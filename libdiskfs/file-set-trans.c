@@ -22,11 +22,12 @@
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_set_translator (struct protid *cred,
-			      int flags,
+			      int passive_flags,
+			      int active_flags,
 			      int killtrans_flags,
-			      char *transname,
-			      u_int transnamelen,
-			      fsys_t existing)
+			      char *passive,
+			      u_int passivelen,
+			      fsys_t active)
 {
   struct node *np;
   error_t error;
@@ -34,13 +35,13 @@ diskfs_S_file_set_translator (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  if (!transnamelen && existing == MACH_PORT_NULL)
+  if (!(passive_flags & FS_TRANS_SET) && !(active_flags & FS_TRANS_SET))
     return 0;
 
-  np = cred->po->np;
-
-  if (transnamelen && transname[transnamelen - 1])
+  if (passive[passivelen - 1])
     return EINVAL;
+
+  np = cred->po->np;
 
   mutex_lock (&np->lock);
 
@@ -50,38 +51,39 @@ diskfs_S_file_set_translator (struct protid *cred,
       return error;
     }
 
-  if (np->translator.control != MACH_PORT_NULL)
-    {
-      if (flags & FS_TRANS_EXCL)
-	{
-	  mutex_unlock (&np->lock);
-	  return EBUSY;
-	}
-      diskfs_destroy_translator (np, killtrans_flags);
-    }
-
-  if ((flags & FS_TRANS_EXCL) && transname && diskfs_node_translated (np))
+  /* Handle exclusive bits */
+  if (((active_flags & FS_TRANS_SET)
+       && (active_flags & FS_TRANS_EXCL)
+       && np->translator.control != MACH_PORT_NULL)
+      || ((passive_flags & FS_TRANS_SET)
+	  && (passive_flags & FS_TRANS_EXCL)
+	  && diskfs_node_translated (np)))
     {
       mutex_unlock (&np->lock);
       return EBUSY;
     }
-	  
-  if (transnamelen)
+  
+  /* Kill existing active translator */
+  if (np->translator.control != MACH_PORT_NULL)
+    diskfs_destroy_translator (np, killtrans_flags);
+
+  /* Set passive translator */
+  if (passive_flags & FS_TRANS_SET)
     {
-      if (!(flags & FS_TRANS_FORCE))
+      if (!(passive_flags & FS_TRANS_FORCE))
 	{
 	  /* Handle the short-circuited translators */
 	  mode_t newmode = 0;
 	
-	  if (diskfs_shortcut_symlink && !strcmp (transname, _HURD_SYMLINK))
+	  if (diskfs_shortcut_symlink && !strcmp (passive, _HURD_SYMLINK))
 	    newmode = S_IFLNK;
-	  if (diskfs_shortcut_chrdev && !(strcmp (transname, _HURD_CHRDEV)))
+	  if (diskfs_shortcut_chrdev && !(strcmp (passive, _HURD_CHRDEV)))
 	    newmode = S_IFCHR;
-	  else if (diskfs_shortcut_blkdev && !strcmp (transname, _HURD_BLKDEV))
+	  else if (diskfs_shortcut_blkdev && !strcmp (passive, _HURD_BLKDEV))
 	    newmode = S_IFBLK;
-	  else if (diskfs_shortcut_fifo && !strcmp (transname, _HURD_FIFO))
+	  else if (diskfs_shortcut_fifo && !strcmp (passive, _HURD_FIFO))
 	    newmode = S_IFIFO;
-	  else if (diskfs_shortcut_ifsock && !strcmp (transname, _HURD_IFSOCK))
+	  else if (diskfs_shortcut_ifsock && !strcmp (passive, _HURD_IFSOCK))
 	    newmode = S_IFSOCK;
 	
 	  if (newmode)
@@ -102,9 +104,9 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  int major, minor;
 		  char *arg;
 	      
-		  arg = transname + strlen (transname) + 1;
-		  assert (arg <= transname + transnamelen);
-		  if (arg == transname + transnamelen)
+		  arg = passive + strlen (passive) + 1;
+		  assert (arg <= passive + passivelen);
+		  if (arg == passive + passivelen)
 		    {
 		      mutex_unlock (&np->lock);
 		      return EINVAL;
@@ -112,8 +114,8 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  major = strtol (arg, 0, 0);
 
 		  arg = arg + strlen (arg) + 1;
-		  assert (arg < transname + transnamelen);
-		  if (arg == transname + transnamelen)
+		  assert (arg < passive + passivelen);
+		  if (arg == passive + passivelen)
 		    {
 		      mutex_unlock (&np->lock);
 		      return EINVAL;
@@ -127,9 +129,9 @@ diskfs_S_file_set_translator (struct protid *cred,
 	      diskfs_truncate (np, 0);
 	      if (newmode == S_IFLNK)
 		{
-		  char *arg = transname + strlen (transname) + 1;
-		  assert (arg <= transname + transnamelen);
-		  if (arg == transname + transnamelen)
+		  char *arg = passive + strlen (passive) + 1;
+		  assert (arg <= passive + passivelen);
+		  if (arg == passive + passivelen)
 		    {
 		      mutex_unlock (&np->lock);
 		      return EINVAL;
@@ -154,11 +156,18 @@ diskfs_S_file_set_translator (struct protid *cred,
 	      return 0;
 	    }
 	}
-      error = diskfs_set_translator (np, transname, transnamelen, cred);
+      error = diskfs_set_translator (np, passive, passivelen, cred);
     }
 
-  if (existing != MACH_PORT_NULL)
-    fshelp_set_control (&np->translator, existing);
+  /* Set active translator */
+  if (active_flags & FS_TRANS_SET)
+    {
+      if (existing != MACH_PORT_NULL)
+	fshelp_set_control (&np->translator, existing);
+      else
+	/* Should have been cleared above. */
+	assert (np->translator.control == MACH_PORT_NULL);
+    }
 
   mutex_unlock (&np->lock);
   return error;
