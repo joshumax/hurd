@@ -27,6 +27,8 @@ subsystem exec 30000;
 EXEC_IMPORTS
 #endif
 
+INTR_INTERFACE
+
 routine exec_exec (
 	execserver: file_t;
 	file: mach_port_send_t;
