@@ -1,3 +1,16 @@
+Wed Aug 14 13:46:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (nfstable): Renamed to nfs2table.
+	* nfsd.h (nfstable): Likewise.
+	* loop.c (server_loop): Reference nfs2table instead of nfstable.
+
+	* nfsd.h, cache.c, ops.c, xdr.c: Use new names for things that
+ 	have just been changed in ../nfs/rpcsvc/nfs_prot.h.
+	* xdr.c (hurd_mode_to_nfs_type): New parm VERSION; all callers
+	changed. 
+	(encode_fattr): New parm VERSION; all callers changed.
+	* nfsd.h (encode_fattr): New parm VERSION.
+
 Tue Aug 13 14:38:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	
 	* ops.c (op_create): Sun's NFS client implementation actually

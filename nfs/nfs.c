@@ -45,9 +45,6 @@ nfs_mode_to_hurd_mode (int type, int mode)
       break;
 
     case NFREG:
-    case NFNON:
-    case NFBAD:
-    default:
       hurdmode = S_IFREG;
       break;
       
@@ -59,8 +56,31 @@ nfs_mode_to_hurd_mode (int type, int mode)
       hurdmode = S_IFSOCK;
       break;
 
-    case NFFIFO:
-      hurdmode = S_IFIFO;
+    default:
+      if (protocol_version == 2)
+	switch (type)
+	  {
+	  case NF2NON:
+	  case NF2BAD:
+	  default:
+	    hurdmode = S_IFREG;
+	    break;
+	    
+	  case NF2FIFO:
+	    hurdmode = S_IFIFO;
+	    break;
+	  }
+      else
+	switch (type)
+	  {
+	  case NF3FIFO:
+	    hurdmode = S_IFIFO;
+	    break;
+	    
+	  default:
+	    hurdmode = S_IFREG;
+	    break;
+	  }
       break;
     }
   
@@ -86,8 +106,8 @@ hurd_mode_to_nfs_mode (mode_t mode)
 int *
 xdr_encode_fhandle (int *p, void *fhandle)
 {
-  bcopy (fhandle, p, NFS_FHSIZE);
-  return p + INTSIZE (NFS_FHSIZE);
+  bcopy (fhandle, p, NFS2_FHSIZE);
+  return p + INTSIZE (NFS2_FHSIZE);
 }
 
 /* Encode uninterpreted bytes. */
@@ -423,14 +443,16 @@ nfs_error_trans (int error)
 	    return EMLINK;
 	    
 	  case NFSERR_NOTSUPP:
+	  case NFSERR_BADTYPE:
 	    return EOPNOTSUPP;
+
+	  case NFSERR_SERVERFAULT:
+	    return EIO;
 
 	  case NFSERR_BADHANDLE:
 	  case NFSERR_NOT_SYNC:
 	  case NFSERR_BAD_COOKIE:
 	  case NFSERR_TOOSMALL:
-	  case NFSERR_SERVERFAULT: /* perhaps EIO instead?? */
-	  case NFSERR_BADTYPE:
 	  case NFSERR_JUKEBOX:	/* ??? */
 	    /* These indicate bugs in the client, so EGRATUITOUS is right. */
 	    return EGRATUITOUS;

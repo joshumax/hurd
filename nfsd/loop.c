@@ -101,7 +101,7 @@ server_loop (int fd)
 	  
 	case NFS_PROGRAM:
 	  version = NFS_VERSION;
-	  table = &nfstable;
+	  table = &nfs2table;
 	  break;
 	  
 	case PMAPPROG:

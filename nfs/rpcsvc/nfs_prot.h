@@ -2,9 +2,13 @@
 #define NFS_MAXDATA 8192
 #define NFS_MAXPATHLEN 1024
 #define NFS_MAXNAMLEN 255
-#define NFS_FHSIZE 32
+#define NFS2_FHSIZE 32
+#define NFS3_FHSIZE 64
 #define NFS_COOKIESIZE 4
 #define NFS_FIFO_DEV -1
+#define NFS3_COOKIEVERFSIZE 8
+#define NFS3_CREATEVERFSIZE 8
+#define NFS3_WRITEVERFSIZE 8
 #define NFSMODE_FMT 0170000
 #define NFSMODE_DIR 0040000
 #define NFSMODE_CHR 0020000
@@ -47,310 +51,83 @@ enum nfsstat {
 	NFSERR_JUKEBOX = 10008,	/* v3 only */
 #define NFSERR_TRYLATER NFSERR_JUKEBOX
 };
-typedef enum nfsstat nfsstat;
-bool_t xdr_nfsstat();
 
 
 enum ftype {
-	NFNON = 0,
+	NF2NON = 0,		/* v2 only */
 	NFREG = 1,
 	NFDIR = 2,
 	NFBLK = 3,
 	NFCHR = 4,
 	NFLNK = 5,
 	NFSOCK = 6,
-	NFBAD = 7,
-	NFFIFO = 8,
+	NF3FIFO = 7,		/* v3 only */
+#define NF2BAD NF3FIFO		/* v2 only */
+	NF2FIFO = 8,		/* v2 only */
 };
-typedef enum ftype ftype;
-bool_t xdr_ftype();
-
-
-struct nfs_fh {
-	char data[NFS_FHSIZE];
-};
-typedef struct nfs_fh nfs_fh;
-bool_t xdr_nfs_fh();
-
-
-struct nfstime {
-	u_int seconds;
-	u_int useconds;
-};
-typedef struct nfstime nfstime;
-bool_t xdr_nfstime();
-
-
-struct fattr {
-	ftype type;
-	u_int mode;
-	u_int nlink;
-	u_int uid;
-	u_int gid;
-	u_int size;
-	u_int blocksize;
-	u_int rdev;
-	u_int blocks;
-	u_int fsid;
-	u_int fileid;
-	nfstime atime;
-	nfstime mtime;
-	nfstime ctime;
-};
-typedef struct fattr fattr;
-bool_t xdr_fattr();
-
-
-struct sattr {
-	u_int mode;
-	u_int uid;
-	u_int gid;
-	u_int size;
-	nfstime atime;
-	nfstime mtime;
-};
-typedef struct sattr sattr;
-bool_t xdr_sattr();
-
-
-typedef char *filename;
-bool_t xdr_filename();
-
-
-typedef char *nfspath;
-bool_t xdr_nfspath();
-
-
-struct attrstat {
-	nfsstat status;
-	union {
-		fattr attributes;
-	} attrstat_u;
-};
-typedef struct attrstat attrstat;
-bool_t xdr_attrstat();
-
-
-struct sattrargs {
-	nfs_fh file;
-	sattr attributes;
-};
-typedef struct sattrargs sattrargs;
-bool_t xdr_sattrargs();
-
-
-struct diropargs {
-	nfs_fh dir;
-	filename name;
-};
-typedef struct diropargs diropargs;
-bool_t xdr_diropargs();
-
-
-struct diropokres {
-	nfs_fh file;
-	fattr attributes;
-};
-typedef struct diropokres diropokres;
-bool_t xdr_diropokres();
-
-
-struct diropres {
-	nfsstat status;
-	union {
-		diropokres diropres;
-	} diropres_u;
-};
-typedef struct diropres diropres;
-bool_t xdr_diropres();
-
-
-struct readlinkres {
-	nfsstat status;
-	union {
-		nfspath data;
-	} readlinkres_u;
-};
-typedef struct readlinkres readlinkres;
-bool_t xdr_readlinkres();
-
-
-struct readargs {
-	nfs_fh file;
-	u_int offset;
-	u_int count;
-	u_int totalcount;
-};
-typedef struct readargs readargs;
-bool_t xdr_readargs();
-
-
-struct readokres {
-	fattr attributes;
-	struct {
-		u_int data_len;
-		char *data_val;
-	} data;
-};
-typedef struct readokres readokres;
-bool_t xdr_readokres();
-
-
-struct readres {
-	nfsstat status;
-	union {
-		readokres reply;
-	} readres_u;
-};
-typedef struct readres readres;
-bool_t xdr_readres();
-
-
-struct writeargs {
-	nfs_fh file;
-	u_int beginoffset;
-	u_int offset;
-	u_int totalcount;
-	struct {
-		u_int data_len;
-		char *data_val;
-	} data;
-};
-typedef struct writeargs writeargs;
-bool_t xdr_writeargs();
-
-
-struct createargs {
-	diropargs where;
-	sattr attributes;
-};
-typedef struct createargs createargs;
-bool_t xdr_createargs();
-
-
-struct renameargs {
-	diropargs from;
-	diropargs to;
-};
-typedef struct renameargs renameargs;
-bool_t xdr_renameargs();
-
-
-struct linkargs {
-	nfs_fh from;
-	diropargs to;
-};
-typedef struct linkargs linkargs;
-bool_t xdr_linkargs();
-
-
-struct symlinkargs {
-	diropargs from;
-	nfspath to;
-	sattr attributes;
-};
-typedef struct symlinkargs symlinkargs;
-bool_t xdr_symlinkargs();
-
-
-typedef char nfscookie[NFS_COOKIESIZE];
-bool_t xdr_nfscookie();
-
-
-struct readdirargs {
-	nfs_fh dir;
-	nfscookie cookie;
-	u_int count;
-};
-typedef struct readdirargs readdirargs;
-bool_t xdr_readdirargs();
-
-
-struct entry {
-	u_int fileid;
-	filename name;
-	nfscookie cookie;
-	struct entry *nextentry;
-};
-typedef struct entry entry;
-bool_t xdr_entry();
-
-
-struct dirlist {
-	entry *entries;
-	bool_t eof;
-};
-typedef struct dirlist dirlist;
-bool_t xdr_dirlist();
-
-
-struct readdirres {
-	nfsstat status;
-	union {
-		dirlist reply;
-	} readdirres_u;
-};
-typedef struct readdirres readdirres;
-bool_t xdr_readdirres();
-
-
-struct statfsokres {
-	u_int tsize;
-	u_int bsize;
-	u_int blocks;
-	u_int bfree;
-	u_int bavail;
-};
-typedef struct statfsokres statfsokres;
-bool_t xdr_statfsokres();
-
-
-struct statfsres {
-	nfsstat status;
-	union {
-		statfsokres reply;
-	} statfsres_u;
-};
-typedef struct statfsres statfsres;
-bool_t xdr_statfsres();
-
 
 #define NFS_PROGRAM ((u_long)100003)
 #define NFS_VERSION ((u_long)2)
-#define NFSPROC_NULL ((u_long)0)
-extern void *nfsproc_null_2();
-#define NFSPROC_GETATTR ((u_long)1)
-extern attrstat *nfsproc_getattr_2();
-#define NFSPROC_SETATTR ((u_long)2)
-extern attrstat *nfsproc_setattr_2();
-#define NFSPROC_ROOT ((u_long)3)
-extern void *nfsproc_root_2();
-#define NFSPROC_LOOKUP ((u_long)4)
-extern diropres *nfsproc_lookup_2();
-#define NFSPROC_READLINK ((u_long)5)
-extern readlinkres *nfsproc_readlink_2();
-#define NFSPROC_READ ((u_long)6)
-extern readres *nfsproc_read_2();
-#define NFSPROC_WRITECACHE ((u_long)7)
-extern void *nfsproc_writecache_2();
-#define NFSPROC_WRITE ((u_long)8)
-extern attrstat *nfsproc_write_2();
-#define NFSPROC_CREATE ((u_long)9)
-extern diropres *nfsproc_create_2();
-#define NFSPROC_REMOVE ((u_long)10)
-extern nfsstat *nfsproc_remove_2();
-#define NFSPROC_RENAME ((u_long)11)
-extern nfsstat *nfsproc_rename_2();
-#define NFSPROC_LINK ((u_long)12)
-extern nfsstat *nfsproc_link_2();
-#define NFSPROC_SYMLINK ((u_long)13)
-extern nfsstat *nfsproc_symlink_2();
-#define NFSPROC_MKDIR ((u_long)14)
-extern diropres *nfsproc_mkdir_2();
-#define NFSPROC_RMDIR ((u_long)15)
-extern nfsstat *nfsproc_rmdir_2();
-#define NFSPROC_READDIR ((u_long)16)
-extern readdirres *nfsproc_readdir_2();
-#define NFSPROC_STATFS ((u_long)17)
-extern statfsres *nfsproc_statfs_2();
+
+#define NFS_PROTOCOL_FUNC(proc,vers) \
+	(vers == 2 ? NFS2PROC_ ## proc : NFS3PROC_ ## proc)
+
+#define NFSPROC_NULL(v) NFS_PROTOCOL_FUNC (NULL,v)
+#define NFSPROC_GETATTR(v) NFS_PROTOCOL_FUNC (GETATTR, v)
+#define NFSPROC_SETATTR(v) NFS_PROTOCOL_FUNC (SETATTR, v)
+#define NFSPROC_LOOKUP(v) NFS_PROTOCOL_FUNC (LOOKUP, v)
+#define NFSPROC_READLINK(v) NFS_PROTOCOL_FUNC (READLINK, v)
+#define NFSPROC_READ(v) NFS_PROTOCOL_FUNC (READ, v)
+#define NFSPROC_WRITE(v) NFS_PROTOCOL_FUNC (WRITE, v)
+#define NFSPROC_CREATE(v) NFS_PROTOCOL_FUNC (CREATE, v)
+#define NFSPROC_REMOVE(v) NFS_PROTOCOL_FUNC (REMOVE, v)
+#define NFSPROC_RENAME(v) NFS_PROTOCOL_FUNC (RENAME, v)
+#define NFSPROC_LINK(v) NFS_PROTOCOL_FUNC (LINK, v)
+#define NFSPROC_SYMLINK(v) NFS_PROTOCOL_FUNC (SYMLINK, v)
+#define NFSPROC_MKDIR(v) NFS_PROTOCOL_FUNC (MKDIR, v)
+#define NFSPROC_RMDIR(v) NFS_PROTOCOL_FUNC (RMDIR, v)
+#define NFSPROC_READDIR(v) NFS_PROTOCOL_FUNC (READDIR, v)
+
+/* Values for each protocol */
+#define NFS2PROC_NULL 0
+#define NFS2PROC_GETATTR 1
+#define NFS2PROC_SETATTR 2
+#define NFS2PROC_ROOT 3
+#define NFS2PROC_LOOKUP 4
+#define NFS2PROC_READLINK 5
+#define NFS2PROC_READ 6
+#define NFS2PROC_WRITECACHE 7
+#define NFS2PROC_WRITE 8
+#define NFS2PROC_CREATE 9
+#define NFS2PROC_REMOVE 10
+#define NFS2PROC_RENAME 11
+#define NFS2PROC_LINK 12
+#define NFS2PROC_SYMLINK 13
+#define NFS2PROC_MKDIR 14
+#define NFS2PROC_RMDIR 15
+#define NFS2PROC_READDIR 16
+#define NFS2PROC_STATFS 17
+
+#define NFS3PROC_NULL 0
+#define NFS3PROC_GETATTR 1
+#define NFS3PROC_SETATTR 2
+#define NFS3PROC_LOOKUP 3
+#define NFS3PROC_ACCESS 4
+#define NFS3PROC_READLINK 5
+#define NFS3PROC_READ 6
+#define NFS3PROC_WRITE 7
+#define NFS3PROC_CREATE 8
+#define NFS3PROC_MKDIR 9
+#define NFS3PROC_SYMLINK 10
+#define NFS3PROC_MKNOD 11
+#define NFS3PROC_REMOVE 12
+#define NFS3PROC_RMDIR 13
+#define NFS3PROC_RENAME 14
+#define NFS3PROC_LINK 15
+#define NFS3PROC_READDIR 16
+#define NFS3PROC_READDIRPLUS 17
+#define NFS3PROC_FSSTAT 18
+#define NFS3PROC_FSINFO 19
+#define NFS3PROC_PATHCONF 20
+#define NFS3PROC_COMMIT 21
 

@@ -33,7 +33,7 @@ hash (void *fhandle)
   unsigned int h = 0;
   int i;
   
-  for (i = 0; i < NFS_FHSIZE; i++)
+  for (i = 0; i < NFS2_FHSIZE; i++)
     h += ((char *)fhandle)[i];
   
   return h % CACHESIZE;
@@ -53,7 +53,7 @@ lookup_fhandle (void *fhandle)
   spin_lock (&netfs_node_refcnt_lock);
   for (np = nodehash[h]; np; np = np->nn->hnext)
     {
-      if (bcmp (np->nn->handle, fhandle, NFS_FHSIZE) != 0)
+      if (bcmp (np->nn->handle, fhandle, NFS2_FHSIZE) != 0)
 	continue;
       
       np->references++;
@@ -63,7 +63,7 @@ lookup_fhandle (void *fhandle)
     }
   
   nn = malloc (sizeof (struct netnode));
-  bcopy (fhandle, nn->handle, NFS_FHSIZE);
+  bcopy (fhandle, nn->handle, NFS2_FHSIZE);
   nn->stat_updated = 0;
   nn->dtrans = NOT_POSSIBLE;
   nn->dead_dir = 0;
@@ -135,7 +135,7 @@ recache_handle (struct node *np, void *handle)
   if (np->nn->hnext)
     np->nn->hnext->nn->hprevp = np->nn->hprevp;
   
-  bcopy (handle, np->nn->handle, NFS_FHSIZE);
+  bcopy (handle, np->nn->handle, NFS2_FHSIZE);
   
   h = hash (handle);
   np->nn->hnext = nodehash[h];

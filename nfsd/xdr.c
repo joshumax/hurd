@@ -31,7 +31,7 @@ hurd_mode_to_nfs_mode (mode_t m)
 }
 
 static int
-hurd_mode_to_nfs_type (mode_t m)
+hurd_mode_to_nfs_type (mode_t m, int version)
 {
   switch (m & S_IFMT)
     {
@@ -54,18 +54,18 @@ hurd_mode_to_nfs_type (mode_t m)
       return NFSOCK;
       
     case S_IFIFO:
-      return NFFIFO;
+      return (version == 2 ? NF2FIFO : NF3FIFO);
       
     default:
-      return NFNON;
+      return (version == 2 ? NF2NON : NFREG);
     }
 }
 
 /* Encode ST into P and return the next thing to come after it. */
 int *
-encode_fattr (int *p, struct stat *st)
+encode_fattr (int *p, struct stat *st, int version)
 {
-  *p++ = htonl (hurd_mode_to_nfs_type (st->st_mode));
+  *p++ = htonl (hurd_mode_to_nfs_type (st->st_mode, version));
   *p++ = htonl (hurd_mode_to_nfs_mode (st->st_mode));
   *p++ = htonl (st->st_nlink);
   *p++ = htonl (st->st_uid);
@@ -102,8 +102,8 @@ decode_name (int *p, char **name)
 int *
 encode_fhandle (int *p, char *handle)
 {
-  bcopy (handle, p, NFS_FHSIZE);
-  return p + INTSIZE (NFS_FHSIZE);
+  bcopy (handle, p, NFS2_FHSIZE);
+  return p + INTSIZE (NFS2_FHSIZE);
 }
 
 /* Encode STRING into P and return the next thing to come after it. */

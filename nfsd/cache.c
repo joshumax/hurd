@@ -243,7 +243,7 @@ fh_hash (char *fhandle, struct idspec *i)
 {
   int hash = 0, n;
   
-  for (n = 0; n < NFS_FHSIZE; n++)
+  for (n = 0; n < NFS2_FHSIZE; n++)
     hash += fhandle[n];
   hash += (int) i >> 6;
   return hash % FHHASH_TABLE_SIZE;
@@ -260,14 +260,14 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   hash = fh_hash ((char *)p, i);
   mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
-    if (c->ids == i && ! bcmp (c->handle, p, NFS_FHSIZE))
+    if (c->ids == i && ! bcmp (c->handle, p, NFS2_FHSIZE))
       {
 	if (c->references == 0)
 	  nfreefh--;
 	c->references++;
 	mutex_unlock (&fhhashlock);
 	*cp = c;
-	return p + NFS_FHSIZE / sizeof (int);
+	return p + NFS2_FHSIZE / sizeof (int);
       }
   
   /* Not found */
@@ -276,15 +276,15 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   fsys = lookup_filesystem (*p);
   if (fsys == MACH_PORT_NULL
       || fsys_getfile (fsys, i->uids, i->nuids, i->gids, i->ngids,
-		       (char *)(p + 1), NFS_FHSIZE - sizeof (int), &port))
+		       (char *)(p + 1), NFS2_FHSIZE - sizeof (int), &port))
     {
       mutex_unlock (&fhhashlock);
       *cp = 0;
-      return p + NFS_FHSIZE / sizeof (int);
+      return p + NFS2_FHSIZE / sizeof (int);
     }
   
   c = malloc (sizeof (struct cache_handle));
-  bcopy (p, c->handle, NFS_FHSIZE);
+  bcopy (p, c->handle, NFS2_FHSIZE);
   cred_ref (i);
   c->ids = i;
   c->port = port;
@@ -298,7 +298,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   
   mutex_unlock (&fhhashlock);
   *cp = c;
-  return p + NFS_FHSIZE / sizeof (int);
+  return p + NFS2_FHSIZE / sizeof (int);
 }
 
 void
@@ -351,12 +351,12 @@ scan_fhs ()
 struct cache_handle *
 create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 {
-  char fhandle[NFS_FHSIZE];
+  char fhandle[NFS2_FHSIZE];
   error_t err;
   struct cache_handle *c;
   int hash;
   char *bp = fhandle + sizeof (int);
-  size_t handlelen = NFS_FHSIZE - sizeof (int);
+  size_t handlelen = NFS2_FHSIZE - sizeof (int);
   mach_port_t newport, ref;
 
   /* Authenticate USERPORT so that we can call file_getfh on it. */
@@ -377,11 +377,11 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   *(int *)fhandle = fs;
   err = file_getfh (newport, &bp, &handlelen);
   mach_port_deallocate (mach_task_self (), newport);
-  if (err || handlelen != NFS_FHSIZE - sizeof (int))
+  if (err || handlelen != NFS2_FHSIZE - sizeof (int))
     return 0;
   if (bp != fhandle + sizeof (int))
     {
-      bcopy (bp, fhandle + sizeof (int), NFS_FHSIZE - sizeof (int));
+      bcopy (bp, fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int));
       vm_deallocate (mach_task_self (), (vm_address_t) bp, handlelen);
     }
   
@@ -389,7 +389,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   hash = fh_hash (fhandle, credc->ids);
   mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
-    if (c->ids == credc->ids && ! bcmp (fhandle, c->handle, NFS_FHSIZE))
+    if (c->ids == credc->ids && ! bcmp (fhandle, c->handle, NFS2_FHSIZE))
       {
 	/* Return this one */
 	if (c->references == 0)
@@ -405,7 +405,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   err = fsys_getfile (lookup_filesystem (fs), 
 		      credc->ids->uids, credc->ids->nuids, 
 		      credc->ids->gids, credc->ids->ngids,
-		      fhandle + sizeof (int), NFS_FHSIZE - sizeof (int),
+		      fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int),
 		      &newport);
   if (err)
     {
@@ -415,7 +415,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   
   /* Create it anew */
   c = malloc (sizeof (struct cache_handle));
-  bcopy (fhandle, c->handle, NFS_FHSIZE);
+  bcopy (fhandle, c->handle, NFS2_FHSIZE);
   cred_ref (credc->ids);
   c->ids = credc->ids;
   c->port = newport;

@@ -46,7 +46,7 @@ struct idspec
 struct cache_handle
 {
   struct cache_handle *next, **prevp;
-  char handle[NFS_FHSIZE];
+  char handle[NFS2_FHSIZE];
   struct idspec *ids;
   file_t port;
   time_t lastuse;
@@ -113,11 +113,11 @@ void scan_replies (void);
 void server_loop (int);
 
 /* ops.c */
-extern struct proctable nfstable, mounttable, pmaptable;
+extern struct proctable nfs2table, mounttable, pmaptable;
 
 /* xdr.c */
 int nfs_error_trans (error_t, int);
-int *encode_fattr (int *, struct stat *);
+int *encode_fattr (int *, struct stat *, int version);
 int *decode_name (int *, char **);
 int *encode_fhandle (int *, char *);
 int *encode_string (int *, char *);

@@ -1,3 +1,63 @@
+Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* rpcsvc/nfs_prot.h (NFS_FHSIZE): Deleted macro.
+	(NFS2_FHSIZE, NFS3_FHSIZE, NFS3_COOKIEVERFSIZE, NFS3_CREATEVERFSIZE,
+	NFS3_WRITEVERFSIZE): New macros.
+	(enum ftype): Deleted NFFIFO.  Added NF2FIFO, NF3FIFO, and an
+	alias NF2BAD for NF3FIFO.
+	(NFSPROC_NULL, NFSPROC_GETATTR, NFSPROC_SETATTR,
+	NFSPROC_LOOKUP, NFSPROC_READLINK, NFSPROC_READ,
+	NFSPROC_WRITE, NFSPROC_CREATE, NFSPROC_REMOVE,
+	NFSPROC_RENAME, NFSPROC_LINK, NFSPROC_SYMLINK, NFSPROC_MKDIR,
+	NFSPROC_RMDIR, NFSPROC_READDIR): Replace with new
+	macros that take a version arg.  All users changed to use new
+	version arg. 
+	(NFS_PROTOCOL_FUNC): New macro.
+	(NFS2PROC_NULL, NFS2PROC_GETATTR, NFS2PROC_SETATTR, NFS2PROC_ROOT,
+	NFS2PROC_LOOKUP, NFS2PROC_READLINK, NFS2PROC_READ,
+	NFS2PROC_WRITECACHE, NFS2PROC_WRIT, NFS2PROC_CREATE,
+	NFS2PROC_REMOVE, NFS2PROC_RENAME, NFS2PROC_LINK, NFS2PROC_SYMLINK,
+	NFS2PROC_MKDIR, NFS2PROC_RMDIR, NFS2PROC_READDIR, NFS2PROC_STATFS,
+	NFS3PROC_NULL, NFS3PROC_GETATTR, NFS3PROC_SETATTR,
+	NFS3PROC_LOOKUP, NFS3PROC_ACCESS, NFS3PROC_READLINK,
+	NFS3PROC_READ, NFS3PROC_WRITE, NFS3PROC_CREATE, NFS3PROC_MKDIR,
+	NFS3PROC_SYMLINK, NFS3PROC_MKNOD, NFS3PROC_REMOVE, NFS3PROC_RMDIR,
+	NFS3PROC_RENAME, NFS3PROC_LINK, NFS3PROC_READDIR,
+	NFS3PROC_READDIRPLUS, NFS3PROC_FSSTAT, NFS3PROC_FSINFO,
+	NFS3PROC_PATHCONF, NFS3PROC_COMMIT): New macros.  All callers
+	appropriately changed.
+	
+	* nfs.c (nfs_error_trans): NFS_SERVERFAULT maps to EIO;
+	NFSERR_BADTYPE maps to EOPNOTSUPP.
+
+	* rpcsvc/nfs_prot.h (nfsstat, ftype, struct nfs_fh, nfs_fh, struct
+	nfstime, nfstime, struct fattr, fattr, struct sattr, sattr,
+	filename, nfspath, struct attrstat, attrstat, struct sattrargs,
+	sattrargs, struct diropargs, diropargs, struct diropokres,
+	diropokres, struct diropres, diropres, struct readlinkres,
+	readlinkres, struct readargs, readargs, struct readokres,
+	readokres, struct readres, readres, struct writeargs, writeargs,
+	struct createargs, createargs, struct renameargs, renameargs,
+	struct linkargs, linkargs, struct symlinkargs, symlinkargs,
+	nfscookie, struct readdirargs, readdirargs, struct entry, entry,
+	struct dirlist, dirlist, struct readdirres, readdirres, struct
+	statfsokres, statfsokres, struct statfsres, statfsres): Delete
+	unused types.
+	(xdr_nfsstat, xdr_ftype, xdr_nfs_fh, xdr_nfstime, xdr_fattr,
+	xdr_sattr, xdr_filename, xdr_nfspath, xdr_attrstat, xdr_sattrargs,
+	xdr_diropargs, xdr_diropokres, xdr_diropres, xdr_readlinkres,
+	xdr_readargs, xdr_readokres, xdr_readres, xdr_writeargs,
+	xdr_createargs, xdr_renameargs, xdr_linkargs, xdr_symlinkargs,
+	xdr_nfscookie, xdr_readdirargs, xdr_entry, xdr_dirlist,
+	xdr_readdirres, xdr_statfsokres, xdr_statfsres, nfsproc_null_2,
+	nfsproc_getattr_2, nfsproc_setattr_2, nfsproc_root_2,
+	nfsproc_lookup_2, nfsproc_readlink_2, rfsproc_read_2,
+	nfsproc_writecache_2, nfsproc_write_2, nfsproc_create_2,
+	nfsproc_remove_2, nfsproc_rename_2, nfsproc_link_2,
+	nfsproc_symlink_2, nfsproc_mkdir_2, nfsproc_rmdir_2,
+	nfsproc_readdir_2, nfsproc_statfs_2): Delete unused function
+	declarations. 
+
 Tue Aug 13 14:57:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_create_file): Sun's NFS client does not

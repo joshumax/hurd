@@ -31,3 +31,6 @@ permission; this will cause a failure of vm_wire if the current
 permission is later promoted.
 
 Patch for MiG dealing when sreplyport and mach_port_poly_t are used together. 
+
+Install Linux and NetBSD physical CPU reset code in place of current
+Mach version.

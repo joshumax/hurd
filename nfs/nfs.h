@@ -28,7 +28,7 @@ typedef int bool_t;		/* Ick. */
    node. */
 struct netnode 
 {
-  char handle[NFS_FHSIZE];
+  char handle[NFS2_FHSIZE];
   time_t stat_updated;
   struct node *hnext, **hprevp;
 

@@ -49,7 +49,7 @@ op_getattr (struct cache_handle *c,
   
   err = io_stat (c->port, &st);
   if (!err)
-    *reply = encode_fattr (*reply, &st);
+    *reply = encode_fattr (*reply, &st, version);
   return err;
 }
 
@@ -133,7 +133,7 @@ op_setattr (struct cache_handle *c,
   if (err)
     return err;
   
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
 
@@ -173,7 +173,7 @@ op_lookup (struct cache_handle *c,
   if (!newc)
     return ESTALE;
   *reply = encode_fhandle (*reply, newc->handle);
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
 
@@ -232,7 +232,7 @@ op_read (struct cache_handle *c,
   if (err)
     return err;
   
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   *reply = encode_data (*reply, bp, buflen);
   return 0;
 }
@@ -273,7 +273,7 @@ op_write (struct cache_handle *c,
   err = io_stat (c->port, &st);
   if (err)
     return err;
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
 
@@ -345,7 +345,7 @@ op_create (struct cache_handle *c,
     return ESTALE;
   
   *reply = encode_fhandle (*reply, newc->handle);
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
 
@@ -500,7 +500,7 @@ op_mkdir (struct cache_handle *c,
   if (!newc)
     return ESTALE;
   *reply = encode_fhandle (*reply, newc->handle);
-  *reply = encode_fattr (*reply, &st);
+  *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
 
@@ -649,10 +649,10 @@ op_getport (struct cache_handle *c,
 }
 
 
-struct proctable nfstable = 
+struct proctable nfs2table = 
 {
-  NFSPROC_NULL,			/* first proc */
-  NFSPROC_STATFS,		/* last proc */
+  NFS2PROC_NULL,		/* first proc */
+  NFS2PROC_STATFS,		/* last proc */
   {
     { op_null, 0, 0, 0},
     { op_getattr, 0, 1, 1},
