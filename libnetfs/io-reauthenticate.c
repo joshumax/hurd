@@ -43,13 +43,14 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   newpi = netfs_make_protid (user->po, 0);
   err = auth_server_authenticate (netfs_auth_server_port,
 				  rend_port,
-				  MACH_MSG_TYPE_MOVE_SEND,
+				  MACH_MSG_TYPE_COPY_SEND,
 				  ports_get_right (newpi),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen,
 				  &aux_uids, &auxuidlen,
 				  &gen_gids, &gengidlen,
 				  &aux_uids, &auxuidlen);
+  mach_port_deallocate (mach_task_self (), rend_port);
   assert_perror (err);
   
   newpi->credential = netfs_make_credential (gen_uids, genuidlen,
