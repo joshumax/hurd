@@ -82,6 +82,7 @@ main (int argc, char **argv)
 
   /* Reply to our parent */
   err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
+  mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (2, err, "Contacting parent");
 
