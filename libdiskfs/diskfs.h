@@ -132,12 +132,13 @@ struct modreq
 #define SPEC_DOTDOT 0x10000000
 
 struct argp;			/* opaque in this file */
+struct argp_child;		/* opaque in this file */
+struct store;			/* opaque in this file */
+struct store_parsed;		/* opaque in this file */
 
 /* Declarations of variables the library sets.  */
 
 extern mach_port_t diskfs_default_pager; /* send right */
-extern mach_port_t diskfs_exec_ctl;	/* send right */
-extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
 
 /* The io_identity identity port for the filesystem. */

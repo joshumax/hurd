@@ -54,16 +54,31 @@ diskfs_S_file_exec (struct protid *cred,
   int suid, sgid;
   struct protid *newpi;
   error_t err = 0;
+  mach_port_t execserver;
   int cached_exec;
+  struct hurd_userlink ulink;
+#define RETURN(code) do { err = (code); goto out; } while (0)
 
   if (!cred)
     return EOPNOTSUPP;
 
-  cached_exec = (diskfs_exec != MACH_PORT_NULL);
-  if (diskfs_exec == MACH_PORT_NULL)
-    diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0); /* XXX unlocked */
-  if (diskfs_exec == MACH_PORT_NULL)
-    return EOPNOTSUPP;
+  /* Get a light reference to the cached exec server port.  */
+  execserver = _hurd_port_get (&_diskfs_exec_portcell, &ulink);
+  cached_exec = (execserver != MACH_PORT_NULL);
+  if (execserver == MACH_PORT_NULL)
+    {
+      /* No cached port.  Look up the canonical naming point.  */
+      execserver = file_name_lookup (_SERVERS_EXEC, 0, 0);
+      if (execserver == MACH_PORT_NULL)
+	return EOPNOTSUPP;	/* No exec server, no exec.  */
+      else
+	{
+	  /* Install the newly-gotten exec server port for other
+	     threads to use, then get a light reference for this call.  */
+	  _hurd_port_set (&_diskfs_exec_portcell, execserver);
+	  execserver = _hurd_port_get (&_diskfs_exec_portcell, &ulink);
+	}
+    }
 
   np = cred->po->np;
 
@@ -74,17 +89,17 @@ diskfs_S_file_exec (struct protid *cred,
   mutex_unlock (&np->lock);
 
   if (_diskfs_noexec)
-    return EACCES;
+    RETURN (EACCES);
 
   if ((cred->po->openstat & O_EXEC) == 0)
-    return EBADF;
+    RETURN (EBADF);
 
   if (!((mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((mode & S_IUSEUNK) && (mode & (S_IEXEC << S_IUNKSHIFT)))))
-    return EACCES;
+    RETURN (EACCES);
 
   if ((mode & S_IFMT) == S_IFDIR)
-    return EACCES;
+    RETURN (EACCES);
 
   suid = mode & S_ISUID;
   sgid = mode & S_ISGID;
@@ -124,7 +139,7 @@ diskfs_S_file_exec (struct protid *cred,
     {
       do
 	{
-	  err = exec_exec (diskfs_exec,
+	  err = exec_exec (execserver,
 			   ports_get_right (newpi),
 			   MACH_MSG_TYPE_MAKE_SEND,
 			   task, flags, argv, argvlen, envp, envplen,
@@ -140,10 +155,17 @@ diskfs_S_file_exec (struct protid *cred,
 		  /* We were using a previously looked-up exec server port.
 		     Try looking up a new one before giving an error.  */
 		  cached_exec = 0;
-		  mach_port_deallocate (mach_task_self (), diskfs_exec);
-		  diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
-		  if (diskfs_exec == MACH_PORT_NULL)
+		  _hurd_port_free (&_diskfs_exec_portcell, &ulink, execserver);
+
+		  execserver = file_name_lookup (_SERVERS_EXEC, 0, 0);
+		  if (execserver == MACH_PORT_NULL)
 		    err = EOPNOTSUPP;
+		  else
+		    {
+		      _hurd_port_set (&_diskfs_exec_portcell, execserver);
+		      execserver = _hurd_port_get (&_diskfs_exec_portcell,
+						   &ulink);
+		    }
 		}
 	      else
 		err = EOPNOTSUPP;
@@ -162,6 +184,9 @@ diskfs_S_file_exec (struct protid *cred,
       for (i = 0; i < portarraylen; i++)
 	mach_port_deallocate (mach_task_self (), portarray[i]);
     }
+
+ out:
+  _hurd_port_free (&_diskfs_exec_portcell, &ulink, execserver);
 
   return err;
 }

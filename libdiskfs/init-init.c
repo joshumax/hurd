@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -32,6 +32,8 @@ mach_port_t diskfs_fsys_identity;
 
 int _diskfs_nosuid = 0, _diskfs_noexec = 0;
 
+struct hurd_port _diskfs_exec_portcell;
+
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
 spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
@@ -46,12 +48,12 @@ struct port_class *diskfs_shutdown_notification_class;
 struct port_bucket *diskfs_port_bucket;
 
 /* Call this after arguments have been parsed to initialize the
-   library.  */ 
+   library.  */
 error_t
 diskfs_init_diskfs (void)
 {
   error_t err;
-  
+
   if (diskfs_boot_flags)
     /* This is a boot filesystem, we have to do some things specially.  */
     {
@@ -87,6 +89,8 @@ diskfs_init_diskfs (void)
   diskfs_shutdown_notification_class = ports_create_class (0, 0);
 
   diskfs_port_bucket = ports_create_bucket ();
+
+  _hurd_port_init (&_diskfs_exec_portcell, MACH_PORT_NULL);
 
   return 0;
 }

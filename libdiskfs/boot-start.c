@@ -36,7 +36,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fsys_reply_U.h"
 
 static mach_port_t diskfs_exec_ctl;
-mach_port_t diskfs_exec = MACH_PORT_NULL;
 extern task_t diskfs_exec_server_task;
 static task_t parent_task = MACH_PORT_NULL;
 
@@ -101,6 +100,7 @@ diskfs_start_bootstrap ()
   size_t exec_argvlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
+  mach_port_t diskfs_exec;
 
   /* Create the port for current and root directory.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
@@ -295,6 +295,9 @@ diskfs_start_bootstrap ()
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
   assert_perror (err);
+
+  /* Cache the exec server port for file_exec to use.  */
+  _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
 }
 
 /* We look like an execserver to the execserver itself; it makes this
@@ -503,8 +506,9 @@ diskfs_S_fsys_init (mach_port_t port,
 
       /* Don't start this until now so that exec is fully authenticated
 	 with proc. */
-      exec_init (diskfs_exec, authhandle,
-		 execprocess, MACH_MSG_TYPE_COPY_SEND);
+      HURD_PORT_USE (&_diskfs_exec_portcell,
+		     exec_init (port, authhandle,
+				execprocess, MACH_MSG_TYPE_COPY_SEND));
       mach_port_deallocate (mach_task_self (), execprocess);
 
       /* We don't need this anymore. */

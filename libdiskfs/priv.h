@@ -23,6 +23,7 @@
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
+#include <hurd/port.h>
 #include <assert.h>
 
 #include "diskfs.h"
@@ -35,6 +36,9 @@ extern const char *_diskfs_chroot_directory;
 
 /* If --boot-command is given, this points to the program and args.  */
 extern char **_diskfs_boot_command;
+
+/* Port cell holding a cached port to the exec server.  */
+extern struct hurd_port _diskfs_exec_portcell;
 
 volatile struct mapped_time_value *_diskfs_mtime;
 
