@@ -195,7 +195,7 @@ add_utmp_entry (char *args, unsigned args_len, int tty_fd, int inherit_host)
 
   bzero (&utmp, sizeof (utmp));
 
-  time (&utmp.ut_time);
+  gettimeofday (&utmp.ut_tv, 0);
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
   strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
@@ -327,13 +327,22 @@ dog (time_t timeout, pid_t pid)
 	   processes, &c, but oh well; they can be set non-executable by
 	   nobody).  */
 	{
-	  size_t num_pids = 20, i;
+	  size_t num_pids = 20;
 	  pid_t _pids[num_pids], *pids = _pids;
+
 	  err = proc_getloginpids (proc_server, pid, &pids, &num_pids);
 	  if (! err)
-	    for (i = 0; i < num_pids; i++)
-	      if (check_owned (proc_server, pids[i], &owned) == 0 && owned)
-		exit (0);	/* Give up, luser wins. */
+	    {
+	      int i;
+
+	      if (num_pids == 0)
+		exit (0);	/* Login already aborted.  Die silently. */
+
+	      for (i = 0; i < num_pids; i++)
+		if (check_owned (proc_server, pids[i], &owned) == 0 && owned)
+		  exit (0);	/* Give up, luser wins. */
+	    }
+	      
 	  /* None are owned.  Kill session after emitting cryptic, yet
 	     stupid, message. */
 	  putc ('\n', stderr);
