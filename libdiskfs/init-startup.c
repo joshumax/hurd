@@ -136,8 +136,8 @@ _diskfs_init_completed ()
   
   notify = ports_get_right (pi);
   ports_port_deref (pi);
-  asprintf (&name, "%s %s", program_invocation_short_name, 
-	    diskfs_device_arg);
+  asprintf (&name,
+	    "%s %s", program_invocation_short_name, diskfs_disk_name ?: "-");
   err = startup_request_notification (init, notify, 
 				      MACH_MSG_TYPE_MAKE_SEND, name);
   free (name);
