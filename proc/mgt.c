@@ -203,7 +203,6 @@ S_proc_reassign (struct proc *p,
 		 task_t newt)
 {
   struct proc *stubp = task_find (newt);
-  mach_port_t foo;
 
   if (!p)
     return EOPNOTSUPP;
