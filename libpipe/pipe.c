@@ -203,28 +203,14 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
   else if (packet && packet->type == PACKET_TYPE_CONTROL)
     /* Read this control packet first, before looking for a data packet. */
     {
-      void *control_source;
-
       if (control != NULL)
 	packet_read (packet, control, control_len, packet_readable (packet));
       if (ports != NULL)
 	/* Copy out the port rights being sent.  */
 	packet_read_ports (packet, ports, num_ports);
 
-      packet_read_source (packet, &control_source);
-
-      packet = pq_next (pq, PACKET_TYPE_DATA, control_source);
-
-      /* Control packets should only have a source address if they're not
-	 followed by a data packet.  */
-      assert (!!packet == !control_source);
-
-      if (!packet)
-	if (source)
-	  /* Since there is no data, say where the control data came from.  */
-	  *source = control_source;
-	else
-	  pipe_dealloc_addr (control_source);
+      packet = pq_next (pq, PACKET_TYPE_DATA, NULL);
+      assert (packet);		/* pipe_write always writes a data packet.  */
     }
   else
     /* No control data... */
@@ -243,6 +229,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
 
  	if (source)
 	  packet_read_source (packet, source);
+
 	err = (*pipe->class->read)(packet, &dq, flags, data, data_len, amount);
 	if (dq)
 	  pq_dequeue (pq);
