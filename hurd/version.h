@@ -14,15 +14,17 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-   
+
+#ifndef _HURD_VERSION_H
+#define _HURD_VERSION_H
 
 /* Each version of the Hurd defines a set of versions for the servers
    that make it up.  Each server is identified by one of these
    structures.  */
 struct hurd_server_version
 {
-  char *name;			/* The name of the server */
-  char *version;		/* The servers's version */
+  char *name;			/* The name of the server.  */
+  char *version;		/* The server's version.  */
 };
 
 /* A version of the Hurd is therefore defined by its version number
@@ -36,8 +38,11 @@ struct hurd_version
   char *hurdrelease;
   char *hurdversion;
   int nservers;
-  struct hurd_vers[0];
+  struct hurd_server_version vers[0];
 };
+
+#endif	/* hurd/version.h */
+
 
 /* And these are the standard lists referred to above. */
 #ifdef HURD_VERSION_DEFINE
@@ -49,17 +54,18 @@ struct hurd_version hurd_versions[] =
     "0.0 pre-alpha",
     "0.0 pre-alpha",
     5,
-    {"auth", "0.0 pre-alpha"},
-    {"proc", "0.0 pre-alpha"},
-    {"ufs", "0.0 pre-alpha"},
-    {"init", "0.0 pre-alpha"},
-    {"exec", "0.0 pre-alpha"},
+    {
+      {"auth", "0.0 pre-alpha"},
+      {"proc", "0.0 pre-alpha"},
+      {"ufs", "0.0 pre-alpha"},
+      {"init", "0.0 pre-alpha"},
+      {"exec", "0.0 pre-alpha"},
+    }
   }
 };
 
 int nhurd_versions = sizeof hurd_versions / sizeof *hurd_versions;
 
 #endif
-    
 
       
