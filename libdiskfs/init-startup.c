@@ -47,5 +47,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap)
   else
     realnode = MACH_PORT_NULL;
 
+  if (diskfs_default_sync_interval)
+    /* Start 'em sync'n */
+    diskfs_set_sync_interval (diskfs_default_sync_interval);
+
   return realnode;
 }
