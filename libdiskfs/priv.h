@@ -1,5 +1,5 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -101,6 +101,8 @@ extern spin_lock_t _diskfs_control_lock;
   									    \
   mutex_lock (&np->lock);						    \
   (OPERATION);								    \
+  if (diskfs_synchronous)						    \
+    diskfs_node_update (np, 1);						    \ 
   mutex_unlock (&np->lock);						    \
   return err;								    \
 })
