@@ -1,3 +1,9 @@
+Wed Aug 14 13:32:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* e2os.sh: Add `;' before last commands inside { } pairs.
+	(OS_FREEBSD, OS_LITES): New variables.
+	Add symbolic names for freebsd & lites.
+
 Mon Aug 12 10:51:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* e2os.sh: New file.
