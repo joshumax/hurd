@@ -165,7 +165,7 @@ char *fmts[] =
   "~PID ~TH# ~TT=tty ~STAT=state ~TIME ~COMMAND=args",
   "~USER ~PID ~TH# ~%CPU ~%MEM ~SZ=vsize ~RSS=rsize ~TT=tty ~STAT=state ~COMMAND=args",
   "~PID ~TH# ~STAT=state ~SL=sleep ~PAGEIN=pgins ~FAULTS=pgflts ~COWFLT=cowflts ~ZFILLS ~SIZE=vsize ~RSS=rsize ~%CPU ~%MEM ~COMMAND=args",
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGIN=msgsin ~MSGOUT=msgsout ~SZ=vsize ~RSS=rsize ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGIN=msgin ~MSGOUT=msgout ~SZ=vsize ~RSS=rsize ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
   "~PID ~Th# ~UID ~NTh ~VMem=vsize ~RSS=rsize ~User=utime ~System=stime ~Args",
   "~PID ~Th# ~UID ~PPID ~PGRP ~Sess ~NTh ~VMem=vsize ~RSS=rsize ~%CPU ~User=utime ~System=stime ~Args"
 };
