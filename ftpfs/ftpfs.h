@@ -56,7 +56,7 @@ struct ftpfs_dir_entry
   struct ftpfs_dir_entry *ordered_next, **ordered_self_p;
 
   /* When the presence/absence of this file was last checked.  */
-  time_t dirent_timestamp;
+  time_t name_timestamp;
 
   void **inode_locp;		/* Used for removing this entry */
 
@@ -92,7 +92,8 @@ struct ftpfs_dir
   /* The path to this directory on the server.  */
   const char *rmt_path;
 
-  time_t timestamp;
+  time_t stat_timestamp;
+  time_t name_timestamp;
 
   /* Stuff for detecting bulk stats.  */
 
@@ -134,15 +135,21 @@ struct netnode
 };
 
 /* Various parameters that can be used to change the behavior of an ftpfs.  */
-struct ftpfs_params 
+struct ftpfs_params
 {
-  time_t dir_timeout;
-  time_t dirent_timeout;
+  /* Amount of time name existance is cached.  */
+  time_t name_timeout;
+
+  /* Amount of time stat information is cached.  */
   time_t stat_timeout;
 
+  /* Parameters for detecting bulk stats; if more than BULK_STAT_THRESHOLD
+     stats are done within BULK_STAT_PERIOD seconds, the whole enclosing
+     directory is fetched.  */
   time_t bulk_stat_period;
-  unsigned bulk_stat_limit;
+  unsigned bulk_stat_threshold;
 
+  /* The size of the node cache.  */
   size_t node_cache_max;
 };
 
