@@ -1,3 +1,8 @@
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* lockfile.c: Use __attribute__ magic instead of #pragma magic
+	for alias definitions.  Don't bother to make them weak.
+
 2002-05-26  Roland McGrath  <roland@frob.com>
 
 	Changes merged from CMU MK83a version:
