@@ -15,7 +15,11 @@
 # along with the GNU Hurd; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+dir := fstests
+
 include ../Makeconf
+
+DIST_FILES = fstests.c Makefile
 
 fstests: fstests.o; $(link)
 
