@@ -1,6 +1,47 @@
+Mon May 26 02:21:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* su.c, addauth.c: Totally rewritten.
+	* rmauth.c, setauth.c, unsu.c, frobauth.h, frobauth.c,
+	frobauth-mod.c, nonsugid.c, pids.c, pids.h: New files.
+	* Makefile: Add appropriate dependencies on parse.o, pids.o,
+	frobauth.o, & frobauth-mod.o.
+	(addauth-LDLIBS, setauth-LDLIBS, su-LDLIBS): New variables.
+
+	* ids.c: Renamed from hurdids.c.
+	* Makefile (targets): hurdids renamed to ids.
+	(SRCS): hurdids.c renamed to ids.c.
+	(INSTALL-ids-ops): Renamed from INSTALL-hurdids-ops.
+
+	* login.c (child_argps): New variable.
+	(options): Remove uid/gid args.
+	(main): Use ugids operations instead of doing [ug]id frobbing
+	ourselves.
+	<ugids.h>: New include.
+
+	* ps.c (options): Rearranged to group similar options.
+	Process-selection options removed.
+	(current_lid, current_sid): Functions removed.
+	(lookup_user): Take new STATE argument.
+	(main): Use PIDS_ARGP to select processes.
+	Use new forms of parse_ functions.
+	"pids.h": New include.
+
+Tue May 20 14:38:22 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist): 
+	Change void * HOOK parameters to struct argp_state *STATE.
+	* parse.h (parse_enum, parse_numlist, parse_strlist): Likewise.
+
+Mon May 19 23:04:54 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist): 
+	Add HOOK argument, and pass it to callback functions.
+	* parse.h (parse_enum, parse_numlist, parse_strlist): Likewise.
+
 Thu May 15 14:04:29 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* ps.c (procset_names, fmt_sortkeys, fmt_names, fmts): Variables removed.
+	* ps.c (procset_names, fmt_sortkeys, fmt_names, fmts): Variables
+	removed.
 	(enum procsets): Type removed.
 	(struct output_fmt): New type.
 	(output_fmt): New variable.
