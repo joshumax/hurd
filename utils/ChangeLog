@@ -1,3 +1,10 @@
+Sun Sep  1 14:15:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* sync.c (argp_program_version): New variable.
+	(main): Call argp_parse with just a doc string.
+	<argp.h>: New include.
+	* Makefile (sync): Depend on libshouldbeinlibc.a.
+
 Fri Aug 30 16:54:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vminfo.c: New file.

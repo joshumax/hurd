@@ -1,3 +1,16 @@
+Fri Aug 30 20:44:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-help.c (argp_help): Print documentation only according to
+	the ARGP_HELP_*_DOC bits in FLAGS.
+	Possibly print bug report address if ARGP_HELP_BUG_ADDR is set.
+	Replace FIRST by ANYTHING (sense inverted).
+	* argp.h (ARGP_HELP_PRE_DOC, ARGP_HELP_POST_DOC, ARGP_HELP_DOC,
+	ARGP_HELP_BUG_ADDR): New macros.
+	(ARGP_HELP_STD_HELP): Include ARGP_HELP_DOC & ARGP_HELP_BUG_ADDR.
+	(argp_program_bug_address): New declaration.
+	(ARGP_HELP_EXIT_ERR, ARGP_HELP_EXIT_OK): Values changed.
+	* Makefile (SRCS): Add argp-ba.c.
+
 Tue Aug 20 17:12:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (argp_doc): Add FIRST_ONLY argument.
