@@ -87,7 +87,7 @@ routine set_init_port (
 routine get_init_ports (
 	process: mach_port_t;
 	refport: mach_port_t;
-	out ports: portarray_t);
+	out ports: portarray_t, dealloc);
 
 routine set_init_ports (
 	process: mach_port_t;
@@ -109,7 +109,7 @@ routine set_init_int (
 routine get_init_ints (
 	process: mach_port_t;
 	refport: mach_port_t;
-	out values: intarray_t);
+	out values: intarray_t, dealloc);
 
 routine set_init_ints (
 	process: mach_port_t;
@@ -121,7 +121,7 @@ routine set_init_ints (
 routine get_dtable (
 	process: mach_port_t;
 	refport: mach_port_t;
-	out dtable: portarray_t);
+	out dtable: portarray_t, dealloc);
 
 routine set_dtable (
 	process: mach_port_t;
@@ -159,7 +159,7 @@ routine set_environment (
 routine get_env_variable (
 	process: mach_port_t;
 	variable: string_t;
-	out value: data_t);
+	out value: data_t, dealloc);
 
 routine set_env_variable (
 	process: mach_port_t;
