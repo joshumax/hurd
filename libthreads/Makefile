@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@ libname = libthreads
 # Don't put cthreads.h in installhdrs or else it will get installed into
 # $(hurdinst)/include/hurd instead of $(hurdinst)/include.
 
-VPATH = $(machine)
+VPATH += $(srcdir)/$(machine)
 
 include ../Makeconf
 
