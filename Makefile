@@ -35,7 +35,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
-	       ufs ext2fs isofs nfs tmpfs \
+	       ufs ext2fs isofs nfs tmpfs fatfs \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons nfsd boot serverboot console \
 	       hostmux usermux ftpfs trans \
