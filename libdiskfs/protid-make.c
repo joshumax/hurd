@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,20 +18,22 @@
 #include "priv.h"
 #include <string.h>
 
-/* Build and return a protid which has no user identification for 
+/* Build and return in CRED a protid which has no user identification, for
    peropen PO.  The node PO->np must be locked.  */
-struct protid *
-diskfs_start_protid (struct peropen *po)
+error_t
+diskfs_start_protid (struct peropen *po, struct protid **cred)
 {
-  struct protid *cred;
-
-  cred = ports_allocate_port (diskfs_port_bucket, sizeof (struct protid), 
-			      diskfs_protid_class);
-  po->refcnt++;
-  cred->po = po;
-  cred->shared_object = MACH_PORT_NULL;
-  cred->mapped = 0;
-  return cred;
+  error_t err =
+    ports_create_port (diskfs_protid_class, diskfs_port_bucket,
+		       sizeof (struct protid), cred);
+  if (! err)
+    {
+      po->refcnt++;
+      (*cred)->po = po;
+      (*cred)->shared_object = MACH_PORT_NULL;
+      (*cred)->mapped = 0;
+    }
+  return err;
 }
 
 /* Finish building protid CRED started with diskfs_start_protid;
@@ -61,16 +63,26 @@ diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
     *cred->gids = 0;
 }
 
-/* Create and return a protid for an existing peropen.  The uid set is
-   UID (length NUIDS); the gid set is GID (length NGIDS).  The node
+/* Create and return a protid for an existing peropen PO in CRED.  The uid
+   set is UID (length NUIDS); the gid set is GID (length NGIDS).  The node
    PO->np must be locked. */
+error_t
+diskfs_create_protid (struct peropen *po, uid_t *uids, int nuids,
+		      uid_t *gids, int ngids, struct protid **cred)
+{
+  error_t err = diskfs_start_protid (po, cred);
+  if (! err)
+    diskfs_finish_protid (*cred, uids, nuids, gids, ngids);
+  return err;
+}
+
+/* Backward compatibility.  Use diskfs_create_protid. */
 struct protid *
 diskfs_make_protid (struct peropen *po, uid_t *uids, int nuids,
 		    uid_t *gids, int ngids)
 {
-  struct protid *cred = diskfs_start_protid (po);
-  diskfs_finish_protid (cred, uids, nuids, gids, ngids);
+  struct protid *cred;
+  if (diskfs_create_protid (po, uids, nuids, gids, ngids, &cred))
+    cred = 0;
   return cred;
 }
-
-
