@@ -1251,12 +1251,12 @@ kill_multi_user ()
 
   free_ttys ();
 
-  /* Notify tasks that they are about to die. */
-  notify_shutdown ("transition to single-user");
-  
   for (stage = 0; stage < 3; stage++)
     if (kill_everyone (sigs[stage]))
       break;
+  
+  /* Notify tasks that they are about to die. */
+  notify_shutdown ("transition to single-user");
   
   if (stage == 3)
     error (0, 0, "warning: some processes wouldn't die; `ps -axlM' advised");
