@@ -1,3 +1,10 @@
+1999-07-15  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rpctrace.c: New file, from josem and gord.  Not yet functional.
+	* Makefile (rpctrace): New target.
+	(targets): Add rpctrace.
+	(SRCS): Add rpctrace.c.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* pids.c: Add #include <sys/mman.h> for munmap decl.
