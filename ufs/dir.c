@@ -95,7 +95,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   struct node *np = 0;
   int retry_dotdot = 0;
   memory_object_t memobj;
-  vm_address_t buf;
+  vm_address_t buf = 0;
   vm_size_t buflen;
   int blockaddr;
   int idx;
@@ -123,6 +123,11 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       ds->type = LOOKUP;
       ds->mapbuf = 0;
       ds->mapextent = 0;
+    }
+  if (buf)
+    {
+      vm_deallocate (mach_task_self (), buf, buflen);
+      buf = 0;
     }
   if (ds && (type == CREATE || type == RENAME))
     ds->stat = LOOKING;
@@ -245,7 +250,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	goto out;
     }
   
-  if ((type == CREATE || type == RENAME) && !np && ds && ds->type == LOOKING)
+  if ((type == CREATE || type == RENAME) && !np && ds && ds->stat == LOOKING)
     {
       /* We didn't find any room, so mark ds to extend the dir */
       ds->type = CREATE;
