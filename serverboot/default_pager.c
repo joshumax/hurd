@@ -3536,7 +3536,7 @@ dprintf("bmd %x md %x\n", bootstrap_master_device_port, mdport);
 #endif
 	if (add) {
 		kr = add_paging_file(bootstrap_master_device_port,
-				     file_name);
+				     file_name, 0);
 	} else {
 		kr = remove_paging_file(file_name);
 	}
