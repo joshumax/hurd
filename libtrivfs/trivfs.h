@@ -84,6 +84,11 @@ extern int trivfs_support_exec;
    operations.)  */
 extern int trivfs_allow_open;
 
+/* If the user defines these, they should be vectors (and the associated
+   sizes) of port classes that will be translated into control & protid
+   pointers for passing to rpcs, in addition to those passed to or created by
+   trivfs_create_control (or trivfs_startup) will automatically be
+   recognized.  */
 extern struct port_class *trivfs_protid_portclasses[];
 extern int trivfs_protid_nportclasses;
 extern struct port_class *trivfs_cntl_portclasses[];
@@ -136,10 +141,11 @@ error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
    fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports
    library to create the control port, and PROTID_CLASS & PROTID_BUCKET are
-   used when creating ports representing opens of this node.  If CONTROL
-   isn't NULL, the trivfs control port is return in it.  If any error occurs
-   sending fsys_startup, it is returned, otherwise 0.  FLAGS specifies how to
-   open the underlying node (O_*).  */
+   used when creating ports representing opens of this node; any of these may
+   be zero, in which case an appropriate port class/bucket is created.  If
+   CONTROL isn't NULL, the trivfs control port is return in it.  If any error
+   occurs sending fsys_startup, it is returned, otherwise 0.  FLAGS specifies
+   how to open the underlying node (O_*).  */
 error_t trivfs_startup (mach_port_t bootstrap, int flags,
 			struct port_class *control_class,
 			struct port_bucket *control_bucket,
@@ -151,7 +157,8 @@ error_t trivfs_startup (mach_port_t bootstrap, int flags,
    return it in CONTROL.  CONTROL_CLASS & CONTROL_BUCKET are passed to
    the ports library to create the control port, and PROTID_CLASS &
    PROTID_BUCKET are used when creating ports representing opens of this
-   node.  */
+   node; any of these may be zero, in which case an appropriate port
+   class/bucket is created.  */
 error_t
 trivfs_create_control (mach_port_t underlying,
 		       struct port_class *control_class,
@@ -209,5 +216,32 @@ error_t trivfs_set_options (struct trivfs_control *fsys,
    routine simply calls diskfs_append_std_options.  */
 error_t trivfs_append_args (struct trivfs_control *fsys,
 			    char **argz, size_t *argz_len);
+
+/* Add the port class *CLASS to the list of control port classes recognized
+   by trivfs; if *CLASS is 0, an attempt is made to allocate a new port
+   class, which is stored in *CLASS.  */
+error_t trivfs_add_control_port_class (struct port_class **class);
+
+/* Remove the previously added dynamic control port class CLASS, freeing it
+   if it was allocated by trivfs_add_control_port_class.  */
+void trivfs_remove_control_port_class (struct port_class *class);
+
+/* Add the port class *CLASS to the list of protid port classes recognized by
+   trivfs; if *CLASS is 0, an attempt is made to allocate a new port class,
+   which is stored in *CLASS.  */
+error_t trivfs_add_protid_port_class (struct port_class **class);
+
+/* Remove the previously added dynamic protid port class CLASS, freeing it
+   if it was allocated by trivfs_add_protid_port_class.  */
+void trivfs_remove_protid_port_class (struct port_class *class);
+
+/* Add the port bucket *BUCKET to the list of dynamically allocated port
+   buckets; if *bucket is 0, an attempt is made to allocate a new port
+   bucket, which is then stored in *bucket.  */
+error_t trivfs_add_port_bucket (struct port_bucket **bucket);
+
+/* Remove the previously added dynamic port bucket BUCKET, freeing it
+   if it was allocated by trivfs_add_port_bucket.  */
+void trivfs_remove_port_bucket (struct port_bucket *bucket);
 
 #endif /* __TRIVFS_H__ */
