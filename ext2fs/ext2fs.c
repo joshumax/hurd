@@ -54,7 +54,7 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap = MACH_PORT_NULL;
 
-  argp_parse (diskfs_std_device_startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&diskfs_std_device_startup_argp, argc, argv, 0, 0, 0);
 
   diskfs_console_stdio ();
 
