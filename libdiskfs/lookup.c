@@ -1,5 +1,5 @@
 /* Wrapper for diskfs_lookup_hard
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -66,6 +66,10 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
 
+   DEPTH is the number of nodes between DP and the filesystem root.
+   If NEW_DEPTH is non-zero, then for a non-error return, the depth of the
+   resulting node NP is returned in it.
+
    Return ENOTDIR if DP is not a directory.
    Return EACCES if CRED isn't allowed to search DP.
    Return EACCES if completing the operation will require writing
@@ -79,9 +83,10 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
 error_t 
 diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	       struct node **np, struct dirstat *ds,
-	       struct protid *cred)
+	       struct protid *cred, unsigned depth, unsigned *new_depth)
 {
   error_t err;
+  struct node *cached;
 
   if (type == REMOVE || type == RENAME)
     assert (np);
@@ -92,6 +97,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	diskfs_null_dirstat (ds);
       return ENOTDIR;
     }
+
   err = fshelp_access (&dp->dn_stat, S_IEXEC, cred->user);
   if (err)
     {
@@ -100,79 +106,102 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       return err;
     }
 
+  if (depth == 0 && name[0] == '.' && name[1] == '.' && name[2] == '\0')
+    /* Ran into the root.  */
+    {
+      if (ds)
+	diskfs_null_dirstat (ds);
+      return EAGAIN;
+    }
+
   if (type == LOOKUP)
-    {
-      /* Check the cache first */
-      struct node *cached = diskfs_check_lookup_cache (dp, name);
+    /* Check the cache first */
+    cached = diskfs_check_lookup_cache (dp, name);
+  else
+    cached = 0;
 
-      if (cached == (struct node *)-1)
-	/* Negative lookup cached.  */
-	{
-	  if (np)
-	    *np = 0;
-	  return ENOENT;
-	}
-      else if (cached)
-	{
-	  if (np)
-	    *np = cached;	/* Return what we found.  */
-	  else
-	    /* Ick, the user doesn't want the result, we have to drop our
-	       reference.  */
-	    if (cached == dp)
-	      diskfs_nrele (cached);
-	    else
-	      diskfs_nput (cached);
-	  if (ds)
-	    diskfs_null_dirstat (ds);
-	  return 0;
-	}
+  if (cached == (struct node *)-1)
+    /* Negative lookup cached.  */
+    {
+      if (np)
+	*np = 0;
+      return ENOENT;
     }
+  else if (cached)
+    {
+      if (np)
+	*np = cached;	/* Return what we found.  */
+      else
+	/* Ick, the user doesn't want the result, we have to drop our
+	   reference.  */
+	if (cached == dp)
+	  diskfs_nrele (cached);
+	else
+	  diskfs_nput (cached);
+
+      if (ds)
+	diskfs_null_dirstat (ds);
+    }
+  else
+    {  
+      err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
+      assert (err != EAGAIN);	/* We should never get EAGAIN now that we're
+				   detecting the root ourselves.  */
+
+      spin_lock (&cm_lock);
+      if (type == LOOKUP)
+	{
+	  if (err == ENOENT)
+	    cache_misses.absent++;
+	  else if (err)
+	    cache_misses.errors++;
+	  else 
+	    cache_misses.present++;
+	  if (name[0] == '.')
+	    {
+	      if (name[1] == '\0')
+		cache_misses.dot++;
+	      else if (name[1] == '.' && name[2] == '\0')
+		cache_misses.dotdot++;
+	    }
+	}
+      spin_unlock (&cm_lock);
+
+      if (err && err != ENOENT)
+	return err;
   
-  err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
-
-  spin_lock (&cm_lock);
-  if (type == LOOKUP)
-    {
-      if (err == ENOENT)
-	cache_misses.absent++;
-      else if (err)
-	cache_misses.errors++;
-      else 
-	cache_misses.present++;
-      if (name[0] == '.')
+      if (type == RENAME
+	  || (type == CREATE && err == ENOENT)
+	  || (type == REMOVE && err != ENOENT))
 	{
-	  if (name[1] == '\0')
-	    cache_misses.dot++;
-	  else if (name[1] == '.' && name[2] == '\0')
-	    cache_misses.dotdot++;
+	  error_t err2 = fshelp_checkdirmod (&dp->dn_stat,
+					     (err || !np) ? 0 : &(*np)->dn_stat,
+					     cred->user);
+	  if (err2)
+	    {
+	      if (np && !err)
+		diskfs_nput (*np);
+	      return err2;
+	    }
 	}
-    }
-  spin_unlock (&cm_lock);
 
-  if (err && err != ENOENT)
-    return err;
-  
-  if (type == RENAME
-      || (type == CREATE && err == ENOENT)
-      || (type == REMOVE && err != ENOENT))
-    {
-      error_t err2 = fshelp_checkdirmod (&dp->dn_stat,
-					 (err || !np) ? 0 : &(*np)->dn_stat,
-					 cred->user);
-      if (err2)
-	{
-	  if (np && !err)
-	    diskfs_nput (*np);
-	  return err2;
-	}
-    }
+      if ((type == LOOKUP || type == CREATE) && !err && np)
+	diskfs_enter_lookup_cache (dp, *np, name);
+      else if (type == LOOKUP && err == ENOENT)
+	diskfs_enter_lookup_cache (dp, 0, name);
+    }    
 
-  if ((type == LOOKUP || type == CREATE) && !err && np)
-    diskfs_enter_lookup_cache (dp, *np, name);
-  else if (type == LOOKUP && err == ENOENT)
-    diskfs_enter_lookup_cache (dp, 0, name);
-    
+  if (!err && new_depth)
+    if (name[0] == '.')
+      if (name[1] == '\0')
+	*new_depth = depth;
+      else if (name[1] == '.' && name[2] == '\0')
+	*new_depth = depth - 1;
+      else
+	*new_depth = depth + 1;
+    else
+      *new_depth = depth + 1;
+
   return err;
 }
 
