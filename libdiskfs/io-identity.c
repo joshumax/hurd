@@ -39,18 +39,7 @@ diskfs_S_io_identity (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   
-  if (np->identity == MACH_PORT_NULL)
-    {
-      err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-				&np->identity);
-      if (err)
-	{
-	  mutex_unlock (&np->lock);
-	  return err;
-	}
-    }
-  
-  *id = np->identity;
+  *id = fshelp_get_identity (diskfs_port_bucket, np->dn_stat.st_ino);
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
   *fsys = diskfs_fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
