@@ -171,7 +171,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 	  getchar ();
 	  err = file_exec (file, *task, 0,
 			   NULL, 0, /* No args.  */
-			   NULL, 0, /* No env.  */
+			   "", 1, /* No env.  */
 			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 			   NULL, 0, /* No info in init ints.  */
@@ -221,7 +221,7 @@ run_for_real (char *filename)
   getchar ();
   err = file_exec (file, task, 0,
 		   NULL, 0, /* No args.  */
-		   NULL, 0, /* No env.  */
+		   "", 1, /* No env.  */
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
 		   INIT_PORT_MAX,
