@@ -42,8 +42,9 @@ print_xlated_port_info (mach_port_t name, mach_port_type_t type,
 /* Prints info about every port common to both tasks in X, but only if the
    port in X->from_task has a type in ONLY, to STREAM.  */
 error_t
-print_xlated_ports_info (struct port_name_xlator *x, mach_port_type_t only,
-			 unsigned show, FILE *stream)
+print_xlated_task_ports_info (struct port_name_xlator *x,
+			      mach_port_type_t only,
+			      unsigned show, FILE *stream)
 {
   mach_port_t *names = 0;
   mach_port_type_t *types = 0;

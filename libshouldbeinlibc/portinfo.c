@@ -132,8 +132,8 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 
 /* Prints info about every port in TASK that has a type in ONLY to STREAM. */
 error_t
-print_task_print_task_ports_info (task_t task, mach_port_type_t only,
-				  unsigned show, FILE *stream)
+print_task_ports_info (task_t task, mach_port_type_t only,
+		       unsigned show, FILE *stream)
 {
   mach_port_t *names = 0;
   mach_port_type_t *types = 0;
