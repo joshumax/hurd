@@ -37,20 +37,20 @@ _store_derive (struct store *store)
 
   for (i = 0; i < runs_len; i += 2)
     {
-      store->wrap += runs[i + 1];
+      store->wrap_src += runs[i + 1];
       if (runs[i] >= 0)
 	store->blocks += runs[i + 1];
     }
 
   if (store->end == 0)
     /* END not set; set it using the info from RUNS.  */
-    store->end = store->wrap;
-  else if (store->wrap < store->end)
+    store->end = store->wrap_src;
+  else if (store->wrap_src < store->end)
     /* A wrapped disk!  RUNS is repeated N times to reach END.  Adjust BLOCKS
        to include all iterations.  */
     {
-      size_t num_iters = store->end / store->wrap;
-      off_t last_part_base = num_iters * store->wrap;
+      size_t num_iters = store->end / store->wrap_src;
+      off_t last_part_base = num_iters * store->wrap_src;
 
       store->blocks *= num_iters;
 
@@ -62,6 +62,8 @@ _store_derive (struct store *store)
 	  }
 	else if (runs[i] >= 0)
 	  store->blocks += runs[i + 1];
+
+      /* WRAP_DST must be set by the caller.  */
     }
 
   store->size = store->end * bsize;
