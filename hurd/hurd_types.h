@@ -252,12 +252,16 @@ typedef int *procinfo_t;
 /* Bits in struct procinfo  state: */
 #define PI_STOPPED 0x00000001	/* Proc server thinks is stopped.  */
 #define PI_EXECED  0x00000002	/* Has called proc_exec.  */
+#define PI_WAITING 0x00000004	/* Process is waiting for child to exit */
 #define PI_ORPHAN  0x00000008	/* Process group is orphaned.  */
 #define PI_NOMSG   0x00000010	/* Process has no message port.  */
 #define PI_SESSLD  0x00000020	/* Session leader.  */
 #define PI_NOTOWNED 0x0000040	/* Process has no owner.  */
 #define PI_NOPARENT 0x0000080	/* Hasn't identified a parent.  */
 #define PI_ZOMBIE  0x00000100	/* Has no associated task.  */
+#define PI_TRACED  0x00000200	/* Process is being traced */
+#define PI_GETMSG  0x00000400	/* Process is blocked in proc_getmsgport. */
+#define PI_LOGINLD 0x00000800	/* Process is leader of login collection */
 
 
 /*   Conventions   */
