@@ -89,6 +89,13 @@ struct dirstat
 
 size_t diskfs_dirstat_size = sizeof (struct dirstat);
 
+/* Initialize DS such that diskfs_drop_dirstat will ignore it. */
+void 
+diskfs_null_dirstat (struct dirstat *ds)
+{
+  ds->type = LOOKUP;
+}
+
 static error_t					
 dirscanblock (vm_address_t blockoff, struct node *dp, int idx, char *name, 
 	      int namelen, enum lookup_type type, struct dirstat *ds,
@@ -97,8 +104,8 @@ dirscanblock (vm_address_t blockoff, struct node *dp, int idx, char *name,
 /* Implement the diskfs_lookup from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification.  */
 error_t
-diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
-	       struct node **npp, struct dirstat *ds, struct protid *cred)
+diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+		    struct node **npp, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
   ino_t inum;
@@ -127,12 +134,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 
   if (namelen > EXT2_NAME_LEN)
     return ENAMETOOLONG;
-  
-  if (!S_ISDIR (dp->dn_stat.st_mode))
-    return ENOTDIR;
-  err = diskfs_access (dp, S_IEXEC, cred);
-  if (err)
-    return err;
   
  try_again:
   if (ds)
@@ -250,16 +251,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	}
       else
 	assert (0);
-    }
-  
-  /* If we will be modifying the directory, make sure it's allowed. */
-  if (type == RENAME
-      || (type == REMOVE && inum)
-      || (type == CREATE && !inum))
-    {
-      err = diskfs_checkdirmod (dp, np, cred);
-      if (err)
-	goto out;
     }
   
   if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
@@ -466,11 +457,8 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
    only be made if the directory has been held locked continuously since
    the preceding lookup call, and only if that call returned ENOENT. */
 error_t
-diskfs_direnter(struct node *dp,
-		char *name,
-		struct node *np,
-		struct dirstat *ds,
-		struct protid *cred)
+diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
+		      struct dirstat *ds, struct protid *cred)
 {
   struct ext2_dir_entry *new;
   int namelen = strlen (name);
@@ -610,9 +598,6 @@ diskfs_direnter(struct node *dp,
   
   diskfs_file_update (dp, 1);
 
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_NEW, name);
-
   return 0;
 }
 
@@ -622,7 +607,7 @@ diskfs_direnter(struct node *dp,
    directory has been locked continously since the call to lookup, and
    only if that call succeeded.  */
 error_t
-diskfs_dirremove(struct node *dp, struct dirstat *ds)
+diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
@@ -647,9 +632,6 @@ diskfs_dirremove(struct node *dp, struct dirstat *ds)
   
   diskfs_file_update (dp, 1);
 
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, ds->entry->name);
-
   return 0;
 }
   
@@ -661,9 +643,7 @@ diskfs_dirremove(struct node *dp, struct dirstat *ds)
    continuously since the call to lookup, and only if that call
    succeeded.  */
 error_t
-diskfs_dirrewrite(struct node *dp, 
-		  struct node *np,
-		  struct dirstat *ds)
+diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 {
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
@@ -676,17 +656,13 @@ diskfs_dirrewrite(struct node *dp,
   
   diskfs_file_update (dp, 1);
 
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, ds->entry->name);
-
   return 0;
 }
 
 /* Tell if DP is an empty directory (has only "." and ".." entries). */
 /* This routine must be called from inside a catch_exception ().  */
 int
-diskfs_dirempty(struct node *dp,
-		struct protid *cred)
+diskfs_dirempty (struct node *dp, struct protid *cred)
 {
   struct ext2_dir_entry *entry;
   int curoff;
