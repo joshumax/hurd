@@ -18,39 +18,34 @@
 #include "priv.h"
 
 error_t
-diskfs_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
+trivfs_do_mach_notify_port_deleted (mach_port_t notify,
 				    mach_port_t name)
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
-				    mach_port_seqno_t seqno,
+trivfs_do_mach_notify_msg_accepted (mach_port_t notify,
 				    mach_port_t name)
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
-				      mach_port_seqno_t seqno,
+trivfs_do_mach_notify_port_destroyed (mach_port_t notify,
 				      mach_port_t name)
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_send_once (mach_port_t notify,
-				 mach_port_seqno_t seqno)
+trivfs_do_mach_notify_send_once (mach_port_t notify)
 {
   return 0;
 }
 
 error_t
-diskfs_do_seqnos_mach_notify_dead_name (mach_port_t notify,
-				 mach_port_seqno_t seqno,
+trivfs_do_mach_notify_dead_name (mach_port_t notify,
 				 mach_port_t name)
 {
   return 0;
