@@ -468,7 +468,7 @@ error_t
 S_io_identity (struct sock_user *user,
 	       mach_port_t *id, mach_msg_type_name_t *id_type,
 	       mach_port_t *fsys_id, mach_msg_type_name_t *fsys_id_type,
-	       int *fileno)
+	       ino_t *fileno)
 {
   static mach_port_t server_id = MACH_PORT_NULL;
   error_t err = 0;
