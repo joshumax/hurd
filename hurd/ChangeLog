@@ -1,3 +1,14 @@
+2001-12-31  Roland McGrath  <roland@frob.com>
+
+	* auth_reply.defs: Change return code parameters to use `RetCode'
+	keyword, for compatibility with OSF Mach mig.
+	* crash_reply.defs: Likewise.
+	* fsys_reply.defs: Likewise.
+	* io_reply.defs: Likewise.
+	* msg_reply.defs: Likewise.
+	* process_reply.defs: Likewise.
+	* startup_reply.defs: Likewise.
+
 2001-07-11  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fs.defs (routine file_get_storage_info): Add dealloc to all out

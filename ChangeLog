@@ -1,3 +1,8 @@
+2001-12-31  Roland McGrath  <roland@frob.com>
+
+	* configure.in: Check mig for `retcode' keyword support.
+	If not there, add -DRetCode=NoLong.
+
 2001-11-15  Neal H Walfield  <neal@cs.uml.edu>
 
 	* Makeconf (TAGS) [configured]: Create tags for MiG generated files.
