@@ -651,6 +651,7 @@ struct dpager {
 #endif
 	dp_map_t	map;		/* block map */
 	vm_size_t	size;		/* size of paging object, in pages */
+	vm_size_t	limit;	/* limit (bytes) allowed to grow to */
 	p_index_t	cur_partition;
 #ifdef	CHECKSUM
 	vm_offset_t	*checksum;	/* checksum - parallel to block map */
@@ -739,6 +740,7 @@ pager_alloc(pager, part, size)
 	}
 	pager->map = mapptr;
 	pager->size = size;
+	pager->limit = (vm_size_t)-1;
 
 #ifdef	CHECKSUM
 	if (INDIRECT_PAGEMAP(size)) {
@@ -913,11 +915,13 @@ pager_extend(pager, new_size)
 	    pager->writer = FALSE;
 #endif
 	    mutex_unlock(&pager->lock);
+#if 0
 	    ddprintf ("pager_extend 1 mapptr %x [3b] = %x\n", new_mapptr,
 		     new_mapptr[0x3b]);
 	    if (new_mapptr[0x3b].indirect > 0x10000
 		&& new_mapptr[0x3b].indirect != NO_BLOCK)
 	      panic ("debug panic");
+#endif
 	    return;
 	}
 
@@ -941,11 +945,13 @@ pager_extend(pager, new_size)
 	    kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
 	    old_mapptr = new_mapptr;
 
+#if 0
 	    ddprintf ("pager_extend 2 mapptr %x [3b] = %x\n", new_mapptr,
 		     new_mapptr[0x3b]);
 	    if (new_mapptr[0x3b].indirect > 0x10000
 		&& new_mapptr[0x3b].indirect != NO_BLOCK)
 	      panic ("debug panic");
+#endif
 
 	    /*
 	     * Now allocate indirect map.
@@ -1014,6 +1020,110 @@ pager_extend(pager, new_size)
 #endif
 	mutex_unlock(&pager->lock);
 }
+
+/* Truncate a memory object.  First, any pages between the new size
+   and the (larger) old size are deallocated.  Then, the size of
+   the pagemap may be reduced, an indirect map may be turned into
+   a direct map.
+
+   The pager must be locked by the caller.  */
+static void
+pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
+{
+  dp_map_t new_mapptr;
+  dp_map_t old_mapptr;
+  int i;
+  vm_size_t old_size;
+
+  /* This deallocates the pages necessary to truncate a direct map
+     previously of size NEW_SIZE to the smaller size OLD_SIZE.  */
+  inline void dealloc_direct (dp_map_t mapptr,
+			      vm_size_t old_size, vm_size_t new_size)
+    {
+      vm_size_t i;
+      for (i = new_size; i < old_size; ++i)
+	{
+	  const union dp_map entry = mapptr[i];
+	  pager_dealloc_page(entry.block.p_index, entry.block.p_offset,
+			     TRUE);
+	  invalidate_block(mapptr[i]);
+	}
+    }
+
+  old_size = pager->size;
+
+  if (INDIRECT_PAGEMAP(old_size))
+    {
+      /* First handle the entire second-levels blocks that are being freed.  */
+      for (i = INDIRECT_PAGEMAP_ENTRIES(new_size);
+	   i < INDIRECT_PAGEMAP_ENTRIES(old_size);
+	   ++i)
+	{
+	  const dp_map_t mapptr = pager->map[i].indirect;
+	  pager->map[i].indirect = (dp_map_t)0;
+	  dealloc_direct (mapptr, PAGEMAP_ENTRIES, 0);
+	  kfree ((char *)mapptr, PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	}
+
+      /* Now truncate what's now the final nonempty direct block.  */
+      dealloc_direct (pager->map[(new_size - 1) / PAGEMAP_ENTRIES].indirect,
+		      old_size & (PAGEMAP_ENTRIES - 1),
+		      new_size & (PAGEMAP_ENTRIES - 1));
+
+      if (INDIRECT_PAGEMAP (new_size))
+	{
+	  if (INDIRECT_PAGEMAP_SIZE (new_size) >= vm_page_size)
+	    /* XXX we know how kalloc.c works; avoid copying.  */
+	    kfree ((char *) round_page ((vm_address_t) pager->map
+					+ INDIRECT_PAGEMAP_SIZE (new_size)),
+		   round_page (INDIRECT_PAGEMAP_SIZE (old_size))
+		   - round_page (INDIRECT_PAGEMAP_SIZE (new_size)));
+	  else
+	    {
+	      const dp_map_t old_mapptr = pager->map;
+	      pager->map = (dp_map_t) kalloc (INDIRECT_PAGEMAP_SIZE(new_size));
+	      memcpy (pager->map, old_mapptr, INDIRECT_PAGEMAP_SIZE(old_size));
+	      kfree ((char *) old_mapptr, INDIRECT_PAGEMAP_SIZE (old_size));
+	    }
+	}
+      else
+	{
+	  /* We are truncating to a size small enough that it goes to using
+	     a one-level map.  We already have that map, as the first and only
+	     nonempty element in our indirect map.  */
+	  const dp_map_t mapptr = pager->map[0].indirect;
+	  kfree((char *)pager->map, INDIRECT_PAGEMAP_SIZE(old_size));
+	  pager->map = mapptr;
+	  old_size = PAGEMAP_ENTRIES;
+	}
+    }
+
+  if (new_size == 0)
+    new_size = 1;
+
+  if (! INDIRECT_PAGEMAP(old_size))
+    {
+      /* First deallocate pages in the truncated region.  */
+      dealloc_direct (pager->map, old_size, new_size);
+      /* Now reduce the size of the direct map itself.  We don't bother
+	 with kalloc/kfree if it's not shrinking enough that kalloc.c
+	 would actually use less.  */
+      if (PAGEMAP_SIZE (new_size) <= PAGEMAP_SIZE (old_size) / 2)
+	{
+	  const dp_map_t old_mapptr = pager->map;
+	  pager->map = (dp_map_t) kalloc (PAGEMAP_SIZE (new_size));
+	  memcpy (pager->map, old_mapptr, PAGEMAP_SIZE (old_size));
+	  kfree ((char *) old_mapptr, PAGEMAP_SIZE (old_size));
+	}
+    }
+
+  pager->size = new_size;
+
+#ifdef	CHECKSUM
+#error write me
+#endif	 /* CHECKSUM */
+}
+
 
 /*
  * Given an offset within a paging object, find the
@@ -1709,7 +1819,6 @@ default_has_page(ds, offset)
 {
 	return ( ! no_block(pager_read_offset(ds, offset)) );
 }
-
 /*
 
  */
@@ -1736,6 +1845,10 @@ struct dstruct {
 
 	unsigned int	readers;	/* Reads in progress */
 	unsigned int	writers;	/* Writes in progress */
+
+  	/* This is the reply port of an outstanding
+           default_pager_object_set_size call.  */
+        mach_port_t	lock_request;
 
 	unsigned int	errors;		/* Pageout error count */
 	struct dpager	dpager;		/* Actual pager */
@@ -2069,8 +2182,6 @@ mach_port_t default_pager_default_port;	/* Port for memory_object_create. */
 
 /* We catch exceptions on ourself & startup using this port. */
 mach_port_t default_pager_exception_port;
-/* We receive bootstrap requests on this port. */
-mach_port_t default_pager_bootstrap_port;
 
 mach_port_t default_pager_internal_set;	/* Port set for internal objects. */
 mach_port_t default_pager_external_set;	/* Port set for external objects. */
@@ -2537,9 +2648,12 @@ ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,
 	    goto done;
 	}
 
-	rc = default_read(&ds->dpager, dpt->dpt_buffer,
-			  vm_page_size, offset,
-			  &addr, protection_required & VM_PROT_WRITE);
+	if (offset >= ds->dpager.limit)
+	  rc = PAGER_ERROR;
+	else
+	  rc = default_read(&ds->dpager, dpt->dpt_buffer,
+			    vm_page_size, offset,
+			    &addr, protection_required & VM_PROT_WRITE);
 
 	switch (rc) {
 	    case PAGER_SUCCESS:
@@ -2762,21 +2876,39 @@ seqnos_memory_object_copy(old_memory_object, seqno, old_memory_control,
 	return KERN_FAILURE;
 }
 
+/* We get this when our memory_object_lock_request has completed
+   after we truncated an object.  */
 kern_return_t
-seqnos_memory_object_lock_completed(pager, seqno, pager_request,
-				    offset, length)
-	memory_object_t	pager;
-	mach_port_seqno_t seqno;
-	mach_port_t	pager_request;
-	vm_offset_t	offset;
-	vm_size_t	length;
+seqnos_memory_object_lock_completed (memory_object_t pager,
+				     mach_port_seqno_t seqno,
+				     mach_port_t pager_request,
+				     vm_offset_t offset,
+				     vm_size_t length)
 {
-#ifdef	lint
-	pager++; seqno++; pager_request++; offset++; length++;
-#endif	 /* lint */
+  default_pager_t ds;
 
-	panic("%slock_completed",my_name);
-	return(KERN_FAILURE);
+  ds = pager_port_lookup(pager);
+  assert(ds != DEFAULT_PAGER_NULL);
+
+  pager_port_lock(ds, seqno);
+  pager_port_wait_for_readers(ds);
+  pager_port_wait_for_writers(ds);
+
+  /* Now that any in-core pages have been flushed, we can apply
+     the limit to prevent any new page-ins.  */
+  assert (page_aligned (offset));
+  ds->dpager.limit = offset;
+
+  default_pager_object_set_size_reply (ds->lock_request, KERN_SUCCESS);
+  ds->lock_request = MACH_PORT_NULL;
+
+  if (ds->dpager.size > ds->dpager.limit / vm_page_size)
+    /* Deallocate the old backing store pages and shrink the page map.  */
+    pager_truncate (&ds->dpager, ds->dpager.limit / vm_page_size);
+
+  pager_port_unlock(ds, seqno);
+
+  return KERN_SUCCESS;
 }
 
 kern_return_t
@@ -2897,7 +3029,8 @@ ddprintf ("DPAGER DEMUX OBJECT <%p>: %d\n", in, in->msgh_id);
 rval =
  (seqnos_memory_object_server(in, out) ||
 		seqnos_memory_object_default_server(in, out) ||
-		default_pager_notify_server(in, out));
+		default_pager_notify_server(in, out) ||
+                default_pager_server(in, out));
 ddprintf ("DPAGER DEMUX OBJECT DONE <%p>: %d\n", in, in->msgh_id);
 return rval;
 }
@@ -2929,20 +3062,6 @@ return rval;
 		 */
 
 		return exc_server(in, out);
-	} else if (in->msgh_local_port == default_pager_bootstrap_port) {
-		/*
-		 *	We receive bootstrap requests
-		 *	from the startup task.
-		 */
-
-		if (in->msgh_id == 999999) {
-			/* compatibility for old bootstrap interface */
-
-			bootstrap_compat(in, out);
-			return TRUE;
-		}
-
-		return bootstrap_server(in, out);
 	} else {
 		panic(my_name);
 		return FALSE;
@@ -3087,14 +3206,6 @@ default_pager_initialize(host_port)
 		panic(my_name);
 
 	/*
-	 *	Initialize the bootstrap port.
-	 */
-	kr = mach_port_allocate(default_pager_self, MACH_PORT_RIGHT_RECEIVE,
-				&default_pager_bootstrap_port);
-	if (kr != KERN_SUCCESS)
-		panic(my_name);
-
-	/*
 	 * Arrange for wiring privileges.
 	 */
 	wire_setup(host_port);
@@ -3165,12 +3276,6 @@ default_pager()
 
 	kr = mach_port_move_member(default_pager_self,
 				   default_pager_exception_port,
-				   default_pager_default_set);
-	if (kr != KERN_SUCCESS)
-		panic(my_name);
-
-	kr = mach_port_move_member(default_pager_self,
-				   default_pager_bootstrap_port,
 				   default_pager_default_set);
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
@@ -3600,6 +3705,57 @@ default_pager_object_pages(pager, object, pagesp, countp)
 	return KERN_SUCCESS;
 }
 
+
+kern_return_t
+default_pager_object_set_size(mach_port_t pager,
+			      mach_port_seqno_t seqno,
+			      mach_port_t reply_to,
+			      vm_size_t limit)
+{
+  kern_return_t kr;
+  default_pager_t ds;
+
+  ds = pager_port_lookup(pager);
+  if (ds == DEFAULT_PAGER_NULL)
+    return KERN_INVALID_ARGUMENT;
+
+  pager_port_lock(ds, seqno);
+  pager_port_check_request(ds, reply_to);
+  pager_port_wait_for_readers(ds);
+  pager_port_wait_for_writers(ds);
+
+  limit = round_page (limit);
+  if (ds->dpager.size <= limit / vm_page_size)
+    {
+      /* The limit has not been exceeded heretofore.  Just change it.  */
+      ds->dpager.limit = limit;
+      kr = KERN_SUCCESS;
+    }
+  else if (ds->lock_request == MACH_PORT_NULL)
+    {
+      /* Tell the kernel to flush from core all the pages being removed.
+	 We will get the memory_object_lock_completed callback when they
+	 have been flushed.  We handle that by completing the limit update
+	 and posting the reply to the pending truncation.  */
+      kr = memory_object_lock_request (ds->pager_request,
+				       limit,
+				       ds->dpager.size * vm_page_size - limit,
+				       MEMORY_OBJECT_RETURN_NONE, TRUE,
+				       VM_PROT_ALL, ds->pager);
+      if (kr != KERN_SUCCESS)
+	panic ("memory_object_lock_request: %d", kr);
+      ds->lock_request = reply_to;
+      kr = MIG_NO_REPLY;
+    }
+  else
+    /* There is already another call in progress.  Tough titties.  */
+    kr = KERN_FAILURE;
+
+  pager_port_unlock(ds, seqno);
+
+  return kr;
+}
+
 /*
  * Add/remove extra paging space
  */
@@ -3747,99 +3903,3 @@ catch_exception_raise(exception_port, thread, task, exception, code, subcode)
 
 	return KERN_FAILURE;
 }
-
-/*
- *	Handle bootstrap requests.
- */
-
-kern_return_t
-do_bootstrap_privileged_ports(bootstrap, hostp, devicep)
-	mach_port_t bootstrap;
-	mach_port_t *hostp, *devicep;
-{
-	*hostp = bootstrap_master_host_port;
-	*devicep = bootstrap_master_device_port;
-	return KERN_SUCCESS;
-}
-
-void
-bootstrap_compat(in, out)
-	mach_msg_header_t *in, *out;
-{
-	mig_reply_header_t *reply = (mig_reply_header_t *) out;
-	mach_msg_return_t mr;
-
-	struct imsg {
-		mach_msg_header_t	hdr;
-		mach_msg_type_t		port_desc_1;
-		mach_port_t		port_1;
-		mach_msg_type_t		port_desc_2;
-		mach_port_t		port_2;
-	} imsg;
-
-	/*
-	 * Send back the host and device ports.
-	 */
-
-	imsg.hdr.msgh_bits = MACH_MSGH_BITS_COMPLEX |
-		MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(in->msgh_bits), 0);
-	/* msgh_size doesn't need to be initialized */
-	imsg.hdr.msgh_remote_port = in->msgh_remote_port;
-	imsg.hdr.msgh_local_port = MACH_PORT_NULL;
-	/* msgh_seqno doesn't need to be initialized */
-	imsg.hdr.msgh_id = in->msgh_id + 100;	/* this is a reply msg */
-
-	imsg.port_desc_1.msgt_name = MACH_MSG_TYPE_COPY_SEND;
-	imsg.port_desc_1.msgt_size = (sizeof(mach_port_t) * 8);
-	imsg.port_desc_1.msgt_number = 1;
-	imsg.port_desc_1.msgt_inline = TRUE;
-	imsg.port_desc_1.msgt_longform = FALSE;
-	imsg.port_desc_1.msgt_deallocate = FALSE;
-	imsg.port_desc_1.msgt_unused = 0;
-
-	imsg.port_1 = bootstrap_master_host_port;
-
-	imsg.port_desc_2 = imsg.port_desc_1;
-
-	imsg.port_2 = bootstrap_master_device_port;
-
-	/*
-	 * Send the reply message.
-	 * (mach_msg_server can not do this, because the reply
-	 * is not in standard format.)
-	 */
-
-	mr = mach_msg(&imsg.hdr, MACH_SEND_MSG,
-		      sizeof imsg, 0, MACH_PORT_NULL,
-		      MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-	if (mr != MACH_MSG_SUCCESS)
-		(void) mach_port_deallocate(default_pager_self,
-					    imsg.hdr.msgh_remote_port);
-
-	/*
-	 * Tell mach_msg_server to do nothing.
-	 */
-
-	reply->RetCode = MIG_NO_REPLY;
-}
-
-#ifdef	mips
-/*
- * set_ras_address for default pager
- * Default pager does not have emulator support
- * so it needs a local version of set_ras_address.
- */
-int
-set_ras_address(basepc, boundspc)
-	vm_offset_t basepc;
-	vm_offset_t boundspc;
-{
-	kern_return_t status;
-
-	status = task_ras_control(mach_task_self(), basepc, boundspc,
-				  TASK_RAS_CONTROL_INSTALL_ONE);
-	if (status != KERN_SUCCESS)
-	  return -1;
-	return 0;
-}
-#endif
