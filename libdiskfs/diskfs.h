@@ -113,19 +113,19 @@ struct dirmod
 
 /* Declarations of variables the library sets.  */
 
-extern mach_port_t diskfs_host_priv;	/* send right */
-extern mach_port_t diskfs_master_device; /* send right */
 extern mach_port_t diskfs_default_pager; /* send right */
 extern mach_port_t diskfs_exec_ctl;	/* send right */
 extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
 
+/* When this is a bootstrap filesystem, the command line options passed from
+   the kernel.  If not a bootstrap filesystem, it is 0, so it can be used to
+   distinguish between the two cases.  */
+extern char *diskfs_boot_flags;
+
 extern struct mutex diskfs_shutdown_lock;
 
 extern volatile struct mapped_time_value *diskfs_mtime;
-
-extern int diskfs_bootflags;
-extern char *diskfs_bootflagarg;
 
 /* True iff we should do every operation synchronously.  It
    is the format-specific code's responsibility to keep allocation
@@ -462,19 +462,37 @@ error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The library exports the following functions for general use */
 
-/* Call this if the bootstrap port is null and you want to support
-   being a bootstrap filesystem.  ARGC and ARGV should be as passed
-   to main.  If the arguments are not in the proper format, an
-   error message will be printed on stderr and exit called.  Otherwise,
-   diskfs_priv_host, diskfs_master_device, and diskfs_bootflags will be
-   set and the Mach kernel name of the bootstrap device will be
-   returned.  */
-char *diskfs_parse_bootargs (int argc, char **argv);
+/* Returns the name and a send right for the mach device on which the file
+   NAME is stored, and returns it in DEV_NAME (which is malloced) and PORT.
+   Other values returned are START, the first valid offset, SIZE, the the
+   number of blocks after START, and BLOCK_SIZE, the units in which the
+   device is addressed.
+
+   The device is opened for reading, and if the diskfs global variable
+   DISKFS_READONLY is false, writing.  */
+error_t diskfs_get_file_device (char *name,
+				char **dev_name, mach_port_t *port,
+				off_t *start, off_t *size, size_t *block_size);
+
+/* Returns a send right to for the mach device called NAME, and returns it in
+   PORT.  Other values returned are START, the first valid offset, SIZE, the
+   the number of blocks after START, and BLOCK_SIZE, the units in which the
+   device is addressed.
+
+   The device is opened for reading, and if the diskfs global variable
+   DISKFS_READ_ONLY is false, writing.
+
+   If NAME cannot be opened and this is a bootstrap filesystem, the user will
+   be prompted for new names until a valid one is found.  */
+error_t diskfs_get_mach_device (char *name,
+				mach_port_t *port,
+				off_t *start, off_t *size, size_t *block_size);
+
 
 /* Call this after arguments have been parsed to initialize the library.
-   You must call this before calling any other diskfs functions except
-   for diskfs_parse_bootargs.  */
-void diskfs_init_diskfs (void);
+   You must call this before calling any other diskfs functions, and after
+   parsing diskfs options.  */
+error_t diskfs_init_diskfs (void);
 
 /* Call this once the filesystem is fully initialized, to advertise the new
    filesystem control port to our parent filesystem.  If BOOTSTRAP is set,
