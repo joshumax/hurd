@@ -54,22 +54,14 @@ diskfs_drop_node (struct node *np)
 	  return;
 	}
 
+      assert (np->dn_stat.st_size == 0);
+
       savemode = np->dn_stat.st_mode;
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
       np->dn_set_ctime = np->dn_set_atime = 1;
       diskfs_node_update (np, 1);
       diskfs_free_node (np, savemode);
-    }
-  else if (np->sockaddr)
-    /* If NP is a socket naming point, we can't drop it until it actually
-       gets unlinked.  Unfortunately we have no way of knowing whether the
-       server is still alive.  This will result in a node with zero refs; I'm
-       not sure whether that will cause lossage.... XXX */
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
-      return;
     }
   else
     diskfs_node_update (np, diskfs_synchronous);
@@ -86,10 +78,8 @@ diskfs_drop_node (struct node *np)
 	  free (dm);
 	}
     }
-  if (np->sockaddr)
-    mach_port_deallocate (mach_task_self (), np->sockaddr);
+  assert (!np->sockaddr);
 
-  _diskfs_purge_cache_deletion (np);
   diskfs_node_norefs (np);
   spin_unlock (&diskfs_node_refcnt_lock);
 }
