@@ -79,6 +79,9 @@ error_t _diskfs_rdwr_internal (struct node *np, char *data, off_t offset,
    and auth ports). */
 void _diskfs_init_completed (void);
 
+/* Called in a bootstrap filesystem only, to get the privileged ports.  */
+void _diskfs_boot_privports (void);
+
 /* Clean routine for control port. */
 void _diskfs_control_clean (void *);
 

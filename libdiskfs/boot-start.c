@@ -67,7 +67,7 @@ get_console ()
 
 /* Make sure we have the privileged ports.  */
 void
-diskfs_boot_privports (void)
+_diskfs_boot_privports (void)
 {
   assert (diskfs_boot_flags);
   if (_hurd_host_priv == MACH_PORT_NULL)

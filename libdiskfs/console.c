@@ -52,7 +52,7 @@ diskfs_console_stdio ()
       mach_port_t dev, cons;
       error_t err;
       if (diskfs_boot_flags)
-	diskfs_boot_privports ();
+	_diskfs_boot_privports ();
       err = get_privileged_ports (NULL, &dev);
       assert_perror (err);
       err = device_open (dev, D_READ|D_WRITE, "console", &cons);
