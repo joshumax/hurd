@@ -18,11 +18,11 @@
 dir := trans
 makemode := servers
 
-targets = symlink firmlink ifsock magic null fifo new-fifo fwd devport crash
-SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c devport.c \
+targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash
+SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
-HURDLIBS=ports trivfs threads fshelp pipe ihash shouldbeinlibc 
+HURDLIBS=ports trivfs threads fshelp pipe ihash shouldbeinlibc
 
 include ../Makeconf
 
