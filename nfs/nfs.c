@@ -147,14 +147,18 @@ xdr_decode_fattr (int *p, struct stat *st)
 /* Create, initialize, and return a buffer suitable for sending an RPC
    of type RPC_PROC for the user identified in CRED.  For types READ,
    WRITE, READLINK, and READDIR, parm LEN is the amount of data the
-   user desires.  Return the address of where RPC args should go;
-   fill *pp with the address of the allocated memory.  */
+   user desires.  Return the address of where RPC args should go; fill
+   *pp with the address of the allocated memory.  The RPC will be used
+   to operate on node NP.  If this is a chown call, then set
+   SECOND_GID to the target of the call, else make it -1.  */
 int *
-nfs_initialize_rpc (int rpc_proc, struct protid *cred,
-		    size_t len, void **pp)
+nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
+		    size_t len, void **pp, struct node *np,
+		    uid_t second_gid)
 {
   void *buf = malloc (len + 1024);
-  int *p = buf, *lenaddr, *ngraddr, i;
+  int *p = buf, *lenaddr;
+  uid_t chosen_uid, chosen_gid;
   
   /* RPC header */
   *p++ = ntohl (generate_xid);
@@ -164,19 +168,80 @@ nfs_initialize_rpc (int rpc_proc, struct protid *cred,
   *p++ = ntohl (NFSV2_RPC_VERSION);
   *p++ = ntohl (rpc_proc);
   
+
   /* CRED field */
-  *p++ = htonl (RPCV2_AUTH_UNIX);
-  lenaddr = p++;
-  *p++ = htonl (mapped_time->seconds);
-  p = xdr_encode_string (p, hostname);
-  *p++ = htonl (cred->uids[0]);
-  *p++ = htonl (cred->gids[0]);
-  ngraddr = p++;
-  for (i = 0; i , 16 && i < cred->ngids - 1; i++)
-    *p++ = htonl (cred->gids[i+1]);
-  *ngraddr = htonl (i);
-  *lenaddr = htonl ((p - (nlenaddr + 1)) * sizeof (int));
-  
+  if (cred
+      && (cred->nuids || cred->ngids))
+    {
+      *p++ = htonl (RPCV2_AUTH_UNIX);
+      lenaddr = p++;
+      *p++ = htonl (mapped_time->seconds);
+      p = xdr_encode_string (p, hostname);
+      
+      if (cred_has_uid (cred, 0))
+	{
+	  netfs_validate_stat (np, 0);
+	  chosen_uid = 0;
+	  chosen_gid = nn->nn_stat.st_gid;
+	}
+      else
+	{
+	  if (cred->nuids == 0)
+	    chosen_uid = -2;	/* Eeeewwww */
+	  else if (cred->nuids == 1)
+	    chosen_uid = cred->uids[0];
+	  else
+	    {
+	      netfs_validate_stat (np, 0);
+	      if (cred_has_uid (cred, nn->nn_stat.st_uid))
+		chosen_uid = nn->nn_stat.st_uid;
+	      else
+		chosen_uid = cred->uids[0];
+	    }
+
+	  if (cred->ngids == 0)
+	    {
+	      chosen_gid = -2;
+	      second_gid = -1;
+	    }
+	  else if (cred->ngids == 1)
+	    {
+	      chosen_gid = cred->gids[0];
+	      second_gid = -1;
+	    }
+	  else
+	    {
+	      netfs_validate_stat (np, 0);
+
+	      if (cred_has_gid (cred, nn->nn_stat.st_gid))
+		chosen_gid = nn->nn_stat.st_gid;
+	      else
+		chosen_gid = cred->gids[0];
+	  
+	      if ((second_gid >= 0)
+		  && (!cred_has_gid (cred, second_gid)))
+		second_gid = -1;
+	    }
+	}
+      
+      *p++ = htonl (chosen_uid);
+      *p++ = htonl (chosen_gid);
+      if (second_gid == -1)
+	{
+	  *p++ = htonl (1);
+	  *p++ = htonl (second_gid);
+	}
+      else
+	*p++ = 0;
+
+      *lenaddr = htonl ((p - (nlenaddr + 1)) * sizeof (int));
+    }
+  else
+    {
+      *p++ = htonl (RPC_AUTH_NULL);
+      *p++ = 0;
+    }
+        
   /* VERF field */
   *p++ = htonl (RPC_AUTH_NULL);
   *p++ = 0;
