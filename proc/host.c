@@ -45,7 +45,7 @@ struct execdata_notify
 } *execdata_notifys;
 
 /* Implement proc_sethostid as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_sethostid (struct proc *p,
 		int newhostid)
 {
@@ -58,7 +58,7 @@ S_proc_sethostid (struct proc *p,
 }
 
 /* Implement proc_gethostid as described in <hurd/proc.defs>. */
-error_t 
+kern_return_t 
 S_proc_gethostid (struct proc *p,
 		int *outhostid)
 {
@@ -67,7 +67,7 @@ S_proc_gethostid (struct proc *p,
 }
 
 /* Implement proc_sethostname as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_sethostname (struct proc *p,
 		  char *newhostname,
 		  u_int newhostnamelen)
@@ -88,21 +88,24 @@ S_proc_sethostname (struct proc *p,
 }
 
 /* Implement proc_gethostname as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_gethostname (struct proc *p,
 		  char **outhostname,
 		  u_int *outhostnamelen)
 {
-  if (*outhostnamelen > hostnamelen + 1)
+  if (*outhostnamelen < hostnamelen + 1)
     vm_allocate (mach_task_self (), (vm_address_t *)outhostname,
-		 hostnamelen, 1);
+		 hostnamelen + 1, 1);
   *outhostnamelen = hostnamelen + 1;
-  bcopy (hostname, *outhostname, hostnamelen + 1);
+  if (hostname)
+    bcopy (hostname, *outhostname, hostnamelen + 1);
+  else
+    **outhostname = '\0';
   return 0;
 }
 
 /* Implement proc_getprivports as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_getprivports (struct proc *p,
 		   mach_port_t *hostpriv,
 		   mach_port_t *devpriv)
@@ -116,7 +119,7 @@ S_proc_getprivports (struct proc *p,
 }
 
 /* Implement proc_setexecdata as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_setexecdata (struct proc *p,
 		  mach_port_t *ports,
 		  u_int nports,
@@ -154,7 +157,7 @@ S_proc_setexecdata (struct proc *p,
 }
 
 /* Implement proc_getexecdata as described in <hurd/proc.defs>. */
-error_t 
+kern_return_t 
 S_proc_getexecdata (struct proc *p,
 		  mach_port_t **ports,
 		  mach_msg_type_name_t *portspoly,
@@ -178,7 +181,7 @@ S_proc_getexecdata (struct proc *p,
 }
 
 /* Implement proc_execdata_notify as described in <hurd/proc.defs>. */
-error_t
+kern_return_t
 S_proc_execdata_notify (struct proc *p,
 		      mach_port_t notify)
 {
