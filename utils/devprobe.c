@@ -1,6 +1,6 @@
 /* Check the existence of mach devices
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -95,12 +95,12 @@ main (int argc, char **argv)
     }
   const struct argp argp = { options, parse_opt, args_doc, doc };
 
+  /* Parse our arguments.  */
+  argp_parse (&argp, argc, argv, 0, 0, 0);
+
   err = get_privileged_ports (0, &device_master);
   if (err)
     error (3, err, "Can't get device master port");
-
-  /* Parse our arguments.  */
-  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   exit (found_one ? 0 : 1);
 }
