@@ -111,15 +111,22 @@ STEP VI:
 Now you have a Hurd system.  But in order to make it fully usable, do
 the following:
 
-A: cd to /dev give the command `./MAKEDEV ptyp ptyq'.
+
+*** making devices
+cd to /dev give the command `./MAKEDEV ptyp ptyq'.
 
 Also add any disk device you have; you must specify both unit
 number *and* partition.  Something like `sd0a' or `rd1f' is called
 for.
 
 
-B: If you want to use the network, set it up thus:
-     
+
+
+
+*** setup network
+
+If you want to use the network, set it up thus:
+    
      settrans /servers/socket/2 \
 	/hurd/pfinet --interface=eth0 --address=NN.NN.NN.NN \
                      --gateway=GG.GG.GG.GG --netmask=MM.MM.MM.MM
@@ -135,7 +142,9 @@ changed while pfinet is running by using fsysopts, e.g.:
      fsysopts /servers/socket/2 --netmask=MM.MM.MM.MM
 
 
-C: You can mount a partition (say hd0a) by saying:
+*** mounting partitions
+
+You can mount a partition (say hd0a) by saying:
 
      settrans /mnt /hurd/ufs /dev/rhd0a
 
@@ -160,7 +169,8 @@ You can make it readonly thus:
 For more information on settrans, see the end of this file.
 
 
-D: NFS mounts, not surprisingly, are done thus:
+*** mounting nfs
+NFS mounts, not surprisingly, are done thus:
 
   settrans /mnt /hurd/nfs /remote/file/system remote.host.org
 
@@ -168,9 +178,12 @@ D: NFS mounts, not surprisingly, are done thus:
 NFS supports many options; use `/hurd/nfs --help' to see them all.
 
 
-E:
+*** edit configuration files
+
 Edit the password file (/etc/passwd) appropriately, and add any serial
 lines you have terminals on to /etc/ttys.
+Set your hostname with `echo foo.bar.baz > /etc/hostname'.  This will
+then be permanent until you change the file.
 
 
 Once you've completed these steps, you can reboot the system multi
