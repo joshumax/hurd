@@ -26,6 +26,6 @@ trivfs_handle_port (mach_port_t realnode,
   
   cntl = ports_allocate_port (sizeof (struct trivfs_control), cntltype);
   cntl->underlying = realnode;
-  cntl->protidtypes = protidtype
+  cntl->protidtypes = protidtype;
   return ports_get_right (cntl);
 }
