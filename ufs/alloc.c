@@ -200,7 +200,7 @@ ffs_realloccg(register struct node *np,
 		goto nospace;
 	if (error = diskfs_catch_exception ())
 	  return error;
-	bprev = dinodes[np->dn->number].di_db[lbprev];
+	bprev = (dino (np->dn->number))->di_db[lbprev];
 	diskfs_end_catch_exception ();
 	assert ("old block not allocated" && bprev);
 
@@ -787,7 +787,7 @@ ffs_fragextend(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = (struct cg *) (cgs + sblock->fs_bsize * cg);
+	cgp = cg_locate (cg);
 #endif
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
@@ -852,7 +852,7 @@ ffs_alloccg(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = (struct cg *) (cgs + sblock->fs_bsize * cg);
+	cgp = cg_locate (cg);
 #endif
 	if (!cg_chkmagic(cgp) ||
 	    (cgp->cg_cs.cs_nbfree == 0 && size == fs->fs_bsize)) {
@@ -1146,7 +1146,7 @@ ffs_nodealloccg(struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = (struct cg *)(cgs + sblock->fs_bsize * cg);
+	cgp = cg_locate (cg);
 #endif
 	if (!cg_chkmagic(cgp) || cgp->cg_cs.cs_nifree == 0) {
 /*		brelse(bp); */
@@ -1227,7 +1227,7 @@ ffs_blkfree(register struct node *np,
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = (struct cg *)(cgs + sblock->fs_bsize * cg);
+	cgp = cg_locate (cg);
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
@@ -1317,7 +1317,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	}
 	cgp = (struct cg *)bp->b_data;
 #else
-	cgp = (struct cg *)(cgs + sblock->fs_bsize * cg);
+	cgp = cg_locate (cg);
 #endif	
 	if (!cg_chkmagic(cgp)) {
 /* 		brelse(bp); */
