@@ -1499,8 +1499,7 @@ kern_return_t
 S_io_select (mach_port_t object,
 	     mach_port_t reply_port,
 	     mach_msg_type_name_t reply_type,
-	     int *type,
-	     int *tag)
+	     int *type)
 {
   fd_set r, w, x;
   int n;
@@ -1558,7 +1557,6 @@ S_io_reauthenticate (mach_port_t object,
   unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
 
   if (! auth_server_authenticate (authserver,
-				  object, MACH_MSG_TYPE_MAKE_SEND,
 				  rend, MACH_MSG_TYPE_MOVE_SEND,
 				  object, MACH_MSG_TYPE_MAKE_SEND,
 				  &gu, &gulen,
