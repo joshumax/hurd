@@ -1,3 +1,10 @@
+1997-08-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mktime.c: A copy of libc's time/mktime.c with the
+	overflow-detection code ifdefd out, to avoid problems with
+	floating point.
+	* Makefile (SRCS): Add mktime.c (temporarily).
+
 1997-07-28  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ugids-posix.c (ugids_set_posix_user): Ignore errors from

@@ -1,3 +1,17 @@
+1997-08-15  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* netfs.c (netfs_attempt_mkfile): Unlock DIR.
+
+	* dir.c (ftpfs_dir_null_lookup): New function.
+	(ftpfs_dir_lookup): Handle "" lookups like ".".
+	* ftpfs.h (ftpfs_dir_null_lookup): New declaration.
+	* fs.c (ftpfs_create): Use ftpfs_dir_null_lookup instead of
+	ftpfs_dir_lookup.
+
+	* dir.c (ftpfs_dir_lookup): Set E's name timestamp for noent entries.
+	(ftpfs_refresh_node): Record ENOENT entries.
+	(refresh_dir): Add PRESERVE_ENTRY parameter; all callers changed.
+
 1997-08-12  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (main): Supply the FSID argument to ftpfs_create.
