@@ -29,7 +29,7 @@ DIST_FILES=frank1.ld frankemul.ld
 
 include ../Makeconf
 
-LDFLAGS += -nostartfiles -Wl,-T -Wl,frank1.ld
+LDFLAGS += -static -nostartfiles -Wl,-T -Wl,frank1.ld
 
 #install: /usr/local/bin/boot
 #
