@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -162,7 +162,8 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   struct store_argp_params store_params = { 0 };
 
-  argp_parse (&startup_argp, argc, argv, 0, 0, &store_params);
+  /* XXX diskfs's --boot-command needs us to use ARGP_IN_ORDER */
+  argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, &store_params);
   store_parsed = store_params.result;
 
   err = store_parsed_name (store_parsed, &diskfs_disk_name);
