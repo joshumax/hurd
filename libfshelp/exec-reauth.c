@@ -26,6 +26,11 @@
 
 #include "fshelp.h"
 
+extern error_t
+exec_reauth (auth_t auth, int secure, int must_reauth,
+	     mach_port_t *ports, unsigned num_ports,
+	     mach_port_t *fds, unsigned num_fds);
+
 /* If SUID or SGID is true, adds UID and/or GID respectively to the
    authentication in PORTS[INIT_PORT_AUTH], and replaces it with the result.
    All the other ports in PORTS and FDS are then reauthenticated, using any
@@ -43,51 +48,16 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 		    mach_port_t *fds, mach_msg_type_number_t num_fds,
 		    int *secure)
 {
-  error_t err;
+  error_t err = 0;
   int _secure = 0;
 
   if (suid || sgid)
     {
-      int i;
       int already_root = 0;
       auth_t newauth;
       /* These variables describe the auth port that the user gave us. */
       struct idvec *eff_uids = make_idvec (), *avail_uids = make_idvec ();
       struct idvec *eff_gids = make_idvec (), *avail_gids = make_idvec ();
-
-      void
-	reauth (mach_port_t *port, int isproc)
-	  {
-	    mach_port_t newport, ref;
-	    if (*port == MACH_PORT_NULL)
-	      return;
-	    ref = mach_reply_port ();
-	    err = (isproc ? proc_reauthenticate : io_reauthenticate)
-	      (*port, ref, MACH_MSG_TYPE_MAKE_SEND);
-	    if (!err)
-	      err = auth_user_authenticate (newauth, *port, ref,
-					    MACH_MSG_TYPE_MAKE_SEND, &newport);
-	    if (err)
-	      {
-		/* Could not reauthenticate.  Roland thinks we should not
-		   give away the old port.  I disagree; it can't actually hurt
-		   because the old id's are still available, so it's no
-		   security problem. */
-
-		/* Nothing Happens. */
-	      }
-	    else
-	      {
-		if (isproc)
-		  mach_port_deallocate (mach_task_self (), newport);
-		else
-		  {
-		    mach_port_deallocate (mach_task_self (), *port);
-		    *port = newport;
-		  }
-	      }
-	    mach_port_destroy (mach_task_self (), ref);
-	  }
 
       if (!eff_uids || !avail_uids || !eff_gids || !avail_gids)
 	goto abandon_suid;	/* Allocation error; probably toast, but... */
@@ -156,20 +126,9 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 
       if (already_root)
 	_secure = 0;		/* executive privilege */
-      
-      /* STEP 4: Re-authenticate all the ports we are handing to the user
-	 with this new port, and install the new auth port in ports. */
-      for (i = 0; i < num_fds; ++i)
-	reauth (&fds[i], 0);
-      if (_secure)
-	/* Not worth doing; the exec server will just do it again.  */
-	ports[INIT_PORT_CRDIR] = MACH_PORT_NULL;
-      else
-	reauth (&ports[INIT_PORT_CRDIR], 0);
-      reauth (&ports[INIT_PORT_PROC], 1);
-      reauth (&ports[INIT_PORT_CWDIR], 0);
-      mach_port_deallocate (mach_task_self (), ports[INIT_PORT_AUTH]);
-      ports[INIT_PORT_AUTH] = newauth;
+
+      /* Re-authenticate the exec parameters.  */
+      exec_reauth (newauth, _secure, 0, ports, num_ports, fds, num_fds);
 
       if (eff_uids->num > 0)
 	proc_setowner (ports[INIT_PORT_PROC], eff_uids->ids[0]);
