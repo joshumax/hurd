@@ -19,6 +19,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <linux/net.h>
+#include <assert.h>
+#include "pfinet.h"
 
 struct proto_ops *proto_ops;
 
