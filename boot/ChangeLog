@@ -1,3 +1,8 @@
+2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* boot.c (S_io_reauthenticate): Don't use MACH_MSG_TYPE_MAKE_SEND
+	in Hurd RPC.
+
 2000-02-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (ds_device_get_status): Accept *STATUSLEN greater than needed.

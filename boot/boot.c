@@ -1679,10 +1679,14 @@ S_io_reauthenticate (mach_port_t object,
   uid_t *gu, *au;
   gid_t *gg, *ag;
   unsigned int gulen = 0, aulen = 0, gglen = 0, aglen = 0;
+  error_t err;
 
+  mach_port_insert_right (mach_task_self (), object, object, 
+			  MACH_MSG_TYPE_MAKE_SEND); 
+   
   if (! auth_server_authenticate (authserver,
 				  rend, MACH_MSG_TYPE_COPY_SEND,
-				  object, MACH_MSG_TYPE_MAKE_SEND,
+				  object, MACH_MSG_TYPE_COPY_SEND,
 				  &gu, &gulen,
 				  &au, &aulen,
 				  &gg, &gglen,
@@ -1694,6 +1698,7 @@ S_io_reauthenticate (mach_port_t object,
       mig_deallocate ((vm_address_t) au, aulen * sizeof *gu);
     }
   mach_port_deallocate (mach_task_self (), rend);
+  mach_port_deallocate (mach_task_self (), object);
 
   return 0;
 }
