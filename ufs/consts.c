@@ -1,5 +1,5 @@
 /* Various constants wanted by the diskfs library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,3 +28,4 @@ char *diskfs_server_name = "ufs";
 int diskfs_major_version = 0;
 int diskfs_minor_version = 0;
 int diskfs_edit_version = 0;
+int diskfs_synchronous = 0;
