@@ -519,8 +519,9 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
      ports (traced_class).  */
   info = ports_lookup_port (traced_bucket, inp->msgh_local_port, 0);
   assert (info);
-  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == info->type);
 
+  /* A notification message from the kernel appears to have been sent
+     with a send-once right, even if there have never really been any.  */
   if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == MACH_MSG_TYPE_MOVE_SEND_ONCE)
     {
       if (inp->msgh_id == MACH_NOTIFY_DEAD_NAME)
@@ -551,6 +552,8 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  return 1;
 	}
     }
+
+  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == info->type);
 
   complex = inp->msgh_bits & MACH_MSGH_BITS_COMPLEX;
 
