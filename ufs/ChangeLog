@@ -1,3 +1,8 @@
+2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ufs.h (swab_long_long): Use LL, not lL, for constant.
+	Submitted by Maurizio Boriani <baux@debian.org>.
+
 2001-08-09  Roland McGrath  <roland@frob.com>
 
 	* inode.c (diskfs_get_translator): Fail with EFTYPE if the length
