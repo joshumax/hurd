@@ -28,7 +28,7 @@
 #include <mach.h>
 #include <device/device.h>
 #include <hurd/hurd_types.h>
-
+
 struct store
 {
   /* If this store was created using store_create, the file from which we got
@@ -82,7 +82,7 @@ struct store_meths
      ADDR.  */
   store_write_meth_t write;
 };
-
+
 /* Return a new store in STORE, which refers to the storage underlying
    SOURCE.  A reference to SOURCE is created (but may be destroyed with
    store_close_source).  */
@@ -112,14 +112,34 @@ error_t _store_file_create (file_t file,
 
 void store_free (struct store *store);
 
+/* Allocate a new store structure of class CLASS, with meths METHS.  */
+struct store *
+_make_store (enum file_storage_class class, struct store_meths *meths);
+
+/* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
+error_t store_set_runs (struct store *store, off_t *runs, unsigned runs_len);
+
+/* Sets the name associated with STORE to a copy of NAME.  */
+error_t store_set_name (struct store *store, char *name);
+
+/* Fills in the values of the various fields in STORE that are derivable from
+   the set of runs & the block size.  */
+void _store_derive (struct store *store);
+
+/* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written
+   in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
+error_t store_write (struct store *store,
+		     off_t addr, char *buf, size_t len, size_t *amount);
+
+/* Read AMOUNT bytes from STORE at ADDR into BUF & LEN (which following the
+   usual mach buffer-return semantics) to STORE at ADDR.  ADDR is in BLOCKS
+   (as defined by STORE->block_size).  */
+error_t store_read (struct store *store,
+		    off_t addr, size_t amount, char **buf, size_t *len);
+
 /* If STORE was created using store_create, remove the reference to the
    source from which it was created.  */
 void store_close_source (struct store *store);
-
-error_t store_write (struct store *store,
-		     off_t addr, char *buf, size_t len, size_t *amount);
-error_t store_read (struct store *store,
-		    off_t addr, size_t amount, char **buf, size_t *len);
 
 #if 0
 
@@ -142,19 +162,5 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 			    mach_port_t *pager)
 
 #endif
-
-/* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
-error_t store_set_runs (struct store *store, off_t *runs, unsigned runs_len);
-
-/* Sets the name associated with STORE to a copy of NAME.  */
-error_t store_set_name (struct store *store, char *name);
-
-/* Fills in the values of the various fields in STORE that are derivable from
-   the set of runs & the block size.  */
-void _store_derive (struct store *store);
-
-/* Allocate a new store structure of class CLASS, with meths METHS.  */
-struct store *
-_make_store (enum file_storage_class class, struct store_meths *meths);
 
 #endif /* __STORE_H__ */
