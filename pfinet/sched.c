@@ -23,7 +23,8 @@
 
 struct mutex global_lock = MUTEX_INITIALIZER;
 
-struct task_struct *current;
+struct task_struct current_contents;
+struct task_struct *current = &current_contents;
 
 /* Call this before doing kernel-level calls; this enforces the
    non-preemptibility of the kernel. */
@@ -45,7 +46,11 @@ end_kernel (void)
 void
 interruptible_sleep_on (struct wait_queue **p)
 {
-  condition_wait (&(*p)->c, &global_lock);
+  int cancel;
+  
+  cancel = hurd_condition_wait (&(*p)->c, &global_lock);
+  if (cancel)
+    current->signal = 1;
 }
 
 void
@@ -77,3 +82,17 @@ select_wait (struct wait_queue **wait_address, select_table *p)
   return;
 }
 
+/* Set the contents of current appropriately for an RPC being undertaken
+   by USER. */
+void
+become_task (struct sock_user *user)
+{
+  /* These fields are not really used currently. */
+  current->pgrp = current->pid = 0;
+  
+  current->flags = 0;
+  current->timeout = 0;
+  current->signal = current->blocked = 0;
+  current->state = TASK_RUNNING;
+  current->isroot = user->isroot;
+}
