@@ -164,6 +164,8 @@ type idarray_t = array[] of uid_t;
 
 type rusage_t = struct[18] of int; /* XXX */
 
+type flock_t = struct[5] of int;
+
 import <sys/types.h>;
 import <sys/stat.h>;
 import <sys/resource.h>;
