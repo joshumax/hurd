@@ -1,3 +1,9 @@
+2001-01-16  Roland McGrath  <roland@frob.com>
+
+	* store.h (struct store_argp_params): Add member `store_optional'.
+	* argp.c (parse_opt): If store_optional is set, don't make it an error
+	when there are no store arguments and the type doesn't validate that.
+
 2001-01-14  Roland McGrath  <roland@frob.com>
 
 	* encode.c (too_big): New static function.

@@ -1,3 +1,12 @@
+2001-01-16  Roland McGrath  <roland@frob.com>
+
+	* storeio.c (parse_opt): Set PARAMS->store_params.store_optional.
+	(storeio_fsys): New global variable.
+	(main): Use it.
+	* dev.h: Declare it.
+	* dev.c (dev_open): If DEV->store_name is null, open the underlying
+	node using store_create.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
