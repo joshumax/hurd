@@ -15,7 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "Priv.h"
+#include "priv.h"
+#include <assert.h>
 
 /* Change the attributes of the memory object underlying pager P.
    Args MAY_CACHE and COPY_STRATEGY are as for 
@@ -30,8 +31,16 @@ pager_change_attributes (struct pager *p,
   struct attribute_request *ar = 0;
   
   mutex_lock (&p->interlock);
-  assert (p->pager_state == NORMAL);
+
+  p->may_cache = may_cache;
+  p->copy_strategy = copy_strategy;
   
+  if (p->pager_state == NOTINIT)
+    {
+      mutex_unlock (&p->interlock);
+      return;
+    }
+
   if (wait)
     {
       for (ar = p->attribute_requests; ar; ar = ar->next)
