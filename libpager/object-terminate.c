@@ -15,9 +15,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include "memory_object.h"
+#include <stdio.h>
 
 /* Called by the kernel when a shutdown has finished. */
-/* This is a dual of seqnos_memory_object_init. */
 kern_return_t
 _pager_seqnos_memory_object_terminate (mach_port_t object, 
 				       mach_port_seqno_t seqno,
@@ -25,8 +27,6 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
 				       mach_port_t name)
 {
   struct pager *p;
-  struct lock_request *lr;
-  int wakeup;
   
   if (!(p = check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
@@ -42,12 +42,6 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
       goto out;
     }
 
-  if (p->pager_type != FILE_DATA && p->pager_type != SINDIR)
-    {
-      printf ("unexpected m_o_terminate\n");
-      goto out;
-    }      
-
   mutex_lock (&p->interlock);
 
   _pager_wait_for_seqno (p, seqno);
@@ -57,6 +51,30 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
       p->termwaiting = 1;
       condition_wait (&p->wakeup, &p->interlock);
     }
+
+  _pager_wait_for_seqno (p, seqno);
+
+  while (p->noterm)
+    {
+      p->termwaiting = 1;
+      condition_wait (&p->wakeup, &p->interlock);
+    }
+
+  _pager_free_structure (p);
+
+ out:
+  done_with_port (p);
+  return 0;
+}
+
+/* Shared code for termination from memory_object_terminate and
+   no-senders.  The pager must be locked.  This routine will
+   deallocate all the ports and memory that pager P references.  */
+void
+_pager_free_structure (struct pager *p)
+{
+  int wakeup;
+  struct lock_request *lr;
 
   wakeup = 0;
   for (lr = p->lock_requests; lr; lr = lr->next)
@@ -68,8 +86,8 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   if (wakeup)
     condition_broadcast (&p->wakeup);
 
-  mach_port_deallocate (mach_task_self (), control);
-  mach_port_deallocate (mach_task_self (), name);
+  mach_port_deallocate (mach_task_self (), p->memobjcntl);
+  mach_port_deallocate (mach_task_self (), p->memobjname);
 
   /* Free the pagemap */
   if (p->pagemapsize)
@@ -83,13 +101,4 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   _pager_release_seqno (p);
 
   mutex_unlock (&p->interlock);
-
-  if (shutting_down)
-    /* Drop the user reference rather than waiting for the user to do it. */
-    done_with_port (p);
-
- out:
-  done_with_port (p);
-  return 0;
 }
-
