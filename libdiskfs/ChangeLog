@@ -1,3 +1,8 @@
+Thu Nov  7 14:49:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): If CRED has
+	root, use the requested id sets verbatim.
+
 Thu Oct 24 15:56:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-std-startup.c (store_argp_children, startup_argp_children):
