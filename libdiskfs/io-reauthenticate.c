@@ -19,7 +19,7 @@
 #include "io_S.h"
 
 /* Implement io_reathenticate as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_reauthenticate (struct protid *cred, 
 		     int rend_int)
 {
