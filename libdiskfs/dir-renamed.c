@@ -18,6 +18,47 @@
 #include "priv.h"
 
 
+/* Check if source directory is in the path of the target directory.
+   We get target locked, source unlocked but with a reference.  When
+   we return, nothing is locked, and target has lost its reference.
+   This routine assumes that no renames of directories will happen
+   while it is running; as a result, ufs_rename serializes all renames
+   of directories.  */
+static error_t
+checkpath(struct node *source,
+	  struct node *target,
+	  struct protid *cred)
+{
+  error_t err;
+  struct node *np;
+  
+  np = target;
+  for (np = target, err = 0;
+       /* nothing */;
+       /* This special lookup does a diskfs_nput on its first argument
+	  when it succeeds. */
+       err = diskfs_lookup (np, "..", LOOKUP | SPEC_DOTDOT, &np, 0, cred))
+    {
+      if (err)
+	{
+	  diskfs_nput (np);
+	  return err;
+	}
+      
+      if (np == source)
+	{
+	  diskfs_nput (np);
+	  return EINVAL;
+	}
+      
+      if (np == diskfs_root_node)
+	{
+	  diskfs_nput (np);
+	  return 0;
+	}
+    }
+}  
+
 /* Rename directory node FNP (whose parent is FDP, and which has name
    FROMNAME in that directory) to have name TONAME inside directory
    TDP.  None of these nodes are locked, and none should be locked
@@ -39,7 +80,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   mutex_lock (&tdp->lock);
   diskfs_nref (tdp);		/* reference and lock will get consumed by
 				   checkpath */
-  err = diskfs_checkpath (fnp, tdp, tocred);
+  err = checkpath (fnp, tdp, tocred);
   
   if (err)
     return err;
