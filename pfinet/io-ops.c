@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -234,7 +234,7 @@ S_io_clear_some_openmodes (struct sock_user *user,
 error_t
 S_io_select (struct sock_user *user,
 	     mach_port_t reply, mach_msg_type_name_t reply_type,
-	     int *select_type, int *id_tag)
+	     int *select_type)
 {
   int avail = 0;
   int cancel = 0;
@@ -376,8 +376,6 @@ S_io_reauthenticate (struct sock_user *user,
   
   auth = getauth ();
   err = auth_server_authenticate (auth, 
-				  ports_get_right (user),
-				  MACH_MSG_TYPE_MAKE_SEND,
 				  rend,
 				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newuser),
