@@ -492,7 +492,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     long_end->name = NULL;
 
     groups = alloca ((num_groups + 1) * sizeof (struct group));
+
     child_inputs = alloca (num_child_inputs * sizeof (void *));
+    bzero (child_inputs, num_child_inputs * sizeof (void *));
 
     if (state.argp)
       egroup = convert_options (state.argp, 0, 0, groups);
