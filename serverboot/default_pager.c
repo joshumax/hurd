@@ -3074,7 +3074,7 @@ default_pager_initialize(host_port)
 
 	DMM = default_pager_default_port;
 	kr = vm_set_default_memory_manager(host_port, &DMM);
-	if ((kr != KERN_SUCCESS) || (DMM != MACH_PORT_NULL))
+	if ((kr != KERN_SUCCESS) || MACH_PORT_VALID(DMM))
 		panic(my_name);
 
 	/*
