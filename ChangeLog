@@ -1,3 +1,9 @@
+1999-03-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf [$(makemode) = library]
+	(linktarg): Append .$(hurd-version).
+	(cleantarg): Add $(linktarg) here.
+
 1999-03-17  Gordon Matzigkeit  <gord@trick.fig.org>
 
 	* Makefile (other-subdirs): Add the debian directory.
