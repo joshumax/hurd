@@ -1,8 +1,8 @@
 /* Attempt to undo a previous su
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,2000 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -35,9 +35,9 @@ const char *argp_program_version = STANDARD_HURD_VERSION (unsu);
 static struct argp_child child_argps[] = {{ &frobauth_no_ugids_argp }, { 0 }};
 
 static char doc[] =
-  "Attempt to undo a previous su"
+  "Attempt to undo a previous setauth --save"
   "\vThis command is convenient, but will only correctly undo a limited"
-  " subset of possible su commands.  It works by simply deleting all"
+  " subset of possible setauth commands.  It works by simply deleting all"
   " current effective ids and the first two available ids, and then"
   " making the first remaining available id the current effective id.";
 

@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,12 +18,12 @@
 dir := utils
 makemode := utilities
 
-targets = shd ps settrans showtrans syncfs su fsysopts \
+targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
 	storeread ping msgport rpctrace mount
 special-targets = loginpr sush uptime
-SRCS = shd.c ps.c su.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
+SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
@@ -36,7 +36,6 @@ HURDLIBS = ps ihash store fshelp ports threads ftpconn shouldbeinlibc
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
-su-LDLIBS = $(LIBCRYPT)
 
 ping-CPPFLAGS = -I$(srcdir)/../pfinet/
 
@@ -50,10 +49,10 @@ INSTALL-ping-ops = -o root -m 4755
 
 include ../Makeconf
 
-freeauth ps addauth rmauth setauth su unsu msgport: parse.o pids.o
-login addauth setauth su: nonsugid.o
-freeauth addauth rmauth setauth su unsu: frobauth.o
-rmauth setauth su unsu: frobauth-mod.o
+ps addauth rmauth setauth unsu msgport: parse.o pids.o
+login addauth setauth: nonsugid.o
+addauth rmauth setauth unsu: frobauth.o
+rmauth setauth unsu: frobauth-mod.o
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 
 storeinfo storecat storeread: ../libstore/libstore.a
@@ -65,7 +64,7 @@ ping: ../libthreads/libthreads.a
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
-  devprobe vminfo addauth freeauth rmauth setauth su unsu ftpcp ftpdir storeread \
+  devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
   storecat msgport mount: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 

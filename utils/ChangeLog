@@ -1,3 +1,15 @@
+2000-02-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	Remove the su utility, which is incompatible with traditional su
+	as provided by sh-utils and used by some portable shell scripts.
+	The Hurdish su functionality is available as `setauth --save'.
+	* su.c: File removed.
+	* Makefile (targets): Remove su.
+	(SRCS): Remove su.c.
+	(su): Target removed from various dependency rules.
+	(su-LDLIBS): Variable removed.
+	* unsu.c (doc): Refer to setauth --save rather than su.
+
 2000-01-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* nonsugid.c (get_nonsugid_ids): Remove saved set IDs from available
