@@ -1,0 +1,22 @@
+-*- Text -*-
+GNU Hurd CVS version.
+
+
+This is the Hurd.  Welcome.
+
+For installation instructions, you might try your luck with the files
+README, INSTALL, and INSTALL-cross.  However, they have not been
+updated for a long time.
+
+For now, this file documents the version requirements for the CVS
+version of the Hurd.  Other combinations might work, but the stated
+minimum requirements are best tested by the developers.
+
+GNU MiG		at least 1.3
+GNU Mach	at least 1.3
+GNU C library	CVS from 2004-03-09 or later
+GNU C compiler	at least 3.3.2
+
+Obviously, you also need somewhat recent versions of binutils, make,
+bash and some other tools.  No hard requirements are currently known
+for these, though.
