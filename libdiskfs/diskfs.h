@@ -18,6 +18,8 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
+#include <assert.h>
+
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library. */
 struct protid 
@@ -523,8 +525,6 @@ diskfs_nref (struct node *np)
 extern inline void
 diskfs_nput (struct node *np)
 {
-  int nlinks;
-
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
@@ -550,8 +550,6 @@ diskfs_nput (struct node *np)
 extern inline void
 diskfs_nrele (struct node *np)
 {
-  int nlinks;
-  
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
