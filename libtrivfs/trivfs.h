@@ -37,6 +37,11 @@ struct trivfs_protid
   struct trivfs_peropen *po;
 };
 
+/* These can be used as `intran' and `destructor' functions for
+   a MiG port type, to have the stubs called with the protid pointer.  */
+struct trivfs_protid *trivfs_begin_using_protid (mach_port_t);
+void trivfs_end_using_protid (struct trivfs_protid *);
+
 struct trivfs_peropen
 {
   void *hook;			/* for user use */
@@ -54,6 +59,12 @@ struct trivfs_control
   mach_port_t underlying;
   void *hook;			/* for user use */
 };
+
+/* These can be used as `intran' and `destructor' functions for
+   a MiG port type, to have the stubs called with the control pointer.  */
+struct trivfs_control *trivfs_begin_using_control (mach_port_t);
+void trivfs_end_using_control (struct trivfs_control *);
+
 
 /* The user must define these variables. */
 extern int trivfs_fstype;
