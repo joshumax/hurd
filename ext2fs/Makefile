@@ -1,6 +1,6 @@
 # Makefile for ext2fs
 #
-#   Copyright (C) 1994, 1995, 1996, 1999, 2000 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,99,2000,02 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,3 +27,5 @@ LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h bitmap.c
 HURDLIBS = diskfs pager iohelp fshelp store threads ports ihash shouldbeinlibc
 
 include ../Makeconf
+
+ext2fs.static: $(boot-store-types:%=../libstore/libstore_%.a)
