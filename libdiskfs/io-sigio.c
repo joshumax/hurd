@@ -18,6 +18,9 @@
 #include "priv.h"
 #include "io_S.h"
 
+/* Implement io_sigio as described in <hurd/io.defs>.  We do this
+   for O_FSYNC right now, but will eventually do it for async I/O
+   too.  */
 kern_return_t
 diskfs_S_io_sigio (struct protid *cred)
 {
