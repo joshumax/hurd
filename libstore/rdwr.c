@@ -26,12 +26,24 @@
 
 /* Returns in RUNS the tail of STORE's run list, who's first run contains
    ADDR, and is not a whole, and in RUNS_END a pointer pointing at the end of
-   the run list.  Returns the offset within it at which ADDR occurs.  */
+   the run list.  Returns the offset within it at which ADDR occurs.  Also
+   returns BASE, which should be added to offsets from RUNS.  */
 static inline off_t
 store_find_first_run (struct store *store, off_t addr,
-		      off_t **runs, off_t **runs_end)
+		      off_t **runs, off_t **runs_end,
+		      off_t *base, size_t *index)
 {
   off_t *tail = store->runs, *tail_end = tail + store->runs_len;
+  off_t wrap = store->wrap;
+
+  if (addr >= wrap && addr < store->end)
+    /* Locate the correct position within a repeating pattern of runs.  */
+    {
+      *base = addr / wrap;
+      addr %= wrap;
+    }
+  else
+    *base = 0;
 
   /* XXX: this isn't going to be very efficient if RUNS is very complex...
      But it should do dandy if it's short.  For long run lists, we could do a
@@ -44,6 +56,7 @@ store_find_first_run (struct store *store, off_t addr,
 	{
 	  *runs = tail;
 	  *runs_end = tail_end;
+	  *index = ((tail - store->runs) >> 1);
 	  return addr;
 	}
 
@@ -54,6 +67,28 @@ store_find_first_run (struct store *store, off_t addr,
 
   return -1;
 }
+
+/* Update RUNS, BASE, & INDEX to point to the next elemement in the runs
+   array.  RUNS_END is the point where RUNS will wrap.  Returns true if
+   things are still kosher.  */
+static inline int
+store_next_run (struct store *store, off_t *runs_end,
+		off_t **runs, off_t *base, size_t *index)
+{
+  *runs += 2;
+  *index += 1;
+
+  if (*runs == runs_end)
+    /* Wrap around in a repeating RUNS.  */
+    {
+      *runs = store->runs;
+      *base += store->wrap;
+      *index = 0;
+      return (*base < store->end);
+    }
+  else
+    return 1;
+}
 
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written
    in AMOUNT.  ADDR is in BLOCKS (as defined by STORE->block_size).  */
@@ -62,64 +97,54 @@ store_write (struct store *store,
 	     off_t addr, char *buf, size_t len, size_t *amount)
 {
   error_t err;
-  off_t *runs, *runs_end;
+  size_t index;
+  off_t *runs, *runs_end, base;
+  int block_shift = store->log2_block_size;
   store_write_meth_t write = store->meths->write;
 
-  addr = store_find_first_run (store, addr, &runs, &runs_end);
+  addr = store_find_first_run (store, addr, &runs, &runs_end, &base, &index);
   if (addr < 0)
     err = EIO;
-  else if (runs[1] >= len)
+  else if ((runs[1] << block_shift) >= len)
     /* The first run has it all... */
-    err = (*write)(store, runs[0] + addr, buf, len, amount);
+    err = (*write)(store, base + runs[0] + addr, index, buf, len, amount);
   else
     /* ARGH, we've got to split up the write ... */
     {
-      mach_msg_type_number_t written;
+      mach_msg_type_number_t try = runs[1] << block_shift, written;
 
       /* Write the initial bit in the first run.  Errors here are returned.  */
-      err = (*write)(store, runs[0] + addr, buf, runs[1], &written);
+      err = (*write)(store, base + runs[0] + addr, index, buf, try, &written);
 
-      if (!err && written == runs[1])
+      if (!err && written == try)
 	/* Wrote the first bit successfully, now do the rest.  Any errors
 	   will just result in a short write.  */
 	{
-	  int block_shift = store->log2_block_size;
-
 	  buf += written;
 	  len -= written;
 
-	  runs += 2;
-	  while (runs != runs_end)
+	  while (store_next_run (store, runs_end, &runs, &base, &index)
+		 && runs[0] >= 0) /* Check for holes.  */
+	    /* Ok, we can write in this run, at least a bit.  */
 	    {
-	      off_t run_addr = runs[0];
-	      off_t run_blocks = runs[1];
+	      mach_msg_type_number_t seg_written;
+	      off_t run_len = (runs[1] << block_shift);
 
-	      if (run_addr < 0)
-		/* A hole!  Can't write here.  Must stop.  */
-		break;
-	      else
-		/* Ok, we can write in this run, at least a bit.  */
-		{
-		  mach_msg_type_number_t seg_written;
-		  off_t run_len = (run_blocks << block_shift);
-		  size_t seg_len = run_len > len ? len : run_len;
+	      try = run_len > len ? len : run_len;
+	      err = (*write)(store, base + runs[0], index, buf, try,
+			     &seg_written);
+	      if (err)
+		break;	/* Ack */
 
-		  err = (*write)(store, run_addr, buf, seg_len, &seg_written);
-		  if (err)
-		    break;	/* Ack */
+	      written += seg_written;
+	      len -= seg_written;
+	      if (len == 0)
+		break;	/* Nothing left to write!  */
 
-		  written += seg_written;
-		  if (seg_written < run_len)
-		    break;	/* Didn't use up the run, we're done.  */
+	      if (seg_written < run_len)
+		break;	/* Didn't use up the run, we're done.  */
 
-		  len -= seg_written;
-		  if (len == 0)
-		    break;	/* Nothing left to write!  */
-
-		  buf += written;
-		}
-
-	      runs += 2;
+	      buf += seg_written;
 	    }
 	}
 
@@ -137,15 +162,17 @@ store_read (struct store *store,
 	    off_t addr, size_t amount, char **buf, size_t *len)
 {
   error_t err;
-  off_t *runs, *runs_end;
+  size_t index;
+  off_t *runs, *runs_end, base;
+  int block_shift = store->log2_block_size;
   store_read_meth_t read = store->meths->read;
 
-  addr = store_find_first_run (store, addr, &runs, &runs_end);
+  addr = store_find_first_run (store, addr, &runs, &runs_end, &base, &index);
   if (addr < 0)
     err = EIO;
-  else if (runs[1] >= amount)
+  else if ((runs[1] << block_shift) >= amount)
     /* The first run has it all... */
-    err = (*read)(store, runs[0] + addr, amount, buf, len);
+    err = (*read)(store, base + runs[0] + addr, index, amount, buf, len);
   else
     /* ARGH, we've got to split up the read ... This isn't fun. */
     {
@@ -153,9 +180,8 @@ store_read (struct store *store,
       /* WHOLE_BUF and WHOLE_BUF_LEN will point to a buff that's large enough
 	 to hold the entire request.  This is initially whatever the user
 	 passed in, but we'll change it as necessary.  */
-      char *whole_buf = *buf, *buf_end = whole_buf;
+      char *whole_buf = *buf, *buf_end;
       size_t whole_buf_len = *len;
-      int block_shift = store->log2_block_size;
 
       /* Read LEN bytes from the store address ADDR into BUF_END.  BUF_END
 	 and AMOUNT are adjusted by the amount actually read.  Whether or not
@@ -166,7 +192,8 @@ store_read (struct store *store,
 	     whole (within one run). */
 	  char *seg_buf = buf_end;
 	  size_t seg_buf_len = len;
-	  error_t err = (*read)(store, addr, len, &seg_buf, &seg_buf_len);
+	  error_t err =
+	    (*read)(store, addr, index, len, &seg_buf, &seg_buf_len);
 	  if (!err)
 	    {
 	      /* If for some bizarre reason, the underlying storage chose not
@@ -192,34 +219,28 @@ store_read (struct store *store,
 	    return err;		/* Punt early, there's nothing to clean up.  */
 	}
 
-      err = seg_read (runs[0] + addr, runs[1] << block_shift, &all);
+      buf_end = whole_buf;
 
-      if (!err && all)
+      err = seg_read (base + runs[0] + addr, runs[1] << block_shift, &all);
+      while (!err && all && amount > 0
+	     && store_next_run (store, runs_end, &runs, &base, &index))
 	{
-	  runs += 2;
-	  while (!err && runs != runs_end && all)
+	  off_t run_addr = runs[0];
+	  off_t run_blocks = runs[1];
+
+	  if (run_addr < 0)
+	    /* A hole!  Can't read here.  Must stop.  */
+	    break;
+	  else
 	    {
-	      off_t run_addr = runs[0];
-	      off_t run_blocks = runs[1];
-
-	      if (run_addr < 0)
-		/* A hole!  Can't read here.  Must stop.  */
-		break;
-	      else if (amount == 0)
-		break;
-	      else
-		{
-		  off_t run_len = (run_blocks << block_shift);
-		  off_t seg_len = run_len > amount ? amount : run_len;
-		  err = seg_read (run_addr, seg_len, &all);
-		}
-
-	      runs +=2;
+	      off_t run_len = (run_blocks << block_shift);
+	      off_t seg_len = run_len > amount ? amount : run_len;
+	      err = seg_read (base + run_addr, seg_len, &all);
 	    }
 	}
 
       /* The actual amount read.  */
-      *len = whole_buf + whole_buf_len - buf_end;
+      *len = buf_end - whole_buf;
       if (*len > 0)
 	err = 0;		/* Return a short read instead of an error.  */
 
