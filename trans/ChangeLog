@@ -1,3 +1,16 @@
+1999-06-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* crash.c: Support three modes of operation, selected by command line
+	switches:
+		-s/--suspend	suspend crashing process (old behavior)
+		-k/--kill	kill crashing process, no core dump
+		-c/--core-file	dump core file
+	(enum crash_action): New type.
+	(crash_how): New variable.
+	(options, crash_argp, trivfs_runtime_argp): New variables.
+	(parse_opt, trivfs_append_args): New functions.
+	(main): Call argp_parse.
+
 1999-05-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* null.c (trivfs_S_io_read): Fix return value.
