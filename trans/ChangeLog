@@ -10,6 +10,7 @@
 	(open_hook): Use trivfs_allow_open instead of readonly.
 	Check whether read is allowed too.
 	(trivfs_modify_stat): Likewise.
+	(clear_buffer): Do nothing if argument is null.
 
 	* streamio.c (stream_name, readonly, rdev, nperopens): Remove
 	superfluous zero initializers.
