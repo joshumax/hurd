@@ -1,3 +1,10 @@
+1998-11-25  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* main.c (S_exec_init): Call _hurd_proc_init with new args set to
+	zero.
+
+	* hashexec.c (check_hashbang): Fix typo: interplen -> interp_len.
+
 Thu Nov  5 15:26:50 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* hashexec.c (check_hashbang): Keep INTERP_LEN with the correct

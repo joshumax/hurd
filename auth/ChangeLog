@@ -1,7 +1,11 @@
+1998-11-27  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* auth.c (main): Call _hurd_proc_init with new args set to zero.
+
 Wed Aug 20 14:01:43 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* auth.c (main): New args for
-	ports_manage_port_operations_multithread. 
+	ports_manage_port_operations_multithread.
 
 Wed Feb 19 23:04:30 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -164,5 +168,3 @@ Fri Apr 29 16:50:50 1994  Michael I Bushnell  (mib@churchy.gnu.ai.mit.edu)
 	* auth.c (main): Fetch hostpriv arg and provide it to
 	startup_essential_task in accord with interface change to
 	startup.defs.
-
-

@@ -1,3 +1,13 @@
+1998-11-29  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* trans-callback.c (_diskfs_translator_callback1_fn): Use size_t*
+	instead of int* for ARGZ_LEN arg.
+
+1998-11-25  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* boot-start.c (diskfs_S_fsys_init): Call _hurd_proc_init with new
+	args set to zero.
+
 Wed Aug 12 23:35:59 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* file-chflags.c (diskfs_S_file_chflags): Only set
