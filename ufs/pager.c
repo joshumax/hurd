@@ -121,7 +121,14 @@ find_address (struct user_pager_info *upi,
 	{
 	  if (*nplock)
 	    rwlock_reader_unlock (*nplock);
-	  return EIO;
+	  if (isread)
+	    return EIO;
+	  else
+	    {
+	      *addr = 0;
+	      *disksize = 0;
+	      return 0;
+	    }
 	}
 
       if (offset + __vm_page_size > np->allocsize)
@@ -216,13 +223,7 @@ pager_write_page (struct user_pager_info *pager,
 	err = EIO;
     }
   else
-    {
-      printf ("Attempt to write unallocated disk\n.");
-      printf ("Object %p\tOffset %#x\n", pager, page);
-      fflush (stdout);
-      err = 0;			/* unallocated disk;
-				   error would be pointless */
-    }
+    err = 0;
 
   if (nplock)
     rwlock_reader_unlock (nplock);

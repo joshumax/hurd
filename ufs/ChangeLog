@@ -1,3 +1,12 @@
+1999-09-04  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* pager.c (find_address): If !ISREAD, then don't return errors for
+	access past NP->allocsize, and clear *ADDR and *DISKSIZE.  These
+	can happen through harmless races against truncate.
+	(pager_write_page): Don't print annoying messages for writes to
+	unallocated disk.  These can happen through harmless races against
+	truncate, and so we should not pester the console with them.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ufs.h: Add #include <sys/mman.h> for munmap decl.
