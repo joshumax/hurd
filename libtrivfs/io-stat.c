@@ -20,9 +20,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "io_S.h"
 
-error_t
-trivfs_S_io_stat (struct protid *cred,
+kern_return_t
+trivfs_S_io_stat (struct trivfs_protid *cred,
 		  struct stat *st)
 {
   error_t err;
