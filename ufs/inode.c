@@ -40,8 +40,6 @@ inode_init ()
   int n;
   for (n = 0; n < INOHSZ; n++)
     nodehash[n] = 0;
-  mutex_init (&dinmaplock);
-  mutex_init (&sinmaplock);
 }
 
 /* Fetch inode INUM, set *NPP to the node structure; 
@@ -165,7 +163,7 @@ diskfs_lost_hardrefs (struct node *np)
   if (np->dn->fileinfo)
     {
       spin_lock (&_libports_portrefcntlock);
-      if (np->fileinfo->p->pi.refcnt == 1)
+      if (np->dn->fileinfo->p->pi.refcnt == 1)
 	{
 	  struct pager *p;
 	  
@@ -182,8 +180,8 @@ diskfs_lost_hardrefs (struct node *np)
 	     give ourselves a reference back so that we are really
 	     allowed to hold the lock.  Then we can do the
 	     unreference. */
-	  p = np->fileinfo->p;
-	  np->fileinfo = 0;
+	  p = np->dn->fileinfo->p;
+	  np->dn->fileinfo = 0;
 	  diskfs_nref (np);
 	  pager_unreference (p);
 
@@ -218,7 +216,7 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = !! di->translator;
+  np->istranslated = !! di->di_translator;
 
   st->st_fstype = FSTYPE_UFS;
   st->st_fsid = pid;
@@ -485,7 +483,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       bcopy (&namelen, buf, sizeof (u_int));
       bcopy (name, buf + sizeof (u_int), namelen);
 
-      bcopy (buf, fsaddr (sblock, blkno), sblock->fs_bsize);
+      bcopy (buf, disk_image + fsaddr (sblock, blkno), sblock->fs_bsize);
       sync_disk_blocks (blkno, sblock->fs_bsize, 1);
 
       np->istranslated = 1;
@@ -512,7 +510,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   blkno = (dino (np->dn->number))->di_trans;
   
   assert (blkno);
-  bcopy (fsaddr (sblock, blkno), buf, sblock->fs_bsize);
+  bcopy (disk_image + fsaddr (sblock, blkno), buf, sblock->fs_bsize);
   diskfs_end_catch_exception ();
   
   datalen = *(u_int *)buf;
