@@ -481,6 +481,45 @@ launch_core_servers (void)
     perror ("fsys_init");
 }
 
+/* Set up the initial value of the standard exec data. */
+void
+init_stdarrays ()
+{
+  auth_t nullauth;
+  mach_port_t pt;
+  int pid = getpid ();
+  mach_port_t *std_port_array;
+  int *std_int_array;
+  
+  std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
+  std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
+  
+  bzero (std_port_array, sizeof (mach_port_t) * INIT_PORT_MAX);
+  bzero (std_int_array, sizeof (int) * INIT_INT_MAX);
+  
+  __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
+  
+  pt = getcwdir ();
+  io_reauthenticate (pt, pid);
+  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CWDIR]);
+  mach_port_deallocate (mach_task_self (), pt);
+  
+  pt = getcrdir ();
+  io_reauthenticate (pt, pid);
+  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CRDIR]);
+  mach_port_deallocate (mach_task_self (), pt);
+  
+  std_port_array[INIT_PORT_AUTH] = nullauth;
+  
+  std_int_array[INIT_UMASK] = CMASK;
+
+  __USEPORT (PROC, proc_setexecdata (port, std_port_array, 
+				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
+				     std_int_array, INIT_INT_MAX));
+}
+  
+
 /* Start the single-user environment.  This can only be done
    when the core servers have fully started.  We know that 
    startup_essential_task is the last thing they do before being
@@ -498,6 +537,8 @@ launch_single_user ()
   task_t foo;
   int fd;
   volatile int run_dev=1;	/* So you can set this from gdb.  */
+
+  init_stdarrays ();
 
   printf ("Hit t for term, else dev: ");
   fflush (stdout);
