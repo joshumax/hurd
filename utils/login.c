@@ -30,6 +30,7 @@
 #include <grp.h>
 #include <netdb.h>
 #include <time.h>
+#include <assert.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -293,6 +294,26 @@ kill_login (process_t proc_server, pid_t pid, int sig)
   while (!err && num_pids > 0);
 }
 
+/* Looks at the login collection LID.  If the root process (with PID == LID)
+   is owned by someone, then exit (0).  Otherwise, return true if the root
+   process still exists, and 0 otherwise.  */
+static int
+watch_login (process_t proc_server, int lid)
+{
+  int owned;
+  error_t err = check_owned (proc_server, lid, &owned);
+
+  if (err == ESRCH)
+    return 0;
+  else
+    assert_perror (err);
+
+  if (owned)
+    exit (0);			/* Our task is done.  */
+
+  return 1;
+}
+
 /* Forks a process which will kill the login session headed by PID after
    TIMEOUT seconds if PID still has no owner.  */
 static void
@@ -300,9 +321,8 @@ dog (time_t timeout, pid_t pid, char **argv)
 {
   if (fork () == 0)
     {
-      int owned;
-      error_t err;
       char buf[25];		/* Be gratuitously pretty.  */
+      char *name = basename (argv[0]);
       time_t left = timeout;
       process_t proc_server = getproc ();
 
@@ -313,46 +333,23 @@ dog (time_t timeout, pid_t pid, char **argv)
 
 	  /* Frob ARGV so that ps show something nice.  */
 	  fmt_named_interval (&tv, 0, buf, sizeof buf);
-	  asprintf (&argv[0], "(watchdog for login %d: %s remaining)", pid, buf);
+	  asprintf (&argv[0], "(watchdog for %s %d: %s remaining)",
+		    name, pid, buf);
 	  argv[1] = 0;
 
 	  sleep (interval);
 	  left -= interval;
+
+	  if (watch_login (proc_server, pid))
+	    break;		/* Login collection root has gone away.  */
 	}
 
-      err = check_owned (proc_server, pid, &owned);
-      if (err == ESRCH)
-	/* The process has gone away.  Maybe someone is trying to play games;
-	   just see if *any* of the remaing processes in the login session
-	   are owned, and give up if so (this can be foiled by setuid
-	   processes, &c, but oh well; they can be set non-executable by
-	   nobody).  */
+      if (watch_login (proc_server, pid))
+	/* The root process has gone away.  */
 	{
-	  size_t num_pids = 20;
-	  pid_t _pids[num_pids], *pids = _pids;
-
-	  err = proc_getloginpids (proc_server, pid, &pids, &num_pids);
-	  if (! err)
-	    {
-	      int i;
-
-	      if (num_pids == 0)
-		exit (0);	/* Login already aborted.  Die silently. */
-
-	      for (i = 0; i < num_pids; i++)
-		if (check_owned (proc_server, pids[i], &owned) == 0 && owned)
-		  exit (0);	/* Give up, luser wins. */
-	    }
-	      
-	  /* None are owned.  Kill session after emitting cryptic, yet
-	     stupid, message. */
 	  putc ('\n', stderr);
 	  error (0, 0, "Beware of dog.");
 	}
-      else if (err)
-	exit (1);		/* Impossible error.... XXX  */
-      else if (owned)
-	exit (0);		/* Use logged in.  */
       else
 	/* Give normal you-forgot-to-login message.  */
 	{
@@ -784,6 +781,9 @@ main(int argc, char *argv[])
   if (err)
     fail (3, err, "Authentication failure", 0);
 
+  err = proc_getsid (proc_server, pid, &sid);
+  assert_perror (err);		/* This should never fail.  */
+
   if (!no_login && count_parent_uids () != 0)
     /* Make a new login collection (but only for real users).  */
     {
@@ -791,22 +791,22 @@ main(int argc, char *argv[])
       if (user && *user)
 	setlogin (user);
       proc_make_login_coll (proc_server);
-    }
 
-  if (eff_uids->num + avail_uids->num == 0 && count_parent_uids () != 0)
-    /* We're transiting from having some uids to having none, which means
-       this is probably a new login session.  Unless specified otherwise, set
-       a timer to kill this session if it hasn't aquired any ids by then.
-       Note that we fork off the timer process before clearing the process
-       owner: because we're interested in killing unowned processes, proc's
-       in-same-login-session rule should apply to us (allowing us to kill
-       them), and this way they can't kill the watchdog (because it *does*
-       have an owner).  */
-    {
-      char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
-      time_t timeout = to ? atoi (to) : 0;
-      if (timeout)
-	dog (timeout, pid, argv);
+      if (eff_uids->num + avail_uids->num == 0)
+	/* We're transiting from having some uids to having none, which means
+	   this is probably a new login session.  Unless specified otherwise,
+	   set a timer to kill this session if it hasn't aquired any ids by
+	   then.  Note that we fork off the timer process before clearing the
+	   process owner: because we're interested in killing unowned
+	   processes, proc's in-same-login-session rule should apply to us
+	   (allowing us to kill them), and this way they can't kill the
+	   watchdog (because it *does* have an owner).  */
+	{
+	  char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
+	  time_t timeout = to ? atoi (to) : 0;
+	  if (timeout)
+	    dog (timeout, pid, argv);
+	}
     }
 
   if (eff_uids->num > 0)
@@ -996,8 +996,7 @@ main(int argc, char *argv[])
   /* No more authentications to fail, so cross our fingers and add our utmp
      entry.  */
   
-  err = proc_getsid (proc_server, pid, &sid);
-  if (!err && pid == sid)
+  if (pid == sid)
     /* Only add utmp entries for the session leader.  */
     add_utmp_entry (args, args_len, !parent_has_uid (0));
 
