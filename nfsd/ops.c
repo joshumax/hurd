@@ -1,5 +1,5 @@
 /* NFS daemon protocol operations
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,6 +24,7 @@
 #include <hurd/paths.h>
 #include <hurd.h>
 #include <dirent.h>
+#include <string.h>
 #include <sys/mman.h>
 
 #include "nfsd.h"
@@ -47,7 +48,7 @@ op_getattr (struct cache_handle *c,
 {
   struct stat st;
   error_t err;
-  
+
   err = io_stat (c->port, &st);
   if (!err)
     *reply = encode_fattr (*reply, &st, version);
@@ -78,13 +79,13 @@ complete_setattr (mach_port_t port,
     err = file_chown (port, uid, gid);
   if (err)
     return err;
-  
+
   size = ntohl (*p++);
   if (size != -1 && size != st.st_size)
     err = file_set_size (port, size);
   if (err)
     return err;
-  
+
   atime.seconds = ntohl (*p++);
   atime.microseconds = ntohl (*p++);
   mtime.seconds = ntohl (*p++);
@@ -133,7 +134,7 @@ op_setattr (struct cache_handle *c,
     err = io_stat (c->port, &st);
   if (err)
     return err;
-  
+
   *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
@@ -153,7 +154,7 @@ op_lookup (struct cache_handle *c,
   struct stat st;
 
   decode_name (p, &name);
-  
+
   err = dir_lookup (c->port, name, O_NOTRANS, 0, &do_retry, retry_name,
 		    &newport);
   free (name);
@@ -163,13 +164,13 @@ op_lookup (struct cache_handle *c,
       && (do_retry != FS_RETRY_NORMAL
 	  || retry_name[0] != '\0'))
     err = EACCES;
-  
+
   if (!err)
     err = io_stat (newport, &st);
-  
+
   if (err)
     return err;
-  
+
   newc = create_cached_handle (*(int *)c->handle, c, newport);
   if (!newc)
     return ESTALE;
@@ -181,13 +182,13 @@ op_lookup (struct cache_handle *c,
 static error_t
 op_readlink (struct cache_handle *c,
 	     int *p,
-	     int **reply, 
+	     int **reply,
 	     int version)
 {
   char buf[2048], *transp = buf;
   mach_msg_type_number_t len = sizeof (buf);
   error_t err;
-  
+
   /* Shamelessly copied from the libc readlink */
   err = file_get_translator (c->port, &transp, &len);
   if (err)
@@ -200,9 +201,9 @@ op_readlink (struct cache_handle *c,
   if (len < sizeof (_HURD_SYMLINK)
       || memcmp (transp, _HURD_SYMLINK, sizeof (_HURD_SYMLINK)))
     return EINVAL;
-  
+
   transp += sizeof (_HURD_SYMLINK);
-  
+
   *reply = encode_string (*reply, transp);
 
   if (transp != buf)
@@ -232,7 +233,7 @@ op_read (struct cache_handle *c,
 
   offset = ntohl (*p++);
   count = ntohl (*p++);
-  
+
   err = io_read (c->port, &bp, &buflen, offset, count);
   if (err)
     {
@@ -240,11 +241,11 @@ op_read (struct cache_handle *c,
 	munmap (bp, buflen);
       return err;
     }
-  
+
   err = io_stat (c->port, &st);
   if (err)
     return err;
-  
+
   *reply = encode_fattr (*reply, &st, version);
   *reply = encode_data (*reply, bp, buflen);
 
@@ -272,7 +273,7 @@ op_write (struct cache_handle *c,
   p++;
   count = ntohl (*p++);
   bp = (char *) *reply;
-  
+
   while (count)
     {
       err = io_write (c->port, bp, count, offset, &amt);
@@ -284,7 +285,7 @@ op_write (struct cache_handle *c,
       bp += amt;
       offset += amt;
     }
-  
+
   file_sync (c->port, 1, 0);
 
   err = io_stat (c->port, &st);
@@ -313,14 +314,14 @@ op_create (struct cache_handle *c,
 
   p = decode_name (p, &name);
   mode = ntohl (*p++);
-  
+
   err = dir_lookup (c->port, name, O_NOTRANS | O_CREAT | O_TRUNC, mode,
 		    &do_retry, retry_name, &newport);
   if (!err
       && (do_retry != FS_RETRY_NORMAL
 	  || retry_name[0] != '\0'))
     err = EACCES;
-  
+
   if (err)
     return err;
 
@@ -328,7 +329,7 @@ op_create (struct cache_handle *c,
     err = io_stat (newport, &st);
   if (err)
     goto errout;
-  
+
   /* NetBSD ignores most of the setattr fields given; that's good enough
      for me too. */
 
@@ -342,7 +343,7 @@ op_create (struct cache_handle *c,
     }
   if (err)
     goto errout;
-  
+
   /* ignore times */
 
   if (statchanged)
@@ -360,7 +361,7 @@ op_create (struct cache_handle *c,
   newc = create_cached_handle (*(int *)c->handle, c, newport);
   if (!newc)
     return ESTALE;
-  
+
   *reply = encode_fhandle (*reply, newc->handle);
   *reply = encode_fattr (*reply, &st, version);
   return 0;
@@ -374,12 +375,12 @@ op_remove (struct cache_handle *c,
 {
   error_t err;
   char *name;
-  
+
   decode_name (p, &name);
-  
+
   err = dir_unlink (c->port, name);
   free (name);
-  
+
   return 0;
 }
 
@@ -392,11 +393,11 @@ op_rename (struct cache_handle *fromc,
   struct cache_handle *toc;
   char *fromname, *toname;
   error_t err = 0;
-  
+
   p = decode_name (p, &fromname);
   p = lookup_cache_handle (p, &toc, fromc->ids);
   decode_name (p, &toname);
-  
+
   if (!toc)
     err = ESTALE;
   if (!err)
@@ -415,15 +416,15 @@ op_link (struct cache_handle *filec,
   struct cache_handle *dirc;
   char *name;
   error_t err = 0;
-  
+
   p = lookup_cache_handle (p, &dirc, filec->ids);
   decode_name (p, &name);
-  
+
   if (!dirc)
     err = ESTALE;
   if (!err)
     err = dir_link (dirc->port, filec->port, name, 1);
-  
+
   free (name);
   return err;
 }
@@ -487,7 +488,7 @@ op_mkdir (struct cache_handle *c,
 
   p = decode_name (p, &name);
   mode = ntohl (*p++);
-  
+
   err = dir_mkdir (c->port, name, mode);
 
   if (err)
@@ -495,7 +496,7 @@ op_mkdir (struct cache_handle *c,
       free (name);
       return err;
     }
-  
+
   err = dir_lookup (c->port, name, O_NOTRANS, 0, &do_retry,
 		    retry_name, &newport);
   free (name);
@@ -505,14 +506,14 @@ op_mkdir (struct cache_handle *c,
     err = EACCES;
   if (err)
     return err;
-  
+
   /* Ignore the rest of the sattr structure */
 
   if (!err)
     err = io_stat (newport, &st);
   if (err)
     return err;
-  
+
   newc = create_cached_handle (*(int *)c->handle, c, newport);
   if (!newc)
     return ESTALE;
@@ -529,7 +530,7 @@ op_rmdir (struct cache_handle *c,
 {
   char *name;
   error_t err;
-  
+
   decode_name (p, &name);
 
   err = dir_rmdir (c->port, name);
@@ -590,7 +591,7 @@ op_readdir (struct cache_handle *c,
       *r++ = htonl (0);		/* no more entries */
       *r++ = htonl (0);		/* not EOF */
     }
-  
+
   *reply = r;
 
   if (buf)
@@ -599,7 +600,7 @@ op_readdir (struct cache_handle *c,
   return 0;
 }
 
-static size_t 
+static size_t
 count_readdir_buffersize (int *p, int version)
 {
   return ntohl (*++p);		/* skip COOKIE; return COUNT  */
@@ -613,7 +614,7 @@ op_statfs (struct cache_handle *c,
 {
   struct statfs st;
   error_t err;
-    
+
   err = file_statfs (c->port, &st);
   if (!err)
     *reply = encode_statfs (*reply, &st);
@@ -629,9 +630,9 @@ op_mnt (struct cache_handle *c,
   file_t root;
   struct cache_handle *newc;
   char *name;
-  
+
   decode_name (p, &name);
-  
+
   root = file_name_lookup (name, 0, 0);
   if (!root)
     {
@@ -654,11 +655,11 @@ op_getport (struct cache_handle *c,
 	    int version)
 {
   int prog, vers, prot;
-  
+
   prog = ntohl (*p++);
   vers = ntohl (*p++);
   prot = ntohl (*p++);
-  
+
   if (prot != IPPROTO_UDP)
     *(*reply)++ = htonl (0);
   else if ((prog == MOUNTPROG && vers == MOUNTVERS)
@@ -668,12 +669,12 @@ op_getport (struct cache_handle *c,
     *(*reply)++ = htonl (PMAPPORT);
   else
     *(*reply)++ = 0;
-  
+
   return 0;
 }
 
 
-struct proctable nfs2table = 
+struct proctable nfs2table =
 {
   NFS2PROC_NULL,		/* first proc */
   NFS2PROC_STATFS,		/* last proc */
@@ -699,7 +700,7 @@ struct proctable nfs2table =
   }
 };
 
-   
+
 struct proctable mounttable =
 {
   MOUNTPROC_NULL,		/* first proc */
@@ -714,7 +715,7 @@ struct proctable mounttable =
   }
 };
 
-struct proctable pmaptable = 
+struct proctable pmaptable =
 {
   PMAPPROC_NULL,		/* first proc */
   PMAPPROC_CALLIT,		/* last proc */
