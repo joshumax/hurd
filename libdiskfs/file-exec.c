@@ -52,7 +52,7 @@ diskfs_S_file_exec (struct protid *cred,
     return EOPNOTSUPP;
 
   if (diskfs_exec == MACH_PORT_NULL)
-    diskfs_exec = path_name_lookup (_SERVERS_EXEC, 0);
+    diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0);
   if (diskfs_exec == MACH_PORT_NULL)
     return EOPNOTSUPP;
   
