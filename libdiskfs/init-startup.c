@@ -203,6 +203,5 @@ _diskfs_init_completed ()
   return;
 
  errout:
-  fprintf (stderr, "Cannot request shutdown notification: %s\n",
-	   strerror (err));
+  error (0, err, "Cannot request shutdown notification");
 }
