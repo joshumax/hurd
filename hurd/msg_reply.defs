@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-subsystem msg 23100;		/* must match msg.defs + 100 */
+subsystem msg_reply 23100;		/* must match msg.defs + 100 */
 
 #include <hurd/hurd_types.defs>
 
