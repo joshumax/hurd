@@ -130,7 +130,7 @@ ps_tty_short_name(ps_tty_t tty)
 	      {
 		if (name[pfx_len] == '\0')
 		  tty->short_name = abbrev->subst;
-		else if (subst[0] = '\0')
+		else if ((subst[0] = '\0'))
 		  tty->short_name = name + pfx_len;
 		else
 		  {
