@@ -1,5 +1,5 @@
 /* Test filesystem behavior
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993,94,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -38,13 +38,13 @@ int check_refs (mach_port_t port) /* To call from gdb */
   return err ? -err : refs;
 }
 
-void
+int
 main ()
 {
   mach_port_t root;
+#if 0
   extern file_t *_hurd_init_dtable;
   char string[] = "Did this get into the file?\n";
-#if 0
   file_t filetowrite;
   retry_type retry;
   char pathbuf[1024];
@@ -90,4 +90,6 @@ main ()
 
   printf ("All done.\n");
   malloc (0);
+
+  return 0;
 }
