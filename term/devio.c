@@ -71,6 +71,8 @@ static struct port_info *phys_reply_pi;
 
 static device_t device_master;
 
+static int output_stopped;
+
 /* Forward */
 static void devio_desert_dtr ();
 
@@ -208,6 +210,12 @@ devio_start_output ()
   if (!size || output_pending || (termflags & USER_OUTPUT_SUSP))
     return;
 
+  if (output_stopped)
+    {
+      device_set_status (phys_device, TTY_START, 0, 0);
+      output_stopped = 0;
+    }
+
   /* Copy characters onto PENDING_OUTPUT, not bothering
      those already there. */
 
@@ -342,6 +350,14 @@ devio_abandon_physical_output ()
   npending_output = 0;
   output_pending = 0;
 }
+
+static void
+devio_suspend_physical_output ()
+{
+  device_set_status (phys_device, TTY_STOP, 0, 0);
+  output_stopped = 1;
+}
+
 
 static int
 devio_pending_output_size ()
@@ -617,6 +633,7 @@ struct bottomhalf devio_bottom =
   devio_set_break,
   devio_clear_break,
   devio_abandon_physical_output,
+  devio_suspend_physical_output,
   devio_pending_output_size,
   devio_assert_dtr,
   devio_desert_dtr,
