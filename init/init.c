@@ -81,6 +81,7 @@ mach_port_t bootport;
 task_t authtask, proctask, fstask;
 
 mach_port_t default_ports[INIT_PORT_MAX];
+mach_port_t default_dtable[3];
 
 char **global_argv;
 
@@ -171,7 +172,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 	  err = file_exec (file, *task, 0,
 			   NULL, 0, /* No args.  */
 			   NULL, 0, /* No env.  */
-			   NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No dtable.  */
+			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 			   NULL, 0, /* No info in init ints.  */
 			   NULL, 0, NULL, 0);
@@ -214,7 +215,7 @@ run_for_real (char *filename)
       err = file_exec (file, task, 0,
 		       NULL, 0, /* No args.  */
 		       NULL, 0, /* No env.  */
-		       NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No dtable.  */
+		       default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		       default_ports, MACH_MSG_TYPE_COPY_SEND,
 		       INIT_PORT_MAX,
 		       NULL, 0, /* No info in init ints.  */
@@ -274,6 +275,10 @@ main (int argc, char **argv, char **envp)
 	break;
       }
   
+  default_dtable[0] = getdport (0);
+  default_dtable[1] = getdport (1);
+  default_dtable[2] = getdport (2);
+
   run ("/hurd/proc", default_ports, &proctask);
   run ("/hurd/auth", default_ports, &authtask);
   
