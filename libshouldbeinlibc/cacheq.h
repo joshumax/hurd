@@ -69,8 +69,10 @@ struct cacheq
      either end of a linked list composed of all the elements of the cache.
      This list will always be the same length -- if an element is `removed',
      its entry is simply marked inactive, and moved to the LRU end of the list
-     so it will be reused first.  */
-  struct cacheq_hdr *lru, *mru;
+     so it will be reused first.  These pointers are of type `void *' so they
+     can be conveniently used by client code (see comment in struct
+     cacheq_hdr). */
+  void *lru, *mru;
 };
 
 /* Move ENTRY to the most-recently-used end of CACHEQ.  */
