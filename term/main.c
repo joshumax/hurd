@@ -172,7 +172,6 @@ main (int argc, char **argv)
   bzero (&termstate, sizeof (termstate));
   termflags = NO_CARRIER | NO_OWNER;
   mutex_init (&global_lock);
-  mutex_init (&input_path_lock);
 
   inputq = create_queue (256, 100, 300);
   rawq = create_queue (256, 100, 300);
