@@ -446,6 +446,17 @@ launch_system (void)
 
   /* Give the bootstrap FS its proc and auth ports.  */
   proc_task2proc (procserver, fstask, &fsproc);
+
+  /* Tell the proc server our msgport.  Be sure to do this after we
+     are all done making requests of proc.  Once we have done this
+     RPC, proc assumes it can send us requests, so we cannot block on
+     proc again before accepting more RPC requests!  However, we must
+     do this befory calling fsys_init, because fsys_init causes the
+     exec server to block waiting on our message yort.*/
+  proc_setmsgport (procserver, startup, &old);
+  if (old)
+    mach_port_deallocate (mach_task_self (), old);
+
   if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
 			 authserver))
     perror ("fsys_init");
@@ -453,13 +464,6 @@ launch_system (void)
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
   fflush (stdout);
-
-  /* Tell the proc server our msgport.  Be sure to do this last.  Once we
-     have done this RPC, proc assumes it can send us requests, so we cannot
-     block on proc again before accepting more RPC requests!  */
-  proc_setmsgport (procserver, startup, &old);
-  if (old)
-    mach_port_deallocate (mach_task_self (), old);
 }
 
 
