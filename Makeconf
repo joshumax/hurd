@@ -473,7 +473,7 @@ vpath libutil.% $(libdir)/
 vpath %.defs $(top_srcdir)/hurd
 
 # These we want to find in the libc include directory...
-mach_defs_names = bootstrap default_pager default_pager_helper exc mach mach4 \
+mach_defs_names = bootstrap exc mach mach4 \
 	mach_host mach_norma mach_port mach_timer_reply memory_object \
 	memory_object_default norma_task notify
 device_defs_names = dev_forward device device_reply device_request
