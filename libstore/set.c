@@ -20,13 +20,16 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <malloc.h>
+
 #include "store.h"
 
 /* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
 error_t
 store_set_runs (struct store *store, off_t *runs, unsigned runs_len)
 {
-  off_t *copy = malloc (runs_len * sizeof (off_t));
+  unsigned size = runs_len * sizeof (off_t);
+  off_t *copy = malloc (size);
 
   if (!copy)
     return ENOMEM;
@@ -34,8 +37,12 @@ store_set_runs (struct store *store, off_t *runs, unsigned runs_len)
   if (store->runs)
     free (store->runs);
 
+  bcopy (runs, copy, size);
   store->runs = copy;
   store->runs_len = runs_len;
+
+  if (store->block_size > 0)
+    _store_derive (store);
 
   return 0;
 }
@@ -45,11 +52,26 @@ error_t
 store_set_name (struct store *store, char *name)
 {
   char *copy = malloc (strlen (name) + 1);
+
   if (!copy)
     return ENOMEM;
+
   if (store->name)
     free (store->name);
+
   strcpy (copy, name);
   store->name = copy;
+
   return 0;
+}
+
+/* If STORE was created using store_create, remove the reference to the
+   source from which it was created.  */
+void store_close_source (struct store *store)
+{
+  if (store->source)
+    {
+      mach_port_deallocate (mach_task_self (), store->source);
+      store->source = MACH_PORT_NULL;
+    }
 }
