@@ -1,5 +1,5 @@
-/*
-   Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+/* File execution (file_exec RPC) for diskfs servers, using exec server.
+   Copyright (C) 1993,94,95,96,97,98,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -132,7 +132,18 @@ diskfs_S_file_exec (struct protid *cred,
 #endif
 
   if (! err)
-    err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, cred->po),
+    /* Make a new peropen for the exec server to access the file, since any
+       seeking the exec server might want to do should not affect the
+       original peropen on which file_exec was called.  (The new protid for
+       this peropen clones the caller's iouser to preserve the caller's
+       authentication credentials.)  The new peropen's openmodes must have
+       O_READ even if the caller had only O_EXEC privilege, so the exec
+       server can read the executable file.  We also include O_EXEC so that
+       the exec server can turn this peropen into a file descriptor in the
+       target process and permit it to exec its /dev/fd/N pseudo-file.  */
+    err = diskfs_create_protid (diskfs_make_peropen (np,
+						     O_READ|O_EXEC,
+						     cred->po),
 				cred->user, &newpi);
 
   if (! err)
