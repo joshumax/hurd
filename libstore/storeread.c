@@ -7,7 +7,9 @@
 #include "store.h"
 
 struct argp_option options[] = {
-  {0}
+  {"file", 'f', 0, 0, "Use file IO instead of the raw device"},
+  {"block-size", 'b', "BYTES", 0, "Set the file block size"},
+  {0, 0}
 };
 char *arg_doc = "FILE [ADDR [LENGTH]]...";
 char *doc = "ADDR is in blocks, and defaults to 0; LENGTH is in bytes, and defaults to the remainder of FILE.";
@@ -17,7 +19,7 @@ main (int argc, char **argv)
 {
   struct store *store = 0;
   off_t addr = -1;
-  int dumped = 0;
+  int dumped = 0, use_file_io = 0, block_size = 0;
 
   void dump (off_t addr,  ssize_t len)
     {
@@ -38,6 +40,9 @@ main (int argc, char **argv)
     {
       switch (key)
 	{
+	case 'f': use_file_io = 1; break;
+	case 'b': block_size = atoi (arg); break;
+
 	case ARGP_KEY_ARG:
 	  if (! store)
 	    {
@@ -45,10 +50,27 @@ main (int argc, char **argv)
 	      file_t source = file_name_lookup (arg, O_READ, 0);
 	      if (errno)
 		error (2, errno, "%s", arg);
-	      err = store_create (source, &store);
+	      if (use_file_io)
+		if (block_size)
+		  {
+		    off_t runs[2];
+		    struct stat stat;
+
+		    err = io_stat (source, &stat);
+		    if (! err)
+		      {
+			runs[0] = 0;
+			runs[1] = stat.st_size / block_size;
+			err = _store_file_create (source,
+						  block_size, runs, 2, &store);
+		      }
+		  }
+		else
+		  err = store_file_create (source, &store);
+	      else
+		err = store_create (source, &store);
 	      if (err)
 		error (err, 3, "%s", arg);
-	      mach_port_deallocate (mach_task_self (), source);
 	    }
 	  else if (addr < 0)
 	    addr = atoi (arg);
