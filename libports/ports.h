@@ -24,6 +24,7 @@
 #include <mach.h>
 #include <stdlib.h>
 #include <hurd.h>
+#include <mach/notify.h>
 
 struct port_info
 {
@@ -81,8 +82,44 @@ struct rpc_info
 {
   thread_t thread;
   struct rpc_info *next, **prevp;
+  struct rpc_notify *notifies;
 };
 
+/* An rpc has requested interruption on a port notification.  */
+struct rpc_notify
+{
+  struct rpc_info *rpc;		/* Which rpc this is for. */
+  struct ports_notify *notify;	/* Which port/request this refers too. */
+
+  struct rpc_notify *next;	/* Notify for this rpc. */
+  unsigned pending;		/* Number of requests this represents.  */
+
+  struct rpc_notify *next_req;	/* rpc for this notify.  */
+  struct rpc_notify **prev_req_p; /* who points to this rpc_notify. */
+};
+
+/* A notification request on a (not necessarily registered) port.  */
+struct ports_notify
+{
+  mach_port_t port;		/*  */
+  mach_msg_id_t what;		/* MACH_NOTIFY_* */
+  unsigned pending : 1;		/* There's a notification outstanding.  */
+  struct mutex lock;
+
+  struct rpc_notify *reqs;	/* Which rpcs are notified by this port. */
+  struct ports_notify *next, **prevp; /* Linked list of all notified ports.  */
+};
+
+/* A linked list of ports that have had notification requested.  */
+extern struct ports_notify *_ports_notifications;
+
+/* Free lists for notify structures.  */
+extern struct ports_notify *_ports_free_ports_notifies;
+extern struct rpc_notify *_ports_free_rpc_notifies;
+
+/* Remove RPC from the list of notified rpcs, cancelling any pending
+   notifications.  _PORTS_LOCK should be held.  */
+void _ports_remove_notified_rpc (struct rpc_info *rpc);
 
 /* Port creation and port right frobbing */
 
@@ -155,6 +192,7 @@ void ports_port_deref_weak (void *port);
    when one arrives, call this routine for the PORT the message was
    sent to, providing the MSCOUNT from the notification. */
 void ports_no_senders (void *port, mach_port_mscount_t mscount);
+void ports_dead_name (void *notify, mach_port_t dead_name);
 
 /* Block port creation of new ports in CLASS.  Return the number
    of ports currently in CLASS. */
@@ -249,6 +287,24 @@ void ports_resume_all_rpcs (void);
 
 /* Cancel (with thread_cancel) any RPC's in progress on PORT. */
 void ports_interrupt_rpc (void *port);
+
+/* Arrange for hurd_cancel to be called on RPC's thread if OBJECT gets notified
+   that any of the things in COND have happened to PORT.  RPC should be an
+   rpc on OBJECT.  */
+error_t
+ports_interrupt_rpc_on_notification (void *object,
+				     struct rpc_info *rpc,
+				     mach_port_t port, mach_msg_id_t what);
+
+/* Arrange for hurd_cancel to be called on the current thread, which should
+   be an rpc on OBJECT, if PORT gets notified with the condition WHAT.  */
+error_t
+ports_interrupt_self_on_notification (void *object,
+				      mach_port_t port, mach_msg_id_t what);
+
+/* Interrupt any rpcs on OBJECT that have requested such.  */
+void ports_interrupt_notified_rpcs (void *object, mach_port_t port,
+				    mach_msg_id_t what);
 
 /* Default servers */
 
