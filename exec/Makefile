@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
+# Copyright (C) 1993, 94, 95, 96, 98, 99 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -32,8 +32,6 @@ DIST_FILES = core.c gcore.c elfcore.c exectrans.c
 HURDLIBS=trivfs fshelp iohelp ports ihash threads shouldbeinlibc
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
-
-exec.static-LDFLAGS += -static
 
 include ../Makeconf
 
