@@ -48,6 +48,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int mustbedir = 0;
   int amt;
   int type;
+  struct protid *newpi;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -173,15 +174,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  && (np->istranslated || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
-	  
+
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  dirport = (ports_get_right
-		     (diskfs_make_protid
-		      (diskfs_make_peropen (dnp, 0, dircred->po->dotdotport),
-		       0, 0, 0, 0)));
+	  newpi = diskfs_make_protid (diskfs_make_peropen (dnp, 0,
+							   dircred->po->dotdotport),
+				      0, 0, 0, 0);
+	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
+	  ports_port_deref (newpi);
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 	  
@@ -341,12 +343,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   flags &= ~OPENONLY_STATE_MODES;
       
-  *returned_port = (ports_get_right
-		    (diskfs_make_protid 
-		     (diskfs_make_peropen (np, flags, dircred->po->dotdotport),
-		      dircred->uids, dircred->nuids,
-		      dircred->gids, dircred->ngids)));
-
+  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags, 
+						   dircred->po->dotdotport),
+			      dircred->uids, dircred->nuids,
+			      dircred->gids, dircred->ngids);
+  *returned_port = ports_get_right (newpi);
+  ports_port_deref (newpi);
   
  out:
   if (np)
