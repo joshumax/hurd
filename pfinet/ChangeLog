@@ -1,3 +1,8 @@
+2000-04-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* glue-include/asm/byteorder.h: Include <hurd.h> early on,
+	to get the things it #include's that need __BYTE_ORDER to work.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* main.c (arrange_shutdown_notification): Don't use MAKE_SEND in

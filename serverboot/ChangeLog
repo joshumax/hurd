@@ -1,3 +1,8 @@
+2000-04-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* panic.c: Include <stdarg.h> instead of <varargs.h>.
+	(panic): Use stdarg style.
+
 2000-01-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file_io.h: Include "../ext2fs/ext2_fs.h" instead of "ext2_fs.h".
