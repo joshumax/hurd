@@ -1,3 +1,12 @@
+1997-08-20  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (_fs_check_mounted): file_get_translator_cntl can also
+	return ENXIO for an inactive translator.
+
+1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh (mkdev): Handle devices of the form "cd*".
+
 1997-07-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh (time): Use /hurd/storeio instead of /hurd/devport.
