@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,5 +24,7 @@ trivfs_clean_cntl (void *arg)
 {
   struct trivfs_control *cntl = arg;
   
+  mach_port_destroy (mach_task_self (), cntl->filesys_id);
+  mach_port_destroy (mach_task_self (), cntl->file_id);
   mach_port_deallocate (mach_task_self (), cntl->underlying);
 }
