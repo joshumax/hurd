@@ -1,3 +1,8 @@
+1997-08-27  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (parse_common_opt): Turn on debugging when there *aren't*
+	any errors...
+
 1997-08-22  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (parse_common_opt): Release DEBUG_LOCK even if we get an
