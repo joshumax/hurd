@@ -30,7 +30,8 @@
    reference to SOURCE is created (but may be destroyed with
    store_close_source).  */
 error_t
-store_create (file_t source, int flags, struct store_class *classes,
+store_create (file_t source, int flags,
+	      const struct store_class *const *classes,
 	      struct store **store)
 {
   error_t err;
