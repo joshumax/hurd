@@ -19,9 +19,6 @@
 #include <strings.h>
 #include <stdio.h>
 
-spin_lock_t pagerlistlock = SPIN_LOCK_INITIALIZER;
-struct user_pager_info *filepagerlist;
-
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
@@ -367,14 +364,15 @@ pager_clear_user_data (struct user_pager_info *upi)
       upi->np->dn->fileinfo = 0;
       spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
-      spin_lock (&pagerlistlock);
-      *upi->prevp = upi->next;
-      if (upi->next)
-	upi->next->prevp = upi->prevp;
-      spin_unlock (&pagerlistlock);
     }
   free (upi);
 }
+
+void
+pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
+{
+}
+    
 
 
 
@@ -463,14 +461,6 @@ diskfs_get_filemap (struct node *np)
       upi->p = pager_create (upi, pager_bucket,
 			     MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
-
-      spin_lock (&pagerlistlock);
-      upi->next = filepagerlist;
-      upi->prevp = &filepagerlist;
-      if (upi->next)
-	upi->next->prevp = &upi->next;
-      filepagerlist = upi;
-      spin_unlock (&pagerlistlock);
     }
   right = pager_get_port (np->dn->fileinfo->p);
   spin_unlock (&node2pagelock);
@@ -531,64 +521,39 @@ diskfs_get_filemap_pager_struct (struct node *np)
   return np->dn->fileinfo->p;
 }
 
-/* Call function FUNC (which takes one argument, a pager) on each pager, with
-   all file pagers being processed before the disk pager.  Make the calls
-   while holding no locks. */
-static void
-pager_traverse (void (*func)(struct user_pager_info *))
-{
-  struct user_pager_info *p;
-  struct item {struct item *next; struct user_pager_info *p;} *list = 0;
-  struct item *i;
-  
-  spin_lock (&pagerlistlock);
-  for (p = filepagerlist; p; p = p->next)
-    {
-      i = alloca (sizeof (struct item));
-      i->next = list;
-      list = i;
-      ports_port_ref (p->p);
-      i->p = p;
-    }
-  spin_unlock (&pagerlistlock);
-  
-  for (i = list; i; i = i->next)
-    {
-      (*func)(i->p);
-      ports_port_deref (i->p->p);
-    }
-  
-  (*func)(diskpager);
-}
-
 /* Shutdown all the pagers. */
 void
 diskfs_shutdown_pager ()
 {
-  void shutdown_one (struct user_pager_info *p)
+  error_t shutdown_one (struct pager *p)
     {
-      pager_shutdown (p->p);
+      /* Make sure the disk pager is done last. */
+      if (p->upi != diskpager)
+	pager_shutdown (p);
+      return 0;
     }
 
   copy_sblock ();
   write_all_disknodes ();
-  pager_traverse (shutdown_one);
+  ports_bucket_iterate (pager_bucket, shutdown_one);
+  pager_shutdown (diskpager->p);
 }
 
 /* Sync all the pagers. */
 void
 diskfs_sync_everything (int wait)
 {
-  void sync_one (struct user_pager_info *p)
+  error_t sync_one (struct pager *p)
     {
+      /* Make sure the disk pager is done last. */
       if (p != diskpager)
-	pager_sync (p->p, wait);
-      else
-	sync_disk (wait);
+	pager_sync (p, wait);
+      return 0;
     }
   
   copy_sblock ();
   write_all_disknodes ();
-  pager_traverse (sync_one);
+  ports_bucket_iterate (pager_bucket, sync_one);
+  sync_disk (wait);
 }
   
