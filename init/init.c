@@ -200,29 +200,35 @@ run_for_real (char *filename)
 {
   file_t file;
   error_t err;
-
-  file = path_lookup (filename, O_EXEC, 0);
-  if (file == MACH_PORT_NULL)
-    perror (filename);
-  else
+  char buf[512];
+  task_t task;
+  
+  do
     {
-      task_t task;
-      task_create (mach_task_self (), 0, &task);
-      proc_child (procserver, task);
-      proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
-      printf ("Pausing for %s\n", filename);
-      getchar ();
-      err = file_exec (file, task, 0,
-		       NULL, 0, /* No args.  */
-		       NULL, 0, /* No env.  */
-		       default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-		       default_ports, MACH_MSG_TYPE_COPY_SEND,
-		       INIT_PORT_MAX,
-		       NULL, 0, /* No info in init ints.  */
-		       NULL, 0, NULL, 0);
-      mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
-      mach_port_deallocate (mach_task_self (), task);
+      printf ("File name [%s]: ", filename);
+      if (getstring (buf, sizeof (buf)) && *buf)
+	filename = buf;
+      file = path_lookup (filename, O_EXEC, 0);
+      if (!file)
+	perror (filename);
     }
+  while (!file);
+
+  task_create (mach_task_self (), 0, &task);
+  proc_child (procserver, task);
+  proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
+  printf ("Pausing for %s\n", filename);
+  getchar ();
+  err = file_exec (file, task, 0,
+		   NULL, 0, /* No args.  */
+		   NULL, 0, /* No env.  */
+		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+		   default_ports, MACH_MSG_TYPE_COPY_SEND,
+		   INIT_PORT_MAX,
+		   NULL, 0, /* No info in init ints.  */
+		   NULL, 0, NULL, 0);
+  mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
+  mach_port_deallocate (mach_task_self (), task);
   mach_port_deallocate (mach_task_self (), file);
 }
 
