@@ -1,5 +1,5 @@
 /* Write ELF core dump files for GNU Hurd.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -174,10 +174,10 @@ dump_core (task_t task, file_t file, off_t corelimit,
   struct note_header
   {
     ElfW(Nhdr) note;
-    char name[4];
-  };
+    char name[(sizeof "CORE" + 3) &~ 3];
+  } __attribute__ ((packed));
 #define NOTE_HEADER(type, size) \
-  ((struct note_header) { { 4, (size), (type) }, "CORE" })
+  ((struct note_header) { { sizeof "CORE", (size), (type) }, "CORE" })
   inline error_t write_note (struct note_header *hdr)
     {
       error_t err = 0;
@@ -190,13 +190,13 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	  err = io_write (file, data, size, offset, &wrote);
 	  if (err)
 	    return err;
-	  offset = (offset + wrote + 3) &~ 3; /* Pad it to word alignment.  */
 	  if (wrote > size)
-	    break;
+	    return EGRATUITOUS;
 	  data += wrote;
 	  size -= wrote;
 	}
-      return err;
+      offset = (offset + wrote + 3) &~ 3; /* Pad it to word alignment.  */
+      return 0;
     }
 
   struct vm_region_list
@@ -278,7 +278,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   }
 
   /* Now we start laying out the file.  */
-  offset = round_page (sizeof hdr + ((nregions + 1) * sizeof *phdrs));
+  offset = sizeof hdr + ((nregions + 1) * sizeof *phdrs);
 
   /* Final check for tiny core limit.  From now on, we will simply truncate
      the file at CORELIMIT but not change the contents of what we write.  */
@@ -477,7 +477,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
   ph->p_filesz = offset - notestart;
   ++ph;
 
-  /* Now make ELF program headers for each of the record memory regions.
+  /* Now make ELF program headers for each of the recorded memory regions.
      Consistent with the Linux kernel, we create PT_LOAD headers with
      p_filesz = 0 for the read-only segments that we are not dumping
      into the file.  */
@@ -492,7 +492,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
       ph->p_vaddr = r->start;
       ph->p_memsz = r->length;
       ph->p_filesz = (r->protection & VM_PROT_WRITE) ? ph->p_memsz : 0;
-      ph->p_offset = offset;
+      ph->p_offset = round_page (offset);
       offset += ph->p_filesz;
       ++ph;
     }
