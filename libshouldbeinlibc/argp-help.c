@@ -596,7 +596,7 @@ hol_usage (struct hol *hol, FILE *stream)
     {
       unsigned nentries;
       struct hol_entry *entry;
-      char *short_no_arg_opts = alloca (strlen (hol->short_options));
+      char *short_no_arg_opts = alloca (strlen (hol->short_options) + 1);
       char *snao_end = short_no_arg_opts;
 
       /* First we put a list of short options without arguments.  */
