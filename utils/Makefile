@@ -47,6 +47,6 @@ ps w hurdids settrans sync showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 %: %.sh
-	cp $< $@
+	sed -f $(top_srcdir)/sh-version.sed < $< > $@
 
 $(filter-out $(special-targets), $(targets)): %: %.o

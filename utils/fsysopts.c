@@ -28,10 +28,11 @@
 
 #include <error.h>
 #include <argz.h>
+#include <version.h>
 
 #include <hurd/fsys.h>
 
-char *argp_program_version = "fsysopts 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (fsysopts);
 
 static struct argp_option options[] =
 {

@@ -30,9 +30,11 @@
 #include <idvec.h>
 #include <ps.h>
 #include <error.h>
+#include <version.h>
+
 #include "psout.h"
 
-char *argp_program_version = "ps 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (ps);
 
 #define OA OPTION_ARG_OPTIONAL
 

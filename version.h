@@ -1,6 +1,6 @@
-/* Reboot the system
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell.
+/* Hurd version
+   Copyright (C) 1996 Free Software Foundation, Inc.
+   Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
 
@@ -16,24 +16,15 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+/* See sh-version.sed for duplicates of this information. */
 
-#include <sys/reboot.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <argp.h>
-#include <hurd.h>
-#include <version.h>
+#ifndef HURD_VERSION
+#define HURD_VERSION "0.1"
+#endif
 
-char *argp_program_version = STANDARD_HURD_VERSION (reboot);
+/* The standard way to print versions for --version */
+#define STANDARD_HURD_VERSION(s) #s " - GNU Hurd-" HURD_VERSION
 
-int
-main (int argc, char *argv[])
-{
-  struct argp argp = {0, 0, 0, "Reboot the system"};
-  argp_parse (&argp, argc, argv, 0, 0, 0);
-  reboot (0);
-  perror ("reboot");
-  return 1;
-}
+   

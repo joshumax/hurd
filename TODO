@@ -242,7 +242,7 @@ See `tasks', the exported task list.
 
 ======
 
-List for version 0.1 release
+List for version 0.2 binary release
 
 * Try and get new mach4 from Shantanu.
 * pfinet needs to support no-network operation
@@ -250,7 +250,6 @@ List for version 0.1 release
 * Make sure nfs still works
 * nfsd?
 * released libc
-* rename nfs/rpcsvc files to something better.
 * Arrange GCC not to install assert.h on GNU.
 * zero (/dev/null) doesn't do access right; probably many in trans/ too.
 * recompile libraries after libc release

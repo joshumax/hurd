@@ -1,3 +1,22 @@
+Thu Sep  5 11:45:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile: Use $(top_srcdir)/sh-version.h to make executables
+ 	from .sh files.
+
+	* fsysopts.c: Include <version.h>.
+	(argp_program_version): Define with STANDARD_HURD_VERSION.
+	* w.c: Likewise.
+	* vmstat.c: Likewise.
+	* vminfo.c: Likewise.
+	* sync.c: Likewise.
+	* storeinfo.c: Likewise.
+	* showtrans.c: Likewise.
+	* settrans.c: Likewise.
+	* ps.c: Likewise.
+	* portinfo.c: Likewise.
+	* login.c: Likewise.
+	* hurdids.c: Likewise.
+
 Sun Sep  1 14:15:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* sync.c (argp_program_version): New variable.

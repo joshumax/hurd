@@ -25,13 +25,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <version.h>
 
 #include <mach.h>
 #include <mach/vm_statistics.h>
 #include <mach/default_pager.h>
 #include <hurd.h>
 
-char *argp_program_version = "vminfo 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (vminfo);
 
 static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},

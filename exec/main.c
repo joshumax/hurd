@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <error.h>
 #include <hurd/paths.h>
 #include <hurd/startup.h>
+#include <version.h>
 
 #ifdef BFD
 bfd_arch_info_type host_bfd_arch_info;
@@ -49,7 +50,6 @@ int trivfs_cntl_nportclasses = 1;
 
 struct trivfs_control *fsys;
 
-char *exec_version = "0.0";
 char **save_argv;
 
 
@@ -252,8 +252,7 @@ S_exec_init (struct trivfs_protid *protid,
   err = get_privileged_ports (&host_priv, &dev_master);
   if (!err)
     {
-      proc_register_version (procserver, host_priv, "exec", HURD_RELEASE,
-			     exec_version);
+      proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
       mach_port_deallocate (mach_task_self (), dev_master);
       err = proc_getmsgport (procserver, 1, &startup);
       if (err)

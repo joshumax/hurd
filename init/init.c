@@ -49,6 +49,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <argz.h>
 #include <utmp.h>
 #include <maptime.h>
+#include <version.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -154,8 +155,6 @@ int fakeboot;
 
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
-
-char *init_version = "0.0";
 
 mach_port_t default_ports[INIT_PORT_MAX];
 mach_port_t default_dtable[3];
@@ -879,8 +878,7 @@ launch_core_servers (void)
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
-  proc_register_version (procserver, host_priv, "init", HURD_RELEASE,
-			 init_version);
+  proc_register_version (procserver, host_priv, "init", "", HURD_VERSION);
 
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */

@@ -366,7 +366,6 @@ diskfs_S_fsys_init (mach_port_t port,
   struct port_infe *pt;
   static int initdone = 0;
   process_t execprocess;
-  string_t version;
   mach_port_t host, startup;
   error_t err;
   mach_port_t root_pt;
@@ -463,9 +462,8 @@ diskfs_S_fsys_init (mach_port_t port,
   if (err)
     return err;
 
-  sprintf (version, "%d.%d", diskfs_major_version, diskfs_minor_version);
-  proc_register_version (procserver, host,
-			 diskfs_server_name, HURD_RELEASE, version);
+  proc_register_version (procserver, host, diskfs_server_name, "", 
+			 diskfs_server_version);
 
   err = proc_getmsgport (procserver, 1, &startup);
   if (!err)

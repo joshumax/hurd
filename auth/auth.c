@@ -29,12 +29,12 @@
 #include <idvec.h>
 #include <assert.h>
 #include <argp.h>
+#include <version.h>
 #include "auth_S.h"
 #include "auth_reply_U.h"
 
-#define AUTH_VERSION "0.0"
+char *argp_program_version = STANDARD_HURD_VERSION(auth);
 
-char *argp_program_version = "auth " AUTH_VERSION " (GNU " HURD_RELEASE ")";
 
 /* Auth handles are server ports with sets of ids.  */
 struct authhandle
@@ -466,7 +466,7 @@ main (int argc, char **argv)
 
   /* Register ourselves with the proc server and then start signals.  */
   proc_getprivports (proc, &hostpriv, &masterdev);
-  proc_register_version (proc, hostpriv, "auth", HURD_RELEASE, AUTH_VERSION);
+  proc_register_version (proc, hostpriv, "auth", "", HURD_VERSION);
   mach_port_deallocate (mach_task_self (), masterdev);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
   _hurd_proc_init (argv);

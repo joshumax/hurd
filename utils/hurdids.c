@@ -26,11 +26,12 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <version.h>
 
 #include <error.h>
 #include <hurd/id.h>
 
-char *argp_program_version = "hurdids 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (hurdids);
 
 static struct argp_option options[] =
 {

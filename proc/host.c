@@ -47,7 +47,6 @@ struct server_version
 {
   char *name;
   char *version;
-  char *release;
 } *server_versions;
 int nserver_versions, server_versions_nalloc;
 
@@ -271,14 +270,17 @@ check_dead_execdata_notify (mach_port_t port)
 
 /* Version information handling.
 
-   A server registers its name, release, and version with
-   startup_register_version.  The uname version string is composed of all
-   the server names and versions.  The uname release is composed of the
-   differing server releases in order of decreasing popularity (just one if
-   they all agree).
+   A server registers its name and version with
+   startup_register_version.
 
-   The Hurd release comes from <hurd/hurd_types.h> and
-   is compiled into proc as well as the other servers. */
+   The uname release is the most popular version number.
+
+   The uname version string is composed of all the server names and
+   versions, omitting special mention of those which match the uname
+   release, plus the kernel version string. */
+   
+char *kernel_name, *kernel_version;
+
 
 /* Rebuild the uname version string.  */
 static void
@@ -314,73 +316,59 @@ rebuild_uname (void)
 	*p++ = '/';
     }
 
-  /* Collect all the differing release strings and count how many
+  /* Collect all the differing version strings and count how many
      servers use each.  */
-  struct release
+  struct version
     {
-      const char *release;
+      const char *version;
       unsigned int count;
-    } releases[nserver_versions];
-  int compare_releases (const void *a, const void *b)
+    } versions[nserver_versions];
+  int compare_versions (const void *a, const void *b)
     {
-      return (((const struct release *) b)->count -
-	      ((const struct release *) a)->count);
+      return (((const struct version *) b)->count -
+	      ((const struct version *) a)->count);
     }
-  unsigned int nreleases = 0;
+  unsigned int nversions = 0;
 
   for (i = 0; i < nserver_versions; ++i)
     {
-      for (j = 0; j < nreleases; ++j)
-	if (! strcmp (releases[j].release, server_versions[i].release))
+      for (j = 0; j < nversions; ++j)
+	if (! strcmp (versions[j].version, server_versions[i].version))
 	  {
-	    ++releases[j].count;
+	    ++versions[j].count;
 	    break;
 	  }
-      if (j == nreleases)
+      if (j == nversions)
 	{
-	  releases[nreleases].release = server_versions[i].release;
-	  releases[nreleases].count = 1;
-	  ++nreleases;
+	  versions[nversions].version = server_versions[i].version;
+	  versions[nversions].count = 1;
+	  ++nversions;
 	}
     }
 
-  /* Sort the releases in order of decreasing popularity.  */
-  qsort (releases, nreleases, sizeof (struct release), compare_releases);
+  /* Sort the versions in order of decreasing popularity.  */
+  qsort (versions, nversions, sizeof (struct version), compare_versions);
 
   /* Now build the uname strings.  */
 
-  initstr (uname_info.release);
-  for (i = 0; i < nreleases; ++i)
-    addstr (NULL, releases[i].release);
-
-  if (p > end)
-#ifdef notyet
-    syslog (LOG_EMERG,
-	    "_UTSNAME_LENGTH %u too short; inform bug-glibc@prep.ai.mit.edu\n",
-	    p - end)
-#endif
-      ;
-  else
-    p[-1] = '\0';
-  end[-1] = '\0';
-
-  for (i = 2; i < nserver_versions; i++)
-    if (strcmp (server_versions[i].version, server_versions[1].version))
-      break;
-
+  /* release is the most popular version */
+  strcpy (uname_info.release, versions[0].version);
+  
   initstr (uname_info.version);
 
-  if (i == nserver_versions)
-    {
-      /* All the servers after [0] (the microkernel version)
-	 are the same, so just write one "hurd" version.  */
-      addstr (server_versions[0].name, server_versions[0].version);
-      addstr ("Hurd", server_versions[1].version);
-    }
-  else
-    for (i = 0; i < nserver_versions; i++)
-      addstr (server_versions[i].name, server_versions[i].version);
+  addstr (kernel_name, kernel_version);
 
+  if (versions[0].count > 1)
+    addstr ("Hurd", versions[0].version);
+
+  /* Now, for any which differ (if there might be any), write it out
+     separately. */
+  if (versions[0].count != nserver_versions)
+    for (i = 0; i < nserver_versions; i++)
+      if (versions[0].count == 1
+	  || strcmp (server_versions[i].version, versions[0].version))
+	addstr (server_versions[i].name, server_versions[i].version);
+    
   if (p > end)
 #ifdef notyet
     syslog (LOG_EMERG,
@@ -393,13 +381,12 @@ rebuild_uname (void)
   end[-1] = '\0';
 }
 
-      
 void
 initialize_version_info (void)
 {
   extern const char *const mach_cpu_types[];
   extern const char *const mach_cpu_subtypes[][32];
-  kernel_version_t kernel_version;
+  kernel_version_t kv;
   char *p;
   struct host_basic_info info;
   unsigned int n = sizeof info;
@@ -419,23 +406,21 @@ initialize_version_info (void)
   server_versions = malloc (sizeof (struct server_version) * 10);
   server_versions_nalloc = 10;
 
-  err = host_kernel_version (mach_host_self (), kernel_version);
+  err = host_kernel_version (mach_host_self (), kv);
   assert (! err);
-  p = index (kernel_version, ':');
+  p = index (kv, ':');
   if (p)
     *p = '\0';
-  p = index (kernel_version, ' ');
+  p = index (kv, ' ');
   if (p)
     *p = '\0';
-  server_versions[0].name = strdup (p ? kernel_version : "mach");
-  server_versions[0].release = strdup (HURD_RELEASE);
-  server_versions[0].version = strdup (p ? p + 1 : kernel_version);
+  kernel_name = strdup (p ? kv : "mach");
+  kernel_version = strdup (p ? p + 1 : kv);
 
   server_versions[1].name = strdup (OUR_SERVER_NAME);
-  server_versions[1].release = strdup (HURD_RELEASE);
   server_versions[1].version = strdup (OUR_VERSION);
 
-  nserver_versions = 2;
+  nserver_versions = 1;
 
   rebuild_uname ();
   
@@ -471,11 +456,8 @@ S_proc_register_version (pstruct_t server,
       {
 	/* Change this entry.  */
 	free (server_versions[i].version);
-	free (server_versions[i].release);
 	server_versions[i].version = malloc (strlen (version) + 1);
-	server_versions[i].release = malloc (strlen (version) + 1);
 	strcpy (server_versions[i].version, version);
-	strcpy (server_versions[i].release, release);
 	break;
       }
   if (i == nserver_versions)
@@ -491,11 +473,8 @@ S_proc_register_version (pstruct_t server,
       server_versions[nserver_versions].name = malloc (strlen (name) + 1);
       server_versions[nserver_versions].version = malloc (strlen (version) 
 							  + 1);
-      server_versions[nserver_versions].release = malloc (strlen (release)
-							  + 1);
       strcpy (server_versions[nserver_versions].name, name);
       strcpy (server_versions[nserver_versions].version, version);
-      strcpy (server_versions[nserver_versions].release, release);
       nserver_versions++;
     }
   

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -31,10 +31,8 @@ diskfs_S_io_server_version (struct protid *cred,
 {
   if (cred)
     {
-      strcpy (server_name, diskfs_server_name);
-      *major = diskfs_major_version;
-      *minor = diskfs_minor_version;
-      *edit = diskfs_edit_version;
+      sprintf (server_name, "%s %s", 
+	       diskfs_server_name, diskfs_server_version);
       return 0;
     }
   else

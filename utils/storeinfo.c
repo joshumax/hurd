@@ -25,13 +25,14 @@
 #include <argp.h>
 #include <unistd.h>
 #include <sys/fcntl.h>
+#include <version.h>
 
 #include <error.h>
 
 #include <hurd/fs.h>
 #include <hurd/store.h>
 
-char *argp_program_version = "storeinfo 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (storeinfo);
 
 static struct argp_option options[] =
 {

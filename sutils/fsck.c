@@ -51,10 +51,12 @@
 #include <argp.h>
 #include <argz.h>
 #include <assert.h>
+#include <version.h>
 
 #include "fstab.h"
 
-char *argp_program_version = "fsck 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (fsck);
+
 
 /* for debugging  */
 static int _debug = 0;

@@ -24,8 +24,9 @@
 #include <stdio.h>
 #include <argp.h>
 #include <hurd.h>
+#include <version.h>
 
-char *argp_program_version = "halt 1.1 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (halt);
 
 int
 main (int argc, char *argv[])

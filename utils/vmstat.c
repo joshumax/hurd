@@ -25,13 +25,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <version.h>
 
 #include <mach.h>
 #include <mach/vm_statistics.h>
 #include <mach/default_pager.h>
 #include <hurd.h>
 
-char *argp_program_version = "vmstat 1.1 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (vmstat);
 
 static const struct argp_option options[] = {
   {"terse",	't', 0, 0, "Use short one-line output format", 1 },

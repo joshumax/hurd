@@ -1,3 +1,8 @@
+Thu Sep  5 11:44:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* mkfs.c: Include <version.h>.
+	(argp_program_version): Define with STANDARD_HURD_VERSION.
+
 Mon Aug 19 15:18:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mkfs.c (doc): Supply a useful value.

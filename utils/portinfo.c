@@ -25,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <version.h>
 
 #include <mach.h>
 
@@ -34,7 +35,7 @@
 #include <portinfo.h>
 #include <portxlate.h>
 
-char *argp_program_version = "portinfo 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (portinfo);
 
 static const struct argp_option options[] = {
   {0,0,0,0,0, 1},

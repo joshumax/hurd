@@ -203,11 +203,13 @@ extern struct node *diskfs_root_node;
    filesystem server. */
 extern char *diskfs_server_name;
 
-/* The user must define these variables.  Set these to be the major, minor,
-   and edit version numbers.  */
-extern int diskfs_major_version;
-extern int diskfs_minor_version;
-extern int diskfs_edit_version;
+/* The user must define this variables.  Set this to be the server
+   version number.  */
+extern char *diskfs_server_version;
+
+/* The user may define this variable.  Set this to be any additional
+   version specification that should be printed for --version. */
+extern char *diskfs_extra_version;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting symlink translation.

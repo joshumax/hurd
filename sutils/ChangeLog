@@ -1,3 +1,13 @@
+Thu Sep  5 11:40:00 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile: Use $(top_srcdir)/sh-version.sed to make executables
+	from .sh files.
+
+	* fsck.c: Include <version.h>.
+ 	(argp_program_version): Define with STANDARD_HURD_VERSION. 
+	* halt.c: Likewise.
+	* reboot.c: Likewise.
+
 Tue Aug 27 12:06:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* reboot.c, halt.c (main): Add argument parsing.

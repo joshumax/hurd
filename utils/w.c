@@ -29,6 +29,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <netdb.h>
+#include <version.h>
 
 #include <sys/fcntl.h>
 
@@ -48,7 +49,7 @@ extern char *canon_host (char *host);
 extern char *shared_domain (char *host1, char *host2);
 extern char *localhost ();
 
-char *argp_program_version = "w 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (w);
 
 #define OA OPTION_ARG_OPTIONAL
 

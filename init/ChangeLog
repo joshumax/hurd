@@ -1,3 +1,10 @@
+Thu Sep  5 11:12:32 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* init.c: Include <version.h>.
+	(init_version): Delete variable.
+	(launch_core_servers): Pass empty string as release; HURD_VERSION
+	as version.
+
 Tue Aug 13 17:51:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (init): Remove -lutil.

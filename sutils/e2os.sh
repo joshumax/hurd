@@ -41,7 +41,7 @@ while :; do
       echo "Usage: $0 [-V?] [--help] [--usage] [--version] DEVICE [OS]"
       exit 0;;
     --version|-V)
-      echo "e2os 1.0 (`uname -sr`)"; exit 0;;
+      echo "STANDARD_HURD_VERSION_e2os_"; exit 0;;
     -*)
       echo 1>&2 "$0: unrecognized option \`$1'"
       echo 1>&2 "Try \`$0 --help' for more information";

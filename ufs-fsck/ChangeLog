@@ -1,3 +1,8 @@
+Thu Sep  5 11:42:21 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c: Include <version.h>.
+ 	(argp_program_version): Define with STANDARD_HURD_VERSION. 
+	
 Fri Aug 16 10:25:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (record_directory): Maximum number of block pointers to

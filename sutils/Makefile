@@ -34,7 +34,7 @@ include ../Makeconf
 fsck: fstab.o clookup.o
 reboot halt fsck: ../libshouldbeinlibc/libshouldbeinlibc.a
 
-%: %.sh
-	cp $< $@
+%: %.sh $(top_srcdir)/sh-version.sed
+	sed -f $(top_srcdir)/sh-version.sed < $< > $@
 
 $(filter-out $(special-targets), $(targets)): %: %.o

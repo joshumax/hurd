@@ -20,8 +20,9 @@
 
 #include <hurd.h>
 #include <argp.h>
+#include <version.h>
 
-char *argp_program_version = "sync 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (sync);
 
 int
 main (int argc, char *argv[])

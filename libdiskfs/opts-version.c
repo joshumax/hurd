@@ -22,36 +22,23 @@
 
 #include "priv.h"
 
-extern char *diskfs_extra_version;
-#pragma weak diskfs_extra_version
-
 static void
 _print_version (FILE *stream, struct argp_state *state)
 {
   if (argp_program_version)
     /* If this is non-zero, then the program's probably defined it, so let
        that take precedence over the default.  */
-    fprintf (stream, "%s\n", argp_program_version);
+    fputs (argp_program_version, stream);
   else
-    /* Construct a version using the standard diskfs variables.  */
     {
-      char ev[15] = { 0 };
-
-      if (diskfs_edit_version)
-	if (diskfs_edit_version <= 26)
-	  sprintf (ev, "%c", diskfs_edit_version - 1 + 'a');
-	else
-	  sprintf (ev, ".%d", diskfs_edit_version);
-
-      if (diskfs_extra_version)
-	fprintf (stream, "%s %d.%d%s (%s, GNU %s)\n",
-		 diskfs_server_name, diskfs_major_version, diskfs_minor_version,
-		 ev, diskfs_extra_version, HURD_RELEASE);
-      else
-	fprintf (stream, "%s %d.%d%s (GNU %s)\n",
-		 diskfs_server_name, diskfs_major_version, diskfs_minor_version,
-		 ev, HURD_RELEASE);
+      fprintf (stream, "%s %s ", diskfs_server_name, diskfs_server_version);
+      if (diskfs_extra_version[0])
+	fprintf (stream, "(%s) ", diskfs_extra_version);
     }
+  /* And because diskfs is big and huge, put our information out too. */
+  fputs (STANDARD_HURD_VERSION (libdiskfs), stream);
+  
+  putc ('\n', stream);
 }
 
 void (*argp_program_version_hook) (FILE *stream, struct argp_state *state)

@@ -25,11 +25,12 @@
 #include <argp.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <version.h>
 
 #include <error.h>
 #include <argz.h>
 
-char *argp_program_version = "showtrans 1.0 (GNU " HURD_RELEASE ")";
+char *argp_program_version = STANDARD_HURD_VERSION (showtrans);
 
 static struct argp_option options[] =
 {

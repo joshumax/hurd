@@ -1,3 +1,13 @@
+Thu Sep  5 10:43:39 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* host.c (struct server_version): Delete member `release'.
+	(kernel_name, kernel_version): New variables.
+	(rebuild_uname): Do the voting on versions, not releases.
+	(initialize_version_info): Store kernel information in kernel_name
+	and kernel_version, not as an entry in the server_versions array. 
+	Don't fill in a release for ourselves.
+	(S_proc_register_version): Ignore RELEASE arg.
+
 Sun Jul 28 22:57:03 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* info.c (get_string_array): Correctly adjust NEWSIZE when

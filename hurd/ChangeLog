@@ -1,3 +1,7 @@
+Thu Sep  5 10:39:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* version.h: File removed.
+
 Wed Jul 17 14:30:36 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile: gs/install-hdrs/install-headers/g.
