@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include <hurd/signal.h>
+#include <unistd.h>
 
 /* This is called to check E for a #! interpreter specification.  E has
    already been prepared (successfully) and checked (unsuccessfully).  If
@@ -54,6 +55,66 @@ check_hashbang (struct execdata *e,
   mach_port_t *new_dtable = NULL;
   u_int new_dtablesize;
 
+  file_t user_fd (int fd)
+    {
+      if (fd < 0 || fd >= dtablesize || dtable[fd] == MACH_PORT_NULL)
+	{
+	  errno = EBADF;
+	  return MACH_PORT_NULL;
+	}
+      return dtable[fd];
+    }
+  file_t user_crdir, user_cwdir, lookup_cwdir;
+  error_t user_port (int which, error_t (*operate) (mach_port_t))
+    {
+      error_t reauthenticate (file_t unauth, file_t *result)
+	{
+	  error_t err;
+	  mach_port_t ref;
+	  error_t uauth (auth_t auth)
+	    {
+	      return auth_user_authenticate (auth,
+					     unauth,
+					     ref, MACH_MSG_TYPE_MAKE_SEND,
+					     result);
+	    }
+	  if (*result != MACH_PORT_NULL)
+	    return 0;
+	  ref = mach_reply_port ();
+	  err = io_reauthenticate (unauth, ref, MACH_MSG_TYPE_MAKE_SEND);
+	  if (!err)
+	    err = user_port (INIT_PORT_AUTH, &uauth);
+	  mach_port_destroy (mach_task_self (), ref);
+	  return err;
+	}
+
+      mach_port_t port = ((which < nports &&
+			   portarray[which] != MACH_PORT_NULL)
+			  ? portarray[which] :
+			  (flags & EXEC_DEFAULTS) ? std_ports[which]
+			  : MACH_PORT_NULL);
+
+      if ((flags & EXEC_SECURE) || port == std_ports[which])
+	switch (which)
+	  {
+	  case INIT_PORT_CRDIR:
+	    return (reauthenticate (INIT_PORT_CRDIR, &user_crdir) ?:
+		    (*operate) (user_crdir));
+	  case INIT_PORT_CWDIR:
+	    return (lookup_cwdir != MACH_PORT_NULL ?
+		    (*operate) (lookup_cwdir) :
+		    reauthenticate (INIT_PORT_CWDIR, &user_cwdir) ?:
+		    (*operate) (user_cwdir));
+	  }
+      return (*operate) (port);
+    }
+  /* Look up NAME on behalf of the client.  */
+  inline error_t lookup (const char *name, int flags, mach_port_t *result)
+    {
+      return hurd_file_name_lookup (&user_port, &user_fd,
+				    name, flags, 0, result);
+    }
+
   rewind (f);
 
   /* Check for our ``magic number''--"#!".  */
@@ -85,83 +146,18 @@ check_hashbang (struct execdata *e,
   /* Skip remaining blanks, and the rest of the line is the argument.  */
   p += strspn (p, " \t");
   arg = p;
-  len = interp_len - (arg - interp);
+  len = interp_len - (arg - ibuf);
   if (len == 0)
     arg = NULL;
   else
     ++len;			/* Include the terminating null.  */
 
-  {
-    file_t user_fd (int fd)
-      {
-	if (fd < 0 || fd >= dtablesize ||
-	    dtable[fd] == MACH_PORT_NULL)
-	  {
-	    errno = EBADF;
-	    return MACH_PORT_NULL;
-	  }
-	return dtable[fd];
-      }
+  user_crdir = user_cwdir = lookup_cwdir = MACH_PORT_NULL;
 
-    file_t user_crdir, user_cwdir;
-    error_t user_port (int which, error_t (*operate) (mach_port_t))
-      {
-	error_t reauthenticate (file_t unauth, file_t *result)
-	  {
-	    error_t err;
-	    mach_port_t ref;
-	    error_t uauth (auth_t auth)
-	      {
-		return auth_user_authenticate (auth,
-					       unauth,
-					       ref, MACH_MSG_TYPE_MAKE_SEND,
-					       result);
-	      }
-	    if (*result != MACH_PORT_NULL)
-	      return 0;
-	    ref = mach_reply_port ();
-	    err = io_reauthenticate (unauth, ref, MACH_MSG_TYPE_MAKE_SEND);
-	    if (!err)
-	      err = user_port (INIT_PORT_AUTH, &uauth);
-	    mach_port_destroy (mach_task_self (), ref);
-	    return err;
-	  }
+  rwlock_reader_lock (&std_lock);
 
-	mach_port_t port = ((which < nports &&
-			     portarray[which] != MACH_PORT_NULL)
-			    ? portarray[which] :
-			    (flags & EXEC_DEFAULTS) ? std_ports[which]
-			    : MACH_PORT_NULL);
-
-	if ((flags & EXEC_SECURE) || port == std_ports[which])
-	  switch (which)
-	    {
-	    case INIT_PORT_CRDIR:
-	      return (reauthenticate (INIT_PORT_CRDIR, &user_crdir) ?:
-		      (*operate) (user_crdir));
-	    case INIT_PORT_CWDIR:
-	      return (reauthenticate (INIT_PORT_CWDIR, &user_cwdir) ?:
-		      (*operate) (user_cwdir));
-	    }
-	return (*operate) (port);
-      }
-
-    user_crdir = user_cwdir = MACH_PORT_NULL;
-
-    rwlock_reader_lock (&std_lock);
-
-    /* Open a port on the interpreter file.  */
-    e->error = hurd_file_name_lookup (&user_port, &user_fd,
-				      interp, O_EXEC, 0,
-				      &interp_file);
-
-    rwlock_reader_unlock (&std_lock);
-
-    if (user_crdir != MACH_PORT_NULL)
-      mach_port_deallocate (mach_task_self (), user_crdir);
-    if (user_cwdir != MACH_PORT_NULL)
-      mach_port_deallocate (mach_task_self (), user_cwdir);
-  }
+  /* Open a port on the interpreter file.  */
+  e->error = lookup (interp, O_EXEC, &interp_file);
 
   if (! e->error)
     {
@@ -179,7 +175,6 @@ check_hashbang (struct execdata *e,
 	  char *file_name = NULL;
 	  size_t namelen;
 
-#if 0
 	  if (! (flags & EXEC_SECURE))
 	    {
 	      /* Try to figure out the file's name.  We guess that if ARGV[0]
@@ -187,7 +182,6 @@ check_hashbang (struct execdata *e,
 		 if it contains no slash, looking for files named by ARGV[0] in
 		 the `PATH' environment variable might find it.  */
 
-	      size_t namelen;
 	      error_t error;
 	      char *name;
 	      file_t name_file;
@@ -196,7 +190,8 @@ check_hashbang (struct execdata *e,
 	      fsid_t file_fsid;
 	      ino_t file_fileno;
 
-	      if (error = io_stat (file, &st)) /* XXX insecure */
+	      error = io_stat (file, &st); /* XXX insecure */
+	      if (error)
 		goto out;
 	      file_fstype = st.st_fstype;
 	      file_fsid = st.st_fsid;
@@ -212,9 +207,7 @@ check_hashbang (struct execdata *e,
 		name = argv;
 
 	      if (strchr (name, '/') != NULL)
-		error = hurd_file_name_lookup (userport (INIT_PORT_CRDIR),
-					       userport (INIT_PORT_CWDIR),
-					       name, 0, 0, &name_file);
+		error = lookup (name, 0, &name_file);
 	      else if (! setjmp (args_faulted))
 		{
 		  /* Search PATH for it.  If we fault accessing ENVP, setjmp
@@ -244,18 +237,17 @@ check_hashbang (struct execdata *e,
 
 		  while ((p = strsep (&path, ":")) != NULL)
 		    {
-		      file_t dir;
 		      if (*p == '\0')
-			dir = portarray[INIT_PORT_CWDIR];
-		      else
-			if (hurd_path_lookup (portarray[INIT_PORT_CRDIR],
-					      portarray[INIT_PORT_CWDIR],
-					      p, O_EXEC, 0, &dir))
-			  continue;
-		      error = hurd_path_lookup (portarray[INIT_PORT_CRDIR], dir,
-						name, O_EXEC, 0, &name_file);
+			lookup_cwdir = MACH_PORT_NULL;
+		      else if (lookup (p, O_EXEC, &lookup_cwdir))
+			continue;
+		      error = lookup (name, O_EXEC, &name_file);
 		      if (*p != '\0')
-			mach_port_deallocate (mach_task_self (), dir);
+			{
+			  mach_port_deallocate (mach_task_self (),
+						lookup_cwdir);
+			  lookup_cwdir = MACH_PORT_NULL;
+			}
 		      if (!error)
 			{
 			  if (*p != '\0')
@@ -280,18 +272,18 @@ check_hashbang (struct execdata *e,
 		  if (!io_stat (name_file, &st) && /* XXX insecure */
 		      st.st_fstype == file_fstype &&
 		      st.st_fsid == file_fsid &&
-		      st.st_ino == file_ino)
+		      st.st_ino == file_fileno)
 		    file_name = name;
 		  mach_port_deallocate (mach_task_self (), name_file);
 		}
 	    }
-#endif
 
 	  if (file_name == NULL)
 	    {
 	      /* We can't easily find the file.
 		 Put it in a file descriptor and pass /dev/fd/N.  */
 	      int fd;
+	    out:
 
 	      for (fd = 0; fd < dtablesize; ++fd)
 		if (dtable[fd] == MACH_PORT_NULL)
@@ -396,6 +388,13 @@ check_hashbang (struct execdata *e,
   /* We are now done reading the script file.  */
   finish (e, 0);
   free (ibuf);
+
+  rwlock_reader_unlock (&std_lock);
+
+  if (user_crdir != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), user_crdir);
+  if (user_cwdir != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), user_cwdir);
 
   if (e->error)
     /* We cannot open the interpreter file to execute it.  Lose!  */
