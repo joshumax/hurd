@@ -76,6 +76,8 @@ main (int argc,
   addrport_class = ports_create_class (clean_addrport, 0);
   socketport_class = ports_create_class (clean_socketport, 0);
   trivfs_fsid = getpid ();
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &fsys_identity);
 
   err = trivfs_startup (bootstrap, 0,
 			trivfs_cntl_portclasses[0], pfinet_bucket,
