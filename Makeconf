@@ -3,12 +3,12 @@
 all:
 
 # This is the directory into which Hurd cross-building tools are placed
-hurdinst := /home/hm1/hurdinst
+hurdinst := /home/gd3/hurdinst
 
 # This is the directory which serves as root for the Hurd.
 hostname := $(shell hostname)
 hurdroot-douglas.gnu.ai.mit.edu = /home/hm2/hurdroot
-hurdroot-ernst.gnu.ai.mit.edu = home/hm1/hurdroot
+hurdroot-ernst.gnu.ai.mit.edu = /home/hm1/hurdroot
 hurdroot := $(hurdroot-$(hostname))
 
 # This is the device with the filesystem mounted as $(hurdroot)
@@ -45,7 +45,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 # $(link) uses threads to get malloc until the one in the library is fixed.
 
 define link
-$(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$(CC) -v -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
 
