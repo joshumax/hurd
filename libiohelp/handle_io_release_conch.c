@@ -15,12 +15,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <libioserver.h>
+
 error_t
 handle_io_release_conch (struct conch *c, void *user)
 {
-  error_t error;
-  
-  mutex_lock (&c->lock);
+  error_t error = 0;
   
   if (c->holder_shared_page->conch_status != USER_HAS_NOT_CONCH)
     {
@@ -35,7 +35,6 @@ handle_io_release_conch (struct conch *c, void *user)
     }
 
   condition_broadcast (&c->wait);
-  mutex_unlock (&c->lock);
   
   return error;
 }
