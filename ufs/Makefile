@@ -45,6 +45,8 @@ exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	rsh $(mighost) cd `pwd` \; \
 	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
 
+install:
+
 clean:
 	rm -f *.o ufs
 relink:
