@@ -1,7 +1,40 @@
 # Generic configuration for Hurd compilation
 
+# Directory makefiles should set the variable makemode to either
+# `server' if they compile and install a single program for /hurd
+# `utility' if they compile and install a single program for /bin
+# `servers' if they compile and install multiple programs for /hurd
+# `utilities' if they compile and install multiple programs for /bin
+# `library' if they compile and install a library
+# `misc' if they do none of those
+
+# Every makefile should define
+# SRCS (all actual source code)
+# LCLHDRS (all source headers in this directory [NOT MiG created])
+# REMHDRS (all Hurd headers in other directories [NOT .defs files])
+
+# Types `server', `utility', and `library' should define
+# OBJS (all .o files used to produce the target).
+
+# Types `server', `utility', `servers', and `utilities' should define
+# HURDLIBS (all Hurd libraries used, omitting the dirname and the .a.)
+
+# Types `server' and `utility' should define
+# OTHERLIBS (all other libraries used)
+# target (the name of the program built)
+
+# Types `servers' and `utilities' should define
+# targets (the names of all the programs built)
+
+# Type `library' should define
+# libname (the name of the library, without .a.)
+# installhdrs (header files that should be installed in /include)
+
+
+# Put this first so it's the default
 all:
 
+
 # This is the directory into which Hurd cross-building tools are placed
 hurdinst := /home/gd3/hurdinst
 
@@ -18,25 +51,146 @@ hurdrootdev := /dev/hd0f
 hurdsource := /home/gd3/gnu/hurd
 
 # Where to find various things for compilation:
+
 includedir := $(hurdinst)/include
+
 startup := $(hurdinst)/lib/crt0.o
 libc := $(patsubst %,$(hurdinst)/lib/lib%.a,c machuser hurduser c hurduser)
-libthreads := $(hurdinst)/lib/libthreads.a
-libports := $(hurdinst)/lib/libports.a
-libioserver := $(hurdinst)/lib/libioserver.a
-libpager := $(hurdinst)/lib/libpager.a
-libfshelp := $(hurdinst)/lib/libfshelp.a
-libdiskfs := $(hurdinst)/lib/libdiskfs.a
-libtrivfs := $(hurdinst)/lib/libtrivfs.a
+
+# END CONFIGURATION AREA
+
+
+# Decode makemode:
+
+
+ifeq ($(makemode),server)
+ doinst := one
+ installationdir := $(hurdinst)/hurd
+ clean := yes
+ cleantarg := $(target)
+endif
+
+ifeq ($(makemode),utility)
+ doinst := one
+ installationdir := $(hurdinst)/bin
+ clean := yes
+ cleantarg := $(target)
+endif
+
+ifeq ($(makemode),servers)
+ doinst := many
+ installationdir := $(hurdinst)/hurd
+ clean := yes
+ cleantarg := $(targets)
+endif
+
+ifeq ($(makemode),utilities)
+ doinst := many
+ installationdir := $(hurdinst)/bin
+ clean := yes
+ cleantarg := $(targets)
+endif
+
+ifeq ($(makemode),library)
+ clean := yes
+ cleantarg := $(libname).a
+endif
+
+
+
+# Hurd libraries
+libthreads := $(hurdsource)/libthreads/libthreads.a
+libports := $(hurdsource)/libports/libports.a
+libioserver := $(hurdsource)/libioserver/libioserver.a
+libpager := $(hurdsource)/libpager/libpager.a
+libfshelp := $(hurdsource)/libfshelp/libfshelp.a
+libdiskfs := $(hurdsource)/libdiskfs/libdiskfs.a
+libtrivfs := $(hurdsource)/libtrivfs/libtrivfs.a
 
 # Finding binaries
 include $(hurdsource)/Maketools
 
-# Flags for compilation.  It is important to have -I. first for things that
-# use their own headers which are later installed; they might do `#include
-# <foo.h>' and that ignores the current directory.
-CPPFLAGS := -I. 
+# Flags for compilation.  
+# It is important to have this inclusion first; that picks up our 
+# library header files locally rather than from installed copies.
+CPPFLAGS := -I$(hurdsource)
 CFLAGS := -Wall -Wno-parentheses -g
+
+
+# Standard targets
+
+# Installation
+ifeq ($(doinst),one)
+all: $(target)
+install: $(target)
+	$(INSTALL_BIN) $(target) $(installationdir)/$(target)
+endif
+
+ifeq ($(doinst),many)
+all: $(targets)
+install: $(targets)
+	for i in $(targets); do; $(INSTALL_BIN) $$i $(installationdir)/$$i; done
+endif
+
+ifeq ($(makemode),library)
+all: $(libname).a
+install: $(libname).a $(installhdrs)
+	cp $(installhdrs) $(includedir)/hurd/
+	cp $(libname).a $(hurdinst)/lib/$(libname).a
+	ranlib $(hurdinst)/lib/$(libname).a
+endif
+
+# Provide default.
+install:
+
+
+# Building the target
+# Yippee!  A use for computed variable references!
+ifeq ($(doinst),one)
+$(target): $(OBJS) $($(HURDLIBS)) $(OTHERLIBS)
+#	$(CC) $(CFLAGS) -o $(target) $^
+endif
+
+ifeq ($(makemode),library)
+$(libname).a: $(OBJS)
+	rm -f $(libname).a
+	$(AR) r $@ $^
+endif
+
+# Making a snapshot
+distfiles := Makefile ChangeLog $(SRCS) $(LCLHDRS) DIST_FILES
+lndist: $(distfiles) $(hurdsource)/hurd-snap/$(dir) FORCE
+	ln $(distfiles) $(hurdsource)/hurd-snap/$(dir)
+ 
+ifeq ($(dir),.)
+$(hurdsource)/hurd-snap/$(dir):
+else
+$(hurdsource)/hurd-snap/$(dir):
+	mkdir $(hurdsource)/hurd-snap/$(dir)
+endif
+
+# TAGS files
+ifneq ($(dir),.)
+TAGS: $(SRCS) $(LCLHDRS) $(REMHDRS)
+	etags -o $@ $(addprefix -i ,$(addsuffix /TAGS,$(addprefix ../,$(HURDLIBS)))) $(SRCS) $(LCLHDRS) $(REMHDRS)
+endif
+
+
+# Cleaning
+ifeq ($(clean),yes)
+clean:
+	rm -f *.o *Server.c *User.c *_S.h *_U.h $(cleantarg)
+ifneq ($(makemode),library)
+relink:
+	rm -f $(cleantarg)
+endif
+endif
+clean:
+relink:
+
+
+
+# Subdependencies
 
 # Mounting $(hurdroot)
 ifeq ($(hurdroot),)
@@ -50,79 +204,88 @@ $(hurdroot)/mounted:
 	mount $(hurdrootdev)
 endif
 
+# Building Hurd libraries
+$(hurdsource)/lib%/lib%.a: FORCE
+	$(MAKE) -C $(dir $@) $(notdir $@)
 
-# Making a snapshot
+
+# How to build RPC stubs
 
-lndist: $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir) FORCE
-	ln $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir)
- 
-ifeq ($(dir),.)
-$(hurdsource)/hurd-snap/$(dir):
-else
-$(hurdsource)/hurd-snap/$(dir):
-	mkdir $(hurdsource)/hurd-snap/$(dir)
-endif
+# Server stubs from Hurd interfaces
+hurddefs := $(notdir $(basename $(wildcard $(hurdsource)/hurd/*.defs)))
+ht := $(hurdsource)/hurd/hurd_types.defs
+
+$(addsuffix _S.h,$(hurddefs)): %_S.h: $(hurdsource)/hurd/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) -DSERVERPREFIX=S_ $(hurdsource)/hurd/$*.defs \
+	| $(MIGCOM) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
+
+$(addsuffix Server.c,$(hurddefs)): %Server.c: $(hurdsource)/hurd/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) -DSERVERPREFIX=S_ $(hurdsource)/hurd/$*.defs \
+	| $(MIGCOM) -user /dev/null -header /dev/null -server $*Server.c
+	
+# User stubs from Hurd interfaces
+
+# Build a .c file to avoid confusion (due to the need to build
+# a header file in the following rule).
+$(addsuffix _U.h,$(hurddefs)): %_U.h: $(hurdsource)/hurd/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(hurdsource)/hurd/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
+
+# We have to build a header file because otherwise MiG ignores the imports
+$(addsuffix User.c,$(hurddefs)): %User.c: $(hurdsource)/hurd/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(hurdsource)/hurd/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
+
+# Server stubs from Mach interfaces
+machdefs := notify 
+
+$(addsuffix _S.h,$(machdefs)): %_S.h: $(includedir)/mach/%.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/mach/$*.defs \
+	| $(MIGCOM) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
+
+$(addsuffix Server.c,$(machdefs)): %Server.c: $(includedir)/mach/%.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/mach/$*.defs \
+	| $(MIGCOM) -user /dev/null -header /dev/null -server $*Server.c
+
+# User stubs from Mach interfaces
+
+# Build a .c file to avoid confusion (due to the need to build
+# a header file in the following rule).
+$(addsuffix _U.h,$(machdefs)): %_U.h: $(includedir)/mach/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(includedir)/mach/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
+
+# We have to build a header file because otherwise MiG ignores the imports
+$(addsuffix User.c,$(machdefs)): %User.c: $(includedir)/mach/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(includedir)/mach/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
+
+# Server stubs from Mach device interfaces
+devicedefs := device_reply device
+
+$(addsuffix _S.h,$(devicedefs)): %_S.h: $(includedir)/device/%.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/device/$*.defs \
+	| $(MIGCOM) -sheader $*_S.h -user /dev/null -server /dev/null -header /dev/null
+
+$(addsuffix Server.c,$(devicedefs)): %Server.c: $(includedir)/device/%.defs
+	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/device/$*.defs \
+	| $(MIGCOM) -user /dev/null -header /dev/null -server $*Server.c
 
 
-# TAGS files
+# User stubs from Mach device interfaces
 
-ifneq ($(dir),.)
-TAGS: $(SRCS) $(TAGSHDRS)
-	etags -o $@ $(addprefix -i ,$(addsuffix /TAGS,$(addprefix ../,$(TAGSLIBS)))) $(SRCS) $(TAGSHDRS)
-endif
+# Build a .c file to avoid confusion (due to the need to build
+# a header file in the following rule).
+$(addsuffix _U.h,$(devicedefs)): %_U.h: $(includedir)/device/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(includedir)/device/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
 
-# Dependencies for building libraries
+# We have to build a header file because otherwise MiG ignores the imports
+$(addsuffix User.c,$(devicedefs)): %User.c: $(includedir)/device/%.defs $(ht)
+	$(CPP) $(CPPFLAGS) $(includedir)/device/$*.defs \
+	| $(MIGCOM) -user $*User.c -server /dev/null -header $*_U.h
 
-ifneq ($(strip $(dir)),libports)
-$(libports): FORCE
-	$(MAKE) -C $(hurdsource)/libports $(libports)
-$(includedir)/hurd/ports.h: FORCE
-	$(MAKE) -C $(hurdsource)/libports $(includedir)/hurd/ports.h
-endif
 
-ifneq ($(strip $(dir)),libioserver)
-$(libioserver): FORCE
-	$(MAKE) -C $(hurdsource)/libioserver $(libioserver)
-$(includedir)/hurd/ioserver.h: FORCE
-	$(MAKE) -C $(hurdsource)/libioserver $(includedir)/hurd/ioserver.h
-endif
-
-ifneq ($(strip $(dir)),libpager)
-$(libpager): FORCE
-	$(MAKE) -C $(hurdsource)/libpager $(libpager)
-$(includedir)/hurd/pager.h: FORCE
-	$(MAKE) -C $(hurdsource)/libpager $(includedir)/hurd/pager.h
-endif
-
-ifneq ($(strip $(dir)),libdiskfs)
-$(libdiskfs): FORCE
-	$(MAKE) -C $(hurdsource)/libdiskfs $(libdiskfs)
-$(includedir)/hurd/diskfs.h: FORCE
-	$(MAKE) -C $(hurdsource)/libdiskfs $(includedir)/hurd/diskfs.h
-endif
-
-ifneq ($(strip $(dir)),libfshelp)
-$(libfshelp): FORCE
-	$(MAKE) -C $(hurdsource)/libfshelp $(libfshelp)
-$(includedir)/hurd/fshelp.h: FORCE
-	$(MAKE) -C $(hurdsource)/libfshelp $(includedir)/hurd/fshelp.h
-endif
-
-ifneq ($(strip $(dir)),libtrivfs)
-$(libtrivfs): FORCE
-	$(MAKE) -C $(hurdsource)/libtrivfs $(libtrivfs)
-$(includedir)/hurd/trivfs.h: FORCE
-	$(MAKE) -C $(hurdsource)/libtrivfs $(includedir)/hurd/trivfs.h
-endif
-
-ifneq ($(strip $(dir)),libthreads)
-$(libthreads): FORCE
-	$(MAKE) -C $(hurdsource)/libthreads $(libthreads)
-$(includedir)/cthreads.h: FORCE
-	$(MAKE) -C $(hurdsource)/libthreads $(includedir)/cthreads.h
-$(includedir)/machine/cthreads.h: FORCE
-	$(MAKE) -C $(hurdsource)/libthreads $(includedir)/machine/cthreads.h
-endif
 
 FORCE:
 
