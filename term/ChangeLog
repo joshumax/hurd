@@ -1,3 +1,15 @@
+Mon Aug 12 11:04:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* munge.c (poutput): Compute tab width using the same loop
+	strategy as output_character and output_width.
+
+Thu Aug  8 17:16:06 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* munge.c (echo_char): Compute non-ctrl version of control
+	character correctly.
+	* term.h (CHAR_SOH): Delete macro.
+	(CTRL_BIT): New macro.
+
 Mon Jul 29 02:46:12 1996  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* munge.c (input_character): In LAST_LNEXT case, jump to `alldone'

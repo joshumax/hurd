@@ -49,7 +49,11 @@ poutput (int c)
   else if (c == '\r')
     output_psize = 0;
   else if (c == '\t')
-    output_psize += (output_psize + 8) % 8;
+    {
+      output_psize++;
+      while (output_psize % 8)
+	output_psize++;
+    }
   else if (c == '\b')
     output_psize--;
 
@@ -131,7 +135,7 @@ output_width (int c, int loc)
       int n = loc + 1;
       while (n % 8)
 	n++;
-      return n;
+      return n; 
     }
   if ((c >= ' ') && (c < '\177'))
     return 1;
@@ -229,7 +233,7 @@ echo_char (char c, int hderase, int quoted)
       if (echo_double (c, quoted))
 	{
 	  output_character ('^');
-	  output_character (c + ('A' - CHAR_SOH));
+	  output_character (c ^ CTRL_BIT);
 	}
       else
 	output_character (c);
