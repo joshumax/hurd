@@ -208,7 +208,8 @@ extern int diskfs_minor_version;
 extern int diskfs_edit_version;
 
 /* The user may define this variable.  This should be nonzero iff the
-   filesystem format supports shortcutting symlink translation. */
+   filesystem format supports shortcutting symlink translation.
+   See also diskfs_create_symlink_hook below. */
 int diskfs_shortcut_symlink;
 
 /* The user may define this variable.  This should be nonzero iff the
@@ -342,7 +343,9 @@ error_t diskfs_set_translator (struct node *np, char *name, u_int namelen,
 
 /* The user must define this function.  Truncate locked node NP to be SIZE
    bytes long.  (If NP is already less than or equal to SIZE bytes
-   long, do nothing.)  */
+   long, do nothing.)  If this is a symlink (and diskfs_shortcut_symlink
+   is set) then this should clear the symlink, even if 
+   diskfs_create_symlink_hook stores the link target elsewhere.  */
 error_t diskfs_truncate (struct node *np, off_t size);
 
 /* The user must define this function.  Grow the disk allocated to locked node
@@ -436,6 +439,12 @@ void diskfs_init_completed ();
 /* It is assumed that the user will use the Hurd pager library; if not
    you need to redefine ports_demuxer and 
    diskfs_do_seqnos_mach_notify_no_senders.  */
+
+/* If this function is nonzero (and diskfs_shortcut_symlink is set) it
+   is called to set a symlink.  If it returns EINVAL or isn't set,
+   then the normal method (writing the contents into the file data) is
+   used.  If it returns any other error, it is returned to the user.  */
+error_t (*diskfs_create_symlink_hook)(struct node *np, char *target);
 
 /* The library exports the following functions for general use */
 
