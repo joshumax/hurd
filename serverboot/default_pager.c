@@ -1800,7 +1800,6 @@ void pager_port_finish_refs(ds)
 task_t		default_pager_self;	/* Our task port. */
 
 mach_port_t default_pager_default_port;	/* Port for memory_object_create. */
-thread_t default_pager_default_thread;	/* Thread for default_port. */
 
 /* We catch exceptions on ourself & startup using this port. */
 mach_port_t default_pager_exception_port;
@@ -2831,14 +2830,6 @@ default_pager()
 	pager_port_list_init();
 
 	printf ("dp3\n");
-
-	/*
-	 *	This thread will receive memory_object_create
-	 *	requests from the kernel and default_pager_object_create
-	 *	requests from the user via default_pager_default_port.
-	 */
-
-	default_pager_default_thread = mach_thread_self();
 
 	kr = mach_port_allocate(default_pager_self, MACH_PORT_RIGHT_PORT_SET,
 				&default_pager_internal_set);

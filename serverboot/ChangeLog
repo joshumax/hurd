@@ -1,6 +1,7 @@
 Wed Apr  9 13:57:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* default_pager.c (default_pager_default_thread): New function.
+	Delete old variable with this name, it was never used.
 	(default_pager): Fork default_pager_default_thread instead of
 	doing it here to avoid the possibility that we are on a tiny
 	stack.  Current thread dies.
