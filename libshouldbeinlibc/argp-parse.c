@@ -47,10 +47,12 @@
 /* ---------------------------------------------------------------- */
 
 #define OPT_PROGNAME	-2
+#define OPT_USAGE	-3
 
 static const struct argp_option argp_default_options[] =
 {
-  {"help",	  '?',    0, 0,  "Give this help list", -1},
+  {"help",	  '?',    	0, 0,  "Give this help list", -1},
+  {"usage",	  OPT_USAGE,	0, 0,  "Give a short usage message"},
   {"program-name",OPT_PROGNAME,"NAME", OPTION_HIDDEN, "Set the program name"},
   {0, 0}
 };
@@ -58,13 +60,13 @@ static const struct argp_option argp_default_options[] =
 static error_t
 argp_default_parser (int key, char *arg, struct argp_state *state)
 {
-  unsigned usage_flags = ARGP_HELP_STD_HELP;
   switch (key)
     {
     case '?':
-      if (state->flags & ARGP_NO_EXIT)
-	usage_flags &= ~ARGP_HELP_EXIT;
-      argp_help (state->argp, stdout, usage_flags);
+      argp_state_help (state, stdout, ARGP_HELP_STD_HELP);
+      break;
+    case OPT_USAGE:
+      argp_state_help (state, stdout, ARGP_HELP_USAGE | ARGP_HELP_EXIT_OK);
       break;
 
     case OPT_PROGNAME:		/* Set the program name.  */
@@ -76,7 +78,7 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
 	program_invocation_short_name = program_invocation_name;
 
       if ((state->flags & (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
-	  == (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
+	  == ARGP_PARSE_ARGV0)
 	state->argv[0] = arg;	/* Update what getopt uses too.  */
 
       break;
@@ -140,6 +142,14 @@ struct group
 
   /* The number of non-option args sucessfully handled by this parser.  */
   unsigned args_processed;
+
+  /* This group's parser's parent's group.  */
+  struct group *parent;
+  unsigned parent_index;	/* And the our position in the parent.   */
+
+  /* These fields are swapped into and out of the state structure when
+     calling this group's parser.  */
+  void *hook, **child_hooks;
 };
 
 /* Parse the options strings in ARGC & ARGV according to the argp in
@@ -150,7 +160,7 @@ struct group
    returned.  */
 error_t
 argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
-	    int *end_index)
+	    int *end_index, void **hook)
 {
   error_t err = 0;
   /* True if we think using getopt is still useful; if false, then
@@ -173,8 +183,29 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   struct group *egroup;
   /* A pointer for people to use for iteration over GROUPS.  */
   struct group *group;
+  /* An vector containing storage for the CHILD_HOOKS field in all groups.  */
+  void **child_hooks;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0 };
+  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0, 0, 0 };
+
+  /* Call GROUP's parser with KEY and ARG, swapping any group-specific info
+     from STATE before calling, and back into state afterwards.  If GROUP has
+     no parser, EINVAL is returned.  */
+  error_t group_parse (struct group *group, int key, char *arg)
+    {
+      if (group->parser)
+	{
+	  error_t err;
+	  state.hook = group->hook;
+	  state.child_hooks = group->child_hooks;
+	  state.arg_num = group->args_processed;
+	  err = (*group->parser)(key, arg, &state);
+	  group->hook = state.hook;
+	  return err;
+	}
+      else
+	return EINVAL;
+    }
 
   /* Parse the non-option argument ARG, at the current position.  Returns
      any error, and sets ARG_EINVAL to true if return EINVAL.  */
@@ -184,11 +215,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       error_t err = EINVAL;
 
       for (group = groups; group < egroup && err == EINVAL; group++)
-	if (group->parser)
-	  {
-	    state.arg_num = group->args_processed;
-	    err = (*group->parser)(ARGP_KEY_ARG, val, &state);
-	  }
+	err = group_parse (group, ARGP_KEY_ARG, val);
 
       if (!err)
 	if (state.next >= index)
@@ -225,9 +252,9 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  char *short_index = index (short_opts, opt);
 	  if (short_index)
 	    for (group = groups; group < egroup; group++)
-	      if (group->short_end > short_index && group->parser)
+	      if (group->short_end > short_index)
 		{
-		  err = (*group->parser)(opt, optarg, &state);
+		  err = group_parse (group, opt, optarg);
 		  break;
 		}
 	}
@@ -249,7 +276,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       /* TOP_ARGP has no options, it just serves to group the user & default
 	 argps.  */
       bzero (top_argp, sizeof (*top_argp));
-      top_argp->parents = plist;
+      top_argp->children = plist;
 
       plist[0] = state.argp;
       plist[1] = &argp_default_argp;
@@ -265,6 +292,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     struct option *long_end;
     unsigned long_len = 0;
     unsigned num_groups = 0;
+    unsigned num_child_hooks = 0;
 
     /* For ARGP, increments NUM_GROUPS by the total number of argp structures
        descended from it, and SHORT_LEN & LONG_LEN by the maximum lengths of
@@ -272,7 +300,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
        array, respectively.  */
     void calc_lengths (const struct argp *argp)
       {
-	const struct argp **parents = argp->parents;
+	const struct argp **children = argp->children;
 	const struct argp_option *opt = argp->options;
 
 	if (opt || argp->parser)
@@ -288,9 +316,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	      }
 	  }
 
-	if (parents)
-	  while (*parents)
-	    calc_lengths (*parents++);
+	if (children)
+	  while (*children)
+	    {
+	      calc_lengths (*children++);
+	      num_child_hooks++;
+	    }
       }
 
     /* Converts all options in ARGP (which is put in GROUP) and ancestors
@@ -298,11 +329,12 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
        LONG_END are the points at which new options are added.  Returns the
        next unused group entry.  */
     struct group *convert_options (const struct argp *argp,
+				   struct group *parent, unsigned parent_index,
 				   struct group *group)
       {
 	/* REAL is the most recent non-alias value of OPT.  */
 	const struct argp_option *real = argp->options;
-	const struct argp **parents = argp->parents;
+	const struct argp **children = argp->children;
 
 	if (real || argp->parser)
 	  {
@@ -357,13 +389,32 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    group->parser = argp->parser;
 	    group->short_end = short_end;
 	    group->args_processed = 0;
+	    group->parent = parent;
+	    group->parent_index = parent_index;
+	    group->hook = 0;
+	    group->child_hooks = 0;
 
-	    group++;
+	    if (children)
+	      /* Assign GROUP's CHILD_HOOKS field a slice from CHILD_HOOKS.  */
+	      {
+		unsigned num_children = 0;
+		while (children[num_children])
+		  num_children++;
+		group->child_hooks = child_hooks;
+		child_hooks += num_children;
+	      }
+
+	    parent = group++;
 	  }
+	else
+	  parent = 0;
 
-	if (parents)
-	  while (*parents)
-	    group = convert_options (*parents++, group);
+	if (children)
+	  {
+	    unsigned index = 0;
+	    while (*children)
+	      group = convert_options (*children++, parent, index++, group);
+	  }
 
 	return group;
       }
@@ -381,9 +432,23 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     long_end->name = NULL;
 
     groups = alloca ((num_groups + 1) * sizeof (struct group));
+    child_hooks = alloca (num_child_hooks * sizeof (void *));
 
-    egroup = convert_options (state.argp, groups);
+    egroup = convert_options (state.argp, 0, 0, groups);
   }
+
+  /* Call each parser for the first time, giving it a chance to propagate
+     values to child parsers.  */
+  groups->hook = hook ? *hook : 0;
+  for (group = groups ; group < egroup && (!err || err == EINVAL); group++)
+    {
+      if (group->parent)
+	/* If is a child parser, get its initial hook value from the parent. */
+	group->hook = group->parent->child_hooks[group->parent_index];
+      err = group_parse (group, ARGP_KEY_INIT, 0);
+    }
+  if (err == EINVAL)
+    err = 0;			/* Some parser didn't understand.  */
 
   /* Getopt is (currently) non-reentrant.  */
   mutex_lock (&getopt_lock);
@@ -473,11 +538,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	 just a few more times... */
       {
 	for (group = groups; group < egroup && (!err || err ==EINVAL); group++)
-	  if (group->args_processed == 0 && group->parser)
-	    err = (*group->parser)(ARGP_KEY_NO_ARGS, 0, &state);
+	  if (group->args_processed == 0)
+	    err = group_parse (group, ARGP_KEY_NO_ARGS, 0);
 	for (group = groups; group < egroup && (!err || err ==EINVAL); group++)
-	  if (group->parser)
-	    err = (*group->parser)(ARGP_KEY_END, 0, &state);
+	  err = group_parse (group, ARGP_KEY_END, 0);
 	if (err == EINVAL)
 	  err = 0;		/* Some parser didn't understand.  */
       }
@@ -487,18 +551,43 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     else
       /* No way to return the remaining arguments, they must be bogus. */
       {
-	if (! (state.flags & ARGP_NO_HELP))
+	if (! (state.flags & ARGP_NO_ERRS))
 	  fprintf (stderr, "%s: Too many arguments\n",
 		   program_invocation_name);
 	err = EINVAL;
       }
 
-  if (err && !(state.flags & ARGP_NO_HELP))
+  /* Okay, we're all done, with either an error or success.  We only call the
+     parsers once more, to indicate which one.  */
+
+  if (err)
     {
-      unsigned usage_flags = ARGP_HELP_STD_ERR;
-      if (state.flags & ARGP_NO_EXIT)
-	usage_flags &= ~ARGP_HELP_EXIT;
-      argp_help (state.argp, stderr, usage_flags);
+      /* Maybe print an error message.  */
+      argp_state_help (&state, stderr, ARGP_HELP_STD_ERR);
+
+      /* Since we didn't exit, give each parser an error indication.  */
+      for (group = groups; group < egroup; group++)
+	group_parse (group, ARGP_KEY_ERROR, 0);
+    }
+  else
+    /* Do final cleanup, including propagating back values from parsers.  */
+    {
+      /* We pass over the groups in reverse order so that child groups are
+	 given a chance to do there processing before passing back a value to
+	 the parent.  */
+      for (group = egroup - 1
+	   ; group >= groups && (!err || err == EINVAL)
+	   ; group--)
+	{
+	  err = group_parse (group, ARGP_KEY_SUCCESS, 0);
+	  if (group->parent)
+	    /* Pass back any value from the child to its parent.  */
+	    group->parent->child_hooks[group->parent_index] = group->hook;
+	}
+      if (err == EINVAL)
+	err = 0;		/* Some parser didn't understand.  */
+      if (!err && hook)
+	*hook = groups->hook;	/* Return the final value to the user.  */
     }
 
   return err;
