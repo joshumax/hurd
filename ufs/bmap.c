@@ -1,5 +1,5 @@
 /* Interpretation of indirect block structure
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -32,7 +32,8 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
   error_t err;
   daddr_t *siblock;
   
-  if (err = diskfs_catch_exception ())
+  err = diskfs_catch_exception ();
+  if (err)
     return err;
   
   indirs[0].offset = -2;
