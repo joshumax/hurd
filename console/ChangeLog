@@ -1,3 +1,8 @@
+2005-01-19  Marco Gerards   <metgerards@student.han.nl>
+
+	* README.UTF8: New file.
+	* motd.UTF8: Likewise.
+
 2003-04-29  Marco Gerards   <metgerards@student.han.nl>
 
 	* display.c (display_create): Added arguments width, height and

@@ -1,0 +1,143 @@
+
+The console server supports any encoding supported by iconv, but uses
+Unicode internally.  The default encoding is ISO8859-1, another useful
+variant is UTF-8.  To configure the console server to use UTF-8 you
+have to use the `--encoding' argument:
+
+# settrans -fg /dev/vcs /hurd/console --encoding=UTF-8
+
+If you actually try this, you will notice two problems:
+
+1. You can not enter the letters in your locale, because the keyboard
+doesn't have the right layout.  Keyboard maps come later.  For now,
+you have to help yourself with the direct input with RightAlt.  Maybe
+I will put a simple compose key feature in the pc_kbd driver, so that
+some western locales can be used more easily.
+
+2. If you bother to look up the unicode hex code and enter it with
+AltGr, the font can not display it!  If you are using the ncursesw
+driver, do you use it while you are logged in from a working UTF-8
+terminal?  If not, then this is your problem.  An ncurses driver for
+non-UTF-8 terminals is on the TODO list.  But if you use the VGA
+driver, you need to load a different font.
+
+This is because by default, the vga driver just reads the VGA card
+memory and takes the font that is stored there.  This font has a
+limited characterset (256 characters, many graphical symbols among
+that), so you won't get more than a few western characters with that.
+
+Unicode support
+===============
+
+But you want it all.  You want to read Middle Old English.  You want
+to read Thai.  Your Korean spam.  Georgian script.  Hebrew.  And you
+can have it.
+
+You need a Unicode font.  There are good ones provided by Markus Kuhn,
+the UCS fonts.  Get them here:
+
+http://www.cl.cam.ac.uk/~mgk25/download/ucs-fonts.tar.gz
+
+(See also the web page at http://www.cl.cam.ac.uk/~mgk25/ucs-fonts.html).
+
+Now, load the font by providing it with the --font option to the vga
+driver.  I suggest only the 8x13 and the 9x15 fonts, but feel free to
+try others, too.  Note that the VGA text mode can not really display 9
+pixel wide characters.  But as most characters have the ninth column
+empty, and the VGA text mode can display an empty column between two
+adjacent character cells, this trick allows us to display most of the
+9x15 font correctly.  So you won't notice a difference until you come
+to very broad characters or special symbols, where you will see that
+the last column is cut off.  (BTW, I wrote the dynafont code carefully
+to still support horizontal line graphic characters properly in 9
+pixel wide fonts.  This is done by exploiting some special modes in
+the VGA hardware.  This is why in 512 (256) glyph mode and 9 pixel
+wide fonts, you are limited to 448 (224) normal characters: 64 (32)
+slots are reserved for the horizontal line graphic characters so they
+are drawn continuously.)
+
+So, try the following:
+
+# console -d vga --font 8x13.bdf -d pc_kbd -d generic_speaker /dev/vcs
+
+or
+
+# console -d vga --font 9x15.bdf -d pc_kbd -d generic_speaker /dev/vcs
+
+If you are satisfied, copy your default font to
+/lib/hurd/fonts/vga-system.bdf, where it will be picked up
+automatically in favor to the graphic card's font.
+
+More about fonts
+================
+
+While we are talking about fonts, try also the 8x13O font with
+--font-italic and 8x13B or 9x15B font with --font-bold.  You can save
+them in /lib/hurd/fonts/vga-system-bold.bdf and
+/lib/hurd/fonts/vga-system-italic.bdf, too.
+
+To activate those fonts on your virtual console, try the following:
+
+# echo `tput sitm`Hello slanted world.`tput ritm`
+
+and
+
+# echo `tput gsbom`Hello bold world.`tput grbom`
+
+I hope you like what you see.  Imagine this in emacs font-lock mode.
+
+
+Unicode, finally
+================
+
+There are a few more steps necessary to make your Unicode environment
+ready:
+
+Add a Unicode locale to /etc/locale.gen, and generate the locale
+information for that!  For example, I am living in Germany, and
+normally use de_DE with the encoding ISO8859-1.  My Unicode locale is
+de_DE.UTF-8, so I am adding that to /etc/locale.gen:
+
+de_DE.UTF-8 UTF-8
+
+and rerun locale-gen:
+
+# locale-gen
+
+See also /share/i18n/SUPPORTED.  You can also do this more conveniently with
+
+# dpkg-reconfigure locales
+
+Once you generated this, make it your default locale:
+
+# export LANG=de_DE.UTF-8
+
+If you have also loaded the unicode font above, you are set up.  Try
+for example to view the examples/ files in the ucs-fonts package with
+less.
+
+# less fonts/examples/UTF_8-demo.txt
+
+You should see most of that file with the 9x15 font (a bit less with
+the 8x13 font).
+
+You should be able to do the above process with other encodings than
+UTF-8.  But you should _always_ use a Unicode font, because the
+console client uses Unicode internally for everything.
+
+Application specific notes
+==========================
+
+If you enter unicode characters at the shell, libreadline loses track
+of the number of characters displayed (it is not aware of multi-byte
+encodings like UTF-8).  This is fixed in readline 4.3 (which is not
+yet in Debian).
+
+If you use mutt, install mutt-utf8.  For lynx, edit /etc/lynx.cfg,
+making sure that CHARACTER_SET is set to utf-8.
+
+If you use other applications, try to search with google for
+"application-name utf8" or "application-name unicode".  Often you find
+what you need.  The issues are the same for the GNU/Hurd and GNU/Linux
+systems, so most of the information can be shared, except how to setup
+the system console to support Unicode, of course.
