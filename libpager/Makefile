@@ -31,14 +31,13 @@ SRCS = $(subst .o,.c,$(COBJS))
 
 DIST_FILES = $(SRCS) Makefile pager.h priv.h
 
-all: libpager.a(__.SYMDEF)
+all: libpager.a
 
-libpager.a(__.SYMDEF): $(OBJS)
+libpager.a: $(OBJS)
 	rm -f libpager.a
 	ar r $@ $^
-	ranlib $@
 
-$(hurdinst)/lib/libpager.a: libpager.a(__.SYMDEF)
+$(hurdinst)/lib/libpager.a: libpager.a
 	cp libpager.a $@
 	ranlib $@
 
