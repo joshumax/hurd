@@ -1,3 +1,12 @@
+1997-08-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpcp.c (eappend, ebasename): New functions.
+	(main): Use them.
+
+	* ftpcp.c (cntl_debug): Print CONN->hook as a string before any output.
+	(main): Set the connection hooks to appropriate strings.
+	(econnect): Add NAME parameter, & set connection hook from it.
+
 1997-07-29  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpcp.c (main): When mungeing the destination to copy into a
