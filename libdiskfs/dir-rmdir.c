@@ -1,5 +1,5 @@
 /* libdsikfs implementation of fs.defs: dir_rmdir
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97,99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -25,13 +25,27 @@ diskfs_S_dir_rmdir (struct protid *dircred,
 		    char *name)
 {
   struct node *dnp;
-  struct node *np = 0;
+  struct node *np;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t error;
 
+  /* This routine cleans up the state we have after calling diskfs_lookup.
+     After that call, all returns are done with `return done (ERROR, NP);'.  */
+  inline error_t done (error_t error, struct node *np)
+    {
+      if (np)
+	diskfs_nput (np);
+
+      if (ds)
+	diskfs_drop_dirstat (dnp, ds);
+      mutex_unlock (&dnp->lock);
+
+      return error;
+    }
+
   if (!dircred)
     return EOPNOTSUPP;
-  
+
   dnp = dircred->po->np;
   if (diskfs_check_readonly ())
     return EROFS;
@@ -39,40 +53,29 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
-  if (error == EAGAIN)
-    error = ENOTEMPTY;
-
   if (error)
-    goto out;
+    return done (error == EAGAIN ? ENOTEMPTY : error, 0);
 
-  /* Attempt to rmdir(".") */
   if (dnp == np)
     {
+      /* Attempt to rmdir(".") */
       diskfs_nrele (np);
       diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return EINVAL;
     }
 
-  if ((np->dn_stat.st_mode & S_IPTRANS)
-      || fshelp_translated (&np->transbox))
-    {
-      error = EBUSY;
-      goto out;
-    }
+  if ((np->dn_stat.st_mode & S_IPTRANS) || fshelp_translated (&np->transbox))
+    /* Attempt to rmdir a translated node.  */
+    return done (EBUSY, np);
 
   if (!S_ISDIR (np->dn_stat.st_mode))
-    {
-      error = ENOTDIR;
-      goto out;
-    }
+    return done (ENOTDIR, np);
 
   if (!diskfs_dirempty (np, dircred))
-    {
-      error = ENOTEMPTY;
-      goto out;
-    }
-  
+    return done (ENOTEMPTY, np);
+
+  /* Here we go!  */
   error = diskfs_dirremove (dnp, np, name, ds);
   ds = 0;
 
@@ -87,10 +90,5 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (diskfs_synchronous)
     diskfs_file_update (dnp, 1);
 
- out:
-  if (ds)
-    diskfs_drop_dirstat (dnp, ds);
-  diskfs_nput (np);
-  mutex_unlock (&dnp->lock);
-  return 0;
+  return done (error, np);
 }
