@@ -20,6 +20,8 @@
    with this program; if not, write to the Free Software Foundation, Inc.,
    675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <string.h>
+
 #include "store.h"
 
 /* Returns in RUNS the tail of STORE's run list, who's first run contains
@@ -27,7 +29,7 @@
    the run list.  Returns the offset within it at which ADDR occurs.  */
 static inline off_t
 store_find_first_run (struct store *store, off_t addr,
-		      off_t **runs, unsigned *runs_end)
+		      off_t **runs, off_t **runs_end)
 {
   off_t *tail = store->runs, *tail_end = tail + store->runs_len;
 
@@ -36,7 +38,6 @@ store_find_first_run (struct store *store, off_t addr,
      binary search or something.  */
   while (tail < tail_end)
     {
-      off_t run_addr = tail[0];
       off_t run_blocks = tail[1];
 
       if (run_blocks > addr)
@@ -58,11 +59,10 @@ store_find_first_run (struct store *store, off_t addr,
    in AMOUNT.  ADDR is in BLOCKS (as defined by store->block_size).  */
 error_t
 store_write (struct store *store,
-	     off_t addr, char *buf, size_t len, size_t *amount);
+	     off_t addr, char *buf, size_t len, size_t *amount)
 {
   error_t err;
-  off_t *runs;
-  unsigned runs_end;
+  off_t *runs, *runs_end;
   store_write_meth_t write = store->meths->write;
 
   addr = store_find_first_run (store, addr, &runs, &runs_end);
@@ -74,7 +74,7 @@ store_write (struct store *store,
   else
     /* ARGH, we've got to split up the write ... */
     {
-      off_t written;
+      mach_msg_type_number_t written;
 
       /* Write the initial bit in the first run.  Errors here are returned.  */
       err = (*write)(store, runs[0] + addr, buf, runs[1], &written);
@@ -100,8 +100,9 @@ store_write (struct store *store,
 	      else
 		/* Ok, we can write in this run, at least a bit.  */
 		{
+		  mach_msg_type_number_t seg_written;
 		  off_t run_len = (run_blocks << block_shift);
-		  off_t seg_len = run_len > len ? len : run_len;
+		  size_t seg_len = run_len > len ? len : run_len;
 
 		  err = (*write)(store, run_addr, buf, seg_len, &seg_written);
 		  if (err)
@@ -133,14 +134,13 @@ store_read (struct store *store,
 	    off_t addr, size_t amount, char **buf, size_t *len)
 {
   error_t err;
-  off_t *runs;
-  unsigned runs_end;
+  off_t *runs, *runs_end;
   store_read_meth_t read = store->meths->read;
 
   addr = store_find_first_run (store, addr, &runs, &runs_end);
   if (addr < 0)
     err = EIO;
-  else if (runs[1] >= len)
+  else if (runs[1] >= amount)
     /* The first run has it all... */
     err = (*read)(store, runs[0] + addr, amount, buf, len);
   else
@@ -174,6 +174,7 @@ store_read (struct store *store,
 	      amount -= seg_buf_len;
 	      *all = (seg_buf_len == len);
 	    }
+	  return err;
 	}
 
       if (whole_buf_left < amount)
@@ -186,7 +187,7 @@ store_read (struct store *store,
 	    return err;		/* Punt early, there's nothing to clean up.  */
 	}
 
-      err = seg_read (store, runs[0] + addr, runs[1], &all);
+      err = seg_read (runs[0] + addr, runs[1], &all);
 
       if (!err && all)
 	{
