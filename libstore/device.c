@@ -62,8 +62,11 @@ dev_write (struct store *store,
 	   const void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
-  return dev_error (device_write (store->port, 0, addr,
-				  (io_buf_ptr_t)buf, len, amount));
+  error_t err = dev_error (device_write (store->port, 0, addr,
+					 (io_buf_ptr_t)buf, len,
+					 (int *) amount));
+  *amount = *(int *) amount;	/* stupid device.defs uses int */
+  return err;
 }
 
 static error_t
@@ -119,7 +122,7 @@ static error_t
 enforced (struct store *store)
 {
   error_t err;
-  size_t sizes[DEV_STATUS_MAX];
+  dev_status_data_t sizes;
   size_t sizes_len = DEV_STATUS_MAX;
 
   if (store->num_runs != 1 || store->runs[0].start != 0)
@@ -248,7 +251,7 @@ store_device_create (device_t device, int flags, struct store **store)
 {
   struct store_run run;
   size_t block_size = 0;
-  size_t sizes[DEV_STATUS_MAX];
+  dev_status_data_t sizes;
   size_t sizes_len = DEV_STATUS_MAX;
   error_t err;
 
