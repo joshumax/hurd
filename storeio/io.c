@@ -41,6 +41,8 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
+  else if (! (cred->po->openmodes & (O_READ|O_WRITE)))
+    return EINVAL;
   else
     {
       mach_port_t memobj;
@@ -86,7 +88,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   if (! cred)
     return EOPNOTSUPP;
   else if (!(cred->po->openmodes & O_READ))
-    return EBADF;
+    return EINVAL;
   else
     return open_read ((struct open *)cred->po->hook,
 		      offs, amount, (void **)data, data_len);
