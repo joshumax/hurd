@@ -50,6 +50,7 @@ struct node *diskfs_root_node;
 mach_port_t default_pager;
 
 off_t tmpfs_page_limit, tmpfs_space_used;
+mode_t tmpfs_root_mode = -1;
 
 error_t
 diskfs_set_statfs (struct statfs *st)
@@ -95,6 +96,17 @@ diskfs_reload_global_state ()
 
 int diskfs_synchronous = 0;
 
+static const struct argp_option options[] =
+{
+  {"mode", 'm', "MODE", 0, "Permissions (octal) for root directory"},
+  {NULL,}
+};
+
+struct option_values
+{
+  off_t size;
+  mode_t mode;
+};
 
 /* Parse a command line option.  */
 static error_t
@@ -102,10 +114,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 {
   /* We save our parsed values in this structure, hung off STATE->hook.
      Only after parsing all options successfully will we use these values.  */
-  struct
-  {
-    off_t size;
-  } *values = state->hook;
+  struct option_values *values = state->hook;
 
   switch (key)
     {
@@ -115,7 +124,30 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (values == 0)
 	return ENOMEM;
       state->hook = values;
-      bzero (values, sizeof *values);
+      values->size = 0;
+      values->mode = -1;
+      break;
+    case ARGP_KEY_FINI:
+      free (values);
+      state->hook = 0;
+      break;
+
+    case 'm':			/* --mode=OCTAL */
+      {
+	char *end = NULL;
+	mode_t mode = strtoul (state->argv[state->next], &end, 8);
+	if (end == NULL || end == arg)
+	  {
+	    argp_error (state, "argument must be an octal number");
+	    return EINVAL;
+	  }
+	if (mode & S_IFMT)
+	  {
+	    argp_error (state, "invalid bits in mode");
+	    return EINVAL;
+	  }
+	values->mode = mode;
+      }
       break;
 
     case ARGP_KEY_NO_ARGS:
@@ -168,6 +200,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case ARGP_KEY_SUCCESS:
       /* All options parse successfully, so implement ours if possible.  */
       tmpfs_page_limit = values->size / vm_page_size;
+      tmpfs_root_mode = values->mode;
       break;
 
     default:
@@ -261,6 +294,7 @@ main (int argc, char **argv)
      set properly, it is safe to export our fsys control port to the
      outside world.  */
   realnode = diskfs_startup_diskfs (bootstrap, 0);
+  diskfs_root_node->dn_stat.st_mode = S_IFDIR;
 
   /* Propagate permissions, owner, etc. from underlying node to
      the root directory of the new (empty) filesystem.  */
@@ -268,19 +302,27 @@ main (int argc, char **argv)
   if (err)
     {
       error (0, err, "cannot stat underlying node");
-      diskfs_root_node->dn_stat.st_mode = S_IFDIR | 0777 | S_ISVTX;
+      if (tmpfs_root_mode == -1)
+	diskfs_root_node->dn_stat.st_mode |= 0777 | S_ISVTX;
+      else
+	diskfs_root_node->dn_stat.st_mode |= tmpfs_root_mode;
       diskfs_root_node->dn_set_ctime = 1;
       diskfs_root_node->dn_set_mtime = 1;
       diskfs_root_node->dn_set_atime = 1;
     }
   else
     {
-      diskfs_root_node->dn_stat.st_mode = S_IFDIR | (st.st_mode &~ S_IFMT);
-      if (S_ISREG(st.st_mode) && (st.st_mode & 0111) == 0)
-	/* There are no execute bits set, as by default on a plain file.
-	   For the virtual directory, set execute bits where read bits are
-	   set on the underlying plain file.  */
-	diskfs_root_node->dn_stat.st_mode |= (st.st_mode & 0444) >> 2;
+      if (tmpfs_root_mode == -1)
+	{
+	  diskfs_root_node->dn_stat.st_mode |= st.st_mode &~ S_IFMT;
+	  if (S_ISREG (st.st_mode) && (st.st_mode & 0111) == 0)
+	    /* There are no execute bits set, as by default on a plain file.
+	       For the virtual directory, set execute bits where read bits are
+	       set on the underlying plain file.  */
+	    diskfs_root_node->dn_stat.st_mode |= (st.st_mode & 0444) >> 2;
+	}
+      else
+	diskfs_root_node->dn_stat.st_mode |= tmpfs_root_mode;
       diskfs_root_node->dn_stat.st_uid = st.st_uid;
       diskfs_root_node->dn_stat.st_author = st.st_author;
       diskfs_root_node->dn_stat.st_gid = st.st_gid;
