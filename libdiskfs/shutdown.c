@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -25,7 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 struct rwlock diskfs_fsys_lock = RWLOCK_INITIALIZER;
 
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
-error_t 
+error_t
 diskfs_shutdown (int flags)
 {
   int nports = -1;
@@ -47,13 +47,13 @@ diskfs_shutdown (int flags)
 	else
 	  error = 0;
 	mutex_lock (&np->lock);
-	
+
 	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
 	  error = 0;
-	
+
 	return error;
       }
-  
+
   if ((flags & FSYS_GOAWAY_UNLINK)
        && S_ISDIR (diskfs_root_node->dn_stat.st_mode))
     return EBUSY;
@@ -66,7 +66,7 @@ diskfs_shutdown (int flags)
     }
 
   rwlock_writer_lock (&diskfs_fsys_lock);
-  
+
   /* Permit all the current RPC's to finish, and then
      suspend new ones.  */
   err = ports_inhibit_class_rpcs (diskfs_protid_class);
@@ -76,9 +76,17 @@ diskfs_shutdown (int flags)
       return err;
     }
 
+  /* Write everything out and set "clean" state.
+     Even if we don't in fact shut down now, this has the nice
+     effect that a disk that has not been writtne for a long time
+     will not need checking after a crash.  */
+  diskfs_sync_everything (1);
+  diskfs_set_hypermetadata (1, 1);
+  _diskfs_diskdirty = 0;
+
   /* First, see if there are outstanding user ports. */
   nports = ports_count_class (diskfs_protid_class);
-  if (((flags & FSYS_GOAWAY_FORCE) == 0) 
+  if (((flags & FSYS_GOAWAY_FORCE) == 0)
       && (nports || diskfs_pager_users ()))
     {
       ports_enable_class (diskfs_protid_class);
