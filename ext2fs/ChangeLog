@@ -1,3 +1,13 @@
+Fri Aug  2 12:10:40 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_write_disknode): If WAIT is false, still record
+ 	the write for later, using record_global_poke.
+
+Thu Aug  1 16:18:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2_fs.h (ext2_debug_flag): New decl.
+	(ext2_debug): Pay attention to EXT2_DEBUG_FLAG.
+
 Sat Jul 20 00:58:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.h (struct disknode): Remove debugging info.
