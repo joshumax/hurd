@@ -26,8 +26,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <argz.h>
+#include <argp.h>
+#include <hurd/store.h>
 
 struct node *diskfs_root_node;
+
+struct store *store = 0;
+struct store_parsed *store_parsed = 0;
+
+char *diskfs_disk_name = 0;
 
 /* Set diskfs_root_node to the root inode. */
 static void
@@ -66,7 +73,7 @@ options[] =
   {0}
 };
 
-/* Parse a command line option.  */
+/* Parse a ufs-specific command line option.  */
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
@@ -101,6 +108,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_INIT:
+      state->child_inputs[0] = state->input;
       state->hook = (void *)compat_mode; break;
     case ARGP_KEY_SUCCESS:
       compat_mode = (enum compat_mode)state->hook; break;
@@ -112,7 +120,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 }
 
 /* Add our startup arguments to the standard diskfs set.  */
-static const struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
+static const struct argp *startup_parents[] = { &diskfs_store_startup_argp, 0};
 static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
 
 /* Similarly at runtime.  */
@@ -123,26 +131,21 @@ struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
 /* Override the standard diskfs routine so we can add our own output.  */
 error_t
-diskfs_get_options (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, unsigned *argz_len)
 {
   error_t err;
-
-  *argz = 0;
-  *argz_len = 0;
 
   /* Get the standard things.  */
   err = diskfs_append_std_options (argz, argz_len);
 
   if (!err && compat_mode != COMPAT_GNU)
-    {
-      err =
-	argz_add (argz, argz_len,
-		  ((compat_mode == COMPAT_BSD42)
-		   ? "--compat=4.2"
-		   : "--compat=4.4"));
-      if (err)
-	free (argz);		/* Deallocate what diskfs returned.  */
-    }
+    err = argz_add (argz, argz_len,
+		    ((compat_mode == COMPAT_BSD42)
+		     ? "--compat=4.2"
+		     : "--compat=4.4"));
+
+  if (! err)
+    err = store_parsed_append_args (store_parsed, argz, argz_len);
 
   return err;
 }
@@ -151,22 +154,23 @@ int
 main (int argc, char **argv)
 {
   error_t err;
-  off_t disk_size;
   mach_port_t bootstrap;
+  struct store_argp_params store_params = { 0 };
 
-  argp_parse (&startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&startup_argp, argc, argv, 0, 0, &store_params);
+  store_parsed = store_params.result;
+
+  err = store_parsed_name (store_parsed, &diskfs_disk_name);
+  if (err)
+    error (2, err, "store_parsed_name");
 
   /* This must come after the args have been parsed, as this is where the
      host priv ports are set for booting.  */
   diskfs_console_stdio ();
 
   if (diskfs_boot_flags)
-    {
       /* We are the bootstrap filesystem.  */
-      bootstrap = MACH_PORT_NULL;
-      diskfs_use_mach_device = 1;
-      compat_mode = COMPAT_GNU;
-    }
+    bootstrap = MACH_PORT_NULL;
   else
     {
       task_get_bootstrap_port (mach_task_self (), &bootstrap);
@@ -179,19 +183,19 @@ main (int argc, char **argv)
   if (err)
     error (4, err, "init");
 
-  err = diskfs_device_open ();
+  err = store_parsed_open (store_parsed, diskfs_readonly ? STORE_READONLY : 0,
+			   &store);
   if (err)
-    error (3, err, "%s", diskfs_device_arg);
+    error (3, err, "%s", diskfs_disk_name);
 
-  if (diskfs_device_block_size != DEV_BSIZE)
+  if (store->block_size != DEV_BSIZE)
     error (4, err, "%s: Bad device record size %d (should be %d)",
-	   diskfs_device_arg, diskfs_device_block_size, DEV_BSIZE);
-  if (diskfs_log2_device_block_size == 0)
+	   diskfs_disk_name, store->block_size, DEV_BSIZE);
+  if (store->log2_block_size == 0)
     error (4, err, "%s: Device block size (%d) not a power of 2",
-	   diskfs_device_arg, diskfs_device_block_size);
+	   diskfs_disk_name, store->block_size);
 
-  disk_size = diskfs_device_size << diskfs_log2_device_block_size;
-  assert (disk_size >= SBSIZE + SBOFF);
+  assert (store->size >= SBSIZE + SBOFF);
 
   /* Map the entire disk. */
   create_disk_pager ();
@@ -221,7 +225,7 @@ error_t
 diskfs_reload_global_state ()
 {
   flush_pokes ();
-  pager_flush (disk_pager, 1);
+  pager_flush (diskfs_disk_pager, 1);
   get_hypermetadata ();
   return 0;
 }
