@@ -183,7 +183,13 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
 	  if (err2)
 	    {
 	      if (np && !err)
-		diskfs_nput (*np);
+		{
+		  if (*np == dp)
+		    diskfs_nrele (*np);
+		  else
+		    diskfs_nput (*np);
+		  *np = 0;
+		}
 	      return err2;
 	    }
 	}

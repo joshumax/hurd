@@ -42,6 +42,9 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (error == EAGAIN)
     error = ENOTEMPTY;
 
+  if (error)
+    goto out;
+
   /* Attempt to rmdir(".") */
   if (dnp == np)
     {
