@@ -85,6 +85,7 @@ parse_hook_add_interface (struct parse_hook *h)
   h->interfaces = new;
   h->num_interfaces++;
   h->curint = new + h->num_interfaces - 1;
+  h->curint->device = 0;
   h->curint->address = INADDR_NONE;
   h->curint->netmask = INADDR_NONE;
   h->curint->gateway = INADDR_NONE;
@@ -154,11 +155,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case 'a':
       h->curint->address = ADDR (arg, "address"); 
-      if (!IN_CLASSA (h->curint->address)
-	  && !IN_CLASSB (h->curint->address)
-	  && !IN_CLASSC (h->curint->address))
+      if (!IN_CLASSA (ntohl (h->curint->address))
+	  && !IN_CLASSB (ntohl (h->curint->address))
+	  && !IN_CLASSC (ntohl (h->curint->address)))
 	{
-	  if (IN_MULTICAST (h->curint->address))
+	  if (IN_MULTICAST (ntohl (h->curint->address)))
 	    FAIL (EINVAL, 1, 0, 
 		  "%s: Cannot set interface address to multicast address", 
 		  arg);
@@ -203,8 +204,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
       /* Check for bogus option combinations.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
-	if (in->address == INADDR_NONE && in->netmask != INADDR_NONE
-	    && in->device->pa_addr != 0)
+	if (in->netmask != INADDR_NONE
+	    && in->address == INADDR_NONE && in->device->pa_addr == 0)
 	  /* Specifying a netmask for an address-less interface is a no-no.  */
 	  FAIL (EDESTADDRREQ, 14, 0, "Cannot set netmask");
 
@@ -215,11 +216,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
 	    {
 	      if (dev->pa_addr != 0)
-		/* There's already an addres, delete it.  */
-		{
-		  dev->pa_addr = 0;
-		  /* ....  */
-		}
+		/* There's already an address, delete the old entry.  */
+		ip_rt_del (dev->pa_addr & dev->pa_mask, dev);
 
 	      if (in->address != INADDR_NONE)
 		dev->pa_addr = in->address;
@@ -228,12 +226,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 		dev->pa_mask = in->netmask;
 	      else
 		{
-		  if (IN_CLASSA (in->address))
-		    dev->pa_mask = IN_CLASSA_NET;
-		  else if (IN_CLASSB (in->address))
-		    dev->pa_mask = IN_CLASSB_NET;
-		  else if (IN_CLASSC (in->address))
-		    dev->pa_mask = IN_CLASSC_NET;
+		  if (IN_CLASSA (ntohl (dev->pa_addr)))
+		    dev->pa_mask = htonl (IN_CLASSA_NET);
+		  else if (IN_CLASSB (ntohl (dev->pa_addr)))
+		    dev->pa_mask = htonl (IN_CLASSB_NET);
+		  else if (IN_CLASSC (ntohl (dev->pa_addr)))
+		    dev->pa_mask = htonl (IN_CLASSC_NET);
 		  else
 		    abort ();
 		}
@@ -241,11 +239,14 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      dev->family = AF_INET;
 	      dev->pa_brdaddr = dev->pa_addr | ~dev->pa_mask;
 
-	      ip_rt_add (0, dev->pa_addr & dev->pa_mask,
-			 dev->pa_mask, 0, dev, 0, 0);
+	      ip_rt_add (0, dev->pa_addr & dev->pa_mask, dev->pa_mask,
+			 0, dev, 0, 0);
 	    }
 	  if (in->gateway != INADDR_NONE)
-	    ip_rt_add (RTF_GATEWAY, 0, 0, in->gateway, dev, 0, 0);
+	    {
+	      ip_rt_del (0, dev);
+	      ip_rt_add (RTF_GATEWAY, 0, 0, in->gateway, dev, 0, 0);
+	    }
 	}
       /* Fall through to free hook.  */
 
@@ -273,26 +274,32 @@ trivfs_get_options (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 {
   error_t add_dev_opts (struct device *dev)
     {
-      struct in_addr i;
       error_t err = 0;
 
-#define ADD_OPT(fmt, args...)						      \
-  do { char buf[100];							      \
-       if (! err) {							      \
-         snprintf (buf, sizeof buf, fmt , ##args);			      \
+#define ADD_OPT(fmt, args...)						\
+  do { char buf[100];							\
+       if (! err) {							\
+         snprintf (buf, sizeof buf, fmt , ##args);			\
          err = argz_add (argz, argz_len, buf); } } while (0)
+#define ADD_ADDR_OPT(name, addr)					\
+  do { struct in_addr i;						\
+       i.s_addr = (addr);						\
+       ADD_OPT ("--%s=%s", name, inet_ntoa (i)); } while (0)
 
       ADD_OPT ("--interface=%s", dev->name);
       if (dev->pa_addr != 0)
-        ADD_OPT ("--address=%s", inet_ntoa ((i.s_addr = dev->pa_addr, i)));
+        ADD_ADDR_OPT ("address", dev->pa_addr);
       if (dev->pa_mask != 0)
-        ADD_OPT ("--netmask=%s", inet_ntoa ((i.s_addr = dev->pa_mask, i)));
+        ADD_ADDR_OPT ("netmask", dev->pa_mask);
 
       /* XXX how do we figure out the default gateway?  */
 #undef ADD_OPT
 
       return err;
     }
+
+  *argz = 0;
+  *argz_len = 0;
 
   return enumerate_devices (add_dev_opts);
 }
