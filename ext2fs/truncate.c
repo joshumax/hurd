@@ -33,18 +33,46 @@
  *  Copyright (C) 1991, 1992  Linus Torvalds
  */
 
-/*
- * Truncate has the most races in the whole filesystem: coding it is
- * a pain in the a**. Especially as I don't do any locking...
- *
- * The code may look a bit weird, but that's just because I've tried to
- * handle things like file-size changes in a somewhat graceful manner.
- * Anyway, truncating a file at the same time somebody else writes to it
- * is likely to result in pretty weird behaviour...
- *
- * The new code handles normal truncates (size = 0) as well as the more
- * general case (size = XXX). I hope.
- */
+#include "ext2fs.h"
+
+#ifdef DONT_CACHE_MEMORY_OBJECTS
+#define MAY_CACHE 0
+#else
+#define MAY_CACHE 1
+#endif
+
+/* ---------------------------------------------------------------- */
+
+/* Write something to each page from START to END inclusive of memory
+   object OBJ, but make sure the data doesns't actually change. */
+static void
+poke_pages (memory_object_t obj,
+	    vm_offset_t start,
+	    vm_offset_t end)
+{
+  vm_address_t addr, poke;
+  vm_size_t len;
+  error_t err;
+  
+  while (start < end)
+    {
+      len = 8 * vm_page_size;
+      if (len > end - start)
+	len = end - start;
+      addr = 0;
+      err = vm_map (mach_task_self (), &addr, len, 0, 1, obj, start, 0,
+		    VM_PROT_WRITE|VM_PROT_READ, VM_PROT_READ|VM_PROT_WRITE, 0);
+      if (!err)
+	{
+	  for (poke = addr; poke < addr + len; poke += vm_page_size)
+	    *(volatile int *)poke = *(volatile int *)poke;
+	  vm_deallocate (mach_task_self (), addr, len);
+	}
+      start += len;
+    }
+}
+
+/* ---------------------------------------------------------------- */
 
 #define DIRECT_BLOCK(length) \
   ((length + block_size - 1) / block_size)
@@ -70,16 +98,13 @@ trunc_direct (struct node * node, unsigned long length)
 
   for (i = direct_block ; i < EXT2_NDIR_BLOCKS ; i++)
     {
-      block = node->dn.info.i_data[i];
+      block = node->dn->info.i_data[i];
       if (!block)
 	continue;
 
       bh = bptr(block);
 
-      if (i < direct_block)
-	goto repeat;
-
-      node->dn.info.i_data[i] = 0;
+      node->dn->info.i_data[i] = 0;
 
       node->dn_stat.st_blocks -= blocks;
       node->dn_stat_dirty = 1;
@@ -103,6 +128,8 @@ trunc_direct (struct node * node, unsigned long length)
   if (free_count > 0)
     ext2_free_blocks (block_to_free, free_count);
 }
+
+/* ---------------------------------------------------------------- */
 
 static void
 trunc_indirect (struct node * node, unsigned long length,
@@ -119,12 +146,12 @@ trunc_indirect (struct node * node, unsigned long length,
 
   block = *p;
   if (!block)
-    return 0;
+    return;
 
   ind_bh = bptr (block);
   if (!ind_bh) {
     *p = 0;
-    return 0;
+    return;
   }
 
   for (i = indirect_block ; i < addr_per_block ; i++)
@@ -138,11 +165,9 @@ trunc_indirect (struct node * node, unsigned long length,
 	continue;
 
       bh = bptr (block);
-      if (i < indirect_block)
-	goto repeat;
 
       *ind = 0;
-      pokel_add (&node->dn.pokel, ind, sizeof *ind);
+      pokel_add (&node->dn->pokel, ind, sizeof *ind);
 
       if (free_count == 0)
 	{
@@ -181,9 +206,9 @@ trunc_indirect (struct node * node, unsigned long length,
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
-
-  return retry;
 }
+
+/* ---------------------------------------------------------------- */
 
 static void
 trunc_dindirect (struct node * node, unsigned long length,
@@ -197,13 +222,13 @@ trunc_dindirect (struct node * node, unsigned long length,
 
   block = *p;
   if (!block)
-    return 0;
+    return;
 
   dind_bh = bptr (block);
   if (!dind_bh)
     {
       *p = 0;
-      return 0;
+      return;
     }
 
   for (i = dindirect_block ; i < addr_per_block ; i++) {
@@ -215,9 +240,9 @@ trunc_dindirect (struct node * node, unsigned long length,
     if (!block)
       continue;
 
-    trunc_indirect (node, offset + (i * addr_per_block), dind);
+    trunc_indirect (node, length, offset + (i * addr_per_block), dind);
 
-    pokel_add (&node->dn.pokel, dindh_bh, block_size);
+    pokel_add (&node->dn->pokel, dind_bh, block_size);
   }
 
   dind = (u32 *) dind_bh;
@@ -233,9 +258,9 @@ trunc_dindirect (struct node * node, unsigned long length,
       node->dn_stat_dirty = 1;
       ext2_free_blocks (block, 1);
     }
-
-  return retry;
 }
+
+/* ---------------------------------------------------------------- */
 
 static void
 trunc_tindirect (struct node * node, unsigned long length)
@@ -243,19 +268,18 @@ trunc_tindirect (struct node * node, unsigned long length)
   int i, block;
   char * tind_bh;
   u32 * tind, * p;
-  int retry = 0;
   int blocks = block_size / 512;
   int tindirect_block = TINDIRECT_BLOCK (length);
 
-  p = node->dn.info.i_data + EXT2_TIND_BLOCK;
+  p = node->dn->info.i_data + EXT2_TIND_BLOCK;
   if (!(block = *p))
-    return 0;
+    return;
 
   tind_bh = bptr (block);
   if (!tind_bh)
     {
       *p = 0;
-      return 0;
+      return;
     }
 
   for (i = tindirect_block ; i < addr_per_block ; i++)
@@ -264,12 +288,12 @@ trunc_tindirect (struct node * node, unsigned long length)
 	i = 0;
 
       tind = i + (u32 *) tind_bh;
-      trunc_dindirect(node,
+      trunc_dindirect(node, length,
 		      (EXT2_NDIR_BLOCKS
 		       + addr_per_block
 		       + (i + 1) * addr_per_block * addr_per_block),
 		      tind);
-      pokel_add (&node->dn.pokel, tindh_bh, block_size);
+      pokel_add (&node->dn->pokel, tind_bh, block_size);
     }
 
   tind = (u32 *) tind_bh;
@@ -296,8 +320,10 @@ trunc_tindirect (struct node * node, unsigned long length)
 static void
 force_delayed_copies (struct node *node, off_t length)
 {
+  struct user_pager_info *upi;
+
   spin_lock (&node_to_page_lock);
-  upi = np->dn->fileinfo;
+  upi = node->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
   spin_unlock (&node_to_page_lock);
@@ -307,10 +333,10 @@ force_delayed_copies (struct node *node, off_t length)
       mach_port_t obj;
       
       pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
-      obj = diskfs_get_filemap (np);
-      poke_pages (obj, round_page (length), round_page (np->allocsize));
+      obj = diskfs_get_filemap (node);
+      poke_pages (obj, round_page (length), round_page (node->allocsize));
       mach_port_deallocate (mach_task_self (), obj);
-      pager_flush_some (upi->p, round_page(length), np->allocsize - length, 1);
+      pager_flush_some (upi->p, round_page(length), node->allocsize - length, 1);
       pager_unreference (upi->p);
     }
 }
@@ -318,10 +344,13 @@ force_delayed_copies (struct node *node, off_t length)
 static void
 enable_delayed_copies (struct node *node)
 {
+  struct user_pager_info *upi;
+
   spin_lock (&node_to_page_lock);
-  upi = np->dn->fileinfo;
+  upi = node->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
+
   spin_unlock (&node_to_page_lock);
   if (upi)
     {
@@ -332,16 +361,17 @@ enable_delayed_copies (struct node *node)
 
 /* ---------------------------------------------------------------- */
 
-/* The user must define this function.  Truncate locked node NP to be SIZE
-   bytes long.  (If NP is already less than or equal to SIZE bytes
+/* The user must define this function.  Truncate locked node NODE to be SIZE
+   bytes long.  (If NODE is already less than or equal to SIZE bytes
    long, do nothing.)  If this is a symlink (and diskfs_shortcut_symlink
    is set) then this should clear the symlink, even if 
    diskfs_create_symlink_hook stores the link target elsewhere.  */
 error_t
-diskfs_truncate (struct node *np, off_t length)
+diskfs_truncate (struct node *node, off_t length)
 {
+  error_t err;
   int offset;
-  mode_t mode = node->dn_state.st_mode;
+  mode_t mode = node->dn_stat.st_mode;
 
   if (S_ISDIR(mode))
     return EISDIR;
@@ -350,7 +380,7 @@ diskfs_truncate (struct node *np, off_t length)
   if (IS_APPEND(node) || IS_IMMUTABLE(node))
     return EINVAL;
 
-  if (length >= np->dn_stat.st_size)
+  if (length >= node->dn_stat.st_size)
     return 0;
 
   assert (!diskfs_readonly);
@@ -364,33 +394,33 @@ diskfs_truncate (struct node *np, off_t length)
   offset = length % block_size;
   if (offset > 0)
     {
-      diskfs_node_rdwr (np, (void *)zeroblock, length, block_size - offset,
+      diskfs_node_rdwr (node, (void *)zeroblock, length, block_size - offset,
 			1, 0, 0);
-      diskfs_file_update (np, 1);
+      diskfs_file_update (node, 1);
     }
 
   ext2_discard_prealloc(node);
 
-  force_delayed_copies (np, length);
+  force_delayed_copies (node, length);
 
-  rwlock_writer_lock (&np->dn->alloc_lock);
+  rwlock_writer_lock (&node->dn->alloc_lock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
-  np->dn_stat.st_size = length;
-  np->dn_set_mtime = 1;
-  np->dn_set_ctime = 1;
-  diskfs_node_update (np, 1);
+  node->dn_stat.st_size = length;
+  node->dn_set_mtime = 1;
+  node->dn_set_ctime = 1;
+  diskfs_node_update (node, 1);
 
   err = diskfs_catch_exception();
   if (!err)
     {
       trunc_direct(node, length);
       trunc_indirect (node, length, EXT2_IND_BLOCK,
-		      (u32 *) &node->dn.info.i_data[EXT2_IND_BLOCK]);
+		      (u32 *) &node->dn->info.i_data[EXT2_IND_BLOCK]);
       trunc_dindirect (node, length, EXT2_IND_BLOCK +
 		       EXT2_ADDR_PER_BLOCK(sblock),
-		       (u32 *) &node->dn.info.i_data[EXT2_DIND_BLOCK]);
+		       (u32 *) &node->dn->info.i_data[EXT2_DIND_BLOCK]);
       trunc_tindirect (node, length);
     }
 
@@ -399,17 +429,19 @@ diskfs_truncate (struct node *np, off_t length)
   node->dn_stat_dirty = 1;
 
   /* Now we can permit delayed copies again. */
-  enable_delayed_copies (np);
+  enable_delayed_copies (node);
+
+  return 0;
 }
 
 /* The user must define this function.  Grow the disk allocated to locked node
-   NP to be at least SIZE bytes, and set NP->allocsize to the actual
+   NODE to be at least SIZE bytes, and set NODE->allocsize to the actual
    allocated size.  (If the allocated size is already SIZE bytes, do
    nothing.)  CRED identifies the user responsible for the call.  */
 error_t
-diskfs_grow (struct node *np, off_t size, struct protid *cred)
+diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
-  if (size > np->allocsize)
-    np->allocsize = size;
+  if (size > node->allocsize)
+    node->allocsize = size;
   return 0;
 }
