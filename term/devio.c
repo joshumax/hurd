@@ -18,15 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include "term.h"
-#include <device/device.h>
-#include <device/device_request.h>
-#include <hurd/ports.h>
-#include <string.h>
-#include <sys/types.h>
-#include <hurd.h>
-#include <stdio.h>
+/* Avoid defenition of the baud rates from <ternios.h> at a later time.  */
+#include <termios.h>
 
+/* And undefine the baud rates to avoid warnings from
+   <device/tty_status.h>.  */
 #undef B50
 #undef B75
 #undef B110
@@ -46,7 +42,22 @@
 #undef B115200
 #undef EXTA
 #undef EXTB
+
+#include <assert.h>
+#include <errno.h>
+#include <error.h>
+#include <string.h>
+
+#include <device/device.h>
+#include <device/device_request.h>
 #include <device/tty_status.h>
+#include <cthreads.h>
+
+#include <hurd.h>
+#include <hurd/ports.h>
+
+#include "term.h"
+
 
 /* This flag is set if there is an outstanding device_write. */
 static int output_pending;
@@ -94,12 +105,11 @@ static void
 init_devio ()
 {
   mach_port_t host_priv;
-  errno = get_privileged_ports (&host_priv, &device_master);
-  if (errno)
-    {
-      perror ("Getting priviliged ports");
-      exit (1);
-    }
+  error_t err;
+
+  err = get_privileged_ports (&host_priv, &device_master);
+  if (err)
+    error (1, err, "Getting priviliged ports");
   mach_port_deallocate (mach_task_self (), host_priv);
   phys_reply_class = ports_create_class (0, 0);
 }
@@ -439,7 +449,7 @@ initial_open ()
 static void
 devio_desert_dtr ()
 {
-  dev_status_t bits;
+  int bits;
 
   /* Turn off DTR. */
   bits = TM_HUP;
