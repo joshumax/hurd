@@ -26,7 +26,9 @@ _pager_seqnos_memory_object_data_initialize (mach_port_t object,
 					     mach_port_seqno_t seqno,
 					     mach_port_t control,
 					     vm_offset_t offset,
-					     pointer_t data)
+					     pointer_t data,
+					     vm_size_t datalen)
 {
-  
-
+  _pager_do_write_request (object, seqno, control, offset, data,
+			   datalen, 1, 0, 1);
+}
