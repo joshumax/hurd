@@ -1,3 +1,7 @@
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* term.h: Add #include <sys/mman.h>.
+
 1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* ptyio.c (pty_io_read): Use mmap instead of vm_allocate.

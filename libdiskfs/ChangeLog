@@ -1,3 +1,7 @@
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot-start.c (diskfs_S_exec_startup_get_info): Typo in last change.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* priv.h: Add #include <sys/mman.h> for munmap decl.

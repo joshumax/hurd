@@ -1,10 +1,15 @@
-1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
-	* crash.c: Add #include <sys/mman.h> for munmap decl.
+	* firmlink.c: Add #include <sys/mman.h>.
+	(trivfs_S_io_read): Fix sloppy bugs in last change.
 
 1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* firmlink.c (trivfs_S_io_read): Use mmap instead of vm_allocate.
+
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* crash.c: Add #include <sys/mman.h> for munmap decl.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 

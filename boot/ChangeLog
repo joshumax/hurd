@@ -1,6 +1,6 @@
-1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
-	* boot.c: Add #include <sys/mman.h> for munmap decl.
+	* boot.c (ds_device_read, S_io_read): Fix sloppy bugs in last change.
 
 1999-07-06  Thomas Bushnell, BSG  <tb@mit.edu>
 
@@ -10,6 +10,10 @@
 	(set_mach_stack_args): Likewise.
 	(read_reply): Likewise.
 	(S_io_read): Likewise.
+
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c: Add #include <sys/mman.h> for munmap decl.
 
 Mon Jul  5 20:04:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 

@@ -1,3 +1,7 @@
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* proc.h: Add #include <sys/mman.h>.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* info.c: Add #include <sys/mman.h> for munmap decl.

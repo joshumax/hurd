@@ -1,3 +1,15 @@
+1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (load_section): Fix typos in last change.
+
+1999-07-11  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* exec.c (load_section): Use mmap instead of vm_allocate when
+	allocating in mach_task_self ().
+	(servercopy): Likewise.
+	(do_exec): Likewise.
+	* hashexec.c (check_hashbang): Likewise.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hostarch.c (mach_host_elf_machine): Replaced with ...
@@ -17,14 +29,6 @@
 	* exec.c (map): Don't cast arg to munmap to vm_address_t.
 
 	* priv.h: Add #include <sys/mman.h> for munmap decl.
-
-1999-07-06  Thomas Bushnell, BSG  <tb@mit.edu>
-
-	* exec.c (load_section): Use mmap instead of vm_allocate when
-	allocating in mach_task_self ().
-	(servercopy): Likewise.
-	(do_exec): Likewise.
-	* hashexec.c (check_hashbang): Likewise.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
