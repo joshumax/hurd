@@ -524,6 +524,8 @@ diskfs_set_statfs (struct statfs *st)
   st->f_ffree = sblock->fs_cstotal.cs_nifree;
   st->f_fsid = getpid ();
   st->f_namelen = 0;
+  st->f_favail = st->f_ffree;
+  st->f_frsize = sblock->fs_fsize;
   return 0;
 }
 
