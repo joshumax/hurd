@@ -46,6 +46,6 @@ trivfs_S_io_identity (struct trivfs_protid *cred,
   *idport_type = MACH_MSG_TYPE_MAKE_SEND;
   *fsidport = cred->po->cntl->filesys_id;
   *fsidport_type = MACH_MSG_TYPE_MAKE_SEND;
-  *fileno = st.st_fileno;
+  *fileno = st.st_ino;
   return 0;
 }
