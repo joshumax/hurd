@@ -167,7 +167,7 @@ main (int argc, char **argv)
   field_argp.options = field_opts;
 
   /* Parse our arguments.  */
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   if (output_fields == 0)
     output_fields = ~0;		/* By default, show all fields. */
