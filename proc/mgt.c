@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -67,13 +67,13 @@ free_ids (struct ids *i)
   free (i);
 }
 
-/* Tell if process P has uid UID.  */
+/* Tell if process P has uid UID, or has root.  */
 int
 check_uid (struct proc *p, uid_t uid)
 {
   int i;
   for (i = 0; i < p->p_id->i_nuids; i++)
-    if (p->p_id->i_uids[i] == uid)
+    if (p->p_id->i_uids[i] == uid || p->p_id\->i_uids[i] == 0)
       return 1;
   return 0;
 }
