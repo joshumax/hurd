@@ -128,11 +128,13 @@ diskfs_set_hypermetadata (int wait, int clean)
   
   bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
 
-  err = dev_read_sync (fsbtodb (sblock, sblock->fs_csaddr), &buf, bufsize);
+  err = diskfs_device_read_sync (fsbtodb (sblock, sblock->fs_csaddr),
+				 &buf, bufsize);
   if (!err)
     {  
       bcopy (csum, (void *) buf, sblock->fs_cssize);
-      dev_write_sync (fsbtodb (sblock, sblock->fs_csaddr), buf, bufsize);
+      diskfs_device_write_sync (fsbtodb (sblock, sblock->fs_csaddr),
+				buf, bufsize);
       csum_dirty = 0;
       vm_deallocate (mach_task_self (), buf, bufsize);
     }
