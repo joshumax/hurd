@@ -69,3 +69,9 @@ simpleroutine fsys_init_reply (
 simpleroutine fsys_forward_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t);
+
+simpleroutine fsys_get_options_reply (
+	reply_port: reply_port_t;
+	retcode: kern_returnt_t;
+	options: data_t);
+
