@@ -17,10 +17,19 @@
 
 include ../Makeconf
 
-OBJS = boot.o notifyServer.o execServer.o deviceServer.o syscall.o
+VPATH=.:../machine
+
+OBJS = boot.o notifyServer.o execServer.o deviceServer.o syscall.o \
+	boot_machdep.o
 
 boot: $(OBJS)
 	$(link)
+
+install: boot
+	cp boot /usr/local/bin/boot
+
+clean: 
+	rm boot $(OBJS) *_S.h *Server.c
 
 boot.o: notify_S.h exec_S.h device_S.h
 
