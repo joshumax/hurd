@@ -60,6 +60,7 @@ ftp_conn_getline (struct ftp_conn *conn, const char **line, size_t *line_len)
 {
   char *l = conn->line;
   size_t offs = conn->line_offs, len = conn->line_len, sz = conn->line_sz;
+  int (*icheck) (struct ftp_conn *conn) = conn->hooks->interrupt_check;
 
   for (;;)
     {
@@ -127,6 +128,9 @@ ftp_conn_getline (struct ftp_conn *conn, const char **line, size_t *line_len)
 
       len += rd;
       conn->line_len = len;
+
+      if (icheck && (*icheck) (conn))
+	return EINTR;
     }
 }
 
