@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -205,7 +205,9 @@ S_socket_bind (struct sock_user *user,
   
   if (!user)
     return EOPNOTSUPP;
-  
+  if (! addr)
+    return EADDRNOTAVAIL;
+
   mutex_lock (&global_lock);
   become_task (user);
   err = - (*user->sock->ops->bind) (user->sock, addr->address, addr->len);
@@ -430,7 +432,7 @@ S_socket_send (struct sock_user *user,
   mutex_unlock (&global_lock);
   
   /* MiG should do this for us, but it doesn't. */
-  if (sent >= 0)
+  if (addr && sent >= 0)
     mach_port_deallocate (mach_task_self (), addr->pi.port_right);
 
   if (sent >= 0)
@@ -504,4 +506,3 @@ S_socket_recv (struct sock_user *user,
   
   return 0;
 }
-
