@@ -90,7 +90,7 @@ main (int argc, char **argv, char **envp)
   assert (!err);
   thread_max_priority (mach_thread_self (), psetcntl, 0);
   assert (!err);
-  err = task_priority (mach_task_self (), 0, 1);
+  err = task_priority (mach_task_self (), 2, 1);
   assert (!err);
 
   mach_port_deallocate (mach_task_self (), pset);
