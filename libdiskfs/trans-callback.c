@@ -19,14 +19,15 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <fcntl.h>
 
 /* Callback function needed for calls to fshelp_fetch_root.  See
    <hurd/fshelp.h> for the interface description.  */
 static error_t
 _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
 				mach_port_t *underlying,
-				uid_t *uid, gid_t *id, char **argz, 
-				int *argz_len, mach_port_t dotdot)
+				uid_t *uid, gid_t *gid, char **argz, 
+				int *argz_len)
 {
   struct node *np = cookie1;
   mach_port_t *dotdot = cookie2;
@@ -39,17 +40,17 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
   if (err)
     return err;
 
-  *uid = np->dn_stat.st_owner;
-  *gid = np->dn_stat.st_group;
+  *uid = np->dn_stat.st_uid;
+  *gid = np->dn_stat.st_gid;
   
   *underlying = (ports_get_right
 		 (diskfs_make_protid
 		  (diskfs_make_peropen (np, 
-					(O_READ|O_EXEC|
+					(O_READ|O_EXEC
 					 | (diskfs_readonly ? O_WRITE : 0)),
 					*dotdot),
 		   uid, 1, gid, 1)));
-  mach_port_insert_right (mach_task_mself (), *underlying, *underlying,
+  mach_port_insert_right (mach_task_self (), *underlying, *underlying,
 			  MACH_MSG_TYPE_MAKE_SEND);
   return 0;
 }
