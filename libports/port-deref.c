@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2001 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -32,11 +32,11 @@ ports_port_deref (void *portstruct)
   
   mutex_lock (&_ports_lock);
   
-  if (pi->refcnt == 1 && pi->weakrefcnt && !trieddroppingweakrefs)
+  if (pi->refcnt == 1 && pi->weakrefcnt
+      && pi->class->dropweak_routine && !trieddroppingweakrefs)
     {
       mutex_unlock (&_ports_lock);
-      if (pi->class->dropweak_routine)
-	(*pi->class->dropweak_routine) (pi);
+      (*pi->class->dropweak_routine) (pi);
       trieddroppingweakrefs = 1;
       goto retry;
     }
