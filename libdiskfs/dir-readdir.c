@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1993,94,96,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -27,6 +27,7 @@ kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
 		      char **data,
 		      u_int *datacnt,
+		      boolean_t *data_dealloc,
 		      int entry,
 		      int nentries,
 		      vm_size_t bufsiz,
@@ -54,8 +55,7 @@ diskfs_S_dir_readdir (struct protid *cred,
     }
 
   err = diskfs_get_directs (np, entry, nentries, data, datacnt, bufsiz, amt);
+  *data_dealloc = 1;		/* XXX */
   mutex_unlock (&np->lock);
   return err;
 }
-
-      
