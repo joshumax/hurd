@@ -1,3 +1,8 @@
+2000-02-11  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* context.c (ps_context_find_tty_by_cttyid): Use the ttys_by_cttyid
+	hash table, not the ttys hash table.
+
 2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* tty.c (struct ps_tty_abbrev): Add const to member types.
