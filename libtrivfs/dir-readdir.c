@@ -25,5 +25,5 @@ trivfs_S_dir_readdir (struct protid *cred,
 		      off_t *nextoff,
 		      int amt)
 {
-  return cred ? EOPNOTSUPP : ENOTDIR;
+  return cred ? ENOTDIR : EOPNOTSUPP;
 }
