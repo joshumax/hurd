@@ -1,3 +1,7 @@
+2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* mgt.c (S_proc_dostop): Revert last change.
+
 2003-06-16  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* mgt.c (S_proc_dostop): Instead of suspending all threads except
