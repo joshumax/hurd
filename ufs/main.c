@@ -109,11 +109,10 @@ main (int argc, char **argv)
       {
 	/* XXX let us see errors */
 	int fd = open ("/dev/console", O_RDWR);
-	assert (fd == 0);
-	fd = dup (0);
-	assert (fd == 1);
-	fd = dup (1);
-	assert (fd == 2);
+	while (fd >= 0 && fd < 2)
+	  fd = dup(fd);
+	if (fd > 2)
+	  close (fd);
       }
     }
   else
