@@ -23,7 +23,7 @@ COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
 	inhibit-term.o lock-completed.o lock-object.o mark-error.o \
 	 no-senders.o object-init.o object-terminate.o pagemap.o \
 	 pager-create.o pager-flush.o pager-shutdown.o pager-sync.o \
-	 reference.o stubs.o seqnos.o demuxer.o
+	 reference.o stubs.o seqnos.o demuxer.o chg-compl.o
 
 OBJS = $(COBJS) memory_objectServer.o
 
