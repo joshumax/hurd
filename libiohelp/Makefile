@@ -24,7 +24,7 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 	initialize_conch.o verify_user_conch.o
 
-DIST_FILES = $(SRCS) Makefile ioserver.h
+DIST_FILES = $(SRCS) Makefile ioserver.h ChangeLog
 
 all: libioserver.a
 
