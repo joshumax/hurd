@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -286,6 +286,9 @@ void copy_rawq (void);
 void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
+
+/* Call this before using ptyio_bottom.  */
+void ptyio_init (void);
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */
