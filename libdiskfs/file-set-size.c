@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <fcntl.h>
 
 /* Implement file_truncate as described in <hurd/fs.defs>. */
 error_t
