@@ -1,3 +1,8 @@
+2001-12-31  Roland McGrath  <roland@frob.com>
+
+	* host.c (ps_get_host): Use mach_port_t instead of host_t.
+	* ps.h: Update decl.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* spec.c (ps_emit_wait): Remove local extern decls for functions

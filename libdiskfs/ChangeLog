@@ -1,3 +1,7 @@
+2001-12-31  Roland McGrath  <roland@frob.com>
+
+	* disk-pager.c (fault_handler): Use sc_pc instead of sc_eip.
+
 2001-12-08  Roland McGrath  <roland@frob.com>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Append trailing / to RETRYNAME
