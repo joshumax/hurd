@@ -77,6 +77,13 @@ $(hurdsource)/hurd-snap/$(dir):
 endif
 
 
+# TAGS files
+
+ifneq ($(dir),.)
+TAGS: $(SRCS) $(TAGSHDRS)
+	etags -o $@ $(addprefix -i ,$(addsuffix /TAGS,$(addprefix ../,$(TAGSLIBS)))) $(SRCS) $(TAGSHDRS)
+endif
+
 # Dependencies for building libraries
 
 ifneq ($(strip $(dir)),libports)
