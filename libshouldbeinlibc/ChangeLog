@@ -1,3 +1,39 @@
+Sun Feb  9 10:53:20 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (ARGP_LONG_ONLY, ARGP_HELP_LONG_ONLY): New macros.
+	* argp-parse.c (argp_parse): Support ARGP_LONG_ONLY.
+	* argp-parse2.c (parser_parse_next): Likewise.
+	* argp-help.c (argp_state_help): Add ARGP_HELP_LONG_ONLY to FLAGS
+	if STATE has ARGP_LONG_ONLY set.
+
+	* argp-help.c (hol_entry_help): Correctly output odoc options.
+	Use un-nested helper functions, with state block.
+	(arg, print_header, comma): New functions (were nested in
+	hol_entry_help)
+	(struct pentry_state): New type.
+	(add_argless_short_opt, usage_argful_short_opt, usage_long_opt):
+	New functions (were nested in hol_usage).
+	(hol_usage): Use un-nested functions.
+	* argp-help.c (hol_entry_short_iterate, hol_entry_long_iterate):
+ 	Add COOKIE argument, also to signature of FUNC.
+	(until_short): Add COOKIE argument.
+
+Sat Feb  8 17:18:43 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (OPTION_DOC): New macro.
+	* argp-parse.c (argp_parse): Don't parse OPTION_DOC options.
+	* argp-parse2.c (convert_options): Likewise.
+	* argp-help.c (odoc): New macro.
+	(oshort): Exclude options for which odoc is true.
+	(canon_doc_option): New function.
+	(hol_entry_cmp): Correctly place odoc options.
+
+	* argp-help.c (hol_entry_qcmp): New function.
+	(hol_sort): Remove cmp and use hol_entry_qcmp instead.
+	(until_short): New function, from old nested function func1 in
+	hol_entry_first_short.  Only return short key when oshort is true.
+	(hol_entry_first_short): Remove func1 and use until_short insteadd.
+
 Tue Nov 12 19:22:58 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* idvec.h (idvec_set, idvec_set_ids): New functions.
