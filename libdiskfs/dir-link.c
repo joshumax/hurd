@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: dir_link
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -81,7 +81,12 @@ diskfs_S_dir_link (struct protid *filecred,
     {
       np->dn_stat.st_nlink--;
       np->dn_set_ctime = 1;
+      if (diskfs_synchronous)
+	diskfs_node_update (np, 1);
     }
+
+  if (diskfs_synchronou)
+    diskfs_node_update (dnp, 1);
 
  out:
   mutex_unlock (&dnp->lock);
