@@ -1,3 +1,13 @@
+1997-08-14  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* interrupt-rpcs.c (ports_interrupt_rpcs): Put RPC into the
+	interrupted list.
+	* end-rpc.c (ports_end_rpc): Call ports_self_interrupted to remove
+	the current thread from the interrupted list.
+	* ports.h (ports_self_interrupted): New declaration.
+	(struct rpc_info): Add interrupted_next field.
+	* Makefile (SRCS): Add interrupted.c.
+
 Wed Aug 20 13:56:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* manage-multithread.c (ports_manage_port_operations_multithread):
