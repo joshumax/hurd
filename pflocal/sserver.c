@@ -22,8 +22,6 @@
 
 #include <hurd/ports.h>
 
-#include "debug.h"
-
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
 struct port_bucket *sock_port_bucket;
 
