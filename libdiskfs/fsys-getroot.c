@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -116,7 +116,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	{
 	  *retry = FS_RETRY_REAUTH;
 	  *returned_port = dotdot;
-	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
+	  *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  strcpy (retryname, pathbuf);
 	  return 0;
 	}
