@@ -164,12 +164,13 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 			}
 		      else
 			{
-			  cc->max += rd;
 			  cc->data_conn_pos += rd;
+			  if (cc->data_conn_pos > cc->max)
+			    cc->max = cc->data_conn_pos;
 			}
 		    }
 
-		  if (!err && hurd_check_cancel ())
+		  if (!err && ports_self_interrupted ())
 		    err = EINTR;
 		}
 
