@@ -172,7 +172,7 @@ pass2 ()
       void *bufp;
       int rewrite;
 
-      readblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+      readblock (fsbtodb (bno), buf, nfrags * sblock.fs_fsize);
       rewrite = 0;
       for (bufp = buf; 
 	   bufp - buf < nfrags * sblock->fs_fsize;
@@ -182,7 +182,7 @@ pass2 ()
 	    rewrite = 1;
 	}
       if (rewrite)
-	writeblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+	writeblock (fsbtodb (bno), buf, nfrags * sblock.fs_fsize);
       return 1;
     }
 
@@ -202,7 +202,7 @@ pass2 ()
 	errexit ("CANNOT ALLOCATE ROOT INODE\n");
       break;
       
-    case FILE:
+    case REG:
       pfatal ("ROOT INODE NOT DIRECTORY");
       if (reply ("REALLOCATE"))
 	freeino (ROOTINO);
@@ -235,9 +235,8 @@ pass2 ()
 	continue;
       if (dnp->i_isize % DIRBLKSIZ)
 	{
-	  getpathname (pathbuf, dnp->i_number, dnp->i_number);
-	  pwarn ("DIRECTORY %s: LENGTH %d NOT MULTIPLE OF %d",
-		 pathbuf, dnp->i_isize, DIRBLKSIZ);
+	  pwarn ("DIRECTORY INO=%d: LENGTH %d NOT MULTIPLE OF %d",
+		 dnp->i_number, dnp->i_isize, DIRBLKSIZ);
 	  if (preen || reply ("ADJUST"))
 	    {
 	      if (preen)
@@ -256,7 +255,7 @@ pass2 ()
   
   /* At this point for each directory:
      If this directory is an entry in another directory, then i_parent is
-       set to that nodes directory.
+       set to that node's number.
      If this directory has a `..' entry, then i_dotdot is set to that link.
      Check to see that `..' is set correctly. */
   for (nd = 0; nd < dirarrayused; nd++)
@@ -273,7 +272,7 @@ pass2 ()
 	  fileerror (dnp->i_parent, dnp->i_number, "MISSING `..'");
 	  if (reply ("FIX"))
 	    makeentry (dnp->i_number, dnp->i_parent, "..");
-}
+	}
       else if (dnp->i_parent && dnp->i_dotdot != dnp->i_parent)
 	{
 	  fileerror (dnp->i_parent, dnp->i_number, 
