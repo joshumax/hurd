@@ -36,4 +36,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define	_HURD_SYMLINK	"/hurd/symlink"	/* S_IFLNK */
 #define	_HURD_CHRDEV	"/hurd/chrdev" /* S_IFCHR */
 #define	_HURD_BLKDEV	"/hurd/blkdev" /* S_IFBLK */
+#define	_HURD_FIFO	"/hurd/fifo" /* S_IFIFO */
+
 #define	_HURD_IFSOCK	"/hurd/ifsock" /* S_IFSOCK */
