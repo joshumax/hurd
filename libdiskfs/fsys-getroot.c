@@ -57,7 +57,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   type = diskfs_root_node->dn_stat.st_mode & S_IFMT;
 
  repeat_transcheck:
-  if ((diskfs_node_translated (diskfs_root_node)
+  if (diskfs_root_node->istranslated
        || diskfs_root_node->translator.control != MACH_PORT_NULL)
       && !(flags & O_NOTRANS))
     {
