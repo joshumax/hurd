@@ -31,15 +31,19 @@ _print_version (FILE *stream, struct argp_state *state)
     fprintf (stream, "%s\n", argp_program_version);
   else
     /* Construct a version using the standard diskfs variables.  */
-    if (diskfs_edit_version)
-      fprintf (stream, "%s %d.%d%c (GNU %s)\n",
+    {
+      char *ev[15] = { 0 };
+
+      if (diskfs_edit_version)
+	if (diskfs_edit_version <= 26)
+	  sprintf (ev, ".%c", diskfs_edit_version - 1 + 'a');
+	else
+	  sprintf (ev, ".%d", diskfs_edit_version);
+
+      fprintf (stream, "%s %d.%d%s (GNU %s)\n",
 	       diskfs_server_name, diskfs_major_version, diskfs_minor_version,
-	       diskfs_edit_version + 'a', HURD_RELEASE);
-    else
-      /* Construct a version using the standard diskfs variables.  */
-      fprintf (stream, "%s %d.%d (GNU %s)\n",
-	       diskfs_server_name, diskfs_major_version, diskfs_minor_version,
-	     HURD_RELEASE);
+	       ev, HURD_RELEASE);
+    }
 }
 
 void (*argp_program_version_hook) (FILE *stream, struct argp_state *state)
