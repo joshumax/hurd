@@ -18,10 +18,10 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      int wait,
 		      int dochildren)
 {
-  return cred ? file_sync (cred->realnod, wait) : EOPNOTSUPP;
+  return cred ? file_sync (cred->realnode, wait) : EOPNOTSUPP;
 }
