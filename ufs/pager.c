@@ -18,6 +18,7 @@
 #include "ufs.h"
 #include <strings.h>
 #include <stdio.h>
+#include <unistd.h>
 
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
@@ -536,7 +537,7 @@ diskfs_pager_users ()
 	 routine), and if that node has no links.  So dinkle the node
 	 ref counting scheme here, which will cause caching to be
 	 turned off, if that's really necessary.  */
-      if (upi->pager_type == FILE_DATA)
+      if (upi->type == FILE_DATA)
 	{
 	  diskfs_nref (upi->np);
 	  diskfs_nrele (upi->np);
@@ -552,7 +553,7 @@ diskfs_pager_users ()
   if (MAY_CACHE == 0)
     {
       ports_enable_bucket (pager_bucket);
-      return 1
+      return 1;
     }
   
   /* Loop through the pagers and turn off caching one by one,
