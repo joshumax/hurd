@@ -18,17 +18,11 @@
 #include "priv.h"
 #include <hurd/pager.h>
 
-static void
-protid_clean (void *arg)
-{
-  diskfs_release_peropen (((struct protid *)arg)->po);
-}
-
 /* Indexed by port type (PT_*); called when the last reference goes
    away on a port. */
 void (*ports_cleanroutines[])(void *)=
 {
-  [PT_PROTID] = protid_clean,
+  [PT_PROTID] = diskfs_protid_rele,
   [PT_PAGER] = pager_clean,
   [PT_TRANSBOOT] = fshelp_transboot_clean,
 };
