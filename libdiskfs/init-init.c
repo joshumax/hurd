@@ -88,7 +88,7 @@ diskfs_init_diskfs (void)
 }
 
 void
-_diskfs_control_clean (void *arg)
+_diskfs_control_clean (void *arg __attribute__ ((unused)))
 {
   spin_lock (&_diskfs_control_lock);
   _diskfs_ncontrol_ports--;
