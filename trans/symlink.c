@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-mach_port_t realnode, dotdotnode;
+mach_port_t realnode;
 
 /* We return this for O_NOLINK lookups */
 mach_port_t realnodenoauth;
@@ -48,7 +48,7 @@ main (int argc, char **argv)
   /* Reply to our parent */
   control = ports_allocate_port (PT_CTL, sizeof (struct port_info));
   error = fsys_startup (bootstrap, ports_get_right (control),
-			MACH_MSG_TYPE_MAKE_SEND, &realnode, &dotdotnode);
+			MACH_MSG_TYPE_MAKE_SEND, &realnode);
 
   io_restrict_auth (realnode, &realnodenoauth, 0, 0, 0, 0);
 
@@ -57,8 +57,8 @@ main (int argc, char **argv)
   return 0;
 }
 
-
 S_fsys_getroot (mach_port_t fsys_t,
+		mach_port_t dotdotnode,
 		uid_t *uids,
 		u_int nuids,
 		uid_t *gids,
@@ -84,7 +84,7 @@ S_fsys_getroot (mach_port_t fsys_t,
       strcpy (retry_name, linktarget);
       if (linktarget[0] == '/')
 	{
-	  *do_retry = FS_RETRY_NORMAL;
+	  *do_retry = FS_RETRY_MAGICAL;
 	  *ret = MACH_PORT_NULL;
 	  *rettype = MACH_MSG_TYPE_COPY_SEND;
 	}
@@ -92,7 +92,7 @@ S_fsys_getroot (mach_port_t fsys_t,
 	{
 	  *do_retry = FS_RETRY_REAUTH;
 	  *ret = dotdotnode;
-	  *rettype = MACH_MSG_TYPE_COPY_SEND;
+	  *rettype = MACH_MSG_TYPE_MOVE_SEND;
 	}
     }
   return 0;
