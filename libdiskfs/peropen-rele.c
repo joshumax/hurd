@@ -33,7 +33,7 @@ diskfs_release_peropen (struct peropen *po)
   if (po->root_parent)
     mach_port_deallocate (mach_task_self (), po->root_parent);
 
-  if (po->shadow_root)
+  if (po->shadow_root && po->shadow_root != po->np)
     {
       mutex_lock (&po->shadow_root->lock);
       diskfs_nput (po->shadow_root);
