@@ -76,7 +76,6 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       return ENOTEMPTY;
     }
 
-  diskfs_purge_cache_node (dnp, np);
   error = diskfs_dirremove (dnp, ds);
   if (!error)
     {
