@@ -1,6 +1,6 @@
 # Makefile for mach-defpager subdirectory of hurd sources
 #
-#   Copyright (C) 1999 Free Software Foundation, Inc.
+#   Copyright (C) 1999,2000 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -35,12 +35,12 @@ OBJS = $(SRCS:.c=.o) \
 HURDLIBS:= threads
 LDFLAGS += -static
 
+include ../Makeconf
+
 vpath %.c $(srcdir)/../serverboot
 CPPFLAGS += -I$(srcdir)/../serverboot
 
 MIGSFLAGS = -DSEQNOS
-
-include ../Makeconf
 
 # Don't even bother.
 CFLAGS := $(filter-out -Wall,$(CFLAGS))
