@@ -3,7 +3,8 @@ privileges.  To login as a user with a userid of USER, use the command:
 
   login USER
 
-other special commands:
+other useful commands:
 
   ql USER 	# quick login -- just start a shell in USER's home directory
-  sush USER	# set-user shell -- start a new shell as USER (don't cd)
+  su USER       # set the id of the current (login) shell to USER
+		# (use the `unsu' command to undo this, or just exit the shell)
