@@ -34,7 +34,7 @@ IOSRCS=io-async-icky.c io-async.c io-duplicate.c io-map.c io-modes-get.c \
 
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c fsys-forward.c
 
-OTHERSRCS=demuxer.c handle-port.c protid-clean.c protid-dup.c cntl-create.c \
+OTHERSRCS=demuxer.c protid-clean.c protid-dup.c cntl-create.c \
 	cntl-clean.c migsupport.c times.c startup.c open.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
