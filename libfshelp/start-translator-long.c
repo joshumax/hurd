@@ -102,7 +102,7 @@ service_fsys_startup(file_t node, mach_msg_type_name_t node_type,
 
   /* Wait for the fsys_startup message...  */
   err = mach_msg(&request.head, (MACH_RCV_MSG 
-				 | timeout ? MACH_RCV_TIMEOUT : 0),
+				 | (timeout ? MACH_RCV_TIMEOUT : 0)),
 		 0, sizeof(request), port, timeout, MACH_PORT_NULL);
   if (err)
     return err;
