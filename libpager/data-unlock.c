@@ -16,16 +16,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 /* Called by the kernel to request a lock on memory. */
-/* We provide all data read-write except for "holes".  Therefore,
-   lock requests should only happen for holes, and this routine does the
-   allocation.  */
 kern_return_t
-seqnos_memory_object_data_unlock (mach_port_t object, 
-			   mach_port_seqno_t seqno,
-			   mach_port_t control,
-			   vm_offset_t offset,
-			   vm_size_t length,
-			   vm_prot_t access)
+_pager_seqnos_memory_object_data_unlock (mach_port_t object, 
+					 mach_port_seqno_t seqno,
+					 mach_port_t control,
+					 vm_offset_t offset,
+					 vm_size_t length,
+					 vm_prot_t access)
 {
   struct pager *p;
   volatile int err;
