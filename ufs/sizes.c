@@ -1,5 +1,5 @@
 /* File growth and truncation
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -83,13 +83,11 @@ diskfs_truncate (struct node *np,
       diskfs_file_update (np, 1);
     }
 
-  rwlock_writer_lock (&np->dn->allocptrlock);
-
   /* Now flush all the data past the new size from the kernel.
      Also force any delayed copies of this data to take place
-     immediately.  (We are changing the data implicitly to zeros
-     and doing it without the kernels immediate knowledge;
-     this forces us to help out the kernel thusly.) */
+     immediately.  (We are implicitly changing the data to zeros
+     and doing it without the kernel's immediate knowledge;
+     accordingl we must help out the kernel thusly.) */
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
@@ -109,6 +107,8 @@ diskfs_truncate (struct node *np,
 			np->allocsize - length, 1);
       pager_unreference (upi->p);
     }
+
+  rwlock_writer_lock (&np->dn->allocptrlock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
