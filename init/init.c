@@ -40,10 +40,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "startup_S.h"
 #include "notify_S.h"
 
-/* Define this if we should really reboot mach instead of
-   just simulating it. */
-#undef STANDALONE
-
 /* host_reboot flags for when we crash.  */
 #define CRASH_FLAGS	RB_AUTOBOOT
 
@@ -88,6 +84,9 @@ mach_port_t procserver;
 /* Our bootstrap port, on which we call fsys_getpriv and fsys_init. */
 mach_port_t bootport;
 
+/* Set iff we are a `fake' bootstrap. */
+int fakeboot;
+
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
 
@@ -117,17 +116,20 @@ getstring (char *buf, size_t bufsize)
 void
 reboot_mach (int flags)
 {
-#ifdef STANDALONE
-  printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
-  fflush (stdout);
-  while (errno = host_reboot (host_priv, flags))
-    perror ("host_reboot");
-  for (;;);
-#else
-  printf ("init: Would %s Mach with flags %#x\n", BOOT (flags), flags);
-  fflush (stdout);
-  exit (1);
-#endif  
+  if (fakeboot)
+    {
+      printf ("init: Would %s Mach with flags %#x\n", BOOT (flags), flags);
+      fflush (stdout);
+      exit (1);
+    }
+  else
+    {
+      printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
+      fflush (stdout);
+      while (errno = host_reboot (host_priv, flags))
+	perror ("host_reboot");
+      for (;;);
+    }
 }
 
 /* Reboot the microkernel, specifying that this is a crash. */
@@ -159,71 +161,69 @@ reboot_system (int flags)
 	}
     }
 
-#ifdef STANDALONE  
-  reboot_mach (flags);
-#else
-  {
-    pid_t *pp;
-    u_int npids = 0;
-    error_t err;
-    int ind;
+  if (fakeboot)
+    {
+      pid_t *pp;
+      u_int npids = 0;
+      error_t err;
+      int ind;
 
-    err = proc_getallpids (procserver, &pp, &npids);
-    if (err == MACH_SEND_INVALID_DEST)
-      {
-      procbad:	
-	/* The procserver must have died.  Give up. */
-	printf ("Init: can't simulate crash; proc has died\n");
-	fflush (stdout);
-	reboot_mach (flags);
-      }
-    for (ind = 0; ind < npids; ind++)
-      {
-	task_t task;
-	err = proc_pid2task (procserver, pp[ind], &task);
-	if (err == MACH_SEND_INVALID_DEST)
-	  goto procbad; 
+      err = proc_getallpids (procserver, &pp, &npids);
+      if (err == MACH_SEND_INVALID_DEST)
+	{
+	procbad:	
+	  /* The procserver must have died.  Give up. */
+	  printf ("Init: can't simulate crash; proc has died\n");
+	  fflush (stdout);
+	  reboot_mach (flags);
+	}
+      for (ind = 0; ind < npids; ind++)
+	{
+	  task_t task;
+	  err = proc_pid2task (procserver, pp[ind], &task);
+	  if (err == MACH_SEND_INVALID_DEST)
+	    goto procbad; 
 
-	else  if (err)
-	  {
-	    printf ("init: getting task for pid %d: %s\n",
-		    pp[ind], strerror (err));
-	    fflush (stdout);
-	    continue;
-	  }
+	  else  if (err)
+	    {
+	      printf ("init: getting task for pid %d: %s\n",
+		      pp[ind], strerror (err));
+	      fflush (stdout);
+	      continue;
+	    }
 	
-	/* Postpone self so we can finish; postpone proc
-	   so that we can finish. */
-	if (task != mach_task_self () && task != proctask)
-	  {
-	    struct procinfo *pi = 0;
-	    u_int pisize = 0;
-	    err = proc_getprocinfo (procserver, pp[ind], (int **)&pi, &pisize);
-	    if (err == MACH_SEND_INVALID_DEST)
-	      goto procbad; 
-	    if (err)
-	      {
-		printf ("init: getting procinfo for pid %d: %s\n",
-			pp[ind], strerror (err));
-		fflush (stdout);
-		continue;
-	      }
-	    if (!(pi->state & PI_NOPARENT))
-	      {
-		printf ("init: killing pid %d\n", pp[ind]);
-		fflush (stdout);
-		task_terminate (task);
-	      }
-	  }
-      }
-    printf ("Killing proc server\n");
-    fflush (stdout);
-    task_terminate (proctask);
-    printf ("Init exiting\n");
-    fflush (stdout);
-    exit (1);
-  }
-#endif
+	  /* Postpone self so we can finish; postpone proc
+	     so that we can finish. */
+	  if (task != mach_task_self () && task != proctask)
+	    {
+	      struct procinfo *pi = 0;
+	      u_int pisize = 0;
+	      err = proc_getprocinfo (procserver, pp[ind], 
+				      (int **)&pi, &pisize);
+	      if (err == MACH_SEND_INVALID_DEST)
+		goto procbad; 
+	      if (err)
+		{
+		  printf ("init: getting procinfo for pid %d: %s\n",
+			  pp[ind], strerror (err));
+		  fflush (stdout);
+		  continue;
+		}
+	      if (!(pi->state & PI_NOPARENT))
+		{
+		  printf ("init: killing pid %d\n", pp[ind]);
+		  fflush (stdout);
+		  task_terminate (task);
+		}
+	    }
+	}
+      printf ("Killing proc server\n");
+      fflush (stdout);
+      task_terminate (proctask);
+      printf ("Init exiting\n");
+      fflush (stdout);
+    }
+  reboot_mach (flags);
 }
 
 /* Reboot the Hurd, specifying that this is a crash. */
@@ -401,6 +401,8 @@ main (int argc, char **argv, char **envp)
 	bootstrap_args |= RB_KDB;
       if (index (argv[1], 'n'))
 	bootstrap_args |= RB_INITNAME;
+      if (index (argv[1], 'f'))
+	fakeboot = 1;
     }
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
@@ -488,10 +490,11 @@ launch_core_servers (void)
 			  mach_task_self (), authserver, 
 			  host_priv, MACH_MSG_TYPE_COPY_SEND,
 			  device_master, MACH_MSG_TYPE_COPY_SEND);
-#ifdef STANDALONE
-  mach_port_deallocate (mach_task_self (), device_master);
-  device_master = 0;
-#endif
+  if (!fakeboot)
+    {
+      mach_port_deallocate (mach_task_self (), device_master);
+      device_master = 0;
+    }
 
   /* Declare that the filesystem and auth are our children. */
   proc_child (procserver, fstask);
