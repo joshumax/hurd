@@ -24,6 +24,8 @@ int
 pager_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
 {
+  extern int seqnos_memory_object_server (mach_msg_header_t *inp,
+					  mach_msg_header_t *outp);
   return seqnos_memory_object_server (inp, outp);
 }
 
