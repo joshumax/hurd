@@ -167,7 +167,7 @@ trunc_indirect (struct node * node, unsigned long length,
       bh = bptr (block);
 
       *ind = 0;
-      pokel_add (&node->dn->pokel, ind, sizeof *ind);
+      record_indir_poke (node, ind_bh);
 
       if (free_count == 0)
 	{
@@ -242,7 +242,7 @@ trunc_dindirect (struct node * node, unsigned long length,
 
     trunc_indirect (node, length, offset + (i * addr_per_block), dind);
 
-    pokel_add (&node->dn->pokel, dind_bh, block_size);
+    record_indir_poke (node, dind_bh);
   }
 
   dind = (u32 *) dind_bh;
@@ -293,7 +293,7 @@ trunc_tindirect (struct node * node, unsigned long length)
 		       + addr_per_block
 		       + (i + 1) * addr_per_block * addr_per_block),
 		      tind);
-      pokel_add (&node->dn->pokel, tind_bh, block_size);
+      record_indir_poke (node, tind_bh);
     }
 
   tind = (u32 *) tind_bh;
