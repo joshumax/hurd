@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -28,13 +28,13 @@ SRCS = create-bucket.c create-class.c allocate-port.c intern-external-port.c \
  no-senders.c begin-rpc.c end-rpc.c manage-one-thread.c manage-multithread.c \
  inhibit-port-rpcs.c inhibit-class-rpcs.c inhibit-bucket-rpcs.c \
  inhibit-all-rpcs.c resume-port-rpcs.c resume-class-rpcs.c \
- resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpc.c \
+ resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpcs.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
  enable-class.c enable-bucket.c bucket-iterate.c stubs.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
  notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \
  interrupt-operation.c interrupt-on-notify.c interrupt-notified-rpcs.c \
- dead-name.c 
+ dead-name.c create-port.c import-port.c default-uninhibitable-rpcs.c
 
 LCLHDRS = ports.h
 installhdrs = ports.h
