@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -39,6 +39,13 @@ diskfs_S_dir_readdir (struct protid *cred,
 
   np = cred->po->np;
   mutex_lock (&np->lock);
+
+  if ((cred->po->openstat & O_READ) == 0)
+    {
+      mutex_unlock (&np->lock);
+      return EBADF;
+    }
+
   if ((np->dn_stat.st_mode & S_IFMT) != S_IFDIR)
     {
       mutex_unlock (&np->lock);
