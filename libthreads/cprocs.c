@@ -373,7 +373,10 @@ cproc_alloc()
 	register cproc_t p = (cproc_t) malloc(sizeof(struct cproc));
 
 	p->incarnation = NO_CTHREAD;
+#if 0
+	/* This member is not used in GNU.  */
 	p->reply_port = MACH_PORT_NULL;
+#endif
 
 	spin_lock_init(&p->lock);
 	p->wired = MACH_PORT_NULL;
@@ -595,6 +598,7 @@ cproc_waiter()
 
 cproc_block()
 {
+  extern unsigned int __hurd_threadvar_max; /* GNU */
 	register cproc_t waiter, new, p = cproc_self();
 	register int extra;
 
@@ -663,9 +667,15 @@ cproc_block()
 			p->state = CPROC_BLOCKED;
 			spin_lock(&waiter->lock); /* in case still switching */
 			spin_unlock(&waiter->lock);
-			cproc_start_wait(&p->context, waiter, 
-			 cproc_stack_base(waiter, sizeof(ur_cthread_t *)),
-			 &p->lock);
+			cproc_start_wait
+			  (&p->context, waiter, 
+			   cproc_stack_base(waiter,
+					    sizeof(ur_cthread_t *) +
+					    /* Account for GNU per-thread
+					       variables.  */
+					    __hurd_threadvar_max *
+					    sizeof (long int)),
+			   &p->lock);
 		}
 	}
 }
@@ -698,10 +708,26 @@ cproc_create()
 		spin_unlock(&ready_lock);
 #endif STATISTICS
 	} else {
+	  	vm_offset_t stack;
 		spin_unlock(&n_kern_lock);
 		child->state = CPROC_BLOCKED;
-		cproc_prepare(child, &child->context,
-			cproc_stack_base(child, 0));
+		/* The original CMU code does the excessively clever
+		   optimization of putting CHILD at the base of the stack
+		   and setting up to be the argument to cthread_body in the
+		   same place (by passing zero as the second arg to
+		   cproc_stack_base here)..  This doesn't fly for GNU,
+		   because we need some more space allocated at the base of
+		   the stack, after the cproc_self pointer (where CHILD is
+		   stored).  */
+		stack = cproc_stack_base(child,
+					 sizeof(ur_cthread_t *) +
+					 /* Account for GNU per-thread
+					    variables.  */
+					 __hurd_threadvar_max *
+					 sizeof (long int));
+		cproc_prepare(child, &child->context, stack);
+		/* Set up the cproc_self ptr at the base of CHILD's stack.  */
+		ur_cthread_ptr(stack) = child;
 		cproc_ready(child,0);
 	}
 	return child;
