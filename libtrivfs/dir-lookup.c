@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1998 Free Software Foundation
+   Copyright (C) 1994, 1998, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -63,8 +63,16 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
   if (trivfs_check_open_hook)
     err = (*trivfs_check_open_hook) (cred->po->cntl, cred->user, flags);
   if (!err)
-    err = trivfs_open (cred->po->cntl, cred->user, flags,
-		       cred->realnode, &newcred);
+    {
+      struct iouser *user = iohelp_dup_iouser (cred->user);
+      err = trivfs_open (cred->po->cntl, user, flags,
+			 cred->realnode, &newcred);
+      if (err)
+	iohelp_free_iouser (user);
+      else
+	mach_port_mod_refs (mach_task_self (), cred->realnode,
+			    MACH_PORT_RIGHT_SEND, +1);
+    }
   if (err)
     return err;
 
