@@ -24,14 +24,14 @@ diskfs_demuxer (mach_msg_header_t *inp,
   int diskfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_exec_server (mach_msg_header_t *, mach_msg_header_t *);
+  int diskfs_exec_startup_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (diskfs_io_server (inp, outp)
 	  || diskfs_fs_server (inp, outp)
 	  || ports_notify_server (inp, outp)
 	  || diskfs_fsys_server (inp, outp)
-	  || diskfs_exec_server (inp, outp)
+	  || diskfs_exec_startup_server (inp, outp)
 	  || ports_interrupt_server (inp, outp)
 	  || (diskfs_shortcut_ifsock ? diskfs_ifsock_server (inp, outp) : 0));
 }
