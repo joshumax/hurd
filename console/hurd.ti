@@ -153,6 +153,11 @@ hurd|The GNU Hurd console server,
 	smso=\E[7m, rmso=\E[27m,
 # Enable (disable) underline mode.
 	smul=\E[4m, rmul=\E[24m,
+# Enable (disable) italic mode.
+	sitm=\E[3m, ritm=\E[23m,
+# Enable (disable) real bold (not intensity bright) mode.  This is a
+# GNU extension.
+	gsbom=\EQ, grbom=\ER,
 # XXX Linux has those also for rmpch and smpch.
 # Enable (disable) alternative character set.
 	smacs=\E[11m, rmacs=\E[10m,

@@ -31,17 +31,25 @@ typedef enum
 
 typedef struct
 {
+  /* The intensity is traditionally a color attribute.  */
 #define CONS_ATTR_INTENSITY_NORMAL	000000000000
 #define CONS_ATTR_INTENSITY_BOLD	000000000001
 #define CONS_ATTR_INTENSITY_DIM		000000000002
   uint32_t intensity : 2;
+
   uint32_t underlined : 1;
   uint32_t blinking : 1;
   uint32_t reversed : 1;
   uint32_t concealed : 1;
+
+  /* Color attributes.  */
   uint32_t bgcol : 3;
   uint32_t fgcol : 3;
-} conchar_attr_t;
+
+  /* Font attributes.  */
+  uint32_t italic : 1;
+  uint32_t bold : 1;
+} conchar_attr_t; 
   
 typedef struct
 {

@@ -1,3 +1,12 @@
+2002-09-16  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hurd.ti: Add capabilities <sitm>, <ritm>, <gsbom>, <grbom>.
+	* display.c (handle_esc_bracket_m): Add support for italic.
+	(display_output_one): Add new capabilities PU1 and PU2 to toggle
+	bold mode.  Reset PARSE->state on most escape sequences.
+	* console.c (parse_attributes): Rename old bold attribute to
+	bright.  Add support for italic and bold.
+	
 2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (DISPLAY_CHANGE_FLAGS): New macro.

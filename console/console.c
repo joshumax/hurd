@@ -1360,9 +1360,9 @@ parse_attributes (const char *name, conchar_attr_t *attr)
 	    return EINVAL;
 	  attr->intensity = CONS_ATTR_INTENSITY_NORMAL;
 	}
-      else if (!strncmp (name, "bold", 4))
+      else if (!strncmp (name, "bright", 6))
 	{
-	  name += 4;
+	  name += 6;
 	  if (value != 1)
 	    return EINVAL;
 	  attr->intensity = CONS_ATTR_INTENSITY_BOLD;
@@ -1388,6 +1388,16 @@ parse_attributes (const char *name, conchar_attr_t *attr)
 	{
 	  name += 9;
 	  attr->concealed = value;
+	}
+      else if (!strncmp (name, "italic", 6))
+	{
+	  name += 6;
+	  attr->italic = value;
+	}
+      else if (!strncmp (name, "bold", 4))
+	{
+	  name += 4;
+	  attr->bold = value;
 	}
       else
 	return EINVAL;

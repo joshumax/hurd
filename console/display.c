@@ -1000,6 +1000,10 @@ handle_esc_bracket_m (attr_t attr, int code)
       /* Dim on: <dim>.  */
       attr->current.intensity = CONS_ATTR_INTENSITY_DIM;
       break;
+    case 3:
+      /* Italic on: <sitm>.  */
+      attr->current.italic = 1;
+      break;
     case 4:
       /* Underline on: <smul>.  */
       attr->current.underlined = 1;
@@ -1027,6 +1031,10 @@ handle_esc_bracket_m (attr_t attr, int code)
     case 22:
       /* Normal intensity.  */
       attr->current.intensity = CONS_ATTR_INTENSITY_NORMAL;
+      break;
+    case 23:
+      /* Italic off: <ritm>.  */
+      attr->current.italic = 1;
       break;
     case 24:
       /* Underline off: <rmul>.  */
@@ -1521,6 +1529,7 @@ display_output_one (display_t display, wchar_t chr)
       break;
 
     case STATE_ESC:
+      parse->state = STATE_NORMAL;
       switch (chr)
 	{
 	case L'[':
@@ -1539,7 +1548,6 @@ display_output_one (display_t display, wchar_t chr)
 		       L' ', display->attr.current);
 	  user->cursor.col = user->cursor.row = 0;
 	  /* XXX Flag cursor change.  */
-	  parse->state = STATE_NORMAL;
 	  break;
 	case L'E':		/* ECMA-48 <NEL>.  */
 	  /* Newline.  */
@@ -1562,9 +1570,16 @@ display_output_one (display_t display, wchar_t chr)
 	  /* Visible bell.  */
 	  user->bell.visible++;
 	  break;
+	case L'Q':		/* ECMA-48 <PU1>.  */
+	  /* Bold on: <gsbom>.  This is a GNU extension.  */
+	  display->attr.current.bold = 1;
+	  break;
+	case L'R':		/* ECMA-48 <PU2>.  */
+	  /* Bold off: <grbom>.  This is a GNU extension.  */
+	  display->attr.current.bold = 0;
+	  break;
 	default:
 	  /* Unsupported escape sequence.  */
-	  parse->state = STATE_NORMAL;
 	  break;
 	}
       break;
