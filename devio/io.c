@@ -296,39 +296,19 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_file_sync (struct trivfs_protid *cred, int wait)
 {
-  if (!cred)
-    return EOPNOTSUPP;
+  if (cred)
+    return dev_sync (((struct open *)cred->po->hook)->dev, wait);
   else
-    {
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "syncing file...\n");
-	  mutex_unlock(&debug_lock);
-	}
-#endif
-      return dev_sync(((struct open *)cred->po->hook)->dev, wait);
-    }
+    return EOPNOTSUPP;
 }
 
 kern_return_t
 trivfs_S_file_syncfs (struct trivfs_protid *cred, int wait, int dochildren)
 {
   if (!cred)
-    return EOPNOTSUPP;
+    return dev_sync (((struct open *)cred->po->hook)->dev, wait);
   else
-    {
-#ifdef MSG
-      if (debug)
-	{
-	  mutex_lock(&debug_lock);
-	  fprintf(debug, "syncing filesystem (through file)...\n");
-	  mutex_unlock(&debug_lock);
-	}
-#endif
-      return dev_sync(((struct open *)cred->po->hook)->dev, wait);
-    }
+    return EOPNOTSUPP;
 }
 
 /* ---------------------------------------------------------------- */
