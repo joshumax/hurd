@@ -19,11 +19,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-error_t
-trivfs_S_io_reauthenticate (struct protid *cred,
+#include "priv.h"
+#include "io_S.h"
+#include <assert.h>
+
+kern_return_t
+trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
 			    int rendint)
 {
-  struct protid *newcred;
+  struct trivfs_protid *newcred;
   uid_t *gen_uids = alloca (sizeof (uid_t) * 20);
   uid_t *gen_gids = alloca (sizeof (uid_t) * 20);
   uid_t *aux_uids = alloca (sizeof (uid_t) * 20);
@@ -32,6 +36,7 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   uid_t *gubuf, *ggbuf, *aubuf, *agbuf;
   error_t err;
   int i;
+  auth_t auth;
 
   if (cred == 0)
     return EOPNOTSUPP;
@@ -40,12 +45,13 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   gubuf = gen_uids; ggbuf = gen_gids;
   aubuf = aux_uids; agbuf = aux_gids;
 
-  newcred = ports_allocate_port (sizeof (struct protid), 
+  newcred = ports_allocate_port (sizeof (struct trivfs_protid), 
 				 trivfs_protid_porttype);
-  err = auth_server_authenticate (diskfs_auth_server_port, 
+  auth = getauth ();
+  err = auth_server_authenticate (auth, 
 				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
-				  rend_int,
+				  rendint,
 				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 
@@ -53,6 +59,7 @@ trivfs_S_io_reauthenticate (struct protid *cred,
 				  &gen_gids, &gengidlen,
 				  &aux_gids, &auxgidlen);
   assert (!err);		/* XXX */
+  mach_port_deallocate (mach_task_self (), auth);
 
   newcred->isroot = 0;
   for (i = 0; i < genuidlen; i++)
