@@ -411,7 +411,7 @@ TAGSFILES=$(SRCS) $(OTHERTAGS)
 endif
 
 TAGS: $(TAGSFILES)
-ifeq ($(strip($(TAGSFILES))),)
+ifeq ($(strip ($(TAGSFILES))),)
 # no tags, but parent will include this file, so make empty one.
 	> $@
 else

@@ -1,3 +1,8 @@
+2003-10-09  Alfred M. Szmidt  <ams@kemisten.nu>
+
+        * Makeconf (TAGS): Add a space between the function `strip' and
+	its argument.
+
 2003-02-15  Roland McGrath  <roland@frob.com>
 
 	* configure: New generated file, now in the repository.
