@@ -1,6 +1,6 @@
 /* Parse run-time options
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -43,7 +43,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
       {
 	error_t error;
 	mach_port_t control;
-	
+
 	error = fshelp_fetch_control (&np->transbox, &control);
 	mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
@@ -59,13 +59,13 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	  error = 0;
 	return error;
       }
-  
+
   if (!pt)
     return EOPNOTSUPP;
 
   if (do_children)
     {
-      rwlock_reader_lock (&diskfs_fsys_lock);
+      rwlock_writer_lock (&diskfs_fsys_lock);
       err = diskfs_node_iterate (helper);
       rwlock_writer_unlock (&diskfs_fsys_lock);
     }
@@ -95,7 +95,7 @@ diskfs_S_fsys_get_options (fsys_t fsys,
   error_t err;
   struct port_info *port =
     ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
-  
+
   if (!port)
     return EOPNOTSUPP;
 
