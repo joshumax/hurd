@@ -29,7 +29,7 @@ diskfs_S_io_duplicate (struct protid *cred,
   
   mutex_lock (&cred->po->np->lock);
   *port = (diskfs_make_protid (cred->po, cred->uids, cred->nuids, cred->gids, 
-			       cred->ngids))->fspt.pi.port;
+			       cred->ngids))->pi.port;
   *portpoly = MACH_MSG_TYPE_MAKE_SEND;
   mutex_unlock (&cred->po->np->lock);
   return 0;
