@@ -28,21 +28,26 @@
 #include <ctype.h>
 #include <getopt.h>
 
+/* A description of a particular option.  A pointer to an array of
+   these is passed in the OPTIONS field of an argp structure.  Each option
+   entry can correspond to one long option and/or one short option; more
+   names for the same option can be added by following an entry in an option
+   array with options having the OPTION_ALIAS flag set.  */
 struct argp_option
 {
   /* The long option name.  For more than one name for the same option, you
      can use following options with the OPTION_ALIAS flag set.  */
   char *name;
 
-  /* What key is returned for this option.  If ascii and > 0, then it's also
-     accepted as a short option.  */
+  /* What key is returned for this option.  If > 0 and printable, then it's
+     also accepted as a short option.  */
   int key;
 
   /* If non-NULL, this is the name of the argument associated with this
-     option, which is required unless the OPTION_ARG_OPTIONAL flags is set. */
+     option, which is required unless the OPTION_ARG_OPTIONAL flag is set. */
   char *arg;
 
-  /* ARGP_OPTION_ flags.  */
+  /* OPTION_ flags.  */
   int flags;
 
   /* The doc string for this option.  */
@@ -82,11 +87,10 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 /* There are no more command line arguments at all.  */
 #define ARGP_KEY_END		1
 /* Because it's common to want to do some special processing if there aren't
-   any non-option args, user parsers are called with this key if there they
-   didn't get a chance to process any non-option arguments; note that having
-   been given a non-option arg and returned EINVAL counts.  Called just
-   before ARGP_KEY_END (where more general validity checks on previously
-   parsed arguments can take place).  */
+   any non-option args, user parsers are called with this key if they didn't
+   successfully process any non-option arguments.  Called just before
+   ARGP_KEY_END (where more general validity checks on previously parsed
+   arguments can take place).  */
 #define ARGP_KEY_NO_ARGS	2
 
 /* An argp structure contains a set of getopt options declarations, a
