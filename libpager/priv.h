@@ -122,8 +122,8 @@ int _pager_page_errors[];
 
 /* Issue this error on next data_request, but only if it asks for
    write access.  */
-#define PM_NEXTERROR(byte) ((byte) & 0x2)
-#define SET_PM_NEXTERROR(byte,err) (((byte) & ~0x2) | (err))
+#define PM_NEXTERROR(byte) ((byte) & 0x3)
+#define SET_PM_NEXTERROR(byte,err) (((byte) & ~0x3) | (err))
 
 
 void _pager_wait_for_seqno (struct pager *, int);
