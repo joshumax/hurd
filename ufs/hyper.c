@@ -21,6 +21,8 @@
 #include <string.h>
 #include <stdio.h>
 
+static int oldformat = 0;
+
 void
 get_hypermetadata (void)
 {
@@ -48,7 +50,7 @@ get_hypermetadata (void)
       exit (1);
     }
 
-  if (sblock->fs_maxsymlinklen > MAXSYMLINKLEN)
+  if (sblock->fs_maxsymlinklen > (long)MAXSYMLINKLEN)
     {
       fprintf (stderr, "Max shortcut symlinklen %ld is too big (max is %ld)\n",
 	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
@@ -58,12 +60,31 @@ get_hypermetadata (void)
   /* If this is an old filesystem, then we have some more
      work to do; some crucial constants might not be set; we
      are therefore forced to set them here.  */
+
   if (sblock->fs_npsect < sblock->fs_nsect)
     sblock->fs_npsect = sblock->fs_nsect;
+
   if (sblock->fs_interleave < 1)
     sblock->fs_interleave = 1;
+
   if (sblock->fs_postblformat == FS_42POSTBLFMT)
     sblock->fs_nrpos = 8;
+
+  if (sblock->fs_inodefmt < FS_44INODEFMT)
+    {
+      quad_t sizepb = sblock->fs_bsize;
+      int i;
+
+      oldformat = 1;
+      sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
+      for (i = 0; i < NIADDR; i++)
+	{
+	  sizepb *= NINDIR (sblock);
+	  sblock->fs_maxfilesize += sizepb;
+	}
+      sblock->fs_qbmask = ~sblock->fs_bmask;
+      sblock->fs_qfmask = ~sblock->fs_fmask;
+    }
 
   /* Find out if we support the 4.4 symlink/dirtype extension */
   if (sblock->fs_maxsymlinklen > 0)
@@ -104,11 +125,20 @@ diskfs_set_hypermetadata (int wait, int clean)
 
   if (sblock_dirty)
     {
-      if (sblock->fs_postblformat == FS_42POSTBLFMT)
+      if (sblock->fs_postblformat == FS_42POSTBLFMT
+	  || oldformat)
 	{
 	  char sblockcopy[SBSIZE];
+	  struct fs *sbcopy = (struct fs *)sblockcopy;
 	  bcopy (sblock, sblockcopy, SBSIZE);
-	  ((struct fs *)sblockcopy)->fs_nrpos = -1;
+	  if (sblock->fs_postblformat == FS_42POSTBLFMT)
+	    sbcopy->fs_nrpos = -1;
+	  if (oldformat)
+	    {
+	      sbcopy->fs_maxfilesize = -1;
+	      sbcopy->fs_qbmask = -1;
+	      sbcopy->fs_qfmask = -1;
+	    }
 	  (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
 	}
       else
