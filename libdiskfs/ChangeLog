@@ -1,3 +1,8 @@
+1997-07-10  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-std-runtime.c (parse_opt): Turn off synchronous mode when
+	setting a sync interval.
+
 Mon Jul  7 16:25:49 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-exec.c: Include <fcntl.h> instead of <fcntlbits.h>.
