@@ -2388,6 +2388,7 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	vm_size_t	amount_sent;
 	default_pager_t	ds;
 	static char	here[] = "%sdata_write";
+	int err
 
 #ifdef	lint
 	pager_request++;
@@ -2436,10 +2437,11 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	}
 
 	pager_port_finish_write(ds);
-	result = vm_deallocate(default_pager_self, addr, data_cnt);
-	if (result != KERN_SUCCESS)
+	err = vm_deallocate(default_pager_self, addr, data_cnt);
+	if (err != KERN_SUCCESS)
 	  {
-	    printf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, result)
+	    printf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, err);
+	    
 	      panic(here,my_name);
 	  }
 	
