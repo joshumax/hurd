@@ -1,4 +1,4 @@
-/* Pager creation
+/* Functions for flushing data
    Copyright (C) 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -15,27 +15,29 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-struct pager *
-pager_create (struct user_pager_info *upi)
+
+/* Have the kernel flush all pages in the pager; if WAIT is set, then
+   wait for them to be finally expunged before returning. */
+void
+pager_flush (struct pager *p, int wait)
 {
-  struct pager *p;
+  vm_address_t offset;
+  vm_size_t len;
   
-  p = allocate_port (sizeof (struct pager), pager_port_type);
+  pager_report_extent (p->upi, &offset, &len);
   
-  p->upi = upi;
-  p->pager_state = NOTINIT;
-  mutex_init (&p->interlock);
-  condition_init (&p->wakeup);
-  p->lock_requests = 0;
-  p->memobjcntl = MACH_PORT_NULL;
-  p->memobjname = MACH_PORT_NULL;
-  p->mscount = 0;
-  p->seqno = -1;
-  p->noterm = 0;
-  p->termwaiting = 0;
-  p->waitingforseqno = 0;
-  p->pagemap = 0;
-  p->pagemapsize = 0;
-  
-  spin_lock (&pagerlistlock);
+  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_NONE, 1
+	       VM_PROT_NONE, wait);
+}
+
+
+/* Have the kernel write back some pages of a pager; if WAIT is set,
+   then wait for them to be finally written before returning. */
+void
+pager_sync_some (struct pager *p, vm_address_t offset,
+		 vm_size_t size, int wait)
+{
+  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
+	       VM_PROT_NO_CHANGE, wait);
+}
   
