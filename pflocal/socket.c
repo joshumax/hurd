@@ -30,9 +30,19 @@
 error_t
 S_socket_connect2 (struct sock_user *user1, struct sock_user *user2)
 {
+  error_t err;
+
   if (!user1 || !user2)
     return EOPNOTSUPP;
-  return sock_connect (user1->sock, user2->sock);
+
+  err = sock_connect (user1->sock, user2->sock);
+
+  /* Since USER2 isn't in the receiver position in the rpc, we get a send
+     right for it (although we only use the receive right with the same
+     name); be sure it's deallocated!  */
+  mach_port_deallocate (mach_task_self (), user2->pi.port_right);
+
+  return err;
 }
 
 /* Make sure we have a queue to listen on.  */
