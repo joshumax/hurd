@@ -29,11 +29,16 @@ trivfs_clean_protid (void *arg)
        wasn't initialized to the point of needing user cleanup.  */
     (*trivfs_protid_destroy_hook) (cred);
 
+  /* If we hold the only reference to the peropen, try to get rid of it. */
   mutex_lock (&cred->po->cntl->lock);
-  if (!--cred->po->refcnt)
+  if (cred->po->refcnt == 1 && trivfs_peropen_destroy_hook)
     {
-      if (trivfs_peropen_destroy_hook)
-	(*trivfs_peropen_destroy_hook) (cred->po);
+      mutex_unlock (&cred->po->cntl->lock);
+      (*trivfs_peropen_destroy_hook) (cred->po);
+      mutex_lock (&cred->po->cntl->lock);
+    }
+  if (--cred->po->refcnt == 0)
+    {
       ports_port_deref (cred->po->cntl);
       free (cred->po);
     }
