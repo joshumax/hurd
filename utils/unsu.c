@@ -30,7 +30,7 @@
 #include "frobauth.h"
 #include "pids.h"
 
-const char *argp_program_version = STANDARD_HURD_VERSION (rmauth);
+const char *argp_program_version = STANDARD_HURD_VERSION (unsu);
 
 static struct argp_child child_argps[] = {{ &frobauth_no_ugids_argp }, { 0 }};
 
@@ -83,7 +83,7 @@ main (int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, &frobauth);
 
-  if (frobauth_modify (&frobauth, modify, print_info, 0))
+  if (frobauth_modify (&frobauth, 0, 0, modify, print_info, 0))
     exit (0);
   else
     exit (1);
