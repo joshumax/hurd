@@ -309,7 +309,7 @@ new_partition (const char *name, struct file_direct *fdp,
 
 	    printf("\
 (default pager): Found Linux 2.2 swap signature (v%u) in %s...",
-		   name, hdr->version);
+		   hdr->version, name);
 
 	    part->bitmap[0] |= 1; /* first page unusable */
 	    part->free--;
