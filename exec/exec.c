@@ -1494,6 +1494,22 @@ do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
   return KERN_SUCCESS;
 }
 
+/* Attempt to set the active translator for the exec server so that
+   filesystems other than the bootstrap can find it. */
+set_active_trans ()
+{
+  file_t execnode;
+  
+  execnode = file_name_lookup (_SERVERS_EXEC, O_NOTRANS | O_CREAT, 0666);
+  if (execnode == MACH_PORT_NULL)
+    return;
+  
+  file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0, fsys,
+		       MACH_MSG_TYPE_MAKE_SEND);
+  mach_port_deallocate (mach_task_self (), execnode);
+}
+
+
 /* Sent by the bootstrap filesystem after the other essential
    servers have been started up.  */
 
@@ -1514,6 +1530,9 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
 
   /* Do initial setup with the proc server.  */
   _hurd_proc_init (save_argv);
+
+  /* Set the active translator on /hurd/exec. */
+  set_active_trans ();
 
   err = get_privileged_ports (&host_priv, &dev_master);
   if (!err)
