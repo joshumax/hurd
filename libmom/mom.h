@@ -40,8 +40,7 @@ struct mom_port_ref;		/* layout defined in mom-kerndep.h */
 
 /* Create a new port reference that refers to the same underlying channel
    as OBJ.  Fill *NEW with the new reference.  NEW should be otherwise
-   unused memory.  The new reference will have a refcount of one (as if
-   mom_add_ref had been called on it already).  */
+   unused memory.  */
 error_t mom_copy_ref (struct mom_port_ref *new, struct mom_port_ref *obj);
 
 /* Tell if two mom ports refer to the same underlying server RPC channel */
@@ -53,11 +52,11 @@ int mom_refs_identical (struct mom_port_ref *obj1, struct mom_port_ref *obj2);
    mom_ports_identical) will always have the same hash key. */
 int mom_hash_ref (struct mom_port_ref *obj);
 
-/* Destroy mom port reference OBJ.  All existing references go away,
-   and the underlying kernel object is deallocated.  After this call,
-   the memory in *OBJ may be used by the user for any purpose.  It
-   is an error to call this routine if any other thread might be calling
-   any other mom port reference function on OBJ concurrently.  */
+/* Destroy mom port reference OBJ and deallocate the underlying kernel
+   object.  After this call, the memory in *OBJ may be used by the
+   user for any purpose.  It is an error to call this routine if any
+   other thread might be calling any other mom port reference function
+   on OBJ concurrently.  */
 void mom_ref_destroy (struct mom_port_ref *obj);
 
 
