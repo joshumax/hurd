@@ -1563,20 +1563,6 @@ send_signal (int signo)
     }
 }
 
-error_t
-trivfs_S_interrupt_operation (mach_port_t port)
-{
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, port, 
-						  tty_class);
-  if (!cred)
-    return EOPNOTSUPP;
-  
-  ports_interrupt_rpc (cred);
-
-  ports_port_deref (cred);
-  return 0;
-}
-
 void
 report_carrier_off ()
 {
