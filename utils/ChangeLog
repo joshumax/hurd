@@ -1,3 +1,10 @@
+Thu Oct 10 13:53:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (options, main): Add --top/-h option.
+	* psout.c (psout): Add TOP parameter.
+	* psout.h (psout): Add TOP parameter.
+	* w.c (main): Supply new TOP arg to psout.
+	
 Wed Oct  9 14:24:54 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* w.c (w_fetch): Use tty st_atime for idle time.
