@@ -75,7 +75,7 @@ struct node
 
   struct disknode *dn;
 
-  struct stat dn_stat;
+  io_statbuf_t dn_stat;
 
   /* Stat has been modified if one of the following four fields
      is nonzero.  Also, if one of the dn_set_?time fields is nonzero,
@@ -104,9 +104,9 @@ struct node
 
   struct modreq *filemod_reqs;
 
-  off_t allocsize;
+  loff_t allocsize;
 
-  int cache_id;
+  ino64_t cache_id;
 
   int author_tracks_uid;
 };
@@ -399,13 +399,13 @@ error_t diskfs_set_translator (struct node *np,
    long, do nothing.)  If this is a symlink (and diskfs_shortcut_symlink
    is set) then this should clear the symlink, even if
    diskfs_create_symlink_hook stores the link target elsewhere.  */
-error_t diskfs_truncate (struct node *np, off_t size);
+error_t diskfs_truncate (struct node *np, loff_t size);
 
 /* The user must define this function.  Grow the disk allocated to locked node
    NP to be at least SIZE bytes, and set NP->allocsize to the actual
    allocated size.  (If the allocated size is already SIZE bytes, do
    nothing.)  CRED identifies the user responsible for the call.  */
-error_t diskfs_grow (struct node *np, off_t size, struct protid *cred);
+error_t diskfs_grow (struct node *np, loff_t size, struct protid *cred);
 
 /* The user must define this function.  Write to disk (synchronously
    iff WAIT is nonzero) from format-specific buffers any non-paged
@@ -631,7 +631,7 @@ void diskfs_nrele_light (struct node *np);
    extension).  For reads, *AMTREAD is filled with the amount actually
    read.  */
 error_t
-diskfs_node_rdwr (struct node *np, char *data, off_t off,
+diskfs_node_rdwr (struct node *np, char *data, loff_t off,
 		  size_t amt, int dir, struct protid *cred,
 		  size_t *amtread);
 
@@ -652,7 +652,7 @@ diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
    This should be called after the change is fully completed.  */
 void
 diskfs_notice_filechange (struct node *np, enum file_changed_type type,
-			  off_t start, off_t end);
+			  loff_t start, loff_t end);
 
 /* Create a new node structure with DS as its physical disknode.
    The new node will have one hard reference and no light references.  */
@@ -750,7 +750,7 @@ error_t diskfs_dirremove (struct node *dp, struct node *np,
 			  const char *name, struct dirstat *ds);
 
 /* Return the node corresponding to CACHE_ID in *NPP. */
-error_t diskfs_cached_lookup (int cache_id, struct node **npp);
+error_t diskfs_cached_lookup (ino64_t cache_id, struct node **npp);
 
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.
