@@ -34,6 +34,7 @@
 #define SHORT_OPT_COL 2		/* column in which short options start */
 #define LONG_OPT_COL  6		/* column in which long options start */
 #define OPT_DOC_COL  29		/* column in which option text starts */
+#define HEADER_COL    1		/* column in which group headers are printed */
 #define USAGE_INDENT 12		/* indentation of wrapped usage lines */
 #define RMARGIN      79		/* right margin used for wrapping */
 
@@ -160,6 +161,8 @@ struct hol *make_hol (struct argp_option *opt)
 
   if (opt)
     {
+      int cur_sort_class = 0;
+
       /* The first option must not be an alias.  */
       assert (! oalias (opt));
 
@@ -184,7 +187,7 @@ struct hol *make_hol (struct argp_option *opt)
 	  entry->opt = o;
 	  entry->num = 0;
 	  entry->short_options = so;
-	  entry->sort_class = 0;
+	  entry->sort_class = cur_sort_class = o->group ?: cur_sort_class;
 
 	  do
 	    {
@@ -502,11 +505,18 @@ hol_entry_help (struct hol_entry *entry, struct line *line)
       }
 
   if (first)
-    /* There are no valid options, so it'd be silly to print anything else. */
-    return;
-
-  /* Now the option documentation.  */
-  if (real->doc)
+    /* Didn't print any switches, what's up?  */
+    if (oshort (real) && ! real->name)
+      /* This is a group header, print it nicely.  */
+      {
+	line_indent_to (line, HEADER_COL);
+	line_fill (line, real->doc, HEADER_COL);
+      }
+    else
+      /* Just a totally shadowed option, don't print anything.  */
+      return;			
+  else if (real->doc)
+    /* Now the option documentation.  */
     {
       unsigned col = line_column (line);
       char *doc = real->doc;
@@ -692,7 +702,7 @@ void argp_help (struct argp *argp, FILE *stream, unsigned flags)
       hol = argp_hol (argp);
 
       /* If present, these options always come last.  */
-      hol_set_sort_class (hol, "help", -2);
+      hol_set_sort_class (hol, "help", -1);
       hol_set_sort_class (hol, "version", -1);
 
       hol_sort (hol);
