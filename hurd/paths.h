@@ -23,16 +23,17 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Port rendezvous points are specified by symbols _SERVERS_FOO,
    the canonical pathname being /servers/foo.  */
 
-#define	_SERVERS_CORE		"/servers/core"
-#define	_SERVERS_EXEC		"/servers/exec"
-#define _SERVERS_STARTUP	"/servers/startup"
-#define _SERVERS_PROC		"/servers/proc"
-#define _SERVERS_NEWTERM	"/servers/newterm"
+#define	_SERVERS		"/servers/"
+#define	_SERVERS_CORE		_SERVERS "core"
+#define	_SERVERS_EXEC		_SERVERS "exec"
+#define _SERVERS_STARTUP	_SERVERS "startup"
+#define _SERVERS_PROC		_SERVERS "proc"
+#define _SERVERS_NEWTERM	_SERVERS "newterm"
 
 /* Directory containing naming points for socket servers.
    Entries are named by the string representing the domain number
    in simple decimal (e.g. "/servers/socket/23").  */
-#define	_SERVERS_SOCKET		"/servers/socket"
+#define	_SERVERS_SOCKET		_SERVERS "socket"
 
 /* Hurd servers are specified by symbols _HURD_FOO,
    the canonical pathname being /libexec/foo.  */
@@ -40,8 +41,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Standard translators for special node types.
    These pathnames are used by the C library.
    UFS and perhaps other filesystems short-circuit these translators.  */
-#define	_HURD_SYMLINK	"/libexec/symlink" /* S_IFLNK */
-#define	_HURD_CHRDEV	"/libexec/chrdev" /* S_IFCHR */
-#define	_HURD_BLKDEV	"/libexec/blkdev" /* S_IFBLK */
-#define	_HURD_FIFO	"/libexec/fifo" /* S_IFIFO */
-#define	_HURD_IFSOCK	"/libexec/ifsock" /* S_IFSOCK */
+#define	_HURD		"/libexec/"
+#define	_HURD_SYMLINK	_HURD "symlink" /* S_IFLNK */
+#define	_HURD_CHRDEV	_HURD "chrdev" /* S_IFCHR */
+#define	_HURD_BLKDEV	_HURD "blkdev" /* S_IFBLK */
+#define	_HURD_FIFO	_HURD "fifo" /* S_IFIFO */
+#define	_HURD_IFSOCK	_HURD "ifsock" /* S_IFSOCK */
