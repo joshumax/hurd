@@ -21,5 +21,5 @@
 
 #define UGIDS_EI
 #undef __OPTIMIZE__
-#define __OPTIMIZE__
+#define __OPTIMIZE__	1
 #include "ugids.h"

@@ -1,3 +1,7 @@
+2004-10-23  Marcus Brinkmann  <marcus@gnu.org>
+
+	* hostmux-xinl.c (__OPTIMIZE__): Define to 1 instead of nothing.
+
 2002-06-02  Marcus Brinkmann  <marcus@gnu.org>
 
 	* mux.c (netfs_get_dirents): Initialize COUNT with 2, to take into

@@ -1,3 +1,7 @@
+2004-10-23  Marcus Brinkmann  <marcus@gnu.org>
+
+	* usermux-xinl.c (__OPTIMIZE__): Define to 1 instead of nothing.
+
 2002-05-13  Roland McGrath  <roland@frob.com>
 
 	* mux.c (netfs_attempt_chmod): Handle MODE arg with no S_IFMT bits set.
