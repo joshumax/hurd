@@ -20,20 +20,9 @@
 
 #include "netfs.h"
 
-int
-netfs_demuxer (mach_msg_header_t *inp,
-	       mach_msg_header_t *outp)
+error_t
+netfs_shutdown (int flags)
 {
-  int netfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
-
-  return (netfs_io_server (inp, outp)
-          || netfs_fs_server (inp, outp)
-          || ports_notify_server (inp, outp)
-          || netfs_fsys_server (inp, outp)
-          || ports_interrupt_server (inp, outp)
-          || netfs_ifsock_server (inp, outp));
+  return EBUSY;
 }
 
