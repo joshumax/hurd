@@ -1,3 +1,8 @@
+1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* portinfo.c (parse_task): Fail with appropriate error message if the
+	fetched task is MACH_PORT_NULL.
+
 1999-04-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* shd.c (run): Print child's PID when pausing before exec.
