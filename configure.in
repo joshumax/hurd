@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.4 1996/05/01 02:14:08 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.5 1996/05/01 02:19:03 roland Exp $])
 AC_PREREQ(2.4)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -38,15 +38,12 @@ else
   # We are configuring in a separate build tree.
   # Create a Makefile in the top-level build directory and
   # one for each subdirectory Makefile in the source.
-  makefiles="`cd $srcdir; for file in Makefile */Makefile; do \
+  makefiles="Makeconf:build.mkcf.in \
+	     `cd $srcdir; for file in Makefile */Makefile; do \
 			    echo ${file}:build.mk.in; done`"
 fi
 
-AC_OUTPUT(config.make ${makefiles},
-	  [if test `cd $srcdir; /bin/pwd` != `/bin/pwd`; then
-	     rm -f Makeconf
-	     echo 'include $(top_srcdir)/Makeconf' >Makeconf
-	   fi])
+AC_OUTPUT(config.make ${makefiles})
 
 dnl Local Variables:
 dnl comment-start: "dnl "
