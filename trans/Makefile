@@ -18,31 +18,16 @@
 dir := trans
 makemode := servers
 
-SRCS = ifsock.c symlink.c magic.c null.c fifo.c
-OBJS = $(subst .c,.o,$(SRCS)) fsysServer.o error.o
 targets = symlink ifsock magic null fifo
+SRCS = ifsock.c symlink.c magic.c null.c fifo.c
+OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
 
-CPPFLAGS += -I../lib
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
-vpath %.c ../lib
-null-HURDLIBS=libtrivfs libports libihash
-ifsock-HURDLIBS=libtrivfs libports libihash
-fifo-HURDLIBS=libpipe libtrivfs libports libihash libthreads
+all: $(targets)
+
+symlink magic: fsysServer.o
+ifsock: ifsockServer.o
+fifo: ../libpipe/libpipe.a ../libthreads/libthreads.a
+null ifsock fifo: ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a
+$(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
-
-symlink: symlink.o fsysServer.o
-
-magic: magic.o fsysServer.o error.o
-
-fifo: fifo.o error.o
-
-# The .a files have to be mentioned explicitly due to a make deficiency,
-# even though they are already specified by null-HURDLIBS above.
-null: null.o error.o ../libtrivfs/libtrivfs.a ../libports/libports.a \
-	../libihash/libihash.a
-
-ifsock: ifsock.o error.o ../libtrivfs/libtrivfs.a ../libports/libports.a \
-	../libihash/libihash.a ifsockServer.o
-
-CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
