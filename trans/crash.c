@@ -67,7 +67,6 @@ struct crasher
 
     task_t task;
     file_t core_file;
-    string_t target;
     int signo, sigcode, sigerror;
 
     mach_port_t original_msgport; /* Restore on resume.  */
@@ -81,7 +80,7 @@ struct port_class *crasher_portclass;
 kern_return_t
 S_crash_dump_task (mach_port_t port,
 		   mach_port_t reply_port, mach_msg_type_name_t reply_type,
-		   task_t task, file_t core_file, char *target,
+		   task_t task, file_t core_file, 
 		   int signo, int sigcode, int sigerror,
 		   natural_t exc, natural_t code, natural_t subcode,
 		   mach_port_t ctty_id)
@@ -128,7 +127,6 @@ S_crash_dump_task (mach_port_t port,
 
 	      c->task = task;
 	      c->core_file = core_file;
-	      strcpy (c->target, target);
 	      c->signo = signo;
 	      c->sigcode = sigcode;
 	      c->sigerror = sigerror;
@@ -255,7 +253,7 @@ S_msg_sig_post_untraced (mach_port_t port,
 }
 
 error_t
-dump_core (task_t task, file_t core_file, const char *target,
+dump_core (task_t task, file_t core_file, 
 	   int signo, long int sigcode, int sigerror)
 {
   return ENOSYS;		/* XXX */
@@ -279,7 +277,7 @@ dead_crasher (void *ptr)
     {
       /* C->proc was cleared in S_msg_sig_post as a marker that
 	 this crasher should get a core dump when we clean him up.  */
-      error_t err = dump_core (c->task, c->core_file, c->target,
+      error_t err = dump_core (c->task, c->core_file,
 			       c->signo, c->sigcode, c->sigerror);
       /* Now reply to the crasher's original RPC which started this whole
          party.  He should now report his own death (with core dump iff ERR
