@@ -17,6 +17,12 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <argp.h>
+#include <argz.h>
+#include <string.h>
+#include <inttypes.h>
+#include <error.h>
+
 #include "tmpfs.h"
 #include <limits.h>
 #include <version.h>
@@ -122,7 +128,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       else
 	{
 	  char *end = NULL;
-	  intmax_t size = strtoimax (state->argv[state->next], 0, &end);
+	  intmax_t size = strtoimax (state->argv[state->next], &end, 0);
 	  if (end == NULL || end == arg)
 	    {
 	      argp_error (state, "argument must be a number");
@@ -229,8 +235,8 @@ main (int argc, char **argv)
     error (0, err, "Cannot get host privileged port");
   else
     {
-      err = vm_set_default_memory_manager (host, &default_pager);
-      mach_port_deallocate (mach_task_self (), host);
+      err = vm_set_default_memory_manager (host_priv, &default_pager);
+      mach_port_deallocate (mach_task_self (), host_priv);
       if (err)
 	error (0, err, "Cannot get default pager port");
     }

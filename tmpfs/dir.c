@@ -17,6 +17,10 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <stddef.h>
+#include <unistd.h>
+#include <sys/mman.h>
+
 #include "tmpfs.h"
 #include <stdlib.h>
 
@@ -66,7 +70,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 	return ENOMEM;
     }
 
-  entp = *data;
+  entp = (struct dirent *) *data;
   entp->d_fileno = dp->dn_stat.st_ino;
   entp->d_type = DT_DIR;
   entp->d_namlen = 1;
@@ -146,7 +150,7 @@ diskfs_lookup_hard (struct node *dp,
     }
   if (namelen == 2 && name[0] == '.' && name[1] == '.')
     {
-      struct disknode *ddnp = dp->dn->dir.dotdot;
+      struct disknode *ddnp = dp->dn->u.dir.dotdot;
       assert (np != 0);
       if (ddnp == 0)		/* root directory */
 	return EAGAIN;

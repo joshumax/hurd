@@ -1,3 +1,29 @@
+2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* dir.c: Include <stddef.h>, <unistd.h>, <sys/mman.h>
+	(diskfs_get_directs): Cast *data to struct dirent *.
+
+	* node.c: Include <stddef.h>.
+	(diskfs_alloc_node): Remove unused variables err, st, np.
+	(diskfs_free_node): Use *np->dn, not *dn to calculate used space.
+	(recompute_blocks): Replace DT_DEV with DT_BLK.
+	(diskfs_node_norefs): Likewise.
+	(recompute_blocks): Take address of np->dn_stat for pointer st.
+	(diskfs_cached_lookup): New variable st.
+	(diskfs_cached_lookup): Set st to &np->dn_stat, not &dn->dn_stat.
+	(create_symlink_hook): Fix malloc call and return code check.
+	(read_symlink_hook): Return 0.
+
+	* tmpfs.c: Include <argp.h>, <string.h>, <inttypes.h>, <argz.h>,
+	<error.h>.
+	(parse_opt): Reverse second and third argument of strtoimax call.
+
+	* tmpfs.h (struct disknode): Remove blind passenger (unnamed copy
+	of anonymous struct {} reg).
+
+	Some of the above were also reported by Alexey Dejneka
+	<adejneka@comail.ru>.
+	
 2000-12-28  Roland McGrath  <roland@frob.com>
 
 	* node.c (recompute_blocks): New function, broken out of ...

@@ -51,11 +51,6 @@ struct disknode
     } reg;
     struct
     {
-      mach_port_t memobj;
-      unsigned int allocpages;	/* largest size while memobj was live */
-    };
-    struct
-    {
       struct tmpfs_dirent *entries;
       struct disknode *dotdot;
     } dir;

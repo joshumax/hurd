@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <stddef.h>
+
 #include "tmpfs.h"
 #include <stdlib.h>
 
@@ -29,9 +31,6 @@ error_t
 diskfs_alloc_node (struct node *dp, mode_t mode, struct node **npp)
 {
   struct disknode *dn;
-  struct node *np;
-  struct stat *st;
-  error_t err;
 
   dn = calloc (1, sizeof *dn);
   if (dn == 0)
@@ -75,7 +74,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 
   spin_lock (&diskfs_node_refcnt_lock);
   --num_files;
-  tmpfs_space_used -= sizeof *dn;
+  tmpfs_space_used -= sizeof *np->dn;
   spin_unlock (&diskfs_node_refcnt_lock);
 }
 
@@ -106,7 +105,7 @@ diskfs_node_norefs (struct node *np)
 	  np->dn->u.reg.allocpages = np->allocsize / vm_page_size;
 	  break;
 	case DT_CHR:
-	case DT_DEV:
+	case DT_BLK:
 	  np->dn->u.chr = np->dn_stat.st_rdev;
 	  break;
 	}
@@ -124,7 +123,7 @@ static void
 recompute_blocks (struct node *np)
 {
   struct disknode *const dn = np->dn;
-  struct stat *const st = np->dn_stat;
+  struct stat *const st = &np->dn_stat;
 
   st->st_blocks = sizeof *dn + dn->translen;
   switch (dn->type)
@@ -137,7 +136,7 @@ recompute_blocks (struct node *np)
       st->st_blocks += st->st_size + 1;
       break;
     case DT_CHR:
-    case DT_DEV:
+    case DT_BLK:
       st->st_rdev = dn->u.chr;
       break;
     case DT_DIR:
@@ -164,6 +163,8 @@ diskfs_cached_lookup (int inum, struct node **npp)
     }
   else
     {
+      struct stat *st;
+
       /* Create the new node.  */
       np = diskfs_make_node (dn);
       np->cache_id = (ino_t) dn;
@@ -174,7 +175,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       all_nodes = np;
       spin_unlock (&diskfs_node_refcnt_lock);
 
-      st = &dn->dn_stat;
+      st = &np->dn_stat;
       memset (st, 0, sizeof *st);
       st->st_fstype = FSTYPE_MEMFS;
       st->st_fsid = getpid ();
@@ -320,8 +321,8 @@ create_symlink_hook (struct node *np, const char *target)
   if (np->dn_stat.st_size > 0)
     {
       const size_t size = np->dn_stat.st_size + 1;
-      char *const new = malloc (np->dn->u.lnk, size);
-      if (new == 0)
+      np->dn->u.lnk = malloc (size);
+      if (np->dn->u.lnk == 0)
 	return ENOSPC;
       memcpy (np->dn->u.lnk, target, size);
       adjust_used (size);
@@ -329,16 +330,17 @@ create_symlink_hook (struct node *np, const char *target)
     }
   return 0;
 }
-error_t (*diskfs_read_symlink_hook)(struct node *np, char *target)
-     = read_symlink_hook;
+error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target)
+     = create_symlink_hook;
 
 static error_t
 read_symlink_hook (struct node *np, char *target)
 {
   memcpy (target, np->dn->u.lnk, np->dn_stat.st_size + 1);
+  return 0;
 }
-error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target)
-     = create_symlink_hook;
+error_t (*diskfs_read_symlink_hook)(struct node *np, char *target)
+     = read_symlink_hook;
 
 void
 diskfs_write_disknode (struct node *np, int wait)
