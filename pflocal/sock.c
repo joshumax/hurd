@@ -19,6 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "pflocal.h"
+
+/* We hold this lock before we lock two sockets at once, to someone
+   else trying to lock the same two sockets in the reverse order, resulting
+   in a deadlock.  */
+static struct mutex socket_pair_lock;
 
 /* ---------------------------------------------------------------- */
 
@@ -35,7 +40,12 @@ sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
   *pipe = user->sock->read_pipe;
   assert (*pipe);		/* A socket always has a read pipe.  */
 
-  if (((*pipe)->flags & PIPE_BROKEN) && ! (sock->flags & SOCK_SHUTDOWN_READ))
+  if (((*pipe)->flags & PIPE_BROKEN)
+      && ! (sock->flags & SOCK_CONNECTED)
+      && ! (sock->flags & SOCK_SHUTDOWN_READ))
+    /* A broken pipe with no peer is not connected (only connection-oriented
+       sockets can have broken pipes.  However this is not true if the
+       read-half has been explicitly shutdown [at least in netbsd].  */
     err = ENOTCONN;
   else
     pipe_aquire (*pipe);
@@ -59,9 +69,10 @@ sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe)
     pipe_aquire (*pipe);	/* Do this before unlocking the sock!  */
   else if (sock->flags & SOCK_SHUTDOWN_WRITE)
     /* Writing on a socket with the write-half shutdown always acts as if the
-       pipe we're broken, even if the socket isn't connected yet.  */
+       pipe were broken, even if the socket isn't connected yet [at least in
+       netbsd].  */
     err = EPIPE;
-  else if (sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
+  else if (sock->read_pipe->class->flags & PIPE_CLASS_CONNECTIONLESS)
     /* Connectionless protocols give a different error when unconnected.  */
     err = EDESTADDRREQ;
   else
@@ -118,6 +129,8 @@ sock_free (struct sock *sock)
   /* But we must do the read pipe ourselves.  */
   pipe_release (sock->read_pipe);
 
+  
+
   free (sock);
 }
 
@@ -173,31 +186,89 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 
 /* ---------------------------------------------------------------- */
 
-/* We hold this lock when we want to lock both sockets for a attach
-   operation, to avoid another attach with the sockets reversed happening.
-   Attach should be the only place trying to lock two sockets at once, so
-   this should be safe...  */
-static struct mutex connect_lock;
+/* Bind SOCK to ADDR.  */
+error_t
+sock_bind (struct sock *sock, struct addr *addr)
+{
+  error_t err = 0;
 
-/* Connect together the previously unconnected sockets SOCK1 and SOCK2.  */
+  mutex_lock (&sock->lock);
+  mutex_lock (&addr->lock);
+
+  if (addr && sock->addr)
+    err = EINVAL;		/* SOCK already bound.  */
+  else if (addr && addr->sock)
+    err = EADDRINUSE;		/* Something else already bound ADDR.  */
+  else if (addr)
+    addr->sock = sock;		/* First binding for SOCK.  */
+  else
+    sock->addr->sock = NULL;	/* Unbinding SOCK.  */
+
+  if (!err)
+    sock->addr = addr;
+
+  mutex_unlock (&addr->lock);
+  mutex_unlock (&sock->lock);
+
+  return err;
+}
+
+/* Returns SOCK's addr, fabricating one if necessary.  SOCK should be
+   locked.  */
+static struct addr *
+ensure_addr (struct sock *sock)
+{
+  if (! sock->addr)
+    {
+      addr_create (&sock->addr);
+      sock->addr->sock = sock;
+    }
+  return sock->addr;
+}
+
+/* Returns a send right to SOCK's address in ADDR_PORT.  If SOCK doesn't
+   currently have an address, one is fabricated first.  */
+error_t
+sock_get_addr_port (struct sock *sock, mach_port_t *addr_port)
+{
+  mutex_lock (&sock->lock);
+  *addr_port = ports_get_right (ensure_addr (sock));
+  mutex_unlock (&sock->lock);
+  return 0;			/* XXX */
+}
+
+/* If SOCK is a connected socket, returns a send right to SOCK's peer's
+   address in ADDR_PORT.  */
+error_t
+sock_get_write_addr_port (struct sock *sock, mach_port_t *addr_port)
+{
+  error_t err = 0;
+
+  mutex_lock (&sock->lock);
+  if (sock->write_addr)
+    *addr_port = ports_get_right (sock->write_addr);
+  else
+    err = ENOTCONN;
+  mutex_unlock (&sock->lock);
+
+  return err;
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Connect SOCK1 and SOCK2.  */
 error_t
 sock_connect (struct sock *sock1, struct sock *sock2)
 {
   error_t err = 0;
   /* In the case of a connectionless protocol, an already-connected socket may
-     be reconnected elsewhere, so we save the old write pipe for later
-     disposal.  */
+     be reconnected, so save the old destination for later disposal.  */
   struct pipe *old_sock1_write_pipe = NULL;
-  struct pipe_class *pipe_class = sock1->read_pipe->pipe_class;
+  struct addr *old_sock1_write_addr = NULL;
+  struct pipe_class *pipe_class = sock1->read_pipe->class;
   /* True if this protocol is a connectionless one.  */
   int connless = (pipe_class->flags & PIPE_CLASS_CONNECTIONLESS);
 
-  int connected (struct sock *s)
-    {
-      /* A socket is considered connected if it has a write pipe or a
-	 non-broken read-pipe.  */
-      return s->write_pipe != NULL || ! (s->read_pipe->flags & PIPE_BROKEN);
-    }
   void connect (struct sock *wr, struct sock *rd)
     {
       if ((wr->flags & SOCK_SHUTDOWN_WRITE)
@@ -207,88 +278,51 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	  pipe_aquire (pipe);
 	  pipe->flags &= ~PIPE_BROKEN; /* Not yet...  */
 	  wr->write_pipe = pipe;
+	  wr->write_addr = ensure_addr (rd);
+	  ports_port_ref (wr->write_addr);
 	  mutex_unlock (&pipe->lock);
 	}
     }
 
-  if (sock2->read_pipe->pipe_class != pipe_class)
+  if (sock2->read_pipe->class != pipe_class)
     /* Incompatible socket types.  */
     return EOPNOTSUPP;		/* XXX?? */
 
-  mutex_lock (&connect_lock);
+  mutex_lock (&socket_pair_lock);
   mutex_lock (&sock1->lock);
   mutex_lock (&sock2->lock);
 
-  if (!connless && (connected (sock1) || connected (sock2)))
+  if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
+    /* An already-connected socket.  */
     err = EISCONN;
   else
     {
       old_sock1_write_pipe = sock1->write_pipe;
+      old_sock1_write_addr = sock1->write_addr;
 
-      /* We always try and make the forward connection.  */
+      /* Always make the forward connection.  */
       connect (sock1, sock2);
 
-      /* We only make the backward connection for connection-oriented
-	 protocols.  */
-      if (! (pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
-	connect (sock2, sock1);
+      /* Only make the reverse for connection-oriented protocols.  */
+      if (! connless)
+	{
+	  connect (sock2, sock1);
+	  sock1->flags |= SOCK_CONNECTED;
+	  sock2->flags |= SOCK_CONNECTED;
+	}
     }
 
   mutex_unlock (&sock2->lock);
   mutex_unlock (&sock1->lock);
-  mutex_unlock (&connect_lock);
+  mutex_unlock (&socket_pair_lock);
 
   if (old_sock1_write_pipe)
-    /* Discard SOCK1's previous write pipe.  */
-    pipe_discard (old_sock1_write_pipe);
+    {
+      pipe_discard (old_sock1_write_pipe);
+      ports_port_deref (old_sock1_write_addr);
+    }
 
   return err;
-}
-
-/* ---------------------------------------------------------------- */
-
-/* Bind SOCK to ADDR.  */
-error_t
-sock_bind (struct sock *sock, struct addr *addr)
-{
-  error_t err;
-
-  mutex_lock (&sock->lock);
-
-  if (sock->addr)
-    if (addr)
-      err = EINVAL;		/* Already bound.  */
-    else
-      err = addr_set_sock (sock->addr, NULL);
-  else
-    if (addr)
-      err = addr_set_sock (addr, sock);
-
-  if (!err)
-    sock->addr = addr;
-
-  mutex_unlock (&sock->lock);
-
-  return err;
-}
-
-/* Returns SOCK's address in ADDR.  If SOCK doesn't currently have an
-   address, one is fabricated first.  */
-error_t
-sock_get_addr (struct sock *sock, struct addr **addr)
-{
-  error_t err;
-  mutex_lock (&sock->lock);
-  if (sock->addr == NULL)
-    err = addr_create (&sock->addr);
-  *addr = sock->addr;
-  mutex_unlock (&sock->lock);
-  return err;
-}
-
-error_t
-sock_get_peer_addr (struct sock *sock, struct addr **addr)
-{
 }
 
 /* ---------------------------------------------------------------- */
@@ -300,7 +334,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
 
   sock->flags |= flags;
 
-  if (which & SOCK_SHUTDOWN_READ)
+  if (flags & SOCK_SHUTDOWN_READ)
     /* Shutdown the read half.  We keep the pipe around though.  */
     {
       struct pipe *pipe = sock->read_pipe;
@@ -312,7 +346,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
       mutex_unlock (&pipe->lock);
     }
 
-  if (which & SOCK_SHUTDOWN_WRITE)
+  if (flags & SOCK_SHUTDOWN_WRITE)
     /* Shutdown the write half.  */
     {
       struct pipe *pipe = sock->write_pipe;
