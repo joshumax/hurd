@@ -1,6 +1,6 @@
 /* The hurd io interface to storeio
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -177,7 +177,7 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
-   be used for.  The O_ASYNC bit affects icky async I/O; good async 
+   be used for.  The O_ASYNC bit affects icky async I/O; good async
    I/O is done through io_async which is orthogonal to these calls. */
 
 error_t
@@ -286,7 +286,7 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      int wait, int dochildren)
 {
-  if (! cred)
+  if (cred)
     return dev_sync (((struct open *)cred->po->hook)->dev, wait);
   else
     return EOPNOTSUPP;
@@ -336,5 +336,5 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 			    offsets, num_offsets, data, data_len);
 
       return err;
-    }	
+    }
 }
