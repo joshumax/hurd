@@ -261,15 +261,17 @@ error_t argp_parse (const struct argp *argp,
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
-   will print this this string and exit (unless the ARGP_NO_EXIT flag is
-   used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
+   will print this this string followed by a newline and exit (unless the
+   ARGP_NO_EXIT flag is used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
 extern char *argp_program_version;
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
-   calls this function and exits (unless the ARGP_NO_EXIT flag is used).
-   This variable takes precedent over ARGP_PROGRAM_VERSION.  */
-extern void (*argp_program_version_hook) ();
+   calls this function with a stream to print the version to and a pointer to
+   the current parsing state, and then exits (unless the ARGP_NO_EXIT flag is
+   used).  This variable takes precedent over ARGP_PROGRAM_VERSION.  */
+extern void (*argp_program_version_hook) (FILE *stream,
+					  struct argp_state *state);
 
 /* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
