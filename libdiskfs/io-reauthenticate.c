@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994,95,96,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,7 +30,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   if (cred == 0)
     return EOPNOTSUPP;
 
-  /* This routine must carefully ignore EINTR because we 
+  /* This routine must carefully ignore EINTR because we
      are a simpleroutine, so callers won't know to restart. */
 
   mutex_lock (&cred->po->np->lock);
@@ -43,16 +43,14 @@ diskfs_S_io_reauthenticate (struct protid *cred,
       return err;
     }
 
-  newright = ports_get_right (newcred);
-  err = mach_port_insert_right (mach_task_self (), newright, newright,
-				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  newright = ports_get_send_right (newcred);
+  assert (newright != MACH_PORT_NULL);
 
-  diskfs_finish_protid (newcred, iohelp_reauth (diskfs_auth_server_port, 
+  diskfs_finish_protid (newcred, iohelp_reauth (diskfs_auth_server_port,
 						rend_port, newright, 1));
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
-    
+
   mutex_unlock (&cred->po->np->lock);
 
   ports_port_deref (newcred);
