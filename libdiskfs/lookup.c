@@ -66,42 +66,54 @@
    This function is a wrapper for diskfs_lookup_hard. 
 */
 error_t 
-diskfs_lookup (struct node *dp, 
-	       char *name,
-	       enum lookup_type type,
-	       struct node **np,
-	       struct dirstat *ds,
+diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
+	       struct node **np, struct dirstat *ds,
 	       struct protid *cred)
 {
-  error_t err, err2;
+  error_t err;
   
   if (type == REMOVE || type == RENAME)
     assert (np);
 
   if (!S_ISDIR (dp->dn_stat.st_mode))
     {
-      diskfs_null_dirstat (ds);
+      if (ds)
+	diskfs_null_dirstat (ds);
       return ENOTDIR;
     }
   err = diskfs_access (dp, S_IEXEC, cred);
   if (err)
     {
-      diskfs_null_dirstat (ds);
+      if (ds)
+	diskfs_null_dirstat (ds);
       return err;
     }
 
   if (type == LOOKUP)
     {
       /* Check the cache first */
-      *np = diskfs_check_cache (dp, name);
-      if (*np == (struct node *)-1)
+      struct node *cached = diskfs_check_lookup_cache (dp, name);
+
+      if (cached == (struct node *)-1)
+	/* Negative lookup cached.  */
 	{
-	  *np = 0;
+	  if (np)
+	    *np = 0;
 	  return ENOENT;
 	}
-      else if (*np)
+      else if (cached)
 	{
-	  diskfs_null_dirstat (ds);
+	  if (np)
+	    *np = cached;	/* Return what we found.  */
+	  else
+	    /* Ick, the user doesn't want the result, we have to drop our
+	       reference.  */
+	    if (cached == dp)
+	      diskfs_nrele (cached);
+	    else
+	      diskfs_nput (cached);
+	  if (ds)
+	    diskfs_null_dirstat (ds);
 	  return 0;
 	}
     }
@@ -114,13 +126,13 @@ diskfs_lookup (struct node *dp,
       || (type == CREATE && err == ENOENT)
       || (type == REMOVE && err != ENOENT))
     {
-      err2 = diskfs_checkdirmod (dp, *np, cred);
+      error_t err2 = diskfs_checkdirmod (dp, (err || !np) ? 0 : *np, cred);
       if (err2)
 	return err2;
     }
 
   if ((type == LOOKUP || type == CREATE) && !err && np)
-    diskfs_enter_cache (dp, *np, name);
+    diskfs_enter_lookup_cache (dp, *np, name);
     
   return err;
 }
