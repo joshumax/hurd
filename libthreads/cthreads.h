@@ -1,31 +1,35 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.10  1995/09/13 19:50:07  mib
+ * (CONDITION_INITIALIZER): Provide initial zero for IMPLICATIONS member.
+ * (condition_init): Bother initializing NAME and IMPLICATIONS members.
+ *
  * Revision 1.9  1995/08/30 15:51:41  mib
  * (condition_implies, condition_unimplies): New functions.
  * (struct condition): New member `implications'.
@@ -53,15 +57,15 @@
  * 	Add declaration for cthread_wire().
  * 	Merge in Jonathan Chew's changes for thread-local data.
  * 	Use MACRO_BEGIN and MACRO_END.
- * 
+ *
  * Revision 1.8  91/03/25  14:14:49  jjc
  * 	For compatibility with cthread_data:
  * 		1) Added private_data field to cthread structure
  * 		   for use by POSIX thread specific data routines.
  * 		2) Conditionalized old data field used by cthread_data
  * 		   under CTHREAD_DATA for binary compatibility.
- * 		3) Changed macros, cthread_set_data and cthread_data, 
- * 		   into routines which use the POSIX routines for 
+ * 		3) Changed macros, cthread_set_data and cthread_data,
+ * 		   into routines which use the POSIX routines for
  * 		   source compatibility.
  * 		   Also, conditionalized under CTHREAD_DATA.
  * 	[91/03/18            jjc]
@@ -73,43 +77,43 @@
  * Revision 2.11  91/08/03  18:20:15  jsb
  * 	Removed the infamous line 122.
  * 	[91/08/01  22:40:24  jsb]
- * 
+ *
  * Revision 2.10  91/07/31  18:35:42  dbg
  * 	Fix the standard-C conditional: it's __STDC__.
- * 
+ *
  * 	Allow for macro-redefinition of cthread_sp, spin_try_lock,
  * 	spin_unlock (from machine/cthreads.h).
  * 	[91/07/30  17:34:28  dbg]
- * 
+ *
  * Revision 2.9  91/05/14  17:56:42  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.8  91/02/14  14:19:52  mrt
  * 	Added new Mach copyright
  * 	[91/02/13  12:41:15  mrt]
- * 
+ *
  * Revision 2.7  90/11/05  14:37:12  rpd
  * 	Include machine/cthreads.h.  Added spin_lock_t.
  * 	[90/10/31            rwd]
- * 
+ *
  * Revision 2.6  90/10/12  13:07:24  rpd
  * 	Channge to allow for positive stack growth.
  * 	[90/10/10            rwd]
- * 
+ *
  * Revision 2.5  90/09/09  14:34:56  rpd
  * 	Remove mutex_special and debug_mutex.
  * 	[90/08/24            rwd]
- * 
+ *
  * Revision 2.4  90/08/07  14:31:14  rpd
  * 	Removed RCS keyword nonsense.
- * 
+ *
  * Revision 2.3  90/01/19  14:37:18  rwd
  * 	Add back pointer to cthread structure.
  * 	[90/01/03            rwd]
  * 	Change definition of cthread_init and change ur_cthread_self macro
  * 	to reflect movement of self pointer on stack.
  * 	[89/12/18  19:18:34  rwd]
- * 
+ *
  * Revision 2.2  89/12/08  19:53:49  rwd
  * 	Change spin_try_lock to int.
  * 	[89/11/30            rwd]
@@ -120,16 +124,16 @@
  * 	Added mutex_special to specify a need to context switch on this
  * 	mutex.
  * 	[89/11/21            rwd]
- * 
+ *
  * 	Made mutex_lock a macro trying to grab the spin_lock first.
  * 	[89/11/13            rwd]
  * 	Removed conditionals.  Mutexes are more like conditions now.
  * 	Changed for limited kernel thread version.
  * 	[89/10/23            rwd]
- * 
+ *
  * Revision 2.1  89/08/03  17:09:40  rwd
  * Created.
- * 
+ *
  *
  * 28-Oct-88  Eric Cooper (ecc) at Carnegie Mellon University
  *	Implemented spin_lock() as test and test-and-set logic
@@ -155,7 +159,7 @@
  *	rather than macros, so that even smart compilers can't reorder
  *	the clearing of the lock.  Suggested by Jeff Eppinger.
  *	Removed the now empty <machine>/cthreads.h.
- * 
+ *
  * 01-Dec-87  Eric Cooper (ecc) at Carnegie Mellon University
  *	Changed cthread_self() to mask the current SP to find
  *	the self pointer stored at the base of the stack.
@@ -241,7 +245,7 @@ int	NEVER;
  * C Threads package initialization.
  */
 
-extern int cthread_init();
+extern int cthread_init C_ARG_DECLS((void));
 #if 0
 /* This prototype is broken for GNU.  */
 extern any_t calloc C_ARG_DECLS((unsigned n, unsigned size));
@@ -488,7 +492,7 @@ extern any_t
 cthread_join C_ARG_DECLS((cthread_t t));
 
 extern void
-cthread_yield();
+cthread_yield C_ARG_DECLS((void));
 
 extern void
 cthread_exit C_ARG_DECLS((any_t result));
@@ -503,7 +507,7 @@ typedef struct ur_cthread {
 
 #ifndef	cthread_sp
 extern int
-cthread_sp();
+cthread_sp C_ARG_DECLS((void));
 #endif
 
 extern int cthread_stack_mask;
@@ -530,13 +534,13 @@ extern char *
 cthread_name C_ARG_DECLS((cthread_t t));
 
 extern int
-cthread_count();
+cthread_count C_ARG_DECLS((void));
 
 extern void
 cthread_set_limit C_ARG_DECLS((int n));
 
 extern int
-cthread_limit();
+cthread_limit C_ARG_DECLS((void));
 
 extern void
 cthread_wire C_ARG_DECLS((void));
@@ -554,8 +558,8 @@ cthread_set_data C_ARG_DECLS((cthread_t t, any_t x));
 extern any_t
 cthread_data C_ARG_DECLS((cthread_t t));
 #endif	CTHREAD_DATA
-  
-/* 
+
+/*
  * Support for POSIX thread specific data
  *
  * Multiplexes a thread specific "global" variable
