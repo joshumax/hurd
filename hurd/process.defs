@@ -382,4 +382,4 @@ routine proc_getpgrppids (
 routine proc_get_tty (
 	calling_process: process_t;
 	target_process: pid_t;
-	tty: mach_port_send_t);
+	out tty: mach_port_send_t);
