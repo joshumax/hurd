@@ -1,6 +1,6 @@
 /* The ps_context type, for per-procserver and somewhat global state.
 
-   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99,2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -151,7 +151,7 @@ ps_context_find_tty_by_cttyid (struct ps_context *pc, mach_port_t cttyid_port,
 	}
     }
 
-  return lookup (cttyid_port, pc->ttys, create, (void **)tty);
+  return lookup (cttyid_port, pc->ttys_by_cttyid, create, (void **)tty);
 }
 
 /* Find a ps_user for the user referred to by UID, and return it in U.  */
