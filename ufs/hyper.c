@@ -1,5 +1,5 @@
 /* Fetching and storing the hypermetadata (superblock and cg summary info).
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -292,8 +292,10 @@ diskfs_set_hypermetadata (int wait, int clean)
       size_t read = 0;
       size_t bufsize = round_page (fragroundup (sblock, sblock->fs_cssize));
 
-      err = store_read (store, fsbtodb (sblock, sblock->fs_csaddr), bufsize,
-			&buf, &read);
+      err = store_read (store,
+			fsbtodb (sblock, sblock->fs_csaddr)
+			  << log2_dev_blocks_per_dev_bsize,
+			bufsize, &buf, &read);
       if (err)
 	return err;
       else if (read != bufsize)
@@ -304,7 +306,9 @@ diskfs_set_hypermetadata (int wait, int clean)
 	  bcopy (csum, buf, sblock->fs_cssize);
 	  if (swab_disk)
 	    swab_csums ((struct csum *)buf);
-	  err = store_write (store, fsbtodb (sblock, sblock->fs_csaddr),
+	  err = store_write (store,
+			     fsbtodb (sblock, sblock->fs_csaddr)
+			       << log2_dev_blocks_per_dev_bsize,
 			     buf, bufsize, &wrote);
 	  if (!err && wrote != bufsize)
 	    err = EIO;
