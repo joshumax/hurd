@@ -186,6 +186,21 @@ swab_long (long arg)
 	  | ((arg & 0xff0000) >> 8)
 	  | ((arg & 0xff000000) >> 24));
 }
+
+/* Return *ENTRYP, after byteswapping it if necessary */
+#define read_disk_entry(entryp)						    \
+({ 									    \
+  if (!swab_disk || sizeof (*entryp) == 1)				    \
+    *entryp;								    \
+  else if (sizeof (*entryp) == 2)					    \
+    swab_short (*entryp);						    \
+  else if (sizeof (*entry) == 4)					    \
+    swab_long (*entryp);						    \
+  else									    \
+    abort;								    \
+})
+    
+
 
 
 
