@@ -1042,7 +1042,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 	    mutex_lock (&(*newnp)->lock);
 	}
 
-      if (!netfs_validate_stat (*newnp, -1)
+      if (*newnp && !netfs_validate_stat (*newnp, -1)
 	  && (*newnp)->nn_stat.st_uid != owner)
 	netfs_attempt_chown (-1, *newnp, owner, (*newnp)->nn_stat.st_gid);
     }

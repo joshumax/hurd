@@ -1,3 +1,8 @@
+Wed May 21 12:07:24 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_create_file): Only attempt chown if the
+	create succeeded.
+
 Tue May 20 15:35:39 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* nfs.c (xdr_encode_create_state): New arg OWNER.  Set the owner
