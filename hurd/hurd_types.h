@@ -250,11 +250,12 @@ enum file_storage_class
 #endif
 
 /* Flags sent in proc_getprocinfo request. */
-#define PI_FETCH_TASKINFO  0x00000001
-#define PI_FETCH_THREADS   0x00000002
-#define PI_FETCH_THREAD_BASIC 0x00004
-#define PI_FETCH_THREAD_SCHED 0x00008
-#define PI_FETCH_THREAD_WAITS 0x00010
+#define PI_FETCH_TASKINFO	0x0001
+#define PI_FETCH_TASKEVENTS	0x0020
+#define PI_FETCH_THREADS	0x0002
+#define PI_FETCH_THREAD_BASIC	0x0004
+#define PI_FETCH_THREAD_SCHED	0x0008
+#define PI_FETCH_THREAD_WAITS	0x0010
 
 struct procinfo
 {
@@ -270,6 +271,7 @@ struct procinfo
   int nthreads;			/* size of pi_threadinfos */
 
   struct task_basic_info taskinfo;
+  struct task_events_info taskevents;
 #ifdef TASK_SCHED_TIMESHARE_INFO
   struct policy_timeshare_base timeshare_base_info;
 #endif
