@@ -382,6 +382,8 @@ pager_clear_user_data (struct user_pager_info *upi)
 void
 create_disk_pager ()
 {
+  pager_bucket = ports_create_bucket ();
+
   diskpager = malloc (sizeof (struct user_pager_info));
   diskpager->type = DISK;
   diskpager->np = 0;
