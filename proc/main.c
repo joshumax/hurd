@@ -58,6 +58,7 @@ main ()
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &request_portset);
 
+  /* new_proc depends on these assignments which must occur in this order. */
   self_proc = new_proc (mach_task_self ()); /* proc 0 is the procserver */
   startup_proc = new_proc (MACH_PORT_NULL); /* proc 1 is init */
 
