@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -2009,8 +2009,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     return pty_io_select (cred, reply, type, idtag);
 
   /* We don't deal with SELECT_URG here.  */
-  if (*type & ~(SELECT_READ | SELECT_WRITE))
-    return EINVAL;
+  *type &= (SELECT_READ | SELECT_WRITE);
 
   available = 0;
   if (*type == 0)
