@@ -1,5 +1,5 @@
 /* By-hand stubs for some RPC calls
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -58,6 +58,8 @@ send_signal (mach_port_t msgport,
       mach_msg_header_t head;
       mach_msg_type_t signaltype;
       int signal;
+      mach_msg_type_t sigcode_type;
+      natural_t sigcode;
       mach_msg_type_t refporttype;
       mach_port_t refport;
     }
@@ -86,6 +88,18 @@ send_signal (mach_port_t msgport,
       },
       /* Signal number */
       0,
+      /* Type descriptor for sigcode */
+      {
+	MACH_MSG_TYPE_INTEGER_32, /* msgt_name */
+	32,			/* msgt_size */
+	1,			/* msgt_number */
+	1,			/* msgt_inline */
+	0,			/* msgt_longform */
+	0,			/* msgt_deallocate */
+	0,			/* msgt_unused */
+      },
+      /* Sigcode */
+      0,
       {
 	/* Type descriptor for refport */
 	MACH_MSG_TYPE_COPY_SEND, /* msgt_name */
@@ -99,7 +113,6 @@ send_signal (mach_port_t msgport,
       /* Reference port */
       MACH_PORT_NULL,
     };
-  
   
   message.head.msgh_remote_port = msgport;
   message.signal = signal;
