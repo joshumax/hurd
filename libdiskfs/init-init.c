@@ -26,7 +26,7 @@ mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_control_port;
-struct mapped_time_value diskfs_mtime;
+struct mapped_time_value *diskfs_mtime;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
