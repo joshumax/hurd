@@ -1,6 +1,6 @@
 /* Store creation
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -51,10 +51,10 @@ error_t store_create (file_t source, struct store **store)
   switch (class)
     {
     case STORAGE_DEVICE:
-      err = _store_device_create (port, runs, runs_len, block_size, store);
+      err = _store_device_create (port, block_size, runs, runs_len, store);
       break;
     case STORAGE_HURD_FILE:
-      err = _store_device_create (port, runs, runs_len, block_size, store);
+      err = _store_file_create (port, block_size, runs, runs_len, store);
       break;
     default:
       err = EINVAL;
