@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dirent.h>
 #include "../ufs/fs.h"
 #include "../ufs/dinode.h"
 #include "../ufs/dir.h"
@@ -32,7 +33,7 @@ enum inodetype
 {
   UNALLOC,			/* not allocated */
   REG,				/* allocated, not dir */
-  DIR,				/* dir */
+  DIRECTORY,			/* dir */
   BADDIR,			/* dir with bad block pointers */
 };
 
@@ -50,6 +51,13 @@ nlink_t *linkfound;
 
 /* DT_foo type of each inode (set by pass 1) */
 char *typemap;
+
+/* Map of blocks allocated */
+char *blockmap;
+
+
+/* Command line flags */ 
+int nowrite;
 
 
 enum contret
@@ -92,8 +100,7 @@ struct dups *duplist;		/* head of dup list */
 struct dups *muldup;		/* end of unique duplicate dup block numbers */
 
 
-char sblockbuf[SBSIZE];
-struct fs *sblock = (struct fs *)sblockbuf;
+struct fs *sblock;
 
 daddr_t maxfsblock;
 int maxino;
@@ -108,13 +115,24 @@ int readfd, writefd;
 int fsmodified;
 
 int lfdir;
-char lfname[] = "lost+found";
-mode_t lfmode = IFDIR | 0755;
+char lfname[];
+mode_t lfmode;
 
 
+#define NBBY 8
 #define howmany(x,y) (((x)+((y)-1))/(y))
 #define roundup(x, y) ((((x)+((y)-1))/(y))*(y))
+#define isclr(a, i) (((a)[(i)/NBBY] & (1<<((i)%NBBY))) == 0)
+#define isset(a, i) ((a)[(i)/NBBY] & (1<<((i)%NBBY)))
+#define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
+#define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
 #define DEV_BSIZE 512
+
+#define setbmap(blkno) setbit (blockmap, blkno)
+#define testbmap(blkno) isset (blockmap, blkno)
+#define clrbmap(blkno) clrbit (blockmap, blkno)
+
+#define DI_MODE(dp) (((dp)->di_modeh << 16) | (dp)->di_model)
 
 
      
@@ -127,6 +145,23 @@ void writeblock (daddr_t, void *, size_t);
 void getinode (ino_t, struct dinode *);
 void write_inode (ino_t, struct dinode *);
 void clear_inode (ino_t, struct dinode *);
+
+daddr_t allocblk (int);
+int check_range (daddr_t, int);
+
+ino_t allocino (ino_t, mode_t);
+void freeino (ino_t);
+ino_t allocdir (ino_t, ino_t, mode_t);
+
+int makeentry (ino_t, ino_t, char *);
+int changeino (ino_t, char *, ino_t);
+
+int linkup (ino_t, ino_t);
+
+void datablocks_iterate (struct dinode *, int (*)(daddr_t, int));
+void allblock_iterate (struct dinode *, int (*)(daddr_t, int));
+
+void record_directory (struct dinode *, ino_t);
 
 int reply (char *);
 void pfatal (char *, ...)  __attribute__ ((format (printf, 1, 2)));
