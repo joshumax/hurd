@@ -1,6 +1,6 @@
 /* Store argument parsing
 
-   Copyright (C) 1996,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -26,7 +26,9 @@
 
 #include "store.h"
 
-#define DEFAULT_STORE_TYPE "query"
+/* We use this class variable instead of just the name so that we ensure
+   linking in store_open to define it.  */
+#define DEFAULT_STORE_CLASS store_query_class
 
 static const struct argp_option options[] = {
   {"store-type",'T', "TYPE",   0, "Each DEVICE names a store of type TYPE"},
@@ -230,14 +232,25 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
       return err;
     }
 }
+
 static const struct store_class *
-find_class (const char *name, const struct store_class *const *classes)
+find_class (const char *name, const struct store_class *const *const classes)
 {
-  while (*classes)
-    if ((*classes)->name && strcmp (name, (*classes)->name) == 0)
-      return *classes;
-    else
-      classes++;
+  const struct store_class *const *cl;
+  for (cl = classes ?: __start_store_std_classes;
+       classes ? *cl != 0 : cl < __stop_store_std_classes;
+       ++cl)
+    if ((*cl)->name && strcmp (name, (*cl)->name) == 0)
+      return *cl;
+
+# pragma weak store_module_find_class
+  if (! classes && store_module_find_class)
+    {
+      const struct store_class *cl;
+      if (store_module_find_class (name, strchr (name, '\0'), &cl) == 0)
+	return cl;
+    }
+
   return 0;
 }
 
@@ -338,9 +351,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	if (! parsed)
 	  return ENOMEM;
 	bzero (parsed, sizeof (struct store_parsed));
-	parsed->classes = params->classes ?: store_std_classes;
+	parsed->classes = params->classes;
 	parsed->default_type =
-	  find_class (params->default_type ?: DEFAULT_STORE_TYPE,
+	  find_class (params->default_type ?: DEFAULT_STORE_CLASS.name,
 		      parsed->classes);
 	if (! parsed->default_type)
 	  {
