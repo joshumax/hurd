@@ -38,15 +38,15 @@ INTR_INTERFACE
    using exec_newtask or exec_loadtask as appropriate.  */
 routine file_exec (
 	exec_file: file_t;
-	exec_task: mach_port_send_t;
+	exec_task: task_t;
 	flags: int;
-	argv: data_t, dealloc[];
-	envp: data_t, dealloc[];
-	fdarray: portarray_t, dealloc[];
-	portarray: portarray_t, dealloc[];
-	intarray: intarray_t, dealloc[];
-	deallocnames: mach_port_name_array_t, dealloc[];
-	destroynames: mach_port_name_array_t, dealloc[]);
+	argv: data_t;
+	envp: data_t;
+	fdarray: portarray_t;
+	portarray: portarray_t;
+	intarray: intarray_t;
+	deallocnames: mach_port_name_array_t;
+	destroynames: mach_port_name_array_t);
 
 /* Change owner and/or group */
 routine file_chown (
