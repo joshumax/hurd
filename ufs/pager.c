@@ -1,5 +1,5 @@
 /* Pager for ufs
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -244,6 +244,8 @@ pager_unlock_page (struct user_pager_info *pager,
 	  if (err)
 	    goto out;
 	  assert (lblkno (sblock, address) < NDADDR);
+	  diskfs_device_write_sync (fsbtodb (sblock, bno),
+				    zeroblock, sblock->fs_bsize);
 	  indirs[0].bno = di->di_db[lblkno (sblock, address)] = bno;
 	  record_poke (di, sizeof (struct dinode));
 	}
