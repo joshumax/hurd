@@ -1,5 +1,11 @@
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* hostarch.c (mach_host_elf_machine): Replaced with ...
+	(elf_machine_matches_host): New function.  Instead of returning
+	an ELF EM_* code, take one and check if it matches the host;
+	operate only on mach_host_self(), cache results,
+	Grok CPU_TYPE_{I486,PENTIUM,PENTIUMPRO} to accept EM_386 or EM_486.
+	Grok POWERPC, ALPHA, HPPA types.
 	* exec.c (check_elf): Call elf_machine_matches_host instead of
 	comparing against elf_machine.
 	(load_section): #if 0 out no-op code that uses elf_machine.

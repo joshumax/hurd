@@ -1,3 +1,16 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr.c: Add #include <sys/mman.h> for munmap decl.
+	* enc.c: Likewise.
+	* copy.c: Likewise.
+	* gunzip.c: Likewise.
+	* bunzip2.c: Likewise.
+
+1999-07-08  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* remap.c (remap_open): Recognize "N+" syntax in block list as from
+	block N through the end of the store.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* bunzip2.c (bunzip2): Use munmap instead of vm_deallocate.

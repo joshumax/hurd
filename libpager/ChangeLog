@@ -1,3 +1,7 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* priv.h: Add #include <sys/mman.h> for munmap decl.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* data-return.c (_pager_do_write_request): Use munmap instead of
@@ -413,4 +417,3 @@ Tue Apr 26 15:08:57 1994  Michael I Bushnell  (mib@geech.gnu.ai.mit.edu)
 	* object-init.c (_pager_seqnos_memory_object_init): Only check
 	for inits of active objects AFTER waiting for seqno; otherwise we
 	could race against a prior terminate.
-

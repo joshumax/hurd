@@ -1,7 +1,11 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot.c: Add #include <sys/mman.h> for munmap decl.
+
 Mon Jul  5 20:04:06 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* boot.c (load_image): Fix typo in cast.  Reported by Yamashita
-	TAKAO <jargon@lares.dti.ne.jp>. 
+	TAKAO <jargon@lares.dti.ne.jp>.
 
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 

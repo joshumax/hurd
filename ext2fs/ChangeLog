@@ -1,3 +1,7 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ext2fs.h: Add #include <sys/mman.h> for munmap decl.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Use munmap instead of vm_deallocate.

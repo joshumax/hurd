@@ -1,3 +1,9 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* portinfo.h: Add #include <sys/mman.h> for munmap decl.
+	* fsysops.c: Likewise.
+	* idvec-auth.c: Likewise.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fsysops.c (fsys_get_readonly): Use munmap instead of vm_deallocate.

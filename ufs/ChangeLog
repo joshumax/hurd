@@ -1,3 +1,7 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ufs.h: Add #include <sys/mman.h> for munmap decl.
+
 Mon Jul  5 20:04:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Repair typo.  Reported by Yamashita
@@ -6,7 +10,7 @@ Mon Jul  5 20:04:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dir.c (diskfs_lookup_hard): Use munmap instead of
-	vm_deallocate. 
+	vm_deallocate.
 	(diskfs_direnter_hard): Likewise.
 	(diskfs_dirremove_hard): Likewise.
 	(diskfs_dirrewrite_hard): Likewise.

@@ -1,7 +1,11 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* isofs.h: Add #include <sys/mman.h> for munmap decl.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* lookup.c (diskfs_get_directs): Use munmap instead of
-	vm_deallocate. 
+	vm_deallocate.
 
 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
 
