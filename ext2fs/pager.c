@@ -646,7 +646,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
 	      if (! err)
 		/* Reflect how much we allocated successfully.  */
-		new_size = (end_block - 1) << log2_block_size;
+		new_size = end_block << log2_block_size;
 	      else
 		/* See if it's still valid to say this.  */
 		dn->last_page_partially_writable =
