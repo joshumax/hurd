@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -41,7 +41,7 @@ diskfs_make_node (struct disknode *dn)
   np->dirmod_reqs = 0;
   
   fshelp_transbox_init (&np->transbox, &np->lock, np);
-  ioserver_initialize_conch (&np->conch, &np->lock);
+  iohelp_initialize_conch (&np->conch, &np->lock);
   fshelp_lock_init (&np->userlock);
   
 
