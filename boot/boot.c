@@ -714,7 +714,7 @@ ds_device_write (device_t device,
     }
 #endif
 
-  *bytes_written = write (1, (void *)(vm_address_t)*data, datalen);
+  *bytes_written = write (1, data, datalen);
   
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
