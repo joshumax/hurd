@@ -1,3 +1,7 @@
+1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (DIST_FILES): Add move-if-change.
+
 1999-06-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* move-if-change: New file, canonical GNU script.
