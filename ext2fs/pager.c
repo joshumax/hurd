@@ -774,3 +774,71 @@ diskfs_sync_everything (int wait)
   /* Do things on the the disk pager.  */
   pokel_sync (&global_pokel, wait);
 }
+
+/* ---------------------------------------------------------------- */
+
+/* Tell diskfs if there are pagers exported, and if none, then
+   prevent any new ones from showing up.  */
+int
+diskfs_pager_users ()
+{
+  int npagers;
+  
+  error_t block_cache (void *arg)
+    {
+      struct pager *p = arg;
+      
+      pager_change_attributes (p, 0, MEMORY_OBJECT_COPY_DELAY, 1);
+      return 0;
+    }
+  
+  error_t enable_cache (void *arg)
+    {
+      struct pager *p = arg;
+      struct user_pager_info *upi = pager_get_upi (p);
+      
+      pager_change_attributes (p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+
+      /* It's possible that we didn't have caching on before, because
+	 the user here is the only reference to the underlying node
+	 (actually, that's quite likely inside this particular
+	 routine), and if that node has no links.  So dinkle the node
+	 ref counting scheme here, which will cause caching to be
+	 turned off, if that's really necessary.  */
+      if (upi->type == FILE_DATA)
+	{
+	  diskfs_nref (upi->node);
+	  diskfs_nrele (upi->node);
+	}
+
+      return 0;
+    }
+
+  npagers = ports_count_bucket (pager_bucket);
+  if (npagers == 0)
+    return 0;
+
+  if (MAY_CACHE == 0)
+    {
+      ports_enable_bucket (pager_bucket);
+      return 1;
+    }
+  
+  /* Loop through the pagers and turn off caching one by one,
+     synchronously.  That should cause termination of each pager. */
+  ports_bucket_iterate (pager_bucket, block_cache);
+
+  /* Give it a second; the kernel doesn't actually shutdown
+     immediately.  XXX */
+  sleep (1);
+  
+  npagers = ports_count_bucket (pager_bucket);
+  
+  if (npagers == 0)
+    return 0;
+  
+  /* Darn, there are actual honest users.  Turn caching back on,
+     and return failure. */
+  ports_bucket_iterate (pager_bucket, enable_cache);
+  return 1;
+}
