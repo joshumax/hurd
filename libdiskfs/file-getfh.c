@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_getfh
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,9 +20,9 @@
 
 /* Implement file_getfh as described in <hurd/fs.defs>. */
 kern_return_t
-diskfs_S_file_getfh (struct protid *cred,
-		     char **data,
-		     u_int *datalen)
+diskfs_S_file_getfh (struct protid *cred __attribute__ ((unused)),
+		     char **data __attribute__ ((unused)),
+		     u_int *datalen __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
