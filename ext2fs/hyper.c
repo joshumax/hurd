@@ -52,6 +52,8 @@ allocate_mod_map (void)
     modified_global_blocks = 0;
 }
 
+unsigned int sblock_block = SBLOCK_BLOCK; /* in 1k blocks */
+
 static int ext2fs_clean;	/* fs clean before we started writing? */
 
 void
@@ -64,7 +66,7 @@ get_hypermetadata (void)
   if (zeroblock)
     munmap ((caddr_t) zeroblock, block_size);
 
-  sblock = (struct ext2_super_block *)boffs_ptr (SBLOCK_OFFS);
+  sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
 
   if (sblock->s_magic != EXT2_SUPER_MAGIC
 #ifdef EXT2FS_PRE_02B_COMPAT
@@ -74,18 +76,16 @@ get_hypermetadata (void)
     ext2_panic ("bad magic number %#x (should be %#x)",
 		sblock->s_magic, EXT2_SUPER_MAGIC);
 
-  block_size = EXT2_MIN_BLOCK_SIZE << sblock->s_log_block_size;
+  log2_block_size = EXT2_MIN_BLOCK_LOG_SIZE + sblock->s_log_block_size;
+  block_size = 1 << log2_block_size;
 
-  if (block_size > 8192)
-    ext2_panic ("block size %ld is too big (max is 8192 bytes)", block_size);
-
-  log2_block_size = ffs (block_size) - 1;
-  if ((1 << log2_block_size) != block_size)
-    ext2_panic ("block size %ld isn't a power of two!", block_size);
+  if (block_size > EXT2_MAX_BLOCK_SIZE)
+    ext2_panic ("block size %d is too big (max is %d bytes)",
+		block_size, EXT2_MAX_BLOCK_SIZE);
 
   log2_dev_blocks_per_fs_block = log2_block_size - store->log2_block_size;
   if (log2_dev_blocks_per_fs_block < 0)
-    ext2_panic ("block size %ld isn't a power-of-two multiple of the device"
+    ext2_panic ("block size %d isn't a power-of-two multiple of the device"
 		" block size (%d)!",
 		block_size, store->block_size);
 
@@ -93,7 +93,7 @@ get_hypermetadata (void)
   while ((512 << log2_stat_blocks_per_fs_block) < block_size)
     log2_stat_blocks_per_fs_block++;
   if ((512 << log2_stat_blocks_per_fs_block) != block_size)
-    ext2_panic ("block size %ld isn't a power-of-two multiple of 512!",
+    ext2_panic ("block size %d isn't a power-of-two multiple of 512!",
 		block_size);
 
   if (store->size < (sblock->s_blocks_count << log2_block_size))
@@ -150,6 +150,10 @@ get_hypermetadata (void)
   allocate_mod_map ();
 
   diskfs_end_catch_exception ();
+
+  /* Cache a convenient pointer to the block group descriptors for allocation.
+     These are stored in the filesystem blocks following the superblock.  */
+  group_desc_image = (struct ext2_group_desc *) bptr (bptr_block (sblock) + 1);
 
   /* A handy source of page-aligned zeros.  */
   zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ|PROT_WRITE,
