@@ -620,7 +620,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     else
       /* No way to return the remaining arguments, they must be bogus. */
       {
-	if (! (state.flags & ARGP_NO_ERRS))
+	if (!(state.flags & ARGP_NO_ERRS) && state.err_stream)
 	  fprintf (state.err_stream, "%s: Too many arguments\n", state.name);
 	err = EBADKEY;
       }
