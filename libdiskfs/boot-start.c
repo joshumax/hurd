@@ -432,7 +432,7 @@ diskfs_S_fsys_init (mach_port_t port,
       _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle); /* Consume. */
       _hurd_port_set (&_hurd_ports[INIT_PORT_CRDIR], root_pt); /* Consume. */
       _hurd_port_set (&_hurd_ports[INIT_PORT_CWDIR], root_pt); /* Consume. */
-      _hurd_proc_init (diskfs_argv);
+      _hurd_proc_init (diskfs_argv, NULL, 0);
     }
   else
     {
