@@ -76,12 +76,13 @@ mark_bh (int arg)
   condition_broadcast (&more_packets);
 }
 
-void
+any_t
 ethernet_thread (any_t arg)
 {
   ports_manage_port_operations_one_thread (etherport_bucket,
 					   ethernet_demuxer,
 					   0);
+  return 0;
 }
 
 int
@@ -123,7 +124,8 @@ ethernet_demuxer (mach_msg_header_t *inp,
   return 1;
 }
 
-int input_work_thread (any_t arg)
+any_t
+input_work_thread (any_t arg)
 {
   mutex_lock (&global_lock);
   for (;;)
@@ -140,8 +142,9 @@ ethernet_open (struct device *dev)
     return 0;
   
   etherreadclass = ports_create_class (0, 0);
-  readpt = ports_allocate_port (etherport_bucket, sizeof (struct port_info),
-				etherreadclass);
+  errno = ports_create_port (etherreadclass, etherport_bucket,
+			     sizeof (struct port_info), &readpt);
+  assert_perror ("creating etherread port");
   readptname = ports_get_right (readpt);
   mach_port_insert_right (mach_task_self (), readptname, readptname,
 			  MACH_MSG_TYPE_MAKE_SEND);
