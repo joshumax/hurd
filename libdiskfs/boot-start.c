@@ -181,7 +181,8 @@ diskfs_start_bootstrap ()
 	  assert (retry_name[0] == '\0');
 	  assert (execnode != MACH_PORT_NULL);
 	  err = file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0,
-				     diskfs_exec_ctl, MACH_MSG_TYPE_MOVE_SEND);
+				     diskfs_exec_ctl, MACH_MSG_TYPE_COPY_SEND);
+	  mach_port_deallocate (mach_task_self (), diskfs_exec_ctl);
 	  mach_port_deallocate (mach_task_self (), execnode);
 	  assert_perror (err);
 	}
@@ -546,8 +547,9 @@ diskfs_S_fsys_init (mach_port_t port,
 	 RPC of its own, as init would have sent it.  */
       err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
       assert_perror (err);
-      err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_MOVE_SEND,
+      err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND,
 		       authhandle);
+      mach_port_deallocate (mach_task_self (), parent_proc);
       mach_port_deallocate (mach_task_self (), bootstrap);
       assert_perror (err);
     }

@@ -57,6 +57,8 @@ diskfs_S_file_exec (struct protid *cred,
   mach_port_t execserver;
   int cached_exec;
   struct hurd_userlink ulink;
+  mach_port_t right;
+
 #define RETURN(code) do { err = (code); goto out; } while (0)
 
   if (!cred)
@@ -150,15 +152,16 @@ diskfs_S_file_exec (struct protid *cred,
     {
       do
 	{
+	  right = ports_get_send_right (newpi);
 	  err = exec_exec (execserver,
-			   ports_get_right (newpi),
-			   MACH_MSG_TYPE_MAKE_SEND,
+			   right, MACH_MSG_TYPE_COPY_SEND,
 			   task, flags, argv, argvlen, envp, envplen,
 			   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
 			   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 			   intarray, intarraylen,
 			   deallocnames, deallocnameslen,
 			   destroynames, destroynameslen);
+	  mach_port_deallocate (mach_task_self (), newpi)
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      if (cached_exec)

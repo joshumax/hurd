@@ -1,5 +1,5 @@
 /* diskfs_startup_diskfs -- advertise our fsys control port to our parent FS.
-   Copyright (C) 1994, 1995, 1996, 1998, 1999 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1998, 1999, 2000 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -32,7 +32,7 @@ char *_diskfs_chroot_directory;
 mach_port_t
 diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 {
-  mach_port_t realnode;
+  mach_port_t realnode, right;
   struct port_info *newpi;
 
   if (_diskfs_chroot_directory != NULL)
@@ -89,8 +89,10 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 				 sizeof (struct port_info), &newpi);
       if (! errno)
 	{
-	  errno = fsys_startup (bootstrap, flags, ports_get_right (newpi),
-				MACH_MSG_TYPE_MAKE_SEND, &realnode);
+	  right = ports_get_send_right (newpi);
+	  errno = fsys_startup (bootstrap, flags, right,
+				MACH_MSG_TYPE_COPY_SEND, &realnode);
+	  mach_port_deallocate (mach_task_self (), newpi);
 	  ports_port_deref (newpi);
 	}
       if (errno)
@@ -186,12 +188,13 @@ _diskfs_init_completed ()
   if (err)
     goto errout;
 
-  notify = ports_get_right (pi);
+  notify = ports_get_send_right (pi);
   ports_port_deref (pi);
   asprintf (&name,
 	    "%s %s", program_invocation_short_name, diskfs_disk_name ?: "-");
   err = startup_request_notification (init, notify,
-				      MACH_MSG_TYPE_MAKE_SEND, name);
+				      MACH_MSG_TYPE_COPY_SEND, name);
+  mach_port_deallocate (mach_task_self (), notify);
   free (name);
   if (err)
     goto errout;
