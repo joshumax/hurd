@@ -20,9 +20,10 @@
 
 #include <sys/socket.h>
 
+#include <hurd/pipe.h>
+
 #include "sock.h"
 #include "connq.h"
-#include "pipe.h"
 
 #include "socket_S.h"
 
@@ -252,10 +253,9 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
       err = sock_aquire_read_pipe (dest_sock, &pipe);
       if (!err)
 	{
-	  err = pipe_write (pipe, source_addr,
-			    data, data_len,
-			    control, control_len, ports, num_ports,
-			    amount);
+	  err = pipe_send (pipe, source_addr, data, data_len,
+			   control, control_len, ports, num_ports,
+			   amount);
 	  pipe_release (pipe);
 	}
       ports_port_deref (source_addr);
@@ -280,7 +280,7 @@ S_socket_recv (struct sock_user *user,
   error_t err;
   unsigned flags;
   struct pipe *pipe;
-  struct addr *source_addr = NULL;
+  void *source_addr = NULL;
 
   if (!user)
     return EOPNOTSUPP;
@@ -296,7 +296,7 @@ S_socket_recv (struct sock_user *user,
   if (!err)
     {
       err =
-	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
+	pipe_recv (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
 		   &source_addr, data, data_len, amount,
 		   control, control_len, ports, num_ports);
       pipe_release (pipe);
