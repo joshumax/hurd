@@ -500,7 +500,16 @@ static void prepare_in_memory (struct execdata *e);
 
 #ifndef EXECDATA_STREAM
 
-static void prepare_stream (struct execdata *e) {}
+/* We don't have a stdio stream, but we have a mapping window
+   we need to initialize.  */
+static void
+prepare_stream (struct execdata *e)
+{
+  e->map_buffer = NULL;
+  e->map_vsize = e->map_fsize = 0;
+  e->map_filepos = 0;
+}
+
 static void prepare_in_memory (struct execdata *e) {}
 
 #else
