@@ -21,15 +21,15 @@ makemode := misc
 include Makeconf
 
 lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
-	      libthreads
+	      libthreads libnetserv
 prog-subdirs = auth boot exec fstests init.trim mkbootfs \
 	       proc term ufs pflocal pipes dev.trim utils trans
 other-subdirs = hurd doc init tmpfs dev ext2fs
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = ext2fs
 
-DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS missing \
-	gcc-specs tasks ChangeLog
+DIST_FILES = COPYING Makeconf Maketools README NEWS missing \
+	gcc-specs tasks 
 
 all: $(addsuffix -all,$(prog-subdirs))
 
@@ -54,7 +54,7 @@ all: $(addsuffix -all,$(prog-subdirs))
 hurd-snap:
 	mkdir hurd-snap
 
-dist: hurd-snap $(addsuffix -lndist,$($filter-out $(subdirs-nodist), $(subdirs))) lndist
+dist: hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
 
