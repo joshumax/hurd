@@ -1,0 +1,162 @@
+hurd|The GNU Hurd console server,
+# Over-all properties.
+# We use 8-bit characters
+	km,
+# Although we don't do XON/XOFF, we don't want padding characters.
+	xon,
+# Hard reset.
+	rs1=\EM,
+
+# Compatibility:
+# to vt100: We don't specify <xenl>, as we don't have the
+# eat_newline_glitch.  We don't support scrolling regions.  We don't
+# support setting/removing tab stops.
+# to linux: W, we don't have PC character set.  We don't have insert
+# mode.
+
+# Cursor related capabilities.
+
+# Moving the cursor.
+# We have automatic margins.
+	am,
+# Carriage return and newline.
+	cr=^M, nel=^M^J,
+# Move cursor to home position (to position P1, P2).
+	home=\E[H, cup=\E[%i%p1%d;%p2%dH,
+# Move cursor one character (P1 characters) backwards.
+	cub1=\E[D, cub=\E[%p1%dD,
+# Move cursor one line (P1 lines) downwards.
+	cud1=\E[B, cud=\E[%p1%dB,
+# Move cursor one character (P1 characters) forwards.
+	cuf1=\E[C, cuf=\E[%p1%dC,
+# Move cursor one line (P1 lines) upwards.
+	cuu1=\E[A, cuu=\E[%p1%dA,
+# Set horizontal (vertical) cursor position to P1.
+	hpa=\E[%i%p1%dG, vpa=\E[%i%p1%dd,
+# Save (restore) cursor position.  XXX Linux has \E7 (\E8).
+	sc=\E7, rc=\E8,
+# XXX When we support this.
+# Set the scrolling region to lines P1 to P2.
+# csr=\E[%i%p1%d;%p2%dr,
+
+# Modifying cursor attributes.
+# Make cursor invisible, very visible or normal.
+	civis=\E[?25l, cvvis=\E[34l, cnorm=\E[?25h,
+
+# Tabulator stops.
+# We have tabulator stops every eight rows.
+	it#8,
+# Move cursor to next tabulator stop.
+	ht=^I,
+# Move cursor to previous tabulator stop.
+	cbt=\E[Z,
+# XXX When we implement this.
+# Set tab stop in the current column of every row.
+# hts=\EH,
+# Delete all tab stops.
+# tbc=\E[3g,
+
+
+# Screen editing capabilities.
+# Clear screen.
+	clear=\Ec,
+# Clear to end of screen.
+	ed=\E[J,
+# Clear to end (beginning) of line.
+	el=\E[K, el1=\E[1K,
+
+# Insert one character (P1 characters).
+# XXX Don't give this when having insert mode.
+	ich1=\E[@, ich=\E[%p1%d@,
+# XXX When we implement insert mode (smir and rmir) (but don't set ich1 then):
+# Enter (leave) insert mode.
+# smir=\E[4h, rmir=\E[4l,
+# It is save to move when in insert mode.	
+# mir,
+# Delete one character (P1 characters).
+	dch1=\E[P, dch=\E[%p1%dP,
+# Erase the next N characters.
+	ech=\E[%p1%dX,
+# Insert one line (P1 lines).
+	il1=\E[L, il=\E[%p1%dL,
+# Delete one line (P1 lines).
+	dl1=\E[M, dl=\E[%p1%dM,
+# Scroll the whole screen one line (P1 lines) upwards.
+# XXX Good optimization is to use ^J as Linux, although this will put
+# things into the scrollback buffer, which might not be what we want.
+	ind=\E[S, indn=\E[%p1%dS,
+# Scroll the whole screen one line (P1 lines) downwards.
+	rin=\E[%p1%dT, ri=\E[T,
+
+
+# Bell capabilities.
+# Audible bell.
+	bel=^G,
+# Flash the screen (visible bell).
+	flash=\Eg,
+
+# Keycodes for special keys.
+# Backspace key.
+	kbs=\177,
+# Keycode for left, down, right and up arrow key.
+	kcub1=\EOD, kcud1=\EOB, kcuf1=\EOC, kcuu1=\EOA,
+# Keycodes for function keys.
+	kf1=\EOP, kf2=\EOQ, kf3=\EOR, kf4=\EOS, kf5=\E[15~,
+        kf6=\E[17~, kf7=\E[18~, kf8=\E[19~, kf9=\E[20~,
+	kf10=\E[21~, kf11=\E[23~, kf12=\E[24~, kf13=\E[25~,
+	kf14=\E[26~, kf15=\E[28~, kf16=\E[29~, kf17=\E[31~,
+	kf18=\E[32~, kf19=\E[33~, kf20=\E[34~,
+# Keycode for backtab key.
+	kcbt=\E[Z,
+# Keycode for suspend key.
+	kspd=^Z,
+# Keycode for home (insert, delete, end) key.
+	khome=\E[1~, kich1=\E[2~, kdch1=\E[3~, kend=\E[4~,
+# Keycode for previous (next) page key.
+	kpp=\E[5~, knp=\E[6~,
+# XXX When we implement this.
+# Keycode for center of keypad area.
+#	kb2=\E[G
+# XXX When we implement this.
+# Mouse event has occured.
+#	kmous=\E[M,
+# XXX How does this come here?  We don't have Lower Left.
+#	kll=\E[F,
+
+
+# Text attribute capabilities.
+	acsc=++\,\,--..00ii``aaffgghhjjkkllmmnnooppqqrrssttuuvvwwxxyyzz{{||}}~~,
+
+# Color support.
+# We erase the screen with the current background color.
+	bce,
+# Number of colors and color pairs at the same time.
+	colors#8,
+	pairs#64,
+# Video attributes colliding with color.
+# ORed: A_STANDOUT 1, A_UNDERLINE 2, A_REVERSE 4, A_BLINK 8, A_DIM 16,
+# A_BOLD 32, A_INVIS 64
+	ncv#18,
+# Set background (foreground) color.
+	setab=\E[4%p1%dm, setaf=\E[3%p1%dm,
+# Set default color pair to its original value.
+	op=\E[39;49m,
+
+# Video attributes.
+# Overstrikes are erasable with a blank.
+	eo,
+# It is save to move when in standout mode.
+	msgr,
+# Enable dim (blinking, bold, invisible, reverse) attribute.
+	dim=\E[2m, blink=\E[5m, bold=\E[1m, invis=\E[8m, rev=\E[7m,
+# Enable (disable) standout mode.
+	smso=\E[7m, rmso=\E[27m,
+# Enable (disable) underline mode.
+	smul=\E[4m, rmul=\E[24m,
+# XXX Linux has those also for rmpch and smpch.
+# Enable (disable) alternative character set.
+	smacs=\E[11m, rmacs=\E[10m,
+# Set all attributes.
+	sgr=\E[0%?%p1%t;7%;%?%p2%t;4%;%?%p3%t;7%;%?%p4%t;5%;%?%p5%t;2%;%?%p6%t;1%;%?%p7%t;8%;%?%p9%t;11%;m,
+# Reset all attributes.
+	sgr0=\E[0m,

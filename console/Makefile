@@ -25,6 +25,7 @@ target = console
 
 SRCS = console.c display.c input.c
 LCLHDRS = display.h input.h priv.h mutations.h
+DIST_FILES = hurd.ti
 
 MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 
