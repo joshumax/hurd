@@ -24,10 +24,13 @@ subsystem core 32000;
 #include <hurd/hurd_types.defs>
 
 /* Dump a core file for TASK in the file `core' in COREDIR.
-   SIGNO is the signal that caused the process to dump core.  */
+   SIGNO is the signal that caused the process to dump core.
+   LIMIT is the resource limit on the size of core files.
+   If the core file would be bigger than this, it is not written.  */
 
 routine core_dump_task (
 	coreserver: mach_port_t;
 	task: task_t;
 	coredir: file_t;
-	signo: int);
+	signo: int;
+	limit: int);
