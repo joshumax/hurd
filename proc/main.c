@@ -102,6 +102,7 @@ main (int argc, char **argv, char **envp)
 
   {
     extern void _start ();
+    extern char _edata, _etext, __data_start;
     vm_address_t text_start = (vm_address_t) &_start;
     err = vm_wire (master_host_port, mach_task_self (), 
 		   (vm_address_t) text_start,
