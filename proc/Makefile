@@ -25,7 +25,7 @@ LCLHDRS = proc.h
 DIST_FILES = proc_exc.defs ourmsg.defs
 
 MIGSTUBS = processServer.o notifyServer.o process_replyUser.o \
-	ourmsgUser.o interruptServer.o proc_excUser.o proc_excServer.o
+	ourmsgUser.o proc_excUser.o proc_excServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 MIGSFLAGS ="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
