@@ -223,7 +223,7 @@ devio_start_output ()
 				     0, pending_output, npending_output);
 
   if (err == MACH_SEND_INVALID_DEST)
-    desert_dtr ();
+    devio_desert_dtr ();
   else if (!err)
     output_pending = 1;
 }
@@ -254,13 +254,13 @@ device_write_reply_inband (mach_port_t replypt,
 	  npending_output -= amount;
 	  memmove (pending_output, pending_output + amount, npending_output);
 	}
-      start_output ();
+      devio_start_output ();
     }
   else if (return_code == D_WOULD_BLOCK)
     /* Carrier has dropped. */
-    desert_dtr ();
+    devio_desert_dtr ();
   else
-    start_output ();
+    devio_start_output ();
   
   mutex_unlock (&global_lock);
   return 0;
@@ -291,7 +291,7 @@ device_read_reply_inband (mach_port_t replypt,
       }
   else if (error_code == D_WOULD_BLOCK)
     {
-      desert_dtr ();
+      devio_desert_dtr ();
       mutex_unlock (&global_lock);
       return 0;
     }
@@ -302,7 +302,7 @@ device_read_reply_inband (mach_port_t replypt,
 				    0, vm_page_size);
   
   if (err)
-    desert_dtr ();
+    devio_desert_dtr ();
   else 
     input_pending = 1;
 
@@ -447,7 +447,7 @@ device_open_reply (mach_port_t replyport,
   input_pending = 1;
   report_carrier_on ();
   if (err)
-    desert_dtr ();
+    devio_desert_dtr ();
 
   mutex_unlock (&global_lock);
 
@@ -563,7 +563,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
   if (notify == phys_reply_writes)
     {
       err = 0;
-      start_output ();
+      devio_start_output ();
     }
   else if (notify == phys_reply)
     {
@@ -580,7 +580,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 	  err = device_read_request_inband (phys_device, phys_reply,
 					    D_NOWAIT, 0, vm_page_size);
 	  if (err)
-	    desert_dtr ();
+	    devio_desert_dtr ();
 	  else
 	    input_pending = 1;
 	}
