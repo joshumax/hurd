@@ -231,6 +231,13 @@ typedef struct fsys_statfsbuf fsys_statfsbuf_t;
 #include <mach/task_info.h>
 #include <mach/thread_info.h>
 
+/* Flags sent in proc_getprocinfo request. */
+#define PI_FETCH_TASKINFO  0x00000001
+#define PI_FETCH_THREADS   0x00000002
+#define PI_FETCH_THREAD_BASIC 0x00004
+#define PI_FETCH_THREAD_SCHED 0x00008
+#define PI_FETCH_THREAD_WAITS 0x00010
+
 struct procinfo
 {
   int state;
@@ -245,6 +252,7 @@ struct procinfo
   struct task_basic_info taskinfo;
   struct
     {
+      int rpc_block;		/* thred is blocked on this RPC */
       struct thread_basic_info pis_bi;
       struct thread_sched_info pis_si;
     } threadinfos[0];
