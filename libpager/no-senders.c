@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <mach/notify.h>
 
+/* The libpager library user must call this (and do nothing else) when
+   a no-senders notification is received for a pager port.  P is pager
+   on for which the notification was received; SEQNO and MSCOUNT are
+   from the no-senders notification as described in <mach/notify.defs>. */
 void
 pager_no_senders (struct pager *p,
 		  mach_port_seqno_t seqno,
