@@ -41,17 +41,17 @@ relink:
 
 boot.o: notify_S.h exec_S.h device_S.h io_S.h
 
-notify_S.h notifyServer.c: $(headers)/mach/notify.defs
+notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader notify_S.h
 
-exec_S.h execServer.c: $(headers)/hurd/exec.defs
+exec_S.h execServer.c: $(includedir)/hurd/exec.defs
 	$(CPP) $(CPPFLAGS) $< -DSERVERPREFIX=S_ | \
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader exec_S.h
 
-device.defs: $(headers)/device/device.defs
+device.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
 device_S.h deviceServer.c: device.defs
@@ -59,11 +59,11 @@ device_S.h deviceServer.c: device.defs
 	$(MIGCOM) -user /dev/null -header /dev/null \
 	-sheader device_S.h
 
-device_replyUser.c: $(headers)/device/device_reply.defs
+device_replyUser.c: $(includedir)/device/device_reply.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -server /dev/null
 
-io.defs: $(headers)/hurd/io.defs mungio
+io.defs: $(includedir)/hurd/io.defs mungio
 	sed -f mungio $< > $@
 io_S.h ioServer.c: io.defs
 	$(CPP) $(CPPFLAGS) $< | \

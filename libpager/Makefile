@@ -41,12 +41,12 @@ $(hurdinst)/lib/libpager.a: libpager.a
 	cp libpager.a $@
 	$(RANLIB) $@
 
-$(headers)/hurd/pager.h: pager.h
+$(includedir)/hurd/pager.h: pager.h
 	cp pager.h $@
 
-install: $(hurdinst)/lib/libpager.a $(headers)/hurd/pager.h
+install: $(hurdinst)/lib/libpager.a $(includedir)/hurd/pager.h
 
-$(OBJS): pager.h priv.h $(headers)/hurd/ports.h
+$(OBJS): pager.h priv.h $(includedir)/hurd/ports.h
 
 data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
 stubs.o object-init.o object-terminate.o: memory_object.h
@@ -56,6 +56,6 @@ clean:
 
 # MiG gook
 memory_object.h memory_objectServer.c:
-	$(CPP) $(CPPFLAGS) -DSEQNOS $(headers)/mach/memory_object.defs \
+	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/memory_object.defs \
 	| $(MIGCOM) -prefix _pager_ -sheader memory_object.h \
 		-header /dev/null -user /dev/null
