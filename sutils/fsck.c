@@ -54,6 +54,8 @@
 
 #include "fstab.h"
 
+char *argp_program_version = "fsck 1.0 (GNU " HURD_RELEASE ")";
+
 /* for debugging  */
 static int _debug = 0;
 #define debug(fmt, args...)						      \
