@@ -142,12 +142,20 @@ zero_validate_name (const char *name, const struct store_class *const *classes)
     return 0;			/* `maximum size' */
 }
 
+static error_t
+zero_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
+{
+  *memobj = MACH_PORT_NULL;
+  return 0;
+}
+
 struct store_class
 store_zero_class =
 {
   STORAGE_ZERO, "zero", zero_read, zero_write,
   zero_allocate_encoding, zero_encode, zero_decode,
-  0, 0, 0, 0, zero_remap, zero_open, zero_validate_name
+  0, 0, 0, 0, zero_remap, zero_open, zero_validate_name,
+  zero_map
 };
 
 /* Return a new zero store SIZE bytes long in STORE.  */
