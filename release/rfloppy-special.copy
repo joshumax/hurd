@@ -1,2 +1,3 @@
 rename etc/passwd copy rfloppy.passwd
 rename etc/group copy rfloppy.group
+rename etc/nsswitch.conf copy rfloppy.nss
