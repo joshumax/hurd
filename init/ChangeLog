@@ -1,3 +1,9 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* init.c (reboot_system): Use munmap instead of vm_deallocate.
+	(frob_kernel_process): Likewise.
+	(kill_everyone): Likewise.
+
 1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (HURDLIBS): Add ports and fshelp only if $(split-init)!=yes.

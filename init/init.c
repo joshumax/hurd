@@ -285,8 +285,7 @@ reboot_system (int flags)
 		  task_terminate (task);
 		}
 	      if (noise_len > 0)
-		vm_deallocate (mach_task_self (),
-			       (vm_address_t)noise, noise_len);
+		munmap (noise, noise_len);
 	    }
 	}
       printf ("%s: Killing proc server\n", program_invocation_short_name);
@@ -1033,7 +1032,7 @@ frob_kernel_process (void)
   /* We have the data all set up in our copy, now just write it over.  */
   err = vm_write (task, his, mine, windowsz);
   mach_port_deallocate (mach_task_self (), task);
-  vm_deallocate (mach_task_self (), mine, windowsz);
+  munmap ((caddr_t) mine, windowsz);
   if (err)
     {
       error (0, err, "cannot write command line into kernel task");
@@ -1431,8 +1430,7 @@ kill_everyone (int signo)
 	    }
 	}
       if (pids != pidbuf)
-	vm_deallocate (mach_task_self (), (vm_address_t) pids,
-		       npids * sizeof (pid_t));
+	munmap (pids, npids * sizeof (pid_t));
       if (!didany)
 	return 1;
     }
