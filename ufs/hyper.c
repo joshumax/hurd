@@ -16,7 +16,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
-#include "fs.h"
 #include "dinode.h"
 #include <string.h>
 #include <stdio.h>
@@ -59,6 +58,10 @@ get_hypermetadata (void)
 	       sblock->fs_maxsymlinklen, MAXSYMLINKLEN);
       exit (1);
     }
+
+  assert ((__vm_page_size % DEV_BSIZE) == 0);
+  assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
+  assert (__vm_page_size <= sblock->fs_bsize);
 
   /* If this is an old filesystem, then we have some more
      work to do; some crucial constants might not be set; we
