@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,6 +38,7 @@ struct trivfs_peropen
 struct trivfs_control
 {
   struct port_info pi;
+  struct mutex lock;
   int protidtypes;
   mach_port_t underlying;
   struct pending_open *openshead, *openstail;
