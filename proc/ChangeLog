@@ -1,3 +1,7 @@
+Sat Jul 20 10:08:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* msg.c (S_proc_getmsgport): Deal with PID dying while we're waiting.
+
 Fri Jul 19 18:22:46 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* msg.c (S_proc_setmsgport): Bother to request DEAD_NAME
