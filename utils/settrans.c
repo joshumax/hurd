@@ -41,17 +41,17 @@ static struct argp_option options[] =
 {
   {"active",      'a', 0, 0, "Set NODE's active translator", 1},
   {"passive",     'p', 0, 0, "Set NODE's passive translator"},
-  {"keep-active", 'k', 0, 0, "Keep any currently running active translator"
-     " when setting the passive translator"},
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
-  {"goaway",      'g', 0, 0, "Make any existing active translator go away"
-     " when setting the passive translator"},
   {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
      " wait for a newline on stdin before completing the startup handshake"},
   {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
      " (default " STRINGIFY (DEFAULT_TIMEOUT) "); 0 means no timeout"},
   {"exclusive",   'x', 0, 0, "Only set the translator if there is none already"},
+
+  {0,0,0,0, "When setting the passive translator, if there's an active translator:"},
+  {"goaway",      'g', 0, 0, "Make the active translator go away"},
+  {"keep-active", 'k', 0, 0, "Leave the existing active translator running"},
 
   {0,0,0,0, "When an active translator is told to go away:", 2},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
