@@ -55,11 +55,10 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 int
 main (int argc, char **argv)
 {
-  file_t file;
   struct port_class *ourclass, *ourcntlclass;
   struct port_class *peerclass, *peercntlclass;
   struct trivfs_control **ourcntl, **peercntl;
-  mach_port_t ctlport, bootstrap;
+  mach_port_t bootstrap;
   enum {T_DEVICE, T_PTYMASTER, T_PTYSLAVE} type; 
 
   term_bucket = ports_create_bucket ();
@@ -133,17 +132,14 @@ main (int argc, char **argv)
     }
   
   /* Set our node */
-  ctlport = trivfs_handle_port (MACH_PORT_NULL, ourcntlclass, term_bucket,
-				ourclass, term_bucket);
-  errno = fsys_startup (bootstrap, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND, &file);
+  errno = trivfs_startup (bootstrap, 0,
+			  ourcntlclass, term_bucket, ourclass, term_bucket,
+			  ourcntl);
   if (errno)
     {
       perror ("Starting translator");
       exit (1);
     }
-  *ourcntl = ports_lookup_port (term_bucket, ctlport, ourcntlclass);
-  assert (*ourcntl);
-  (*ourcntl)->underlying = file;
 
   /* For ptys, the nodename depends on which half is used.  For now just use
      the hook to store the nodename.  */
@@ -153,19 +149,20 @@ main (int argc, char **argv)
   if (peerclass)
     {
       char *peer_name = argv[3];
+      file_t file = file_name_lookup (peer_name, O_CREAT|O_NOTRANS, 0666);
 
-      file = file_name_lookup (peer_name, O_CREAT|O_NOTRANS, 0666);
-      if (file == MACH_PORT_NULL)
-	{
-	  perror (peer_name);
-	  exit (1);
-	}
-      ctlport = trivfs_handle_port (file, peercntlclass, term_bucket,
-				    peerclass, term_bucket);
-      *peercntl = ports_lookup_port (term_bucket, ctlport, peercntlclass);
-      assert (*peercntl);
-      errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
-				   0, 0, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND);
+      if (file != MACH_PORT_NULL)
+	errno = 0;
+
+      if (! errno)
+	errno = trivfs_create_control (file, peercntlclass, term_bucket,
+				       peerclass, term_bucket, peercntl);
+      if (! errno)
+	errno = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
+				     0, 0, 0,
+				     ports_get_right (*peercntl),
+				     MACH_MSG_TYPE_MAKE_SEND);
+
       if (errno)
 	{
 	  perror (peer_name);
@@ -173,6 +170,7 @@ main (int argc, char **argv)
 	}
 
       (*peercntl)->hook = peer_name;
+      ports_port_deref (*peercntl);
     }
 
   bzero (&termstate, sizeof (termstate));
