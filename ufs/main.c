@@ -111,22 +111,39 @@ parse_opt (int key, char *arg, struct argp_state *state)
     }
   return 0;
 }
-
-static const struct argp *startup_parents[] = {
-  &diskfs_std_device_startup_argp, 0
-};
-static const struct argp startup_argp = {
-  options, parse_opt, 0, 0, startup_parents
-};
 
-static const struct argp *runtime_parents[] = {
-  &diskfs_std_runtime_argp, 0
-};
-static const struct argp runtime_argp = {
-  options, parse_opt, 0, 0, runtime_parents
-};
+/* Add our startup arguments to the standard diskfs set.  */
+static struct argp *startup_parents[] = { &diskfs_std_device_startup_argp, 0};
+static struct argp startup_argp = {options, parse_opt, 0, 0, startup_parents};
+
+/* Similarly at runtime.  */
+static struct argp *runtime_parents[] = {&diskfs_std_runtime_argp, 0};
+static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_parents};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
+
+/* Override the standard diskfs routine so we can add our own output.  */
+error_t
+diskfs_get_options (char **argz, unsigned *argz_len)
+{
+  error_t err;
+
+  *argz = 0;
+  *argz_len = 0;
+
+  /* Get the standard things.  */
+  err = diskfs_append_std_options (argz, argz_len);
+
+  if (!err && compat_mode != COMPAT_GNU)
+    {
+      char *mode = (compat_mode == COMPAT_BSD42) ? "4.2" : "4.4";
+      err = argz_add (argz, argz_len, mode);
+      if (err)
+	free (argz);		/* Deallocate what diskfs returned.  */
+    }
+
+  return err;
+}
 
 int
 main (int argc, char **argv)
