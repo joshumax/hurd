@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.33 2002/08/22 21:25:03 marcus Exp $])
+AC_REVISION([$Id: configure.in,v 1.34 2002/08/30 00:27:32 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -147,8 +147,8 @@ else
 fi
 AC_SUBST(VERSIONING)
 
-# Check if libc contains getgrouplist().
-AC_CHECK_FUNCS(getgrouplist)
+# Check if libc contains getgrouplist and/or uselocale.
+AC_CHECK_FUNCS(getgrouplist uselocale)
 
 AC_ARG_WITH(parted, dnl
 [  --without-parted        don't try to use GNU Parted libraries],
