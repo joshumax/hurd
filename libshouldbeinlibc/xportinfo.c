@@ -59,8 +59,8 @@ print_xlated_task_ports_info (struct port_name_xlator *x,
     if (types[i] & only)
       print_xlated_port_info (names[i], types[i], x, show, stream);
 
-  munmap (names, names_len * sizeof *names);
-  munmap (types, types_len * sizeof *types);
+  munmap ((caddr_t) names, names_len * sizeof *names);
+  munmap ((caddr_t) types, types_len * sizeof *types);
 
   return 0;
 }

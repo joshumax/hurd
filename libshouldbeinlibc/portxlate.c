@@ -60,8 +60,10 @@ port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
 	}
       else
 	{
-	  munmap (x->to_names, x->to_names_len * sizeof (mach_port_t));
-	  munmap (x->to_types, x->to_types_len * sizeof (mach_port_type_t));
+	  munmap ((caddr_t) x->to_names, 
+		  x->to_names_len * sizeof (mach_port_t));
+	  munmap ((caddr_t) x->to_types, 
+		  x->to_types_len * sizeof (mach_port_type_t));
 	  err = ENOMEM;
 	}
     }
@@ -85,8 +87,8 @@ port_name_xlator_free (struct port_name_xlator *x)
       mach_port_deallocate (mach_task_self (), x->ports[i]);
   free (x->ports);
 
-  munmap (x->to_names, x->to_names_len * sizeof (mach_port_t));
-  munmap (x->to_types, x->to_types_len * sizeof (mach_port_type_t));
+  munmap ((caddr_t) x->to_names, x->to_names_len * sizeof (mach_port_t));
+  munmap ((caddr_t) x->to_types, x->to_types_len * sizeof (mach_port_type_t));
 
   mach_port_deallocate (mach_task_self (), x->to_task);
   mach_port_deallocate (mach_task_self (), x->from_task);

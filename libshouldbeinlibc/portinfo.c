@@ -121,7 +121,7 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 		  for (i = 1; i < members_len; i++)
 		    fprintf (stream, hex_names ? ", %#x" : ", %u", members[i]);
 		  fprintf (stream, ")");
-		  munmap (members, members_len * sizeof *members);
+		  munmap ((caddr_t) members, members_len * sizeof *members);
 		}
 	    }
 	  }
@@ -148,8 +148,8 @@ print_task_ports_info (task_t task, mach_port_type_t only,
     if (types[i] & only)
       print_port_info (names[i], types[i], task, show, stream);
 
-  munmap (names, names_len * sizeof *names);
-  munmap (types, types_len * sizeof *types);
+  munmap ((caddr_t) names, names_len * sizeof *names);
+  munmap ((caddr_t) types, types_len * sizeof *types);
 
   return 0;
 }

@@ -1,6 +1,6 @@
 /* Parse user and group ids
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -60,18 +60,22 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	return ARGP_ERR_UNKNOWN;
 
       if (key == ARGP_KEY_END)
-	if (ugids_is_empty (ugids))
-	  if (params->default_user >= 0)
-	    uid = params->default_user;
-	  else if (params->require_ids)
+	{
+	  if (ugids_is_empty (ugids))
 	    {
-	      argp_error (state, "No ids specified");
-	      return EINVAL;
+	      if (params->default_user >= 0)
+		uid = params->default_user;
+	      else if (params->require_ids)
+		{
+		  argp_error (state, "No ids specified");
+		  return EINVAL;
+		}
+	      else
+		break;
 	    }
-          else
+	  else
 	    break;
-	else
-	  break;
+	}
       else if (isdigit (*arg))
 	uid = atoi (arg);
       else if (strcmp (arg, "-") == 0)
@@ -90,20 +94,22 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	}
 
       if (key == ARGP_KEY_ARG || key == ARGP_KEY_END)
-	/* A user arg, which means add the user, and any appropriate
-	   groups. */
-	if (!params->user_args_are_effective
-	    && !params->user_args_are_available)
-	  return ugids_set_posix_user (ugids, uid);
-	else
-	  {
-	    error_t err = 0;
-	    if (params->user_args_are_effective)
-	      err = ugids_add_user (ugids, uid, 0);
-	    if (!err && params->user_args_are_available)
-	      err = ugids_add_user (ugids, uid, 1);
-	    return err;
-	  }
+	{
+	  /* A user arg, which means add the user, and any appropriate
+	     groups. */
+	  if (!params->user_args_are_effective
+	      && !params->user_args_are_available)
+	    return ugids_set_posix_user (ugids, uid);
+	  else
+	    {
+	      error_t err = 0;
+	      if (params->user_args_are_effective)
+		err = ugids_add_user (ugids, uid, 0);
+	      if (!err && params->user_args_are_available)
+		err = ugids_add_user (ugids, uid, 1);
+	      return err;
+	    }
+	}
       else
 	/* Add an individual specific effective/auxiliary uid.  */
 	return ugids_add_uid (ugids, uid, key == 'U');
