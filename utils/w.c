@@ -216,11 +216,11 @@ extern error_t ps_emit_user_name ();
 extern int ps_cmp_times (), ps_cmp_strings ();
 const struct ps_fmt_spec _w_specs[] =
 {
-  {"User", 0, UT_NAMESIZE,-1,0,&w_uname_getter,ps_emit_string, ps_cmp_strings},
-  {"Name", 0, 20,	  -1,0,&w_user_getter, ps_emit_user_name,ps_cmp_strings},
+  {"User", 0, 8,   -1,0, &w_uname_getter,ps_emit_string, ps_cmp_strings},
+  {"Name", 0, 20,  -1,0, &w_user_getter, ps_emit_user_name,ps_cmp_strings},
   {"Login","Login@", -7,  -1,0,&w_login_getter,ps_emit_past_time,ps_cmp_times},
-  {"From", 0, UT_HOSTSIZE,-1,0,&w_host_getter, ps_emit_string, ps_cmp_strings},
-  {"Idle", 0, -5,         -1,0,&w_idle_getter, ps_emit_minutes,ps_cmp_times},
+  {"From", 0, 16,  -1,0, &w_host_getter, ps_emit_string, ps_cmp_strings},
+  {"Idle", 0, -5,  -1,0, &w_idle_getter, ps_emit_minutes,ps_cmp_times},
   {"What=args"},
   {0}
 };
