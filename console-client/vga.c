@@ -75,8 +75,8 @@ static struct mutex vga_display_lock;
 static struct display_ops vga_display_ops;
 
 /* The current width and height the ncursesw driver is using.  */
-static int current_width;
-static int current_height;
+static unsigned int current_width;
+static unsigned int current_height;
 
 /* The cursor state to restore the state to.  */
 static int cursor_state;
@@ -102,8 +102,8 @@ struct vga_display
   /* The color palette.  */
   dynacolor_t dc;
 
-  int width;
-  int height;
+  unsigned int width;
+  unsigned int height;
 
   /* Current attribute.  */
   int cur_conchar_attr_init;
@@ -441,7 +441,7 @@ vga_display_scroll (void *handle, int delta)
   return 0;
 }
 
-
+#if 0
 /* Change the font on the console CONSOLE to font.  The old font will
    not be accessed by the vga console subsystem anymore after this
    call completed.  */
@@ -452,6 +452,7 @@ vga_display_change_font (void *handle, bdf_font_t font)
 
   dynafont_change_font (disp->df, font);
 }
+#endif
 
 
 static inline char
@@ -667,7 +668,7 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
 }
 
 static error_t
-vga_set_dimension (void *handle, int width, int height)
+vga_set_dimension (void *handle, unsigned int width, unsigned int height)
 {
   if (current_width && current_height)
     vga_display_clear (handle, current_width * current_height, 0, 0);

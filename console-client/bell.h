@@ -50,7 +50,7 @@ struct bell_ops
   error_t (*beep) (void *handle);
 
   /* Do not use, do not remove.  */
-  void (*deprecated) (void *handle, int key);
+  void (*deprecated) (void *handle, unsigned int key);
 };
 
 #endif	/* _BELL_H_ */

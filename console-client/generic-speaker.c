@@ -342,8 +342,8 @@ beep_on (short pitch)
 
   if (pitch < 20)
     pitch = 20;
-  else if (pitch > 32767)
-    pitch = 32767;
+  else if (pitch > 20000)
+    pitch = 20000;
 
   counter = PIT_FREQUENCY / pitch;
 
@@ -452,7 +452,7 @@ generic_speaker_beep (void *handle)
 
 #if QUAERENDO_INVENIETIS
 static void
-generic_speaker_play_melody (void *handle, int key)
+generic_speaker_play_melody (void *handle, unsigned int key)
 {
   if (key < 0 || key >= sizeof (tune) / sizeof (tune[0]))
     return;

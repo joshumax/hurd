@@ -198,24 +198,24 @@ bdf_read (FILE *filep, bdf_font_t *font, int *linecount)
     int glyphs;
 
     /* True if we have seen a SIZE keyword so far.  */
-    int has_size : 1;
+    unsigned int has_size : 1;
     /* True if we have seen a FONTBOUNDINGBOX keyword so far.  */
-    int has_fbbx : 1;
+    unsigned int has_fbbx : 1;
     /* True if we have seen a METRICSSET keyword so far.  */
-    int has_metricsset : 1;
+    unsigned int has_metricsset : 1;
 
     /* Current glyph.  */
     struct bdf_glyph *glyph;
     /* True if we have seen an ENCODING keyword for the glyph.  */
-    int glyph_has_encoding : 1;
+    unsigned int glyph_has_encoding : 1;
     /* True if we have seen an BBX keyword for the glyph.  */
-    int glyph_has_bbx : 1;
+    unsigned int glyph_has_bbx : 1;
     /* Width of the glyph in bytes.  */
-    int glyph_bwidth;
+    unsigned int glyph_bwidth;
     /* Height of the glyph in pixel.  */
-    int glyph_bheight;
+    unsigned int glyph_bheight;
     /* How many bitmap lines have been parsed already.  */
-    int glyph_blines;
+    unsigned int glyph_blines;
   } parser = { location: START, properties: 0, glyphs: 0,
 	       has_size: 0, has_fbbx: 0 };
 

@@ -139,7 +139,8 @@ struct display_ops
      old screen.  If the physical screen already has the right
      resolution do nothing.  This function is always followed by a
      write that covers the whole new screen.  */
-  error_t (*set_dimension) (void *handle, int width, int height);
+  error_t (*set_dimension) (void *handle, unsigned int width,
+			    unsigned int height);
 };
 
 #endif	/* _DISPLAY_H_ */

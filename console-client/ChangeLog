@@ -1,3 +1,36 @@
+2004-03-07  Marco Gerards  <metgerards@student.han.nl>
+
+	* bdf.c (bdf_read): Change the types of has_size, has_fbbx,
+	has_metricset, glyph_has_encoding, glyph_has_bbx, glyph_bwidth,
+	glyph_bheight and glyph_blines to unsigned int.
+	* bell.h (struct bell_ops): Change the type of the argument KEY of
+	the interface `deprecated' to unsigned int.  All callers changed.
+	* display.h (struct display_ops): Changed the type of the
+	arguments width and height to unsigned int.  All callers changed.
+	* driver.c (driver_fini): Change the type of `i' to unsigned int
+	to silence a gcc warning.
+	(driver_start): Likewise.
+	(driver_remove): Likewise.
+	(ADD_REMOVE_COMPONENT): Likewise.
+	(driver_add): Likewise.
+	* generic-speaker.c (beep_on): Cup pitch at 20000, not 327677.
+	Also silences a gcc warning.
+	* ncursesw.c: Changed all calls to the function `ncurses_refresh'
+	to `refresh_screen'.
+	(current_width): Changed type to unsigned int.
+	(current_height): Likewise.
+	(padx): Likewise.
+	(pady): Likewise.
+	(refresh_screen): Cast LINES and COLS to unsigned int.
+	(input_loop): Change `i' from int to unsigned int to silence a gcc
+	warning.
+	* vga.c (current_width): Changed type to unsigned int to silence a
+	gcc warning.
+	(current_heigh): Likewise.
+	(struct vga_display): Changed the type of the members `width' and
+	`height' to unsigned int to silence a gcc warning.
+	(vga_display_change_font): Disabled the unused code for now.
+
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* vga-dynafont.c: Include <stddef.h>.

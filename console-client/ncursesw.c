@@ -37,15 +37,15 @@
 static struct mutex ncurses_lock;
 
 /* The current width and height the ncursesw driver is using.  */
-static int current_width;
-static int current_height;
+static unsigned int current_width;
+static unsigned int current_height;
 
 /* The window on which the console is shown.  */
 static WINDOW *conspad;
 
 /* The upper left corner shown in the pad.  */
-static int padx;
-static int pady;
+static unsigned int padx;
+static unsigned int pady;
 
 /* Autoscroll is on or off.  Autoscroll makes scrolling dependant on
    the cursor position.  */
@@ -280,8 +280,10 @@ refresh_screen (void)
   if (!current_width && !current_height)
     return 0;
   return prefresh (conspad, pady, padx, 0, 0, 
-		   (current_height <= LINES ? current_height : LINES) - 1,
-		   (current_width <= COLS ? current_width : COLS) - 1); 
+		   (current_height <= (unsigned int) LINES 
+		    ? current_height : (unsigned int) LINES) - 1,
+		   (current_width <= (unsigned int) COLS 
+		    ? current_width : (unsigned int) COLS) - 1); 
 }
 
 static any_t
@@ -310,7 +312,7 @@ input_loop (any_t unused)
 	  mutex_lock (&ncurses_lock);
 	  while ((ret = wgetch (conspad)) != ERR)
 	    {
-	      int i;
+	      unsigned int i;
 	      int found;
 
 	      if (w_escaped)
@@ -360,7 +362,7 @@ input_loop (any_t unused)
 		      if (padx < current_width - COLS)
 			{
 			  padx++;
-			  ncurses_refresh ();
+			  refresh_screen ();
 			}  
 		      break;
 		    case 'i':
@@ -512,7 +514,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 	  padx += COLS / 2;
 	  if (padx > COLS + current_width)
 	    padx = current_width - COLS;
-	  ncurses_refresh ();
+	  refresh_screen ();
 	}
       /* Autoscroll to the left.  */
       else if (col < padx)
@@ -520,7 +522,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 	  padx -= COLS / 2;
 	  if (padx < 0)
 	    padx = 0;
-	  ncurses_refresh ();
+	  refresh_screen ();
 	}
       /* Autoscroll down.  */
       if (row > LINES + pady)
@@ -528,7 +530,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 	  pady += LINES / 2;
 	  if (pady > LINES + current_height)
 	    pady = current_height - LINES;
-	  ncurses_refresh ();
+	  refresh_screen ();
 	}
       /* Autoscroll up.  */
       else if (row < pady)
@@ -536,7 +538,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 	  pady -= LINES / 2;
 	  if (pady < 0)
 	    pady = 0;
-	  ncurses_refresh ();
+	  refresh_screen ();
 	}
     }
 
@@ -694,7 +696,7 @@ ncursesw_driver_fini (void *handle, int force)
 }
 
 static error_t
-ncursesw_set_dimension (void *handle, int width, int height)
+ncursesw_set_dimension (void *handle, unsigned int width, unsigned int height)
 {
   mutex_lock (&ncurses_lock);
   if (width != current_width || height != current_height)

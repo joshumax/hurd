@@ -65,7 +65,7 @@ driver_init (void)
 error_t
 driver_fini (void)
 {
-  int i;
+  unsigned int i;
 
   mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
@@ -96,7 +96,7 @@ error_t driver_add (const char *const name, const char *const driver,
   char *modname;
   void *shobj = NULL;
   driver_t drv;
-  int i;
+  unsigned int i;
   char *dir = driver_path;
   int defpath = 0;
 
@@ -242,7 +242,7 @@ error_t
 driver_start (char **name)
 {
   error_t err = 0;
-  int i;
+  unsigned int i;
 
   mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
@@ -268,7 +268,7 @@ driver_start (char **name)
 error_t driver_remove (const char *const name)
 {
   error_t err;
-  int i;
+  unsigned int i;
 
   mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
@@ -330,7 +330,7 @@ driver_add_##component (component##_ops_t ops, void *handle)		\
 error_t									\
 driver_remove_##component (component##_ops_t ops, void *handle)		\
 {									\
-  int i;								\
+  unsigned int i;								\
 									\
   mutex_lock (&component##_list_lock);					\
   for (i = 0; i < component##_list_len; i++)				\
