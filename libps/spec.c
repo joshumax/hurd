@@ -951,7 +951,7 @@ static const struct ps_fmt_spec specs[] =
    &ps_proc_susp_count_getter, ps_emit_int, ps_cmp_ints,   ps_nominal_zint},
   {"TSusp",	0,	-2,
    &ps_thread_susp_count_getter, ps_emit_int,ps_cmp_ints,  ps_nominal_zint},
-  {"TTY",	0,	2,
+  {"TTY",	0,	-2,
    &ps_tty_getter,	   ps_emit_tty_name,ps_cmp_strings,0},
   {"PgFlts",	0,	-5,
    &ps_page_faults_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
