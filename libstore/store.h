@@ -187,7 +187,7 @@ struct store_class
 		   struct store **store);
 
   /* Given a user argument ARG, this function should check it for syntactic
-     validaty, or print a syntax error, using ARGP_STATE in the normal
+     validity, or print a syntax error, using ARGP_STATE in the normal
      manner; if zero is returned, then this argument is assumed valid, and
      can be passed to the open function.  If ARG is 0, then there were *no*
      arguments specified; in this case, returning EINVAL means that this is
