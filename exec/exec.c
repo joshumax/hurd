@@ -1301,20 +1301,23 @@ check_bzip2 (struct execdata *earg)
 #endif
 
 
-static inline error_t
-servercopy (void **arg, mach_msg_type_number_t argsize, boolean_t argcopy)
+static inline void *
+servercopy (void *arg, mach_msg_type_number_t argsize, boolean_t argcopy,
+	    error_t *errorp)
 {
-  if (argcopy)
+  if (! argcopy)
+    return arg;
+
+  /* ARG came in-line, so we must copy it.  */
+  void *copy;
+  copy = mmap (0, argsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  if (copy == MAP_FAILED)
     {
-      /* ARG came in-line, so we must copy it.  */
-      void *copy;
-      copy = mmap (0, argsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (copy == (void *) -1)
-	return errno;
-      bcopy (*arg, copy, argsize);
-      *arg = copy;
+      *errorp = errno;
+      return NULL;
     }
-  return 0;
+  memcpy (copy, arg, argsize);
+  return copy;
 }
 
 
@@ -1533,18 +1536,18 @@ do_exec (file_t file,
 
     boot->flags = flags;
 
-    e.error = servercopy ((void **) &argv, argvlen, argv_copy);
+    argv = servercopy (argv, argvlen, argv_copy, &e.error);
     if (e.error)
       goto stdout;
     boot->argv = argv;
     boot->argvlen = argvlen;
-    e.error = servercopy ((void **) &envp, envplen, envp_copy);
+    envp = servercopy (envp, envplen, envp_copy, &e.error);
     if (e.error)
       goto stdout;
     boot->envp = envp;
     boot->envplen = envplen;
-    e.error = servercopy ((void **) &dtable, dtablesize * sizeof (mach_port_t),
-			  dtable_copy);
+    dtable = servercopy (dtable, dtablesize * sizeof (mach_port_t),
+			 dtable_copy, &e.error);
     if (e.error)
       goto stdout;
     boot->dtable = dtable;
@@ -1568,8 +1571,8 @@ do_exec (file_t file,
       }
     else
       {
-	e.error = servercopy ((void **) &intarray, nints * sizeof (int),
-			      intarray_copy);
+	intarray = servercopy (intarray, nints * sizeof (int), intarray_copy,
+			       &e.error);
 	if (e.error)
 	  goto stdout;
 	boot->intarray = intarray;
@@ -2147,13 +2150,16 @@ S_exec_setexecdata (struct trivfs_protid *protid,
   if (nports < INIT_PORT_MAX || nints < INIT_INT_MAX)
     return EINVAL;		/*  */
 
-  err = servercopy ((void **) &ports, nports * sizeof (mach_port_t),
-		    ports_copy);
+  err = 0;
+  ports = servercopy (ports, nports * sizeof (mach_port_t), ports_copy, &err);
   if (err)
     return err;
-  err = servercopy ((void **) &ints, nints * sizeof (int), ints_copy);
+  ints = servercopy (ints, nints * sizeof (int), ints_copy, &err);
   if (err)
-    return err;
+    {
+      munmap (ports, nports * sizeof (mach_port_t));
+      return err;
+    }
 
   rwlock_writer_lock (&std_lock);
 
