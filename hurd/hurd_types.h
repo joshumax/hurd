@@ -33,7 +33,11 @@ typedef mach_port_t addr_port_t;
 typedef mach_port_t startup_t;
 typedef mach_port_t proccoll_t;
 
+/* XXX temp hack --roland */
+#include <errno.h>
+#ifndef errno
 typedef kern_return_t error_t;
+#endif
 
 /* These names exist only because of MiG deficiencies.
    You should not use them in C source; use the normal C types instead.  */
