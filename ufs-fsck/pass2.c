@@ -1,5 +1,5 @@
 /* Pass 2 of GNU fsck -- examine all directories for validity
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -60,7 +60,7 @@ pass2 ()
 	  if (dp->d_reclen == 0
 	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
 	    {
-	      pfatal ("BAD RECLEN IN DIRECTORY");
+	      problem (1, "BAD RECLEN IN DIRECTORY");
 	      if (reply ("SALVAGE"))
 		{
 		  /* Skip over everything else in this dirblock;
@@ -77,7 +77,7 @@ pass2 ()
 	  /* Check INO */
 	  if (dp->d_ino > maxino)
 	    {
-	      pfatal ("BAD INODE NUMBER IN DIRECTORY");
+	      problem (1, "BAD INODE NUMBER IN DIRECTORY");
 	      if (reply ("SALVAGE"))
 		{
 		  /* Mark this entry clear */
@@ -92,7 +92,7 @@ pass2 ()
 	  /* Check INO */
 	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
-	      pinode (dnp->i_number, "REF TO UNALLOCATED NODE IN");
+	      pinode (0, dnp->i_number, "REF TO UNALLOCATED NODE IN");
 	      if (reply ("REMOVE"))
 		{
 		  dp->d_ino = 0;
@@ -105,7 +105,7 @@ pass2 ()
 	  namlen = DIRECT_NAMLEN (dp);
 	  if (namlen > MAXNAMLEN)
 	    {
-	      pfatal ("BAD NAMLEN IN DIRECTORY");
+	      problem (1, "BAD NAMLEN IN DIRECTORY");
 	      if (reply ("SALVAGE"))
 		{
 		  /* Mark this entry clear */
@@ -119,7 +119,7 @@ pass2 ()
 	      for (i = 0; i < DIRECT_NAMLEN (dp); i++)
 		if (dp->d_name[i] == '\0' || dp->d_name[i] == '/')
 		  {
-		    pfatal ("ILLEGAL CHARACTER IN FILE NAME");
+		    problem (1, "ILLEGAL CHARACTER IN FILE NAME");
 		    if (reply ("SALVAGE"))
 		      {
 			/* Mark this entry clear */
@@ -130,7 +130,7 @@ pass2 ()
 		  }
 	      if (dp->d_name[DIRECT_NAMLEN (dp)])
 		{
-		  pfatal ("DIRECTORY NAME NOT TERMINATED");
+		  problem (1, "DIRECTORY NAME NOT TERMINATED");
 		  if (reply ("SALVAGE"))
 		    {
 		      /* Mark this entry clear */
@@ -147,7 +147,7 @@ pass2 ()
 	  type = DIRECT_TYPE (dp);
 	  if (type != DT_UNKNOWN && type != typemap[dp->d_ino])
 	    {
-	      pfatal ("INCORRECT NODE TYPE IN DIRECTORY");
+	      problem (1, "INCORRECT NODE TYPE IN DIRECTORY");
 	      if (reply ("FIX"))
 		{
 		  errexit ("NODE TYPE FOUND WHEN NOT SUPPORTED");
@@ -177,15 +177,17 @@ pass2 ()
 		  targetdir = lookup_directory (dp->d_ino);
 		  if (targetdir->i_parent)
 		    {
-		      printf ("EXTRANEOUS LINK %s TO DIR I=%ld", dp->d_name,
-			      dp->d_ino);
-		      pwarn ("FOUND IN DIR I=%d", dnp->i_number);
+		      problem (0, "EXTRANEOUS LINK `%s' TO DIR I=%ld",
+			       dp->d_name, dp->d_ino);
+		      pextend (" FOUND IN DIR I=%d", dnp->i_number);
 		      if (preen || reply ("REMOVE"))
 			{
-			  pfix ("REMOVED");
 			  dp->d_ino = 0;
 			  mod = 1;
+			  pfix ("REMOVED");
 			}
+		      else
+			pfail (0);
 		    }
 		  else
 		    targetdir->i_parent = dnp->i_number;
@@ -230,31 +232,31 @@ pass2 ()
       break;
 
     case UNALLOC:
-      pfatal ("ROOT INODE UNALLOCATED");
+      problem (1, "ROOT INODE UNALLOCATED");
       if (!reply ("ALLOCATE"))
-	errexit ("\n");
+	errexit ("ABORTING");
       if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
-	errexit ("CANNOT ALLOCATE ROOT INODE\n");
+	errexit ("CANNOT ALLOCATE ROOT INODE");
       break;
       
     case REG:
-      pfatal ("ROOT INODE NOT DIRECTORY");
+      problem (1, "ROOT INODE NOT DIRECTORY");
       if (reply ("REALLOCATE"))
 	freeino (ROOTINO);
       if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
-	errexit ("CANNOT ALLOCATE ROOT INODE\n");
+	errexit ("CANNOT ALLOCATE ROOT INODE");
       break;
       
     case BADDIR:
-      pfatal ("DUPLICATE or BAD BLOCKS IN ROOT INODE");
+      problem (1, "DUPLICATE or BAD BLOCKS IN ROOT INODE");
       if (reply ("REALLOCATE"))
 	{
 	  freeino (ROOTINO);
 	  if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
-	    errexit ("CANNOT ALLOCATE ROOT INODE\n");
+	    errexit ("CANNOT ALLOCATE ROOT INODE");
 	}
       if (reply ("CONTINUE") == 0)
-	errexit ("\n");
+	errexit ("ABORTING");
       break;
     }
   
@@ -270,8 +272,8 @@ pass2 ()
 	continue;
       if (dnp->i_isize % DIRBLKSIZ)
 	{
-	  pwarn ("DIRECTORY INO=%d: LENGTH %d NOT MULTIPLE OF %d",
-		 dnp->i_number, dnp->i_isize, DIRBLKSIZ);
+	  problem (0, "DIRECTORY INO=%d: LENGTH %d NOT MULTIPLE OF %d",
+		   dnp->i_number, dnp->i_isize, DIRBLKSIZ);
 	  if (preen || reply ("ADJUST"))
 	    {
 	      getinode (dnp->i_number, &dino);
@@ -279,6 +281,8 @@ pass2 ()
 	      write_inode (dnp->i_number, &dino);
 	      pfix ("ADJUSTED");
 	    }
+	  else
+	    pfail (0);
 	}
       bzero (&dino, sizeof (struct dinode));
       dino.di_size = dnp->i_isize;
@@ -308,17 +312,20 @@ pass2 ()
       if (dnp->i_parent && dnp->i_dotdot == 0)
 	{
 	  dnp->i_dotdot = dnp->i_parent;
-	  pinode (dnp->i_number, "MISSING `..' IN");
-	  if (reply ("FIX"))
-	    if (makeentry (dnp->i_number, dnp->i_parent, ".."))
+	  pinode (0, dnp->i_number, "MISSING `..' IN");
+	  if ((preen || reply ("FIX"))
+	      && makeentry (dnp->i_number, dnp->i_parent, ".."))
+	    {
 	      linkfound[dnp->i_parent]++;
-	    else
-	      pfatal ("COULDN'T ADD `..'\n");
+	      pfix ("FIXED");
+	    }
+	  else
+	    pfail (0);
 	}
       else if (dnp->i_parent && dnp->i_dotdot != dnp->i_parent)
 	{
-	  pinode (dnp->i_number, "BAD INODE NUMBER FOR `..' IN");
-	  if (reply ("FIX"))
+	  pinode (0, dnp->i_number, "BAD INODE NUMBER FOR `..' IN");
+	  if (preen || reply ("FIX"))
 	    {
 	      ino_t parent = dnp->i_parent, old_dotdot = dnp->i_dotdot;
 	      dnp->i_dotdot = parent;
@@ -329,27 +336,33 @@ pass2 ()
 		  linkfound[parent]++;
 		  if (inodestate[old_dotdot] != UNALLOC)
 		    linkfound[old_dotdot]--;
+		  pfix ("FIXED");
 		}
 	      else
-		pfatal ("COULDN'T CHANGE `..'\n");
+		pfail (0);
 	    }
+	  else
+	    pfail (0);
 	}
       
       /* Check `.' to make sure it exists and is correct */
       if (dnp->i_dot == 0)
 	{
 	  dnp->i_dot = dnp->i_number;
-	  pinode (dnp->i_number, "MISSING `.' IN");
-	  if (reply ("FIX"))
-	    if (makeentry (dnp->i_number, dnp->i_number, "."))
+	  pinode (0, dnp->i_number, "MISSING `.' IN");
+	  if ((preen || reply ("FIX"))
+	       && makeentry (dnp->i_number, dnp->i_number, "."))
+	    {
 	      linkfound[dnp->i_number]++;
-	    else
-	      pfatal ("COULDN'T ADD `.'\n");
+	      pfix ("FIXED");
+	    }
+	  else
+	    pfail (0);
 	}
       else if (dnp->i_dot != dnp->i_number)
 	{
-	  pinode (dnp->i_number, "BAD INODE NUMBER FOR `.' IN");
-	  if (reply ("FIX"))
+	  pinode (0, dnp->i_number, "BAD INODE NUMBER FOR `.' IN");
+	  if (preen || reply ("FIX"))
 	    {
 	      ino_t old_dot = dnp->i_dot;
 	      dnp->i_dot = dnp->i_number;
@@ -358,10 +371,13 @@ pass2 ()
 		  linkfound[dnp->i_number]++;
 		  if (inodestate[old_dot] != UNALLOC)
 		    linkfound[old_dot]--;
+		  pfix ("FIXED");
 		}
 	      else
-		pfatal ("COULDN'T CHANGE `.'\n");
+		pfail (0);
 	    }
+	  else
+	    pfail (0);
 	}
     }
 }  
