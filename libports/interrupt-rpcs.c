@@ -35,5 +35,3 @@ ports_interrupt_rpc (void *portstruct)
 
   mutex_unlock (&_ports_lock);
 }
-
-      
