@@ -47,7 +47,8 @@ diskfs_S_file_exec (struct protid *cred,
 {
   struct node *np;
   error_t err;
-
+  struct protid *newpi;
+  
   if (!cred)
     return EOPNOTSUPP;
 
@@ -239,18 +240,19 @@ diskfs_S_file_exec (struct protid *cred,
     flags |= EXEC_NEWTASK;
 #endif
 
+  newpi = diskfs_make_protid (diskfs_make_peropen (np, O_READ, 
+						   cred->po->dotdotport),
+			      cred->uids, cred->nuids,
+			      cred->gids, cred->ngids);
   err = exec_exec (diskfs_exec, 
-		   (ports_get_right 
-		    (diskfs_make_protid
-		     (diskfs_make_peropen (np, O_READ, cred->po->dotdotport),
-		      cred->uids, cred->nuids,
-		      cred->gids, cred->ngids))),
+		   ports_get_right (newpi),
 		   MACH_MSG_TYPE_MAKE_SEND,
 		   task, flags, argv, argvlen, envp, envplen, 
 		   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
 		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		   intarray, intarraylen, deallocnames, deallocnameslen,
 		   destroynames, destroynameslen);
+  ports_port_deref (newpi);
   if (!err)
     {
       unsigned int i;
