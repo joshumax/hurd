@@ -1,5 +1,12 @@
 1999-10-02  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* ext2fs.h (SBLOCK_LBLOCK): New macro, filesystem block number of sb.
+	(BLOCKSIZE_SCALE): New macro for converting min-blocks to fs blocks.
+	(group_desc): Fix calculation of offset from superblock, so it works
+	properly with block_size != EXT2_MIN_BLOCK_SIZE.
+
+	* ext2fs.h (EXT2FS_EI): New macro, use it for all extern inlines.
+
 	* bitmap.c (count_free, find_next_zero_bit, find_first_zero_bit):
 	Make these all static inline.
 	(ffz, ffz_nibble_map): Function and variable removed.
