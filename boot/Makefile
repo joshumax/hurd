@@ -22,9 +22,10 @@ include ../Makeconf
 VPATH = ../machine
 
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
-	io_replUser.o device_replyUser.o sigvec.o tioctlServer.o termServer.o
+       io_replUser.o device_replyUser.o sigvec.o tioctlServer.o \
+       termServer.o tcattr.o
 
-DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S
+DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S tcattr.c
 
 all: boot
 
