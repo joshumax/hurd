@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_get_translator
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -111,7 +111,7 @@ diskfs_S_file_get_translator (struct protid *cred,
     }
   else
     {
-      if (!np->istranslated)
+      if (! (np->dn_stat.st_mode & S_IPTRANS))
 	error = EINVAL;
       else
 	{
