@@ -234,6 +234,13 @@ See `tasks', the exported task list.
 
 ======
 
+???
+  login> ps aux|head
+  bash: /bin/head: (ipc/send) invalid msg-header
+  Broken pipe
+???
+  
+
 List for version 0.2 binary release
 
 * Try and get new mach4 from Shantanu.
