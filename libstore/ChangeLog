@@ -1,3 +1,9 @@
+2001-01-09  Marcus Brinkmann  <marcus@gnu.org>
+
+	* device.c (enforce): First try DEV_GET_RECORDS, and only fall
+	back to DEV_GET_STORE if this fails with D_INVALID_OPERATION.
+	(store_device_create): Likewise, but fall back for any failure.
+	
 2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
 
 	* zero.c (zero_remap): Change type of variables length, old_length

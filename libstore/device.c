@@ -116,28 +116,50 @@ dclose (struct store *store)
 static error_t
 enforced (struct store *store)
 {
+  size_t sizes[DEV_STATUS_MAX];
+  size_t sizes_len = DEV_STATUS_MAX;
+
   if (store->num_runs != 1 || store->runs[0].start != 0)
     /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
     return EINVAL;
   else
     /* See if the the current (one) range is that the kernel is enforcing. */
     {
-      size_t sizes[DEV_GET_SIZE_COUNT];
-      size_t sizes_len = DEV_GET_SIZE_COUNT;
       error_t err =
-	device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
+	device_get_status (store->port, DEV_GET_RECORDS, sizes, &sizes_len);
 
-      if (err)
+      if (err && err != D_INVALID_OPERATION)
 	return EINVAL;
 
-      assert (sizes_len == DEV_GET_SIZE_COUNT);
+      if (!err)
+	{
+	  assert (sizes_len == DEV_GET_RECORDS_COUNT);
 
-      if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
-	  || (store->runs[0].length !=
-	      sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
-	return EINVAL;
+	  if (sizes[DEV_GET_RECORDS_RECORD_SIZE] != store->block_size
+	      || (store->runs[0].length !=
+		  sizes[DEV_GET_RECORDS_DEVICE_RECORDS]))
+	    return EINVAL;
 
-      return 0;
+	  return 0;
+	}
+      else
+	{
+	  sizes_len = DEV_GET_SIZE_COUNT;
+	  error_t err =
+	    device_get_status (store->port, DEV_GET_SIZE, sizes, &sizes_len);
+
+	  if (err)
+	    return EINVAL;
+
+	  assert (sizes_len == DEV_GET_SIZE_COUNT);
+	  
+	  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
+	      || (store->runs[0].length !=
+		  sizes[DEV_GET_SIZE_DEVICE_SIZE] >> store->log2_block_size))
+	    return EINVAL;
+	
+	  return 0;
+	}
     }
 }
 
@@ -216,24 +238,38 @@ store_device_create (device_t device, int flags, struct store **store)
   size_t sizes_len = DEV_STATUS_MAX;
   error_t err;
 
-  /* Some Mach devices do not implement device_get_status, but do not
-     return an error.  To detect these devices we set the size of the
-     input buffer to something larger than DEV_GET_SIZE_COUNT.  If the
-     size of the returned device status is not equal to
-     DEV_GET_SIZE_COUNT, we know that something is wrong.  */
-  err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
-  if (! err && sizes_len == DEV_GET_SIZE_COUNT)
+  err = device_get_status (device, DEV_GET_RECORDS, sizes, &sizes_len);
+  if (! err && sizes_len == DEV_GET_RECORDS_COUNT)
     {
-      block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
+      block_size = sizes[DEV_GET_RECORDS_RECORD_SIZE];
 
       if (block_size)
 	{
 	  run.start = 0;
-	  run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
-
-	  if (run.length * block_size != sizes[DEV_GET_SIZE_DEVICE_SIZE])
-	    /* Bogus results (which some mach devices return).  */
-	    block_size = 0;
+	  run.length = sizes[DEV_GET_RECORDS_DEVICE_RECORDS];
+	}
+    }
+  else
+    {
+      /* Some Mach devices do not implement device_get_status, but do not
+	 return an error.  To detect these devices we set the size of the
+	 input buffer to something larger than DEV_GET_SIZE_COUNT.  If the
+	 size of the returned device status is not equal to
+	 DEV_GET_SIZE_COUNT, we know that something is wrong.  */
+      err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
+      if (! err && sizes_len == DEV_GET_SIZE_COUNT)
+	{
+	  block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
+	  
+	  if (block_size)
+	    {
+	      run.start = 0;
+	      run.length = sizes[DEV_GET_SIZE_DEVICE_SIZE] / block_size;
+	      
+	      if (run.length * block_size != sizes[DEV_GET_SIZE_DEVICE_SIZE])
+		/* Bogus results (which some mach devices return).  */
+		block_size = 0;
+	    }
 	}
     }
 
