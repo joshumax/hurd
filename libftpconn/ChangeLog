@@ -1,3 +1,34 @@
+1997-09-02  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* xfer.c (ftp_conn_start_open_actv_data): If necessary, reopen the
+	control connection for getsockname.
+
+1997-08-27  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpconn.h (struct ftp_conn): Add the ACTV_DATA_ADDR and
+	ACTV_DATA_CONN_QUEUE fields.
+	* create.c (ftp_conn_free): Free the ACTV_DATA_ADDR field.
+	(ftp_conn_create): Initialiaze the ACTV_DATA_ADDR &
+	ACTV_DATA_CONN_QUEUE fields.
+	* open.c (ftp_conn_close): Close CONN->actv_data_conn_queue if necessary.
+	* xfer.c (ftp_conn_start_open_actv_data): Renamed ftp_conn_open_actv_data.
+	Correctly generate data address.
+	(ftp_conn_start_open_data): Renamed from ftp_conn_open_data.
+	(ftp_conn_finish_open_data, ftp_conn_finish_open_actv_data): New
+	functions.
+	(ftp_conn_start_transfer): Use ftp_conn_start_open_data and
+	ftp_conn_finish_open_data instead of ftp_conn_open_data.
+
+1997-08-26  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* xfer.c (ftp_conn_open_actv_data): New function.
+	(ftp_conn_open_data): Use an active data connection if passive
+	doesn't work.
+	* ftpconn.h (struct ftp_conn): Add USE_PASSIVE field.
+	* create.c (ftp_conn_create): Initialize USE_PASSIVE field.
+
+	* open.c (ftp_conn_open): Set SIN_LEN field correctly.
+
 1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* create.c (ftp_conn_create): Initialize the SYSHOOKS_VALID field.
