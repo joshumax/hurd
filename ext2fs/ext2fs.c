@@ -306,10 +306,15 @@ main (int argc, char **argv)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap (argv);
 
-  /* Now become a generic request thread.  */
-  diskfs_main_request_loop ();
+  /* and so we die, leaving others to do the real work.  */
+  cthread_exit (0);
 }
 
+/* Dummy */
+void
+thread_cancel (thread_t foo __attribute__ ((unused)))
+{
+}
 
 void
 diskfs_init_completed ()
