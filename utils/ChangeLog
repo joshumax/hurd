@@ -1,3 +1,9 @@
+Wed Aug 14 10:18:41 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (login-LDLIBS): New variable.
+	(login): Dependency on -lutil removed.
+	(libutil-libsubst): Variable removed.
+
 Sat Aug 10 10:03:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ps.c (options): Whoops, short option for --sort is -s.

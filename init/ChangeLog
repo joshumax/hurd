@@ -1,3 +1,9 @@
+Tue Aug 13 17:51:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (init): Remove -lutil.
+	(libutil-libsubst): Variable removed.
+	(LDLIBS): New variable.
+
 Mon Aug 12 11:12:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* init.c (setup_terminal): Declare LINE.

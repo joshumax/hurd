@@ -1,3 +1,7 @@
+Tue Aug 13 17:54:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makeconf ($(target)): Add $($@-LDLIBS) $(LDLIBS) to libs.
+
 Tue Aug 13 14:05:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf (vpath %.defs): Remove reference for mach and device

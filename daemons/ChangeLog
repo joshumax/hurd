@@ -1,3 +1,9 @@
+Wed Aug 14 10:22:39 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (getty-LDLIBS): New variable.
+	(getty): Dependency on -lutil removed.
+	(libutil-libsubst): Variable removed.
+
 Tue Aug 13 08:13:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* rc.sh: When deleting files from /tmp, use -f flag to rm.
