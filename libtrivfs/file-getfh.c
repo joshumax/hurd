@@ -19,8 +19,8 @@
 #include "fs_S.h"
 
 kern_return_t
-trivfs_S_file_getfs (struct trivfs_protid *cred, 
-		     char *data,
+trivfs_S_file_getfh (struct trivfs_protid *cred, 
+		     char **data,
 		     u_int *datalen)
 {
   return EOPNOTSUPP;
