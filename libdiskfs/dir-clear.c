@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,7 +30,7 @@ diskfs_clear_directory (struct node *dp,
   struct node *np;
 
   /* Find and remove the `.' entry. */
-  err = diskfs_lookup (dp, ".", REMOVE, &np, ds, cred);
+  err = diskfs_lookup (dp, ".", REMOVE, &np, ds, cred, 1, 0);
   assert (err != ENOENT);
   if (!err)
     {
@@ -48,7 +48,7 @@ diskfs_clear_directory (struct node *dp,
   dp->dn_set_ctime = 1;
 
   /* Find and remove the `..' entry. */
-  err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, &np, ds, cred);
+  err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, &np, ds, cred, 1, 0);
   assert (err != ENOENT);
   if (!err)
     {
