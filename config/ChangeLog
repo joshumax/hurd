@@ -1,3 +1,9 @@
+Wed Jul 31 12:11:02 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* passwd (games): Have no password.
+	* Makefile (SYSCONFFILES): Add `group'.
+	* group: New file.
+
 Mon Jul 29 14:43:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* passwd: mib -> thomas.
