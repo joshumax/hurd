@@ -18,6 +18,7 @@
 #include "priv.h"
 #include <hurd/paths.h>
 #include <string.h>
+#include <stdio.h>
 #include "fs_S.h"
 
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
