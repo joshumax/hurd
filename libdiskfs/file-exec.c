@@ -71,6 +71,9 @@ diskfs_S_file_exec (struct protid *cred,
   gid = np->dn_stat.st_uid;
   mutex_unlock (&np->lock);
 
+  if (noexec)
+    return EACCES;
+
   if ((cred->po->openstat & O_EXEC) == 0)
     return EBADF;
   
@@ -83,7 +86,7 @@ diskfs_S_file_exec (struct protid *cred,
 
   suid = mode & S_ISUID;
   sgid = mode & S_ISGID;
-  if (suid || sgid)
+  if (!nosuid && (suid || sgid))
     {
       int secure = 0;
       error_t get_file_ids (struct idvec *uids, struct idvec *gids)

@@ -1,3 +1,26 @@
+Tue Sep 16 14:37:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* priv.h (nosuid, noexec): New variables.
+	* init-init.c (nosuid, noexec): New variables, initialized to zero.
+	* file-exec.c (diskfs_S_file_exec): If noexec is on, then prohibit
+	all execution with EACCES.  If nosuid is on, then prohibit setuid
+	or setgid execution by silently omitting the uid substitution.
+	* opts-std-startup.c (parse_startup_opt): Implement --no-suid and
+	--no-exec. 
+	* opts-common.c (diskfs_common_options): Add --no-suid and
+	--no-exec. 
+	* opts-std-runtime.c (struct parse_hook): Add nosuid and noexec. 
+	(parse_opt) [cases 'S', 'E', OPT_SUID_OK, OPT_EXEC_OK] Understand
+	--no-suid, --no-exec, --suid-ok, and --exec-ok.  
+	(parse_opt) [case ARGP_KEY_INIT]: Initialize H->nosuid and
+	H->noexec. 
+	(OPT_SUID_OK, OPT_EXEC_OK): New macros.
+	(std_runtime_options): Add --suid-ok and --exec-ok.
+	(set_opts): Set nosuid and noexec from H->nosuid and H->noexec. 
+
+	* opts-common.c (diskfs_common_options): Rename --nosync to
+	--no-sync; leave --nosync as an alias.
+
 Wed Aug 20 14:03:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* diskfs.h: Doc fix.

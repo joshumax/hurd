@@ -29,6 +29,9 @@
 
 extern mach_port_t fs_control_port;	/* receive right */
 
+/* These inhibit setuid or exec. */
+extern int nosuid, noexec;
+
 volatile struct mapped_time_value *_diskfs_mtime;
 
 extern struct argp_option diskfs_common_options[];

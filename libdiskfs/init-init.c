@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -29,6 +29,8 @@ mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
 mach_port_t diskfs_fsys_identity;
+
+int nosuid = 0, noexec = 0;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 

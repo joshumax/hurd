@@ -22,17 +22,22 @@
 
 #include "priv.h"
 
+#define SUID_OK_OPT 600
+#define EXEC_OK_OPT 601
+
 static const struct argp_option
 std_runtime_options[] =
 {
   {"update", 'u',  0, 0, "Flush any meta-data cached in core"},
   {"remount", 0, 0, OPTION_HIDDEN | OPTION_ALIAS}, /* deprecated */
+  {"suid-ok", OPT_SUID_OK, 0, 0, "Enable set-uid execution"},
+  {"exec-ok", OPT_EXEC_OK, 0, 0, "Enable execution of files"},
   {0, 0}
 };
 
 struct parse_hook
 {
-  int readonly, sync, sync_interval, remount;
+  int readonly, sync, sync_interval, remount, nosuid, noexec;
 };
 
 /* Implement the options in H, and free H.  */
@@ -71,6 +76,11 @@ set_opts (struct parse_hook *h)
 	diskfs_set_sync_interval (h->sync_interval);
     }
 
+  if (h->nosuid != -1)
+    nosuid = h->nosuid;
+  if (h->noexec != -1)
+    noexec = h->noexec;
+
   free (h);
 
   return err;
@@ -86,6 +96,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'r': h->readonly = 1; break;
     case 'w': h->readonly = 0; break;
     case 'u': h->remount = 1; break;
+    case 'S': h->nosuid = 1; break;
+    case 'E': h->noexec = 1; break;
+    case OPT_SUID_OK: h->nosuid = 0; break;
+    case OPT_EXEC_OK: h->noexec = 0; break;
     case 'n': h->sync_interval = 0; h->sync = 0; break;
     case 's':
       if (arg)
@@ -96,6 +110,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       else
 	h->sync = 1;
       break;
+
 
     case ARGP_KEY_INIT:
       if (state->input)
@@ -109,6 +124,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  h->sync = diskfs_synchronous;
 	  h->sync_interval = -1;
 	  h->remount = 0;
+	  h->nosuid = h->noexec = -1;
 
 	  /* We know that we have one child, with which we share our hook.  */
 	  state->child_inputs[0] = h;

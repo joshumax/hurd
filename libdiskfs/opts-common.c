@@ -1,6 +1,6 @@
 /* Options common to both startup and runtime
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,6 +32,9 @@ const struct argp_option diskfs_common_options[] =
      "If INTERVAL is supplied, sync all data not actually written to disk"
      " every INTERVAL seconds, otherwise operate in synchronous mode (the"
      " default is to sync every 30 seconds)"},
-  {"nosync",  'n',  0, 0, "Don't automatically sync data to disk"},
+  {"no-sync",  'n',  0, 0, "Don't automatically sync data to disk"},
+  {"nosync", 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"no-suid", 'S', 0, 0, "Don't permit set-uid or set-gid execution"},
+  {"no-exec", 'E', 0, 0, "Don't permit any execution of files on this filesystem"},
   {0, 0}
 };
