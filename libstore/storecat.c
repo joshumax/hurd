@@ -9,19 +9,51 @@
 struct argp_option options[] = {
   {"file", 'f', 0, 0, "Use file IO instead of the raw device"},
   {"block-size", 'b', "BYTES", 0, "Set the file block size"},
+  {"interleave", 'i', "INTERVAL", 0, "Instead of concatenating the files,"
+     " interleave them, every INTERVAL blocks (default 1)"},
   {0, 0}
 };
-char *arg_doc = "FILE [ADDR [LENGTH]]...";
-char *doc = "ADDR is in blocks, and defaults to 0; LENGTH is in bytes, and defaults to the remainder of FILE.";
+char *arg_doc = "FILE...";
+char *doc = 0;
 
 int
 main (int argc, char **argv)
 {
-  struct store *store = 0;
-  off_t addr = -1;
-  int dumped = 0, use_file_io = 0, block_size = 0;
+  struct store *stores[4096];
+  int num_stores = 0;
+  int use_file_io = 0, block_size = 0, interleave = 0;
 
-  void dump (off_t addr,  ssize_t len)
+  struct store *make_store (char *file)
+    {
+      error_t err;
+      struct store *store;
+      file_t source = file_name_lookup (file, O_READ, 0);
+      if (errno)
+	error (2, errno, "%s", file);
+      if (use_file_io)
+	if (block_size)
+	  {
+	    off_t runs[2];
+	    struct stat stat;
+
+	    err = io_stat (source, &stat);
+	    if (! err)
+	      {
+		runs[0] = 0;
+		runs[1] = stat.st_size / block_size;
+		err = _store_file_create (source,
+					  block_size, runs, 2, &store);
+	      }
+	  }
+	else
+	  err = store_file_create (source, &store);
+      else
+	err = store_create (source, &store);
+      if (err)
+	error (err, 3, "%s", file);
+      return store;
+    }
+  void dump (struct store *store, off_t addr,  ssize_t len)
     {
       char buf[4096], *data = buf;
       size_t data_len = sizeof (buf);
@@ -42,54 +74,32 @@ main (int argc, char **argv)
 	{
 	case 'f': use_file_io = 1; break;
 	case 'b': block_size = atoi (arg); break;
+	case 'i': interleave = atoi (arg); break;
 
 	case ARGP_KEY_ARG:
-	  if (! store)
-	    {
-	      error_t err;
-	      file_t source = file_name_lookup (arg, O_READ, 0);
-	      if (errno)
-		error (2, errno, "%s", arg);
-	      if (use_file_io)
-		if (block_size)
-		  {
-		    off_t runs[2];
-		    struct stat stat;
-
-		    err = io_stat (source, &stat);
-		    if (! err)
-		      {
-			runs[0] = 0;
-			runs[1] = stat.st_size / block_size;
-			err = _store_file_create (source,
-						  block_size, runs, 2, &store);
-		      }
-		  }
-		else
-		  err = store_file_create (source, &store);
-	      else
-		err = store_create (source, &store);
-	      if (err)
-		error (err, 3, "%s", arg);
-	    }
-	  else if (addr < 0)
-	    addr = atoi (arg);
-	  else
-	    {
-	      dump (addr, atoi (arg));
-	      dumped = 1;
-	      addr = -1;
-	    }
+	  if (num_stores > sizeof stores / sizeof *stores)
+	    error (72, 0, "%s: Too many files", arg);
+	  stores[num_stores++] = make_store (arg);
 	  break;
 
 	case ARGP_KEY_END:
-	  if (addr >= 0)
-	    dump (addr, -1);
-	  else if (! dumped)
-	    dump (0, -1);
+	  if (num_stores == 1)
+	    dump (stores[0], 0, -1);
+	  else if (num_stores > 1)
+	    {
+	      error_t err;
+	      struct store *cat;
+	      if (interleave)
+		err = store_ileave_create (interleave, stores, num_stores, 1,
+					   &cat);
+	      else
+		err = store_concat_create (stores, num_stores, 1, &cat);
+	      if (err)
+		error (99, err, "Can't concatenate");
+	      dump (cat, 0, -1);
+	    }
 	  break;
 
-	case ARGP_KEY_NO_ARGS:
 	default:
 	  return EINVAL;
 	}
