@@ -225,3 +225,4 @@ See `tasks', the exported task list.
 ** Relink everything after version numbered libc is installed
 ** Debug ext2fs
 ** Find fsck system hang
+** Emacs `M-x shell' starts all ptys and then hangs.
