@@ -79,10 +79,11 @@ install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs))
 
 lndist: cp-linked-files
 
-cp-linked-files:
-	cp $(srcdir)/install-sh $(srcdir)/hurd-snap/install-sh
-	cp $(srcdir)/config.guess $(srcdir)/hurd-snap/config.guess
-	cp $(srcdir)/config.sub $(srcdir)/hurd-snap/config.sub
+linked-files = install-sh config.guess config.sub mkinstalldirs
+lf-inst = $(addprefix $(srcdir)/hurd-snap/,$(linked-files))
+cp-linked-files: $(lf-inst)
+$(lfinst): $(srcdir)/hurd-snap/%: $(srcdir)/%
+	cp $< $@
 
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
 
