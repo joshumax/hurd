@@ -29,3 +29,4 @@ clean:
 # the Hurd libraries.
 relink:
 
+install:
