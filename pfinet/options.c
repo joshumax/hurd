@@ -24,30 +24,36 @@
 #include <string.h>
 #include <hurd.h>
 #include <argp.h>
-#include <error.h>
+#include <argz.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "pfinet.h"
 
+/* Our interface to the set of devices.  */
+extern error_t find_device (char *name, struct device **device);
+extern error_t enumerate_devices (error_t (*fun) (struct device *dev));
+
 /* Pfinet options.  Used for both startup and runtime.  */
-static const struct argp_option options[] = {
+static const struct argp_option options[] =
+{
   {"interface", 'i', "DEVICE",  0,  "Network interface to use", 1},
   {0,0,0,0,"These apply to a given interface:", 2},
   {"address",   'a', "ADDRESS", 0, "Set the network address"},
   {"netmask",   'm', "MASK",    0, "Set the netmask"},
   {"gateway",   'g', "ADDRESS", 0, "Set the default gateway"},
-  {"shutdown",  's', 0,       , 0, "Shut it down"}
+  {"shutdown",  's', 0,         0, "Shut it down"},
   {0}
 };
 
-static const char args_doc[] = 0;
 static const char doc[] = "Interface-specific options before the first \
 interface specification apply to the first following interface; otherwise \
-they apply to the previously specified interface."
+they apply to the previously specified interface.";
 
 /* Used to describe a particular interface during argument parsing.  */
 struct parse_interface
 {
-  /* The network interface in question.  *?
+  /* The network interface in question.  */
   struct device *device;
 
   /* New values to apply to it.  */
@@ -117,7 +123,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	{
 	  /* First see if a previously specified one is being re-specified.  */
 	  for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
-	    if (strcmp (in->device.pa_name, arg) == 0)
+	    if (strcmp (in->device->name, arg) == 0)
 	      /* Re-use an old slot.  */
 	      {
 		h->curint = in;
@@ -184,7 +190,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	if (in->address == INADDR_NONE && in->netmask != INADDR_NONE
 	    && in->device->pa_addr != 0)
 	  /* Specifying a netmask for an address-less interface is a no-no.  */
-	  FAIL (EDESTADDREQ, 14, 0, "Cannot set netmask");
+	  FAIL (EDESTADDRREQ, 14, 0, "Cannot set netmask");
 
       /* Successfully finished parsing, return a result.  */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
@@ -192,38 +198,38 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  struct device *dev = in->device;
 	  if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
 	    {
-	      if (in->device->pa_addr != 0)
+	      if (dev->pa_addr != 0)
 		/* There's already an addres, delete it.  */
 		{
-		  in->device->pa_addr = 0;
+		  dev->pa_addr = 0;
 		  /* ....  */
 		}
 
 	      if (in->address != INADDR_NONE)
-		in->device->pa_addr = in->address;
+		dev->pa_addr = in->address;
 
 	      if (in->netmask != INADDR_NONE)
-		in->device->pa_mask = in->netmask;
+		dev->pa_mask = in->netmask;
 	      else
 		{
 		  if (IN_CLASSA (in->address))
-		    in->device->pa_mask = IN_CLASSA_NET;
+		    dev->pa_mask = IN_CLASSA_NET;
 		  else if (IN_CLASSB (in->address))
-		    in->device->pa_mask = IN_CLASSB_NET;
-		  else if (IS_CLASS_C (in->address))
-		    in->device->pa_mask = IN_CLASSC_NET;
+		    dev->pa_mask = IN_CLASSB_NET;
+		  else if (IN_CLASSC (in->address))
+		    dev->pa_mask = IN_CLASSC_NET;
 		  else
 		    abort ();
 		}
 
-	      in->device->family = AF_INET;
-	      in->device->pa_brdaddr = in->device->pa_addr | ~in->device->pa_mask;
+	      dev->family = AF_INET;
+	      dev->pa_brdaddr = dev->pa_addr | ~dev->pa_mask;
 
-	      ip_rt_add (0, in->device->pa_addr & in->device->pa_mask,
-			 in->device->pa_mask, 0, in->device, 0, 0);
+	      ip_rt_add (0, dev->pa_addr & dev->pa_mask,
+			 dev->pa_mask, 0, dev, 0, 0);
 	    }
 	  if (in->gateway != INADDR_NONE)
-	    ip_rt_add (RTF_GATEWAY, 0, 0, in->gateway, in->device, 0, 0);
+	    ip_rt_add (RTF_GATEWAY, 0, 0, in->gateway, dev, 0, 0);
 	}
       /* Fall through to free hook.  */
 
@@ -241,76 +247,35 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 }
 
 struct argp
-pfinet_argp = { options, parse_opt, args_doc, doc };
+pfinet_argp = { options, parse_opt, 0, doc };
+
+struct argp *trivfs_runtime_argp = &pfinet_argp;
 
 error_t
-trivfs_S_fsys_set_options (struct trivfs_control *cntl,
-			   mach_port_t reply, mach_msg_type_name_t reply_type,
-			   char *data, mach_msg_type_number_t len,
-			   int do_children)
+trivfs_get_options (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 {
-  if (! cntl)
-    return EOPNOTSUPP;
-  else
-    {
-      int argc = argz_count (data, len);
-      char **argv = alloca (sizeof (char *) * (argc + 1));
-
-      argz_extract (data, len, argv);
-
-      /* XXX should we should serialize requests here? */
-      return
-	argp_parse (&pfinet_argp, argv, argc,
-		    ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
-		    0, 0);
-    }
-}
-
-static error_t
-get_opts (char **data, mach_msg_type_number_t *len)
-{
-  char *argz = 0;
-  size_t argz_len = 0;
-
   error_t add_dev_opts (struct device *dev)
     {
+      struct in_addr i;
+      error_t err = 0;
 
+#define ADD_OPT(fmt, args...)						      \
+  do { char buf[100];							      \
+       if (! err) {							      \
+         snprintf (buf, sizeof buf, fmt , ##args);			      \
+         err = argz_add (argz, argz_len, buf); } } while (0)
+
+      ADD_OPT ("--interface=%s", dev->name);
+      if (dev->pa_addr != 0)
+        ADD_OPT ("--address=%s", inet_ntoa ((i.s_addr = dev->pa_addr, i)));
+      if (dev->pa_mask != 0)
+        ADD_OPT ("--netmask=%s", inet_ntoa ((i.s_addr = dev->pa_mask, i)));
+
+      /* XXX how do we figure out the default gateway?  */
+#undef ADD_OPT
+
+      return err;
     }
 
-  err = enumerate_devices (add_dev_opts);
-
-  if (! err)
-    /* Put ARGZ into vm_alloced memory for the return trip.  */
-    {
-      if (*len < argz_len)
-	err = vm_allocate (mach_task_self (), data, argz_len, 1);
-      if (! err)
-	{
-	  if (argz_len)
-	    bcopy (argz, *data, argz_len);
-	  *len = argz_len;
-	}
-    }
-
-  if (argz_len > 0)
-    free (argz);
-
-  return err;
-}
-
-error_t
-trivfs_S_fsys_get_options (struct trivfs_control *fsys,
-			   mach_port_t reply, mach_msg_type_name_t reply_type,
-			   char **data, mach_msg_type_number_t *len)
-{
-  return fsys ? get_opts (data, len) : EOPNOTSUPP;
-}
-
-error_t
-trivfs_S_file_get_fs_options (struct trivfs_protid *cred,
-			      mach_port_t reply,
-			      mach_msg_type_name_t reply_type,
-			      char **data, mach_msg_type_number_t *len)
-{
-  return cred ? get_opts (data, len) : EOPNOTSUPP;
+  return enumerate_devices (add_dev_opts);
 }
