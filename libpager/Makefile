@@ -52,7 +52,7 @@ data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
 stubs.o object-init.o object-terminate.o: memory_object.h
 
 clean:
-	rm libpager.a *.o memory_object.h memory_objectServer.c
+	rm -f libpager.a *.o memory_object.h memory_objectServer.c
 
 # MiG gook
 memory_object.h memory_objectServer.c:
