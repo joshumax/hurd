@@ -37,93 +37,138 @@ scan_ids (uid_t *set, int setlen, uid_t test)
   return 0;
 }
 
-/* Adds ID to the sets OLDGENIDS & OLDAUXIDS, and returns the new set in
-   GENIDS and AUXIDS, which are malloced.  SECURE is also updated to reflect
-   whether a secure exec is called for.  ENOMEM is returned if a malloc
-   fails, otherwise 0.  */
+/* If SETID is true, adds ID to the sets OLDGENIDS & OLDAUXIDS, and returns
+   the new set in GENIDS and AUXIDS, which are malloced; if SETID is false,
+   just makes GENIDS and AUXIDS (malloced) copies of OLDGENIDS & OLDAUXIDS;
+   SECURE is also updated to reflect whether a secure exec is called for.
+   ENOMEM is returned if a malloc fails, otherwise 0.  The return parameters
+   are only touched if this call succeeds.  */
 static error_t
-setid (uid_t id, int *secure,
+setid (int setid, uid_t id, int *secure,
        uid_t *oldgenids, size_t noldgenids,
        uid_t *oldauxids, size_t noldauxids,
        uid_t **genids, size_t *ngenids,
        uid_t **auxids, size_t *nauxids)
 {
-  /* We are dumping the current first id; put it
-     into the auxids array.  This is complex.  The different
-     cases below are intended to make sure that we don't
-     lose any ids (unlike posix) and to make sure that aux ids
-     zero and one (if already set) behave like the posix
-     ones. */
+  /* These hold the new auxids array until we're sure we're going to return. */
+  uid_t *_genids, *_auxids;
+  size_t _ngenids, _nauxids;
 
-#define MALLOC(n) ({ void *_p = malloc(n); if (! _p) return ENOMEM; _p; })
+/* Return malloced storage for N uids.  If the malloc fails, return ENOMEM
+   from the function enclosing the call.  */
+#define MALLOC_IDS(n) \
+  ({ void *_p = malloc ((n) * sizeof (uid_t)); if (! _p) return ENOMEM; _p; })
 
-  if (noldauxids == 0)
+/* Copy N uids/gids from SRC to DST.  */ 
+#define COPY_IDS(src, dst, n) \
+  bcopy (src, dst, (n) * sizeof (uid_t))
+
+  if (setid)
     {
-      *auxids = MALLOC (*nauxids = 1);
-      (*auxids)[0] = oldgenids[0];
-    }
-  else if (noldauxids == 1)
-    {
-      *auxids = MALLOC (*nauxids = 2);
-      (*auxids)[0] = oldauxids[0];
-      (*auxids)[1] = oldgenids[0];
-    }
-  else if (noldauxids == 2)
-    {
-      if (oldgenids[0] == oldauxids[1])
+      /* We are dumping the current first id; put it into the auxids array.
+	 This is complex.  The different cases below are intended to make
+	 sure that we don't lose any ids (unlike posix) and to make sure that
+	 aux ids zero and one (if already set) behave like the posix ones. */
+      if (noldauxids == 0)
 	{
-	  *auxids = MALLOC (*nauxids = 2);
-	  (*auxids)[0] = oldauxids[0];
-	  (*auxids)[1] = oldauxids[1];
+	  if (noldgenids == 0)
+	    _auxids = _nauxids = 0;
+	  else
+	    {
+	      _auxids = MALLOC_IDS (_nauxids = 1);
+	      _auxids[0] = oldgenids[0];
+	    }
+	}
+      else if (noldauxids == 1)
+	{
+	  _nauxids = noldgenids > 0 ? 2 : 1;
+	  _auxids = MALLOC_IDS (_nauxids);
+	  _auxids[0] = oldauxids[0];
+	  if (noldgenids > 0)
+	    _auxids[1] = oldgenids[0];
+	}
+      else if (noldauxids == 2)
+	{
+	  if (noldgenids == 0 || oldgenids[0] == oldauxids[1])
+	    {
+	      _auxids = MALLOC_IDS (_nauxids = 2);
+	      _auxids[0] = oldauxids[0];
+	      _auxids[1] = oldauxids[1];
+	    }
+	  else
+	    {
+	      /* Shift by one */
+	      _auxids = MALLOC_IDS (_nauxids = 3);
+	      _auxids[0] = oldauxids[0];
+	      _auxids[1] = oldgenids[0];
+	      _auxids[2] = oldauxids[1];
+	    }
 	}
       else
 	{
-	  /* Shift by one */
-	  *auxids = MALLOC (*nauxids = 3);
-	  (*auxids)[0] = oldauxids[0];
-	  (*auxids)[1] = oldgenids[0];
-	  (*auxids)[2] = oldauxids[1];
+	  /* Just like above, but in the shift case note
+	     that the new _auxids[2] shouldn't be allowed
+	     to needlessly duplicate something further on. */
+	  if (noldgenids == 0
+	      || oldgenids[0] == oldauxids[1]
+	      || scan_ids (&oldauxids[2], noldauxids - 2, oldauxids[1]))
+	    {
+	      _auxids = MALLOC_IDS (_nauxids = noldauxids);
+	      COPY_IDS (oldauxids, _auxids, _nauxids);
+	      if (noldgenids > 0)
+		_auxids[1] = oldgenids[0];
+	    }
+	  else 
+	    {
+	      _auxids = MALLOC_IDS (_nauxids = noldauxids + 1);
+	      _auxids[0] = oldauxids[0];
+	      _auxids[1] = oldgenids[0];
+	      COPY_IDS (&oldauxids[1], &_auxids[2], noldauxids - 1);
+	    }
 	}
+
+      /* Whew.  Now set the new id. */
+      _ngenids = noldgenids ?: 1;
+      _genids = malloc (_ngenids * sizeof (uid_t));
+
+      if (! _genids)
+	{
+	  free (_auxids);
+	  return ENOMEM;
+	}
+
+      _genids[0] = id;
+      if (noldgenids > 1)
+	COPY_IDS (&oldgenids[1], &_genids[1], _ngenids - 1);
+
+      if (secure && !*secure
+	  && !scan_ids (oldgenids, noldgenids, id)
+	  && !scan_ids (oldauxids, noldauxids, id))
+	*secure = 1;
     }
   else
+    /* Not SETID; just copy the old values.  */
     {
-      /* Just like above, but in the shift case note
-	 that the new (*auxids)[2] shouldn't be allowed
-	 to needlessly duplicate something further on. */
-      if (oldgenids[0] == oldauxids[1]
-	  || scan_ids (&oldauxids[2], *nauxids - 2, oldauxids[1]))
+      _ngenids = noldgenids;
+      _nauxids = noldauxids;
+      _genids = MALLOC_IDS (_ngenids);
+      _auxids = malloc (_nauxids * sizeof (uid_t));
+
+      if (! _auxids)
 	{
-	  *auxids = MALLOC (*nauxids = noldauxids);
-	  bcopy (oldauxids, *auxids, *nauxids);
-	  (*auxids)[1] = oldgenids[0];
+	  free (_genids);
+	  return ENOMEM;
 	}
-      else 
-	{
-	  *auxids = MALLOC (*nauxids = noldauxids + 1);
-	  (*auxids)[0] = oldauxids[0];
-	  (*auxids)[1] = oldgenids[0];
-	  bcopy (&oldauxids[1], &(*auxids)[2], noldauxids - 1);
-	}
+
+      COPY_IDS (oldgenids, _genids, _ngenids);
+      COPY_IDS (oldauxids, _auxids, _nauxids);
     }
 
-  /* Whew.  Now set the new id. */
-  *ngenids = noldgenids ?: 1;
-  *genids = malloc (*ngenids);
-
-  if (! *genids)
-    {
-      free (*auxids);
-      return ENOMEM;
-    }
-
-  (*genids)[0] = id;
-  if (noldgenids > 0)
-    bcopy (&oldgenids[1], &(*genids)[1], *ngenids - 1);
-
-  if (secure && !*secure
-      && !scan_ids (oldgenids, noldgenids, id)
-      && !scan_ids (oldauxids, noldauxids, id))
-    *secure = 1;
+  /* Finally we can zot the return params.  */
+  *genids = _genids;
+  *ngenids = _ngenids;
+  *auxids = _auxids;
+  *nauxids = _nauxids;
 
   return 0;
 }
@@ -199,10 +244,10 @@ diskfs_S_file_exec (struct protid *cred,
       int noldauxgids = 20, noldgengids = 20;
 
       /* These describe the auth port we are trying to create. */
-      uid_t *auxuids, *genuids;
-      gid_t *auxgids, *gengids;
-      int nauxuids, ngenuids;
-      int nauxgids, ngengids;
+      uid_t *auxuids = 0, *genuids = 0;
+      gid_t *auxgids = 0, *gengids = 0;
+      int nauxuids = 0, ngenuids = 0;
+      int nauxgids = 0, ngengids = 0;
       auth_t newauth;
 
       int i;
@@ -261,15 +306,14 @@ diskfs_S_file_exec (struct protid *cred,
 	 will be wrong.  No matter; we will repeat these checks
 	 using secure id sets later if the port turns out to be 
 	 bogus.  */
-      if (suid)
-	err = setid (np->dn_stat.st_uid, &secure,
-		     oldgenuids, noldauxuids, oldauxuids, noldauxuids,
-		     &genuids, &ngenuids, &auxuids, &nauxuids);
-      if (sgid && !err)
-	err = setid (np->dn_stat.st_gid, &secure,
-		     oldgengids, noldauxgids, oldauxgids, noldauxgids,
-		     &gengids, &ngengids, &auxgids, &nauxgids);
 
+      err = setid (suid, np->dn_stat.st_uid, &secure,
+		   oldgenuids, noldgenuids, oldauxuids, noldauxuids,
+		   &genuids, &ngenuids, &auxuids, &nauxuids);
+      if (! err)
+	err = setid (sgid, np->dn_stat.st_gid, &secure,
+		     oldgengids, noldgengids, oldauxgids, noldauxgids,
+		     &gengids, &ngengids, &auxgids, &nauxgids);
       if (scan_ids (oldgenuids, noldgenuids, 0) 
 	  || scan_ids (oldauxuids, noldauxuids, 0))
 	secure = 0;		/* If we're root, we don't have to be. */
@@ -289,7 +333,7 @@ diskfs_S_file_exec (struct protid *cred,
 		       noldauxgids * (sizeof (gid_t)));
 
       if (err)
-	goto abandon_suid;	/* setid() failed.  */
+	goto free_abandon_suid;
 
 
       /* STEP 3: Attempt to create this new auth handle. */
@@ -306,21 +350,19 @@ diskfs_S_file_exec (struct protid *cred,
 	   execed (which we know is good), as the effective ids, and assume
 	   no aux ids.  */
 	{
-	  /* Free our first attempts.  */
-	  free (genuids);
-	  free (auxuids);
-	  free (gengids);
-	  free (auxgids);
+	  /* Free our first attempts.  [Reinit to 0, so we can free them]  */
+	  free (genuids); genuids = 0;
+	  free (auxuids); auxuids = 0;
+	  free (gengids); gengids = 0;
+	  free (auxgids); auxgids = 0;
 
-	  if (suid)
-	    err = setid (np->dn_stat.st_uid, &secure,
-			 cred->uids, cred->nuids, 0, 0,
-			 &genuids, &ngenuids, &auxuids, &nauxuids);
-	  if (sgid && !err)
-	    err = setid (np->dn_stat.st_gid, &secure,
+	  err = setid (suid, np->dn_stat.st_uid, &secure,
+		       cred->uids, cred->nuids, 0, 0,
+		       &genuids, &ngenuids, &auxuids, &nauxuids);
+	  if (! err)
+	    err = setid (sgid, np->dn_stat.st_gid, &secure,
 			 cred->gids, cred->ngids, 0, 0,
 			 &gengids, &ngengids, &auxgids, &nauxgids);
-
 	  if (diskfs_isuid (0, cred))
 	    secure = 0;		/* If we're root, we don't have to be. */
 
