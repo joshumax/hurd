@@ -43,6 +43,8 @@ error_t diskfs_dirrewrite (struct node *dp,
   if (err)
     return err;
   
+  if (dp->dirmod_reqs)
+    diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, name);
   diskfs_enter_cache (dp, np, name);
   return 0;
 }
