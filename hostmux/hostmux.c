@@ -74,7 +74,7 @@ main (int argc, char **argv)
   struct argp argp = { options, parse_opt, args_doc, doc };
 
   /* Parse our command line arguments.  */
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
     
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
