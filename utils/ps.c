@@ -101,7 +101,7 @@ separated lists.  The System V options -u and -g may be accessed with -o and \
 --pgrp.";
 
 int 
-parse_enum(char *arg, char **choices, char *kind, bool allow_mismatches)
+parse_enum(char *arg, char **choices, char *kind, int allow_mismatches)
 {
   int arglen = strlen(arg);
   char **p = choices;
@@ -167,14 +167,14 @@ char *fmts[] =
 };
 
 /* Augment the standard specs with our own abbrevs.  */
-static struct ps_fmt_spec
+static const struct ps_fmt_spec
 spec_abbrevs[] = {
   {"TT=tty"}, {"SC=susp"}, {"STAT=state"}, {"COMMAND=args"}, {"SL=sleep"},
   {"TH=nth"}, {"NI=bpri"}, {"SZ=vsize"}, {"RSS=rsize"},
   {"MSGI=msgin"}, {"MSGO=msgout"},
   {0}
 };
-static const struct ps_fmt_specs ps_specs =
+static struct ps_fmt_specs ps_specs =
   { spec_abbrevs, &ps_std_fmt_specs };
 
 /* ---------------------------------------------------------------- */
@@ -321,7 +321,7 @@ lookup_user(char *name)
 
 extern void
 psout (struct proc_stat_list *procs,
-       const char *fmt_string, const ps_fmt_specs_t specs,
+       const char *fmt_string, const struct ps_fmt_specs *specs,
        const char *sort_key_name, int sort_reverse,
        int output_width, int print_heading,
        int squash_bogus_fields, int squash_nominal_fields);
@@ -338,20 +338,20 @@ main(int argc, char *argv[])
   struct idvec *only_uids = make_idvec (), *not_uids = make_idvec ();
   char *tty_names = 0;
   unsigned num_tty_names = 0;
-  proc_stat_list_t procset;
-  ps_context_t context;
+  struct proc_stat_list *procset;
+  struct ps_context *context;
   char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
     FILTER_OWNER | FILTER_NOT_LEADER | FILTER_UNORPHANED | FILTER_PARENTED;
-  bool sort_reverse = FALSE, print_heading = TRUE;
-  bool squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
-  bool show_threads = FALSE, no_msg_port = FALSE;
+  int sort_reverse = FALSE, print_heading = TRUE;
+  int squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
+  int show_threads = FALSE, no_msg_port = FALSE;
   int output_width = -1;	/* Desired max output size.  */
 
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
     {
-      proc_stat_t ps;
+      struct proc_stat *ps;
 
       err = proc_stat_list_add_pid (procset, pid, &ps);
       if (err)
@@ -409,7 +409,7 @@ main(int argc, char *argv[])
     }
   /* Returns TRUE if PS is owned by any of the users in ONLY_UIDS, and none
      in NOT_UIDS.  */
-  bool proc_stat_owner_ok(struct proc_stat *ps)
+  int proc_stat_owner_ok(struct proc_stat *ps)
     {
       int uid = proc_stat_owner_uid (ps);
       if (only_uids->num > 0 && !idvec_contains (only_uids, uid))
@@ -427,17 +427,17 @@ main(int argc, char *argv[])
       if (err)
 	error (8, err, "%s: Can't add tty", tty_name);
     }
-  bool proc_stat_has_ctty(struct proc_stat *ps)
+  int proc_stat_has_ctty(struct proc_stat *ps)
     {
       if (proc_stat_has(ps, PSTAT_TTY))
 	/* Only match processes whose tty we can figure out.  */
 	{
-	  ps_tty_t tty = proc_stat_tty(ps);
+	  struct ps_tty *tty = proc_stat_tty (ps);
 	  if (tty)
 	    {
 	      char *try = 0;
-	      char *name = ps_tty_name(tty);
-	      char *short_name = ps_tty_short_name(tty);
+	      const char *name = ps_tty_name (tty);
+	      const char *short_name = ps_tty_short_name(tty);
 
 	      while (try = argz_next (tty_names, num_tty_names, try))
 		if ((name && strcmp (try, name) == 0)
@@ -449,20 +449,20 @@ main(int argc, char *argv[])
     }
 
   /* Returns the name of the current controlling terminal.  */
-  static char *current_tty_name()
+  static const char *current_tty_name()
     {
       error_t err;
-      ps_tty_t tty;
+      struct ps_tty *tty;
       mach_port_t cttyid = getcttyid();
 
       if (cttyid == MACH_PORT_NULL)
 	error(2, 0, "No controlling terminal");
 
-      err = ps_context_find_tty_by_cttyid(context, cttyid, &tty);
+      err = ps_context_find_tty_by_cttyid (context, cttyid, &tty);
       if (err)
 	error(2, err, "Can't get controlling terminal");
 
-      return ps_tty_name(tty);
+      return ps_tty_name (tty);
     }
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -539,7 +539,7 @@ main(int argc, char *argv[])
 
   proc_server = getproc();
 
-  err = ps_context_create(proc_server, &context);
+  err = ps_context_create (proc_server, &context);
   if (err)
     error(1, err, "ps_context_create");
 
@@ -592,11 +592,11 @@ main(int argc, char *argv[])
       proc_stat_list_filter1(procset, proc_stat_has_ctty, 0, FALSE);
     }
   if (filter_mask & FILTER_NOT_LEADER)
-    proc_stat_list_filter(procset, &ps_not_leader_filter, FALSE);
+    proc_stat_list_filter (procset, &ps_not_leader_filter, FALSE);
   if (filter_mask & FILTER_UNORPHANED)
-    proc_stat_list_filter(procset, &ps_unorphaned_filter, FALSE);
+    proc_stat_list_filter (procset, &ps_unorphaned_filter, FALSE);
   if (filter_mask & FILTER_PARENTED)
-    proc_stat_list_filter(procset, &ps_parent_filter, FALSE);
+    proc_stat_list_filter (procset, &ps_parent_filter, FALSE);
 
   if (show_threads)
     proc_stat_list_add_threads(procset);
@@ -607,5 +607,5 @@ main(int argc, char *argv[])
 	 output_width, print_heading,
 	 squash_bogus_fields, squash_nominal_fields);
 
-  exit(0);
+  exit (0);
 }
