@@ -94,6 +94,14 @@ struct w_hook
 #define W_PSTAT_LOGIN	(PSTAT_USER_BASE << 3)
 
 static ps_flags_t
+w_deps (ps_flags_t flags)
+{
+  if (flags & W_PSTAT_IDLE)
+    flags |= PSTAT_TTY;
+  return flags;
+}
+
+static ps_flags_t
 w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 {
   struct w_hook *hook = ps->hook;
@@ -122,24 +130,33 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	      if (sd)
 		*sd = '\0';
 	    }
-
-	  have |= W_PSTAT_HOST;
 	}
+      have |= W_PSTAT_HOST;
     }
 
   if (need & W_PSTAT_IDLE)
-    {
-      struct stat stat;
-      struct ps_tty *tty = ps->tty;
+    if (have & PSTAT_TTY)
+      {
+	struct stat stat;
+	struct ps_tty *tty = ps->tty;
 
-      hook->idle.tv_usec = 0;
-      if (io_stat (tty->port, &stat) == 0)
-	{
-	  hook->idle.tv_sec = now.tv_sec - stat.st_mtime;
-	  if (hook->idle.tv_sec > 0)
+	hook->idle.tv_usec = 0;
+	if (! tty)
+	  {
+	    hook->idle.tv_sec = 0;
 	    have |= W_PSTAT_IDLE;
-	}
-    }
+	  }
+	else
+	  {
+	    if (io_stat (tty->port, &stat) == 0)
+	      {
+		hook->idle.tv_sec = now.tv_sec - stat.st_mtime;
+		have |= W_PSTAT_IDLE;
+	      }
+	  }
+      }
+    else if (ps->inapp & PSTAT_TTY)
+      ps->inapp |= W_PSTAT_IDLE;
 
   if (need & W_PSTAT_USER)
     if (ps_user_uname_create (hook->utmp.ut_name, &hook->user) == 0)
@@ -219,7 +236,7 @@ const struct ps_fmt_spec _w_specs[] =
   {"Name", 0, 20,  -1,0, &w_user_getter, ps_emit_user_name,ps_cmp_strings},
   {"Login","Login@", -7,  -1,0,&w_login_getter,ps_emit_past_time,ps_cmp_times},
   {"From", 0, 16,  -1,0, &w_host_getter, ps_emit_string, ps_cmp_strings},
-  {"Idle", 0, -5,  -1,0, &w_idle_getter, ps_emit_minutes,ps_cmp_times},
+  {"Idle", 0, -5,  -1,PS_FMT_FIELD_COLON_MOD, &w_idle_getter, ps_emit_minutes,ps_cmp_times},
   {"What=args"},
   {0}
 };
@@ -381,7 +398,7 @@ main(int argc, char *argv[])
   unsigned num_tty_names = 0;
   struct idvec *only_uids = make_idvec (), *not_uids = make_idvec ();
 #endif
-  struct ps_user_hooks ps_hooks = { 0, w_fetch, w_cleanup };
+  struct ps_user_hooks ps_hooks = { w_deps, w_fetch, w_cleanup };
 
   int has_hook (struct proc_stat *ps) { return ps->hook != 0; }
 
