@@ -66,7 +66,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
       return;
     }
 
-  ext2_debug ("freeing block %lu[%lu]\n", block, count);
+  ext2_debug ("freeing block %lu[%lu]", block, count);
 
   block_group = (block - sblock->s_first_data_block) /
     sblock->s_blocks_per_group;
@@ -144,7 +144,7 @@ ext2_new_block (unsigned long goal,
     }
 #endif
 
-  ext2_debug ("goal=%lu.\n", goal);
+  ext2_debug ("goal=%lu", goal);
 
 repeat:
   /*
@@ -169,7 +169,7 @@ repeat:
 	{
 #ifdef EXT2FS_DEBUG
 	  goal_hits++;
-	  ext2_debug ("goal bit allocated.\n");
+	  ext2_debug ("goal bit allocated!");
 #endif
 	  goto got_block;
 	}
@@ -197,7 +197,7 @@ repeat:
 	    }
 	}
 
-      ext2_debug ("Bit not found near goal\n");
+      ext2_debug ("Bit not found near goal");
 
       /*
        * There has been no free block found in the near vicinity
@@ -226,7 +226,7 @@ repeat:
 	}
     }
 
-  ext2_debug ("Bit not found in block group %d.\n", i);
+  ext2_debug ("Bit not found in block group %d", i);
 
   /*
      * Now search the rest of the groups.  We assume that 
@@ -272,7 +272,7 @@ search_back:
 
 got_block:
 
-  ext2_debug ("using block group %d(%d)\n", i, gdp->bg_free_blocks_count);
+  ext2_debug ("using block group %d (%d)", i, gdp->bg_free_blocks_count);
 
   tmp = j + i * sblock->s_blocks_per_group + sblock->s_first_data_block;
 
@@ -289,7 +289,7 @@ got_block:
       goto repeat;
     }
 
-  ext2_debug ("found bit %d\n", j);
+  ext2_debug ("found bit %d", j);
 
   /*
      * Do block preallocation now if required.
@@ -308,7 +308,7 @@ got_block:
 	}
       gdp->bg_free_blocks_count -= *prealloc_count;
       sblock->s_free_blocks_count -= *prealloc_count;
-      ext2_debug ("Preallocated a further %lu bits.\n",
+      ext2_debug ("Preallocated a further %lu bits",
 		  *prealloc_count);
     }
 #endif
@@ -329,8 +329,8 @@ got_block:
   bh = bptr (j);
   memset (bh, 0, block_size);
 
-  ext2_debug ("allocating block %d. "
-	      "Goal hits %d of %d.\n", j, goal_hits, goal_attempts);
+  ext2_debug ("allocating block %d; goal hits %d of %d",
+	      j, goal_hits, goal_attempts);
 
   gdp->bg_free_blocks_count--;
   record_global_poke (gdp);
@@ -363,11 +363,11 @@ ext2_count_free_blocks ()
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
       x = count_free (bptr (gdp->bg_block_bitmap), block_size);
-      printf ("group %d: stored = %d, counted = %lu\n",
+      printf ("group %d: stored = %d, counted = %lu",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
     }
-  printf ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
+  printf ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu",
 	  sblock->s_free_blocks_count, desc_count, bitmap_count);
   spin_unlock (&global_lock);
   return bitmap_count;
