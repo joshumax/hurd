@@ -722,7 +722,11 @@ struct proto udp_prot = {
 	NULL,
 	udp_rcv,
 	datagram_select,
+#ifdef _HURD_
+	NULL,
+#else
 	udp_ioctl,
+#endif
 	NULL,
 	NULL,
 	ip_setsockopt,
