@@ -301,9 +301,11 @@ S_proc_dostop (struct proc *p,
   unsigned int nthreads = 2, i;
   error_t err;
 
-  if (err = task_suspend (p->p_task))
+  err = task_suspend (p->p_task);
+  if (err)
     return err;
-  if (err = task_threads (p->p_task, &threads, &nthreads))
+  err = task_threads (p->p_task, &threads, &nthreads);
+  if (err)
     return err;
   for (i = 0; i < nthreads; i++)
     {
@@ -314,7 +316,8 @@ S_proc_dostop (struct proc *p,
   if (threads != threadbuf)
     vm_deallocate (mach_task_self (), (vm_address_t) threads,
 		   nthreads * sizeof (thread_t));
-  if (err = task_resume (p->p_task))
+  err = task_resume (p->p_task);
+  if (err)
     return err;
 
   mach_port_deallocate (mach_task_self (), contthread);
