@@ -69,13 +69,17 @@ struct store
   /* Log_2 (VM_PAGE_SIZE / BLOCK_SIZE); only valid if LOG2_BLOCK_SIZE is.  */
   int log2_blocks_per_page;
 
+  /* Random flags.  */
+  int flags;
+
   void *misc;
+  size_t misc_len;
 
   struct store_meths *meths;
 
   void *hook;			/* Type specific noise.  */
 };
-
+
 typedef error_t (*store_write_meth_t)(struct store *store,
 				      off_t addr, size_t index,
 				      char *buf, mach_msg_type_number_t len,
@@ -96,6 +100,12 @@ struct store_meths
 
   /* Called just before deallocating STORE.  */
   void (*cleanup) (struct store *store);
+
+  /* To the lengths of each for the four arrays in ENC, add how much STORE
+     would need to be encoded.  */
+  error_t (*allocate_encoding)(struct store *store, struct store_enc *enc);
+  /* Append the encoding for STORE to ENC.  */
+  error_t (*encode) (struct store *store, struct store_enc *enc);
 };
 
 /* Return a new store in STORE, which refers to the storage underlying
@@ -216,6 +226,7 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
       (BS is the LCM of its children; LEN is the minimum of theirs)
 
   For ileave, concat, and layer, the children are encoded following the parent.
+  The first int must always be TY.
 
   key: TY = type code, FL = flags, BS = block size, NR = num runs,
        NL = name len, ML = misc len, NC = num children,
@@ -223,21 +234,59 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
        LEN = run length (blocks), OFFS = run offset (blocks),
  */
 
-/* Encode STORE into the given arrays, suitable for passing back using
-   file_get_storage_info.  */
-error_t store_encode (const struct store *store,
-		      mach_port_t **ports, mach_msg_type_number_t *ports_len,
-		      int **ints, mach_msg_type_number_t *ints_len,
-		      off_t **offsets, mach_msg_type_number_t *offsets_len,
-		      char **data, mach_msg_type_number_t *data_len);
+/* Used to hold the various bits that make up the representation of a store
+   for transmission via rpc.  */
+struct store_enc
+{
+  /* Each of the four vectors used.  All are vm_allocated.  */
+  mach_port_t *ports;
+  int *ints;
+  off_t *offsets;
+  char *data;
 
-/* Decode the given arrays, as fetched using file_get_storage_info, and
-   either create a new store from them, which return in STORE, or return an
-   error.  */
-error_t store_decode (mach_port_t *ports, mach_msg_type_number_t ports_len,
-		      int *ints, mach_msg_type_number_t ints_len,
-		      off_t *offsets, mach_msg_type_number_t offsets_len,
-		      char *data, mach_msg_type_number_t data_len,
-		      struct store **store);
+  /* The sizes of the vectors.  */
+  mach_msg_type_number_t ports_len, ints_len, offsets_len, data_len;
+
+  /* Offsets into the above vectors, for an encoding/decoding in progress. */
+  size_t cur_port, cur_int, cur_offset, cur_data;
+
+  /* Each of these is an `initial' version of the associated vector.  When
+     store_enc_dealloc is called, any vector that is the same as its `init_'
+     version won't be deallocated.  */
+  mach_port_t *init_ports;
+  int *init_ints;
+  off_t *init_offsets;
+  char *init_data;
+};
+
+/* Encode STORE into ENC, which should have been prepared with
+   store_enc_init, or return an error.  The contents of ENC may then be
+   return as the value of file_get_storage_info; if for some reason this
+   can't be done, store_enc_dealloc may be used to deallocate the mmemory
+   used by the unsent vectors.  */
+error_t store_encode (const struct store *store, struct store_enc *enc);
+
+/* Decode ENC, either returning a new store in STORE, or an error.  If
+   nothing else is to be done with ENC, its contents may then be freed using
+   store_enc_dealloc.  */
+error_t store_decode (struct store_enc *enc, struct store *store);
+
+/* Initialize ENC.  The given vector and sizes will be used for the encoding
+   if they are big enough (otherwise new ones will be automatically
+   allocated).  */
+error_t store_enc_init (struct store_enc *enc,
+			mach_port_t *ports, mach_msg_type_number_t ports_len,
+			int *ints, mach_msg_type_number_t ints_len,
+			off_t *offsets, mach_msg_type_number_t offsets_len,
+			char *data, mach_msg_type_number_t data_len);
+
+/* Deallocate storage used by the fields in ENC (but nothing is done with ENC
+   itself).  */
+void store_enc_dealloc (struct store_enc *enc);
+
+/* Default encoding used for most leaf store types.  */
+error_t store_default_leaf_allocate_encoding (struct store *store,
+					      struct store_enc *enc);
+error_t store_default_leaf_encode (struct store *store, struct store_enc *enc);
 
 #endif /* __STORE_H__ */
