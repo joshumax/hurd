@@ -31,6 +31,30 @@ _store_derive (struct store *store)
   unsigned runs_len = store->runs_len;
   size_t bsize = store->block_size;
 
+  /* BLOCK & SIZE */
   store->blocks = 0;
-  store->
+  store->size = 0;
+
+  while (runs_len > 0)
+    {
+      store->size += bsize * runs[1];
+      if (runs[0] >= 0)
+	store->blocks += runs[1];
+      runs += 2;
+      runs_len--;
+    }
+
+  /* LOG2_BLOCK_SIZE */
+  store->log2_block_size = 0;
+  while ((1 << store->log2_block_size) < bsize)
+    store->log2_block_size++;
+  if ((1 << store->log2_block_size) != bsize)
+    store->log2_block_size = 0;
+
+  /* LOG2_BLOCKS_PER_PAGE */
+  store->log2_blocks_per_page = 0;
+  while ((bsize << store->log2_blocks_per_page) < vm_page_size)
+    store->log2_blocks_per_page++;
+  if ((bsize << store->log2_blocks_per_page) != vm_page_size)
+    store->log2_blocks_per_page = 0;
 }
