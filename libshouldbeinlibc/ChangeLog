@@ -1,3 +1,10 @@
+Mon Oct 14 18:06:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_parse): Don't consume non-option arguments
+	that aren't recognized by any parser.
+	Allocate enough space for TOP_ARGP's parent list to include the
+	version parser.
+
 Thu Sep 19 17:48:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsysops.c (fsys_update): Renamed from fsys_remount.
