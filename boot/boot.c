@@ -1023,6 +1023,7 @@ read_reply ()
   if (!qrhead)
     {
       spin_unlock (&queuelock);
+      spin_unlock (&readlock);
       return;
     }
 
@@ -1594,6 +1595,7 @@ do_mach_notify_no_senders (mach_port_t notify,
       if (mscount == console_mscount)
 	{
 	  restore_termstate ();
+write (2, "bye\n", 4);
 	  uxexit (0);
 	}
       else
