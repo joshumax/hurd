@@ -3,6 +3,11 @@ Thu Apr 10 11:53:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* boot.c: Don't include varargs.h.
  	(set_mach_stack_args): Use stdarg instead of vararg.
 
+Mon Mar 17 13:12:45 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* boot_script.c (boot_script_parse_line): Don't print gratuitous
+	output noise.
+
 Thu Sep 12 16:28:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
