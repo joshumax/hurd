@@ -1,3 +1,6 @@
+#ifndef _HACK_ASM_SYSTEM_H_
+#define _HACK_ASM_SYSTEM_H_
+
 #include <cthreads.h>
 
 /* This lock is held when "interrupts" are disabled. */
@@ -42,7 +45,4 @@ sti ()
   mutex_unlock (&global_interrupt_lock);
 }
 
-
-
-
-  
+#endif
