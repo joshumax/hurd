@@ -37,10 +37,10 @@ $(hurdinst)/lib/libfshelp.a: libfshelp.a
 	cp libfshelp.a $@
 	$(RANLIB) $@
 
-$(headers)/hurd/fshelp.h: fshelp.h
+$(includedir)/hurd/fshelp.h: fshelp.h
 	cp $< $@
 
-$(OBJS): fshelp.h $(headers)/hurd/ports.h
+$(OBJS): fshelp.h $(includedir)/hurd/ports.h
 handle-startup.o init-trans.o start-trans.o transboot-clean.o: trans.h
 kill-trans.o trans-iter.o: trans.h
 
@@ -52,4 +52,4 @@ lock-acquire.o lock-init.o: locks.h
 clean:
 	rm -f libfshelp.a *.o
 
-install: $(hurdinst)/lib/libfshelp.a $(headers)/hurd/fshelp.h
+install: $(hurdinst)/lib/libfshelp.a $(includedir)/hurd/fshelp.h
