@@ -93,6 +93,8 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   else
     doerror = 0;
 
+  *pm_entry |= PM_INCORE;
+
   if (PM_NEXTERROR (*pm_entry) != PAGE_NOERR && (access & VM_PROT_WRITE))
     {
       memory_object_data_error (control, offset, length, 
