@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -21,6 +21,8 @@ makemode := server
 SRCS = init.c
 OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o msgServer.o
 target = init
+
+init: $(OBJS) ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
 
