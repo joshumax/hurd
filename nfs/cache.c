@@ -1,4 +1,4 @@
-/* 
+/* Node cache management for NFS client implementation
    Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -22,10 +22,11 @@
 
 #include <string.h>
 
+/* Hash table containing all the nodes currently active. */
 #define CACHESIZE 512
-
 static struct node *nodehash [CACHESIZE];
 
+/* Compute and return a hash key for NFS file handle FHANDLE. */
 static inline int
 hash (void *fhandle)
 {
@@ -38,6 +39,10 @@ hash (void *fhandle)
   return h % CACHESIZE;
 }
 
+/* Lookup the specified file handle FHANDLE in the hash table.  If it
+   is not present, initialize a new node structure and insert it into
+   the hash table.  Whichever course, a new reference is generated and
+   the node is returned. */
 struct node *
 lookup_fhandle (void *fhandle)
 {
@@ -61,6 +66,8 @@ lookup_fhandle (void *fhandle)
   bcopy (fhandle, nn->handle, NFS_FHSIZE);
   nn->stat_updated = 0;
   nn->dtrans = NOT_POSSIBLE;
+  nn->dead_dir = 0;
+  nn->dead_name = 0;
   
   np = netfs_make_node (nn);
   mutex_lock (&np->lock);
@@ -68,12 +75,16 @@ lookup_fhandle (void *fhandle)
   if (nn->hnext)
     nn->hnext->nn->hprevp = &nn->hnext;
   nn->hprevp = &nodehash[h];
+  nodehash[h] = np;
 
   spin_unlock (&netfs_node_refcnt_lock);
   
   return np;
 }
 
+/* Called by libnetfs when node NP has no more references.  (See
+   <hurd/libnetfs.h> for details.  Just clear local state and remove
+   from the hash table. */
 void
 netfs_node_norefs (struct node *np)
 {
@@ -112,6 +123,8 @@ netfs_node_norefs (struct node *np)
     }
 }
 
+/* Change the file handle used for node NP to be HANDLE.  Make sure the
+   hash table stays up to date. */
 void
 recache_handle (struct node *np, void *handle)
 {

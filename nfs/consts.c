@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/* Definition of constants required by libnetfs
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,4 +20,6 @@
 
 #include "nfs.h"
 
+/* Maximum number of times to walk through symlinks before returning
+   ELOOP.  See <hurd/libnetfs.h> for details. */
 int netfs_maxsymlinks = 8;
