@@ -211,7 +211,8 @@ struct bottomhalf ptyio_bottom =
 
 /* Validation has already been done by trivfs_S_io_read. */
 error_t
-pty_io_read (char **data,
+pty_io_read (struct trivfs_protid *cred,
+	     char **data,
 	     mach_msg_type_number_t *datalen,
 	     mach_msg_type_number_t amount)
 {
@@ -219,6 +220,8 @@ pty_io_read (char **data,
   
   mutex_lock (&global_lock);
   
+  /* Validate CRED.  XXX */
+
   while (!control_byte
 	 && (!qsize (outputq) || (termflags & USER_OUTPUT_SUSP)))
     {
