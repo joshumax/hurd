@@ -1,3 +1,8 @@
+1999-06-21  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* login.c (main): For no-uids shell, default SH_ARG0 to informative
+	value.  Use asprintf to construct it.
+
 1999-06-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ps.c (options): Doc fix.
