@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,5 +27,6 @@ trivfs_handle_port (mach_port_t realnode,
   cntl = ports_allocate_port (sizeof (struct trivfs_control), cntltype);
   cntl->underlying = realnode;
   cntl->protidtypes = protidtype;
+  mutex_init (&cntl->lock);
   return ports_get_right (cntl);
 }
