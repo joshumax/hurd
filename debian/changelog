@@ -1,3 +1,13 @@
+hurd (20011105-1) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual (well, the intention was there :).
+    Change terminal type to mach-color.
+    Compiled with -O2 rather than -O3.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon,  5 Nov 2001 00:00:26 +0100
+
 hurd (20011016-1) unstable; urgency=low
 
   * New snapshot from CVS.

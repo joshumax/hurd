@@ -1,3 +1,7 @@
+2001-11-05  Marcus Brinkmann  <marcus@gnu.org>
+
+	* debian/changelog: Update for new Debian package.
+
 2001-10-16  Marcus Brinkmann  <marcus@gnu.org>
 
 	* debian/changelog: Update for new Debian package.
