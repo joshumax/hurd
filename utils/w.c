@@ -454,7 +454,7 @@ main(int argc, char *argv[])
   if (show_entries)
     psout (procs, fmt_string, 0, &w_specs, sort_key_name, sort_reverse,
 	   output_width, print_heading,
-	   squash_bogus_fields, squash_nominal_fields);
+	   squash_bogus_fields, squash_nominal_fields, 0);
 
   exit(0);
 }
