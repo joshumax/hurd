@@ -27,7 +27,6 @@
 
 char *ufs_version = "0.0 pre-alpha";
 
-static char **save_argv;
 
 /* Parse the arguments for ufs when started as a translator. */
 char *
@@ -98,8 +97,6 @@ main (int argc, char **argv)
   error_t err;
   int sizes[DEV_GET_SIZE_COUNT];
   u_int sizescnt = 2;
- 
-  save_argv = argv;
 
   mutex_init (&printf_lock);	/* XXX */
 
@@ -205,7 +202,7 @@ main (int argc, char **argv)
 
   if (bootstrap == MACH_PORT_NULL)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
-    diskfs_start_bootstrap ();
+    diskfs_start_bootstrap (argv);
   
   /* Now become a generic request thread.  */
   diskfs_main_request_loop ();
@@ -218,8 +215,7 @@ diskfs_init_completed ()
   mach_port_t proc, startup;
   error_t err;
 
-  _hurd_proc_init (save_argv);
-  proc = getproc();
+  proc = getproc ();
   proc_register_version (proc, diskfs_host_priv, "ufs", HURD_RELEASE,
 			 ufs_version);
   err = proc_getmsgport (proc, 1, &startup);
