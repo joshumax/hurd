@@ -87,7 +87,8 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
   mutex_lock (&debug_lock);
   if (debug_stream)
     {
-      fprintf (debug_stream, "%u.%s%s\n", (unsigned)conn->hook, type_str, txt);
+      fprintf (debug_stream, "%u.%s%s\n",
+	       (unsigned)(uintptr_t)conn->hook, type_str, txt);
       fflush (debug_stream);
     }
   mutex_unlock (&debug_lock);

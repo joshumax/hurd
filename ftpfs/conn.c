@@ -1,6 +1,6 @@
 /* Ftp connection management
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997,2002 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -19,11 +19,12 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <assert.h>
+#include <stdint.h>
 
 #include "ftpfs.h"
 
 /* A particular connection.  */
-struct ftpfs_conn 
+struct ftpfs_conn
 {
   struct ftp_conn *conn;
   struct ftpfs_conn *next;
@@ -69,7 +70,7 @@ ftpfs_get_ftp_conn (struct ftpfs *fs, struct ftp_conn **conn)
 	}
 
       /* For debugging purposes, give each connection a unique integer id.  */
-      fsc->conn->hook = (void *)conn_id++;
+      fsc->conn->hook = (void *)(uintptr_t)conn_id++;
     }
 
   spin_lock (&fs->conn_lock);
