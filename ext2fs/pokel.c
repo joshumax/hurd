@@ -56,6 +56,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       pl->next = pokel->pokes;
       pokel->pokes = pl;
     }
+ printf ("Added %d[%d] to pokel 0x%x\n", offset, length, pokel);
 
   spin_unlock (&pokel->lock);
 }
@@ -70,6 +71,7 @@ pokel_sync (struct pokel *pokel, int wait)
 
   for (pl = pokel->pokes; pl; pl = next)
     {
+ printf ("Syncing %d[%d] from pokel 0x%x\n", pl->offset, pl->length, pokel);
       pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
       next = pl->next;
       pl->next = pokel->free_pokes;
