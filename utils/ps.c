@@ -80,7 +80,13 @@ static const struct argp_option options[] =
   {"sort",       's',	  "FIELD",0, "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
   {"threads",    'T',     0,      0,  "Show the threads for each process"},
-  {"top",	 'h',     "ENTRIES", OA, "Show the top ENTRIES processes (default 10)"},
+  {"top",	 'h',     "ENTRIES", OA, "Show the top ENTRIES processes"
+                                      " (default 10), or if ENTRIES is"
+                                      " negative, the bottom -ENTRIES"},
+  {"head",	 0,       0,      OPTION_ALIAS},
+  {"bottom",     'b',     "ENTRIES", OA, "Show the bottom ENTRIES processes"
+                                      " (default 10)"},
+  {"tail",	 0,       0,      OPTION_ALIAS},
   {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
                                       " terminal TTY"},
   {0,            'u',     0,      0,  "Use the `user' output-format"},
@@ -491,6 +497,7 @@ main(int argc, char *argv[])
 	case 's': sort_key_name = arg; break;
 	case 'r': sort_reverse = TRUE; break;
 	case 'h': top = arg ? atoi (arg) : 10; break;
+	case 'b': top = -(arg ? atoi (arg) : 10); break;
 	case 'F': fmt_string = arg; posix_fmt = 0; break;
 	case 'o': fmt_string = arg; posix_fmt = 1; break;
 
