@@ -144,36 +144,42 @@ argz_remove (char **argz, unsigned *argz_len, char *entry)
     }
 }
 
-/* Insert ENTRY into ARGZ & ARGZ_LEN at position N.  */
+/* Insert ENTRY into ARGZ & ARGZ_LEN before BEFORE, which should be an
+   existing entry in ARGZ; if BEFORE is NULL, ENTRY is appended to the end.
+   Since ARGZ's first entry is the same as ARGZ, argz_insert (ARGZ, ARGZ_LEN,
+   ARGZ, ENTRY) will insert ENTRY at the beginning of ARGZ.  If BEFORE is not
+   in ARGZ, EINVAL is returned, else if memory can't be allocated for the new
+   ARGZ, ENOMEM is returned, else 0.  */
 error_t
-argz_insert (char **argz, unsigned *argz_len, unsigned n, char *entry)
+argz_insert (char **argz, unsigned *argz_len, char *before, char *entry)
 {
-  char *place = *argz;
-  unsigned left = *argz_len;
-  while (n > 0 && left > 0)
-    {
-      int len = strlen (place) + 1;
-      place += len;
-      left -= len;
-      n--;
-    }
-  if (left < 0 || n > 0)
+  if (! before)
+    return argz_add (argz, argz_len, entry);
+
+  if (before < *argz || before >= *argz + *argz_len)
     return EINVAL;
-  else
-    {
-      unsigned entry_len = strlen  (entry) + 1;
-      unsigned new_argz_len = *argz_len + entry_len;
-      char *new_argz = realloc (*argz, new_argz_len);
-      if (new_argz)
-	{
-	  place = new_argz + (place - *argz);
-	  bcopy (place, place + entry_len, left);
-	  bcopy (entry, place, entry_len);
-	  *argz = new_argz;
-	  *argz_len = new_argz_len;
-	  return 0;
-	}
-      else
-	return ENOMEM;
-    }
+
+  if (before > argz)
+    /* Make sure before is actually the beginning of an entry.  */
+    while (before[-1])
+      before--;
+
+  {
+    unsigned after_before = *argz_len - (before - *argz);
+    unsigned entry_len = strlen  (entry) + 1;
+    unsigned new_argz_len = *argz_len + entry_len;
+    char *new_argz = realloc (*argz, new_argz_len);
+
+    if (new_argz)
+      {
+	before = new_argz + (before - *argz);
+	bcopy (before, before + entry_len, after_before);
+	bcopy (entry, before, entry_len);
+	*argz = new_argz;
+	*argz_len = new_argz_len;
+	return 0;
+      }
+    else
+      return ENOMEM;
+  }
 }
