@@ -131,7 +131,8 @@ sock_create (struct pipe_class *pipe_class, struct sock **sock)
   new->flags = 0;
   new->write_pipe = NULL;
   new->id = next_sock_id++;
-  new->connq = NULL;
+  new->listen_queue = NULL;
+  new->connect_queue = NULL;
   new->addr = NULL;
   bzero (&new->change_time, sizeof (new->change_time));
   mutex_init (&new->lock);
