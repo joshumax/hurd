@@ -1,3 +1,12 @@
+2001-03-11  Roland McGrath  <roland@frob.com>
+
+	* Makeconf (%_S.h %Server.c): Split out an intermediate rule for the
+	cpp stage ...
+	(%.sdefsi: %.defs): ... into this rule.
+	(%_U.h %User.c): Likewise split ...
+	(%.udefsi: %.defs): ... into this rule.
+	(clean): Remove *.[su]defsi too.
+
 2000-12-28  Roland McGrath  <roland@frob.com>
 
 	* Makeconf (mach_defs_names): Remove default_pager (replaced by our

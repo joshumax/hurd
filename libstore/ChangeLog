@@ -10,6 +10,7 @@
 	* stripe.c (stripe_write): Likewise.
 	* task.c (task_write): Likewise.
 	* zero.c (zero_write): Likewise.
+	* mvol.c (zero_write): Likewise.
 
 2001-01-16  Roland McGrath  <roland@frob.com>
 
