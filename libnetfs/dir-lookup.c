@@ -113,17 +113,12 @@ netfs_S_dir_lookup (struct protid *diruser,
       
       np = 0;
 	  
-      /* Attempt a lookup on the next pathname component. */
-      error = netfs_attempt_lookup (diruser->credential, dnp, nextname, &np);
-
-      /* Implement O_EXCL flag here */
-      if (lastcomp && create && excl && (!error || error == EAGAIN))
-	error = EEXIST;
-	  
-      /* If we get an error, we're done */
-      if (error == EAGAIN)
+    retry_lookup:
+      
+      if (dnp == netfs_root_node
+	  && nextname[0] == '.' && nextname[1] == '.' && nextname[2] == '\0')
 	{
-	  /* This really means .. from root */
+	  /* Lookup of .. from root */
 	  if (diruser->po->dotdotport != MACH_PORT_NULL)
 	    {
 	      *do_retry = FS_RETRY_REAUTH;
@@ -132,28 +127,52 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      if (!lastcomp)
 		strcpy (retry_name, nextname);
 	      error = 0;
+	      mutex_unlock (&dnp->lock);
 	      goto out;
 	    }
 	  else
+	    /* We are global root */
 	    {
-	      /* We are the global root; .. from our root is
-		 just our root again. */
 	      error = 0;
 	      np = dnp;
 	      netfs_nref (np);
 	    }
 	}
-	  
+      else
+	/* Attempt a lookup on the next pathname component. */
+	error = netfs_attempt_lookup (diruser->credential, dnp, nextname, &np);
+      
+      /* At this point, DNP is unlocked */
+
+      /* Implement O_EXCL flag here */
+      if (lastcomp && create && excl && !error)
+	error = EEXIST;
+      
       /* Create the new node if necessary */
       if (lastcomp && create && error == ENOENT)
 	{
 	  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	  mode |= S_IFREG;
+	  mutex_lock (&dnp->lock);
 	  error = netfs_attempt_create_file (diruser->credential, dnp, 
 					     filename, mode, &np);
 	  newnode = 1;
+
+	  /* If someone has already created the file (between our lookup
+	     and this create) then we just got EEXIST.  If we are
+	     EXCL, that's fine; otherwise, we have to retry the lookup. */
+	  if (error == EEXIST && !excl)
+	    {
+	      mutex_lock (&dnp->lock);
+	      goto retry_lookup;
+	    }
 	}
+
+      /* All remaining errors get returned to the user */
+      if (error)
+	goto out;
 	     
+#if 0
       /* If this is translated, start the translator (if necessary)
 	 and return. */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
@@ -261,6 +280,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 		}
 	    }
 	}
+#endif
       
       netfs_validate_stat (np, diruser->credential);
       
@@ -314,24 +334,22 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      create = 0;
 	    }
 	  netfs_nput (np);
+	  mutex_lock (&dnp->lock);
 	  np = 0;
 	}
       else
 	{
-	  /* Normal nodes here */
+	  /* Normal nodes here for next filename component */
 	  filename = nextname;
-	  if (np == dnp)
-	    netfs_nrele (dnp);
-	  else
-	    netfs_nput (dnp);
+	  netfs_nrele (dnp);
 	  
-	  if (!lastcomp)
+	  if (lastcomp)
+	    dnp = 0;
+	  else
 	    {
 	      dnp = np;
 	      np = 0;
 	    }
-	  else
-	    dnp = 0;
 	}
     }
   while (filename && *filename);
@@ -363,14 +381,9 @@ netfs_S_dir_lookup (struct protid *diruser,
   
  out:
   if (np)
-    {
-      if (dnp == np)
-	netfs_nrele (np);
-      else
-	netfs_nput (np);
-    }
+    netfs_nput (np);
   if (dnp)
-    netfs_nput (dnp);
+    netfs_nrele (dnp);
   return error;
 }
 
