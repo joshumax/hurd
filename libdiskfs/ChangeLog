@@ -1,3 +1,8 @@
+1999-10-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* opts-std-startup.c (TOGGLE): Fix `off' case.
+	Reported by Kalle Olavi Niemitalo <tosi@ees2.oulu.fi>.
+
 1999-10-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-pathconf.c (diskfs_S_io_pathconf): Cap diskfs_name_max to size
