@@ -1,3 +1,7 @@
+Mon Jul 29 03:22:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (val_t): Make `long long'.
+
 Sun Jul 28 21:13:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* w.c (main): Correctly parse the -w/--width option.
