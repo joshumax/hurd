@@ -1,5 +1,9 @@
 2001-02-25  Roland McGrath  <roland@frob.com>
 
+	* Makefile (asm/checksum.h): New target.
+	(CPPFLAGS): Don't set _HURD_SYSTYPE.
+	* glue-include/asm/checksum.h: File removed.
+
 	* linux-src/include/linux/net.h (struct file): Move forward
 	decl outside of `struct socket' type definition, for gcc-2.96 syntax.
 
