@@ -24,6 +24,7 @@
 #include <linux/etherdevice.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <error.h>
 
 #include "pfinet.h"
 
@@ -187,6 +188,7 @@ setup_ethernet_device (char *name)
   u_int count;
   int net_address[2];
   int i;
+  error_t err;
 
   etherport_bucket = ports_create_bucket ();
 
@@ -223,7 +225,7 @@ setup_ethernet_device (char *name)
   err = device_get_status (ether_port, NET_STATUS,
 			   (dev_status_t) &netstat, &count);
   if (err)
-    error (2, err, "%s: Cannot get device status", name)
+    error (2, err, "%s: Cannot get device status", name);
   ether_dev.mtu = netstat.max_packet_size - ether_dev.hard_header_len;
   assert (netstat.header_format == HDR_ETHERNET);
   assert (netstat.header_size == ETH_HLEN);
@@ -233,7 +235,7 @@ setup_ethernet_device (char *name)
   assert (count * sizeof (int) >= ETH_ALEN);
   err = device_get_status (ether_port, NET_ADDRESS, net_address, &count);
   if (err)
-    error (2, err, "%s: Cannot get hardware Ethernet address", name)
+    error (2, err, "%s: Cannot get hardware Ethernet address", name);
   net_address[0] = ntohl (net_address[0]);
   net_address[1] = ntohl (net_address[1]);
   bcopy (net_address, ether_dev.dev_addr, ETH_ALEN);
