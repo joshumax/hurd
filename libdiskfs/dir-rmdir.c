@@ -76,7 +76,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       return ENOTEMPTY;
     }
 
-  error = diskfs_dirremove (dnp, ds);
+  error = diskfs_dirremove (dnp, np, name, ds);
   if (!error)
     {
       np->dn_stat.st_nlink--;
