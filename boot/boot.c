@@ -24,20 +24,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach/notify.h>
 #include <errno.h>
 #include <device/device.h>
+#include <a.out.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
 #include "device_S.h"
-
-
-/* These will prevent the Hurd-ish versions from being used */
-
-#define task_by_pid(foo) syscall (-33, foo)
-#define myfork() syscall (2)
-#define execve(foo1, foo2, foo3) syscall (59, foo1, foo2, foo3)
-#define write(foo1, foo2, foo3) syscall (4, foo1, foo2, foo3)
-#define read(foo1, foo2, foo3) syscall (3, foo1, foo2, foo3)
-#define getpid() syscall (20)
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
@@ -49,6 +40,46 @@ mach_port_t php_child_name, psmdp_child_name;
 task_t child_task;
 mach_port_t bootport;
 
+/* These will prevent the Hurd-ish versions from being used */
+
+int
+task_by_pid (int pid)
+{
+  return syscall (-33, pid);
+}
+
+int
+write (int fd,
+       void *buf,
+       int buflen)
+{
+  return syscall (4, fd, buf, buflen);
+}
+
+int
+read (int fd,
+      void *buf,
+      int buflen)
+{
+  return syscall (3, fd, buf, buflen);
+}
+
+int
+open (char *name,
+      int flags,
+      int mode)
+{
+  return syscall (5, name, flags, mode);
+}
+
+int
+lseek (int fd,
+       int off,
+       int whence)
+{
+  return syscall (19, fd, off, whence);
+}
+
 int
 request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
@@ -58,6 +89,45 @@ request_server (mach_msg_header_t *inp,
 	  || notify_server (inp, outp));
 }
 
+vm_address_t
+load_image (task_t t,
+	    char *file)
+{
+  int fd;
+  struct exec x;
+  char *buf;
+  int headercruft;
+  vm_address_t base = 0x10000;
+  int amount;
+  vm_address_t bsspagestart, bssstart, stackaddr;
+  int magic;
+
+  fd = open (file, 0, 0);
+  
+  read (fd, &x, sizeof (struct exec));
+  magic = N_MAGIC (x);
+
+  headercruft = sizeof (struct exec) * (magic == ZMAGIC);
+  
+  amount = round_page (headercruft + x.a_text + x.a_data);
+  vm_allocate (mach_task_self (), (u_int *)&buf, amount, 1);
+  lseek (fd, -headercruft, 1);
+  read (fd, buf, amount);
+  vm_allocate (t, &base, amount, 0);
+  vm_write (t, base, (u_int) buf, amount);
+  if (magic != OMAGIC)
+    vm_protect (t, base, trunc_page (headercruft + x.a_text),
+		0, VM_PROT_READ | VM_PROT_EXECUTE);
+  vm_deallocate (mach_task_self (), (u_int)buf, amount);
+
+  bssstart = base + x.a_text + x.a_data + headercruft;
+  bsspagestart = round_page (bssstart);
+  vm_allocate (t, &bsspagestart, x.a_bss - (bsspagestart - bssstart), 0);
+  
+  return x.a_entry;
+}
+
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -65,6 +135,10 @@ main (int argc, char **argv, char **envp)
   thread_t newthread;
   mach_port_t foo;
   vm_address_t startpc;
+  char msg[] = "Boot is here.\n";
+  char c;
+
+  write (1, msg, sizeof msg);
 
   privileged_host_port = task_by_pid (-1);
   master_device_port = task_by_pid (-2);
@@ -111,6 +185,10 @@ main (int argc, char **argv, char **envp)
   
   thread_create (newtask, &newthread);
   start_thread (newtask, newthread, startpc);
+
+  write (1, "pausing\n", 8);
+  read (0, &c, 1);
+  thread_resume (newthread);
   
   mach_msg_server (request_server, __vm_page_size * 2, receive_set);
 }
@@ -187,20 +265,17 @@ S_exec_startup (mach_port_t port,
 
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
-  nc = sprintf (argv, "-x%c%d%c%d%c%s%c", '\0', php_child_name, '\0',
-		psmdp_child_name, "hd0a", '\0');
+  nc = sprintf (argv, "[BOOTSTRAP]%c-x%c%d%c%d%c%s%c", '\0', '\0',
+		php_child_name, '\0', psmdp_child_name, '\0', "hd0e", '\0');
 
   if (nc > *argvlen)
     vm_allocate (mach_task_self (), (vm_address_t *)argvP, nc, 1);
-  else
-    bcopy (argv, *argvP, nc);
+  bcopy (argv, *argvP, nc);
   *argvlen = nc;
   
   *base_addr = *stack_size = 0;
 
   *flags = 0;
-  
-  *argvlen = 0;
   
   *envplen = 0;
 
@@ -268,7 +343,7 @@ ds_device_write (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
-  *bytes_written = write (1, *data, datalen);
+  *bytes_written = write (1, (void *)*data, datalen);
   
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
 }
