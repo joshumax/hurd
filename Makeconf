@@ -30,7 +30,7 @@ CFLAGS := -Wall -Wno-parentheses -g
 include ../Maketools
 
 gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
-libgcc := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/libgcc.a
+libgcc := -lgcc
 
 # How to do some things:
 
