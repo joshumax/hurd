@@ -2394,11 +2394,19 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 #endif	lint
 
 	if ((data_cnt % vm_page_size) != 0)
+	  {
+	    printf ("fail 1: %d %d\n", data_cnt, vm_page_size);
 	    panic(here,my_name);
+	  }
+	
 
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
+	  {
+	    printf ("fail 2: %d %d\n", pager, ds);
 	    panic(here,my_name);
+	  }
+	
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, pager_request);
 	pager_port_start_write(ds);
@@ -2428,8 +2436,13 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	}
 
 	pager_port_finish_write(ds);
-	if (vm_deallocate(default_pager_self, addr, data_cnt) != KERN_SUCCESS)
-		panic(here,my_name);
+	result = vm_deallocate(default_pager_self, addr, data_cnt);
+	if (result != KERN_SUCCESS)
+	  {
+	    printf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, result)
+	      panic(here,my_name);
+	  }
+	
 
 	return(KERN_SUCCESS);
 }
