@@ -68,6 +68,7 @@ _pager_free_structure (struct pager *p)
 {
   int wakeup;
   struct lock_request *lr;
+  struct attribute_request *ar;
 
   wakeup = 0;
   for (lr = p->lock_requests; lr; lr = lr->next)
@@ -76,6 +77,12 @@ _pager_free_structure (struct pager *p)
       if (!lr->pending_writes)
 	wakeup = 1;
     }
+  for (ar = p->attribute_requests; ar; ar = ar->next)
+    {
+      ar->attrs_pending = 0;
+      wakeup = 1;
+    }
+
   if (wakeup)
     condition_broadcast (&p->wakeup);
 
