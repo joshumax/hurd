@@ -1,3 +1,15 @@
+2002-06-22  Roland McGrath  <roland@frob.com>
+
+	* load.c (boot_script_exec_cmd): Twiddle decls of serverboot_bunzip2
+	and serverboot_gunzip.
+
+	* elf-load.c (exec_load) [__alpha__]: Grok Elf64_* headers and check
+	for EM_ALPHA.
+	* exec.c (set_regs) [__alpha__]: Alpha implementation snarfed from CMU
+	file bootstrap/alpha/exec.c in MK83a.
+
+	* load.c (boot_script_exec_cmd): Cast int to intptr_t before char *.
+
 2002-06-14  Roland McGrath  <roland@frob.com>
 
 	* default_pager.c: #include "default_pager_S.h"
