@@ -1,7 +1,7 @@
 2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
 
-	* netfs.h (struct node): Adjust comment fixes by last change
-	to be more in line with similar comments elsewhere.
+	* netfs.h: Adjust comment fixes by last change to be more in line
+	with similar comments elsewhere.
 	* make-node.c (netfs_make_node): Return 0 if malloc does.
 	Reported by Neal H Walfield <neal@cs.uml.edu>.
 
