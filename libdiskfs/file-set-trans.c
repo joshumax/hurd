@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <hurd/paths.h>
 
 /* XXX need to reimplement transnamelen parameter, and implement Roland's
    suggestion:
@@ -31,27 +32,29 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      int flags,
 			      int killtrans_flags,
 			      char *transname,
+			      u_int transnamelen,
 			      fsys_t existing)
 {
   struct node *np;
   error_t error;
-  daddr_t blkno;
-  char blkbuf[sblock->fs_fsize];
 
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
 
+  if (!transname[transnamelen - 1])
+    return EINVAL;
+
   mutex_lock (&np->lock);
 
-  if (error = isowner (np, cred))
+  if (error = diskfs_isowner (np, cred))
     {
       mutex_unlock (&np->lock);
       return error;
     }
 
-  if (np->translator)
+  if (np->translator.control != MACH_PORT_NULL)
     {
       if (flags & FS_TRANS_EXCL)
 	{
@@ -74,7 +77,7 @@ diskfs_S_file_set_translator (struct protid *cred,
       
       if (diskfs_shortcut_symlink && !strcmp (transname, _HURD_SYMLINK))
 	newmode = S_IFLNK;
-
+      if (diskfs_shortcut_chrdev && !(strcmp (transname, _HURD_CHRDEV)))
 	newmode = S_IFCHR;
       else if (diskfs_shortcut_blkdev && !strcmp (transname, _HURD_BLKDEV))
 	newmode = S_IFBLK;
@@ -96,25 +99,45 @@ diskfs_S_file_set_translator (struct protid *cred,
 	    }
 	  if (newmode == S_IFBLK || newmode == S_IFCHR)
 	    {
-	      /* Here we need to read the device number from the
-		 contents of the file (which must be S_IFREG).  */
-	      char buf[20];
+	      /* Find the device number from the arguments
+		 of the translator. */
+	      int major, minor;
+	      char *arg;
 	      
-	      if (S_ISREG (np->dn_stat.st_mode))
+	      arg = transname + strlen (transname) + 1;
+	      assert (arg <= transname + transnamelen);
+	      if (arg == transname + transnamelen)
 		{
 		  mutex_unlock (&np->lock);
 		  return EINVAL;
 		}
-	      error = diskfs_fs_rdwr (np, buf, 0, 20, 0, 0);
-	      if (error)
+	      major = strtol (arg, 0, 0);
+
+	      arg = arg + strlen (arg) + 1;
+	      assert (arg < transname + transnamelen);
+	      if (arg == transname + transnamelen)
 		{
 		  mutex_unlock (&np->lock);
-		  return error;
+		  return EINVAL;
 		}
-	      np->dn_stat.st_rdev = atoi (buf);
+	      minor = strtol (arg, 0, 0);
+	      
+	      np->dn_stat.st_rdev = ((major & 0x377) << 8) | (minor & 0x377);
 	    }
-	  if (newmode != IFLNK)
-	    node_truncate (np, 0);
+
+	  diskfs_truncate (np, 0);
+	  if (newmode == S_IFLNK)
+	    {
+	      char *arg = transname + strlen (transname) + 1;
+	      assert (arg <= transname + transnamelen);
+	      if (arg == transname + transnamelen)
+		{
+		  mutex_unlock (&np->lock);
+		  return EINVAL;
+		}
+	      /* Store the argument in the file as the target of the link */
+	      diskfs_node_rdwr (np, arg, 0, strlen (arg), 1, cred, 0);
+	    }
 	  np->dn_stat.st_mode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
 	  diskfs_node_update (np, 1);
 	  mutex_unlock (&np->lock);
@@ -122,7 +145,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 	}
     }
 
-  error = diskfs_set_translator (np, transname, cred);
+  error = diskfs_set_translator (np, transname, transnamelen, cred);
   mutex_unlock (&np->lock);
   return error;
 }
