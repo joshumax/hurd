@@ -31,6 +31,13 @@
 #include <hurd/fsys.h>
 
 #include "fstab.h"
+
+extern error_t fsys_set_readonly (fsys_t fsys, int readonly);
+extern error_t fsys_get_readonly (fsys_t fsys, int *readonly);
+extern error_t fsys_remount (fsys_t fsys);
+
+extern file_t file_name_lookup_carefully (const char *file,
+					  int flags, mode_t mode);
 
 /* Return a new fstab in FSTAB.  */
 error_t
@@ -215,21 +222,29 @@ _fs_check_mounted (struct fs *fs)
   if (fs->mounted < 0)
     /* The mounted field in FS is -1 if we're not sure.  */
     {
-      file_t mount_point;
-      error_t err = careful_lookup (fs->mntent.mnt_dir, &mount_point);
+      file_t mount_point =
+	file_name_lookup_carefully (fs->mntent.mnt_dir, O_NOTRANS, 0);
 
-      if (! err)
+      if (mount_point != MACH_PORT_NULL)
+	/* The node exists.  Is it the root of an active translator?
+	   [Note that it could be a different translator than the one in
+	   the mntent, but oh well, nothing we can do about that.]  */
 	{
 	  if (fs->fsys != MACH_PORT_NULL)
 	    mach_port_deallocate (mach_task_self (), fs->fsys);
-	  if (mount_point != MACH_PORT_NULL)
-	    /* The node exists.  Is it the root of an active translator?
-	       [Note that it could be a different translator than the one in
-	       the mntent, but oh well, nothing we can do about that.]  */
-	    err = file_get_translator_cntl (mount_point, &fs->fsys);
-	  else
+	  err = file_get_translator_cntl (mount_point, &fs->fsys);
+	  if (err ==  EINVAL || err == EOPNOTSUPP)
 	    /* Either the mount point doesn't exist, or wasn't mounted.  */
-	    fs->fsys = MACH_PORT_NULL;
+	    {
+	      fs->fsys = MACH_PORT_NULL;
+	      err = 0;
+	    }
+	}
+      else if (errno == ENXIO)
+	/* Ran into an inactive passive translator.  FS can't be mounted.  */
+	{
+	  fs->fsys = MACH_PORT_NULL;
+	  err = 0;
 	}
 
       if (! err)
@@ -281,36 +296,7 @@ fs_readonly (struct fs *fs, int *readonly)
 	if (fsys == MACH_PORT_NULL)
 	  fs->readonly = 1;
 	else
-	  /* Ask the filesystem whether it's readonly; we don't really have a
-	     good method for this, other than asking for it's options and
-	     looking for `--readonly' or `--writable'.  If we see neither,
-	     return EOPNOTSUPP.  */
-	  {
-	    char _opts[200], *opts = _opts;
-	    size_t opts_len = sizeof opts;
-
-	    err = fsys_get_options (fsys, &opts, &opts_len);
-	    if (! err)
-	      {
-		char *opt;
-
-		for (opt = opts
-		     ; fs->readonly < 0 && opt && opt < opts + opts_len
-		     ; opt = argz_next (opts, opts_len, opt)) 
-		  if (strcasecmp (opt, "--readonly") == 0)
-		    fs->readonly = 1;
-		  else if (strcasecmp (opt, "--writable") == 0)
-		    fs->readonly = 0;
-
-		if (fs->readonly < 0)
-		  err = EOPNOTSUPP; /* So far as we know...  */
-
-		if (opts != _opts)
-		  /* Free out-of-line memory returned by fsys_get_options.  */
-     		  vm_deallocate (mach_task_self (),
-				 (vm_address_t)opts, opts_len);
-	      }
-	  }
+	  err = fsys_get_readonly (fsys, &fs->readonly);
     }
 
   if (!err && readonly)
@@ -318,7 +304,7 @@ fs_readonly (struct fs *fs, int *readonly)
 
   return err;
 }
-
+
 /* If FS is currently mounted writable, try to make it readonly.  XXX If FS
    is not mounted at all, then nothing is done.   */
 error_t
@@ -333,16 +319,11 @@ fs_set_readonly (struct fs *fs, int readonly)
     /* We have to try and change the readonly state.  */
     {
       fsys_t fsys;
-
       err = fs_fsys (fs, &fsys);
       if (!err && fsys != MACH_PORT_NULL) /* XXX What to do if not mounted? */
-	{
-	  char *opts = readonly ? "--readonly" : "--writable";
-	  size_t opts_len = strlen (opts) + 1;
-	  err = fsys_set_options (fsys, opts, opts_len, 0);
-	  if (! err)
-	    fs->readonly = readonly;
-	}
+	err = fsys_set_readonly (fsys, readonly);
+      if (! err)
+	fs->readonly = readonly;
     }
 
   return err;
@@ -356,11 +337,7 @@ fs_remount (struct fs *fs)
   fsys_t fsys;
   error_t err = fs_fsys (fs, &fsys);
   if (!err && fsys != MACH_PORT_NULL) /* XXX What to do if not mounted? */
-    {
-      char *opts = "--remount";
-      size_t opts_len = strlen (opts) + 1;
-      err = fsys_set_options (fsys, opts, opts_len, 0);
-    }
+    err = fsys_remount (fsys);
   return err;
 }
 
