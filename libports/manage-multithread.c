@@ -102,7 +102,10 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	{
 	  spin_lock (&lock);
 	  if (totalthreads != 1)
-	    goto startover;
+	    {
+	      spin_unlock (&lock);
+	      goto startover;
+	    }
 	  return;
 	}
       else
