@@ -1,3 +1,11 @@
+1997-07-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* map.c (store_map): If we can't map STORE directly, and it has a
+	source file, try to map that instead.
+	* remap.c (store_remap): If we are mutating SOURCE, close any
+	source port it has.
+	* store.h (store_map_source): Declaration removed.
+
 1997-07-17  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* store.h (store_map): New declaration.
