@@ -39,7 +39,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   np = cred->po->np;
 
-  if (transnamelen && !transname[transnamelen - 1])
+  if (transnamelen && transname[transnamelen - 1])
     return EINVAL;
 
   mutex_lock (&np->lock);
