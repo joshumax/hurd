@@ -268,7 +268,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
     }
 
   st->st_rdev = rdev;
-  if (readonly)
+  if (readonly || (open && (open->dev->store->flags & STORE_READONLY)))
     st->st_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
 }
 
