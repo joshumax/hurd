@@ -38,7 +38,7 @@ ps_own_p (struct proc_stat *ps)
     own_uid = getuid ();
   return own_uid >= 0 && own_uid == proc_stat_owner_uid (ps);
 }
-struct ps_filter ps_own_filter =
+const struct ps_filter ps_own_filter =
 {"own", PSTAT_OWNER_UID, ps_own_p};
 
 static int 
@@ -47,7 +47,7 @@ ps_not_leader_p (struct proc_stat *ps)
   return
     !(proc_stat_state (ps) & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
 }
-struct ps_filter ps_not_leader_filter =
+const struct ps_filter ps_not_leader_filter =
 {"not-sess-leader", PSTAT_STATE, ps_not_leader_p};
 
 static int 
@@ -58,7 +58,7 @@ ps_unorphaned_p (struct proc_stat *ps)
     !(state & PSTAT_STATE_P_ORPHAN)
       || (state & (PSTAT_STATE_P_SESSLDR | PSTAT_STATE_P_LOGINLDR));
 }
-struct ps_filter ps_unorphaned_filter =
+const struct ps_filter ps_unorphaned_filter =
 {"unorphaned", PSTAT_STATE, ps_unorphaned_p};
 
 static int 
@@ -66,7 +66,7 @@ ps_ctty_p (struct proc_stat *ps)
 {
   return proc_stat_cttyid (ps) != MACH_PORT_NULL;
 }
-struct ps_filter ps_ctty_filter =
+const struct ps_filter ps_ctty_filter =
 {"ctty", PSTAT_CTTYID, ps_ctty_p};
 
 static int 
@@ -74,7 +74,7 @@ ps_parent_p (struct proc_stat *ps)
 {
   return !(proc_stat_state (ps) & PSTAT_STATE_P_NOPARENT);
 }
-struct ps_filter ps_parent_filter =
+const struct ps_filter ps_parent_filter =
 {"parent", PSTAT_STATE, ps_parent_p};
 
 static int
@@ -87,5 +87,5 @@ ps_alive_p (struct proc_stat *ps)
   proc_stat_set_flags (ps, test_flag);
   return proc_stat_has (ps, test_flag);
 }
-struct ps_filter ps_alive_filter =
+const struct ps_filter ps_alive_filter =
 {"alive", 0, ps_alive_p};

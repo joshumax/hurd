@@ -1,3 +1,13 @@
+2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
+
+	* filters.c (ps_own_filter): Add const to type.
+	(ps_not_leader_filter): Likewise.
+	(ps_unorphaned_filter): Likewise.
+	(ps_ctty_filter): Likewise.
+	(ps_parent_filter): Likewise.
+	(ps_alive_filter): Likewise.
+	Submitted by Maurizio Boriani <baux@debian.org>.
+
 2001-03-29  Neal H Walfield  <neal@cs.uml.edu>
 
         * host.c: Fix comments.
