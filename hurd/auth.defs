@@ -50,7 +50,7 @@ routine auth_makeauth (
 	gen_uids: idarray_t;
 	aux_uids: idarray_t;
 	gen_gids: idarray_t;
-	aux_uids: idarray_t;
+	aux_gids: idarray_t;
 	out newhandle: mach_port_make_send_t);
 
 routine auth_combine (
@@ -77,7 +77,7 @@ routine auth_user_authenticate (
 routine auth_server_authenticate (
 	handle: auth_t;
 	sreplyport reply_port: reply_port_t;
-	rendezvous: mach_port_send_;
+	rendezvous: mach_port_send_t;
 	rend_int: int;
 	newport: mach_port_send_t;
 	out gen_uids: idarray_t;
