@@ -25,8 +25,14 @@ error_t
 trivfs_S_fsys_goaway (mach_port_t fsys,
 		      int flags)
 {
-  if (!ports_get_port (fsys))
+  error_t err;
+  struct port_info *pi;
+  
+  pi = ports_get_port (fsys, trivfs_cntl_porttype);
+  if (!pi)
     return EOPNOTSUPP;
 
-  return trivfs_goaway (flags);
+  err = trivfs_goaway (flags);
+  ports_done_with_port (pi);
+  return err;
 }
