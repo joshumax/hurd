@@ -1,3 +1,51 @@
+1999-08-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ext2_fs.h, ext2_fs_i.h: Replaced with Linux 2.3.14 versions.
+	* ext2fs.h (i_mode_high): New macro, missing from ext_fs.h.
+
+	* inode.c (read_node): Don't set INFO->i_version.
+	Extract INFO->i_dir_acl value only for a directory;
+	otherwise use zero and instead extract INFO->i_high_size.
+	Fail with EFBIG if INFO->i_high_size is nonzero.
+
+	* ialloc.c (diskfs_alloc_node): Propagate initial value of i_flags
+	from directory, as Linux 2.3.14 does.
+
+	* inode.c (write_node): Get i_flags from NP->dn->info instead of from
+	the disk inode, so we can have modified the in-core version.
+	* dir.c (diskfs_direnter_hard, diskfs_dirremove_hard,
+	diskfs_dirrewrite_hard): Clear EXT2_BTREE_FL flag bit from
+	DP->dn->info.i_flags after modifying the directory (this is what
+	Linux 2.3.14 does).
+
+	* inode.c (read_node): i_version -> i_generation
+	* inode.c (write_node): Likewise.
+
+	* balloc.c (ext2_free_blocks): Handle freeing across group boundary,
+	as Linux 2.3.14 does.
+
+	* balloc.c (ext2_check_blocks_bitmap): If RO_COMPAT_SPARSE_SUPER
+	feature flag is set, or if group number is not a power of 3, 5, or 7
+	(I don't know why; this is what Linux 2.3.14 does), skip tests for
+	superblocks and descriptor blocks being free in bitmap.
+
+	* dir.c: Replace `struct ext2_dir_entry' with `struct ext2_dir_entry_2'
+	in all uses.
+	(ext2_file_type): New static const variable.
+	(diskfs_get_directs): Set d_type member based on file_type field in
+	directory entry.
+
+	* balloc.c (ext2_new_block): Take new arg PREALLOC_GOAL.
+	Use that instead of hard-coded 8 as maximum of blocks to preallocate.
+	Also test that instead of PREALLOC_COUNT to decide whether to
+	try any preallocation at all.
+	* getblk.c (ext2_alloc_block): Pass new arg to ext2_new_block.
+	Use EXT2_DEFAULT_PREALLOC_BLOCKS as default (replaces hard-coded 8);
+	For a regular file, use SBLOCK->s_prealloc_blocks before default.
+	For a directory, use SBLOCK->s_dir_prealloc_blocks if the
+	EXT2_FEATURE_COMPAT_DIR_PREALLOC flag is set, otherwise zero.
+	* inode.c (diskfs_set_translator): Pass new arg (zero).
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c (diskfs_get_directs): Fix sloppy bugs in last change.
