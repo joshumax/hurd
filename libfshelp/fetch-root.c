@@ -90,7 +90,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       err = (*callback) (box->cookie, cookie, &underlying, &uid,
 			 &gid, &argz, &argz_len);
       if (err)
-	return err;
+	goto return_error;
       
       ourauth = getauth ();
       uidarray[0] = uidarray[1] = uid;
@@ -123,11 +123,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       mutex_lock (box->lock);
       
       free (argz);
-      
-      if (err)
-	return err;
-      
-      box->active = control;
+
+    return_error:
       
       box->flags &= ~TRANSBOX_STARTING;
       if (box->flags & TRANSBOX_WANTED)
@@ -135,6 +132,11 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	  box->flags &= ~TRANSBOX_WANTED;
 	  condition_broadcast (&box->wakeup);
 	}
+
+      if (err)
+	return err;
+      
+      box->active = control;
     }
   
   control = box->active;
