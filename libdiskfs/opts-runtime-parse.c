@@ -22,7 +22,9 @@
 
 error_t
 diskfs_parse_runtime_options (int argc, char **argv,
-			      struct options *standard_options)
+			      struct argp *standard_argp)
 {
-  return options_parse (standard_options, argc, argv, 0, 0);
+  return argp_parse (standard_argp, argc, argv,
+		     ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
+		     0);
 }
