@@ -402,14 +402,13 @@ libraries they use.  At that point, you should be able to study the
 source code of existing Hurd servers and understand how they use the
 Hurd libraries.
 
-The final level of mastery is learning the about RPC.  If you needed to
-ask, then you've got your work cut out for you before you'll be ready
-for Hurd programming.} interfaces which the Hurd libraries implement.
-The last section of each chapter describes any Hurd interfaces used in
-that subsystem.  Those sections assume that you are perusing the
-referenced interface definitions as you read.  After you have understood
-a given interface, you will be in a good position to improve the Hurd
-libraries, design your own interfaces, and implement new subsystems.
+The final level of mastery is learning the about the RPC interfaces
+which the Hurd libraries implement.  The last section of each chapter
+describes any Hurd interfaces used in that subsystem.  Those sections
+assume that you are perusing the referenced interface definitions as you
+read.  After you have understood a given interface, you will be in a
+good position to improve the Hurd libraries, design your own interfaces,
+and implement new subsystems.
 
 
 @node Features
