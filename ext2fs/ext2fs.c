@@ -171,6 +171,8 @@ main (int argc, char **argv)
 
   mutex_init (&printf_lock);	/* XXX */
 
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+
   if (getpid () > 0)
     {
       int opt;
@@ -205,13 +207,14 @@ main (int argc, char **argv)
 	  usage (1);
 	}
 
+      if (bootstrap == MACH_PORT_NULL)
+	error (2, 0, "Must be started as a translator");
+
       device_name = argv[optind];
     }
   else
     /* We are the bootstrap filesystem.  */
     device_name = diskfs_parse_bootargs (argc, argv);
-  
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   /* Initialize the diskfs library.  This must come before
      any other diskfs call.  */
@@ -298,11 +301,9 @@ main (int argc, char **argv)
      outside world.  */
   (void) diskfs_startup_diskfs (bootstrap);
 
-#if 0
   if (bootstrap == MACH_PORT_NULL)
     /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap (argv);
-#endif
   
   /* Now become a generic request thread.  */
   diskfs_main_request_loop ();
