@@ -1,6 +1,6 @@
 /* Protocol family operations
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -18,8 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <stddef.h>
 #include <sys/socket.h>
-
 #include <hurd/pipe.h>
 
 #include "sock.h"
@@ -96,10 +96,28 @@ S_socket_fabricate_address (mach_port_t pf,
   return 0;
 }
 
+/* Implement socket_whatis_address as described in <hurd/socket.defs>.
+   Since we cannot tell what our adress is, return an empty string as
+   the file name.  This is primarily for the implementation of accept
+   and recvfrom.  The functions getsockname and getpeername remain
+   unsupported for the local namespace.  */
 error_t
 S_socket_whatis_address (struct addr *addr,
 			 int *sockaddr_type,
 			 char **sockaddr, size_t *sockaddr_len)
 {
-  return EOPNOTSUPP;
+  socklen_t addr_len = (offsetof (struct sockaddr, sa_data) + 1);
+  
+  if (! addr)
+    return EOPNOTSUPP;
+
+  *sockaddr_type = AF_LOCAL;
+  if (*sockaddr_len < addr_len)
+    vm_allocate (mach_task_self (), (vm_address_t *) sockaddr, addr_len, 1);
+  ((struct sockaddr *) *sockaddr)->sa_len = addr_len;
+  ((struct sockaddr *) *sockaddr)->sa_family = *sockaddr_type;
+  ((struct sockaddr *) *sockaddr)->sa_data[0] = 0;
+  *sockaddr_len = addr_len;
+  
+  return 0;
 }
