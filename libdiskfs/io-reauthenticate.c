@@ -24,20 +24,19 @@ diskfs_S_io_reauthenticate (struct protid *cred,
 		     int rend_int)
 {
   struct protid *newcred;
-  uid_t *gen_uids = alloca (sizeof (uid_t) * 20);
-  uid_t *gen_gids = alloca (sizeof (uid_t) * 20);
-  uid_t *aux_uids = alloca (sizeof (uid_t) * 20);
-  uid_t *aux_gids = alloca (sizeof (uid_t) * 20);
+  uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
+  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
   u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
-  uid_t *gubuf, *ggbuf, *aubuf, *agbuf;
   error_t err;
 
   if (cred == 0)
     return EOPNOTSUPP;
 
   genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
-  gubuf = gen_uids; ggbuf = gen_gids;
-  aubuf = aux_uids; agbuf = aux_gids;
+  gen_uids = gubuf;
+  gen_gids = ggbuf;
+  aux_uids = aubuf;
+  aux_gids = agbuf;
 
   mutex_lock (&cred->po->np->lock);
   newcred = diskfs_start_protid (cred->po);
