@@ -582,6 +582,56 @@ netfs_S_io_map (struct protid *user,
   return err;
 }
 
+/* This overrides the library's definition.  */
+int
+netfs_demuxer (mach_msg_header_t *inp,
+	       mach_msg_header_t *outp)
+{
+  int netfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
+  int netfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
+  int netfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  int netfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
+
+  if (netfs_io_server (inp, outp)
+      || netfs_fs_server (inp, outp)
+      || ports_notify_server (inp, outp)
+      || netfs_fsys_server (inp, outp)
+      /* XXX we should intercept interrupt_operation and do
+	 the ports_S_interrupt_operation work as well as
+	 sending an interrupt_operation to the underlying file.
+       */
+      || ports_interrupt_server (inp, outp))
+    return 1;
+  else
+    {
+      /* We didn't recognize the message ID, so pass the message through
+	 unchanged to the underlying file.  */
+      struct protid *cred = ports_lookup_port (netfs_port_bucket,
+					       inp->msgh_local_port,
+					       netfs_protid_class);
+      if (cred == 0)
+	/* This must be an unknown message on our fsys control port.  */
+	return 0;
+      else
+	{
+	  error_t err;
+	  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
+		  == MACH_MSG_TYPE_MOVE_SEND);
+	  inp->msgh_bits = (inp->msgh_bits & MACH_MSGH_BITS_COMPLEX)
+	    | MACH_MSGH_BITS (MACH_MSG_TYPE_COPY_SEND,
+			      MACH_MSGH_BITS_REMOTE (inp->msgh_bits));
+	  inp->msgh_local_port = inp->msgh_remote_port;	/* reply port */
+	  inp->msgh_remote_port = cred->po->np->nn->file;
+	  err = mach_msg (inp, MACH_SEND_MSG, inp->msgh_size, 0,
+			  MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
+			  MACH_PORT_NULL);
+	  assert_perror (err);	/* XXX should synthesize reply */
+	  ports_port_deref (cred);
+	  return 1;
+	}
+    }
+}
+
 
 int
 main (int argc, char **argv)
