@@ -1,3 +1,25 @@
+2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
+
+	* loop.c (server_loop): Use memset instead bzero.
+	(server_loop): Add parenthesis for post-decrement (even
+	though it is only used as an lvalue here).  Increment P after
+	using it in the macro, not within.
+	* ops.c (complete_setattr): Likewise.
+	(op_setattr, op_read, op_write, op_create, op_symlink, op_mkdir,
+	op_readdir, op_getport): Likewise.
+	* xdr.c (encode_fattr): Likewise.
+	(encode_data): Likewise.  Also use memcpy instead bcopy.
+	(encode_statfs): Likewise.
+	(decode_name): Likewise.  Also use memcpy instead bcopy.
+	(encode_fhandle): Use memcpy instead bcopy.
+	* cache.c (process_cred): Add parenthesis for post-decrement (even
+	though it is only used as an lvalue here).  Increment P after
+	using it in the macro, not within.
+	(idspec_lookup): Use memcpy, not bcopy.
+	(lookup_cache_handle): Likewise.
+	(create_cached_handle): Likewise.
+	(check_cached_replies): Likewise.
+
 2002-05-29  Roland McGrath  <roland@frob.com>
 
 	* nfsd.h (struct proctable): [0] -> [], for newfangled GCC.

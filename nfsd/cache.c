@@ -1,4 +1,4 @@
-/*
+/* cache.c - Cache operations for the nfs daemon.
    Copyright (C) 1996,98,99,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -46,9 +46,9 @@ spin_lock_t idhashlock = SPIN_LOCK_INITIALIZER;
 static int nfreeids;
 static int leastidlastuse;
 
-/* Compare I against the specified set of users/groups. */
+/* Compare I against the specified set of users/groups.  */
 /* Use of int in decl of UIDS and GIDS is correct here; that's
-   the NFS type because they come in in known 32 bit slots. */
+   the NFS type because they come in in known 32 bit slots.  */
 static int
 idspec_compare (struct idspec *i, int nuids, int ngids,
 		int *uids, int *gids)
@@ -66,7 +66,7 @@ idspec_compare (struct idspec *i, int nuids, int ngids,
   return 1;
 }
 
-/* Compute a hash value for a given user spec */
+/* Compute a hash value for a given user spec.  */
 static int
 idspec_hash (int nuids, int ngids, int *uids, int *gids)
 {
@@ -81,7 +81,7 @@ idspec_hash (int nuids, int ngids, int *uids, int *gids)
   return hash;
 }
 
-/* Lookup a user spec in the hash table and allocate a reference */
+/* Lookup a user spec in the hash table and allocate a reference.  */
 static struct idspec *
 idspec_lookup (int nuids, int ngids, int *uids, int *gids)
 {
@@ -107,8 +107,8 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
   i->ngids = ngids;
   i->uids = malloc (nuids * sizeof (uid_t));
   i->gids = malloc (ngids * sizeof (gid_t));
-  bcopy (uids, i->uids, nuids * sizeof (uid_t));
-  bcopy (gids, i->gids, ngids * sizeof (gid_t));
+  memcpy (i->uids, uids, nuids * sizeof (uid_t));
+  memcpy (i->gids, gids, ngids * sizeof (gid_t));
   i->references = 1;
 
   i->next = idhashtable[hash];
@@ -132,33 +132,38 @@ process_cred (int *p, struct idspec **credp)
   int firstgid;
   int i;
 
-  type = ntohl (*p++);
+  type = ntohl (*p);
+  p++;
 
   if (type != AUTH_UNIX)
     {
-      int size = ntohl (*p++);
+      int size = ntohl (*p);
+      p++;
       *credp = idspec_lookup (0, 0, 0, 0);
       p += INTSIZE (size);
     }
   else
     {
-      p++;			/* skip size */
-      p++;			/* skip seconds */
-      len = ntohl (*p++);
-      p += INTSIZE (len);	/* skip hostname */
+      p++;			/* Skip size.  */
+      p++;			/* Skip seconds.  */
+      len = ntohl (*p);
+      p++;
+      p += INTSIZE (len);	/* Skip hostname.  */
 
-      uid = p++;		/* remember loc of uid */
+      uid = p++;		/* Remember location of uid.  */
       *uid = ntohl (*uid);
 
-      firstgid = *p++;		/* remember first gid */
-      gids = p;			/* here's where the array will start */
-      ngids = ntohl (*p++);
+      firstgid = *(p++);	/* Remember first gid.  */
+      gids = p;			/* Here is where the array will start.  */
+      ngids = ntohl (*p);
+      p++;
 
-      /* Now swap the first gid to be the first element of the array */
+      /* Now swap the first gid to be the first element of the
+	 array.  */
       *gids = firstgid;
-      ngids++;			/* and count it */
+      ngids++;			/* And count it.  */
 
-      /* And byteswap the gids */
+      /* And byteswap the gids.  */
       for (i = 0; i < ngids; i++)
 	gids[i] = ntohl (gids[i]);
 
@@ -167,9 +172,10 @@ process_cred (int *p, struct idspec **credp)
       *credp = idspec_lookup (1, ngids, uid, gids);
     }
 
-  /* Next is the verf field; skip it entirely */
-  p++;				/* skip id */
-  len = htonl (*p++);
+  /* Next is the verf field; skip it entirely.  */
+  p++;				/* Skip ID.  */
+  len = htonl (*p);
+  p++;
   p += INTSIZE (len);
 
   return p;
@@ -235,7 +241,7 @@ scan_creds ()
 	    }
 	}
 
-      /* If we didn't bail early, then this is valid */
+      /* If we didn't bail early, then this is valid.  */
       if (nfreeids)
 	leastidlastuse = newleast;
     }
@@ -281,9 +287,9 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
 	return p + NFS2_FHSIZE / sizeof (int);
       }
 
-  /* Not found */
+  /* Not found.  */
 
-  /* First four bytes are our internal table of filesystems */
+  /* First four bytes are our internal table of filesystems.  */
   fsys = lookup_filesystem (*p);
   if (fsys == MACH_PORT_NULL
       || fsys_getfile (fsys, i->uids, i->nuids, i->gids, i->ngids,
@@ -295,7 +301,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
     }
 
   c = malloc (sizeof (struct cache_handle));
-  bcopy (p, c->handle, NFS2_FHSIZE);
+  memcpy (c->handle, p, NFS2_FHSIZE);
   cred_ref (i);
   c->ids = i;
   c->port = port;
@@ -363,7 +369,7 @@ scan_fhs ()
 	    }
 	}
 
-      /* If we didn't bail early, then this is valid. */
+      /* If we didn't bail early, then this is valid.  */
       if (nfreefh)
 	leastfhlastuse = newleast;
     }
@@ -381,22 +387,22 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   size_t handlelen = NFS2_FHSIZE - sizeof (int);
   mach_port_t newport, ref;
 
-  /* Authenticate USERPORT so that we can call file_getfh on it. */
+  /* Authenticate USERPORT so that we can call file_getfh on it.  */
   ref = mach_reply_port ();
-  /* MAKE_SEND is safe becaue we destroy REF ourselves. */
+  /* MAKE_SEND is safe becaue we destroy REF ourselves.  */
   if (io_reauthenticate (userport, ref, MACH_MSG_TYPE_MAKE_SEND)
       || auth_user_authenticate (authserver, ref, MACH_MSG_TYPE_MAKE_SEND,
 				 &newport))
     {
       /* Reauthentication has failed, but maybe the filesystem will let
-	 us call file_getfh anyway. */
+	 us call file_getfh anyway.  */
       newport = userport;
     }
   else
     mach_port_deallocate (mach_task_self (), userport);
   mach_port_destroy (mach_task_self (), ref);
 
-  /* Fetch the file handle */
+  /* Fetch the file handle.  */
   *(int *)fhandle = fs;
   err = file_getfh (newport, &bp, &handlelen);
   mach_port_deallocate (mach_task_self (), newport);
@@ -404,17 +410,17 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
     return 0;
   if (bp != fhandle + sizeof (int))
     {
-      bcopy (bp, fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int));
+      memcpy (fhandle + sizeof (int), bp, NFS2_FHSIZE - sizeof (int));
       munmap (bp, handlelen);
     }
 
-  /* Cache it */
+  /* Cache it.  */
   hash = fh_hash (fhandle, credc->ids);
   mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
     if (c->ids == credc->ids && ! bcmp (fhandle, c->handle, NFS2_FHSIZE))
       {
-	/* Return this one */
+	/* Return this one.  */
 	if (c->references == 0)
 	  nfreefh--;
 	c->references++;
@@ -423,7 +429,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
       }
 
   /* Always call fsys_getfile so that we don't depend on the
-     particular open modes of the port passed in. */
+     particular open modes of the port passed in.  */
 
   err = fsys_getfile (lookup_filesystem (fs),
 		      credc->ids->uids, credc->ids->nuids,
@@ -436,15 +442,15 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
       return 0;
     }
 
-  /* Create it anew */
+  /* Create it anew.  */
   c = malloc (sizeof (struct cache_handle));
-  bcopy (fhandle, c->handle, NFS2_FHSIZE);
+  memcpy (c->handle, fhandle, NFS2_FHSIZE);
   cred_ref (credc->ids);
   c->ids = credc->ids;
   c->port = newport;
   c->references = 1;
 
-  /* And add it to the hash table */
+  /* And add it to the hash table.  */
   c->next = fhhashtable[hash];
   if (c->next)
     c->next->prevp = &c->next;
@@ -464,7 +470,7 @@ static int leastreplylastuse;
 
 /* Check the list of cached replies to see if this is a replay of a
    previous transaction; if so, return the cache record.  Otherwise,
-   create a new cache record. */
+   create a new cache record.  */
 struct cached_reply *
 check_cached_replies (int xid,
 		      struct sockaddr_in *sender)
@@ -490,7 +496,7 @@ check_cached_replies (int xid,
   cr = malloc (sizeof (struct cached_reply));
   mutex_init (&cr->lock);
   mutex_lock (&cr->lock);
-  bcopy (sender, &cr->source, sizeof (struct sockaddr_in));
+  memcpy (&cr->source, sender, sizeof (struct sockaddr_in));
   cr->xid = xid;
   cr->data = 0;
   cr->references = 1;
@@ -506,7 +512,7 @@ check_cached_replies (int xid,
 }
 
 /* A cached reply returned by check_cached_replies is now no longer
-   needed by its caller. */
+   needed by its caller.  */
 void
 release_cached_reply (struct cached_reply *cr)
 {
@@ -559,7 +565,7 @@ scan_replies ()
 	    }
 	}
 
-      /* If we didn't bail early, then this is valid */
+      /* If we didn't bail early, then this is valid.  */
       if (nfreereplies)
 	leastreplylastuse = newleast;
     }

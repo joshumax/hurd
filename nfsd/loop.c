@@ -1,4 +1,4 @@
-/* Main server loop for nfs server.
+/* loop.c - Main server loop for nfs server.
    Copyright (C) 1996,98,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -55,7 +55,7 @@ server_loop (int fd)
   socklen_t addrlen;
   int cc;
 
-  bzero (&fakec, sizeof (struct cache_handle));
+  memset (&fakec, 0, sizeof (struct cache_handle));
 
   for (;;)
     {
@@ -64,33 +64,36 @@ server_loop (int fd)
       addrlen = sizeof (struct sockaddr_in);
       cc = recvfrom (fd, buf, MAXIOSIZE, 0, &sender, &addrlen);
       if (cc == -1)
-	continue;		/* ignore errors */
-      xid = *p++;
+	continue;		/* Ignore errors.  */
+      xid = *(p++);
 
-      /* Ignore things that aren't proper RPCs. */
-      if (ntohl (*p++) != CALL)
+      /* Ignore things that aren't proper RPCs.  */
+      if (ntohl (*p) != CALL)
 	continue;
+      p++;
 
       cr = check_cached_replies (xid, &sender);
       if (cr->data)
-	/* This transacation has already completed */
+	/* This transacation has already completed.  */
 	goto repost_reply;
 
       r = (int *) rbuf = malloc (MAXIOSIZE);
 
-      if (ntohl (*p++) != RPC_MSG_VERSION)
+      if (ntohl (*p) != RPC_MSG_VERSION)
 	{
-	  /* Reject RPC */
-	  *r++ = xid;
-	  *r++ = htonl (REPLY);
-	  *r++ = htonl (MSG_DENIED);
-	  *r++ = htonl (RPC_MISMATCH);
-	  *r++ = htonl (RPC_MSG_VERSION);
-	  *r++ = htonl (RPC_MSG_VERSION);
+	  /* Reject RPC.  */
+	  *(r++) = xid;
+	  *(r++) = htonl (REPLY);
+	  *(r++) = htonl (MSG_DENIED);
+	  *(r++) = htonl (RPC_MISMATCH);
+	  *(r++) = htonl (RPC_MSG_VERSION);
+	  *(r++) = htonl (RPC_MSG_VERSION);
 	  goto send_reply;
 	}
+      p++;
 
-      program = ntohl (*p++);
+      program = ntohl (*p);
+      p++;
       switch (program)
 	{
 	case MOUNTPROG:
@@ -109,44 +112,46 @@ server_loop (int fd)
 	  break;
 
 	default:
-	  /* Program unavailable */
-	  *r++ = xid;
-	  *r++ = htonl (REPLY);
-	  *r++ = htonl (MSG_ACCEPTED);
-	  *r++ = htonl (AUTH_NULL);
-	  *r++ = htonl (0);
-	  *r++ = htonl (PROG_UNAVAIL);
+	  /* Program unavailable.  */
+	  *(r++) = xid;
+	  *(r++) = htonl (REPLY);
+	  *(r++) = htonl (MSG_ACCEPTED);
+	  *(r++) = htonl (AUTH_NULL);
+	  *(r++) = htonl (0);
+	  *(r++) = htonl (PROG_UNAVAIL);
 	  goto send_reply;
 	}
 
-      if (ntohl (*p++) != version)
+      if (ntohl (*p) != version)
 	{
-	  /* Program mismatch */
-	  *r++ = xid;
-	  *r++ = htonl (REPLY);
-	  *r++ = htonl (MSG_ACCEPTED);
-	  *r++ = htonl (AUTH_NULL);
-	  *r++ = htonl (0);
-	  *r++ = htonl (PROG_MISMATCH);
-	  *r++ = htonl (version);
-	  *r++ = htonl (version);
+	  /* Program mismatch.  */
+	  *(r++) = xid;
+	  *(r++) = htonl (REPLY);
+	  *(r++) = htonl (MSG_ACCEPTED);
+	  *(r++) = htonl (AUTH_NULL);
+	  *(r++) = htonl (0);
+	  *(r++) = htonl (PROG_MISMATCH);
+	  *(r++) = htonl (version);
+	  *(r++) = htonl (version);
 	  goto send_reply;
 	}
+      p++;
 
-      procedure = htonl (*p++);
+      procedure = htonl (*p);
+      p++;
       if (procedure < table->min
 	  || procedure > table->max
 	  || table->procs[procedure - table->min].func == 0)
 	{
-	  /* Procedure unavailable */
-	  *r++ = xid;
-	  *r++ = htonl (REPLY);
-	  *r++ = htonl (MSG_ACCEPTED);
-	  *r++ = htonl (AUTH_NULL);
-	  *r++ = htonl (0);
-	  *r++ = htonl (PROC_UNAVAIL);
-	  *r++ = htonl (table->min);
-	  *r++ = htonl (table->max);
+	  /* Procedure unavailable.  */
+	  *(r++) = xid;
+	  *(r++) = htonl (REPLY);
+	  *(r++) = htonl (MSG_ACCEPTED);
+	  *(r++) = htonl (AUTH_NULL);
+	  *(r++) = htonl (0);
+	  *(r++) = htonl (PROC_UNAVAIL);
+	  *(r++) = htonl (table->min);
+	  *(r++) = htonl (table->max);
 	  goto send_reply;
 	}
       proc = &table->procs[procedure - table->min];
@@ -172,34 +177,34 @@ server_loop (int fd)
 	    }
 	}
 
-      /* Fill in beginning of reply */
-      *r++ = xid;
-      *r++ = htonl (REPLY);
-      *r++ = htonl (MSG_ACCEPTED);
-      *r++ = htonl (AUTH_NULL);
-      *r++ = htonl (0);
-      *r++ = htonl (SUCCESS);
+      /* Fill in beginning of reply.  */
+      *(r++) = xid;
+      *(r++) = htonl (REPLY);
+      *(r++) = htonl (MSG_ACCEPTED);
+      *(r++) = htonl (AUTH_NULL);
+      *(r++) = htonl (0);
+      *(r++) = htonl (SUCCESS);
       if (!proc->process_error)
-	/* The function does its own error processing,
-	   and we ignore its return value.  */
+	/* The function does its own error processing, and we ignore
+	   its return value.  */
 	(void) (*proc->func) (c, p, &r, version);
       else
 	{
 	  if (c)
 	    {
-	      /* Assume success for now and patch it later if necessary */
+	      /* Assume success for now and patch it later if necessary.  */
 	      int *errloc = r;
-	      *r++ = htonl (0);
+	      *(r++) = htonl (0);
 	      /* Call processing function, its output after error code.  */
 	      err = (*proc->func) (c, p, &r, version);
 	      if (err)
 		{
 		  r = errloc;	/* Back up, patch error code, discard rest.  */
-		  *r++ = htonl (nfs_error_trans (err, version));
+		  *(r++) = htonl (nfs_error_trans (err, version));
 		}
 	    }
 	  else
-	    *r++ = htonl (nfs_error_trans (ESTALE, version));
+	    *(r++) = htonl (nfs_error_trans (ESTALE, version));
 	}
 
       cred_rele (cred);
@@ -212,7 +217,7 @@ server_loop (int fd)
 
     repost_reply:
       sendto (fd, cr->data, cr->len, 0,
-	      (struct sockaddr *)&sender, addrlen);
+	      (struct sockaddr *) &sender, addrlen);
       release_cached_reply (cr);
     }
 }

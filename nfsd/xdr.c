@@ -1,5 +1,5 @@
-/* XDR packing and unpacking in nfsd
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/* xdr.c - XDR packing and unpacking in nfsd.
+   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,7 +23,7 @@
 #include <string.h>
 #include "nfsd.h"
 
-/* Any better ideas? */
+/* Any better ideas?  */
 static int
 hurd_mode_to_nfs_mode (mode_t m)
 {
@@ -61,83 +61,84 @@ hurd_mode_to_nfs_type (mode_t m, int version)
     }
 }
 
-/* Encode ST into P and return the next thing to come after it. */
+/* Encode ST into P and return the next thing to come after it.  */
 int *
 encode_fattr (int *p, struct stat *st, int version)
 {
-  *p++ = htonl (hurd_mode_to_nfs_type (st->st_mode, version));
-  *p++ = htonl (hurd_mode_to_nfs_mode (st->st_mode));
-  *p++ = htonl (st->st_nlink);
-  *p++ = htonl (st->st_uid);
-  *p++ = htonl (st->st_gid);
-  *p++ = htonl (st->st_size);
-  *p++ = htonl (st->st_blksize);
-  *p++ = htonl (st->st_rdev);
-  *p++ = htonl (st->st_blocks);
-  *p++ = htonl (st->st_fsid);
-  *p++ = htonl (st->st_ino);
-  *p++ = htonl (st->st_atime);
-  *p++ = htonl (st->st_atime_usec);
-  *p++ = htonl (st->st_mtime);
-  *p++ = htonl (st->st_mtime_usec);
-  *p++ = htonl (st->st_ctime);
-  *p++ = htonl (st->st_ctime_usec);
+  *(p++) = htonl (hurd_mode_to_nfs_type (st->st_mode, version));
+  *(p++) = htonl (hurd_mode_to_nfs_mode (st->st_mode));
+  *(p++) = htonl (st->st_nlink);
+  *(p++) = htonl (st->st_uid);
+  *(p++) = htonl (st->st_gid);
+  *(p++) = htonl (st->st_size);
+  *(p++) = htonl (st->st_blksize);
+  *(p++) = htonl (st->st_rdev);
+  *(p++) = htonl (st->st_blocks);
+  *(p++) = htonl (st->st_fsid);
+  *(p++) = htonl (st->st_ino);
+  *(p++) = htonl (st->st_atime);
+  *(p++) = htonl (st->st_atime_usec);
+  *(p++) = htonl (st->st_mtime);
+  *(p++) = htonl (st->st_mtime_usec);
+  *(p++) = htonl (st->st_ctime);
+  *(p++) = htonl (st->st_ctime_usec);
   return p;
 }
 
-/* Decode P into NAME and return the next thing to come after it. */
+/* Decode P into NAME and return the next thing to come after it.  */
 int *
 decode_name (int *p, char **name)
 {
   int len;
   
-  len = ntohl (*p++);
+  len = ntohl (*p);
+  p++;
   *name = malloc (len + 1);
-  bcopy (p, *name, len);
+  memcpy (*name, p, len);
   (*name)[len] = '\0';
   return p + INTSIZE (len);
 }
 
-/* Encode HANDLE into P and return the next thing to come after it. */
+/* Encode HANDLE into P and return the next thing to come after it.  */
 int *
 encode_fhandle (int *p, char *handle)
 {
-  bcopy (handle, p, NFS2_FHSIZE);
+  memcpy (p, handle, NFS2_FHSIZE);
   return p + INTSIZE (NFS2_FHSIZE);
 }
 
-/* Encode STRING into P and return the next thing to come after it. */
+/* Encode STRING into P and return the next thing to come after it.  */
 int *
 encode_string (int *p, char *string)
 {
   return encode_data (p, string, strlen (string));
 }
 
-/* Encode DATA into P and return the next thing to come after it. */
+/* Encode DATA into P and return the next thing to come after it.  */
 int *
 encode_data (int *p, char *data, size_t len)
 {
   int nints = INTSIZE (len);
   
   p[nints] = 0;
-  *p++ = htonl (len);
-  bcopy (data, p, len);
+  *(p++) = htonl (len);
+  memcpy (p, data, len);
   return p + nints;
 }
 
-/* Encode ST into P and return the next thing to come after it. */
+/* Encode ST into P and return the next thing to come after it.  */
 int *
 encode_statfs (int *p, struct statfs *st)
 {
-  *p++ = st->f_bsize;
-  *p++ = st->f_bsize;
-  *p++ = st->f_blocks;
-  *p++ = st->f_bfree;
-  *p++ = st->f_bavail;
+  *(p++) = st->f_bsize;
+  *(p++) = st->f_bsize;
+  *(p++) = st->f_blocks;
+  *(p++) = st->f_bfree;
+  *(p++) = st->f_bavail;
   return p;
 }
 
-/* Return an NFS error corresponding to Hurd error ERR. */
+/* Return an NFS error corresponding to Hurd error ERR.  */
 int
 nfs_error_trans (error_t err, int version)
 {
@@ -206,13 +207,10 @@ nfs_error_trans (error_t err, int version)
 	  return NFSERR_INVAL;
 	  
 	case EOPNOTSUPP:
-	  return NFSERR_NOTSUPP; /* are we sure here? */
+	  return NFSERR_NOTSUPP;	/* Are we sure here?  */
 	  
 	default:
 	  return NFSERR_IO;
 	}
     }
 }      
-      
-      
-     
