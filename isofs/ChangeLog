@@ -1,3 +1,33 @@
+2000-11-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	Closes Debian Bug #68417:
+	* rr.c (rrip_work): In helper function add_comp set targused to
+	zero after malloc, and loop over realloc in case doubling is not
+	enough.  After finalizing the link, set VALID_SL valid flag.
+	* inode.c (read_disknode): For links use rl->target instead
+	rl->name.
+		
+	Closes Debian Bug #69281: Don't use file_start as inode numbers,
+	but the offset of the directory record in disk_image. This is what
+	Linux 2.4 does.
+	* isofs.h (struct disknode): New member struct dirrect *dr.
+	* inode.c: Fix comment about inode numbers.
+	(struct node_cache): Fix comment about file_start (it's not unique).
+	In fact, file_start is invalid for symlinks, and only stored here
+	for convenience. Maybe caching file_start can be avoided by
+	rearranging the code.
+	(inode_cache_find): Change first argument from off_t file_start
+	to struct dirrect *dr and fix the doc.
+	Compare cached value of DR with this argument, instead FILE_START.
+	(diskfs_cached_lookup): Set DR member of DN.
+	(load_inode): Call inode_cache_find with RECORD instead FILE_START.
+	Set DR member of DN.
+	(read_disknode): Set inode number to DR - DISK_IMAGE instead
+	FILE_START.
+	* lookup.c (diskfs_get_directs): Remove variable file_start.
+	Don't calculate file_start. Set D_FILENO to EP - DISK_IMAGE
+	instead FILE_START.
+	
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib

@@ -363,10 +363,10 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	      if (rr->target == 0)
 		{
 		  rr->target = malloc (cnamelen * 2);
-		  targused = cnamelen;
+		  targused = 0;
 		  targalloced = cnamelen * 2;
 		}
-	      else if (targused + cnamelen > targalloced)
+	      else while (targused + cnamelen > targalloced)
 		rr->target = realloc (rr->target, targalloced *= 2);
 	      assert (rr->target);
 
@@ -434,6 +434,8 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    rr->target[targused - 1] = '\0';
 	  else
 	    add_comp ("", 1);
+
+	  rr->valid |= VALID_SL;
 
 	  free (slbuf);
 	  goto next_field;

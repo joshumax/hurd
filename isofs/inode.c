@@ -23,9 +23,11 @@
 #include "isofs.h"
 
 
-/* There is no such thing as an inode in this format, all such information
-   being recorded in the directory entry.  So we report inode numbers as
-   absolute offsets from DISK_IMAGE. */
+/* There is no such thing as an inode in this format, all such
+   information being recorded in the directory entry.  So we report
+   inode numbers as absolute offsets from DISK_IMAGE. But we can't use
+   the file start because of symlinks (and zero length files?), so we
+   use the directory record itself.  */
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -38,7 +40,7 @@ struct node_cache
 {
   struct dirrect *dr;		/* somewhere in disk_image */
 
-  off_t file_start;		/* UNIQUE start of file */
+  off_t file_start;		/* start of file */
 
   struct node *np;		/* if live */
 };
@@ -52,17 +54,17 @@ static error_t read_disknode (struct node *,
 			      struct dirrect *, struct rrip_lookup *);
 
 
-/* See if node with file start FILE_START is in the cache.  If so,
-   return it, with one additional reference. diskfs_node_refcnt_lock must
-   be held on entry to the call, and will be released iff the node
-   was found in the cache. */
+/* See if node with directory entry RECORD is in the cache.  If so,
+   return it, with one additional reference. diskfs_node_refcnt_lock
+   must be held on entry to the call, and will be released iff the
+   node was found in the cache. */
 void
-inode_cache_find (off_t file_start, struct node **npp)
+inode_cache_find (struct dirrect *record, struct node **npp)
 {
   int i;
 
   for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].file_start == file_start
+    if (node_cache[i].dr == record
 	&& node_cache[i].np)
       {
 	*npp = node_cache[i].np;
@@ -84,7 +86,7 @@ cache_inode (struct dirrect *dr, struct node *np)
 
   /* First see if there's already an entry. */
   for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].file_start == np->dn->file_start)
+    if (node_cache[i].dr == np->dn->dr)
       break;
 
   if (i == node_cache_size)
@@ -148,6 +150,7 @@ diskfs_cached_lookup (int id, struct node **npp)
 
       dn = malloc (sizeof (struct disknode));
       dn->fileinfo = 0;
+      dn->dr = c->dr;
       dn->file_start = c->file_start;
       np = diskfs_make_node (dn);
       np->cache_id = id + 1;	/* see above for rationale for increment */
@@ -279,13 +282,14 @@ load_inode (struct node **npp, struct dirrect *record,
   spin_lock (&diskfs_node_refcnt_lock);
 
   /* First check the cache */
-  inode_cache_find (file_start, npp);
+  inode_cache_find (record, npp);
   if (*npp)
     return 0;
 
   /* Create a new node */
   dn = malloc (sizeof (struct disknode));
   dn->fileinfo = 0;
+  dn->dr = record;
   dn->file_start = file_start;
 
   np = diskfs_make_node (dn);
@@ -311,7 +315,7 @@ read_disknode (struct node *np, struct dirrect *dr,
   struct stat *st = &np->dn_stat;
   st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
-  st->st_ino = np->dn->file_start;
+  st->st_ino = (ino_t) ((void *) np->dn->dr - (void *) disk_image);
   st->st_gen = 0;
   st->st_rdev = 0;
 
@@ -410,8 +414,8 @@ read_disknode (struct node *np, struct dirrect *dr,
     {
       if (rl->valid & VALID_SL)
 	{
-	  np->dn->link_target = rl->name;
-	  rl->name = 0;
+	  np->dn->link_target = rl->target;
+	  rl->target = 0;
 	  st->st_size = strlen (np->dn->link_target);
 	}
       else

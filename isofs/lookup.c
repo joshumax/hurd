@@ -293,7 +293,6 @@ diskfs_get_directs (struct node *dp,
       struct rrip_lookup rr;
       const char *name;
       size_t namlen, reclen;
-      off_t file_start;
 
       ep = (struct dirrect *) bufp;
 
@@ -354,16 +353,7 @@ diskfs_get_directs (struct node *dp,
 
       /* Fill in entry */
 
-      err = calculate_file_start (ep, &file_start, &rr);
-      if (err)
-	{
-	  diskfs_end_catch_exception ();
-	  if (ouralloc)
-	    munmap (*data, allocsize);
-	  return err;
-	}
-
-      userp->d_fileno = file_start;
+      userp->d_fileno = (ino_t) ((void *) ep - (void *) disk_image);
       userp->d_type = DT_UNKNOWN;
       userp->d_reclen = reclen;
       userp->d_namlen = namlen;

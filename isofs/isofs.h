@@ -33,6 +33,8 @@
 
 struct disknode
 {
+  struct dirrect *dr; /* Somewhere in disk_image.  */
+
   off_t file_start; /* In store->block_size units */
 
   struct user_pager_info *fileinfo;
