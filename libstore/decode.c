@@ -37,9 +37,14 @@ store_std_leaf_decode (struct store_enc *enc,
 {
   char *misc, *name;
   error_t err;
-  int type, flags, i;
+  int type, flags;
   mach_port_t port;
   size_t block_size, num_runs, name_len, misc_len;
+  /* Call CREATE appriately from within store_with_decoded_runs.  */
+  error_t call_create (const struct store_run *runs, size_t num_runs)
+    {
+      return (*create)(port, flags, block_size, runs, num_runs, store);
+    }
   
   /* Make sure there are enough encoded ints and ports.  */
   if (enc->cur_int + 6 > enc->num_ints || enc->cur_port + 1 > enc->num_ports)
@@ -80,6 +85,34 @@ store_std_leaf_decode (struct store_enc *enc,
   /* Read encoded ports (be careful to deallocate this if we barf).  */
   port = enc->ports[enc->cur_port++];
 
+  err = store_with_decoded_runs (enc, num_runs, call_create);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), port);
+      free (misc);
+      if (name)
+	free (name);
+    }
+  else
+    {
+      (*store)->flags = flags;
+      (*store)->name = name;
+      (*store)->misc = misc;
+      (*store)->misc_len = misc_len;
+    }
+
+  return err;
+}
+
+/* Call FUN with the vector RUNS of length RUNS_LEN extracted from ENC.  */
+error_t
+store_with_decoded_runs (struct store_enc *enc, size_t num_runs,
+			 error_t (*fun) (const struct store_run *runs,
+					 size_t num_runs))
+{
+  int i;
+  error_t err;
+
   /* Since the runs are passed in an array of off_t pairs, and we use struct
      store_run, we have to make a temporary array to hold the (probably
      bitwise identical) converted representation to pass to CREATE.  */
@@ -92,7 +125,8 @@ store_std_leaf_decode (struct store_enc *enc,
 	  runs[i].start = *e++;
 	  runs[i].length = *e++;
 	}
-      err = (*create)(port, flags, block_size, runs, num_runs, store);
+      enc->cur_offset = e - enc->offsets;
+      err = (*fun)(runs, num_runs);
     }
   else
     /* Ack.  Too many runs to allocate the temporary RUNS array on the stack.
@@ -107,26 +141,12 @@ store_std_leaf_decode (struct store_enc *enc,
 	      runs[i].start = *e++;
 	      runs[i].length = *e++;
 	    }
-	  err = (*create)(port, flags, block_size, runs, num_runs, store);
+	  enc->cur_offset = e - enc->offsets;
+	  err = (*fun) (runs, num_runs);
 	  free (runs);
 	}
       else
 	err = ENOMEM;
-    }
-
-  if (err)
-    {
-      mach_port_deallocate (mach_task_self (), port);
-      free (misc);
-      if (name)
-	free (name);
-    }
-  else
-    {
-      (*store)->flags = flags;
-      (*store)->name = name;
-      (*store)->misc = misc;
-      (*store)->misc_len = misc_len;
     }
 
   return err;
