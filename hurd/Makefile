@@ -21,3 +21,14 @@ DIST_FILES = ChangeLog Makefile *.defs subsystems $(HDRS)
 
 HDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
 
+# XXX This should be done by the individual libraries' install targets XXX
+REMHDRS = ../libioserver/ioserver.h \
+	../libports/ports.h \
+	../libpager/pager.h \
+	../libfshelp/fshelp.h \
+	../libdiskfs/diskfs.h \
+	../libtrivfs/trivfs.h \
+	../libthreads/cthreads.h
+
+dohdrs:
+	ln -s $(REMHDRS) .
