@@ -84,7 +84,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     return EBADF;
   else
     return open_read ((struct open *)cred->po->hook,
-		      offs, amount, (char **)data, data_len);
+		      offs, amount, (void **)data, data_len);
 }
 
 /* Tell how much data can be read from the object without blocking for
@@ -126,7 +126,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     return EBADF;
   else
     return open_write ((struct open *)cred->po->hook,
-		       offs, (char *)data, data_len, amount);
+		       offs, (void *)data, data_len, amount);
 }
 
 /* Change current read/write offset */
