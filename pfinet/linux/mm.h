@@ -5,5 +5,6 @@ int verify_area (int, const void *, u_long);
 
 #define VERIFY_READ 0
 #define VERIFY_WRITE 0
+#define GFP_ATOMIC 0
 
 #endif
