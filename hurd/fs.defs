@@ -240,6 +240,18 @@ routine dir_rename (
 	newdirectory: file_t;
 	newname: string_t);
 
+/* Create a new file without linking it into the filesystem.  You
+   still must have write permission on the specified directory, even
+   though it will not actually be written.  Return in *newnode a port
+   to the file.  Flags are the same as for dir_pathtrans, but 
+   O_CREAT and O_TRUNC are assumed even if not specified.  */
+/* INTR */
+routine dir_mkfile (
+	directory: file_t;
+	flags: int;
+	mode: mode_t;
+	out mach_port_send_t newnode);
+
 /* To get or set the translator currently running on a file, use
    file_set_translator, file_get_translator, or
    file_get_translator_cntl on a port gotten with the
