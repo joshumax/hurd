@@ -88,7 +88,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
       spin_unlock (&pflocalserverlock);
       
       /* Create an address for the node */
-      err = socket_fabricate_address (server, &sockaddr);
+      err = socket_fabricate_address (server, AF_LOCAL, &sockaddr);
       if (err)
 	{
 	  mutex_unlock (&np->lock);
