@@ -32,15 +32,15 @@
 /* Invoke ARGP with data from DATA & LEN, in the standard way.  */
 error_t
 fshelp_set_options (struct argp *argp, int flags,
-		    char *data, mach_msg_type_number_t len)
+		    char *argz, size_t argz_len, void *input)
 {
-  int argc = argz_count (data, len);
+  int argc = argz_count (argz, argz_len);
   char **argv = alloca (sizeof (char *) * (argc + 1));
 
-  argz_extract (data, len, argv);
+  argz_extract (argz, argz_len, argv);
 
   return
     argp_parse (argp, argc, argv,
 		flags | ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
-		0, 0);
+		0, input);
 }
