@@ -1227,7 +1227,6 @@ S_tioctl_tiocswinsz (io_t port,
       return EOPNOTSUPP;
     }
 
-
   mutex_lock (&global_lock);
   
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
@@ -1237,10 +1236,11 @@ S_tioctl_tiocswinsz (io_t port,
 
   ports_port_deref (cred);
 
-  if (!err && (size.ws_row - window_size.ws_row +
-	       size.ws_col - window_size.ws_col +
-	       size.ws_xpixel - window_size.ws_xpixel +
-	       size.ws_ypixel - window_size.ws_ypixel) != 0)
+  if (! err
+      && (size.ws_row != window_size.ws_row
+	  || size.ws_col != window_size.ws_col
+	  || size.ws_xpixel != window_size.ws_xpixel
+	  || size.ws_ypixel != window_size.ws_ypixel))
     {
       /* The size is actually changing.  Record the new size and notify the
 	 process group.  */
