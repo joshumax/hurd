@@ -62,7 +62,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 	  >= offsetof (struct dirent, d_name));
 
   if (bufsiz == 0)
-    bufsiz = dp->dn_stat.st_size;
+    bufsiz = dp->dn_stat.st_size + 2 * offsetof (struct dirent, d_name[4]);
   if (bufsiz > *datacnt)
     {
       *data = mmap (0, bufsiz, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
@@ -70,28 +70,46 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 	return ENOMEM;
     }
 
+  /* We always synthesize the first two entries (. and ..) on the fly.  */
   entp = (struct dirent *) *data;
-  entp->d_fileno = dp->dn_stat.st_ino;
-  entp->d_type = DT_DIR;
-  entp->d_namlen = 1;
-  entp->d_name[0] = '.';
-  entp->d_name[1] = '\0';
-  entp->d_reclen = (&entp->d_name[2] - (char *) entp + 7) & ~7;
-  entp = (void *) entp + entp->d_reclen;
-  entp->d_fileno = (ino_t) dp->dn->u.dir.dotdot;
-  entp->d_type = DT_DIR;
-  entp->d_namlen = 2;
-  entp->d_name[0] = '.';
-  entp->d_name[1] = '.';
-  entp->d_name[2] = '\0';
-  entp->d_reclen = (&entp->d_name[3] - (char *) entp + 7) & ~7;
-  entp = (void *) entp + entp->d_reclen;
+  i = 0;
+  if (i++ >= entry)
+    {
+      entp->d_fileno = dp->dn_stat.st_ino;
+      entp->d_type = DT_DIR;
+      entp->d_namlen = 1;
+      entp->d_name[0] = '.';
+      entp->d_name[1] = '\0';
+      entp->d_reclen = (&entp->d_name[2] - (char *) entp + 7) & ~7;
+      entp = (void *) entp + entp->d_reclen;
+    }
+  if (i++ >= entry)
+    {
+      if (dp->dn->u.dir.dotdot == 0)
+	{
+	  assert (dp == diskfs_root_node);
+	  /* Use something not zero and not an st_ino value for any node in
+	     this filesystem.  Since we use pointer values, 2 will never
+	     be a valid number.  */
+	  entp->d_fileno = 2;
+	}
+      else
+	entp->d_fileno = (ino_t) dp->dn->u.dir.dotdot;
+      entp->d_type = DT_DIR;
+      entp->d_namlen = 2;
+      entp->d_name[0] = '.';
+      entp->d_name[1] = '.';
+      entp->d_name[2] = '\0';
+      entp->d_reclen = (&entp->d_name[3] - (char *) entp + 7) & ~7;
+      entp = (void *) entp + entp->d_reclen;
+    }
 
-  d = dp->dn->u.dir.entries;
-  for (i = 2; i < entry && d != 0; ++i)
-    d = d->next;
+  /* Skip ahead to the desired entry.  */
+  for (d = dp->dn->u.dir.entries; i < entry && d != 0; d = d->next)
+    ++i;
 
-  for (i = 2; d != 0; d = d->next)
+  /* Now fill in the buffer with real entries.  */
+  for (; d != 0; d = d->next)
     {
       if ((char *) entp - *data >= bufsiz || (n >= 0 && ++i > n))
 	break;
@@ -102,10 +120,11 @@ diskfs_get_directs (struct node *dp, int entry, int n,
       entp->d_reclen = ((&entp->d_name[d->namelen + 1] - (char *) entp + 7)
 			& ~7);
       entp = (void *) entp + entp->d_reclen;
+      ++i;
     }
 
   *datacnt = (char *) entp - *data;
-  *amt = i;
+  *amt = i - entry;
 
   return 0;
 }
