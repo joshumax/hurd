@@ -218,9 +218,9 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 static void
 free_name (struct hostmux_name *nm)
 {
-  free ((char *)nm->name);
   if (nm->name != nm->canon)
     free ((char *)nm->canon);
+  free ((char *)nm->name);
   free (nm);
 }
 

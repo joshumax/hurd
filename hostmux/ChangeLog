@@ -1,3 +1,8 @@
+2001-08-01  Marcus Brinkmann  <marcus@gnu.org>
+
+	* mux.c (free_name): Swap order of memory releases.
+	Reported by Kalle Olavi Niemitalo <kon@iki.fi>
+
 2001-02-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* hostmux.c: Include <version.h>.  Add global variable
