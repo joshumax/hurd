@@ -1,0 +1,16 @@
+libshouldbeinlibc 0.2
+libftpconn 0.2
+libports 0.2
+libmom 0.2
+libthreads 0.2
+libhurdbugaddr 0.2
+libstore 0.2
+libihash 0.2
+libpipe 0.2
+libtrivfs 0.2
+libpager 0.2
+libnetfs 0.2
+libiohelp 0.2
+libfshelp 0.2
+libps 0.2
+libdiskfs 0.2
