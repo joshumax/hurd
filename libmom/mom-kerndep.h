@@ -23,9 +23,7 @@
 
 struct mom_port_ref
 {
-  spin_lock_t lock;
   mach_port_t port;
-  int refcnt;
 };
 
 /* Mach-specific functions */
