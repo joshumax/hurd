@@ -317,7 +317,8 @@ zombie_check_pid (pid_t pid)
 
 /* Implement interrupt_operation as described in <hurd/interrupt.defs>. */
 kern_return_t
-S_interrupt_operation (mach_port_t object)
+S_interrupt_operation (mach_port_t object,
+		       mach_port_seqno_t seqno)
 {
   struct proc *p = reqport_find (object);
   
