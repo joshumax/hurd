@@ -1,3 +1,7 @@
+1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* node.c (netfs_attempt_utimes): Fix typo in last change.
+
 Sun Jan 31 18:41:17 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* node.c (netfs_attempt_utimes): Handle new possibility that ATIME
