@@ -36,7 +36,7 @@
    case where the read should signal EOF, EPIPE is returned.  SOCK mustn't be
    locked.  */
 error_t
-sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
+sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
  debug (sock, "in");
@@ -52,7 +52,7 @@ sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
 	&& !(sock->flags & SOCK_CONNECTED))
       err = ENOTCONN;
     else
-      pipe_aquire_reader (*pipe);
+      pipe_acquire_reader (*pipe);
   else if (sock->flags & SOCK_SHUTDOWN_READ)
     /* Reading on a socket with the read-half shutdown always acts as if the
        pipe were at eof, even if the socket isn't connected yet [at least in
@@ -76,7 +76,7 @@ sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
    additional reference, or an error saying why it's not possible.  SOCK
    mustn't be locked.  */
 error_t
-sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe)
+sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
 debug (sock, "in");
@@ -85,7 +85,7 @@ debug (sock, "lock");
   mutex_lock (&sock->lock);
   *pipe = sock->write_pipe;
   if (*pipe != NULL)
-    pipe_aquire_writer (*pipe);	/* Do this before unlocking the sock!  */
+    pipe_acquire_writer (*pipe);	/* Do this before unlocking the sock!  */
   else if (sock->flags & SOCK_SHUTDOWN_WRITE)
     /* Writing on a socket with the write-half shutdown always acts as if the
        pipe were broken, even if the socket isn't connected yet [at least in
