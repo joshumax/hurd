@@ -23,11 +23,12 @@
 #include "isofs.h"
 
 /* Forward */
-static error_t
-dirscanblock (void *, char *, size_t, struct dirrect **, struct rrip_lookup *);
+static error_t dirscanblock (void *, const char *, size_t,
+			     struct dirrect **, struct rrip_lookup *);
 
 static int
-isonamematch (char *dirname, size_t dnamelen, char *username, size_t unamelen)
+isonamematch (const char *dirname, size_t dnamelen,
+	      const char *username, size_t unamelen)
 {
   /* Special representations for `.' and `..' */
   if (dnamelen == 1 && dirname[0] == '\0')
@@ -148,7 +149,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 /* Scan one logical sector of directory contents (at address BLKADDR)
    for NAME of length NAMELEN.  Return its address in *RECORD. */
 static error_t
-dirscanblock (void *blkaddr, char *name, size_t namelen,
+dirscanblock (void *blkaddr, const char *name, size_t namelen,
 	      struct dirrect **record, struct rrip_lookup *rr)
 {
   struct dirrect *entry;

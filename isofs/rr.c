@@ -47,7 +47,7 @@ release_rrip (struct rrip_lookup *rr)
 /* Work function combining the three interfaces below. */
 static int
 rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
-	   char *match_name, char match_name_len,
+	   const char *match_name, size_t match_name_len,
 	   int initializing, int ignorenm)
 {
   void *bp, *terminus;
@@ -616,7 +616,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
    case, fill RR with information corresponding to the fields we do
    encounter. */
 int
-rrip_match_lookup (struct dirrect *dr, char *name, size_t namelen,
+rrip_match_lookup (struct dirrect *dr, const char *name, size_t namelen,
 		   struct rrip_lookup *rr)
 {
   return rrip_work (dr, rr, name, namelen, 0, 0);

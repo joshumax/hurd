@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1997, 1999 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -31,16 +31,16 @@ struct rrip_lookup
 
   /* PN */
   dev_t rdev;
-  
+
   /* SL */
   char *target;
-   
+
   /* NM */
   char *name;			/* name of this entry if changed (malloced) */
-  
+
   /* CL */
   off_t newloc;			/* relocated directory */
-  
+
   /* PL */
   off_t parloc;			/* parent of relocated directory */
 
@@ -60,10 +60,10 @@ struct rrip_lookup
   /* TR */
   size_t translen;
   char *trans;
-  
+
   /* MD */
   mode_t allmode;
-  
+
   /* FL */
   long flags;
 
@@ -198,7 +198,7 @@ struct rr_pl
 };
 
 /* The body of a TF (Time Stamp) field. */
-struct rr_tf 
+struct rr_tf
 {
   u_char flags;
   char data[0];
@@ -259,7 +259,8 @@ struct gn_fl
 
 /* Rock-Ridge related functions. */
 
-int rrip_match_lookup (struct dirrect *, char *, size_t, struct rrip_lookup *);
+int rrip_match_lookup (struct dirrect *, const char *,
+		       size_t, struct rrip_lookup *);
 void rrip_lookup (struct dirrect *, struct rrip_lookup *, int);
 void rrip_initialize (struct dirrect *);
 void release_rrip (struct rrip_lookup *);
