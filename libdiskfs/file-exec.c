@@ -73,7 +73,7 @@ diskfs_S_file_exec (struct protid *cred,
   err = exec_exec (diskfs_exec, 
 		   (ports_get_right 
 		    (diskfs_make_protid
-		     (diskfs_make_peropen (np, O_READ),
+		     (diskfs_make_peropen (np, O_READ, cred->po->dotdotport),
 		      cred->uids, cred->nuids, cred->gids, cred->ngids))),
 		   MACH_MSG_TYPE_MAKE_SEND,
 		   task, flags, argv, argvlen, envp, envplen, 
