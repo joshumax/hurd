@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -31,6 +31,7 @@ subsystem crash 32000;
 
 routine crash_dump_task (
 	crashserver: mach_port_t;
+	sreplyport reply: sreply_port_t;
 	task: task_t;
 	file: file_t;
 	target: string_t;
