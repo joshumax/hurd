@@ -184,6 +184,9 @@ struct disknode
   /* True if the last page of the file has been made writable, but is only
      partially allocated.  */
   int last_page_partially_writable;
+
+  /* Index to start a directory lookup at.  */
+  int dir_idx;
 };
 
 struct user_pager_info
