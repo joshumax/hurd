@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -157,7 +157,6 @@ struct user_pager_info
       FILE_DATA,
     } type;
   struct pager *p;
-  struct user_pager_info *next, **prevp;
 };
 
 struct user_pager_info *diskpager;
