@@ -54,7 +54,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
  */
 
 #include "ufs.h"
-#include "fs.h"
 #include "dinode.h"
 #include <stdio.h>
 
