@@ -198,10 +198,10 @@ hurdio_reader_loop (any_t arg)
       err = io_read (ioport, &data, &datalen, -1, BUFFER_SIZE);
 
       mutex_lock (&global_lock);
-      /* EIO or EOF can mean the carrier has been dropped.  */
-      if (err == EIO || !datalen)
+      /* Error or EOF can mean the carrier has been dropped.  */
+      if (err || !datalen)
 	hurdio_desert_dtr ();
-      else if (!err)
+      else
 	{
 	  if (termstate.c_cflag & CREAD)
 	    {
@@ -291,10 +291,9 @@ hurdio_writer_loop (any_t arg)
 
       mach_port_mod_refs (mach_task_self (), ioport_copy,
 			  MACH_PORT_RIGHT_SEND, -1);
-      /* XXX Handle errors correctly.  */
-      if (err == EIO)
+      if (err)
 	hurdio_desert_dtr ();
-      else if (!err)
+      else
 	{
 	  /* Note that npending_output might be set to null in the
 	     meantime by hurdio_abandon_physical_output.  */
