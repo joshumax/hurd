@@ -113,19 +113,6 @@ S_io_write (struct sock_user *user,
   return err;
 }
 
-/* Cause a pending request on this object to immediately return.  The
-   exact semantics are dependent on the specific object.  */
-error_t
-S_interrupt_operation (mach_port_t port)
-{
-  struct sock_user *user = ports_lookup_port (sock_port_bucket, port, 0);
-  if (!user)
-    return EOPNOTSUPP;
-  ports_interrupt_rpc (user);
-  ports_port_deref (user);
-  return 0;
-}
-
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
    by the nonblocking flag.  */
