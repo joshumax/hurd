@@ -60,3 +60,26 @@ wake_up_interruptible (struct wait_queue **p)
   condition_broadcast (&(*p)->c);
 }
 
+
+/* Wake up the owner of the SOCK.  If HOW is zero, then just
+   send SIGIO.  If HOW is one, then send SIGIO only if the 
+   SO_WAITDATA flag is off.  If HOW is two, then send SIGIO
+   only if the SO_NOSPACE flag is on, and also clear it. */
+int
+sock_wake_async (struct socket *sock, int how)
+{
+  /* For now, do nothing. XXX  */
+  return 0;
+}
+
+/* Record that we are doing a select.  The table P is passed 
+   to the protocol-specific select routine and then echoed
+   through to us.  The WAIT_ADDRESS is what will be woken up
+   when I/O becomes possible.  */
+void
+select_wait (struct wait_queue **wait_address, select_table *p)
+{
+  /* For now, do nothing. XXX */
+  return;
+}
+
