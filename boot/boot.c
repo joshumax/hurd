@@ -1756,6 +1756,19 @@ S_io_map (mach_port_t obj,
 }
 
 kern_return_t
+S_io_map_segment (mach_port_t obj,
+	  mach_port_t reply_port,
+	  mach_msg_type_name_t reply_type,
+	  int index,
+	  mach_port_t *rd,
+	  mach_msg_type_name_t *rdtype,
+	  mach_port_t *wr,
+	  mach_msg_type_name_t *wrtype)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
 S_io_map_cntl (mach_port_t obj,
 	       mach_port_t reply_port,
 	       mach_msg_type_name_t reply_type,

@@ -1,3 +1,7 @@
+1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* boot.c (S_io_map_segment): New function.
+
 1999-07-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (ds_device_read, S_io_read): Fix sloppy bugs in last change.
