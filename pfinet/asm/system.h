@@ -46,4 +46,24 @@ sti ()
   mutex_unlock (&global_interrupt_lock);
 }
 
+/* In threads set aside to be interrupt threads, they call this
+   before doing any real work, thus putting us into "interrupt"
+   mode. */
+extern inline void
+begin_interrupt ()
+{
+  mutex_lock (&global_interrupt_lock);
+  /* Should we suspend the current "user thread"? */
+}
+
+/* And then this, at the end of the real work. */
+extern inline void
+end_interrupt ()
+{
+  mutex_unlock (&global_interrupt_lock);
+  /* Likewise a resumption? */
+}
+
+
+
 #endif
