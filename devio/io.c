@@ -359,14 +359,14 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 	  (*ints)[0] = STORAGE_DEVICE;	      /* type */
 	  (*ints)[1] = 0;		      /* flags */
 	  (*ints)[2] = dev->dev_block_size;   /* block_size */
-	  (*ints)[3] = 2;		      /* num_runs */
+	  (*ints)[3] = 1;		      /* num_runs */
 	  (*ints)[4] = strlen (dev->name) + 1; /* name_len */
 	  (*ints)[5] = 0;		      /* misc_len */
 	  *num_ints = 6;
 
 	  (*offsets)[0] = 0;
 	  (*offsets)[1] = dev->size / dev->dev_block_size;
-	  *num_offsets = 1;
+	  *num_offsets = 2;
 
 	  strcpy (*data, dev->name);
 	  *data_len = strlen (dev->name) + 1;
