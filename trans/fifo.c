@@ -1,6 +1,6 @@
 /* A translator for fifos
 
-   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -317,11 +317,12 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
    mapping; they will set none of the ports and return an error.  Such
    objects can still be accessed by io_read and io_write.  */
 error_t
-trivfs_S_io_map(struct trivfs_protid *cred,
-		memory_object_t *rdobj,
-		mach_msg_type_name_t *rdtype,
-		memory_object_t *wrobj,
-		mach_msg_type_name_t *wrtype)
+trivfs_S_io_map (struct trivfs_protid *cred,
+		 mach_port_t reply, mach_msg_type_name_t replytype,
+		 memory_object_t *rdobj,
+		 mach_msg_type_name_t *rdtype,
+		 memory_object_t *wrobj,
+		 mach_msg_type_name_t *wrtype)
 {
   return EINVAL;
 }
@@ -406,7 +407,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int *select_type, int *tag)
+		    int *select_type)
 {
   struct pipe *pipe;
   error_t err = 0;
