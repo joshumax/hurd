@@ -21,23 +21,24 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "fs_S.h"
+#include "io_S.h"
 
 error_t
 diskfs_S_dir_readdir (struct protid *cred,
-		      char *data,
+		      char **data,
 		      u_int *datacnt,
-		      int offset,
-		      int *nextoffset,
+		      off_t offset,
+		      off_t *nextoffset,
 		      int amt)
 {
   error_t err;
-  
+
   if (offset == -1)
     return EINVAL;
 
   err = diskfs_S_io_read (cred, data, datacnt, offset, amt);
   if (!err)
-    *newoffset = offset + *datalen;
+    *nextoffset = offset + *datacnt;
   return err;
 }
 
