@@ -1,8 +1,3 @@
-2003-08-06  Jeroen Dekkers  <jeroen@dekkers.cx>
-
-	* idvec-verify.c: Remove #pragma weak crypt.
-	(verify_passwd): Don't check if crypt exist.
-
 2003-08-03  Marco Gerards  <metgerards@student.han.nl>
 
 	* idvec-verify.c: Include <crypt.h>.
