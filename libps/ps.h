@@ -27,15 +27,8 @@
 
 #include <pwd.h>
 #include <errno.h>
-
-#ifndef bool
-#define bool int
-#endif
 
-/* ---------------------------------------------------------------- */
-/* A PS_USER_T hold info about a particular user.  */
-
-typedef struct ps_user *ps_user_t;
+/* A PS_USER holds info about a particular user.  */
 
 /* Possible states a ps_user's passwd can be in: valid, not fet */
 enum ps_user_passwd_state
@@ -59,25 +52,22 @@ struct ps_user
 
 #define ps_user_uid(u) ((u)->uid)
 
-/* Create a ps_user_t for the user referred to by UID, returning it in U.
+/* Create a ps_user for the user referred to by UID, returning it in U.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t ps_user_create(uid_t uid, ps_user_t *u);
+error_t ps_user_create (uid_t uid, struct ps_user **u);
 
 /* Free U and any resources it consumes.  */
-void ps_user_free(ps_user_t u);
+void ps_user_free (struct ps_user *u);
 
 /* Returns the password file entry (struct passwd, from <pwd.h>) for the user
    referred to by U, or NULL if it can't be gotten.  */
-struct passwd *ps_user_passwd(ps_user_t u);
+struct passwd *ps_user_passwd (struct ps_user *u);
 
 /* Returns the user name for the user referred to by U, or NULL if it can't
    be gotten.  */
-char *ps_user_name(ps_user_t u);
+char *ps_user_name (struct ps_user *u);
 
-/* ---------------------------------------------------------------- */
-/* A ps_tty_t holds information about a terminal.  */
-
-typedef struct ps_tty *ps_tty_t;
+/* A ps_tty holds information about a terminal.  */
 
 /* Possible states a ps_tty's name can be in: valid, not fetched yet,
    couldn't fetch.  */
@@ -89,56 +79,54 @@ struct ps_tty {
   file_t port;
   
   /* The name of the tty, if we could figure it out.  */
-  char *name;
+  const char *name;
   /* What state the name is in.  */
   enum ps_tty_name_state name_state;
 
   /* A more abbreviated name for the tty, or NULL if no name at all.  */
-  char *short_name;
-  bool short_name_alloced : 1;
+  const char *short_name;
+  int short_name_alloced : 1;
 };
 
 #define ps_tty_port(tty) ((tty)->port)
 
-/* Create a ps_tty_t for the tty referred to by PORT, returning it in TTY.
+/* Create a ps_tty for the tty referred to by PORT, returning it in TTY.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t ps_tty_create(file_t port, ps_tty_t *tty);
+error_t ps_tty_create (file_t port, struct ps_tty **tty);
 
 /* Frees TTY and any resources it consumes.  */
-void ps_tty_free(ps_tty_t tty);
+void ps_tty_free (struct ps_tty *tty);
 
 /* Returns the name of the tty, or NULL if it can't be figured out.  */
-char *ps_tty_name(ps_tty_t tty);
+const char *ps_tty_name (struct ps_tty *tty);
 
 /* Returns the standard abbreviated name of the tty, the whole name if there
    is no standard abbreviation, or NULL if it can't be figured out.  */
-char *ps_tty_short_name(ps_tty_t tty);
+const char *ps_tty_short_name (struct ps_tty *tty);
 
-/* ---------------------------------------------------------------- */
-/* A ps_context_t holds various information resulting from querying a
+/* A PS_CONTEXT holds various information resulting from querying a
    particular process server, in particular a group of proc_stats, ps_users,
    and ps_ttys.  This information sticks around until the context is freed
    (subsets may be created by making proc_stat_lists).  */
 
-typedef struct ps_context *ps_context_t;
-typedef struct proc_stat *proc_stat_t;
+struct proc_stat;		/* Fwd declared */
 
 struct ps_context
 {
   /* The process server our process info is from.  */
   process_t server;
 
-  /* proc_stat_t's for every process we know about, indexed by process id.  */
+  /* proc_stats for every process we know about, indexed by process id.  */
   ihash_t procs;
 
-  /* ps_tty_t's for every tty we know about, indexed by the terminal port.  */
+  /* ps_ttys for every tty we know about, indexed by the terminal port.  */
   ihash_t ttys;
 
-  /* ps_tty_t's for every tty we know about, indexed by their ctty id port
+  /* ps_ttys for every tty we know about, indexed by their ctty id port
      (from libc).  */
   ihash_t ttys_by_cttyid;
 
-  /* ps_user_t's for every user we know about, indexed by user-id.  */
+  /* A ps_user for every user we know about, indexed by user-id.  */
   ihash_t users;
 
   /* Functions that can be set to extend the behavior of proc_stats.  */
@@ -147,35 +135,36 @@ struct ps_context
 
 #define ps_context_server(pc) ((pc)->server)
 
-/* Returns in PC a new ps_context_t for the proc server SERVER.  If a memory
+/* Returns in PC a new ps_context for the proc server SERVER.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  */
-error_t ps_context_create(process_t server, ps_context_t *pc);
+error_t ps_context_create (process_t server, struct ps_context **pc);
 
 /* Frees PC and any resources it consumes.  */
-void ps_context_free(ps_context_t pc);
+void ps_context_free (struct ps_context *pc);
 
-/* Find a proc_stat_t for the process referred to by PID, and return it in
+/* Find a proc_stat for the process referred to by PID, and return it in
    PS.  If an error occurs, it is returned, otherwise 0.  */
-error_t ps_context_find_proc_stat(ps_context_t pc, pid_t pid, proc_stat_t *ps);
+error_t ps_context_find_proc_stat (struct ps_context *pc, pid_t pid,
+				   struct proc_stat **ps);
 
-/* Find a ps_tty_t for the terminal referred to by the port TTY_PORT, and
+/* Find a ps_tty for the terminal referred to by the port TTY_PORT, and
    return it in TTY.  If an error occurs, it is returned, otherwise 0.  */
-error_t ps_context_find_tty(ps_context_t pc, mach_port_t tty_port, ps_tty_t *tty);
+error_t ps_context_find_tty (struct ps_context *pc, mach_port_t tty_port,
+			     struct ps_tty **tty);
 
-/* Find a ps_tty_t for the terminal referred to by the ctty id port
+/* Find a ps_tty for the terminal referred to by the ctty id port
    CTTYID_PORT, and return it in TTY.  If an error occurs, it is returned,
    otherwise 0.  */
-error_t ps_context_find_tty_by_cttyid(ps_context_t pc,
-				      mach_port_t cttyid_port, ps_tty_t *tty);
+error_t ps_context_find_tty_by_cttyid (struct ps_context *pc,
+				       mach_port_t cttyid_port,
+				       struct ps_tty **tty);
 
-/* Find a ps_user_t for the user referred to by UID, and return it in U.  */
-error_t ps_context_find_user(ps_context_t pc, uid_t uid, ps_user_t *u);
+/* Find a ps_user for the user referred to by UID, and return it in U.  */
+error_t ps_context_find_user (struct ps_context *pc, uid_t uid,
+			      struct ps_user **u);
 
-/* ---------------------------------------------------------------- */
-/*
-   A PROC_STAT_T holds lots of info about the process PID at SERVER; exactly
-   which info is dependent on its FLAGS field.
- */
+/* A PROC_STAT holds lots of info about the process PID at SERVER; exactly
+   which info is dependent on its FLAGS field.  */
 
 typedef unsigned ps_flags_t;
 typedef unsigned ps_state_t;
@@ -183,7 +172,7 @@ typedef unsigned ps_state_t;
 struct proc_stat
   {
     /* Which process server this is from.  */
-    ps_context_t context;
+    struct ps_context *context;
 
     /* The proc's process id; if <0 then this is a thread, not a process.  */
     pid_t pid;
@@ -193,7 +182,7 @@ struct proc_stat
     ps_flags_t failed;		/* flags that we tried to set and couldn't.  */
 
     /* Thread fields -- these are valid if PID < 0.  */
-    proc_stat_t thread_origin;	/* A proc_stat_t for the task we're in.  */
+    struct proc_stat *thread_origin; /* A proc_stat for the task we're in.  */
     unsigned thread_index;	/* Which thread in our proc we are.  */
 
     /* A process_t port for the process.  */
@@ -254,8 +243,8 @@ struct proc_stat
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
     ps_state_t state;
 
-    /* A ps_user_t object for the owner of this process, or NULL if none.  */
-    ps_user_t owner;
+    /* A ps_user object for the owner of this process, or NULL if none.  */
+    struct ps_user *owner;
     int owner_uid;		/* The corresponding UID, or -1.  */
 
     /* The process's argv, as a string with each element separated by '\0'.  */
@@ -288,8 +277,8 @@ struct proc_stat
        when creating a file.  */
     unsigned umask;
 
-    /* A ps_tty_t object for the process's controlling terminal.  */
-    ps_tty_t tty;
+    /* A ps_tty object for the process's controlling terminal.  */
+    struct ps_tty *tty;
 
     /* A hook for the user to use.  */
     void *hook;
@@ -316,8 +305,8 @@ struct proc_stat
 #define PSTAT_CTTYID	       0x08000 /* The process's CTTYID port */
 #define PSTAT_CWDIR	       0x10000 /* A file_t for the proc's CWD */
 #define PSTAT_AUTH	       0x20000 /* The proc's auth port */
-#define PSTAT_TTY	       0x40000 /* A ps_tty_t for the proc's terminal.*/
-#define PSTAT_OWNER	       0x80000 /* A ps_user_t for the proc's owner */
+#define PSTAT_TTY	       0x40000 /* A ps_tty for the proc's terminal.*/
+#define PSTAT_OWNER	       0x80000 /* A ps_user for the proc's owner */
 #define PSTAT_OWNER_UID	      0x100000 /* The uid of the the proc's owner */
 #define PSTAT_UMASK	      0x200000 /* The proc's current umask */
 #define PSTAT_EXEC_FLAGS      0x400000 /* The process's exec flags */
@@ -330,7 +319,7 @@ struct proc_stat
 #define PSTAT_USER_BASE      0x2000000
 #define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
 
-/* If the PSTAT_STATE flag is set, then the proc_stat's state field holds a
+/* If the PSTAT_STATE flag is set, then the proc_stats state field holds a
    bitmask of the following bits, describing the process's run state.  If you
    change the value of these, you must change proc_stat_state_tags as well!  */
 
@@ -382,18 +371,16 @@ struct proc_stat
 				 | PSTAT_STATE_T_NICE | PSTAT_STATE_T_NASTY)
 
 /* This is a constant string holding a single character for each possible bit
-   in a proc_stat's STATE field, in order from bit zero.  These are intended
+   in a proc_stats STATE field, in order from bit zero.  These are intended
    for printing a user-readable summary of a process's state. */
 char *proc_stat_state_tags;
 
-/*
-   Process info accessor functions.
+/* Process info accessor functions.
 
    You must be sure that the associated flag bit is set before accessing a
-   field in a proc_stat_t!  A field FOO (with accessor macro proc_foo()), has
+   field in a proc_stat!  A field FOO (with accessor macro proc_foo ()), has
    a flag named PSTAT_FOO.  If the flag is'nt set, you may attempt to set it
-   with proc_stat_set_flags (but note that this may not succeed).
- */
+   with proc_stat_set_flags (but note that this may not succeed).  */
 
 /* FLAGS doesn't have a flag bit; it's always valid */
 #define proc_stat_flags(ps) ((ps)->flags)
@@ -430,30 +417,31 @@ char *proc_stat_state_tags;
 /* True if PS refers to a thread and not a process.  */
 #define proc_stat_is_thread(ps) ((ps)->pid < 0)
 
-/* Returns in PS a new proc_stat_t for the process PID in the ps context PC.
+/* Returns in PS a new proc_stat for the process PID in the ps context PC.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.
    Users shouldn't use this routine, use pc_context_find_proc_stat instead.  */
-error_t _proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps);
+error_t _proc_stat_create (pid_t pid, struct ps_context *context,
+			   struct proc_stat **ps);
 
 /* Frees PS and any memory/ports it references.  Users shouldn't use this
-   routine; proc_stat_ts are normally freed only when their ps_context goes
+   routine; proc_stats are normally freed only when their ps_context goes
    away.  */
-void _proc_stat_free(proc_stat_t ps);
+void _proc_stat_free (struct proc_stat *ps);
 
 /* Adds FLAGS to PS's flags, fetching information as necessary to validate
    the corresponding fields in PS.  Afterwards you must still check the flags
    field before using new fields, as something might have failed.  Returns
    a system error code if a fatal error occurred, and 0 otherwise.  */
-error_t proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags);
+error_t proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags);
 
-/* Returns in THREAD_PS a proc_stat_t for the Nth thread in the proc_stat_t
+/* Returns in THREAD_PS a proc_stat for the Nth thread in the proc_stat
    PS (N should be between 0 and the number of threads in the process).  The
-   resulting proc_stat_t isn't fully functional -- most flags can't be set in
+   resulting proc_stat isn't fully functional -- most flags can't be set in
    it.  If N was out of range, EINVAL is returned.  If a memory allocation
    error occured, ENOMEM is returned.  Otherwise, 0 is returned.  */
-error_t proc_stat_thread_create(proc_stat_t ps, unsigned n, proc_stat_t *thread_ps);
+error_t proc_stat_thread_create (struct proc_stat *ps, unsigned n,
+				 struct proc_stat **thread_ps);
 
-/* ---------------------------------------------------------------- */
 /* A struct ps_user_hooks holds functions that allow the user to extend the
    behavior of libps.  */
 
@@ -469,30 +457,25 @@ struct ps_user_hooks
      PS (probably in a user defined structure pointed to by the hook field).
      The user flags corresponding to what is successfully fetched should be
      returned.  HAVE are the flags defining whas is currently valid in PS. */
-  ps_flags_t (*fetch) (proc_stat_t ps, ps_flags_t need, ps_flags_t have);
+  ps_flags_t (*fetch) (struct proc_stat *ps, ps_flags_t need, ps_flags_t have);
 
   /* When a proc_stat goes away, this function is called on it.  */
-  void (*cleanup) (proc_stat_t ps);
+  void (*cleanup) (struct proc_stat *ps);
 };
 
-/* ---------------------------------------------------------------- */
-/*
-   A PS_GETTER_T describes how to get a particular value from a PROC_STAT_T.
+/* A PS_GETTER describes how to get a particular value from a PROC_STAT.
 
-   To get a value from a proc_stat_t PS with a getter, you must make sure all
-   the pstat_flags returned by ps_getter_needs(GETTER) are set in PS, and
-   then call the function returned ps_getter_function(GETTER) with PS as the
+   To get a value from a proc_stat PS with a getter, you must make sure all
+   the pstat_flags returned by ps_getter_needs (GETTER) are set in PS, and
+   then call the function returned ps_getter_function (GETTER) with PS as the
    first argument.
 
    The way the actual value is returned from this funciton is dependent on
    the type of the value:
-      For int's and float's, the value is the return value.
+      For ints and floats, the value is the return value.
       For strings, you must pass in two extra arguments, a char **, which is
-        filled in with a pointer to the string, or NULL if the string is
-	NULL, and an int *, which is filled in with the length of the string.
-*/
-
-typedef const struct ps_getter *ps_getter_t;
+        filled in with a pointer to the string, or NULL if the string is NULL,
+        and an int *, which is filled in with the length of the string.  */
 
 struct ps_getter
   {
@@ -513,25 +496,22 @@ struct ps_getter
 #define ps_getter_needs(g) ((g)->needs)
 #define ps_getter_function(g) ((g)->fn)
 
-/* ---------------------------------------------------------------- */
 /* A PS_FILTER_T describes how to select some subset of a PROC_STAT_LIST_T */
-
-typedef const struct ps_filter *ps_filter_t;
 
 struct ps_filter
   {
     /* Name of this filter.  */
     char *name;
 
-    /* The flags that need to be set in each proc_stat_t in the list to
+    /* The flags that need to be set in each proc_stat in the list to
        call the filter's predicate function; if these flags can't be set in a
-       particular proc_stat_t, the function is not called, and it isn't deleted
+       particular proc_stat, the function is not called, and it isn't deleted
        from the list.  */
     ps_flags_t needs;
 
-    /* A function that returns true if called on a proc_stat_t that the
+    /* A function that returns true if called on a proc_stat that the
        filter accepts, or false if the filter rejects it.  */
-    bool(*fn) (proc_stat_t ps);
+    int (*fn) (struct proc_stat *ps);
   };
 
 /* Access macros: */
@@ -540,13 +520,13 @@ struct ps_filter
 #define ps_filter_predicate(f) ((f)->fn)
 
 /* Some predefined filters.  These are structures; you must use the &
-   operator to get a ps_filter_t from them */
+   operator to get a ps_filter from them */
 
-/* A filter that retains only process's owned by getuid() */
+/* A filter that retains only processes owned by getuid () */
 extern const struct ps_filter ps_own_filter;
-/* A filter that retains only process's that aren't session or login leaders */
+/* A filter that retains only processes that aren't session or login leaders */
 extern const struct ps_filter ps_not_leader_filter;
-/* A filter that retains only process's with a controlling terminal */
+/* A filter that retains only processes with a controlling terminal */
 extern const struct ps_filter ps_ctty_filter;
 /* A filter that retains only `unorphaned' process.  A process is unorphaned
    if it's a session leader, or the process's process group is not orphaned */
@@ -557,10 +537,8 @@ extern const struct ps_filter ps_parent_filter;
 /* A filter that retains only processes/threads that aren't totally dead.  */
 extern const struct ps_filter ps_alive_filter;
 
-/* ---------------------------------------------------------------- */
-/* A PS_STREAM_T describes an output stream for libps to use.  */
+/* A ps_stream describes an output stream for libps to use.  */
 
-typedef struct ps_stream *ps_stream_t;
 struct ps_stream
 {
   FILE *stream;			/* The actual destination.  */
@@ -569,86 +547,87 @@ struct ps_stream
 };
 
 /* Create a stream outputing to DEST, and return it in STREAM, or an error.  */
-error_t ps_stream_create (FILE *dest, ps_stream_t *stream);
+error_t ps_stream_create (FILE *dest, struct ps_stream **stream);
 
 /* Frees STREAM.  The destination file is *not* closed.  */
-void ps_stream_free (ps_stream_t stream);
+void ps_stream_free (struct ps_stream *stream);
 
 /* Write at most MAX_LEN characters of STRING to STREAM (if MAX_LEN > the
    length of STRING, then write all of it; if MAX_LEN == -1, then write all
    of STRING regardless).  */
-error_t ps_stream_write (ps_stream_t stream, char *string, int max_len);
+error_t ps_stream_write (struct ps_stream *stream,
+			 const char *string, int max_len);
 
 /* Write NUM spaces to STREAM.  NUM may be negative, in which case the same
    number of adjacent spaces (written by other calls to ps_stream_space) are
    consumed if possible.  If an error occurs, the error code is returned,
    otherwise 0.  */
-error_t ps_stream_space (ps_stream_t stream, int num);
+error_t ps_stream_space (struct ps_stream *stream, int num);
 
 /* Write as many spaces to STREAM as required to make a field of width SOFAR
    be at least WIDTH characters wide (the absolute value of WIDTH is used).
    If an error occurs, the error code is returned, otherwise 0.  */
-error_t ps_stream_pad (ps_stream_t stream, int sofar, int width);
+error_t ps_stream_pad (struct ps_stream *stream, int sofar, int width);
 
 /* Write a newline to STREAM, resetting its position to zero.  */
-error_t ps_stream_newline (ps_stream_t stream);
+error_t ps_stream_newline (struct ps_stream *stream);
 
 /* Write the string BUF to STREAM, padded on one side with spaces to be at
    least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
    side, otherwise on the right side.  If an error occurs, the error code is
    returned, otherwise 0.  */
-error_t ps_stream_write_field (ps_stream_t stream, char *buf, int width);
+error_t ps_stream_write_field (struct ps_stream *stream,
+			       const char *buf, int width);
 
 /* Like ps_stream_write_field, but truncates BUF to make it fit into WIDTH.  */
-error_t ps_stream_write_trunc_field (ps_stream_t stream, char *buf, int width);
+error_t ps_stream_write_trunc_field (struct ps_stream *stream,
+				     const char *buf, int width);
 
 /* Write the decimal representation of VALUE to STREAM, padded on one side
    with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
    0, then on the left side, otherwise on the right side.  If an error
    occurs, the error code is returned, otherwise 0.  */
-error_t ps_stream_write_int_field (ps_stream_t stream, int value, int width);
+error_t ps_stream_write_int_field (struct ps_stream *stream,
+				   int value, int width);
 
-/* ---------------------------------------------------------------- */
-/*
-   A PS_FMT_SPEC_T describes how to output something from a PROC_STAT_T; it
+/* A PS_FMT_SPEC describes how to output something from a PROC_STAT; it
    is a combination of a getter (describing how to get the value), an output 
    function (which outputs the result of the getter), and a compare function
-   (which can be used to sort proc_stat_t's according to how they are
+   (which can be used to sort proc_stats according to how they are
    output).  It also specifies the default width of the field in which the
-   output should be printed.
-   */
-
-typedef struct ps_fmt_spec *ps_fmt_spec_t;
+   output should be printed. */
 
 struct ps_fmt_spec
   {
     /* The name of the spec (and it's title, if TITLE is NULL).  */
-    char *name;
+    const char *name;
     
     /* The title to be printed in the headers.  */
-    char *title;
+    const char *title;
 
     /* The width of the field that this spec will be printed in if not
        overridden.  */
     int width;
 
-    ps_getter_t getter;
+    const struct ps_getter *getter;
 
     /* A function that, given a ps, a getter, a field width, and a stream,
        will output what the getter gets in some format */
-    error_t (*output_fn)(proc_stat_t ps, ps_getter_t getter, int width,
-			 ps_stream_t stream);
+    error_t (*output_fn)(struct proc_stat *ps,
+			 const struct ps_getter *getter,
+			 int width, struct ps_stream *stream);
 
     /* A function that, given two pses and a getter, will compare what
        the getter gets for each ps, and return an integer ala qsort.  This
        may be NULL, in which case values in this field cannot be compared.  */
-    int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter);
+    int (*cmp_fn)(struct proc_stat *ps1, struct proc_stat *ps2,
+		  const struct ps_getter *getter);
 
     /* A function that, given a ps and a getter, will return true if what the
        getter gets from the ps is `nominal' -- a default unexciting value.
        This may be NULL, in which case values in this field are _always_
        exciting...  */
-    bool (*nominal_fn)(proc_stat_t ps, ps_getter_t getter);
+    int (*nominal_fn)(struct proc_stat *ps, const struct ps_getter *getter);
   };
 
 /* Accessor macros:  */
@@ -660,43 +639,42 @@ struct ps_fmt_spec
 #define ps_fmt_spec_nominal_fn(spec) ((spec)->nominal_fn)
 #define ps_fmt_spec_getter(spec) ((spec)->getter)
 
-/* Returns true if a pointer into an array of struct ps_fmt_spec's is at  the
+/* Returns true if a pointer into an array of struct ps_fmt_specs is at  the
    end.  */
 #define ps_fmt_spec_is_end(spec) ((spec)->name == NULL)
 
-typedef struct ps_fmt_specs *ps_fmt_specs_t;
-
 struct ps_fmt_specs
 {
-  ps_fmt_spec_t specs;		/* An array of specs. */
-  ps_fmt_specs_t parent;	/* A link to more specs shadowed by this. */
+  const struct ps_fmt_spec *specs; /* An array of specs. */
+  struct ps_fmt_specs *parent;	/* A link to more specs shadowed by us. */
+  struct ps_fmt_spec *expansions; /* Storage for expanded aliases.  */
+  size_t expansions_alloced;	/* Amount of space ino EXPANSIONS.  */
 };
 
 /* An struct ps_fmt_specs, suitable for use with ps_fmt_specs_find, 
-   containing specs for most values in a proc_stat_t.  */
-extern const struct ps_fmt_specs ps_std_fmt_specs;
+   containing specs for most values in a proc_stat.  */
+extern struct ps_fmt_specs ps_std_fmt_specs;
 
 /* Searches for a spec called NAME in SPECS and returns it if found,
    otherwise NULL.  */
-ps_fmt_spec_t ps_fmt_specs_find (ps_fmt_specs_t specs, char *name);
+const struct ps_fmt_spec *ps_fmt_specs_find (struct ps_fmt_specs *specs,
+					     const char *name);
 
-/* ---------------------------------------------------------------- */
-/* A PS_FMT_T describes how to output user-readable  version of a proc_stat_t.
+/* A PS_FMT describes how to output user-readable  version of a proc_stat.
    It consists of a series of PS_FMT_FIELD_Ts, each describing how to output
    one value.  */
 
-/* PS_FMT_FIELD_T */
-typedef struct ps_fmt_field *ps_fmt_field_t;
+/* PS_FMT_FIELD */
 struct ps_fmt_field
   {
-    /* A ps_fmt_spec_t describing how to output this field's value, or NULL
+    /* A ps_fmt_spec describing how to output this field's value, or NULL
        if there is no value (in which case this is the last field, and exists
        just to output its prefix string).  */
-    ps_fmt_spec_t spec;
+    const struct ps_fmt_spec *spec;
 
     /* A non-zero-terminated string of characters that should be output
        between the previous field and this one.  */
-    char *pfx;
+    const char *pfx;
     /* The number of characters from PFX that should be output.  */
     unsigned pfx_len;
 
@@ -707,7 +685,7 @@ struct ps_fmt_field
     int width;
 
     /* Returns the title used when printing a header line for this field.  */
-    char *title;
+    const char *title;
   };
 
 /* Accessor macros: */
@@ -717,17 +695,16 @@ struct ps_fmt_field
 #define ps_fmt_field_width(field) ((field)->width)
 #define ps_fmt_field_title(field) ((field)->title)
 
-/* PS_FMT_T */
-typedef struct ps_fmt *ps_fmt_t;
+/* PS_FMT */
 struct ps_fmt
   {
-    /* A pointer to an array of struct ps_fmt_field's holding the individual
+    /* A pointer to an array of struct ps_fmt_fields holding the individual
        fields to be formatted.  */
-    ps_fmt_field_t fields;
+    struct ps_fmt_field *fields;
     /* The (valid) length of the fields array.  */
     unsigned num_fields;
 
-    /* A set of proc_stat flags describing what a proc_stat_t needs to hold in 
+    /* A set of proc_stat flags describing what a proc_stat needs to hold in 
        order to print out every field in the fmt.  */
     ps_flags_t needs;
 
@@ -744,8 +721,7 @@ struct ps_fmt
 #define ps_fmt_needs(fmt) ((fmt)->needs)
 #define ps_fmt_inval (fmt) ((fmt)->inval)
 
-/*
-   Make a PS_FMT_T by parsing the string SRC, searching for any named
+/* Make a PS_FMT by parsing the string SRC, searching for any named
    field specs in FMT_SPECS, and returning the result in FMT.  If a memory
    allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
    field name, EINVAL is returned.  Otherwise 0 is returned.
@@ -759,51 +735,49 @@ struct ps_fmt
 
    PREFIXes and SUFFIXes are printed verbatim, and specs are replaced by the
    output of the named spec with that name (each spec specifies what
-   proc_stat_t field to print, and how to print it, as well as a default
+   proc_stat field to print, and how to print it, as well as a default
    field width into which put the output).  WIDTH is used to override the
    spec's default width.  If a `-' is included, the output is right-aligned
-   within this width, otherwise it is left-aligned.
- */
-error_t ps_fmt_create(char *src, ps_fmt_specs_t fmt_specs, ps_fmt_t *fmt);
+   within this width, otherwise it is left-aligned.  */
+error_t ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs,
+		       struct ps_fmt **fmt);
 
 /* Free FMT, and any resources it consumes.  */
-void ps_fmt_free(ps_fmt_t fmt);
+void ps_fmt_free (struct ps_fmt *fmt);
 
 /* Write an appropiate header line for FMT, containing the titles of all its
    fields appropiately aligned with where the values would be printed, to
    STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
-error_t ps_fmt_write_titles (ps_fmt_t fmt, ps_stream_t stream);
+error_t ps_fmt_write_titles (struct ps_fmt *fmt, struct ps_stream *stream);
 
 /* Format a description as instructed by FMT, of the process described by PS
    to STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
-error_t ps_fmt_write_proc_stat (ps_fmt_t fmt, proc_stat_t ps,
-				ps_stream_t stream);
+error_t ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps,
+				struct ps_stream *stream);
 
 /* Remove those fields from FMT for which the function FN, when called on the
    field's format spec, returns true.  Appropiate inter-field characters are
    also removed: those *following* deleted fields at the beginning of the
    fmt, and those *preceeding* deleted fields *not* at the beginning. */
-void ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec));
+void ps_fmt_squash (struct ps_fmt *fmt,
+		    int (*fn)(const struct ps_fmt_spec *spec));
 
 /* Remove those fields from FMT which would need the proc_stat flags FLAGS.
    Appropiate inter-field characters are also removed: those *following*
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning.  */
-void ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags);
+void ps_fmt_squash_flags (struct ps_fmt *fmt, ps_flags_t flags);
 
-/* ---------------------------------------------------------------- */
-/* A PROC_STAT_LIST_T represents a list of proc_stat_t's */
-
-typedef struct proc_stat_list *proc_stat_list_t;
+/* A PROC_STAT_LIST represents a list of proc_stats */
 
 struct proc_stat_list
   {
-    /* An array of proc_stat_t's for the processes in this list.  */
-    proc_stat_t *proc_stats;
+    /* An array of proc_stats for the processes in this list.  */
+    struct proc_stat **proc_stats;
 
     /* The number of processes in the list.  */
     unsigned num_procs;
@@ -813,7 +787,7 @@ struct proc_stat_list
     unsigned alloced;
 
     /* Returns the proc context that these processes are from.  */
-    ps_context_t context;
+    struct ps_context *context;
   };
 
 /* Accessor macros: */
@@ -823,170 +797,176 @@ struct proc_stat_list
 /* Creates a new proc_stat_list_t for processes from CONTEXT, which is
    returned in PP, and returns 0, or else returns ENOMEM if there wasn't
    enough memory.  */
-error_t proc_stat_list_create(ps_context_t context, proc_stat_list_t *pp);
+error_t proc_stat_list_create (struct ps_context *context,
+			       struct proc_stat_list **pp);
 
 /* Free PP, and any resources it consumes.  */
-void proc_stat_list_free(proc_stat_list_t pp);
+void proc_stat_list_free (struct proc_stat_list *pp);
 
-/* Returns the proc_stat_t in PP with a process-id of PID, if there's one,
+/* Returns the proc_stat in PP with a process-id of PID, if there's one,
    otherwise, NULL.  */
-proc_stat_t proc_stat_list_pid_proc_stat(proc_stat_list_t pp, pid_t pid);
+struct proc_stat *proc_stat_list_pid_proc_stat (struct proc_stat_list *pp,
+						pid_t pid);
 
-/* Add proc_stat_t entries to PP for each process with a process id in the
+/* Add proc_stat entries to PP for each process with a process id in the
    array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
    added for processes not already in PP.  ENOMEM is returned if a memory
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
    resulting proc_stat_list_t, and so may be subsequently freed.  If
    PROC_STATS is non-NULL, a malloced array NUM_PROCS entries long of the
    resulting proc_stats is returned in it.  */
-error_t proc_stat_list_add_pids (proc_stat_list_t pp,
+error_t proc_stat_list_add_pids (struct proc_stat_list *pp,
 				 pid_t *pids, unsigned num_procs,
-				 proc_stat_t **proc_stats);
+				 struct proc_stat ***proc_stats);
 
-/* Add a proc_stat_t for the process designated by PID at PP's proc context
+/* Add a proc_stat for the process designated by PID at PP's proc context
    to PP.  If PID already has an entry in PP, nothing is done.  If a memory
    allocation error occurs, ENOMEM is returned, otherwise 0.  If PS is
    non-NULL, the resulting entry is returned in it.  */
-error_t proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid,
-				proc_stat_t *ps);
+error_t proc_stat_list_add_pid (struct proc_stat_list *pp, pid_t pid,
+				struct proc_stat **ps);
 
-/* Adds all proc_stat_t's in MERGEE to PP that don't correspond to processes
-   already in PP; the resulting order of proc_stat_t's in PP is undefined.
+/* Adds all proc_stats in MERGEE to PP that don't correspond to processes
+   already in PP; the resulting order of proc_stats in PP is undefined.
    If MERGEE and PP point to different proc contexts, EINVAL is returned.  If a
    memory allocation error occurs, ENOMEM is returned.  Otherwise 0 is
    returned, and MERGEE is freed.  */
-error_t proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee);
+error_t proc_stat_list_merge (struct proc_stat_list *pp,
+			      struct proc_stat_list *mergee);
 
 /* Add to PP entries for all processes at its context.  If an error occurs,
    the system error code is returned, otherwise 0.  If PROC_STATS and
    NUM_PROCS are non-NULL, a malloced vector of the resulting entries is
    returned in them.  */
-error_t proc_stat_list_add_all (proc_stat_list_t pp,
-				proc_stat_t **proc_stats, unsigned *num_procs);
+error_t proc_stat_list_add_all (struct proc_stat_list *pp,
+				struct proc_stat ***proc_stats,
+				unsigned *num_procs);
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
    otherwise 0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector
    of the resulting entries is returned in them.  */
-error_t proc_stat_list_add_login_coll (proc_stat_list_t pp, pid_t login_id,
-				       proc_stat_t **proc_stats,
+error_t proc_stat_list_add_login_coll (struct proc_stat_list *pp,
+				       pid_t login_id,
+				       struct proc_stat ***proc_stats,
 				       unsigned *num_procs);
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
    0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
    resulting entries is returned in them.  */
-error_t proc_stat_list_add_session (proc_stat_list_t pp, pid_t session_id,
-				    proc_stat_t **proc_stats,
+error_t proc_stat_list_add_session (struct proc_stat_list *pp,
+				    pid_t session_id,
+				    struct proc_stat ***proc_stats,
 				    unsigned *num_procs);
 
 /* Add to PP entries for all processes in the process group PGRP at its
    context.  If an error occurs, the system error code is returned, otherwise
    0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
    resulting entries is returned in them.  */
-error_t proc_stat_list_add_pgrp (proc_stat_list_t pp, pid_t pgrp,
-				 proc_stat_t **proc_stats,
+error_t proc_stat_list_add_pgrp (struct proc_stat_list *pp, pid_t pgrp,
+				 struct proc_stat ***proc_stats,
 				 unsigned *num_procs);
 
-/* Try to set FLAGS in each proc_stat_t in PP (but they may still not be set
+/* Try to set FLAGS in each proc_stat in PP (but they may still not be set
    -- you have to check).  If a fatal error occurs, the error code is
    returned, otherwise 0.  */
-error_t proc_stat_list_set_flags(proc_stat_list_t pp, ps_flags_t flags);
+error_t proc_stat_list_set_flags (struct proc_stat_list *pp, ps_flags_t flags);
 
-/* Destructively modify PP to only include proc_stat_t's for which the
-   function PREDICATE returns true; if INVERT is true, only proc_stat_t's for
+/* Destructively modify PP to only include proc_stats for which the
+   function PREDICATE returns true; if INVERT is true, only proc_stats for
    which PREDICATE returns false are kept.  FLAGS is the set of pstat_flags
    that PREDICATE requires be set as precondition.  Regardless of the value
-   of INVERT, all proc_stat_t's for which the predicate's preconditions can't
+   of INVERT, all proc_stats for which the predicate's preconditions can't
    be satisfied are kept.  If a fatal error occurs, the error code is
    returned, it returns 0.  */
-error_t proc_stat_list_filter1(proc_stat_list_t pp,
-			       bool (*predicate)(proc_stat_t ps), ps_flags_t flags,
-			       bool invert);
+error_t proc_stat_list_filter1 (struct proc_stat_list *pp,
+				int (*predicate)(struct proc_stat *ps),
+				ps_flags_t flags,
+				int invert);
 
-/* Destructively modify PP to only include proc_stat_t's for which the
+/* Destructively modify PP to only include proc_stats for which the
    predicate function in FILTER returns true; if INVERT is true, only
-   proc_stat_t's for which the predicate returns false are kept.  Regardless
-   of the value of INVERT, all proc_stat_t's for which the predicate's
+   proc_stats for which the predicate returns false are kept.  Regardless
+   of the value of INVERT, all proc_stats for which the predicate's
    preconditions can't be satisfied are kept.  If a fatal error occurs,
    the error code is returned, it returns 0.  */
-error_t proc_stat_list_filter(proc_stat_list_t pp,
-			      ps_filter_t filter, bool invert);
+error_t proc_stat_list_filter (struct proc_stat_list *pp,
+			       const struct ps_filter *filter, int invert);
 
 /* Destructively sort proc_stats in PP by ascending value of the field
    returned by GETTER, and compared by CMP_FN; If REVERSE is true, use the
    opposite order.  If a fatal error occurs, the error code is returned, it
    returns 0.  */
-error_t proc_stat_list_sort1(proc_stat_list_t pp,
-			     ps_getter_t getter,
-			     int (*cmp_fn)(proc_stat_t ps1, proc_stat_t ps2,
-					   ps_getter_t getter),
-			     bool reverse);
+error_t proc_stat_list_sort1 (struct proc_stat_list *pp,
+			      const struct ps_getter *getter,
+			      int (*cmp_fn)(struct proc_stat *ps1,
+					    struct proc_stat *ps2,
+					    const struct ps_getter *getter),
+			      int reverse);
 
 /* Destructively sort proc_stats in PP by ascending value of the field KEY;
    if REVERSE is true, use the opposite order.  If KEY isn't a valid sort
    key, EINVAL is returned.  If a fatal error occurs the error code is
    returned.  Otherwise, 0 is returned.  */
-error_t proc_stat_list_sort(proc_stat_list_t pp,
-			    ps_fmt_spec_t key, bool reverse);
+error_t proc_stat_list_sort (struct proc_stat_list *pp,
+			     struct ps_fmt_spec *key, int reverse);
 
 /* Format a description as instructed by FMT, of the processes in PP to
    STREAM, separated by newlines (and with a terminating newline).  If COUNT
    is non-NULL, it points to an integer which is incremented by the number of
    characters output.  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
-error_t proc_stat_list_fmt (proc_stat_list_t pp, ps_fmt_t fmt,
-			    ps_stream_t stream);
+error_t proc_stat_list_fmt (struct proc_stat_list *pp, struct ps_fmt *fmt,
+			    struct ps_stream *stream);
 
-/* Modifies FLAGS to be the subset which can't be set in any proc_stat_t in
-   PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat_t
+/* Modifies FLAGS to be the subset which can't be set in any proc_stat in
+   PP (and as a side-effect, adds as many bits from FLAGS to each proc_stat
    as possible).  If a fatal error occurs, the error code is returned,
    otherwise 0.  */
-error_t proc_stat_list_find_bogus_flags(proc_stat_list_t pp, ps_flags_t *flags);
+error_t proc_stat_list_find_bogus_flags (struct proc_stat_list *pp,
+					 ps_flags_t *flags);
 
 /* Add thread entries for for every process in PP, located immediately after
    the containing process in sequence.  Subsequent sorting of PP will leave
    the thread entries located after the containing process, although the
    order of the thread entries themselves may change.  If a fatal error
    occurs, the error code is returned, otherwise 0.  */
-error_t proc_stat_list_add_threads(proc_stat_list_t pp);
+error_t proc_stat_list_add_threads (struct proc_stat_list *pp);
 
-error_t proc_stat_list_remove_threads(proc_stat_list_t pp);
+error_t proc_stat_list_remove_threads (struct proc_stat_list *pp);
 
 /* Calls FN in order for each proc_stat in PP.  If FN ever returns a non-zero
    value, then the iteration is stopped, and the value is returned
    immediately; otherwise, 0 is returned.  */
-int proc_stat_list_for_each (proc_stat_list_t pp, int (*fn)(proc_stat_t ps));
+int proc_stat_list_for_each (struct proc_stat_list *pp,
+			     int (*fn)(struct proc_stat *ps));
 
 /* Returns true if SPEC is `nominal' in every entry in PP.  */
-bool proc_stat_list_spec_nominal (proc_stat_list_t pp, ps_fmt_spec_t spec);
+int proc_stat_list_spec_nominal (struct proc_stat_list *pp,
+				  struct ps_fmt_spec *spec);
 
-/* ---------------------------------------------------------------- */
- /*
-   The Basic & Sched info types are pretty static, so we cache them, but load
-   info is dynamic so we don't cache that.
-
-   See <mach/host_info.h> for information on the data types these routines
-   return.
-*/
+/* The Basic & Sched info types are pretty static, so we cache them, but load
+   info is dynamic so we don't cache that.  See <mach/host_info.h> for
+   information on the data types these routines return.  */
 
 /* Return the current host port.  */
-host_t ps_get_host();
+host_t ps_get_host ();
 
 /* Return a pointer to basic info about the current host in HOST_INFO.  Since
    this is static global information we just use a static buffer.  If a
    system error occurs, the error code is returned, otherwise 0.  */
-error_t ps_host_basic_info(host_basic_info_t *host_info);
+error_t ps_host_basic_info (host_basic_info_t *host_info);
 
 /* Return a pointer to scheduling info about the current host in HOST_INFO.
    Since this is static global information we just use a static buffer.  If a
    system error occurs, the error code is returned, otherwise 0.  */
-error_t ps_host_sched_info(host_sched_info_t *host_info);
+error_t ps_host_sched_info (host_sched_info_t *host_info);
 
 /* Return a pointer to load info about the current host in HOST_INFO.  Since
    this is global information we just use a static buffer (if someone desires
    to keep old load info, they should copy the buffer we return a pointer
    to).  If a system error occurs, the error code is returned, otherwise 0.  */
-error_t ps_host_load_info(host_load_info_t *host_info);
+error_t ps_host_load_info (host_load_info_t *host_info);
 
 #endif /* __PS_H__ */
