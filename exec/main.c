@@ -254,6 +254,7 @@ S_exec_init (struct trivfs_protid *protid,
 
   err = proc_getmsgport (procserver, 1, &startup);
   assert_perror (err);
+  mach_port_deallocate (mach_task_self (), procserver);
 
   /* Call startup_essential task last; init assumes we are ready to
      run once we call it. */
