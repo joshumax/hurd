@@ -37,4 +37,4 @@ dd if="$DEV" of=mbr bs=512 count=1					 \
 rm mbr stage1
 
 echo "$0: /boot/grub/stage1_ffs installed in MBR"
-echo "$0: Don't forget to use the grub `install=' command to install stage2"
+echo "$0: Don't forget to use the grub \`install=' command to install stage2"
