@@ -19,6 +19,7 @@ Checklist for binary image filesystems
 *   Symlink /lib/libtermcap.a -> /lib/libncurses.a, termcap_g.a, 
 	curses_g.a, curses.a.
 *   Symlink /lib/ld.so -> /lib/ld.so.1.
+*   Symlink . -> /usr.
 *   Make sure directories exist: /tmp, /var/run.
 *   Touch /var/log/wtmp.
 *   Check all symlinks to make sure they don't reference /gd4.

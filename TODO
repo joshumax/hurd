@@ -53,6 +53,7 @@ See `tasks', the exported task list.
 *** add chflags flags to appropriate header(s)
 *** declare reboot() somewhere.
 *** extra commas in enums in socket.h and errnos.h.
+*** emacs, on standalone system, with no nsswitch.conf, crashes.
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
