@@ -214,6 +214,7 @@ read_disknode (struct node *np)
   static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
   struct ext2_inode *di = dino (np->dn->number);
+  struct ext2_inode_info *info = &np->dn->info;
   error_t err;
   
   err = diskfs_catch_exception ();
@@ -231,16 +232,12 @@ read_disknode (struct node *np)
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = fsid;
   st->st_ino = np->dn->number;
-
-#ifdef XXX
-  st->st_gen = di->i_gen;
-  st->st_rdev = di->i_rdev;
-  st->st_blksize = sblock->fs_bsize;
-#endif
+  st->st_blksize = block_size;
 
   st->st_mode = di->i_mode | (di->i_mode_high << 16);
   st->st_nlink = di->i_links_count;
   st->st_size = di->i_size;
+  st->st_gen = di->i_version;
 
   st->st_atime = di->i_atime;
   st->st_mtime = di->i_mtime;
@@ -261,9 +258,33 @@ read_disknode (struct node *np)
   if (st->st_author == -1)
     st->st_author = st->st_uid;
 
+  /* Setup the ext2fs auxiliary inode info.  */
+  info->i_dtime = di->i_dtime;
+  info->i_flags = di->i_flags;
+  info->i_faddr = di->i_faddr;
+  info->i_frag_no = di->i_frag;
+  info->i_frag_size = di->i_fsize;
+  info->i_osync = 0;
+  info->i_file_acl = di->i_file_acl;
+  info->i_dir_acl = di->i_dir_acl;
+  info->i_version = di->i_version;
+  info->i_block_group = block_group;
+  info->i_next_alloc_block = 0;
+  info->i_next_alloc_goal = 0;
+  if (info->i_prealloc_count)
+    ext2_error ("ext2_read_inode", "New inode has non-zero prealloc count!");
+  if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+    st->st_rdev = di->i_block[0];
+  else
+    {
+      int block;
+      for (block = 0; block < EXT2_N_BLOCKS; block++)
+	info->i_data[block] = di->i_block[block];
+      st->st_rdev = 0;
+    }
+
   diskfs_end_catch_exception ();
-  if (!S_ISBLK (st->st_mode) && !S_ISCHR (st->st_mode))
-    st->st_rdev = 0;
+
   return 0;
 }
 
@@ -283,7 +304,7 @@ write_node (struct node *np)
       if (err)
 	return;
   
-      di->i_gen = st->st_gen;
+      di->i_version = st->st_gen;
       
       if (S_ISBLK (st->st_mode) || S_ISCHR (st->st_mode))
 	di->i_rdev = st->st_rdev;
@@ -316,6 +337,15 @@ write_node (struct node *np)
 
       di->i_blocks = st->st_blocks;
       di->i_flags = st->st_flags;
+
+      if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+	di->i_block[0] = stat->st_rdev;
+      else
+	{
+	  int block;
+	  for (block = 0; block < EXT2_N_BLOCKS; block++)
+	    di->i_block[block] = np->dn->info.i_data[block];
+	}
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
