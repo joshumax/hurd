@@ -255,7 +255,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   error_t err = 0;
   struct pending_blocks pb;
   struct rwlock *lock = 0;
-  u32 block;
+  block_t block;
   int left = vm_page_size;
 
   pending_blocks_init (&pb, buf);

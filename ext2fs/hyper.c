@@ -98,7 +98,7 @@ get_hypermetadata (void)
 
   itb_per_group = sblock->s_inodes_per_group / inodes_per_block;
   desc_per_block = block_size / sizeof (struct ext2_group_desc);
-  addr_per_block = block_size / sizeof (u32);
+  addr_per_block = block_size / sizeof (block_t);
   db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
 
   diskfs_end_catch_exception ();

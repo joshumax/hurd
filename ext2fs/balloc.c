@@ -113,8 +113,7 @@ ext2_free_blocks (block_t block, unsigned long count)
  * bitmap, and then for any free bit if that fails.
  */
 block_t
-ext2_new_block (block_t goal,
-		u32 * prealloc_count, u32 * prealloc_block)
+ext2_new_block (block_t goal, block_t *prealloc_count, block_t *prealloc_block)
 {
   char *bh;
   char *p, *r;

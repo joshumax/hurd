@@ -176,9 +176,9 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 {
   int i;
   block_t goal = 0;
-  char *bh = bptr (block);
+  block_t *bh = (block_t *)bptr (block);
 
-  *result = ((u32 *)bh)[nr];
+  *result = bh[nr];
   if (*result)
     return 0;
 
@@ -191,9 +191,9 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
     {
       for (i = nr - 1; i >= 0; i--)
 	{
-	  if (((u32 *) bh)[i])
+	  if (bh[i])
 	    {
-	      goal = ((u32 *) bh)[i];
+	      goal = bh[i];
 	      break;
 	    }
 	}
@@ -205,7 +205,7 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
   if (!*result)
     return ENOSPC;
 
-  ((u32 *)bh)[nr] = *result;
+  bh[nr] = *result;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
     sync_global_ptr (bh, 1);
@@ -228,8 +228,7 @@ error_t
 ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
 {
   error_t err;
-  u32 indir;
-  block_t b;
+  block_t indir, b;
   unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
 
   if (block > EXT2_NDIR_BLOCKS + addr_per_block +

@@ -42,7 +42,7 @@
 int printf (const char *fmt, ...);
 
 /* A block number.  */
-typedef unsigned long block_t;
+typedef u32 block_t;
 
 /* ---------------------------------------------------------------- */
 
@@ -446,7 +446,7 @@ void ext2_discard_prealloc (struct node *node);
    otherwise EINVAL is returned.  */
 error_t ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block);
 
-block_t ext2_new_block (block_t goal, u32 * prealloc_count, u32 * prealloc_block);
+block_t ext2_new_block (block_t goal, block_t *prealloc_count, block_t *prealloc_block);
 
 void ext2_free_blocks (block_t block, unsigned long count);
 
