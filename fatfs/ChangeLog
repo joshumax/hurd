@@ -1,3 +1,16 @@
+2003-08-03  Marco Gerards  <metgerards@student.han.nl>
+
+	* fatfs.h (struct disknode): New member DIRNODE.
+	* inode.c (read_node): Added assertion to be sure the directory
+	can always be found.  Add directory dependancy to node by
+	initializing DIRNODE and holding a reference.
+	(diskfs_node_norefs): Release reference to DIRNODE.
+	(write_node): Don't use diskfs_cached_lookup to lookup the
+	directory, use DIRNODE instead and lock DP.  Don't use diskfs_nput,
+	use mutex_unlock instead.
+	(diskfs_alloc_node): Add directory dependancy to node by
+	initializing DIRNODE and holding a reference.
+
 2003-08-05  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fat.c (fat_read_sblock): Catch error from store_read.

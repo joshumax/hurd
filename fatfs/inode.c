@@ -223,6 +223,15 @@ diskfs_node_norefs (struct node *np)
   if (np->dn->translator)
     free (np->dn->translator);
 
+  /* It is safe to unlock diskfs_node_refcnt_lock here for a while because
+     all references to the node have been deleted.  */
+  if (np->dn->dirnode)
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      diskfs_nrele (np->dn->dirnode);
+      spin_lock (&diskfs_node_refcnt_lock);
+    }
+
   assert (!np->dn->pager);
 
   free (np->dn);
@@ -255,7 +264,7 @@ diskfs_new_hardrefs (struct node *np)
 static error_t
 read_node (struct node *np, vm_address_t buf)
 {
-  /* XXX This needs careful investigation */
+  /* XXX This needs careful investigation.  */
   error_t err;
   struct stat *st = &np->dn_stat;
   struct disknode *dn = np->dn;
@@ -266,33 +275,6 @@ read_node (struct node *np, vm_address_t buf)
   memory_object_t memobj;
   vm_size_t buflen = 0;
   int our_buf = 0;
-
-  if (vk.dir_inode == 0)
-    dr = &dr_root_node;
-  else
-    {
-      if (buf == 0)
-	{
-	  /* FIXME: We know intimately that the parent dir is locked
-	     by libdiskfs.  The only case it is not locked is for NFS
-	     (fsys_getfile) and we disabled that.  */
-	  dp = ifind (vk.dir_inode);
-      
-	  /* Map in the directory contents. */
-	  memobj = diskfs_get_filemap (dp, prot);
-      
-	  if (memobj == MACH_PORT_NULL)
-	    return errno;
-
-	  buflen = round_page (dp->dn_stat.st_size);
-	  err = vm_map (mach_task_self (),
-			&buf, buflen, 0, 1, memobj, 0, 0, prot, prot, 0);
-	  mach_port_deallocate (mach_task_self (), memobj);
-	  our_buf = 1;
-	}
-      
-      dr = (struct dirrect *) (buf + vk.dir_offset);
-    }
 
   st->st_fstype = FSTYPE_MSLOSS;
   st->st_fsid = getpid ();
@@ -311,13 +293,45 @@ read_node (struct node *np, vm_address_t buf)
 
   st->st_flags = 0;
 
-  /* If we are called for a newly allocated node that has no directory
-     entry yet, only set a minimal amount of data until the dirent is
-     created (and we get called a second time?).  */
-  /* We will avoid this by overriding the relevant functions.
-     if (dr == (void *)1)
-     return 0;
-  */
+  /* FIXME: If we are called through diskfs_alloc_node for a newly
+     allocated node that has no directory entry yet, only set a
+     minimal amount of data until the dirent is created (and we get
+     called a second time?).  */
+  if (vk.dir_inode == 0 && vk.dir_offset == (void *) 2)
+    return 0;
+
+  if (vk.dir_inode == 0)
+    dr = &dr_root_node;
+  else
+    {
+      if (buf == 0)
+	{
+	  /* FIXME: We know intimately that the parent dir is locked
+	     by libdiskfs.  The only case it is not locked is for NFS
+	     (fsys_getfile) and we disabled that.  */
+	  dp = ifind (vk.dir_inode);
+	  assert (dp);
+      
+	  /* Map in the directory contents. */
+	  memobj = diskfs_get_filemap (dp, prot);
+      
+	  if (memobj == MACH_PORT_NULL)
+	    return errno;
+
+	  buflen = round_page (dp->dn_stat.st_size);
+	  err = vm_map (mach_task_self (),
+			&buf, buflen, 0, 1, memobj, 0, 0, prot, prot, 0);
+	  mach_port_deallocate (mach_task_self (), memobj);
+	  our_buf = 1;
+	}
+      
+      dr = (struct dirrect *) (buf + vk.dir_offset);
+    }
+
+  /* Files in fatfs depend on the directory that hold the file.  */
+  np->dn->dirnode = dp;
+  if (dp)
+    dp->references++;
 
   rwlock_reader_lock(&np->dn->dirent_lock);
 
@@ -464,15 +478,20 @@ write_node (struct node *np)
     {
       assert (!diskfs_readonly);
 
-      err = diskfs_cached_lookup (vk.dir_inode, &dp);
-      if (err)
-	return;
+      dp = np->dn->dirnode;
+      assert (dp);
+
+      mutex_lock (&dp->lock);
 
       /* Map in the directory contents. */
       memobj = diskfs_get_filemap (dp, prot);
 
       if (memobj == MACH_PORT_NULL)
-	return;
+	{
+	  mutex_unlock (&dp->lock);
+	  /* FIXME: We shouldn't ignore this error.  */
+	  return;
+	}
 
       buflen = round_page (dp->dn_stat.st_size);
       err = vm_map (mach_task_self (),
@@ -487,7 +506,7 @@ write_node (struct node *np)
 
       write_dword (dr->file_size, st->st_size);
 
-      /* Write time. */
+      /* Write time.  */
       fat_from_epoch ((unsigned char *) &dr->write_date,
 		      (unsigned char *) &dr->write_time, &st->st_mtime);
 
@@ -495,7 +514,7 @@ write_node (struct node *np)
       np->dn_stat_dirty = 0;
 
       munmap ((caddr_t) buf, buflen);
-      diskfs_nput (dp);
+      mutex_unlock (&dp->lock);
     }
 }
 
@@ -745,13 +764,19 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   
   assert (!diskfs_readonly);
 
-  err = vi_new((struct vi_key) {0,1} /* XXX not allocated yet */, &inum, &inode);
+  /* FIXME: We use a magic key here that signals read_node that we are
+     not entered in any directory yet.  */
+  err = vi_new((struct vi_key) {0,2}, &inum, &inode);
   if (err)
     return err;
 
   err = diskfs_cached_lookup (inum, &np);
   if (err)
     return err;
+
+  /* FIXME: We know that readnode couldn't put this in.  */
+  np->dn->dirnode = dir;
+  dir->references++;
 
   *node = np;
   return 0;

@@ -42,6 +42,9 @@ struct disknode
   /* The inode as returned by virtual inode management routines.  */
   inode_t inode;
 
+  /* The directory that hold this file, always hold a reference.  */
+  struct node *dirnode;
+
   struct rwlock dirent_lock;
     
   char *link_target;            /* For S_ISLNK.  */
