@@ -63,6 +63,7 @@ diskfs_truncate (struct node *np,
       if (err)
 	return err;
       bzero ((char *)di->di_shortlink + length, np->dn_stat.st_size - length);
+      record_poke (di, sizeof (struct dinode));
       diskfs_end_catch_exception ();
       np->dn_stat.st_size = length;
       np->dn_set_ctime = np->dn_set_mtime = 1;
