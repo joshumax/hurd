@@ -1,3 +1,18 @@
+Fri Jun 20 15:37:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* bootstrap.c (main/script_paging_file): Instead of returning an
+	error use new variable `had_a_partition' to record whether we
+	successfully opened a partition.
+	(main/script_default_pager): Only start pager if HAD_A_PARTITION;
+	otherwise print warning message.
+
+Mon Jun 16 11:52:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (installationdir): Use `=' to set this instead of :=;
+	$(prefix) is not yet available and `=' postpones the evaluation
+	properly.   Reported by Marcus G. Daniels,
+	marcus@cathcart.sysc.pdx.edu. 
+
 Tue Jun 10 21:54:52 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* disk_inode.h (struct icommon): Use short instead of uid_t/gid_t

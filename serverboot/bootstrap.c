@@ -139,19 +139,23 @@ main(argc, argv)
 	char	**argv;
 {
   int doing_default_pager = 0;
+  int had_a_partition = 0;
   int script_paging_file (const struct cmd *cmd, int *val)
     {
       if (add_paging_file (bootstrap_master_device_port, cmd->path))
-	{
-	  printf ("(bootstrap): %s: Cannot add paging file\n", cmd->path);
-	  return BOOT_SCRIPT_MACH_ERROR;
-	}
-      return 0;
+	printf ("(bootstrap): %s: Cannot add paging file\n", cmd->path);
+      else
+	had_a_partition = 1;
     }
   int script_default_pager (const struct cmd *cmd, int *val)
     {
-      default_pager_initialize(bootstrap_master_host_port);
-      doing_default_pager = 1;
+      if (had_a_partition)
+	{
+	  default_pager_initialize(bootstrap_master_host_port);
+	  doing_default_pager = 1;
+	}
+      else
+	printf ("(bootstrap): Running without any paging\n");
       return 0;
     }
 
