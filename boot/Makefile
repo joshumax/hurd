@@ -1,4 +1,4 @@
-# Copyright (C) 1993 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ install: boot
 	cp boot /usr/local/bin/boot
 
 clean: 
-	rm boot $(OBJS) *_S.h *Server.c
+	rm -f boot $(OBJS) *_S.h *Server.c
 
 boot.o: notify_S.h exec_S.h device_S.h
 
