@@ -1,3 +1,7 @@
+Tue Feb 16 04:34:02 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io.defs (io_revoke): New RPC.
+
 Sun Jan 31 18:21:58 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* fs.defs (file_utimes): Extend documentation.

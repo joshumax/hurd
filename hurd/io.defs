@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1991, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -317,4 +317,9 @@ routine io_identity (
 	out idport: mach_port_send_t;
 	out fsidport: mach_port_send_t;
 	out fileno: int);
+
+/* Revoke the access of all descriptors except this one currently open
+   on the specified object.  */
+routine io_revoke (
+	io_object: io_t RPTLAST);
 
