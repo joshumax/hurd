@@ -1,3 +1,7 @@
+2002-06-09  Roland McGrath  <roland@frob.com>
+
+	* Makefile (installhdrs): List just ps.h, not common.h as well.
+
 2002-06-05  Roland McGrath  <roland@frob.com>
 
 	* procstat.c (fetch_procinfo): Use PI_FETCH_TASKEVENTS.
