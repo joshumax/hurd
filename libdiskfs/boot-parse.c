@@ -19,6 +19,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "priv.h"
+#include <stdio.h>
+#include <device/device.h>
+#include <string.h>
+#include <sys/reboot.h>
+
 /* Call this if the bootstrap port is null and you want to support
    being a bootstrap filesystem.  ARGC and ARGV should be as passed
    to main.  If the arguments are not in the proper format, an
@@ -44,7 +50,7 @@ diskfs_parse_bootargs (int argc, char **argv)
   diskfs_master_device = atoi (argv[3]);
   devname = argv[4];
 
-  (void) device_open (master_device_port, D_WRITE, "console", &con);
+  (void) device_open (diskfs_master_device, D_WRITE, "console", &con);
   stderr = stdout = mach_open_devstream (con, "w");
   stdin = mach_open_devstream (con, "r");
 
@@ -78,6 +84,8 @@ diskfs_parse_bootargs (int argc, char **argv)
       if (*tmp)
 	devname = tmp;
     }
+
+  diskfs_bootflagarg = argv[1];
 
   return devname;
 }
