@@ -38,6 +38,16 @@ struct connq
   unsigned num_listeners;
   struct mutex lock;
 }
+
+extern inline qnext (struct connq *ca, unsigned pos)
+{
+  return (pos + 1 == cq->length ? 0 : pos + 1);
+}
+
+extern inline qprev (struct connq *ca, unsigned pos)
+{
+  return (pos == 0 ? cq->length - 1 : pos - 1);
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -100,13 +110,14 @@ connq_create (struct connq **cq)
 /* ---------------------------------------------------------------- */
 
 /* Wait for a connection attempt to be made on CQ, and return the connecting
-   socket in SOCK, and a request tag in REQ.  connq_request_complete must be
-   call on REQ to allow the requesting thread to continue.  If NOBLOCK is
-   true, then return EWOULDBLOCK immediately when there are no immediate
-   connections available.  */
+   socket in SOCK, and a request tag in REQ.  If REQ is NULL, the request is
+   left in the queue, otherwise connq_request_complete must be called on REQ
+   to allow the requesting thread to continue.  If NOBLOCK is true,
+   EWOULDBLOCK is returned when there are no immediate connections
+   available. */
 error_t 
 connq_listen (struct connq *cq, int noblock,
-		struct sock **sock, struct connq_request **req)
+	      struct connq_request **req, struct sock **sock)
 {
   error_t err = 0;
 
@@ -120,17 +131,20 @@ connq_listen (struct connq *cq, int noblock,
   while (cq->head == cq->tail)
     condition_wait (&cq->listeners, &cq->lock);
 
-  /* Dequeue the next request.  */
-  *req = cq->queue[cq->tail];
-  cq->tail = (cq->tail + 1 == cq->length ? 0 : cq->tail + 1);
-
-  mutex_lock (&(*req)->lock);
+  if (req != NULL)
+    /* Dequeue the next request, if desired.  */
+    {
+      *req = cq->queue[cq->tail];
+      cq->tail = qnext (cq, cq->tail);
+      mutex_lock (&(*req)->lock);
+      if (sock != NULL)
+	*sock = (*req)->sock;
+    }
 
   cq->num_listeners--;
 
   mutex_unlock (&cq->lock);
 
-  *sock = (*req)->sock;
   return 0;    
 }
 
@@ -159,7 +173,7 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
   if ((noblock || cq->noqueue) && cq->num_listeners == 0)
     return EWOULDBLOCK;
 
-  next = (cq->head + 1 == cq->length ? 0 : cq->head + 1);
+  next = qnext (cq, cq->head);
   if (next == cq->tail)
     err = ECONNREFUSED;
   else
@@ -184,20 +198,31 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
 error_t 
 connq_set_length (struct connq *cq, int length)
 {
-  int excess;
-
   mutex_lock (&cq->lock);
+
+  if (length > cq->length)
+    /* Growing the queue is simple... */
+    cq->queue = realloc (cq->queue, sizeof (struct connq_request *) * length);
+  else
+    /* Shrinking it less so.  */
+    {
+      int i;
+      struct connq_request *new_queue =
+	malloc (sizeof (struct connq_request *) * length);
+
+      for (i = 0; i < cq->length && cq->head != cq->tail;)
+	{
+	  cq->head = qprev (cq, cq->head)
+	    if (i < length)
+	      /* Keep this connect request in the queue.  */
+	      new_queue[length - i] = cq->queue[cq->head];
+	    else
+	      /* Punt this one.  */
+	      connq_request_complete (cq->queue[cq->head], ECONNREFUSED);
+	}
+    }
 
   cq->noqueue = 0;		/* Turn on queueing.  */
 
-  /* Force any excess requests to fail.  */
-  excess = cq->length - length;
-  while (excess-- > 0)
-    {
-      assert (cq->head != cq->tail);
-      cq->head = (cq->head == 0 ? cq->length - 1 : cq->head - 1);
-      connq_request_complete (cq->queue[cq->head], ECONNREFUSED);
-    }
-
-  /* ... */
+  mutex_unlock (&cq->lock);
 }
