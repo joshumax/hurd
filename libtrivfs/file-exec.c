@@ -16,15 +16,28 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
-#include <string.h>
 
 kern_return_t
-trivfs_S_file_statfs (struct trivfs_protid *cred,
-		      struct fsys_statfsbuf *stb)
+trivfs_S_file_exec (trivfs_protid_t exec_file,
+		    mach_port_t exec_task,
+		    int flags,
+		    data_t argv,
+		    mach_msg_type_number_t argvCnt,
+		    data_t envp,
+		    mach_msg_type_number_t envpCnt,
+		    portarray_t fdarray,
+		    mach_msg_type_number_t fdarrayCnt,
+		    portarray_t portarray,
+		    mach_msg_type_number_t portarrayCnt,
+		    intarray_t intarray,
+		    mach_msg_type_number_t intarrayCnt,
+		    mach_port_array_t deallocnames,
+		    mach_msg_type_number_t deallocnamesCnt,
+		    mach_port_array_t destroynames,
+		    mach_msg_type_number_t destroynamesCnt)
 {
-  bzero (stb, sizeof (struct fsys_statfsbuf));
-  stb->fsys_stb_type = trivfs_fstype;
-  stb->fsys_stb_fsid = trivfs_fsid;
-  return 0;
-}    
+  return EOPNOTSUPP;
+}
+
+
+  
