@@ -35,14 +35,14 @@ message_demuxer (mach_msg_header_t *inp,
 {
   extern int process_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
 
   return (process_server (inp, outp)
 	  || notify_server (inp, outp)
-	  || interrupt_server (inp, outp)
 	  || proc_exc_server (inp, outp));
 }
+
+struct mutex global_lock = MUTEX_INITIALIZER;
 
 int
 main (int argc, char **argv, char **envp)
