@@ -92,7 +92,8 @@ run (char **argv, int fd0, int fd1)
       task_t task;
       pid_t pid;
       
-      if (errno = task_create (mach_task_self (), 0, &task))
+      errno = task_create (mach_task_self (), 0, &task);
+      if (errno)
 	{
 	  perror ("task_create");
 	  pid = -1;
@@ -135,7 +136,8 @@ run (char **argv, int fd0, int fd1)
 	  pid = task2pid (task);
 	  if (pid == -1)
 	    perror ("task2pid"), pid = 0;
-	  if (errno = proc_child (proc, task))
+	  errno = proc_child (proc, task);
+	  if (errno)
 	    perror ("proc_child");
 	  if (pause_startup)
 	    {
@@ -157,7 +159,8 @@ run (char **argv, int fd0, int fd1)
 	  if (errno)
 	    {
 	      perror ("_hurd_exec");
-	      if (errno = task_terminate (task))
+	      errno = task_terminate (task);
+	      if (errno)
 		perror ("task_terminate");
 	    }
 	  mach_port_deallocate (mach_task_self (), task);
@@ -177,7 +180,8 @@ command (int argc, char **argv)
   int i, start;
   int fds[2] = { 0, 1 };
 
-  if (bg = !strcmp (argv[argc - 1], "&"))
+  bg = !strcmp (argv[argc - 1], "&");
+  if (bg)
     argv[--argc] = NULL;
 		      
   start = 0;
