@@ -247,8 +247,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
 	  ports_port_deref (newpi);
-	  if (np != dnp)
-	    mutex_unlock (&dnp->lock);
 	  
 	  error = fshelp_fetch_root (&np->transbox, diruser->po,
 				     dirport, 
@@ -274,20 +272,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    }
 	  
 	  /* ENOENT means there was a hiccup, and the translator vanished
-	     while NP was unlocked inside fshelp_fetch_root.
-	     Reacquire the locks and continue as normal. */
+	     while NP was unlocked inside fshelp_fetch_root; continue as normal. */
 	  error = 0;
-	  if (np != dnp)
-	    {
-	      if (!strcmp (filename, ".."))
-		mutex_lock (&dnp->lock);
-	      else
-		{
-		  mutex_unlock (&np->lock);
-		  mutex_lock (&dnp->lock);
-		  mutex_lock (&np->lock);
-		}
-	    }
 	}
       
       if (S_ISLNK (np->nn_stat.st_mode)
@@ -340,7 +326,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      create = 0;
 	    }
 	  netfs_nput (np);
-	  mutex_lock (&dnp->lock);
 	  np = 0;
 	}
       else
