@@ -60,22 +60,22 @@ endif
 ifneq ($(strip $(dir)),libports)
 $(libports): FORCE
 	$(MAKE) -C $(hurdsource)/libports $(libports)
-$(headers)/libports.h: FORCE
-	$(MAKE) -C $(hurdsource)/libports $(headers)/libports.h
+$(headers)/hurd/ports.h: FORCE
+	$(MAKE) -C $(hurdsource)/libports $(headers)/hurd/ports.h
 endif
 
 ifneq ($(strip $(dir)),libioserver)
 $(libioserver): FORCE
 	$(MAKE) -C $(hurdsource)/libioserver $(libioserver)
-$(headers)/libioserver.h: FORCE
-	$(MAKE) -C $(hurdsource)/libioserver $(headers)/libioserver.h
+$(headers)/hurd/ioserver.h: FORCE
+	$(MAKE) -C $(hurdsource)/libioserver $(headers)/hurd/ioserver.h
 endif
 
 ifneq ($(strip $(dir)),libpager)
 $(libpager): FORCE
 	$(MAKE) -C $(hurdsource)/libpager $(libpager)
-$(headers)/libpager.h: FORCE
-	$(MAKE) -C $(hurdsource)/libpager $(headers)/libpager.h
+$(headers)/hurd/pager.h: FORCE
+	$(MAKE) -C $(hurdsource)/libpager $(headers)/hurd/pager.h
 endif
 
 FORCE:
