@@ -93,6 +93,7 @@ mach_port_t default_dtable[3];
 
 char **global_argv;
 
+
 /* Read a string from stdin into BUF.  */
 static int
 getstring (char *buf, size_t bufsize)
@@ -601,6 +602,22 @@ S_startup_reboot (mach_port_t server,
   for (;;);
 }
 
+kern_return_t 
+S_startup_register_version (mach_port_t server,
+			    mach_port_t credential,
+			    char *name,
+			    char *release,
+			    char *version)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_startup_uname (mach_port_t server,
+		 struct utsname *uname)
+{
+  return EOPNOTSUPP;
+}
 
 kern_return_t
 do_mach_notify_port_destroyed (mach_port_t notify,
