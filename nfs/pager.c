@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -283,6 +283,13 @@ netfs_get_filemap (struct node *np, vm_prot_t prot)
 	netfs_nref (np);
 	upi->max_prot = prot;
 	upi->p = pager_create (upi, pager_bucket, 1, MEMORY_OBJECT_COPY_NONE);
+	if (upi->p == 0)
+	  {
+	    netfs_nrele (np);
+	    free (upi);
+	    spin_unlock (&node2pagelock);
+	    return MACH_PORT_NULL;
+	  }
 	np->nn->fileinfo = upi;
 	right = pager_get_port (np->nn->fileinfo->p);
 	ports_port_deref (np->nn->fileinfo->p);
