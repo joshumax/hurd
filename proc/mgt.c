@@ -467,6 +467,7 @@ struct proc *
 new_proc (task_t task)
 {
   struct proc *p;
+  mach_port_t foo;
 
   /* Because these have a reference count of one before starting,
      they can never be freed, so we're safe. */
@@ -488,6 +489,12 @@ new_proc (task_t task)
 
   p->p_pid = genpid ();
   p->p_task = task;
+
+  mach_port_request_notification (mach_task_self (), p->p_task,
+				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
 
   switch (p->p_pid)
     {
@@ -636,6 +643,8 @@ process_has_exited (struct proc *p)
       p->p_ochild->p_prevsib = &startup_proc->p_ochild;
     }
 
+  /* If an operation is in progress for this process, cause it
+     to wakeup and return now. */
   if (p->p_waiting || p->p_msgportwait)
     condition_broadcast (&p->p_wakeup);
 
