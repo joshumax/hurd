@@ -29,6 +29,7 @@
 #include <idvec.h>
 #include <assert.h>
 #include <argp.h>
+#include <error.h>
 #include <version.h>
 #include "auth_S.h"
 #include "auth_reply_U.h"
