@@ -1,5 +1,5 @@
 /* Handle notifications
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1996, 1999 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -41,6 +41,9 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
   struct proc *p;
 
+  /* Drop gratuitous extra reference that the notification creates. */
+  mach_port_deallocate (mach_task_self (), deadport);
+
   if (notify == generic_port)
     {
       check_dead_execdata_notify (deadport);
@@ -50,7 +53,9 @@ do_mach_notify_dead_name (mach_port_t notify,
   p = ports_lookup_port (proc_bucket, notify, proc_class);
 
   if (!p)
-    return EOPNOTSUPP;
+    {
+      return EOPNOTSUPP;
+    }
 
   if (p->p_msgport == deadport)
     {
