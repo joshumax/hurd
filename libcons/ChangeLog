@@ -1,0 +1,7 @@
+2002-08-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* demuxer.c, init-init.c, init-loop.c, opts-version.c,
+	extra-version.c, dir-changed.c, file-changed.c,
+	opts-std-startup.c, cons-lookup.c, cons-switch.c, vcons-remove.c,
+	vcons-add.c, vcons-open.c, vcons-close.c, vcons-refresh.c, priv.h,
+	mutations.h, cons.h: New files.
