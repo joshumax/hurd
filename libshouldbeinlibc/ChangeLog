@@ -1,5 +1,7 @@
 Thu Jul 25 23:10:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* timefmt.c (fmt_past_time): Terminate SEPS.
+
 	* argp-help.c (hol_entry_help): Never return without restoring margins.
 
 Mon Jul 22 23:41:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
