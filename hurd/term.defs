@@ -37,11 +37,10 @@ Return a controlling terminal port for this terminal.  This has the
 following effects:
 
 Certain input characters in certain modes will cause signals to be
-sent to foreground processes which have made this call, on the sigpt
-port they specified.  The ctty ID will be used as the reference port.
-
-Certain conditions will cause SIGHUP to be sent using the same
-mechanism as above.
+sent to foreground processes which have made this call.  The ctty ID
+will be used as the reference port.  Certain conditions will cause
+SIGHUP to be sent.  The foreground process group is the same as the
+owner defined by io_set_owner and io_get_owner.
 
 When background processes do certain operations on a port returned by
 term_become_ctty, the EBACKGROUND error may be returned.  This occurs
@@ -59,7 +58,6 @@ routine term_become_ctty (
 	terminal: io_t;
 	pid: pid_t;
 	pgrp: pid_t;
-	sigpt: mach_port_t;
 	out newtty: mach_port_send_t);
 
 /* This sets the name returned by future get_nodename calls.  This is
