@@ -16,5 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-diskfs_
+diskfs_S_file_notice_changes (struct protid *cred,
+			      mach_port_t notify)
+{
+  return EOPNOTSUPP;
+}
+
