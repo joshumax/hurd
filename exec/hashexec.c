@@ -340,7 +340,8 @@ check_hashbang (struct execdata *e,
 	      memcpy (p, file_name, namelen);
 	      p += namelen;
 	      if (other_args)
-		memcpy (p, other_args, argvlen - (other_args - new_argv));
+		memcpy (p, other_args - new_argv + argv,
+			argvlen - (other_args - new_argv));
 	    }
 	  else
 	    {
