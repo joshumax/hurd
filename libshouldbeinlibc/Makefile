@@ -22,9 +22,10 @@ makemode := library
 libname = libshouldbeinlibc
 SRCS = argz.c argp-parse.c argp-help.c line.c envz.c termsize.c \
 	idvec.c idvec-auth.c timefmt.c exec-reauth.c path-lookup.c \
-	canon-host.c maptime.c shared-dom.c localhost.c wire.c
+	canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
+	xportinfo.c portxlate.c
 LCLHDRS = argz.h rwlock.h argp.h line.h envz.h idvec.h timefmt.h maptime.h \
-	wire.h
+	wire.h portinfo.h portxlate.h
 installhdrs = $(LCLHDRS)
 installhdrsubdir = .
 
