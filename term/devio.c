@@ -572,7 +572,8 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 	{
 	  /* xxx */
 	  char msg[] = "Term input check happened\r\n";
-	  device_write_inband (phys_device, 0, 0, msg, sizeof msg);
+	  int foo;
+	  device_write_inband (phys_device, 0, 0, msg, sizeof msg, &foo);
 	  /* end xxx */
 
 	  input_pending = 0;
