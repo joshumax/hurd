@@ -1,3 +1,20 @@
+2001-04-15  Neal H Walfield  <neal@cs.uml.edu>
+
+	* dir.c (diskfs_get_directs): Total rewrite.
+	(diskfs_lookup_hard): Likewise.
+	(diskfs_enter_hard): Count node size in the size of the dirent so
+	diskfs_get_directs does not have to guess; this is only a few
+	bytes different.  Check the amount of space correctly, i.e.
+	we cannot compare bytes and pages.
+	* node.c: (diskfs_free_node): We already hold
+	diskfs_node_refcnt_lock; do not try to lock it again.
+	(diskfs_cached_lookup): Use diskfs_nref, that is why we have it.
+	Link the nodes correctly.
+	(diskfs_set_translator): Add or remove S_IPTRANS from
+	np->dn_stat.st_mode as appropriate.
+	(diskfs_truncate): Set the new np->dn_stat.st_size.
+	(diskfs_grow): Move the assert up.
+
 2001-04-10  Neal H Walfield  <neal@cs.uml.edu>
 
         * tmpfs.c (diskfs_shortcurt_chrdev): Rename to diskfs_shortcut_chrdev.
