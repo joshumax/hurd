@@ -1,5 +1,5 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993, 94, 95, 96, 98, 99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -73,7 +73,8 @@ typedef struct statfs fsys_statfsbuf_t;
 #define EXEC_NEWTASK	0x00000001 /* Create new task; kill old one.  */
 #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
-/* These two are passed through by the exec server but not examined by it.  */
+#define EXEC_SIGTRAP	0x00000008 /* Simulate SIGTRAP on startup.  */
+/* This flag is passed through by the exec server but not examined by it.  */
 #define	EXEC_STACK_ARGS	0x00000010 /* Use arguments from stack, not RPC.  */
 
 /* Bits for flags in fs.defs:file_set_translator call: */
