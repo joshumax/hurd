@@ -260,8 +260,18 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
   int pos;
   struct proc_stat *ps;
 
-  if (u->ut_type == DEAD_PROCESS || !*u->ut_name)
-    return;			/* Unused entry.  */
+  switch (u->ut_type)
+    {
+    case LOGIN_PROCESS:
+    case USER_PROCESS:
+	/* These are the types that indicate a user job that we might
+	   find processes for.  */
+      if (u->ut_name[0] != '\0' && u->ut_line[0] != '\0')
+	break;
+    default:
+      /* This entry is not for a user, skip it.  */
+      return;
+    }
 
   strncpy (tty, u->ut_line, sizeof u->ut_line);
   tty[sizeof u->ut_line] = '\0'; /* Ensure it's '\0' terminated. */
@@ -325,6 +335,9 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
 	   tty, pid < 0 ? "pgrp" : "pid", pid < 0 ? -pid : pid);
 }
 
+/* Find the absolute timestamp of when the system was booted.
+   We define "system boot time" as the task creation time of PID 1 (init).  */
+
 static error_t
 fetch_boot_time (struct timeval *when)
 {
@@ -368,7 +381,8 @@ uptime (struct proc_stat_list *procs)
   char uptime_rep[20], tod_rep[20];
   struct host_load_info *load;
   unsigned nusers = 0;
-  int maybe_add_user (struct proc_stat *ps) { if (ps->hook) nusers++; return 0; }
+  int maybe_add_user (struct proc_stat *ps)
+    { if (ps->hook) nusers++; return 0; }
 
   proc_stat_list_for_each (procs, maybe_add_user);
 
