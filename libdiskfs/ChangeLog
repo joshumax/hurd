@@ -1,3 +1,8 @@
+Sun Jan 31 18:24:33 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* file-utimes.c (diskfs_S_file_utimes): Implement new semantics
+	for setting to exactly present time.
+
 1999-01-27  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (OTHERSRCS): Add init-main.c.
