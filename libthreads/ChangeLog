@@ -1,3 +1,11 @@
+2002-05-08  Roland McGrath  <roland@frob.com>
+
+	* cthreads.c (cthread_exit): Cast any_t to long before int.
+
+	* cthread_internals.h: int -> void * for `busy' member.
+	* cprocs.c (cthread_mach_msg): Don't cast to int when setting it.
+	* cprocs.c (cthread_mag_active): Likewise.
+
 2002-05-07  Roland McGrath  <roland@frob.com>
 
 	* cprocs.c (cproc_list_lock): Declare type as spin_lock_t.
