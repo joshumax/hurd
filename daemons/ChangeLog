@@ -1,3 +1,7 @@
+Wed Feb 19 23:05:13 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lmail.c (argp_program_version): Make const.
+
 Tue Oct 22 15:47:13 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* lmail.c (options): Make -l/--use-lock-file hidden, as we don't

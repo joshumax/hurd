@@ -1,3 +1,7 @@
+Wed Feb 19 23:04:30 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* auth.c (argp_program_version): Make const.
+
 Thu Sep 12 16:27:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
