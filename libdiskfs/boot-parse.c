@@ -134,6 +134,7 @@ diskfs_parse_bootargs (int argc, char **argv)
 
   (void) device_open (diskfs_master_device, D_READ|D_WRITE, "console", &con);
   stderr = stdout = mach_open_devstream (con, "w");
+  setlinebuf (stdout);
   stdin = mach_open_devstream (con, "r");
 
   /* For now... */
