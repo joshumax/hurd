@@ -21,10 +21,13 @@
 #ifndef __SOCK_H__
 #define __SOCK_H__
 
-#include <hurd/ports.h>
+#include <assert.h>
 #include <cthreads.h>		/* For mutexes */
 
+#include <hurd/ports.h>
+
 struct pipe;
+struct pipe_class;
 
 /* A port on SOCK.  Multiple sock_user's can point to the same socket.  */ 
 struct sock_user
@@ -73,7 +76,7 @@ struct sock
 #define SOCK_NONBLOCK		0x2 /* Don't block on I/O.  */
 #define SOCK_SHUTDOWN_READ	0x4 /* The read-half has been shutdown.  */
 #define SOCK_SHUTDOWN_WRITE	0x8 /* The write-half has been shutdown.  */
-
+
 /* Returns the pipe that SOCK is reading from in PIPE, locked and with an
    additional reference, or an error saying why it's not possible.  NULL may
    also be returned in PIPE with a 0 error, meaning that EOF should be
@@ -86,13 +89,29 @@ error_t sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe);
 error_t sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe);
 
 /* Connect together the previously unconnected sockets SOCK1 and SOCK2.  */
-error_t sock_connect (struct sock *sock1, struct sock *sock2)
+error_t sock_connect (struct sock *sock1, struct sock *sock2);
 
 /* Return a new socket with the given pipe class in SOCK.  */
 error_t sock_create (struct pipe_class *pipe_class, struct sock **sock);
 
+/* Remove a reference from SOCK, possibly freeing it.  */
+extern inline void
+sock_deref (struct sock *sock)
+{
+  mutex_lock (&sock->lock);
+  if (--sock->refs == 0)
+    {
+      /* A sock should never have an address when it has 0 refs, as the
+	 address should hold a reference to the sock!  */
+      assert (sock->addr == NULL);
+      sock_free (sock);
+    }
+  else
+    mutex_unlock (&sock->lock);
+}
+
 /* Return a new socket just like TEMPLATE in SOCK.  */
-error_t sock_create (struct sock *template, struct sock **sock);
+error_t sock_clone (struct sock *template, struct sock **sock);
 
 /* Return a new user port on SOCK in PORT.  */
 error_t sock_create_port (struct sock *sock, mach_port_t *port);
@@ -102,14 +121,24 @@ error_t sock_bind (struct sock *sock, struct addr *addr);
 
 /* Returns SOCK's address in ADDR, with an additional reference added.  If
    SOCK doesn't currently have an address, one is fabricated first.  */
-error_t sock_get_addr (struct sock *sock, struct addr *addr);
-
-/* Returns a send right to SOCK's address in ADDR_PORT.  If SOCK doesn't
-   currently have an address, one is fabricated first.  */
-error_t sock_get_addr_port (struct sock *sock, mach_port_t *addr_port);
+error_t sock_get_addr (struct sock *sock, struct addr **addr);
 
 /* If SOCK is a connected socket, returns a send right to SOCK's peer's
    address in ADDR_PORT.  */
 error_t sock_get_write_addr_port (struct sock *sock, mach_port_t *addr_port);
+
+/* Shutdown either the read or write halves of SOCK, depending on whether the
+   SOCK_SHUTDOWN_READ or SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
+void sock_shutdown (struct sock *sock, unsigned flags);
+
+/* Return a new address, not connected to any socket yet, ADDR.  */
+error_t addr_create (struct addr **addr);
+
+/* Returns the socket bound to ADDR in SOCK, or EADDRNOTAVAIL.  The returned
+   sock will have one reference added to it.  */
+error_t addr_get_sock (struct addr *addr, struct sock **sock);
+
+extern struct port_class *sock_user_port_class;
+extern struct port_class *addr_port_class;
 
 #endif /* __SOCK_H__ */
