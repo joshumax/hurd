@@ -113,11 +113,12 @@ arrange_shutdown_notification ()
   if (err)
     return;
 
-  notify = ports_get_right (pi);
+  notify = ports_get_send_right (pi);
   ports_port_deref (pi);
   startup_request_notification (initport, notify,
 				MACH_MSG_TYPE_MAKE_SEND,
 				program_invocation_short_name);
+  mach_port_deallocate (mach_task_self (), notify);
   mach_port_deallocate (mach_task_self (), initport);
 }
 
