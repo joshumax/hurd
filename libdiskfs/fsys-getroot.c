@@ -101,9 +101,12 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       char pathbuf[diskfs_root_node->dn_stat.st_size + 1];
       int amt;
       
-      error = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
-				diskfs_root_node->dn_stat.st_size, 0,
-				0, &amt);
+      if (diskfs_read_symlink_hook)
+	error = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
+      if (!diskfs_read_symlink_hook || error == EINVAL)
+	error = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
+				  diskfs_root_node->dn_stat.st_size, 0,
+				  0, &amt);
       pathbuf[amt] = '\0';
 
       mutex_unlock (&diskfs_root_node->lock);
