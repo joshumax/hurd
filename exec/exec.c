@@ -433,12 +433,11 @@ load_section (void *section, struct execdata *u)
     }
 }
 
-/* Make sure our mapping window (or read buffer) covers
-   LEN bytes of the file starting at POSN.  */
-static void *map (struct execdata *e, off_t posn, size_t len);
-
 /* Initialize E's stdio stream.  */
 static void prepare_stream (struct execdata *e);
+
+/* Point the stream at the buffer of file data in E->file_data.  */
+static void prepare_in_memory (struct execdata *e);
 
 #ifdef _STDIO_USES_IOSTREAM
 
@@ -446,7 +445,7 @@ static void prepare_stream (struct execdata *e);
 
 #else  /* old GNU stdio */
 
-static void *
+void *
 map (struct execdata *e, off_t posn, size_t len)
 {
   FILE *f = &e->stream;
@@ -457,6 +456,13 @@ map (struct execdata *e, off_t posn, size_t len)
       f->__buffer + (posn + len - f->__offset) < f->__get_limit)
     /* The current mapping window covers it.  */
     offset = posn & (f->__bufsize - 1);
+  else if (e->file_data != NULL)
+    {
+      /* The current "mapping window" is in fact the whole file contents.
+	 So if it's not in there, it's not in there.  */
+      f->__eof = 1;
+      return NULL;
+    }
   else if (e->filemap == MACH_PORT_NULL)
     {
       /* No mapping for the file.  Read the data by RPC.  */
@@ -583,6 +589,20 @@ prepare_stream (struct execdata *e)
   e->stream.__io_funcs.seek = fake_seek;
   e->stream.__io_funcs.close = close_exec_stream;
   e->stream.__cookie = e;
+  e->stream.__seen = 1;
+}
+
+/* Point the stream at the buffer of file data.  */
+static void
+prepare_in_memory (struct execdata *e)
+{
+  memset (&e->stream, 0, sizeof (e->stream));
+  e->stream.__magic = _IOMAGIC;
+  e->stream.__mode.__read = 1;
+  e->stream.__buffer = e->file_data;
+  e->stream.__bufsize = e->file_size;
+  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
+  e->stream.__bufp = e->stream.__buffer;
   e->stream.__seen = 1;
 }
 #endif
@@ -1054,7 +1074,8 @@ check_gzip (struct execdata *earg)
      nothing will in fact ever try to use E->stream again.  */
   finish (e, 0);
 
-  *(int *)&e->stream = 0;	/* clobber magic number field just in case */
+  /* Prepare the stream state to use the file contents already in memory.  */
+  prepare_in_memory (e);
 }
 #endif
 
@@ -1135,13 +1156,13 @@ check_bzip2 (struct execdata *earg)
   e->file_data = zipdata;
   e->file_size = zipdatasz;
 
-
   /* Clean up the old exec file stream's state.
      Now that we have the contents all in memory (in E->file_data),
      nothing will in fact ever try to use E->stream again.  */
   finish (e, 0);
 
-  *(int *)&e->stream = 0;	/* clobber magic number field just in case */
+  /* Prepare the stream state to use the file contents already in memory.  */
+  prepare_in_memory (e);
 }
 #endif
 
