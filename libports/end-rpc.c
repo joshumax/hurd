@@ -26,6 +26,9 @@ ports_end_rpc (void *port, struct rpc_info *info)
 {
   struct port_info *pi = port;
 
+  if (info->notifies)
+    _ports_remove_notified_rpc (info);
+
   mutex_lock (&_ports_lock);
   *info->prevp = info->next;
   if (info->next)
