@@ -81,11 +81,11 @@ thread_state(thread_basic_info_t bi)
    field before using new fields, as something might have failed.  Returns
    a system error code if a fatal error occurred, or 0 if none.  */
 error_t
-proc_stat_set_flags(proc_stat_t ps, int flags)
+proc_stat_set_flags(proc_stat_t ps, ps_flags_t flags)
 {
   error_t err;
-  int have = ps->flags;		/* flags set in ps */
-  int need;			/* flags not set in ps, but desired to be */
+  ps_flags_t have = ps->flags;	/* flags set in ps */
+  ps_flags_t need;		/* flags not set in ps, but desired to be */
   process_t server = ps_context_server(ps->context);
 
   if (flags & PSTAT_NO_MSGPORT)
@@ -346,7 +346,7 @@ _proc_stat_free(ps)
    CONTEXT.  If a memory allocation error occurs, ENOMEM is returned,
    otherwise 0.  */
 error_t
-_proc_stat_create(int pid, ps_context_t context, proc_stat_t *ps)
+_proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps)
 {
   *ps = NEW(struct proc_stat);
   if (*ps == NULL)
@@ -369,12 +369,12 @@ _proc_stat_create(int pid, ps_context_t context, proc_stat_t *ps)
    memory allocation error occured, ENOMEM is returned.  Otherwise, 0 is
    returned.  */
 error_t
-proc_stat_thread_create(proc_stat_t ps, int index, proc_stat_t *thread_ps)
+proc_stat_thread_create(proc_stat_t ps, unsigned index, proc_stat_t *thread_ps)
 {
   error_t err = proc_stat_set_flags(ps, PSTAT_THREAD_INFO);
   if (err)
     return err;
-  else if (index < 0 || index >= ps->info->nthreads)
+  else if (index >= ps->info->nthreads)
     return EINVAL;
   else
     {

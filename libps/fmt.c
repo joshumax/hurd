@@ -226,7 +226,7 @@ ps_fmt_free(ps_fmt_t fmt)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, int *count)
+ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, unsigned *count)
 {
   error_t err = 0;
   ps_fmt_field_t field = ps_fmt_fields(fmt);
@@ -262,7 +262,8 @@ ps_fmt_write_titles(ps_fmt_t fmt, FILE *stream, int *count)
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps, FILE *stream, int *count)
+ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps,
+		       FILE *stream, unsigned *count)
 {
   error_t err = 0;
   ps_fmt_field_t field = ps_fmt_fields(fmt);
@@ -309,7 +310,7 @@ ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps, FILE *stream, int *count)
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning. */
 void
-ps_fmt_squash(ps_fmt_t fmt, int flags)
+ps_fmt_squash(ps_fmt_t fmt, ps_flags_t flags)
 {
   int nfields = fmt->num_fields;
   ps_fmt_field_t fields = fmt->fields, field = fields;

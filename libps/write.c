@@ -33,7 +33,7 @@
    written is added to the integer it points to.  If an error occurs, the
    error code is returned, otherwise 0.  */
 error_t
-ps_write_string(char *string, int max_len, FILE *stream, int *count)
+ps_write_string(char *string, int max_len, FILE *stream, unsigned *count)
 {
   int len = strlen(string);
 
@@ -56,7 +56,7 @@ ps_write_string(char *string, int max_len, FILE *stream, int *count)
    written is added to the integer it points to.  If an error occurs, the
    error code is returned, otherwise 0.  */
 error_t
-ps_write_spaces(int num, FILE *stream, int *count)
+ps_write_spaces(int num, FILE *stream, unsigned *count)
 {
   static char spaces[] = "                                ";
 #define spaces_len (sizeof(spaces) - 1)
@@ -81,7 +81,7 @@ ps_write_spaces(int num, FILE *stream, int *count)
    it points to.  If an error occurs, the error code is returned, otherwise
    0.  */
 error_t
-ps_write_padding(int sofar, int width, FILE *stream, int *count)
+ps_write_padding(int sofar, int width, FILE *stream, unsigned *count)
 {
   width = ABS(width);
   if (sofar < width)
@@ -96,7 +96,7 @@ ps_write_padding(int sofar, int width, FILE *stream, int *count)
    characters written is added to the integer it points to.  If an error
    occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_write_field(char *buf, int width, FILE *stream, int *count)
+ps_write_field(char *buf, int width, FILE *stream, unsigned *count)
 {
   error_t err;
   int len = strlen(buf);
@@ -125,7 +125,7 @@ ps_write_field(char *buf, int width, FILE *stream, int *count)
    non-NULL, the number of characters written is added to the integer it
    points to.  If an error occurs, the error code is returned, otherwise 0.  */
 error_t
-ps_write_int_field(int value, int width, FILE *stream, int *count)
+ps_write_int_field(int value, int width, FILE *stream, unsigned *count)
 {
   char buf[20];
   sprintf(buf, "%d", value);

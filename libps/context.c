@@ -102,7 +102,7 @@ lookup(int id, ihash_t ht, error_t (*create)(int id, void **), void **value)
 /* Find a proc_stat_t for the process referred to by PID, and return it in
    PS.  If an error occurs, it is returned, otherwise 0.  */
 error_t
-ps_context_find_proc_stat(ps_context_t pc, int pid, proc_stat_t *ps)
+ps_context_find_proc_stat(ps_context_t pc, pid_t pid, proc_stat_t *ps)
 {
   error_t create(int pid, void **value)
     {
@@ -114,7 +114,7 @@ ps_context_find_proc_stat(ps_context_t pc, int pid, proc_stat_t *ps)
 /* Find a ps_tty_t for the terminal referred to by the port TTY_PORT, and
    return it in TTY.  If an error occurs, it is returned, otherwise 0.  */
 error_t
-ps_context_find_tty(ps_context_t pc, int tty_port, ps_tty_t *tty)
+ps_context_find_tty(ps_context_t pc, mach_port_t tty_port, ps_tty_t *tty)
 {
   return lookup(tty_port,
 		pc->ttys,
@@ -126,7 +126,7 @@ ps_context_find_tty(ps_context_t pc, int tty_port, ps_tty_t *tty)
    CTTYID_PORT, and return it in TTY.  If an error occurs, it is returned,
    otherwise 0.  */
 error_t
-ps_context_find_tty_by_cttyid(ps_context_t pc, int cttyid_port, ps_tty_t *tty)
+ps_context_find_tty_by_cttyid(ps_context_t pc, mach_port_t cttyid_port, ps_tty_t *tty)
 {
   error_t create(int cttyid_port, void **value)
     {
@@ -151,7 +151,7 @@ ps_context_find_tty_by_cttyid(ps_context_t pc, int cttyid_port, ps_tty_t *tty)
 
 /* Find a ps_user_t for the user referred to by UID, and return it in U.  */
 error_t
-ps_context_find_user(ps_context_t pc, int uid, ps_user_t *u)
+ps_context_find_user(ps_context_t pc, uid_t uid, ps_user_t *u)
 {
   return lookup(uid,
 		pc->users,

@@ -31,7 +31,7 @@
 /* Create a ps_user_t for the user referred to by UID, returning it in U.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
-ps_user_create(int uid, ps_user_t *u)
+ps_user_create(uid_t uid, ps_user_t *u)
 {
   *u = NEW(struct ps_user);
   if (*u == NULL)
