@@ -225,7 +225,7 @@ struct rr_sf
 /* GNU extensions */
 
 #define GNUEXT_VERS	1
-#define GNUEXT_ID	GNUEXT_1997
+#define GNUEXT_ID	"GNUEXT_1997"
 #define GNUEXT_DES \
    "The GNU Extensions provide support for special GNU filesystem features"
 #define GNUEXT_SRC \
