@@ -718,14 +718,14 @@ diskfs_dirempty(struct node *dp,
 	  if (!diskfs_readonly)
 	    dp->dn_set_atime = 1;
 	  if (diskfs_synchronous)
-	    node_update (dp, 1);
+	    diskfs_node_update (dp, 1);
 	  return 0;
 	}
     }
   if (!diskfs_readonly)
     dp->dn_set_atime = 1;
   if (diskfs_synchronous)
-    node_update (dp, 1);
+    diskfs_node_update (dp, 1);
   vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
   return 1;
 }
