@@ -1858,7 +1858,8 @@ S_io_identity (mach_port_t obj,
 }
 
 kern_return_t
-S_io_revoke (mach_port_t obj)
+S_io_revoke (mach_port_t obj,
+	     mach_port_t reply, mach_msg_type_name_t replyPoly)
 {
   return EOPNOTSUPP;
 }
