@@ -1643,21 +1643,33 @@ S_exec_exec (struct trivfs_protid *protid,
 #if 0
   if (!(flags & EXEC_SECURE))
     {
-      char *env_server_list = envz_get (envp, envplen, "EXECSERVERS");
+      char *list = envz_get (envp, envplen, "EXECSERVERS");
 
-      if (env_server_list)
+      if (list)
 	{
 	  int tried = 0;
-	  size_t len = strlen (p) + 1;
-	  char *list = alloca (len);
-
-	  memcpy (list, env_server_list, len);
+	  list = strdupa (list);
 	  while ((p = strsep (&list, ":")))
 	    {
+	      /* Open the named file using the appropriate directory ports for
+		 the user.  */
+	      error_t user_port (int which, error_t (*operate) (mach_port_t))
+		{
+		  return (*operate) (nports > which
+				     ? portarray[which] : MACH_PORT_NULL);
+		}
+	      file_t user_fd (int fd)
+		{
+		  if (fd < 0 || fd >= dtablesize ||
+		      dtable[fd] == MACH_PORT_NULL)
+		    {
+		      errno = EBADF;
+		      return MACH_PORT_NULL;
+		    }
+		  return dtable[fd];
+		}
 	      file_t server;
-	      if (!hurd_file_name_lookup (portarray[INIT_PORT_CRDIR],
-					  portarray[INIT_PORT_CWDIR],
-					  p, 0, 0, &server))
+	      if (!hurd_file_name_lookup (user_port, user_fd, p, 0,0, &server))
 		{
 		  error_t err;
 		  struct trivfs_protid *protid
