@@ -1,8 +1,7 @@
 /* The hurd io interface to storeio
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -247,7 +246,7 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
   else
     {
       struct open *open = (struct open *)cred->po->hook;
-      *owner = open->dev->owner;
+      *owner = open->dev->owner; /* atomic word fetch */
       return 0;
     }
 }
@@ -262,7 +261,7 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
   else
     {
       struct open *open = (struct open *)cred->po->hook;
-      open->dev->owner = owner;
+      open->dev->owner = owner;	/* atomic word store */
       return 0;
     }
 }
