@@ -56,6 +56,8 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
   mutex_unlock (&cred->po->np->lock);
 
+  ports_port_deref (newcred);
+
   if (gubuf != gen_uids)
     vm_deallocate (mach_task_self (), (u_int) gen_uids,
 		   genuidlen * sizeof (uid_t));
