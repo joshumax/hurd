@@ -54,7 +54,7 @@ S_proc_setmsgport (struct proc *p,
     return EOPNOTSUPP;
 
   *oldmsgport = p->p_msgport;
-  *oldmsgport_type = MACH_MSG_TYPE_COPY_SEND;
+  *oldmsgport_type = MACH_MSG_TYPE_MOVE_SEND;
 
   p->p_msgport = msgport;
   p->p_deadmsg = 0;

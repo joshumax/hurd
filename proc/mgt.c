@@ -146,6 +146,8 @@ S_proc_child (struct proc *parentp,
   if (childp->p_parentset)
     return EBUSY;
 
+  mach_port_deallocate (mach_task_self (), childt);
+
   /* Process identification.
      Leave p_task and p_pid alone; all the rest comes from the
      new parent. */
@@ -212,11 +214,13 @@ S_proc_reassign (struct proc *p,
   if (stubp == p)
     return EINVAL;
 
+  mach_port_deallocate (mach_task_self (), newt);
+
   remove_proc_from_hash (p);
 
   task_terminate (p->p_task);
   mach_port_deallocate (mach_task_self (), p->p_task);
-  p->p_task = newt;
+  p->p_task = stubp->p_task;
 
   /* For security, we need use the request port from STUBP */
   ports_transfer_right (p, stubp);

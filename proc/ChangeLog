@@ -1,7 +1,13 @@
 Thu Jul 18 13:23:51 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
-	* mgt.c (S_proc_handle_exceptions): Release newly created referenc
+	* msg.c (S_proc_setmsgport): Use MOVE_SEND, not COPY_SEND, to
+	return the old message port to the caller.
+
+	* mgt.c (S_proc_handle_exceptions): Release newly created reference
  	on E when we are done with it.
+	(S_proc_child): Deallocate our ref on childt once we know we will
+	return success.
+	(S_proc_reassign): Likewise for NEWT.
 
 	* main.c (main): Don't wire proc anymore.  It's not necessary or
 	useful. 
