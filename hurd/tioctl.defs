@@ -39,52 +39,32 @@ type sizes_t = array[4] of short;
 skip; skip; skip; /* 0 1 2 unused */
 
 /* 3 TIOCMODG */
-#if 0
 routine tioctl_tiocmodg (
 	reqport: io_t;
 	out state: int);   
-#else
-skip;
-#endif
 
-#if 0
 /* 4 TIOCMODS */
 routine tioctl_tiocmods (
 	reqport: io_t;
 	state: int);
-#else
-skip;
-#endif
 
 skip; skip; skip; skip; /* 5 6 7 8 unused */
 skip; skip; skip; skip; /* 9 10 11 12 unused */
 
-#if 0
 /* 13 TIOCEXCL */
 routine tioctl_tiocexcl (
 	reqport: io_t);
-#else
-skip;
-#endif
 
-#if 0
 /* 14 TIOCNXCL */
 routine tioctl_tiocnxcl (
 	reqport: io_t);
-#else
-skip;
-#endif
 
 skip; /* 15 unused */
 
-#if 0
 /* 16 TIOCFLUSH */
 routine tioctl_tiocflush (
 	reqport: io_t;
 	queue_selector: int);
-#else
-skip;
-#endif
 
 skip; skip; /* 17 18 unused */
 
@@ -118,7 +98,6 @@ routine tioctl_tiocsetaf (
 
 skip; skip; skip; /* 23 24 25 unused */
    
-#if 0
 /* 26 TIOCGETD */
 routine tioctl_tiocgetd (
 	port: io_t;
@@ -152,10 +131,25 @@ routine tioctl_tiocext (
 
 skip; /* 97 TIOCSCTTY -- implemented in C library */
 skip; /* 98 TIOCCONS -- implemented in C library */
-#endif
    
-#if 0 /* Can't go past 100 because MiG sucks. */   
-skip; skip; skip; /* 99 100 101 unused */
+skip; /* 99 unused */
+
+/* Because MiG defines reply ports as 100 more than request ports, we
+   have to leave one hundred empty RPC's here. */
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; 
+
+
+skip; skip; /* 100 101 unused */
 
 /* 102 TIOCUCNTL */
 routine tioctl_tiocucntl (
@@ -224,5 +218,30 @@ routine tioctl_tiocoutq (
 
 skip; skip; /* 116 117 unused */
 
-/* Incomplete... */   
-#endif
+/* 118 TIOCSPGRP */
+routine tioctl_tiocspgrp (
+	port: io_t;
+	pgrp: int);
+
+/* 119 TIOCGPGRP */
+routine tioctl_tiocgpgrp (
+	port: io_t;
+	out pgrp: int);
+
+/* 120 TIOCCDTR */
+routine tioctl_tioccdtr (
+	port: io_t);
+
+/* 121 TIOCSDTR */
+routine tioctl_tiocsdtr (
+	port: io_t);
+
+/* 122 TIOCCBRK */
+routine tioctl_tioccbrk (
+	port: io_t);
+
+/* 123 TIOCSBRK */
+routine tioctl_tiocsbrk (
+	port: io_t);
+
+/* 124 - 256 unused */
