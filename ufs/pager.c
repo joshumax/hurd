@@ -19,6 +19,7 @@
 #include <strings.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <hurd/store.h>
 
 spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 
@@ -31,6 +32,9 @@ spin_lock_t unlocked_pagein_lock = SPIN_LOCK_INITIALIZER;
 #endif
 
 struct port_bucket *pager_bucket;
+
+/* Mapped image of the disk.  */
+void *disk_image;
 
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
@@ -161,7 +165,10 @@ pager_read_page (struct user_pager_info *pager,
 
   if (addr)
     {
-      err = diskfs_device_read_sync (addr, (void *)buf, disksize);
+      size_t read = 0;
+      err = store_read (store, addr, disksize, (void **)buf, &read);
+      if (read != disksize)
+	err = EIO;
       if (!err && disksize != __vm_page_size)
 	bzero ((void *)(*buf + disksize), __vm_page_size - disksize);
       *writelock = 0;
@@ -199,7 +206,12 @@ pager_write_page (struct user_pager_info *pager,
     return err;
 
   if (addr)
-    err = diskfs_device_write_sync (addr, buf, disksize);
+    {
+      size_t wrote;
+      err = store_write (store, addr, (void *)buf, disksize, &wrote);
+      if (wrote != disksize)
+	err = EIO;
+    }
   else
     {
       printf ("Attempt to write unallocated disk\n.");
@@ -286,6 +298,8 @@ pager_unlock_page (struct user_pager_info *pager,
   /* Check to see if this block is allocated. */
   if (indirs[0].bno == 0)
     {
+      size_t wrote;
+
       if (indirs[0].offset == -1)
 	{
 	  err = ffs_alloc (np, lblkno (sblock, address),
@@ -294,9 +308,15 @@ pager_unlock_page (struct user_pager_info *pager,
 			   sblock->fs_bsize, &bno, 0);
 	  if (err)
 	    goto out;
+
 	  assert (lblkno (sblock, address) < NDADDR);
-	  diskfs_device_write_sync (fsbtodb (sblock, bno),
-				    zeroblock, sblock->fs_bsize);
+	  err = store_write (store, fsbtodb (sblock, bno),
+			     zeroblock, sblock->fs_bsize, &wrote);
+	  if (!err && wrote != sblock->fs_bsize)
+	    err = EIO;
+	  if (err)
+	    goto out;
+
 	  indirs[0].bno = bno;
 	  write_disk_entry (di->di_db[lblkno (sblock, address)], bno);
 	  record_poke (di, sizeof (struct dinode));
@@ -378,8 +398,12 @@ pager_unlock_page (struct user_pager_info *pager,
 	  if (err)
 	    goto out;
 
-	  diskfs_device_write_sync (fsbtodb (sblock, bno),
-				    zeroblock, sblock->fs_bsize);
+	  err = store_write (store, fsbtodb (sblock, bno),
+			     zeroblock, sblock->fs_bsize, &wrote);
+	  if (!err && wrote != sblock->fs_bsize)
+	    err = EIO;
+	  if (err)
+	    goto out;
 
 	  indirs[0].bno = bno;
 	  write_disk_entry (siblock[indirs[0].offset], bno);
@@ -405,7 +429,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = diskfs_device_size << diskfs_log2_device_block_size;
+    *size = store->size;
   else
     *size = pager->np->allocsize;
 
@@ -436,15 +460,6 @@ pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
 
 
 
-static void
-thread_function (any_t foo __attribute__ ((unused)))
-{
-  for (;;)
-    ports_manage_port_operations_multithread (pager_bucket, pager_demuxer,
-					      1000 * 60 * 2, 0,
-					      1, MACH_PORT_NULL);
-}
-
 /* Create the DISK pager.  */
 void
 create_disk_pager (void)
@@ -453,8 +468,10 @@ create_disk_pager (void)
 
   upi->type = DISK;
   upi->np = 0;
-  disk_pager_setup (upi, MAY_CACHE);
-  upi->p = disk_pager;
+  pager_bucket = ports_create_bucket ();
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,
+			   &disk_image);
+  upi->p = diskfs_disk_pager;
 }
 
 /* This syncs a single file (NP) to disk.  Wait for all I/O to complete
@@ -743,7 +760,7 @@ diskfs_shutdown_pager ()
     {
       struct pager *p = arg;
       /* Don't ever shut down the disk pager. */
-      if (p != disk_pager)
+      if (p != diskfs_disk_pager)
 	pager_shutdown (p);
       return 0;
     }
@@ -762,7 +779,7 @@ diskfs_sync_everything (int wait)
     {
       struct pager *p = arg;
       /* Make sure the disk pager is done last. */
-      if (p != disk_pager)
+      if (p != diskfs_disk_pager)
 	pager_sync (p, wait);
       return 0;
     }
