@@ -56,22 +56,24 @@ static int devices_alloced = 0;
 /* ---------------------------------------------------------------- */
 
 /* If NAME is in the global DEVICES vector, return a pointer to it in
-   DEVICES, otherwise return NULL.  LEN should be the length of NAME.  */
+   DEVICES, otherwise return NULL.  */
 static char *
-_find_device(char *name, int len)
+_find_device(char *name)
 {
-  int len = strlen(name);
   char *dev = devices;
   int left = devices_len;
 
   while (left > 0)
-    if (strcmp(name, dev) == 0)
-      return dev;
-    else
-      {
-	dev += len;
-	left -= len;
-      }
+    {
+      if (strcmp(name, dev) == 0)
+	return dev;
+      else
+	{
+	  int skip = strlen (dev) + 1;
+	  dev += skip;
+	  left -= skip;
+	}
+    }
 
   return 0;
 }
@@ -83,7 +85,7 @@ add_device(char *name)
 {
   int len = strlen(name) + 1;
 
-  if (!_find_device(name, len))
+  if (!_find_device(name))
     {
       if (len + devices_len > devices_alloced)
 	{
@@ -107,11 +109,11 @@ add_device(char *name)
 static void
 remove_device(char *name)
 {
-  int len = strlen(name) + 1;
-  char *dev = _find_device(name, len);
+  char *dev = _find_device(name);
 
   if (dev)
     {
+      int len = strlen(name) + 1;
       int tail_len = devices_len - ((dev - devices) + len);
       if (tail_len > 0)
 	bcopy(dev + len, dev, tail_len);
