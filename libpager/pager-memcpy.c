@@ -1,5 +1,5 @@
 /* Fault-safe copy into or out of pager-backed memory.
-   Copyright (C) 1996,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2000,2001 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 #include <sys/mman.h>
 #include <hurd/sigpreempt.h>
 #include <assert.h>
+#include <string.h>
 
 /* Try to copy *SIZE bytes between the region OTHER points to
    and the region at OFFSET in the pager indicated by PAGER and MEMOBJ.
