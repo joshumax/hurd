@@ -705,7 +705,7 @@ _diskfs_idcheckdirmod (struct node *dp, struct node *np,
      or the file.  */
   return (_diskfs_idaccess (dp, S_IWRITE, id)
 	  && (!(dp->dn_stat.st_mode & S_ISVTX) || !np
-	      || diskfs_hasuid (0, id) || _diskfs_idisowner (dp, id)
+	      || diskfs_idhasuid (0, id) || _diskfs_idisowner (dp, id)
 	      || _diskfs_idisowner (np, id)));
 }
 
