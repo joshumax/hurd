@@ -202,14 +202,15 @@ request_server (mach_msg_header_t *inp,
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int S_term_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int S_tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (exec_server (inp, outp)
 	  || io_server (inp, outp)
 	  || device_server (inp, outp)
 	  || notify_server (inp, outp)
-	  || term_server (inp, outp)
-	  || tioctl_server (inp, outp));
+	  || S_term_server (inp, outp)
+	  || S_tioctl_server (inp, outp));
 }
 
 vm_address_t
@@ -1330,12 +1331,6 @@ S_term_getctty (mach_port_t object,
   return 0;
 }
 
-kern_return_t S_term_getctty
-(
-	io_t terminal,
-	mach_port_t *ctty,
-)
-{ return EOPNOTSUPP; }
 
 kern_return_t S_term_become_ctty
 (
