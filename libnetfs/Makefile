@@ -28,7 +28,7 @@ FSSRCS= file-chauthor.c file-check-access.c file-chflags.c file-chmod.c \
 	dir-lookup.c dir-unlink.c dir-rename.c dir-rmdir.c dir-mkfile.c \
 	dir-notice-changes.c dir-mkdir.c dir-link.c file-getcontrol.c \
 	fsstubs.c file-getlinknode.c dir-readdir.c file-get-fs-options.c \
-	file-get-translator.c
+	file-get-translator.c file-set-translator.c
 
 IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c \
@@ -47,7 +47,7 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c \
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 
-LCLHDRS = netfs.h
+LCLHDRS = netfs.h callbacks.h misc.h modes.h mutations.h priv.h
 installhdrs=netfs.h
 
 MIGSTUBS= ioServer.o fsServer.o fsysServer.o ifsockServer.o
