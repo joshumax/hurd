@@ -31,7 +31,7 @@
 #include "auth_S.h"
 #include "auth_reply_U.h"
 
-char *auth_version = "0.0 pre-alpha";
+char *auth_version = "0.0";
 
 
 /* Auth handles are server ports with sets of ids.  */
