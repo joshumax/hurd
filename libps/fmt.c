@@ -100,11 +100,9 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
 	/* Another format-spec.  */
 	{
 	  char *name;
-	  ps_fmt_spec_t spec;
 	  int sign = 1;
 	  bool explicit_width = FALSE; /* True if the width set from SRC.  */
-
-	  src++;
+	  char *spec_start = src++;
 
 	  /* Read an explicit field width.  */
 	  field->width = 0;
@@ -138,39 +136,23 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
 		src++;
 	    }
 
-	  /* we use an explicit loop instead of just calling
-	     find_ps_fmt_spec() because NAME isn't NUL terminated.  */
-	  for (spec = fmt_specs; !ps_fmt_spec_is_end(spec); spec++)
-	    {
-	      char *spec_name = ps_fmt_spec_name(spec);
+	  /* Now that we've parsed everything in this spec, move the whole
+	     thing down one byte (trashing the leading `~') so that we have
+	     room to NUL-terminate the name for which we're searching.  We
+	     also adjust any pointers into this spec-string accordingly.  */
+	  bcopy (spec_start + 1, spec_start, src - spec_start - 1);
+	  name--;
+	  if (field->title)
+	    field->title--;
+	  else
+	    /* If there wasn't a title, give it the same one as the name.  */
+	    field->title = name;
 
-	      if (strncasecmp(spec_name, name, src - name) == 0)
-		{
-		  field->spec = spec;
+	  /* Now that we've made room, do the termination of NAME.  */
+	  src[-1] = '\0';
 
-		  /* Add FIELD's required pstat_flags to FMT's set */
-		  needs |= ps_getter_needs(ps_fmt_spec_getter(spec));
-
-		  if (field->title == NULL)
-		    /* No explicit title different from the spec name, so use
-		       the name from the spec as our title (unlike name, it's
-		       NUL terminated).  */
-		    {
-		      if (strncmp(name, spec_name, src - name) != 0)
-			/* XXX Horrible hack: modify the spec's name
-			   to match the capitalization of the users.  */
-			strncpy(spec_name, name, src - name);
-
-		      field->title = spec_name;
-		    }
-
-		  if (!explicit_width)
-		    field->width = ps_fmt_spec_default_width(spec);
-		  break;
-		}
-	    }
-
-	  if (ps_fmt_spec_is_end(spec))
+	  field->spec = find_ps_fmt_spec(name, fmt_specs);
+	  if (!field->spec)
 	    /* Failed to find any named spec called NAME.  */
 	    {
 	      FREE(new_fmt->src);
@@ -178,6 +160,12 @@ ps_fmt_create(char *src, ps_fmt_spec_t fmt_specs, ps_fmt_t *fmt)
 	      FREE(new_fmt);
 	      return EINVAL;
 	    }
+
+	  /* Add FIELD's required pstat_flags to FMT's set */
+	  needs |= ps_getter_needs(ps_fmt_spec_getter(field->spec));
+
+	  if (!explicit_width)
+	    field->width = ps_fmt_spec_default_width(field->spec);
 
 	  /* Skip optional trailing `/' after the spec name.  */
 	  if (*src == '/')
