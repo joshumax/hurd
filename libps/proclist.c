@@ -459,33 +459,23 @@ proc_stat_list_sort(proc_stat_list_t pp, ps_fmt_spec_t key, bool reverse)
 /* ---------------------------------------------------------------- */
 
 /* Format a description as instructed by FMT, of the processes in PP to
-   STREAM, separated by newlines (and with a terminating newline).  If COUNT
-   is non-NULL, it points to an integer which is incremented by the number of
-   characters output.  If a fatal error occurs, the error code is returned,
-   otherwise 0.  */
+   STREAM, separated by newlines (and with a terminating newline).  If a
+   fatal error occurs, the error code is returned, otherwise 0.  */
 error_t
-proc_stat_list_fmt(proc_stat_list_t pp,
-		   ps_fmt_t fmt, FILE *stream, unsigned *count)
+proc_stat_list_fmt (proc_stat_list_t pp, ps_fmt_t fmt, ps_stream_t stream)
 {
   unsigned nprocs = pp->num_procs;
   proc_stat_t *procs = pp->proc_stats;
   error_t err = proc_stat_list_set_flags(pp, ps_fmt_needs(fmt));
 
-  if (err)
-    return err;
-
-  while (nprocs-- > 0)
+  while (!err && nprocs-- > 0)
     {
-      err = ps_fmt_write_proc_stat(fmt, *procs++, stream, count);
-      if (err)
-	return err;
-
-      putc('\n', stream);
-      if (count != NULL)
-	(*count)++;
+      err = ps_fmt_write_proc_stat (fmt, *procs++, stream);
+      if (! err)
+	ps_stream_newline (stream);
     }
 
-  return 0;
+  return err;
 }
 
 /* ---------------------------------------------------------------- */
