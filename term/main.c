@@ -117,7 +117,7 @@ main (int argc, char **argv)
       ourcntl = &termctl;
       peerclass = pty_class;
       peercntlclass = pty_cntl_class;
-      peercntl = 0;
+      peercntl = &ptyctl;
     }
   else
     {
