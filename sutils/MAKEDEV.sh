@@ -103,7 +103,7 @@ function mkdev {
 	st $I root 666 /hurd/magic fd
 	cmd ln -f -s fd/0 $dir/stdin
 	cmd ln -f -s fd/1 $dir/stdout
-	cmd -f -s fd/2 $dir/stderr
+	cmd ln -f -s fd/2 $dir/stderr
 	;;
       time)
 	st $I root 666 /hurd/devport time ;;
