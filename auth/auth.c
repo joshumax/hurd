@@ -217,26 +217,13 @@ S_auth_makeauth (struct authhandle *auth,
   if (err)
     return err;
 
+  /* Create a new handle with the specified ids.  */
+
 #define MERGE S (euids); S (egids); S (auids); S (agids);
-  if (neuids || nauids || negids || nagids)
-    {
-      /* Create a new handle with the specified ids.  */
 
 #define S(uids) if (!err) err = idvec_merge_ids (&newauth->uids, uids, n##uids)
       MERGE;
 #undef S
-    }
-  else
-    {
-      /* Use the union of the ids of the passed in handles for the new one.  */
-
-      for (i = 0; !err && i < nauths; ++i)
-	{
-#define S(uids) if (!err) err = idvec_merge (&newauth->uids, &auths[i]->uids)
-	  MERGE;
-#undef S
-	}
-    }
 
   if (! err)
     *newhandle = ports_get_right (newauth);
