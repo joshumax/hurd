@@ -72,17 +72,17 @@ diskfs_parse_bootargs (int argc, char **argv)
       };
 
       msg.Head.msgh_bits =
-	MACH_MSGH_BITS(19, MACH_MSG_TYPE_MAKE_SEND_ONCE);
+	MACH_MSGH_BITS (MACH_MSG_TYPE_MOVE_SEND, MACH_MSG_TYPE_MAKE_SEND_ONCE);
       /* msgh_size passed as argument */
       msg.Head.msgh_remote_port = bootstrap;
       msg.Head.msgh_local_port = mig_get_reply_port ();
       msg.Head.msgh_seqno = 0;
       msg.Head.msgh_id = 999999;
 
-      msg_result = mach_msg(&msg.Head, MACH_SEND_MSG|MACH_RCV_MSG,
-			    sizeof msg.Head, sizeof msg,
-			    msg.Head.msgh_local_port,
-			    MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+      msg_result = mach_msg (&msg.Head, MACH_SEND_MSG|MACH_RCV_MSG,
+			     sizeof msg.Head, sizeof msg,
+			     msg.Head.msgh_local_port,
+			     MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
       if (msg_result != MACH_MSG_SUCCESS)
 	{
 	  if ((msg_result == MACH_SEND_INVALID_REPLY) ||
@@ -98,11 +98,13 @@ diskfs_parse_bootargs (int argc, char **argv)
 	}
       mig_put_reply_port (msg.Head.msgh_local_port);
 
+#if 0
       assert (msg.Head.msgh_id == 999999 + 100);
       assert (msg.Head.msgh_size == sizeof msg);
       assert (msg.Head.msgh_bits & MACH_MSGH_BITS_COMPLEX);
       assert (*(int *) &msg.priv_hostType == *(int *) &portCheck);
       assert (*(int *) &msg.priv_deviceType == *(int *) &portCheck);
+#endif
       diskfs_host_priv = msg.priv_host;
       diskfs_master_device = msg.priv_device;
 
