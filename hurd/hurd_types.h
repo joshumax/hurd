@@ -78,10 +78,9 @@ typedef struct stat io_statbuf_t;
 /* Values for retry field in fs.defs:dir_pathtrans call: */
 enum retry_type
 {
-  FS_RETRY_NONE,		/* No retry necessary.  */
-  FS_RETRY_NORMAL,		/* Retry normally.  */
-  FS_RETRY_REAUTH,		/* Retry after reauthenticating retry port. */
-  FS_RETRY_MAGICAL,		/* Retry string is magical.  */
+  FS_RETRY_NORMAL = 1,		/* Retry normally.  */
+  FS_RETRY_REAUTH = 2,		/* Retry after reauthenticating retry port. */
+  FS_RETRY_MAGICAL = 3,		/* Retry string is magical.  */
   /* "tty" means controlling tty;
 
      "fd/%u" means file descriptor N;
@@ -171,6 +170,7 @@ struct procinfo
   pid_t ppid;
   pid_t pgrp;
   pid_t session;
+  pid_t logincollection;
 
   int nthreads;			/* size of pi_threadinfos */
   
@@ -221,6 +221,7 @@ typedef int *procinfo_t;
 #define FSTYPE_PROC9   0x00000014 /* /proc filesystem ala Plan 9 */
 #define FSTYPE_SOCKET  0x00000015 /* Naming point for socket server */
 #define FSTYPE_MISC    0x00000016 /* generic trivfs server */
+#define FSTYPE_EXT2FS  0x00000017 /* Linux filesystem by Remy Card */
 
 /* Standard port assignments for file_exec and exec_* */
 enum
