@@ -25,6 +25,8 @@
 
 #include <file_io.h>
 
+#define	EXT2_INODES_PER_BLOCK(s)	(EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_inode))
+
 int ino2blk (struct ext2_super_block *fs, struct ext2_group_desc *gd, int ino)
 {
         int group;

@@ -34,11 +34,20 @@
 #include <mach.h>
 #include <cthreads.h>
 
+#include <stdint.h>
 #include <device/device_types.h>
+
+/* Types used by the ext2 header files.  */
+typedef u_int32_t __u32;
+typedef int32_t   __s32;
+typedef u_int16_t __u16;
+typedef int16_t   __s16;
+typedef u_int8_t  __u8;
+typedef int8_t    __s8;
 
 #include <defs.h>
 #include "minix_fs.h"
-#include "ext2_fs.h"
+#include "../ext2fs/ext2_fs.h"	/* snarf stolen linux header from ext2fs */
 #include "disk_inode.h"
 
 #define	BSD_FFS		0

@@ -1,3 +1,13 @@
+2000-01-03  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file_io.h: Include "../ext2fs/ext2_fs.h" instead of "ext2_fs.h".
+	* ext2_file_io.c (search_directory): Use `struct ext2_dir_entry_2' in
+	place of `struct ext2_dir_entry', so as to grok newer dir formats.
+	* ext2_fs.h: File removed.
+	* Makefile (LCLHDRS): Remove it from the list.
+	* ffs_compat.c (EXT2_INODES_PER_BLOCK): New macro, no longer in
+	ext2_fs.h.
+
 1999-11-18  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* default_pager.c (default_pager): Instead of suspending this thread,

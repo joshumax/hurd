@@ -374,7 +374,7 @@ search_directory(name, fp, inumber_p)
 	vm_offset_t	buf;
 	vm_size_t	buf_size;
 	vm_offset_t	offset;
-	register struct ext2_dir_entry *dp;
+	struct ext2_dir_entry_2 *dp;
 	int		length;
 	kern_return_t	rc;
 	char		tmp_name[256];
@@ -387,7 +387,7 @@ search_directory(name, fp, inumber_p)
 	    if (rc != KERN_SUCCESS)
 		return (rc);
 
-	    dp = (struct ext2_dir_entry *)buf;
+	    dp = (struct ext2_dir_entry_2 *)buf;
 	    if (dp->inode != 0) {
 		strncpy (tmp_name, dp->name, dp->name_len);
 		tmp_name[dp->name_len] = '\0';

@@ -1,4 +1,4 @@
-# Copyright (C) 1997 Free Software Foundation, Inc.
+# Copyright (C) 1997, 1999 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -22,7 +22,7 @@ SRCS = bootstrap.c ffs_compat.c load.c wiring.c def_pager_setup.c \
 	ffs_file_io.c minix_ffs_compat.c default_pager.c file_io.c\
 	minix_file_io.c ext2_file_io.c kalloc.c strfcns.c exec.c \
 	panic.c elf-load.c gunzip.c bunzip2.c
-LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h ext2_fs.h \
+LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h \
 	 minix_ffs_compat.h wiring.h dir.h ffs_compat.h minix_fs.h \
 	disk_inode.h file_io.h minix_super.h mach-exec.h
 target = serverboot
