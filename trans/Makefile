@@ -19,17 +19,22 @@ dir := trans
 makemode := servers
 
 targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
-	  password hello hello-mt streamio fakeroot proxy-defpager
+	  password hello hello-mt streamio fakeroot proxy-defpager devpts
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c \
-	fakeroot.c proxy-defpager.c
+	fakeroot.c proxy-defpager.c devpts.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
-	default_pagerServer.o device_replyServer.o elfcore.o
+	default_pagerServer.o default_pagerUser.o \
+	device_replyServer.o elfcore.o
 HURDLIBS = threads ports trivfs fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
+
+# hurd/default_pager.defs doesn't include hurd/hurd_types.defs and so won't
+# obey SERVERPREFIX.
+default_pager-MIGCOMSFLAGS = -prefix S_
 
 vpath elfcore.c $(top_srcdir)/exec
 
@@ -38,7 +43,7 @@ ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o elfcore.o
 password: passwordServer.o
 streamio: device_replyServer.o
-proxy-defpager: default_pagerServer.o
+proxy-defpager: default_pagerServer.o default_pagerUser.o
 
 proxy-defpager crash password streamio: ../libthreads/libthreads.a ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
@@ -47,5 +52,8 @@ hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../l
 hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
+
+devpts: ../libtermios/libtermserver.a ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+
 
 $(targets): %: %.o

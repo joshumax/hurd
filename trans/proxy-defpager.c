@@ -25,6 +25,7 @@
 #include <hurd/paths.h>
 
 #include "default_pager_S.h"
+#include "default_pager_U.h"
 
 static mach_port_t real_defpager, dev_master;
 
@@ -41,27 +42,27 @@ allowed (mach_port_t port, int mode)
 }
 
 kern_return_t
-default_pager_object_create (mach_port_t default_pager,
-			     memory_object_t *memory_object,
-			     vm_size_t object_size)
+S_default_pager_object_create (mach_port_t default_pager,
+			       memory_object_t *memory_object,
+			       vm_size_t object_size)
 {
   return allowed (default_pager, O_EXEC)
     ?: default_pager_object_create (real_defpager, memory_object, object_size);
 }
 
 kern_return_t
-default_pager_info (mach_port_t default_pager, default_pager_info_t *info)
+S_default_pager_info (mach_port_t default_pager, default_pager_info_t *info)
 {
   return allowed (default_pager, O_READ)
     ?: default_pager_info (real_defpager, info);
 }
 
 kern_return_t
-default_pager_objects (mach_port_t default_pager,
-		       default_pager_object_array_t *objects,
-		       mach_msg_type_number_t *objectsCnt,
-		       mach_port_array_t *ports,
-		       mach_msg_type_number_t *portsCnt)
+S_default_pager_objects (mach_port_t default_pager,
+			 default_pager_object_array_t *objects,
+			 mach_msg_type_number_t *objectsCnt,
+			 mach_port_array_t *ports,
+			 mach_msg_type_number_t *portsCnt)
 {
   return allowed (default_pager, O_WRITE)
     ?: default_pager_objects (real_defpager,
@@ -69,10 +70,10 @@ default_pager_objects (mach_port_t default_pager,
 }
 
 kern_return_t
-default_pager_paging_file (mach_port_t default_pager,
-			   mach_port_t master_device_port,
-			   default_pager_filename_t filename,
-			   boolean_t add)
+S_default_pager_paging_file (mach_port_t default_pager,
+			     mach_port_t master_device_port,
+			     default_pager_filename_t filename,
+			     boolean_t add)
 {
   return allowed (default_pager, O_WRITE)
     ?: default_pager_paging_file (real_defpager, dev_master, filename, add)
@@ -80,11 +81,11 @@ default_pager_paging_file (mach_port_t default_pager,
 }
 
 kern_return_t
-default_pager_paging_storage (mach_port_t default_pager,
-			      mach_port_t device,
-			      recnum_t *runs, mach_msg_type_number_t nruns,
-			      default_pager_filename_t name,
-			      boolean_t add)
+S_default_pager_paging_storage (mach_port_t default_pager,
+				mach_port_t device,
+				recnum_t *runs, mach_msg_type_number_t nruns,
+				default_pager_filename_t name,
+				boolean_t add)
 {
   return allowed (default_pager, O_WRITE)
     ?: default_pager_paging_storage (real_defpager, dev_master,
@@ -93,10 +94,10 @@ default_pager_paging_storage (mach_port_t default_pager,
 }
 
 kern_return_t
-default_pager_object_set_size (mach_port_t memory_object,
-			       mach_port_t reply_port,
-			       mach_port_seqno_t seqno,
-			       vm_size_t object_size_limit)
+S_default_pager_object_set_size (mach_port_t memory_object,
+				 mach_port_t reply_port,
+				 mach_port_seqno_t seqno,
+				 vm_size_t object_size_limit)
 {
   /* This is sent to an object, not the control port.  */
   return MIG_BAD_ID;
