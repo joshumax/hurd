@@ -1,6 +1,6 @@
 /* Common output function for ps & w
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -27,14 +27,15 @@
 #include <ps.h>
 
 void
-psout (struct proc_stat_list *procs, char *fmt_string, ps_fmt_specs_t specs,
+psout (struct proc_stat_list *procs,
+       char *fmt_string, struct ps_fmt_specs *specs,
        char *sort_key_name, int sort_reverse,
        int output_width, int print_heading,
        int squash_bogus_fields, int squash_nominal_fields)
 {
   error_t err;
-  ps_stream_t output;
-  ps_fmt_t fmt;
+  struct ps_stream *output;
+  struct ps_fmt *fmt;
 
   err = ps_fmt_create (fmt_string, specs, &fmt);
   if (err)
@@ -56,7 +57,7 @@ psout (struct proc_stat_list *procs, char *fmt_string, ps_fmt_specs_t specs,
   if (squash_nominal_fields)
     /* Remove any fields that contain only `uninteresting' information.  */
     {
-      bool nominal (ps_fmt_spec_t spec)
+      int nominal (struct ps_fmt_spec *spec)
 	{
 	  return proc_stat_list_spec_nominal (procs, spec);
 	}
@@ -66,7 +67,7 @@ psout (struct proc_stat_list *procs, char *fmt_string, ps_fmt_specs_t specs,
   if (sort_key_name)
     /* Sort on the given field. */
     {
-      ps_fmt_spec_t sort_key;
+      struct ps_fmt_spec *sort_key;
 
       if (*sort_key_name == '-')
 	/* Sort in reverse.  */
