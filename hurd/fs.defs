@@ -159,7 +159,6 @@ routine file_get_storage_info (
 	file: file_t;
 	out class: int;
 	out addresses: intarray_t;
-	out lengths: intarray_t;
 	out storage_name: string_t;
 	out storage_port: mach_port_send_t;
 	out storage_misc: data_t);
