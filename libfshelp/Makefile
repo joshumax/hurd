@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,7 +24,8 @@ SRCS =	lock-acquire.c lock-init.c \
 	fetch-root.c transbox-init.c set-active.c fetch-control.c \
 	drop-transbox.c \
 	delegate.c \
-	exec-reauth.c
+	exec-reauth.c \
+	setopts.c
 LCLHDRS = fshelp.h locks.h
 installhdrs = fshelp.h
 
