@@ -39,6 +39,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/shared.h>
 #include <hurd/fsys.h>
 #include <hurd/exec.h>
+#include <hurd/paths.h>
+#include <fcntl.h>
 #include "exec_S.h"
 #include "fsys_S.h"
 #include "notify_S.h"
@@ -1496,6 +1498,7 @@ do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
 
 /* Attempt to set the active translator for the exec server so that
    filesystems other than the bootstrap can find it. */
+void
 set_active_trans ()
 {
   file_t execnode;
