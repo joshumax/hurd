@@ -392,6 +392,7 @@ believe it has restricted them to different identities or no identity at all.\
      directly to effect what posix_spawn does in the simple case.  */
   {
     task_t newtask;
+    process_t proc;
     file_t execfile = file_name_lookup (argv[argi], O_EXEC, 0);
     if (execfile == MACH_PORT_NULL)
       error (3, errno, "%s", argv[argi]);
@@ -406,6 +407,12 @@ believe it has restricted them to different identities or no identity at all.\
     child = task2pid (newtask);
     if (child < 0)
       error (3, errno, "task2pid");
+    proc = getproc ();
+    err = proc_child (proc, newtask);
+    mach_port_deallocate (mach_task_self (), proc);
+    if (err)
+      error (3, err, "proc_child");
+
     err = _hurd_exec (newtask, execfile, &argv[argi], environ);
     mach_port_deallocate (mach_task_self (), newtask);
     mach_port_deallocate (mach_task_self (), execfile);

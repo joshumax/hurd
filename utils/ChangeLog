@@ -1,5 +1,10 @@
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
+	* fakeauth.c (main): Register NEWTASK as a child with the proc
+	server.
+
+2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
+
 	* devprobe.c: Include <version.h>.
 	(argp_program_version): New variable.
 	* storecat.c: Include <version.h>.
