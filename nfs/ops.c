@@ -959,21 +959,21 @@ netfs_report_access (struct netcred *cred,
      here we err on the side of denying access, and that we always
      have to check everything.  */
   
+  *types = 0;
+
   len = 1;
   err = netfs_attempt_read (cred, np, 0, &len, &byte);
   if (err)
-    {
-      *types = 0;
-      return;
-    }
-  
+    return;
   assert (len == 1 || len == 0);
+
+  *types |= O_READ | O_EXEC;
 
   if (len == 1)
     {
       err = netfs_attempt_write (cred, np, 0, &len, &byte);
-      if (err)
-	*types &= ~O_WRITE;
+      if (!err)
+	*types |= O_WRITE;
     }
   else
     {
@@ -984,8 +984,8 @@ netfs_report_access (struct netcred *cred,
 	 check this and not just return a presumptive error. */
       byte = 0;
       err = netfs_attempt_write (cred, np, 0, &len, &byte);
-      if (err)
-	*types &= ~O_WRITE;
+      if (!err)
+	*types |= O_WRITE;
       netfs_attempt_set_size (cred, np, 0);
     }
 }
