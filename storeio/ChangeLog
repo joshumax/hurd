@@ -1,3 +1,11 @@
+2001-12-28  Roland McGrath  <roland@frob.com>
+
+	* dev.h (struct dev): New member `no_fileio' (flag).
+	* storeio.c (options): Add --no-file-io/-F.
+	(parse_opt): Parse it to set PARAMS->dev->no_fileio.
+	(trivfs_append_args): Add --no-file-io if it's set.
+	* dev.c (dev_open): Pass STORE_NOFILEIO flag if DEV->no_fileio is set.
+
 2001-08-12  Neal H Walfield  <neal@cs.uml.edu>
 
 	* pager.c: Include <errno.h>.
