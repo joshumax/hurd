@@ -1,6 +1,6 @@
 /* Hurd-aware fsck wrapper
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -423,8 +423,11 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 		  merge_status (fscks_wait (&fscks));
 		merge_status (fscks_start_fsck (&fscks, fs));
 	      }
-	    else
+	    else if (autom)
 	      fs_debug (fs, "Not fsckable");
+	    else
+	      error (0, 0, "%s: %s: Not a fsckable filesystem type",
+		     fs->mntent.mnt_dir, fs->mntent.mnt_type);
 	  }
 
       /* Now wait for them all to finish.  */
