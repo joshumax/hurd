@@ -273,24 +273,33 @@ S_proc_setpgrp (struct proc *callerp,
 	      pid_t pid,
 	      pid_t pgid)
 {
-  struct proc *p = pid_find (pid);
-  struct pgrp *pg = pgrp_find (pgid);
+  struct proc *p;
+  struct pgrp *pg;
   
+  p = pid ? pid_find (pid) : callerp;
+
   if (!p || (p != callerp && p->p_parent != callerp))
     return ESRCH;
   
   if (p->p_parent == callerp && p->p_exec)
     return EACCES;
   
+  if (!pgid)
+    pgid = p->p_pid;
+  pg = pgrp_find (pgid);
+
   if (p->p_pgrp->pg_session->s_sid == p->p_pid
       || p->p_pgrp->pg_session != callerp->p_pgrp->pg_session
-      || ((pgid != p->p_pgrp->pg_pgid
+      || ((pgid != p->p_pid
 	   && (!pg || pg->pg_session != callerp->p_pgrp->pg_session))))
     return EPERM;
   
-  leave_pgrp (p);
-  p->p_pgrp = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
-  join_pgrp (p);
+  if (p->p_pgrp != pg)
+    {
+      leave_pgrp (p);
+      p->p_pgrp = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
+      join_pgrp (p);
+    }
   
   return 0;
 }
@@ -353,8 +362,8 @@ leave_pgrp (struct proc *p)
       if (dosignal)
 	for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
 	  {
-	    nowait_sig_post (ip->p_msgport, SIGHUP, ip->p_task);
-	    nowait_sig_post (ip->p_msgport, SIGCONT, ip->p_task);
+	    send_signal (ip->p_msgport, SIGHUP, ip->p_task);
+	    send_signal (ip->p_msgport, SIGCONT, ip->p_task);
 	  }
     }
 }
