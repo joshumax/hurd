@@ -109,11 +109,15 @@ void pokel_inherit (struct pokel *pokel, struct pokel *from);
 /* ---------------------------------------------------------------- */
 /* Bitmap routines.  */
 
+#include <stdint.h>
+
 /* Returns TRUE if bit NUM is set in BITMAP.  */
 EXT2FS_EI int
 test_bit (unsigned num, char *bitmap)
 {
-  return bitmap[num >> 3] & (1 << (num & 0x7));
+  const uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
+  const uint_fast32_t mask = 1 << (num & 31);
+  return *bw & mask;
 }
 
 /* Sets bit NUM in BITMAP, and returns the previous state of the bit.  Unlike
@@ -121,17 +125,9 @@ test_bit (unsigned num, char *bitmap)
 EXT2FS_EI int
 set_bit (unsigned num, char *bitmap)
 {
-  char *p = bitmap + (num >> 3);
-  char byte = *p;
-  char mask = (1 << (num & 0x7));
-
-  if (byte & mask)
-    return 1;
-  else
-    {
-      *p = byte | mask;
-      return 0;
-    }
+  uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
+  const uint_fast32_t mask = 1 << (num & 31);
+  return (*bw & mask) ?: (*bw |= mask, 0);
 }
 
 /* Clears bit NUM in BITMAP, and returns the previous state of the bit.
@@ -139,17 +135,9 @@ set_bit (unsigned num, char *bitmap)
 EXT2FS_EI int
 clear_bit (unsigned num, char *bitmap)
 {
-  char *p = bitmap + (num >> 3);
-  char byte = *p;
-  char mask = (1 << (num & 0x7));
-
-  if (byte & mask)
-    {
-      *p = byte & ~mask;
-      return 1;
-    }
-  else
-    return 0;
+  uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
+  const uint_fast32_t mask = 1 << (num & 31);
+  return (*bw & mask) ? (*bw &= ~mask, mask) : 0;
 }
 
 /* ---------------------------------------------------------------- */
@@ -224,24 +212,24 @@ extern struct store_parsed *store_parsed;
 /* Mapped image of the disk.  */
 extern void *disk_image;
 
-/* Our in-core copy of the super-block.  */
+/* Our in-core copy of the super-block (pointer into the disk_image).  */
 struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
 
 /* Where the super-block is located on disk (at min-block 1).  */
-#define SBLOCK_BLOCK 1
-#define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
-#define SBLOCK_SIZE (sizeof (struct ext2_super_block))
-#define SBLOCK_LBLOCK (SBLOCK_BLOCK >> BLOCKSIZE_SCALE)
+#define SBLOCK_BLOCK	1	/* Default location, second 1k block.  */
+#define SBLOCK_SIZE	(sizeof (struct ext2_super_block))
+extern unsigned int sblock_block; /* Specified location (in 1k blocks).  */
+#define SBLOCK_OFFS	(sblock_block << 10) /* Byte offset of superblock.  */
 
 /* The filesystem block-size.  */
-unsigned long block_size;
+unsigned int block_size;
 /* The log base 2 of BLOCK_SIZE.  */
-unsigned log2_block_size;
+unsigned int log2_block_size;
 
 /* The number of bits to scale min-blocks to get filesystem blocks.  */
-#define BLOCKSIZE_SCALE	(log2_block_size - EXT2_MIN_BLOCK_LOG_SIZE)
+#define BLOCKSIZE_SCALE	(sblock->s_log_block_size)
 
 /* log2 of the number of device blocks in a filesystem block.  */
 unsigned log2_dev_blocks_per_fs_block;
@@ -299,16 +287,10 @@ unsigned long next_generation;
 #define bptr_block(ptr) boffs_block(bptr_offs(ptr))
 
 /* Get the descriptor for block group NUM.  The block group descriptors are
-   stored starting in the filesystem block following the super block.  */
-EXT2FS_EI struct ext2_group_desc *
-group_desc(unsigned long num)
-{
-  int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
-  unsigned long group_desc = num / desc_per_block;
-  unsigned long desc = num % desc_per_block;
-  return ((struct ext2_group_desc *) bptr(SBLOCK_LBLOCK + 1 + group_desc)
-	  + desc);
-}
+   stored starting in the filesystem block following the super block.
+   We cache a pointer into the disk image for easy lookup.  */
+#define group_desc(num)	(&group_desc_image[num])
+struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
