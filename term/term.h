@@ -44,8 +44,16 @@
 #define CTRL_BIT 0x40
 
 /* XXX These belong in <termios.h> */
+#ifdef	IUCLC
+#define ILCASE	IUCLC
+#else
 #define ILCASE (1 << 14)
+#endif
+#ifdef	OLCUC
+#define OLCASE	OLCUC
+#else
 #define OLCASE (1 << 9)
+#endif
 #define OTILDE (1 << 10)
 
 /* used in mdmctl device call */
