@@ -22,8 +22,8 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_file_check_access (struct protid *user,
-			   int *types)
+netfs_S_file_statfs (struct protid *user,
+		     struct statfs *st)
 {
   error_t err;
   
@@ -31,7 +31,7 @@ netfs_S_file_check_access (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_report_access (user->credential, user->po->np, types);
+  err = netfs_attempt_statfs (user->credential, user->po->np, st);
   mutex_unlock (&user->po->np->lock);
   return err;
 }
