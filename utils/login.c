@@ -146,12 +146,22 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 {
   struct utmp utmp;
   char const *host = 0;
+  int tty_fd = 0;
+  char *tty = 0;
 
   bzero (&utmp, sizeof (utmp));
 
   gettimeofday (&utmp.ut_tv, 0);
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
+
+  utmp.ut_type = USER_PROCESS;
+
+  /* Search for a file descriptor naming a tty.  */
+  while (!tty && tty_fd < 3)
+    tty = ttyname (tty_fd++);
+  if (tty)
+    strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
 
   if (! inherit_host)
     {
@@ -160,27 +170,12 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 	host = envz_get (args, args_len, "VIA_ADDR") ?: host;
     }
 
-  if (! host)
+  if (!host && tty)
     /* Get the host from the `existing utmp entry'.  This is a crock.  */
     {
-      int tty_fd = 0;
-      char *tty = 0;
-
-      /* Search for a file descriptor naming a tty.  */
-      while (!tty && tty_fd < 3)
-	tty = ttyname (tty_fd);
-
-      if (tty)
-	/* Look for an existing utmp entry that has our tty.  */
-	{
-	  struct utmp *old_utmp;
-
-	  strncpy (utmp.ut_line, tty, sizeof (utmp.ut_line));
-	  old_utmp = getutline (&utmp);
-
-	  if (old_utmp)
+      struct utmp *old_utmp = getutline (&utmp);
+      if (old_utmp)
 	    host = old_utmp->ut_host;
-	}
     }
 
   strncpy (utmp.ut_host, host ?: "", sizeof (utmp.ut_host));
@@ -265,6 +260,8 @@ kill_login (process_t proc_server, pid_t pid, int sig)
 {
   error_t err;
   size_t num_pids;
+  pid_t self = getpid ();
+
   do
     {
       pid_t _pids[num_pids = 20], *pids = _pids;
@@ -273,7 +270,8 @@ kill_login (process_t proc_server, pid_t pid, int sig)
 	{
 	  size_t i;
 	  for (i = 0; i < num_pids; i++)
-	    kill (pids[i], sig);
+	    if (pids[i] != self)
+	      kill (pids[i], sig);
 	  if (pids != _pids)
 	    vm_deallocate (mach_task_self (), (vm_address_t)pids, num_pids);
 	}
@@ -284,15 +282,29 @@ kill_login (process_t proc_server, pid_t pid, int sig)
 /* Forks a process which will kill the login session headed by PID after
    TIMEOUT seconds if PID still has no owner.  */
 static void
-dog (time_t timeout, pid_t pid)
+dog (time_t timeout, pid_t pid, char **argv)
 {
   if (fork () == 0)
     {
       int owned;
       error_t err;
+      char buf[25];		/* Be gratuitously pretty.  */
+      time_t left = timeout;
       process_t proc_server = getproc ();
 
-      sleep (timeout);
+      while (left)
+	{
+	  time_t interval = left < 5 ? left : 5;
+	  struct timeval tv = { left, 0 };
+
+	  /* Frob ARGV so that ps show something nice.  */
+	  fmt_named_interval (&tv, 0, buf, sizeof buf);
+	  asprintf (&argv[0], "watchdog for login %d: %s remaining", pid);
+	  argv[1] = 0;
+
+	  sleep (interval);
+	  left -= interval;
+	}
 
       err = check_owned (proc_server, pid, &owned);
       if (err == ESRCH)
@@ -330,13 +342,12 @@ dog (time_t timeout, pid_t pid)
       else
 	/* Give normal you-forgot-to-login message.  */
 	{
-	  char interval[10];	/* Be gratuitously pretty.  */
 	  struct timeval tv = { timeout, 0 };
 
-	  fmt_named_interval (&tv, 0, interval, sizeof interval);
+	  fmt_named_interval (&tv, 0, buf, sizeof buf);
 
-	  putc ('\n', stderr);
-	  error (0, 0, "Timed out after %s.", interval);
+	  putc ('\n', stderr);	/* Make sure our message starts a line.  */
+	  error (0, 0, "Timed out after %s.", buf);
 	}
 
       /* Kill login session, trying to be nice about it.  */
@@ -781,7 +792,7 @@ main(int argc, char *argv[])
       char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
       time_t timeout = to ? atoi (to) : 0;
       if (timeout)
-	dog (timeout, pid);
+	dog (timeout, pid, argv);
     }
 
   if (eff_uids->num > 0)
