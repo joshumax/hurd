@@ -94,6 +94,7 @@ request_server (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
   return (exec_server (inp, outp)
+	  || io_server (inp, outp)
 	  || device_server (inp, outp)
 	  || notify_server (inp, outp));
 }
@@ -662,9 +663,9 @@ S_io_restrict_auth (mach_port_t object,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobjtype,
 		    uid_t *uids,
-		    u_int *nuids,
+		    u_int nuids,
 		    uid_t *gids,
-		    u_int *ngids)
+		    u_int ngids)
 {
   if (object != pseudo_console)
     return EOPNOTSUPP;
@@ -707,8 +708,7 @@ S_io_map (mach_port_t obj,
 
 error_t
 S_io_map_cntl (mach_port_t obj,
-	       mach_port_t *mem,
-	       mach_msg_type_name_t *objtype)
+	       mach_port_t *mem)
 {
   return EOPNOTSUPP;
 }
