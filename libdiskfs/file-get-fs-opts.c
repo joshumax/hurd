@@ -21,7 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <errno.h>
-
+#include <string.h>
 #include "priv.h"
 
 error_t
@@ -41,7 +41,8 @@ diskfs_S_file_get_fs_options (struct protid *cred,
   if (!err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
     {
-      err = vm_allocate (mach_task_self (), (vm_address_t *)data, data_len, 1);
+      err = vm_allocate (mach_task_self (), (vm_address_t *)data, 
+			 *data_len, 1);
       if (!err)
 	bcopy (argz, *data, *data_len);
       free (argz);
