@@ -22,3 +22,6 @@
    for the current program. */
 void wire_down (void);
 
+/* Wire down all memory currently allocated at START for LEN bytes. */
+void wire_segment (vm_address_t start, vm_size_t len);
+
