@@ -1,3 +1,27 @@
+1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makeconf (link-executable): New variable, partial linking
+	commands for executables.
+	($(target)): Use it.  Move .o's before -Wl,-(, just cause.
+	($(addsuffix .static,$(target))): New static pattern rule,
+	use `$(link-executable) -static' and static hurd libs.
+	[$(doinst) = one]: Give deps to $(target).static too.
+	{"Decode makemode" page}: Set linktarg instead of cleantarg for each
+	makemode that sets only one.
+	[$(makemode) != library]: Append $(linktarg:=.static) to linktarg.
+	[$(cleantarg) empty]: Set cleantarg to $(linktarg).
+	[Installation section] (targets): Set to $(target) if empty.
+	(installable): New variable, union of $(linktarg) and $(targets).
+	Remove conditionals on $(doinst), leaving only multi-target version.
+	Use $(installable) rather than $(targets) to compute list of
+	targets for static pattern rule that does the install.
+	(install-targets): New variable, $(targets) plus subset of $(linktarg)
+	matching $(build-static:=.static).
+	(all): Depend on $(install-targets) rather than $(targets).
+	(install): Likewise for computed list of targets in $(installationdir).
+	* config.make.in (build-static): New variable.
+	* configure.in: Support --enable-static-progs=LIST.
+
 1999-09-12  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* libmom: Remove directory and contents.
@@ -10,8 +34,8 @@
 	($(libname)_pic.a): New rule.
 	($(libdir)/$(libname)_pic.a): Extended from the previous _p.a and
 	.a rules.
-	Submitted by Marcus Brinkmann (Marcus.Brinkmann@ruhr-uni-bochum.de). 
-	
+	Submitted by Marcus Brinkmann (Marcus.Brinkmann@ruhr-uni-bochum.de).
+
 1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (DIST_FILES): Add move-if-change.
