@@ -25,6 +25,7 @@
 #include <mach/mach.h>
 #include <pwd.h>
 #include <ihash.h>
+#include <errno.h>
 
 #ifndef bool
 #define bool int
@@ -731,6 +732,69 @@ error_t proc_stat_list_add_threads(proc_stat_list_t pp);
 
 error_t proc_stat_list_remove_threads(proc_stat_list_t pp);
 
+
 /* ---------------------------------------------------------------- */
+/*
+   The Basic & Sched info types are pretty static, so we cache them, but load
+   info is dynamic so we don't cache that.
+
+   See <mach/host_info.h> for information on the data types these routines
+   return.
+*/
+
+/* Return the current host port.  */
+host_t ps_get_host();
+
+/* Return a pointer to basic info about the current host in HOST_INFO.  Since
+   this is static global information we just use a static buffer.  If a
+   system error occurs, the error code is returned, otherwise 0.  */
+error_t ps_host_basic_info(host_basic_info_t *host_info);
+
+/* Return a pointer to scheduling info about the current host in HOST_INFO.
+   Since this is static global information we just use a static buffer.  If a
+   system error occurs, the error code is returned, otherwise 0.  */
+error_t ps_host_sched_info(host_sched_info_t *host_info);
+
+/* Return a pointer to load info about the current host in HOST_INFO.  Since
+   this is global information we just use a static buffer (if someone desires
+   to keep old load info, they should copy the buffer we return a pointer
+   to).  If a system error occurs, the error code is returned, otherwise 0.  */
+error_t ps_host_load_info(host_load_info_t *host_info);
+
+/* ---------------------------------------------------------------- */
+
+/* Write at most MAX_LEN characters of STRING to STREAM (if MAX_LEN > the
+   length of STRING, then write all of it; if MAX_LEN == -1, then write all
+   of STRING regardless).  If COUNT is non-NULL, the number of characters
+   written is added to the integer it points to.  If an error occurs, the
+   error code is returned, otherwise 0.  */
+error_t ps_write_string(char *string, int max_len, FILE *stream, int *count);
+
+/* Write NUM spaces to STREAM.  If COUNT is non-NULL, the number of spaces
+   written is added to the integer it points to.  If an error occurs, the
+   error code is returned, otherwise 0.  */
+error_t ps_write_spaces(int num, FILE *stream, int *count);
+
+/* Write as many spaces to STREAM as required to make a field of width SOFAR
+   be at least WIDTH characters wide (the absolute value of WIDTH is used).
+   If COUNT is non-NULL, the number of spaces written is added to the integer
+   it points to.  If an error occurs, the error code is returned, otherwise
+   0.  */
+error_t ps_write_padding(int sofar, int width, FILE *stream, int *count);
+
+/* Write the string BUF to STREAM, padded on one side with spaces to be at
+   least the absolute value of WIDTH long: if WIDTH >= 0, then on the left
+   side, otherwise on the right side.  If COUNT is non-NULL, the number of
+   characters written is added to the integer it points to.  If an error
+   occurs, the error code is returned, otherwise 0.  */
+error_t ps_write_field(char *buf, int width, FILE *stream, int *count);
+
+/* Write the decimal representation of VALUE to STREAM, padded on one side
+   with spaces to be at least the absolute value of WIDTH long: if WIDTH >=
+   0, then on the left side, otherwise on the right side.  If COUNT is
+   non-NULL, the number of characters written is added to the integer it
+   points to.  If an error occurs, the error code is returned, otherwise 0.  */
+error_t ps_write_int_field(int value, int width, FILE *stream, int *count);
+
 
 #endif /* __PS_H__ */
