@@ -526,7 +526,7 @@ init_ttys (void)
   ttys = malloc (ttyslen * sizeof (struct ttyent));
   bzero (ttys, ttyslen * sizeof (struct ttyent));
 
-  if (setttyent ())
+  if (!setttyent ())
     {
       perror (_PATH_TTYS);
       return 1;
@@ -653,7 +653,7 @@ reread_ttys (void)
   struct terminal *t;
   int on;
 
-  if (setttyent ())
+  if (!setttyent ())
     {
       perror (_PATH_TTYS);
       return;
