@@ -1,5 +1,5 @@
 /* libdsikfs implementation of fs.defs: dir_rmdir
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
 
   mutex_lock (&dnp->lock);
 
-  error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
+  error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred, 0, 0);
   if (error == EAGAIN)
     error = ENOTEMPTY;
   else if (np && !S_ISDIR (np->dn_stat.st_mode))
