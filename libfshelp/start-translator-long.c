@@ -157,9 +157,10 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 	reply.head.msgh_bits |= MACH_MSGH_BITS_COMPLEX;
     }
 
-  err = mach_msg(&reply.head, MACH_SEND_MSG, sizeof(reply), 0,
-		 request.head.msgh_remote_port,
-		 MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+  err = mach_msg (&reply.head, MACH_SEND_MSG | MACH_SEND_INTERRUPT,
+		  sizeof(reply), 0,
+		  request.head.msgh_remote_port,
+		  MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
 
   if (reply.RetCode)
     /* Make our error return be the earlier one.  */
