@@ -355,7 +355,7 @@ diskfs_grow (struct node *np,
   int size, osize;
   error_t err;
   struct dinode *di = dino (np->dn->number);
-  off_t poke_off;
+  off_t poke_off = 0;
   size_t poke_len = 0;
   
   /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
