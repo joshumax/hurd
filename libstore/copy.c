@@ -30,8 +30,8 @@
 #include "store.h"
 
 static error_t
-copy_read (struct store *store,
-	   store_offset_t addr, size_t index, size_t amount, void **buf, size_t *len)
+copy_read (struct store *store, store_offset_t addr, size_t index,
+	   size_t amount, void **buf, size_t *len)
 {
   char *data = store->hook + (addr * store->block_size);
 
@@ -39,7 +39,9 @@ copy_read (struct store *store,
     {
       /* When reading whole pages, we can avoid any real copying.  */
       error_t err = vm_read (mach_task_self (),
-			     (vm_address_t) data, amount, (pointer_t *) buf, len);
+			     (vm_address_t) data, amount,
+			     (pointer_t *) buf, len);
+      *len *= vm_page_size;
       return err;
     }
 
@@ -63,16 +65,16 @@ copy_write (struct store *store,
 {
   char *data = store->hook + (addr * store->block_size);
 
-  if (page_aligned (data) && page_aligned (len))
+  if (page_aligned (data) && page_aligned (len) && page_aligned (buf))
     {
-      /* When reading whole pages, we can avoid any real copying.  */
+      /* When writing whole pages, we can avoid any real copying.  */
       error_t err = vm_write (mach_task_self (),
 			      (vm_address_t) data, (vm_address_t) buf, len);
       *amount = len;
       return err;
     }
 
-  memcpy (data, buf, *amount);
+  memcpy (data, buf, len);
   *amount = len;
   return 0;
 }
@@ -152,7 +154,7 @@ copy_clone (const struct store *from, struct store *to)
   if (buf != (void *) -1)
     {
       to->hook = buf;
-      bcopy (from->hook, to->hook, from->size);
+      memcpy (to->hook, from->hook, from->size);
       return 0;
     }
   return errno;

@@ -1,7 +1,7 @@
 /* Calculation of various derived store fields
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995-97,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -19,6 +19,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <assert.h>
+#include <sys/types.h>
+#include <mach.h>
 
 #include "store.h"
 
@@ -34,6 +36,7 @@ _store_derive (struct store *store)
 
   /* BLOCK & SIZE */
   store->blocks = 0;
+  store->wrap_src = 0;
 
   for (i = 0; i < num_runs; i++)
     {
