@@ -1,5 +1,5 @@
 /* Pager for ufs
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -363,9 +363,11 @@ pager_clear_user_data (struct user_pager_info *upi)
   upi->np->dn->fileinfo = 0;
   spin_unlock (&node2pagelock);
   diskfs_nrele_light (upi->np);
+  spin_lock (&pagerlistlock);
   *upi->prevp = upi->next;
   if (upi->next)
     upi->next->prevp = upi->prevp;
+  spin_unlock (&pagerlistlock);
   free (upi);
 }
 
