@@ -18,14 +18,11 @@
 dir := benchmarks
 
 include ../Makeconf
+CCTARGET=i386-gnu
 
-DIST_FILES = 
+DIST_FILES = forks.c
 
 all: forks
-
-OBJS=forks.o
-
-forks: $(OBJS) $(libc); $(link)
 
 install: $(hurdroot) forks
 	$(INSTALL_BIN) forks $(hurdroot)/bin/forks

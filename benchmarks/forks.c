@@ -14,6 +14,7 @@ main(argc, argv)
 	register int nforks, i;
 	char *cp;
 	int pid, child, status, brksize;
+	int starttime, endtime;
 
 	if (argc < 2) {
 		printf("usage: %s number-of-forks sbrk-size\n", argv[0]);
@@ -29,6 +30,8 @@ main(argc, argv)
 		printf("%s: bad size to sbrk\n", argv[2]);
 		exit(3);
 	}
+	
+	time (&starttime);
 	cp = (char *)sbrk(brksize);
 	if ((int)cp == -1) {
 		perror("sbrk");
@@ -47,5 +50,7 @@ main(argc, argv)
 		while ((pid = wait(&status)) != -1 && pid != child)
 			;
 	}
+	time (&endtime);
+	printf ("Time: %d seconds.\n", endtime - starttime);
 	exit(0);
 }
