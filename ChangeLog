@@ -1,3 +1,8 @@
+Mon Mar 10 17:07:11 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (prog-subdirs): Add `serverboot'.
+	(serverboot): New directory.
+
 Fri Oct 25 20:17:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf (%.prof_d): Don't set no-deps.

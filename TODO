@@ -35,6 +35,7 @@ See `tasks', the exported task list.
 
 ** general:
 *** expunge special cthreads malloc finally !!
+*** implement all the pathconf things from Posix.1 right.
 
 ** libmom work:
 *** Hack interface definitions so that args are mom-ish
@@ -49,6 +50,7 @@ See `tasks', the exported task list.
 *** implement revoke once io_revoke is added. !!
 *** add chflags flags to appropriate header(s)
 *** declare reboot() somewhere.
+*** extra commas in enums in socket.h and errnos.h.
 
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
@@ -91,6 +93,7 @@ See `tasks', the exported task list.
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
     routines and then share common code. !!
+*** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC.
 *** Handle dead name notifications on execserver ports. !
 *** Deal correctly with setting the translators on /servers/exec.
 *** Implement file_notice_changes.
@@ -131,6 +134,7 @@ See `tasks', the exported task list.
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
 ** term: find a way to reduce duplicate signals from repeated VINTR input
+** magic: `ls -ld /dev/fd' and `test -d /dev/fd' should work.
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
@@ -140,6 +144,7 @@ See `tasks', the exported task list.
     non-suid. !
 *** Remove hostname/hostid functions
 *** add timeouts to all the msg_* calls proc makes. !
+*** proc leaks dead names massively.
 
 ** pfinet
 *** Allow multiple pfinets to arp on the same ethernet interface for different
@@ -158,6 +163,8 @@ See `tasks', the exported task list.
 *** Add Hurd-specific calls. !!
 *** emacs M-x server doesn't work if ~ is on nfs. !!!
 *** errors in mount_root should get reflected more usefully to users. !
+*** nfs/libnetfs validates file_set_size based upon current node mode
+    rather than O_WRITE.  !!!
 
 ** storeio:
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
@@ -248,15 +255,16 @@ See `tasks', the exported task list.
   Broken pipe
   [bash only seems to print error messages in this particular format if an
    execve fails]
+
+  I've also had it happen in shells that have been around a while.  -thomas
+
+  I just saw it happen in make output; there the particular error
+  happens only when execvp fails.  -thomas
 ???
 
 List for version 0.2 binary release
 
-* Install patch from hag for disk device in mach
-* Try and get new mach4 from Shantanu.
 * Have term do scancodes, at least kludgily.
 * nfsd?
-* released libc
-* Arrange GCC not to install assert.h on GNU.
 * recompile libraries after libc release
 * Change all copyright notices to say "GNU Hurd" instead of "This program".
