@@ -35,11 +35,12 @@ _ports_complete_deallocate (struct port_info *pi)
 
   pi->bucket->count--;
   pi->class->count--;
-  mutex_unlock (&_ports_lock);
 
   mach_port_mod_refs (mach_task_self (), pi->port_right,
 		      MACH_PORT_RIGHT_RECEIVE, -1);
-  
+  pi->port_right = MACH_PORT_NULL;
+  mutex_unlock (&_ports_lock);
+
   if (pi->class->clean_routine)
     (*pi->class->clean_routine)(pi);
   
