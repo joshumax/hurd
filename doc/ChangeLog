@@ -1,3 +1,11 @@
+1999-06-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (%.info rule): Put output in build dir, not srcdir.
+	Pass -I options to makeinfo for both dirs.
+	(move-if-change): New variable.
+	(version.texi, stamp-version): New targets, update version.texi (in
+	build dir) from `$(hurd-version)' as set in Makeconf.
+
 Tue Apr 20 21:50:19 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* hurd.texi: More detail on fshelp_start_translator.
@@ -8,13 +16,13 @@ Tue Apr 13 16:47:41 1999  Thomas Bushnell, BSG  <tb@mit.edu>
  	Gordon Matzigkeit.
 
 1999-03-17  Gordon Matzigkeit  <gord@trick.fig.org>
-	
+
 	* gpl.texinfo: New file, taken from /gd/gnu/doc/gpl.texi on the
 	GNU machines.
 
 	* Makefile (DIST_FILES): Fix up wildcard so that we don't
 	accidentally include hurd.info twice.
-	
+
 1998-06-02  Gordon Matzigkeit  <gord@profitpress.com>
 
 	* Makefile: Add rules for building info, dvi and ps files.
