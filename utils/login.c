@@ -990,8 +990,7 @@ main(int argc, char *argv[])
 	}
     }
 
-  err = file_exec (exec, mach_task_self (),
-		   EXEC_NEWTASK | EXEC_DEFAULTS | EXEC_SECURE,
+  err = file_exec (exec, mach_task_self (), EXEC_DEFAULTS,
 		   sh_args, sh_args_len, env, env_len,
 		   fds, MACH_MSG_TYPE_COPY_SEND, 3,
 		   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
