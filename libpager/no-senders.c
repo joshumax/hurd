@@ -29,40 +29,12 @@ pager_no_senders (struct pager *p,
 		  mach_port_seqno_t seqno,
 		  mach_port_mscount_t mscount)
 {
-  mach_port_t old;
-  int dealloc;
-  
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
   _pager_release_seqno (p);
-  
-  if (mscount > p->mscount)
-    {
-      printf ("pager strange no senders\n");
-      dealloc = 1;
-    }
-  else if (mscount == p->mscount)
-    dealloc = 1;
-  else
-    {
-      /* Request a new notification.  The sync value is because we might
-	 have accounted for a new sender but not actually made the send right
-	 yet.  */
-      mach_port_request_notification (mach_task_self (), p->port.port, 
-				      MACH_NOTIFY_NO_SENDERS, p->mscount,
-				      p->port.port, 
-				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
-      if (old)
-	mach_port_deallocate (mach_task_self (), old);
-      dealloc = 0;
-    }
-
   mutex_unlock (&p->interlock);
-
-  if (dealloc)
-    ports_done_with_port (p);
-
-  ports_done_with_port (p);		/* for previous check_port_type */
+  
+  ports_no_senders (p, mscount);
 }
 
 
