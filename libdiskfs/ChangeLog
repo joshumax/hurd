@@ -1,3 +1,10 @@
+2001-12-08  Roland McGrath  <roland@frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Append trailing / to RETRYNAME
+	returned for absolute symlink when MUSTBEDIR is set.
+	Reported by Moritz Schulte <moritz@duesseldorf.ccc.de>.
+	Also, bcopy -> memcpy; avoid strcat.
+
 2001-10-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): When looking up the next
