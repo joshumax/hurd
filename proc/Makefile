@@ -24,13 +24,18 @@ SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
 LCLHDRS = proc.h
 DIST_FILES = proc_exc.defs ourmsg.defs
 
-MIGSTUBS = processServer.o notifyServer.o process_replyUser.o \
+MIGSFLAGS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
+	"-DPROCESS_DESTRUCTOR=process_drop (pstruct_t)" \
+	"-DPROCESS_IMPORTS=import \"proc.h\";"
+
+MIGSTUBS = processServer.o notifyServer.o \
 	ourmsgUser.o proc_excUser.o proc_excServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
-MIGSFLAGS ="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
-	"-DPROCESS_IMPORTS=import \"proc.h\";"
-
-proc: $(OBJS) ../libthreads/libthreads.a ../libihash/libihash.a
+proc: $(OBJS) ../libthreads/libthreads.a ../libihash/libihash.a \
+	../libports/libports.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
+
+mutated_ourmsg_U.h: ourmsg_U.h
+	sed -e 's/_msg_user_/_ourmsg_user_/' < $< > $@

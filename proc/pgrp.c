@@ -28,7 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "proc.h"
 #include "process_S.h"
-#include "ourmsg_U.h"
+#include "mutated_ourmsg_U.h"
 
 
 /* Create and return a new process group with pgid PGID in session SESS. */
@@ -100,6 +100,9 @@ S_proc_setsid (struct proc *p)
 {
   struct session *sess;
   
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (p->p_pgrp->pg_pgid == p->p_pid || pgrp_find (p->p_pid))
     return EPERM;
   
@@ -134,6 +137,8 @@ S_proc_getsid (struct proc *callerp,
   if (!p)
     return ESRCH;
 
+  /* No need to check CALLERP; we don't use it. */
+
   *sid = p->p_pgrp->pg_session->s_sid;
   return 0;
 }
@@ -152,6 +157,8 @@ S_proc_getsessionpids (struct proc *callerp,
   pid_t *pp = *pids;
   u_int npids = *npidsp;
   
+  /* No need to check CALLERP; we don't use it. */
+
   s = session_find (sid);
   if (!s)
     return ESRCH;
@@ -193,6 +200,8 @@ S_proc_getsessionpgids (struct proc *callerp,
   pid_t *pp = *pgids;
   int npgids = *npgidsp;
   
+  /* No need to check CALLERP; we don't use it. */
+
   s = session_find (sid);
   if (!s)
     return ESRCH;
@@ -229,6 +238,8 @@ S_proc_getpgrppids (struct proc *callerp,
   pid_t *pp = *pids;
   unsigned int npids = *npidsp, count;
   
+  /* No need to check CALLERP; we don't use it. */
+
   if (pgid == 0)
     pg = callerp->p_pgrp;
   else
@@ -263,6 +274,10 @@ S_proc_getsidport (struct proc *p,
 		   mach_port_t *sessport, mach_msg_type_name_t *sessport_type)
 {
   error_t err = 0;
+  
+  if (!p)
+    return EOPNOTSUPP;
+
   if (!p->p_pgrp)
     *sessport = MACH_PORT_NULL;
   else
@@ -285,6 +300,9 @@ S_proc_setpgrp (struct proc *callerp,
   struct proc *p;
   struct pgrp *pg;
   
+  if (!callerp)
+    return EOPNOTSUPP;
+
   p = pid ? pid_find (pid) : callerp;
 
   if (!p || (p != callerp && p->p_parent != callerp))
@@ -323,6 +341,8 @@ S_proc_getpgrp (struct proc *callerp,
 	      pid_t *pgid)
 {
   struct proc *p = pid_find (pid);
+
+  /* No need to check CALLERP; we don't use it. */
   
   if (!p)
     return ESRCH;
@@ -337,6 +357,8 @@ S_proc_getpgrp (struct proc *callerp,
 kern_return_t
 S_proc_mark_exec (struct proc *p)
 {
+  if (!p)
+    return EOPNOTSUPP;
   p->p_exec = 1;
   return 0;
 }

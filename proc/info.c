@@ -38,10 +38,19 @@ S_proc_pid2task (struct proc *callerp,
 	       pid_t pid,
 	       task_t *t)
 {
-  struct proc *p = pid_find (pid);
+  struct proc *p = pid_find_allow_zombie (pid);
+
+  if (!callerp)
+    return EOPNOTSUPP;
 
   if (!p)
     return ESRCH;
+
+  if (p->p_dead)
+    {
+      *t = MACH_PORT_NULL;
+      return 0;
+    }
 
   if (!check_uid (callerp, p->p_owner))
     return EPERM;
@@ -57,6 +66,8 @@ S_proc_task2pid (struct proc *callerp,
 	       pid_t *pid)
 {
   struct proc *p = task_find (t);
+
+  /* No need to check CALLERP here; we don't use it. */
 
   if (!p)
     return ESRCH;
@@ -74,10 +85,12 @@ S_proc_task2proc (struct proc *callerp,
 {
   struct proc *p = task_find (t);
 
+  /* No need to check CALLERP here; we don't use it. */
+
   if (!p)
     return ESRCH;
 
-  *outproc = p->p_reqport;
+  *outproc = ports_get_right (p);
   mach_port_deallocate (mach_task_self (), t);
   return 0;
 }
@@ -87,6 +100,8 @@ kern_return_t
 S_proc_proc2task (struct proc *p,
 		task_t *t)
 {
+  if (!p)
+    return EOPNOTSUPP;
   *t = p->p_task;
   return 0;
 }
@@ -97,15 +112,24 @@ S_proc_pid2proc (struct proc *callerp,
 	       pid_t pid,
 	       mach_port_t *outproc)
 {
-  struct proc *p = pid_find (pid);
+  struct proc *p = pid_find_allow_zombie (pid);
+
+  if (!callerp)
+    return EOPNOTSUPP;
 
   if (!p)
     return ESRCH;
 
+  if (p->p_dead)
+    {
+      *outproc = MACH_PORT_NULL;
+      return 0;
+    }
+
   if (!check_uid (callerp, p->p_owner))
     return EPERM;
 
-  *outproc = p->p_reqport;
+  *outproc = ports_get_right (p);
   return 0;
 }
 
@@ -289,6 +313,8 @@ S_proc_getprocargs (struct proc *callerp,
 {
   struct proc *p = pid_find (pid);
 
+  /* No need to check CALLERP here; we don't use it. */
+
   if (!p)
     return ESRCH;
 
@@ -303,6 +329,8 @@ S_proc_getprocenv (struct proc *callerp,
 		 u_int *buflen)
 {
   struct proc *p = pid_find (pid);
+
+  /* No need to check CALLERP here; we don't use it. */
 
   if (!p)
     return ESRCH;
@@ -331,6 +359,8 @@ S_proc_getprocinfo (struct proc *callerp,
   mach_msg_type_number_t waits_used = 0;
   u_int tkcount, thcount;
   struct proc *tp;
+
+  /* No need to check CALLERP here; we don't use it. */
 
   if (!p)
     return ESRCH;
@@ -508,6 +538,8 @@ S_proc_getprocinfo (struct proc *callerp,
 kern_return_t
 S_proc_make_login_coll (struct proc *p)
 {
+  if (!p)
+    return EOPNOTSUPP;
   p->p_loginleader = 1;
   return 0;
 }
@@ -520,6 +552,8 @@ S_proc_getloginid (struct proc *callerp,
 {
   struct proc *proc = pid_find (pid);
   struct proc *p;
+
+  /* No need to check CALLERP here; we don't use it. */
 
   if (!proc)
     return ESRCH;
@@ -543,6 +577,8 @@ S_proc_getloginpids (struct proc *callerp,
   struct proc **tail, **new, **parray;
   int parraysize;
   int i;
+
+  /* No need to check CALLERP here; we don't use it. */
 
   if (!l || !l->p_loginleader)
     return ESRCH;
@@ -587,6 +623,9 @@ S_proc_setlogin (struct proc *p,
 {
   struct login *l;
 
+  if (!p)
+    return EOPNOTSUPP;
+
   if (!check_uid (p, 0))
     return EPERM;
 
@@ -604,6 +643,8 @@ kern_return_t
 S_proc_getlogin (struct proc *p,
 	       char *login)
 {
+  if (!p)
+    return EOPNOTSUPP;
   strcpy (login, p->p_login->l_name);
   return 0;
 }

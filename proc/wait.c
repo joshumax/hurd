@@ -30,9 +30,6 @@
 #include <assert.h>
 
 #include "process_S.h"
-#include "process_reply_U.h"
-#include "ourmsg_U.h"
-
 #include <mach/mig_errors.h>
 
 /* Return nonzero if a `waitpid' on WAIT_PID by a process
@@ -47,14 +44,11 @@ waiter_cares (pid_t wait_pid, pid_t mypgrp,
 	  (wait_pid == WAIT_MYPGRP && pgrp == mypgrp));
 }
 
-/* A process is dying.  Send SIGCHLD to the parent.  Check if the parent is
-   waiting for us to exit; if so wake it up, otherwise, enter us as a
-   zombie.  */
+/* A process is dying.  Send SIGCHLD to the parent.  Wake the parent
+if it is waiting for us to exit. */
 void
 alert_parent (struct proc *p)
 {
-  struct zombie *z;
-
   send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
   if (!p->p_exiting)
@@ -65,50 +59,8 @@ alert_parent (struct proc *p)
       condition_broadcast (&p->p_parent->p_wakeup);
       p->p_parent->p_waiting = 0;
     }
-  
-  z = malloc (sizeof (struct zombie));
-      
-  z->pid = p->p_pid;
-  z->pgrp = p->p_pgrp->pg_pgid;
-  z->parent = p->p_parent;
-  z->exit_status = p->p_status;
-  bzero (&z->ru, sizeof (struct rusage));
-  z->next = zombie_list;
-  zombie_list = z;
 }
 
-/* Process P is exiting.  Find all the zombies who claim P as their parent
-   and make them claim startup_proc as their parent; then wake it
-   up if appropriate. */
-void
-reparent_zombies (struct proc *p)
-{
-  struct zombie *z, *prevz;
-  struct wait_c *w = &startup_proc->p_continuation.wait_c;
-  int initsignalled = 0;
-  
-  for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
-    {
-      if (z->parent != p)
-	continue;
-      z->parent = startup_proc;
-
-      if (!initsignalled)
-	{
-	  send_signal (startup_proc->p_msgport, SIGCHLD, startup_proc->p_task);
-	  initsignalled = 1;
-	}
-
-      if (startup_proc->p_waiting)
-	{
-	  condition_broadcast (&startup_proc->p_wakeup);
-	  startup_proc->p_waiting = 0;
-	}
-    }
-}
-
-
-/* Implement proc_wait as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_wait (struct proc *p,
 	     mach_port_t reply_port,
@@ -119,24 +71,25 @@ S_proc_wait (struct proc *p,
 	     struct rusage *ru,
 	     pid_t *pid_status)
 {
-  struct wait_c *w;
-  struct zombie *z, *prevz;
+  int cancel;
   
- start_over:
-  for (z = zombie_list, prevz = 0; z; prevz = z, z = z->next)
+  int child_ready (struct proc *child)
     {
-      if (z->parent == p && waiter_cares (pid, p->p_pgrp->pg_pgid,
-					  z->pid, z->pgrp))
-	{
-	  *status = z->exit_status;
-	  bzero (ru, sizeof (struct rusage));
-	  *pid_status = z->pid;
-	  (prevz ? prevz->next : zombie_list) = z->next;
-	  free (z);
-	  return 0;
-	}
+      if (child->p_waited)
+	return 0;
+      if (child->p_dead)
+	return 1;
+      if (!child->p_stopped)
+	return 0;
+      if (child->p_traced || (options & WUNTRACED))
+	return 1;
+      return 0;
     }
 
+  if (!p)
+    return EOPNOTSUPP;
+  
+ start_over:
   /* See if we can satisfy the request with a stopped
      child; also check for invalid arguments here. */
   if (!p->p_ochild) 
@@ -144,14 +97,15 @@ S_proc_wait (struct proc *p,
   
   if (pid > 0)
     {
-      struct proc *child = pid_find (pid);
+      struct proc *child = pid_find_allow_zombie (pid);
       if (!child || child->p_parent != p)
 	return ECHILD;
-      if (child->p_stopped && !child->p_waited
-	  && ((options & WUNTRACED) || child->p_traced))
+      if (child_ready (child))
 	{
 	  child->p_waited = 1;
 	  *status = child->p_status;
+	  if (child->p_dead)
+	    complete_exit (child);
 	  bzero (ru, sizeof (struct rusage));
 	  *pid_status = pid;
 	  return 0;
@@ -161,19 +115,20 @@ S_proc_wait (struct proc *p,
     {
       struct proc *child;
       int had_a_match = pid == 0;
-
+      
       for (child = p->p_ochild; child; child = child->p_sib)
 	if (waiter_cares (pid, p->p_pgrp->pg_pgid,
 			  child->p_pid, child->p_pgrp->pg_pgid))
 	  {
 	    had_a_match = 1;
-	    if (child->p_stopped && !child->p_waited
-		&& ((options & WUNTRACED) || child->p_traced))
+	    if (child_ready (child))
 	      {
 		child->p_waited = 1;
 		*status = child->p_status;
-		bzero (ru, sizeof (struct rusage));
 		*pid_status = child->p_pid;
+		if (child->p_dead)
+		  complete_exit (child);
+		bzero (ru, sizeof (struct rusage));
 		return 0;
 	      }
 	  }
@@ -186,7 +141,11 @@ S_proc_wait (struct proc *p,
     return EWOULDBLOCK;
 
   p->p_waiting = 1;
-  condition_wait (&p->p_wakeup, &global_lock);
+  cancel = hurd_condition_wait (&p->p_wakeup, &global_lock);
+  if (p->p_dead)
+    return EOPNOTSUPP;
+  if (cancel)
+    return EINTR;
   goto start_over;
 }
 
@@ -195,6 +154,9 @@ kern_return_t
 S_proc_mark_stop (struct proc *p,
 	       int signo)
 {
+  if (!p)
+    return EOPNOTSUPP;
+
   p->p_stopped = 1;
   p->p_status = W_STOPCODE (signo);
   p->p_waited = 0;
@@ -216,6 +178,9 @@ kern_return_t
 S_proc_mark_exit (struct proc *p,
 		int status)
 {
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (WIFSTOPPED (status))
     return EINVAL;
   
@@ -228,6 +193,8 @@ S_proc_mark_exit (struct proc *p,
 kern_return_t
 S_proc_mark_cont (struct proc *p)
 {
+  if (!p)
+    return EOPNOTSUPP;
   p->p_stopped = 0;
   return 0;
 }
@@ -236,6 +203,8 @@ S_proc_mark_cont (struct proc *p)
 kern_return_t
 S_proc_mark_traced (struct proc *p)
 {
+  if (!p)
+    return EOPNOTSUPP;
   p->p_traced = 1;
   return 0;
 }
@@ -245,20 +214,10 @@ kern_return_t
 S_proc_mod_stopchild (struct proc *p,
 		      int value)
 {
+  if (!p)
+    return EOPNOTSUPP;
   /* VALUE is nonzero if we should send SIGCHLD.  */
   p->p_nostopcld = ! value;
-  return 0;
-}
-
-/* Return 1 if pid is in use by a zombie. */
-int
-zombie_check_pid (pid_t pid)
-{
-  struct zombie *z;
-  for (z = zombie_list; z; z = z->next)
-    if (z->pid == pid || -z->pid == pid
-	|| z->pgrp == pid || -z->pgrp == pid)
-      return 1;
   return 0;
 }
 

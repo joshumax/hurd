@@ -1,5 +1,5 @@
 /* Proc server host management calls
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -62,6 +62,9 @@ kern_return_t
 S_proc_sethostid (struct proc *p,
 		int newhostid)
 {
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (! check_uid (p, 0))
     return EPERM;
   
@@ -75,6 +78,7 @@ kern_return_t
 S_proc_gethostid (struct proc *p,
 		int *outhostid)
 {
+  /* No need to check P here; we don't use it. */
   *outhostid = hostid;
   return 0;
 }
@@ -86,6 +90,9 @@ S_proc_sethostname (struct proc *p,
 		    u_int newhostnamelen)
 {
   int len;
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (! check_uid (p, 0))
     return EPERM;
   
@@ -113,6 +120,8 @@ S_proc_gethostname (struct proc *p,
 		    char **outhostname,
 		    u_int *outhostnamelen)
 {
+  /* No need to check P here; we don't use it. */
+
   if (*outhostnamelen < hostnamelen + 1)
     vm_allocate (mach_task_self (), (vm_address_t *)outhostname,
 		 hostnamelen + 1, 1);
@@ -130,6 +139,9 @@ S_proc_getprivports (struct proc *p,
 		     mach_port_t *hostpriv,
 		     mach_port_t *devpriv)
 {
+  if (!p)
+    return EOPNOTSUPP;
+  
   if (! check_uid (p, 0))
     return EPERM;
   
@@ -149,6 +161,9 @@ S_proc_setexecdata (struct proc *p,
 {
   int i;
   struct execdata_notify *n;
+  
+  if (!p)
+    return EOPNOTSUPP;
   
   if (!check_uid (p, 0))
     return EPERM;
@@ -186,6 +201,8 @@ S_proc_getexecdata (struct proc *p,
 		    int **ints,
 		    u_int *nints)
 {
+  /* No need to check P here; we don't use it. */
+
   /* XXX memory leak here */
 
   if (!std_port_array)
@@ -211,6 +228,8 @@ S_proc_execdata_notify (struct proc *p,
 {
   struct execdata_notify *n = malloc (sizeof (struct execdata_notify));
   mach_port_t foo;
+
+  /* No need to check P here; we don't use it. */
 
   n->notify_port = notify;
   n->next = execdata_notifys;
@@ -427,6 +446,7 @@ kern_return_t
 S_proc_uname (pstruct_t process,
 	      struct utsname *uname)
 {
+  /* No need to check PROCESS here, we don't use it. */
   *uname = uname_info;
   return 0;
 }
@@ -439,6 +459,8 @@ S_proc_register_version (pstruct_t server,
 			 char *version)
 {
   int i;
+
+  /* No need to check SERVER here; we don't use it. */
 
   if (credential != master_host_port)
     /* Must be privileged to register for uname. */

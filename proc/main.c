@@ -24,10 +24,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd.h>
 #include <hurd/startup.h>
 #include <assert.h>
+#include <wire.h>
 
 #include "proc.h"
-
-
 
 int
 message_demuxer (mach_msg_header_t *inp,
@@ -36,10 +35,15 @@ message_demuxer (mach_msg_header_t *inp,
   extern int process_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
+  int status;
 
-  return (process_server (inp, outp)
-	  || notify_server (inp, outp)
-	  || proc_exc_server (inp, outp));
+  mutex_lock (&global_lock);
+  status = (process_server (inp, outp)
+	    || notify_server (inp, outp)
+	    || ports_interrupt_server (inp, outp)
+	    || proc_exc_server (inp, outp));
+  mutex_unlock (&global_lock);
+  return status;
 }
 
 struct mutex global_lock = MUTEX_INITIALIZER;
@@ -50,28 +54,36 @@ main (int argc, char **argv, char **envp)
   mach_port_t boot;
   error_t err;
   mach_port_t pset, psetcntl;
+  void *genport;
+  process_t startup_port;
+  volatile int hold = 0;
+  
+  while (hold);
+  
 
   initialize_version_info ();
 
   task_get_bootstrap_port (mach_task_self (), &boot);
 
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
-		      &request_portset);
-
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-		      &generic_port);
-  mach_port_move_member (mach_task_self (), generic_port, request_portset);
+  proc_bucket = ports_create_bucket ();
+  proc_class = ports_create_class (0, 0);
+  generic_port_class = ports_create_class (0, 0);
+  exc_class = ports_create_class (exc_clean, 0);
+  ports_create_port (generic_port_class, proc_bucket, 
+		     sizeof (struct port_info), &genport);
+  generic_port = ports_get_right (genport);
 
   /* new_proc depends on these assignments which must occur in this order. */
   self_proc = new_proc (mach_task_self ()); /* proc 0 is the procserver */
   startup_proc = new_proc (MACH_PORT_NULL); /* proc 1 is init */
 
-  mach_port_insert_right (mach_task_self (), startup_proc->p_reqport,
-			  startup_proc->p_reqport, MACH_MSG_TYPE_MAKE_SEND);
-  err = startup_procinit (boot, startup_proc->p_reqport, &startup_proc->p_task,
+  startup_port = ports_get_right (startup_proc);
+  mach_port_insert_right (mach_task_self (), startup_port,
+			  startup_port, MACH_MSG_TYPE_MAKE_SEND);
+  err = startup_procinit (boot, startup_port, &startup_proc->p_task,
 			  &authserver, &master_host_port, &master_device_port);
   assert (!err);
-  mach_port_deallocate (mach_task_self (), startup_proc->p_reqport);
+  mach_port_deallocate (mach_task_self (), startup_port);
 
   mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -98,20 +110,10 @@ main (int argc, char **argv, char **envp)
   mach_port_deallocate (mach_task_self (), pset);
   mach_port_deallocate (mach_task_self (), psetcntl);
 
-  {
-    extern void _start ();
-    extern char _edata, _etext, __data_start;
-    vm_address_t text_start = (vm_address_t) &_start;
-    err = vm_wire (master_host_port, mach_task_self (),
-		   (vm_address_t) text_start,
-		   (vm_size_t) (&_etext - text_start),
-		   VM_PROT_READ|VM_PROT_EXECUTE);
-    err = vm_wire (master_host_port, mach_task_self (),
-		   (vm_address_t) &__data_start,
-		   (vm_size_t) (&_edata - &__data_start),
-		   VM_PROT_READ|VM_PROT_WRITE);
-  }
+  wire_task_self ();
 
   while (1)
-    mach_msg_server (message_demuxer, 0, request_portset);
+    ports_manage_port_operations_multithread (proc_bucket,
+					      message_demuxer,
+					      0, 0, 0, 0);
 }

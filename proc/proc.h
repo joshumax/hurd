@@ -23,10 +23,12 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define PROC_H_INCLUDED
 
 #include <sys/resource.h>
+#include <hurd/ports.h>
+#include <cthreads.h>
 
 struct proc
 {
-  mach_port_t p_reqport;
+  struct port_info p_pi;
 
   /* List of members of a process group */
   struct proc *p_gnext, **p_gprevp; /* process group */
@@ -34,7 +36,6 @@ struct proc
   /* Hash table pointers that point here */
   void **p_pidhashloc;		/* by pid */
   void **p_taskhashloc;		/* by task port */
-  void **p_porthashloc;		/* by request port */
 
   /* Identification of this process */
   task_t p_task;
@@ -76,6 +77,7 @@ struct proc
   int p_msgportwait:1;		/* blocked in getmsgport */
   int p_noowner:1;		/* has no owner known */
   int p_loginleader:1;		/* leader of login collection */
+  int p_dead:1;			/* process is dead */
 };
 
 typedef struct proc *pstruct_t;
@@ -115,21 +117,11 @@ struct ids
 /* Structure for an exception port we are listening on.  */
 struct exc
 {
-  mach_port_t excport;		/* Receive right.  */
+  struct port_info pi;
   mach_port_t forwardport;	/* Send right to forward msg to.  */
-  void **hashloc;
   int flavor;			/* State to restore faulting thread to.  */
   mach_msg_type_number_t statecnt;
   natural_t thread_state[0];
-};
-
-struct zombie
-{
-  struct zombie *next;
-  pid_t pid, pgrp;
-  struct proc *parent;
-  int exit_status;
-  struct rusage ru;
 };
 
 struct zombie *zombie_list;
@@ -138,7 +130,10 @@ mach_port_t authserver;
 struct proc *self_proc;		/* process 0 (us) */
 struct proc *startup_proc;	/* process 1 (init) */
 
-mach_port_t request_portset;
+struct port_bucket *proc_bucket;
+struct port_class *proc_class;
+struct port_class *generic_port_class;
+struct port_class *exc_class;
 
 mach_port_t master_host_port;
 mach_port_t master_device_port;
@@ -150,6 +145,13 @@ struct mutex global_lock;
 /* Our name for version system */
 #define OUR_SERVER_NAME "proc"
 #define OUR_VERSION "0.0 pre-alpha"
+
+extern inline void
+process_drop (struct proc *p)
+{
+  if (p)
+    ports_port_deref (p);
+}
 
 /* Forward declarations */
 void complete_wait (struct proc *, int);
@@ -179,11 +181,14 @@ void remove_pgrp_from_hash (struct pgrp *);
 void remove_exc_from_hash (struct exc *);
 struct exc *exc_find (mach_port_t);
 struct proc *pid_find (int);
+struct proc *pid_find_allow_zombie (int);
 struct proc *task_find (task_t);
 struct proc *task_find_nocreate (task_t);
 struct pgrp *pgrp_find (int);
 struct proc *reqport_find (mach_port_t);
 struct session *session_find (pid_t);
+
+void exc_clean (void *);
 
 struct proc *add_tasks (task_t);
 int pidfree (pid_t);
@@ -197,6 +202,7 @@ void boot_setsid (struct proc *);
 void process_has_exited (struct proc *);
 void alert_parent (struct proc *);
 void reparent_zombies (struct proc *);
+void complete_exit (struct proc *);
 
 void initialize_version_info (void);
 

@@ -18,7 +18,6 @@
 #include <mach.h>
 #include <hurd.h>
 #include "proc.h"
-#include "process_reply_U.h"
 #include <hurd/startup.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -35,12 +34,24 @@ check_message_return (struct proc *p, void *availpaddr)
     }
 }
 
+/* Register ourselves with init. */
+static any_t
+tickle_init (any_t initport)
+{
+  startup_essential_task ((mach_port_t) initport, mach_task_self (),
+			  MACH_PORT_NULL, "proc", master_host_port);
+  return 0;
+}
+
 error_t
 S_proc_setmsgport (struct proc *p,
 		   mach_port_t reply, mach_msg_type_name_t replytype,
 		   mach_port_t msgport,
 		   mach_port_t *oldmsgport)
 {
+  if (!p)
+    return EOPNOTSUPP;
+
   *oldmsgport = p->p_msgport;
   p->p_msgport = msgport;
   p->p_deadmsg = 0;
@@ -49,21 +60,15 @@ S_proc_setmsgport (struct proc *p,
   p->p_checkmsghangs = 0;
 
   if (p == startup_proc)
-    {
-      /* init is single-threaded.  Reply to it before we expect it
-	 to service requests.  */
-      proc_setmsgport_reply (reply, replytype, 0, *oldmsgport);
-      mach_port_deallocate (mach_task_self (), *oldmsgport);
-      startup_essential_task (msgport, mach_task_self (), MACH_PORT_NULL,
-			      "proc", master_host_port);
-      return MIG_NO_REPLY;
-    }
-  else
-    return 0;
+    /* Init is single threaded, so we can't delay our reply for
+       the essential task RPC; spawn a thread to do it. */
+    cthread_detach (cthread_fork (tickle_init, (any_t) msgport));
+      
+  return 0;
 }
 
 /* Check to see if process P is blocked trying to get the message port of 
-   process DYINGP; if so, return its call with ESRCH. */
+   process DYINGP; if so, wake it up. */
 void
 check_message_dying (struct proc *p, struct proc *dyingp)
 {
@@ -81,7 +86,11 @@ S_proc_getmsgport (struct proc *callerp,
 		   pid_t pid,
 		   mach_port_t *msgport)
 {
-  struct proc *p = pid_find (pid);
+  struct proc *p = pid_find_allow_zombie (pid);
+  int cancel;
+
+  if (!callerp)
+    return EOPNOTSUPP;
 
   if (!p)
     return ESRCH;
@@ -90,7 +99,11 @@ S_proc_getmsgport (struct proc *callerp,
     {
       callerp->p_msgportwait = 1;
       p->p_checkmsghangs = 1;
-      condition_wait (&callerp->p_wakeup, &global_lock);
+      cancel = hurd_condition_wait (&callerp->p_wakeup, &global_lock);
+      if (callerp->p_dead)
+	return EOPNOTSUPP;
+      if (cancel)
+	return EINTR;
     }
 
   *msgport = p->p_msgport;

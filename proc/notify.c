@@ -47,23 +47,28 @@ do_mach_notify_dead_name (mach_port_t notify,
       return 0;
     }
 
-  p = reqport_find (notify);
+  p = ports_lookup_port (proc_bucket, notify, proc_class);
 
   if (!p)
     return EOPNOTSUPP;
 
-  if (p->p_reqport == deadport)
+  if (p->p_msgport == deadport)
     {
       message_port_dead (p);
+      ports_port_deref (p);
       return 0;
     }
   else if (p->p_task == deadport)
     {
       process_has_exited (p);
+      ports_port_deref (p);
       return 0;
     }
   else
-    return EINVAL;
+    {
+      ports_port_deref (p);
+      return EINVAL;
+    }
 }
 
 /* We get no-senders notifications on exception ports that we
@@ -72,16 +77,7 @@ kern_return_t
 do_mach_notify_no_senders (mach_port_t notify,
 			   mach_port_mscount_t mscount)
 {
-  struct exc *e = exc_find (notify);
-  if (!e)
-    return EOPNOTSUPP;
-
-  remove_exc_from_hash (e);
-  mach_port_mod_refs (mach_task_self (), e->excport,
-		      MACH_PORT_RIGHT_RECEIVE, -1);
-  mach_port_deallocate (mach_task_self (), e->forwardport);
-  free (e);
-  return 0;
+  return ports_do_mach_notify_no_senders (notify, mscount);
 }
 
 kern_return_t
