@@ -1,3 +1,8 @@
+2003-09-05  Greg Buchholz <greg@sleepingsquirrel.org>
+
+	* fifo.c, new-fifo.c, null.c (trivfs_S_io_map): Change return value to
+	EOPNOTSUPP (was EINVAL).
+
 2003-03-05  Roland McGrath  <roland@frob.com>
 
 	Make /hurd/magic support translator delegation via /servers/magic.
