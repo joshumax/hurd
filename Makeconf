@@ -115,7 +115,7 @@ endif
 ifeq ($(doinst),many)
 all: $(targets)
 install: $(addprefix $(installationdir)/,$(targets))
-$(addprefix $(installationdir)/,$(targets)): %(installationdir)/%: %
+$(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
 	$(INSTALL_BIN) $< $@
 endif
 
