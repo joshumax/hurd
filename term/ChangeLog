@@ -1,3 +1,8 @@
+Mon Jul 29 02:46:12 1996  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* munge.c (input_character): In LAST_LNEXT case, jump to `alldone'
+	after putting the char on the queue.
+
 Fri Jul 19 23:46:39 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* users.c (trivfs_S_file_access): Implement locally always
@@ -170,7 +175,7 @@ Tue Dec 19 19:57:53 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(call_asyncs): Likewise.
 	(report_sig_start, report_sig_end): New functions.
 	(sigs_in_progress, input_sig_wait, input_sig_wakeup): New variables.
-	
+
 Thu Dec 14 12:48:08 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* ptyio.c (pty_io_read): When copying TIOCPKT_DATA; account for
@@ -220,20 +225,20 @@ Tue Dec  5 15:30:36 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 Mon Dec  4 20:09:21 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* term.h (pty_cntl_class, ptyctl): New variables.
-	* main.c (main): Initialize pty_class, pty_cntl_class, 
+	* main.c (main): Initialize pty_class, pty_cntl_class,
 	trivfs_protid_portclasses[1], and trivfs_cntl_portclasses[1].
 	(trivfs_protid_portclasses): Increase size to 2.
 	(trivfs_cntl_portclasses): Likewise.
-	(trivfs_protid_nportclasses): Increase initialization to 2. 
+	(trivfs_protid_nportclasses): Increase initialization to 2.
 	(trivfs_cntl_nportclasses): Likewise.
 
 	* ptyio.c: Include <unistd.h>.
 	(ptyio_set_bits): If the stop char state has changed, dinkle the
-	stop bits in the control_byte accordingly. 
+	stop bits in the control_byte accordingly.
 
 	* term.h: Include <hurd/trivfs.h> and <sys/types.h>.
 	(pty_io_write, pty_io_read, pty_io_readable, pty_io_select): New
-	declarations. 
+	declarations.
 	* ptyio.c: Include <fcntl.h>.
 	(pty_io_read): Add CRED arg.
 	(pty_io_write): Likewise.
@@ -277,12 +282,12 @@ Fri Dec  1 14:08:44 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* users.c (trivfs_S_interrupt_operation): Delete function.
 
 	* users.c (S_tioctl_tiocdrain): Free reference on CRED before
-	returning. 
+	returning.
 
 	* munge.c (input_character): Skip much processing if
 	external_processing is on.
 	(output_character): Don't do tab expansion of external_processing
-	is on. 
+	is on.
 	(echo_p): Never echo if external_processing is on.
 	* users.c (set_state): Make EXTPROC bit read only.  When
 	external_processing, call set_bits even if CIGNORE.
@@ -292,17 +297,17 @@ Fri Dec  1 14:08:44 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* users.c (trivfs_S_io_readable): If remote_input_mode, then don't
  	include extra final character as input.
 	trivfs_S_io_read): If remote_input_mode, copy characters without
-	interpretation; treat last character left in queue as junk. 
+	interpretation; treat last character left in queue as junk.
 	(S_tioctl_tiocremote): Deleted function.
 	* term.h (remote_input_mode): New variable.
 
 	* users.c (S_tioctl_tiocsig, S_tioctl_tiocpkt,
  	S_tioctl_tiocucntl): Deleted functions.
-	
+
 	* term.h (ptyio_bottom, pty_class): New variables.
 	* Makefile (SRCS): Added ptyio.c.
 	* ptyio.c: New file.
-	
+
 	* term.h (struct bottomhalf): New member `notice_input_flushed'.
 	* devio.c (devio_notice_input_flushed): New function.
 	(devio_bottom): Add devio_notice_input_flushed.
@@ -347,7 +352,7 @@ Thu Nov 30 15:50:01 1995  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(bottom, devio_bottom): New variables.
 	(start_output, set_break, clear_break, abandon_physical_output,
 	pending_output_size, assert_dtr, desert_dtr, set_bits, mdmctl,
-	mdmstate): Deleted declarations. 
+	mdmstate): Deleted declarations.
 
 	* devio.c (ports_do_mach_notify_send_once): New function.
 
@@ -382,10 +387,10 @@ Fri Sep  1 09:51:11 1995  Michael I. Bushnell, p/BSG  <mib@duality.gnu.ai.mit.ed
 	* users.c (init_users): New function.
 	* main.c (main): Call init_users.
 	* term.h (init_users): New decl.
-	 
+
 	* users.c (open_hook): Turn on NO_OWNER for fresh opens.
 	* main.c (main): Assert NO_OWNER in initial state.
-	
+
 	* term.h (output_psize): Delete decl.
 	(write_character): New decl.
 	* munge.c (output_character): Don't set echo_qsize or echo_pstart
@@ -394,7 +399,7 @@ Fri Sep  1 09:51:11 1995  Michael I. Bushnell, p/BSG  <mib@duality.gnu.ai.mit.ed
 	(echo_char): Use write_character for closing '/' of hderase.
 	(output_psize): New decl.
 	* users.c (trivfs_S_io_write): Use write_character instead of
-	output_character. 
+	output_character.
 	* main.c (main): Don't initialize output_psize.
 
 
