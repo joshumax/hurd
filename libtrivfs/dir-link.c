@@ -16,9 +16,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
-error_t
-trivfs_S_dir_link (struct protid *file, struct protid *dir, char *name)
+kern_return_t
+trivfs_S_dir_link (struct trivfs_protid *file, 
+		   struct trivfs_protid *dir, char *name)
 {
   if (!file)
     return EOPNOTSUPP;
