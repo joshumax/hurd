@@ -280,9 +280,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
       bzero (top_argp, sizeof (*top_argp));
       top_argp->children = plist;
 
-      plist[0] = state.argp;
-      plist[1] = &argp_default_argp;
-      plist[2] = 0;
+      if (state.argp)
+	*plist++ = state.argp;
+      *plist++ = &argp_default_argp;
+      *plist = 0;
 
       state.argp = top_argp;
     }
@@ -422,7 +423,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	return group;
       }
 
-    calc_lengths (state.argp);
+    if (state.argp)
+      calc_lengths (state.argp);
 
     short_opts = short_end = alloca (short_len + 1);
     if (state.flags & ARGP_IN_ORDER)
@@ -437,12 +439,16 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     groups = alloca ((num_groups + 1) * sizeof (struct group));
     child_inputs = alloca (num_child_inputs * sizeof (void *));
 
-    egroup = convert_options (state.argp, 0, 0, groups);
+    if (state.argp)
+      egroup = convert_options (state.argp, 0, 0, groups);
+    else
+      egroup = groups;		/* No parsers at all! */
   }
 
   /* Call each parser for the first time, giving it a chance to propagate
      values to child parsers.  */
-  groups->input = input;
+  if (groups < egroup)
+    groups->input = input;
   for (group = groups ; group < egroup && (!err || err == EINVAL); group++)
     {
       if (group->parent)
