@@ -69,10 +69,9 @@ all: $(lib-subdirs) $(working-prog-subdirs)
 # command line; otherwise the tar file will be a dated snapshot.
 ifeq ($(version),)
 version:=$(shell date +%y%m%d)
-dirname:=hurd-snap
-else
-dirname:=hurd
 endif
+dirname:=hurd
+
 dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
 	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
 	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
