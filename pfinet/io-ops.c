@@ -146,3 +146,89 @@ S_io_readable (struct sock_user *user,
   return err;
 }
 
+error_t
+S_io_select (struct sock_user *user,
+	     int *select_type,
+	     int *id_tag)
+{
+  struct sock *sk;
+  error_t err;
+  int avail = 0;
+  int cancel = 0;
+  struct select_table table;
+  struct select_table_elt *elt, *nxt;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&global_lock);
+  become_task (user);
+
+  /* In Linux, this means (supposedly) that I/O will never be possible.  
+     That's a lose, so prevent it from happening.  */
+  assert (user->sock->ops->select);
+
+  condition_init (&table.master_condition);
+  table.head = 0;
+      
+  /* The select function returns one if the specified I/O type is
+     immediately possible.  If it returns zero, then it is not
+     immediately possible, and it has called select_wait.  Eventually
+     it will wakeup the wait queue specified in the select_wait call;
+     at that point we should retry the call. */
+
+  for (;;)
+    {
+      if (*select_type & SELECT_READ)
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_IN, &table) 
+		  ? SELECT_READ : 0);
+      if (*select_type & SELECT_WRITE)
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_OUT, &table) 
+		  ? SELECT_WRITE : 0);
+      if (*select_type & SELECT_URG)
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_EX, &table) 
+		  ? SELECT_URG : 0);
+    
+      if (!avail)
+	cancel = hurd_condition_wait (&table.master_condition, &global_lock);
+
+      /* Drop the conditions implications and structures allocated in the
+	 select table. */
+      for (elt = table.head; elt; elt = nxt)
+	{
+	  condition_unimplies (elt->dependent_condition, 
+			       &table.master_condition);
+	  nxt = elt->next;
+	  free (elt);
+	}
+
+      if (avail)
+	{
+	  mutex_unlock (&global_lock);
+	  *select_type = avail;
+	  return 0;
+	}
+
+      if (cancel)
+	{
+	  mutex_unlock (&global_lock);
+	  return EINTR;
+	}
+    }
+}
+
+/* Establish that the condition in WAIT_ADDRESS should imply
+   the condition in P.  Also, add us to the queue in P so
+   that the relation can be undone at the proper time. */
+void
+select_wait (struct wait_queue **wait_address, select_table *p)
+{
+  struct select_table_elt *elt;
+  
+  elt = malloc (sizeof (struct select_table_elt));
+  elt->dependent_condition = (*wait_address)->c;
+  elt->next = p->head;
+  p->head = elt;
+
+  condition_implies (elt->dependent_condition, p->master_condition);
+}
