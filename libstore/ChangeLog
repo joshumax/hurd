@@ -5,6 +5,16 @@
 	* copy.c: Likewise.
 	* gunzip.c: Likewise.
 	* bunzip2.c: Likewise.
+	
+1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* bunzip2.c (bunzip2): Use mmap instead of vm_allocate.
+	* copy.c (copy_read): Likewise.
+	(copy_clone): Likewise.
+	* encode.c (store_encode): Likewise.
+	* gunzip.c (gunzip): Likewise.
+	* rdwr.c (store_read): Likewise.
+	* zero.c (zero_read): Likewise.
 
 1999-07-08  Roland McGrath  <roland@baalperazim.frob.com>
 

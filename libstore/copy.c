@@ -34,10 +34,9 @@ copy_read (struct store *store,
   if (*len < amount)
     /* Have to allocate memory for the return value.  */
     {
-      error_t err =
-	vm_allocate (mach_task_self (), (vm_address_t *)buf, amount, 1);
-      if (err)
-	return err;
+      *buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*buf == (void *)-1))
+	return errno;
     }
 
   bcopy (store->hook + (addr * store->block_size), *buf, amount);
@@ -124,11 +123,15 @@ copy_cleanup (struct store *store)
 error_t
 copy_clone (const struct store *from, struct store *to)
 {
-  error_t err =
-    vm_allocate (mach_task_self (), (vm_address_t *)&to->hook, to->size, 1);
-  if (! err)
-    bcopy (from->hook, to->hook, from->size);
-  return err;
+  void *buf;
+  buf = mmap (0, to->size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  if (buf != (void *) -1)
+    {
+      to->hook = buf;
+      bcopy (from->hook, to->hook, from->size);
+      return 0;
+    }
+  return errno;
 }
 
 struct store_class

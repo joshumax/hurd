@@ -1,6 +1,6 @@
 /* Zero store backend
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -32,18 +32,17 @@ zero_read (struct store *store,
 {
   if (*len < amount)
     {
-      error_t err =
-	vm_allocate (mach_task_self (), (vm_address_t *)buf, amount, 1);
-      if (! err)
-	*len = amount;
-      return err;
-    }
-  else
-    {
-      bzero (*buf, amount);
+      *buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*buf == (void *) -1)
+	return errno;
       *len = amount;
       return 0;
     }
+  else
+    bzero (*buf, amount);
+
+  *len = amount;
+  return 0;
 }
 
 static error_t

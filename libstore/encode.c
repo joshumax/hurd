@@ -1,6 +1,6 @@
 /* Store wire encoding
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -80,6 +80,7 @@ store_std_leaf_encode (const struct store *store, struct store_enc *enc)
 error_t
 store_encode (const struct store *store, struct store_enc *enc)
 {
+  void *buf;
   error_t err;
   const struct store_class *class = store->class;
   /* We zero each vector length for the allocate_encoding method to work, so
@@ -100,22 +101,36 @@ store_encode (const struct store *store, struct store_enc *enc)
   if (err)
     return err;
 
+  errno = 0;
   if (enc->num_ports > init_num_ports)
-    err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ports,
-		       enc->num_ports * sizeof *enc->ports, 1);
-  if (!err && enc->num_ints > init_num_ints)
-    err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->ints,
-		       enc->num_ints * sizeof *enc->ints, 1);
-  if (!err && enc->num_offsets > init_num_offsets)
-    err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->offsets,
-		       enc->num_offsets * sizeof *enc->offsets, 1);
-  if (!err && enc->data_len > init_data_len)
-    err = vm_allocate (mach_task_self (),
-		       (vm_address_t *)&enc->data, enc->data_len, 1);
-
+    {
+      buf = mmap (0, enc->num_ports * sizeof *enc->ports, 
+		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf != (void *) -1)
+	enc->ports = buf;
+    }
+  if (!errno && enc->num_ints > init_num_ints)
+    {
+      buf = mmap (0, enc->num_ints * sizeof *enc->ints, 
+		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf != (void *) -1)
+	enc->ints = buf;
+    }
+  if (!errno && enc->num_offsets > init_num_offsets)
+    {
+      buf = mmap (0, enc->num_offsets * sizeof *enc->offsets, 
+		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf != (void *) -1)
+	enc->offsets = buf;
+      
+    }
+  if (!errno && enc->data_len > init_data_len)
+    {
+      buf = mmap (0, enc->data_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf != (void *) -1)
+	enc->data = buf;
+    }
+  err = errno
   if (! err)
     err = (*class->encode) (store, enc);
 

@@ -226,10 +226,9 @@ store_read (struct store *store,
 	   make room.  */
 	{
 	  whole_buf_len = amount;
-	  err = vm_allocate (mach_task_self (),
-			     (vm_address_t *)&whole_buf, amount, 1);
-	  if (err)
-	    return err;		/* Punt early, there's nothing to clean up.  */
+	  whole_buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (whole_buf == (void *) -1)
+	    return errno;	/* Punt early, there's nothing to clean up.  */
 	}
 
       buf_end = whole_buf;

@@ -142,10 +142,9 @@ gunzip (struct store *from, void **buf, size_t *buf_len)
 	  if (zerr)
 	    /* Can't do that, try to make a bigger buffer elsewhere.  */
 	    {
-	      new_buf = old_buf;
-	      zerr =
-		vm_allocate (mach_task_self (),
-			     (vm_address_t *)&new_buf, new_buf_len, 1);
+	      new_buf = mmap (0, new_buf_len, PROT_READ|PROT_WRITE, 
+			      MAP_ANON, 0, 0);
+	      zerr = (new_buf == (void *) -1) ? errno : 0;
 	      if (zerr)
 		longjmp (zerr_jmp_buf, 1);
 
@@ -178,7 +177,8 @@ gunzip (struct store *from, void **buf, size_t *buf_len)
 
   /* Try to guess a reasonable output buffer size.  */
   *buf_len = round_page (from->size * 2);
-  zerr = vm_allocate (mach_task_self (), (vm_address_t *)buf, *buf_len, 1);
+  *buf = mmap (0, *buf_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  zerr = (*buf == (void *) -1) ? errno : 0;
   if (zerr)
     return zerr;
 
