@@ -20,20 +20,9 @@
 
 #include "priv.h"
 
-#define SHORT_OPTIONS "rwsnm"
-
 static struct argp_option
 std_runtime_options[] =
 {
-  {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
-  {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
-  {"writable", 'w', 0, 0, "Use normal read/write behavior"},
-  {"rdwr",     0,   0, OPTION_ALIAS | OPTION_HIDDEN},
-  {"sync",     's', "INTERVAL", OPTION_ARG_OPTIONAL,
-     "If INTERVAL is supplied, sync all data not actually written to disk"
-     " every INTERVAL seconds, otherwise operate in synchronous mode (the"
-     " default is to sync every 30 seconds)"},
-  {"nosync",  'n',  0, 0, "Don't automatically sync data to disk"},
   {"remount", 'u',  0, 0, "Flush any meta-data cached in core"},
   {0, 0}
 };
@@ -41,9 +30,11 @@ std_runtime_options[] =
 error_t
 diskfs_set_options (int argc, char **argv)
 {
+  error_t err;
   int readonly = diskfs_readonly;
   int sync = diskfs_synchronous;
   int sync_interval = -1;
+  int remount = 0;
   error_t parse_opt (int opt, char *arg, struct argp_state *argp)
     {
       switch (opt)
@@ -52,6 +43,8 @@ diskfs_set_options (int argc, char **argv)
 	  readonly = 1; break;
 	case 'w':
 	  readonly = 0; break;
+	case 'u':
+	  remount = 1; break;
 	case 'n':
 	  sync_interval = 0; sync = 0; break;
 	case 's':
@@ -60,29 +53,38 @@ diskfs_set_options (int argc, char **argv)
 	  else
 	    sync = 1;
 	  break;
+
 	default:
 	  return EINVAL;
 	}
       return 0;
     }
-  struct argp argp = { std_runtime_options, parse_opt };
+  struct argp common_argp = { diskfs_common_options, parse_opt };
+  struct argp *parents[] = { &common_argp, 0 };
+  struct argp argp = { std_runtime_options, parse_opt, 0, 0, parents };
 
   /* Call the user option parsing routine, giving it our set of options to do
      with as it pleases.  */
-  error_t err = diskfs_parse_runtime_options (argc, argv, &argp);
-
+  err = diskfs_parse_runtime_options (argc, argv, &argp);
   if (err)
     return err;
 
-  /* Do things in this order: change-read/write, remount, change-sync. */
+  /* Do things in this order: remount, change readonly, change-sync; always
+     do the remount while the disk is readonly, even if only temporarily.  */
 
-  /* Going writable seems easy, but how do we switch to readonly mode?  There
-     might be thread that are past the initial readonly checks which would
-     fail a !readonly assertion if we just set the variable...  */
-  if (!readonly)
-    diskfs_readonly = 0;
+  if (remount)
+    {
+      /* We can only remount while readonly.  */
+      err = diskfs_set_readonly (1);
+      if (!err)
+	err = diskfs_remount ();
+    }
 
-  /* Remount...  */
+  if (readonly != diskfs_readonly)
+    if (err)
+      diskfs_set_readonly (readonly); /* keep the old error.  */
+    else
+      err = diskfs_set_readonly (readonly);
 
   /* Change sync mode.  */
   if (sync)
@@ -97,5 +99,5 @@ diskfs_set_options (int argc, char **argv)
 	diskfs_set_sync_interval (sync_interval);
     }
 
-  return 0;
+  return err;
 }
