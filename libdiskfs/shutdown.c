@@ -87,7 +87,7 @@ diskfs_shutdown (int flags)
       return EBUSY;
     }
 
-  if ((flags & FSYS_GOAWAY_NOSYNC) == 0)
+  if (!diskfs_readonly && (flags & FSYS_GOAWAY_NOSYNC) == 0)
     {
       diskfs_shutdown_pager ();
       diskfs_set_hypermetadata (1, 1);
