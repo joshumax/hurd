@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "memory_object_S.h"
+#include <stdio.h>
 
 /* The kernel calls this (as described in <mach/memory_object.defs>)
    when a memory_object_lock_request call has completed.  Read this
