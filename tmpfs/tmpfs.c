@@ -41,10 +41,10 @@ int diskfs_maxsymlinks = 8;
 
 /* Yeah, baby, we do it all!  */
 int diskfs_shortcut_symlink = 1;
-int diskfs_shortcurt_chrdev = 1;
-int diskfs_shortcurt_blkdev = 1;
-int diskfs_shortcurt_fifo = 1;
-int diskfs_shortcurt_ifsock = 1;
+int diskfs_shortcut_chrdev = 1;
+int diskfs_shortcut_blkdev = 1;
+int diskfs_shortcut_fifo = 1;
+int diskfs_shortcut_ifsock = 1;
 
 struct node *diskfs_root_node;
 mach_port_t default_pager;
