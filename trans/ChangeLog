@@ -1,3 +1,37 @@
+Wed Feb 19 21:34:01 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c (argp_program_version, argp): New variables.
+	(parse_opt): New function.
+	(options): Use argp structures instead of getopt ones.
+	(main): Use argp instead of getopt.
+	<argp.h>: New include.
+	<getopt.h>: Include removed.
+	(trivfs_protid_port_class, trivfs_cntl_portclasses,
+	trivfs_protid_nportclasses, trivfs_cntl_nportclasses):
+	Variables removed.
+	(main): Don't use them.
+	Don't create our own port classes/bucket, let trivfs_startup do it.
+
+Tue Feb 18 12:55:50 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fifo.c <version.h>: New include.
+	(parse_opt): Use KEY, not OPT.
+
+Fri Feb 14 03:05:59 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* null.c (control_class, node_class, port_bucket,
+	trivfs_protid_port_class, trivfs_cntl_portclasses,
+	trivfs_protid_nportclasses, trivfs_cntl_nportclasses):
+	Variables removed.
+	(main): Don't use them.
+
+Thu Feb 13 19:42:38 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* firmlink.c: New file.
+	* Makefile (targets): Add firmlink.
+	(SRCS): Add firmlink.c.
+	(firmlink): New target.
+
 Thu Sep 26 14:27:02 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* null.c (trivfs_S_file_check_access): Function removed (trivfs
