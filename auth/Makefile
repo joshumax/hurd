@@ -19,7 +19,7 @@ dir := auth
 makemode := server
 
 SRCS = auth.c
-OBJS = auth.o authServer.o
+OBJS = auth.o authServer.o auth_replyUser.o
 LCLHDRS = authmutations.h auth_mig.h
 target = auth
 
