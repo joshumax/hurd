@@ -86,7 +86,7 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
 
     case OPT_PROGNAME:		/* Set the program name.  */
       program_invocation_name = arg;
-      program_invocation_short_name = rindex (arg, '/');
+      program_invocation_short_name = strrchr (arg, '/');
       if (program_invocation_short_name)
 	program_invocation_short_name++;
       else
@@ -303,7 +303,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	  /* By comparing OPT's position in SHORT_OPTS to the various
 	     starting positions in each group's SHORT_END field, we can
 	     determine which group OPT came from.  */
-	  char *short_index = index (short_opts, opt);
+	  char *short_index = strchr (short_opts, opt);
 	  if (short_index)
 	    for (group = groups; group < egroup; group++)
 	      if (group->short_end > short_index)
@@ -330,10 +330,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 
       /* TOP_ARGP has no options, it just serves to group the user & default
 	 argps.  */
-      bzero (top_argp, sizeof (*top_argp));
+      memset (top_argp, 0, sizeof (*top_argp));
       top_argp->children = kids;
 
-      bzero (kids, 4 * sizeof (struct argp_child));
+      memset (kids, 0, 4 * sizeof (struct argp_child));
       if (state.argp)
 	(kids++)->argp = state.argp;
       (kids++)->argp = &argp_default_argp;
@@ -501,7 +501,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     groups = alloca ((num_groups + 1) * sizeof (struct group));
 
     child_inputs = alloca (num_child_inputs * sizeof (void *));
-    bzero (child_inputs, num_child_inputs * sizeof (void *));
+    memset (child_inputs, 0, num_child_inputs * sizeof (void *));
 
     if (state.argp)
       egroup = convert_options (state.argp, 0, 0, groups);
