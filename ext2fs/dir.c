@@ -492,7 +492,7 @@ diskfs_direnter(struct node *dp,
       
       ds->entry->inode = np->dn->number;
       ds->entry->name_len = namelen;
-      bcopy (name, ds->entry->name, namelen + 1);
+      bcopy (name, ds->entry->name, namelen);
 
       break;
       
@@ -507,7 +507,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = ds->entry->rec_len - oldneeded;
       new->name_len = namelen;
-      bcopy (name, new->name, namelen + 1);
+      bcopy (name, new->name, namelen);
       
       ds->entry->rec_len = oldneeded;
       
@@ -545,7 +545,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = totfreed;
       new->name_len = namelen;
-      bcopy (name, new->name, namelen + 1);
+      bcopy (name, new->name, namelen);
       break;
 
     case EXTEND:
@@ -571,7 +571,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = DIRBLKSIZ;
       new->name_len = namelen;
-      bcopy (name, new->name, namelen + 1);
+      bcopy (name, new->name, namelen);
       break;
       
     default:
