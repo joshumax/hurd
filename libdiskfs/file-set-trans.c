@@ -67,8 +67,10 @@ diskfs_S_file_set_translator (struct protid *cred,
 	{
 	  mutex_unlock (&np->lock);
 	  error = fsys_goaway (control, killtrans_flags);
-	  if (error)
+	  if (error && (error != MIG_SERVER_DIED) 
+	      && (error != MACH_SEND_INVALID_DEST))
 	    return error;
+	  error = 0;
 	  mutex_lock (&np->lock);
 	}
     }
