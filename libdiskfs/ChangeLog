@@ -1,3 +1,8 @@
+1999-05-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* console.c (diskfs_console_stdio): If there is an fd 2 that appears
+	to work, just leave it as is and dup2 it to fd 1 as well.
+
 1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-chown.c (diskfs_S_file_chown): Fix last change: not just
