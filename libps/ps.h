@@ -300,10 +300,18 @@ struct proc_stat
 #define PSTAT_TASK_BASIC       0x00040 /* The task's struct task_basic_info. */
 #define PSTAT_TASK_EVENTS      0x01000 /* A task_events_info_t for the proc. */
 #define PSTAT_NUM_THREADS      0x00080 /* The number of threads in the task. */
+/* Note that for a process-procstat, the thread information fields generally
+   are a summary of the process's threads, and imply that the corresponding
+   information has been fetched for all its threads.  The exception is
+   thread-wait information (PSTAT_THREAD_WAIT), which is expensive to fetch
+   for processes with lots of threads, and not terrible useful.  In this
+   case, the thread waits vector containing per-thread information is only
+   guaranteed to be valid if PSTAT_THREAD_WAITS is true as well.  */
 #define PSTAT_THREAD_BASIC     0x00100 /* A struct thread_basic_info. */
 #define PSTAT_THREAD_SCHED     0x00200 /* A struct thread_sched_info. */
-#define PSTAT_THREAD_WAIT       0x00400 /* The rpc the thread is waiting on. */
-#define PSTAT_ARGS	       0x00800 /* The process's args */
+#define PSTAT_THREAD_WAIT      0x00400 /* The rpc the thread is waiting on. */
+#define PSTAT_THREAD_WAITS     0x00800 /* Thread waits for this PS's threads */
+#define PSTAT_ARGS	       0x01000 /* The process's args */
 #define PSTAT_STATE	       0x02000 /* A bitmask describing the process's
 					  state (see below) */
 #define PSTAT_SUSPEND_COUNT    0x04000 /* Task/thread suspend count */
