@@ -28,7 +28,8 @@ SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c argp-ba.c \
 	idvec.c idvec-auth.c idvec-funcs.c \
 	idvec-impgids.c idvec-verify.c idvec-rep.c \
 	ugids.c ugids-argp.c ugids-rep.c ugids-verify.c ugids-subtract.c \
-	ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c
+	ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c \
+	argz-replace.c
 installhdrs = argp.h idvec.h timefmt.h maptime.h \
 	wire.h portinfo.h portxlate.h cacheq.h ugids.h
 LCLHDRS = $(installhdrs) argp-fmtstream.h argp-namefrob.h
