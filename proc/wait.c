@@ -182,13 +182,13 @@ S_proc_wait (struct proc *p,
   /* See if we can satisfy the request with a stopped
      child; also check for invalid arguments here. */
   if (!p->p_ochild) 
-    return ESRCH;
+    return ECHILD;
   
   if (pid > 0)
     {
       struct proc *child = pid_find (pid);
       if (!child || child->p_parent != p)
-	return ESRCH;
+	return ECHILD;
       if (child->p_stopped && !child->p_waited
 	  && ((options & WUNTRACED) || child->p_traced))
 	{
@@ -221,7 +221,7 @@ S_proc_wait (struct proc *p,
 	  }
 
       if (!had_a_match)
-	return ESRCH;
+	return ECHILD;
     }
   
   if (options & WNOHANG)
