@@ -86,7 +86,7 @@ fi
 
 if test -d /var/run; then
   (cd /var/run && {
-    find . ! -type d ! -name utmp ! -name innd.pid ! -name random-seed \
+    find . ! -type d ! -name utmp ! -name innd.pid \
       -exec rm -f -- {} \;
     cp /dev/null utmp
     if grep -q ^utmp: /etc/group

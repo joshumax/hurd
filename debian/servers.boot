@@ -17,3 +17,6 @@
 # You can also add swap partitions to /etc/fstab.
 #/dev/hd0s2 $(add-linux-paging-file)
 
+# Don't make serverboot the default pager.  The real default pager will
+# we started early in /libexec/rc.
+die $(serverboot)

@@ -1,3 +1,10 @@
+2001-07-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rc: Do not excempt random-seed when cleaning up /var/run.  State
+	data should be in /var/lib (FHS) or /var/state.
+	* changelog: Update to current version.
+	* debian/servers.boot: Add die $(serverboot).
+
 2001-06-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update to current version.
