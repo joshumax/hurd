@@ -1,11 +1,14 @@
 #ifndef _HACK_TIMER_H_
 #define _HACK_TIMER_H_
 
+#include <cthreads.h>
+
 struct timer_list
 {
-  cthread_t thread;
-  u_long expires;
-  u_long data;
+  thread_t thread;
+  int foobiebletch;
+  unsigned long expires;
+  unsigned long data;
   void (*function)(unsigned long);
 };
 
