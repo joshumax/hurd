@@ -43,6 +43,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/wait.h>
 #include <error.h>
 #include <hurd/msg_reply.h>
+#include <ttyent.h>
+#include <argz.h>
+#include <utmp.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -57,6 +60,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #define _PATH_RUNCOM "/etc/rc"
 #define _PATH_LOGIN "/bin/login"
+
+/* How long to wait after starting window specs before starting getty */
+#define WINDOW_DELAY 3		/* seconds */
+
 
 /* Current state of the system. */
 enum 
@@ -86,6 +93,30 @@ struct ess_task
 /* These are linked lists of all of the registered items.  */
 struct ess_task *ess_tasks;
 struct ntfy_task *ntfy_tasks;
+
+/* All the ttys in /etc/ttys. */
+struct terminal 
+{
+  /* argz list for getty */
+  char *getty_argz;
+  size_t getty_argz_len;
+  
+  /* argz list for window spec */
+  char *window_argz;
+  size_t window_argz_len;
+  
+  int on;
+  int pid;
+  
+  char *name;
+};
+  
+struct terminal *ttys;
+/* Number of live elements in ttys */
+int nttys;
+/* Total number of elements in ttys */
+int ttyslen;
+
 
 /* Our receive right */
 mach_port_t startup;
@@ -127,8 +158,11 @@ char **global_argv;
 
 pid_t shell_pid;		/* PID of single-user shell.  */
 pid_t rc_pid;			/* PID of rc script */
-pid_t session_pid;		/* PID of sole multi-user login */
+
+
 
+/** Utility functions **/
+
 /* Read a string from stdin into BUF.  */
 static int
 getstring (char *buf, size_t bufsize)
@@ -142,6 +176,9 @@ getstring (char *buf, size_t bufsize)
     }
   return 0;
 }
+
+
+/** System shutdown **/
 
 /* Reboot the microkernel.  */
 void
@@ -275,6 +312,11 @@ crash_system (void)
   reboot_system (CRASH_FLAGS);
 }
 
+
+
+
+/** Starting programs **/
+
 /* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.
    Set TASK to be the task port of the new image. */
 void
@@ -337,17 +379,19 @@ run (char *server, mach_port_t *ports, task_t *task)
 #endif
 }
 
-/* Run FILENAME as root with ARGS as its argv (length ARGLEN).
-   Return the task that we started.  If CTTY is set, then make
-   that the controlling terminal of the new process and put it in
-   its own login collection.  */
-task_t
-run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
+/* Run FILENAME as root with ARGS as its argv (length ARGLEN).  Return
+   the task that we started.  If CTTY is set, then make that the
+   controlling terminal of the new process and put it in its own login
+   collection.  If SETSID is set, put it in a new session. */
+pid_t
+run_for_real (char *filename, char *args, int arglen, mach_port_t ctty, 
+	      int setsid)
 {
   file_t file;
   error_t err;
   task_t task;
   char *progname;
+  int pid;
 
 #if 0
   char buf[512];
@@ -372,14 +416,14 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 
   task_create (mach_task_self (), 0, &task);
   proc_child (procserver, task);
+  proc_task2pid (procserver, task, &pid);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
   proc_mark_exec (default_ports[INIT_PORT_PROC]);
-  proc_setsid (default_ports[INIT_PORT_PROC]);
+  if (setsid)
+    proc_setsid (default_ports[INIT_PORT_PROC]);
   if (ctty != MACH_PORT_NULL)
     {
-      int pid;
       term_getctty (ctty, &default_ports[INIT_PORT_CTTYID]);
-      proc_task2pid (procserver, task, &pid);
       io_mod_owner (ctty, -pid);
       proc_make_login_coll (default_ports[INIT_PORT_PROC]);
     }
@@ -402,6 +446,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 		   default_ints, INIT_INT_MAX,
 		   NULL, 0, NULL, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
+  mach_port_deallocate (mach_task_self (), task);
   if (ctty != MACH_PORT_NULL)
     {
       mach_port_deallocate (mach_task_self (),
@@ -414,8 +459,213 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
       error (0, err, "Cannot execute %s", filename);
       return MACH_PORT_NULL;
     }
-  return task;
+  return pid;
 }
+
+
+
+
+/** /etc/ttys support **/
+
+
+/* Add a new terminal spec for TT and return it. */
+struct terminal *
+add_terminal (struct ttyent *tt)
+{
+  struct terminal *t;
+  char *line;
+  
+  if (nttys >= ttyslen)
+    {
+      ttys = realloc (ttys, (ttyslen * 2) * sizeof (struct ttyent));
+      bzero (&ttys[nttys], ttyslen);
+      ttyslen *= 2;
+    }
+      
+  t = &ttys[nttys];
+  nttys++;
+
+  t->name = malloc (strlen (tt->ty_name) + 1);
+  strcpy (t->name, tt->ty_name);
+
+  if (t->getty_argz)
+    free (t->getty_argz);
+  if (t->window_argz)
+    free (t->window_argz);
+
+  if ((tt->ty_status & TTY_ON) && tt->ty_getty)
+    {
+      asprintf (&line, "%s %s", tt->ty_getty, tt->ty_name);
+      argz_create_sep (line, ' ', &t->getty_argz, &t->getty_argz_len);
+      if (tt->ty_window)
+	argz_create_sep (tt->ty_window, ' ', 
+			 &t->window_argz, &t->window_argz_len);
+      else
+	t->window_argz = 0;
+      t->on = 1;
+    }
+  else
+    {
+      t->getty_argz = t->window_argz = 0;
+      t->on = 0;
+    }
+  return t;
+}
+  
+
+/* Read /etc/ttys and initialize ttys array */
+void
+init_ttys (void)
+{
+  struct ttyent *tt;
+
+  ttyslen = 10;
+  nttys = 0;
+  
+  ttys = malloc (ttyslen * sizeof (struct ttyent));
+  bzero (ttys, ttyslen * sizeof (struct ttyent));
+
+  if (setttyent ())
+    {
+      perror (_PATH_TTYS);
+      return;
+    }
+  while ((tt = getttyent ()))
+    {
+      if (!tt->ty_name)
+	continue;
+
+      add_terminal (tt);
+    }
+  
+  endttyent ();
+}
+
+/* Free everyting in the terminal array */
+void
+free_ttys (void)
+{
+  int i;
+
+  for (i = 0; i < nttys; i++)
+    {
+      if (ttys[i].getty_argz)
+	free (ttys[i].getty_argz);
+      if (ttys[i].window_argz)
+	free (ttys[i].window_argz);
+      free (ttys[i].name);
+    }
+  free (ttys);
+}
+
+/* Start line T */
+void
+startup_terminal (struct terminal *t)
+{
+  assert (t->on);
+  assert (t->getty_argz);
+  
+  if (t->window_argz)
+    {
+      run_for_real (t->window_argz, t->window_argz,
+		    t->window_argz_len, MACH_PORT_NULL, 1);
+      sleep (WINDOW_DELAY);
+    }
+
+  t->pid = run_for_real (t->getty_argz, t->getty_argz,
+			 t->getty_argz_len, MACH_PORT_NULL, 0);
+}
+
+/* For each line in /etc/ttys, start up the specified program */
+void
+startup_ttys (void)
+{
+  int i;
+  
+  for (i = 0; i < nttys; i++)
+    if (ttys[i].on)
+      startup_terminal (&ttys[i]);
+}
+
+/* Find the terminal spec corresponding to line LINE. */
+struct terminal *
+find_line (char *line)
+{
+  int i;
+  
+  for (i = 0; i < nttys; i++)
+    if (!strcmp (ttys[i].name, line))
+      return &ttys[i];
+  return 0;
+}
+
+/* PID has just exited; restart the terminal it's on if necessary. */
+void
+restart_terminal (int pid)
+{
+  int i;
+  
+  for (i = 0; i < nttys; i++)
+    if (pid == ttys[i].pid)
+      {
+	if (logout (ttys[i].name))
+	  logwtmp (ttys[i].name, "", "");
+	ttys[i].pid = 0;
+	if (ttys[i].on)
+	  startup_terminal (&ttys[i]);
+      }
+}  
+
+/* Re-read /etc/ttys.  If a line has turned off, kill what's there.
+   If a line has turned on, start it.  If an on line has changed,
+   kill it, and then restart it. */
+void
+reread_ttys (void)
+{
+  struct ttyent *tt;
+  struct terminal *t;
+  int on;
+
+  if (setttyent ())
+    {
+      perror (_PATH_TTYS);
+      return;
+    }
+  
+  while ((tt = getttyent ()))
+    {
+      if (!tt->ty_name)
+	continue;
+      
+      t = find_line (tt->ty_name);
+      on = tt->ty_getty && (tt->ty_status & TTY_ON);
+      
+      if (t)
+	{
+	  if (t->on && !on)
+	    {
+	      t->on = 0;
+	      kill (t->pid, SIGHUP);
+	    }
+	  else if (!t->on && on)
+	    {
+	      t->on = 1;
+	      startup_terminal (t);
+	    }
+	}
+      else
+	{
+	  t = add_terminal (tt);
+	  if (on)
+	    startup_terminal (t);
+	}
+    }
+  endttyent ();
+}
+
+
+/** Main program and setup **/
+
 
 static int
 demuxer (mach_msg_header_t *inp,
@@ -427,7 +677,7 @@ demuxer (mach_msg_header_t *inp,
 	  msg_server (inp, outp) ||
 	  startup_server (inp, outp));
 }
-
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -796,6 +1046,9 @@ open_console ()
   return term;
 }
 
+
+/** Single and multi user transitions **/
+
 
 /* Start the single-user environment.  This can only be done
    when the core servers have fully started.  We know that
@@ -806,7 +1059,7 @@ void
 launch_single_user ()
 {
   char shell[1024];
-  mach_port_t term, shelltask;
+  mach_port_t term;
 
   printf ("Single-user environment:");
   fflush (stdout);
@@ -822,13 +1075,8 @@ launch_single_user ()
     strcpy (shell, _PATH_BSHELL);
 
   /* The shell needs a real controlling terminal, so set that up here. */
-  shelltask = run_for_real (shell, shell, strlen (shell) + 1, term);
+  shell_pid = run_for_real (shell, shell, strlen (shell) + 1, term, 1);
   mach_port_deallocate (mach_task_self (), term);
-  if (shelltask != MACH_PORT_NULL)
-    {
-      shell_pid = task2pid (shelltask);
-      mach_port_deallocate (mach_task_self (), shelltask);
-    }
   printf (" shell.\n");
   fflush (stdout);
 }
@@ -840,7 +1088,6 @@ process_rc_script ()
   char *rcargs;
   size_t rcargslen;
   mach_port_t term;
-  task_t rctask;
 
   if (do_fastboot)
     {
@@ -857,39 +1104,16 @@ process_rc_script ()
 
   system_state = RUNCOM;
   
-  rctask = run_for_real (rcargs, rcargs, rcargslen, term);
+  rc_pid = run_for_real (rcargs, rcargs, rcargslen, term, 1);
   mach_port_deallocate (mach_task_self (), term);
-  if (rctask != MACH_PORT_NULL)
-    {
-      rc_pid = task2pid (rctask);
-      mach_port_deallocate (mach_task_self (), rctask);
-    }
 }
 
 /* Start up multi-user state. */
 void
 launch_multi_user ()
 {
-  char *sessionargs;
-  size_t sessionargslen;
-  mach_port_t term;
-  task_t session_task;
-  
-  /* Right now, just run `/bin/login -aNOAUTH_TIMEOUT' */
-  sessionargslen = asprintf (&sessionargs, "%s%c%s%n", _PATH_LOGIN, '\0',
-			     "-aNOAUTH_TIMEOUT");
-  sessionargslen++;		/* final null */
-
-  term = open_console ();
-  system_state = MULTI;
-  
-  session_task = run_for_real (sessionargs, sessionargs, sessionargslen, term);
-  mach_port_deallocate (mach_task_self (), term);
-  if (session_task != MACH_PORT_NULL)
-    {
-      session_pid = task2pid (session_task);
-      mach_port_deallocate (mach_task_self (), session_task);
-    }
+  init_ttys ();
+  startup_ttys ();
 }
 
 /* Kill all the outstanding processes with SIGNO.  Return 1 if
@@ -973,6 +1197,8 @@ kill_multi_user ()
   int sigs[3] = {SIGHUP, SIGTERM, SIGKILL};
   int stage;
 
+  free_ttys ();
+
   /* Notify tasks that they are about to die. */
   notify_shutdown ("transition to single-user");
   
@@ -1002,10 +1228,7 @@ process_signal (int signo)
 
     case SIGHUP:
       if (system_state == MULTI)
-	{
-	  /* Should re-read ttys file here, but it's static and hard-coded
-	     into launch_multi_user right now. */
-	}
+	reread_ttys ();
       break;
       
     case SIGCHLD:
@@ -1062,9 +1285,8 @@ process_signal (int signo)
 	    else
 	      launch_multi_user ();
 	  }
-	else if (pid == session_pid && system_state == MULTI)
-	  /* XXX should handle separate sessions instead of only one... */
-	  launch_multi_user ();
+	else if (system_state == MULTI)
+	  restart_terminal (pid);
 #if 0
 	else
 	  error (0, 0, "Random child pid %d died (%d)", pid, status);
@@ -1079,6 +1301,7 @@ process_signal (int signo)
 
 
 
+/** RPC servers **/
 
 kern_return_t
 S_startup_procinit (startup_t server,
@@ -1314,7 +1537,7 @@ do_mach_notify_msg_accepted (mach_port_t notify,
 kern_return_t
 S_msg_sig_post_untraced (mach_port_t msgport,
 			 mach_port_t reply, mach_msg_type_name_t reply_type,
-			 int signo, int sigcode, mach_port_t refport)
+			 int signo, natural_t sigcode, mach_port_t refport)
 {
   if (refport != mach_task_self ())
     return EPERM;
@@ -1330,7 +1553,7 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 kern_return_t
 S_msg_sig_post (mach_port_t msgport,
 		mach_port_t reply, mach_msg_type_name_t reply_type,
-		int signo, int sigcode, mach_port_t refport)
+		int signo, natural_t sigcode, mach_port_t refport)
 {
   if (refport != mach_task_self ())
     return EPERM;
