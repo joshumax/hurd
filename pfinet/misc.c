@@ -57,9 +57,10 @@ make_sockaddr_port (struct socket *sock,
   if (err)
     return err;
   
-  addrstruct = ports_allocate_port (pfinet_bucket,
-				    sizeof (struct sock_addr) + buflen,
-				    addrport_class);
+  err = ports_create_port (addrport_class, pfinet_bucket,
+			   sizeof (struct sock_addr) + buflen, &addrstruct);
+  if (err)
+    return err;
   addrstruct->len = buflen;
   bcopy (buf, addrstruct->address, buflen);
   *addr = ports_get_right (addrstruct);
