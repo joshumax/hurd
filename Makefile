@@ -19,16 +19,16 @@ dir := .
 
 include Makeconf
 
-LIB_SUBDIRS = libioserver libports libpager libfshelp libdiskfs libtrivfs \
-	libcthreads
-PROG_SUBDIRS = auth boot exec fstests hello ifsock init.trim mkbootfs \
-	 proc term tmpfs ufs pflocal sh.trim ps
-OTHER_SUBDIRS = hurd i386 doc init
-SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
+lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
+	      libthreads
+prog-subdirs = auth boot exec fstests hello ifsock init.trim mkbootfs \
+	       proc term tmpfs ufs pflocal sh.trim ps
+other-subdirs = hurd i386 doc init
+subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 
 DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS
 
-all: $(addsuffix -all,$(PROG_SUBDIRS))
+all: $(addsuffix -all,$(prog-subdirs))
 
 %-all: 
 	$(MAKE) -C $* all
@@ -48,12 +48,12 @@ all: $(addsuffix -all,$(PROG_SUBDIRS))
 hurd-snap:
 	mkdir hurd-snap
 
-dist: hurd-snap $(addsuffix -lndist,$(SUBDIRS)) lndist
+dist: hurd-snap $(addsuffix -lndist,$(subdirs)) lndist
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
 
-clean: $(addsuffix -clean,$(LIB_SUBDIRS)) $(addsuffix -clean,$(PROG_SUBDIRS))
+clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(prog-subdirs))
 
-relink: $(addsuffix -relink,$(PROG_SUBDIRS))
+relink: $(addsuffix -relink,$(prog-subdirs))
 
-install: $(addsuffix -install,$(PROG_SUBDIRS))
+install: $(addsuffix -install,$(prog-subdirs))
