@@ -1,5 +1,5 @@
 /* libkdiskfs implementation of fs.defs: file_get_translator_cntl
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,6 +32,7 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   
   np = cred->po->np;
 
+  mutex_lock (&np->lock);
   error = diskfs_isowner (np, cred);
   if (!error)
     error = fshelp_fetch_control (&np->transbox, ctl);
@@ -39,6 +40,6 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
     error = ENXIO;
   if (!error)
     *ctltype = MACH_MSG_TYPE_COPY_SEND;
-  diskfs_nput (np);
+  mutex_unlock (&np->lock);
   return error;
 }
