@@ -73,6 +73,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
       return ENOMEM;
     }
   dn->dirents = 0;
+  dn->dir_idx = 0;
   dn->pager = 0;
   rwlock_init (&dn->alloc_lock);
   pokel_init (&dn->indir_pokel, disk_pager, disk_image);
