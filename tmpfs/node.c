@@ -120,6 +120,33 @@ diskfs_node_norefs (struct node *np)
   free (np);
 }
 
+static void
+recompute_blocks (struct node *np)
+{
+  struct disknode *const dn = np->dn;
+  struct stat *const st = np->dn_stat;
+
+  st->st_blocks = sizeof *dn + dn->translen;
+  switch (dn->type)
+    {
+    case DT_REG:
+      np->allocsize = dn->u.reg.allocpages * vm_page_size;
+      st->st_blocks += np->allocsize;
+      break;
+    case DT_LNK:
+      st->st_blocks += st->st_size + 1;
+      break;
+    case DT_CHR:
+    case DT_DEV:
+      st->st_rdev = dn->u.chr;
+      break;
+    case DT_DIR:
+      st->st_blocks += dn->size;
+      break;
+    }
+  st->st_blocks = (st->st_blocks + 511) / 512;
+}
+
 error_t
 diskfs_cached_lookup (int inum, struct node **npp)
 {
@@ -169,25 +196,7 @@ diskfs_cached_lookup (int inum, struct node **npp)
 
       st->st_rdev = 0;
       np->allocsize = 0;
-      st->st_blocks = sizeof *dn + dn->translen;
-      switch (dn->type)
-	{
-	case DT_REG:
-	  np->allocsize = dn->u.reg.allocpages * vm_page_size;
-	  st->st_blocks += np->allocsize;
-	  break;
-	case DT_LNK:
-	  st->st_blocks += st->st_size + 1;
-	  break;
-	case DT_CHR:
-	case DT_DEV:
-	  st->st_rdev = dn->u.chr;
-	  break;
-	case DT_DIR:
-	  st->st_blocks += dn->size;
-	  break;
-	}
-      st->st_blocks = (st->st_blocks + 511) / 512;
+      recompute_blocks (np);
     }
 
   mutex_lock (&np->lock);
@@ -298,25 +307,26 @@ diskfs_set_translator (struct node *np,
       memcpy (new, name, namelen);
     }
   adjust_used (namelen - np->dn->translen);
-  if (np->dn->translen != 0)
-    np->dn_stat.st_blocks -= (np->dn->translen + 511) / 512;
-  if (namelen != 0)
-    np->dn_stat.st_blocks += (namelen + 511) / 512;
   np->dn->trans = new;
   np->dn->translen = namelen;
+  recompute_blocks (np);
   return 0;
 }
 
 static error_t
 create_symlink_hook (struct node *np, const char *target)
 {
-  const size_t size = np->dn_stat.st_size + 1;
-  assert (np->dn->u.link == 0);
-  char *new = malloc (np->dn->u.lnk, size);
-  if (new == 0)
-    return ENOSPC;
-  memcpy (np->dn->u.lnk, target, size);
-  adjust_used (size);
+  assert (np->dn->u.lnk == 0);
+  if (np->dn_stat.st_size > 0)
+    {
+      const size_t size = np->dn_stat.st_size + 1;
+      char *const new = malloc (np->dn->u.lnk, size);
+      if (new == 0)
+	return ENOSPC;
+      memcpy (np->dn->u.lnk, target, size);
+      adjust_used (size);
+      recompute_blocks (np);
+    }
   return 0;
 }
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target)
