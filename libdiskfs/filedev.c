@@ -111,8 +111,7 @@ diskfs_get_file_device (char *name,
       *port = ports[0];
 
   /* Deallocate things we don't care about or that we've made copies of.  */
-
-  for (i = 0; i < num_ports; i++)
+  for (i = (err || !port) ? 0 : 1; i < num_ports; i++)
     if (MACH_PORT_VALID (ports[i]))
       mach_port_deallocate (mach_task_self (), ports[i]);
 
