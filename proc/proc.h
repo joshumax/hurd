@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifndef PROC_H_INCLUDED
 #define PROC_H_INCLUDED
 
+#include <sys/resource.h>
 
 struct proc
 {
