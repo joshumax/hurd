@@ -42,7 +42,7 @@ static struct argp_option options[] =
 static char *args_doc = "DEVICE...";
 
 #ifdef SWAPOFF
-static char *doc = "Stop paging onto DEVICE...";
+static char *doc = "Stop paging on DEVICE...";
 #else
 static char *doc = "Start paging onto DEVICE...";
 #endif
