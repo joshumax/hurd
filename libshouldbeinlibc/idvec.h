@@ -83,9 +83,15 @@ error_t idvec_insert_new (struct idvec *idvec, unsigned pos, uid_t id);
    idvec_add_new().  */
 error_t idvec_merge_ids (struct idvec *idvec, uid_t *ids, unsigned num);
 
+/* Adds each id from  NEW to IDVEC, as if with idvec_add_new().  */
+error_t idvec_merge (struct idvec *idvec, struct idvec *new);
+
 /* Remove any occurances of ID in IDVEC after position POS>  Returns true if
    anything was done.  */
 int idvec_remove (struct idvec *idvec, unsigned pos, uid_t id);
+
+/* Deleted the id at position POS in IDVEC.  */
+void idvec_delete (struct idvec *idvec, unsigned pos);
 
 /* Insert ID at position POS in IDVEC, remoint any instances of ID previously
    present at POS or after.  ENOMEM is returned if there's not enough memory,
