@@ -63,6 +63,8 @@ diskfs_create_node (struct node *dir,
   if (err)
     goto change_err;
   np->dn_stat.st_uid = newuid;
+  if (np->author_tracks_uid)
+    np->dn_stat.st_author = newuid;
 
   newgid = dir->dn_stat.st_gid;
   if (!idvec_contains (cred->user->gids, newgid))
