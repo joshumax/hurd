@@ -75,7 +75,7 @@ static const struct argp_option options[] =
                                       " (which defaults to the sid of the"
                                       " current process)"},
   {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
-  {"sort",       'S',	  "FIELD",0, "Sort the output with respect to FIELD,"
+  {"sort",       's',	  "FIELD",0, "Sort the output with respect to FIELD,"
                                      " backwards if FIELD is prefixed by `-'"},
   {"threads",    'T',     0,      0,  "Show the threads for each process"},
   {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
