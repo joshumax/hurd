@@ -31,7 +31,7 @@
 
 /* These directly correspond to the bits in a state, starting from 0.  See
    ps.h for an explanation of what each of these means.  */
-char *proc_stat_state_tags = "RTHDSIWN<Z+sfmpox";
+char *proc_stat_state_tags = "TZRHDSIN<u+sfmpox";
 
 /* ---------------------------------------------------------------- */
 
@@ -45,31 +45,28 @@ thread_state(thread_basic_info_t bi)
   switch (bi->run_state)
     {
     case TH_STATE_RUNNING:
-      state |= PSTAT_STATE_RUNNING;
-      break;
-    case TH_STATE_STOPPED:
-      state |= PSTAT_STATE_STOPPED;
+      state |= PSTAT_STATE_T_RUN;
       break;
     case TH_STATE_UNINTERRUPTIBLE:
-      state |= PSTAT_STATE_WAIT;
+      state |= PSTAT_STATE_T_WAIT;
       break;
     case TH_STATE_HALTED:
-      state |= PSTAT_STATE_HALTED;
+      state |= PSTAT_STATE_T_HALT;
+      break;
+    case TH_STATE_STOPPED:
+      state |= PSTAT_STATE_T_HALT | PSTAT_STATE_T_UNCLEAN;
       break;
     case TH_STATE_WAITING:
       /* Act like unix: waits of less than 20 seconds means a process is
 	 `sleeping' and >= 20 seconds means it's `idle' */
-      state |= bi->sleep_time < 20 ? PSTAT_STATE_SLEEPING : PSTAT_STATE_IDLE;
+      state |= bi->sleep_time < 20 ? PSTAT_STATE_T_SLEEP : PSTAT_STATE_T_IDLE;
       break;
     }
 
   if (bi->base_priority < 12)
-    state |= PSTAT_STATE_PRIORITY;
+    state |= PSTAT_STATE_T_NASTY;
   else if (bi->base_priority > 12)
-    state |= PSTAT_STATE_NICED;
-
-  if (bi->flags & TH_FLAGS_SWAPPED)
-    state |= PSTAT_STATE_SWAPPED;
+    state |= PSTAT_STATE_T_NICE;
 
   return state;
 }
@@ -333,21 +330,23 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	state |= thread_state(&pi->threadinfos[i].pis_bi);
 
       /* ... and process-only state bits.  */
+      if (pi_flags & PI_STOPPED)
+	state |= PSTAT_STATE_P_STOP;
       if (pi_flags & PI_ZOMBIE)
-	state |= PSTAT_STATE_ZOMBIE;
+	state |= PSTAT_STATE_P_ZOMBIE;
       if (pi_flags & PI_SESSLD)
-	state |= PSTAT_STATE_SESSLDR;
+	state |= PSTAT_STATE_P_SESSLDR;
       if (!(pi_flags & PI_EXECED))
-	state |= PSTAT_STATE_FORKED;
+	state |= PSTAT_STATE_P_FORKED;
       if (pi_flags & PI_NOMSG)
-	state |= PSTAT_STATE_NOMSG;
+	state |= PSTAT_STATE_P_NOMSG;
       if (pi_flags & PI_NOPARENT)
-	state |= PSTAT_STATE_NOPARENT;
+	state |= PSTAT_STATE_P_NOPARENT;
       if (pi_flags & PI_ORPHAN)
-	state |= PSTAT_STATE_ORPHANED;
+	state |= PSTAT_STATE_P_ORPHAN;
 
       if ((have & PSTAT_EXEC_FLAGS) & (ps->exec_flags & EXEC_TRACED))
-	state |= PSTAT_STATE_TRACED;
+	state |= PSTAT_STATE_P_TRACE;
 
       ps->state = state;
       have |= PSTAT_STATE;
