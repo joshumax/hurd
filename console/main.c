@@ -129,10 +129,7 @@ main (int argc, char **argv)
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "Must be started as a translator\n");
-      exit (1);
-    }
+    error (1, 0, "Must be started as a translator");
 
   /* Set our node */
   err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);

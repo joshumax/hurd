@@ -1,3 +1,7 @@
+2002-03-23  James A. Morrison  <ja2morri@uwaterloo.ca>
+
+	* boot.c (main): Use error, not perror and exit.
+
 2001-10-07  Neal H Walfield  <neal@cs.uml.edu>
 
         * boot.c (main): Set the boot script variables based on
