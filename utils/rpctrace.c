@@ -975,12 +975,14 @@ print_data (mach_msg_type_name_t type,
       break;
 
     case MACH_MSG_TYPE_REAL:
-      switch (eltsize)
-	{
-	case sizeof (float):		FMT ("%g", float);
-	case sizeof (double):		FMT ("%g", double);
-	case sizeof (long double):	FMT ("%Lg", long double);
-	}
+      if (eltsize == sizeof (float))
+	FMT ("%g", float);
+      else if (eltsize == sizeof (double))
+	FMT ("%g", double);
+      else if (eltsize == sizeof (long double))
+	FMT ("%Lg", long double);
+      else
+	abort ();
       break;
     }
 
