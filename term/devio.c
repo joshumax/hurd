@@ -361,6 +361,10 @@ devio_suspend_physical_output ()
     }
 }
 
+static void
+devio_notice_input_flushed ()
+{
+}
 
 static int
 devio_pending_output_size ()
@@ -638,6 +642,7 @@ struct bottomhalf devio_bottom =
   devio_abandon_physical_output,
   devio_suspend_physical_output,
   devio_pending_output_size,
+  devio_notice_input_flushed,
   devio_assert_dtr,
   devio_desert_dtr,
   devio_set_bits,
