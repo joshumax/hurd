@@ -1,2 +1,2 @@
 ufs/ufs ${boot-args} ${host-port} ${device-port} ${exec-task} ${root-device} $(task-create) $(task-resume)
-exec/exec $(exec-task=task-create)
+/gd4/hurdinst/lib/ld.so /hurd/exec $(exec-task=task-create)
