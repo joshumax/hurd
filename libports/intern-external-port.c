@@ -46,6 +46,7 @@ void *ports_intern_external_port (struct port_bucket *bucket,
   pi->class = class;
   pi->refcnt = 1 + !!stat.mps_srights;
   pi->weakrefcnt = 0;
+  pi->cancel_threshhold = 0;
   pi->mscount = stat.mps_mscount;
   pi->flags = stat.mps_srights ? PORT_HAS_SENDRIGHTS : 0;
   pi->port_right = port;
