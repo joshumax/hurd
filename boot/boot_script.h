@@ -1,3 +1,7 @@
+/* Definitions for boot script parser for Mach.  */
+
+/* Written by Shantanu Goel (goel@cs.columbia.edu).  */
+
 /* Error codes returned by boot_script_parse_line()
    and boot_script_exec_cmd().  */
 #define BOOT_SCRIPT_NOMEM		1
@@ -6,24 +10,16 @@
 #define BOOT_SCRIPT_MACH_ERROR		4
 #define BOOT_SCRIPT_UNDEF_SYM		5
 #define BOOT_SCRIPT_EXEC_ERROR		6
+#define BOOT_SCRIPT_INVALID_SYM		7
+#define BOOT_SCRIPT_BAD_TYPE		8
 
-/* The user must define this variable.  The root device name.
-   This must be initialized prior to calling the parser.  */
-extern char *boot_script_root_device;
+/* Legal values for argument `type' to function
+   boot_script_set_variable().  */
+#define VAL_STR		1	/* string */
+#define VAL_PORT	2	/* port */
 
 /* The user must define this variable.  The task port of the program.  */
 extern mach_port_t boot_script_task_port;
-
-/* The user must define this variable.  Send right to the host port.  */
-extern mach_port_t boot_script_host_port;
-
-/* The user must define this variable.  Send right to the
-   master device port.  */
-extern mach_port_t boot_script_device_port;
-
-/* The user must define this variable.  Send right to the
-   the bootstrap port.  */
-extern mach_port_t boot_script_bootstrap_port;
 
 /* The user must define this function.  Allocate SIZE bytes of memory
    and return a pointer to it.  */
@@ -86,6 +82,11 @@ int boot_script_parse_line (char *cmdline);
 /* Execute the command lines prevously parsed.
    Returns 0 for success, non-zero otherwise.  */
 int boot_script_exec (void);
+
+/* Create an entry in the symbol table for variable NAME,
+   whose type is TYPE and value is VAL.  Returns 0 on success,
+   non-zero otherwise.  */
+int boot_script_set_variable (const char *name, int type, int val);
 
 /* Returns a string describing the error ERR.  */
 char *boot_script_error_string (int err);
