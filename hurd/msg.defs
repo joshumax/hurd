@@ -170,7 +170,7 @@ routine set_env_variable (
 
 /* A select call has completed.  */
 routine io_select_done (
-	notify_port: mach_port_t;
+	notify_port: mach_port_poly_t;
 	select_result: int;
 	id_tag: int);
 
