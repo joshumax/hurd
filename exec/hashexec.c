@@ -65,7 +65,7 @@ check_hashbang (struct execdata *e,
 	}
       return dtable[fd];
     }
-  file_t user_crdir, user_cwdir, lookup_cwdir;
+  file_t user_crdir, user_cwdir;
   error_t user_port (int which, error_t (*operate) (mach_port_t))
     {
       error_t reauthenticate (file_t unauth, file_t *result)
@@ -103,8 +103,6 @@ check_hashbang (struct execdata *e,
 		    (*operate) (user_crdir));
 	  break;
 	case INIT_PORT_CWDIR:
-	  if (lookup_cwdir != MACH_PORT_NULL)
-	    return (*operate) (lookup_cwdir);
 	  if ((flags & EXEC_SECURE) || port == std_ports[which])
 	    return (reauthenticate (port, &user_cwdir) ?:
 		    (*operate) (user_cwdir));
@@ -156,7 +154,7 @@ check_hashbang (struct execdata *e,
   else
     ++len;			/* Include the terminating null.  */
 
-  user_crdir = user_cwdir = lookup_cwdir = MACH_PORT_NULL;
+  user_crdir = user_cwdir = MACH_PORT_NULL;
 
   rwlock_reader_lock (&std_lock);
 
@@ -197,59 +195,26 @@ check_hashbang (struct execdata *e,
 		 reading the user's environment.  */
 	      error_t search_path (struct hurd_signal_preempter *preempter)
 		{
-		  error_t error;
-		  char *path;
-		  char *env_path = envz_get (envp, envplen, "PATH");
+		  error_t err;
+		  char *path = envz_get (envp, envplen, "PATH"), *pfxed_name;
 
-		  if (env_path)
-		    {
-		      size_t len = strlen (env_path) + 1;
-		      path = alloca (len);
-		      bcopy (env_path, path, len);
-		    }
-		  else
+		  if (! path)
 		    {
 		      const size_t len = confstr (_CS_PATH, NULL, 0);
 		      path = alloca (len);
 		      confstr (_CS_PATH, path, len);
 		    }
 
-		  p = path;
-		  do
+		  err = hurd_file_name_path_lookup (user_port, user_fd,
+						    name, path,
+						    &name_file, &pfxed_name);
+		  if (!err && pfxed_name)
 		    {
-		      path = strchr (p, ':');
-		      if (path)
-			*path++ = '\0';
-		      if (*p == '\0')
-			lookup_cwdir = MACH_PORT_NULL;
-		      else if (lookup (p, O_EXEC, &lookup_cwdir))
-			continue;
-		      error = lookup (name, O_EXEC, &name_file);
-		      if (*p != '\0')
-			{
-			  mach_port_deallocate (mach_task_self (),
-						lookup_cwdir);
-			  lookup_cwdir = MACH_PORT_NULL;
-			}
-		      if (!error)
-			{
-			  if (*p != '\0')
-			    {
-			      size_t dirlen = strlen (p);
-			      size_t namelen = strlen (name);
-			      char *new = malloc (dirlen + 1 + namelen + 1);
+		      name = pfxed_name;
+		      free_name = 1;
+		    }
 
-			      memcpy (new, p, dirlen);
-			      new[dirlen] = '/';
-			      memcpy (&new[dirlen + 1], name, namelen + 1);
-			      name = new;
-			      free_name = 1;
-			    }
-			  break;
-			}
-		    } while ((p = path) != NULL);
-
-		  return p ? error : ENOENT;
+		  return err;
 		}
 
 	      error = io_stat (file, &st); /* XXX insecure */
