@@ -137,9 +137,9 @@ diskfs_start_bootstrap ()
 	}
 
       /* Here we assume the parent has already printed:
-	 	Hurd server bootstrap: bootfs exec ourfs
+	 	Hurd server bootstrap: bootfs[bootdev] exec ourfs
       */
-      printf ("[re-bootstrap]:");
+      printf ("\nContinuing on new root filesystem %s:", diskfs_disk_name);
       fflush (stdout);
     }
   else
@@ -147,7 +147,8 @@ diskfs_start_bootstrap ()
       uid_t idlist[] = {0, 0, 0};
       file_t execnode;
 
-      printf ("Hurd server bootstrap: %s", program_invocation_short_name);
+      printf ("Hurd server bootstrap: %s[%s]",
+	      program_invocation_short_name, diskfs_disk_name);
       fflush (stdout);
 
       /* Get the execserver going and wait for its fsys_startup */
@@ -533,15 +534,6 @@ diskfs_S_fsys_init (mach_port_t port,
 	 RPC just as init would.  */
       err = proc_task2proc (procserver, parent_task, &parent_proc);
       assert_perror (err);
-      {
-	pid_t pid;
-	err = proc_task2pid (procserver, parent_task, &pid);
-	assert_perror (err);
-	printf("BOOT parent pid %d\n",pid);
-	err = proc_task2pid (procserver, mach_task_self(), &pid);
-	assert_perror (err);
-	printf("BOOT our pid %d\n",pid);
-      }
 
       /* We don't need this anymore. */
       mach_port_deallocate (mach_task_self (), parent_task);
