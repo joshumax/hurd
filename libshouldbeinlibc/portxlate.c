@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <malloc.h>
+#include <sys/types.h>
 #include <sys/mman.h>
 
 #include "portxlate.h"

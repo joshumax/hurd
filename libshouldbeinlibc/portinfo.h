@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <mach.h>
+#include <sys/types.h>
 #include <sys/mman.h>
 
 #include <portxlate.h>

@@ -3,8 +3,9 @@
 	* ugids-argp.c (parse_opt): Clarify if-then-else structure by
 	adding more braces.
 
-	* portinfo.c (print_port_info): Cast first arg of munmap
-	correctly. 
+	* portinfo.h: Include <sys/types.h>.
+	* portxlate.c: Likewise.
+	* portinfo.c: (print_port_info): Cast first arg of munmap correctly. 
 	(print_task_ports_info): Likewise.
 	* xportinfo.c (print_xlated_task_ports_info): Likewise.
 	* idvec-auth.c (idvec_merge_auth): Likewise.
