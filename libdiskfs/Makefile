@@ -35,8 +35,6 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c
 IFSOCKSRCS=ifsock.c
-NOTIFYSRCS=notify-nosenders.c notify-stubs.c
-INTSRCS=interrupt.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
@@ -44,16 +42,14 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	boot-parse.c boot-start.c demuxer.c exc.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c opts-set.c opts-std-startup.c \
 	opts-runtime-def.c trans-callback.c
-SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
-	$(IFSOCKSRCS)
+SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h
 installhdrs = diskfs.h
 
-MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
-	interruptServer.o fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
+MIGSTUBS = fsServer.o ioServer.o fsysServer.o execServer.o \
+	fsys_replyUser.o ourfs_notifyUser.o ifsockServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-notify-MIGSFLAGS = -DSEQNOS
 fsys-MIGSFLAGS = -DREPLY_PORTS
 MIGSFLAGS = -imacros fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
