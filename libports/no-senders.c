@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -60,7 +60,7 @@ ports_no_senders (void *portstruct,
     {
       ports_interrupt_notified_rpcs (portstruct, pi->port_right,
 				     MACH_NOTIFY_NO_SENDERS);
-      ports_interrupt_rpc (pi);
+      ports_interrupt_rpcs (pi);
       ports_port_deref (pi);
     }
 }
