@@ -19,7 +19,7 @@ dir := fstests
 makemode := utilities
 
 SRCS = fstests.c fdtests.c timertest.c opendisk.c
-targets = timertest fstests opendisk # fdtests
+targets = timertest fstests # opendisk fdtests
 
 include ../Makeconf
 
