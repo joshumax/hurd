@@ -42,6 +42,7 @@ store_default_leaf_allocate_encoding (struct store *store,
 error_t
 store_default_leaf_encode (struct store *store, struct store_enc *enc)
 {
+  int i;
   size_t name_len = (store->name ? strlen (store->name) + 1 : 0);
 
   enc->ports[enc->cur_port++] = store->port;
@@ -87,7 +88,7 @@ store_encode (const struct store *store, struct store_enc *enc)
   mach_msg_type_number_t init_offsets_len = enc->offsets_len;
   mach_msg_type_number_t init_data_len = enc->data_len;
 
-  if (!meths->allocate_encoding || !meths->encoding)
+  if (!meths->allocate_encoding || !meths->encode)
     return EOPNOTSUPP;
 
   enc->ports_len = 0;
