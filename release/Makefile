@@ -66,12 +66,12 @@ boot-floppies = bfloppy1.ext2 bfloppy2.ext2 bfloppy.ext2 rfloppy.ext2.gz
 boot-floppies: $(boot-floppies)
 
 %.ext2.gz:
-	./mkfsimage $@ --compress --owner=root.wheel			\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	./mkfsimage $@ --compress --owner=root.wheel		\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
 %.ext2:
-	./mkfsimage $@ --owner=root.wheel				\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	./mkfsimage $@ --owner=root.wheel			\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
 
 # floppy dependencies
@@ -79,7 +79,7 @@ ifneq ($(no_deps),t)
 -include $(patsubst %,%.f_d, $(boot-floppies))
 
 %.ext2.f_d %.ext2.gz.f_d: mkfsimage
-	./mkfsimage $(patsubst %.f_d,%,$@) --dependencies=$@		\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy			\
+	./mkfsimage $(patsubst %.f_d,%,$@) --dependencies=$@	\
+	  $(bfloppy-src) --copy-rules=$(srcdir)/$*.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/$*-special.copy
 endif
