@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@
 #define _HURD_FSHELP_
 
 /* This library implements various things that are generic to
-   all or most implementors of the filesystem protocol.  It 
+   all or most implementors of the filesystem protocol.  It
    presumes that you are using the iohelp library as well.  It
    is divided into separate facilities which may be used independently.  */
 
@@ -58,9 +58,9 @@ typedef error_t (*fshelp_open_fn_t) (int flags,
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
-			      mach_port_t *fds, 
+			      mach_port_t *fds,
 			      mach_msg_type_name_t fds_type, int fds_len,
-			      mach_port_t *ports, 
+			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
 			      int timeout, fsys_t *control);
@@ -82,7 +82,7 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
    use the passive translator routines above, but they don't require
    the ports library at all.  */
 
-struct transbox 
+struct transbox
 {
   fsys_t active;
   struct mutex *lock;
@@ -105,7 +105,7 @@ struct transbox
    then return ENOENT.  COOKIE1 is the cookie passed in fshelp_transbox_init.
    COOKIE2 is the cookie passed in the call to fshelp_fetch_root.  */
 typedef error_t (*fshelp_fetch_root_callback1_t) (void *cookie1, void *cookie2,
-						  uid_t *uid, gid_t *gid, 
+						  uid_t *uid, gid_t *gid,
 						  char **argz, size_t *argz_len);
 
 /* This routine is called by fshelp_fetch_root to fetch more information.
@@ -128,7 +128,7 @@ typedef error_t (*fshelp_fetch_root_callback2_t) (void *cookie1, void *cookie2,
    released during the operation of the call.  */
 error_t
 fshelp_fetch_root (struct transbox *transbox, void *cookie,
-		   file_t dotdot, 
+		   file_t dotdot,
 		   struct iouser *user,
 		   int flags,
 		   fshelp_fetch_root_callback1_t callback1,
@@ -176,11 +176,11 @@ struct lock_box
    There should be one lock box per object and one int per open; these
    are passed as arguments BOX and USER respectively.  FLAGS are as
    per file_lock.  MUT is a mutex which will be held whenever this
-   routine is called, to lock BOX->wait.  */ 
-error_t fshelp_acquire_lock (struct lock_box *box, int *user, 
+   routine is called, to lock BOX->wait.  */
+error_t fshelp_acquire_lock (struct lock_box *box, int *user,
 			     struct mutex *mut, int flags);
 
-  
+
 /* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
    should be initialized with LOCK_UN.).  */
 void fshelp_lock_init (struct lock_box *box);
@@ -233,14 +233,6 @@ struct argp;			/* Include <argp.h> to get the real thing.  */
 /* Invoke ARGP with data from DATA & LEN, in the standard way.  */
 error_t fshelp_set_options (struct argp *argp, int flags,
 			    char *argz, size_t argz_len, void *input);
-
-/* Puts data from the malloced buffer BUF, LEN bytes long, into RBUF & RLEN,
-   suitable for returning from a mach rpc.  If LEN > 0, BUF is freed,
-   regardless of whether an error is returned or not.  */
-error_t fshelp_return_malloced_buffer (char *buf, size_t len,
-				       char **rbuf,
-				       mach_msg_type_number_t *rlen);
-
 
 
 /*  Standardized filesystem permission checking */
@@ -259,7 +251,7 @@ fshelp_isowner (struct stat *st, struct iouser *user)
       || (idvec_contains (user->gids, st->st_gid)
 	  && idvec_contains (user->uids, st->st_gid)))
     return 0;
-  else 
+  else
     return EPERM;
 }
 
@@ -293,7 +285,7 @@ FSHELP_EI error_t
 fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)
 {
   error_t err;
-  
+
   /* The user must be able to write the directory. */
   err = fshelp_access (dir, S_IWRITE, user);
   if (err)
