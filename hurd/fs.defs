@@ -299,13 +299,3 @@ routine file_get_translator_cntl (
 	file: file_t;
 	out translator_cntl: mach_port_send_t);
 
-/* Activate FILE's translator if necessary, and open a port to it with
-   FLAGS and retry protocol as for dir_pathtrans; if FLAGS contains
-   O_NOTRANS, this will start the translator set on FILE, but circumvent
-   the translator set on the resultant node.  */
-routine file_invoke_translator (
-	file: file_t;
-	flags: int;
-	out do_retry: retry_type;
-	out retry_name: string_t;
-	out result: mach_port_send_t);
