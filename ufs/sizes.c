@@ -1,5 +1,5 @@
 /* File growth and truncation
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -439,7 +439,7 @@ block_extended (struct node *np,
 
       /* Undo mapping */
       mach_port_deallocate (mach_task_self (), mapobj);
-      vm_deallocate (mach_task_self (), mapaddr, round_page (old_size));
+      munmap ((caddr_t) mapaddr, round_page (old_size));
 
       /* Now it's OK to free the old block */
       ffs_blkfree (np, old_pbn, old_size);
@@ -711,7 +711,7 @@ poke_pages (memory_object_t obj,
 	{
 	  for (poke = addr; poke < addr + len; poke += vm_page_size)
 	    *(volatile int *)poke = *(volatile int *)poke;
-	  vm_deallocate (mach_task_self (), addr, len);
+	  munmap ((caddr_t) addr, len);
 	}
       start += len;
     }

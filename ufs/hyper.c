@@ -138,8 +138,7 @@ get_hypermetadata (void)
 
   /* Free previous values.  */
   if (zeroblock)
-    vm_deallocate (mach_task_self(),
-		   (vm_address_t)zeroblock, sblock->fs_bsize);
+    munmap ((caddr_t) zeroblock, sblock->fs_bsize);
   if (csum)
     free (csum);
 
@@ -314,7 +313,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 	    err = EIO;
 	}
 
-      vm_deallocate (mach_task_self (), (vm_address_t)buf, read);
+      munmap (buf, read);
 
       if (err)
 	{
