@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -40,7 +40,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	init-init.c init-startup.c init-first.c init-completed.c \
-	rdwr-internal.c boot-start.c demuxer.c exc.c node-times.c shutdown.c \
+	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c opts-set.c opts-get.c opts-std-startup.c \
 	opts-runtime-def.c opts-common.c trans-callback.c readonly.c remount.c \
 	filedev.c machdev.c dev-open.c dev-io.c dev-globals.c console.c
