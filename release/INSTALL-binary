@@ -119,11 +119,21 @@ the following:
 
 
 *** making devices
-cd to /dev give the command `./MAKEDEV ptyp ptyq'.
+cd to /dev and make devices.
 
-Also add any disk device you have; you must specify both unit
-number *and* partition.  Something like `sd0a' or `rd1f' is called
-for.
+Say `MAKEDEV dev1 dev2 dev3 ...'.
+
+Supported devices are:
+  o any hard disk device you have; you must specify both unit number *and*
+     partition.  Something like `sd0a' or `rd1f' is called for.
+  o floppy disk drives, give something like `fd0' or `fd1'.
+
+For hardwired terminals, MAKEDEV doesn't know how to do it yet.  To
+create /dev/tty00, where `tty00' is the Mach device name for the
+terminal, do
+
+settrans -c /dev/tty00 /hurd/term /dev/tty00 device tty00
+
 
 
 *** setup network
