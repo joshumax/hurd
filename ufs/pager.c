@@ -437,10 +437,40 @@ diskfs_file_update (struct node *np,
   diskfs_node_update (np, wait);
 }
 
+/* Invalidate any pager data associated with NODE.  */
+void
+flush_node_pager (struct node *node)
+{
+  struct user_pager_info *upi;
+  struct disknode *dn = node->dn;
+  struct dirty_indir *dirty = dn->dirty;
+
+  spin_lock (&node2pagelock);
+  upi = dn->fileinfo;
+  if (upi)
+    ports_port_ref (upi->p);
+  spin_unlock (&node2pagelock);
+  
+  if (upi)
+    {
+      pager_flush (upi->p, 1);
+      ports_port_deref (upi->p);
+    }
+  
+  dn->dirty = 0;
+
+  while (dirty)
+    {
+      struct dirty_indir *next = dirty->next;
+      free (dirty);
+      dirty = next;
+    }
+}
+
 /* Call this to create a FILE_DATA pager and return a send right.
-   NP must be locked.  */
+   NP must be locked.  PROT is the max protection desired.  */
 mach_port_t
-diskfs_get_filemap (struct node *np)
+diskfs_get_filemap (struct node *np, vm_prot_t prot)
 {
   struct user_pager_info *upi;
   mach_port_t right;
@@ -458,6 +488,7 @@ diskfs_get_filemap (struct node *np)
 	upi = malloc (sizeof (struct user_pager_info));
 	upi->type = FILE_DATA;
 	upi->np = np;
+	upi->max_prot = prot;
 	diskfs_nref_light (np);
 	upi->p = pager_create (upi, pager_bucket,
 			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
@@ -467,6 +498,8 @@ diskfs_get_filemap (struct node *np)
       }
     else
       {
+	np->dn->fileinfo->max_prot |= prot;
+
 	/* Because NP->dn->fileinfo->p is not a real reference,
 	   this might be nearly deallocated.  If that's so, then
 	   the port right will be null.  In that case, clear here
@@ -523,13 +556,9 @@ allow_pager_softrefs (struct node *np)
     ports_port_deref (upi->p);
 }
 
-/* Tell diskfs if there are pagers exported, and if none, then
-   prevent any new ones from showing up.  */
-int
-diskfs_pager_users ()
+static void
+block_caching ()
 {
-  int npagers;
-  
   error_t block_cache (void *arg)
     {
       struct pager *p = arg;
@@ -538,6 +567,14 @@ diskfs_pager_users ()
       return 0;
     }
   
+  /* Loop through the pagers and turn off caching one by one,
+     synchronously.  That should cause termination of each pager. */
+  ports_bucket_iterate (pager_bucket, block_cache);
+}
+
+static void
+enable_caching ()
+{
   error_t enable_cache (void *arg)
     {
       struct pager *p = arg;
@@ -560,34 +597,78 @@ diskfs_pager_users ()
       return 0;
     }
 
-  npagers = ports_count_bucket (pager_bucket);
+  ports_bucket_iterate (pager_bucket, enable_cache);
+}
+
+/* Tell diskfs if there are pagers exported, and if none, then
+   prevent any new ones from showing up.  */
+int
+diskfs_pager_users ()
+{
+  int npagers = ports_count_bucket (pager_bucket);
+
   if (npagers <= 1)
     return 0;
 
-  if (MAY_CACHE == 0)
+  if (MAY_CACHE)
     {
-      ports_enable_bucket (pager_bucket);
-      return 1;
+      block_caching ();
+
+      /* Give it a second; the kernel doesn't actually shutdown
+	 immediately.  XXX */
+      sleep (1);
+  
+      npagers = ports_count_bucket (pager_bucket);
+      if (npagers <= 1)
+	return 0;
+
+      /* Darn, there are actual honest users.  Turn caching back on,
+	 and return failure. */
+      enable_caching ();
     }
   
-  /* Loop through the pagers and turn off caching one by one,
-     synchronously.  That should cause termination of each pager. */
-  ports_bucket_iterate (pager_bucket, block_cache);
+  ports_enable_bucket (pager_bucket);
 
-  /* Give it a second; the kernel doesn't actually shutdown
-     immediately.  XXX */
-  sleep (1);
-  
-  npagers = ports_count_bucket (pager_bucket);
-  if (npagers <= 1)
-    return 0;
-  
-  /* Darn, there are actual honest users.  Turn caching back on,
-     and return failure. */
-  ports_bucket_iterate (pager_bucket, enable_cache);
   return 1;
 }
 
+/* Return the bitwise or of the maximum prot parameter (the second arg to
+   diskfs_get_filemap) for all active user pagers. */
+vm_prot_t
+diskfs_max_user_pager_prot ()
+{
+  vm_prot_t max_prot = 0;
+  int npagers = ports_count_bucket (pager_bucket);
+
+  if (npagers > 1)
+    /* More than just the disk pager.  */
+    {
+      error_t add_pager_max_prot (void *v_p)
+	{
+	  struct pager *p = v_p;
+	  struct user_pager_info *upi = pager_get_upi (p);
+	  if (upi->type == FILE_DATA)
+	    max_prot |= upi->max_prot;
+	  /* Stop iterating if MAX_PROT is as filled as it's going to get. */
+	  return
+	    (max_prot == (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE)) ? 1 : 0;
+	}
+
+      block_caching ();		/* Make any silly pagers go away. */
+
+      /* Give it a second; the kernel doesn't actually shutdown
+	 immediately.  XXX */
+      sleep (1);
+
+      ports_bucket_iterate (pager_bucket, add_pager_max_prot);
+
+      enable_caching ();
+    }
+
+  ports_enable_bucket (pager_bucket);
+
+  return 1;
+}
 
 /* Call this to find out the struct pager * corresponding to the
    FILE_DATA pager of inode IP.  This should be used *only* as a subsequent
@@ -638,4 +719,3 @@ diskfs_sync_everything (int wait)
   ports_bucket_iterate (pager_bucket, sync_one);
   sync_disk (wait);
 }
-  
