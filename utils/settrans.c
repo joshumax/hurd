@@ -86,7 +86,7 @@ main(int argc, char *argv[])
   int goaway_flags = 0;
 
   /* Various option flags.  */
-  int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 1;
+  int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
 
