@@ -509,7 +509,7 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 		 memory_object_t *wrobj,
 		 mach_msg_type_name_t *wrtype)
 {
-  return EINVAL;
+  return EOPNOTSUPP;
 }
 
 /* ---------------------------------------------------------------- */

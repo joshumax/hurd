@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995,96,97,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02,03 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -130,7 +130,7 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 		 memory_object_t *wrobj,
 		 mach_msg_type_name_t *wrtype)
 {
-  return EINVAL;		/* XXX should work! */
+  return EOPNOTSUPP;		/* XXX should work! */
 }
 
 /* Read data from an IO object.  If offset if -1, read from the object
