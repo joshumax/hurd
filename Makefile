@@ -30,19 +30,19 @@ DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS
 all: $(addsuffix -all,$(PROG_SUBDIRS))
 
 %-all: 
-	make -C $* all
+	$(MAKE) -C $* all
 
 %-lndist: hurd-snap
-	make -C $* lndist
+	$(MAKE) -C $* lndist
 
 %-clean:
-	make -C $* clean
+	$(MAKE) -C $* clean
 
 %-relink:
-	make -C $* relink
+	$(MAKE) -C $* relink
 
 %-install:
-	make -C $* install
+	$(MAKE) -C $* install
 
 hurd-snap:
 	mkdir hurd-snap
