@@ -863,28 +863,6 @@ S_tioctl_tiocdrain (io_t port)
   return err;
 }
 
-/* TIOCSIG -- PTY master generate signal */
-kern_return_t
-S_tioctl_tiocsig (io_t port)
-{
-  return EOPNOTSUPP;
-}
-
-/* TIOCEXT -- PTY master enter external mode */
-kern_return_t
-S_tioctl_tiocext (io_t port)
-{
-  return EOPNOTSUPP;
-}
-
-/* TIOCUCNTL -- PTY set/clear usr cntl mode */
-kern_return_t
-S_tioctl_tiocucntl (io_t port,
-		    int how)
-{
-  return EOPNOTSUPP;
-}
-
 /* TIOCSWINSZ -- Set window size */
 kern_return_t
 S_tioctl_tiocswinsz (io_t port,
