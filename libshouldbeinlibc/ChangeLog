@@ -1,5 +1,8 @@
 Thu Feb 20 15:56:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* idvec.c (idvec_insert_only): Handle POS >= IDVEC->num correctly.
+	(idvec_insert, idvec_remove): Handle POS > IDVEC->num correctly.
+
 	* argp-fmtstream.c (__argp_fmtstream_update): Account for case
 	where NEXTLINE points one past the end of the active buffer.
 
