@@ -28,7 +28,7 @@ Make filesystem nodes for accessing standard system devices
     --devdir=*) DEVDIR="`echo "$1" | sed 's/^--devdir=//'`"; shift 1;;
     -D)         DEVDIR="$2"; shift 2;;
     -D*)        DEVDIR="`echo "$1" | sed 's/^-D//'`"; shift 1;;
-    --verbose|-v) ECHO=echo; shift;; 
+    --verbose|-v) ECHO=echo; shift;;
     --dry-run|-n) EXEC=:; shift;;
     -nv|-vn)      ECHO=echo; EXEC=:; shift;;
     --usage)
@@ -106,7 +106,7 @@ function mkdev {
 	cmd ln -f -s fd/2 $dir/stderr
 	;;
       'time')
-	st $I root 666 /hurd/storeio time ;;
+	st $I root 644 /hurd/storeio time ;;
 
       # ptys
       [pt]ty[pqrstuvwxyzPQRST]?)
