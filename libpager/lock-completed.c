@@ -1,5 +1,5 @@
 /* Implementation of memory_object_lock_completed for pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -61,6 +61,10 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 	break;
       }
 
+  if (!lr)
+    printf ("orphaned lock_request: offset = %#x; length = %#x\n",
+	    offset, length);
+      
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
   ports_port_deref (p);
