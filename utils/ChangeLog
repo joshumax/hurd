@@ -1,3 +1,7 @@
+Sat Nov 23 16:30:16 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* psout.c (psout): Delete var REMOVE.
+
 Fri Nov 15 19:05:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* w.c (read_utmp_procs): Function removed.

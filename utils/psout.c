@@ -121,7 +121,6 @@ psout (struct proc_stat_list *procs,
   if (top)
     /* Restrict output to the top TOP entries.  */
     {
-      int remove = 0;
       int filter (struct proc_stat *ps)
 	{
 	  return --top >= 0;
