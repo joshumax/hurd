@@ -402,7 +402,7 @@ block_extended (struct node *np,
 				   (void *) &buf, vm_page_size);
 	  /* If this page is the last one, then zero the excess first */
 	  if (off + vm_page_size > old_size)
-	    bzero ((vod *)(buf + old_size - off),
+	    bzero ((void *)(buf + old_size - off),
 		   vm_page_size - (old_size - off));
 	  offer_data (np, lbn * sblock->fs_bsize + off, vm_page_size, buf);
 	}
