@@ -147,7 +147,7 @@ main(int argc, char *argv[])
 	{
 	  if (pause)
 	    {
-	      fprintf (stderr, "Pausing...\n");
+	      fprintf (stderr, "Pausing...");
 	      getchar ();
 	    }
 
