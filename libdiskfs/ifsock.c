@@ -70,7 +70,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 
 	  /* Look it up */
 	  sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
-	  server = path_lookup (buf, 0, 0);
+	  server = file_name_lookup (buf, 0, 0);
 	  if (server == MACH_PORT_NULL)
 	    return EIEIO;
 
