@@ -1,0 +1,62 @@
+I am pleased to announce version 0.2 of the GNU Hurd, available via
+anonymous FTP from prep.ai.mit.edu [18.159.0.42] in the file
+/pub/gnu/hurd-0.2.tar.gz (about 1.37 MB compressed).  
+
+(The GNU Hurd, plus Mach, is a kernel, not an operating system.  The
+GNU operating system, like the Unix operating system, consists of many
+components, including kernel, libraries, compilers, assembler, shell,
+parser generators, utilities, window system, editors, text formatters,
+and so on.  The GNU project set out a decade ago to develop this
+system, and we've been writing various components of it ever since.)
+
+This release contains many bug fixes from version 0.1.  Many thanks to
+all the people who are helping find bugs!  
+
+The best way you can help find bugs is to try and compile and use on
+the Hurd as many programs as you can find and find out where bugs
+still exist.  There are also unimplemented features, and your reports
+will help us to prioritize which things we work on.
+
+The system is vastly more reliable than it has been in the past.
+
+One important addition:
+
+  New programs addauth, rmauth, unsu, su, and setauth modify the uid
+  sets of running programs.  Using addauth you can add root to your
+  emacs, write a file, and then use rmauth to take the uid back.  (Of
+  course, passwords are required when necessary.)  New program `ids'
+  will tell you what all the user ids are that a program has.  Note
+  that in the Hurd a program can have several user ids all at once,
+  just like Unix supports having several group ids.  Now that you can
+  dynamically change the ids of running programs, system
+  administration (among other things) becomes much easier.
+
+For more detailed news, see the NEWS file in the distribution.
+
+This release contains complete source code for the following:
+
+Hurd servers: 
+ 
+ auth, crash, devport, exec, ext2fs, fifo, fwd, ifsock, init,
+ magic, new-fifo, nfs, null, pfinet, pflocal, proc, symlink, term,
+ ufs, storeio, firmlink.
+
+Hurd libraries: 
+ 
+ diskfs, fshelp, ihash, iohelp, netfs, pager, pipe, ports, ps,
+ shouldbeinlibc, store, threads, trivfs, hurdbugaddr, ftpconn
+
+Hurd utilities and other programs: 
+
+ boot, shd, ps, settrans, showtrans, sync, su, mount, fsysopts,
+ storeinfo, login, w, uptime, ids, sush, vmstat, portinfo, devprobe,
+ reboot, halt, fsck, fsck.ufs, mkfs.ufs, clri.ufs, stati.ufs, getty,
+ rc, e2os, vminfo, nfsd, mail.local, serverboot, MAKEDEV, loginpr,
+ addauth, rmauth, unsu, setauth, ftpcp, ftpdir.
+
+We are also making a complete GNU 0.2 binary release, which will
+include Hurd 0.2, glibc 2.0.4, gnumach 1.1.2, and many other
+programs.  This binary release is announced separately.
+
+
+Thomas Bushnell, n/BSG
