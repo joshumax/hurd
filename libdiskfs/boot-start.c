@@ -33,14 +33,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 mach_port_t diskfs_exec_ctl;
 mach_port_t diskfs_exec;
-
+extern task_t diskfs_execserver_task;
 
 static struct mutex execstartlock;
 static struct condition execstarted;
-
-static task_t exectask;
-static vm_address_t exec_stack_base;
-static vm_size_t exec_stack_size;
 
 static char *default_init = "hurd/init";
 
@@ -214,8 +210,8 @@ diskfs_S_exec_startup (mach_port_t port,
   if (!(upt = ports_check_port_type (port, PT_EXECBOOT)))
     return EOPNOTSUPP;
 
-  *base_addr = exec_stack_base;
-  *stack_size = exec_stack_size;
+  *base_addr = 0;
+  *stack_size = 0;
 
   *flags = 0;
   
@@ -351,20 +347,20 @@ diskfs_S_fsys_init (mach_port_t port,
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
   diskfs_auth_server_port = authhandle;
 
-  assert (exectask != MACH_PORT_NULL);
-  err = proc_task2proc (procserver, exectask, &execprocess);
+  assert (diskfs_execserver_task != MACH_PORT_NULL);
+  err = proc_task2proc (procserver, diskfs_execserver_task, &execprocess);
   assert_perror (err);
 
   /* Declare that the exec server is our child. */
-  proc_child (procserver, exectask);
+  proc_child (procserver, diskfs_execserver_task);
 
   /* Don't start this until now so that exec is fully authenticated 
      with proc. */
   exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_MOVE_SEND);
 
   /* We don't need this anymore. */
-  mach_port_deallocate (mach_task_self (), exectask);
-  exectask = MACH_PORT_NULL;
+  mach_port_deallocate (mach_task_self (), diskfs_execserver_task);
+  diskfs_execserver_task = MACH_PORT_NULL;
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
@@ -473,67 +469,28 @@ diskfs_S_exec_boot_init (mach_port_t execserver,
   return EOPNOTSUPP;
 }
 
-/* Start the execserver running (when we are a bootstrap filesystem).
-   CON will eventually go away; right now it's the console device. */
+/* Start the execserver running (when we are a bootstrap filesystem).  */
 static void 
 start_execserver (void)
 {
-  task_t newt;
-  thread_t newthd;
-  vm_address_t buf;
-  vm_size_t bufsiz;
-  vm_address_t bssloc, textloc;
-  volatile error_t err;
   mach_port_t right;
+  extern task_t diskfs_execserver_task;	/* Set in boot-parse.c.  */
 
-  extern int execserver_text_size, execserver_data_size, execserver_bss_size;
-  extern int execserver_start;
-  extern int execserver_text, execserver_data;
-
-  /* This just sets up and runs the execserver task.  It will do an
-     exec_startup (as every new task does) to get other stuff. */
-
-  err = task_create (mach_task_self (), 0, &newt);
-  exectask = newt;
-
+  assert (diskfs_execserver_task != MACH_PORT_NULL);
   right = ports_get_right (ports_allocate_port (sizeof (struct port_info),
 						PT_EXECBOOT));
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
-  task_set_special_port (newt, TASK_BOOTSTRAP_PORT, right);
+  task_set_special_port (diskfs_execserver_task, TASK_BOOTSTRAP_PORT, right);
   mach_port_deallocate (mach_task_self (), right);
 
-  bufsiz = round_page (execserver_text_size + execserver_data_size);
-
-  err = vm_allocate (mach_task_self (), &buf, bufsiz, 1);
-  bcopy (&execserver_text, (char *)buf, execserver_text_size);
-  bcopy (&execserver_data, (char *)(buf + execserver_text_size),
-	 execserver_data_size);
-  textloc = 0x10000;
-  err = vm_allocate (newt, &textloc, bufsiz, 0);
-  err = vm_write (newt, 0x10000, buf, bufsiz);
-  err = vm_deallocate (mach_task_self (), buf, bufsiz);
-  err = vm_protect (newt, 0, trunc_page (execserver_text_size) + 0x10000, 0,
-	      VM_PROT_READ | VM_PROT_EXECUTE);
-
-  bssloc = round_page (0x10000 + execserver_text_size + execserver_data_size);
-  err = vm_allocate (newt, &bssloc,
-		     round_page (0x10000 +
-				 execserver_text_size +
-				 execserver_data_size +
-				 execserver_bss_size -
-				 bssloc),
-		     0);
-
-  err = thread_create (newt, &newthd);
-  err = mach_setup_thread (newt, newthd, (void *) execserver_start,
-			   &exec_stack_base, &exec_stack_size);
   if (diskfs_bootflags & RB_KDB)
     {
       printf ("pausing for exec\n");
       getc (stdin);
     }
-  thread_resume (newthd);
+  task_resume (diskfs_execserver_task);
+
   printf (" exec");
   fflush (stdout);
 }
