@@ -178,7 +178,7 @@ main (int argc, char **argv)
   mutex_init (&global_lock);
 
   term_owner = term_group = 0;
-  term_mode = (bottom == &ptyio_bottom ? 0666 : 0600) | S_IFCHR;
+  term_mode = (bottom == &ptyio_bottom ? 0666 : 0600) | S_IFCHR | S_IROOT;
 
   inputq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
   rawq = create_queue (256, QUEUE_LOWAT, QUEUE_HIWAT);
