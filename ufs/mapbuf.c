@@ -21,13 +21,16 @@
 
 #include "ufs.h"
 
-#define MAXMAPMEM (1024 * 1024 * 1024) /* one Gb */
+struct mapbuf *mblist;
+spin_lock_t mblistlock = SPIN_LOCK_INITIALIZER;
 
-struct mapbuf 
+struct mapbuf *
+map_region (vm_offset_t diskloc, vm_size_t length)
 {
-  vm_size_t length;
-  vm_offset_t diskaddr;
-};
+  struct mapbuf *mb;
+  
+  /* Check to see if we are already mapping this region */
+  spin_lock (&mblistlock);
+  for (mb = mblist; mb; mb = mb->next)
+    {
 
-void *
-map_region 
