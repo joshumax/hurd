@@ -1,5 +1,5 @@
 /* Special protocol for terminal driver
-   Copyright (C) 1991, 1993 Free Software Foundation, Inc.
+   Copyright (C) 1991, 1993, 1994 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -30,7 +30,7 @@ TERM_IMPORTS
 /* Find out what the controlling terminal ID port is.  */
 routine term_getctty (
 	terminal: io_t;
-	out ctty: mach_port_make_send_t);
+	out ctty: mach_port_send_t);
 
 /* 
 Return a controlling terminal port for this terminal.  This has the
