@@ -206,11 +206,12 @@ main (int argc,
      After this, we can use `register_netdevice' for new interfaces.  */
   net_dev_init ();
 
-  /* Parse options.  When successful, this configures the interfaces
-     before returning.  (And when not sucessful, it never returns.)  */
-  argp_parse (&pfinet_argp, argc, argv, 0,0,0);
-
   __mutex_unlock (&global_lock);
+
+  /* Parse options.  When successful, this configures the interfaces
+     before returning; to do so, it will acquire the global_lock.
+     (And when not sucessful, it never returns.)  */
+  argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
   /* Ask init to tell us when the system is going down,
      so we can try to be friendly to our correspondents on the network.  */
