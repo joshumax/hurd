@@ -99,7 +99,7 @@ mode_rep (unsigned short mode)
   add_perms (3, S_ISGID);
   add_perms (6, 0);
 
-  snprintf (p, buf + sizeof buf - p, " [%0o]", mode);
+  snprintf (p, buf + sizeof buf - p, " [0%0o]", mode);
 
   return buf;
 }
