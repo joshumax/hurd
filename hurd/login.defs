@@ -39,7 +39,7 @@ routine login_message_user (
 /* Return a human-readable string describing the user's physical location.  */
 routine login_get_location (
 	login: file_t;
-	out location: data_t);
+	out location: data_t, dealloc);
 
 /* Return how much time has passed since the user last used an input device. */
 routine login_get_idle_time (
@@ -50,7 +50,7 @@ routine login_get_idle_time (
    characters.  This call is optional; clients should not depend on it.  */
 routine login_get_input_devices (
 	login: file_t;
-	out devices: data_t);
+	out devices: data_t, dealloc);
 
 /* Return the process collection ID for the user's login collection. */
 routine login_get_login_collection (

@@ -52,7 +52,7 @@ routine io_write (
 routine io_read (
 	io_object: io_t;
 	RPT
-	out data: data_t;
+	out data: data_t, dealloc;
 	offset: off_t;
 	amount: int);
 

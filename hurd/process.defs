@@ -54,7 +54,7 @@ routine proc_sethostname (
 /* Get the hostname.  */
 routine proc_gethostname (
 	process: process_t;
-	out hostname: data_t);
+	out hostname: data_t, dealloc);
 
 /* Get the privileged host port and the device master port.  */
 routine proc_getprivports (
@@ -65,7 +65,7 @@ routine proc_getprivports (
 /* Return all the pids of all live processes.  */
 routine proc_getallpids (
 	process: process_t;
-	out pidarray: pidarray_t);
+	out pidarray: pidarray_t, dealloc);
 
 /* Set the "standard exec data", used by programs that want predefined
    values for exec.  */
@@ -77,8 +77,8 @@ routine proc_setexecdata (
 /* Get the standard exec data */
 routine proc_getexecdata (
 	process: process_t;
-	out ports: portarray_t;
-	out ints: intarray_t);
+	out ports: portarray_t, dealloc;
+	out ints: intarray_t, dealloc);
 
 /* Request notification with exec_setexecdata on NOTIFY.  */
 routine proc_execdata_notify (
@@ -278,12 +278,12 @@ routine proc_getprocinfo (
 routine proc_getprocargs (
 	process: process_t;
 	which: pid_t;
-	out procargs: data_t);
+	out procargs: data_t, dealloc);
 
 routine proc_getprocenv (
 	process: process_t;
 	which: pid_t;
-	out procenv: data_t);
+	out procenv: data_t, dealloc);
 
 /* Create a new login collection.  The pid of PROCESS will be the id
    of the collection.  All the children (and their children, and so forth) of
@@ -303,7 +303,7 @@ routine proc_getloginid (
 routine proc_getloginpids (
 	process: process_t;
 	id: pid_t;
-	out pids: pidarray_t);
+	out pids: pidarray_t, dealloc);
 
 /* These next two should not actually be used; they are here 
    for "historic reasons."  You are not expected to understand this. */
@@ -334,13 +334,13 @@ routine proc_getsid (
 routine proc_getsessionpgids (
 	process: process_t;
 	sid: pid_t;
-	out pgidset: pidarray_t);
+	out pgidset: pidarray_t, dealloc);
 
 /* Get the pids of all the members of a session. */
 routine proc_getsessionpids (
 	process: process_t;
 	sid: pid_t;
-	out pidset: pidarray_t);
+	out pidset: pidarray_t, dealloc);
 
 /* Return a "session ID" port for the session of the caller.
    This port is generally only available to members of the session.
@@ -365,6 +365,6 @@ routine proc_getpgrp (
 routine proc_getpgrppids (
 	process: process_t;
 	pgrp: pid_t;
-	out pidset: pidarray_t);
+	out pidset: pidarray_t, dealloc);
 
 
