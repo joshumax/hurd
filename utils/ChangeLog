@@ -1,3 +1,9 @@
+Mon Aug 19 15:19:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* devprobe.c, fsysopts.c, hurdids.c, login.c, portinfo.c, ps.c,
+ 	settrans.c, showtrans.c, storeinfo.c, vmstat.c, w.c, x.c (doc):
+ 	Add program description.
+
 Wed Aug 14 10:18:41 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (login-LDLIBS): New variable.
