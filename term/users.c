@@ -217,7 +217,7 @@ po_create_hook (struct trivfs_peropen *po)
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs (1);
+      call_asyncs ();
     }
   mutex_unlock (&global_lock);
   return 0;
@@ -466,7 +466,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   trivfs_set_mtime (termctl);
 
-  call_asyncs (1);
+  call_asyncs ();
 
   mutex_unlock (&global_lock);
 
@@ -604,7 +604,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   *datalen = cp - *data;
 
-  call_asyncs (1);
+  call_asyncs ();
 
   mutex_unlock (&global_lock);
 
@@ -1619,7 +1619,7 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs (1);
+      call_asyncs ();
     }
 
   mutex_unlock (&global_lock);
@@ -1645,7 +1645,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
     {
       termflags |= ICKY_ASYNC;
       num_icky_async_peropens++;
-      call_asyncs (1);
+      call_asyncs ();
     }
   mutex_unlock (&global_lock);
   return 0;
@@ -1828,21 +1828,12 @@ report_sig_end ()
     }
 }
 
-/* Call all the scheduled async I/O handlers.  If FORCE is true then turn off
-   SUPPRESS_ASYNC first, otherwise use it to suppress subsequent calls with
-   FORCE == 0.  */
+/* Call all the scheduled async I/O handlers.  */
 void
-call_asyncs (int force)
+call_asyncs ()
 {
   struct async_req *ar, *nxt, **prevp;
   mach_port_t err;
-
-  if (force)
-    termflags &= ~SUPPRESS_ASYNC;
-  else if (termflags & SUPPRESS_ASYNC)
-    return;
-  else
-    termflags |= SUPPRESS_ASYNC;
 
   /* If no I/O is possible or nobody wants async
      messages, don't bother further. */
