@@ -18,8 +18,8 @@
 dir := trans
 makemode := servers
 
-targets = symlink ifsock magic null fifo new-fifo
-SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c
+targets = symlink ifsock magic null fifo new-fifo fwd
+SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o
 
 all: $(targets)
@@ -27,9 +27,9 @@ all: $(targets)
 symlink magic: fsysServer.o
 ifsock: ifsockServer.o
 fifo new-fifo: ../libpipe/libpipe.a
-new-fifo: ../libfshelp/libfshelp.a
+fwd new-fifo: ../libfshelp/libfshelp.a
 null ifsock fifo new-fifo: ../libtrivfs/libtrivfs.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-null ifsock fifo new-fifo: ../libthreads/libthreads.a
+fwd null ifsock fifo new-fifo: ../libthreads/libthreads.a
 
 include ../Makeconf
