@@ -265,7 +265,7 @@ error_t ports_do_mach_notify_send_once (mach_port_t notify);
 
 /* A default interrupt server */
 int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-error_t ports_S_interrupt_operation (mach_port_t port);
+error_t ports_S_interrupt_operation (mach_port_t port, mach_msg_seqno_t);
 
 /* Private data */
 extern struct mutex _ports_lock;
