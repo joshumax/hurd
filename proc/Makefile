@@ -81,3 +81,5 @@ msg.h msgUser.c: $(headers)/hurd/msg.defs $(headers)/hurd/hurd_types.defs
 clean:
 	rm -f *.o *Server.c *_S.h *User.c proc process_reply.h \
 		msg.h proc_exc.h proc_excrepl.h
+relink:
+	rm -f proc
