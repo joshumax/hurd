@@ -601,9 +601,9 @@ pager_clear_user_data (struct user_pager_info *upi)
       if (upi->next)
 	upi->next->prevp = upi->prevp;
       spin_unlock (&pager_list_lock);
-
-      free (upi);
     }
+
+  free (upi);
 }
 
 /* ---------------------------------------------------------------- */
