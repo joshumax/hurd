@@ -21,6 +21,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "io_S.h"
+#include <string.h>
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */
 static inline int
@@ -53,7 +54,7 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
   for (i = newnuids = 0; i < cred->nuids; i++)
     if (listmember (uids, cred->uids[i], nuids))
       newuids[newnuids++] = cred->uids[i];
-  for (i = newngids = 0; i < cred->gids[i], ngids)
+  for (i = newngids = 0; i < cred->gids[i]; i++)
     if (listmember (gids, cred->gids[i], ngids))
       newgids[newngids++] = cred->gids[i];
 
