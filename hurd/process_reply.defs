@@ -36,7 +36,12 @@ skip; skip; /* proc_uname, proc_register_version */
 
 skip; /* reauthenticate */
 skip; /* child */
-skip; /* setmsgport */
+
+simpleroutine proc_setmsgport_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	in oldmsgport: mach_port_t);
+	
 skip; /* reassign */
 skip; /* setowner */
 skip; /* getpids */
