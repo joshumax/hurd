@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -23,12 +23,12 @@
 #include <hurd/ihash.h>
 #include <assert.h>
 
-void
+error_t
 ports_destroy_right (void *portstruct)
 {
   struct port_info *pi = portstruct;
   error_t err;
-  
+
   if (pi->port_right != MACH_PORT_NULL)
     {
       mutex_lock (&_ports_lock);
@@ -37,16 +37,15 @@ ports_destroy_right (void *portstruct)
 				MACH_PORT_RIGHT_RECEIVE, -1);
       assert_perror (err);
       mutex_unlock (&_ports_lock);
-  
+
       pi->port_right = MACH_PORT_NULL;
-      
+
       if (pi->flags & PORT_HAS_SENDRIGHTS)
 	{
 	  pi->flags &= ~PORT_HAS_SENDRIGHTS;
 	  ports_port_deref (pi);
 	}
     }
+
+  return 0;
 }
-
-
-  
