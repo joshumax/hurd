@@ -383,9 +383,6 @@ block_extended (struct node *np,
 		size_t old_size,
 		size_t new_size)
 {
-  vm_address_t buf;
-  daddr_t off;
-
   /* Make sure that any pages of this block which just became allocated
      don't get paged in from disk. */
   if (round_page (old_size) < round_page (new_size))
@@ -394,7 +391,7 @@ block_extended (struct node *np,
 
   if (old_pbn != new_pbn)
     {
-      vm_object_t mapobj;
+      memory_object_t mapobj;
       error_t err;
       vm_address_t mapaddr;
       volatile int *pokeaddr;
@@ -413,12 +410,12 @@ block_extended (struct node *np,
       spin_unlock (&unlocked_pagein_lock);
 
       /* Make sure all waiting pageins see this change. */
-      mutex_lock (&np->allocptrlock->master);
-      condition_broadcast (&np->allocptrlock->wakeup);
-      mutex_unlock (&np->allocptrlock->master);
+      mutex_lock (&np->dn->allocptrlock->master);
+      condition_broadcast (&np->dn->allocptrlock->wakeup);
+      mutex_unlock (&np->dn->allocptrlock->master);
 
       /* Force the pages in core and make sure they are dirty */
-      for (pokeaddr = (char *)mapaddr; 
+      for (pokeaddr = (int *)mapaddr; 
 	   pokeaddr < mapaddr + round_page (old_size);
 	   pokeaddr += vm_page_size / sizeof (*pokeaddr))
 	*pokeaddr = *pokeaddr;
@@ -431,7 +428,7 @@ block_extended (struct node *np,
 
       /* Undo mapping */
       mach_port_deallocate (mach_task_self (), mapobj);
-      vm_deallocate (mach_task_self (), mapaddr, round_page (old_size);
+      vm_deallocate (mach_task_self (), mapaddr, round_page (old_size));
 
       /* Now it's OK to free the old block */
       ffs_blkfree (np, old_pbn, old_size);
@@ -456,7 +453,7 @@ diskfs_grow (struct node *np,
   error_t err;
   struct dinode *di = dino (np->dn->number);
   mach_port_t pagerpt;
-  int needsync = 0;
+  int need_sync = 0;
 
   /* Zero an sblock->fs_bsize piece of disk starting at BNO,
      synchronously.  We do this on newly allocated indirect
