@@ -42,11 +42,6 @@ VPATH = $(machine)
 
 include ../Makeconf
 
-# This is cheating, but it's a lot easier than writing PIC assembly
-# code.
-csw_pic.o: csw.o
-	cp $< $@
-
 install: $(includedir)/cthreads.h
 $(includedir)/cthreads.h: cthreads.h
 	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h
