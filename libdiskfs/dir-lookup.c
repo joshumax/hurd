@@ -430,7 +430,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    type == S_IFIFO)
 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
 	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
-	error = EOPNOTSUPP;
+	error = EACCES;
 
       if (!error && (flags & O_READ))
 	error = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
