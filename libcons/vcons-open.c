@@ -126,11 +126,11 @@ cons_vcons_open (cons_t cons, vcons_list_t vcons_entry, vcons_t *r_vcons)
   vcons->state.screen.width = vcons->display->screen.width;
   vcons->state.screen.height = vcons->display->screen.height;
   vcons->state.screen.lines = vcons->display->screen.lines;
-  vcons->state.screen.matrix = ((wchar_t *) vcons->display)
-    + vcons->display->screen.matrix;
+  vcons->state.screen.matrix = (conchar_t *)
+    (((uint32_t *) vcons->display) + vcons->display->screen.matrix);
   vcons->state.changes.length = vcons->display->changes.length;
-  vcons->state.changes.buffer = ((uint32_t *) vcons->display)
-    + vcons->display->changes.buffer;
+  vcons->state.changes.buffer = (cons_change_t *)
+    (((uint32_t *) vcons->display) + vcons->display->changes.buffer);
 
   /* Request notification messages.  */
   notify = ports_get_right (vcons);

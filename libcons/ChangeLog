@@ -1,3 +1,8 @@
+2002-10-04  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vcons-open.c (cons_vcons_open): Add casts to silence gcc
+	warning.
+
 2002-09-22  Marcus Brinkmann  <marcus@gnu.org>
 
 	* vcons-refresh.c (cons_vcons_refresh): Take VCONS->scrolling into

@@ -119,7 +119,7 @@ struct cons_display
 			   preceeding CUR_LINE.  */
     uint32_t height;	/* Number of lines in visible area following
 			   (and including) CUR_LINE.  */
-    uint32_t matrix;	/* Index (in wchar_t) of the beginning of
+    uint32_t matrix;	/* Index (in uint32_t) of the beginning of
 			   screen matrix in this structure.  */
   } screen;
 
