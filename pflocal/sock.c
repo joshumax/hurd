@@ -288,6 +288,8 @@ addr_create (struct addr **addr)
   ensure_sock_server ();
 
   (*addr)->sock = NULL;
+  mutex_init (&(*addr)->lock);
+
   return 0;
 }
 
