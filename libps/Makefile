@@ -25,6 +25,7 @@ libname = libps
 SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 	tty.c user.c write.c
 LCLHDRS=ps.h
+REMHDRS = ../libihash/ihash.h
 installhdrs=ps.h
 
 MIGSTUBS=msgUser.o termUser.o
@@ -37,5 +38,3 @@ msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;'
 term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;'
 
 include ../Makeconf
-
-$(OBJS): ps.h
