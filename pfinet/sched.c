@@ -71,16 +71,6 @@ sock_wake_async (struct socket *sock, int how)
   return 0;
 }
 
-/* Record that we are doing a select.  The table P is passed 
-   to the protocol-specific select routine and then echoed
-   through to us.  The WAIT_ADDRESS is what will be woken up
-   when I/O becomes possible.  */
-void
-select_wait (struct wait_queue **wait_address, select_table *p)
-{
-  /* For now, do nothing. XXX */
-  return;
-}
 
 /* Set the contents of current appropriately for an RPC being undertaken
    by USER. */
