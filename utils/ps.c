@@ -110,21 +110,14 @@ parse_enum(char *arg, char **choices, char *kind, bool allow_mismatches)
       {
 	if (strncmp(*p, arg, arglen) == 0)
 	  if (partial_match >= 0)
-	    {
-	      fprintf(stderr, "%s: Ambiguous %s", arg, kind);
-	      argp_help (0, stderr, ARGP_HELP_STD_ERR);
-	    }
+	    argp_error (0, "%s: Ambiguous %s", arg, kind);
 	  else
 	    partial_match = p - choices;
 	p++;
       }
 
   if (partial_match < 0 && !allow_mismatches)
-    {
-      fprintf(stderr, "%s: Invalid %s", arg, kind);
-      argp_help (0, stderr, ARGP_HELP_STD_ERR);
-      return 0;
-    }
+    argp_error (0, "%s: Invalid %s", arg, kind);
 
   return partial_match;
 }
