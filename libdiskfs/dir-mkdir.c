@@ -38,9 +38,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   mutex_lock (&dnp->lock);
 
-  error = diskfs_lookup (dnp, name, CREATE, 0, ds, dircred,
-			 dircred->po->depth, 0);
-
+  error = diskfs_lookup (dnp, name, CREATE, 0, ds, dircred);
   if (error == EAGAIN)
     error = EEXIST;
   if (!error)
