@@ -689,7 +689,7 @@ pager_extend(pager, new_size)
 	    pager->writer = FALSE;
 #endif
 	    mutex_unlock(&pager->lock);
-	    ddprintf ("pager_extend 1 mapptr %x [3b] = %x\n", new_mapptr, 
+	    ddprintf ("pager_extend 1 mapptr %x [3b] = %x\n", new_mapptr,
 		     new_mapptr[0x3b]);
 	    if (new_mapptr[0x3b].indirect > 0x10000
 		&& new_mapptr[0x3b].indirect != NO_BLOCK)
@@ -717,7 +717,7 @@ pager_extend(pager, new_size)
 	    kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
 	    old_mapptr = new_mapptr;
 
-	    ddprintf ("pager_extend 2 mapptr %x [3b] = %x\n", new_mapptr, 
+	    ddprintf ("pager_extend 2 mapptr %x [3b] = %x\n", new_mapptr,
 		     new_mapptr[0x3b]);
 	    if (new_mapptr[0x3b].indirect > 0x10000
 		&& new_mapptr[0x3b].indirect != NO_BLOCK)
@@ -819,7 +819,7 @@ pager_read_offset(pager, offset)
 	  {
 	    ddprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
 		    my_name, pager, f_page, pager->size);
-	    return (union dp_map *) NO_BLOCK;
+	    return (union dp_map) (union dp_map *) NO_BLOCK;
 #if 0
 	    panic("%spager_read_offset",my_name);
 #endif
@@ -1082,7 +1082,7 @@ pager_write_offset(pager, offset)
 
 	while (f_page >= pager->size) {
 	  ddprintf ("pager_write_offset: extending: %x %x\n", f_page, pager->size);
-	  
+
 	    /*
 	     * Paging object must be extended.
 	     * Remember that offset is 0-based, but size is 1-based.
@@ -1192,11 +1192,11 @@ dprintf("extending object %x (size %x) to %x.\n",
 	    block.block.p_offset = off;
 	    block.block.p_index  = pager->cur_partition;
 	    mapptr[f_page] = block;
-	    ddprintf ("pager_write_offset: mapptr %x [3b] = %x\n", mapptr, 
+	    ddprintf ("pager_write_offset: mapptr %x [3b] = %x\n", mapptr,
 		     mapptr[0x3b]);
 	    ddprintf ("pager_write_offset: block is finally %x\n", block);
 	}
-	
+
 out:
 
 #if	DEBUG_READER_CONFLICTS
@@ -1431,7 +1431,7 @@ default_write(ds, addr, size, offset)
 	register int		rc;
 
 	ddprintf ("default_write: pager offset %x\n", offset);
-	
+
 	/*
 	 * Find block in paging partition
 	 */
@@ -2454,7 +2454,7 @@ ddprintf ("seqnos_memory_object_data_write <%p>: 1\n", &err);
 	    ddprintf ("fail 1: %d %d\n", data_cnt, vm_page_size);
 	    panic(here,my_name);
 	  }
-	
+
 
 ddprintf ("seqnos_memory_object_data_write <%p>: 2\n", &err);
 	ds = pager_port_lookup(pager);
@@ -2464,7 +2464,7 @@ ddprintf ("seqnos_memory_object_data_write <%p>: 3\n", &err);
 	    ddprintf ("fail 2: %d %d\n", pager, ds);
 	    panic(here,my_name);
 	  }
-	
+
 ddprintf ("seqnos_memory_object_data_write <%p>: 4\n", &err);
 ddprintf ("seqnos_memory_object_data_write <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
 	&err, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
@@ -2513,10 +2513,10 @@ ddprintf ("seqnos_memory_object_data_write <%p>: 14\n", &err);
 	if (err != KERN_SUCCESS)
 	  {
 	    ddprintf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, &err);
-	    
+
 	      panic(here,my_name);
 	  }
-	
+
 
 ddprintf ("seqnos_memory_object_data_write <%p>: 15\n", &err);
 	return(KERN_SUCCESS);
