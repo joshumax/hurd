@@ -346,18 +346,15 @@ netfs_attempt_statfs (struct netcred *cred, struct node *np,
   
   if (!err)
     {
-      long iosize, bsize;
-      iosize = *p++;
-      bsize = *p++;
-      st->f_bsize = iosize;
-      st->f_blocks = ((*p++) * bsize) / iosize;
-      st->f_bfree = ((*p++) * bsize) / iosize;
-      st->f_bavail = ((*p++) * bsize) / iosize;
-      
+      p++;			/* skip IOSIZE field */
+      st->f_bsize = ntohl (*p++);
+      st->f_blocks = ntohl (*p++);
+      st->f_bfree = ntohl (*p++);
+      st->f_bavail = ntohl (*p++);
       st->f_type = FSTYPE_NFS;
       st->f_files = 0;
       st->f_ffree = 0;
-      st->f_fsid = 0;	/* XXX wrong  */
+      st->f_fsid = getpid ();
       st->f_namelen = 0;
     }
   
