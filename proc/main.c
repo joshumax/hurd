@@ -23,6 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/hurd_types.h>
 #include <hurd.h>
 #include <hurd/startup.h>
+#include <device/device.h>
 #include <assert.h>
 #include <wire.h>
 #include <argp.h>
