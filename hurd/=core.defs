@@ -25,7 +25,9 @@ subsystem core 32000;
 
 /* Dump a core file for TASK in FILE.  SIGNO and SIGCODE indicate the
    signal that caused the process to dump core.  For the standard core
-   server, TARGET specifies the flavor of object file to write.  */
+   server, TARGET specifies the flavor of object file to write,
+   and is normally taken from the `GNUTARGET' environment variable in the
+   caller.  */
 
 routine core_dump_task (
 	coreserver: mach_port_t;
