@@ -40,7 +40,7 @@ working-prog-subdirs := $(filter-out \
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 	     hurd.boot build.mk.in build.mkcf.in SETUP \
-	     README NEWS tasks INSTALL INSTALL-cross *.h
+	     README NEWS tasks INSTALL INSTALL-cross
 
 all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
 
