@@ -367,11 +367,16 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
 {
   error_t err = 0;
   struct pending_blocks pb;
-  struct rwlock *lock = 0;
+  struct rwlock *lock = &node->dn->alloc_lock;
   block_t block;
   int left = vm_page_size;
 
   pending_blocks_init (&pb, buf);
+
+  /* Holding NODE->dn->alloc_lock effectively locks NODE->allocsize,
+     at least for the cases we care about: pager_unlock_page,
+     diskfs_grow and diskfs_truncate.  */
+  rwlock_reader_lock (&node->dn->alloc_lock);
 
   if (offset >= node->allocsize)
     left = 0;
@@ -396,8 +401,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   if (!err)
     pending_blocks_write (&pb);
 
-  if (lock)
-    rwlock_reader_unlock (lock);
+  rwlock_reader_unlock (&node->dn->alloc_lock);
 
   return err;
 }
