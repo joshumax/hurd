@@ -46,8 +46,8 @@ message_demuxer (mach_msg_header_t *inp,
 	  || proc_excrepl_server (inp, outp));
 }
 
-void
-main ()
+int
+main (int argc, char **argv, char **envp)
 {
   mach_port_t boot;
   mach_port_t authhandle;
@@ -77,6 +77,10 @@ main ()
   add_proc_to_hash (self_proc);
   add_proc_to_hash (startup_proc);
   
+  /* Set our own argv and envp locations.  */
+  self_proc->p_argv = (int) argv;
+  self_proc->p_envp = (int) envp;
+
   while (1)
     mach_msg_server (message_demuxer, 0, request_portset);
 }
