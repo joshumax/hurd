@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 2004 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -21,4 +21,4 @@
 #include <fcntl.h>
 
 /* Bits that are turned off after open */
-#define OPENONLY_STATE_MODES (O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK)
+#define OPENONLY_STATE_MODES (O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS)
