@@ -37,39 +37,34 @@ get_hypermetadata (void)
       && sblock->s_magic != EXT2_PRE_02B_MAGIC
 #endif
       )
-    ext2_panic("get_hypermetadata",
-	       "Bad magic number %#x (should be %#x)",
-	       sblock->s_magic, EXT2_SUPER_MAGIC);
+    ext2_panic ("bad magic number %#x (should be %#x)",
+		sblock->s_magic, EXT2_SUPER_MAGIC);
 
   block_size = EXT2_MIN_BLOCK_SIZE << sblock->s_log_block_size;
 
   if (block_size > 8192)
-    ext2_panic("get_hypermetadata",
-	       "Block size %ld is too big (max is 8192 bytes)", block_size);
+    ext2_panic ("block size %ld is too big (max is 8192 bytes)", block_size);
 
   log2_dev_blocks_per_fs_block = 0;
   while ((device_block_size << log2_dev_blocks_per_fs_block) < block_size)
     log2_dev_blocks_per_fs_block++;
   if ((device_block_size << log2_dev_blocks_per_fs_block) != block_size)
-    ext2_panic("get_hypermetadata",
-	       "Block size %ld isn't a power-of-two multiple of the device"
-	       " block size (%d)!",
-	       block_size, device_block_size);
+    ext2_panic ("block size %ld isn't a power-of-two multiple of the device"
+		" block size (%d)!",
+		block_size, device_block_size);
 
   log2_stat_blocks_per_fs_block = 0;
   while ((512 << log2_stat_blocks_per_fs_block) < block_size)
     log2_stat_blocks_per_fs_block++;
   if ((512 << log2_stat_blocks_per_fs_block) != block_size)
-    ext2_panic("get_hypermetadata",
-	       "Block size %ld isn't a power-of-two multiple of 512!",
-	       block_size);
+    ext2_panic ("block size %ld isn't a power-of-two multiple of 512!",
+		block_size);
 
   log2_block_size = 0;
   while ((1 << log2_block_size) < block_size)
     log2_block_size++;
   if ((1 << log2_block_size) != block_size)
-    ext2_panic("get_hypermetadata",
-	       "Block size %ld isn't a power of two!", block_size);
+    ext2_panic ("block size %ld isn't a power of two!", block_size);
 
   if (!diskfs_readonly && block_size < vm_page_size)
     /* If the block size is too small, we have to take extra care when
@@ -94,7 +89,7 @@ get_hypermetadata (void)
   if (frag_size)
     frags_per_block = block_size / frag_size;
   else
-    ext2_panic("get_hypermetadata", "Frag size is zero!");
+    ext2_panic ("frag size is zero!");
 
   groups_count =
     ((sblock->s_blocks_count - sblock->s_first_data_block +

@@ -341,8 +341,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  ext2_warning ("dirscanblock", 
-			"Bad directory entry: inode: %d offset: %ld",
+	  ext2_warning ("bad directory entry: inode: %d offset: %ld",
 			dp->dn->number,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
@@ -878,8 +877,7 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->rec_len == 0)
 	{
-	  ext2_warning ("diskfs_get_directs", 
-			"Zero length directory entry: inode: %d offset: %ld",
+	  ext2_warning ("zero length directory entry: inode: %d offset: %ld",
 			dp->dn->number,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
@@ -893,8 +891,7 @@ diskfs_get_directs (struct node *dp,
 	}
       else if (bufp - buf > DIRBLKSIZ)
 	{
-	  ext2_warning ("diskfs_get_directs", 
-			"Directory entry too long: inode: %d offset: %ld",
+	  ext2_warning ("directory entry too long: inode: %d offset: %ld",
 			dp->dn->number,
 			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
 	  return EIO;

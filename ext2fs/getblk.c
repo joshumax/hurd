@@ -236,7 +236,7 @@ ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
       addr_per_block * addr_per_block +
       addr_per_block * addr_per_block * addr_per_block)
     {
-      ext2_warning ("ext2_getblk", "block > big");
+      ext2_warning ("block > big: %lu", block);
       return EIO;
     }
   /*

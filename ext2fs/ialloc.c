@@ -65,7 +65,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   if (inum < EXT2_FIRST_INO || inum > sblock->s_inodes_count)
     {
-      ext2_error ("free_inode", "reserved inode or nonexistent inode");
+      ext2_error ("reserved inode or nonexistent inode: %lu", inum);
       spin_unlock (&global_lock);
       return;
     }
@@ -77,7 +77,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bh = bptr (gdp->bg_inode_bitmap);
 
   if (!clear_bit (bit, bh))
-    ext2_warning ("ext2_free_inode", "bit already cleared for inode %u", inum);
+    ext2_warning ("bit already cleared for inode %u", inum);
   else
     {
       record_global_poke (bh);
@@ -219,8 +219,7 @@ repeat:
     {
       if (set_bit (inum, bh))
 	{
-	  ext2_warning ("ext2_new_inode",
-			"bit already set for inode %d", inum);
+	  ext2_warning ("bit already set for inode %d", inum);
 	  goto repeat;
 	}
       record_global_poke (bh);
@@ -229,8 +228,7 @@ repeat:
     {
       if (gdp->bg_free_inodes_count != 0)
 	{
-	  ext2_error ("ext2_new_inode",
-		      "Free inodes count corrupted in group %d", i);
+	  ext2_error ("free inodes count corrupted in group %d", i);
 	  inum = 0;
 	  goto sync_out;
 	}
@@ -240,8 +238,7 @@ repeat:
   inum += i * sblock->s_inodes_per_group + 1;
   if (inum < EXT2_FIRST_INO || inum > sblock->s_inodes_count)
     {
-      ext2_error ("ext2_new_inode",
-		  "reserved inode or inode > inodes count - "
+      ext2_error ("reserved inode or inode > inodes count - "
 		  "block_group = %d,inode=%d", i, inum);
       inum = 0;
       goto sync_out;
@@ -290,8 +287,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 
   if (np->dn_stat.st_blocks)
     {
-      ext2_warning("diskfs_alloc_node",
-		   "Free inode %d had %d blocks", inum, np->dn_stat.st_blocks);
+      ext2_warning("Free inode %d had %d blocks", inum, np->dn_stat.st_blocks);
       np->dn_stat.st_blocks = 0;
       np->dn_set_ctime = 1;
     }
@@ -377,15 +373,13 @@ ext2_check_inodes_bitmap ()
       x = count_free (bptr (gdp->bg_inode_bitmap),
 		      sblock->s_inodes_per_group / 8);
       if (gdp->bg_free_inodes_count != x)
-	ext2_error ("ext2_check_inodes_bitmap",
-		    "Wrong free inodes count in group %d, "
-		    "stored = %d, counted = %lu", i,
-		    gdp->bg_free_inodes_count, x);
+	ext2_error ("wrong free inodes count in group %d, "
+		    "stored = %d, counted = %lu",
+		    i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
     }
   if (sblock->s_free_inodes_count != bitmap_count)
-    ext2_error ("ext2_check_inodes_bitmap",
-		"Wrong free inodes count in super block, "
+    ext2_error ("wrong free inodes count in super block, "
 		"stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_inodes_count, bitmap_count);
 
