@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1999 Free Software Foundation
    Written by Thomas Bushnell, BSG.
 
@@ -26,13 +26,13 @@ netfs_S_io_revoke (struct protid *cred)
   error_t err;
   struct node *np;
 
-  error_t 
+  error_t
     iterator_function (void *port)
     {
       struct protid *user = port;
 
-      if ((user.pi.class == netfs_protid_class)
-	  && (user != cred) 
+      if ((user->pi.class == netfs_protid_class)
+	  && (user != cred)
 	  && (user->po->np == np))
 	ports_destroy_right (user);
       return 0;
@@ -40,25 +40,23 @@ netfs_S_io_revoke (struct protid *cred)
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
 
   mutex_lock (&np->lock);
-  
-  err = netfs_validate_stat (np, cred);
+
+  err = netfs_validate_stat (np, cred->user);
   if (!err)
-    err = fshelp_isowner (&np->dn_stat, cred->user);
+    err = fshelp_isowner (&np->nn_stat, cred->user);
   if (err)
     {
       mutex_unlock (&np->lock);
       return err;
     }
-  
+
   ports_bucket_iterate (netfs_port_bucket, iterator_function);
 
   mutex_unlock (&np->lock);
 
   return 0;
 }
-
-
