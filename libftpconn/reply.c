@@ -28,7 +28,7 @@
 
 /* Add STR (of size LEN) to CONN's reply_txt buffer, at offset *OFFS,
    updating *OFFS.  */
-static error_t
+static inline error_t
 ftp_conn_add_reply_txt (struct ftp_conn *conn, size_t *offs,
 			const char *str, size_t len)
 {
@@ -55,7 +55,7 @@ ftp_conn_add_reply_txt (struct ftp_conn *conn, size_t *offs,
    next call to this function, or return an error code.  (we used to just use
    the stdio getline function, and keep a stdio stream for the control
    connection, but interleaved I/O didn't work correctly.)  */
-static error_t
+static inline error_t
 ftp_conn_getline (struct ftp_conn *conn, const char **line, size_t *line_len)
 {
   char *l = conn->line;
@@ -135,8 +135,9 @@ ftp_conn_getline (struct ftp_conn *conn, const char **line, size_t *line_len)
    reply code) in REPLY_TXT (if it isn't zero), or return an error code.  If
    the reply is multiple lines, all of them are included in REPLY_TXT,
    separated by newlines.  */
-error_t
-ftp_conn_get_reply (struct ftp_conn *conn, int *reply, const char **reply_txt)
+inline error_t
+ftp_conn_get_raw_reply (struct ftp_conn *conn, int *reply,
+			const char **reply_txt)
 {
   size_t reply_txt_offs = 0;	/* End of a multi-line reply in accum buf.  */
   int multi = 0;		/* If a multi-line reply, the reply code. */
@@ -155,14 +156,15 @@ ftp_conn_get_reply (struct ftp_conn *conn, int *reply, const char **reply_txt)
       if (!multi && len == 0)
 	return EPIPE;
 
-#define ACCUM(txt, len)								\
-  do {										\
-    if (reply_txt)		/* Only accumulate if wanted.  */		\
-      {										\
-	error_t err = ftp_conn_add_reply_txt (conn, &reply_txt_offs, txt, len);	\
-	if (err)								\
-	  return err;								\
-      }										\
+#define ACCUM(txt, len)							      \
+  do {									      \
+    if (reply_txt)		/* Only accumulate if wanted.  */	      \
+      {									      \
+	error_t err =							      \
+	  ftp_conn_add_reply_txt (conn, &reply_txt_offs, txt, len);	      \
+	if (err)							      \
+	  return err;							      \
+      }									      \
   } while (0)
 
       if (conn->hooks && conn->hooks->cntl_debug)
@@ -209,4 +211,27 @@ ftp_conn_get_reply (struct ftp_conn *conn, int *reply, const char **reply_txt)
     *reply_txt = conn->reply_txt;
 
   return 0;
+}
+
+/* Get the next reply from CONN's ftp server, returning the reply code in
+   REPLY, if REPLY is non-zero, and the text of the reply (not including the
+   reply code) in REPLY_TXT (if it isn't zero), or return an error code.  If
+   the reply is multiple lines, all of them are included in REPLY_TXT,
+   separated by newlines.  This differs from ftp_conn_get_raw_reply in that
+   it eats REPLY_ABORT_OK replies on the assumption that they're junk left
+   over from the last abort command.  */
+error_t
+ftp_conn_get_reply (struct ftp_conn *conn, int *reply, const char **reply_txt)
+{
+  int code;
+  error_t err;
+
+  do
+    err = ftp_conn_get_raw_reply (conn, &code, reply_txt);
+  while (!err && code == REPLY_ABORT_OK);
+
+  if (!err && reply)
+    *reply = code;
+
+  return err;
 }
