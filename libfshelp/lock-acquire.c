@@ -111,8 +111,8 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	}
       else if (flags & LOCK_EX)
 	{
-	  /* Wait for any shared locks to finish. */
-	  while (box->type == LOCK_SH)
+	  /* Wait for any shared (and exclusive) locks to finish. */
+	  while (box->type != LOCK_UN)
 	    {
 	      if (flags & LOCK_NB)
 		return EWOULDBLOCK;

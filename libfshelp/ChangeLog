@@ -1,3 +1,9 @@
+2002-06-26  Marcus Brinkmann  <marcus@gnu.org>
+
+	* lock-acquire.c (fshelp_acquire_lock): Also wait for exclusive
+	locks which might have been acquired while we were waiting for
+	shared locks to finish.
+
 2002-06-07  Roland McGrath  <roland@frob.com>
 
 	* fshelp.h: Use io_statbuf_t in place of struct stat throughout.
