@@ -195,13 +195,13 @@ w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
 const struct ps_getter w_host_getter =
 {"host", W_PSTAT_HOST, w_get_host};
 
-extern error_t ps_emit_time (), ps_emit_string (), ps_emit_minutes ();
+extern error_t ps_emit_past_time (), ps_emit_string (), ps_emit_minutes ();
 extern int ps_cmp_times (), ps_cmp_strings ();
 
 const struct ps_fmt_spec _w_specs[] =
 {
   {"USER",  0, UT_NAMESIZE, &w_user_getter, ps_emit_string, ps_cmp_strings},
-  {"LOGIN", "LOGIN@", -7,   &w_login_getter, /*ps_emit_time*/ps_emit_minutes,    ps_cmp_times},
+  {"LOGIN", "LOGIN@", -7,   &w_login_getter, ps_emit_past_time, ps_cmp_times},
   {"FROM",  0, UT_HOSTSIZE, &w_host_getter,  ps_emit_string,  ps_cmp_strings},
   {"IDLE",  0, -5,          &w_idle_getter,  ps_emit_minutes, ps_cmp_times},
   {"WHAT=args"},
