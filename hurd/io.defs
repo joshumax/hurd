@@ -307,12 +307,14 @@ routine io_pathconf (
 	out value: int);
 
 /* Return the identity port for the object underlying IO_OBJECT.
-   Different I/O ports for the same object all have the same identity
-   port.  DEV and FILENO are the same values returned by io_stat for
-   `st_dev' and `st_ino'.  */
+   Different I/O ports for the same object all have the same identity port.
+   FSIDPORT is an identity port returned by for all objects in the same
+   filesystem.  FILENO is the same value returned by io_stat for `st_ino'.
+   */
 routine io_identity (
 	io_object: io_t;
 	RPT
 	out idport: mach_port_send_t;
-	out dev, out fileno: int);
+	out fsidport: mach_port_send_t;
+	out fileno: int);
 
