@@ -129,7 +129,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       error_t err2 = diskfs_checkdirmod (dp, (err || !np) ? 0 : *np, cred);
       if (err2)
 	{
-	  if (np)
+	  if (np && !err)
 	    diskfs_nput (*np);
 	  return err2;
 	}
