@@ -584,7 +584,8 @@ file distributed with the binary distribution gives you complete
 instructions.
 
 After you follow all the appropriate instructions, you will have a
-working GNU/Hurd system.  If you have used Linux-based GNU systems or
+working GNU/Hurd system.  If you have used
+@uref{http://www.gnu.org/gnu/linux-and-gnu.html, GNU/Linux} systems or
 other Unix-like systems before, the Hurd will look quite familiar.  You
 should play with it for a while, referring to this manual only when you
 want to learn more about the Hurd.  Have fun!
@@ -685,9 +686,10 @@ instructions for starting the Hurd, it follows general steps given in a
 user-supplied boot script.
 
 To boot the Hurd, the microkernel must start @code{serverboot} as its
-first task, and pass it appropriate arguments.  @code{serverboot} may
-also be invoked while the Hurd is already running, which allows users to
-start their own complete sub-Hurds (@pxref{Recursive Bootstrap}).
+first task, and pass it appropriate arguments.  @code{serverboot} has a
+counterpart, called @code{boot}, which can be invoked while the Hurd is
+already running, and allows users to start their own complete sub-Hurds
+(@pxref{Recursive Bootstrap}).
 
 @menu
 * Invoking serverboot::         Starting a set of interdependent servers.
@@ -748,10 +750,11 @@ FIXME: finish
 @node Recursive Bootstrap
 @subsection Recursive Bootstrap
 
-The most appealing use of the @code{serverboot} program is to start a
-set of core Hurd servers while another Hurd is already running.  You
-will rarely need to do this, and it requires superuser privileges, but
-it is interesting to note that it can be done.
+The @code{boot} program can be used to start a set of core Hurd servers
+while another Hurd is already running.  You will rarely need to do this,
+and it requires superuser privileges to control the new Hurd (or allow
+it to access certain devices), but it is interesting to note that it can
+be done.
 
 Usually, you would make changes to only one server, and simply tell your
 programs to use it in order to test out your changes.  This process can
@@ -759,29 +762,68 @@ be applied even to the core servers.  However, some changes have
 far-reaching effects, and so it is nice to be able to test those effects
 without having to reboot the machine.
 
+@c FIXME: `boot' synopsis
+
 Here are the steps you can follow to test out a new set of servers:
 
 @enumerate 1
 @item
-Create a new root partition.  Usually, you would do this under your old
-Hurd, and initialize it with your favorite filesystem format.
+Create a pseudo-root device.  Usually, you would do this by creating a
+new partition under your old Hurd, and initializing it with your
+favorite filesystem format.  @code{boot} understands the regular
+@code{libstore} options (FIXME xref), so you may use a file or other
+store instead of a partition.
+
+@example
+$ @kbd{dd if=/dev/zero of=my-partition bs=1024k count=400}
+400+0 records in
+400+0 records out
+$ @kbd{mke2fs ./my-partition}
+mke2fs 1.18, 11-Nov-1999 for EXT2 FS 0.5b, 95/08/09
+my-partition is not a block special device.
+Proceed anyway? (y,n) @kbd{y}
+Filesystem label=
+OS type: GNU/Hurd
+Block size=1024 (log=0)
+Fragment size=1024 (log=0)
+102400 inodes, 409600 blocks
+20480 blocks (5.00%) reserved for the super user
+First data block=1
+50 block groups
+8192 blocks per group, 8192 fragments per group
+2048 inodes per group
+Superblock backups stored on blocks:
+        8193, 24577, 40961, 57345, 73729, 204801, 221185, 401409
+
+Writing inode tables: done
+Writing superblocks and filesystem accounting information: done
+$
+@end example
 
 @item
-Copy the core servers, C library, and any of your modified programs onto
-the new partition.  
+Copy the core servers, C library, your modified programs, and anything
+else you need onto the pseudo-root.
 
-@c tb: this actually won't work, so I'm commenting it out
-@c @item
-@c Use some clever shadowfs hacks (FIXME xref) to mirror the rest of your
-@c programs under the modified partition.  Copying them will work, too, if
-@c you don't like shadowfs.
+@example
+$ @kbd{settrans -c ./my-root /hurd/ext2fs -r `pwd`/my-partition}
+$ @kbd{fsysopts ./my-root --writable}
+$ @kbd{cd my-root}
+$ @kbd{tar -zxpf /pub/debian/FIXME/gnu-20000929.tar.gz}
+$ @kbd{cd ..}
+$ @kbd{fsysopts ./my-root --read-only}
+$
+@end example
 
 @item
-Create a boot script on the new partition, in @file{/boot/servers.boot}.
+Create a new boot script (FIXME xref).
 
 @item
-Run @kbd{serverboot -aqd @var{root-name}}, where @var{root-name} is the
-microkernel name for your new root device.
+Run @code{boot}.
+
+@example
+$ @kbd{boot -D ./my-boot ./my-boot/boot/servers.boot ./my-partition}
+[...]
+@end example
 @end enumerate
 
 Note that it is impossible to share microkernel devices between the two
@@ -3599,7 +3641,7 @@ filesystem control port to our parent filesystem.  If @var{bootstrap} is set,
 diskfs will call @code{fsys_startup} on that port as appropriate and return
 the @var{realnode} from that call; otherwise we call
 @code{diskfs_start_bootstrap} and return @code{MACH_PORT_NULL}.
-@var{flags} specifies how to open @var{realnode} (from the O_* set).
+@var{flags} specifies how to open @var{realnode} (from the @code{O_*} set).
 @end deftypefun
 
 You should not need to call the following function directly, since
