@@ -24,6 +24,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/mman.h>
 
 #include "hostmux.h"
 
@@ -51,7 +52,7 @@ static error_t lookup_host (struct hostmux *mux, const char *host,
    (*NODE, if found, should be locked, this call should unlock DIR no matter
    what.) */
 error_t
-netfs_attempt_lookup (struct iouser *user, struct node *dir, 
+netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		      char *name, struct node **node)
 {
   error_t err;
@@ -315,7 +316,7 @@ lookup_hostent (struct hostmux *mux, const char *host, struct hostent *he,
     }
 
   return 0;
-}  
+}
 
 /* Lookup the host HOST in MUX, and return the resulting node in NODE, with
    an additional reference, or an error.  */
