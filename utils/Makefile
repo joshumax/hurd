@@ -43,8 +43,6 @@ INSTALL-login-ops = -o root -m 4755
 INSTALL-ids-ops = -o root -m 4755
 INSTALL-ps-ops = -o root -m 4755
 INSTALL-w-ops = -o root -m 4755
-INSTALL-vmstat-ops = -o root -m 4755
-INSTALL-vminfo-ops = -o root -m 4755
 INSTALL-ping-ops = -o root -m 4755
 
 include ../Makeconf
