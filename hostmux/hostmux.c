@@ -30,13 +30,15 @@ int netfs_maxsymlinks = 25;
 
 volatile struct mapped_time_value *hostmux_mapped_time;
 
+#define DEFAULT_HOST_PAT "${host}"
+
 /* Startup options.  */
 static const struct argp_option options[] =
 {
   { "host-pattern", 'H', "PAT", 0,
     "The string to replace in the translator specification with the hostname;"
     " if empty, or doesn't occur, the hostname is appended as additional"
-    " argument instead (default `${host}')" },
+    " argument instead (default `" DEFAULT_HOST_PAT "')" },
   { 0 }
 };
 static const char args_doc[] = "TRANSLATOR [ARG...]";
@@ -44,14 +46,43 @@ static const char doc[] =
   "A translator for invoking host-specific translators"
   "\vThis translator appears like a directory in which hostnames can be"
   " looked up, and will start TRANSLATOR to service each resulting node.";
+
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage.  */
+error_t
+netfs_append_args (char **argz, size_t *argz_len)
+{
+  char buf[80];
+  error_t err = 0;
+  struct hostmux *mux = netfs_root_node->nn->mux;
 
+#define FOPT(fmt, arg) \
+  do { \
+    if (! err) \
+      { \
+	snprintf (buf, sizeof buf, fmt, arg); \
+	err = argz_add (argz, argz_len, buf); \
+      } \
+  } while (0)
+
+  if (strcmp (mux->host_pat, DEFAULT_HOST_PAT) != 0)
+    FOPT ("--host-pattern=%s", mux->host_pat);
+
+  if (! err)
+    err = argz_append (argz, argz_len,
+		       mux->trans_template, mux->trans_template_len);
+
+  return err;
+}
+
 int
 main (int argc, char **argv)
 {
   error_t err;
   struct stat ul_stat;
   mach_port_t bootstrap;
-  struct hostmux mux = { host_pat: "${host}", next_fileno: 10 };
+  struct hostmux mux = { host_pat: DEFAULT_HOST_PAT, next_fileno: 10 };
   struct netnode root_nn = { mux: &mux };
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)
