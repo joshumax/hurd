@@ -25,5 +25,9 @@
 /* For the sake of MiG. */
 typedef struct trivfs_protid *trivfs_protid_t;
 
+struct trivfs_protid *_trivfs_begin_using_protid (mach_port_t);
+void _trivfs_end_using_protid (struct trivfs_protid *);
+
 #define TRIVFS_PRIV_H_INCLUDED
 #endif
+
