@@ -643,5 +643,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	err = 0;		/* Some parser didn't understand.  */
     }
 
+  if (err == EBADKEY)
+    err = EINVAL;
+
   return err;
 }
