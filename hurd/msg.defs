@@ -25,6 +25,9 @@ subsystem msg 23000;
 MSG_IMPORTS
 #endif
 
+/* WARNING: The file hurd/proc/stubs.c knows the RPC message ID's
+   and formats for some of the RPC's in this file.  */
+
 /* Post a signal to the process.  The refport indicates some
    permission attribute that the caller provides in the hope that the
    receiver will honor the signal.  Conventional values include:
