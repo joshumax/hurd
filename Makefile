@@ -94,7 +94,7 @@ install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
 		$(working-prog-subdirs)\
 		$(other-subdirs))
 
-TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
+TAGS: $(addsuffix -TAGS,$(working-prog-subdirs) $(lib-subdirs))
 	etags -o $@ $(patsubst %-TAGS,-i %/TAGS,$^)
 
 ## Targets used by the main targets above.
