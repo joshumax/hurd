@@ -60,17 +60,18 @@ main (int argc, char **argv)
   revoke (ttyname);
   sleep (2);			/* leave DTR down for a bit */
   
-  for (;;)
+  do
     {
       tty = open (ttyname, O_RDWR);
       if (tty == -1)
 	{
 	  syslog (LOG_ERR, "%s: %m", ttyname);
 	  closelog ();
+	  sleep (60);
 	}
-      sleep (60);
     }
-  
+  while (tty == -1);
+
   login_tty (tty);
   
   asprintf (&arg, "TERM=%s", tt ? tt->ty_type : "unknown");
