@@ -172,13 +172,11 @@ routine file_getfh (
 /* Translate a pathname, following all symlinks.  Upon return, if
    do_retry is FS_RETRY_NONE, then result is a port referencing the
    pathname's target.  If do_retry is FS_RETRY_NORMAL, then the call
-   needs to be repeated.  If retry_name starts with a slash, then the
-   new call needs to be made to the caller's root directory (without
-   the leading slash).  If it does not start with a slash, then the
-   new call needs to be made to result.  If do_retry is
-   FS_RETRY_REAUTH, then the same procedure is followed as for
-   FS_RETRY_NORMAL, except retry will need to be reauthenticated
-   before use.  */
+   needs to be repeated, calling RESULT with pathname RETRY_NAME. 
+   If do_retry is FS_RETRY_REAUTH, then the call needs to be repeated,
+   but RESULT should be reauthenticated first.  If do_retry is
+   FS_RETRY_MAGICAL, then RETRY_NAME specifies what to do; the list
+   of possibilities is documented in <hurd/hurd_types.h>.  */
 INTR_ROUTINE (dir_pathtrans, (
 	start_dir: file_t;
 	pathname: string_t;
