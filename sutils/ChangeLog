@@ -1,3 +1,22 @@
+2001-02-27  Roland McGrath  <roland@frob.com>
+
+	Use a new, more flexible RPC interface to the default pager.
+	This allows swapon to do its own interpretation of Linux swap
+	signature pages, and to support partial-device stores such as
+	store_open will return for regular files on disk filesystems.
+	* swapon.c: Include <hurd/default_pager.h>, not <mach/default_pager.h>.
+	(ignore_signature, require_signature, quiet): New variables.
+	(options): Add --silent, --no-signature, --require-signature.
+	(main: parse_opt): Parse them.
+	(check_signature): New function.
+	(swaponoff): Use it unless --no-signature set, to get a remapped store
+	using the pages indicated by the Linux signature page.  Try new
+	default_pager_paging_storage RPC first, using a possibly-remapped
+	device store.  If the default pager does not support that, fall back
+	to the old protocol that only supports whole devices (and wherein the
+	default pager itself interprets a Linux signature page).
+	* Makefile (swapon, swapoff): Depend on default_pagerUser.o.
+
 2001-02-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fstab.c (STORE): Only copy when field exists (is non-zero).

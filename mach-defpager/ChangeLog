@@ -1,3 +1,16 @@
+2000-12-28  Roland McGrath  <roland@frob.com>
+
+	Override the shared code from serverboot for device access with
+	a new, simpler implementation with no filesystem format support.
+	The new code implements the new default_pager_paging_storage RPC
+	to set up paging areas that can be subsets of whole Mach devices,
+	with no Linux signature checking.  The compatibility setup entry
+	point works as before on whole devices.
+	* setup.c, file_io.h: New files.
+	* Makefile (SRCS): Remove def_pager_setup.c, file_io.c, strfcns.c,
+	ext2_file_io.c, ffs_file_io.c, ffs_compat.c, minix_file_io.c,
+	minix_ffs_compat.c; add setup.c to replace them all.
+
 2000-02-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile: Move include ../Makeconf earlier, since it sets srcdir.
