@@ -6,8 +6,9 @@ set -v
 # Make sure the filesystem is writable
 fsysopts / --writable 
 
-# Set up the PFLOCAL server so we can do pipes
-/bin/settrans /servers/socket/local /hurd/pflocal
+# Set up standard passive translators
+/bin/settrans -c /servers/socket/local /hurd/pflocal
+/bin/settrans -c /servers/crash /hurd/crash
 
 # Setup crucial devices
 cd /dev
