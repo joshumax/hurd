@@ -742,6 +742,11 @@ struct ps_fmt
 error_t ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs,
 		       struct ps_fmt **fmt);
 
+/* Given the same arguments as a previous call to ps_fmt_create that returned
+   an error, this function returns a malloced string describing the error.  */
+void ps_fmt_creation_error (char *src, struct ps_fmt_specs *fmt_specs,
+			    char **error);
+
 /* Free FMT, and any resources it consumes.  */
 void ps_fmt_free (struct ps_fmt *fmt);
 
