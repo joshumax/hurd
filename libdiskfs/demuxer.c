@@ -1,5 +1,5 @@
-/* Demultiplexer for ports library
-   Copyright (C) 1994 Free Software Foundation
+/* Demultiplexer for diskfs library
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,20 +18,18 @@
 #include "priv.h"
 
 int
-ports_demuxer (mach_msg_header_t *inp,
-	       mach_msg_header_t *outp)
+diskfs_demuxer (mach_msg_header_t *inp,
+		mach_msg_header_t *outp)
 {
   int diskfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_seqnos_notify_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_exec_server (mach_msg_header_t *, mach_msg_header_t *);
-  int pager_demuxer (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   int diskfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (diskfs_io_server (inp, outp)
-	  || pager_demuxer (inp, outp)
 	  || diskfs_fs_server (inp, outp)
 	  || diskfs_seqnos_notify_server (inp, outp)
 	  || diskfs_fsys_server (inp, outp)
