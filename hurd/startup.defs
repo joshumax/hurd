@@ -55,6 +55,10 @@ routine startup_reboot (
    bootstrap port.  */
 routine startup_procinit (
 	server: startup_t;
+	startup_proc: process_t;
+	fs_proc: process_t;
+	auth_proc: process_t;
+	out auth: auth_t;
 	out host_priv: mach_port_t;
 	out device_master: mach_port_t);
 
@@ -64,3 +68,7 @@ routine startup_procinit (
 routine startup_authinit (
 	server: startup_t;
 	auth: mach_port_make_send_t);
+
+routine startup_authinit2 (
+	server: startup_t;
+	out proc: process_t);
