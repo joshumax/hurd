@@ -23,7 +23,7 @@
 #include <hurd/socket.h>
 #include <hurd/fsys.h>
 #include <stdio.h>
-#include <assert.h>
+#include <error.h>
 #include <fcntl.h>
 
 #include "ifsock_S.h"
@@ -51,34 +51,19 @@ int trivfs_cntl_nporttypes = 1;
 int
 main (int argc, char **argv)
 {
-  mach_port_t bootstrap;
+  error_t err;
   mach_port_t pflocal;
-  mach_port_t ourcntl;
-  mach_port_t realnode;
+  mach_port_t bootstrap;
   char buf[512];
-  struct trivfs_control *cntl;
-  error_t error;
-
-  _libports_initialize ();
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "%s must be started as a translator\n", argv[0]);
-      exit (1);
-    }
+    error(1, 0, "Must be started as a translator");
   
   /* Reply to our parent */
-  ourcntl = trivfs_handle_port (MACH_PORT_NULL, PT_CTL, PT_NODE);
-  error = fsys_startup (bootstrap, ourcntl, MACH_MSG_TYPE_MAKE_SEND,
-			&realnode);
-  
-  /* Install the returned realnode for trivfs's use */
-  cntl = ports_check_port_type (ourcntl, PT_CTL);
-  assert (cntl);
-  ports_change_hardsoft (cntl, 1);
-  cntl->underlying = realnode;
-  ports_done_with_port (cntl);
+  err = trivfs_startup (bootstrap, PT_CTL, PT_NODE, NULL);
+  if (err)
+    error(2, err, "Contacting parent");
 
   /* Try and connect to the pflocal server */
   sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
