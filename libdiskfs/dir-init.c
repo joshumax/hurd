@@ -33,8 +33,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
   static uid_t zero = 0;
   static struct idvec vec = {&zero, 1, 1};
   static struct iouser user = {&vec, &vec, 0};
-  static struct protid lookupcred = {{0, 0, 0, 0},
-				     &user, 0, 0, 0};
+  struct protid lookupcred = {{0, 0, 0, 0}, &user, cred->po, 0, 0};
 
   /* New links */
   if (pdp->dn_stat.st_nlink == diskfs_link_max - 1)
