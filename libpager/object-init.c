@@ -54,9 +54,11 @@ seqnos_memory_object_init (mach_port_t object,
   memory_object_ready (control, 0, MEMORY_OBJECT_COPY_NONE);
 
   p->pager_state = NORMAL;
+
+  _pager_release_seqno (p);
   mutex_unlock (&p->interlock);
 
  out:
-  _pager_done_with_port (p);
+  done_with_port (p);
   return 0;
 }
