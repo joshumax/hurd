@@ -18,11 +18,11 @@
 dir := boot
 makemode := utility
 
-SRCS = mach-crt0.c boot.c tcattr.c sigvec.S syscall.S
+SRCS = mach-crt0.c boot.c tcattr.c sigvec.S syscall.S boot_script.c
 OBJS = mach-crt0.o boot.o notifyServer.o execServer.o ourdeviceServer.o \
        ioServer.o io_replyUser.o device_replyUser.o sigvec.o syscall.o \
-       termServer.o tcattr.o bootstrapServer.o
-HURDLIBS = libthreads
+       termServer.o tcattr.o bootstrapServer.o boot_script.o
+LCLHDRS = boot_script.h
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
 DIST_FILES=frank1.ld frankemul.ld
@@ -40,6 +40,8 @@ all: boot.a
 
 ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
+
+boot: ../libthreads/libthreads.a
 
 boot.1: boot frankemul.ld
 	$(LD) -o boot.1 -T frankemul.ld boot
