@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -43,7 +43,7 @@ reap (pid_t waitfor)
 
       if (pid == -1)
 	{
-	  if (errno != ESRCH && errno != EWOULDBLOCK)
+	  if (errno != ECHILD && errno != EWOULDBLOCK)
 	    perror ("waitpid");
 	  return;
 	}
