@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For bzero */
+#include <unistd.h>		/* For getpid */
 
 #include <sys/types.h>
 #include <sys/fcntl.h>
