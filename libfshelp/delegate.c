@@ -1,8 +1,8 @@
 /* fshelp_delegate_translation
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -51,9 +51,12 @@ fshelp_delegate_translation (char *server_name,
       int argz_len;
       err = argz_create (argv, &argz, &argz_len);
       if (!err)
-	err = fsys_forward (server,
-			    requestor, MACH_MSG_TYPE_COPY_SEND,
-			    argz, argz_len);
+	{
+	  err = fsys_forward (server,
+			      requestor, MACH_MSG_TYPE_COPY_SEND,
+			      argz, argz_len);
+	  free (argz);
+	}
     }
   else
     err = errno;
