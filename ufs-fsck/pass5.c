@@ -69,7 +69,7 @@ pass5 ()
   int c;
   daddr_t d;
   struct cg *cg = alloca (sblock->fs_cgsize);
-  char csumbuf[fragroundup (sblock, sizeof (struct csum) * sblock->fs_ncg)];
+  char csumbuf[fragroundup (sblock, sblock->fs_cssize)];
   struct csum *sbcsums = (struct csum *)csumbuf;
 
   int basesize;			/* size of cg not counting flexibly sized */
@@ -84,7 +84,7 @@ pass5 ()
   writecsum = 0;
 
   readblock (fsbtodb (sblock, sblock->fs_csaddr), csumbuf, 
-	     fragroundup (sblock, sizeof (struct csum) * sblock->fs_ncg));
+	     fragroundup (sblock, sblock->fs_cssize));
 
   /* Construct a CG structure; initialize everything that's the same
      in each cylinder group. */
@@ -375,5 +375,6 @@ pass5 ()
     writeblock (SBLOCK, &sblock, SBSIZE);
   if (writecsum)
     writeblock (fsbtodb (sblock, sblock->fs_csaddr), csumbuf, 
-		fragroundup (sblock, sizeof (struct csum) * sblock->fs_ncg));
+		fragroundup (sblock, sblock->fs_cssize));
+
 }
