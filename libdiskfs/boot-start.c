@@ -393,6 +393,7 @@ diskfs_S_fsys_init (mach_port_t port,
 
   /* Declare that the exec server is our child. */
   proc_child (procserver, diskfs_exec_server_task);
+  proc_mark_exec (execprocess);
 
   /* Don't start this until now so that exec is fully authenticated
      with proc. */
