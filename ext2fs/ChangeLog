@@ -1,4 +1,13 @@
+Sat Jul 20 00:58:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (file_pager_read_page): Set
+	NODE->dn->last_page_partially_writable if we return such a page.
+
 Fri Jul 19 15:02:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (diskfs_grow): Rename OLD_END_BLOCK to END_BLOCK.
+	Correctly determine whether to set DN->last_page_partially_writable
+	after allocating new blocks.
 
 	* pager.c (file_pager_read_page, file_pager_write_page): Pass
 	NODE->dn, not &NODE->dn to RECORD_LAST.
