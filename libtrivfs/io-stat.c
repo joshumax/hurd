@@ -19,8 +19,19 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "priv.h"
+
 error_t
 trivfs_S_io_stat (struct protid *cred,
 		  struct stat *st)
 {
-  io_stat (
+  error_t err;
+  if (!cred)
+    return EOPNOTSUPP;
+
+  err = io_stat (cred->realnode, st);
+  if (!err)
+    trivfs_modify_stat (st);
+  return err;
+}
+
