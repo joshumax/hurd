@@ -29,9 +29,9 @@ diskfs_S_file_lock (struct protid *cred, int flags)
   if (!cred)
     return EOPNOTSUPP;
   mutex_lock (&cred->po->np->lock);
-  err = fshelp_acquire_lock (&cred->po->np->userlock, cred->po->lock_status,
+  err = fshelp_acquire_lock (&cred->po->np->userlock, &cred->po->lock_status,
 			     &cred->po->np->lock, flags);
-  mutex_unlcok (&cred->po->np->lock);
+  mutex_unlock (&cred->po->np->lock);
   return err;
 }
 
