@@ -416,18 +416,10 @@ main (int argc, char **argv, char **envp)
 }
 
 void
-launch_system (void)
+launch_core_servers (void)
 {
   mach_port_t old;
   mach_port_t authproc, fsproc;
-  char shell[] = "/bin/sh";
-  char pipes[] = "/hurd/pipes\0/servers/socket/1";
-  char terminal[] = "/hurd/term\0console\0/dev/console";
-  char devname[] = "/hurd/dev\0/dev";
-  mach_port_t term;
-  task_t termtask;
-  task_t foo;
-  int fd;
 
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0, 
@@ -467,6 +459,44 @@ launch_system (void)
   proc_task2proc (procserver, fstask, &fsproc);
 
 #if 0
+  printf ("Init has completed.\n");
+  fflush (stdout);
+#endif
+
+  /* Tell the proc server our msgport.  Be sure to do this after we are all
+     done making requests of proc.  Once we have done this RPC, proc
+     assumes it can send us requests, so we cannot block on proc again
+     before accepting more RPC requests!  However, we must do this before
+     calling fsys_init, because fsys_init blocks on exec_init, and
+     exec_init to block waiting on our message port.  */
+  proc_setmsgport (procserver, startup, &old);
+  if (old)
+    mach_port_deallocate (mach_task_self (), old);
+
+  /* Give the bootstrap FS its proc and auth ports.  */
+  if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
+			 authserver))
+    perror ("fsys_init");
+}
+
+/* Start the single-user environment.  This can only be done
+   when the core servers have fully started.  We know that 
+   startup_essential_task is the last thing they do before being
+   ready to handle requests, so we start this once all the necessary
+   servers have identified themselves that way. */
+void
+launch_single_user ()
+{
+  char shell[] = "/bin/sh";
+  char pipes[] = "/hurd/pipes\0/servers/socket/1";
+  char terminal[] = "/hurd/term\0console\0/dev/console";
+  char devname[] = "/hurd/dev\0/dev";
+  mach_port_t term;
+  task_t termtask;
+  task_t foo;
+  int fd;
+
+#if 1
   /* Run the device server */
   termtask = run_for_real (devname, devname, sizeof (devname));
 #else  
@@ -533,25 +563,8 @@ launch_system (void)
   foo = run_for_real (pipes, pipes, sizeof (pipes));
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
-
-  printf ("Init has completed.\n");
-  fflush (stdout);
-
-  /* Tell the proc server our msgport.  Be sure to do this after we are all
-     done making requests of proc.  Once we have done this RPC, proc
-     assumes it can send us requests, so we cannot block on proc again
-     before accepting more RPC requests!  However, we must do this before
-     calling fsys_init, because fsys_init blocks on exec_init, and
-     exec_init to block waiting on our message port.  */
-  proc_setmsgport (procserver, startup, &old);
-  if (old)
-    mach_port_deallocate (mach_task_self (), old);
-
-  /* Give the bootstrap FS its proc and auth ports.  */
-  if (errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND,
-			 authserver))
-    perror ("fsys_init");
 }
+
 
 
 kern_return_t
@@ -577,7 +590,7 @@ S_startup_procinit (startup_t server,
 
   /* Save the reply port until we get startup_authinit.  */
   if (authserver)
-    launch_system ();
+    launch_core_servers ();
 
   return MIG_NO_REPLY;
 }
@@ -603,13 +616,15 @@ S_startup_authinit (startup_t server,
   authreplytype = reply_porttype;
 
   if (procserver)
-    launch_system ();
+    launch_core_servers ();
 
   return MIG_NO_REPLY;
 }
     
 kern_return_t
 S_startup_essential_task (mach_port_t server,
+			  mach_port_t reply,
+			  mach_msg_type_name_t replytype,
 			  task_t task,
 			  mach_port_t excpt,
 			  char *name,
@@ -617,6 +632,7 @@ S_startup_essential_task (mach_port_t server,
 {
   struct ess_task *et;
   mach_port_t prev;
+  static int authinit, procinit, execinit, initdone;
 
   if (credential != host_priv)
     return EPERM;
@@ -648,6 +664,28 @@ S_startup_essential_task (mach_port_t server,
 #endif
 
   mach_port_deallocate (mach_task_self (), credential);
+
+  if (!initdone)
+    {
+      if (!strcmp (name, "auth"))
+	authinit = 1;
+      else if (!strcmp (name, "exec"))
+	execinit = 1;
+      else if (!strcmp (name, "proc"))
+	procinit = 1;
+      
+      if (authinit && execinit && procinit)
+	{
+	  /* Reply to this RPC, after that everything
+	     is ready for real startup to begin. */
+	  startup_essential_task_reply (reply, replytype, 0);
+	  
+	  launch_single_user ();
+	  initdone = 1;
+	  return MIG_NO_REPLY;
+	}
+    }
+
   return 0;
 }
 
