@@ -237,14 +237,14 @@ main(argc, argv)
 	 * root device was specificed, ask for the root device.
 	 */
 
-	if (root_name [0] == '\0' || index(flag_string, 'a')) {
+	if (!root_name || root_name [0] == '\0' || index(flag_string, 'a')) {
 	    static char		new_root[16];
-
+	    
 		printf("root device? [%s] ", root_name);
 		safe_gets(new_root, sizeof(new_root));
 
 		if (new_root[0] != '\0')
-			strcpy (root_name, new_root);
+		  root_name = new_root;
 	}
 
 	(void) strbuild(boot_script_name,

@@ -2,7 +2,8 @@
 
 	* bootstrap.c: (DEFAULT_ROOT): Remove macro.
 	(main): If no root device was specified, then prompt as if the
-	user had specified -a.
+	user had specified -a.  Don't use strcpy to move NEW_ROOT into
+	ROOT_NAME; that's unsafe.  
 
 1999-10-06  Roland McGrath  <roland@baalperazim.frob.com>
 
