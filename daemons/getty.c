@@ -1,5 +1,5 @@
 /* Stubby version of getty for Hurd
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -28,6 +28,7 @@
 #include <error.h>
 #include <sys/utsname.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* XXX */
 extern int login_tty (int);
@@ -62,7 +63,7 @@ main (int argc, char **argv)
   char *arg;
 
   openlog ("getty", LOG_ODELAY|LOG_CONS|LOG_PID, LOG_AUTH);
-  
+
   /* Nothing to do .... */
   if (argc != 3)
     {
@@ -76,12 +77,12 @@ main (int argc, char **argv)
 
   tt = getttynam (argv[2]);
   asprintf (&ttyname, "%s/%s", _PATH_DEV, argv[2]);
-  
+
   chown (ttyname, 0, 0);
   chmod (ttyname, 0600);
   revoke (ttyname);
   sleep (2);			/* leave DTR down for a bit */
-  
+
   do
     {
       tty = open (ttyname, O_RDWR);
@@ -97,7 +98,7 @@ main (int argc, char **argv)
   print_banner (tty, ttyname);
 
   login_tty (tty);
-  
+
   asprintf (&arg, "TERM=%s", tt ? tt->ty_type : "unknown");
 
   if (tt && strcmp (tt->ty_type, "dialup") == 0)
