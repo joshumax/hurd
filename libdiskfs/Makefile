@@ -80,5 +80,5 @@ ourfs_notify_U.h ourfs_notifyUser.c: ourfs_notify.defs $(includedir)/hurd/hurd_t
 
 ourfs_notify.defs: $(includedir)/hurd/fs_notify.defs
 	rm -f $@
-	ln $< $@
+	ln -s $< $@
 
