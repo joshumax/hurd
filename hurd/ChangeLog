@@ -1,5 +1,8 @@
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* process_request.defs: Delete proc_sethostid, proc_gethostid,
+	proc_sethostname, and proc_gethostname.
+
 	* password.defs: Fix subsystem decl and random mig syntax errors.
 
 Wed Jul 15 10:37:44 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>

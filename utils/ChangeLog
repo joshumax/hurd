@@ -1,3 +1,10 @@
+1998-07-24  Jose M. Moya  <josem@gnu.org>
+
+	* msgport.c: New file.
+	* Makefile (targets): Add `msgport'.
+	(SRCS): Add `msgport.c'.
+	(msgport): Add dependencies on parse.o and pids.o.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ps.c (main): Fix return type to int, and use return.
