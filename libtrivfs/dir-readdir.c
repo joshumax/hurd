@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,99, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,7 +27,7 @@ trivfs_S_dir_readdir (struct trivfs_protid *cred,
 		      int entry,
 		      int nentries,
 		      vm_size_t bufsiz,
-		      vm_size_t *amount)
+		      int *amount)
 {
   return cred ? ENOTDIR : EOPNOTSUPP;
 }
