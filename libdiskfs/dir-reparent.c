@@ -25,5 +25,30 @@ error_t
 diskfs_S_dir_reparent (struct protid *cred, mach_port_t parent,
 		       mach_port_t *new_dir, mach_msg_type_name_t *new_dir_type)
 {
-  return EOPNOTSUPP;
+  error_t err;
+  struct node *node;
+  struct protid *new_cred;
+
+  if (! cred)
+    return EOPNOTSUPP;
+  
+  node = cred->po->np;
+  if (! S_ISDIR (node->dn_stat.st_mode))
+    return ENOTDIR;
+
+  mutex_lock (&node->lock);
+
+  err = diskfs_create_protid (diskfs_make_peropen (node, cred->po->openstat,
+						   parent, 0),
+			      cred->user, &new_cred);
+  if (! err)
+    {
+      *new_dir = ports_get_right (new_cred);
+      *new_dir_type = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (new_cred);
+    }
+
+  mutex_unlock (&node->lock);
+
+  return err;
 }
