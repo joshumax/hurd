@@ -98,8 +98,7 @@ static const struct argp_option options[] =
   {0, 0}
 };
 
-char *args_doc = "[PID...]";
-char *doc =
+static const char doc[] =
 "Show information about processes PID... (default all `interesting' processes)"
 "\vThe USER, LID, PID, PGRP, and SID arguments may also be comma separated"
 " lists.  The System V options -u and -g may be accessed with -O and -G."; 
@@ -335,7 +334,7 @@ main(int argc, char *argv[])
     { { &pids_argp, 0,
 	"Process selection (before filtering; default is all processes):", 3},
       {0} };
-  struct argp argp = { options, parse_opt, args_doc, doc, argp_kids };
+  struct argp argp = { options, parse_opt, 0, doc, argp_kids };
 
   err = ps_context_create (getproc (), &context);
   if (err)
@@ -343,16 +342,6 @@ main(int argc, char *argv[])
 
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
-
-  if (only_uids->num == 0 && (filter_mask & FILTER_OWNER))
-    /* Restrict the output to only our own processes.  */
-    {
-      int uid = getuid ();
-      if (uid >= 0)
-	add_uid (uid, 0);
-      else
-	filter_mask &= ~FILTER_OWNER; /* Must be an anonymous process.  */
-    }
 
   /* Select an explicit format string if FMT_STRING is a format name.  */
   {
@@ -410,6 +399,16 @@ main(int argc, char *argv[])
 
   if (no_msg_port)
     proc_stat_list_set_flags(procset, PSTAT_NO_MSGPORT);
+
+  if (only_uids->num == 0 && (filter_mask & FILTER_OWNER))
+    /* Restrict the output to only our own processes.  */
+    {
+      int uid = getuid ();
+      if (uid >= 0)
+	add_uid (uid, 0);
+      else
+	filter_mask &= ~FILTER_OWNER; /* Must be an anonymous process.  */
+    }
 
   /* Filter out any processes that we don't want to show.  */
   if (only_uids->num || not_uids->num)
