@@ -1,6 +1,6 @@
 /* Routines for dealing with '\0' separated environment vectors
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -134,7 +134,7 @@ envz_merge (char **envz, unsigned *envz_len, char *envz2, unsigned envz2_len,
   while (envz2_len && ! err)
     {
       char *old = envz_entry (*envz, *envz_len, envz2);
-      char new_len = strlen (envz2) + 1;
+      size_t new_len = strlen (envz2) + 1;
 
       if (! old)
 	err = argz_append (envz, envz_len, envz2, new_len);
