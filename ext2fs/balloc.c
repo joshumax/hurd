@@ -59,8 +59,7 @@ ext2_free_blocks (block_t block, unsigned long count)
   if (block < sblock->s_first_data_block ||
       (block + count) > sblock->s_blocks_count)
     {
-      ext2_error ("ext2_free_blocks",
-		  "Freeing blocks not in datazone - "
+      ext2_error ("freeing blocks not in datazone - "
 		  "block = %lu, count = %lu", block, count);
       spin_unlock (&global_lock);
       return;
@@ -72,28 +71,24 @@ ext2_free_blocks (block_t block, unsigned long count)
     sblock->s_blocks_per_group;
   bit = (block - sblock->s_first_data_block) % sblock->s_blocks_per_group;
   if (bit + count > sblock->s_blocks_per_group)
-    ext2_panic ("ext2_free_blocks",
-		"Freeing blocks across group boundary - "
-		"Block = %lu, count = %lu",
+    ext2_panic ("freeing blocks across group boundary - "
+		"block = %lu, count = %lu",
 		block, count);
   gdp = group_desc (block_group);
   bh = bptr (gdp->bg_block_bitmap);
 
-  if (check_strict &&
-      (in_range (gdp->bg_block_bitmap, block, count) ||
-       in_range (gdp->bg_inode_bitmap, block, count) ||
-       in_range (block, gdp->bg_inode_table, itb_per_group) ||
-       in_range (block + count - 1, gdp->bg_inode_table, itb_per_group)))
-    ext2_panic ("ext2_free_blocks",
-		"Freeing blocks in system zones - "
-		"Block = %lu, count = %lu",
+  if (in_range (gdp->bg_block_bitmap, block, count) ||
+      in_range (gdp->bg_inode_bitmap, block, count) ||
+      in_range (block, gdp->bg_inode_table, itb_per_group) ||
+      in_range (block + count - 1, gdp->bg_inode_table, itb_per_group))
+    ext2_panic ("freeing blocks in system zones - "
+		"block = %lu, count = %lu",
 		block, count);
 
   for (i = 0; i < count; i++)
     {
       if (!clear_bit (bit + i, bh))
-	ext2_warning ("ext2_free_blocks",
-		      "bit already cleared for block %lu", block + i);
+	ext2_warning ("bit already cleared for block %lu", block + i);
       else
 	{
 	  gdp->bg_free_blocks_count++;
@@ -197,7 +192,7 @@ repeat:
 	    }
 	}
 
-      ext2_debug ("Bit not found near goal");
+      ext2_debug ("bit not found near goal");
 
       /*
        * There has been no free block found in the near vicinity
@@ -226,7 +221,7 @@ repeat:
 	}
     }
 
-  ext2_debug ("Bit not found in block group %d", i);
+  ext2_debug ("bit not found in block group %d", i);
 
   /*
      * Now search the rest of the groups.  We assume that 
@@ -256,8 +251,7 @@ repeat:
 			     sblock->s_blocks_per_group);
   if (j >= sblock->s_blocks_per_group)
     {
-      ext2_error ("ext2_new_block",
-		  "Free blocks count corrupted for block group %d", i);
+      ext2_error ("free blocks count corrupted for block group %d", i);
       spin_unlock (&global_lock);
       return 0;
     }
@@ -276,16 +270,14 @@ got_block:
 
   tmp = j + i * sblock->s_blocks_per_group + sblock->s_first_data_block;
 
-  if (check_strict &&
-      (tmp == gdp->bg_block_bitmap ||
-       tmp == gdp->bg_inode_bitmap ||
-       in_range (tmp, gdp->bg_inode_table, itb_per_group)))
-    ext2_panic ("ext2_new_block",
-		"Allocating block in system zone; block = %u", tmp);
+  if (tmp == gdp->bg_block_bitmap ||
+      tmp == gdp->bg_inode_bitmap ||
+      in_range (tmp, gdp->bg_inode_table, itb_per_group))
+    ext2_panic ("allocating block in system zone; block = %u", tmp);
 
   if (set_bit (j, bh))
     {
-      ext2_warning ("ext2_new_block", "bit already set for block %d", j);
+      ext2_warning ("bit already set for block %d", j);
       goto repeat;
     }
 
@@ -326,7 +318,7 @@ got_block:
 	}
       gdp->bg_free_blocks_count -= *prealloc_count;
       sblock->s_free_blocks_count -= *prealloc_count;
-      ext2_debug ("Preallocated a further %lu bits", *prealloc_count);
+      ext2_debug ("preallocated a further %lu bits", *prealloc_count);
     }
 #endif
 
@@ -336,9 +328,7 @@ got_block:
 
   if (j >= sblock->s_blocks_count)
     {
-      ext2_error ("ext2_new_block",
-		  "block >= blocks count - "
-		  "block_group = %d, block=%d", i, j);
+      ext2_error ("block >= blocks count - block_group = %d, block=%d", i, j);
       j = 0;
       goto sync_out;
     }
@@ -421,41 +411,32 @@ ext2_check_blocks_bitmap ()
       bh = bptr (gdp->bg_block_bitmap);
 
       if (!test_bit (0, bh))
-	ext2_error ("ext2_check_blocks_bitmap",
-		    "Superblock in group %d is marked free", i);
+	ext2_error ("superblock in group %d is marked free", i);
 
       for (j = 0; j < desc_blocks; j++)
 	if (!test_bit (j + 1, bh))
-	  ext2_error ("ext2_check_blocks_bitmap",
-		      "Descriptor block #%d in group "
-		      "%d is marked free", j, i);
+	  ext2_error ("descriptor block #%d in group %d is marked free", j, i);
 
       if (!block_in_use (gdp->bg_block_bitmap, bh))
-	ext2_error ("ext2_check_blocks_bitmap",
-		    "Block bitmap for group %d is marked free", i);
+	ext2_error ("block bitmap for group %d is marked free", i);
 
       if (!block_in_use (gdp->bg_inode_bitmap, bh))
-	ext2_error ("ext2_check_blocks_bitmap",
-		    "Inode bitmap for group %d is marked free", i);
+	ext2_error ("inode bitmap for group %d is marked free", i);
 
       for (j = 0; j < itb_per_group; j++)
 	if (!block_in_use (gdp->bg_inode_table + j, bh))
-	  ext2_error ("ext2_check_blocks_bitmap",
-		      "Block #%d of the inode table in "
-		      "group %d is marked free", j, i);
+	  ext2_error ("block #%d of the inode table in group %d is marked free", j, i);
 
       x = count_free (bh, block_size);
       if (gdp->bg_free_blocks_count != x)
-	ext2_error ("ext2_check_blocks_bitmap",
-		    "Wrong free blocks count for group %d, "
-		    "stored = %d, counted = %lu", i,
-		    gdp->bg_free_blocks_count, x);
+	ext2_error ("wrong free blocks count for group %d,"
+		    " stored = %d, counted = %lu",
+		    i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
     }
   if (sblock->s_free_blocks_count != bitmap_count)
-    ext2_error ("ext2_check_blocks_bitmap",
-		"Wrong free blocks count in super block, "
-		"stored = %lu, counted = %lu",
+    ext2_error ("wrong free blocks count in super block,"
+		" stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_blocks_count, bitmap_count);
   spin_unlock (&global_lock);
 }
