@@ -25,34 +25,35 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/fs.h>
 #include <hurd/io.h>
 #include <hurd.h>
+#include <fcntl.h>
 
 void
 main ()
 {
-  file_t root, filetoprint;
+  file_t filetowrite;
   retry_type retry;
-  char buf[1024], *bp;
-  int buflen;
   char pathbuf[1024];
   extern file_t *_hurd_init_dtable;
-
+  char string[] = "Did this get into the file?\n";
+  int written;
+  int err;
+  mach_port_t root;
+  
+  root = _hurd_ports[INIT_PORT_CRDIR].port;
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
-  root = _hurd_ports[INIT_PORT_CRDIR].port;
-  dir_pathtrans (root, "README", FS_LOOKUP_READ, 0, &retry, pathbuf,
-		 &filetoprint);
-  
-  do
-    {
-      bp = buf;
-      buflen = 10;
-      io_read (filetoprint, &bp, &buflen, -1, 10);
-      bp[buflen] = '\0';
-      printf ("%s", bp);
-      if (bp != buf)
-	vm_deallocate (mach_task_self (), (vm_address_t) bp, buflen);
-    }
-  while (buflen);
+  err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666, &retry,
+		       pathbuf, &filetowrite);
+
+  if (err)
+    printf ("Error on pathtrans: %d\n", err);
+  else if (err = io_write (filetowrite, string, strlen (string), -1, &written))
+    printf ("Error on write: %d\n", err);
+  else if (written != strlen (string))
+    printf ("Short write: %d\n");
+  else if (err = file_syncfs (filetowrite, 1, 0))
+    printf ("Error on sync: %d\n", err);
+
   printf ("All done.\n");
   malloc (0);
 }
