@@ -16,10 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
+#include "io_S.h"
 
 kern_return_t
-trivfs_S_file_pathconf (struct trivfs_protid *cred, int name, int *val)
+trivfs_S_io_pathconf (struct trivfs_protid *cred, int name, int *val)
 {
   if (cred)
     {
