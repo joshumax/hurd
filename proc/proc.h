@@ -70,9 +70,7 @@ struct proc
 	{
 	  mach_port_t reply_port;
 	  mach_msg_type_name_t reply_port_type;
-	  struct proc *waiting;
-	  struct proc **procs;
-	  int nprocs;
+	  struct proc *msgp;
 	} getmsgport_c;
     } p_continuation;
   
