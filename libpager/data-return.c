@@ -17,14 +17,14 @@
 
 /* Called by the kernel to write data to the backing store */
 kern_return_t
-seqnos_memory_object_data_return (mach_port_t object, 
-				  mach_port_seqno_t seqno,
-				  mach_port_t control,
-				  vm_offset_t offset,
-				  pointer_t data,
-				  vm_size_t length,
-				  int dirty,
-				  int kcopy)
+_pager_seqnos_memory_object_data_return (mach_port_t object, 
+					 mach_port_seqno_t seqno,
+					 mach_port_t control,
+					 vm_offset_t offset,
+					 pointer_t data,
+					 vm_size_t length,
+					 int dirty,
+					 int kcopy)
 {
   struct pager *p;
   char *pm_entry;
