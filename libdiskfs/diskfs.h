@@ -532,17 +532,39 @@ diskfs_nref (struct node *np)
 extern inline void
 diskfs_nput (struct node *np)
 {
+  int tried_drop_softrefs = 0;
+  
+ loop:
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
   if (np->references + np->light_references == 0)
     diskfs_drop_node (np);
-  else if (np->references == 0)
+  else if (np->references == 0 && !tried_drop_softrefs)
     {
       spin_unlock (&diskfs_node_refcnt_lock);
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink)
-	diskfs_try_dropping_softrefs (np);
+	{
+	  /* There are no links.  If there are soft references that
+	     can be dropped, we can't let them postpone deallocation.
+	     So attempt to drop them.  But that's a user-supplied
+	     routine, which might result in further recursive calls to
+	     the ref-counting system.  So we have to reacquire our
+	     reference around the call to forestall disaster. */
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  np->references++;
+	  spin_unlock (&diskfs_node_refcnt_lock);
+
+	  diskfs_try_dropping_softrefs (np);
+
+	  /* But there's no value in looping forever in this
+	     routine; only try to drop soft refs once. */
+	  tried_drop_softrefs = 1;
+
+	  /* Now we can drop the reference back... */
+	  goto loop;
+	}
     }
   else
     spin_unlock (&diskfs_node_refcnt_lock);
@@ -557,6 +579,9 @@ diskfs_nput (struct node *np)
 extern inline void
 diskfs_nrele (struct node *np)
 {
+  int tried_drop_softrefs = 0;
+  
+ loop:
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
@@ -570,8 +595,20 @@ diskfs_nrele (struct node *np)
       mutex_lock (&np->lock);
       spin_unlock (&diskfs_node_refcnt_lock);
       diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink)
-	diskfs_try_dropping_softrefs (np);
+      if (!np->dn_stat.st_nlink && !tried_drop_softrefs)
+	{
+	  /* Same issue here as in nput; see that for explanation */
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  np->references++;
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  
+	  diskfs_try_dropping_softrefs (np);
+	  tried_drop_softrefs = 1;
+
+	  /* Now we can drop the reference back... */
+	  mutex_unlock (&np->lock);
+	  goto loop;
+	}
       mutex_unlock (&np->lock);
     }
   else
