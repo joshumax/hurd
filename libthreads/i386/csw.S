@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.6  1996/08/29 17:44:42  thomas
+ * *** empty log message ***
+ *
  * Revision 1.5  1995/10/04 20:55:28  roland
  * (JUMPTARGET): New macro, versions for [PIC] and not.
  * Use it in place of EXT.
@@ -72,12 +75,21 @@
 #define	JUMPTARGET(name)	EXT(name)
 #endif
 
+#ifdef PROF
+#define CALL_MCOUNT \
+  pushl %ebp; movl %esp, %ebp; call JUMPTARGET(mcount); popl %ebp;
+#else
+#define CALL_MCOUNT
+#endif
+	
+
 /*
  * Suspend the current thread and resume the next one.
  *
  * void cproc_switch(int *cur, int *next, int *lock)
  */
 ENTRY(cproc_switch)
+	CALL_MCOUNT
 	pushl	%ebp		/* save ebp */
 	movl	%esp,%ebp	/* set frame pointer to get arguments */
 	pushl	%ebx		/* save ebx */
@@ -109,6 +121,7 @@ ENTRY(cproc_switch)
  *			 int *lock)
  */
 ENTRY(cproc_start_wait)
+	CALL_MCOUNT
 	pushl	%ebp		/* save ebp */
 	movl	%esp,%ebp	/* set frame pointer */
 	pushl	%ebx		/* save ebx */
@@ -134,6 +147,7 @@ ENTRY(cproc_start_wait)
  * void cproc_prepare(cproc_t child, int *context, int stack)
  */
 ENTRY(cproc_prepare)
+	CALL_MCOUNT
 	pushl	%ebp		/* save ebp */
 	movl	%esp,%ebp	/* set frame pointer */
 	movl	B_ARG2,%edx	/* get child`s stack */
