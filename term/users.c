@@ -2000,44 +2000,37 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 		    int *type,
 		    int *idtag)
 {
-  int available;
-
   if (!cred)
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
     return pty_io_select (cred, reply, type, idtag);
 
-  /* We don't deal with SELECT_URG here.  */
-  *type &= (SELECT_READ | SELECT_WRITE);
-
-  available = 0;
-  if (*type == 0)
-    return 0;
+  if ((cred->po->openmodes & O_READ) == 0)
+    *type &= ~SELECT_READ;
+  if ((cred->po->openmodes & O_WRITE) == 0)
+    *type &= ~SELECT_WRITE;
 
   mutex_lock (&global_lock);
 
   while (1)
     {
+      int available = 0;
       if ((*type & SELECT_READ) && qsize (inputq))
 	available |= SELECT_READ;
       if ((*type & SELECT_WRITE) && qavail (outputq))
 	available |= SELECT_WRITE;
 
-      if (available)
+      if (available == 0)
 	{
-	  *type = available;
-	  mutex_unlock (&global_lock);
-	  return 0;
+	  ports_interrupt_self_on_port_death (cred, reply);
+	  if (hurd_condition_wait (&select_alert, &global_lock) == 0)
+	    continue;
 	}
 
-      ports_interrupt_self_on_port_death (cred, reply);
-      if (hurd_condition_wait (&select_alert, &global_lock))
-	{
-	  *type = 0;
-	  mutex_unlock (&global_lock);
-	  return EINTR;
-	}
+      *type = available;
+      mutex_unlock (&global_lock);
+      return available ? 0 EINTR;
     }
 }
 
