@@ -22,3 +22,27 @@
 
 struct device *dev_base;
 struct device loopback_dev;
+
+device_t master_device;
+
+void
+init_devices (void)
+{
+  mach_port_t priv_host;
+  error_t err;
+  
+  err = get_privileged_ports (&priv_host, &master_device);
+  if (err)
+    {
+      perror ("Cannot fetch master device port");
+      exit (1);
+    }
+  
+  mach_port_deallocate (mach_task_self (), priv_host);
+  
+  dev_base = 0;
+}
+
+
+
+  
