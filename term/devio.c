@@ -145,7 +145,7 @@ real_speed_to_bogus_speed (int rspeed, int *bspeed)
     case 19200:
       *bspeed = EXTA;
       break;
-    case 28400:
+    case 38400:
       *bspeed = EXTB;
       break;
     default:
