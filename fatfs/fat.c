@@ -151,7 +151,7 @@ fat_read_sblock (void)
     error (1, 0, "Number of total sectors is zero");
 
   if (bytes_per_sector & (store->block_size - 1))
-    error (1, 0, "Block size of filesystem is not
+    error (1, 0, "Block size of filesystem is not"
           " a multiple of the block size of the store");
 
   if (read_word (sblock->reserved_sectors) == 0)
