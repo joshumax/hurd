@@ -1,3 +1,10 @@
+Fri Aug 30 16:54:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vminfo.c: New file.
+	* Makefile (targets): Add vminfo.
+	(SRCS): Add vminfo.c.
+	(INSTALL-vminfo-ops): New variable.
+
 Mon Aug 19 15:19:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* devprobe.c, fsysopts.c, hurdids.c, login.c, portinfo.c, ps.c,
