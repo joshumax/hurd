@@ -1,3 +1,7 @@
+1999-03-07  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* primes.c: Fix last change.
+
 Fri Mar  5 17:13:04 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* primes.c (_ihash_nextprime): Use a dynamically-sized array for
