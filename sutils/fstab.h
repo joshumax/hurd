@@ -1,6 +1,6 @@
 /* Fstab filesystem frobbing
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -70,7 +70,7 @@ error_t fstab_create (struct fstypes *types, struct fstab **fstab);
 void fstab_free (struct fstab *fstab);
 
 /* Return a new fstypes structure in TYPES.  SEARCH_FMTS is copied.  */
-error_t fstypes_create (char *search_fmts, size_t search_fmts_len,
+error_t fstypes_create (const char *search_fmts, size_t search_fmts_len,
 			struct fstypes **types);
 
 /* Return an fstype entry in TYPES called NAME, in FSTYPE.  If there is no
@@ -78,12 +78,13 @@ error_t fstypes_create (char *search_fmts, size_t search_fmts_len,
    using the alternatives in the FSCK_SEARCH_FMTS field in TYPES.  If
    one is found, it is added to TYPES, otherwise an new entry is created
    with a NULL PROGRAM field.  */
-error_t fstypes_get (struct fstypes *types, char *name, struct fstype **fstype);
+error_t fstypes_get (struct fstypes *types,
+		     const char *name, struct fstype **fstype);
 
 /* Copy MNTENT into FS, copying component strings as well.  */
-error_t fs_set_mntent (struct fs *fs, struct mntent *mntent);
+error_t fs_set_mntent (struct fs *fs, const struct mntent *mntent);
 
-/* Returns an fstype for FS in TYPE, trying to fillin FS's type field if
+/* Returns an fstype for FS in TYPE, trying to fill in FS's type field if
    necessary.  */
 error_t fs_type (struct fs *fs, struct fstype **type);
 
@@ -115,26 +116,27 @@ void fs_free (struct fs *fs);
 
 /* Returns the FS entry in FSTAB with the device field NAME (there can only
    be one such entry).  */
-struct fs *fstab_find_device (struct fstab *fstab, char *name);
+struct fs *fstab_find_device (const struct fstab *fstab, const char *name);
 
 /* Returns the FS entry in FSTAB with the mount point NAME (there can only
    be one such entry).  */
-struct fs *fstab_find_mount (struct fstab *fstab, char *name);
+struct fs *fstab_find_mount (const struct fstab *fstab, const char *name);
 
 /* Returns the FS entry in FSTAB with the device or mount point NAME (there
    can only be one such entry).  */
-struct fs *fstab_find (struct fstab *fstab, char *name);
+struct fs *fstab_find (const struct fstab *fstab, const char *name);
 
 /* Add an entry for MNTENT to FSTAB, removing any existing entries that
    conflict (in either the device or mount point).  If RESULT is non-zero, the
-   new entry is returne in it.  */
-error_t fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
+   new entry is returned in it.  */
+error_t fstab_add_mntent (struct fstab *fstab, const struct mntent *mntent,
 			  struct fs **result);
 
 /* Copy the entry FS (which should belong to another fstab than DST) into
    DST.  If DST & SRC have different TYPES fields, EINVAL is returned.  If
    COPY is non-zero, the copy is returned in it.  */
-error_t fstab_add_fs (struct fstab *dst, struct fs *fs, struct fs **copy);
+error_t fstab_add_fs (struct fstab *dst, const struct fs *fs,
+		      struct fs **copy);
 
 /* Merge SRC into DST, as if by calling fstab_add_fs on DST with every
    entry in SRC, and then deallocating SRC.  If DST & SRC have different
@@ -143,10 +145,10 @@ error_t fstab_merge (struct fstab *dst, struct fstab *src);
 
 /* Reads fstab-format entries into FSTAB from the file NAME.  Any entries
    duplicating one already in FS_LIST supersede the existing entry.  */
-error_t fstab_read (struct fstab *fstab, char *name);
+error_t fstab_read (struct fstab *fstab, const char *name);
 
 /* Return the next pass number that applies to any filesystem in FSTAB that
    is greater than PASS, or -1 if there isn't any.  */
-int fstab_next_pass (struct fstab *fstab, int pass);
+int fstab_next_pass (const struct fstab *fstab, int pass);
 
 #endif /* __FSTAB_H__ */
