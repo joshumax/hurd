@@ -39,18 +39,21 @@ diskfs_S_dir_link (struct protid *filecred,
   if (!dircred)
     return EXDEV;
   
-  dnp = dircred->po->np;
-  mutex_lock (&dnp->lock);
-  /* This lock is safe since a non-directory is inherently a leaf */
-  /* XXX But we don't know yet that it is a non-directory */
   mutex_lock (&np->lock);
-
   if (S_ISDIR (np->dn_stat.st_mode))
     {
-      error = EISDIR;
-      goto out;
+      mutex_unlock (&np->lock);
+      return EISDIR;
     }
-  else if (np->dn_stat.st_nlink == diskfs_link_max - 1)
+  mutex_unlock (&np->lock);
+  
+  dnp = dircred->po->np;
+  mutex_lock (&dnp->lock);
+
+  /* This lock is safe since a non-directory is inherently a leaf */
+  mutex_lock (&np->lock);
+
+  if (np->dn_stat.st_nlink == diskfs_link_max - 1)
     {
       error = EMLINK;
       goto out;
