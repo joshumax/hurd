@@ -92,3 +92,4 @@ seqnos_memory_object_terminate (mach_port_t object,
   done_with_port (p);
   return 0;
 }
+
