@@ -31,8 +31,59 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.1 1994/08/23 19:44:53 mib Exp $
+ *	$Id: fsck.h,v 1.2 1994/08/23 19:53:52 mib Exp $
  */
+
+/* Begin GNU Hurd */
+
+/* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD 
+   4.4 version that fsck expects.  So we provide here the BSD version. */
+#undef DIRSIZ
+#if (BYTE_ORDER == LITTLE_ENDIAN)
+#define DIRSIZ(oldfmt, dp) \
+    ((oldfmt) ? \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_type+1 + 3) &~ 3)) : \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3)))
+#else
+#define DIRSIZ(oldfmt, dp) \
+    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((dp)->d_namlen+1 + 3) &~ 3))
+#endif
+
+/* GNU ufs has no need of struct dirtemplate; so provide the 
+   BSD version here. */
+/*
+ * Template for manipulating directories.
+ * Should use struct direct's, but the name field
+ * is MAXNAMLEN - 1, and this just won't do.
+ */
+struct dirtemplate {
+	u_long	dot_ino;
+	short	dot_reclen;
+	u_char	dot_type;
+	u_char	dot_namlen;
+	char	dot_name[4];		/* must be multiple of 4 */
+	u_long	dotdot_ino;
+	short	dotdot_reclen;
+	u_char	dotdot_type;
+	u_char	dotdot_namlen;
+	char	dotdot_name[4];		/* ditto */
+};
+/*
+ * This is the old format of directories, sanz type element.
+ */
+struct odirtemplate {
+	u_long	dot_ino;
+	short	dot_reclen;
+	u_short	dot_namlen;
+	char	dot_name[4];		/* must be multiple of 4 */
+	u_long	dotdot_ino;
+	short	dotdot_reclen;
+	u_short	dotdot_namlen;
+	char	dotdot_name[4];		/* ditto */
+};
+
+/* End GNU Hurd additions */	
+
 
 #define	MAXDUP		10	/* limit on dup blks (per inode) */
 #define	MAXBAD		10	/* limit on bad blks (per inode) */
