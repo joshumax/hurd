@@ -192,8 +192,16 @@ void ports_destroy_right (void *port);
 
 /* Return the receive right currently associated with PORT.  The effects
    on PORT are the same as in ports_destroy_right, except that the receive
-   right itself is not affected. */
+   right itself is not affected.  Note that in multi-threaded servers, 
+   messages might already have been dequeued for this port before it gets
+   removed from the portset; such messages will get EOPNOTSUPP errors.  */
 mach_port_t ports_claim_right (void *port);
+
+/* Transfer the receive right from FROMPT to TOPT.  FROMPT ends up
+   with a destroyed right (as if ports_destroy_right were called) and
+   TOPT's old right is destroyed (as if ports_reallocate_from_external
+   were called. */
+error_t ports_transfer_right (void *topt, void *frompt);
 
 /* Return the name of the receive right associated with PORT.  The user
    is responsible for creating an ordinary  send right from this name.  */
