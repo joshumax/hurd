@@ -115,6 +115,7 @@ fetch_procinfo (process_t server, pid_t pid,
       if (! err)
 	/* Update *HAVE to reflect what we've successfully fetched.  */
 	{
+	  *have |= PSTAT_PROC_INFO;
 	  if (pi_flags & PI_FETCH_TASKINFO)
 	    *have |= PSTAT_TASK_BASIC;
 	  if (pi_flags & PI_FETCH_THREADS)
