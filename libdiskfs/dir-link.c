@@ -53,8 +53,7 @@ diskfs_S_dir_link (struct protid *dircred,
   mutex_lock (&dnp->lock);
 
   /* Lookup new location */
-  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred,
-			 dircred->po->depth, 0);
+  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
   if (!error && excl)
     {
       error = EEXIST;
