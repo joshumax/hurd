@@ -1,3 +1,8 @@
+Fri Jul 18 16:37:22 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* isofs: New directory.
+	* Makefile (prog-subdirs): Add isofs.
+
 Thu Jul 10 14:10:32 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makeconf ($(makemode) == library): If $(no_prof) is `t', then
