@@ -1,3 +1,8 @@
+2002-03-23  Roland McGrath  <roland@frob.com>
+
+	* main.c (default_pager_bootstrap_port): Declaration removed.
+	(main): Don't use it.
+
 2001-06-05  Mark Kettenis  <kettenis@gnu.org>
 
 	* setup.c (page_read_file_direct): Fix logic to find the run that
@@ -6,7 +11,7 @@
 	(page_write_file_direct): Fix logic to find the run that contains
 	the data to be written.  Pass SIZE_WRITTEN to device_write call
 	instead of &WROTE when writing a whole page.  Correctly calculate
-	SEGSIZE.  
+	SEGSIZE.
 
 2001-02-28  Roland McGrath  <roland@frob.com>
 
