@@ -27,6 +27,7 @@ REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
 	libfshelp libdiskfs libthreads libports
 #HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
+LDFLAGS = -Wl,--no-keep-memory
 target = ufs
 
 include ../Makeconf
