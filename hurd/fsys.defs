@@ -43,15 +43,21 @@ routine fsys_goaway (
 	flags: int);
 
 /* Return a file to the root of the filesystem.
-   FLAGS are as for dir_pathtrans. */
-routine fsys_getroot (
+   FLAGS are as for dir_pathtrans (but O_CREAT and O_EXCL are not
+   meaningful).  DO_RETRY, RETRY_NAME, and RESULT are as
+   for dir_pathtrans.  The port should be authenticated with GEN_UIDS
+   and GEN_GIDS (except, of course, for FS_RETRY_REAUTH and 
+   FS_RETRY_MAGICAL). */ 
+routine fsys_getroot(
 	fsys: fsys_t;
 #ifdef	FSYS_GETROOT_UREPLY
 	ureplyport ureply: mig_reply_port_t;
 #endif
-	flags: int;
 	gen_uids: idarray_t;
 	gen_gids: idarray_t;
+	flags: int;
+	out do_retry: retry_type;
+	out retry_name: string_t;
 	out file: mach_port_send_t);
 
 /* Get a file given a file handle (see file_getfh).  */
