@@ -137,11 +137,13 @@ S_crash_dump_task (mach_port_t port,
 				   sizeof *c, &c);
 	  if (! err)
 	    {
+	      mach_port_t msgport;
+
 	      stop_pgrp (user_proc);
 
 	      /* Install our port as the crasher's msgport.
 		 We will wait for signals to resume (crash) it.  */
-	      mach_port_t msgport = ports_get_right (c);
+	      msgport = ports_get_right (c);
 	      mach_port_insert_right (mach_task_self (), msgport,
 				      msgport, MACH_MSG_TYPE_MAKE_SEND);
 	      err = proc_setmsgport (user_proc, msgport, &c->original_msgport);
