@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -64,8 +64,6 @@ exec_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 }
 
 
-static int going_down;
-
 /* Clean up the storage in BOOT, which was never used.  */
 
 void
@@ -90,17 +88,23 @@ deadboot (void *p)
 		 (vm_address_t) boot->intarray,
 		 boot->nints * sizeof (int));
 
-  if (going_down)
+  /* See if we are going away and this was the last thing keeping us up.  */
+  if (ports_count_class (trivfs_cntl_portclasses[0]) == 0)
     {
-      /* We are not accepting new requests, only listening
-	 for exec_startup RPCs from tasks we already started.
-	 See if there are any more to be answered.  */
-      int count = ports_count_class (execboot_portclass);
-      if (count == 0)
-	/* No more tasks starting up.  No reason to live.  */
-	exit (0);
-      ports_enable_class (execboot_portclass);
+      /* We have no fsys control port, so we are detached from the
+	 parent filesystem.  Maybe we have no users left either.  */
+      if (ports_count_class (trivfs_protid_portclasses[0]) == 0)
+	{
+	  /* We have no user ports left.  Are we still listening for
+	     exec_startup RPCs from any tasks we already started?  */
+	  if (ports_count_class (execboot_portclass) == 0)
+	    /* Nobody talking.  Time to die.  */
+	    exit (0);
+	  ports_enable_class (execboot_portclass);
+	}
+      ports_enable_class (trivfs_protid_portclasses[0]);
     }
+  ports_enable_class (trivfs_cntl_portclasses[0]);
 }
 
 
@@ -186,7 +190,6 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 
       /* No more communication with the parent filesystem.  */
       ports_destroy_right (fsys);
-      going_down = 1;
 
       return 0;
     }
@@ -242,7 +245,7 @@ S_exec_init (struct trivfs_protid *protid,
   set_active_trans ();
 
   procserver = getproc ();
-  
+
   err = get_privileged_ports (&host_priv, &dev_master);
   if (!err)
     {
@@ -258,7 +261,7 @@ S_exec_init (struct trivfs_protid *protid,
     }
   else
     host_priv = MACH_PORT_NULL;
-      
+
   {
     /* Have the proc server notify us when the canonical ints and ports
        change.  */
