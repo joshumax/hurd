@@ -74,7 +74,7 @@ pager_read_page (struct user_pager_info *pager,
 		  (void **)buf, &nread);
       if (nread != vm_page_size)
 	{
-	  vm_deallocate (mach_task_self (), *buf, nread);
+	  munmap ((caddr_t) *buf, nread);
 	  return EIO;
 	}
     }
