@@ -55,7 +55,7 @@ pass1 ()
      bad, or if we should entirely stop checking blocks in this 
      inode. */
   int
-  checkblock (daddr_t bno, int nfrags)
+  checkblock (daddr_t bno, int nfrags, off_t offset)
     {
 #define MAXBAD 10
       int outofrange;
