@@ -1,6 +1,6 @@
 /* Verify user passwords
 
-   Copyright (C) 1996,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99,2002,2003 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -29,8 +29,6 @@
 #include <crypt.h>
 
 #define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
-
-#pragma weak crypt
 
 static error_t verify_id (); /* FWD */
 
@@ -70,13 +68,8 @@ verify_passwd (const char *password,
   if (sys_encrypted[0] == '\0')
     return 0;			/* No password.  */
 
-  if (crypt)
-    /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
-    encrypted = crypt (password, sys_encrypted);
-  else
-    /* No crypt on this system!  Use plain-text passwords.  */
-    encrypted = password;
-
+  /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
+  encrypted = crypt (password, sys_encrypted);
   if (! encrypted)
     /* Crypt failed.  */
     return errno;
