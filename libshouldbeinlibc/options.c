@@ -25,7 +25,8 @@
 #include <limits.h>		/* for CHAR_BIT */
 #include <getopt.h>
 #include <cthreads.h>
-#include <options.h>
+
+#include "options.h"
 
 #define EOF (-1)
 
