@@ -53,7 +53,10 @@ S_io_read (struct sock_user *user,
   err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
     /* EOF */
-    *data_len = 0;
+    {
+      err = 0;
+      *data_len = 0;
+    }
   else if (!err)
     {
       err =
@@ -138,7 +141,10 @@ S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
   err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)
     /* EOF */
-    *amount = 0;
+    {
+      err = 0;
+      *amount = 0;
+    }
   else if (!err)
     {
       *amount = pipe_readable (user->sock->read_pipe, 1);
@@ -166,13 +172,9 @@ S_io_duplicate (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-debug (user, "duping, sock: %p", user->sock);
   err = sock_create_port (user->sock, new_port);
   if (! err)
     *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
-{unsigned refs;
- mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
- debug (user, "send rights: %d", refs);}
 
   return err;
 }
