@@ -175,7 +175,7 @@ error_t netfs_attempt_unlink (struct netcred *user, struct node *dir,
 /* Note that in this one call, neither of the specific nodes are locked. */
 error_t netfs_attempt_rename (struct netcred *user, struct node *fromdir,
 			      char *fromname, struct node *todir, 
-			      char *toname);
+			      char *toname, int excl);
 
 /* The user must define this function.  Attempt to create a new
    directory named NAME in DIR for USER with mode MODE.  */
@@ -190,9 +190,10 @@ error_t netfs_attempt_rmdir (struct netcred *user,
 
 /* The user must define this function.  Create a link in DIR with name
    NAME to FILE for USER.  Note that neither DIR nor FILE are
-   locked. */
+   locked.  If EXCL is set, do not delete the target, but return EEXIST
+   if NAME is already found in DIR.   */
 error_t netfs_attempt_link (struct netcred *user, struct node *dir,
-			    struct node *file, char *name);
+			    struct node *file, char *name, int excl);
 
 /* The user must define this function.  Attempt to create an anonymous
    file related to DIR for USER with MODE.  Set *NP to the returned
