@@ -1,3 +1,11 @@
+2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* tty.c (struct ps_tty_abbrev): Add const to member types.
+	(ps_tty_abbrevs): Make const.
+	(ps_tty_short_name): Clean up type usage, add consts.
+	Include null terminator in calculation for short_name allocation size.
+	Save lengths and use memcpy instead of using strcpy and strcat.
+
 1999-12-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (HURDLIBS): Add shouldbeinlibc.
