@@ -35,7 +35,7 @@ struct htable
 {
   void **tab;
   int *ids;
-  void ****locps;
+  void ****locps;		/* four, count them, four stars */
   int size;
 };
 #define HASH_DEL ((void *) -1)
