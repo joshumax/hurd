@@ -1,8 +1,7 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995,96,97,98,2001 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,2001,02 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <argp.h>
+#include <error.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -31,6 +31,10 @@
 #include <hurd/fshelp.h>
 #include <hurd/process.h>
 #include <version.h>
+
+#include <hurd/lookup.h>
+#include <hurd/fsys.h>
+
 
 const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 
@@ -50,8 +54,12 @@ static struct argp_option options[] =
   {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
      " (default " STRINGIFY (DEFAULT_TIMEOUT) "); 0 means no timeout"},
   {"exclusive",   'x', 0, 0, "Only set the translator if there is not one already"},
-  {"orphan",      'o', 0, 0, "Disconnect the translator from the filesystem "
+  {"orphan",      'o', 0, 0, "Disconnect old translator from the filesystem "
 			     "(do not ask it to go away)"},
+
+  {"chroot",      'C', 0, 0,
+   "Instead of setting the node's translator, take following arguments up to"
+   " `--' and run that command chroot'd to the translated node."},
 
   {0,0,0,0, "When setting the passive translator, if there's an active translator:"},
   {"goaway",      'g', 0, 0, "Ask the active translator to go away"},
@@ -98,6 +106,7 @@ main(int argc, char *argv[])
       orphan = 0;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
+  char **chroot_command = 0;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -129,6 +138,31 @@ main(int argc, char *argv[])
 	case 'P': pause = 1; break;
 	case 'o': orphan = 1; break;
 
+	case 'C':
+	  if (chroot_command)
+	    {
+	      argp_error (state, "--chroot given twice");
+	      return EINVAL;
+	    }
+	  chroot_command = &state->argv[state->next];
+	  while (state->next < state->argc)
+	    {
+	      if (!strcmp (state->argv[state->next], "--"))
+		{
+		  state->argv[state->next++] = 0;
+		  if (chroot_command[0] == 0)
+		    {
+		      argp_error (state,
+				  "--chroot must be followed by a command");
+		      return EINVAL;
+		    }
+		  break;
+		}
+	      ++state->next;
+	    }
+	  argp_error (state, "--chroot command must be terminated with `--'");
+	  return EINVAL;
+
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
 
@@ -148,7 +182,7 @@ main(int argc, char *argv[])
 
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
-  if (!active && !passive)
+  if (!active && !passive && !chroot_command)
     passive = 1;		/* By default, set the passive translator.  */
 
   if (passive)
@@ -168,7 +202,7 @@ main(int argc, char *argv[])
 	active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
     }
 
-  if (active && argz_len > 0)
+  if ((active || chroot_command) && argz_len > 0)
     {
       /* Error during file lookup; we use this to avoid duplicating error
 	 messages.  */
@@ -182,7 +216,7 @@ main(int argc, char *argv[])
 	{
 	  if (pause)
 	    {
-	      fprintf (stderr, "Translator pid: %d\nPausing...", 
+	      fprintf (stderr, "Translator pid: %d\nPausing...",
 	               task2pid (task));
 	      getchar ();
 	    }
@@ -213,13 +247,46 @@ main(int argc, char *argv[])
 	error(1, errno, "%s", node_name);
     }
 
-  err =
-    file_set_translator(node,
-			passive_flags, active_flags, goaway_flags,
-			argz, argz_len,
-			active_control, MACH_MSG_TYPE_COPY_SEND);
-  if (err)
-    error(5, err, "%s", node_name);
+  if (active || passive)
+    {
+      err = file_set_translator (node,
+				 passive_flags, active_flags, goaway_flags,
+				 argz, argz_len,
+				 active_control, MACH_MSG_TYPE_COPY_SEND);
+      if (err)
+	error (5, err, "%s", node_name);
+    }
+
+  if (chroot_command)
+    {
+      /* We will act as the parent filesystem would for a lookup
+	 of the active translator's root node, then use this port
+	 as our root directory while we exec the command.  */
+
+      char retry_name[1024];	/* XXX */
+      retry_type do_retry;
+      mach_port_t root;
+      err = fsys_getroot (active_control,
+			  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
+			  NULL, 0, NULL, 0, 0, &do_retry, retry_name, &root);
+      mach_port_deallocate (mach_task_self (), active_control);
+      if (err)
+	error (6, err, "fsys_getroot");
+      err = hurd_file_name_lookup_retry (&_hurd_ports_use, &getdport, 0,
+					 do_retry, retry_name, 0, 0,
+					 &root);
+      if (err)
+	error (6, err, "cannot resolve root port");
+
+      if (setcrdir (root))
+	error (7, errno, "cannot install root port");
+      mach_port_deallocate (mach_task_self (), root);
+      if (chdir ("/"))
+	error (8, errno, "cannot chdir to new root");
+
+      execvp (chroot_command[0], chroot_command);
+      error (8, errno, "cannot execute %s", chroot_command[0]);
+    }
 
   return 0;
 }
