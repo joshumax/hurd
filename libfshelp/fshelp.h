@@ -52,15 +52,6 @@ extern int fshelp_transboot_port_type;
    normally from your main node initialization routine. */
 void fshelp_init_trans_link (struct trans_link *LINK);
 
-/* The user must define this function.  This is used to create ports
-   for translator startup from files.  NODE identifies the file for
-   which a port is required; UID and GID identifies the identity of
-   the user for the open.  Both arguments are opaque to the library
-   (and must be provided to the fshelp_start_translator call).  This
-   should return the name of a receive right from which exactly one
-   send right will be created.  */
-mach_port_t fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
-
 /* Call to set the control field of translator LINK to CTL
    directly. */
 void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
@@ -68,25 +59,18 @@ void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
 /* Call this when the control field of a translator is null and you
    want to have the translator started so you can talk to it.  LINK is
    the trans_link structure for this node; NAME is the file to execute
-   as the translator (*NAME may be modified).  fshelp_get_node_port
-   will be called with DIR and NODE as necessary.  (These values must
-   remain valid until fshelp_done_with_node is called.)  DIR should
-   refer to the directory holding the node being translater, and will
-   be provided as the cwdir of the process and as the dotdot return
-   value from fsys_startup.  NODE will should refer to the node being
-   translated, and will be provided as the realnode return value from
-   fsys_startup.  UID and GID will be provided as the second and third
-   arguments to fshelp_get_node_port for both these calls.  LOCK must
-   be a mutex which you hold; it is assumed that the trans_link
-   structure will not be changed unless this is held. */
+   as the translator (*NAME may be modified).  DIR and NODE should be
+   send rights; both of them will be reauthenticated before being given
+   to the translator.  DIR should refer to the directory holding the node being
+   translater, and will be provided as the cwdir of the process and as
+   the dotdot return value from fsys_startup.  NODE should refer to the 
+   node being translated, and will be provided as the realnode return value
+   from fsys_startup.  UID and GID are the uid and gid of the process to
+   be started.  LOCK must be a mutex which you hold; it is assumed
+   that the trans_link structure will not be changed unless this is held. */
 error_t fshelp_start_translator (struct trans_link *link, char *name, 
-				 int namelen, void *dir, void *node, 
+				 int namelen, file_t dir, file_t node, 
 				 uid_t uid, gid_t gid, struct mutex *lock);
-
-/* The user must define this function.  This will be called for the
-   DIR and NODE arguments to fshelp_start_translator when the library
-   no longer needs them.  */
-void fshelp_done_with_node (void *);
 
 /* Call this when you receive a fsys_startup message on a port of type
    fshelp_transboot_port_type.  PORTSTRUCT is the result of
