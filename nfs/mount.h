@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/* Manifest constants describing the mount protocol
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -17,6 +17,8 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+
+/* These constants define the RPC mount protocol; see RFC 1094. */
 
 #define MOUNT_RPC_PROGRAM 100005
 #define MOUNT_RPC_VERSION 1

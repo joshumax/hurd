@@ -29,23 +29,50 @@
 #include <netinet/in.h>
 #include <stdio.h>
 
+/* Service name for portmapper */
 char *pmap_service_name = "sunrpc";
+
+/* Fallback port number for portmapper */
 short pmap_service_number = PMAPPORT; 
+
+/* RPC program for mount server. */
 int mount_program = MOUNTPROG;
+
+/* RPC version for mount server. */
 int mount_version = MOUNTVERS;
+
+/* Fallback port number for mount server. */
 short mount_port = 0;
+
+/* True iff MOUNT_PORT should be used even if portmapper present. */
 int mount_port_override = 0;
+
+/* RPC program number for NFS server. */
 int nfs_program = NFS_PROGRAM;
+
+/* RPC version number for NFS server. */
 int nfs_version = NFS_VERSION;
+
+/* Fallback port number for NFS server. */
 short nfs_port = NFS_PORT;
+
+/* True iff NFS_PORT should be used even if portmapper present. */
 int nfs_port_override = 0;
 
+/* Set up an RPC for procedure PROCNUM for talking to the portmapper.
+   Allocate storage with malloc and point *BUF at it; caller must free
+   this when done.  Return the address where the args for the
+   procedure should be placed. */
 int *
 pmap_initialize_rpc (int procnum, void **buf)
 {
   return initialize_rpc (PMAPPROG, PMAPVERS, procnum, 0, buf, 0, 0, -1);
 }
 
+/* Set up an RPC for procedure PROCNUM for talking to the mount
+   server.  Allocate storage with malloc and point *BUF at it; caller
+   must free this when done.  Return the address where the args for
+   the procedure should be placed.  */
 int *
 mount_initialize_rpc (int procnum, void **buf)
 {
