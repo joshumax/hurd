@@ -755,6 +755,7 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"Sess",   &ps_session_getter,     ps_emit_int,	ps_cmp_ints,	-5},
   {"LColl",  &ps_login_col_getter,   ps_emit_int,	ps_cmp_ints,	-5},
   {"Args",   &ps_args_getter,	     ps_emit_string0,	ps_cmp_strings,	 0},
+  {"Arg0",   &ps_args_getter,	     ps_emit_string,	ps_cmp_strings,	 0},
   {"Time",   &ps_tot_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
   {"UTime",  &ps_usr_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
   {"STime",  &ps_sys_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
@@ -771,8 +772,8 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"PgFlts", &ps_page_faults_getter, ps_emit_int,	ps_cmp_ints,	-5},
   {"COWFlts",&ps_cow_faults_getter,  ps_emit_int,	ps_cmp_ints,	-5},
   {"PgIns",  &ps_pageins_getter,     ps_emit_int,	ps_cmp_ints,	-5},
-  {"MsgsIn", &ps_msgs_rcvd_getter,   ps_emit_int,	ps_cmp_ints,	-5},
-  {"MsgsOut",&ps_msgs_sent_getter,   ps_emit_int,	ps_cmp_ints,	-5},
+  {"MsgIn",  &ps_msgs_rcvd_getter,   ps_emit_int,	ps_cmp_ints,	-5},
+  {"MsgOut", &ps_msgs_sent_getter,   ps_emit_int,	ps_cmp_ints,	-5},
   {"ZFills", &ps_zero_fills_getter,  ps_emit_int,	ps_cmp_ints,	-5},
   {0}
 };
