@@ -36,3 +36,4 @@ include ../Makeconf
 
 storeread: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
 storecat: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
+storeargs: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so

@@ -1,3 +1,19 @@
+Wed Aug 21 14:40:15 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* device.c (store_device_open): Don't call store_device_create if
+	device_open fails.
+
+Tue Aug 20 14:37:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (free_hook): Free H->params->args if necessary.
+	(parse_opt): Initialize and fill in H->params->args when appropriate.
+	<argz.h>: New include.
+
+Mon Aug 19 14:31:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (struct store_argp_params): Add return_args, args, &
+	args_len fields.
+
 Fri Jul 19 16:16:46 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* decode.c (store_std_leaf_decode): Decode name too.
