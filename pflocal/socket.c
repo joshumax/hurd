@@ -194,6 +194,9 @@ S_socket_send (struct sock_user *user,
 	       char *control, unsigned control_len,
 	       int *amount)
 {
+  if (flags & MSG_OOB)
+    /* BSD local sockets don't support OOB data.  */
+    return EOPNOTSUPP;
   return EOPNOTSUPP;
 }
 
@@ -206,5 +209,8 @@ S_socket_recv (struct sock_user *user,
 	       char **control, unsigned *control_len,
 	       int *out_flags, int amount)
 {
+  if (flags & MSG_OOB)
+    /* BSD local sockets don't support OOB data.  */
+    return EOPNOTSUPP;
   return EOPNOTSUPP;
 }
