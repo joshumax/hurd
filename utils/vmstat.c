@@ -567,17 +567,24 @@ main (int argc, char **argv)
 	      for (field = fields, num = 0, first = 1; field->name; field++, num++)
 		if (output_fields & (1 << (field - fields)))
 		  {
-		    int sign = 0;
 		    val_t val = vm_state_get_field (&state, field);
 
-		    if (repeats && field->change_type == CUMUL)
+		    if (val < 0)
+		      /* Couldn't fetch this field, don't try again.  */
+		      const_fields &= ~(1 << (field - fields));
+		    else
 		      {
-			sign = 1;
-			val -= vm_state_get_field (&prev_state, field);
-		      }
+			int sign = 0;
 
-		    PSEP (" ", 0);
-		    PVAL (val, field, fwidths[num], sign);
+			if (repeats && field->change_type == CUMUL)
+			  {
+			    sign = 1;
+			    val -= vm_state_get_field (&prev_state, field);
+			  }
+
+			PSEP (" ", 0);
+			PVAL (val, field, fwidths[num], sign);
+		      }
 		  }
 	      putchar ('\n');
 
@@ -617,14 +624,17 @@ main (int argc, char **argv)
 	if (output_fields & (1 << (field - fields)))
 	  {
 	    val_t val = vm_state_get_field (&state, field);
-	    int fwidth = 0;
-	    if (print_prefix)
+	    if (val >= 0)
 	      {
-		printf ("%s: ", field->name);
-		fwidth = max_width - strlen (field->name);
+		int fwidth = 0;
+		if (print_prefix)
+		  {
+		    printf ("%s: ", field->name);
+		    fwidth = max_width - strlen (field->name);
+		  }
+		PVAL (val, field, fwidth, 0);
+		putchar ('\n');
 	      }
-	    PVAL (val, field, fwidth, 0);
-	    putchar ('\n');
 	  }
     }
 
