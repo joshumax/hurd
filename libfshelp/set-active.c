@@ -24,11 +24,9 @@ error_t
 fshelp_set_active (struct transbox *box,
 		   mach_port_t active)
 {
-  mutex_lock (&box->innerlock);	/* cancellation point XXX */
   if (box->active != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), box->active);
   box->active = active;
-  mutex_unlock (&box->innerlock);
   return 0;
 }
 
