@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -310,8 +310,8 @@ device_read_reply_inband (mach_port_t replypt,
     for (i = 0; i < datalen; i++)
       {
 	int c = data[i];
-	
-	/* XXX Mach only supports 8-bit channels; this munges things 
+
+	/* XXX Mach only supports 8-bit channels; this munges things
 	   to account for the reality.  */
 	c &= char_size_mask_xxx;
 
@@ -400,17 +400,19 @@ devio_pending_output_size ()
 static error_t
 initial_open ()
 {
+  error_t err;
+
   assert (open_pending != FAKE);
 
   /* Nothing to do */
   if (open_pending == INITIAL)
     return 0;
-  
+
   assert (phys_device == MACH_PORT_NULL);
   assert (phys_reply == MACH_PORT_NULL);
   assert (phys_reply_pi == 0);
-  
-    err = ports_create_port (phys_reply_class, term_bucket,
+
+  err = ports_create_port (phys_reply_class, term_bucket,
 			   sizeof (struct port_info), &phys_reply_pi);
   if (err)
     return err;
@@ -438,12 +440,12 @@ static void
 devio_desert_dtr ()
 {
   dev_status_t bits;
-  
+
   /* Turn off DTR. */
   bits = TM_HUP;
-  device_set_status (phys_device, TTY_MODEM, 
+  device_set_status (phys_device, TTY_MODEM,
 		     (dev_status_t) &bits, TTY_MODEM_COUNT);
-  
+
   report_carrier_off ();
 }
 
@@ -455,19 +457,19 @@ devio_assert_dtr ()
   /* The first time is special. */
   if (phys_device == MACH_PORT_NULL)
     return initial_open ();
-  
+
   /* Schedule a fake open to wait for DTR, unless one is already
      happening. */
   assert (open_pending != INITIAL);
   if (open_pending == FAKE)
     return 0;
-  
-  err = device_open_request (device_master, phys_reply, 
+
+  err = device_open_request (device_master, phys_reply,
 			     D_READ|D_WRITE, pterm_name);
 
   if (err)
     return err;
-  
+
   open_pending = FAKE;
   return 0;
 }
@@ -528,7 +530,7 @@ device_open_reply (mach_port_t replyport,
       /* Schedule our first read */
       err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
 					0, vm_page_size);
-      
+
       input_pending = 1;
     }
   else
@@ -537,7 +539,7 @@ device_open_reply (mach_port_t replyport,
       device_close (device);
       mach_port_deallocate (mach_task_self (), device);
     }
-  
+
   device_get_status (phys_device, TTY_STATUS,
 		     (dev_status_t)&ttystat, &count);
   ttystat.tt_breakc = 0;
@@ -601,11 +603,11 @@ devio_set_bits ()
 	case CS6:
 	  char_size_mask_xxx = 0x3f;
 	  break;
-	  
+
 	case CS7:
 	  char_size_mask_xxx = 0x7f;
 	  break;
-	  
+
 	case CS8:
 	default:
 	  char_size_mask_xxx = 0xff;
@@ -705,7 +707,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 	}
       else if (open_pending != NOTPENDING)
 	{
-	  open_pending = NOTPENDiNG;
+	  open_pending = NOTPENDING;
 
 	  report_carrier_on ();
 	  report_carrier_off ();
