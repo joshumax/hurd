@@ -19,20 +19,12 @@
 dir := ext2fs
 makemode := server
 
+target = ext2fs
 SRCS = balloc.c bitmap.c devio.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c
-OBJS = $(SRCS:.c=.o) error.o
+OBJS = $(SRCS:.c=.o)
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
-REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
-		../hurd/ioserver.h ../hurd/fshelp.h
-HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads \
-	libihash
-target = ext2fs
 
-CPPFLAGS += -I../lib
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
-vpath %.c ../lib
+ext2fs: $(OBJS) ../libdiskfs/libdiskfs.a ../libports/libports.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
-
-CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
