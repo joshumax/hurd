@@ -1379,6 +1379,7 @@ do_exec (file_t file,
 
   /* Here is the main body of the function.  */
 
+  interp.file = MACH_PORT_NULL;
 
   /* Catch this error now, rather than later.  */
   /* XXX For EXEC_DEFAULTS, this is only an error if one of the user's
@@ -1430,8 +1431,6 @@ do_exec (file_t file,
       e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (Elf32_Phdr));
       check_elf_phdr (&e, phdr, &phdr_addr, &phdr_size);
     }
-
-  interp.file = MACH_PORT_NULL;
 
   if (oldtask == MACH_PORT_NULL)
     flags |= EXEC_NEWTASK;
