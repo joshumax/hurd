@@ -280,7 +280,7 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 			      mach_msg_type_name_t *realpoly)
 {
   struct port_info *pt;
-  struct diskfs_protid *rootpi;
+  struct protid *rootpi;
   mach_port_t rootport;
   error_t err;
 
