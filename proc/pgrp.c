@@ -227,7 +227,7 @@ S_proc_getpgrppids (struct proc *callerp,
   struct proc *p;
   struct pgrp *pg;
   pid_t *pp = *pids;
-  int npids = *npidsp;
+  unsigned int npids = *npidsp, count;
   
   if (pgid == 0)
     pg = callerp->p_pgrp;
