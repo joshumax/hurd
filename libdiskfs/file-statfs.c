@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 /* Implement file_getcontrol as described in <hurd/fs.defs>. */
 diskfs_S_file_statfs (struct protid *file,
