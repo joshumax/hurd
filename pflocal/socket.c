@@ -33,12 +33,12 @@ S_socket_connect2 (struct sock_user *user1, struct sock_user *user2)
 
 /* Make sure we have a queue to listen on.  */
 static error_t
-ensure_listenq (struct sock *sock)
+ensure_connq (struct sock *sock)
 {
   error_t err = 0;
   mutex_lock (&sock->lock);
-  if (!sock->listenq)
-    err = listenq_create (0, &sock->listenq);
+  if (!sock->connq)
+    err = connq_create (0, &sock->connq);
   mutex_unlock (&sock->lock);
   return err;
 }
@@ -54,15 +54,15 @@ S_socket_accept (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  err = ensure_listenq (sock);
+  err = ensure_connq (sock);
   if (!err)
     {
-      struct listenq_request *request;
+      struct connq_request *req;
       struct sock *peer_sock;
 
       err =
-	listenq_listen (sock->listenq, sock->modes & O_NONBLOCK,
-			&peer_sock, &request);
+	connq_listen (sock->connq, sock->flags & SOCK_NONBLOCK,
+		      &req, &peer_sock);
       if (!err)
 	{
 	  struct sock *conn_sock;
@@ -86,8 +86,8 @@ S_socket_accept (struct sock_user *user,
 		sock_free (conn_sock);
 	    }
 
-	  /* Send back any error to the connecting thread.  */
-	  listenq_request_complete (request, err);
+	  /* Communicate any error (or success) to the connecting thread.  */
+	  connq_request_complete (req, err);
 	}
     }
 
@@ -101,19 +101,71 @@ S_socket_listen (struct sock_user *user, int queue_limit)
   error_t err;
   if (!user)
     return EOPNOTSUPP;
-  err = ensure_listenq (sock);
+  err = ensure_connq (sock);
   if (!err)
-    err = listenq_set_length (sock->listenq, queue_limit);
+    err = connq_set_length (sock->connq, queue_limit);
   return err;
 }
 
 error_t
 S_socket_connect (struct sock_user *user, struct addr *addr)
 {
-  if (!user)
+  if (! user)
     return EOPNOTSUPP;
   if (!addr)
     return EADDRNOTAVAIL;
 
   
+}
+
+error_t
+S_socket_shutdown (struct sock_user *user, int what)
+{
+  if (! user)
+    return EOPNOTSUPP;
+  sock_shutdown (user->sock,
+		   (what != 1 ? SOCK_SHUTDOWN_READ : 0)
+		 | (what != 0 ? SOCK_SHUTDOWN_WRITE : 0));
+  return 0;
+}
+
+/* Stubs for currently unsupported rpcs.  */
+
+error_t
+S_socket_getopt (struct sock_user *user,
+		 int level, int opt,
+		 char **value, unsigned *value_len)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_setopt (struct sock_user *user,
+		 int level, int opt,
+		 char *value, unsigned value_len)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_send (struct sock_user *user,
+	       mach_port_t addr, int flags,
+	       char *data, unsigned data_len,
+	       mach_port_t *ports, unsigned num_ports,
+	       char *control, unsigned control_len,
+	       int *amount)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_socket_recv (struct sock_user *user,
+	       mach_port_t *addr, int flags,
+	       char **data, unsigned *data_len,
+	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
+	       unsigned *num_ports,
+	       char **control, unsigned *control_len,
+	       int *out_flags, int amount)
+{
+  return EOPNOTSUPP;
 }
