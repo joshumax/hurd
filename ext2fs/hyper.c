@@ -1,6 +1,6 @@
 /* Fetching and storing the hypermetadata (superblock and bg summary info)
 
-   Copyright (C) 1994,95,96,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,99,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -82,7 +82,7 @@ get_hypermetadata (void)
   log2_dev_blocks_per_fs_block = log2_block_size - store->log2_block_size;
   if (log2_dev_blocks_per_fs_block < 0)
     ext2_panic ("block size %d isn't a power-of-two multiple of the device"
-		" block size (%d)!",
+		" block size (%zd)!",
 		block_size, store->block_size);
 
   log2_stat_blocks_per_fs_block = 0;
@@ -98,7 +98,7 @@ get_hypermetadata (void)
 		(long long int) sblock->s_blocks_count << log2_block_size);
   if (log2_dev_blocks_per_fs_block != 0
       && (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)) != 0)
-    ext2_warning ("%Ld (%d byte) device blocks "
+    ext2_warning ("%Ld (%zd byte) device blocks "
 		  " unused after last filesystem (%d byte) block",
 		  (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)),
 		  store->block_size, block_size);

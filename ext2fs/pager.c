@@ -572,7 +572,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
       else if (err)
-	ext2_warning ("inode=%d, page=0x%x: %s",
+	ext2_warning ("inode=%d, page=0x%zx: %s",
 		      node->cache_id, page, strerror (err));
 
       return err;
