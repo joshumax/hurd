@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "io_S.h"
+#include <fcntl.h>
 
 /* Implement io_sigio as described in <hurd/io.defs>.  We do this
    for O_FSYNC right now, but will eventually do it for async I/O
@@ -29,6 +30,7 @@ diskfs_S_io_sigio (struct protid *cred)
   
   mutex_lock (&cred->po->np->lock);
   if (cred->po->openstat & O_FSYNC)
-    diskfs_update_file (1);
+    diskfs_file_update (1);
   mutex_unlock (&cred->po->np->lock);
+  return 0;
 }
