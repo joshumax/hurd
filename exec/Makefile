@@ -35,6 +35,8 @@ exec.o: exec_server.h
 
 exec.o hostarch.o: a.out.h
 
+install:
+
 clean: 
 	rm -f *.o exec exec_server.h *_S.h *Server.c
 relink:
