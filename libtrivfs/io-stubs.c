@@ -28,7 +28,6 @@ trivfs_S_io_map_cntl (struct protid *cred,
   return EOPNOTSUPP;
 }
 
-
 error_t
 trivfs_S_io_get_conch (struct protid *cred)
 {
@@ -41,33 +40,32 @@ trivfs_S_io_release_conch (struct protid *cred)
   return EOPNOTSUPP;
 }
 
-
 error_t 
-io_eofnotify (struct protid *)
+trivfs_S_io_eofnotify (struct protid *)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-io_prenotify (struct protid *, int start, int end)
+trivfs_S_io_prenotify (struct protid *, int start, int end)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-io_postnotify (struct protid *, int start, int end)
+trivfs_S_io_postnotify (struct protid *, int start, int end)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-io_readsleep (struct protid *)
+trivfs_S_io_readsleep (struct protid *)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-io_sigio (struct protid *)
+trivfs_S_io_sigio (struct protid *)
 {
   return EOPNOTSUPP;
 }
