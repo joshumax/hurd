@@ -105,7 +105,9 @@ void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
    any error occurs sending fsys_startup, it is returned, otherwise 0.  */
 error_t trivfs_startup(mach_port_t bootstrap,
 		       struct port_class *control_class,
+		       struct port_bucket *control_bucket,
 		       struct port_class *protid_class,
+		       struct port_bucket *protid_bucket,
 		       struct trivfs_control **control);
 
 /* Call this to create a new control port and return a receive right
@@ -116,7 +118,7 @@ error_t trivfs_startup(mach_port_t bootstrap,
    to be used for the control port for this node. */
 mach_port_t trivfs_handle_port (mach_port_t underlying, 
 				struct port_class *control_class,
-				struct port_bucket *control_bucket
+				struct port_bucket *control_bucket,
 				struct port_class *protid_class,
 				struct port_bucket *protid_bucket);
 
