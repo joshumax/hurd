@@ -52,7 +52,10 @@ alert_parent (struct proc *p)
   send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
 
   if (!p->p_exiting)
-    p->p_status = W_EXITCODE (0, SIGKILL);
+    {
+      p->p_status = W_EXITCODE (0, SIGKILL);
+      p->p_sigcode = -1;
+    }
 
   if (p->p_parent->p_waiting)
     {
@@ -68,6 +71,7 @@ S_proc_wait (struct proc *p,
 	     pid_t pid,
 	     int options,
 	     int *status,
+	     int *sigcode,
 	     struct rusage *ru,
 	     pid_t *pid_status)
 {
@@ -104,6 +108,7 @@ S_proc_wait (struct proc *p,
 	{
 	  child->p_waited = 1;
 	  *status = child->p_status;
+	  *sigcode = child->p_sigcode;
 	  if (child->p_dead)
 	    complete_exit (child);
 	  bzero (ru, sizeof (struct rusage));
@@ -125,6 +130,7 @@ S_proc_wait (struct proc *p,
 	      {
 		child->p_waited = 1;
 		*status = child->p_status;
+		*sigcode = child->p_sigcode;
 		*pid_status = child->p_pid;
 		if (child->p_dead)
 		  complete_exit (child);
@@ -152,13 +158,15 @@ S_proc_wait (struct proc *p,
 /* Implement proc_mark_stop as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_mark_stop (struct proc *p,
-	       int signo)
+		  int signo,
+		  int sigcode)
 {
   if (!p)
     return EOPNOTSUPP;
 
   p->p_stopped = 1;
   p->p_status = W_STOPCODE (signo);
+  p->p_sigcode = sigcode;
   p->p_waited = 0;
   
   if (p->p_parent->p_waiting)
@@ -176,7 +184,8 @@ S_proc_mark_stop (struct proc *p,
 /* Implement proc_mark_exit as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_mark_exit (struct proc *p,
-		int status)
+		  int status,
+		  int sigcode)
 {
   if (!p)
     return EOPNOTSUPP;
@@ -186,6 +195,7 @@ S_proc_mark_exit (struct proc *p,
   
   p->p_exiting = 1;
   p->p_status = status;
+  p->p_sigcode = sigcode;
   return 0;
 }
 
