@@ -1,8 +1,13 @@
+2002-05-13  Roland McGrath  <roland@frob.com>
+
+	* fakeroot.c (netfs_attempt_chmod): Handle a MODE argument with no
+	S_IFMT bits set.
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeroot.c (netfs_server_name, netfs_server_version): New
 	variables.
-	
+
 2002-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* symlink.c: Include <argp.h> and <version.h>.
