@@ -66,6 +66,8 @@ diskfs_drop_node (struct node *np)
 	  free (dm);
 	}
     }
+  if (np->sockaddr)
+    mach_port_deallocate (mach_task_self (), np->sockaddr);
 
   diskfs_node_norefs (np);
   spin_unlock (&diskfs_node_refcnt_lock);
