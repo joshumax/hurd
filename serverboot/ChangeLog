@@ -1,5 +1,10 @@
 1999-10-28  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* load.c, bootstrap.c: Back out some debugging printfs accidentally
+	included in the last commit.
+	* bootstrap.c (main): Increase size of NEW_ROOT buffer.
+	This change was included in the last commit, but not logged then.
+
 	* file_io.h: Include <errno.h>.
 	(FS_* macros): Define these to equivalent errno codes.
 	* def_pager_setup.c (add_paging_file): Put strerror of result code in
