@@ -52,6 +52,8 @@ ext2_discard_prealloc (struct node *node)
   if (node->dn->info.i_prealloc_count)
     {
       int i = node->dn->info.i_prealloc_count;
+      ext2_debug ("discarding %d prealloced blocks for inode %d",
+		  i, node->dn->number);
       node->dn->info.i_prealloc_count = 0;
       ext2_free_blocks (node->dn->info.i_prealloc_block, i);
     }
@@ -74,7 +76,7 @@ ext2_alloc_block (struct node *node, unsigned long goal)
     {
       result = node->dn->info.i_prealloc_block++;
       node->dn->info.i_prealloc_count--;
-      ext2_debug ("preallocation hit (%lu/%lu).\n",
+      ext2_debug ("preallocation hit (%lu/%lu)",
 		  ++alloc_hits, ++alloc_attempts);
 
       bh = bptr (result);
@@ -82,9 +84,9 @@ ext2_alloc_block (struct node *node, unsigned long goal)
     }
   else
     {
-      ext2_discard_prealloc (node);
-      ext2_debug ("preallocation miss (%lu/%lu).\n",
+      ext2_debug ("preallocation miss (%lu/%lu)",
 		  alloc_hits, ++alloc_attempts);
+      ext2_discard_prealloc (node);
       if (S_ISREG (node->dn_stat.st_mode))
 	result = ext2_new_block
 	  (goal,
@@ -106,6 +108,9 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
   u32 block;
   int goal = 0, i;
   int blocks = block_size / 512;
+#ifdef EXT2FS_DEBUG
+  int hint;
+#endif
 
   block = node->dn->info.i_data[nr];
   if (block)
@@ -120,7 +125,9 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
 
-  ext2_debug ("hint = %d,", goal);
+#ifdef EXT2FS_DEBUG
+  hint = goal;
+#endif
 
   if (!goal)
     {
@@ -138,7 +145,8 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
 	  + sblock->s_first_data_block;
     }
 
-  ext2_debug ("goal = %d.\n", goal);
+  ext2_debug ("%screate, hint = %d, goal = %d",
+	      create ? "" : "no", hint, goal);
 
   block = ext2_alloc_block (node, goal);
   if (!block)
@@ -245,7 +253,7 @@ ext2_getblk (struct node *node, long block, int create, char **buf)
      * allocations use the same goal zone
    */
 
-  ext2_debug ("block %lu, next %lu, goal %lu.\n", block,
+  ext2_debug ("block = %lu, next = %lu, goal = %lu", block,
 	      node->dn->info.i_next_alloc_block,
 	      node->dn->info.i_next_alloc_goal);
 
