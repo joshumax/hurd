@@ -534,8 +534,9 @@ error_t diskfs_init_diskfs (void);
 /* Call this once the filesystem is fully initialized, to advertise the new
    filesystem control port to our parent filesystem.  If BOOTSTRAP is set,
    the diskfs will call fsys_startup on that port as appropriate and return
-   the REALNODE returned in that call; otherwise we return MACH_PORT_NULL.  */
-mach_port_t diskfs_startup_diskfs (mach_port_t bootstrap);
+   the REALNODE returned in that call; otherwise we return MACH_PORT_NULL.
+   FLAGS specifies how to open REALNODE (from the O_* set).  */
+mach_port_t diskfs_startup_diskfs (mach_port_t bootstrap, int flags);
 
 /* Call this after all format-specific initialization is done (except
    for setting diskfs_root_node); at this point the pagers should be
@@ -942,8 +943,8 @@ error_t diskfs_remount ();
 /* Called by S_fsys_startup for execserver bootstrap.  The execserver
    is able to function without a real node, hence this fraud.  Arguments
    are all as for fsys_startup in <hurd/fsys.defs>.  */
-error_t diskfs_execboot_fsys_startup (mach_port_t port, mach_port_t ctl,
-				      mach_port_t *real,
+error_t diskfs_execboot_fsys_startup (mach_port_t port, int flags,
+				      mach_port_t ctl, mach_port_t *real,
 				      mach_msg_type_name_t *realpoly);
 
 /* Establish a thread to sync the filesystem every INTERVAL seconds, or
