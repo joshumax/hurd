@@ -241,7 +241,7 @@ struct argp
 					     TEXT is NULL for this key.  */
 /* Explanatory note emitted when duplicate option arguments have been
    suppressed.  */
-#define ARGP_KEY_HELP_DUP_ARGS_NOTE 0x2000005 
+#define ARGP_KEY_HELP_DUP_ARGS_NOTE 0x2000005
 #define ARGP_KEY_HELP_ARGS_DOC	0x2000006 /* Argument doc string.  */
 
 /* When an argp has a non-zero CHILDREN field, it should point to a vector of
@@ -369,11 +369,11 @@ struct argp_state
    returned.  This function may also call exit unless the ARGP_NO_HELP flag
    is set.  INPUT is a pointer to a value to be passed in to the parser.  */
 extern error_t argp_parse __P ((__const struct argp *__argp,
-			 int __argc, char **__argv, unsigned __flags,
-			 int *__arg_index, void *__input));
+				int __argc, char **__argv, unsigned __flags,
+				int *__arg_index, void *__input));
 extern error_t __argp_parse __P ((__const struct argp *__argp,
-			   int __argc, char **__argv, unsigned __flags,
-			   int *__arg_index, void *__input));
+				  int __argc, char **__argv, unsigned __flags,
+				  int *__arg_index, void *__input));
 
 /* Global variables.  */
 
@@ -396,7 +396,7 @@ extern void (*argp_program_version_hook) __P ((FILE *__stream,
    argp_help if the ARGP_HELP_BUG_ADDR flag is set (as it is by various
    standard help messages), embedded in a sentence that says something like
    `Report bugs to ADDR.'.  */
-__const extern char *argp_program_bug_address;
+extern __const char *argp_program_bug_address;
 
 /* The exit status that argp will use when exiting due to a parsing error.
    If not defined or set by the user program, this defaults to EX_USAGE from

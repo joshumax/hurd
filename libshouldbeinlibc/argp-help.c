@@ -156,7 +156,7 @@ fill_in_uparams (const struct argp_state *state)
 		arg++;
 		SKIPWS (arg);
 	      }
-	    
+
 	    if (unspec)
 	      if (var[0] == 'n' && var[1] == 'o' && var[2] == '-')
 		{
@@ -879,7 +879,7 @@ arg (const struct argp_option *real, const char *req_fmt, const char *opt_fmt,
 /* Helper functions for hol_entry_help.  */
 
 /* State used during the execution of hol_help.  */
-struct hol_help_state 
+struct hol_help_state
 {
   /* PREV_ENTRY should contain the previous entry printed, or 0.  */
   struct hol_entry *prev_entry;
@@ -922,7 +922,7 @@ filter_doc (const char *doc, int key, const struct argp *argp,
     }
   else
     /* No filter.  */
-    return (char *)doc;  
+    return (char *)doc;
 }
 
 /* Prints STR as a header line, with the margin lines set appropiately, and
@@ -1543,7 +1543,7 @@ _help (const struct argp *argp, const struct argp_state *state, FILE *stream,
     {
       __argp_fmtstream_printf (fs, _("\
 Try `%s --help' or `%s --usage' for more information.\n"),
-					    name, name);
+			       name, name);
       anything = 1;
     }
 
@@ -1569,7 +1569,7 @@ Try `%s --help' or `%s --usage' for more information.\n"),
       if (anything)
 	__argp_fmtstream_putc (fs, '\n');
       __argp_fmtstream_printf (fs, _("Report bugs to %s.\n"),
-			       argp_program_bug_address);
+ 			       argp_program_bug_address);
       anything = 1;
     }
 

@@ -576,7 +576,7 @@ parser_init (struct parser *parser, const struct argp *argp,
 	parser->state.argv--, parser->state.argc++;
     }
   else
-    opterr = 1;			/* Print error messages.  */
+    opterr = 1;		/* Print error messages.  */
 
   if (parser->state.argv == argv && argv[0])
     /* There's an argv[0]; use it for messages.  */
@@ -755,7 +755,7 @@ parser_parse_next (struct parser *parser, int *arg_ebadkey)
     /* Give getopt a chance to parse this.  */
     {
       optind = parser->state.next; /* Put it back in OPTIND for getopt.  */
-      optopt = KEY_END;		/* Distinguish KEY_ERR from a real option.  */
+      optopt = KEY_END;	/* Distinguish KEY_ERR from a real option.  */
       if (parser->state.flags & ARGP_LONG_ONLY)
 	opt = getopt_long_only (parser->state.argc, parser->state.argv,
 				parser->short_opts, parser->long_opts, 0);
