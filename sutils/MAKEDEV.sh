@@ -65,7 +65,7 @@ function mkdev {
       null)
 	st $I root 666 /hurd/null;;
       zero)
-	st $I root 666 /hurd/null -z;;
+	st $I root 666 /hurd/storeio -Tzero;;
       tty)
 	st $I root 666 /hurd/magic tty;;
       fd)
