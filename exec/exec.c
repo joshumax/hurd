@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,98,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -435,6 +435,16 @@ load_section (void *section, struct execdata *u)
 
 /* Make sure our mapping window (or read buffer) covers
    LEN bytes of the file starting at POSN.  */
+static void *map (struct execdata *e, off_t posn, size_t len);
+
+/* Initialize E's stdio stream.  */
+static void prepare_stream (struct execdata *e);
+
+#ifdef _STDIO_USES_IOSTREAM
+
+# error implement me for libio!
+
+#else  /* old GNU stdio */
 
 static void *
 map (struct execdata *e, off_t posn, size_t len)
@@ -561,6 +571,22 @@ fake_seek (void *cookie, fpos_t *pos, int whence)
   return 0;
 }
 
+/* Initialize E's stdio stream.  */
+static void
+prepare_stream (struct execdata *e)
+{
+  memset (&e->stream, 0, sizeof (e->stream));
+  e->stream.__magic = _IOMAGIC;
+  e->stream.__mode.__read = 1;
+  e->stream.__userbuf = 1;
+  e->stream.__room_funcs.__input = input_room;
+  e->stream.__io_funcs.seek = fake_seek;
+  e->stream.__io_funcs.close = close_exec_stream;
+  e->stream.__cookie = e;
+  e->stream.__seen = 1;
+}
+#endif
+
 
 /* Prepare to check and load FILE.  */
 static void
@@ -579,17 +605,6 @@ prepare (file_t file, struct execdata *e)
   e->cntlmap = MACH_PORT_NULL;
 
   e->interp.section = NULL;
-
-  /* Initialize E's stdio stream.  */
-  memset (&e->stream, 0, sizeof (e->stream));
-  e->stream.__magic = _IOMAGIC;
-  e->stream.__mode.__read = 1;
-  e->stream.__userbuf = 1;
-  e->stream.__room_funcs.__input = input_room;
-  e->stream.__io_funcs.seek = fake_seek;
-  e->stream.__io_funcs.close = close_exec_stream;
-  e->stream.__cookie = e;
-  e->stream.__seen = 1;
 
   /* Try to mmap FILE.  */
   e->error = io_map (file, &rd, &wr);
@@ -657,6 +672,9 @@ prepare (file_t file, struct execdata *e)
   else if (e->error == EOPNOTSUPP)
     /* We can't mmap FILE, but perhaps we can do normal I/O to it.  */
     e->error = 0;
+
+  /* Initialize E's stdio stream.  */
+  prepare_stream (e);
 }
 
 /* Check the magic number, etc. of the file.
@@ -1031,18 +1049,12 @@ check_gzip (struct execdata *earg)
   e->file_data = zipdata;
   e->file_size = zipdatasz;
 
-  /* Clean up the old exec file stream's state.  */
+  /* Clean up the old exec file stream's state.
+     Now that we have the contents all in memory (in E->file_data),
+     nothing will in fact ever try to use E->stream again.  */
   finish (e, 0);
 
-  /* Point the stream at the buffer of file data.  */
-  memset (&e->stream, 0, sizeof (e->stream));
-  e->stream.__magic = _IOMAGIC;
-  e->stream.__mode.__read = 1;
-  e->stream.__buffer = e->file_data;
-  e->stream.__bufsize = e->file_size;
-  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
-  e->stream.__bufp = e->stream.__buffer;
-  e->stream.__seen = 1;
+  *(int *)&e->stream = 0;	/* clobber magic number field just in case */
 }
 #endif
 
@@ -1123,18 +1135,13 @@ check_bzip2 (struct execdata *earg)
   e->file_data = zipdata;
   e->file_size = zipdatasz;
 
-  /* Clean up the old exec file stream's state.  */
+
+  /* Clean up the old exec file stream's state.
+     Now that we have the contents all in memory (in E->file_data),
+     nothing will in fact ever try to use E->stream again.  */
   finish (e, 0);
 
-  /* Point the stream at the buffer of file data.  */
-  memset (&e->stream, 0, sizeof (e->stream));
-  e->stream.__magic = _IOMAGIC;
-  e->stream.__mode.__read = 1;
-  e->stream.__buffer = e->file_data;
-  e->stream.__bufsize = e->file_size;
-  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
-  e->stream.__bufp = e->stream.__buffer;
-  e->stream.__seen = 1;
+  *(int *)&e->stream = 0;	/* clobber magic number field just in case */
 }
 #endif
 
