@@ -1,3 +1,22 @@
+Tue Sep 24 14:46:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh: Fix argument parsing.
+	(zero): Use `storeio -Tzero' instead of `null -z'.
+	
+Thu Sep 19 17:48:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fstab.c (fs_remount): Use fsys_update instead of fsys_remount.
+
+Wed Sep 18 19:12:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* MAKEDEV.sh: Use a shell function `mkdev' for recursion, rather
+	than calling this script recursively.
+
+Thu Sep 12 18:53:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsck.c (fs_start_fsck): Print an error for filesystem types we
+	don't know how to fsck, instead of dying with an assertion failure.
+
 Thu Sep 19 16:58:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (install): Depend on installation directory directly;
