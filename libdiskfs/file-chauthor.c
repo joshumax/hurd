@@ -25,7 +25,7 @@ diskfs_S_file_chauthor (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
-		       if (!(err = isowner (np, cred)))
+		       if (!(err = diskfs_isowner (np, cred)))
 			 {
 			   np->dn_stat.st_author = author;
 			   np->dn_set_ctime = 1;
