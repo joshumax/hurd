@@ -19,12 +19,10 @@
 #include <libioserver.h>
 
 error_t
-handle_io_get_conch (struct conch *c, void *user, struct shared *user_sh)
+handle_io_get_conch (struct conch *c, void *user, struct shared_io *user_sh)
 {
-  error_t error;
+  error_t error = 0;
   
-  mutex_lock (&c->lock);
-
   if (c->holder == user)
     {
       if (user_sh->conch_status != USER_HAS_NOT_CONCH)
@@ -39,18 +37,18 @@ handle_io_get_conch (struct conch *c, void *user, struct shared *user_sh)
     }
   else
     {
-      error = _libioserver_internal_get_conch (c);
+      error = get_conch (c);
 
       if (!error)
 	{
 	  c->holder = user;
 	  c->holder_shared_page = user_sh;
-	  user_sh->conch_status == USER_HAS_NOT_CONCH
+	  if (user_sh->conch_status == USER_HAS_NOT_CONCH)
 	    user_sh->accessed = user_sh->written = 0;
 	  user_sh->conch_status = USER_HAS_CONCH;
 	  put_shared_data (user);
 	}
     }
   
-  mutex_unlock (&c->lock);
+  return error;
 }
