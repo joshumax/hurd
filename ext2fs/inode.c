@@ -335,8 +335,17 @@ check_high_bits (struct node *np, long l)
 {
   if (sblock->s_creator_os == EXT2_OS_HURD)
     return 0;
-  else
-    return ((l & ~0xFFFF) == 0) ? 0 : EINVAL;
+
+  /* Linux 2.3.42 has a mount-time option (not a bit stored on disk)
+     NO_UID32 to ignore the high 16 bits of uid and gid, but by default
+     allows them.  It also does this check for "interoperability with old
+     kernels".  Note that our check refuses to change the values, while
+     Linux 2.3.42 just silently clears the high bits in an inode it updates,
+     even if it was updating it for an unrelated reason.  */
+  if (np->dn->info.i_dtime != 0)
+    return 0;
+
+  return ((l & ~0xFFFF) == 0) ? 0 : EINVAL;
 }
 
 /* Return 0 if NP's owner can be changed to UID; otherwise return an error

@@ -216,13 +216,13 @@ struct ext2_group_desc
  */
 struct ext2_inode {
 	__u16	i_mode;		/* File mode */
-	__u16	i_uid;		/* Owner Uid */
+	__u16	i_uid;		/* Low 16 bits of Owner Uid */
 	__u32	i_size;		/* Size in bytes */
 	__u32	i_atime;	/* Access time */
 	__u32	i_ctime;	/* Creation time */
 	__u32	i_mtime;	/* Modification time */
 	__u32	i_dtime;	/* Deletion Time */
-	__u16	i_gid;		/* Group Id */
+	__u16	i_gid;		/* Low 16 bits of Group Id */
 	__u16	i_links_count;	/* Links count */
 	__u32	i_blocks;	/* Blocks count */
 	__u32	i_flags;	/* File flags */
@@ -247,7 +247,9 @@ struct ext2_inode {
 			__u8	l_i_frag;	/* Fragment number */
 			__u8	l_i_fsize;	/* Fragment size */
 			__u16	i_pad1;
-			__u32	l_i_reserved2[2];
+			__u16	l_i_uid_high;	/* these 2 fields    */
+			__u16	l_i_gid_high;	/* were reserved2[0] */
+			__u32	l_i_reserved2;
 		} linux2;
 		struct {
 			__u8	h_i_frag;	/* Fragment number */
@@ -272,6 +274,10 @@ struct ext2_inode {
 #define i_reserved1	osd1.linux1.l_i_reserved1
 #define i_frag		osd2.linux2.l_i_frag
 #define i_fsize		osd2.linux2.l_i_fsize
+#define i_uid_low	i_uid
+#define i_gid_low	i_gid
+#define i_uid_high	osd2.linux2.l_i_uid_high
+#define i_gid_high	osd2.linux2.l_i_gid_high
 #define i_reserved2	osd2.linux2.l_i_reserved2
 #endif
 
@@ -310,6 +316,7 @@ struct ext2_inode {
 #define EXT2_MOUNT_ERRORS_RO		0x0020	/* Remount fs ro on errors */
 #define EXT2_MOUNT_ERRORS_PANIC		0x0040	/* Panic on errors */
 #define EXT2_MOUNT_MINIX_DF		0x0080	/* Mimics the Minix statfs */
+#define EXT2_MOUNT_NO_UID32		0x0200  /* Disable 32-bit UIDs */
 
 #define clear_opt(o, opt)		o &= ~EXT2_MOUNT_##opt
 #define set_opt(o, opt)			o |= EXT2_MOUNT_##opt
@@ -597,7 +604,6 @@ extern void ext2_put_super (struct super_block *);
 extern void ext2_write_super (struct super_block *);
 extern int ext2_remount (struct super_block *, int *, char *);
 extern struct super_block * ext2_read_super (struct super_block *,void *,int);
-extern int init_ext2_fs(void);
 extern int ext2_statfs (struct super_block *, struct statfs *, int);
 
 /* truncate.c */
@@ -615,6 +621,7 @@ extern struct inode_operations ext2_file_inode_operations;
 
 /* symlink.c */
 extern struct inode_operations ext2_symlink_inode_operations;
+extern struct inode_operations ext2_fast_symlink_inode_operations;
 
 #endif	/* __KERNEL__ */
 
