@@ -1,5 +1,7 @@
 2001-12-31  Roland McGrath  <roland@frob.com>
 
+	* url.c (url_decode): Don't clobber *ENC in the dummy run.
+
 	* nbd.c (store_nbd_open): Make sure the store's name always
 	starts with the "nbd://" prefix.
 
