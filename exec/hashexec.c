@@ -84,7 +84,6 @@ check_hashbang (struct execdata *e,
 	  error_t uauth (auth_t auth)
 	    {
 	      return auth_user_authenticate (auth,
-					     unauth,
 					     ref, MACH_MSG_TYPE_MAKE_SEND,
 					     result);
 	    }
@@ -218,7 +217,8 @@ check_hashbang (struct execdata *e,
 	      error_t search_path (struct hurd_signal_preempter *preempter)
 		{
 		  error_t err;
-		  char *path = envz_get (envp, envplen, "PATH"), *pfxed_name;
+		  char const *path
+		    = envz_get (envp, envplen, "PATH"), *pfxed_name;
 
 		  if (! path)
 		    {
