@@ -423,6 +423,7 @@ launch_system (void)
   char shell[] = "/bin/sh";
   char pipes[] = "/hurd/pipes\0/servers/socket/1";
   char terminal[] = "/hurd/term\0console\0/dev/console";
+  char devname[] = "/hurd/dev\0/dev";
   mach_port_t term;
   task_t termtask;
   task_t foo;
@@ -465,8 +466,13 @@ launch_system (void)
      We must do this before calling proc_setmsgport below.  */
   proc_task2proc (procserver, fstask, &fsproc);
 
+#if 1
+  /* Run the device server */
+  termtask = run_for_real (devname, devname, sizeof (devname));
+#else  
   /* Run the terminal driver and open it for the shell. */
   termtask = run_for_real (terminal, terminal, sizeof (terminal));
+#endif
   if (termtask)
     {
       /* Open the console.  We are racing here against the
