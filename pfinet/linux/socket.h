@@ -14,7 +14,12 @@
 #define SOPRI_NORMAL 1
 #define SOPRI_BACKGROUND 2
 
-#define SOL_IP 0 /* XXX */
+#define SOL_IP IPPROTO_IP
+#define SOL_TCP IPPROTO_TCP
+
+/* TCP options */
+#define TCP_NODELAY 1
+#define TCP_MAXSEG 2
 
 #define SO_NO_CHECK 11
 #define SO_PRIORITY 12
