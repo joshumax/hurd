@@ -3,6 +3,7 @@
 	* users.c (trivfs_S_io_select): Remove IDTAG argument.
 	Also in invocation of pty_io_select.
 	* ptyio.c (pty_io_select): Likewise.
+	* term.h (pty_io_select): Likewise.
 
 2002-01-04  Marcus Brinkmann  <marcus@gnu.org>
 
