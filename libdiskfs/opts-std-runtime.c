@@ -18,12 +18,15 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <argp.h>
+
 #include "priv.h"
 
 static const struct argp_option
 std_runtime_options[] =
 {
-  {"remount", 'u',  0, 0, "Flush any meta-data cached in core"},
+  {"update", 'u',  0, 0, "Flush any meta-data cached in core"},
+  {"remount", 0, 0, OPTION_HIDDEN | OPTION_ALIAS}, /* deprecated */
   {0, 0}
 };
 
