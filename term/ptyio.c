@@ -46,13 +46,13 @@ static int user_ioctl_mode = 0;
 /* Byte to send to user in packet mode or user ioctl mode. */
 static char control_byte = 0;
 
-static int output_stopped;
+static int output_stopped = 0;
 
-static int pktnostop;
+static int pktnostop = 0;
 
-static int ptyopen;
+static int ptyopen = 0;
 
-static int nptyperopens;
+static int nptyperopens = 0;
 
 
 static void ptyio_init (void) __attribute__ ((constructor));
