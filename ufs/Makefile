@@ -26,8 +26,9 @@ DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
-LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
-	 $(libfshelp) $(libdiskfs) $(libthreads) $(libports)
+LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
+
+LIBPARTS = $(libdiskfs) $(libports) $(libpager) $(libioserver) $(libfshelp)
 
 all: ufs
 
@@ -53,6 +54,17 @@ pager.o: fs.h dinode.h
 sizes.o: fs.h dinode.h
 subr.o: fs.h
 tables.o: fs.h
+
+$(hurdinst)/lib/libdiskfscombined.a: $(LIBPARTS)
+	-mkdir foo
+	cd foo; $(AR) x $(libdiskfs)
+	cd foo; $(AR) x $(libports)
+	cd foo; $(AR) x $(libpager)
+	cd foo; $(AR) x $(libioserver)
+	cd foo; $(AR) x $(libfshelp)
+	cd foo; $(AR) cr $(hurdinst)/lib/libdiskfscombined.a *
+	rm -rf foo
+	$(RANLIB) $(hurdinst)/lib/libdiskfscombined.a
 
 $(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
 	$(MAKE) -C $(@D) $(@F)
