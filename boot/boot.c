@@ -383,6 +383,9 @@ main (int argc, char **argv, char **envp)
 	mach_port_deallocate (mach_task_self (), foo);
 #endif
     }
+  else
+    /* Remove inherited port.  The kernel gives none.  */
+    task_set_bootstrap_port (newtask, MACH_PORT_NULL);
 
   child_task = newtask;
 
@@ -410,9 +413,14 @@ main (int argc, char **argv, char **envp)
     __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
 			 &fs_stack_size);
   else if (boot_like_kernel) 
-    set_mach_stack_args (newtask, newthread, (char *)startpc,
-			 "[BOOTSTRAP fs]", bootstrap_args, php_child_name,
-			 psmdp_child_name, bootdevice, 0);
+    {
+      char hp[20], mdp[20];
+      sprintf (hp, "%d", (int) php_child_name);
+      sprintf (mdp, "%d", (int) psmdp_child_name);
+      set_mach_stack_args (newtask, newthread, (void *) startpc,
+			   "[BOOTSTRAP fs]", bootstrap_args,
+			   hp, mdp, bootdevice, 0);
+    }
   else
     set_mach_stack_args (newtask, newthread, (char *)startpc,
 			 "[BOOTSTRAP fs]", bootstrap_args,
@@ -513,7 +521,7 @@ set_mach_stack_args (user_task,
 				(thread_state_t)&regs,
 				&reg_size);
 
-	regs.eip = startpc;
+	regs.eip = (int) startpc;
 	regs.uesp = (int)((stack_end - arg_len) & ~(sizeof(int)-1));
 
 	(void)thread_set_state(user_thread,
@@ -521,7 +529,7 @@ set_mach_stack_args (user_task,
 				(thread_state_t)&regs,
 				reg_size);
 
-	arg_pos = regs.uesp;
+	arg_pos = (void *) regs.uesp;
       }    
 
 	/*
