@@ -19,13 +19,6 @@
 #include "fs_S.h"
 #include <hurd/paths.h>
 
-/* XXX need to reimplement transnamelen parameter, and implement Roland's
-   suggestion:
-   For S_IFMT shorcuts, don't read the device number out of the file!
-   TRANSNAME should be "ifmt\0minor\0major\0", where IFMT is
-   _HURD_{CHR,BLK}DEV and MAJOR, MINOR can be parsed with strtol (,,0)
-   (allowing octal or hex with 0 or 0x). */
-
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 error_t
 diskfs_S_file_set_translator (struct protid *cred,
@@ -41,9 +34,12 @@ diskfs_S_file_set_translator (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
+  if (!transnamelen && existing == MACH_PORT_NULL)
+    return 0;
+
   np = cred->po->np;
 
-  if (!transname[transnamelen - 1])
+  if (transnamelen && !transname[transnamelen - 1])
     return EINVAL;
 
   mutex_lock (&np->lock);
@@ -64,88 +60,98 @@ diskfs_S_file_set_translator (struct protid *cred,
       diskfs_destroy_translator (np, killtrans_flags);
     }
 
-  if ((flags & FS_TRANS_EXCL) && diskfs_node_translated (np))
+  if ((flags & FS_TRANS_EXCL) && transname && diskfs_node_translated (np))
     {
       mutex_unlock (&np->lock);
       return EBUSY;
     }
 	  
-  /* Handle the short-circuited translators */
-  if (!(flags & FS_TRANS_FORCE))
+  if (transnamelen)
     {
-      mode_t newmode = 0;
-      
-      if (diskfs_shortcut_symlink && !strcmp (transname, _HURD_SYMLINK))
-	newmode = S_IFLNK;
-      if (diskfs_shortcut_chrdev && !(strcmp (transname, _HURD_CHRDEV)))
-	newmode = S_IFCHR;
-      else if (diskfs_shortcut_blkdev && !strcmp (transname, _HURD_BLKDEV))
-	newmode = S_IFBLK;
-      else if (diskfs_shortcut_fifo && !strcmp (transname, _HURD_FIFO))
-	newmode = S_IFIFO;
-      else if (diskfs_shortcut_ifsock && !strcmp (transname, _HURD_IFSOCK))
-	newmode = S_IFSOCK;
-      
-      if (newmode)
+      if (!(flags & FS_TRANS_FORCE))
 	{
-	  if (S_ISDIR (np->dn_stat.st_mode))
+	  /* Handle the short-circuited translators */
+	  mode_t newmode = 0;
+	
+	  if (diskfs_shortcut_symlink && !strcmp (transname, _HURD_SYMLINK))
+	    newmode = S_IFLNK;
+	  if (diskfs_shortcut_chrdev && !(strcmp (transname, _HURD_CHRDEV)))
+	    newmode = S_IFCHR;
+	  else if (diskfs_shortcut_blkdev && !strcmp (transname, _HURD_BLKDEV))
+	    newmode = S_IFBLK;
+	  else if (diskfs_shortcut_fifo && !strcmp (transname, _HURD_FIFO))
+	    newmode = S_IFIFO;
+	  else if (diskfs_shortcut_ifsock && !strcmp (transname, _HURD_IFSOCK))
+	    newmode = S_IFSOCK;
+	
+	  if (newmode)
 	    {
-	      /* We can't allow this, because if the mode of the directory
-		 changes, the links will be lost.  Perhaps it might be 
-		 allowed for empty directories, but that's too much of a
-		 pain.  */
+	      if (S_ISDIR (np->dn_stat.st_mode))
+		{
+		  /* We can't allow this, because if the mode of the directory
+		     changes, the links will be lost.  Perhaps it might be 
+		     allowed for empty directories, but that's too much of a
+		     pain.  */
+		  mutex_unlock (&np->lock);
+		  return EISDIR;
+		}
+	      if (newmode == S_IFBLK || newmode == S_IFCHR)
+		{
+		  /* Find the device number from the arguments
+		     of the translator. */
+		  int major, minor;
+		  char *arg;
+	      
+		  arg = transname + strlen (transname) + 1;
+		  assert (arg <= transname + transnamelen);
+		  if (arg == transname + transnamelen)
+		    {
+		      mutex_unlock (&np->lock);
+		      return EINVAL;
+		    }
+		  major = strtol (arg, 0, 0);
+
+		  arg = arg + strlen (arg) + 1;
+		  assert (arg < transname + transnamelen);
+		  if (arg == transname + transnamelen)
+		    {
+		      mutex_unlock (&np->lock);
+		      return EINVAL;
+		    }
+		  minor = strtol (arg, 0, 0);
+	      
+		  np->dn_stat.st_rdev = (((major & 0x377) << 8)
+					 | (minor & 0x377));
+		}
+
+	      diskfs_truncate (np, 0);
+	      if (newmode == S_IFLNK)
+		{
+		  char *arg = transname + strlen (transname) + 1;
+		  assert (arg <= transname + transnamelen);
+		  if (arg == transname + transnamelen)
+		    {
+		      mutex_unlock (&np->lock);
+		      return EINVAL;
+		    }
+		  /* Store the argument in the file as the
+		     target of the link */
+		  diskfs_node_rdwr (np, arg, 0, strlen (arg), 1, cred, 0);
+		}
+	      np->dn_stat.st_mode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
+	      diskfs_node_update (np, 1);
 	      mutex_unlock (&np->lock);
-	      return EISDIR;
+	      return 0;
 	    }
-	  if (newmode == S_IFBLK || newmode == S_IFCHR)
-	    {
-	      /* Find the device number from the arguments
-		 of the translator. */
-	      int major, minor;
-	      char *arg;
-	      
-	      arg = transname + strlen (transname) + 1;
-	      assert (arg <= transname + transnamelen);
-	      if (arg == transname + transnamelen)
-		{
-		  mutex_unlock (&np->lock);
-		  return EINVAL;
-		}
-	      major = strtol (arg, 0, 0);
-
-	      arg = arg + strlen (arg) + 1;
-	      assert (arg < transname + transnamelen);
-	      if (arg == transname + transnamelen)
-		{
-		  mutex_unlock (&np->lock);
-		  return EINVAL;
-		}
-	      minor = strtol (arg, 0, 0);
-	      
-	      np->dn_stat.st_rdev = ((major & 0x377) << 8) | (minor & 0x377);
-	    }
-
-	  diskfs_truncate (np, 0);
-	  if (newmode == S_IFLNK)
-	    {
-	      char *arg = transname + strlen (transname) + 1;
-	      assert (arg <= transname + transnamelen);
-	      if (arg == transname + transnamelen)
-		{
-		  mutex_unlock (&np->lock);
-		  return EINVAL;
-		}
-	      /* Store the argument in the file as the target of the link */
-	      diskfs_node_rdwr (np, arg, 0, strlen (arg), 1, cred, 0);
-	    }
-	  np->dn_stat.st_mode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
-	  diskfs_node_update (np, 1);
-	  mutex_unlock (&np->lock);
-	  return 0;
 	}
+      error = diskfs_set_translator (np, transname, transnamelen, cred);
     }
 
-  error = diskfs_set_translator (np, transname, transnamelen, cred);
+  if (existing != MACH_PORT_NULL)
+    {    
+      np->translator.control = existing;
+      np->translator.starting = 0;
+    }
   mutex_unlock (&np->lock);
   return error;
 }
