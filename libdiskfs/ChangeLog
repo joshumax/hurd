@@ -1,8 +1,13 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup: short_circuited_callback1): Fix
+	type of arg `argz_len' to use size_t *.
+
 Tue Jul 14 16:27:00 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Don't require the node to be
 	a directory in the null pathname case.  (Thus reverting one of the
-	changes of June 15, 1994.)  
+	changes of June 15, 1994.)
 
 Mon Jun 29 18:54:23 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
@@ -45,17 +50,17 @@ Tue Sep 16 14:37:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	all execution with EACCES.  If nosuid is on, then prohibit setuid
 	or setgid execution by silently omitting the uid substitution.
 	* opts-std-startup.c (parse_startup_opt): Implement --no-suid and
-	--no-exec. 
+	--no-exec.
 	* opts-common.c (diskfs_common_options): Add --no-suid and
-	--no-exec. 
-	* opts-std-runtime.c (struct parse_hook): Add nosuid and noexec. 
+	--no-exec.
+	* opts-std-runtime.c (struct parse_hook): Add nosuid and noexec.
 	(parse_opt) [cases 'S', 'E', OPT_SUID_OK, OPT_EXEC_OK] Understand
-	--no-suid, --no-exec, --suid-ok, and --exec-ok.  
+	--no-suid, --no-exec, --suid-ok, and --exec-ok.
 	(parse_opt) [case ARGP_KEY_INIT]: Initialize H->nosuid and
-	H->noexec. 
+	H->noexec.
 	(OPT_SUID_OK, OPT_EXEC_OK): New macros.
 	(std_runtime_options): Add --suid-ok and --exec-ok.
-	(set_opts): Set nosuid and noexec from H->nosuid and H->noexec. 
+	(set_opts): Set nosuid and noexec from H->nosuid and H->noexec.
 
 	* opts-common.c (diskfs_common_options): Rename --nosync to
 	--no-sync; leave --nosync as an alias.
@@ -65,11 +70,11 @@ Wed Aug 20 14:03:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* diskfs.h: Doc fix.
 
 	* io-map.c (diskfs_S_io_map): Cope with error return from
-	diskfs_get_filemap. 
+	diskfs_get_filemap.
 	* rdwr-internal.c (_diskfs_rdwr_internal): Likewise.
 
 	* disk-pager.c (service_paging_requests): New args for
-	ports_manage_port_operations_multithread. 
+	ports_manage_port_operations_multithread.
 	* init-first.c (master_thread_function): Likewise.
 
 1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -188,7 +193,7 @@ Wed Feb 12 14:23:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	Deal properly with EAGAIN return from diskfs_lookup.
 	Replace references to dotdotport with root_parent.
 	* dir-unlink.c (diskfs_S_dir_unlink): Don't pass depth args to
-	diskfs_lookup. 
+	diskfs_lookup.
 	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
 	* dir-renamed.c (diskfs_rename_dir, checkpath): Likewise.
 	* dir-rename.c (diskfs_S_dir_rename): Likewise.
@@ -337,22 +342,22 @@ Thu Nov  7 01:03:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 Wed Nov  6 17:55:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* diskfs.h (diskfs_isuid, diskfs_groupmember, diskfs_isowner, 
+	* diskfs.h (diskfs_isuid, diskfs_groupmember, diskfs_isowner,
 	diskfs_access, diskfs_checkdirmod): Delete functions.
 	* fsys-getroot.c (diskfs_S_fsys_getroot): Replace PSEUDOCRED with
 	a real iouser and specify that in the relevant calls.
 	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Reworked to use
 	idvecs.
 	* file-chmod.c (diskfs_S_file_chmod): diskfs_isuid ->
-	idvec_contains. 
+	idvec_contains.
 	* file-chown.c (diskfs_S_file_chown): Likewise.
 	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
 	* file-chmod.c (diskfs_S_file_chmod): diskfs_groupmember ->
-	idvec_contains. 
+	idvec_contains.
 	* file-chown.c (diskfs_S_file_chown): Likewise.
 	* node-create.c (diskfs_create_node): Likewise.
 	* dir-lookup.c (diskfs_S_dir_lookup): diskfs_isowner ->
-	fshelp_isowner. 
+	fshelp_isowner.
 	* file-chflags.c (diskfs_S_file_chflags): Likewise.
 	* file-chmod.c (diskfs_S_file_chmod): Likewise.
 	* file-chown.c (diskfs_S_file_chown): Likewise.
@@ -366,7 +371,7 @@ Wed Nov  6 17:55:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* file-chauthor.c (dithkfth_TH_file_chauthor): dthkfth_ithowner ->
 	fthhelp_ithowner.
 	* dir-lookup.c (diskfs_S_dir_lookup): diskfs_access ->
-	fshelp_access. 
+	fshelp_access.
 	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
 	* file-access.c (diskfs_S_file_check_access): Likewise.
 	* file-exec.c (diskfs_S_file_exec): Likewise (in dead code).
@@ -375,7 +380,7 @@ Wed Nov  6 17:55:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* lookup.c (diskfs_lookup): Likewise.
 	(diskfs_lookup): diskfs_checkdirmod -> fshelp_checkdirmod.
 	* dir-lookup.c (diskfs_S_dir_lookup): New arg format for
-	fshelp_fetch_root. 
+	fshelp_fetch_root.
 	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
 	* diskfs.h, protid-make.c (diskfs_create_protid): Delete args
  	`uids', `gids', `nuids', and `ngids'.  Replace with new arg
@@ -439,7 +444,7 @@ Thu Oct 10 10:53:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* peropen-rele.c (diskfs_release_peropen): Before freeing PO,
  	release any user lock it's holding.
 	<sys/file.h>: New include.
-	
+
 Tue Oct  8 15:01:32 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ifsock.c (diskfs_S_ifsock_getsockaddr): Write permission governs
@@ -467,7 +472,7 @@ Wed Sep 18 15:02:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	<argp.h>: New include.
 	* opts-append-std.c <stdio.h>: New include.
 	* dir-lookup.c <stdio.h>: New include.
-	
+
 Fri Sep 13 19:15:45 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Free ARGZ if
@@ -537,7 +542,7 @@ Sun Sep  8 18:19:50 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	(diskfs_startup_argp): Renamed from diskfs_std_startup_argp.
 	* Makefile (OTHERSRCS): Remove filedev.c, machdev.c, dev-open.c,
  	dev-io.c, & dev-globals.c.
-	
+
 Thu Sep 12 16:22:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile: New variable.
@@ -556,7 +561,7 @@ Thu Sep  5 11:13:54 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* extra-version.c: New file.
 	* Makefile (OTHERSRCS): Add extra-version.c.
 	* opts-version.c: Include <version.h>.
- 	(diskfs_extra_version): Delete special declaration. 
+ 	(diskfs_extra_version): Delete special declaration.
 	(_print_version): Use the user's provided version number, and also
 	give it our (libdiskfs) version number.
 
@@ -577,7 +582,7 @@ Fri Aug 30 21:57:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* name-cache.c (MAXCACHE): 200 now.  After experimentation, this
 	appears to be a pretty good value.  Very little benefit after
-	this. 
+	this.
 
 Fri Aug 30 20:41:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -605,7 +610,7 @@ Mon Aug 26 15:10:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	(partial_stats): New variable.
 	(build_partial): New function.
 	(diskfs_check_lookup_cache): Call build_partial after statistics
-	frobbing. 
+	frobbing.
 
 	* name-cache.c (diskfs_check_lookup_cache): Increment members of
 	statistics while still holding CACHE_LOCK.
@@ -647,7 +652,7 @@ Wed Aug  7 13:53:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* node-create.c (diskfs_create_node): New files always copy GID
 	from their parent; that's NetBSD's behavior, and it's good enough
-	for me. 
+	for me.
 
 Thu Aug  1 17:24:08 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
