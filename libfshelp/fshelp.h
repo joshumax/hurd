@@ -90,10 +90,10 @@ struct transbox
    the entire passive translator spec for the file (setting
    *ARGZ_LEN to the length.)   If there is no passive 
    translator, then return ENOENT.  */
-typedef void (*fshelp_callback_t) (void *cookie,
-				   mach_port_t *underlying,
-				   uid_t *uid, gid_t *gid, 
-				   char **argz, int *argz_len);
+typedef error_t (*fshelp_callback_t) (void *cookie,
+				      mach_port_t *underlying,
+				      uid_t *uid, gid_t *gid, 
+				      char **argz, int *argz_len);
 
 
 /* Fetch the root from TRANSBOX.  DOTDOT is an unauthenticated port
