@@ -1,5 +1,5 @@
 /* Definitions for pfinet-specific calls
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1999 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -21,62 +21,41 @@ subsystem pfinet 21000;
 
 #include <hurd/hurd_types.defs>
 
+#ifdef SOCKET_IMPORTS
+SOCKET_IMPORTS
+#endif
+
 INTR_INTERFACE
 
-/* Add a route entry for DESTINATION through GATEWAY.  All outgoing IP
-   addresses A for which (A & MASK) == DESTINATION will be directed
-   through GATEWAY.  What BSD calls `host routes' are just where
-   MASK is all one bits.  */
-routine pfinet_add_route (
-	socket_t ignored;
-	int gateway;
-	int destination;
-	int mask);
 
-/* Delete a route entry; the parameters much exactly match a preceding
-   pfinet_add_route call. */
-routine pfinet_delete_route (
-	socket_t ignored;
-	int gateway;
-	int destination;
-	int mask);
+/* Register a new interface.  This call is made on the main socket
+   rendezvous port (/servers/socket/pfinet). */
+routine pfinet_register_interface (
+	server: pf_t;
+	name: string_t;
+	address: int;	/* in net byte order */
+	network: int;	/* in net byte order */
+	mask: int;	/* in net byte order */
+	broadcast: int; /* in net byte order */
+	mac_hdr_len: int;
+	xmit: mach_port_send_t;
+	out recv: mach_port_send_t);
 
-/* Return the current contents of the routing table.  GATEWAY,
-   DESTINATION, MASK, REDIRECT, and WIRED are parallel arrays with one element
-   each for each route.  GATEWAY, DESTINATION, and MASK refer to the
-   parameters of the pfinet_add_route call.  REDIRECT is set for 
-   internally generated routes.  WIRED is set for permanent routes
-   associated with live interfaces. */
-routine pfinet_get_routes (
-	socket_t ignored;
-	intarray_t gateway;
-	intarray_t destination;
-	intarray_t mask;
-	data_t redirect;
-	data_t wired);
-   
-/* Add a new interface specification.  NAME is the kernel device name
-   corresponding to the interface.  ADDR is our address on that 
-   interface.  DEST is the address of the peers we can talk to on the
-   interface, such that if (X & MASK) == DEST for some address X,
-   then it should be directly reachable on this interface. 
-   A wired routing entry will be added for this interface.  */
-routine pfinet_add_interface (
-	socket_t ignored;
-	string_t name;
-   	int addr;
-	int dest;
-	int mask;
-	int type);
+/* Process an incoming packet.  This is made on the RECVXMIT port returned
+   by a previous call to pfinet_register_interface. */
+simpleroutine pfinet_recv (
+	rx: mach_port_t;
+	packet: data_t);
 
-/* Delete an interface specification.  The parameters must exactly
-   match those of a preceding pfinet_add_interface call. */
-routine pfinet_delete_interface (
-	socket_t ignored;
-	string_t name;
-	int addr;
-	int dest;
-	int mask;
-	int type);
+/* Sent by pfinet TO an interface for each packet that needs to be sent.
+   The first mac_hdr_len bytes of the buffer are unfilled; the actual
+   IP packet begins that many bytes in. */
+simpleroutine pfinet_xmit (
+	tx: mach_port_t;
+	is_broadcast: int;
+	packet: data_t);
+
+
+
 
 
