@@ -1,3 +1,9 @@
+Wed Sep  4 16:25:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makeconf
+	($(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))):
+	`$(includdir)' --> `$(includedir)'
+
 Sun Sep  1 14:03:20 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makeconf ($(target): %$(target-suffix)): Add dependency on
