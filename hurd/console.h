@@ -20,6 +20,7 @@
 #define _HURD_CONSOLE_H
 
 #include <stdint.h>
+#include <wchar.h>
 
 typedef enum
   {
