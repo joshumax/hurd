@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface. 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -198,13 +198,16 @@ routine file_getfh (
 /* Operations supported on directories */
 
 /* Translate a file name, following all symlinks.  Upon return, if DO_RETRY
-   is FS_RETRY_MAGICAL then RETRY_NAME specifies what to do, the list of
-   possibilities is documented in <hurd/hurd_types.h>; if FS_RETRY_REAUTH,
-   then RESULT should be reauthenticated before being used.  If RETRY_NAME
-   is the empty string, no further dir_lookup calls are required; RESULT,
-   or the reauthenticated port, is the port to use.  Otherwise the
-   dir_lookup call should be repeated, sent to RESULT (or the
-   reauthenticated port) with RETRY_NAME passed for FILE_NAME.  */
+   is FS_RETRY_MAGICAL then RETRY_NAME specifies what to do, the list
+   of possibilities is documented in <hurd/hurd_types.h>; if
+   FS_RETRY_REAUTH, then RESULT should be reauthenticated before being
+   used.  If RETRY_NAME is the empty string and the retry type is
+   FS_RETRY_NORMAL, then no further dir_lookup calls are required;
+   RESULT is the port to use.  Otherwise the dir_lookup call should be
+   repeated, sent to RESULT (or the reauthenticated port) with
+   RETRY_NAME passed for FILE_NAME.  This call is required to be
+   supported by all files (even non-directories) if the filename is
+   null, and should function in that case as a re-open of the file.  */
 routine dir_lookup (
 	start_dir: file_t;
 	RPT

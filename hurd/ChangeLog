@@ -1,3 +1,8 @@
+Wed Jul 15 10:37:44 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
+
+	* fs.defs (dir_lookup): Update interface specification in the
+	comment to reflect current reality.
+
 Tue Sep 23 15:52:35 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* password.defs: New file.
