@@ -173,12 +173,15 @@ struct argp
   argp_parser_t parser;
 
   /* A string describing what other arguments are wanted by this program.  It
-     is only used by argp_usage to print the `Usage:' message.  */
+     is only used by argp_usage to print the `Usage:' message.  If it
+     contains newlines, the strings separated by them are considered
+     alternative usage patterns, and printed on separate lines (lines after
+     the first are prefix by `  or: ' instead of `Usage:').  */
   __const char *args_doc;
 
   /* If non-NULL, a string containing extra text to be printed before and
      after the options in a long help message (separated by a vertical tab
-     `\v' character). */
+     `\v' character).  */
   __const char *doc;
 
   /* A vector of argp_children structures, terminated by a member with a 0
