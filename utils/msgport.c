@@ -1,7 +1,6 @@
 /* Send messages to selected processes
 
-   Copyright (C) 1998, 1999, 2000 Free Software Foundation, Inc.
-
+   Copyright (C) 1998,99,2000,02 Free Software Foundation, Inc.
    Written by Jose M. Moya <josem@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -165,17 +164,18 @@ cmd_clearenv (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 /* Convert string STR in flags for file access modes.  STR should be a
    combination of `r', `w' and `x' (for read, write and execute modes
    respectively).  Other chars are ignored. */
-int
-str2flags (char *str)
+static inline int
+str2flags (const char *str)
 {
   int flags = 0;
   while (*str)
     {
       switch (*str)
 	{
-	case 'r': flags |= O_RDONLY; break;
-	case 'w': flags |= O_WRONLY; break;
-	case 'x': flags |= O_EXEC;   break;
+	case 'r': flags |= O_RDONLY;		break;
+	case 'w': flags |= O_WRONLY|O_CREAT;	break;
+	case 'x': flags |= O_EXEC;		break;
+	case 'a': flags |= O_APPEND;		break;
 	default:
 	  /* ignore */
 	}
@@ -210,12 +210,8 @@ error_t
 cmd_setfd (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
-  int flags = O_RDONLY;
-  file_t file;
-
-  if (argc > 2)
-    flags = str2flags(argv[2]);
-  file = file_name_lookup (argv[1], flags, 0666);
+  int flags = str2flags (argc > 2 ? argv[2] : "r");
+  file_t file = file_name_lookup (argv[1], flags, 0666);
   if (file == MACH_PORT_NULL)
     return errno;
   err = do_setfd (pid, msgport, atoi (argv[0]), file);
@@ -230,15 +226,11 @@ error_t
 cmd_stdin (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
-  int flags = O_RDONLY;
-  file_t file;
-
-  if (argc > 1)
-    flags = str2flags(argv[1]);
-  file = file_name_lookup (argv[0], flags, 0666);
+  int flags = str2flags (argc > 2 ? argv[2] : "r");
+  file_t file = file_name_lookup (argv[0], flags, 0666);
   if (file == MACH_PORT_NULL)
     return errno;
-  err = do_setfd (pid, msgport, 0, file);
+  err = do_setfd (pid, msgport, STDIN_FILENO, file);
   if (err)
     mach_port_deallocate (mach_task_self (), file);
   return err;
@@ -250,15 +242,11 @@ error_t
 cmd_stdout (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
-  int flags = O_WRONLY;
-  file_t file;
-
-  if (argc > 1)
-    flags = str2flags(argv[1]);
-  file = file_name_lookup (argv[0], flags, 0666);
+  int flags = str2flags (argc > 2 ? argv[2] : "w");
+  file_t file = file_name_lookup (argv[0], flags, 0666);
   if (file == MACH_PORT_NULL)
     return errno;
-  err = do_setfd (pid, msgport, 1, file);
+  err = do_setfd (pid, msgport, STDOUT_FILENO, file);
   if (err)
     mach_port_deallocate (mach_task_self (), file);
   return err;
@@ -270,15 +258,11 @@ error_t
 cmd_stderr (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
-  int flags = O_WRONLY;
-  file_t file;
-
-  if (argc > 1)
-    flags = str2flags(argv[1]);
-  file = file_name_lookup (argv[0], flags, 0666);
+  int flags = str2flags (argc > 2 ? argv[2] : "w");
+  file_t file = file_name_lookup (argv[0], flags, 0666);
   if (file == MACH_PORT_NULL)
     return errno;
-  err = do_setfd (pid, msgport, 2, file);
+  err = do_setfd (pid, msgport, STDERR_FILENO, file);
   if (err)
     mach_port_deallocate (mach_task_self (), file);
   return err;
@@ -471,10 +455,10 @@ static const struct argp_option cmd_options[] =
   {"pwd",      CMD_PWD,    0,     0, "Print current working directory"},
   {"getcwd",   0,	   0,     OPTION_ALIAS},
   {"getroot",  CMD_GETROOT,0,     0, "Print current root directory"},
-  {"setfd",    CMD_SETFD,  "FD FILE [+rwxn]", 0, "Change file descriptor"},
-  {"stdin",    CMD_STDIN,  "FILE [+rwxn]",    0, "Change standard input"},
-  {"stdout",   CMD_STDOUT, "FILE [+rwxn]",    0, "Change standard output"},
-  {"stderr",   CMD_STDERR, "FILE [+rwxn]",    0, "Change standard error"},
+  {"setfd",    CMD_SETFD,  "FD FILE [rwxa]", 0, "Change file descriptor"},
+  {"stdin",    CMD_STDIN,  "FILE [rwxa]",    0, "Change standard input"},
+  {"stdout",   CMD_STDOUT, "FILE [rwxa]",    0, "Change standard output"},
+  {"stderr",   CMD_STDERR, "FILE [rwxa]",    0, "Change standard error"},
   {"chdir",    CMD_CHCWDIR,"DIR",   0, "Change current working directory"},
   {"cd",       0,	   0,     OPTION_ALIAS},
   {"chroot",   CMD_CHCRDIR,"DIR",   0, "Change current root directory"},
