@@ -1,3 +1,8 @@
+1999-02-01  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* ops.c: Include <maptime.h>.
+	(netfs_attempt_utimes): Fix various typo's.
+
 Sun Jan 31 18:39:09 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* nfs.c (xdr_encode_sattr_times): Convert nanoseconds to

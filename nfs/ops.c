@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <maptime.h>
 
 /* We have fresh stat information for NP; the fattr structure is at
    P.  Update our entry.  Return the address of the next int after
@@ -283,7 +284,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
      just yet. */
   if (!atime || !mtime)
     {
-      maptime_read (maptime, &tv);
+      maptime_read (mapped_time, &tv);
       current.tv_sec = tv.tv_sec;
       current.tv_nsec = tv.tv_usec * 1000;
     }
@@ -292,8 +293,8 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
 			  cred, 0, &rpcbuf, np, -1);
   p = xdr_encode_fhandle (p, &np->nn->handle);
   p = xdr_encode_sattr_times (p, 
-			      atime ?: current, 
-			      mtime ?: current);
+			      atime ?: &current, 
+			      mtime ?: &current);
   if (protocol_version == 3)
     *p++ = 0;			/* guard check == 0 */
 
