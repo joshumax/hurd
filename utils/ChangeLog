@@ -1,3 +1,17 @@
+Fri Jul 26 12:34:00 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (enum val_display_type): Add `PAGESZ'.
+	`SIZES' -> `SIZE'; all uses updated.  Remove BYTES, PAGES, and KBYTES.
+	(fields): disp_type of "pagesize" and "swap-pagesize" changed to PAGESZ.
+	(val_display_type_is_size): Function removed.
+	(struct field): `disp_type' field -> `type'; all used updated.
+	(print_val): Add TYPE & SIZE_UNITS arguments; remove HOW & PSIZE.
+	(main): Variable user_disp_type removed.  Variable size_units added.
+	Add SIZE_UNITS macro, remove FDISPTYPE macro.
+	Calls to print_val now use new PVAL macro.
+	(get_vmstats_field): Just test against a type of SIZE, instead of
+	using val_display_type_is_size.
+
 Thu Jul 25 22:36:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (INSTALL-vmstat-ops): New variable.
