@@ -130,8 +130,9 @@ diskfs_start_bootstrap (char **argv)
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
-  bootpt = ports_get_right (ports_allocate_port (sizeof (struct port_info), 
-						 PT_INITBOOT));
+  bootpt = ports_get_right (ports_allocate_port (diskfs_port_bucket,
+						 sizeof (struct port_info), 
+						 diskfs_initboot_class));
   mach_port_insert_right (mach_task_self (), bootpt, bootpt,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
@@ -207,7 +208,8 @@ diskfs_S_exec_startup (mach_port_t port,
   struct ufsport *upt;
   char exec_argv[] = "[BOOT EXECSERVER]";
 
-  if (!(upt = ports_check_port_type (port, PT_EXECBOOT)))
+  if (!(upt = ports_lookup_port (diskfs_port_bucket, port, 
+				 diskfs_execboot_class)))
     return EOPNOTSUPP;
 
   *base_addr = 0;
@@ -263,7 +265,7 @@ diskfs_S_exec_startup (mach_port_t port,
 
   *dtablepoly = MACH_MSG_TYPE_COPY_SEND;
 
-  ports_done_with_port (upt);
+  ports_port_deref (upt);
   return 0;
 }
 
@@ -277,7 +279,8 @@ diskfs_execboot_fsys_startup (mach_port_t port,
 {
   struct port_info *pt;
   
-  if (!(pt = ports_check_port_type (port, PT_EXECBOOT)))
+  if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
+				diskfs_execboot_class)))
     return EOPNOTSUPP;
   
   *real = MACH_PORT_NULL;
@@ -288,7 +291,7 @@ diskfs_execboot_fsys_startup (mach_port_t port,
   mutex_lock (&execstartlock);
   condition_signal (&execstarted);
   mutex_unlock (&execstartlock);
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   return 0;
 }
   
@@ -301,13 +304,14 @@ diskfs_S_fsys_getpriv (mach_port_t port,
 		       mach_port_t *fstask)
 {
   struct port_info *pt;
-  if (!(pt = ports_check_port_type (port, PT_INITBOOT)))
+  if (!(pt = ports_lookup_port (diskfs_port_bucket, port, 
+				diskfs_initboot_class)))
     return EOPNOTSUPP;
   
   *hostpriv = diskfs_host_priv;
   *device_master = diskfs_master_device;
   *fstask = mach_task_self ();
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   return 0;
 }
 
@@ -325,10 +329,10 @@ diskfs_S_fsys_init (mach_port_t port,
   error_t err;
   mach_port_t root_pt;
 
-  pt = ports_check_port_type (port, PT_INITBOOT);
+  pt = ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
   if (!pt)
     return EOPNOTSUPP;
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   if (initdone)
     return EOPNOTSUPP;
   initdone = 1;
@@ -477,8 +481,9 @@ start_execserver (void)
   extern task_t diskfs_execserver_task;	/* Set in boot-parse.c.  */
 
   assert (diskfs_execserver_task != MACH_PORT_NULL);
-  right = ports_get_right (ports_allocate_port (sizeof (struct port_info),
-						PT_EXECBOOT));
+  right = ports_get_right (ports_allocate_port (diskfs_port_bucket,
+						sizeof (struct port_info),
+						diskfs_execboot_class));
   mach_port_insert_right (mach_task_self (), right,
 			  right, MACH_MSG_TYPE_MAKE_SEND);
   task_set_special_port (diskfs_execserver_task, TASK_BOOTSTRAP_PORT, right);
