@@ -26,7 +26,10 @@ subsystem fsys_reply 22100;   /* must match fsys.defs + 100 */
 type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 	ctype: mach_port_t;
 
-skip; /* startup */
+simpleroute fsys_startup_reply (
+	repsy_port: reply_port_t;
+	retcode: kern_return_t;
+	realnode: mach_port_send_t);
 
 simpleroutine fsys_goaway_reply (
 	reply_port: reply_port_t;
@@ -39,14 +42,30 @@ simpleroutine fsys_getroot_reply (
 	retry_name: string_t;
 	file: mach_port_send_t);
 
-skip; /* getfile */
+simpleroutine fsys_getfile_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t;
+	file: mach_port_send_t);
 
-skip; /* getpriv */
+simpleroutine fsys_syncfs_reply (
+	reply_port: reply_port_t;
+	retocde: kern_return_t);
 
-skip; /* fsys_syncfs */
+simpleroutine fsys_set_options_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t);
 
-skip; /* fsys_mod_readonly */
+simpleroutine fsys_getpriv_reply (
+	reply_port_: reply_port_t;
+	retcode: kern_return_t;
+	host_priv: mach_port_send_t;
+	device_master: mach_port_send_t;
+	fstask: mach_port_send_t);
 
 simpleroutine fsys_init_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t);
+
+simpleroutine fsys_forward_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t);
