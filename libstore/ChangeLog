@@ -1,3 +1,8 @@
+2001-12-31  Roland McGrath  <roland@frob.com>
+
+	* nbd.c (store_nbd_open): Make sure the store's name always
+	starts with the "nbd://" prefix.
+
 2001-12-30  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (nbd_read): Request multiple chunks of up to NBD_IO_MAX each.
