@@ -27,5 +27,5 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   int *amt)
 {
   assert (!trivfs_support_write);
-  return cred ? EBADF : EOPNOTSUPP;
+  return EOPNOTSUPP;
 }
