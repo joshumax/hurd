@@ -30,7 +30,7 @@ diskfs_drop_node (struct node *np)
       diskfs_check_readonly ();
       assert (!diskfs_readonly);
 
-      if (np->istranslated)
+      if (np->dn_stat.st_mode & S_IPTRANS)
 	diskfs_set_translator (np, 0, 0, 0);
 
       if (np->allocsize != 0
