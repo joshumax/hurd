@@ -1,5 +1,5 @@
 /* Demuxer for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "memory_object_S.h"
+#include "notify_S.h"
 
 /* Demultiplex a single message directed at a pager port; INP is the
    message received; fille OUTP with the reply.  */
@@ -26,6 +27,10 @@ pager_demuxer (mach_msg_header_t *inp,
 {
   extern int _pager_seqnos_memory_object_server (mach_msg_header_t *inp,
 					  mach_msg_header_t *outp);
-  return _pager_seqnos_memory_object_server (inp, outp);
+  extern int _pager_seqnos_notify_server (mach_msg_header_t *inp,
+					  mach_msg_header_t *outp);
+  
+  return (_pager_seqnos_memory_object_server (inp, outp)
+	  || _pager_seqnos_notify_server (inp, outp));
 }
 
