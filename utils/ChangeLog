@@ -1,3 +1,22 @@
+Thu Jul 25 22:36:38 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (options, main): -k/--kilobytes, -v/--pages, and
+	-b/--bytes options added.
+	(fields): New struct members initialized.  `size',
+	`cache-hit-ratio', `swap-size', `swap-active', `swap-free', and
+	`swap-pagesize' added.
+	(val_t, enum val_display_type, enum field_change_type): New types.
+	(val_display_type_is_size, print_val, vm_state_refresh,
+	vm_state_get_field, get_vmstats_field, get_size,
+	ensure_def_pager_info, get_swap_size, get_swap_free,
+	get_swap_page_size, get_swap_active): New functions.
+	(struct field): CHANGE_TYPE, DISP_TYPE, STANDARD, and COMPUTE
+	fields added.  CUM field removed.
+	(struct vm_state): New type.
+	(main): Changed greatly to use vm_state type & functions, use
+ 	print_val, and support CONST display types nicely.
+	(argp_program_version): Version changed to 1.1.
+
 Sun Jul 21 03:00:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsysopts.c (main): Print an error for no args.
