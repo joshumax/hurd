@@ -23,6 +23,12 @@ extern int __verify_write(const void *, unsigned long);
 
 #define put_user(x,ptr) (*(ptr) = (x), 0)
 #define get_user(x,ptr) ((x) = *(ptr), 0)
+#define __get_user(x,ptr) get_user((x), (ptr))
+
+/* This is used to constitute an arbitrarily-sized memory clobber in an asm. */
+struct __large_struct { unsigned long buf[100]; };
+#define __m(x) (*(struct __large_struct *)(x))
+
 
 /*
  * The "xxx_ret" versions return constant specified in third argument, if
