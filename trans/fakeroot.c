@@ -364,20 +364,37 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       else
 	{
 	  mach_port_deallocate (mach_task_self (), fsidport);
-	  mutex_lock (&idport_ihash_lock);
-	  *np = ihash_find (&idport_ihash, idport);
-	  if (*np != 0)
+	  if (fsidport == netfs_fsys_identity)
 	    {
-	      /* We already know about this node.  */
+	      /* Talking to ourselves!  We just looked up one of our own nodes.
+		 Find the node and return it.  */
+	      struct protid *cred = ports_lookup_port (netfs_port_bucket, file,
+						       netfs_protid_class);
 	      mach_port_deallocate (mach_task_self (), idport);
 	      mach_port_deallocate (mach_task_self (), file);
+	      if (cred == 0)
+		return EGRATUITOUS;
+	      *np = cred->po->np;
 	      netfs_nref (*np);
-	      mutex_unlock (&idport_ihash_lock);
+	      ports_port_deref (cred);
 	    }
 	  else
 	    {
-	      mutex_unlock (&idport_ihash_lock);
-	      err = new_node (file, idport, flags, np);
+	      mutex_lock (&idport_ihash_lock);
+	      *np = ihash_find (&idport_ihash, idport);
+	      if (*np != 0)
+		{
+		  /* We already know about this node.  */
+		  mach_port_deallocate (mach_task_self (), idport);
+		  mach_port_deallocate (mach_task_self (), file);
+		  netfs_nref (*np);
+		  mutex_unlock (&idport_ihash_lock);
+		}
+	      else
+		{
+		  mutex_unlock (&idport_ihash_lock);
+		  err = new_node (file, idport, flags, np);
+		}
 	    }
 	}
     }
