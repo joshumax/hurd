@@ -222,8 +222,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  error = 
-	    diskfs_create_protid (diskfs_make_peropen (dnp,
-						       dircred->po->openstat,
+	    diskfs_create_protid (diskfs_make_peropen (dnp, 0,
 						       dircred->po->dotdotport),
 				  0, 0, 0, 0, &newpi);
 	  if (error)
