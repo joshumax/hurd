@@ -24,3 +24,4 @@
 #define IO_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
 
 #define IO_IMPORTS import "priv.h";
+#define TIOCTL_IMPORTS IO_IMPORTS
