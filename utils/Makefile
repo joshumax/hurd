@@ -43,7 +43,7 @@ storeinfo: ../libstore/libstore.a
 # We must include libthreads because of a bug in the way shared libraries
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
-ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo \
+ps w hurdids settrans sync showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 %: %.sh
