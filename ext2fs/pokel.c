@@ -38,8 +38,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
   vm_offset_t offset = trunc_page (loc - pokel->image);
   vm_offset_t end = round_page (loc + length - pokel->image);
 
- printf ("pokel_add (%p, %p, %lu) [%lu, %lu]\n",
-	 pokel, loc, length, offset, end);
+ printf ("pokel_add (%p, %p, %u) [%u, %u]\n", pokel, loc, length, offset, end);
 
   spin_lock (&pokel->lock);
 
