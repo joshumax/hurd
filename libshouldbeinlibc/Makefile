@@ -1,6 +1,6 @@
 # Makefile for libshouldbeinlibc
 #
-#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,19 +20,17 @@ dir := libshouldbeinlibc
 makemode := library
 
 libname = libshouldbeinlibc
-SRCS = argp-parse.c argp-help.c argp-pv.c argp-pvh.c argp-ba.c \
-	argp-fmtstream.c argp-fs-xinl.c argp-xinl.c argp-eexst.c \
-	termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
-	canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
-	xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c \
-	idvec.c idvec-auth.c idvec-funcs.c \
-	idvec-impgids.c idvec-verify.c idvec-rep.c \
-	ugids.c ugids-argp.c ugids-rep.c ugids-verify.c ugids-subtract.c \
-	ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c \
-	ugids-verify-auth.c \
-	argz-replace.c mktime.c
-installhdrs = argp.h idvec.h timefmt.h maptime.h \
-	wire.h portinfo.h portxlate.h cacheq.h ugids.h
+SRCS = termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
+       canon-host.c maptime.c shared-dom.c localhost.c wire.c portinfo.c \
+       xportinfo.c portxlate.c lcm.c cacheq.c fsysops.c \
+       idvec.c idvec-auth.c idvec-funcs.c \
+       idvec-impgids.c idvec-verify.c idvec-rep.c \
+       ugids.c ugids-argp.c ugids-rep.c ugids-verify.c ugids-subtract.c \
+       ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c \
+       ugids-verify-auth.c \
+       mktime.c
+installhdrs = idvec.h timefmt.h maptime.h \
+	      wire.h portinfo.h portxlate.h cacheq.h ugids.h
 LCLHDRS = $(installhdrs) argp-fmtstream.h argp-namefrob.h
 installhdrsubdir = .
 
@@ -41,4 +39,3 @@ CFLAGS += -DHAVE_LINEWRAP_H -DHAVE_CTHREADS_H
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
-
