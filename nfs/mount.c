@@ -125,6 +125,7 @@ mount_root (char *name, char *host)
   np = lookup_fhandle (p);
   p += NFS_FHSIZE / sizeof (int);
   free (rpcbuf);
+  mutex_unlock (&np->lock);
 
   /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
   addr.sin_port = s->s_port;
