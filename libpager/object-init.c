@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "memory_object.h"
+#include "memory_object_S.h"
 #include <stdio.h>
 
 /* Implement the object initialiation call as described in

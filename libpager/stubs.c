@@ -17,7 +17,7 @@
 
 
 #include "priv.h"
-#include "memory_object.h"
+#include "memory_object_S.h"
 #include <stdio.h>
 
 kern_return_t
