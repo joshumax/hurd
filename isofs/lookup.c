@@ -308,7 +308,7 @@ diskfs_get_directs (struct node *dp,
 	}
 
       /* See if there's room to hold this one */
-      name = rr.valid & VALID_NM ? rr.name : ep->name;
+      name = rr.valid & VALID_NM ? rr.name : (char *) ep->name;
       namlen = rr.valid & VALID_NM ? strlen (name) : ep->namelen;
 
       /* Name frobnication */
