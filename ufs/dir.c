@@ -1,5 +1,5 @@
 /* Directory management routines
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -89,8 +89,8 @@ dirscanblock (vm_address_t blockoff, struct node *dp, int idx, char *name,
 /* Implement the diskfs_lookup from the diskfs library.  See
    <hurd/diskfs.h> for the interface specification.  */
 error_t
-diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
-	       struct node **npp, struct dirstat *ds, struct protid *cred)
+diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
+		    struct node **npp, struct dirstat *ds, struct protid *cred)
 {
   error_t err;
   ino_t inum;
@@ -458,11 +458,11 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
    only be made if the directory has been held locked continuously since
    the preceding lookup call, and only if that call returned ENOENT. */
 error_t
-diskfs_direnter(struct node *dp,
-		char *name,
-		struct node *np,
-		struct dirstat *ds,
-		struct protid *cred)
+diskfs_direnter_hard(struct node *dp,
+		     char *name,
+		     struct node *np,
+		     struct dirstat *ds,
+		     struct protid *cred)
 {
   struct directory_entry *new;
   int namelen = strlen (name);
@@ -608,9 +608,6 @@ diskfs_direnter(struct node *dp,
   
   diskfs_file_update (dp, 1);
 
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_NEW, name);
-
   return 0;
 }
 
@@ -620,8 +617,8 @@ diskfs_direnter(struct node *dp,
    directory has been locked continously since the call to lookup, and
    only if that call succeeded.  */
 error_t
-diskfs_dirremove(struct node *dp,
-		 struct dirstat *ds)
+diskfs_dirremove_hard(struct node *dp,
+		      struct dirstat *ds)
 {
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
@@ -644,9 +641,6 @@ diskfs_dirremove(struct node *dp,
   
   diskfs_file_update (dp, 1);
 
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, ds->entry->d_name);
-
   return 0;
 }
   
@@ -658,9 +652,9 @@ diskfs_dirremove(struct node *dp,
    continuously since the call to lookup, and only if that call
    succeeded.  */
 error_t
-diskfs_dirrewrite(struct node *dp, 
-		  struct node *np,
-		  struct dirstat *ds)
+diskfs_dirrewrite_hard(struct node *dp, 
+		       struct node *np,
+		       struct dirstat *ds)
 {
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
@@ -672,9 +666,6 @@ diskfs_dirrewrite(struct node *dp,
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
   
   diskfs_file_update (dp, 1);
-
-  if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, ds->entry->d_name);
 
   return 0;
 }
