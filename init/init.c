@@ -895,7 +895,7 @@ S_startup_request_notification (mach_port_t server,
   nt->next = ntfy_tasks;
   ntfy_tasks = nt;
   nt->name = malloc (strlen (name) + 1);
-  strcpy (nt->name, nt->name);
+  strcpy (nt->name, name);
   return 0;
 }
 
