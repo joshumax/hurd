@@ -419,11 +419,11 @@ extern unsigned long ext2_count_free_blocks (struct super_block *);
 extern void ext2_check_blocks_bitmap (struct super_block *);
 
 /* bitmap.c */
-extern unsigned long ext2_count_free (struct buffer_head *, unsigned);
+extern unsigned long ext2_count_free (char *, unsigned);
 
 /* dir.c */
 extern int ext2_check_dir_entry (char *, struct inode *,
-				 struct ext2_dir_entry *, struct buffer_head *,
+				 struct ext2_dir_entry *, char *,
 				 unsigned long);
 
 /* file.c */
@@ -442,8 +442,8 @@ extern void ext2_check_inodes_bitmap (struct super_block *);
 /* inode.c */
 extern int ext2_bmap (struct inode *, int);
 
-extern struct buffer_head * ext2_getblk (struct inode *, long, int, int *);
-extern struct buffer_head * ext2_bread (struct inode *, int, int, int *);
+extern char * ext2_getblk (struct inode *, long, int, int *);
+extern char * ext2_bread (struct inode *, int, int, int *);
 
 extern int ext2_getcluster (struct inode * inode, long block);
 extern void ext2_read_inode (struct inode *);
