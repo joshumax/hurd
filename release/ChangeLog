@@ -1,3 +1,8 @@
+1997-07-15  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfsimage.sh: Let uncompressed images be smaller than the
+	maximum size.
+
 1997-07-14  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rfloppy.copy: Add bin/rm.
