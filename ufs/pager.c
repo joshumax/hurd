@@ -30,6 +30,8 @@ spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
 #define MAY_CACHE 1
 #endif
 
+struct port_bucket *pager_bucket;
+
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
    return, then release that mutex after I/O on the data has
@@ -383,7 +385,8 @@ create_disk_pager ()
   diskpager = malloc (sizeof (struct user_pager_info));
   diskpager->type = DISK;
   diskpager->np = 0;
-  diskpager->p = pager_create (diskpager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+  diskpager->p = pager_create (diskpager, pager_bucket,
+			       MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
   diskpagerport = pager_get_port (diskpager->p);
   mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -401,13 +404,13 @@ diskfs_file_update (struct node *np,
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
-    pager_reference (upi->p);
+    ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
   
   if (upi)
     {
       pager_sync (upi->p, wait);
-      pager_unreference (upi->p);
+      port_port_deref (upi->p);
     }
   
   for (d = np->dn->dirty; d; d = tmp)
@@ -442,7 +445,8 @@ diskfs_get_filemap (struct node *np)
       upi->type = FILE_DATA;
       upi->np = np;
       diskfs_nref_light (np);
-      upi->p = pager_create (upi, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+      upi->p = pager_create (upi, pager_bucket,
+			     MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
       np->dn->fileinfo = upi;
 
       spin_lock (&pagerlistlock);
