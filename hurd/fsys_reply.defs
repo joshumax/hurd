@@ -1,5 +1,5 @@
 /* Reply half of fsys
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -27,7 +27,10 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 	ctype: mach_port_t;
 
 skip; /* startup */
-skip; /* goaway */
+
+simpleroutine fsys_goaway_reply (
+	reply_port: reply_port_t;
+	retcode: kern_return_t);
 
 simpleroutine fsys_getroot_reply (
 	reply_port: reply_port_t;
