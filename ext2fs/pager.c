@@ -132,7 +132,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       if (err)
 	break;
 
-      RECORD_LAST (&node->dn, LAST_READ, page);
+      RECORD_LAST (node->dn, LAST_READ, page);
 
       if (block != pending_blocks + num_pending_blocks)
 	{
@@ -285,7 +285,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
       if (err)
 	break;
 
-      RECORD_LAST (&node->dn, LAST_WRITE, offset);
+      RECORD_LAST (node->dn, LAST_WRITE, offset);
 
       assert (block);
       pending_blocks_add (&pb, block);
