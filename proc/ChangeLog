@@ -1,3 +1,7 @@
+2001-08-01  Roland McGrath  <roland@frob.com>
+
+	* mgt.c (genpid): Rewritten.
+
 2001-08-02  Marcus Brinkmann  <marcus@gnu.org>
 
 	* mgt.c (genpid): Before checking if NEXTPID is free, check if it
