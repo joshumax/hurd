@@ -259,7 +259,7 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
   if (noblock)
     {
       size_t left = pipe->write_limit - pipe_readable (pipe, 1);
-      if (left > data_len)
+      if (left < data_len)
 	if (data_len <= pipe->write_atomic)
 	  return EWOULDBLOCK;
 	else
