@@ -161,7 +161,7 @@ diskfs_S_file_exec (struct protid *cred,
 			   intarray, intarraylen,
 			   deallocnames, deallocnameslen,
 			   destroynames, destroynameslen);
-	  mach_port_deallocate (mach_task_self (), newpi)
+	  mach_port_deallocate (mach_task_self (), right);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      if (cached_exec)

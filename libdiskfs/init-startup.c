@@ -92,7 +92,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 	  right = ports_get_send_right (newpi);
 	  errno = fsys_startup (bootstrap, flags, right,
 				MACH_MSG_TYPE_COPY_SEND, &realnode);
-	  mach_port_deallocate (mach_task_self (), newpi);
+	  mach_port_deallocate (mach_task_self (), right);
 	  ports_port_deref (newpi);
 	}
       if (errno)
