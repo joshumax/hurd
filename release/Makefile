@@ -56,21 +56,22 @@ endif
 # Where to get files for the floppies from.
 bfloppy-src=$(firstword $(dist-root) /)
 
-bfloppy.ext2: mkfsimage bfloppy.copy
+bfloppy.ext2: mkfsimage bfloppy.copy bfloppy-special.copy
 	./mkfsimage $@ --owner=root.wheel				\
 	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy-special.copy
 
 # Temporarily use two boot floppies until we add compression in appropriate places.
-bfloppy1.ext2: mkfsimage bfloppy1.copy
+bfloppy1.ext2: mkfsimage bfloppy1.copy bfloppy1-special.copy
 	./mkfsimage $@ --owner=root.wheel				\
-	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy1.copy
-bfloppy2.ext2: mkfsimage bfloppy2.copy
+	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy1.copy		\
+	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy1-special.copy
+bfloppy2.ext2: mkfsimage bfloppy2.copy bfloppy2-special.copy
 	./mkfsimage $@ --owner=root.wheel				\
 	  $(bfloppy-src) --copy-rules=$(srcdir)/bfloppy2.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/bfloppy2-special.copy
 
-rfloppy.ext2.gz: mkfsimage rfloppy.copy
+rfloppy.ext2.gz: mkfsimage rfloppy.copy rfloppy-special.copy
 	./mkfsimage $@ --compress --owner=root.wheel			\
 	  $(bfloppy-src) --copy-rules=$(srcdir)/rfloppy.copy		\
 	  $(srcdir)      --copy-rules=$(srcdir)/rfloppy-special.copy
