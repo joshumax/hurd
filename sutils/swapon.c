@@ -1,6 +1,6 @@
 /* Add/remove paging devices
 
-   Copyright (C) 1997,98,99,2000,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,99,2000,01,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -65,7 +65,7 @@ static char *doc = "Start paging onto DEVICE...";
 #define inform_2_0(fmt, arg...) \
   verbose ("%s: Linux 2.0 swap signature, " fmt, name ,##arg)
 #define inform_2_2(fmt, arg...) \
-     verbose ("%s: Linux 2.2 swap signature v1, %uk swap-space" fmt, \
+     verbose ("%s: Linux 2.2 swap signature v1, %zuk swap-space" fmt, \
 	      name, freepages * (LINUX_PAGE_SIZE / 1024) ,##arg)
 
 
@@ -130,7 +130,7 @@ check_signature (const char *name, struct store **storep, int no_remap,
     }
   if (len < LINUX_PAGE_SIZE)
     {
-      error (0, 0, "%s: short read %u reading Linux swap signature page",
+      error (0, 0, "%s: short read %zu reading Linux swap signature page",
 	     name, len);
       return EINVAL;
     }
@@ -184,21 +184,21 @@ check_signature (const char *name, struct store **storep, int no_remap,
 	  /* The wasted pages were already marked "bad".  */
 	  bad -= waste;
 	  if (bad > 0)
-	    inform_2_0 ("%dk swap-space (%dk bad, %dk wasted at end)",
+	    inform_2_0 ("%zdk swap-space (%zdk bad, %dk wasted at end)",
 			freepages * (LINUX_PAGE_SIZE / 1024),
 			bad * (LINUX_PAGE_SIZE / 1024),
 			waste * (LINUX_PAGE_SIZE / 1024));
 	  else
-	    inform_2_0 ("%dk swap-space (%dk wasted at end)",
+	    inform_2_0 ("%zdk swap-space (%dk wasted at end)",
 			freepages * (LINUX_PAGE_SIZE / 1024),
 			waste * (LINUX_PAGE_SIZE / 1024));
 	}
       else if (bad > 0)
-	inform_2_0 ("%dk swap-space (excludes %dk marked bad)",
+	inform_2_0 ("%zdk swap-space (excludes %zdk marked bad)",
 		    freepages * (LINUX_PAGE_SIZE / 1024),
 		    bad * (LINUX_PAGE_SIZE / 1024));
       else
-	inform_2_0 ("%dk swap-space", freepages * (LINUX_PAGE_SIZE / 1024));
+	inform_2_0 ("%zdk swap-space", freepages * (LINUX_PAGE_SIZE / 1024));
     }
   /* Check for Linux 2.2 format.  */
   else if (!memcmp ("SWAPSPACE2", buf + LINUX_PAGE_SIZE-10, 10))
@@ -261,12 +261,12 @@ check_signature (const char *name, struct store **storep, int no_remap,
 	      size_t wastek = waste * (LINUX_PAGE_SIZE / 1024);
 	      if (badk && wastek)
 		inform_2_2 ("\
- (excludes %uk marked bad and %uk at end of partition)",
+ (excludes %zuk marked bad and %zuk at end of partition)",
 			    badk, wastek);
 	      else if (badk)
-		inform_2_2 (" (excludes %uk marked bad)", badk);
+		inform_2_2 (" (excludes %zuk marked bad)", badk);
 	      else if (wastek)
-		inform_2_2 (" (excludes %uk at end of partition)", wastek);
+		inform_2_2 (" (excludes %zuk at end of partition)", wastek);
 	      else
 		inform_2_2 ("");
 	    }
