@@ -34,6 +34,7 @@
 
 #ifndef __error_t_defined
 typedef int error_t;
+#define __error_t_defined
 #endif
 
 #ifndef __P
@@ -379,7 +380,7 @@ extern error_t __argp_parse __P ((__const struct argp *__argp,
    option --version is added (unless the ARGP_NO_HELP flag is used), which
    will print this string followed by a newline and exit (unless the
    ARGP_NO_EXIT flag is used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
-extern const char *argp_program_version;
+extern __const char *argp_program_version;
 
 /* If defined or set by the user program to a non-zero value, then a default
    option --version is added (unless the ARGP_NO_HELP flag is used), which
