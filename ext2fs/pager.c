@@ -50,7 +50,7 @@ find_block (struct node *node, vm_offset_t offset,
       rwlock_reader_lock (*node_lock);
     }
 
-  if (offset + block_size >= node->allocsize)
+  if (offset + block_size > node->allocsize)
     return EIO;
 
   err = ext2_getblk (node, offset >> log2_block_size, create, &bptr);
@@ -318,7 +318,7 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
       while (length > 0 && !err)
 	{
 	  daddr_t block = boffs_block (offs);
-	  if (!clear_bit (block, modified_global_blocks))
+	  if (clear_bit (block, modified_global_blocks))
 	    /* This block's been modified, so write it out.  */
 	    err = pending_blocks_add (&pb, block);
 	  else
