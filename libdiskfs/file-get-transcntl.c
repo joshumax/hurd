@@ -33,13 +33,16 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   np = cred->po->np;
 
   mutex_lock (&np->lock);
+
   error = fshelp_isowner (&np->dn_stat, cred->user);
   if (!error)
     error = fshelp_fetch_control (&np->transbox, ctl);
-  if (ctl == MACH_PORT_NULL)
+  if (!error && *ctl == MACH_PORT_NULL)
     error = ENXIO;
   if (!error)
-    *ctltype = MACH_MSG_TYPE_COPY_SEND;
+    *ctltype = MACH_MSG_TYPE_MOVE_SEND;
+
   mutex_unlock (&np->lock);
+
   return error;
 }
