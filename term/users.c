@@ -160,6 +160,9 @@ error_t (*trivfs_check_open_hook) (struct trivfs_control *, uid_t *,
 static error_t
 pi_create_hook (struct trivfs_protid *cred)
 {
+  if (cred->pi.class == pty_class)
+    return 0;
+  
   mutex_lock (&global_lock);
   if (cred->hook)
     ((struct protid_hook *)cred->hook)->refcnt++;
@@ -172,6 +175,9 @@ error_t (*trivfs_protid_create_hook) (struct trivfs_protid *) = pi_create_hook;
 static void
 pi_destroy_hook (struct trivfs_protid *cred)
 {
+  if (cred->pi.class == pty_class)
+    return 0;
+
   mutex_lock (&global_lock);
   if (cred->hook && !--((struct protid_hook *)cred->hook)->refcnt)
     free (cred->hook);
@@ -182,6 +188,9 @@ void (*trivfs_protid_destroy_hook) (struct trivfs_protid *) = pi_destroy_hook;
 static error_t
 po_create_hook (struct trivfs_peropen *po)
 {
+  if (po->cntl == ptyctl)
+    return pty_po_create_hook (po);
+
   mutex_lock (&global_lock);
   nperopens++;
   if (po->openmodes & O_ASYNC)
@@ -195,6 +204,9 @@ error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *) =
 static void 
 po_destroy_hook (struct trivfs_peropen *po)
 {
+  if (po->cntl == ptyctl)
+    return pty_po_destroy_hook (po);
+
   mutex_lock (&global_lock);
   nperopens--;
   if (!nperopens)
