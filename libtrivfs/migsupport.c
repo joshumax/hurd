@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,17 +20,22 @@
 struct trivfs_protid *
 trivfs_begin_using_protid (mach_port_t port)
 {
-  if (trivfs_protid_nportclasses + trivfs_num_dynamic_protid_port_classes> 1)
+  if (trivfs_protid_nportclasses + trivfs_num_dynamic_protid_port_classes > 1)
     {
       struct port_info *pi = ports_lookup_port (0, port, 0);
       int i;
-      for (i = 0; i < trivfs_protid_nportclasses; i++)
-	if (pi->class == trivfs_protid_portclasses[i])
-	  return (struct trivfs_protid *) pi;
-      for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
-	if (pi->class == trivfs_dynamic_protid_port_classes[i])
-	  return (struct trivfs_protid *) pi;
-      ports_port_deref ((void *)port);
+
+      if (pi)
+	{
+	  for (i = 0; i < trivfs_protid_nportclasses; i++)
+	    if (pi->class == trivfs_protid_portclasses[i])
+	      return (struct trivfs_protid *) pi;
+	  for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
+	    if (pi->class == trivfs_dynamic_protid_port_classes[i])
+	      return (struct trivfs_protid *) pi;
+	  ports_port_deref (pi);
+	}
+      
       return 0;
     }
   else if (trivfs_protid_nportclasses == 1)
@@ -53,13 +58,18 @@ trivfs_begin_using_control (mach_port_t port)
     {
       struct port_info *pi = ports_lookup_port (0, port, 0);
       int i;
-      for (i = 0; i < trivfs_cntl_nportclasses; i++)
-	if (pi->class == trivfs_cntl_portclasses[i])
-	  return (struct trivfs_control *) pi;
-      for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
-	if (pi->class == trivfs_dynamic_control_port_classes[i])
-	  return (struct trivfs_control *) pi;
-      ports_port_deref ((void *)port);
+
+      if (pi)
+	{
+	  for (i = 0; i < trivfs_cntl_nportclasses; i++)
+	    if (pi->class == trivfs_cntl_portclasses[i])
+	      return (struct trivfs_control *) pi;
+	  for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
+	    if (pi->class == trivfs_dynamic_control_port_classes[i])
+	      return (struct trivfs_control *) pi;
+	  ports_port_deref (pi);
+	}
+      
       return 0;
     }
   else if (trivfs_cntl_nportclasses == 1)
