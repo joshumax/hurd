@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -242,5 +242,8 @@ trivfs_modify_stat (struct trivfs_protid *cred,
 error_t
 trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
-  return EBUSY;
+  if (flags & FSYS_GOAWAY_FORCE)
+    exit (0);
+  else
+    return EBUSY;
 }

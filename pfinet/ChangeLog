@@ -1,3 +1,10 @@
+Mon Jul 21 14:58:13 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add iohelp.
+
+	* main.c (trivfs_goaway): If FSYS_GOAWAY_FORCE is set, then go
+	away, otherwise, continue to return EBUSY.
+
 Fri Apr 25 10:46:49 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* options.c (trivfs_append_args): Renamed from trivfs_get_options.

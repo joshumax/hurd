@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -40,7 +40,7 @@ FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
 	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
 ASMHEADERS=bitops.h segment.h system.h
 
-HURDLIBS=trivfs fshelp threads ports ihash shouldbeinlibc
+HURDLIBS=trivfs fshelp threads ports ihash shouldbeinlibc iohelp
 
 target = pfinet
 
