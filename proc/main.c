@@ -100,6 +100,8 @@ main (int argc, char **argv, char **envp)
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
 
+  add_proc_to_hash (startup_proc); /* Now that we have the task port.  */
+
   /* Set our own argv and envp locations.  */
   self_proc->p_argv = (int) argv;
   self_proc->p_envp = (int) envp;

@@ -566,7 +566,6 @@ create_startup_proc (void)
   strcpy (p->p_login->l_name, "root");
 
   boot_setsid (p);
-  add_proc_to_hash (p);
 
   return p;
 }
