@@ -34,8 +34,6 @@
 #endif
 #endif /* _LIBC */
 
-extern char *__progname, *__progname_full;
-
 #include "argp.h"
 #include "argp-namefrob.h"
 
@@ -94,20 +92,20 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
       break;
 
     case OPT_PROGNAME:		/* Set the program name.  */
-      __progname_full = arg;
+      program_invocation_name = arg;
 
-      /* [Note that some systems only have __progname, in which
-	 __progname_full is just defined to be that, so we have to be a bit
-	 careful to take that into account here.]  */
+      /* [Note that some systems only have PROGRAM_INVOCATION_SHORT_NAME (aka
+	 __PROGNAME), in which case, PROGRAM_INVOCATION_NAME is just defined
+	 to be that, so we have to be a bit careful here.]  */
       arg = strrchr (arg, '/');
       if (arg)
-	__progname = arg + 1;
+	program_invocation_short_name = arg + 1;
       else
-	__progname = __progname_full;
+	program_invocation_short_name = program_invocation_name;
 
       if ((state->flags & (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
 	  == ARGP_PARSE_ARGV0)
-	state->argv[0] = __progname_full; /* Update what getopt uses too.  */
+	state->argv[0] = program_invocation_name; /* Update what getopt uses too.  */
 
       break;
 
@@ -538,7 +536,7 @@ parser_init (struct parser *parser, const struct argp *argp,
     /* There's an argv[0]; use it for messages.  */
     parser->state.name = argv[0];
   else
-    parser->state.name = __progname_full;
+    parser->state.name = program_invocation_name;
 
   /* Getopt is (currently) non-reentrant.  */
   LOCK_GETOPT;
