@@ -28,6 +28,8 @@
 #include <pwd.h>
 #include <shadow.h>
 
+#define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
+
 extern char *crypt (const char *string, const char salt[2]);
 #pragma weak crypt
 
@@ -55,20 +57,6 @@ verify_passwd (const char *password,
   int wheel_uid = (int)hook;
   const char *sys_encrypted;
 
-  char sp_lookup_buf[1024];
-  const char *check_shadow (struct passwd *pw)
-    {
-      if (strcmp (pw->pw_passwd, "x") == 0)
-	{
-	  /* When encrypted password is "x", try shadow passwords. */
-	  struct spwd _sp, *sp;
-	  if (getspnam_r (pw->pw_name, &_sp, sp_lookup_buf,
-			  sizeof sp_lookup_buf, &sp) == 0)
-	    return sp->sp_pwdp;
-	}
-      return pw->pw_passwd;
-    }
-
   if (! pwd_or_grp)
     /* No password db entry for ID; if ID is root, the system is probably
        really fucked up, so grant it (heh).  */
@@ -79,9 +67,6 @@ verify_passwd (const char *password,
     (is_group
      ? ((struct passwd *)pwd_or_grp)->pw_passwd
      : ((struct group *)pwd_or_grp)->gr_passwd);
-
-  if (!is_group)
-    sys_encrypted = check_shadow (pwd_or_grp);
 
   if (sys_encrypted[0] == '\0')
     return 0;			/* No password.  */
@@ -105,8 +90,22 @@ verify_passwd (const char *password,
     /* Special hack: a user attempting to gain root access can use
        their own password (instead of root's) if they're in group 0. */
     {
-      char lookup_buf[1024];
       struct passwd _pw, *pw;
+      char lookup_buf[1024];
+      char sp_lookup_buf[1024];
+
+      const char *check_shadow (struct passwd *pw)
+	{
+	  if (strcmp (pw->pw_passwd, SHADOW_PASSWORD_STRING) == 0)
+	    {
+	      /* When encrypted password is "x", try shadow passwords. */
+	      struct spwd _sp, *sp;
+	      if (getspnam_r (pw->pw_name, &_sp, sp_lookup_buf,
+			      sizeof sp_lookup_buf, &sp) == 0)
+		return sp->sp_pwdp;
+	    }
+	  return pw->pw_passwd;
+	}
 
       if (getpwuid_r (wheel_uid, &_pw, lookup_buf, sizeof lookup_buf, &pw))
 	return errno ?: EINVAL;
@@ -255,6 +254,7 @@ verify_id (uid_t id, int is_group, int multiple,
   char *name = 0;
   char *prompt = 0, *password;
   char id_lookup_buf[1024];
+  char sp_lookup_buf[1024];
 
   /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
   assert (verify_fn);
@@ -280,7 +280,22 @@ verify_id (uid_t id, int is_group, int multiple,
 	    if (getpwuid_r (id, &_pw, id_lookup_buf, sizeof id_lookup_buf, &pw)
 		== 0)
 	      {
-		if (!pw->pw_passwd || !*pw->pw_passwd)
+		if (strcmp (pw->pw_passwd, SHADOW_PASSWORD_STRING) == 0)
+		  {
+		    /* When encrypted password is "x", check shadow
+		       passwords to see if there is an empty password. */
+		    struct spwd _sp, *sp;
+		    if (getspnam_r (pw->pw_name, &_sp, sp_lookup_buf,
+				    sizeof sp_lookup_buf, &sp) == 0)
+		      /* The storage for the password string is in
+			 SP_LOOKUP_BUF, a local variable in this function.
+			 We Know that the only use of PW->pw_passwd will be
+			 in the VERIFY_FN call in this function, and that
+			 the pointer will not be stored past the call.  */
+		      pw->pw_passwd = sp->sp_pwdp;
+		  }
+
+		if (pw->pw_passwd[0] == '\0')
 		  return (*verify_fn) ("", id, 0, pw, verify_hook);
 		name = pw->pw_name;
 		pwd_or_grp = pw;
