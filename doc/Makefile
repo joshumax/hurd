@@ -27,7 +27,7 @@ DVIPS = dvips
 include ../Makeconf
 
 # For each .info file we need a .d file.
--include $(subst .info,.d,$(filter %.info,$(targets))) /dev/null
+-include $(patsubst %.info,%.d,$(filter %.info,$(targets))) /dev/null
 
 # Build dependencies from included files.
 %.d: %.texi
@@ -37,8 +37,8 @@ include ../Makeconf
 	mv -f $@.new $@
 
 %.info: %.texi
-	@cd $(srcdir) && rm -f $@ $@-[0-9] $@-[0-9][0-9]
-	cd $(srcdir) && $(MAKEINFO) $(notdir $<)
+	@rm -f $@ $@-[0-9] $@-[0-9][0-9]
+	$(MAKEINFO) -I $(@D) -I $(<D) $<
 
 .PRECIOUS: %.dvi
 %.dvi: %.texi
@@ -48,11 +48,12 @@ include ../Makeconf
 %.ps: %.dvi
 	$(DVIPS) $< -o $@
 
-# A header which contains the latest package version.
-$(srcdir)/version.texi: $(top_srcdir)/version.h
-	set -e; (echo "@c version.texi - automatically generated from ../version.h"; \
-	         grep '^#define HURD_VERSION' $< | \
-		 sed 's/^[^"]*"\([^"]*\).*$$/@set VERSION \1/') > $@.new
-	mv -f $@.new $@
+move-if-change = $(SHELL) $(top_srcdir)/move-if-change
+
+version.texi: stamp-version; @:
+stamp-version: $(top_srcdir)/Makeconf
+	echo '@set VERSION $(hurd-version)' > version.texi.new
+	$(move-if-change) version.texi.new version.texi
+	touch $@
 
 all: $(targets)
