@@ -1,3 +1,8 @@
+1999-02-05  Mark Kettenis  <kettenis@gnu.org>
+
+	* users.c (trivfs_S_file_chmod): Clear S_ISVTX bit instead of
+	clearing all other bits.
+
 Sat Jan 30 00:27:14 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* munge.c (create_queue): Make sure that malloc succeeds.

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -491,7 +491,7 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
       if (err)
 	goto out;
 
-      mode &= S_ISVTX;
+      mode &= ~S_ISVTX;
 
       if (!idvec_contains (cred->user->uids, term_owner))
 	mode &= ~S_ISUID;
