@@ -30,7 +30,7 @@ diskfs_remount ()
 {
   error_t err;
 
-  if (! diskfs_readonly)
+  if (! diskfs_check_readonly ())
     return EBUSY;
 
   err = ports_inhibit_class_rpcs (diskfs_protid_class);
