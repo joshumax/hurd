@@ -29,36 +29,47 @@
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths,
 	     mach_port_t port, size_t block_size,
-	     off_t *runs, size_t runs_len)
+	     off_t *runs, size_t runs_len, off_t end)
 {
-  struct store *store = malloc (sizeof (struct store));
-  if (store)
+  if (block_size & (block_size - 1))
+    return 0;			/* block size not a power of two.  */
+  else
     {
-      store->name = 0;
-      store->port = port;
-      store->runs = 0;
-      store->runs_len = 0;
-      store->block_size = block_size;
-      store->source = MACH_PORT_NULL;
-      store->blocks = 0;
-      store->size = 0;
-      store->log2_block_size = 0;
-      store->log2_blocks_per_page = 0;
+      struct store *store = malloc (sizeof (struct store));
+      if (store)
+	{
+	  store->name = 0;
+	  store->port = port;
+	  store->runs = 0;
+	  store->runs_len = 0;
+	  store->wrap = 0;
+	  store->end = end;
+	  store->block_size = block_size;
+	  store->source = MACH_PORT_NULL;
+	  store->blocks = 0;
+	  store->size = 0;
+	  store->log2_block_size = 0;
+	  store->log2_blocks_per_page = 0;
+	  store->misc = 0;
+	  store->hook = 0;
 
-      store->class = class;
-      store->meths = meths;
+	  store->class = class;
+	  store->meths = meths;
 
-      store_set_runs (store, runs, runs_len); /* Also calls _store_derive(). */
+	  store_set_runs (store, runs, runs_len); /* Calls _store_derive() */
+	}
+      return store;
     }
-  return store;
 }
 
 void
 store_free (struct store *store)
 {
-  if (store->port)
+  if (store->meths->cleanup)
+    (*store->meths->cleanup) (store);
+  if (store->port != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), store->port);
-  if (store->source)
+  if (store->source != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), store->source);
   if (store->name)
     free (store->name);
