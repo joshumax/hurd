@@ -1,11 +1,14 @@
 hurddir = $(prefix)/hurd
 serversdir = $(prefix)/servers
+libdir = $(prefix)/lib
 
 .PHONY: all install
 all: exec core bootexec
 install: $(hurddir)/exec $(hurddir)/core $(serversdir)/exec $(serversdir)/core
 
-exec bootexec core: hostarch.o
+vpath %.c ../$(machine)
+
+exec bootexec core: hostarch.o $(libdir)/libc.a
 exec bootexec: exec_machdep.o
 exec: transexec.o
 
@@ -20,5 +23,10 @@ $(serversdir)/core: core.text $(hurddir)/core
 $(serversdir)/exec: exec.text
 	@rm -f $@
 	cp $< $@
-# Comment the next line out to use bootexec.
-#	settrans $(word 2,$^) $@
+	settrans '$(filter %/exec,$^)' $@
+
+# This dependency makes the standard exec server be a translator.  Without
+# it, /servers/exec has no translator, and bootexec is linked into the boot
+# filesystem.  Uncomment the line to install the exec server as a
+# translator.
+#$(serversdir)/exec: $(hurddir)/exec
