@@ -55,7 +55,7 @@ send_signal (mach_port_t msgport,
        | MACH_MSGH_BITS (MACH_MSG_TYPE_COPY_SEND,
 			 MACH_MSG_TYPE_MAKE_SEND_ONCE)), /* msgh_bits */
       sizeof message,		/* msgh_size */
-      msgport,		/* msgh_remote_port */
+      msgport,			/* msgh_remote_port */
       MACH_PORT_NULL,		/* msgh_local_port */
       0,			/* msgh_seqno */
       RPCID_SIG_POST,		/* msgh_id */
@@ -106,11 +106,19 @@ send_signal (mach_port_t msgport,
     {
     case MACH_SEND_TIMED_OUT:
       /* The send could not complete in time.  In this error case, the
-	 kernel has modified the message buffer in a pseudo-receive operation.
-	 That means our COPY_SEND refs might now be MOVE_SEND refs, in
-	 which case each has gained user ref accordingly.  To avoid leaking
-	 those refs, we must clean up the buffer.  */
-      mach_msg_destroy (&message.head);
+	 kernel has modified the message buffer in a pseudo-receive
+	 operation.  That means our COPY_SEND refs might now be MOVE_SEND
+	 refs, in which case each has gained user ref accordingly.  To
+	 avoid leaking those refs, we must clean up the buffer.  We don't
+	 use mach_msg_destroy because it assumes the local/remote ports in
+	 the header have been reversed as from a real receive, while a
+	 pseudo-receive leaves them as they were.  */
+      if (MACH_MSGH_BITS_REMOTE (message.head.msgh_bits)
+	  == MACH_MSG_TYPE_MOVE_SEND)
+	mach_port_deallocate (mach_task_self (),
+			      message.head.msgh_remote_port);
+      if (message.refporttype.msgt_name == MACH_MSG_TYPE_MOVE_SEND)
+	mach_port_deallocate (mach_task_self (), message.refport);
       break;
 
       /* These are the other codes that mean a pseudo-receive modified
