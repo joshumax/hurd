@@ -1,5 +1,12 @@
 1999-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* ext2_file_io.c, ffs_file_io.c, minix_file_io.c: Remove fs-specific
+	routines *_page_{read,write}_file_direct.  Moved to ...
+	* file_io.c (page_read_file_direct, page_write_file_direct): Don't
+	call fs-specific routine, these are not fs-specific.  Instead,
+	replaced with former fs-specific routines (which were all identical).
+	Read and write more than a fs block when disk blocks are contiguous.
+
 	* default_pager.c (new_partition): When reading Linux signature page,
 	handle pager_read_file_direct returning sub-page blocks.
 
