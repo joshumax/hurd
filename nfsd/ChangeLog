@@ -1,3 +1,7 @@
+2002-05-29  Roland McGrath  <roland@frob.com>
+
+	* nfsd.h (struct proctable): [0] -> [], for newfangled GCC.
+
 2002-05-08  Roland McGrath  <roland@frob.com>
 
 	* main.c (main): Cast int to intptr_t before any_t.

@@ -1,3 +1,22 @@
+2002-05-29  Roland McGrath  <roland@frob.com>
+
+	* ethernet.c (setup_ethernet_device): u_int -> size_t
+
+	* linux-src/include/linux/net.h (struct socket) [_HURD_]:
+	New member `st_ino'.
+	* io-ops.c (S_io_stat, S_io_identity): Use that.
+	* socket.c (sock_alloc): Initialize it with a monotonic counter.
+
+	* stubs.c: Use __attribute__ instead of #pragma for aliases.
+
+	* linux-src/arch/alpha/lib/csum_partial_copy.c: New file,
+	taken verbatim from Linux 2.2.14.
+	* Makefile (arch-lib-srcs): Add csum_partial_copy.c.
+	(LINUXSRCS): Match $(arch-lib-srcs) subset in arch/$(asm_syntax)/lib.
+	(OBJS): Use delayed evaluation.
+	* glue-include/asm/uaccess.h (__get_user): New macro.
+	(__m): New macro.
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* io-ops.c (S_io_write, S_io_read): u_int -> size_t
