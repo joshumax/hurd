@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -77,6 +77,8 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subd
 
 relink: $(addsuffix -relink,$(lib-subdirs) $(prog-subdirs))
 
+objs: $(addsuffix -objs,$(lib-subdirs) $(prog-subdirs))
+
 install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
 	   $(other-subdirs))
 
@@ -100,6 +102,9 @@ FORCE:
 
 %-relink:
 	$(MAKE) -C $* relink no_deps=t
+
+%-objs:
+	$(MAKE) -C $* objs
 
 %-install:
 	$(MAKE) -C $* install

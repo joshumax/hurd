@@ -148,7 +148,16 @@ BUGADDR_REF = -uargp_program_bug_address
 
 # Standard targets
 
-.PHONY: all install libs relink clean
+.PHONY: all install libs relink clean objs
+
+# Just build all the object files.
+objs: $(OBJS)
+ifneq ($(no_prof),t)
+objs: $(OBJS:%.o=%_p.o)
+endif
+ifneq ($(no_pic),t)
+objs: $(OBJS:%.o=%_pic.o)
+endif
 
 # Installation
 ifeq ($(doinst),one)
@@ -213,10 +222,6 @@ $(installationdirlist): %:
 	@$(MKINSTALLDIRS) $@
 
 # Building the target
-ifeq ($(OBJS),)
-OBJS=%.o
-endif
-
 ifeq ($(doinst),many)
  target = $(filter-out $(special-targets),$(targets))
 endif
