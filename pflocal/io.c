@@ -1,6 +1,6 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -510,8 +510,15 @@ S_io_identity (struct sock_user *user,
 
   return err;
 }
+
 
 /* Stubs for currently unsupported rpcs.  */
+
+error_t
+S_io_revoke (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
 
 error_t
 S_io_async(struct sock_user *user,

@@ -1,3 +1,8 @@
+Tue Feb 16 05:52:35 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io.c (S_io_revoke): New function.  Don't attempt to implement.
+  	(Other systems don't even permit non-file revokes.)
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io.c (S_io_select): Add braces to silence gcc warning.
