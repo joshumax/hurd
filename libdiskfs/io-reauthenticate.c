@@ -42,10 +42,10 @@ S_io_reauthenticate (struct protid *cred,
   mutex_lock (&cred->po->np->lock);
   newcred = diskfs_start_protid (cred->po);
   err = auth_server_authenticate (diskfs_auth_server_port, 
-				  cred->pi.port,
+				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  rend_int,
-				  newcred->pi.port,
+				  ports_get_right (newcred),
 				  MACH_MSG_TYPE_MAKE_SEND,
 				  &gen_uids, &genuidlen, 
 				  &aux_uids, &auxuidlen,
