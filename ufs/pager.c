@@ -35,8 +35,7 @@ static void enqueue_pager (struct user_pager_info *);
 static void dequeue_pager (struct user_pager_info *);
 static daddr_t indir_alloc (struct node *, int, int);
 
-/* Locks all nodes' sininfo and fileinfo fields. */
-static struct mutex pagernplock = MUTEX_INITIALIZER;
+struct mutex pagernplock = MUTEX_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -45,13 +44,6 @@ static struct mutex pagernplock = MUTEX_INITIALIZER;
 #endif
 
 char typechars[] = "ICSDF";
-
-/* Limit the number of outstanding FILE_DATA paging requests.  
-   Otherwise the kernel can send all the data at once and overwhelm us. */
-#define DATA_MAX_THREADS 10
-static int ndatapagethreads;
-static struct mutex ndpthreads_lock = MUTEX_INITIALIZER;
-static struct condition ndpthreads_wait = CONDITION_INITIALIZER;
 
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
@@ -209,6 +201,8 @@ pager_read_page (struct user_pager_info *pager,
     }
   else
     {
+      printf ("Write-locked pagein Object %#x\tOffset %#x\n", pager, page);
+      fflush (stdout);
       vm_allocate (mach_task_self (), buf, __vm_page_size, 1);
       *writelock = 1;
     }
@@ -232,8 +226,10 @@ pager_write_page (struct user_pager_info *pager,
   error_t err;
   struct disknode *dn;
   
+#if 0
   printf ("%c", typechars[pager->type]);
   fflush (stdout);
+#endif
 
   err = find_address (pager, page, &addr, &disksize, &nplock, &dn);
   if (err)
@@ -244,6 +240,7 @@ pager_write_page (struct user_pager_info *pager,
   else
     {
       printf ("Attempt to write unallocated disk\n.");
+      printf ("Object %#x\tOffset %#x\n", pager, page);
       fflush (stdout);
       err = 0;			/* unallocated disk; 
 				   error would be pointless */
@@ -270,6 +267,9 @@ pager_unlock_page (struct user_pager_info *pager,
   /* Problem--where to get cred values for allocation here? */
 
   vblkno = address / sblock->fs_bsize;
+
+  printf ("Unlock page request, Object %#x\tOffset %#x...", pager, address);
+  fflush (stdout);
 
   switch (pager->type)
     {
@@ -394,6 +394,12 @@ pager_unlock_page (struct user_pager_info *pager,
     default:
       err = 0;
     }
+  
+  if (err)
+    printf ("denied\n");
+  else
+    printf ("succeeded\n");
+  fflush (stdout);
   
   return err;
 }
@@ -535,8 +541,6 @@ sin_map (struct node *np)
       mach_port_insert_right (mach_task_self (), port, port,
 			      MACH_MSG_TYPE_MAKE_SEND); 
     }
-  mutex_unlock (&pagernplock);
-  
   pager_report_extent (upi, &offset, &extent);
   
   err = vm_map (mach_task_self (), (vm_address_t *)&np->dn->sinloc, 
@@ -549,6 +553,7 @@ sin_map (struct node *np)
 
   diskfs_register_memory_fault_area (np->dn->sininfo->p, offset, 
 				     np->dn->sinloc, extent);
+  mutex_unlock (&pagernplock);
 }
 
 /* This is caled when a file (NP) grows (to size NEWSIZE) to see
@@ -852,6 +857,7 @@ allow_pager_softrefs (struct node *np)
       if (np->dn->sininfo)
 	pager_change_attributes (np->dn->sininfo->p, 1,
 				 MEMORY_OBJECT_COPY_DELAY, 0);
+      mutex_unlock (&pagernplock);
     }
 }
 
