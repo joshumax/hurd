@@ -24,6 +24,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 kern_return_t
 trivfs_S_io_map_cntl (struct trivfs_protid *cred,
+		      mach_port_t reply,
+		      mach_msg_type_name_t replytype,
 		      mach_port_t *obj,
 		      mach_msg_type_name_t *objtype)
 {
@@ -31,51 +33,69 @@ trivfs_S_io_map_cntl (struct trivfs_protid *cred,
 }
 
 kern_return_t
-trivfs_S_io_get_conch (struct trivfs_protid *cred)
+trivfs_S_io_get_conch (struct trivfs_protid *cred,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_release_conch (struct trivfs_protid *cred)
+trivfs_S_io_release_conch (struct trivfs_protid *cred,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t 
-trivfs_S_io_eofnotify (struct trivfs_protid *cred)
+trivfs_S_io_eofnotify (struct trivfs_protid *cred,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_prenotify (struct trivfs_protid *cred, vm_offset_t start, 
+trivfs_S_io_prenotify (struct trivfs_protid *cred, 
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype,
+		       vm_offset_t start, 
 		       vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_postnotify (struct trivfs_protid *cred, vm_offset_t start, 
+trivfs_S_io_postnotify (struct trivfs_protid *cred, 
+			mach_port_t reply,
+			mach_msg_type_name_t replytype,
+			vm_offset_t start, 
 			vm_offset_t end)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_readsleep (struct trivfs_protid *cred)
+trivfs_S_io_readsleep (struct trivfs_protid *cred,
+		       mach_port_t reply,
+		       mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_sigio (struct trivfs_protid *cred)
+trivfs_S_io_sigio (struct trivfs_protid *cred,
+		   mach_port_t reply,
+		   mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-trivfs_S_io_readnotify (struct trivfs_protid *cred)
+trivfs_S_io_readnotify (struct trivfs_protid *cred,
+		     mach_port_t reply,
+		     mach_msg_type_name_t replytype)
 {
   return EOPNOTSUPP;
 }

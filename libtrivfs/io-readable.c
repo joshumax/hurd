@@ -21,6 +21,8 @@
 
 kern_return_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
+		      mach_port_t reply,
+		      mach_msg_type_name_t replytype,
 		      int *amount)
 {
   assert (!trivfs_support_read);

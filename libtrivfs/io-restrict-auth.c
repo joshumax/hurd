@@ -36,6 +36,8 @@ listmember (int *list, int query, int n)
 
 kern_return_t
 trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newporttype,
 			   uid_t *uids, u_int nuids,
