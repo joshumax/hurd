@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <hurd/fd.h>
 
 int
 main ()
@@ -34,15 +35,37 @@ main ()
   static const char string[] = "Did this get into the file?\n";
   int written;
   
-  stderr = stdout = mach_open_devstream (getdport (1), "w");
+  setlinebuf (stdout);
+  setlinebuf (stderr);
 
   if (unlink ("CREATED") < 0 && errno != ENOENT)
     printf ("Error on unlink: %d\n", errno);
 
   fd = open ("CREATED", O_WRITE | O_CREAT, 0666);
   if (fd < 0)
-    printf ("Error on poen: %d\n", errno);
-  written = write (fd, string, strlen (string));
+    printf ("Error on open: %d\n", errno);
+
+  /* written = write (fd, string, strlen (string)); */
+
+  {
+    size_t nbytes = strlen (string);
+    struct hurd_userlink __dt_ulink;
+    error_t __result;
+    struct hurd_fd_user __d = _hurd_fd_get (fd, &__dt_ulink);
+    if (__d.d == NULL)
+      __result = EBADF;
+    else
+      {
+	struct hurd_fd *const descriptor = __d.d;
+	__result = _hurd_fd_write (descriptor, string, &nbytes);
+	_hurd_fd_free (__d, &__dt_ulink);
+      }
+    if (__result)
+      errno = __result, written = -1;
+    else
+      written = nbytes;
+  }
+
   if (written < 0)
     printf ("Error on write: %d\n", errno);
   else if (written != strlen (string))
