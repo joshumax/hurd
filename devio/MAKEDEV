@@ -21,6 +21,8 @@ for I; do
       $ST $I /hurd/null ;;
     zero)
       $ST $I /hurd/null -z ;;
+    tty)
+      $ST $I /hurd/magic tty ;;
     fd)
       $ST $I /hurd/magic fd
       ln -f -s fd/0 stdin
