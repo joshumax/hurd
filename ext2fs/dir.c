@@ -331,7 +331,6 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || entry->rec_len % 4
 	  || entry->name_len > EXT2_NAME_LEN
 	  || currentoff + entry->rec_len > blockaddr + DIRBLKSIZ
-	  || entry->name[entry->name_len]
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
@@ -446,6 +445,9 @@ diskfs_direnter(struct node *dp,
 
   assert (ds->type == CREATE);
   
+  if (diskfs_readonly)
+    return EROFS;
+
   switch (ds->stat)
     {
     case TAKE:
@@ -586,6 +588,9 @@ diskfs_dirremove(struct node *dp,
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
   
+  if (diskfs_readonly)
+    return EROFS;
+
   if (ds->preventry == 0)
     ds->entry->inode = 0;
   else
@@ -625,6 +630,9 @@ diskfs_dirrewrite(struct node *dp,
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
   
+  if (diskfs_readonly)
+    return EROFS;
+
   ds->entry->inode = np->dn->number;
 
   vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
@@ -845,14 +853,24 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->inode)
 	{
+	  int rec_len;
+	  int name_len = entryp->name_len;
+
 	  userp = (struct dirent *) datap;
 
+	  /* Length is structure before the name + the name + '\0', all
+	     padded to a four-byte alignment.  */
+	  rec_len =
+	    (((char *)&userp->d_name - (char *)userp) + name_len + 1 + 3) & ~3;
+
 	  userp->d_fileno = entryp->inode;
-	  userp->d_reclen = EXT2_DIR_REC_LEN (entryp->name_len);
-	  userp->d_namlen = entryp->name_len;
-	  bcopy (entryp->name, userp->d_name, entryp->name_len + 1);
+	  userp->d_reclen = rec_len;
+	  userp->d_namlen = name_len;
+	  bcopy (entryp->name, userp->d_name, name_len);
+	  userp->d_name[name_len] = '\0';
+
+	  datap += rec_len;
 	  i++;
-	  datap += EXT2_DIR_REC_LEN (entryp->name_len);
 	}
 
       bufp += entryp->rec_len;
