@@ -1,5 +1,5 @@
 /* syncfs -- User interface to file_syncfs, synchronize filesystems.
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -24,7 +24,7 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (sync);
 
-static int synchronous = 1, do_children = 1;
+static int synchronous = 0, do_children = 1;
 
 static void
 sync_one (const char *name, file_t port)
@@ -40,7 +40,7 @@ parser (int key, char *arg, struct argp_state *state)
 {
   switch (key)
     {
-    case 'a': synchronous = 0; break;
+    case 's': synchronous = 1; break;
     case 'c': do_children = 0; break;
 
     case ARGP_KEY_NO_ARGS:
@@ -63,7 +63,7 @@ main (int argc, char *argv[])
 {
   static struct argp_option options[] =
   {
-    {"asynchronous", 'a', 0, 0, "Do not wait for completion"},
+    {"synchronous", 's', 0, 0, "Wait for completion of all disk writes"},
     {"no-children", 'c', 0, 0, "Do not synchronize child filesystems"},
     {0}
   };
