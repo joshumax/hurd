@@ -185,6 +185,9 @@ check_open_hook (struct trivfs_control *trivfs_control,
 {
   error_t err = 0;
 
+  if (!err && readonly && (flags & O_WRITE))
+    return EROFS;
+
   mutex_lock (&device_lock);
   if (device == NULL)
     /* Try and open the device.  */
@@ -200,6 +203,18 @@ check_open_hook (struct trivfs_control *trivfs_control,
   mutex_unlock (&device_lock);
 
   return err;
+}
+
+error_t
+trivfs_S_file_check_access (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t reply_type,
+			    int *allowed)
+{
+  if (! cred)
+    return EOPNOTSUPP;
+  else
+    return file_check_access (cred->realnode, allowed);
+  return 0;
 }
 
 static error_t
