@@ -127,14 +127,11 @@ open_console (char **namep)
 	  return 0;
 	}
 
+      terminal = TERMINAL_FIRST_TRY;
+      argz_len = sizeof TERMINAL_FIRST_TRY;
       for (try = 1; try < 3; ++try)
 	{
-	  if (try == 1)
-	    {
-	      terminal = TERMINAL_FIRST_TRY;
-	      argz_len = sizeof TERMINAL_FIRST_TRY;
-	    }
-	  else if (try == 2)
+	  if (try == 2)
 	    {
 	      terminal = TERMINAL_SECOND_TRY;
 	      argz_len = sizeof TERMINAL_SECOND_TRY;
