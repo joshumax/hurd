@@ -146,8 +146,8 @@ endif
 ifeq ($(makemode),library)
 all: $(libname).a
 install: $(libname).a $(installhdrs)
-	cp $(installhdrs) $(includedir)/hurd/
-	cp $(libname).a $(hurdinst)/lib/$(libname).a
+	$(INSTALL_DATA) $(installhdrs) $(includedir)/hurd/
+	$(INSTALL_DATA) $(libname).a $(hurdinst)/lib/$(libname).a
 	ranlib $(hurdinst)/lib/$(libname).a
 endif
 
