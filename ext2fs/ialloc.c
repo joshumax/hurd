@@ -59,8 +59,6 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   assert (!diskfs_readonly);
 
- printf ("freeing inode %u", inum);
-
   ext2_debug ("freeing inode %u", inum);
 
   spin_lock (&global_lock);
