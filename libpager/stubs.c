@@ -1,4 +1,4 @@
-/* Unused memory object interface stubs
+ /* Unused memory object interface stubs
    Copyright (C) 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -56,15 +56,4 @@ _pager_seqnos_memory_object_supply_completed (mach_port_t obj,
   printf ("m_o_supply_completed called\n");
   return EOPNOTSUPP;
 }
-
-kern_return_t
-_pager_seqnos_memory_object_change_completed (mach_port_t obj,
-				       mach_port_seqno_t seq,
-				       boolean_t maycache,
-				       memory_object_copy_strategy_t strat)
-{
-  printf ("m_o_change_completed called\n");
-  return EOPNOTSUPP;
-}
-
 
