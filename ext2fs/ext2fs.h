@@ -226,7 +226,7 @@ unsigned log2_stat_blocks_per_fs_block;
 vm_address_t zeroblock;
 
 /* Get the superblock from the disk, & setup various global info from it.  */
-error_t get_hypermetadata ();
+void get_hypermetadata ();
 
 /* ---------------------------------------------------------------- */
 

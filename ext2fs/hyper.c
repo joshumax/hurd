@@ -1,6 +1,6 @@
 /* Fetching and storing the hypermetadata (superblock and bg summary info)
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -52,13 +52,12 @@ static void allocate_mod_map ()
     modified_global_blocks = 0;
 }
 
-error_t
+void
 get_hypermetadata (void)
 {
   error_t err = diskfs_catch_exception ();
-
   if (err)
-    return err;
+    ext2_panic ("can't read superblock: %s", strerror (err));
 
   if (zeroblock)
     vm_deallocate (mach_task_self (), zeroblock, block_size);
@@ -129,8 +128,6 @@ get_hypermetadata (void)
 
   /* A handy source of page-aligned zeros.  */
   vm_allocate (mach_task_self (), &zeroblock, block_size, 1);
-
-  return 0;
 }
 
 void

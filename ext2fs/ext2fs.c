@@ -44,22 +44,8 @@ int diskfs_edit_version = 0;
 
 int diskfs_synchronous = 0;
 int diskfs_readonly = 0;
-
-/* ---------------------------------------------------------------- */
 
 struct node *diskfs_root_node;
-
-/* Set diskfs_root_node to the root inode. */
-static void
-warp_root (void)
-{
-  error_t err;
-  err = iget (EXT2_ROOT_INO, &diskfs_root_node);
-  assert (!err);
-  mutex_unlock (&diskfs_root_node->lock);
-}
-
-/* ---------------------------------------------------------------- */
 
 void
 main (int argc, char **argv)
@@ -104,14 +90,17 @@ main (int argc, char **argv)
 
   pokel_init (&global_pokel, disk_pager, disk_image);
 
-  err = get_hypermetadata();
-  if (err)
-    error (3, err, "get_hypermetadata");
+  get_hypermetadata();
 
   inode_init ();
 
-  /* Find our root node.  */
-  warp_root ();
+  /* Set diskfs_root_node to the root inode. */
+  err = iget (EXT2_ROOT_INO, &diskfs_root_node);
+  if (err)
+    ext2_panic ("can't get root: %s", strerror (err));
+  else if ((diskfs_root_node->dn_stat.st_mode & S_IFMT) == 0)
+    ext2_panic ("no root node!");
+  mutex_unlock (&diskfs_root_node->lock);
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
