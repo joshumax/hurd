@@ -229,38 +229,39 @@ read_disknode (struct node *np)
   st->st_fstype = FSTYPE_UFS;
   st->st_fsid = fsid;
   st->st_ino = np->dn->number;
-  st->st_gen = di->di_gen;
-  st->st_rdev = di->di_rdev;
-  st->st_mode = di->di_model | (di->di_modeh << 16);
-  st->st_nlink = di->di_nlink;
-  st->st_size = di->di_size;
+  st->st_gen = read_disk_entry (di->di_gen);
+  st->st_rdev = read_disk_entry(di->di_rdev);
+  st->st_mode = (read_disk_entry (di->di_model) 
+		 | (read_disk_entry (di->di_modeh) << 16);
+  st->st_nlink = read_disk_entry (di->di_nlink);
+  st->st_size = read_disk_entry (di->di_size);
 #ifdef notyet
   st->st_atimespec = di->di_atime;
   st->st_mtimespec = di->di_mtime;
   st->st_ctimespec = di->di_ctime;
 #else
-  st->st_atime = di->di_atime.ts_sec;
-  st->st_atime_usec = di->di_atime.ts_nsec / 1000;
-  st->st_mtime = di->di_mtime.ts_sec;
-  st->st_mtime_usec = di->di_mtime.ts_nsec / 1000;
-  st->st_ctime = di->di_ctime.ts_sec;
-  st->st_ctime_usec = di->di_ctime.ts_nsec / 1000;
+  st->st_atime = read_disk_entry (di->di_atime.ts_sec);
+  st->st_atime_usec = read_disk_entry (di->di_atime.ts_nsec) / 1000;
+  st->st_mtime = read_disk_entry (di->di_mtime.ts_sec);
+  st->st_mtime_usec = read_disk_entry (di->di_mtime.ts_nsec) / 1000;
+  st->st_ctime = read_disk_entry (di->di_ctime.ts_sec);
+  st->st_ctime_usec = read_disk_entry (di->di_ctime.ts_nsec) / 1000;
 #endif  
   st->st_blksize = sblock->fs_bsize;
-  st->st_blocks = di->di_blocks;
-  st->st_flags = di->di_flags;
+  st->st_blocks = read_disk_entry (di->di_blocks);
+  st->st_flags = read_disk_entry (di->di_flags);
   
   if (sblock->fs_inodefmt < FS_44INODEFMT)
     {
-      st->st_uid = di->di_ouid;
-      st->st_gid = di->di_ogid;
+      st->st_uid = read_disk_entry (di->di_ouid);
+      st->st_gid = read_disk_entry (di->di_ogid);
       st->st_author = 0;
     }
   else
     {
-      st->st_uid = di->di_uid;
-      st->st_gid = di->di_gid;
-      st->st_author = di->di_author;
+      st->st_uid = read_disk_entry (di->di_uid);
+      st->st_gid = read_disk_entry (di->di_gid);
+      st->st_author = read_disk_entry (di->di_author);
       if (st->st_author == -1)
 	st->st_author = st->st_uid;
     }
@@ -305,55 +306,55 @@ write_node (struct node *np)
       if (err)
 	return;
   
-      di->di_gen = st->st_gen;
+      write_disk_entry (di->di_gen, st->st_gen);
       
       if (S_ISBLK (st->st_mode) || S_ISCHR (st->st_mode))
-	di->di_rdev = st->st_rdev;
+	write_disk_entry (di->di_rdev, st->st_rdev);
 
       /* We happen to know that the stat mode bits are the same
 	 as the ufs mode bits. */
 
       if (compat_mode == COMPAT_GNU)
 	{
-	  di->di_model = st->st_mode & 0xffff;
-	  di->di_modeh = (st->st_mode >> 16) & 0xffff;
+	  write_disk_entry (di->di_model, st->st_mode & 0xffff);
+	  write_disk_entry (di->di_modeh, (st->st_mode >> 16) & 0xffff);
 	}
       else 
 	{
-	  di->di_model = st->st_mode & 0xffff;
+	  write_disk_entry (di->di_model, st->st_mode & 0xffff);
 	  di->di_modeh = 0;
 	}
 
       if (compat_mode != COMPAT_BSD42)
 	{
-	  di->di_uid = st->st_uid;
-	  di->di_gid = st->st_gid;
+	  write_disk_entry (di->di_uid, st->st_uid);
+	  write_disk_entry (di->di_gid, st->st_gid);
 	}
       
       if (sblock->fs_inodefmt < FS_44INODEFMT)
 	{
-	  di->di_ouid = st->st_uid & 0xffff;
-	  di->di_ogid = st->st_gid & 0xffff;
+	  write_disk_entry (di->di_ouid, st->st_uid & 0xffff);
+	  write_disk_entry (di->di_ogid, st->st_gid & 0xffff);
 	}
       else if (compat_mode == COMPAT_GNU)
-	di->di_author = st->st_author;
+	write_disk_entry (di->di_author, st->st_author);
 
-      di->di_nlink = st->st_nlink;
-      di->di_size = st->st_size;
+      write_disk_entry (di->di_nlink, st->st_nlink);
+      write_disk_entry (di->di_size, st->st_size);
 #ifdef notyet
       di->di_atime = st->st_atimespec;
       di->di_mtime = st->st_mtimespec;
       di->di_ctime = st->st_ctimespec;
 #else
-      di->di_atime.ts_sec = st->st_atime;
-      di->di_atime.ts_nsec = st->st_atime_usec * 1000;
-      di->di_mtime.ts_sec = st->st_mtime;
-      di->di_mtime.ts_nsec = st->st_mtime_usec * 1000;
-      di->di_ctime.ts_sec = st->st_ctime;
-      di->di_ctime.ts_nsec = st->st_ctime_usec * 1000;
+      write_disk_entry (di->di_atime.ts_sec, st->st_atime);
+      write_disk_entry (di->di_atime.ts_nsec, st->st_atime_usec * 1000);
+      write_disk_entry (di->di_mtime.ts_sec, st->st_mtime);
+      write_disk_entry (di->di_mtime.ts_nsec, st->st_mtime_usec * 1000);
+      write_disk_entry (di->di_ctime.ts_sec, st->st_ctime);
+      write_disk_entry (di->di_ctime.ts_nsec, st->st_ctime_usec * 1000);
 #endif      
-      di->di_blocks = st->st_blocks;
-      di->di_flags = st->st_flags;
+      write_disk_entry (di->di_blocks, st->st_blocks);
+      write_disk_entry (di->di_flags, st->st_flags);
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
@@ -524,7 +525,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
     return err;
   
   di = dino (np->dn->number);
-  blkno = di->di_trans;
+  blkno = read_disk_entry (di->di_trans);
   
   if (namelen && !blkno)
     {
@@ -535,7 +536,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  diskfs_end_catch_exception ();
 	  return err;
 	}
-      di->di_trans = blkno;
+      write_disk_entry (di->di_trans, blkno);
       record_poke (di, sizeof (struct dinode));
       np->dn_set_ctime = 1;
     }
@@ -580,7 +581,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   if (err)
     return err;
 
-  blkno = (dino (np->dn->number))->di_trans;
+  blkno = read_disk_entry ((dino (np->dn->number))->di_trans);
   assert (blkno);
   transloc = disk_image + fsaddr (sblock, blkno);
   
@@ -670,7 +671,8 @@ diskfs_S_file_get_storage_info (struct protid *cred,
     {
       for (i = 0; i < NDADDR; i++)
 	{
-	  (*addresses)[2 * i] = fsbtodb (sblock, di->di_db[i]);
+	  (*addresses)[2 * i] = fsbtodb (sblock, 
+					 read_disk_entry (di->di_db[i]));
 	  if ((i + 1) * sblock->fs_bsize > np->allocsize)
 	    (*addresses)[2 * i + 1] = np->allocsize - i * sblock->fs_bsize;
 	  else
