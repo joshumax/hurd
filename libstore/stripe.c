@@ -1,7 +1,7 @@
 /* Striped store backend
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,99 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -90,7 +90,7 @@ ileave_decode (struct store_enc *enc, const struct store_class *const *classes,
     return EINVAL;
   else
     {
-      int type = enc->ints[enc->cur_int++];
+      int type __attribute__((unused)) = enc->ints[enc->cur_int++];
       int flags = enc->ints[enc->cur_int++];
       int interleave = enc->ints[enc->cur_int++];
       int nkids = enc->ints[enc->cur_int++];
@@ -134,7 +134,7 @@ concat_decode (struct store_enc *enc, const struct store_class *const *classes,
     return EINVAL;
   else
     {
-      int type = enc->ints[enc->cur_int++];
+      int type __attribute__((unused)) = enc->ints[enc->cur_int++];
       int flags = enc->ints[enc->cur_int++];
       int nkids = enc->ints[enc->cur_int++];
       struct store *kids[nkids];
@@ -187,7 +187,7 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
 
       if (stripes[i]->block_size != block_size)
 	end /= (block_size / stripes[i]->block_size);
-  
+
       if (min_end < 0)
 	min_end = end;
       else if (min_end > end)
