@@ -499,6 +499,10 @@ launch_single_user ()
   int fd;
   volatile int run_dev=1;	/* So you can set this from gdb.  */
 
+  printf ("Hit t for term, else dev: ");
+  fflush (stdout);
+  run_dev = getchar () != 't';
+
   if (run_dev)
     /* Run the device server */
     termtask = run_for_real (devname, devname, sizeof (devname));
