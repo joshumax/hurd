@@ -1721,6 +1721,19 @@ S_io_pathconf (mach_port_t obj,
   return EOPNOTSUPP;
 }
 
+kern_return_n
+S_io_identity (mach_port_t obj,
+	       mach_port_t reply,
+	       mach_msg_type_name_t replytype,
+	       mach_port_t *id,
+	       mach_msg_type_name_t *idtype,
+	       mach_port_t *fsid,
+	       mach_msg_type_name_t *fsidtype,
+	       int *fileno)
+{
+  return EOPNOTSUPP;
+}
+
 
 
 /* Implementation of the Hurd terminal driver interface, which we only
