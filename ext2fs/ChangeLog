@@ -1,3 +1,8 @@
+Fri Jul 19 15:02:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (file_pager_read_page, file_pager_write_page): Pass
+	NODE->dn, not &NODE->dn to RECORD_LAST.
+
 Mon Jul 15 18:00:26 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.h (struct disknode): Add debugging info.
