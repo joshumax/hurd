@@ -25,7 +25,7 @@ pager_sync (struct pager *p, int wait)
 {
   vm_address_t offset;
   vm_size_t len;
-  
+
   pager_report_extent (p->upi, &offset, &len);
   
   _pager_lock_object (p, offset, len, MEMORY_OBJECT_RETURN_ALL, 0,
