@@ -66,13 +66,14 @@ struct ess_task
 struct ess_task *ess_tasks;
 struct ntfy_task *ntfy_tasks;
 
-int prompt_for_servers = 0;
-
 /* Our receive right */
 mach_port_t startup;
 
 /* Ports to the kernel */
 mach_port_t host_priv, device_master;
+
+/* Args to bootstrap, expressed as flags */
+int bootstrap_args;
 
 /* Stored information for returning proc and auth startup messages. */
 mach_port_t procreply, authreply;
@@ -238,7 +239,7 @@ run (char *server, mach_port_t *ports, task_t *task)
   char buf[BUFSIZ];
   char *prog = server;
 
-  if (prompt_for_servers)
+  if (bootstrap_args & RB_INITNAME)
     {
       printf ("Server file name (default %s): ", server);
       if (getstring (buf, sizeof (buf)))
@@ -256,8 +257,11 @@ run (char *server, mach_port_t *ports, task_t *task)
 	{
 	  char *progname;
 	  task_create (mach_task_self (), 0, task);
-	  printf ("Pausing for %s\n", prog);
-	  getchar ();
+	  if (bootstrap_args & RB_KDB)
+	    {
+	      printf ("Pausing for %s\n", prog);
+	      getchar ();
+	    }
 	  progname = strrchr (prog, '/');
 	  if (progname)
 	    ++progname;
@@ -283,8 +287,10 @@ run (char *server, mach_port_t *ports, task_t *task)
 	crash_system ();
     }
 
+#if 0
   printf ("started %s\n", prog);
   fflush (stdout);
+#endif
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).
@@ -322,8 +328,11 @@ run_for_real (char *filename, char *args, int arglen)
   proc_child (procserver, task);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
   proc_setsid (default_ports[INIT_PORT_PROC]);
-  printf ("Pausing for %s\n", filename);
-  getchar ();
+  if (bootstrap_args & RB_KDB)
+    {
+      printf ("Pausing for %s\n", filename);
+      getchar ();
+    }
   progname = strrchr (filename, '/');
   if (progname)
     ++progname;
@@ -355,11 +364,26 @@ demuxer (mach_msg_header_t *inp,
 int
 main (int argc, char **argv, char **envp)
 {
-  int err;
+  volatile int err;
   int i;
   mach_port_t consdev;
+  extern char _edata, _etext, __data_start;
   
   global_argv = argv;
+
+  /* Parse the arguments */
+  bootstrap_args = 0;
+  if (argc >= 2)
+    {
+      if (index (argv[1], 'q'))
+	bootstrap_args |= RB_ASKNAME;
+      if (index (argv[1], 's'))
+	bootstrap_args |= RB_SINGLE;
+      if (index (argv[1], 'd'))
+	bootstrap_args |= RB_KDB;
+      if (index (argv[1], 'n'))
+	bootstrap_args |= RB_INITNAME;
+    }
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
      master device ports, and the console.  */
@@ -367,6 +391,15 @@ main (int argc, char **argv, char **envp)
       || fsys_getpriv (bootport, &host_priv, &device_master, &fstask)
       || device_open (device_master, D_WRITE, "console", &consdev))
     crash_mach ();
+
+  err = vm_wire (host_priv, mach_task_self (), 
+		 (vm_address_t) 0x10000, /* XXX */
+		 (vm_size_t) (&_etext - 0x10000),
+		 VM_PROT_READ|VM_PROT_EXECUTE);
+  err = vm_wire (host_priv, mach_task_self (), 
+		 (vm_address_t) &__data_start,
+		 (vm_size_t) (&_edata - &__data_start), 
+		 VM_PROT_READ|VM_PROT_WRITE);
 
   /* Clear our bootstrap port so our children don't inherit it.  */
   task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
@@ -406,7 +439,11 @@ main (int argc, char **argv, char **envp)
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask);
+  printf (" proc");
+  fflush (stdout);
   run ("/hurd/auth", default_ports, &authtask);
+  printf (" auth");
+  fflush (stdout);
   default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
   
   /* Wait for messages.  When both auth and proc have started, we
@@ -465,6 +502,8 @@ launch_core_servers (void)
   printf ("Init has completed.\n");
   fflush (stdout);
 #endif
+  printf (".\n");
+  fflush (stdout);
 
   /* Tell the proc server our msgport.  Be sure to do this after we are all
      done making requests of proc.  Once we have done this RPC, proc
@@ -538,12 +577,19 @@ launch_single_user ()
   task_t foo;
   int fd;
   volatile int run_dev=1;	/* So you can set this from gdb.  */
+  int foobiebletch[TASK_BASIC_INFO_COUNT];
+  int foobiebletchcount = TASK_BASIC_INFO_COUNT;
 
   init_stdarrays ();
 
+  printf ("Single-user environment:");
+  fflush (stdout);
+
+#if 0
   printf ("Hit t for term, else dev: ");
   fflush (stdout);
   run_dev = getchar () != 't';
+#endif
 
   if (run_dev)
     /* Run the device server */
@@ -551,6 +597,9 @@ launch_single_user ()
   else  
     /* Run the terminal driver and open it for the shell. */
     termtask = run_for_real (terminal, terminal, sizeof (terminal));
+
+  printf (" dev");
+  fflush (stdout);
 
   if (termtask)
     {
@@ -591,9 +640,10 @@ launch_single_user ()
 	      default_dtable[2] = getdport (2);
 	      break;
 	    }
+	  sleep (1);
 	  /* Perhaps the terminal driver died? */
-	  task_suspend (termtask);
-	  errno = task_resume (termtask);
+	  errno = task_info (termtask, TASK_BASIC_INFO, foobiebletch,
+			     &foobiebletchcount);
 	  if (errno == MACH_SEND_INVALID_DEST
 	      || errno == KERN_INVALID_ARGUMENT)
 	    break;
@@ -602,18 +652,19 @@ launch_single_user ()
   if (termtask != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), termtask);
 
-  /* Run the shell.  We must do this before calling proc_setmsgport below,
-     because run_for_real does proc server operations.  */
-  foo = run_for_real (shell, shell, sizeof (shell));
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
-
   /* Run pipes. */
   foo = run_for_real (pipes, pipes, sizeof (pipes));
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
-}
+  printf (" pipes");
+  fflush (stdout);
 
+  foo = run_for_real (shell, shell, sizeof (shell));
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
+  printf (" shell.\n");
+  fflush (stdout);
+}
 
 
 kern_return_t
