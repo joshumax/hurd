@@ -27,7 +27,8 @@ SRCS =	lock-acquire.c lock-init.c \
 	exec-reauth.c \
 	set-options.c \
 	get-identity.c \
-	perms-isowner.c perms-access.c perms-checkdirmod.c \
+	perms-isowner.c perms-iscontroller.c perms-access.c \
+	perms-checkdirmod.c \
 	touch.c
 LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h

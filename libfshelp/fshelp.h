@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -237,6 +237,13 @@ error_t fshelp_set_options (struct argp *argp, int flags,
    file identified by ST.  If so, return zero; otherwise return an
    appropriate error code. */
 error_t fshelp_isowner (struct stat *st, struct iouser *user);
+
+/* Check to see whether USER should be considered a controller of the
+   filesystem.  Which is to say, check to see if we should give USER the
+   control port.  ST is the stat of the root node.  USER is the user
+   asking for a send right to the control port.  */
+error_t
+fshelp_iscontroller (struct stat *st, struct iouser *user);
 
 /* Check to see whether the user USER can operate on a file identified
    by ST.  OP is one of S_IREAD, S_IWRITE, and S_IEXEC.  If the access
