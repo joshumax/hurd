@@ -1294,7 +1294,7 @@ S_tioctl_tiocsbrk (io_t port)
 }
 
 error_t
-trivfs_S_file_truncate (struct trivfs_protid *cred,
+trivfs_S_file_set_size (struct trivfs_protid *cred,
 			off_t size)
 {
   if (!cred)
