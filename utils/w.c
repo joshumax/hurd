@@ -43,7 +43,7 @@
 
 #include "psout.h"
 
-#define DEFAULT_FMT_STRING "%^%user %tty %from %login %idle %what"
+#define DEFAULT_FMT_STRING "%^%user %tty %from %login %idle %pid %what"
 
 extern char *canon_host (char *host);
 extern char *shared_domain (char *host1, char *host2);
@@ -229,13 +229,14 @@ const struct ps_getter w_host_getter =
 
 extern error_t ps_emit_past_time (), ps_emit_string (), ps_emit_minutes ();
 extern error_t ps_emit_user_name ();
-extern int ps_cmp_times (), ps_cmp_strings ();
+extern int ps_cmp_times (), ps_cmp_strings (), ps_cmp_unames ();
+extern int ps_nominal_string ();
 const struct ps_fmt_spec _w_specs[] =
 {
   {"User", 0, 8,   -1,0, &w_uname_getter,ps_emit_string, ps_cmp_strings},
-  {"Name", 0, 20,  -1,0, &w_user_getter, ps_emit_user_name,ps_cmp_strings},
+  {"Name", 0, 16,  -1,0, &w_user_getter, ps_emit_user_name,ps_cmp_unames,ps_nominal_string},
   {"Login","Login@", -7,  -1,0,&w_login_getter,ps_emit_past_time,ps_cmp_times},
-  {"From", 0, 16,  -1,0, &w_host_getter, ps_emit_string, ps_cmp_strings},
+  {"From", 0, 14,  -1,0, &w_host_getter, ps_emit_string, ps_cmp_strings, ps_nominal_string},
   {"Idle", 0, -5,  -1,PS_FMT_FIELD_COLON_MOD, &w_idle_getter, ps_emit_minutes,ps_cmp_times},
   {"What=args"},
   {0}
