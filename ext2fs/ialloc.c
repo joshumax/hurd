@@ -273,7 +273,7 @@ error_t
 diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 {
   error_t err;
-  int sex;
+  int sex, block;
   struct node *np;
   ino_t inum;
 
@@ -295,6 +295,14 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
       np->dn_stat.st_blocks = 0;
       np->dn_set_ctime = 1;
     }
+
+  /* Zero out the block pointers in case there's some noise left on disk.  */
+  for (block = 0; block < EXT2_N_BLOCKS; block++)
+    if (np->dn->info.i_data[block] != 0)
+      {
+	np->dn->info.i_data[block] = 0;
+	np->dn_set_ctime = 1;
+      }
 
   np->dn_stat.st_flags = 0;
 
