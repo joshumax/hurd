@@ -26,11 +26,12 @@ diskfs_S_file_utimes (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!(err = isowner (np, cred)))
+		     if (!(err = diskfs_isowner (np, cred)))
 		       {
 			 np->dn_stat.st_atime = atime.seconds;
 			 np->dn_stat.st_mtime = mtime.seconds;
-			 np->dn_stat.st_ctime = wallclock->seconds;
+			 np->dn_set_atime = np->dn_set_mtime = 0;
+			 np->dn_set_ctime = 1;
 		       }
 		   }));
 }
