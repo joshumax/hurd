@@ -274,7 +274,8 @@ routine proc_getprocinfo (
 	process: process_t;
 	which: pid_t;
 	flags: int;
-	out procinfo: procinfo_t);
+	out procinfo: procinfo_t;
+	out threadwaits: data_t, dealloc);
 
 routine proc_getprocargs (
 	process: process_t;
