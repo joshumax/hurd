@@ -457,63 +457,57 @@ S_proc_getprocinfo (struct proc *callerp,
 	    break;
 	}
 
-      if ((flags & PI_FETCH_THREAD_WAITS)
-	  && p->p_msgport != MACH_PORT_NULL
-	  && !p->p_deadmsg)
+      if (flags & PI_FETCH_THREAD_WAITS)
 	{
-	  string_t desc;
-	  size_t desc_len;
-
 	  /* See what thread I is waiting on.  */
-	  if (p->p_msgport == MACH_PORT_NULL)
+	  if (p->p_msgport == MACH_PORT_NULL || p->p_deadmsg)
 	    flags &= ~PI_FETCH_THREAD_WAITS; /* Can't return much... */
-#if 0
-	  else if (nowait_msg_report_wait (p->p_msgport, thds[i]))
-#else
 	  else
-#endif
-	    strcpy (desc, "failed"); /* Don't know.  */
-#if 0
-
-	  /* See how long DESC is, being sure not to barf if it's
-	     unterminated (string_t's are fixed length).  */
-	  desc_len =
-	    ((char *)memchr (desc, '\0', sizeof desc) ?: desc + sizeof desc)
-	      - desc;
-
-	  if (waits_used + desc_len + 1 > *waits_len)
-	    /* Not enough room in WAITS, we must allocate more.  */
 	    {
-	      char *new_waits = 0;
-	      mach_msg_type_number_t new_len =
-		round_page (waits_used + desc_len + 1);
+	      string_t desc;
+	      size_t desc_len;
 
-	      err = vm_allocate (mach_task_self (),
-				 (vm_address_t *)&new_waits, new_len,1);
-	      if (err)
-		/* Just don't return any more waits information.  */
-		flags &= ~PI_FETCH_THREAD_WAITS;
-	      else
+	      if (msg_report_wait (p->p_msgport, thds[i],
+				   desc, &pi->threadinfos[i].rpc_block))
+		desc[0] = '\0'; /* Don't know.  */
+
+	      /* See how long DESC is, being sure not to barf if it's
+		 unterminated (string_t's are fixed length).  */
+	      desc_len = strnlen (desc, sizeof desc);
+
+	      if (waits_used + desc_len + 1 > *waits_len)
+		/* Not enough room in WAITS, we must allocate more.  */
 		{
-		  if (waits_used > 0)
-		    bcopy (*waits, new_waits, waits_used);
-		  if (*waits_len > 0 && waits_alloced)
-		    vm_deallocate (mach_task_self (),
-				   (vm_address_t)*waits, *waits_len);
-		  *waits = new_waits;
-		  *waits_len = new_len;
-		  waits_alloced = 1;
+		  char *new_waits = 0;
+		  mach_msg_type_number_t new_len =
+		    round_page (waits_used + desc_len + 1);
+
+		  err = vm_allocate (mach_task_self (),
+				     (vm_address_t *)&new_waits, new_len,1);
+		  if (err)
+		    /* Just don't return any more waits information.  */
+		    flags &= ~PI_FETCH_THREAD_WAITS;
+		  else
+		    {
+		      if (waits_used > 0)
+			bcopy (*waits, new_waits, waits_used);
+		      if (*waits_len > 0 && waits_alloced)
+			vm_deallocate (mach_task_self (),
+				       (vm_address_t)*waits, *waits_len);
+		      *waits = new_waits;
+		      *waits_len = new_len;
+		      waits_alloced = 1;
+		    }
+		}
+
+	      if (waits_used + desc_len + 1 > *waits_len)
+		/* Append DESC to WAITS.  */
+		{
+		  bcopy (desc, *waits + waits_used, desc_len);
+		  waits_used += desc_len;
+		  (*waits)[waits_used++] = '\0';
 		}
 	    }
-
-	  if (waits_used + desc_len + 1 > *waits_len)
-	    /* Append DESC to WAITS.  */
-	    {
-	      bcopy (desc, *waits + waits_used, desc_len);
-	      waits_used += desc_len;
-	      (*waits)[waits_used++] = '\0';
-	    }
-#endif
 	}
 
       mach_port_deallocate (mach_task_self (), thds[i]);
