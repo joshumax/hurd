@@ -585,8 +585,8 @@ main(int argc, char *argv[])
   /* Check passwords where necessary.  If no_passwd is set, then our parent
      guarantees identity itself (where it is allowed), but otherwise
      we want every UID fully checked.  */
-  err = ugids_verify_make_auth (&ugids, 
-				no_passwd ? &parent_uids : 0, 
+  err = ugids_verify_make_auth (&ugids,
+				no_passwd ? &parent_uids : 0,
 				no_passwd ? &parent_gids : 0,
 				0, 0, 0, 0, &auth);
   if (err == EACCES)
@@ -818,18 +818,17 @@ main(int argc, char *argv[])
 
       if (no_login)
 	sh_arg0 = shell_base;
+      else if (ugids.eff_uids.num + ugids.avail_uids.num == 0)
+	/* Use a special format for the argv[0] of a login prompt shell,
+	   so that `ps' shows something informative in the COMMAND field.
+	   This string must begin with a `-', the convention to tell the
+	   shell to be a login shell (i.e. run .profile and the like).  */
+	err = (asprintf (&sh_arg0, "-login prompt (%s)", shell_base) == -1
+	       ? ENOMEM : 0);
       else
-	{
-	  sh_arg0 = malloc (strlen (shell_base) + 2);
-	  if (! sh_arg0)
-	    err = ENOMEM;
-	  else
-	    /* Prepend the name with a `-', as is the odd custom.  */
-	    {
-	      sh_arg0[0] = '-';
-	      strcpy (sh_arg0 + 1, shell_base);
-	    }
-	}
+	/* Prepend a `-' to the name, which is the ancient canonical
+	   way to tell the shell that it's a login shell.  */
+	err = asprintf (&sh_arg0, "-%s", shell_base) == -1 ? ENOMEM : 0;
     }
   if (! err)
     err = argz_insert (&sh_args, &sh_args_len, sh_args, sh_arg0);
