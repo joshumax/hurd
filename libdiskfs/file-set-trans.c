@@ -18,6 +18,7 @@
 #include "priv.h"
 #include "fs_S.h"
 #include <hurd/paths.h>
+#include <hurd/fsys.h>
 
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 kern_return_t
@@ -75,9 +76,10 @@ diskfs_S_file_set_translator (struct protid *cred,
 	{
 	  mach_port_t control;
 
-	  control = fshelp_get_active (&np->transbox);
+	  error = fshelp_fetch_control (&np->transbox, &control);
 	  mutex_unlock (&np->lock);
-	  error = fsys_goaway (control, killtrans_flags);
+	  if (!error)
+	    error = fsys_goaway (control, killtrans_flags);
 	  if (error)
 	    return error;
 	  mutex_lock (&np->lock);
