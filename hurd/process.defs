@@ -109,7 +109,7 @@ routine proc_register_version (
    MACH_PORT_NULL.  */
 simpleroutine proc_reauthenticate (
 	process: process_t;
-	id: int);
+	rendezvous2: mach_port_send_t);
 
 /* Declare that a task is a child of the caller.  The task's state
    will then inherit from the caller.  This call can be made only once
