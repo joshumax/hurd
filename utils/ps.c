@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <hurd/ps.h>
+#include <unistd.h>
 
 #include "error.h"
 #include "common.h"
@@ -101,6 +102,7 @@ enum_name(char *arg, char **choices, char *kind, int allow_mismatches)
     {
       fprintf(stderr, "%s: invalid %s", arg, kind);
       usage(1);
+      return 0;
     }
 }
 
