@@ -24,7 +24,7 @@ VPATH=.:../machine
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
 	io_replUser.o device_replyUser.o sigvec.o
 
-DIST_FILES = boot.c Makefile io_repl.defs ChangeLog
+DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S
 
 all: boot
 
