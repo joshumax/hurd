@@ -25,7 +25,9 @@ DIST_FILES = sh.ChangeLog
 HURDLIBS=libps libihash  # Only used by ps.  
 REMHDRS=../hurd/ps.h ../lib/argz.h ../lib/error.h ../lib/start-trans.h
 
+CPPFLAGS += -I../lib
 CPPFLAGS += $(CPPFLAGS-$(notdir $<))
+vpath %.c ../lib
 
 include ../Makeconf
 
