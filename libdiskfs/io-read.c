@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -46,6 +46,11 @@ diskfs_S_io_read (struct protid *cred,
 
   if (off == -1)
     off = cred->po->filepointer;
+  if (off < 0)
+    {
+      mutex_unlock (&np->lock);
+      return EINVAL;
+    }
 
   if (off > np->dn_stat.st_size)
     maxread = 0;
