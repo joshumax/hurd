@@ -144,9 +144,10 @@ fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
 	  if (stat.st_mode & S_IXUSR)
 	    /* Yup execute bit is set.  This must a program...  */
 	    break;
+
+	  free (program);
 	}
 
-      free (program);
       program = 0;
     }
 
