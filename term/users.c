@@ -93,6 +93,9 @@ open_hook (struct trivfs_control *cntl,
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
 
+  if (cntl == ptyctl)
+    return pty_open_hook (cntl, uids, nuids, gids, ngids, flags);
+
   mutex_lock (&global_lock);
 
   if (!(termflags & TTY_OPEN))
