@@ -803,7 +803,7 @@ diskfs_checkdirmod (struct node *dp, struct node *np,
     return err;
 
   if ((dp->dn_stat.st_mode & S_ISVTX) && np && !diskfs_isuid (0, cred)
-      && !diskfs_isowner (dp, cred) && !diskfs_isowner (np, cred))
+      && diskfs_isowner (dp, cred) && diskfs_isowner (np, cred))
     return EACCES;
 
   return 0;
