@@ -481,7 +481,9 @@ main (int argc, char **argv, char **envp)
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
 
-  if (root_store->class == &store_device_class && root_store->name)
+  if (root_store->class == &store_device_class && root_store->name
+      && (root_store->flags & STORE_ENFORCED)
+      && root_store->num_runs == 1 && store->runs[0].start == 0)
     /* Let known device nodes pass through directly.  */
     bootdevice = root_store->name;
   else
