@@ -1,5 +1,6 @@
 #
-#   Copyright (C) 1993,94,95,96,97,98,99,2001,02 Free Software Foundation, Inc.
+#   Copyright (C) 1993,94,95,96,97,98,99,2001,02,04
+#	Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -31,13 +32,13 @@ DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libpager libfshelp libdiskfs libtrivfs libps \
 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
-	      libpthread
+	      libpthread libtermserver
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
 	       ufs ext2fs isofs nfs tmpfs fatfs \
 	       storeio pflocal pfinet defpager mach-defpager \
-	       login daemons nfsd boot serverboot console \
+	       login daemons nfsd boot console \
 	       hostmux usermux ftpfs trans \
 	       console-client utils sutils ufs-fsck ufs-utils \
 	       benchmarks fstests
