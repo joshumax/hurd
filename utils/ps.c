@@ -569,9 +569,17 @@ main(int argc, char *argv[])
 	 simple heuristic: Is the 5th process a hurd process (1-4 are
 	 typically: proc server, init, kernel, boot default pager (maybe); the
 	 last two are know not to be hurd processes)?  */
-      show_non_hurd_procs =
-	(procset->num_procs > 4
-	 && !(procset->proc_stats[4]->flags & PSTAT_STATE_P_NOPARENT));
+      if (procset->num_procs > 4)
+	{
+	  struct proc_stat *ps = procset->proc_stats[4];
+	  if (proc_stat_set_flags (ps, PSTAT_STATE) == 0
+	      && (ps->flags & PSTAT_STATE))
+	    show_non_hurd_procs = !(ps->state & PSTAT_STATE_P_NOPARENT);
+	  else
+	    /* Something is fucked, we can't get the state bits for PS.
+	       Default to showing everything.  */
+	    show_non_hurd_procs = 1;
+	}
     }
 
   if (no_msg_port)
