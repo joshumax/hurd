@@ -1,3 +1,21 @@
+2003-08-01  Marco Gerards  <metgerards@student.han.nl>
+
+	* node-create.c: New file.
+	* Makefile (SRCS): Added node-created.c.
+	* dir.c: Include <hurd/fsys.h>.
+	(diskfs_direnter_hard): Initialize a new block with zeros. Enter
+	direntry and setup the virtual	inode. Also handle directories
+	correctly.
+	(diskfs_rewrite_hard): Function rewritten.
+	(diskfs_dirempty): Change logic to test if a file was deleted.
+	* fat.c (fat_extend_chain): Unlock spin_lock when returning from
+	function. Set dn->last to 0 when deallocating the complete
+	file. Update dn->last when not deallocating the complete file. Set
+	dn->first to zero when the complete file was deallocated. Also
+	update dn->length_of_chain to the new amount of clusters in the
+	chain.
+	* main.c (diskfs_hard_readonly): Remove global variable.
+
 2003-07-29  Jeff Bailey  <jbailey@nisa.net>
 
 	* fatfs.h (LOG2_BLOCKS_PER_CLUSTER): Fix typo.

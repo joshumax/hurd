@@ -385,14 +385,17 @@ fat_extend_chain (struct node *node, cluster_t new_last_cluster, int create)
 	dn->last = dn->first = *table;
       return 0;
     }
-	  
-  spin_lock(&dn->chain_extension_lock);
   
+  spin_lock(&dn->chain_extension_lock);
+
   /* If we already have what we need, or we have all clusters that are
      available without allocating new ones, go out.  */
   if (new_last_cluster < dn->length_of_chain
       || (!create && dn->chain_complete))
-    return 0;
+    {
+      spin_unlock(&dn->chain_extension_lock);
+      return 0;
+    }
 
   left = new_last_cluster + 1 - dn->length_of_chain;
 
@@ -517,6 +520,7 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
       /* Deallocate the complete file.  */
       node->dn->start_cluster = 0;
       pos = count = offs = 0;
+      node->dn->last = 0;
     }
   else
     {
@@ -525,6 +529,11 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
       while (count-- > 0)
 	{
 	  assert (next);
+
+	  /* This cluster is now the last cluster in the chain.  */
+	  if (count == 0)
+	    node->dn->last = next;
+
 	  next = next->next;
 	}
       assert (next);
@@ -566,6 +575,11 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
       free (next);
       next = next_next;
     }
+
+  if (clusters_to_keep == 0)
+    node->dn->first = 0;
+  
+  node->dn->length_of_chain = clusters_to_keep; 
 }
 
 

@@ -43,7 +43,7 @@ int diskfs_name_max = FAT_NAME_MAX;
 int diskfs_maxsymlinks = 8;     /* XXX */
 
 /* This filesystem is not capable of writing yet.  */
-int diskfs_readonly = 1, diskfs_hard_readonly = 1;
+int diskfs_readonly = 1;
 
 /* Handy source of zeroes.  */
 vm_address_t zerocluster;

@@ -1,5 +1,5 @@
-/* main.c - FAT filesystem.
-   Copyright (C) 1997, 1998, 1999, 2002 Free Software Foundation, Inc.
+/* dir.c - FAT filesystem.
+   Copyright (C) 1997, 1998, 1999, 2002, 2003 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -21,6 +21,8 @@
 #include <ctype.h>
 #include <string.h>
 #include <dirent.h>
+#include <hurd/fsys.h>
+
 #include "fatfs.h"
 
 /* The size of a directory block is usually just the cluster size.
@@ -617,8 +619,9 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
               munmap ((caddr_t) ds->mapbuf, ds->mapextent);
               return err;
             }
-        }
-      
+	  memset ((caddr_t) ds->mapbuf + oldsize, 0, bytes_per_cluster);
+	}
+
       new = (struct dirrect *) ((char *) ds->mapbuf + oldsize);
 
       dp->dn_stat.st_size = oldsize + bytes_per_cluster;
@@ -642,8 +645,27 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   memcpy (new->name, "           ", 11);
   memcpy (new->name, name, namelen % 11); /* XXX */
 
-  /* XXX We need to do much, much more here.  */
-  /* XXX What about creating . and .. for dirs?  */
+  write_word (new->first_cluster_low, np->dn->start_cluster & 0xffff);
+  write_word (new->first_cluster_high, np->dn->start_cluster >> 16);
+  write_dword (new->file_size, np->dn_stat.st_size);
+  
+  if (!(name[0] == '.' && (name[1] == '\0' 
+			   || (name[1] == '.'  && name[2] =='\0'))))
+    {
+      vi_key_t entry_key;
+      
+      entry_key.dir_inode = dp->cache_id;
+      entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
+      
+      /* Set the key for this inode now because it wasn't know when
+	 the inode was initialized.  */
+      vi_change (vi_lookup (np->cache_id), entry_key);
+      
+      if (np->dn_stat.st_mode & S_IFDIR)
+	new->attribute = FAT_DIR_ATTR_DIR;
+    }
+  else
+    new->attribute = FAT_DIR_ATTR_DIR;
 
   /* Mark the directory inode has having been written.  */
   dp->dn_set_mtime = 1;
@@ -692,19 +714,48 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 error_t
 diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 {
+  error_t err;
+  vi_key_t entry_key;
+  mach_port_t control = MACH_PORT_NULL;
+  struct node *oldnp;
+  ino_t inode;
+  inode_t vinode;
+  
+  /*  We need the inode and vinode of the old node.  */
+  entry_key.dir_inode = dp->cache_id;
+  entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
+  err = vi_rlookup (entry_key, &inode, &vinode, 0);
+  
+  assert (err != EINVAL);
+  
+  /*  Lookup the node, we already have a reference.  */
+  oldnp = ifind (inode);
+
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
 
   assert (!diskfs_readonly);
 
-  /* XXX We have to reimplement rename completely.  */
-  /*
-    ds->entry->inode = np->cache_id;
-  */
-  dp->dn_set_mtime = 1;
- 
+  /*  The link count must be 0 so the file will be removed and
+      the node will be dropped.  */
+  oldnp->dn_stat.st_nlink--;
+  assert (!oldnp->dn_stat.st_nlink);
+  
+  /* Close the file, free the referenced held by clients.  */
+  fshelp_fetch_control (&oldnp->transbox, &control);
+  
+  if (control)
+    {
+      fsys_goaway (control, FSYS_GOAWAY_UNLINK);
+      mach_port_deallocate (mach_task_self (), control);
+    }
+  
+  /*  Put the new key in the vinode.  */
+  vi_change (vi_lookup (np->cache_id), entry_key);
+   
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
+  dp->dn_set_mtime = 1;
   diskfs_file_update (dp, 1);
 
   return 0;
@@ -741,7 +792,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 
       if (entry->name[0] == FAT_DIR_NAME_LAST)
 	break;
-      if (!entry->name[0] == FAT_DIR_NAME_DELETED
+      if ((char) entry->name[0] != FAT_DIR_NAME_DELETED
 	  && memcmp (entry->name, FAT_DIR_NAME_DOT, 11)
 	  && memcmp (entry->name, FAT_DIR_NAME_DOTDOT, 11))
 	hit = 1;

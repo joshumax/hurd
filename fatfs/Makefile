@@ -1,4 +1,4 @@
-#   Copyright (C) 1997 Free Software Foundation
+#   Copyright (C) 1997, 2003 Free Software Foundation
 #   Modified by Marcus Brinkmann, 2000-05-05
 #
 #   This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@ dir := fatfs
 makemode := server
 
 target = fatfs
-SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c
+SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c node-create.c
 LCLHDRS = fat.h fatfs.h virt-inode.h
 DIST_FILES = EXTENSIONS
 
