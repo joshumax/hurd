@@ -980,9 +980,11 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 		     pid, status);
 	    launch_single_user ();
 	  }
+#if 0
 	else
 	  fprintf (stderr, "init: Random child PID %d died (%d).\n",
 		   pid, status);
+#endif
 	break;
       }
 
