@@ -1,3 +1,7 @@
+Tue May 27 12:04:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* users.c (trivfs_S_file_chmod): Turn off S_ISPARE too.
+
 Fri Feb 21 13:17:48 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* users.c (open_hook): Add OPEN_COUNT hack to try and detect lossage.

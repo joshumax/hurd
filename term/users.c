@@ -499,7 +499,7 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
 	mode &= ~S_ISUID;
     }
 
-  term_mode = ((mode & ~S_IFMT & ~S_ITRANS) | S_IFCHR | S_IROOT);
+  term_mode = ((mode & ~S_IFMT & ~S_ITRANS & ~S_IPARE) | S_IFCHR | S_IROOT);
   err = 0;
   
 out:
