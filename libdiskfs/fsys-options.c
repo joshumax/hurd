@@ -84,3 +84,34 @@ diskfs_S_fsys_set_options (fsys_t fsys,
   ports_port_deref (pt);
   return err;
 }
+
+/* Implement fsys_get_options as described in <hurd/fsys.defs>. */
+error_t
+diskfs_S_fsys_get_options (fsys_t fsys,
+			   char **data, mach_msg_type_number_t *data_len)
+{
+  char *argz;
+  error_t err;
+  struct port_info *port =
+    ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
+  
+  if (!port)
+    return EOPNOTSUPP;
+
+  rwlock_reader_lock (&diskfs_fsys_lock);
+  err = diskfs_get_options (&argz, data_len);
+  rwlock_reader_unlock (&diskfs_fsys_lock);
+
+  if (!err)
+    /* Move ARGZ from a malloced buffer into a vm_alloced one.  */
+    {
+      err =
+	vm_allocate (mach_task_self (), (vm_address_t *)data, *data_len, 1);
+      if (!err)
+	bcopy (argz, *data, *data_len);
+      free (argz);
+    }
+
+  ports_port_deref (port);
+  return err;
+}
