@@ -136,6 +136,10 @@ sock_free (struct sock *sock)
   sock_shutdown (sock, SOCK_SHUTDOWN_READ | SOCK_SHUTDOWN_WRITE);
   if (sock->id != MACH_PORT_NULL)
     mach_port_destroy (mach_task_self (), sock->id);
+  if (sock->listen_queue)
+    connq_destroy (sock->listen_queue);
+  if (sock->connect_queue)
+    connq_destroy (sock->connect_queue);
   free (sock);
 }
 

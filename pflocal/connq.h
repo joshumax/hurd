@@ -33,6 +33,9 @@ struct sock;
    is already listening (change this with connq_set_length).  */
 error_t connq_create (struct connq **cq);
 
+/* Destroy a queue.  */
+void connq_destroy (struct connq *cq);
+
 /* Wait for a connection attempt to be made on CQ, and return the connecting
    socket in SOCK, and a request tag in REQ.  If REQ is NULL, the request is
    left in the queue, otherwise connq_request_complete must be called on REQ

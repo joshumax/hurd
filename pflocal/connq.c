@@ -108,6 +108,20 @@ connq_create (struct connq **cq)
   *cq = new;
   return 0;
 }
+
+/* Destroy a queue.  */
+void
+connq_destroy (struct connq *cq)
+{
+  /* Everybody in the queue should hold a reference to the socket
+     containing the queue.  */
+  assert (cq->length == 0);
+  /* Nevertheless, malloc(0) or realloc(0) might allocate some small
+     space.  */
+  if (cq->queue)
+    free (cq->queue);
+  free (cq);
+}
 
 /* ---------------------------------------------------------------- */
 
