@@ -338,6 +338,10 @@ S_proc_getprocenv (struct proc *callerp,
   return get_string_array (p->p_task, p->p_envp, (vm_address_t *)buf, buflen);
 }
 
+/* Handy abbreviation for all the various thread details.  */
+#define PI_FETCH_THREAD_DETAILS  \
+  (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC | PI_FETCH_THREAD_WAITS)
+
 /* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_getprocinfo (struct proc *callerp,
@@ -370,8 +374,7 @@ S_proc_getprocinfo (struct proc *callerp,
   task = p->p_task;
   msgport = p->p_deadmsg ? MACH_PORT_NULL : p->p_msgport;
 
-  if (*flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
-	       | PI_FETCH_THREAD_WAITS))
+  if (*flags & PI_FETCH_THREAD_DETAILS)
     *flags |= PI_FETCH_THREADS;
 
   if (*flags & PI_FETCH_THREADS)
@@ -385,8 +388,9 @@ S_proc_getprocinfo (struct proc *callerp,
   else
     nthreads = 0;
 
-  structsize =
-    sizeof (struct procinfo) + nthreads * sizeof (pi->threadinfos[0]);
+  structsize = sizeof (struct procinfo);
+  if (*flags & PI_FETCH_THREAD_DETAILS)
+    structsize += nthreads * sizeof (pi->threadinfos[0]);
 
   if (structsize / sizeof (int) > *piarraylen)
     {
@@ -432,7 +436,8 @@ S_proc_getprocinfo (struct proc *callerp,
 
   for (i = 0; i < nthreads; i++)
     {
-      pi->threadinfos[i].died = 0;
+      if (*flags & PI_FETCH_THREAD_DETAILS)
+	pi->threadinfos[i].died = 0;
       if (*flags & PI_FETCH_THREAD_BASIC)
 	{
 	  thcount = THREAD_BASIC_INFO_COUNT;
@@ -442,30 +447,39 @@ S_proc_getprocinfo (struct proc *callerp,
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      pi->threadinfos[i].died = 1;
+	      err = 0;
 	      continue;
 	    }
 	  else if (err)
-	    break;
+	    /* Something screwy, give up on this bit of info.  */
+	    {
+	      *flags &= ~PI_FETCH_THREAD_BASIC;
+	      err = 0;
+	    }
 	}
 
       if (*flags & PI_FETCH_THREAD_SCHED)
 	{
 	  thcount = THREAD_SCHED_INFO_COUNT;
-	  if (!err)
-	    err = thread_info (thds[i], THREAD_SCHED_INFO,
-			       (int *)&pi->threadinfos[i].pis_si,
-			       &thcount);
+	  err = thread_info (thds[i], THREAD_SCHED_INFO,
+			     (int *)&pi->threadinfos[i].pis_si,
+			     &thcount);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      pi->threadinfos[i].died = 1;
+	      err = 0;
 	      continue;
 	    }
-	  if (err && err != ESRCH)
-	    break;
+	  if (err)
+	    /* Something screwy, give up o nthis bit of info.  */
+	    {
+	      *flags &= ~PI_FETCH_THREAD_SCHED;
+	      err = 0;
+	    }
 	}
 
       /* Note that there are thread wait entries only for threads not marked
-         dead.  */
+	 dead.  */
 
       if (*flags & PI_FETCH_THREAD_WAITS)
 	{
