@@ -1,5 +1,5 @@
 /* Prime number generation
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,9 +19,12 @@
 #include <limits.h>
 #include <string.h>
 #include <assert.h>
+#include <spin-lock.h>
 
 #define BITS_PER_UNSIGNED (8 * sizeof (unsigned))
 #define SQRT_INT_MAX (1 << (BITS_PER_UNSIGNED / 2))
+
+static spin_lock_t table_lock = SPIN_LOCK_INITIALIZER;
 
 /* Return the next prime greater than or equal to N. */
 int 
@@ -39,6 +42,8 @@ nextprime (unsigned n)
   static unsigned next_sieve;	/* always even */
   unsigned max_prime;
 
+  spin_lock (&table_lock);
+  
   if (! primes)
     {
       primes_size = 128;
@@ -55,8 +60,11 @@ nextprime (unsigned n)
     }
 
   if (n <= primes[0])
-    return primes[0];
-
+    { 
+      spin_unlock (&table_lock);
+      return primes[0];
+    }
+  
   while (n > (max_prime = primes[primes_len - 1])) 
     {
       /* primes doesn't contain any prime large enough.  Sieve from
@@ -129,6 +137,7 @@ nextprime (unsigned n)
 	  top = mid;
       }
     
+    spin_unlock (&table_lock);
     return primes[top];
   }
 }
