@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
@@ -26,7 +26,7 @@ makemode := misc
 # If override_conf is set to `t' then install even on top of existing
 # files.
 SYSCONFFILES = protocols services shells motd ttys hostname fstab passwd \
-	group resolv.conf syslog.conf
+	group resolv.conf
 installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
