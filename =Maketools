@@ -21,8 +21,8 @@ CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
 
 ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 
-ifndef HOST_CC
-export HOST_CC := $(CC)
+ifndef BUILD_CC
+export BUILD_CC := $(CC)
 endif
 CC=gcc $(CCTYPE) -O2 -pipe
 ifeq (,$(wildcard /usr/local/lib/migcom))
@@ -39,7 +39,7 @@ AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
 
-INSTALL_BIN=$(tooldir)/objcopy -S
+INSTALL_BIN=i386-gnu-objcopy -S
 #INSTALL_BIN=cp
 
 machine := i386
