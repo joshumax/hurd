@@ -526,7 +526,7 @@ diskfs_sync_everything (int wait)
       if (p != disk_pager)
 	pager_sync (p->p, wait);
       else
-	pokel_sync (&sblock_pokel, wait);
+	pokel_sync (&global_pokel, wait);
     }
   
   copy_sblock ();
