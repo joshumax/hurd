@@ -256,24 +256,9 @@ ihash_iterate(ihash_t ht, error_t (*fun)(void *))
 void
 ihash_locp_remove(ihash_t ht, void **locp)
 {
-  void *tag = HASH_DEL;
-
-  if (ht != NULL)
-    {
-      int index = locp - ht->tab;
-      int next_index = REHASH(ht, ht->ids[index], index);
-
-      if (ht && ht->cleanup)
-	ht->cleanup(*locp, ht->cleanup_arg);
-
-      /* If the next position in this hash chain is empty, then we don't need
-	 to use HASH_DEL (which only serves to prevent breaking the chain to
-	 preserve lookups past this point).  */
-      if (ht->tab[next_index] == HASH_EMPTY)
-	tag = HASH_EMPTY;
-    }
-
-  *locp = tag;
+  if (ht && ht->cleanup)
+    ht->cleanup(*locp, ht->cleanup_arg);
+  *locp = HASH_DEL;
 }
 
 /* Remove the entry with a key of ID from HT.  If anything was actually
