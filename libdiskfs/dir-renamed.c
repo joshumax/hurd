@@ -86,9 +86,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     }
   tdp->dn_stat.st_nlink++;
   tdp->dn_set_ctime = 1;
-  err = diskfs_checkdirmod (fnp, fdp, fromcred);
-  if (err)
-    goto out;
   
   tmpds = alloca (diskfs_dirstat_size);
   err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
