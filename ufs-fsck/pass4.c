@@ -35,7 +35,7 @@ pass4()
 	      getinode (number, &dino);
 	      pwarn ("LINK COUNT %s", 
 		     (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE");
-	      pinode (dino);
+	      pinode (number);
 	      printf (" COUNT %d SHOULD BE %d", linkcount[number],
 		      linkfound[number]);
 	      if (preen)
