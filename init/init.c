@@ -382,7 +382,8 @@ run (char *server, mach_port_t *ports, task_t *task)
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).  Return
    the task that we started.  If CTTY is set, then make that the
    controlling terminal of the new process and put it in its own login
-   collection.  If SETSID is set, put it in a new session. */
+   collection.  If SETSID is set, put it in a new session.  Return
+   0 if the task was not created successfully. */
 pid_t
 run_for_real (char *filename, char *args, int arglen, mach_port_t ctty, 
 	      int setsid)
@@ -410,7 +411,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
   if (!file)
     {
       error (0, errno, "%s", filename);
-      return MACH_PORT_NULL;
+      return 0;
     }
 #endif
 
@@ -457,7 +458,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
   if (err)
     {
       error (0, err, "Cannot execute %s", filename);
-      return MACH_PORT_NULL;
+      return 0;
     }
   return pid;
 }
@@ -562,18 +563,30 @@ free_ttys (void)
 void
 startup_terminal (struct terminal *t)
 {
+  pid_t pid;
   assert (t->on);
   assert (t->getty_argz);
   
   if (t->window_argz)
     {
-      run_for_real (t->window_argz, t->window_argz,
-		    t->window_argz_len, MACH_PORT_NULL, 1);
+      pid = run_for_real (t->window_argz, t->window_argz,
+			  t->window_argz_len, MACH_PORT_NULL, 1);
+      if (!pid)
+	goto error;
+	  
       sleep (WINDOW_DELAY);
     }
 
-  t->pid = run_for_real (t->getty_argz, t->getty_argz,
-			 t->getty_argz_len, MACH_PORT_NULL, 0);
+  pid = run_for_real (t->getty_argz, t->getty_argz,
+		      t->getty_argz_len, MACH_PORT_NULL, 0);
+  if (pid == 0)
+    {
+    error:
+      t->pid = 0;
+      t->on = 0;
+    }
+  else
+    t->pid = pid;
 }
 
 /* For each line in /etc/ttys, start up the specified program */
@@ -1077,12 +1090,14 @@ launch_single_user ()
   /* The shell needs a real controlling terminal, so set that up here. */
   shell_pid = run_for_real (shell, shell, strlen (shell) + 1, term, 1);
   mach_port_deallocate (mach_task_self (), term);
+  if (shell_pid == 0)
+    crash_system ();
   printf (" shell.\n");
   fflush (stdout);
 }
 
-/* Run /etc/rc as a shell script. */
-void
+/* Run /etc/rc as a shell script.  Return non-zero if we fail.  */
+int
 process_rc_script ()
 {  
   char *rcargs;
@@ -1106,6 +1121,7 @@ process_rc_script ()
   
   rc_pid = run_for_real (rcargs, rcargs, rcargslen, term, 1);
   mach_port_deallocate (mach_task_self (), term);
+  return ! rc_pid;
 }
 
 /* Start up multi-user state. */
@@ -1215,6 +1231,8 @@ kill_multi_user ()
 void
 process_signal (int signo)
 {
+  int fail;
+  
   switch (signo)
     {
     case SIGTERM:
@@ -1260,7 +1278,12 @@ process_signal (int signo)
 	    else
 	      {
 		do_fastboot = 1;
-		process_rc_script ();
+		fail = process_rc_script ();
+		if (fail)
+		  {
+		    do_fastboot = 0;
+		    launch_single_user ();
+		  }
 	      }
 	  }
 	else if (pid == rc_pid && system_state == RUNCOM)
@@ -1421,7 +1444,11 @@ S_startup_essential_task (mach_port_t server,
 	  if (bootstrap_args & RB_SINGLE)
 	    launch_single_user ();
 	  else
-	    process_rc_script ();
+	    {
+	      fail = process_rc_script ();
+	      if (fail)
+		launch_single_user ();
+	    }
 	  return MIG_NO_REPLY;
 	}
     }
