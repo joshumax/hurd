@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -176,7 +176,7 @@ reboot_system (int flags)
       err = proc_getallpids (procserver, &pp, &npids);
       if (err == MACH_SEND_INVALID_DEST)
 	{
-	procbad:	
+	procbad:
 	  /* The procserver must have died.  Give up. */
 	  printf ("Init: can't simulate crash; proc has died\n");
 	  fflush (stdout);
@@ -187,7 +187,7 @@ reboot_system (int flags)
 	  task_t task;
 	  err = proc_pid2task (procserver, pp[ind], &task);
 	  if (err == MACH_SEND_INVALID_DEST)
-	    goto procbad; 
+	    goto procbad;
 
 	  else  if (err)
 	    {
@@ -196,7 +196,7 @@ reboot_system (int flags)
 	      fflush (stdout);
 	      continue;
 	    }
-	
+
 	  /* Postpone self so we can finish; postpone proc
 	     so that we can finish. */
 	  if (task != mach_task_self () && task != proctask)
@@ -208,7 +208,7 @@ reboot_system (int flags)
 	      err = proc_getprocinfo (procserver, pp[ind], 0,
 				      (int **)&pi, &pisize, &noise,&noise_len);
 	      if (err == MACH_SEND_INVALID_DEST)
-		goto procbad; 
+		goto procbad;
 	      if (err)
 		{
 		  printf ("init: getting procinfo for pid %d: %s\n",
@@ -243,7 +243,7 @@ crash_system (void)
   reboot_system (CRASH_FLAGS);
 }
 
-/* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS. 
+/* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.
    Set TASK to be the task port of the new image. */
 void
 run (char *server, mach_port_t *ports, task_t *task)
@@ -306,7 +306,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).
-   Return the task that we started.  If CTTY is set, then make 
+   Return the task that we started.  If CTTY is set, then make
    that the controlling terminal of the new process and put it in
    its own login collection.  */
 task_t
@@ -337,10 +337,11 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
       return MACH_PORT_NULL;
     }
 #endif
-  
+
   task_create (mach_task_self (), 0, &task);
   proc_child (procserver, task);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
+  proc_mark_exec (default_ports[INIT_PORT_PROC]);
   proc_setsid (default_ports[INIT_PORT_PROC]);
   if (ctty != MACH_PORT_NULL)
     {
@@ -371,7 +372,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   if (ctty != MACH_PORT_NULL)
     {
-      mach_port_deallocate (mach_task_self (), 
+      mach_port_deallocate (mach_task_self (),
 			    default_ports[INIT_PORT_CTTYID]);
       default_ports[INIT_PORT_CTTYID] = MACH_PORT_NULL;
     }
@@ -389,7 +390,7 @@ demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
   extern int notify_server (), startup_server (), msg_server ();
-  
+
   return (notify_server (inp, outp) ||
 	  msg_server (inp, outp) ||
 	  startup_server (inp, outp));
@@ -402,7 +403,7 @@ main (int argc, char **argv, char **envp)
   int i;
   mach_port_t consdev;
   extern char _edata, _etext, __data_start;
-  
+
   global_argv = argv;
 
   /* Parse the arguments */
@@ -431,13 +432,13 @@ main (int argc, char **argv, char **envp)
   {
     extern void _start ();
     vm_address_t text_start = (vm_address_t) &_start;
-    err = vm_wire (host_priv, mach_task_self (), 
+    err = vm_wire (host_priv, mach_task_self (),
 		   (vm_address_t) text_start,
 		   (vm_size_t) (&_etext - text_start),
 		   VM_PROT_READ|VM_PROT_EXECUTE);
-    err = vm_wire (host_priv, mach_task_self (), 
+    err = vm_wire (host_priv, mach_task_self (),
 		   (vm_address_t) &__data_start,
-		   (vm_size_t) (&_edata - &__data_start), 
+		   (vm_size_t) (&_edata - &__data_start),
 		   VM_PROT_READ|VM_PROT_WRITE);
   }
 
@@ -449,7 +450,7 @@ main (int argc, char **argv, char **envp)
   if (stdout == NULL || stdin == NULL)
     crash_mach ();
   setbuf (stdout, NULL);
-  
+
   /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
@@ -472,7 +473,7 @@ main (int argc, char **argv, char **envp)
 	default_ports[i] = MACH_PORT_NULL;
 	break;
       }
-  
+
   default_dtable[0] = getdport (0);
   default_dtable[1] = getdport (1);
   default_dtable[2] = getdport (2);
@@ -485,7 +486,7 @@ main (int argc, char **argv, char **envp)
   printf (" auth");
   fflush (stdout);
   default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
-  
+
   /* Wait for messages.  When both auth and proc have started, we
      run launch_system which does the rest of the boot.  */
   while (1)
@@ -502,8 +503,8 @@ launch_core_servers (void)
   mach_port_t authproc, fsproc;
 
   /* Reply to the proc and auth servers.   */
-  startup_procinit_reply (procreply, procreplytype, 0, 
-			  mach_task_self (), authserver, 
+  startup_procinit_reply (procreply, procreplytype, 0,
+			  mach_task_self (), authserver,
 			  host_priv, MACH_MSG_TYPE_COPY_SEND,
 			  device_master, MACH_MSG_TYPE_COPY_SEND);
   if (!fakeboot)
@@ -512,12 +513,15 @@ launch_core_servers (void)
       device_master = 0;
     }
 
+  proc_mark_exec (procserver);
+
   /* Declare that the filesystem and auth are our children. */
   proc_child (procserver, fstask);
   proc_child (procserver, authtask);
 
   proc_task2proc (procserver, authtask, &authproc);
-  startup_authinit_reply (authreply, authreplytype, 0, authproc, 
+  proc_mark_exec (authproc);
+  startup_authinit_reply (authreply, authreplytype, 0, authproc,
 			  MACH_MSG_TYPE_MOVE_SEND);
 
   /* Give the library our auth and proc server ports.  */
@@ -538,6 +542,7 @@ launch_core_servers (void)
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */
   proc_task2proc (procserver, fstask, &fsproc);
+  proc_mark_exec (fsproc);
 
 #if 0
   printf ("Init has completed.\n");
@@ -571,16 +576,16 @@ init_stdarrays ()
   mach_port_t ref;
   mach_port_t *std_port_array;
   int *std_int_array;
-  
+
   std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
   std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
-  
+
   bzero (std_port_array, sizeof (mach_port_t) * INIT_PORT_MAX);
   bzero (std_int_array, sizeof (int) * INIT_INT_MAX);
-  
+
   __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
-  
+
   pt = getcwdir ();
   ref = mach_reply_port ();
   io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
@@ -588,7 +593,7 @@ init_stdarrays ()
 			  &std_port_array[INIT_PORT_CWDIR]);
   mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
-  
+
   pt = getcrdir ();
   ref = mach_reply_port ();
   io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
@@ -596,19 +601,19 @@ init_stdarrays ()
 			  &std_port_array[INIT_PORT_CRDIR]);
   mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
-  
+
   std_port_array[INIT_PORT_AUTH] = nullauth;
-  
+
   std_int_array[INIT_UMASK] = CMASK;
 
-  __USEPORT (PROC, proc_setexecdata (port, std_port_array, 
+  __USEPORT (PROC, proc_setexecdata (port, std_port_array,
 				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
 				     std_int_array, INIT_INT_MAX));
 }
-  
+
 
 /* Start the single-user environment.  This can only be done
-   when the core servers have fully started.  We know that 
+   when the core servers have fully started.  We know that
    startup_essential_task is the last thing they do before being
    ready to handle requests, so we start this once all the necessary
    servers have identified themselves that way. */
@@ -640,7 +645,7 @@ launch_single_user ()
       if (err)
 	perror (termname);
     }
-  
+
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     {
       /* Start the terminal server ourselves. */
@@ -653,7 +658,7 @@ launch_single_user ()
 	  goto fail;
 	}
       errno = file_set_translator (term, FS_TRANS_SET, 0, 0,
-				   terminal, sizeof terminal, 
+				   terminal, sizeof terminal,
 				   MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
       if (errno)
 	{
@@ -684,7 +689,7 @@ launch_single_user ()
 	}
     }
  fail:
-    
+
   /* At this point either TERM is the console or it's null.  If it's
      null, then don't do anything, and our fd's will be copied.
      Otherwise, open fd's 0, 1, and 2. */
@@ -699,7 +704,7 @@ launch_single_user ()
 
       fclose (stdin);
       stdin = fdopen (0, "r");
-      
+
       /* Don't reopen our output channel for reliability's sake. */
 
       /* Set ports in init_dtable for programs we start. */
@@ -710,7 +715,7 @@ launch_single_user ()
       default_dtable[1] = getdport (1);
       default_dtable[2] = getdport (2);
     }
-  
+
 #if 0
   printf ("Shell program [%s]: ", _PATH_BSHELL);
   if (! getstring (shell, sizeof shell))
@@ -734,7 +739,7 @@ kern_return_t
 S_startup_procinit (startup_t server,
 		    mach_port_t reply,
 		    mach_msg_type_name_t reply_porttype,
-		    process_t proc, 
+		    process_t proc,
 		    mach_port_t *startuptask,
 		    auth_t *auth,
 		    mach_port_t *priv,
@@ -783,7 +788,7 @@ S_startup_authinit (startup_t server,
 
   return MIG_NO_REPLY;
 }
-    
+
 kern_return_t
 S_startup_essential_task (mach_port_t server,
 			  mach_port_t reply,
@@ -812,10 +817,10 @@ S_startup_essential_task (mach_port_t server,
     }
   et->next = ess_tasks;
   ess_tasks = et;
-  
+
   /* Dead-name notification on the task port will tell us when it dies.  */
-  mach_port_request_notification (mach_task_self (), task, 
-				  MACH_NOTIFY_DEAD_NAME, 1, startup, 
+  mach_port_request_notification (mach_task_self (), task,
+				  MACH_NOTIFY_DEAD_NAME, 1, startup,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
   if (prev)
     mach_port_deallocate (mach_task_self (), prev);
@@ -836,13 +841,13 @@ S_startup_essential_task (mach_port_t server,
 	execinit = 1;
       else if (!strcmp (name, "proc"))
 	procinit = 1;
-      
+
       if (authinit && execinit && procinit)
 	{
 	  /* Reply to this RPC, after that everything
 	     is ready for real startup to begin. */
 	  startup_essential_task_reply (reply, replytype, 0);
-	  
+
 	  launch_single_user ();
 	  initdone = 1;
 	  return MIG_NO_REPLY;
@@ -859,8 +864,8 @@ S_startup_request_notification (mach_port_t server,
   struct ntfy_task *nt;
   mach_port_t prev;
 
-  mach_port_request_notification (mach_task_self (), notify, 
-				  MACH_NOTIFY_DEAD_NAME, 1, startup, 
+  mach_port_request_notification (mach_task_self (), notify,
+				  MACH_NOTIFY_DEAD_NAME, 1, startup,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
   if (prev != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), prev);
@@ -878,7 +883,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
-  
+
   for (et = ess_tasks; et != NULL; et = et->next)
     if (et->task_port == name)
       /* An essential task has died.  */
@@ -911,7 +916,7 @@ S_startup_reboot (mach_port_t server,
 {
   if (refpt != host_priv)
     return EPERM;
-  
+
   reboot_system (code);
   for (;;);
 }
@@ -937,7 +942,7 @@ do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t mscount)
   return EOPNOTSUPP;
 }
 
-kern_return_t 
+kern_return_t
 do_mach_notify_port_deleted (mach_port_t notify,
 			     mach_port_t name)
 {
