@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -56,6 +56,13 @@ diskfs_node_rdwr (struct node *np,
     }
 
   err = _diskfs_rdwr_internal (np, data, off, amt, dir, 0);
+  if (diskfs_synchronous)
+    {
+      if (dir)
+	diskfs_file_update (np, 1);
+      else
+	diskfs_node_update (np, 1);
+    }
   if (!err && amtread)
     *amtread = amt;
 
