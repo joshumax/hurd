@@ -1,5 +1,7 @@
 2000-03-19  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* io.c: Comments.
+
 	* dev.h (struct dev): New members store_name, readonly, rdev.
 	(dev_is_readonly): New inline function.
 	* dev.c (dev_open): Take just one arg, a struct dev whose store==0.
