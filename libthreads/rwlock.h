@@ -16,6 +16,12 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef _rwlock_h
+#define _rwlock_h
+
+#include <cthreads.h>
+#include <assert.h>
+
 struct rwlock
 {
   struct mutex master;
@@ -96,3 +102,6 @@ rwlock_init (struct rwlock *lock)
 
 #define RWLOCK_INITIALIZER \
   { MUTEX_INITIALIZER, CONDITION_INITIALIZER, 0, 0, 0 }
+
+
+#endif /* _rwlock_h */
