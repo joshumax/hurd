@@ -56,6 +56,17 @@ diskfs_drop_node (struct node *np)
   else
     diskfs_node_update (np, 0);
 
+  if (np->dirmod_reqs)
+    {
+      struct dirmod *dm, *tmp;
+      for (dm = np->dirmod_reqs; dm; dm = tmp)
+	{
+	  mach_port_deallocate (mach_task_self (), dm->port);
+	  tmp = dm->next;
+	  free (dm);
+	}
+    }
+
   diskfs_node_norefs (np);
   spin_unlock (&diskfs_node_refcnt_lock);
 }
