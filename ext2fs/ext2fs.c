@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <getopt.h>
+#include <options.h>
 #include "ext2fs.h"
 #include "error.h"
 
@@ -154,19 +154,23 @@ usage(int status)
   exit (status);
 }
 
-#define SHORT_OPTIONS "rwsn?V"
+#define SHORT_OPTS ""
 
-static struct option options[] =
+static struct option long_opts[] =
 {
-  {"readonly", no_argument, 0, 'r'},
-  {"writable", no_argument, 0, 'w'},
-  {"sync", optional_argument, 0, 's'},
-  {"nosync", no_argument, 0, 'n'},
   {"help", no_argument, 0, '?'},
-  {"version", no_argument, 0, 'V'},
   {0, 0, 0, 0}
 };
 
+static error_t
+parse_opt (int opt, char *arg)
+{
+  /* We currently only deal with one option... */
+  if (opt != '?')
+    return EINVAL;
+  usage (0);			/* never returns */
+  return 0;
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -184,8 +188,10 @@ main (int argc, char **argv)
 
   if (getpid () > 0)
     {
-      int opt;
+      int argind;		/* ARGV index of the first argument.  */
       int fd = open ("/dev/console", O_RDWR);
+      struct options options =
+	{ SHORT_OPTS, long_opts, parse_opt, diskfs_standard_startup_options };
 
       /* Make errors go somewhere reasonable.  */
       while (fd >= 0 && fd < 2)
@@ -193,34 +199,11 @@ main (int argc, char **argv)
       if (fd > 2)
 	close (fd);
 
-      while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
-	switch (opt)
-	  {
-	  case 'r':
-	    diskfs_readonly = 1; break;
-	  case 'w':
-	    diskfs_readonly = 0; break;
-	  case 's':
-	    if (optarg == NULL)
-	      diskfs_synchronous = 1;
-	    else
-	      diskfs_default_sync_interval = atoi (optarg);
-	    break;
-	  case 'n':
-	    diskfs_synchronous = 0;
-	    diskfs_default_sync_interval = 0;
-	    break;
-	  case 'V':
-	    printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
-		   diskfs_minor_version, diskfs_edit_version);
-	    exit(0);
-	  case '?':
-	    usage(0);
-	  default:
-	    usage(1);
-	  }
+      /* Parse our command line.  */
+      if (options_parse (&options, argc, argv, OPTIONS_PRINT_ERRS, &argind))
+	usage (1);
 
-      if (argc - optind != 1)
+      if (argc - argind != 1)
 	{
 	  fprintf (stderr, USAGE, program_invocation_name);
 	  usage (1);
@@ -229,7 +212,7 @@ main (int argc, char **argv)
       if (bootstrap == MACH_PORT_NULL)
 	error (2, 0, "Must be started as a translator");
 
-      device_name = argv[optind];
+      device_name = argv[argind];
     }
   else
     /* We are the bootstrap filesystem.  */
