@@ -211,12 +211,13 @@ routine msg_clear_some_exec_flags (
 	refport: mach_port_t;
 	flags: int);
 
-/* Return a description of why THREAD is waiting.  (THREAD should
-   be a thread in this task.)  If the thread is not waiting, or the reason
-   is unknown, return zero.  WAIT_RPC is the RPC code of the
-   RPC the thread is waiting on (if it is waiting on an RPC; zero if not.)  */
+/* Return a description of why THREAD is waiting.  THREAD must
+   be a thread in this task.  If the thread is not waiting, or the reason
+   is unknown, return zero.  WAIT_RPC is the RPC code of the RPC the thread
+   is waiting on, or zero if it is not blocked in an RPC.  */
 routine msg_report_wait (
 	process: mach_port_t;
 	thread: thread_t;
+	out wait_desc: string_t;
 	out wait_rpc: int);
 
