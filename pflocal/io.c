@@ -31,6 +31,10 @@
 #include "sock.h"
 #include "pipe.h"
 #include "connq.h"
+#include "sserver.h"
+
+#include "io_S.h"
+#include "interrupt_S.h"
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
@@ -80,10 +84,15 @@ S_io_write (struct sock_user *user,
   if (!err)
     {
       struct addr *source_addr;
+
+      /* We could provide a source address for all writes, but we only do so
+	 for connectionless sockets because that's the only place it's
+	 required, and it's more efficient not to.  */
       if (pipe->class->flags & PIPE_CLASS_CONNECTIONLESS)
 	err = sock_get_addr (user->sock, &source_addr);
       else
 	source_addr = NULL;
+
       if (!err)
 	{
 	  err = pipe_write (pipe, source_addr,
@@ -92,6 +101,7 @@ S_io_write (struct sock_user *user,
 	  if (source_addr)
 	    ports_port_deref (source_addr);
 	}
+
       pipe_release (pipe);
     }
 
@@ -101,12 +111,14 @@ S_io_write (struct sock_user *user,
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
 error_t
-S_interrupt_operation (struct sock_user *user)
+S_interrupt_operation (mach_port_t port)
 {
   struct pipe *pipe;
+  struct sock_user *user = ports_lookup_port (sock_port_bucket, port, 0);
 
   if (!user)
     return EOPNOTSUPP;
+debug (user, "interrupt, sock: %p", user->sock);
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
@@ -117,6 +129,8 @@ S_interrupt_operation (struct sock_user *user)
       pipe_kick (pipe);
       pipe_release (pipe);
     }
+
+  ports_port_deref (user);
 
   return 0;
 }
@@ -179,6 +193,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
   *select_type |= ~SELECT_URG;	/* We never return these.  */
 
   sock = user->sock;
+debug (sock, "lock");
   mutex_lock (&sock->lock);
 
   if (sock->connq)
@@ -186,24 +201,30 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
        only select for reading, which will block until a connection request
        comes along.  */
     {
+debug (sock, "unlock");
       mutex_unlock (&sock->lock);
 
       if (*select_type & SELECT_WRITE)
 	/* Meaningless for a non-i/o socket.  */
+debug (sock, "ebadf");
 	return EBADF;
 
       if (*select_type & SELECT_READ)
 	/* Wait for a connect.  Passing in NULL for REQ means that the
 	   request won't be dequeued.  */
+{debug (sock, "waiting for connection");
 	return 
 	  connq_listen (sock->connq, sock->flags & SOCK_NONBLOCK, NULL, NULL);
+}
     }
   else
     /* Sock is a normal read/write socket.  */
     {
       if ((*select_type & SELECT_WRITE) && !sock->write_pipe)
 	{
+debug (sock, "unlock");
 	  mutex_unlock (&sock->lock);
+debug (sock, "ebadf");
 	  return EBADF;
 	}
       /* Otherwise, pipes are always writable... */
@@ -216,10 +237,13 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 
 	  /* We unlock SOCK here, as it's not subsequently used, and we might
 	     go to sleep waiting for readable data.  */
+debug (sock, "unlock");
 	  mutex_unlock (&sock->lock);
 
 	  if (!pipe)
+{debug (sock, "ebadf");
 	    return EBADF;
+}
 
 	  if (! pipe_is_readable (pipe, 1))
 	    /* Nothing to read on PIPE yet...  */
@@ -234,9 +258,12 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 	  pipe_release (pipe);
 	}
       else
+{debug (sock, "unlock");
 	mutex_unlock (&sock->lock);
+}
     }
 
+debug (sock, "out");
   return err;
 }
 
@@ -267,6 +294,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
 
   st->st_blksize = vm_page_size * 8;
 
+debug (sock, "lock");
   mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
   if (sock->read_pipe)
@@ -274,6 +302,9 @@ S_io_stat (struct sock_user *user, struct stat *st)
   if (sock->write_pipe)
     copy_time (&sock->read_pipe->write_time, &st->st_mtime, &st->st_mtime_usec);
   copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
+
+debug (sock, "unlock");
+  mutex_unlock (&sock->lock);
 
   return 0;
 }
@@ -297,11 +328,13 @@ S_io_set_all_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
+debug (user->sock, "lock");
   mutex_lock (&user->sock->lock);
   if (bits & SOCK_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
   else
     user->sock->flags &= ~SOCK_NONBLOCK;
+debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
   return 0;
 }
@@ -311,9 +344,11 @@ S_io_set_some_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
+debug (user->sock, "lock");
   mutex_lock (&user->sock->lock);
   if (bits & SOCK_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
+debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
   return 0;
 }
@@ -323,9 +358,11 @@ S_io_clear_some_openmodes (struct sock_user *user, int bits)
 {
   if (!user)
     return EOPNOTSUPP;
+debug (user->sock, "lock");
   mutex_lock (&user->sock->lock);
   if (bits & SOCK_NONBLOCK)
     user->sock->flags &= ~SOCK_NONBLOCK;
+debug (user->sock, "unlock");
   mutex_unlock (&user->sock->lock);
   return 0;
 }
@@ -352,6 +389,7 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   if (err)
     return err;
 
+debug (user, "old: %p, new: %d", user, new_user_port);
   auth_server = getauth ();
   err =
     auth_server_authenticate (auth_server, ports_get_right (user), 
