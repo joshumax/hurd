@@ -395,6 +395,11 @@ extern void (*argp_program_version_hook) __P ((FILE *__stream,
    standard help messages), embedded in a sentence that says something like
    `Report bugs to ADDR.'.  */
 __const extern char *argp_program_bug_address;
+
+/* The exit status that argp will use when exiting due to a parsing error.
+   If not defined or set by the user program, this defaults to EX_USAGE from
+   <sysexits.h>.  */
+extern error_t argp_err_exit_status;
 
 /* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* a Usage: message. */
