@@ -61,8 +61,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (!dircred)
     return EOPNOTSUPP;
 
-  flags &= O_HURD;
-  
+  /* XXX - EXLOCK & SHLOCK are temporary until they get added to O_HURD. */
+  flags &= O_HURD | O_EXLOCK | O_SHLOCK;  
+
   create = (flags & O_CREAT);
   excl = (flags & O_EXCL);
 
@@ -399,13 +400,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if ((flags & O_NOATIME) && (diskfs_isowner (np, dircred) == EPERM))
     flags &= ~O_NOATIME;
       
-  error = diskfs_create_protid (diskfs_make_peropen (np, 
-						     (flags
-						      & OPENONLY_STATE_MODES), 
-						     dircred->po->dotdotport),
-				dircred->uids, dircred->nuids,
-				dircred->gids, dircred->ngids,
-				&newpi);
+  error =
+    diskfs_create_protid (diskfs_make_peropen (np, 
+					       (flags &~OPENONLY_STATE_MODES), 
+					       dircred->po->dotdotport),
+			  dircred->uids, dircred->nuids,
+			  dircred->gids, dircred->ngids,
+			  &newpi);
 
   if (! error)
     {
