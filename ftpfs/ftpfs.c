@@ -1,6 +1,6 @@
 /* Ftp filesystem
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -131,7 +131,7 @@ static const struct argp_option common_options[] =
    "Period for detecting bulk stats (default " _D(BULK_STAT_PERIOD) ")"},
   {"bulk-stat-threshold", OPT_BULK_STAT_THRESHOLD, "SECS", 0,
    "Number of stats within the bulk-stat-period that trigger a bulk stat"
-   " (default " _D(BULK_STAT_THRESHOLD) ")"}, 
+   " (default " _D(BULK_STAT_THRESHOLD) ")"},
 
   {0, 0}
 };
@@ -188,7 +188,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
       mutex_lock (&debug_lock);
       if (debug_stream && debug_stream != stderr)
 	fclose (debug_stream);
-      ftpfs_ftp_hooks.cntl_debug = 0; 
+      ftpfs_ftp_hooks.cntl_debug = 0;
       mutex_unlock (&debug_lock);
       break;
 
@@ -340,13 +340,13 @@ netfs_append_args (char **argz, size_t *argz_len)
   mutex_unlock (&debug_lock);
 
   if (ftpfs->params.name_timeout != DEFAULT_NAME_TIMEOUT)
-    FOPT ("--name-timeout=%d", ftpfs->params.name_timeout);
+    FOPT ("--name-timeout=%ld", ftpfs->params.name_timeout);
   if (ftpfs->params.stat_timeout != DEFAULT_STAT_TIMEOUT)
-    FOPT ("--stat-timeout=%d", ftpfs->params.stat_timeout);
+    FOPT ("--stat-timeout=%ld", ftpfs->params.stat_timeout);
   if (ftpfs->params.node_cache_max != DEFAULT_NODE_CACHE_MAX)
-    FOPT ("--node-cache-size=%d", ftpfs->params.node_cache_max);
+    FOPT ("--node-cache-size=%Zu", ftpfs->params.node_cache_max);
   if (ftpfs->params.bulk_stat_period != DEFAULT_BULK_STAT_PERIOD)
-    FOPT ("--bulk-stat-period=%d", ftpfs->params.bulk_stat_period);
+    FOPT ("--bulk-stat-period=%ld", ftpfs->params.bulk_stat_period);
   if (ftpfs->params.bulk_stat_threshold != DEFAULT_BULK_STAT_THRESHOLD)
     FOPT ("--bulk-stat-threshold=%d", ftpfs->params.bulk_stat_threshold);
 
@@ -354,7 +354,7 @@ netfs_append_args (char **argz, size_t *argz_len)
 }
 
 /* Program entry point.  */
-int 
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -389,7 +389,7 @@ main (int argc, char **argv)
   netfs_root_node = ftpfs->root;
 
   netfs_startup (bootstrap, 0);
-  
+
   for (;;)
     netfs_server_loop ();
 }
