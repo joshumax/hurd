@@ -108,17 +108,14 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
    arguments can take place).  */
 #define ARGP_KEY_NO_ARGS	2
 /* Passed in before any parsing is done.  Afterwards, the values of each
-   element of the CHILD_HOOKS field, if any, in the state structure is
-   copied to each child's state to be the initial value of the HOOK field.  */
+   element of the CHILD_INPUT field, if any, in the state structure is
+   copied to each child's state to be the initial value of the INPUT field.  */
 #define ARGP_KEY_INIT		3
 /* Passed in when parsing has successfully been completed (even if there are
-   still arguments remaining).  Afterwards, the value of the HOOK field in
-   the state structure is passed back to the user or the parser above this
-   one.  */
+   still arguments remaining).  */
 #define ARGP_KEY_SUCCESS	4
 /* Passed in if an error occurs (in which case a call with ARGP_KEY_SUCCESS is
-   never made, so any cleanup must be done here).  Note that HOOK fields are
-   *not* passed back.  */
+   never made, so any cleanup must be done here).  */
 #define ARGP_KEY_ERROR		5
 
 /* An argp structure contains a set of getopt options declarations, a
@@ -186,13 +183,14 @@ struct argp_state
      option).  Only set once argument parsing has proceeded past this point. */
   int quoted;
 
-  /* An arbitrary pointer passed in from the user; the value of HOOK will be
-     similarly passed out after parsing is sucessfully concluded.  */
+  /* An arbitrary pointer passed in from the user.  */
+  void *input;
+  /* Values to pass to child parsers.  This vector will be the same length as
+     the number of children for the current parser.  */
+  void **child_inputs;
+
+  /* For the parser's use.  Initialized to 0.  */
   void *hook;
-  /* Hooks to pass to child parsers (and passed back from them).  This
-     vector will be the same length as the number of children for the current
-     parser.  */
-  void **child_hooks;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
@@ -242,11 +240,10 @@ struct argp_state
    it.  If an unknown option is present, EINVAL is returned; if some parser
    routine returned a non-zero value, it is returned; otherwise 0 is
    returned.  This function may also call exit unless the ARGP_NO_HELP
-   flag is set.  HOOK is a pointer to a value to be passed in to the parser,
-   and which will be passed out again afterwards.  */
+   flag is set.  INPUT is a pointer to a value to be passed in to the parser.*/
 error_t argp_parse (const struct argp *argp,
 		    int argc, char **argv, unsigned flags,
-		    int *arg_index, void **hook);
+		    int *arg_index, void *input);
 
 /* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
