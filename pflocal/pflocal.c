@@ -21,11 +21,13 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <error.h>
+#include <sys/stat.h>
 
 #include <hurd/hurd_types.h>
 #include <hurd/trivfs.h>
 
 #include "pflocal.h"
+#include "sock.h"
 
 /* Where our ports are... */
 struct port_bucket *pflocal_port_bucket;
@@ -117,6 +119,12 @@ void main(int argc, char *argv[])
   exit(0);
 }
 
+void
+trivfs_modify_stat (struct stat *st)
+{
+  st->st_fstype = FSTYPE_MISC;
+}
+
 error_t
 trivfs_goaway (int flags, mach_port_t realnode,
 	       struct port_class *fsys_port_class,
