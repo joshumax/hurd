@@ -41,10 +41,20 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
     error = ENOTEMPTY;
-  else if (np && !S_ISDIR (np->dn_stat.st_mode))
+
+  if (np)
     {
-      diskfs_nput (np);
-      error = ENOTDIR;
+      if ((np->dn_stat.st_mode & S_IPTRANS)
+	  || fshelp_translated (&np->transbox))
+	{
+	  diskfs_nput (np);
+	  error = EBUSY;
+	}
+      if (!S_ISDIR (np->dn_stat.st_mode))
+	{
+	  diskfs_nput (np);
+	  error = ENOTDIR;
+	}
     }
   if (error)
     {
@@ -60,14 +70,6 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       diskfs_drop_dirstat (dnp, ds);
       mutex_unlock (&dnp->lock);
       return EINVAL;
-    }
-
-  if ((np->dn_stat.st_mode & S_IPTRANS) || fshelp_translated (&np->transbox))
-    {
-      diskfs_drop_dirstat (dnp, ds);
-      diskfs_nput (np);
-      mutex_unlock (&dnp->lock);
-      return EBUSY;
     }
 
   /* Verify the directory is empty (and valid).  (Rmdir ".." won't be

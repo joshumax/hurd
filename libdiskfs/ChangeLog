@@ -4,6 +4,11 @@ Mon Feb 24 17:22:05 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	inode number to fshelp_get_identity when creating a shadow root
 	fsid, not INUM.
 
+Mon Feb 24 14:40:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Check EBUSY-when-translated
+	error before ENOTDIR-when-not-dir.
+
 Sat Feb 22 00:00:32 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-stat.c (diskfs_S_io_stat): Mark shadow roots with S_IROOT.
@@ -62,7 +67,8 @@ Wed Feb 12 14:23:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 	Get rid of depth parameters to diskfs_lookup.
 	Deal properly with EAGAIN return from diskfs_lookup.
 	Replace references to dotdotport with root_parent.
-	* dir-unlink.c (diskfs_S_dir_unlink): Don't pass depth args to diskfs_lookup.
+	* dir-unlink.c (diskfs_S_dir_unlink): Don't pass depth args to
+	diskfs_lookup. 
 	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
 	* dir-renamed.c (diskfs_rename_dir, checkpath): Likewise.
 	* dir-rename.c (diskfs_S_dir_rename): Likewise.
