@@ -22,7 +22,8 @@
 
 #include "ext2fs.h"
 
-void pokel_init (struct pokel *pokel, struct pager *pager, void *image)
+void
+pokel_init (struct pokel *pokel, struct pager *pager, void *image)
 {
   pokel->lock = SPIN_LOCK_INITIALIZER;
   pokel->pokes = NULL;
@@ -31,6 +32,23 @@ void pokel_init (struct pokel *pokel, struct pager *pager, void *image)
   pokel->image = image;
 }
 
+/* Clean up any state associated with POKEL (but don't free POKEL).  */
+void
+pokel_finalize (struct pokel *pokel)
+{
+  struct poke *pl, *next;
+  for (pl = pokel->pokes; pl; pl = next)
+    {
+      next = pl->next;
+      free (pl);
+    }
+  for (pl = pokel->free_pokes; pl; pl = next)
+    {
+      next = pl->next;
+      free (pl);
+    }
+}
+
 /* Remember that data here on the disk has been modified. */
 void
 pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
@@ -81,7 +99,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 
   spin_unlock (&pokel->lock);
 }
-
+
 /* Move all pending pokes from POKEL into its free list.  If SYNC is true,
    otherwise do nothing.  */
 void
@@ -122,4 +140,33 @@ void
 pokel_flush (struct pokel *pokel)
 {
   _pokel_exec (pokel, 0, 0);
+}
+
+/* Transfer all regions from FROM to POKEL, which must have the same pager. */
+void
+pokel_inherit (struct pokel *pokel, struct pokel *from)
+{
+  struct poke *pokes, *last;
+  
+  assert (pokel->pager == from->pager);
+  assert (pokel->image == from->image);
+
+  /* Take all pokes from FROM...  */
+  spin_lock (&from->lock);
+  pokes = from->pokes;
+  from->pokes = NULL;
+  spin_unlock (&from->lock);
+
+  /* And put them in POKEL.  */
+  spin_lock (&pokel->lock);
+  last = pokel->pokes;
+  if (last)
+    {
+      while (last->next)
+	last = last->next;
+      last->next = pokes;
+    }
+  else
+    pokel->pokes = pokes;
+  spin_unlock (&pokel->lock);
 }
