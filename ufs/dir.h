@@ -83,24 +83,6 @@ struct	directory_entry {
 	char	d_name[MAXNAMLEN + 1];	/* name with length <= MAXNAMLEN */
 };
 
-/*
- * File types
- */
-#define	DT_UNKNOWN	 0
-#define	DT_FIFO		 1
-#define	DT_CHR		 2
-#define	DT_DIR		 4
-#define	DT_BLK		 6
-#define	DT_REG		 8
-#define	DT_LNK		10
-#define	DT_SOCK		12
-
-/*
- * Convert between stat structure types and directory types.
- */
-#define	IFTODT(mode)	(((mode) & 0170000) >> 12)
-#define	DTTOIF(dirtype)	((dirtype) << 12)
-
 /* Return the type from a struct directory_entry, paying attention to whether
    this filesystem supports the type extension */
 #define DIRECT_TYPE(dp) (direct_symlink_extension ? (dp)->d_type : DT_UNKNOWN)
