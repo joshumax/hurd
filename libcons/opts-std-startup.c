@@ -26,8 +26,8 @@
 
 /* Option keys for long-only options in diskfs_common_options.  */
 #define OPT_SLACK		600	/* --slack */
-#define OPT_JUMP_DOWN_AT_INPUT	601	/* --jump-down-at-input */
-#define OPT_JUMP_DOWN_AT_OUTPUT	602	/* --jump-down-at-output */
+#define OPT_JUMP_DOWN_ON_INPUT	601	/* --jump-down-on-input */
+#define OPT_JUMP_DOWN_ON_OUTPUT	602	/* --jump-down-on-output */
 
 /* Common value for diskfs_common_options and diskfs_default_sync_interval. */
 #define DEFAULT_SLACK 100
@@ -39,11 +39,11 @@
    server.  */
 int _cons_slack = DEFAULT_SLACK;
 
-/* If we jump down at input.  */
-int _cons_jump_down_at_input;
+/* If we jump down on input.  */
+int _cons_jump_down_on_input;
 
-/* If we jump down at output.  */
-int _cons_jump_down_at_output;
+/* If we jump down on output.  */
+int _cons_jump_down_on_output;
 
 /* The filename of the console server.  */
 char *_cons_file;
@@ -53,9 +53,9 @@ startup_options[] =
 {
   { "slack", OPT_SLACK, "RECORDS", 0, "Max number of records the client is"
     " allowed to lag behind the server (default " DEFAULT_SLACK_STRING ")" },
-  { "jump-down-at-input", OPT_JUMP_DOWN_AT_INPUT, NULL, 0,
+  { "jump-down-on-input", OPT_JUMP_DOWN_ON_INPUT, NULL, 0,
     "End scrollback when something is entered" },
-  { "jump-down-at-output", OPT_JUMP_DOWN_AT_OUTPUT, NULL, 0,
+  { "jump-down-on-output", OPT_JUMP_DOWN_ON_OUTPUT, NULL, 0,
     "End scrollback when something is printed" },
   { 0, 0 }
 };
@@ -73,12 +73,12 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       _cons_slack = atoi (arg);
       break;
 
-    case OPT_JUMP_DOWN_AT_INPUT:
-      _cons_jump_down_at_input = 1;
+    case OPT_JUMP_DOWN_ON_INPUT:
+      _cons_jump_down_on_input = 1;
       break;
 
-    case OPT_JUMP_DOWN_AT_OUTPUT:
-      _cons_jump_down_at_output = 1;
+    case OPT_JUMP_DOWN_ON_OUTPUT:
+      _cons_jump_down_on_output = 1;
       break;
 
     case ARGP_KEY_ARG:

@@ -26,10 +26,10 @@
 extern int _cons_slack;
 
 /* If we jump down at input.  */
-extern int _cons_jump_down_at_input;
+extern int _cons_jump_down_on_input;
 
 /* If we jump down at output.  */
-extern int _cons_jump_down_at_output;
+extern int _cons_jump_down_on_output;
 
 /* The filename of the console server.  */
 extern char *_cons_file;

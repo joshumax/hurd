@@ -33,7 +33,7 @@ cons_vcons_input (vcons_t vcons, char *buf, size_t size)
 
   mutex_lock (&vcons->lock);
 
-  if (vcons->scrolling && _cons_jump_down_at_input)
+  if (vcons->scrolling && _cons_jump_down_on_input)
     _cons_vcons_scrollback (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 
   do

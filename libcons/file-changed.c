@@ -128,7 +128,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 			 until absolutely necessary.  */
 		      if (vcons->scrolling)
 			{
-			  if (_cons_jump_down_at_output)
+			  if (_cons_jump_down_on_output)
 			    _cons_vcons_scrollback
 			      (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 			  else
@@ -234,7 +234,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 	      off_t start = change.matrix.start;
 	      off_t end = change.matrix.end;
 
-	      if (vcons->scrolling && _cons_jump_down_at_output)
+	      if (vcons->scrolling && _cons_jump_down_on_output)
 		_cons_vcons_scrollback (vcons, CONS_SCROLL_ABSOLUTE_LINE, 0);
 
 	      if (vcons->state.screen.cur_line >= vcons->scrolling)

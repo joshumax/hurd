@@ -9,17 +9,17 @@
 	* cons.h (cons_scroll_t): New type.
 	(cons_vcons_scrollback): Update prototype.
 
-	* priv.h (_cons_jump_down_at_input): New extern.
-	(_cons_jump_down_at_output): Likewise.
+	* priv.h (_cons_jump_down_on_input): New extern.
+	(_cons_jump_down_on_output): Likewise.
 	(_cons_vcons_scrollback): New prototype.
-	* opts-std-startup.c (OPT_JUMP_DOWN_AT_INPUT): New macro.
-	(OPT_JUMP_DOWN_AT_OUTPUT): Likewise.
-	(_cons_jump_down_at_input): New variable.
-	(_cons_jump_down_at_output): Likewise.
-	(startup_options): Add new options --jump-down-at-input and
-	--jump-down-at-output.
+	* opts-std-startup.c (OPT_JUMP_DOWN_ON_INPUT): New macro.
+	(OPT_JUMP_DOWN_ON_OUTPUT): Likewise.
+	(_cons_jump_down_on_input): New variable.
+	(_cons_jump_down_on_output): Likewise.
+	(startup_options): Add new options --jump-down-on-input and
+	--jump-down-on-output.
 	(parse_startup_opt): Handle these new options.
-	* file-changed.c (cons_S_file_changed): Support the jump down at
+	* file-changed.c (cons_S_file_changed): Support the jump down on
 	output option.
 
 2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
