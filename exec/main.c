@@ -36,8 +36,6 @@ extern error_t bfd_mach_host_arch_mach (host_t host,
 					Elf32_Half *elf_machine);
 #endif
 
-Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
-
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
@@ -122,11 +120,9 @@ main (int argc, char **argv)
   err = bfd_mach_host_arch_mach (mach_host_self (),
 				 &host_bfd.arch_info->arch,
 				 &host_bfd.arch_info->mach);
-#endif
-  err = mach_host_elf_machine (mach_host_self (), &elf_machine);
-
   if (err)
     error (1, err, "Getting host architecture from Mach");
+#endif
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
