@@ -42,16 +42,17 @@ ftp_conn_set_type (struct ftp_conn *conn, const char *type)
       else
 	{
 	  int reply;
-	  error_t err = ftp_conn_cmd_reopen (conn, "type", type, &reply, 0);
-	  if (! err)
-	    if (reply == REPLY_OK)
-	      {
-		if (conn->type)
-		  free ((char *)conn->type);
-		conn->type = type;
-	      }
-	    else
-	      err = unexpected_reply (conn, reply, 0, 0);
+	  error_t err = ftp_conn_cmd (conn, "type", type, &reply, 0);
+
+	  if (!err && reply != REPLY_OK && reply != REPLY_CLOSED)
+	    err = unexpected_reply (conn, reply, 0, 0);
+
+	  if (!err || err == EPIPE)
+	    {
+	      if (conn->type)
+		free ((char *)conn->type);
+	      conn->type = type;
+	    }
 	}
     }    
 
