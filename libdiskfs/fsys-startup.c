@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fsys_S.h"
 
 /* Implement fsys_startup as described in <hurd/fsys.defs>. */
-error_t
+kern_return_t
 diskfs_S_fsys_startup (mach_port_t port,
 		       mach_port_t ctl,
 		       mach_port_t *real,
