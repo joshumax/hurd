@@ -18,7 +18,6 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#include <argp.h>
 #include <assert.h>
 #include <unistd.h>
 #include <rwlock.h>
@@ -117,6 +116,7 @@ struct dirmod
 /* Special flag for diskfs_lookup. */
 #define SPEC_DOTDOT 0x10000000
 
+struct argp;			/* opaque in this file */
 
 /* Declarations of variables the library sets.  */
 
@@ -241,6 +241,13 @@ int diskfs_shortcut_ifsock;
    thread is started up (in diskfs_spawn_first_threa).   */
 extern int diskfs_default_sync_interval;
 
+/* The user must define this variable, which should be a string that somehow
+   identifies the particular disk this filesystem is interpreting.  It is
+   generally only used to print messages or to distinguish instances of the
+   same filesystem type from one another.  If this filesystem accesses no
+   external media, then define this to be 0.  */
+extern char *diskfs_disk_name;
+
 /* The user must define this function.  Set *STATFSBUF with
    appropriate values to reflect the current state of the filesystem.  */
 error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
@@ -513,33 +520,6 @@ error_t (*diskfs_create_symlink_hook)(struct node *np, char *target);
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The library exports the following functions for general use */
-
-/* Returns the name and a send right for the mach device on which the file
-   NAME is stored, and returns it in DEV_NAME (which is malloced) and PORT.
-   Other values returned are START, the first valid offset, SIZE, the the
-   number of blocks after START, and BLOCK_SIZE, the units in which the
-   device is addressed.
-
-   The device is opened for reading, and if the diskfs global variable
-   DISKFS_READONLY is false, writing.  */
-error_t diskfs_get_file_device (char *name,
-				char **dev_name, mach_port_t *port,
-				off_t *start, off_t *size, size_t *block_size);
-
-/* Returns a send right to for the mach device called NAME, and returns it in
-   PORT.  Other values returned are START, the first valid offset, SIZE, the
-   the number of blocks after START, and BLOCK_SIZE, the units in which the
-   device is addressed.
-
-   The device is opened for reading, and if the diskfs global variable
-   DISKFS_READ_ONLY is false, writing.
-
-   If NAME cannot be opened and this is a bootstrap filesystem, the user will
-   be prompted for new names until a valid one is found.  */
-error_t diskfs_get_mach_device (char *name,
-				mach_port_t *port,
-				off_t *start, off_t *size, size_t *block_size);
-
 
 /* Call this after arguments have been parsed to initialize the library.
    You must call this before calling any other diskfs functions, and after
@@ -1053,12 +1033,10 @@ error_t diskfs_set_sync_interval (int interval);
    routine will parse them using DISKFS_RUNTIME_ARGP, which see.  */
 error_t diskfs_set_options (char *argz, size_t argz_len);
 
-/* Return an argz string describing the current options.  Fill *ARGZ
-   with a pointer to newly malloced storage holding the list and *LEN
-   to the length of that storage.  The default definition of this routine
-   simply initializes *ARGZ and *ARGZ_LEN to 0 and calls
-   diskfs_append_std_options.  */
-error_t diskfs_get_options (char **argz, unsigned *argz_len);
+/* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
+   list of the arguments to this translator.  The default definition of this
+   routine simply calls diskfs_append_std_options.  */
+error_t diskfs_append_args (char **argz, unsigned *argz_len);
 
 /* If this is defined or set to an argp structure, it will be used by the
    default diskfs_set_options to handle runtime option parsing.  The default
@@ -1073,7 +1051,14 @@ extern const struct argp diskfs_std_runtime_argp;
 /* An argp structure for the standard diskfs command line arguments.  The
    user may call argp_parse on this to parse the command line, chain it onto
    the end of his own argp structure, or ignore it completely.  */
-extern const struct argp diskfs_std_startup_argp;
+extern const struct argp diskfs_startup_argp;
+
+/* An argp structure for the standard diskfs command line arguments plus a
+   store specification.  The address of a location in which to return the
+   resulting struct store_parsed structure should be passed as the input
+   argument to argp_parse; see the declaration for STORE_ARGP in
+   <hurd/store.h> for more information.  */
+extern const struct argp diskfs_store_startup_argp;
 
 /* *Appends* to ARGZ & ARGZ_LEN '\0'-separated options describing the standard
    diskfs option state (note that unlike diskfs_get_options, ARGZ & ARGZ_LEN
@@ -1096,62 +1081,7 @@ int diskfs_check_readonly (void);
    can be used by any user program that uses a mach device to hold the
    underlying filesystem.  */
 
-/* A pointer to an argp structure for the standard diskfs command line
-   arguments, that also parses a device argument.  The user may call
-   argp_parse on this to parse the command line, chain it onto the end of his
-   own argp structure, or ignore it completely.  */
-extern const struct argp diskfs_std_device_startup_argp;
-
-/* The following two are set by the preceding argument parser:  */
-/* The device specifier given on the command line.  */
-extern char *diskfs_device_arg;
-/* True if --machdev was specified, meaning that DISKFS_DEVICE_ARG names a
-   mach device and not a filesystem device node.  */
-extern int diskfs_use_mach_device;
-
-/* Uses the values of DISKFS_DEVICE_ARG and DISKFS_USE_MACH_DEVICE, and
-   attempts to open the device and set the values of DISKFS_DEVICE,
-   DISKFS_DEVICE_NAME, DISKFS_DEVICE_START, DISKFS_DEVICE_SIZE, and
-   DISKFS_DEVICE_BLOCK_SIZE.  */
-extern error_t diskfs_device_open ();
-
-/* A mach device port for the device we're using.  */
-extern mach_port_t diskfs_device;
-
-/* The mach device name of DISKFS_DEVICE.  May be 0 if unknown.  */
-extern char *diskfs_device_name;
-
-/* The first valid block of DISKFS_DEVICE, in units of
-   DISKFS_DEVICE_BLOCK_SIZE.  */
-extern off_t diskfs_device_start;
-
-/* The usable size of DISKFS_DEVICE, in units of DISKFS_DEVICE_BLOCK_SIZE.  */
-extern off_t diskfs_device_size;
-
-/* The unit of addressing for DISKFS_DEVICE.  */
-extern unsigned diskfs_device_block_size;
-
-/* Some handy calculations based on DISKFS_DEVICE_BLOCK_SIZE.  */
-/* Log base 2 of DEVICE_BLOCK_SIZE, or 0 if it's not a power of two.  */
-extern unsigned diskfs_log2_device_block_size;
-/* Log base 2 of the number of device blocks in a vm page.  This number is
-   only valid if DISKFS_LOG2_DEVICE_BLOCK_SIZE is not 0.  */
-extern unsigned diskfs_log2_device_blocks_per_page;
-
-/* Write disk block ADDR with DATA of LEN bytes to DISKFS_DEVICE, waiting for
-   completion.  ADDR is offset by DISKFS_DEVICE_START.  If an error occurs,
-   EIO is returned.  */
-error_t diskfs_device_write_sync (off_t addr, vm_address_t data, size_t len);
-
-/* Read disk block ADDR from DISKFS_DEVICE; put the address of the data in
-   DATA; read LEN bytes.  Always *DATA should be a full page no matter what.
-   ADDR is offset by DISKFS_DEVICE_START.  If an error occurs, EIO is
-   returned.  */
-error_t diskfs_device_read_sync (off_t addr, vm_address_t *data, size_t len);
-
 /* Make errors go somewhere reasonable.  */
 void diskfs_console_stdio ();
 
-
 #endif	/* hurd/diskfs.h */
-
