@@ -108,6 +108,22 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
   return p;
 }
 
+inline int *
+xdr_encode_create_state (int *p, 
+			 mode_t mode)
+{
+  *p++ = mode;
+  *p++ = -1;			/* uid */
+  *p++ = -1;			/* gid */
+  *p++ = 0;			/* size */
+  *p++ = -1;			/* atime sec */
+  *p++ = -1;			/* atime usec */
+  *p++ = -1;			/* mtime sec */
+  *p++ = -1;			/* mtime usec */
+  return p
+}
+
+
 /* Decode *P into a stat structure; return the address of the
  following data. */
 int *
@@ -142,4 +158,3 @@ xdr_decode_fattr (int *p, struct stat *st)
   return p;
 
 }
-
