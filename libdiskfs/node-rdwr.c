@@ -41,8 +41,11 @@ diskfs_node_rdwr (struct node *np,
   
   if (dir)
     while (off + amt > np->allocsize)
-      if (err = diskfs_grow (np, off + amt, cred))
-	return err;
+      {
+	err = diskfs_grow (np, off + amt, cred);
+	if (err)
+	  return err;
+      }
 
   if (off + amt > np->dn_stat.st_size)
     {
