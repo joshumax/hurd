@@ -254,7 +254,7 @@ diskfs_append_args (char **argz, unsigned *argz_len)
 /* Add our startup arguments to the standard diskfs set.  */
 static const struct argp_child startup_children[] =
   {{&diskfs_startup_argp}, {0}};
-static struct argp startup_argp = {0, parse_opt, "MAX-BYTES", "\
+static struct argp startup_argp = {options, parse_opt, "MAX-BYTES", "\
 \v\
 MAX-BYTES may be followed by k or K for kilobytes,\n\
 m or M for megabytes, g or G for gigabytes.",
