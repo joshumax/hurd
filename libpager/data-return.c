@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Called by the kernel to write data to the backing store */
+/* Implement pageout call back as described by <mach/memory_object.defs>. */
 kern_return_t
 _pager_seqnos_memory_object_data_return (mach_port_t object, 
 					 mach_port_seqno_t seqno,
