@@ -26,16 +26,41 @@ libname = libstore
 SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c	   \
 	enc.c encode.c decode.c clone.c argp.c std.c kids.c zero.c flags.c \
 	open.c remap.c xinl.c task.c typed.c copy.c gunzip.c map.c mvol.c \
-	bunzip2.c
+	bunzip2.c part.c
 LCLHDRS=store.h
 installhdrs=store.h
 
 HURDLIBS = shouldbeinlibc
 UNZIP_OBJS = unzip.o inflate.o util.o do-bunzip2.o
-OBJS = $(SRCS:.c=.o) $(UNZIP_OBJS)
+OBJS = $(patsubst part.o,parted.o,$(SRCS:.c=.o)) $(UNZIP_OBJS)
 
 # Look for zip stuff
 VPATH += $(srcdir)/../exec
 CPPFLAGS += -I$(srcdir)/../exec
 
 include ../Makeconf
+
+ifeq (,$(strip $(PARTED_LIBS)))
+# Configure didn't find the Parted libraries, so we have no "part" store type.
+
+parted.o parted_p.o parted_pic.o:
+	$(CC) -o $@ -c -x c /dev/null
+
+else
+
+# We have Parted, so link against it.  For the static libraries,
+# we slurp in all the Parted code we need and stuff it into one
+# object file along with our code that uses it.
+
+LDFLAGS-libstore.so += $(PARTED_LIBS)
+
+parted.o: part.o $(..)config.make
+	$(CC) -r -o $@ $< $(PARTED_LIBS)
+
+parted_p.o: part_p.o $(..)config.make
+	$(CC) -r -o $@ $< $(PARTED_LIBS:=_p)
+
+parted_pic.o: part_pic.o
+	ln -f $< $@
+
+endif
