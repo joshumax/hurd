@@ -1,5 +1,10 @@
 -*- Mode: Outline -*-
 
+Before working on anything in this file, it's very important that you
+make contact with the core Hurd developers.  Things herein might bu
+slightly out of date or otherwise not easy to understand at first
+glance.  So write bug-hurd@gnu.org first.
+
 Priorities:
   Check the end of this file for a task list referring to the next
   public release.
