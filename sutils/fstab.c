@@ -80,6 +80,7 @@ fstypes_create (char *search_fmts, size_t search_fmts_len,
 	  free (types);
 	  return ENOMEM;
 	}
+      bcopy (search_fmts, new->program_search_fmts, search_fmts_len);
       *types = new;
       return 0;
     }
@@ -179,6 +180,14 @@ fs_set_mntent (struct fs *fs, struct mntent *mntent)
   if (! fs->storage)
     return ENOMEM;
 
+  if (strcmp (fs->mntent.mnt_dir, mntent->mnt_dir) != 0)
+    {
+      fs->mounted = fs->readonly = -1;
+      if (fs->fsys != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), fs->fsys);
+      fs->fsys = MACH_PORT_NULL;
+    }
+
   /* Copy MNTENT into FS; string-valued fields will be fixed up next.  */
   fs->mntent = *mntent;
 
@@ -222,29 +231,45 @@ _fs_check_mounted (struct fs *fs)
   if (fs->mounted < 0)
     /* The mounted field in FS is -1 if we're not sure.  */
     {
-      file_t mount_point =
-	file_name_lookup_carefully (fs->mntent.mnt_dir, O_NOTRANS, 0);
+      if (fs->fsys != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), fs->fsys);
 
-      if (mount_point != MACH_PORT_NULL)
-	/* The node exists.  Is it the root of an active translator?
-	   [Note that it could be a different translator than the one in
-	   the mntent, but oh well, nothing we can do about that.]  */
+      if (strcmp (fs->mntent.mnt_dir, "/") == 0)
+	/* The root is always mounted.  Get its control port.  */
 	{
-	  if (fs->fsys != MACH_PORT_NULL)
-	    mach_port_deallocate (mach_task_self (), fs->fsys);
-	  err = file_get_translator_cntl (mount_point, &fs->fsys);
-	  if (err ==  EINVAL || err == EOPNOTSUPP)
-	    /* Either the mount point doesn't exist, or wasn't mounted.  */
+	  file_t root = getcrdir ();
+	  if (root == MACH_PORT_NULL)
+	    err = errno;
+	  else
+	    {
+	      err = file_getcontrol (root, &fs->fsys);
+	      mach_port_deallocate (mach_task_self (), root);
+	    }
+	}
+      else
+	{
+	  file_t mount_point =
+	    file_name_lookup_carefully (fs->mntent.mnt_dir, O_NOTRANS, 0);
+
+	  if (mount_point != MACH_PORT_NULL)
+	    /* The node exists.  Is it the root of an active translator?
+	       [Note that it could be a different translator than the one in
+	       the mntent, but oh well, nothing we can do about that.]  */
+	    {
+	      err = file_get_translator_cntl (mount_point, &fs->fsys);
+	      if (err ==  EINVAL || err == EOPNOTSUPP)
+		/* Either the mount point doesn't exist, or wasn't mounted.  */
+		{
+		  fs->fsys = MACH_PORT_NULL;
+		  err = 0;
+		}
+	    }
+	  else if (errno == ENXIO)
+	    /* Ran into an inactive passive translator.  FS can't be mounted.  */
 	    {
 	      fs->fsys = MACH_PORT_NULL;
 	      err = 0;
 	    }
-	}
-      else if (errno == ENXIO)
-	/* Ran into an inactive passive translator.  FS can't be mounted.  */
-	{
-	  fs->fsys = MACH_PORT_NULL;
-	  err = 0;
 	}
 
       if (! err)
@@ -424,6 +449,8 @@ fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
       if (fs)
 	{
 	  bzero (fs, sizeof (struct fs));
+	  fs->mounted = fs->readonly = -1;
+	  fs->fsys = MACH_PORT_NULL;
 	  new = 1;
 	}
       else
