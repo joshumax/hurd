@@ -1,6 +1,6 @@
 /* Hurdish login
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -614,7 +614,10 @@ main(int argc, char *argv[])
 	    /* USER is whom to look up.  If it's 0, then we hit the end of
 	       the sh_args without seeing a user, so we want to add defaults
 	       values for `nobody'.  */
-	    char *user = arg ?: envz_get (args, args_len, "NOBODY");
+	    char *user = arg
+	      ?: envz_get (args, args_len, "NOBODY")
+	      ?: envz_get (args_defs, args_defs_len, "NOBODY")
+	      ?: "login";
 	    struct passwd *pw =
 	      isdigit (*user) ? getpwuid (atoi (user)) : getpwnam (user);
 	    /* True if this is the user arg and there were no user options. */
