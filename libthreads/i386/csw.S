@@ -1,31 +1,36 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
  * $Log: csw.S,v $
+ * Revision 1.8  1997/04/04 01:31:16  thomas
+ * Thu Apr  3 20:29:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+ *
+ * 	* i386/csw.S: Define __ELF__ too.
+ *
  * Revision 1.7  1996/10/24 19:30:10  thomas
  * Mon Oct 21 22:05:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
  *
@@ -51,26 +56,26 @@
  * Revision 2.7  91/07/31  18:36:32  dbg
  * 	Fix for ANSI C preprocessor.
  * 	[91/07/30  17:35:16  dbg]
- * 
+ *
  * Revision 2.6  91/05/14  17:56:56  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.5  91/05/08  13:35:49  dbg
  * 	Unlock lock with a locked instruction (xchg).
  * 	[91/03/20            dbg]
- * 
+ *
  * Revision 2.4  91/02/14  14:20:02  mrt
  * 	Changed to new Mach copyright
  * 	[91/02/13  12:15:27  mrt]
- * 
+ *
  * Revision 2.3  91/01/08  16:46:20  rpd
  * 	Don't use Times - horta doesn't like it for some reason.
  * 	[91/01/06            rpd]
- * 
+ *
  * Revision 2.2  90/05/03  15:54:37  dbg
  * 	Created.
  * 	[90/02/05            dbg]
- * 
+ *
  */
 #define ELF
 #define __ELF__
@@ -88,7 +93,7 @@
 #else
 #define CALL_MCOUNT
 #endif
-	
+
 
 /*
  * Suspend the current thread and resume the next one.
@@ -110,7 +115,7 @@ ENTRY(cproc_switch)
 	movl	(%eax),%esp	/* get new stack pointer */
 	xorl	%eax,%eax	/* unlock */
 	xchgl	%eax,(%edx)	/* the lock - now old thread can run */
-	
+
 	popl	%edi		/* restore di */
 	popl	%esi		/*	  si */
 	popl	%ebx		/*	  bx */
@@ -151,7 +156,8 @@ ENTRY(cproc_start_wait)
  * it, it will start up as if it called
  * cproc_body(child)
  *
- * void cproc_prepare(cproc_t child, int *context, int stack)
+ * void cproc_prepare(cproc_t child, int *context, int stack,
+ *		      void (*cthread_body)(cproc_t));
  */
 ENTRY(cproc_prepare)
 	CALL_MCOUNT
@@ -168,8 +174,8 @@ ENTRY(cproc_prepare)
 				/* 20  return PC from cthread_body */
 				/* 24  argument to cthread_body */
 	movl	$0,12(%edx)	/* clear frame pointer */
-	movl	$JUMPTARGET(cthread_body),16(%edx)
-				/* resume at cthread_body */
+	movl	B_ARG3,%ecx	/* get address of cthread_body passed in */
+	movl	%ecx,16(%edx)	/* set child to resume at cthread_body */
 	movl	$0,20(%edx)	/* fake return address from cthread_body */
 	movl	B_ARG0,%ecx	/* get child thread pointer */
 	movl	%ecx,24(%edx)	/* set as argument to cthread_body */
@@ -177,4 +183,3 @@ ENTRY(cproc_prepare)
 	movl	%edx,(%ecx)	/* save context */
 	leave
 	ret
-

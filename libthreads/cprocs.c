@@ -1,31 +1,36 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
+ *
  * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.9  1996/11/18 23:54:51  thomas
+ * Mon Nov 18 16:36:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+ *
+ * 	* cprocs.c (cproc_create): Cast CHILD in assignment.
+ *
  * Revision 1.8  1995/12/06 19:48:34  mib
  * (condition_unimplies): Take address of (*impp)->next in assignment to
  * IMPP on loop step instruction.
@@ -53,72 +58,72 @@
  * Revision 2.15  92/03/06  14:09:31  rpd
  * 	Replaced swtch_pri with yield.
  * 	[92/03/06            rpd]
- * 
+ *
  * Revision 2.14  91/08/28  11:19:16  jsb
  * 	Fixed the loop in cproc_fork_child that frees cprocs.
  * 	[91/08/23            rpd]
- * 
+ *
  * Revision 2.13  91/07/31  18:33:04  dbg
  * 	Fix some more bad types.  Ints are NOT pointers.
- * 
+ *
  * 	Fix argument type mismatch in cproc_create.
  * 	[91/07/30  17:32:59  dbg]
- * 
+ *
  * Revision 2.12  91/05/14  17:56:11  mrt
  * 	Correcting copyright
- * 
+ *
  * Revision 2.11  91/02/14  14:19:26  mrt
  * 	Added new Mach copyright
  * 	[91/02/13  12:40:50  mrt]
- * 
+ *
  * Revision 2.10  90/11/05  14:36:41  rpd
  * 	Added cproc_fork_{prepare,parent,child}.
  * 	[90/11/02            rwd]
- * 
+ *
  * 	Fix for positive stack growth.
  * 	[90/11/01            rwd]
- * 
+ *
  * 	Add spin_lock_t.
  * 	[90/10/31            rwd]
- * 
+ *
  * Revision 2.9  90/10/12  13:07:12  rpd
  * 	Fix type
  * 	[90/10/10  15:09:59  rwd]
- * 
+ *
  * 	Comment code.
  * 	[90/10/02            rwd]
- * 
+ *
  * Revision 2.8  90/09/09  14:34:44  rpd
  * 	Remove special mutex.  Remove thread_calls and debug_mutex
  * 	[90/08/24            rwd]
  * 	Fix up old call to cthread_msg_busy to new format.
  * 	[90/08/22            rwd]
- * 
+ *
  * Revision 2.7  90/08/06  15:09:17  rwd
  * 	Fixed arguments to cthread_mach_msg.
  * 	[90/06/26            rwd]
  * 	Add additional STATISTICS.
  * 	[90/06/07            rwd]
- * 
+ *
  * 	Attempt to reduce number of times a cthread is released to to a
  * 	msg_receive by adding min/max instead of single number to
  * 	cthread_msg calls.
  * 	[90/06/06            rwd]
- * 
+ *
  * Revision 2.6  90/06/02  15:13:36  rpd
  * 	Converted to new IPC.
  * 	[90/03/20  20:46:16  rpd]
- * 
+ *
  * Revision 2.5  90/05/29  18:40:11  rwd
  * 	Don't incr special field until the mutex grab is successful.
  * 	[90/05/09            rwd]
- * 
+ *
  * Revision 2.4  90/03/14  21:12:02  rwd
  * 	Added WAIT_DEBUG code for deadlock debugging.
  * 	[90/03/01            rwd]
  * 	Insert cprocs in cproc_list as allocated.
  * 	[90/03/01  10:20:16  rwd]
- * 
+ *
  * Revision 2.3  90/01/19  14:36:57  rwd
  * 	Make cthread_msg_busy only release new thread if this is still
  * 	busy.  Ie don't release two on back to back calls.
@@ -130,7 +135,7 @@
  * 	Change cproc_self pointer to top of stack.  Now need to change
  * 	the stack of the first thread.
  * 	[89/12/12            rwd]
- * 
+ *
  * Revision 2.2  89/12/08  19:53:13  rwd
  * 	Added CPROC_CONDWAIT state to deal with lock held
  * 	across mutex_unlock problem.
@@ -138,7 +143,7 @@
  * 	Changed mutexes to not hand off.  MUTEX_EXTRA conditional is
  * 	now obsolete.
  * 	[89/11/27            rwd]
- * 
+ *
  * 	Add MUTEX_EXTRA code for extra kernel threads to serve special
  * 	mutexes in time of need.
  * 	[89/11/25            rwd]
@@ -148,15 +153,15 @@
  * 	macro which tries the spin_lock before making a subroutine call.
  * 	Mutex_unlock is now a macro with mutex_unlock_solid for worst case.
  * 	[89/11/13            rwd]
- * 
+ *
  * 	Rewrite most to merge coroutine and thread implementation.
  * 	New routines are cthread_set_kernel_limit, cthread_kernel_limit,
  * 	cthread_wire, cthread_unwire, and cthread_receive.
  * 	[89/10/23            rwd]
- * 
+ *
  * Revision 2.1  89/08/03  17:07:10  rwd
  * Created.
- * 
+ *
  * 11-Apr-89  David Golub (dbg) at Carnegie-Mellon University
  *	Made condition_yield loop break if swtch_pri returns TRUE (in
  *	case we fix it).
@@ -212,7 +217,7 @@
  *	to eliminate dependency on cproc layout.
  */
 /*
- * 	File: 	cprocs.c 
+ * 	File: 	cprocs.c
  *	Author: Eric Cooper, Carnegie Mellon University
  *	Date:	Aug, 1987
  *
@@ -566,7 +571,7 @@ cproc_waiting(p)
 		cthread_none++;
 #endif STATISTICS
 		spin_unlock(&ready_lock);
-	} 
+	}
 #ifdef STATISTICS
 	cthread_ready--;
 	cthread_running++;
@@ -693,7 +698,7 @@ cproc_block()
 			spin_lock(&waiter->lock); /* in case still switching */
 			spin_unlock(&waiter->lock);
 			cproc_start_wait
-			  (&p->context, waiter, 
+			  (&p->context, waiter,
 			   cproc_stack_base(waiter,
 					    sizeof(ur_cthread_t *) +
 					    /* Account for GNU per-thread
@@ -750,7 +755,7 @@ cproc_create()
 					    variables.  */
 					 __hurd_threadvar_max *
 					 sizeof (long int));
-		cproc_prepare(child, &child->context, stack);
+		cproc_prepare(child, &child->context, stack, &cthread_body);
 		/* Set up the cproc_self ptr at the base of CHILD's stack.  */
 		ur_cthread_ptr(stack) = (ur_cthread_t) child;
 		cproc_ready(child,0);
@@ -802,7 +807,7 @@ void
 condition_implies (condition_t implicator, condition_t implicatand)
 {
   struct cond_imp *imp;
-  
+
   imp = malloc (sizeof (struct cond_imp));
   imp->implicatand = implicatand;
   imp->next = implicator->implications;
@@ -815,7 +820,7 @@ void
 condition_unimplies (condition_t implicator, condition_t implicatand)
 {
   struct cond_imp **impp;
-  
+
   for (impp = &implicator->implications; *impp; impp = &(*impp)->next)
     {
       if ((*impp)->implicatand == implicatand)
