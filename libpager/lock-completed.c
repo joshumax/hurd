@@ -55,9 +55,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
     if (lr->start == offset && lr->end == offset + length)
       {
 	if (lr->locks_pending)
-	  {
-	    --lr->locks_pending;
-	  }
+	  --lr->locks_pending;
 	if (!lr->locks_pending && !lr->pending_writes)
 	  condition_broadcast (&p->wakeup);
 	break;
