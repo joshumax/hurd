@@ -19,6 +19,8 @@
 #include <hurd.h>
 #include "proc.h"
 #include "process_reply.h"
+#include <assert.h>
+#include <stdlib.h>
 
 /* Check to see if process P is blocked trying to get the message
    port of process AVAILP; if so, return its call.  */
@@ -26,16 +28,31 @@ void
 check_message_return (struct proc *p, struct proc *availp)
 {
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
+  struct proc *cp;
+  mach_port_t *msgports;
+  int i;
   
-  if (p->p_msgportwait && c->msgp == availp)
+  if (p->p_msgportwait && c->waiting == availp)
     {
-      proc_getmsgport_reply (c->reply_port, c->reply_port_type,
-			     0, availp->p_msgport);
+      msgports = alloca (sizeof (mach_port_t) * c->nprocs);
+      for (i = 0; i < c->nprocs; i++)
+	{
+	  cp = c->procs[i];
+	  if (cp->p_deadmsg)
+	    {
+	      assert (cp != availp);
+	      c->waiting = cp;
+	      cp->p_checkmsghangs = 1;
+	      return;
+	    }
+	  msgports[i] = cp->p_msgport;
+	}
       p->p_msgportwait = 0;
+      free (c->procs);
+      proc_getmsgport_reply (c->reply_port, c->reply_port_type, 0,
+			     msgports, MACH_MSG_TYPE_COPY_SEND,
+			     c->nprocs);
     }
-  else if (p->p_msgcollwait 
-	   && p->p_continuation.get_collports_c.waitp == availp)
-    check_msgcollwait_wakeup (p);
 }
 
 error_t
@@ -53,23 +70,23 @@ S_proc_setmsgport (struct proc *p,
   return 0;
 }
 
-
 /* Check to see if process P is blocked trying to get the message port of 
    process DYINGP; if so, return its call with ESRCH. */
 void
 check_message_dying (struct proc *p, struct proc *dyingp)
 {
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
+  int i;
   
-  if (p->p_msgportwait && c->msgp == dyingp)
-    {
-      proc_getmsgport_reply (c->reply_port, c->reply_port_type, ESRCH,
-			     MACH_PORT_NULL);
-      p->p_msgportwait = 0;
-    }
-  else if (p->p_msgcollwait
-	   && p->p_continuation.get_collports_c.waitp == dyingp)    
-    check_msgcollwait_wakeup (p);
+  if (p->p_msgportwait)
+    for (i = 0; i < c->nprocs; i++)
+      if (c->procs[i] == dyingp)
+	{
+	  proc_getmsgport_reply (c->reply_port, c->reply_port_type, ESRCH,
+				 0, MACH_MSG_TYPE_COPY_SEND, 0);
+	  free (c->procs);
+	  p->p_msgportwait = 0;
+	}
 }
 
 /* Cause a pending proc_getmsgport operation to immediately return */
@@ -79,35 +96,67 @@ abort_getmsgport (struct proc *p)
   struct getmsgport_c *c = &p->p_continuation.getmsgport_c;
   
   proc_getmsgport_reply (c->reply_port, c->reply_port_type, EINTR,
-			 MACH_PORT_NULL);
+			 0, MACH_MSG_TYPE_COPY_SEND, 0);
+  free (c->procs);
   p->p_msgportwait = 0;
 }
 
 error_t
 S_proc_getmsgport (struct proc *callerp,
-		 mach_port_t reply_port,
-		 mach_msg_type_name_t reply_port_type,
-		 int pid,
-		 mach_port_t *msgport)
+		   mach_port_t reply_port,
+		   mach_msg_type_name_t reply_port_type,
+		   int *pids,
+		   u_int pidslen,
+		   mach_port_t **msgports,
+		   mach_msg_type_name_t *msgportname,
+		   u_int *msgportlen)
 {
-  struct proc *p = pid_find (pid);
-  
-  if (!p)
-    return ESRCH;
+  struct proc *p;
+  int i;
+  struct proc **procs = malloc (sizeof (struct proc *) * pidslen);
 
-  if (p->p_deadmsg)
+  for (i = 0; i < pidslen; i++)
     {
-      struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
-      c->reply_port = reply_port;
-      c->reply_port_type = reply_port_type;
-      c->msgp = p;
-      p->p_checkmsghangs = 1;
-      callerp->p_msgportwait = 1;
-      return MIG_NO_REPLY;
+      p = pid_find (pids[i]);
+      if (!p)
+	{
+	  free (procs);
+	  return ESRCH;
+	}
+      procs[i] = p;
     }
   
-  *msgport = p->p_msgport;
-  return 0;
+  for (i = 0; i < pidslen; i++)
+    if (procs[i]->p_deadmsg)
+      {
+	struct getmsgport_c *c = &callerp->p_continuation.getmsgport_c;
+	if (callerp->p_msgportwait)
+	  {
+	    free (procs);
+	    return EBUSY;
+	  }
+	c->reply_port = reply_port;
+	c->reply_port_type = reply_port_type;
+	c->waiting = procs[i];
+	c->procs = procs;
+	c->nprocs = pidslen;
+	procs[i]->p_checkmsghangs = 1;
+	callerp->p_msgportwait = 1;
+	break;
+      }
+  
+  if (callerp->p_msgportwait)
+    return MIG_NO_REPLY;
+  else
+    {
+      if (pidslen * sizeof (mach_port_t) > *msgportlen)
+	vm_allocate (mach_task_self (), (vm_address_t *) msgports,
+		     pidslen * sizeof (mach_port_t), 1);
+      for (i = 0; i < pidslen; i++)
+	(*msgports)[i] = procs[i]->p_msgport;
+      free (procs);
+      return 0;
+    }
 }
 
 void
