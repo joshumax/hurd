@@ -28,7 +28,7 @@
 
 struct fs
 {
-  struct fstab *fstab;		/* Containg fstab. */
+  struct fstab *fstab;		/* Containing fstab. */
   struct mntent mntent;		/* Mount entry from fstab file. */
   char *storage;		/* Storage for strings in MNTENT.  */
   struct fstype *type;		/* Only set if fs_type called. */
