@@ -1,3 +1,7 @@
+2001-09-06  Roland McGrath  <roland@frob.com>
+
+	* MAKEDEV.sh (pty cases): Remove ptyT? from the set.  Add pty?[g-v].
+
 2001-02-27  Roland McGrath  <roland@frob.com>
 
 	Use a new, more flexible RPC interface to the default pager.
