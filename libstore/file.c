@@ -1,4 +1,4 @@
-/* Mach file store backend
+/* File store backend
 
    Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
@@ -32,20 +32,7 @@ file_read (struct store *store,
 	   off_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
   size_t bsize = store->block_size;
-  error_t err = io_read (store->port, (char **)buf, len, addr * bsize, amount);
-#if 0
-  char rep_buf[20];
-  if (err)
-    strcpy (rep_buf, "-");
-  else if (*len > sizeof rep_buf - 3)
-    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), *buf);
-  else
-    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), *buf);
-  fprintf (stderr, "; file_read (%ld, %d, %d) [%d] => %s, %s, %d\n",
-	   addr, index, amount, store->block_size, err ? strerror (err) : "-",
-	   rep_buf, err ? 0 : *len);
-#endif
-  return err;
+  return io_read (store->port, (char **)buf, len, addr * bsize, amount);
 }
 
 static error_t
@@ -53,15 +40,6 @@ file_write (struct store *store,
 	    off_t addr, size_t index, void *buf, size_t len, size_t *amount)
 {
   size_t bsize = store->block_size;
-#if 0
-  char rep_buf[20];
-  if (len > sizeof rep_buf - 3)
-    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
-  else
-    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
-  fprintf (stderr, "; file_write (%ld, %d, %s, %d)\n",
-	   addr, index, rep_buf, len);
-#endif
   return io_write (store->port, buf, len, addr * bsize, amount);
 }
 
@@ -79,13 +57,102 @@ file_open (const char *name, int flags,
 {
   return store_file_open (name, flags, store);
 }
+
+static error_t
+fiopen (const char *name, file_t *file, int *mod_flags)
+{
+  if (*mod_flags & STORE_HARD_READONLY)
+    *file = file_name_lookup (name, O_RDONLY, 0);
+  else
+    {
+      *file = file_name_lookup (name, O_RDWR, 0);
+      if (*file == MACH_PORT_NULL && errno == EACCES)
+	{
+	  *file = file_name_lookup (name, O_RDONLY, 0);
+	  if (*file != MACH_PORT_NULL)
+	    *mod_flags |= STORE_HARD_READONLY;
+	}
+      else if (*file != MACH_PORT_NULL)
+	*mod_flags &= ~STORE_HARD_READONLY;
+    }
+  return *file == MACH_PORT_NULL ? errno : 0;
+}
+
+static void
+ficlose (struct store *store)
+{
+  mach_port_deallocate (mach_task_self (), store->port);
+  store->port = MACH_PORT_NULL;
+}
+
+/* Return 0 if STORE's range is enforced by the filesystem, otherwise an
+   error.  */
+static error_t
+enforced (struct store *store)
+{
+  if (store->num_runs != 1 || store->runs[0].start != 0)
+    /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
+    return EINVAL;
+  else
+    /* See if the the current (one) range is that the kernel is enforcing. */
+    {
+      struct stat st; 
+      error_t err = io_stat (store->port, &st);
+
+      if (!err
+	  && store->runs[0].length != (st.st_size >> store->log2_block_size))
+	/* The single run is not the whole file.  */
+	err = EINVAL;
+
+      return err;
+    }
+}
+
+static error_t
+file_set_flags (struct store *store, int flags)
+{
+  if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
+    /* Trying to set flags we don't support.  */
+    return EINVAL;
+
+  if (! ((store->flags | flags) & STORE_INACTIVE))
+    /* Currently active and staying that way, so we must be trying to set the
+       STORE_ENFORCED flag.  */
+    {
+      error_t err = enforced (store);
+      if (err)
+	return err;
+    }
+
+  if (flags & STORE_INACTIVE)
+    ficlose (store);
+
+  store->flags |= flags;	/* When inactive, anything goes.  */
+
+  return 0;
+}
+
+static error_t
+file_clear_flags (struct store *store, int flags)
+{
+  error_t err = 0;
+  if ((flags & ~(STORE_INACTIVE | STORE_ENFORCED)) != 0)
+    err = EINVAL;
+  if (!err && (flags & STORE_INACTIVE))
+    err = store->name
+      ? fiopen (store->name, &store->port, &store->flags)
+      : ENOENT;
+  if (! err)
+    store->flags &= ~flags;
+  return err;
+}
 
 struct store_class
 store_file_class =
 {
   STORAGE_HURD_FILE, "file", file_read, file_write,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
-  0, 0, 0, 0, 0, file_open
+  file_set_flags, file_clear_flags, 0, 0, 0, file_open
 };
 
 static error_t
@@ -93,20 +160,7 @@ file_byte_read (struct store *store,
 		off_t addr, size_t index, size_t amount,
 		void **buf, size_t *len)
 {
-  error_t err = io_read (store->port, (char **)buf, len, addr, amount);
-#if 0
-  char rep_buf[20];
-  if (err)
-    strcpy (rep_buf, "-");
-  else if (*len > sizeof rep_buf - 3)
-    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), *buf);
-  else
-    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), *buf);
-  fprintf (stderr, "; file_byte_read (%ld, %d, %d) => %s, %s, %d\n",
-	   addr, index, amount, err ? strerror (err) : "-",
-	   rep_buf, err ? 0 : *len);
-#endif
-  return err;
+  return io_read (store->port, (char **)buf, len, addr, amount);
 }
 
 static error_t
@@ -114,20 +168,16 @@ file_byte_write (struct store *store,
 		 off_t addr, size_t index, void *buf, size_t len,
 		 size_t *amount)
 {
-#if 0
-  char rep_buf[20];
-  if (len > sizeof rep_buf - 3)
-    sprintf (rep_buf, "\"%.*s\"...", (int)(sizeof rep_buf - 6), buf);
-  else
-    sprintf (rep_buf, "\"%.*s\"", (int)(sizeof rep_buf - 3), buf);
-  fprintf (stderr, "; file_byte_write (%ld, %d, %s, %d)\n",
-	   addr, index, rep_buf, len);
-#endif
   return io_write (store->port, buf, len, addr, amount);
 }
 
 struct store_class
-store_file_byte_class = {STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write};
+store_file_byte_class =
+{
+  STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write,
+  store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
+  file_set_flags, file_clear_flags, 0, 0, 0, file_open
+};
 
 /* Return a new store in STORE referring to the mach file FILE.  Consumes
    the send right FILE.  */
@@ -167,16 +217,19 @@ _store_file_create (file_t file, int flags, size_t block_size,
 error_t
 store_file_open (const char *name, int flags, struct store **store)
 {
-  error_t err;
-  int open_flags = (flags & STORE_HARD_READONLY) ? O_RDONLY : O_RDWR;
-  file_t node = file_name_lookup (name, open_flags, 0);
-
-  if (node == MACH_PORT_NULL)
-    return errno;
-
-  err = store_file_create (node, flags, store);
-  if (err)
-    mach_port_deallocate (mach_task_self (), node);
-
+  file_t file;
+  error_t err = fiopen (name, &file, &flags);
+  if (! err)
+    {
+      err = store_file_create (file, flags, store);
+      if (! err)
+	{
+	  err = store_set_name (*store, name);
+	  if (err)
+	    store_free (*store);
+	}
+      if (err)
+	mach_port_deallocate (mach_task_self (), file);
+    }
   return err;
 }
