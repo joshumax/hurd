@@ -31,84 +31,67 @@ static error_t
 ftp_conn_start_open_actv_data (struct ftp_conn *conn, int *data)
 {
   error_t err = 0;
+  /* DCQ is a socket on which to listen for data connections from the server. */
+  int dcq;
+  struct sockaddr *addr = conn->actv_data_addr;
+  size_t addr_len = sizeof *addr;
 
-  if (conn->actv_data_conn_queue < 0)
+  if (! addr)
+    /* Generate an address for the data connection (which we must know,
+       so we can tell the server).  */
     {
-      /* DCQ is a socket on which we listen for data connections from the
-	 server.  */
-      int dcq;
-      struct sockaddr *addr = conn->actv_data_addr;
-      size_t addr_len = sizeof *addr;
-
+      addr = conn->actv_data_addr = malloc (sizeof (struct sockaddr_in));
       if (! addr)
-	/* Generate an address for the data connection (which we must know,
-	   so we can tell the server).  */
+	return ENOMEM;
+
+      /* Get the local address chosen by the system.  */
+      if (conn->control < 0)
+	err = EBADF;
+      else if (getsockname (conn->control, addr, &addr_len) < 0)
+	err = errno;
+
+      if (err == EBADF || err == EPIPE)
+	/* Control connection has closed; reopen it and try again.  */
 	{
-	  addr = conn->actv_data_addr = malloc (sizeof (struct sockaddr_in));
-	  if (! addr)
-	    return ENOMEM;
-
-	  /* Get the local address chosen by the system.  */
-	  if (conn->control < 0)
-	    err = EBADF;
-	  else if (getsockname (conn->control, addr, &addr_len) < 0)
+	  err = ftp_conn_open (conn);
+	  if (!err && getsockname (conn->control, addr, &addr_len) < 0)
 	    err = errno;
-
-	  if (err == EBADF || err == EPIPE)
-	    /* Control connection has closed; reopen it and try again.  */
-	    {
-	      err = ftp_conn_open (conn);
-	      if (!err && getsockname (conn->control, addr, &addr_len) < 0)
-		err = errno;
-	    }
-
-	  if (err)
-	    {
-	      free (addr);
-	      conn->actv_data_addr = 0;
-	      return err;
-	    }
 	}
 
-      dcq = socket (AF_INET, SOCK_STREAM, 0);
-      if (dcq < 0)
-	return errno;
-
-#if 0
-      if (setsockopt (dcq, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof on) < 0)
-	err = errno;
-#endif
-
-      /* Let the system choose a port for us.  */
-      ((struct sockaddr_in *)addr)->sin_port = 0;
-
-      /* Use ADDR as the data socket's local address.  */
-      if (!err && bind (dcq, addr, addr_len) < 0)
-	err = errno;
-
-      /* See what port was chosen by the system.  */
-      if (!err && getsockname (dcq, addr, &addr_len) < 0)
-	err = errno;
-
-      /* Set the incoming connection queue length.  */
-      if (!err && listen (dcq, 1) < 0)
-	err = errno;
-
       if (err)
-	close (dcq);
-      else
-	conn->actv_data_conn_queue = dcq;
+	{
+	  free (addr);
+	  conn->actv_data_addr = 0;
+	  return err;
+	}
     }
 
-  if (! err)
-    /* By my reading of rfc959, we shouldn't have to re-send the data
-       connection address to the server after the first time (the servers
-       should always use the last-specified address), but bsd-derived ftp
-       servers don't work unless this is done.  Aren't standards wonderful?  */
+  dcq = socket (AF_INET, SOCK_STREAM, 0);
+  if (dcq < 0)
+    return errno;
+
+  /* Let the system choose a port for us.  */
+  ((struct sockaddr_in *)addr)->sin_port = 0;
+
+  /* Use ADDR as the data socket's local address.  */
+  if (!err && bind (dcq, addr, addr_len) < 0)
+    err = errno;
+
+  /* See what port was chosen by the system.  */
+  if (!err && getsockname (dcq, addr, &addr_len) < 0)
+    err = errno;
+
+  /* Set the incoming connection queue length.  */
+  if (!err && listen (dcq, 1) < 0)
+    err = errno;
+
+  if (err)
+    close (dcq);
+  else
     err = ftp_conn_send_actv_addr (conn, conn->actv_data_addr);
 
   if (! err)
-    *data = conn->actv_data_conn_queue;
+    *data = dcq;
 
   return err;
 }
@@ -125,12 +108,23 @@ ftp_conn_finish_open_actv_data (struct ftp_conn *conn, int *data)
   size_t rmt_addr_len = sizeof rmt_addr;
   int real = accept (*data, &rmt_addr, &rmt_addr_len);
 
+  close (*data);
+
   if (real < 0)
     return errno;
 
   *data = real;
 
   return 0;
+}
+
+/* Abort an active data connection open sequence; this function should be
+   called if ftp_conn_start_open_actv_data succeeds, but an error happens
+   before ftp_conn_finish_open_actv_data can be called.  */
+static void
+ftp_conn_abort_open_actv_data (struct ftp_conn *conn, int data)
+{
+  close (data);
 }
 
 /* Return a data connection, which may not be in a completely open state;
@@ -193,6 +187,18 @@ ftp_conn_finish_open_data (struct ftp_conn *conn, int *data)
   else
     return ftp_conn_finish_open_actv_data (conn, data);
 }
+
+/* Abort a data connection open sequence; this function should be called if
+   ftp_conn_start_open_data succeeds, but an error happens before
+   ftp_conn_finish_open_data can be called.  */
+static void
+ftp_conn_abort_open_data (struct ftp_conn *conn, int data)
+{
+  if (conn->use_passive)
+    close (data);
+  else
+    return ftp_conn_abort_open_actv_data (conn, data);
+}
 
 /* Start a transfer command CMD/ARG, returning a file descriptor in DATA.
    POSS_ERRS is a list of errnos to try matching against any resulting error
@@ -214,11 +220,10 @@ ftp_conn_start_transfer (struct ftp_conn *conn,
       if (!err && !REPLY_IS_PRELIM (reply))
 	err = unexpected_reply (conn, reply, txt, poss_errs);
 
-      if (! err)
-	err = ftp_conn_finish_open_data (conn, data);
-
       if (err)
-	close (*data);
+	ftp_conn_abort_open_data (conn, *data);
+      else
+	err = ftp_conn_finish_open_data (conn, data);
     }
 
   return err;
