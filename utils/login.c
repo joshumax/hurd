@@ -1000,7 +1000,7 @@ main(int argc, char *argv[])
 		       eff_uids->num ? eff_uids->ids[0] : -1,
 		       eff_gids->num ? eff_gids->ids[0] : -1);
 	  if (err)
-	    error (0, err, "chown: %s", tty);
+	    error (0, errno, "chown: %s", tty);
 	}
     }
 
