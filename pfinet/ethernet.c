@@ -83,7 +83,7 @@ ethernet_open (struct device *dev)
   device_open (master_device, D_WRITE | D_READ, ethername, &ether_port);
 
   device_set_filter (ether_port, ports_get_right (readpt), 
-		     MACH_MSG_TYPE_MAKE_SEND, NET_HI_PRI,
+		     MACH_MSG_TYPE_MAKE_SEND, 0,
 		     ether_filter, ether_filter_len);
   return 0;
 }
