@@ -32,14 +32,17 @@ diskfs_S_io_identity (struct protid *cred,
 {
   struct node *np;
   error_t err;
+  ino_t inum;
 
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
   mutex_lock (&np->lock);
-  
-  err = fshelp_get_identity (diskfs_port_bucket, np->dn_stat.st_ino, id);
+  inum = np->dn_stat.st_ino;
+  mutex_unlock (&np->lock);
+
+  err = fshelp_get_identity (diskfs_port_bucket, inum, id);
   if (!err)
     {
       *idtype = MACH_MSG_TYPE_MAKE_SEND;
