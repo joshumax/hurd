@@ -20,11 +20,11 @@ makemode := utilities
 
 targets = shd ps settrans showtrans sync su mount fsysopts \
 	storeinfo login w uptime hurdids loginpr sush vmstat portinfo \
-	devprobe 
+	devprobe vminfo
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
-	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c
+	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c vminfo.c
 LCLHDRS = psout.h
 
 OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
@@ -34,6 +34,7 @@ INSTALL-login-ops = -o root -m 4755
 INSTALL-ps-ops = -o root -m 4755
 INSTALL-w-ops = -o root -m 4755
 INSTALL-vmstat-ops = -o root -m 4755
+INSTALL-vminfo-ops = -o root -m 4755
 
 include ../Makeconf
 
@@ -43,7 +44,7 @@ storeinfo: ../libstore/libstore.a
 # work: all libraries that *any* routine in libfshelp uses must be defined.
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
 ps w hurdids settrans showtrans fsysopts storeinfo login vmstat portinfo \
-  devprobe: ../libshouldbeinlibc/libshouldbeinlibc.a
+  devprobe vminfo: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 %: %.sh
 	cp $< $@
