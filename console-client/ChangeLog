@@ -1,3 +1,8 @@
+2005-01-10  Alfred M. Szmidt  <ams@gnu.org>
+
+	* console.c (consnode_path): Renamed to ...
+	(console_node): ... this.  Updated all references.
+
 2005-01-06  Marco Gerards  <metgerards@student.han.nl>
 
 	* Makefile (SRCS): Add `trans.c'.

@@ -57,8 +57,9 @@ static int saved_id = 0;
 /* The console, used to switch back.  */
 static cons_t saved_cons;
 
-/* The pathname of the node on which the translator is set.  */
-static char *consnode_path;
+/* The file name of the node on which the console translator is
+   set.  */
+static char *console_node;
 
 
 /* Callbacks for input source drivers.  */
@@ -556,8 +557,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case 'c':
-      consnode_path = arg ? arg : DEFAULT_CONSOLE_NODE;
-      if (!consnode_path)
+      console_node = arg ? arg : DEFAULT_CONSOLE_NODE;
+      if (!console_node)
 	return ENOMEM;
       break;
       
@@ -612,8 +613,8 @@ main (int argc, char *argv[])
       error (1, err, "Timer thread initialization failed");
     }
 
-  if (consnode_path)
-    console_setup_node (consnode_path);
+  if (console_node)
+    console_setup_node (console_node);
   
   cons_server_loop ();
 
