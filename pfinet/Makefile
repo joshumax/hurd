@@ -32,6 +32,6 @@ target = pfinet
 
 include ../Makeconf
 
-CPPFLAGS += -I.
+CPPFLAGS += -I. -D__KERNEL__ -D_HURD_
 
 
