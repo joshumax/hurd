@@ -13,7 +13,7 @@ export _CWD
 for I; do
   case "$I" in
     std)
-      $0 console tty null zero fd
+      $0 console tty null zero fd time
       ;;
     console|tty[0-9]?|tty[0-9a-f])
       $ST $I /hurd/term $_CWD/$I device $I;;
@@ -29,6 +29,8 @@ for I; do
       ln -f -s fd/1 stdout
       ln -f -s fd/2 stderr
       ;;
+    time)
+      $ST $I /hurd/devport time ;;
 
     # ptys
     [pt]ty[pqPQ]?)
