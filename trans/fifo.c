@@ -123,15 +123,17 @@ open_hook (struct trivfs_peropen *po)
       mutex_lock (&active_fifo_lock);
 
 /* Wait until the active fifo has changed so that CONDITION is true.  */
-#define WAIT(condition, noblock_err)					     \
-  while (!err && !(condition)) 						     \
-    if (flags & O_NONBLOCK) 						     \
-      {			 						     \
-        err = noblock_err; 						     \
-        break;		 						     \
-      }			 						     \
-    else if (hurd_condition_wait (&active_fifo_changed, &active_fifo_lock))  \
-      err = EINTR;
+#define WAIT(condition, noblock_err)					      \
+  while (!err && !(condition))						      \
+    {									      \
+      if (flags & O_NONBLOCK)						      \
+	{								      \
+	  err = noblock_err;						      \
+	  break;							      \
+	}								      \
+      else if (hurd_condition_wait (&active_fifo_changed, &active_fifo_lock)) \
+	err = EINTR;							      \
+    }
 
       if (flags & O_READ)
 	/* When opening for read, what we do depends on what mode this server
@@ -415,26 +417,30 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   pipe = cred->po->hook;
 
   if (*select_type & SELECT_READ)
-    if (cred->po->openmodes & O_READ)
-      {
-	mutex_lock (&pipe->lock);
-	if (pipe_wait_readable (pipe, 1, 1) != EWOULDBLOCK)
-	  ready |= SELECT_READ; /* Data immediately readable (or error). */
-	mutex_unlock (&pipe->lock);
-      }
-    else
-      ready |= SELECT_READ;	/* Error immediately available...  */
+    {
+      if (cred->po->openmodes & O_READ)
+	{
+	  mutex_lock (&pipe->lock);
+	  if (pipe_wait_readable (pipe, 1, 1) != EWOULDBLOCK)
+	    ready |= SELECT_READ; /* Data immediately readable (or error). */
+	  mutex_unlock (&pipe->lock);
+	}
+      else
+	ready |= SELECT_READ;	/* Error immediately available...  */
+    }
 
   if (*select_type & SELECT_WRITE)
-    if (cred->po->openmodes & O_WRITE)
-      {
-	mutex_lock (&pipe->lock);
-	if (pipe_wait_writable (pipe, 1) != EWOULDBLOCK)
-	  ready |= SELECT_WRITE; /* Data immediately writable (or error). */
-	mutex_unlock (&pipe->lock);
-      }
-    else
-      ready |= SELECT_WRITE;	/* Error immediately available...  */
+    {
+      if (cred->po->openmodes & O_WRITE)
+	{
+	  mutex_lock (&pipe->lock);
+	  if (pipe_wait_writable (pipe, 1) != EWOULDBLOCK)
+	    ready |= SELECT_WRITE; /* Data immediately writable (or error). */
+	  mutex_unlock (&pipe->lock);
+	}
+      else
+	ready |= SELECT_WRITE;	/* Error immediately available...  */
+    }
 
   if (ready)
     *select_type = ready;

@@ -1,3 +1,11 @@
+1998-10-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fmt.c (_fmt_create): Add braces to silence gcc warning.
+	* procstat.c (summarize_thread_waits): Likewise.
+	(proc_stat_set_flags): Likewise.
+	(proc_stat_set_flags): Likewise.
+	(proc_stat_set_flags): Likewise.
+
 Sat Jun  7 21:35:37 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* spec.c (ps_emit_wait): Provide slightly better abbreviations for
@@ -119,7 +127,7 @@ Mon Jun  3 10:17:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	correctly (it's an error_t).
 
 	* ps.h (struct proc_stat): Add PROC_INFO_VM_ALLOCED,
-	THREAD_WAITS_VM_ALLOCED, and ARGS_VM_ALLOCED fields, 
+	THREAD_WAITS_VM_ALLOCED, and ARGS_VM_ALLOCED fields,
 	* procstat.c (merge_procinfo) Take a struct proc_stat as an arg,
 	not all the individual fields.  Correctly set OLD_PI_HDR.
 	Correctly calculate REALLY_NEED.
@@ -133,7 +141,7 @@ Mon Jun  3 10:17:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Sat Jun  1 11:18:58 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* procstat.c (set_procinfo_flags): New function.
-	(proc_stat_set_flags): Use it, to get msgport validity testing right. 
+	(proc_stat_set_flags): Use it, to get msgport validity testing right.
 	(merge_procinfo): Take and return HAVE instead of using a
 	reference parameter.  Clean up malloced storage if we get an error.
 
@@ -190,7 +198,7 @@ Fri May 24 13:33:14 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* procstat.c (fetch_procinfo): Always turn on PSTAT_PROC_INFO if
  	proc_getprocinfo returns successfully.
 	(merge_procinfo): Update *HAVE with PSTAT_PROC_INFO from
-	REALLY_HAVE here. 
+	REALLY_HAVE here.
 
 Wed May 22 19:55:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -366,7 +374,7 @@ Wed Feb 14 17:49:17 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 Mon Feb 12 14:34:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* spec.c (ps_emit_wait): For rpcs, put the port first. 
+	* spec.c (ps_emit_wait): For rpcs, put the port first.
 
 Fri Feb  9 15:55:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -455,7 +463,7 @@ Thu Dec 21 12:04:24 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	* fmt.c (ps_fmt_create): Use the new spec fields.
 	(ps_fmt_write_proc_stat): Support new inval field in FMT.
 
-	* spec.c (ps_fmt_specs_find): Renamed from find_ps_fmt_spec; now 
+	* spec.c (ps_fmt_specs_find): Renamed from find_ps_fmt_spec; now
 	uses a struct ps_fmt_specs instead of an array of specs.
 	(specs): Renamed from ps_std_fmt_specs;
 	(ps_std_fmt_specs): Now of type struct ps_fmt_specs, pointing to specs.
@@ -505,7 +513,7 @@ Sat Dec 16 23:42:27 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	(own_uid): New variable (was function local).
 	* filters.c (ps_own_filter): Depend on PSTAT_OWNER_UID.
 	(ps_own_p): Account for there being no uid.
-	
+
 Thu Nov 16 12:51:34 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* write.c (ps_stream_write_field): Trim spaces from BUF.
@@ -526,7 +534,7 @@ Wed Nov 15 18:55:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	(ps_stream_write_field): Renamed from ps_write_field.
 	(ps_stream_write_int_field): Renamed from ps_write_int_field.
 	(ps_stream_newline): New declaration.
-	
+
 	* fmt.c (ps_fmt_write_titles, ps_fmt_write_proc_stat): Use new
 	write function names.  Use new STREAM parameter instead of old one
 	and count.
@@ -534,7 +542,7 @@ Wed Nov 15 18:55:26 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	* spec.c (ps_emit_int, ps_emit_nz_int, ps_emit_priority,
 	ps_emit_percent, ps_emit_num_blocks, ps_emit_nice_int,
 	ps_emit_nice_seconds, ps_emit_seconds, ps_emit_uid, ps_emit_uname,
-	ps_emit_string0, ps_emit_string, ps_emit_tty_name, ps_emit_state): 
+	ps_emit_string0, ps_emit_string, ps_emit_tty_name, ps_emit_state):
 	Ditto.
 	(ps_emit_seconds): Remove leading spaces from what we print.
 
@@ -581,7 +589,7 @@ Tue Oct 31 14:03:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	* ps.h (PSTAT_STATE_P_LOGINLDR, PSTAT_STATE_P_WAIT,
 	PSTAT_STATE_P_GETMSG): New flags.
 	* procstat.c (add_preconditions): Don't require PSTAT_EXEC_FLAGS for
- 	getting the state anymore (but do require PSTAT_{TASK,THREAD}_BASIC). 
+ 	getting the state anymore (but do require PSTAT_{TASK,THREAD}_BASIC).
 	(proc_stat_state_tags): Update to reflect new flags.
 	(proc_stat_set_flags): Set new flags.
 
@@ -605,7 +613,7 @@ Tue Oct 31 14:03:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	(ps_get_ppid, ps_get_pgrp, ps_get_session, ps_get_login_col): Use
 	proc_stat_proc_info, not proc_stat_info.
 	(ps_vsize_getter, ps_rsize_getter, ps_rmem_frac_getter,
-	ps_proc_susp_count_getter): Use PSTAT_TASK_BASIC, not PSTAT_INFO. 
+	ps_proc_susp_count_getter): Use PSTAT_TASK_BASIC, not PSTAT_INFO.
 	(ps_get_vsize, ps_get_rsize, ps_get_rmem_frac, ps_get_proc_susp_count):
 	Use proc_stat_task_basic_info, not proc_stat_info.
 	(ps_cur_priority_getter, ps_base_priority_getter,
@@ -613,7 +621,7 @@ Tue Oct 31 14:03:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	(ps_usr_time_getter, ps_sys_time_getter, ps_tot_time_getter,
 	ps_cpu_frac_getter, ps_sleep_getter):
 	Use PSTAT_THREAD_BASIC, not PSTAT_THREAD_INFO.
-	
+
 	* filters.c (ps_own_filter): Use PSTAT_PROC_INFO, not PSTAT_INFO.
 	(ps_own_p): Use proc_stat_proc_info, not proc_stat_info.
 
@@ -628,7 +636,7 @@ Tue Oct 31 14:03:53 1995  Miles Bader  <miles@gnu.ai.mit.edu>
 	(struct proc_stat): info & info_len --> proc_info & proc_info_len.
 	Add the num_threads, task_basic_info, and thread_rpc fields.
 	thread_basic_info & thread_sched_info are now pointers.
-	
+
 Mon Oct  9 14:57:48 1995  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
 
         * Makefile: Specify shared library dependencies.
@@ -660,7 +668,7 @@ Fri Aug 18 16:43:41 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
 	(ps_emit_state): Use the state_shadows list to turn off some states.
 	* filters.c (ps_not_sess_leader_p, ps_unorphaned_p, ps_parent_p):
 	Use the new state bits.
-	
+
 Sat Jul  8 13:34:20 1995  Miles Bader  <miles@churchy.gnu.ai.mit.edu>
 
 	* tty.c (ps_tty_short_name): That assignment around which extra
@@ -830,4 +838,3 @@ Mon Mar 20 20:51:51 1995  Michael I Bushnell  <mib@duality.gnu.ai.mit.edu>
 
 	* New ChangeLog, moved into canonical directory structure.
 	Old ChangeLog is in .../hurd/utils/ps.ChangeLog.
-

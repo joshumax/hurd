@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -102,7 +102,7 @@ parse_task (char *arg)
   return task;
 }
 
-static volatile hold = 0;
+static volatile int hold = 0;
 
 int
 main (int argc, char **argv)

@@ -1,3 +1,7 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io.c (S_io_select): Add braces to silence gcc warning.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* pflocal.c (main): Fix return type to int, and use return.

@@ -77,10 +77,12 @@ main (int argc, char *argv[])
 	      argz_stringify (trans, trans_len, ' ');
 
 	      if (!silent)
-		if (print_prefix)
-		  printf ("%s: %s\n", name, trans);
-		else
-		  puts (trans);
+		{
+		  if (print_prefix)
+		    printf ("%s: %s\n", name, trans);
+		  else
+		    puts (trans);
+		}
 
 	      if (trans != buf)
 		vm_deallocate (mach_task_self (),

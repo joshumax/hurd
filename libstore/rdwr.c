@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -259,20 +259,22 @@ store_read (struct store *store,
 
       /* Deallocate any amount of WHOLE_BUF we didn't use.  */
       if (whole_buf != *buf)
-	if (err)
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t)whole_buf, whole_buf_len);
-	else
-	  {
-	    vm_size_t unused = whole_buf_len - round_page (*len);
-	    if (unused)
-	      vm_deallocate (mach_task_self (),
-			     (vm_address_t)whole_buf + whole_buf_len - unused,
-			     unused);
-	    *buf = whole_buf;
-	  }
+	{
+	  if (err)
+	    vm_deallocate (mach_task_self (),
+			   (vm_address_t)whole_buf, whole_buf_len);
+	  else
+	    {
+	      vm_size_t unused = whole_buf_len - round_page (*len);
+	      if (unused)
+		vm_deallocate (mach_task_self (),
+			       (vm_address_t)whole_buf + whole_buf_len
+			       - unused,
+			       unused);
+	      *buf = whole_buf;
+	    }
+	}
 
       return err;
     }
 }
-		

@@ -1,3 +1,9 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* cache.c (scan_creds): Add braces to silence gcc warning.
+	(scan_fhs): Likewise.
+	(scan_replies): Likewise.
+
 Thu Sep 26 14:09:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* nfsd.h (enum_t): New type.
@@ -15,7 +21,7 @@ Tue Sep  3 14:15:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	"../nfs/rpcsvc/mount.h".
 	* ops.c: Likewise.
 	* nfsd.h: Include "../nfs/nfs-spec.h" instead of
-	"../nfs/rpcsvc/nfs_prot.h". 
+	"../nfs/rpcsvc/nfs_prot.h".
 
 Wed Aug 14 13:46:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -26,18 +32,18 @@ Wed Aug 14 13:46:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* nfsd.h, cache.c, ops.c, xdr.c: Use new names for things that
  	have just been changed in ../nfs/rpcsvc/nfs_prot.h.
 	* xdr.c (hurd_mode_to_nfs_type): New parm VERSION; all callers
-	changed. 
+	changed.
 	(encode_fattr): New parm VERSION; all callers changed.
 	* nfsd.h (encode_fattr): New parm VERSION.
 
 Tue Aug 13 14:38:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
-	
+
 	* ops.c (op_create): Sun's NFS client implementation actually
  	bombs if do do what RFC 1094 says to do in section 2.2.10.  So
  	don't pass O_EXCL, but do pass O_TRUNC.  That's what NetBSD does.
 
 	* ops.c (op_setattr): Fill in an fattr in reply.
-	
+
 Mon Aug 12 11:15:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (installationdir): Include quotes in variable expansion
@@ -62,33 +68,33 @@ Wed Aug  7 11:39:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* main.c (index_file): New var.
 	(index_file_name): Initialize from index_file.
 	(main): Don't initialize index_file_name here.
-	
+
 	* ops.c (op_null, op_getattr, op_setattr, op_lookup, op_readlink,
 	count_read_buffersize, op_read, op_write, op_create, op_remove,
 	op_rename, op_link, op_symlink, op_mkdir, op_rmdir,
 	count_readdir_buffersize, op_statfs, op_mnt, op_getport): Add new
 	parm `version'.
 	* loop.c (server_loop): Supply VERSION to PROC->alloc_reply and
-	PROC->func. 
+	PROC->func.
 	* nfsd.h (struct procedure): Add new parm to `func' and
 	`alloc_reply' members to specify protocol version.
 
 	* ops.c (mounttable): Use op_null for MOUNTPROC_UMNT and
-	MOUNTPROC_UMNTALL. 
-	
+	MOUNTPROC_UMNTALL.
+
 	* ops.c (op_create): Ignore most of setattr structure given.
 	(op_mkdir): Likewise.
 	(complete_setattr): Clean up and be less active when possible.
 
 	* ops.c (op_readdir): Correctly end list of directory entries.
-	
+
 	* nfsd.h (authserver): New variable.
 n	* main.c: Include <hurd.h>.
  	(main): Initialize AUTHSERVER.
 	* cache.c: Include <hurd/io.h> and <hurd/auth.h>.
  	(create_cached_handle): Reauthenticate port before calling
-	file_getfh. 
-	
+	file_getfh.
+
 	* fsys.c (init_filesystems): When setting NFSYS, it needs to be at
 	least as big as INDEX + 1, and install the control port into the
 	correct slot.
@@ -100,17 +106,17 @@ Tue Aug  6 13:18:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* cache.c (create_cached_handle): Always call fsys_getfile when
 	creating a new cached handle instead of relying upon the passed in
-	port. 
+	port.
 
 	* xdr.c (hurd_mode_to_nfs_mode): Specify octal number in octal
-	notation. 
+	notation.
 	(encode_fattr): Bother filling in all the fields.
 
 	* loop.c (server_loop): Don't attempt to call cache_handle_rele if
 	C is null.
 
 	* cache.c (fh_hash): Mod-ulize HASH before returning it.
-		
+
 	* cache.c (process_cred): Arrange to skip VERF field for
 	non-AUTH_UNIX creds too.
 
@@ -132,5 +138,3 @@ Tue Aug  6 13:18:40 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): Stringify LOCALSTATEDIR; but for now just pound
 	in /var.  Call asprintf correctly.
-
-

@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -70,14 +70,16 @@ dev_buf_fill (struct dev *dev, off_t offs)
   size_t buf_len = store->block_size;
 
   if (dev_buf_is_active (dev))
-    if ((dev->buf_offs & ~block_mask) == (offs & ~block_mask))
-      return 0;			/* Correct block alredy in buffer.  */
-    else
-      {
-	err = dev_buf_discard (dev);
-	if (err)
-	  return err;
-      }
+    {
+      if ((dev->buf_offs & ~block_mask) == (offs & ~block_mask))
+	return 0;			/* Correct block alredy in buffer.  */
+      else
+	{
+	  err = dev_buf_discard (dev);
+	  if (err)
+	    return err;
+	}
+    }
 
   err = store_read (store, offs >> store->log2_block_size, store->block_size,
 		    &buf, &buf_len);
@@ -171,7 +173,7 @@ dev_open (struct store_parsed *name, int flags, struct dev **dev)
 }
 
 /* Free DEV and any resources it consumes.  */
-void 
+void
 dev_close (struct dev *dev)
 {
   if (dev->pager != NULL)
@@ -400,4 +402,4 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
     vm_deallocate (mach_task_self (), (vm_address_t)*buf, whole_amount);
 
   return err;
-}     
+}

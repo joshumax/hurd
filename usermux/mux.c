@@ -1,6 +1,6 @@
 /* Root usermux node
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -52,7 +52,7 @@ static error_t lookup_user (struct usermux *mux, const char *user,
    (*NODE, if found, should be locked, this call should unlock DIR no matter
    what.) */
 error_t
-netfs_attempt_lookup (struct iouser *user, struct node *dir, 
+netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		      char *name, struct node **node)
 {
   error_t err;
@@ -106,7 +106,7 @@ get_dirents (struct node *dir,
 	{
 	  struct passwd *pw;
 	  char *p = *data;
-	  int count = 0; 
+	  int count = 0;
 	  int entry_type =
 	    (S_ISLNK (dir->nn->mux->stat_template.st_mode) ? DT_LNK : DT_REG);
 
@@ -119,18 +119,20 @@ get_dirents (struct node *dir,
 	      size_t sz = DIRENT_LEN (name_len);
 
 	      if ((p - *data) + sz > size)
-		if (max_data_len > 0)
-		  break;
-		else
-		  /* Try to grow our return buffer.  */
-		  {
-		    vm_address_t extension = (vm_address_t)(*data + size);
-		    err = vm_allocate (mach_task_self (), &extension,
-				       DIRENTS_CHUNK_SIZE, 0);
-		    if (err)
-		      break;
-		    size += DIRENTS_CHUNK_SIZE;
-		  }
+		{
+		  if (max_data_len > 0)
+		    break;
+		  else
+		    /* Try to grow our return buffer.  */
+		    {
+		      vm_address_t extension = (vm_address_t)(*data + size);
+		      err = vm_allocate (mach_task_self (), &extension,
+					 DIRENTS_CHUNK_SIZE, 0);
+		      if (err)
+			break;
+		      size += DIRENTS_CHUNK_SIZE;
+		    }
+		}
 
 	      hdr.d_namlen = name_len;
 	      hdr.d_fileno = pw->pw_uid + USERMUX_FILENO_UID_OFFSET;
@@ -223,7 +225,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 	  rwlock_reader_unlock (&cache_lock);
 	  return EINVAL;
 	}
-      
+
       first += e->d_reclen;
       bytes_left -= e->d_reclen;
       entries_left--;
@@ -255,7 +257,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   *data_len = bytes_left;
   *data_entries = entries_left;
-  
+
   err = vm_allocate (mach_task_self (), (vm_address_t *)data, bytes_left, 1);
   if (! err)
     bcopy (cached_data, *data, bytes_left);
@@ -364,7 +366,7 @@ lookup_pwent (struct usermux *mux, const char *user, struct passwd *pw,
     }
 
   return 0;
-}  
+}
 
 /* Lookup the user USER in MUX, and return the resulting node in NODE, with
    an additional reference, or an error.  */

@@ -1,6 +1,6 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -117,7 +117,7 @@ S_io_write (struct sock_user *user,
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
    by the nonblocking flag.  */
-error_t 
+error_t
 S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
 {
   error_t err;
@@ -196,17 +196,19 @@ S_io_select (struct sock_user *user,
       *select_type &= SELECT_READ;
 
       if (*select_type & SELECT_READ)
-	/* Wait for a connect.  Passing in NULL for REQ means that the
-	   request won't be dequeued.  */
-	if (connq_listen (sock->listen_queue, 1, NULL, NULL) == 0)
-	  /* We can satisfy this request immediately. */
-	  return 0;
-	else
-	  /* Gotta wait...  */
-	  {
-	    ports_interrupt_self_on_port_death (user, reply);
-	    return connq_listen (sock->listen_queue, 0, NULL, NULL);
-	  }
+	{
+	  /* Wait for a connect.  Passing in NULL for REQ means that the
+	     request won't be dequeued.  */
+	  if (connq_listen (sock->listen_queue, 1, NULL, NULL) == 0)
+	    /* We can satisfy this request immediately. */
+	    return 0;
+	  else
+	    /* Gotta wait...  */
+	    {
+	      ports_interrupt_self_on_port_death (user, reply);
+	      return connq_listen (sock->listen_queue, 0, NULL, NULL);
+	    }
+	}
     }
   else
     /* Sock is a normal read/write socket.  */
@@ -402,14 +404,14 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
     return err;
 
   auth_server = getauth ();
-  err = mach_port_insert_right (mach_task_self (), new_user_port, 
+  err = mach_port_insert_right (mach_task_self (), new_user_port,
 				new_user_port, MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
   do
     err =
-      auth_server_authenticate (auth_server, 
+      auth_server_authenticate (auth_server,
 				rendezvous, MACH_MSG_TYPE_COPY_SEND,
-				new_user_port, MACH_MSG_TYPE_COPY_SEND, 
+				new_user_port, MACH_MSG_TYPE_COPY_SEND,
 				&uids, &num_uids, &aux_uids, &num_aux_uids,
 				&gids, &num_gids, &aux_gids, &num_aux_gids);
   while (err == EINTR);
@@ -526,7 +528,7 @@ S_io_mod_owner(struct sock_user *user, pid_t owner)
   return EOPNOTSUPP;
 }
 
-error_t 
+error_t
 S_io_get_owner(struct sock_user *user, pid_t *owner)
 {
   return EOPNOTSUPP;

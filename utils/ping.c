@@ -40,7 +40,7 @@ char copyright[] =
 /*
  * From: @(#)ping.c	5.9 (Berkeley) 5/12/91
  */
-char rcsid[] = "$Id: ping.c,v 1.2 1998/04/22 20:44:38 tb Exp $";
+char rcsid[] = "$Id: ping.c,v 1.3 1998/10/20 09:42:49 roland Exp $";
 char pkg[] = "netkit-base-0.10";
 
 /*
@@ -69,8 +69,7 @@ char pkg[] = "netkit-base-0.10";
 
 #include <netinet/in.h>
 #include <netinet/ip.h>
-#include <linux/icmp.h>
-/* #include <netinet/ip_icmp.h> */
+#include <netinet/ip_icmp.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -89,38 +88,6 @@ char pkg[] = "netkit-base-0.10";
  */
 #ifdef __linux__
 #define SAFE_TO_DROP_ROOT
-#endif
-
-#if defined(__GLIBC__) && (__GLIBC__ >= 2) && (__GLIBC_MINOR__ != 0)
-#define icmphdr			icmp
-#define ICMP_DEST_UNREACH	ICMP_UNREACH
-#define ICMP_NET_UNREACH	ICMP_UNREACH_NET
-#define ICMP_HOST_UNREACH	ICMP_UNREACH_HOST
-#define ICMP_PORT_UNREACH	ICMP_UNREACH_PORT
-#define ICMP_PROT_UNREACH	ICMP_UNREACH_PROTOCOL
-#define ICMP_FRAG_NEEDED	ICMP_UNREACH_NEEDFRAG
-#define ICMP_SR_FAILED		ICMP_UNREACH_SRCFAIL
-#define ICMP_NET_UNKNOWN	ICMP_UNREACH_NET_UNKNOWN
-#define ICMP_HOST_UNKNOWN	ICMP_UNREACH_HOST_UNKNOWN
-#define ICMP_HOST_ISOLATED	ICMP_UNREACH_ISOLATED
-#define ICMP_NET_UNR_TOS	ICMP_UNREACH_TOSNET
-#define ICMP_HOST_UNR_TOS	ICMP_UNREACH_TOSHOST
-#define ICMP_SOURCE_QUENCH	ICMP_SOURCEQUENCH
-#define ICMP_REDIR_NET		ICMP_REDIRECT_NET
-#define ICMP_REDIR_HOST		ICMP_REDIRECT_HOST
-#define ICMP_REDIR_NETTOS	ICMP_REDIRECT_TOSNET
-#define ICMP_REDIR_HOSTTOS	ICMP_REDIRECT_TOSHOST
-#define ICMP_TIME_EXCEEDED	ICMP_TIMXCEED
-#define ICMP_EXC_TTL		ICMP_TIMXCEED_INTRANS
-#define ICMP_EXC_FRAGTIME	ICMP_TIMXCEED_REASS
-#define	ICMP_PARAMETERPROB	ICMP_PARAMPROB
-#define ICMP_TIMESTAMP		ICMP_TSTAMP
-#define ICMP_TIMESTAMPREPLY	ICMP_TSTAMPREPLY
-#define ICMP_INFO_REQUEST	ICMP_IREQ
-#define ICMP_INFO_REPLY		ICMP_IREQREPLY
-#else
-#define ICMP_MINLEN	28
-#define inet_ntoa(x) inet_ntoa(*((struct in_addr *)&(x)))
 #endif
 
 #define	DEFDATALEN	(64 - 8)	/* default data length */
@@ -195,17 +162,19 @@ static void fill(void *bp, char *patp);
 static void usage(void);
 static void pr_pack(char *buf, int cc, struct sockaddr_in *from);
 static void tvsub(struct timeval *out, struct timeval *in);
-static void pr_icmph(struct icmphdr *icp);
+static void pr_icmph(struct icmp *icp);
 static void pr_retip(struct ip *ip);
 
 /* Only wrapper to call pinger (). */
-pinger_wrapper ()
+void *
+pinger_wrapper (void *ignored)
 {
   for (;;)
     {
       pinger ();
       sleep (interval);
     }
+  return 0;
 }
 
 int
@@ -231,7 +200,7 @@ main(int argc, char *argv[])
 	am_i_root = (getuid()==0);
 
 	cthread_init ();
-	
+
 	/*
 	 * Pull this stuff up front so we can drop root if desired.
 	 */
@@ -363,7 +332,7 @@ main(int argc, char *argv[])
 		}
 	argc -= optind;
 	argv += optind;
-	
+
 	if (argc != 1)
 		usage();
 	target = *argv;
@@ -487,13 +456,13 @@ main(int argc, char *argv[])
 	/* I replace this with thread -- Kunihiro
 	(void)signal(SIGALRM, catcher);
 	*/
-	
+
 
 	while (preload--)		/* fire off them quickies */
 		pinger();
 
 	if ((options & F_FLOOD) == 0)
-	  cthread_detach (cthread_fork ((cthread_fn_t) pinger_wrapper, NULL));
+	  cthread_detach (cthread_fork (pinger_wrapper, NULL));
 
 
 	for (;;) {
@@ -531,7 +500,7 @@ main(int argc, char *argv[])
  * catcher --
  *	This routine causes another PING to be transmitted, and then
  * schedules another SIGALRM for 1 second from now.
- * 
+ *
  * bug --
  *	Our sense of time will slowly skew (i.e., packets will not be
  * launched exactly at 1-second intervals).  This does not affect the
@@ -561,28 +530,6 @@ catcher(int ignore)
 	}
 }
 
-/* This is quick hack to compile this file under old Linux's linux/icmp.h */
-#if defined(__GLIBC__) && (__GLIBC__ >= 2)
-#define icmp_type type
-#define icmp_code code
-#define icmp_cksum checksum
-#define icmp_id un.echo.id
-#define icmp_seq un.echo.sequence
-#define icmp_gwaddr un.gateway
-#else
-#define ip_hl ihl
-#define ip_v version
-#define ip_tos tos
-#define ip_len tot_len
-#define ip_id id
-#define ip_off frag_off
-#define ip_ttl ttl
-#define ip_p protocol
-#define ip_sum check
-#define ip_src saddr
-#define ip_dst daddr
-#endif
-
 /*
  * pinger --
  * 	Compose and transmit an ICMP ECHO REQUEST packet.  The IP packet
@@ -594,11 +541,11 @@ catcher(int ignore)
 static void
 pinger(void)
 {
-	register struct icmphdr *icp;
+	register struct icmp *icp;
 	register int cc;
 	int i;
 
-	icp = (struct icmphdr *)outpack;
+	icp = (struct icmp *)outpack;
 	icp->icmp_type = ICMP_ECHO;
 	icp->icmp_code = 0;
 	icp->icmp_cksum = 0;
@@ -639,7 +586,7 @@ pinger(void)
 void
 pr_pack(char *buf, int cc, struct sockaddr_in *from)
 {
-	register struct icmphdr *icp;
+	register struct icmp *icp;
 	register int i;
 	register u_char *cp,*dp;
 /*#if 0*/
@@ -668,7 +615,7 @@ pr_pack(char *buf, int cc, struct sockaddr_in *from)
 
 	/* Now the ICMP part */
 	cc -= hlen;
-	icp = (struct icmphdr *)(buf + hlen);
+	icp = (struct icmp *)(buf + hlen);
 	if (icp->icmp_type == ICMP_ECHOREPLY) {
 		if (icp->icmp_id != ident)
 			return;			/* 'Twas not our ECHO */
@@ -932,7 +879,7 @@ static char *ttab[] = {
  *	Print a descriptive string about an ICMP header.
  */
 static void
-pr_icmph(struct icmphdr *icp)
+pr_icmph(struct icmp *icp)
 {
 	switch(icp->icmp_type) {
 	case ICMP_ECHOREPLY:
@@ -1027,7 +974,7 @@ pr_icmph(struct icmphdr *icp)
 			(void)printf("Redirect, Bad Code: %d", icp->icmp_code);
 			break;
 		}
-		(void)printf("(New addr: %s)\n", 
+		(void)printf("(New addr: %s)\n",
 			     inet_ntoa(icp->icmp_gwaddr));
 #ifndef icmp_data
 		pr_retip((struct ip *)(icp + 1));
@@ -1139,7 +1086,7 @@ pr_addr(u_long l)
 
 	if ((options & F_NUMERIC) ||
 	    !(hp = gethostbyaddr((char *)&l, 4, AF_INET)))
-		(void)snprintf(buf, sizeof(buf), "%s", 
+		(void)snprintf(buf, sizeof(buf), "%s",
 			       inet_ntoa(*(struct in_addr *)&l));
 	else
 		(void)snprintf(buf, sizeof(buf), "%s (%s)", hp->h_name,

@@ -1,6 +1,6 @@
 /* Common output function for ps & w
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -97,15 +97,17 @@ psout (struct proc_stat_list *procs,
     error (5, err, "Can't make output stream");
 
   if (print_heading)
-    if (procs->num_procs > 0)
-      {
-	err = ps_fmt_write_titles (fmt, output);
-	if (err)
-	  error (0, err, "Can't print titles");
-	ps_stream_newline (output);
-      }
-    else
-      error (0, 0, "No applicable processes");
+    {
+      if (procs->num_procs > 0)
+	{
+	  err = ps_fmt_write_titles (fmt, output);
+	  if (err)
+	    error (0, err, "Can't print titles");
+	  ps_stream_newline (output);
+	}
+      else
+	error (0, 0, "No applicable processes");
+    }
 
   if (output_width)
     /* Try and restrict the number of output columns.  */

@@ -151,13 +151,15 @@ main(int argc, char *argv[])
     active_flags = FS_TRANS_SET | (excl ? FS_TRANS_EXCL : 0);
 
   if (passive && !active)
-    /* When setting just the passive, decide what to do with any active.  */
-    if (kill_active)
-      /* Make it go away.  */
-      active_flags = FS_TRANS_SET;
-    else if (! keep_active)
-      /* Ensure that there isn't one.  */
-      active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
+    {
+      /* When setting just the passive, decide what to do with any active.  */
+      if (kill_active)
+	/* Make it go away.  */
+	active_flags = FS_TRANS_SET;
+      else if (! keep_active)
+	/* Ensure that there isn't one.  */
+	active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
+    }
 
   if (active && argz_len > 0)
     {

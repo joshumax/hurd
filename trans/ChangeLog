@@ -1,3 +1,10 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fifo.c (open_hook: WAIT): Add braces to silence gcc warning.
+	(trivfs_S_io_select): Likewise.
+	* new-fifo.c (fifo_trans_open): Likewise.
+	(trivfs_S_io_select): Likewise.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* firmlink.c (main): Fix return type to int, and use return.

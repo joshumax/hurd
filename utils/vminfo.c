@@ -1,6 +1,6 @@
 /* Print task vm information
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -143,7 +143,7 @@ main (int argc, char **argv)
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
-	  argp_usage (state); 
+	  argp_usage (state);
 
 	default:
 	  return ARGP_ERR_UNKNOWN;
@@ -179,16 +179,22 @@ main (int argc, char **argv)
 	}
 
       if (holes && hole_addr != addr)
-	if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
-	  if (hex)
-	    printf ("          [%#x] (hole)\n", addr - hole_addr);
-	  else
-	    printf ("          [%d] (hole)\n", addr - hole_addr);
-	else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
-	  if (hex)
-	    printf ("%#10x (hole)\n", addr - hole_addr);
-	  else
-	    printf ("%10u (hole)\n", addr - hole_addr);
+	{
+	  if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
+	    {
+	      if (hex)
+		printf ("          [%#x] (hole)\n", addr - hole_addr);
+	      else
+		printf ("          [%d] (hole)\n", addr - hole_addr);
+	    }
+	  else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
+	    {
+	      if (hex)
+		printf ("%#10x (hole)\n", addr - hole_addr);
+	      else
+		printf ("%10u (hole)\n", addr - hole_addr);
+	    }
+	}
 
       if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
 	if (hex)
@@ -201,10 +207,12 @@ main (int argc, char **argv)
 	else
 	  printf ("%10u", addr);
       else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
-	if (hex)
-	  printf ("%#10x", size);
-	else
-	  printf ("%10u", size);
+	{
+	  if (hex)
+	    printf ("%#10x", size);
+	  else
+	    printf ("%10u", size);
+	}
       if (what & W_DETAILS)
 	{
 	  printf (" (prot=%s", prot_rep (prot));
@@ -217,10 +225,12 @@ main (int argc, char **argv)
 	  if (obj != MACH_PORT_NULL)
 	    printf (", mem_obj=%d", obj);
 	  if (offs != 0)
-	    if (hex)
-	      printf (", offs=%#x", offs);
-	    else
-	      printf (", offs=%d", offs);
+	    {
+	      if (hex)
+		printf (", offs=%#x", offs);
+	      else
+		printf (", offs=%d", offs);
+	    }
 	  putchar (')');
 	}
       putchar ('\n');

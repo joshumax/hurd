@@ -1,3 +1,8 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* fstab.c (fstab_add_mntent): Add braces to silence gcc warning.
+	(fs_readonly): Likewise.
+
 1998-07-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* swapon.c (main): Fix return type to int, and use return.

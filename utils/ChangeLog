@@ -1,3 +1,27 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile (OBJS): Use % pattern instead of explicit list.
+
+	* parse.c (parse_enum): Add braces to silence gcc warning.
+	* psout.c (psout): Likewise.
+	* settrans.c (main): Likewise.
+	* showtrans.c (main): Likewise.
+	* w.c (w_fetch): Likewise.
+	* vminfo.c (main): Likewise.
+
+1998-09-05  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ping.c: <linux/icmp.h> -> <netinet/ip_icmp.h>;
+	struct icmphdr -> struct icmp;
+	Remove macro hacks to cope with old headers.
+	(pinger_wrapper): Take and return void *, so we're a cthread_fn_t.
+
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* portinfo.c (hold): Declare explicit `int' to silence warning.
+
+	* Makefile (OBJS): Use pattern %.sh instead of explicit list.
+
 Fri Aug 21 19:25:12 1998  Jose M. Moya  <josem@gnu.org>
 
 	* msgport.c: Comments added.

@@ -1,7 +1,7 @@
 /* Implements the ps_fmt type, which describes how to output a user-readable
    version of a proc_stat.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -240,11 +240,13 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	    }
 
 	  if (! field->title)
-	    /* No explicit title specified in the fmt string.  */
-	    if (field->spec->title)
-	      field->title = field->spec->title; /* But the spec has one.  */
-	    else
-	      field->title = field->spec->name; /* Just use the field name.  */
+	    {
+	      /* No explicit title specified in the fmt string.  */
+	      if (field->spec->title)
+		field->title = field->spec->title; /* But the spec has one.  */
+	      else
+		field->title = field->spec->name; /* Just use field name.  */
+	    }
 
 	  /* Add FIELD's required pstat_flags to FMT's set */
 	  needs |= ps_getter_needs (ps_fmt_spec_getter (field->spec));
@@ -255,7 +257,7 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	    field->precision = field->spec->precision;
 
 	  field->flags = (field->spec->flags & ~clr_flags) ^ inv_flags;
-	  
+
 	  if (quoted_name && *src == '}')
 	    /* Skip optional trailing `}' after the spec name.  */
 	    src++;
@@ -324,7 +326,7 @@ ps_fmt_creation_error (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 }
 
 /* Free FMT, and any resources it consumes.  */
-void 
+void
 ps_fmt_free (struct ps_fmt *fmt)
 {
   FREE (fmt->src);
@@ -475,7 +477,7 @@ ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(struct ps_fmt_field *field))
       {
 	/* Save the old prefix, in case we're deleting the first field,
 	   and need to prepend it to the next field.  */
-	const char *beg_pfx = field->pfx; 
+	const char *beg_pfx = field->pfx;
 	int beg_pfx_len = field->pfx_len;
 
 	nfields--;

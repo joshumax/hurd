@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.17 1997/06/23 17:35:37 thomas Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.18 1998/10/20 09:46:39 roland Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -63,7 +63,7 @@ static char *rcsid = "$Id: mkfs.c,v 1.17 1997/06/23 17:35:37 thomas Exp $";
 
 /* Begin misc additions for GNU Hurd */
 
-/* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD 
+/* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD
    4.4 version that mkfs expects.  So we provide here the BSD version. */
 #undef DIRSIZ
 #if (BYTE_ORDER == LITTLE_ENDIAN)
@@ -174,22 +174,22 @@ static const struct argp_option options[] = {
   {"just-print", 'N', 0, 0,
      "Just print the file system parameters that would be used"},
   {"old-format", 'O', 0, 0, "Create a 4.3BSD format filesystem"},
-  {"max-contig", 'a', "BLOCKS", 0, 
+  {"max-contig", 'a', "BLOCKS", 0,
      "The maximum number of contiguous blocks that will be laid out before"
      " forcing a rotational delay; the default is no limit"},
   {"block-size", 'b', "BYTES", 0, "The block size of the file system"},
   {"group-cylinders", 'c', "N", 0,
      "The number of cylinders per cylinder group; the default 16"},
-  {"rot-delay", 'd', "MSEC", 0, 
+  {"rot-delay", 'd', "MSEC", 0,
      "The expected time to service a transfer completion interrupt and"
      " initiate a new transfer on the same disk; the default is 0"},
-  {"max-bpg", 'e', "BLOCKS", 0, 
+  {"max-bpg", 'e', "BLOCKS", 0,
      "Maximum number of blocks any single file can allocate out of a cylinder"
      " group before it is forced to begin allocating blocks from another"
      " cylinder group; the default is about one quarter of the total blocks"
      " in a cylinder group"},
   {"frag-size",  'f', "BYTES", 0, "The fragment size"},
-  {"inode-density", 'i', "BYTES", 0, 
+  {"inode-density", 'i', "BYTES", 0,
      "The density of inodes in the file system, in bytes of data space per"
      " inode; the default is one inode per 4 filesystem frags"},
   {"minfree", 'm', "PERCENT", 0,
@@ -211,7 +211,7 @@ static const struct argp_option options[] = {
   {"tracks", 't', "N", 0, "The number of tracks/cylinder"},
   {"sectors", 'u', "N", 0,
      "The number of sectors per track (does not include sectors reserved for"
-     " bad block replacement"}, 
+     " bad block replacement"},
   {"spare-sectors", 'p', "N", 0,
      "Spare sectors (for bad sector replacement) at the end of each track"},
   {"cyl-spare-sectors", 'x', "N", 0,
@@ -261,7 +261,7 @@ char *device = 0;
 #define deverr(code, err, fmt, args...) \
   error (code, err, "%s: " fmt, device , ##args)
 
-void
+int
 main (int argc, char **argv)
 {
   int fdo, fdi;
@@ -277,7 +277,7 @@ main (int argc, char **argv)
 	{
 	case 'N': Nflag = 1; break;
 	case 'O': Oflag = 1; break;
-     
+
 	  /* Mark &VAR as being a uparam, and return a lvalue for VAR.  */
 #define UP(var) (amarks_add (&uparams, &var), var)
 	  /* Record an integer uparam into VAR.  */
@@ -302,7 +302,7 @@ main (int argc, char **argv)
 	case 'p': UP_INT (nspares); break;
 	case 'x': UP_INT (ncspares); break;
 
-	case 'o': 
+	case 'o':
 	  amarks_add (&uparams, &opt);
 	  if (strcmp (arg, "time") == 0)
 	    opt = FS_OPTTIME;
@@ -413,7 +413,7 @@ main (int argc, char **argv)
   nphyssectors = nsectors + nspares;
 
   secpercyl = nsectors * ntracks;
-  
+
   DEFAULT (rpm, DL_INT (0, d_rpm));
   DEFAULT (interleave, DL_INT (0, d_interleave));
   DEFAULT (trackskew, DL_SECS (0, d_trackskew));
@@ -422,7 +422,7 @@ main (int argc, char **argv)
 
   DEFAULT (fsize, 1024);
   DEFAULT (bsize, 8192);
-  
+
   DEFAULT (cpg, 16);
   DEFAULT (minfree, MINFREE);
   DEFAULT (opt, DEFAULTOPT);
@@ -439,7 +439,7 @@ main (int argc, char **argv)
 
   mkfs (0, device, fdi, fdo);
 
-  exit (0);
+  return 0;
 }
 
 void
@@ -656,7 +656,7 @@ mkfs(pp, fsys, fi, fo)
 	    }
 	  else
 	    exit(23);
-	/* 
+	/*
 	 * Calculate the number of cylinders per group
 	 */
 	sblock.fs_cpg = cpg;
@@ -905,7 +905,7 @@ next:
 			sblock.fs_cssize - i < sblock.fs_bsize ?
 			    sblock.fs_cssize - i : sblock.fs_bsize,
 			((char *)fscs) + i);
-	/* 
+	/*
 	 * Write out the duplicate super blocks
 	 */
 	for (cylno = 0; cylno < sblock.fs_ncg; cylno++)
@@ -963,7 +963,7 @@ initcg(cylno, utime)
 		acg.cg_nclusterblks = acg.cg_ndblk / sblock.fs_frag;
 	acg.cg_btotoff = &acg.cg_space[0] - (u_char *)(&acg.cg_link);
 	acg.cg_boff = acg.cg_btotoff + sblock.fs_cpg * sizeof(long);
-	acg.cg_iusedoff = acg.cg_boff + 
+	acg.cg_iusedoff = acg.cg_boff +
 		sblock.fs_cpg * sblock.fs_nrpos * sizeof(short);
 	acg.cg_freeoff = acg.cg_iusedoff + howmany(sblock.fs_ipg, NBBY);
 	if (sblock.fs_contigsumsize <= 0) {

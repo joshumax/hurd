@@ -1,6 +1,6 @@
 /* The proc_stat type, which holds information about a hurd process.
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -43,7 +43,7 @@ typedef threadinfo_data_t *threadinfo_t;
 
 /* Return the PSTAT_STATE_ bits describing the state of an individual thread,
    from that thread's thread_basic_info_t struct */
-static int 
+static int
 thread_state (thread_basic_info_t bi)
 {
   int state = 0;
@@ -93,7 +93,7 @@ thread_state (thread_basic_info_t bi)
  (PSTAT_PROCINFO_TASK_THREAD_DEP | PSTAT_PROC_INFO | PSTAT_TASK_BASIC)
 
 /* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
-#define PSTAT_PROCINFO PSTAT_PROCINFO_TASK 
+#define PSTAT_PROCINFO PSTAT_PROCINFO_TASK
 
 /* The set of things in PSTAT_PROCINFO that we will not attempt to refetch on
    subsequent getprocinfo calls.  */
@@ -156,7 +156,7 @@ fetch_procinfo (process_t server, pid_t pid,
    vm_alloced memory for the procinfo structure returned by getprocinfo.
    Here we just give enough for four threads.  */
 #define PROCINFO_MALLOC_SIZE \
-  (sizeof (struct procinfo) + 4 * sizeof (threadinfo_data_t)) 
+  (sizeof (struct procinfo) + 4 * sizeof (threadinfo_data_t))
 
 #define WAITS_MALLOC_SIZE	128
 
@@ -272,7 +272,7 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 
 /* Returns FLAGS augmented with any other flags that are necessary
    preconditions to setting them.  */
-static ps_flags_t 
+static ps_flags_t
 add_preconditions (ps_flags_t flags, struct ps_context *context)
 {
   /* Implement any inter-flag dependencies: if the new flags in FLAGS depend on
@@ -453,7 +453,7 @@ summarize_thread_sched_info (struct procinfo *pi)
   bzero (tsi, sizeof *tsi);
 
   for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died 
+    if (! pi->threadinfos[i].died
 	&& ! (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE))
       {
 	thread_sched_info_t si = &pi->threadinfos[i].pis_si;
@@ -504,33 +504,35 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died)
-      if (next_wait > waits + waits_len)
-	break;
-      else
-	{
-	  int left = waits + waits_len - next_wait;
+      {
+	if (next_wait > waits + waits_len)
+	  break;
+	else
+	  {
+	    int left = waits + waits_len - next_wait;
 
-	  if (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE)
-	    ;			/* kernel idle thread; ignore */
-	  else if (strncmp (next_wait, "msgport", left) == 0
-	      || strncmp (next_wait, "itimer", left) == 0)
-	    ;		/* libc internal threads; ignore.  */
-	  else if (*wait)
-	    /* There are multiple user threads.  Punt.  */
-	    {
-	      *wait = "*";
-	      *rpc = 0;
-	      break;
-	    }
-	  else
-	    {
-	      *wait = next_wait;
-	      *rpc = pi->threadinfos[i].rpc_block;
-	    }
+	    if (pi->threadinfos[i].pis_bi.flags & TH_FLAGS_IDLE)
+	      ;			/* kernel idle thread; ignore */
+	    else if (strncmp (next_wait, "msgport", left) == 0
+		     || strncmp (next_wait, "itimer", left) == 0)
+	      ;		/* libc internal threads; ignore.  */
+	    else if (*wait)
+	      /* There are multiple user threads.  Punt.  */
+	      {
+		*wait = "*";
+		*rpc = 0;
+		break;
+	      }
+	    else
+	      {
+		*wait = next_wait;
+		*rpc = pi->threadinfos[i].rpc_block;
+	      }
 
-	  /* Advance NEXT_WAIT to the next wait string.  */
-	  next_wait += strnlen (next_wait, left) + 1;
-	}
+	    /* Advance NEXT_WAIT to the next wait string.  */
+	    next_wait += strnlen (next_wait, left) + 1;
+	  }
+      }
 }
 
 /* Returns the number of threads in PI that aren't marked dead.  */
@@ -875,13 +877,15 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
       ps->state = 0;
 
       if (have & PSTAT_THREAD_BASIC)
-	/* Thread states.  */
-	if (have & PSTAT_THREAD)
-	  ps->state |= thread_state (ps->thread_basic_info);
-	else
-	  /* For a process, we use the thread list instead of
-	     PS->thread_basic_info because it contains more information.  */
-	  ps->state |= summarize_thread_states (ps->proc_info);
+	{
+	  /* Thread states.  */
+	  if (have & PSTAT_THREAD)
+	    ps->state |= thread_state (ps->thread_basic_info);
+	  else
+	    /* For a process, we use the thread list instead of
+	       PS->thread_basic_info because it contains more information.  */
+	    ps->state |= summarize_thread_states (ps->proc_info);
+	}
 
       if (have & PSTAT_PROC_INFO)
 	/* Process state.  */
@@ -921,15 +925,17 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
       ps->args_len = 100;
       ps->args = buf;
       if (ps->args)
-	if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
-	  free (buf);
-	else
-	  {
-	    have |= PSTAT_ARGS;
-	    ps->args_vm_alloced = (ps->args != buf);
-	    if (ps->args_vm_alloced)
-	      free (buf);
-	  }
+	{
+	  if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
+	    free (buf);
+	  else
+	    {
+	      have |= PSTAT_ARGS;
+	      ps->args_vm_alloced = (ps->args != buf);
+	      if (ps->args_vm_alloced)
+		free (buf);
+	    }
+	}
     }
 
   /* The ctty id port; note that this is just a magic cookie;
@@ -967,13 +973,15 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   /* A ps_user object for the process's owner.  */
   if (NEED (PSTAT_OWNER, PSTAT_OWNER_UID))
-    if (ps->owner_uid < 0)
-      {
-	ps->owner = 0;
+    {
+      if (ps->owner_uid < 0)
+	{
+	  ps->owner = 0;
+	  have |= PSTAT_OWNER;
+	}
+      else if (! ps_context_find_user (ps->context, ps->owner_uid, &ps->owner))
 	have |= PSTAT_OWNER;
-      }
-    else if (! ps_context_find_user (ps->context, ps->owner_uid, &ps->owner))
-      have |= PSTAT_OWNER;
+    }
 
   /* A ps_tty for the process's controlling terminal, or NULL if it
      doesn't have one.  */
@@ -1005,7 +1013,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
 /* ---------------------------------------------------------------- */
 /* Discard PS and any resources it holds.  */
-void 
+void
 _proc_stat_free (ps)
      struct proc_stat *ps;
 {
@@ -1019,7 +1027,7 @@ _proc_stat_free (ps)
      ? mach_port_deallocate(mach_task_self (), (ps->port)) : 0)
 
   /* If FLAG is set in PS's flags, then if VM_ALLOCED is zero, free the malloced
-     field MEM in PS; othrewise, vm_deallocate MEM, consisting of SIZE 
+     field MEM in PS; othrewise, vm_deallocate MEM, consisting of SIZE
      elements of type ELTYPE, *unless* MEM == SBUF, which usually means
      that MEM points to a static buffer somewhere instead of vm_alloc'd
      memory.  */

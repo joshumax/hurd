@@ -1,0 +1,3 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mux.c (get_dirents): Add braces to silence gcc warning.

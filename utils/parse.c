@@ -1,6 +1,6 @@
 /* Random helpful option parsing functions
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -149,7 +149,7 @@ parse_numlist (char *arg,
    that ARG matches no entry , otherwise, an error message is printed and the
    program exits in this event.  If ARG is an ambiguous match, an error
    message is printed and the program exits.  */
-int 
+int
 parse_enum (const char *arg,
 	    const char *(*choice_fn)(unsigned n),
             const char *kind, int allow_mismatches,
@@ -166,13 +166,15 @@ parse_enum (const char *arg,
     else
       {
 	if (strncasecmp (choice, arg, arglen) == 0)
-	  if (partial_match >= 0)
-	    {
-	      argp_error (state, "%s: Ambiguous %s", arg, kind);
-	      return -1;
-	    }
-	  else
-	    partial_match = n;
+	  {
+	    if (partial_match >= 0)
+	      {
+		argp_error (state, "%s: Ambiguous %s", arg, kind);
+		return -1;
+	      }
+	    else
+	      partial_match = n;
+	  }
 	n++;
       }
 

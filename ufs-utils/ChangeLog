@@ -1,3 +1,7 @@
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mkfs.c (main): Fix return type to int, use return.
+
 Fri Jun 20 13:39:02 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* mkfs.c (mkfs): Set SBLOCK.fs_clean.  New file systems are always
@@ -100,7 +104,7 @@ Thu Nov 24 18:39:30 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
 
 Wed Oct 12 12:59:01 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
 
-	* mkfs.c (main): MAXCONTIG should be zero because we don't 
+	* mkfs.c (main): MAXCONTIG should be zero because we don't
 	do clustering.
 
 Fri Sep  9 09:45:23 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
@@ -117,7 +121,7 @@ Fri Sep  9 09:45:23 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
 	(main): Comment out check for already-mounted partition.
 	(main): Comment out MFS specific open of FSI.
 
-	* mkfs.c (fsinit): Use DI_MODE to read mode from NODE, and 
+	* mkfs.c (fsinit): Use DI_MODE to read mode from NODE, and
 	set di_model and di_modeh instead of di_mode.
 	(mkfs): Don't set fields in *PP.
 
@@ -129,4 +133,3 @@ Thu Sep  8 15:52:05 1994  Michael I Bushnell  <mib@churchy.gnu.ai.mit.edu>
 
 	* mkfs.c: Include ufs header files with "../ufs/foo.h" instead of
 	<ufs/ufs/foo.h>.  Don't include <sys/disklabel.h>.
-

@@ -1,6 +1,6 @@
 /* Fstab filesystem frobbing
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -330,10 +330,12 @@ fs_readonly (struct fs *fs, int *readonly)
 
       err = fs_fsys (fs, &fsys);
       if (! err)
-	if (fsys == MACH_PORT_NULL)
-	  fs->readonly = 1;
-	else
-	  err = fsys_get_readonly (fsys, &fs->readonly);
+	{
+	  if (fsys == MACH_PORT_NULL)
+	    fs->readonly = 1;
+	  else
+	    err = fsys_get_readonly (fsys, &fs->readonly);
+	}
     }
 
   if (!err && readonly)
@@ -453,7 +455,7 @@ fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
       fs = mounted_fs;
       mounted_fs = 0;
     }
-    
+
   if (! fs)
     /* No old entry, make a new one.  */
     {
@@ -474,15 +476,17 @@ fstab_add_mntent (struct fstab *fstab, struct mntent *mntent,
     err = fs_set_mntent (fs, mntent);
 
   if (new)
-    if (! err)
-      _fstab_add (fstab, fs);
-    else if (fs)
-      free (fs);
+    {
+      if (! err)
+	_fstab_add (fstab, fs);
+      else if (fs)
+	free (fs);
+    }
 
   if (!err && mounted_fs)
     /* Get rid of the conflicting entry MOUNTED_FS.  */
     fs_free (mounted_fs);
-    
+
   if (!err && result)
     *result = fs;
 
@@ -537,7 +541,7 @@ fstab_merge (struct fstab *dst, struct fstab *src)
       if (old_fs)
 	fs_free (old_fs);
     }
-    
+
   /* Now that we know there are no conflicts, steal all SRC's entries and
      cons them onto DST.  */
   for (fs = src->entries; fs; fs = fs->next)

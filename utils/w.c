@@ -135,28 +135,30 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
     }
 
   if (need & W_PSTAT_IDLE)
-    if (have & PSTAT_TTY)
-      {
-	struct stat stat;
-	struct ps_tty *tty = ps->tty;
+    {
+      if (have & PSTAT_TTY)
+	{
+	  struct stat stat;
+	  struct ps_tty *tty = ps->tty;
 
-	hook->idle.tv_usec = 0;
-	if (! tty)
-	  {
-	    hook->idle.tv_sec = 0;
-	    have |= W_PSTAT_IDLE;
-	  }
-	else
-	  {
-	    if (io_stat (tty->port, &stat) == 0)
-	      {
-		hook->idle.tv_sec = now.tv_sec - stat.st_atime;
-		have |= W_PSTAT_IDLE;
-	      }
-	  }
-      }
-    else if (ps->inapp & PSTAT_TTY)
-      ps->inapp |= W_PSTAT_IDLE;
+	  hook->idle.tv_usec = 0;
+	  if (! tty)
+	    {
+	      hook->idle.tv_sec = 0;
+	      have |= W_PSTAT_IDLE;
+	    }
+	  else
+	    {
+	      if (io_stat (tty->port, &stat) == 0)
+		{
+		  hook->idle.tv_sec = now.tv_sec - stat.st_atime;
+		  have |= W_PSTAT_IDLE;
+		}
+	    }
+	}
+      else if (ps->inapp & PSTAT_TTY)
+	ps->inapp |= W_PSTAT_IDLE;
+    }
 
   if (need & W_PSTAT_USER)
     if (ps_user_uname_create (hook->utmp.ut_name, &hook->user) == 0)

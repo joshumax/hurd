@@ -1,6 +1,6 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -55,13 +55,15 @@ store_typed_open (const char *name, int flags,
       break;
 
   if (! *cl)
-    /* No class with the given name found.  */
-    if (*clname_end)
-      /* NAME really should be a class name, which doesn't exist.  */
-      return EINVAL;
-    else
-      /* Try opening NAME by querying it as a file instead.  */
-      return store_open (name, flags, classes, store);
+    {
+      /* No class with the given name found.  */
+      if (*clname_end)
+	/* NAME really should be a class name, which doesn't exist.  */
+	return EINVAL;
+      else
+	/* Try opening NAME by querying it as a file instead.  */
+	return store_open (name, flags, classes, store);
+    }
 
   if (! (*cl)->open)
     /* CL cannot be opened.  */
@@ -75,7 +77,7 @@ store_typed_open (const char *name, int flags,
     /* The class-specific portion of the name is empty, so make it *really*
        empty.  */
     clname_end = 0;
-  
+
   return (*(*cl)->open) (clname_end, flags, classes, store);
 }
 

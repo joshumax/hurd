@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -57,11 +57,11 @@ idspec_compare (struct idspec *i, int nuids, int ngids,
     return 0;
 
   assert (sizeof (int) == sizeof (uid_t));
-  
+
   if (bcmp (i->uids, uids, nuids * sizeof (uid_t))
       || bcmp (i->gids, gids, ngids * sizeof (gid_t)))
     return 0;
- 
+
   return 1;
 }
 
@@ -70,7 +70,7 @@ static int
 idspec_hash (int nuids, int ngids, int *uids, int *gids)
 {
   int hash, n;
-  
+
   hash = nuids + ngids;
   for (n = 0; n < ngids; n++)
     hash += gids[n];
@@ -99,7 +99,7 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
 	spin_unlock (&idhashlock);
 	return i;
       }
-  
+
   assert (sizeof (uid_t) == sizeof (int));
   i = malloc (sizeof (struct idspec));
   i->nuids = nuids;
@@ -130,7 +130,7 @@ process_cred (int *p, struct idspec **credp)
   int ngids;
   int firstgid;
   int i;
-  
+
   type = ntohl (*p++);
 
   if (type != AUTH_UNIX)
@@ -145,32 +145,32 @@ process_cred (int *p, struct idspec **credp)
       p++;			/* skip seconds */
       len = ntohl (*p++);
       p += INTSIZE (len);	/* skip hostname */
-      
+
       uid = p++;		/* remember loc of uid */
       *uid = ntohl (*uid);
-      
+
       firstgid = *p++;		/* remember first gid */
       gids = p;			/* here's where the array will start */
       ngids = ntohl (*p++);
-      
+
       /* Now swap the first gid to be the first element of the array */
       *gids = firstgid;
       ngids++;			/* and count it */
-      
+
       /* And byteswap the gids */
       for (i = 0; i < ngids; i++)
 	gids[i] = ntohl (gids[i]);
-      
+
       p += ngids - 1;
 
       *credp = idspec_lookup (1, ngids, uid, gids);
     }
-  
+
   /* Next is the verf field; skip it entirely */
   p++;				/* skip id */
   len = htonl (*p++);
   p += INTSIZE (len);
-  
+
   return p;
 }
 
@@ -209,20 +209,21 @@ scan_creds ()
   if (mapped_time->seconds - leastidlastuse > ID_KEEP_TIMEOUT)
     for (n = 0; n < IDHASH_TABLE_SIZE && nfreeids; n++)
       for (i = idhashtable[n]; i && nfreeids; i = i->next)
-	if (!i->references
-	    && mapped_time->seconds - i->lastuse > ID_KEEP_TIMEOUT)
-	  {
-	    nfreeids--;
-	    *i->prevp = i->next;
-	    if (i->next)
-	      i->next->prevp = i->prevp;
-	    free (i->uids);
-	    free (i->gids);
-	    free (i);
-	  }
-	else
-	  if (!i->references && newleast > i->lastuse)
+	{
+	  if (!i->references
+	      && mapped_time->seconds - i->lastuse > ID_KEEP_TIMEOUT)
+	    {
+	      nfreeids--;
+	      *i->prevp = i->next;
+	      if (i->next)
+		i->next->prevp = i->prevp;
+	      free (i->uids);
+	      free (i->gids);
+	      free (i);
+	    }
+	  else if (!i->references && newleast > i->lastuse)
 	    newleast = i->lastuse;
+	}
 
   /* If we didn't bail early, then this is valid */
   if (nfreeids)
@@ -241,7 +242,7 @@ static int
 fh_hash (char *fhandle, struct idspec *i)
 {
   int hash = 0, n;
-  
+
   for (n = 0; n < NFS2_FHSIZE; n++)
     hash += fhandle[n];
   hash += (int) i >> 6;
@@ -255,7 +256,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   struct cache_handle *c;
   fsys_t fsys;
   file_t port;
-  
+
   hash = fh_hash ((char *)p, i);
   mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
@@ -268,9 +269,9 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
 	*cp = c;
 	return p + NFS2_FHSIZE / sizeof (int);
       }
-  
+
   /* Not found */
-  
+
   /* First four bytes are our internal table of filesystems */
   fsys = lookup_filesystem (*p);
   if (fsys == MACH_PORT_NULL
@@ -281,7 +282,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
       *cp = 0;
       return p + NFS2_FHSIZE / sizeof (int);
     }
-  
+
   c = malloc (sizeof (struct cache_handle));
   bcopy (p, c->handle, NFS2_FHSIZE);
   cred_ref (i);
@@ -294,7 +295,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
     c->next->prevp = &c->next;
   c->prevp = &fhhashtable[hash];
   fhhashtable[hash] = c;
-  
+
   mutex_unlock (&fhhashlock);
   *cp = c;
   return p + NFS2_FHSIZE / sizeof (int);
@@ -315,32 +316,33 @@ cache_handle_rele (struct cache_handle *c)
   mutex_unlock (&fhhashlock);
 }
 
-void  
+void
 scan_fhs ()
 {
   struct cache_handle *c;
   int n;
   int newleast = mapped_time->seconds;
-  
+
   mutex_lock (&fhhashlock);
   if (mapped_time->seconds - leastfhlastuse > FH_KEEP_TIMEOUT)
     for (n = 0; n < FHHASH_TABLE_SIZE && nfreefh; n++)
       for (c = fhhashtable[n]; c && nfreefh; c = c->next)
-	if (!c->references
-	    && mapped_time->seconds - c->lastuse > FH_KEEP_TIMEOUT)
-	  {
-	    nfreefh--;
-	    *c->prevp = c->next;
-	    if (c->next)
-	      c->next->prevp = c->prevp;
-	    cred_rele (c->ids);
-	    mach_port_deallocate (mach_task_self (), c->port);
-	    free (c);
-	  }
-	else
-	  if (!c->references && newleast > c->lastuse)
-	    newleast = c->lastuse;
-  
+	{
+	  if (!c->references
+	      && mapped_time->seconds - c->lastuse > FH_KEEP_TIMEOUT)
+	    {
+	      nfreefh--;
+	      *c->prevp = c->next;
+	      if (c->next)
+		c->next->prevp = c->prevp;
+	      cred_rele (c->ids);
+	      mach_port_deallocate (mach_task_self (), c->port);
+	      free (c);
+	    }
+	  else if (!c->references && newleast > c->lastuse)
+	      newleast = c->lastuse;
+	}
+
   /* If we didn't bail early, then this is valid. */
   if (nfreefh)
     leastfhlastuse = newleast;
@@ -371,7 +373,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   else
     mach_port_deallocate (mach_task_self (), userport);
   mach_port_destroy (mach_task_self (), ref);
-    
+
   /* Fetch the file handle */
   *(int *)fhandle = fs;
   err = file_getfh (newport, &bp, &handlelen);
@@ -383,7 +385,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
       bcopy (bp, fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int));
       vm_deallocate (mach_task_self (), (vm_address_t) bp, handlelen);
     }
-  
+
   /* Cache it */
   hash = fh_hash (fhandle, credc->ids);
   mutex_lock (&fhhashlock);
@@ -401,8 +403,8 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   /* Always call fsys_getfile so that we don't depend on the
      particular open modes of the port passed in. */
 
-  err = fsys_getfile (lookup_filesystem (fs), 
-		      credc->ids->uids, credc->ids->nuids, 
+  err = fsys_getfile (lookup_filesystem (fs),
+		      credc->ids->uids, credc->ids->nuids,
 		      credc->ids->gids, credc->ids->ngids,
 		      fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int),
 		      &newport);
@@ -411,7 +413,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
       mutex_unlock (&fhhashlock);
       return 0;
     }
-  
+
   /* Create it anew */
   c = malloc (sizeof (struct cache_handle));
   bcopy (fhandle, c->handle, NFS2_FHSIZE);
@@ -419,7 +421,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   c->ids = credc->ids;
   c->port = newport;
   c->references = 1;
-  
+
   /* And add it to the hash table */
   c->next = fhhashtable[hash];
   if (c->next)
@@ -427,7 +429,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   c->prevp = &fhhashtable[hash];
   fhhashtable[hash] = c;
   mutex_unlock (&fhhashlock);
-    
+
   return c;
 }
 
@@ -442,17 +444,17 @@ static int leastreplylastuse;
    previous transaction; if so, return the cache record.  Otherwise,
    create a new cache record. */
 struct cached_reply *
-check_cached_replies (int xid, 
+check_cached_replies (int xid,
 		      struct sockaddr_in *sender)
 {
   struct cached_reply *cr;
   int hash;
 
   hash = xid % REPLYHASH_TABLE_SIZE;
-  
+
   spin_lock (&replycachelock);
   for (cr = replyhashtable[hash]; cr; cr = cr->next)
-    if (cr->xid == xid 
+    if (cr->xid == xid
 	&& !bcmp (sender, &cr->source, sizeof (struct sockaddr_in)))
       {
 	cr->references++;
@@ -504,25 +506,26 @@ scan_replies ()
   struct cached_reply *cr;
   int n;
   int newleast = mapped_time->seconds;
-  
+
   spin_lock (&replycachelock);
   if (mapped_time->seconds - leastreplylastuse > REPLY_KEEP_TIMEOUT)
     for (n = 0; n < REPLYHASH_TABLE_SIZE && nfreereplies; n++)
       for (cr = replyhashtable[n]; cr && nfreereplies; cr = cr->next)
-	if (!cr->references
-	    && mapped_time->seconds - cr->lastuse > REPLY_KEEP_TIMEOUT)
-	  {
-	    nfreereplies--;
-	    *cr->prevp = cr->next;
-	    if (cr->next)
-	      cr->next->prevp = cr->prevp;
-	    if (cr->data)
-	      free (cr->data);
-	  }
-	else 
-	  if (!cr->references && newleast > cr->lastuse)
+	{
+	  if (!cr->references
+	      && mapped_time->seconds - cr->lastuse > REPLY_KEEP_TIMEOUT)
+	    {
+	      nfreereplies--;
+	      *cr->prevp = cr->next;
+	      if (cr->next)
+		cr->next->prevp = cr->prevp;
+	      if (cr->data)
+		free (cr->data);
+	    }
+	  else if (!cr->references && newleast > cr->lastuse)
 	    newleast = cr->lastuse;
-  
+	}
+
   /* If we didn't bail early, then this is valid */
   if (nfreereplies)
     leastreplylastuse = newleast;
