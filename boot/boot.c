@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel. 
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -1586,11 +1586,8 @@ kern_return_t
 S_io_select (mach_port_t object,
 	     mach_port_t reply_port,
 	     mach_msg_type_name_t reply_type,
-	     int type,
-	     mach_port_t ret,
-	     mach_msg_type_name_t rettype,
-	     int tag,
-	     int *result)
+	     int *type,
+	     int *tag)
 {
   fd_set r, w, x;
   int n;
@@ -1614,13 +1611,12 @@ S_io_select (mach_port_t object,
     return errno;
 
   if (! FD_ISSET (0, &r))
-    type &= ~SELECT_READ;
+    *type &= ~SELECT_READ;
   if (! FD_ISSET (0, &w))
-    type &= ~SELECT_WRITE;
+    *type &= ~SELECT_WRITE;
   if (! FD_ISSET (0, &x))
-    type &= ~SELECT_URG;
+    *type &= ~SELECT_URG;
 
-  *result = type;
   return 0;
 }
 
