@@ -121,3 +121,10 @@ rpc_send (struct rpc_target *target, void *buf, size_t len,
   return error;
 }
 
+void
+rpc_transmit (struct rpc_target *target, struct rpc_list *record)
+{
+  static int xid;
+
+  /* Assign a unique transaction ID */
+  record->rpc
