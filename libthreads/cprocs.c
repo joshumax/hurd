@@ -25,7 +25,10 @@
  */
 /*
  * HISTORY
- * $Log:	cprocs.c,v $
+ * $Log: cprocs.c,v $
+ * Revision 1.3  1994/05/19  04:55:30  roland
+ * entered into RCS
+ *
  * Revision 2.15  92/03/06  14:09:31  rpd
  * 	Replaced swtch_pri with yield.
  * 	[92/03/06            rpd]
@@ -846,9 +849,9 @@ cthread_yield()
  */
 
 void
-mutex_lock_solid(m)
-	register mutex_t m;
+__mutex_lock_solid(void *ptr)
 {
+	register mutex_t m = ptr;
 	register cproc_t p = cproc_self();
 	register int queued;
 	register int tried = 0;
@@ -892,9 +895,9 @@ mutex_lock_solid(m)
 }
 
 void
-mutex_unlock_solid(m)
-	register mutex_t m;
+__mutex_unlock_solid(void *ptr)
 {
+	register mutex_t m = ptr;
 	register cproc_t new;
 
 	if (!spin_try_lock(&m->held))
@@ -907,10 +910,6 @@ mutex_unlock_solid(m)
 		cproc_ready(new,0);
 	}
 }
-
-/* The GNU C library's internal locking functions use these variables.  */
-void (*_cthread_mutex_lock_routine) (struct mutex *) = mutex_lock_solid;
-void (*_cthread_mutex_unlock_routine) (struct mutex *) = mutex_unlock_solid;
 
 
 /*
