@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pwd.h>
+#include <hurd/resource.h>
 
 #include "ps.h"
 #include "pshost.h"
@@ -285,6 +286,14 @@ error_t
 ps_emit_int(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
 {
   return ps_write_int_field(G(getter, int)(ps), width, stream, count);
+}
+
+error_t
+ps_emit_priority(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+{
+  return
+    ps_write_int_field(MACH_PRIORITY_TO_NICE(G(getter, int)(ps)),
+		       width, stream, count);
 }
 
 error_t
@@ -751,9 +760,9 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"STime",  &ps_sys_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
   {"VSize",  &ps_vsize_getter,	     ps_emit_nice_int,	ps_cmp_ints,	-5},
   {"RSize",  &ps_rsize_getter,	     ps_emit_nice_int,	ps_cmp_ints,	-5},
-  {"Pri",    &ps_cur_priority_getter,ps_emit_int,	ps_cmp_ints,	-2},
-  {"BPri",   &ps_base_priority_getter,ps_emit_int,	ps_cmp_ints,	-2},
-  {"MPri",   &ps_max_priority_getter,ps_emit_int,	ps_cmp_ints,	-2},
+  {"Pri",    &ps_cur_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
+  {"BPri",   &ps_base_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
+  {"MPri",   &ps_max_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
   {"%Mem",   &ps_rmem_frac_getter,   ps_emit_percent,	ps_cmp_floats,	-4},
   {"%CPU",   &ps_cpu_frac_getter,    ps_emit_percent,	ps_cmp_floats,	-4},
   {"State",  &ps_state_getter,	     ps_emit_state,	NULL,	4},
