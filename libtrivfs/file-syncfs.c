@@ -16,9 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
-trivfs_S_file_syncfs (struct protid *cred,
+trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      int wait,
 		      int dochildren)
 {
