@@ -67,7 +67,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   if (err)
     return err;
 
-  flags &= (O_READ | O_WRITE | O_EXEC);
+  flags &= ~OPENONLY_STATE_MODES; /* These bits are all meaningless here.  */
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, cred->po),
 			      cred->user, &newpi);
   if (! err)
