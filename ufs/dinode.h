@@ -71,6 +71,14 @@
 #define	NDADDR	12			/* Direct addresses in inode. */
 #define	NIADDR	3			/* Indirect addresses in inode. */
 
+/* Maximum value of di_nlink field. */
+#define LINK_MAX 32767
+
+/* Indexes into di_ib */
+#define INDIR_SINGLE 0
+#define INDIR_DOUBLE 1
+#define INDIR_TRIPLE 2		/* NOT SUPPORTED */
+
 struct dinode {
 	u_short		di_model;	/*   0: IFMT and permissions. */
 	short		di_nlink;	/*   2: File link count. */
