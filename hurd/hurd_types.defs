@@ -95,6 +95,19 @@ destructor: SOCKET_DESTRUCTOR
 #endif
 ;
 
+/* Protocol family */
+type pf_t = mach_port_copy_send_t
+#ifdef PF_INTRAN
+intran: PF_INTRAN
+#endif
+#ifdef PF_OUTTRAN
+outtran: PF_OUTTRAN
+#endif
+#ifdef PF_DESTRUCTOR
+destructor: PF_DESTRUCTOR
+#endif
+;
+
 type addr_port_t = mach_port_copy_send_t
 #ifdef ADDRPORT_INTRAN
 intran: ADDRPORT_INTRAN

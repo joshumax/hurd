@@ -40,6 +40,7 @@ typedef mach_port_t io_t;
 typedef mach_port_t process_t;
 typedef mach_port_t auth_t;
 typedef mach_port_t socket_t;
+typedef mach_port_t pf_t;	/* Protocol family */
 typedef mach_port_t addr_port_t;
 typedef mach_port_t startup_t;
 typedef mach_port_t proccoll_t;
