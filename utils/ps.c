@@ -436,7 +436,7 @@ main(int argc, char *argv[])
     }
 
   /* Returns the name of the current controlling terminal.  */
-  static const char *current_tty_name()
+  static char *current_tty_name()
     {
       error_t err;
       struct ps_tty *tty;
