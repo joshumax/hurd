@@ -33,11 +33,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <assert.h>
 
 #include "proc.h"
-#include "proc_S.h"
-#include "msg.h"
+#include "process_S.h"
+#include "ourmsg_U.h"
 #include "proc_exc_S.h"
-#include "proc_exc.h"
-#include "proc_excrepl.h"
+#include "proc_exc_U.h"
+#include "proc_excrepl_U.h"
 #include "proc_excrepl_S.h"
 
 /* Create a new id structure with the given genuine uids and gids. */
