@@ -1,5 +1,16 @@
 2001-08-25  Roland McGrath  <roland@frob.com>
 
+	* part.c (store_part_create): Do a run-time check on ped_get_version.
+
+2001-08-25  Neal H Walfield  <neal@cs.uml.edu>
+
+        * part.c: New file.
+        * std.c (store_std_classes): Add store_part_class.
+        * store.h (store_part_create): New prototype.
+        (store_part_open): Likewise.
+
+2001-08-25  Roland McGrath  <roland@frob.com>
+
 	* Makefile (parted.o, parted_pic.o): Pass -nostdlib.
 
 2001-08-25  Neal H Walfield  <neal@cs.uml.edu>

@@ -1,3 +1,8 @@
+2001-08-25  Roland McGrath  <roland@frob.com>
+
+	* configure.in: Add a check for Parted's libraries.
+	(PARTED_LIBS): New variable, substitute it.
+
 2001-08-24  Roland McGrath  <roland@frob.com>
 
 	* config.make.in (PARTED_LIBS): New variable, substituted by configure.
