@@ -23,6 +23,7 @@
 #include <hurd/paths.h>
 #include "netfs.h"
 #include "fs_S.h"
+#include <sys/mman.h>
 
 error_t
 netfs_S_file_get_translator (struct protid *user,
@@ -110,4 +111,3 @@ netfs_S_file_get_translator (struct protid *user,
 
   return err;
 }
-
