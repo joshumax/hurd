@@ -30,7 +30,7 @@ SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c addauth.c rmauth.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c ping.c msgport.c
 LCLHDRS = psout.h parse.h pids.h frobauth.h
 
-OBJS = $(filter-out loginpr.sh mount.sh sush.sh uptime.sh,$(SRCS:.c=.o))
+OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports threads ftpconn shouldbeinlibc
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
