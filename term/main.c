@@ -227,6 +227,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      assert (! "impossible type");
 	      break;
 	    }
+	  free (tty_arg);
+	  tty_arg = strdup (v->arg);
 	  error_t err = (*bottom->init) ();
 	  mutex_unlock (&global_lock);
 	  return err;
