@@ -81,7 +81,7 @@ check_uid (struct proc *p, uid_t uid)
 
 /* Implement proc_reathenticate as described in <hurd/proc.defs>. */
 kern_return_t
-S_proc_reauthenticate (struct proc *p, int id)
+S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 {
   error_t err;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
@@ -97,7 +97,8 @@ S_proc_reauthenticate (struct proc *p, int id)
   ngen_gids = naux_gids = 50;
 
   err = auth_server_authenticate (authserver, p->p_reqport, 
-				  MACH_MSG_TYPE_MAKE_SEND, id,
+				  MACH_MSG_TYPE_MAKE_SEND, 
+				  rendport, MACH_MSG_TYPE_MOVE_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 				  &gen_uids, &ngen_uids,
 				  &aux_uids, &naux_uids,
