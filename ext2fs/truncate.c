@@ -277,9 +277,10 @@ diskfs_truncate (struct node *node, off_t length)
   if (length >= node->dn_stat.st_size)
     return 0;
 
-  if (S_ISLNK (node->dn_stat.st_mode) && !node->dn_stat.st_blocks)
-    /* An in-inode symlink; there aren't really any blocks allocated, so
-       just frob the size.  */
+  if (! node->dn_stat.st_blocks)
+    /* There aren't really any blocks allocated, so just frob the size.  This
+       is true for fast symlinks, and also apparently for some device nodes
+       in linux.  */
     {
       node->dn_stat.st_size = length;
       node->dn_set_mtime = 1;
