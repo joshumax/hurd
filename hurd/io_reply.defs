@@ -49,7 +49,7 @@ simpleroutine io_seek_reply (
 simpleroutine io_readable_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t;
-	int amount);
+	amount: int);
 
 simpleroutine io_set_all_openmodes_reply (
 	reply: reply_port_t;
@@ -58,7 +58,7 @@ simpleroutine io_set_all_openmodes_reply (
 simpleroutine io_get_openmodes_reply (
 	reply: reply_port_t;
 	return_code: kern_return_t;
-	int bits);
+	bits: int);
 
 simpleroutine io_set_some_openmodes_reply (
 	reply: reply_port_t;
