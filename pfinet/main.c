@@ -28,6 +28,9 @@ main ()
 
   pfinet_bucket = ports_create_bucket ();
   
+  init_devices ();
+  init_mapped_time ();
+
   setup_ethernet_device ();
   
   /* Call initialization routines */
