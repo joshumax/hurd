@@ -1,7 +1,7 @@
 /* Multiple-volume store backend
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -61,8 +61,8 @@ mvol_read (struct store *store,
 
 static error_t
 mvol_write (struct store *store,
-	    store_offset_t addr, size_t index, void *buf, size_t len,
-	    size_t *amount)
+	    store_offset_t addr, size_t index,
+	    const void *buf, size_t len, size_t *amount)
 {
   error_t err = ensure_vol (store, index);
   if (! err)
@@ -117,7 +117,7 @@ store_mvol_create (struct store *phys,
 	}
       else
 	err = ENOMEM;
-      
+
       if (! err)
 	err = store_set_children (*store, &phys, 1);
 
