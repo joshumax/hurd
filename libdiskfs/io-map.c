@@ -30,7 +30,7 @@ S_io_map (struct protid *cred,
     return EOPNOTSUPP;
   
   *rdobj = diskfs_get_filemap (cred->po->np);
-  *rdtype = *wrtype = MACH_MSG_TYPE_MAKE_SEND;
+  *rdtype = *wrtype = MACH_MSG_TYPE_COPY_SEND;
   *wrobj = *rdobj;
   return 0;
 }
