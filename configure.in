@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.15 1999/01/27 20:48:21 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.16 1999/09/13 04:34:38 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -26,9 +26,22 @@ esac
 AC_SUBST(asm_syntax)
 
 AC_ARG_ENABLE(profile,
-[  --disable-profile	  do not build profiled libraries and programs],,
-	      enable_profile=yes)
+[  --disable-profile	  do not build profiled libraries and programs])
 AC_SUBST(enable_profile)
+
+define([default_static],['ext2fs,ufs'])dnl
+AC_ARG_ENABLE(static-progs,
+[  --enable-static-progs=PROGRAMS...
+                          build statically-linked PROGRAM.static versions
+                          of (only) the listed programs ]dnl
+changequote(',')[default_static]changequote([,]))
+case "$enable_static_progs" in
+'no')	enable_static_progs= ;;		# we got --disable-static
+'')	enable_static_progs=default_static ;;
+*)	enable_static_progs=`echo "$enable_static_progs" |
+			     sed 's/[[, ]][[, ]]*/ /g'` ;;
+esac
+AC_SUBST(enable_static_progs)
 
 AC_PROG_INSTALL
 AC_PROG_AWK

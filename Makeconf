@@ -97,7 +97,7 @@ ifeq ($(makemode),server)
  doinst := one
  installationdir := $(hurddir)
  clean := yes
- cleantarg := $(target)
+ linktarg := $(target)
 endif
 
 ifeq ($(makemode),utility)
@@ -106,14 +106,14 @@ ifeq ($(makemode),utility)
    installationdir := $(bindir)
  endif
  clean := yes
- cleantarg := $(target)
+ linktarg := $(target)
 endif
 
 ifeq ($(makemode),servers)
  doinst := many
  installationdir := $(hurddir)
  clean := yes
- cleantarg := $(targets)
+ linktarg := $(targets)
 endif
 
 ifeq ($(makemode),utilities)
@@ -122,7 +122,7 @@ ifeq ($(makemode),utilities)
    installationdir := $(bindir)
  endif
  clean := yes
- cleantarg := $(targets)
+ linktarg := $(targets)
 endif
 
 ifeq ($(makemode),library)
@@ -145,11 +145,14 @@ ifeq ($(makemode),library)
    targets := $(libname).a $(libname).so $(libname)_pic.a $(libname)_p.a
   endif
  endif
+else
+ linktarg := $(linktarg) $(linktarg:=.static)
 endif
 
-ifeq ($(linktarg),)
- linktarg:=$(cleantarg)
+ifeq ($(cleantarg),)
+ cleantarg := $(linktarg)
 endif
+
 
 # This is a hack to give all hurd utilities a default bug-reporting
 # address (defined in libhurdbugaddr/bugaddr.c).
@@ -172,19 +175,15 @@ endif
 endif
 
 # Installation
-ifeq ($(doinst),one)
-all: $(target)
-install: $(installationdir) $(installationdir)/$(target)
-$(installationdir)/$(target): $(target)
-	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
+ifndef targets
+targets = $(target)
 endif
-
-ifeq ($(doinst),many)
-all: $(targets)
-install: $(installationdir) $(addprefix $(installationdir)/,$(targets))
-$(addprefix $(installationdir)/,$(targets)): $(installationdir)/%: %
+installable := $(sort $(linktarg) $(targets))
+install-targets := $(targets) $(filter $(build-static:=.static),$(linktarg))
+all: $(install-targets)
+install: $(installationdir) $(addprefix $(installationdir)/,$(install-targets))
+$(addprefix $(installationdir)/,$(installable)): $(installationdir)/%: %
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
-endif
 
 ifeq ($(makemode),library)
 all: libs
@@ -240,7 +239,7 @@ ifeq ($(doinst),many)
 endif
 
 ifeq ($(doinst),one)
-$(target): $(OBJS) $(OTHERLIBS) $(library_deps)
+$(target) $(target).static: $(OBJS) $(OTHERLIBS) $(library_deps)
 endif
 
 # Determine which sort of library we should link against from whether -static
@@ -262,11 +261,22 @@ rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 # (prof-depend is a special kind of run not normally used; see the rules
 # below for %.prof_d which uses it.)
 ifeq ($(prof-depend),)
+
+define link-executable
+$(CC) $(rpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
+      $(BUGADDR_REF) \
+      -o $@
+endef
 $(target): %$(target-suffix): $(BUGADDR)
-	$(CC) $(rpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) $(BUGADDR_REF) \
-	      -o $@ \
-	      '-Wl,-(' $(filter %.o,$^) \
-		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) $($*-LDLIBS) $(LDLIBS) \
+	$(link-executable) \
+              $(filter %.o,$^) \
+	      '-Wl,-(' $(foreach lib,$(filter-out %.o,$^),${_libsubst}) \
+		       $($*-LDLIBS) $(LDLIBS) \
+	      '-Wl,-)'
+
+$(addsuffix .static,$(target)): %$(target-suffix).static: $(BUGADDR)
+	$(link-executable) -static \
+	      '-Wl,-(' $(patsubst %.so,%.a,$^) $($*-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)'
 endif
 
