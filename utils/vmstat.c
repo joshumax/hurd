@@ -1,8 +1,7 @@
 /* Print vm statistics
 
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -104,7 +103,7 @@ print_val (val_t val, enum val_type type,
 	   size_t size_units, int fwidth, int sign)
 {
   if (type == PCENT)
-    printf (sign ? "%+*d%%" : "%*d%%", fwidth - 1, val);
+    printf (sign ? "%+*lld%%" : "%*lld%%", fwidth - 1, val);
   else if ((type == SIZE || type == PAGESZ) && size_units == 0)
     {
       float fval = val;
@@ -125,7 +124,7 @@ print_val (val_t val, enum val_type type,
     {
       if ((type == SIZE || type == PAGESZ) && size_units > 0)
 	val /= size_units;
-      printf (sign ? "%+*d" : "%*d", fwidth, val);
+      printf (sign ? "%+*lld" : "%*lld", fwidth, val);
     }
 }
 
