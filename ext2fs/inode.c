@@ -76,6 +76,7 @@ iget (ino_t inum, struct node **npp)
   pokel_init (&dn->indir_pokel, disk_pager->p, disk_image);
   dn->fileinfo = 0;
   dn->last_page_partially_writable = 0;
+  dn->last_block_allocated = 1;
 
   np = diskfs_make_node (dn);
   mutex_lock (&np->lock);
@@ -140,9 +141,14 @@ diskfs_node_norefs (struct node *np)
   *np->dn->hprevp = np->dn->hnext;
   if (np->dn->hnext)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
+
+  if (np->dn->info.i_prealloc_count)
+    ext2_discard_prealloc (np);
+
   if (np->dn->dirents)
     free (np->dn->dirents);
   assert (!np->dn->fileinfo);
+
   free (np->dn);
   free (np);
 }
