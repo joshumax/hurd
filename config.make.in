@@ -20,6 +20,12 @@ sysconfdir = $(prefix)/etc
 localstatedir = $(prefix)/var
 sharedstatedir = $(prefix)/com
 
+# All of those directories together:
+installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \
+	$(includedir) $(libexecdir) $(infodir) $(sysconfdir) \
+	$(localstatedir) $(sharedstatedir)
+
+
 # How to run compilation tools.
 CC = @CC@
 CPP = $(CC) -E -x c # We need this option when input file names are not *.c.
