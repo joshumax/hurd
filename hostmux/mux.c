@@ -58,24 +58,31 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
   if (dir->nn->name)
     err = ENOTDIR;
-  else if (strcmp (name, ".") == 0)
-    /* Current directory -- just add an additional reference to DIR and
-       return it.  */
-    {
-      netfs_nref (dir);
-      *node = dir;
-      err = 0;
-    }
-  else if (strcmp (name, "..") == 0)
-    err = EAGAIN;
   else
-    err = lookup_host (dir->nn->mux, name, node);
-
-  fshelp_touch (&dir->nn_stat, TOUCH_ATIME, hostmux_maptime);
-
-  mutex_unlock (&dir->lock);
+    err = fshelp_access (&dir->nn_stat, S_IEXEC, user);
 
   if (! err)
+    {
+      if (strcmp (name, ".") == 0)
+	/* Current directory -- just add an additional reference to DIR and
+	   return it.  */
+	{
+	  netfs_nref (dir);
+	  *node = dir;
+	  err = 0;
+	}
+      else if (strcmp (name, "..") == 0)
+	err = EAGAIN;
+      else
+	err = lookup_host (dir->nn->mux, name, node);
+
+      fshelp_touch (&dir->nn_stat, TOUCH_ATIME, hostmux_maptime);
+    }
+
+  mutex_unlock (&dir->lock);
+  if (err)
+    *node = 0;
+  else
     mutex_lock (&(*node)->lock);
 
   return err;
