@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,98,99,2000,01 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -1692,6 +1692,8 @@ do_exec (file_t file,
 		  errno = EBADF;
 		  return MACH_PORT_NULL;
 		}
+	      mach_port_mod_refs (mach_task_self (), boot->dtable[fd],
+				  MACH_PORT_RIGHT_SEND, +1);
 	      return boot->dtable[fd];
 	    }
 				/* XXX/fault */
