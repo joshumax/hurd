@@ -514,8 +514,8 @@ add_terminal (struct ttyent *tt)
 }
   
 
-/* Read /etc/ttys and initialize ttys array */
-void
+/* Read /etc/ttys and initialize ttys array.  Return non-zero if we fail. */
+int
 init_ttys (void)
 {
   struct ttyent *tt;
@@ -529,7 +529,7 @@ init_ttys (void)
   if (setttyent ())
     {
       perror (_PATH_TTYS);
-      return;
+      return 1;
     }
   while ((tt = getttyent ()))
     {
@@ -540,6 +540,7 @@ init_ttys (void)
     }
   
   endttyent ();
+  return 0;
 }
 
 /* Free everyting in the terminal array */
@@ -559,8 +560,8 @@ free_ttys (void)
   free (ttys);
 }
 
-/* Start line T */
-void
+/* Start line T.  Return non-zero if we didn't actually start anything.  */
+int
 startup_terminal (struct terminal *t)
 {
   pid_t pid;
@@ -584,20 +585,33 @@ startup_terminal (struct terminal *t)
     error:
       t->pid = 0;
       t->on = 0;
+      return 1;
     }
   else
-    t->pid = pid;
+    {
+      t->pid = pid;
+      return 0;
+    }
 }
 
-/* For each line in /etc/ttys, start up the specified program */
-void
+/* For each line in /etc/ttys, start up the specified program.  Return
+   non-zero if we fail.  */
+int
 startup_ttys (void)
 {
   int i;
+  int didone, fail;
+  
+  didone = 0;
   
   for (i = 0; i < nttys; i++)
     if (ttys[i].on)
-      startup_terminal (&ttys[i]);
+      {
+	fail = startup_terminal (&ttys[i]);
+	if (!fail)
+	  didone = 1;
+      }
+  return !didone;
 }
 
 /* Find the terminal spec corresponding to line LINE. */
@@ -1128,9 +1142,20 @@ process_rc_script ()
 void
 launch_multi_user ()
 {
-  init_ttys ();
-  startup_ttys ();
+  int fail;
+  
+  fail = init_ttys ();
+  if (fail)
+    launch_single_user ();
+  else
+    {
+      system_state = MULTI;
+      fail = startup_ttys ();
+      if (fail)
+	launch_single_user ();
+    }
 }
+
 
 /* Kill all the outstanding processes with SIGNO.  Return 1 if
    there were no tasks left to kill. */
