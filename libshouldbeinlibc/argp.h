@@ -197,6 +197,14 @@ struct argp_state
 
   /* For the parser's use.  Initialized to 0.  */
   void *hook;
+
+  /* The name used when printing messages.  This is initialized to ARGV[0],
+     or PROGRAM_INVOCATION_NAME if that is unavailable.  */
+  char *name;
+
+  /* Streams used when argp prints something.  */
+  FILE *err_stream;		/* For errors; initialized to stderr. */
+  FILE *out_stream;		/* For information; initialized to stdout. */
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
@@ -232,10 +240,10 @@ struct argp_state
 
 /* Don't provide the standard long option --help, which causes usage and
       option help information to be output to stdout, and exit (0) called. */
-#define ARGP_NO_HELP   0x16
+#define ARGP_NO_HELP   0x10
 
 /* Don't exit on errors (they may still result in error messages).  */
-#define ARGP_NO_EXIT   0x32
+#define ARGP_NO_EXIT   0x20
 
 /* Turns off any message-printing/exiting options.  */
 #define ARGP_SILENT    (ARGP_NO_EXIT | ARGP_NO_ERRS | ARGP_NO_HELP)
@@ -274,7 +282,7 @@ extern void (*argp_program_version_hook) ();
 #define ARGP_HELP_EXIT_OK	0x20 /* Call exit(0) instead of returning.  */
 
 /* The standard thing to do after a program command line parsing error, if an
-   error messages has already been printed.  */
+   error message has already been printed.  */
 #define ARGP_HELP_STD_ERR \
   (ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
 /* The standard thing to do after a program command line parsing error, if no
@@ -287,7 +295,8 @@ extern void (*argp_program_version_hook) ();
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
-extern void argp_help (const struct argp *argp, FILE *stream, unsigned flags);
+extern void argp_help (const struct argp *argp, FILE *stream, unsigned flags,
+		       char *name);
 
 /* The following routines are intended to be called from within an argp
    parsing routine (thus taking an argp_state structure as the first
@@ -313,6 +322,18 @@ argp_usage (struct argp_state *state)
    message, then exit (1).  */
 void argp_error (struct argp_state *state, const char *fmt, ...)
      __attribute__ ((format (printf, 2, 3)));
+
+/* Similar to the standard gnu error-reporting function error(), but will
+   respect the ARGP_NO_EXIT and ARGP_NO_ERRS flags in STATE, and will print
+   to STATE->err_stream.  This is useful for argument parsing code that is
+   shared between program startup (when exiting is desired) and runtime
+   option parsing (when typically an error code is returned instead).  The
+   difference between this function and argp_error is that the latter is for
+   *parsing errors*, and the former is for other problems that occur during
+   parsing but don't reflect a (syntactic) problem with the input.  */
+void argp_failure (struct argp_state *state,
+		   int status, int errnum, const char *fmt, ...)
+     __attribute__ ((format (printf, 4, 5)));
 
 /* Returns true if the option OPT is a valid short option.  */
 extern inline int
