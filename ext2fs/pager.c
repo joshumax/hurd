@@ -1,6 +1,6 @@
 /* Pager for ext2fs
 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <strings.h>
+#include <string.h>
 #include <hurd/store.h>
 #include "ext2fs.h"
 
@@ -191,7 +191,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 		free_page_buf (new_buf); /* Return NEW_BUF to our pool.  */
 		STAT_INC (file_pagein_freed_bufs);
 	      }
-	  
+
 	  offs += new_len;
 	  num_pending_blocks = 0;
 	}
