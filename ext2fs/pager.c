@@ -19,10 +19,14 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <strings.h>
+#include <hurd/store.h>
 #include "ext2fs.h"
 
 /* A ports bucket to hold pager ports.  */
 struct port_bucket *pager_bucket;
+
+/* Mapped image of the disk.  */
+void *disk_image;
 
 spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 
@@ -55,14 +59,54 @@ struct ext2fs_pager_stats
 
 static struct ext2fs_pager_stats ext2s_pager_stats;
 
-#define STAT_INC(field)							\
-do { spin_lock (&ext2s_pager_stats.lock);					\
-     ext2s_pager_stats.field++;							\
+#define STAT_INC(field)							      \
+do { spin_lock (&ext2s_pager_stats.lock);				      \
+     ext2s_pager_stats.field++;						      \
      spin_unlock (&ext2s_pager_stats.lock); } while (0)
 
 #else /* !STATS */
 #define STAT_INC(field) /* nop */0
 #endif /* STATS */
+
+static spin_lock_t free_page_bufs_lock = SPIN_LOCK_INITIALIZER;
+static void *free_page_bufs = 0;
+
+/* Returns a single page page-aligned buffer.  */
+static void *
+get_page_buf ()
+{
+  void *buf;
+
+  spin_lock (&free_page_bufs_lock);
+
+  buf = free_page_bufs;
+  if (buf == 0)
+    {
+      error_t err;
+      spin_unlock (&free_page_bufs_lock);
+      err = vm_allocate (mach_task_self (),
+			 (vm_address_t *)&buf, vm_page_size, 1);
+      if (err)
+	buf = 0;
+    }
+  else
+    {
+      free_page_bufs = *(void **)buf;
+      spin_unlock (&free_page_bufs_lock);
+    }
+
+  return buf;
+}
+
+/* Frees a block returned by get_page_buf.  */
+static void
+free_page_buf (void *buf)
+{
+  spin_lock (&free_page_bufs_lock);
+  *(void **)buf = free_page_bufs;
+  free_page_bufs = buf;
+  spin_unlock (&free_page_bufs_lock);
+}
 
 /* Find the location on disk of page OFFSET in NODE.  Return the disk block
    in BLOCK (if unallocated, then return 0).  If *LOCK is 0, then it a reader
@@ -95,14 +139,12 @@ find_block (struct node *node, vm_offset_t offset,
   return err;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Read one page for the pager backing NODE at offset PAGE, into BUF.  This
    may need to read several filesystem blocks to satisfy one page, and tries
    to consolidate the i/o if possible.  */
 static error_t
 file_pager_read_page (struct node *node, vm_offset_t page,
-		      vm_address_t *buf, int *writelock)
+		      void **buf, int *writelock)
 {
   error_t err;
   int offs = 0;
@@ -121,27 +163,36 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       if (num_pending_blocks > 0)
 	{
 	  block_t dev_block = pending_blocks << log2_dev_blocks_per_fs_block;
-	  int length = num_pending_blocks << log2_block_size;
-	  vm_address_t new_buf;
+	  size_t amount = num_pending_blocks << log2_block_size;
+	  /* The buffer we try to read into; on the first read, we pass in a
+	     size of zero, so that the read is guaranteed to allocate a new
+	     buffer, otherwise, we try to read directly into the tail of the
+	     buffer we've already got.  */
+	  void *new_buf = *buf + offs;
+	  size_t new_len = offs == 0 ? 0 : vm_page_size - offs;
 
 	  STAT_INC (file_pagein_reads);
 
-	  err = diskfs_device_read_sync (dev_block, &new_buf, length);
+	  err = store_read (store, dev_block, amount, &new_buf, &new_len);
 	  if (err)
 	    return err;
+	  else if (amount != new_len)
+	    return EIO;
 
-	  if (offs == 0)
-	    /* First read, make the returned page be our buffer.  */
-	    *buf = new_buf;
-	  else
-	    {
+	  if (new_buf != *buf + offs)
+	    /* The read went into a different buffer than the one we passed. */
+	    if (offs == 0)
+	      /* First read, make the returned page be our buffer.  */
+	      *buf = new_buf;
+	    else
 	      /* We've already got some buffer, so copy into it.  */
-	      bcopy ((char *)new_buf, (char *)*buf + offs, length);
-	      free_page_buf (new_buf);
-	      STAT_INC (file_pagein_freed_bufs);
-	    }
-
-	  offs += length;
+	      {
+		bcopy (new_buf, *buf + offs, new_len);
+		free_page_buf (new_buf); /* Return NEW_BUF to our pool.  */
+		STAT_INC (file_pagein_freed_bufs);
+	      }
+	  
+	  offs += new_len;
 	  num_pending_blocks = 0;
 	}
 
@@ -191,7 +242,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 		break;
 	      STAT_INC (file_pagein_alloced_bufs);
 	    }
-	  bzero ((char *)*buf + offs, block_size);
+	  bzero (*buf + offs, block_size);
 	  offs += block_size;
 	}
       else
@@ -213,16 +264,14 @@ file_pager_read_page (struct node *node, vm_offset_t page,
   return err;
 }
 
-/* ---------------------------------------------------------------- */
-
 struct pending_blocks
 {
   /* The block number of the first of the blocks.  */
   block_t block;
   /* How many blocks we have.  */
-  int num;
+  off_t num;
   /* A (page-aligned) buffer pointing to the data we're dealing with.  */
-  vm_address_t buf;
+  void *buf;
   /* And an offset into BUF.  */
   int offs;
 };
@@ -235,22 +284,24 @@ pending_blocks_write (struct pending_blocks *pb)
     {
       error_t err;
       block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
-      int length = pb->num << log2_block_size;
+      size_t length = pb->num << log2_block_size, amount;
 
       ext2_debug ("writing block %lu[%d]", pb->block, pb->num);
 
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
 	{
-	  vm_address_t page_buf = get_page_buf ();
-	  bcopy ((char *)pb->buf + pb->offs, (void *)page_buf, length);
-	  err = diskfs_device_write_sync (dev_block, page_buf, length);
+	  void *page_buf = get_page_buf ();
+	  bcopy (pb->buf + pb->offs, (void *)page_buf, length);
+	  err = store_write (store, dev_block, page_buf, length, &amount);
 	  free_page_buf (page_buf);
 	}
       else
-	err = diskfs_device_write_sync (dev_block, pb->buf, length);
+	err = store_write (store, dev_block, pb->buf, length, &amount);
       if (err)
 	return err;
+      else if (amount != length)
+	return EIO;
 
       pb->offs += length;
       pb->num = 0;
@@ -260,7 +311,7 @@ pending_blocks_write (struct pending_blocks *pb)
 }
 
 static void
-pending_blocks_init (struct pending_blocks *pb, vm_address_t buf)
+pending_blocks_init (struct pending_blocks *pb, void *buf)
 {
   pb->buf = buf;
   pb->block = 0;
@@ -294,13 +345,11 @@ pending_blocks_add (struct pending_blocks *pb, block_t block)
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Write one page for the pager backing NODE, at offset PAGE, into BUF.  This
    may need to write several filesystem blocks to satisfy one page, and tries
    to consolidate the i/o if possible.  */
 static error_t
-file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
+file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
 {
   error_t err = 0;
   struct pending_blocks pb;
@@ -342,20 +391,19 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   return err;
 }
 
-/* ---------------------------------------------------------------- */
-
 static error_t
-disk_pager_read_page (vm_offset_t page, vm_address_t *buf, int *writelock)
+disk_pager_read_page (vm_offset_t page, void **buf, int *writelock)
 {
   error_t err;
-  int length = vm_page_size;
-  vm_size_t dev_end = diskfs_device_size << diskfs_log2_device_block_size;
+  size_t length = vm_page_size, read;
+  vm_size_t dev_end = store->size;
 
   if (page + vm_page_size > dev_end)
     length = dev_end - page;
 
-  err = diskfs_device_read_sync (page >> diskfs_log2_device_block_size,
-				 (void *)buf, length);
+  err = store_read (store, page >> store->log2_block_size, length, buf, &read);
+  if (read != length)
+    return EIO;
   if (!err && length != vm_page_size)
     bzero ((void *)(*buf + length), vm_page_size - length);
 
@@ -365,11 +413,11 @@ disk_pager_read_page (vm_offset_t page, vm_address_t *buf, int *writelock)
 }
 
 static error_t
-disk_pager_write_page (vm_offset_t page, vm_address_t buf)
+disk_pager_write_page (vm_offset_t page, void *buf)
 {
   error_t err = 0;
-  int length = vm_page_size;
-  vm_size_t dev_end = diskfs_device_size << diskfs_log2_device_block_size;
+  size_t length = vm_page_size, amount;
+  vm_size_t dev_end = store->size;
 
   if (page + vm_page_size > dev_end)
     length = dev_end - page;
@@ -414,26 +462,27 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 	err = pending_blocks_write (&pb);
     }
   else
-    err =
-      diskfs_device_write_sync (page >> diskfs_log2_device_block_size,
-				buf, length);
+    {
+      err = store_write (store, page >> store->log2_block_size,
+			 buf, length, &amount);
+      if (!err && length != amount)
+	err = EIO;
+    }
 
   return err;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Satisfy a pager read request for either the disk pager or file pager
    PAGER, to the page at offset PAGE into BUF.  WRITELOCK should be set if
    the pager should make the page writeable.  */
 error_t
 pager_read_page (struct user_pager_info *pager, vm_offset_t page,
-		      vm_address_t *buf, int *writelock)
+		 vm_address_t *buf, int *writelock)
 {
   if (pager->type == DISK)
-    return disk_pager_read_page (page, buf, writelock);
+    return disk_pager_read_page (page, (void **)buf, writelock);
   else
-    return file_pager_read_page (pager->node, page, buf, writelock);
+    return file_pager_read_page (pager->node, page, (void **)buf, writelock);
 }
 
 /* Satisfy a pager write request for either the disk pager or file pager
@@ -443,13 +492,11 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
 		  vm_address_t buf)
 {
   if (pager->type == DISK)
-    return disk_pager_write_page (page, buf);
+    return disk_pager_write_page (page, (void *)buf);
   else
-    return file_pager_write_page (pager->node, page, buf);
+    return file_pager_write_page (pager->node, page, (void *)buf);
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Make page PAGE writable, at least up to ALLOCSIZE.  This function and
    diskfs_grow are the only places that blocks are actually added to the
    file.  */
@@ -519,8 +566,6 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
     }
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Grow the disk allocated to locked node NODE to be at least SIZE bytes, and
    set NODE->allocsize to the actual allocated size.  (If the allocated size
    is already SIZE bytes, do nothing.)  CRED identifies the user responsible
@@ -615,8 +660,6 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
     return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* This syncs a single file (NODE) to disk.  Wait for all I/O to complete
    if WAIT is set.  NODE->lock must be held.  */
 void
@@ -662,8 +705,6 @@ flush_node_pager (struct node *node)
 }
 
 
-/* ---------------------------------------------------------------- */
-
 /* Return in *OFFSET and *SIZE the minimum valid address the pager will
    accept and the size of the object.  */
 inline error_t
@@ -675,7 +716,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = diskfs_device_size << diskfs_log2_device_block_size;
+    *size = store->size;
   else
     *size = pager->node->allocsize;
 
@@ -711,27 +752,15 @@ pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
 {
 }
 
-/* ---------------------------------------------------------------- */
-
-/* A top-level function for the paging thread that just services paging
-   requests.  */
-static void
-service_paging_requests (any_t foo __attribute__ ((unused)))
-{
-  for (;;)
-    ports_manage_port_operations_multithread (pager_bucket, pager_demuxer,
-					      1000 * 60 * 2, 1000 * 60 * 10,
-					      1, MACH_PORT_NULL);
-}
-
 /* Create the DISK pager.  */
 void
 create_disk_pager (void)
 {
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
-
   upi->type = DISK;
-  disk_pager_setup (upi, MAY_CACHE);
+  pager_bucket = ports_create_bucket ();
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,
+			   &disk_image);
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
@@ -842,7 +871,7 @@ diskfs_shutdown_pager ()
   error_t shutdown_one (void *v_p)
     {
       struct pager *p = v_p;
-      if (p != disk_pager)
+      if (p != diskfs_disk_pager)
 	pager_shutdown (p);
       return 0;
     }
@@ -865,7 +894,7 @@ diskfs_sync_everything (int wait)
   error_t sync_one (void *v_p)
     {
       struct pager *p = v_p;
-      if (p != disk_pager)
+      if (p != diskfs_disk_pager)
 	pager_sync (p, wait);
       return 0;
     }
@@ -877,8 +906,6 @@ diskfs_sync_everything (int wait)
   sync_global (wait);
 }
 
-/* ---------------------------------------------------------------- */
-
 static void
 disable_caching ()
 {
