@@ -1,6 +1,6 @@
 /* Support for periodic syncing
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -72,7 +72,7 @@ diskfs_set_sync_interval (int interval)
       if (periodic_sync_thread)
 	cthread_detach (periodic_sync_thread);
       else
-	err = EIEIO;
+	err = ENOMEM;
     }
 
   if (!err)
