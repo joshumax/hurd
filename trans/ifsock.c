@@ -22,6 +22,11 @@
 #include <sys/socket.h>
 #include <hurd/socket.h>
 #include <hurd/fsys.h>
+#include <stdio.h>
+#include <assert.h>
+#include <fcntl.h>
+
+#include "ifsock_S.h"
 
 mach_port_t address_port;
 
@@ -34,15 +39,16 @@ int trivfs_fsid = 0; /* ??? */
 
 int trivfs_support_read = 0;
 int trivfs_support_write = 0;
-int trivfs_support_exec = 0
+int trivfs_support_exec = 0;
 
 int trivfs_allow_open = 0;
 
-int trivfs_protid_porttypes = {PT_NODE};
-int trivfs_cntl_porttypes = {PT_CTL};
+int trivfs_protid_porttypes[] = {PT_NODE};
+int trivfs_cntl_porttypes[] = {PT_CTL};
 int trivfs_protid_nporttypes = 1;
 int trivfs_cntl_nporttypes = 1;
 
+int
 main (int argc, char **argv)
 {
   mach_port_t bootstrap;
@@ -51,6 +57,7 @@ main (int argc, char **argv)
   mach_port_t realnode;
   char buf[512];
   struct trivfs_control *cntl;
+  error_t error;
 
   _libports_initialize ();
 
@@ -69,18 +76,19 @@ main (int argc, char **argv)
   /* Install the returned realnode for trivfs's use */
   cntl = ports_check_port_type (ourcntl, PT_CTL);
   assert (cntl);
+  ports_change_hardsoft (cntl, 1);
   cntl->underlying = realnode;
-  ports_done_with_port (ourcntl);
+  ports_done_with_port (cntl);
 
   /* Try and connect to the pflocal server */
   sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
-  pflocal = path_lookup (buf, 0);
+  pflocal = path_lookup (buf, 0, 0);
 
   if (pflocal == MACH_PORT_NULL)
     address_port = MACH_PORT_NULL;
   else
     {
-      errno = socket_fabricate_address (pflocal, &address_port);
+      errno = socket_fabricate_address (pflocal, AF_LOCAL, &address_port);
       if (errno)
 	address_port = MACH_PORT_NULL;
       mach_port_deallocate (mach_task_self (), pflocal);
@@ -90,28 +98,62 @@ main (int argc, char **argv)
   ports_manage_port_operations_onethread ();
   return 0;
 }
-  
-int
-ports_demuxer (mach_msg_header_t *, mach_msg_header_t *)
+
+void (*ports_cleanroutines[])(void *) =
 {
-  return trivfs_demuxer || ifsock_server;
+  [PT_CTL] = trivfs_clean_cntl,
+  [PT_NODE] = trivfs_clean_protid,
+};
+
+int
+ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
+{
+  return trivfs_demuxer (inp, outp) || ifsock_server (inp, outp);
 }
 
 void
-trivfs_modify_stat (struct stat *)
+ports_notice_idle (int nhard, int nsoft)
 {
+  if (!nhard && !nsoft)
+    exit (0);
 }
 
+void
+ports_no_live_ports ()
+{
+  exit (0);
+}
+
+void
+ports_no_hard_ports ()
+{
+  exit (0);
+}
+
+void
+trivfs_modify_stat (struct stat *st)
+{
+  st->st_mode = (st->st_mode & ~S_IFMT) | S_IFSOCK;
+}
+
+error_t
+trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
+{
+  exit (0);
+}
+
+error_t
 S_ifsock_getsockaddr (file_t sockfile,
 		      mach_port_t *address)
 {
   struct trivfs_protid *cred = ports_check_port_type (sockfile, PT_NODE);
   int perms;
+  error_t err;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  err = file_check_access (cred->underlying, &perms);
+  err = file_check_access (cred->realnode, &perms);
   if (!err && !(perms & O_READ))
     err = EACCES;
   
