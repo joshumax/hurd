@@ -112,6 +112,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 						0, &box->active);
 	    mutex_unlock (&box->innerlock);
       
+	    free (argz);
+
 	    if (err)
 	      return err;
 
