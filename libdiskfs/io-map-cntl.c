@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994,96,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -34,8 +34,8 @@ diskfs_S_io_map_cntl (struct protid *cred,
     {
       default_pager_object_create (diskfs_default_pager, &cred->shared_object,
 				   __vm_page_size);
-      vm_map (mach_task_self (), (u_int *)&cred->mapped, vm_page_size, 0, 1,
-	      cred->shared_object, 0, 0,
+      vm_map (mach_task_self (), (vm_address_t *)&cred->mapped, vm_page_size,
+	      0, 1, cred->shared_object, 0, 0,
 	      VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE, 0);
       cred->mapped->shared_page_magic = SHARED_PAGE_MAGIC;
       cred->mapped->conch_status = USER_HAS_NOT_CONCH;
