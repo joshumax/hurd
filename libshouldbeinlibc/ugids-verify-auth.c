@@ -64,9 +64,11 @@ struct svma_state
 /* Append the auth ports in AUTHS, of length NUM_AUTHS, to the auth port
    vector in SS, returning 0 if successful, or an error.  */
 static error_t
-svma_state_add_auths (struct svma_state *ss, const auth_t *auths, size_t num_auths)
+svma_state_add_auths (struct svma_state *ss,
+		      const auth_t *auths, size_t num_auths)
 {
-  auth_t *new = realloc (ss->auths, ss->num_auths + num_auths);
+  auth_t *new = realloc (ss->auths,
+			 (ss->num_auths + num_auths) * sizeof (auth_t));
   if (new)
     {
       ss->auths = new;
@@ -87,7 +89,7 @@ server_verify_make_auth (const char *password,
   auth_t auth;
   struct svma_state *svma_state = hook;
   error_t (*check) (io_t server, uid_t id, const char *passwd, auth_t *auth) =
-    is_group ? password_check_user : password_check_group;
+    is_group ? password_check_group : password_check_user;
   error_t err = (*check) (svma_state->server, id, password, &auth);
 
   if (! err)
