@@ -26,15 +26,22 @@ installationdir = $(sbindir)
 SCRIPTS = e2os.sh
 SRCS = reboot.c halt.c fsck.c fstab.c clookup.c $(SCRIPTS)
 LCLHDRS = fstab.h
+DIST_FILES = MAKEDEV.sh
 
 OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
 
 include ../Makeconf
 
+all: MAKEDEV
+install: $(prefix)/dev/MAKEDEV
+
 fsck: fstab.o clookup.o
 reboot halt fsck: ../libshouldbeinlibc/libshouldbeinlibc.a
 
+$(filter-out $(special-targets), $(targets)): %: %.o
+
+$(prefix)/dev/MAKEDEV: MAKEDEV
+	$(INSTALL_PROGRAM) MAKEDEV $(prefix)/dev/MAKEDEV
+
 %: %.sh $(top_srcdir)/sh-version.sed
 	sed -f $(top_srcdir)/sh-version.sed < $< > $@
-
-$(filter-out $(special-targets), $(targets)): %: %.o
