@@ -1,3 +1,8 @@
+2001-12-30  Roland McGrath  <roland@frob.com>
+
+	* nbd.c (nbd_read): Request multiple chunks of up to NBD_IO_MAX each.
+	Handle needing multiple io_read calls to receive a single chunk.
+
 2001-12-29  Roland McGrath  <roland@frob.com>
 
 	* nbd.c (nbdopen): Fix in last change.
