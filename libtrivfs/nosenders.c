@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -31,13 +31,13 @@ trivfs_do_mach_notify_no_senders (mach_port_t notify,
 {
   struct port_info *pt;
 
-  pt = ports_get_port (notify);
+  pt = ports_lookup_port (0, notify, 0);
   if (!pt)
     return EOPNOTSUPP;
 
   ports_no_senders (pt, mscount);
 
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
   
   return 0;
 }
