@@ -70,6 +70,8 @@ MAGIC_EXT2_OLD=ef53
 OS_LINUX=0
 OS_HURD=1
 OS_MASIX=2
+OS_FREEBSD=3
+OS_LITES=4
 
 # Superblock
 SB=/tmp/,e2os-sb.$$
@@ -120,6 +122,8 @@ if test "$OS"; then
     linux) OS=$OS_LINUX;;
     hurd)  OS=$OS_HURD;;
     masix) OS=$OS_MASIX;;
+    freebsd) OS=$OS_FREEBSD;;
+    lites) OS=$OS_LITES;;
     "*[!0-9]*") 
       echo 1>&2 "$0: $OS: Unknown ext2 creator_os value"; exit 5;;
   esac
@@ -138,6 +142,8 @@ else
     $OS_LINUX) OS=linux;;
     $OS_HURD)  OS=hurd;;
     $OS_MASIX) OS=masix;;
+    $OS_FREEBSD) OS=freebsd;;
+    $OS_LITES) OS=lites;;
   esac
   echo "$OS"
 fi
