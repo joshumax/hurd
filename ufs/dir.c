@@ -269,7 +269,11 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   if ((err && err != ENOENT)
       || !ds
       || ds->type == LOOKUP)
-    vm_deallocate (mach_task_self (), buf, buflen);
+    {
+      vm_deallocate (mach_task_self (), buf, buflen);
+      if (ds)
+	ds->type = LOOKUP;	/* set to be ignored by drop_dirstat */
+    }
   else
     {
       ds->mapbuf = buf;
