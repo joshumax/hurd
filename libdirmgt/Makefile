@@ -23,4 +23,4 @@ makemode := misc
 
 LCLHDRS = dirmgt.h
 
-include ../Makecinf
+include ../Makeconf
