@@ -324,23 +324,32 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		      char *name, struct node **np)
 {
   error_t err;
-  int flags = O_RDWR|O_EXEC;
-  file_t file = file_name_lookup_under (dir->nn->file, name,
-					flags | O_NOLINK, 0);
+  int flags;
+  const file_t dirfile = dir->nn->file;
+  file_t file;
+
+  /* We must unlock the directory before making RPCs to the underlying
+     filesystem in case they somehow wind up trying to refer back to one of
+     our nodes.  The DIRFILE port will not change or die as long as DIR
+     lives, and our caller holds a reference keeping it alive.  */
+  mutex_unlock (&dir->lock);
+
+  flags = O_RDWR|O_EXEC;
+  file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
   if (file == MACH_PORT_NULL && errno == EACCES)
     {
       flags = O_RDWR;
-      file = file_name_lookup_under (dir->nn->file, name, flags | O_NOLINK, 0);
+      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
   if (file == MACH_PORT_NULL && errno == EACCES)
     {
       flags = O_READ|O_EXEC;
-      file = file_name_lookup_under (dir->nn->file, name, flags | O_NOLINK, 0);
+      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
   if (file == MACH_PORT_NULL && errno == EACCES)
     {
       flags = O_READ;
-      file = file_name_lookup_under (dir->nn->file, name, flags | O_NOLINK, 0);
+      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
     }
   *np = 0;
   if (file == MACH_PORT_NULL)
@@ -372,7 +381,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	    }
 	}
     }
-  mutex_unlock (&dir->lock);
+
   if (*np)
     mutex_lock (&(*np)->lock);
   return err;
