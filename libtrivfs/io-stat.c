@@ -43,7 +43,7 @@ trivfs_S_io_stat (struct trivfs_protid *cred,
       st->st_fstype = trivfs_fstype;
       st->st_fsid = trivfs_fsid;
 
-      trivfs_modify_stat (st);
+      trivfs_modify_stat (cred, st);
     }
 
   return err;
