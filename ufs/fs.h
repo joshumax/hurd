@@ -84,6 +84,16 @@
  */
 
 /*
+ * The file system is made out of blocks of at most MAXBSIZE units, with
+ * smaller units (fragments) only in the last direct block.  MAXBSIZE
+ * primarily determines the size of buffers in the buffer pool.  It may be
+ * made larger without any effect on existing file systems; however making
+ * it smaller make make some file systems unmountable.
+ */
+#define MAXBSIZE        MAXPHYS
+#define MAXFRAG         8
+
+/*
  * MINBSIZE is the smallest allowable block size.
  * In order to insure that it is possible to create files of size
  * 2^32 with only two levels of indirection, MINBSIZE is set to 4096.
@@ -465,14 +475,18 @@ struct	ocg {
 /*
  * Determining the size of a file block in the file system.
  */
-#define blksize(fs, ip, lbn) \
-	(((lbn) >= NDADDR || (ip)->i_size >= ((lbn) + 1) << (fs)->fs_bshift) \
+/* Changed from BSD to use allocsize instead of i_size. */
+#define blksize(fs, np, lbn) \
+	(((lbn) >= NDADDR || (np)->allocsize >= ((lbn) + 1) << (fs)->fs_bshift) \
 	    ? (fs)->fs_bsize \
-	    : (fragroundup(fs, blkoff(fs, (ip)->i_size))))
+	    : (fragroundup(fs, blkoff(fs, (np)->allocsize))))
+
+#if 0 /* Don't use this */
 #define dblksize(fs, dip, lbn) \
 	(((lbn) >= NDADDR || (dip)->di_size >= ((lbn) + 1) << (fs)->fs_bshift) \
 	    ? (fs)->fs_bsize \
 	    : (fragroundup(fs, blkoff(fs, (dip)->di_size))))
+#endif
 
 /*
  * Number of disk sectors per block; assumes DEV_BSIZE byte sector size.
