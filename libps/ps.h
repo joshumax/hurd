@@ -56,6 +56,14 @@ struct ps_user
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t ps_user_create (uid_t uid, struct ps_user **u);
 
+/* Create a ps_user for the user referred to by UNAME, returning it in U.
+   If a memory allocation error occurs, ENOMEM is returned.  If no such user
+   is known, EINVAL is returned.  */
+error_t ps_user_uname_create (char *uname, struct ps_user **u);
+
+/* Makes makes a ps_user containing PW (which is copied).  */
+error_t ps_user_passwd_create (struct passwd *pw, struct ps_user **u);
+
 /* Free U and any resources it consumes.  */
 void ps_user_free (struct ps_user *u);
 
@@ -236,9 +244,6 @@ struct proc_stat
     /* The task or thread suspend count (whatever this proc_stat refers to). */
     int suspend_count;
 
-    /* Exec flags (see EXEC_* in <hurd/hurd_types.h>).  */
-    unsigned exec_flags;
-
     /* A bitmask summarizing the scheduling state of this process and all its
        threads.  See the PSTAT_STATE_ defines below for a list of bits.  */
     ps_state_t state;
@@ -309,7 +314,6 @@ struct proc_stat
 #define PSTAT_OWNER	       0x80000 /* A ps_user for the proc's owner */
 #define PSTAT_OWNER_UID	      0x100000 /* The uid of the the proc's owner */
 #define PSTAT_UMASK	      0x200000 /* The proc's current umask */
-#define PSTAT_EXEC_FLAGS      0x400000 /* The process's exec flags */
 #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
 
 /* Flag bits that don't correspond precisely to any field.  */
@@ -597,6 +601,8 @@ error_t ps_stream_write_int_field (struct ps_stream *stream,
    output).  It also specifies the default width of the field in which the
    output should be printed. */
 
+struct ps_fmt_field;		/* fwd decl */
+
 struct ps_fmt_spec
   {
     /* The name of the spec (and it's title, if TITLE is NULL).  */
@@ -609,13 +615,17 @@ struct ps_fmt_spec
        overridden.  */
     int width;
 
+    /* A default value for the fields `precision'.  */
+    int precision;
+
+    /* Default values for PS_FMT_FIELD_ flags.  */
+    int flags;
+
     const struct ps_getter *getter;
 
-    /* A function that, given a ps, a getter, a field width, and a stream,
-       will output what the getter gets in some format */
-    error_t (*output_fn)(struct proc_stat *ps,
-			 const struct ps_getter *getter,
-			 int width, struct ps_stream *stream);
+    /* A function that outputs what FIELD specifies in PS to STREAM.  */
+    error_t (*output_fn)(struct proc_stat *ps, struct ps_fmt_field *field,
+			 struct ps_stream *stream);
 
     /* A function that, given two pses and a getter, will compare what
        the getter gets for each ps, and return an integer ala qsort.  This
@@ -664,6 +674,12 @@ const struct ps_fmt_spec *ps_fmt_specs_find (struct ps_fmt_specs *specs,
    It consists of a series of PS_FMT_FIELD_Ts, each describing how to output
    one value.  */
 
+/* Flags for ps_fmt_fields.  */
+#define PS_FMT_FIELD_AT_MOD		0x1 /* `@' modifier */
+#define PS_FMT_FIELD_COLON_MOD		0x2 /* `:' modifier */
+#define PS_FMT_FIELD_KEEP		0x4 /* Never nominalize this field. */
+#define PS_FMT_FIELD_UPCASE_TITLE	0x8 /* Upcase this field's title.  */
+
 /* PS_FMT_FIELD */
 struct ps_fmt_field
   {
@@ -678,11 +694,16 @@ struct ps_fmt_field
     /* The number of characters from PFX that should be output.  */
     unsigned pfx_len;
 
-    /* Returns the number of characters that the value portion of this field
-       should consume.  If this field is negative, then the absolute value is
-       used, and the field should be right-aligned, otherwise, it is
-       left-aligned.  */
+    /* The number of characters that the value portion of this field should
+       consume.  If this field is negative, then the absolute value is used,
+       and the field should be right-aligned, otherwise, it is left-aligned. */
     int width;
+
+    /* User-specifiable attributes, interpreted by each output format. */
+    int precision;		/* fraction following field width */
+
+    /* Flags, from the set PS_FMT_FIELD_.  */
+    int flags;
 
     /* Returns the title used when printing a header line for this field.  */
     const char *title;
@@ -726,25 +747,34 @@ struct ps_fmt
    allocation error occurs, ENOMEM is returned.  If SRC contains an unknown
    field name, EINVAL is returned.  Otherwise 0 is returned.
 
-   The syntax of SRC is:
+   If POSIX is true, a posix-style format string is parsed, otherwise
+   the syntax of SRC is:
+
    SRC:  FIELD* [ SUFFIX ]
    FIELD: [ PREFIX ] SPEC
-   SPEC: `~' [ `-' ] [ WIDTH ] [ `/' ] NAME [ `/' ]
-   WIDTH: `[0-9]+'
-   NAME: `[^/]*'
+   SPEC: `%' [ FLAGS ] [ `-' ] [ WIDTH ] [ `.' PRECISION ] NAMESPEC
+   FLAGS: `[!?@:]+'
+   WIDTH, PRECISION: `[0-9]+'
+   NAMESPEC: `{' NAME [ `:' TITLE ] `}' | NAME_AN
+   NAME, TITLE: `[^}]*'
+   NAME_AN: `[A-Za-z0-9_]*'
 
    PREFIXes and SUFFIXes are printed verbatim, and specs are replaced by the
    output of the named spec with that name (each spec specifies what
-   proc_stat field to print, and how to print it, as well as a default
-   field width into which put the output).  WIDTH is used to override the
-   spec's default width.  If a `-' is included, the output is right-aligned
-   within this width, otherwise it is left-aligned.  */
-error_t ps_fmt_create (char *src, struct ps_fmt_specs *fmt_specs,
+   proc_stat field to print, and how to print it, as well as a default field
+   width into which put the output).  WIDTH is used to override the spec's
+   default width.  If a `-' is included, the output is right-aligned within
+   this width, otherwise it is left-aligned.  The FLAGS `@' & `:' are
+   spec-specific, `!' means never omit a nominal field, and `?' means omit a
+   field if it's nominal (in case the defualt is to never do so).  PRECISION
+   has a spec-specific meaning.  */
+error_t ps_fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 		       struct ps_fmt **fmt);
 
 /* Given the same arguments as a previous call to ps_fmt_create that returned
    an error, this function returns a malloced string describing the error.  */
-void ps_fmt_creation_error (char *src, struct ps_fmt_specs *fmt_specs,
+void ps_fmt_creation_error (char *src, int posix,
+			    struct ps_fmt_specs *fmt_specs,
 			    char **error);
 
 /* Free FMT, and any resources it consumes.  */
@@ -765,17 +795,19 @@ error_t ps_fmt_write_proc_stat (struct ps_fmt *fmt, struct proc_stat *ps,
 				struct ps_stream *stream);
 
 /* Remove those fields from FMT for which the function FN, when called on the
-   field's format spec, returns true.  Appropiate inter-field characters are
-   also removed: those *following* deleted fields at the beginning of the
-   fmt, and those *preceeding* deleted fields *not* at the beginning. */
-void ps_fmt_squash (struct ps_fmt *fmt,
-		    int (*fn)(const struct ps_fmt_spec *spec));
+   field, returns true.  Appropiate inter-field characters are also removed:
+   those *following* deleted fields at the beginning of the fmt, and those
+   *preceeding* deleted fields *not* at the beginning. */
+void ps_fmt_squash (struct ps_fmt *fmt, int (*fn)(struct ps_fmt_field *field));
 
 /* Remove those fields from FMT which would need the proc_stat flags FLAGS.
    Appropiate inter-field characters are also removed: those *following*
    deleted fields at the beginning of the fmt, and those *preceeding* deleted
    fields *not* at the beginning.  */
 void ps_fmt_squash_flags (struct ps_fmt *fmt, ps_flags_t flags);
+
+/* Try and restrict the number of output columns in FMT to WIDTH.  */
+void ps_fmt_set_output_width (struct ps_fmt *fmt, int width);
 
 /* A PROC_STAT_LIST represents a list of proc_stats */
 
@@ -915,7 +947,7 @@ error_t proc_stat_list_sort1 (struct proc_stat_list *pp,
    key, EINVAL is returned.  If a fatal error occurs the error code is
    returned.  Otherwise, 0 is returned.  */
 error_t proc_stat_list_sort (struct proc_stat_list *pp,
-			     struct ps_fmt_spec *key, int reverse);
+			     const struct ps_fmt_spec *key, int reverse);
 
 /* Format a description as instructed by FMT, of the processes in PP to
    STREAM, separated by newlines (and with a terminating newline).  If COUNT
@@ -949,7 +981,7 @@ int proc_stat_list_for_each (struct proc_stat_list *pp,
 
 /* Returns true if SPEC is `nominal' in every entry in PP.  */
 int proc_stat_list_spec_nominal (struct proc_stat_list *pp,
-				  struct ps_fmt_spec *spec);
+				 const struct ps_fmt_spec *spec);
 
 /* The Basic & Sched info types are pretty static, so we cache them, but load
    info is dynamic so we don't cache that.  See <mach/host_info.h> for
