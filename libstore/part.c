@@ -1,9 +1,8 @@
 /* Partition store backend
    Copyright (C) 2001 Free Software Foundation, Inc.
-
    Written by Neal H Walfield <neal@cs.uml.edu>
 
-   This task is part of the GNU Hurd.
+   This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as

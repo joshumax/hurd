@@ -1,10 +1,9 @@
 /* Support for opening `typed' stores
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
-
-   This task is part of the GNU Hurd.
+   This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,9 +19,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <string.h>
-
 #include "store.h"
+#include <string.h>
 
 /* Open the store indicated by NAME, which should consist of a store type
    name followed by a ':' and any type-specific name, returning the new store

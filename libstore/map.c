@@ -1,8 +1,9 @@
 /* Direct store mapping
 
    Copyright (C) 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
-   This task is part of the GNU Hurd.
+   Written by Miles Bader <miles@gnu.org>
+
+   This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,8 +28,9 @@
    fail because store contains non-contiguous regions on the underlying
    object.  In such a case you can try calling some of the routines below to
    get a pager.  */
-error_t store_map (const struct store *store, vm_prot_t prot,
-		   mach_port_t *memobj)
+error_t
+store_map (const struct store *store, vm_prot_t prot,
+	   mach_port_t *memobj)
 {
   error_t (*map) (const struct store *store, vm_prot_t prot,
 		  mach_port_t *memobj) =

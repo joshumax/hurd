@@ -3,7 +3,7 @@
    Copyright (C) 1995,96,97,99,2000,01 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
-   This task is part of the GNU Hurd.
+   This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
