@@ -69,6 +69,8 @@ diskfs_free_node (struct node *np, mode_t mode)
       break;
     }
   *np->dn->hprevp = np->dn->hnext;
+  if (np->dn->hnext != 0)
+    np->dn->hnext->dn->hprevp = np->dn->hprevp;
   free (np->dn);
   np->dn = 0;
 
@@ -112,6 +114,8 @@ diskfs_node_norefs (struct node *np)
 
       /* Remove this node from the cache list rooted at `all_nodes'.  */
       *np->dn->hprevp = np->dn->hnext;
+      if (np->dn->hnext != 0)
+	np->dn->hnext->dn->hprevp = np->dn->hprevp;
       np->dn->hnext = 0;
       np->dn->hprevp = 0;
     }
@@ -152,9 +156,9 @@ diskfs_cached_lookup (int inum, struct node **npp)
   struct disknode *dn = (void *) inum;
   struct node *np;
 
-  if (dn->hnext != 0)		/* There is already a node.  */
+  if (dn->hprevp != 0)		/* There is already a node.  */
     {
-      np = (void *) dn->hnext - offsetof (struct disknode, hnext);
+      np = *dn->hprevp;
       assert (np->dn == dn);
       assert (*dn->hprevp == np);
       spin_lock (&diskfs_node_refcnt_lock);
