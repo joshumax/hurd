@@ -303,7 +303,7 @@ S_io_stat (struct sock_user *user,
 
   st->st_fstype = FSTYPE_SOCKET;
   st->st_fsid = getpid ();
-  st->st_ino = (ino_t) user->sock; /* why not? */
+  st->st_ino = user->sock->st_ino;
 
   st->st_mode = S_IFSOCK | ACCESSPERMS;
   st->st_blksize = 512;		/* ???? */
@@ -471,7 +471,7 @@ S_io_identity (struct sock_user *user,
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
   *fsys = fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
-  *fileno = (ino_t) user->sock;	/* matches S_io_stat above */
+  *fileno = user->sock->st_ino;
 
   __mutex_unlock (&global_lock);
   return 0;

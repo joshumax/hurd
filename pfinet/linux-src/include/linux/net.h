@@ -69,6 +69,7 @@ struct socket
 #ifdef _HURD_
  	uint_fast32_t		refcnt;	/* # of sock_user's pointing to this */
 	mach_port_t 		identity; /* for io_identity */
+  	ino_t			st_ino;
 #else
 	struct fasync_struct	*fasync_list;	/* Asynchronous wake up list	*/
 	struct file		*file;		/* File back pointer for gc	*/

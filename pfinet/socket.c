@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,2000 Free Software Foundation, Inc.
+   Copyright (C) 1995,2000,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -41,6 +41,7 @@ sock_register (struct net_proto_family *fam)
 struct socket *
 sock_alloc (void)
 {
+  static ino_t nextino;		/* locked by global_lock */
   struct socket *sock;
   struct condition *c;
 
@@ -54,6 +55,10 @@ sock_alloc (void)
   sock->identity = MACH_PORT_NULL;
   sock->refcnt = 1;
   sock->wait = (void *) c;
+
+  if (nextino == 0)
+    nextino = 2;
+  sock->st_ino = nextino++;
 
   return sock;
 }
