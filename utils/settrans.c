@@ -30,6 +30,10 @@
 #include <argz.h>
 #include <hurd/fshelp.h>
 
+#define DEFAULT_TIMEOUT 60
+
+#define STRINGIFY(arg) #arg
+
 static struct argp_option options[] =
 {
   {"active",      'a', 0, 0, "Set NODE's active translator", 1},
@@ -39,7 +43,10 @@ static struct argp_option options[] =
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
   {"goaway",      'g', 0, 0, "Make any existing active translator go away"},
-  {"pause",       'P', 0, 0, "When starting an active translator, prompt and wait for a newline on stdin before completing the startup handshake"},
+  {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
+     " wait for a newline on stdin before completing the startup handshake"},
+  {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
+     " (default " STRINGIFY (DEFAULT_TIMEOUT) "); 0 means no timeout"},
 
   {0,0,0,0, "When an active translator is told to go away:", 2},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
@@ -78,6 +85,7 @@ main(int argc, char *argv[])
 
   /* Various option flags.  */
   int passive = 0, active = 0, keep_active = 0, pause = 0;
+  int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -85,11 +93,16 @@ main(int argc, char *argv[])
       switch (key)
 	{
 	case ARGP_KEY_ARG:
-	  node_name = arg;
-	  err = argz_create (state->argv + state->next, &argz, &argz_len);
-	  if (err)
-	    error(3, err, "Can't create options vector");
-	  state->next = state->argc; /* stop parsing */
+	  if (state->arg_num == 0)
+	    node_name = arg;
+	  else			/* command */
+	    {
+	      error_t err =
+		argz_create (state->argv + state->next - 1, &argz, &argz_len);
+	      if (err)
+		error(3, err, "Can't create options vector");
+	      state->next = state->argc; /* stop parsing */
+	    }
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
@@ -109,6 +122,9 @@ main(int argc, char *argv[])
 	case 'S': goaway_flags |= FSYS_GOAWAY_NOSYNC; break;
 	case 'f': goaway_flags |= FSYS_GOAWAY_FORCE; break;
 
+	  /* Use atof so the user can specifiy fractional timeouts.  */
+	case 't': timeout = atof (arg) * 1000.0; break;
+
 	default:
 	  return EINVAL;
 	}
@@ -116,7 +132,7 @@ main(int argc, char *argv[])
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  argp_parse (&argp, argc, argv, 0, 0);
+  argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0);
 
   if (!active && !passive)
     passive = 1;
@@ -143,7 +159,7 @@ main(int argc, char *argv[])
 
 	  return 0;
 	}
-      err = fshelp_start_translator (open_node, argz, argz, argz_len, 60000,
+      err = fshelp_start_translator (open_node, argz, argz, argz_len, timeout,
 				     &active_control);
       if (err)
 	error(4, err, "%s", argz);
