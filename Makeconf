@@ -49,7 +49,6 @@ $(LD) -e __start $(LDFLAGS) -o $@ $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
 
-
 # Mounting $(hurdroot)
 ifeq ($(hurdroot),)
 $(hurdroot): force
