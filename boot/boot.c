@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <cthreads.h>
 #include <varargs.h>
 #include <fcntlbits.h>
+#include <elf.h>
 
 #include "notify_S.h"
 #include "exec_S.h"
@@ -56,7 +57,7 @@ auth_t authserver;
 
 spin_lock_t queuelock = SPIN_LOCK_INITIALIZER;
 
-mach_port_t php_child_name, psmdp_child_name;
+mach_port_t php_child_name, psmdp_child_name, taskname;
 
 task_t child_task;
 mach_port_t bootport;
@@ -251,14 +252,13 @@ load_image (task_t t,
 	    char *file)
 {
   int fd;
-  struct exec x;
-  char *buf;
-  int headercruft;
-  vm_address_t base = 0x10000;
-  int rndamount, amount;
-  vm_address_t bsspagestart, bssstart;
+  union
+    {
+      struct exec a;
+      Elf32_Ehdr e;
+    } hdr;
   char msg[] = "cannot open bootstrap file";
-  int magic;
+
 
   fd = open (file, 0, 0);
 
@@ -269,28 +269,63 @@ load_image (task_t t,
       uxexit (1);
     }
   
-  read (fd, &x, sizeof (struct exec));
-  magic = N_MAGIC (x);
+  read (fd, &hdr, sizeof hdr);
+  if (*(Elf32_Word *) hdr.e.e_ident == *(Elf32_Word *) "\177ELF")
+    {
+      Elf32_Phdr phdrs[hdr.e.e_phnum], *ph;
+      lseek (fd, hdr.e.e_phoff, SEEK_SET);
+      read (fd, phdrs, sizeof phdrs);
+      for (ph = phdrs; ph < &phdrs[sizeof phdrs/sizeof phdrs[0]]; ++ph)
+	if (ph->p_type == PT_LOAD)
+	  {
+	    vm_address_t buf;
+	    vm_size_t bufsz = round_page (ph->p_filesz);
+	    vm_allocate (mach_task_self (), &buf, bufsz, 1);
+	    lseek (fd, ph->p_offset, SEEK_SET);
+	    read (fd, buf + (ph->p_offset & (ph->p_align - 1)), ph->p_filesz);
+	    ph->p_vaddr &= ~(ph->p_align - 1);
+	    ph->p_memsz += ph->p_align - 1;
+	    ph->p_memsz &= ~(ph->p_align - 1);
+	    vm_allocate (t, (vm_address_t*)&ph->p_vaddr, ph->p_memsz, 0);
+	    vm_write (t, ph->p_vaddr, (vm_address_t)buf, bufsz);
+	    vm_protect (t, ph->p_vaddr, ph->p_memsz, 0, 
+			((ph->p_flags & PF_R) ? VM_PROT_READ : 0) |
+			((ph->p_flags & PF_W) ? VM_PROT_WRITE : 0) |
+			((ph->p_flags & PF_X) ? VM_PROT_EXECUTE : 0));
+	  }
+      return hdr.e.e_entry;
+    }
+  else
+    {
+      /* a.out */
+      int magic = N_MAGIC (hdr.a);
+      int headercruft;
+      vm_address_t base = 0x10000;
+      int rndamount, amount;
+      vm_address_t bsspagestart, bssstart;
+      char *buf;
 
-  headercruft = sizeof (struct exec) * (magic == ZMAGIC);
+      headercruft = sizeof (struct exec) * (magic == ZMAGIC);
   
-  amount = headercruft + x.a_text + x.a_data;
-  rndamount = round_page (amount);
-  vm_allocate (mach_task_self (), (u_int *)&buf, rndamount, 1);
-  lseek (fd, -headercruft, 1);
-  read (fd, buf, amount);
-  vm_allocate (t, &base, rndamount, 0);
-  vm_write (t, base, (u_int) buf, rndamount);
-  if (magic != OMAGIC)
-    vm_protect (t, base, trunc_page (headercruft + x.a_text),
-		0, VM_PROT_READ | VM_PROT_EXECUTE);
-  vm_deallocate (mach_task_self (), (u_int)buf, rndamount);
+      amount = headercruft + hdr.a.a_text + hdr.a.a_data;
+      rndamount = round_page (amount);
+      vm_allocate (mach_task_self (), (u_int *)&buf, rndamount, 1);
+      lseek (fd, sizeof hdr.a - headercruft, SEEK_SET);
+      read (fd, buf, amount);
+      vm_allocate (t, &base, rndamount, 0);
+      vm_write (t, base, (u_int) buf, rndamount);
+      if (magic != OMAGIC)
+	vm_protect (t, base, trunc_page (headercruft + hdr.a.a_text),
+		    0, VM_PROT_READ | VM_PROT_EXECUTE);
+      vm_deallocate (mach_task_self (), (u_int)buf, rndamount);
 
-  bssstart = base + x.a_text + x.a_data + headercruft;
-  bsspagestart = round_page (bssstart);
-  vm_allocate (t, &bsspagestart, x.a_bss - (bsspagestart - bssstart), 0);
-  
-  return x.a_entry;
+      bssstart = base + hdr.a.a_text + hdr.a.a_data + headercruft;
+      bsspagestart = round_page (bssstart);
+      vm_allocate (t, &bsspagestart,
+		   hdr.a.a_bss - (bsspagestart - bssstart), 0);
+
+      return hdr.a.a_entry;
+    }
 }
 
 
@@ -300,12 +335,13 @@ void msg_thread ();
 int
 main (int argc, char **argv, char **envp)
 {
-  task_t newtask;
   thread_t newthread;
   mach_port_t foo;
-  vm_address_t startpc;
-  char usagemsg[] = "Usage: boot [-qsdn] first-task [disk]";
-  char *bootfile;
+  vm_address_t startpc[argc];
+  char usagemsg[] = "Usage: boot [-qsdn] servers... disk";
+  char **bootfiles;
+  int nfiles, i;
+  task_t newtasks[argc];
   char c;
   struct sigvec vec = { read_reply, 0, 0};
   char *newargs;
@@ -313,10 +349,7 @@ main (int argc, char **argv, char **envp)
   privileged_host_port = task_by_pid (-1);
   master_device_port = task_by_pid (-2);
 
-  if (argc < 2
-      || argc > 4
-      || (argv[1][0] == '-' && argc < 3)
-      || (argv[1][0] != '-' && argc > 3))
+  if (argc < 2 || (argv[1][0] == '-' && argc < 3))
     {
       write (2, usagemsg, sizeof usagemsg);
       uxexit (1);
@@ -325,17 +358,17 @@ main (int argc, char **argv, char **envp)
   if (argv[1][0] != '-')
     {
       bootstrap_args = "-x";
-      if (argc == 3)
-	bootdevice = argv[2];
-      bootfile = argv[1];
+      bootfiles = &argv[1];
     }
   else
     {
       bootstrap_args = argv[1];
-      bootfile = argv[2];
-      if (argc == 4)
-	bootdevice = argv[3];
+      bootfiles = &argv[2];
     }
+  nfiles = 0;
+  while (bootfiles[nfiles])
+    ++nfiles;
+  bootdevice = bootfiles[nfiles-- - 1];
 
   newargs = malloc (strlen (bootstrap_args) + 2);
   strcpy (newargs, bootstrap_args);
@@ -349,11 +382,14 @@ main (int argc, char **argv, char **envp)
   else
     boot_like_hurd = 1;
 
-  task_create (mach_task_self (), 0, &newtask);
+  for (i = 0; i < nfiles; ++i)
+    {
+      task_create (mach_task_self (), 0, &newtasks[i]);
+      task_suspend (newtasks[i]);
+      startpc[i] = load_image (newtasks[i], bootfiles[i]);
+    }
   
-  startpc = load_image (newtask, bootfile);
-  
-  fsname = bootfile;
+  fsname = bootfiles[0];
   
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
@@ -380,7 +416,7 @@ main (int argc, char **argv, char **envp)
 
       mach_port_insert_right (mach_task_self (), bootport, bootport, 
 			      MACH_MSG_TYPE_MAKE_SEND);
-      task_set_bootstrap_port (newtask, bootport);
+      task_set_bootstrap_port (newtasks[0], bootport);
       mach_port_deallocate (mach_task_self (), bootport);
 
 #if 0
@@ -393,19 +429,23 @@ main (int argc, char **argv, char **envp)
     }
   else
     /* Remove inherited port.  The kernel gives none.  */
-    task_set_bootstrap_port (newtask, MACH_PORT_NULL);
+    task_set_bootstrap_port (newtasks[0], MACH_PORT_NULL);
 
-  child_task = newtask;
+  child_task = newtasks[0];
 
   if (boot_like_kernel || boot_like_hurd)
     {
       php_child_name = 100;
       psmdp_child_name = 101;
-      mach_port_insert_right (newtask, php_child_name, privileged_host_port,
+      mach_port_insert_right (newtasks[0], php_child_name,
+			      privileged_host_port,
 			      MACH_MSG_TYPE_COPY_SEND);
-      mach_port_insert_right (newtask, psmdp_child_name,
+      mach_port_insert_right (newtasks[0], psmdp_child_name,
 			      pseudo_master_device_port,
 			      MACH_MSG_TYPE_MAKE_SEND);
+      taskname = 102;
+      mach_port_insert_right (newtasks[0], taskname, newtasks[1],
+			      MACH_MSG_TYPE_COPY_SEND);
     }
 
   foo = 1;
@@ -415,32 +455,38 @@ main (int argc, char **argv, char **envp)
   sigvec (SIGMSG, &vec, 0);
   sigvec (SIGEMSG, &vec, 0);
   
-  thread_create (newtask, &newthread);
-
-  if (boot_like_hurd)
-    __mach_setup_thread (newtask, newthread, (char *)startpc, &fs_stack_base,
-			 &fs_stack_size);
-  else if (boot_like_kernel) 
+  for (i = 0; i < nfiles; ++i)
     {
-      char hp[20], mdp[20];
-      sprintf (hp, "%d", (int) php_child_name);
-      sprintf (mdp, "%d", (int) psmdp_child_name);
-      set_mach_stack_args (newtask, newthread, (void *) startpc,
-			   "[BOOTSTRAP fs]", bootstrap_args,
-			   hp, mdp, bootdevice, 0);
+      thread_create (newtasks[i], &newthread);
+
+      if (boot_like_hurd)
+	__mach_setup_thread (newtasks[0], newthread, (char *)startpc[i],
+			     i?0:&fs_stack_base, i?0:&fs_stack_size);
+      else if (boot_like_kernel) 
+	{
+	  char hp[20], mdp[20], tn[20];
+	  sprintf (hp, "%d", (int) php_child_name);
+	  sprintf (mdp, "%d", (int) psmdp_child_name);
+	  sprintf (tn, "%d", (int) taskname);
+	  set_mach_stack_args (newtasks[i], newthread, (void *) startpc[i],
+			       "[BOOTSTRAP fs]", bootstrap_args,
+			       hp, mdp, tn, bootdevice, 0);
+	}
+      else
+	set_mach_stack_args (newtasks[i], newthread, (char *)startpc[i],
+			     "[BOOTSTRAP fs]", bootstrap_args,
+			     bootdevice, "/", 0);
+
+      thread_resume (newthread);
     }
-  else
-    set_mach_stack_args (newtask, newthread, (char *)startpc,
-			 "[BOOTSTRAP fs]", bootstrap_args,
-			 bootdevice, "/", 0);
 
   if (index (bootstrap_args, 'd'))
     {
       write (1, "pausing\n", 8);
       read (0, &c, 1);
     }
-  thread_resume (newthread);
-  
+  task_resume(newtasks[0]);
+
   cthread_detach (cthread_fork ((cthread_fn_t) msg_thread,
 				(any_t) 0));
   
