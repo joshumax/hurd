@@ -1,3 +1,8 @@
+1998-10-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* users.c (open_hook): Assert DTR if NO_CARRIER, even for CLOCAL.
+	This is the only thing that tells it to open the device.
+
 Mon Oct 26 16:47:18 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* devio.c (char_size_mask_xxx): New variable.
