@@ -103,9 +103,29 @@ error_t netfs_attempt_chauthor (struct netcred *cred, struct node *np,
 
 /* The user must define this function.  This should attempt a chmod
    call for the user specified by CRED on node NODE, to change the
-   mode to MODE. */
+   mode to MODE.  Unlike the normal Unix and Hurd meaning of chmod,
+   this function is also used to attempt to change files into other
+   types.  If such a transition is attempted which is impossible, then
+   return EOPNOTSUPP.
+  */
 error_t netfs_attempt_chmod (struct netcred *cred, struct node *np,
 			     mode_t mode);
+
+/* The user must define this function.  Attempt to turn NODE (user CRED)
+   into a symlink with target NAME. */
+error_t netfs_attempt_mksymlink (struct netcred *cred, struct node *np,
+				 char *name);
+
+/* The user must define this function.  Attempt to turn NODE (user
+   CRED) into a device.  TYPE is either S_IFBLK or S_IFCHR. */
+error_t netfs_attempt_mkdev (struct netcred *cred, struct node *np,
+			     mode_t type, dev_t indexes);
+
+/* The user must define this function.  Attempt to set the passive
+   translator record for FILE to ARGZ (of length ARGZLEN) for user
+   CRED. */
+error_t netfs_set_translator (struct netcred *cred, struct node *np,
+			      char *argz, size_t argzlen);
 
 /* The user must define this function.  This should attempt a chflags
    call for the user specified by CRED on node NODE, to change the
@@ -294,12 +314,12 @@ error_t netfs_get_options (char **argz, unsigned *argz_len);
    completely.  */
 extern const struct argp *netfs_startup_argp;
 
-struct port_class *netfs_protid_class;
-struct port_class *netfs_control_class;
-struct port_bucket *netfs_port_bucket;
-struct node *netfs_root_node;
+extern struct port_class *netfs_protid_class;
+extern struct port_class *netfs_control_class;
+extern struct port_bucket *netfs_port_bucket;
+extern struct node *netfs_root_node;
 
-auth_t netfs_auth_server_port;
+extern auth_t netfs_auth_server_port;
 
 extern inline void
 netfs_nref (struct node *np)
