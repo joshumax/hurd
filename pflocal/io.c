@@ -1,8 +1,7 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995, 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,98,99,2000,02 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -392,8 +391,8 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   uid_t *uids = uids_buf, *aux_uids = aux_uids_buf;
   gid_t gids_buf[NIDS], aux_gids_buf[NIDS];
   gid_t *gids = gids_buf, *aux_gids = aux_gids_buf;
-  unsigned num_uids = NIDS, num_aux_uids = NIDS;
-  unsigned num_gids = NIDS, num_aux_gids = NIDS;
+  size_t num_uids = NIDS, num_aux_uids = NIDS;
+  size_t num_gids = NIDS, num_aux_gids = NIDS;
 
   if (!user)
     return EOPNOTSUPP;
@@ -437,8 +436,8 @@ error_t
 S_io_restrict_auth (struct sock_user *user,
 		    mach_port_t *new_port,
 		    mach_msg_type_name_t *new_port_type,
-		    uid_t *uids, unsigned num_uids,
-		    uid_t *gids, unsigned num_gids)
+		    uid_t *uids, size_t num_uids,
+		    uid_t *gids, size_t num_gids)
 {
   if (!user)
     return EOPNOTSUPP;
