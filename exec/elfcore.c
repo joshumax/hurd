@@ -495,7 +495,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	do
 	  {
 	    pointer_t copied;
-	    int copy_count;
+	    size_t copy_count;
 	    err = vm_read (task, va, sz, &copied, &copy_count);
 	    if (err == 0)
 	      {
