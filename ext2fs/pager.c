@@ -187,7 +187,7 @@ pending_blocks_write (struct pending_blocks *pb)
       block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       int length = pb->num << log2_block_size;
 
-      ext2_debug ("Writing block %lu[%d]", pb->block, pb->num);
+      ext2_debug ("writing block %lu[%d]", pb->block, pb->num);
 
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
@@ -263,7 +263,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
   if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
-  ext2_debug ("Writing inode %d page %d[%d]", node->dn->number, offset, left);
+  ext2_debug ("writing inode %d page %d[%d]", node->dn->number, offset, left);
 
   while (left > 0)
     {
@@ -314,7 +314,7 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
   if (page + vm_page_size > device_size)
     length = device_size - page;
 
-  ext2_debug ("Writing disk page %d[%d]", page, length);
+  ext2_debug ("writing disk page %d[%d]", page, length);
 
   if (modified_global_blocks)
     /* Be picky about which blocks in a page that we write.  */
@@ -440,6 +440,9 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
       diskfs_end_catch_exception ();
       rwlock_writer_unlock (&dn->alloc_lock);
+
+      if (err == ENOSPC)
+	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
 
       return err;
     }
