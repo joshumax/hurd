@@ -1,3 +1,7 @@
+Thu Oct 17 11:06:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lmail.c (deliver): fsync the user's mailbox after delivery.
+
 Mon Oct 14 21:36:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* lmail.c: New file.
