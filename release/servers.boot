@@ -13,4 +13,4 @@
 /lib/ld.so /hurd/exec $(exec-task=task-create)
 
 # default pager
-/dev/hd0b $(add-paging-file) $(default-pager)
+/dev/sd0b $(add-paging-file) $(default-pager)
