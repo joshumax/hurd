@@ -35,6 +35,8 @@
    of paging requests, which may be helpful in catching bugs. */
 
 /* #undef DONT_CACHE_MEMORY_OBJECTS */
+
+int printf (const char *fmt, ...);
 
 /* ---------------------------------------------------------------- */
 
@@ -201,6 +203,7 @@ struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
 
+/* Where the super-block is located on disk (at min-block 1).  */
 #define SBLOCK_BLOCK 1
 #define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
 #define SBLOCK_SIZE (sizeof (struct ext2_super_block))
@@ -346,30 +349,47 @@ global_block_modified (daddr_t block)
       spin_lock (&modified_global_blocks_lock);
       was_clean = !set_bit(block, modified_global_blocks);
       spin_unlock (&modified_global_blocks_lock);
+ if (was_clean)
+   printf ("Marked block %lu as modified\n", block);
       return was_clean;
     }
   else
-    return 0;
+    return 1;
 }
 
 /* This records a modification to a non-file block.  */
 extern inline void
-record_global_poke (void *bptr)
+record_global_poke (void *ptr)
 {
-  int boffs = trunc_block (bptr_offs (bptr));
+  int boffs = trunc_block (bptr_offs (ptr));
   if (global_block_modified (boffs_block (boffs)))
+ {
+ printf ("Adding block %u to global_pokel (%p)\n", boffs_block (boffs), &global_pokel);
     pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
+  }
 }
 
 /* This syncs a modification to a non-file block.  */
 extern inline void
 sync_global_ptr (void *bptr, int wait)
 {
-  int boffs = trunc_block (bptr_offs (bptr));
+  vm_offset_t boffs = trunc_block (bptr_offs (bptr));
   global_block_modified (boffs_block (boffs));
-  pager_sync_some (disk_pager->p,
-		   (vm_address_t)boffs_ptr (boffs), block_size,
-		   wait);
+ printf ("Syncing block %d\n", boffs_block (boffs));
+  pager_sync_some (disk_pager->p, trunc_page (boffs), vm_page_size, wait);
+}
+
+/* This records a modification to one of a file's indirect blocks.  */
+extern inline void
+record_indir_poke (struct node *node, void *ptr)
+{
+  int boffs = trunc_block (bptr_offs (ptr));
+  if (global_block_modified (boffs_block (boffs)))
+ {
+ printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
+	 (boffs), node->dn->number, &node->dn->pokel);
+    pokel_add (&node->dn->pokel, boffs_ptr(boffs), block_size);
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -377,6 +397,7 @@ sync_global_ptr (void *bptr, int wait)
 extern inline void
 sync_super_block ()
 {
+ printf ("Syncing superblock\n");
   sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
   sync_global_ptr (sblock, 1);
 }
@@ -384,6 +405,7 @@ sync_super_block ()
 extern inline void
 sync_global_data ()
 {
+ printf ("Syncing global data\n");
   pokel_sync (&global_pokel, 1);
   diskfs_set_hypermetadata (1, 0);
 }
@@ -396,9 +418,11 @@ alloc_sync (struct node *np)
     {
       if (np)
 	{
+ printf ("Alloc sync inode %d\n", np->dn->number);
 	  diskfs_node_update (np, 1);
 	  pokel_sync (&np->dn->pokel, 1);
 	}
+else  printf ("Alloc sync 0\n");
       sync_global_data ();
     }
 }
