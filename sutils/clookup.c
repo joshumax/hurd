@@ -1,6 +1,6 @@
 /* Careful filename lookup
 
-   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -106,10 +106,11 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 		    {
 		      file_t old_node = *node;
 		      err = fsys_getroot (fsys,
-					  unauth_dir, MACH_MSG_TYPE_MOVE_SEND,
+					  unauth_dir, MACH_MSG_TYPE_COPY_SEND,
 					  uids, num_uids, gids, num_gids,
 					  flags & ~O_NOTRANS, retry,
 					  retry_name, node);
+		      mach_port_deallocate (mach_task_self (), unauth_dir);
 		      if (! err)
 			mach_port_deallocate (mach_task_self (), old_node);
 		    }
