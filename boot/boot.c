@@ -285,6 +285,7 @@ request_server (mach_msg_header_t *inp,
   extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
   extern void bootstrap_compat ();
 
+#if 0
   if (inp->msgh_local_port == bootport && boot_like_cmudef)
     {
       if (inp->msgh_id == 999999)
@@ -296,6 +297,7 @@ request_server (mach_msg_header_t *inp,
 	return bootstrap_server (inp, outp);
     }
   else
+#endif
     return (exec_server (inp, outp)
 	    || io_server (inp, outp)
 	    || device_server (inp, outp)
@@ -399,10 +401,6 @@ void msg_thread ();
 /* Callbacks for boot_script.c; see boot_script.h.  */
 
 mach_port_t boot_script_task_port;
-mach_port_t boot_script_host_port;
-mach_port_t boot_script_device_port;
-mach_port_t boot_script_bootstrap_port;
-char *boot_script_root_device;
 
 void *
 boot_script_malloc (int size)
@@ -461,12 +459,6 @@ boot_script_port_insert_right (mach_port_t task, mach_port_t name,
   return mach_port_insert_right (task, name, port, right);
 }
 
-void
-boot_script_set_bootstrap_port (mach_port_t task, mach_port_t port)
-{
-  task_set_bootstrap_port (task, port);
-}
-
 int
 boot_script_exec_cmd (mach_port_t task, char *path, int argc,
 		      char **argv, char *strings, int stringlen)
@@ -481,13 +473,12 @@ boot_script_exec_cmd (mach_port_t task, char *path, int argc,
   struct i386_thread_state regs;
 
   write (2, path, strlen (path));
+  write (2, "\r\n", 2);
 
   startpc = load_image (task, path);
   thread_create (task, &thread);
-
   arg_len = stringlen + (argc + 2) * sizeof (char *) + sizeof (integer_t);
   arg_len += 5 * sizeof (int);
-
   stack_end = VM_MAX_ADDRESS;
   stack_start = VM_MAX_ADDRESS - 16 * 1024 * 1024;
   vm_allocate (task, &stack_start, stack_end - stack_start, FALSE);
@@ -532,7 +523,6 @@ main (int argc, char **argv, char **envp)
   char *newargs;
 
   privileged_host_port = task_by_pid (-1);
-  boot_script_host_port = privileged_host_port;
   master_device_port = task_by_pid (-2);
 
   boot_script_task_port = mach_task_self ();
@@ -556,8 +546,6 @@ main (int argc, char **argv, char **envp)
       bootdevice = argv[3];
     }
 
-  boot_script_root_device = bootdevice;
-
   newargs = malloc (strlen (bootstrap_args) + 2);
   strcpy (newargs, bootstrap_args);
   strcat (newargs, "f");
@@ -568,7 +556,6 @@ main (int argc, char **argv, char **envp)
   
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
 		      &pseudo_master_device_port);
-  boot_script_device_port = pseudo_master_device_port;
   mach_port_insert_right (mach_task_self (),
 			  pseudo_master_device_port,
 			  pseudo_master_device_port,
@@ -585,7 +572,19 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
-  boot_script_bootstrap_port = MACH_PORT_NULL;
+  /* Initialize boot script variables.  */
+  if (boot_script_set_variable ("host-port", VAL_PORT,
+				(int) privileged_host_port)
+      || boot_script_set_variable ("device-port", VAL_PORT,
+				   (int) pseudo_master_device_port)
+      || boot_script_set_variable ("root-device", VAL_STR, (int) bootdevice)
+      || boot_script_set_variable ("boot-args", VAL_STR, (int) bootstrap_args))
+    {
+      char msg[] = "error setting variable";
+
+      write (2, msg, strlen (msg));
+      uxexit (1);
+    }
 
   /* Parse the boot script.  */
   {
@@ -641,6 +640,14 @@ main (int argc, char **argv, char **envp)
 	line = ++p;
       }
   }
+
+  if (index (boot_args, 'd'))
+    {
+      const char msg[] = "Pausing. . .";
+      char c;
+      write (2, msg, sizeof (msg) - 1);
+      read (0, &c, 1);
+    }
 
   foo = 1;
   init_termstate ();
@@ -1138,8 +1145,10 @@ S_exec_startup (mach_port_t port,
   int *intarray, nc;
   char argv[100];
 
+#if 0
   if (!boot_like_hurd)
     return EOPNOTSUPP;
+#endif
 
   /* The argv string has nulls in it; so we use %c for the nulls
      and fill with constant zero. */
@@ -2118,4 +2127,3 @@ kern_return_t S_term_on_pty
 	io_t *ptymaster
 )
 { return EOPNOTSUPP; }
-
