@@ -1,3 +1,8 @@
+Sat Jun  7 21:35:37 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* spec.c (ps_emit_wait): Provide slightly better abbreviations for
+	various port types.
+
 Fri May 23 13:13:18 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* procstat.c (summarize_thread_basic_info): Don't include the
