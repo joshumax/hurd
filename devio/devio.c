@@ -32,15 +32,6 @@
 
 #include "open.h"
 #include "dev.h"
-
-#ifdef MSG
-#define DEBUG(what) \
-  ((debug) \
-   ? ({ mutex_lock(&debug_lock); what; mutex_unlock(&debug_lock);0;}) \
-   : 0)
-#else
-#define DEBUG(what) 0
-#endif
 
 /* ---------------------------------------------------------------- */
 
@@ -96,7 +87,6 @@ usage(int status)
 static struct option options[] =
 {
   {"block-size", required_argument, 0, 'B'},
-  {"debug", required_argument,  0, 'D'},
   {"help", no_argument, 0, '?'},
   {"devnum", required_argument, 0, 'm'},
   {"block", no_argument, 0, 'b'},
@@ -122,11 +112,6 @@ static int device_block_size = 0;
 /* A unixy device number to return when the device is stat'd.  */
 static int device_number = 0;
 
-/* A stream on which we can print debugging message.  */
-FILE  *debug = NULL;
-/* A lock to use while doing so.  */
-struct mutex debug_lock;
-
 void main(int argc, char *argv[])
 {
   int opt;
@@ -142,12 +127,9 @@ void main(int argc, char *argv[])
       case 'p': device_flags |= DEV_SEEKABLE; break;
       case 'B': device_block_size = atoi(optarg); break;
       case 'd': device_number = atoi(optarg); break;
-      case 'D': debug = fopen(optarg, "w+"); setlinebuf(debug); break;
       case '?': usage(0);
       default:  usage(1);
       }
-
-  mutex_init(&debug_lock);
 
   if (device_flags & DEV_READONLY)
     /* Catch illegal writes at the point of open.  */
@@ -362,16 +344,8 @@ trivfs_S_fsys_syncfs (struct trivfs_control *cntl,
 		      int wait, int dochildren)
 {
   struct dev *dev = device;
-
-  DEBUG(fprintf(debug, "Syncing filesystem...\n"));
-
   if (dev)
     return dev_sync(dev, wait);
   else
     return 0;
-}
-
-void
-thread_cancel (thread_t foo __attribute__ ((unused)))
-{
 }
