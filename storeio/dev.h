@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,6 +32,20 @@ struct dev
   /* The device to which we're doing io.  */
   struct store *store;
 
+  /* The current owner of the open device.  For terminals, this affects
+     controlling terminal behavior (see term_become_ctty).  For all objects
+     this affects old-style async IO.  Negative values represent pgrps.  This
+     has nothing to do with the owner of a file (as returned by io_stat, and
+     as used for various permission checks by filesystems).  An owner of 0
+     indicates that there is no owner.  */
+  pid_t owner;
+
+  /* Nonzero iff the --no-cache flag was given.
+     If this is set, the remaining members are not used at all
+     and don't need to be initialized or cleaned up.  */
+  int inhibit_cache;
+
+
   /* A bitmask corresponding to the part of an offset that lies within a
      device block.  */
   unsigned block_mask;
@@ -50,21 +64,14 @@ struct dev
 
   struct pager *pager;
   struct mutex pager_lock;
-
-  /* The current owner of the open device.  For terminals, this affects
-     controlling terminal behavior (see term_become_ctty).  For all objects
-     this affects old-style async IO.  Negative values represent pgrps.  This
-     has nothing to do with the owner of a file (as returned by io_stat, and
-     as used for various permission checks by filesystems).  An owner of 0
-     indicates that there is no owner.  */
-  pid_t owner;
 };
 
 /* Returns a pointer to a new device structure in DEV for the device
    NAME, with the given FLAGS.  If BLOCK_SIZE is non-zero, it should be the
    desired block size, and must be a multiple of the device block size.
    If an error occurs, the error code is returned, otherwise 0.  */
-error_t dev_open (struct store_parsed *name, int flags, struct dev **dev);
+error_t dev_open (struct store_parsed *name, int flags, int inhibit_cache,
+		  struct dev **dev);
 
 /* Free DEV and any resources it consumes.  */
 void dev_close (struct dev *dev);

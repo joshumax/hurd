@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -138,7 +138,8 @@ dev_buf_rw (struct dev *dev, size_t buf_offs, size_t *io_offs, size_t *len,
    desired block size, and must be a multiple of the device block size.
    If an error occurs, the error code is returned, otherwise 0.  */
 error_t
-dev_open (struct store_parsed *name, int flags, struct dev **dev)
+dev_open (struct store_parsed *name, int flags, int inhibit_cache,
+	  struct dev **dev)
 {
   error_t err;
   struct dev *new = malloc (sizeof (struct dev));
@@ -161,12 +162,16 @@ dev_open (struct store_parsed *name, int flags, struct dev **dev)
       return ENOMEM;
     }
 
-  new->buf_offs = -1;
-  rwlock_init (&new->io_lock);
+  new->inhibit_cache = inhibit_cache;
   new->owner = 0;
-  new->block_mask = (1 << new->store->log2_block_size) - 1;
-  new->pager = 0;
-  mutex_init (&new->pager_lock);
+  if (!inhibit_cache)
+    {
+      new->buf_offs = -1;
+      rwlock_init (&new->io_lock);
+      new->block_mask = (1 << new->store->log2_block_size) - 1;
+      new->pager = 0;
+      mutex_init (&new->pager_lock);
+    }
   *dev = new;
 
   return 0;
@@ -176,13 +181,16 @@ dev_open (struct store_parsed *name, int flags, struct dev **dev)
 void
 dev_close (struct dev *dev)
 {
-  if (dev->pager != NULL)
-    pager_shutdown (dev->pager);
+  if (!dev->inhibit_cache)
+    {
+      if (dev->pager != NULL)
+	pager_shutdown (dev->pager);
 
-  dev_buf_discard (dev);
+      dev_buf_discard (dev);
 
-  vm_deallocate (mach_task_self (),
-		 (vm_address_t)dev->buf, dev->store->block_size);
+      vm_deallocate (mach_task_self (),
+		     (vm_address_t)dev->buf, dev->store->block_size);
+    }
 
   store_free (dev->store);
 
@@ -195,6 +203,9 @@ error_t
 dev_sync(struct dev *dev, int wait)
 {
   error_t err;
+
+  if (dev->inhibit_cache)
+    return 0;
 
   /* Sync any paged backing store.  */
   if (dev->pager != NULL)
@@ -330,6 +341,22 @@ dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
 		     buf + io_offs, len, amount);
     }
 
+  if (dev->inhibit_cache)
+    {
+      /* Under --no-cache, we permit only whole-block writes.
+	 Note that in this case we handle non-power-of-two block sizes.  */
+
+      struct store *store = dev->store;
+
+      if (offs % store->block_size != 0 || len % store->block_size != 0)
+	/* Not whole blocks.  No can do.  */
+	return EINVAL;
+
+      /* Do a direct write to the store.  */
+      return store_write (dev->store, offs * store->block_size,
+			  buf, len, amount);
+    }
+
   return dev_rw (dev, offs, len, amount, buf_write, raw_write);
 }
 
@@ -395,6 +422,23 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 	    }
 	  return err;
 	}
+    }
+
+  if (dev->inhibit_cache)
+    {
+      /* Under --no-cache, we permit only whole-block reads.
+	 Note that in this case we handle non-power-of-two block sizes.  */
+
+      struct store *store = dev->store;
+
+      if (offs % store->block_size != 0
+	  || whole_amount % store->block_size != 0)
+	/* Not whole blocks.  No can do.  */
+	return EINVAL;
+
+      /* Do a direct read from the store.  */
+      return store_read (dev->store, offs * store->block_size, whole_amount,
+			 buf, len);
     }
 
   err = dev_rw (dev, offs, whole_amount, len, buf_read, raw_read);

@@ -1,6 +1,6 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -35,8 +35,9 @@
 
 static struct argp_option options[] =
 {
-  {"readonly", 'r', 0,	  0, "Disallow writing"},
-  {"writable", 'w', 0,	  0, "Allow writing"},
+  {"readonly", 'r', 0,	  0,"Disallow writing"},
+  {"writable", 'w', 0,	  0,"Allow writing"},
+  {"no-cache", 'c', 0,	  0,"Never cache data--user io does direct device io"},
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
@@ -53,10 +54,13 @@ static struct mutex device_lock;
 
 /* Desired store parameters specified by the user.  */
 struct store_parsed *store_name;
-static int readonly = 0;
+static int readonly;
+
+/* Nonzero if user gave --no-cache flag.  */
+static int inhibit_cache;
 
 /* A unixy device number to return when the device is stat'd.  */
-static int rdev = 0;
+static int rdev;
 
 /* Parse a single option.  */
 static error_t
@@ -66,6 +70,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
     {
     case 'r': readonly = 1; break;
     case 'w': readonly = 0; break;
+
+    case 'c': inhibit_cache = 1; break;
 
     case 'n':
       {
@@ -147,6 +153,9 @@ trivfs_append_args (struct trivfs_control *trivfs_control,
       err = argz_add (argz, argz_len, buf);
     }
 
+  if (!err && inhibit_cache)
+    err = argz_add (argz, argz_len, "--no-cache");
+
   if (! err)
     err = argz_add (argz, argz_len, readonly ? "--readonly" : "--writable");
 
@@ -173,7 +182,8 @@ check_open_hook (struct trivfs_control *trivfs_control,
   if (device == NULL)
     /* Try and open the device.  */
     {
-      err = dev_open (store_name, readonly ? STORE_READONLY : 0, &device);
+      err = dev_open (store_name, readonly ? STORE_READONLY : 0, inhibit_cache,
+		      &device);
       if (err)
 	device = NULL;
       if (err && (flags & (O_READ|O_WRITE)) == 0)

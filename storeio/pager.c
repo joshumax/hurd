@@ -1,6 +1,6 @@
 /* Paging interface for storeio devices
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -217,7 +217,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 {
   error_t err = store_map (dev->store, prot, memobj);
 
-  if (err == EOPNOTSUPP)
+  if (err == EOPNOTSUPP && !dev->inhibit_cache)
     {
       int created = 0;
 
