@@ -22,6 +22,9 @@
 
 #include "priv.h"
 
+extern char *diskfs_extra_version;
+#pragma weak diskfs_extra_version
+
 static void
 _print_version (FILE *stream, struct argp_state *state)
 {
@@ -32,17 +35,22 @@ _print_version (FILE *stream, struct argp_state *state)
   else
     /* Construct a version using the standard diskfs variables.  */
     {
-      char *ev[15] = { 0 };
+      char ev[15] = { 0 };
 
       if (diskfs_edit_version)
 	if (diskfs_edit_version <= 26)
-	  sprintf (ev, ".%c", diskfs_edit_version - 1 + 'a');
+	  sprintf (ev, "%c", diskfs_edit_version - 1 + 'a');
 	else
 	  sprintf (ev, ".%d", diskfs_edit_version);
 
-      fprintf (stream, "%s %d.%d%s (GNU %s)\n",
-	       diskfs_server_name, diskfs_major_version, diskfs_minor_version,
-	       ev, HURD_RELEASE);
+      if (diskfs_extra_version)
+	fprintf (stream, "%s %d.%d%s (%s, GNU %s)\n",
+		 diskfs_server_name, diskfs_major_version, diskfs_minor_version,
+		 ev, diskfs_extra_version, HURD_RELEASE);
+      else
+	fprintf (stream, "%s %d.%d%s (GNU %s)\n",
+		 diskfs_server_name, diskfs_major_version, diskfs_minor_version,
+		 ev, HURD_RELEASE);
     }
 }
 
