@@ -163,14 +163,14 @@ main (int argc, char **argv)
   get_hypermetadata ();
 
   if (diskpagersize < sblock->fs_size * sblock->fs_fsize)
-      {
-	fprintf (stderr, 
-		 "Disk size (%d) less than necessary "
-		 "(superblock says we need %ld)\n",
-		 sizes[DEV_GET_SIZE_DEVICE_SIZE],
-		 sblock->fs_size * sblock->fs_fsize);
-	exit (1);
-      }
+    {
+      fprintf (stderr, 
+	       "Disk size (%d) less than necessary "
+	       "(superblock says we need %ld)\n",
+	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
+	       sblock->fs_size * sblock->fs_fsize);
+      exit (1);
+    }
 
   vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
 
