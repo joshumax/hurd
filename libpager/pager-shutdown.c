@@ -1,5 +1,5 @@
 /* Pager shutdown in pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,17 +29,7 @@ pager_shutdown (struct pager *p)
   pager_flush (p, 1);
   mutex_lock (&p->interlock);
   p->pager_state = SHUTDOWN;
-
-  /* Cancel the pending no-senders notification. */
-  mach_port_request_notification (mach_task_self (), p->port.port_right, 
-				  MACH_NOTIFY_NO_SENDERS, 0, MACH_PORT_NULL,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &port);
-  
+  ports_destroy_right (p);
   mutex_unlock (&p->interlock);
-  if (port)
-    {
-      ports_port_deref (p);
-      mach_port_deallocate (mach_task_self (), port);
-    }
 }
 
