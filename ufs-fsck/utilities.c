@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 /* Read disk block ADDR into BUF of SIZE bytes. */
 void
@@ -145,3 +146,89 @@ check_range (daddr_t blk, int cnt)
   return 0;
 }  
 
+/* Like printf, but exit if we are preening. */
+int
+pfatal (char *fmt, ...)
+{
+  va_list args;
+  int ret;
+  
+  va_start (args, fmt);
+  ret = vprintf (fmt, args);
+  va_end (args);
+  putchar ('\n');
+  if (preen)
+    exit (1);
+  
+  return ret;
+}
+
+/* Like printf, but exit after printing. */
+void
+errexit (char *fmt, ...)
+{
+  va_list args;
+
+  va_start (args, fmt);
+  vprintf (fmt, args);
+  va_end (args);
+  exit (1);
+}
+
+/* Like printf, but give more information (when we fully support it) 
+   when preening. */
+int
+pwarn (char *fmt, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start (args, fmt);
+  ret = vprintf (fmt, args);
+  va_end (args);
+  return ret;
+}
+
+/* Ask the user a question; return 1 if the user says yes, and 0
+   if the user says no. */
+int
+reply (char *question)
+{
+  int persevere;
+  char c;
+  
+  if (preen)
+    pfatal ("INTERNAL ERROR: GOT TO reply ()");
+
+  persevere = !strcmp (question, "CONTINUE");
+  putchar ('\n');
+  if (!persevere && (nowrite || writefd < 0))
+    {
+      printf ("%s? no\n\n", question);
+      return 0;
+    }
+  else if (noquery || (persevere && nowrite))
+    {
+      printf ("%s? yes\n\n", question);
+      return 1;
+    }
+ else
+    {
+      do
+	{
+	  printf ("%s? [yn] ", question);
+	  fflush (stdout);
+	  c = getchar ();
+	  while (c != '\n' && getchar () != '\n')
+	    if (feof (stdin))
+	      return 0;
+	}
+      while (c != 'y' && c != 'Y' && c != 'n' && c != 'N');
+      putchar ('\n');
+      return c == 'y' || c == 'Y';
+    }
+}
+
+  
+  
+  
