@@ -3,6 +3,9 @@
 export GNUTARGET=elf32-i386
 export OBJCOPY=i386-gnu-objcopy
 
+INSTALL=install
+IMAGE=image
+
 BF=bfloppy-image
 RF=rfloppy-image
 
@@ -11,14 +14,14 @@ bfloppy-files = $(bfloppy-bootfs:%=hurd/%) $(bfloppy-bootprogs:%=boot/%) \
 bfloppy-bootfs = ufs
 bfloppy-bootprogs = kernel bootstrap
 
-$(BF)/boot/servers.boot: hurd-image/boot/floppy.boot
+$(BF)/boot/servers.boot: $(IMAGE)/boot/floppy.boot
 	-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
 	cp $< $@
 
-$(BF)/%/: hurd-image/%/
+$(BF)/%/: $(IMAGE)/%/
 	test -d $@ || mkdir -p $@
-$(BF)/%: hurd-image/%
+$(BF)/%: $(IMAGE)/%
 	-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
 	ln $< $@ || cp $< $@
@@ -46,27 +49,27 @@ smallso-LDFLAGS = -Wl,-rpath-link=/lib
 libc-USERS =
 libc-DEPS =
 
-$(RF)/lib/libc.so: hurd-image/lib/libc.so hurd-image/lib/libhurduser.so hurd-image/lib/libmachuser.so $(libc-satisfies:%=hurd-image/%)
+$(RF)/lib/libc.so: $(IMAGE)/lib/libc.so $(IMAGE)/lib/libhurduser.so $(IMAGE)/lib/libmachuser.so $(libc-satisfies:%=$(IMAGE)/%)
 	mksmallso $(smallso-LDFLAGS) \
-	  $@ $(libc-obj-dir)/libc_pic.a '-Lhurd-image/lib -lhurduser -lmachuser' \
+	  $@ $(libc-obj-dir)/libc_pic.a '-L$(IMAGE)/lib -lhurduser -lmachuser' \
 	  $(filter-out $(firstword $^),$^)
 
-$(RF)/lib/libhurduser.so: $(RF)/lib/libc.so $(libc-satisfies:%=hurd-image/%)
-	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libhurduser_pic.a -Lhurd-image/lib -lmachuser $(filter-out $(firstword $^),$^)
+$(RF)/lib/libhurduser.so: $(RF)/lib/libc.so $(libc-satisfies:%=$(IMAGE)/%)
+	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libhurduser_pic.a -L$(IMAGE)/lib -lmachuser $(filter-out $(firstword $^),$^)
 
-$(RF)/lib/libmachuser.so: $(RF)/lib/libc.so $(RF)/lib/libhurduser.so $(libc-satisfies:%=hurd-image/%)
+$(RF)/lib/libmachuser.so: $(RF)/lib/libc.so $(RF)/lib/libhurduser.so $(libc-satisfies:%=$(IMAGE)/%)
 	mksmallso $(smallso-LDFLAGS) $@ $(libc-obj-dir)/libmachuser_pic.a '' $(filter-out $(firstword $^),$^)
 
 $(addprefix $(RF)/,$(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%)): \
-  $(RF)/%: hurd-image/%
+  $(RF)/%: $(IMAGE)/%
 	@test -d $(@D) || mkdir -p $(@D)
 	gzip -9v -c $< > $@.new
 	chmod 555 $@.new
 	mv -f $@.new $@
 
-$(RF)/%/: hurd-image/%/
+$(RF)/%/: $(IMAGE)/%/
 	test -d $@ || mkdir -p $@
-$(RF)/%: hurd-image/%
+$(RF)/%: $(IMAGE)/%
 	-rm -f $@
 	@test -d $(@D) || mkdir -p $(@D)
 	ln $< $@ || cp $< $@
@@ -96,7 +99,7 @@ floppy%-image.fs: /tmp/floppy%-image.fs; cp -f $< $@
 	vnconfig -u ${VND_DEV} $@.new
 	mv -f $@.new $@
 
-hurd-image.tar: hurd-image hurd-image.stamp
+$(IMAGE).tar: $(IMAGE) $(IMAGE).stamp
 	tar cof $@ $<
 
 %.gz: %
@@ -108,17 +111,14 @@ hurd-image.tar: hurd-image hurd-image.stamp
 	mv -f $@.new $@
 
 
-instdirs := $(patsubst ../hurdinst/%,%,\
-		       $(filter-out ../hurdinst,\
-				    $(shell find ../hurdinst -type d -print \
+instdirs := $(patsubst $(INSTALL)/%,%,\
+		       $(filter-out $(INSTALL),\
+				    $(shell find $(INSTALL) -type d -print \
 					    | sort -r)))
 
-hurd-image/%/.stamp: ../hurdinst/%
+$(IMAGE)/%/.stamp: $(INSTALL)/%
 	@./install-stripped -N $@ $< $(@D)
 	@echo $< `date` > $@
 	@echo updated $(@D)/
-hurd-image.stamp: $(instdirs:%=hurd-image/%/.stamp); touch $@
-hurd-image: hurd-image.stamp
-
-
-	
+$(IMAGE).stamp: $(instdirs:%=$(IMAGE)/%/.stamp); touch $@
+$(IMAGE): $(IMAGE).stamp
