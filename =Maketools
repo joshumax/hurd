@@ -41,6 +41,9 @@ MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(ccdir)/ld -L$(ccdir)
-INSTALL_BIN=$(tooldir)/objcopy -S
+
+# objcopy zeroes the exec header, so we can't do this.
+#INSTALL_BIN=$(tooldir)/objcopy -S
+INSTALL_BIN=cp
 
 machine := i386
