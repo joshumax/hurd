@@ -32,7 +32,7 @@ libdiskfs := $(hurdinst)/lib/libdiskfs.a
 include $(hurdsource)/Maketools
 
 gccheaders = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/include
-libgcc := -lgcc
+libgcc := /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/libgcc.a
 
 # Flags for compilation
 CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
@@ -45,7 +45,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 # $(link) uses threads to get malloc until the one in the library is fixed.
 
 define link
-$(CC) -nostdlib -e __start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$(LD) -e __start $(LDFLAGS) -o $@ $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
 
