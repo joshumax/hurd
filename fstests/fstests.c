@@ -43,6 +43,7 @@ main ()
   root = _hurd_ports[INIT_PORT_CRDIR].port;
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
+#if 0
   if ((err = dir_unlink (root, "CREATED")) && err != ENOENT)
     printf ("Error on unlink: %d\n", err);
   else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
@@ -54,6 +55,12 @@ main ()
     printf ("Short write: %d\n", written);
   else if (err = file_syncfs (filetowrite, 1, 0))
     printf ("Error on sync: %d\n", err);
+#endif
+
+  if (err = dir_rename (root, "CREATED", root, "newname"))
+    printf ("Error on rename %d\n", err);
+
+  file_syncfs (root, 1, 0);
 
   printf ("All done.\n");
   malloc (0);
