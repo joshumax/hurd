@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+   Copyright (C) 1993,94,95,96,97,98,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -96,8 +96,8 @@ diskfs_start_bootstrap ()
   mach_port_t fdarray[3];	/* XXX */
   task_t newt;
   error_t err;
-  char *exec_argv, *initname;
-  size_t exec_argvlen;
+  char *exec_argv, *exec_env, *initname;
+  size_t exec_argvlen, exec_envlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
   mach_port_t diskfs_exec;
@@ -274,6 +274,9 @@ diskfs_start_bootstrap ()
 
   fdarray[0] = fdarray[1] = fdarray[2] = get_console (); /* XXX */
 
+  err = argz_create (environ, &exec_env, &exec_envlen);
+  assert_perror (err);
+
   err = task_create (mach_task_self (), 0, &newt);
   assert_perror (err);
   if (index (diskfs_boot_flags, 'd'))
@@ -284,13 +287,14 @@ diskfs_start_bootstrap ()
   printf (" %s", basename (exec_argv));
   fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
-		   newt, 0, exec_argv, exec_argvlen, 0, 0,
+		   newt, 0, exec_argv, exec_argvlen, exec_env, exec_envlen,
 		   fdarray, MACH_MSG_TYPE_COPY_SEND, 3,
 		   portarray, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 		   /* Supply no intarray, since we have no info for it.
 		      With none supplied, it will use the defaults.  */
 		   NULL, 0, 0, 0, 0, 0);
   free (exec_argv);
+  free (exec_env);
   mach_port_deallocate (mach_task_self (), root_pt);
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
