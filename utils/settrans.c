@@ -32,7 +32,8 @@
 
 #define DEFAULT_TIMEOUT 60
 
-#define STRINGIFY(arg) #arg
+#define _STRINGIFY(arg) #arg
+#define STRINGIFY(arg) _STRINGIFY (arg)
 
 static struct argp_option options[] =
 {
