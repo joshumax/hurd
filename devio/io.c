@@ -212,10 +212,8 @@ trivfs_S_file_truncate (struct trivfs_protid *cred, off_t size)
 {
   if (!cred)
     return EOPNOTSUPP;
-  else if (dev_is(((struct open *)cred->po->hook)->dev, DEV_SERIAL))
-    return 0;
   else
-    return EINVAL;
+    return 0;
 }
 
 /* ---------------------------------------------------------------- */
