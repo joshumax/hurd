@@ -16,39 +16,12 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := init.trim
+makemode := server
+
+SRCS = init.c
+OBJS = init.o startupServer.o notifyServer.o startup_replyUser.o
+target = init
 
 include ../Makeconf
 
-DIST_FILES = Makefile init.c ChangeLog
-
-OBJS = init.o startupServer.o startup_replyUser.o notifyServer.o
-
-SRCS = init.c
-
-all: init
-
-init: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
-
-init.o: startup_S.h startup_reply.h notify_S.h
-
-install: init $(hurdroot)
-	$(INSTALL_BIN) init $(hurdroot)/hurd/init
-
-
-startup_S.h startupServer.c: $(includedir)/hurd/startup.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/hurd/startup.defs \
-	| $(MIGCOM) -prefix S_ -sheader startup_S.h -header /dev/null -user /dev/null
-
-startup_reply.h startup_replyUser.c: $(includedir)/hurd/startup_reply.defs $(includedir)/hurd/hurd_types.defs
-	$(CPP) $(CPPFLAGS) $(includedir)/hurd/startup_reply.defs \
-	| $(MIGCOM) -server /dev/null
-
-notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
-	$(CPP) $(CPPFLAGS)  $(includedir)/mach/notify.defs \
-	| $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
-
-clean:
-	rm -f init *.o
-relink:
-	rm -f init
+init.o: startup_reply_U.h startup_S.h notify_S.h
