@@ -22,7 +22,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <hurd.h>
-#include <hurd/ports.h>
 #include <hurd/startup.h>
 
 #include "proc.h"
