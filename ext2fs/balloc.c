@@ -1,6 +1,25 @@
 /* Block allocation routines.
- *
- * Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
+/*
+ *  linux/fs/ext2/balloc.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -21,15 +40,15 @@
  * when a file system is mounted (see ext2_read_super).
  */
 
+#include <string.h>
 #include "ext2fs.h"
 
-#define in_range(b, first, len)		((b) >= (first) && (b) <= (first) + (len) - 1)
+#define in_range(b, first, len) ((b) >= (first) && (b) <= (first) + (len) - 1)
 
 void 
 ext2_free_blocks (unsigned long block, unsigned long count)
 {
   char *bh;
-  char *bh2;
   unsigned long block_group;
   unsigned long bit;
   unsigned long i;
@@ -60,7 +79,7 @@ ext2_free_blocks (unsigned long block, unsigned long count)
   gdp = group_desc (block_group);
   bh = baddr (gdp->bg_block_bitmap);
 
-  if (test_opt (CHECK_STRICT) &&
+  if (check_strict &&
       (in_range (gdp->bg_block_bitmap, block, count) ||
        in_range (gdp->bg_inode_bitmap, block, count) ||
        in_range (block, gdp->bg_inode_table, itb_per_group) ||
@@ -82,8 +101,8 @@ ext2_free_blocks (unsigned long block, unsigned long count)
 	}
     }
 
-  record_poke (bh, block_size);
-  record_poke (gdp, sizeof *gdp);
+  pokel_add (&sblock_pokel, bh, block_size);
+  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
 
   sblock_dirty = 1;
   spin_unlock (&sblock_lock);
@@ -103,7 +122,6 @@ ext2_new_block (unsigned long goal,
 		u32 * prealloc_count, u32 * prealloc_block)
 {
   char *bh;
-  char *bh2;
   char *p, *r;
   int i, j, k, tmp;
   unsigned long lmap;
@@ -115,6 +133,7 @@ ext2_new_block (unsigned long goal,
 
   spin_lock (&sblock_lock);
 
+#ifdef XXX /* Auth check to use reserved blocks  */
   if (sblock->s_free_blocks_count <= sblock->s_r_blocks_count &&
       (!fsuser () && (sb->u.ext2_sb.s_resuid != current->fsuid) &&
        (sb->u.ext2_sb.s_resgid == 0 ||
@@ -123,6 +142,7 @@ ext2_new_block (unsigned long goal,
       spin_unlock (&sblock_lock);
       return 0;
     }
+#endif
 
   ext2_debug ("goal=%lu.\n", goal);
 
@@ -256,18 +276,16 @@ got_block:
 
   tmp = j + i * sblock->s_blocks_per_group + sblock->s_first_data_block;
 
-  if (test_opt (CHECK_STRICT) &&
+  if (check_strict &&
       (tmp == gdp->bg_block_bitmap ||
        tmp == gdp->bg_inode_bitmap ||
        in_range (tmp, gdp->bg_inode_table, itb_per_group)))
     ext2_panic ("ext2_new_block",
-		"Allocating block in system zone - "
-		"block = %u", tmp);
+		"Allocating block in system zone; block = %u", tmp);
 
   if (set_bit (j, bh))
     {
-      ext2_warning ("ext2_new_block",
-		    "bit already set for block %d", j);
+      ext2_warning ("ext2_new_block", "bit already set for block %d", j);
       goto repeat;
     }
 
@@ -297,7 +315,7 @@ got_block:
 
   j = tmp;
 
-  record_poke (bh, block_size);
+  pokel_add (&sblock_pokel, bh, block_size);
 
   if (j >= sblock->s_blocks_count)
     {
@@ -310,13 +328,13 @@ got_block:
 
   bh = baddr (j);
   memset (bh, 0, block_size);
-  record_poke (bh, block_size);
+  pokel_add (&sblock_pokel, bh, block_size);
 
   ext2_debug ("allocating block %d. "
 	      "Goal hits %d of %d.\n", j, goal_hits, goal_attempts);
 
   gdp->bg_free_blocks_count--;
-  record_poke (gdp, sizeof *gdp);
+  pokel_add (&sblock_pokel, gdp, sizeof *gdp);
 
   sblock->s_free_blocks_count--;
   sblock_dirty = 1;
@@ -345,7 +363,7 @@ ext2_count_free_blocks ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      x = ext2_count_free (baddr (gdb->bg_block_bitmap), block_size);
+      x = count_free (baddr (gdb->bg_block_bitmap), block_size);
       printk ("group %d: stored = %d, counted = %lu\n",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
@@ -413,7 +431,7 @@ ext2_check_blocks_bitmap ()
 		      "Block #%d of the inode table in "
 		      "group %d is marked free", j, i);
 
-      x = ext2_count_free (bh, block_size);
+      x = count_free (bh, block_size);
       if (gdp->bg_free_blocks_count != x)
 	ext2_error ("ext2_check_blocks_bitmap",
 		    "Wrong free blocks count for group %d, "
