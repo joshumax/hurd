@@ -28,6 +28,7 @@ objcopy bin/gzip
 objcopy bin/ln
 objcopy bin/ls
 objcopy bin/mv
+objcopy bin/rm
 objcopy bin/settrans
 objcopy bin/showtrans
 objcopy bin/sync
