@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -42,6 +42,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   struct protid *newpi;
   mode_t type;
   struct idvec *uvec, *gvec;
+  struct peropen peropen_context = { root_parent: dotdot };
 
   if (!pt)
     return EOPNOTSUPP;
@@ -68,7 +69,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
       && !(flags & O_NOTRANS))
     {
       err = fshelp_fetch_root (&netfs_root_node->transbox,
-			       &dotdot, dotdot, cred, flags,
+			       &peropen_context, dotdot, cred, flags,
 			       _netfs_translator_callback1,
 			       _netfs_translator_callback2,
 			       do_retry, retry_name, retry_port);
@@ -129,9 +130,10 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   flags &= ~OPENONLY_STATE_MODES;
   
   newpi = netfs_make_protid (netfs_make_peropen (netfs_root_node, flags,
-						 dotdot),
+						 &peropen_context),
 			     cred);
   mach_port_deallocate (mach_task_self (), dotdot);
+
   *do_retry = FS_RETRY_NORMAL;
   *retry_port = ports_get_right (newpi);
   *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
