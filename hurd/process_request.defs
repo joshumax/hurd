@@ -1,6 +1,6 @@
 /* Definitions for process server interface (request-only version)
 
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -32,30 +32,10 @@ type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 
 /*** Host management ***/
 
-/* Set the hostid for the machine.  This should be unique among all
-   machines.  By convention, it is the "primary" IP address of the
-   machine.  */
-simpleroutine proc_sethostid_request (
-	process: process_t;
-	ureplyport reply: reply_port_t;
-	hostid: int);
-
-/* Get the host id.  */
-simpleroutine proc_gethostid_request (
-	process: process_t;
-	ureplyport reply: reply_port_t);
-
-/* Set the hostname for the machine.  By convention this is the DNS
-   FQDN for the machine.  */
-simpleroutine proc_sethostname_request (
-	process: process_t;
-	ureplyport reply: reply_port_t;
-	hostname: data_t);
-
-/* Get the hostname.  */
-simpleroutine proc_gethostname_request (
-	process: process_t;
-	ureplyport reply: reply_port_t);
+skip;  /* Was proc_sethostid */
+skip;  /* Was proc_gethostid */
+skip;  /* Was proc_sethostname */
+skip;  /* Was proc_gethostname */
 
 /* Get the privileged host port and the device master port.  */
 simpleroutine proc_getprivports_request (
@@ -209,7 +189,7 @@ simpleroutine proc_handle_exceptions_request (
 
 
 
-/*** Mark bits.  Some of these (exec, traced, eg) modify small pieces 
+/*** Mark bits.  Some of these (exec, traced, eg) modify small pieces
    of the proc server's behavior; others are purely informational. ***/
 
 /* Mark the process as stopped on a signal. */
@@ -239,13 +219,13 @@ simpleroutine proc_mark_exec_request (
 	ureplyport reply: reply_port_t);
 
 /* Inform the process server that the process has asked to be traced.
-   The only result of this is to change the behavior of wait by the 
+   The only result of this is to change the behavior of wait by the
    parent slightly.  */
 simpleroutine proc_mark_traced_request (
 	process: process_t;
 	ureplyport reply: reply_port_t);
 
-/* Inform the process server whether SIGCHLD should be sent for stopped 
+/* Inform the process server whether SIGCHLD should be sent for stopped
    child processes.  */
 simpleroutine proc_mod_stopchild_request (
 	process: process_t;
@@ -317,7 +297,7 @@ simpleroutine proc_getloginpids_request (
 	ureplyport reply: reply_port_t;
 	id: pid_t);
 
-/* These next two should not actually be used; they are here 
+/* These next two should not actually be used; they are here
    for "historic reasons."  You are not expected to understand this. */
 simpleroutine proc_setlogin_request (
 	process: process_t;
@@ -385,4 +365,3 @@ simpleroutine proc_get_tty_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
 	pid: pid_t);
-
