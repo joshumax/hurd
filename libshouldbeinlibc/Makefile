@@ -31,10 +31,3 @@ CPPFLAGS += $(CPPFLAGS-$(notdir $<))
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
 
 include ../Makeconf
-
-lndist: $(srcdir)/hurd-snap/$(dir)/error.c $(srcdir)/hurd-snap/$(dir)/error.h
-
-$(srcdir)/hurd-snap/$(dir)/error.c: error.c
-	cp $< $@
-$(srcdir)/hurd-snap/$(dir)/error.h: error.h
-	cp $< $@
