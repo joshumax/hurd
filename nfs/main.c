@@ -64,7 +64,7 @@ int max_transmit_timeout = 30;
 int soft_retries = DEFAULT_SOFT_RETRIES;
 
 /* True iff we are mounted soft. */
-int mounted_soft = 1;
+int mounted_soft = 0;
 
 /* Maximum number of bytes to read at once. */
 int read_size = DEFAULT_READ_SIZE;
