@@ -62,7 +62,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
     path++;
 
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
-  *retry = FS_RETRY_NONE;
+  *retry = FS_RETRY_NORMAL;
+  retryname[0] = '\0';
 
   if (path[0] == '\0')
     {
@@ -259,8 +260,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	     arrange to have a correct repeat call made. */
 	  if (!error && !lastcomp)
 	    {
-	      if (*retry == FS_RETRY_NONE)
-		*retry = FS_RETRY_NORMAL;
 	      strcat (retryname, "/");
 	      strcat (retryname, nextname);
 	    }
