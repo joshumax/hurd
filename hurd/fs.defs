@@ -43,7 +43,9 @@ routine file_exec (
 	envp: data_t;
 	fdarray: portarray_t;
 	portarray: portarray_t;
-	intarray: intarray_t);
+	intarray: intarray_t;
+	deallocnames: mach_port_name_array_t;
+	destroynames: mach_port_name_array_t);
 
 /* Change owner and/or group */
 /* INTR */
