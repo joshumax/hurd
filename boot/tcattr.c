@@ -19,7 +19,6 @@ Cambridge, MA 02139, USA.  */
 #include <errno.h>
 #include <stddef.h>
 #include <termios.h>
-#include <sys/ioctl.h>
 
 #undef	B0
 #undef	B50
@@ -363,6 +362,7 @@ const speed_t __bsd_speeds[] =
     38400,
   };
 
+extern int ioctl ();
 
 /* Set the state of FD to *TERMIOS_P.  */
 int
