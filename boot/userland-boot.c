@@ -25,13 +25,13 @@
 #include "boot_script.h"
 
 void *
-boot_script_malloc (size_t size)
+boot_script_malloc (unsigned int size)
 {
   return malloc (size);
 }
 
 void
-boot_script_free (void *ptr, size_t size)
+boot_script_free (void *ptr, unsigned int size)
 {
   free (ptr);
 }
@@ -82,7 +82,7 @@ boot_script_free_task (task_t task, int aborting)
 }
 
 int
-boot_script_insert_right (struct cmd *cmd , mach_port_t port)
+boot_script_insert_right (struct cmd *cmd, mach_port_t port, mach_port_t *name)
 {
   error_t err = mach_port_insert_right (cmd->task,
 					port, port, MACH_MSG_TYPE_COPY_SEND);
@@ -91,5 +91,12 @@ boot_script_insert_right (struct cmd *cmd , mach_port_t port)
       error (0, err, "%s: task_resume", cmd->path);
       return BOOT_SCRIPT_MACH_ERROR;
     }
+  *name = port;
   return 0;
+}
+
+int
+boot_script_insert_task_port (struct cmd *cmd, task_t task, mach_port_t *name)
+{
+  return boot_script_insert_right (cmd, task, name);
 }

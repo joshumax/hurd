@@ -3,6 +3,9 @@
 /* Written by Shantanu Goel (goel@cs.columbia.edu).  */
 
 #include <mach/mach_types.h>
+#if !KERNEL || OSKIT_MACH
+#include <string.h>
+#endif
 #include "boot_script.h"
 
 
@@ -30,8 +33,8 @@ struct sym
 
 /* Additional values symbols can take.
    These are only used internally.  */
-#define VAL_SYM		3	/* symbol table entry */
-#define VAL_FUNC	4	/* function pointer */
+#define VAL_SYM		10	/* symbol table entry */
+#define VAL_FUNC	11	/* function pointer */
 
 /* This structure describes an argument.  */
 struct arg
@@ -90,7 +93,7 @@ prompt_resume_task (struct cmd *cmd, int *val)
 /* List of builtin symbols.  */
 static struct sym builtin_symbols[] =
 {
-  { "task-create", VAL_FUNC, (int) create_task, VAL_PORT, 0 },
+  { "task-create", VAL_FUNC, (int) create_task, VAL_TASK, 0 },
   { "task-resume", VAL_FUNC, (int) resume_task, VAL_NONE, 1 },
   { "prompt-task-resume", VAL_FUNC, (int) prompt_resume_task, VAL_NONE, 1 },
 };
@@ -543,6 +546,7 @@ boot_script_exec ()
 	    {
 	      char *p, buf[50];
 	      int len;
+	      mach_port_t name;
 
 	      if (arg->type == VAL_SYM)
 		{
@@ -568,14 +572,21 @@ boot_script_exec ()
 		  len = strlen (p);
 		  break;
 
+		case VAL_TASK:
 		case VAL_PORT:
-		  /* Insert send right.  */
-		  error = boot_script_insert_right (cmd,
-						    (mach_port_t) arg->val);
+		  if (arg->type == VAL_TASK)
+		    /* Insert send right to task port.  */
+		    error = boot_script_insert_task_port
+		      (cmd, (task_t) arg->val, &name);
+		  else
+		    /* Insert send right.  */
+		    error = boot_script_insert_right (cmd,
+						      (mach_port_t) arg->val,
+						      &name);
 		  if (error)
 		    goto done;
 
-		  i = arg->val;
+		  i = name;
 		  p = buf + sizeof (buf);
 		  len = 0;
 		  do
