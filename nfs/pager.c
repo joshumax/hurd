@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -143,7 +143,7 @@ pager_read_page (struct user_pager_info *pager,
 	{
 	  mutex_unlock (&np->lock);
 	  free (rpcbuf);
-	  vm_deallocate (mach_task_self (), *buf, vm_page_size);
+	  munmap ((caddr_t) *buf, vm_page_size);
 	  return err;
 	}
   

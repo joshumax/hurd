@@ -1,3 +1,8 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* ops.c (netfs_get_dirents): Use munmap instead of vm_deallocate.
+	* pager.c (pager_read_page): Likewise.
+
 1999-02-01  Mark Kettenis  <kettenis@phys.uva.nl>
 
 	* ops.c: Include <maptime.h>.

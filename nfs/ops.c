@@ -1694,8 +1694,8 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
      all the pages, free the extra. */
   if (allocsize > *datacnt
       && round_page (userdp - *data) < round_page (allocsize))
-    vm_deallocate (mach_task_self (), round_page (userdp),
-		   round_page (allocsize) - round_page (userdp - *data));
+    munmap ((caddr_t) round_page (userdp),
+	    round_page (allocsize) - round_page (userdp - *data));
 
   *datacnt = userdp - *data;
   return 0;
