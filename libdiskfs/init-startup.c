@@ -70,7 +70,6 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
   return realnode;
 }
 
-#if 0
 error_t
 diskfs_S_startup_dosync (mach_port_t handle)
 {
@@ -97,7 +96,6 @@ diskfs_S_startup_dosync (mach_port_t handle)
   
   return 0;
 }
-#endif
 
 /* This is called when we have an ordinary environment, complete
    with proc and auth ports. */
