@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Called by the kernel when data is needed upon page fault */
+/* Implement pagein callback as described in <mach/memory_object.defs>. */
 kern_return_t
 _pager_seqnos_memory_object_data_request (mach_port_t object, 
 					  mach_port_seqno_t seqno,
