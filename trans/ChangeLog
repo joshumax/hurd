@@ -1,3 +1,10 @@
+2002-08-05  Marcus Brinkmann <marcus@gnu.org>
+
+	* proxy-defpager.c (allowed): Check CRED, not PORT.
+	(default_pager_info): Use real_defpager, not DEFAULT_PAGER.
+	(proxy_defpager_demuxer): New demuxer.
+	(main): Use it.
+
 2002-06-14  Roland McGrath  <roland@frob.com>
 
 	* proxy-defpager.c: New file.

@@ -33,7 +33,7 @@ allowed (mach_port_t port, int mode)
 {
   struct trivfs_protid *cred = ports_lookup_port
     (0, port, trivfs_protid_portclasses[0]);
-  if (port == 0)
+  if (!cred)
     return MIG_BAD_ID;
   error_t result = (cred->po->openmodes & mode) ? 0 : EACCES;
   ports_port_deref (cred);
@@ -53,7 +53,7 @@ kern_return_t
 default_pager_info (mach_port_t default_pager, default_pager_info_t *info)
 {
   return allowed (default_pager, O_READ)
-    ?: default_pager_info (default_pager, info);
+    ?: default_pager_info (real_defpager, info);
 }
 
 kern_return_t
@@ -215,6 +215,16 @@ Access to control interfaces of Mach default pager.\n\
 This translator should normally be set on " _SERVERS_DEFPAGER "."};
 
 int
+proxy_defpager_demuxer (mach_msg_header_t *inp,
+			mach_msg_header_t *outp)
+{
+  extern int default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
+
+  return default_pager_server (inp, outp)
+    || trivfs_demuxer (inp, outp);
+}
+
+int
 main (int argc, char **argv)
 {
   error_t err;
@@ -248,7 +258,8 @@ main (int argc, char **argv)
     error (4, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
+  ports_manage_port_operations_multithread (fsys->pi.bucket,
+					    proxy_defpager_demuxer,
 					    2 * 60 * 1000, 0, 0);
 
   return 0;
