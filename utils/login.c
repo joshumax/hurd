@@ -441,7 +441,6 @@ main(int argc, char *argv[])
       int retry_argc;
       char **retry_argv;
       char *via = envz_get (args, args_len, "VIA");
-      extern void _argp_unlock_xxx (); /* Secret unknown function.  */
 
       if (fmt)
 	error (retry ? 0 : code, err, fmt, str); /* May exit... */
@@ -457,7 +456,6 @@ main(int argc, char *argv[])
       argz_extract (retry_args, retry_args_len, retry_argv);
 
       /* Reinvoke ourselves with no userids or anything; shouldn't return.  */
-      _argp_unlock_xxx ();	/* Hack to get around problems with getopt. */
       main (retry_argc, retry_argv);
       exit (code);		/* But if it does... */
     }
