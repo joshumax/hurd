@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -56,8 +56,6 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
 
   auth = getauth ();
   err = auth_server_authenticate (auth, 
-				  ports_get_right (cred),
-				  MACH_MSG_TYPE_MAKE_SEND,
 				  rendport,
 				  MACH_MSG_TYPE_MOVE_SEND,
 				  ports_get_right (newcred),
