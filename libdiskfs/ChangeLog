@@ -1,3 +1,16 @@
+Thu Oct 24 15:56:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* opts-std-startup.c (store_argp_children, startup_argp_children):
+	New variables.
+	(store_argp_parents, startup_argp_children): Variable removed.
+	(diskfs_store_startup_argp): Use STORE_ARGP_CHILDREN instead of
+	STORE_ARGP_PARENTS.
+	(diskfs_startup_argp): Use STARTUP_ARGP_CHILDREN instead of
+	STARTUP_ARGP_PARENTS.
+	* opts-std-runtime.c (children): New variable.
+	(parents): Variable removed.
+	(diskfs_std_runtime_argp): Use CHILDREN instead of PARENTS.
+
 Mon Oct 21 21:54:34 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* diskfs.h: Add extern inline protection.
