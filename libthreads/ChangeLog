@@ -1,5 +1,7 @@
 2002-05-28  Roland McGrath  <roland@frob.com>
 
+	* cprocs.c (cproc_block): Can't be static, called from cancel-cond.c.
+
 	* cthreads.h (hurd_condition_wait, condition_implies,
 	condition_unimplies): Restore decls lost in merge.
 	(mutex_clear): Define as mutex_init instead of bogon (lost in merge).
