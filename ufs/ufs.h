@@ -24,15 +24,6 @@
 #include <hurd/diskfs.h>
 #include <assert.h>
 
-/* XXX */
-typedef unsigned long long u_quad_t;
-typedef long long quad_t;
-struct timespec 
-{
-  long ts_sec;
-  long ts_nsec;
-};
-
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
