@@ -20,8 +20,8 @@ dir := libshouldbeinlibc
 makemode := library
 
 libname = libshouldbeinlibc
-SRCS = error.c argz.c options.c
-LCLHDRS = error.h argz.h rwlock.h options.h
+SRCS = error.c argz.c options.c argp-parse.c argp-help.c line.c
+LCLHDRS = error.h argz.h rwlock.h options.h argp.h line.h
 installhdrs = $(LCLHDRS)
 installhdrsubdir = .
 
