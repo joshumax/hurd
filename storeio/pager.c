@@ -1,6 +1,6 @@
 /* Paging interface for storeio devices
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -124,6 +124,10 @@ pager_report_extent (struct user_pager_info *upi,
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
+  struct dev *dev = (struct dev *)upi;
+  mutex_lock (&dev->pager_lock);
+  dev->pager = 0;
+  mutex_unlock (&dev->pager_lock);
 }
 
 static struct port_bucket *pager_port_bucket = 0;
@@ -172,60 +176,39 @@ pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
 int
 dev_stop_paging (struct dev *dev, int nosync)
 {
-  int success = 1;		/* Initially assume success.  */
+  size_t num_pagers = ports_count_bucket (pager_port_bucket);
 
-  mutex_lock (&dev->pager_lock);
-
-  if (dev->pager != NULL)
+  if (num_pagers > 0 && !nosync)
     {
-      int num_pagers = ports_count_bucket (pager_port_bucket);
-      if (num_pagers > 0 && !nosync)
+      error_t block_cache (void *arg)
 	{
-	  error_t block_cache (void *arg)
-	    {
-	      struct pager *p = arg;
-	      pager_change_attributes (p, 0, MEMORY_OBJECT_COPY_DELAY, 1);
-	      return 0;
-	    }
-	  error_t enable_cache (void *arg)
-	    {
-	      struct pager *p = arg;
-	      pager_change_attributes (p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
-	      return 0;
-	    }
-
-	  /* Loop through the pagers and turn off caching one by one,
-	     synchronously.  That should cause termination of each pager. */
-	  ports_bucket_iterate (pager_port_bucket, block_cache);
-      
-	  /* Give it a second; the kernel doesn't actually shutdown
-	     immediately.  XXX */
-	  sleep (1);
-      
-	  num_pagers = ports_count_bucket (pager_port_bucket);
-	  if (num_pagers > 0)
-	    /* Darn, there are actual honest users.  Turn caching back on,
-	       and return failure. */
-	    {
-	      ports_bucket_iterate (pager_port_bucket, enable_cache);
-	      success = 0;
-	    }
+	  struct pager *p = arg;
+	  pager_change_attributes (p, 0, MEMORY_OBJECT_COPY_DELAY, 1);
+	  return 0;
+	}
+      error_t enable_cache (void *arg)
+	{
+	  struct pager *p = arg;
+	  pager_change_attributes (p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+	  return 0;
 	}
 
-      if (success && !nosync)
-	/* shutdown the pager on DEV.  If NOSYNC is set, we don't bother, for
-	   fear that this may result in I/O.  In this case we've disabled
-	   rpcs on the pager's ports, so this will result in hanging...  What
-	   do we do??? XXXX */
-	pager_shutdown (dev->pager);
+      /* Loop through the pagers and turn off caching one by one,
+	 synchronously.  That should cause termination of each pager. */
+      ports_bucket_iterate (pager_port_bucket, block_cache);
+
+      /* Give it a second; the kernel doesn't actually shutdown
+	 immediately.  XXX */
+      sleep (1);
+
+      num_pagers = ports_count_bucket (pager_port_bucket);
+      if (num_pagers > 0)
+	/* Darn, there are actual honest users.  Turn caching back on,
+	   and return failure. */
+	ports_bucket_iterate (pager_port_bucket, enable_cache);
     }
 
-  if (success)
-    dev->pager = NULL;
-
-  mutex_unlock (&dev->pager_lock);
-
-  return success;
+  return num_pagers == 0;
 }
 
 /* Returns in MEMOBJ the port for a memory object backed by the storage on
@@ -233,6 +216,7 @@ dev_stop_paging (struct dev *dev, int nosync)
 error_t
 dev_get_memory_object (struct dev *dev, memory_object_t *memobj)
 {
+  int created = 0;
   error_t err = 0;
 
   init_dev_paging ();
@@ -240,23 +224,34 @@ dev_get_memory_object (struct dev *dev, memory_object_t *memobj)
   mutex_lock (&dev->pager_lock);
 
   if (dev->pager == NULL)
-    dev->pager =
-      pager_create ((struct user_pager_info *)dev, pager_port_bucket,
-		    1, MEMORY_OBJECT_COPY_DELAY);
-  else
-    ports_port_ref (dev->pager);
+    {
+      dev->pager =
+	pager_create ((struct user_pager_info *)dev, pager_port_bucket,
+		      1, MEMORY_OBJECT_COPY_DELAY);
+      created = 1;
+    }
 
   if (dev->pager == NULL)
     err = ENODEV;		/* XXX ??? */
   else
     {
       *memobj = pager_get_port (dev->pager);
-      if (*memobj != MACH_PORT_NULL)
+
+      if (*memobj == MACH_PORT_NULL)
+	/* Pager is currently being destroyed, try again.  */
+	{
+	  dev->pager = 0;
+	  mutex_unlock (&dev->pager_lock);
+	  return dev_get_memory_object (dev, memobj);
+	}
+      else
 	err =
 	  mach_port_insert_right (mach_task_self (),
 				  *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
-      ports_port_deref (dev->pager); /* Drop our original ref on PAGER.  */
     }
+
+  if (created)
+    ports_port_deref (dev->pager);
 
   mutex_unlock (&dev->pager_lock);
 
