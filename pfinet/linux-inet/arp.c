@@ -1218,6 +1218,7 @@ static int arp_req_get(struct arpreq *req)
 }
 
 
+#ifndef _HURD_
 /*
  *	Handle an ARP layer I/O control request.
  */
@@ -1260,7 +1261,7 @@ int arp_ioctl(unsigned int cmd, void *arg)
 	/*NOTREACHED*/
 	return 0;
 }
-
+#endif
 
 /*
  *	Called once on startup.
