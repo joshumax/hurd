@@ -1,6 +1,6 @@
-# Makefile for sutils 
-# 
-#   Copyright (C) 1996, 1997 Free Software Foundation
+# Makefile for sutils
+#
+#   Copyright (C) 1996,97,99 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,10 +20,10 @@
 dir := sutils
 makemode := utilities
 
-targets = reboot halt fsck e2os MAKEDEV swapon swapoff
-special-targets = e2os MAKEDEV
+targets = $(special-targets) reboot halt fsck swapon swapoff
+special-targets = e2os MAKEDEV losetup
 installationdir = $(sbindir)
-SCRIPTS = e2os.sh MAKEDEV.sh
+SCRIPTS = e2os.sh MAKEDEV.sh losetup.sh
 SRCS = reboot.c halt.c fsck.c fstab.c clookup.c swapon.c swapoff.c $(SCRIPTS)
 LCLHDRS = fstab.h
 
