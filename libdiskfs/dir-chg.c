@@ -17,10 +17,33 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include "msg.h"
 
 kern_return_t
 diskfs_S_dir_notice_changes (struct protid *cred,
 			     mach_port_t notify)
 {
-  return EOPNOTSUPP;
+  struct dirmod *req;
+  
+  if (!cred)
+    return EOPNOTSUPP;
+
+  req = malloc (sizeof (struct dirmod));
+  mutex_lock (&cred->po->np->lock);
+  req->port = notify;
+  req->next = cred->po->np->dirmod_reqs;
+  cred->po->np->dirmod_reqs = req;
+  nowait_dir_changed (notify, DIR_CHANGED_NULL, "");
+  mutex_unlock (&cred->po->np->lock);
+  return 0;
 }
+
+void
+diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
+			 char *name)
+{
+  struct dirmod *req;
+  
+  for (req = dp->dirmod_reqs; req; req = req->next)
+    nowait_dir_changed (req->port, type, name);
+}  
