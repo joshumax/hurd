@@ -192,6 +192,9 @@ setup_ethernet_device (void)
   bcopy (net_address, ether_dev.dev_addr, ETH_ALEN);
 
   /* That should be enough. */
+
+  ether_dev.next = dev_base;
+  dev_base = &ether_dev;
 }
 
 
