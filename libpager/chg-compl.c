@@ -41,12 +41,12 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   _pager_wait_for_seqno (p, seq);
 
   for (ar = p->attribute_requests; ar; ar = ar->next)
-    if (ar->may_cache == maycache && ar->copy_strategy == strat
-	&& !--ar->attrs_pending)
-      break;
-  
-  if (ar)
-    condition_broadcast (&p->wakeup);
+    if (ar->may_cache == maycache && ar->copy_strategy == strat)
+      {
+	if (ar->attrs_pending && !--ar->attrs_pending)
+	  condition_broadcast (&p->wakeup);
+	break;
+      }
   
   _pager_release_seqno (p, seq);
   mutex_unlock (&p->interlock);
