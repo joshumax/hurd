@@ -754,9 +754,9 @@ diskfs_shutdown_pager ()
 {
   error_t shutdown_one (void *v_p)
     {
-      struct user_pager_info *p = v_p;
-      if (p != disk_pager)
-	pager_shutdown (p->p);
+      struct pager *p = v_p;
+      if (p != disk_pager->p)
+	pager_shutdown (p);
       return 0;
     }
 
@@ -777,9 +777,9 @@ diskfs_sync_everything (int wait)
 {
   error_t sync_one (void *v_p)
     {
-      struct user_pager_info *p = v_p;
-      if (p != disk_pager)
-	pager_sync (p->p, wait);
+      struct pager *p = v_p;
+      if (p != disk_pager->p)
+	pager_sync (p, wait);
       return 0;
     }
   
@@ -830,7 +830,7 @@ diskfs_pager_users ()
     }
 
   npagers = ports_count_bucket (pager_bucket);
-  if (npagers == 0)
+  if (npagers <= 1)
     return 0;
 
   if (MAY_CACHE == 0)
@@ -848,8 +848,7 @@ diskfs_pager_users ()
   sleep (1);
   
   npagers = ports_count_bucket (pager_bucket);
-  
-  if (npagers == 0)
+  if (npagers <= 1)
     return 0;
   
   /* Darn, there are actual honest users.  Turn caching back on,
