@@ -1,3 +1,7 @@
+Tue Jul 30 13:54:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (top_srcdirinc): Don't define EWOULDBLOCK anymore.
+
 Sat Jul 20 15:42:43 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makeconf (lndist): Find DISTFILES in $(srcdir).

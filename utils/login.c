@@ -513,7 +513,7 @@ main(int argc, char *argv[])
   void verify_passwd (const char *name, const char *password,
 		      uid_t id, int is_group)
     {
-      extern char *crypt (const char salt[2], const char *string);
+      extern char *crypt (const char *string, const char salt[2]);
       char *prompt, *unencrypted, *encrypted;
 
       if (!password || !*password
@@ -531,9 +531,13 @@ main(int argc, char *argv[])
 	prompt = "Password:";
 
       unencrypted = getpass (prompt);
+#ifdef government_not_broken
       encrypted = crypt (unencrypted, password);
       /* Paranoia may destroya.  */
       memset (unencrypted, 0, strlen (unencrypted));
+#else
+      encrypted = unencrypted;
+#endif      
 
       if (name)
 	free (prompt);

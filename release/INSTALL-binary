@@ -42,8 +42,7 @@ understand how to boot from a Linux ext2fs filesystem, though this is
 expected to change very soon.
 
 Ideally, you should make a new disk, labelling it with the BSD
-`disklabel' command.  Make sure you leave cylinder 0 unused; the A
-partition should start at cylinder 1.
+`disklabel' command.  
 
 Make the A partition large enough to hold the entire Hurd binary
 image, and then some, and make a B partition for swap.  Use newfs to
@@ -401,47 +400,42 @@ C.  Proceed through the NetBSD automated installation script.
 D.  Tell the script that you want to use cylinders, not sectors,
     in specifying sizes.
 
-E.  VERY IMPORTANT: Make the size of your `NetBSD' portion one
-    cylinder less than the total amount listed.  If the script 
-    tells you that you have 3045 cylinders, then say you want the
-    NetBSD portion to be 3044 cylinders long.
+E.  Make the size of your `NetBSD' portion the total amount 
+    that the script has listed, starting at cylinder 0.
 
-F.  VERY IMPORTANT: Tell the script that your `NetBSD' portion
-    should start at cylinder 1.  Not 0.  1.
-
-G.  Then allocate however much disk you want to your root partition
+F.  Then allocate however much disk you want to your root partition
     and to your swap partition.  The root partition must be big
     enough to hold the entire Hurd binary snapshot; it is strongly
     recommended that you make it a fair bit bigger than that.  It is
     quite satisfactory to use only one filesystem partition in the
     Hurd. 
 
-H.  If you specify partitions beyond the root partition and swap,
+G.  If you specify partitions beyond the root partition and swap,
     the script will ask you for a `mount point'.  Type anything you
     like, it won't matter.
 
-I.  Affirm to the over-eagerly questioning script that you really do
+H.  Affirm to the over-eagerly questioning script that you really do
     want to smash your disk.  NetBSD will proceed to create
     filesystems on all the partitions you specified in I.G-H.
 
-J.  When the script says "populating ..." hit ^C.  You are now done
+I.  When the script says "populating ..." hit ^C.  You are now done
     with the script.
     
-K.  cd to /mnt.  For each mount point that was gratuitously created
+J.  cd to /mnt.  For each mount point that was gratuitously created
     in step I.H, say `umount NAME'.  Then say `rm -rf * .*'.  Make
     sure you are really in /mnt.  This will delete whatever NetBSD
     has put on your new partition.
 
-L.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
+K.  Initialize the network with `ifconfig DEV MY-ADDR'.  DEV was
     printed by the kernel when it booted; type `more /kern/msgbuf'
     if you want to see those messages again.  (Sometimes ifconfig
     says that something is "offline".  Ignore it.)
 
-M.  Mount the NFS server partition with the conveniente command
+L.  Mount the NFS server partition with the conveniente command
     `mount SERVER-ADDR:SERVER-DIR /mnt2'.
 
-N.  Copy the Hurd onto your disk with the command 
+M.  Copy the Hurd onto your disk with the command 
     (cd /mnt2; tar cf - .) | (cd mnt; tar xfpv -)
 
-O.  If you haven't done STEP II yet, then do it now; otherwise go on
+N.  If you haven't done STEP II yet, then do it now; otherwise go on
     to STEP III.

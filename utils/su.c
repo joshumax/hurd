@@ -1,5 +1,5 @@
 /* `su' for GNU Hurd.
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -455,7 +455,7 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
 int
 check_password (const char *name, const char *password)
 {
-  extern char *crypt (const char salt[2], const char *string);
+  extern char *crypt (const char *string, const char salt[2]);
   char *unencrypted, *encrypted;
   static char *prompt = NULL;
 
@@ -464,8 +464,12 @@ check_password (const char *name, const char *password)
 
   asprintf (&prompt, "%s's Password:", name);
   unencrypted = getpass (prompt);
+#ifdef government_not_broken
   encrypted = crypt (unencrypted, password);
   memset (unencrypted, 0, strlen (unencrypted)); /* Paranoia may destroya.  */
+#else
+  encrypted = unencrypted;
+#endif  
 
   if (!strcmp (encrypted, password))
     return 1;

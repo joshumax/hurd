@@ -47,6 +47,9 @@ See `tasks', the exported task list.
 ** libfsserver/libnetfs:
 *** convert libnetfs to libfsserver
 
+** libnetfs
+*** Support --readonly, --writable, and --update
+
 ** libpager:
 *** Put user-defined fns into a callback struct passed to pager_create.
 *** Make libpager paging interface able to read/write multiple pages at once.
@@ -85,6 +88,7 @@ See `tasks', the exported task list.
     (syslog, but takes special care when the root file system?).
 *** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic 
     routines. 
+*** fsys_get_options should return the disk name.
 
 ** libfshelp
 *** Put functions here to deal with directory and file change notifications?
@@ -191,6 +195,8 @@ See `tasks', the exported task list.
     script by other than root (it doesn't now if the script specifies
     --retry="$0" because the exec server will use /dev/fd/N for name,
     and child_lookup() doesn't supply more than fds 0-2).
+** fsck should use (not-yet-added) fsys_get_options returned device instead 
+   of /etc/fstab.
 
 
 ** ps:
@@ -210,8 +216,9 @@ See `tasks', the exported task list.
 ** nfsd -- fix remaining bugs
 *** Add necessary support to filesystems
 
-** fsck -- zero-length directories and attachment into lost+found still 
+** fsck.ufs -- zero-length directories and attachment into lost+found still 
    don't work. 
+
 
 
 * Mach:
@@ -227,8 +234,8 @@ See `tasks', the exported task list.
 ** Compile released libc.
 ** Compile released utilities.  (See SOURCES-0.0)
 ** Make serverboot source tar and build instructions.
-** Deal with crypt
-** Relink everything after version numbered libc is installed
+** Release inetutils 1.1 with autoconf crypt test.
+** Relink everything after when released libc is installed.
 ** ext2fs: shutdown doesn't sync properly?
     [Create a file, then (settrans -a) won't write it, but if you do sync
      first, everything's fine; the code doesn't look too different...]

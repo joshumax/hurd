@@ -1,3 +1,13 @@
+Tue Jul 30 14:49:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* login.c (main/verify_passwd): If government is broken, don't use
+	crypt.
+	* su.c (check_password): Likewise.
+
+	* login.c (main/verify_passwd): Provide correct prototype for
+	crypt. 
+	* su.c (check_password): Likewise.
+
 Mon Jul 29 03:22:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (val_t): Make `long long'.
