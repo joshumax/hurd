@@ -1,9 +1,43 @@
-hurd (19990317) unstable; urgency=low
+hurd (19990601) unstable; urgency=low
+
+  * New snapshot from CVS.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue,  1 Jun 1999 19:25:37 +0200
+
+hurd (19990524) unstable; urgency=low
+
+  * New snapshot from CVS.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon, 24 May 1999 15:09:45 +0200
+
+hurd (19990523) unstable; urgency=low
+
+  * New snapshot from CVS, fixes: #38062, #37670, #37878, #37944.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Mon, 24 May 1999 01:08:26 +0200
+
+hurd (19990517fixed) unstable; urgency=low
+
+  * debian/shlibs: corrected.
+  * exec/hashexec.c: Applied patch by Roland to make it work.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 17 May 1999 00:25:11 +0200
+
+hurd (19990517) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Add shlibs file.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sun, 16 May 1999 15:28:09 +0200
+
+hurd (19990425-1) unstable; urgency=low
 
   * Put shared library symlinks into the hurd-dev package.
   * Clarify instructions in provided servers.boot.
+  * libfshelp/fetch-root.c: De-patched a change by tb which produced
+    strange errors.
 
- --
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu, 29 Apr 1999 22:47:51 +0200
 
 hurd (19990212-2) unstable; urgency=low
 
