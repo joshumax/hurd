@@ -28,6 +28,8 @@ struct port_bucket *netfs_port_bucket = 0;
 struct port_class *netfs_protid_class = 0;
 struct port_class *netfs_control_class = 0;
 auth_t netfs_auth_server_port = 0;
+mach_port_t netfs_fsys_identity;
+
 
 void
 netfs_init ()
@@ -36,4 +38,6 @@ netfs_init ()
   netfs_control_class = ports_create_class (0, 0);
   netfs_port_bucket = ports_create_bucket ();
   netfs_auth_server_port = getauth ();
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
+		      &netfs_fsys_identity);
 }
