@@ -1,3 +1,13 @@
+2001-12-22  Roland McGrath  <roland@frob.com>
+
+	* configure.in (asm_syntax): Grok "powerpc" value for $host_cpu.
+	Default asm_syntax to $host_cpu if not a known type.
+	Complain about unsupported CPU iff libthreads/$asm_syntax/cthreads.h
+	is missing; make that complaint a warning rather than fatal error.
+
+	* Makeconf (MIGCOMFLAGS): New variable, set -subrprefix __ here.
+	(%_S.h %Server.c rule, %_U.h %User.c rule): Pass that to $(MIGCOM).
+
 2001-11-24  Roland McGrath  <roland@frob.com>
 
 	* config.make.in (bootdir): New variable, set to $(exec_prefix)/boot.
