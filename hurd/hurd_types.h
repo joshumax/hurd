@@ -143,8 +143,7 @@ struct fsys_statfsbuf
   long fsys_stb_bavail;
   long fsys_stb_files;
   long fsys_stb_ffree;
-  long fsys_stb_fsid_1;
-  long fsys_stb_fsid_2;
+  fsid_t fsys_stb_fsid;
   long fsys_stb_spare[9];
 };
 typedef struct fsys_statfsbuf fsys_statfsbuf_t;
