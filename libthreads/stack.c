@@ -119,6 +119,7 @@
 
 #include <cthreads.h>
 #include "cthread_internals.h"
+#include <hurd/threadvar.h>
 
 #define	BYTES_TO_PAGES(b)	(((b) + vm_page_size - 1) / vm_page_size)
 
