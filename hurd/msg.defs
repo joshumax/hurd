@@ -103,6 +103,16 @@ routine set_dtable (
 	process: mach_port_t;
 	dtable: portarray_t);
 
+routine get_fd (
+	process: mach_port_t;
+	out fd: mach_port_t);
+
+/* These two calls fetch and store a single file descriptor.  */
+
+routine set_fd (
+	process: mach_port_t;
+	fd: mach_port_t);
+
 /* A select call has completed.  */
 routine io_select_done (
 	notify_port: mach_port_t;
