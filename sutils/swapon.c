@@ -1,7 +1,7 @@
 /* Add/remove paging devices
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,99 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@
 #include <hurd/store.h>
 #include <version.h>
 #include <mach/default_pager.h>
+#include <mntent.h>
 
 #ifdef SWAPOFF
 const char *argp_program_version = STANDARD_HURD_VERSION (swapoff);
@@ -36,7 +37,8 @@ const char *argp_program_version = STANDARD_HURD_VERSION (swapon);
 
 static struct argp_option options[] =
 {
-  {"standard",	  'a', 0, 0, "Use all devices marked as `sw' in /etc/fstab"},
+  {"standard",	  'a', 0, 0,
+    "Use all devices marked as `swap' in " _PATH_MNTTAB},
   {0, 0}
 };
 static char *args_doc = "DEVICE...";
@@ -47,8 +49,8 @@ static char *doc = "Stop paging on DEVICE...";
 static char *doc = "Start paging onto DEVICE...";
 #endif
 
-static void
-swaponoff (char *file, int add)
+static int
+swaponoff (const char *file, int add)
 {
   error_t err;
   struct store *store;
@@ -59,18 +61,18 @@ swaponoff (char *file, int add)
   if (err)
     {
       error (0, err, "%s", file);
-      return;
+      return err;
     }
 
   if (store->class != &store_device_class)
     {
       error (0, 0, "%s: Can't get device", file);
-      return;
+      return err;
     }
   if (! (store->flags & STORE_ENFORCED))
     {
       error (0, 0, "%s: Can only page to the entire device", file);
-      return;
+      return err;
     }
 
   if (def_pager == MACH_PORT_NULL)
@@ -96,8 +98,12 @@ swaponoff (char *file, int add)
   }
 
   store_free (store);
+
+  return err;
 }
 
+static int do_all;
+
 int
 main(int argc, char *argv[])
 {
@@ -107,14 +113,16 @@ main(int argc, char *argv[])
       switch (key)
 	{
 	case 'a':
-	  argp_failure (state, 5, 0, "--standard: Not supported yet");
+	  do_all = 1;
+	  break;
 
 	case ARGP_KEY_ARG:
 #ifdef SWAPOFF
-	  swaponoff (arg, 0);
+#define ONOFF 0
 #else
-	  swaponoff (arg, 1);
+#define ONOFF 1
 #endif
+	  swaponoff (arg, ONOFF);
 	  break;
 
 	default:
@@ -125,6 +133,31 @@ main(int argc, char *argv[])
   struct argp argp = {options, parse_opt, args_doc, doc};
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
+
+  if (do_all)
+    {
+      struct mntent *me;
+      FILE *f;
+
+      f = setmntent (_PATH_MNTTAB, "r");
+      if (f == NULL)
+	error (1, errno, "Cannot read %s", _PATH_MNTTAB);
+      else
+	{
+	  int done = 0, err = 0;
+	  while ((me = getmntent (f)) != NULL)
+	    if (!strcmp (me->mnt_type, MNTTYPE_SWAP))
+	      {
+		done = 1;
+
+		err |= swaponoff (me->mnt_fsname, ONOFF);
+	      }
+	  if (done == 0)
+	    error (2, 0, "No swap partitions found in %s", _PATH_MNTTAB);
+	  else if (err)
+	    return 1;
+	}
+    }
 
   return 0;
 }
