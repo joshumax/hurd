@@ -57,14 +57,16 @@ static const char *doc = "If PERIOD is supplied, then terse mode is"
 " cumulative fields).";
 
 /* We use this one type to represent all values printed by this program.  It
-   should be signed, and hopefully large enough!  */
-typedef ssize_t val_t;
+   should be signed, and hopefully large enough (it may need to be larger
+   than what the system returns values in, as we represent some quantities as
+   bytes instead of pages)!  */
+typedef long long val_t;
 
 /* What a given number describes.  */
 enum val_type
 {
   COUNT,			/* As-is.  */
-  SIZE,				/* Use the most convenient unit, with suffix. */
+  SIZE,				/* Use the most convenient unit, with suffix */
   PAGESZ,			/* Like SIZE, but never changed to PAGES.  */
   PCENT,			/* Append `%'.  */
 };
