@@ -42,7 +42,7 @@ trivfs_S_io_map (struct trivfs_protid *cred,
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & (O_READ|O_WRITE)))
-    return EINVAL;
+    return EBADF;
   else
     {
       mach_port_t memobj;
@@ -87,8 +87,8 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
-  else if (!(cred->po->openmodes & O_READ))
-    return EINVAL;
+  else if (! (cred->po->openmodes & O_READ))
+    return EBADF;
   else
     return open_read ((struct open *)cred->po->hook,
 		      offs, amount, (void **)data, data_len);
@@ -105,7 +105,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & O_READ))
-    return EINVAL;
+    return EBADF;
   else
     {
       struct open *open = (struct open *)cred->po->hook;
@@ -129,7 +129,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
-  else if (!(cred->po->openmodes & O_WRITE))
+  else if (! (cred->po->openmodes & O_WRITE))
     return EBADF;
   else
     return open_write ((struct open *)cred->po->hook,
@@ -158,11 +158,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
-  else if (((*type & SELECT_READ) && !(cred->po->openmodes & O_READ))
-	   || ((*type & SELECT_WRITE) && !(cred->po->openmodes & O_WRITE)))
-    return EBADF;
-  else
-    *type &= ~SELECT_URG;
+  *type &= ~SELECT_URG;
   return 0;
 }
 
