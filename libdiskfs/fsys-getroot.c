@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -38,7 +38,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 		       file_t *returned_port,
 		       mach_msg_type_name_t *returned_port_poly)
 {
-  struct port_info *pt = ports_check_port_type (controlport, PT_CTL);
+  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport, 
+					    diskfs_control_class);
   error_t error = 0;
   mode_t type;
   struct protid pseudocred;
@@ -194,7 +195,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   mutex_unlock (&diskfs_root_node->lock);
 
-  ports_done_with_port (pt);
+  ports_port_deref (pt);
 
   return 0;
 }
