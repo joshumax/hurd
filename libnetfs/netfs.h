@@ -48,7 +48,7 @@ struct protid
 /* One of these is created for each open */
 struct peropen
 {
-  off_t filepointer;
+  loff_t filepointer;
   int lock_status;
   int refcnt;
   int openstat;
@@ -73,7 +73,7 @@ struct node
   struct netnode *nn;
 
   /* The stat information for this particular node.  */
-  struct stat nn_stat;
+  io_statbuf_t nn_stat;
   /* The S_IPTRANS and S_IFMT bits here are examined instead of nn_stat.st_mode
      to decide whether to do passive translator processing.  Other bits
      are ignored, so you can set this to nn_stat.st_mode if you want that.  */
@@ -172,13 +172,13 @@ error_t netfs_attempt_utimes (struct iouser *cred, struct node *np,
 /* The user must define this function.  This should attempt to set the
    size of the locked file NP (for user CRED) to SIZE bytes long.  */
 error_t netfs_attempt_set_size (struct iouser *cred, struct node *np,
-				off_t size);
+				loff_t size);
 
 /* The user must define this function.  This should attempt to fetch
    filesystem status information for the remote filesystem, for the
    user CRED. NP is locked.  */
 error_t netfs_attempt_statfs (struct iouser *cred, struct node *np,
-			      struct statfs *st);
+			      fsys_statfsbuf_t *st);
 
 /* The user must define this function.  This should sync the locked
    file NP completely to disk, for the user CRED.  If WAIT is set,
@@ -260,14 +260,14 @@ error_t netfs_check_open_permissions (struct iouser *user, struct node *np,
    bytes.  Put the data at DATA.  Set *LEN to the amount successfully
    read upon return.  */
 error_t netfs_attempt_read (struct iouser *cred, struct node *np,
-			    off_t offset, size_t *len, void *data);
+			    loff_t offset, size_t *len, void *data);
 
 /* The user must define this function.  Write to the locked file NP
    for user CRED starting at OFSET and continuing for up to *LEN bytes
    from DATA.  Set *LEN to the amount successfully written upon
    return.  */
 error_t netfs_attempt_write (struct iouser *cred, struct node *np,
-			     off_t offset, size_t *len, void *data);
+			     loff_t offset, size_t *len, void *data);
 
 /* The user must define this function.  Return the valid access
    types (bitwise OR of O_READ, O_WRITE, and O_EXEC) in *TYPES for
@@ -306,7 +306,7 @@ error_t netfs_file_get_storage_info (struct iouser *cred,
 				     mach_msg_type_number_t *num_ports,
 				     int **ints,
 				     mach_msg_type_number_t *num_ints,
-				     off_t **offsets,
+				     loff_t **offsets,
 				     mach_msg_type_number_t *num_offsets,
 				     char **data,
 				     mach_msg_type_number_t *data_len);
