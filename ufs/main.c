@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-char *ufs_version = "0.0 pre-alpha";
+char *ufs_version = "0.0";
 
 struct node *diskfs_root_node;
 
