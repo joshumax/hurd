@@ -477,6 +477,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 error_t
 diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
+  diskfs_check_readonly ();
   assert (!diskfs_readonly);
 
   if (size > node->allocsize)
