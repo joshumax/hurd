@@ -1,0 +1,21 @@
+2002-03-17  Roland McGrath  <roland@frob.com>
+
+	* vga.c (vga_init): io_perm -> ioperm.
+
+	* dynafont.c: Include <string.h>.
+	* focus.c: Likewise.
+	* vga.c: Likewise.
+	* vga-display.c: Likewise.
+
+	* main.c: Include <error.h>.
+	(main): Use `error' instead of perror + exit.
+	(console_mode, console_owner, console_group): Use *_t, not int.
+
+	* console/mutations.h (TIOCTL_IMPORTS): New macro.
+	* priv.h: Protect from multiple inclusion.
+
+2002-03-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* bdf.c, bdf.h, console.c, console.h, display.h, dynafont.c,
+	dynafont.h, focus.c, focus.h, input.h, main.c, Makefile,
+	mutations.h, priv.h, vga.c, vga-display.c, vga.h, vga-hw.h: New files.
