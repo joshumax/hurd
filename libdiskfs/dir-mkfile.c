@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 
 /* Implement dir_mkfile as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_dir_mkfile (struct protid *cred,
 		     int flags,
 		     mode_t mode,
