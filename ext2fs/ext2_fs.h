@@ -30,7 +30,7 @@ typedef signed char s8;
 /*
  * Define EXT2FS_DEBUG to produce debug messages
  */
-#undef EXT2FS_DEBUG
+#define EXT2FS_DEBUG
 
 /*
  * Define EXT2FS_DEBUG_CACHE to produce cache debug messages
