@@ -110,6 +110,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   *retry_name = '\0';
   *newpt = ports_get_right (cred);
   *newpttype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (cred);
   mach_port_deallocate (mach_task_self (), dotdot);
   return 0;
 }
