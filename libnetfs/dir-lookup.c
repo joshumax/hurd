@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -116,7 +116,7 @@ netfs_S_dir_lookup (struct protid *diruser,
     retry_lookup:
       
       if (dnp == netfs_root_node
-	  && nextname[0] == '.' && nextname[1] == '.' && nextname[2] == '\0')
+	  && filename[0] == '.' && filename[1] == '.' && filename[2] == '\0')
 	{
 	  /* Lookup of .. from root */
 	  if (diruser->po->dotdotport != MACH_PORT_NULL)
@@ -140,7 +140,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
       else
 	/* Attempt a lookup on the next pathname component. */
-	error = netfs_attempt_lookup (diruser->credential, dnp, nextname, &np);
+	error = netfs_attempt_lookup (diruser->credential, dnp, filename, &np);
       
       /* At this point, DNP is unlocked */
 
