@@ -17,12 +17,12 @@
 
 /* Called by the kernel when data is needed upon page fault */
 kern_return_t
-seqnos_memory_object_data_request (mach_port_t object, 
-				   mach_port_seqno_t seqno,
-				   mach_port_t control,
-				   vm_offset_t offset,
-				   vm_size_t length,
-				   vm_prot_t access)
+_pager_seqnos_memory_object_data_request (mach_port_t object, 
+					  mach_port_seqno_t seqno,
+					  mach_port_t control,
+					  vm_offset_t offset,
+					  vm_size_t length,
+					  vm_prot_t access)
 {
   struct pager *p;
   char *pm_entry;
