@@ -37,7 +37,7 @@ export CPP
 MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
-LD=$(ccdir)/ld -L$(ccdir)
+LD=$(tooldir)/ld -L$(ccdir)
 
 INSTALL_BIN=$(tooldir)/objcopy -S
 #INSTALL_BIN=cp
