@@ -26,8 +26,43 @@
 #include "ps.h"
 #include "common.h"
 
-/* ---------------------------------------------------------------- */
+static error_t
+install_passwd (struct ps_user *u, struct passwd *pw)
+{
+  int needed = 0;
 
+#define COUNT(field) if (pw->field != NULL) (needed += strlen(pw->field) + 1)
+  COUNT (pw_name);
+  COUNT (pw_passwd);
+  COUNT (pw_gecos);
+  COUNT (pw_dir);
+  COUNT (pw_shell);
+
+  u->storage = malloc (needed);
+  if (u->storage != NULL)
+    {
+      char *p = u->storage;
+
+      /* Copy each string field into storage allocated in the u
+	 structure and point the fields at that instead of the static
+	 storage that pw currently points to.  */
+#define COPY(field) \
+if (pw->field != NULL) \
+strcpy(p, pw->field), (pw->field = p), (p += strlen (p) + 1)
+      COPY (pw_name);
+      COPY (pw_passwd);
+      COPY (pw_gecos);
+      COPY (pw_dir);
+      COPY (pw_shell);
+
+      u->passwd = *pw;
+
+      return 0;
+    }
+  else
+    return ENOMEM;
+}
+
 /* Create a ps_user for the user referred to by UID, returning it in U.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.  */
 error_t
@@ -41,6 +76,43 @@ ps_user_create (uid_t uid, struct ps_user **u)
   (*u)->passwd_state = PS_USER_PASSWD_PENDING;
 
   return 0;
+}
+
+/* Create a ps_user for the user referred to by UNAME, returning it in U.
+   If a memory allocation error occurs, ENOMEM is returned.  If no such user
+   is known, EINVAL is returned.  */
+error_t
+ps_user_uname_create (char *uname, struct ps_user **u)
+{
+  struct passwd *pw = getpwnam (uname);
+  if (pw)
+    return ps_user_passwd_create (pw, u);
+  else
+    return EINVAL;
+}
+
+/* Makes makes a ps_user containing PW (which is copied).  */
+error_t
+ps_user_passwd_create (struct passwd *pw, struct ps_user **u)
+{
+  error_t err = 0;
+
+  *u = NEW (struct ps_user);
+  if (*u == NULL)
+    err = ENOMEM;
+  else
+    {
+      err = install_passwd (*u, pw);
+      if (err)
+	FREE (*u);
+      else
+	{
+	  (*u)->passwd_state = PS_USER_PASSWD_OK;
+	  (*u)->uid = pw->pw_uid;
+	}
+    }
+
+  return err;
 }
 
 /* Free U and any resources it consumes.  */
@@ -65,44 +137,17 @@ struct passwd *ps_user_passwd (struct ps_user *u)
   else
     {
       struct passwd *pw = getpwuid (u->uid);
-      if (pw != NULL)
+      if (pw != NULL && install_passwd (u, pw))
 	{
-	  int needed = 0;
-
-#define COUNT(field) if (pw->field != NULL) (needed += strlen(pw->field) + 1)
-	  COUNT (pw_name);
-	  COUNT (pw_passwd);
-	  COUNT (pw_gecos);
-	  COUNT (pw_dir);
-	  COUNT (pw_shell);
-
-	  u->storage = malloc (needed);
-	  if (u->storage != NULL)
-	    {
-	      char *p = u->storage;
-
-	      /* Copy each string field into storage allocated in the u
-		 structure and point the fields at that instead of the static
-		 storage that pw currently points to.  */
-#define COPY(field) \
-  if (pw->field != NULL) \
-   strcpy(p, pw->field), (pw->field = p), (p += strlen (p) + 1)
-	      COPY (pw_name);
-	      COPY (pw_passwd);
-	      COPY (pw_gecos);
-	      COPY (pw_dir);
-	      COPY (pw_shell);
-
-	      u->passwd = *pw;
-	      u->passwd_state = PS_USER_PASSWD_OK;
-
-	      return &u->passwd;
-	    }
+	  u->passwd_state = PS_USER_PASSWD_OK;
+	  return &u->passwd;
+	}
+      else
+	{
+	  u->passwd_state = PS_USER_PASSWD_ERROR;
+	  return NULL;
 	}
     }
-
-  u->passwd_state = PS_USER_PASSWD_ERROR;
-  return NULL;
 }
 
 /* Returns the user name for the user referred to by U, or NULL if it can't
