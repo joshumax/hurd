@@ -22,13 +22,12 @@ dir := release
 makemode := misc
 
 # Files that go into the root of binary distributions
-dist-files = INSTALL-binary dist-README SETUP servers.boot \
-	menu.lst COPYING.LIB SOURCES.0.2
+dist-files = INSTALL-binary dist-README SETUP servers.boot bfloppy.boot \
+	menu.lst COPYING.LIB SOURCES.0.2 \
+	bfloppy.copy bfloppy-special.copy rfloppy.copy \
+	mkfsimage.sh mksmallso.sh mkemptyso.sh
 
-# Tools for making images
-tool-files = tool-Makefile install-stripped mksmallso mkemptyso
-
-DIST_FILES = README $(dist-files) $(tool-files)
+DIST_FILES = README $(dist-files)
 
 include ../Makeconf
 
@@ -54,9 +53,9 @@ dist-links:
 	touch $(dist-root)/servers/exec
 endif
 
-ifneq ($(tool-root),)
-install-tools:
-	cp $(srcdir)/install-stripped $(tool-root)/
-	chmod +x $(tool-root)/install-stripped
-	cp $(srcdir)/tool-Makefile $(tool-root)/Makefile
-endif
+bfloppy.ext2: mkfsimage bfloppy.copy
+	 ./mkfsimage bfloppy.ext2					\
+	   /         --copy-rules=$(srcdir)/bfloppy.copy		\
+	   $(srcdir) --copy-rules=$(srcdir)/bfloppy-special.copy
+rfloppy.ext2.gz: mkfsimage rfloppy.copy
+	 ./mkfsimage --compress rfloppy.ext2.gz / --copy-rules=$(srcdir)/rfloppy.copy
