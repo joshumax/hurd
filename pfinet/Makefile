@@ -68,7 +68,8 @@ SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
 		  iioctl-ops.c
 MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c \
 		  pfinetServer.c iioctlServer.c
-OBJS		= $(patsubst %.c,%.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
+OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o,\
+			     $(LINUXSRCS) $(SRCS) $(MIGSRCS)))
 LCLHDRS		= config.h mapped-time.h mutations.h pfinet.h
 LINUXHDRS	= arp.h datalink.h eth.h icmp.h ip.h ipx.h ipxcall.h p8022.h \
 		  p8022call.h protocol.h psnap.h psnapcall.h \
