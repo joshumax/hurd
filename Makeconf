@@ -144,13 +144,14 @@ endif
 # We use recursively expanded variables that reference the automatic
 # variables in the link rules.  For now, you have to say -static
 # in $(LDFLAGS); it cannot be in a per-target LDFLAGS.
-ifeq ($(doinst),many)
-  HURDLIBS-libs = $(foreach lib,$($@-HURDLIBS), -L../$(lib)  \
-			$(patsubst lib%,-l%,$(lib)))
-else
-  HURDLIBS-libs = $(foreach lib,$(HURDLIBS), -L../$(lib)  \
-			$(patsubst lib%,-l%,$(lib)))
-endif
+#ifeq ($(doinst),many)
+#  HURDLIBS-libs = $(foreach lib,$($@-HURDLIBS), -L../$(lib)  \
+#			$(patsubst lib%,-l%,$(lib)))
+#else
+#  HURDLIBS-libs = $(foreach lib,$(HURDLIBS), -L../$(lib)  \
+#			$(patsubst lib%,-l%,$(lib)))
+#endif
+HURDLIBS-libs = $(HURDLIBS-files)
 
 # This variable is used for the default library-building rule
 # and for dependencies.  For the former, this is always adequate.
