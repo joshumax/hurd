@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.2 1994/08/23 19:53:52 mib Exp $
+ *	$Id: fsck.h,v 1.3 1994/08/23 20:07:33 mib Exp $
  */
 
 /* Begin GNU Hurd */
@@ -81,6 +81,14 @@ struct odirtemplate {
 	u_short	dotdot_namlen;
 	char	dotdot_name[4];		/* ditto */
 };
+
+/* These shouldn't be used by anyone, but fsck seems to need it */
+#define DEV_BSIZE 512
+#define MAXPATHLEN 1024
+
+/* Provide mode from struct dinode * */
+#define DI_MODE(dp) (((dp)->di_modeh << 16) & (dp)->di_model)
+
 
 /* End GNU Hurd additions */	
 
