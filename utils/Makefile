@@ -18,11 +18,11 @@
 dir := utils
 makemode := utilities
 
-targets = shd ps settrans showtrans sync reboot halt su mount fsysopts \
+targets = shd ps settrans showtrans sync su mount fsysopts \
 	storeinfo login w uptime hurdids loginpr sush vmstat portinfo \
 	devprobe
 special-targets = mount loginpr sush uptime
-SRCS = shd.c ps.c su.c settrans.c sync.c reboot.c halt.c showtrans.c \
+SRCS = shd.c ps.c su.c settrans.c sync.c showtrans.c \
 	mount.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c hurdids.c vmstat.c portinfo.c devprobe.c
 DIST_FILES = shd.ChangeLog
@@ -34,7 +34,7 @@ libutil-libsubst = -lutil
 
 include ../Makeconf
 
-login: /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
+login: -lutil     # /gd4/hurdinst/lib/libutil.a	# ick ick ick ick
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 storeinfo: ../libstore/libstore.a
 # We must include libthreads because of a bug in the way shared libraries
