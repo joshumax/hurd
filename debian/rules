@@ -183,11 +183,15 @@ binary-arch: build
 	$(install_script)	debian/postinst debian/tmp/DEBIAN/postinst
 	$(install_script)	debian/prerm debian/tmp/DEBIAN/prerm
 
-	# Filter out scripts.
-	dpkg-shlibdeps		-p$(package) `for f in debian/tmp/bin/* \
-				debian/tmp/libexec/* debian/tmp/hurd/* \
-				debian/tmp/sbin/* ; do head -n1 $$f \
-				| sed -n -e '/^#!/!a\'$$'\n'$$f ; done`
+	# Get list of dynamically linked executables
+	dpkg-shlibdeps		-p$(package) \
+				`file debian/tmp/bin/* \
+				      debian/tmp/hurd/* \
+				      debian/tmp/lib/* \
+				      debian/tmp/libexec/* \
+				      debian/tmp/sbin/* \
+				| egrep '(executable.*dynamic)|(shared object)' \
+				| cut -f 1 -d ':'`
 	dpkg-gencontrol         -isp -p$(package) -Pdebian/tmp
 	chown -R root.root      debian/tmp
 	dpkg --build            debian/tmp ..

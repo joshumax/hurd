@@ -1,3 +1,14 @@
+hurd (20010817-3) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+  * debian/rules: Change way how to find executables by Kevin Kreamer.
+  * debian/control: Add `file' to build dependencies by Kevin Kreamer.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sat, 13 Oct 2001 01:05:30 +0200
+
 hurd (20010817-2) unstable; urgency=low
 
   * Include a copy of update-rc.d, moved from dpkg to init providing

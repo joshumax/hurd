@@ -1,3 +1,12 @@
+2001-10-13  Marcus Brinkmann  <marcus@gnu.org>
+
+	* debian/rules: New dpkg-shlibdeps is more strict and complains
+	about statically linked files, so a new filter is necessary.
+	* debian/control: Add `file' to build dependencies.
+	By Kevin Kreamer <kkreamer@etherhogz.org>.
+
+	* debian/changelog: Update for new release.
+
 2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
 
 	* changelog: Update to current version.
