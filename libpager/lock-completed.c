@@ -1,5 +1,5 @@
 /* Implementation of memory_object_lock_completed for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,8 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   struct pager *p;
   struct lock_request *lr;
 
-  if (!(p = ports_check_port_type (object, pager_port_type)))
+  p = ports_lookup_port (0, object, _ports_class);
+  if (!p);
     {
       printf ("Bad lock completed\n");
       return EOPNOTSUPP;
@@ -41,7 +42,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   if (control != p->memobjcntl)
     {
       printf ("lock_completed: bad control port\n");
-      ports_done_with_port (p);
+      ports_drop_ref (p);
       return EPERM;
     }
 
@@ -60,7 +61,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
-  ports_done_with_port (p);
+  ports_drop_ref (p);
 
   return 0;
 }
