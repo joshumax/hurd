@@ -127,9 +127,9 @@ argp_version_parser (int key, char *arg, struct argp_state *state)
     {
     case 'v':
       if (argp_program_version_hook)
-	(*argp_program_version_hook) ();
+	(*argp_program_version_hook) (state->out_stream, state);
       else if (argp_program_version)
-	puts (argp_program_version);
+	fprintf (state->out_stream, "%s\n", argp_program_version);
       else
 	argp_error (state, "No version known!?");
       if (! (state->flags & ARGP_NO_EXIT))
