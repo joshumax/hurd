@@ -806,6 +806,9 @@ ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node)
   return err;
 }
 
+/* Size of initial htable for a new directory.  */
+#define INIT_HTABLE_LEN 5
+
 /* Return in DIR a new ftpfs directory, in the filesystem FS, with node NODE
    and remote path RMT_PATH.  RMT_PATH is *not copied*, so it shouldn't ever
    change while this directory is active.  */
@@ -814,9 +817,17 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
 		  struct ftpfs_dir **dir)
 {
   struct ftpfs_dir *new = malloc (sizeof (struct ftpfs_dir));
+  struct ftpfs_dir_entry **htable
+    = calloc (INIT_HTABLE_LEN * sizeof (struct ftpfs_dir_entry *));
 
-  if (! new)
-    return ENOMEM;
+  if (!new || !htable)
+    {
+      if (new)
+	free (new);
+      if (htable)
+	free (htable);
+      return ENOMEM;
+    }
 
   /* Hold a reference to the new dir's node.  */
   spin_lock (&netfs_node_refcnt_lock);
@@ -825,9 +836,8 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
 
   new->num_entries = 0;
   new->num_live_entries = 0;
-  new->htable_len = 5;
-  new->htable = malloc (new->htable_len * sizeof (struct ftpfs_dir_entry *));
-  bzero (new->htable, sizeof *new->htable * new->htable_len);
+  new->htable_len = INIT_HTABLE_LEN;
+  new->htable = htable;
   new->ordered = 0;
   new->rmt_path = rmt_path;
   new->fs = fs;
