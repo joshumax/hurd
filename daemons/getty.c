@@ -44,19 +44,12 @@ print_banner (int fd, char *ttyname)
   char *s;
   struct utsname u;
   char *hostname = localhost ();
-  char *t;
 
   if (uname (&u))
     u.sysname[0] = u.release[0] = '\0';
 
-  t = rindex (ttyname, '/');
-  if (t)
-    t++;
-  else
-    t = ttyname;
-
   cc = asprintf (&s, "\r\n\n%s %s (%s) (%s)\r\n\n",
-		 u.sysname, u.release, hostname ?: "?", t);
+		 u.sysname, u.release, hostname ?: "?", basename (ttyname));
   write (fd, s, cc);
 }
 
