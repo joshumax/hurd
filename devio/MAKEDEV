@@ -30,9 +30,9 @@ for I; do
       settrans -cf $I /hurd/devio -b $I
       ;;
 
-    rd*|sd*|hd*)
+    [hrs]d*)
       case "$I" in
-      [a-z]*[0-9][0-9]*[a-z]*)
+      [a-z][a-z][0-9][a-z])
         settrans -cf r$I /hurd/devio $I
         settrans -cf $I /hurd/devio -b $I
 	;;
