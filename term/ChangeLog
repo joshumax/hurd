@@ -1,3 +1,8 @@
+Thu Aug 15 15:32:47 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* users.c (trivfs_S_file_check_access): Renamed from
+	`trivfs_S_file_access'.
+
 Mon Aug 12 11:04:28 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* term.h (CTRL_BIT): Correct value is 0x40, not 0x20.
