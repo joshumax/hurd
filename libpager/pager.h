@@ -1,5 +1,5 @@
 /* Definitions for multi-threaded pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -40,7 +40,7 @@ int pager_demuxer (mach_msg_header_t *inp,
    references to pagers by use of the relevant ports library
    functions.  */
 struct pager *
-pager_create (struct user_pager_info *u_pager, 
+pager_create (struct user_pager_info *u_pager,
 	      struct port_bucket *bucket,
 	      boolean_t may_cache,
 	      memory_object_copy_strategy_t copy_strategy);
@@ -80,7 +80,7 @@ pager_flush_some (struct pager *pager,
 		  int wait);
 
 /* Change the attributes of the memory object underlying pager PAGER.
-   Args MAY_CACHE and COPY_STRATEGY are as for 
+   Args MAY_CACHE and COPY_STRATEGY are as for
    memory_object_change_atributes.  Wait for the kernel to report completion
    off WAIT is set.*/
 void
@@ -96,7 +96,7 @@ mach_port_t
 pager_get_port (struct pager *pager);
 
 /* Force termination of a pager.  After this returns, no
-   more paging requests on the pager will be honored, and the 
+   more paging requests on the pager will be honored, and the
    pager will be deallocated.  (The actual deallocation might
    occur asynchronously if there are currently outstanding paging
    requests that will complete first.)  */
@@ -108,9 +108,21 @@ pager_shutdown (struct pager *pager);
 error_t
 pager_get_error (struct pager *p, vm_address_t addr);
 
+/* Try to copy *SIZE bytes between the region OTHER points to
+   and the region at OFFSET in the pager indicated by PAGER and MEMOBJ.
+   If PROT is VM_PROT_READ, copying is from the pager to OTHER;
+   if PROT contains VM_PROT_WRITE, copying is from OTHER into the pager.
+   *SIZE is always filled in the actual number of bytes successfully copied.
+   Returns an error code if the pager-backed memory faults;
+   if there is no fault, returns 0 and *SIZE will be unchanged.  */
+error_t
+pager_memcpy (struct pager *pager, memory_object_t memobj,
+	      vm_offset_t offset, void *other, size_t *size,
+	      vm_prot_t prot);
+
 /* The user must define this function.  For pager PAGER, read one
    page from offset PAGE.  Set *BUF to be the address of the page,
-   and set *WRITE_LOCK if the page must be provided read-only. 
+   and set *WRITE_LOCK if the page must be provided read-only.
    The only permissable error returns are EIO, EDQUOT, and ENOSPC. */
 error_t
 pager_read_page (struct user_pager_info *pager,
@@ -119,7 +131,7 @@ pager_read_page (struct user_pager_info *pager,
 		 int *write_lock);
 
 /* The user must define this function.  For pager PAGER, synchronously
-   write one page from BUF to offset PAGE.  In addition, vm_deallocate 
+   write one page from BUF to offset PAGE.  In addition, vm_deallocate
    (or equivalent) BUF.  The only permissable error returns are EIO,
    EDQUOT, and ENOSPC. */
 error_t
@@ -149,7 +161,7 @@ pager_clear_user_data (struct user_pager_info *pager);
    library wants to drop weak references.  The pager library creates no
    weak references itself.  If the user doesn't either, then it's OK for
    this function to do nothing.  */
-void 
+void
 pager_dropweak (struct user_pager_info *p);
 
 #endif
