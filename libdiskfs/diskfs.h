@@ -49,6 +49,7 @@ struct peropen
   int lock_status;
   int refcnt;
   int openstat;
+  mach_port_t dotdotport;
   struct node *np;
 };
 
@@ -122,8 +123,6 @@ extern mach_port_t diskfs_exec;	/* send right */
 extern auth_t diskfs_auth_server_port; /* send right */
 
 
-extern struct port_info *diskfs_control_port;
-
 extern volatile struct mapped_time_value *diskfs_mtime;
 
 extern int diskfs_bootflags;
@@ -136,6 +135,36 @@ extern int pager_port_type;
 
 struct pager;
 
+
+/* The user must observe the following discipline in port creation
+   with the ports library.  Any port for which a send right is
+   given to any entity outside the filesystem itself must be
+   a hard port.  Other ports used only internally should be
+   soft ports.  
+
+   When there are neither hard ports nor soft ports, the diskfs
+   library will call diskfs_sync_everything with WAIT set.  This 
+   should sync everything; upon return diskfs will exit.  (There
+   should be no active pagers at all in this state, because such
+   would be either hard or soft ports.)
+
+   When there are only soft ports, diskfs will call
+   diskfs_shutdown_soft_ports.  This function should initiate (but
+   need not complete) the destruction of any outstanding soft ports.
+   When they are actually destroyed, diskfs_sync_everything will be
+   called as described above.
+
+   When the only outstanding hard port is the control port for
+   the filesystem and the filesystem has been idle for a considerable
+   time (as defined by the ports library), diskfs will detach from the
+   parent filesystem and call diskfs_shutdown_soft_ports.
+
+   When the filesystem is asked to exit with FSYS_GOAWAY_NOSYNC,
+   it will not bother calling diskfs_sync_everything.  When the
+   filesystem is asked to exit with FSYS_GOAWAY_FORCE, all existing
+   send rights for files are immediately destroyed.  Then 
+   diskfs_sync_everything is called and the filesystem will exit.
+*/
 
 
 /* Declarations of things the user must or may define.  */
@@ -163,11 +192,6 @@ extern int diskfs_maxsymlinks;
 /* The user must define this variable and set it if the filesystem
    should be readonly.  */
 extern int diskfs_readonly;
-
-/* The user must define this variable.  Set this to be an unauthenticated
-   port to the directory which should be `..' from root.  If this is 
-   *the* root, then set this to MACH_PORT_NULL.  */
-extern file_t diskfs_dotdot_file;
 
 /* The user must define this variable.  Set this to be the node 
    of root of the filesystem.  */
@@ -362,6 +386,11 @@ void diskfs_lost_hardrefs (struct node *np);
    might not be locked; this routine should not attempt to gain the lock. */
 void diskfs_new_hardrefs (struct node *np);
 
+/* The user must define this function.  There are no hard ports outstanding;
+   the user should take steps so that any soft ports outstanding get
+   shut down. */
+void diskfs_shutdown_soft_ports ();
+
 /* The user must define this function.  Return non-zero if locked
    directory DP is empty.  If the user does not redefine
    diskfs_clear_directory and diskfs_init_directory, then `empty'
@@ -420,8 +449,10 @@ void diskfs_init_completed ();
 char *diskfs_parse_bootargs (int argc, char **argv);
 
 /* Call this after arguments have been parsed to initialize the
-   library.  */ 
-void diskfs_init_diskfs (void);
+   library.  If BOOTSTRAP is set, the diskfs will call fsys_startup
+   on that port as appropriate and return the REALNODE returned
+   in that call; otherwise we return MACH_PORT_NULL.  */ 
+mach_port_t diskfs_init_diskfs (mach_port_t bootstrap);
 
 /* Call this after all format-specific initialization is done (except
    for setting diskfs_root_node); at this point the pagers should be
@@ -730,7 +761,8 @@ void diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
-struct peropen *diskfs_make_peropen (struct node *np, int flags);
+struct peropen *diskfs_make_peropen (struct node *np, int flags, 
+				     mach_port_t dotdotnode);
 
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is 
