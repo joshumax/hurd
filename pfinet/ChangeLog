@@ -1,3 +1,19 @@
+2000-02-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* options.c (parse_opt): New code to set the default gateway using
+	fib_new_table and the tb_insert/tb_delete callbacks.
+
+	* options.c (parse_opt): Take global_lock while applying changes.
+	* main.c (main): Unlock global_lock before calling argp_parse.
+
+	* options.c (struct parse_interface): Use uint32_t for the IP
+	address members.
+
+	* linux-src/net/ipv4/devinet.c [_HURD_] (inquire_device): New function.
+	* options.c: Declare it.
+	(trivfs_append_args): Use inquire_device for --address and --netmask.
+	(ADD_ADDR_OPT): #undef it after uses.
+
 2000-02-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	Complete overhaul of pfinet based on the IPv4 networking code from the

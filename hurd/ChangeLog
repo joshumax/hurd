@@ -1,3 +1,8 @@
+2000-01-26  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* io_reply.defs (io_select_reply): Remove ID_TAG argument,
+	which does not exist in the io_select RPC as defined in io.defs.
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fs.defs (dir_readdir): Replace dealloc with dealloc[] on out data.
