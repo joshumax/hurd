@@ -145,16 +145,18 @@ routine io_get_icky_async_id (
 	out icky_async_id_port: mach_port_send_t);
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
-   Block until one of the indicated types of i/o can be done "quickly".
-   ID_TAG is returned as passed; it is just for the convenience of the user in
-   matching up reply messages with specific requests it sent.  */
+   Block until one of the indicated types of i/o can be done "quickly", and
+   return the types that are then available.  ID_TAG is returned as passed; it
+   is just for the convenience of the user in matching up reply messages with
+   specific requests sent.  */
 /* INTR */
 routine io_select (
 	io_object: io_t;
 	RPT
-	select_type: int;
-	inout id_tag: int;	/* Returned as passed.  */
-	out select_result: int);
+	ureplyport ureply: mach_port_make_send_t;
+	waittime timeout: natural_t;
+	inout select_type: int;
+	inout id_tag: int);	/* Returned as passed.  */
 
 /* Return the current status of the object.  Not all the fields of the
    io_statuf_t are meaningful for all objects; however, the access and
