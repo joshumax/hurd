@@ -35,8 +35,11 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 
-static const struct argp_option options[] = {
+static const struct argp_option options[] =
+{
   {"output", 'o', "FILE", 0, "Send trace output to FILE instead of stderr."},
+  {"rpc-list", 'I', "FILE", 0,
+   "Read FILE for assocations of message ID numbers to names."},
   {0}
 };
 
@@ -44,6 +47,87 @@ static const char *args_doc = "COMMAND [ARG...]";
 static const char *doc =
 "Trace Mach Remote Procedure Calls."
 "\v.";
+
+/* The msgid_ihash table maps msgh_id values to names (malloc'd strings).  */
+
+static void
+msgid_ihash_cleanup (void *element, void *arg)
+{
+  free (element);
+}
+
+static struct ihash msgid_ihash = { cleanup: msgid_ihash_cleanup };
+
+/* Parse a file of RPC names and message IDs as output by mig's -list
+   option: "subsystem base-id routine n request-id reply-id".  Put each
+   request-id value into `msgid_ihash' with the routine name as its value.  */
+static void
+parse_msgid_list (const char *filename)
+{
+  FILE *fp;
+  char *buffer = NULL;
+  size_t bufsize = 0;
+  unsigned int lineno = 0;
+  char *name;
+  unsigned int msgid;
+
+  fp = fopen (filename, "r");
+  if (fp == 0)
+    {
+      error (2, errno, "%s", filename);
+      return;
+    }
+
+  while (getline (&buffer, &bufsize, fp) > 0)
+    {
+      ++lineno;
+      if (buffer[0] == '#' || buffer[0] == '\0')
+	continue;
+      if (sscanf (buffer, "%*s %*u %as %*u %u %*u\n", &name, &msgid) != 2)
+	error (0, 0, "%s:%u: invalid format in RPC list file",
+	       filename, lineno);
+      else
+	{
+	  error_t err = ihash_add (&msgid_ihash, msgid, name, NULL);
+	  if (err)
+	    error (1, err, "ihash_add");
+	}
+    }
+
+  free (buffer);
+  fclose (fp);
+}
+
+/* Look for a name describing MSGID.  We check the table directly, and
+   also check if this looks like the ID of a reply message whose request
+   ID is already in the table.  */
+static const char *
+msgid_name (mach_msg_id_t msgid)
+{
+  const char *msgname = ihash_find (&msgid_ihash, msgid);
+  if (msgname == 0 && (msgid / 100) % 2 == 1)
+    {
+      /* This message ID is not in the table, and its number makes it
+	 what should be an RPC reply message ID.  So look up the message
+	 ID of the corresponding RPC request and synthesize a name from
+	 that.  Then stash that name in the table so the next time the
+	 lookup will match directly.  */
+      msgname = ihash_find (&msgid_ihash, msgid - 100);
+      if (msgname != 0)
+	{
+	  char *reply_name = 0;
+	  asprintf (&reply_name, "%s-reply", reply_name);
+	  if (reply_name != 0)
+	    {
+	      ihash_add (&msgid_ihash, msgid, reply_name, NULL);
+	      msgname = reply_name;
+	    }
+	  else
+	    msgname = 0;
+	}
+    }
+    return msgname;
+}
 
 /* We keep one of these structures for each port right we are tracing.  */
 struct traced_info
@@ -568,9 +652,16 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	info = rewrite_right (&inp->msgh_local_port, &reply_type);
 	assert (info);
 	if (info->name == 0)
-	  asprintf (&info->name, "reply(%u:%u)",
-		    (unsigned int) info->pi.port_right,
-		    (unsigned int) inp->msgh_id);
+	  {
+	    const char *msgname = msgid_name (inp->msgh_id);
+	    if (msgname == 0)
+	      asprintf (&info->name, "reply(%u:%u)",
+			(unsigned int) info->pi.port_right,
+			(unsigned int) inp->msgh_id);
+	    else
+	      asprintf (&info->name, "reply(%u:%s)",
+			(unsigned int) info->pi.port_right, msgname);
+	  }
 	if (info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE)
 	  {
 	    info->u.send_once.sent_to = info->pi.port_right;
@@ -689,13 +780,19 @@ static mach_port_t expected_reply_port;
 static void
 print_request_header (struct traced_info *receiver, mach_msg_header_t *msg)
 {
+  const char *msgname = msgid_name (msg->msgh_id);
+
   expected_reply_port = msg->msgh_local_port;
 
   if (receiver->name != 0)
-    fprintf (ostream, "%4s->%5u (", receiver->name, msg->msgh_id);
+    fprintf (ostream, "%4s->", receiver->name);
   else
-    fprintf (ostream, "%4u->%5u (",
-	     (unsigned int) receiver->pi.port_right, msg->msgh_id);
+    fprintf (ostream, "%4u->", (unsigned int) receiver->pi.port_right);
+
+  if (msgname != 0)
+    fprintf (ostream, "%5s (", msgname);
+  else
+    fprintf (ostream, "%5u (", (unsigned int) msg->msgh_id);
 }
 
 static void
@@ -741,8 +838,14 @@ print_reply_header (struct traced_info *info, mig_reply_header_t *reply)
 	/* This is a normal reply to a previous request.  */
 	fprintf (ostream, " > ");
       else
-	/* Weirdo.  */
-	fprintf (ostream, " >(%u) ", reply->Head.msgh_id);
+	{
+	  /* Weirdo.  */
+	  const char *msgname = msgid_name (reply->Head.msgh_id);
+	  if (msgname == 0)
+	    fprintf (ostream, " >(%u) ", reply->Head.msgh_id);
+	  else
+	    fprintf (ostream, " >(%s) ", msgname);
+	}
     }
 
   if (reply->RetCode == 0)
@@ -915,6 +1018,10 @@ main (int argc, char **argv, char **envp)
 	{
 	case 'o':
 	  outfile = arg;
+	  break;
+
+	case 'I':
+	  parse_msgid_list (arg);
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
