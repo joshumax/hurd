@@ -274,7 +274,10 @@ fsck_cleanup (struct fsck *fsck, int remount, int make_writable)
   error_t err = 0;
   struct fs *fs = fsck->fs;
 
-  *fsck->self = fsck->next;	/* Remove from chain.  */
+  /* Remove from chain.  */
+  *fsck->self = fsck->next;
+  if (fsck->next)
+    fsck->next->self = fsck->self;
 
   fs_debug (fs, "Cleaning up after fsck (remount = %d, make_writable = %d)",
 	    remount, make_writable);
