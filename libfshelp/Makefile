@@ -20,10 +20,10 @@ dir := libfshelp
 include ../Makeconf
 
 SRCS = handle-startup.c init-trans.c start-trans.c transboot-clean.c \
-	kill-trans.c trans-iter.c lock-acquire.c lock-init.c 
+	kill-trans.c trans-iter.c lock-acquire.c lock-init.c trans-cntl.c
 
 OBJS = handle-startup.o init-trans.o start-trans.o transboot-clean.o \
-	kill-trans.o trans-iter.o lock-acquire.o lock-init.o 
+	kill-trans.o trans-iter.o lock-acquire.o lock-init.o trans-cntl.o
 
 DIST_FILES = $(SRCS) Makefile trans.h fshelp.h locks.h ChangeLog
 
@@ -42,7 +42,7 @@ $(includedir)/hurd/fshelp.h: fshelp.h
 
 $(OBJS): fshelp.h $(includedir)/hurd/ports.h
 handle-startup.o init-trans.o start-trans.o transboot-clean.o: trans.h
-kill-trans.o trans-iter.o: trans.h
+trans-cntl.o kill-trans.o trans-iter.o: trans.h
 
 lock-acquire.o lock-init.o: locks.h
 
