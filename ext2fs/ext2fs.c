@@ -70,7 +70,7 @@ void ext2_error (const char * function, const char * fmt, ...)
   va_end (args);
 
   mutex_lock(&printf_lock);
-  fprintf (stderr, "ext2fs: %s: %s: %s\n", devname, function, error_buf);
+  fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
   mutex_unlock(&printf_lock);
 }
 
@@ -83,7 +83,7 @@ void ext2_panic (const char * function, const char * fmt, ...)
   va_end (args);
 
   mutex_lock(&printf_lock);
-  fprintf(stderr, "ext2fs: %s: panic: %s: %s\n", devname, function, error_buf);
+  fprintf(stderr, "ext2fs: %s: panic: %s: %s\n", device_name, function, error_buf);
   mutex_unlock(&printf_lock);
 
   exit (0);
@@ -98,7 +98,7 @@ void ext2_warning (const char * function, const char * fmt, ...)
   va_end (args);
 
   mutex_lock(&printf_lock);
-  fprintf (stderr, "ext2fs: %s: %s: %s\n", devname, function, error_buf);
+  fprintf (stderr, "ext2fs: %s: %s: %s\n", device_name, function, error_buf);
   mutex_unlock(&printf_lock);
 }
 
@@ -147,7 +147,7 @@ int check_string = 1;
 void
 main (int argc, char **argv)
 {
-  char *devname;
+  char *device_name;
   mach_port_t bootstrap;
   error_t err;
   int sizes[DEV_GET_SIZE_COUNT];
@@ -186,11 +186,11 @@ main (int argc, char **argv)
 	  usage (1);
 	}
 
-      devname = argv[optind];
+      device_name = argv[optind];
     }
   else
     /* We are the bootstrap filesystem.  */
-    devname = diskfs_parse_bootargs (argc, argv);
+    device_name = diskfs_parse_bootargs (argc, argv);
   
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
@@ -206,23 +206,23 @@ main (int argc, char **argv)
       
       err = device_open (diskfs_master_device, 
 			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 devname, &ext2fs_device);
+			 device_name, &ext2fs_device);
       if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
 	{
 	  /* Prompt the user to give us another name rather
 	     than just crashing */
-	  printf ("Cannot open device %s\n", devname);
+	  printf ("Cannot open device %s\n", device_name);
 	  printf ("Open instead: ");
 	  fflush (stdout);
 	  len = getline (&line, &linesz, stdin);
 	  if (len > 2)
-	    devname = line;
+	    device_name = line;
 	}
     }
   while (err && err == D_NO_SUCH_DEVICE && getpid () <= 0);
 	  
   if (err)
-    error(1, errno, "%s", devname);
+    error(1, errno, "%s", device_name);
 
   /* Check to make sure device sector size is reasonable. */
   err = device_get_status (ext2fs_device, DEV_GET_SIZE, sizes, &sizescnt);
