@@ -30,23 +30,32 @@
 # Put this first so it's the default
 all:
 
-
-# Root of installation and source directories
-prefix := /home/gd4/hurdinst
-exec_prefix := $(prefix)
-srcdir := /home/gd4/gnu/hurd
+# Figure out how to locate the parent directory from here.
+ifeq (.,$(dir))
+.. =
+else
+.. = ../
+endif
 
-# Where to install things
-hurddir := $(exec_prefix)/hurd
-bindir := $(exec_prefix)/bin
-sbindir := $(exec_prefix)/sbin
-libdir := $(exec_prefix)/lib
-infodir := $(prefix)/info
-includedir := $(prefix)/include
+ifndef srcdir
+# We are building in the source directory itself.
+srcdir = .
+top_srcdir = $(..)
+endif
+
+# Include the configure-generated file of parameters.
+# This sets up variables for build tools and installation directories.
+include $(..)config.make
+
+# Flags for compilation.  
+# It is important to have this inclusion first; that picks up our 
+# library header files locally rather than from installed copies.
+# Append to any value set by the specific Makefile or by configure.
+CPPFLAGS += -I. -I$(srcdir) -I.. -I$(top_srcdir)
+CFLAGS += -Wall
+
 
 libthreads-libsubst=../libthreads/libthreads.a
-
-# END CONFIGURATION AREA
 
 
 # Decode makemode:
@@ -97,17 +106,6 @@ endif
 
 
 
-# Finding binaries
-include $(srcdir)/Maketools
-
-# Flags for compilation.  
-# It is important to have this inclusion first; that picks up our 
-# library header files locally rather than from installed copies.
-# Append to any value set by the specific Makefile.
-CPPFLAGS += -I$(srcdir)
-CFLAGS += -Wall -g
-
-
 # Standard targets
 
 # Installation
@@ -179,19 +177,20 @@ endif
 
 # Making a snapshot
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
-lndist: $(distfiles) $(srcdir)/hurd-snap/$(dir) FORCE
-	ln $(distfiles) $(srcdir)/hurd-snap/$(dir)
+lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
+	ln $(distfiles) $(top_srcdir)/hurd-snap/$(dir)
  
 ifeq ($(dir),.)
-$(srcdir)/hurd-snap/$(dir):
+$(top_srcdir)/hurd-snap/$(dir):
 else
-$(srcdir)/hurd-snap/$(dir):
-	mkdir $(srcdir)/hurd-snap/$(dir)
+$(top_srcdir)/hurd-snap/$(dir):
+	mkdir $@
 endif
 
 # TAGS files
 ifneq ($(dir),.)
-DEP_SRCS=sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -ur
+DEP_SRCS = sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| \
+	   sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -ur
 TAGS: $(OBJS:.o=.d) $(OTHERTAGS)
 	cat $(OBJS:.o=.d) | $(DEP_SRCS) | etags -o $@ - $(OTHERTAGS)
 endif
@@ -249,7 +248,7 @@ relink:
 
 
 # Where to find .defs files.
-vpath %.defs $(srcdir)/hurd:$(crossheaders)/mach:$(crossheaders)/device
+vpath %.defs $(top_srcdir)/hurd
 
 FORCE:
 
