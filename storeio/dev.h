@@ -40,6 +40,8 @@ struct dev
      indicates that there is no owner.  */
   pid_t owner;
 
+  int enforced;			/* Nonzero iff --enforced flag was given.  */
+
   /* Nonzero iff the --no-cache flag was given.
      If this is set, the remaining members are not used at all
      and don't need to be initialized or cleaned up.  */
