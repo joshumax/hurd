@@ -103,8 +103,8 @@ S_crash_dump_task (mach_port_t port,
 	{
 	  struct crasher *c;
 
-	  err = ports_create_port (port_bucket, sizeof *c,
-				   crasher_portclass, &c);
+	  err = ports_create_port (crasher_portclass, port_bucket,
+				   sizeof *c, &c);
 	  if (! err)
 	    {
 	      /* Install our port as the crasher's msgport.
@@ -198,7 +198,7 @@ signal_crasher (struct crasher *c, int signo, mach_port_t refport)
 kern_return_t
 S_msg_sig_post (mach_port_t port,
 		mach_port_t reply_port, mach_msg_type_name_t reply_type,
-		int signo, mach_port_t refport)
+		int signo, natural_t sigcode, mach_port_t refport)
 {
   struct crasher *c = ports_lookup_port (port_bucket, port, crasher_portclass);
 
@@ -212,7 +212,7 @@ kern_return_t
 S_msg_sig_post_untraced (mach_port_t port,
 			 mach_port_t reply_port,
 			 mach_msg_type_name_t reply_type,
-			 int signo, mach_port_t refport)
+			 int signo, natural_t sigcode, mach_port_t refport)
 {
   error_t err;
   struct crasher *c = ports_lookup_port (port_bucket, port, crasher_portclass);
