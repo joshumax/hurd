@@ -81,7 +81,7 @@ inline unsigned long ffz(unsigned long word)
 inline unsigned long
 find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
 {
-  unsigned long *p = ((unsigned long *) addr) + (offset >> 6);
+  unsigned long *p = ((unsigned long *) addr) + (offset >> 5);
   unsigned long result = offset & ~31UL;
   unsigned long tmp;
 
@@ -100,7 +100,7 @@ find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
       size -= 32;
       result += 32;
     }
-  while (size & ~32UL) 
+  while (size & ~31UL) 
     {
       if (~(tmp = *(p++)))
 	goto found_middle;
