@@ -404,9 +404,8 @@ pty_io_readable (int *amt)
 
 /* Validation has already been done by trivfs_S_io_select. */
 error_t
-pty_io_select (struct trivfs_protid *cred,
-	       int *type,
-	       int *idtag)
+pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
+	       int *type, int *idtag)
 {
   int avail = 0;
   
@@ -432,6 +431,8 @@ pty_io_select (struct trivfs_protid *cred,
 	  mutex_unlock (&global_lock);
 	  return 0;
 	}
+
+      ports_interrupt_self_on_port_death (cred, reply);
 
       pty_read_blocked = 1;
       if (hurd_condition_wait (&pty_select_wakeup, &global_lock))
