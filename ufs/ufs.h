@@ -67,6 +67,9 @@ struct disknode
   /* These pointers are locked by sinmaplock and dinmaplock for all nodes. */
   daddr_t *dinloc;
   daddr_t *sinloc;
+
+  size_t dinloclen;
+  size_t sinloclen;
   
   /* These two pointers are locked by pagernplock in pager.c for
      all nodes. */
