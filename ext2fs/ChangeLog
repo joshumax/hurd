@@ -1,3 +1,16 @@
+2001-03-03  Roland McGrath  <roland@frob.com>
+
+	* hyper.c (zeroblock, modified_global_blocks): Remove superfluous
+	zero initializers.
+	(allocate_mod_map): Likewise for static here.
+	(get_hypermetadata): Don't munmap old ZEROBLOCK, just keep it.
+	Allocate ZEROBLOCK with PROT_READ.
+
+2001-02-28  Roland McGrath  <roland@frob.com>
+
+	* dir.c (count_dirents): Check for bogus rec_len having pushed us past
+	the end.
+
 2001-01-08  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ext2fs.c (main): Use %Ld instead %ld to print store->size.

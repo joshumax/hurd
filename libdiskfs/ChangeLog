@@ -1,3 +1,25 @@
+2001-03-28 Neal H Walfield  <neal@cs.uml.edu>
+
+        * shutdown.c: Move initialization of diskfs_fsys_lock from here ...
+        * init-init.c: ... to here with the rest of the initialization
+        code.
+
+        * init-init.c: Do not initialize global variables to zero.
+
+        * protid-rele: Doc fix.
+        * node-nput.c: Likewise.
+        * io-prenotify.c: Likewise.
+
+        * dir-chg.c (diskfs_S_dir_notice_changes): Check what malloc
+        returns.
+        * peropen-make.c (diskfs_make_peropen): Likewise.
+
+        * io-identity.c (diskfs_S_io_identity): Use INUM; that is what
+        we bothered getting the lock for.
+
+	* ports-noports.c, ports-clean.c, ports-soft.c, ports-idle.c,
+	ports-consts.c: Dead files finally removed from cvs.
+
 2001-03-28  Marcus Brinkmann  <marcus@gnu.org>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): New variable USER. Store new

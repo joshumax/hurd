@@ -1,3 +1,10 @@
+2001-03-31  Roland McGrath  <roland@frob.com>
+
+	* assert.h: Fix obsolescent #endif syntax.
+	* default_pager.c: Likewise.
+	* queue.h: Likewise.
+	* load.c: Likewise.
+
 2001-02-28  Roland McGrath  <roland@frob.com>
 
 	* default_pager.c: Use <file_io.h> instead of "file_io.h",

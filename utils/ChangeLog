@@ -1,3 +1,7 @@
+2001-03-31  Roland McGrath  <roland@frob.com>
+
+	* pids.h: Fix obsolescent #endif syntax.
+
 2001-02-27  Roland McGrath  <roland@frob.com>
 
 	* rpctrace.c: Overhaul output handling.

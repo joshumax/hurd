@@ -1,3 +1,7 @@
+2001-03-31  Roland McGrath  <roland@frob.com>
+
+	* sock.c: Include "connq.h" for connq_destroy decl.
+
 2001-02-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* connq.c: Include <assert.h>. Reported by Arkadi E. Shishlov
