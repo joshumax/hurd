@@ -53,6 +53,8 @@ void
 main(int argc, char *argv[])
 {
   error_t err;
+  task_t task;
+  mach_port_t msgport;
   int pid = -1;
   auth_t auth = getauth ();
   process_t proc = getproc ();
@@ -152,27 +154,32 @@ main(int argc, char *argv[])
   if (! show_names && ! show_ids)
     show_names = show_ids = 1;
 
-  if (pid >= 0)
-    /* Get the auth port from PID instead of using our own.  */
-    {
-      mach_port_t msgport;
-      task_t task;
+  if (pid < 0)
+    /* We get our parent's authentication instead of our own because this
+       program is usually installed setuid.  This should work even if it's
+       not installed setuid, using the auth port as authentication to the
+       msg_get_init_port rpc.  */
+    pid = getppid ();
 
-      err = proc_getmsgport (proc, pid, &msgport);
-      if (err)
-	error (5, err, "%d: Cannot get process msgport", pid);
+  /* Get a msgport for PID, to which we can send requests.  */
+  err = proc_getmsgport (proc, pid, &msgport);
+  if (err)
+    error (5, err, "%d: Cannot get process msgport", pid);
 
-      err = proc_pid2task (proc, pid, &task);
-      if (err)
-	err = msg_get_init_port (msgport, auth, INIT_PORT_AUTH, &auth);
-      else
-	err = msg_get_init_port (msgport, task, INIT_PORT_AUTH, &auth);
-      if (err)
-	error (6, err, "%d: Cannot get process authentication", pid);
+  /* Try to get the task port to use as authentication.  */
+  err = proc_pid2task (proc, pid, &task);
 
-      mach_port_deallocate (mach_task_self (), msgport);
-      mach_port_deallocate (mach_task_self (), task);
-    }
+  /* Now fetch the auth port; if we couldn't get the task port to use for
+     authentication, we try the (old) auth port instead.  */
+  if (err)
+    err = msg_get_init_port (msgport, auth, INIT_PORT_AUTH, &auth);
+  else
+    err = msg_get_init_port (msgport, task, INIT_PORT_AUTH, &auth);
+  if (err)
+    error (6, err, "%d: Cannot get process authentication", pid);
+
+  mach_port_deallocate (mach_task_self (), msgport);
+  mach_port_deallocate (mach_task_self (), task);
 
   /* Get the ids that AUTH represents.  */
   err = idvec_merge_auth (&euids, &auids, &egids, &agids, auth);
