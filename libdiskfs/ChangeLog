@@ -1,3 +1,14 @@
+1997-09-18  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* priv.h (fs_control_port): Declaration removed.
+	(_diskfs_nosuid, _diskfs_noexec): Renamed from nosuid & noexec.
+	* file-exec.c (diskfs_S_file_exec): Prepend "_diskfs" to uses of
+	NOSUID & NOEXEC.
+	* init-init.c: Likewise.
+	* opts-std-startup.c (parse_startup_opt): Likewise.
+	* opts-std-runtime.c (set_opts): Likewise.
+	(OPT_EXEC_OK, OPT_SUID_OK): Rename definitions from ..._OPT.
+
 1997-09-16  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-append-std.c (diskfs_append_std_options): Add --no-suid and
