@@ -1,3 +1,8 @@
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* ftpfs.c (parse_startup_opt): If given one argument with no :,
+	use "/" as the remote root.
+
 2001-12-29  Roland McGrath  <roland@frob.com>
 
 	* netfs.c (netfs_attempt_statfs): Implement this,
