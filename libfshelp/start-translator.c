@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -32,6 +32,7 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
   mach_port_t fds[STDERR_FILENO + 1];
   int ints[INIT_INT_MAX];
   int i;
+  error_t err;
   
   for (i = 0; i < INIT_PORT_MAX; i++)
     ports[i] = MACH_PORT_NULL;
@@ -44,12 +45,18 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
   ports[INIT_PORT_AUTH] = getauth ();
   fds[STDERR_FILENO] = getdport (STDERR_FILENO);
   
-  return fshelp_start_translator_long (underlying_open_fn,
-				       name, argz, argz_len,
-				       fds, MACH_MSG_TYPE_MOVE_SEND,
-				       STDERR_FILENO + 1,
-				       ports, MACH_MSG_TYPE_MOVE_SEND,
-				       INIT_PORT_MAX,
-				       ints, INIT_INT_MAX,
-				       timeout, control);
+  err = fshelp_start_translator_long (underlying_open_fn,
+				      name, argz, argz_len,
+				      fds, MACH_MSG_TYPE_COPY_SEND,
+				      STDERR_FILENO + 1,
+				      ports, MACH_MSG_TYPE_COPY_SEND,
+				      INIT_PORT_MAX,
+				      ints, INIT_INT_MAX,
+				      timeout, control);
+  for (i = 0; i < INIT_PORT_MAX; i++)
+    mach_port_deallocate (mach_task_self (), ports[i]);
+  for (i = 0; i <= STDERR_FILENO; i++)
+    mach_port_deallocate (mach_task_self (), fds[i]);
+
+  return err;
 }
