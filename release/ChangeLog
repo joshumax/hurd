@@ -1,3 +1,12 @@
+1997-07-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* rfloppy.nss: New file.
+	* rfloppy-special.copy: etc/nsswitch.conf.
+	* rfloppy.copy: Add sbin/swapon, servers/socket/inet, servers/socket/local.
+
+	* bfloppy2.boot: Specify a sync interval of two seconds to avoid
+	accumulating tons of memory when doing massive copies.
+
 1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* bfloppy2.boot: Renamed from bfloppy1.boot.
