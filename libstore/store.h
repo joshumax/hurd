@@ -406,8 +406,15 @@ struct store_argp_params
      upon which store_create has failed.  */
   int no_file_io : 1;
 
+  /* If true, then fill in ARGS & ARGS_LEN with appropiate arguments.  */
+  int return_args : 1;
+
   /* Parsed store returned here.  */
   struct store *result;
+
+  /* Arguments used to specify this store, in argz format.  */
+  char *args;
+  size_t args_len;
 };
 
 #endif /* __STORE_H__ */
