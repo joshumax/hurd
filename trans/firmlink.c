@@ -1,6 +1,6 @@
 /* A translator for `firmlinks'
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -218,7 +218,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       if (start + amount > max)
 	amount = max - start;
       if (amount > *data_len)
-	err = vm_allocate (mach_task_self (), data, amount, 1);
+	*data = (vm_address_t) mmap (0, amount, PROT_READ|PROT_WRITE, 
+				     MAP_ANON, 0, 0);
+      err = (*data == -1) ? errno : 0;
       if (!err && amount > 0)
 	{
 	  memcpy ((char *)(*data + start), target, amount);
