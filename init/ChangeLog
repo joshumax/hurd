@@ -1,5 +1,13 @@
 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* init.c (kill_multi_user): Suggest `ps -AlM' in error message.
+
+	* init.c (record_essential_task): New function, broken out of
+	S_startup_essential_task.
+	(S_startup_essential_task): Call it.
+	(frob_kernel_process): Call it for kernel task port.
+	(kill_everyone): Remove special case for PID 2 (kernel task).
+
 	* init.c (run): Add const to SERVER arg, PROG local.
 	Don't trim directory name from PROG for argument.
 
