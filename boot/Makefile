@@ -42,7 +42,7 @@ ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
 boot.1: boot frankemul.ld
-	i386-gnuelf-ld -o boot.1 -T frankemul.ld boot
+	$(LD) -o boot.1 -T frankemul.ld boot
 boot.a: boot.1 
-	i386-gnuelf-objcopy -S --remove-section=.comment -O a.out-mach3 \
+	$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 \
 			    boot.1 boot.a
