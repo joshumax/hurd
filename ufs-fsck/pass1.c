@@ -22,6 +22,8 @@
 
 #include "fsck.h"
 
+static struct dinode zino;
+
 /* Find all the blocks in use by files and filesystem reserved blocks. 
    Set them in the global block map.  For each file, if a block is found
    allocated twice, then record the block and inode in DUPLIST.
@@ -66,10 +68,10 @@ pass1 ()
 	  blkerror = 1;
 	  wasbad = 1;
 	  if (nblkrngerrors == 0)
-	    printf ("I=%lu HAS BAD BLOCKS\n");
+	    printf ("I=%d HAS BAD BLOCKS\n", number);
 	  if (nblkrngerrors++ > MAXBAD)
 	    {
-	      pwarn ("EXCESSIVE BAD BLKS I=%lu", number);
+	      pwarn ("EXCESSIVE BAD BLKS I=%d", number);
 	      if (preen || reply ("SKIP"))
 		{
 		  if (preen)
@@ -82,7 +84,7 @@ pass1 ()
       for (; nfrags > 0; bno++, nfrags--)
 	{
 	  if (outofrange && check_range (bno, 1))
-	    printf ("BAD BLOCK %d\n", bno);
+	    printf ("BAD BLOCK %lu\n", bno);
 	  else
 	    {
 	      if (!testbmap (bno))
@@ -91,12 +93,12 @@ pass1 ()
 		{
 		  blkerror = 1;
 		  if (nblkduperrors == 0)
-		    printf ("I=%lu HAS DUPLICATE BLOCKS\n");
-		  printf ("DUPLICATE BLOCK %d\n", bno);
+		    printf ("I=%d HAS DUPLICATE BLOCKS\n", number);
+		  printf ("DUPLICATE BLOCK %ld\n", bno);
 		  wasbad = 1;
 		  if (nblkduperrors++ > MAXBAD)
 		    {
-		      pwarn ("EXCESSIVE DUP BLKS I=%lu", number);
+		      pwarn ("EXCESSIVE DUP BLKS I=%d", number);
 		      if (preen || reply ("SKIP"))
 			{
 			  if (preen)
@@ -105,7 +107,7 @@ pass1 ()
 			}
 		    }
 		  new = malloc (sizeof (struct dups));
-		  new->dup = blkno;
+		  new->dup = bno;
 		  if (muldup == 0)
 		    {
 		      duplist = muldup = new;
@@ -117,20 +119,20 @@ pass1 ()
 		      muldup->next = new;
 		    }
 		  for (dlp = duplist; dlp != muldup; dlp = dlp->next)
-		    if (dlp->dup == blkno)
+		    if (dlp->dup == bno)
 		      break;
-		  if (dlp == muldup && dlp->dup != blkno)
+		  if (dlp == muldup && dlp->dup != bno)
 		    muldup = new;
 		}
 	    }
-	  nblocks += btodb (sblock->fs_fsize);
+	  nblocks += sblock->fs_fsize / DEV_BSIZE;
 	}
       return wasbad ? RET_BAD : RET_GOOD;
     }
   
 
   /* Account for blocks used by meta data */
-  for (cg = 0, cg < sblock.fs_ncg; cg++)
+  for (cg = 0; cg < sblock->fs_ncg; cg++)
     {
       daddr_t firstdata, firstcgblock, bno;
       
@@ -141,23 +143,23 @@ pass1 ()
 	 The first, however, reserves from the very front of the
 	 cylinder group (thus including the boot block), and it also
 	 reserves the data blocks holding the csum information. */
-      firstdata = cgdmin (&sblock, cg);
+      firstdata = cgdmin (sblock, cg);
       if (cg == 0)
 	{
-	  firstcgblock = cgbase (&sblock, cg);
-	  firstdata += howmany (sblock.fs_cssize, sblock.fs_fsize);
+	  firstcgblock = cgbase (sblock, cg);
+	  firstdata += howmany (sblock->fs_cssize, sblock->fs_fsize);
 	}
       else
-	firstdata = cgsblock (&sblock, cg);
+	firstcgblock = cgsblock (sblock, cg);
 
       /* Mark the blocks set */
       for (bno = firstcgblock; bno < firstdata; bno++)
-	setbmap (bno):
+	setbmap (bno);
     }
   
   /* Loop through each inode, doing initial checks */
-  for (number = 0, cg = 0; cg < sblock.fs_ncg; cg++)
-    for (i = 0; i < sblock.fs_ipg; i++, number++)
+  for (number = 0, cg = 0; cg < sblock->fs_ncg; cg++)
+    for (i = 0; i < sblock->fs_ipg; i++, number++)
       {
 	if (number < ROOTINO)
 	  continue;
@@ -171,12 +173,12 @@ pass1 ()
 	if (type == 0)
 	  {
 	    if (bcmp (dp->di_db, zino.di_db, NDADDR * sizeof (daddr_t))
-		|| bcmp (dp->di_ib, zino->di_ix, NIADDR * sizeof (daddr_t))
+		|| bcmp (dp->di_ib, zino.di_ib, NIADDR * sizeof (daddr_t))
 		|| dp->di_trans
 		|| DI_MODE (dp)
 		|| dp->di_size)
 	      {
-		pwarn ("PARTIALLY ALLOCATED INODE I=%lu", number);
+		pwarn ("PARTIALLY ALLOCATED INODE I=%d", number);
 		if (preen || reply ("CLEAR"))
 		  {
 		    if (preen)
@@ -195,9 +197,9 @@ pass1 ()
 	    /* Verify size for basic validity */
 	    holdallblocks = 0;
 	    
-	    if (dp->di_size + sblock.fs_bsize - 1 < dp->di_size)
+	    if (dp->di_size + sblock->fs_bsize - 1 < dp->di_size)
 	      {
-		pfatal ("OVERFLOW IN FILE SIZE I=%lu (SIZE == %lu)", inumber, 
+		pfatal ("OVERFLOW IN FILE SIZE I=%d (SIZE == %lld)", number, 
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -206,7 +208,8 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%lu AS ALLOCATED\n");
+		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n",
+			number);
 		holdallblocks = 1;
 	      }
 
@@ -225,16 +228,16 @@ pass1 ()
 		break;
 		    
 	      case IFLNK:
-		if (sblock.fs_maxsymlinklen != -1)
+		if (sblock->fs_maxsymlinklen != -1)
 		  {
 		    /* Check to see if this is a fastlink.  The
 		       old fast link format has fs_maxsymlinklen
 		       of zero and di_blocks zero; the new format has
 		       fs_maxsymlinklen set and we ignore di_blocks. 
 		       So check for either. */
-		    if ((sblock.fs_maxsymlinklen
-			 && dp->di_size < sblock.fs_maxsymlinklen)
-			|| (!sblock.fs_maxsymlinklen && !dp->di_blocks))
+		    if ((sblock->fs_maxsymlinklen
+			 && dp->di_size < sblock->fs_maxsymlinklen)
+			|| (!sblock->fs_maxsymlinklen && !dp->di_blocks))
 		      {
 			/* Fake NDB value so that we will check
 			   all the block pointers past the symlink */
@@ -243,26 +246,26 @@ pass1 ()
 			  {
 			    int j = ndb - NDADDR;
 			    for (ndb = 1; j > 1; i--)
-			      ndb *= NINDIR (&sblock);
+			      ndb *= NINDIR (sblock);
 			    ndb += NDADDR;
 			  }
 		      }
 		    else
-		      ndb = howmany (dp->di_size, sblock.fs_bsize);
+		      ndb = howmany (dp->di_size, sblock->fs_bsize);
 		  }
 		else
-		  ndb = howmany (dp->di_size, sblock.fs_bsize);
+		  ndb = howmany (dp->di_size, sblock->fs_bsize);
 		break;
 		    
 	      case IFDIR:
-		inodestate[number] = DIR;
+		inodestate[number] = DIRECTORY;
 		/* Fall through */
 	      case IFREG:
-		ndb = howmany (dp->di_size, sblock.fs_bsize);
+		ndb = howmany (dp->di_size, sblock->fs_bsize);
 		break;
 		
 	      default:
-		pfatal ("UNKNOWN FILE TYPE I=%lu (MODE=%lo)\n",
+		pfatal ("UNKNOWN FILE TYPE I=%d (MODE=%uo)\n",
 			number, mode);
 		if (reply ("CLEAR"))
 		  {
@@ -272,13 +275,14 @@ pass1 ()
 		  }
 		inodestate[number] = UNALLOC;
 		holdallblocks = 1;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%lu "
+		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d "
 			"AS ALLOCATED\n", number);
+		ndb = 0;
 	      }
 
 	    if (ndb < 0)
 	      {
-		pfatal ("BAD FILE SIZE I= %lu (SIZE == %lu)", inumber,
+		pfatal ("BAD FILE SIZE I= %d (SIZE == %lld)", number,
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -287,7 +291,7 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		printf ("WILL TREAT ANY BLOCKS HELD BY I=%lu AS ALLOCATED\n", 
+		printf ("WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED\n", 
 			number);
 		holdallblocks = 1;
 	      }
@@ -302,7 +306,7 @@ pass1 ()
 		    && (type == IFBLK || type == IFCHR 
 			|| type == IFSOCK || type == IFIFO))
 		  {
-		    pfatal ("SPECIAL NODE I=%du (MODE=%ol) HAS SIZE %lu\n",
+		    pfatal ("SPECIAL NODE I=%d (MODE=%ol) HAS SIZE %lld\n",
 			    number, mode, dp->di_size);
 		    if (reply ("TRUNCATE"))
 		      {
@@ -324,7 +328,7 @@ pass1 ()
 			if (!dbwarn)
 			  {
 			    dbwarn = 1;
-			    pwarn ("INODE I=%lu HAS EXTRA DIRECT BLOCKS", 
+			    pwarn ("INODE I=%d HAS EXTRA DIRECT BLOCKS", 
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
@@ -342,16 +346,16 @@ pass1 ()
 		  }
 
 		for (lbn = 0, ndb -= NDADDR; ndb > 0; lbn++)
-		  ndb /= NINDIR (&sblock);
+		  ndb /= NINDIR (sblock);
 		for (; lbn < NIADDR; lbn++)
 		  {
-		    ind ibwarn = 0;
+		    int ibwarn = 0;
 		    if (dp->di_ib[lbn])
 		      {
 			if (ibwarn)
 			  {
 			    ibwarn = 1;
-			    pwarn ("INODE I=%lu HAS EXTRA INDIRECT BLOCKS",
+			    pwarn ("INODE I=%d HAS EXTRA INDIRECT BLOCKS",
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
@@ -392,7 +396,7 @@ pass1 ()
 		  pfatal ("DUPLICATE or BAD BLOCKS");
 		else
 		  {
-		    printf ("I=%ld has ");
+		    printf ("I=%d has ", number);
 		    if (nblkduperrors)
 		      {
 			printf ("%d DUPLICATE BLOCKS", nblkduperrors);
@@ -407,14 +411,14 @@ pass1 ()
 			clear_inode (number, dp);
 			inodestate[number] = UNALLOC;
 		      }
-		    else if (inodestate[number] == DIR)
+		    else if (inodestate[number] == DIRECTORY)
 		      inodestate[number] = BADDIR;
 		  }
 	      }
 	    else if (dp->di_blocks != nblocks)
 	      {
-		pwarn ("INCORRECT BLOCK COUNT I=%lu (%ld should be %ld)",
-		       number, di->di_blocks, nblocks);
+		pwarn ("INCORRECT BLOCK COUNT I=%d (%ld should be %d)",
+		       number, dp->di_blocks, nblocks);
 		if (preen || reply ("CORRECT"))
 		  {
 		    if (preen)
