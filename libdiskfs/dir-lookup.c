@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
+#include <sys/file.h>
 #include <hurd/fsys.h>
 #include <hurd/paths.h>
 
@@ -409,10 +410,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (! error)
     {
       if (flags & O_EXLOCK)
-	error = fshelp_acquire_lock (&np->userlock, &po->lock_status,
+	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_EX);
       else if (flags & O_SHLOCK)
-	error = fshelp_acquire_lock (&np->userlock, &po->lock_status,
+	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_SH);
     }
   
