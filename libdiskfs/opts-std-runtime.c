@@ -22,8 +22,8 @@
 
 #include "priv.h"
 
-#define SUID_OK_OPT 600
-#define EXEC_OK_OPT 601
+#define OPT_SUID_OK 600
+#define OPT_EXEC_OK 601
 
 static const struct argp_option
 std_runtime_options[] =
@@ -77,9 +77,9 @@ set_opts (struct parse_hook *h)
     }
 
   if (h->nosuid != -1)
-    nosuid = h->nosuid;
+    _diskfs_nosuid = h->nosuid;
   if (h->noexec != -1)
-    noexec = h->noexec;
+    _diskfs_noexec = h->noexec;
 
   free (h);
 
