@@ -1,6 +1,6 @@
 /* Setuid reauthentication for exec
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>,
      from the original by Michael I. Bushnell p/BSG  <mib@gnu.ai.mit.edu>
@@ -131,7 +131,7 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
       exec_reauth (newauth, _secure, 0, ports, num_ports, fds, num_fds);
 
       if (eff_uids->num > 0)
-	proc_setowner (ports[INIT_PORT_PROC], eff_uids->ids[0]);
+	proc_setowner (ports[INIT_PORT_PROC], eff_uids->ids[0], 0);
 
     abandon_suid:
       if (eff_uids)
