@@ -37,7 +37,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int nsymlink = 0;
   char *nextname;
   int nextnamelen;
-  int error = 0;
+  error_t error = 0;
   char *pathbuf = 0;
   int pathbuflen = 0;
   int newnamelen;
@@ -224,10 +224,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				    lastcomp ? flags : flags & ~O_NOLINK,
 				    retry, retryname, returned_port);
 	      
-	      /* If we got MACH_SEND_INVALID_DEST, then the server is dead.
-		 Zero out the old control port and try everything again. */
+	      /* If we got MACH_SEND_INVALID_DEST or MIG_SERVER_DIED, then
+		 the server is dead.  Zero out the old control port and try
+		 everything again.  */
 
-	      if (error == MACH_SEND_INVALID_DEST)
+	      if (error == MACH_SEND_INVALID_DEST || error == MIG_SERVER_DIED)
 		{
 		  mutex_lock (&np->translator.lock);
 
@@ -348,10 +349,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  if (pathbuf[0] == '/')
 	    {
-	      /* Punt to the caller */
+	      /* Punt to the caller.  */
 	      *retry = FS_RETRY_MAGICAL;
 	      *returned_port = MACH_PORT_NULL;
-	      strcpy (retryname, pathbuf + nextnamelen);
+	      strcpy (retryname, pathbuf);
 	      goto out;
 	    }
 	  
