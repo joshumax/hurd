@@ -1,5 +1,5 @@
 /* Interrup [get the phone, will ya?] tion.			-*- C -*-
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -23,18 +23,11 @@ subsystem interrupt 33000;
 
 #include <hurd/hurd_types.defs>
 
-/* Time in milliseconds to wait for a reply before
-   returning MACH_RCV_TIMED_OUT.  */
-
-#ifndef INTERRUPT_TIMEOUT
-#define INTERRUPT_TIMEOUT 1000	/* One second.  */
-#endif
-waittime INTERRUPT_TIMEOUT;
-
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
 
 routine
 interrupt_operation (object: mach_port_t;
+		     waittime timeout: natural_t;
 		     msgseqno seqno: mach_port_seqno_t);
 
