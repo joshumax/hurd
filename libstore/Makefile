@@ -31,7 +31,7 @@ installhdrs=store.h
 UTIL_OBJS = storeread.o storecat.o
 OBJS = $(filter-out $(UTIL_OBJS), $(SRCS:.c=.o))
 
-storeread: storeread.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
-storecat: storecat.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
-
 include ../Makeconf
+
+storeread: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
+storecat: libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
