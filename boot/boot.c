@@ -263,8 +263,7 @@ struct sgttyb
 
 
 #define SIGIO 23
-#define SIGEMSG 30
-#define SIGMSG 31
+
 struct sigvec
 {
   void (*sv_handler)();
@@ -370,11 +369,11 @@ request_server (mach_msg_header_t *inp,
     }
   else
 #endif
-    return (io_server (inp, outp)
-	    || device_server (inp, outp)
-	    || notify_server (inp, outp)
-	    || term_server (inp, outp)
-/*	    || tioctl_server (inp, outp) */);
+   return (io_server (inp, outp)
+	   || device_server (inp, outp)
+	   || notify_server (inp, outp)
+	   || term_server (inp, outp)
+	   /*	    || tioctl_server (inp, outp) */);
 }
 
 vm_address_t
@@ -737,8 +736,6 @@ main (int argc, char **argv, char **envp)
   init_termstate ();
   ioctl (0, FIOASYNC, &foo);
   sigvec (SIGIO, &vec, 0);
-  sigvec (SIGMSG, &vec, 0);
-  sigvec (SIGEMSG, &vec, 0);
 
   /* The boot script has now been parsed into internal data structures.
      Now execute its directives.  */
@@ -1009,6 +1006,10 @@ queue_read (enum read_type type,
   spin_unlock (&queuelock);
 }
 
+/* TRUE if there's data available on stdin, which should be used to satisfy
+   console read requests.  */
+static int should_read = 0;
+
 /* Reply to a queued read. */
 void
 read_reply ()
@@ -1018,7 +1019,16 @@ read_reply ()
   char * buf;
   int amtread;
 
-  spin_lock (&readlock);
+  /* By forcing SHOULD_READ to true before trying the lock, we ensure that
+     either we get the lock ourselves or that whoever currently holds the
+     lock will service this read when he unlocks it.  */
+  should_read = 1;
+  if (! spin_try_lock (&readlock))
+    return;
+
+  /* Since we're commited to servicing the read, no one else need do so.  */
+  should_read = 0;
+
   ioctl (0, FIONREAD, &avail);
   if (!avail)
     {
@@ -1079,6 +1089,16 @@ read_reply ()
     }
 
   free (qr);
+}
+
+/* Unlock READLOCK, and also service any new read requests that it was
+   blocking.  */
+static void
+unlock_readlock ()
+{
+  spin_unlock (&readlock);
+  while (should_read)
+    read_reply ();
 }
 
 /*
@@ -1411,7 +1431,6 @@ ds_device_read (device_t device,
 		unsigned int *datalen)
 {
   int avail;
-  int mask;
 
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
@@ -1425,22 +1444,19 @@ ds_device_read (device_t device,
     }
 #endif
 
-  mask = sigblock (sigmask (SIGIO));
   spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
       *datalen = read (0, *data, bytes_wanted);
-      spin_unlock (&readlock);
-      sigsetmask (mask);
+      unlock_readlock ();
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
-      spin_unlock (&readlock);
+      unlock_readlock ();
       queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
-      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
@@ -1456,7 +1472,6 @@ ds_device_read_inband (device_t device,
 		       unsigned int *datalen)
 {
   int avail;
-  int mask;
 
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
@@ -1470,21 +1485,18 @@ ds_device_read_inband (device_t device,
     }
 #endif
 
-  mask = sigblock (sigmask (SIGIO));
   spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       *datalen = read (0, data, bytes_wanted);
-      spin_unlock (&readlock);
-      sigsetmask (mask);
+      unlock_readlock ();
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
-      spin_unlock (&readlock);
+      unlock_readlock ();
       queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
-      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
@@ -1691,7 +1703,6 @@ S_io_read (mach_port_t object,
 	   mach_msg_type_number_t amount)
 {
   mach_msg_type_number_t avail;
-  int mask;
 
   if (object != pseudo_console)
     return EOPNOTSUPP;
@@ -1705,7 +1716,6 @@ S_io_read (mach_port_t object,
     }
 #endif
 
-  mask = sigblock (sigmask (SIGIO));
   spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
@@ -1713,15 +1723,13 @@ S_io_read (mach_port_t object,
       if (amount > *datalen)
 	vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
       *datalen = read (0, *data, amount);
-      spin_unlock (&readlock);
-      sigsetmask (mask);
+      unlock_readlock ();
       return *datalen == -1 ? errno : 0;
     }
   else
     {
-      spin_unlock (&readlock);
+      unlock_readlock ();
       queue_read (IO_READ, reply_port, reply_type, amount);
-      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
