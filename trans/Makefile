@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,99,2000,2001 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,99,2000,01,02 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,15 +24,17 @@ SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
-	device_replyServer.o
+	device_replyServer.o elfcore.o
 HURDLIBS = threads ports trivfs fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
 
+vpath elfcore.c $(top_srcdir)/exec
+
 symlink: fsysServer.o
 ifsock: ifsockServer.o
-crash: crashServer.o crash_replyUser.o msgServer.o
+crash: crashServer.o crash_replyUser.o msgServer.o elfcore.o
 password: passwordServer.o
 streamio: device_replyServer.o
 

@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995,96,97,99,2000,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,01,02 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -69,9 +69,10 @@ enum crash_action
 static enum crash_action crash_how, crash_orphans_how;
 
 
-error_t dump_core (task_t task, file_t core_file,
-		   int signo, long int sigcode, int sigerror);
-
+/* This is defined in ../exec/elfcore.c, or we could have
+   different implementations for other formats.  */
+extern error_t dump_core (task_t task, file_t file, off_t corelimit,
+			  int signo, long int sigcode, int sigerror);
 
 /* This data structure describes a crashing task which we have suspended.
    This is attached to a receive right we have set as the process's message
@@ -90,6 +91,7 @@ struct crasher
 
     task_t task;
     file_t core_file;
+    off_t core_limit;
     int signo, sigcode, sigerror;
 
     mach_port_t original_msgport; /* Restore on resume.  */
@@ -214,6 +216,7 @@ S_crash_dump_task (mach_port_t port,
 
 	      c->task = task;
 	      c->core_file = core_file;
+	      c->core_limit = (off_t) -1; /* XXX should core limit in RPC */
 	      c->signo = signo;
 	      c->sigcode = sigcode;
 	      c->sigerror = sigerror;
@@ -230,7 +233,9 @@ S_crash_dump_task (mach_port_t port,
       err = task_suspend (task);
       if (!err)
 	{
-	  err = dump_core (task, core_file, signo, sigcode, sigerror);
+	  err = dump_core (task, core_file,
+			   (off_t) -1,	/* XXX should get core limit in RPC */
+			   signo, sigcode, sigerror);
 	  task_resume (task);
 	}
       break;
@@ -370,13 +375,6 @@ S_msg_sig_post_untraced (mach_port_t port,
   return err;
 }
 
-error_t
-dump_core (task_t task, file_t core_file,
-	   int signo, long int sigcode, int sigerror)
-{
-  return ENOSYS;		/* XXX */
-}
-
 /* This gets called when the receive right for a crasher message port dies.  */
 
 void
@@ -395,7 +393,7 @@ dead_crasher (void *ptr)
     {
       /* C->proc was cleared in S_msg_sig_post as a marker that
 	 this crasher should get a core dump when we clean him up.  */
-      error_t err = dump_core (c->task, c->core_file,
+      error_t err = dump_core (c->task, c->core_file, c->core_limit,
 			       c->signo, c->sigcode, c->sigerror);
       /* Now reply to the crasher's original RPC which started this whole
          party.  He should now report his own death (with core dump iff ERR
