@@ -740,17 +740,7 @@ prepare (file_t file, struct execdata *e)
       e->filemap = rd;
 
       e->error = /* io_map_cntl (file, &e->cntlmap) */ EOPNOTSUPP; /* XXX */
-      if (e->error)
-	{
-	  /* No shared page.  Do a stat to find the file size.  */
-	  struct stat st;
-	  e->error = io_stat (file, &st);
-	  if (e->error)
-	    return;
-	  e->file_size = st.st_size;
-	  e->optimal_block = st.st_blksize;
-	}
-      else
+      if (!e->error)
 	e->error = vm_map (mach_task_self (), (vm_address_t *) &e->cntl,
 			   vm_page_size, 0, 1, e->cntlmap, 0, 0,
 			   VM_PROT_READ|VM_PROT_WRITE,
@@ -791,6 +781,17 @@ prepare (file_t file, struct execdata *e)
   else if (e->error == EOPNOTSUPP)
     /* We can't mmap FILE, but perhaps we can do normal I/O to it.  */
     e->error = 0;
+
+  if (!e->error && !e->cntl)
+    {
+      /* No shared page.  Do a stat to find the file size.  */
+      struct stat st;
+      e->error = io_stat (file, &st);
+      if (e->error)
+	return;
+      e->file_size = st.st_size;
+      e->optimal_block = st.st_blksize;
+    }
 
   /* Initialize E's stdio stream.  */
   prepare_stream (e);
