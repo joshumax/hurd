@@ -26,7 +26,7 @@ subsystem fsys_reply 22100;   /* must match fsys.defs + 100 */
 type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 	ctype: mach_port_t;
 
-simpleroute fsys_startup_reply (
+simpleroutine fsys_startup_reply (
 	repsy_port: reply_port_t;
 	retcode: kern_return_t;
 	realnode: mach_port_send_t);
@@ -72,6 +72,6 @@ simpleroutine fsys_forward_reply (
 
 simpleroutine fsys_get_options_reply (
 	reply_port: reply_port_t;
-	retcode: kern_returnt_t;
+	retcode: kern_return_t;
 	options: data_t);
 
