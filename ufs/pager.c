@@ -43,7 +43,7 @@ find_address (struct user_pager_info *upi,
 	      struct rwlock **nplock)
 {
   error_t err;
-  
+
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
   if (upi->type == DISK)
@@ -53,13 +53,13 @@ find_address (struct user_pager_info *upi,
       *nplock = 0;
       return 0;
     }
-  else 
+  else
     {
       struct iblock_spec indirs[NIADDR + 1];
       struct node *np;
-  
+
       np = upi->np;
-      
+
       rwlock_reader_lock (&np->dn->allocptrlock);
       *nplock = &np->dn->allocptrlock;
 
@@ -68,12 +68,12 @@ find_address (struct user_pager_info *upi,
 	  rwlock_reader_unlock (&np->dn->allocptrlock);
 	  return EIO;
 	}
-      
+
       if (offset + __vm_page_size > np->allocsize)
 	*disksize = np->allocsize - offset;
       else
 	*disksize = __vm_page_size;
-      
+
       err = fetch_indir_spec (np, lblkno (sblock, offset), indirs);
       if (err)
 	rwlock_reader_unlock (&np->dn->allocptrlock);
@@ -85,13 +85,13 @@ find_address (struct user_pager_info *upi,
 	  else
 	    *addr = 0;
 	}
-      
+
       return err;
     }
 }
 
 
-/* Implement the pager_read_page callback from the pager library.  See 
+/* Implement the pager_read_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
 pager_read_page (struct user_pager_info *pager,
@@ -103,11 +103,11 @@ pager_read_page (struct user_pager_info *pager,
   struct rwlock *nplock;
   daddr_t addr;
   int disksize;
-  
+
   err = find_address (pager, page, &addr, &disksize, &nplock);
   if (err)
     return err;
-  
+
   if (addr)
     {
       err = diskfs_device_read_sync (addr, (void *)buf, disksize);
@@ -124,14 +124,14 @@ pager_read_page (struct user_pager_info *pager,
       vm_allocate (mach_task_self (), buf, __vm_page_size, 1);
       *writelock = 1;
     }
-      
+
   if (nplock)
     rwlock_reader_unlock (nplock);
-  
+
   return err;
 }
 
-/* Implement the pager_write_page callback from the pager library.  See 
+/* Implement the pager_write_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
 pager_write_page (struct user_pager_info *pager,
@@ -142,11 +142,11 @@ pager_write_page (struct user_pager_info *pager,
   int disksize;
   struct rwlock *nplock;
   error_t err;
-  
+
   err = find_address (pager, page, &addr, &disksize, &nplock);
   if (err)
     return err;
-  
+
   if (addr)
     err = diskfs_device_write_sync (addr, buf, disksize);
   else
@@ -154,17 +154,17 @@ pager_write_page (struct user_pager_info *pager,
       printf ("Attempt to write unallocated disk\n.");
       printf ("Object %p\tOffset %#x\n", pager, page);
       fflush (stdout);
-      err = 0;			/* unallocated disk; 
+      err = 0;			/* unallocated disk;
 				   error would be pointless */
     }
-    
+
   if (nplock)
     rwlock_reader_unlock (nplock);
-  
+
   return err;
 }
 
-/* Implement the pager_unlock_page callback from the pager library.  See 
+/* Implement the pager_unlock_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
 pager_unlock_page (struct user_pager_info *pager,
@@ -177,7 +177,7 @@ pager_unlock_page (struct user_pager_info *pager,
   struct disknode *dn;
   struct dinode *di;
 
-  /* Zero an sblock->fs_bsize piece of disk starting at BNO, 
+  /* Zero an sblock->fs_bsize piece of disk starting at BNO,
      synchronously.  We do this on newly allocated indirect
      blocks before setting the pointer to them to ensure that an
      indirect block absolutely never points to garbage. */
@@ -196,13 +196,13 @@ pager_unlock_page (struct user_pager_info *pager,
 
   if (pager->type == DISK)
     return 0;
-  
+
   np = pager->np;
   dn = np->dn;
   di = dino (dn->number);
 
   rwlock_writer_lock (&dn->allocptrlock);
-  
+
   /* If this is the last block, we don't let it get unlocked. */
   if (address + __vm_page_size
       > blkroundup (sblock, np->allocsize) - sblock->fs_bsize)
@@ -212,7 +212,7 @@ pager_unlock_page (struct user_pager_info *pager,
       rwlock_writer_unlock (&dn->allocptrlock);
       return EIO;
     }
-    
+
   err = fetch_indir_spec (np, lblkno (sblock, address), indirs);
   if (err)
     {
@@ -228,10 +228,10 @@ pager_unlock_page (struct user_pager_info *pager,
     }
 
   /* See if we need a triple indirect block; fail if we do. */
-  assert (indirs[0].offset == -1 
-	  || indirs[1].offset == -1 
+  assert (indirs[0].offset == -1
+	  || indirs[1].offset == -1
 	  || indirs[2].offset == -1);
-  
+
   /* Check to see if this block is allocated. */
   if (indirs[0].bno == 0)
     {
@@ -252,7 +252,7 @@ pager_unlock_page (struct user_pager_info *pager,
       else
 	{
 	  daddr_t *siblock;
-	  
+
 	  /* We need to set siblock to the single indirect block
 	     array; see if the single indirect block is allocated. */
 	  if (indirs[1].bno == 0)
@@ -272,7 +272,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	      else
 		{
 		  daddr_t *diblock;
-	      
+
 		  /* We need to set diblock to the double indirect
 		     block array; see if the double indirect block is
 		     allocated. */
@@ -281,7 +281,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		      /* This assert because triple indirection is
 			 not supported. */
 		      assert (indirs[2].offset == -1);
-		      
+
 		      err = ffs_alloc (np, lblkno (sblock, address),
 				       ffs_blkpref (np, lblkno (sblock,
 								address),
@@ -296,9 +296,9 @@ pager_unlock_page (struct user_pager_info *pager,
 
 		  diblock = indir_block (indirs[2].bno);
 		  mark_indir_dirty (np, indirs[2].bno);
-		  
+
 		  /* Now we can allocate the single indirect block */
-		  
+
 		  err = ffs_alloc (np, lblkno (sblock, address),
 				   ffs_blkpref (np, lblkno (sblock, address),
 						indirs[1].offset, diblock),
@@ -310,7 +310,7 @@ pager_unlock_page (struct user_pager_info *pager,
 		  record_poke (diblock, sblock->fs_bsize);
 		}
 	    }
-	  
+
 	  siblock = indir_block (indirs[1].bno);
 	  mark_indir_dirty (np, indirs[1].bno);
 
@@ -330,14 +330,14 @@ pager_unlock_page (struct user_pager_info *pager,
 	  record_poke (siblock, sblock->fs_bsize);
 	}
     }
-  
+
  out:
   diskfs_end_catch_exception ();
   rwlock_writer_unlock (&dn->allocptrlock);
   return err;
 }
 
-/* Implement the pager_report_extent callback from the pager library.  See 
+/* Implement the pager_report_extent callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 inline error_t
 pager_report_extent (struct user_pager_info *pager,
@@ -352,7 +352,7 @@ pager_report_extent (struct user_pager_info *pager,
     *size = diskfs_device_size << diskfs_log2_device_block_size;
   else
     *size = pager->np->allocsize;
-  
+
   return 0;
 }
 
@@ -377,7 +377,7 @@ void
 pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
 {
 }
-    
+
 
 
 static void
@@ -389,23 +389,17 @@ thread_function (any_t foo __attribute__ ((unused)))
 					      1, MACH_PORT_NULL);
 }
 
-/* Create a the DISK pager, initializing DISKPAGER, and DISKPAGERPORT */
+/* Create the DISK pager.  */
 void
-create_disk_pager ()
+create_disk_pager (void)
 {
-  pager_bucket = ports_create_bucket ();
+  struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
 
-  cthread_detach (cthread_fork ((cthread_fn_t) thread_function, (any_t) 0));
-  
-  diskpager = malloc (sizeof (struct user_pager_info));
-  diskpager->type = DISK;
-  diskpager->np = 0;
-  diskpager->p = pager_create (diskpager, pager_bucket,
-			       MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  diskpagerport = pager_get_port (diskpager->p);
-  mach_port_insert_right (mach_task_self (), diskpagerport, diskpagerport,
-			  MACH_MSG_TYPE_MAKE_SEND);
-}  
+  upi->type = DISK;
+  upi->np = 0;
+  disk_pager_setup (upi, MAY_CACHE);
+  upi->p = disk_pager;
+}
 
 /* This syncs a single file (NP) to disk.  Wait for all I/O to complete
    if WAIT is set.  NP->lock must be held.  */
@@ -421,13 +415,13 @@ diskfs_file_update (struct node *np,
   if (upi)
     ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
-  
+
   if (upi)
     {
       pager_sync (upi->p, wait);
       ports_port_deref (upi->p);
     }
-  
+
   for (d = np->dn->dirty; d; d = tmp)
     {
       sync_disk_blocks (d->bno, sblock->fs_bsize, wait);
@@ -452,13 +446,13 @@ flush_node_pager (struct node *node)
   if (upi)
     ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
-  
+
   if (upi)
     {
       pager_flush (upi->p, 1);
       ports_port_deref (upi->p);
     }
-  
+
   dn->dirty = 0;
 
   while (dirty)
@@ -480,7 +474,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   assert (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)
 	  || (S_ISLNK (np->dn_stat.st_mode)
-	      && (!direct_symlink_extension 
+	      && (!direct_symlink_extension
 		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
 
   spin_lock (&node2pagelock);
@@ -513,12 +507,12 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   while (right == MACH_PORT_NULL);
 
   spin_unlock (&node2pagelock);
-  
+
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   return right;
-} 
+}
 
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
@@ -526,7 +520,7 @@ void
 drop_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
-  
+
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
@@ -545,13 +539,13 @@ void
 allow_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
-  
+
   spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
   spin_unlock (&node2pagelock);
-  
+
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
   if (upi)
@@ -564,11 +558,11 @@ block_caching ()
   error_t block_cache (void *arg)
     {
       struct pager *p = arg;
-      
+
       pager_change_attributes (p, 0, MEMORY_OBJECT_COPY_DELAY, 1);
       return 0;
     }
-  
+
   /* Loop through the pagers and turn off caching one by one,
      synchronously.  That should cause termination of each pager. */
   ports_bucket_iterate (pager_bucket, block_cache);
@@ -581,7 +575,7 @@ enable_caching ()
     {
       struct pager *p = arg;
       struct user_pager_info *upi = pager_get_upi (p);
-      
+
       pager_change_attributes (p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
 
       /* It's possible that we didn't have caching on before, because
@@ -619,7 +613,7 @@ diskfs_pager_users ()
       /* Give it a second; the kernel doesn't actually shutdown
 	 immediately.  XXX */
       sleep (1);
-  
+
       npagers = ports_count_bucket (pager_bucket);
       if (npagers <= 1)
 	return 0;
@@ -628,7 +622,7 @@ diskfs_pager_users ()
 	 and return failure. */
       enable_caching ();
     }
-  
+
   ports_enable_bucket (pager_bucket);
 
   return 1;
@@ -674,7 +668,7 @@ diskfs_max_user_pager_prot ()
 
 /* Call this to find out the struct pager * corresponding to the
    FILE_DATA pager of inode IP.  This should be used *only* as a subsequent
-   argument to register_memory_fault_area, and will be deleted when 
+   argument to register_memory_fault_area, and will be deleted when
    the kernel interface is fixed.  NP must be locked.  */
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *np)
@@ -692,7 +686,7 @@ diskfs_shutdown_pager ()
     {
       struct pager *p = arg;
       /* Make sure the disk pager is done last. */
-      if (p != diskpager->p)
+      if (p != disk_pager)
 	pager_shutdown (p);
       return 0;
     }
@@ -700,7 +694,7 @@ diskfs_shutdown_pager ()
   copy_sblock ();
   write_all_disknodes ();
   ports_bucket_iterate (pager_bucket, shutdown_one);
-  pager_shutdown (diskpager->p);
+  pager_shutdown (disk_pager);
 }
 
 /* Sync all the pagers. */
@@ -711,11 +705,11 @@ diskfs_sync_everything (int wait)
     {
       struct pager *p = arg;
       /* Make sure the disk pager is done last. */
-      if (p != diskpager->p)
+      if (p != disk_pager)
 	pager_sync (p, wait);
       return 0;
     }
-  
+
   copy_sblock ();
   write_all_disknodes ();
   ports_bucket_iterate (pager_bucket, sync_one);
