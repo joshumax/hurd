@@ -81,15 +81,18 @@ struct port_class *crasher_portclass;
 void
 stop_pgrp (process_t userproc, mach_port_t cttyid)
 {
-  pid_t pid, pgrp;
+  pid_t pid, ppid, pgrp;
   int orphaned;
   error_t err;
   size_t numpids = 20;
   pid_t pids_[numpids], *pids = pids_;
   int i;
 
-  err = proc_getpids (userproc, &pid, &pgrp, &orphaned);
+  err = proc_getpids (userproc, &pid, &ppid, &orphaned);
   if (err || orphaned)
+    return;
+  err = proc_getpgrp (userproc, pid, &pgrp);
+  if (err)
     return;
 
   /* Use USERPROC so that if it's just died we get an error and don't do
