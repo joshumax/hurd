@@ -1,5 +1,5 @@
 /* Directory management routines
-   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -379,7 +379,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  || DIRSIZ (DIRECT_NAMLEN (entry)) > read_disk_entry (entry->d_reclen)
 	  || memchr (entry->d_name, '\0', DIRECT_NAMLEN (entry)))
 	{
-	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
+	  fprintf (stderr, "Bad directory entry: inode: %d offset: %zd\n",
 		  dp->dn->number, currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
 	}
@@ -729,8 +729,7 @@ diskfs_dirempty(struct node *dp,
 		struct protid *cred)
 {
   struct directory_entry *entry;
-  int curoff;
-  vm_address_t buf;
+  vm_address_t buf, curoff;
   memory_object_t memobj;
   error_t err;
 
@@ -798,7 +797,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 static error_t
 count_dirents (struct node *dp, int nb, char *buf)
 {
-  int amt;
+  size_t amt;
   char *offinblk;
   struct directory_entry *entry;
   int count = 0;
@@ -833,7 +832,7 @@ diskfs_get_directs (struct node *dp,
 		    int entry,
 		    int nentries,
 		    char **data,
-		    u_int *datacnt,
+		    size_t *datacnt,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
@@ -848,7 +847,7 @@ diskfs_get_directs (struct node *dp,
   char *datap;
   struct directory_entry *entryp;
   int allocsize;
-  int checklen;
+  size_t checklen;
   struct dirent *userp;
 
   nblks = dp->dn_stat.st_size/DIRBLKSIZ;

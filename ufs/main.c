@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -136,7 +136,7 @@ struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
 /* Override the standard diskfs routine so we can add our own output.  */
 error_t
-diskfs_append_args (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err;
 
@@ -166,7 +166,7 @@ main (int argc, char **argv)
 			    &store_parsed, &bootstrap);
 
   if (store->block_size > DEV_BSIZE)
-    error (4, 0, "%s: Bad device block size %d (should be <= %d)",
+    error (4, 0, "%s: Bad device block size %zd (should be <= %d)",
 	   diskfs_disk_name, store->block_size, DEV_BSIZE);
   if (store->size < SBSIZE + SBOFF)
     error (5, 0, "%s: Disk too small (%Ld bytes)", diskfs_disk_name,
