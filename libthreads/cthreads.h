@@ -430,7 +430,7 @@ typedef struct cthread {
 	struct mutex lock;
 	struct condition done;
 	int state;
-/*	jmp_buf catch; */
+	jmp_buf catch;
 	cthread_fn_t func;
 	any_t arg;
 	any_t result;
