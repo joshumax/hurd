@@ -77,6 +77,10 @@ diskfs_cached_lookup (int inum, struct node **npp)
   rwlock_init (&dn->alloc_lock);
   pokel_init (&dn->indir_pokel, disk_pager, disk_image);
   
+  bzero (&dn->last_acts, sizeof dn->last_acts);
+  bzero (&dn->last_addrs, sizeof dn->last_addrs);
+  dn->last_offs = 0;
+
   /* Create the new node.  */
   np = diskfs_make_node (dn);
   np->cache_id = inum;
