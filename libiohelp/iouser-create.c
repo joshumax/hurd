@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996,2001 Free Software Foundation
+/*
+   Copyright (C) 1996,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,7 @@ iohelp_create_iouser (struct iouser **user, struct idvec *uids,
 
   return 0;
 }
-  
+
 #define E(err)				\
 	do {				\
 	  if (err)			\
@@ -89,8 +89,8 @@ iohelp_create_simple_iouser (struct iouser **user, uid_t uid, gid_t gid)
 
 error_t
 iohelp_create_complex_iouser (struct iouser **user,
-			      uid_t *uvec, int nuids,
-			      gid_t *gvec, int ngids)
+			      const uid_t *uvec, int nuids,
+			      const gid_t *gvec, int ngids)
 {
   struct idvec *uids, *gids;
 
