@@ -1,3 +1,19 @@
+1999-02-27  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* def_pager_setup.c (add_paging_file): New arg CHECK_LINUX_SIGNATURE,
+	pass down to create_paging_partition.
+	* default_pager.c (create_paging_partition): New arg
+	CHECK_LINUX_SIGNATURE, pass down new_partition.
+	(new_partition): New arg CHECK_LINUX_SIGNATURE: if not < 0,
+	check first page of swap for Linux 2.0 or 2.2 signature page and obey
+	its bad-block map; if > 0, refuse the partition if no signature found.
+	* bootstrap.c (main): Add new boot script functions
+	`add-raw-paging-file', `add-linux-paging-file'.  Make those
+	and `add-paging-file' all call add_paging_file with new
+	LINUX_SIGNATURE arg of -1, 1, and 0, respectively.
+	* default_pager.c (create_paging_partition): If new_partition returns
+	null, return and do nothing more.
+
 1998-07-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* default_pager.c (pager_read_offset): Cast NO_BLOCK twice, to real
