@@ -32,7 +32,7 @@ IO_IMPORTS
 routine io_write (
 	io_object: io_t;
 	data: data_t;
-	offset: int;
+	offset: off_t;
 	out amount: int);
 
 /* Read data from an IO object.  If offset if -1, read from the object
@@ -42,16 +42,16 @@ routine io_write (
 routine io_read (
 	io_object: io_t;
 	out data: data_t;
-	offset: int;
+	offset: off_t;
 	amount: int);
 
 /* Change current read/write offset */
 /* INTR */
 routine io_seek (
 	io_object: io_t;
-	offset: int;
+	offset: off_t;
 	whence: int;
-	out newp: int);
+	out newp: off_t);
 
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
