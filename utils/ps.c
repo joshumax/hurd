@@ -427,17 +427,21 @@ main(int argc, char *argv[])
     }
   bool proc_stat_has_ctty(struct proc_stat *ps)
     {
-      ps_tty_t tty = proc_stat_tty(ps);
-      if (tty)
+      if (proc_stat_has(ps, PSTAT_TTY))
+	/* Only match processes whose tty we can figure out.  */
 	{
-	  unsigned i;
-	  char *name = ps_tty_name(tty);
-	  char *short_name = ps_tty_short_name(tty);
+	  ps_tty_t tty = proc_stat_tty(ps);
+	  if (tty)
+	    {
+	      unsigned i;
+	      char *name = ps_tty_name(tty);
+	      char *short_name = ps_tty_short_name(tty);
 
-	  for (i = 0; i < num_tty_names; i++)
-	    if ((name && strcmp (tty_names[i], name) == 0)
-		|| (short_name && strcmp (tty_names[i], short_name) == 0))
-	      return TRUE;
+	      for (i = 0; i < num_tty_names; i++)
+		if ((name && strcmp (tty_names[i], name) == 0)
+		    || (short_name && strcmp (tty_names[i], short_name) == 0))
+		  return TRUE;
+	    }
 	}
       return FALSE;
     }
@@ -581,8 +585,12 @@ main(int argc, char *argv[])
   if (num_uids > 0)
     proc_stat_list_filter1(procset, proc_stat_has_owner, PSTAT_INFO, FALSE);
   if (num_tty_names > 0)
-    /* Returns TRUE if PS has for a controlling terminal any in TTY_NAMES.  */
-    proc_stat_list_filter1(procset, proc_stat_has_ctty, PSTAT_TTY, FALSE);
+    {
+      /* We set the PSTAT_TTY flag separately so that our filter function
+	 can look at any procs that fail to set it.  */
+      proc_stat_list_set_flags(procset, PSTAT_TTY);
+      proc_stat_list_filter1(procset, proc_stat_has_ctty, 0, FALSE);
+    }
   if (filter_mask & FILTER_NSESSLDR)
     proc_stat_list_filter(procset, &ps_not_sess_leader_filter, FALSE);
   if (filter_mask & FILTER_UNORPHANED)
