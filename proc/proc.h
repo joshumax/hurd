@@ -1,5 +1,5 @@
 /* Process server definitions
-   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -65,6 +65,9 @@ struct proc
   vm_address_t p_argv, p_envp;
   int p_status;			/* to return via wait */
   int p_sigcode;
+  struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */
+
+  struct rusage p_child_rusage;	/* accumulates p_rusage of all dead children */
 
   unsigned int p_exec:1;	/* has called proc_mark_exec */
   unsigned int p_stopped:1;	/* has called proc_mark_stop */
