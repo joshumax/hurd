@@ -39,10 +39,10 @@ simpleroutine startup_procinit_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
 	auth: auth_t;
-	host_priv: mach_port_move_send_t;
-	device_master: mach_port_move_send_t);
+	host_priv: mach_port_send_t;
+	device_master: mach_port_send_t);
 
 simpleroutine startup_authinit_reply (
 	reply_port: reply_port_t;
 	retcode: kern_return_t;
-	proc: mach_port_move_send_t);
+	proc: mach_port_send_t);
