@@ -709,8 +709,10 @@ launch_single_user ()
      Otherwise, open fd's 0, 1, and 2. */
   if (term != MACH_PORT_NULL)
     {
+      errno = 0;
       fd = open (termname, O_RDWR);
-      assert (fd != -1);
+      assert_perror (perror);
+
       dup2 (fd, 0);
       close (fd);
       dup2 (0, 1);
