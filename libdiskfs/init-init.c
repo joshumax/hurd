@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <device/device.h>
 #include <hurd/fsys.h>
+#include <stdio.h>
 
 mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
@@ -79,7 +80,11 @@ diskfs_init_diskfs (mach_port_t bootstrap)
 			  MACH_MSG_TYPE_MAKE_SEND,
 			  &realnode);
       if (err)
-	realnode = MACH_PORT_NULL;
+	{
+	  fprintf (stderr, "Translator startup failure\n");
+	  exit (1);
+	}
+      mach_port_deallocate (mach_task_self (), bootstrap);
     }
   else
     realnode = MACH_PORT_NULL;
