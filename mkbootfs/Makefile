@@ -23,7 +23,7 @@ SRCS = mkbootfs.c
 
 all: mkbootfs
 mkbootfs: mkbootfs.c
-	rsh -n $(mighost) cd `pwd` \; $(MIGHOSTCC) mkbootfs.c -o mkbootfs
+	rsh $(mighost) -n cd `pwd` \; gcc mkbootfs.c -o mkbootfs
 
 clean:
 	rm -f mkbootfs *.o
