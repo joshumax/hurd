@@ -1,3 +1,8 @@
+Tue Jul 23 19:34:58 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfs.c (fsinit): `struct timespec' now uses a field prefix of `tv_'.
+	* stati.c (timespec_rep): Likewise.
+
 Fri Jun 21 02:12:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dlabel.c (fd_get_device): Supply new args to store_create.
