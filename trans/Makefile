@@ -18,21 +18,24 @@
 dir := trans
 makemode := servers
 
-SRCS = ifsock.c symlink.c magic.c null.c
+SRCS = ifsock.c symlink.c magic.c null.c fifo.c
 OBJS = $(subst .c,.o,$(SRCS)) fsysServer.o error.o
-targets = symlink ifsock magic null
+targets = symlink ifsock magic null fifo
 
 CPPFLAGS += -I../lib
 CPPFLAGS += $(CPPFLAGS-$(notdir $<))
 vpath %.c ../lib
 null-HURDLIBS=libtrivfs libports libihash
 ifsock-HURDLIBS=libtrivfs libports libihash
+fifo-HURDLIBS=libpipe libtrivfs libports libihash libthreads
 
 include ../Makeconf
 
 symlink: symlink.o fsysServer.o
 
 magic: magic.o fsysServer.o error.o
+
+fifo: fifo.o error.o
 
 # The .a files have to be mentioned explicitly due to a make deficiency,
 # even though they are already specified by null-HURDLIBS above.
