@@ -223,6 +223,8 @@ main (int argc, char **argv)
      outside world.  */
   diskfs_startup_diskfs (bootstrap, 0);
 
+  /* SET HOST NAME */
+
   /* And this thread is done with its work. */
   cthread_exit (0);
 
