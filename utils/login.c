@@ -190,13 +190,13 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 	      if (! host)
 		host = old_utmp->ut_host;
 	      if (! addr)
-		addr = old_utmp->ut_addr;
+		addr = old_utmp->ut_addr[0];
 	    }
 	}
     }
 
   strncpy (utmp.ut_host, host ?: "", sizeof (utmp.ut_host));
-  utmp.ut_addr = addr;
+  utmp.ut_addr[0] = addr;
 
   login (&utmp);
 }

@@ -49,6 +49,11 @@ Mon Dec 16 20:52:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	Add --head and --bottom/--tail/-b options.
 	(main): Implement --bottom/--tail/-b.
 
+Tue Dec 10 11:40:04 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* login.c (add_utmp_entry): ut_addr has changed to be an array;
+	stash the IP address in the first slot.
+
 Sat Nov 23 16:30:16 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* psout.c (psout): Delete var REMOVE.
