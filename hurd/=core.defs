@@ -25,7 +25,7 @@ subsystem core 32000;
 
 /* Dump a core file for TASK in the file `core' in COREDIR.
    HOST is the Mach host port for TASK.
-   SIGNO is the signal that caused the process to dump core.
+   SIGNO and SIGCODE indicate the signal that caused the process to dump core.
    LIMIT is the resource limit on the size of core files.
    If the core file would be bigger than this, it is not written.
    MODE gives the permissions for the core file.  */
@@ -35,6 +35,6 @@ routine core_dump_task (
 	task: task_t;
 	host: host_t;
 	coredir: file_t;
-	signo: int;
+	signo: int; sigcode: int;
 	limit: int;
 	mode: int);
