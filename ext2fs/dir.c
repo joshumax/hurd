@@ -445,8 +445,7 @@ diskfs_direnter(struct node *dp,
 
   assert (ds->type == CREATE);
   
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
 
   switch (ds->stat)
     {
@@ -588,8 +587,7 @@ diskfs_dirremove(struct node *dp,
   assert (ds->type == REMOVE);
   assert (ds->stat == HERE_TIS);
   
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
 
   if (ds->preventry == 0)
     ds->entry->inode = 0;
@@ -630,8 +628,7 @@ diskfs_dirrewrite(struct node *dp,
   assert (ds->type == RENAME);
   assert (ds->stat == HERE_TIS);
   
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
 
   ds->entry->inode = np->dn->number;
 
