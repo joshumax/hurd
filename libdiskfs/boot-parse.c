@@ -39,6 +39,7 @@ char *
 diskfs_parse_bootargs (int argc, char **argv)
 {
   char *devname;
+  device_t con;
   
   /* The arguments, as passed by the kernel, are as follows:
      -<flags> hostport deviceport rootname  */
