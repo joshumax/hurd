@@ -24,6 +24,8 @@
  * the rights to redistribute these changes.
  */
 #include <mach.h>
+#include <mach/mig_errors.h>
+#include <mach/default_pager_types.h>
 
 #include <file_io.h>
 
@@ -91,6 +93,16 @@ remove_paging_file(file_name)
 		kfree(fdp, sizeof(*fdp));
 	}
 	return kr;
+}
+
+kern_return_t
+default_pager_paging_storage (mach_port_t pager,
+                              mach_port_t device,
+                              recnum_t *runs, mach_msg_type_number_t nrun,
+                              default_pager_filename_t name,
+                              boolean_t add)
+{
+  return MIG_BAD_ID;
 }
 
 #if 0				/* no longer used */

@@ -1,3 +1,9 @@
+2001-01-11  Marcus Brinkmann  <marcus@gnu.org>
+
+	* def_pager_setup.c: Include <mach/mig_errors.h> and
+	<mach/default_pager_types.h>.
+	(default_pager_paging_storage): New stub.
+
 2000-04-03  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* panic.c: Include <stdarg.h> instead of <varargs.h>.
