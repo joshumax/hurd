@@ -39,6 +39,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/wait.h>
 #include <hurd/msg_server.h>
 #include <wire.h>
+#include <hurd/startup_notify.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -55,6 +56,7 @@ struct ntfy_task
   {
     mach_port_t notify_port;
     struct ntfy_task *next;
+    char *name;
   };
 
 /* This structure keeps track of each registered essential task.  */
@@ -156,11 +158,7 @@ reboot_system (int flags)
       error_t err;
       printf ("init: notifying %p\n", (void *) n->notify_port);
       fflush (stdout);
-#ifdef notyet
-      err = msg_startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
-#else
-      err = msg_startup_dosync (n->notify_port);
-#endif
+      err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err && err != MACH_SEND_INVALID_DEST)
 	{
 	  printf ("init: %p complained: %s\n",
@@ -581,7 +579,7 @@ init_stdarrays ()
   pt = getcwdir ();
   ref = mach_reply_port ();
   io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
-  auth_user_authenticate (nullauth, pt, ref, MACH_MSG_TYPE_MAKE_SEND,
+  auth_user_authenticate (nullauth, ref, MACH_MSG_TYPE_MAKE_SEND,
 			  &std_port_array[INIT_PORT_CWDIR]);
   mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
@@ -589,7 +587,7 @@ init_stdarrays ()
   pt = getcrdir ();
   ref = mach_reply_port ();
   io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);
-  auth_user_authenticate (nullauth, pt, ref, MACH_MSG_TYPE_MAKE_SEND,
+  auth_user_authenticate (nullauth, ref, MACH_MSG_TYPE_MAKE_SEND,
 			  &std_port_array[INIT_PORT_CRDIR]);
   mach_port_destroy (mach_task_self (), ref);
   mach_port_deallocate (mach_task_self (), pt);
@@ -873,7 +871,8 @@ S_startup_essential_task (mach_port_t server,
 
 kern_return_t
 S_startup_request_notification (mach_port_t server,
-				mach_port_t notify)
+				mach_port_t notify,
+				char *name)
 {
   struct ntfy_task *nt;
   mach_port_t prev;
@@ -888,6 +887,8 @@ S_startup_request_notification (mach_port_t server,
   nt->notify_port = notify;
   nt->next = ntfy_tasks;
   ntfy_tasks = nt;
+  nt->name = malloc (strlen (name) + 1);
+  strcpy (nt->name, nt->name);
   return 0;
 }
 
@@ -1181,10 +1182,6 @@ S_msg_set_env_variable (mach_port_t process,
 	string_t value,
 	boolean_t replace)
 { return _S_msg_set_env_variable (process, refport, variable, value, replace); }
-
-kern_return_t
-S_msg_startup_dosync (mach_port_t process)
-{ return _S_msg_startup_dosync (process); }
 
 kern_return_t
 S_msg_get_exec_flags (mach_port_t process, mach_port_t refport, int *flags)
