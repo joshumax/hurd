@@ -23,15 +23,13 @@ makemode := library
 
 SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 	tty.c user.c write.c
-
-OBJS = $(subst .c,.o,$(SRCS))
-
 LCLHDRS=ps.h
 installhdrs=ps.h
 
+OBJS = $(subst .c,.o,$(SRCS))
+
 CPPFLAGS += -I../lib
 
-libname = libps
-installhdrs=
-
 include ../Makeconf
+
+$(OBJS): ps.h
