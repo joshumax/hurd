@@ -28,8 +28,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define	_SERVERS_EXEC		_SERVERS "exec"
 #define _SERVERS_STARTUP	_SERVERS "startup"
 #define _SERVERS_PROC		_SERVERS "proc"
-#define _SERVERS_NEWTERM	_SERVERS "newterm"
-#define _SERVERS_IFSOCK		_SERVERS "ifsock"
 
 /* Directory containing naming points for socket servers.
    Entries are named by the string representing the domain number
