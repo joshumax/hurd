@@ -38,25 +38,20 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
    to be the amount of valid data on disk.  */
 static error_t
 find_block (struct node *node, vm_offset_t offset,
-	    daddr_t *block, int *length, int create,
+	    daddr_t *block, int create,
 	    struct rwlock **node_lock)
 {
   error_t err;
   char *bptr;
-      
-  rwlock_reader_lock (&node->dn->alloc_lock);
-  *node_lock = &node->dn->alloc_lock;
 
-  if (offset >= node->allocsize)
+  if (!*node_lock)
     {
-      rwlock_reader_unlock (&node->dn->alloc_lock);
-      return EIO;
+      *node_lock = &node->dn->alloc_lock;
+      rwlock_reader_lock (*node_lock);
     }
-      
-  if (offset + vm_page_size > node->allocsize)
-    *length = node->allocsize - offset;
-  else
-    *length = vm_page_size;
+
+  if (offset + block_size >= node->allocsize)
+    return EIO;
 
   err = ext2_getblk (node, offset >> log2_block_size, create, &bptr);
   if (err == EINVAL)
@@ -93,33 +88,38 @@ file_pager_read_page (struct node *node, vm_offset_t page,
      error is returned.  */
   error_t do_pending_reads ()
     {
-      daddr_t dev_block = pending_blocks >> log2_dev_blocks_per_fs_block;
-      int length = num_pending_blocks << log2_block_size;
-      vm_address_t new_buf;
+      if (num_pending_blocks > 0)
+	{
+	  daddr_t dev_block = pending_blocks << log2_dev_blocks_per_fs_block;
+	  int length = num_pending_blocks << log2_block_size;
+	  vm_address_t new_buf;
 
-      err = dev_read_sync (dev_block, &new_buf, length);
-      if (err)
-	return err;
+	  err = dev_read_sync (dev_block, &new_buf, length);
+	  if (err)
+	    return err;
 
-      if (offs == 0)
-	/* First read, make the returned page be our buffer.  */
-	*buf = new_buf;
-      else
-	/* We've already got some buffer, so copy into it.  */
-	bcopy ((char *)*buf + offs, (char *)new_buf, length);
+	  if (offs == 0)
+	    /* First read, make the returned page be our buffer.  */
+	    *buf = new_buf;
+	  else
+	    /* We've already got some buffer, so copy into it.  */
+	    bcopy ((char *)*buf + offs, (char *)new_buf, length);
 
-      offs += length;
-      num_pending_blocks = 0;
+	  offs += length;
+	  num_pending_blocks = 0;
+	}
 
       return 0;
     }
 
+  if (page + left > node->allocsize)
+    left = node->allocsize - page;
+
   while (left > 0)
     {
       daddr_t block;
-      int length;
 
-      err = find_block (node, page, &block, &length, 0, &node_lock);
+      err = find_block (node, page, &block, 0, &node_lock);
       if (err)
 	break;
 
@@ -148,7 +148,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
       else
 	num_pending_blocks++;
 
-      left -= length;
+      page += block_size;
+      left -= block_size;
     }
 
   if (!err && num_pending_blocks > 0)
@@ -181,7 +182,7 @@ pending_blocks_write (struct pending_blocks *pb)
   if (pb->num > 0)
     {
       error_t err;
-      daddr_t dev_block = pb->block >> log2_dev_blocks_per_fs_block;
+      daddr_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       int length = pb->num << log2_block_size;
 
       if (pb->offs > 0)
@@ -213,7 +214,18 @@ pending_blocks_init (struct pending_blocks *pb, vm_address_t buf)
   pb->offs = 0;
 }
 
-/* Add the disk block BLOCK to the list of blocks pending in PB.  */
+/* Skip writing the next block in PB's buffer (writing out any previous
+   blocks if necessary).  */
+static error_t
+pending_blocks_skip (struct pending_blocks *pb)
+{
+  error_t err = pending_blocks_write (pb);
+  pb->offs += block_size;
+  return err;
+}
+
+/* Add the disk block BLOCK to the list of destination disk blocks pending in
+   PB.  */
 static error_t
 pending_blocks_add (struct pending_blocks *pb, daddr_t block)
 {
@@ -234,23 +246,27 @@ pending_blocks_add (struct pending_blocks *pb, daddr_t block)
    may need to write several filesystem blocks to satisfy one page, and tries
    to consolidate the i/o if possible.  */
 static error_t
-file_pager_write_page (struct node *node, vm_offset_t page, vm_address_t buf)
+file_pager_write_page (struct node *node, vm_offset_t offset, vm_address_t buf)
 {
   error_t err = 0;
   struct pending_blocks pb;
   struct rwlock *node_lock = 0;
   u32 block;
-  int left = vm_page_size, length;
+  int left = vm_page_size;
 
   pending_blocks_init (&pb, buf);
 
+  if (offset + left > node->allocsize)
+    left = left > node->allocsize - offset;
+
   while (left > 0)
     {
-      err = find_block (node, page, &block, &length, 1, &node_lock);
+      err = find_block (node, offset, &block, 1, &node_lock);
       if (err)
 	break;
       pending_blocks_add (&pb, block);
-      left -= length;
+      offset += block_size;
+      left -= block_size;
     }
 
   if (!err)
@@ -285,6 +301,7 @@ disk_pager_read_page (vm_offset_t page, vm_address_t *buf, int *writelock)
 static error_t
 disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 {
+  error_t err = 0;
   int length = vm_page_size;
 
   if (page + vm_page_size > device_size)
@@ -298,20 +315,25 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 
       pending_blocks_init (&pb, buf);
 
-      while (length > 0)
+      while (length > 0 && !err)
 	{
-	  if (!clear_bit (boffs_block (offs), modified_global_blocks))
+	  daddr_t block = boffs_block (offs);
+	  if (!clear_bit (block, modified_global_blocks))
 	    /* This block's been modified, so write it out.  */
-	    pending_blocks_add (&pb, offs);
+	    err = pending_blocks_add (&pb, block);
 	  else
-	    pb.offs += block_size;
+	    /* Otherwise just skip it.  */
+	    err = pending_blocks_skip (&pb);
 	  offs += block_size;
 	}
 
-      return pending_blocks_write (&pb);
+      if (!err)
+	err = pending_blocks_write (&pb);
     }
   else
-    return dev_write_sync (page / device_block_size, buf, length);
+    err = dev_write_sync (page / device_block_size, buf, length);
+
+  return err;
 }
 
 /* ---------------------------------------------------------------- */
