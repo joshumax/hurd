@@ -136,36 +136,12 @@ int
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t bootstrap = MACH_PORT_NULL;
-  struct store_argp_params store_params = { 0 };
+  mach_port_t bootstrap;
 
-  /* XXX diskfs's --boot-command needs us to use ARGP_IN_ORDER */
-  argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, &store_params);
-  store_parsed = store_params.result;
-
-  err = store_parsed_name (store_parsed, &diskfs_disk_name);
-  if (err)
-    error (2, err, "store_parsed_name");
-
-  diskfs_console_stdio ();
-
-  if (! diskfs_boot_flags)
-    {
-      task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      if (bootstrap == MACH_PORT_NULL)
-	error (2, 0, "Must be started as a translator");
-    }
-
-  /* Initialize the diskfs library.  This must come before
-     any other diskfs call.  */
-  err = diskfs_init_diskfs ();
-  if (err)
-    error (4, err, "init");
-
-  err = store_parsed_open (store_parsed, diskfs_readonly ? STORE_READONLY : 0,
-			   &store);
-  if (err)
-    error (3, err, "%s", diskfs_disk_name);
+  /* Initialize the diskfs library, parse arguments, and open the store.
+     This starts the first diskfs thread for us.  */
+  store = diskfs_init_main (&startup_argp, argc, argv,
+			    &store_parsed, &bootstrap);
 
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
     ext2_panic ("superblock won't fit on the device!");
@@ -173,14 +149,8 @@ main (int argc, char **argv)
     ext2_panic ("device block size (%u) greater than page size (%d)",
 		store->block_size, vm_page_size);
 
-  if (store->flags & STORE_HARD_READONLY)
-    diskfs_readonly = diskfs_hard_readonly = 1;
-
   /* Map the entire disk. */
   create_disk_pager ();
-
-  /* Start the first request thread, to handle RPCs and page requests. */
-  diskfs_spawn_first_thread ();
 
   pokel_init (&global_pokel, diskfs_disk_pager, disk_image);
 
