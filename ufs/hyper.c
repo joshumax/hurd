@@ -107,7 +107,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 {
   error_t (*writefn) (daddr_t, vm_address_t, long);
   writefn = (wait ? dev_write_sync : dev_write);
-  
+
   spin_lock (&alloclock);
   if (csum_dirty)
     {
@@ -117,7 +117,7 @@ diskfs_set_hypermetadata (int wait, int clean)
       csum_dirty = 0;
     }
 
-  if (clean)
+  if (clean && !diskfs_readonly)
     {
       sblock->fs_clean = 1;
       sblock_dirty = 1;
@@ -146,7 +146,7 @@ diskfs_set_hypermetadata (int wait, int clean)
       sblock_dirty = 0;
     }
 
-  if (clean)
+  if (clean && !diskfs_readonly)
     {
       sblock->fs_clean = 0;
       sblock_dirty = 1;
