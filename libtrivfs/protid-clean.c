@@ -27,11 +27,11 @@ trivfs_clean_protid (void *arg)
   if (trivfs_protid_destroy_hook)
     (*trivfs_protid_destroy_hook) (cred);
   mutex_lock (&cred->po->cntl->lock);
-  if (!cred->po->refcnt--)
+  if (!--cred->po->refcnt)
     {
       if (trivfs_peropen_destroy_hook)
 	(*trivfs_peropen_destroy_hook) (cred->po);
-      ports_done_with_port (cred->po->cntl);
+      ports_port_deref (cred->po->cntl);
       free (cred->po);
     }
   mutex_unlock (&cred->po->cntl->lock);
