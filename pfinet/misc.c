@@ -62,6 +62,7 @@ make_sockaddr_port (struct socket *sock,
   bcopy (buf, addrstruct->address, buflen);
   *addr = ports_get_right (addr);
   *addrtype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (addrstruct);
   return 0;
 }
 
@@ -87,6 +88,25 @@ void
 end_using_sockaddr_port (struct sock_addr *addr)
 {
   ports_port_deref (addr);
+}
+
+/* Nothing need be done here. */
+void
+clean_addrport (void *arg)
+{
+}
+
+/* Release the reference on the referenced socket. */
+void
+clean_socketport (void *arg)
+{
+  struct sock_user *user = arg;
+  
+  mutex_lock (&global_lock);
+  
+  user->sock->refcnt--;
+  if (user->sock->refcnt == 0)
+    sock_release (user->sock);
 }
 
 struct socket *
@@ -137,6 +157,7 @@ sock_release (struct socket *sock)
 		(*sock->ops->release) (sock, peersock);
 	if (peersock)
 		sock_release_peer(peersock);
+	free (sock);
 }
 
   
