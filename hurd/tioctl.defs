@@ -131,7 +131,8 @@ routine tioctl_tiocsig (
 
 /* 96 TIOCEXT */
 routine tioctl_tiocext (
-	port: io_t);
+	port: io_t;
+	mode: int);
 
 skip; /* 97 TIOCSCTTY -- implemented in C library */
 skip; /* 98 TIOCCONS -- implemented in C library */
