@@ -95,13 +95,13 @@ that come with the GNU Hurd.
 @node I/O interface
 @chapter I/O interface
                            
-The I/O interface is used to interact with almost all servers in the
-GNU Hurd.  It provides facilities for reading and writing I/O streams.
-The I/O interface facilities are described in <hurd/io.defs> and
-<hurd/shared.h>  The latter portion of <hurd/io.defs> and all of
+The I/O interface is used to interact with almost all servers in the GNU
+Hurd.  It provides facilities for reading and writing I/O streams.  The
+I/O interface facilities are described in <hurd/io.defs> and
+<hurd/shared.h> The latter portion of <hurd/io.defs> and all of
 <hurd/shared.h> describe how to implement shared-memory I/O operations,
-and are described later.  The present chapter is concerned with
-RPC-based I/O operations.
+and are described later.  The present chapter discusses RPC-based I/O
+operations.
 
 @menu
 * I/O object ports::              How ports to I/O objects work
@@ -116,23 +116,26 @@ RPC-based I/O operations.
 @node I/O object ports
 @section I/O object ports
 
-Each port to an I/O server should be associated with a particular set of
+The I/O server must associate each I/O port with a particular set of
 uids and gids, identifying the user who is responsible for operations on
 the port.  Every port to an I/O server should also support either the
 file protocol or the socket protocol; naked I/O ports are not allowed.
 
-In addition, each port is associated with a default file pointer, a set
-of open mode bits, a pid (called the ``owner''), and some underlying
-object which can absorb data (for write) or provide data (for read).
+In addition, the server associates with each port a default file
+pointer, a set of open mode bits, a pid (called the ``owner''), and some
+underlying object which can absorb data (for write) or provide data (for
+read).
 
 The uid and gid sets associated with a port may not be visibly shared
-with other ports; nor may they ever change.  The identification of a set
-of uids and gids with a particular port must be fixed at the moment of
-the port's creation.  The other characteristics of an I/O port may be
-shared with other users.  The manner in which these characteristics are
-shared is not part of the I/O server interface; however, the file and
-socket interfaces make further requirements about what sharing is
-expected and prohibited from occurring.
+with other ports, nor may they ever change.  The server must fix the
+identification of a set of uids and gids with a particular port at the
+moment of the port's creation.  The other characteristics of an I/O port
+may be shared with other users.  The I/O server interface does not
+generally specify in what way servers may share these other
+characteristics are shared (with the exception of the deprecated O_ASYNC
+interface); however, the file and socket interfaces make further
+requirements about what sharing is expected and prohibited from
+occurring.
 
 In general, users get send-rights to I/O ports by some mechanism that is
 external to the I/O protocol.  (For example file servers give out I/O
@@ -143,44 +146,46 @@ obtaining new ports that refer to the same underlying object as another
 port.  In response to all of these calls, all underlying state
 (including, but not limited to, the default file poirter, open mode
 bits, and underlying object) must be shared between the old and new
-ports.  In the following descriptions of these calls, this is what is
-meant by saying that the new port is "identical" to the old port.  They
-all must return send-rights to a newly-constructed Mach port.
+ports.  In the following descriptions of these calls, the term
+"identical" means this kind of sharing.  All these calls must return
+send-rights to a newly-constructed Mach port.
 
 The io_duplicate call simply returns another port which is identical
 to an existing port and has the same uid and gid set.
 
-The io_restrict_auth call should return another port, identical to the
+The io_restrict_auth call returns another port, identical to the
 provided port, but which has a smaller associated uid and gid set.  The
-uid and gid sets of the new port should be the intersection of the set
-on the existing port and the lists of uids and gids provided in the
-call.
+uid and gid sets of the new port are the intersection of the set on the
+existing port and the lists of uids and gids provided in the call.
 
-The io_reauthenticate call is used when users wish to have an entirely
-new set of uids or gids associated with a port.  When such a call is
-received, the server must create a new port, and then make the call
-auth_server_authenticate to the auth server.  The rendezvous port for
-the auth_server_authenticate call is the I/O port to which was made the
-io_reauthenticate call.  The rend_int parameter should be copied from
-the io_reauthenticate call.  The I/O server also gives the auth server a
-new port; this should be a newly created port identical to the old port.
-The auth server will return the set of uids and gids associated with the
+Users use the io_reauthenticate call when they wish to have an entirely
+new set of uids or gids associated with a port.  In response to the
+io_reauthenticate call, the server must create a new port, and then make
+the call auth_server_authenticate to the auth server.  The rendezvous
+port for the auth_server_authenticate call is the I/O port to which was
+made the io_reauthenticate call.  The server provides rend_int parameter
+to the auth server as a copy from the corresponding parameter in the
+io_reauthenticate call.  The I/O server also gives the auth server a new
+port; this must be a newly created port identical to the old port.  The
+auth server will return the set of uids and gids associated with the
 user, and guarantees that the new port will go directly to the user that
-possessed the associated authentication port.
+possessed the associated authentication port.  The server then
+identifies the new port given out with the specified id's.
 
 @node Simple operations
 @section Simple operations
 
 Users write to I/O ports by calling the io_write RPC.  They specify an
 offset parameter; if the object supports writing at arbitrary offsets,
-this should be honored.  If -1 is passed as the offset, then the default
-file pointer should be used.  The server should return the amount of
-data which was successfully written.  If the operation was interrupted
-after some but not all of the data was written, then it is considered to
-have succeeded and should return the amount written.  If the port is not
-an I/O port at all, the error EOPNOTSUPP should be returned.  If the
-port is an I/O port, but does not happen to support writing, then EBADF
-should be returned.  
+the server should honor this parameter.  If -1 is passed as the offset,
+then the server should use the default file pointer.  The server should
+return the amount of data which was successfully written.  If the
+operation was interrupted after some but not all of the data was
+written, then it is considered to have succeeded and the server should
+return the amount written.  If the port is not an I/O port at all, the
+server should reply with the error EOPNOTSUPP.  If the port is an I/O
+port, but does not happen to support writing, then the correct error is
+EBADF.
 
 Users read from I/O ports by calling the io_read RPC.  The specify the
 amount of data they wish to read and the offset.  The offset has the
@@ -190,43 +195,44 @@ operation is not idempotent) then the server should return the amount
 read, even if less than the amount requested.  The server should return
 as much data as possible, but never more than requested by the user.  If
 there is no data, but there might be later, the call should block until
-data becomes available.  End-of-file conditions are indicated by
-returning zero bytes.  If the call is interrupted after some data has
-been read, but the call is idempotent, then the server may return EINTR
-rather than actually filling the buffer (taking care that any
-modifications of the default file pointer have been reversed).
+data becomes available.  Indicate end-of-file conditions by returning
+zero bytes.  If the call is interrupted after some data has been read,
+but the call is idempotent, then the server may return EINTR rather than
+actually filling the buffer (taking care that any modifications of the
+default file pointer have been reversed).  Preferably, however, servers
+should return data if possible.
 
-Objects are divided into two categories: seekable and non-seekable.
-Seekable objects are required to accept arbitrary offset parameters in
-the io_read and io_write calls, and to implement the io_seek call.
-Nonseekable objects must ignore the offset parameters to io_read and
-io_write, and should return ESPIPE to the io_seek call.  
+There are two categories of objects: seekable and non-seekable.
+Seekable objects must accept arbitrary offset parameters in the io_read
+and io_write calls, and to implement the io_seek call.  Nonseekable
+objects must ignore the offset parameters to io_read and io_write, and
+should return ESPIPE to the io_seek call.
 
-On seekable objects, io_seek is used to change the default file pointer
-for reads and writes.  (See the C library manual for the interpretation
-of the WHENCE and OFFSET arguments, and why the grammatically incorrect
-term `whence' is used.)  It returns the new offset as modified by
-io_seek.  
+On seekable objects, io_seek changes the default file pointer for reads
+and writes.  (See the C library manual for the interpretation of the
+WHENCE and OFFSET arguments, and why the grammatically incorrect term
+`whence' is used.)  It returns the new offset as modified by io_seek.
 
-The io_readable interface should return the amount of data which can be
+The io_readable interface returns the amount of data which can be
 immediately read.  For the special technical meaning of "immediately",
 see the description of asynchronous I/O.  (*Note: Asynchronous I/O.)
 
 @node Open modes
 @section Open modes
 
-Each port is identified with a set of bits that affect its operation.
-These bits are modified with the io_set_all_openmodes call and fetched
-with the io_get_openmodes.  In addition, the io_set_some_openmodes and
-io_clear_some_openmodes do atomic read/writes of the openmodes.
+The server associates each port with a set of bits that affect its
+operation.  The io_set_all_openmodes call modifies these bits and the
+io_get_openmodes call returns them.  In addition, the
+io_set_some_openmodes and io_clear_some_openmodes do an atomic
+read/modify/write of the openmodes.
 
 The O_APPEND bit, when set, changes the behavior of io_write when it
 uses the default file pointer on seekable objects.  When io_write is
 done on a port with the O_APPEND bit set, is must set the filepointer to
 one more than the "maximum correct value" (described below) before doing
-the write (which would then increment the file pointer as usual).  This
-update must be atomically bound to the actual data write with respect to
-other users of io_read, io_write, and io_seek.
+the write (which would then increment the file pointer as usual).  The
+server must atomically bind this update to the actual data write with
+respect to other users of io_read, io_write, and io_seek.
 
 A "correct value" for the file pointer which, when provided to io_read,
 will successfully return at least one byte of data and not end-of-file.
@@ -235,15 +241,15 @@ is the maximum such correct value.  (For ordinary files [see the
 description of the file protocol for more information] this is the same
 as the current file size.)
 
-The O_FSYNC bit, when set, should cause io_write not to delay writing
-data to underlying media in any fashion.  
+The O_FSYNC bit, when set, causes io_write not to delay writing data to
+underlying media in any fashion.
 
-The O_NONBLOCK bit, when set, should prevent read and write from
-blocking.  They should copy such data as is immediately available.  If
-no data is immediately available they should return EWOULDBLOCK.  
+The O_NONBLOCK bit, when set, prevents read and write from blocking.
+They should copy such data as is immediately available.  If no data is
+immediately available they should return EWOULDBLOCK.
 
 The definition of "immediate" is more or less server dependent.  Some
-servers (disk based file servers, most notable) regard all data as
+servers (disk-based file servers, most notably) regard all data as
 immediatebly available.  The one criterion is that something which must
 happen immediately may not wait for any user-synchronizable event.  
 
@@ -254,27 +260,27 @@ underlying object.
 @node Asynchronous I/O
 @section Asynchronous I/O
 
-Users may wish to be notified of when I/O can be done without blocking;
+Users may wish to be notified when I/O can be done without blocking;
 they use the io_async call to indicate this to the server.  In the
-io_async call the user provides a port on which will be sent sig_post
-messages as I/O becomes possible.  The server should return a port which
-will be used as a reference port in sig_post messages.  Each io_async
-call should generate a new reference port.  (See the C library manual
-for information on how to send sig_post messages.)
+io_async call the user provides a port on which will the server should
+send sig_post messages as I/O becomes possible.  The server must return
+a port which will be the reference port in the sig_post messages.  Each
+io_async call should generate a new reference port.  (See the C library
+manual for information on how to send sig_post messages.)
 
-The server should send one SIGIO signal to each registered async user
+The server then sends one SIGIO signal to each registered async user
 everytime I/O becomes possible.  I/O is possible if at least one byte
 can be read or written immediately.  (The definition of ``immediately''
-must be the same as for the implementation of the O_NONBLOCK flag.)
-Everytime io_read or io_write is called on a non-seekable object, or at
-the default file pointer on a seekable object, another signal should be
-sent to each user if I/O is still possible.
+must be the same as for the implementation of the O_NONBLOCK flag.)  In
+addition, everytime a user calls io_read or io_write on a non-seekable
+object, or at the default file pointer on a seekable object, another
+signal should be sent to each user if I/O is still possible.
 
 Some objects may also define "urgent" conditions.  Such servers should
 send the SIGURG signal to each registered async user anytime an urgent
 condition appears.  After any RPC that has the possibility of clearing
-the urgent condition, the signal should again be sent to all registered
-users if the urgent condition is still present.
+the urgent condition, the server should again send the signal to all
+registered users if the urgent condition is still present.
 
 A more fine-grained mechanism for doing async I/O is the io_select call.
 The user specifies the kind of access desired, and a send-once right.
@@ -285,22 +291,23 @@ right, and send a select_done message as soon as I/O becomes immediately
 possible.  (Again, the definition of ``immediate'' must be the same for
 io_select, io_async, and O_NONBLOCK.)
 
-For compatibility, a deprecated feature (known as icky async I/O) is
-provided.  The calls io_mod_owner and io_get_owner are used to set the
-``owner'' of the object; either a pid or a pgrp (negative) is provided.
-Whenever the I/O server is sending messages to all the io_async users,
-if the O_ASYNC bit is set for any user of the object, it should also
-send a signal to the owning pid/pgrp.  The ID port for this call should
-be different from all the io_async id ports given to users.  Users may
-find out what ID port will be used by calling io_get_icky_async_id.
+For compatibility, the I/O interface provides a deprecated feature
+(known as icky async I/O)..  The calls io_mod_owner and io_get_owner set
+the ``owner'' of the object, providing either a pid or a pgrp (if the
+value isnegative).  Whenever the I/O server is sending sig_post messages
+to all the io_async users, if the O_ASYNC bit is set, the server should
+also send a signal to the owning pid/pgrp.  The ID port for this call
+should be different from all the io_async id ports given to users.
+Users may find out what ID port the server uses for this by calling
+io_get_icky_async_id.
 
 @node Information queries
 @section Information queries
 
 Users may call io_stat to find out information about the I/O object.
 Most of the fieds of a struct stat are meaningful only for files.  All
-objects, however, are required to support the fields st_fstype, st_fsid,
-st_ino, st_atime, st_atime_usec, st_mtime_user, st_ctime, st_ctime_usec,
+objects, however, must support the fields st_fstype, st_fsid, st_ino,
+st_atime, st_atime_usec, st_mtime_user, st_ctime, st_ctime_usec, and
 st_blksize.
 
 st_fstype, st_fsid, and st_ino must be unique for the underlying object
@@ -314,16 +321,23 @@ st_mtime and st_mtime_usec hold the second and microseconds,
 respectively, of the system clock at the last time the object was
 written with io_write.
 
+Other appropriate operations may update the atime and the mtime as well;
+both the file and socket interfaces specify such operations.
+
 st_ctime and st_ctime_usec hold the seconds and microseconds,
 respectively, of the system clock at the last time permanent meta-data
 associated with the object was changed.  The exact operations which
 couse such an update are server-dependent, but must include the creation
 of the object.
 
-st_blksize gives the optimal I/O size for io_read and io_write; users
-should endeavor to read and write amounts which are multiples of the
-optimal size, and to use offsets which are multiples of the optimal
-size.  
+The server is permitted to delay the actual update of these times until
+stat is called; before the server stores the times on permanent media
+(if it ever does so) it should update them if necessary.
+
+st_blksize gives the optimal I/O size in bytes for io_read and io_write;
+users should endeavor to read and write amounts which are multiples of
+the optimal size, and to use offsets which are multiples of the optimal
+size
 
 In addition, objects which are seekable should set st_size to the
 "maximum correct value" described above in the description of the
@@ -348,7 +362,7 @@ Seekable objects must allow access from 0 to the "maximum correct value"
 described for O_APPEND.  Whether they provide access beyond such a point
 is server dependent; in addition, the meaning of such an object for a
 non-seekable object is server dependent.  However, servers which
-implement the facilities of the next section are bound to certain
+implement the facilities of the next section must obey to certain
 requirements about which addresses in the memory objects provided by
 io_map must be valid.  Simply put, any user following the rules
 described in the next chapter should not get any memory faults except as
@@ -380,11 +394,16 @@ return a memory object, called the shared page object.  One page of this
 object should be mapped from offset zero into the user's address space.
 At the front of this page is a struct shared_io as described in
 <hurd/shared.h>.  Frequent reference will be made to the members of this
-structure in this chapter, without further qualification.  
+structure in this chapter, without further qualification.  The shared
+page past the struct shared_io may be used by users as they wish.  
 
-Only one shared user can be active on a given port at a time.  If
-io_map_cntl is called for a port on which a user is already active, the
-server should return EBUSY, and which point the user should call
+Users should examine the shared_page_magic field; from it they can
+discover the byte ordering used by the server.  Users should not blindly
+assume that the server uses the same byte ordering as they.
+
+Only one shared user can be active on a given port at a time.  If a user
+calls io_map_cntl on a port which already has an active shared user, the
+server should return EBUSY, at which point the user should call
 io_duplicate to obtain a new port, and call io_map_cntl there.
 
 @menu
@@ -404,32 +423,40 @@ io_duplicate to obtain a new port, and call io_map_cntl there.
 
 Access to the shared page is mediated through a facility known as the
 ``conch''.  The ``lock'' field of the shared page protects the
-conch_status field; this lock must be acquired with spin_lock before
-conch_status may be modified or examined.  
+conch_status field; users and the server must acquire this lock with
+spin_lock before they may modify or examine conch_status.
 
 If the conch_status field is USER_HAS_CONCH or USER_RELEASE_CONCH, then
 the user has the conch, and may access the shared page after releasing
-the spin lock. .  If the conch status field is USER_COULD_HAVE_CONCH,
-then the user may immediately set conch_status to USER_HAS_CONCH, and
-proceed to access the shared page after releasing the spin lock.  If the
-conch status is USER_HAS_NOT_CONCH, then the user should release the
-spin lock, and call io_get_conch.  Upon return from io_get_conch, the
-user should reacquire the spin lock and check the conch status again.
+the spin lock.  If the conch_status field is USER_COULD_HAVE_CONCH, then
+the user may immediately set conch_status to USER_HAS_CONCH, and proceed
+to access the shared page after releasing the spin lock.  If the conch
+status is USER_HAS_NOT_CONCH, then the user should release the spin
+lock, and call io_get_conch.  Upon return from io_get_conch, the user
+should reacquire the spin lock and check conch_status again.
 
 When the user is through accessing the shared page, the user should
 acquire the spin lock and examine the conch_status field.  If it has
 been set to USER_RELEASE_CONCH, then the user should release the spin
-lock and call io_release_conch.
+lock and call io_release_conch.  Otherwise, the user should change
+conch_status from USER_HAS_CONCH to USER_COULD_HAVE_CONCH and then
+release the spin lock.
 
-The implementation of io_read and io_write must not modify the file
-contents except when the server is holding the conch; users who wish to
-be atomic with respect to those functions should be similarly reticent.
+The implementation of io_read and io_write must not modify the object
+data or the default file pointer except when the server is holding the
+conch; users who wish to be atomic with respect to those functions
+should be similarly reticent.
 
-The server should guarantee that at most one user has the conch at a
-time; the server may only have the conch if no user does.  The server
-may not modify conch_status or the shared page if the status is
-USER_HAS_CONCH except to set it to USER_RELEASE_CONCH, thus requesting a
-call to io_release_conch.
+The server must guarantee that at most one user of an underlying object
+has the conch at a time; the server may only have the conch if no user
+does.  The server may not modify conch_status or the shared page if the
+status is USER_HAS_CONCH except to set it to USER_RELEASE_CONCH, thus
+requesting a call to io_release_conch.
+
+The server is permitted to modify any characteristics of the shared page
+anytime the conch_status is not USER_HAS_CONCH or USER_RELEASE_CONCH;
+users may not assume that the shared page has not changed even when only
+upgrading USER_COULD_HAVE_CONCH to USER_HAS_CONCH.
 
 @node Access rules
 @subsection Access rules
@@ -439,76 +466,79 @@ areas of the data objects may be accessed.  In addition, for
 non-seekable objects, the file pointers rd_file_pointer,
 wr_file_pointer, and xx_file_pointer affect which areas may be accessed.
 
-For seekable objects, the read object may be read from offset 0 through
-the minimum of file_size and read_size.
+For seekable objects, the user may read the read object from offset 0
+through the minimum of file_size and read_size.
 
-For seekable objects, the write object may be modified from offset 0
-through the prenotify_size.  
+For seekable objects, the user may write the write object from offset 0
+through the prenotify_size.
 
-For nonseekable objects, the read object may be read from
+For nonseekable objects, the user may read the read object from
 rd_file_pointer through the minimum of file_size and read_size. 
 
-For nonseekable objects, the write object may be modified from
+For nonseekable objects, the user may write the write object from
 wr_file_pointer through prenotify_size.
 
-The server may permit access outside these regions, but data will not
-necessarily be preserved for any length of time if so written.  If the
-server wishes to deny such access, it should fault with EIO.  Servers
-may also issue faults on modifications of the write object for reasons
-such as EDQUOT and ENOSPC, as well as reporting hardware errors with
-EIO.  Servers may only fault valid addresses in the read object with EIO
-to indicate hardware failure.
+The server may permit access outside these regions, but need not
+preserve data for any length of time if so written.  If the server
+wishes to deny such access, it issue faults with EIO.  Servers may also
+issue faults on modifications of the write object for reasons such as
+EDQUOT and ENOSPC, as well as reporting hardware errors with EIO.
+Servers may only fault valid addresses in the read object in the event
+of hardware failure, giving EIO.
 
-The foo field should be ignored if the value use_foo is clear in the
+Users should ignore the foo field if the value use_foo is clear in the
 shared page; this may result in there being no maximum valid address for
-a particular access.  In that case, the object may be accessed to the
-end of its virtual address space.
+a particular access.  In that case, the user may access the object to
+the end of its virtual address space.
 
 If use_file_size is set, the user may increase the file_size, but may
 not decrease it, to indicate the new "maximum correct value" as
-described for O_APPEND.  Normally writes which extend beyond the current
-file_size should extend it to the end of the write.
+described for O_APPEND.  Normally when users write beyond the current
+file_size they should extend it at least to the end of the write.
 
-The xx_file_pointer for seekable objects is the same as the default file
-pointer used by io_read and io_write.
+The xx_file_pointer for seekable objects must be the same as the default
+file pointer used by io_read and io_write.
 
 If use_read_size is set and the user wishes to read past read_size, she
-may call io_readsleep, which will return as soon as read_size is
-increased.  If read_block_reason is set to RBR_BUFFER_FULL, then the
-read_size will not be increased until the rd_file_pointer is increased.
+may call io_readsleep, which must return as soon as read_size is
+increased.  The server should set read_block_reason anytime
+use_read_size is set; if read_block_reason is RBR_BUFFER_FULL, then the
+server is indicating that the read_size might never be increased until
+the rd_file_pointer is sufficiently increased.
 
-If use_prenotify_size is set and the user wishes to write past
-prenotify_size, she may call io_prenotify, specifying the maximum offset
-the user intends to write.  The server should return when prenotify_size
-has been increased, but is not obligated to extend it as far as the user
-wishes.  In addition, io_prenotify may return errors such as ENOSPC,
-indicating that the prenotify_size cannot be increased.
+If the server has set use_prenotify_size and the user wishes to write
+past prenotify_size, she may call io_prenotify, specifying the maximum
+offset the user intends to write.  The server should return when after
+increasing prenotify_size, but is not obligated to extend it as far as
+the user wishes.  In addition, io_prenotify may return errors such as
+ENOSPC, indicating that the prenotify_size cannot be increased.
 
-Seekable objects may modify the xx_file_pointer at will (including
-pointing past read_size, file_size, or prenotify_size).  Non-seekable
-objects, however, may only increase the rd_file_pointer and
-wr_file_pointer.  In addition, they may not modify them to point past
-the valid data as described above.  Failing to advance them may prevent
-the read_size or prenotify_size from being increased.
+Users of seekable objects may modify the xx_file_pointer at will
+(including pointing past read_size, file_size, or prenotify_size).
+Users of non-seekable objects, however, may only increase the
+rd_file_pointer and wr_file_pointer.  In addition, they may not modify
+them to point past the valid data as described above.  Failing to
+advance them at all may prevent the read_size or prenotify_size from
+being increased.
 
-If eof_notify is set, then the user may attempt to have the file_size to
-be increased by calling io_eofnotify after "noticing" the current file
-size limit.  io_eofnotify must return immediately, but need not increase
-the file_size or clear user_file_size.  (However, if it is impossible
-for io_eofnotify to ever do anything, then the server should not set
-eof_notify.)
+If the server sets eof_notify, then the user may attempt to have the
+file_size to be increased by calling io_eofnotify after "noticing" the
+current file size limit.  io_eofnotify must return immediately, but need
+not actually increase the file_size or clear user_file_size.  (However,
+if it is impossible for io_eofnotify to ever do anything, then the
+server should not bother setting eof_notify.)
 
 @node Status notification
 @subsection Status notification
 
-The flag do_sigio requests the user to call io_sigio every time the file
-pointers or the file_size have been changed.
+The flag do_sigio requests the user to call io_sigio every time she
+changes the file pointers or the file_size.
 
-If use_postnotify_size is set, then the user should call io_postnotify
-after writing data that extends past postnotify_size.  Writes beyond
-postnotify_size may be buffered internally to the server for arbitrarily
-long periods until io_postnotify is called, regardless of@c the setting
-of the O_FSYNC bit.
+If the server sets use_postnotify_size, then the user should call
+io_postnotify after writing data that extends past postnotify_size.  The
+server may buffer writes internally beyond postnotify_size for
+arbitrarily long periods until io_postnotify is called, regardless of
+the setting of the O_FSYNC bit.
 
 After modifying or reading the object contents, the user should set the
 written or accessed fields respectively.  (Users who fail to set these
@@ -525,20 +555,21 @@ it is set, then the user should do writes at file_size and set the file
 pointer appropriately (this applies only if the user would be writing at
 the file pointer in the first place).
 
-The flag O_FSYNC is implemented in servers by using the postnotify_size
-field.  
+Servers should implement the flag O_FSYNC by using the postnotify_size
+field.
 
-The io_async and O_ASYNC notifications are supported through the
-do_sigio field.
+Servers should implement the io_async and O_ASYNC notifications by using
+the do_sigio field.
 
 @node Violations
 @subsection Violations
 
 Users who hold the conch for too long while conch_status is set to
 USER_RELEASE_CONCH may have the conch stolen from them and their
-conch_status unilaterally downgraded to USER_HAS_NOT_CONCH.  Users who
-hold the spin lock for too long (where this ``too long'' is much much
-shorter than the previous one) will have the spin lock stolen from them. 
+conch_status unilaterally downgraded to USER_HAS_NOT_CONCH by the
+server.  Users who hold the spin lock for too long (where this ``too
+long'' is much much shorter than the previous one) may have the spin
+lock stolen from them by the server.
 
 Users who read or write outside the valid regions described above may
 get memory faults and may not expect data written to be saved in any
@@ -556,7 +587,7 @@ have such modifications ignored.
 
 Users may not call any server functions (whether in the I/O protocol or
 another) while holding the conch except for those specified in this
-chapter.  Such calls may block or fail silently.
+chapter.  Such calls may block indefinitely or fail silently.
 
 
 @bye
