@@ -144,7 +144,6 @@ diskfs_S_dir_rename (struct protid *fromcred,
 
   if (tnp)
     {
-      diskfs_purge_cache (tdp, tnp);
       err = diskfs_dirrewrite (tdp, fnp, ds);
       if (!err)
 	{
