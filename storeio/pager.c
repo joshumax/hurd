@@ -1,6 +1,6 @@
 /* Paging interface for storeio devices
 
-   Copyright (C) 1995, 96, 97, 99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2002 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -40,7 +40,7 @@ pager_read_page (struct user_pager_info *upi,
 		 vm_offset_t page, vm_address_t *buf, int *writelock)
 {
   error_t err;
-  int read = 0;			/* bytes actually read */
+  size_t read = 0;		/* bytes actually read */
   int want = vm_page_size;	/* bytes we want to read */
   struct dev *dev = (struct dev *)upi;
   struct store *store = dev->store;
@@ -79,7 +79,7 @@ pager_write_page (struct user_pager_info *upi,
   else
     {
       error_t err;
-      int written;
+      size_t written;
       int want = vm_page_size;
 
       if (page + want > store->size)
