@@ -60,33 +60,26 @@ static const char *doc = "If PERIOD is supplied, then terse mode is"
    should be signed, and hopefully large enough!  */
 typedef ssize_t val_t;
 
-/* How to print a given number.  */
-enum val_display_type
+/* What a given number describes.  */
+enum val_type
 {
-  ASIS,				/* Always printed as-is.  */
   COUNT,			/* As-is.  */
-  PAGES,			/* Divided by the page size.  */
-  KBYTES,			/* Divided by 1024.  */
-  BYTES,			/* As-is.  */
-  SIZES,			/* Use the most convenient unit, with suffix. */
+  SIZE,				/* Use the most convenient unit, with suffix. */
+  PAGESZ,			/* Like SIZE, but never changed to PAGES.  */
   PCENT,			/* Append `%'.  */
 };
 
-/* Returns true if TYPE is a `size' type.  */
-static int
-val_display_type_is_size (enum val_display_type type)
-{
-  return type == PAGES || type == KBYTES || type == BYTES || type == SIZES;
-}
-
-/* Print a number in a way described by HOW.  PSIZE is the page size.  FWIDTH
+/* Print a number of type TYPE.  If SIZE_UNITS is non-zero, then values of
+   type SIZE are divided by that amount and printed without a suffix.  FWIDTH
    is the width of the field to print it in, right-justified.  If SIGN is
    true, the value is always printed with a sign, even if it's positive.  */
 static void
-print_val (val_t val, int fwidth, enum val_display_type how, int sign,
-	   size_t psize)
+print_val (val_t val, enum val_type type,
+	   size_t size_units, int fwidth, int sign)
 {
-  if (how == SIZES)
+  if (type == PCENT)
+    printf (sign ? "%+*d%%" : "%*d%%", fwidth - 1, val);
+  else if ((type == SIZE || type == PAGESZ) && size_units == 0)
     {
       float fval = val;
       char *units = " KMGT", *u = units;
@@ -104,16 +97,9 @@ print_val (val_t val, int fwidth, enum val_display_type how, int sign,
     }
   else
     {
-      if (how == PAGES)
-	val /= psize;
-      else if (how == KBYTES)
-	val /= 1024;
-      else if (how == PCENT)
-	fwidth--;
-
+      if ((type == SIZE || type == PAGESZ) && size_units > 0)
+	val /= size_units;
       printf (sign ? "%+*d" : "%*d", fwidth, val);
-      if (how == PCENT)
-	putchar ('%');
     }
 }
 
@@ -144,7 +130,7 @@ struct field
   /* How to display the number associated with this field.
      If this is anything but `DIMLESS', then it can be overriden by the
      user.  */
-  enum val_display_type disp_type;
+  enum val_type type;
 
   /* True if we display this field by default (user can always override). */
   int standard :1;
@@ -189,7 +175,7 @@ get_vmstats_field (struct vm_state *state, const struct field *field)
 {
   val_t val =
     (val_t)(*(integer_t *)((char *)&state->vmstats + field->offs));
-  if (val_display_type_is_size (field->disp_type))
+  if (field->type == SIZE)
     val *= state->vmstats.pagesize;
   return val;
 }
@@ -287,25 +273,25 @@ get_swap_active (struct vm_state *state, const struct field *field)
 /* vm_statistics fields we know about.  */
 static const struct field fields[] =
 {
-  {"pagesize",	   "Pagesize",	   " pgsz",  CONST,ASIS, 1,_F(pagesize)},
-  {"size",	   "Size",	   " size",  CONST,SIZES,1,0,get_size},
-  {"free",	   "Free",	   " free",  VARY, SIZES,1,_F(free_count)},
-  {"active",	   "Active",	   " actv",  VARY, SIZES,1,_F(active_count)},
-  {"inactive",	   "Inactive", 	   "inact",  VARY, SIZES,1,_F(inactive_count)},
-  {"wired",	   "Wired",    	   "wired",  VARY, SIZES,1,_F(wire_count)},
-  {"zero-filled",  "Zeroed",	   "zeroed", CUMUL,SIZES,1,_F(zero_fill_count)},
-  {"reactivated",  "Reactivated",  "react",  CUMUL,SIZES,1,_F(reactivations)},
-  {"pageins",	   "Pageins",	   "pgins",  CUMUL,SIZES,1,_F(pageins)},
-  {"pageouts",     "Pageouts",	   "pgouts", CUMUL,SIZES,1,_F(pageouts)},
+  {"pagesize",	   "Pagesize",	   " pgsz",  CONST,PAGESZ, 1,_F(pagesize)},
+  {"size",	   "Size",	   " size",  CONST,SIZE, 1,0,get_size},
+  {"free",	   "Free",	   " free",  VARY, SIZE, 1,_F(free_count)},
+  {"active",	   "Active",	   " actv",  VARY, SIZE, 1,_F(active_count)},
+  {"inactive",	   "Inactive", 	   "inact",  VARY, SIZE, 1,_F(inactive_count)},
+  {"wired",	   "Wired",    	   "wired",  VARY, SIZE, 1,_F(wire_count)},
+  {"zero-filled",  "Zeroed",	   "zeroed", CUMUL,SIZE, 1,_F(zero_fill_count)},
+  {"reactivated",  "Reactivated",  "react",  CUMUL,SIZE, 1,_F(reactivations)},
+  {"pageins",	   "Pageins",	   "pgins",  CUMUL,SIZE, 1,_F(pageins)},
+  {"pageouts",     "Pageouts",	   "pgouts", CUMUL,SIZE, 1,_F(pageouts)},
   {"faults",	   "Faults",	   "pfaults",CUMUL,COUNT,1,_F(faults)},
   {"cow-faults",  "Cow faults",    "cowpfs", CUMUL,COUNT,1,_F(cow_faults)},
   {"cache-lookups","Cache lookups","clkups", CUMUL,COUNT,0,_F(lookups)},
   {"cache-hits",   "Cache hits",   "chits",  CUMUL,COUNT,0,_F(hits)},
   {"cache-hit-ratio","Cache hit ratio","chrat",VARY,PCENT,1,-1,get_cache_hit_ratio},
-  {"swap-size",    "Swap size",	   "swsize", CONST,SIZES,1,0,get_swap_size},
-  {"swap-active",  "Swap active",  "swactv", VARY, SIZES,0,0,get_swap_active},
-  {"swap-free",    "Swap free",	   "swfree", VARY, SIZES,1,0,get_swap_free},
-  {"swap-pagesize","Swap pagesize","swpgsz", CONST,ASIS, 0,0,get_swap_page_size},
+  {"swap-size",    "Swap size",	   "swsize", CONST,SIZE, 1,0,get_swap_size},
+  {"swap-active",  "Swap active",  "swactv", VARY, SIZE, 0,0,get_swap_active},
+  {"swap-free",    "Swap free",	   "swfree", VARY, SIZE, 1,0,get_swap_free},
+  {"swap-pagesize","Swap pagesize","swpgsz", CONST,PAGESZ, 0,0,get_swap_page_size},
   {0}
 };
 #undef _F
@@ -321,7 +307,7 @@ main (int argc, char **argv)
   int count = 1;		/* Number of repeats.  */
   unsigned period = 0;		/* Seconds between terse mode repeats.  */
   unsigned hdr_interval = 22;	/*  */
-  enum val_display_type user_disp_type = ASIS;
+  ssize_t size_units = 0;	/* -1 means `pages' */
   int terse = 0, print_heading = 1, print_prefix = -1;
 
   /* Parse our options...  */
@@ -337,9 +323,9 @@ main (int argc, char **argv)
 	  case 'p': print_prefix = 1; break;
 	  case 'P': print_prefix = 0; break;
 	  case 'H': print_heading = 0; break;
-	  case 'b': user_disp_type = BYTES; break;
-	  case 'v': user_disp_type = PAGES; break;
-	  case 'k': user_disp_type = KBYTES; break;
+	  case 'b': size_units = 1; break;
+	  case 'v': size_units = -1; break;
+	  case 'k': size_units = 1024; break;
 
 	  case ARGP_KEY_ARG:
 	    terse = 1;
@@ -399,17 +385,19 @@ main (int argc, char **argv)
       if (field->standard)
 	output_fields |= (1 << (field - fields));
 
-  /* Returns a value describing how to display FIELD.  */
-#define FDISPTYPE(field)						      \
-  (user_disp_type == ASIS || !val_display_type_is_size ((field)->disp_type)   \
-   ? (field)->disp_type							      \
-   : user_disp_type)
+  /* Returns an appropiate SIZE_UNITS for printing FIELD.  */
+#define SIZE_UNITS(field)							\
+  (size_units >= 0								\
+   ? size_units									\
+   : ((field)->type == PAGESZ ? 0 : state.vmstats.pagesize))
 
     /* Prints SEP if the variable FIRST is 0, otherwise, prints START (if
        it's non-zero), and sets first to 0.  */
 #define PSEP(sep, start) \
     (first ? (first = 0, (start && fputs (start, stdout))) : fputs (sep, stdout))
-
+#define PVAL(val, field, width, sign) \
+    print_val (val, (field)->type, SIZE_UNITS (field), width, sign)
+	
   /* Actually fetch the statistics.  */
   bzero (&state, sizeof (state)); /* Initialize STATE.  */
   err = vm_state_refresh (&state);
@@ -458,8 +446,7 @@ main (int argc, char **argv)
 		      {
 			PSEP (", ", "(");
 			printf ("%s: ", field->desc);
-			print_val (val, 0, FDISPTYPE (field), 0,
-				   state.vmstats.pagesize);
+			PVAL (val, field, 0, 0);
 		      }
 		  }
 	      if (! first)
@@ -498,8 +485,7 @@ main (int argc, char **argv)
 		      }
 
 		    PSEP (" ", 0);
-		    print_val (val, width, FDISPTYPE (field), sign,
-			       state.vmstats.pagesize);
+		    PVAL (val, field, width, sign);
 		  }
 	      putchar ('\n');
 
@@ -545,8 +531,7 @@ main (int argc, char **argv)
 		printf ("%s:", field->desc);
 		fwidth = max_desc_width + 5 - strlen (field->desc);
 	      }
-	    print_val (val, fwidth, FDISPTYPE (field), 0,
-		       state.vmstats.pagesize);
+	    PVAL (val, field, fwidth, 0);
 	    putchar ('\n');
 	  }
     }
