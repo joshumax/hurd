@@ -54,6 +54,14 @@ get_hypermetadata (void)
 	       " block size (%d)!",
 	       block_size, device_block_size);
 
+  log2_stat_blocks_per_fs_block = 0;
+  while ((512 << log2_stat_blocks_per_fs_block) < block_size)
+    log2_stat_blocks_per_fs_block++;
+  if ((512 << log2_stat_blocks_per_fs_block) != block_size)
+    ext2_panic("get_hypermetadata",
+	       "Block size %ld isn't a power-of-two multiple of 512!",
+	       block_size);
+
   log2_block_size = 0;
   while ((1 << log2_block_size) < block_size)
     log2_block_size++;
@@ -108,9 +116,12 @@ diskfs_set_hypermetadata (int wait, int clean)
        just write the superblock directly, without using the paged copy.  */
     {
       vm_address_t page_buf = get_page_buf ();
+      sblock_dirty = 0;		/* doesn't matter if this gets stomped */
       bcopy (sblock, (void *)page_buf, SBLOCK_SIZE);
       ((struct ext2_super_block *)page_buf)->s_state |= EXT2_VALID_FS;
       dev_write_sync (SBLOCK_OFFS / device_block_size, page_buf, block_size);
       free_page_buf (page_buf);
     }
+  else if (sblock_dirty)
+    sync_super_block ();
 }
