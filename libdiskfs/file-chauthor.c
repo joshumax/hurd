@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_chauthor
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@
 
 /* Implement file_chauthor as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_file_chauthor (struct protid *cred,
+S_file_chauthor (struct protid *cred,
 		 uid_t author)
 {
   CHANGE_NODE_FIELD (cred,

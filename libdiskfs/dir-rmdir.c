@@ -1,5 +1,5 @@
-/* libdiskfs implementation of fs.defs: dir_unlink
-   Copyright (C) 1993, 1994 Free Software Foundation
+/* libdsikfs implementation of fs.defs: dir_rmdir
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,13 +17,13 @@
 
 #include "priv.h"
 
-/* Implement dir_unlink as described in <hurd/fs.defs>. */
+/* Implement dir_rmdir as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_dir_unlink (struct protid *dircred,
-		     char *name)
+diskfs_S_dir_rmdir (struct protid *dircred,
+		    char *name)
 {
   struct node *dnp;
-  struct node *np;
+  struct node *np = 0;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t error;
 
@@ -38,44 +38,46 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
-    error = EISDIR;
+    error = ENOTEMPTY;
   if (error)
     {
-      diskfs_drop_dirstat (ds);
       mutex_unlock (&dnp->lock);
+      diskfs_drop_dirstat (ds);
       return error;
     }
-  
-  /* This isn't the BSD behavior, but it is Posix compliant and saves
-     us on several race conditions.*/
-  if (S_ISDIR(np->dn_stat.st_mode))
+
+  /* Attempt to rmdir(".") */
+  if (dnp == np)
     {
-      if (np == dnp)		/* gotta catch '.' */
-	diskfs_nrele (np);
-      else
-	diskfs_nput (np);
+      diskfs_nrele (np);
       diskfs_drop_dirstat (ds);
       mutex_unlock (&dnp->lock);
-      return EISDIR;
+      return EINVAL;
+    }
+
+  /* Verify the directory is empty (and valid).  (Rmdir ".." won't be
+     valid since ".." will contain a reference to the current directory and
+     thus be non-empty). */
+  if (!diskfs_dirempty (np, dircred))
+    {
+      diskfs_nput (np);
+      diskfs_drop_dirstat (ds);
+      mutex_unlock (&dnp->lock);
+      return ENOTEMPTY;
     }
 
   error = diskfs_dirremove (dnp, ds);
-  if (error)
-    {
-      diskfs_nput (np);
-      mutex_unlock (&dnp->lock);
-      return error;
-    }
-      
-  np->dn_stat.st_nlink--;
-  np->dn_set_ctime = 1;
 
-  /* This check is necessary because we might get here on an error while 
-     checking the mode on something which happens to be `.'. */
-  if (np == dnp)
-    diskfs_nrele (np);	
-  else
-    diskfs_nput (np);
+  if (!error)
+    {
+      np->dn_stat.st_nlink--;
+      np->dn_set_ctime = 1;
+    }
+  
+  if (!error)
+    diskfs_clear_directory (np, dnp, dircred);
+
+  diskfs_nput (np);
   mutex_unlock (&dnp->lock);
-  return error;
+  return 0;
 }

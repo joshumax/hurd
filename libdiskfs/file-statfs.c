@@ -1,5 +1,5 @@
-/* libdiskfs implementation of fs.defs: file_truncate
-   Copyright (C) 1993, 1994 Free Software Foundation
+/* libdiskfs implementation of fs.defs: file_statfs
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,16 +17,14 @@
 
 #include "priv.h"
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
-error_t
-diskfs_S_file_truncate (struct protid *cred,
-			int size)
+/* Implement file_getcontrol as described in <hurd/fs.defs>. */
+diskfs_S_file_statfs (struct protid *file,
+		      fsys_statfsbuf_t *statbuf)
 {
-  CHANGE_NODE_FIELD (cred,
-		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       diskfs_truncate (np, size);
-		   }));
+  if (!file)
+    return EOPNOTSUPP;
+  
+  diskfs_set_statfs (statbuf);
+
+  return 0;
 }

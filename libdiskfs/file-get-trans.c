@@ -1,4 +1,4 @@
-/* libdiskfs implementation of fs.defs: file_truncate
+/* libdiskfs implementation of fs.defs: file_get_translator
    Copyright (C) 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -17,16 +17,25 @@
 
 #include "priv.h"
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
+/* Implement file_get_translator as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_file_truncate (struct protid *cred,
-			int size)
+diskfs_S_file_get_translator (struct protid *cred,
+			      vm_address_t *trans)
 {
-  CHANGE_NODE_FIELD (cred,
-		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       diskfs_truncate (np, size);
-		   }));
+  struct node *np;
+  error_t error;
+  
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  np = cred->po->np;
+
+  mutex_lock (&np->lock);
+  if (!diskfs_node_translated (np))
+    error = EINVAL;
+  else
+    error = diskfs_get_translator (np, trans);
+  mutex_unlock (&np->lock);
+
+  return error;
 }

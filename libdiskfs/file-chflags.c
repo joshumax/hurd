@@ -1,5 +1,5 @@
-/* libdiskfs implementation of fs.defs: file_truncate
-   Copyright (C) 1993, 1994 Free Software Foundation
+/* libdiskfs implementation of fs.defs:file_chflags
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,16 +17,14 @@
 
 #include "priv.h"
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
+/* Implement file_chflags as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_file_truncate (struct protid *cred,
-			int size)
+dikfs_S_file_chflags (struct protid *cred,
+		      int flags)
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       diskfs_truncate (np, size);
+		     if (!(err = isowner (np, cred)))
+			 np->dn_stat.st_flags = flags;
 		   }));
 }

@@ -1,5 +1,5 @@
-/* libdiskfs implementation of fs.defs: file_truncate
-   Copyright (C) 1993, 1994 Free Software Foundation
+/* libdiskfs implementation of fs.defs:file_getcontrol.c
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,16 +17,25 @@
 
 #include "priv.h"
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
+/* Implement file_getcontrol as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_file_truncate (struct protid *cred,
-			int size)
+diskfs_S_file_getcontrol (struct protid *cred,
+			  mach_port_t *control,
+			  mach_msg_type_name_t *controltype)
 {
-  CHANGE_NODE_FIELD (cred,
-		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       diskfs_truncate (np, size);
-		   }));
+  int error = 0;;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  if (!isuid (0, cred))
+    error = EPERM;
+  else
+    {
+      /* XXX nosenders race */
+      *control = fs_control_port;
+      *controltype = MACH_MSG_TYPE_MAKE_SEND;
+    }
+
+  return error;
 }

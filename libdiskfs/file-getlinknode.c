@@ -1,5 +1,5 @@
-/* libdiskfs implementation of fs.defs: file_truncate
-   Copyright (C) 1993, 1994 Free Software Foundation
+/* libdiskfs implementation of fs.defs: file_getlinknode
+   Copyright (C) 1992, 1993, 1994 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,16 +17,25 @@
 
 #include "priv.h"
 
-/* Implement file_truncate as described in <hurd/fs.defs>. */
+/* Implement file_getlinknode as described in <hurd/fs.defs>. */
 error_t
-diskfs_S_file_truncate (struct protid *cred,
-			int size)
+diskfs_S_file_getlinknode (struct protid *cred,
+			   file_t *port,
+			   mach_msg_type_name_t *portpoly)
 {
-  CHANGE_NODE_FIELD (cred,
-		   ({
-		     if (!(cred->po->openstat & O_WRITE))
-		       err = EINVAL;
-		     else
-		       diskfs_truncate (np, size);
-		   }));
+  struct inode *np;
+
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  np = cred->po->np;
+  if (np->i_number == diskfs_root_node_number)
+    return EBUSY;
+  
+  /* XXX -- this is wrong; port management code for protids
+     only allows a port to be given out once; we need to
+     send a new protid unfortunately. */
+  *port = cred->fspt.pi.port;
+  *portpoly = MACH_MSG_TYPE_MAKE_SEND;
+  return 0;
 }
