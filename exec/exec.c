@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992, 93, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,98,99 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -1627,6 +1627,29 @@ do_exec (file_t file,
     finish (&interp, 1);
   finish (&e, !e.error);
 
+  if (!e.error && (flags & EXEC_SIGTRAP)) /* XXX && !secure ? */
+    {
+      /* This is a "traced" exec, i.e. the new task is to be debugged.  The
+	 caller has requested that the new process stop with SIGTRAP before
+	 it starts.  Since the process has no signal thread yet to do its
+	 own POSIX signal mechanics, we simulate it by notifying the proc
+	 server of the signal and leaving the initial thread with a suspend
+	 count of one, as it would be if the process were stopped by a
+	 POSIX signal.  */
+      mach_port_t proc;
+      if (boot->nports > INIT_PORT_PROC)
+	proc = boot->portarray[INIT_PORT_PROC];
+      else
+	/* Ask the proc server for the proc port for this task.  */
+	e.error = proc_task2proc (procserver, newtask, &proc);
+      if (!e.error)
+	/* Tell the proc server that the process has stopped with the
+	   SIGTRAP signal.  Don't bother to check for errors from the RPC
+	   here; for non-secure execs PROC may be the user's own proc
+	   server its confusion shouldn't make the exec fail.  */
+	   proc_mark_stop (proc, SIGTRAP, 0);
+    }
+
   if (boot)
     {
       /* Release the original reference.  Now there is only one
@@ -1650,7 +1673,8 @@ do_exec (file_t file,
 
   if (thread != MACH_PORT_NULL)
     {
-      thread_resume (thread);
+      if (!e.error && !(flags & EXEC_SIGTRAP))
+	thread_resume (thread);
       mach_port_deallocate (mach_task_self (), thread);
     }
 
