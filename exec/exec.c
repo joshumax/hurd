@@ -527,6 +527,8 @@ close_exec_stream (void *cookie)
 static void
 prepare (file_t file, struct execdata *e)
 {
+  memory_object_t rd, wr;
+
   e->file = file;
 
 #ifdef	BFD
@@ -537,71 +539,9 @@ prepare (file_t file, struct execdata *e)
   e->filemap = MACH_PORT_NULL;
   e->cntlmap = MACH_PORT_NULL;
 
-  {
-    memory_object_t rd, wr;
-    e->error = io_map (file, &rd, &wr);
-    if (e->error)
-      return;
-    if (wr != MACH_PORT_NULL)
-      mach_port_deallocate (mach_task_self (), wr);
-    if (rd == MACH_PORT_NULL)
-      {
-	e->error = EBADF;	/* ? XXX */
-	return;
-      }
-    e->filemap = rd;
+  e->interp.section = NULL;
 
-    e->error = /* io_map_cntl (file, &e->cntlmap) */ EOPNOTSUPP; /* XXX */
-    if (e->error)
-      {
-	/* No shared page.  Do a stat to find the file size.  */
-	struct stat st;
-	e->error = io_stat (file, &st);
-	if (e->error)
-	  return;
-	e->file_size = st.st_size;
-	e->optimal_block = st.st_blksize;
-      }
-    else
-      e->error = vm_map (mach_task_self (), (vm_address_t *) &e->cntl,
-			 vm_page_size, 0, 1, e->cntlmap, 0, 0,
-			 VM_PROT_READ|VM_PROT_WRITE,
-			 VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
-
-    if (e->cntl)
-      while (1)
-	{
-	  spin_lock (&e->cntl->lock);
-	  switch (e->cntl->conch_status)
-	    {
-	    case USER_COULD_HAVE_CONCH:
-	      e->cntl->conch_status = USER_HAS_CONCH;
-	    case USER_HAS_CONCH:
-	      spin_unlock (&e->cntl->lock);
-	      /* Break out of the loop.  */
-	      break;
-	    case USER_RELEASE_CONCH:
-	    case USER_HAS_NOT_CONCH:
-	    default:		/* Oops.  */
-	      spin_unlock (&e->cntl->lock);
-	      e->error = io_get_conch (e->file);
-	      if (e->error)
-		return;
-	      /* Continue the loop.  */
-	      continue;
-	    }
-
-	  /* Get here if we are now IT.  */
-	  e->file_size = 0;
-	  if (e->cntl->use_file_size)
-	    e->file_size = e->cntl->file_size;
-	  if (e->cntl->use_read_size && e->cntl->read_size > e->file_size)
-	    e->file_size = e->cntl->read_size;
-	  break;
-	}
-  }
-
-  /* Open a stdio stream to do mapped i/o to the file.  */
+  /* Initialize E's stdio stream.  */
   memset (&e->stream, 0, sizeof (e->stream));
   e->stream.__magic = _IOMAGIC;
   e->stream.__mode.__read = 1;
@@ -613,7 +553,72 @@ prepare (file_t file, struct execdata *e)
   e->stream.__cookie = e;
   e->stream.__seen = 1;
 
-  e->interp.section = NULL;
+  /* Try to mmap FILE.  */
+  e->error = io_map (file, &rd, &wr);
+  if (! e->error)
+    /* Mapping is O.K.  */
+    {
+      if (wr != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), wr);
+      if (rd == MACH_PORT_NULL)
+	{
+	  e->error = EBADF;	/* ? XXX */
+	  return;
+	}
+      e->filemap = rd;
+
+      e->error = /* io_map_cntl (file, &e->cntlmap) */ EOPNOTSUPP; /* XXX */
+      if (e->error)
+	{
+	  /* No shared page.  Do a stat to find the file size.  */
+	  struct stat st;
+	  e->error = io_stat (file, &st);
+	  if (e->error)
+	    return;
+	  e->file_size = st.st_size;
+	  e->optimal_block = st.st_blksize;
+	}
+      else
+	e->error = vm_map (mach_task_self (), (vm_address_t *) &e->cntl,
+			   vm_page_size, 0, 1, e->cntlmap, 0, 0,
+			   VM_PROT_READ|VM_PROT_WRITE,
+			   VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
+
+      if (e->cntl)
+	while (1)
+	  {
+	    spin_lock (&e->cntl->lock);
+	    switch (e->cntl->conch_status)
+	      {
+	      case USER_COULD_HAVE_CONCH:
+		e->cntl->conch_status = USER_HAS_CONCH;
+	      case USER_HAS_CONCH:
+		spin_unlock (&e->cntl->lock);
+		/* Break out of the loop.  */
+		break;
+	      case USER_RELEASE_CONCH:
+	      case USER_HAS_NOT_CONCH:
+	      default:		/* Oops.  */
+		spin_unlock (&e->cntl->lock);
+		e->error = io_get_conch (e->file);
+		if (e->error)
+		  return;
+		/* Continue the loop.  */
+		continue;
+	      }
+
+	    /* Get here if we are now IT.  */
+	    e->file_size = 0;
+	    if (e->cntl->use_file_size)
+	      e->file_size = e->cntl->file_size;
+	    if (e->cntl->use_read_size && e->cntl->read_size > e->file_size)
+	      e->file_size = e->cntl->read_size;
+	    break;
+	  }
+    }
+  else if (e->error == EOPNOTSUPP)
+    /* We can't mmap FILE, but perhaps we can do normal I/O to it.  */
+    e->error = 0;
 }
 
 /* Check the magic number, etc. of the file.
@@ -1052,9 +1057,10 @@ do_exec (file_t file,
     {
       /* Prepare E to read the file.  */
       prepare (file, e);
+      if (e->error)
+	return;
 
       /* Check the file for validity first.  */
-
       check (e);
 
 #ifdef GZIP
