@@ -31,7 +31,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
   struct protid *newpi;
 
   mutex_lock (&diruser->po->np->lock);
-  err = netfs_attempt_mkfile (diruser->credential, diruser->po->np, mode, &np);
+  err = netfs_attempt_mkfile (diruser->user, diruser->po->np, mode, &np);
 
   if (!err)
     {
@@ -39,7 +39,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
       flags &= OPENONLY_STATE_MODES;
       newpi = netfs_make_protid (netfs_make_peropen (np, flags,
 						     diruser->po->dotdotport),
-				 netfs_copy_credential (diruser->credential));
+				 iohelp_dup_iouser (diruser->user));
       *newfile = ports_get_right (newpi);
       *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (newpi);

@@ -34,7 +34,7 @@ netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
     return EXDEV;
   
   /* Note that nothing is locked here */
-  err = netfs_attempt_rename (fromdiruser->credential, fromdiruser->po->np, 
+  err = netfs_attempt_rename (fromdiruser->user, fromdiruser->po->np, 
 			      fromname, todiruser->po->np, toname, excl);
   if (!err)
     mach_port_deallocate (mach_task_self (), todiruser->pi.port_right);

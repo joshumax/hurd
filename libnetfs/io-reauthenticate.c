@@ -25,20 +25,11 @@ error_t
 netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
 {
   struct protid *newpi;
-  uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
-  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   mach_port_t newright;
   
   if (!user)
     return EOPNOTSUPP;
-  
-  genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
-  gen_uids = gubuf;
-  gen_gids = ggbuf;
-  aux_uids = aubuf;
-  aux_gids = agbuf;
   
   mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, 0);
@@ -47,25 +38,11 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   err = mach_port_insert_right (mach_task_self (), newright, newright,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
-  do
-    err = auth_server_authenticate (netfs_auth_server_port,
-				    rend_port,
-				    MACH_MSG_TYPE_COPY_SEND,
-				    newright,
-				    MACH_MSG_TYPE_COPY_SEND,
-				    &gen_uids, &genuidlen,
-				    &aux_uids, &auxuidlen,
-				    &gen_gids, &gengidlen,
-				    &aux_uids, &auxuidlen);
-  while (err == EINTR);
+
+  newpi->user = iohelp_reauth (netfs_auth_server_port, rend_port, newright, 1);
+
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
-
-  if (err)
-    newpi->credential = netfs_make_credential (0, 0, 0, 0);
-  else
-    newpi->credential = netfs_make_credential (gen_uids, genuidlen,
-					       gen_gids, gengidlen);
 
   mach_port_move_member (mach_task_self (), newpi->pi.port_right,
 			 netfs_port_bucket->portset);
@@ -73,17 +50,5 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   mutex_unlock (&user->po->np->lock);
   ports_port_deref (newpi);
 
-  if (gen_uids != gubuf)
-    vm_deallocate (mach_task_self (), (vm_address_t) gen_uids,
-		   genuidlen * sizeof (uid_t));
-  if (aux_uids != aubuf)
-    vm_deallocate (mach_task_self (), (vm_address_t) aux_uids,
-		   auxuidlen * sizeof (uid_t));
-  if (gen_gids != ggbuf)
-    vm_deallocate (mach_task_self (), (vm_address_t) gen_gids,
-		   gengidlen * sizeof (uid_t));
-  if (aux_gids != agbuf)
-    vm_deallocate (mach_task_self (), (vm_address_t) aux_gids,
-		   auxgidlen * sizeof (uid_t));
   return 0;
 }

@@ -37,7 +37,7 @@ netfs_S_file_get_translator (struct protid *user,
 
   np = user->po->np;
   mutex_lock (&np->lock);
-  err = netfs_validate_stat (np, user->credential);
+  err = netfs_validate_stat (np, user->user);
 
   if (err)
     {
@@ -53,7 +53,7 @@ netfs_S_file_get_translator (struct protid *user,
 	vm_allocate (mach_task_self (), (vm_address_t *)trans, len, 1);
       bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
 
-      err = netfs_attempt_readlink (user->credential, np,
+      err = netfs_attempt_readlink (user->user, np,
 				    *trans + sizeof _HURD_SYMLINK);
       if (!err)
 	{

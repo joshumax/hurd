@@ -50,7 +50,7 @@ netfs_S_io_read (struct protid *user,
     }
   *datalen = amount;
 
-  err = netfs_attempt_read (user->credential, user->po->np, 
+  err = netfs_attempt_read (user->user, user->po->np, 
 			    offset == -1 ? user->po->filepointer : offset, 
 			    datalen, *data);
   if (offset == -1 && !err)

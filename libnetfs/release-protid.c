@@ -25,7 +25,7 @@ netfs_release_protid (void *arg)
 {
   struct protid *user = arg;
   
-  netfs_drop_credential (user->credential);
+  iohelp_free_iouser (user->user);
   if (user->shared_object)
     mach_port_deallocate (mach_task_self (), user->shared_object);
   if (user->mapped)

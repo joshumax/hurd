@@ -21,7 +21,7 @@
 #include "netfs.h"
 
 struct protid *
-netfs_make_protid (struct peropen *po, struct netcred *cred)
+netfs_make_protid (struct peropen *po, struct iouser *cred)
 {
   struct protid *pi;
 
@@ -38,7 +38,7 @@ netfs_make_protid (struct peropen *po, struct netcred *cred)
 
   po->refcnt++;
   pi->po = po;
-  pi->credential = cred;
+  pi->user = cred;
   pi->shared_object = MACH_PORT_NULL;
   pi->mapped = 0;
   return pi;

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -32,7 +32,7 @@ netfs_S_io_stat (struct protid *fileuser,
     return EOPNOTSUPP;
 
   mutex_lock (&fileuser->po->np->lock);
-  err = netfs_validate_stat (fileuser->po->np, fileuser->credential);
+  err = netfs_validate_stat (fileuser->po->np, fileuser->user);
   if (!err)
     bcopy (&fileuser->po->np->nn_stat, statbuf, sizeof (struct stat));
   mutex_unlock (&fileuser->po->np->lock);

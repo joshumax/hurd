@@ -1,6 +1,6 @@
 
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -36,7 +36,7 @@ netfs_S_io_readable (struct protid *user,
     return EINVAL;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_validate_stat (user->po->np, user->credential);
+  err = netfs_validate_stat (user->po->np, user->user);
   if (!err)
     {
       if (user->po->np->nn_stat.st_size > user->po->filepointer)

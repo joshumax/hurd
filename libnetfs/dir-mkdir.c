@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -33,7 +33,7 @@ netfs_S_dir_mkdir (struct protid *user, char *name, mode_t mode)
   mode |= S_IFDIR;
 
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_mkdir (user->credential, user->po->np, name, mode);
+  err = netfs_attempt_mkdir (user->user, user->po->np, name, mode);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

@@ -39,7 +39,7 @@ struct protid
   struct port_info pi;
   
   /* User identification */
-  struct netcred *credential;
+  struct iouser *user;
   
   /* Object this refers to */
   struct peropen *po;
@@ -92,18 +92,18 @@ struct node
 /* The user must define this function.  Make sure that NP->nn_stat is
    filled with current information.  CRED identifies the user
    responsible for the operation.  */
-error_t netfs_validate_stat (struct node *NP, struct netcred *cred);
+error_t netfs_validate_stat (struct node *NP, struct iouser *cred);
 
 /* The user must define this function.  This should attempt a chmod
    call for the user specified by CRED on node NODE, to change the
    owner to UID and the group to GID. */
-error_t netfs_attempt_chown (struct netcred *cred, struct node *np,
+error_t netfs_attempt_chown (struct iouser *cred, struct node *np,
 			     uid_t uid, uid_t gid);
 
 /* The user must define this function.  This should attempt a chauthor
    call for the user specified by CRED on node NODE, to change the
    author to AUTHOR. */
-error_t netfs_attempt_chauthor (struct netcred *cred, struct node *np,
+error_t netfs_attempt_chauthor (struct iouser *cred, struct node *np,
 				uid_t author);
 
 /* The user must define this function.  This should attempt a chmod
@@ -113,83 +113,83 @@ error_t netfs_attempt_chauthor (struct netcred *cred, struct node *np,
    types.  If such a transition is attempted which is impossible, then
    return EOPNOTSUPP.
   */
-error_t netfs_attempt_chmod (struct netcred *cred, struct node *np,
+error_t netfs_attempt_chmod (struct iouser *cred, struct node *np,
 			     mode_t mode);
 
 /* The user must define this function.  Attempt to turn NODE (user CRED)
    into a symlink with target NAME. */
-error_t netfs_attempt_mksymlink (struct netcred *cred, struct node *np,
+error_t netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
 				 char *name);
 
 /* The user must define this function.  Attempt to turn NODE (user
    CRED) into a device.  TYPE is either S_IFBLK or S_IFCHR. */
-error_t netfs_attempt_mkdev (struct netcred *cred, struct node *np,
+error_t netfs_attempt_mkdev (struct iouser *cred, struct node *np,
 			     mode_t type, dev_t indexes);
 
 /* The user must define this function.  Attempt to set the passive
    translator record for FILE to ARGZ (of length ARGZLEN) for user
    CRED. */
-error_t netfs_set_translator (struct netcred *cred, struct node *np,
+error_t netfs_set_translator (struct iouser *cred, struct node *np,
 			      char *argz, size_t argzlen);
 
 /* The user must define this function.  This should attempt a chflags
    call for the user specified by CRED on node NODE, to change the
    flags to FLAGS. */
-error_t netfs_attempt_chflags (struct netcred *cred, struct node *np,
+error_t netfs_attempt_chflags (struct iouser *cred, struct node *np,
 			       int flags);
 
 /* The user must define this function.  This should attempt a utimes
    call for the user specified by CRED on node NODE, to change the
    atime to ATIME and the mtime to MTIME. */
-error_t netfs_attempt_utimes (struct netcred *cred, struct node *np,
+error_t netfs_attempt_utimes (struct iouser *cred, struct node *np,
 			      struct timespec *atime, struct timespec *mtime);
 
 /* The user must define this function.  This should attempt to set the
    size of the file NODE (for user CRED) to SIZE bytes long. */
-error_t netfs_attempt_set_size (struct netcred *cred, struct node *np,
+error_t netfs_attempt_set_size (struct iouser *cred, struct node *np,
 				off_t size);
 
 /* The user must define this function.  This should attempt to fetch
    filesystem status information for the remote filesystem, for the
    user CRED. */
-error_t netfs_attempt_statfs (struct netcred *cred, struct node *np,
+error_t netfs_attempt_statfs (struct iouser *cred, struct node *np,
 			      struct statfs *st);
 
 /* The user must define this function.  This should sync the file NP
    completely to disk, for the user CRED.  If WAIT is set, return
    only after sync is completely finished.  */
-error_t netfs_attempt_sync (struct netcred *cred, struct node *np,
+error_t netfs_attempt_sync (struct iouser *cred, struct node *np,
 			    int wait);
 
 /* The user must define this function.  This should sync the entire
    remote filesystem.  If WAIT is set, return only after
    sync is completely finished.  */
-error_t netfs_attempt_syncfs (struct netcred *cred, int wait);
+error_t netfs_attempt_syncfs (struct iouser *cred, int wait);
 
 /* The user must define this function.  Lookup NAME in DIR for USER;
    set *NP to the found name upon return.  If the name was not found,
    then return ENOENT.  On any error, clear *NP.  (*NP, if found, should
    be locked, this call should unlock DIR no matter what.) */
-error_t netfs_attempt_lookup (struct netcred *user, struct node *dir, 
+error_t netfs_attempt_lookup (struct iouser *user, struct node *dir, 
 			      char *name, struct node **np);
 
 /* The user must define this function.  Delete NAME in DIR for USER. */
-error_t netfs_attempt_unlink (struct netcred *user, struct node *dir,
+error_t netfs_attempt_unlink (struct iouser *user, struct node *dir,
 			      char *name);
 
 /* Note that in this one call, neither of the specific nodes are locked. */
-error_t netfs_attempt_rename (struct netcred *user, struct node *fromdir,
+error_t netfs_attempt_rename (struct iouser *user, struct node *fromdir,
 			      char *fromname, struct node *todir, 
 			      char *toname, int excl);
 
 /* The user must define this function.  Attempt to create a new
    directory named NAME in DIR for USER with mode MODE.  */
-error_t netfs_attempt_mkdir (struct netcred *user, struct node *dir,
+error_t netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 			     char *name, mode_t mode);
 
 /* The user must define this function.  Attempt to remove directory
    named NAME in DIR for USER. */
-error_t netfs_attempt_rmdir (struct netcred *user, 
+error_t netfs_attempt_rmdir (struct iouser *user, 
 			     struct node *dir, char *name);
 
 
@@ -197,76 +197,63 @@ error_t netfs_attempt_rmdir (struct netcred *user,
    NAME to FILE for USER.  Note that neither DIR nor FILE are
    locked.  If EXCL is set, do not delete the target, but return EEXIST
    if NAME is already found in DIR.   */
-error_t netfs_attempt_link (struct netcred *user, struct node *dir,
+error_t netfs_attempt_link (struct iouser *user, struct node *dir,
 			    struct node *file, char *name, int excl);
 
 /* The user must define this function.  Attempt to create an anonymous
    file related to DIR for USER with MODE.  Set *NP to the returned
    file upon success.  No matter what, unlock DIR. */
-error_t netfs_attempt_mkfile (struct netcred *user, struct node *dir,
+error_t netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 			      mode_t mode, struct node **np);
 
 /* The user must define this function.  Attempt to create a file named
    NAME in DIR for USER with MODE.  Set *NP to the new node upon
    return.  On any error, clear *NP.  *NP should be locked on success;
    no matter what, unlock DIR before returning.  */
-error_t netfs_attempt_create_file (struct netcred *user, struct node *dir,
+error_t netfs_attempt_create_file (struct iouser *user, struct node *dir,
 				   char *name, mode_t mode, struct node **np);
 
 /* The user must define this function.  Read the contents of NP (a symlink),
    for USER, into BUF. */
-error_t netfs_attempt_readlink (struct netcred *user, struct node *np,
+error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
 				char *buf);
 
 /* The user must define this function.  Node NP is being opened by USER,
    with FLAGS.  NEWNODE is nonzero if we just created this node.  Return
    an error if we should not permit the open to complete because of a
    permission restriction. */
-error_t netfs_check_open_permissions (struct netcred *user, struct node *np,
+error_t netfs_check_open_permissions (struct iouser *user, struct node *np,
 				      int flags, int newnode);
 
 /* The user must define this function.  Read from the file NP for user
    CRED starting at OFFSET and continuing for up to *LEN bytes.  Put
    the data at DATA.  Set *LEN to the amount successfully read upon
    return.  */
-error_t netfs_attempt_read (struct netcred *cred, struct node *np,
+error_t netfs_attempt_read (struct iouser *cred, struct node *np,
 			    off_t offset, size_t *len, void *data);
 
 /* The user must define this function.  Write to the file NP for user
    CRED starting at OFSET and continuing for up to *LEN bytes from
    DATA.  Set *LEN to the amount seccessfully written upon return. */
-error_t netfs_attempt_write (struct netcred *cred, struct node *np,
+error_t netfs_attempt_write (struct iouser *cred, struct node *np,
 			     off_t offset, size_t *len, void *data);
 
 /* The user must define this function.  Return the valid access
    types (bitwise OR of O_READ, O_WRITE, and O_EXEC) in *TYPES for
    file NP and user CRED.   */
-void netfs_report_access (struct netcred *cred, struct node *np,
-			  int *types);
+error_t netfs_report_access (struct iouser *cred, struct node *np,
+			     int *types);
 
-/* The user must define this function.  Malloc and fill two arrays with
-   the uids and gids from the specified credential. */
-void netfs_interpret_credential (struct netcred *cred, uid_t **uids,
-				 int *nuids, uid_t **gids, int *ngids);
-
-/* The user must define this function.  Return a (virtual or physical)
-   copy of CRED. */
-struct netcred *netfs_copy_credential (struct netcred *cred);
-
-/* The user must define this function.  The specified credential is 
-   not in use any more.  */
-void netfs_drop_credential (struct netcred *cred);
-
-/* The user must define this function.  Create a new credential
+/* The user must define this function.  Create a new user
    from the specified UID and GID arrays. */
-struct netcred *netfs_make_credential (uid_t *uids, int nuids,
+struct iouser *netfs_make_user (uid_t *uids, int nuids,
 				       uid_t *gids, int ngids);
 
 /* The user must define this function.  Node NP is all done; free
    all its associated storage. */
 void netfs_node_norefs (struct node *np);
 
-error_t netfs_get_dirents (struct netcred *, struct node *, int, int, char **,
+error_t netfs_get_dirents (struct iouser *, struct node *, int, int, char **,
 			   mach_msg_type_number_t *, vm_size_t, int *);
 
 /* Option parsing */
@@ -314,7 +301,7 @@ extern int netfs_maxsymlinks;
 
 void netfs_init (void);
 void netfs_server_loop (void);
-struct protid *netfs_make_protid (struct peropen *, struct netcred *);
+struct protid *netfs_make_protid (struct peropen *, struct iouser *);
 struct peropen *netfs_make_peropen (struct node *, int, mach_port_t);
 void netfs_drop_node (struct node *);
 void netfs_release_protid (void *);

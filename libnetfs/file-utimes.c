@@ -38,7 +38,7 @@ netfs_S_file_utimes (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_utimes (user->credential, user->po->np, &atime, &mtime);
+  err = netfs_attempt_utimes (user->user, user->po->np, &atime, &mtime);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

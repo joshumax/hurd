@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -30,7 +30,7 @@ netfs_S_io_duplicate (struct protid *user,
   
   mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po,
-			     netfs_copy_credential (user->credential));
+			     iohelp_dup_iouser (user->user));
   *newport = ports_get_right (newpi);
   mutex_unlock (&user->po->np->lock);
   *newporttp = MACH_MSG_TYPE_MAKE_SEND;

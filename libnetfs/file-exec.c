@@ -73,7 +73,7 @@ netfs_S_file_exec (struct protid *cred,
   mode = np->nn_stat.st_mode;
   uid = np->nn_stat.st_uid;
   gid = np->nn_stat.st_gid;
-  err = netfs_validate_stat (np, cred->credential);
+  err = netfs_validate_stat (np, cred->user);
   mutex_unlock (&np->lock);
 
   if (err)
@@ -94,17 +94,11 @@ netfs_S_file_exec (struct protid *cred,
       error_t get_file_ids (struct idvec *uidsvec, struct idvec *gidsvec)
 	{
 	  error_t err;
-	  uid_t *uids, *gids;
-	  int nuids, ngids;
 
-	  netfs_interpret_credential (cred->credential, &uids, &nuids,
-				      &gids, &ngids);
-
-	  err = idvec_merge_ids (uidsvec, uids, nuids);
+	  err = idvec_merge (uidsvec, cred->user->uids);
 	  if (! err)
-	    err = idvec_merge_ids (gidsvec, gids, ngids);
-	  free (uids);
-	  free (gids);
+	    err = idvec_merge (gidsvec, cred->user->gids);
+
 	  return err;
 	}
       err = 
@@ -130,7 +124,7 @@ netfs_S_file_exec (struct protid *cred,
       struct protid *newpi =
 	netfs_make_protid (netfs_make_peropen (np, O_READ,
 					       cred->po->dotdotport),
-			   netfs_copy_credential (cred->credential));
+			   iohelp_dup_iouser (cred->user));
       err = exec_exec (_netfs_exec, 
 		       ports_get_right (newpi),
 		       MACH_MSG_TYPE_MAKE_SEND,

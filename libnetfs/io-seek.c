@@ -47,7 +47,7 @@ netfs_S_io_seek (struct protid *user,
       break;
       
     case SEEK_END:
-      err = netfs_validate_stat (user->po->np, user->credential);
+      err = netfs_validate_stat (user->po->np, user->user);
       if (!err)
 	user->po->filepointer = user->po->np->nn_stat.st_size + offset;
       break;

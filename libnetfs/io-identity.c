@@ -38,7 +38,7 @@ netfs_S_io_identity (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   
-  err = netfs_validate_stat (np, cred->credential);
+  err = netfs_validate_stat (np, cred->user);
   if (err)
     {
       mutex_unlock (&np->lock);

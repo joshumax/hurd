@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -40,28 +40,34 @@ netfs_S_io_restrict_auth (struct protid *user,
 			  gid_t *gids,
 			  mach_msg_type_number_t ngids)
 {
-  uid_t *newuids, *newgids, *olduids, *oldgids;
-  int i, newnuids, newngids, oldnuids, oldngids;
+  struct idvec *uvec, *gvec;
+  int i;
   struct protid *newpi;
   
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
-  netfs_interpret_credential (user->credential, &olduids, &oldnuids,
-			      &oldgids, &oldngids);
-  newuids = alloca (sizeof (uid_t) * oldnuids);
-  newgids = alloca (sizeof (gid_t) * oldngids);
-  for (i = newnuids = 0; i < oldnuids; i++)
-    if (listmember (uids, olduids[i], nuids))
-      newuids[newnuids++] = olduids[i];
-  for (i = newngids = 0; i < oldngids; i++)
-    if (listmember (gids, oldgids[i], ngids))
-      newgids[newngids++] = oldgids[i];
+  uvec = make_idvec ();
+  gvec = make_idvec ();
+
+  if (idvec_contains (user->user->uids, 0))
+    {
+      idvec_set_ids (uvec, uids, nuids);
+      idvec_set_ids (gvec, gids, ngids);
+    }
+  else
+    {
+      for (i = 0; i < user->user->uids->num; i++)
+	if (listmember (uids, user->user->uids->ids[i], nuids))
+	  idvec_add (uvec, user->user->uids->ids[i]);
+      
+      for (i = 0; i < user->user->gids->num; i++)
+	if (listmember (gids, user->user->gids->ids[i], ngids))
+	  idvec_add (gvec, user->user->gids->ids[i]);
+    }
   
-  newpi = netfs_make_protid (user->po, 
-			     netfs_make_credential (newuids, newnuids,
-						    newgids, newngids));
+  mutex_lock (&user->po->np->lock);
+  newpi = netfs_make_protid (user->po, iohelp_create_iouser (uvec, gvec));
   *newport = ports_get_right (newpi);
   mutex_unlock (&user->po->np->lock);
   

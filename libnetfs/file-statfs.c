@@ -31,7 +31,7 @@ netfs_S_file_statfs (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_statfs (user->credential, user->po->np, st);
+  err = netfs_attempt_statfs (user->user, user->po->np, st);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -30,7 +30,7 @@ netfs_S_dir_rmdir (struct protid *diruser, char *name)
     return EOPNOTSUPP;
 
   mutex_lock (&diruser->po->np->lock);
-  err = netfs_attempt_rmdir (diruser->credential, diruser->po->np, name);
+  err = netfs_attempt_rmdir (diruser->user, diruser->po->np, name);
   mutex_unlock (&diruser->po->np->lock);
   return err;
 }

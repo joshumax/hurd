@@ -33,8 +33,6 @@ netfs_S_file_set_translator (struct protid *user,
 {
   struct node *np;
   error_t err = 0;
-  uid_t *uids, *gids;
-  int nuids, ngids;
   int i;
   mach_port_t control;
 
@@ -53,21 +51,14 @@ netfs_S_file_set_translator (struct protid *user,
   if (active_flags & FS_TRANS_SET)
     {
       /* Validate--user must be owner */
-      netfs_interpret_credential (user->credential, &uids, &nuids,
-					&gids, &ngids);
-      err = netfs_validate_stat (np, user->credential);
+      err = netfs_validate_stat (np, user->user);
       if (err)
 	goto out;
 
-      for (i = 0; i < nuids; i++)
-	if (uids[i] == 0 || uids[i] == np->nn_stat.st_uid)
-	  break;
-      if (i == nuids)
-	{
-	  mutex_unlock (&np->lock);
-	  return EBUSY;
-	}
-
+      err = fshelp_isowner (&np->nn_stat, user->user);
+      if (err)
+	goto out;
+      
       err = fshelp_fetch_control (&np->transbox, &control);
       if (err)
 	goto out;
@@ -87,7 +78,7 @@ netfs_S_file_set_translator (struct protid *user,
   if ((passive_flags & FS_TRANS_SET)
       && (passive_flags & FS_TRANS_EXCL))
     {
-      err = netfs_validate_stat (np, user->credential);
+      err = netfs_validate_stat (np, user->user);
       if (!err && np->istranslated)
 	err = EBUSY;
       if (err)
@@ -148,7 +139,7 @@ netfs_S_file_set_translator (struct protid *user,
 	    }
 	  minor = strtol (arg, 0, 0);
 	  
-	  err = netfs_attempt_mkdev (user->credential, np,
+	  err = netfs_attempt_mkdev (user->user, np,
 				     newmode, makedev (major, minor));
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
@@ -163,15 +154,15 @@ netfs_S_file_set_translator (struct protid *user,
 	      return EINVAL;
 	    }
 	  
-	  err = netfs_attempt_mksymlink (user->credential, np, arg);
+	  err = netfs_attempt_mksymlink (user->user, np, arg);
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
 	  break;
 
 	default:
-	  err = netfs_validate_stat (np, user->credential);
+	  err = netfs_validate_stat (np, user->user);
 	  if (!err)
-	    err = netfs_attempt_chmod (user->credential, np,
+	    err = netfs_attempt_chmod (user->user, np,
 				       ((np->nn_stat.st_mode & ~S_IFMT)
 					| newmode));
 	  if (err == EOPNOTSUPP)
@@ -180,7 +171,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  
 	case 0:
 	fallback:
-	  err = netfs_set_translator (user->credential, np, 
+	  err = netfs_set_translator (user->user, np, 
 				      passive, passivelen);
 	  break;
 	}

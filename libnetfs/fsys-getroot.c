@@ -37,16 +37,22 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 {
   struct port_info *pt = ports_lookup_port (netfs_port_bucket, cntl,
 					    netfs_control_class);
-  struct netcred *cred;
+  struct iouser *cred;
   error_t err;
   struct protid *newpi;
   mode_t type;
+  struct idvec *uvec, *gvec;
 
   if (!pt)
     return EOPNOTSUPP;
   ports_port_deref (pt);
 
-  cred = netfs_make_credential (uids, nuids, gids, ngids);
+  uvec = make_idvec ();
+  gvec = make_idvec ();
+  idvec_set_ids (uvec, uids, nuids);
+  idvec_set_ids (gvec, gids, ngids);
+
+  cred = iohelp_create_iouser (uvec, gvec);
   
   flags &= O_HURD;
   
@@ -62,14 +68,14 @@ netfs_S_fsys_getroot (mach_port_t cntl,
       && !(flags & O_NOTRANS))
     {
       err = fshelp_fetch_root (&netfs_root_node->transbox,
-			       &dotdot, dotdot, uids, nuids,
-			       gids, ngids, flags,
+			       &dotdot, dotdot, cred, flags,
 			       _netfs_translator_callback1,
 			       _netfs_translator_callback2,
 			       do_retry, retry_name, retry_port);
       if (err != ENOENT)
 	{
 	  mutex_unlock (&netfs_root_node->lock);
+	  iohelp_free_iouser (cred);
 	  if (!err)
 	    *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
 	  return err;
@@ -84,10 +90,12 @@ netfs_S_fsys_getroot (mach_port_t cntl,
       
       err = netfs_attempt_readlink (cred, netfs_root_node, pathbuf);
 
-      mutex_unlock (&netfs_root_node->lock);
       if (err)
 	goto out;
       
+      mutex_unlock (&netfs_root_node->lock);
+      iohelp_free_iouser (cred);
+
       if (pathbuf[0] == '/')
 	{
 	  *do_retry = FS_RETRY_MAGICAL;
@@ -110,8 +118,8 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR 
       || type == S_IFIFO) && (flags & (O_READ|O_WRITE|O_EXEC)))
     {
-      mutex_unlock (&netfs_root_node->lock);
-      return EOPNOTSUPP;
+      err = EOPNOTSUPP;
+      goto out;
     }
   
   err = netfs_check_open_permissions (cred, netfs_root_node, flags, 0);
@@ -131,6 +139,8 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   ports_port_deref (newpi);
   
  out:
+  if (err)
+    iohelp_free_iouser (cred);
   mutex_unlock (&netfs_root_node->lock);
   return err;
 }

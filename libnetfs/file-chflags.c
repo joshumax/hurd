@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -31,7 +31,7 @@ netfs_S_file_chflags (struct protid *user,
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_chflags (user->credential, user->po->np, flags);
+  err = netfs_attempt_chflags (user->user, user->po->np, flags);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

@@ -51,7 +51,7 @@ netfs_S_io_write (struct protid *user,
     {
       if (user->po->openstat & O_APPEND)
 	{
-	  err = netfs_validate_stat (np, user->credential);
+	  err = netfs_validate_stat (np, user->user);
 	  if (err)
 	    {
 	      mutex_unlock (&np->lock);
@@ -62,7 +62,7 @@ netfs_S_io_write (struct protid *user,
       off = user->po->filepointer;
     }
 
-  err =  netfs_attempt_write (user->credential, np, off, amount, data);
+  err =  netfs_attempt_write (user->user, np, off, amount, data);
   if (offset == -1 && !err)
     user->po->filepointer += *amount;
   mutex_unlock (&np->lock);

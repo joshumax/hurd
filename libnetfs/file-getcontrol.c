@@ -29,34 +29,21 @@ netfs_S_file_getcontrol (struct protid *user,
 {
   error_t err;
   struct port_info *pi;
-  uid_t *uids, *gids;
-  int nuids, ngids;
-  int i;
 
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
-  netfs_interpret_credential (user->credential, &uids, &nuids, &gids, &ngids);
-  mutex_unlock (&user->po->np->lock);
-  free (gids);
+  if (!idvec_contains (user->user->uids, 0))
+    return EPERM;
+  
+  /* They've got root; give it to them. */
+  err = ports_create_port (netfs_control_class, netfs_port_bucket,
+			   sizeof (struct port_info), &pi);
+  if (err)
+    return err;
 
-  for (i = 0; i < nuids; i++)
-    if (uids[i] == 0)
-      {
-	/* They've got root; give it to them. */
-	free (uids);
-	err = ports_create_port (netfs_control_class, netfs_port_bucket,
-				 sizeof (struct port_info), &pi);
-	if (err)
-	  return err;
-	*control = ports_get_right (pi);
-	*controltype = MACH_MSG_TYPE_MAKE_SEND;
-	ports_port_deref (pi);
-	return 0;
-      }
-
-  /* Not got root. */
-  free (uids);
-  return EPERM;
+  *control = ports_get_right (pi);
+  *controltype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (pi);
+  return 0;
 }

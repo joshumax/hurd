@@ -1,3 +1,47 @@
+Mon Nov 18 17:06:39 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* netfs.h (netfs_report_access): Return error_t.
+	* file-check-access.c (netfs_S_file_check_access): Deal with
+	errors from netfs_report_access.
+
+Sat Nov 16 17:17:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* io-restrict-auth.c (netfs_S_io_restrict_auth): Fix several typos.
+
+	* fsys-getroot.c (netfs_S_fsys_getroot): iohelp_make_iouser ->
+	iohelp_create_iouser.  New arg syntax for fshelp_fetch_root.
+
+Fri Nov 15 13:39:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* netfs.h (struct protid): Replace member `credential' with `user'
+	of new type.  All uses of old `credential' member changed to
+	use `user' member.
+	Change all functions that used to take `struct netcred' args to
+	take `struct iouser' args.  All callers changed.
+	(netfs_copy_credential, netfs_dropy_credential,
+ 	netfs_make_credential): Delete functions.
+	* dir-lookup.c (netfs_S_dir_lookup): netfs_copy_credential ->
+	iohelp_dup_iouser.
+	* dir-mkfile.c (netfs_S_dir_mkfile): Likewise.
+	* file-exec.c (netfs_S_file_exec): Likewise.
+	* io-duplicate.c (netfs_S_io_duplicate): Likewise.
+	* release-protid.c (netfs_release_protid): netfs_drop_credential
+	-> iohelp_free_iouser.
+	* dir-lookup.c (netfs_S_dir_lookup): Omit uses of
+	netfs_interpret_credential; do it with new structures.
+	* file-exec.c (netfs_S_file_exec): Likewise.
+	* file-getcontrol.c (netfs_S_file_getcontrol): Likewise.
+	* file-set-translator.c (netfs_S_file_set_translator): Likewise;
+	using fshelp_isowner for permission check.
+	* io-restrict-auth.c (netfs_S_io_restrict_auth): Likewise; guts
+	rewritten. 
+	* dir-lookup.c (netfs_S_dir_lookup): netfs_make_credential ->
+	iohelp_make_iouser. 
+	* fsys-getroot.c (netfs_S_fsys_getroot): Likewise.
+	* fsys-syncfs.c (netfs_S_fsys_syncfs): Likewise.
+	* io-reauthenticate.c (netfs_S_io_reauthenticate): Use
+	iohelp_reauth instead of doing it by hand.
+
 Mon Oct 21 21:56:33 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* netfs.h: Add extern inline protection.

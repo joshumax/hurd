@@ -140,7 +140,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
       else
 	/* Attempt a lookup on the next pathname component. */
-	error = netfs_attempt_lookup (diruser->credential, dnp, filename, &np);
+	error = netfs_attempt_lookup (diruser->user, dnp, filename, &np);
       
       /* At this point, DNP is unlocked */
 
@@ -154,7 +154,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	  mode |= S_IFREG;
 	  mutex_lock (&dnp->lock);
-	  error = netfs_attempt_create_file (diruser->credential, dnp, 
+	  error = netfs_attempt_create_file (diruser->user, dnp, 
 					     filename, mode, &np);
 	  newnode = 1;
 
@@ -172,7 +172,7 @@ netfs_S_dir_lookup (struct protid *diruser,
       if (error)
 	goto out;
 	     
-      error = netfs_validate_stat (np, diruser->credential);
+      error = netfs_validate_stat (np, diruser->user);
       if (error)
 	goto out;
 
@@ -184,8 +184,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      || fshelp_translated (&np->transbox)))
 	{
 	  mach_port_t dirport;
-	  uid_t *uids, *gids;
-	  int nuids, ngids;
 	  
 	  /* A callback function for short-circuited translators.
 	     S_ISLNK and S_IFSOCK are handled elsewhere. */
@@ -196,7 +194,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      struct node *np = cookie1;
 	      error_t err;
 
-	      err = netfs_validate_stat (np, diruser->credential);
+	      err = netfs_validate_stat (np, diruser->user);
 	      if (err)
 		return err;
 
@@ -232,7 +230,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  newpi = 
 	    netfs_make_protid (netfs_make_peropen (dnp, 0,
 						   diruser->po->dotdotport),
-			       netfs_make_credential (0, 0, 0, 0));
+			       iohelp_create_iouser (make_idvec (), 
+						   make_idvec ()));
 	  dirport = ports_get_right (newpi);
 	  mach_port_insert_right (mach_task_self (), dirport, dirport,
 				  MACH_MSG_TYPE_MAKE_SEND);
@@ -240,18 +239,16 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 	  
-	  netfs_interpret_credential (diruser->credential, &uids, &nuids,
-				      &gids, &ngids);
 	  error = fshelp_fetch_root (&np->transbox, &diruser->po->dotdotport,
-				     dirport, uids, nuids, gids, ngids,
+				     dirport, 
+				     diruser->user,
 				     lastcomp ? flags : 0,
 				     (np->istranslated
 				      ? _netfs_translator_callback1
 				      : short_circuited_callback1),
 				     _netfs_translator_callback2,
 				     do_retry, retry_name, retry_port);
-	  free (uids);
-	  free (gids);
+
 	  if (error != ENOENT)
 	    {
 	      netfs_nrele (dnp);
@@ -301,7 +298,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  newnamelen = nextnamelen + linklen + 1;
 	  linkbuf = alloca (newnamelen);
 	  
-	  error = netfs_attempt_readlink (diruser->credential, np, linkbuf);
+	  error = netfs_attempt_readlink (diruser->user, np, linkbuf);
 	  if (error)
 	    goto out;
 	  
@@ -357,14 +354,14 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   if (mustbedir)
     {
-      netfs_validate_stat (np, diruser->credential);
+      netfs_validate_stat (np, diruser->user);
       if (!S_ISDIR (np->nn_stat.st_mode))
 	{
 	  error = ENOTDIR;
 	  goto out;
 	}
     }      
-  error = netfs_check_open_permissions (diruser->credential, np,
+  error = netfs_check_open_permissions (diruser->user, np,
 					flags, newnode);
   if (error)
     goto out;
@@ -373,7 +370,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   
   newpi = netfs_make_protid (netfs_make_peropen (np, flags,
 						 diruser->po->dotdotport),
-			     netfs_copy_credential (diruser->credential));
+			     iohelp_dup_iouser (diruser->user));
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
   
