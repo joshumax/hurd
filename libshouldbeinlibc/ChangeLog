@@ -1,3 +1,13 @@
+1997-06-21 17:35  Ulrich Drepper  <drepper@cygnus.com>
+
+	* argp.h: Remove extra #endif.  Pretty print.
+
+1997-06-13 10:06  Richard Henderson  <rth@tamu.edu>
+
+	* argp-parse.c: [_LIBC] <libc-lock.h> -> <bits/libc-lock.h>.
+	* argp-fmtstream.h: Standardize the multiple-include protect (for libc).
+	* argp.h: Likewise.
+
 1997-06-13  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-parse.c (argp_version_parser): Include `(PROGRAM ERROR)' in
