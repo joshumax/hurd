@@ -23,18 +23,12 @@ target = pflocal
 
 SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
 LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h
-HURDLIBS = libtrivfs libpipe libports libthreads libihash
+
 MIGSTUBS = ioServer.o socketServer.o interruptServer.o notifyServer.o
-
-OBJS = $(SRCS:.c=.o) $(MIGSTUBS) error.o
-
-CPPFLAGS += -I../lib
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
+OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 MIGSFLAGS = -imacros mig-mutate.h
 
-CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
-
-vpath %.c ../lib
+pflocal: $(OBJS) ../libpipe/libpipe.a ../libtrivfs/libtrivfs.a ../libports/libports.a ../libthreads/libthreads.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
