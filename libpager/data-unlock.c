@@ -37,7 +37,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
 
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
 
   if (p->pager_state != NORMAL)
