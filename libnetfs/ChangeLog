@@ -1,3 +1,8 @@
+1997-08-29  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-reparent.c (netfs_S_file_reparent): Use a copy of
+	CRED->user when creating NEW_CRED.
+
 1997-08-28  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-lookup.c (netfs_S_dir_lookup): Don't lock DNP or assume it's
