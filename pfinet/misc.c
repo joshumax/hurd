@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -75,7 +75,8 @@ begin_using_socket_port (mach_port_t port)
 void
 end_using_socket_port (struct sock_user *user)
 {
-  ports_port_deref (user);
+  if (user)
+    ports_port_deref (user);
 }
 
 struct sock_addr *
@@ -87,7 +88,8 @@ begin_using_sockaddr_port (mach_port_t port)
 void
 end_using_sockaddr_port (struct sock_addr *addr)
 {
-  ports_port_deref (addr);
+  if (addr)
+    ports_port_deref (addr);
 }
 
 /* Nothing need be done here. */
