@@ -398,6 +398,7 @@ S_io_restrict_auth (struct sock_user *user,
 		    uid_t *gids,
 		    u_int gidslen)
 {
+  struct sock_user *newuser;
   int i = 0;
   int isroot;
 
@@ -412,8 +413,10 @@ S_io_restrict_auth (struct sock_user *user,
       if (uids[i] == 0)
 	isroot = 1;
   
-  *newobject = ports_get_right (make_sock_user (user->sock, isroot));
+  newuser = make_sock_user (user->sock, isroot);
+  *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newuser);
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -423,15 +426,139 @@ S_io_duplicate (struct sock_user *user,
 		mach_port_t *newobject,
 		mach_msg_type_name_t *newobject_type)
 {
+  struct sock_user *newuser;
   if (!user)
     return EOPNOTSUPP;
   
   mutex_lock (&global_lock);
-  *newobject = ports_get_right (make_sock_user (user->sock, user->isroot));
+  newuser = make_sock_user (user->sock, user->isroot);
+  *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newuser);
   mutex_unlock (&global_lock);
   return 0;
 }
 
-  
-  
+
+
+error_t
+S_io_async (struct sock_user *user,
+	    mach_port_t notify,
+	    mach_port_t *id,
+	    mach_msg_type_name_t *idtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_mod_owner (struct sock_user *user,
+		pid_t owner)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_owner (struct sock_user *user,
+		pid_t *owner)
+{
+  return EOPNOTSUPP;
+}
+ 
+error_t  
+S_io_get_icky_async_id (struct sock_user *user,
+			mach_port_t *id,
+			mach_msg_type_name_t *idtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_server_version (struct sock_user *user,
+		     char *name,
+		     int *major,
+		     int *minor,
+		     int *edit)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_pathconf (struct sock_user *user,
+	       int name,
+	       int *value)
+{
+  return EOPNOTSUPP;
+}
+
+
+
+error_t
+S_io_map (struct sock_user *user,
+	  mach_port_t *rdobj,
+	  mach_msg_type_name_t *rdobj_type,
+	  mach_port_t *wrobj,
+	  mach_msg_type_name_t *wrobj_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_map_cntl (struct sock_user *user,
+	       mach_port_t *obj,
+	       mach_msg_type_name_t *obj_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_get_conch (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_release_conch (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_eofnotify (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_prenotify (struct sock_user *user,
+		vm_offset_t start,
+		vm_offset_t end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_postnotify (struct sock_user *user,
+		 vm_offset_t start,
+		 vm_offset_t end)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_readnotify (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_readsleep (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_io_sigio (struct sock_user *user)
+{
+  return EOPNOTSUPP;
+}
+
