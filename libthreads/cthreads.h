@@ -164,6 +164,9 @@
 #ifndef	_CTHREADS_
 #define	_CTHREADS_ 1
 
+/* MIB XXX */
+#define CTHREAD_DATA
+
 #include <machine/cthreads.h>
 
 #if	c_plusplus || __STDC__
@@ -284,7 +287,7 @@ extern int
 spin_try_lock C_ARG_DECLS((spin_lock_t *p));
 #endif
 
-#define spin_lock(p) if (!spin_try_lock(p)) spin_lock_solid(p); else
+#define spin_lock(p) ({if (!spin_try_lock(p)) spin_lock_solid(p);})
 
 /*
  * Mutex objects.
