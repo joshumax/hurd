@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
@@ -172,18 +172,19 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
 error_t
 fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      char *name, char *argz, int argz_len,
-			      mach_port_t *fds, 
+			      mach_port_t *fds,
 			      mach_msg_type_name_t fds_type, int fds_len,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
+			      uid_t owner_uid,
 			      int timeout, fsys_t *control)
 {
   error_t err;
   file_t executable;
   mach_port_t bootstrap = MACH_PORT_NULL;
   mach_port_t task = MACH_PORT_NULL;
-  mach_port_t prev_notify, proc, saveport;
+  mach_port_t prev_notify, proc, saveport, childproc;
   int ports_moved = 0;
 
   /* Find the translator itself.  Since argz has zero-separated elements, we
@@ -191,7 +192,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   executable = file_name_lookup(name, O_EXEC, 0);
   if (executable == MACH_PORT_NULL)
     return errno;
-  
+
   /* Create a bootstrap port for the translator.  */
   err =
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &bootstrap);
@@ -206,8 +207,15 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   /* Designate TASK as our child.  */
   proc = getproc ();
   proc_child (proc, task);
+  err = proc_task2proc (proc, task, &childproc);
   mach_port_deallocate (mach_task_self (), proc);
-  
+  if (err)
+    goto lose;
+  err = proc_setowner (childproc, owner_uid, owner_uid == (uid_t) -1);
+  mach_port_deallocate (mach_task_self (), childproc);
+  if (err)
+    goto lose;
+
   assert (ports_len > INIT_PORT_BOOTSTRAP);
   switch (ports_type)
     {
@@ -269,7 +277,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (!ports_moved)
     {
       int i;
-      
+
       if (fds_type == MACH_MSG_TYPE_MOVE_SEND)
 	for (i = 0; i < fds_len; i++)
 	  mach_port_deallocate (mach_task_self (), fds[i]);

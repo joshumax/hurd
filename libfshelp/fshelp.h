@@ -59,6 +59,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 			      mach_port_t *ports,
 			      mach_msg_type_name_t ports_type, int ports_len,
 			      int *ints, int ints_len,
+			      uid_t owner_uid,
 			      int timeout, fsys_t *control);
 
 
@@ -244,7 +245,7 @@ error_t fshelp_access (struct stat *st, int op, struct iouser *user);
    existing file ST.  (If there is no existing file, pass 0 for ST.)
    If the access is permissable return 0; otherwise return an
    appropriate error code.  */
-error_t fshelp_checkdirmod (struct stat *dir, struct stat *st, 
+error_t fshelp_checkdirmod (struct stat *dir, struct stat *st,
 			    struct iouser *user);
 
 
