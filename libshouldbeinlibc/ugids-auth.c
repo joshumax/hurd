@@ -26,12 +26,13 @@
 /* Make an auth port from UGIDS and return it in AUTH, using authority in
    both the auth port FROM and the current auth port.  */
 error_t
-ugids_make_auth (const struct ugids *ugids, auth_t from, auth_t *auth)
+ugids_make_auth (const struct ugids *ugids,
+		 const auth_t *from, size_t num_from,
+		 auth_t *auth)
 {
   auth_t cur_auth = getauth ();
   error_t err =
-    auth_makeauth (cur_auth, &from, MACH_MSG_TYPE_COPY_SEND,
-		   (from == MACH_PORT_NULL) ? 0 : 1,
+    auth_makeauth (cur_auth, (auth_t *)from, MACH_MSG_TYPE_COPY_SEND, num_from,
 		   ugids->eff_uids.ids, ugids->eff_uids.num,
 		   ugids->avail_uids.ids, ugids->avail_uids.num,
 		   ugids->eff_gids.ids, ugids->eff_gids.num,
