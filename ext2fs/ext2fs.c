@@ -1,6 +1,6 @@
 /* Main entry point for the ext2 file system translator
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -77,7 +77,7 @@ main (int argc, char **argv)
       if (bootstrap == MACH_PORT_NULL)
 	error (2, 0, "Must be started as a translator");
     }
-  
+
   /* Initialize the diskfs library.  This must come before
      any other diskfs call.  */
   diskfs_init_diskfs ();
@@ -102,19 +102,6 @@ main (int argc, char **argv)
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
 
-  err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		diskfs_device_size << diskfs_log2_device_block_size,
-		0, 1, disk_pager_port, 0, 0, 
-		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
-		VM_PROT_READ | VM_PROT_WRITE,
-		VM_INHERIT_NONE);
-  if (err)
-    error (2, err, "vm_map");
-
-  diskfs_register_memory_fault_area (disk_pager, 0,
-				     disk_image,
-				     diskfs_device_size << diskfs_log2_device_block_size);
-
   pokel_init (&global_pokel, disk_pager, disk_image);
 
   err = get_hypermetadata();
@@ -135,7 +122,7 @@ main (int argc, char **argv)
   cthread_exit (0);
 }
 
-error_t 
+error_t
 diskfs_reload_global_state ()
 {
   pokel_flush (&global_pokel);
