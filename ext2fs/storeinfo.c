@@ -106,8 +106,8 @@ diskfs_S_file_get_storage_info (struct protid *cred, int *class,
     {
       if (run[0] >= 0)
 	/* Include the current run, as long as it's not a hole.  */
-	runs += 2;
-      else if (((vm_address_t)run % vm_page_size) == 0)
+	run += 2;
+      else if ((off_t *)trunc_page (run) == run)
 	/* We allocated just *one* too many pages -- the last run is a hole. */
 	vm_deallocate (mach_task_self (), (vm_address_t)run, vm_page_size);
       *runs_len = run - *runs;
