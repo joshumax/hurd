@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <rwlock.h>
 #include "ext2_fs.h"
+#include "fs.h"
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
@@ -67,14 +68,17 @@ struct user_pager_info *diskpager;
 mach_port_t diskpagerport;
 off_t diskpagersize;
 
-vm_address_t zeroblock;
+
+/* ---------------------------------------------------------------- */
 
-struct fs *sblock;
-struct csum *csum;
+vm_address_t zeroblock;
+void *disk_image;
+
+struct super_block *sblock;
 int sblock_dirty;
 int csum_dirty;
-
-void *disk_image;
+
+/* ---------------------------------------------------------------- */
 
 spin_lock_t node2pagelock;
 
@@ -83,7 +87,12 @@ spin_lock_t alloclock;
 spin_lock_t gennumberlock;
 u_long nextgennumber;
 
-mach_port_t ufs_device;
+
+/* ---------------------------------------------------------------- */
+
+mach_port_t ext2fs_device;
+
+/* ---------------------------------------------------------------- */
 
 /* The compat_mode specifies whether or not we write
    extensions onto the disk. */
@@ -94,6 +103,8 @@ enum compat_mode
 } compat_mode;
 
 
+/* ---------------------------------------------------------------- */
+
 /* Handy macros */
 #define DEV_BSIZE 512
 #define NBBY 8
@@ -105,6 +116,10 @@ enum compat_mode
 #define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
 #define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
 #define fsaddr(fs,n) (fsbtodb(fs,n)*DEV_BSIZE)
+
+#define bread(void *dev, long block, long amount) \
+  ((char *)(vm_addres_t)dev + block * DEV_BSIZE)
+#define brelse(char *bh) ((void)0)
 
 
 /* Functions for looking inside disk_image */
