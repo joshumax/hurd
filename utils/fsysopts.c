@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
+#include <argp.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -30,50 +30,21 @@
 #include <argz.h>
 
 #include <hurd/fsys.h>
-
-/* ---------------------------------------------------------------- */
 
-#define USAGE "Usage: %s [OPTION...] FILESYS OPTIONS...\n" 
-
-static void
-usage(status)
-     int status;
+static struct argp_option options[] =
 {
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	      program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-      printf("\
-\n\
-  -L, --dereference          if FILE is a symbolic link, follow it\n\
-  -R, --recursive            pass these options to any child translators\n\
-      --help                 give this help list\n\
-      --version              print version number of program\n\
-");
-    }
-
-  exit(status);
-}
-
-#define SHORT_OPTIONS "LRV"
-
-static struct option options[] =
-{
-  {"dereference", no_argument, 0, 'L'},
-  {"recursive", no_argument, 0, 'R'},
-  {"help", no_argument, 0, '&'},
-  {"version", no_argument, 0, 'V'},
+  {"dereference", 'L', 0, 0, "if FILE is a symbolic link, follow it"},
+  {"recursive",   'R', 0, 0, "pass these options to any child translators"},
   {0, 0, 0, 0}
 };
+
+static char *args_doc = "FILESYS OPTIONS...";
 
 /* ---------------------------------------------------------------- */
 
 void 
 main(int argc, char *argv[])
 {
-  int opt;
   error_t err;
 
   /* The filesystem we're passing options to.  */
@@ -89,33 +60,37 @@ main(int argc, char *argv[])
 
   int deref = 0, recursive = 0;
 
-  /* Parse our options...  */
-  while ((opt = getopt_long(argc, argv, "-" SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 1:
-	node_name = optarg;
-	err = argz_create(argv + optind, &argz, &argz_len);
-	if (err)
-	  error(3, err, "Can't create options vector");
-	optind = argc;		/* stop parsing */
-	break;
-      case 'R': recursive = 1; break;
-      case 'L': deref = 1; break;
-      case 'V': printf ("%s 0.0\n", program_invocation_short_name); exit (0);
-      case '&': usage(0);
-      default:  usage(-1);
-      }
-
-  if (node_name == NULL)
+  /* Parse a command line option.  */
+  error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
-      fprintf (stderr, USAGE, program_invocation_short_name);
-      usage (-1);
+      switch (key)
+	{
+	case ARGP_KEY_ARG:
+	  node_name = arg;
+	  err = argz_create (state->argv + state->index, &argz, &argz_len);
+	  if (err)
+	    error(3, err, "Can't create options vector");
+	  state->index = state->argc; /* Skip all the rest of the arguments */
+	  break;
+
+	case ARGP_KEY_NO_ARGS:
+	  argp_help (state->argp, stderr, ARGP_HELP_STD_USAGE); /* exits */
+
+	case 'R': recursive = 1; break;
+	case 'L': deref = 1; break;
+
+	default:  return EINVAL;
+	}
+      return 0;
     }
 
-  node = file_name_lookup(node_name, (deref ? 0 : O_NOLINK), 0666);
+  struct argp argp = {options, parse_opt, args_doc};
+
+  argp_parse (&argp, argc, argv, 0, 0);
+
+  node = file_name_lookup (node_name, (deref ? 0 : O_NOLINK), 0666);
   if (node == MACH_PORT_NULL)
-    error(1, errno, "%s", node_name);
+    error (1, errno, "%s", node_name);
 
   /* Get the filesystem for NODE.  */
   err = file_getcontrol (node, &fsys);
