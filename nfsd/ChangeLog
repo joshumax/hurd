@@ -1,3 +1,12 @@
+2000-12-02  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ops.c (op_readlink): Before returning, check if the buffer
+	pointed to by transp is ours. If not, munmap it.
+	(op_read): Likewise for bp.
+	(op_readdir): Don't alloca a buffer here. Instead initialize
+	BUF and BUFSIZE to 0 and let the server (eh, MiG) do it.
+	munmap BUF before returning.
+
 2000-12-01  Marcus Brinkmann  <marcus@gnu.org>
 
 	* cache.c (scan_creds): Move I inside for-statement.

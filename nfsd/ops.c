@@ -24,6 +24,7 @@
 #include <hurd/paths.h>
 #include <hurd.h>
 #include <dirent.h>
+#include <sys/mman.h>
 
 #include "nfsd.h"
 #include "../nfs/mount.h" /* XXX */
@@ -190,8 +191,12 @@ op_readlink (struct cache_handle *c,
   /* Shamelessly copied from the libc readlink */
   err = file_get_translator (c->port, &transp, &len);
   if (err)
-    return err;
-  
+    {
+      if (transp != buf)
+	munmap (transp, len);
+      return err;
+    }
+
   if (len < sizeof (_HURD_SYMLINK)
       || memcmp (transp, _HURD_SYMLINK, sizeof (_HURD_SYMLINK)))
     return EINVAL;
@@ -199,6 +204,10 @@ op_readlink (struct cache_handle *c,
   transp += sizeof (_HURD_SYMLINK);
   
   *reply = encode_string (*reply, transp);
+
+  if (transp != buf)
+    munmap (transp, len);
+
   return 0;
 }
 
@@ -226,7 +235,11 @@ op_read (struct cache_handle *c,
   
   err = io_read (c->port, &bp, &buflen, offset, count);
   if (err)
-    return err;
+    {
+      if (bp != buf)
+	munmap (bp, buflen);
+      return err;
+    }
   
   err = io_stat (c->port, &st);
   if (err)
@@ -234,6 +247,10 @@ op_read (struct cache_handle *c,
   
   *reply = encode_fattr (*reply, &st, version);
   *reply = encode_data (*reply, bp, buflen);
+
+  if (bp != buf)
+    munmap (bp, buflen);
+
   return 0;
 }
 
@@ -540,11 +557,15 @@ op_readdir (struct cache_handle *c,
   cookie = ntohl (*p++);
   count = ntohl (*p++);
 
-  buf = alloca (count);
-  bufsize = count;
+  buf = (char *) 0;
+  bufsize = 0;
   err = dir_readdir (c->port, &buf, &bufsize, cookie, -1, count, &nentries);
   if (err)
-    return err;
+    {
+      if (buf)
+	munmap (buf, bufsize);
+      return err;
+    }
 
   r = *reply;
 
@@ -571,6 +592,9 @@ op_readdir (struct cache_handle *c,
     }
   
   *reply = r;
+
+  if (buf)
+    munmap (buf, bufsize);
 
   return 0;
 }
