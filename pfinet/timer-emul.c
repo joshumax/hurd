@@ -20,7 +20,11 @@
 
 #include <linux/timer.h>
 #include <asm/system.h>
+#include <linux/sched.h>
+#include "pfinet.h"
 
+long long root_jiffies;
+volatile struct mapped_time_value *mapped_time;
 
 static void
 timer_function (any_t timerp)
@@ -34,7 +38,7 @@ timer_function (any_t timerp)
   timer->thread = mach_thread_self ();
 
   err = mach_msg (NULL, MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT, 
-		  0, 0, recv, timer->expires, MACH_PORT_NULL);
+		  0, 0, recv, timer->expires * (1000 / HZ), MACH_PORT_NULL);
 
   timer->thread = MACH_PORT_NULL;
 
@@ -96,4 +100,29 @@ init_timer (struct timer_list *timer)
   timer->thread = MACH_PORT_NULL;
 }
 
+void
+init_root_jiffies ()
+{
+  struct timeval tp;
   
+  fill_timeval (&tp);
+  
+  root_jiffies = (long long) tp.tv_sec * HZ 
+    + (long long) tp.tv_usec * HZ / 1000.0;
+}
+
+void
+init_mapped_time ()
+{
+  device_t timedev;
+  memory_object_t timeobj;
+  
+  device_open (master_device, 0, "time", &timedev);
+  device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t),
+	      &timeobj, 0);
+  vm_map (mach_task_self (), (vm_address_t *)&mapped_time,
+	  sizeof (mapped_time_value_t), 0, 1, timeobj, 0, 0,
+	  VM_PROT_READ, VM_PROT_READ, VM_INHERIT_NONE);
+  mach_port_deallocate (mach_task_self (), timedev);
+  mach_port_deallocate (mach_task_self (), timeobj);
+}
