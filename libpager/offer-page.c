@@ -1,5 +1,5 @@
 /* Wrapper for unsolicited memory_object_data_supply
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -28,23 +28,25 @@ pager_offer_page (struct pager *p,
 		  vm_offset_t offset,
 		  vm_address_t buf)
 {
-  char *pm_entry;
-  
- try_again:
   mutex_lock (&p->interlock);
-  _pager_pagemap_resize (p, offset + vm_page_size);
-  pm_entry = &p->pagemap[offset / vm_page_size];
-  if (*pm_entry & PM_INCORE)
-    {
-      mutex_unlock (&p->interlock);
-      pager_flush_some (p, offset, vm_page_size, 1);
-      goto try_again;
-    }
-  *pm_entry |= PM_INCORE;
 
-  memory_object_data_supply (p->memobjcntl, offset, buf, vm_page_size, 0,
-			     writelock ? VM_PROT_WRITE : VM_PROT_NONE, 
-			     precious, MACH_PORT_NULL);
+  if (_pager_pagemap_resize (p, offset + vm_page_size))
+    {
+      char *pm_entry = &p->pagemap[offset / vm_page_size];
+
+      while (*pm_entry & PM_INCORE)
+	{
+	  mutex_unlock (&p->interlock);
+	  pager_flush_some (p, offset, vm_page_size, 1);
+	  mutex_lock (&p->interlock);
+	}
+      *pm_entry |= PM_INCORE;
+
+      memory_object_data_supply (p->memobjcntl, offset, buf, vm_page_size, 0,
+				 writelock ? VM_PROT_WRITE : VM_PROT_NONE, 
+				 precious, MACH_PORT_NULL);
+    }
+
   mutex_unlock (&p->interlock);
 }
 
