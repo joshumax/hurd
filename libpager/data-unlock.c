@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_unlock for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,8 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
   struct pager *p;
   volatile int err;
   
-  if (!(p = ports_check_port_type (object, pager_port_type)))
+  p = ports_lookup_port (0, object, _ports_class);
+  if (!p)
     return EOPNOTSUPP;
 
   mutex_lock (&p->interlock);
@@ -83,7 +84,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
-  ports_done_with_port (p);
+  ports_drop_ref (p);
   return 0;
 }
 
