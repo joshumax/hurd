@@ -52,12 +52,12 @@
  */
 
 #ifndef	lint
-static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.1 1992/10/06 18:31:16 mib Exp $";
+static char rcs_id[] = "$Header: cvs-sans-libpthread/hurd/libthreads/i386/thread.c,v 1.2 1994/05/04 19:05:26 mib Exp $";
 #endif	not lint
 
 
-#include <cthreads.h>
-#include "cthread_internals.h"
+#include "../cthreads.h"
+#include "../cthread_internals.h"
 
 
 #include <mach/mach.h>
