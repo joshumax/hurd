@@ -148,13 +148,13 @@ install:
 
 # Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
 # a variable above with the complete file name to find it.
+# Yippee!  A use for computed variable references!
 HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
 #HURDLIBS-libs := $(foreach lib,$(HURDLIBS-files), \
 #			   -L$(dir $(lib)) \
 #			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
 
 # Building the target
-# Yippee!  A use for computed variable references!
 ifeq ($(doinst),one)
 $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(link-objects)
@@ -163,7 +163,7 @@ $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 # -lg avoids "No input files" error.
 link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),$(strip \
 	       $(startup) $(OBJS) -\( $(HURDLIBS-files) $(OTHERLIBS) -\) \
-	       -\( $(sort $(libc)) -lgcc -\))) -lg -v
+	       -\( $(sort $(libc)) -lgcc -\))) -lg
 empty =
 comma = ,
 endif
