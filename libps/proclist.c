@@ -494,7 +494,7 @@ proc_stat_list_sort1 (struct proc_stat_list *pp,
    returned.  Otherwise, 0 is returned.  */
 error_t
 proc_stat_list_sort (struct proc_stat_list *pp,
-		     struct ps_fmt_spec *key, int reverse)
+		     const struct ps_fmt_spec *key, int reverse)
 {
   int (*cmp_fn)() = ps_fmt_spec_compare_fn (key);
   if (cmp_fn == NULL)
@@ -645,10 +645,10 @@ proc_stat_list_for_each (struct proc_stat_list *pp, int (*fn)(struct proc_stat *
 /* Returns true if SPEC is `nominal' in every entry in PP.  */
 int
 proc_stat_list_spec_nominal (struct proc_stat_list *pp,
-			     struct ps_fmt_spec *spec)
+			     const struct ps_fmt_spec *spec)
 {
   int (*nominal_fn)(struct proc_stat *ps, const struct ps_getter *getter) =
-    ps_fmt_spec_nominal_fn (spec);
+    spec->nominal_fn;
 
   if (nominal_fn == NULL)
     return FALSE;
