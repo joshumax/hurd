@@ -276,7 +276,7 @@ check_owned (process_t proc_server, pid_t pid, int *owned)
 
   if (! err)
     {
-      *owned = pi->state & PI_NOTOWNED;
+      *owned = !(pi->state & PI_NOTOWNED);
       if (pi != &_pi)
 	vm_deallocate (mach_task_self (), (vm_address_t)pi, pi_size);
     }
