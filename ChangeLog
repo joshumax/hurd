@@ -1,3 +1,12 @@
+1999-09-08  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* Makeconf (cleantarg): Add `$(libname)_pic.a'.
+	[$(makemode) = library] (targets): Likewise.
+	($(libname)_pic.a): New rule.
+	($(libdir)/$(libname)_pic.a): Extended from the previous _p.a and
+	.a rules.
+	Submitted by Marcus Brinkmann (Marcus.Brinkmann@ruhr-uni-bochum.de). 
+	
 1999-06-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (DIST_FILES): Add move-if-change.

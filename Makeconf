@@ -128,14 +128,22 @@ endif
 ifeq ($(makemode),library)
  linktarg := $(libname).so.$(hurd-version)
  clean := yes
- cleantarg := $(libname).a $(libname)_p.a $(libname).so $(linktarg)
+ cleantarg := $(libname).a $(libname)_p.a $(libname).so $(libname)_pic.a $(linktarg)
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
- ifeq ($(no_prof),t)
-  targets := $(libname).a $(libname).so
+ ifeq ($(no_pic),t)
+  ifeq ($(no_prof),t)
+   targets := $(libname).a $(libname).so
+  else
+   targets := $(libname).a $(libname).so $(libname)_p.a
+  endif
  else
-  targets := $(libname).a $(libname).so $(libname)_p.a
+  ifeq ($(no_prof),t)
+   targets := $(libname).a $(libname).so $(libname)_pic.a
+  else
+   targets := $(libname).a $(libname).so $(libname)_pic.a $(libname)_p.a
+  endif
  endif
 endif
 
@@ -203,7 +211,7 @@ $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
 
-$(addprefix $(libdir)/$(libname),_p.a .a): $(libdir)/%: %
+$(addprefix $(libdir)/$(libname),_p.a .a _pic.a): $(libdir)/%: %
 	$(INSTALL_DATA) $< $@
 	$(RANLIB) $@
 
@@ -278,6 +286,11 @@ $(libname).a: $(OBJS)
 
 $(libname)_p.a: $(patsubst %.o,%_p.o,$(OBJS))
 	rm -f $(libname)_p.a
+	$(AR) r $@ $^
+	$(RANLIB) $@
+
+$(libname)_pic.a: $(patsubst %.o,%_pic.o,$(OBJS))
+	rm -f $(libname)_pic.a
 	$(AR) r $@ $^
 	$(RANLIB) $@
 
