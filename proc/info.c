@@ -420,6 +420,13 @@ S_proc_getprocinfo (struct proc *callerp,
   for (tp = p; !tp->p_loginleader; tp = tp->p_parent)
     assert (tp);
   pi->logincollection = tp->p_pid;
+  if (p->p_dead || p->p_stopped)
+    {    
+      pi->exitstatus = p->p_status;
+      pi->sigcode = p->p_sigcode;
+    }
+  else
+    pi->exitstatus = pi->sigcode = 0;
 
   pi->nthreads = nthreads;
 
