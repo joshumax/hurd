@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -137,7 +137,7 @@ struct store_class
   enum file_storage_class id;
 
   /* Name of the class.  */
-  char *name;
+  const char *name;
 
   /* Read up to AMOUNT bytes at the underlying address ADDR from the storage
      into BUF and LEN.  INDEX varies from 0 to the number of runs in STORE. */
