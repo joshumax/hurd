@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1993 Free Software Foundation
+#   Copyright (C) 1993, 1994 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,3 +18,6 @@
 dir := mkbootfs
 include ../Makeconf
 DIST_FILES = mkbootfs.c Makefile
+all: mkbootfs
+mkbootfs: mkbootfs.c
+	$(CC) mkbootfs.c -o mkbootfs
