@@ -92,6 +92,15 @@ find_long_option (struct option *long_options, const char *name)
 /* Used to regulate access to the getopt routines, which are non-reentrant.  */
 static struct mutex getopt_lock = MUTEX_INITIALIZER;
 
+/* This hack to allow programs that know what's going on to call argp
+   recursively.  If someday argp is changed not to use the non-reentrant
+   getopt interface, we can get rid of this shit.  XXX */
+void
+_argp_unlock_xxx ()
+{
+  mutex_unlock (&getopt_lock);
+}
+
 /* The state of a `group' during parsing.  Each group corresponds to a
    particular argp structure from the tree of such descending from the top
    level argp passed to argp_parse.  */
