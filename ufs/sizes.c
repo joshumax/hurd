@@ -410,13 +410,13 @@ block_extended (struct node *np,
       spin_unlock (&unlocked_pagein_lock);
 
       /* Make sure all waiting pageins see this change. */
-      mutex_lock (&np->dn->allocptrlock->master);
-      condition_broadcast (&np->dn->allocptrlock->wakeup);
-      mutex_unlock (&np->dn->allocptrlock->master);
+      mutex_lock (&np->dn->allocptrlock.master);
+      condition_broadcast (&np->dn->allocptrlock.wakeup);
+      mutex_unlock (&np->dn->allocptrlock.master);
 
       /* Force the pages in core and make sure they are dirty */
       for (pokeaddr = (int *)mapaddr; 
-	   pokeaddr < mapaddr + round_page (old_size);
+	   pokeaddr < (int *) (mapaddr + round_page (old_size));
 	   pokeaddr += vm_page_size / sizeof (*pokeaddr))
 	*pokeaddr = *pokeaddr;
 
