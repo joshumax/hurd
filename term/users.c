@@ -1591,7 +1591,7 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_mod_owner (cred, owner);
+    return pty_io_mod_owner (owner);
 
   mutex_lock (&global_lock);
   termflags &= ~NO_OWNER;
@@ -1610,7 +1610,7 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_get_owner (cred, owner);
+    return pty_io_get_owner (owner);
 
   mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
