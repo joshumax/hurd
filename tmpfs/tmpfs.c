@@ -245,7 +245,7 @@ diskfs_append_args (char **argz, size_t *argz_len)
 #define S(n, c) if ((lim & ((1 << n) - 1)) == 0) sfx = c, lim >>= n
       S (30, 'G'); else S (20, 'M'); else S (10, 'K'); else sfx = '\0';
 #undef S
-      snprintf (buf, sizeof buf, "%ld%c", lim, sfx);
+      snprintf (buf, sizeof buf, "%Ld%c", lim, sfx);
       err = argz_add (argz, argz_len, buf);
     }
 
