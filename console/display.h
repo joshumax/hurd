@@ -26,6 +26,8 @@
 struct display;
 typedef struct display *display_t;
 
+void display_init (void);
+
 /* Create a new virtual console display, with the system encoding
    being ENCODING.  */
 error_t display_create (display_t *r_display, const char *encoding);
@@ -52,6 +54,8 @@ error_t display_get_owner (display_t display, pid_t *pid);
    if operation would block for a long time.  */
 ssize_t display_output (display_t display, int nonblock, char *data,
 			size_t datalen);
+
+mach_port_t display_get_filemap (display_t display, vm_prot_t prot);
 
 ssize_t display_read (display_t display, int nonblock, off_t off,
 		      char *data, size_t len);

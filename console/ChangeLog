@@ -1,3 +1,63 @@
+2002-06-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* console.c: Include <argz.h>.  Do not include "console.h", but
+	inline it.  New macro DEFAULT_ENCODING.
+	(struct cons): De-const-ify member ENCODING.
+	(mycons, cons): Remove global variables.
+	(vcons_lookup): Use default encoding if CONS->encoding is not set.
+	(new_node): Access CONS through VCONS.  Adjust size of display
+	node.
+	(netfs_attempt_read): Truncate length to read before reading.
+	(netfs_S_io_map): New function.
+	(options): New global variable.
+	(parse_opt): New function.
+	(netfs_append_args): New function.
+	(main): New variable CONS to hold console structure.  Rediddle
+	initialization to allocate memory for it, parse arguments, and
+	create the root node in correct order.  Also call display_init.
+	* console.h: Rewritten with new meaning.  It now describes the
+	public interface of the console.
+	* display.c: Include <assert.h>, <error.h>, <hurd.h>,
+	<hurd/pager.h> and "console.h".
+	(struct screen): Removed.
+	(struct cursor): Remove members X, Y and status.
+	(struct user_pager_info): New struct.
+	(struct display): Remove member SCREEN, add new members USER, UPI,
+	MEMOBJ and MEMOBJ_SIZE.
+	(pager_bucket): New global variable.
+	(display_get_filemap): New function.
+	(pager_clear_user_data): Likewise.
+	(pager_read_page): Likewise.
+	(pager_write_page): Likewise.
+	(pager_unlock_page): Likewise.
+	(pager_report_extent): Likewise.
+	(pager_dropweak): Likewise.
+	(service_paging_requests): Likewise.
+	(screen_init): Renamed to ...
+	(user_create): ... this new function and changed to allocate
+	memory object and map it for USER data in display structure.
+	(screen_deinit): Renamed to ...
+	(user_destroy): ... this new function and rewrote it.
+	(MATRIX_POS): New macro.
+	(screen_fill): Take DISPLAY argument instead SCREEN.  Use
+	MATRIX_POS.
+	(screen_scroll_up): Likewise.
+	(screen_scroll_down): Likewise.
+	(screen_scroll_left): Likewise.
+	(screen_scroll_right): Likewise.
+	(handle_esc_bracket_hl): Take DISPLAY argument instead CURSOR.
+	(handle_esc_bracket): Access screen and cursor fields correctly.
+	(display_output_one): Likewise.
+	(display_getsize): Likewise.
+	(display_init): New function.
+	(display_create): New variables width, height, lines.  Call
+	user_create, not screen_init.  Call user_destroy, not
+	screen_deinit.
+	(display_destroy): Call user_destroy, not
+	screen_deinit.
+	(display_read): Reimplement using memory mapping.
+	* display.h: New prototypes for display_init and display_get_filemap.
+
 2002-06-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (struct cursor): Change type of all members from int

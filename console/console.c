@@ -16,25 +16,27 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#include <hurd/netfs.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
 
 #include <argp.h>
+#include <argz.h>
 #include <error.h>
 #include <string.h>
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <rwlock.h>
+#include <maptime.h>
 #include <cthreads.h>
-#include <mcheck.h>
 
 #include <version.h>
 
-#include "console.h"
+#include <hurd/netfs.h>
+
 #include "display.h"
 #include "input.h"
 
@@ -43,6 +45,11 @@ const char *argp_program_version = STANDARD_HURD_VERSION (console);
 char *netfs_server_name = "console";
 char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 16;	/* Arbitrary.  */
+
+/* Handy source of time.  */
+volatile struct mapped_time_value *console_maptime;
+
+#define DEFAULT_ENCODING "ISO-8859-1"
 
 
 struct vcons
@@ -68,24 +75,28 @@ struct vcons
   struct node *disp_node;
   struct node *inpt_node;
 };
+/* A handle for a virtual console device.  */
+typedef struct vcons *vcons_t;
 
 struct cons
 {
   /* The lock protects the console, all virtual consoles contained in
-     it and the reference counters.  It also locks the
-     configuration.  */
+     it and the reference counters.  It also locks the configuration
+     parameters.  */
   struct mutex lock;
   vcons_t vcons_list;
   /* The encoding.  */
-  const char *encoding;
+  char *encoding;
 
   struct node *node;
   mach_port_t underlying;
   /* A template for the stat information of all nodes.  */
   struct stat stat_template;
-} mycons;
-cons_t cons = &mycons;
+};
+/* A handle for a console device.  */
+typedef struct cons *cons_t;
 
+
 /* Lookup the virtual console with number ID in the console CONS,
    acquire a reference for it, and return it in R_VCONS.  If CREATE is
    true, the virtual console will be created if it doesn't exist yet.
@@ -150,7 +161,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   /* XXX Error checking.  */
 
   mutex_init (&vcons->lock);
-  err = display_create (&vcons->display, cons->encoding);
+  err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING);
   if (err)
     {
       free (vcons->name);
@@ -159,7 +170,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
       return err;
     }
 
-  err = input_create (&vcons->input, cons->encoding);
+  err = input_create (&vcons->input, cons->encoding ?: DEFAULT_ENCODING);
   if (err)
     {
       display_destroy (vcons->display);
@@ -268,7 +279,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       free (nn);
       return ENOMEM;
     }
-  (*np)->nn_stat = cons->stat_template;
+  (*np)->nn_stat = vcons->cons->stat_template;
   (*np)->nn_translated = 0;
 
   switch (type)
@@ -288,7 +299,7 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 2;
       (*np)->nn_stat.st_mode |= S_IFREG;
       (*np)->nn_stat.st_mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
-      (*np)->nn_stat.st_size = 2008 * sizeof (wchar_t); /* XXX */
+      (*np)->nn_stat.st_size = 2011 * sizeof (wchar_t); /* XXX */
       break;
     case VCONS_NODE_INPUT:
       (*np)->nn_stat.st_ino = (vcons->id << 2) + 3;
@@ -300,14 +311,14 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
 
   /* If the underlying node isn't a directory, propagate read permission to
      execute permission since we need that for lookups.  */
-  if (! S_ISDIR (cons->stat_template.st_mode)
+  if (! S_ISDIR (vcons->cons->stat_template.st_mode)
       && S_ISDIR ((*np)->nn_stat.st_mode))
     {
-      if (cons->stat_template.st_mode & S_IRUSR)
+      if (vcons->cons->stat_template.st_mode & S_IRUSR)
 	(*np)->nn_stat.st_mode |= S_IXUSR;
-      if (cons->stat_template.st_mode & S_IRGRP)
+      if (vcons->cons->stat_template.st_mode & S_IRGRP)
 	(*np)->nn_stat.st_mode |= S_IXGRP;
-      if (cons->stat_template.st_mode & S_IROTH)
+      if (vcons->cons->stat_template.st_mode & S_IROTH)
 	(*np)->nn_stat.st_mode |= S_IXOTH;
     }
 
@@ -1037,11 +1048,14 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
   else
     {
       /* Pass display content to caller.  */
-      ssize_t amt;
+      ssize_t amt = *len;
       assert (np == vcons->disp_node);
-      amt  = display_read (vcons->display,
-			   /* cred->po->openstat & O_NONBLOCK */ 0,
-			   offset, data, *len);
+
+      if (amt > np->nn_stat.st_size)
+	amt = np->nn_stat.st_size;
+      amt = display_read (vcons->display,
+			  /* cred->po->openstat & O_NONBLOCK */ 0,
+			  offset, data, amt);
       if (amt == -1)
 	err = errno;
       else
@@ -1094,44 +1108,175 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 }
 
 
+/* Implement io_map as described in <hurd/io.defs>. */
+kern_return_t
+netfs_S_io_map (struct protid *cred,
+		memory_object_t *rdobj,
+		mach_msg_type_name_t *rdtype,
+		memory_object_t *wrobj,
+		mach_msg_type_name_t *wrtype)
+{
+  int flags;
+  struct node *np;
+  vcons_t vcons;
+
+  if (!cred)
+    return EOPNOTSUPP;
+
+  np = cred->po->np;
+  vcons = np->nn->vcons;
+  if (!vcons || np != vcons->disp_node)
+    return EOPNOTSUPP;
+
+  *wrobj = *rdobj = MACH_PORT_NULL;
+
+  flags = cred->po->openstat & (O_READ | O_WRITE);
+
+  mutex_lock (&np->lock);
+  switch (flags)
+    {
+    case O_READ | O_WRITE:
+      *wrobj = *rdobj = display_get_filemap (vcons->display,
+					     VM_PROT_READ | VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+        goto error;
+      mach_port_mod_refs (mach_task_self (), *rdobj, MACH_PORT_RIGHT_SEND, 1);
+      break;
+    case O_READ:
+      *rdobj = display_get_filemap (vcons->display, VM_PROT_READ);
+      if (*rdobj == MACH_PORT_NULL)
+        goto error;
+      break;
+    case O_WRITE:
+      *wrobj = display_get_filemap (vcons->display, VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+        goto error;
+      break;
+    }
+  mutex_unlock (&np->lock);
+
+  *rdtype = MACH_MSG_TYPE_MOVE_SEND;
+  *wrtype = MACH_MSG_TYPE_MOVE_SEND;
+
+  return 0;
+
+ error:
+  mutex_unlock (&np->lock);
+  return errno;
+}
+
+
+static const struct argp_option options[] =
+{
+  {"encoding",	'e', "NAME", 0, "Set encoding of virtual consoles to"
+   " NAME (default `" DEFAULT_ENCODING "')" },
+  {0}
+};
+
+static error_t
+parse_opt (int opt, char *arg, struct argp_state *state)
+{
+  cons_t cons = state->input;
+
+  switch (opt)
+    {
+    default:
+      return ARGP_ERR_UNKNOWN;
+    case ARGP_KEY_SUCCESS:
+    case ARGP_KEY_ERROR:
+      break;
+
+    case ARGP_KEY_INIT:
+      mutex_lock (&cons->lock);
+      break;
+
+    case ARGP_KEY_FINI:
+      mutex_unlock (&cons->lock);
+      break;
+
+    case 'e':
+      /* XXX Check validity of encoding.  Can we perform all necessary
+	 conversions?  */
+      {
+	char *new = strdup (arg);
+	if (!new)
+	  return ENOMEM;
+	if (cons->encoding)
+	  free (cons->encoding);
+	cons->encoding = new;
+      }
+      break;
+    }
+  return 0;
+}
+
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage.  */
+error_t
+netfs_append_args (char **argz, size_t *argz_len)
+{
+  error_t err = 0;
+  cons_t cons = netfs_root_node->nn->cons;
+
+  if (cons->encoding && strcmp (cons->encoding, DEFAULT_ENCODING))
+    {
+      char *buf;
+      asprintf (&buf, "--encoding=%s", cons->encoding);
+      if (buf)
+	err = argz_add (argz, argz_len, buf);
+      else
+	err = errno;
+    }
+  return err;
+}
+
+
 int
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
   struct stat ul_stat;
-  struct netnode root_nn = { cons: cons, vcons: 0 };
+  cons_t cons;
+  struct netnode root_nn = { vcons: 0 };
+  struct argp argp = { options, parse_opt, NULL,
+		       "A translator that provides virtual consoles." };
 
-  mtrace();
-  struct argp argp
-    = { NULL, NULL, NULL,
-	"A translator that provides virtual console displays." };
+  cons = malloc (sizeof (struct cons));
+  if (!malloc)
+    error (1, ENOMEM, "Cannot create console structure");
+  mutex_init (&cons->lock);
+  cons->encoding = NULL;
+  cons->vcons_list = NULL;
+  root_nn.cons = cons;
 
   /* Parse our command line arguments (all none of them).  */
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, cons);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
+
   netfs_init ();
+
+  display_init ();
 
   /* Create the root node (some attributes initialized below).  */
   netfs_root_node = netfs_make_node (&root_nn);
   if (! netfs_root_node)
-    error (5, ENOMEM, "Cannot create root node");
+    error (2, ENOMEM, "Cannot create root node");
 
   err = maptime_map (0, 0, &console_maptime);
   if (err)
-    error (6, err, "Cannot map time");
+    error (3, err, "Cannot map time");
 
-  mutex_init (&cons->lock);
-  cons->encoding = "ISO-8859-1";
   cons->node = netfs_root_node;
   cons->underlying = netfs_startup (bootstrap, O_READ);
   if (cons->underlying == MACH_PORT_NULL)
-    error (5, err, "Cannot get underlying node");
+    error (4, err, "Cannot get underlying node");
 
   err = io_stat (cons->underlying, &ul_stat);
   if (err)
-    error (6, err, "Cannot stat underlying node");
+    error (5, err, "Cannot stat underlying node");
 
   /* CONS.stat_template contains some fields that are inherited by all
      nodes we create.  */
@@ -1164,8 +1309,8 @@ main (int argc, char **argv)
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		console_maptime);
 
-  netfs_server_loop ();		/* Never returns.  */
-
+  netfs_server_loop ();
+                                
   /*NOTREACHED*/
   return 0;
 }

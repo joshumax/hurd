@@ -1,4 +1,4 @@
-/* console.h -- Interfaces for the console server.
+/* console.h -- Public interface to the console server.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
@@ -16,20 +16,51 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef _HURD_CONSOLE_H
+#define _HURD_CONSOLE_H
 
-#include <hurd/netfs.h>
-#include <rwlock.h>
-#include <maptime.h>
+#include <sys/types.h>
 
-/* Handy source of time.  */
-volatile struct mapped_time_value *console_maptime;
+struct cons_display
+{
+#define CONS_MAGIC 0x48555244	/* Hex for "HURD".  */
+  u_int32_t magic;		/* CONS_MAGIC, use to detect
+				   endianess.  */
+#define CONS_VERSION_MAJ 0x0
+#define CONS_VERSION_MAJ_SHIFT 16
+#define CONS_VERSION_AGE 0x0
+  u_int32_t version;		/* Version of interface.  Lower 16
+				   bits define the age, upper 16 bits
+				   the major version.  */
+  struct
+  {
+    u_int32_t width;	/* Width of screen matrix.  */
+    u_int32_t lines;	/* Length of whole matrix.  */
+    u_int32_t cur_line;	/* Beginning of visible area.  */
+    u_int32_t scr_lines;/* Number of lines in scrollback buffer
+			   preceeding CUR_LINE.  */
+    u_int32_t height;	/* Number of lines in visible area following
+			   (and including) CUR_LINE.  */
+    u_int32_t matrix;	/* Index (in wchar_t) of the beginning of
+			   screen matrix in this structure.  */
+  } screen;
 
-/* A handle for a console device.  */
-typedef struct cons *cons_t;
+  struct
+  {
+    u_int32_t col;	/* Current column (x-position) of cursor.  */
+    u_int32_t row;	/* Current row (y-position) of cursor.  */
 
-/* A handle for a virtual console device.  */
-typedef struct vcons *vcons_t;
+#define CONS_CURSOR_INVISIBLE 0
+#define CONS_CURSOR_NORMAL 1
+#define CONS_CURSOR_VERY_VISIBLE 2
+    u_int32_t status;	/* Visibility status of cursor.  */
+  } cursor;
 
-#endif	/* CONSOLE_H */
+  /* Don't use this, use ((wchar_t *) cons_display +
+     cons_display.screen.matrix) instead.  This will make your client
+     upward compatible with future versions of this interface.  */
+  wchar_t _matrix[0];
+};
+
+
+#endif	/* _HURD_CONSOLE_H */

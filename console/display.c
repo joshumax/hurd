@@ -25,47 +25,27 @@
 #include <iconv.h>
 #include <argp.h>
 #include <string.h>
+#include <assert.h>
+#include <error.h>
 
 #include <sys/io.h>
-#include <sys/mman.h>
 #include <sys/fcntl.h>
+#include <sys/mman.h>
 #include <cthreads.h>
+
+#include <hurd.h>
+#include <hurd/pager.h>
 
 #ifndef __STDC_ISO_10646__
 #error It is required that wchar_t is UCS-4.
 #endif
 
+#include "console.h"
 #include "display.h"
 
 
-struct screen
-{
-  /* A screen matrix, including the scroll back buffer.  */
-  wchar_t *matrix;
-
-  /* The size of the screen, in lines.  */
-  int lines;
-
-  /* The top most line of the screen in the video buffer.  */
-  int current_line;
-
-  /* Maximum number of lines scrolled back.  */
-  int scrolling_max;
-
-  int width;
-  int height;
-};
-typedef struct screen *screen_t;
-
 struct cursor
 {
-  /* The visibility of the cursor.  */
-  u_int32_t status;
-#define CURSOR_INVISIBLE 1
-#define CURSOR_STANDOUT 2
-
-  u_int32_t x;
-  u_int32_t y;
   u_int32_t saved_x;
   u_int32_t saved_y;
 };
@@ -128,107 +108,251 @@ struct attr
 };
 typedef struct attr *attr_t;
 
+struct user_pager_info
+{
+  display_t display;
+  struct pager *p;
+};
+
 struct display
 {
   /* The lock for the virtual console display structure.  */
   struct mutex lock;
-
-  struct screen screen;
-  struct cursor cursor;
-  struct output output;
-  struct attr attr;
 
   /* Indicates if OWNER_ID is initialized.  */
   int has_owner;
   /* Specifies the ID of the process that should receive the WINCH
      signal for this virtual console.  */
   int owner_id;
+
+  struct cursor cursor;
+  struct output output;
+  struct attr attr;
+  struct cons_display *user;
+
+  struct user_pager_info *upi;  
+  memory_object_t memobj;
+  size_t memobj_size;
 };
 
+
+/* We need a separate bucket for the pager ports.  */
+struct port_bucket *pager_bucket;
 
-static error_t
-screen_init (screen_t screen)
+mach_port_t
+display_get_filemap (display_t display, vm_prot_t prot)
 {
-  screen->width = 80;
-  screen->height = 25;
-  screen->lines = 25;	/* XXX For now.  */
-  screen->current_line = 0;
-  screen->matrix = calloc (screen->lines * screen->width, sizeof (wchar_t));
-  if (!screen->matrix)
-    return ENOMEM;
+  error_t err;
 
-  wmemset (screen->matrix, L' ', screen->height * screen->width);
+  /* Add a reference for each call, the caller will deallocate it.  */
+  err = mach_port_mod_refs (mach_task_self (), display->memobj,
+                            MACH_PORT_RIGHT_SEND, +1);
+  assert_perror (err);
+
+  return display->memobj;
+}
+
+/* Implement the pager_clear_user_data callback from the pager library. */
+void
+pager_clear_user_data (struct user_pager_info *upi)
+{
+  free (upi);
+}
+
+/* XXX This is not good enough.  We actually need to provide a backing
+   store.  */
+error_t
+pager_read_page (struct user_pager_info *pager, vm_offset_t page,
+                 vm_address_t *buf, int *writelock)
+{
+  /* This is a read-only medium */
+  *writelock = 1;
+
+  *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+			      MAP_ANON, 0, 0);
+  return 0;
+}
+
+error_t
+pager_write_page (struct user_pager_info *pager,
+                  vm_offset_t page,
+                  vm_address_t buf)
+{
+  /* XXX Implement me.  */
+  assert (0);
+}
+
+error_t
+pager_unlock_page (struct user_pager_info *pager,
+                   vm_offset_t address)
+{
+  return 0;
+}
+
+/* Tell how big the file is. */
+error_t
+pager_report_extent (struct user_pager_info *upi,
+                     vm_address_t *offset,
+                     vm_size_t *size)
+{
+  display_t display = upi->display;
+  *offset = 0;
+  *size = display->memobj_size;
+  return 0;
+}
+
+void
+pager_dropweak (struct user_pager_info *upi)
+{
+}
+
+/* A top-level function for the paging thread that just services paging
+   requests.  */
+static void
+service_paging_requests (any_t arg)
+{
+  struct port_bucket *pager_bucket = arg;
+  for (;;)
+    ports_manage_port_operations_multithread (pager_bucket,
+                                              pager_demuxer,
+                                              1000 * 60 * 2,
+                                              1000 * 60 * 10, 0);
+}    
+
+
+static error_t
+user_create (display_t display, u_int32_t width, u_int32_t height,
+	     u_int32_t lines)
+{
+  error_t err;
+  struct cons_display *user;
+  display->memobj_size = round_page (sizeof (struct cons_display) +
+				   sizeof (u_int32_t) * width * lines);
+
+  display->upi = malloc (sizeof (struct user_pager_info));
+  if (!display->upi)
+    return MACH_PORT_NULL;
+  display->upi->display = display;
+  /* 1 & MOCD correct? */
+  display->upi->p = pager_create (display->upi, pager_bucket,
+				  1, MEMORY_OBJECT_COPY_DELAY);
+  if (display->upi->p == 0)
+    {
+      free (display->upi);
+      return errno;
+    }
+  display->memobj = pager_get_port (display->upi->p);
+  ports_port_deref (display->upi->p);
+
+  mach_port_insert_right (mach_task_self (), display->memobj, display->memobj,
+                          MACH_MSG_TYPE_MAKE_SEND);
+
+  err = vm_map (mach_task_self (),
+		(vm_address_t *) &user, (vm_size_t) display->memobj_size,
+		(vm_address_t) 0,
+		1 /* ! (flags & MAP_FIXED) */,
+		display->memobj, 0 /* (vm_offset_t) offset */,
+		0 /* ! (flags & MAP_SHARED) */,
+                VM_PROT_READ | VM_PROT_WRITE,
+                VM_PROT_READ | VM_PROT_WRITE,
+                VM_INHERIT_NONE);
+  if (err)
+    {
+      /* UPI will be cleaned up by libpager.  */
+      mach_port_deallocate (mach_task_self (), display->memobj);
+      return err;
+    }
+    
+  user->magic = CONS_MAGIC;
+  user->version = CONS_VERSION_MAJ << 16 | CONS_VERSION_AGE;
+  user->screen.width = width;
+  user->screen.height = height;
+  user->screen.lines = lines;
+  user->screen.cur_line = 0;
+  user->screen.scr_lines = 0;
+  user->screen.matrix = sizeof (struct cons_display) / sizeof (u_int32_t);
+  user->cursor.col = 0;
+  user->cursor.row = 0;
+  user->cursor.status = CONS_CURSOR_NORMAL;
+  wmemset (user->_matrix, L' ', user->screen.width * user->screen.lines);
+
   /* XXX Set attribute flags.  */
+  display->user = user;
   return 0;
 }
 
 static void
-screen_deinit (screen_t screen)
+user_destroy (display_t display)
 {
-  free (screen->matrix);
+  /* The pager will be deallocated by libpager.  */
+  mach_port_deallocate (mach_task_self (), display->memobj);
 }
 
+
+#define MATRIX_POS(user,x,y) ((user)->_matrix \
+    + (((user)->screen.cur_line + (y)) % (user)->screen.height) \
+    * (user)->screen.width + (x))
+
 static void
-screen_fill (screen_t screen, size_t x, size_t y, size_t w, size_t h,
+screen_fill (display_t display, size_t x, size_t y, size_t w, size_t h,
 	     wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix
-    + ((screen->current_line + y) % screen->height) * screen->width + x;
+  struct cons_display *user = display->user;
+  wchar_t *matrixp = MATRIX_POS (user, x, y);
 
   while (h--)
     {
       /* XXX Set attribute flags.  */
       wmemset (matrixp, L' ', w);
-      matrixp += screen->width;
+      matrixp += user->screen.width;
     }
 
-  /* XXX Flag screen change, but here?  */
+  /* XXX Flag screen change, but here or where else?  */
 }
 
 static void
-screen_scroll_up (screen_t screen, size_t x, size_t y, size_t w, size_t h,
+screen_scroll_up (display_t display, size_t x, size_t y, size_t w, size_t h,
 		  int amt, wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix
-    + ((screen->current_line + y) % screen->height) * screen->width + x;
+  struct cons_display *user = display->user;
+  wchar_t *matrixp = MATRIX_POS (user, x, y);
 
   if (amt < 0)
     return;
 
   while (h-- > amt)
     {
-      wmemcpy (matrixp, matrixp + amt * screen->width, w);
-      matrixp += screen->width;
+      wmemcpy (matrixp, matrixp + amt * user->screen.width, w);
+      matrixp += user->screen.width;
     }
-  screen_fill (screen, x, y, w, h, chr, attr);
+  screen_fill (display, x, y, w, h, chr, attr);
 }
 
 static void
-screen_scroll_down (screen_t screen, size_t x, size_t y, size_t w, size_t h,
+screen_scroll_down (display_t display, size_t x, size_t y, size_t w, size_t h,
 		    int amt, wchar_t chr, char attr)
 {
-  wchar_t *matrixp = screen->matrix
-    + ((screen->current_line + y + h - 1) % screen->height)
-    * screen->width + x;
+  struct cons_display *user = display->user;
+  wchar_t *matrixp = MATRIX_POS (user, x, y + h - 1);
 
   if (amt < 0)
     return;
 
   while (h-- > amt)
     {
-      wmemcpy (matrixp, matrixp - amt * screen->width, w);
-      matrixp -= screen->width;
+      wmemcpy (matrixp, matrixp - amt * user->screen.width, w);
+      matrixp -= user->screen.width;
     }
-  screen_fill (screen, x, y, w, h, chr, attr);
+  screen_fill (display, x, y, w, h, chr, attr);
 }
 
 static void
-screen_scroll_left (screen_t screen, size_t x, size_t y, size_t w, size_t h,
+screen_scroll_left (display_t display, size_t x, size_t y, size_t w, size_t h,
 		    int amt, wchar_t chr, char attr)
 {
+  struct cons_display *user = display->user;
+  wchar_t *matrixp = MATRIX_POS (user, x, y);
   int i;
-  wchar_t *matrixp = screen->matrix
-    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   if (amt < 0)
     return;
@@ -238,18 +362,18 @@ screen_scroll_left (screen_t screen, size_t x, size_t y, size_t w, size_t h,
   for (i = 0; i < y + h; i++)
     {
       wmemmove (matrixp, matrixp + amt, w - amt);
-      matrixp += screen->width;
+      matrixp += user->screen.width;
     }
-  screen_fill (screen, x + w - amt, y, amt, h, chr, attr);
+  screen_fill (display, x + w - amt, y, amt, h, chr, attr);
 }
 
 static void
-screen_scroll_right (screen_t screen, size_t x, size_t y, size_t w, size_t h,
+screen_scroll_right (display_t display, size_t x, size_t y, size_t w, size_t h,
 		     int amt, wchar_t chr, char attr)
 {
+  struct cons_display *user = display->user;
+  wchar_t *matrixp = MATRIX_POS (user, x, y);
   int i;
-  wchar_t *matrixp = screen->matrix
-    + ((screen->current_line + y) % screen->height) * screen->width + x;
 
   if (amt < 0)
     return;
@@ -259,9 +383,9 @@ screen_scroll_right (screen_t screen, size_t x, size_t y, size_t w, size_t h,
   for (i = 0; i < y + h; i++)
     {
       wmemmove (matrixp + amt, matrixp, w - amt);
-      matrixp += screen->width;
+      matrixp += user->screen.width;
     }
-  screen_fill (screen, x, y, amt, h, chr, attr);
+  screen_fill (display, x, y, amt, h, chr, attr);
 }
 
 
@@ -289,16 +413,16 @@ output_deinit (output_t output)
 
 
 static void
-handle_esc_bracket_hl (cursor_t cursor, int code, int flag)
+handle_esc_bracket_hl (display_t display, int code, int flag)
 {
   switch (code)
     {
     case 34:
       /* Cursor standout: <cnorm>, <cvvis>.  */
       if (flag)
-	cursor->status |= CURSOR_STANDOUT;
+	display->user->cursor.status = CONS_CURSOR_VERY_VISIBLE;
       else
-	cursor->status &= ~CURSOR_STANDOUT;
+	display->user->cursor.status = CONS_CURSOR_NORMAL;
       /* XXX Flag cursor status change.  */
       break;
     }
@@ -390,20 +514,21 @@ handle_esc_bracket_m (attr_t attr, int code)
 static void
 handle_esc_bracket (display_t display, char op)
 {
+  struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
   int i;
 
   static void limit_cursor (void)
     {
-      if (display->cursor.x >= display->screen.width)
-	display->cursor.x = display->screen.width - 1;
-      else if (display->cursor.x < 0)
-	display->cursor.x = 0;
+      if (user->cursor.col >= user->screen.width)
+	user->cursor.col = user->screen.width - 1;
+      else if (user->cursor.col < 0)
+	user->cursor.col = 0;
       
-      if (display->cursor.y >= display->screen.height)
-	display->cursor.y = display->screen.height - 1;
-      else if (display->cursor.y < 0)
-	display->cursor.y = 0;
+      if (user->cursor.row >= user->screen.height)
+	user->cursor.row = user->screen.height - 1;
+      else if (user->cursor.row < 0)
+	user->cursor.row = 0;
 
       /* XXX Flag cursor change.  */
     }
@@ -413,64 +538,64 @@ handle_esc_bracket (display_t display, char op)
     case 'H':
     case 'f':
       /* Cursor position: <cup>.  */
-      display->cursor.x = parse->params[1] - 1;
-      display->cursor.y = parse->params[0] - 1;
+      user->cursor.col = parse->params[1] - 1;
+      user->cursor.row = parse->params[0] - 1;
       limit_cursor ();
       break;
     case 'G':
       /* Horizontal position: <hpa>.  */
-      display->cursor.x = parse->params[0] - 1;
+      user->cursor.col = parse->params[0] - 1;
       limit_cursor ();
       break;
     case 'F':
       /* Beginning of previous line.  */
-      display->cursor.x = 0;
+      user->cursor.col = 0;
       /* fall through */
     case 'A':
       /* Cursor up: <cuu>, <cuu1>.  */
-      display->cursor.y -= (parse->params[0] ?: 1);
+      user->cursor.row -= (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'E':
       /* Beginning of next line.  */
-      display->cursor.x = 0;
+      user->cursor.col = 0;
       /* Fall through.  */
     case 'B':
       /* Cursor down: <cud1>, <cud>.  */
-      display->cursor.y += (parse->params[0] ?: 1);
+      user->cursor.row += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'C':
       /* Cursor right: <cuf1>, <cuf>.  */
-      display->cursor.x += (parse->params[0] ?: 1);
+      user->cursor.col += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'D':
       /* Cursor left: <cub>, <cub1>.  */
-      display->cursor.x -= (parse->params[0] ?: 1);
+      user->cursor.col -= (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 's':
       /* Save cursor position: <sc>.  */
-      display->cursor.saved_x = display->cursor.x;
-      display->cursor.saved_y = display->cursor.y;
+      display->cursor.saved_x = user->cursor.col;
+      display->cursor.saved_y = user->cursor.row;
       break;
     case 'u':
       /* Restore cursor position: <rc>.  */
-      display->cursor.x = display->cursor.saved_x;
-      display->cursor.y = display->cursor.saved_y;
+      user->cursor.col = display->cursor.saved_x;
+      user->cursor.row = display->cursor.saved_y;
       /* In case the screen was larger before:  */
       limit_cursor ();
       break;
     case 'h':
       /* Reset mode.  */
       for (i = 0; i < parse->nparams; i++)
-	handle_esc_bracket_hl (&display->cursor, parse->params[i], 0);
+	handle_esc_bracket_hl (display, parse->params[i], 0);
       break;
     case 'l':
       /* Set mode.  */
       for (i = 0; i < parse->nparams; i++)
-	handle_esc_bracket_hl (&display->cursor, parse->params[i], 1);
+	handle_esc_bracket_hl (display, parse->params[i], 1);
       break;
     case 'm':
       for (i = 0; i < parse->nparams; i++)
@@ -481,27 +606,27 @@ handle_esc_bracket (display_t display, char op)
 	{
 	case 0:
 	  /* Clear to end of screen: <ed>.  */
-	  screen_fill (&display->screen, display->cursor.x, display->cursor.y,
-		       display->screen.width - display->cursor.x, 1, L' ',
+	  screen_fill (display, user->cursor.col, user->cursor.row,
+		       user->screen.width - user->cursor.col, 1, L' ',
 		       display->attr.current);
-	  screen_fill (&display->screen, 0, display->cursor.y + 1,
-		       display->screen.width,
-		       display->screen.height - display->cursor.y,
+	  screen_fill (display, 0, user->cursor.row + 1,
+		       user->screen.width,
+		       user->screen.height - user->cursor.row,
 			L' ', display->attr.current);
 	  break;
 	case 1:
 	  /* Clear to beginning of screen.  */
-	  screen_fill (&display->screen, 0, 0,
-		       display->screen.width, display->cursor.y,
+	  screen_fill (display, 0, 0,
+		       user->screen.width, user->cursor.row,
 		       L' ', display->attr.current);
-	  screen_fill (&display->screen, 0, display->cursor.y,
-		       display->cursor.x + 1, 1,
+	  screen_fill (display, 0, user->cursor.row,
+		       user->cursor.col + 1, 1,
 		       L' ', display->attr.current);
 	  break;
 	case 2:
 	  /* Clear entire screen.  */
-	  screen_fill (&display->screen, 0, 0,
-		       display->screen.width, display->screen.height,
+	  screen_fill (display, 0, 0,
+		       user->screen.width, user->screen.height,
 		       L' ', display->attr.current);
 	  break;
 	}
@@ -511,73 +636,73 @@ handle_esc_bracket (display_t display, char op)
 	{
 	case 0:
 	  /* Clear to end of line: <el>.  */
-	  screen_fill (&display->screen, display->cursor.x, display->cursor.y,
-		       display->screen.width - display->cursor.x, 1,
+	  screen_fill (display, user->cursor.col, user->cursor.row,
+		       user->screen.width - user->cursor.col, 1,
 		       L' ', display->attr.current);
 	  break;
 	case 1:
 	  /* Clear to beginning of line: <el1>.  */
-	  screen_fill (&display->screen, 0, display->cursor.y,
-		       display->cursor.x + 1, 1,
+	  screen_fill (display, 0, user->cursor.row,
+		       user->cursor.col + 1, 1,
 		       L' ', display->attr.current);
 	  break;
 	case 2:
 	  /* Clear entire line.  */
-	  screen_fill (&display->screen, 0, display->cursor.y,
-		       display->screen.width, 1,
+	  screen_fill (display, 0, user->cursor.row,
+		       user->screen.width, 1,
 		       L' ', display->attr.current);
 	  break;
 	}
       break;
     case 'L':
       /* Insert line(s): <il1>, <il>.  */
-      screen_scroll_down (&display->screen, 0, display->cursor.y,
-			  display->screen.width,
-			  display->screen.height - display->cursor.y,
+      screen_scroll_down (display, 0, user->cursor.row,
+			  user->screen.width,
+			  user->screen.height - user->cursor.row,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'M':
       /* Delete line(s): <dl1>, <dl>.  */
-      screen_scroll_up (&display->screen, 0, display->cursor.y,
-			display->screen.width,
-			display->screen.height - display->cursor.y,
+      screen_scroll_up (display, 0, user->cursor.row,
+			user->screen.width,
+			user->screen.height - user->cursor.row,
 			parse->params[0] ?: 1,
 			L' ', display->attr.current);
       break;
     case '@':
       /* Insert character(s): <ich1>, <ich>.  */
-      screen_scroll_right (&display->screen, display->cursor.x,
-			   display->cursor.y,
-			   display->screen.width - display->cursor.x, 1,
+      screen_scroll_right (display, user->cursor.col,
+			   user->cursor.row,
+			   user->screen.width - user->cursor.col, 1,
 			   parse->params[0] ?: 1,
 			   L' ', display->attr.current);
       break;
     case 'P':
       /* Delete character(s): <dch1>, <dch>.  */
-      screen_scroll_left (&display->screen, display->cursor.x,
-			  display->cursor.y,
-			  display->screen.width - display->cursor.x, 1,
+      screen_scroll_left (display, user->cursor.col,
+			  user->cursor.row,
+			  user->screen.width - user->cursor.col, 1,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'S':
       /* Scroll up: <ind>, <indn>.  */
-      screen_scroll_up (&display->screen, 0, 0,
-			display->screen.width, display->screen.height,
+      screen_scroll_up (display, 0, 0,
+			user->screen.width, user->screen.height,
 			parse->params[0] ?: 1,
 			L' ', display->attr.current);
       break;
     case 'T':
       /* Scroll down: <ri>, <rin>.  */
-      screen_scroll_down (&display->screen, 0, 0,
-			  display->screen.width, display->screen.height,
+      screen_scroll_down (display, 0, 0,
+			  user->screen.width, user->screen.height,
 			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'X':
       /* Erase character(s): <ech>.  */
-      screen_fill (&display->screen, display->cursor.x, display->cursor.y,
+      screen_fill (display, user->cursor.col, user->cursor.row,
 		   parse->params[0] ?: 1, 1,
 		   L' ', display->attr.current);
       break;
@@ -592,9 +717,9 @@ handle_esc_bracket_question_hl (display_t display, int code, int flag)
     case 25:
       /* Cursor invisibility: <civis>, <cnorm>.  */
       if (flag)
-	display->cursor.status |= CURSOR_INVISIBLE;
+	display->user->cursor.status = CONS_CURSOR_INVISIBLE;
       else
-	display->cursor.status &= ~CURSOR_INVISIBLE;
+	display->user->cursor.status = CONS_CURSOR_NORMAL;
       /* XXX Flag cursor status change.  */
       break;
     }
@@ -626,26 +751,27 @@ handle_esc_bracket_question (display_t display, char op)
 static void
 display_output_one (display_t display, wchar_t chr)
 {
+  struct cons_display *user = display->user;
   parse_t parse = &display->output.parse;
 
   void newline (void)
     {
-      if (display->cursor.y < display->screen.height - 1)
+      if (user->cursor.row < user->screen.height - 1)
 	{
-	  display->cursor.y++;
+	  user->cursor.row++;
 	  /* XXX Flag cursor update.  */
 	}
       else
 	{
-	  display->screen.current_line++;
-	  display->screen.current_line %= display->screen.lines;
+	  user->screen.cur_line++;
+	  user->screen.cur_line %= user->screen.lines;
 
 	  /* XXX Set attribute flags.  */
-	  screen_fill (&display->screen, 0, display->screen.height - 1,
-		       display->screen.width, 1, L' ', display->screen.width);
-	  if (display->screen.scrolling_max <
-	      display->screen.lines - display->screen.height)
-	    display->screen.scrolling_max++;
+	  screen_fill (display, 0, user->screen.height - 1,
+		       user->screen.width, 1, L' ', user->screen.width);
+	  if (user->screen.scr_lines <
+	      user->screen.lines - user->screen.height)
+	    user->screen.scr_lines++;
 	  /* XXX Flag current line change.  */
 	  /* XXX Flag change of last line.  */
 	  /* XXX Possibly flag change of length of scroll back buffer.  */
@@ -659,9 +785,9 @@ display_output_one (display_t display, wchar_t chr)
 	{
 	case L'\r':
 	  /* Carriage return: <cr>.  */
-	  if (display->cursor.x)
+	  if (user->cursor.col)
 	    {
-	      display->cursor.x = 0;
+	      user->cursor.col = 0;
 	      /* XXX Flag cursor update.  */
 	    }
 	  break;
@@ -671,26 +797,26 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	case L'\b':
 	  /* Cursor backward: <cub1>.  */
-	  if (display->cursor.x > 0 || display->cursor.y > 0)
+	  if (user->cursor.col > 0 || user->cursor.row > 0)
 	    {
-	      if (display->cursor.x > 0)
-		display->cursor.x--;
+	      if (user->cursor.col > 0)
+		user->cursor.col--;
 	      else
 		{
 		  /* XXX This implements the <bw> functionality.
 		     The alternative is to cut off and set x to 0.  */
-		  display->cursor.x = display->screen.width - 1;
-		  display->cursor.y--;
+		  user->cursor.col = user->screen.width - 1;
+		  user->cursor.row--;
 		}
 	      /* XXX Flag cursor update.  */
 	    }
 	  break;
 	case L'\t':
 	  /* Horizontal tab: <ht> */
-	  display->cursor.x = (display->cursor.x | 7) + 1;
-	  if (display->cursor.x >= display->screen.width)
+	  user->cursor.col = (user->cursor.col | 7) + 1;
+	  if (user->cursor.col >= user->screen.width)
 	    {
-	      display->cursor.x = 0;
+	      user->cursor.col = 0;
 	      newline ();
 	    }
 	  /* XXX Flag cursor update.  */
@@ -703,17 +829,17 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	default:
 	  {
-	    int line = (display->screen.current_line + display->cursor.y)
-	      % display->screen.lines;
+	    int line = (user->screen.cur_line + user->cursor.row)
+	      % user->screen.lines;
 
 	    /* XXX Set attribute flags.  */
-	    display->screen.matrix[line * display->screen.width
-				   + display->cursor.x] = chr;
+	    user->_matrix[line * user->screen.width
+			  + user->cursor.col] = chr;
 
-	    display->cursor.x++;
-	    if (display->cursor.x == display->screen.width)
+	    user->cursor.col++;
+	    if (user->cursor.col == user->screen.width)
 	      {
-		display->cursor.x = 0;
+		user->cursor.col = 0;
 		newline ();
 	      }
 	  }
@@ -729,10 +855,10 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	case L'c':
 	  /* Clear screen and home cursor: <clear>.  */
-	  screen_fill (&display->screen, 0, 0,
-		       display->screen.width, display->screen.height,
+	  screen_fill (display, 0, 0,
+		       user->screen.width, user->screen.height,
 		       L' ', display->attr.current);
-	  display->cursor.x = display->cursor.y = 0;
+	  user->cursor.col = user->cursor.row = 0;
 	  /* XXX Flag cursor change.  */
 	  parse->state = STATE_NORMAL;
 	  break;
@@ -818,6 +944,19 @@ display_output_some (display_t display, char **buffer, size_t *length)
   return err;
 }
 
+void
+display_init (void)
+{
+  /* Create the pager bucket, and start to serve paging requests.  */
+  pager_bucket = ports_create_bucket ();
+  if (! pager_bucket)
+    error (5, errno, "Cannot create pager bucket");
+
+  /* Make a thread to service paging requests.  */
+  cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
+                                (any_t)pager_bucket));
+}
+
 /* Create a new virtual console display, with the system encoding
    being ENCODING.  */
 error_t
@@ -825,6 +964,9 @@ display_create (display_t *r_display, const char *encoding)
 {
   error_t err = 0;
   display_t display;
+  int width = 80;
+  int height = 25;
+  int lines = 25; 	/* XXX For now.  */
 
   *r_display = NULL;
   display = calloc (1, sizeof *display);
@@ -832,7 +974,7 @@ display_create (display_t *r_display, const char *encoding)
     return ENOMEM;
 
   mutex_init (&display->lock);
-  err = screen_init (&display->screen);
+  err = user_create (display, width, height, lines);
   if (err)
     {
       free (display);
@@ -842,7 +984,7 @@ display_create (display_t *r_display, const char *encoding)
   err = output_init (&display->output, encoding);
   if (err)
     {
-      screen_deinit (&display->screen);
+      user_destroy (display);
       free (display);
     }
   *r_display = display;
@@ -855,7 +997,7 @@ void
 display_destroy (display_t display)
 {
   output_deinit (&display->output);
-  screen_deinit (&display->screen);
+  user_destroy (display);
   free (display);
 }
 
@@ -865,8 +1007,8 @@ void
 display_getsize (display_t display, struct winsize *winsize)
 {
   mutex_lock (&display->lock);
-  winsize->ws_row = display->screen.height;
-  winsize->ws_col = display->screen.width;
+  winsize->ws_row = display->user->screen.height;
+  winsize->ws_col = display->user->screen.width;
   winsize->ws_xpixel = 0;
   winsize->ws_ypixel = 0;
   mutex_unlock (&display->lock);
@@ -1003,43 +1145,14 @@ display_output (display_t display, int nonblock, char *data, size_t datalen)
   return amount;
 }
 
-ssize_t display_read (display_t display, int nonblock, off_t off,
-		      char *data, size_t len)
+ssize_t
+display_read (display_t display, int nonblock, off_t off,
+	      char *data, size_t len)
 {
-  u_int32_t metadata[8];
-  size_t metadatalen = sizeof (metadata);
-  ssize_t written = 0;
-
   mutex_lock (&display->lock);
-  metadata[0] = display->screen.width;
-  metadata[1] = display->screen.height;
-  metadata[2] = display->screen.lines;
-  metadata[3] = display->screen.current_line;
-  metadata[4] = display->screen.scrolling_max;
-  metadata[5] = display->cursor.x;
-  metadata[6] = display->cursor.y;
-  metadata[7] = display->cursor.status;
-  
-  if (off >= 0 && off < metadatalen)
-    {
-      int part_len = len;
-
-      if (part_len > metadatalen)
-	part_len = metadatalen;
-      memcpy (data, (char *) metadata + off, part_len);
-      data += part_len;
-      len -= part_len;
-      written += part_len;
-    }
-  off -= metadatalen;
-  if (off < 0)
-    off = 0;
-  
-  if (off + len > 2000 * sizeof(wchar_t))
-    len = 2000 * sizeof(wchar_t) - off;
-  memcpy (data, (char *) display->screen.matrix + off, len);
+  memcpy (data, ((char *) display->user) + off, len);
   mutex_unlock (&display->lock);
-  return written + len;
+  return len;
 }
 
 /* Resume the output on the display DISPLAY.  */
