@@ -555,7 +555,7 @@ allocate_proc (task_t task)
   if (err)
     return NULL;
 
-  memset (p, 0, sizeof *p);
+  memset (&p->p_pi + 1, 0, sizeof *p - sizeof p->p_pi);
   p->p_task = task;
   p->p_msgport = MACH_PORT_NULL;
 
