@@ -2,13 +2,88 @@
 
 XXX this needs much work, trolling through ChangeLogs.
 
+Many, many, many bugs have been fixed, including some resource
+consumption problems and race conditions.  The system can compile
+itself as well as most external applications.  The amount of stress
+the system can tolerate has increased a lot.
+
+The new ftpfs translator can be used to transparently access FTP
+servers through the filesystem.  Together with the new hostmux
+translator, which can invoke host-specific translators like ftpfs,
+this leads to a very comfortable way to use FTP archives on the Hurd.
+
+A new translator usermux can invoke user specific translators. It can
+be used to provide a symlink to all users home directories in a single
+place (similar to amd/automount).
+
+The tmpfs translator can be used to store files and directories in RAM
+without any overhead of a real filesystem.  The amount of memory
+allocated equals the amount of space occupied, and an upper limit can
+be defined.
+
+Shadow passwords are now supported.  If the password field in
+/etc/passwd contains the string "x", the crypted password is looked up
+in /etc/shadow instead.  A new password server distributes auth ports
+after password verification.
+
+The pfinet server uses the Linux 2.2.12 IP stack now.  It supports the
+new interface types dummy and tun which provide a bottomless sink and
+IP tunnel interface respectively.  It also supports all common network
+ioctls now.
+
+The Hurd can now access CD-ROMs containing an ISO9660 file format with
+the new isofs translator. Rock Ridge extensions are supported, as well
+as some GNU extensions to store GNU specific file system attributes in
+such filesystems.
+
+Two new translators, hello and hello-mt, illustrate how to implement
+simple trivfs based filesystems in the Hurd.
+
+A new utility `rpctrace' aids in debugging the Hurd by listing all
+invoked RPCs with message id and port right information.
+
+The Hurd does no longer contain the utility `su', which is included in
+the GNU shellutils package. `setauth --save' can also be used as a
+replacement.
+
+The init script mechanism became more flexible, as it was splitted
+into several files.  This allows to plug in different styles of init
+procedures by just hooking them into /libexec/runsystem.
+
+The ext2fs server understands the sparse_super filesystem option, and
+can deal with the filetype option (but won't make use of this itself).
+
+Several utilities have new options.  All store based filesystems can
+be configured with --no-suid, --no-exec, --bootflags, --boot-command
+and --no-cache. The null translator also can be full now (--full).
+The magic translator can provide an empty directory.
+
+The crash server supports several modes of operation, it can suspend
+or kill a crashing task. Core dumping is planned for but not
+implemented yet.  Users can set their own crash server using an
+environment variable.
+
+The proc server can show the start time of processes.
+
 * sync -> syncfs, takes args
 
 * Default pager (serverboot) understands Linux (mkswap) signature pages.
   New boot script function $(add-raw-paging-file) inhibits looking for the
   signature page.  New function $(add-linux-paging-file) checks for the
   page and refuses to use the swap partition or paging file if there is no
-  valid Linux signature page.
+  valid Linux signature page.  A stand-alone default pager `mach-defpager'
+  is implemented which supports the same features.  With
+  "die $(serverboot)"
+  in the boot script, serverboot doesn't become the default pager.
+
+* libstore uses off64_t internally, allowing large stores to be
+  handled properly.  The zero store supports suffix b, k/K, m/M, g/G
+  for blocks, kilo-, mega- and gigabytes resp. when specifying the
+  store size.  The remap store understands N+ as the end of the store
+  starting from block N.  A new store type `bunzip2' uncompresses
+  stores in the bzip2 format into memory.
+
+* msgport, ping
 
 
 9 June 1997
