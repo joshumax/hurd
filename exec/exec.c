@@ -1623,7 +1623,7 @@ do_exec (file_t file,
   }
 
  out:
-  if (e.interp.section)
+  if (interp.file != MACH_PORT_NULL)
     finish (&interp, 1);
   finish (&e, !e.error);
 
