@@ -603,7 +603,7 @@ diskfs_nput (struct node *np)
 	     routine, which might result in further recursive calls to
 	     the ref-counting system.  So we have to reacquire our
 	     reference around the call to forestall disaster. */
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  spin_lock (&diskfs_node_refcnt_lock);
 	  np->references++;
 	  spin_unlock (&diskfs_node_refcnt_lock);
 
@@ -649,7 +649,7 @@ diskfs_nrele (struct node *np)
       if (!np->dn_stat.st_nlink && !tried_drop_softrefs)
 	{
 	  /* Same issue here as in nput; see that for explanation */
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  spin_lock (&diskfs_node_refcnt_lock);
 	  np->references++;
 	  spin_unlock (&diskfs_node_refcnt_lock);
 
