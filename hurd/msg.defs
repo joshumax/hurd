@@ -1,5 +1,5 @@
 /* Miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1991, 1992 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -21,8 +21,8 @@ subsystem msg 23000;
 
 #include <hurd/hurd_types.defs>
 
-#ifdef SIGNAL_IMPORTS
-SIGNAL_IMPORTS
+#ifdef MSG_IMPORTS
+MSG_IMPORTS
 #endif
 
 /* Post a signal to the process.  The refport indicates some
@@ -102,3 +102,13 @@ routine get_dtable (
 routine set_dtable (
 	process: mach_port_t;
 	dtable: portarray_t);
+
+/* A select call has completed.  */
+routine io_select_done (
+	notify_port: mach_port_t;
+	select_result: int;
+	id_tag: int);
+
+/* This is sent by the startup server when the system is going down.  */
+routine startup_dosync (
+	process: mach_port_t);
