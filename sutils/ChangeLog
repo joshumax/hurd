@@ -1,5 +1,7 @@
 2002-03-23  Roland McGrath  <roland@frob.com>
 
+	* MAKEDEV.sh (mkdev: shm): Change tmpfs size argument to 50%.
+
 	* MAKEDEV.sh (mkdev: shm): Give the file mode 644 and pass
 	options to tmpfs: -m 1777 512M.
 

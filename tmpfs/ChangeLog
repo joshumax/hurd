@@ -1,5 +1,8 @@
 2002-03-23  Roland McGrath  <roland@frob.com>
 
+	* tmpfs.c (parse_opt): Grok % suffix on number to mean percentage
+	of the machine's RAM.
+
 	* tmpfs.c (options): New static const variable.  Add --mode/-m.
 	(struct option_values): New type.
 	(parse_opt): Use that for VALUES.  Grok -m to set VALUES->mode.
