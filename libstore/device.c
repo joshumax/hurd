@@ -74,19 +74,27 @@ dev_write (struct store *store,
 }
 
 static error_t
-dev_decode (struct store_enc *enc, struct store_class *classes,
+dev_decode (struct store_enc *enc, const struct store_class *const *classes,
 	    struct store **store)
 {
   return store_std_leaf_decode (enc, _store_device_create, store);
 }
 
-static struct store_class
-dev_class =
+static error_t
+dev_open (const char *name, int flags,
+	  const struct store_class *const *classes,
+	  struct store **store)
+{
+  return store_device_open (name, flags, store);
+}
+
+struct store_class
+store_device_class =
 {
   STORAGE_DEVICE, "device", dev_read, dev_write,
-  store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode
+  store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode,
+  0, 0, 0, 0, 0, dev_open
 };
-_STORE_STD_CLASS (dev_class);
 
 /* Return a new store in STORE referring to the mach device DEVICE.  Consumes
    the send right DEVICE.  */
@@ -119,7 +127,7 @@ _store_device_create (device_t device, int flags, size_t block_size,
 		      struct store **store)
 {
   *store =
-    _make_store (&dev_class, device, flags, block_size, runs, num_runs, 0);
+    _make_store (&store_device_class, device, flags, block_size, runs, num_runs, 0);
   return *store ? 0 : ENOMEM;
 }
 
