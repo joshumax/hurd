@@ -29,7 +29,7 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
 {
   struct pager *p;
   
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
   
   if (control != p->memobjcntl)
@@ -64,7 +64,7 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
   _pager_free_structure (p);
 
  out:
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 }
 
