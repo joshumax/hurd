@@ -47,33 +47,6 @@ int trivfs_cntl_nportclasses = 1;
 
 /* ---------------------------------------------------------------- */
 
-#define USAGE "Usage: %s\n"
-
-static void
-usage(int status)
-{
-  if (status != 0)
-    fprintf(stderr, "Try `%s --help' for more information.\n",
-	    program_invocation_name);
-  else
-    {
-      printf(USAGE, program_invocation_name);
-    }
-
-  exit(status);
-}
-
-#define SHORT_OPTIONS "D&"
-
-static struct option options[] =
-{
-  {"debug", no_argument, 0, 'D'},
-  {"help", no_argument, 0, '&'},
-  {0, 0, 0, 0}
-};
-
-/* ---------------------------------------------------------------- */
-
 /* A demuxer to separate out pf-level operations on our node.  */
 static int
 pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -82,27 +55,15 @@ pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   return socket_server (inp, outp) || trivfs_demuxer (inp, outp);
 }
 
-int debug_flag = 0;
-spin_lock_t debug_lock = SPIN_LOCK_INITIALIZER;
-
 void main(int argc, char *argv[])
 {
-  int opt;
   error_t err;
   mach_port_t bootstrap;
 
-  while ((opt = getopt_long(argc, argv, SHORT_OPTIONS, options, 0)) != EOF)
-    switch (opt)
-      {
-      case 'D': debug_flag = 1; break;
-      case '&': usage(0);
-      default:  usage(1);
-      }
-
-  if (argv[optind] != NULL)
+  if (argc > 1)
     {
-      fprintf(stderr, USAGE, program_invocation_name);
-      usage(1);
+      fprintf(stderr, "Usage: %s\n", program_invocation_name);
+      exit (1);
     }
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
