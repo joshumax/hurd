@@ -32,6 +32,9 @@ int echo_qsize;
 /* Where the output_psize was when echo_qsize was last 0. */
 int echo_pstart;
 
+/* PHYSICAL position of the terminal cursor */
+int output_psize;
+
 /* Actually drop character onto output queue.  This should be the
    only place where we actually enqueue characters on the output queue;
    it is responsible for keeping track of cursor positions. */
@@ -54,7 +57,8 @@ poutput (int c)
 }
 
 /* Place C on output queue, doing normal output processing. 
-   This is used for write, never for echo.  */
+   Only echo routines should directly call this function.  Others
+   should call write_character below. */
 void
 output_character (int c)
 {
@@ -97,6 +101,13 @@ output_character (int c)
     }
   else
     poutput (c);
+}
+
+/* Place C on output queue, doing normal processing.  */
+void
+write_character (int c)
+{
+  output_character (c);
   echo_qsize = 0;
   echo_pstart = output_psize;
 }
@@ -202,26 +213,24 @@ echo_char (char c, int hderase, int quoted)
     {
       if (!hderase && (termflags & INSIDE_HDERASE))
 	{
-	  poutput ('/');
+	  write_character ('/');
 	  termflags &= ~INSIDE_HDERASE;
-	  echo_qsize = 0;
-	  echo_pstart = output_psize;
 	}
 
       if (hderase && !(termflags & INSIDE_HDERASE))
 	{
-	  poutput ('\\');
+	  output_character ('\\');
 	  termflags |= INSIDE_HDERASE;
 	}
 
       /* Control characters that should use caret-letter */
       if (echo_double (c, quoted))
 	{
-	  poutput ('^');
-	  poutput (c + ('A' - CHAR_SOH));
+	  output_character ('^');
+	  output_character (c + ('A' - CHAR_SOH));
 	}
       else
-	poutput (c);
+	output_character (c);
     }
 }
 
@@ -402,9 +411,13 @@ input_character (int c)
 	  if (!(lflag & NOFLSH))
 	    {
 	      drop_output ();
+	      clear_queue (inputq);
+	      clear_queue (rawq);
 	      flush = 1;
 	    }
 	  echo_char (c, 0, 0);
+	  echo_qsize = 0;
+	  echo_pstart = output_psize;
 	  send_signal (CCEQ (cc[VINTR], c) ? SIGINT : SIGQUIT);
 	  goto alldone;
 	}
@@ -412,8 +425,14 @@ input_character (int c)
       if (CCEQ (cc[VSUSP], c))
 	{
 	  if (!(lflag & NOFLSH))
-	    flush = 1;
+	    {
+	      flush = 1;
+	      clear_queue (inputq);
+	      clear_queue (rawq);
+	    }
 	  echo_char (c, 0, 0);
+	  echo_qsize = 0;
+	  echo_pstart = output_psize;
 	  send_signal (SIGTSTP);
 	  goto alldone;
 	}
@@ -536,6 +555,10 @@ input_character (int c)
 	{
 	  /* Drop everything */
 	  drop_output ();
+	  clear_queue (inputq);
+	  clear_queue (rawq);
+	  echo_pstart = 0;
+	  echo_qsize = 0;
 	  flush = 1;
 	}
       goto alldone;
