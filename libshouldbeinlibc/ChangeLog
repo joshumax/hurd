@@ -1,3 +1,7 @@
+Wed Jul 29 16:25:50 1998  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* ugids-verify-auth.c: Don't include <hurd/password.h> for now.
+
 1997-09-26  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* idvec-verify.c (verify_passwd, get_passwd): New functions.

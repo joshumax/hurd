@@ -1,6 +1,6 @@
 /* Verify user/group passwords and authenticate accordingly
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -28,7 +28,6 @@
 #include <grp.h>
 
 #include <hurd/paths.h>
-#include <hurd/password.h>
 
 #include "ugids.h"
 
