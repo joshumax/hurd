@@ -195,6 +195,8 @@ po_destroy_hook (struct trivfs_peropen *po)
       /* Empty queues */
       clear_queue (inputq);
       clear_queue (rawq);
+      (*bottom->notice_input_flushed) ();
+
       drain_output ();
       
       /* Possibly drop carrier */
@@ -651,7 +653,10 @@ S_tioctl_tiocflush (io_t port,
 	flags = O_READ|O_WRITE;
 
       if (flags & O_READ)
-	clear_queue (inputq);
+	{
+	  clear_queue (inputq);
+	  (*bottom->notice_input_flushed) ();
+	}
 
       if (flags & O_WRITE)
 	drop_output ();
@@ -727,7 +732,10 @@ set_state (io_t port,
 	}
       
       if (flushi)
-	clear_queue (inputq);
+	{
+	  clear_queue (inputq);
+	  (*bottom->notice_input_flushed) ();
+	}
 
       oldlflag = termstate.c_lflag;
       termstate.c_iflag = modes[0];
