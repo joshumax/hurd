@@ -1,11 +1,11 @@
 /* Definitions for socket interface
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1991, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -77,7 +77,8 @@ routine socket_connect2 (
 /* Create an address from a sockaddr.  */
 routine socket_create_address (
 	sock: socket_t;
-	sockaddr: sockaddr_t;
+	sockaddr_type: int
+	sockaddr: data_t;
 	out addr: addr_port_t;
 	binding: int);
 
@@ -89,26 +90,29 @@ routine socket_fabricate_address (
 /* Find the sockaddr name of an address. */
 routine socket_whatis_address(
 	addr: addr_port_t;
-	out sockaddr: sockaddr_t);
+	out sockaddr_type: int
+	out sockaddr: data_t);
 
 /* Shutdown a socket for reading or writing.  */
 routine socket_shutdown (
 	sock: socket_t;
 	direction: int);
 
+/* XXX to become ioctl hack */
 /* Get a socket option.  */
 routine socket_getopt (
 	sock: socket_t;
 	level: int;
 	option: int;
-	out optval: ioctl_data_t);
+	out optval: data_t);
 
+/* XXX to become ioctl hack */
 /* Set a socket option.  */
 routine socket_setopt (
 	sock: socket_t;
 	level: int;
 	option: int;
-	optval: ioctl_data_t);
+	optval: data_t);
 
 /* Send data over a socket, possibly including Mach ports.  */
 /* INTR */
@@ -117,7 +121,7 @@ routine socket_send (
 	addr: addr_port_t;
 	flags: int;
 	data: data_t;
-	ports: fd_array_t;
+	ports: portarray_t;
 	control: data_t;
 	out amount: int);
 
@@ -128,7 +132,7 @@ routine socket_recv (
 	out addr: addr_port_t;
 	flags: int;
 	out data: data_t;
-	out ports: fd_array_t;
+	out ports: portarray_t;
 	out control: data_t;
 	out outflags: int;
 	amount: int);
