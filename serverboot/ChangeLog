@@ -1,3 +1,9 @@
+1999-10-08  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* bootstrap.c: (DEFAULT_ROOT): Remove macro.
+	(main): If no root device was specified, then prompt as if the
+	user had specified -a.
+
 1999-10-06  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* bootstrap.c (DEFAULT_ROOT): Change to "hd0s1".

@@ -37,10 +37,6 @@
 
 #include "../boot/boot_script.h"
 
-/* Use this device if no root specified.  */
-#define DEFAULT_ROOT "hd0s1"
-
-
 #if 0
 /*
  *	Use 8 Kbyte stacks instead of the default 64K.
@@ -236,15 +232,12 @@ main(argc, argv)
 	panic_init(bootstrap_master_host_port);
 #endif
 
-	if (root_name[0] == '\0')
-                root_name = DEFAULT_ROOT;
-
 	/*
-	 * If the '-a' (ask) switch was specified, ask for
-	 * the root device.
+	 * If the '-a' (ask) switch was specified, or if no 
+	 * root device was specificed, ask for the root device.
 	 */
 
-	if (index(flag_string, 'a')) {
+	if (root_name [0] == '\0' || index(flag_string, 'a')) {
 	    static char		new_root[16];
 
 		printf("root device? [%s] ", root_name);
