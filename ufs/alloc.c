@@ -1,5 +1,5 @@
 /* Disk allocation routines
-   Copyright (C) 1993, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,2002 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -685,7 +685,7 @@ diskfs_alloc_node (struct node *dir,
 	assert ("duplicate allocation" && !np->dn_stat.st_mode);
 	assert (! (np->dn_stat.st_mode & S_IPTRANS));
 	if (np->dn_stat.st_blocks) {
-	  printf("free inode %d had %ld blocks\n",
+	  printf("free inode %Ld had %Ld blocks\n",
 		 ino, np->dn_stat.st_blocks);
 	  np->dn_stat.st_blocks = 0;
 	  np->dn_set_ctime = 1;
@@ -1395,7 +1395,7 @@ ffs_blkfree(register struct node *np,
 	assert ((u_int)size <= fs->fs_bsize && !fragoff (fs, size));
 	cg = dtog(fs, bno);
 	if ((u_int)bno >= fs->fs_size) {
-		printf("bad block %ld, ino %d\n", bno, np->dn->number);
+		printf("bad block %ld, ino %Ld\n", bno, np->dn->number);
 /*		ffs_fserr(fs, ip->i_uid, "bad block"); */
 		return;
 	}
@@ -1518,7 +1518,7 @@ diskfs_free_node (struct node *np, mode_t mode)
 	cgp->cg_time = diskfs_mtime->seconds;
 	ino %= fs->fs_ipg;
 	if (isclr(cg_inosused(cgp), ino)) {
-/*		printf("dev = 0x%x, ino = %d, fs = %s\n",
+/*		printf("dev = 0x%x, ino = %Ld, fs = %s\n",
 		    pip->i_dev, ino, fs->fs_fsmnt); */
 		assert (diskfs_readonly);
 	}
