@@ -231,19 +231,19 @@ main (int argc, char **argv)
     error(1, 0, "Bad device record size %d (should be %d)\n",
 	  sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
   
-  diskpagersize = sizes[DEV_GET_SIZE_DEVICE_SIZE];
-  assert (diskpagersize >= SBLOCK_OFFS + SBLOCK_SIZE);
+  disk_pagersize = sizes[DEV_GET_SIZE_DEVICE_SIZE];
+  assert (disk_pagersize >= SBLOCK_OFFS + SBLOCK_SIZE);
 
   /* Map the entire disk. */
   create_disk_pager ();
 
-  pokel_init (&sblock_pokel, diskpager->p, disk_image);
+  pokel_init (&sblock_pokel, disk_pager->p, disk_image);
 
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
 
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
-		diskpagersize, 0, 1, diskpagerport, 0, 0, 
+		disk_pagersize, 0, 1, disk_pagerport, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE), 
 		VM_INHERIT_NONE);
@@ -251,7 +251,7 @@ main (int argc, char **argv)
 
   get_hypermetadata();
 
-  if (diskpagersize < sblock->s_blocks_count * block_size)
+  if (disk_pagersize < sblock->s_blocks_count * block_size)
     ext2_panic("main",
 	       "Disk size (%d) too small (superblock says we need %ld)",
 	       sizes[DEV_GET_SIZE_DEVICE_SIZE],
