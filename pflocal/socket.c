@@ -51,11 +51,9 @@ static error_t
 ensure_connq (struct sock *sock)
 {
   error_t err = 0;
-debug (sock, "lock");
   mutex_lock (&sock->lock);
   if (!sock->listen_queue)
     err = connq_create (&sock->listen_queue);
-debug (sock, "unlock");
   mutex_unlock (&sock->lock);
   return err;
 }
@@ -81,12 +79,16 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
   error_t err;
   struct sock *peer;
 
-  if (! user)
-    return EOPNOTSUPP;
   if (! addr)
     return ECONNREFUSED;
 
-debug (user, "in");
+  /* Deallocate ADDR's send right, which we get as a side effect of the rpc. */
+  mach_port_deallocate (mach_task_self (),
+			((struct port_info *)addr)->port_right);
+
+  if (! user)
+    return EOPNOTSUPP;
+
   err = addr_get_sock (addr, &peer);
   if (!err)
     {
@@ -95,7 +97,6 @@ debug (user, "in");
       if (cq)
 	/* Only connect with sockets that are actually listening.  */
 	{
-debug (sock, "(sock) lock");
 	  mutex_lock (&sock->lock);
 	  if (sock->connect_queue)
 	    /* SOCK is already doing a connect.  */
@@ -110,23 +111,17 @@ debug (sock, "(sock) lock");
 	    {
 	      /* Assert that we're trying to connect, so anyone else trying
 	         to do so will fail with EALREADY.  */
-debug (sock, "(sock) connect_queue: %p", cq);
 	      sock->connect_queue = cq;
-debug (sock, "(sock) unlock");
 	      mutex_unlock (&sock->lock); /* Unlock SOCK while waiting.  */
 
-debug (cq, "(cq) connect: %p", sock);
 	      /* Try to connect.  */
 	      err = connq_connect (cq, sock->flags & SOCK_NONBLOCK, sock);
 
 	      /* We can safely set CONNECT_QUEUE to NULL, as no one else can
 		 set it until we've done so.  */
-debug (sock, "(sock) lock");
 	      mutex_lock (&sock->lock);
-debug (sock, "(sock) connect_queue: NULL");
 	      sock->connect_queue = NULL;
 	    }
-debug (sock, "(sock) unlock");
 	  mutex_unlock (&sock->lock);
 	}
       else
@@ -134,7 +129,6 @@ debug (sock, "(sock) unlock");
       sock_deref (peer);
     }
 
-debug (user, "out");
   return err;
 }
 
@@ -202,10 +196,15 @@ S_socket_accept (struct sock_user *user,
 error_t
 S_socket_bind (struct sock_user *user, struct addr *addr)
 {
-  if (! user)
-    return EOPNOTSUPP;
   if (! addr)
     return EADDRNOTAVAIL;
+
+  /* Deallocate ADDR's send right, which we get as a side effect of the rpc. */
+  mach_port_deallocate (mach_task_self (),
+			((struct port_info *)addr)->port_right);
+
+  if (! user)
+    return EOPNOTSUPP;
 
   return sock_bind (user->sock, addr);
 }
