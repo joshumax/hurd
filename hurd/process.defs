@@ -167,7 +167,7 @@ routine proc_get_arg_locations (
 	out argv: vm_address_t;
 	out envp: vm_address_t);
 
-/* Fetch the message ports of a set of processes */
+/* Fetch the message port of a process */
 routine proc_getmsgport (
 	process: process_t;
 	sreplyport reply_port: sreply_port_t;
