@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -20,6 +20,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "fs_S.h"
+#include <fcntl.h>
 
 /* Implement dir_mkfile as described in <hurd/fs.defs>. */
 error_t
@@ -29,32 +31,38 @@ diskfs_S_dir_mkfile (struct protid *cred,
 		     mach_port_t *newnode,
 		     mach_msg_type_name_t *newnodetype)
 {
-  struct node *np;
+  struct node *dnp, *np;
   error_t err;
 
   if (!cred)
     return EOPNOTSUPP;
-  np = cred->po->np;
-  mutex_lock (&np->lock);
-  if (!S_ISDIR (np->dn_stat.st_mode))
+  if (diskfs_readonly)
+    return EROFS;
+  dnp = cred->po->np;
+  mutex_lock (&dnp->lock);
+  if (!S_ISDIR (dnp->dn_stat.st_mode))
     {
-      mutex_unlock (&np->lock);
+      mutex_unlock (&dnp->lock);
       return ENOTDIR;
     }
-  err = diskfs_access (np, S_IWRITE, cred);
-  mutex_unlock (&np->lock);
+  err = diskfs_access (dnp, S_IWRITE, cred);
   if (err)
-    return err;
+    {
+      mutex_unlock (&dnp->lock);
+      return err;
+    }
   
   mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
   mode |= S_IFREG;
-  err = diskfs_create_node (0, 0, mode, &np, cred, 0);
+  err = diskfs_create_node (dnp, 0, mode, &np, cred, 0);
+  mutex_unlock (&dnp->lock);
   if (err)
     return err;
   
-  *returned_port = (diskfs_make_protid (diskfs_make_peropen (np, flags),
-					cred->uids, cred->nuids, 
-					cred->gids, cred->ngids))->pi.port;
+  flags &= (O_READ | O_WRITE | O_EXEC);
+  *newnode = (diskfs_make_protid (diskfs_make_peropen (np, flags),
+				  cred->uids, cred->nuids, 
+				  cred->gids, cred->ngids))->pi.port;
   *newnodetype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
