@@ -69,33 +69,40 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 error_t
 diskfs_S_startup_dosync (mach_port_t handle)
 {
-  error_t err;
+  error_t err = 0;
   struct port_info *pi 
     = ports_lookup_port (diskfs_port_bucket, handle,
 			 diskfs_shutdown_notification_class);
+
   if (!pi)
     return EOPNOTSUPP;
   
-  /* First start a sync so that if something goes wrong
-     we at least get this much done. */
-  diskfs_sync_everything (0);
-  diskfs_set_hypermetadata (0, 0);
+  if (! diskfs_readonly)
+    {
+      /* First start a sync so that if something goes wrong
+	 we at least get this much done. */
+      diskfs_sync_everything (0);
+      diskfs_set_hypermetadata (0, 0);
   
-  rwlock_writer_lock (&diskfs_fsys_lock);
+      rwlock_writer_lock (&diskfs_fsys_lock);
   
-  /* Permit all the current RPC's to finish, and then suspend new ones */
-  err = ports_inhibit_class_rpcs (diskfs_protid_class);
-  if (err)
-    return err;
-  
-  diskfs_sync_everything (1);
-  diskfs_set_hypermetadata (1, 1);
-  _diskfs_diskdirty = 0;
+      /* Permit all the current RPC's to finish, and then suspend new ones */
+      err = ports_inhibit_class_rpcs (diskfs_protid_class);
+      if (! err)
+	{
+	  diskfs_sync_everything (1);
+	  diskfs_set_hypermetadata (1, 1);
+	  _diskfs_diskdirty = 0;
 
-  ports_resume_class_rpcs (diskfs_protid_class);
-  rwlock_writer_unlock (&diskfs_fsys_lock);
-  
-  return 0;
+	  ports_resume_class_rpcs (diskfs_protid_class);
+	}
+
+      rwlock_writer_unlock (&diskfs_fsys_lock);
+    }
+
+  ports_port_deref (pi);
+
+  return err;
 }
 
 /* This is called when we have an ordinary environment, complete
