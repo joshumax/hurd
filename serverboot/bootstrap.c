@@ -389,8 +389,10 @@ main(argc, argv)
 	}
 #endif
 
+#if 0				/* Always stick around to handle swapon requests */
 	if (! doing_default_pager)
 	  task_terminate (mach_task_self ());
+#endif
 
 	/*
 	 * Become the default pager
