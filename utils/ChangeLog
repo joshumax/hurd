@@ -8,6 +8,10 @@
 	* showtrans.c (main): Likewise.
 	* fsysopts.c (main): Likewise.
 	* storeinfo.c (main): Likewise.
+	* unsu.c (main): Likewise.
+	* setauth.c (main): Likewise.
+	* rmauth.c (main): Likewise.
+	* addauth.c (main): Likewise.
 
 	* w.c (main): Avoid warning from `while (a = b)'.
 
