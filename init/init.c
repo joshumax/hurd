@@ -630,7 +630,7 @@ launch_single_user ()
      and we're done.  Otherwise, start /hurd/term on something inside
      /tmp and use that.  */
   termname = _PATH_CONSOLE;
-  term = file_name_lookup (termname, O_READ, 0);
+  term = file_name_lookup (termname, O_RDWR, 0);
   if (term != MACH_PORT_NULL)
     {
       err = io_stat (term, &st);
@@ -682,7 +682,7 @@ launch_single_user ()
       mach_port_deallocate (mach_task_self (), term);
 
       /* Now repeat the open. */
-      term = file_name_lookup (termname, O_READ, 0);
+      term = file_name_lookup (termname, O_RDWR, 0);
       if (term == MACH_PORT_NULL)
 	{
 	  perror (termname);
@@ -709,9 +709,9 @@ launch_single_user ()
      Otherwise, open fd's 0, 1, and 2. */
   if (term != MACH_PORT_NULL)
     {
-      errno = 0;
-      fd = open (termname, O_RDWR);
-      assert_perror (perror);
+      fd = openport (term, O_RDWR);
+      if (fd < 0)
+	assert_perror (errno);
 
       dup2 (fd, 0);
       close (fd);
