@@ -1,6 +1,8 @@
 #!/bin/sh
 PATH=/bin:/sbin
 
+swapon -a
+
 if [ -r /fastboot ]
 then
 	rm -f /fastboot
@@ -19,7 +21,7 @@ then
 	# Filesystem modified (but ok now)
 	1 | 2)
 		;;
-	# Fsck couldn't fix it. 
+	# Fsck couldn't fix it.
 	4 | 8)
 		echo "Automatic boot failed... help!"
 		exit 1
@@ -35,7 +37,7 @@ then
 		exit 1
 		;;
 	# Oh dear.
-	*)	
+	*)
 		echo "Unknown error during fsck"
 		exit 1
 		;;
@@ -80,6 +82,6 @@ if test -x /sbin/sendmail -a -r /etc/sendmail.cf; then
   /sbin/sendmail -bd -q30m	&& echo -n ' sendmail'
 fi
 
-echo .	
+echo .
 
 date
