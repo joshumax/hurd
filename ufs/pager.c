@@ -560,7 +560,7 @@ diskfs_pager_users ()
     }
 
   npagers = ports_count_bucket (pager_bucket);
-  if (npagers == 0)
+  if (npagers <= 1)
     return 0;
 
   if (MAY_CACHE == 0)
@@ -578,8 +578,7 @@ diskfs_pager_users ()
   sleep (1);
   
   npagers = ports_count_bucket (pager_bucket);
-  
-  if (npagers == 0)
+  if (npagers <= 1)
     return 0;
   
   /* Darn, there are actual honest users.  Turn caching back on,
