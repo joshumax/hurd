@@ -46,6 +46,14 @@ struct lookup_cache
 /* Cache itself */
 static struct lookup_cache *lookup_cache_head, *lookup_cache_tail;
 
+/* Buffer to hold statistics */
+static struct
+{
+  long pos_hits;
+  long neg_hits;
+  long miss;
+} statistics;
+
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
    means that this name has been confirmed as absent in the directory. */
 void
@@ -153,15 +161,18 @@ diskfs_check_cache (struct node *dir, char *name)
 	if (lc->np)
 	  {
 	    lc->np->references++;
+	    statistics.pos_hits++;
 	    spin_unlock (&diskfs_node_refcnt_lock);
 	    return lc->np;
 	  }
 	else
 	  {
+	    statistics.neg_hits++;
 	    spin_unlock (&diskfs_node_refcnt_lock);
 	    return (struct node *) -1;
 	  }
       }
+  statistics.miss++;
   spin_unlock (&diskfs_node_refcnt_lock);
   return 0;
 }
