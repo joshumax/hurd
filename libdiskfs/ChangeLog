@@ -1,3 +1,9 @@
+1999-10-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* diskfs.h (diskfs_name_max): Declare new variable.
+	* io-pathconf.c (diskfs_S_io_pathconf): Use it for _PC_NAME_MAX,
+	capping it to 1024.
+
 1999-10-12  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* opts-std-runtime.c (parse_opt: ARGP_KEY_INIT): Initialize H->noatime.
