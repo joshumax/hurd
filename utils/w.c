@@ -150,7 +150,7 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	  {
 	    if (io_stat (tty->port, &stat) == 0)
 	      {
-		hook->idle.tv_sec = now.tv_sec - stat.st_mtime;
+		hook->idle.tv_sec = now.tv_sec - stat.st_atime;
 		have |= W_PSTAT_IDLE;
 	      }
 	  }
