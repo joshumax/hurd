@@ -23,12 +23,17 @@ DIST_FILES = Makefile $(SRCS) ChangeLog sh.ChangeLog ps.ChangeLog
 UTILS=sh ps su
 
 SRCS = $(addsuffix .c,$(UTILS))
-OBJS = $(addsuffix .o,$(UTILS))
 UTILS_INST = $(addprefix $(hurdroot)/bin/,$(UTILS))
 
 all: $(UTILS)
 
 install: $(UTILS_INST)
+
+clean: 
+	rm -f $(UTILS)
+
+relink:
+	rm -f $(UTILS)
 
 $(UTILS_INST): $(hurdroot)
 
