@@ -75,7 +75,7 @@ auth_port_to_handle (auth_t auth)
 /* id management.  */
 
 static inline void
-idvec_copyout (struct idvec *idvec, uid_t **ids, uid_t *nids)
+idvec_copyout (struct idvec *idvec, uid_t **ids, size_t *nids)
 {
   if (idvec->num > *nids)
     *ids = idvec->ids;
@@ -92,13 +92,13 @@ idvec_copyout (struct idvec *idvec, uid_t **ids, uid_t *nids)
 kern_return_t
 S_auth_getids (struct authhandle *auth,
 	       uid_t **euids,
-	       u_int *neuids,
+	       size_t *neuids,
 	       uid_t **auids,
-	       u_int *nauids,
+	       size_t *nauids,
 	       uid_t **egids,
-	       u_int *negids,
+	       size_t *negids,
 	       uid_t **agids,
-	       u_int *nagids)
+	       size_t *nagids)
 {
   if (! auth)
     return EOPNOTSUPP;
@@ -111,17 +111,17 @@ S_auth_getids (struct authhandle *auth,
 /* Implement auth_makeauth as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_makeauth (struct authhandle *auth,
-		 mach_port_t *authpts, u_int nauths,
-		 uid_t *euids, u_int neuids,
-		 uid_t *auids, u_int nauids,
-		 uid_t *egids, u_int negids,
-		 uid_t *agids, u_int nagids,
+		 mach_port_t *authpts, size_t nauths,
+		 uid_t *euids, size_t neuids,
+		 uid_t *auids, size_t nauids,
+		 uid_t *egids, size_t negids,
+		 uid_t *agids, size_t nagids,
 		 mach_port_t *newhandle)
 {
   struct authhandle *newauth, *auths[1 + nauths];
   int hasroot = 0;
   error_t err;
-  u_int i, j;
+  size_t i, j;
 
   if (!auth)
     return EOPNOTSUPP;
@@ -272,13 +272,13 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 			    mach_port_t newport,
 			    mach_msg_type_name_t newport_type,
 			    uid_t **euids,
-			    u_int *neuids,
+			    size_t *neuids,
 			    uid_t **auids,
-			    u_int *nauids,
+			    size_t *nauids,
 			    uid_t **egids,
-			    u_int *negids,
+			    size_t *negids,
 			    uid_t **agids,
-			    u_int *nagids)
+			    size_t *nagids)
 {
   if (! serverauth)
     return EOPNOTSUPP;
