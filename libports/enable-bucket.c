@@ -28,7 +28,7 @@ ports_enable_bucket (struct port_bucket *bucket)
   bucket->flags &= ~PORT_BUCKET_NO_ALLOC;
   if (bucket->flags & PORT_BUCKET_ALLOC_WAIT)
     {
-      bucket->flags &= PORT_BUCKET_ALLOC_WAIT;
+      bucket->flags |= PORT_BUCKET_ALLOC_WAIT;
       condition_broadcast (&_ports_block);
     }
   mutex_unlock (&_ports_lock);
