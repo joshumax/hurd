@@ -1,6 +1,6 @@
 /* Integer-keyed hash table functions.
 
-   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
    
    This file is part of the GNU Hurd.
 
@@ -85,6 +85,8 @@ ihash_create(ihash_t *ht)
   if (*ht == NULL)
     return ENOMEM;
   (*ht)->size = 0;
+  (*ht)->cleanup = 0;
+  (*ht)->cleanup_arg = 0;
   return 0;
 }
 
