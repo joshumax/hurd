@@ -21,13 +21,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>
+#include <malloc.h>
 
 #include "store.h"
 
-/* Decodes the standard leaf device encoding that's common to various builtin
-   formats.  */
+/* Decodes the standard leaf encoding that's common to various builtin
+   formats, and calls CREATE to actually create the store.  */
 error_t
-store_default_leaf_decode (struct store_enc *enc, struct store **store)
+store_default_leaf_decode (struct store_enc *enc,
+			   error_t (*create)(mach_port_t port,
+					     size_t block_size,
+					     const off_t *runs,
+					     size_t runs_len,
+					     struct store **store),
+			   struct store **store)
 {
   char *misc;
   error_t err;
@@ -52,7 +59,7 @@ store_default_leaf_decode (struct store_enc *enc, struct store **store)
       || enc->cur_data + name_len + misc_len > enc->data_len)
     return EINVAL;
 
-  if (ports->data[ports->cur_data + name_len - 1] != '\0')
+  if (enc->data[enc->cur_data + name_len - 1] != '\0')
     return EINVAL;		/* Name not terminated.  */
 
   misc = malloc (misc_len);
@@ -62,23 +69,9 @@ store_default_leaf_decode (struct store_enc *enc, struct store **store)
   /* Read encoded ports (be careful to deallocate this if we barf).  */
   port = enc->ports[enc->cur_port++];
 
-  switch (type)
-    {
-    case STORAGE_DEVICE:
-      err =
-	_store_device_create (port, block_size,
-			      ports->offsets + ports->curr_offset, num_runs,
-			      store);
-      break;
-    case STORAGE_FILE:
-      err =
-	_store_file_create (port, block_size,
-			    ports->offsets + ports->curr_offset, num_runs,
-			    store);
-      break;
-    default:
-      err = EINVAL;
-    }
+  err =
+    (*create)(port, block_size, enc->offsets + enc->cur_offset, num_runs,
+	      store);
 
   if (err)
     {
@@ -105,13 +98,15 @@ store_decode (struct store_enc *enc, struct store **store)
     /* The first int should always be the type.  */
     return EINVAL;
 
-  switch (enc->ints[enc->cur_ints])
+  switch (enc->ints[enc->cur_int])
     {
     case STORAGE_HURD_FILE:
+      return store_default_leaf_decode (enc, _store_file_create, store);
     case STORAGE_DEVICE:
+      return store_default_leaf_decode (enc, _store_device_create, store);
+#if 0
     case STORAGE_TASK:
     case STORAGE_MEMORY:
-      return store_default_leaf_decode (enc, store);
 
     case STORAGE_ILEAVE:
       return store_ileave_decode (enc, store);
@@ -121,6 +116,7 @@ store_decode (struct store_enc *enc, struct store **store)
       return store_layer_decode (enc, store);
     case STORAGE_NULL:
       return store_null_decode (enc, store);
+#endif
 
     default:
       return EINVAL;
