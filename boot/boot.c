@@ -76,7 +76,7 @@ void init_termstate ();
 char *fsname;
 
 char *bootstrap_args;
-char *bootdevice = DEFAULT_BOOTDEVICE;
+char *bootdevice = "sd0a";
 
 /* We can't include <unistd.h> for this, because that will fight witho
    our definitions of syscalls below. */
