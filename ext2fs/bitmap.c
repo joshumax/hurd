@@ -44,7 +44,7 @@ inline unsigned long ffz(unsigned long word)
       word >>= 4;
       offset += 4;
     }
-  return ffz_nibble_map[word] + offset;
+  return ffz_nibble_map[word & 0xF] + offset;
 }
 
 /* ---------------------------------------------------------------- */
