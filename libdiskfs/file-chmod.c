@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_chmod
-   Copyright (C) 1992, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1996, 1997 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -22,7 +22,7 @@ error_t
 diskfs_S_file_chmod (struct protid *cred,
 	      mode_t mode)
 {
-  mode &= ~(S_IFMT | S_ISPARE);
+  mode &= ~(S_IFMT | S_ISPARE | S_ITRANS);
   
   CHANGE_NODE_FIELD (cred,
 		   ({
