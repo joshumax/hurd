@@ -1,12 +1,17 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-exec.c (diskfs_S_file_exec): Fix typo and braino in last change.
+	* init-startup.c (diskfs_startup_diskfs): Fix braino in last change.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* boot-start.c (diskfs_S_fsys_init, diskfs_start_bootstrap): Don't
-	use MOVE_SEND in Hurd RPC. 
+	use MOVE_SEND in Hurd RPC.
 
 	* file-exec.c (diskfs_S_file_exec): Don't use MAKE_SEND in Hurd
-	RPC. 
+	RPC.
 	* init-startup.c (diskfs_startup_diskfs, _diskfs_init_completed):
-	Likewise. 
+	Likewise.
 
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 

@@ -1,7 +1,10 @@
+2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* file-exec.c (netfs_S_file_exec): Fix typo and braino in last change.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
-	* file-exec.c (netfs_S_file_exec): Don't use MAKE_SEND in Hurd
-	RPC. 
+	* file-exec.c (netfs_S_file_exec): Don't use MAKE_SEND in Hurd RPC.
 	* init-startup.c (netfs_startup): Likewise.
 
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
