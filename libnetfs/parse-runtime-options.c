@@ -26,5 +26,5 @@ netfs_parse_runtime_options (int argc, char **argv,
 {
   return argp_parse (standard_argp, argc, argv,
 		     ARGP_NO_ERRS | ARGP_NO_HELP | ARGP_PARSE_ARGV0,
-		     0);
+		     0, 0);
 }
