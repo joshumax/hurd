@@ -27,7 +27,7 @@ DISTFILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
 LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
-	 $(libfshelp) $(libdiskfs) $(libthreads)
+	 $(libfshelp) $(libdiskfs) $(libthreads) $(libports)
 
 all: ufs
 
