@@ -74,13 +74,6 @@ diskfs_start_bootstrap (void)
   mutex_unlock (&execstartlock);
   assert (diskfs_exec_ctl);
 
-  /* Contact the exec server */
-  err = fsys_getroot (diskfs_exec_ctl, idlist, 3, idlist, 3, 0, 
-		      &retry, retry_name, &diskfs_exec);
-  assert (!err);
-  assert (retry == FS_RETRY_NONE);
-  assert (diskfs_exec);
-  
   /* Create the port for current and root directory */
   root_pt = (ports_get_right
 	     (diskfs_make_protid
@@ -90,8 +83,17 @@ diskfs_start_bootstrap (void)
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
-  /* Execute the startup server. */
 
+  /* Contact the exec server */
+  err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
+		      idlist, 3, idlist, 3, 0, 
+		      &retry, retry_name, &diskfs_exec);
+  assert (!err);
+  assert (retry == FS_RETRY_NONE);
+  assert (diskfs_exec);
+
+  
+  /* Execute the startup server. */
   if (diskfs_bootflags & RB_INITNAME)
     {
       printf ("Init name [%s]: ", default_init);
@@ -249,9 +251,7 @@ error_t
 diskfs_execboot_fsys_startup (mach_port_t port,
 			      mach_port_t ctl,
 			      mach_port_t *real,
-			      mach_msg_type_name_t *realpoly,
-			      mach_port_t *dotdot_node,
-			      mach_msg_type_name_t *dotdot_node_poly)
+			      mach_msg_type_name_t *realpoly)
 {
   struct port_info *pt;
   
@@ -260,8 +260,6 @@ diskfs_execboot_fsys_startup (mach_port_t port,
   
   *real = MACH_PORT_NULL;
   *realpoly = MACH_MSG_TYPE_COPY_SEND;
-  *dotdot_node = MACH_PORT_NULL;
-  *dotdot_node_poly = MACH_MSG_TYPE_COPY_SEND;
   
   diskfs_exec_ctl = ctl;
 
