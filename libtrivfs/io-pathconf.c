@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,10 +24,7 @@ trivfs_S_io_pathconf (struct trivfs_protid *cred,
 		      int name, int *val)
 {
   if (cred)
-    {
-      *val = 0;
-      return 0;
-    }
+    return io_pathconf (cred->realnode, name, val);
   else
     return EOPNOTSUPP;
 }
