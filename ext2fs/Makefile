@@ -22,7 +22,6 @@ SRCS = balloc.c bitmap.c devio.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c
 OBJS = $(SRCS:.c=.o) error.o exec_server_image.o
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
-DIST_FILES = BROKEN
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
 		../hurd/ioserver.h ../hurd/fshelp.h
 HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
