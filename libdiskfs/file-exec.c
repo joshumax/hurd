@@ -48,6 +48,7 @@ diskfs_S_file_exec (struct protid *cred,
   struct node *np;
   error_t err;
   struct protid *newpi;
+  int suid, sgid, secure;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -81,7 +82,323 @@ diskfs_S_file_exec (struct protid *cred,
       return EACCES;
     }
 
-#ifdef this_is_so_totally_wrong
+#ifdef this_is_right_but_not_quite_complete
+  suid = np->dn_stat.st_mode & S_ISUID; /* XXX not if we can't do it... */
+  sgid = np->dn_stat.st_mode & S_ISGID;	/* XXX not of we can't do it... */
+  secure = 0;
+  
+  if (suid || sgid)
+    {
+      /* These variables describe the auth port that the
+	 user gave us. */
+      uid_t aubuf[10], gubuf[10], agbuf[20], ggbuf[20];
+      uid_t *oldauxuids = aubuf, *oldgenuids = gubuf;
+      gid_t *oldauxgids = agbuf, *oldgengids = ggbuf;
+      int noldauxuids = 10, noldgenuids = 10;
+      int noldauxgids = 20, noldgengids = 20;
+
+      /* These describe the auth port we are trying to create. */
+      uid_t *auxuids, *genuids;
+      gid_t *auxgids, *gengids;
+      int nauxuids, ngenuids;
+      int nauxgids, ngengids;
+      auth_t newauth;
+
+      int isroot, i;
+
+      int
+	scan_ids (uid_t *set, int setlen, uid_t test)
+	  {
+	    int i;
+	    for (i = 0; i < setlen; i++)
+	      if (set[i] == test)
+		return 1;
+	    return 0;
+	  }
+      
+      void
+	reauth (mach_port_t *port, int isproc)
+	  {
+	    mach_port_t newport, ref;
+	    if (*port == MACH_PORT_NULL)
+	      return;
+	    ref = mach_reply_port ();
+	    err = (isproc ? proc_reauthenticate : io_reauthenticate)
+	      (*port, ref, MACH_MSG_TYPE_MAKE_SEND);
+	    if (!err)
+	      err = auth_user_authenticate (newauth, *port, ref,
+					    MACH_MSG_TYPE_MAKE_SEND, &newport);
+	    if (err)
+	      {
+		/* Could not reauthenticate.  Roland thinks we should not
+		   give away the old port.  I disagree; it can't actually hurt
+		   because the old id's are still available, so it's no
+		   security problem. */
+
+		/* Nothing Happens. */
+	      }
+	    else
+	      {
+		if (isproc)
+		  mach_port_deallocate (mach_task_self (), newport);
+		else
+		  {
+		    mach_port_deallocate (mach_task_self (), *port);
+		    *port = newport;
+		  }
+	      }
+	    mach_port_destroy (mach_task_self (), ref);
+	  }
+
+
+      /* STEP 0: Fetch the user's current id's. */
+      
+      /* First fetch the current ID's the user has. */
+      err = auth_getids (portarray[INIT_PORT_AUTH],
+			 &oldgenuids, &noldgenuids,
+			 &oldauxuids, &noldauxuids,
+			 &oldgengids, &noldgengids,
+			 &oldauxgids, &noldauxgids);
+      if (err)
+	goto abandon_suid;
+
+
+      /* STEP 1: Find out if the user's permission will be
+	 increasing, or just rearranged. */
+
+      /* If the user's auth port is fraudulent, then these values
+	 will be wrong.  No matter; we will repeat these checks
+	 using secure id sets later if the port turns out to be 
+	 bogus.  */
+      isroot = (scan_ids (oldgenuids, noldgenuids, 0) 
+		&& scan_ids (oldauxuids, noldauxuids, 0));
+      if (!secure && suid && !isroot
+	  && !scan_ids (oldgenuids, noldgenuids, np->dn_stat.st_uid)
+	  && !scan_ids (oldauxuids, noldauxuids, np->dn_stat.st_uid))
+	secure = 1;
+      if (!secure && sgid && !isroot
+	  && !scan_ids (oldgengids, noldgengids, np->dn_stat.st_gid)
+	  && !scan_ids (oldauxgids, noldauxgids, np->dn_stat.st_gid))
+	secure = 1;
+
+
+      /* STEP 2: Rearrange the ids to decide what the new 
+	 lists will look like. */
+      
+      if (suid)
+	{
+	  /* We are dumping the current first uid; put it
+	     into the auxuids array.  This is complex.  The different
+	     cases below are intended to make sure that we don't
+	     lose any uids (unlike posix) and to make sure that aux ids
+	     zero and one (if already set) behave like the posix
+	     ones. */
+	     
+	  if (noldauxuids == 0)
+	    {
+	      auxuids = alloca (nauxuids = 1);
+	      auxuids[0] = oldgenuids[0];
+	    }
+	  else if (noldauxuids == 1)
+	    {
+	      auxuids = alloca (nauxuids = 2);
+	      auxuids[0] = oldauxuids[0];
+	      auxuids[1] = oldgenuids[0];
+	    }
+	  else if (noldauxuids == 2)
+	    {
+	      if (oldgenuids[0] == oldauxuids[1])
+		{
+		  auxuids = alloca (nauxuids = 2);
+		  auxuids[0] = oldauxuids[0];
+		  auxuids[1] = oldauxuids[1];
+		}
+	      else
+		{
+		  /* Shift by one */
+		  auxuids = alloca (nauxuids = 3);
+		  auxuids[0] = oldauxuids[0];
+		  auxuids[1] = oldgenuids[0];
+		  auxuids[2] = oldauxuids[1];
+		}
+	    }
+	  else
+	    {
+	      /* Just like above, but in the shift case note
+		 that the new auxuids[2] shouldn't be allowed
+		 to needlessly duplicate something further on. */
+	      if (oldgenuids[0] == oldauxuids[1]
+		  || scan_uids (&oldauxuids[2], nauxuids - 2, oldauxuids[1]))
+		{
+		  auxuids = alloca (nauxuids = noldauxuids);
+		  bcopy (oldauxuids, auxuids, nauxuids);
+		  auxuids[1] = oldgenuids[0];
+		}
+	      else 
+		{
+		  auxuids = alloca (nauxuids = noldauxuids + 1);
+		  auxuids[0] = oldauxuids[0];
+		  auxuids[1] = oldgenuids[0];
+		  bcopy (&oldauxuids[1], &auxuids[2], noldauxuids - 1);
+		}
+	    }
+	  
+	  /* Whew.  Now set the new uid. */
+	  genuids = alloca (ngenuids = noldgenuids);
+	  genuids[0] = np->dn_stat.st_uid;
+	  bcopy (&oldgenuids[1], &genuids[1], ngenuids - 1);
+	}
+      
+      /* And now the same thing for group ids, mutatis mutandis. */
+      if (sgid)
+	{
+	  /* We are dumping the current first gid; put it
+	     into the auxgids array.  This is complex.  The different
+	     cases below are intended to make sure that we don't
+	     lose any gids (unlike posix) and to make sure that aux ids
+	     zero and one (if already set) behave like the posix
+	     ones. */
+	     
+	  if (noldauxgids == 0)
+	    {
+	      auxgids = alloca (nauxgids = 1);
+	      auxgids[0] = oldgengids[0];
+	    }
+	  else if (noldauxgids == 1)
+	    {
+	      auxgids = alloca (nauxgids = 2);
+	      auxgids[0] = oldauxgids[0];
+	      auxgids[1] = oldgengids[0];
+	    }
+	  else if (noldauxgids == 2)
+	    {
+	      if (oldgengids[0] == oldauxgids[1])
+		{
+		  auxgids = alloca (nauxgids = 2);
+		  auxgids[0] = oldauxgids[0];
+		  auxgids[1] = oldauxgids[1];
+		}
+	      else
+		{
+		  /* Shift by one */
+		  auxgids = alloca (nauxgids = 3);
+		  auxgids[0] = oldauxgids[0];
+		  auxgids[1] = oldgengids[0];
+		  auxgids[2] = oldauxgids[1];
+		}
+	    }
+	  else
+	    {
+	      /* Just like above, but in the shift case note
+		 that the new auxgids[2] shouldn't be allowed
+		 to needlessly duplicate something further on. */
+	      if (oldgengids[0] == oldauxgids[1]
+		  || scan_gids (&oldauxgids[2], nauxgids - 2, oldauxgids[1]))
+		{
+		  auxgids = alloca (nauxgids = noldauxgids);
+		  bcopy (oldauxgids, auxgids, nauxgids);
+		  auxgids[1] = oldgengids[0];
+		}
+	      else 
+		{
+		  auxgids = alloca (nauxgids = noldauxgids + 1);
+		  auxgids[0] = oldauxgids[0];
+		  auxgids[1] = oldgengids[0];
+		  bcopy (&oldauxgids[1], &auxgids[2], noldauxgids - 1);
+		}
+	    }
+	  
+	  /* Whew.  Now set the new gid. */
+	  gengids = alloca (ngengids = noldgengids);
+	  gengids[0] = np->dn_stat.st_gid;
+	  bcopy (&oldgengids[1], &gengids[1], ngengids - 1);
+	}
+      
+      /* Deallocate the buffers if MiG allocated them. */
+      if (oldgenuids != gubuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) oldgenuids, 
+		       noldgenuids * sizeof (uid_t));
+      if (oldauxuids != aubuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) oldauxuids,
+		       noldauxuids * sizeof (uid_t));
+      if (oldgengids != ggbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) oldgengids,
+		       noldgengids * (sizeof (gid_t)));
+      if (oldauxgids != agbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) oldauxgids,
+		       noldauxgids * (sizeof (gid_t)));
+
+
+      /* STEP 3: Attempt to create this new auth handle. */
+      err = auth_makeauth (diskfs_auth_server_port, &portarray[INIT_PORT_AUTH],
+			   MACH_MSG_TYPE_COPY_SEND, 1, 
+			   genuids, ngenuids,
+			   auxuids, nauxuids,
+			   gengids, ngengids,
+			   auxgids, nauxgids,
+			   &newauth);
+      if (err == EINVAL)
+	{
+	  /* The user's auth port was bogus.  We have to repeat the
+	     check in step 1 above, but this time use the id's that
+	     we have verified on the incoming request port. */
+	  isroot = diskfs_isuid (cred, 0);
+	  secure = 0;
+	  if (suid && !isroot && !diskfs_isuid (cred, np->dn_stat.st_uid))
+	    secure = 1;
+	  if (!secure && sgid && !isroot
+	      && !diskfs_groupmember (cred, np->dn_stat.st_gid))
+	    secure = 1;
+
+	  /* XXX Bad bug---the id's here came from the user's bogus
+	     port; we shouldn't just trust them */
+
+	  /* And now again try and create the new auth port, this
+	     time not using the user for help. */
+	  err = auth_makeauth (diskfs_auth_server_port, 
+			       0, MACH_MSG_TYPE_COPY_SEND, 0, 
+			       genuids, ngenuids,
+			       auxuids, nauxuids,
+			       gengids, ngengids,
+			       auxgids, nauxgids,
+			       &newauth);
+	}
+
+      if (err)
+	goto abandon_suid;
+      
+      
+      /* STEP 4: Re-authenticate all the ports we are handing to the user
+	 with this new port, and install the new auth port in portarray. */
+      for (i = 0; i < fdslen; ++i)
+	reauth (&fds[i], 0);
+      if (secure)
+	{
+	  /* Not worth doing these; the exec server will be 
+	     doing them again for us. */
+	  portarray[INIT_PORT_PROC] = MACH_PORT_NULL;
+	  portarray[INIT_PORT_CRDIR] = MACH_PORT_NULL;
+	}
+      else
+	{
+	  reauth (&portarray[INIT_PORT_PROC], 1);
+	  reauth (&portarray[INIT_PORT_CRDIR], 0);
+	}
+      reauth (&portarray[INIT_PORT_CWDIR], 0);
+      mach_port_deallocate (mach_task_self (), portarray[INIT_PORT_AUTH]);
+      portarray[INIT_PORT_AUTH] = newauth;
+
+
+      /* STEP 5: If we must be secure, then set the appropriate flags
+	 to tell the exec server so. */
+      if (secure)
+	flags |= EXEC_SECURE | EXEC_NEWTASK;
+    }
+ abandon_suid:
+#endif
+    
+
+#ifdef this_is_so_totally_wrong_and_is_replaced_with_the_above
   /* Handle S_ISUID and S_ISGID uid substitution.  */
   /* XXX All this complexity should be moved to libfshelp.  -mib */
   if ((((np->dn_stat.st_mode & S_ISUID)
