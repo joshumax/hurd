@@ -16,6 +16,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
+#include "priv.h"
+#include "memory_object.h"
+
 error_t
 _pager_seqnos_memory_object_copy (mach_port_t old,
 			   mach_port_seqno_t seq,
