@@ -460,15 +460,32 @@ new_proc (task_t task)
   
   p->p_owner = 0;
       
-  if (p->p_pid < 2)
+  if (p->p_pid == 0)
     {
       uid_t foo = 0;
       p->p_id = make_ids (&foo, 1, &foo, 1);
-      p->p_parent = 0;
+      p->p_parent = p;
       p->p_sib = 0;
+      p->p_prevsib = &p->p_ochild;
+      p->p_ochild = p;
       p->p_loginleader = 1;
+      p->p_parentset = 1;
     }
+  else if (p->p_pid == 1)
+    {
+      p->p_id = self_proc->p_id;
+      p->p_id->i_refcnt++;
+      p->p_parent = self_proc;
 
+      p->p_sib = self_proc->p_ochild;
+      p->p_prevsib = &self_proc->p_ochild;
+      if (p->p_sib)
+	p->p_sib->p_prevsib = &p->p_sib;
+      self_proc->p_ochild = p;
+      p->p_loginleader = 1;
+      p->p_ochild = 0;
+      p->p_parentset = 1;
+    }
   else
     {
       p->p_id = &nullids;
@@ -483,10 +500,10 @@ new_proc (task_t task)
 	p->p_sib->p_prevsib = &p->p_sib;
       startup_proc->p_ochild = p;
       p->p_loginleader = 0;
+      p->p_ochild = 0;
+      p->p_parentset = 0;
     }
   
-  p->p_ochild = 0;
-
   if (p->p_pid < 2)
     boot_setsid (p);
   else
@@ -503,7 +520,6 @@ new_proc (task_t task)
   p->p_waiting = 0;
   p->p_traced = 0;
   p->p_nostopcld = 0;
-  p->p_parentset = 0;
   p->p_deadmsg = 0;
   p->p_checkmsghangs = 0;
   p->p_msgportwait = 0;
