@@ -778,11 +778,8 @@ prepare (file_t file, struct execdata *e)
 	    break;
 	  }
     }
-  else if (e->error == EOPNOTSUPP)
-    /* We can't mmap FILE, but perhaps we can do normal I/O to it.  */
-    e->error = 0;
 
-  if (!e->error && !e->cntl)
+  if (!e->cntl && (!e->error || e->error == EOPNOTSUPP))
     {
       /* No shared page.  Do a stat to find the file size.  */
       struct stat st;
