@@ -23,8 +23,9 @@ lib-subdirs = libioserver libports libpager libfshelp libdiskfs libtrivfs \
 	      libthreads
 prog-subdirs = auth boot exec fstests ifsock init.trim mkbootfs \
 	       proc term ufs pflocal sh.trim ps pipes dev.trim su symlink
-other-subdirs = hurd i386 doc init tmpfs dev
+other-subdirs = hurd i386 doc init tmpfs dev ext2fs
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
+subdirs-nodist = ext2fs
 
 DIST_FILES = COPYING Makeconf Makefile Maketools README NEWS missing \
 	gcc-specs tasks ChangeLog
@@ -52,7 +53,7 @@ all: $(addsuffix -all,$(prog-subdirs))
 hurd-snap:
 	mkdir hurd-snap
 
-dist: hurd-snap $(addsuffix -lndist,$(subdirs)) lndist
+dist: hurd-snap $(addsuffix -lndist,$($filter-out $(subdirs-nodist), $(subdirs))) lndist
 	tar cfz hurd-snap.tar.gz hurd-snap
 	rm -rf hurd-snap
 
