@@ -41,8 +41,7 @@ enum porttype
 };
 
 spin_lock_t _diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
-
-#define MAXSYMLINKS 8
+volatile struct mapped_time_value *_diskfs_mtime;
 
 /* Needed for MiG. */
 typedef struct protid *protid_t;
@@ -60,7 +59,7 @@ begin_using_protid_port (file_t port)
    balances begin_using_protid_port, and is arranged for the io
    and fs interfaces by fsmutations.h. */
 extern inline void
-diskfs_end_using_protid_port (struct protid *cred)
+end_using_protid_port (struct protid *cred)
 {
   ports_done_with_port (cred);
 }
@@ -104,6 +103,15 @@ diskfs_nrele (struct node *np)
     diskfs_drop_node (np);
   spin_unlock (&_diskfs_node_refcnt_lock);
 }
+
+/* Actually read or write a file.  The file size must already permit
+   the requested access.  NP is the file to read/write.  DATA is a buffer
+   to write from or fill on read.  OFFSET is the absolute address (-1
+   not permitted here); AMT is the size of the read/write to perform;
+   DIR is set for writing and clear for reading.  The inode must
+   be locked.  */
+error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset, 
+			       int amt, int dir);
 
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
