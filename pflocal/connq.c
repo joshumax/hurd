@@ -250,6 +250,28 @@ debug (&req, "(req) unlock");
   return err;
 }
 
+/* `Compresses' CQ, by removing any NULL entries.  CQ should be locked.  */
+static void
+connq_compress (struct connq *cq)
+{
+  unsigned pos;
+  unsigned comp_tail = cq->head;
+
+debug (cq, "compress queue");
+  /* Now compress the queue to remove any null entries we put in.  */
+  for (pos = cq->head; pos != cq->tail; pos = qnext (cq, pos))
+    if (cq->queue[pos] != NULL)
+      /* This position has a non-NULL request, so move it to the end of the
+	 compressed queue.  */
+      {
+	cq->queue[comp_tail] = cq->queue[pos];
+	comp_tail = qnext (cq, comp_tail);
+      }
+
+  /* Move back tail to only include what we kept in the queue.  */
+  cq->tail = comp_tail;
+}
+
 /* Interrupt any threads waiting on CQ, both listeners and connectors, and
    make them return with EINTR.  */
 void
@@ -286,7 +308,7 @@ debug (cq, "out");
 void
 connq_interrupt_sock (struct connq *cq, struct sock *sock)
 {
-  unsigned pos, comp_tail;
+  unsigned pos;
 
 debug (cq, "in");
 debug (cq, "lock");
@@ -303,21 +325,7 @@ debug (cq, "interrupt connections from: %p", sock);
       cq->queue[pos] = NULL;	/* Mark REQ as being deleted.  */
     }
 
-debug (cq, "compress queue");
-  /* Now compress the queue to remove any null entries we put in.  */
-  for (pos = cq->head, comp_tail = cq->head;
-       pos != cq->tail;
-       pos = qnext (cq, pos))
-    if (cq->queue[pos] != NULL)
-      /* This position has a non-NULL request, so move it to the end of the
-	 compressed queue.  */
-      {
-	cq->queue[comp_tail] = cq->queue[pos];
-	comp_tail = qnext (cq, comp_tail);
-      }
-
-  /* Move back tail to only include what we kept in the queue.  */
-  cq->tail = comp_tail;
+  connq_compress (cq);
 
 debug (cq, "unlock");
   mutex_unlock (&cq->lock);
