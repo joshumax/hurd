@@ -358,6 +358,7 @@ pager_report_extent (struct user_pager_info *pager,
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
+  /* XXX Do the right thing for the disk pager here too. */
   if (upi->type == FILE_DATA)
     {
       spin_lock (&node2pagelock);
