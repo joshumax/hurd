@@ -457,7 +457,11 @@ get_thread_wait (char *waits, size_t waits_len, unsigned n)
     if (wait >= waits + waits_len)
       wait = 0;
     else
-      wait = memchr (wait, '\0', wait + waits_len - waits);
+      {
+	wait = memchr (wait, '\0', waits_len - (wait - waits));
+	if (wait)
+	  wait++;
+      }
   return wait;
 }
 
