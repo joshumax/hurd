@@ -24,16 +24,18 @@ PROCMIGOPTS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 	"-DSERVERPREFIX=S_"
 
 OBJS = wait.o hash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
-	primes.o cpu-types.o \
+	primes.o cpu-types.o stubs.o \
 	processServer.o notifyServer.o process_replyUser.o msgUser.o \
 	interruptServer.o proc_excUser.o proc_excServer.o proc_excreplUser.o \
 	proc_excreplServer.o
 
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
-       primes.c cpu-types.c
+       primes.c cpu-types.c stubs.c
 
 DIST_FILES = $(SRCS) proc.h Makefile proc_exc.defs proc_excrepl.defs \
 		ChangeLog
+
+LIBS = $(libthreads)
 
 all: proc
 
@@ -76,9 +78,21 @@ proc_excrepl_S.h proc_excreplUser.c proc_excreplServer.c proc_excrepl.h: proc_ex
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
 # We don't use those, so we're safe in breaking them.
+# 
+# The first sed command inserts timeout argments for each of the RPCs.
+# The second sed command fixes the prototypes in msg.h to correspond.
 msg.h msgUser.c: $(includedir)/hurd/msg.defs $(includedir)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) -Droutine=simpleroutine -Dout= $(includedir)/hurd/msg.defs \
-	| $(MIGCOM) -prefix nowait_ -server /dev/null
+	| $(MIGCOM) -prefix nowait_ -server /dev/null -user msgUser.c -header msg.h
+
+
+#	sed	-e 's/process,/process,int timeout,/' \
+#		-e 's/MACH_MSG_OPTION_NONE/MACH_SEND_TIMEOUT/' \
+#		-e 's/MACH_MSG_TIMEOUT_NONE/timeout/' \
+#		< msgUser.c > msgUser.c.temp
+#	mv msgUser.c.temp msgUser.c
+#	sed -e 's/process,/process,int timeout,/' < msg.h > msg.h.temp
+#	mv msg.h.temp msg.h
 
 clean:
 	rm -f *.o *Server.c *_S.h *User.c proc process_reply.h \
