@@ -20,7 +20,7 @@ hurdsource := /home/gd3/gnu/hurd
 # Where to find various things for compilation:
 headers := $(hurdinst)/include
 startup := $(hurdinst)/lib/crt0.o
-libc := $(hurdinst)/lib/libc.a
+libc := $(patsubst %,$(hurdinst)/lib/lib%.a,c machuser hurduser c)
 libthreads := $(hurdinst)/lib/libthreads.a
 libports := $(hurdinst)/lib/libports.a
 libioserver := $(hurdinst)/lib/libioserver.a
