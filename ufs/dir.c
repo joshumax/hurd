@@ -153,7 +153,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 
   inum = 0;
   
-  if (!diskfs_readonly)
+  if (!diskfs_check_readonly ())
     dp->dn_set_atime = 1;
   
   for (blockaddr = buf, idx = 0;
@@ -170,7 +170,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
 	}
     }
 
-  if (!diskfs_readonly)
+  if (!diskfs_check_readonly ())
     dp->dn_set_atime = 1;
   if (diskfs_synchronous)
     diskfs_node_update (dp, 1);
@@ -705,7 +705,7 @@ diskfs_dirempty(struct node *dp,
   mach_port_deallocate (mach_task_self (), memobj);
   assert (!err);
 
-  if (!diskfs_readonly)
+  if (!diskfs_check_readonly ())
     dp->dn_set_atime = 1;
 
   for (curoff = buf; 
@@ -721,14 +721,14 @@ diskfs_dirempty(struct node *dp,
 		  && entry->d_name[1] != '\0')))
 	{
 	  vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
-	  if (!diskfs_readonly)
+	  if (!diskfs_check_readonly ())
 	    dp->dn_set_atime = 1;
 	  if (diskfs_synchronous)
 	    diskfs_node_update (dp, 1);
 	  return 0;
 	}
     }
-  if (!diskfs_readonly)
+  if (!diskfs_check_readonly ()) 
     dp->dn_set_atime = 1;
   if (diskfs_synchronous)
     diskfs_node_update (dp, 1);
