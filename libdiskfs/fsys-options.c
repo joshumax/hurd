@@ -57,7 +57,11 @@ diskfs_S_fsys_set_options (fsys_t fsys,
     return EOPNOTSUPP;
 
   if (do_children)
-    diskfs_node_iterate (helper);
+    {
+      ret = diskfs_node_iterate (helper);
+      if (ret)
+	return ret;
+    }
 
   argz_extract (data, len, argv);
 
