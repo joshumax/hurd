@@ -22,7 +22,7 @@ makemode := library
 
 # In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
 # all done in libc.
-SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c malloc.c
+SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c malloc.c \
 	cancel-cond.c
 I386SRCS := i386/csw.S i386/thread.c
 
