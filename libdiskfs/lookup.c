@@ -121,7 +121,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
     }
   
   err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
-  dp->dn_set_atime = 1;
+  if (!diskfs_readonly)
+    dp->dn_set_atime = 1;
   if (err && err != ENOENT)
     return err;
   
