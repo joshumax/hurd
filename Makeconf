@@ -57,8 +57,12 @@ endif
 
 # Generic compiler options, appended to whatever the particular makefile set.
 # The config.make file will append the values chosed by configure.
-CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include \
-	    -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
+INCLUDES = -I. $(srcdirinc)
+ifneq (.,$(dir))
+INCLUDES += -I.. $(top_srcdirinc)
+endif
+INCLUDES += -I$(..)include -I$(top_srcdir)/include
+CPPFLAGS += $(INCLUDES) -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
 CFLAGS += -Wall -g -O3
 
@@ -240,15 +244,21 @@ $(includedir)/$(installhdrsubdir): $(includedir)
 # Not quite perfect, but at least it does end up getting done; and once done
 # it never needs to be repeated for a particular header.
 ifeq ($(installhdrsubdir),.)
-INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/include/,$(installhdrs))
-$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/include/%:
-	ln -s ../$(dir)/$* $@
+local-installhdrsubdir = include
 else
-INSTALLED_LOCAL_HEADERS=$(addprefix $(top_srcdir)/$(installhdrsubdir)/,$(installhdrs))
-$(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
-	ln -s ../$(dir)/$* $@
+local-installhdrsubdir = $(installhdrsubdir)
+endif
+ifneq ($(local-installhdrsubdir),$(dir))
+INSTALLED_LOCAL_HEADERS := $(installhdrs:%=../$(local-installhdrsubdir)/%)
+$(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: ../config.make
+	@rm -f $@
+	echo '#include "../$(dir)/$*"' > $@
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
+
+# The installed local headers referring to our own files will use
+# relative names with ../$(dir) and make won't notice that's us.
+../$(dir)/%: % ;
 
 $(addprefix $(libdir)/$(libname),_p.a .a _pic.a): $(libdir)/%: %
 	$(INSTALL_DATA) $< $@
@@ -482,6 +492,7 @@ endif
 MIGCOMFLAGS := -subrprefix __
 
 # User settable variables:
+#	mig-sheader-prefix prepend to foo_S.h for name of foo.defs stub header
 # 	MIGSFLAGS	   flags to CPP when building server stubs and headers
 #	foo-MIGSFLAGS	   same, but only for interface `foo'
 # 	MIGCOMSFLAGS	   flags to MiG when building server stubs and headers
@@ -497,10 +508,11 @@ MIGCOMFLAGS := -subrprefix __
 # These chained rules could be (and used to be) single rules using pipes.
 # But it's convenient to be able to explicitly make the intermediate
 # files when you want to deal with a problem in the MiG stub generator.
-%_S.h %Server.c: %.sdefsi
+$(mig-sheader-prefix)%_S.h %Server.c: %.sdefsi
 	$(MIGCOM) $(MIGCOMFLAGS) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
-		    -sheader $*_S.h -server $*Server.c \
+		    -sheader $(mig-sheader-prefix)$*_S.h -server $*Server.c \
 		    -user /dev/null -header /dev/null < $<
+
 %.sdefsi: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ $< -o $@
 %.udefsi: %.defs
