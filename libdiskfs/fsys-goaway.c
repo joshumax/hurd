@@ -35,7 +35,7 @@ diskfs_S_fsys_goaway (fsys_t controlport,
   /* XXX FSYS_GOAWAY_NOWAIT not implemented. */
   
   ret = diskfs_shutdown (flags);
-  ports_done_with_port (upt);
+  ports_done_with_port (pt);
   return ret;
 }
 
