@@ -53,7 +53,8 @@ struct bootinfo
     size_t argvlen, envplen, dtablesize, nports, nints;
     mach_port_t *dtable, *portarray;
     int *intarray;
-    vm_address_t phdr_addr, phdr_size, user_entry;
+    vm_address_t phdr_addr, user_entry;
+    vm_size_t phdr_size;
   };
 
 
