@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -62,11 +62,10 @@ ethernet_set_multi (struct device *dev, int numaddrs, void *addrs)
 static short ether_filter[] =
 {
   NETF_PUSHLIT | NETF_NOP,
-  1,
-  NETF_PUSHZERO | NETF_OR,
+  1
 };
+static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
 
-static int ether_filter_len = 3;
 static struct port_bucket *etherport_bucket;
 
 void

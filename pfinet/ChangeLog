@@ -1,3 +1,8 @@
+Sun Mar 14 18:33:54 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* ethernet.c (ether_filter): Use a shorter filter program.
+	(ether_filter_len): Compute more safely.
+
 1999-02-28  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (S_startup_dosync): Use ports_class_iterate.
