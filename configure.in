@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.29 2002/03/12 03:01:02 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.30 2002/03/15 09:51:54 roland Exp $])
 AC_PREREQ(2.12)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -136,34 +136,29 @@ AC_ARG_WITH(parted, dnl
 [  --without-parted        don't try to use GNU Parted libraries],
 	    , with_parted=yes)
 
-# Check if we have the necessary stuff to build against GNU Parted libraries.
-parted=$with_parted
-save_LIBS=
-LIBS=
-test $parted = no || {
-  AC_CHECK_HEADER(parted/parted.h,
-    [AC_DEFINE(HAVE_PARTED_PARTED_H)],
-    parted=no)
-}
-test $parted = no || {
-  AC_CHECK_LIB(uuid, uuid_generate, , parted=no)
-}
-test $parted = no || {
-  AC_CHECK_LIB(parted, ped_device_read, , parted=no)
-}
-PARTED_LIBS=$LIBS
-LIBS=$save_LIBS
-AC_SUBST(PARTED_LIBS)
-
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
 			  list of store types included in statically
 			  linked filesystems used for booting])dnl
 if test -z "$enable_boot_store_types"; then
-  boot_store_types='device gunzip bunzip2'
-  test $parted = no || boot_store_types="$boot_store_types part"
+  boot_store_types='device remap gunzip bunzip2'
+
+  # Check for Parted's static store module.
+  if test "x$with_parted" != xno; then
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LDFLAGS -static"
+    AC_CHECK_LIB(store_part, store_part_open, [dnl
+		 boot_store_types="$boot_store_types part"], , -luuid -lstore)
+    LDFLAGS="$save_LDFLAGS"
+  fi
+elif test "x$enable_boot_store_types" = xno; then
+  AC_MSG_WARN([you probably wanted --disable-static-progs])
+else
+  boot_store_types="$enable_boot_store_types"
 fi
 AC_SUBST(boot_store_types)dnl
+AC_MSG_CHECKING(boot store types)
+AC_MSG_RESULT($boot_store_types)
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.
