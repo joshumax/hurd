@@ -1,5 +1,6 @@
 /*
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02
+   	Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -246,7 +247,11 @@ diskfs_start_bootstrap ()
   err = argz_create (environ, &exec_env, &exec_envlen);
   assert_perror (err);
 
-  err = task_create (mach_task_self (), 0, &newt);
+  err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		     NULL, 0,	/* OSF Mach */
+#endif
+		     0, &newt);
   assert_perror (err);
   if (_diskfs_boot_pause)
     {
