@@ -20,10 +20,10 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-DD=/bin/dd
-OD=/bin/od
-SED=/bin/sed
-AWK=/bin/gawk
+DD=${DD-/bin/dd}
+OD=${OD-/bin/od}
+SED=${SED-/bin/sed}
+AWK=${AWK-/bin/gawk}
 
 USAGE="Usage: $0 DEVICE [OS]"
 
