@@ -38,8 +38,10 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   if (!pt)
     return EOPNOTSUPP;
   
-  *result = (diskfs_make_protid (diskfs_make_peropen (diskfs_root_node, flags),
-			  uids, nuids, gids, ngids))->pi.port;
+  *result = (ports_get_right 
+	     (diskfs_make_protid
+	      (diskfs_make_peropen (diskfs_root_node, flags),
+	       uids, nuids, gids, ngids)));
   *result_poly = MACH_MSG_TYPE_MAKE_SEND;
 
   ports_done_with_port (pt);
