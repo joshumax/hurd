@@ -34,10 +34,10 @@ static spin_lock_t memory_fault_lock;
    at offset OFF.  Call when vm_map-ing part of the disk. 
    CAVEAT: addr must not be zero. */
 void
-register_memory_fault_area (struct pager *p,
-			    vm_address_t off,
-			    void *addr, 
-			    long len)
+diskfs_register_memory_fault_area (struct pager *p,
+				   vm_address_t off,
+				   void *addr, 
+				   long len)
 {
   int i;
 
@@ -62,8 +62,8 @@ register_memory_fault_area (struct pager *p,
 /* Mark the memory at ADDR continuing for LEN bytes as no longer
    mapped from the disk.  Call when vm_unmap-ing part of the disk.  */
 void
-unregister_memory_fault_area (void *addr,
-			      long len)
+diskfs_unregister_memory_fault_area (void *addr,
+				     long len)
 {
   int i;
 
