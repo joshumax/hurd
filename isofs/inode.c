@@ -547,8 +547,19 @@ diskfs_write_disknode (struct node *np, int wait)
 error_t
 diskfs_set_statfs (struct statfs *st)
 {
-  /* XXX return something useful */
-  bzero (st, sizeof *st);
+  /* There is no easy way to determine the number of files on an
+     ISO 9660 filesystem.  */
+  st->f_type = FSTYPE_ISO9660;
+  st->f_bsize = logical_block_size;
+  st->f_blocks = isonum_733 (sblock->vol_sp_size);
+  st->f_bfree = 0;
+  st->f_bavail = 0;
+  st->f_files = 0;
+  st->f_ffree = 0;
+  st->f_fsid = getpid ();
+  st->f_namelen = 0;
+  st->__f_favail = 0;
+  st->__f_frsize = logical_block_size;
   return 0;
 }
 
