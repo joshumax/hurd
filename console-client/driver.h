@@ -1,5 +1,5 @@
 /* driver.h - The interface to and for a console client driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -158,6 +158,13 @@ struct driver_ops
      The function is allowed to fail if FORCE is 0.  If FORCE is not
      0, the driver should remove itself no matter what.  */
   error_t (*fini) (void *handle, int force);
+
+
+  /* Save the status of the hardware.  */
+  void (*save_status) (void *handle);
+  
+  /* Restore the status of the hardware.  */
+  void (*restore_status) (void *handle);
 };
 
 

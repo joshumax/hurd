@@ -1,5 +1,5 @@
 /* vga.c - The VGA device display driver.
-   Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -93,6 +93,15 @@ struct refchr
 };
 
 
+typedef struct vga_mousecursor
+{
+  float posx;
+  float posy;
+  char oldcolor;
+  int visible;
+  int enabled;
+} vga_mousecursor_t;
+
 struct vga_display
 {
   /* The VGA font for this display.  */
@@ -109,6 +118,9 @@ struct vga_display
   int cur_conchar_attr_init;
   conchar_attr_t cur_conchar_attr;
   char cur_attr;
+
+  /* The state of the mouse cursor.  */
+  vga_mousecursor_t mousecursor;
 
   /* Remember for each cell on the display the glyph written to it and
      the colors (in the upper byte) assigned.  0 means unassigned.  */
@@ -151,6 +163,37 @@ vga_display_flash (void *handle)
   return 0;
 }
 
+
+static void
+hide_mousecursor (struct vga_display *disp)
+{
+  char *oldpos  = vga_videomem + 2 * ((int) disp->mousecursor.posy * disp->width 
+				      + (int) disp->mousecursor.posx) + 1;
+
+  if (!disp->mousecursor.visible)
+    return;
+
+  /* First remove the old cursor.  */
+  *oldpos = disp->mousecursor.oldcolor;
+  disp->mousecursor.visible = 0;
+}
+
+
+static void
+draw_mousecursor (struct vga_display *disp)
+{
+  char *newpos  = vga_videomem + 2 * ((int) disp->mousecursor.posy * disp->width 
+				      + (int) disp->mousecursor.posx) + 1;
+
+  if (disp->mousecursor.visible)
+    return;
+
+  /* Draw the new cursor.  */
+  disp->mousecursor.oldcolor = *newpos;
+  *newpos = (127) ^ *newpos;
+  
+  disp->mousecursor.visible = 1;
+}
 
 
 static const char doc[] = "VGA Driver";
@@ -344,6 +387,16 @@ vga_display_fini (void *handle, int force)
   return 0;
 }
 
+
+static void
+vga_display_restore_status (void *handle)
+{
+  /* Read/write in interleaved mode.  This is not preserved by the
+     XFree VESA driver.  */
+  outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
+  outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_A0TOAF, VGA_GFX_DATA_REG);
+}
+
 
 /* Set the cursor's state to STATE on display HANDLE.  */
 static error_t
@@ -408,6 +461,8 @@ vga_display_scroll (void *handle, int delta)
   int count = abs(delta) * disp->width;
   int i;
   struct refchr *refpos;
+  
+  hide_mousecursor (disp);
 
   /* XXX: If the virtual console is bigger than the physical console it is
      impossible to scroll because the data to scroll is not in memory.  */
@@ -595,6 +650,7 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
   struct vga_display *disp = handle;
   char *pos;
   struct refchr *refpos = &disp->refmatrix[row][col];
+  char *mouse_cursor_pos;
 
   /* The starting column is outside the physical screen.  */
   if (disp->width < current_width && col >= disp->width)
@@ -607,6 +663,9 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
     }
 
   pos  = vga_videomem + 2 * (row * disp->width + col);
+  mouse_cursor_pos  = (vga_videomem + 2 
+		       * ((int) disp->mousecursor.posy 
+			  * disp->width + (int) disp->mousecursor.posx) + 1);
 
   /* Although all references to the current fgcol or bgcol could have
      been released here, for example due to a scroll operation, we
@@ -662,6 +721,10 @@ vga_display_write (void *handle, conchar_t *str, size_t length,
 	}
 
       *(pos++) = charval & 0xff;
+      
+      if (pos == mouse_cursor_pos)
+	disp->mousecursor.visible = 0;
+      
       *(pos++) = disp->cur_attr
 	| (disp->df_size == 512 ? (charval >> 5) & 0x8 : 0);
 
@@ -700,12 +763,65 @@ vga_set_dimension (void *handle, unsigned int width, unsigned int height)
   return 0;
 }
 
+
+static error_t
+vga_display_update (void *handle)
+{
+  struct vga_display *disp = handle;
+
+  if (disp->mousecursor.enabled)
+    draw_mousecursor (disp);
+
+  return 0;
+}
+
+
+static error_t
+vga_set_mousecursor_pos (void *handle, float x, float y)
+{
+  struct vga_display *disp = handle;
+  
+  /* If the mouse did not move from the character position, don't
+     bother about updating the cursor position.  */
+  if (disp->mousecursor.visible && x == (int) disp->mousecursor.posx 
+      && y == (int) disp->mousecursor.posy)
+    return 0;
+  
+  hide_mousecursor (disp);
+  
+  disp->mousecursor.posx = x;
+  disp->mousecursor.posy = y;
+  
+  if (disp->mousecursor.enabled)
+    draw_mousecursor (disp);
+  
+  return 0;
+}
+
+
+static error_t
+vga_set_mousecursor_status (void *handle, int status)
+{
+  struct vga_display *disp = handle;
+
+  disp->mousecursor.enabled = status;
+  if (!status)
+    hide_mousecursor (disp);
+  else
+    draw_mousecursor (disp);
+      
+  return 0;
+}
+
+
 
 struct driver_ops driver_vga_ops =
   {
     vga_display_init,
     vga_display_start,
     vga_display_fini,
+    NULL,
+    vga_display_restore_status
   };
 
 static struct display_ops vga_display_ops =
@@ -715,8 +831,10 @@ static struct display_ops vga_display_ops =
     vga_display_scroll,
     vga_display_clear,
     vga_display_write,
-    NULL,
+    vga_display_update,
     vga_display_flash,
     NULL,
-    vga_set_dimension
+    vga_set_dimension,
+    vga_set_mousecursor_pos,
+    vga_set_mousecursor_status
   };

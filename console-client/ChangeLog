@@ -1,3 +1,66 @@
+2005-01-06  Marco Gerards  <metgerards@student.han.nl>
+
+	* Makefile (SRCS): Add `trans.c'.
+	(LCLHDRS): Add `mach-inputdev.h'.
+	(HURDLIBS): Add `netfs', `fshelp' and `iohelp'.
+	(modules): Add `pc_mouse'.
+	(pc_kbd.so.$(hurd-version)): Add `kdioctlServer.o' and
+	`kbd-repeat.c'.
+	(pc_mouse.so.$(hurd-version)): New variable.
+	* console.c: Include <trans.h>.
+	(DEFAULT_CONSOLE_NODE): New macro.
+	(saved_id, saved_cons, consnode_path): New variables.
+	(console_move_mouse): New function.
+	(console_switch_away): New function.
+	(console_switch_back): Likewise.
+	(cons_vcons_set_mousecursor_pos): Likewise.
+	(cons_vcons_set_mousecursor_status): Likewise.
+	(options): Add the option `--console-node'.
+	(parse_opt): Parse the options that were added to `options'.
+	(main): Setup the console client translator node.
+	* display.h (display_ops): New members `set_mousecursor_pos' and
+	`set_mousecursor_status'.
+	* driver.c (driver_start): Change the type of `i' to `unsigned
+	int'.
+	* driver.h (driver_ops): New members `save_status' and
+	`restore_status'.
+	* input.h (console_switch_away): New prototype.
+	(console_switch_back): Likewise.
+	(console_move_mouse): Likewise.
+	* kbd-repeat.c: New file.
+	* mach-inputdev.h: Likewise.
+	* pc-mouse.c: Likewise.
+	* trans.c: Likewise.
+	* trans.h: Likewise.
+	* pc-kbd.c: Include <argp.h> and "mach-inputdev.h".
+	(DEFAULT_REPEATER_NODE): New macro.
+	(repeater_node, cnode): New variables.
+	(kev_type, mouse_motion, Scancode, m_deltaX, m_deltaY, MOUSE_LEFT)
+	(MOUSE_MIDDLE, MOUSE_RIGHT, MOUSE_MOTION, KEYBD_EVENT)
+	(IOCPARM_MASK, IOC_OUT, IOC_IN, _IOC, _IOR, _IOW, KDSKBDMODE,
+	(KB_EVENT, KB_ASCII, KDGKBDTYPE, KB_VANILLAKB, KDSETLEDS):
+	Removed.
+	(gnumach_v1_input_next): Call the repeater when repeating is
+	active.
+	(doc, options, argp): New variables.
+	(parse_opt): New function.
+	(pc_kbd_init): Function rewritten.
+	(pc_kbd_start): Initialize the repeater, when it is active.
+	(pc_kbd_fini): Destroy the console node.
+	* vga.c (vga_mousecursor): New struct.
+	(vga_mousecursor_t): New type.
+	(mousecursor): New variable.
+	(hide_mousecursor): New function.
+	(draw_mousecursor): Likewise.
+	(vga_display_restore_status): Likewise.
+	(vga_display_update): Likewise.
+	(vga_set_mousecursor_pos): Likewise.
+	(vga_set_mousecursor_status): Likewise.
+	(vga_display_scroll): Update the mousecursor state.
+	(driver_vga_ops): Add `vga_display_restore_status'.
+	(vga_display_op): Add `vga_display_update', `vga_set_mousecursor_pos'
+	and `vga_set_mousecursor_status'.
+
 2004-11-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pc-kbd.c (input_loop): Make the left shift key behave the same

@@ -1,5 +1,5 @@
 /* driver.c - The console client driver code.
-   Copyright (C) 2002, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -248,8 +248,8 @@ error_t
 driver_start (char **name)
 {
   error_t err = 0;
-  unsigned int i;
-
+  int i;
+  
   mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
     {
@@ -303,7 +303,6 @@ error_t driver_remove (const char *const name)
   mutex_unlock (&driver_list_lock);
   return ESRCH;
 }
-
 
 #define ADD_REMOVE_COMPONENT(component)					\
 struct mutex component##_list_lock;					\

@@ -1,5 +1,5 @@
 /* display.h - The interface to and for a display driver.
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -141,6 +141,14 @@ struct display_ops
      write that covers the whole new screen.  */
   error_t (*set_dimension) (void *handle, unsigned int width,
 			    unsigned int height);
+
+  /* Move the mouse cursor to the position X, Y.  If the mouse cursor
+     is visible, update its position.  */
+  error_t (*set_mousecursor_pos) (void *handle, float x, float y);
+
+  /* If STATUS is set to 0, hide the mouse cursor, otherwise show
+     it.  */
+  error_t (*set_mousecursor_status) (void *handle, int status);
 };
 
 #endif	/* _DISPLAY_H_ */

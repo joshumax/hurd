@@ -1,5 +1,5 @@
 /* input.h - The interface to and for an input driver.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -64,6 +64,19 @@ void console_error (const wchar_t *const err_msg);
 
 /* Exit the console client.  Does not return.  */
 void console_exit (void);
+
+/* Switch away from the console an external use of the console like
+   XFree.  */
+void console_switch_away (void);
+
+/* Switch back to the console client from an external user of the
+   console like XFree.  */
+void console_switch_back (void);
+
+/* Report the mouse event EV to the currently active console.  This
+   can be called by the input driver at any time.  */
+error_t console_move_mouse (mouse_event_t ev);
+
 
 #if QUAERENDO_INVENIETIS
 /* Do not use, do not remove.  */

@@ -1,5 +1,5 @@
 /* console.c -- A pluggable console client.
-   Copyright (C) 2002, 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2004, 2005 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -34,9 +34,13 @@
 
 #include "driver.h"
 #include "timer.h"
+#include "trans.h"
 
 const char *cons_client_name = "console";
 const char *cons_client_version = HURD_VERSION;
+
+/* The default node on which the console node is started.  */
+#define DEFAULT_CONSOLE_NODE	"/dev/cons"
 
 
 /* The global lock protects the active_vcons variable, and thus all
@@ -46,6 +50,15 @@ static struct mutex global_lock;
 /* The active virtual console.  This is the one currently
    displayed.  */
 static vcons_t active_vcons = NULL;
+
+/* Contains the VT id when switched away.  */
+static int saved_id = 0;
+
+/* The console, used to switch back.  */
+static cons_t saved_cons;
+
+/* The pathname of the node on which the translator is set.  */
+static char *consnode_path;
 
 
 /* Callbacks for input source drivers.  */
@@ -121,6 +134,37 @@ console_input (char *buf, size_t size)
 }
 
 
+/* Report the mouse event EV to the currently active console.  This
+   can be called by the input driver at any time.  */
+error_t
+console_move_mouse (mouse_event_t ev)
+{
+  error_t err;
+  vcons_t vcons;
+
+  mutex_lock (&global_lock);
+  
+  vcons = active_vcons;
+  if (!vcons)
+    {
+      mutex_unlock (&global_lock);
+      return EINVAL;
+    }
+  ports_port_ref (vcons);
+  mutex_unlock (&global_lock);
+
+  if (vcons)
+    {
+      err = cons_vcons_move_mouse (vcons, ev);
+      ports_port_deref (vcons);
+    }
+
+  mutex_unlock (&global_lock);
+
+  return 0;
+}
+
+
 /* Scroll the active console by TYPE and VALUE as specified by
    cons_vcons_scrollback.  */
 int
@@ -145,6 +189,62 @@ console_scrollback (cons_scroll_t type, float value)
       ports_port_deref (vcons);
     }
   return nr;
+}
+
+
+/* Switch away from the console an external use of the console like
+   XFree.  */
+void
+console_switch_away (void)
+{
+  mutex_lock (&global_lock);
+
+  driver_iterate
+    if (driver->ops->save_status)
+      driver->ops->save_status (driver->handle);
+
+  saved_id = active_vcons->id;
+  saved_cons = active_vcons->cons;
+  cons_vcons_close (active_vcons);
+  active_vcons = NULL;
+  mutex_unlock (&global_lock);
+}
+
+/* Switch back to the console client from an external user of the
+   console like XFree.  */
+void
+console_switch_back (void)
+{
+  vcons_list_t conslist;
+  mutex_lock (&global_lock);
+
+  driver_iterate
+    if (driver->ops->restore_status)
+      driver->ops->restore_status (driver->handle);
+  
+  if (saved_cons)
+    {
+      error_t err;
+
+      err = cons_lookup (saved_cons, saved_id, 1, &conslist);
+      if (err)
+	{
+	  mutex_unlock (&global_lock);
+	  return;
+	}
+
+      err = cons_vcons_open (saved_cons, conslist, &active_vcons);
+      if (err)
+	{
+	  mutex_unlock (&global_lock);
+	  return;
+	}
+	
+      conslist->vcons = active_vcons;
+      saved_cons = NULL;
+      mutex_unlock (&active_vcons->lock);
+    }
+  mutex_unlock (&global_lock);
 }
 
 
@@ -371,6 +471,33 @@ cons_vcons_set_dimension (vcons_t vcons, uint32_t col, uint32_t row)
   return 0;
 }
 
+
+error_t
+cons_vcons_set_mousecursor_pos (vcons_t vcons, float x, float y)
+{
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    display_iterate
+      if (display->ops->set_mousecursor_pos)
+	display->ops->set_mousecursor_pos (display->handle, x, y);
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
+
+error_t
+cons_vcons_set_mousecursor_status (vcons_t vcons, int status)
+{
+  mutex_lock (&global_lock);
+  if (vcons == active_vcons)
+    display_iterate
+      if (display->ops->set_mousecursor_status)
+	display->ops->set_mousecursor_status (display->handle, status);
+  mutex_unlock (&global_lock);
+  return 0;
+
+}
+
 
 /* Console-specific options.  */
 static const struct argp_option
@@ -378,6 +505,8 @@ options[] =
   {
     {"driver-path", 'D', "PATH", 0, "Specify search path for driver modules" },
     {"driver", 'd', "NAME", 0, "Add driver NAME to the console" },
+    {"console-node", 'c', "FILE", OPTION_ARG_OPTIONAL,
+     "Set a translator on the node FILE (default: " DEFAULT_CONSOLE_NODE ")" },
     {0}
   };
 
@@ -426,6 +555,12 @@ parse_opt (int key, char *arg, struct argp_state *state)
       devcount++;
       break;
 
+    case 'c':
+      consnode_path = arg ? arg : DEFAULT_CONSOLE_NODE;
+      if (!consnode_path)
+	return ENOMEM;
+      break;
+      
     case ARGP_KEY_SUCCESS:
       if (!devcount)
 	{
@@ -477,6 +612,9 @@ main (int argc, char *argv[])
       error (1, err, "Timer thread initialization failed");
     }
 
+  if (consnode_path)
+    console_setup_node (consnode_path);
+  
   cons_server_loop ();
 
   /* Never reached.  */
