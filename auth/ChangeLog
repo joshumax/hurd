@@ -1,3 +1,16 @@
+Thu Jul 18 19:31:53 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
+
+	* auth.c (S_auth_makeauth): It's fine if a passed in auth port is
+	not one we know about; just make the loops across AUTHS deal
+	properly with null values.  Only deallocate the AUTHPTS passed in
+	if we don't encounter any errors.  Always deallocate the
+	references in the AUTHS array.
+	(struct pending): Delete member `passthrough_type'.
+	(S_auth_user_authenticate): Always use MOVE_SEND to send pass
+	through port back to user.
+	(S_auth_server_authenticate): Don't bother initializing
+	U.passthrough_type or S.passthrough_type.
+
 Sat Jul  6 23:16:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* auth.c (AUTH_VERSION): New macro.

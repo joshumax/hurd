@@ -134,11 +134,10 @@ S_auth_makeauth (struct authhandle *auth,
 
   auths[0] = auth;
 
-  /* Verify all the auth ports passed in.  */
+  /* Fetch the auth structures for all the ports passed in. */
   for (i = 0; i < nauths; i++)
-    if (!(auths[i + 1] = auth_port_to_handle (authpts[i])))
-      return EINVAL;
-
+    auths[i + 1] = auth_port_to_handle (authpts[i]);
+  
   ++nauths;
 
   /* Verify that the union of the handles passed in either contains euid 0
@@ -149,7 +148,7 @@ S_auth_makeauth (struct authhandle *auth,
 #define isroot(auth)		isuid (0, auth)
 
   for (i = 0; i < nauths; i++)
-    if (isroot (auths[i]))
+    if (auths[i] && isroot (auths[i]))
       {
 	hasroot = 1;
 	break;
@@ -163,74 +162,83 @@ S_auth_makeauth (struct authhandle *auth,
 	{
 	  has_it = 0;
 	  for (j = 0; j < nauths; j++)
-	    if (isuid (euids[i], auths[j]))
+	    if (auths[j] && isuid (euids[i], auths[j]))
 	      {
 		has_it = 1;
 		break;
 	      }
 	  if (!has_it)
-	    return EPERM;
+	    goto eperm;
 	}
 
       for (i = 0; i < nauids; i++)
 	{
 	  has_it = 0;
 	  for (j = 0; j < nauths; j++)
-	    if (isuid (auids[i], auths[j]))
+	    if (auths[j] && isuid (auids[i], auths[j]))
 	      {
 		has_it = 1;
 		break;
 	      }
 	  if (!has_it)
-	    return EPERM;
+	    goto eperm;
 	}
 
       for (i = 0; i < negids; i++)
 	{
 	  has_it = 0;
 	  for (j = 0; j < nauths; j++)
-	    if (groupmember (egids[i], auths[j]))
+	    if (auths[j] && groupmember (egids[i], auths[j]))
 	      {
 		has_it = 1;
 		break;
 	      }
 	  if (!has_it)
-	    return EPERM;
+	    goto eperm;
 	}
 
       for (i = 0; i < nagids; i++)
 	{
 	  has_it = 0;
 	  for (j = 0; j < nauths; j++)
-	    if (groupmember (agids[i], auths[j]))
+	    if (auths[j] && groupmember (agids[i], auths[j]))
 	      {
 		has_it = 1;
 		break;
 	      }
 	  if (!has_it)
-	    return EPERM;
+	    goto eperm;
 	}
     }
 
-  for (j = 1; j < nauths; ++j)
-    mach_port_deallocate (mach_task_self (), authpts[j]);
-
   err = create_authhandle (&newauth);
-  if (err)
-    return err;
 
   /* Create a new handle with the specified ids.  */
 
 #define MERGE S (euids); S (egids); S (auids); S (agids);
-
 #define S(uids) if (!err) err = idvec_merge_ids (&newauth->uids, uids, n##uids)
-      MERGE;
+
+  MERGE;
+
 #undef S
 
   if (! err)
-    *newhandle = ports_get_right (newauth);
+    {
+      for (j = 1; j < nauths; ++j)
+	mach_port_deallocate (mach_task_self (), authpts[j]);
+      *newhandle = ports_get_right (newauth);
+    }
 
+  for (j = 1; j < nauths; j++)
+    if (auths[j])
+      ports_port_deref (auths[j]);
   return err;
+
+ eperm:
+  for (j = 1; j < nauths; j++)
+    if (auths[j])
+      ports_port_deref (auths[j]);
+  return EPERM;
 }
 
 /* Transaction handling.  */
@@ -250,7 +258,6 @@ struct pending
 
     /* The port to pass back to the user.  */
     mach_port_t passthrough;
-    mach_msg_type_name_t passthrough_type;
   };
 
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
@@ -273,7 +280,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
     {
       /* Found it!  Extract the port.  */
       *newport = s->passthrough;
-      *newporttype = s->passthrough_type;
+      *newporttype = MACH_MSG_TYPE_MOVE_SEND;
 
       /* Remove it from the pending list.  */
       ihash_locp_remove (pending_servers, s->locp);
@@ -318,7 +325,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	{
 	  /* The server RPC has set the port and signalled U.wakeup.  */
 	  *newport = u.passthrough;
-	  *newporttype = u.passthrough_type;
+	  *newporttype = MACH_MSG_TYPE_MOVE_SEND;
 	  mach_port_deallocate (mach_task_self (), rendezvous);
 	}
       return err;
@@ -364,7 +371,6 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 
       /* Give the user the new port and wake the RPC up.  */
       u->passthrough = newport;
-      u->passthrough_type = newport_type;
 
       condition_signal (&u->wakeup);
       mutex_unlock (&pending_lock);
@@ -381,7 +387,6 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 	{
 	  /* Store the new port and wait for the user RPC to wake us up.  */
 	  s.passthrough = newport;
-	  s.passthrough_type = newport_type;
 	  condition_init (&s.wakeup);
 	  ports_interrupt_self_on_port_death (serverauth, rendezvous);
 	  if (hurd_condition_wait (&s.wakeup, &pending_lock))
