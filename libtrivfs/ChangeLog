@@ -1,3 +1,9 @@
+Fri Aug 16 19:24:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* migsupport.c (trivfs_end_using_protid): Only call
+	ports_port_deref if CRED is set.
+	(trivfs_end_using_control): Likewise.
+
 Thu Aug 15 16:14:33 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* io-pathconf.c (trivfs_S_io_pathconf): Implement by calling

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -37,7 +37,8 @@ trivfs_begin_using_protid (mach_port_t port)
 void 
 trivfs_end_using_protid (struct trivfs_protid *cred)
 {
-  ports_port_deref (cred);
+  if (cred)
+    ports_port_deref (cred);
 }
 
 struct trivfs_control *
@@ -60,5 +61,6 @@ trivfs_begin_using_control (mach_port_t port)
 void 
 trivfs_end_using_control (struct trivfs_control *cred)
 {
-  ports_port_deref (cred);
+  if (cred)
+    ports_port_deref (cred);
 }
