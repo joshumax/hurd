@@ -29,7 +29,8 @@ dev_write_sync (block_t addr, vm_address_t data, long len)
 {
   int written;
   assert (!diskfs_readonly);
-  if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &written)
+  if (device_write (device_port, 0, device_start + addr,
+		    (io_buf_ptr_t) data, len, &written)
       || written != len)
     return EIO;
   return 0;
@@ -41,7 +42,8 @@ error_t
 dev_read_sync (block_t addr, vm_address_t *data, long len)
 {
   u_int read;
-  if (device_read (device_port, 0, addr, len, (io_buf_ptr_t *)data, &read)
+  if (device_read (device_port, 0, device_start + addr, len,
+		   (io_buf_ptr_t *)data, &read)
       || read != len)
     return EIO;
   return 0;
