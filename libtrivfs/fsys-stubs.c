@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -83,6 +83,8 @@ trivfs_S_fsys_set_options (struct trivfs_control *cntl,
 
 error_t
 trivfs_S_fsys_get_options (struct trivfs_control *fsys,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype,
 			   char **data, mach_msg_type_number_t *len)
 {
   return EOPNOTSUPP;
