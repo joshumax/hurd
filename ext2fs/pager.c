@@ -593,9 +593,11 @@ pager_clear_user_data (struct user_pager_info *upi)
 
       diskfs_nrele_light (upi->node);
 
+      spin_lock (&pager_list_lock);
       *upi->prevp = upi->next;
       if (upi->next)
 	upi->next->prevp = upi->prevp;
+      spin_unlock (&pager_list_lock);
 
       free (upi);
     }
@@ -717,6 +719,9 @@ pager_traverse (void (*func)(struct user_pager_info *))
   
   spin_lock (&pager_list_lock);
   for (p = file_pager_list; p; p = p->next)
+    /* XXXXXXX THIS CHECK IS A HACK TO MAKE A RACE WITH DEPARTING PAGERS
+       RARER, UNTIL MIB FIXES PORTS TO HAVE SOFT REFERENCES!!!! XXXXX */
+    if (((struct port_info *)p->p)->refcnt > 0)
     {
       i = alloca (sizeof (struct item));
       i->next = list;
@@ -735,6 +740,8 @@ pager_traverse (void (*func)(struct user_pager_info *))
   (*func)(disk_pager);
 }
 
+static struct ext2_super_block final_sblock;
+
 /* Shutdown all the pagers. */
 void
 diskfs_shutdown_pager ()
@@ -745,6 +752,12 @@ diskfs_shutdown_pager ()
     }
 
   write_all_disknodes ();
+  
+  /* Because the superblock lives in the disk pager, we copy out the last
+     known value just before we shut it down.  */
+  bcopy (sblock, &final_sblock, sizeof (final_sblock));
+  sblock = &final_sblock;
+
   pager_traverse (shutdown_one);
 }
 
