@@ -1,3 +1,30 @@
+2000-10-04  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (SRCS): Add dummy.c
+	* dummy.c: New file.
+
+	* ethernet.c: Moved ETHER_PORT, READPT, READPTNAME to ...
+	(struct ether_device): ... here. New struct. ETHER_DEV is now a
+	pointer to a struct ether_device.
+	(ethernet_demuxer): New variables edev, dev. Iterate over linked
+	list ETHER_DEV to find correct readptname. Use dev instead
+	ETHER_DEV for socket buffer manipulation.
+	(ethernet_open): New variable edev.  Use dev->priv to find correct
+	edev. Use members of edev instead global variables.
+	(ethernet_xmit): New variable edev. Use dev->priv to find correct
+	edev.Use member of edev instead global variable ETHER_PORT.
+	(setup_ethernet_device): New output argument DEVICE. New
+	variables edev and dev. Allocate memory for edev, add it to the
+	head of ETHER_DEV. Use dev instead ETHER_DEV.  Use members of edev
+	instead global variables.
+	* main.c: ALREADY_OPEN removed.
+	(find_device): Fix comment. Redone to work with multiple devices
+	by iterating over DEV_BASE.
+	(enumerate_device): Likewise.
+	* pfinet.h: Add new argument to prototype of
+	setup_ethernet_device.  Add prototype for setup_dummy_device.
+	Remove prototype for ETHER_DEV.  Add prototype for DEV_BASE.
+
 2000-09-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c: Prototype configure_device to supress compiler warning.

@@ -36,7 +36,7 @@ struct port_class *socketport_class;
 
 mach_port_t fsys_identity;
 
-extern struct device ether_dev;
+extern struct device *dev_base;
 extern struct device loopback_dev;
 
 /* A port on SOCK.  Multiple sock_user's can point to the same socket. */
@@ -56,7 +56,8 @@ struct sock_addr
 
 void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
-void setup_ethernet_device (char *);
+void setup_ethernet_device (char *, struct device **);
+void setup_dummy_device (char *, struct device **);
 struct sock_user *make_sock_user (struct socket *, int, int, int);
 error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);

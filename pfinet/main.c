@@ -126,48 +126,73 @@ arrange_shutdown_notification ()
   mach_port_deallocate (mach_task_self (), initport);
 }
 
-static char *already_open = 0;
 
-/* Return an open device called NAME.  If NMAE is 0, and there is a single
-   active device, it is returned, otherwise an error.
-   XXX hacky single-interface version. */
+/* Return an open device called NAME.  If NAME is 0, and there is a single
+   active device, it is returned, otherwise an error.  */
 error_t
 find_device (char *name, struct device **device)
 {
-  if (already_open)
-    if (!name || strcmp (already_open, (*device)->name) == 0)
+  struct device *dev = dev_base;
+
+  /* Skip loopback interface. */
+  assert (dev);
+  dev = dev->next;
+
+  if (!name)
+    {
+      if (dev)
+	{
+	  if (dev->next)
+	    return EBUSY;	/* XXXACK */
+	  else
+	    {
+	      *device = dev;
+	      return 0;
+	    }
+	}
+      else
+	return ENXIO;		/* XXX */
+    }
+
+  for (; dev; dev = dev->next)
+    if (strcmp (dev->name, name) == 0)
       {
-	*device = &ether_dev;
+	*device = dev;
 	return 0;
       }
-    else
-      return EBUSY;		/* XXXACK */
-  else if (! name)
-    return ENXIO;		/* XXX */
 
-  name = already_open = strdup (name);
-
-  setup_ethernet_device (name);
+  if (strncmp(name, "dummy", 5) == 0)
+    setup_dummy_device (name, device);
+  else
+    setup_ethernet_device (name, device);
 
   /* Turn on device. */
-  dev_open (&ether_dev);
-
-  *device = &ether_dev;
+  dev_open (*device);
 
   return 0;
 }
 
 /* Call FUN with each active device.  If a call to FUN returns a
    non-zero value, this function will return immediately.  Otherwise 0 is
-   returned.
-   XXX hacky single-interface version.  */
+   returned.  */
 error_t
 enumerate_devices (error_t (*fun) (struct device *dev))
 {
-  if (already_open)
-    return (*fun) (&ether_dev);
-  else
-    return 0;
+  error_t err;
+  struct device *dev = dev_base;
+
+  /* Skip loopback device.  */
+  assert (dev);
+  dev = dev->next;
+
+  for (; dev; dev = dev->next)
+    {
+      err = (*fun) (dev);
+      if (err)
+	return err;
+    }
+
+  return 0;
 }
 
 extern void sk_init (void), skb_init (void);
