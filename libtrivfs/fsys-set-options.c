@@ -29,8 +29,8 @@ trivfs_S_fsys_set_options (struct trivfs_control *cntl,
 			   char *data, mach_msg_type_number_t len,
 			   int do_children)
 {
-  if (trivfs_runtime_argp)
-    return fshelp_set_options (trivfs_runtime_argp, 0, data, len);
+  if (cntl)
+    return trivfs_set_options (cntl, data, len);
   else
     return EOPNOTSUPP;
 }
