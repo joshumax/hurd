@@ -143,7 +143,6 @@ See `tasks', the exported task list.
    anyone to use it.  !!
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
     non-suid. !
-*** Remove hostname/hostid functions
 *** add timeouts to all the msg_* calls proc makes. !
 *** proc leaks dead names massively.
 
