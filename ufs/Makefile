@@ -26,15 +26,15 @@ DISTFILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
 OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
 
-PRELIBS = $(libdiskfs) $(libports)
-LIBS= $(libdiskfs) $(libpager) $(libioserver) $(libports) $(libfshelp) \
-	$(libthreads)
-POSTLIBS=$(libdiskfs)
+LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
+	 $(libports) $(libfshelp) $(libthreads) $(libdiskfs)
 
 all: ufs
 
-ufs: $(OBJS) $(LIBS)
+ufs: $(OBJS)
 	$(link)
+
+ufs: $(LIBS)
 
 exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
 	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
