@@ -36,20 +36,39 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 		       mach_msg_type_name_t *newpttype)
 {
   struct trivfs_protid *cred;
+  mach_port_t new_realnode;
+  error_t err;
+  int perms;
   int i;
 
   if (!cntl)
     return EOPNOTSUPP;
 
-  assert (!trivfs_support_read && !trivfs_support_write
-	  && !trivfs_support_exec);
-  
-  if (flags & (O_READ|O_WRITE|O_EXEC))
+  if (((flags & O_READ) && !trivfs_support_read)
+      || ((flags & O_WRITE) && !trivfs_support_write)
+      || ((flags & O_EXEC) && !trivfs_support_exec))
     {
       ports_done_with_port (cntl);
       return EACCES;
     }
-  
+
+  /* O_CREAT and O_EXCL are not meaningful here; O_NOLINK and O_NOTRANS
+     will only be useful when trivfs supports translators (which it doesn't 
+     now). */
+  flags &= O_HURD;
+  flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
+
+  io_restrict_auth (cntl->underlying, &new_realnode,
+		    uids, nuids, gids, ngids);
+  file_check_access (new_realnode, &perms);
+  if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
+      != (flags & (O_READ|O_WRITE|O_EXEC)))
+    {
+      mach_port_deallocate (mach_task_self (), new_realnode);
+      ports_done_with_port (cntl);
+      return EACCES;
+    }
+
   cred = ports_allocate_port (sizeof (struct trivfs_protid),
 			      cntl->protidtypes);
   cred->isroot = 0;
@@ -62,16 +81,18 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   bcopy (gids, cred->gids, ngids * sizeof (uid_t));
   cred->nuids = nuids;
   cred->ngids = ngids;
+  cred->hook = 0;
 
   cred->po = malloc (sizeof (struct trivfs_peropen));
   cred->po->refcnt = 1;
   cred->po->cntl = cntl;
+  cred->po->openmodes = (flags & ~O_NONBLOCK);
+  cred->po->hook = 0;
   ports_port_ref (cntl);
   if (trivfs_peropen_create_hook)
     (*trivfs_peropen_create_hook) (cred->po);
 
-  io_restrict_auth (cred->po->cntl->underlying, &cred->realnode, 
-		    uids, nuids, gids, ngids);
+  cred->realnode = new_realnode;
   if (trivfs_protid_create_hook)
     (*trivfs_protid_create_hook) (cred);
 
