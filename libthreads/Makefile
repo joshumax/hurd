@@ -33,9 +33,6 @@ OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 
 OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
-# We need this to find <cthreads.h> in the source directory.
-CPPFLAGS = -I. -I$(srcdir)/libthreads
-
 libname = libthreads
 
 # Don't put cthreads.h in installhdrs or else it will get installed into
@@ -56,8 +53,8 @@ $(includedir)/cthreads.h: cthreads.h
 
 lndist: lndist-i386-files
 
-lndist-i386-files: $(srcdir)/hurd-snap/$(dir)/i386
-	ln $(I386SRCS) $(I386HDRS) $(srcdir)/hurd-snap/$(dir)/i386
+lndist-i386-files: $(top_srcdir)/hurd-snap/$(dir)/i386
+	ln $(I386SRCS) $(I386HDRS) $<
 
-$(srcdir)/hurd-snap/$(dir)/i386:
-	mkdir $(srcdir)/hurd-snap/$(dir)/i386
+$(top_srcdir)/hurd-snap/$(dir)/i386:
+	mkdir $@
