@@ -1,3 +1,7 @@
+2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* startup.c (trivfs_startup): Don't use MAKE_SEND in Hurd RPC.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* io-reauthenticate.c (trivfs_S_io_reauthenticate): Use

@@ -1,6 +1,6 @@
 /* Contact parent filesystem and establish ourselves as the translator.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -49,11 +49,12 @@ trivfs_startup(mach_port_t bootstrap, int flags,
   if (err)
     return err;
 
-  right = ports_get_right (fsys);
+  right = ports_get_send_right (fsys);
 
   /* Contact whoever started us.  */
-  err = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_MAKE_SEND,
+  err = fsys_startup (bootstrap, flags, right, MACH_MSG_TYPE_COPY_SEND,
 		      &underlying);
+  mach_port_deallocate (mach_task_self (), right);
 
   if (! err)
     fsys->underlying = underlying;
