@@ -1,4 +1,4 @@
-/* Init that only bootstraps the hurd and runs sh.
+/* Somewhat primitive version of init
    Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -39,6 +39,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/wait.h>
 #include <hurd/msg_server.h>
 #include <wire.h>
+#include <paths.h>
+#include <sys/wait.h>
+#include <error.h>
+#include <hurd/msg_reply.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -50,6 +54,18 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define CRASH_FLAGS	RB_AUTOBOOT
 
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
+
+#define _PATH_RUNCOM "/etc/rc"
+#define _PATH_LOGIN "/bin/login"
+
+/* Current state of the system. */
+enum 
+{
+  INITIAL,
+  SINGLE,
+  RUNCOM,
+  MULTI,
+} system_state;
 
 /* This structure keeps track of each notified task.  */
 struct ntfy_task
@@ -80,6 +96,10 @@ mach_port_t host_priv, device_master;
 /* Args to bootstrap, expressed as flags */
 int bootstrap_args;
 
+/* Set if something determines we should no longer pass the `autoboot'
+   flag to _PATH_RUNCOM. */
+int do_fastboot;
+
 /* Stored information for returning proc and auth startup messages. */
 mach_port_t procreply, authreply;
 mach_msg_type_name_t procreplytype, authreplytype;
@@ -101,10 +121,13 @@ char *init_version = "0.0";
 
 mach_port_t default_ports[INIT_PORT_MAX];
 mach_port_t default_dtable[3];
+int default_ints[INIT_INT_MAX];
 
 char **global_argv;
 
 pid_t shell_pid;		/* PID of single-user shell.  */
+pid_t rc_pid;			/* PID of rc script */
+pid_t session_pid;		/* PID of sole multi-user login */
 
 /* Read a string from stdin into BUF.  */
 static int
@@ -126,17 +149,19 @@ reboot_mach (int flags)
 {
   if (fakeboot)
     {
-      printf ("init: Would %s Mach with flags %#x\n", BOOT (flags), flags);
+      printf ("%s: Would %s Mach with flags %#x\n",
+	      program_invocation_short_name, BOOT (flags), flags);
       fflush (stdout);
       exit (1);
     }
   else
     {
-      printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
+      printf ("%s: %sing Mach (flags %#x)...\n",
+	      program_invocation_short_name, BOOT (flags), flags);
       fflush (stdout);
       sleep (5);
       while ((errno = host_reboot (host_priv, flags)))
-	perror ("host_reboot");
+	error (0, errno, "reboot");
       for (;;);
     }
 }
@@ -148,27 +173,34 @@ crash_mach (void)
   reboot_mach (CRASH_FLAGS);
 }
 
-/* Reboot the Hurd. */
+/* Notify all tasks that have requested shutdown notifications */
 void
-reboot_system (int flags)
+notify_shutdown (char *msg)
 {
   struct ntfy_task *n;
 
   for (n = ntfy_tasks; n != NULL; n = n->next)
     {
       error_t err;
-      printf ("%s: notifying %s of shutdown...", 
-	      program_invocation_short_name, n->name);
+      printf ("%s: notifying %s of %s...", 
+	      program_invocation_short_name, n->name, msg);
       fflush (stdout);
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err == MACH_SEND_INVALID_DEST)
-	printf ("(no longer present)\n");
+	puts ("(no longer present)");
       else if (err)
-	printf ("%s", strerror (err));
+	puts (strerror (err));
       else
-	printf ("done\n");
+	puts ("done");
       fflush (stdout);
     }
+}  
+
+/* Reboot the Hurd. */
+void
+reboot_system (int flags)
+{
+  notify_shutdown ("shutdown");
 
   if (fakeboot)
     {
@@ -182,22 +214,19 @@ reboot_system (int flags)
 	{
 	procbad:
 	  /* The procserver must have died.  Give up. */
-	  printf ("Init: can't simulate crash; proc has died\n");
-	  fflush (stdout);
+	  error (0, 0, "Can't simulate crash; proc has died");
 	  reboot_mach (flags);
 	}
       for (ind = 0; ind < npids; ind++)
 	{
 	  task_t task;
+
 	  err = proc_pid2task (procserver, pp[ind], &task);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    goto procbad;
-
 	  else  if (err)
 	    {
-	      printf ("init: getting task for pid %d: %s\n",
-		      pp[ind], strerror (err));
-	      fflush (stdout);
+	      error (0, err, "Getting task for pid %d", pp[ind]);
 	      continue;
 	    }
 
@@ -215,14 +244,13 @@ reboot_system (int flags)
 		goto procbad;
 	      if (err)
 		{
-		  printf ("init: getting procinfo for pid %d: %s\n",
-			  pp[ind], strerror (err));
-		  fflush (stdout);
+		  error (0, err, "Getting procinfo for pid %d", pp[ind]);
 		  continue;
 		}
 	      if (!(pi->state & PI_NOPARENT))
 		{
-		  printf ("init: killing pid %d\n", pp[ind]);
+		  printf ("%s: Killing pid %d\n",
+			  program_invocation_short_name, pp[ind]);
 		  fflush (stdout);
 		  task_terminate (task);
 		}
@@ -231,10 +259,10 @@ reboot_system (int flags)
 			       (vm_address_t)noise, noise_len);
 	    }
 	}
-      printf ("Killing proc server\n");
+      printf ("%s: Killing proc server\n", program_invocation_short_name);
       fflush (stdout);
       task_terminate (proctask);
-      printf ("Init exiting\n");
+      printf ("%s: Exiting", program_invocation_short_name);
       fflush (stdout);
     }
   reboot_mach (flags);
@@ -268,7 +296,7 @@ run (char *server, mach_port_t *ports, task_t *task)
 
       file = file_name_lookup (prog, O_EXEC, 0);
       if (file == MACH_PORT_NULL)
-	perror (prog);
+	error (0, errno, "%s", prog);
       else
 	{
 	  char *progname;
@@ -288,12 +316,12 @@ run (char *server, mach_port_t *ports, task_t *task)
 			     "", 1, /* No env.  */
 			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			     NULL, 0, /* No info in init ints.  */
+			     default_ints, INIT_INT_MAX,
 			     NULL, 0, NULL, 0);
 	  if (!errno)
 	    break;
 
-	  perror (prog);
+	  error (0, errno, "%s", prog);
 	}
 
       printf ("File name for server %s (or nothing to reboot): ", server);
@@ -330,14 +358,14 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 	filename = buf;
       file = file_name_lookup (filename, O_EXEC, 0);
       if (!file)
-	perror (filename);
+	error (0, errno, "%s", filename);
     }
   while (!file);
 #else
   file = file_name_lookup (filename, O_EXEC, 0);
   if (!file)
     {
-      perror (filename);
+      error (0, errno, "%s", filename);
       return MACH_PORT_NULL;
     }
 #endif
@@ -371,7 +399,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
 		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 		   default_ports, MACH_MSG_TYPE_COPY_SEND,
 		   INIT_PORT_MAX,
-		   NULL, 0, /* No info in init ints.  */
+		   default_ints, INIT_INT_MAX,
 		   NULL, 0, NULL, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   if (ctty != MACH_PORT_NULL)
@@ -383,7 +411,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty)
   mach_port_deallocate (mach_task_self (), file);
   if (err)
     {
-      fprintf (stderr, "Cannot execute %s: %s.\n", filename, strerror (err));
+      error (0, err, "Cannot execute %s", filename);
       return MACH_PORT_NULL;
     }
   return task;
@@ -408,6 +436,8 @@ main (int argc, char **argv, char **envp)
   mach_port_t consdev;
 
   global_argv = argv;
+
+  system_state = INITIAL;
 
   /* Parse the arguments */
   bootstrap_args = 0;
@@ -469,6 +499,13 @@ main (int argc, char **argv, char **envp)
   default_dtable[0] = getdport (0);
   default_dtable[1] = getdport (1);
   default_dtable[2] = getdport (2);
+
+  /* All programs we start should ignore job control stop signals.
+     That way Posix.1 B.2.2.2 is satisfied where it says that programs
+     not run under job control shells are protected.  */
+  default_ints[INIT_SIGIGN] = (sigmask (SIGTSTP)
+			       | sigmask (SIGTTIN)
+			       | sigmask (SIGTTOU)); 
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask);
@@ -556,7 +593,7 @@ launch_core_servers (void)
   /* Give the bootstrap FS its proc and auth ports.  */
   errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND, authserver);
   if (errno)
-    perror ("fsys_init");	/* Not necessarily fatal.  */
+    error (0, errno, "fsys_init"); /* Not necessarily fatal.  */
 }
 
 /* Set up the initial value of the standard exec data. */
@@ -604,40 +641,42 @@ init_stdarrays ()
 }
 
 
-/* Start the single-user environment.  This can only be done
-   when the core servers have fully started.  We know that
-   startup_essential_task is the last thing they do before being
-   ready to handle requests, so we start this once all the necessary
-   servers have identified themselves that way. */
-void
-launch_single_user ()
+/* Open /dev/console.  If it isn't there, or it isn't a terminal, then
+   create /tmp/console and put the terminal on it.  If we get EROFS,
+   in trying to create /tmp/console then as a last resort, put the
+   console on /tmp itself.  
+
+   In any case, after the console has been opened, set it appropriately
+   in default_dtable.  Also return a port right for the terminal. */
+file_t
+open_console ()
 {
-  char shell[1024];
-  char terminal[] = "/hurd/term\0/tmp/console\0device\0console";
-  mach_port_t term, shelltask;
-  char *termname;
+#define TERMINAL_FIRST_TRY "/hurd/term\0/tmp/console\0device\0console"
+#define TERMINAL_SECOND_TRY "/hurd/term\0/tmp\0device\0console"
+  static char *terminal;
+  int try;
+  mach_port_t term;
+  static char *termname;
   int fd;
   struct stat st;
-  error_t err;
+  error_t err = 0;
+  
+  if (system_state != INITIAL)
+    {
+      term = file_name_lookup (termname, O_RDWR, 0);
+      return term;
+    }
 
-  init_stdarrays ();
-
-  printf ("Single-user environment:");
-  fflush (stdout);
-
-  /* Open the console.  If we get something which is a terminal, then
-     we conclude that the filesystem has a proper translator for it,
-     and we're done.  Otherwise, start /hurd/term on something inside
-     /tmp and use that.  */
   termname = _PATH_CONSOLE;
   term = file_name_lookup (termname, O_RDWR, 0);
   if (term != MACH_PORT_NULL)
     {
       err = io_stat (term, &st);
       if (err)
-	perror (termname);
+	error (0, err, "%s", termname);
     }
-
+  
+  try = 1;
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
     /* Start the terminal server ourselves. */
     {
@@ -649,18 +688,34 @@ launch_single_user ()
 	  term = file_name_lookup (termname, flags | O_CREAT|O_NOTRANS, 0666);
 	  if (term == MACH_PORT_NULL)
 	    {
-	      perror (termname);
+	      error (0, errno, "%s", termname);
 	      return errno;
 	    }
 
 	  *underlying = term;
 	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
-
+	      
 	  return 0;
 	}
 
-      termname = terminal + strlen (terminal) + 1; /* first arg is name */
+    retry:
+      bootstrap_args |= RB_SINGLE;
 
+      if (try == 1)
+	{
+	  terminal = TERMINAL_FIRST_TRY;
+	  try = 2;
+	}
+      else if (try == 2)
+	{
+	  terminal = TERMINAL_SECOND_TRY;
+	  try = 3;
+	}
+      else
+	goto fail;
+
+      termname = terminal + strlen (terminal) + 1; /* first arg is name */
+	  
       /* The callback to start_translator opens TERM as a side effect.  */
       errno =
 	fshelp_start_translator (open_node,
@@ -668,40 +723,44 @@ launch_single_user ()
 				 &control);
       if (errno)
 	{
-	  perror (terminal);
-	  goto fail;
+	  error (0, errno, "%s", terminal);
+	  goto retry;
 	}
-
+	  
       errno = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
 				   control, MACH_MSG_TYPE_MOVE_SEND);
       if (errno)
 	{
-	  perror (termname);
-	  goto fail;
+	  error (0, errno, "%s", termname);
+	  goto retry;
 	}
       mach_port_deallocate (mach_task_self (), term);
-
+      
       /* Now repeat the open. */
       term = file_name_lookup (termname, O_RDWR, 0);
       if (term == MACH_PORT_NULL)
 	{
-	  perror (termname);
-	  goto fail;
+	  error (0, errno, "%s", termname);
+	  goto retry;
 	}
       errno = io_stat (term, &st);
       if (errno)
 	{
-	  perror (termname);
+	  error (0, errno, "%s", termname);
 	  term = MACH_PORT_NULL;
-	  goto fail;
+	  goto retry;
 	}
       if (st.st_fstype != FSTYPE_TERM)
 	{
-	  fprintf (stderr, "Installed /tmp/console terminal failed\n");
+	  error (0, 0, "%s: Not a terminal", termname);
 	  term = MACH_PORT_NULL;
-	  goto fail;
+	  goto retry;
 	}
+
+      if (term)
+	error (0, 0, "Using temporary console %s", termname);
     }
+
  fail:
 
   /* At this point either TERM is the console or it's null.  If it's
@@ -731,7 +790,31 @@ launch_single_user ()
       default_dtable[1] = getdport (1);
       default_dtable[2] = getdport (2);
     }
+  else
+    error (0, 0, "Cannot open console");
 
+  return term;
+}
+
+
+/* Start the single-user environment.  This can only be done
+   when the core servers have fully started.  We know that
+   startup_essential_task is the last thing they do before being
+   ready to handle requests, so we start this once all the necessary
+   servers have identified themselves that way. */
+void
+launch_single_user ()
+{
+  char shell[1024];
+  mach_port_t term, shelltask;
+
+  printf ("Single-user environment:");
+  fflush (stdout);
+
+  term = open_console ();
+
+  system_state = SINGLE;
+  
 #if 0
   printf ("Shell program [%s]: ", _PATH_BSHELL);
   if (! getstring (shell, sizeof shell))
@@ -749,6 +832,252 @@ launch_single_user ()
   printf (" shell.\n");
   fflush (stdout);
 }
+
+/* Run /etc/rc as a shell script. */
+void
+process_rc_script ()
+{  
+  char *rcargs;
+  size_t rcargslen;
+  mach_port_t term;
+  task_t rctask;
+
+  if (do_fastboot)
+    {
+      rcargs = malloc (rcargslen = sizeof _PATH_RUNCOM);
+      strcpy (rcargs, _PATH_RUNCOM);
+    }
+  else
+    {
+      rcargslen = asprintf (&rcargs, "%s%c%s", _PATH_RUNCOM, '\0', "autoboot");
+      rcargslen++;		/* final null */
+    }
+    
+  term = open_console ();
+
+  system_state = RUNCOM;
+  
+  rctask = run_for_real (rcargs, rcargs, rcargslen, term);
+  mach_port_deallocate (mach_task_self (), term);
+  if (rctask != MACH_PORT_NULL)
+    {
+      rc_pid = task2pid (rctask);
+      mach_port_deallocate (mach_task_self (), rctask);
+    }
+}
+
+/* Start up multi-user state. */
+void
+launch_multi_user ()
+{
+  char *sessionargs;
+  size_t sessionargslen;
+  mach_port_t term;
+  task_t session_task;
+  
+  /* Right now, just run `/bin/login -aNOAUTH_TIMEOUT' */
+  sessionargslen = asprintf (&sessionargs, "%s%c%s%n", _PATH_LOGIN, '\0',
+			     "-aNOAUTH_TIMEOUT");
+  sessionargslen++;		/* final null */
+
+  term = open_console ();
+  system_state = MULTI;
+  
+  session_task = run_for_real (sessionargs, sessionargs, sessionargslen, term);
+  mach_port_deallocate (mach_task_self (), term);
+  if (session_task != MACH_PORT_NULL)
+    {
+      session_pid = task2pid (session_task);
+      mach_port_deallocate (mach_task_self (), session_task);
+    }
+}
+
+/* Kill all the outstanding processes with SIGNO.  Return 1 if
+   there were no tasks left to kill. */
+int
+kill_everyone (int signo)
+{
+  pid_t pidbuf[100], *pids = pidbuf;
+  mach_msg_type_number_t i, npids = 100;
+  task_t tk;
+  struct ess_task *es;
+  mach_port_t msg;
+  int didany;
+  int nloops;
+  error_t err;
+
+  for (nloops = 10; nloops; nloops--)
+    {
+      if (nloops < 9)
+	/* Give it a rest for folks to have a chance to die */
+	sleep (1);
+
+      didany = 0;
+      err = proc_getallpids (procserver, &pids, &npids);
+      if (!err)
+	{
+	  for (i = 0; i < npids; i++)
+	    {
+	      if (pids[i] == 1 /* us */
+		  || pids[i] == 2 /* kernel */
+		  || pids[i] == 3 /* default pager for now XXX */)
+		continue;
+	      
+	      /* See if the task is essential */
+	      err = proc_pid2task (procserver, pids[i], &tk);
+	      if (err)
+		continue;
+	      
+	      for (es = ess_tasks; es; es = es->next)
+		if (tk == es->task_port)
+		  {
+		    /* Skip this one */
+		    mach_port_deallocate (mach_task_self (), tk);
+		    continue;
+		  }
+	      
+	      /* Kill it */
+	      if (signo == SIGKILL)
+		{
+		  task_terminate (tk);
+		  didany = 1;
+		}
+	      else
+		{
+		  err = proc_getmsgport (procserver, pids[i], &msg);
+		  if (err)
+		    {
+		      mach_port_deallocate (mach_task_self (), tk);
+		      continue;
+		    }
+		  
+		  didany = 1;
+		  msg_sig_post (msg, signo, 0, tk);
+		  mach_port_deallocate (mach_task_self (), tk);
+		}
+	    }
+	}
+      if (pids != pidbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) pids,
+		       npids * sizeof (pid_t));
+      if (!didany)
+	return 1;
+    }
+  return 0;
+}
+
+/* Kill outstanding multi-user sessions */
+void
+kill_multi_user ()
+{
+  int sigs[3] = {SIGHUP, SIGTERM, SIGKILL};
+  int stage;
+
+  /* Notify tasks that they are about to die. */
+  notify_shutdown ("transition to single-user");
+  
+  for (stage = 0; stage < 3; stage++)
+    if (kill_everyone (sigs[stage]))
+      break;
+  
+  if (stage == 3)
+    error (0, 0, "warning: some processes wouldn't die; `ps -axlM' advised");
+}
+
+/* SIGNO has arrived and has been validated.  Do whatever work it 
+   implies. */
+void
+process_signal (int signo)
+{
+  switch (signo)
+    {
+    case SIGTERM:
+      if (system_state == MULTI)
+	{
+	  /* Drop back to single user. */
+	  kill_multi_user ();
+	  launch_single_user ();
+	}
+      break;
+
+    case SIGHUP:
+      if (system_state == MULTI)
+	{
+	  /* Should re-read ttys file here, but it's static and hard-coded
+	     into launch_multi_user right now. */
+	}
+      break;
+      
+    case SIGCHLD:
+      {
+	/* A child died.  Find its status.  */
+	int status;
+	pid_t pid = waitpid (WAIT_ANY, &status, WNOHANG);
+	if (pid < 0)
+	  error (0, errno, "waitpid");
+	else if (pid == 0)
+	  error (0, 0, "Spurious SIGCHLD");
+	else if (pid == shell_pid && system_state == SINGLE)
+	  {
+	    if (WIFSIGNALED (status))
+	      {
+		error (0, 0,
+		       "Single-user terminated abnormally (%s), restarting",
+		       strsignal (WTERMSIG (status)));
+		launch_single_user ();
+	      }
+	    else if (WIFSTOPPED (status))
+	      {
+		error (0, 0,
+		       "Single-user stopped (%s), killing and restarting",
+		       strsignal (WSTOPSIG (status)));
+		kill (shell_pid, SIGKILL);
+		launch_single_user ();
+	      }
+	    else
+	      {
+		do_fastboot = 1;
+		process_rc_script ();
+	      }
+	  }
+	else if (pid == rc_pid && system_state == RUNCOM)
+	  {
+	    if (WIFSIGNALED (status))
+	      {
+		error (0, 0,
+		       "%s terminated abnormally (%s), going to single user mode",
+		       _PATH_RUNCOM, strsignal (WTERMSIG (status)));
+		launch_single_user ();
+	      }
+	    else if (WIFSTOPPED (status))
+	      {
+		error (0, 0,
+		       "%s stopped (%s), killing it and going to single user mode",
+		       _PATH_RUNCOM, strsignal (WSTOPSIG (status)));
+		kill (rc_pid, SIGKILL);
+		launch_single_user ();
+	      }
+	    else if (WEXITSTATUS (status))
+	      launch_single_user ();
+	    else
+	      launch_multi_user ();
+	  }
+	else if (pid == session_pid && system_state == MULTI)
+	  /* XXX should handle separate sessions instead of only one... */
+	  launch_multi_user ();
+#if 0
+	else
+	  error (0, 0, "Random child pid %d died (%d)", pid, status);
+#endif
+	break;
+      }
+
+    default:
+      break;
+    }
+}
+
+
 
 
 kern_return_t
@@ -816,7 +1145,7 @@ S_startup_essential_task (mach_port_t server,
 {
   struct ess_task *et;
   mach_port_t prev;
-  static int authinit, procinit, execinit, initdone;
+  static int authinit, procinit, execinit;
 
   if (credential != host_priv)
     return EPERM;
@@ -849,7 +1178,7 @@ S_startup_essential_task (mach_port_t server,
 
   mach_port_deallocate (mach_task_self (), credential);
 
-  if (!initdone)
+  if (system_state == INITIAL)
     {
       if (!strcmp (name, "auth"))
 	authinit = 1;
@@ -864,8 +1193,12 @@ S_startup_essential_task (mach_port_t server,
 	     is ready for real startup to begin. */
 	  startup_essential_task_reply (reply, replytype, 0);
 
-	  launch_single_user ();
-	  initdone = 1;
+	  init_stdarrays ();
+
+	  if (bootstrap_args & RB_SINGLE)
+	    launch_single_user ();
+	  else
+	    process_rc_script ();
 	  return MIG_NO_REPLY;
 	}
     }
@@ -910,9 +1243,7 @@ do_mach_notify_dead_name (mach_port_t notify,
     if (et->task_port == name)
       /* An essential task has died.  */
       {
-	printf ("Init crashing system; essential task %s died\n",
-		et->name);
-	fflush (stdout);
+	error (0, 0, "Crashing system; essential task %s died", et->name);
 	crash_system ();
       }
 
@@ -987,39 +1318,13 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 {
   if (refport != mach_task_self ())
     return EPERM;
-
-  switch (signo)
-    {
-    case SIGCHLD:
-      {
-	/* A child died.  Find its status.  */
-	int status;
-	pid_t pid = waitpid (WAIT_ANY, &status, WNOHANG);
-	if (pid < 0)
-	  perror ("init: waitpid");
-	else if (pid == 0)
-	  fprintf (stderr, "init: Spurious SIGCHLD.\n");
-	else if (pid == shell_pid)
-	  {
-	    fprintf (stderr,
-		     "init: Single-user shell PID %d died (%d), restarting.\n",
-		     pid, status);
-	    launch_single_user ();
-	  }
-#if 0
-	else
-	  fprintf (stderr, "init: Random child PID %d died (%d).\n",
-		   pid, status);
-#endif
-	break;
-      }
-
-    default:
-      break;
-    }
-
   mach_port_deallocate (mach_task_self (), refport);
-  return 0;
+
+  /* Reply immediately */
+  msg_sig_post_untraced_reply (reply, reply_type, 0);
+  
+  process_signal (signo);
+  return MIG_NO_REPLY;
 }
 
 kern_return_t
@@ -1027,7 +1332,15 @@ S_msg_sig_post (mach_port_t msgport,
 		mach_port_t reply, mach_msg_type_name_t reply_type,
 		int signo, mach_port_t refport)
 {
-  return S_msg_sig_post_untraced (msgport, reply, reply_type, signo, refport);
+  if (refport != mach_task_self ())
+    return EPERM;
+  mach_port_deallocate (mach_task_self (), refport);
+  
+  /* Reply immediately */
+  msg_sig_post_reply (reply, reply_type, 0);
+  
+  process_signal (signo);
+  return MIG_NO_REPLY;
 }
 
 
