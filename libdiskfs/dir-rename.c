@@ -22,7 +22,6 @@
    simultaneously renamed by two processes, we serialize all renames of
    directores with this lock */
 static struct mutex renamedirlock = MUTEX_INITIALIZER;
-static int renamedirinit;
 
 /* Implement dir_rename as described in <hurd/fs.defs>. */
 error_t
@@ -33,7 +32,6 @@ diskfs_S_dir_rename (struct protid *fromcred,
 {
   struct node *fdp, *tdp, *fnp, *tnp, *tmpnp;
   error_t err;
-  int isdir;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   
   if (!fromcred)
@@ -43,13 +41,13 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (!tocred)
     return EXDEV;
 
-  if (readonly)
+  if (diskfs_readonly)
     return EROFS;
 
   fdp = fromcred->po->np;
   tdp = tocred->po->np;
 
- tryagain:
+ try_again:
   /* Acquire the source; hold a reference to it.  This 
      will prevent anyone from deleting it before we create
      the new link. */
@@ -68,7 +66,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
 	  mutex_lock (&renamedirlock);
 	  goto try_again;
 	}
-      err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname);
+      err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
+			       tocred);
       diskfs_nrele (fnp);
       mutex_unlock (&renamedirlock);
       return err;
@@ -84,7 +83,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   if (err && err != ENOENT)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       mutex_unlock (&tdp->lock);
       return err;
@@ -94,7 +93,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
      do nothing by Posix. */
   if (tnp == fnp)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
       mutex_unlock (&tdp->lock);
@@ -104,7 +103,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* rename("foo", dir) should fail. */
   if (tnp && S_ISDIR (tnp->dn_stat.st_mode))
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       mutex_unlock (&tdp->lock);
       return EISDIR;
@@ -113,9 +112,9 @@ diskfs_S_dir_rename (struct protid *fromcred,
   mutex_lock (&fnp->lock);
 
   /* Increment the link count for the upcoming link */
-  if (fnp->dn_stat.st_nlink == LINK_MAX - 1)
+  if (fnp->dn_stat.st_nlink == diskfs_link_max - 1)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nput (fnp);
       mutex_unlock (&tdp->lock);
       return EMLINK;
@@ -154,7 +153,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   if (err)
     {
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       mutex_unlock (&fdp->lock);
       diskfs_nrele (fnp);
       return err;
@@ -163,7 +162,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (tmpnp != fnp)
     {
       /* This is no longer the node being renamed, so just return. */
-      diskfs_drop_dirstat (ds);
+      diskfs_drop_dirstat (tdp, ds);
       diskfs_nput (tmpnp);
       diskfs_nrele (fnp);
       mutex_unlock (&fdp->lock);
@@ -180,4 +179,3 @@ diskfs_S_dir_rename (struct protid *fromcred,
   mutex_unlock (&fdp->lock);
   return err;
 }
-#endif
