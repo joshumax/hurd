@@ -1,6 +1,6 @@
 /* Message printing functions
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -83,7 +83,7 @@ void _ext2_warning (const char * function, const char * fmt, ...)
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  fprintf (stderr, "ext2fs: %s: %s: %s\n",
+  fprintf (stderr, "ext2fs: %s: warning: %s: %s\n",
 	   diskfs_device_arg, function, error_buf);
 
   mutex_unlock(&printf_lock);
