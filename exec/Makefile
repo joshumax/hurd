@@ -19,16 +19,20 @@ dir := exec
 makemode := server
 
 SRCS = exec.c hostarch.c
-OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o
-LCLHDRS = a.out.h a.out.gnu.h
+OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o \
+       unzip.o util.o inflate.o
+LCLHDRS = a.out.h a.out.gnu.h gzip.h crypt.h tailor.h
 target = exec
 DIST_FILES = core.c gcore.c hashexec.c
 
 include ../Makeconf
 
-CFLAGS := $(CFLAGS) -DA_OUT_H=\"./a.out.h\"
+CFLAGS += -DA_OUT_H=\"./a.out.h\"
 
-exec.o: fsys_S.h notify_S.h exec_S.h
+exec.o bfdexec.o: fsys_S.h notify_S.h exec_S.h
 
 exec.o hostarch.o: a.out.h a.out.gnu.h
 
+bfdexec: bfdhostarch.o -lbfd
+
+unzip.o util.o inflate.o: gzip.h crypt.h tailor.h
