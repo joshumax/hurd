@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -90,7 +90,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   error_t err;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
-  u_int ngen_uids, naux_uids, ngen_gids, naux_gids;
+  size_t ngen_uids, naux_uids, ngen_gids, naux_gids;
 
   if (!p)
     return EOPNOTSUPP;
@@ -332,7 +332,7 @@ S_proc_dostop (struct proc *p,
 	       thread_t contthread)
 {
   thread_t threadbuf[2], *threads = threadbuf;
-  int nthreads = sizeof (threadbuf) / sizeof (thread_t);
+  size_t nthreads = sizeof (threadbuf) / sizeof (thread_t);
   int i;
   error_t err;
 
@@ -409,9 +409,9 @@ S_proc_exception_raise (mach_port_t excport,
 			mach_msg_type_name_t reply_type,
 			mach_port_t thread,
 			mach_port_t task,
-			int exception,
-			int code,
-			int subcode)
+			integer_t exception,
+			integer_t code,
+			integer_t subcode)
 {
   error_t err;
   struct proc *p;
@@ -505,7 +505,7 @@ S_proc_exception_raise (mach_port_t excport,
 kern_return_t
 S_proc_getallpids (struct proc *p,
 		   pid_t **pids,
-		   u_int *pidslen)
+		   size_t *pidslen)
 {
   int nprocs;
   pid_t *loc;
@@ -792,7 +792,7 @@ struct proc *
 add_tasks (task_t task)
 {
   mach_port_t *psets;
-  u_int npsets;
+  size_t npsets;
   int i;
   struct proc *foundp = 0;
 
@@ -801,7 +801,7 @@ add_tasks (task_t task)
     {
       mach_port_t psetpriv;
       mach_port_t *tasks;
-      u_int ntasks;
+      size_t ntasks;
       int j;
 
       if (!foundp)

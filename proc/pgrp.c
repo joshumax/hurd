@@ -1,5 +1,5 @@
-/* Session and process group manipulation 
-   Copyright (C) 1992,93,94,95,96,99,2001 Free Software Foundation, Inc.
+/* Session and process group manipulation
+   Copyright (C) 1992,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -38,7 +38,7 @@ new_pgrp (pid_t pgid,
 	  struct session *sess)
 {
   struct pgrp *pg;
-  
+
   pg = malloc (sizeof (struct pgrp));
   if (! pg)
     return NULL;
@@ -46,14 +46,14 @@ new_pgrp (pid_t pgid,
   pg->pg_plist = 0;
   pg->pg_pgid = pgid;
   pg->pg_orphcnt = 0;
-  
+
   pg->pg_session = sess;
   pg->pg_next = sess->s_pgrps;
   if (pg->pg_next)
     pg->pg_next->pg_prevp = &pg->pg_next;
   sess->s_pgrps = pg;
   pg->pg_prevp = &sess->s_pgrps;
-  
+
   add_pgrp_to_hash (pg);
   return pg;
 }
@@ -63,7 +63,7 @@ static inline struct session *
 new_session (struct proc *p)
 {
   struct session *sess;
-  
+
   sess = malloc (sizeof (struct session));
   if (! sess)
     return NULL;
@@ -73,7 +73,7 @@ new_session (struct proc *p)
   sess->s_sessionid = MACH_PORT_NULL;
 
   add_session_to_hash (sess);
-  
+
   return sess;
 }
 
@@ -100,21 +100,21 @@ free_pgrp (struct pgrp *pg)
   remove_pgrp_from_hash (pg);
   free (pg);
 }
- 
+
 /* Implement proc_setsid as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setsid (struct proc *p)
 {
   struct session *sess;
-  
+
   if (!p)
     return EOPNOTSUPP;
-  
+
   if (p->p_pgrp->pg_pgid == p->p_pid || pgrp_find (p->p_pid))
     return EPERM;
-  
+
   leave_pgrp (p);
-  
+
   sess = new_session (p);
   p->p_pgrp= new_pgrp (p->p_pid, sess);
   join_pgrp (p);
@@ -127,7 +127,7 @@ void
 boot_setsid (struct proc *p)
 {
   struct session *sess;
-  
+
   sess = new_session (p);
   p->p_pgrp = new_pgrp (p->p_pid, sess);
   assert (p->p_pgrp);
@@ -156,7 +156,7 @@ kern_return_t
 S_proc_getsessionpids (struct proc *callerp,
 		       pid_t sid,
 		       pid_t **pids,
-		       u_int *npidsp)
+		       size_t *npidsp)
 {
   int count;
   struct pgrp *pg;
@@ -164,13 +164,13 @@ S_proc_getsessionpids (struct proc *callerp,
   struct session *s;
   pid_t *pp = *pids;
   u_int npids = *npidsp;
-  
+
   /* No need to check CALLERP; we don't use it. */
 
   s = session_find (sid);
   if (!s)
     return ESRCH;
-  
+
   count = 0;
   for (pg = s->s_pgrps; pg; pg = pg->pg_next)
     for (p = pg->pg_plist; p; p = p->p_gnext)
@@ -178,7 +178,7 @@ S_proc_getsessionpids (struct proc *callerp,
 	if (++count <= npids)
 	  *pp++ = p->p_pid;
       }
-  
+
   if (count > npids)
     /* They didn't all fit */
     {
@@ -203,14 +203,14 @@ kern_return_t
 S_proc_getsessionpgids (struct proc *callerp,
 			pid_t sid,
 			pid_t **pgids,
-			u_int *npgidsp)
+			size_t *npgidsp)
 {
   int count;
   struct pgrp *pg;
   struct session *s;
   pid_t *pp = *pgids;
   int npgids = *npgidsp;
-  
+
   /* No need to check CALLERP; we don't use it. */
 
   s = session_find (sid);
@@ -221,7 +221,7 @@ S_proc_getsessionpgids (struct proc *callerp,
   for (pg = s->s_pgrps; pg; pg = pg->pg_next)
     if (++count <= npgids)
       *pp++ = pg->pg_pgid;
-  
+
   if (count > npgids)
     /* They didn't all fit. */
     {
@@ -244,14 +244,14 @@ kern_return_t
 S_proc_getpgrppids (struct proc *callerp,
 		    pid_t pgid,
 		    pid_t **pids,
-		    u_int *npidsp)
+		    size_t *npidsp)
 {
 
   struct proc *p;
   struct pgrp *pg;
   pid_t *pp = *pids;
   unsigned int npids = *npidsp, count;
-  
+
   /* No need to check CALLERP; we don't use it. */
 
   if (pgid == 0)
@@ -267,7 +267,7 @@ S_proc_getpgrppids (struct proc *callerp,
   for (p = pg->pg_plist; p; p = p->p_gnext)
     if (++count <= npids)
       *pp++ = p->p_pid;
-  
+
   if (count > npids)
     /* They didn't all fit. */
     {
@@ -291,7 +291,7 @@ S_proc_getsidport (struct proc *p,
 		   mach_port_t *sessport, mach_msg_type_name_t *sessport_type)
 {
   error_t err = 0;
-  
+
   if (!p)
     return EOPNOTSUPP;
 
@@ -316,7 +316,7 @@ S_proc_setpgrp (struct proc *callerp,
 {
   struct proc *p;
   struct pgrp *pg;
-  
+
   if (!callerp)
     return EOPNOTSUPP;
 
@@ -324,10 +324,10 @@ S_proc_setpgrp (struct proc *callerp,
 
   if (!p || (p != callerp && p->p_parent != callerp))
     return ESRCH;
-  
+
   if (p->p_parent == callerp && p->p_exec)
     return EACCES;
-  
+
   if (!pgid)
     pgid = p->p_pid;
   pg = pgrp_find (pgid);
@@ -337,7 +337,7 @@ S_proc_setpgrp (struct proc *callerp,
       || ((pgid != p->p_pid
 	   && (!pg || pg->pg_session != callerp->p_pgrp->pg_session))))
     return EPERM;
-  
+
   if (p->p_pgrp != pg)
     {
       leave_pgrp (p);
@@ -347,7 +347,7 @@ S_proc_setpgrp (struct proc *callerp,
   else
     nowait_msg_proc_newids (p->p_msgport, p->p_task, p->p_parent->p_pid,
 			    pg->pg_pgid, !pg->pg_orphcnt);
-  
+
   return 0;
 }
 
@@ -360,13 +360,13 @@ S_proc_getpgrp (struct proc *callerp,
   struct proc *p = pid_find (pid);
 
   /* No need to check CALLERP; we don't use it. */
-  
+
   if (!p)
     return ESRCH;
-  
+
   if (p->p_pgrp)
     *pgid = p->p_pgrp->pg_pgid;
-  
+
   return 0;
 }
 
@@ -392,7 +392,7 @@ leave_pgrp (struct proc *p)
   *p->p_gprevp = p->p_gnext;
   if (p->p_gnext)
     p->p_gnext->p_gprevp = p->p_gprevp;
-  
+
   /* If we were the last member of our pgrp, free it */
   if (!pg->pg_plist)
     free_pgrp (pg);
@@ -404,7 +404,7 @@ leave_pgrp (struct proc *p)
 	 an orphaned process group -- do the orphaning gook */
       struct proc *ip;
       int dosignal = 0;
-      
+
       for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
 	{
 	  if (ip->p_stopped)
@@ -435,7 +435,7 @@ join_pgrp (struct proc *p)
   if (pg->pg_plist)
     pg->pg_plist->p_gprevp = &p->p_gnext;
   pg->pg_plist = p;
-  
+
   origorphcnt = !!pg->pg_orphcnt;
   if (p->p_parent->p_pgrp != pg
       && p->p_parent->p_pgrp->pg_session == pg->pg_session)
