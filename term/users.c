@@ -78,8 +78,13 @@ struct protid_hook
 void
 init_users ()
 {
-  cttyid = ports_allocate_port (term_bucket, sizeof (struct port_info),
-				cttyid_class);
+  errno = ports_create_port (term_bucket, sizeof (struct port_info),
+			     cttyid_class, &cttyid);
+  if (errno)
+    {
+      perror ("Allocating cttyid");
+      exit (1);
+    }
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
 		      &async_icky_id);
