@@ -93,15 +93,15 @@ store_parsed_append_args (const struct store_parsed *parsed,
 
   if (!err && parsed->type != parsed->default_type)
     if (parsed->name_prefix)
-      /* A name prefix of "PFX:" is equivalent to appending ":PFX" to the
+      /* A name prefix of "PFX" is equivalent to appending ":PFX" to the
 	 type name.  */
       {
 	size_t npfx_len = strlen (parsed->name_prefix);
 	char tname[strlen ("--store-type=")
- 		   + strlen (parsed->type->name) + 1 + npfx_len - 1 + 1];
+ 		   + strlen (parsed->type->name) + 1 + npfx_len + 1];
 	snprintf (tname, sizeof tname, "--store-type=%s:%.*s",
-		  parsed->type->name, npfx_len - 1, parsed->name_prefix);
-	err = argz_add (args, args_len, buf);
+		  parsed->type->name, npfx_len, parsed->name_prefix);
+	err = argz_add (args, args_len, tname);
       }
     else
       /* A simple type name.  */
