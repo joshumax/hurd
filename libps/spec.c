@@ -54,10 +54,18 @@ struct ps_getter ps_thread_index_getter =
 static ps_user_t
 ps_get_owner(proc_stat_t ps)
 {
-  return proc_stat_owner(ps);
+  return proc_stat_owner (ps);
 }
 struct ps_getter ps_owner_getter =
 {"owner", PSTAT_OWNER, (vf) ps_get_owner};
+
+static int
+ps_get_owner_uid (proc_stat_t ps)
+{
+  return proc_stat_owner_uid (ps);
+}
+struct ps_getter ps_owner_uid_getter =
+{"uid", PSTAT_OWNER_UID, (vf) ps_get_owner_uid};
 
 static int 
 ps_get_ppid(proc_stat_t ps)
@@ -331,7 +339,7 @@ ps_emit_nz_int (proc_stat_t ps, ps_getter_t getter, int width,
   if (value)
     return ps_stream_write_int_field  (stream, value, width);
   else
-    return ps_stream_space  (stream, width);
+    return ps_stream_write_field (stream, "-", width);
 }
 
 error_t
@@ -568,8 +576,11 @@ ps_emit_seconds (proc_stat_t ps, ps_getter_t getter, int width,
 error_t
 ps_emit_uid (proc_stat_t ps, ps_getter_t getter, int width, ps_stream_t stream)
 {
-  ps_user_t u = G(getter, ps_user_t)(ps);
-  return ps_stream_write_int_field (stream, ps_user_uid(u), width);
+  int uid = G(getter, int)(ps);
+  if (uid < 0)
+    return ps_stream_write_field (stream, "-", width);
+  else
+    return ps_stream_write_int_field (stream, uid, width);
 }
 
 error_t
@@ -577,11 +588,16 @@ ps_emit_uname (proc_stat_t ps, ps_getter_t getter, int width,
 	       ps_stream_t stream)
 {
   ps_user_t u = G(getter, ps_user_t)(ps);
-  struct passwd *pw = ps_user_passwd(u);
-  if (pw == NULL)
-    return ps_stream_write_int_field (stream, ps_user_uid(u), width);
+  if (u)
+    {
+      struct passwd *pw = ps_user_passwd (u);
+      if (pw == NULL)
+	return ps_stream_write_int_field (stream, ps_user_uid(u), width);
+      else
+	return ps_stream_write_field (stream, pw->pw_name, width);
+    }
   else
-    return ps_stream_write_field (stream, pw->pw_name, width);
+    return ps_stream_write_field (stream, "-", width);
 }
 
 /* prints a string with embedded nuls as spaces */
@@ -741,7 +757,7 @@ ps_cmp_uids(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 {
   ps_user_t (*gf)() = G(getter, ps_user_t);
   ps_user_t u1 = gf(ps1), u2 = gf(ps2);
-  return ps_user_uid(u1) - ps_user_uid(u2);
+  return (u1 ? ps_user_uid (u1) : -1) - (u2 ? ps_user_uid (u2) : -1);
 }
 
 int 
@@ -749,8 +765,9 @@ ps_cmp_unames(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 {
   ps_user_t (*gf)() = G(getter, ps_user_t);
   ps_user_t u1 = gf(ps1), u2 = gf(ps2);
-  struct passwd *pw1 = ps_user_passwd(u1), *pw2 = ps_user_passwd(u2);
-  return GUARDED_CMP(pw1, pw2, strcmp(pw1->pw_name, pw2->pw_name));
+  struct passwd *pw1 = u1 ? ps_user_passwd (u1) : 0;
+  struct passwd *pw2 = u2 ? ps_user_passwd (u2) : 0;
+  return GUARDED_CMP (pw1, pw2, strcmp (pw1->pw_name, pw2->pw_name));
 }
 
 int 
@@ -793,17 +810,26 @@ ps_nominal_nth (proc_stat_t ps, ps_getter_t getter)
   return G(getter, int)(ps) == 2;
 }
 
+static int own_uid = -2;	/* -1 means no uid at all.  */
+
 /* A user is nominal if it's the current user.  */
 bool 
 ps_nominal_user (proc_stat_t ps, ps_getter_t getter)
 {
-  static int own_uid = -1;
   ps_user_t u = G(getter, ps_user_t)(ps);
-
-  if (own_uid < 0)
+  if (own_uid == -2)
     own_uid = getuid();
+  return own_uid >= 0 && u && u->uid == own_uid;
+}
 
-  return u->uid == own_uid;
+/* A uid is nominal if it's that of the current user.  */
+bool 
+ps_nominal_uid (proc_stat_t ps, ps_getter_t getter)
+{
+  uid_t uid = G(getter, uid_t)(ps);
+  if (own_uid == -2)
+    own_uid = getuid ();
+  return own_uid >= 0 && uid == own_uid;
 }
 
 /* ---------------------------------------------------------------- */
@@ -830,7 +856,7 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"PPID",
    &ps_ppid_getter,	   ps_emit_int,     ps_cmp_ints,   0,		   -5},
   {"UID",
-   &ps_owner_getter,	   ps_emit_uid,	    ps_cmp_uids,   ps_nominal_user,-5},
+   &ps_owner_uid_getter,   ps_emit_uid,	    ps_cmp_ints,   ps_nominal_uid, -4},
   {"User",
    &ps_owner_getter,	   ps_emit_uname,   ps_cmp_unames, ps_nominal_user, 8},
   {"NTh",
