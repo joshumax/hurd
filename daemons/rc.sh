@@ -8,6 +8,7 @@ then
 elif [ $1x = autobootx ]
 then
 	echo Automatic boot in progress...
+	date
 
 	# Find the filesystem by a kludge, and extract the root device name.
 	fsargs=`ps -MaxHww --fmt=%command | grep exec-server-task | head -1`
@@ -60,9 +61,9 @@ rm -f /var/lock/LCK.*
 (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
 echo done
 
-echo -n restoring pty permissions...
-chmod 666 /dev/tty[pqrs]*
-echo done
+#echo -n restoring pty permissions...
+#chmod 666 /dev/tty[pqrs]*
+#echo done
 
 #echo -n updating /etc/motd...
 #echo GNU\'s Not Unix Version `uname --release` > /tmp/newmotd
