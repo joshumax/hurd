@@ -1,6 +1,6 @@
 /* A translator for providing endless empty space and immediate eof.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -22,6 +22,7 @@
 #include <hurd/ports.h>
 #include <hurd/trivfs.h>
 #include <hurd/fsys.h>
+#include <version.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -29,9 +30,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <argp.h>
 
-/* ---------------------------------------------------------------- */
-
 struct port_class *control_class;
 struct port_class *node_class;
 struct port_bucket *port_bucket;
@@ -41,40 +41,32 @@ struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_protid_nportclasses = 1;
 int trivfs_cntl_nportclasses = 1;
 
-/* If true, then reading from this device will yield an endless stream of
-   zeros instead of immediate EOF.  This also makes it mappable.  */
-static int provide_zeros = 0;
+char *argp_program_version = STANDARD_HURD_VERSION (null);
 
 void
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
-  
+  const struct argp argp = { 0, 0, 0, "Endless sink and null source" };
+
+  argp_parse (&argp, argc, argv, 0, 0, 0);
+
   control_class = ports_create_class (trivfs_clean_cntl, 0);
   node_class = ports_create_class (trivfs_clean_protid, 0);
   port_bucket = ports_create_bucket ();
   trivfs_protid_portclasses[0] = node_class;
   trivfs_cntl_portclasses[0] = control_class;
 
-  if (argc == 2 &&
-      (strcmp(argv[1], "-z") == 0 || strcmp(argv[1], "--zero") == 0))
-    provide_zeros = 1;
-  else if (argc != 1)
-    {
-      fprintf(stderr, "Usage: %s [-z|--zero]", program_invocation_name);
-      exit(1);
-    }
-
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    error(1, 0, "must be started as a translator");
+    error(1, 0, "Must be started as a translator");
 
   /* Reply to our parent */
   err = trivfs_startup(bootstrap, 0, control_class, port_bucket,
 		       node_class, port_bucket, NULL);
   if (err)
-    error(3, err, "Contacting parent");
+    error(3, err, "trivfs_startup");
 
   /* Launch. */
   ports_manage_port_operations_one_thread (port_bucket, trivfs_demuxer, 0);
@@ -82,7 +74,6 @@ main (int argc, char **argv)
   exit(0);
 }
 
-/* ---------------------------------------------------------------- */
 /* Trivfs hooks  */
 
 int trivfs_fstype = FSTYPE_DEV;
@@ -109,11 +100,20 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
-  exit(0);
+  exit (0);
+}
+
+error_t
+trivfs_S_file_check_access (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t reply_type,
+			    int *allowed)
+{
+  if (! cred)
+    return EOPNOTSUPP;
+  else
+    return file_check_access (cred->realnode, allowed);
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Return objects mapping the data underlying this memory object.  If
    the object can be read then memobjrd will be provided; if the
    object can be written then memobjwr will be provided.  For objects
@@ -132,8 +132,6 @@ trivfs_S_io_map(struct trivfs_protid *cred,
   return EINVAL;		/* XXX should work! */
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
    ignored.  The amount desired to be read is in AMT.  */
@@ -151,22 +149,12 @@ trivfs_S_io_read(struct trivfs_protid *cred,
     err = EOPNOTSUPP;
   else if (!(cred->po->openmodes & O_READ))
     err = EBADF;
-  else if (provide_zeros)
-    {
-      if (amt > *datalen)
-	err = vm_allocate(mach_task_self(), data, amt, 1);
-      else
-	bzero((void *)*data, amt);
-      *datalen = amt;
-    }
   else
     *datalen = 0;
 
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
    by the nonblocking flag.  */
@@ -179,15 +167,11 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
     return EOPNOTSUPP;
   else if (!(cred->po->openmodes & O_READ))
     return EINVAL;
-  else if (provide_zeros)
-    *amount = INT_MAX;
   else
     *amount = 0;
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Change current read/write offset */
 kern_return_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
@@ -200,8 +184,6 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
    return the types that are then available.  ID_TAG is returned as passed; it
@@ -222,8 +204,6 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Write data to an IO object.  If offset is -1, write at the object
    maintained file pointer.  If the object is not seekable, offset is
    ignored.  The amount successfully written is returned in amount.  A
@@ -245,8 +225,6 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
-
 /* Truncate file.  */
 kern_return_t
 trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
@@ -254,7 +232,6 @@ trivfs_S_file_set_size (struct trivfs_protid *cred, off_t size)
   return 0;
 }
 
-/* ---------------------------------------------------------------- */
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
    will tell you which of O_READ, O_WRITE, and O_EXEC the object can
@@ -311,7 +288,6 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
     return 0;
 }
 
-/* ---------------------------------------------------------------- */
 /* Get/set the owner of the IO object.  For terminals, this affects
    controlling terminal behavior (see term_become_ctty).  For all
    objects this affects old-style async IO.  Negative values represent
