@@ -37,7 +37,7 @@
 
 static struct ext2_group_desc * get_group_desc (struct super_block * sb,
 						unsigned int block_group,
-						struct buffer_head ** bh)
+						char ** bh)
 {
 	unsigned long group_desc;
 	unsigned long desc;
@@ -68,7 +68,7 @@ static void read_block_bitmap (struct super_block * sb,
 			       unsigned long bitmap_nr)
 {
 	struct ext2_group_desc * gdp;
-	struct buffer_head * bh;
+	char * bh;
 	
 	gdp = get_group_desc (sb, block_group, NULL);
 	bh = bread (sb->s_dev, gdp->bg_block_bitmap, sb->s_blocksize);
@@ -97,7 +97,7 @@ static int load__block_bitmap (struct super_block * sb,
 {
 	int i, j;
 	unsigned long block_bitmap_number;
-	struct buffer_head * block_bitmap;
+	char * block_bitmap;
 
 	if (block_group >= sb->u.ext2_sb.s_groups_count)
 		ext2_panic (sb, "load_block_bitmap",
@@ -168,8 +168,8 @@ static inline int load_block_bitmap (struct super_block * sb,
 void ext2_free_blocks (struct super_block * sb, unsigned long block,
 		       unsigned long count)
 {
-	struct buffer_head * bh;
-	struct buffer_head * bh2;
+	char * bh;
+	char * bh2;
 	unsigned long block_group;
 	unsigned long bit;
 	unsigned long i;
@@ -253,8 +253,8 @@ int ext2_new_block (struct super_block * sb, unsigned long goal,
 		    u32 * prealloc_count,
 		    u32 * prealloc_block)
 {
-	struct buffer_head * bh;
-	struct buffer_head * bh2;
+	char * bh;
+	char * bh2;
 	char * p, * r;
 	int i, j, k, tmp;
 	unsigned long lmap;
@@ -519,7 +519,7 @@ static inline int block_in_use (unsigned long block,
 
 void ext2_check_blocks_bitmap (struct super_block * sb)
 {
-	struct buffer_head * bh;
+	char * bh;
 	struct ext2_super_block * es;
 	unsigned long desc_count, bitmap_count, x;
 	unsigned long desc_blocks;
