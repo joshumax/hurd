@@ -31,7 +31,7 @@
 
 #include "priv.h"
 #include "tioctl_S.h"
-#include "console.h"
+#include "vcons.h"
 #include "focus.h"
 
 

@@ -2,7 +2,7 @@
 #include <cthreads.h>
 #include <string.h>
 
-#include "console.h"
+#include "vcons.h"
 #include "input-drv.h"
 #include "focus.h"
 

@@ -1,4 +1,4 @@
-/* console.h - Interface for the device independant part of a virtual console.
+/* vcons.h - Interface for the device independant part of a virtual console.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 

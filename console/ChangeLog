@@ -6,6 +6,11 @@
 	* console.c: Likewise.
 	* Makefile (LCLHDRS): Rename input.h to input-drv.h.
 
+	* main.c: Include "vcons.h" instead "console.h".
+	* focus.c: Likewise.
+	* Makefile (LCLHDRS): Rename console.h to vcons.h.
+	(SRCS): Rename console.c to vcons.c.
+
 2002-06-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.h: New file.

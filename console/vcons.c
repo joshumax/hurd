@@ -1,4 +1,4 @@
-/* console.c - The device independant part of a console.
+/* vcons.c - The device independant part of a console.
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
@@ -23,7 +23,7 @@
 #include <string.h>
 #include <cthreads.h>
 
-#include "console.h"
+#include "vcons.h"
 #include "display-drv.h"
 #include "input-drv.h"
 
