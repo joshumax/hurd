@@ -20,6 +20,17 @@
 
 #include "priv.h"
 
+static struct
+{
+  int present;
+  int absent;
+  int errors;
+  int dot;
+  int dotdot;
+} cache_misses;
+static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
+
+
 /* Lookup in directory DP (which is locked) the name NAME.  TYPE will
    either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
    user making the call.
@@ -71,7 +82,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	       struct protid *cred)
 {
   error_t err;
-  
+
   if (type == REMOVE || type == RENAME)
     assert (np);
 
@@ -119,6 +130,26 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
     }
   
   err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
+
+  spin_lock (&cm_lock);
+  if (type == LOOKUP)
+    {
+      if (err == ENOENT)
+	cache_misses.absent++;
+      else if (err)
+	cache_misses.errors++;
+      else 
+	cache_misses.present++;
+      if (name[0] == '.')
+	{
+	  if (name[1] == '\0')
+	    cache_misses.dot++;
+	  else if (name[1] == '.' && name[2] == '\0')
+	    cache_misses.dotdot++;
+	}
+    }
+  spin_unlock (&cm_lock);
+
   if (err && err != ENOENT)
     return err;
   
@@ -137,6 +168,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 
   if ((type == LOOKUP || type == CREATE) && !err && np)
     diskfs_enter_lookup_cache (dp, *np, name);
+  else if (type == LOOKUP && err == ENOENT)
+    diskfs_enter_lookup_cache (dp, 0, name);
     
   return err;
 }

@@ -1,3 +1,74 @@
+Tue Sep  3 14:00:25 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfs-spec.h: Renamed from rpcsvc/nfs_prot.h.
+	* mount.c: Include "mount.h" instead of <rpcsvc/mount.h>.
+	* nfs.h: Include "nfs-spec.h" instead of <rpcsvc/nfs_prot.h>.
+	* rpcsvc/mount.h: Deleted file.
+	* rpcsvc: Deleted directory.
+	* mount.h (MOUNTPROG): Renamed from MOUNT_RPC_PROGRAM.
+	(MOUNTVERS): Renamed from MOUNT_RPC_VERSION.
+	* Makefile (RPCSVC_FILES): Deleted var.
+	(lndist, lndist-rpcsvc-files,
+	$(top_srcdir)/hurd-snap/$(dir)/rpcsvc): Deleted targets.
+	(LCLHDRS): Added mount.h and nfs-spec.h.
+
+Thu Aug 29 10:41:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* rpcsvc/nfs_prot.h (createmode): Spell EXCLUSIVE correctly.
+	* nfs.c (hurd_mode_to_nfs_type): New function.
+	* nfs.h (hurd_mode_to_nfs_type): New decl.
+	* ops.c (netfs_attempt_rmdir): process_wcc_stat for NP, not DIR.
+	(netfs_attempt_link): Spell netfs_validate_stat correctly. 
+	(minor, major): New macros.
+	(netfs_report_access): Don't try and return an error.
+
+	* rpc.c (conduct_rpc): Tolerate and return errors from write.
+
+	* Makefile (RPCSVC_FILES): New variable.
+	(lndist): Depend on lndist-rpcsvc-files.
+	(lndist-rpcsvc-files, $(top_srcdir)/hurd-snap/$(dir)/rpcsvc): New
+	targets. 
+
+Fri Aug 16 11:56:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (process_wcc_stat): New function.
+	(netfs_attempt_chown): Use process_wcc_stat instead of
+	register_fresh_stat.  Pack and unpack v3 SETATTR structure if
+	appropriate.
+	(netfs_attempt_chmod): Likewise.
+	(netfs_attempt_utimes): Likewise.
+	(netfs_attempt_set_size): Likewise.
+	(netfs_attempt_lookup): Use process_returned_stat instead of
+	register_fresh state.  Unpack v3 LOOKUP structure if appropriate.
+	(netfs_attempt_link): Likewise.
+	(verify_nonexistent): Assert that we are v2.
+	(netfs_report_access): Use NFS3PROC_ACCESS if we are v3.
+	(netfs_check_open_permissions): Use netfs_report_access.
+	(netfs_attempt_readlink): Unpack v3 READLINK structure if
+	appropriate.
+	(netfs_attempt_read): Pack and unpack v3 READ structure in
+	appropriate.  Use process_returned_stat instead of
+	register_fresh_stat. 
+	(netfs_attempt_write): Pack and unpack v3 WRITE structure in
+	appropriate.  Use process_wcc_stat instead of
+	register_fresh_stat. 
+	(netfs_attempt_create_file): Pack and unpack v3 CREATE structure
+	if appropriate.  Use process_returned_stat instead of
+	register_fresh_stat.
+	(netfs_attempt_link) [CHRDEV, BLKDEV, FIFO, SOCK]: If v3, use new
+	MKNOD call instead of CREATE with overloaded mode.
+	(netfs_attempt_link) [SYMLINK]: If pack and unpack v3 SYMLINK
+	structure if appropriate.
+	(netfs_attempt_unlink): Unpack v3 REMOVE structure if appropriate.
+	(netfs_attempt_rmdir): Unpack v3 RMDIR structure if appropriate.
+	(netfs_attempt_rename): Unpack v3 RENAME structure if appropriate.
+
+	* rpcsvc/nfs_prot.h (ACCESS3_READ, ACCESS3_LOOKUP, ACCESS3_MODIFY,
+	ACCESS3_EXTEND, ACCESS3_DELETE, ACCESS3_EXECUTE): New macros.
+
+	* ops.c (netfs_attempt_chown): Bother to read NFS error/success
+	value. 
+
 Thu Aug 15 15:24:29 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (verify_nonexistent): Don't need to lock DIR; it's already

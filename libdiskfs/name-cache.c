@@ -24,7 +24,7 @@
 #include <cacheq.h>
 
 /* Maximum number of names to cache at once */
-#define MAXCACHE 256
+#define MAXCACHE 200
 
 /* Maximum length of file name we bother caching */
 #define CACHE_NAME_LEN 100
@@ -44,7 +44,10 @@ struct lookup_cache
   char name[CACHE_NAME_LEN];
 
   /* Strlen of NAME.  If this is zero, it's an unused entry. */
-  size_t name_len;		
+  size_t name_len;
+
+  /* XXX */
+  int stati;
 };
 
 /* The contents of the cache in no particular order */
@@ -53,13 +56,18 @@ static struct cacheq lookup_cache = { sizeof (struct lookup_cache) };
 static spin_lock_t cache_lock = SPIN_LOCK_INITIALIZER;
 
 /* Buffer to hold statistics */
-static struct
+static struct stats
 {
   long pos_hits;
   long neg_hits;
   long miss;
   long fetch_errors;
 } statistics;
+
+#define PARTIAL_THRESH 100
+#define NPARTIALS MAXCACHE / PARTIAL_THRESH
+struct stats partial_stats [NPARTIALS];
+
 
 /* If there's an entry for NAME, of length NAME_LEN, in directory DIR in the
    cache, return it's entry, otherwise 0.  CACHE_LOCK must be held.  */
@@ -67,15 +75,21 @@ static struct lookup_cache *
 find_cache (struct node *dir, const char *name, size_t name_len)
 {
   struct lookup_cache *c;
+  int i;
 
   /* Search the list.  All unused entries are contiguous at the end of the
      list, so we can stop searching when we see the first one.  */
-  for (c = lookup_cache.mru; c && c->name_len; c = c->hdr.next)
+  for (i = 0, c = lookup_cache.mru; 
+       c && c->name_len; 
+       c = c->hdr.next, i++)
     if (c->name_len == name_len
 	&& c->dir_cache_id == dir->cache_id
 	&& c->name[0] == name[0] && strcmp (c->name, name) == 0)
-      return c;
-
+      {
+	c->stati = i / 100;
+	return c;
+      }
+  
   return 0;
 }
 
@@ -88,13 +102,6 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, char *name)
   size_t name_len = strlen (name);
   
   if (name_len > CACHE_NAME_LEN - 1)
-    return;
-
-  /* Never cache . or ..; it's too much trouble to get the locking
-     order right.  */
-  if (name[0] == '.' 
-      && (name[1] == '\0'
-	  || (name[1] == '.' && name[2] == '\0')))
     return;
 
   spin_lock (&cache_lock);
@@ -145,6 +152,47 @@ diskfs_purge_lookup_cache (struct node *dp, struct node *np)
   spin_unlock (&cache_lock);
 }
 
+/* Register a negative hit for an entry in the Nth stat class */
+void
+register_neg_hit (int n)
+{
+  int i;
+
+  statistics.neg_hits++;
+
+  for (i = 0; i < n; i++)
+    partial_stats[i].miss++;
+  for (; i < NPARTIALS; i++)
+    partial_stats[i].neg_hits++;
+}
+
+/* Register a positive hit for an entry in the Nth stat class */
+void
+register_pos_hit (int n)
+{
+  int i;
+
+  statistics.pos_hits++;
+
+  for (i = 0; i < n; i++)
+    partial_stats[i].miss++;
+  for (; i < NPARTIALS; i++)
+    partial_stats[i].pos_hits++;
+}
+  
+/* Register a miss */
+void
+register_miss ()
+{
+  int i;
+  
+  statistics.miss++;
+  for (i = 0; i < NPARTIALS; i++)
+    partial_stats[i].miss++;
+}
+
+
+
 /* Scan the cache looking for NAME inside DIR.  If we don't know
    anything entry at all, then return 0.  If the entry is confirmed to
    not exist, then return -1.  Otherwise, return NP for the entry, with
@@ -163,15 +211,18 @@ diskfs_check_lookup_cache (struct node *dir, char *name)
 
       cacheq_make_mru (&lookup_cache, c); /* Record C as recently used.  */
 
-      statistics.pos_hits++;
-      spin_unlock (&cache_lock);
-
       if (id == 0)
 	/* A negative cache entry.  */
-	return (struct node *)-1;
+	{
+	  register_neg_hit (c->stati);
+	  spin_unlock (&cache_lock);
+	  return (struct node *)-1;
+	}
       else if (id == dir->cache_id)
 	/* The cached node is the same as DIR.  */
 	{
+	  register_pos_hit (c->stati);
+	  spin_unlock (&cache_lock);
 	  diskfs_nref (dir);
 	  return dir;
 	}
@@ -179,12 +230,35 @@ diskfs_check_lookup_cache (struct node *dir, char *name)
 	/* Just a normal entry in DIR; get the actual node.  */
 	{
 	  struct node *np;
-	  error_t err = diskfs_cached_lookup (id, &np);
+	  error_t err;
+	  
+	  register_pos_hit (c->stati);
+	  spin_unlock (&cache_lock);
+	  
+	  if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
+	    {
+	      mutex_unlock (&dir->lock);
+	      err = diskfs_cached_lookup (id, &np);
+	      mutex_lock (&dir->lock);
+
+	      /* In the window where DP was unlocked, we might
+		 have lost.  So check the cache again, and see
+		 if it's still there; if so, then we win. */
+	      c = find_cache (dir, "..", 2);
+	      if (!c || c->node_cache_id != id)
+		{
+		  /* Lose */
+		  mutex_unlock (&np->lock);
+		  return 0;
+		}
+	    }
+	  else
+	    err = diskfs_cached_lookup (id, &np);
 	  return err ? 0 : np;
 	}
     }
   
-  statistics.miss++;
+  register_miss ();
   spin_unlock (&cache_lock);
 
   return 0;

@@ -1,4 +1,4 @@
-GNU Hurd Task List Version 1.16.  Last updated 8 August 1996.
+GNU Hurd Task List Version 1.17.  Last updated 3 September 1996.
 
 If you would like to work on one of these, please contact
 thomas@gnu.ai.mit.edu.  It's important that you let me know what's being
@@ -46,10 +46,6 @@ microkernel work there as well as with mib@gnu.ai.mit.edu.
 !!!
   * Mach 3.0 needs to provide support for task virtual timers similar
   in functionality to the Unix ITIMER_PROF and ITIMER_VIRTUAL timers.
-
-!!!
-  * Mach 3.0 needs to provide a way for users to do statistical PC
-  profiling similar to the Unix profil system call.
 
 !!!
   * Mach 3.0 needs to make switches from MEMORY_OBJECT_COPY_DELAY to
@@ -154,7 +150,6 @@ Hurd work (these are brief descriptions; mib can give more information):
   * Filesystem implementations (using libdiskfs) for other popular
   formats.  Importantly, MSDOS FAT format.
   
-
   * Transparent FTP translator.
 
   * A fancy terminal driver that uses readline and supports detach/attach.

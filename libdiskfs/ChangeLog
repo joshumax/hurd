@@ -1,3 +1,60 @@
+Tue Sep  3 10:48:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (diskfs_enter_lookup_cache): Cache `.' and `..'
+	just like other nodes.
+	(diskfs_check_lookup_cache): If we get a cache hit on `..', then
+	do the inverse locking semantic, and only return success if things
+	are stable around the call.
+
+Fri Aug 30 21:57:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* lookup.c (cache_misses): New variable, to find out what sort of
+	thing all the cache misses are.
+	(cm_lock): New variable.
+	(diskfs_lookup): Keep track of cache misses in cache_misses.
+
+	* name-cache.c (MAXCACHE): 200 now.  After experimentation, this
+	appears to be a pretty good value.  Very little benefit after
+	this. 
+
+Fri Aug 30 20:41:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (struct lookup_cache): Delete member `hits'.
+	New member `stati'.
+	(diskfs_enter_lookup_cache): Don't initialize C->hits.
+	(find_cache): Set C->stati before returning.
+	(build_partial): Delete function.
+	(diskfs_check_lookup_cache): Delete calls to build_partial.
+	Register all statistics through register_neg_hit,
+	register_pos_hit, and register_miss.
+	(MAXCACHE): 2000 now.
+
+Wed Aug 28 12:20:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (MAXCACHE): 500 for now.
+
+Mon Aug 26 15:10:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (MAXCACHE): Increase to 50000.
+	(struct lookup_cache): New member `hits'.
+	(statistics): Name struct type `struct stats'.
+	(diskfs_enter_lookup_cache): Initialize C->hits.
+	(PARTIAL_THRESH, NPARTIALS): New macros.
+	(partial_stats): New variable.
+	(build_partial): New function.
+	(diskfs_check_lookup_cache): Call build_partial after statistics
+	frobbing. 
+
+	* name-cache.c (diskfs_check_lookup_cache): Increment members of
+	statistics while still holding CACHE_LOCK.
+
+Fri Aug 16 18:23:25 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (diskfs_check_lookup_cache): Keep track of negative
+	hits properly.
+	* lookup.c (diskfs_lookup): On LOOKUPs that fail to find the node,
+	enter a negative cache entry.
+
 Thu Aug 15 16:07:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-version.c (diskfs_extra_version): New (weak) reference.

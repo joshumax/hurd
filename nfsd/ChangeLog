@@ -1,3 +1,11 @@
+Tue Sep  3 14:15:50 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* loop.c: Include "../nfs/mount.h" instead of
+	"../nfs/rpcsvc/mount.h".
+	* ops.c: Likewise.
+	* nfsd.h: Include "../nfs/nfs-spec.h" instead of
+	"../nfs/rpcsvc/nfs_prot.h". 
+
 Wed Aug 14 13:46:45 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (nfstable): Renamed to nfs2table.

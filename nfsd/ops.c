@@ -26,7 +26,7 @@
 #include <dirent.h>
 
 #include "nfsd.h"
-#include "../nfs/rpcsvc/mount.h" /* XXX */
+#include "../nfs/mount.h" /* XXX */
 #include <rpc/pmap_prot.h>
 
 static error_t

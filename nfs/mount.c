@@ -20,7 +20,6 @@
 
 #include "nfs.h"
 
-#include <rpcsvc/mount.h>
 #include <rpc/pmap_prot.h>
 #include <errno.h>
 #include <sys/socket.h>
@@ -28,6 +27,8 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <stdio.h>
+
+#include "mount.h"
 
 /* Service name for portmapper */
 char *pmap_service_name = "sunrpc";

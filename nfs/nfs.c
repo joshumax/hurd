@@ -97,6 +97,37 @@ hurd_mode_to_nfs_mode (mode_t mode)
   return mode & 07777;
 }
 
+/* Convert a Hurd mode to an NFS type */
+int 
+hurd_mode_to_nfs_type (mode_t mode)
+{
+  switch (mode & S_IFMT)
+    {
+    case S_IFDIR:
+      return NFDIR;
+      
+    case S_IFCHR:
+    default:
+      return NFCHR;
+
+    case S_IFBLK:
+      return NFBLK;
+      
+    case S_IFREG:
+      return NFREG;
+
+    case S_IFLNK:
+      return NFLNK;
+      
+    case S_IFSOCK:
+      return NFSOCK;
+      
+    case S_IFIFO:
+      return protocol_version == 2 ? NF2FIFO : NF3FIFO;
+    }
+}
+
+
 
 /* Each of the functions on this page copies its second arg to *P,
    converting it to XDR representation along the way.  They then

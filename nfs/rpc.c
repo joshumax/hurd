@@ -193,7 +193,10 @@ conduct_rpc (void **rpcbuf, int **pp)
       nc = (void *) *pp - *rpcbuf - sizeof (struct rpc_list);
       cc = write (main_udp_socket, *rpcbuf + sizeof (struct rpc_list), nc);
       if (cc == -1)
-	assert_perror (errno);
+	{
+	  unlink_rpc (hdr);
+	  return errno;
+	}
       else 
 	assert (cc == nc);
       

@@ -25,7 +25,7 @@ typedef int bool_t;
 #include <errno.h>
 #include <netinet/in.h>
 #include <cthreads.h>
-#include "../nfs/rpcsvc/nfs_prot.h" /* XXX */
+#include "../nfs/nfs-spec.h" /* XXX */
 #include <hurd/fs.h>
 
 /* These should be configuration options */

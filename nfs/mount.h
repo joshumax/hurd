@@ -20,8 +20,8 @@
 
 /* These constants define the RPC mount protocol; see RFC 1094. */
 
-#define MOUNT_RPC_PROGRAM 100005
-#define MOUNT_RPC_VERSION 1
+#define MOUNTPROG 100005
+#define MOUNTVERS 1
 
 /* Obnoxious arbitrary limits */
 #define MOUNT_MNTPATHLEN 1024

@@ -21,7 +21,7 @@ typedef int bool_t;		/* Ick. */
 
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <rpcsvc/nfs_prot.h>
+#include "nfs-spec.h"
 #include <hurd/netfs.h>
 
 /* A file handle */
@@ -164,6 +164,7 @@ int cred_has_uid (struct netcred *, uid_t);
 int cred_has_gid (struct netcred *, gid_t);
 
 /* nfs.c */
+int hurd_mode_to_nfs_type (mode_t);
 int *xdr_encode_fhandle (int *, struct fhandle *);
 int *xdr_encode_data (int *, char *, size_t);
 int *xdr_encode_string (int *, char *);

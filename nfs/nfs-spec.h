@@ -74,6 +74,29 @@ enum sattr_time_how
   SET_TO_CLIENT_TIME = 2,
 };
 
+/* Construction of ACCESS arg to NFS3PROC_ACCESS. */
+#define ACCESS3_READ     0x01
+#define ACCESS3_LOOKUP   0x02
+#define ACCESS3_MODIFY   0x04
+#define ACCESS3_EXTEND   0x08
+#define ACCESS3_DELETE   0x10
+#define ACCESS3_EXECUTE  0x20
+
+/* STABLE arg to NFS3PROC_READ */
+enum stable_how {
+  UNSTABLE = 0,
+  DATA_SYNC = 1,
+  FILE_SYNC = 2,
+};
+
+/* MODE arg to NFS3PROC_CREATE */
+enum createmode 
+{
+  UNCHECKED = 0,
+  GUARDED = 1,
+  EXCLUSIVE = 2,
+};
+
 #define NFS_PROGRAM ((u_long)100003)
 #define NFS_VERSION ((u_long)2)
 

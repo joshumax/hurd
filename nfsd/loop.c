@@ -24,7 +24,7 @@
 #include "nfsd.h"
 
 #include <rpc/pmap_prot.h>
-#include "../nfs/rpcsvc/mount.h"
+#include "../nfs/mount.h"
 
 #undef TRUE
 #undef FALSE
