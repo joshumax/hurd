@@ -1,5 +1,12 @@
 Tue Feb 11 19:16:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-help.c (argp_args_levels): New function.
+	(argp_args_usage): Add LEVELS & ADVANCE arguments, and implement
+	multi-pattern output.
+	(__argp_help): Print multiple argument patterns if there are any.
+	* argp-test.c (args_doc): Add an alternative args pattern.
+	(parse_opt): Enforce it.
+
 	* argp-parse.c: Largely rewritten to clean up the code, avoid
  	using nested functions, and adapt namespace and locking in
  	preparation for moving into libc.
