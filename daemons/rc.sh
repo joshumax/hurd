@@ -46,7 +46,7 @@ echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
 if test -d /tmp; then
-  (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -r {} \; )
+  (cd /tmp; find . ! -name . ! -name lost+found ! -name quotas -exec rm -rf {} \; )
 fi
 if test -d /var/run; then
   (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
