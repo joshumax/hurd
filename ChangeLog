@@ -1,3 +1,14 @@
+2002-03-11  Roland McGrath  <roland@frob.com>
+
+	* Makeconf ($(libname).so.$(hurd-version)):
+	Include $($(libname).so-LDLIBS) and $(LDLIBS) in the link.
+
+	* configure.in (--enable-boot-store-types): Grok this arg.
+	* config.make.in (boot-store-types): New variable, set by it.
+	* Makeconf [$(dir) != libstore]
+	($(boot-store-types:%=../libstore/libstore_%.a)): Make these targets
+	depend on ../libstore/libstore.so.
+
 2002-02-10  Marcus Brinkmann  <marcus@gnu.org>
 
 	* INSTALL: Change install-hdrs to install-headers.  Reported by
