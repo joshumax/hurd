@@ -154,7 +154,7 @@ char *fmts[] =
   /* vmem (-v) */
   "~PID ~TH# ~STAT=state ~SL=sleep ~PAGEIN=pgins ~FAULTS=pgflts ~COWFLT=cowflts ~ZFILLS ~SIZE=vsize ~RSS=rsize ~%CPU ~%MEM ~COMMAND=args",
   /* long (-l) */
-  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGI=msgin ~MSGO=msgout ~SZ=vsize ~RSS=rsize ~SC=susp ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
+  "~UID ~PID ~TH# ~PPID ~PRI ~NI=bpri ~TH=nth ~MSGI=msgin ~MSGO=msgout ~SZ=vsize ~RSS=rsize ~SC=susp ~RPC ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
   /* jobc (-j) */
   "~USER ~PID ~TH# ~PPID ~PGRP ~SESS ~LCOLL ~SC=susp ~STAT=state ~TT=tty ~TIME ~COMMAND=args",
   /* full (-f) (from sysv) */
