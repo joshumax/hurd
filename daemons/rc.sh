@@ -67,12 +67,13 @@ echo -n restoring pty permissions...
 chmod 666 /dev/tty[pqrs]*
 echo done
 
-echo -n updating /etc/motd...
-echo GNU\'s Not Unix Version `uname --release` > /tmp/newmotd
-egrep -v 'GNU|Version' /etc/motd >> /tmp/newmotd
-mv /tmp/newmotd /etc/motd
+#echo -n updating /etc/motd...
+#echo GNU\'s Not Unix Version `uname --release` > /tmp/newmotd
+#egrep -v 'GNU|Version' /etc/motd >> /tmp/newmotd
+#mv /tmp/newmotd /etc/motd
+#echo done
+
 chmod 664 /etc/motd
-echo done
 
 echo -n starting daemons:
 /sbin/syslogd;		echo -n ' syslogd'
