@@ -28,6 +28,7 @@
 #include <cthreads.h>
 #include <hurd.h>
 #include <stdio.h>
+#include <hurd/iohelp.h>
 #include "ourmsg_U.h"
 
 
@@ -471,8 +472,8 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
   if (!cred->isroot)
     {
       /* XXX */
-      st.st_uid;
-      st.st_gid;
+      st.st_uid = term_owner;
+      st.st_gid = term_group;
       
       err = fshelp_isowner (&st, cred->user);
       if (err)

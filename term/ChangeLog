@@ -1,3 +1,8 @@
+Sat Nov 23 16:28:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* users.c: Include <hurd/iohelp.h>.
+	(trivfs_S_file_chmod): Bother to fill in ST.
+
 Mon Nov 18 18:16:29 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* users.c (trivfs_modify_stat): Omit pointless assignment.
