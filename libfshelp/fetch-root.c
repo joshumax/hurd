@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -119,7 +119,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       bzero (fds, (STDERR_FILENO + 1) * sizeof (mach_port_t));
       bzero (ints, INIT_INT_MAX * sizeof (int));
       
-      ports[INIT_PORT_CWDIR] = reauth (getcwdir (), MACH_MSG_TYPE_MOVE_SEND);
+      ports[INIT_PORT_CWDIR] = dotdot;
       ports[INIT_PORT_CRDIR] = reauth (getcrdir (), MACH_MSG_TYPE_MOVE_SEND);
       ports[INIT_PORT_AUTH] = newauth;
       

@@ -1,3 +1,8 @@
+Tue Apr 20 21:43:20 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* fetch-root.c (fshelp_fetch_root): When starting a passive
+	translator, set cwd to be DOTDOT instead of our own cwd.
+
 Sat Mar  6 17:03:02 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* start-translator-long.c (service_fsys_startup): Doc fixes, and
