@@ -1,3 +1,7 @@
+2004-02-01  Alfred M. Szmidt  <ams@kemisten.nu>
+
+        * hurd.texi (Installing): Chapter removed.
+
 2003-08-09  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* Makefile (targets): Add hurd.info-* to list.
