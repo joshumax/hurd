@@ -163,7 +163,7 @@ $(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
 # -lg avoids "No input files" error.
 link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),$(strip \
 	       $(startup) $(OBJS) -\( $(HURDLIBS-files) $(OTHERLIBS) -\))) \
-	       $(libc) -lgcc -lg -v
+	       $(libc)  -lg
 empty =
 comma = ,
 endif
