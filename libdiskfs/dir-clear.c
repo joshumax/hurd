@@ -17,9 +17,6 @@
 
 #include "priv.h"
 
-/* Clear the `.' and `..' entries from directory DP.  Its parent is PDP,
-   and the user responsible for this is identified by CRED.  Both 
-   directories must be locked.  */
 error_t
 diskfs_clear_directory (struct node *dp,
 			struct node *pdp,
