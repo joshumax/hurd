@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -19,7 +19,12 @@ dir := fstests
 makemode := utilities
 
 SRCS = fstests.c fdtests.c timertest.c opendisk.c
+OBJS = fstests.o fdtests.o timertest.o opendisk.o
 targets = timertest fstests opendisk # fdtests
 
 include ../Makeconf
 
+timertest: timertest.o
+fstests: fstests.o
+opendisk: opendisk.o
+fdtests: fdtests.o
