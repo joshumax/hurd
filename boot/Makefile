@@ -15,11 +15,15 @@
 # along with the GNU Hurd; see the file COPYING.  If not, write to
 # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
 
+dir := boot
+
 include ../Makeconf
 
 VPATH=.:../machine
 
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o boot_machdep.o
+
+DIST_FILES = boot.c Makefile
 
 boot: $(OBJS)
 	$(link)
