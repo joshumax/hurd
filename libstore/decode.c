@@ -35,7 +35,7 @@ store_std_leaf_decode (struct store_enc *enc,
 		       store_std_leaf_create_t create,
 		       struct store **store)
 {
-  char *misc;
+  char *misc, *name;
   error_t err;
   int type, flags, i;
   mach_port_t port;
@@ -64,6 +64,13 @@ store_std_leaf_decode (struct store_enc *enc,
   misc = malloc (misc_len);
   if (! misc)
     return ENOMEM;
+
+  name = strdup (enc->data + enc->cur_data);
+  if (! name)
+    {
+      free (misc);
+      return ENOMEM;
+    }
 
   /* Read encoded ports (be careful to deallocate this if we barf).  */
   port = enc->ports[enc->cur_port++];
@@ -106,10 +113,12 @@ store_std_leaf_decode (struct store_enc *enc,
     {
       mach_port_deallocate (mach_task_self (), port);
       free (misc);
+      free (name);
     }
   else
     {
       (*store)->flags = flags;
+      (*store)->name = name;
       (*store)->misc = misc;
       (*store)->misc_len = misc_len;
     }
