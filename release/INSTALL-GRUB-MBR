@@ -9,13 +9,13 @@ if [ ! "$DEV" -o ! -w "$DEV" ]; then
   exit 1
 fi
 
-case "$DEV" in)
+case "$DEV" in
   *r?d[0-9])
     ;;
   *)
     echo "The device $DEV doesn't seem to be a whole-disk raw device; continue? [n] "
     read C
-    case "$C" in)
+    case "$C" in
       [Yy]*)
         ;;
       *)
@@ -28,7 +28,7 @@ esac
 
 cd /tmp
 
-dd if="$DEV" of=mbr							 \
+dd if="$DEV" of=mbr bs=512 count=1					 \
 && cp /boot/grub/stage1_ffs stage1					 \
 && dd if=mbr of=stage1 conv=notrunc bs=1 seek=446 skip=446 count=64	 \
 && dd if=stage1 of="$DEV" bs=512 count=1
