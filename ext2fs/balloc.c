@@ -67,37 +67,50 @@ ext2_free_blocks (block_t block, unsigned long count)
 
   ext2_debug ("freeing block %lu[%lu]", block, count);
 
-  block_group = (block - sblock->s_first_data_block) /
-    sblock->s_blocks_per_group;
-  bit = (block - sblock->s_first_data_block) % sblock->s_blocks_per_group;
-  if (bit + count > sblock->s_blocks_per_group)
-    ext2_panic ("freeing blocks across group boundary - "
-		"block = %u, count = %lu",
-		block, count);
-  gdp = group_desc (block_group);
-  bh = bptr (gdp->bg_block_bitmap);
-
-  if (in_range (gdp->bg_block_bitmap, block, count) ||
-      in_range (gdp->bg_inode_bitmap, block, count) ||
-      in_range (block, gdp->bg_inode_table, itb_per_group) ||
-      in_range (block + count - 1, gdp->bg_inode_table, itb_per_group))
-    ext2_panic ("freeing blocks in system zones - "
-		"block = %u, count = %lu",
-		block, count);
-
-  for (i = 0; i < count; i++)
+  do
     {
-      if (!clear_bit (bit + i, bh))
-	ext2_warning ("bit already cleared for block %lu", block + i);
-      else
-	{
-	  gdp->bg_free_blocks_count++;
-	  sblock->s_free_blocks_count++;
-	}
-    }
+      unsigned long int gcount = count;
 
-  record_global_poke (bh);
-  record_global_poke (gdp);
+      block_group = ((block - sblock->s_first_data_block)
+		     / sblock->s_blocks_per_group);
+      bit = (block - sblock->s_first_data_block) % sblock->s_blocks_per_group;
+      if (bit + count > sblock->s_blocks_per_group)
+	{
+	  unsigned long overflow = bit + count - sblock->s_blocks_per_group;
+	  gcount -= overflow;
+	  ext2_debug ("freeing blocks across group boundary - "
+		      "block = %u, count = %lu",
+		      block, count);
+	}
+      gdp = group_desc (block_group);
+      bh = bptr (gdp->bg_block_bitmap);
+
+      if (in_range (gdp->bg_block_bitmap, block, gcount) ||
+	  in_range (gdp->bg_inode_bitmap, block, gcount) ||
+	  in_range (block, gdp->bg_inode_table, itb_per_group) ||
+	  in_range (block + gcount - 1, gdp->bg_inode_table, itb_per_group))
+	ext2_panic ("freeing blocks in system zones - "
+		    "block = %u, count = %lu",
+		    block, count);
+
+      for (i = 0; i < gcount; i++)
+	{
+	  if (!clear_bit (bit + i, bh))
+	    ext2_warning ("bit already cleared for block %lu", block + i);
+	  else
+	    {
+	      gdp->bg_free_blocks_count++;
+	      sblock->s_free_blocks_count++;
+	    }
+	}
+
+      record_global_poke (bh);
+      record_global_poke (gdp);
+
+      block += gcount;
+      count -= gcount;
+    } while (count > 0);
+
   sblock_dirty = 1;
 
   spin_unlock (&global_lock);
@@ -113,7 +126,9 @@ ext2_free_blocks (block_t block, unsigned long count)
  * bitmap, and then for any free bit if that fails.
  */
 block_t
-ext2_new_block (block_t goal, block_t *prealloc_count, block_t *prealloc_block)
+ext2_new_block (block_t goal,
+		block_t prealloc_goal,
+		block_t *prealloc_count, block_t *prealloc_block)
 {
   char *bh;
   char *p, *r;
@@ -296,12 +311,12 @@ got_block:
      * Do block preallocation now if required.
    */
 #ifdef EXT2_PREALLOCATE
-  if (prealloc_block)
+  if (prealloc_goal)
     {
       *prealloc_count = 0;
       *prealloc_block = tmp + 1;
       for (k = 1;
-	   k < 8 && (j + k) < sblock->s_blocks_per_group; k++)
+	   k < prealloc_goal && (j + k) < sblock->s_blocks_per_group; k++)
 	{
 	  if (set_bit (j + k, bh))
 	    break;
@@ -405,16 +420,41 @@ ext2_check_blocks_bitmap ()
 
   for (i = 0; i < groups_count; i++)
     {
+      inline int test_root (int a, int b)
+	{
+	  if (a == 0)
+	    return 1;
+	  while (1)
+	    {
+	      if (a == 1)
+		return 1;
+	      if (a % b)
+		return 0;
+	      a = a / b;
+	    }
+	}
+      inline int ext2_group_sparse (int group)
+	{
+	  return (test_root (group, 3) || test_root (group, 5)
+		  || test_root (group, 7));
+	}
+
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
       bh = bptr (gdp->bg_block_bitmap);
 
-      if (!test_bit (0, bh))
-	ext2_error ("superblock in group %d is marked free", i);
+      if (!EXT2_HAS_RO_COMPAT_FEATURE (sblock,
+				       EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER)
+	  || ext2_group_sparse (i))
+	{
+	  if (!test_bit (0, bh))
+	    ext2_error ("superblock in group %d is marked free", i);
 
-      for (j = 0; j < desc_blocks; j++)
-	if (!test_bit (j + 1, bh))
-	  ext2_error ("descriptor block #%d in group %d is marked free", j, i);
+	  for (j = 0; j < desc_blocks; j++)
+	    if (!test_bit (j + 1, bh))
+	      ext2_error ("descriptor block #%d in group %d is marked free",
+			  j, i);
+	}
 
       if (!block_in_use (gdp->bg_block_bitmap, bh))
 	ext2_error ("block bitmap for group %d is marked free", i);
