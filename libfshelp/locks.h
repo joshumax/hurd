@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -24,3 +24,5 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <cthreads.h>
 #include <hurd/ports.h>
 #include "fshelp.h"
+#include <sys/file.h>
+#include <assert.h>

@@ -19,6 +19,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
+#include "locks.h"
+
 /* Initialize a lock box. */
 void
 fshelp_lock_init (struct lock_box *box)

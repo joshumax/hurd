@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell.  */
 
-#include "fshelp.h"
+#include "locks.h"
 
 error_t
 fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
@@ -46,12 +46,12 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
       if (*user == LOCK_SH)
 	{
 	  if (!--box->shcount)
-	    box->lock_type == LOCK_UN;
+	    box->type = LOCK_UN;
 	}
       else if (*user == LOCK_EX)
-	box->lock_type == LOCK_UN;
+	box->type = LOCK_UN;
       
-      if (box->lock_type == LOCK_UN && box->waiting)
+      if (box->type == LOCK_UN && box->waiting)
 	{
 	  box->waiting = 0;
 	  condition_broadcast (&box->wait);
@@ -73,7 +73,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	}
       
       /* If there is an exclusive lock, wait for it to end. */
-      while (lock->type == LOCK_EX)
+      while (box->type == LOCK_EX)
 	{
 	  if (flags & LOCK_NB)
 	    return EWOULDBLOCK;
