@@ -1,6 +1,6 @@
 /* Add/remove paging devices
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -98,7 +98,7 @@ swaponoff (char *file, int add)
   store_free (store);
 }
 
-void 
+int
 main(int argc, char *argv[])
 {
   /* Parse our options...  */
@@ -107,7 +107,7 @@ main(int argc, char *argv[])
       switch (key)
 	{
 	case 'a':
-	  argp_failure (state, 5, 0, "--standard: Not supported yet"); 
+	  argp_failure (state, 5, 0, "--standard: Not supported yet");
 
 	case ARGP_KEY_ARG:
 #ifdef SWAPOFF
@@ -126,5 +126,5 @@ main(int argc, char *argv[])
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  exit(0);
+  return 0;
 }
