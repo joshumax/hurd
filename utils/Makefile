@@ -47,7 +47,4 @@ settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthrea
 ps w hurdids settrans sync showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo: ../libshouldbeinlibc/libshouldbeinlibc.a
 
-%: %.sh
-	sed -f $(top_srcdir)/sh-version.sed < $< > $@
-
 $(filter-out $(special-targets), $(targets)): %: %.o
