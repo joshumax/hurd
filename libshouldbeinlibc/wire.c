@@ -149,5 +149,4 @@ wire_task_self ()
   mach_port_deallocate (mach_task_self (), device);
 }
 
-
- 
+asm (".weak _start");		/* XXX hack to avoid recompilation.  */
