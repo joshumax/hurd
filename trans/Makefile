@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,99 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,99,2000 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -23,7 +23,7 @@ targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o
-HURDLIBS=ports trivfs threads fshelp pipe ihash shouldbeinlibc
+HURDLIBS = threads ports trivfs fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
@@ -33,11 +33,11 @@ ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o
 password: passwordServer.o
 
-crash password: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
+crash password: ../libthreads/libthreads.a ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
-fwd new-fifo: ../libfshelp/libfshelp.a ../libports/libports.a
-hello-mt hello magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
+fwd: ../libfshelp/libfshelp.a ../libports/libports.a
+hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-hello-mt magic fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
 
 $(targets): %: %.o

@@ -1,3 +1,10 @@
+2000-07-26  Mark Kettenis  <kettenis@gnu.org>
+
+	* Makefile: Reorder libs such that the threads lib comes before
+	the ports lib.  This makes sure the functions in libthreads
+	properly override the stubs in libports with the new dynamic
+	linker semantics in glibc 2.2.
+
 2000-03-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* new-fifo.c (trivfs_protid_portclasses, trivfs_protid_nportclasses):
