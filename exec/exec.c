@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <hurd.h>
 #include <hurd/startup.h>
@@ -809,7 +810,7 @@ static void
 set_init_port (mach_port_t port, mach_port_t *slot, auth_t authenticate,
 	       int consume)
 {
-  int pid = getpid ();
+  pid_t pid = getpid ();
   
   if (*slot != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), *slot);
@@ -1478,7 +1479,8 @@ S_exec_init (mach_port_t server, auth_t auth, process_t proc)
   /* Have the proc server notify us when the canonical ints and ports change.
      The notification comes as a normal RPC on the message port, which
      the C library's signal thread handles.  */
-  __USEPORT (PROC, proc_execdata_notify (port, execserver));
+  __USEPORT (PROC, proc_execdata_notify (port, execserver,
+					 MACH_MSG_TYPE_MAKE_SEND));
 
   /* Don't call startup_essential_task here.  Init knows that once
      we call that we are all set up; we actually aren't all set up
