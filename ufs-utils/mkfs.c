@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.3 1994/09/08 20:03:28 mib Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.4 1994/09/09 16:48:27 mib Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -45,8 +45,10 @@ static char *rcsid = "$Id: mkfs.c,v 1.3 1994/09/08 20:03:28 mib Exp $";
 #include "../ufs/dir.h"
 #include "../ufs/fs.h"
 /* #include <sys/disklabel.h> */
+#include <sys/stat.h>
+#include <fcntl.h>
 
-/* Begin additions for GNU Hurd */
+/* Begin misc additions for GNU Hurd */
 
 /* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD 
    4.4 version that mkfs expects.  So we provide here the BSD version. */
@@ -67,6 +69,10 @@ static char *rcsid = "$Id: mkfs.c,v 1.3 1994/09/08 20:03:28 mib Exp $";
 
 /* Provide mode from struct dinode * */
 #define DI_MODE(dp) (((dp)->di_modeh << 16) | (dp)->di_model)
+
+#define DEV_BSIZE 512
+
+#define btodb(bytes) ((bytes) / DEV_BSIZE)
 
 /* End additions for GNU Hurd */
 
@@ -95,6 +101,7 @@ static char *rcsid = "$Id: mkfs.c,v 1.3 1994/09/08 20:03:28 mib Exp $";
 /*
  * variables set up by front end.
  */
+#define extern
 extern int	mfs;		/* run as the memory based filesystem */
 extern int	Nflag;		/* run mkfs without writing file system */
 extern int	Oflag;		/* format as an 4.3BSD file system */
@@ -125,6 +132,7 @@ extern int	sbsize;		/* superblock size */
 extern u_long	memleft;	/* virtual memory available */
 extern caddr_t	membase;	/* start address of memory based filesystem */
 extern caddr_t	malloc(), calloc();
+#undef extern
 
 union {
 	struct fs fs;
@@ -143,6 +151,119 @@ struct dinode zino[MAXBSIZE / sizeof(struct dinode)];
 
 int	fsi, fso;
 daddr_t	alloc();
+
+main (int argc, char **argv)
+{
+  void usage ()
+    {
+      fprintf (stderr, 
+	       "Usage: %s [-N] special nsect ntrak npseck tskew ileave\n",
+	       argv[0]);
+      exit (1);
+    }
+  /* Usage is 
+     mkfs [-N] special nsect ntrak npsect tskew ileave
+     
+     All other parameters are computed from defaults and the device itself. */
+  char **args;
+  int fdo, fdi;
+  char *device;
+  struct stat st;
+
+  if (argc == 8)
+    {
+      if (argv[1][0] != '-' || argv[1][1] != 'N' || argv[1][2] != '\0')
+	usage ();
+      Nflag = 1;
+      args = &argv[2];
+    }
+  else if (argc != 7)
+    usage ();
+  else
+    args = &argv[1];
+  
+  /* Default computation taken from 4.4 BSD newfs.c */
+  
+  device = args[0];
+  fdi = open (device, O_RDONLY);
+  if (fdi == -1)
+    {
+      perror (device);
+      exit (1);
+    }
+  fdo = open (device, O_WRONLY);
+  if (fdo == -1)
+    {
+      perror (device);
+      exit (1);
+    }
+  if (fstat (fdi, &st) == -1)
+    {
+      perror ("stat");
+      exit (1);
+    }
+
+  mfs = 0;
+  Oflag = 0;
+  fssize = st.st_size / DEV_BSIZE;
+
+  ntracks = atoi (args[2]);
+  if (ntracks == 0)
+    {
+      fprintf (stderr, "Bogus ntracks: %d\n", ntracks);
+      exit (1);
+    }
+  
+  nsectors = atoi (args[1]);
+  if (nsectors == 0)
+    {
+      fprintf (stderr, "Bogus nsectors: %d\n", nsectors);
+      exit (1);
+    }
+
+  nphyssectors = atoi (args[3]);
+  if (nphyssectors == 0)
+    {
+      fprintf (stderr, "Bogus npsect: %d\n", nphyssectors);
+      exit (1);
+    }
+
+  secpercyl = nsectors * ntracks;
+  
+  sectorsize = DEV_BSIZE;
+  
+  rpm = 3600;
+  
+  interleave = atoi (args[5]);
+
+  trackskew = atoi (args[4]);
+  
+  /* These aren't used by the GNU ufs, so who cares? */
+  headswitch = 0;
+  trackseek = 0;
+  
+  fsize = 1024;
+  bsize = 8192;
+  
+  cpg = 16;
+  cpgflg = 0;
+  minfree = MINFREE;
+  opt = DEFAULTOPT ;
+  density = 4 * fsize;
+  maxcontig = MAX (1, MIN (MAXPHYS, MAXBSIZE) / bsize - 1);
+  rotdelay = 4;
+#define MAXBLKPG(bsize)	((bsize) / sizeof(daddr_t))
+  maxbpg = MAXBLKPG (bsize);
+  nrpos = 8;
+  bbsize = BBSIZE;
+  sbsize = SBSIZE;
+
+  mkfs (0, device, fdi, fdo);
+
+  exit (0);
+}
+  
+
 
 mkfs(pp, fsys, fi, fo)
 	struct partition *pp;
@@ -638,6 +759,7 @@ next:
 	for (cylno = 0; cylno < sblock.fs_ncg; cylno++)
 		wtfs(fsbtodb(&sblock, cgsblock(&sblock, cylno)),
 		    sbsize, (char *)&sblock);
+#if 0 /* Not in Hurd (yet) */
 	/*
 	 * Update information about this partion in pack
 	 * label, to that it may be updated on disk.
@@ -646,6 +768,7 @@ next:
 	pp->p_fsize = sblock.fs_fsize;
 	pp->p_frag = sblock.fs_frag;
 	pp->p_cpg = sblock.fs_cpg;
+#endif
 	/*
 	 * Notify parent process of success.
 	 * Dissociate from session and tty.
@@ -880,10 +1003,11 @@ fsinit(utime)
 			bcopy(&lost_found_dir[2], &buf[i],
 			    DIRSIZ(0, &lost_found_dir[2]));
 	}
-	node.di_mode = IFDIR | UMASK;
+	node.di_model = ifdir | UMASK;
+	node.di_modeh = 0;
 	node.di_nlink = 2;
 	node.di_size = sblock.fs_bsize;
-	node.di_db[0] = alloc(node.di_size, node.di_mode);
+	node.di_db[0] = alloc(node.di_size, DI_MODE (&node));
 	node.di_blocks = btodb(fragroundup(&sblock, node.di_size));
 	wtfs(fsbtodb(&sblock, node.di_db[0]), node.di_size, buf);
 	iput(&node, LOSTFOUNDINO);
@@ -892,15 +1016,16 @@ fsinit(utime)
 	 * create the root directory
 	 */
 	if (mfs)
-		node.di_mode = IFDIR | 01777;
+		node.di_model = IFDIR | 01777;
 	else
-		node.di_mode = IFDIR | UMASK;
+		node.di_model = IFDIR | UMASK;
+	node.di_modeh = 0;
 	node.di_nlink = PREDEFDIR;
 	if (Oflag)
 		node.di_size = makedir((struct direct *)oroot_dir, PREDEFDIR);
 	else
 		node.di_size = makedir(root_dir, PREDEFDIR);
-	node.di_db[0] = alloc(sblock.fs_fsize, node.di_mode);
+	node.di_db[0] = alloc(sblock.fs_fsize, DI_MODE (&node));
 	node.di_blocks = btodb(fragroundup(&sblock, node.di_size));
 	wtfs(fsbtodb(&sblock, node.di_db[0]), sblock.fs_fsize, buf);
 	iput(&node, ROOTINO);
