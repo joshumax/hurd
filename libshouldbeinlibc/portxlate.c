@@ -1,8 +1,7 @@
 /* Translate mach port names between two tasks
 
-   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,99,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -61,9 +60,9 @@ port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
 	}
       else
 	{
-	  munmap ((caddr_t) x->to_names, 
+	  munmap ((caddr_t) x->to_names,
 		  x->to_names_len * sizeof (mach_port_t));
-	  munmap ((caddr_t) x->to_types, 
+	  munmap ((caddr_t) x->to_types,
 		  x->to_types_len * sizeof (mach_port_type_t));
 	  err = ENOMEM;
 	}
@@ -108,8 +107,8 @@ port_name_xlator_xlate (struct port_name_xlator *x,
   error_t err;
   mach_port_t port;
   mach_msg_type_number_t i;
-  mach_port_type_t aquired_type;
-  mach_port_type_t valid_to_types;
+  mach_msg_type_name_t aquired_type;
+  mach_msg_type_name_t valid_to_types;
 
   if (from_type == 0)
     {
