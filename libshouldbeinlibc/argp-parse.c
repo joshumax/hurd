@@ -526,7 +526,7 @@ parser_init (struct parser *parser, const struct argp *argp,
   parser_convert (parser, argp, flags);
 
   memset (&parser->state, 0, sizeof (struct argp_state));
-  parser->state.argp = parser->argp;
+  parser->state.root_argp = parser->argp;
   parser->state.argc = argc;
   parser->state.argv = argv;
   parser->state.flags = flags;
