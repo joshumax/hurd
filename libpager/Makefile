@@ -35,11 +35,11 @@ all: libpager.a
 
 libpager.a: $(OBJS)
 	rm -f libpager.a
-	ar r $@ $^
+	$(AR) r $@ $^
 
 $(hurdinst)/lib/libpager.a: libpager.a
 	cp libpager.a $@
-	ranlib $@
+	$(RANLIB) $@
 
 $(headers)/hurd/pager.h: pager.h
 	cp pager.h $@
