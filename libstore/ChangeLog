@@ -1,3 +1,8 @@
+1997-07-21  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (store_parsed_append_args): Correctly unparse complex
+	type names.
+
 1997-07-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* map.c (store_map): If we can't map STORE directly, and it has a
