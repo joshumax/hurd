@@ -60,17 +60,14 @@ ffs_fragacct(fs, fragmap, fraglist, cnt)
 void
 pass5 ()
 {
-  char cgbuf[sblock->fs_cgsize];
-  struct cg *newcg = (struct cg *)cgbuf;
-  struct ocg *ocg = (struct ocg *)cgbuf;
+  struct cg *newcg, *cg;
+  struct ocg *newocg;
   int savednrpos = 0;
   struct csum cstotal;
   int i, j;
   int c;
   daddr_t d;
-  struct cg *cg = alloca (sblock->fs_cgsize);
-  char csumbuf[fragroundup (sblock, sblock->fs_cssize)];
-  struct csum *sbcsums = (struct csum *)csumbuf;
+  struct csum *sbcsums;
 
   int basesize;			/* size of cg not counting flexibly sized */
   int sumsize;			/* size of block totals and pos tbl */
@@ -83,7 +80,14 @@ pass5 ()
   writesb = 0;
   writecsum = 0;
 
-  readblock (fsbtodb (sblock, sblock->fs_csaddr), csumbuf, 
+  cg = alloca (sblock->fs_cgsize);
+
+  newcg = alloca (sblock->fs_cgsize);
+  newocg = (struct ocg *)newcg;
+
+  sbcsums = alloca (fragroundup (sblock, sblock->fs_cssize));
+
+  readblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums, 
 	     fragroundup (sblock, sblock->fs_cssize));
 
   /* Construct a CG structure; initialize everything that's the same
@@ -94,10 +98,10 @@ pass5 ()
     {
     case FS_42POSTBLFMT:
       /* Initialize size information */
-      basesize = (char *)(&ocg->cg_btot[0]) - (char *)(&ocg->cg_link);
-      sumsize = &ocg->cg_iused[0] - (char *)(&ocg->cg_btot[0]);
-      mapsize = (&ocg->cg_free[howmany(sblock->fs_fpg, NBBY)]
-		 - (u_char *)&ocg->cg_iused[0]);
+      basesize = (char *)(&newocg->cg_btot[0]) - (char *)(&newocg->cg_link);
+      sumsize = &newocg->cg_iused[0] - (char *)(&newocg->cg_btot[0]);
+      mapsize = (&newocg->cg_free[howmany(sblock->fs_fpg, NBBY)]
+		 - (u_char *)&newocg->cg_iused[0]);
       savednrpos = sblock->fs_nrpos;
       sblock->fs_nrpos = 8;
       break;
@@ -217,7 +221,7 @@ pass5 ()
       bzero (&newcg->cg_frsum[0], sizeof newcg->cg_frsum);
       bzero (&cg_blktot (newcg)[0], sumsize + mapsize);
       if (sblock->fs_postblformat == FS_42POSTBLFMT)
-	ocg->cg_magic = CG_MAGIC;
+	newocg->cg_magic = CG_MAGIC;
 
       /* Walk through each inode, accounting for it in
 	 the inode map and in newcg->cg_cs. */
@@ -374,7 +378,16 @@ pass5 ()
   if (writesb)
     writeblock (SBLOCK, &sblock, SBSIZE);
   if (writecsum)
-    writeblock (fsbtodb (sblock, sblock->fs_csaddr), csumbuf, 
-		fragroundup (sblock, sblock->fs_cssize));
+    {
+      struct csum *test;
+      
+      writeblock (fsbtodb (sblock, sblock->fs_csaddr), sbcsums, 
+		  fragroundup (sblock, sblock->fs_cssize));
 
+      test = alloca (fragroundup (sblock, sblock->fs_cssize));
+      readblock (fsbtodb (sblock, sblock->fs_csaddr), test,
+		 fragroundup (sblock, sblock->fs_cssize));
+      if (bcmp (test, sbcsums, fragroundup (sblock, sblock->fs_cssize)))
+	printf ("CSUM write inconsistent");
+    }
 }
