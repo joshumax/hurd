@@ -1,5 +1,8 @@
 Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp.h (ARGP_KEY_END, ARGP_KEY_NO_ARGS, ARGP_KEY_INIT,
+ 	ARGP_KEY_SUCCESS, ARGP_KEY_ERROR): Change values.
+
 	* argp-help.c (make_hol): Initalize clusters field.
 	(argp_args_usage): Don't trash memory.
 
