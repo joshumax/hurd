@@ -130,6 +130,7 @@ typedef enum retry_type retry_type;
 #define FSYS_GOAWAY_NOSYNC    0x00000002 /* Don't update physical media */
 #define FSYS_GOAWAY_FORCE     0x00000004 /* Go away despite current users */
 #define FSYS_GOAWAY_UNLINK    0x00000008 /* Go away only if non-dir */
+#define FSYS_GOAWAY_RECURSE   0x00000010 /* Shutdown children too */
 
 /* This structure is known to be 19 ints long in hurd_types.defs */
 struct fsys_statfsbuf
