@@ -50,3 +50,4 @@ installhdrs = trivfs.h
 
 include ../Makeconf
 
+libtrivfs.so: ../libports/libports.so
