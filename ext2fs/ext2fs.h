@@ -65,14 +65,14 @@ void pokel_sync (struct pokel *pokel, int wait);
 /* Bitmap routines.  */
 
 /* Returns TRUE if bit NUM is set in BITMAP.  */
-inline int
+extern inline int
 test_bit (unsigned num, char *bitmap)
 {
   return bitmap[num >> 3] & (1 << (num & 0x7));
 }
 
 /* Sets bit NUM in BITMAP, and returns TRUE if it was already set.  */
-inline int
+extern inline int
 set_bit (unsigned num, char *bitmap)
 {
   char *p = bitmap + (num >> 3);
@@ -89,7 +89,7 @@ set_bit (unsigned num, char *bitmap)
 }
 
 /* Clears bit NUM in BITMAP, and returns TRUE if it was already clear.  */
-inline int
+extern inline int
 clear_bit (unsigned num, char *bitmap)
 {
   char *p = bitmap + (num >> 3);
@@ -153,6 +153,24 @@ struct user_pager_info
 };
 
 /* ---------------------------------------------------------------- */
+/* pager.c */
+
+struct user_pager_info *disk_pager;
+mach_port_t disk_pager_port;
+void *disk_image;
+
+/* Create the global disk pager.  */
+void create_disk_pager ();
+
+/* Call this when we should turn off caching so that unused memory object
+   ports get freed.  */
+void drop_pager_softrefs (struct node *node);
+
+/* Call this when we should turn on caching because it's no longer
+   important for unused memory object ports to get freed.  */
+void allow_pager_softrefs (struct node *node);
+
+/* ---------------------------------------------------------------- */
 
 /*
  * These are the fs-independent mount-flags: up to 16 flags are supported
@@ -164,17 +182,14 @@ struct user_pager_info
 #define MS_SYNCHRONOUS	16 /* writes are synced at once */
 #define MS_REMOUNT	32 /* alter flags of a mounted FS */
 
+/* Inode flags.  */
 #define S_APPEND    256 /* append-only file */
 #define S_IMMUTABLE 512 /* immutable file */
 
 #define IS_APPEND(node) ((node)->dn->info.i_flags & S_APPEND)
-#define IS_IMMUTABLE(node) ((inode)->dn->info.i_flags & S_IMMUTABLE)
+#define IS_IMMUTABLE(node) ((node)->dn->info.i_flags & S_IMMUTABLE)
 
 /* ---------------------------------------------------------------- */
-
-struct user_pager_info *disk_pager;
-mach_port_t disk_pager_port;
-void *disk_image;
 
 char *device_name;
 mach_port_t device_port;
@@ -199,10 +214,19 @@ unsigned log2_block_size;
    block (BLOCK_SIZE).  */
 unsigned int log2_dev_blocks_per_fs_block;
 
+/* A handy page of page-aligned zeros.  */
 vm_address_t zeroblock;
 
-/* Copy the sblock into the disk.  */
-void get_hypermetadata ();
+/* Get the superblock from the disk, & setup various global info from it.  */
+error_t get_hypermetadata ();
+
+/* ---------------------------------------------------------------- */
+
+/* Returns a single page page-aligned buffer.  */
+vm_address_t get_page_buf ();
+
+/* Frees a block returned by get_page_buf.  */
+void free_page_buf (vm_address_t buf);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -235,12 +259,12 @@ unsigned long next_generation;
 /* block num --> byte offset on disk */
 #define boffs(block) ((block) << log2_block_size)
 /* byte offset on disk --> block num */
-#define boffs_block(offs) ((block) >> log2_block_size)
+#define boffs_block(offs) ((offs) >> log2_block_size)
 
 /* byte offset on disk --> pointer to in-memory block */
 #define boffs_ptr(offs) (((char *)disk_image) + (offs))
 /* pointer to in-memory block --> byte offset on disk */
-#define bptr_offs(offs) ((char *)(ptr) - ((char *)disk_image))
+#define bptr_offs(ptr) ((char *)(ptr) - ((char *)disk_image))
 
 /* block num --> pointer to in-memory block */
 #define bptr(block) boffs_ptr(boffs(block))
@@ -255,7 +279,9 @@ group_desc(unsigned long num)
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
   unsigned long group_desc = num / desc_per_block;
   unsigned long desc = num % desc_per_block;
-  return ((struct ext2_group_desc *)bptr(1 + group_desc)) + desc;
+  return
+    ((struct ext2_group_desc *)boffs_ptr(SBLOCK_OFFS + boffs(1 + group_desc)))
+      + desc;
 }
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
@@ -264,14 +290,20 @@ group_desc(unsigned long num)
 extern inline struct ext2_inode *
 dino (ino_t inum)
 {
-  unsigned long bg_num = inode_group_num(inum);
+  unsigned long inodes_per_group = sblock->s_inodes_per_group;
+  unsigned long bg_num = (inum - 1) / inodes_per_group;
+  unsigned long group_inum = (inum - 1) % inodes_per_group;
   struct ext2_group_desc *bg = group_desc(bg_num);
   unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
-  unsigned long block = bg->bg_inode_table + (bg_num / inodes_per_block);
-  return ((struct ext2_inode *)bptr(block)) + inum % inodes_per_block;
+  unsigned long block = bg->bg_inode_table + (group_inum / inodes_per_block);
+  return ((struct ext2_inode *)bptr(block)) + group_inum % inodes_per_block;
 }
 
 /* ---------------------------------------------------------------- */
+/* inode.c */
+
+/* Write all active disknodes into the inode pager. */
+void write_all_disknodes ();
 
 /* Fetch inode INUM, set *NPP to the node structure; gain one user reference
    and lock the node.  */
@@ -298,10 +330,10 @@ struct pokel global_pokel;
 char *modified_global_blocks;
 
 /* This records a modification to a non-file block.  */
-inline void
-record_global_poke (char *image)
+extern inline void
+record_global_poke (void *bptr)
 {
-  int boffs = trunc_block(bptr_offs(image));
+  int boffs = trunc_block(bptr_offs(bptr));
   if (!modified_global_blocks
       || !set_bit (boffs_block (boffs), modified_global_blocks))
     pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
@@ -329,7 +361,7 @@ sync_global_data ()
 }
 
 /* Sync all allocation information and node NP if diskfs_synchronous. */
-inline void
+extern inline void
 alloc_sync (struct node *np)
 {
   if (diskfs_synchronous)
@@ -344,11 +376,13 @@ alloc_sync (struct node *np)
 }
 
 /* ---------------------------------------------------------------- */
+/* getblk.c */
+
+void ext2_discard_prealloc (struct node *node);
 
 error_t ext2_getblk (struct node *node, long block, int create, char **buf);
 
-int ext2_new_block (unsigned long goal,
-		    u32 * prealloc_count, u32 * prealloc_block);
+int ext2_new_block (unsigned long goal, u32 * prealloc_count, u32 * prealloc_block);
 
 void ext2_free_blocks (unsigned long block, unsigned long count);
 
