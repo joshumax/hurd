@@ -26,38 +26,23 @@
 long long root_jiffies;
 volatile struct mapped_time_value *mapped_time;
 
-static void
-timer_function (any_t timerp)
-{
-  struct timer_list *timer = timerp;
-  mach_port_t recv;
-  error_t err;
-
-  recv = mach_reply_port ();
-
-  timer->thread = mach_thread_self ();
+static spin_lock_t timer_lock;
+struct timer_list *timers;
+mach_thread_t timer_thread;
 
   err = mach_msg (NULL, MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT, 
 		  0, 0, recv, timer->expires * (1000 / HZ), MACH_PORT_NULL);
-
-  timer->thread = MACH_PORT_NULL;
-
-  mach_port_destroy (mach_task_self (), recv);
-
-  if (!err)
-    {
-      mutex_lock (&global_lock);
-      (*timer->function)(timer->data);
-      mutex_unlock (&global_lock);
-    }
-}
 
 
 void
 add_timer (struct timer_list *timer)
 {
-  timer->thread = -1;
-  cthread_detach (cthread_fork ((cthread_fn_t) timer_function, timer));
+  spin_lock (&timer_lock);
+
+  timer->expires += jiffies;
+
+
+  spin_unlock (&timer_lock);
 }
 
 int
@@ -65,6 +50,24 @@ del_timer (struct timer_list *timer)
 {
   thread_t thread;
 
+  spin_lock (&timer_lock);
+  
+ recheck:
+  switch (timer->state)
+    {
+    case TIMER_INACTIVE:
+      break;
+
+    case TIMER_STARTING:
+      /* Wait until it's had a chance to set its ID. */
+      spin_unlock (&timer_lock);
+      swtch_pri (0);
+      spin_lock (&timer_lock);
+      goto recheck;
+      
+    case TIMER_STARTED:
+      /* 
+	
   
   if (timer->thread == -1)
     {
@@ -97,7 +100,7 @@ del_timer (struct timer_list *timer)
 void
 init_timer (struct timer_list *timer)
 {
-  timer->thread = MACH_PORT_NULL;
+  timer->state = TIMER_INACTIVE;
 }
 
 void
