@@ -1,3 +1,8 @@
+2000-12-02  Roland McGrath  <roland@frob.com>
+
+	* node-times.c (diskfs_set_node_times): Make individual flag checks
+	race-proof so we don't lose any flag settings.
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
