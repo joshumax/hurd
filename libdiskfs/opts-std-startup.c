@@ -1,8 +1,7 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -23,10 +22,13 @@
 #include <stdio.h>
 #include <argp.h>
 #include <hurd/store.h>
+#include <hurd/paths.h>
 #include "priv.h"
 
-char *diskfs_boot_flags;
+const char *diskfs_boot_command_line;
 char **_diskfs_boot_command;
+
+int _diskfs_boot_pause;
 
 extern char **diskfs_argv;
 
@@ -37,8 +39,10 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 #define OPT_HOST_PRIV_PORT	(-1)
 #define OPT_DEVICE_MASTER_PORT	(-2)
 #define OPT_EXEC_SERVER_TASK	(-3)
-#define OPT_BOOTFLAGS		(-4)
+#define OPT_BOOT_CMDLINE	(-4)
 #define OPT_BOOT_COMMAND	(-5)
+#define OPT_BOOT_INIT_PROGRAM	(-6)
+#define OPT_BOOT_PAUSE		(-7)
 
 static const struct argp_option
 startup_options[] =
@@ -49,9 +53,12 @@ startup_options[] =
   {"chroot",		 0, 0, OPTION_ALIAS},
 
   {0,0,0,0, "Boot options:", -2},
-  {"bootflags",          OPT_BOOTFLAGS,          "FLAGS", 0,
-   "Required for bootstrap filesystem, the FLAGS"
-   " argument is passed on to init"},
+  {"multiboot-command-line", OPT_BOOT_CMDLINE, "ARGS", 0,
+   "Required for bootstrap filesystem, the multiboot kernel command line"},
+  {"boot-init-program",  OPT_BOOT_INIT_PROGRAM,  "FILE", 0,
+   "For bootstrap filesystem, init program to run (default " _HURD_INIT ")"},
+  {"boot-debug-pause",  OPT_BOOT_PAUSE,	         0, 0,
+   "Pause for keystroke before starting bootstrap programs"},
   {"boot-command",	 OPT_BOOT_COMMAND,	 0, 0,
    "Remaining arguments form command line to run"
    " at bootstrap instead of init"},
@@ -94,8 +101,12 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       _hurd_host_priv = atoi (arg); break;
     case OPT_EXEC_SERVER_TASK:
       diskfs_exec_server_task = atoi (arg); break;
-    case OPT_BOOTFLAGS:
-      diskfs_boot_flags = arg; break;
+    case OPT_BOOT_CMDLINE:
+      diskfs_boot_command_line = arg; break;
+    case OPT_BOOT_INIT_PROGRAM:
+      diskfs_boot_init_program = arg; break;
+    case OPT_BOOT_PAUSE:
+      _diskfs_boot_pause = 1;
     case 'C':
       _diskfs_chroot_directory = arg; break;
 
