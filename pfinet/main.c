@@ -30,6 +30,10 @@
 #include <linux/netdevice.h>
 #include <linux/inet.h>
 
+/* devinet.c */
+extern error_t configure_device (struct device *dev,
+                                 uint32_t addr, uint32_t netmask);
+
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
 int trivfs_support_read = 0;
