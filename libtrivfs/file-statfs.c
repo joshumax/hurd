@@ -18,13 +18,18 @@
 #include "priv.h"
 #include "fs_S.h"
 #include <string.h>
+#include <unistd.h>
 
 kern_return_t
 trivfs_S_file_statfs (struct trivfs_protid *cred,
 		      struct fsys_statfsbuf *stb)
 {
+  if (!trivfs_fsid)
+    trivfs_fsid = getpid();
+
   bzero (stb, sizeof (struct fsys_statfsbuf));
   stb->fsys_stb_type = trivfs_fstype;
   stb->fsys_stb_fsid = trivfs_fsid;
+
   return 0;
 }    
