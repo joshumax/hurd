@@ -65,10 +65,6 @@ extern void	default_pager();
 extern void	default_pager_initialize();
 extern void	default_pager_setup();
 
-/* initialized in default_pager_initialize */
-extern mach_port_t default_pager_exception_port;
-extern mach_port_t default_pager_bootstrap_port;
-
 /*
  * Convert ASCII to integer.
  */
@@ -153,24 +149,12 @@ main(argc, argv)
 	char	**argv;
 {
   int die = 0;
-  int script_paging_file (const struct cmd *cmd, int linux_signature)
+  int script_paging_file (const struct cmd *cmd, int *val)
     {
-      if (add_paging_file (bootstrap_master_device_port, cmd->path,
-			   linux_signature))
-	printf ("(serverboot): %s: Cannot add paging file\n", cmd->path);
+      printf ("*** paging files no longer supported in boot scripts ***\n\a"
+	      "*** use swapon %s and/or /etc/fstab instead ***\n",
+	      cmd->path);
       return 0;
-    }
-  int script_add_paging_file (const struct cmd *cmd, int *val)
-    {
-      return script_paging_file (cmd, 0);
-    }
-  int script_add_raw_paging_file (const struct cmd *cmd, int *val)
-    {
-      return script_paging_file (cmd, -1);
-    }
-  int script_add_linux_paging_file (const struct cmd *cmd, int *val)
-    {
-      return script_paging_file (cmd, 1);
     }
   int script_serverboot_ctl (const struct cmd *cmd, int *val)
     {
@@ -334,11 +318,6 @@ main(argc, argv)
 		root_name[len] = 0;
 	}
 
-	/*
-	 * Set up the default pager.
-	 */
-	partition_init();
-
 	{
 	  char *cmdline;
 
@@ -352,12 +331,12 @@ main(argc, argv)
 	      || boot_script_set_variable ("boot-args", VAL_STR,
 					   (int) flag_string)
 	      || boot_script_define_function ("add-paging-file", VAL_NONE,
-					      &script_add_paging_file)
+					      &script_paging_file)
 	      || boot_script_define_function ("add-raw-paging-file", VAL_NONE,
-					      &script_add_raw_paging_file)
+					      &script_paging_file)
 	      || boot_script_define_function ("add-linux-paging-file",
 					      VAL_NONE,
-					      &script_add_linux_paging_file)
+					      &script_paging_file)
 	      || boot_script_define_function ("serverboot",
 					      VAL_NONE,
 					      &script_serverboot_ctl)
@@ -381,22 +360,6 @@ main(argc, argv)
 	    printf ("Hit return to boot...");
 	    safe_gets (xx, sizeof xx);
 	  }
-
-	/*
-	 * task_set_exception_port and task_set_bootstrap_port
-	 * both require a send right.
-	 */
-	(void) mach_port_insert_right(my_task, default_pager_bootstrap_port,
-				      default_pager_bootstrap_port,
-				      MACH_MSG_TYPE_MAKE_SEND);
-	(void) mach_port_insert_right(my_task, default_pager_exception_port,
-				      default_pager_exception_port,
-				      MACH_MSG_TYPE_MAKE_SEND);
-
-	/*
-	 * Change our exception port.
-	 */
-	(void) task_set_exception_port(my_task, default_pager_exception_port);
 
 	result = boot_script_exec ();
 
@@ -440,19 +403,9 @@ main(argc, argv)
 	}
 #endif
 
-      if (die)
-	{
-	  printf ("(serverboot): terminating, not becoming default pager\n");
-	  while (1)
-	    task_terminate (mach_task_self ());
-	}
-
-      default_pager_initialize (bootstrap_master_host_port);
-
-      /*
-       * Become the default pager
-       */
-      default_pager();
+	printf ("(serverboot): terminating\n");
+	while (1)
+	  task_terminate (mach_task_self ());
       /*NOTREACHED*/
 }
 
