@@ -1,5 +1,5 @@
 /* Function to wire down text and data (including from shared libraries)
-   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,99,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -20,10 +20,15 @@
 
 
 #include <link.h>
+#include <dlfcn.h>
 #include <mach.h>
 #include <hurd.h>
 
 #pragma weak _DYNAMIC
+#pragma weak dlopen
+#pragma weak dlclose
+#pragma weak dlerror
+#pragma weak dlsym
 
 /* Find the list of shared objects */
 static struct link_map *
@@ -48,10 +53,20 @@ loaded (void)
 static Elf32_Addr
 map_extent (struct link_map *map)
 {
-  /* Find the last load cmd; they are in ascending p_vaddr order.  */
-  Elf32_Word n = map->l_phnum;
-  while (n-- > 0 && map->l_phdr[n].p_type != PT_LOAD);
-  return map->l_phdr[n].p_vaddr + map->l_phdr[n].p_memsz;
+  /* In fact, LIB == MAP, but doing it this way makes it entirely kosher.  */
+  void *lib = dlopen (map->l_name);
+  if (lib == 0)
+    error (2, 0, "cannot dlopen %s: %s", map->l_name, dlerror ());
+  else
+    {
+      /* Find the _end symbol's runtime address and subtract the load base.  */
+      void *end = dlsym (lib, "_end");
+      if (end == 0)
+	error (2, 0, "cannot wire library %s with no _end symbol: %s",
+	       map->l_name, dlerror ());
+      dlclose (lib);
+      return (Elf32_Addr) end - map->l_addr;
+    }
 }
 
 /* Wire down all memory currently allocated at START for LEN bytes;
