@@ -86,7 +86,9 @@ static struct argp_option options[] =
                                       " terminal is TTY"},
   {0,            'u',     0,      0,  "Use the `user' output-format"},
   {0,            'v',     0,      0,  "Use the `vmem' output-format"},
-  {0,            'w',     0,      0,  "(ignored)"},
+  {"width",      'w',     "WIDTH",OA, "If WIDTH is given, try to format the"
+                                      " output for WIDTH columns, otherwise,"
+				      " remove the default limit"}, 
   {0,            'x',     0,      0,  "Include orphaned processes"},
   {0, 0}
 };
@@ -371,6 +373,7 @@ main(int argc, char *argv[])
   bool sort_reverse = FALSE, print_heading = TRUE;
   bool squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
   bool show_threads = FALSE, no_msg_port = FALSE;
+  int output_width = -1;	/* Desired max output size.  */
 
   /* Add a specific process to be printed out.  */
   void add_pid (unsigned pid)
@@ -560,7 +563,7 @@ main(int argc, char *argv[])
 	  break;
 
 	case 'w':
-	  /* Ignored; just here to make BSD users less unhappy.  */
+	  output_width = arg ? atoi (arg) : 0; /* 0 means `unlimited'.  */
 	  break;
 
 	default:
@@ -706,6 +709,29 @@ main(int argc, char *argv[])
       }
     else
       error(0, 0, "No applicable processes");
+
+  if (output_width)
+    {
+      int deduce_term_size (int fd, char *type, int *width, int *height);
+      struct ps_fmt_field *field = ps_fmt_fields (fmt);
+      int nfields = ps_fmt_num_fields (fmt);
+
+      if (output_width < 0)
+	/* Have to figure it out!  */
+	if (! deduce_term_size (1, getenv ("TERM"), &output_width, 0))
+	  output_width = 80;	/* common default */
+
+      /* We're not very clever about this -- just see if the last field is
+	 `varying' (as it usually is), then set it to the proper max width.  */
+      while (--nfields > 0)
+	{
+	  int fw = field->width;
+	  output_width -= field->pfx_len + (fw < 0 ? -fw : fw);
+	  field++;
+	}
+      if (nfields == 0 && field->width == 0 && output_width > 0)
+	field->width = output_width - field->pfx_len - 1; /* 1 for the CR. */
+    }
 
   err = proc_stat_list_fmt (procset, fmt, output);
   if (err)
