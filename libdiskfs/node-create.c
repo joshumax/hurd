@@ -17,32 +17,33 @@
 
 #include "priv.h"
 
-/* Create a new node and link it into DIR with as NAME.  Give it MODE;
-   if that includes IFDIR, also initialize `.' and `..' in the new
-   directory.  Return the node in NPP.  CRED identifies the user responsible
-   for the call, and DS is the result of a prior diskfs_lookup for creation. */
+/* Create a new node. Give it MODE; if that includes IFDIR, also
+   initialize `.' and `..' in the new directory.  Return the node in NPP.
+   CRED identifies the user responsible for the call.  If NAME is nonzero,
+   then link the new node into DIR with name NAME; DS is the result of a
+   prior diskfs_lookup for creation (and DIR has been held locked since).
+   DIR must always be provided as at least a hint for disk allocation
+   strategies.  */
 error_t
-diskfs_create_and_link (struct node *dir,
-			char *name,
-			mode_t mode,
-			struct node **newnode,
-			struct protid *cred,
-			struct dirstat *ds)
+diskfs_create_node (struct node *dir,
+		    char *name,
+		    mode_t mode,
+		    struct node **newnode,
+		    struct protid *cred,
+		    struct dirstat *ds)
 {
   struct node *np;
   error_t err;
-  int dirinc = 0;
-  int number;
   
   /* Make the node */
-  err = diskfs_alloc_node (dir, mode, &number);
+  err = diskfs_alloc_node (dir, mode, newnode);
   if (err)
     {
-      diskfs_drop_dirstat (ds);
+      if (name)
+	diskfs_drop_dirstat (dir, ds);
       return err;
     }
-  *newnode = np = diskfs_nget (newnode);
-  
+  np = *newnode;
   /* Initialize the on-disk fields. */
   
   if (cred->nuids)
@@ -53,7 +54,7 @@ diskfs_create_and_link (struct node *dir,
       mode &= ~S_ISUID;
     }
 
-  if (groupmember (dir->dn_stat.st_gid, cred))
+  if (diskfs_groupmember (dir->dn_stat.st_gid, cred))
     np->dn_stat.st_gid = dir->dn_stat.st_gid;
   else if (cred->ngids)
     np->dn_stat.st_gid = cred->gids[0];
@@ -64,7 +65,7 @@ diskfs_create_and_link (struct node *dir,
     }
   
   np->dn_stat.st_rdev = 0;
-  np->dn_stat.st_nlink = 1;
+  np->dn_stat.st_nlink = !!name;
   np->dn_stat.st_mode = mode;
 
   np->dn_stat.st_blocks = 0;
@@ -81,18 +82,22 @@ diskfs_create_and_link (struct node *dir,
 
   if (err)
     {
-      diskfs_drop_dirstat (ds);
+      if (name)
+	diskfs_drop_dirstat (dir, ds);
       return err;
     }
   
-  err = diskfs_direnter (dir, name, np, ds, cred);
-  if (err)
+  if (name)
     {
-      if (S_ISDIR (mode))
-	diskfs_clear_directory (np);
-      np->dn_stat.st_nlink = 0;
-      np->dn_set_ctime = 1;
-      diskfs_nput (np);
+      err = diskfs_direnter (dir, name, np, ds, cred);
+      if (err)
+	{
+	  if (S_ISDIR (mode))
+	    diskfs_clear_directory (np, dir, cred);
+	  np->dn_stat.st_nlink = 0;
+	  np->dn_set_ctime = 1;
+	  diskfs_nput (np);
+	}
     }
   return err;
 }
