@@ -1,6 +1,6 @@
 /* Make a malloced buffer suitable for returning from a mach rpc
 
-   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -35,7 +35,10 @@ iohelp_return_malloced_buffer (char *buf, size_t len,
   error_t err = 0;
 
   if (*rlen < len)
-    err = vm_allocate (mach_task_self (), (vm_address_t *)rbuf, len, 1);
+    {
+      *rbuf = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = (*rbuf == (char *) -1) ? errno : 0;
+    }
   if (! err)
     {
       if (len)
