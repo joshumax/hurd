@@ -73,7 +73,7 @@ struct icmphdr {
 
 
 struct icmp_err {
-  int		errno;
+  int		error;
   unsigned	fatal:1;
 };
 
