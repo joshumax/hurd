@@ -5,7 +5,7 @@
  *
  *		Implementation of the Transmission Control Protocol(TCP).
  *
- * Version:	$Id: tcp_ipv4.c,v 1.175.2.10 1999/08/13 16:14:35 davem Exp $
+ * Version:	$Id: tcp_ipv4.c,v 1.175.2.13 1999/11/16 06:33:53 davem Exp $
  *
  *		IPv4 specific functions
  *
@@ -90,12 +90,14 @@ void tcp_v4_send_check(struct sock *sk, struct tcphdr *th, int len,
  * First half of the table is for sockets not in TIME_WAIT, second half
  * is for TIME_WAIT sockets only.
  */
-struct sock *tcp_established_hash[TCP_HTABLE_SIZE];
+unsigned int tcp_ehash_size;
+struct sock **tcp_ehash;
 
 /* Ok, let's try this, I give up, we do need a local binding
  * TCP hash as well as the others for fast bind/connect.
  */
-struct tcp_bind_bucket *tcp_bound_hash[TCP_BHTABLE_SIZE];
+unsigned int tcp_bhash_size;
+struct tcp_bind_bucket **tcp_bhash;
 
 /* All sockets in TCP_LISTEN state will be in here.  This is the only table
  * where wildcard'd TCP sockets can exist.  Hash function here is just local
@@ -117,7 +119,7 @@ int tcp_port_rover = (1024 - 1);
 static __inline__ int tcp_hashfn(__u32 laddr, __u16 lport,
 				 __u32 faddr, __u16 fport)
 {
-	return ((laddr ^ lport) ^ (faddr ^ fport)) & ((TCP_HTABLE_SIZE/2) - 1);
+	return ((laddr ^ lport) ^ (faddr ^ fport)) & ((tcp_ehash_size/2) - 1);
 }
 
 static __inline__ int tcp_sk_hashfn(struct sock *sk)
@@ -140,7 +142,7 @@ struct tcp_bind_bucket *tcp_bucket_create(unsigned short snum)
 	tb = kmem_cache_alloc(tcp_bucket_cachep, SLAB_ATOMIC);
 	if(tb != NULL) {
 		struct tcp_bind_bucket **head =
-			&tcp_bound_hash[tcp_bhashfn(snum)];
+			&tcp_bhash[tcp_bhashfn(snum)];
 		tb->port = snum;
 		tb->fastreuse = 0;
 		tb->owners = NULL;
@@ -162,7 +164,7 @@ static __inline__ int __tcp_bucket_check(unsigned short snum)
 {
 	struct tcp_bind_bucket *tb;
 
-	tb = tcp_bound_hash[tcp_bhashfn(snum)];
+	tb = tcp_bhash[tcp_bhashfn(snum)];
 	for( ; (tb && (tb->port != snum)); tb = tb->next)
 		;
 	if (tb == NULL) {
@@ -180,8 +182,8 @@ static __inline__ void __tcp_inherit_port(struct sock *sk, struct sock *child)
 
 #ifdef CONFIG_IP_TRANSPARENT_PROXY
 	if (child->num != sk->num) {
-		unsigned short snum = ntohs(child->num);
-		for(tb = tcp_bound_hash[tcp_bhashfn(snum)];
+		unsigned short snum = child->num;
+		for(tb = tcp_bhash[tcp_bhashfn(snum)];
 		    tb && tb->port != snum;
 		    tb = tb->next)
 			;
@@ -220,7 +222,7 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 		do {	rover++;
 			if ((rover < low) || (rover > high))
 				rover = low;
-			tb = tcp_bound_hash[tcp_bhashfn(rover)];
+			tb = tcp_bhash[tcp_bhashfn(rover)];
 			for ( ; tb; tb = tb->next)
 				if (tb->port == rover)
 					goto next;
@@ -237,7 +239,7 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 		snum = rover;
 		tb = NULL;
 	} else {
-		for (tb = tcp_bound_hash[tcp_bhashfn(snum)];
+		for (tb = tcp_bhash[tcp_bhashfn(snum)];
 		     tb != NULL;
 		     tb = tb->next)
 			if (tb->port == snum)
@@ -328,7 +330,7 @@ static __inline__ void __tcp_v4_hash(struct sock *sk)
 	if(sk->state == TCP_LISTEN)
 		skp = &tcp_listening_hash[tcp_sk_listen_hashfn(sk)];
 	else
-		skp = &tcp_established_hash[(sk->hashent = tcp_sk_hashfn(sk))];
+		skp = &tcp_ehash[(sk->hashent = tcp_sk_hashfn(sk))];
 
 	if((sk->next = *skp) != NULL)
 		(*skp)->pprev = &sk->next;
@@ -421,7 +423,7 @@ static inline struct sock *__tcp_v4_lookup(struct tcphdr *th,
 	 * have wildcards anyways.
 	 */
 	hash = tcp_hashfn(daddr, hnum, saddr, sport);
-	for(sk = tcp_established_hash[hash]; sk; sk = sk->next) {
+	for(sk = tcp_ehash[hash]; sk; sk = sk->next) {
 		if(TCP_IPV4_MATCH(sk, acookie, saddr, daddr, ports, dif)) {
 			if (sk->state == TCP_ESTABLISHED)
 				TCP_RHASH(sport) = sk;
@@ -429,7 +431,7 @@ static inline struct sock *__tcp_v4_lookup(struct tcphdr *th,
 		}
 	}
 	/* Must check for a TIME_WAIT'er before going to listener hash. */
-	for(sk = tcp_established_hash[hash+(TCP_HTABLE_SIZE/2)]; sk; sk = sk->next)
+	for(sk = tcp_ehash[hash+(tcp_ehash_size/2)]; sk; sk = sk->next)
 		if(TCP_IPV4_MATCH(sk, acookie, saddr, daddr, ports, dif))
 			goto hit;
 	sk = tcp_v4_lookup_listener(daddr, hnum, dif);
@@ -469,7 +471,7 @@ static struct sock *tcp_v4_proxy_lookup(unsigned short num, unsigned long raddr,
 
 	/* This code must run only from NET_BH. */
 	{
-		struct tcp_bind_bucket *tb = tcp_bound_hash[tcp_bhashfn(hnum)];
+		struct tcp_bind_bucket *tb = tcp_bhash[tcp_bhashfn(hnum)];
 		for( ; (tb && tb->port != hnum); tb = tb->next)
 			;
 		if(tb == NULL)
@@ -510,7 +512,7 @@ pass2:
 	}
 next:
 	if(firstpass--) {
-		struct tcp_bind_bucket *tb = tcp_bound_hash[tcp_bhashfn(hpnum)];
+		struct tcp_bind_bucket *tb = tcp_bhash[tcp_bhashfn(hpnum)];
 		for( ; (tb && tb->port != hpnum); tb = tb->next)
 			;
 		if(tb) {
@@ -547,7 +549,7 @@ static int tcp_v4_unique_address(struct sock *sk)
 
 	/* Freeze the hash while we snoop around. */
 	SOCKHASH_LOCK();
-	tb = tcp_bound_hash[tcp_bhashfn(snum)];
+	tb = tcp_bhash[tcp_bhashfn(snum)];
 	for(; tb; tb = tb->next) {
 		if(tb->port == snum && tb->owners != NULL) {
 			/* Almost certainly the re-use port case, search the real hashes
@@ -1615,7 +1617,8 @@ static inline struct sock *tcp_v4_hnd_req(struct sock *sk,struct sk_buff *skb)
 			sk = tcp_check_req(sk, skb, req);
 		}
 #ifdef CONFIG_SYN_COOKIES
-		else if (flg == __constant_htonl(0x00120000))  {
+		else if ((flg & __constant_htonl(0x00120000))==__constant_htonl(0x00100000))
+		{
 			sk = cookie_v4_check(sk, skb, &(IPCB(skb)->opt));
 		}
 #endif
@@ -1793,7 +1796,7 @@ do_time_wait:
 
 static void __tcp_v4_rehash(struct sock *sk)
 {
-	struct sock **skp = &tcp_established_hash[(sk->hashent = tcp_sk_hashfn(sk))];
+	struct sock **skp = &tcp_ehash[(sk->hashent = tcp_sk_hashfn(sk))];
 
 	SOCKHASH_LOCK();
 	if(sk->pprev) {

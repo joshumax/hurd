@@ -292,7 +292,7 @@ extern int zeromap_page_range(unsigned long from, unsigned long size, pgprot_t p
 
 extern void vmtruncate(struct inode * inode, unsigned long offset);
 extern int handle_mm_fault(struct task_struct *tsk,struct vm_area_struct *vma, unsigned long address, int write_access);
-extern void make_pages_present(unsigned long addr, unsigned long end);
+extern int make_pages_present(unsigned long addr, unsigned long end);
 
 extern int pgt_cache_water[2];
 extern int check_pgt_cache(void);
@@ -300,7 +300,6 @@ extern int check_pgt_cache(void);
 extern unsigned long paging_init(unsigned long start_mem, unsigned long end_mem);
 extern void mem_init(unsigned long start_mem, unsigned long end_mem);
 extern void show_mem(void);
-extern void oom(struct task_struct * tsk);
 extern void si_meminfo(struct sysinfo * val);
 
 /* mmap.c */

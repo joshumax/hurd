@@ -5,11 +5,12 @@
  *
  *		The IP forwarding functionality.
  *		
- * Version:	$Id: ip_forward.c,v 1.43 1999/03/21 05:22:37 davem Exp $
+ * Version:	$Id: ip_forward.c,v 1.43.2.1 1999/11/16 06:33:43 davem Exp $
  *
  * Authors:	see ip.c
  *
  * Fixes:
+ *		Joseph Gooch	:	Removed maddr selection for ip_masq, now done in ip_masq.c
  *		Many		:	Split from ip.c , see ip_input.c for 
  *					history.
  *		Dave Gregorich	:	NULL ip_rt_put fix for multicast 
@@ -168,7 +169,6 @@ int ip_forward(struct sk_buff *skb)
 		 *	and skip the firewall checks
 		 */
 		if (iph->protocol == IPPROTO_ICMP) {
-			__u32 maddr;
 #ifdef CONFIG_IP_MASQUERADE_ICMP
 			struct icmphdr *icmph = (struct icmphdr *)((char*)iph + (iph->ihl << 2));
 			if ((icmph->type==ICMP_DEST_UNREACH)||
@@ -176,8 +176,7 @@ int ip_forward(struct sk_buff *skb)
 			    (icmph->type==ICMP_TIME_EXCEEDED))
 			{
 #endif
-				maddr = inet_select_addr(dev2, rt->rt_gateway, RT_SCOPE_UNIVERSE);
-				fw_res = ip_fw_masq_icmp(&skb, maddr);
+				fw_res = ip_fw_masquerade(&skb, 0);
 			        if (fw_res < 0) {
 					kfree_skb(skb);
 					return -1;
@@ -187,7 +186,7 @@ int ip_forward(struct sk_buff *skb)
 					/* ICMP matched - skip firewall */
 					goto skip_call_fw_firewall;
 #ifdef CONFIG_IP_MASQUERADE_ICMP
-			       }
+			}
 #endif				
 		}
 		if (rt->rt_flags&RTCF_MASQ)
@@ -219,15 +218,11 @@ skip_call_fw_firewall:
 	 */
 	if (!(IPCB(skb)->flags&IPSKB_MASQUERADED) &&
 	    (fw_res==FW_MASQUERADE || rt->rt_flags&RTCF_MASQ)) {
-		u32 maddr;
+		u32 maddr = 0;
 
 #ifdef CONFIG_IP_ROUTE_NAT
 		maddr = (rt->rt_flags&RTCF_MASQ) ? rt->rt_src_map : 0;
-
-		if (maddr == 0)
 #endif
-			maddr = inet_select_addr(dev2, rt->rt_gateway, RT_SCOPE_UNIVERSE);
-
 			if (ip_fw_masquerade(&skb, maddr) < 0) {
 				kfree_skb(skb);
 				return -1;

@@ -5,7 +5,7 @@
  *
  *		Implementation of the Transmission Control Protocol(TCP).
  *
- * Version:	$Id: tcp_input.c,v 1.164.2.7 1999/08/13 16:14:27 davem Exp $
+ * Version:	$Id: tcp_input.c,v 1.164.2.8 1999/09/23 19:21:23 davem Exp $
  *
  * Authors:	Ross Biro, <bir7@leland.Stanford.Edu>
  *		Fred N. van Kempen, <waltje@uWalt.NL.Mugnet.ORG>
@@ -1043,7 +1043,7 @@ static __inline__ void tcp_tw_hashdance(struct sock *sk, struct tcp_tw_bucket *t
 	sk->prot->inuse--;
 
 	/* Step 4: Hash TW into TIMEWAIT half of established hash table. */
-	head = &tcp_established_hash[sk->hashent + (TCP_HTABLE_SIZE/2)];
+	head = &tcp_ehash[sk->hashent + (tcp_ehash_size/2)];
 	sktw = (struct sock *)tw;
 	if((sktw->next = *head) != NULL)
 		(*head)->pprev = &sktw->next;

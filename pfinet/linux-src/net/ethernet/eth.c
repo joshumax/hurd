@@ -201,7 +201,7 @@ unsigned short eth_type_trans(struct sk_buff *skb, struct device *dev)
 	 *	seems to set IFF_PROMISC.
 	 */
 	 
-	else if(dev->flags&(IFF_PROMISC/*|IFF_ALLMULTI*/))
+	else if(1 /*dev->flags&IFF_PROMISC*/)
 	{
 		if(memcmp(eth->h_dest,dev->dev_addr, ETH_ALEN))
 			skb->pkt_type=PACKET_OTHERHOST;

@@ -3,7 +3,7 @@
 
 #include <asm/param.h>	/* for HZ */
 
-extern unsigned long event;
+extern unsigned long global_event;
 
 #include <linux/binfmts.h>
 #include <linux/personality.h>
@@ -657,12 +657,12 @@ static inline int expand_files(struct files_struct *files, int nr)
 	
 	if (nr >= files->max_fdset) {
 		expand = 1;
-		if ((err = expand_fdset(files, nr)))
+		if ((err = expand_fdset(files, nr + 1)))
 			goto out;
 	}
 	if (nr >= files->max_fds) {
 		expand = 1;
-		if ((err = expand_fd_array(files, nr)))
+		if ((err = expand_fd_array(files, nr + 1)))
 			goto out;
 	}
 	err = expand;
@@ -737,6 +737,7 @@ do {									\
 	add_wait_queue(&wq, &__wait);					\
 	for (;;) {							\
 		current->state = TASK_UNINTERRUPTIBLE;			\
+		mb();							\
 		if (condition)						\
 			break;						\
 		schedule();						\
@@ -760,6 +761,7 @@ do {									\
 	add_wait_queue(&wq, &__wait);					\
 	for (;;) {							\
 		current->state = TASK_INTERRUPTIBLE;			\
+		mb();							\
 		if (condition)						\
 			break;						\
 		if (!signal_pending(current)) {				\

@@ -50,10 +50,9 @@
      *  Vector numbers
      */
 
-#define OPENPIC_VEC_SOURCE      0x10    /* and up */
-#define OPENPIC_VEC_TIMER       0x40    /* and up */
-#define OPENPIC_VEC_IPI         0x50    /* and up */
-#define OPENPIC_VEC_SPURIOUS    99
+#define OPENPIC_VEC_TIMER       64    /* and up */
+#define OPENPIC_VEC_IPI         70    /* and up */
+#define OPENPIC_VEC_SPURIOUS    127
 
 
     /*

@@ -1,16 +1,18 @@
 /*****************************************************************************
 * sdla_fr.h	Sangoma frame relay firmware API definitions.
 *
-* Author:	Jaspreet Singh  <jaspreet@sangoma.com>
-*		Gene Kozin	<74604.152@compuserve.com>
+* Author:       Gideon Hack  	
+*		Nenad Corbic <ncorbic@sangoma.com> 	
 *
-* Copyright:	(c) 1995-1996 Sangoma Technologies Inc.
+* Copyright:	(c) 1995-1999 Sangoma Technologies Inc.
 *
 *		This program is free software; you can redistribute it and/or
 *		modify it under the terms of the GNU General Public License
 *		as published by the Free Software Foundation; either version
 *		2 of the License, or (at your option) any later version.
 * ============================================================================
+* Oct 04, 1999  Gideon Hack     Updated API structures
+* Jun 02, 1999  Gideon Hack 	Modifications for S514 support
 * Oct 12, 1997	Jaspreet Singh	Added FR_READ_DLCI_IB_MAPPING
 * Jul 21, 1997 	Jaspreet Singh	Changed FRRES_TOO_LONG and FRRES_TOO_MANY to 
 *				0x05 and 0x06 respectively.
@@ -24,26 +26,16 @@
 /*----------------------------------------------------------------------------
  * Notes:
  * ------
- * 1. All structures defined in this file are byte-alined.  To ensure
- *    portability of this code between different platforms and compilers, one
- *    of the following defines must be defined before including this file:
+ * 1. All structures defined in this file are byte-alined.  
  *
- *	Compiler	Platform	Define		Use option
- *	--------	--------	------		----------
- *	GNU C		Linux		_GNUC_		-
- *	Microsoft C	DOS/Windows	_MSC_		-
+ *	Compiler	Platform
+ *	--------	--------
+ *	GNU C		Linux
  */
 
-#ifdef		_GNUC_
-#  ifndef	PACKED
+#ifndef	PACKED
 #    define	PACKED	__attribute__((packed))
-#  endif	/* PACKED */
-#else
-#  define	PACKED
-#endif
-#ifdef		_MSC_
-#  pragma	pack(1)
-#endif
+#endif	/* PACKED */
 
 /* Adapter memory layout */
 #define	FR_MB_VECTOR	0xE000	/* mailbox window vector */
@@ -59,6 +51,11 @@
 /* Important constants */
 #define FR502_MAX_DATA	4096	/* maximum data buffer length */
 #define FR508_MAX_DATA	4080	/* maximum data buffer length */
+#define MIN_LGTH_FR_DATA_CFG         300     /* min Information frame length
+(for configuration purposes) */
+#define FR_MAX_NO_DATA_BYTES_IN_FRAME  15354 	/* max Information frame length */
+ 
+#define HIGHEST_VALID_DLCI	991
 
 /****** Data Structures *****************************************************/
 
@@ -90,6 +87,7 @@ typedef struct fr_cmd
 #define FR_FLUSH_STATISTICS	0x16
 #define	FR_LIST_ACTIVE_DLCI	0x17
 #define FR_FLUSH_DATA_BUFFERS	0x18
+#define FR_READ_ADD_DLC_STATS	0x19
 #define	FR_ADD_DLCI		0x20
 #define	FR_DELETE_DLCI		0x21
 #define	FR_ACTIVATE_DLCI	0x22
@@ -102,6 +100,20 @@ typedef struct fr_cmd
 #define FR_READ_CODE_VERSION	0x40
 #define	FR_SET_INTR_MODE	0x50
 #define	FR_READ_INTR_MODE	0x51
+#define FR_SET_TRACE_CONFIG	0x60
+#define FR_FT1_STATUS_CTRL 	0x80
+#define FR_SET_FT1_MODE		0x81
+
+/* Special UDP drivers management commands */
+#define FPIPE_ENABLE_TRACING          	0x41
+#define FPIPE_DISABLE_TRACING		0x42
+#define FPIPE_GET_TRACE_INFO            0x43
+#define FPIPE_FT1_READ_STATUS           0x44
+#define FPIPE_DRIVER_STAT_IFSEND        0x45
+#define FPIPE_DRIVER_STAT_INTR          0x46
+#define FPIPE_DRIVER_STAT_GEN           0x47
+#define FPIPE_FLUSH_DRIVER_STATS        0x48
+#define FPIPE_ROUTER_UP_TIME            0x49
 
 /* 'result' field defines */
 #define FRRES_OK		0x00	/* command executed successfully */
@@ -169,7 +181,7 @@ typedef struct	fr508_flags
 } fr508_flags_t;
 
 /* 'event' field defines */
-#define	FR_EVENT_STATUS		0x01	/* channel status change ??? */
+#define	FR_EVENT_STATUS		0x01	/* channel status change */
 #define	FR_EVENT_DLC_STATUS	0x02	/* DLC status change */
 #define	FR_EVENT_BAD_DLCI	0x04	/* FSR included wrong DLCI */
 #define	FR_EVENT_LINK_DOWN	0x40	/* DCD or CTS low */
@@ -185,6 +197,8 @@ typedef struct	fr508_flags
 #define	FR_INTR_READY		0x08	/* interface command completed */
 #define	FR_INTR_DLC		0x10	/* DLC status change */
 #define	FR_INTR_TIMER		0x20	/* millisecond timer */
+#define FR_INTR_TX_MULT_DLCIs	0x80	/* Tx interrupt on multiple DLCIs */
+
 
 /*----------------------------------------------------------------------------
  * Receive Buffer Configuration Info. S508 only!
@@ -206,7 +220,7 @@ typedef struct	fr_buf_info
  *	'rse_base' field of the frBufInfo_t structure into absolute adapter
  *	memory address space.
  */
-typedef struct	fr_buf_ctl
+typedef struct	fr_rx_buf_ctl
 {
 	unsigned char flag	PACKED;	/* 00h: ready flag */
 	unsigned short length	PACKED;	/* 01h: frame length */
@@ -215,7 +229,18 @@ typedef struct	fr_buf_ctl
 	unsigned short tmstamp	PACKED;	/* 06h: time stamp */
 	unsigned short rsrv[2]	PACKED; /* 08h:  */
 	unsigned long offset	PACKED;	/* 0Ch: buffer absolute address */
-} fr_buf_ctl_t;
+} fr_rx_buf_ctl_t;
+
+typedef struct  fr_tx_buf_ctl
+{
+        unsigned char flag      PACKED; /* 00h: ready flag */
+	unsigned short rsrv0[2]	PACKED;	/* 01h: */
+        unsigned short length   PACKED; /* 05h: frame length */
+        unsigned short dlci     PACKED; /* 07h: DLCI */
+        unsigned char attr      PACKED; /* 09h: FECN/BECN/DE/CR */
+        unsigned short rsrv1 	PACKED; /* 0Ah:  */
+        unsigned long offset    PACKED; /* 0Ch: buffer absolute address */
+} fr_tx_buf_ctl_t;
 
 /*----------------------------------------------------------------------------
  * Global Configuration Block. Passed to FR_SET_CONFIG command when dlci == 0.
@@ -270,6 +295,52 @@ typedef struct	fr_conf
 #define	FRCFG_MODE_INT_CLK	0x0001
 #define	FRCFG_MODE_V35		0x0000	/* S508 only */
 #define	FRCFG_MODE_RS232	0x0002	/* S508 only */
+
+/* defines for line tracing */
+
+/* the line trace status element presented by the frame relay code */
+typedef struct {
+        unsigned char flag      PACKED; /* ready flag */
+        unsigned short length   PACKED; /* trace length */
+        unsigned char rsrv0[2]  PACKED; /* reserved */
+        unsigned char attr      PACKED; /* trace attributes */
+        unsigned short tmstamp  PACKED; /* time stamp */
+        unsigned char rsrv1[4]  PACKED; /* reserved */
+        unsigned long offset    PACKED; /* buffer absolute address */
+} fr_trc_el_t;
+
+typedef struct {
+        unsigned char status    	PACKED; /* status flag */
+	unsigned char data_passed	PACKED;	/* 0 if no data passed, 1 if */
+						/* data passed */
+        unsigned short length   	PACKED; /* frame length */
+        unsigned short tmstamp  	PACKED; /* time stamp */
+} fpipemon_trc_hdr_t;
+
+typedef struct {
+	fpipemon_trc_hdr_t fpipemon_trc_hdr			PACKED;
+        unsigned char data[FR_MAX_NO_DATA_BYTES_IN_FRAME]	PACKED;
+} fpipemon_trc_t;
+
+/* bit settings for the 'status' byte  - note that bits 1, 2 and 3 are used */
+/* for returning the number of frames being passed to fpipemon */
+#define TRC_OUTGOING_FRM	0x01
+#define TRC_ABORT_ERROR         0x10
+#define TRC_CRC_ERROR           0x20
+#define TRC_OVERRUN_ERROR       0x40
+#define MORE_TRC_DATA		0x80
+
+#define MAX_FRMS_TRACED		0x07
+
+#define NO_TRC_ELEMENTS_OFF		0x9000
+#define BASE_TRC_ELEMENTS_OFF		0x9002
+#define TRC_ACTIVE			0x01
+#define FLUSH_TRC_BUFFERS 		0x02
+#define FLUSH_TRC_STATISTICS		0x04
+#define TRC_SIGNALLING_FRMS		0x10
+#define TRC_INFO_FRMS			0x20
+#define ACTIVATE_TRC	(TRC_ACTIVE | TRC_SIGNALLING_FRMS | TRC_INFO_FRMS)
+#define RESET_TRC	(FLUSH_TRC_BUFFERS | FLUSH_TRC_STATISTICS)
 
 /*----------------------------------------------------------------------------
  * Channel configuration.
@@ -414,6 +485,151 @@ typedef struct	fr_comm_stat
  */
 #define	FR_ISF_LVE	2		/* issue Link Verification Enquiry */
 #define	FR_ISF_FSE	3		/* issue Full Status Enquiry */
+
+/*----------------------------------------------------------------------------
+ * Frame Relay ARP Header -- Used for Dynamic route creation with InvARP 
+ */
+
+typedef struct arphdr_fr
+	{
+	unsigned short ar_hrd PACKED;		/* format of hardware addr */
+	unsigned short ar_pro PACKED;		/* format of protocol addr */
+	unsigned char  ar_hln PACKED;		/* length of hardware addr */	
+	unsigned char  ar_pln PACKED;		/* length of protocol addr */
+	unsigned short ar_op  PACKED;		/* ARP opcode		   */
+	unsigned short ar_sha PACKED;		/* Sender DLCI addr 2 bytes */
+	unsigned long  ar_sip PACKED;		/* Sender IP   addr 4 bytes */
+	unsigned short ar_tha PACKED;		/* Target DLCI addr 2 bytes */
+	unsigned long  ar_tip PACKED;		/* Target IP   addr 4 bytes */
+	} arphdr_fr_t;
+
+/*----------------------------------------------------------------------------
+ * Frame Relay RFC 1490 SNAP Header -- Used to check for ARP packets
+ */
+typedef struct arphdr_1490
+	{
+	unsigned char control PACKED;		/* UI, etc...  */
+	unsigned char pad     PACKED;		/* Pad */
+	unsigned char NLPID   PACKED;		/* SNAP */
+	unsigned char OUI[3]  PACKED;		/* Ethertype, etc... */
+	unsigned short PID    PACKED;		/* ARP, IP, etc... */
+	}  arphdr_1490_t;
+
+/* UDP/IP packet (for UDP management) layout */
+
+/* The embedded control block for UDP mgmt
+   This is essentially a mailbox structure, without the large data field */
+
+typedef struct {
+        unsigned char  opp_flag PACKED; /* the opp flag */
+        unsigned char  command  PACKED; /* command code */
+        unsigned short length   PACKED; /* length of data buffer */
+        unsigned char  result   PACKED; /* return code */
+        unsigned short dlci     PACKED; /* DLCI number */
+        unsigned char  attr     PACKED; /* FECN, BECN, DE and C/R bits */
+        unsigned short rxlost1  PACKED; /* frames discarded at int. level */
+        unsigned long  rxlost2  PACKED; /* frames discarded at app. level */
+        unsigned char  rsrv[2]  PACKED; /* reserved for future use */
+} cblock_t;
+
+
+/* UDP management packet layout (data area of ip packet) */
+
+typedef struct {
+        unsigned char   control                 PACKED;
+        unsigned char   NLPID                   PACKED;
+} fr_encap_hdr_t;
+
+typedef struct {
+	fr_encap_hdr_t 		fr_encap_hdr	PACKED;
+	ip_pkt_t 		ip_pkt		PACKED;
+	udp_pkt_t		udp_pkt		PACKED;
+	wp_mgmt_t 		wp_mgmt       	PACKED;
+        cblock_t                cblock          PACKED;
+        unsigned char           data[4080]      PACKED;
+} fr_udp_pkt_t;
+
+
+/* valid ip_protocol for UDP management */
+#define UDPMGMT_UDP_PROTOCOL 0x11
+
+#define UDPMGMT_FPIPE_SIGNATURE         "FPIPE8ND"
+#define UDPMGMT_DRVRSTATS_SIGNATURE     "DRVSTATS"
+
+/* values for request/reply byte */
+#define UDPMGMT_REQUEST	0x01
+#define UDPMGMT_REPLY	0x02
+#define UDP_OFFSET	12
+
+typedef struct {
+        unsigned long if_send_entry;
+        unsigned long if_send_skb_null;
+        unsigned long if_send_broadcast;
+        unsigned long if_send_multicast;
+        unsigned long if_send_critical_ISR;
+        unsigned long if_send_critical_non_ISR;
+        unsigned long if_send_busy;
+        unsigned long if_send_busy_timeout;
+	unsigned long if_send_DRVSTATS_request;
+        unsigned long if_send_FPIPE_request;
+        unsigned long if_send_wan_disconnected;
+        unsigned long if_send_dlci_disconnected;
+        unsigned long if_send_no_bfrs;
+        unsigned long if_send_adptr_bfrs_full;
+        unsigned long if_send_bfrs_passed_to_adptr;
+	unsigned long if_send_consec_send_fail;
+} drvstats_if_send_t; 
+
+typedef struct {
+        unsigned long rx_intr_no_socket;
+        unsigned long rx_intr_dev_not_started;
+        unsigned long rx_intr_DRVSTATS_request;
+        unsigned long rx_intr_FPIPE_request;
+        unsigned long rx_intr_bfr_not_passed_to_stack;
+        unsigned long rx_intr_bfr_passed_to_stack;
+ } drvstats_rx_intr_t;
+
+typedef struct {
+        unsigned long UDP_FPIPE_mgmt_kmalloc_err;
+        unsigned long UDP_FPIPE_mgmt_direction_err;
+        unsigned long UDP_FPIPE_mgmt_adptr_type_err;
+        unsigned long UDP_FPIPE_mgmt_adptr_cmnd_OK;
+        unsigned long UDP_FPIPE_mgmt_adptr_cmnd_timeout;
+        unsigned long UDP_FPIPE_mgmt_adptr_send_passed;
+        unsigned long UDP_FPIPE_mgmt_adptr_send_failed;
+        unsigned long UDP_FPIPE_mgmt_not_passed_to_stack;
+        unsigned long UDP_FPIPE_mgmt_passed_to_stack;
+        unsigned long UDP_FPIPE_mgmt_no_socket;
+        unsigned long UDP_DRVSTATS_mgmt_kmalloc_err;
+        unsigned long UDP_DRVSTATS_mgmt_adptr_cmnd_OK;
+        unsigned long UDP_DRVSTATS_mgmt_adptr_cmnd_timeout;
+        unsigned long UDP_DRVSTATS_mgmt_adptr_send_passed;
+        unsigned long UDP_DRVSTATS_mgmt_adptr_send_failed;
+        unsigned long UDP_DRVSTATS_mgmt_not_passed_to_stack;
+        unsigned long UDP_DRVSTATS_mgmt_passed_to_stack;
+        unsigned long UDP_DRVSTATS_mgmt_no_socket;
+} drvstats_gen_t;
+
+typedef struct {
+        unsigned char   attr      	PACKED;
+        unsigned short  time_stamp      PACKED;
+        unsigned char   reserved[13]    PACKED;
+} api_rx_hdr_t;
+
+typedef struct {
+        api_rx_hdr_t    api_rx_hdr      PACKED;
+        void *          data            PACKED;
+} api_rx_element_t;
+
+typedef struct {
+        unsigned char   attr            PACKED;
+        unsigned char   reserved[15]    PACKED;
+} api_tx_hdr_t;
+
+typedef struct {
+        api_tx_hdr_t    api_tx_hdr      PACKED;
+        void *          data            PACKED;
+} api_tx_element_t;
 
 #ifdef		_MSC_
 #  pragma	pack()

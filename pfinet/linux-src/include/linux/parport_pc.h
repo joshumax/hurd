@@ -5,14 +5,15 @@
 
 /* --- register definitions ------------------------------- */
 
-#define ECONTROL 0x402
-#define CONFIGB  0x401
-#define CONFIGA  0x400
-#define EPPDATA  0x4
-#define EPPADDR  0x3
-#define CONTROL  0x2
-#define STATUS   0x1
-#define DATA     0
+#define ECONTROL(p) ((p)->base_hi + 0x2)
+#define CONFIGB(p)  ((p)->base_hi + 0x1)
+#define CONFIGA(p)  ((p)->base_hi + 0x0)
+#define FIFO(p)     ((p)->base_hi + 0x0)
+#define EPPDATA(p)  ((p)->base    + 0x4)
+#define EPPADDR(p)  ((p)->base    + 0x3)
+#define CONTROL(p)  ((p)->base    + 0x2)
+#define STATUS(p)   ((p)->base    + 0x1)
+#define DATA(p)     ((p)->base    + 0x0)
 
 /* Private data for PC low-level driver. */
 struct parport_pc_private {
@@ -26,27 +27,27 @@ extern volatile unsigned char parport_pc_ctr;
 
 extern __inline__ void parport_pc_write_epp(struct parport *p, unsigned char d)
 {
-	outb(d, p->base+EPPDATA);
+	outb(d, EPPDATA(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_epp(struct parport *p)
 {
-	return inb(p->base+EPPDATA);
+	return inb(EPPDATA(p));
 }
 
 extern __inline__ void parport_pc_write_epp_addr(struct parport *p, unsigned char d)
 {
-	outb(d, p->base+EPPADDR);
+	outb(d, EPPADDR(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_epp_addr(struct parport *p)
 {
-	return inb(p->base+EPPADDR);
+	return inb(EPPADDR(p));
 }
 
 extern __inline__ int parport_pc_check_epp_timeout(struct parport *p)
 {
-	if (!(inb(p->base+STATUS) & 1))
+	if (!(inb(STATUS(p)) & 1))
 		return 0;
 	parport_pc_epp_clear_timeout(p);
 	return 1;
@@ -54,24 +55,24 @@ extern __inline__ int parport_pc_check_epp_timeout(struct parport *p)
 
 extern __inline__ unsigned char parport_pc_read_configb(struct parport *p)
 {
-	return inb(p->base+CONFIGB);
+	return inb(CONFIGB(p));
 }
 
 extern __inline__ void parport_pc_write_data(struct parport *p, unsigned char d)
 {
-	outb(d, p->base+DATA);
+	outb(d, DATA(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_data(struct parport *p)
 {
-	return inb(p->base+DATA);
+	return inb(DATA(p));
 }
 
 extern __inline__ void parport_pc_write_control(struct parport *p, unsigned char d)
 {
 	struct parport_pc_private *priv = p->private_data;
 	priv->ctr = d;/* update soft copy */
-	outb(d, p->base+CONTROL);
+	outb(d, CONTROL(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_control(struct parport *p)
@@ -85,34 +86,34 @@ extern __inline__ unsigned char parport_pc_frob_control(struct parport *p, unsig
 	struct parport_pc_private *priv = p->private_data;
 	unsigned char ctr = priv->ctr;
 	ctr = (ctr & ~mask) ^ val;
-	outb (ctr, p->base+CONTROL);
+	outb (ctr, CONTROL(p));
 	return priv->ctr = ctr; /* update soft copy */
 }
 
 extern __inline__ void parport_pc_write_status(struct parport *p, unsigned char d)
 {
-	outb(d, p->base+STATUS);
+	outb(d, STATUS(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_status(struct parport *p)
 {
-	return inb(p->base+STATUS);
+	return inb(STATUS(p));
 }
 
 extern __inline__ void parport_pc_write_econtrol(struct parport *p, unsigned char d)
 {
-	outb(d, p->base+ECONTROL);
+	outb(d, ECONTROL(p));
 }
 
 extern __inline__ unsigned char parport_pc_read_econtrol(struct parport *p)
 {
-	return inb(p->base+ECONTROL);
+	return inb(ECONTROL(p));
 }
 
 extern __inline__ unsigned char parport_pc_frob_econtrol(struct parport *p, unsigned char mask,  unsigned char val)
 {
-	unsigned char old = inb(p->base+ECONTROL);
-	outb(((old & ~mask) ^ val), p->base+ECONTROL);
+	unsigned char old = inb(ECONTROL(p));
+	outb(((old & ~mask) ^ val), ECONTROL(p));
 	return old;
 }
 

@@ -753,7 +753,7 @@ extern void set_writetime(struct buffer_head * buf, int flag);
 extern int try_to_free_buffers(struct page *);
 
 extern int nr_buffers;
-extern int buffermem;
+extern long buffermem;
 extern int nr_buffer_heads;
 
 #define BUF_CLEAN	0
@@ -783,7 +783,9 @@ extern inline void mark_buffer_dirty(struct buffer_head * bh, int flag)
 extern int check_disk_change(kdev_t dev);
 extern int invalidate_inodes(struct super_block * sb);
 extern void invalidate_inode_pages(struct inode *);
-extern void invalidate_buffers(kdev_t dev);
+#define invalidate_buffers(dev)	__invalidate_buffers((dev), 0)
+#define destroy_buffers(dev)	__invalidate_buffers((dev), 1)
+extern void __invalidate_buffers(kdev_t dev, int);
 extern int floppy_is_wp(int minor);
 extern void sync_inodes(kdev_t dev);
 extern void write_inode_now(struct inode *inode);
@@ -837,6 +839,7 @@ extern void iput(struct inode *);
 extern struct inode * igrab(struct inode *inode);
 extern ino_t iunique(struct super_block *, ino_t);
 extern struct inode * iget(struct super_block *, unsigned long);
+extern struct inode * iget_in_use (struct super_block *, unsigned long);
 extern void clear_inode(struct inode *);
 extern struct inode * get_empty_inode(void);
 

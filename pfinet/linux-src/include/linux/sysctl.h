@@ -104,7 +104,8 @@ enum
 	KERN_MSGMNB=36,         /* int: Maximum message queue size */
 	KERN_MSGPOOL=37,         /* int: Maximum system message pool size */
 	KERN_SYSRQ=38,		/* int: Sysreq enable */
-	KERN_SHMALL=41		/* int: maximum size of shared memory */
+	KERN_SHMALL=41,		/* int: maximum size of shared memory */
+	KERN_SPARC_STOP_A=44,	/* int: Sparc Stop-A enable */
 };
 
 
@@ -267,7 +268,8 @@ enum
 	NET_IPV4_CONF_RP_FILTER=8,
 	NET_IPV4_CONF_ACCEPT_SOURCE_ROUTE=9,
 	NET_IPV4_CONF_BOOTP_RELAY=10,
-	NET_IPV4_CONF_LOG_MARTIANS=11
+	NET_IPV4_CONF_LOG_MARTIANS=11,
+	NET_IPV4_CONF_HIDDEN=12
 };
 
 /* /proc/sys/net/ipv6 */

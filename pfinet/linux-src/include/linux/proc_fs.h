@@ -466,6 +466,7 @@ extern inline void remove_proc_entry(const char *name, struct proc_dir_entry *pa
 extern inline void proc_tty_register_driver(struct tty_driver *driver) {};
 extern inline void proc_tty_unregister_driver(struct tty_driver *driver) {};
 
+extern struct proc_dir_entry proc_root;
 
-#endif
+#endif /* CONFIG_PROC_FS */
 #endif /* _LINUX_PROC_FS_H */

@@ -1,4 +1,4 @@
-/* $Id: isdn.h,v 1.76 1999/09/14 10:16:21 keil Exp $
+/* $Id: isdn.h,v 1.81 1999/10/27 21:21:18 detabc Exp $
  *
  * Main header for the Linux ISDN subsystem (linklevel).
  *
@@ -21,6 +21,31 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
  * $Log: isdn.h,v $
+ * Revision 1.81  1999/10/27 21:21:18  detabc
+ * Added support for building logically-bind-group's per interface.
+ * usefull for outgoing call's with more then one isdn-card.
+ *
+ * Switchable support to dont reset the hangup-timeout for
+ * receive frames. Most part's of the timru-rules for receiving frames
+ * are now obsolete. If the input- or forwarding-firewall deny
+ * the frame, the line will be not hold open.
+ *
+ * Revision 1.80  1999/10/26 21:09:29  armin
+ * New bufferlen for phonenumber only with kernel 2.3.x
+ *
+ * Revision 1.79  1999/10/16 17:52:38  keil
+ * Changing the MSN length need new data versions
+ *
+ * Revision 1.78  1999/10/08 18:59:33  armin
+ * Bugfix of too small MSN buffer and checking phone number
+ * in isdn_tty_getdial()
+ *
+ * Revision 1.77  1999/09/23 22:22:42  detabc
+ * added tcp-keepalive-detect with local response (ipv4 only)
+ * added host-only-interface support
+ * (source ipaddr == interface ipaddr) (ipv4 only)
+ * ok with kernel 2.3.18 and 2.2.12
+ *
  * Revision 1.76  1999/09/14 10:16:21  keil
  * change ABC include
  *
@@ -301,9 +326,13 @@
 #undef CONFIG_ISDN_WITH_ABC_CALLB
 #undef CONFIG_ISDN_WITH_ABC_UDP_CHECK
 #undef CONFIG_ISDN_WITH_ABC_UDP_CHECK_HANGUP
+#undef CONFIG_ISDN_WITH_ABC_UDP_CHECK_DIAL
 #undef CONFIG_ISDN_WITH_ABC_OUTGOING_EAZ
-#undef CONFIG_ISDN_WITH_ABC_CALL_CHECK_SYNCRO
 #undef CONFIG_ISDN_WITH_ABC_LCR_SUPPORT
+#undef CONFIG_ISDN_WITH_ABC_IPV4_TCP_KEEPALIVE
+#undef CONFIG_ISDN_WITH_ABC_IPV4_DYNADDR
+#undef CONFIG_ISDN_WITH_ABC_RCV_NO_HUPTIMER
+#undef CONFIG_ISDN_WITH_ABC_ICALL_BIND
 
 
 /* New ioctl-codes */
@@ -363,9 +392,14 @@
 #define ISDN_USAGE_OUTGOING 128 /* This bit is set, if channel is outgoing  */
 
 #define ISDN_MODEM_ANZREG    24        /* Number of Modem-Registers        */
-#define ISDN_MSNLEN          20
 #define ISDN_LMSNLEN         255 /* Length of tty's Listen-MSN string */
 #define ISDN_CMSGLEN	     50	 /* Length of CONNECT-Message to add for Modem */
+
+#define ISDN_MSNLEN          20
+#define NET_DV 0x05  /* Data version for isdn_net_ioctl_cfg   */
+#define TTY_DV 0x05  /* Data version for iprofd etc.          */
+
+#define INF_DV 0x01  /* Data version for /dev/isdninfo        */
 
 typedef struct {
   char drvid[25];
@@ -383,10 +417,6 @@ typedef struct {
   char phone[ISDN_MSNLEN];
   int  outgoing;
 } isdn_net_ioctl_phone;
-
-#define NET_DV 0x05  /* Data version for isdn_net_ioctl_cfg   */
-#define TTY_DV 0x05  /* Data version for iprofd etc.          */
-#define INF_DV 0x01  /* Data version for /dev/isdninfo        */
 
 typedef struct {
   char name[10];     /* Name of interface                     */
@@ -896,6 +926,7 @@ typedef struct isdn_devt {
 } isdn_dev;
 
 extern isdn_dev *dev;
+
 
 
 /* Utility-Macros */

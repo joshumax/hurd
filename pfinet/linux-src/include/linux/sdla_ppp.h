@@ -19,38 +19,25 @@
 /*----------------------------------------------------------------------------
  * Notes:
  * ------
- * 1. All structures defined in this file are byte-alined.  To ensure
- *    portability of this code between different platforms and compilers, one
- *    of the following defines must be defined before including this file:
+ * 1. All structures defined in this file are byte-alined.  
  *
- *	Compiler	Platform	Define		Use option
- *	--------	--------	------		----------
- *	GNU C		Linux		_GNUC_		-
- *	Microsoft C	DOS/Windows	_MSC_		-
+ *	Compiler	Platform
+ *	--------	--------
+ *	GNU C		Linux		
  */
 
-#ifdef		_GNUC_
-#  ifndef	PACKED
+#ifndef	PACKED
 #    define	PACKED	__attribute__((packed))
-#  endif	/* PACKED */
-#else
-#  define	PACKED
-#endif
-#ifdef		_MSC_
-#  pragma	pack(1)
-#endif
+#endif	/* PACKED */
 
 /* Adapter memory layout and important constants */
-
-#define	PPP502_MB_VECT	0xA000	/* mailbox window vector */
-#define	PPP502_MB_OFFS	0x1C00	/* mailbox offset */
-#define	PPP502_FLG_OFFS	0	/* status flags offset */
-#define	PPP502_BUF_OFFS	0x0010	/* buffer info block offset */
-
 #define	PPP508_MB_VECT	0xE000	/* mailbox window vector */
-#define	PPP508_MB_OFFS	0	/* mailbox offset */
+#define	PPP508_MB_OFFS	0		/* mailbox offset */
 #define	PPP508_FLG_OFFS	0x1000	/* status flags offset */
 #define	PPP508_BUF_OFFS	0x1100	/* buffer info block offset */
+#define PPP514_MB_OFFS  0xE000  /* mailbox offset */
+#define PPP514_FLG_OFFS 0xF000  /* status flags offset */
+#define PPP514_BUF_OFFS 0xF100  /* buffer info block offset */
 
 #define PPP_MAX_DATA	1008	/* command block data buffer length */
 
@@ -59,13 +46,45 @@
 /*----------------------------------------------------------------------------
  * PPP Command Block.
  */
-typedef struct ppp_cmd
-{
+typedef struct ppp_cmd{
 	unsigned char  command	PACKED;	/* command code */
 	unsigned short length	PACKED;	/* length of data buffer */
 	unsigned char  result	PACKED;	/* return code */
 	unsigned char  rsrv[11]	PACKED;	/* reserved for future use */
 } ppp_cmd_t;
+
+typedef struct cblock{
+	unsigned char  opp_flag	PACKED;
+	unsigned char  command	PACKED;	/* command code */
+	unsigned short length	PACKED;	/* length of data buffer */
+	unsigned char  result	PACKED;	/* return code */
+	unsigned char  rsrv[11]	PACKED;	/* reserved for future use */
+} cblock_t;
+
+typedef struct ppp_udp_pkt{
+	ip_pkt_t 	ip_pkt	PACKED;
+	udp_pkt_t	udp_pkt	PACKED;
+	wp_mgmt_t	wp_mgmt PACKED;
+	cblock_t	cblock  PACKED;
+	unsigned char   data[MAX_LGTH_UDP_MGNT_PKT] PACKED;
+} ppp_udp_pkt_t;	
+
+typedef struct {
+	unsigned char	status		PACKED;
+	unsigned char	data_avail	PACKED;
+	unsigned short	real_length	PACKED;
+	unsigned short	time_stamp	PACKED;
+	unsigned char	data[1]		PACKED;
+} trace_pkt_t;
+
+
+typedef struct {
+	unsigned char 	opp_flag	PACKED;
+	unsigned char	trace_type	PACKED;
+	unsigned short 	trace_length	PACKED;
+	unsigned short 	trace_data_ptr	PACKED;
+	unsigned short  trace_time_stamp PACKED;
+} trace_element_t;
 
 /* 'command' field defines */
 #define PPP_READ_CODE_VERSION	0x10	/* configuration commands */
@@ -145,26 +164,46 @@ typedef struct	ppp_flags
 #define	PPP_INTR_DISC		0x10	/* data link disconnected */
 #define	PPP_INTR_OPEN		0x20	/* data link open */
 #define	PPP_INTR_DROP_DTR	0x40	/* DTR drop timeout expired */
+#define PPP_INTR_TIMER          0x80    /* timer interrupt */
+
 
 /* 'mstatus' defines */
 #define	PPP_MDM_DCD		0x08	/* mdm_status: DCD */
 #define	PPP_MDM_CTS		0x20	/* mdm_status: CTS */
 
-/*----------------------------------------------------------------------------
- * PPP Buffer Info.
- *	This structure is located at offset PPP502_BUF_OFFS into
- *	PPP502_MB_VECT.
- */
-typedef struct	ppp502_buf_info
-{
-	unsigned short txb_num	PACKED;	/* 00: number of transmit buffers */
-	unsigned short txb_offs	PACKED;	/* 02: offset of the buffer ctl. */
-	unsigned char  rsrv1[4]	PACKED;
-	unsigned short rxb_num	PACKED;	/* 08: number of receive buffers */
-	unsigned short rxb_offs	PACKED;	/* 0A: offset of the buffer ctl. */
-	unsigned char  rsrv2[2]	PACKED;
-	unsigned short rxb_next	PACKED; /* 0E: index of the next buffer */
-} ppp502_buf_info_t;
+/* 'disc_cause' defines */
+#define PPP_LOCAL_TERMINATION   0x0001	/* Local Request by PPP termination phase */
+#define PPP_DCD_CTS_DROP        0x0002  /* DCD and/or CTS dropped. Link down */
+#define PPP_REMOTE_TERMINATION	0x0800	/* Remote Request by PPP termination phase */
+
+/* 'misc_config_bits' defines */
+#define DONT_RE_TX_ABORTED_I_FRAMES 	0x01
+#define TX_FRM_BYTE_COUNT_STATS         0x02
+#define RX_FRM_BYTE_COUNT_STATS         0x04
+#define TIME_STAMP_IN_RX_FRAMES         0x08
+#define NON_STD_ADPTR_FREQ              0x10
+#define INTERFACE_LEVEL_RS232           0x20
+#define AUTO_LINK_RECOVERY              0x100
+#define DONT_TERMINATE_LNK_MAX_CONFIG   0x200                    
+
+/* 'authentication options' defines */
+#define NO_AUTHENTICATION	0x00
+#define INBOUND_AUTH		0x80
+#define PAP_AUTH		0x01
+#define CHAP_AUTH		0x02		
+
+/* 'ip options' defines */
+#define L_AND_R_IP_NO_ASSIG	0x00
+#define L_IP_LOCAL_ASSIG    	0x01
+#define L_IP_REMOTE_ASSIG   	0x02
+#define R_IP_LOCAL_ASSIG        0x04
+#define R_IP_REMOTE_ASSIG       0x08
+#define ENABLE_IP		0x80
+
+/* 'ipx options' defines */
+#define ROUTING_PROT_DEFAULT    0x20
+#define ENABLE_IPX		0x80
+#define DISABLE_IPX		0x00
 
 /*----------------------------------------------------------------------------
  * PPP Buffer Info.
@@ -203,37 +242,6 @@ typedef struct	ppp_buf_ctl
 } ppp_buf_ctl_t;
 
 /*----------------------------------------------------------------------------
- * S502 Adapter Configuration Block (passed to the PPP_SET_CONFIG command).
- */
-typedef struct	ppp502_conf
-{
-	unsigned char  line_speed	PACKED;	/* 00: 0 - external clk. */
-	unsigned short txbuf_num	PACKED;	/* 01: number of Tx buffers */
-	unsigned short conf_flags	PACKED;	/* 03: configuration bits */
-	unsigned short mtu_local	PACKED;	/* 05: local MTU */
-	unsigned short mtu_remote	PACKED;	/* 07: remote MTU */
-	unsigned short restart_tmr	PACKED;	/* 09: restart timer */
-	unsigned short auth_rsrt_tmr	PACKED;	/* 0B: authentication timer */
-	unsigned short auth_wait_tmr	PACKED;	/* 0D: authentication timer */
-	unsigned short mdm_fail_tmr	PACKED;	/* 0F: modem failure timer */
-	unsigned short dtr_drop_tmr	PACKED;	/* 11: DTR drop timer */
-	unsigned short connect_tmout	PACKED;	/* 13: connection timeout */
-	unsigned short conf_retry	PACKED;	/* 15: max. retry */
-	unsigned short term_retry	PACKED;	/* 17: max. retry */
-	unsigned short fail_retry	PACKED;	/* 19: max. retry */
-	unsigned short auth_retry	PACKED;	/* 1B: max. retry */
-	unsigned char  auth_options	PACKED;	/* 1D: authentication opt. */
-	unsigned char  ip_options	PACKED;	/* 1E: IP options */
-	unsigned char  ip_local[4]	PACKED;	/* 1F: local IP address */
-	unsigned char  ip_remote[4]	PACKED;	/* 23: remote IP address */
-	unsigned char  ipx_options	PACKED;	/* 27: IPX options */
-	unsigned char  ipx_netno[4]	PACKED;	/* 28: IPX net number */
-	unsigned char  ipx_local[6]	PACKED;	/* 2C: local IPX node number*/
-	unsigned char  ipx_remote[6]	PACKED;	/* 32: remote IPX node num.*/
-	unsigned char  ipx_router[48]	PACKED;	/* 38: IPX router name*/
-} ppp502_conf_t;
-
-/*----------------------------------------------------------------------------
  * S508 Adapter Configuration Block (passed to the PPP_SET_CONFIG command).
  */
 typedef struct	ppp508_conf
@@ -255,8 +263,8 @@ typedef struct	ppp508_conf
 	unsigned short auth_retry	PACKED;	/* 1E: max. retry */
 	unsigned char  auth_options	PACKED;	/* 20: authentication opt. */
 	unsigned char  ip_options	PACKED;	/* 21: IP options */
-	unsigned char  ip_local[4]	PACKED;	/* 22: local IP address */
-	unsigned char  ip_remote[4]	PACKED;	/* 26: remote IP address */
+	unsigned long  ip_local		PACKED;	/* 22: local IP address */
+	unsigned long  ip_remote	PACKED;	/* 26: remote IP address */
 	unsigned char  ipx_options	PACKED;	/* 2A: IPX options */
 	unsigned char  ipx_netno[4]	PACKED;	/* 2B: IPX net number */
 	unsigned char  ipx_local[6]	PACKED;	/* 2F: local IPX node number*/
@@ -264,6 +272,25 @@ typedef struct	ppp508_conf
 	unsigned char  ipx_router[48]	PACKED;	/* 3B: IPX router name*/
 	unsigned long  alt_cpu_clock	PACKED;	/* 6B:  */
 } ppp508_conf_t;
+
+/*----------------------------------------------------------------------------
+ * S508 Adapter Read Connection Information Block 
+ *    Returned by the PPP_GET_CONNECTION_INFO command
+ */
+typedef struct	ppp508_connect_info
+{
+	unsigned short 	mru		PACKED;	/* 00-01 Remote Max Rec' Unit */
+	unsigned char  	ip_options 	PACKED; /* 02: Negotiated ip options  */
+	unsigned long  	ip_local	PACKED;	/* 03-06: local IP address    */
+	unsigned long  	ip_remote	PACKED;	/* 07-0A: remote IP address   */
+	unsigned char	ipx_options	PACKED; /* 0B: Negotiated ipx options */
+	unsigned char  	ipx_netno[4]	PACKED;	/* 0C-0F: IPX net number      */
+	unsigned char  	ipx_local[6]	PACKED;	/* 10-1F: local IPX node #    */
+	unsigned char  	ipx_remote[6]	PACKED;	/* 16-1B: remote IPX node #   */
+	unsigned char  	ipx_router[48]	PACKED;	/* 1C-4B: IPX router name     */
+	unsigned char	auth_status	PACKED; /* 4C: Authentication Status  */
+	unsigned char 	inbd_auth_peerID[1] PACKED; /* 4D: variable length inbound authenticated peer ID */
+} ppp508_connect_info_t;
 
 /* 'line_speed' field */
 #define	PPP_BITRATE_1200	0x01
@@ -303,16 +330,6 @@ typedef struct	ppp508_conf
 #define	PPP_IPX_ENABLE		0x80
 
 /*----------------------------------------------------------------------------
- * S502 Adapter Configuration Block (returned by the PPP_READ_CONFIG command).
- */
-typedef struct	ppp502_get_conf
-{
-	ppp502_conf_t  conf	PACKED;	/* 00: requested config. */
-	unsigned short txb_num	PACKED;	/* 68: number of Tx buffers */
-	unsigned short rxb_num	PACKED;	/* 6A: number of Rx buffers */
-} ppp502_get_conf_t;
-
-/*----------------------------------------------------------------------------
  * S508 Adapter Configuration Block (returned by the PPP_READ_CONFIG command).
  */
 typedef struct	ppp508_get_conf
@@ -322,20 +339,6 @@ typedef struct	ppp508_get_conf
 	unsigned short txb_num	PACKED;	/* 6F: number of Tx buffers */
 	unsigned short rxb_num	PACKED;	/* 71: number of Rx buffers */
 } ppp508_get_conf_t;
-
-/*----------------------------------------------------------------------------
- * S502 Operational Statistics (returned by the PPP_READ_STATISTIC command).
- */
-typedef struct ppp502_Stats
-{
-	unsigned short rx_lost_intr	PACKED;	/* 00: */
-	unsigned short rx_lost_buff	PACKED;	/* 02: */
-	unsigned short tx_abort	PACKED;	/* 04: */
-	unsigned long  tx_frames	PACKED;	/* 06: */
-	unsigned long  tx_bytes	PACKED;	/* 0A: */
-	unsigned long  rx_frames	PACKED;	/* 0E: */
-	unsigned long  rx_bytes	PACKED;	/* 12: */
-} ppp502_Stats_t;
 
 /*----------------------------------------------------------------------------
  * S508 Operational Statistics (returned by the PPP_READ_STATISTIC command).
@@ -529,6 +532,40 @@ typedef struct	ppp_conn_info
 	unsigned char  auth_status	PACKED;	/* 4C:  */
 	unsigned char  peer_id[0]	PACKED;	/* 4D:  */
 } ppp_conn_info_t;
+
+/* Data structure for SET_TRIGGER_INTR command
+ */
+
+typedef struct ppp_intr_info{
+	unsigned char  i_enable		PACKED; /* 0 Interrupt enable bits */
+	unsigned char  irq              PACKED; /* 1 Irq number */
+	unsigned short timer_len        PACKED; /* 2 Timer delay */
+} ppp_intr_info_t;
+
+
+#define FT1_MONITOR_STATUS_CTRL                         0x80
+#define SET_FT1_MODE                                    0x81
+
+
+
+/* Special UDP drivers management commands */
+#define PPIPE_ENABLE_TRACING                            0x20
+#define PPIPE_DISABLE_TRACING                           0x21
+#define PPIPE_GET_TRACE_INFO                            0x22
+#define PPIPE_GET_IBA_DATA                              0x23
+#define PPIPE_KILL_BOARD     				0x24
+#define PPIPE_FT1_READ_STATUS                           0x25
+#define PPIPE_DRIVER_STAT_IFSEND                        0x26
+#define PPIPE_DRIVER_STAT_INTR                          0x27
+#define PPIPE_DRIVER_STAT_GEN                           0x28
+#define PPIPE_FLUSH_DRIVER_STATS                        0x29
+#define PPIPE_ROUTER_UP_TIME                            0x30
+
+#define DISABLE_TRACING 				0x00
+#define TRACE_SIGNALLING_FRAMES				0x01
+#define TRACE_DATA_FRAMES				0x02
+
+
 
 #ifdef		_MSC_
 #  pragma	pack()

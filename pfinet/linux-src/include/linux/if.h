@@ -45,31 +45,6 @@
 #define IFF_AUTOMEDIA	0x4000		/* auto media select active	*/
 #define IFF_DYNAMIC	0x8000		/* dialup device with changing addresses*/
 
-#ifdef __KERNEL__
-/*
- * The ifaddr structure contains information about one address
- * of an interface.  They are maintained by the different address
- * families, are allocated and attached when an address is set,
- * and are linked together so all addresses for an interface can
- * be located.
- */
- 
-struct ifaddr 
-{
-	struct sockaddr	ifa_addr;	/* address of interface		*/
-	union {
-		struct sockaddr	ifu_broadaddr;
-		struct sockaddr	ifu_dstaddr;
-	} ifa_ifu;
-	struct iface		*ifa_ifp;	/* back-pointer to interface	*/
-	struct ifaddr		*ifa_next;	/* next address for interface	*/
-};
-
-#define	ifa_broadaddr	ifa_ifu.ifu_broadaddr	/* broadcast address	*/
-#define	ifa_dstaddr	ifa_ifu.ifu_dstaddr	/* other end of link	*/
-
-#endif /* __KERNEL__ */ 
-
 /*
  *	Device mapping structure. I'd just gone off and designed a 
  *	beautiful scheme using only loadable modules with arguments

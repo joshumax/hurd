@@ -4,7 +4,9 @@
 /*
  * /usr/include/linux/joystick.h  Version 1.2
  *
- * Copyright (C) 1996-1998 Vojtech Pavlik
+ * Copyright (C) 1996-1999 Vojtech Pavlik
+ *
+ * Sponsored by SuSE
  */
 
 /*
@@ -23,7 +25,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  * 
  * Should you need to contact me, the author, you can do so either by
- * e-mail - mail your message to <vojtech@ucw.cz>, or by paper mail:
+ * e-mail - mail your message to <vojtech@suse.cz>, or by paper mail:
  * Vojtech Pavlik, Ucitelska 1576, Prague 8, 182 00 Czech Republic
  */
 
@@ -34,7 +36,7 @@
  * Version
  */
 
-#define JS_VERSION		0x01020d
+#define JS_VERSION		0x01020f
 
 /*
  * Types and constants for reading from /dev/js
@@ -128,74 +130,61 @@ struct JS_DATA_SAVE_TYPE {
 
 #include <linux/version.h>
 
-#ifndef KERNEL_VERSION
-#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,0)
+#error "You need to use at least v2.2 Linux kernel."
 #endif
 
-#ifndef LINUX_VERSION_CODE
-#error "You need to use at least 2.0 Linux kernel."
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+#include <asm/spinlock.h>
+typedef struct wait_queue *wait_queue_head_t;
+#define __setup(a,b)
+#define BASE_ADDRESS(x,i)	((x)->base_address[i])
+#define DECLARE_WAITQUEUE(x,y)	struct wait_queue x = { y, NULL }
+#define init_waitqueue_head(x)	do { *(x) = NULL; } while (0)
+#define __set_current_state(x)	current->state = x
+#define SETUP_PARAM		char *str, int *ints
+#define SETUP_PARSE(x)		do {} while (0)
+#else
+#include <linux/spinlock.h>
+#define BASE_ADDRESS(x,i)	((x)->resource[i].start)
+#define SETUP_PARAM		char *str
+#define SETUP_PARSE(x)		int ints[x]; get_options(str, x, ints)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,0,0)
-#error "You need to use at least 2.0 Linux kernel."
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,1,0)
-#define JS_HAS_RDTSC (current_cpu_data.x86_capability & 0x10)
-#include <linux/init.h>
-#else
-#ifdef MODULE
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,0,35)
-#define JS_HAS_RDTSC (x86_capability & 0x10)
-#else
-#define JS_HAS_RDTSC 0
-#endif
-#else
-#define JS_HAS_RDTSC (x86_capability & 0x10)
-#endif
-#define __initdata
-#define __init
-#define __cli cli
-#define __save_flags(flags) save_flags(flags)
-#define __restore_flags(flags)	restore_flags(flags)
-#define spin_lock_irqsave(x, flags) do { save_flags(flags); cli(); } while (0)
-#define spin_unlock_irqrestore(x, flags) restore_flags(flags)
-#define spin_lock_init(x) do { } while (0)
-typedef struct { int something; } spinlock_t;
-#define SPIN_LOCK_UNLOCKED { 0 }
-#define MODULE_AUTHOR(x)
-#define MODULE_PARM(x,y)
-#define MODULE_SUPPORTED_DEVICE(x)
-#define signal_pending(x) (((x)->signal) & ~((x)->blocked))
-#endif
+#define PCI_VENDOR_ID_AUREAL	0x12eb
 
 /*
  * Parport stuff
  */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,1,0)
-#define USE_PARPORT
-#endif
-
-#ifdef USE_PARPORT
 #include <linux/parport.h>
-#define JS_PAR_DATA_IN(y)	parport_read_data(y->port)
-#define JS_PAR_DATA_OUT(x,y)	parport_write_data(y->port, x)
-#define JS_PAR_STATUS(y)	parport_read_status(y->port)
-#define JS_PAR_CTRL_IN(y)	parport_read_control(y->port)
-#define JS_PAR_CTRL_OUT(x,y)	parport_write_control(y->port, x)
-#define JS_PAR_ECTRL_OUT(x,y)	parport_write_econtrol(y->port, x)
-#else
-#define JS_PAR_DATA_IN(y)	inb(y)
-#define JS_PAR_DATA_OUT(x,y)	outb(x,y)
-#define JS_PAR_STATUS(y)	inb(y+1)
-#define JS_PAR_CTRL_IN(y)	inb(y+2)
-#define JS_PAR_CTRL_OUT(x,y)	outb(x,y+2)
-#define JS_PAR_ECTRL_OUT(x,y)	outb(x,y+0x402)
-#endif
 
 #define JS_PAR_STATUS_INVERT	(0x80)
 #define JS_PAR_CTRL_INVERT	(0x04)
+#define JS_PAR_DATA_IN(y)	parport_read_data(y->port)
+#define JS_PAR_DATA_OUT(x,y)	parport_write_data(y->port, x)
+#define JS_PAR_STATUS(y)	parport_read_status(y->port)
+
+#ifndef PARPORT_NEED_GENERIC_OPS
+#define JS_PAR_CTRL_IN(y)	parport_read_control(y->port)
+#else
+#define JS_PAR_CTRL_IN(y)	inb(y->port->base+2) 
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+#define JS_PAR_CTRL_OUT(x,y)	parport_write_control(y->port, x)
+#define JS_PAR_ECTRL_OUT(x,y)	parport_write_econtrol(y->port, x)
+#else
+#define JS_PAR_CTRL_OUT(x,y)					\
+	do {							\
+		if ((x) & 0x20) parport_data_reverse(y->port);	\
+		else parport_data_forward(y->port);		\
+		parport_write_control(y->port, (x) & ~0x20);	\
+	} while (0)
+#define JS_PAR_ECTRL_OUT(x,y)	/*parport sets PS/2 mode on ECR chips */
+#define PARPORT_MODE_PCPS2	PARPORT_MODE_TRISTATE
+#define PARPORT_MODE_PCECPPS2	PARPORT_MODE_TRISTATE
+#endif
 
 /*
  * Internal types
@@ -204,8 +193,6 @@ typedef struct { int something; } spinlock_t;
 struct js_dev;
 
 typedef int (*js_read_func)(void *info, int **axes, int **buttons);
-typedef unsigned int (*js_time_func)(void);
-typedef int (*js_delta_func)(unsigned int x, unsigned int y);
 typedef int (*js_ops_func)(struct js_dev *dev);
 
 struct js_data {
@@ -217,7 +204,7 @@ struct js_dev {
 	struct js_dev *next;
 	struct js_list *list;
 	struct js_port *port;
-	struct wait_queue *wait;
+	wait_queue_head_t wait;
 	struct js_data cur;
 	struct js_data new;
 	struct js_corr *corr;
@@ -249,19 +236,13 @@ struct js_port {
 	struct js_corr **corr;
 	void *info;
 	int ndevs;
+	int fail;
+	int total;
 };
 
 /*
  * Sub-module interface
  */
-
-extern unsigned int js_time_speed;
-extern js_time_func js_get_time;
-extern js_delta_func js_delta;
-
-extern unsigned int js_time_speed_a;
-extern js_time_func js_get_time_a;
-extern js_delta_func js_delta_a;
 
 extern struct js_port *js_register_port(struct js_port *port, void *info,
 	int devs, int infos, js_read_func read);
@@ -280,19 +261,19 @@ extern int js_am_init(void);
 extern int js_an_init(void);
 extern int js_as_init(void);
 extern int js_console_init(void);
+extern int js_cr_init(void);
 extern int js_db9_init(void);
 extern int js_gr_init(void);
 extern int js_l4_init(void);
 extern int js_lt_init(void);
+extern int js_mag_init(void);
+extern int js_pci_init(void);
 extern int js_sw_init(void);
+extern int js_sball_init(void);
+extern int js_orb_init(void);
 extern int js_tm_init(void);
-
-extern void js_am_setup(char *str, int *ints);
-extern void js_an_setup(char *str, int *ints);
-extern void js_as_setup(char *str, int *ints);
-extern void js_console_setup(char *str, int *ints);
-extern void js_db9_setup(char *str, int *ints);
-extern void js_l4_setup(char *str, int *ints);
+extern int js_tg_init(void);
+extern int js_war_init(void);
 
 #endif /* __KERNEL__ */
 
