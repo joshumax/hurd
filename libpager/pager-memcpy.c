@@ -1,5 +1,5 @@
 /* Fault-safe copy into or out of pager-backed memory.
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This program is free software; you can redistribute it and/or
@@ -87,6 +87,11 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
       to_copy -= sigcode - window;
       longjmp (buf, 1);
     }
+
+  if (to_copy == 0)
+    /* Short-circuit return if nothing to do.
+       ERR would not be initialized by the copy loop in this case.  */
+    return 0;
 
   if (setjmp (buf) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
