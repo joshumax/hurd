@@ -1,9 +1,9 @@
 -*- Mode: Outline -*-
 
 Before working on anything in this file, it's very important that you
-make contact with the core Hurd developers.  Things herein might bu
+make contact with the core Hurd developers.  Things herein might be
 slightly out of date or otherwise not easy to understand at first
-glance.  So write bug-hurd@gnu.org first.
+glance.  So write to <bug-hurd@gnu.org> first.
 
 Priorities:
   Check the end of this file for a task list referring to the next
@@ -124,7 +124,7 @@ See `tasks', the exported task list.
     supposed to be able to change the low bits)
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
-    routines and then share common code. 
+    routines and then share common code.
 *** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC under the right
     names; change libc header to match current Posix.
 *** Handle dead name notifications on execserver ports. !
