@@ -1,6 +1,6 @@
 /* Support for mach's mapped time
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -26,6 +26,7 @@
 #endif
 
 #include <mach/time_value.h>
+#include <sys/time.h>
 
 /* Return the mach mapped time page in MTIME.  If USE_MACH_DEV is false, then
    the hurd uptime device DEV_NAME, or "/dev/uptime" if DEV_NAME is 0, is
