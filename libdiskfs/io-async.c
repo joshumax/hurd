@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -20,10 +20,11 @@
 
 /* Implement io_async as described in <hurd/io.defs>. */
 kern_return_t
-diskfs_S_io_async (struct protid *cred,
-		   mach_port_t notify,
-		   mach_port_t *idport,
-		   mach_msg_type_name_t *idport_type)
+diskfs_S_io_async (struct protid *cred __attribute__ ((unused)),
+		   mach_port_t notify __attribute__ ((unused)),
+		   mach_port_t *idport __attribute__ ((unused)),
+		   mach_msg_type_name_t *idport_type 
+		     __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
