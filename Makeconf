@@ -156,11 +156,13 @@ HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
 # Building the target
 # Yippee!  A use for computed variable references!
 ifeq ($(doinst),one)
-$(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(OBJS) \
-	      $(HURDLIBS-files) $(OTHERLIBS)
-#	      -Wl,$(subst $(empty) ,$(comma),-\( $(OBJS) $(HURDLIBS-files) -\))\
-#	       -lg
+$(target): $(OBJS) $(HURDLIBS-files) $(OTHERLIBS) $(libc)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(target) $(link-objects)
+#link-objects = $(filter-out $(libc),$^)
+# -lg avoids "No input files" error.
+link-objects = -nostdlib -Wl,$(subst $(empty) ,$(comma),\
+	       $(startup) -\( $(filter-out $(libc),$^) -\) \
+	       -\( $(sort $(libc)) -lgcc -\)) -lg -v
 empty =
 comma = ,
 endif
