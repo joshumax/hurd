@@ -19,7 +19,17 @@ dir := utils
 makemode := utilities
 
 SRCS = sh.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c
-targets = sh settrans update clri sync reboot halt # su
+targets = sh ps settrans update clri sync reboot halt # su
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
+HURDLIBS=libps  # Only used by ps.  
+
+CPPFLAGS += -I../lib
+
+vpath %.c ../lib
+
 include ../Makeconf
+
+ps: ps.o ihash.o $(HURDLIBS-files) $(libc)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o ps ps.o $(HURDLIBS-files)
+
