@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@ password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
 
-symlink magic: fsysServer.o
+symlink: fsysServer.o
 ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o
 password: passwordServer.o
@@ -35,8 +35,8 @@ password: passwordServer.o
 crash password: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a ../libports/libports.a
-null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
+magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
+magic fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
 
 $(targets): %: %.o
