@@ -1,3 +1,37 @@
+1997-06-13  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (argp_version_parser): Include `(PROGRAM ERROR)' in
+	the no-version error text to indicate that something's fucked.
+	[!_] (N_): New macro.
+	(argp_default_options, argp_version_options): Wrap doc strings in N_().
+
+1997-06-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (parser_parse_opt): Detect and report unhandled
+	options here.
+	(parser_parse_args): Function removed.
+	(parser_parse_arg): Handle ARGP_KEY_ARGS here.
+	Adjust NEXT pointer back if we fail to parse any args.
+	(parser_parse_next): Don't use parser_parse_args.  Leave state
+	NEXT frobbing to parser_parse_arg.
+
+1997-06-12 21:22  Ulrich Drepper  <drepper@cygnus.com>
+
+	* argp-help.c (argp_args_usage): Don't modify `fdoc' value since
+	it is used to distinguish filtered strings from unmodifed strings.
+
+1997-06-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* maptime.h: Include <sys/time.h>.
+
+1997-06-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (ARGP_KEY_ARGS, ARGP_KEY_FINI): New macros.
+	* argp-parse.c (parser_parse_next): Try parser_parse_args if other
+	methods fail.
+	(parser_parse_arg): New function.
+	(parser_finalize): Do another pass over the parsers with ARGP_KEY_FINI.
+
 Wed Jun  4 15:05:10 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.h, argp-help.c, argp-parse.c: Sync with libc version (there
