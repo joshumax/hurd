@@ -2,6 +2,14 @@
 #define _HACK_INTERRUPT_H_
 
 #define NET_BH 1
-void mark_bh (int);
+
+extern inline void 
+mark_bottom_half (int foo)
+{
+  assert (foo == NET_BH);
+  
+  incoming_net_packet ();
+}
+
 
 #endif
