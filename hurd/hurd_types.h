@@ -1,5 +1,5 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993, 94, 95, 96, 98, 99 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,99,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -81,6 +81,7 @@ typedef struct statfs fsys_statfsbuf_t;
 #define FS_TRANS_FORCE     0x00000001 /* Must use translator(no sht circuit) */
 #define FS_TRANS_EXCL      0x00000002 /* Don't do it if already translated.  */
 #define FS_TRANS_SET	   0x00000004 /* Set or clear translator */
+#define FS_TRANS_ORPHAN    0x00000008 /* Orphan the active translator.  */
 
 /* Values for retry field in fs.defs:dir_pathtrans call: */
 enum retry_type
