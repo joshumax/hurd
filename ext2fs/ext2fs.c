@@ -63,9 +63,13 @@ int ext2_debug_flag = 0;
 static const struct argp_option
 options[] =
 {
-#ifdef EXT2FS_DEBUG
-  {"debug", 'D', 0, 0, "Toggle debugging output" },
+  {"debug", 'D', 0, 0, "Toggle debugging output"
+#ifndef EXT2FS_DEBUG
+   " (not compiled in)"
 #endif
+  },
+  {"sblock", 'S', "BLOCKNO", 0,
+   "Use alternate superblock location (1kb blocks)"},
   {0}
 };
 
@@ -73,26 +77,50 @@ options[] =
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
+  /* We save our parsed values in this structure, hung off STATE->hook.
+     Only after parsing all options successfully will we use these values.  */
+  struct
+  {
+    int debug_flag;
+    unsigned int sb_block;
+  } *values = state->hook;
+
   switch (key)
     {
-#ifdef EXT2FS_DEBUG
     case 'D':
-      state->hook = (void *)1;	/* Do it at the end */
+      values->debug_flag = 1;
       break;
-#endif
+    case 'S':
+      values->sb_block = strtoul (arg, &arg, 0);
+      if (!arg || *arg != '\0')
+	{
+	  argp_error (state, "invalid number for --sblock");
+	  return EINVAL;
+	}
+      break;
 
     case ARGP_KEY_INIT:
       state->child_inputs[0] = state->input;
-#ifdef EXT2FS_DEBUG
-      state->hook = 0;
-#endif
+      values = malloc (sizeof *values);
+      if (values == 0)
+	return ENOMEM;
+      state->hook = values;
+      bzero (values, sizeof *values);
+      values->sb_block = SBLOCK_BLOCK;
       break;
+
     case ARGP_KEY_SUCCESS:
       /* All options parse successfully, so implement ours if possible.  */
+      if (values->debug_flag)
+	{
 #ifdef EXT2FS_DEBUG
-      if (state->hook)
-	ext2_debug_flag = !ext2_debug_flag;
+	  ext2_debug_flag = !ext2_debug_flag;
+#else
+	  argp_failure (state, 2, 0, "debugging support not compiled in");
+	  return EINVAL;
 #endif
+	}
+
       break;
 
     default:
