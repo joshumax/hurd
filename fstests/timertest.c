@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994, 2001 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,6 +18,7 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void
 alarm_handler (int signo)
@@ -35,9 +36,9 @@ main()
   real_timer.it_interval.tv_sec = 1;
   real_timer.it_value.tv_usec = 0;
   real_timer.it_value.tv_sec = 1;
-  
+
   signal (SIGALRM, alarm_handler);
-  
+
   if (setitimer (ITIMER_REAL, &real_timer, 0) < 0)
     {
       perror ("Setting timer");
@@ -65,4 +66,3 @@ main()
 	printf ("Saw %.3o\n", c);
     }
 }
-
