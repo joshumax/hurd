@@ -1,3 +1,9 @@
+Fri Feb 21 10:41:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.h (OPTION_NO_USAGE): New macro.
+	* argp-help.c (usage_long_opt, usage_argful_short_opt,
+	add_argless_short_opt): Implement OPTION_NO_USAGE.
+
 Thu Feb 20 15:56:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* idvec.c (idvec_insert_only): Handle POS >= IDVEC->num correctly.
