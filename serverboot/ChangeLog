@@ -1,0 +1,53 @@
+Wed Mar 19 14:45:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* panic.c (panic): Clear possible errors on stdout before printing
+	panic string.
+
+Mon Mar 17 13:13:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* wiring.c (wire_all_memory): Don't attempt wire if PROTECTION is
+	VM_PROT_NONE. 
+
+	* panic.c (panic): Be more informative about where the error is
+	coming from. 
+
+	* default_pager.c (create_paging_partition): Don't print
+	gratuitous output noise.
+	* load.c (boot_script_exec_cmd): Likewise.
+
+Wed Mar 12 10:53:00 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ext2_file_io.c (ext2_open_file): Clear FP before beginning
+	work. 
+	* ffs_file_io.c (ffs_open_file): Likewise.
+	* minix_file_io.c (minix_open_file): Likewise.
+
+	* bootstrap.c (printf_init, safe_gets): New functions.
+	* console.c: Deleted file.
+	* Makefile (SRCS): Omit console.c and gets.c.
+
+	* load.c (read_symtab_from_file): Comment out body of function.
+	We don't want this.
+
+	* defs.h: Comment out redefinitions of common types.
+
+	* default_pager.c: Include <cthreads.h> instead of
+	<mach/cthreads.h>. 
+	* file_io.h: Likewise.
+	* kalloc.c: Likewise.
+
+	* panic.c: Include <varargs.h> instead of <sys/varargs.h>.
+
+	* default_pager.c (pager_read_offset): Cast return of NO_BLOCK
+	properly. 
+
+Mon Mar 10 17:07:50 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* load.c: Find boot_script.h in ../boot.
+	* bootstrap.c: Likewise.
+
+	* bootstrap.c (boot_panic): Repair syntax.
+
+	* strfcns.c: Include <varargs.h> instead of <sys/varargs.h>.
+	* load.c: Likewise.
+
