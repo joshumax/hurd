@@ -239,7 +239,7 @@ ffs_realloccg(register struct node *np,
 	 */
 	cg = dtog(fs, bprev);
 	bno = ffs_fragextend(np, cg, (long)bprev, osize, nsize);
-	if (bno)
+	if (bno) {
 		assert (bno == bprev);
 		spin_unlock (&alloclock);
 		np->dn_stat.st_blocks += btodb(nsize - osize);
