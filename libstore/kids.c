@@ -21,6 +21,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "store.h"
 
@@ -154,14 +155,39 @@ store_clear_child_flags (struct store *store, int flags)
    simply a single character, followed by each individual store name (which
    are in the store_typed_open syntax -- the type name, a ':', and the store
    name) separated by that same character, with the whole list optionally
-   terminated by the same. */
+   terminated by the same.  If the first character of NAME is an
+   alpha-numeric, then NAME is taken to be in `factored-type' notation,
+   meaning that a common type-name for each child actually precedes the
+   entire list of children, instead of being specified in each child,
+   followed by a `:' and the child list as above.  */
 error_t
 store_open_children (const char *name, int flags,
 		     const struct store_class *const *classes,
 		     struct store ***stores, size_t *num_stores)
 {
-  /* Character separating individual names.  */
-  char sep = *name;
+  char *pfx = 0;		/* Prefix applied to each part name.  */
+  size_t pfx_len = 0;		/* Space PFX + separator takes up.  */
+  char sep = *name;		/* Character separating individual names.  */
+
+  if (sep && isalnum (sep))
+    /* If the first character is a `name' character, it's likely to be either
+       a type prefix (e.g, TYPE:@NAME1@NAME2@), so we distribute the type
+       prefix among the elements (@TYPE:NAME1@TYPE:NAME2@).  */
+    {
+      const char *pfx_end = name;
+
+      while (isalnum (pfx_end))
+	pfx_end++;
+
+      if (*pfx_end++ != ':')
+	return EINVAL;
+
+      /* Make a copy of the prefix.  */
+      pfx = strndupa (name, pfx_end - name);
+      pfx_len = pfx_end - name;
+
+      sep = *pfx_end;
+    }
 
   if (sep)
     /* Parse a list of store specs separated by SEP.  */
@@ -186,20 +212,24 @@ store_open_children (const char *name, int flags,
       /* Open each child store.  */
       for (p = name, k = 0; !err && p && p[1]; p = end, k++)
 	{
-	  char *kname;
+	  size_t kname_len;
 
 	  end = strchr (p + 1, sep);
-	  if (end)
-	    kname = strndup (p + 1, end - p - 1);
-	  else
-	    kname = strdup (p + 1);
-	  if (kname)
-	    {
-	      err = store_typed_open (kname, flags, classes, &(*stores)[k]);
-	      free (kname);
-	    }
-	  else
-	    err = ENOMEM;
+	  kname_len = (end ? end - p - 1 : strlen (p + 1));
+
+	  {
+	    /* Allocate temporary child name on the stack.  */
+	    char kname[pfx_len + kname_len + 1];
+
+	    if (pfx)
+	      /* Add type prefix to child name.  */
+	      memcpy (kname, pfx, pfx_len);
+
+	    memcpy (kname + pfx_len, p + 1, kname_len);
+	    kname[pfx_len + kname_len] = '\0';
+
+	    err = store_typed_open (kname, flags, classes, &(*stores)[k]);
+	  }
 	}
 
       if (err)
