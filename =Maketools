@@ -14,7 +14,9 @@ CCTARGET=i386-mach
 CCVERSION=2.5.8
 CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 
-HOST_CC := $(CC)
+ifndef HOST_CC
+export HOST_CC := $(CC)
+endif
 CC=gcc $(CCTYPE) -O2 -pipe # Ceci n'est pas une pipe.
 MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
 CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
