@@ -112,16 +112,18 @@ store_write (struct store *store,
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
   if (addr < 0)
     err = EIO;
-  else if ((len >> block_shift) <= run->length)
+  else if ((len >> block_shift) <= run->length - addr)
     /* The first run has it all... */
     err = (*write)(store, base + run->start + addr, index, buf, len, amount);
   else
     /* ARGH, we've got to split up the write ... */
     {
-      mach_msg_type_number_t try = run->length << block_shift, written;
+      mach_msg_type_number_t try, written;
 
       /* Write the initial bit in the first run.  Errors here are returned.  */
-      err = (*write)(store, base + run->start + addr, index, buf, try, &written);
+      try = (run->length - addr) << block_shift;
+      err = (*write) (store, base + run->start + addr, index, buf, try,
+		      &written);
 
       if (!err && written == try)
 	/* Wrote the first bit successfully, now do the rest.  Any errors
@@ -183,7 +185,7 @@ store_read (struct store *store,
 
   assert ((amount & (block_shift - 1)) == 0);
 
-  if ((amount >> block_shift) <= run->length)
+  if ((amount >> block_shift) <= run->length - addr)
     /* The first run has it all... */
     return (*read) (store, base + run->start + addr, index, amount, buf, len);
   else
@@ -238,7 +240,7 @@ store_read (struct store *store,
       buf_end = whole_buf;
 
       err = seg_read (base + run->start + addr,
-		      run->length << block_shift, &all);
+		      (run->length - addr) << block_shift, &all);
       while (!err && all && amount > 0
 	     && store_next_run (store, runs_end, &run, &base, &index))
 	{
