@@ -114,3 +114,9 @@ routine fsys_forward (
 	RPT
 	requestor: mach_port_send_t;
 	argv: data_t);
+
+/* Return the options describing the operation of the receiving
+   filesystem (sutiable for fsys_set_options).  */
+routine fsys_get_options (
+	server: fsys_t;
+	options: data_t);
