@@ -26,7 +26,7 @@ diskfs_S_file_utimes (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!(err = diskfs_isowner (np, cred)))
+		     if (!(err = fshelp_isowner (&np->dn_stat, cred->user)))
 		       {
 			 np->dn_stat.st_atime = atime.seconds;
 			 np->dn_stat.st_mtime = mtime.seconds;

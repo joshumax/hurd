@@ -30,7 +30,7 @@ diskfs_S_file_getcontrol (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  if (!diskfs_isuid (0, cred))
+  if (!idvec_contains (cred->user->uids, 0))
     error = EPERM;
   else
     {

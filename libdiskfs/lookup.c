@@ -92,7 +92,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 	diskfs_null_dirstat (ds);
       return ENOTDIR;
     }
-  err = diskfs_access (dp, S_IEXEC, cred);
+  err = fshelp_access (&dp->dn_stat, S_IEXEC, cred->user);
   if (err)
     {
       if (ds)
@@ -157,7 +157,9 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       || (type == CREATE && err == ENOENT)
       || (type == REMOVE && err != ENOENT))
     {
-      error_t err2 = diskfs_checkdirmod (dp, (err || !np) ? 0 : *np, cred);
+      error_t err2 = fshelp_checkdirmod (&dp->dn_stat,
+					 (err || !np) ? 0 : &(*np)->dn_stat,
+					 cred->user);
       if (err2)
 	{
 	  if (np && !err)

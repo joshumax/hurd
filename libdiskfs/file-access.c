@@ -31,11 +31,11 @@ diskfs_S_file_check_access (struct protid *cred,
   np = cred->po->np;
   mutex_lock (&np->lock);
   *type = 0;
-  if (diskfs_access (np, S_IREAD, cred) == 0)
+  if (fshelp_access (&np->dn_stat, S_IREAD, cred->user) == 0)
     *type |= O_READ;
-  if (diskfs_access (np, S_IWRITE, cred) == 0)
+  if (fshelp_access (&np->dn_stat, S_IWRITE, cred->user) == 0)
     *type |= O_WRITE;
-  if (diskfs_access (np, S_IEXEC, cred) == 0)
+  if (fshelp_access (&np->dn_stat, S_IEXEC, cred->user) == 0)
     *type |= O_EXEC;
   
   mutex_unlock (&np->lock);

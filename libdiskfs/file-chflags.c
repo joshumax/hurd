@@ -25,7 +25,7 @@ diskfs_S_file_chflags (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     err = diskfs_isowner (np, cred);
+		     err = fshelp_isowner (&np->dn_stat, cred->user);
 		     if (!err)
 		       err = diskfs_validate_flags_change (np, flags);
 		     if (!err)

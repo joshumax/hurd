@@ -24,20 +24,11 @@ diskfs_S_io_reauthenticate (struct protid *cred,
 			    mach_port_t rend_port)
 {
   struct protid *newcred;
-  uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
-  uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  u_int genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   mach_port_t newright;
 
   if (cred == 0)
     return EOPNOTSUPP;
-
-  genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
-  gen_uids = gubuf;
-  gen_gids = ggbuf;
-  aux_uids = aubuf;
-  aux_gids = agbuf;
 
   /* This routine must carefully ignore EINTR because we 
      are a simpleroutine, so callers won't know to restart. */
@@ -56,40 +47,15 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   err = mach_port_insert_right (mach_task_self (), newright, newright,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
-  do
-    err = auth_server_authenticate (diskfs_auth_server_port,
-				    rend_port,
-				    MACH_MSG_TYPE_COPY_SEND,
-				    newright,
-				    MACH_MSG_TYPE_COPY_SEND,
-				    &gen_uids, &genuidlen,
-				    &aux_uids, &auxuidlen,
-				    &gen_gids, &gengidlen,
-				    &aux_gids, &auxgidlen);
-  while (err == EINTR);
+
+  diskfs_finish_protid (newcred, iohelp_reauth (diskfs_auth_server_port, 
+						rend_port, newright, 1));
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
     
-  if (err)
-    diskfs_finish_protid (newcred, 0, 0, 0, 0);
-  else
-    diskfs_finish_protid (newcred, gen_uids, genuidlen, gen_gids, gengidlen);
   mutex_unlock (&cred->po->np->lock);
 
   ports_port_deref (newcred);
-
-  if (gubuf != gen_uids)
-    vm_deallocate (mach_task_self (), (u_int) gen_uids,
-		   genuidlen * sizeof (uid_t));
-  if (ggbuf != gen_gids)
-    vm_deallocate (mach_task_self (), (u_int) gen_gids,
-		   gengidlen * sizeof (uid_t));
-  if (aubuf != aux_uids)
-    vm_deallocate (mach_task_self (), (u_int) aux_uids,
-		   auxuidlen * sizeof (uid_t));
-  if (agbuf != aux_gids)
-    vm_deallocate (mach_task_self (), (u_int) aux_gids,
-		   auxgidlen * sizeof (uid_t));
 
   return 0;
 }

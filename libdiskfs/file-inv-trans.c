@@ -72,9 +72,10 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
 
       mach_port_mod_refs (mach_task_self (), control, MACH_PORT_RIGHT_SEND, 1);
       mutex_unlock (&np->lock);
-      error = fsys_getroot (control, cred->uids, cred->nuids, 
-			    cred->gids, cred->ngids, flags, retry,
-			    retry_name, retrypt);
+      error = fsys_getroot (control, 
+			    cred->user->uids->ids, cred->user->uids->num, 
+			    cred->user->gids->ids, cred->user->gids->num,
+			    flags, retry, retry_name, retrypt);
       if (error == MACH_SEND_INVALID_DEST)
 	{
 	  mutex_lock (&np->lock);
@@ -139,9 +140,7 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
   
   error = diskfs_create_protid (diskfs_make_peropen (np, flags,
 						     _diskfs_dotdot_file),
-				cred->uids, cred->nuids, 
-				cred->gids, cred->ngids,
-				&newpi);
+				cred->user, &newpi);
   if (! error)
     {
       *retry = FS_RETRY_NONE;

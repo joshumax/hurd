@@ -33,7 +33,7 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   np = cred->po->np;
 
   mutex_lock (&np->lock);
-  error = diskfs_isowner (np, cred);
+  error = fshelp_isowner (&np->dn_stat, cred->user);
   if (!error)
     error = fshelp_fetch_control (&np->transbox, ctl);
   if (ctl == MACH_PORT_NULL)

@@ -46,7 +46,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
       mutex_unlock (&dnp->lock);
       return ENOTDIR;
     }
-  err = diskfs_access (dnp, S_IWRITE, cred);
+  err = fshelp_access (&dnp->dn_stat, S_IWRITE, cred->user);
   if (err)
     {
       mutex_unlock (&dnp->lock);
@@ -70,9 +70,7 @@ diskfs_S_dir_mkfile (struct protid *cred,
   flags &= (O_READ | O_WRITE | O_EXEC);
   err = diskfs_create_protid (diskfs_make_peropen (np, flags, 
 						   cred->po->dotdotport),
-			      cred->uids, cred->nuids, 
-			      cred->gids, cred->ngids,
-			      &newpi);
+			      cred->user, &newpi);
   if (! err)
     {
       *newnode = ports_get_right (newpi);

@@ -26,11 +26,11 @@ diskfs_S_file_chown (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     err = diskfs_isowner (np, cred);
+		     err = fshelp_isowner (&np->dn_stat, cred->user);
 		     if (err
-			 || ((!diskfs_isuid (uid, cred)
-			      || !diskfs_groupmember (gid, cred))
-			     && !diskfs_isuid (0, cred)))
+			 || ((!idvec_contains (cred->user->uids, cred)
+			      || !idvec_contains (cred->user->gids, gid))
+			     && !idvec_contains (cred->user->uids, 0)))
 		       err = EPERM;
 		     else 
 		       {

@@ -53,7 +53,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   mutex_lock (&np->lock);
 
-  error = diskfs_isowner (np, cred);
+  error = fshelp_isowner (&np->dn_stat, cred->user);
   if (error)
     {
       mutex_unlock (&np->lock);

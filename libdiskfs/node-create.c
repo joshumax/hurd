@@ -52,8 +52,8 @@ diskfs_create_node (struct node *dir,
   np = *newnode;
 
   /* Initialize the on-disk fields. */
-  if (cred->nuids)
-    newuid = cred->uids[0];
+  if (cred->user->uids->num)
+    newuid = cred->user->uids->ids[0];
   else
     {
       newuid = dir->dn_stat.st_uid;
@@ -65,7 +65,7 @@ diskfs_create_node (struct node *dir,
   np->dn_stat.st_uid = newuid;
 
   newgid = dir->dn_stat.st_gid;
-  if (!diskfs_groupmember (newgid, cred))
+  if (!idvec_contains (cred->user->gids, newgid))
     mode &= ~S_ISGID;
   err = diskfs_validate_group_change (np, newgid);
   if (err)

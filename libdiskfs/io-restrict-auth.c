@@ -40,37 +40,34 @@ diskfs_S_io_restrict_auth (struct protid *cred,
 			   u_int ngids)
 {
   error_t err;
-  uid_t *newuids, *newgids;
-  int i, newnuids, newngids;
+  struct idvec *uvec, *gvec;
   struct protid *newpi;
   
   if (!cred)
     return EOPNOTSUPP;
+
+  uvec = make_idvec ();
+  gvec = make_idvec ();
   
-  if (diskfs_isuid (0, cred))
-    /* CRED has root access, and so may use any ids.  */
+  if (idvec_contains (cred->user->uids, 0))
     {
-      newuids = uids;
-      newnuids = nuids;
-      newgids = gids;
-      newngids = ngids;
+      /* CRED has root access, and so may use any ids.  */
+      idvec_set_ids (uvec, uids, nuids);
+      idvec_set_ids (gvec, gids, ngids);
     }
   else
-    /* Otherwise, use any of the requested ids that CRED already has.  */
     {
-      newuids = alloca (sizeof (uid_t) * cred->nuids);
-      newgids = alloca (sizeof (uid_t) * cred->ngids);
-  
-      for (i = newnuids = 0; i < cred->nuids; i++)
-	if (listmember (uids, cred->uids[i], nuids))
-	  newuids[newnuids++] = cred->uids[i];
-      for (i = newngids = 0; i < cred->ngids; i++)
-	if (listmember (gids, cred->gids[i], ngids))
-	  newgids[newngids++] = cred->gids[i];
+      /* Otherwise, use any of the requested ids that CRED already has.  */
+      for (i = 0; i < cred->user->uids->num; i++)
+	if (listmember (uids, cred->user->uids->ids[i], nuids))
+	  idvec_add (uvec, cred->user->uids->ids[i]);
+      for (i = 0; i < cred->user->gids->num; i++)
+	if (listmember (gids, cred->user->gids->ids[i], ngids))
+	  idvec_add (gvec, cred->user->gids->ids[i])
     }
 
   mutex_lock (&cred->po->np->lock);
-  err = diskfs_create_protid (cred->po, newuids, newnuids, newgids, newngids,
+  err = diskfs_create_protid (cred->po, iohelp_create_iouser (uvec, gvec),
 			      &newpi);
   if (! err)
     {

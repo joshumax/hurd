@@ -3,6 +3,71 @@ Thu Nov  7 14:49:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* io-restrict-auth.c (diskfs_S_io_restrict_auth): If CRED has
 	root, use the requested id sets verbatim.
 
+Thu Nov  7 01:03:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* protid-rele.c (diskfs_protid_rele): Free CRED->user.
+
+Wed Nov  6 17:55:17 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* diskfs.h (diskfs_isuid, diskfs_groupmember, diskfs_isowner, 
+	diskfs_access, diskfs_checkdirmod): Delete functions.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Replace PSEUDOCRED with
+	a real iouser and specify that in the relevant calls.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Reworked to use
+	idvecs.
+	* file-chmod.c (diskfs_S_file_chmod): diskfs_isuid ->
+	idvec_contains. 
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* file-getcontrol.c (diskfs_S_file_getcontrol): Likewise.
+	* file-chmod.c (diskfs_S_file_chmod): diskfs_groupmember ->
+	idvec_contains. 
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* node-create.c (diskfs_create_node): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): diskfs_isowner ->
+	fshelp_isowner. 
+	* file-chflags.c (diskfs_S_file_chflags): Likewise.
+	* file-chmod.c (diskfs_S_file_chmod): Likewise.
+	* file-chown.c (diskfs_S_file_chown): Likewise.
+	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl):
+	Likewise.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise.
+	* file-utimes.c (diskfs_S_file_utimes): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* lithp.h (dithkfth_ithowner): Deleted macro.
+	(fthhelp_ithowner, uther): New macros.
+	* file-chauthor.c (dithkfth_TH_file_chauthor): dthkfth_ithowner ->
+	fthhelp_ithowner.
+	* dir-lookup.c (diskfs_S_dir_lookup): diskfs_access ->
+	fshelp_access. 
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* file-access.c (diskfs_S_file_check_access): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise (in dead code).
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* ifsock.c (diskfs_S_ifsock_getsockaddr): Likewise.
+	* lookup.c (diskfs_lookup): Likewise.
+	(diskfs_lookup): diskfs_checkdirmod -> fshelp_checkdirmod.
+	* dir-lookup.c (diskfs_S_dir_lookup): New arg format for
+	fshelp_fetch_root. 
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* diskfs.h, protid-make.c (diskfs_create_protid): Delete args
+ 	`uids', `gids', `nuids', and `ngids'.  Replace with new arg
+ 	`user'.  All callers changed.
+	(diskfs_finish_protid): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Use
+	CRED->user instead of old fields.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Likewise.
+	* node-create.c (diskfs_create_node): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.  Use idvec_merge
+	instead of idvec_merge_ids, now that it's convenient.
+	* io-reauthenticate.c (diskfs_S_io_reauthenticate): Use new
+	iohelp_reauthenticate.
+
+Tue Nov  5 21:10:18 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* diskfs.h: Include <idvec.h>.
+	(struct protid): Delete members `uids', `gids', `nuids' and
+	`ngids'.  New member `user'.
+
 Thu Oct 24 15:56:30 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* opts-std-startup.c (store_argp_children, startup_argp_children):

@@ -228,7 +228,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  error = 
 	    diskfs_create_protid (diskfs_make_peropen (dnp, 0,
 						       dircred->po->dotdotport),
-				  0, 0, 0, 0, &newpi);
+				  0, &newpi);
 	  if (error)
 	    goto out;
 
@@ -240,8 +240,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    mutex_unlock (&dnp->lock);
 
 	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
-				     dirport, dircred->uids, dircred->nuids,
-				     dircred->gids, dircred->ngids, 
+				     dirport, dircred->user,
 				     lastcomp ? flags : 0,
 				     (np->istranslated
 				      ? _diskfs_translator_callback1
@@ -378,10 +377,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	error = EOPNOTSUPP;
 
       if (!error && (flags & O_READ))
-	error = diskfs_access (np, S_IREAD, dircred);
+	error = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
 
       if (!error && (flags & O_EXEC))
-	error = diskfs_access (np, S_IEXEC, dircred);
+	error = fshelp_access (&np->dn_stat, S_IEXEC, dircred->user);
 
       if (!error && (flags & O_WRITE))
 	{
@@ -390,23 +389,22 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  else if (diskfs_check_readonly ())
 	    error = EROFS;
 	  else
-	    error = diskfs_access (np, S_IWRITE, dircred);
+	    error = fshelp_access (&np->dn_stat, S_IWRITE, dircred->user);
 	}
 
       if (error)
 	goto out;
     }
     
-  if ((flags & O_NOATIME) && (diskfs_isowner (np, dircred) == EPERM))
+  if ((flags & O_NOATIME) 
+      && (fshelp_isowner (&np->dn_stat, dircred->user) == EPERM))
     flags &= ~O_NOATIME;
       
   error =
     diskfs_create_protid (diskfs_make_peropen (np, 
 					       (flags &~OPENONLY_STATE_MODES), 
 					       dircred->po->dotdotport),
-			  dircred->uids, dircred->nuids,
-			  dircred->gids, dircred->ngids,
-			  &newpi);
+			  dircred->user, &newpi);
 
   if (! error)
     {

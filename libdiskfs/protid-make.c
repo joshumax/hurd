@@ -37,45 +37,35 @@ diskfs_start_protid (struct peropen *po, struct protid **cred)
 }
 
 /* Finish building protid CRED started with diskfs_start_protid;
-   the uid set is UID (length NUIDS); the gid set is GID (length NGIDS). */
+   the user to install is USER. */
 void
-diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
-		      gid_t *gids, int ngids)
+diskfs_finish_protid (struct protid *cred, struct iouser *user)
 {
-  if (!uids)
-    nuids = 1;
-  if (!gids)
-    ngids = 1;
-
-  cred->uids = malloc (nuids * sizeof (uid_t));
-  cred->gids = malloc (ngids * sizeof (uid_t));
-  cred->nuids = nuids;
-  cred->ngids = ngids;
-
-  if (uids)
-    bcopy (uids, cred->uids, nuids * sizeof (uid_t));
+  if (!user)
+    {
+      uid_t zero = 0;
+      /* Create one for root */
+      user = iohelp_create_iouser (make_idvec (), make_idvec ());
+      idvec_set_ids (user->uids, &zero, 1);
+      idvec_set_ids (user->gids, &zero, 1);
+      cred->user = user;
+    }
   else
-    *cred->uids = 0;
-
-  if (gids)
-    bcopy (gids, cred->gids, ngids * sizeof (uid_t));
-  else
-    *cred->gids = 0;
+    cred->user = iohelp_dup_user (user);
 
   mach_port_move_member (mach_task_self (), cred->pi.port_right, 
 			 diskfs_port_bucket->portset);
 }
 
-/* Create and return a protid for an existing peropen PO in CRED.  The uid
-   set is UID (length NUIDS); the gid set is GID (length NGIDS).  The node
-   PO->np must be locked. */
+/* Create and return a protid for an existing peropen PO in CRED for USER.
+   The node PO->np must be locked. */
 error_t
-diskfs_create_protid (struct peropen *po, uid_t *uids, int nuids,
-		      uid_t *gids, int ngids, struct protid **cred)
+diskfs_create_protid (struct peropen *po, struct iouser *user,
+		      struct protid **cred)
 {
   error_t err = diskfs_start_protid (po, cred);
   if (! err)
-    diskfs_finish_protid (*cred, uids, nuids, gids, ngids);
+    diskfs_finish_protid (*cred, user);
   return err;
 }
 

@@ -24,6 +24,7 @@
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
+#include <idvec.h>
 
 #ifndef DISKFS_EI
 #define DISKFS_EI extern inline
@@ -36,8 +37,7 @@ struct protid
   struct port_info pi;		/* libports info block */
 
   /* User identification */
-  uid_t *uids, *gids;
-  int nuids, ngids;
+  struct iouser *user;
 
   /* Object this refers to */
   struct peropen *po;
@@ -711,90 +711,6 @@ diskfs_nrele_light (struct node *np)
     spin_unlock (&diskfs_node_refcnt_lock);
 }
 
-/* Return nonzero iff the user identified by CRED has uid UID. */
-DISKFS_EI int
-diskfs_isuid (uid_t uid, struct protid *cred)
-{
-  int i;
-  for (i = 0; i < cred->nuids; i++)
-    if (cred->uids[i] == uid)
-      return 1;
-  return 0;
-}
-
-/* Return nonzero iff the user identified by CRED has group GRP. */
-DISKFS_EI int
-diskfs_groupmember (uid_t grp, struct protid *cred)
-{
-  int i;
-  for (i = 0; i < cred->ngids; i++)
-    if (cred->gids[i] == grp)
-      return 1;
-  return 0;
-}
-
-/* Check to see if the user identified by CRED is permitted to do
-   owner-only operations on node NP; if so, return 0; if not, return
-   EPERM. */
-DISKFS_EI error_t
-diskfs_isowner (struct node *np, struct protid *cred)
-{
-  /* Permitted if the user is the owner, superuser, or if the user
-     is in the group of the file and has the group ID as their user
-     ID.  (This last is colloquially known as `group leader'.) */
-  if (diskfs_isuid (np->dn_stat.st_uid, cred) || diskfs_isuid (0, cred)
-      || (diskfs_groupmember (np->dn_stat.st_gid, cred)
-	  && diskfs_isuid (np->dn_stat.st_gid, cred)))
-    return 0;
-  else
-    return EPERM;
-}
-
-/* Check to see is the user identified by CRED is permitted to do
-   operation OP on node NP.  Op is one of S_IREAD, S_IWRITE, or S_IEXEC.
-   Return 0 if the operation is permitted and EACCES if not. */
-DISKFS_EI error_t
-diskfs_access (struct node *np, int op, struct protid *cred)
-{
-  int gotit;
-  if (diskfs_isuid (0, cred))
-    gotit = 1;
-  else if (cred->nuids == 0 && (np->dn_stat.st_mode & S_IUSEUNK))
-    gotit = np->dn_stat.st_mode & (op << S_IUNKSHIFT);
-  else if (!diskfs_isowner (np, cred))
-    gotit = np->dn_stat.st_mode & op;
-  else if (diskfs_groupmember (np->dn_stat.st_gid, cred))
-    gotit = np->dn_stat.st_mode & (op >> 3);
-  else
-    gotit = np->dn_stat.st_mode & (op >> 6);
-  return gotit ? 0 : EACCES;
-}
-
-/* Check to see if the user identified by CRED is allowed to modify
-   directory DP with respect to existing file NP.  This is the same
-   as diskfs_access (dp, S_IWRITE, cred), except when the directory
-   has the sticky bit set.  (If there is no existing file NP, then
-   0 can be passed.)  */
-DISKFS_EI error_t
-diskfs_checkdirmod (struct node *dp, struct node *np,
-		    struct protid *cred)
-{
-  error_t err;
-
-  /* The user must be able to write the directory, but if the directory
-     is sticky, then the user must also be either the owner of the directory
-     or the file.  */
-  err = diskfs_access (dp, S_IWRITE, cred);
-  if (err)
-    return err;
-
-  if ((dp->dn_stat.st_mode & S_ISVTX) && np && !diskfs_isuid (0, cred)
-      && diskfs_isowner (dp, cred) && diskfs_isowner (np, cred))
-    return EACCES;
-
-  return 0;
-}
-
 /* Reading and writing of files. this is called by other filesystem
    routines and handles extension of files automatically.  NP is the
    node to be read or written, and must be locked.  DATA will be
@@ -923,20 +839,18 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 		    struct node **newnode, struct protid *cred,
 		    struct dirstat *ds);
 
-/* Create and return a protid for an existing peropen PO in CRED.  The uid
-   set is UID (length NUIDS); the gid set is GID (length NGIDS).  The node
-   PO->np must be locked. */
-error_t diskfs_create_protid (struct peropen *po, uid_t *uids, int nuids,
-			      uid_t *gids, int ngids, struct protid **cred);
+/* Create and return a protid for an existing peropen PO in CRED,
+   referring to user USER.  The node PO->np must be locked. */
+error_t diskfs_create_protid (struct peropen *po, struct iouser *user,
+			      struct protid **cred);
 
 /* Build and return in CRED a protid which has no user identification, for
    peropen PO.  The node PO->np must be locked.  */
 error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 
 /* Finish building protid CRED started with diskfs_start_protid;
-   the uid set is UID (length NUIDS); the gid set is GID (length NGIDS). */
-void diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
-			   gid_t *gids, int nguds);
+   the user to install is USER.  *q
+void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */

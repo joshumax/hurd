@@ -46,11 +46,18 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   mode_t type;
   struct protid pseudocred;
   struct protid *newpi;
+  struct iouser user;
   
   if (!pt)
     return EOPNOTSUPP;
 
   flags &= O_HURD;
+
+  user.uids = make_idvec ();
+  user.gids = make_idvec ();
+  idvec_set_ids (user.uids, uids, nuids);
+  idvec_set_ids (uesr.gids, gids, ngids);
+#define drop_idvec() idvec_free (user.gids); idvec_free (user.uids)
 
   rwlock_reader_lock (&diskfs_fsys_lock);
   mutex_lock (&diskfs_root_node->lock);
@@ -66,8 +73,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       && !(flags & O_NOTRANS))
     {
       error = fshelp_fetch_root (&diskfs_root_node->transbox,
-				 &dotdot, dotdot, uids, nuids,
-				 gids, ngids, flags, 
+				 &dotdot, dotdot, &user, flags, 
 				 _diskfs_translator_callback1,
 				 _diskfs_translator_callback2,
 				 retry, retryname, returned_port);
@@ -75,6 +81,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	{
 	  mutex_unlock (&diskfs_root_node->lock);
 	  rwlock_reader_unlock (&diskfs_fsys_lock);
+	  drop_idvec ();
 	  if (!error)
 	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  return error;
@@ -101,7 +108,10 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       mutex_unlock (&diskfs_root_node->lock);
       rwlock_reader_unlock (&diskfs_fsys_lock);
       if (error)
-	return error;
+	{
+	  drop_idvec ();
+	  return error;
+	}
       
       if (pathbuf[0] == '/')
 	{
@@ -110,6 +120,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	  strcpy (retryname, pathbuf);
 	  mach_port_deallocate (mach_task_self (), dotdot);
+	  drop_idvec ();
 	  return 0;
 	}
       else
@@ -118,6 +129,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	  *returned_port = dotdot;
 	  *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  strcpy (retryname, pathbuf);
+	  drop_idvec ();
 	  return 0;
 	}
     }
@@ -127,17 +139,11 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       && (flags & (O_READ|O_WRITE|O_EXEC)))
     error = EOPNOTSUPP;
   
-  /* diskfs_access requires a cred; so we give it one. */
-  pseudocred.uids = uids;
-  pseudocred.gids = gids;
-  pseudocred.nuids = nuids;
-  pseudocred.ngids = ngids;
-      
   if (!error && (flags & O_READ))
-    error = diskfs_access (diskfs_root_node, S_IREAD, &pseudocred);
+    error = fshelp_access (&diskfs_root_node->dn_stat, S_IREAD, &user);
   
   if (!error && (flags & O_EXEC))
-    error = diskfs_access (diskfs_root_node, S_IEXEC, &pseudocred);
+    error = fshelp_access (&diskfs_root_node->dn_stat, S_IEXEC, &user);
   
   if (!error && (flags & (O_WRITE)))
     {
@@ -146,25 +152,28 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       else if (diskfs_check_readonly ())
 	error = EROFS;
       else 
-	error = diskfs_access (diskfs_root_node, S_IWRITE, &pseudocred);
+	error = fshelp_access (&diskfs_root_node->dn_stat,
+			       S_IWRITE, &pseudocred.user);
     }
 
   if (error)
     {
       mutex_unlock (&diskfs_root_node->lock);
       rwlock_reader_unlock (&diskfs_fsys_lock);
+      drop_idvec ();
       return error;
     }
   
   if ((flags & O_NOATIME)
-      && (diskfs_isowner (diskfs_root_node, &pseudocred) == EPERM))
+      && (fshelp_isowner (&diskfs_root_node->dn_stat, &user)
+	  == EPERM))
     flags &= ~O_NOATIME;
 
   flags &= ~OPENONLY_STATE_MODES;
 
   error = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
 						     flags, dotdot),
-				uids, nuids, gids, ngids, &newpi);
+				&user, &newpi);
   mach_port_deallocate (mach_task_self (), dotdot);
   if (! error)
     {
@@ -179,6 +188,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   ports_port_deref (pt);
+
+  drop_idvec ();
 
   return error;
 }

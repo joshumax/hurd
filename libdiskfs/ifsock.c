@@ -45,7 +45,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
       mutex_unlock (&np->lock);
       return EOPNOTSUPP;
     }
-  err = diskfs_access (np, S_IWRITE, cred);
+  err = fshelp_access (&np->dn_stat, S_IWRITE, cred->user);
   if (err)
     {
       mutex_unlock (&np->lock);

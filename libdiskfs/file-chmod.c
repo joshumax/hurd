@@ -26,16 +26,17 @@ diskfs_S_file_chmod (struct protid *cred,
   
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     if (!(err = diskfs_isowner (np, cred)))
+		     if (!(err = fshelp_isowner (&np->dn_stat, cred->user)))
 		       {
-			 if (!diskfs_isuid (0, cred))
+			 if (!idvec_contains (cred->user->uids, 0))
 			   {
 			     if (!S_ISDIR (np->dn_stat.st_mode))
 			       mode &= ~S_ISVTX;
-			     if (!diskfs_groupmember (np->dn_stat.st_gid,
-						      cred))
+			     if (!idvec_contains (cred->user->gids,
+						  np->dn_stat.st_gid))
 			       mode &= ~S_ISGID;
-			     if (!diskfs_isuid (np->dn_stat.st_uid, cred))
+			     if (!idvec_contains (cred->user->uids, 
+						  np->dn_stat.st_uid))
 			       mode &= ~S_ISUID;
 			   }
 			 mode |= (np->dn_stat.st_mode & (S_IFMT | S_ISPARE));

@@ -88,9 +88,9 @@ diskfs_S_file_exec (struct protid *cred,
       int secure = 0;
       error_t get_file_ids (struct idvec *uids, struct idvec *gids)
 	{
-	  error_t err = idvec_merge_ids (uids, cred->uids, cred->nuids);
+	  error_t err = idvec_merge (uids, cred->user->uids);
 	  if (! err)
-	    err = idvec_merge_ids (gids, cred->gids, cred->ngids);
+	    err = idvec_merge (gids, cred->user->gids);
 	  return err;
 	}
       err =
@@ -107,16 +107,14 @@ diskfs_S_file_exec (struct protid *cred,
      to the user.  Too many things depend on that that it can't be
      changed.  So this vague attempt isn't even worth trying.  */
 #if 0
-  if (diskfs_access (np, S_IREAD, cred))
+  if (fshelp_access (&np->dn_stat, S_IREAD, cred->user))
     flags |= EXEC_NEWTASK;
 #endif
 
   if (! err)
     err = diskfs_create_protid (diskfs_make_peropen (np, O_READ, 
 						     cred->po->dotdotport),
-				cred->uids, cred->nuids,
-				cred->gids, cred->ngids,
-				&newpi);
+				cred->user, &newpi);
 
   if (! err)
     {
