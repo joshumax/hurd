@@ -1,5 +1,14 @@
 Wed Feb 12 00:35:21 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* argp-parse.c (__progname, __progname_full): Decls removed.
+  	(argp_default_parser): Use PROGRAM_INVOCATION_NAME &
+ 	PROGRAM_INVOCATION_SHORT_NAME, not __PROGNAME_FULL & __PROGNAME.
+	* argp-help.c (__progname, __progname_full): Decls removed.
+	(__argp_failure, __argp_error, __argp_state_help): Use
+	PROGRAM_INVOCATION_NAME instead of __PROGNAME_FULL.
+	(__argp_error): Use STATE->name if it's available.
+	* argp-namefrob.h (__progname_full): Macro removed.
+
 	* argp.h (ARGP_KEY_END, ARGP_KEY_NO_ARGS, ARGP_KEY_INIT,
  	ARGP_KEY_SUCCESS, ARGP_KEY_ERROR): Change values.
 

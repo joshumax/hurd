@@ -1,3 +1,14 @@
+Thu Feb  6 12:01:36 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pagemap.c (_pager_pagemap_resize): Return errors.
+	* offer-page.c (pager_offer_page): Rewrite for clarity.
+	Deal with _pager_pagemap_resize failing.
+	* data-request.c (_pager_seqnos_memory_object_data_request): Deal
+	with _pager_pagemap_resize failing.
+	* lock-object.c (_pager_lock_object): Likewise.
+	* mark-error.c (pager_get_error): Likewise.
+	* priv.h (_pager_pagemap_resize): Returns an error_t.
+
 Mon Jan 20 16:25:39 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pager-memcpy.c (pager_memcpy): `preempter' -> `preemptor'.
