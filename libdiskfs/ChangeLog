@@ -1,5 +1,9 @@
 2002-01-03  Roland McGrath  <roland@frob.com>
 
+	* dir-lookup.c (diskfs_S_dir_lookup): Clear S_ITRANS bits in MODE.
+	* dir-mkdir.c (diskfs_S_dir_mkdir): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+
 	* file-chmod.c (diskfs_S_file_chmod): Preserve S_ITRANS bits in change.
 
 2002-01-02  Roland McGrath  <roland@frob.com>
