@@ -1,5 +1,5 @@
 /* Definitions for shared IO control pages
-   Copyright (C) 1992 Free Software Foundation
+   Copyright (C) 1992, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -16,6 +16,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+#include <sys/types.h>		/* Defines `off_t'.  */
 
 struct shared_io
 {
