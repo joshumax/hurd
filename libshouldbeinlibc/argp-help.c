@@ -1600,7 +1600,7 @@ __argp_state_help (const struct argp_state *state, FILE *stream, unsigned flags)
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
 	  if (flags & ARGP_HELP_EXIT_ERR)
-	    exit (1);
+	    exit (argp_err_exit_status);
 	  if (flags & ARGP_HELP_EXIT_OK)
 	    exit (0);
 	}
