@@ -20,6 +20,7 @@
 #include "fs.h"
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -147,9 +148,19 @@ diskfs_node_norefs (struct node *np)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
   if (np->dn->dirents)
     free (np->dn->dirents);
-  assert (!np->dn->sininfo && !np->dn->fileinfo);
-  assert (!np->dn->dinloc && !np->dn->sinloc);
-  assert (!np->dn->dinloclen && !np->dn->sinloclen);
+  if (np->dn->sininfo || np->dn->fileinfo || np->dn->dinloc
+      || np->dn->sinloc || np->dn->dinloclen || np->dn->sinloclen)
+    {
+      printf ("I=%d\n", np->dn->number);
+      printf ("Hard %d\tSoft %d\n", np->references, np->light_references);
+      fflush (stdout);
+    }
+  assert (!np->dn->sininfo);
+  assert (!np->dn->fileinfo);
+  assert (!np->dn->dinloc);
+  assert (!np->dn->sinloc);
+  assert (!np->dn->dinloclen);
+  assert (!np->dn->sinloclen);
   free (np->dn);
   free (np);
 }
