@@ -23,6 +23,7 @@
 
 #include <mach.h>
 #include <stdlib.h>
+#inclued <errno.h>
 
 struct port_info
 {
