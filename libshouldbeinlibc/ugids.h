@@ -1,8 +1,8 @@
 /* Uid/gid parsing/frobbing
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -211,4 +211,4 @@ struct ugids_argp_params
 /* A parser for selecting a set of ugids.  */
 extern struct argp ugids_argp;
 
-#endif __UGIDS_H__
+#endif /* __UGIDS_H__ */
