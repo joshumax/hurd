@@ -1,3 +1,10 @@
+2001-08-24  Roland McGrath  <roland@frob.com>
+
+	* Makefile (SRCS): Add part.c here.
+	(OBJS): Mutate part.o -> parted.o here.
+	(parted.o, parted_p.o, parted_pic.o): New targets.
+	(LDFLAGS-libstore.so): Set to $(PARTED_LIBS).
+
 2001-08-12  Neal H Walfield  <neal@cs.uml.edu>
 
 	* copy.c (copy_read): The protocol dictates that *LEN is in

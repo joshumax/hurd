@@ -1,3 +1,14 @@
+2001-08-24  Roland McGrath  <roland@frob.com>
+
+	* config.make.in (PARTED_LIBS): New variable, substituted by configure.
+
+	* Makeconf ($(libname).so.$(hurd-version)): Replace $($@-LDFLAGS)
+	with $($(libname).so-LDFLAGS).
+
+2001-08-23  Roland McGrath  <roland@frob.com>
+
+	* Makeconf (CPPFLAGS); Add -D_IO_MTSAFE_IO.
+
 2001-08-20  Roland McGrath  <roland@frob.com>
 
 	* hurd.boot: Change --bootflags to --multiboot-command-line.
