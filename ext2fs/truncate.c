@@ -296,11 +296,11 @@ trunc_tindirect (struct node * node, unsigned long length)
 static void
 force_delayed_copies (struct node *node, off_t length)
 {
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi = np->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
  
   if (upi)
     {
@@ -318,11 +318,11 @@ force_delayed_copies (struct node *node, off_t length)
 static void
 enable_delayed_copies (struct node *node)
 {
-  spin_lock (&node2pagelock);
+  spin_lock (&node_to_page_lock);
   upi = np->dn->fileinfo;
   if (upi)
     pager_reference (upi->p);
-  spin_unlock (&node2pagelock);
+  spin_unlock (&node_to_page_lock);
   if (upi)
     {
       pager_change_attributes (upi->p, MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
