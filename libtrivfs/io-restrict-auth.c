@@ -20,21 +20,22 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "io_S.h"
 
-error_t
-trivfs_S_io_restrict_auth (struct protid *cred,
+kern_return_t
+trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newporttype,
 			   uid_t *uids, u_int nuids,
 			   uid_t *gids, u_int ngids)
 {
-  struct protid *newcred;
+  struct trivfs_protid *newcred;
   int i;
   
   if (!cred)
     return EOPNOTSUPP;
   
-  newcred = ports_allocate_port (sizeof (struct protid), 
+  newcred = ports_allocate_port (sizeof (struct trivfs_protid), 
 				 trivfs_protid_porttype);
   newcred->isroot = 0;
   newcred->cntl = cred->cntl;
