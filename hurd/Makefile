@@ -19,13 +19,16 @@ dir := hurd
 makemode := misc
 
 hdrs = $(wildcard $(srcdir)/*.defs $(srcdir)/*.h)
-DIST_FILES = subsystems $(hdrs)
-LCLHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h
+DIST_FILES = subsystems $(notdir $(hdrs))
+
+INSTHDRS = hurd_types.h ioctl_types.h paths.h shared.h version.h 
+	$(notdir $(wildcard $(srcdir)/*.defs))
 
 include ../Makeconf
 
-# XXX not ideal
 install-hdrs install: $(includedir)/hurd \
-	 $(patsubst $(srcdir)/%,$(includedir)/hurd/%,$(hdrs))
+	$(addprefix $(includedir)/hurd,$(INSTHDRS))
+
 $(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
+
 $(includedir)/hurd:;mkdir -p $@
