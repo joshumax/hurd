@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+/*
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,18 +27,18 @@
    extension).  For reads, *AMTREAD is filled with the amount actually
    read.  */
 error_t
-diskfs_node_rdwr (struct node *np, 
+diskfs_node_rdwr (struct node *np,
 		  char *data,
-		  off_t off, 
-		  int amt, 
+		  off_t off,
+		  size_t amt,
 		  int dir,
 		  struct protid *cred,
-		  int *amtread)
+		  size_t *amtread)
 {
   error_t err;
-  
+
   ioserver_get_conch (&np->conch);
-  
+
   if (dir)
     while (off + amt > np->allocsize)
       {
@@ -58,16 +58,15 @@ diskfs_node_rdwr (struct node *np,
 	amt = np->dn_stat.st_size - off;
     }
 
-  err = _diskfs_rdwr_internal (np, data, off, amt, dir, 0);
-  if (diskfs_synchronous)
+  *amtread = amt;
+  err = _diskfs_rdwr_internal (np, data, off, amtread, dir, 0);
+  if (*amtread && diskfs_synchronous)
     {
       if (dir)
 	diskfs_file_update (np, 1);
       else
 	diskfs_node_update (np, 1);
     }
-  if (!err && amtread)
-    *amtread = amt;
 
   return err;
 }
