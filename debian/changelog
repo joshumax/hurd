@@ -1,10 +1,10 @@
-hurd (20020917-1) unstable; urgency=low
+hurd (20020918-1) unstable; urgency=low
 
   * New snapshot from CVS.
     kbd, mouse as usual.
     Change terminal type to mach-color.
 
- -- Marcus Brinkmann <brinkmd@debian.org>  Tue, 17 Sep 2002 18:13:06 +0200
+ -- Marcus Brinkmann <brinkmd@debian.org>  Tue, 18 Sep 2002 23:13:06 +0200
 
 hurd (20020804-1) unstable; urgency=low
 
