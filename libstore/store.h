@@ -215,37 +215,9 @@ error_t store_create_pager (struct store *store, vm_prot_t prot, ...,
 
 #endif
 
-/* Encode/decode table:
-
-   4 vectors are used: ports, ints, offsets (off_t), and data (char);
-   each type of store uses the following entries in each vector:
-
-    -type-  -ports-  -ints-	     	     -offsets-	       -data-    -kids-
-    device  DEVICE   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
-    file    FILE     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
-    memory  MEMOBJ   TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
-    task    TASK     TY, FL, BS, NR, NL, ML  NR * (OFFS, LEN)  NL + ML   -
-      (the data for the above is a name (incl '\0') and a misc data block)
-    null    -	     TY, FL		     LEN	       -         -
-      (BS is 1)
-    ileave  -	     TY, FL, IL, NC	     -		       -         NC
-      (BS is the LCM of its children; LEN is the minimum of theirs * IL)
-    concat  - 	     TY, FL, NC      	     -		       -	 NC
-      (BS is the LCM of its children; LEN is the sum of theirs)
-    layer   - 	     TY, FL, NC      	     -		       -	 NC
-      (BS is the LCM of its children; LEN is the minimum of theirs)
-
-  For ileave, concat, and layer, the children are encoded following the parent.
-  The first int must always be TY.
-
-  key: TY = type code, FL = flags, BS = block size, NR = num runs,
-       NL = name len, ML = misc len, NC = num children,
-       IL = interleave (bytes),
-       LEN = run length (blocks), OFFS = run offset (blocks),
- */
-
 /* Used to hold the various bits that make up the representation of a store
-   for transmission via rpc.  */
+   for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
+   the encodings for the various storage types.  */
 struct store_enc
 {
   /* Each of the four vectors used.  All are vm_allocated.  */
