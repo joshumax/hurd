@@ -68,6 +68,7 @@ static error_t
 print_info (mach_port_t node, char *source, unsigned what)
 {
   error_t err;
+  int flags;
   int first = 1;
   int kind, i;
   char *kind_name;
@@ -108,7 +109,7 @@ print_info (mach_port_t node, char *source, unsigned what)
     }
 
   err = file_get_storage_info (node, &kind, &runs, &runs_len, &block_size,
-			       name, &store_port, &misc, &misc_len);
+			       name, &store_port, &misc, &misc_len, &flags);
   if (err)
     return err;
   mach_port_deallocate (mach_task_self (), store_port);
@@ -118,10 +119,10 @@ print_info (mach_port_t node, char *source, unsigned what)
     {
     case STORAGE_OTHER: kind_name = "other"; break;
     case STORAGE_DEVICE: kind_name = "device"; break;
-    case STORAGE_DEVICE_MUTATED: kind_name = "device_mutated"; break;
     case STORAGE_HURD_FILE: kind_name = "file"; break;
-    case STORAGE_HURD_FILE_MUTATED: kind_name = "file_mutated"; break;
     case STORAGE_NETWORK: kind_name = "network"; break;
+    case STORAGE_MEMORY: kind_name = "memory"; break;
+    case STORAGE_TASK: kind_name = "task"; break;
     default:
       sprintf (unknown_kind_name, "%d", kind);
       kind_name = unknown_kind_name;
@@ -129,14 +130,16 @@ print_info (mach_port_t node, char *source, unsigned what)
 
   for (i = 0; i < runs_len; i += 2)
     {
-      if (runs[0] >= 0)
-	blocks += runs[1];
-      size += runs[1];
+      if (runs[i] >= 0)
+	blocks += runs[i+1];
+      size += runs[i+1];
     }
   size *= block_size;
 
   pstr (source,	    0);
   pstr (kind_name,  W_KIND);
+  if ((flags & STORAGE_MUTATED) && (what & W_KIND))
+    fputs ("/mutated", stdout);
   pstr (name,       W_NAME);
   pint (block_size, W_BLOCK_SIZE);
   pint (blocks,     W_BLOCKS);
