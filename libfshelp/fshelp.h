@@ -60,14 +60,14 @@ void fshelp_set_control (struct trans_link *link, mach_port_t ctl);
    want to have the translator started so you can talk to it.  LINK is
    the trans_link structure for this node; NAME is the file to execute
    as the translator (*NAME may be modified).  DIR and NODE should be
-   send rights; both of them will be reauthenticated before being given
-   to the translator.  DIR should refer to the directory holding the node being
-   translater, and will be provided as the cwdir of the process and as
-   the dotdot return value from fsys_startup.  NODE should refer to the 
-   node being translated, and will be provided as the realnode return value
-   from fsys_startup.  UID and GID are the uid and gid of the process to
-   be started.  LOCK must be a mutex which you hold; it is assumed
-   that the trans_link structure will not be changed unless this is held. */
+   send rights; both of them will be reauthenticated before being
+   given to the translator.  DIR should refer to the directory holding
+   the node being translater, and will be provided as the cwdir of the
+   process.  NODE should refer to the node being translated, and will
+   be provided as the realnode return value from fsys_startup.  UID
+   and GID are the uid and gid of the process to be started.  LOCK
+   must be a mutex which you hold; it is assumed that the trans_link
+   structure will not be changed unless this is held. */
 error_t fshelp_start_translator (struct trans_link *link, char *name, 
 				 int namelen, file_t dir, file_t node, 
 				 uid_t uid, gid_t gid, struct mutex *lock);
@@ -75,22 +75,17 @@ error_t fshelp_start_translator (struct trans_link *link, char *name,
 /* Call this when you receive a fsys_startup message on a port of type
    fshelp_transboot_port_type.  PORTSTRUCT is the result of
    ports_check_port_type/ports_get_port; this routine does not call
-   ports_done_with_port so the caller normally should.  CTL, REAL,
-   REALPOLY, DOTDOT, and DOTDOTPOLY are copied from the fsys_startup
-   message; CTL will be installed as the control field of the
-   translator making this call, *REAL will be set to be the underlying
-   port (by calling the MAKE_PORT function set at
-   fshelp_start_translator time with the NODE argument to that call);
-   *DOTDOT will be set similarly, but from the DIR argument to
-   fshelp_start_translator. *REALPOLY and *DOTDOTPOLY will be set to
-   the Mach message transmission types for those two ports. 
-   If this routine returns an error, then the CTL port must be deallocated
-   by the caller. */
+   ports_done_with_port so the caller normally should.  CTL, REAL, and
+   REALPOLY, are copied from the fsys_startup message; CTL will be
+   installed as the control field of the translator making this call,
+   *REAL will be set to be the underlying port (by calling the
+   MAKE_PORT function set at fshelp_start_translator time with the
+   NODE argument to that call).  *REALPOLY will be set to the Mach
+   message transmission types for that.  If this routine returns an
+   error, then the CTL port must be deallocated by the caller. */
 error_t fshelp_handle_fsys_startup (void *portstruct, mach_port_t ctl,
 				    mach_port_t *real, 
-				    mach_msg_type_name_t *realpoly,
-				    mach_port_t *dotdot,
-				    mach_msg_type_name_t *dotdotpoly);
+				    mach_msg_type_name_t *realpoly);
 
 /* Install this routine as the ports library type-specific clean routine
    for ports of type fshelp_transboot_port_type. */
