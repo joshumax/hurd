@@ -344,6 +344,18 @@ crash_system (void)
 
 
 
+/* Request a dead-name notification sent to our port.  */
+static void
+request_dead_name (mach_port_t name)
+{
+  mach_port_t prev;
+  mach_port_request_notification (mach_task_self (), name,
+				  MACH_NOTIFY_DEAD_NAME, 1, startup,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
+  if (prev != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), prev);
+}
+
 
 /** Starting programs **/
 
@@ -407,6 +419,10 @@ run (char *server, mach_port_t *ports, task_t *task)
   printf ("started %s\n", prog);
   fflush (stdout);
 #endif
+
+  /* Dead-name notification on the task port will tell us when it dies,
+     so we can crash if we don't make it to a fully bootstrapped Hurd.  */
+  request_dead_name (*task);
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).  Return
@@ -829,6 +845,9 @@ main (int argc, char **argv, char **envp)
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
 
+  /* Crash if the boot filesystem task dies.  */
+  request_dead_name (fstask);
+
   /* Set up the set of ports we will pass to the programs we exec.  */
   for (i = 0; i < INIT_PORT_MAX; i++)
     switch (i)
@@ -877,7 +896,8 @@ void
 launch_core_servers (void)
 {
   mach_port_t old;
-  mach_port_t authproc, fsproc;
+  mach_port_t authproc, fsproc, procproc;
+  error_t err;
 
   /* Reply to the proc and auth servers.   */
   startup_procinit_reply (procreply, procreplytype, 0,
@@ -912,6 +932,15 @@ launch_core_servers (void)
 			  (vm_address_t) global_argv, (vm_address_t) environ);
 
   default_ports[INIT_PORT_AUTH] = authserver;
+
+  /* Declare that the proc server is our child.  */
+  proc_child (procserver, proctask);
+  err = proc_task2proc (procserver, proctask, &procproc);
+  if (!err)
+    {
+      proc_mark_exec (procproc);
+      mach_port_deallocate (mach_task_self (), procproc);
+    }
 
   proc_register_version (procserver, host_priv, "init", "", HURD_VERSION);
 
@@ -1627,7 +1656,6 @@ S_startup_essential_task (mach_port_t server,
 			  mach_port_t credential)
 {
   struct ess_task *et;
-  mach_port_t prev;
   static int authinit, procinit, execinit;
   int fail;
 
@@ -1648,11 +1676,7 @@ S_startup_essential_task (mach_port_t server,
   ess_tasks = et;
 
   /* Dead-name notification on the task port will tell us when it dies.  */
-  mach_port_request_notification (mach_task_self (), task,
-				  MACH_NOTIFY_DEAD_NAME, 1, startup,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
-  if (prev)
-    mach_port_deallocate (mach_task_self (), prev);
+  request_dead_name (task);
 
 #if 0
   /* Taking over the exception port will give us a better chance
@@ -1701,13 +1725,8 @@ S_startup_request_notification (mach_port_t server,
 				char *name)
 {
   struct ntfy_task *nt;
-  mach_port_t prev;
 
-  mach_port_request_notification (mach_task_self (), notify,
-				  MACH_NOTIFY_DEAD_NAME, 1, startup,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
-  if (prev != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), prev);
+  request_dead_name (notify);
 
   /* Note that the ntfy_tasks list is kept in inverse order of the
      calls; this is important.  We need later notification requests
@@ -1727,6 +1746,8 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
+
+  assert (notify == startup);
 
   /* Deallocate the extra reference the notification carries. */
   mach_port_deallocate (mach_task_self (), name);
@@ -1752,6 +1773,30 @@ do_mach_notify_dead_name (mach_port_t notify,
 
 	return 0;
       }
+
+  if (system_state == INITIAL)
+    {
+      /* The system has not come up yet, so essential tasks are not yet
+	 registered.  But the essential servers involved in the bootstrap
+	 handshake might crash before completing it, so we have requested
+	 dead-name notification on those tasks.  */
+      static const struct { task_t *taskp; const char *name; } boots[] =
+        {
+	  {&fstask, "bootstrap filesystem"},
+	  {&authtask, "auth"},
+	  {&proctask, "proc"},
+	};
+      size_t i;
+      for (i = 0; i < sizeof boots / sizeof boots[0]; ++i)
+	if (name == *boots[i].taskp)
+	  {
+	    error (0, 0, "Crashing system; %s server died during bootstrap",
+		   boots[i].name);
+	    crash_mach ();
+	  }
+      error (0, 0, "BUG!  Unexpected dead-name notification (name %#x)", name);
+      crash_mach ();
+    }
 
   return 0;
 }
