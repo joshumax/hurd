@@ -83,24 +83,6 @@ inode_cache_find (off_t id, struct node **npp)
 int
 use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
 {
-  /* If it is a directory, don't use file_start.  */
-  if (rr->valid & VALID_PX)
-    {
-      if (((rr->valid & VALID_MD) == 0) && (rr->mode & S_IFDIR))
-	return 0;
-    }
-  else
-    if ((rr->valid & VALID_MD) == 0)
-      {
-	/* If there are no periods, it's a directory. */
-	if (((rr->valid & VALID_NM) && !index (rr->name, '.'))
-	    || (!(rr->valid & VALID_NM) && !memchr (record->name, '.',
-						    record->namelen)))
-	  return 0;
-      }
-  if ((rr->valid & VALID_MD) && (rr->allmode & S_IFDIR))
-      return 0;
-
   /* If it is a symlink or a zero length file, don't use file_start.  */
   if (rr->valid & VALID_SL || isonum_733 (record->size) == 0)
     return 0;

@@ -1,3 +1,12 @@
+2002-08-06  Marcus Brinkmann  <marcus@gnu.org>
+
+	* inode.c (use_file_start_id): Use file_start for directories, so
+	the inode of the directory is used for the ".." entries in all
+	sub-directories.  Contrary to ChangeLog entry 2001-11-27, this is
+	safe, because the ISO9660 specification mandates that the first
+	entry in every directory must be ".", so a non-file_start using
+	directory record can not be the first one.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* inode.c (diskfs_cached_lookup): Use ino_t for argument.
