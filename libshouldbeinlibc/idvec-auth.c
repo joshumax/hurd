@@ -50,9 +50,9 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
   if (eff_uids)
     err = idvec_grow (eff_uids, num_eff_uids);
   if (avail_uids && !err)
-    err = idvec_grow (avail_gids, num_avail_uids);
-  if (eff_uids && !err)
-    err = idvec_grow (eff_gids, num_eff_uids);
+    err = idvec_grow (avail_uids, num_avail_uids);
+  if (eff_gids && !err)
+    err = idvec_grow (eff_gids, num_eff_gids);
   if (avail_gids && !err)
     err = idvec_grow (avail_gids, num_avail_gids);
 
@@ -61,8 +61,8 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
        return an error.  */
     {
       idvec_merge_ids (eff_uids, _eff_uids, num_eff_uids);
-      idvec_merge_ids (avail_gids, _avail_gids, num_avail_uids);
-      idvec_merge_ids (eff_gids, _eff_gids, num_eff_uids);
+      idvec_merge_ids (avail_uids, _avail_uids, num_avail_uids);
+      idvec_merge_ids (eff_gids, _eff_gids, num_eff_gids);
       idvec_merge_ids (avail_gids, _avail_gids, num_avail_gids);
     }
 
