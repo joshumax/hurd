@@ -28,6 +28,9 @@
 
 #include <mach.h>
 #include <mach/vm_statistics.h>
+#include <hurd.h>
+
+char *argp_program_version = "vmstat 1.0 (GNU " HURD_RELEASE ")";
 
 struct field {
   /* Name of the field; used for the option name.  */
