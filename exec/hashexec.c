@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -175,7 +175,7 @@ check_hashbang (struct execdata *e,
       inline void prepare_args (void)
 	{
 
-	  char * volatile file_name = NULL;
+	  char *file_name = NULL;
 	  size_t namelen;
 
 	  if (! (flags & EXEC_SECURE))
@@ -185,8 +185,8 @@ check_hashbang (struct execdata *e,
 		 if it contains no slash, looking for files named by ARGV[0] in
 		 the `PATH' environment variable might find it.  */
 
-	      volatile error_t error;
-	      char * volatile name;
+	      error_t error;
+	      char *name;
 	      file_t name_file;
 	      struct stat st;
 	      int file_fstype;
