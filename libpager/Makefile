@@ -29,10 +29,7 @@ OBJS = $(COBJS) memory_objectServer.o
 
 SRCS = $(subst .o,.c,$(COBJS))
 
-DIST_FILES = $(SRCS) Makefile libpager.h priv.h
-
-# Make sure we get local copies of the headers we install
-CPPFLAGS := -I. $(CPPFLAGS)
+DIST_FILES = $(SRCS) Makefile pager.h priv.h
 
 all: libpager.a(__.SYMDEF)
 
@@ -45,12 +42,12 @@ $(hurdinst)/lib/libpager.a: libpager.a(__.SYMDEF)
 	cp libpager.a $@
 	ranlib $@
 
-$(headers)/libpager.h: libpager.h
-	cp libpager.h $@
+$(headers)/hurd/pager.h: pager.h
+	cp pager.h $@
 
-install: $(hurdinst)/lib/libpager.a $(headers)/libpager.h
+install: $(hurdinst)/lib/libpager.a $(headers)/hurd/pager.h
 
-$(OBJS): libpager.h priv.h $(headers)/libports.h
+$(OBJS): pager.h priv.h $(headers)/hurd/ports.h
 
 data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
 stubs.o object-init.o object-terminate.o: memory_object.h
