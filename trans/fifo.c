@@ -160,14 +160,12 @@ open_hook (struct trivfs_peropen *po)
     {
       if (one_reader)
 	/* Wait until there isn't any active fifo, so we can make one. */
-	while (active_fifo != NULL || active_fifo->readers > 0)
+	while (!err && (active_fifo != NULL || active_fifo->readers > 0))
 	  if (flags & O_NONBLOCK)
-	    {
-	      err = EWOULDBLOCK;
-	      break;
-	    }
-	  else
-	    condition_wait (&active_fifo_changed, &active_fifo_lock);
+	    err = EWOULDBLOCK;
+	  else if (hurd_condition_wait (&active_fifo_changed,
+					&active_fifo_lock))
+	    err = EINTR;
 
       if (!err && active_fifo == NULL)
 	/* No other readers, and indeed, no fifo; make one.  */
@@ -189,14 +187,12 @@ open_hook (struct trivfs_peropen *po)
     {
       if (wait_for_reader)
 	/* Wait until there's a fifo to write to.  */
-	while (active_fifo == NULL || active_fifo->readers == 0)
+	while (!err && (active_fifo == NULL || active_fifo->readers == 0))
 	  if (flags & O_NONBLOCK)
-	    {
-	      err = EWOULDBLOCK;
-	      break;
-	    }
-	  else
-	    condition_wait (&active_fifo_changed, &active_fifo_lock);
+	    err = EWOULDBLOCK;
+	  else if (hurd_condition_wait (&active_fifo_changed,
+					&active_fifo_lock))
+	    err = EINTR;
 
       if (!err && active_fifo == NULL)
 	/* No other readers, and indeed, no fifo; make one.  */
