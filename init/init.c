@@ -62,10 +62,6 @@ int crash_flags = RB_AUTOBOOT;
 
 #define _PATH_RUNCOM "/libexec/rc"
 
-
-/* Multiboot command line used to start the kernel,
-   a single string of space-separated words.  */
-char *kernel_command_line;
 
 const char *argp_program_version = STANDARD_HURD_VERSION (init);
 
@@ -78,8 +74,6 @@ options[] =
   {"crash-debug",  'H', 0, 0, "On system crash, go to kernel debugger"},
   {"debug",       'd', 0, 0 },
   {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
-  {"kernel-command-line",
-   		  'K', "COMMAND-LINE", 0, "Multiboot command line string"},
   {0,             'x', 0, OPTION_HIDDEN},
   {0}
 };
@@ -524,12 +518,6 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'H': crash_flags = RB_DEBUGGER; break;
     case 'x': /* NOP */ break;
     default: return ARGP_ERR_UNKNOWN;
-
-    case 'K':
-      kernel_command_line = arg;
-      /* XXX When this is really in use,
-	 this should do some magical parsing for options.  */
-      break;
     }
   return 0;
 }
@@ -998,17 +986,11 @@ frob_kernel_process (void)
 	}
     }
 
-  if (!kernel_command_line)
-    kernel_command_line = getenv ("MULTIBOOT_CMDLINE") ?: "(kernel)";
+  /* Our arguments make up the multiboot command line used to boot the
+     kernel.  We'll write into the kernel task a page containing a
+     canonical argv array and argz of those words.  */
 
-
-  /* The variable `kernel_command_line' contains the multiboot command line
-     used to boot the kernel, a single string of space-separated words.
-
-     We will slice that up into words, and then write into the kernel task
-     a page containing a canonical argv array and argz of those words.  */
-
-  err = argz_create_sep (kernel_command_line, ' ', &argz, &argzlen);
+  err = argz_create (&global_argv[1], &argz, &argzlen);
   assert_perror (err);
   argc = argz_count (argz, argzlen);
 
@@ -1176,18 +1158,36 @@ process_signal (int signo)
     }
 }
 
-/* Start the child program PROG.  It is run via /libexec/console-run,
-   and we pass it no arguments to pass on to PROG.  */
+/* Start the child program PROG.  It is run via /libexec/console-run
+   with the given additional arguments.  */
 static int
-start_child (const char *prog)
+start_child (const char *prog, char **progargs)
 {
   file_t file;
   error_t err;
   char *args;
   size_t arglen;
-  const char *argv[] = { "/libexec/console-run", prog, 0 };
 
-  err = argz_create ((char **) argv, &args, &arglen);
+  if (progargs == 0)
+    {
+      const char *argv[] = { "/libexec/console-run", prog, 0 };
+      err = argz_create ((char **) argv, &args, &arglen);
+    }
+  else
+    {
+      int argc = 0;
+      while (progargs[argc] != 0)
+	++argc;
+      {
+	const char *argv[2 + argc + 1];
+	argv[0] = "/libexec/console-run";
+	argv[1] = prog;
+	argv[2 + argc] = 0;
+	while (argc-- > 0)
+	  argv[2 + argc] = progargs[argc];
+	err = argz_create ((char **) argv, &args, &arglen);
+      }
+    }
   assert_perror (err);
 
   file = file_name_lookup (args, O_EXEC, 0);
@@ -1243,8 +1243,11 @@ launch_something (const char *why)
   if (why)
     error (0, 0, "%s %s", tries[try - 1], why);
 
+  if (try == 0 && start_child (tries[try++], &global_argv[1]) == 0)
+      return;
+
   while (try < sizeof tries / sizeof tries[0])
-    if (start_child (tries[try++]) == 0)
+    if (start_child (tries[try++], NULL) == 0)
       return;
 
   crash_system ();
