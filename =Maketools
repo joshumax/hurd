@@ -23,7 +23,7 @@ export HOST_CC := $(CC)
 endif
 CC=gcc $(CCTYPE) -O2 -pipe # Ceci n'est pas une pipe.
 ifeq (,$(wildcard /usr/local/lib/migcom))
-MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
+MIGCOM=rsh -n $(mighost) cd `pwd` \; /usr/local/lib/migcom 
 else
 MIGCOM=/usr/local/lib/migcom
 endif
