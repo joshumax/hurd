@@ -683,7 +683,7 @@ diskfs_alloc_node (struct node *dir,
 		goto noinodes;
 	error = diskfs_cached_lookup (ino, &np);
 	assert ("duplicate allocation" && !np->dn_stat.st_mode);
-	assert (!np->istranslated);
+	assert (! (np->dn_stat.st_mode & S_IPTRANS));
 	if (np->dn_stat.st_blocks) {
 	  printf("free inode %d had %d blocks\n",
 		 ino, np->dn_stat.st_blocks);
