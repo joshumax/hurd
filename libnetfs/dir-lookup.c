@@ -375,7 +375,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   
   newpi = netfs_make_protid (netfs_make_peropen (np, flags,
 						 diruser->po->dotdotport),
-			     diruser->credential);
+			     netfs_copy_credential (diruser->credential));
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
   
