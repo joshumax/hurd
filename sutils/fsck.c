@@ -380,6 +380,8 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
        time. */
     {
       debug ("Pass %d", pass);
+
+      /* Try and fsck every filesystem in this pass.  */
       for (fs = fstab->entries; fs; fs = fs->next)
 	if (fs->mntent.mnt_passno == pass)
 	  /* FS is applicable for this pass.  */
@@ -405,6 +407,10 @@ fsck (struct fstab *fstab, int flags, int max_parallel)
 	    else
 	      fs_debug (fs, "Not fsckable");
 	  }
+
+      /* Now wait for them all to finish.  */
+      while (fscks->running)
+	merge_status (fscks_wait (fscks));
     }
 
   free (fscks);
