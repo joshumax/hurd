@@ -124,7 +124,7 @@ extern int fsmodified;
 extern ino_t lfdir;
 
 /* Total number of files found on the partition.  */
-extern daddr_t num_files;
+extern long num_files;
 
 extern mode_t lfmode;
 extern char *lfname;
