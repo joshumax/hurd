@@ -42,7 +42,7 @@ cacheq_make_mru (struct cacheq *cq, void *entry)
       /* Now make it MRU.  */
       h->next = cq->mru;
       h->prev = 0;
-      cq->mru->prev = h;
+      ((struct cacheq_hdr *)cq->mru)->prev = h;
       cq->mru = h;
     }
 }
@@ -66,7 +66,7 @@ cacheq_make_lru (struct cacheq *cq, void *entry)
       /* Now make it LRU.  */
       h->prev = cq->lru;
       h->next = 0;
-      cq->lru->next = h;
+      ((struct cacheq_hdr *)cq->lru)->next = h;
       cq->lru = h;
     }
 }
