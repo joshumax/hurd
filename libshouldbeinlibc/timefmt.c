@@ -248,7 +248,7 @@ size_t
 fmt_past_time (struct timeval *tv, struct timeval *now,
 	       size_t width, char *buf, size_t buf_len)
 {
-  static char *time_fmts[] = { "%-r", "%l:%M%p", "%l%p", 0 };
+  static char *time_fmts[] = { "%-r", "%-lf:%M%p", "%-l%p", 0 };
   static char *week_fmts[] = { "%A,", "%a,", "%a", 0 };
   static char *month_fmts[] = { "%A, %-d", "%a, %-d", "%a %-d", "%a%-d", 0 };
   static char *date_fmts[] =
