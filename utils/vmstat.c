@@ -1,6 +1,6 @@
 /* Print vm statistics
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -59,6 +59,7 @@ static const char *doc = "Show system virtual memory statistics"
    than what the system returns values in, as we represent some quantities as
    bytes instead of pages)!  */
 typedef long long val_t;
+#define BADVAL ((val_t) -1LL)	/* a good generic value for "couldn't get" */
 
 /* What a given number describes.  */
 enum val_type
@@ -178,7 +179,7 @@ struct field
 };
 
 /* State about system vm from which we compute the above defined fields.  */
-struct vm_state 
+struct vm_state
 {
   /* General vm statistics.  */
   struct vm_statistics vmstats;
@@ -261,47 +262,32 @@ ensure_def_pager_info (struct vm_state *state)
 	}
     }
 
-  if (state->def_pager == MACH_PORT_NULL)
-    return 0;
-  else
+  if (!MACH_PORT_VALID (state->def_pager))
     {
-      err = default_pager_info (state->def_pager, &state->def_pager_info);
-      if (err)
-	error (0, err, "default_pager_info");
-      return (err == 0);
+      if (state->def_pager == MACH_PORT_NULL)
+	{
+	  error (0, 0,
+		 "No default pager running, so no swap information available");
+	  state->def_pager = MACH_PORT_DEAD; /* so we don't try again */
+	}
+      return 0;
     }
+
+  err = default_pager_info (state->def_pager, &state->def_pager_info);
+  if (err)
+    error (0, err, "default_pager_info");
+  return (err == 0);
 }
 
-static val_t
-get_swap_size (struct vm_state *state, const struct field *field)
-{
-  return
-    ensure_def_pager_info (state) ? state->def_pager_info.dpi_total_space : -1;
-}
+#define SWAP_FIELD(getter, expr) \
+  static val_t getter (struct vm_state *state, const struct field *field) \
+  { return ensure_def_pager_info (state) ? (val_t) (expr) : BADVAL; }
 
-static val_t
-get_swap_free (struct vm_state *state, const struct field *field)
-{
-  return
-    ensure_def_pager_info (state) ? state->def_pager_info.dpi_free_space : -1;
-}
-
-static val_t
-get_swap_page_size (struct vm_state *state, const struct field *field)
-{
-  return
-    ensure_def_pager_info (state) ? state->def_pager_info.dpi_page_size : -1;
-}
-
-static val_t
-get_swap_active (struct vm_state *state, const struct field *field)
-{
-  return
-    ensure_def_pager_info (state)
-    ? (state->def_pager_info.dpi_total_space
-       - state->def_pager_info.dpi_free_space)
-    : -1;
-}
+SWAP_FIELD (get_swap_size, state->def_pager_info.dpi_total_space)
+SWAP_FIELD (get_swap_free, state->def_pager_info.dpi_free_space)
+SWAP_FIELD (get_swap_page_size, state->def_pager_info.dpi_page_size)
+SWAP_FIELD (get_swap_active, (state->def_pager_info.dpi_total_space
+			      - state->def_pager_info.dpi_free_space))
 
 /* Returns the byte offset of the field FIELD in a vm_statistics structure. */
 #define _F(field_name)  offsetof (struct vm_statistics, field_name)
@@ -560,7 +546,7 @@ main (int argc, char **argv)
 		  }
 	      putchar ('\n');
 	    }
-	
+
 	  prev_state = state;
 
 	  for (repeats = 0
