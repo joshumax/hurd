@@ -1,4 +1,4 @@
-# 
+#
 #   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -15,7 +15,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-# This is currently i386 specific. XXX 
+# This is currently i386 specific. XXX
 
 dir := libthreads
 makemode := library
@@ -23,11 +23,11 @@ makemode := library
 # In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
 # all done in libc.
 SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c malloc.c \
-	cancel-cond.c
+	cancel-cond.c rwlock.c
 I386SRCS := i386/csw.S i386/thread.c
 
 # In GNU machine/cthreads.h is omitted; that work is done in libc headers.
-LCLHDRS := cthread_internals.h options.h cthreads.h
+LCLHDRS := cthread_internals.h options.h cthreads.h rwlock.h
 
 OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 
@@ -36,7 +36,7 @@ OTHERTAGS = $(I386SRCS) $(I386HDRS)
 libname = libthreads
 
 # Don't put cthreads.h in installhdrs or else it will get installed into
-# $(hurdinst)/include/hurd instead of $(hurdinst)/include.
+# $(prefix)/include/hurd instead of $(prefix)/include.
 
 VPATH += $(srcdir)/$(machine)
 
@@ -46,9 +46,9 @@ include ../Makeconf
 # what that means, you'll understand this line.
 CFLAGS := $(filter-out -Wall,$(CFLAGS))
 
-install: $(includedir)/cthreads.h
-$(includedir)/cthreads.h: cthreads.h
-	$(INSTALL_DATA) cthreads.h $(includedir)/cthreads.h
+install: $(includedir)/cthreads.h $(includedir)/rwlock.h
+
+$(includedir)/%.h: %.h; $(INSTALL_DATA) $< $@
 
 lndist: lndist-i386-files
 
