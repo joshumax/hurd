@@ -79,9 +79,11 @@ _pager_lock_object (struct pager *p,
       while (lr->locks_pending || lr->pending_writes)
 	condition_wait (&p->wakeup, &p->interlock);
   
-      if (!--lr->threads_waiting)
+      if (! --lr->threads_waiting)
 	{
 	  *lr->prevp = lr->next;
+	  if (lr->next)
+	    lr->next->prevp = lr->prevp;
 	  free (lr);
 	}
     }
