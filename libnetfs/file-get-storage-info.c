@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -20,6 +20,7 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <sys/mman.h>
 
 error_t
 netfs_S_file_get_storage_info (struct protid *user,
@@ -33,7 +34,7 @@ netfs_S_file_get_storage_info (struct protid *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   *data_len = 0;
   *num_offsets = 0;
   *num_ports = 0;
@@ -51,5 +52,3 @@ netfs_S_file_get_storage_info (struct protid *user,
 
   return 0;
 }
-
-  
