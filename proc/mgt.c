@@ -105,6 +105,8 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   ngen_gids = sizeof (ggbuf) / sizeof (uid_t);
   naux_gids = sizeof (agbuf) / sizeof (uid_t);
 
+  /* Release the global lock while blocking on the auth server and client.  */
+  mutex_unlock (&global_lock);
   err = auth_server_authenticate (authserver,
 				  rendport, MACH_MSG_TYPE_COPY_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
@@ -112,14 +114,22 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 				  &aux_uids, &naux_uids,
 				  &gen_gids, &ngen_gids,
 				  &aux_gids, &naux_gids);
+  mutex_lock (&global_lock);
+
   if (err)
     return err;
-  mach_port_deallocate (mach_task_self (), rendport);
 
-  ids_rele (p->p_id);
-  p->p_id = make_ids (gen_uids, ngen_uids);
-  if (! p->p_id)
-    err = ENOMEM;
+  if (p->p_dead)
+    /* The process died while we had the lock released.
+       Its p_id field is no longer valid and we shouldn't touch it.  */
+    err = EAGAIN;
+  else
+    {
+      ids_rele (p->p_id);
+      p->p_id = make_ids (gen_uids, ngen_uids);
+      if (! p->p_id)
+	err = ENOMEM;
+    }
 
   if (gen_uids != gubuf)
     munmap (gen_uids, ngen_uids * sizeof (uid_t));
@@ -130,6 +140,8 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   if (aux_gids != agbuf)
     munmap (aux_gids, naux_gids * sizeof (uid_t));
 
+  if (!err)
+    mach_port_deallocate (mach_task_self (), rendport);
   return err;
 }
 
@@ -543,25 +555,11 @@ allocate_proc (task_t task)
   if (err)
     return NULL;
 
+  memset (p, 0, sizeof *p);
   p->p_task = task;
   p->p_msgport = MACH_PORT_NULL;
 
   condition_init (&p->p_wakeup);
-
-  p->p_argv = p->p_envp = p->p_status = 0;
-
-  p->p_owner = 0;
-  p->p_exec = 0;
-  p->p_stopped = 0;
-  p->p_waited = 0;
-  p->p_exiting = 0;
-  p->p_waiting = 0;
-  p->p_traced = 0;
-  p->p_nostopcld = 0;
-  p->p_deadmsg = 0;
-  p->p_checkmsghangs = 0;
-  p->p_msgportwait = 0;
-  p->p_dead = 0;
 
   return p;
 }
