@@ -31,17 +31,12 @@ struct rwlock
   int readers_waiting;
 };
 
-#ifdef _RWLOCK_DEFINE_FUNCTIONS
-#undef _EXTERN_INLINE
-#define _EXTERN_INLINE
-#else /* ! _RWLOCK_DEFINE_FUNCTIONS */
-#ifndef _EXTERN_INLINE
-#define _EXTERN_INLINE extern __inline
+#ifndef RWLOCK_EI
+#define RWLOCK_EI extern inline
 #endif
-#endif /* _RWLOCK_DEFINE_FUNCTIONS */
 
 /* Get a reader lock on reader-writer lock LOCK for disknode DN */
-_EXTERN_INLINE void
+RWLOCK_EI void
 rwlock_reader_lock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -58,7 +53,7 @@ rwlock_reader_lock (struct rwlock *lock)
 }
 
 /* Get a writer lock on reader-writer lock LOCK for disknode DN */
-_EXTERN_INLINE void
+RWLOCK_EI void
 rwlock_writer_lock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -75,7 +70,7 @@ rwlock_writer_lock (struct rwlock *lock)
 }
 
 /* Release a reader lock on reader-writer lock LOCK for disknode DN */
-_EXTERN_INLINE void
+RWLOCK_EI void
 rwlock_reader_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -87,7 +82,7 @@ rwlock_reader_unlock (struct rwlock *lock)
 }
 
 /* Release a writer lock on reader-writer lock LOCK for disknode DN */
-_EXTERN_INLINE void
+RWLOCK_EI void
 rwlock_writer_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -99,7 +94,7 @@ rwlock_writer_unlock (struct rwlock *lock)
 }
 
 /* Initialize reader-writer lock LOCK */
-_EXTERN_INLINE void
+RWLOCK_EI void
 rwlock_init (struct rwlock *lock)
 {
   mutex_init (&lock->master);
