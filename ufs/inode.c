@@ -17,7 +17,6 @@
 
 #include "ufs.h"
 #include "dinode.h"
-#include "fs.h"
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -73,6 +72,7 @@ iget (ino_t inum, struct node **npp)
   dn->dirents = 0;
 
   rwlock_init (&dn->allocptrlock);
+  dn->dirty = 0;
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
