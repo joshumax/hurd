@@ -35,7 +35,7 @@ working-prog-subdirs := $(filter-out \
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
 			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
-	     hurd.boot build.mk.in \
+	     hurd.boot build.mk.in SETUP \
 	     README NEWS tasks INSTALL README-binary 
 
 all: $(addsuffix -all,$(lib-subdirs) $(working-prog-subdirs))
