@@ -1,3 +1,12 @@
+Mon Oct  7 15:48:49 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Typo.
+
+Fri Oct  4 23:51:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Add security
+	check, and deactivate FILE_STORE if necessary.
+
 Mon Sep 30 15:40:53 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storeinfo.c (diskfs_S_file_get_storage_info): Set *PORTS_TYPE.
