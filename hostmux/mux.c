@@ -61,7 +61,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
   else
     err = lookup_host (dir->nn->mux, name, node);
 
-  touch (dir, TOUCH_ATIME);
+  fshelp_touch (&dir->nn_stat, TOUCH_ATIME, hostmux_maptime);
 
   mutex_unlock (&dir->lock);
 
@@ -103,7 +103,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
     if (nm->node)
       {
 	size_t new_size = size + DIRENT_LEN (strlen (nm->name));
-	if (new_size > max_data_len)
+	if (max_data_len > 0 && new_size > max_data_len)
 	  break;
 	size = new_size;
 	count++;
@@ -151,7 +151,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   rwlock_reader_unlock (&dir->nn->mux->names_lock);
 
-  touch (dir, TOUCH_ATIME);
+  fshelp_touch (&dir->nn_stat, TOUCH_ATIME, hostmux_maptime);
 
   return err;
 }
@@ -336,7 +336,7 @@ netfs_attempt_chown (struct iouser *cred, struct node *node, uid_t uid, uid_t gi
 	      }
 	  rwlock_reader_unlock (&mux->names_lock);
 
-	  touch (node, TOUCH_CTIME);
+	  fshelp_touch (&node->nn_stat, TOUCH_CTIME, hostmux_maptime);
 	}
 
       return err;
@@ -370,7 +370,7 @@ netfs_attempt_chauthor (struct iouser *cred, struct node *node, uid_t author)
 	      nm->node->nn_stat.st_author = author;
 	  rwlock_reader_unlock (&mux->names_lock);
 
-	  touch (node, TOUCH_CTIME);
+	  fshelp_touch (&node->nn_stat, TOUCH_CTIME, hostmux_maptime);
 	}
 
       return err;
@@ -394,7 +394,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *node, mode_t mode)
       if (! err)
 	{
 	  node->nn_stat.st_mode = mode;
-	  touch (node, TOUCH_CTIME);
+	  fshelp_touch (&node->nn_stat, TOUCH_CTIME, hostmux_maptime);
 	}
       return err;
     }
