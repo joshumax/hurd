@@ -128,6 +128,6 @@ error_t
 ps_write_int_field(int value, int width, FILE *stream, int *count)
 {
   char buf[20];
-  sprintf(buf, "%ld", value);
+  sprintf(buf, "%d", value);
   return ps_write_field(buf, width, stream, count);
 }
