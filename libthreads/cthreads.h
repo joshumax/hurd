@@ -1,6 +1,6 @@
 /*
  * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
+ * Copyright (c) 1993,1992,1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
  *
  * Permission to use, copy, modify and distribute this software and its
@@ -25,67 +25,58 @@
  */
 /*
  * HISTORY
- * $Log: cthreads.h,v $
- * Revision 1.16  2001/03/31 23:01:01  roland
- * 2001-03-31  Roland McGrath  <roland@frob.com>
+ * 20-Oct-93  Tero Kivinen (kivinen) at Helsinki University of Technology
+ *	Renamed cthread_t->catch to to cthread_t->catch_exit, because
+ *	catch is reserved word in c++.
  *
- * 	* cthreads.h: Fix obsolescent #endif syntax.
- * 	* cthread_internals.h: Likewise.
- * 	* cancel-cond.c: Likewise.
- * 	* stack.c: Likewise.
- * 	* cthreads.c: Likewise.
- * 	* cprocs.c: Likewise.
- * 	* call.c: Likewise.
+ * 12-Oct-93  Johannes Helander (jvh) at Helsinki University of Technology
+ *	Added CONDITION_NAMED_INITIALIZER and MUTEX_NAMED_INITIALIZER1
+ * 	macros. They take one argument: a name string.
  *
- * Revision 1.15  1999/06/13 18:54:42  roland
- * 1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
+ * $Log:	cthreads.h,v $
+ * Revision 2.17  93/05/10  19:43:11  rvb
+ * 	Removed include of stdlib.h and just define malloc
+ * 	[93/04/27            mrt]
  *
- * 	* cthreads.h (MACRO_BEGIN, MACRO_END): #undef before unconditionally
- * 	redefining.  Use GCC extension for statement expression with value 0.
+ * Revision 2.16  93/05/10  17:51:26  rvb
+ * 	Just imagine how much more useful TWO special/fast lookup
+ * 	variables could be.  (Actually, I am planning on using this
+ * 	for bsdss -- for multiple threads per task.  If I don't, I'll
+ * 	remove the feature.)
+ * 	[93/05/10            rvb]
+ * 	Big mistake here! CTHREAD_DATA must always be set TRUE.
+ * 	cthreads.h is included by import_mach.h by lots of files
+ * 	that are not compiled with -DCTHREAD_DATA.  This means
+ * 	they see a different structure for cthread_t than the
+ * 	cthread library -- which is compiled with CTHREAD_DATA.
+ * 	Also, make cthread_set_data and cthread_data macros.
+ * 	[93/05/06            rvb]
+ * 	Flush stdlib
+ * 	[93/05/05            rvb]
  *
- * Revision 1.14  1999/05/30 01:39:48  roland
- * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+ * Revision 2.15  93/01/27  09:03:32  danner
+ * 	Updated include of mach/mach.h to mach.h
  *
- * 	* cthreads.h (mutex_clear): Change again, to call mutex_init.
  *
- * Revision 1.13  1999/05/29 18:59:10  roland
- * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+ * Revision 2.14  93/01/24  13:24:50  danner
+ * 	Get MACRO_BEGIN, MACRO_END, NEVER, ... from sys/macro_help.h
+ * 	why define it here.
+ * 	[92/10/20            rvb]
  *
- * 	* cthreads.h (mutex_clear): Change from syntax error to no-op (with
- * 	warning avoidance).
+ * Revision 2.13  93/01/14  18:05:04  danner
+ * 	Added MACRO_BEGIN and MACRO_END to definition of spin_lock.
+ * 	Fixed return value of cthread_set_data.
+ * 	Added prototypes for other miscellaneous functions.
+ * 	[92/12/18            pds]
+ * 	Converted file to ANSI C.
+ * 	Added declarations of cthread_fork_{prepare,parent,child}.
+ * 	Added include of <sys/macro_help.h>.
+ * 	[92/12/13            pds]
  *
- * Revision 1.12  1996/05/04 10:06:31  roland
- * [lint] (NEVER): Spurious global variable removed.
- * [!lint] (NEVER): Useless macro removed.
- *
- * Revision 1.11  1996/01/24 18:37:59  roland
- * Use prototypes for functions of zero args.
- *
- * Revision 1.10  1995/09/13 19:50:07  mib
- * (CONDITION_INITIALIZER): Provide initial zero for IMPLICATIONS member.
- * (condition_init): Bother initializing NAME and IMPLICATIONS members.
- *
- * Revision 1.9  1995/08/30 15:51:41  mib
- * (condition_implies, condition_unimplies): New functions.
- * (struct condition): New member `implications'.
- * (cond_imp): New structure.
- * (cond_signal): Return int now.
- * (condition_broadcast): Always call cond_broadcast if this condition
- * has implications.
- * (condition_signal): Always call cond_signal if this condition has
- * implications.
- *
- * Revision 1.8  1995/08/30 15:10:23  mib
- * (hurd_condition_wait): Provide declaration.
- *
- * Revision 1.7  1995/07/18 17:15:51  mib
- * Reverse previous change.
- *
- * Revision 1.5  1995/04/04 21:06:16  roland
- * (mutex_lock, mutex_unlock): Use __ names for *_solid.
- *
- * Revision 1.4  1994/05/05  10:52:06  roland
- * entered into RCS
+ * 	Replaced calloc declaration with an include of stdlib.h.
+ * 	[92/06/15            pds]
+ * 	64bit cleanup.
+ * 	[92/12/02            af]
  *
  * Revision 2.12  92/05/22  18:38:36  jfriedl
  * 	From Mike Kupfer <kupfer@sprite.Berkeley.EDU>:
@@ -225,62 +216,46 @@
 #ifndef	_CTHREADS_
 #define	_CTHREADS_ 1
 
-/* MIB XXX */
-#define CTHREAD_DATA
+#define WAIT_DEBUG		/* XXX should be defined somewhere else */
 
 #if 0
 /* This is CMU's machine-dependent file.  In GNU all of the machine
    dependencies are dealt with in libc.  */
 #include <machine/cthreads.h>
-#else
-#include <machine-sp.h>
-#define cthread_sp()	((vm_address_t) __thread_stack_pointer ())
-#endif
-
-#if	c_plusplus || __STDC__
-
-#ifndef	C_ARG_DECLS
-#define	C_ARG_DECLS(arglist)	arglist
-#endif	/* not C_ARG_DECLS */
-
-typedef void *any_t;
-
-#else	/* not (c_plusplus || __STDC__) */
-
-#ifndef	C_ARG_DECLS
-#define	C_ARG_DECLS(arglist)	()
-#endif	/* not C_ARG_DECLS */
-
-typedef char *any_t;
-
-#endif	/* not (c_plusplus || __STDC__) */
-
-#include <mach/mach.h>
+#include <mach.h>
+#include <sys/macro_help.h>
 #include <mach/machine/vm_param.h>
 
-#ifndef	TRUE
+#ifdef __STDC__
+extern void *malloc();
+#else
+extern char *malloc();
+#endif
+
+#else  /* GNU */
+# include <stdlib.h>
+# include <mach.h>
+# include <mach/machine/vm_param.h>
+# include <machine-sp.h>
+# define cthread_sp()	((vm_address_t) __thread_stack_pointer ())
+# define MACRO_BEGIN	__extension__ ({
+# define MACRO_END	0; })
+#endif
+
+typedef void *any_t;	    /* XXX - obsolete, should be deleted. */
+
+#if	defined(TRUE)
+#else	/* not defined(TRUE) */
 #define	TRUE	1
 #define	FALSE	0
-#endif	/* TRUE */
-
-
-#undef	MACRO_BEGIN
-#undef	MACRO_END
-#define	MACRO_BEGIN	__extension__ ({
-#define	MACRO_END	0; })
-
+#endif
 
 /*
  * C Threads package initialization.
  */
 
-extern int cthread_init C_ARG_DECLS((void));
-#if 0
-/* This prototype is broken for GNU.  */
-extern any_t calloc C_ARG_DECLS((unsigned n, unsigned size));
-#else
-#include <stdlib.h>
-#endif
+extern vm_offset_t cthread_init(void);
+
 
 /*
  * Queues.
@@ -300,7 +275,7 @@ typedef struct cthread_queue_item {
 
 #define	cthread_queue_alloc()	((cthread_queue_t) calloc(1, sizeof(struct cthread_queue)))
 #define	cthread_queue_init(q)	((q)->head = (q)->tail = 0)
-#define	cthread_queue_free(q)	free((any_t) (q))
+#define	cthread_queue_free(q)	free((q))
 
 #define	cthread_queue_enq(q, x) \
 	MACRO_BEGIN \
@@ -332,7 +307,7 @@ typedef struct cthread_queue_item {
 #define	cthread_queue_map(q, t, f) \
 	MACRO_BEGIN \
 		register cthread_queue_item_t x, next; \
-		for (x = (cthread_queue_item_t) ((q)->head); x != 0; x = next) { \
+		for (x = (cthread_queue_item_t) ((q)->head); x != 0; x = next){\
 			next = x->next; \
 			(*(f))((t) x); \
 		} \
@@ -349,20 +324,24 @@ typedef struct cthread_queue_item {
 /*
  * Spin locks.
  */
-extern void
-spin_lock_solid C_ARG_DECLS((spin_lock_t *p));
+extern void		spin_lock_solid(spin_lock_t *_lock);
 
-#ifndef	spin_unlock
-extern void
-spin_unlock C_ARG_DECLS((spin_lock_t *p));
+#if	defined(spin_unlock)
+#else	/* not defined(spin_unlock) */
+extern void		spin_unlock(spin_lock_t *_lock);
 #endif
 
-#ifndef	spin_try_lock
-extern int
-spin_try_lock C_ARG_DECLS((spin_lock_t *p));
+#if	defined(spin_try_lock)
+#else	/* not defined(spin_try_lock) */
+extern boolean_t	spin_try_lock(spin_lock_t *_lock);
 #endif
 
-#define spin_lock(p) ({if (!spin_try_lock(p)) spin_lock_solid(p);})
+#define spin_lock(p) \
+	MACRO_BEGIN \
+	if (!spin_try_lock(p)) { \
+		spin_lock_solid(p); \
+	} \
+	MACRO_END
 
 #endif /* End unused CMU code.  */
 
@@ -376,12 +355,15 @@ typedef struct mutex {
      see if it gets the mutex.  */
 	spin_lock_t held;
 	spin_lock_t lock;
-	char *name;
+	const char *name;
 	struct cthread_queue queue;
+	/* holder is for WAIT_DEBUG. Not ifdeffed to keep size constant. */
+	struct cthread *holder;
 } *mutex_t;
 
 /* Rearranged accordingly for GNU: */
-#define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER }
+#define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER, }
+#define	MUTEX_NAMED_INITIALIZER(Name) { SPIN_LOCK_INITIALIZER, SPIN_LOCK_INITIALIZER, Name, QUEUE_INITIALIZER, }
 
 #define	mutex_alloc()		((mutex_t) calloc(1, sizeof(struct mutex)))
 #define	mutex_init(m) \
@@ -389,16 +371,31 @@ typedef struct mutex {
 	spin_lock_init(&(m)->lock); \
 	cthread_queue_init(&(m)->queue); \
 	spin_lock_init(&(m)->held); \
+	(m)->holder = 0; \
 	MACRO_END
 #define	mutex_set_name(m, x)	((m)->name = (x))
 #define	mutex_name(m)		((m)->name != 0 ? (m)->name : "?")
-#define	mutex_clear(m)		mutex_init(m)
-#define	mutex_free(m)		free((any_t) (m))
-
-extern void __mutex_lock_solid (void *mutex); /* blocking -- roland@gnu */
-extern void __mutex_unlock_solid (void *mutex); /* roland@gnu */
+#define	mutex_clear(m)		/* nop */???
+#define	mutex_free(m)		free((m))
 
 #define mutex_try_lock(m) spin_try_lock(&(m)->held)
+#if defined(WAIT_DEBUG)
+#define mutex_lock(m) \
+	MACRO_BEGIN \
+	if (!spin_try_lock(&(m)->held)) { \
+		__mutex_lock_solid(m); \
+	} \
+	(m)->holder = cthread_self(); \
+	MACRO_END
+#define mutex_unlock(m) \
+	MACRO_BEGIN \
+	if (spin_unlock(&(m)->held), \
+	    cthread_queue_head(&(m)->queue, vm_offset_t) != 0) { \
+		__mutex_unlock_solid(m); \
+	} \
+	(m)->holder = 0; \
+	MACRO_END
+#else /* defined(WAIT_DEBUG */
 #define mutex_lock(m) \
 	MACRO_BEGIN \
 	if (!spin_try_lock(&(m)->held)) { \
@@ -408,18 +405,18 @@ extern void __mutex_unlock_solid (void *mutex); /* roland@gnu */
 #define mutex_unlock(m) \
 	MACRO_BEGIN \
 	if (spin_unlock(&(m)->held), \
-	    cthread_queue_head(&(m)->queue, void *) != 0) { \
+	    cthread_queue_head(&(m)->queue, vm_offset_t) != 0) { \
 		__mutex_unlock_solid(m); \
 	} \
 	MACRO_END
-
+#endif /* defined(WAIT_DEBUG) */
 /*
  * Condition variables.
  */
 typedef struct condition {
 	spin_lock_t lock;
 	struct cthread_queue queue;
-	char *name;
+	const char *name;
 	struct cond_imp *implications;
 } *condition_t;
 
@@ -430,8 +427,10 @@ struct cond_imp
 };
 
 #define	CONDITION_INITIALIZER		{ SPIN_LOCK_INITIALIZER, QUEUE_INITIALIZER, 0, 0 }
+#define	CONDITION_NAMED_INITIALIZER(Name)		{ SPIN_LOCK_INITIALIZER, QUEUE_INITIALIZER, Name, 0 }
 
-#define	condition_alloc()		((condition_t) calloc(1, sizeof(struct condition)))
+#define	condition_alloc() \
+	((condition_t) calloc(1, sizeof(struct condition)))
 #define	condition_init(c) \
 	MACRO_BEGIN \
 	spin_lock_init(&(c)->lock); \
@@ -449,7 +448,7 @@ struct cond_imp
 #define	condition_free(c) \
 	MACRO_BEGIN \
 	condition_clear(c); \
-	free((any_t) (c)); \
+	free((c)); \
 	MACRO_END
 
 #define	condition_signal(c) \
@@ -466,29 +465,17 @@ struct cond_imp
 	} \
 	MACRO_END
 
-extern int
-cond_signal C_ARG_DECLS((condition_t c));
+extern int	cond_signal(condition_t _cond);
 
-extern void
-cond_broadcast C_ARG_DECLS((condition_t c));
+extern void	cond_broadcast(condition_t _cond);
 
-extern void
-condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
-
-extern int
-hurd_condition_wait C_ARG_DECLS((condition_t c, mutex_t m));
-
-extern void
-condition_implies C_ARG_DECLS((condition_t implicator, condition_t implicatand));
-
-extern void
-condition_unimplies C_ARG_DECLS((condition_t implicator, condition_t implicatand));
+extern void	condition_wait(condition_t _cond, mutex_t _mutex);
 
 /*
  * Threads.
  */
 
-typedef any_t (*cthread_fn_t) C_ARG_DECLS((any_t arg));
+typedef void *	(*cthread_fn_t)(void *arg);
 
 #include <setjmp.h>
 
@@ -497,34 +484,28 @@ typedef struct cthread {
 	struct mutex lock;
 	struct condition done;
 	int state;
-	jmp_buf catch;
+	jmp_buf catch_exit;
 	cthread_fn_t func;
-	any_t arg;
-	any_t result;
-	char *name;
-#ifdef	CTHREAD_DATA
-	any_t data;
-#endif	 /* CTHREAD_DATA */
-	any_t private_data;
+	void *arg;
+	void *result;
+	const char *name;
+	void *data;
+	void *ldata;
+	void *private_data;
 	struct ur_cthread *ur;
 } *cthread_t;
 
 #define	NO_CTHREAD	((cthread_t) 0)
 
-extern cthread_t
-cthread_fork C_ARG_DECLS((cthread_fn_t func, any_t arg));
+extern cthread_t	cthread_fork(cthread_fn_t _func, void *_arg);
 
-extern void
-cthread_detach C_ARG_DECLS((cthread_t t));
+extern void		cthread_detach(cthread_t _thread);
 
-extern any_t
-cthread_join C_ARG_DECLS((cthread_t t));
+extern any_t		cthread_join(cthread_t _thread);
 
-extern void
-cthread_yield C_ARG_DECLS((void));
+extern void		cthread_yield(void);
 
-extern void
-cthread_exit C_ARG_DECLS((any_t result));
+extern void		cthread_exit(void *_result);
 
 /*
  * This structure must agree with struct cproc in cthread_internals.h
@@ -535,20 +516,20 @@ typedef struct ur_cthread {
 } *ur_cthread_t;
 
 #ifndef	cthread_sp
-extern int
-cthread_sp C_ARG_DECLS((void));
+extern vm_offset_t
+cthread_sp(void);
 #endif
 
-extern int cthread_stack_mask;
+extern vm_offset_t cthread_stack_mask;
 
-#ifdef	STACK_GROWTH_UP
+#if	defined(STACK_GROWTH_UP)
 #define	ur_cthread_ptr(sp) \
 	(* (ur_cthread_t *) ((sp) & cthread_stack_mask))
-#else	 /* STACK_GROWTH_UP */
+#else	/* not defined(STACK_GROWTH_UP) */
 #define	ur_cthread_ptr(sp) \
 	(* (ur_cthread_t *) ( ((sp) | cthread_stack_mask) + 1 \
 			      - sizeof(ur_cthread_t *)) )
-#endif	 /* STACK_GROWTH_UP */
+#endif	/* defined(STACK_GROWTH_UP) */
 
 #define	ur_cthread_self()	(ur_cthread_ptr(cthread_sp()))
 
@@ -556,37 +537,80 @@ extern int cthread_stack_mask;
 				((t) ? ((t)->ur = (ur_cthread_t)(id)) : 0))
 #define	cthread_self()		(ur_cthread_self()->incarnation)
 
-extern void
-cthread_set_name C_ARG_DECLS((cthread_t t, char *name));
+extern void		cthread_set_name(cthread_t _thread, const char *_name);
 
-extern char *
-cthread_name C_ARG_DECLS((cthread_t t));
+extern const char *	cthread_name(cthread_t _thread);
 
-extern int
-cthread_count C_ARG_DECLS((void));
+extern int		cthread_count(void);
 
-extern void
-cthread_set_limit C_ARG_DECLS((int n));
+extern void		cthread_set_limit(int _limit);
 
-extern int
-cthread_limit C_ARG_DECLS((void));
+extern int		cthread_limit(void);
 
-extern void
-cthread_wire C_ARG_DECLS((void));
+extern void		cthread_set_kernel_limit(int _n);
 
-#ifdef	CTHREAD_DATA
+extern int		cthread_kernel_limit(void);
+
+extern void		cthread_wire(void);
+
+extern void		cthread_unwire(void);
+
+extern void		cthread_msg_busy(mach_port_t _port, int _min, int _max);
+
+extern void		cthread_msg_active(mach_port_t _prt, int _min, int _max);
+
+extern mach_msg_return_t cthread_mach_msg(mach_msg_header_t *_header,
+					  mach_msg_option_t _option,
+					  mach_msg_size_t _send_size,
+					  mach_msg_size_t _rcv_size,
+					  mach_port_t _rcv_name,
+					  mach_msg_timeout_t _timeout,
+					  mach_port_t _notify,
+					  int _min, int _max);
+
+extern void		cthread_fork_prepare(void);
+
+extern void		cthread_fork_parent(void);
+
+extern void		cthread_fork_child(void);
+
+#if	defined(THREAD_CALLS)
+/*
+ * Routines to replace thread_*.
+ */
+extern kern_return_t	cthread_get_state(cthread_t _thread);
+
+extern kern_return_t	cthread_set_state(cthread_t _thread);
+
+extern kern_return_t	cthread_abort(cthread_t _thread);
+
+extern kern_return_t	cthread_resume(cthread_t _thread);
+
+extern kern_return_t	cthread_suspend(cthread_t _thread);
+
+extern kern_return_t	cthread_call_on(cthread_t _thread);
+#endif	/* defined(THREAD_CALLS) */
+
+#if	defined(CTHREAD_DATA_XX)
 /*
  * Set or get thread specific "global" variable
  *
  * The thread given must be the calling thread (ie. thread_self).
  * XXX This is for compatibility with the old cthread_data. XXX
  */
-extern int
-cthread_set_data C_ARG_DECLS((cthread_t t, any_t x));
+extern int		cthread_set_data(cthread_t _thread, void *_val);
 
-extern any_t
-cthread_data C_ARG_DECLS((cthread_t t));
-#endif	 /* CTHREAD_DATA */
+extern void *		cthread_data(cthread_t _thread);
+#else	/* defined(CTHREAD_DATA_XX) */
+
+#define cthread_set_data(_thread, _val) ((_thread)->data) = (void *)(_val);
+#define cthread_data(_thread) ((_thread)->data)
+
+#define cthread_set_ldata(_thread, _val) ((_thread)->ldata) = (void *)(_val);
+#define cthread_ldata(_thread) ((_thread)->ldata)
+
+#endif	/* defined(CTHREAD_DATA_XX) */
+
 
 /*
  * Support for POSIX thread specific data
@@ -594,7 +618,7 @@ cthread_data C_ARG_DECLS((cthread_t t));
  * Multiplexes a thread specific "global" variable
  * into many thread specific "global" variables.
  */
-#define CTHREAD_DATA_VALUE_NULL		(any_t)0
+#define CTHREAD_DATA_VALUE_NULL		(void *)0
 #define	CTHREAD_KEY_INVALID		(cthread_key_t)-1
 
 typedef int	cthread_key_t;
@@ -604,27 +628,25 @@ typedef int	cthread_key_t;
  * Different threads may use same key, but the values bound to the key are
  * maintained on a thread specific basis.
  */
-extern int
-cthread_keycreate C_ARG_DECLS((cthread_key_t *key));
+extern int		cthread_keycreate(cthread_key_t *_key);
 
 /*
  * Get value currently bound to key for calling thread
  */
-extern int
-cthread_getspecific C_ARG_DECLS((cthread_key_t key, any_t *value));
+extern int		cthread_getspecific(cthread_key_t _key, void **_value);
 
 /*
  * Bind value to given key for calling thread
  */
-extern int
-cthread_setspecific C_ARG_DECLS((cthread_key_t key, any_t value));
+extern int		cthread_setspecific(cthread_key_t _key, void *_value);
 
 /*
  * Debugging support.
  */
-#ifdef	DEBUG
+#if	defined(DEBUG)
 
-#ifndef	ASSERT
+#if	defined(ASSERT)
+#else	/* not defined(ASSERT) */
 /*
  * Assertion macro, similar to <assert.h>
  */
@@ -639,18 +661,19 @@ cthread_setspecific C_ARG_DECLS((cthread_key_t key, any_t value));
 	} \
 	MACRO_END
 
-#endif	 /* ASSERT */
+#endif	/* defined(ASSERT) */
 
 #define	SHOULDNT_HAPPEN	0
 
 extern int cthread_debug;
 
-#else	 /* DEBUG */
+#else	/* not defined(DEBUG) */
 
-#ifndef	ASSERT
+#if	defined(ASSERT)
+#else	/* not defined(ASSERT) */
 #define	ASSERT(p)
-#endif	 /* ASSERT */
+#endif	/* defined(ASSERT) */
 
-#endif	 /* DEBUG */
+#endif	/* defined(DEBUG) */
 
-#endif	 /* _CTHREADS_ */
+#endif	/* not defined(_CTHREADS_) */

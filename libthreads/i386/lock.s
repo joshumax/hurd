@@ -26,6 +26,10 @@
 /*
  * HISTORY
  * $Log:	lock.s,v $
+ * Revision 2.6  93/05/10  17:51:38  rvb
+ * 	Use C Comment
+ * 	[93/05/04  18:14:05  rvb]
+ * 
  * Revision 2.5  91/05/14  17:57:20  mrt
  * 	Correcting copyright
  * 
@@ -49,22 +53,22 @@
  * boolean_t spin_try_lock(int *m)
  */
 ENTRY(spin_try_lock)
-	movl	4(%esp),%ecx		/ point at mutex
-	movl	$1,%eax			/ set locked value in acc
-	xchg	%eax,(%ecx)		/ swap with mutex
-					/ xchg with memory is automatically
-					/ locked
-	xorl	$1,%eax			/ 1 (locked) => FALSE
-					/ 0 (locked) => TRUE
+	movl	4(%esp),%ecx		/* point at mutex */
+	movl	$1,%eax			/* set locked value in acc */
+	xchg	%eax,(%ecx)		/* swap with mutex */
+					/* xchg with memory is automatically */
+					/* locked */
+	xorl	$1,%eax			/* 1 (locked) => FALSE */
+					/* 0 (locked) => TRUE */
 	ret
 
 /*
  * void spin_unlock(int *m)
  */
 ENTRY(spin_unlock)
-	movl	4(%esp),%ecx		/ point at mutex
-	xorl	%eax,%eax		/ set unlocked value in acc
-	xchg	%eax,(%ecx)		/ swap with mutex
-					/ xchg with memory is automatically
-					/ locked
+	movl	4(%esp),%ecx		/* point at mutex */
+	xorl	%eax,%eax		/* set unlocked value in acc */
+	xchg	%eax,(%ecx)		/* swap with mutex */
+					/* xchg with memory is automatically */
+					/* locked */
 	ret

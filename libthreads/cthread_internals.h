@@ -1,6 +1,6 @@
 /*
  * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
+ * Copyright (c) 1992,1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
  *
  * Permission to use, copy, modify and distribute this software and its
@@ -25,23 +25,28 @@
  */
 /*
  * HISTORY
- * $Log: cthread_internals.h,v $
- * Revision 1.4  2001/03/31 23:01:01  roland
- * 2001-03-31  Roland McGrath  <roland@frob.com>
+ * 26-Oct-94  Johannes Helander (jvh) Helsinki University of Technology
+ *	Defined WAIT_DEBUG and initialized wait_enum
  *
- * 	* cthreads.h: Fix obsolescent #endif syntax.
- * 	* cthread_internals.h: Likewise.
- * 	* cancel-cond.c: Likewise.
- * 	* stack.c: Likewise.
- * 	* cthreads.c: Likewise.
- * 	* cprocs.c: Likewise.
- * 	* call.c: Likewise.
+ * $Log:	cthread_internals.h,v $
+ * Revision 2.17  93/05/10  21:33:36  rvb
+ * 	Context is a natural_t.  Assumming, that is, that on
+ * 	some future architecture one word might be enough.
+ * 	[93/05/06  09:19:35  af]
  *
- * Revision 1.3  1995/08/29 14:49:20  mib
- * (cproc_block): Provide decl.
+ * Revision 2.16  93/05/10  17:51:23  rvb
+ * 	Flush stdlib
+ * 	[93/05/05  09:12:29  rvb]
  *
- * Revision 1.2  1994/05/05 10:58:01  roland
- * entered into RCS
+ * Revision 2.15  93/01/14  18:04:56  danner
+ * 	Added declarations for library-internal routines.
+ * 	[92/12/18            pds]
+ *
+ * 	Replaced malloc and mach_error declarations with includes of
+ * 	mach_error.h and stdlib.h.
+ * 	[92/06/13            pds]
+ * 	64bit cleanup.
+ * 	[92/12/01            af]
  *
  * Revision 2.14  92/08/03  18:03:56  jfriedl
  * 	Made state element of struct cproc volatile.
@@ -160,7 +165,7 @@ typedef struct cproc {
 	mach_port_t reply_port;		/* for mig_get_reply_port() */
 #endif
 
-	int context;
+	natural_t context;
 	spin_lock_t lock;
 	volatile int state;			/* current state */
 #define CPROC_RUNNING	0
@@ -173,14 +178,12 @@ typedef struct cproc {
 
 	mach_msg_header_t msg;
 
-	unsigned int stack_base;
-	unsigned int stack_size;
+	vm_offset_t stack_base;
+	vm_offset_t stack_size;
 } *cproc_t;
 
 #define	NO_CPROC		((cproc_t) 0)
 #define	cproc_self()		((cproc_t) ur_cthread_self())
-
-int cproc_block ();
 
 #if 0
 /* This declaration conflicts with <stdlib.h> in GNU.  */
@@ -221,3 +224,71 @@ extern void mach_error();
 
 #define yield()		\
 	(void) thread_switch(MACH_PORT_NULL, SWITCH_OPTION_DEPRESS, 10)
+
+/*
+ * Functions implemented in malloc.c.
+ */
+
+#if	defined(DEBUG)
+extern void	print_malloc_free_list(void);
+#endif	/* defined(DEBUG) */
+
+extern void		malloc_fork_prepare(void);
+
+extern void		malloc_fork_parent(void);
+
+extern void		malloc_fork_child(void);
+
+
+/*
+ * Functions implemented in stack.c.
+ */
+
+extern vm_offset_t	stack_init(cproc_t _cproc);
+
+extern void		alloc_stack(cproc_t _cproc);
+
+extern vm_offset_t	cproc_stack_base(cproc_t _cproc, int _offset);
+
+extern void		stack_fork_child(void);
+
+/*
+ * Functions implemented in cprocs.c.
+ */
+
+extern vm_offset_t	cproc_init(void);
+
+extern void		cproc_waiting(cproc_t _waiter);
+
+extern cproc_t		cproc_create(void);
+
+extern void		cproc_fork_prepare(void);
+
+extern void		cproc_fork_parent(void);
+
+extern void		cproc_fork_child(void);
+
+/*
+ * Function implemented in cthreads.c.
+ */
+
+extern void		cthread_body(cproc_t _self);
+
+/*
+ * Functions from machine dependent files.
+ */
+
+extern void		cproc_switch(natural_t *_cur, const natural_t *_new,
+				     spin_lock_t *_lock);
+
+extern void		cproc_start_wait(natural_t *_parent, cproc_t _child,
+					 vm_offset_t _stackp,
+					 spin_lock_t *_lock);
+
+extern void		cproc_prepare(cproc_t _child,
+				      natural_t *_child_context,
+				      vm_offset_t _stackp,
+				      void (*cthread_body_pc)());
+
+extern void		cproc_setup(cproc_t _child, thread_t _mach_thread,
+				    void (*_routine)(cproc_t));

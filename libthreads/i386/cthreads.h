@@ -1,6 +1,6 @@
 /* 
  * Mach Operating System
- * Copyright (c) 1991,1990 Carnegie Mellon University
+ * Copyright (c) 1993,1991,1990 Carnegie Mellon University
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify and distribute this software and its
@@ -26,6 +26,15 @@
 /*
  * HISTORY
  * $Log:	cthreads.h,v $
+ * Revision 2.9  93/01/24  13:24:58  danner
+ * 	Move ! in spin_try_lock to give the compiler
+ * 	a fighting chance.
+ * 	[92/11/19            rvb]
+ * 
+ * Revision 2.8  93/01/14  18:05:09  danner
+ * 	asm -> __asm__
+ * 	[93/01/10            danner]
+ * 
  * Revision 2.7  92/01/03  20:36:59  dbg
  * 	Add volatile to spin_lock_t.  Change spin_unlock and
  * 	spin_try_lock definitions back to memory operands, but rely on
@@ -66,21 +75,21 @@ typedef volatile int spin_lock_t;
 
 #define	spin_unlock(p) \
 	({  register int _u__ ; \
-	    asm volatile("xorl %0, %0; \n\
+	    __asm__ volatile("xorl %0, %0; \n\
 			  xchgl %0, %1" \
 			: "=&r" (_u__), "=m" (*(p)) ); \
 	    0; })
 
 #define	spin_try_lock(p)\
-	({  boolean_t _r__; \
-	    asm volatile("movl $1, %0; \n\
+	(!({  boolean_t _r__; \
+	    __asm__ volatile("movl $1, %0; \n\
 			  xchgl %0, %1" \
 			: "=&r" (_r__), "=m" (*(p)) ); \
-	    !_r__; })
+	    _r__; }))
 
 #define	cthread_sp() \
 	({  int	_sp__; \
-	    asm("movl %%esp, %0" \
+	    __asm__("movl %%esp, %0" \
 	      :	"=g" (_sp__) ); \
 	    _sp__; })
 

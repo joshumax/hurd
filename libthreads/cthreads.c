@@ -1,6 +1,6 @@
 /*
  * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
+ * Copyright (c) 1992,1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
  *
  * Permission to use, copy, modify and distribute this software and its
@@ -25,52 +25,24 @@
  */
 /*
  * HISTORY
- * $Log: cthreads.c,v $
- * Revision 1.10  2001/03/31 23:01:01  roland
- * 2001-03-31  Roland McGrath  <roland@frob.com>
+ * 20-Oct-93  Tero Kivinen (kivinen) at Helsinki University of Technology
+ *	Renamed cthread_t->catch to to cthread_t->catch_exit, because
+ *	catch is reserved word in c++.
  *
- * 	* cthreads.h: Fix obsolescent #endif syntax.
- * 	* cthread_internals.h: Likewise.
- * 	* cancel-cond.c: Likewise.
- * 	* stack.c: Likewise.
- * 	* cthreads.c: Likewise.
- * 	* cprocs.c: Likewise.
- * 	* call.c: Likewise.
+ * $Log:	cthreads.c,v $
+ * Revision 2.13  93/01/21  12:27:55  danner
+ * 	Remove deadlock in cproc_fork_child; must release malloc lock first.
+ * 	[93/01/19  16:37:43  bershad]
  *
- * Revision 1.9  1998/11/22 18:18:10  roland
- * 1998-11-12  Mark Kettenis  <kettenis@phys.uva.nl>
+ * Revision 2.12  93/01/14  18:05:00  danner
+ * 	Converted file to ANSI C.
+ * 	Removed use of obsolete type any_t.
+ * 	[92/12/18            pds]
+ * 	64bit cleanup.
+ * 	[92/12/01            af]
  *
- * 	* cthreads.c (cthread_init): Move cthread_alloc call before
- * 	cproc_init call, since cthread_alloc uses malloc, and malloc won't
- * 	work between initializing the new stack and switching over to it.
- *
- * Revision 1.8  1998/06/10 19:38:01  tb
- * Tue Jun  9 13:50:09 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
- *
- * 	* cthreads.c (cthread_fork_prepare): Don't call
- * 	malloc_fork_prepare since we are no longer providing our own
- * 	malloc in this library.
- * 	(cthread_fork_parent): Likewise, for malloc_fork_parent.
- * 	(cthread_fork_child): Likewize, for malloc_fork_child.
- *
- * Revision 1.7  1997/08/20 19:41:20  thomas
- * Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
- *
- * 	* cthreads.c (cthread_body): Wire self before calling user work
- *  	function.  This way all cthreads will be wired, which the ports
- * 	library (and hurd_thread_cancel, etc.) depend on.
- *
- * Revision 1.6  1997/06/10 01:22:19  thomas
- * Mon Jun  9 21:18:46 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
- *
- * 	* cthreads.c (cthread_fork): Delete debugging oddity that crept
- * 	into source.
- *
- * Revision 1.5  1997/04/04 01:30:35  thomas
- * *** empty log message ***
- *
- * Revision 1.4  1994/05/05 18:13:57  roland
- * entered into RCS
+ * 	Free private_data in cthread_exit, from Mike Kupfer.
+ * 	[92/11/30            af]
  *
  * Revision 2.11  92/07/20  13:33:37  cmaeda
  * 	In cthread_init, do machine dependent initialization if it's defined.
@@ -147,22 +119,8 @@
  */
 
 #include <cthreads.h>
+#include <mach/mig_support.h>
 #include "cthread_internals.h"
-
-/*
- * C Threads imports:
- */
-extern void cproc_create();
-extern vm_offset_t cproc_init();
-extern void mig_init();
-
-/*
- * Mach imports:
- */
-
-/*
- * C library imports:
- */
 
 /*
  * Thread status bits.
@@ -171,9 +129,9 @@ extern void mig_init();
 #define	T_RETURNED	0x2
 #define	T_DETACHED	0x4
 
-#ifdef	DEBUG
+#if	defined(DEBUG)
 int cthread_debug = FALSE;
-#endif	 /* DEBUG */
+#endif	/* defined(DEBUG) */
 
 private struct cthread_queue cthreads = QUEUE_INITIALIZER;
 private struct mutex cthread_lock = MUTEX_INITIALIZER;
@@ -189,9 +147,7 @@ private spin_lock_t free_lock = SPIN_LOCK_INITIALIZER;	/* unlocked */
 private struct cthread initial_cthread = { 0 };
 
 private cthread_t
-cthread_alloc(func, arg)
-	cthread_fn_t func;
-	any_t arg;
+cthread_alloc(cthread_fn_t func, void *arg)
 {
 	register cthread_t t = NO_CTHREAD;
 
@@ -223,8 +179,7 @@ cthread_alloc(func, arg)
 }
 
 private void
-cthread_free(t)
-	register cthread_t t;
+cthread_free(cthread_t t)
 {
 	spin_lock(&free_lock);
 	t->next = free_cthreads;
@@ -232,8 +187,8 @@ cthread_free(t)
 	spin_unlock(&free_lock);
 }
 
-int
-cthread_init()
+vm_offset_t
+cthread_init(void)
 {
 	static int cthreads_started = FALSE;
 	register cproc_t p;
@@ -242,9 +197,9 @@ cthread_init()
 
 	if (cthreads_started)
 		return 0;
-	t = cthread_alloc((cthread_fn_t) 0, (any_t) 0);
 	stack = cproc_init();
 	cthread_cprocs = 1;
+	t = cthread_alloc((cthread_fn_t) 0, (void *) 0);
 
 #ifdef cthread_md_init
 	cthread_md_init();
@@ -270,16 +225,15 @@ cthread_init()
 
 /*
  * Used for automatic initialization by crt0.
- * Cast needed since too many C compilers choke on the type void (*)().
  */
-int (*_cthread_init_routine)() = (int (*)()) cthread_init;
+vm_offset_t (*_cthread_init_routine)(void) = cthread_init;
+
 
 /*
  * Procedure invoked at the base of each cthread.
  */
 void
-cthread_body(self)
-	cproc_t self;
+cthread_body(cproc_t self)
 {
 	register cthread_t t;
 
@@ -297,8 +251,7 @@ cthread_body(self)
 			 */
 			mutex_unlock(&cthread_lock);
 			cthread_assoc(self, t);		/* assume thread's identity */
-			if (_setjmp(t->catch) == 0) {	/* catch for cthread_exit() */
-			        cthread_wire ();
+			if (_setjmp(t->catch_exit) == 0) {	/* catch for cthread_exit() */
 				/*
 				 * Execute the fork request.
 				 */
@@ -333,9 +286,7 @@ cthread_body(self)
 }
 
 cthread_t
-cthread_fork(func, arg)
-	cthread_fn_t func;
-	any_t arg;
+cthread_fork(cthread_fn_t func, void *arg)
 {
 	register cthread_t t;
 
@@ -367,11 +318,10 @@ cthread_detach(t)
 	}
 }
 
-any_t
-cthread_join(t)
-	cthread_t t;
+void *
+cthread_join(cthread_t t)
 {
-	any_t result;
+	void *result;
 
 	TRACE(printf("[%s] join(%s)\n", cthread_name(cthread_self()), cthread_name(t)));
 	mutex_lock(&t->lock);
@@ -385,21 +335,24 @@ cthread_join(t)
 }
 
 void
-cthread_exit(result)
-	any_t result;
+cthread_exit(void *result)
 {
 	register cthread_t t = cthread_self();
 
 	TRACE(printf("[%s] exit()\n", cthread_name(t)));
 	t->result = result;
+	if (t->private_data != 0) {
+		free((char *)t->private_data);
+		t->private_data = 0;
+	}
 	if (t->state & T_MAIN) {
 		mutex_lock(&cthread_lock);
 		while (cthread_cthreads > 1)
 			condition_wait(&cthread_idle, &cthread_lock);
 		mutex_unlock(&cthread_lock);
-		exit((int)(long)result);
+		exit((int) (integer_t) result);
 	} else {
-		_longjmp(t->catch, TRUE);
+		_longjmp(t->catch_exit, TRUE);
 	}
 }
 
@@ -410,60 +363,60 @@ cthread_exit(result)
 int (*_cthread_exit_routine)() = (int (*)()) cthread_exit;
 
 void
-cthread_set_name(t, name)
-	cthread_t t;
-	char *name;
+cthread_set_name(cthread_t t, const char *name)
 {
 	t->name = name;
 }
 
-char *
-cthread_name(t)
-	cthread_t t;
+const char *
+cthread_name(cthread_t t)
 {
-	return (t == NO_CTHREAD
-		? "idle"
-		: (t->name == 0 ? "?" : t->name));
+	return (t == NO_CTHREAD ? "idle" : (t->name == 0 ? "?" : t->name));
 }
 
 int
-cthread_limit()
+cthread_limit(void)
 {
 	return cthread_max_cprocs;
 }
 
 void
-cthread_set_limit(n)
-	int n;
+cthread_set_limit(int n)
 {
 	cthread_max_cprocs = n;
 }
 
 int
-cthread_count()
+cthread_count(void)
 {
 	return cthread_cthreads;
 }
 
-cthread_fork_prepare()
+void
+cthread_fork_prepare(void)
 {
     spin_lock(&free_lock);
     mutex_lock(&cthread_lock);
+    malloc_fork_prepare();
     cproc_fork_prepare();
 }
 
-cthread_fork_parent()
+void
+cthread_fork_parent(void)
 {
     cproc_fork_parent();
+    malloc_fork_parent();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);
 }
 
-cthread_fork_child()
+void
+cthread_fork_child(void)
 {
     cthread_t t;
     cproc_t p;
 
+    malloc_fork_child();
     cproc_fork_child();
     mutex_unlock(&cthread_lock);
     spin_unlock(&free_lock);

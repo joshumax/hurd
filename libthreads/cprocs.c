@@ -1,6 +1,6 @@
 /*
  * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
+ * Copyright (c) 1993-1989 Carnegie Mellon University
  * All Rights Reserved.
  *
  * Permission to use, copy, modify and distribute this software and its
@@ -25,72 +25,24 @@
  */
 /*
  * HISTORY
- * $Log: cprocs.c,v $
- * Revision 1.14  2002/05/08 09:32:11  roland
- * 2002-05-07  Roland McGrath  <roland@frob.com>
+ * 26-Oct-94 Johannes Helander (jvh) Helsinki University of Technology
+ *	Set the wait_type field.
  *
- * 	* cprocs.c (cproc_list_lock): Declare type as spin_lock_t.
+ * $Log:	cprocs.c,v $
+ * Revision 2.18  93/03/09  10:59:10  danner
+ * 	Lint.
+ * 	[93/03/06            af]
  *
- * Revision 1.13  2001/03/31 23:01:01  roland
- * 2001-03-31  Roland McGrath  <roland@frob.com>
+ * Revision 2.17  93/01/19  08:55:44  danner
+ * 	Added missing spin_lock_t type from cproc_list_lock decl.
+ * 	[92/12/30            af]
  *
- * 	* cthreads.h: Fix obsolescent #endif syntax.
- * 	* cthread_internals.h: Likewise.
- * 	* cancel-cond.c: Likewise.
- * 	* stack.c: Likewise.
- * 	* cthreads.c: Likewise.
- * 	* cprocs.c: Likewise.
- * 	* call.c: Likewise.
  *
- * Revision 1.12  2000/01/10 14:42:30  kettenis
- * 2000-01-10  Mark Kettenis  <kettenis@gnu.org>
- *
- * 	* cprocs.c: Include <assert.h>
- *
- * Revision 1.11  2000/01/09 23:00:18  roland
- * 2000-01-09  Roland McGrath  <roland@baalperazim.frob.com>
- *
- * 	* cprocs.c (cproc_alloc): Initialize P->wired and P->msg here (code
- * 	from cthread_wire).
- * 	(cthread_wire): Reduce to just an assert, cthreads always wired.
- * 	(chtread_unwire): Abort if called.
- *
- * Revision 1.10  1998/07/20 06:59:14  roland
- * 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
- *
- * 	* i386/csw.S (cproc_prepare): Take address of cthread_body as third
- * 	arg, so we don't have to deal with PIC magic to find its address
- * 	without producing a text reloc.
- * 	* cprocs.c (cproc_create): Pass &cthread_body to cproc_prepare.
- *
- * Revision 1.9  1996/11/18 23:54:51  thomas
- * Mon Nov 18 16:36:56 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
- *
- * 	* cprocs.c (cproc_create): Cast CHILD in assignment.
- *
- * Revision 1.8  1995/12/06 19:48:34  mib
- * (condition_unimplies): Take address of (*impp)->next in assignment to
- * IMPP on loop step instruction.
- *
- * Revision 1.7  1995/09/22 17:51:10  roland
- * Include hurd/threadvar.h.
- *
- * Revision 1.6  1995/08/30 15:57:47  mib
- * Repair typos.
- *
- * Revision 1.5  1995/08/30 15:50:53  mib
- * (cond_signal): If this condition has implications, see if one of them
- * needs to be signalled when we have no waiters.
- * (cond_broadcast): Signal the implications list too.
- * (condition_implies, condition_unimplies): New functions.
- *
- * Revision 1.4  1995/04/04 21:04:29  roland
- * (mutex_lock_solid, mutex_unlock_solid): Renamed to __*.
- * (_cthread_mutex_lock_routine, _cthread_mutex_unlock_routine): Variables
- * removed.
- *
- * Revision 1.3  1994/05/19  04:55:30  roland
- * entered into RCS
+ * Revision 2.16  93/01/14  18:04:46  danner
+ * 	Convert file to ANSI C.
+ * 	[92/12/18            pds]
+ * 	64bit cleanup.
+ * 	[92/12/10  21:08:32  af]
  *
  * Revision 2.15  92/03/06  14:09:31  rpd
  * 	Replaced swtch_pri with yield.
@@ -270,15 +222,6 @@
 #include <assert.h>
 
 /*
- * C Threads imports:
- */
-extern void alloc_stack();
-extern void cproc_switch();		/* cproc context switch */
-extern void cproc_start_wait();		/* cproc idle thread */
-extern vm_offset_t cproc_stack_base();	/* return start of stack */
-extern vm_offset_t stack_init();
-
-/*
  * Port_entry's are used by cthread_mach_msg to store information
  * about each port/port_set for which it is managing threads
  */
@@ -358,8 +301,8 @@ private mach_msg_header_t wakeup_msg;	/* prebuilt message used by idle
  * Return current value for max kernel threads
  * Note: 0 means no limit
  */
-
-cthread_kernel_limit()
+int
+cthread_kernel_limit(void)
 {
 	return cthread_max_kernel_threads;
 }
@@ -370,8 +313,8 @@ cthread_kernel_limit()
  * 		over maximum.
  */
 
-cthread_set_kernel_limit(n)
-	int n;
+void
+cthread_set_kernel_limit(int n)
 {
 	cthread_max_kernel_threads = n;
 }
@@ -380,7 +323,8 @@ cthread_set_kernel_limit(n)
  * Wire a cthread to its current kernel thread
  */
 
-void cthread_wire()
+void
+cthread_wire(void)
 {
 	register cproc_t p = cproc_self();
 	kern_return_t r;
@@ -393,7 +337,8 @@ void cthread_wire()
  * Unwire a cthread.  Deallocate its wait port.
  */
 
-void cthread_unwire()
+void
+cthread_unwire(void)
 {
 	register cproc_t p = cproc_self();
 
@@ -416,7 +361,7 @@ void cthread_unwire()
 }
 
 private cproc_t
-cproc_alloc()
+cproc_alloc(void)
 {
 	register cproc_t p = (cproc_t) malloc(sizeof(struct cproc));
 	kern_return_t r;
@@ -466,7 +411,7 @@ cproc_alloc()
  */
 
 vm_offset_t
-cproc_init()
+cproc_init(void)
 {
 	kern_return_t r;
 
@@ -503,9 +448,7 @@ cproc_init()
  * synching on its lock.  Just send message to wired cproc.
  */
 
-private int cproc_ready(p, preq)
-	register cproc_t p;
-	register int preq;
+private boolean_t cproc_ready(register cproc_t p, register int preq)
 {
 	register cproc_t s=cproc_self();
 	kern_return_t r;
@@ -586,8 +529,7 @@ private int cproc_ready(p, preq)
  */
 
 void
-cproc_waiting(p)
-	register cproc_t p;
+cproc_waiting(cproc_t p)
 {
 	mach_msg_header_t msg;
 	register cproc_t new;
@@ -634,8 +576,8 @@ cproc_waiting(p)
  *
  */
 
-cproc_t
-cproc_waiter()
+private cproc_t
+cproc_waiter(void)
 {
 	register cproc_t waiter;
 
@@ -667,7 +609,8 @@ cproc_waiter()
  * You must hold cproc_self()->lock when called.
  */
 
-cproc_block()
+private void
+cproc_block(void)
 {
   extern unsigned int __hurd_threadvar_max; /* GNU */
 	register cproc_t waiter, new, p = cproc_self();
@@ -755,7 +698,7 @@ cproc_block()
  * Implement C threads using MACH threads.
  */
 cproc_t
-cproc_create()
+cproc_create(void)
 {
 	register cproc_t child = cproc_alloc();
 	register kern_return_t r;
@@ -805,9 +748,7 @@ cproc_create()
 }
 
 void
-condition_wait(c, m)
-	register condition_t c;
-	mutex_t m;
+condition_wait(condition_t c, mutex_t m)
 {
 	register cproc_t p = cproc_self();
 
@@ -877,8 +818,7 @@ condition_unimplies (condition_t implicator, condition_t implicatand)
 /* Signal one waiter on C.  If there were no waiters at all, return
    0, else return 1. */
 int
-cond_signal(c)
-	register condition_t c;
+cond_signal(condition_t c)
 {
 	register cproc_t p;
 	struct cond_imp *imp;
@@ -899,8 +839,7 @@ cond_signal(c)
 }
 
 void
-cond_broadcast(c)
-	register condition_t c;
+cond_broadcast(condition_t c)
 {
 	register cproc_t p;
 	struct cthread_queue blocked_queue;
@@ -931,7 +870,7 @@ cond_broadcast(c)
 }
 
 void
-cthread_yield()
+cthread_yield(void)
 {
 	register cproc_t new, p = cproc_self();
 
@@ -1040,8 +979,8 @@ __mutex_unlock_solid(void *ptr)
  * call to occur as often as is possible.
  */
 
-private port_entry_t get_port_entry(port, min, max)
-	mach_port_t port;
+private port_entry_t
+get_port_entry(mach_port_t port, int min, int max)
 {
 	register port_entry_t i;
 
@@ -1064,8 +1003,8 @@ private port_entry_t get_port_entry(port, min, max)
 	return i;
 }
 
-cthread_msg_busy(port, min, max)
-	mach_port_t port;
+void
+cthread_msg_busy(mach_port_t port, int min, int max)
 {
 	register port_entry_t port_entry;
 	register cproc_t new, p = cproc_self();
@@ -1096,8 +1035,8 @@ cthread_msg_busy(port, min, max)
 
 }
 
-cthread_msg_active(port, min, max)
-mach_port_t port;
+void
+cthread_msg_active(mach_port_t port, int min, int max)
 {
 	register cproc_t p = cproc_self();
 	register port_entry_t port_entry;
@@ -1115,17 +1054,11 @@ mach_port_t port;
 }
 
 mach_msg_return_t
-cthread_mach_msg(header, option,
-		 send_size, rcv_size, rcv_name,
-		 timeout, notify, min, max)
-	register mach_msg_header_t *header;
-	register mach_msg_option_t option;
-	mach_msg_size_t send_size;
-	mach_msg_size_t rcv_size;
-	register mach_port_t rcv_name;
-	mach_msg_timeout_t timeout;
-	mach_port_t notify;
-	int min, max;
+cthread_mach_msg(register mach_msg_header_t *header,
+		 register mach_msg_option_t option, mach_msg_size_t send_size,
+		 mach_msg_size_t rcv_size, register mach_port_t rcv_name,
+		 mach_msg_timeout_t timeout, mach_port_t notify, int min,
+		 int max)
 {
 	register port_entry_t port_entry;
 	register cproc_t p = cproc_self();
@@ -1184,7 +1117,8 @@ cthread_mach_msg(header, option,
 	return r;
 }
 
-cproc_fork_prepare()
+void
+cproc_fork_prepare(void)
 {
     register cproc_t p = cproc_self();
 
@@ -1193,7 +1127,8 @@ cproc_fork_prepare()
     spin_lock(&cproc_list_lock);
 }
 
-cproc_fork_parent()
+void
+cproc_fork_parent(void)
 {
     register cproc_t p = cproc_self();
 
@@ -1202,7 +1137,8 @@ cproc_fork_parent()
     vm_inherit(mach_task_self(),p->stack_base, p->stack_size, VM_INHERIT_NONE);
 }
 
-cproc_fork_child()
+void
+cproc_fork_child(void)
 {
     register cproc_t l,p = cproc_self();
     cproc_t m;

@@ -1,6 +1,6 @@
 /* 
  * Mach Operating System
- * Copyright (c) 1991,1990,1989 Carnegie Mellon University
+ * Copyright (c) 1992,1991,1990,1989 Carnegie Mellon University
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify and distribute this software and its
@@ -26,6 +26,10 @@
 /*
  * HISTORY
  * $Log:	sync.c,v $
+ * Revision 2.8  93/01/14  18:06:23  danner
+ * 	Converted file to ANSI C.
+ * 	[92/12/18            pds]
+ * 
  * Revision 2.7  92/03/06  14:09:59  rpd
  * 	Replaced swtch_pri with yield.
  * 	[92/03/06            rpd]
@@ -69,8 +73,7 @@
 int cthread_spin_count=0;
 
 void
-spin_lock_solid(p)
-	register spin_lock_t *p;
+spin_lock_solid(register spin_lock_t *p)
 {
 	while (spin_lock_locked(p) || !spin_try_lock(p)) {
 #ifdef STATISTICS
