@@ -134,6 +134,7 @@ reboot_mach (int flags)
     {
       printf ("init: %sing Mach (flags %#x)...\n", BOOT (flags), flags);
       fflush (stdout);
+      sleep (5);
       while ((errno = host_reboot (host_priv, flags)))
 	perror ("host_reboot");
       for (;;);
