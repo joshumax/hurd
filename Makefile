@@ -29,7 +29,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libnetfs libpipe libstore libmom libhurdbugaddr
 prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
-	       devio ufs-utils ext2fs benchmarks pflocal defpager \
+	       devio storeio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet daemons nfsd
 other-subdirs = hurd doc config release include
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
