@@ -24,10 +24,7 @@ target = ftpfs
 SRCS = ftpfs.c fs.c host.c netfs.c dir.c conn.c ccache.c node.c ncache.c
 LCLHDRS = ftpfs.h ccache.h
 
-MIGSTUBS = ioServer.o fsysServer.o
-OBJS = $(SRCS:.c=.o) # $(MIGSTUBS)
+OBJS = $(SRCS:.c=.o)
 HURDLIBS = netfs fshelp iohelp ports threads ihash ftpconn shouldbeinlibc
-
-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 include ../Makeconf
