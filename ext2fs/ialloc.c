@@ -300,9 +300,9 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
    */
   spin_lock (&generation_lock);
   sex = diskfs_mtime->seconds;
-  if (++nextgennumber < (u_long)sex)
-    nextgennumber = sex;
-  np->dn_stat.st_gen = nextgennumber;
+  if (++next_generation < (u_long)sex)
+    next_generation = sex;
+  np->dn_stat.st_gen = next_generation;
   spin_unlock (&generation_lock);
 
   alloc_sync (np);
