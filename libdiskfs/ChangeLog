@@ -1,3 +1,8 @@
+2002-05-26  Roland McGrath  <roland@frob.com>
+
+	* dir-unlink.c (diskfs_S_dir_unlink): Return EPERM instead of EISDIR,
+	as per POSIX.
+
 2002-05-12  Roland McGrath  <roland@frob.com>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Fail with EACCES instead of
