@@ -38,6 +38,8 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
+	node-nref.c node-nput.c node-nrele.c node-nrefl.c node-nputl.c \
+	node-nrelel.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	init-init.c init-startup.c init-first.c init-main.c \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
@@ -47,7 +49,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	trans-callback.c readonly.c remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
-	validate-rdev.c validate-owner.c extra-version.c diskfs.c
+	validate-rdev.c validate-owner.c extra-version.c 
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 LCLHDRS = diskfs.h priv.h lithp.h fsmutations.h diskfs-pager.h fhandle.h
 installhdrs = diskfs.h diskfs-pager.h

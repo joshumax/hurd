@@ -26,10 +26,6 @@
 #include <hurd/iohelp.h>
 #include <idvec.h>
 
-#ifndef DISKFS_EI
-#define DISKFS_EI extern inline
-#endif
-
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library).  */
 struct protid
@@ -577,156 +573,30 @@ void diskfs_node_update (struct node *np, int wait);
 /* Add a hard reference to a node.  If there were no hard
    references previously, then the node cannot be locked
    (because you must hold a hard reference to hold the lock). */
-DISKFS_EI void
-diskfs_nref (struct node *np)
-{
-  int new_hardref;
-  spin_lock (&diskfs_node_refcnt_lock);
-  np->references++;
-  new_hardref = (np->references == 1);
-  spin_unlock (&diskfs_node_refcnt_lock);
-  if (new_hardref)
-    {
-      mutex_lock (&np->lock);
-      diskfs_new_hardrefs (np);
-      mutex_unlock (&np->lock);
-    }
-}
+void diskfs_nref (struct node *np);
 
 /* Unlock node NP and release a hard reference; if this is the last
    hard reference and there are no links to the file then request
    soft references to be dropped.  */
-DISKFS_EI void
-diskfs_nput (struct node *np)
-{
-  int tried_drop_softrefs = 0;
-
- loop:
-  spin_lock (&diskfs_node_refcnt_lock);
-  assert (np->references);
-  np->references--;
-  if (np->references + np->light_references == 0)
-    diskfs_drop_node (np);
-  else if (np->references == 0 && !tried_drop_softrefs)
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink)
-	{
-	  /* There are no links.  If there are soft references that
-	     can be dropped, we can't let them postpone deallocation.
-	     So attempt to drop them.  But that's a user-supplied
-	     routine, which might result in further recursive calls to
-	     the ref-counting system.  So we have to reacquire our
-	     reference around the call to forestall disaster. */
-	  spin_lock (&diskfs_node_refcnt_lock);
-	  np->references++;
-	  spin_unlock (&diskfs_node_refcnt_lock);
-
-	  diskfs_try_dropping_softrefs (np);
-
-	  /* But there's no value in looping forever in this
-	     routine; only try to drop soft refs once. */
-	  tried_drop_softrefs = 1;
-
-	  /* Now we can drop the reference back... */
-	  goto loop;
-	}
-      mutex_unlock (&np->lock);
-    }
-  else
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
-    }
-}
+void diskfs_nput (struct node *np);
 
 /* Release a hard reference on NP.  If NP is locked by anyone, then
    this cannot be the last hard reference (because you must hold a
    hard reference in order to hold the lock).  If this is the last
    hard reference and there are no links, then request soft references
    to be dropped.  */
-DISKFS_EI void
-diskfs_nrele (struct node *np)
-{
-  int tried_drop_softrefs = 0;
-
- loop:
-  spin_lock (&diskfs_node_refcnt_lock);
-  assert (np->references);
-  np->references--;
-  if (np->references + np->light_references == 0)
-    {
-      mutex_lock (&np->lock);
-      diskfs_drop_node (np);
-    }
-  else if (np->references == 0)
-    {
-      mutex_lock (&np->lock);
-      spin_unlock (&diskfs_node_refcnt_lock);
-      diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink && !tried_drop_softrefs)
-	{
-	  /* Same issue here as in nput; see that for explanation */
-	  spin_lock (&diskfs_node_refcnt_lock);
-	  np->references++;
-	  spin_unlock (&diskfs_node_refcnt_lock);
-
-	  diskfs_try_dropping_softrefs (np);
-	  tried_drop_softrefs = 1;
-
-	  /* Now we can drop the reference back... */
-	  mutex_unlock (&np->lock);
-	  goto loop;
-	}
-      mutex_unlock (&np->lock);
-    }
-  else
-    spin_unlock (&diskfs_node_refcnt_lock);
-}
+void diskfs_nrele (struct node *np);
 
 /* Add a light reference to a node. */
-DISKFS_EI void
-diskfs_nref_light (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  np->light_references++;
-  spin_unlock (&diskfs_node_refcnt_lock);
-}
+void diskfs_nref_light (struct node *np);
 
 /* Unlock node NP and release a light reference */
-DISKFS_EI void
-diskfs_nput_light (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  assert (np->light_references);
-  np->light_references--;
-  if (np->references + np->light_references == 0)
-    diskfs_drop_node (np);
-  else
-    {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
-    }
-}
+void diskfs_nput_light (struct node *np);
 
 /* Release a light reference on NP.  If NP is locked by anyone, then
    this cannot be the last reference (because you must hold a
    hard reference in order to hold the lock).  */
-DISKFS_EI void
-diskfs_nrele_light (struct node *np)
-{
-  spin_lock (&diskfs_node_refcnt_lock);
-  assert (np->light_references);
-  np->light_references--;
-  if (np->references + np->light_references == 0)
-    {
-      mutex_lock (&np->lock);
-      diskfs_drop_node (np);
-    }
-  else
-    spin_unlock (&diskfs_node_refcnt_lock);
-}
+void diskfs_nrele_light (struct node *np);
 
 /* Reading and writing of files. this is called by other filesystem
    routines and handles extension of files automatically.  NP is the

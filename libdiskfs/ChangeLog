@@ -1,3 +1,20 @@
+1999-07-01  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* node-nref.c: New file; guts from diskfs.h.
+	* node-nput.c: Likewise.
+	* node-nrele.c: Likewise.
+	* node-nrefl.c: Likewise.
+	* node-nputl.c: Likewise.
+	* node-nrelel.c: LIkewise.
+	* diskfs.h (diskfs_nref, diskfs_nput, diskfs_nrele,
+	diskfs_nref_light, diskfs_nput_light, diskfs_nrele_light): Replace
+	inline definitions with ordinary declarations.
+	(DISKFS_EI): Removed macro.
+	* diskfs.c: Deleted file.
+	* Makefile (OTHERSRCS): Added node-nref.c, node-nput.c
+	node-nrele.c, node-nrefl.c, node-nputl.c, node-nrelel.c.  Removed
+	diskfs.c. 
+	
 1999-06-29  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* dev-globals.c, dev-io.c, dev-open.c: Files removed.
