@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1997,98,99,2001 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <string.h>
+#include <stdlib.h>
 #include <dirent.h>
 #include "isofs.h"
 
@@ -359,7 +360,7 @@ diskfs_get_directs (struct node *dp,
       if (use_file_start_id (ep, &rr))
 	{
 	  off_t file_start;
-	  
+
 	  err = calculate_file_start (ep, &file_start, &rr);
 	  if (err)
 	    {
