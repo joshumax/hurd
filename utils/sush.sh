@@ -30,20 +30,20 @@ LOGIN=${LOGIN-/bin/login}
 FMT=${FMT-/bin/fmt}
 
 needs_arg=""
-while :; do
+for I; do
   case $needs_arg in
     ?*) needs_arg="";;
     "")
-      case "$1" in
+      case "$I" in
 	-e|-E|-g|-G|-u|-U|--envar|--envva|--env|--en|--e|--envvar-default|--envvar-defaul|--envvar-defau|--envvar-defa|--envvar-def|--envvar-def|--envvar-de|--envvar-d|--envvar-|--group|--grou|--gro|--gr|--g|--avail-group|--avail-grou|--avail-gro|--avail-gr|--avail-g|--user|--use|--us|--u|--avail-user|--avail-use|--avail-us|--avail-u)
-	  needs_arg="$1";;
+	  needs_arg="$I";;
 	-e*|-E*|-g*|-G*|-u*|-U*|--envar=*|--envva=*|--env=*|--en=*|--e=*|--envvar-default=*|--envvar-defaul=*|--envvar-defau=*|--envvar-defa=*|--envvar-def=*|--envvar-def=*|--envvar-de=*|--envvar-d=*|--envvar-=*|--group=*|--grou=*|--gro=*|--gr=*|--g=*|--avail-group=*|--avail-grou=*|--avail-gro=*|--avail-gr=*|--avail-g=*|--user=*|--use=*|--us=*|--u=*|--avail-user=*|--avail-use=*|--avail-us=*|--avail-u=*)
 	  :;;
 	--avail-|--avail|--avai|--ava|--av|--a|--avail-=*|--avail=*|--avai=*|--ava=*|--av=*|--a=*)
 	  echo 1>&2 "$0: option \`$1' is ambiguous"
 	  echo 1>&2 "Try \`$0 --help' or \`$0 --usage' for more information";
 	  exit 1;;
-	--help|"-?")
+	--help|"-?" |--hel|--he|--h)
 	  echo "$USAGE"
 	  echo "$DOC"
 	  echo ""
@@ -61,11 +61,11 @@ while :; do
 	  echo "Unlike the traditional unix \`su' command, if USER is not specified,"
 	  echo "then the result is *no* user-ids, not uid 0."
 	  exit 0;;
-	--usage)
+	--usage |--usag|--usa|--us|--u)
 	  (echo "Usage: $0 [-V?]"
 	   echo "            [-e ENTRY] [-E ENTRY] [-g GROUP] [-G GROUP] [-u USER] [-U USER]  [--envvar=ENTRY] [--envvar-default=ENTRY] [--group=GROUP] [--avail-group=GROUP][--group=GROUP] [--avail-group=GROUP] [--user=USER] [--avail-user=USER] [--help] [--usage] [--version] $ARGS_DOC") |$FMT -t
 	  exit 0;;
-	--version|-V)
+	--version|-V |--versio|--versi|--vers|--ver|--ve|--v)
 	  echo "STANDARD_HURD_VERSION_sush_"; exit 0;;
 	-*)
 	  echo 1>&2 "$0: unrecognized option \`$1'"
