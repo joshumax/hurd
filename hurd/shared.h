@@ -23,7 +23,6 @@ struct shared_io
 
   /* This lock protects against modification to it_status. */
   spin_lock_t lock;
-
   enum
     {
       USER_IT,			/* User is it */
@@ -31,6 +30,11 @@ struct shared_io
       USER_RELEASE_IT,		/* User is it, should release it promptly */
       USER_NOT_IT,		/* User is not it */
     } it_status;
+
+
+  /* These values are set by the IO server only: */
+
+  int append_mode;		/* append on each write */
 
   int eof_notify;		/* notify filesystem upon read of eof */
   int do_sigio;			/* call io_sigio after each operation */
@@ -42,17 +46,29 @@ struct shared_io
   int read_size;
   
   int seekable;			/* the file pointer can be reduced */
-  off_t file_pointer;
-
-  /* These two indicate that the appropriate times need updated */
-  int written;
-  int accessed;
 
   int use_prenotify_size;	/* prenotify_size is meaningful */
   int use_postnotify_size;	/* postnotify_size is meaningful */
   
   off_t prenotify_size;
   off_t postnotify_size;
+
+
+  /* These are set by both the IO server and the user: */
+
+  /* These have meanings just like io_map; -1 is used to indicate an
+     impossible value.  */
+  off_t rd_file_pointer; 
+  off_t wr_file_pointer;
+  off_t xx_file_pointer;
+
+
+  /* These are set by the user only:  */
+
+  /* These two indicate that the appropriate times need updated */
+  int written;
+  int accessed;
+
 
   /* Reserved for future extensions */
   int reserved [32];
