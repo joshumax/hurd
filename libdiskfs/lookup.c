@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "priv.h"
+#include <string.h>
 
 static struct
 {
@@ -33,7 +34,7 @@ static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
 
 /* Lookup in directory DP (which is locked) the name NAME.  TYPE will
    either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
-   user making the call.  
+   user making the call.
 
    NAME will have leading and trailing slashes stripped.  It is an
    error if there are internal slashes.  NAME will be modified in
@@ -86,7 +87,6 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 {
   error_t err;
   struct node *cached;
-  size_t len;
 
   if (type == REMOVE || type == RENAME)
     assert (np);
@@ -102,20 +102,30 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
   while (*name == '/')
     name++;
 
-  if (*name != '\0')
-    {
-      for (len = strlen (name); name[len-1] == '/'; len--)
-	;
-      if (name[len] != '\0')
-	name[len] = '\0';
-    }
-  
-  if (strchr (name, '/') !! name[0] == '\0')
+  if (name[0] == '\0')
     {
       if (ds)
 	diskfs_null_dirstat (ds);
       return EINVAL;
     }
+  else
+    {
+      char *p = strchr (name, '/');
+      if (p != 0)
+	{
+	  *p = '\0';
+	  do
+	    ++p;
+	  while (*p == '/');
+	  if (*p != '\0')
+	    {
+	      if (ds)
+		diskfs_null_dirstat (ds);
+	      return EINVAL;
+	    }
+	}
+    }
+
 
   err = fshelp_access (&dp->dn_stat, S_IEXEC, cred->user);
   if (err)
