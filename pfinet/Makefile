@@ -28,7 +28,7 @@ UNUSEDSRC = packet.c ipx.c ip_fw.c p8022.c p8023.c pe2.c psnap.c rarp.c
 SRCS = sched.c timer-emul.c devices.c socket.c main.c ethernet.c
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
 
-pfinet: $(OBJS) ../libthreads/libthreads.a
+pfinet: $(OBJS) ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
 
 vpath %.c linux-inet
 
