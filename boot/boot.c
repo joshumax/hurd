@@ -123,7 +123,7 @@ char *bootdevice = "sd0a";
 
 void set_mach_stack_args ();
 
-void safe_gets (char *buf, size_t buf_len)
+void safe_gets (char *buf, int buf_len)
 {
   fgets (buf, buf_len, stdin);
 }

@@ -917,3 +917,4 @@ Wed Apr 27 01:54:34 1994  Roland McGrath  (roland@churchy.gnu.ai.mit.edu)
 	* Makefile (LIB_SUBDIRS, PROG_SUBDIRS, OTHER_SUBDIRS, SUBDIRS):
 	Renamed to less annoying names, not in ALL GRATUITOUS CAPS.
 	(lib-subdirs): Fixed name of libthreads.
+

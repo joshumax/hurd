@@ -87,4 +87,4 @@ int boot_script_define_function (const char *name, int ret_type,
 char *boot_script_error_string (int err);
 
 
-void safe_gets (char *, size_t);
+void safe_gets (char *, int);

@@ -227,9 +227,6 @@ See `tasks', the exported task list.
 
 ** Compile released libc.
 ** Compile released utilities.  (See SOURCES-0.0)
-** Make serverboot source tar and build instructions.
-** Release inetutils 1.1 with autoconf crypt test.
-** Relink everything after when released libc is installed.
 ** ext2fs: shutdown doesn't sync properly?
     [Create a file, then (settrans -a) won't write it, but if you do sync
      first, everything's fine; the code doesn't look too different...]

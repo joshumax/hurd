@@ -5,9 +5,6 @@ Key:
 + = Relinked to get libc.0.0
 
 STILL TO CATEGORIZE: XXX  
-* fileutils (3.13) [rebuild for df after libc install]
-* gperf (cperf 2.1a) [hacked src/Makefile and src/stderr.c slightly]
-	[substitute with libg++ version?]
 libc
 
 
@@ -27,6 +24,7 @@ instructions without modification:
 *+ doschk (1.1)
 *+ ed  (0.2)
 *+ emacs lisp manual (19-2.4)
+*+ fileutils (3.13)
 *+ flex  (2.5.3)
 *+ gawk  (3.0.0)
 *+ gcal (1.01)
@@ -48,7 +46,7 @@ instructions without modification:
 *+ recode (3.4)
 *+ sed  (2.05)
 *+ sharutils (4.2)
-*  termcap (1.3) [manual only]
+*+ termcap (1.3) [manual only]
 *+ termutils (2.0)
 *+ textutils (1.19)
 *+ time (1.7)
@@ -71,6 +69,8 @@ instructions, after making the indicated minor modifications:
 *+ findutils (4.1)  
   [Comment out decl of basename in defs.h and defn in util.c
    Add `#define ARG_MAX 20480' in xargs/xargs.c, right after the includes]
+*+ gperf (cperf 2.1a) 
+  [hacked src/Makefile and src/stderr.c slightly]
 *+ gzip (1.2.4) 
   [commented out basename from gzip.h and util.c]
 *+ ncurses (1.9.9e) 
@@ -100,9 +100,12 @@ instructions, after making the indicated minor modifications:
 The following were compiled from the sources found in
 ftp://prep.gnu.ai.mit.edu/pub/gnu/gnu-0.0/hurd-special-src:
 
-* bash (1.14.4 patchlevel 10, with some additional local bugfixes)
-e2fsprogs (e2fsprogs-0.5c-hurd1.tar.gz) [1.04 doesn't have hurd patches]
-serverboot
+*+ bash (1.14.4 patchlevel 10, with some additional local bugfixes)
+*+ e2fsprogs (e2fsprogs-0.5c-hurd1.tar.gz) [1.04 doesn't have hurd patches]
+*+ serverboot (serverboot.tar.gz)
+  [ Unpack into the mach4 source directory, and rename it to be `bootstrap';
+    you won't need the existing mach4 bootstrap.  Then build in the bootstrap
+    subdir of the build directory, and install as /boot/serverboot. ]
 *+ from
 (*) grub
   [ Requires changes for ELF: avoid generating 16-bit relocations.

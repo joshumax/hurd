@@ -1,3 +1,8 @@
+Thu Aug  1 14:38:38 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* boot_script.h (safe_gets): Declare second parm as type `int'.
+	* boot.c (safe_gets): Likewise.	
+
 Sun Jul  7 21:10:08 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* boot.c (S_io_reauthenticate): Don't use unsafe MOVE_SEND in
