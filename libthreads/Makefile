@@ -21,22 +21,27 @@ dir := libthreads
 
 include ../Makeconf
 
-GEN_SRCS = call.c cprocs.c cthread_data.c cthreads.c malloc.c mig_support.c \
-	  stack.c sync.c
-I386_SRCS =  i386/csw.s i386/lock.s i386/thread.c
-SRCS = $(GEN_SRCS) $(I386_SRCS)
-OBJS = call.o cprocs.o cthread_data.o cthreads.o malloc.o mig_support.o \
-	stack.o sync.o csw.o lock.o thread.o
+# In GNU mig_support.c and machine/lock.s are omitted; that work is all
+# done in libc.
+generic-sources = call.c cprocs.c cthread_data.c cthreads.c \
+		  malloc.c stack.c sync.c
+machine-sources = csw.s thread.c
+sources = $(generic-sources) $(addprefix $(machine)/,$(machine-sources))
+objects = $(addsuffix .o,$(basename $(notdir $(sources))))
+headers = cthreads.h
 
-DIST_FILES = $(GEN_SRCS) Makefile cthread_internals.h cthreads.h options.h\
-		 ChangeLog
-I386_DIST_FILES = $(I386_SRCS) i386/asm.h i386/cthreads.h
+DIST_FILES = $(generic-sources) $(headers) \
+	     cthread_internals.h options.h \
+	     ChangeLog Makefile
 
-VPATH = .:i386
+# In GNU machine/cthreads.h is omitted; that work is done in libc headers.
+I386_DIST_FILES = $(addprefix i386/,$(machine-sources)) i386/asm.h
+
+VPATH = $(machine)
 
 all: libthreads.a
 
-libthreads.a: $(OBJS)
+libthreads.a: $(objects)
 	rm -f libthreads.a
 	$(AR) r $@ $^
 
@@ -47,14 +52,10 @@ $(hurdinst)/lib/libthreads.a: libthreads.a
 $(headers)/cthreads.h: cthreads.h
 	cp $< $@
 
-$(headers)/i386/cthreads.h: i386/cthreads.h
-	cp $< $@
+install: $(hurdinst)/lib/libthreads.a $(headers)/cthreads.h 
 
-install: $(hurdinst)/lib/libthreads.a \
-	$(headers)/cthreads.h $(headers)/i386/cthreads.h
-
-$(OBJS): cthreads.h cthread_internals.h options.h \
-	i386/asm.h i386/cthreads.h
+$(objects): cthreads.h cthread_internals.h options.h \
+	 i386/asm.h
 
 clean:
 	rm -f libthreads.a *.o
@@ -66,3 +67,6 @@ lndist-i386-files: $(hurdsource)/hurd-snap/$(dir)/i386
 
 $(hurdsource)/hurd-snap/$(dir)/i386:
 	mkdir $(hurdsource)/hurd-snap/$(dir)/i386
+
+TAGS: $(sources) $(headers)
+	etags -T $^
