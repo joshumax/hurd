@@ -67,6 +67,8 @@ struct dev
      been allocated yet.  Lock the lock in IO_STATE if you want to update
      this field.  */
   struct pager *pager;
+  /* The port_bucket for paging ports.  */
+  struct port_bucket *pager_port_bucket;
 
   /* The current owner of the open device.  For terminals, this affects
      controlling terminal behavior (see term_become_ctty).  For all objects
@@ -126,6 +128,11 @@ error_t dev_write(struct dev *dev,
 /* Returns in MEMOBJ the port for a memory object backed by the storage on
    DEV.  Returns 0 or the error code if an error occurred.  */
 error_t dev_get_memory_object(struct dev *dev, memory_object_t *memobj);
+
+/* Try to stop all paging activity on DEV, returning true if we were
+   successful.  If NOSYNC is true, then we won't write back any (kernel)
+   cached pages to the device.  */
+int dev_stop_paging (struct dev *dev, int nosync);
 
 /* Try and write out any pending writes to DEV.  If WAIT is true, will wait
    for any paging activity to cease.  */
