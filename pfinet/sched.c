@@ -21,3 +21,6 @@
 #include <linux/system.h>
 
 struct mutex global_interrupt_lock = MUTEX_INITIALIZER;
+
+struct task_struct *current;
+
