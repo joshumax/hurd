@@ -31,43 +31,27 @@
 
 /* XXX */
 extern int login_tty (int);
+extern char *localhost ();
 
 #define _PATH_DEV "/dev"
 #define _PATH_LOGIN "/bin/login"
 
 /* Print a suitable welcome banner */
-void
+static void
 print_banner (int fd, char *ttyname)
 {
-  struct utsname u;
+  int cc;
   char *s;
-  int len, cc;
-  char *hostname;
+  struct utsname u;
+  char *hostname = localhost ();
 
   if (uname (&u))
     u.sysname[0] = u.release[0] = '\0';
-  
-  len = 50;
-  hostname = malloc (len);
-  cc = gethostname (hostname, len);
-  if (cc == -1)
-    hostname[0] = '\0';
-  while (cc >= len)
-    {
-      hostname = realloc (hostname, len *= 2);
-      cc = gethostname (hostname, len);
-      if (cc == -1)
-	{
-	  hostname[0] = '\0';
-	  break;
-	}
-    }
 
   cc = asprintf (&s, "\r\n\n%s %s (%s) (%s)\r\n\n",
-		 u.sysname, u.release, hostname, ttyname);
+		 u.sysname, u.release, hostname ?: "?", ttyname);
   write (fd, s, cc);
 }
-
 
 int
 main (int argc, char **argv)
@@ -123,6 +107,7 @@ main (int argc, char **argv)
     /* Hardwired lines don't.  */
     execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", 0);
 
-  error (99, errno, "execl");
+  syslog (LOG_ERR, "%s: %m", _PATH_LOGIN);
+
   return 1;
 }
