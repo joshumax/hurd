@@ -68,9 +68,6 @@ struct bootinfo
 struct port_bucket *port_bucket;
 struct port_class *execboot_portclass;
 
-
-typedef struct trivfs_protid *trivfs_protid_t; /* For MiG.  */
-
 extern mach_port_t procserver;	/* Our proc port.  */
 
 #ifdef BFD
