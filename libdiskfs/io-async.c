@@ -25,9 +25,6 @@ diskfs_S_io_async (struct protid *cred,
 		   mach_port_t *idport,
 		   mach_msg_type_name_t *idport_type)
 {
-  mach_port_deallocate (mach_task_self (), notify);
-  *idport = MACH_PORT_NULL;
-  *idport_type = MACH_MSG_TYPE_COPY_SEND;
-  return 0;
+  return EOPNOTSUPP;
 }
 
