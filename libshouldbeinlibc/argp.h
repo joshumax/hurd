@@ -214,9 +214,14 @@ error_t argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
    flags at once.  */
 #define ARGP_HELP_EXIT   (ARGP_HELP_EXIT_ERR | ARGP_HELP_EXIT_OK)
 
-/* The standard thing to do after a program command line parsing error.  */
+/* The standard thing to do after a program command line parsing error, if an
+   error messages has already been printed.  */
 #define ARGP_HELP_STD_ERR \
-  (ARGP_HELP_USAGE | ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
+  (ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
+/* The standard thing to do after a program command line parsing error, if no
+   more specific error message has been printed.  */
+#define ARGP_HELP_STD_USAGE \
+  (ARGP_HELP_SHORT_USAGE | ARGP_HELP_SEE | ARGP_HELP_EXIT_ERR)
 /* The standard thing to do in response to a --help option.  */
 #define ARGP_HELP_STD_HELP \
   (ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG | ARGP_HELP_EXIT_OK)
