@@ -1,3 +1,7 @@
+2002-05-05  Roland McGrath  <roland@frob.com>
+
+	* fakeroot.c (netfs_attempt_lookup): Unlock DIR before doing RPCs.
+
 2002-05-03  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeroot.c (netfs_node_norefs): Unlock node after not dropping
