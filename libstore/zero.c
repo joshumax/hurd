@@ -35,13 +35,13 @@ zero_read (struct store *store,
   if (*len < amount)
     {
       *buf = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (*buf == (void *) -1)
+      if (*buf == MAP_FAILED)
 	return errno;
       *len = amount;
       return 0;
     }
   else
-    bzero (*buf, amount);
+    memset (*buf, 0, amount);
 
   *len = amount;
   return 0;

@@ -1,7 +1,7 @@
 /* Setting various store fields
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995, 1996, 1997, 2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,8 +18,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <mach.h>
 
 #include "store.h"
 
@@ -37,7 +39,7 @@ store_set_runs (struct store *store,
   if (store->runs)
     free (store->runs);
 
-  bcopy (runs, copy, size);
+  memcpy (copy, runs, size);
   store->runs = copy;
   store->num_runs = num_runs;
 
@@ -51,7 +53,7 @@ store_set_runs (struct store *store,
 error_t
 store_set_name (struct store *store, const char *name)
 {
-  char *copy = malloc (strlen (name) + 1);
+  char *copy = strdup (name);
 
   if (!copy)
     return ENOMEM;
@@ -59,7 +61,6 @@ store_set_name (struct store *store, const char *name)
   if (store->name)
     free (store->name);
 
-  strcpy (copy, name);
   store->name = copy;
 
   return 0;
