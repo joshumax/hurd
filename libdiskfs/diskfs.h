@@ -289,9 +289,7 @@ error_t diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
    unsuccessful call to diskfs_lookup of type CREATE or RENAME; DP
    has been locked continuously since that call and DS is as that call
    set it, NP is locked.   CRED identifies the user responsible
-   for the call (to be used only to validate directory growth).
-   The routine should call diskfs_notice_dirchange if DP->dirmod_reqs
-   is nonzero.  */
+   for the call (to be used only to validate directory growth). */
 error_t diskfs_direnter_hard (struct node *dp, char *name,
 			      struct node *np, struct dirstat *ds,
 			      struct protid *cred);
@@ -300,16 +298,14 @@ error_t diskfs_direnter_hard (struct node *dp, char *name,
    a successful call to diskfs_lookup of type RENAME; this call should change
    the name found in directory DP to point to node NP instead of its previous
    referent.  DP has been locked continuously since the call to diskfs_lookup
-   and DS is as that call set it; NP is locked.  This routine should call
-   diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
+   and DS is as that call set it; NP is locked.  */
 error_t diskfs_dirrewrite_hard (struct node *dp, struct node *np,
 				struct dirstat *ds);
 
 /* The user must define this function.  This will only be called after a
    successful call to diskfs_lookup of type REMOVE; this call should remove
    the name found from the directory DS.  DP has been locked continuously since
-   the call to diskfs_lookup and DS is as that call set it.  This routine
-   should call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
+   the call to diskfs_lookup and DS is as that call set it.  */
 error_t diskfs_dirremove_hard (struct node *dp, struct dirstat *ds);
 
 /* The user must define this function.  DS has been set by a previous
