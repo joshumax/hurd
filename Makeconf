@@ -18,6 +18,7 @@ libc := $(hurdinst)/lib/libc.a
 libthreads := $(hurdinst)/lib/libthreads.a
 libports := $(hurdinst)/lib/libports.a
 libioserver := $(hurdinst)/lib/libioserver.a
+libpager := $(hurdinst)/lib/libpager.a
 gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/include
 
 # Flags for compilation
@@ -54,7 +55,7 @@ $(hurdsource)/hurd-snap/$(dir):
 endif
 
 
-# Some very useful dependencies
+# Dependencies for building libraries
 
 ifneq ($(strip $(dir)),libports)
 $(libports): FORCE
@@ -68,6 +69,13 @@ $(libioserver): FORCE
 	$(MAKE) -C $(hurdsource)/libioserver $(libioserver)
 $(headers)/libioserver.h: FORCE
 	$(MAKE) -C $(hurdsource)/libioserver $(headers)/libioserver.h
+endif
+
+ifneq ($(strip $(dir)),libpager)
+$(libpager): FORCE
+	$(MAKE) -C $(hurdsource)/libpager $(libpager)
+$(headers)/libpager.h: FORCE
+	$(MAKE) -C $(hurdsource)/libpager $(headers)/libpager.h
 endif
 
 FORCE:
