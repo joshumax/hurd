@@ -23,14 +23,13 @@ PROCMIGOPTS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 	"-DPROCESS_IMPORTS=import \"proc.h\";" \
 	"-DSERVERPREFIX=S_"
 
-OBJS = proc_wait.o proc_hash.o proc_host.o \
-	proc_info.o proc_main.o proc_mgt.o \
-	proc_notify.o proc_pgrp.o proc_msg.o \
+OBJS = wait.o hash.o host.o info.o main.o mgt.o	notify.o pgrp.o msg.o \
+	primes.o \
 	processServer.o notifyServer.o process_replyUser.o msgUser.o \
-	interruptServer.o
+	interruptServer.o proc_excUser.o proc_excServer.o proc_excreplUser.o \
+	proc_excreplServer.o
 
-SRCS = proc_wait.c proc_hash.c proc_host.c proc_info.c proc_main.c proc_mgt.c \
-	proc_notify.c proc_pgrp.c proc_coll.c proc_msg.c 
+SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c primes.c
 
 DIST_FILES = $(SRCS) proc.h Makefile
 
@@ -40,8 +39,9 @@ proc: $(OBJS)
 	$(link)
 
 $(OBJS): proc.h proc_S.h
-proc_notify.o: notify_S.h
-proc_wait.o: process_reply.h msg.h interrupt_S.h
+notify.o: notify_S.h
+wait.o: process_reply.h msg.h interrupt_S.h
+mgt.o: proc_exc_S.h proc_exc.h proc_excrepl.h proc_excrepl_S.h
 
 proc_S.h processServer.c: $(headers)/hurd/process.defs $(headers)/hurd/hurd_types.defs
 	$(CPP) $(CPPFLAGS) $(PROCMIGOPTS) $(headers)/hurd/process.defs \
@@ -58,6 +58,15 @@ interrupt_S.h interruptServer.c: $(headers)/hurd/interrupt.defs
 notify_S.h notifyServer.c:
 	$(CPP) $(CPPFLAGS) $(headers)/mach/notify.defs \
 	 | $(MIGCOM) -sheader notify_S.h -header /dev/null -user /dev/null
+
+proc_exc_S.h proc_excUser.c proc_excServer.c proc_exc.h: proc_exc.defs
+	$(CPP) $(CPPFLAGS) proc_exc.defs \
+	| $(MIGCOM) -sheader proc_exc_S.h
+
+proc_excrepl_S.h proc_excreplUser.c proc_excreplServer.c proc_excrepl.h:
+	$(CPP) $(CPPFLAGS) proc_excrepl.defs \
+	| $(MIGCOM) -sheader proc_excrepl_S.h
+
 
 # The reason for -Dout= is to prevent errors for get_init_port,
 # get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
