@@ -33,10 +33,13 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libnetfs libpipe libstore libmom libhurdbugaddr libftpconn
 
 # Hurd programs
-prog-subdirs = auth boot exec fstests init isofs \
-	       proc term ufs utils sutils trans ufs-fsck \
-	       storeio ufs-utils ext2fs benchmarks pflocal defpager \
-	       login nfs pfinet daemons nfsd serverboot hostmux usermux ftpfs
+prog-subdirs = auth proc exec init term \
+	       ufs ext2fs isofs nfs \
+	       storeio pflocal pfinet defpager \
+	       login daemons nfsd boot serverboot \
+	       hostmux usermux ftpfs trans \
+	       utils sutils ufs-fsck ufs-utils \
+	       benchmarks fstests
 
 # Other directories
 other-subdirs = hurd doc config release include
