@@ -1,5 +1,5 @@
 /* Miscellaneous functions for fsck
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -322,6 +322,7 @@ pextend (char *fmt, ...)
 
   strcpy (concat + strlen (concat), more);
   prob->desc = concat;
+  free (more);
 }
 
 /* Like problem, but as if immediately followed by pfail.  */

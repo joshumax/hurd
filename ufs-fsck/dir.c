@@ -1,5 +1,5 @@
 /* Directory management subroutines
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -519,8 +519,8 @@ linkup (ino_t ino, ino_t parent)
     }
   if (search_failed)
     {
-      free (tempname);
       warning (1, "FAILURE SEARCHING FOR `%s' IN `%s'", tempname, lfname);
+      free (tempname);
       return 0;
     }
   if (!makeentry (lfdir, ino, tempname))

@@ -1,3 +1,10 @@
+Thu May  6 10:25:27 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* utilities.c (pextend): Free MORE before returning.
+	* dir.c (linkup): Don't free tempname until after we're done using
+	it in the call to warning.
+	Reported by Katsuya Tanaka (tanaka@boarderz.com).
+	
 1999-03-25  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* setup.c (setup): Don't complain if the device is a block device.
