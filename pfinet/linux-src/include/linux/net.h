@@ -58,6 +58,7 @@ typedef enum {
 
 #ifdef __KERNEL__
 
+struct file;		/* forward decl magic */
 struct socket
 {
 	socket_state		state;
@@ -68,7 +69,6 @@ struct socket
 #ifdef _HURD_
  	uint_fast32_t		refcnt;	/* # of sock_user's pointing to this */
 	mach_port_t 		identity; /* for io_identity */
-  	struct file;		/* forward decl magic */
 #else
 	struct fasync_struct	*fasync_list;	/* Asynchronous wake up list	*/
 	struct file		*file;		/* File back pointer for gc	*/
