@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.13  1999/05/29 18:59:10  roland
+ * 1999-05-29  Roland McGrath  <roland@baalperazim.frob.com>
+ *
+ * 	* cthreads.h (mutex_clear): Change from syntax error to no-op (with
+ * 	warning avoidance).
+ *
  * Revision 1.12  1996/05/04 10:06:31  roland
  * [lint] (NEVER): Spurious global variable removed.
  * [!lint] (NEVER): Useless macro removed.
@@ -364,7 +370,7 @@ typedef struct mutex {
 	MACRO_END
 #define	mutex_set_name(m, x)	((m)->name = (x))
 #define	mutex_name(m)		((m)->name != 0 ? (m)->name : "?")
-#define	mutex_clear(m)		((void) 0) /* nop */
+#define	mutex_clear(m)		mutex_init(m)
 #define	mutex_free(m)		free((any_t) (m))
 
 extern void __mutex_lock_solid (void *mutex); /* blocking -- roland@gnu */
