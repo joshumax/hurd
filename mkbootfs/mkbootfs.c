@@ -68,7 +68,7 @@ main (int argc, char **argv)
       exit (1);
     }
   
-  newdoto = open (argv[2], O_WRONLY | O_CREAT, 0666);
+  newdoto = open (argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
   if (newdoto == -1)
     {
       perror (argv[2]);
