@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.5  1997/04/04 01:30:35  thomas
+ * *** empty log message ***
+ *
  * Revision 1.4  1994/05/05 18:13:57  roland
  * entered into RCS
  *
@@ -295,21 +298,16 @@ cthread_fork(func, arg)
 {
 	register cthread_t t;
 
-	printf ("cf1\n");
-
 	TRACE(printf("[%s] fork()\n", cthread_name(cthread_self())));
 	mutex_lock(&cthread_lock);
 	t = cthread_alloc(func, arg);
-	printf ("cf2\n");
 	cthread_queue_enq(&cthreads, t);
 	if (++cthread_cthreads > cthread_cprocs && (cthread_max_cprocs == 0 || cthread_cprocs < cthread_max_cprocs)) {
 		cthread_cprocs += 1;
 		cproc_create();
 	}
-	printf ("cf3\n");
 	mutex_unlock(&cthread_lock);
 	condition_signal(&cthread_needed);
-	printf ("cf4\n");
 	return t;
 }
 
