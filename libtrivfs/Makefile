@@ -38,8 +38,8 @@ NOTIFYSRCS=nosenders.c notify-stubs.c
 
 INTSRCS=interrupt.c
 
-OTHERSRCS=demuxer.c handle-port.c protid-clean.c cntl-clean.c migsupport.c \
-	times.c startup.c
+OTHERSRCS=demuxer.c handle-port.c protid-clean.c protid-dup.c cntl-clean.c \
+	migsupport.c times.c startup.c open.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSRCS)
 
