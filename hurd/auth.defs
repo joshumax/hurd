@@ -59,7 +59,7 @@ routine auth_user_authenticate (
 	handle: auth_t;
 	sreplyport reply_port: sreply_port_t;
 	rendezvous: mach_port_t;
-	rend_int: int;
+	rendezvous2: mach_port_send_t;
 	out newport: mach_port_send_t);
    
 /* Called by a server in a reauthentication transaction.  The
@@ -71,7 +71,7 @@ routine auth_server_authenticate (
 	handle: auth_t;
 	sreplyport reply_port: sreply_port_t;
 	rendezvous: mach_port_send_t;
-	rend_int: int;
+	rendezvous2: mach_port_send_t;
 	newport: mach_port_send_t;
 	out gen_uids: idarray_t;
 	out aux_uids: idarray_t;
