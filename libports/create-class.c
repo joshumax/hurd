@@ -34,5 +34,8 @@ ports_create_class (void (*clean_routine)(void *),
   cl->dropweak_routine = dropweak_routine;
   cl->flags = 0;
   cl->rpcs = 0;
+  cl->ports = NULL;
+  cl->count = 0;
+
   return cl;
 }
