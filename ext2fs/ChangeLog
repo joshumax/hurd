@@ -1,3 +1,12 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ialloc.c (diskfs_alloc_node): If creator_os is not EXT2_OS_HURD,
+	suppress warnings about stale nonzero st_blocks or st_size.
+
+1999-05-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ext2fs.c (main): Include store size in panic msg when it's too small.
+
 1999-01-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* ext2fs.c (main): Use diskfs_init_main.
