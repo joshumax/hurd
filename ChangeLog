@@ -1,3 +1,15 @@
+Mon Jun  9 12:27:40 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* version.h (HURD_VERSION): Update version number.
+	* sh-version.sed: Likewise.
+	* README: Likewise.
+	* INSTALL: Likewise.
+
+Thu Jun  5 14:20:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+	
+	* Makefile: Don't include directory .d files if no_deps is t.
+	(prog-subdirs): Omit ftpfs.
+
 Fri May 23 10:06:34 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* configure.in: Use AC_PROG_CC_LOCAL instead of AC_PROG_CC.

@@ -1,5 +1,81 @@
 -*- Text -*-
 
+9 June 1997
+Version 0.2
+
+Summary of important externally visible changes since version 0.1:
+
+Many, many bugs have been fixed, including some resource consumption
+problems.  The system can now compile itself, and stay running the
+whole time.  It is quite reliable, and is used here for regular
+computing tasks now.
+
+New programs addauth, rmauth, unsu, su, and setauth modify the uid
+sets of running programs.  Using addauth you can add root to your
+emacs, write a file, and then use rmauth to take the uid back.  (Of
+course, passwords are required when necessary.)  New program `ids'
+will tell you what all the user ids are that a program has.  Note that
+in the Hurd a program can have several user ids all at once, just like
+Unix supports having several group ids.  Now that you can dynamically
+change the ids of running programs, system administration (among other
+things) becomes much easier.
+
+Two new programs, ftpcp and ftpdir, can be used to fetch files using
+FTP with a simple command line interface.
+
+We have moved the `serverboot' bootstrapper and default pager from
+Mach into the Hurd source distribution, so that Mach can avoid
+distributing user programs.  We hope to phase out use of serverboot
+entirely at some point.  Along with this, we made serverboot much
+quieter.
+
+We now build profiling versions of the Hurd libraries, and the
+makefiles have targets to build profiling executables as desired.
+
+We have added `lmail', a /bin/mail replacement for use with sendmail
+to do local mail delivery.
+
+The idle threads of the kernel no longer count in `ps' towards the
+total run time of the kernel process.  This means that the kernel will
+now sort into the right location for `u' format output.
+
+Several oddities in NFS client behavior have been fixed to produce
+more sensible results.
+
+The "loopback" device is now supported (automatically) inside pfinet.
+It should now be possible to use pfinet with no ethernet at all. 
+
+Filesystems now use `store' library; the contents of the filesystem
+can be nearly anywhere (including another file somewhere).
+
+Some annoying bugs in tty behavior have been fixed.  Some still
+remain, unfortunately.
+
+New translator `firmlink' is like a cross between a symlink and a hard
+link.  
+
+
+Programmer visible changes:
+
+Filesystems support a new "reparenting" feature.  This makes `..' from
+the "reparented" node return whatever the user wishes, for a given
+`open' regime.  This enables the "firmlink" translator to work, and
+will also be important in implementing shadow filesystems.
+
+The fshelp library now managed UID sets itself, and contains functions
+to do permission checks in the usual way.  Now it's much easier to be
+sure every filesystem implements the same permission checks.
+
+The trivfs library has had its static initializations replaced with
+spiffy dynamic ones.
+
+New library `libftpconn' is used to manage FTP connections.  We are
+already using this library for some local system administration tasks,
+and are making it the basis of the (as yet unfinished) ftpfs
+filesystem for the Hurd.
+
+
+
 6 September 1996
 Version 0.1.
 

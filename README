@@ -1,8 +1,11 @@
 -*- Text -*-
-GNU Hurd version 0.1.
+GNU Hurd version 0.2.
 
 
 This is the Hurd.  Welcome.
+
+This version of the GNU Hurd runs on various ix86 machines, including
+i386, i486, i586 (pentium), i686 (hexium [pentium pro]).  
 
 For instructions on compiling and installing the GNU Hurd from an
 already running Hurd system, see the file `INSTALL'.
@@ -13,7 +16,9 @@ trouble to maintain these instructions and keep them up to date.  Your
 best bet is to start with a running Hurd system already.  If you do
 decide to cross compile, you will need to examine the instructions in
 INSTALL for building Mach, libc, and the Hurd together, and follow
-them. 
+them.  The instructions in INSTALL-cross are quite out-of-date, but
+they contain some useful hints buried amongst the errors, so we have
+left the file for those who find it useful.
 
 Please note that this directory also contains a fair amount of
 not-yet-working code.  By default, the makefiles build only the

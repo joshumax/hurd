@@ -1,5 +1,5 @@
 /* Hurd version
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -21,7 +21,7 @@
 /* See sh-version.sed for duplicates of this information. */
 
 #ifndef HURD_VERSION
-#define HURD_VERSION "0.1"
+#define HURD_VERSION "0.2"
 #endif
 
 /* The standard way to print versions for --version.  */

@@ -40,7 +40,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
 	       storeio ufs-utils ext2fs benchmarks pflocal defpager \
-	       login nfs pfinet daemons nfsd serverboot ftpfs
+	       login nfs pfinet daemons nfsd serverboot
 
 # Other directories
 other-subdirs = hurd doc config release include
@@ -141,7 +141,9 @@ endif
 # Some directories depend on others, so we need to find out exactly
 # what they are.  This does that for us.
 
+ifneq ($(no_deps),t)
 -include $(addsuffix .d,$(subdirs))
+endif
 
 # How to build them
 $(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
