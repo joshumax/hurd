@@ -1,3 +1,8 @@
+2002-06-22  Roland McGrath  <roland@frob.com>
+
+	* storeio.c (parse_opt): Fix fencepost error in -n arg parsing.
+	Reported by Nicola Girardi <nicola@g-n-u.de>.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* io.c (trivfs_S_io_read, trivfs_S_io_write): off_t -> loff_t.
