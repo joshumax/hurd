@@ -1,3 +1,58 @@
+Thu Feb 13 19:27:16 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* dir-rename.c (diskfs_S_dir_rename): Return EXDEV if FROMCRED and
+	TOCRED are in different shadow trees.
+
+	* file-reparent.c (diskfs_S_file_reparent): New function, from
+	dir-reparent.c.
+	* dir-reparent.c: File removed.
+	* Makefile (FSSRCS): dir-reparent.c replaced by file-reparent.c.
+
+Wed Feb 12 14:23:15 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* peropen-make.c (diskfs_make_peropen): Add & use CONTEXT param.
+	Remove DOTDOT & DEPTH params.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Pass a prototype peropen
+	instead of the dotdotport and depth to diskfs_make_peropen.
+	* fsys-getfile.c (diskfs_S_fsys_getfile): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* dir-reparent.c (diskfs_S_dir_reparent): Likewise.
+	* dir-mkfile.c (diskfs_S_dir_mkfile): Likewise.
+	* dir-lookup.c (diskfs_S_dir_lookup): Likewise.
+	* boot-start.c (diskfs_start_bootstrap): Likewise.
+	(diskfs_S_exec_startup_get_info): Likewise.
+	(diskfs_execboot_fsys_startup): Likewise.
+	(diskfs_S_fsys_init): Likewise.
+	* trans-callback.c (_diskfs_translator_callback2_fn): Pass COOKIE
+	directly to diskfs_make_peropen instead of unpacking each arg.
+	* priv.h (struct diskfs_trans_callback_cookie2): Type removed.
+	* dir-lookup.c (diskfs_S_dir_lookup): Use DIRCRED->po as the
+	cookie for fshelp_fetch_root instead of a local structure.
+	* diskfs.h (diskfs_lookup): Remove DEPTH & NEW_DEPTH params.
+	* dir-lookup.c (diskfs_S_dir_lookup): Get rid of DEPTH variable.
+	Get rid of depth parameters to diskfs_lookup.
+	Deal properly with EAGAIN return from diskfs_lookup.
+	Replace references to dotdotport with root_parent.
+	* dir-unlink.c (diskfs_S_dir_unlink): Don't pass depth args to diskfs_lookup.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+	* dir-renamed.c (diskfs_rename_dir, checkpath): Likewise.
+	* dir-rename.c (diskfs_S_dir_rename): Likewise.
+	* dir-mkdir.c (diskfs_S_dir_mkdir): Likewise.
+	* dir-link.c (diskfs_S_dir_link): Likewise.
+	* dir-init.c (diskfs_init_dir): Likewise.
+	* dir-clear.c (diskfs_clear_directory): Likewise.
+	* lookup.c (diskfs_lookup): Remove DEPTH & NEW_DEPTH params.
+	Check CRED->po->shadow_root for root traversals, and get rid of assert
+	that EAGAIN isn't returned from diskfs_lookup_hard.
+	* diskfs.h (struct peropen):
+	Add shadow_root_parent & shadow_root fields.
+	Removed depth field.
+	Rename dotdotnode field to root_parent.
+	* peropen-rele.c (diskfs_release_peropen): Finalize new state.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Remove O_EXLOCK & O_SHLOCK
+ 	from FLAGS mask, now that they're included in O_HURD.
+
 Thu Feb  6 02:17:35 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* io-write.c (diskfs_S_io_write): Check OFF for validity and

@@ -1,3 +1,7 @@
+Thu Feb 13 19:21:03 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fs.defs (file_reparent): Renamed from dir_reparent.
+
 Mon Jan 20 16:34:12 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fs.defs (dir_reparent): Make PARENT a mach_port_t, not a file_t,

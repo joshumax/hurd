@@ -1,3 +1,9 @@
+Thu Feb 13 18:30:45 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* trivfs.h (trivfs_getroot_hook): New declaration.
+	* fsys-getroot.c (trivfs_S_fsys_getroot): Use trivfs_getroot_hook.
+	* Makefile (FSSRCS): Replace dir-reparent.c by file-reparent.c.
+
 Mon Jan 20 16:37:04 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* dir-reparent.c (trivfs_S_dir_reparent): New file.
