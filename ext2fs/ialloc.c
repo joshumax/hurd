@@ -291,8 +291,6 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 
   if (st->st_blocks)
     {
-      if (sblock->s_creator_os == EXT2_OS_HURD)
-	ext2_warning ("Free inode %d had %ld blocks", inum, st->st_blocks);
       st->st_blocks = 0;
       np->dn_set_ctime = 1;
     }
@@ -306,8 +304,6 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   st->st_mode &= ~S_IPTRANS;
   if (np->allocsize)
     {
-      if (sblock->s_creator_os == EXT2_OS_HURD)
-	ext2_warning ("Free inode %d had a size of %ld", inum, st->st_size);
       st->st_size = 0;
       np->allocsize = 0;
       np->dn_set_ctime = 1;

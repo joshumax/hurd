@@ -1,3 +1,8 @@
+2001-08-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ialloc.c (diskfs_alloc_node): Remove warnings about stale
+	nonzero st_blocks or st_size.
+
 2001-08-16  Roland McGrath  <roland@frob.com>
 
 	* inode.c (write_node): Leave i_size, i_blocks, i_translator unchanged
