@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02
+   Copyright (C) 1992,93,94,95,96,98,99,2000,01,02,04
    	Free Software Foundation, Inc.
    Written by Roland McGrath.
 
@@ -902,6 +902,12 @@ check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr,
   memcpy (e->info.elf.phdr, mapped_phdr,
 	  e->info.elf.phnum * sizeof (ElfW(Phdr)));
 
+  /* Default state if we do not see PT_GNU_STACK telling us what to do.
+     Executable stack is the compatible default.
+     (XXX should be machine-dependent??)
+  */
+  e->info.elf.execstack = 1;
+
   for (phdr = e->info.elf.phdr;
        phdr < &e->info.elf.phdr[e->info.elf.phnum];
        ++phdr)
@@ -921,6 +927,9 @@ check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr,
 	if (e->file_size <= (off_t) (phdr->p_offset +
 				     phdr->p_filesz))
 	  e->error = ENOEXEC;
+	break;
+      case PT_GNU_STACK:
+	e->info.elf.execstack = phdr->p_flags & PF_X;
 	break;
       }
 }
@@ -1822,6 +1831,17 @@ do_exec (file_t file,
 			       &boot->stack_base, &boot->stack_size);
   if (e.error)
     goto out;
+#ifdef BFD
+  if (!e.bfd)
+#endif
+    {
+      /* It would probably be better to change mach_setup_thread so
+	 it does a vm_map with the right permissions to start with.  */
+      if (!e.info.elf.execstack)
+	e.error = vm_protect (newtask, boot->stack_base, boot->stack_size,
+			      0, VM_PROT_READ | VM_PROT_WRITE);
+    }
+
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
     {
