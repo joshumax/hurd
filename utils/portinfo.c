@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99, 2000 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -57,8 +57,10 @@ static const struct argp_option options[] = {
 
   {0,0,0,0, "Translating port names between tasks:", 3},
   {"translate", 't', "PID", 0, "Translate port names to process PID"},
+#if 0
   {"show-targets", 'h', 0, 0,
      "Print a header describing the target process" },
+#endif
   {"no-translation-errors", 'E', 0, 0,
      "Don't display an error if a specified port can't be translated" },
 #if 0

@@ -1,3 +1,9 @@
+2000-07-27  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* portinfo.c: Comment out unimplemented argument
+	`--show-targets'.  Reported by
+	Marcus.Brinkmann@ruhr-uni-bochum.de. 
+
 2000-07-26  Mark Kettenis  <kettenis@gnu.org>
 
 	* Makefile (HURDLIBS): Reorder libs such that the threads lib
