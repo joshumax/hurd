@@ -17,8 +17,11 @@
 #define _LINUX_EXT2_FS_H
 
 typedef unsigned long u32;
+typedef long s32;
 typedef unsigned short u16;
+typedef short s16;
 typedef unsigned char u8;
+typedef signed char s8;
 
 /*
  * The second extended filesystem constants/structures
@@ -390,119 +393,5 @@ struct ext2_dir_entry {
 #define EXT2_DIR_ROUND 			(EXT2_DIR_PAD - 1)
 #define EXT2_DIR_REC_LEN(name_len)	(((name_len) + 8 + EXT2_DIR_ROUND) & \
 					 ~EXT2_DIR_ROUND)
-
-#ifdef __KERNEL__
-/*
- * Function prototypes
- */
-
-/*
- * Ok, these declarations are also in <linux/kernel.h> but none of the
- * ext2 source programs needs to include it so they are duplicated here.
- */
-#if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 5)
-# define NORET_TYPE    __volatile__
-# define ATTRIB_NORET  /**/
-# define NORET_AND     /**/
-#else
-# define NORET_TYPE    /**/
-# define ATTRIB_NORET  __attribute__((noreturn))
-# define NORET_AND     noreturn,
-#endif
-
-/* acl.c */
-extern int ext2_permission (struct inode *, int);
-
-/* balloc.c */
-extern int ext2_new_block (struct super_block *, unsigned long,
-			   u32 *, u32 *);
-extern void ext2_free_blocks (struct super_block *, unsigned long,
-			      unsigned long);
-extern unsigned long ext2_count_free_blocks (struct super_block *);
-extern void ext2_check_blocks_bitmap (struct super_block *);
-
-/* bitmap.c */
-extern unsigned long ext2_count_free (char *, unsigned);
-
-/* dir.c */
-extern int ext2_check_dir_entry (char *, struct inode *,
-				 struct ext2_dir_entry *, char *,
-				 unsigned long);
-
-/* file.c */
-extern int ext2_read (struct inode *, struct file *, char *, int);
-extern int ext2_write (struct inode *, struct file *, char *, int);
-
-/* fsync.c */
-extern int ext2_sync_file (struct inode *, struct file *);
-
-/* ialloc.c */
-extern struct inode * ext2_new_inode (const struct inode *, int);
-extern void ext2_free_inode (struct inode *);
-extern unsigned long ext2_count_free_inodes (struct super_block *);
-extern void ext2_check_inodes_bitmap (struct super_block *);
-
-/* inode.c */
-extern int ext2_bmap (struct inode *, int);
-
-extern char * ext2_getblk (struct inode *, long, int, int *);
-extern char * ext2_bread (struct inode *, int, int, int *);
-
-extern int ext2_getcluster (struct inode * inode, long block);
-extern void ext2_read_inode (struct inode *);
-extern void ext2_write_inode (struct inode *);
-extern void ext2_put_inode (struct inode *);
-extern int ext2_sync_inode (struct inode *);
-extern void ext2_discard_prealloc (struct inode *);
-
-/* ioctl.c */
-extern int ext2_ioctl (struct inode *, struct file *, unsigned int,
-		       unsigned long);
-
-/* namei.c */
-extern void ext2_release (struct inode *, struct file *);
-extern int ext2_lookup (struct inode *,const char *, int, struct inode **);
-extern int ext2_create (struct inode *,const char *, int, int,
-			struct inode **);
-extern int ext2_mkdir (struct inode *, const char *, int, int);
-extern int ext2_rmdir (struct inode *, const char *, int);
-extern int ext2_unlink (struct inode *, const char *, int);
-extern int ext2_symlink (struct inode *, const char *, int, const char *);
-extern int ext2_link (struct inode *, struct inode *, const char *, int);
-extern int ext2_mknod (struct inode *, const char *, int, int, int);
-extern int ext2_rename (struct inode *, const char *, int,
-			struct inode *, const char *, int);
-
-/* super.c */
-extern void ext2_error (struct super_block *, const char *, const char *, ...)
-	__attribute__ ((format (printf, 3, 4)));
-extern NORET_TYPE void ext2_panic (struct super_block *, const char *,
-				   const char *, ...)
-	__attribute__ ((NORET_AND format (printf, 3, 4)));
-extern void ext2_warning (struct super_block *, const char *, const char *, ...)
-	__attribute__ ((format (printf, 3, 4)));
-extern void ext2_put_super (struct super_block *);
-extern void ext2_write_super (struct super_block *);
-extern int ext2_remount (struct super_block *, int *, char *);
-extern struct super_block * ext2_read_super (struct super_block *,void *,int);
-extern void ext2_statfs (struct super_block *, struct statfs *);
-
-/* truncate.c */
-extern void ext2_truncate (struct inode *);
-
-/*
- * Inodes and files operations
- */
-
-/* dir.c */
-extern struct inode_operations ext2_dir_inode_operations;
-
-/* file.c */
-extern struct inode_operations ext2_file_inode_operations;
-
-/* symlink.c */
-extern struct inode_operations ext2_symlink_inode_operations;
-
-#endif	/* __KERNEL__ */
 
 #endif	/* _LINUX_EXT2_FS_H */
