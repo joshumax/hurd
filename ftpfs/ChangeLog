@@ -1,3 +1,15 @@
+1997-08-22  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (parse_common_opt): Release DEBUG_LOCK even if we get an
+	error.
+
+1997-08-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpfs.c (netfs_maxsymlinks): Initialize to 12.
+
+	* ccache.c (ccache_read): Always update CC->max to something
+	reasonable after a transfer.
+
 1997-08-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ftpfs.c (debug_stream, debug_stream_name): New variables.
