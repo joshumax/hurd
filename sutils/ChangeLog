@@ -1,3 +1,8 @@
+Thu Aug  1 16:29:31 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* clookup.c (file_name_lookup_carefully/lookup): When appending
+	TAIL to RETRY_NAME, use strcpy instead of strcat.
+
 Sat Jul  6 19:55:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsck.c: (argp_program_version): New variable.
