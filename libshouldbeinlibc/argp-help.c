@@ -1398,7 +1398,7 @@ __argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 	flags |= ARGP_HELP_LONG_ONLY;
 
       _help (state ? state->argp : 0, state, stream, flags,
-	     state ? state->name : program_invocation_name);
+	     state ? state->name : program_invocation_short_name);
 
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
@@ -1427,7 +1427,7 @@ __argp_error (struct argp_state *state, const char *fmt, ...)
 	{
 	  va_list ap;
 
-	  fputs (state ? state->name : program_invocation_name, stream);
+	  fputs (state ? state->name : program_invocation_short_name, stream);
 	  putc (':', stream);
 	  putc (' ', stream);
 
@@ -1463,7 +1463,7 @@ __argp_failure (struct argp_state *state, int status, int errnum,
 
       if (stream)
 	{
-	  fputs (state ? state->name : program_invocation_name, stream);
+	  fputs (state ? state->name : program_invocation_short_name, stream);
 
 	  if (fmt)
 	    {
