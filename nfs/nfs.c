@@ -158,3 +158,129 @@ xdr_decode_fattr (int *p, struct stat *st)
   return p;
 
 }
+
+int *
+nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
+		    size_t len, void **bufp, struct node *np,
+		    uid_t second_gid)
+{
+  uid_t uid;
+  uid_t gid;
+  
+  if (cred
+      && (cred->nuids || cred->ngids))
+    {
+      if (cred_has_uid (cred, 0))
+	{
+	  netfs_validate_stat (np, 0);
+	  uid = 0;
+	  gid = np->nn_stat.st_gid;
+	}
+      else
+	{
+	  if (cred->nuids == 0)
+	    uid = -2;
+	  else if (cred->nuids == 1)
+	    uid = cred->uids[0];
+	  else
+	    {
+	      netfs_validate_state (np, 0);
+	      if (cred_has_uid (cred, np->nn_stat.st_uid))
+		uid = np->nn_stat.st_uid;
+	      else
+		uid = cred->uids[0];
+	    }
+
+	  if (cred->ngids == 0)
+	    {
+	      gid = -2;
+	      second_gid = -1;
+	    }
+	  else if (cred->ngids == 1)
+	    {
+	      gid = cred->gids[0];
+	      second_gid = -1;
+	    }
+	  else
+	    {
+	      netfs_validate_stat (np, 0);
+	      if (cred_has_gid (cred, np->nn_stat.st_gid))
+		gid = np->nn_stat.st_gid;
+	      else
+		gid = cred->gids[0];
+	      
+	      if (second_gid != -1
+		  && !cred_has_gid (cred, second_gid))
+		second_gid = -1;
+	    }
+	}
+    }
+  else
+    uid = gid = second_gid = -1;
+
+  return initialize_rpc (program, version, rpc_proc, len, bufp,
+			 uid, gid, second_gid);
+}
+
+error_t
+nfs_error_trans (int error)
+{
+  switch (error)
+    {
+    case NFSV2_OK:
+      return 0;
+      
+    case NFSV2_ERR_PERM:
+      return EPERM;
+
+    case NFSV2_ERR_NOENT:
+      return ENOENT;
+		  
+    case NFS_ERR_IO:
+      return EIO;
+		  
+    case NFS_ERR_NXIO:
+      return ENXIO;
+		  
+    case NFS_ERR_ACCES:
+      return EACCESS;
+		  
+    case NFS_ERR_EXIST:
+      return EEXIST;
+		  
+    case NFS_ERR_NODEV:
+      return ENODEV;
+		  
+    case NFS_ERR_NOTDIR:
+      return ENOTDIR;
+		  
+    case NFS_ERR_ISDIR:
+      return EISDIR;
+		  
+    case NFS_ERR_FBIG:
+      return E2BIG;
+      
+    case NFS_ERR_NOSPC:
+      return ENOSPC;
+
+    case NFS_ERR_ROFS:
+      return EROFS;
+		  
+    case NFS_ERR_NAMETOOLONG:
+      return ENAMETOOLONG;
+		  
+    case NFS_ERR_NOTEMPTY:
+      return ENOTEMPTY;
+		  
+    case NFS_ERR_DQUOT:
+      return EDQUOT;
+		  
+    case NFS_ERR_STALE:
+      return ESTALE;
+		  
+    case NFS_ERR_WFLUSH:
+    default:
+      return EINVAL;
+    }
+}
+
