@@ -448,7 +448,7 @@ S_proc_exception_raise (mach_port_t excport,
       _hurd_exception2signal (&hsd, &signo);
       p->p_exiting = 1;
       p->p_status = W_EXITCODE (0, signo);
-      p->p_sigcode = hsd.subcode;
+      p->p_sigcode = hsd.code;
 
       /* Nuke the task; we will get a notification message and report it
 	 died with SIGNO.  */
