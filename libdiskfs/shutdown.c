@@ -31,13 +31,13 @@ diskfs_shutdown (int flags)
       fsys_goaway (trans->control, (int) arg);
     }
   
-  if (flags & FSYS_GOAWAY_RECURSE)
-    fshelp_translator_iterate (sync_trans, (void *)flags);
-  
   if ((flags & FSYS_GOAWAY_UNLINK)
        && S_ISDIR (diskfs_root_node->dn_stat.st_mode))
     return EBUSY;
-      
+
+  if (flags & FSYS_GOAWAY_RECURSE)
+    fshelp_translator_iterate (sync_trans, (void *)flags);
+  
   /* XXX doesn't handle GOAWAY_FORCE yet */
 
   if (!(flags & FSYS_GOAWAY_NOSYNC))
