@@ -19,7 +19,8 @@
 #include "memory_object.h"
 #include <stdio.h>
 
-/* Called by the kernel when a shutdown has finished. */
+/* Implement the object termination call from the kernel as described
+   in <mach/memory_object.defs>. */
 kern_return_t
 _pager_seqnos_memory_object_terminate (mach_port_t object, 
 				       mach_port_seqno_t seqno,
