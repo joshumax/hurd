@@ -132,7 +132,7 @@ diskfs_parse_bootargs (int argc, char **argv)
       devname = argv[4];
     }
 
-  (void) device_open (diskfs_master_device, D_WRITE, "console", &con);
+  (void) device_open (diskfs_master_device, D_READ|D_WRITE, "console", &con);
   stderr = stdout = mach_open_devstream (con, "w");
   stdin = mach_open_devstream (con, "r");
 
