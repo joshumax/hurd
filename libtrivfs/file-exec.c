@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,6 +19,8 @@
 
 kern_return_t
 trivfs_S_file_exec (trivfs_protid_t exec_file,
+		    mach_port_t reply,
+		    mach_msg_type_name_t replyPoly,
 		    mach_port_t exec_task,
 		    int flags,
 		    data_t argv,
@@ -38,6 +40,3 @@ trivfs_S_file_exec (trivfs_protid_t exec_file,
 {
   return EOPNOTSUPP;
 }
-
-
-  
