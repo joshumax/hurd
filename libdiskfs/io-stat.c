@@ -25,18 +25,32 @@ diskfs_S_io_stat (struct protid *cred,
 		  io_statbuf_t *statbuf)
 {
   struct node *np;
+  mach_port_t atrans;
 
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
   mutex_lock (&np->lock);
+
   iohelp_get_conch (&np->conch);
   if (diskfs_synchronous)
     diskfs_node_update (np, 1);
   else
     diskfs_set_node_times (np);
+
   bcopy (&np->dn_stat, statbuf, sizeof (struct stat));
+  statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
+  if (fshelp_fetch_control (&np->transbox, &atrans) == 0 
+      && atrans != MACH_PORT_NULL)
+    {
+      statbuf->st_mode |= S_IATRANS;
+      mach_port_deallocate (mach_task_self (), atrans);
+    }
+  if (np == diskfs_root_node)
+    statbuf->st_mode |= S_IROOT;
+    
   mutex_unlock (&np->lock);
+
   return 0;
 }
