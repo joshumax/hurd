@@ -146,10 +146,11 @@ routine proc_setprocargs (
 	argv: int;
 	envp: int);
 
-/* Fetch the message port of a process */
+/* Fetch the message ports of a set of processes */
 /* INTR */
 routine proc_getmsgport (
 	process: process_t;
+	other_proces: portarray_t;
 	sreplyport reply_port: reply_port_t;
 	pid: pid_t;
 	out msgport: mach_port_t);
@@ -265,6 +266,26 @@ routine proc_getprocenv (
 	which: pid_t;
 	out procenv: data_t);
 
+/* Create a new login collection.  The pid of PROCESS will be the id
+   of the collection.  All the children (and their children, and so forth) of
+   PROCESS will automatically join the collection.  If PROCESS dies its
+   children (and their children, and so forth) will become part of init's
+   process collection.  */
+routine proc_make_login_coll (
+	process: process_t);
+
+/* Get the process collection ID for the process specified by pid.  */
+routine proc_getloginid (
+	process: process_t;
+	pid: pid_t;
+	out login_id: pid_t);
+
+/* Get the pids of all the members of process collection ID. */
+routine proc_getloginpids (
+	process: process_t;
+	id: pid_t;
+	out pids: pidarray_t);
+
 /* These next two should not actually be used; they are here 
    for "historic reasons."  You are not expected to understand this. */
 routine proc_setlogin (
@@ -322,63 +343,3 @@ routine proc_getpgrppids (
 	out pidset: pidarray_t);
 
 
-/*** Process collections ***/
-
-/* Create a new process collection.  Process collections are
-   completely orthogonal to the Posix concepts of process group and
-   session.  Process collections may be inheritable, which means that
-   child processes of members automatically become members themselves.
-   The calling process is automatically a member of the new process 
-   collection. */
-routine proc_make_collection (
-	process: process_t;
-	inheritable: int;
-	out proccoll: proccoll_t);
-
-/* Add the caller to the indicated process collection.  */
-routine proc_add_collection (
-	process: process_t;
-	proccoll: proccoll_t);
-
-/* Remove the process from the indicated process collection.  If this
-   is the only process in the collection, then the collection itself
-   is deallocated.  */
-routine proc_remove_collection (
-	process: process_t;
-	proccoll: proccoll_t);
-
-/* Return all the process collections of which we are a member.  */
-routine proc_get_collections (
-	process: process_t;
-	out collections: portarray_t);
-
-/* Return all the pids of processes in a collection.  */
-routine proc_collection_members (
-	process: process_t;
-	proccoll: proccoll_t;
-	out pids: intarray_t);
-
-/* Return a pseudo-collection port for a process group.  This is only
-   useful as an argument to proc_get_collports.  */
-routine proc_pgrp_pcoll (
-	process: process_t;
-	pgrp: pid_t;
-	out pcoll: proccoll_t);
-
-/* Return a pseudo-collection port for a session.  This is only useful
-   as an argument to proc_get_collports.  */
-routine proc_session_pcoll (
-	process: process_t;
-	session: pid_t;
-	out pcoll: proccoll_t);
-
-/* Return send rights to all the message ports of the members of the
-   collection or pseudo-collection.  These should not be saved for a
-   period of time, because processes are free to change their message
-   ports.  */
-/* INTR */
-routine proc_get_collports (
-	process: process_t;
-	proccoll: proccoll_t;
-	out pids: pidarray_t;
-	out msgports: portarray_t);
