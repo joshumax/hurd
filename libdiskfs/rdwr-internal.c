@@ -49,8 +49,6 @@ _diskfs_rdwr_internal (struct node *np,
     }
   
   memobj = diskfs_get_filemap (np);
-  mach_port_insert_right (mach_task_self (), memobj, memobj,
-			  MACH_MSG_TYPE_MAKE_SEND);
   
   while (amt > 0)
     {
