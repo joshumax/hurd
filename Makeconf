@@ -149,6 +149,17 @@ else
  linktarg := $(linktarg) $(linktarg:=.static)
 endif
 
+ifeq ($(makemode),misc)
+  ifndef doinst
+    doinst := many
+  endif
+  ifndef installationdir
+    ifneq (,$(target)$(targets))
+    ?Error subdir Makefile must define installationdir
+    endif
+  endif
+endif
+
 ifeq ($(cleantarg),)
  cleantarg := $(linktarg)
 endif
@@ -243,6 +254,8 @@ ifeq ($(doinst),many)
  target = $(filter-out $(special-targets),$(targets))
 endif
 
+ifneq ($(makemode),misc)
+
 ifeq ($(doinst),one)
 $(target) $(target).static: $(OBJS) $(OTHERLIBS) $(library_deps)
 endif
@@ -325,6 +338,8 @@ endif
 ifneq ($(makemode),library)
 hurd-bug-addr-dir-dep = libhurdbugaddr
 endif
+
+endif # makemode != misc
 
 directory-depend: $(..)$(dir).d
 $(..)$(dir).d: $(srcdir)/Makefile
