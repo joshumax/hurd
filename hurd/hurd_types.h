@@ -56,6 +56,7 @@ typedef int *fd_mask_t;
 typedef mach_port_t *portarray_t;
 typedef pid_t *pidarray_t;
 typedef uid_t *idarray_t;
+typedef off_t *off_array_t;
 typedef struct rusage rusage_t;
 typedef struct flock flock_t;
 typedef struct utsname utsname_t;
