@@ -709,23 +709,48 @@ argp_args_usage (const struct argp *argp, FILE *stream)
       argp_args_usage (*children++, stream);
 }
 
-/* Print the documentation for ARGP to STREAM.  Each separate bit of
-   documentation is preceded by a blank line.  */
-static void
-argp_doc (const struct argp *argp, FILE *stream)
+/* Print the documentation for ARGP to STREAM; if POST is false, then
+   everything preceeding a `\v' character in the documentation strings (or
+   the whole string, for those with none) is printed, otherwise, everything
+   following the `\v' character (nothing for strings without).  Each separate
+   bit of documentation is separated a blank line, and if PRE_BLANK is true,
+   then the first is as well.  If FIRST_ONLY is true, only the first
+   occurance is output.  Returns true if anything was output.  */
+static int
+argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
+	  FILE *stream)
 {
   const struct argp **children = argp->children;
   const char *doc = argp->doc;
+  int anything = 0;
+
   if (doc)
     {
-      putc ('\n', stream);
-      fputs (doc, stream);
+      char *vt = index (doc, '\v');
+
+      if (pre_blank && (vt || !post))
+	putc ('\n', stream);
+
+      if (vt)
+	if (post)
+	  fputs (vt + 1, stream);
+	else
+	  fwrite (doc, 1, vt - doc, stream);
+      else
+	if (! post)
+	  fputs (doc, stream);
       if (line_wrap_point (stream) > line_wrap_lmargin (stream))
 	putc ('\n', stream);
+
+      anything = 1;
     }
   if (children)
-    while (*children)
-      argp_doc (*children++, stream);
+    while (*children && !(first_only && anything))
+      anything |=
+	argp_doc (*children++, post, anything || pre_blank, first_only,
+		  stream);
+
+  return anything;
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
@@ -781,11 +806,15 @@ void argp_help (const struct argp *argp, FILE *stream,
 
       putc ('\n', stream);
       first = 0;
+
+      argp_doc (argp, 0, 0, 1, stream);
     }
 
   if (flags & ARGP_HELP_SEE)
     {
-      fprintf (stream, "Try `%s --help' for more information.\n", name);
+      fprintf (stream,
+	       "Try `%s --help' or `%s --usage' for more information.\n",
+	       name, name);
       first = 0;
     }
 
@@ -802,7 +831,7 @@ void argp_help (const struct argp *argp, FILE *stream,
 	}
 
       /* Finally, print any documentation strings at the end.  */
-      argp_doc (argp, stream);
+      argp_doc (argp, 1, 1, 0, stream);
     }
 
   if (hol)
