@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-	.globl _errno
+#include <i386/asm.h>
+
+	.globl EXT(errno)
 .text
-	.globl _syscall
-	.align 4
-_syscall:
+ENTRY(syscall)
 	pop %ecx
 	pop %eax
 	push %ecx
@@ -29,6 +29,6 @@ _syscall:
 	jb error
 	ret
 error:
-	movl %eax,_errno
+	movl %eax,EXT(errno)
 	movl $-1,%eax
 	ret
