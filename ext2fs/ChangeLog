@@ -1,3 +1,9 @@
+Mon Jun 30 17:34:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ext2fs.c (diskfs_readonly): Delete variable definition.
+	(main): If the store cannot be made writable, then set
+	diskfs_hard_readonly and diskfs_readonly.
+
 1997-06-20  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* pager.c (disk_pager_read_page): Initialize READ to 0 to force

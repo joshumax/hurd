@@ -47,7 +47,6 @@ char *diskfs_server_version = HURD_VERSION;
 char *diskfs_extra_version = "GNU Hurd; ext2 " EXT2FS_VERSION;
 
 int diskfs_synchronous = 0;
-int diskfs_readonly = 0;
 
 struct node *diskfs_root_node;
 
@@ -172,6 +171,9 @@ main (int argc, char **argv)
   if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%u) greater than page size (%d)",
 		store->block_size, vm_page_size);
+
+  if (store->flags & STORE_HARD_READONLY)
+    diskfs_readonly = diskfs_hard_readonly = 1;
 
   /* Map the entire disk. */
   create_disk_pager ();
