@@ -272,6 +272,10 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time, &note.data.pr_time);
 	/* XXX struct procinfo should have dead child info for pr_ctime */
 	note.data.pr_wstat = pi->exitstatus;
+
+	if ((void *) pi != &pibuf)
+	  munmap (pi, pi_size);
+
 	{
 	  /* We have to nab the process's own proc port to get the
 	     proc server to tell us its registered arg locations.  */
