@@ -81,9 +81,12 @@ main (int argc, char **argv, char **envp)
 		     sizeof (struct port_info), &genport);
   generic_port = ports_get_right (genport);
 
-  /* new_proc depends on these assignments which must occur in this order. */
-  self_proc = new_proc (mach_task_self ()); /* proc 0 is the procserver */
-  startup_proc = new_proc (MACH_PORT_NULL); /* proc 1 is init */
+  /* Create the initial proc object for init (PID 1).  */
+  startup_proc = create_startup_proc ();
+
+  /* Create our own proc object (we are PID 0).  */
+  self_proc = allocate_proc (mach_task_self ());
+  complete_proc (self_proc, 0);
 
   startup_port = ports_get_right (startup_proc);
   mach_port_insert_right (mach_task_self (), startup_port,
@@ -96,9 +99,6 @@ main (int argc, char **argv, char **envp)
   mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
-
-  add_proc_to_hash (self_proc);
-  add_proc_to_hash (startup_proc);
 
   /* Set our own argv and envp locations.  */
   self_proc->p_argv = (int) argv;
