@@ -39,7 +39,7 @@ static char copyright[] =
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)main.c	8.2 (Berkeley) 1/23/94";*/
-static char *rcsid = "$Id: main.c,v 1.3 1994/08/25 15:18:07 mib Exp $";
+static char *rcsid = "$Id: main.c,v 1.4 1994/08/26 18:06:30 mib Exp $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,6 +57,9 @@ static char *rcsid = "$Id: main.c,v 1.3 1994/08/25 15:18:07 mib Exp $";
 void	catch(), catchquit(), voidquit();
 int	returntosingle;
 
+/* GNU Hurd patch */
+#define blockcheck(a) (a)
+
 main(argc, argv)
 	int	argc;
 	char	*argv[];
@@ -64,7 +67,8 @@ main(argc, argv)
 	int ch;
 	int ret, maxrun = 0;
 	extern int docheck(), checkfilesys();
-	extern char *optarg, *blockcheck();
+	extern char *optarg;
+/*	extern char *blockcheck(); */
 	extern int optind;
 
 	sync();
