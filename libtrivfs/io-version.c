@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994 Free Software Foundation
+/*
+   Copyright (C) 1994,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,8 +17,8 @@
 
 #include "priv.h"
 
-kern_return_t 
-trivfs_S_io_server_version (mach_port_t obj,
+kern_return_t
+trivfs_S_io_server_version (trivfs_protid_t obj,
 			    mach_port_t reply,
 			    mach_msg_type_name_t replytype,
 			    char *name,
