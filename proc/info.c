@@ -154,7 +154,7 @@ get_string (task_t t,
   return err;
 }
 
-/* Read a vector of addresses (stored as are argv and envp) from tast TASK
+/* Read a vector of addresses (stored as are argv and envp) from task TASK
    found at address ADDR.  Set *VEC to point to newly malloced storage holding
    the addresses. */
 static error_t
@@ -163,45 +163,51 @@ get_vector (task_t task,
 	    int **vec)
 {
   vm_address_t readaddr;
-  vm_address_t data = 0;
-  u_int readlen;
+  vm_size_t readsize;
+  vm_address_t scanned;
   error_t err;
-  vm_address_t *t;
 
+  *vec = NULL;
   readaddr = trunc_page (addr);
-  err = vm_read (task, readaddr, vm_page_size * 2, &data, &readlen);
-  if (err == KERN_INVALID_ADDRESS)
-    err = vm_read (task, readaddr, vm_page_size, &data, &readlen);
-  if (err == MACH_SEND_INVALID_DEST)
-    err = ESRCH;
-  if (err)
-    return err;
+  readsize = 0;
+  scanned = addr;
+  do
+    {
+      vm_address_t data;
+      mach_msg_type_number_t readlen = 0;
+      vm_address_t *t;
 
-  /* Scan for a null.  */
-  *vec = 0;
-  /* This will lose sometimes on machines with unfortunate alignment
-     restrictions. XXX */
-  for (t = (vm_address_t *) (data + (addr - readaddr));
-       t < (vm_address_t *) (data + readlen);
-       ++t)
-    if (*t == 0)
-      {
-	++t;			/* Include the null.  */
-	*vec = malloc ((char *)t - (char *)(data + (addr - readaddr)));
-	if (*vec == NULL)
+      readsize += vm_page_size;
+      err = vm_read (task, readaddr, readsize, &data, &readlen);
+      if (err == MACH_SEND_INVALID_DEST)
+	err = ESRCH;
+      if (err)
+	return err;
+
+      /* XXX fault bad here */
+
+      /* Scan for a null.  */
+      for (t = (vm_address_t *) (data + (scanned - readaddr));
+	   t < (vm_address_t *) (data + readlen);
+	   ++t)
+	if (*t == 0)
 	  {
-	    err = ENOMEM;
+	    ++t;		/* Include the null.  */
+	    *vec = malloc ((char *)t - (char *)(data + (addr - readaddr)));
+	    if (*vec == NULL)
+	      err = ENOMEM;
+	    else
+	      bcopy ((char *)(data + (addr - readaddr)), *vec,
+		     (char *)t - (char *)(data + (addr - readaddr)));
 	    break;
 	  }
-	bcopy ((char *)(data + (addr - readaddr)), *vec,
-	       (char *)t - (char *)(data + (addr - readaddr)));
-	break;
-      }
 
-  if (!err && *vec == 0)
-    err = KERN_INVALID_ADDRESS;
+      /* If we didn't find the null terminator, then we will loop
+	 to read an additional page.  */
+      scanned = data + readlen;
+      vm_deallocate (mach_task_self (), data, readlen);
+    } while (!err && *vec == NULL);
 
-  vm_deallocate (mach_task_self (), data, readlen);
   return err;
 }
 
