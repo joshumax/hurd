@@ -391,28 +391,6 @@ open_write(struct open *open, vm_address_t buf, vm_size_t len,
   else
     err = window_write(open->window, buf, len, amount, state.offs_p);
 
-#ifdef MSG
-  if (debug)
-    {
-      char *mode =
-	(dev_is(dev, DEV_BUFFERED)
-	 ? dev_is(dev, DEV_SERIAL) ? "buffered" : "windowed" : "raw");
-      char *estr = err ? strerror(err) : "OK";
-      char *bstr = err ? "-" : brep(buf, len);
-
-      mutex_lock(&debug_lock);
-      fprintf(debug, "open_rdwr:\n  using %s offset\n",
-	      (state.user_offs == -1 || !dev_is(dev, DEV_BUFFERED))
-	      ? (state.offs_p == &dev->io_state.location
-		 ? "device" : "open")
-	      : "msg");
-      fprintf(debug, "  %s write(%s, %d, %d) => %s, %d\n",
-	      mode, bstr, len, (int)offs, estr, *amount);
-      fprintf(debug, "  offset = %d\n", (int)*state.offs_p);
-      mutex_unlock(&debug_lock);
-    }
-#endif
-
   rdwr_state_finalize(&state);
 
   return err;
@@ -446,28 +424,6 @@ open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
     }
   else
     err = window_read(open->window, buf, buf_len, amount, state.offs_p);
-
-#ifdef MSG
-  if (debug)
-    {
-      char *mode =
-	(dev_is(dev, DEV_BUFFERED)
-	 ? dev_is(dev, DEV_SERIAL) ? "buffered" : "windowed" : "raw");
-      char *estr = err ? strerror(err) : "OK";
-      char *bstr = err ? "-" : brep(*buf, *buf_len);
-
-      mutex_lock(&debug_lock);
-      fprintf(debug, "open_rdwr:\n  using %s offset\n",
-	      (state.user_offs == -1 || !dev_is(dev, DEV_BUFFERED))
-	      ? (state.offs_p == &dev->io_state.location
-		 ? "device" : "open")
-	      : "msg");
-      fprintf(debug, "  %s read(%d, %d) => %s, %s, %d\n",
-	      mode, amount, (int)offs, estr, bstr, *buf_len);
-      fprintf(debug, "  offset = %d\n", (int)*state.offs_p);
-      mutex_unlock(&debug_lock);
-    }
-#endif
 
   rdwr_state_finalize(&state);
 
