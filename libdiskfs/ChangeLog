@@ -1,3 +1,48 @@
+1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Add braces to silence gcc
+	warning.
+	* io-identity.c (diskfs_S_io_identity): Likewise.
+	* opts-append-std.c (diskfs_append_std_options): Likewise.
+	* opts-std-runtime.c (set_opts): Likewise.
+
+1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* diskfs.h (diskfs_lookup_hard, diskfs_lookup,
+	diskfs_set_translator, diskfs_create_symlink_hook,
+	diskfs_notice_dirchange, diskfs_direnter, diskfs_direnter_hard,
+	diskfs_dirrewrite, diskfs_dirremove,
+	diskfs_create_node, diskfs_enter_lookup_cache,
+	diskfs_check_lookup_cache, dir_rename_dir, diskfs_set_options):
+	Add `const' qualifier to `char *' parameters where appropriate.
+	* opts-set.c (diskfs_set_options): Fix defn with `const'.
+	* node-create.c (diskfs_create_node): Likewise.
+	* name-cache.c (diskfs_enter_lookup_cache): Likewise.
+	(diskfs_check_lookup_cache): Likewise.
+	* dirremove.c (diskfs_dirremove): Likewise.
+	* dirrewrite.c (diskfs_dirrewrite): Likewise.
+	* lookup.c (diskfs_lookup): Likewise.
+	* direnter.c (diskfs_direnter): Likewise.
+	* dir-renamed.c (diskfs_rename_dir): Likewise.
+	* dir-chg.c (diskfs_notice_dirchange): Likewise.
+
+1998-04-04  Roland McGrath  <roland@baalperazim.frob.com>
+
+	Add support for a "virtual root directory" specified at startup.
+	* priv.h (_diskfs_chroot_directory): Declare new variable.
+	* opts-std-startup.c (startup_options, parse_startup_opt): New
+	string-valued option -C/--directory/--virtual-root/--chroot sets
+	_diskfs_chroot_directory.
+	* init-startup.c (_diskfs_chroot_directory): New variable.
+	(diskfs_startup_diskfs): If that's set, look up the name and
+	warp us to that as a virtual root directory.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Initialize new peropen's
+	shadow_root_parent to null, and shadow_root to either null or,
+	if _diskfs_chroot_directory is set, to diskfs_root_node.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Treat a shadow_root with null
+	shadow_root_parent as a "virtual root".
+
 1998-08-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* fsys-options.c (diskfs_S_fsys_get_options):
