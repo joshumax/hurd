@@ -707,7 +707,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 error_t
 diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 {
-  error_t err;
+  error_t err = 0;
   daddr_t blkno;
   unsigned datalen;
   void *transloc;
@@ -725,12 +725,14 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
   *namep = malloc (datalen);
+  if (!*namep)
+    err = ENOMEM;
   bcopy (transloc + 2, *namep, datalen);
 
   diskfs_end_catch_exception ();
 
   *namelen = datalen;
-  return 0;
+  return err;
 }
 
 /* The maximum size of a symlink store in the inode (including '\0').  */

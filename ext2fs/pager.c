@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>
+#include <errno.h>
 #include <hurd/store.h>
 #include "ext2fs.h"
 
@@ -772,6 +773,8 @@ void
 create_disk_pager (void)
 {
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
+  if (!upi)
+    ext2_panic ("can't create disk pager: %s", strerror (errno));
   upi->type = DISK;
   pager_bucket = ports_create_bucket ();
   diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,

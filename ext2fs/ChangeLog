@@ -1,3 +1,13 @@
+2000-12-21  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pager.c: Include <errno.h>.
+	(create_disk_pager): Panic if malloc fails.
+	Reported by Igor Khavkine <i_khavki@alcor.concordia.ca>.
+
+	* inode.c (diskfs_get_translator): If malloc fails, set err to ENOMEM.
+	Initialize err with 0, and return it at the end of the function.
+	Reported by Igor Khavkine <i_khavki@alcor.concordia.ca>.
+
 2000-12-02  Roland McGrath  <roland@frob.com>
 
 	* inode.c (write_all_disknodes): Call diskfs_set_node_times after
