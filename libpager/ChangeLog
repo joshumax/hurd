@@ -1,3 +1,11 @@
+Tue Aug 13 10:47:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* object-terminate.c (_pager_free_structure): Don't bother calling
+	mach_port_deallocate if the cells are already null; set the cells
+	to null after the deallocation is done.
+	(_pager_seqnos_memory_object_terminate): Destroy the rights passed
+	in for control and name.
+
 Thu May  9 11:10:11 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* pager-create.c: Get rid of link warning.

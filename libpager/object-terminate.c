@@ -53,6 +53,12 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
       condition_wait (&p->wakeup, &p->interlock);
     }
 
+  /* Destry the ports we received; mark that in P so that it doesn't bother
+     doing it again. */
+  mach_port_destroy (mach_task_self (), control);
+  mach_port_destroy (mach_task_self (), name);
+  p->memobjcntl = p->memobjname = MACH_PORT_NULL;
+
   _pager_free_structure (p);
 
 #ifdef KERNEL_INIT_RACE
@@ -104,8 +110,16 @@ _pager_free_structure (struct pager *p)
   if (wakeup)
     condition_broadcast (&p->wakeup);
 
-  mach_port_deallocate (mach_task_self (), p->memobjcntl);
-  mach_port_deallocate (mach_task_self (), p->memobjname);
+  if (p->memobjcntl != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), p->memobjcntl);
+      p->memobjcntl = MACH_PORT_NULL;
+    }
+  if (p->memobjname != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), p->memobjname);
+      p->memobjname = MACH_PORT_NULL;
+    }
 
   /* Free the pagemap */
   if (p->pagemapsize)
