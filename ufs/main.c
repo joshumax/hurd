@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <device/device.h>
 #include <hurd/startup.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 char *ufs_version = "0.0 pre-alpha";
 
@@ -105,14 +107,28 @@ main (int argc, char **argv)
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   
   if (bootstrap)
-    devname = trans_parse_args (argc, argv);
+    {
+      devname = trans_parse_args (argc, argv);
+
+      {
+	/* XXX let us see errors */
+	int fd = open ("/dev/console", O_RDWR);
+	assert (fd == 0);
+	fd = dup (0);
+	assert (fd == 1);
+	fd = dup (1);
+	assert (fd == 2);
+      }
+    }
   else
     {
       devname = diskfs_parse_bootargs (argc, argv);
       compat_mode = COMPAT_GNU;
     }
   
-  diskfs_init_diskfs (bootstrap);
+  /* Initialize the diskfs library.  This must come before
+     any other diskfs call.  */
+  diskfs_init_diskfs ();
   
   err = device_open (diskfs_master_device, 
 		     (diskfs_readonly ? 0 : D_WRITE) | D_READ,
@@ -148,26 +164,38 @@ main (int argc, char **argv)
   if ((sblock->fs_inodefmt == FS_44INODEFMT
        || direct_symlink_extension)
       && compat_mode == COMPAT_BSD42)
+    /* XXX should syslog to this effect */
     compat_mode = COMPAT_BSD44;
 
   if (!diskfs_readonly)
     {
       sblock->fs_clean = 0;
-      strcpy (sblock->fs_fsmnt, "Hurd /");
+      strcpy (sblock->fs_fsmnt, "Hurd /"); /* XXX */
       sblock_dirty = 1;
       diskfs_set_hypermetadata (1, 0);
     }
 
+  /* Initiialize our pagers so we can begin using them.  */
   inode_init ();
   pager_init ();
-  
+
+  /* Start the first request thread, to handle RPCs and page requests
+     resulting from warp_root below.  */
   diskfs_spawn_first_thread ();
-  
+
+  /* Find our root node.  */
   warp_root ();
-  
-  if (!bootstrap)
+
+  /* Now that we are all set up to handle requests, and diskfs_root_node is
+     set properly, it is safe to export our fsys control port to the
+     outside world.  */
+  (void) diskfs_startup_diskfs (bootstrap);
+
+  if (bootstrap == MACH_PORT_NULL)
+    /* We are the bootstrap filesystem; do special boot-time setup.  */
     diskfs_start_bootstrap ();
   
+  /* Now become a generic request thread.  */
   diskfs_main_request_loop ();
 }
 
