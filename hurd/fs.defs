@@ -235,7 +235,7 @@ routine dir_readdir (
 	entry: int;
 	nentries: int;
 	bufsiz: vm_size_t;
-	out amount: vm_size_t);
+	out amount: int);
 
 /* Create directory */
 routine dir_mkdir (
