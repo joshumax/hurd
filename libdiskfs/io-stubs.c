@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -47,7 +47,8 @@ diskfs_S_io_eofnotify (struct protid *cred)
    We don't use this feature. */
 kern_return_t
 diskfs_S_io_postnotify (struct protid *cred,
-			vm_offset_t start, vm_offset_t end)
+			vm_offset_t start __attribute__ ((unused)), 
+			vm_offset_t end __attribute__ ((unused)))
 {
   return cred ? 0 : EOPNOTSUPP;
 }
