@@ -1,3 +1,7 @@
+2004-02-10  Roland McGrath  <roland@frob.com>
+
+	* linux-src/arch/i386/lib/checksum.S: Fix comment syntax.
+
 2003-05-07  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* linux-src/include/asm-i386/checksum.h (ip_fast_csum): Use
@@ -15,7 +19,7 @@
 	* Makefile: Revert last change.
 	* glue-include/asm/spinlock.h (SPIN_LOCK_UNLOCKED): Do not use a
 	compound literal, which is not constant.
-	
+
 	* Makefile: For now, filter -std=gnu99 out of CPPFLAGS.
 
 2002-06-15  Roland McGrath  <roland@frob.com>

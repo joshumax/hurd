@@ -1,9 +1,13 @@
+2004-02-10  Roland McGrath  <roland@frob.com>
+
+	* opts-runtime.c (diskfs_runtime_argp): Include <argp.h>.
+
 2003-10-11  Marcus Brinkmann  <marcus@gnu.org>
 
 	* notify-nosenders.c, notify-stubs.c: Delete obsolete files.
 
 2003-06-11  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
-	
+
 	* dir-renamed.c (diskfs_rename_dir): Check permissions to remove
 	FROMNAME before any modification could take place.  Check result
 	of removing the from node.

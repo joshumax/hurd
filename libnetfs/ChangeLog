@@ -1,3 +1,7 @@
+2004-02-10  Roland McGrath  <roland@frob.com>
+
+	* runtime-argp.c (netfs_runtime_argp): Include <argp.h>.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* dir-readdir.c (netfs_S_dir_readdir): Revert last change.
