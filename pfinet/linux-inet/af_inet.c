@@ -1239,6 +1239,8 @@ static int inet_select(struct socket *sock, int sel_type, select_table *wait )
 	return(sk->prot->select(sk, sel_type, wait));
 }
 
+#ifndef _HURD_
+
 /*
  *	ioctl() calls you can issue on an INET socket. Most of these are
  *	device configuration and stuff and very rarely used. Some ioctls
@@ -1335,7 +1337,9 @@ static int inet_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 	}
 	/*NOTREACHED*/
 	return(0);
+
 }
+#endif
 
 /*
  * This routine must find a socket given a TCP or UDP header.
