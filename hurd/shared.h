@@ -33,6 +33,7 @@ struct shared_io
     } it_status;
 
   int eof_notify;		/* notify filesystem upon read of eof */
+  int do_sigio;			/* call io_sigio after each operation */
 
   int use_file_size;		/* file_size is meaningful */
   off_t file_size;
