@@ -53,7 +53,11 @@ diskfs_shutdown (int flags)
     return EBUSY;
 
   if (flags & FSYS_GOAWAY_RECURSE)
-    diskfs_node_iterate (helper);
+    {
+      err = diskfs_node_iterate (helper);
+      if (err)
+	return err;
+    }
 
   mutex_lock (&diskfs_shutdown_lock);
   
