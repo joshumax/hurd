@@ -126,8 +126,6 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
-** Bug: pflocal: using emacsclient causes massive thread creation in pflocal,
-   and emacsclient hangs in connect().
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
