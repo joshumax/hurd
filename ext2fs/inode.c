@@ -231,41 +231,35 @@ read_disknode (struct node *np)
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = fsid;
   st->st_ino = np->dn->number;
-  st->st_gen = di->di_gen;
-  st->st_rdev = di->di_rdev;
-  st->st_mode = di->di_model | (di->di_modeh << 16);
-  st->st_nlink = di->di_nlink;
-  st->st_size = di->di_size;
-#ifdef notyet
-  st->st_atimespec = di->di_atime;
-  st->st_mtimespec = di->di_mtime;
-  st->st_ctimespec = di->di_ctime;
-#else
-  st->st_atime = di->di_atime.ts_sec;
-  st->st_atime_usec = di->di_atime.ts_nsec / 1000;
-  st->st_mtime = di->di_mtime.ts_sec;
-  st->st_mtime_usec = di->di_mtime.ts_nsec / 1000;
-  st->st_ctime = di->di_ctime.ts_sec;
-  st->st_ctime_usec = di->di_ctime.ts_nsec / 1000;
-#endif  
+
+#ifdef XXX
+  st->st_gen = di->i_gen;
+  st->st_rdev = di->i_rdev;
   st->st_blksize = sblock->fs_bsize;
-  st->st_blocks = di->di_blocks;
-  st->st_flags = di->di_flags;
+#endif
+
+  st->st_mode = di->i_mode | (di->i_mode_high << 16);
+  st->st_nlink = di->i_links_count;
+  st->st_size = di->i_size;
+
+  st->st_atime = di->i_atime;
+  st->st_mtime = di->i_mtime;
+  st->st_ctime = di->i_ctime;
+
+#ifdef XXX
+  st->st_atime_usec = di->i_atime.ts_nsec / 1000;
+  st->st_mtime_usec = di->i_mtime.ts_nsec / 1000;
+  st->st_ctime_usec = di->i_ctime.ts_nsec / 1000;
+#endif
+
+  st->st_blocks = di->i_blocks;
+  st->st_flags = di->i_flags;
   
-  if (sblock->fs_inodefmt < FS_44INODEFMT)
-    {
-      st->st_uid = di->di_ouid;
-      st->st_gid = di->di_ogid;
-      st->st_author = 0;
-    }
-  else
-    {
-      st->st_uid = di->di_uid;
-      st->st_gid = di->di_gid;
-      st->st_author = di->di_author;
-      if (st->st_author == -1)
-	st->st_author = st->st_uid;
-    }
+  st->st_uid = di->i_uid | (di->i_uid_high << 16);
+  st->st_gid = di->i_gid | (di->i_gid_high << 16);
+  st->st_author = di->i_author;
+  if (st->st_author == -1)
+    st->st_author = st->st_uid;
 
   diskfs_end_catch_exception ();
   if (!S_ISBLK (st->st_mode) && !S_ISCHR (st->st_mode))
@@ -289,122 +283,45 @@ write_node (struct node *np)
       if (err)
 	return;
   
-      di->di_gen = st->st_gen;
+      di->i_gen = st->st_gen;
       
       if (S_ISBLK (st->st_mode) || S_ISCHR (st->st_mode))
-	di->di_rdev = st->st_rdev;
+	di->i_rdev = st->st_rdev;
 
       /* We happen to know that the stat mode bits are the same
 	 as the ext2fs mode bits. */
+      /* XXX? */
 
-      if (compat_mode == COMPAT_GNU)
-	{
-	  di->di_model = st->st_mode & 0xffff;
-	  di->di_modeh = (st->st_mode >> 16) & 0xffff;
-	}
-      else 
-	{
-	  di->di_model = st->st_mode & 0xffff;
-	  di->di_modeh = 0;
-	}
-
-      if (compat_mode != COMPAT_BSD42)
-	{
-	  di->di_uid = st->st_uid;
-	  di->di_gid = st->st_gid;
-	}
+      di->i_mode = st->st_mode & 0xffff;
+      di->i_mode_high = (st->st_mode >> 16) & 0xffff;
       
-      if (sblock->fs_inodefmt < FS_44INODEFMT)
-	{
-	  di->di_ouid = st->st_uid & 0xffff;
-	  di->di_ogid = st->st_gid & 0xffff;
-	}
-      else if (compat_mode == COMPAT_GNU)
-	di->di_author = st->st_author;
+      di->i_uid = st->st_uid & 0xFFFF;
+      di->i_gid = st->st_gid & 0xFFFF;
+      di->i_uid_high = st->st_uid >> 16;
+      di->i_gid_high = st->st_gid >> 16;
 
-      di->di_nlink = st->st_nlink;
-      di->di_size = st->st_size;
-#ifdef notyet
-      di->di_atime = st->st_atimespec;
-      di->di_mtime = st->st_mtimespec;
-      di->di_ctime = st->st_ctimespec;
-#else
-      di->di_atime.ts_sec = st->st_atime;
-      di->di_atime.ts_nsec = st->st_atime_usec * 1000;
-      di->di_mtime.ts_sec = st->st_mtime;
-      di->di_mtime.ts_nsec = st->st_mtime_usec * 1000;
-      di->di_ctime.ts_sec = st->st_ctime;
-      di->di_ctime.ts_nsec = st->st_ctime_usec * 1000;
-#endif      
-      di->di_blocks = st->st_blocks;
-      di->di_flags = st->st_flags;
+      di->i_author = st->st_author;
+
+      di->i_links_count = st->st_nlink;
+      di->i_size = st->st_size;
+
+      di->i_atime = st->st_atime;
+      di->i_mtime = st->st_mtime;
+      di->i_ctime = st->st_ctime;
+#ifdef XXX
+      di->i_atime.ts_nsec = st->st_atime_usec * 1000;
+      di->i_mtime.ts_nsec = st->st_mtime_usec * 1000;
+      di->i_ctime.ts_nsec = st->st_ctime_usec * 1000;
+#endif
+
+      di->i_blocks = st->st_blocks;
+      di->i_flags = st->st_flags;
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
       record_poke (di, sizeof (struct ext2_inode));
     }
 }  
-
-/* See if we should create a symlink by writing it directly into
-   the block pointer array.  Returning EINVAL tells diskfs to do it
-   the usual way.  */
-static error_t
-create_symlink_hook (struct node *np, char *target)
-{
-  int len = strlen (target);
-  error_t err;
-  struct ext2_inode *di;
-  
-  if (!direct_symlink_extension)
-    return EINVAL;
-  
-  assert (compat_mode != COMPAT_BSD42);
-
-  if (len >= sblock->fs_maxsymlinklen)
-    return EINVAL;
-  
-  err = diskfs_catch_exception ();
-  if (err)
-    return err;
-  
-  di = dino (np->dn->number);
-  bcopy (target, di->di_shortlink, len);
-  np->dn_stat.st_size = len;
-  np->dn_set_ctime = 1;
-  np->dn_set_mtime = 1;
-  record_poke (di, sizeof (struct ext2_inode));
-
-  diskfs_end_catch_exception ();
-  return 0;
-}
-error_t (*diskfs_create_symlink_hook)(struct node *, char *) 
-     = create_symlink_hook;
-
-/* Check if this symlink is stored directly in the block pointer array.
-   Returning EINVAL tells diskfs to do it the usual way. */
-static error_t 
-read_symlink_hook (struct node *np,
-		   char *buf)
-{
-  error_t err;
-  
-  if (!direct_symlink_extension 
-      || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)
-    return EINVAL;
-
-  err = diskfs_catch_exception ();
-  if (err)
-    return err;
-  
-  bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
-  np->dn_set_atime = 1;
-
-  diskfs_end_catch_exception ();
-  return 0;
-}
-error_t (*diskfs_read_symlink_hook)(struct node *, char *)
-     = read_symlink_hook;
-     
 
 /* Write all active disknodes into the ext2_inode pager. */
 void
@@ -436,15 +353,13 @@ error_t
 diskfs_set_statfs (struct fsys_statfsbuf *st)
 {
   st->fsys_stb_type = FSTYPE_EXT2FS;
-  st->fsys_stb_bsize = sblock->fs_bsize;
-  st->fsys_stb_fsize = sblock->fs_fsize;
-  st->fsys_stb_blocks = sblock->fs_dsize;
-  st->fsys_stb_bfree = (sblock->fs_cstotal.cs_nbfree * sblock->fs_frag
-		       + sblock->fs_cstotal.cs_nffree);
-  st->fsys_stb_bavail = ((sblock->fs_dsize * (100 - sblock->fs_minfree) / 100)
-			- (sblock->fs_dsize - st->fsys_stb_bfree));
-  st->fsys_stb_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
-  st->fsys_stb_ffree = sblock->fs_cstotal.cs_nifree;
+  st->fsys_stb_fsize = EXT2_BLOCK_SIZE(sblock);
+  st->fsys_stb_fsize = EXT2_FRAG_SIZE(sblock);
+  st->fsys_stb_blocks = sblock->s_blocks_count;
+  st->fsys_stb_bfree = sblock->s_free_blocks_count;
+  st->fsys_stb_bavail = st->fsys_stb_free - sblock->s_r_blocks_count;
+  st->fsys_stb_files = sblock->inodes_count;
+  st->fsys_stb_ffree = sblock->free_inodes_count;
   st->fsys_stb_fsid = getpid ();
   return 0;
 }
@@ -455,6 +370,7 @@ error_t
 diskfs_set_translator (struct node *np, char *name, u_int namelen,
 		       struct protid *cred)
 {
+#ifdef XXX
   daddr_t blkno;
   error_t err;
   char buf[sblock->fs_bsize];
@@ -471,7 +387,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
     return err;
   
   di = dino (np->dn->number);
-  blkno = di->di_trans;
+  blkno = di->i_trans;
   
   if (namelen && !blkno)
     {
@@ -482,7 +398,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  diskfs_end_catch_exception ();
 	  return err;
 	}
-      di->di_trans = blkno;
+      di->i_trans = blkno;
       record_poke (di, sizeof (struct ext2_inode));
       np->dn_set_ctime = 1;
     }
@@ -490,7 +406,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
     {
       /* Clear block for translator going away. */
       ffs_blkfree (np, blkno, sblock->fs_bsize);
-      di->di_trans = 0;
+      di->i_trans = 0;
       record_poke (di, sizeof (struct ext2_inode));
       np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
       np->istranslated = 0;
@@ -511,6 +427,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   
   diskfs_end_catch_exception ();
   return err;
+#endif
 }
 
 /* Implement the diskfs_get_translator callback from the diskfs library.
@@ -518,6 +435,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 error_t
 diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 {
+#ifdef XXX
   error_t err;
   daddr_t blkno;
   u_int datalen;
@@ -527,7 +445,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
   if (err)
     return err;
 
-  blkno = (dino (np->dn->number))->di_trans;
+  blkno = (dino (np->dn->number))->i_trans;
   assert (blkno);
   transloc = disk_image + fsaddr (sblock, blkno);
   
@@ -540,6 +458,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 
   *namelen = datalen;
   return 0;
+#endif
 }
 
 /* Called when all hard ports have gone away. */
