@@ -162,20 +162,23 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  newpi = diskfs_make_protid (diskfs_make_peropen (diskfs_root_node,
-						   flags, dotdot),
-			      uids, nuids, gids, ngids);
+  error = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
+						     flags, dotdot),
+				uids, nuids, gids, ngids, &newpi);
   mach_port_deallocate (mach_task_self (), dotdot);
-  *retry = FS_RETRY_NORMAL;
-  *retryname = '\0';
-  *returned_port = ports_get_right (newpi);
-  *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newpi);
+  if (! error)
+    {
+      *retry = FS_RETRY_NORMAL;
+      *retryname = '\0';
+      *returned_port = ports_get_right (newpi);
+      *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
+    }
   
   mutex_unlock (&diskfs_root_node->lock);
   rwlock_reader_unlock (&diskfs_fsys_lock);
 
   ports_port_deref (pt);
 
-  return 0;
+  return error;
 }
