@@ -244,7 +244,7 @@ reprint_line ()
   if (termstate.c_cc[VREPRINT] != _POSIX_VDISABLE)
     echo_char (termstate.c_cc[VREPRINT], 0, 0);
   else
-    echo_char (CHAR_DC3, 0, 0);
+    echo_char (CHAR_DC2, 0, 0);
   echo_char ('\n', 0, 0);
 
   echo_qsize = 0;
