@@ -29,9 +29,7 @@
 #include <argz.h>
 #include <idvec.h>
 #include <hurd/ps.h>
-
-#include "error.h"
-#include "common.h"
+#include <error.h>
 
 /* ---------------------------------------------------------------- */
 
