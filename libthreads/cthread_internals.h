@@ -138,7 +138,10 @@ typedef struct cproc {
 	volatile char *waiting_for;	/* address of mutex/cond waiting for */
 #endif	WAIT_DEBUG
 
+#if 0
+	/* This is not needed in GNU; libc handles it.  */
 	mach_port_t reply_port;		/* for mig_get_reply_port() */
+#endif
 
 	int context;
 	spin_lock_t lock;
@@ -160,10 +163,13 @@ typedef struct cproc {
 #define	NO_CPROC		((cproc_t) 0)
 #define	cproc_self()		((cproc_t) ur_cthread_self())
 
+#if 0
+/* This declaration conflicts with <stdlib.h> in GNU.  */
 /*
  * C Threads imports:
  */
 extern char *malloc();
+#endif
 
 /*
  * Mach imports:
