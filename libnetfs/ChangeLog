@@ -1,3 +1,9 @@
+2001-06-21  Neal H Walfield  <neal@cs.uml.edu>
+
+	* file-getcontrol.c (netfs_S_file_getcontrol): When checking if
+	we can give the control port out, use fshelp_iscontroller rather
+	than doing the check by hand.
+
 2001-04-01  Neal H Walfield  <neal@cs.uml.edu>
 
 	* dir-lookup.c (netfs_S_dir_lookup):  Use

@@ -1,3 +1,13 @@
+2001-06-21  Neal H Walfield  <neal@cs.uml.edu>
+
+	* file-getcontrol.c (diskfs_S_file_getcontrol):  When checking
+	if we can give the control port out, use fshelp_iscontroller
+	rather than doing the check by hand.
+
+2001-06-19  Roland McGrath  <roland@frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Handle symlinks to "".
+
 2001-06-16  Roland McGrath  <roland@frob.com>
 
 	* file-set-trans.c (diskfs_S_file_set_translator): Add some parens.
