@@ -1,3 +1,12 @@
+Mon Feb 17 13:33:11 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp-parse.c (parser_parse_next, parser_init): Remove __
+ 	prefixes from references to getopt functions variables (OPT*).
+	(argp_version_parser, parser_finalize): Use _ instead of gettext.
+	(gettext): Macro removed.
+	* argp-namefrob.h (__getopt_long, __getopt_long_only, __optind,
+	__optarg, __opterr, __optopt): Macros removed.
+
 Sun Feb 16 00:04:07 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (space): New function.
