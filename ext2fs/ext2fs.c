@@ -206,7 +206,7 @@ main (int argc, char **argv)
       
       err = device_open (diskfs_master_device, 
 			 (diskfs_readonly ? 0 : D_WRITE) | D_READ,
-			 device_name, &ext2fs_device);
+			 device_name, &device_port);
       if (err == D_NO_SUCH_DEVICE && getpid () <= 0)
 	{
 	  /* Prompt the user to give us another name rather
@@ -225,7 +225,7 @@ main (int argc, char **argv)
     error(1, errno, "%s", device_name);
 
   /* Check to make sure device sector size is reasonable. */
-  err = device_get_status (ext2fs_device, DEV_GET_SIZE, sizes, &sizescnt);
+  err = device_get_status (device_port, DEV_GET_SIZE, sizes, &sizescnt);
   assert (sizescnt == DEV_GET_SIZE_COUNT);
   if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
     error(1, 0, "Bad device record size %d (should be %d)\n",
