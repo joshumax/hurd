@@ -175,7 +175,7 @@ open_hook (struct trivfs_peropen *po)
       if (!err)
 	{
 	  pipe_add_reader (active_fifo);
-	  condition_signal (&active_fifo_changed);
+	  condition_broadcast (&active_fifo_changed);
 	  /* We'll unlock ACTIVE_FIFO_LOCK below; the writer code won't make
 	     us block because we've ensured that there's a reader for it.  */
 	}
@@ -241,7 +241,7 @@ close_hook (struct trivfs_peropen *po)
     {
       if (going_away)
 	active_fifo = NULL;
-      condition_signal (&active_fifo_changed);
+      condition_broadcast (&active_fifo_changed);
       mutex_unlock (&active_fifo_lock);
     }
 }
