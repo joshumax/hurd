@@ -120,7 +120,7 @@ mach_port_t disk_pager_port;
 off_t disk_pager_size;
 
 void *disk_image;
-char *devname;
+char *device_name;
 mach_port_t ext2fs_device;
 
 /* Our in-core copy of the super-block.  */
