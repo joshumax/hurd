@@ -62,9 +62,6 @@ long termflags;
 #define NO_OWNER          0x00000200 /* there is no foreground_id */
 #define ICKY_ASYNC	  0x00000400 /* some user has set O_ASYNC */
 
-/* PHYSICAL position of the terminal cursor */
-int output_psize;
-
 /* Global lock */
 struct mutex global_lock;
 
@@ -249,6 +246,8 @@ error_t drain_output ();
 void output_character (int);
 void copy_rawq (void);
 void rescan_inputq (void);
+void write_character (int);
+void init_users (void);
 
 
 /* exported by the devio interface */
