@@ -516,6 +516,6 @@ do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
 {
   if (name == child_task && notify == bootport)
-    exit ();
+    _exit (0);
 }
 
