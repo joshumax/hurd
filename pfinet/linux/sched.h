@@ -14,6 +14,7 @@
 
 #define jiffies (fetch_jiffies ())
 extern struct task_struct *current;
+extern struct task_struct current_contents;
 
 struct task_struct
 {
@@ -24,7 +25,6 @@ struct task_struct
   int blocked;
   int state;
   int isroot;
-  thread_t thread;
 };
 
 /* FLAGS in task_struct's. */
