@@ -27,7 +27,7 @@ crossdir := /usr/local/$(CCTARGET)
 ifndef BUILD_CC
 export BUILD_CC := $(CC)
 endif
-CC=$(CCTARGET)-gcc $(CCTYPE) -O2 -pipe
+CC=$(CCTARGET)-gcc $(CCTYPE) -O2 
 ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=$(crossdir)/lib/migcom
 MIG=$(tooldir)/mig
@@ -40,6 +40,7 @@ export CPP
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
+OBJCOPY=$(CCTARGET)-objcopy
 
 startup := $(crossdir)/lib/crt0.o
 libc := $(crossdir)/lib/libc.a
