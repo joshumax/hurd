@@ -1,3 +1,10 @@
+Fri Jul 19 11:02:18 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* root-.profile: Don't \ ' inside "s.
+	Advise to use `sush root', not su.
+
+	* passwd (games): New user.
+
 Thu Jul 18 17:24:55 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* root-.profile: Echo usual noisy message.
