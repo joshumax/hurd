@@ -229,7 +229,7 @@ main (int argc,
   /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,
 					    pfinet_demuxer,
-					    0, 0, 1, 0);
+					    0, 0, 0);
   return 0;
 }
 
