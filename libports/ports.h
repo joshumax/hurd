@@ -1,0 +1,259 @@
+/* Ports library for server construction
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Written by Michael I. Bushnell.
+
+   This file is part of the GNU Hurd.
+
+   The GNU Hurd is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   The GNU Hurd is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
+#ifndef _HURD_PORTS_
+#define _HURD_PORTS_
+
+#include <mach.h>
+#include <stdlib.h>
+
+struct port_info
+{
+  struct port_class *class;
+  int refcnt;
+  int weakrefcnt;
+  mach_port_mscount_t mscount;
+  int flags;
+  mach_port_t port_right;
+  struct rpc_info *current_rpcs;
+  struct port_bucket *bucket;
+  void **hentry;
+  struct port_info *next, **prevp; /* links on port_class list */
+};
+/* FLAGS above are the following: */
+#define PORT_HAS_SENDRIGHTS	0x0001 /* send rights extant */
+#define PORT_INHIBITED		0x0002 /* block RPCs */
+#define PORT_BLOCKED		0x0004 /* if INHIBITED, someone is blocked */
+#define PORT_INHIBIT_WAIT	0x0008 /* someone wants to start inihibt */
+
+struct port_bucket
+{
+  mach_port_t portset;
+  struct ihash *htable;
+  int rpcs;
+  int flags;
+  int count;
+  struct port_bucket *next;
+};
+/* FLAGS above are the following: */
+#define PORT_BUCKET_INHIBITED	0x0001 /* block RPC's */
+#define PORT_BUCKET_BLOCKED	0x0002 /* if INHIBITED, someone is blocked */
+#define PORT_BUCKET_INHIBIT_WAIT 0x004 /* someone wants to start inhibit */
+#define PORT_BUCKET_NO_ALLOC	0x0008 /* block allocation */
+#define PORT_BUCKET_ALLOC_WAIT  0x0010 /* someone wants to allocate */
+
+struct port_class
+{
+  int flags;
+  int rpcs;
+  struct port_info *ports;
+  int count;
+  void (*clean_routine) (void *);
+  void (*dropweak_routine) (void *);
+};
+/* FLAGS are the following: */
+#define PORT_CLASS_INHIBITED	0x0001 /* block RPCs */
+#define PORT_CLASS_BLOCKED	0x0002 /* if INHIBITED, someone is blocked */
+#define PORT_CLASS_INHIBIT_WAIT	0x0004 /* someone wants to start INHIBIT */
+#define PORT_CLASS_NO_ALLOC	0x0008 /* block allocation */
+#define PORT_CLASS_ALLOC_WAIT   0x0010 /* someone wants to allocate */
+
+struct rpc_info
+{
+  thread_t thread;
+  struct rpc_info *next, **prevp;
+};
+
+
+/* Port creation and port right frobbing */
+
+/* Create and return a new bucket. */
+struct port_bucket *ports_create_bucket (void);
+
+/* Create and return a new port class.  If nonzero, CLEAN_ROUTINE will
+   be called for each allocated port object in this class when it is
+   being destroyed.   If nonzero, DROPWEAK_ROUTINE will be called
+   to request weak references to be dropped.  (If DROPWEAK_ROUTINE is null,
+   then normal references and hard references will be identical for
+   ports of this class.)  */
+struct port_class *ports_create_class (void (*clean_routine)(void *),
+				       void (*dropweak_routine)(void *));
+
+/* Create and return a new port in BUCKET and CLASS; SIZE bytes will
+   be allocated to hold the port structure and whatever private data
+   the user desires. */
+void *ports_allocate_port (struct port_bucket *bucket, size_t size, 
+			   struct port_class *class);
+   
+/* For an existing RECEIVE right, create and return a new port structure;
+   BUCKET, SIZE, and CLASS args are as for ports_allocate_port. */
+void *ports_intern_external_port (struct port_bucket *bucket,
+				  mach_port_t receive, size_t size, 
+				  struct port_class *class);
+
+/* Destroy the receive right currently associated with PORT and allocate
+   a new one. */
+void ports_reallocate_port (void *port);
+
+/* Destroy the receive right currently associated with PORT and designate
+   RECEIVE as the new one. */
+void ports_reallocate_from_external (void *port, mach_port_t receive);
+
+/* Destroy the receive right currently associated with PORT.  After
+   this call, ports_reallocate_port and ports_reallocate_from_external
+   may not be used. */
+void ports_destroy_right (void *port);
+
+/* Return the name of the receive right associated with PORT.  The user
+   is responsible for creating an ordinary  send right from this name.  */
+mach_port_t ports_get_right (void *port);
+
+
+
+/* Reference counting */
+   
+/* Look up PORT and return the associated port structure, allocating a
+   reference.  If the call fails, return 0.  If BUCKET is nonzero,
+   then it specifies a bucket to search; otherwise all buckets will be
+   searched.  If CLASS is nonzero, then the lookup will fail if PORT
+   is not in CLASS. */
+void *ports_lookup_port (struct port_bucket *bucket, 
+			 mach_port_t port, struct port_class *class);
+
+/* Allocate another reference to PORT. */
+void ports_port_ref (void *port);
+
+/* Allocate a weak reference to PORT. */
+void ports_port_ref_weak (void *port);
+
+/* Drop a reference to PORT. */
+void ports_port_deref (void *port);
+
+/* Drop a weak reference to PORT. */
+void ports_port_deref_weak (void *port);
+
+/* The user is responsible for listening for no senders notifications;
+   when one arrives, call this routine for the PORT the message was
+   sent to, providing the MSCOUNT from the notification. */
+void ports_no_senders (void *port, mach_port_mscount_t mscount);
+
+/* Block port creation of new ports in CLASS.  Return the number
+   of ports currently in CLASS. */
+int ports_count_class (struct port_class *class);
+
+/* Block port creation of new ports in BUCKET.  Return the number
+   of ports currently in BUCKET. */
+int ports_count_bucket (struct port_bucket *bucket);
+
+/* Permit suspended port creation (blocked by ports_count_class) 
+   to continue. */
+void ports_enable_class (struct port_class *class);
+
+/* Permit suspend port creation (blocked by ports_count_bucket)
+   to continue. */
+void port_enable_bucket (struct port_bucket *bucket);
+
+
+
+/* RPC management */
+   
+/* Type of MiG demuxer routines. */
+typedef int (*ports_demuxer_type)(mach_msg_header_t *inp, 
+				  mach_msg_header_t *outp);
+
+/* Call this when an RPC is beginning on PORT.  INFO should be 
+   allocated by the caller and will be used to hold dynamic state. 
+   If this RPC should be abandoned, return EDIED; otherwise we
+   return zero. */
+error_t ports_begin_rpc (void *port, struct rpc_info *info);
+
+/* Call this when an RPC is concluding.  Args must be as for the
+   paired call to ports_begin_rpc. */
+void ports_end_rpc (void *port, struct rpc_info *info);
+
+/* Begin handling operations for the ports in BUCKET, calling DEMUXER
+   for each incoming message.  Return if TIMEOUT is nonzero and no
+   messages have been received for TIMEOUT milliseconds.  Use
+   only one thread (the calling thread).  */
+void ports_manage_port_operations_one_thread(struct port_bucket *bucket,
+					     ports_demuxer_type demuxer,
+					     int timeout);
+
+/* Begin handling operations for the ports in BUCKET, calling DEMUXER
+   for each incoming message.  Return if GLOBAL_TIMEOUT is nonzero and
+   no messages have been receieved for GLOBAL_TIMEOUT milliseconds.
+   Create threads as necessary to handle incoming messages so that no
+   port is starved because of sluggishness on another port.  All
+   threads created (and the calling thread) will be wired with
+   cthread_wire if WIRE_CTHREADS is non-zero.  All threads created
+   (and the calling thread) will be wired with thread_wire if
+   WIRE_THREADS is non-zero (it must be the priviliged host port in
+   order to succeed).  If LOCAL_TIMEOUT is non-zero, then individual
+   threads will die off if they handle no incoming messages for
+   LOCAL_TIMEOUT milliseconds. */
+void ports_manage_port_operations_multithread (struct port_bucket *bucket,
+					       ports_demuxer_type demuxer,
+					       int thread_timeout,
+					       int global_timeout,
+					       int wire_cthreads,
+					       mach_port_t wire_threads);
+   
+/* Interrupt any pending RPC on PORT.  Wait for all pending RPC's to
+   finish, and then block any new RPC's starting on that port. */
+void ports_inhibit_port_rpcs (void *port);
+
+/* Similar to ports_inhibit_port_rpcs, but affects all ports in CLASS. */
+void ports_inhibit_class_rpcs (struct port_class *class);
+
+/* Similar to ports_inhibit_port_rpcs, but affects all ports in BUCKET. */
+void ports_inhibit_bucket_rpcs (struct port_bucket *bucket);
+
+/* Similar to ports_inhibit_port_rpcs, but affects all ports whatsoever. */
+void ports_inhibit_all_rpcs (void);
+
+/* Reverse the effect of a previous ports_inhibit_port_rpcs for this PORT,
+   allowing blocked RPC's to continue. */
+void ports_resume_port_rpcs (void *port);
+
+/* Reverse the effect of a previous ports_inhibit_class_rpcs for CLASS. */
+void ports_resume_class_rpcs (struct port_class *class);
+
+/* Reverse the effect of a previous ports_inhibit_bucket_rpcs for BUCKET. */
+void ports_resume_bucket_rpcs (struct port_bucket *bucket);
+
+/* Reverse the effect of a previous ports_inhibit_all_rpcs. */
+void ports_resume_all_rpcs (void);
+
+/* Cancel (with thread_cancel) any RPC's in progress on PORT. */
+void ports_interrupt_rpc (void *port);
+
+
+/* Private data */
+extern struct mutex _ports_lock;
+extern struct condition _ports_block;
+extern struct port_bucket *_ports_all_buckets;
+extern int _ports_total_rpcs;
+extern int _ports_flags;
+#define _PORTS_INHIBITED	0x01
+#define _PORTS_BLOCKED		0x02
+#define _PORTS_INHIBIT_WAIT	0x04
+void _ports_complete_deallocate (struct port_info *);
+
+#endif
