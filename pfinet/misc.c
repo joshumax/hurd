@@ -46,7 +46,7 @@ make_sockaddr_port (struct socket *sock,
 		    mach_port_t *addr,
 		    mach_msg_type_name_t *addrtype)
 {
-  char *buf[128];
+  char buf[128];
   int buflen = 128;
   error_t err;
   struct sock_addr *addrstruct;
@@ -60,7 +60,7 @@ make_sockaddr_port (struct socket *sock,
 				    addrport_class);
   addrstruct->len = buflen;
   bcopy (buf, addrstruct->address, buflen);
-  *addr = ports_get_right (addr);
+  *addr = ports_get_right (addrstruct);
   *addrtype = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (addrstruct);
   return 0;
@@ -107,6 +107,8 @@ clean_socketport (void *arg)
   user->sock->refcnt--;
   if (user->sock->refcnt == 0)
     sock_release (user->sock);
+
+  mutex_unlock (&global_lock);
 }
 
 struct socket *
