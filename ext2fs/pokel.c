@@ -35,12 +35,11 @@ void
 pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 {
   struct poke *pl;
-  vm_offset_t offset, end;
-  
-  offset = loc - pokel->image;
-  offset = trunc_page (offset);
-  length = round_page (offset + length) - offset;
-  end = length - offset;
+  vm_offset_t offset = trunc_page (loc - pokel->image);
+  vm_offset_t end = round_page (loc + length - pokel->image);
+
+ printf ("pokel_add (%p, %p, %lu) [%lu, %lu]\n",
+	 pokel, loc, length, offset, end);
 
   spin_lock (&pokel->lock);
 
@@ -50,7 +49,9 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       vm_offset_t p_offs = pl->offset;
       vm_size_t p_end = p_offs + pl->length;
 
-      if (p_end >= offset && end >= p_offs)
+      if (p_offs == offset && p_end == end)
+	break;
+      else if (p_end >= offset && end >= p_offs)
 	{
 	  pl->offset = offset < p_offs ? offset : p_offs;
 	  pl->length = (end > p_end ? end : p_end) - pl->offset;
@@ -70,10 +71,10 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       else
 	pokel->free_pokes = pl->next;
       pl->offset = offset;
-      pl->length = length;
+      pl->length = end - offset;
       pl->next = pokel->pokes;
       pokel->pokes = pl;
- printf ("Added %d[%d] to pokel %p\n", offset, length, pokel);
+ printf ("Added %d[%d] to pokel %p\n", offset, end - offset, pokel);
     }
 
   spin_unlock (&pokel->lock);
