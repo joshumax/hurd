@@ -1,3 +1,8 @@
+2002-01-04  Marcus Brinkmann  <marcus@gnu.org>
+
+	* devio.c (bogus_speed_to_real_speed): Handle B57600, B115200 if
+	they are defined.  Reported by Diego Roversi <diegor@tiscalinet.it>.
+
 2001-12-17  Roland McGrath  <roland@frob.com>
 
 	* munge.c (input_character): Fix DISCARD character handling

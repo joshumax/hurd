@@ -224,6 +224,14 @@ bogus_speed_to_real_speed (int bspeed)
       return 19200;
     case EXTB:
       return 38400;
+#ifdef B57600
+    case B57600:
+      return 57600;
+#endif
+#ifdef B115200
+    case B115200:
+      return 115200;
+#endif
     }
 }
 
