@@ -22,6 +22,8 @@
 
 #include "connq.h"
 
+#include "debug.h"
+
 /* A queue for queueing incoming connections.  */
 struct connq
 {
@@ -121,21 +123,28 @@ error_t
 connq_listen (struct connq *cq, int noblock,
 	      struct connq_request **req, struct sock **sock)
 {
+debug (cq, "in");
+debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   if (noblock && cq->head == cq->tail)
+{debug (cq, "ewouldblock");
     return EWOULDBLOCK;
+}
 
   cq->num_listeners++;
 
   while (cq->head == cq->tail)
+{debug (cq, "wait listeners");
     condition_wait (&cq->listeners, &cq->lock);
+}
 
   if (req != NULL)
     /* Dequeue the next request, if desired.  */
     {
       *req = cq->queue[cq->tail];
       cq->tail = qnext (cq, cq->tail);
+debug (*req, "(req) lock");
       mutex_lock (&(*req)->lock);
       if (sock != NULL)
 	*sock = (*req)->sock;
@@ -143,8 +152,10 @@ connq_listen (struct connq *cq, int noblock,
 
   cq->num_listeners--;
 
+debug (cq, "unlock");
   mutex_unlock (&cq->lock);
 
+debug (cq, "out");
   return 0;    
 }
 
@@ -153,10 +164,13 @@ connq_listen (struct connq *cq, int noblock,
 void
 connq_request_complete (struct connq_request *req, error_t err)
 {
+debug (req, "lock");
   mutex_lock (&req->lock);
   req->err = err;
   req->completed = 1;
+debug (req, "signal, err: %d", err);
   condition_signal (&req->signal);
+debug (req, "unlock");
   mutex_unlock (&req->lock);
 }
 
@@ -170,10 +184,16 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
   struct connq_request req;
   unsigned next;
 
+debug (cq, "in");
+debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   if ((noblock || cq->noqueue) && cq->num_listeners == 0)
+{debug (cq, "unlock");
+    mutex_unlock (&cq->lock);
+debug (cq, "ewouldblock");
     return EWOULDBLOCK;
+}
 
   next = qnext (cq, cq->head);
   if (next == cq->tail)
@@ -185,16 +205,22 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
 
       /* Hold REQ.LOCK before we signal the condition so that we're sure to be
 	 woken up.  */
+debug (&req, "(req) lock");
       mutex_lock (&req.lock);
 
+debug (cq, "signal listeners");
       condition_signal (&cq->listeners);
+debug (cq, "unlock");
       mutex_unlock (&cq->lock);
 
       while (!req.completed)
+{debug (&req, "(req) wait");
 	condition_wait (&req.signal, &req.lock);
+}
 
       err = req.err;
 
+debug (&req, "(req) unlock");
       mutex_unlock (&req.lock);
     }
 
@@ -206,6 +232,8 @@ connq_connect (struct connq *cq, int noblock, struct sock *sock)
 error_t 
 connq_set_length (struct connq *cq, int length)
 {
+debug (cq, "in: %d", length);
+debug (cq, "lock");
   mutex_lock (&cq->lock);
 
   if (length > cq->length)
@@ -232,7 +260,9 @@ connq_set_length (struct connq *cq, int length)
 
   cq->noqueue = 0;		/* Turn on queueing.  */
 
+debug (cq, "unlock");
   mutex_unlock (&cq->lock);
 
+debug (cq, "out");
   return 0;
 }
