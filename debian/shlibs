@@ -1,15 +1,15 @@
-libshouldbeinlibc 0.2 hurd
-libftpconn 0.2 hurd
-libports 0.2 hurd
-libthreads 0.2 hurd
-libhurdbugaddr 0.2 hurd
-libstore 0.2 hurd
-libihash 0.2 hurd
-libpipe 0.2 hurd
-libtrivfs 0.2 hurd
-libpager 0.2 hurd
-libnetfs 0.2 hurd
-libiohelp 0.2 hurd
-libfshelp 0.2 hurd
-libps 0.2 hurd
-libdiskfs 0.2 hurd
+libshouldbeinlibc 0.3 hurd (>= 20020804-1)
+libftpconn 0.3 hurd (>= 20020804-1)
+libports 0.3 hurd (>= 20020804-1)
+libthreads 0.3 hurd (>= 20020804-1)
+libhurdbugaddr 0.3 hurd (>= 20020804-1)
+libstore 0.3 hurd (>= 20020804-1)
+libihash 0.3 hurd (>= 20020804-1)
+libpipe 0.3 hurd (>= 20020804-1)
+libtrivfs 0.3 hurd (>= 20020804-1)
+libpager 0.3 hurd (>= 20020804-1)
+libnetfs 0.3 hurd (>= 20020804-1)
+libiohelp 0.3 hurd (>= 20020804-1)
+libfshelp 0.3 hurd (>= 20020804-1)
+libps 0.3 hurd (>= 20020804-1)
+libdiskfs 0.3 hurd (>= 20020804-1)
