@@ -48,7 +48,6 @@ define link
 $(LD) -e __start $(LDFLAGS) -o $@ $(startup) \
 $(OBJS) $(LIBS) $(libthreads) $(libc) $(libgcc)
 endef
-link = $(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 
 # Mounting $(hurdroot)
