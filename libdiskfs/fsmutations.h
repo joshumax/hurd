@@ -23,8 +23,6 @@
 #define IO_INTRAN protid_t begin_using_protid_port (io_t)
 #define IO_DESTRUCTOR end_using_protid_port (protid_t)
 
-#define SERVERPREFIX diskfs_S_
-
 #define FILE_IMPORTS import "priv.h";
 #define IO_IMPORTS import "priv.h";
 #define FSYS_IMPORTS import "priv.h";
