@@ -1,3 +1,7 @@
+2004-10-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* driver.c (driver_start): Don't underflow I.
+
 2004-09-29  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* Makefile (vga-CPPFLAGS): New variable.

@@ -258,8 +258,11 @@ driver_start (char **name)
       if (err)
 	{
 	  *name = driver_list[i].name;
-	  while (--i >= 0)
-	    (*driver_list[i].ops->fini) (driver_list[i].handle, 1);
+	  while (i > 0)
+	    {
+	      i--;
+	      (*driver_list[i].ops->fini) (driver_list[i].handle, 1);
+	    }
 	  break;
 	}
     }
