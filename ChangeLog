@@ -1,3 +1,8 @@
+1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* usermux: New directory.
+	* Makefile (prog-subdirs): Add usermux.
+
 Fri Jul 18 16:37:22 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* isofs: New directory.
@@ -10,6 +15,7 @@ Thu Jul 10 14:10:32 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
+	* hostmux: New directory.
 	* Makefile (prog-subdirs): Add hostmux.
 
 1997-06-18  Miles Bader  <miles@gnu.ai.mit.edu>
