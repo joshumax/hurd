@@ -768,6 +768,22 @@ main(int argc, char *argv[])
       proc_make_login_coll (proc_server);
     }
 
+  if (eff_uids->num + avail_uids->num == 0 && parent_uids->num != 0)
+    /* We're transiting from having some uids to having none, which means
+       this is probably a new login session.  Unless specified otherwise, set
+       a timer to kill this session if it hasn't aquired any ids by then.
+       Note that we fork off the timer process before clearing the process
+       owner: because we're interested in killing unowned processes, proc's
+       in-same-login-session rule should apply to us (allowing us to kill
+       them), and this way they can't kill the watchdog (because it *does*
+       have an owner).  */
+    {
+      char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
+      time_t timeout = to ? atoi (to) : 0;
+      if (timeout)
+	dog (timeout, pid);
+    }
+
   if (eff_uids->num > 0)
     proc_setowner (proc_server, eff_uids->ids[0], 0);
   else
@@ -959,17 +975,6 @@ main(int argc, char *argv[])
   if (!err && pid == sid)
     /* Only add utmp entries for the session leader.  */
     add_utmp_entry (args, args_len, 0, !parent_has_uid (0));
-
-  if (eff_uids->num + avail_uids->num == 0 && parent_uids->num != 0)
-    /* We're transiting from having some uids to having none, which means
-       this is probably a new login session.  Unless specified otherwise, set
-       a timer to kill this session if it hasn't aquired any ids by then.  */
-    {
-      char *to = envz_get (args, args_len, "NOAUTH_TIMEOUT");
-      time_t timeout = to ? atoi (to) : 0;
-      if (timeout)
-	dog (timeout, pid);
-    }
 
   if ((eff_uids->num | eff_gids->num) && !no_login)
     {
