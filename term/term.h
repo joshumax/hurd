@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <hurd/trivfs.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <fcntl.h>
 
 #undef MDMBUF
