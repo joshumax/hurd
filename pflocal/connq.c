@@ -23,7 +23,7 @@
 #include "pflocal.h"
 
 /* A queue for queueing incoming connections.  */
-struct listenq
+struct connq
 {
   /* True if all connection requests should be treated as non-blocking.  */
   int noqueue;
@@ -31,7 +31,7 @@ struct listenq
   /* The connection request queue.  */
   unsigned length;
   unsigned head, tail;
-  struct listenq_request *queue;
+  struct connq_request *queue;
 
   /* Threads that have done an accept on this queue wait on this condition.  */
   struct condition listeners;
@@ -41,9 +41,9 @@ struct listenq
 
 /* ---------------------------------------------------------------- */
 
-/* A data block allocated by a thread waiting on a listenq, which is used to
+/* A data block allocated by a thread waiting on a connq, which is used to
    get information from and to the thread.  */
-struct listenq_request
+struct connq_request
 {
   /* The socket that's waiting to connect.  */
   struct sock *sock;
@@ -62,24 +62,24 @@ struct listenq_request
 };
 
 static inline void
-listenq_request_init (struct sock *sock, struct listenq_request *lqr)
+connq_request_init (struct sock *sock, struct connq_request *req)
 {
-  lqr->err = 0;
-  lqr->sock = sock;
-  lqr->completed = 0;
-  condition_init (&lqr->signal);
-  mutex_init (&lqr->lock);
+  req->err = 0;
+  req->sock = sock;
+  req->completed = 0;
+  condition_init (&req->signal);
+  mutex_init (&req->lock);
 }
 
 /* ---------------------------------------------------------------- */
 
-/* Create a new listening queue, returning it in LQ.  The resulting queue
+/* Create a new listening queue, returning it in CQ.  The resulting queue
    will be of zero length, that is it won't allow connections unless someone
-   is already listening (change this with listenq_set_length).  */
+   is already listening (change this with connq_set_length).  */
 error_t
-listenq_create (struct listenq **lq)
+connq_create (struct connq **cq)
 {
-  struct listenq *new = malloc (sizeof (struct listenq));
+  struct connq *new = malloc (sizeof (struct connq));
 
   if (!new)
     return ENOMEM;
@@ -93,85 +93,85 @@ listenq_create (struct listenq **lq)
   mutex_init (&new->lock);
   condition_init (&new->listeners);
 
-  *lq = new;
+  *cq = new;
   return 0;
 }
 
 /* ---------------------------------------------------------------- */
 
-/* Wait for a connection attempt to be made on LQ, and return the connecting
-   socket in SOCK, and a request tag in REQ.  listenq_request_complete must be
+/* Wait for a connection attempt to be made on CQ, and return the connecting
+   socket in SOCK, and a request tag in REQ.  connq_request_complete must be
    call on REQ to allow the requesting thread to continue.  If NOBLOCK is
    true, then return EWOULDBLOCK immediately when there are no immediate
    connections available.  */
 error_t 
-listenq_listen (struct listenq *lq, int noblock,
-		struct sock **sock, struct listenq_request **req)
+connq_listen (struct connq *cq, int noblock,
+		struct sock **sock, struct connq_request **req)
 {
   error_t err = 0;
 
-  mutex_lock (&lq->lock);
+  mutex_lock (&cq->lock);
 
-  if (noblock && lq->head == lq->tail)
+  if (noblock && cq->head == cq->tail)
     return EWOULDBLOCK;
 
-  lq->num_listeners++;
+  cq->num_listeners++;
 
-  while (lq->head == lq->tail)
-    condition_wait (&lq->listeners, &lq->lock);
+  while (cq->head == cq->tail)
+    condition_wait (&cq->listeners, &cq->lock);
 
   /* Dequeue the next request.  */
-  *req = lq->queue[lq->tail];
-  lq->tail = (lq->tail + 1 == lq->length ? 0 : lq->tail + 1);
+  *req = cq->queue[cq->tail];
+  cq->tail = (cq->tail + 1 == cq->length ? 0 : cq->tail + 1);
 
   mutex_lock (&(*req)->lock);
 
-  lq->num_listeners--;
+  cq->num_listeners--;
 
-  mutex_unlock (&lq->lock);
+  mutex_unlock (&cq->lock);
 
   *sock = (*req)->sock;
   return 0;    
 }
 
 /* Return the error code ERR to the thread that made the listen request REQ,
-   returned from a previous listenq_listen.  */
+   returned from a previous connq_listen.  */
 void
-listenq_request_complete (struct listenq_request *req, error_t err)
+connq_request_complete (struct connq_request *req, error_t err)
 {
   req->err = err;
   req->complete = 1;
   condition_signal (&req->signal, &req->lock);
 }
 
-/* Try to connect SOCK with the socket listening on LQ.  If NOBLOCK is true,
+/* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is true,
    then return EWOULDBLOCK immediately when there are no immediate
    connections available. */
 error_t
-listenq_connect (struct listenq *lq, int noblock, struct sock *sock)
+connq_connect (struct connq *cq, int noblock, struct sock *sock)
 {
   error_t err = 0;
-  struct listenq_request req;
+  struct connq_request req;
   unsigned next;
 
-  mutex_lock (&lq->lock);
+  mutex_lock (&cq->lock);
 
-  if ((noblock || lq->noqueue) && lq->num_listeners == 0)
+  if ((noblock || cq->noqueue) && cq->num_listeners == 0)
     return EWOULDBLOCK;
 
-  next = (lq->head + 1 == lq->length ? 0 : lq->head + 1);
-  if (next == lq->tail)
+  next = (cq->head + 1 == cq->length ? 0 : cq->head + 1);
+  if (next == cq->tail)
     err = ECONNREFUSED;
   else
     {
-      lq->queue[lq->head] = &req;
-      lq->head = next;
+      cq->queue[cq->head] = &req;
+      cq->head = next;
     }
     
   /* Hold REQ.LOCK before we signal the condition so that we're sure to be
      woken up.  */
   mutex_lock (&req.lock);
-  condition_signal (&lq->listeners, &lq->lock);
+  condition_signal (&cq->listeners, &cq->lock);
 
   while (!req.completed)
     condition_wait (&req.signal, &req.lock);
@@ -179,24 +179,24 @@ listenq_connect (struct listenq *lq, int noblock, struct sock *sock)
   return req.err;
 }
 
-/* Set LQ's queue length to LENGTH.  Any sockets already waiting for a
+/* Set CQ's queue length to LENGTH.  Any sockets already waiting for a
    connections that are past the new length will fail with ECONNREFUSED.  */
 error_t 
-listenq_set_length (struct listenq *lq, int length)
+connq_set_length (struct connq *cq, int length)
 {
   int excess;
 
-  mutex_lock (&lq->lock);
+  mutex_lock (&cq->lock);
 
-  lq->noqueue = 0;		/* Turn on queueing.  */
+  cq->noqueue = 0;		/* Turn on queueing.  */
 
   /* Force any excess requests to fail.  */
-  excess = lq->length - length;
+  excess = cq->length - length;
   while (excess-- > 0)
     {
-      assert (lq->head != lq->tail);
-      lq->head = (lq->head == 0 ? lq->length - 1 : lq->head - 1);
-      listenq_request_complete (lq->queue[lq->head], ECONNREFUSED);
+      assert (cq->head != cq->tail);
+      cq->head = (cq->head == 0 ? cq->length - 1 : cq->head - 1);
+      connq_request_complete (cq->queue[cq->head], ECONNREFUSED);
     }
 
   /* ... */
