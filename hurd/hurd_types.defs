@@ -1,4 +1,4 @@
-/* MiG type declarations for Hurd interfaces
+/* MiG type declarations for Hurd interfaces		-*- C -*-
    Copyright (C) 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
@@ -155,25 +155,10 @@ userprefix USERPREFIX;
 serverprefix SERVERPREFIX;
 #endif
 
-/* All RPCs which can be interrupted by `interrupt_operation'
-   should be defined with this macro:
-   	INTR_ROUTINE (protocol_operation, (object: protocol_t; ...))
- */
-#define INTR_ROUTINE(name, args) \
-  BEFORE_INTR_RPC \
-  routine INTR_RPC_PREFIX##name##INTR_RPC_SUFFIX args; \
-  AFTER_INTR_RPC
-#ifndef BEFORE_INTR_RPC
-#define BEFORE_INTR_RPC /* Usually empty.  */
-#endif
-#ifndef AFTER_INTR_RPC
-#define AFTER_INTR_RPC /* Usually empty.  */
-#endif
-#ifndef INTR_RPC_PREFIX
-#define INTR_RPC_PREFIX /* Usually empty.  */
-#endif
-#ifndef INTR_RPC_SUFFIX
-#define INTR_RPC_SUFFIX /* Usually empty.  */
+/* RPC interfaces which are interrupt compliant (see interrupt.defs)
+   should put ``INTR_INTERFACE'' at the beginning of their .defs file.  */
+#ifndef INTR_INTERFACE
+#define INTR_INTERFACE		/* Nothing special.  */
 #endif
 
 type data_t = array[] of char;

@@ -484,8 +484,9 @@ void diskfs_spawn_first_thread (void);
 
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  If you call this, then the library will call
-   diskfs_init_completed once it has a valid proc and auth port.*/
-void diskfs_start_bootstrap (void);
+   diskfs_init_completed once it has a valid proc and auth port.
+   ARGV (the address) is supplied to the proc server.  */
+void diskfs_start_bootstrap (char **argv);
 
 /* Last step of init is to call this, which never returns.  */
 void diskfs_main_request_loop (void);
