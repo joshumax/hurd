@@ -44,6 +44,8 @@ static struct mutex pagernplock = MUTEX_INITIALIZER;
 #define MAY_CACHE 1
 #endif
 
+char typechars[] = "ICSDF";
+
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
    return, then release that mutex after I/O on the data has
@@ -113,6 +115,7 @@ find_address (struct user_pager_info *upi,
 	  maplock = &dinmaplock;
 	  if (!np->dn->dinloc)
 	    din_map (np);
+	  assert (vblkno - 1 < np->dn->dinloclen);
 	  fsbaddr = np->dn->dinloc[vblkno - 1];
 	  mutex_unlock (&dinmaplock);
 	}
@@ -149,6 +152,7 @@ find_address (struct user_pager_info *upi,
 	  maplock = &sinmaplock;
 	  if (!np->dn->sinloc)
 	    sin_map (np);
+	  assert (vblkno - NDADDR < np->dn->sinloclen);
 	  fsbaddr = np->dn->sinloc[vblkno - NDADDR];
 	  mutex_unlock (&sinmaplock);
 	}
@@ -221,6 +225,9 @@ pager_write_page (struct user_pager_info *pager,
   error_t err;
   struct disknode *dn;
   
+  printf ("%c", typechars[pager->type]);
+  fflush (stdout);
+
   err = find_address (pager, page, &addr, &disksize, &nplock, &dn);
   if (err)
     return err;
@@ -230,6 +237,7 @@ pager_write_page (struct user_pager_info *pager,
   else
     {
       printf ("Attempt to write unallocated disk\n.");
+      fflush (stdout);
       err = 0;			/* unallocated disk; 
 				   error would be pointless */
     }
@@ -299,6 +307,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	    {
 	      if (!np->dn->dinloc)
 		din_map (np);
+	      assert (vblkno - 1 < np->dn->dinloclen);
 	      slot = &np->dn->dinloc[vblkno - 1];
 	    }
 
@@ -330,6 +339,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	  > blkroundup (sblock, np->allocsize) - sblock->fs_bsize)
 	{
 	  printf ("attempt to unlock at last block denied\n");
+	  fflush (stdout);
 	  rwlock_writer_unlock (&np->dn->datalock, np->dn);
 	  return EIO;
 	}
@@ -348,6 +358,7 @@ pager_unlock_page (struct user_pager_info *pager,
 	    {
 	      if (!np->dn->sinloc)
 		sin_map (np);
+	      assert (vblkno - NDADDR < np->dn->sinloclen);
 	      slot = &np->dn->sinloc[vblkno - NDADDR];
 	      table = np->dn->sinloc;
 	    }
@@ -527,7 +538,8 @@ sin_map (struct node *np)
   mach_port_deallocate (mach_task_self (), port);
   
   assert (!err);
-  
+  np->dn->sinloclen = extent / sizeof (daddr_t);
+
   diskfs_register_memory_fault_area (np->dn->sininfo->p, offset, 
 				     np->dn->sinloc, extent);
 }
@@ -572,6 +584,7 @@ sin_remap (struct node *np,
 		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
       mach_port_deallocate (mach_task_self (), port);
       assert (!err);
+      np->dn->sinloclen = newsize / sizeof (daddr_t);
       diskfs_register_memory_fault_area (np->dn->sininfo->p, 0,
 					 np->dn->sinloc, newsize);
     }
@@ -590,6 +603,7 @@ sin_unmap (struct node *np)
   pager_report_extent (np->dn->sininfo, &start, &len);
   diskfs_unregister_memory_fault_area (np->dn->sinloc, len);
   vm_deallocate (mach_task_self (), (u_int) np->dn->sinloc, len);
+  np->dn->sinloclen = 0;
   np->dn->sinloc = 0;
 }
 
@@ -608,6 +622,7 @@ din_map (struct node *np)
 		VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE,
 		VM_INHERIT_NONE);
   assert (!err);
+  np->dn->dinloclen = sblock->fs_bsize / sizeof (daddr_t);
   diskfs_register_memory_fault_area (dinpager->p,
 				     np->dn->number * sblock->fs_bsize,
 				     np->dn->dinloc, sblock->fs_bsize);
@@ -620,6 +635,7 @@ din_unmap (struct node *np)
 {
   diskfs_unregister_memory_fault_area (np->dn->dinloc, sblock->fs_bsize);
   vm_deallocate (mach_task_self (), (u_int) np->dn->dinloc, sblock->fs_bsize);
+  np->dn->dinloclen = 0;
   np->dn->dinloc = 0;
 }
 
