@@ -846,7 +846,7 @@ $ @kbd{boot -d -D /mnt -I /mnt/boot/servers.boot /dev/hd2s1}
 @end example
 
 @item
-See @pxref{boot Options} for help with boot.
+See @pxref{Invoking boot} for help with boot.
 @end enumerate
 
 Note that it is impossible to share microkernel devices between the two
@@ -869,13 +869,7 @@ to your old configuration (with the new Hurd servers).
 
 
 @node Invoking boot 
-@section Invoking boot 
-@menu
-* boot Options::                Boot program command line options
-@end menu
-
-@node Boot bptions
-@subsection boot Options
+@subsection Invoking boot 
 
 Usage: boot [@var{option}@dots{}] @var{boot-script} @var{device}@dots{}
 
