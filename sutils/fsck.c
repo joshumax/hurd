@@ -1,6 +1,6 @@
 /* Hurd-aware fsck wrapper
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 97, 98 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -28,7 +28,7 @@
      -n  Automatically answer no to all questions
      -f  Check even if clean
      -s  Only print diagostic messages
-   
+
    They should also return exit-status codes as following:
 
      0   Filesystem was clean
@@ -211,7 +211,7 @@ fscks_start_fsck (struct fscks *fscks, struct fs *fs)
   fs_debug (fs, "Checking mounted state");
   err = fs_mounted (fs, &mounted);
   CK (err, "%s: Cannot check mounted state", fs->mntent.mnt_dir);
-  
+
   if (mounted)
     {
       int readonly;
@@ -327,7 +327,7 @@ fscks_wait (struct fscks *fscks)
 
   debug ("Waiting...");
 
-  do 
+  do
     pid = wait (&wstatus);
   while (pid < 0 && errno == EINTR);
 
@@ -490,7 +490,7 @@ main (int argc, char **argv)
 	case 's': flags |= FSCK_F_SILENT; break;
 	case 'v': flags |= FSCK_F_VERBOSE; break;
 	case 'w': flags |= FSCK_F_WRITABLE; break;
-	case 't': fstab_path = arg; break; 
+	case 't': fstab_path = arg; break;
 	case 'D': _debug = 1; break;
 	case 'l':
 	  max_parallel = atoi (arg);
@@ -558,10 +558,12 @@ main (int argc, char **argv)
     }
 
   if (max_parallel <= 0)
-    if (flags & FSCK_F_PREEN)
-      max_parallel = 100;	/* In preen mode, do lots in parallel.  */
-    else
-      max_parallel = 1;		/* Do one at a time to keep output rational. */
+    {
+      if (flags & FSCK_F_PREEN)
+	max_parallel = 100;	/* In preen mode, do lots in parallel.  */
+      else
+	max_parallel = 1;	/* Do one at a time to keep output rational. */
+    }
 
   /* If the user send a SIGQUIT (usually ^\), then do all checks, but
      regardless of their outcome, return a status that will cause the
