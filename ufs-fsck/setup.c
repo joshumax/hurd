@@ -18,12 +18,23 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+
+static char sblockbuf[SBSIZE];
+struct fs *sblock = (struct fs *)sblockbuf;
+
+char lfname[] = "lost+found";
+mode_t lfmode = IFDIR | 0755;
 
 /* Get ready to run on device with pathname DEV. */
+int
 setup (char *dev)
 {
   struct stat st;
   int changedsb;
+  size_t bmapsize;
   
   if (stat (dev, &st) == -1)
     {
@@ -44,11 +55,11 @@ setup (char *dev)
     }
   if (preen == 0)
     printf ("** %s", dev);
-  if (nflag)
+  if (nowrite)
     writefd = -1;
   else
     writefd = open (dev, O_WRONLY);
-  if (nflag || writefd == -1)
+  if (nowrite || writefd == -1)
     {
       if (preen)
 	pfatal ("NO WRITE ACCESS");
@@ -99,7 +110,7 @@ setup (char *dev)
     }
   if (sblock->fs_minfree < 0 || sblock->fs_minfree > 99)
     {
-      pfatal ("IMPOSSIBLE MINFREE=%d IN SUPERBLOCK", sblock->fs_minfree);
+      pfatal ("IMPOSSIBLE MINFREE=%ld IN SUPERBLOCK", sblock->fs_minfree);
       if (reply ("SET TO DEFAULT"))
 	{
 	  sblock->fs_minfree = 10;
@@ -109,7 +120,7 @@ setup (char *dev)
   if (sblock->fs_interleave < 1
       || sblock->fs_interleave > sblock->fs_nsect)
     {
-      pwarn ("IMPOSSIBLE INTERLEAVE=%d IN SUPERBLOCK", sblock->fs_interleave);
+      pwarn ("IMPOSSIBLE INTERLEAVE=%ld IN SUPERBLOCK", sblock->fs_interleave);
       if (preen || reply ("SET TO DEFAULT"))
 	{
 	  if (preen)
@@ -119,9 +130,9 @@ setup (char *dev)
 	}
     }
   if (sblock->fs_npsect < sblock->fs_nsect
-      || sblock->npsect > sblock->fs_nsect * 2)
+      || sblock->fs_npsect > sblock->fs_nsect * 2)
     {
-      pwarn ("IMPOSSIBLE NPSECT=%d IN SUPERBLOCK", sblock->fs_npsect);
+      pwarn ("IMPOSSIBLE NPSECT=%ld IN SUPERBLOCK", sblock->fs_npsect);
       if (preen || reply ("SET TO DEFAULT"))
 	{
 	  if (preen)
