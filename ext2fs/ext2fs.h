@@ -399,9 +399,7 @@ sync_global_ptr (void *bptr, int wait)
   pager_sync_some (disk_pager->p, trunc_page (boffs), vm_page_size, wait);
 }
 
-/* This records a modification to one of a file's indirect blocks.  It's
-   added to both the file-specific pokel, so a file sync will sync that
-   file's blocks, and the global one, so a global sync will as well.  */
+/* This records a modification to one of a file's indirect blocks.  */
 extern inline void
 record_indir_poke (struct node *node, void *ptr)
 {
@@ -411,9 +409,6 @@ record_indir_poke (struct node *node, void *ptr)
       printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
 	      (boffs), node->dn->number, &node->dn->indir_pokel);
       pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
-      printf ("Adding block %u to global_pokel (%p)\n",
-	      boffs_block (boffs), &global_pokel);
-      pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
     }
 }
 
