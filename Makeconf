@@ -313,26 +313,22 @@ endif
 %.miguh_d: %.migu_d
 	sed -e 's/User\.c/_U\.h/' -e 's/migu_d/miguh_d/' < $< > $@
 
-# Here is how to make .d files from .c files
-ifeq ($(makemode),library)
-%.d: %.c
-	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-	sed -e 's/$*\.o:/$*.o $*_pic.o $@:/' > $@)
-else
-%.d: %.c
-	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-	sed -e 's/$*\.o:/$*.o $@:/' > $@)
-endif
+define make-deps
+set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
+sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $@:/' \
+	     -e 's% [^ ]*/gcc-lib/[^ ]*\.h%%g'
+mv -f $@.new $@
+endef
 
+# Here is how to make .d files from .c files
+%.d: %.c; $(make-deps)
 # Here is how to make .d files from .S files
-%.d: %.S
-	(set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $< | \
-	sed -e 's/*\.o:/$*.o $@:/' > $@)
+%.d: %.S; $(make-deps)
 
 # .s files don't go through the preprocessor, so we do this
 # This rule must come *after* the genuine ones above, so that
 # make doesn't build a .s file and then make an empty dependency
 # list.
 %.d: %.s
-	echo '$*.o: $*.s' > $*.d
+	echo '$*.o: $<' > $@
 
