@@ -1,5 +1,5 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -62,8 +62,8 @@ end_using_protid_port (struct protid *cred)
    DIR is set for writing and clear for reading.  The inode must
    be locked.   If NOTIME is set, then don't update the access or
    modify times on the file.  */
-error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset,
-			       int amt, int dir, int notime);
+error_t _diskfs_rdwr_internal (struct node *np, char *data, off_t offset,
+			       size_t *amt, int dir, int notime);
 
 /* Clean routine for control port. */
 void _diskfs_control_clean (void *);
