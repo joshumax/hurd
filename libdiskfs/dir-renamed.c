@@ -100,7 +100,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (tnp);
       mutex_unlock (&tdp->lock);
-      mutex_unlock (&fdp->lock);
+      if (fdp != tdp)
+	mutex_unlock (&fdp->lock);
       return 0;
     }
   
@@ -119,37 +120,40 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     goto out;
 
   /* 2: Set our .. to point to the new parent */
-  if (tdp->dn_stat.st_nlink == diskfs_link_max - 1)
+  if (fdp != tdp)
     {
-      err = EMLINK;
-      return EMLINK;
-    }
-  tdp->dn_stat.st_nlink++;
-  tdp->dn_set_ctime = 1;
-  if (diskfs_synchronous)
-    diskfs_node_update (tdp, 1);
+      if (tdp->dn_stat.st_nlink == diskfs_link_max - 1)
+	{
+	  err = EMLINK;
+	  return EMLINK;
+	}
+      tdp->dn_stat.st_nlink++;
+      tdp->dn_set_ctime = 1;
+      if (diskfs_synchronous)
+	diskfs_node_update (tdp, 1);
   
-  tmpds = alloca (diskfs_dirstat_size);
-  err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
-		       &tmpnp, tmpds, fromcred);
-  assert (err != ENOENT);
-  assert (tmpnp == fdp);
-  if (err)
-    {
-      diskfs_drop_dirstat (fnp, tmpds);
-      goto out;
-    }
+      tmpds = alloca (diskfs_dirstat_size);
+      err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT, 
+			   &tmpnp, tmpds, fromcred);
+      assert (err != ENOENT);
+      assert (tmpnp == fdp);
+      if (err)
+	{
+	  diskfs_drop_dirstat (fnp, tmpds);
+	  goto out;
+	}
 
-  err = diskfs_dirrewrite (fnp, fdp, tdp, "..", tmpds);
-  if (diskfs_synchronous)
-    diskfs_file_update (fnp, 1);
-  if (err)
-    goto out;
+      err = diskfs_dirrewrite (fnp, fdp, tdp, "..", tmpds);
+      if (diskfs_synchronous)
+	diskfs_file_update (fnp, 1);
+      if (err)
+	goto out;
   
-  fdp->dn_stat.st_nlink--;
-  fdp->dn_set_ctime = 1;
-  if (diskfs_synchronous)
-    diskfs_node_update (fdp, 1);
+      fdp->dn_stat.st_nlink--;
+      fdp->dn_set_ctime = 1;
+      if (diskfs_synchronous)
+	diskfs_node_update (fdp, 1);
+    }
 
 
   /* 3: Increment the link count on the node being moved and rewrite
@@ -214,7 +218,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
     mutex_unlock (&tdp->lock);
   if (tnp)
     diskfs_nput (tnp);
-  if (fdp)
+  if (fdp && fdp != tdp)
     mutex_unlock (&fdp->lock);
   if (fnp)
     mutex_unlock (&fnp->lock);
