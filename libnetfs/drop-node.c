@@ -23,26 +23,7 @@
 void
 netfs_drop_node (struct node *np)
 {
-  mode_t savemode;
-  
-  if (np->dn_stat.st_nlink == 0)
-    {
-      assert (!netfs_readonly);
-      
-      if (np->allocsize != 0)
-	{
-	  np->references++;
-	  spin_unlock (&netfs_node_refcnt_lock);
-	  netfs_truncate (np, 0);
-	  
-	  netfs_nput (np);
-	  return;
-	}
-      /* How to clear? */
-    }
-  
   fshelp_drop_transbox (&np->transbox);
-  
   netfs_node_norefs (np);
   spin_unlock (&netfs_node_refcnt_lock);
 }
