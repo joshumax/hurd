@@ -45,6 +45,7 @@ typedef mach_port_t *portarray_t;
 typedef pid_t *pidarray_t;
 typedef uid_t *idarray_t;
 typedef struct rusage rusage_t;
+typedef struct flock flock_t;
 
 typedef struct stat io_statbuf_t;
 
@@ -156,7 +157,8 @@ enum verstype
   MACHINE,
 };
 
-struct procinfo
+stru
+ct procinfo
 {
   int state;
   uid_t owner;
