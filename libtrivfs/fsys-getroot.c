@@ -31,10 +31,10 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
 {
   struct protid *cred;
   int i;
-  struct port_info *pi;
+  struct control *cntl;
 
-  pi = ports_get_port (fsys, PT_CTL);
-  if (!pi)
+  cntl = ports_check_port_type (fsys, trivfs_cntl_porttype);
+  if (!cntl)
     return EOPNOTSUPP;
 
   assert (!trivfs_support_read && !trivfs_support_write
@@ -42,20 +42,22 @@ trivfs_S_fsys_getroot (mach_port_t fsys,
   
   if (flags & (O_READ|O_WRITE|O_EXEC))
     {
-      ports_done_with_port (pi);
+      ports_done_with_port (cntl);
       return EACCES;
     }
   
-  cred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
+  cred = ports_allocate_port (sizeof (struct protid), trivfs_protid_porttype);
   cred->isroot = 0;
   for (i = 0; i < nuids; i++)
     if (uids[i] == 0)
       cred->isroot = 1;
-  io_restrict_auth (trivfs_underlying_node, &cred->realnod, 
+  cred->cntl = cntl;
+  ports_port_ref (cntl);
+  io_restrict_auth (cred->cntl->underlying, &cred->realnode, 
 		    uids, nuids, gids, ngids);
   *newpt = ports_get_right (cred);
   *newpttype = MACH_MSG_TYPE_MAKE_SEND;
-  ports_done_with_port (pi);
+  ports_done_with_port (cntl);
   return 0;
 }
 
