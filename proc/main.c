@@ -52,6 +52,7 @@ main (int argc, char **argv, char **envp)
   mach_port_t boot;
   mach_port_t authhandle;
   error_t err;
+  mach_port_t pset, psetcntl;
 
   initialize_version_info ();
 
@@ -80,6 +81,20 @@ main (int argc, char **argv, char **envp)
   /* Set our own argv and envp locations.  */
   self_proc->p_argv = (int) argv;
   self_proc->p_envp = (int) envp;
+
+  /* Give ourselves good scheduling performance, because we are so
+     important. */
+  err = thread_get_assignment (mach_thread_self (), &pset);
+  assert (!err);
+  err = host_processor_set_priv (master_host_port, pset, &psetcntl);
+  assert (!err);
+  thread_max_priority (mach_thread_self (), psetcntl, 0);
+  assert (!err);
+  err = task_priority (mach_task_self (), 0, 1);
+  assert (!err);
+
+  mach_port_deallocate (mach_task_self (), pset);
+  mach_port_deallocate (mach_task_self (), psetcntl);
 
   while (1)
     mach_msg_server (message_demuxer, 0, request_portset);
