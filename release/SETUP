@@ -26,6 +26,7 @@ fsysopts / --writable
 # Set up standard passive translators
 /bin/settrans -c /servers/socket/local /hurd/pflocal
 /bin/settrans -c /servers/crash /hurd/crash
+/bin/settrans -c /servers/password /hurd/password
 
 # Setup crucial devices
 cd /dev
