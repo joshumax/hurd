@@ -29,7 +29,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <hurd.h>
 #include "fsys_S.h"
-#include "fsys_reply.h"
+#include "fsys_reply_U.h"
 
 mach_port_t diskfs_exec_ctl;
 mach_port_t diskfs_exec;
