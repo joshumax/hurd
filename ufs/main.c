@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 char *ufs_version = "0.0";
 
@@ -55,14 +56,49 @@ int printf (const char *fmt, ...)
 
 int diskfs_readonly;
 
+/* Ufs-specific options.  XXX this should be moved so it can be done at
+   runtime as well as startup.  */
+static struct argp_option
+options[] =
+{
+  {"compat", 'C', "FMT", 0,
+     "FMT may be GNU, 4.4, or 4.2, and determines which filesystem extensions"
+     " are written onto the disk (default is GNU)"},
+  {0}
+};
+
+/* Parse a command line option.  */
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case 'C':
+      if (strcasecmp (arg, "gnu") == 0)
+	compat_mode = COMPAT_GNU;
+      else if (strcmp (arg, "4.4") == 0)
+	compat_mode = COMPAT_BSD44;
+      else if (strcmp (arg, "4.2") == 0)
+	compat_mode = COMPAT_BSD42;
+      else
+	argp_error (state, "%s: Unknown compatibility mode", arg);
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv)
 {
   error_t err;
   off_t disk_size;
   mach_port_t bootstrap;
+  const struct argp *argp_parents[] = { diskfs_device_startup_argp, 0 };
+  struct argp argp = {options, parse_opt, 0, 0, argp_parents};
 
-  argp_parse (diskfs_device_startup_argp, argc, argv, 0, 0, 0);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   /* This must come after the args have been parsed, as this is where the
      host priv ports are set for booting.  */
