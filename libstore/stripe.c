@@ -21,22 +21,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "store.h"
 
-struct stripe_info
-{
-  struct store **stripes;
-  int dealloc : 1;
-};
-
+extern long lcm (long p, long q);
+
 /* Return ADDR adjust for any block size difference between STORE and
    STRIPE.  We assume that STORE's block size is no less than STRIPE's.  */
 static inline off_t
 addr_adj (off_t addr, struct store *store, struct store *stripe)
 {
-  unsigned common_bs = store->block_shift;
-  unsigned stripe_bs = stripe->block_shift;
+  unsigned common_bs = store->log2_block_size;
+  unsigned stripe_bs = stripe->log2_block_size;
   if (common_bs == stripe_bs)
     return addr;
   else
@@ -48,8 +45,8 @@ stripe_read (struct store *store,
 	     off_t addr, size_t index, mach_msg_type_number_t amount,
 	     char **buf, mach_msg_type_number_t *len)
 {
-  struct stripe_info *info = store->hook;
-  struct store *stripe = info->stripes[index];
+  struct store **stripes = store->hook;
+  struct store *stripe = stripes[index];
   return store_read (stripe, addr_adj (addr, store, stripe), amount, buf, len);
 }
 
@@ -58,41 +55,46 @@ stripe_write (struct store *store,
 	      off_t addr, size_t index, char *buf, mach_msg_type_number_t len,
 	      mach_msg_type_number_t *amount)
 {
-  struct stripe_info *info = store->hook;
-  struct store *stripe = info->stripes[index];
+  struct store **stripes = store->hook;
+  struct store *stripe = stripes[index];
   return
     store_write (stripe, addr_adj (addr, store, stripe), buf, len, amount);
 }
 
+static error_t
+stripe_clone (const struct store *from, struct store *to)
+{
+  size_t num_stripes = from->runs_len / 2;
+
+  to->hook = malloc (sizeof (struct store *) * num_stripes);
+  if (to->hook == 0)
+    return ENOMEM;
+
+  bcopy (from->hook, to->hook, num_stripes * sizeof (struct store *));
+
+  return 0;
+}
+
 static struct store_meths
-stripe_meths = {stripe_read, stripe_write};
+stripe_meths = {stripe_read, stripe_write, 0, 0, 0, stripe_clone};
 
 /* Return a new store in STORE that interleaves all the stores in STRIPES
    (NUM_STRIPES of them) every INTERLEAVE bytes; INTERLEAVE must be an
-   integer multiple of each stripe's block size.  If DEALLOC is true, then
-   the striped stores are freed when this store is (in any case, the array
-   STRIPES is copied, and so should be freed by the caller).  */
+   integer multiple of each stripe's block size.  The stores in STRIPES are
+   consumed -- that is, will be freed when this store is (however, the
+   *array* STRIPES is copied, and so should be freed by the caller).  */
 error_t
-store_ileave_create (struct store **stripes, size_t num_stripes, int dealloc,
+store_ileave_create (struct store * const *stripes, size_t num_stripes,
 		     off_t interleave, struct store **store)
 {
   size_t i;
   error_t err = EINVAL;		/* default error */
   off_t block_size = 1, min_end = 0;
   off_t runs[num_stripes * 2];
-  struct stripe_info *info = malloc (sizeof (struct stripe_info));
+  struct store *cstripes = malloc (sizeof (struct store *) * num_stripes);
 
-  if (info == 0)
+  if (cstripes == 0)
     return ENOMEM;
-
-  info->stripes = malloc (sizeof (struct store *) * num_stripes);
-  info->dealloc = dealloc;
-
-  if (info->stripes == 0)
-    {
-      free (info);
-      return ENOMEM;
-    }
 
   /* Find a common block size.  */
   for (i = 0; i < num_stripes; i++)
@@ -130,46 +132,36 @@ store_ileave_create (struct store **stripes, size_t num_stripes, int dealloc,
     }
 
   (*store)->wrap_dst = interleave;
-  (*store)->hook = info;
-  bcopy (stripes, info->stripes, num_stripes * sizeof *stripes);
+  (*store)->hook = cstripes;
+  bcopy (stripes, cstripes, num_stripes * sizeof *stripes);
 
   return 0;
 
  barf:
-  free (info->stripes);
-  free (info);
+  free (cstripes);
   return err;
 }
 
 /* Return a new store in STORE that concatenates all the stores in STORES
-   (NUM_STORES of them).  If DEALLOC is true, then the sub-stores are freed
-   when this store is (in any case, the array STORES is copied, and so should
-   be freed by the caller).  */
+   (NUM_STORES of them).  The stores in STRIPES are consumed -- that is, will
+   be freed when this store is (however, the *array* STRIPES is copied, and
+   so should be freed by the caller).  */
 error_t
-store_concat_create (struct store **stores, size_t num_stores, int dealloc,
+store_concat_create (struct store * const *stores, size_t num_stores,
 		     struct store **store)
 {
   size_t i;
   error_t err = EINVAL;		/* default error */
   off_t block_size = 1;
   off_t runs[num_stores * 2];
-  struct stripe_info *info = malloc (sizeof (struct stripe_info));
+  struct store *cstripes = malloc (sizeof (struct store *) * num_stores);
 
-  if (info == 0)
+  if (cstripes == 0)
     return ENOMEM;
 
-  info->stripes = malloc (sizeof (struct store *) * num_stores);
-  info->dealloc = dealloc;
-
-  if (info->stripes == 0)
-    {
-      free (info);
-      return ENOMEM;
-    }
-
   /* Find a common block size.  */
-  for (i = 0; i < num_stripes; i++)
-    block_size = lcm (block_size, stripes[i]->block_size);
+  for (i = 0; i < num_stores; i++)
+    block_size = lcm (block_size, stores[i]->block_size);
 
   for (i = 0; i < num_stores; i++)
     {
@@ -185,13 +177,12 @@ store_concat_create (struct store **stores, size_t num_stores, int dealloc,
       goto barf;
     }
 
-  (*store)->hook = info;
-  bcopy (stores, info->stripes, num_stores * sizeof *stores);
+  (*store)->hook = cstripes;
+  bcopy (stores, cstripes, num_stores * sizeof *stores);
 
   return 0;
 
  barf:
-  free (info->stripes);
-  free (info);
+  free (cstripes);
   return err;
 }

@@ -24,11 +24,12 @@ makemode := library
 
 libname = libstore
 SRCS = create.c derive.c make.c rdwr.c set.c device.c file.c stripe.c \
-	storeread.c storecat.c
+	storeread.c storecat.c enc.c encode.c decode.c clone.c
 LCLHDRS=store.h
 installhdrs=store.h
 
-OBJS = $(SRCS:.c=.o)
+UTIL_OBJS = storeread.o storecat.o
+OBJS = $(filter-out $(UTIL_OBJS), $(SRCS:.c=.o))
 
 storeread: storeread.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so
 storecat: storecat.o libstore.so ../libshouldbeinlibc/libshouldbeinlibc.so

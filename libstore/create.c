@@ -24,6 +24,16 @@
 
 #include "store.h"
 
+static error_t
+fgsi (file_t source,
+      mach_port_t **ports, mach_msg_type_number_t *num_ports,
+      int **ints, mach_msg_type_number_t *num_ints,
+      off_t **offsets, mach_msg_type_number_t *num_offsets,
+      char **data, mach_msg_type_number_t *num_data)
+{
+  return EOPNOTSUPP;
+}
+
 /* Return a new store in STORE, which refers to the storage underlying
    SOURCE.  A reference to SOURCE is created (but may be destroyed with
    store_close_source).  */
@@ -31,7 +41,7 @@ error_t store_create (file_t source, struct store **store)
 {
   error_t err;
   struct store_enc enc;
-  mach_port_t inline_ports[10]
+  mach_port_t inline_ports[10];
   int inline_ints[60];
   off_t inline_offsets[60];
   char inline_data[100];
@@ -39,11 +49,12 @@ error_t store_create (file_t source, struct store **store)
   store_enc_init (&enc, inline_ports, 10, inline_ints, 60,
 		  inline_offsets, 60, inline_data, 100);
 
+#define file_get_storage_info fgsi /* XXX */
   err = file_get_storage_info (source,
-			       &enc->ports, &enc->ports_len,
-			       &enc->ints, &enc->ints_len,
-			       &enc->offsets, &enc->offsets_len,
-			       &enc->data, &enc->data_len);
+			       &enc.ports, &enc.ports_len,
+			       &enc.ints, &enc.ints_len,
+			       &enc.offsets, &enc.offsets_len,
+			       &enc.data, &enc.data_len);
   if (err)
     return err;
 
