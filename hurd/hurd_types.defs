@@ -185,11 +185,14 @@ type retry_type = int;
 type pid_t = int;
 type wait_status_t = int;
 type off_t = int;
+type size_t = unsigned;
+type ssize_t = int;
 type file_changed_type_t = int;
 type dir_changed_type_t = int;
 
 type portarray_t = array[] of mach_port_send_t;
 type intarray_t = array[] of int;
+type off_array_t = array[] of off_t;
 
 type pidarray_t = array[] of pid_t;
 type procinfo_t = array[] of int;
