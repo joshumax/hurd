@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <hurd/store.h>
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -621,108 +622,76 @@ diskfs_shutdown_soft_ports ()
    offset into inode block holding inode (4 bytes) */
 error_t
 diskfs_S_file_get_storage_info (struct protid *cred,
-				int *class,
-				off_t **addresses,
-				u_int *naddresses,
-				size_t *block_size,
-				char *storage_name,
-				mach_port_t *storage_port,
-				mach_msg_type_name_t *storage_port_type,
-				char **storage_data,
-				u_int *storage_data_len,
-				int *flags)
+				mach_port_t **ports,
+				mach_msg_type_name_t *ports_type,
+				mach_msg_type_number_t *num_ports,
+				int **ints, mach_msg_type_number_t *num_ints,
+				off_t **offsets,
+				mach_msg_type_number_t *num_offsets,
+				char **data, mach_msg_type_number_t *data_len)
 {
   error_t err;
   struct node *np;
-  int i;
-  struct dinode *di;
-  void *cp;
+  struct store *file_store;
+  struct store_run runs[NDADDR];
+  size_t num_runs = 0;
   
+  if (! cred)
+    return EOPNOTSUPP;
+
   np = cred->po->np;
   mutex_lock (&np->lock);
   
   /* See if this file fits in the direct block pointers.  If not, punt
      for now.  (Reading indir blocks is a pain, and I'm postponing
      pain.)  XXX */
-
   if (np->allocsize > NDADDR * sblock->fs_bsize)
     {
       mutex_unlock (&np->lock);
       return EINVAL;
     }
-  
-  if (*naddresses < NDADDR * 2)
-    vm_allocate (mach_task_self (), (vm_address_t *) addresses, 
-		 sizeof (int) * NDADDR * 2, 1);
-  else
-    bzero (addresses, *naddresses * 2 * sizeof (int));
-  *naddresses = NDADDR * 2;
 
-  if (*storage_data_len < 4 * sizeof (int))
-    vm_allocate (mach_task_self (), (vm_address_t *) storage_data, 
-		 sizeof (int) * 4, 1);
-  *storage_data_len = 4 * sizeof (int);
-
-  di = dino (np->dn->number);
-  
   err = diskfs_catch_exception ();
-  if (err)
-    {
-      mutex_unlock (&np->lock);
-      return err;
-    }
-  
-  /* Copy the block pointers */
+  if (! err)
+    if (!direct_symlink_extension
+	|| np->dn_stat.st_size >= sblock->fs_maxsymlinklen
+	|| !S_ISLNK (np->dn_stat.st_mode))
+      /* Copy the block pointers */
+      {
+	int i;
+	struct store_run *run = runs;
+	struct dinode *di = dino (np->dn->number);
 
-  if (!direct_symlink_extension
-      || np->dn_stat.st_size >= sblock->fs_maxsymlinklen
-      || !S_ISLNK (np->dn_stat.st_mode))
-    {
-      for (i = 0; i < NDADDR; i++)
-	{
-	  (*addresses)[2 * i] = fsbtodb (sblock, 
-					 read_disk_entry (di->di_db[i]));
-	  if ((i + 1) * sblock->fs_bsize > np->allocsize)
-	    (*addresses)[2 * i + 1] = np->allocsize - i * sblock->fs_bsize;
-	  else
-	    (*addresses)[2 * i + 1] = sblock->fs_bsize;
-	}
-    }
-
-  /* Fill in the aux data */
-  cp = *storage_data;
-
-  *(int *)cp = htonl (np->dn->number);
-  cp += sizeof (int);
-  
-  *(int *)cp = htonl (di->di_trans);
-  cp += sizeof (int);
-  
-  *(int *)cp = htonl (fsbtodb (sblock, ino_to_fsba (sblock, np->dn->number)));
-  cp += sizeof (int);
-  
-  *(int *)cp = htonl (ino_to_fsbo (sblock, np->dn->number)
-		      * sizeof (struct dinode));
-  
-      
+	for (i = 0; i < NDADDR; i++)
+	  {
+	    off_t start = fsbtodb (sblock, read_disk_entry (di->di_db[i]));
+	    off_t length = 
+	      (((i + 1) * sblock->fs_bsize > np->allocsize)
+	       ? np->allocsize - i * sblock->fs_bsize
+	       : sblock->fs_bsize);
+	    if (num_runs == 0 || run->start + run->length != start)
+	      *run++ = (struct store_run){ start, length };
+	    else
+	      run->length += length;
+	  }
+      }
   diskfs_end_catch_exception ();
-  
-  *class = STORAGE_DEVICE;
-  *flags = 0;
-  *block_size = DEV_BSIZE;
 
-  if (diskfs_device_name)
-    strcpy (storage_name, diskfs_device_name);
-  
-  if (diskfs_isuid (0, cred))
-    *storage_port = diskfs_device;
-  else
-    *storage_port = MACH_PORT_NULL;
-  *storage_port_type = MACH_MSG_TYPE_COPY_SEND;
-  
   mutex_unlock (&np->lock);
   
-  return 0;
+  if (! err)
+    err = store_clone (store, &file_store);
+  if (! err)
+    {
+      err = store_remap (file_store, runs, num_runs, &file_store);
+      if (! err)
+	err = store_return (file_store, ports, num_ports, ints, num_ints,
+			    offsets, num_offsets, data, data_len);
+      store_free (file_store);
+    }
+  *ports_type = MACH_MSG_TYPE_COPY_SEND;
+
+  return err;
 }
 
 /* Must be exactly 28 bytes long */
@@ -742,7 +711,6 @@ diskfs_S_file_getfh (struct protid *cred,
 		     u_int *fh_len)
 {
   struct node *np;
-  error_t err;
   struct ufs_fhandle *f;
 
   if (!cred)
@@ -845,5 +813,3 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
     }
   return err;
 }
-
-  
