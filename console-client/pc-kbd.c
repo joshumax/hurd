@@ -179,8 +179,9 @@ char *sc_to_kc[][7] =
     {  "0",  ")",       0,  "\e0",  "\e)",         0,   "0" }, /* SC_0.  */
     {  "-",  "_",  "\x1f",  "\e-",  "\e_",  "\e\x1f",   "-" }, /* SC_MINUS.  */
     {  "=",  "+",       0,  "\e=",  "\e+",         0,   "=" }, /* SC_EQUAL.  */
-    { CONS_KEY_BACKSPACE, CONS_KEY_BACKSPACE, CONS_KEY_BACKSPACE, /* XXX */ 0,
-      CONS_KEY_BACKSPACE, /*XXX*/ 0, CONS_KEY_BACKSPACE }, /* SC_BACKSPACE.  */
+    { CONS_KEY_BACKSPACE, CONS_KEY_BACKSPACE, CONS_KEY_BACKSPACE,
+      "\e" CONS_KEY_BACKSPACE, "\e" CONS_KEY_BACKSPACE,
+      "\e" CONS_KEY_BACKSPACE, CONS_KEY_BACKSPACE }, /* SC_BACKSPACE.  */
     /* XXX back tab?  */
     { "\t", "\t",    "\t", "\e\t", "\e\t",    "\e\t",  "\t" }, /* SC_TAB.  */
     {  "q",  "Q",  "\x11",  "\eq",  "\eQ",  "\e\x11",   "q" }, /* SC_Q.  */
