@@ -46,6 +46,13 @@ static struct mutex pagernplock = MUTEX_INITIALIZER;
 
 char typechars[] = "ICSDF";
 
+/* Limit the number of outstanding FILE_DATA paging requests.  
+   Otherwise the kernel can send all the data at once and overwhelm us. */
+#define DATA_MAX_THREADS 10
+static int ndatapagethreads;
+static struct mutex ndpthreads_lock = MUTEX_INITIALIZER;
+static struct condition ndpthreads_wait = CONDITION_INITIALIZER;
+
 /* Find the location on disk of page OFFSET in pager UPI.  Return the
    disk address (in disk block) in *ADDR.  If *NPLOCK is set on
    return, then release that mutex after I/O on the data has
