@@ -31,7 +31,7 @@
    MIN_SIZE and MAX_SIZE are the minimum and maximum sizes that the window
    will shrink/grow to (a value of 0 will use some default).  */
 error_t
-window_create(mach_port_t memobj,
+window_create(mach_port_t memobj, vm_offset_t max_pos,
 	      vm_size_t min_size, vm_size_t max_size, int read_only,
 	      struct window **win)
 {
@@ -42,7 +42,8 @@ window_create(mach_port_t memobj,
   if (min_size < max_size)
     min_size = max_size;
 
-  (*win)->location = 0;
+  (*win)->pos = 0;
+  (*win)->max_pos = max_pos;
   (*win)->size = 0;
   (*win)->memobj = memobj;
   (*win)->min_size = (min_size < vm_page_size ? vm_page_size : min_size);
@@ -73,7 +74,7 @@ static error_t
 position(struct window *win, vm_offset_t pos, vm_size_t len)
 {
   vm_offset_t end = pos + len;
-  vm_offset_t win_beg = win->location;
+  vm_offset_t win_beg = win->pos;
   vm_offset_t win_end = win_beg + win->size;
 
 #ifdef MSG
@@ -111,31 +112,33 @@ position(struct window *win, vm_offset_t pos, vm_size_t len)
 	  vm_deallocate(mach_task_self(), win->buffer, win->size);
 	}
 
-      win->location = trunc_page(pos);
-      win->size = round_page(len + (pos - win->location));
+      win->pos = trunc_page(pos);
+      win->size = round_page(len + (pos - win->pos));
       win->buffer = 0;
 
       if (win->size < win->min_size)
 	win->size = win->min_size;
+
+      if (win->pos + win->size > win->max_pos)
+	win->size = win->max_pos - win->pos;
 
 #ifdef MSG
 	  if (debug)
 	    {
 	      mutex_lock(&debug_lock);
 	      fprintf(debug, "position: mapping window 0x%x[%d]\n",
-		      win->location, win->size);
+		      win->pos, win->size);
 	      mutex_unlock(&debug_lock);
 	    }
 #endif
 
       return
 	vm_map(mach_task_self(), &win->buffer, win->size, 0, 1,
-	       win->memobj, win->location, 0, prot, prot, VM_INHERIT_NONE);
+	       win->memobj, win->pos, 0, prot, prot, VM_INHERIT_NONE);
     }
 
   return 0;
 }
-
 
 /* ---------------------------------------------------------------- */
 
@@ -156,7 +159,7 @@ window_write(struct window *win,
   if (!err)
     {
       bcopy((char *)buf,
-	    (char *)win->buffer + (*offs - win->location),
+	    (char *)win->buffer + (*offs - win->pos),
 	    buf_len);
       *amount = buf_len;
       *offs += buf_len;
@@ -187,7 +190,7 @@ window_read(struct window *win,
       err = allocate(buf, buf_len, amount);
       if (!err)
 	{
-	  bcopy((char *)win->buffer + (*offs - win->location),
+	  bcopy((char *)win->buffer + (*offs - win->pos),
 		(char *)*buf,
 		amount);
 	  *offs += amount;
