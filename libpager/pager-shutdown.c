@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "priv.h"
+#include <mach/notify.h>
 
 void
 pager_shutdown (struct pager *p)
@@ -32,6 +34,7 @@ pager_shutdown (struct pager *p)
 				  MACH_NOTIFY_NO_SENDERS, 0, MACH_PORT_NULL,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &port);
   
+  mutex_unlock (&p->interlock);
   if (port)
     {
       done_with_port (p);		/* pretend send right has died */
