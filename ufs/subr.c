@@ -226,6 +226,40 @@ ffs_setblock(fs, cp, h)
 		cp[h >> 3] |= (0x01 << (h & 0x7));
 		return;
 	default:
-		panic("ffs_setblock");
+		assert (0);
 	}
+}
+
+/* Taken from 4.4 BSD sys/libkern/skpc.c:
+   @(#)skpc.c	8.1 (Berkeley) 6/10/93
+*/
+int
+skpc(mask0, size, cp0)
+	int mask0;
+	int size;
+	char *cp0;
+{
+	register u_char *cp, *end, mask;
+
+	mask = mask0;
+	cp = (u_char *)cp0;
+	for (end = &cp[size]; cp < end && *cp == mask; ++cp);
+	return (end - cp);
+}
+
+/* Taken from 4.4 BSD sys/libkern/scanc.c:
+   @(#)scanc.c	8.1 (Berkeley) 6/10/93
+*/
+int
+scanc(size, cp, table, mask0)
+	u_int size;
+	register u_char *cp, table[];
+	int mask0;
+{
+	register u_char *end;
+	register u_char mask;
+
+	mask = mask0;
+	for (end = &cp[size]; cp < end && (table[*cp] & mask) == 0; ++cp);
+	return (end - cp);
 }
