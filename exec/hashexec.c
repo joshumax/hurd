@@ -175,7 +175,7 @@ check_hashbang (struct execdata *e,
       inline void prepare_args (void)
 	{
 
-	  volatile char *file_name = NULL;
+	  char * volatile file_name = NULL;
 	  size_t namelen;
 
 	  if (! (flags & EXEC_SECURE))
@@ -186,7 +186,7 @@ check_hashbang (struct execdata *e,
 		 the `PATH' environment variable might find it.  */
 
 	      volatile error_t error;
-	      volatile char *name;
+	      char * volatile name;
 	      file_t name_file;
 	      struct stat st;
 	      int file_fstype;
