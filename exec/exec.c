@@ -10,6 +10,9 @@
    Can exec any executable format the BFD library understands
    to be for this flavor of machine.
    #endif
+   #ifdef BZIP2
+   Can bunzip2 executables into core on the fly.
+   #endif
 
 This file is part of the GNU Hurd.
 
@@ -67,6 +70,10 @@ b2he (error_t deflt)
 
 #ifdef GZIP
 static void check_gzip (struct execdata *);
+#endif
+
+#ifdef BZIP2
+static void check_bzip2 (struct execdata *);
 #endif
 
 #ifdef	BFD
@@ -1031,6 +1038,98 @@ check_gzip (struct execdata *earg)
   e->stream.__seen = 1;
 }
 #endif
+
+#ifdef BZIP2
+/* Check the file for being a bzip2'd image.  Return with ENOEXEC means not
+   a valid bzip2 file; return with another error means lossage in decoding;
+   return with zero means the file was uncompressed into memory which E now
+   points to, and `check' can be run again.  */
+
+static void
+check_bzip2 (struct execdata *earg)
+{
+  struct execdata *e = earg;
+  /* Entry points to bunzip2 engine.  */
+  void do_bunzip2 (void);
+  /* Callbacks from unzip for I/O and error interface.  */
+  extern int (*unzip_read) (char *buf, size_t maxread);
+  extern void (*unzip_write) (const char *buf, size_t nwrite);
+  extern void (*unzip_read_error) (void);
+  extern void (*unzip_error) (const char *msg);
+
+  char *zipdata = NULL;
+  size_t zipdatasz = 0;
+  FILE *zipout = NULL;
+  jmp_buf ziperr;
+  int zipread (char *buf, size_t maxread)
+    {
+      return fread (buf, 1, maxread, &e->stream);
+    }
+  void zipwrite (const char *buf, size_t nwrite)
+    {
+      if (fwrite (buf, nwrite, 1, zipout) != 1)
+	longjmp (ziperr, 1);
+    }
+  void ziprderr (void)
+    {
+      errno = ENOEXEC;
+      longjmp (ziperr, 2);
+    }
+  void ziperror (const char *msg)
+    {
+      errno = ENOEXEC;
+      longjmp (ziperr, 2);
+    }
+
+  unzip_read = zipread;
+  unzip_write = zipwrite;
+  unzip_read_error = ziprderr;
+  unzip_error = ziperror;
+
+  if (setjmp (ziperr))
+    {
+      /* Error in unzipping jumped out.  */
+      if (zipout)
+	{
+	  fclose (zipout);
+	  free (zipdata);
+	}
+      e->error = errno;
+      return;
+    }
+
+  rewind (&e->stream);
+
+  zipout = open_memstream (&zipdata, &zipdatasz);
+  if (! zipout)
+    {
+      e->error = errno;
+      return;
+    }
+
+  /* Call the bunzip2 engine.  */
+  do_bunzip2 ();
+
+  /* The output is complete.  Clean up the stream and store its resultant
+     buffer and size in the execdata as the file contents.  */
+  fclose (zipout);
+  e->file_data = zipdata;
+  e->file_size = zipdatasz;
+
+  /* Clean up the old exec file stream's state.  */
+  finish (e, 0);
+
+  /* Point the stream at the buffer of file data.  */
+  memset (&e->stream, 0, sizeof (e->stream));
+  e->stream.__magic = _IOMAGIC;
+  e->stream.__mode.__read = 1;
+  e->stream.__buffer = e->file_data;
+  e->stream.__bufsize = e->file_size;
+  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
+  e->stream.__bufp = e->stream.__buffer;
+  e->stream.__seen = 1;
+}
+#endif
 
 
 static inline error_t
@@ -1099,7 +1198,26 @@ do_exec (file_t file,
 	  /* The gzip code is really cheesy, not even close to thread-safe.
 	     So we serialize all uses of it.  */
 	  mutex_lock (&lock);
+	  e->error = 0;
 	  check_gzip (e);
+	  mutex_unlock (&lock);
+	  if (e->error == 0)
+	    /* The file was uncompressed into memory, and now E describes the
+	       uncompressed image rather than the actual file.  Check it again
+	       for a valid magic number.  */
+	    check (e);
+	}
+#endif
+#ifdef BZIP2
+      if (e->error == ENOEXEC)
+	{
+	  /* See if it is a compressed image.  */
+	  static struct mutex lock = MUTEX_INITIALIZER;
+	  /* The bzip2 code is really cheesy, not even close to thread-safe.
+	     So we serialize all uses of it.  */
+	  mutex_lock (&lock);
+	  e->error = 0;
+	  check_bzip2 (e);
 	  mutex_unlock (&lock);
 	  if (e->error == 0)
 	    /* The file was uncompressed into memory, and now E describes the

@@ -21,8 +21,9 @@ makemode := server
 SRCS = exec.c main.c hashexec.c hostarch.c unzip.c util.c inflate.c
 OBJS = main.o hostarch.o exec.o hashexec.o \
        execServer.o exec_startupServer.o \
-       $(gzip-objects)
+       $(gzip-objects) $(bzip2-objects)
 gzip-objects = unzip.o util.o inflate.o
+bzip2-objects = do-bunzip2.o
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
 #targets = exec exec.static
@@ -36,6 +37,6 @@ exec.static-LDFLAGS += -static
 
 include ../Makeconf
 
-CPPFLAGS += -DGZIP # -DBFD
+CPPFLAGS += -DGZIP -DBZIP2 # -DBFD
 
 exec.static exec: $(OBJS) $(library_deps)
