@@ -59,5 +59,5 @@ fi
 # the shell running under fakeauth to chdir there inside the chroot world.
 # That shell then execs our arguments as a command line.
 exec /bin/settrans --chroot \
-     /bin/fakeauth /bin/sh -c "cd `pwd`; exec $*" \
+     /bin/fakeauth /bin/sh -c "cd `pwd`; $*" \
      -- / /hurd/fakeroot
