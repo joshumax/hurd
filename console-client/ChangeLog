@@ -1,3 +1,10 @@
+2002-09-18  Marcus Brinkmann  <marcus@gnu.org>
+
+	* ncursesw.c: Add an entry for the clear function.
+
+	* pc-kbd.c (sv_to_kc): Add entries for unused scan codes 0x55 and
+	0x56.
+
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pc-kbd.c (input_loop): Move code that toggles NumLock after code

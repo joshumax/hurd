@@ -592,6 +592,7 @@ static struct display_ops ncursesw_display_ops =
     ncursesw_set_cursor_pos,
     ncursesw_set_cursor_status,
     ncursesw_scroll,
+    NULL,
     ncursesw_write,
     ncursesw_update,
     ncursesw_flash,

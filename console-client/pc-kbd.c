@@ -251,7 +251,9 @@ char *sc_to_kc[][7] =
     { CONS_KEY_NPAGE, CONS_KEY_NPAGE, CONS_KEY_NPAGE,0, 0, 0, 0 }, /* SC_PAD_3.  */
     { CONS_KEY_IC,    CONS_KEY_IC,    CONS_KEY_IC,   0, 0, 0, 0 }, /* SC_PAD_0.  */
     { CONS_KEY_DC,    CONS_KEY_DC,    CONS_KEY_DC,   0, 0, 0, 0 }, /* SC_PAD_DECIMAL.  */
-    {    0,      0, /*XX*/0,      0,      0,         0,     0 }, /* SC_SYSREQ.  */
+    {    0,      0, /*XX*/0,      0,      0,         0,       0 }, /* SC_SYSREQ.  */
+    {    0,      0,       0,      0,      0,         0,       0 }, /* Unused.  */
+    {    0,      0,       0,      0,      0,         0,       0 }, /* Unused.  */
     { CONS_KEY_F11, 0,      0,      0,      0,         0,     0 }, /* SC_F11.  */
     { CONS_KEY_F12, 0,      0,      0,      0,         0,     0 }  /* SC_F12.  */
   };
