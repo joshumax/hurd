@@ -33,6 +33,7 @@
 #include <file_io.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "../boot/boot_script.h"
 
@@ -116,7 +117,7 @@ void
 safe_gets (char *str, int maxlen)
 {
   char *c;
-  c = index (fgets (str, maxlen, stdin), '\n');
+  c = strchr (fgets (str, maxlen, stdin), '\n');
   if (c)
     *c = '\0';
   printf ("\r\n");
@@ -148,19 +149,13 @@ main(argc, argv)
   int script_paging_file (const struct cmd *cmd, int *val)
     {
       if (add_paging_file (bootstrap_master_device_port, cmd->path))
-	printf ("(bootstrap): %s: Cannot add paging file\n", cmd->path);
+	printf ("(serverboot): %s: Cannot add paging file\n", cmd->path);
       else
 	had_a_partition = 1;
     }
   int script_default_pager (const struct cmd *cmd, int *val)
     {
-      if (had_a_partition)
-	{
-	  default_pager_initialize(bootstrap_master_host_port);
-	  doing_default_pager = 1;
-	}
-      else
-	printf ("(bootstrap): Running without any paging\n");
+      doing_default_pager = 1;
       return 0;
     }
 
@@ -389,16 +384,23 @@ main(argc, argv)
 	}
 #endif
 
+      if (had_a_partition)
+	doing_default_pager = 1;
+      else
+	printf ("(serverboot): Running without any paging\n");
+
 #if 0				/* Always stick around to handle swapon requests */
-	if (! doing_default_pager)
-	  task_terminate (mach_task_self ());
+      if (! doing_default_pager)
+	task_terminate (mach_task_self ());
 #endif
 
-	/*
-	 * Become the default pager
-	 */
-	default_pager();
-	/*NOTREACHED*/
+      default_pager_initialize (bootstrap_master_host_port);
+
+      /*
+       * Become the default pager
+       */
+      default_pager();
+      /*NOTREACHED*/
 }
 
 /* Parse the boot script.  */
