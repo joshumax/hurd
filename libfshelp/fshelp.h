@@ -138,7 +138,9 @@ error_t fshelp_acquire_lock (struct lock_box *box, int *user,
 			     struct mutex *mut, int flags);
 
   
-
+/* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
+   should be initialized with LOCK_UN.).  */
+void fshelp_lock_init (struct lock_box *box);
 
 					     
 #endif
