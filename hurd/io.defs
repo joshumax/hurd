@@ -153,9 +153,10 @@ routine io_get_icky_async_id (
 routine io_select (
 	io_object: io_t;
 #if defined (REPLY_PORTS) || defined (IO_SELECT_REPLY_PORT)
-	sreplyport reply: sreply_port_t;
+	replyport reply: sreply_port_t;
+#else
+	ureplyport reply: mach_port_make_send_t;
 #endif
-	ureplyport ureply: mach_port_make_send_t;
 	waittime timeout: natural_t;
 	inout select_type: int;
 	inout id_tag: int);	/* Returned as passed.  */
