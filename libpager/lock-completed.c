@@ -41,6 +41,7 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   if (control != p->memobjcntl)
     {
       printf ("lock_completed: bad control port\n");
+      ports_done_with_port (p);
       return EPERM;
     }
 
@@ -57,8 +58,9 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   if (lr)
     condition_broadcast (&p->wakeup);
 
-  _pager_release_seqno (p);
+  _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
+  ports_done_with_port (p);
 
   return 0;
 }
