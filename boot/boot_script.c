@@ -116,11 +116,21 @@ resume_task (struct cmd *cmd, int *val)
   return 0;
 }
 
+static int
+read_file (struct cmd *cmd, int *val)
+{
+  *val = boot_script_read_file (cmd->args[0]);
+  if (*val == 0)
+    return BOOT_SCRIPT_MACH_ERROR;
+  return 0;
+}
+
 /* List of builtin symbols.  */
 static struct sym builtin_symbols[] =
 {
   { "task-create", VAL_FUNC, (int) create_task, VAL_PORT, 0 },
-  { "task-resume", VAL_FUNC, (int) resume_task, VAL_NONE, 1 }
+  { "task-resume", VAL_FUNC, (int) resume_task, VAL_NONE, 1 },
+  { "read-file", VAL_FUNC, (int) read_file, VAL_PORT, 0 },
 };
 #define NUM_BUILTIN (sizeof (builtin_symbols) / sizeof (builtin_symbols[0]))
 
