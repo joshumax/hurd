@@ -35,3 +35,5 @@ install: $(testprog) $(hurdroot)
 
 clean: 
 	rm -f fstests fstests.o
+relink:
+	rm -f fstests
