@@ -183,4 +183,8 @@ error_t trivfs_set_atime (struct trivfs_control *cntl);
 /* Call this to set mtime for the node to the current time. */
 error_t trivfs_set_mtime (struct trivfs_control *cntl);
 
+/* If this is defined or set to an argp structure, it will be used by the
+   default trivfs_S_fsys_set_options to handle runtime options parsing.  */
+extern struct argp *trivfs_runtime_argp;
+
 #endif /* __TRIVFS_H__ */
