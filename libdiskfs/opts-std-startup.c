@@ -69,7 +69,7 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
     {
 #define TOGGLE(var, on, off) \
     case on: var = 1; break; \
-    case off: var = 1; break;
+    case off: var = 0; break;
       TOGGLE (diskfs_readonly, 'r', 'w');
       TOGGLE (_diskfs_nosuid, 'S', OPT_SUID_OK);
       TOGGLE (_diskfs_noexec, 'E', OPT_EXEC_OK);
