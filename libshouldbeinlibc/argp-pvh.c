@@ -20,8 +20,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "argp.h"
+
 /* If set by the user program to a non-zero value, then a default option
    --version is added (unless the ARGP_NO_HELP flag is used), which calls
-   this function and exits (unless the ARGP_NO_EXIT flag is used).  This
-   variable takes precedent over ARGP_PROGRAM_VERSION.  */
-void (*argp_program_version_hook) () = 0;
+   this function with a stream to print the version to and a pointer to the
+   current parsing state, and then exits (unless the ARGP_NO_EXIT flag is
+   used).  This variable takes precedent over ARGP_PROGRAM_VERSION.  */
+void (*argp_program_version_hook) (FILE *stream, struct argp_state *state) = 0;
