@@ -1,8 +1,20 @@
+Thu Oct  3 12:04:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_write): If we get EINTR after having
+	already written something, return a short count.
+	
+	* ops.c (netfs_attempt_create_file): If verify_nonexistent returns
+	an error, bother to properly unlock NP before returning.
+
 Mon Sep 30 15:45:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (OPT_RSIZE): Changed to 'R'.
 	(OPT_WSIZE): Changed to 'W'.
 	(doc): Add general description.
+
+Thu Sep 26 14:03:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* nfs.h (enum_t): New decl.
 
 Wed Sep 18 13:03:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 

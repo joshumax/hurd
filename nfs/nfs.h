@@ -16,8 +16,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-/* Needed for the rpcsvc include files to work. */
+/* Needed for the rpc include files to work. */
 typedef int bool_t;		/* Ick. */
+typedef int enum_t;		/* Ick. */
 
 #include <sys/stat.h>
 #include <sys/types.h>

@@ -20,6 +20,7 @@
 
 #include "nfs.h"
 
+#include <rpc/types.h>
 #include <rpc/pmap_prot.h>
 #include <errno.h>
 #include <sys/socket.h>

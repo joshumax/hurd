@@ -505,6 +505,13 @@ netfs_attempt_write (struct netcred *cred, struct node *np,
 	    }
 	}
       
+      if (err == EINTR && amt != *len)
+	{
+	  *len -= amt;
+	  free (rpcbuf);
+	  return 0;
+	}
+      
       if (err)
 	{
 	  *len = 0;
@@ -945,7 +952,10 @@ netfs_attempt_create_file (struct netcred *cred, struct node *np,
     {
       err = verify_nonexistent (cred, np, name);
       if (err)
-	return err;
+	{
+	  mutex_unlock (&np->lock);
+	  return err;
+	}
     }
 
   p = nfs_initialize_rpc (NFSPROC_CREATE (protocol_version),
