@@ -1,3 +1,71 @@
+Mon Sep 23 12:55:43 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storecat.c (main): Use new PARAMS var for passing args to STORE_ARGP.
+
+Thu Sep 19 11:12:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (parse_opt): Correctly check for non-default type.
+
+	* kids.c (store_decode_children): Change CLASSES to **.
+	* encode.c (store_encode): Make CLASS var const.
+	* file.c (_store_file_create): Make CLASS arg const.
+	* store.h (struct store): Make CLASS field const.
+	(_make_store): Make CLASS arg const.
+	* make.c (_make_store): Make CLASS arg const.
+	* stripe.c (ileave_decode, concat_decode): Make CLASSES arg const.
+	* remap.c (remap_decode): Likewise.
+	* create.c (store_create): Likewise.
+
+Wed Sep 18 15:14:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* argp.c (struct store_parsed): Change CLASSES field to be a pointer to
+	a vector of class pointers.
+	(find_class): Change CLASSES to be a vector of class pointers.
+	* decode.c (store_decode): Change CLASSES to be a vector of class
+	pointers.
+	* store.h (struct store_class, struct store_argp_params, store_create,
+ 	store_open, store_decode, store_decode_children): Change CLASSES args
+	to be a pointer to a vector of class pointers.
+	(_store_add_std_class): Declaration removed.
+	(STORE_STD_CLASS): Macro removed.
+	* std.c (store_std_classes): Make an initialized array.
+	(_store_add_std_class): Function removed.
+	* device.c (store_device_class): Renamed from dev_class; export.
+	* file.c (store_file_class): Renamed from file_class; export.
+	(store_file_byte_class): Renamed from file_byte_class; export.
+	* zero.c (store_zero_class): Renamed from zero_class; export.
+	* remap.c (store_remap_class): Renamed from remap_class; export.
+	* open.c (store_query_class): Renamed from query_class; export.
+	* stripe.c (store_ileave_class): Renamed from ileave_class; export.
+	(store_concat_class): Renamed from concat_class; export.
+
+	* zero.c (zero_open, zero_validate_name): New functions.
+	(zero_class): Use them.
+
+	* argp.c (store_parsed_open): Remove CLASSES argument.
+	(struct store_parsed): Make some fields const.
+	* store.h (store_parsed_open): Remove CLASSES argument.
+
+Tue Sep 17 14:48:48 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* store.h (struct store_class): Add OPEN and PARSE fields.
+	(store_open): Make NAME const.
+	(struct store_argp_params): New type.
+	* device.c (dev_open): New function.
+	(dev_class): Point to it.
+	* file.c (fhile_open): New function.
+	(file_class): Point to it.
+	* argp.c (options, parse_opt): Add --store-type/-T & (hidden)
+	--machdev/-m options, remove --device/-d option.
+	(struct store_parsed): Rmove DEVICE field, add TYPE, DEFAULT_TYPE
+	and CLASSES fields.
+	(store_parsed_free): Free PARSED->type if it exists.
+	(store_parsed_append_args): Use --store-type=... instead of --device.
+	(store_parsed_open): When --store-type is specified, search
+	CLASSES for that type, and call it's open function.
+	* open.c (store_open): Make NAME const.
+	(query_class): New variable.
+
 Fri Sep 13 14:33:24 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp.c (store_parsed_append_args, store_parsed_open, struct
