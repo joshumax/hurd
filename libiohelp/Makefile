@@ -26,14 +26,13 @@ OBJS = get_conch.o handle_io_get_conch.o handle_io_release_conch.o \
 
 DIST_FILES = $(SRCS) Makefile ioserver.h
 
-all: libioserver.a(__.SYMDEF)
+all: libioserver.a
 
-libioserver.a(__.SYMDEF): $(OBJS)
+libioserver.a: $(OBJS)
 	rm -f libioserver.a
 	ar r $@ $^
-	ranlib $@
 
-$(hurdinst)/lib/libioserver.a: libioserver.a(__.SYMDEF)
+$(hurdinst)/lib/libioserver.a: libioserver.a
 	cp libioserver.a $@
 	ranlib $@
 
