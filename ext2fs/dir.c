@@ -24,7 +24,7 @@
 
 /* Don't straddle block boundaries between blocks of this length.  The Linux
    implementation of ext2fs doesn't enforce this, but we may as well.  */
-#define DIRBLKSIZ DEV_BSIZE
+#define DIRBLKSIZ device_block_size
 
 enum slot_status
 {
