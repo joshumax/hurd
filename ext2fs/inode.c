@@ -308,6 +308,8 @@ write_node (struct node *np)
 
       di->i_blocks = st->st_blocks;
       di->i_flags = st->st_flags;
+      if (! np->istranslated)
+	di->i_translator = 0;
 
       /* Set dtime non-zero to indicate a deleted file.  */
       di->i_dtime = (st->st_mode ? 0 : di->i_mtime);
