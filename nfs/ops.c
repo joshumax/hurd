@@ -1,5 +1,5 @@
 /* Libnetfs callbacks for node operations in NFS client
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,6 +21,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stddef.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <maptime.h>
@@ -88,7 +89,7 @@ process_returned_stat (struct node *np, int *p, int mod)
   else
     {
       int attrs_exist;
-      
+
       attrs_exist = ntohl (*p++);
       if (attrs_exist)
 	p = register_fresh_stat (np, p);
@@ -290,7 +291,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   error_t err;
   struct timeval tv;
   struct timespec current;
-    
+
   /* XXX For version 3 we can actually do this right, but we don't
      just yet. */
   if (!atime || !mtime)
@@ -306,8 +307,8 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
     return errno;
 
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  p = xdr_encode_sattr_times (p, 
-			      atime ?: &current, 
+  p = xdr_encode_sattr_times (p,
+			      atime ?: &current,
 			      mtime ?: &current);
   if (protocol_version == 3)
     *p++ = 0;			/* guard check == 0 */
@@ -1222,7 +1223,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
      away entirely. */
   if (np->references > 1)
     {
-      char *newname;
+      char *newname = 0;
       int n = 0;
 
       mutex_unlock (&dir->lock);
@@ -1237,7 +1238,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
 
       do
 	{
-	  sprintf (newname, ".nfs%xgnu.%d", (int) np, n++);
+	  sprintf (newname, ".nfs%txgnu.%d", (ptrdiff_t) np, n++);
 	  err = netfs_attempt_link (cred, dir, np, newname, 1);
 	}
       while (err == EEXIST);
