@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cprocs.c,v $
+ * Revision 1.6  1995/08/30 15:57:47  mib
+ * Repair typos.
+ *
  * Revision 1.5  1995/08/30 15:50:53  mib
  * (cond_signal): If this condition has implications, see if one of them
  * needs to be signalled when we have no waiters.
@@ -214,6 +217,7 @@
 #include <cthreads.h>
 #include "cthread_internals.h"
 #include <mach/message.h>
+#include <hurd/threadvar.h>	/* GNU */
 
 /*
  * C Threads imports:
