@@ -71,6 +71,11 @@ static struct port_info *phys_reply_pi;
 
 static device_t device_master;
 
+/* Forward */
+static void devio_desert_dtr ();
+
+
+
 static void init_devio (void) __attribute__ ((constructor));
 static void
 init_devio ()
@@ -200,7 +205,7 @@ devio_start_output ()
   
   size = qsize (outputq);
 
-  if (!size || output_pending)
+  if (!size || output_pending || (termflags & USER_OUTPUT_SUSP))
     return;
 
   /* Copy characters onto PENDING_OUTPUT, not bothering
