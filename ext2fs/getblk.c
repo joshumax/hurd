@@ -1,5 +1,25 @@
+/* File block to disk block mapping routines.
+
+   Copyright (C) 1995 Free Software Foundation, Inc.
+
+   Converted to work under the hurd by Miles Bader <miles@gnu.ai.mit.edu>
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+
 /*
- *  Largely stolen from: linux/fs/ext2/inode.c
+ *  linux/fs/ext2/inode.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -14,6 +34,9 @@
  *
  *  Goal-directed block allocation by Stephen Tweedie (sct@dcs.ed.ac.uk), 1993
  */
+
+#include <string.h>
+#include "ext2fs.h"
 
 /* 
  * ext2_discard_prealloc and ext2_alloc_block are atomic wrt. the
@@ -62,7 +85,7 @@ ext2_alloc_block (struct node *node, unsigned long goal)
       ext2_discard_prealloc (node);
       ext2_debug ("preallocation miss (%lu/%lu).\n",
 		  alloc_hits, ++alloc_attempts);
-      if (S_ISREG (node->dn_stat.mode))
+      if (S_ISREG (node->dn_stat.st_mode))
 	result = ext2_new_block
 	  (goal,
 	   &node->dn->info.i_prealloc_count,
@@ -78,29 +101,21 @@ ext2_alloc_block (struct node *node, unsigned long goal)
 }
 
 static error_t
-inode_getblk (struct node *node, int nr,
-	      int create, int new_block, int *buf)
+inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
 {
-  u32 *p;
-  int tmp, goal = 0;
+  u32 block;
+  int goal = 0, i;
   int blocks = block_size / 512;
 
-  p = node->dn->info.i_data + nr;
-
-repeat:
-  tmp = *p;
-  if (tmp)
+  block = node->dn->info.i_data[nr];
+  if (block)
     {
-      *buf = baddr(tmp);
-      if (tmp == *p)
-	return 0;
-      goto repeat;
+      *buf = baddr(block);
+      return 0;
     }
 
-  if (!create || new_block >=
-      (current->rlim[RLIMIT_FSIZE].rlim_cur >>
-       EXT2_BLOCK_SIZE_BITS (sblock)))
-    return EFBIG;
+  if (!create)
+    return EINVAL;
 
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
@@ -109,11 +124,11 @@ repeat:
 
   if (!goal)
     {
-      for (tmp = nr - 1; tmp >= 0; tmp--)
+      for (i = nr - 1; i >= 0; i--)
 	{
-	  if (node->dn->info.i_data[tmp])
+	  if (node->dn->info.i_data[i])
 	    {
-	      goal = node->dn->info.i_data[tmp];
+	      goal = node->dn->info.i_data[i];
 	      break;
 	    }
 	}
@@ -125,27 +140,21 @@ repeat:
 
   ext2_debug ("goal = %d.\n", goal);
 
-  tmp = ext2_alloc_block (node, goal);
-  if (!tmp)
+  block = ext2_alloc_block (node, goal);
+  if (!block)
     return EIO;
 
-  *buf = baddr(tmp);
-  if (*p)
-    {
-      ext2_free_blocks (tmp, 1);
-      goto repeat;
-    }
+  *buf = baddr(block);
+  node->dn->info.i_data[nr] = block;
 
-  *p = tmp;
   node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = tmp;
+  node->dn->info.i_next_alloc_goal = block;
   node->dn_set_ctime = 1;
   node->dn_stat.st_blocks += blocks;
+  node->dn_stat_dirty = 1;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
-    ext2_sync_node (node);
-  else
-    node->dirty = 1;
+    diskfs_node_update (node, 1);
 
   return 0;
 }
@@ -154,62 +163,53 @@ error_t
 block_getblk (struct node *node,
 	      char *bh, int nr,
 	      int create, int blocksize,
-	      int new_block, int **buf)
+	      int new_block, char **buf)
 {
-  int tmp, goal = 0;
-  u32 *p;
-  char *result;
+  int i, goal = 0;
+  u32 block;
   int blocks = block_size / 512;
 
-  p = (u32 *) bh + nr;
-
-repeat:
-  tmp = *p;
-  if (tmp)
+  block = ((u32 *)bh)[nr];
+  if (block)
     {
-      *buf = baddr (tmp);
-      if (tmp == *p)
-	return 0;
-      goto repeat;
+      *buf = baddr (block);
+      return 0;
     }
-  if (!create || new_block >=
-      (current->rlim[RLIMIT_FSIZE].rlim_cur >> EXT2_BLOCK_SIZE_BITS (sblock)))
-    return EFBIG;
+
+  if (!create)
+    return EINVAL;
+
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
   if (!goal)
     {
-      for (tmp = nr - 1; tmp >= 0; tmp--)
+      for (i = nr - 1; i >= 0; i--)
 	{
-	  if (((u32 *) bh)[tmp])
+	  if (((u32 *) bh)[i])
 	    {
-	      goal = ((u32 *) bh)[tmp];
+	      goal = ((u32 *) bh)[i];
 	      break;
 	    }
 	}
       if (!goal)
-	goal = bh->b_blocknr;
+	goal = addrb(bh);
     }
-  tmp = ext2_alloc_block (node, goal);
-  if (!tmp)
+
+  block = ext2_alloc_block (node, goal);
+  if (!block)
     return EIO;			/* XXX? */
 
-  *buf = baddr (tmp);
-  if (*p)
-    {
-      ext2_free_blocks (tmp, 1);
-      goto repeat;
-    }
-  *p = tmp;
+  *buf = baddr (block);
+  ((u32 *)bh)[nr] = block;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
-    sync_disk_image (bh, block_size);
+    sync_disk_image (bh, block_size, 1);
 
   node->dn_set_ctime = 1;
-  node->dn_stat.st_blocks += blocks;
-  node->dirty = 1;
   node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = tmp;
+  node->dn->info.i_next_alloc_goal = block;
+  node->dn_stat.st_blocks += blocks;
+  node->dn_stat_dirty = 1;
 
   return 0;
 }
@@ -217,6 +217,7 @@ repeat:
 error_t
 ext2_getblk (struct node *node, long block, int create, char **buf)
 {
+  error_t err;
   char *bh;
   unsigned long b;
   unsigned long addr_per_block = EXT2_ADDR_PER_BLOCK (sblock);
@@ -277,7 +278,7 @@ ext2_getblk (struct node *node, long block, int create, char **buf)
     }
 
   block -= addr_per_block * addr_per_block;
-  err = inode_getblk (node, EXT2_TIND_BLOCK, create, b, bh);
+  err = inode_getblk (node, EXT2_TIND_BLOCK, create, b, &bh);
   if (!err)
     err = block_getblk (node, bh, block / (addr_per_block * addr_per_block),
 			create, block_size, b, &bh);
@@ -288,5 +289,6 @@ ext2_getblk (struct node *node, long block, int create, char **buf)
   if (!err)
     err = block_getblk (node, bh, block & (addr_per_block - 1), create,
 			block_size, b, buf);
+
   return err;
 }
