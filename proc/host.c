@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include <mach.h>
+#include <hurd.h>
 #include <sys/types.h>
 #include <hurd/hurd_types.h>
 #include <stdlib.h>
@@ -28,6 +29,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <stdio.h>
 #include <hurd/exec.h>
+#include <unistd.h>
 
 #define HURD_VERSION_DEFINE
 #include <hurd/version.h>
@@ -51,8 +53,6 @@ struct server_version
   char *release;
 } *server_versions;
 int nserver_versions, server_versions_nalloc;
-
-
 
 struct execdata_notify 
 {
@@ -141,6 +141,38 @@ S_proc_getprivports (struct proc *p,
   return 0;
 }
 
+/* Initialize the standard exec ports and ints. */
+void
+init_stdarrays ()
+{
+  auth_t nullauth;
+  mach_port_t pt;
+  int pid = getpid ();
+  
+  std_port_array = malloc (sizeof (mach_port_t) * INIT_PORT_MAX);
+  std_int_array = malloc (sizeof (int) * INIT_INT_MAX);
+  
+  bzero (std_port_array, sizeof (mach_port_t) * INIT_PORT_MAX);
+  bzero (std_int_array, sizeof (int) * INIT_INT_MAX);
+  
+  __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
+  
+  pt = getcwdir ();
+  io_reauthenticate (pt, pid);
+  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CWDIR]);
+  mach_port_deallocate (mach_task_self (), pt);
+  
+  pt = getcrdir ();
+  io_reauthenticate (pt, pid);
+  auth_user_authenticate (nullauth, pt, pid, &std_port_array[INIT_PORT_CRDIR]);
+  mach_port_deallocate (mach_task_self (), pt);
+  
+  std_port_array[INIT_PORT_AUTH] = nullauth;
+  
+  std_int_array[INIT_UMASK] = CMASK;
+}
+
 /* Implement proc_setexecdata as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_setexecdata (struct proc *p,
@@ -190,6 +222,9 @@ S_proc_getexecdata (struct proc *p,
 {
   /* XXX memory leak here */
 
+  if (!std_port_array)
+    init_stdarrays ();
+
   if (*nports < n_std_ports)
     *ports = malloc (n_std_ports * sizeof (mach_port_t));
   bcopy (std_port_array, *ports, n_std_ports * sizeof (mach_port_t));
@@ -223,9 +258,32 @@ S_proc_execdata_notify (struct proc *p,
   if (foo)
     mach_port_deallocate (mach_task_self (), foo);
   
+  if (!std_port_array)
+    init_stdarrays ();
+      
   exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND, 
 		    n_std_ports, std_int_array, n_std_ints);
   return 0;
+}
+
+/* Check all the execdata notify ports and see if one of them is
+   PORT; if it is, then free it. */
+void
+check_dead_execdata_notify (mach_port_t port)
+{
+  struct execdata_notify *en, **prevp;
+  
+  for (en = execdata_notifys, prevp = &execdata_notifys; en; en = *prevp)
+    {
+      if (en->notify_port == port)
+	{
+	  mach_port_deallocate (mach_task_self (), port);
+	  *prevp = en->next;
+	  free (en);
+	}
+      else
+	prevp = &en->next;
+    }
 }
 
 /* Version information handling.
