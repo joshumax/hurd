@@ -1,0 +1,14 @@
+/* Private specialized presentation of msg.defs for term server.  */
+
+#define routine simpleroutine
+
+/* The reason for this= is to prevent errors for get_init_port,
+   get_init_ports, get_init_int, get_init_ints, get_dtable, and get_fd.
+   We don't use those, so we're safe in breaking them.  */
+#define out /* empty */
+
+#define USERPREFIX nowait_
+
+#define msg ourmsg		/* Change subsystem name for headers et al.  */
+
+#include <hurd/msg.defs>
