@@ -21,6 +21,8 @@
 #ifndef __CONNQ_H__
 #define __CONNQ_H__
 
+#include <errno.h>
+
 /* Unknown types */
 struct connq;
 struct connq_request;
