@@ -45,8 +45,8 @@ routine exec_startup (
 	out portarray: portarray_t;
 	out intarray: intarray_t);
 
-/* This call is made by the bootstrap filesystem to
-   give the exec server the standard ports.  */
-routine exec_boot_setup (
+/* This call is made by the bootstrap filesystem to give the
+   exec server a port to init, whence it can get all else.  */
+routine exec_boot_init (
 	execserver: mach_port_t;
-	portarray: portarray_t);
+	init: startup_t);
