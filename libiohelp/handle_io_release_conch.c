@@ -20,15 +20,14 @@
 /* Called by an I/O server upon receipt of an io_release_conch message;
    The user identified by USER is done with conch C; release it and 
    allow a waiting user to obtain the conch.  */
-error_t
+void
 ioserver_handle_io_release_conch (struct conch *c, void *user)
 {
-  error_t error = 0;
   
   if (c->holder_shared_page->conch_status != USER_HAS_NOT_CONCH)
     {
       c->holder_shared_page->conch_status = USER_HAS_NOT_CONCH;
-      error = ioserver_fetch_shared_data (c->holder);
+      ioserver_fetch_shared_data (c->holder);
     }
   
   if (c->holder == user)
@@ -38,7 +37,5 @@ ioserver_handle_io_release_conch (struct conch *c, void *user)
     }
 
   condition_broadcast (&c->wait);
-  
-  return error;
 }
 

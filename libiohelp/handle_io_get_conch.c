@@ -21,38 +21,30 @@
 /* Called by an I/O server when an io_get_conch message is received.
    The user represented by USER and USER_SH wants conch C; give it
    to her or return an error.  */
-error_t
+void
 ioserver_handle_io_get_conch (struct conch *c, void *user,
 			      struct shared_io *user_sh)
 {
-  error_t error = 0;
   
   if (c->holder == user)
     {
       if (user_sh->conch_status != USER_HAS_NOT_CONCH)
-	error = ioserver_fetch_shared_data (user);
+	ioserver_fetch_shared_data (user);
       else
 	user_sh->accessed = user_sh->written = 0;
       
-      if (!error)
-	error = ioserver_put_shared_data (user);
-      if (!error)
-	user_sh->conch_status = USER_HAS_CONCH;
+      ioserver_put_shared_data (user);
+      user_sh->conch_status = USER_HAS_CONCH;
     }
   else
     {
-      error = ioserver_get_conch (c);
+      ioserver_get_conch (c);
 
-      if (!error)
-	{
-	  c->holder = user;
-	  c->holder_shared_page = user_sh;
-	  if (user_sh->conch_status == USER_HAS_NOT_CONCH)
-	    user_sh->accessed = user_sh->written = 0;
-	  user_sh->conch_status = USER_HAS_CONCH;
-	  ioserver_put_shared_data (user);
-	}
+      c->holder = user;
+      c->holder_shared_page = user_sh;
+      if (user_sh->conch_status == USER_HAS_NOT_CONCH)
+	user_sh->accessed = user_sh->written = 0;
+      user_sh->conch_status = USER_HAS_CONCH;
+      ioserver_put_shared_data (user);
     }
-  
-  return error;
 }

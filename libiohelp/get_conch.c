@@ -19,11 +19,10 @@
 
 /* The conch must be locked when calling this routine. */
 /* Remove any current holder of conch C. */
-error_t
+void
 ioserver_get_conch (struct conch *c)
 {
   struct shared_io *user_sh;
-  int error = 0;
   
  again:
   user_sh = c->holder_shared_page;
@@ -45,7 +44,7 @@ ioserver_get_conch (struct conch *c)
 	case USER_COULD_HAVE_CONCH:
 	  user_sh->conch_status = USER_HAS_NOT_CONCH;
 	  spin_unlock (&user_sh->lock);
-	  error = ioserver_fetch_shared_data (c->holder);
+	  ioserver_fetch_shared_data (c->holder);
 	  break;
 	  
 	case USER_HAS_NOT_CONCH:
@@ -55,5 +54,4 @@ ioserver_get_conch (struct conch *c)
     }
   c->holder = 0;
   c->holder_shared_page = 0;
-  return error;
 }
