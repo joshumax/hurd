@@ -28,8 +28,8 @@ SRCS = reboot.c halt.c fsck.c fstab.c clookup.c $(SCRIPTS)
 LCLHDRS = fstab.h
 DIST_FILES = MAKEDEV.sh
 
-HURDLIBS=shouldbeinlibc
 OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
+HURDLIBS = shouldbeinlibc
 
 include ../Makeconf
 
