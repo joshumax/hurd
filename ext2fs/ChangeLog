@@ -1,3 +1,9 @@
+1999-10-01  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* bitmap.c (memscan): Function removed.
+	* ext2fs.h: Removed its decl.
+	* balloc.c (memscan): New static function, defined using memchr.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c, truncate.c, pager.c: Reverted changes related to
