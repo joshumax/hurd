@@ -20,6 +20,7 @@
 #include <hurd/hurd_types.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <mach/task_info.h>
 
 #include "proc.h"
 
@@ -32,20 +33,6 @@
 
 #include "process_S.h"
 #include <mach/mig_errors.h>
-
-#define EWOULDBLOCK EAGAIN /* XXX */
-
-/* Return nonzero if a `waitpid' on WAIT_PID by a process
-   in MYPGRP cares about the death of PID/PGRP.  */
-static inline int
-waiter_cares (pid_t wait_pid, pid_t mypgrp,
-	      pid_t pid, pid_t pgrp)
-{
-  return (wait_pid == pid ||
-	  wait_pid == -pgrp ||
-	  wait_pid == WAIT_ANY ||
-	  (wait_pid == WAIT_MYPGRP && pgrp == mypgrp));
-}
 
 static inline void
 rusage_add (struct rusage *acc, const struct rusage *b)
@@ -69,6 +56,84 @@ rusage_add (struct rusage *acc, const struct rusage *b)
   acc->ru_nsignals += b->ru_nsignals;
   acc->ru_nvcsw += b->ru_nvcsw;
   acc->ru_nivcsw += b->ru_nivcsw;
+}
+
+/* XXX This is real half-assed.
+
+   We want to collect usage statistics from dead processes to return to its
+   parent for its proc_wait calls and its aggregate child statistics.
+
+   The microkernel provides no access to this information once the task is
+   terminated.  So the best we can do is take a sample at some time while
+   the task is still alive but not too long before it dies.  Our results
+   are always inaccurate, because they don't account for the final part of
+   the task's lifetime.  But perhaps it's better than nothing at all.
+
+   The obvious place to take this sample is in proc_mark_exit, which in
+   normal circumstances a task is calling immediately before terminating
+   itself.  So in the best of cases, our data omits only the interval in
+   which our RPC returns to the task and it calls task_terminate.  We could
+   take samples in other places just to have something rather than nothing
+   if the task dies unexpectedly (e.g. SIGKILL); but it may not be worthwhile
+   since the end result is never going to be accurate anyway.
+
+   The only way to get correct results is by adding some microkernel
+   feature to report the task statistics data post-mortem.  */
+
+void
+sample_rusage (struct proc *p)
+{
+  struct task_basic_info bi;
+  struct task_events_info ei;
+  struct task_thread_times_info tti;
+  mach_msg_type_number_t count;
+  error_t err;
+
+  count = TASK_BASIC_INFO_COUNT;
+  err = task_info (p->p_task, TASK_BASIC_INFO,
+		   (task_info_t) &bi, &count);
+  if (err)
+    memset (&bi, 0, sizeof bi);
+
+  count = TASK_EVENTS_INFO_COUNT;
+  err = task_info (p->p_task, TASK_EVENTS_INFO,
+		   (task_info_t) &ei, &count);
+  if (err)
+    memset (&ei, 0, sizeof ei);
+
+  count = TASK_THREAD_TIMES_INFO_COUNT;
+  err = task_info (p->p_task, TASK_THREAD_TIMES_INFO,
+		   (task_info_t) &tti, &count);
+  if (err)
+    memset (&tti, 0, sizeof tti);
+
+  time_value_add (&bi.user_time, &tti.user_time);
+  time_value_add (&bi.system_time, &tti.system_time);
+
+  memset (&p->p_rusage, 0, sizeof (struct rusage));
+
+  p->p_rusage.ru_utime.tv_sec = bi.user_time.seconds;
+  p->p_rusage.ru_utime.tv_usec = bi.user_time.microseconds;
+  p->p_rusage.ru_stime.tv_sec = bi.system_time.seconds;
+  p->p_rusage.ru_stime.tv_usec = bi.system_time.microseconds;
+
+  /* These statistics map only approximately.  */
+  p->p_rusage.ru_majflt = ei.pageins;
+  p->p_rusage.ru_minflt = ei.faults - ei.pageins;
+  p->p_rusage.ru_msgsnd = ei.messages_sent; /* Mach IPC, not SysV IPC */
+  p->p_rusage.ru_msgrcv = ei.messages_received; /* ditto */
+}
+
+/* Return nonzero if a `waitpid' on WAIT_PID by a process
+   in MYPGRP cares about the death of PID/PGRP.  */
+static inline int
+waiter_cares (pid_t wait_pid, pid_t mypgrp,
+	      pid_t pid, pid_t pgrp)
+{
+  return (wait_pid == pid ||
+	  wait_pid == -pgrp ||
+	  wait_pid == WAIT_ANY ||
+	  (wait_pid == WAIT_MYPGRP && pgrp == mypgrp));
 }
 
 /* A process is dying.  Send SIGCHLD to the parent.
@@ -208,6 +273,8 @@ S_proc_mark_exit (struct proc *p,
 
   if (WIFSTOPPED (status))
     return EINVAL;
+
+  sample_rusage (p);		/* See comments above sample_rusage.  */
 
   if (p->p_exiting)
     return EBUSY;
