@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <hurd/fsys.h>
+#include <hurd/paths.h>
 
 /* XXX - Temporary hack; this belongs in a header file, probably types.h. */
 #define major(x) ((int)(((unsigned) (x) >> 8) & 0xff))
@@ -175,7 +176,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp)
-	  && (node->istranslated
+	  && (np->istranslated
 	      || S_ISFIFO (np->dn_stat.st_mode)
 	      || S_ISCHR (np->dn_stat.st_mode)
 	      || S_ISBLK (np->dn_stat.st_mode)
@@ -199,14 +200,14 @@ diskfs_S_dir_lookup (struct protid *dircred,
 			    (S_ISCHR (node->dn_stat.st_mode)
 			     ? _HURD_CHRDEV : _HURD_BLKDEV),
 			    0, major (node->dn_stat.st_rdev),
-			    0, minor (node->dn_stat.st_rdev),);
-		  argz_len = strlen (argz) + 1;
-		  argz_len += strlen (argz + argz_len) + 1;
-		  argz_len += strlen (argz + argz_len) + 1;
+			    0, minor (node->dn_stat.st_rdev));
+		  *argz_len = strlen (*argz) + 1;
+		  *argz_len += strlen (*argz + *argz_len) + 1;
+		  *argz_len += strlen (*argz + *argz_len) + 1;
 		  break;
 		case S_IFIFO:
 		  asprintf (argz, "%s", _HURD_FIFO);
-		  argz_len = strlen (argz) + 1;
+		  *argz_len = strlen (*argz) + 1;
 		  break;
 		default:
 		  return ENOENT;
@@ -235,7 +236,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				     dirport, dircred->uids, dircred->nuids,
 				     dircred->gids, dircred->ngids, 
 				     lastcomp ? flags : 0,
-				     (node->istranslated
+				     (np->istranslated
 				      ? _diskfs_translator_callback1
 				      : short_circuited_callback1),
 				     _diskfs_translator_callback2,
