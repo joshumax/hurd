@@ -24,9 +24,11 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-#include <argp.h>
-#include <hurd/ps.h>
 #include <unistd.h>
+#include <argp.h>
+#include <argz.h>
+#include <idvec.h>
+#include <hurd/ps.h>
 
 #include "error.h"
 #include "common.h"
@@ -54,7 +56,7 @@ static struct argp_option options[] =
                                       " leaders"},
   {"all",        'e',     0,      0,  "List all processes"},
   {0,            'f',     0,      0,  "Use the `full' output-format"},
-  {0,            'g',     0,      0,  "Include session leaders"},
+  {0,            'g',     0,      0,  "Include session and login leaders"},
   {"no-header",  'H',     0,      0,  "Don't print a descriptive header line"},
   {0,            'j',     0,      0,  "Use the `jobc' output-format"},
   {0,            'l',     0,      0,  "Use the `long' output-format"},
@@ -80,7 +82,8 @@ static struct argp_option options[] =
                                       " (which defaults to the sid of the"
                                       " current process)"},
   {"sid",        0,       0,      OPTION_ALIAS | OPTION_HIDDEN},
-  {"sort",       OPT_SORT,"FIELD", 0, "Sort the output with respect to FIELD"},
+  {"sort",       OPT_SORT,"FIELD", 0, "Sort the output with respect to FIELD,"
+                                     " backwards if FIELD is prefixed by `-'"},
   {"threads",    's',     0,      0,  "Show the threads for each process"},
   {"tty",        't',     "TTY",  OA, "Only show processes with controlling"
                                       " terminal TTY"},
@@ -126,7 +129,7 @@ parse_enum(char *arg, char **choices, char *kind, bool allow_mismatches)
 }
 
 #define FILTER_OWNER		0x01
-#define FILTER_NSESSLDR		0x02
+#define FILTER_NOT_LEADER	0x02
 #define FILTER_CTTY    		0x04
 #define FILTER_UNORPHANED	0x08
 #define FILTER_PARENTED		0x10
@@ -306,51 +309,6 @@ lookup_user(char *name)
 
 /* ---------------------------------------------------------------- */
 
-typedef unsigned id_t;
-
-struct ids 
-{
-  id_t *ids;
-  unsigned num, alloced;
-};
-
-struct
-ids *make_ids ()
-{
-  struct ids *ids = malloc (sizeof (struct ids));
-  if (!ids)
-    error(8, ENOMEM, "Can't allocate id list");
-  ids->ids = 0;
-  ids->num = ids->alloced = 0;
-  return ids;
-}
-
-void
-ids_add (struct ids *ids, id_t id)
-{
-  if (ids->alloced == ids->num)
-    {
-      ids->alloced = ids->alloced * 2 + 1;
-      ids->ids = realloc (ids->ids, ids->alloced * sizeof (id_t));
-      if (ids->ids == NULL)
-	error(8, ENOMEM, "Can't allocate id list");
-    }
-
-  ids->ids[ids->num++] = id;
-}
-
-int
-ids_contains (struct ids *ids, id_t id)
-{
-  unsigned i;
-  for (i = 0; i < ids->num; i++)
-    if (ids->ids[i] == id)
-      return 1;
-  return 0;
-}
-
-/* ---------------------------------------------------------------- */
-
 void 
 main(int argc, char *argv[])
 {
@@ -360,16 +318,16 @@ main(int argc, char *argv[])
      realloced for each successive arg that needs it, on the assumption that
      args don't get parsed multiple times.  */
   char *arg_hack_buf = 0;
-  struct ids *only_uids = make_ids (), *not_uids = make_ids ();
-  char **tty_names = 0;
-  unsigned num_tty_names = 0, tty_names_alloced = 0;
+  struct idvec *only_uids = make_idvec (), *not_uids = make_idvec ();
+  char *tty_names = 0;
+  unsigned num_tty_names = 0;
   proc_stat_list_t procset;
   ps_context_t context;
   ps_stream_t output;
   ps_fmt_t fmt;
   char *fmt_string = "default", *sort_key_name = NULL;
   unsigned filter_mask =
-    FILTER_OWNER | FILTER_NSESSLDR | FILTER_UNORPHANED | FILTER_PARENTED;
+    FILTER_OWNER | FILTER_NOT_LEADER | FILTER_UNORPHANED | FILTER_PARENTED;
   bool sort_reverse = FALSE, print_heading = TRUE;
   bool squash_bogus_fields = TRUE, squash_nominal_fields = TRUE;
   bool show_threads = FALSE, no_msg_port = FALSE;
@@ -411,23 +369,27 @@ main(int argc, char *argv[])
     }
     
   /* Add a user who's processes should be printed out.  */
-  void add_uid (id_t uid)
+  void add_uid (uid_t uid)
     {
-      ids_add (only_uids, uid);
+      error_t err = idvec_add (only_uids, uid);
+      if (err)
+	error (23, err, "Couldn't add uid");
     }
   /* Add a user who's processes should not be printed out.  */
-  void add_not_uid (id_t uid)
+  void add_not_uid (uid_t uid)
     {
-      ids_add (not_uids, uid);
+      error_t err = idvec_add (not_uids, uid);
+      if (err)
+	error (23, err, "Couldn't add uid");
     }
   /* Returns TRUE if PS is owned by any of the users in ONLY_UIDS, and none
      in NOT_UIDS.  */
   bool proc_stat_owner_ok(struct proc_stat *ps)
     {
-      id_t uid = proc_stat_proc_info (ps)->owner;
-      if (only_uids->num > 0 && !ids_contains (only_uids, uid))
+      int uid = proc_stat_owner_uid (ps);
+      if (only_uids->num > 0 && !idvec_contains (only_uids, uid))
 	return 0;
-      if (not_uids->num > 0 && ids_contains (not_uids, uid))
+      if (not_uids->num > 0 && idvec_contains (not_uids, uid))
 	return 0;
       return 1;
     }
@@ -436,14 +398,9 @@ main(int argc, char *argv[])
      terminals will be printed.  */
   void add_tty_name (char *tty_name)
     {
-      if (tty_names_alloced == num_tty_names)
-	{
-	  tty_names_alloced += tty_names_alloced + 1;
-	  tty_names = realloc(tty_names, tty_names_alloced * sizeof(int));
-	  if (tty_names == NULL)
-	    error(8, ENOMEM, "Can't allocate tty_name list");
-	}
-      tty_names[num_tty_names++] = tty_name;
+      error_t err = argz_add (&tty_names, &num_tty_names, tty_name);
+      if (err)
+	error (8, err, "%s: Can't add tty", tty_name);
     }
   bool proc_stat_has_ctty(struct proc_stat *ps)
     {
@@ -453,13 +410,13 @@ main(int argc, char *argv[])
 	  ps_tty_t tty = proc_stat_tty(ps);
 	  if (tty)
 	    {
-	      unsigned i;
+	      char *try = 0;
 	      char *name = ps_tty_name(tty);
 	      char *short_name = ps_tty_short_name(tty);
 
-	      for (i = 0; i < num_tty_names; i++)
-		if ((name && strcmp (tty_names[i], name) == 0)
-		    || (short_name && strcmp (tty_names[i], short_name) == 0))
+	      while (try = argz_next (tty_names, num_tty_names, try))
+		if ((name && strcmp (try, name) == 0)
+		    || (short_name && strcmp (try, short_name) == 0))
 		  return TRUE;
 	    }
 	}
@@ -504,44 +461,29 @@ main(int argc, char *argv[])
 	  parse_numlist(arg, add_pid, NULL, NULL, "PID");
 	  break;
 
-	case 'a':
-	  filter_mask &= ~(FILTER_OWNER | FILTER_NSESSLDR); break;
-	case 'd':
-	  filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
-	case 'e':
-	  filter_mask = 0; break;
-	case 'g':
-	  filter_mask &= ~FILTER_NSESSLDR; break;
-	case 'x':
-	  filter_mask &= ~FILTER_UNORPHANED; break;
-	case 'P':
-	  filter_mask &= ~FILTER_PARENTED; break;
-	case 'f':
-	  fmt_string = "full"; break;
-	case 'u':
-	  fmt_string = "user"; break;
-	case 'v':
-	  fmt_string = "vmem"; break;
-	case 'j':
-	  fmt_string = "jobc"; break;
-	case 'l':
-	  fmt_string = "long"; break;
-	case 'M':
-	  no_msg_port = TRUE; break;
-	case 'H':
-	  print_heading = FALSE; break;
-	case 'Q':
-	  squash_bogus_fields = squash_nominal_fields = FALSE; break;
-	case 'n':
-	  squash_nominal_fields = FALSE; break;
-	case 's':
-	  show_threads = TRUE; break;
-	case OPT_FMT:
-	  fmt_string = arg; break;
-	case OPT_SORT:
-	  sort_key_name = arg; break;
-	case 'r':
-	  sort_reverse = TRUE; break;
+	case 'a': filter_mask &= ~(FILTER_OWNER | FILTER_NOT_LEADER); break;
+	case 'd': filter_mask &= ~(FILTER_OWNER | FILTER_UNORPHANED); break;
+	case 'e': filter_mask = 0; break;
+	case 'g': filter_mask &= ~FILTER_NOT_LEADER; break;
+	case 'x': filter_mask &= ~FILTER_UNORPHANED; break;
+	case 'P': filter_mask &= ~FILTER_PARENTED; break;
+	case 'f': fmt_string = "full"; break;
+	case 'u': fmt_string = "user"; break;
+	case 'v': fmt_string = "vmem"; break;
+	case 'j': fmt_string = "jobc"; break;
+	case 'l': fmt_string = "long"; break;
+	case 'M': no_msg_port = TRUE; break;
+	case 'H': print_heading = FALSE; break;
+	case 'Q': squash_bogus_fields = squash_nominal_fields = FALSE; break;
+	case 'n': squash_nominal_fields = FALSE; break;
+	case 's': show_threads = TRUE; break;
+	case OPT_FMT: fmt_string = arg; break;
+	case OPT_SORT: sort_key_name = arg; break;
+	case 'r': sort_reverse = TRUE; break;
+
+	case 'w':
+	  output_width = arg ? atoi (arg) : 0; /* 0 means `unlimited'.  */
+	  break;
 
 	case 't':
 	  parse_strlist(arg, add_tty_name, current_tty_name, "tty");
@@ -560,10 +502,6 @@ main(int argc, char *argv[])
 	  break;
 	case OPT_PGRP:
 	  parse_numlist(arg, add_pgrp, NULL, NULL, "process group");
-	  break;
-
-	case 'w':
-	  output_width = arg ? atoi (arg) : 0; /* 0 means `unlimited'.  */
 	  break;
 
 	default:
@@ -588,7 +526,14 @@ main(int argc, char *argv[])
   argp_parse (&argp, argc, argv, 0, 0);
 
   if (only_uids->num == 0 && (filter_mask & FILTER_OWNER))
-    add_uid (getuid ());
+    /* Restrict the output to only our own processes.  */
+    {
+      int uid = getuid ();
+      if (uid >= 0)
+	add_uid (uid);
+      else
+	filter_mask &= ~FILTER_OWNER; /* Must be an anonymous process.  */
+    }
 
   {
     int fmt_index = parse_enum(fmt_string, fmt_names, "format type", 1);
@@ -599,6 +544,12 @@ main(int argc, char *argv[])
 	  {
 	    sort_key_name = fmt_sortkeys[fmt_index];
 	    sort_reverse = fmt_sortrev[fmt_index];
+	  }
+	else if (*sort_key_name == '-')
+	  /* Sort in reverse.  */
+	  {
+	    sort_reverse = 1;
+	    sort_key_name++;
 	  }
       }
   }
@@ -616,7 +567,7 @@ main(int argc, char *argv[])
   /* Filter out any processes that we don't want to show.  */
   if (only_uids->num || not_uids->num)
     proc_stat_list_filter1 (procset, proc_stat_owner_ok,
-			    PSTAT_PROC_INFO, FALSE);
+			    PSTAT_OWNER_UID, FALSE);
   if (num_tty_names > 0)
     {
       /* We set the PSTAT_TTY flag separately so that our filter function
@@ -624,8 +575,8 @@ main(int argc, char *argv[])
       proc_stat_list_set_flags(procset, PSTAT_TTY);
       proc_stat_list_filter1(procset, proc_stat_has_ctty, 0, FALSE);
     }
-  if (filter_mask & FILTER_NSESSLDR)
-    proc_stat_list_filter(procset, &ps_not_sess_leader_filter, FALSE);
+  if (filter_mask & FILTER_NOT_LEADER)
+    proc_stat_list_filter(procset, &ps_not_leader_filter, FALSE);
   if (filter_mask & FILTER_UNORPHANED)
     proc_stat_list_filter(procset, &ps_unorphaned_filter, FALSE);
   if (filter_mask & FILTER_PARENTED)
@@ -638,7 +589,7 @@ main(int argc, char *argv[])
   if (show_threads)
     proc_stat_list_add_threads(procset);
 
-  if (sort_key_name != NULL)
+  if (sort_key_name)
     /* Sort on the given field; we look in both the user-named fields and
        the system named fields for the name given, as the user may only know
        the printed title and not the official name. */
@@ -711,6 +662,7 @@ main(int argc, char *argv[])
       error(0, 0, "No applicable processes");
 
   if (output_width)
+    /* Try and restrict the number of output columns.  */
     {
       int deduce_term_size (int fd, char *type, int *width, int *height);
       struct ps_fmt_field *field = ps_fmt_fields (fmt);
@@ -721,8 +673,9 @@ main(int argc, char *argv[])
 	if (! deduce_term_size (1, getenv ("TERM"), &output_width, 0))
 	  output_width = 80;	/* common default */
 
-      /* We're not very clever about this -- just see if the last field is
-	 `varying' (as it usually is), then set it to the proper max width.  */
+      /* We're not very clever about this -- just add up the width of all the
+	 fields but the last, and if the last has no existing width (as is
+	 the case in most output formats), give it whatever is left over.  */
       while (--nfields > 0)
 	{
 	  int fw = field->width;
@@ -733,6 +686,7 @@ main(int argc, char *argv[])
 	field->width = output_width - field->pfx_len - 1; /* 1 for the CR. */
     }
 
+  /* Finally, output all the processes!  */
   err = proc_stat_list_fmt (procset, fmt, output);
   if (err)
     error (5, err, "Couldn't output process status");
