@@ -1,3 +1,21 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* stripe.c (concat_decode): Add __attribute__((unused)) to suppress
+	warning.
+	(ileave_decode): Likewise.
+
+	* bunzip2.c: Add extern decl for do_bunzip2.
+
+1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* remap.c (remap_decode): Add attribute((unused)) to suppress warning.
+
+1999-05-14  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* remap.c (remap_open, remap_validate_name): New functions, to support
+	parsing block lists a la GRUB.
+	(store_remap_class): Initialize those slots.
+
 1999-05-01  Mark Kettenis  <kettenis@gnu.org>
 
 	* device.c (store_device_create): Deal with devices that return
