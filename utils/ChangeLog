@@ -1,3 +1,7 @@
+1997-07-03  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ftpdir.c (main): Flush stdout after printing prefix/separator.
+
 1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* storecat.c, storeread.c: Moved here from ../libstore.
