@@ -29,6 +29,10 @@
 # Type `library' should define
 # libname (the name of the library, without .a.)
 # installhdrs (header files that should be installed in /include)
+# 
+# If you define a new library, then you need to add it to the list
+# below under the comment `Hurd libraries' in the same form as the
+# other libraries listed there.
 
 
 # Put this first so it's the default
