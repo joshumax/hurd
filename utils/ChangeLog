@@ -1,3 +1,35 @@
+Thu May 15 14:04:29 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.c (procset_names, fmt_sortkeys, fmt_names, fmts): Variables removed.
+	(enum procsets): Type removed.
+	(struct output_fmt): New type.
+	(output_fmt): New variable.
+	(parse_enum): Function removed.
+	(main): Use new version of parse_enum & output_fmts variable.
+
+	* login.c, addauth.c (main: verify_passwd): Make
+	user-in-group-0-can-use-his-own-password-to-su work.
+
+	* parse.c, parse.h: New files.
+	* addauth.c: Replace include of "psout.h" with one of "parse.h".
+	(_parse_strlist, parse_numlist): Functions removed.
+	* ps.c: Include "parse.h".
+	(_parse_strlist, parse_strlist, parse_numlist): Functions removed.
+	* Makefile (SRCS): Add parse.c.
+	(LCLHDRS): Add parse.h.
+	Add dependencies on parse.o.
+
+	* addauth.c: Renamed from addu.c.
+	* Makefile: Change references to addu into ones to addauth.
+
+Fri Apr 25 13:06:29 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hurdids.c (main): Use the parent process's auth port instead of
+ 	the hurdids process's, because hurdids is usually installed setuid.
+
+	* login.c, addu.c (main: verify_passwd): Add
+	user-in-group-0-can-use-his-own-password-to-su hack.
+
 Wed Apr 16 15:59:41 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* login.c (add_utmp_entry): Revert change of December 10, 1996.
