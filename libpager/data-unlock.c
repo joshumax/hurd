@@ -32,7 +32,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
   struct pager *p;
   volatile int err;
   
-  if (!(p = check_port_type (object, pager_port_type)))
+  if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
 
   mutex_lock (&p->interlock);
@@ -83,7 +83,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
-  done_with_port (p);
+  ports_done_with_port (p);
   return 0;
 }
 
