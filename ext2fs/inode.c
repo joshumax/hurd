@@ -73,8 +73,9 @@ iget (ino_t inum, struct node **npp)
   dn->dirents = 0;
 
   rwlock_init (&dn->alloc_lock);
-  pokel_init (&dn->pokel, disk_pager->p, disk_image);
+  pokel_init (&dn->indir_pokel, disk_pager->p, disk_image);
   dn->fileinfo = 0;
+  dn->last_page_partially_writable = 0;
 
   np = diskfs_make_node (dn);
   mutex_lock (&np->lock);
@@ -378,7 +379,7 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   write_node (np);
-  pokel_sync (&np->dn->pokel, wait);
+  pokel_sync (&np->dn->indir_pokel, wait);
 }
 
 /* Implement the diskfs_set_statfs callback from the diskfs library;
