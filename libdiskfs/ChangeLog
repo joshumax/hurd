@@ -1,3 +1,7 @@
+2001-06-15  Roland McGrath  <roland@frob.com>
+
+	* Makefile (FSSRCS): Last change got botched in merging.
+
 2001-06-10  Neal H Walfield  <neal@cs.uml.edu>
 
         * file-inv-trans.c: Remove this file, function no longer exists.

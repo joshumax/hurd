@@ -1,3 +1,8 @@
+2001-06-15  Roland McGrath  <roland@frob.com>
+
+	* Makeconf (CPPFLAGS, CFLAGS): Append to these before we include the
+	config.make file.
+
 2001-03-11  Roland McGrath  <roland@frob.com>
 
 	* Makeconf (%_S.h %Server.c): Split out an intermediate rule for the
