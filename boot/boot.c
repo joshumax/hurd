@@ -865,7 +865,10 @@ error_t
 S_io_readable (mach_port_t object,
 	       int *amt)
 {
-  return EOPNOTSUPP;
+  if (object != pseudo_console)
+    return EOPNOTSUPP;
+  ioctl (0, FIONREAD, amt);
+  return 0;
 }
 
 error_t 
