@@ -1,3 +1,7 @@
+Thu May 29 15:00:07 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* idvec-verify.c (idvec_verify): Fix detection of multiple ids.
+
 Tue May 27 14:16:08 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (argp_args_usage): Supply correct argp to filter_doc.
