@@ -28,8 +28,7 @@ get_hypermetadata (void)
 {
   error_t err;
   
-  err = dev_read_sync (SBLOCK, (vm_address_t *)&sblock, SBSIZE);
-  assert (!err);
+  sblock = (struct fs *) disk_image + SBOFF;
 
   if (sblock->fs_magic != FS_MAGIC)
     {
@@ -67,23 +66,32 @@ get_hypermetadata (void)
   if (sblock->fs_interleave < 1)
     sblock->fs_interleave = 1;
 
-  if (sblock->fs_postblformat == FS_42POSTBLFMT)
-    sblock->fs_nrpos = 8;
-
-  if (sblock->fs_inodefmt < FS_44INODEFMT)
+  if (sblock->fs_postblformat == FS_42POSTBLFMT
+      || sblock->fs_inodefmt < FS_44INODEFMT)
     {
-      quad_t sizepb = sblock->fs_bsize;
-      int i;
+      /* Make a local copy so we don't write our different
+	 values into the old format disk. */
+      sblock = malloc (SBSIZE);
+      bcopy (disk_image + SBOFF, sblock, SBSIZE);
 
-      oldformat = 1;
-      sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
-      for (i = 0; i < NIADDR; i++)
+      if (sblock->fs_postblformat == FS_42POSTBLFMT)
+	sblock->fs_nrpos = 8;
+
+      if (sblock->fs_inodefmt < FS_44INODEFMT)
 	{
-	  sizepb *= NINDIR (sblock);
-	  sblock->fs_maxfilesize += sizepb;
+	  quad_t sizepb = sblock->fs_bsize;
+	  int i;
+
+	  oldformat = 1;
+	  sblock->fs_maxfilesize = sblock->fs_bsize * NDADDR - 1;
+	  for (i = 0; i < NIADDR; i++)
+	    {
+	      sizepb *= NINDIR (sblock);
+	      sblock->fs_maxfilesize += sizepb;
+	    }
+	  sblock->fs_qbmask = ~sblock->fs_bmask;
+	  sblock->fs_qfmask = ~sblock->fs_fmask;
 	}
-      sblock->fs_qbmask = ~sblock->fs_bmask;
-      sblock->fs_qfmask = ~sblock->fs_fmask;
     }
 
   /* Find out if we support the 4.4 symlink/dirtype extension */
@@ -92,11 +100,9 @@ get_hypermetadata (void)
   else
     direct_symlink_extension = 0;
 
-  err = dev_read_sync (fsbtodb (sblock, sblock->fs_csaddr), 
-		       (vm_address_t *) &csum,
-		       sblock->fs_fsize * howmany (sblock->fs_cssize, 
-						   sblock->fs_fsize));
-  assert (!err);
+  csum = (struct csum *) 
+    (disk_image
+     + howmany (sblock->fs_cssize, sblock->fs_fsize) * sblock->fs_fsize);
 }
 
 /* Write the superblock and cg summary info to disk.  If WAIT is set,
@@ -109,13 +115,6 @@ diskfs_set_hypermetadata (int wait, int clean)
   writefn = (wait ? dev_write_sync : dev_write);
 
   spin_lock (&alloclock);
-  if (csum_dirty)
-    {
-      (*writefn)(fsbtodb (sblock, sblock->fs_csaddr), (vm_address_t) csum,
-		 sblock->fs_fsize * howmany (sblock->fs_cssize,
-					     sblock->fs_fsize));
-      csum_dirty = 0;
-    }
 
   if (clean && !diskfs_readonly)
     {
@@ -139,6 +138,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 	      sbcopy->fs_qbmask = -1;
 	      sbcopy->fs_qfmask = -1;
 	    }
+	  bcopy (sbcopy, disk_image + SBOFF, SBSIZE)
 	  (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
 	}
       else
