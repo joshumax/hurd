@@ -189,7 +189,6 @@ See `tasks', the exported task list.
 
 * Utilities
 ** Write a real mount program.
-** settrans needs an option to make the active go away without using goaway.
 ** Make id, et. al. work with no/multiple uids.
 ** Make things work with the `nobody' mode bits: chmod, ls, ...
 ** Make things work better with translators, e.g., tar...
@@ -206,6 +205,12 @@ See `tasks', the exported task list.
 ** fsck should use (not-yet-added) fsys_get_options returned device instead 
    of /etc/fstab.
 ** Write/port the various helpful mach info programs in UX (vminfo, etc).
+** Serverboot doesn't deal with symlinks properly.
+** Grub doesn't deal with symlinks properly.
+
+** settrans:
+*** needs an option to make the active go away without using goaway.
+*** -P should print the pid of the translator before pausing
 
 ** ps:
 *** ps should timeout quickly (one second?) on non-responsive message ports.
