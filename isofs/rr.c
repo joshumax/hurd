@@ -187,7 +187,6 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	{
 	  /* Extension Reference */
 	  struct su_er *er = body;
-	  char *c;
 
 	  /* Make sure the ER field is valid */
 	  if ((void *) er->more + er->len_id + er->len_des + er->len_src
@@ -196,12 +195,12 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  
 	  /* Check for rock-ridge */
 	  if (er->ext_ver == ROCK_VERS
-	      && !memcmp (ROCK_ID, er->more, er->lenid))
+	      && !memcmp (ROCK_ID, er->more, er->len_id))
 	    rock_live = 1;
 
 	  /* Check for Gnuext */
 	  else if (er->ext_ver == GNUEXT_VERS
-		   && !memcmp (GNUEXT_ID, er->more, er->lenid))
+		   && !memcmp (GNUEXT_ID, er->more, er->len_id))
 	    gnuext_live = 1;
 	}
 
