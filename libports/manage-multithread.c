@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -65,13 +65,18 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
       if (pi)
 	{
-	  ports_begin_rpc (pi, &link);
-	  mutex_lock (&_ports_lock);
-	  if (inp->msgh_seqno < pi->cancel_threshhold)
-	    hurd_thread_cancel (link.thread);
-	  mutex_unlock (&_ports_lock);
-	  status = demuxer (inp, outp);
-	  ports_end_rpc (pi, &link);
+	  error_t err = ports_begin_rpc (pi, inp->msgh_id, &link);
+	  if (err)
+	    status = 0;
+	  else
+	    {
+	      mutex_lock (&_ports_lock);
+	      if (inp->msgh_seqno < pi->cancel_threshold)
+		hurd_thread_cancel (link.thread);
+	      mutex_unlock (&_ports_lock);
+	      status = demuxer (inp, outp);
+	      ports_end_rpc (pi, &link);
+	    }
 	  ports_port_deref (pi);
 	}
       else
@@ -130,6 +135,8 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   /* Wire this because hurd_thread_cancel will not interoperate
      cleanly with cthreads cleverness yet. */
   wire_cthreads = 1;
+
+  thread_timeout = global_timeout = 0; /* XXX */
 
   nreqthreads = 1;
   totalthreads = 1;
