@@ -135,7 +135,8 @@ should_suppress_msgport (proc_stat_t ps)
 }
 
 /* Returns FLAGS with PSTAT_MSGPORT turned off and PSTAT_NO_MSGPORT on.  */
-#define SUPPRESS_MSGPORT(flags) (((flags) & ~PSTAT_MSGPORT) | PSTAT_NO_MSGPORT)
+#define SUPPRESS_MSGPORT_FLAGS(flags) \
+   (((flags) & ~PSTAT_MSGPORT) | PSTAT_NO_MSGPORT)
 
 /* ---------------------------------------------------------------- */
 
@@ -146,20 +147,28 @@ should_suppress_msgport (proc_stat_t ps)
 error_t
 proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 {
-  error_t err;
   ps_flags_t have = ps->flags;	/* flags set in ps */
   ps_flags_t need;		/* flags not set in ps, but desired to be */
   ps_flags_t no_msgport_flags;	/* a version of FLAGS for use when we can't
 				   use the msg port.  */
   process_t server = ps_context_server(ps->context);
 
+  /* Turn off use of the msg port if we decide somewhere along the way that
+     it's hosed.  */
+  void suppress_msgport ()
+    {
+      /* Turn off those things that were only good given the msg port.  */
+      need &= ~(flags & ~no_msgport_flags);
+      have = SUPPRESS_MSGPORT_FLAGS (have);
+    }
+
   /* Propagate PSTAT_NO_MSGPORT.  */
   if (flags & PSTAT_NO_MSGPORT)
-    have = SUPPRESS_MSGPORT (have);
+    have = SUPPRESS_MSGPORT_FLAGS (have);
   if (have & PSTAT_NO_MSGPORT)
-    flags = SUPPRESS_MSGPORT (flags);
+    flags = SUPPRESS_MSGPORT_FLAGS (flags);
 
-  no_msgport_flags = add_preconditions (SUPPRESS_MSGPORT (flags));
+  no_msgport_flags = add_preconditions (SUPPRESS_MSGPORT_FLAGS (flags));
   flags = add_preconditions (flags);
 
   if (flags & PSTAT_MSGPORT)
@@ -173,13 +182,28 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
      in the flags already, then eval CALL and set ERR to the result.
      If the resulting ERR is 0 add FLAG to the set of valid flags.  ERR is
      returned.  */
-#define MGET(flag, precond, call) \
-  ((!(need & (flag)) || (have & (precond)) != (precond)) \
-   ? 0 \
-   : ((((err = (call)) == 0)  \
-       ? (have |= (flag)) \
-       : 0), \
-      err))
+#define MGET(_flag, _precond, call) \
+  ({ ps_flags_t flag = (_flag), precond = (_precond); \
+     error_t err; \
+     if (!(need & (flag)) || (have & (precond)) != (precond)) \
+       err = 0; \
+     else \
+       { \
+	 err = (call); \
+	 if (!err) \
+	   have |= flag; \
+       } \
+     err; \
+   })
+
+  /* A version of MGET specifically for the msg port, that turns off the msg
+     port if a call to it times out.  It also implies a precondition of
+     PSTAT_MSGPORT.  */
+#define MP_MGET(flag, precond, call) \
+  ({ error_t err = MGET(flag, (precond) | PSTAT_MSGPORT, call); \
+     if (err) suppress_msgport (); \
+     err; \
+   })
 
   /* the process's struct procinfo as returned by proc_getprocinfo.  */
   if ((need & PSTAT_INFO) && (have & PSTAT_PID))
@@ -271,19 +295,14 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 
   ps->flags = have;		/* should_suppress_msgport looks at them.  */
   if (should_suppress_msgport (ps))
-    /* Something is likely to have hosed the msg port, so don't use it.  */
-    {
-      /* Turn off those things that were only good given the msg port.  */
-      need &= ~(flags & ~no_msgport_flags);
-      have &= ~PSTAT_MSGPORT;
-    }
+    suppress_msgport ();
 
+  /* The process's libc msg port (see <hurd/msg.defs>).  */
+  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
   /* The process's process port.  */
   MGET(PSTAT_PROCESS, PSTAT_PID, proc_pid2proc(server, ps->pid, &ps->process));
   /* The process's task port.  */
   MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
-  /* The process's libc msg port (see <hurd/msg.defs>).  */
-  MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport(server, ps->pid, &ps->msgport));
 
   /* VM statistics for the task.  See <mach/task_info.h>.  */
   if ((need & PSTAT_TASK_EVENTS_INFO) && (have & PSTAT_TASK))
@@ -298,8 +317,8 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
     }
 
   /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
-  MGET(PSTAT_EXEC_FLAGS, PSTAT_MSGPORT | PSTAT_TASK,
-       msg_get_exec_flags(ps->msgport, ps->task, &ps->exec_flags));
+  MP_MGET(PSTAT_EXEC_FLAGS, PSTAT_TASK,
+	  msg_get_exec_flags(ps->msgport, ps->task, &ps->exec_flags));
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
   if ((need & PSTAT_STATE) && (have & PSTAT_INFO))
@@ -347,24 +366,24 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   /* The ctty id port; note that this is just a magic cookie;
      we use it to fetch a port to the actual terminal -- it's not useful for
      much else.  */
-  MGET(PSTAT_CTTYID, PSTAT_MSGPORT | PSTAT_TASK,
-       msg_get_init_port(ps->msgport, ps->task,
-			 INIT_PORT_CTTYID, &ps->cttyid));
+  MP_MGET(PSTAT_CTTYID, PSTAT_TASK,
+	  msg_get_init_port(ps->msgport, ps->task,
+			    INIT_PORT_CTTYID, &ps->cttyid));
 
   /* A port to the process's current working directory.  */
-  MGET(PSTAT_CWDIR, PSTAT_MSGPORT | PSTAT_TASK,
-       msg_get_init_port(ps->msgport, ps->task,
-			 INIT_PORT_CWDIR, &ps->cwdir));
+  MP_MGET(PSTAT_CWDIR, PSTAT_TASK,
+	  msg_get_init_port(ps->msgport, ps->task,
+			    INIT_PORT_CWDIR, &ps->cwdir));
 
   /* The process's auth port, which we can use to determine who the process
      is authenticated as.  */
-  MGET(PSTAT_AUTH, PSTAT_MSGPORT | PSTAT_TASK,
-       msg_get_init_port(ps->msgport, ps->task, INIT_PORT_AUTH, &ps->auth));
+  MP_MGET(PSTAT_AUTH, PSTAT_TASK,
+	  msg_get_init_port(ps->msgport, ps->task, INIT_PORT_AUTH, &ps->auth));
 
   /* The process's umask, which controls which protection bits won't be set
      when creating a file.  */
-  MGET(PSTAT_UMASK, PSTAT_MSGPORT | PSTAT_TASK,
-       msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
+  MP_MGET(PSTAT_UMASK, PSTAT_TASK,
+	  msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
 
   /* A ps_user_t object for the process's owner.  */
   if ((need & PSTAT_OWNER) && (have & PSTAT_INFO))
