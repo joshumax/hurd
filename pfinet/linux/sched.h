@@ -30,6 +30,11 @@ struct task_struct
 #define TASK_INTERRUPTIBLE 1
 #define TASK_RUNNING 2
 
+extern inline int suser ()
+{
+  return current->isroot;
+};
+
 void wake_up_interruptible (struct wait_queue **);
 void interruptible_sleep_on (struct wait_queue **);
 void add_wait_queue (struct wait_queue **, struct wait_queue *);
