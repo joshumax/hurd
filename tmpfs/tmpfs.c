@@ -255,8 +255,6 @@ main (int argc, char **argv)
   if (err)
     error (4, err, "cannot create root directory");
 
-  mutex_lock (&diskfs_root_node->lock);
-
   diskfs_spawn_first_thread ();
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
@@ -279,6 +277,11 @@ main (int argc, char **argv)
   else
     {
       diskfs_root_node->dn_stat.st_mode = S_IFDIR | (st.st_mode &~ S_IFMT);
+      if (S_ISREG(st.st_mode) && (st.st_mode & 0111) == 0)
+	/* There are no execute bits set, as by default on a plain file.
+	   For the virtual directory, set execute bits where read bits are
+	   set on the underlying plain file.  */
+	diskfs_root_node->dn_stat.st_mode |= (st.st_mode & 0444) >> 2;
       diskfs_root_node->dn_stat.st_uid = st.st_uid;
       diskfs_root_node->dn_stat.st_author = st.st_author;
       diskfs_root_node->dn_stat.st_gid = st.st_gid;
@@ -287,6 +290,8 @@ main (int argc, char **argv)
       diskfs_root_node->dn_stat.st_ctime = st.st_ctime;
       diskfs_root_node->dn_stat.st_flags = st.st_flags;
     }
+  diskfs_root_node->dn_stat.st_mode &= ~S_ITRANS;
+  diskfs_root_node->dn_stat.st_mode |= S_IROOT;
 
   mutex_unlock (&diskfs_root_node->lock);
 
