@@ -401,8 +401,7 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
 
   auth_server = getauth ();
   err =
-    auth_server_authenticate (auth_server, ports_get_right (user), 
-			      MACH_MSG_TYPE_MAKE_SEND, 
+    auth_server_authenticate (auth_server, 
 			      rendezvous, MACH_MSG_TYPE_MOVE_SEND,
 			      new_user_port, MACH_MSG_TYPE_MAKE_SEND, 
 			      &uids, &num_uids, &aux_uids, &num_aux_uids,
