@@ -28,7 +28,7 @@ trivfs_S_file_getcontrol (struct trivfs_protid *cred,
   if (!cred->isroot)
     return EPERM;
   
-  *cntl = ports_get_right (cred->cntl);
+  *cntl = ports_get_right (cred->po->cntl);
   *cntltype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
