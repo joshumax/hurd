@@ -40,7 +40,8 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   gubuf = gen_uids; ggbuf = gen_gids;
   aubuf = aux_uids; agbuf = aux_gids;
 
-  newcred = ports_allocate_port (sizeof (struct protid), PT_PROTID);
+  newcred = ports_allocate_port (sizeof (struct protid), 
+				 trivfs_protid_porttype);
   err = auth_server_authenticate (diskfs_auth_server_port, 
 				  ports_get_right (cred),
 				  MACH_MSG_TYPE_MAKE_SEND,
@@ -57,7 +58,9 @@ trivfs_S_io_reauthenticate (struct protid *cred,
   for (i = 0; i < genuidlen; i++)
     if (gen_uids[i] == 0)
       newcred->isroot = 1;
-  err = io_restrict_auth (trivfs_underlying_node, &newcred->realnode,
+  newcred->cntl = cred->cntl;
+  ports_port_ref (newcred->cntl);
+  err = io_restrict_auth (newcred->cntl->underlying, &newcred->realnode,
 			  gen_uids, genuidlen, gen_gids, gengidlen);
   if (err)
     newcred->realnode = MACH_PORT_NULL;
