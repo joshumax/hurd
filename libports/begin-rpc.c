@@ -38,7 +38,7 @@ ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
       if (pi->port_right == MACH_PORT_NULL)
 	{
 	  mutex_unlock (&_ports_lock);
-	  return EDIED;
+	  return EOPNOTSUPP;
 	}
   
       if (_ports_flags & INHIBITED)
