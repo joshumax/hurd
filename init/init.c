@@ -342,7 +342,7 @@ main (int argc, char **argv, char **envp)
   global_argv = argv;
 
   /* Fetch a port to the bootstrap filesystem, the host priv and
-     master device ports, and the console */
+     master device ports, and the console.  */
   if (task_get_bootstrap_port (mach_task_self (), &bootport)
       || fsys_getpriv (bootport, &host_priv, &device_master, &fstask)
       || device_open (device_master, D_WRITE, "console", &consdev))
@@ -354,7 +354,7 @@ main (int argc, char **argv, char **envp)
   stdout = stderr = stdin;
   setbuf (stdout, NULL);
   
-  /* At this point we can use assert to check for errors. */
+  /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
   assert (!err);
@@ -362,7 +362,7 @@ main (int argc, char **argv, char **envp)
 				MACH_MSG_TYPE_MAKE_SEND);
   assert (!err);
 
-  /* Set up the set of ports we will pass to the programs we exec. */
+  /* Set up the set of ports we will pass to the programs we exec.  */
   for (i = 0; i < INIT_PORT_MAX; i++)
     switch (i)
       {
@@ -388,7 +388,7 @@ main (int argc, char **argv, char **envp)
   run ("/hurd/auth", default_ports, &authtask);
   
   /* Wait for messages.  When both auth and proc have started, we
-     run launch_system which does the rest of the boot. */
+     run launch_system which does the rest of the boot.  */
   while (1)
     {
       err = mach_msg_server (demuxer, 0, startup);
@@ -419,11 +419,16 @@ launch_system (void)
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
-  _hurd_proc_init (global_argv);
+
+  /* Do NOT run _hurd_proc_init!  That will start signals, which we do not
+     want.  We listen to our own message port.  Tell the proc server where
+     our args and environment are.  */
+  proc_setprocargs (procserver,
+		    (vm_address_t) global_argv, (vm_address_t) environ);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
-  /* Tell the proc server our msgport */
+  /* Tell the proc server our msgport.  */
   proc_setmsgport (procserver, startup, &old);
   if (old)
     mach_port_deallocate (mach_task_self (), old);
