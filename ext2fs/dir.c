@@ -119,7 +119,8 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   vm_address_t buf = 0;
   vm_size_t buflen = 0;
   int blockaddr;
-  int idx;
+  int idx, lastidx;
+  int looped;
   
   if ((type == REMOVE) || (type == RENAME))
     assert (npp);
@@ -164,17 +165,38 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
   if (!diskfs_check_readonly ())
     dp->dn_set_atime = 1;
   
-  for (blockaddr = buf, idx = 0;
-       blockaddr - buf < dp->dn_stat.st_size;
-       blockaddr += DIRBLKSIZ, idx++)
+  /* Start the lookup at DP->dn->dir_idx.  */
+  idx = dp->dn->dir_idx;
+  if (idx * DIRBLKSIZ > dp->dn_stat.st_size)
+    idx = 0;			/* just in case */
+  blockaddr = buf + idx * DIRBLKSIZ;
+  looped = (idx == 0);
+  lastidx = idx;
+  if (lastidx == 0)
+    lastidx = dp->dn_stat.st_size / DIRBLKSIZ;
+
+  while (!looped || idx < lastidx)
     {
       err = dirscanblock (blockaddr, dp, idx, name, namelen, type, ds, &inum);
       if (!err)
-	break;
+	{
+	  dp->dn->dir_idx = idx;
+	  break;
+	}
       if (err != ENOENT)
 	{
 	  vm_deallocate (mach_task_self (), buf, buflen);
 	  return err;
+	}
+
+      blockaddr += DIRBLKSIZ;
+      idx++;
+      if (blockaddr - buf >= dp->dn_stat.st_size && !looped)
+	{
+	  /* We've gotten to the end; start back at the beginning */
+	  looped = 1;
+	  blockaddr = buf;
+	  idx = 0;
 	}
     }
 
@@ -266,7 +288,7 @@ diskfs_lookup_hard (struct node *dp, char *name, enum lookup_type type,
       /* We didn't find any room, so mark ds to extend the dir */
       ds->type = CREATE;
       ds->stat = EXTEND;
-      ds->idx = idx;
+      ds->idx = dp->dn_stat.st_size / DIRBLKSIZ;
     }
 
   /* Return to the user; if we can't, release the reference
@@ -428,8 +450,8 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	 down how many entries there were. */
       if (!dp->dn->dirents)
 	{
-	  dp->dn->dirents = malloc ((dp->dn_stat.st_size / DIRBLKSIZ + 1) 
-				* sizeof (int));
+	  dp->dn->dirents = malloc ((dp->dn_stat.st_size / DIRBLKSIZ) 
+				    * sizeof (int));
 	  for (i = 0; i < dp->dn_stat.st_size/DIRBLKSIZ; i++) 
 	    dp->dn->dirents[i] = -1;
 	}
@@ -475,7 +497,7 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
   vm_address_t fromoff, tooff;
   int totfreed;  
   error_t err;
-  off_t oldsize;
+  off_t oldsize = 0;
 
   assert (ds->type == CREATE);
   
@@ -590,19 +612,26 @@ diskfs_direnter_hard (struct node *dp, char *name, struct node *np,
     }
   else
     {
+      int i;
       /* It's cheap, so start a count here even if we aren't counting
 	 anything at all. */
       if (dp->dn->dirents)
 	{
 	  dp->dn->dirents = realloc (dp->dn->dirents, 
-				     (ds->idx + 1) * sizeof (int));
+				     (dp->dn_stat.st_size / DIRBLKSIZ
+				      * sizeof (int)));
+	  for (i = oldsize / DIRBLKSIZ; 
+	       i < dp->dn_stat.st_size / DIRBLKSIZ;
+	       i++)
+	    dp->dn->dirents[i] = -1;
+
 	  dp->dn->dirents[ds->idx] = 1;
 	}
       else
 	{
-	  int i;
-	  dp->dn->dirents = malloc ((ds->idx + 1) * sizeof (int));
-	  for (i = 0; i < ds->idx; i++)
+	  dp->dn->dirents = malloc (dp->dn_stat.st_size / DIRBLKSIZ 
+				    * sizeof (int));
+	  for (i = 0; i < dp->dn_stat.st_size / DIRBLKSIZ; i++)
 	    dp->dn->dirents[i] = -1;
 	  dp->dn->dirents[ds->idx] = 1;
 	}
