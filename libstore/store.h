@@ -148,7 +148,7 @@ _make_store (enum file_storage_class class, struct store_meths *meths,
 error_t store_set_runs (struct store *store, off_t *runs, size_t runs_len);
 
 /* Sets the name associated with STORE to a copy of NAME.  */
-error_t store_set_name (struct store *store, char *name);
+error_t store_set_name (struct store *store, const char *name);
 
 /* Fills in the values of the various fields in STORE that are derivable from
    the set of runs & the block size.  */
