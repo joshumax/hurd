@@ -53,8 +53,8 @@ install-cthreads.h: cthreads.h
 
 lndist: lndist-i386-files
 
-lndist-i386-files: $(hurdsource)/hurd-snap/$(dir)/i386
-	ln $(I386SRCS) $(I386HDRS) $(hurdsource)/hurd-snap/$(dir)/i386
+lndist-i386-files: $(srcdir)/hurd-snap/$(dir)/i386
+	ln $(I386SRCS) $(I386HDRS) $(srcdir)/hurd-snap/$(dir)/i386
 
-$(hurdsource)/hurd-snap/$(dir)/i386:
-	mkdir $(hurdsource)/hurd-snap/$(dir)/i386
+$(srcdir)/hurd-snap/$(dir)/i386:
+	mkdir $(srcdir)/hurd-snap/$(dir)/i386
