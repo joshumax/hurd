@@ -33,9 +33,11 @@ ioserver_put_shared_data (void *arg)
   cred->mapped->do_sigio = 0;
   cred->mapped->use_file_size = 1;
   cred->mapped->use_read_size = 0;
+  cred->mapped->optimal_transfer_size = sblock->fs_bsize;
   cred->mapped->seekable = 1;
   cred->mapped->use_prenotify_size = 1;
   cred->mapped->use_postnotify_size = 0;
+  cred->mapped->use_readnotify_size = 0;
   cred->mapped->prenotify_size = cred->po->np->allocsize;
       
   cred->mapped->xx_file_pointer = cred->po->filepointer;
