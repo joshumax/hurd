@@ -26,36 +26,6 @@
 #include "ftpfs.h"
 #include "ccache.h"
 
-/* Return an alloca'd string containing NAME appended to DIR's path; if
-   DIR_PFX_LEN is non-zero, the length of DIR's path is returned in it.  */
-#define path_append(dir, name, dir_pfx_len)				      \
-({									      \
-   const char *_dname = (dir)->rmt_path;				      \
-   const char *_name = (name);						      \
-   size_t *_dir_pfx_len_p = (dir_pfx_len);				      \
-   size_t _dir_pfx_len = strlen (_dname) + 1;				      \
-   char *_path = alloca (_dir_pfx_len + strlen (_name) + 1);		      \
-									      \
-   /* Form the composite name.  */					      \
-   if (_name && *_name)							      \
-     if (_dname[0] == '/' && _dname[1] == '\0')				      \
-       {								      \
-	 stpcpy (stpcpy (_path, _dname), _name);		     	      \
-	 _dir_pfx_len--;						      \
-       }								      \
-     else								      \
-       stpcpy (stpcpy (stpcpy (_path, _dname), "/"), _name);		      \
-   else									      \
-     {									      \
-       strcpy (_path, _dname);						      \
-       _dir_pfx_len--;							      \
-     }									      \
-   if (_dir_pfx_len_p)							      \
-     *_dir_pfx_len_p = _dir_pfx_len;					      \
-									      \
-   _path;								      \
-})
-
 /* Free the directory entry E and all resources it consumes.  */
 void
 free_entry (struct ftpfs_dir_entry *e)
@@ -93,6 +63,8 @@ rehash (struct ftpfs_dir *dir, size_t new_len)
 
   if (! new_htable)
     return ENOMEM;
+
+  bzero (new_htable, new_len * sizeof (struct ftpfs_dir_entry *));
 
   for (i = 0; i < old_len; i++)
     while (old_htable[i])
@@ -139,6 +111,11 @@ lookup (struct ftpfs_dir *dir, const char *name, int add)
 
   if (!e && add)
     {
+      if (dir->num_entries > dir->htable_len)
+	/* Grow the hash table.  */
+	if (rehash (dir, (dir->htable_len + 1) * 2 - 1) != 0)
+	  return 0;
+
       e = malloc (sizeof *e);
       if (e)
 	{
@@ -304,8 +281,11 @@ reset_bulk_stat_info (struct ftpfs_dir *dir)
 struct dir_fetch_state
 {
   struct ftpfs_dir *dir;
-  struct ftpfs_dir_entry *prev_entry;
   time_t timestamp;
+
+  /* A pointer to the NEXT-field of the previously seen entry, or a pointer
+     to the ORDERED field in the directory if this is the first.  */
+  struct ftpfs_dir_entry **prev_entry_next_p;
 };
 
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET, also
@@ -317,7 +297,7 @@ update_ordered_entry (const char *name, const struct stat *st,
 		      const char *symlink_target, void *hook)
 {
   struct dir_fetch_state *dfs = hook;
-  struct ftpfs_dir_entry *e = lookup (dfs->dir, name, 1), *pe;
+  struct ftpfs_dir_entry *e = lookup (dfs->dir, name, 1);
 
   if (! e)
     return ENOMEM;
@@ -325,19 +305,25 @@ update_ordered_entry (const char *name, const struct stat *st,
   update_entry (e, st, symlink_target, dfs->timestamp);
   e->valid = 1;
 
-  assert (! e->ordered_self_p);
-  assert (! e->ordered_next);
+  if (! e->ordered_self_p)
+    /* Position E in the ordered chain following the previously seen entry.  */
+    {
+      /* The PREV_ENTRY_NEXT_P field holds a pointer to the NEXT-field of the
+	 previous entry, or a pointer to the ORDERED field in the directory. */
+      e->ordered_self_p = dfs->prev_entry_next_p;
 
-  /* Position E in the ordered chain.  */
-  pe = dfs->prev_entry;		/* Previously seen entry.  */
-  if (pe)
-    e->ordered_self_p = &pe->ordered_next; /* Put E after PE.  */
-  else
-    e->ordered_self_p = &dfs->dir->ordered; /* Put E at beginning.  */
-  assert (! *e->ordered_self_p);/* There shouldn't be anything in E's place. */
+      if (*e->ordered_self_p)
+	/* Update the self_p pointer of the previous successor.  */
+	(*e->ordered_self_p)->ordered_self_p = &e->ordered_next;
 
-  *e->ordered_self_p = e;	/* Put E there.  */
-  dfs->prev_entry = e;		/* Put the next entry after this one.  */
+      /* E comes before the previous successor.  */
+      e->ordered_next = *e->ordered_self_p;
+
+      *e->ordered_self_p = e;	/* Put E there.  */
+    }
+
+  /* Put the next entry after this one. */
+  dfs->prev_entry_next_p = &e->ordered_next;
 
   return 0;
 }
@@ -374,28 +360,17 @@ refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp)
   if (err)
     return err;
 
-  /* Clear DIR's ordered entry list.  */
-  if (dir->ordered)
-    {
-      struct ftpfs_dir_entry *e, *next;
-      for (e = dir->ordered; e; e = next)
-	{
-	  next = e->ordered_next;
-	  e->ordered_next = 0;
-	  e->ordered_self_p = 0;
-	}	
-      dir->ordered = 0;
-    }
-
   /* Mark directory entries so we can GC them later using sweep.  */
   mark (dir);
 
-  reset_bulk_stat_info (dir);
+  if (update_stats)
+    /* We're doing a bulk stat now, so don't do another for a while.  */
+    reset_bulk_stat_info (dir);
 
   /* Info passed to update_ordered_entry.  */
   dfs.dir = dir;
-  dfs.prev_entry = 0;
   dfs.timestamp = timestamp;
+  dfs.prev_entry_next_p = &dir->ordered;
 
   /* Refetch the directory from the server.  */
   if (update_stats)
@@ -433,9 +408,6 @@ struct refresh_entry_state
 {
   struct ftpfs_dir_entry *entry;
   time_t timestamp;
-  /* Prefix to skip at beginning of name returned from listing.  */
-  const char *dir_pfx;
-  size_t dir_pfx_len;
 };
 
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET.
@@ -445,12 +417,6 @@ update_old_entry (const char *name, const struct stat *st,
 		  const char *symlink_target, void *hook)
 {
   struct refresh_entry_state *res = hook;
-
-  /* Skip the directory part of the name.  */
-  if (strncmp (name, res->dir_pfx, res->dir_pfx_len) != 0)
-    return EGRATUITOUS;
-  else
-    name += res->dir_pfx_len;
 
   if (strcmp (name, res->entry->name) != 0)
     return EGRATUITOUS;
@@ -494,18 +460,29 @@ ftpfs_refresh_node (struct node *node)
 	else
 	  {
 	    struct ftp_conn *conn;
-	    struct refresh_entry_state res;
-	    const char *path = path_append (dir, entry->name, &res.dir_pfx_len);
-
-	    res.entry = entry;
-	    res.timestamp = timestamp;
-	    res.dir_pfx = path;
 
 	    err = ftpfs_get_ftp_conn (dir->fs, &conn);
+
 	    if (! err)
 	      {
-		err =
-		  ftp_conn_get_stats (conn, path, 0, update_old_entry, &res);
+		char *rmt_path;
+
+		err = ftp_conn_append_name (conn, dir->rmt_path, entry->name,
+					    &rmt_path);
+		if (! err)
+		  {
+		    struct refresh_entry_state res;
+
+		    res.entry = entry;
+		    res.timestamp = timestamp;
+
+		    if (! err)
+		      err = ftp_conn_get_stats (conn, rmt_path, 0,
+						update_old_entry, &res);
+
+		    free (rmt_path);
+		  }
+
 		ftpfs_release_ftp_conn (dir->fs, conn);
 	      }
 	  }
@@ -568,9 +545,6 @@ struct new_entry_state
   time_t timestamp;
   struct ftpfs_dir *dir;
   struct ftpfs_dir_entry *entry;
-  /* Prefix to skip at beginning of name returned from listing.  */
-  const char *dir_pfx;
-  size_t dir_pfx_len;
 };
 
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET.
@@ -581,12 +555,6 @@ update_new_entry (const char *name, const struct stat *st,
 {
   struct ftpfs_dir_entry *e;
   struct new_entry_state *nes = hook;
-
-  /* Skip the directory part of the name.  */
-  if (strncmp (name, nes->dir_pfx, nes->dir_pfx_len) != 0)
-    return EGRATUITOUS;
-  else
-    name += nes->dir_pfx_len;
 
   e = lookup (nes->dir, name, 1);
   if (! e)
@@ -606,17 +574,22 @@ error_t
 ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 		  struct node **node)
 {
-  error_t err = 0;
-  time_t timestamp = NOW;
+  struct ftp_conn *conn;
   struct ftpfs_dir_entry *e;
+  error_t err = 0;
+  char *rmt_path = 0;
+  time_t timestamp = NOW;
 
   if (strcmp (name, ".") == 0)
+    /* Current directory -- just add an additional reference to DIR's node
+       and return it.  */ 
     {
       netfs_nref (dir->node);
       *node = dir->node;
       return 0;
     }
   else if (strcmp (name, "..") == 0)
+    /* Parent directory.  */
     {
       if (dir->node->nn->dir_entry)
 	{
@@ -648,28 +621,30 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 	}
       else
 	{
-	  struct ftp_conn *conn;
-
 	  err = ftpfs_get_ftp_conn (dir->fs, &conn);
 	  if (! err)
 	    {
-	      struct new_entry_state nes;
-	      const char *path = path_append (dir, name, &nes.dir_pfx_len);
-
-	      nes.dir = dir;
-	      nes.timestamp = timestamp;
-	      nes.dir_pfx = path;
-
-	      err = ftp_conn_get_stats (conn, path, 0, update_new_entry, &nes);
+	      err = ftp_conn_append_name (conn, dir->rmt_path, name,
+					  &rmt_path);
 	      if (! err)
-		e = nes.entry;
-	      else if (err == ENOENT)
 		{
-		  e = lookup (dir, name, 1);
-		  if (! e)
-		    err = ENOMEM;
-		  else
-		    e->noent = 1;	/* A negative entry.  */
+		  struct new_entry_state nes;
+
+		  nes.dir = dir;
+		  nes.timestamp = timestamp;
+
+		  err = ftp_conn_get_stats (conn, rmt_path, 0,
+					    update_new_entry, &nes);
+		  if (! err)
+		    e = nes.entry;
+		  else if (err == ENOENT)
+		    {
+		      e = lookup (dir, name, 1);
+		      if (! e)
+			err = ENOMEM;
+		      else
+			e->noent = 1;	/* A negative entry.  */
+		    }
 		}
 
 	      ftpfs_release_ftp_conn (dir->fs, conn);
@@ -690,20 +665,41 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 	if (! e->node)
 	  /* No node; make one and install it into E.  */
 	  {
-	    const char *path = path_append (dir, name, 0);
-	    err = ftpfs_create_node (e, path, &e->node);
-	    if (!err && dir->num_live_entries++ == 0)
-	      /* Keep a reference to dir's node corresponding to children.  */
+	    if (! rmt_path)
+	      /* We have to cons up the absolute path.  We need the
+		 connection just for the pathname frobbing functions.  */
 	      {
-		spin_lock (&netfs_node_refcnt_lock);
-		dir->node->references++;
-		spin_unlock (&netfs_node_refcnt_lock);
+		err = ftpfs_get_ftp_conn (dir->fs, &conn);
+		if (! err)
+		  {
+		    err = ftp_conn_append_name (conn, dir->rmt_path, name,
+						&rmt_path);
+		    ftpfs_release_ftp_conn (dir->fs, conn);
+		  }
+	      }
+
+	    if (! err)
+	      {
+		err = ftpfs_create_node (e, rmt_path, &e->node);
+
+		if (!err && dir->num_live_entries++ == 0)
+		  /* Keep a reference to dir's node corresponding to
+                     children.  */
+		  {
+		    spin_lock (&netfs_node_refcnt_lock);
+		    dir->node->references++;
+		    spin_unlock (&netfs_node_refcnt_lock);
+		  }
 	      }
 	  }
 
 	if (! err)
 	  {
 	    *node = e->node;
+	    /* We have to unlock DIR's node before locking the child node
+	       because the locking order is always child-parent.  We know the
+	       child node won't go away because we already hold the
+	       additional reference to it.  */
 	    mutex_unlock (&dir->node->lock);
 	    mutex_lock (&e->node->lock);
 	  }
@@ -716,6 +712,9 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
       *node = 0;
       mutex_unlock (&dir->node->lock);
     }
+
+  if (rmt_path)
+    free (rmt_path);
 
   return err;
 }
