@@ -82,19 +82,19 @@ char *copied_args[] = {
 static struct argp_option options[] =
 {
   {"arg0",	'0', "ARG",   0, "Make ARG the shell's argv[0]"},
-  {"environ",	'e', "ENTRY", 0, "Add ENTRY to the environment"},
-  {"environ-default", 'E', "ENTRY", 0, "Use ENTRY as a default environment variable"},
+  {"envvar",	'e', "ENTRY", 0, "Add ENTRY to the environment"},
+  {"envvar-default", 'E', "ENTRY", 0, "Use ENTRY as a default environment variable"},
   {"no-args",	'x', 0,	      0, "Don't put login args into the environment"},
   {"arg",	'a', "ARG",   0, "Add login parameter ARG"},
   {"arg-default", 'A', "ARG", 0, "Use ARG as a default login parameter"},
-  {"no-environ", 'X', 0,      0, "Don't add the parent environment as default login params"},
+  {"no-environment-args", 'X', 0, 0, "Don't add the parent environment as default login params"},
   {"user",	'u', "USER",  0, "Add USER to the effective uids"},
   {"avail-user",'U', "USER",  0, "Add USER to the available uids"},
   {"group",     'g', "GROUP", 0, "Add GROUP to the effective groups"},
   {"avail-group",'G',"GROUP", 0, "Add GROUP to the available groups"},
   {"no-login",  'L', 0,       0, "Don't modify the shells argv[0] to look"
-     " like a login shell"},
-  {"inherit-environ", 'p', 0, 0, "Inherit the parent's environment"},
+   " like a login shell"},
+  {"preserve-environment", 'p', 0, 0, "Inherit the parent's environment"},
   {"via",	'h', "HOST",  0, "This login is from HOST"},
   {"no-passwd", 'f', 0,       0, "Don't ask for passwords"},
   {"paranoid",  'P', 0,       0, "Don't admit that a user doesn't exist"},
@@ -102,8 +102,8 @@ static struct argp_option options[] =
      "effective ids as available ids"},
   {"shell-from-args", 'S', 0, 0, "Use the first shell arg as the shell to invoke"},
   {"retry",     'R', "ARG",   OPTION_ARG_OPTIONAL,
-     "Re-exec login with no users after non-fatal errors; if ARG is supplied,"
-     "add it to the list of args passed to login when retrying"},
+   "Re-exec login with no users after non-fatal errors; if ARG is supplied,"
+   "add it to the list of args passed to login when retrying"},
   {0, 0}
 };
 static char *args_doc = "[USER [ARG...]]";
@@ -513,8 +513,8 @@ main(int argc, char *argv[])
   void verify_passwd (const char *name, const char *password,
 		      uid_t id, int is_group)
     {
-      extern char *crypt (const char *string, const char salt[2]) 
-	__attribute__ ((weak));
+      extern char *crypt (const char *string, const char salt[2]);
+#pragma weak crypt
       char *prompt, *unencrypted, *encrypted;
 
       if (!password || !*password
