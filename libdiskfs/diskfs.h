@@ -134,6 +134,9 @@ extern volatile struct mapped_time_value *diskfs_mtime;
 extern int diskfs_bootflags;
 extern char *diskfs_bootflagarg;
 
+/* True iff we should do every operation synchronously.  */
+extern int diskfs_synchronous;
+
 extern spin_lock_t diskfs_node_refcnt_lock;
 
 extern int pager_port_type;
