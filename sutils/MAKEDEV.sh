@@ -5,18 +5,34 @@
 
 PATH=/bin
 
+ECHO=:		# Change to "echo" to echo commands
+EXEC=""		# Change to ":" to suppress command execution
+export ECHO EXEC
+
 while :; do
   case "$1" in
     --help|"-?")
-      echo "Usage: $0 [OPTION...] DEVNAME..."
-      echo "Make filesystem nodes for accessing standard system devices"
-      echo ""
-      echo "  -?, --help                 Give this help list"
-      echo "      --usage                Give a short usage message"
-      echo "  -V, --version              Print program version"
+      echo "\
+Usage: $0 [OPTION...] DEVNAME...
+Make filesystem nodes for accessing standard system devices
+
+  -D, --devdir=DIR           Use DIR when a device node name must be
+                             embedded in a translator; default is the cwd
+  -n, --dry-run              Don't actually execute any commands
+  -v, --verbose              Show what commands are executed to make the devices
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version"
       exit 0;;
+    --devdir)   DEVDIR="$2"; shift 2;;
+    --devdir=*) DEVDIR="`echo "$1" | sed 's/^--devdir=//'`"; shift 1;;
+    -D)         DEVDIR="$2"; shift 2;;
+    -D*)        DEVDIR="`echo "$1" | sed 's/^-D//'`"; shift 1;;
+    --verbose|-v) ECHO=echo; shift;; 
+    --dry-run|-n) EXEC=:; shift;;
+    -nv|-vn)      ECHO=echo; EXEC=:; shift;;
     --usage)
-      echo "Usage: $0 [-V?] [--help] [--usage] [--version] DEVNAME..."
+      echo "Usage: $0 [-V?] [-D DIR] [--help] [--usage] [--version] [--devdir=DIR] DEVNAME..."
       exit 0;;
     --version|-V)
       echo "STANDARD_HURD_VERSION_MAKEDEV_"; exit 0;;
@@ -35,29 +51,47 @@ case  "$#" in 0)
   exit 1;;
 esac
 
-function st {
-  NODE="$1"
-  OWNER="$2"
-  PERM="$3"
-  shift 3
-  settrans -cg "$NODE"
-  chown "$OWNER" "$NODE"
-  chmod "$PERM" "$NODE"
-  settrans "$NODE" "$@"
+function cmd {
+  eval $ECHO "$@"
+  eval $EXEC "$@"
 }
 
-_CWD=${_CWD:-`pwd`}
-export _CWD
+function st {
+  local NODE="$1"
+  local OWNER="$2"
+  local PERM="$3"
+  shift 3
+  if cmd settrans -cg "$NODE"; then
+    cmd chown "$OWNER" "$NODE"
+    cmd chmod "$PERM" "$NODE"
+    cmd settrans "$NODE" "$@"
+  fi
+}
+
+case ${DEVDIR+set} in
+  set) export DEVDIR;;
+  *)   _CWD="`pwd`";;
+esac
 
 function mkdev {
   local I
   for I; do
-    case "$I" in
+    local B="${I##*/}"
+    case "$B" in
       std)
-	mkdev console tty null zero fd time
+        local dir="`dirname $I`"
+	mkdev $dir/console $dir/tty $dir/null $dir/zero $dir/fd $dir/time
 	;;
       console|tty[0-9][0-9a-f]|tty[0-9a-f]|com[0-9])
-	st $I root 600 /hurd/term $_CWD/$I device $I;;
+	local dn	# runtime device name
+	case "${DEVDIR+set}" in
+	  set) dn="$DEVDIR/$B";;
+	  "")  case "$I" in
+		 /*)  dn="$I";;
+		 *)   dn="$_CWD/$I";;
+	       esac;;
+        esac
+	st $I root 600 /hurd/term $dn device $B;;
       null)
 	st $I root 666 /hurd/null;;
       zero)
@@ -65,10 +99,11 @@ function mkdev {
       tty)
 	st $I root 666 /hurd/magic tty;;
       fd)
+        local dir="`dirname $I`"
 	st $I root 666 /hurd/magic fd
-	ln -f -s fd/0 stdin
-	ln -f -s fd/1 stdout
-	ln -f -s fd/2 stderr
+	cmd ln -f -s fd/0 $dir/stdin
+	cmd ln -f -s fd/1 $dir/stdout
+	cmd -f -s fd/2 $dir/stderr
 	;;
       time)
 	st $I root 666 /hurd/devport time ;;
@@ -76,9 +111,19 @@ function mkdev {
       # ptys
       [pt]ty[pqPQ]?)
 	# Make one pty, both the master and slave halves
-	ID="`expr substr $I 4 99`"
-	st pty$ID root 640 /hurd/term $_CWD/pty$ID pty-master $_CWD/tty$ID
-	st tty$ID root 640 /hurd/term $_CWD/tty$ID pty-slave $_CWD/pty$ID
+	local id="${B:3}"
+        local dir="`dirname $I`"
+	local dd
+	case "${DEVDIR+set}" in
+	  set) dd="$DEVDIR";;
+	  "")  case "$I" in
+		 /*)  dd="$dir";;
+		 */*) dd="$_CWD/$dir";;
+		 *)   dd="$_CWD";;
+	       esac;;
+        esac
+	st $dir/pty$id root 640 /hurd/term $dd/pty$id pty-master $dd/tty$id
+	st $dir/tty$id root 640 /hurd/term $dd/tty$id pty-slave $dd/pty$id
 	;;
       [pt]ty[pqPQ])
 	# Make a bunch of ptys
@@ -87,23 +132,23 @@ function mkdev {
 	;;
 
       fd*|mt*)
-	st $I root 640 /hurd/storeio $I
+	st $I root 640 /hurd/storeio $B
 	;;
 
       [hrs]d*)
-	case "$I" in
+	case "$B" in
 	[a-z][a-z][0-9][a-z] | [a-z][a-z][0-9]s[1-9] | [a-z][a-z][0-9]s[1-9][a-z] | [a-z][a-z][0-9])
-	  st $I root 640 /hurd/storeio $I
+	  st $I root 640 /hurd/storeio $B
 	  ;;
 	*)
-	  echo 1>&2 $0: $I: Invalid device name: must supply a device number
+	  echo 1>&2 $0: $B: Invalid device name: must supply a device number
 	  exit 1
 	  ;;
 	esac
 	;;
 
       *)
-	echo >&2 $0: $I: Unknown device name
+	echo >&2 $0: $B: Unknown device name
 	exit 1
 	;;
     esac
