@@ -18,6 +18,7 @@
 #include "priv.h"
 #include "io_S.h"
 #include <assert.h>
+#include <fcntl.h>
 
 kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
