@@ -61,6 +61,16 @@ diskfs_drop_node (struct node *np)
       diskfs_node_update (np, 1);
       diskfs_free_node (np, savemode);
     }
+  else if (np->sockaddr)
+    /* If NP is a socket naming point, we can't drop it until it actually
+       gets unlinked.  Unfortunately we have no way of knowing whether the
+       server is still alive.  This will result in a node with zero refs; I'm
+       not sure whether that will cause lossage.... XXX */
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      mutex_unlock (&np->lock);
+      return;
+    }
   else
     diskfs_node_update (np, diskfs_synchronous);
 
