@@ -241,7 +241,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 	    else
 	      /* The user only cares about reading, so wait until something is
 		 readable.  */
-	      err = pipe_wait (pipe, 0, 1);
+	      err = pipe_select (pipe, 1);
 
 	  pipe_release_reader (pipe);
 	}
