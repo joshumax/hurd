@@ -314,6 +314,8 @@ main(argc, argv)
 	partition_init();
 
 	{
+	  char *cmdline;
+
 	  /* Initialize boot script variables.  */
 	  if (boot_script_set_variable ("host-port", VAL_PORT,
 					(int) bootstrap_master_host_port)
@@ -334,6 +336,13 @@ main(argc, argv)
 					      VAL_NONE,
 					      &script_serverboot_ctl)
 	      )
+	    panic ("bootstrap: error setting boot script variables");
+
+	  cmdline = getenv ("MULTIBOOT_CMDLINE");
+	  if (cmdline != NULL
+	      && boot_script_set_variable ("kernel-command-line",
+					   VAL_STR,
+					   (int) cmdline))
 	    panic ("bootstrap: error setting boot script variables");
 
 	  parse_script (&scriptf);
