@@ -294,6 +294,8 @@ error_t
 S_io_stat (struct sock_user *user, struct stat *st)
 {
   struct sock *sock;
+  struct pipe *rpipe, *wpipe;
+
   void copy_time (time_value_t *from, time_t *to_sec, unsigned long *to_usec)
     {
       *to_sec = from->seconds;
@@ -310,17 +312,32 @@ S_io_stat (struct sock_user *user, struct stat *st)
   st->st_fstype = FSTYPE_SOCKET;
   st->st_fsid = getpid ();
   st->st_ino = sock->id;
-
-  st->st_blksize = vm_page_size * 8;
+  /* As we try to be clever with large transfers, ask for them. */
+  st->st_blksize = vm_page_size * 16;
 
 debug (sock, "lock");
   mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
-  if (sock->read_pipe)
-    copy_time (&sock->read_pipe->read_time, &st->st_atime, &st->st_atime_usec);
-  if (sock->write_pipe)
-    copy_time (&sock->read_pipe->write_time, &st->st_mtime, &st->st_mtime_usec);
+  rpipe = sock->read_pipe;
+  wpipe = sock->write_pipe;
+
+  mutex_lock (&rpipe->lock);
+  copy_time (&rpipe->read_time, &st->st_atime, &st->st_atime_usec);
+  /* This seems useful.  */
+  st->st_size = pipe_readable (rpipe, 1);
+  mutex_unlock (&rpipe->lock);
+
+  if (wpipe)
+    {
+      mutex_lock (&wpipe->lock);
+      copy_time (&wpipe->write_time, &st->st_mtime, &st->st_mtime_usec);
+      mutex_unlock (&wpipe->lock);
+    }
+
   copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
+
+  /* When RPIPE == WPIPE, it *is* a fifo; also the fifo server uses sockets. */
+  st->st_mode = (wpipe == rpipe ? S_IFIFO : S_IFSOCK);
 
 debug (sock, "unlock");
   mutex_unlock (&sock->lock);
