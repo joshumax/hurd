@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -21,52 +21,74 @@
 #include "ports.h"
 #include <cthreads.h>
 
+#define INHIBITED (PORTS_INHIBITED | PORTS_INHIBIT_WAIT)
+
 error_t
-ports_begin_rpc (void *portstruct, struct rpc_info *info)
+ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
 {
+  int *block_flags = 0;
+
   struct port_info *pi = portstruct;
   
   mutex_lock (&_ports_lock);
   
- start_over:
+  do
+    {
+      /* If our receive right is gone, then abandon the RPC. */
+      if (pi->port_right == MACH_PORT_NULL)
+	{
+	  mutex_unlock (&_ports_lock);
+	  return EDIED;
+	}
+  
+      if (_ports_flags & INHIBITED)
+	/* All RPC's are inhibited.  */
+	block_flags = &_ports_flags;
+      else if (pi->bucket->flags & INHIBITED)
+	/* RPC's are inhibited for this port's bucket.  */
+	block_flags = &pi->bucket->flags;
+      else if (pi->class->flags & INHIBITED)
+	/* RPC's are inhibited for this port's class.  */
+	block_flags = &pi->class->flags;
+      else if (pi->flags & INHIBITED)
+	/* RPC's are inhibited for this port itself.  */
+	block_flags = &pi->flags;
+      else
+	block_flags = 0;
 
-  /* If our receive right is gone, then abandon the RPC. */
-  if (pi->port_right == MACH_PORT_NULL)
-    {
-      mutex_unlock (&_ports_lock);
-      return EDIED;
-    }
-  
-  /* Check to see if RPC's are inhibited */
-  while (_ports_flags & (_PORTS_INHIBITED | _PORTS_INHIBIT_WAIT))
-    {
-      _ports_flags |= _PORTS_BLOCKED;
-      condition_wait (&_ports_block, &_ports_lock);
-    }
-  
-  /* Check to see if RPC's are inhibited for this port's bucket */
-  if (pi->bucket->flags & (PORT_BUCKET_INHIBITED | PORT_BUCKET_INHIBIT_WAIT))
-    {
-      pi->bucket->flags |= PORT_BUCKET_BLOCKED;
-      condition_wait (&_ports_block, &_ports_lock);
-      goto start_over;
-    }
+      if (block_flags)
+	/* We maybe want to block.  */
+	{
+	  if (msg_id)
+	    /* See if this particular RPC shouldn'be be inhibitable.  */
+	    {
+	      struct ports_msg_id_range *range = pi->class->uninhibitable_rpcs;
+	      while (range)
+		if (msg_id >= range->start && msg_id < range->end)
+		  {
+		    block_flags = 0;
+		    break;
+		  }
+		else
+		  range = range->next;
+	    }
 
-  /* Check to see if RPC's are inhibited for this port's class */
-  if (pi->class->flags & (PORT_CLASS_INHIBITED | PORT_CLASS_INHIBIT_WAIT))
-    {
-      pi->class->flags |= PORT_CLASS_BLOCKED;
-      condition_wait (&_ports_block, &_ports_lock);
-      goto start_over;
+	  if (block_flags)
+	    {
+	      *block_flags |= PORTS_BLOCKED;
+	      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+		/* We've been cancelled, just return EINTR.  If we were the
+		   only one blocking, PORTS_BLOCKED will still be turned on,
+		   but that's ok, it will just cause a (harmless) extra
+		   condition_broadcast().  */
+		{
+		  mutex_unlock (&_ports_lock);
+		  return EINTR;
+		}
+	    }
+	}
     }
-  
-  /* Check to see if RPC's are inhibited for this port itself */
-  if (pi->flags & (PORT_INHIBITED | PORT_INHIBIT_WAIT))
-    {
-      pi->flags |= PORT_BLOCKED;
-      condition_wait (&_ports_block, &_ports_lock);
-      goto start_over;
-    }
+  while (block_flags);
   
   /* Record that that an RPC is in progress */
   info->thread = hurd_thread_self ();
@@ -80,6 +102,7 @@ ports_begin_rpc (void *portstruct, struct rpc_info *info)
   pi->class->rpcs++;
   pi->bucket->rpcs++;
   _ports_total_rpcs++;
+
   mutex_unlock (&_ports_lock);
 
   return 0;
