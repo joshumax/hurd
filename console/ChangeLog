@@ -1,5 +1,18 @@
 2002-06-05  Marcus Brinkmann  <marcus@gnu.org>
 
+	* input.h: New file.
+	* input.c: Likewise.
+	* console.h: Likewise.
+	* console.c: Likewise.
+	* display.h: New development version.
+	* display.c: Likewise.
+	* Makefile (SRCS): Replace with files for new console server.
+	(LCLHDRS): Likewise.
+	(HURDLIBS): Likewise.
+	(OBJS): Likewise.
+
+2002-06-05  Marcus Brinkmann  <marcus@gnu.org>
+
 	* input.h: Renamed to ...
 	* input-drv.h: ... this.
 	* focus.c: Include "input-drv.h" instead "input.h".

@@ -57,6 +57,20 @@ struct screen
 };
 typedef struct screen *screen_t;
 
+struct cursor
+{
+  /* The visibility of the cursor.  */
+  int status;
+#define CURSOR_INVISIBLE 1
+#define CURSOR_STANDOUT 2
+
+  size_t x;
+  size_t y;
+  size_t saved_x;
+  size_t saved_y;
+};
+typedef struct cursor *cursor_t;
+
 struct parse
 {
   /* The parsing state of output characters, needed to handle escape
@@ -76,47 +90,53 @@ struct parse
   int params[PARSE_MAX_PARAMS];
   int nparams;
 };
+typedef struct parse *parse_t;
 
-struct cursor
+struct output
 {
-  /* The visibility of the cursor.  */
-  int status;
-#define CURSOR_INVISIBLE 1
-#define CURSOR_STANDOUT 2
+  /* The state of the conversion of output characters.  */
+  iconv_t cd;
+  /* The output queue holds the characters that are to be outputted.
+     The conversion routine might refuse to handle some incomplete
+     multi-byte or composed character at the end of the buffer, so we
+     have to keep them around.  */
+  int stopped;
+  struct condition resumed;
+  char *buffer;
+  size_t allocated;
+  size_t size;
 
-  size_t x;
-  size_t y;
-  size_t saved_x;
-  size_t saved_y;
+  /* The parsing state of output characters.  */
+  struct parse parse;
 };
+typedef struct output *output_t;
+
+struct attr
+{
+  /* Current attribute.  */
+  char current;
+  int fg;
+  int bg;
+  int def_fg;
+  int def_bg;
+  int reverse : 1;
+  int bold : 1;
+  int blink : 1;
+  int invisible : 1;
+  int dim : 1;
+  int underline : 1;
+};
+typedef struct attr *attr_t;
 
 struct display
 {
   /* The lock for the virtual console display structure.  */
   struct mutex lock;
 
-  /* The state of the conversion of output characters.  */
-  iconv_t cd;
-
-  struct parse parse;
   struct screen screen;
   struct cursor cursor;
-
-  struct
-  {
-    /* Current attribute.  */
-    char current;
-    int fg;
-    int bg;
-    int def_fg;
-    int def_bg;
-    int reverse : 1;
-    int bold : 1;
-    int blink : 1;
-    int invisible : 1;
-    int dim : 1;
-    int underline : 1;
-  } attr;
+  struct output output;
+  struct attr attr;
 
   /* Indicates if OWNER_ID is initialized.  */
   int has_owner;
@@ -202,7 +222,7 @@ static void
 screen_scroll_left (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		    int amt, wchar_t chr, char attr)
 {
-  int y;
+  int i;
   wchar_t *matrixp = screen->matrix + y * screen->width + x;
 
   if (amt < 0)
@@ -210,9 +230,9 @@ screen_scroll_left (screen_t screen, size_t x, size_t y, size_t w, size_t h,
   if (amt > w)
     amt = w;
 
-  for (y = 0; y < y + h; y++)
+  for (i = 0; i < y + h; i++)
     {
-      wmemmov (matrixp, matrixp + amt, w - amt);
+      wmemmove (matrixp, matrixp + amt, w - amt);
       matrixp += screen->width;
     }
   screen_fill (screen, x + w - amt, y, amt, h, chr, attr);
@@ -222,7 +242,7 @@ static void
 screen_scroll_right (screen_t screen, size_t x, size_t y, size_t w, size_t h,
 		     int amt, wchar_t chr, char attr)
 {
-  int y;
+  int i;
   wchar_t *matrixp = screen->matrix + y * screen->width + x;
 
   if (amt < 0)
@@ -230,152 +250,131 @@ screen_scroll_right (screen_t screen, size_t x, size_t y, size_t w, size_t h,
   if (amt > w)
     amt = w;
 
-  for (y = 0; y < y + h; y++)
+  for (i = 0; i < y + h; i++)
     {
-      wmemmov (matrixp + amt, matrixp, w - amt);
+      wmemmove (matrixp + amt, matrixp, w - amt);
       matrixp += screen->width;
     }
   screen_fill (screen, x, y, amt, h, chr, attr);
 }
 
 
-/* Create a new virtual console display, with the system encoding
-   being ENCODING.  */
-error_t
-display_create (display_t *r_display, const char *encoding)
+static error_t
+output_init (output_t output, const char *encoding)
 {
-  error_t err = 0;
-  display_t display;
-
-  *r_display = NULL;
-  display = calloc (1, sizeof *display);
-  if (!display)
-    return ENOMEM;
-
-  mutex_init (&display->lock);
-  err = screen_init (&display->screen);
-  if (err)
-    {
-      free (display);
-      return err;
-    }
+  condition_init (&output->resumed);
+  output->stopped = 0;
+  output->buffer = NULL;
+  output->allocated = 0;
+  output->size = 0;
 
   /* WCHAR_T happens to be UCS-4 on the GNU system.  */
-  display->cd = iconv_open ("WCHAR_T", encoding);
-  if (display->cd == (iconv_t) -1)
-    {
-      err = errno;
-      screen_deinit (&display->screen);
-      free (display);
-    }
-  *r_display = display;
-  return err;
+  output->cd = iconv_open ("WCHAR_T", encoding);
+  if (output->cd == (iconv_t) -1)
+    return errno;
+  return 0;
 }
 
-
-/* Destroy the display DISPLAY.  */
-void
-display_destroy (display_t display)
+static void
+output_deinit (output_t output)
 {
-  iconv_close (display->cd);
-  screen_deinit (&display->screen);
-  free (display);
+  iconv_close (output->cd);
 }
 
 
 static void
-handle_esc_bracket_hl (display_t display, int code, int flag)
+handle_esc_bracket_hl (cursor_t cursor, int code, int flag)
 {
   switch (code)
     {
     case 34:
       /* Cursor standout: <cnorm>, <cvvis>.  */
       if (flag)
-	display->cursor.status |= CURSOR_STANDOUT;
+	cursor->status |= CURSOR_STANDOUT;
       else
-	display->cursor.status &= ~CURSOR_STANDOUT;
+	cursor->status &= ~CURSOR_STANDOUT;
       /* XXX Flag cursor status change.  */
       break;
     }
 }
 
 static void
-handle_esc_bracket_m (display_t display, int code)
+handle_esc_bracket_m (attr_t attr, int code)
 {
   switch (code)
     {
     case 0:
       /* All attributes off: <sgr0>.  */
-      display->attr.fg = display->attr.def_fg;
-      display->attr.bg = display->attr.def_bg;
-      display->attr.reverse = display->attr.bold = display->attr.blink
-	= display->attr.invisible = display->attr.dim
-	= display->attr.underline = 0;
+      attr->fg = attr->def_fg;
+      attr->bg = attr->def_bg;
+      attr->reverse = attr->bold = attr->blink
+	= attr->invisible = attr->dim
+	= attr->underline = 0;
       /* Cursor attributes aren't text attributes.  */
       break;
     case 1:
       /* Bold on: <bold>.  */
-      display->attr.bold = 1;
+      attr->bold = 1;
       break;
     case 2:
       /* Dim on: <dim>.  */
-      display->attr.dim = 1;
+      attr->dim = 1;
       break;
     case 4:
       /* Underline on: <smul>.  */
-      display->attr.underline = 1;
+      attr->underline = 1;
       break;
     case 5:
       /* Blink on: <blink>.  */
-      display->attr.blink = 1;
+      attr->blink = 1;
       break;
     case 7:
       /* Reverse video on: <rev>, <smso>.  */
-      display->attr.reverse = 1;
+      attr->reverse = 1;
       break;
     case 8:
       /* Concealed on: <invis>.  */
-      display->attr.invisible = 1;
+      attr->invisible = 1;
       break;
     case 21:
       /* Bold Off.  */
-      display->attr.bold = 0;
+      attr->bold = 0;
       break;
     case 22:
       /* Dim off.  */
-      display->attr.dim = 0;
+      attr->dim = 0;
       break;
     case 24:
       /* Underline off: <rmul>.  */
-      display->attr.underline = 0;
+      attr->underline = 0;
       break;
     case 25:
       /* Blink off.  */
-      display->attr.blink = 0;
+      attr->blink = 0;
       break;
     case 27:
       /* Reverse video off: <rmso>.  */
-      display->attr.reverse = 0;
+      attr->reverse = 0;
       break;
     case 28:
       /* Concealed off.  */
-      display->attr.invisible = 0;
+      attr->invisible = 0;
       break;
     case 30 ... 37:
       /* Set foreground color: <setaf>.  */
-      display->attr.fg = code - 30;
+      attr->fg = code - 30;
       break;
     case 39:
       /* Default foreground color; ANSI?.  */
-      display->attr.fg = display->attr.def_fg;
+      attr->fg = attr->def_fg;
       break;
     case 40 ... 47:
       /* Set background color: <setab>.  */
-      display->attr.bg = code - 40;
+      attr->bg = code - 40;
       break;
     case 49:
       /* Default background color; ANSI?.  */
-      display->attr.bg = display->attr.def_bg;
+      attr->bg = attr->def_bg;
       break;
     }
   /* XXX */
@@ -385,6 +384,7 @@ handle_esc_bracket_m (display_t display, int code)
 static void
 handle_esc_bracket (display_t display, char op)
 {
+  parse_t parse = &display->output.parse;
   int i;
 
   static void limit_cursor (void)
@@ -407,13 +407,13 @@ handle_esc_bracket (display_t display, char op)
     case 'H':
     case 'f':
       /* Cursor position: <cup>.  */
-      display->cursor.x = display->parse.params[1] - 1;
-      display->cursor.y = display->parse.params[0] - 1;
+      display->cursor.x = parse->params[1] - 1;
+      display->cursor.y = parse->params[0] - 1;
       limit_cursor ();
       break;
     case 'G':
       /* Horizontal position: <hpa>.  */
-      display->cursor.x = display->parse.params[0] - 1;
+      display->cursor.x = parse->params[0] - 1;
       limit_cursor ();
       break;
     case 'F':
@@ -422,7 +422,7 @@ handle_esc_bracket (display_t display, char op)
       /* fall through */
     case 'A':
       /* Cursor up: <cuu>, <cuu1>.  */
-      display->cursor.y -= (display->parse.params[0] ?: 1);
+      display->cursor.y -= (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'E':
@@ -431,17 +431,17 @@ handle_esc_bracket (display_t display, char op)
       /* Fall through.  */
     case 'B':
       /* Cursor down: <cud1>, <cud>.  */
-      display->cursor.y += (display->parse.params[0] ?: 1);
+      display->cursor.y += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'C':
       /* Cursor right: <cuf1>, <cuf>.  */
-      display->cursor.x += (display->parse.params[0] ?: 1);
+      display->cursor.x += (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 'D':
       /* Cursor left: <cub>, <cub1>.  */
-      display->cursor.x -= (display->parse.params[0] ?: 1);
+      display->cursor.x -= (parse->params[0] ?: 1);
       limit_cursor ();
       break;
     case 's':
@@ -458,20 +458,20 @@ handle_esc_bracket (display_t display, char op)
       break;
     case 'h':
       /* Reset mode.  */
-      for (i = 0; i < display->parse.nparams; i++)
-	handle_esc_bracket_hl (display, display->parse.params[i], 0);
+      for (i = 0; i < parse->nparams; i++)
+	handle_esc_bracket_hl (&display->cursor, parse->params[i], 0);
       break;
     case 'l':
       /* Set mode.  */
-      for (i = 0; i < display->parse.nparams; i++)
-	handle_esc_bracket_hl (display, display->parse.params[i], 1);
+      for (i = 0; i < parse->nparams; i++)
+	handle_esc_bracket_hl (&display->cursor, parse->params[i], 1);
       break;
     case 'm':
-      for (i = 0; i < display->parse.nparams; i++)
-	handle_esc_bracket_m (display, display->parse.params[i]);
+      for (i = 0; i < parse->nparams; i++)
+	handle_esc_bracket_m (&display->attr, parse->params[i]);
       break;
     case 'J':
-      switch (display->parse.params[0])
+      switch (parse->params[0])
 	{
 	case 0:
 	  /* Clear to end of screen: <ed>.  */
@@ -501,7 +501,7 @@ handle_esc_bracket (display_t display, char op)
 	}
       break;
     case 'K':
-      switch (display->parse.params[0])
+      switch (parse->params[0])
 	{
 	case 0:
 	  /* Clear to end of line: <el>.  */
@@ -528,7 +528,7 @@ handle_esc_bracket (display_t display, char op)
       screen_scroll_down (&display->screen, 0, display->cursor.y,
 			  display->screen.width,
 			  display->screen.height - display->cursor.y,
-			  display->parse.params[0] ?: 1,
+			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'M':
@@ -536,7 +536,7 @@ handle_esc_bracket (display_t display, char op)
       screen_scroll_up (&display->screen, 0, display->cursor.y,
 			display->screen.width,
 			display->screen.height - display->cursor.y,
-			display->parse.params[0] ?: 1,
+			parse->params[0] ?: 1,
 			L' ', display->attr.current);
       break;
     case '@':
@@ -544,7 +544,7 @@ handle_esc_bracket (display_t display, char op)
       screen_scroll_right (&display->screen, display->cursor.x,
 			   display->cursor.y,
 			   display->screen.width - display->cursor.x, 1,
-			   display->parse.params[0] ?: 1,
+			   parse->params[0] ?: 1,
 			   L' ', display->attr.current);
       break;
     case 'P':
@@ -552,27 +552,27 @@ handle_esc_bracket (display_t display, char op)
       screen_scroll_left (&display->screen, display->cursor.x,
 			  display->cursor.y,
 			  display->screen.width - display->cursor.x, 1,
-			  display->parse.params[0] ?: 1,
+			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'S':
       /* Scroll up: <ind>, <indn>.  */
       screen_scroll_up (&display->screen, 0, 0,
 			display->screen.width, display->screen.height,
-			display->parse.params[0] ?: 1,
+			parse->params[0] ?: 1,
 			L' ', display->attr.current);
       break;
     case 'T':
       /* Scroll down: <ri>, <rin>.  */
       screen_scroll_down (&display->screen, 0, 0,
 			  display->screen.width, display->screen.height,
-			  display->parse.params[0] ?: 1,
+			  parse->params[0] ?: 1,
 			  L' ', display->attr.current);
       break;
     case 'X':
       /* Erase character(s): <ech>.  */
       screen_fill (&display->screen, display->cursor.x, display->cursor.y,
-		   display->parse.params[0] ?: 1, 1,
+		   parse->params[0] ?: 1, 1,
 		   L' ', display->attr.current);
       break;
     }
@@ -598,18 +598,20 @@ handle_esc_bracket_question_hl (display_t display, int code, int flag)
 static void
 handle_esc_bracket_question (display_t display, char op)
 {
+  parse_t parse = &display->output.parse;
+
   int i;
   switch (op)
     {
     case 'h':
       /* Reset mode.  */
-      for (i = 0; i < display->parse.nparams; ++i)
-	handle_esc_bracket_question_hl (display, display->parse.params[i], 0);
+      for (i = 0; i < parse->nparams; ++i)
+	handle_esc_bracket_question_hl (display, parse->params[i], 0);
       break;
     case 'l':
       /* Set mode.  */
-      for (i = 0; i < display->parse.nparams; ++i)
-	handle_esc_bracket_question_hl (display, display->parse.params[i], 1);
+      for (i = 0; i < parse->nparams; ++i)
+	handle_esc_bracket_question_hl (display, parse->params[i], 1);
       break;
     }
 }
@@ -618,6 +620,8 @@ handle_esc_bracket_question (display_t display, char op)
 static void
 display_output_one (display_t display, wchar_t chr)
 {
+  parse_t parse = &display->output.parse;
+
   void newline (void)
     {
       if (display->cursor.y < display->screen.height - 1)
@@ -643,7 +647,7 @@ display_output_one (display_t display, wchar_t chr)
 	}
     }
 
-  switch (display->parse.state)
+  switch (parse->state)
     {
     case STATE_NORMAL:
       switch (chr)
@@ -687,7 +691,7 @@ display_output_one (display_t display, wchar_t chr)
 	  /* XXX Flag cursor update.  */
 	  break;
 	case L'\033':
-	  display->parse.state = STATE_ESC;
+	  parse->state = STATE_ESC;
 	  break;
 	case L'\0':
 	  /* Padding character: <pad>.  */
@@ -702,7 +706,7 @@ display_output_one (display_t display, wchar_t chr)
 				   + display->cursor.x] = chr;
 
 	    display->cursor.x++;
-	    if (display->cursor.x == display->screen.height)
+	    if (display->cursor.x == display->screen.width)
 	      {
 		display->cursor.x = 0;
 		newline ();
@@ -716,7 +720,7 @@ display_output_one (display_t display, wchar_t chr)
       switch (chr)
 	{
 	case L'[':
-	  display->parse.state = STATE_ESC_BRACKET_INIT;
+	  parse->state = STATE_ESC_BRACKET_INIT;
 	  break;
 	case L'c':
 	  /* Clear screen and home cursor: <clear>.  */
@@ -725,44 +729,44 @@ display_output_one (display_t display, wchar_t chr)
 		       L' ', display->attr.current);
 	  display->cursor.x = display->cursor.y = 0;
 	  /* XXX Flag cursor change.  */
-	  display->parse.state = STATE_NORMAL;
+	  parse->state = STATE_NORMAL;
 	  break;
 	default:
 	  /* Unsupported escape sequence.  */
-	  display->parse.state = STATE_NORMAL;
+	  parse->state = STATE_NORMAL;
 	  break;
 	}
       break;
       
     case STATE_ESC_BRACKET_INIT:
-      memset (&display->parse.params, 0, sizeof display->parse.params);
-      display->parse.nparams = 0;
+      memset (&parse->params, 0, sizeof parse->params);
+      parse->nparams = 0;
       if (chr == '?')
 	{
-	  display->parse.state = STATE_ESC_BRACKET_QUESTION;
+	  parse->state = STATE_ESC_BRACKET_QUESTION;
 	  break;	/* Consume the question mark.  */
 	}
       else
-	display->parse.state = STATE_ESC_BRACKET;
+	parse->state = STATE_ESC_BRACKET;
       /* Fall through.  */
     case STATE_ESC_BRACKET:
     case STATE_ESC_BRACKET_QUESTION:
       if (chr >= '0' && chr <= '9')
-	display->parse.params[display->parse.nparams]
-	    = display->parse.params[display->parse.nparams]*10 + chr - '0';
+	parse->params[parse->nparams]
+	    = parse->params[parse->nparams]*10 + chr - '0';
       else if (chr == ';')
 	{
-	  if (++(display->parse.nparams) >= PARSE_MAX_PARAMS)
-	    display->parse.state = STATE_NORMAL; /* too many */
+	  if (++(parse->nparams) >= PARSE_MAX_PARAMS)
+	    parse->state = STATE_NORMAL; /* too many */
 	}
       else
 	{
-	  display->parse.nparams++;
-	  if (display->parse.state == STATE_ESC_BRACKET)
+	  parse->nparams++;
+	  if (parse->state == STATE_ESC_BRACKET)
 	    handle_esc_bracket (display, chr);
 	  else
 	    handle_esc_bracket_question (display, chr);
-	  display->parse.state = STATE_NORMAL;
+	  parse->state = STATE_NORMAL;
 	}
       break;
     default:
@@ -770,31 +774,29 @@ display_output_one (display_t display, wchar_t chr)
     }
 }
 
-
 /* Output LENGTH bytes starting from BUFFER in the system encoding.
    Set BUFFER and LENGTH to the new values.  The exact semantics are
    just as in the iconv interface.  */
-error_t
-display_output (display_t display, char **buffer, size_t *length)
+static error_t
+display_output_some (display_t display, char **buffer, size_t *length)
 {
 #define CONV_OUTBUF_SIZE 256
   error_t err = 0;
 
-  mutex_lock (&display->lock);
   while (!err && *length > 0)
     {
       size_t nconv;
       wchar_t outbuf[CONV_OUTBUF_SIZE];
       char *outptr = (char *) outbuf;
-      size_t outsize = CONV_OUTBUF_SIZE;
+      size_t outsize = CONV_OUTBUF_SIZE * sizeof (wchar_t);
       error_t saved_err;
       int i;
 
-      nconv = iconv (display->cd, buffer, length, &outptr, &outsize);
+      nconv = iconv (display->output.cd, buffer, length, &outptr, &outsize);
       saved_err = errno;
 
       /* First process all successfully converted characters.  */
-      for (i = 0; i < CONV_OUTBUF_SIZE - outsize; i++)
+      for (i = 0; i < CONV_OUTBUF_SIZE - outsize / sizeof (wchar_t); i++)
 	display_output_one (display, outbuf[i]);
 
       if (nconv == (size_t) -1)
@@ -808,11 +810,52 @@ display_output (display_t display, char **buffer, size_t *length)
 	    err = saved_err;
 	}
     }
-  mutex_unlock (&display->lock);
+  return err;
+}
+
+/* Create a new virtual console display, with the system encoding
+   being ENCODING.  */
+error_t
+display_create (display_t *r_display, const char *encoding)
+{
+  error_t err = 0;
+  display_t display;
+
+  *r_display = NULL;
+  display = calloc (1, sizeof *display);
+  if (!display)
+    return ENOMEM;
+
+  mutex_init (&display->lock);
+  err = screen_init (&display->screen);
+  if (err)
+    {
+      free (display);
+      return err;
+    }
+
+  err = output_init (&display->output, encoding);
+  if (err)
+    {
+      screen_deinit (&display->screen);
+      free (display);
+    }
+  *r_display = display;
   return err;
 }
 
-
+
+/* Destroy the display DISPLAY.  */
+void
+display_destroy (display_t display)
+{
+  output_deinit (&display->output);
+  screen_deinit (&display->screen);
+  free (display);
+}
+
+
+/* Return the dimensions of the display DISPLAY in *WINSIZE.  */
 void
 display_getsize (display_t display, struct winsize *winsize)
 {
@@ -821,5 +864,192 @@ display_getsize (display_t display, struct winsize *winsize)
   winsize->ws_col = display->screen.width;
   winsize->ws_xpixel = 0;
   winsize->ws_ypixel = 0;
+  mutex_unlock (&display->lock);
+}
+
+
+/* Set the owner of the display DISPLAY to PID.  The owner receives
+   the SIGWINCH signal when the terminal size changes.  */
+error_t
+display_set_owner (display_t display, pid_t pid)
+{
+  mutex_lock (&display->lock);
+  display->has_owner = 1;
+  display->owner_id = pid;
+  mutex_unlock (&display->lock);
+  return 0;
+}
+
+
+/* Return the owner of the display DISPLAY in PID.  If there is no
+   owner, return ENOTTY.  */
+error_t
+display_get_owner (display_t display, pid_t *pid)
+{
+  error_t err = 0;
+  mutex_lock (&display->lock);
+  if (!display->has_owner)
+    err = ENOTTY;
+  else
+    *pid = display->owner_id;
+  mutex_unlock (&display->lock);
+  return err;
+}
+
+/* Output DATALEN characters from the buffer DATA on display DISPLAY.
+   The DATA must be supplied in the system encoding configured for
+   DISPLAY.  The function returns the amount of bytes written (might
+   be smaller than DATALEN) or -1 and the error number in errno.  If
+   NONBLOCK is not zero, return with -1 and set errno to EWOULDBLOCK
+   if operation would block for a long time.  */
+ssize_t
+display_output (display_t display, int nonblock, char *data, size_t datalen)
+{
+  output_t output = &display->output;
+  error_t err;
+  char *buffer;
+  size_t buffer_size;
+  ssize_t amount;
+
+  error_t ensure_output_buffer_size (size_t new_size)
+    {
+      /* Must be a power of two.  */
+#define OUTPUT_ALLOCSIZE 32
+
+      if (output->allocated < new_size)
+	{
+	  char *new_buffer;
+	  new_size = (new_size + OUTPUT_ALLOCSIZE - 1)
+	    & ~(OUTPUT_ALLOCSIZE - 1);
+	  new_buffer = realloc (output->buffer, new_size);
+	  if (!new_buffer)
+	    return ENOMEM;
+	  output->buffer = new_buffer;
+	  output->allocated = new_size;
+	}
+      return 0;
+    }
+
+  mutex_lock (&display->lock);
+  while (output->stopped)
+    {
+      if (nonblock)
+        {
+          mutex_unlock (&display->lock);
+          errno = EWOULDBLOCK;
+          return -1;
+        }
+      if (hurd_condition_wait (&output->resumed, &display->lock))
+        {
+          mutex_unlock (&display->lock);
+          errno = EINTR;
+          return -1;
+        }
+    }
+
+  if (output->size)
+    {
+      err = ensure_output_buffer_size (output->size + datalen);
+      if (err)
+        {
+          mutex_unlock (&display->lock);
+          errno = ENOMEM;
+          return -1;
+        }
+      buffer = output->buffer;
+      buffer_size = output->size;
+      memcpy (buffer + buffer_size, data, datalen);
+      buffer_size += datalen;
+    }
+  else
+    {
+      buffer = data;
+      buffer_size = datalen;
+    }
+  amount = buffer_size;
+  err = display_output_some (display, &buffer, &buffer_size);
+  amount -= buffer_size;
+
+  if (err && !amount)
+    {
+      mutex_unlock (&display->lock);
+      errno = err;
+      return err;
+    }
+  /* XXX What should be done with invalid characters etc?  */
+  if (buffer_size)
+    {
+      /* If we used the caller's buffer DATA, the remaining bytes
+         might not fit in our internal output buffer.  In this case we
+         can reallocate the buffer in VCONS without needing to update
+         OUTPUT (as it points into DATA). */
+      err = ensure_output_buffer_size (buffer_size);
+      if (err)
+        {
+          mutex_unlock (&display->lock);
+          return err;
+        }
+      memmove (output->buffer, buffer, buffer_size);
+    }
+  output->size = buffer_size;
+  amount += buffer_size;
+
+  mutex_unlock (&display->lock);
+  return amount;
+}
+
+ssize_t display_read (display_t display, int nonblock, off_t off,
+		      char *data, size_t len)
+{
+  mutex_lock (&display->lock);
+  if (off + len > 2000 * sizeof(wchar_t))
+    len = 2000 * sizeof(wchar_t) - off;
+  memcpy (data, (char *) display->screen.matrix + off, len);
+  mutex_unlock (&display->lock);
+  return len;
+}
+
+/* Resume the output on the display DISPLAY.  */
+void
+display_start_output (display_t display)
+{
+  mutex_lock (&display->lock);
+  if (display->output.stopped)
+    {
+      display->output.stopped = 0;
+      condition_broadcast (&display->output.resumed);
+    }
+  mutex_unlock (&display->lock);
+}
+
+
+/* Stop all output on the display DISPLAY.  */
+void
+display_stop_output (display_t display)
+{
+  mutex_lock (&display->lock);
+  display->output.stopped = 1;
+  mutex_unlock (&display->lock);
+}
+
+
+/* Return the number of pending output bytes for DISPLAY.  */
+size_t
+display_pending_output (display_t display)
+{
+  int output_size;
+  mutex_lock (&display->lock);
+  output_size = display->output.size;
+  mutex_unlock (&display->lock);
+  return output_size;
+}
+
+
+/* Flush the output buffer, discarding all pending data.  */
+void
+display_discard_output (display_t display)
+{
+  mutex_lock (&display->lock);
+  display->output.size = 0;
   mutex_unlock (&display->lock);
 }

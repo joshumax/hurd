@@ -22,13 +22,21 @@ dir := console
 makemode := server
 
 target = console
-SRCS = main.c vcons.c focus.c vga-display.c vga.c dynafont.c bdf.c
-LCLHDRS = focus.h input-drv.h vcons.h display-drv.h vga.h vga-hw.h dynafont.h bdf.h \
-	mutations.h priv.h
 
-HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
-OBJS = $(subst .c,.o,$(SRCS)) tioctlServer.o
+SRCS = console.c display.c input.c
+LCLHDRS = console.h display.h input.h
 
-MIGSFLAGS += -imacros $(srcdir)/mutations.h
+HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
+OBJS = $(subst .c,.o,$(SRCS))
+
+# This is the old monolithic version of the console server.
+#SRCS = main.c vcons.c focus.c vga-display.c vga.c dynafont.c bdf.c
+#LCLHDRS = focus.h input-drv.h vcons.h display-drv.h vga.h vga-hw.h	\
+#          dynafont.h bdf.h mutations.h priv.h
+#
+#HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
+#OBJS = $(subst .c,.o,$(SRCS)) tioctlServer.o
+#
+#MIGSFLAGS += -imacros $(srcdir)/mutations.h
 
 include ../Makeconf
