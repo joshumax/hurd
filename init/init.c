@@ -326,8 +326,9 @@ launch_system (void)
 			  authserver))
     perror ("fsys_init");
 
-  /* Declare that the filesystem is our child. */
+  /* Declare that the filesystem and auth are our children. */
   proc_child (procserver, fstask);
+  proc_child (procserver, authtask);
   
   run_for_real ("/bin/sh");
   printf ("Init has completed.\n");
