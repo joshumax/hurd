@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -93,12 +93,11 @@ netfs_S_io_read (struct protid *user,
   mutex_unlock (&node->lock);
 
   if (err && alloced)
-    vm_deallocate (mach_task_self (), (vm_address_t) *data, amount);
+    munmap (*data, amount);
 
   if (!err && alloced && (round_page (*datalen) < round_page (amount)))
-    vm_deallocate (mach_task_self (), 
-		   (vm_address_t) *data + round_page (*datalen),
-		   round_page (amount) - round_page (*datalen));
+    munmap (*data + round_page (*datalen),
+	    round_page (amount) - round_page (*datalen));
 
   return err;
 }

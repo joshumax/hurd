@@ -1,3 +1,9 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* io-read.c (netfs_S_io_read): Use munmap instead of
+	vm_deallocate. 
+	* release-protid.c (netfs_release_protid): Likewise.
+
 1999-07-01  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* nref.c: New file; guts from netfs.h.

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,7 +29,6 @@ netfs_release_protid (void *arg)
   if (user->shared_object)
     mach_port_deallocate (mach_task_self (), user->shared_object);
   if (user->mapped)
-    vm_deallocate (mach_task_self (), (vm_address_t) user->mapped,
-		   vm_page_size);
+    munmap (user->mapped, vm_page_size);
   netfs_release_peropen (user->po);
 }
