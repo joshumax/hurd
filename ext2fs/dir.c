@@ -22,8 +22,9 @@
 #include <stdio.h>
 #include <dirent.h>
 
-/* This is bogus, but oh well...  XXX  */
-#define DIRBLKSZ block_size
+/* Don't straddle block boundaries between blocks of this length.  The Linux
+   implementation of ext2fs doesn't enforce this, but we may as well.  */
+#define DIRBLKSIZ DEV_BSIZE
 
 enum slot_status
 {
@@ -327,9 +328,9 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || entry->rec_len % 4
 	  || entry->name_len > EXT2_NAME_LEN
 	  || currentoff + entry->rec_len > blockaddr + DIRBLKSIZ
-	  || entry->d_name[entry->name_len]
+	  || entry->name[entry->name_len]
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
-	  || memchr (entry->d_name, '\0', entry->name_len))
+	  || memchr (entry->name, '\0', entry->name_len))
 	{
 	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
 		  dp->dn->number, currentoff - blockaddr + idx * DIRBLKSIZ);
@@ -371,9 +372,9 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	nentries++;
 
       if (entry->name_len == namelen
-	  && entry->d_name[0] == name[0]
+	  && entry->name[0] == name[0]
 	  && entry->inode
-	  && !bcmp (entry->d_name, name, namelen))
+	  && !bcmp (entry->name, name, namelen))
 	break;
     }
 
@@ -448,7 +449,7 @@ diskfs_direnter(struct node *dp,
       
       ds->entry->inode = np->dn->number;
       ds->entry->name_len = namelen;
-      bcopy (name, ds->entry->d_name, namelen + 1);
+      bcopy (name, ds->entry->name, namelen + 1);
 
       break;
       
@@ -463,7 +464,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = ds->entry->rec_len - oldneeded;
       new->name_len = namelen;
-      bcopy (name, new->d_name, namelen + 1);
+      bcopy (name, new->name, namelen + 1);
       
       ds->entry->rec_len = oldneeded;
       
@@ -501,7 +502,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = totfreed;
       new->name_len = namelen;
-      bcopy (name, new->d_name, namelen + 1);
+      bcopy (name, new->name, namelen + 1);
       break;
 
     case EXTEND:
@@ -524,7 +525,7 @@ diskfs_direnter(struct node *dp,
       new->inode = np->dn->number;
       new->rec_len = DIRBLKSIZ;
       new->name_len = namelen;
-      bcopy (name, new->d_name, namelen + 1);
+      bcopy (name, new->name, namelen + 1);
       break;
       
     default:
@@ -599,7 +600,7 @@ diskfs_dirremove(struct node *dp,
   diskfs_file_update (dp, 1);
 
   if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, ds->entry->d_name);
+    diskfs_notice_dirchange (dp, DIR_CHANGED_UNLINK, ds->entry->name);
 
   return 0;
 }
@@ -626,7 +627,7 @@ diskfs_dirrewrite(struct node *dp,
   diskfs_file_update (dp, 1);
 
   if (dp->dirmod_reqs)
-    diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, ds->entry->d_name);
+    diskfs_notice_dirchange (dp, DIR_CHANGED_RENUMBER, ds->entry->name);
 
   return 0;
 }
@@ -659,9 +660,9 @@ diskfs_dirempty(struct node *dp,
 
       if (entry->inode != 0
 	  && (entry->name_len > 2
-	      || entry->d_name[0] != '.'
-	      || (entry->d_name[1] != '.'
-		  && entry->d_name[1] != '\0')))
+	      || entry->name[0] != '.'
+	      || (entry->name[1] != '.'
+		  && entry->name[1] != '\0')))
 	{
 	  vm_deallocate (mach_task_self (), buf, dp->dn_stat.st_size);
 	  return 0;
@@ -842,9 +843,9 @@ diskfs_get_directs (struct node *dp,
 	  userp = (struct dirent *) datap;
 
 	  userp->d_fileno = entryp->inode;
-	  userp->rec_len = EXT2_DIR_REC_LEN (entryp->name_len);
-	  userp->name_len = entryp->name_len;
-	  bcopy (entryp->d_name, userp->d_name, entryp->name_len + 1);
+	  userp->d_reclen = EXT2_DIR_REC_LEN (entryp->name_len);
+	  userp->d_namlen = entryp->name_len;
+	  bcopy (entryp->name, userp->d_name, entryp->name_len + 1);
 	  i++;
 	  datap += EXT2_DIR_REC_LEN (entryp->name_len);
 	}
