@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -40,6 +40,10 @@
 #undef B2400
 #undef B4800
 #undef B9600
+#undef B19200
+#undef B38400
+#undef B57600
+#undef B115200
 #undef EXTA
 #undef EXTB
 #include <device/tty_status.h>
@@ -204,7 +208,7 @@ devio_start_output ()
   char *cp;
   int size;
   error_t err;
-  
+
   size = qsize (outputq);
 
   if (!size || output_pending || (termflags & USER_OUTPUT_SUSP))
@@ -224,10 +228,10 @@ devio_start_output ()
 
   cp = pending_output + npending_output;
   npending_output += size;
-  
+
   while (size--)
     *cp++ = dequeue (outputq);
-  
+
   /* Submit all the outstanding characters to the device. */
   /* The D_NOWAIT flag does not, in fact, prevent blocks.  Instead,
      it merely causes D_WOULD_BLOCK errors when carrier is down...
@@ -250,9 +254,9 @@ device_write_reply_inband (mach_port_t replypt,
     return EOPNOTSUPP;
 
   mutex_lock (&global_lock);
-  
+
   output_pending = 0;
-  
+
   if (return_code == 0)
     {
       if (amount >= npending_output)
@@ -274,7 +278,7 @@ device_write_reply_inband (mach_port_t replypt,
     devio_desert_dtr ();
   else
     devio_start_output ();
-  
+
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -290,11 +294,11 @@ device_read_reply_inband (mach_port_t replypt,
 
   if (replypt != phys_reply)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
-  
+
   input_pending = 0;
-  
+
   if (!error_code && (termstate.c_cflag & CREAD))
     for (i = 0; i < datalen; i++)
       {
@@ -313,10 +317,10 @@ device_read_reply_inband (mach_port_t replypt,
      D_WOULD_BLOCK errors when carrier drops. */
   err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
 				    0, vm_page_size);
-  
+
   if (err)
     devio_desert_dtr ();
-  else 
+  else
     input_pending = 1;
 
   mutex_unlock (&global_lock);
@@ -344,7 +348,7 @@ devio_abandon_physical_output ()
      have nothing to do. */
   if (!phys_reply_writes_pi)
     return;
-  
+
   mach_port_deallocate (mach_task_self (), phys_reply_writes);
   ports_reallocate_port (phys_reply_writes_pi);
   phys_reply_writes = ports_get_right (phys_reply_writes_pi);
@@ -386,7 +390,7 @@ devio_desert_dtr ()
   device_close (phys_device);
   mach_port_deallocate (mach_task_self (), phys_device);
   phys_device = MACH_PORT_NULL;
-  
+
   mach_port_deallocate (mach_task_self (), phys_reply);
   mach_port_deallocate (mach_task_self (), phys_reply_writes);
   phys_reply = phys_reply_writes = MACH_PORT_NULL;
@@ -402,10 +406,10 @@ static error_t
 devio_assert_dtr ()
 {
   error_t err;
-  
+
   if (open_pending || (phys_device != MACH_PORT_NULL))
     return 0;
-  
+
   assert (phys_reply == MACH_PORT_NULL);
   assert (phys_reply_pi == 0);
 
@@ -445,13 +449,13 @@ device_open_reply (mach_port_t replyport,
   mutex_lock (&global_lock);
 
   open_pending = 0;
-  
+
   if (returncode != 0)
     {
       /* Bogus. */
       report_carrier_on ();
       report_carrier_off ();
-      
+
       mach_port_deallocate (mach_task_self (), phys_reply);
       phys_reply = MACH_PORT_NULL;
       ports_port_deref (phys_reply_pi);
@@ -464,7 +468,7 @@ device_open_reply (mach_port_t replyport,
   assert (phys_reply_writes == MACH_PORT_NULL);
   assert (phys_reply_writes_pi == 0);
   phys_device = device;
-  errno = ports_create_port (phys_reply_class, term_bucket, 
+  errno = ports_create_port (phys_reply_class, term_bucket,
 			     sizeof (struct port_info),
 			     &phys_reply_writes_pi);
   if (errno)
@@ -480,7 +484,7 @@ device_open_reply (mach_port_t replyport,
 		     (dev_status_t)&ttystat, &count);
   ttystat.tt_breakc = 0;
   ttystat.tt_flags = TF_ANYP | TF_LITOUT | TF_NOHANG | TF_HUPCLS;
-  device_set_status (phys_device, TTY_STATUS, 
+  device_set_status (phys_device, TTY_STATUS,
 		     (dev_status_t)&ttystat, TTY_STATUS_COUNT);
 
   err = device_read_request_inband (phys_device, phys_reply, D_NOWAIT,
@@ -494,9 +498,9 @@ device_open_reply (mach_port_t replyport,
   mutex_unlock (&global_lock);
 
   return 0;
-}  
+}
 
-/* Adjust physical state on the basis of the terminal state. 
+/* Adjust physical state on the basis of the terminal state.
    Where it isn't possible, mutate terminal state to match
    reality. */
 static void
@@ -513,7 +517,7 @@ devio_set_bits ()
 	real_speed_to_bogus_speed (termstate.__ispeed, &ttystat.tt_ispeed);
       if (termstate.__ospeed)
 	real_speed_to_bogus_speed (termstate.__ospeed, &ttystat.tt_ospeed);
-  
+
       /* Try and set it. */
       device_set_status (phys_device, TTY_STATUS,
 			 (dev_status_t) &ttystat, TTY_STATUS_COUNT);
@@ -523,20 +527,20 @@ devio_set_bits ()
       device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
       termstate.__ispeed = bogus_speed_to_real_speed (ttystat.tt_ispeed);
       termstate.__ospeed = bogus_speed_to_real_speed (ttystat.tt_ospeed);
-  
+
       /* Mach forces us to use the normal stop bit convention:
 	 two bits at 110 bps; 1 bit otherwise. */
       if (termstate.__ispeed == 110)
 	termstate.c_cflag |= CSTOPB;
       else
 	termstate.c_cflag &= ~CSTOPB;
-  
+
       /* Mach only supports 8 bit channels.  So wark the CSIZE to conform. */
       termstate.c_cflag = ((termstate.c_cflag & ~CSIZE)
 			   | ((termstate.c_cflag & PARENB) ? CS7 : CS8));
     }
 }
-  
+
 static void
 devio_mdmctl (int how, int bits)
 {
@@ -557,8 +561,8 @@ devio_mdmctl (int how, int bits)
     newbits = (oldbits &= ~bits);
   else
     newbits = bits;
-  
-  device_set_status (phys_device, TTY_MODEM, 
+
+  device_set_status (phys_device, TTY_MODEM,
 		     (dev_status_t) &newbits, TTY_MODEM_COUNT);
 }
 
@@ -566,7 +570,7 @@ static int
 devio_mdmstate ()
 {
   int bits, cnt;
-  
+
   cnt = TTY_MODEM_COUNT;
   device_get_status (phys_device, TTY_MODEM, (dev_status_t) &bits, &cnt);
   if (cnt != TTY_MODEM_COUNT)
@@ -597,9 +601,9 @@ error_t
 ports_do_mach_notify_send_once (mach_port_t notify)
 {
   error_t err;
-  
+
   mutex_lock (&global_lock);
-  
+
   if (notify == phys_reply_writes)
     {
       err = 0;
@@ -616,7 +620,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 	  /* end xxx */
 
 	  input_pending = 0;
-	  
+
 	  err = device_read_request_inband (phys_device, phys_reply,
 					    D_NOWAIT, 0, vm_page_size);
 	  if (err)
@@ -630,7 +634,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 
 	  report_carrier_on ();
 	  report_carrier_off ();
-	  
+
 	  mach_port_deallocate (mach_task_self (), phys_reply);
 	  phys_reply = MACH_PORT_NULL;
 	  ports_port_deref (phys_reply_pi);
@@ -640,7 +644,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
     }
   else
     err = EOPNOTSUPP;
-  
+
   mutex_unlock (&global_lock);
   return err;
 }
@@ -661,6 +665,3 @@ struct bottomhalf devio_bottom =
   devio_mdmctl,
   devio_mdmstate,
 };
-
-      
-      
