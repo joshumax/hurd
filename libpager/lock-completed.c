@@ -52,12 +52,16 @@ _pager_seqnos_memory_object_lock_completed (mach_port_t object,
   _pager_wait_for_seqno (p, seqno);
 
   for (lr = p->lock_requests; lr; lr = lr->next)
-    if (lr->start == offset && lr->end == offset + length
-	&& !--lr->locks_pending && !lr->pending_writes)
-      break;
-
-  if (lr)
-    condition_broadcast (&p->wakeup);
+    if (lr->start == offset && lr->end == offset + length)
+      {
+	if (lr->locks_pending)
+	  {
+	    --lr->locks_pending;
+	  }
+	if (!lr->locks_pending && !lr->pending_writes)
+	  condition_broadcast (&p->wakeup);
+	break;
+      }
 
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
