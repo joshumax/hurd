@@ -32,8 +32,10 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 					 int kcopy)
 {
   struct pager *p;
-  char *pm_entry;
+  char *pm_entries;
   error_t err;
+  int npages, i;
+  error_t *pagerrs;
   struct lock_request *lr;
   struct lock_list {struct lock_request *lr;
 		    struct lock_list *next;} *lock_list, *ll;
@@ -45,19 +47,19 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
-      printf ("incg data request: wrong control port");
+      printf ("incg data return: wrong control port\n");
       err = 0;
       goto out;
     }
-  if (length != __vm_page_size)
+  if (length % __vm_page_size)
     {
-      printf ("incg data request: bad length size");
+      printf ("incg data return: bad length size %d\n", length);
       err = 0;
       goto out;
     }
   if (offset % __vm_page_size)
     {
-      printf ("incg data request: misaligned request");
+      printf ("incg data return: misaligned request\n");
       err = 0;
       goto out;
     }
@@ -67,6 +69,9 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
       err = 0;
       goto out;
     }
+
+  npages = length / __vm_page_size;
+  pagerrs = alloca (npages * sizeof (error_t));
 
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
@@ -85,11 +90,11 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 
   _pager_pagemap_resize (p, offset + length);
 
-  pm_entry = &p->pagemap[offset / __vm_page_size];
+  pm_entries = &p->pagemap[offset / __vm_page_size];
 
-  /* Mark this page as being paged out.  */
-  *pm_entry |= PM_PAGINGOUT;
-
+  /* Mark these pages as being paged out.  */
+  for (i = 0; i < npages; i++)
+    pm_entries[i] |= PM_PAGINGOUT;
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
@@ -112,29 +117,44 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   _pager_release_seqno (p);
   mutex_unlock (&p->interlock);
 
-  err = pager_write_page (p->upi, offset, data);
+  /* This is inefficient; we should send all the pages to the device at once
+     but until the pager library interface is changed, this will have to do. */
+
+  for (i = 0; i < npages; i++)
+    pagerrs[i] = pager_write_page (p->upi, 
+				   offset + (vm_page_size * i), 
+				   data + (vm_page_size * i));
 
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
   _pager_pagemap_resize (p, offset + length);
-  pm_entry = &p->pagemap[offset / __vm_page_size];
+  pm_entries = &p->pagemap[offset / __vm_page_size];
 
-  if (err && ! (*pm_entry & PM_PAGEINWAIT))
-    /* The only thing we can do here is mark the page, and give errors 
-       from now on when it is to be read.  This is imperfect, because 
-       if all users go away, the pagemap will be freed, and this information
-       lost.  Oh well.  It's still better than Un*x.  Of course, if we 
-       are about to hand this data to the kernel, the error isn't a problem,
-       hence the check for pageinwait.  */
-    *pm_entry |= PM_INVALID;
+  for (i = 0; i < npages; i++)
+    {
+      if (pagerrs[i] && ! (pm_entries[i] & PM_PAGEINWAIT))
+	/* The only thing we can do here is mark the page, and give
+	   errors from now on when it is to be read.  This is
+	   imperfect, because if all users go away, the pagemap will
+	   be freed, and this information lost.  Oh well.  It's still
+	   better than Un*x.  Of course, if we are about to hand this
+	   data to the kernel, the error isn't a problem, hence the
+	   check for pageinwait.  */
+	pm_entries[i] |= PM_INVALID;
 
-  if (*pm_entry & PM_PAGEINWAIT)
-    memory_object_data_supply (p->memobjcntl, offset, data, length, 1,
-			       VM_PROT_NONE, 0, MACH_PORT_NULL);
-  else
-    vm_deallocate (mach_task_self (), data, length);
+      if (pm_entries[i] & PM_PAGEINWAIT)
+	memory_object_data_supply (p->memobjcntl, 
+				   offset + (vm_page_size * i), 
+				   data + (vm_page_size * i), 
+				   vm_page_size, 1,
+				   VM_PROT_NONE, 0, MACH_PORT_NULL);
+      else
+	vm_deallocate (mach_task_self (), 
+		       data + (vm_page_size * i), 
+		       vm_page_size);
 
-  *pm_entry &= ~(PM_PAGINGOUT | PM_PAGEINWAIT);
+      pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT);
+    }
 
   wakeup = 0;
   for (ll = lock_list; ll; ll = ll->next)
