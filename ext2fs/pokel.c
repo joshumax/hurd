@@ -1,8 +1,6 @@
 /* Remember where we've written the disk to speed up sync
 
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
-
-   Written by Michael I. Bushnell.
+   Copyright (C) 1995 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
