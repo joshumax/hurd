@@ -99,7 +99,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   ngen_gids = naux_gids = 50;
 
 
-  err = auth_server_authenticate (authserver, 
+  err = auth_server_authenticate (authserver,
 				  rendport, MACH_MSG_TYPE_COPY_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 				  &gen_uids, &ngen_uids,
@@ -223,7 +223,7 @@ S_proc_reassign (struct proc *p,
 
   /* Redirect the task-death notification to the new receive right. */
   mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, 
+				  MACH_NOTIFY_DEAD_NAME, 1,
 				  p->p_pi.port_right,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (foo)
@@ -256,12 +256,12 @@ S_proc_reassign (struct proc *p,
 /* Implement proc_setowner as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,
-		 uid_t owner, 
+		 uid_t owner,
 		 int clear)
 {
   if (!p)
     return EOPNOTSUPP;
-  
+
   if (clear)
     p->p_noowner = 1;
   else
@@ -272,7 +272,7 @@ S_proc_setowner (struct proc *p,
       p->p_owner = owner;
       p->p_noowner = 0;
     }
-  
+
   return 0;
 }
 
@@ -372,7 +372,7 @@ S_proc_handle_exceptions (struct proc *p,
 
   /* No need to check P here; we don't use it. */
 
-  err = ports_import_port (exc_class, proc_bucket, msgport, 
+  err = ports_import_port (exc_class, proc_bucket, msgport,
 			   (sizeof (struct exc)
 			    + (statecnt * sizeof (natural_t))), &e);
   if (err)
@@ -411,7 +411,7 @@ S_proc_exception_raise (mach_port_t excport,
       ports_port_deref (e);
       return EINVAL;
     }
-  
+
   /* Try to forward the message.  */
   err = proc_exception_raise (e->forwardport,
 			      reply, reply_type, MACH_SEND_NOTIFY,
@@ -457,7 +457,7 @@ S_proc_exception_raise (mach_port_t excport,
       ports_port_deref (e);
       return 0;
     }
-  
+
 }
 
 /* Implement proc_getallpids as described in <hurd/proc.defs>. */
@@ -709,7 +709,7 @@ complete_exit (struct proc *p)
 {
   assert (p->p_dead);
   assert (p->p_waited);
-  
+
   remove_proc_from_hash (p);
   if (p->p_task != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), p->p_task);
@@ -774,7 +774,7 @@ add_tasks (task_t task)
 	}
       mach_port_deallocate (mach_task_self (), psets[i]);
     }
-  vm_deallocate (mach_host_self (), (vm_address_t) psets,
+  vm_deallocate (mach_task_self (), (vm_address_t) psets,
 		 npsets * sizeof (mach_port_t));
   return foundp;
 }
