@@ -404,17 +404,15 @@ read_symlink_hook (struct node *np,
 }
 error_t (*diskfs_read_symlink_hook)(struct node *, char *)
      = read_symlink_hook;
-     
 
-/* Write all active disknodes into the dinode pager. */
-void
-write_all_disknodes ()
+error_t
+diskfs_node_iterate (error_t (*fun)(struct node *))
 {
-  int n;
   struct node *np;
   struct item {struct item *next; struct node *np;} *list = 0;
   struct item *i;
-
+  error_t err;
+      
   /* Acquire a reference on all the nodes in the hash table
      and enter them into a list on the stack. */
   spin_lock (&diskfs_node_refcnt_lock);
@@ -428,15 +426,32 @@ write_all_disknodes ()
 	list = i;
       }
   spin_unlock (&diskfs_node_refcnt_lock);
-  
-  /* Update each node. */
+
+  err = 0;
   for (i = list; i; i = i->next)
     {
-      mutex_lock (&i->np->lock);
-      diskfs_set_node_times (i->np);
-      write_node (i->np);
-      diskfs_nput (i->np);
+      if (!err)
+	{
+	  mutex_lock (&i->np->lock);
+	  err = (*fun)(i->np);
+	  mutex_unlock (&i->np->lock);
+	}
+      diskfs_nrele (i->np);
     }
+}
+
+/* Write all active disknodes into the dinode pager. */
+void
+write_all_disknodes ()
+{
+  error_t
+    helper (struct node *np)
+      {
+	diskfs_set_node_times (np);
+	write_node (np);
+      }
+  
+  diskfs_node_iterate (helper);
 }
 	
 void
