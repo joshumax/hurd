@@ -1,3 +1,7 @@
+Mon Jan 20 16:16:33 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hashexec.c (check_hashbang): `preempter' -> `preemptor'.
+
 Sat Nov 23 16:26:55 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* priv.h (mach_host_elf_machine): New prototype.
