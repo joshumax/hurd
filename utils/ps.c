@@ -181,8 +181,8 @@ static struct ps_fmt_specs ps_specs =
    empty and DEFAULT_ADD_FN isn't NULL, then call DEFAULT_ADD_FN instead. */
 static void
 _parse_strlist (char *arg,
-		void (*add_fn)(char *str), void (*default_add_fn)(),
-			   char *type_name)
+		void (*add_fn)(const char *str), void (*default_add_fn)(),
+		const char *type_name)
 {
   if (arg)
     while (isspace(*arg))
@@ -237,9 +237,9 @@ _parse_strlist (char *arg,
    DEFAULT_FN instead, otherwise signal an error.  */
 static void
 parse_strlist (char *arg,
-	       void (*add_fn)(char *str),
+	       void (*add_fn)(const char *str),
 	       const char *(*default_fn)(),
-	       char *type_name)
+	       const char *type_name)
 {
   void default_str_add() { (*add_fn)((*default_fn)()); }
   _parse_strlist(arg, add_fn, default_str_add, type_name);
@@ -255,13 +255,13 @@ static void
 parse_numlist (char *arg,
 	       void (*add_fn)(unsigned num),
 	       int (*default_fn)(),
-	       int (*lookup_fn)(char *str),
-	       char *type_name)
+	       int (*lookup_fn)(const char *str),
+	       const char *type_name)
 {
   void default_num_add() { (*add_fn)((*default_fn)()); }
-  void add_num_str(char *str)
+  void add_num_str(const char *str)
     {
-      char *p;
+      const char *p;
       for (p = str; *p != '\0'; p++)
 	if (!isdigit(*p))
 	  {
@@ -303,7 +303,7 @@ current_lid()
 
 /* Returns the UID for the user called NAME.  */
 static int
-lookup_user(char *name)
+lookup_user(const char *name)
 {
   struct passwd *pw = getpwnam(name);
   if (pw == NULL)
@@ -408,7 +408,7 @@ main(int argc, char *argv[])
 
   /* Add TTY_NAME to the list for which processes with those controlling
      terminals will be printed.  */
-  void add_tty_name (char *tty_name)
+  void add_tty_name (const char *tty_name)
     {
       error_t err = argz_add (&tty_names, &num_tty_names, tty_name);
       if (err)
@@ -436,7 +436,7 @@ main(int argc, char *argv[])
     }
 
   /* Returns the name of the current controlling terminal.  */
-  static char *current_tty_name()
+  static const char *current_tty_name()
     {
       error_t err;
       struct ps_tty *tty;
@@ -499,10 +499,10 @@ main(int argc, char *argv[])
 	  break;
 
 	case 't':
-	  parse_strlist(arg, add_tty_name, current_tty_name, "tty");
+	  parse_strlist (arg, add_tty_name, current_tty_name, "tty");
 	  break;
 	case 'U':
-	  parse_numlist(arg, add_uid, NULL, lookup_user, "user");
+	  parse_numlist (arg, add_uid, NULL, lookup_user, "user");
 	  break;
 	case 'O':
 	  parse_numlist (arg, add_not_uid, NULL, lookup_user, "user");
@@ -518,7 +518,7 @@ main(int argc, char *argv[])
 	  break;
 
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }
