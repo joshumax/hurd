@@ -25,7 +25,7 @@ OBJS = mach-crt0.o boot.o notifyServer.o execServer.o ourdeviceServer.o \
 HURDLIBS = libthreads
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
-DISTFILES=frank1.ld frankemul.ld
+DIST_FILES=frank1.ld frankemul.ld
 
 include ../Makeconf
 
