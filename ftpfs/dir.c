@@ -483,8 +483,9 @@ ftpfs_refresh_node (struct node *node)
 	      if (!err && entry->noent)
 		err = ENOENT;
 	    }
-	  else
+	  else if (*(entry->name))
 	    {
+	      /* The root node is treated seperately below.  */
 	      struct ftp_conn *conn;
 
 	      err = ftpfs_get_ftp_conn (dir->fs, &conn);
@@ -517,6 +518,17 @@ ftpfs_refresh_node (struct node *node)
 		  entry->noent = 1; /* A negative entry.  */
 		  entry->name_timestamp = timestamp;
 		}
+	    }
+	  else
+	    {
+	      /* Refresh the root node with the old stat
+                 information.  */
+	      struct refresh_entry_state res;
+	      res.entry = entry;
+	      res.timestamp = timestamp;
+	      err = update_old_entry (entry->name,
+				      &netfs_root_node->nn_stat,
+				      NULL, &res);
 	    }
 	}
 

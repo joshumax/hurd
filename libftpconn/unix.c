@@ -27,6 +27,7 @@
 #include <grp.h>
 #include <sys/time.h>
 #include <netinet/in.h>
+#include <libgen.h> /* For dirname().  */
 #ifdef HAVE_HURD_HURD_TYPES_H
 #include <hurd/hurd_types.h>
 #endif
@@ -145,6 +146,9 @@ struct get_stats_state
   int name_partial;		/* True if NAME isn't complete.  */
 
   int contents;			/* Are we looking for directory contents?  */
+  char *searched_name;          /* If we are not, then we are only
+                                   looking for this name.  */
+
   int added_slash;		/* Did we prefix the name with `./'?  */
 
   struct stat stat;		/* Last read stat info.  */
@@ -154,8 +158,6 @@ struct get_stats_state
   size_t buf_len;		/* Length of contents in BUF.  */
   char buf[7000];
 };
-
-
 
 /* Start an operation to get a list of file-stat structures for NAME (this is
    often similar to ftp_conn_start_dir, but with OS-specific flags), and
@@ -168,51 +170,102 @@ ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
 			       const char *name, int contents,
 			       int *fd, void **state)
 {
-  error_t err;
+  error_t err = 0;
   size_t req_len;
-  char *req;
-  struct get_stats_state *s = malloc (sizeof (struct get_stats_state));
-  const char *flags = contents ? "-A" : "-Ad";
+  char *req = NULL;
+  struct get_stats_state *s = NULL;
+  const char *flags = "-A";
   const char *slash = strchr (name, '/');
+  char *searched_name = NULL;
 
+  s = (struct get_stats_state *) malloc (sizeof (struct get_stats_state));
   if (! s)
-    return ENOMEM;
+    {
+      err = ENOMEM;
+      goto out;
+    }
+  if (! contents)
+    {
+      if (! strcmp (name, "/"))
+	{
+	  /* Listing only the directory itself and not the directory
+	     content seems to be not supported by all FTP servers.  If
+	     the directory in question is not the root directory, we
+	     can simply lookup `..', but that doesn't work if we are
+	     already on the root directory.  */
+	  err = EINVAL;
+	}
+      else
+	{
+	  searched_name = strdup (basename ((char *) name));
+	  if (! searched_name)
+	    err = ENOMEM;
+	}
+      if (err)
+	goto out;
+    }
 
   if (strcspn (name, "*? \t\n{}$`\\\"'") < strlen (name))
     /* NAME contains some metacharacters, which makes the behavior of various
        ftp servers unpredictable, so punt.  */
     {
-      free (s);
-      return EINVAL;
+      err = EINVAL;
+      goto out;
     }
 
   /* We pack the ls options and the name into the list argument, in REQ,
      which will do the right thing on most unix ftp servers.  */
 
-  /* Space needed for REQ.  */
-  req_len = strlen (flags) + 1 + strlen (name) + 1;
-
-  /* If NAME doesn't contain a slash, we prepend `./' to it so that we can
-     tell from the results whether it's a directory or not.  */
-  if (! slash)
-    req_len += 2;
-
-  req = malloc (req_len);
-  if (! req)
-    return ENOMEM;
-
-  snprintf (req, req_len, "%s %s%s", flags, slash ? "" : "./", name);
+  req_len = strlen (flags) + 2; /* space character + null character.  */
+  if (! contents)
+    {
+      /* If we are looking for a directory rather than its content,
+	 lookup the parent directory and search for the entry, rather
+	 than looking it up directly, as not all ftp servers support
+	 the -d option to ls.  To make sure we get a directory, append
+	 '/', except for the root directory.  */
+      char *dirn = dirname ((char *) name);
+      int is_root = ! strcmp (dirn, "/");
+      req_len += strlen (dirn) + (is_root ? 0 : 1);
+      req = malloc (req_len);
+      if (! req)
+	err = ENOMEM;
+      else
+	sprintf (req, "%s %s%s", flags, dirn, (is_root ? "" : "/"));
+    }
+  else
+    {
+      /* If NAME doesn't contain a slash, we prepend `./' to it so that we can
+	 tell from the results whether it's a directory or not.  */
+      req_len += strlen (name) + (slash ? 0 : 2);
+      req = malloc (req_len);
+      if (! req)
+	err = ENOMEM;
+      else
+	sprintf (req, "%s %s%s", flags, slash ? "" : "./", name);
+    }
+  
+  if (err)
+    goto out;
 
   /* Make the actual request.  */
   err = ftp_conn_start_dir (conn, req, fd);
 
-  free (req);
+ out:
 
+  if (req)
+    free (req);
   if (err)
-    free (s);
+    {
+      if (s)
+	free (s);
+      if (searched_name)
+	free (searched_name);
+    }
   else
     {
       s->contents = contents;
+      s->searched_name = searched_name;
       s->added_slash = !slash;
       s->name = 0;
       s->name_len = s->name_alloced = 0;
@@ -616,11 +669,16 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 	  /* Pass only directory-relative names to the callback function.  */
 	  name = basename (name);
 
-	  /* Call the callback function to process the current entry; it is
-	     responsible for freeing S->name and SYMLINK_TARGET.  */
-	  err = (*add_stat) (name, &s->stat, symlink_target, hook);
-	  if (err)
-	    goto finished;
+	  if (s->contents || ! strcmp (s->name, s->searched_name))
+	    {
+	      /* We are only interested in searched_name.  */
+
+	      /* Call the callback function to process the current entry; it is
+		 responsible for freeing S->name and SYMLINK_TARGET.  */
+	      err = (*add_stat) (name, &s->stat, symlink_target, hook);
+	      if (err)
+		goto finished;
+	    }
 
 	  s->name_len = 0;
 	  s->name_partial = 0;
@@ -658,6 +716,8 @@ finished:
      return.  */
   if (s->name)
     free (s->name);
+  if (s->searched_name)
+    free (s->searched_name);
   free (s);
   close (fd);
 

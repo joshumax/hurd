@@ -1,3 +1,13 @@
+2002-04-13  Moritz Schulte  <moritz@chaosdorf.de>
+
+	* unix.c: Include <libgen.h>.
+	(struct get_stats_state): New member: searched_name.
+	(ftp_conn_unix_start_get_stats): Return EINVAL if trying to list
+	the root node without listing it's content; set searched_name to
+	the dirname.
+	(ftp_conn_unix_cont_get_stats): If searching for the list info of
+	one entry, skip all other entries.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* ftpconn.h (ftp_conn_validate_syshooks): Don't make this extern

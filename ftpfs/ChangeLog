@@ -1,3 +1,12 @@
+2002-04-13  Moritz Schulte  <moritz@chaosdorf.de>
+
+	* ftpfs.c: Include <sys/stat.h>
+	(main): Stat the underlying node and initialize the root node's
+	stat information.
+
+	* dir.c (ftpfs_refresh_node): If refreshing the root node, simply
+	use the old stat information.
+
 2002-03-11  Roland McGrath  <roland@frob.com>
 
 	* ftpfs.c (parse_startup_opt): If given one argument with no :,

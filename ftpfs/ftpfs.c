@@ -24,6 +24,7 @@
 #include <error.h>
 #include <argz.h>
 #include <netdb.h>
+#include <sys/stat.h>
 
 #include <version.h>
 
@@ -365,7 +366,8 @@ int
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t bootstrap;
+  mach_port_t bootstrap, underlying_node;
+  struct stat underlying_stat;
   const struct argp_child argp_children[] =
     { {&common_argp}, {&netfs_std_startup_argp}, {0} };
   struct argp argp =
@@ -395,7 +397,27 @@ main (int argc, char **argv)
 
   netfs_root_node = ftpfs->root;
 
-  netfs_startup (bootstrap, 0);
+  underlying_node = netfs_startup (bootstrap, 0);
+  err = io_stat (underlying_node, &underlying_stat);
+  if (err)
+    error (1, err, "cannot stat underling node");
+
+  /* Initialize stat information of the root node.  */
+  netfs_root_node->nn_stat = underlying_stat;
+  netfs_root_node->nn_stat.st_mode =
+    S_IFDIR | (underlying_stat.st_mode & ~S_IFMT & ~S_ITRANS);
+
+  /* If the underlying node isn't a directory, propagate read permission to
+     execute permission since we need that for lookups.  */
+  if (! S_ISDIR (underlying_stat.st_mode))
+    {
+      if (underlying_stat.st_mode & S_IRUSR)
+	netfs_root_node->nn_stat.st_mode |= S_IXUSR;
+      if (underlying_stat.st_mode & S_IRGRP)
+	netfs_root_node->nn_stat.st_mode |= S_IXGRP;
+      if (underlying_stat.st_mode & S_IROTH)
+	netfs_root_node->nn_stat.st_mode |= S_IXOTH;
+    }
 
   for (;;)
     netfs_server_loop ();
