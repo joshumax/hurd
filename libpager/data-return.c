@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_return for pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -38,7 +38,6 @@ _pager_do_write_request (mach_port_t object,
 {
   struct pager *p;
   char *pm_entries;
-  error_t err;
   int npages, i;
   error_t *pagerrs;
   struct lock_request *lr;
@@ -50,47 +49,39 @@ _pager_do_write_request (mach_port_t object,
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
+
+  /* Acquire the right to meddle with the pagemap */
+  mutex_lock (&p->interlock);
+  _pager_wait_for_seqno (p, seqno);
   
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
       printf ("incg data return: wrong control port\n");
-      err = 0;
-      goto out;
+      goto release_out;
     }
   if (length % __vm_page_size)
     {
       printf ("incg data return: bad length size %d\n", length);
-      err = 0;
-      goto out;
+      goto release_out;
     }
   if (offset % __vm_page_size)
     {
       printf ("incg data return: misaligned request\n");
-      err = 0;
-      goto out;
+      goto release_out;
     }
 
-  if (!dirty)
-    {
-      err = 0;
-      goto out;
-    }
-
-  npages = length / __vm_page_size;
-  pagerrs = alloca (npages * sizeof (error_t));
-
-  /* Acquire the right to meddle with the pagemap */
-  mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
+  if (! dirty)
+    goto release_out;
 
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for write\n");
-      _pager_release_seqno (p, seqno);
-      mutex_unlock (&p->interlock);
-      goto out;
+      goto release_out;
     }
+
+  npages = length / __vm_page_size;
+  pagerrs = alloca (npages * sizeof (error_t));
 
   _pager_block_termination (p);	/* until we are done with the pagemap
 				   when the write completes. */
@@ -193,6 +184,12 @@ _pager_do_write_request (mach_port_t object,
  out:
   ports_port_deref (p);
   return 0;
+
+ release_out:
+  _pager_release_seqno (p, seqno);
+  mutex_unlock (&p->interlock);
+  ports_port_deref (p);
+  return 0;
 }
 
 /* Implement pageout call back as described by <mach/memory_object.defs>. */
@@ -209,6 +206,3 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   return _pager_do_write_request (object, seqno, control, offset, data,
 				  length, dirty, kcopy, 0);
 }
-
-			   
-
