@@ -26,14 +26,14 @@
    be locked.  */
 error_t
 _diskfs_rdwr_internal (struct node *np,
-		       char *data,
-		       int offset, 
-		       int amt, 
+		       char *volatile data,
+		       volatile int offset, 
+		       volatile int amt, 
 		       int dir)
 {
   char *window;
   int winoff;
-  int cc;
+  volatile int cc;
   memory_object_t memobj;
   int err = 0;
 
@@ -64,25 +64,25 @@ _diskfs_rdwr_internal (struct node *np,
 		    0, 1, memobj, winoff, 0, VM_PROT_READ|VM_PROT_WRITE, 
 		    VM_PROT_READ|VM_PROT_WRITE, VM_INHERIT_NONE);
       assert (!err);
-      register_memory_fault_area (get_filemap_pager_struct (np), winoff,
-				  window, 8 * __vm_page_size);
+      diskfs_register_memory_fault_area (diskfs_get_filemap_pager_struct (np), 
+					 winoff, window, 8 * __vm_page_size);
       
       if ((offset - winoff) + amt > 8 * __vm_page_size)
 	cc = 8 * __vm_page_size - (offset - winoff);
       else
 	cc = amt;
       
-      if (!(err = catch_exception ()))
+      if (!(err = diskfs_catch_exception ()))
 	{
 	  if (dir)
 	    bcopy (data, window + (offset - winoff), cc);
 	  else
 	    bcopy (window + (offset - winoff), data, cc);
-	  end_catch_exception ();
+	  diskfs_end_catch_exception ();
 	}
 
       vm_deallocate (mach_task_self (), (u_int) window, 8 * __vm_page_size);
-      unregister_memory_fault_area (window, 8 * __vm_page_size);
+      diskfs_unregister_memory_fault_area (window, 8 * __vm_page_size);
       if (err)
 	break;
       amt -= cc;
