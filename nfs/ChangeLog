@@ -1,3 +1,7 @@
+1997-06-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ops.c (netfs_validate_stat): Don't clear NP->istranslated.
+
 Wed May 21 12:07:24 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_create_file): Only attempt chown if the

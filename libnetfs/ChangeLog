@@ -1,3 +1,23 @@
+1997-06-11  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* trans-callback.c, set-get-trans.c: New files.
+	* Makefile (OTHERSRCS): Add trans-callback.c & set-get-trans.c.
+
+1997-06-09  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* netfs.h (struct node): Remove istranslated field.
+	(netfs_get_translator): New declaration.
+
+	* dir-lookup.c (netfs_S_dir_lookup): Use S_IPTRANS bit in nn_stat
+ 	st_mode field rather than istranslated field.
+	* fsys-getroot.c (netfs_S_fsys_getroot): Likewise.
+	* file-set-translator.c (netfs_S_file_set_translator): Likewise.
+	* io-stat.c (netfs_S_io_stat): Set S_IATRANS & S_IROOT bits in
+	st_mode field of returned buffer if appropriate.
+
+	* init-startup.c (netfs_startup): Supply program name with error
+	messages.
+
 Tue May 27 11:55:17 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* file-chmod.c (netfs_S_file_chmod): Turn off any read-only bits.
