@@ -31,7 +31,8 @@ OBJS = $(filter-out $(SCRIPTS),$(SRCS:.c=.o))
 
 include ../Makeconf
 
-fsck: fstab.o clookup.o ../libshouldbeinlibc/libshouldbeinlibc.a
+fsck: fstab.o clookup.o
+reboot halt fsck: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 %: %.sh
 	cp $< $@
