@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.12 1996/07/07 01:14:44 miles Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.13 1996/07/23 23:37:21 miles Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -1122,9 +1122,9 @@ fsinit(utime)
 	/*
 	 * initialize the node
 	 */
-	node.di_atime.ts_sec = utime;
-	node.di_mtime.ts_sec = utime;
-	node.di_ctime.ts_sec = utime;
+	node.di_atime.tv_sec = utime;
+	node.di_mtime.tv_sec = utime;
+	node.di_ctime.tv_sec = utime;
 #ifdef LOSTDIR
 	/*
 	 * create the lost+found directory
