@@ -37,12 +37,12 @@ trivfs_S_io_stat (struct trivfs_protid *cred,
 
   if (!err)
     {
-      if (!trivfs_fsid)
+      if (! trivfs_fsid)
 	trivfs_fsid = getpid();
 
       st->st_fstype = trivfs_fstype;
       st->st_fsid = trivfs_fsid;
-      st->st_mode = (st->st_mode & ~S_IFMT) | S_IFCHR;
+      st->st_mode = (st->st_mode & ~S_IFMT & ~S_ITRANS) | S_IFCHR | S_IROOT;
 
       trivfs_modify_stat (cred, st);
     }
