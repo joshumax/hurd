@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -38,7 +38,7 @@
 char *pmap_service_name = "sunrpc";
 
 /* Fallback port number for portmapper */
-short pmap_service_number = PMAPPORT; 
+short pmap_service_number = PMAPPORT;
 
 /* RPC program for mount server. */
 int mount_program = MOUNTPROG;
@@ -70,7 +70,7 @@ int protocol_version = 2;
    Allocate storage with malloc and point *BUF at it; caller must free
    this when done.  Return the address where the args for the
    procedure should be placed. */
-int *
+static int *
 pmap_initialize_rpc (int procnum, void **buf)
 {
   return initialize_rpc (PMAPPROG, PMAPVERS, procnum, 0, buf, 0, 0, -1);
@@ -80,7 +80,7 @@ pmap_initialize_rpc (int procnum, void **buf)
    server.  Allocate storage with malloc and point *BUF at it; caller
    must free this when done.  Return the address where the args for
    the procedure should be placed.  */
-int *
+static int *
 mount_initialize_rpc (int procnum, void **buf)
 {
   return initialize_rpc (MOUNTPROG, MOUNTVERS, procnum, 0, buf, 0, 0, -1);
@@ -119,11 +119,11 @@ mount_root (char *name, char *host)
       herror (host);
       return 0;
     }
-  
+
   addr.sin_family = h->h_addrtype;
   bcopy (h->h_addr_list[0], &addr.sin_addr, h->h_length);
   addr.sin_port = pmapport;
-  
+
   connect (main_udp_socket,
 	   (struct sockaddr *)&addr, sizeof (struct sockaddr_in));
 
@@ -154,11 +154,11 @@ mount_root (char *name, char *host)
     }
   else
     addr.sin_port = htons (mount_port);
-  
+
 
   /* Now talking to the mount program, fetch the file handle
      for the root. */
-  connect (main_udp_socket, 
+  connect (main_udp_socket,
 	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
   p = mount_initialize_rpc (MOUNTPROC_MNT, &rpcbuf);
   p = xdr_encode_string (p, name);
@@ -179,7 +179,7 @@ mount_root (char *name, char *host)
       perror (name);
       return 0;
     }
-  
+
   /* Create the node for root */
   xdr_decode_fhandle (p, &np);
   free (rpcbuf);
@@ -189,7 +189,7 @@ mount_root (char *name, char *host)
     {
       /* Now send another PMAPPROC_GETPORT request to lookup the nfs server. */
       addr.sin_port = pmapport;
-      connect (main_udp_socket, 
+      connect (main_udp_socket,
 	       (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
       p = pmap_initialize_rpc (PMAPPROC_GETPORT, &rpcbuf);
       *p++ = htonl (NFS_PROGRAM);
@@ -204,17 +204,17 @@ mount_root (char *name, char *host)
       else
 	{
 	  free (rpcbuf);
-	  perror ("pmap of nfs server");
+	  perror ("portmap of nfs server");
 	  return 0;
 	}
       free (rpcbuf);
     }
   else
     port = nfs_port;
-  
+
   addr.sin_port = htons (port);
-  connect (main_udp_socket, 
+  connect (main_udp_socket,
 	   (struct sockaddr *) &addr, sizeof (struct sockaddr_in));
-  
+
   return np;
 }
