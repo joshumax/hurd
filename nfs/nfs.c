@@ -213,15 +213,6 @@ xdr_decode_fattr (int *p, struct stat *st)
 
 }
 
-/* Decode *P into an fhandle, stored at HANDLE; return the address
-   of the following data. */
-int *
-xdr_decode_fhandle (int *p, void *handle)
-{
-  bcopy (p, handle, NFS_FHSIZE);
-  return p + (NFS_FHSIZE / sizeof (int));
-}
-
 /* Decode *P into a string, stored at BUF; return the address
    of the following data. */
 int *
@@ -244,8 +235,13 @@ nfs_initialize_rpc (int rpc_proc, struct netcred *cred,
   uid_t uid;
   uid_t gid;
   
-  if (cred
-      && (cred->nuids || cred->ngids))
+  if (cred == (struct netcred *) -1)
+    {
+      uid = gid = 0;
+      second_gid = -2;
+    }
+  else if (cred
+	   && (cred->nuids || cred->ngids))
     {
       if (cred_has_uid (cred, 0))
 	{
