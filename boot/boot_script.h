@@ -1,5 +1,8 @@
 /* Definitions for boot script parser for Mach.  */
 
+#ifndef _boot_script_h
+#define _boot_script_h
+
 /* Written by Shantanu Goel (goel@cs.columbia.edu).  */
 
 /* Error codes returned by boot_script_parse_line()
@@ -62,7 +65,7 @@ void boot_script_free (void *, size_t);
    strings are STRINGS.  STRINGS has length STRINGLEN.
    Return 0 for success, non-zero otherwise.  */
 int boot_script_exec_cmd (void *hook,
-			  mach_port_t task, char *path, int argc,
+			  task_t task, char *path, int argc,
 			  char **argv, char *strings, int stringlen);
 
 /* The user must define this function.  Load the contents of FILE
@@ -74,6 +77,7 @@ mach_port_t boot_script_read_file (const char *file);
 int boot_script_task_create (struct cmd *); /* task_create + task_suspend */
 int boot_script_task_resume (struct cmd *);
 int boot_script_prompt_task_resume (struct cmd *);
+int boot_script_insert_right (struct cmd *, mach_port_t); /* same name */
 
 /* The user must define this function to clean up the `task_t'
    returned by boot_script_task_create.  */
@@ -105,5 +109,5 @@ int boot_script_define_function (const char *name, int ret_type,
 /* Returns a string describing the error ERR.  */
 char *boot_script_error_string (int err);
 
-
-void safe_gets (char *, int);
+
+#endif /* _boot_script_h */
