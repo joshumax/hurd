@@ -1,5 +1,6 @@
-# 
-#   Copyright (C) 1996 Free Software Foundation, Inc.
+# Makefile for include subdirectory.
+#
+#   Copyright (C) 1996,2002 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -21,7 +22,13 @@
 dir := include
 makemode := misc
 
-DIST_FILES = $(notdir $(wildcard $(srcdir)/*.h))
+installhdrs := sys/procfs.h
+
+LCLHDRS := $(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/*.h $(srcdir)/*/*.h))
 
 include ../Makeconf
 
+install-headers: $(installhdrs:%=$(includedir)/%)
+$(includedir)/%: $(srcdir)/%
+	@$(MKINSTALLDIRS) $(@D)
+	$(INSTALL_DATA) $< $@
