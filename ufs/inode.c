@@ -66,7 +66,7 @@ iget (ino_t inum, struct node **npp)
 
   dn = malloc (sizeof (struct disknode));
 
-  dn->number = inum;
+  np->cache_id = dn->number = inum;
   dn->dirents = 0;
 
   rwlock_init (&dn->allocptrlock);
