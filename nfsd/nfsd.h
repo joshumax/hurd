@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 98 Free Software Foundation, Inc.
+   Copyright (C) 1996,98,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -76,7 +76,7 @@ struct proctable
 {
   int min;
   int max;
-  struct procedure procs[0];
+  struct procedure procs[];
 };
 
 volatile struct mapped_time_value *mapped_time;
