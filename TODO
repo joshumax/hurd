@@ -123,6 +123,8 @@ See `tasks', the exported task list.
     instead of the underlying node, when it's important. !!
 
 ** libps
+*** Add option to print values times with a delay,
+    and to print values relative to last printing.
 *** Whizzier columnation (autosizing?)
 *** Make getters more robust.
 
