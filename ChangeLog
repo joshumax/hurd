@@ -3,6 +3,8 @@ Thu Jul 18 00:40:04 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* Makeconf (install): Depend on $(includedir)/$(installhdrsubdir).
 	(install-headers): Likewise.
 	($(includedir)/$(installhdrsubdir)): New rule.
+	
+	* Makeconf (vpath -l%): Tell make where to find -l libraries.
 
 Wed Jul 17 22:49:50 1996  Roland McGrath  <roland@baalperazim.frob.com>
 
