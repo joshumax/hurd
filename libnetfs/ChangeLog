@@ -1,3 +1,9 @@
+Mon Oct 21 21:56:33 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* netfs.h: Add extern inline protection.
+	* netfs.c: New file.
+	* Makefile (OTHERSRCS): Add netfs.c.
+
 Wed Sep 18 12:56:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* std-runtime-argp.c <argp.h>: New include.

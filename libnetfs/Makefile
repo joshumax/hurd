@@ -44,7 +44,7 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 	init-loop.c demuxer.c shutdown.c release-protid.c release-peropen.c   \
 	init-startup.c startup-argp.c set-options.c append-args.c	      \
 	runtime-argp.c std-runtime-argp.c std-startup-argp.c		      \
-	append-std-options.c
+	append-std-options.c netfs.c
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 

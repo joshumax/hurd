@@ -24,6 +24,10 @@
 #include <hurd/iohelp.h>
 #include <assert.h>
 
+#ifndef NETFS_EI
+#define NETFS_EI extern inline
+#endif
+
 /* This library supports client-side network file system
    implementations.  It is analogous to the diskfs library provided for 
    disk-based filesystems.  */
@@ -325,7 +329,7 @@ extern struct node *netfs_root_node;
 extern mach_port_t netfs_fsys_identity;
 extern auth_t netfs_auth_server_port;
 
-extern inline void
+NETFS_EI void
 netfs_nref (struct node *np)
 {
   spin_lock (&netfs_node_refcnt_lock);
@@ -333,7 +337,7 @@ netfs_nref (struct node *np)
   spin_unlock (&netfs_node_refcnt_lock);
 }
   
-extern inline void
+NETFS_EI void
 netfs_nrele (struct node *np)
 {
   spin_lock (&netfs_node_refcnt_lock);
@@ -348,7 +352,7 @@ netfs_nrele (struct node *np)
     spin_unlock (&netfs_node_refcnt_lock);
 }
 
-extern inline void
+NETFS_EI void
 netfs_nput (struct node *np)
 {
   spin_lock (&netfs_node_refcnt_lock);
