@@ -22,6 +22,7 @@
 
 #define pfinet_demuxer ethernet_demuxer
 
+int
 main ()
 {
   pfinet_bucket = ports_create_bucket ();
