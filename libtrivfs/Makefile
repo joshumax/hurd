@@ -30,9 +30,9 @@ IOSRCS=io-async-icky.c \
 	io-async.c io-duplicate.c io-map.c io-modes-get.c io-modes-off.c \
 	io-modes-on.c io-modes-set.c io-owner-get.c io-owner-mod.c io-read.c \
 	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
-	io-select.c io-stat.c io-stubs.c io-version.c io-write.c 
+	io-select.c io-stat.c io-stubs.c io-write.c 
 
-FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c
+FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c
 
 NOTIFYSRCS=nosenders.c notify-stubs.c
 
@@ -41,6 +41,8 @@ INTSRCS=interrupt.c
 OTHERSRCS=demuxer.c handle-port.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(NOTIFYSRCS) $(INTSRCS) $(OTHERSCS)
+
+MIGSTUBS=fsServer.o ioServer.o fsysServer.o interruptServer.o
 
 OBJS= $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
 
@@ -92,16 +94,8 @@ notify_S.h notifyServer.c: $(includedir)/mach/notify.defs
 	| $(MIGCOM) -prefix trivfs_ \
 		 -sheader notify_S.h -header /dev/null -user /dev/null
 
-exec_S.h execServer.c: $(includedir)/hurd/exec.defs \
-		$(includedir)/hurd/hurd_types.defs fsmutations.h
-	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/exec.defs \
-	| $(MIGCOM) -sheader exec_S.h -header /dev/null -user /dev/null
-
 interrupt_S.h interruptServer.c: $(includedir)/hurd/interrupt.defs \
 		$(includedir)/hurd/hurd_types.defs fsmutations.h
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $(includedir)/hurd/interrupt.defs \
 	| $(MIGCOM) -sheader interrupt_S.h -header /dev/null -user /dev/null
 
-fsys_reply.h fsys_replyUser.c: $(includedir)/hurd/fsys_reply.defs $(hurd/hurd_types.defs)
-	$(CPP) $(CPPFLAGS) $(includedir)/hurd/fsys_reply.defs \
-	| $(MIGCOM) -prefix trivfs__ -server /dev/null
