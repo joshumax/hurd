@@ -1,5 +1,5 @@
 /* Reply half of wait
-   Copyright (C) 1991, 1993, 1994, 1996 Free Software Foundation
+   Copyright (C) 1991,93,94,96,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -39,9 +39,9 @@ skip; /* child */
 
 simpleroutine proc_setmsgport_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	in oldmsgport: mach_port_t);
-	
+
 skip; /* reassign */
 skip; /* setowner */
 skip; /* getpids */
@@ -50,14 +50,13 @@ skip; /* get_arg_locations */
 
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	in msgports: mach_port_t);
 
 simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	in status: int;
 	in sigcode: int;
 	in rusage: rusage_t;
 	in pid_status: pid_t);
-

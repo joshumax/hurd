@@ -1,5 +1,5 @@
 /* Reply side of miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -26,7 +26,7 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 
 simpleroutine msg_sig_post_reply (
 	reply_port: reply_port_t;
-	in return_code: kern_return_t);
+	in return_code: kern_return_t, RetCode);
 
 skip; /* msg_proc_newids */
 skip; /* msg_add_auth */
@@ -52,4 +52,4 @@ skip; /* msg_startup_dosync */
 
 simpleroutine msg_sig_post_untraced_reply (
 	reply_port: reply_port_t;
-	in return_code: kern_return_t);
+	in return_code: kern_return_t, RetCode);

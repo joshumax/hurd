@@ -1,6 +1,6 @@
 /* Server-reply definitions for startup server interface
    NOTE: All changes here must be reflected in startup.defs.
-   Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991,92,93,94,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -33,14 +33,14 @@ STARTUP_IMPORTS
 
 simpleroutine startup_essential_task_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t);
+	errorcode: kern_return_t, retcode);
 
 skip;	/* startup_request_notification */
 skip;	/* startup_reboot */
 
 simpleroutine startup_procinit_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	startup_task: task_t;
 	auth: auth_t;
 	host_priv: mach_port_send_t;
@@ -48,5 +48,5 @@ simpleroutine startup_procinit_reply (
 
 simpleroutine startup_authinit_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	proc: mach_port_send_t);

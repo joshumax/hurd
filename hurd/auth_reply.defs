@@ -1,5 +1,5 @@
 /* Reply-only side of auth interface
-   Copyright (C) 1991, 1993, 1994 Free Software Foundation
+   Copyright (C) 1991,93,94,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -31,14 +31,13 @@ skip; /* auth_makeauth */
 
 simpleroutine auth_user_authenticate_reply (
 	reply_port: reply_port_t;
-	in return_code: kern_return_t;
+	in return_code: kern_return_t, RetCode;
 	in newhandle: mach_port_send_t);
 
 simpleroutine auth_server_authenticate_reply (
 	reply_port: reply_port_t;
-	in return_code: kern_return_t;
+	in return_code: kern_return_t, RetCode;
 	in gen_uids: idarray_t;
 	in aux_uids: idarray_t;
 	in gen_gids: idarray_t;
 	in aux_gids: idarray_t);
-	

@@ -1,5 +1,5 @@
 /* MiG protocol for handling program crashes, reply half.
-   Copyright (C) 1992, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992,94,95,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -27,4 +27,4 @@ subsystem crash_reply 32100;	/* must match crash + 100 */
 
 simpleroutine crash_dump_task_reply (
 	ureply_port: mach_port_poly_t;
-	result: int);
+	result: int, RetCode);

@@ -1,5 +1,5 @@
 /* Reply half of fsys
-   Copyright (C) 1991, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1991,93,94,95,2001 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -27,24 +27,24 @@ type reply_port_t = polymorphic | MACH_MSG_TYPE_PORT_SEND_ONCE
 	ctype: mach_port_t;
 
 simpleroutine fsys_startup_reply (
-	repsy_port: reply_port_t;
-	retcode: kern_return_t;
+	reply_port: reply_port_t;
+	errorcode: kern_return_t, retcode;
 	realnode: mach_port_send_t);
 
 simpleroutine fsys_goaway_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t);
+	errorcode: kern_return_t, retcode);
 
 simpleroutine fsys_getroot_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	do_retry: retry_type;
 	retry_name: string_t;
 	file: mach_port_send_t);
 
 simpleroutine fsys_getfile_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	file: mach_port_send_t);
 
 simpleroutine fsys_syncfs_reply (
@@ -53,25 +53,24 @@ simpleroutine fsys_syncfs_reply (
 
 simpleroutine fsys_set_options_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t);
+	errorcode: kern_return_t, retcode);
 
 simpleroutine fsys_getpriv_reply (
 	reply_port_: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	host_priv: mach_port_send_t;
 	device_master: mach_port_send_t;
 	fstask: mach_port_send_t);
 
 simpleroutine fsys_init_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t);
+	errorcode: kern_return_t, retcode);
 
 simpleroutine fsys_forward_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t);
+	errorcode: kern_return_t, retcode);
 
 simpleroutine fsys_get_options_reply (
 	reply_port: reply_port_t;
-	retcode: kern_return_t;
+	errorcode: kern_return_t, retcode;
 	options: data_t);
-
