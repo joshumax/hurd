@@ -33,7 +33,7 @@
 
 /* ---------------------------------------------------------------- */
 
-#define USAGE "Usage: %s [OPTION...] FILE OPTIONS...\n" 
+#define USAGE "Usage: %s [OPTION...] FILESYS OPTIONS...\n" 
 
 static void
 usage(status)
@@ -57,13 +57,13 @@ usage(status)
   exit(status);
 }
 
-#define SHORT_OPTIONS "LR?V"
+#define SHORT_OPTIONS "LRV"
 
 static struct option options[] =
 {
   {"dereference", no_argument, 0, 'L'},
   {"recursive", no_argument, 0, 'R'},
-  {"help", no_argument, 0, '?'},
+  {"help", no_argument, 0, '&'},
   {"version", no_argument, 0, 'V'},
   {0, 0, 0, 0}
 };
@@ -103,9 +103,15 @@ main(int argc, char *argv[])
       case 'R': recursive = 1; break;
       case 'L': deref = 1; break;
       case 'V': printf ("%s 0.0\n", program_invocation_short_name); exit (0);
-      case '?': usage(0);
+      case '&': usage(0);
       default:  usage(-1);
       }
+
+  if (node_name == NULL)
+    {
+      fprintf (stderr, USAGE, program_invocation_short_name);
+      usage (-1);
+    }
 
   node = file_name_lookup(node_name, (deref ? 0 : O_NOLINK), 0666);
   if (node == MACH_PORT_NULL)
@@ -118,7 +124,10 @@ main(int argc, char *argv[])
 
   err = fsys_set_options (fsys, argz, argz_len, recursive);
   if (err)
-    error(5, err, "%s", node_name);
+    {
+      argz_stringify (argz, argz_len);
+      error(5, err, "%s: %s", node_name, argz);
+    }
 
   exit(0);
 }
