@@ -194,9 +194,14 @@ int arp_mc_map(u32 addr, u8 *haddr, struct device *dev, int dir)
 {
 	switch (dev->type) {
 	case ARPHRD_ETHER:
-	case ARPHRD_IEEE802:
 	case ARPHRD_FDDI:
-		ip_eth_mc_map(addr, haddr);
+		ip_eth_mc_map(addr, haddr) ; 
+		return 0 ; 
+	case ARPHRD_IEEE802:
+		if ( (dev->name[0] == 't') && (dev->name[1] == 'r')) /* Token Ring */
+			ip_tr_mc_map(addr,haddr) ; 
+		else  
+			ip_eth_mc_map(addr, haddr);
 		return 0;
 	default:
 		if (dir) {
