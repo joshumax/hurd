@@ -36,6 +36,7 @@ struct pager
   struct condition wakeup;
 
   struct lock_request *lock_requests; /* pending lock requests */
+  struct attribute_request *attribute_requests; /* pending attr requests */
   
   /* Interface ports */
   memory_object_control_t memobjcntl;
@@ -61,6 +62,15 @@ struct lock_request
   int pending_writes;
   int locks_pending;
   int threads_waiting;
+};
+
+struct attribute_request
+{
+  struct attribute_request *next, **prevp;
+  boolean_t may_cache;
+  memory_object_copy_strategy_t copy_strategy;
+  int threads_waiting;
+  int attrs_pending;
 };
 
 enum page_errors
