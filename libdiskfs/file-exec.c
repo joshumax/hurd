@@ -21,6 +21,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 #include "fs_S.h"
+#include <sys/stat.h>
+#include <fcntlbits.h>
+#include <hurd/exec.h>
 
 error_t 
 diskfs_S_file_exec (struct protid *cred,
@@ -41,5 +44,41 @@ diskfs_S_file_exec (struct protid *cred,
 	     mach_port_t *destroynames,
 	     u_int destroynameslen)
 {
-  return EOPNOTSUPP;
+  struct node *np;
+  error_t err;
+  
+  if (!cred)
+    return EOPNOTSUPP;
+  
+  np = cred->po->np;
+  if (err = diskfs_access (np, S_IEXEC, cred))
+    return err;
+  if (!((np->dn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))
+	|| ((np->dn_stat.st_mode & S_IUSEUNK)
+	    && (np->dn_stat.st_mode & (S_IEXEC << S_IUNKSHIFT)))))
+    return EACCES;
+  
+  /* Handle S_ISUID and S_ISGID uid substitution. */
+  /* XXX We should change the auth handle here too. */
+  if (((np->dn_stat.st_mode & S_ISUID)
+       && !diskfs_isuid (np->dn_stat.st_uid, cred))
+      || ((np->dn_stat.st_mode & S_ISGID)
+	  && !diskfs_groupmember (np->dn_stat.st_gid, cred)))
+    flags |= EXEC_SECURE|EXEC_NEWTASK;
+
+  if (diskfs_access (np, S_IREAD, cred))
+    flags |= EXEC_NEWTASK;
+
+  err = exec_exec (diskfs_exec, 
+		   (ports_get_right 
+		    (diskfs_make_protid
+		     (diskfs_make_peropen (np, O_READ),
+		      cred->uids, cred->nuids, cred->gids, cred->ngids))),
+		   task, flags, argv, argvlen, envp, envplen, 
+		   fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
+		   portarray, MACH_MSG_TYPE_MOVE_SEND, portarraylen,
+		   intarray, intarraylen, deallocnames, deallocnameslen,
+		   destroynames, destroynameslen);
+  mach_port_deallocate (mach_task_self (), task);
+  return err;
 }
