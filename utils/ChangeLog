@@ -1,6 +1,8 @@
-1999-08-20  Roland McGrath  <roland@baalperazim.frob.com>
+1999-08-10  Thomas Bushnell, BSG  <tb@mit.edu>
 
-	* portinfo.c (options): Doc fixes from Marcus.
+	* portinfo.c: Correct documentation for (currently implemented)
+	--target-send and --target-send-once options.  Reported by Marcus
+	Brinkmann (Marcus.Brinkmann@ruhr-uni-bochum.de).
 
 1999-07-23  Roland McGrath  <roland@baalperazim.frob.com>
 
