@@ -1,4 +1,4 @@
-/* Interface definitions for the exec servers
+/* Interface definitions for the exec servers.
    Copyright (C) 1991, 1992, 1993, 1994 Free Software Foundation
 
 This file is part of the GNU Hurd.
@@ -31,9 +31,9 @@ routine exec_exec ( /* Better name, Roland??
 	flags: int;
 	argv: data_t, servercopy;
 	envp: data_t, servercopy;
-	dtable: portarray_t;
-	portarray: portarray_t;
-	intarray: intarray_t;
+	dtable: portarray_t, servercopy;
+	portarray: portarray_t, servercopy;
+	intarray: intarray_t, servercopy;
 	deallocnames: mach_port_name_array_t;
 	destroynames: mach_port_name_array_t);
 
@@ -47,11 +47,11 @@ routine exec_startup (
 	out stack_base: vm_address_t;
 	out stack_size: vm_size_t;
 	out flags: int;
-	out argv: data_t;
-	out envp: data_t;
-	out dtable: portarray_t;
-	out portarray: portarray_t;
-	out intarray: intarray_t);
+	out argv: data_t, dealloc;
+	out envp: data_t, dealloc;
+	out dtable: portarray_t, dealloc;
+	out portarray: portarray_t, dealloc;
+	out intarray: intarray_t, dealloc);
 
 /* This call is made by the bootstrapping filesystem to give the
    execserver its auth handle.  */
@@ -62,5 +62,5 @@ routine exec_init (
 
 simpleroutine exec_setexecdata (
 	execserver: mach_port_t;
-	ports: portarray_t;
-	ints: intarray_t);
+	ports: portarray_t, servercopy;
+	ints: intarray_t, servercopy);
