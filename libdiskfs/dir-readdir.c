@@ -23,7 +23,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "fs_S.h"
 #include "io_S.h"
 
-error_t
+kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
 		      char **data,
 		      u_int *datacnt,
