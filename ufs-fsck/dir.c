@@ -89,15 +89,15 @@ validdir (ino_t dir, char *action)
       return 1;
       
     case UNALLOC:
-      pfatal ("CANNOT %s I=%d; NOT ALLOCATED\n", action, dir);
+      pfatal ("CANNOT %s I=%d; NOT ALLOCATED", action, dir);
       return 0;
       
     case BADDIR:
-      pfatal ("CANNOT %s I=%d; BAD BLOCKS\n", action, dir);
+      pfatal ("CANNOT %s I=%d; BAD BLOCKS", action, dir);
       return 0;
       
     case REG:
-      pfatal ("CANNOT %s I=%d; NOT DIRECTORY\n", action, dir);
+      pfatal ("CANNOT %s I=%d; NOT DIRECTORY", action, dir);
       return 0;
 
     default:
@@ -106,8 +106,9 @@ validdir (ino_t dir, char *action)
 }  
 
 /* Search directory DIR for name NAME.  If NAME is found, then
-   set *INO to the inode of the entry; otherwise clear INO. */
-void
+   set *INO to the inode of the entry; otherwise clear INO.  Returns 1 if all
+   was normal, or 0 if there was some error doing the search.  */
+int
 searchdir (ino_t dir, char *name, ino_t *ino)
 {
   struct dinode dino;
@@ -126,15 +127,15 @@ searchdir (ino_t dir, char *name, ino_t *ino)
 	  if (dp->d_reclen == 0
 	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
 	    return;
+
 	  if (dp->d_ino == 0 || dp->d_ino > maxino)
 	    continue;
-	  if (DIRECT_NAMLEN (dp) != len)
-	    continue;
-	  if (!strcmp (dp->d_name, name))
-	    continue;
-	  
-	  *ino = dp->d_ino;
-	  return;
+
+	  if (DIRECT_NAMLEN (dp) == len && strcmp (dp->d_name, name) == 0)
+	    {
+	      *ino = dp->d_ino;
+	      return;
+	    }
 	}
     }
 
@@ -163,12 +164,14 @@ searchdir (ino_t dir, char *name, ino_t *ino)
   *ino = 0;
 
   if (!validdir (dir, "READ"))
-    return;
+    return 0;
 
   getinode (dir, &dino);
 
   len = strlen (name);
   datablocks_iterate (&dino, checkdirblock);
+
+  return 1;
 }
 
 /* Change the existing entry in DIR for name NAME to be
@@ -195,16 +198,16 @@ changeino (ino_t dir, char *name, ino_t ino)
 	  if (dp->d_reclen == 0
 	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
 	    return 0;
+
 	  if (dp->d_ino == 0 || dp->d_ino > maxino)
 	    continue;
-	  if (DIRECT_NAMLEN (dp) != len)
-	    continue;
-	  if (!strcmp (dp->d_name, name))
-	    continue;
-	  
-	  dp->d_ino = ino;
-	  madechange = 1;
-	  return 1;
+
+	  if (DIRECT_NAMLEN (dp) == len && strcmp (dp->d_name, name) == 0)
+	    {
+	      dp->d_ino = ino;
+	      madechange = 1;
+	      return 1;
+	    }
 	}
       return 0;
     }
@@ -427,16 +430,21 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
 int
 linkup (ino_t ino, ino_t parent)
 {
+  int search_failed;
   struct dinode lfdino;
   char *tempname;
   ino_t foo;
 
   if (lfdir == 0)
     {
-      searchdir (ROOTINO, lfname, &lfdir);
+      if (!searchdir (ROOTINO, lfname, &lfdir))
+	{
+	  pfatal ("FAILURE SEARCHING FOR %s\n", lfname);
+	  return 0;
+	}
       if (lfdir == 0)
 	{
-	  pwarn ("NO lost+found DIRECTORY");
+	  pwarn ("NO %s DIRECTORY", lfname);
 	  if (preen || reply ("CREATE"))
 	    {
 	      lfdir = allocdir (ROOTINO, 0, lfmode);
@@ -459,8 +467,7 @@ linkup (ino_t ino, ino_t parent)
 	    }
 	  if (!lfdir)
 	    {
-	      pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
-	      printf ("\n\n");
+	      pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
 	      return 0;
 	    }
 	}
@@ -471,7 +478,7 @@ linkup (ino_t ino, ino_t parent)
     {
       ino_t oldlfdir;
       
-      pfatal ("lost+found IS NOT A DIRECTORY");
+      pfatal ("%s IS NOT A DIRECTORY", lfname);
       if (!reply ("REALLOCATE"))
 	return 0;
       
@@ -480,14 +487,12 @@ linkup (ino_t ino, ino_t parent)
       lfdir = allocdir (ROOTINO, 0, lfmode);
       if (!lfdir)
 	{
-	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
-	  printf ("\n\n");
+	  pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
 	  return 0;
 	}
       if (!changeino (ROOTINO, lfname, lfdir))
 	{
-	  pfatal ("SORRY, CANNOT CREATE lost+found DIRECTORY");
-	  printf ("\n\n");
+	  pfatal ("SORRY, CANNOT CREATE %s DIRECTORY\n", lfname);
 	  return 0;
 	}
       
@@ -499,24 +504,30 @@ linkup (ino_t ino, ino_t parent)
   
   if (inodestate[lfdir] != DIRECTORY && inodestate[lfdir] != (DIRECTORY|DIR_REF))
     {
-      pfatal ("SORRY.  lost+found DIRECTORY NOT ALLOCATED.\n\n");
+      pfatal ("SORRY.  %s DIRECTORY NOT ALLOCATED\n", lfname);
       return 0;
     }
+
   asprintf (&tempname, "#%d", ino);
-  searchdir (lfdir, tempname, &foo);
+  search_failed = !searchdir (lfdir, tempname, &foo);
   while (foo)
     {
       char *newname;
       asprintf (&newname, "%sa", tempname);
       free (tempname);
       tempname = newname;
-      searchdir (lfdir, tempname, &foo);
+      search_failed = !searchdir (lfdir, tempname, &foo);
     }
-  if (makeentry (lfdir, ino, tempname))
+  if (search_failed)
     {
       free (tempname);
-      pfatal("SORRY. NO SPACE IN lost+found DIRECTORY");
-      printf("\n\n");
+      pfatal ("FAILURE SEARCHING FOR %s in %s\n", tempname, lfname);
+      return 0;
+    }
+  if (!makeentry (lfdir, ino, tempname))
+    {
+      free (tempname);
+      pfatal("SORRY, NO SPACE IN %s DIRECTORY\n", lfname);
       return 0;
     }
   free (tempname);
@@ -529,7 +540,7 @@ linkup (ino_t ino, ino_t parent)
 	{
 	  if (!changeino (ino, "..", lfdir))
 	    {
-	      pfatal ("CANNOT ADJUST .. link I=%u", ino);
+	      pfatal ("CANNOT ADJUST .. link I=%u\n", ino);
 	      return 0;
 	    }
 	  /* Forget about link to old parent */
@@ -537,7 +548,7 @@ linkup (ino_t ino, ino_t parent)
 	}
       else if (!makeentry (ino, lfdir, ".."))
 	{
-	  pfatal ("CANNOT CREAT .. link I=%u", ino);
+	  pfatal ("CANNOT CREAT .. link I=%u\n", ino);
 	  return 0;
 	}
       
@@ -556,5 +567,3 @@ linkup (ino_t ino, ino_t parent)
     }
   return 1;
 }
-
-
