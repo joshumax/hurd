@@ -23,7 +23,7 @@
 
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
-error_t
+kern_return_t
 ports_S_interrupt_operation (mach_port_t port,
 			     mach_port_seqno_t seqno)
 {
