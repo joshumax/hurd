@@ -1,5 +1,5 @@
-/* Fetching identity port 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/* Fetching identity port
+   Copyright (C) 1996,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,14 +29,14 @@ trivfs_S_io_identity (struct trivfs_protid *cred,
 		      mach_msg_type_name_t *idport_type,
 		      mach_port_t *fsidport,
 		      mach_msg_type_name_t *fsidport_type,
-		      int *fileno)
+		      ino_t *fileno)
 {
   error_t err;
   struct stat st;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   err = io_stat (cred->realnode, &st);
   if (err)
     return err;
