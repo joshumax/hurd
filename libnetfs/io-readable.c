@@ -35,7 +35,7 @@ netfs_S_io_readable (struct protid *user,
     return EINVAL;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_validate_stat (user->po->np, user);
+  err = netfs_validate_stat (user->po->np, user->credential);
   if (!err)
     {
       if (user->po->np->nn_stat.st_size > user->po->filepointer)
