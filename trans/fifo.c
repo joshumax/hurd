@@ -423,17 +423,54 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
    return the types that are then available.  ID_TAG is returned as passed; it
-u   is just for the convenience of the user in matching up reply messages with
+   is just for the convenience of the user in matching up reply messages with
    specific requests sent.  */
 error_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
 		    int *select_type, int *tag)
 {
+  struct pipe *pipe;
+  error_t err = 0;
+  int ready = 0;
+
   if (!cred)
     return EOPNOTSUPP;
-  *select_type &= SELECT_READ | SELECT_WRITE;
-  return pipe_pair_select (cred->hook, cred->hook, select_type, 1);
+
+  pipe = cred->hook;
+
+  if (*select_type & SELECT_READ)
+    if (cred->po->openmodes & O_READ)
+      {
+	mutex_lock (&pipe->lock);
+	if (pipe_wait_readable (pipe, 1, 1) != EWOULDBLOCK)
+	  ready |= SELECT_READ; /* Data immediately readable (or error). */
+	mutex_unlock (&pipe->lock);
+      }
+    else
+      ready |= SELECT_READ;	/* Error immediately available...  */
+
+  if (*select_type & SELECT_WRITE)
+    if (cred->po->openmodes & O_WRITE)
+      {
+	mutex_lock (&pipe->lock);
+	if (pipe_wait_writable (pipe, 1) != EWOULDBLOCK)
+	  ready |= SELECT_WRITE; /* Data immediately writable (or error). */
+	mutex_unlock (&pipe->lock);
+      }
+    else
+      ready |= SELECT_WRITE;	/* Error immediately available...  */
+
+  if (ready)
+    *select_type = ready;
+  else
+    /* Wait for something to change.  */
+    {
+      ports_interrupt_self_on_port_death (cred, reply);
+      err = pipe_pair_select (pipe, pipe, select_type, 1);
+    }
+
+  return err;
 }
 
 /* ---------------------------------------------------------------- */
