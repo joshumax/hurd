@@ -45,8 +45,8 @@ argz_append (char **argz, unsigned *argz_len, char *buf, unsigned buf_len);
    argz.c in libshouldbelibc.  */
 error_t argz_add (char **argz, unsigned *argz_len, char *str);
 
-/* Remove ENTRY from ARGZ & ARGZ_LEN, if any.  */
-void argz_remove (char **argz, unsigned *argz_len, char *entry);
+/* Delete ENTRY from ARGZ & ARGZ_LEN, if any.  */
+void argz_delete (char **argz, unsigned *argz_len, char *entry);
 
 /* Insert ENTRY into ARGZ & ARGZ_LEN before BEFORE, which should be an
    existing entry in ARGZ; if BEFORE is NULL, ENTRY is appended to the end.
