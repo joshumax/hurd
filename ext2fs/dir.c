@@ -523,11 +523,14 @@ diskfs_direnter(struct node *dp,
       
       oldsize = dp->dn_stat.st_size;
       while (oldsize + DIRBLKSIZ > dp->allocsize)
-	if (err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred))
-	  {
-	    vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
-	    return err;
-	  }
+	{
+	  err = diskfs_grow (dp, oldsize + DIRBLKSIZ, cred);
+	  if (err)
+	    {
+	      vm_deallocate (mach_task_self (), ds->mapbuf, ds->mapextent);
+	      return err;
+	    }
+	}
 
       new = (struct ext2_dir_entry *) (ds->mapbuf + oldsize);
 
@@ -877,7 +880,7 @@ diskfs_get_directs (struct node *dp,
 
       if (entryp->rec_len == 0)
 	{
-	  ext2_warning ("zero length directory entry: inode: %d offset: %ld",
+	  ext2_warning ("zero length directory entry: inode: %d offset: %d",
 			dp->dn->number,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
@@ -891,7 +894,7 @@ diskfs_get_directs (struct node *dp,
 	}
       else if (bufp - buf > DIRBLKSIZ)
 	{
-	  ext2_warning ("directory entry too long: inode: %d offset: %ld",
+	  ext2_warning ("directory entry too long: inode: %d offset: %d",
 			dp->dn->number,
 			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
 	  return EIO;
