@@ -173,9 +173,9 @@ lndist: $(distfiles) $(srcdir)/hurd-snap/$(dir) FORCE
 	ln $(distfiles) $(srcdir)/hurd-snap/$(dir)
  
 ifeq ($(dir),.)
-$(hurdsource)/hurd-snap/$(dir):
+$(srcdir)/hurd-snap/$(dir):
 else
-$(hurdsource)/hurd-snap/$(dir):
+$(srcdir)/hurd-snap/$(dir):
 	mkdir $(srcdir)/hurd-snap/$(dir)
 endif
 
