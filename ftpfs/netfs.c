@@ -1,6 +1,6 @@
 /* ftpfs interface to libnetfs
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -65,17 +65,30 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
 		      struct timespec *atime, struct timespec *mtime)
 {
   error_t err = ftpfs_refresh_node (node);
+  int flags = TOUCH_CTIME;
 
   if (! err)
     err = fshelp_isowner (&node->nn_stat, cred);
 
   if (! err)
     {
-      node->nn_stat.st_mtime = mtime->tv_sec;
-      node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
-      node->nn_stat.st_atime = atime->tv_sec;
-      node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
-      fshelp_touch (&node->nn_stat, TOUCH_CTIME, ftpfs_maptime);
+      if (atime)
+	{
+	  node->nn_stat.st_atime = atime->tv_sec;
+	  node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
+	}
+      else
+	flags |= TOUCH_ATIME;
+      
+      if (mtime)
+	{
+	  node->nn_stat.st_mtime = mtime->tv_sec;
+	  node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
+	}
+      else
+	flags |= TOUCH_MTIME;
+  
+      fshelp_touch (&node->nn_stat, flags, ftpfs_maptime);
     }
 
   return err;
