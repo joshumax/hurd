@@ -1,3 +1,8 @@
+Thu Sep 19 17:48:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsysops.c (fsys_update): Renamed from fsys_remount.
+	Use --update, not --remount.
+
 Fri Aug 30 20:44:44 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* argp-help.c (argp_help): Print documentation only according to

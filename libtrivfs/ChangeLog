@@ -1,3 +1,18 @@
+Thu Sep 19 18:00:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add shouldbeinlibc.
+
+Wed Sep 18 12:47:54 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsys-get-options.c (trivfs_S_fsys_get_options): Initialize ARGZ
+	with the program name, and call trivfs_append_args instead of
+	trivfs_get_options.
+	* file-get-fs-options.c (trivfs_S_file_get_fs_options): Likewise.
+	* trivfs.h (trivfs_append_args): New declaration.
+	(trivfs_get_options): Declaration removed.
+	* Makefile (OTHERSRCS): Replace get-options.c with apend-args.c.
+	* append-args.c (trivfs_append_args): New file.
+
 Thu Sep 12 16:23:15 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
