@@ -1,3 +1,8 @@
+2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Follow symlink despite flags if
+	MUSTBEDIR is set (i.e. there was a trailing slash).
+
 2000-01-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* rdwr-internal.c (_diskfs_rdwr_internal): Short-circuit return for

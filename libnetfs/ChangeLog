@@ -1,3 +1,8 @@
+2000-01-25  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir-lookup.c (netfs_S_dir_lookup): Follow symlink despite flags if
+	MUSTBEDIR is set (i.e. there was a trailing slash).
+
 1999-10-11  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir-readdir.c (netfs_S_dir_readdir): Take new DATA_DEALLOC parameter.
