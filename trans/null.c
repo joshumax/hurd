@@ -46,10 +46,6 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap, control, realnode;
   struct trivfs_control *trivfs_control;
-
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    error(1, 0, "must be started as a translator");
   
   if (argc == 2 &&
       (strcmp(argv[1], "-z") == 0 || strcmp(argv[1], "--zero") == 0))
@@ -59,6 +55,10 @@ main (int argc, char **argv)
       fprintf(stderr, "Usage: %s [-z|--zero]", program_invocation_name);
       exit(1);
     }
+
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  if (bootstrap == MACH_PORT_NULL)
+    error(1, 0, "must be started as a translator");
 
   _libports_initialize();
 
