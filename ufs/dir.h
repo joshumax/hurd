@@ -72,7 +72,10 @@
 #define DIRBLKSIZ	DEV_BSIZE
 #define	MAXNAMLEN	255
 
-struct	direct {
+/* Don't call this struct DIRECT because the library defines that
+   (sometimes) in a possible different way. */
+
+struct	directory_entry {
 	u_long	d_ino;			/* inode number of entry */
 	u_short	d_reclen;		/* length of this record */
 	u_char	d_type; 		/* file type, see below */
@@ -98,7 +101,7 @@ struct	direct {
 #define	IFTODT(mode)	(((mode) & 0170000) >> 12)
 #define	DTTOIF(dirtype)	((dirtype) << 12)
 
-/* Return the type from a struct direct, paying attention to whether
+/* Return the type from a struct directory_entry, paying attention to whether
    this filesystem supports the type extension */
 #define DIRECT_TYPE(dp) (direct_symlink_extension ? (dp)->d_type : DT_UNKNOWN)
 
@@ -120,7 +123,7 @@ struct	direct {
 /* In BSD this macro takes a struct direct.  Modified by MIB here to
    take the namelen (as computed by strlen).  */
 #define DIRSIZ(namelen) \
-    ((sizeof (struct direct) - (MAXNAMLEN+1)) + (((namelen)+1 + 3) &~ 3))
+    ((sizeof (struct directory_entry) - (MAXNAMLEN+1)) + (((namelen)+1 + 3) &~ 3))
 
 #if 0 /* This is the BSD definition */
 #if (BYTE_ORDER == LITTLE_ENDIAN)
