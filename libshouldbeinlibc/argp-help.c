@@ -35,7 +35,7 @@
 #define LONG_OPT_COL  6		/* column in which long options start */
 #define OPT_DOC_COL  29		/* column in which option text starts */
 #define USAGE_INDENT 12		/* indentation of wrapped usage lines */
-#define RMARGIN      78		/* right margin used for wrapping */
+#define RMARGIN      79		/* right margin used for wrapping */
 
 /* Returns true if OPT hasn't been marked invisible.  Visibility only affects
    whether OPT is displayed or used in sorting, not option shadowing.  */
@@ -135,12 +135,14 @@ struct hol_entry
 /* A list of options for help.  */
 struct hol
 {
+  /* The number of entries in this hol.  If this field is zero, the others
+     are undefined.  */
+  unsigned num_entries;
+  /* An array of hol_entry's.  */
+  struct hol_entry *entries;
   /* A string containing all short options in this HOL.  Each entry contains
      pointers into this string, so the order can't be messed with blindly.  */
   char *short_options;
-  /* An array of hol_entry's.  */
-  struct hol_entry *entries;
-  unsigned num_entries;
 };
 
 /* Create a struct hol from an array of struct argp_option.  */
@@ -154,43 +156,47 @@ struct hol *make_hol (struct argp_option *opt)
 
   assert (hol);
 
-  /* The first option must not be an alias.  */
-  assert (! oalias (opt));
-
   hol->num_entries = 0;
 
-  /* Calculate the space needed.  */
-  for (o = opt; ! oend (o); o++)
+  if (opt)
     {
-      if (! oalias (o))
-	hol->num_entries++;
-      if (oshort (o))
-	num_short_options++;	/* This is an upper bound.  */
-    }
+      /* The first option must not be an alias.  */
+      assert (! oalias (opt));
 
-  hol->entries = malloc (sizeof (struct hol_entry) * hol->num_entries);
-  hol->short_options = malloc (num_short_options);
-
-  assert (hol->entries && hol->short_options);
-
-  /* Fill in the entries.  */
-  so = hol->short_options;
-  for (o = opt, entry = hol->entries; ! oend (o); entry++)
-    {
-      entry->opt = o;
-      entry->num = 0;
-      entry->short_options = so;
-      entry->sort_class = 0;
-
-      do
+      /* Calculate the space needed.  */
+      for (o = opt; ! oend (o); o++)
 	{
-	  entry->num++;
-	  if (oshort (o) && ! find_char (o->key, hol->short_options, so))
-	    /* O has a valid short option which hasn't already been used.  */
-	    *so++ = o->key;
-	  o++;
+	  if (! oalias (o))
+	    hol->num_entries++;
+	  if (oshort (o))
+	    num_short_options++;	/* This is an upper bound.  */
 	}
-      while (! oend (o) && oalias (o));
+
+      hol->entries = malloc (sizeof (struct hol_entry) * hol->num_entries);
+      hol->short_options = malloc (num_short_options + 1);
+
+      assert (hol->entries && hol->short_options);
+
+      /* Fill in the entries.  */
+      so = hol->short_options;
+      for (o = opt, entry = hol->entries; ! oend (o); entry++)
+	{
+	  entry->opt = o;
+	  entry->num = 0;
+	  entry->short_options = so;
+	  entry->sort_class = 0;
+
+	  do
+	    {
+	      entry->num++;
+	      if (oshort (o) && ! find_char (o->key, hol->short_options, so))
+		/* O has a valid short option which hasn't already been used.*/
+		*so++ = o->key;
+	      o++;
+	    }
+	  while (! oend (o) && oalias (o));
+	}
+      *so = '\0';		/* null terminated so we can find the length */
     }
 
   return hol;
@@ -200,8 +206,11 @@ struct hol *make_hol (struct argp_option *opt)
 static void
 hol_free (struct hol *hol)
 {
-  free (hol->entries);
-  free (hol->short_options);
+  if (hol->num_entries > 0)
+    {
+      free (hol->entries);
+      free (hol->short_options);
+    }
   free (hol);
 }
 
@@ -281,7 +290,7 @@ static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
 
   while (num_entries-- > 0)
     {
-      struct argp_option *opt = entry++->opt;
+      struct argp_option *opt = entry->opt;
       unsigned num_opts = entry->num;
 
       while (num_opts-- > 0)
@@ -289,6 +298,8 @@ static struct hol_entry *hol_find_entry (struct hol *hol, char *name)
 	  return entry;
 	else
 	  opt++;
+
+      entry++;
     }
 
   return 0;
@@ -337,18 +348,20 @@ hol_sort (struct hol *hol)
 	      char first2 = short2 ?: long2 ? *long2 : 0;
 	      /* Compare ignoring case, except when the options are both the
 		 same letter, in which case lower-case always comes first.  */
-	      return (tolower (first2) - tolower (first1)) ?: first2 - first1;
+	      return (tolower (first1) - tolower (first2)) ?: first2 - first1;
 	    }
 	}
       else
 	/* Order by class:  1, 2, ..., n, 0, -m, ..., -2, -1  */
 	if ((class1 < 0 && class2 < 0) || (class1 > 0 && class2 > 0))
-	  return class2 - class1;
-	else
 	  return class1 - class2;
+	else
+	  return class2 - class1;
     }
 
-  qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry), entry_cmp);
+  if (hol->num_entries > 0)
+    qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry),
+	   entry_cmp);
 }
 
 /* Append MORE to HOL, destroying MORE in the process.  Options in HOL shadow
@@ -356,6 +369,78 @@ hol_sort (struct hol *hol)
 static void
 hol_append (struct hol *hol, struct hol *more)
 {
+  if (more->num_entries == 0)
+    hol_free (more);
+  else if (hol->num_entries == 0)
+    {
+      hol->num_entries = more->num_entries;
+      hol->entries = more->entries;
+      hol->short_options = more->short_options;
+      /* We've stolen everything MORE from more.  Destroy the empty shell. */
+      free (more);		
+    }
+  else
+    /* append the entries in MORE to those in HOL, taking care to only add
+       non-shadowed SHORT_OPTIONS values.  */
+    {
+      unsigned left;
+      char *so, *more_so;
+      struct hol_entry *e;
+      unsigned num_entries = hol->num_entries + more->num_entries;
+      struct hol_entry *entries =
+	malloc (num_entries * sizeof (struct hol_entry));
+      unsigned hol_so_len = strlen (hol->short_options);
+      char *short_options =
+	malloc (hol_so_len + strlen (more->short_options) + 1);
+
+      bcopy (hol->entries, entries,
+	     hol->num_entries * sizeof (struct hol_entry));
+      bcopy (more->entries, entries + hol->num_entries,
+	     more->num_entries * sizeof (struct hol_entry));
+
+      bcopy (hol->short_options, short_options, hol_so_len);
+
+      /* Fix up the short options pointers from HOL.  */
+      for (e = entries, left = hol->num_entries; left > 0; e++, left--)
+	e->short_options += (short_options - hol->short_options);
+
+      /* Now add the short options from MORE, fixing up its entries too.  */
+      so = short_options + hol_so_len;
+      more_so = more->short_options;
+      for (left = more->num_entries; left > 0; e++, left--)
+	{
+	  int opts_left;
+	  struct argp_option *opt;
+
+	  e->short_options = so;
+
+	  for (opts_left = e->num, opt = e->opt; opts_left; opt++, opts_left--)
+	    {
+	      int ch = *more_so;
+	      if (oshort (opt) && ch == opt->key)
+		/* The next short option in MORE_SO, CH, is from OPT.  */
+		{
+		  if (! find_char (ch,
+				   short_options, short_options + hol_so_len))
+		    /* The short option CH isn't shadowed by HOL's options,
+		       so add it to the sum.  */
+		    *so++ = ch;
+		  more_so++;
+		}
+	    }
+	}
+
+      *so = '\0';
+
+      free (hol->entries);
+      free (hol->short_options);
+
+      hol->entries = entries;
+      hol->num_entries = num_entries;
+      hol->short_options = short_options;
+
+      hol_free (more);
+    }
 }
 
 static void
@@ -424,7 +509,7 @@ hol_entry_help (struct hol_entry *entry, struct line *line)
   if (real->doc)
     {
       unsigned col = line_column (line);
-      char *doc = opt->doc;
+      char *doc = real->doc;
 
       if (col > OPT_DOC_COL + 3)
 	line_newline (line, OPT_DOC_COL);
@@ -475,68 +560,71 @@ add_usage_item (struct line *line, char *fmt, ...)
 static void
 hol_usage (struct hol *hol, struct line *line)
 {
-  unsigned nentries;
-  struct hol_entry *entry;
-  char *short_no_arg_opts = alloca (strlen (hol->short_options));
-  char *snao_end = short_no_arg_opts;
+  if (hol->num_entries > 0)
+    {
+      unsigned nentries;
+      struct hol_entry *entry;
+      char *short_no_arg_opts = alloca (strlen (hol->short_options));
+      char *snao_end = short_no_arg_opts;
 
-  /* First we put a list of short options without arguments.  */
-  for (entry = hol->entries, nentries = hol->num_entries
-       ; nentries > 0
-       ; entry++, nentries--)
-    {
-      inline int func2 (struct argp_option *opt, struct argp_option *real)
+      /* First we put a list of short options without arguments.  */
+      for (entry = hol->entries, nentries = hol->num_entries
+	   ; nentries > 0
+	   ; entry++, nentries--)
 	{
-	  if (! (opt->arg || real->arg))
-	    *snao_end++ = opt->key;
-	  return 0;
+	  inline int func2 (struct argp_option *opt, struct argp_option *real)
+	    {
+	      if (! (opt->arg || real->arg))
+		*snao_end++ = opt->key;
+	      return 0;
+	    }
+	  hol_entry_short_iterate (entry, func2);
 	}
-      hol_entry_short_iterate (entry, func2);
-    }
-  if (snao_end > short_no_arg_opts)
-    {
-      *snao_end++ = 0;
-      add_usage_item (line, "[-%s]", short_no_arg_opts);
-    }
+      if (snao_end > short_no_arg_opts)
+	{
+	  *snao_end++ = 0;
+	  add_usage_item (line, "[-%s]", short_no_arg_opts);
+	}
 
-  /* Now a list of short options *with* arguments.  */
-  for (entry = hol->entries, nentries = hol->num_entries
-       ; nentries > 0
-       ; entry++, nentries--)
-    {
-      inline int func3 (struct argp_option *opt, struct argp_option *real)
+      /* Now a list of short options *with* arguments.  */
+      for (entry = hol->entries, nentries = hol->num_entries
+	   ; nentries > 0
+	   ; entry++, nentries--)
 	{
-	  if (opt->arg || real->arg)
-	    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-	      add_usage_item (line, "[-%c[%s]]",
-			       opt->key, opt->arg ?: real->arg);
-	    else
-	      add_usage_item (line, "[-%c %s]",
-			       opt->key, opt->arg ?: real->arg);
-	  return 0;
+	  inline int func3 (struct argp_option *opt, struct argp_option *real)
+	    {
+	      if (opt->arg || real->arg)
+		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+		  add_usage_item (line, "[-%c[%s]]",
+				   opt->key, opt->arg ?: real->arg);
+		else
+		  add_usage_item (line, "[-%c %s]",
+				   opt->key, opt->arg ?: real->arg);
+	      return 0;
+	    }
+	  hol_entry_short_iterate (entry, func3);
 	}
-      hol_entry_short_iterate (entry, func3);
-    }
 
-  /* Finally, a list of long options (whew!).  */
-  for (entry = hol->entries, nentries = hol->num_entries
-       ; nentries > 0
-       ; entry++, nentries--)
-    {
-      int func4 (struct argp_option *opt, struct argp_option *real)
+      /* Finally, a list of long options (whew!).  */
+      for (entry = hol->entries, nentries = hol->num_entries
+	   ; nentries > 0
+	   ; entry++, nentries--)
 	{
-	  if (opt->arg || real->arg)
-	    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-	      add_usage_item (line, "[--%s[=%s]]",
-			       opt->name, opt->arg ?: real->arg);
-	    else
-	      add_usage_item (line, "[--%s=%s]",
-			       opt->name, opt->arg ?: real->arg);
-	  else
-	    add_usage_item (line, "[--%s]", opt->name);
-	  return 0;
+	  int func4 (struct argp_option *opt, struct argp_option *real)
+	    {
+	      if (opt->arg || real->arg)
+		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+		  add_usage_item (line, "[--%s[=%s]]",
+				   opt->name, opt->arg ?: real->arg);
+		else
+		  add_usage_item (line, "[--%s=%s]",
+				   opt->name, opt->arg ?: real->arg);
+	      else
+		add_usage_item (line, "[--%s]", opt->name);
+	      return 0;
+	    }
+	  hol_entry_long_iterate (entry, func4);
 	}
-      hol_entry_long_iterate (entry, func4);
     }
 }
 
@@ -585,8 +673,8 @@ argp_doc (struct argp *argp, struct line *line)
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
-   ARGP_USAGE_*.  */
-void argp_usage (struct argp *argp, FILE *stream, unsigned flags)
+   ARGP_HELP_*.  */
+void argp_help (struct argp *argp, FILE *stream, unsigned flags)
 {
   int first = 1;
   struct hol *hol = 0;
@@ -599,7 +687,7 @@ void argp_usage (struct argp *argp, FILE *stream, unsigned flags)
 	line_newline (line, 0);
     }
 
-  if (flags & (ARGP_USAGE_USAGE | ARGP_USAGE_HELP))
+  if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG))
     {
       hol = argp_hol (argp);
 
@@ -610,24 +698,32 @@ void argp_usage (struct argp *argp, FILE *stream, unsigned flags)
       hol_sort (hol);
     }
 
-  if (flags & ARGP_USAGE_USAGE)
-    /* Print a short help message.  */
+  if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE))
+    /* Print a short `Usage:' message.  */
     {
       line_printf (line, "Usage: %s", program_invocation_name);
-      hol_usage (hol, line);
+      if (flags & ARGP_HELP_SHORT_USAGE)
+	/* Just show where the options go.  */
+	{
+	  if (hol->num_entries > 0)
+	    line_puts (line, " [OPTIONS...]");
+	}
+      else
+	/* Actually print the options.  */
+	hol_usage (hol, line);
       argp_args_usage (argp, line);
       line_newline (line, 0);
       first = 0;
     }
 
-  if (flags & ARGP_USAGE_SEE)
+  if (flags & ARGP_HELP_SEE)
     {
       line_printf (line, "Try `%s --help' for more information.\n",
 		   program_invocation_name);
       first = 0;
     }
 
-  if (flags & ARGP_USAGE_HELP)
+  if (flags & ARGP_HELP_LONG)
     /* Print a long, detailed help message.  */
     {
       /* Print info about all the options.  */
@@ -647,8 +743,8 @@ void argp_usage (struct argp *argp, FILE *stream, unsigned flags)
 
   line_free (line);
 
-  if (flags & ARGP_USAGE_EXIT_ERR)
+  if (flags & ARGP_HELP_EXIT_ERR)
     exit (1);
-  if (flags & ARGP_USAGE_EXIT_OK)
+  if (flags & ARGP_HELP_EXIT_OK)
     exit (0);
 }
