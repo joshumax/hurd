@@ -51,8 +51,8 @@ endif
 # This sets up variables for build tools and installation directories.
 include $(..)config.make
 
-# Flags for compilation.  
-# It is important to have this inclusion first; that picks up our 
+# Flags for compilation.
+# It is important to have this inclusion first; that picks up our
 # library header files locally rather than from installed copies.
 # Append to any value set by the specific Makefile or by configure.
 ifeq ($(srcdir),.)
@@ -194,7 +194,7 @@ endif
 distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
 	ln $(distfiles) $(top_srcdir)/hurd-snap/$(dir)
- 
+
 ifeq ($(dir),.)
 $(top_srcdir)/hurd-snap/$(dir):
 else
@@ -228,7 +228,7 @@ relink:
 
 # Building libraries from other directories.  We force both libraries to be
 # built if either is, because it will use the appropriate one even if the other
-# is specified in someone's dependency list. 
+# is specified in someone's dependency list.
 ../%.a ../%.so: FORCE
 	$(MAKE) -C $(dir $@) libs
 
@@ -265,15 +265,15 @@ relink:
 
 
 # Where to find .defs files.
-vpath %.defs $(top_srcdir)/hurd /gd4/hurdinst/include/mach
+vpath %.defs $(top_srcdir)/hurd $(includedir)
 
 FORCE:
 
 
 # How to build automatic dependencies
 
-# Don't include dependencies if $(no_deps) is set; the master makefile 
-# does this for clean and other such targets that don't need 
+# Don't include dependencies if $(no_deps) is set; the master makefile
+# does this for clean and other such targets that don't need
 # dependencies.  That then avoids rebuilding dependencies.
 
 ifneq ($(no_deps),t)
@@ -282,7 +282,7 @@ ifneq ($(no_deps),t)
 # These lines assume that every Makefile that uses a foo_S.h or foo_U.h file
 # also mentions the associated fooServer.o or fooUser.o file.
 include $(subst Server.o,.migs_d,$(filter %Server.o,$(OBJS))) /dev/null
-include $(subst User.o,.migu_d,$(filter %User.o,$(OBJS))) /dev/null 
+include $(subst User.o,.migu_d,$(filter %User.o,$(OBJS))) /dev/null
 include $(subst Server.o,.migsh_d,$(filter %Server.o,$(OBJS))) /dev/null
 include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
