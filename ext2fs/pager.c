@@ -93,7 +93,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 	  int length = num_pending_blocks << log2_block_size;
 	  vm_address_t new_buf;
 
-	  err = dev_read_sync (dev_block, &new_buf, length);
+	  err = diskfs_device_read_sync (dev_block, &new_buf, length);
 	  if (err)
 	    return err;
 
@@ -194,11 +194,11 @@ pending_blocks_write (struct pending_blocks *pb)
 	{
 	  vm_address_t page_buf = get_page_buf ();
 	  bcopy ((char *)pb->buf + pb->offs, (void *)page_buf, length);
-	  err = dev_write_sync (dev_block, page_buf, length);
+	  err = diskfs_device_write_sync (dev_block, page_buf, length);
 	  free_page_buf (page_buf);
 	}
       else
-	err = dev_write_sync (dev_block, pb->buf, length);
+	err = diskfs_device_write_sync (dev_block, pb->buf, length);
       if (err)
 	return err;
 
@@ -292,11 +292,13 @@ disk_pager_read_page (vm_offset_t page, vm_address_t *buf, int *writelock)
 {
   error_t err;
   int length = vm_page_size;
+  vm_size_t dev_end = diskfs_device_size << diskfs_log2_device_block_size;
+  
+  if (page + vm_page_size > dev_end)
+    length = dev_end - page;
 
-  if (page + vm_page_size > device_size)
-    length = device_size - page;
-
-  err = dev_read_sync (page / device_block_size, (void *)buf, length);
+  err = diskfs_device_read_sync (page >> diskfs_log2_device_block_size,
+				 (void *)buf, length);
   if (!err && length != vm_page_size)
     bzero ((void *)(*buf + length), vm_page_size - length);
 
@@ -310,9 +312,10 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 {
   error_t err = 0;
   int length = vm_page_size;
+  vm_size_t dev_end = diskfs_device_size << diskfs_log2_device_block_size;
 
-  if (page + vm_page_size > device_size)
-    length = device_size - page;
+  if (page + vm_page_size > dev_end)
+    length = dev_end - page;
 
   ext2_debug ("writing disk page %d[%d]", page, length);
 
@@ -352,7 +355,9 @@ disk_pager_write_page (vm_offset_t page, vm_address_t buf)
 	err = pending_blocks_write (&pb);
     }
   else
-    err = dev_write_sync (page / device_block_size, buf, length);
+    err =
+      diskfs_device_write_sync (page >> diskfs_log2_device_block_size,
+				buf, length);
 
   return err;
 }
@@ -535,7 +540,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 void
 diskfs_file_update (struct node *node, int wait)
 {
-  struct user_pager_info *upi;
+  struct pager *pager;
 
   if (!node->dn->last_block_allocated)
     /* Allocate the last block in the file to maintain consistency with the
@@ -554,21 +559,42 @@ diskfs_file_update (struct node *node, int wait)
     }
 
   spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    ports_port_ref (upi->p);
+  pager = node->dn->pager;
+  if (pager)
+    ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
   
-  if (upi)
+  if (pager)
     {
-      pager_sync (upi->p, wait);
-      ports_port_deref (upi->p);
+      pager_sync (pager, wait);
+      ports_port_deref (pager);
     }
   
   pokel_sync (&node->dn->indir_pokel, wait);
 
   diskfs_node_update (node, wait);
 }
+
+/* Invalidate any pager data associated with NODE.  */
+void
+flush_node_pager (struct node *node)
+{
+  struct pager *pager;
+  struct disknode *dn = node->dn;
+
+  spin_lock (&node_to_page_lock);
+  pager = dn->pager;
+  if (pager)
+    ports_port_ref (pager);
+  spin_unlock (&node_to_page_lock);
+  
+  if (pager)
+    {
+      pager_flush (pager, 1);
+      ports_port_deref (pager);
+    }
+}
+
 
 /* ---------------------------------------------------------------- */
 
@@ -583,7 +609,7 @@ pager_report_extent (struct user_pager_info *pager,
   *offset = 0;
 
   if (pager->type == DISK)
-    *size = device_size;
+    *size = diskfs_device_size << diskfs_log2_device_block_size;
   else
     *size = pager->node->allocsize;
   
@@ -597,9 +623,12 @@ pager_clear_user_data (struct user_pager_info *upi)
 {
   if (upi->type == FILE_DATA)
     {
+      struct pager *pager;
+
       spin_lock (&node_to_page_lock);
-      if (upi->node->dn->fileinfo == upi)
-	upi->node->dn->fileinfo = 0;
+      pager = upi->node->dn->pager;
+      if (pager && pager_get_upi (pager) == upi)
+	upi->node->dn->pager = 0;
       spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
@@ -633,19 +662,19 @@ service_paging_requests (any_t foo __attribute__ ((unused)))
 void
 create_disk_pager ()
 {
+  struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
+
   pager_bucket = ports_create_bucket ();
 
   /* Make a thread to service paging requests.  */
   cthread_detach (cthread_fork ((cthread_fn_t)service_paging_requests,
 				(any_t)0));
 
-  disk_pager = malloc (sizeof (struct user_pager_info));
-  disk_pager->type = DISK;
-  disk_pager->node = 0;
-  disk_pager->p =
-    pager_create (disk_pager, pager_bucket,
-		  MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
-  disk_pager_port = pager_get_port (disk_pager->p);
+  upi->type = DISK;
+  disk_pager = 
+    pager_create (upi, pager_bucket, MAY_CACHE, MEMORY_OBJECT_COPY_NONE);
+
+  disk_pager_port = pager_get_port (disk_pager);
   mach_port_insert_right (mach_task_self (), disk_pager_port, disk_pager_port,
 			  MACH_MSG_TYPE_MAKE_SEND);
 }  
@@ -653,9 +682,8 @@ create_disk_pager ()
 /* Call this to create a FILE_DATA pager and return a send right.
    NODE must be locked.  */
 mach_port_t
-diskfs_get_filemap (struct node *node)
+diskfs_get_filemap (struct node *node, vm_prot_t prot)
 {
-  struct user_pager_info *upi;
   mach_port_t right;
 
   assert (S_ISDIR (node->dn_stat.st_mode)
@@ -664,29 +692,35 @@ diskfs_get_filemap (struct node *node)
 
   spin_lock (&node_to_page_lock);
   do
-    if (!node->dn->fileinfo)
-      {
-	upi = malloc (sizeof (struct user_pager_info));
-	upi->type = FILE_DATA;
-	upi->node = node;
-	diskfs_nref_light (node);
-	upi->p =
-	  pager_create (upi, pager_bucket, MAY_CACHE,
-			MEMORY_OBJECT_COPY_DELAY);
-	node->dn->fileinfo = upi;
-	right = pager_get_port (node->dn->fileinfo->p);
-	ports_port_deref (node->dn->fileinfo->p);
-      }
-    else
-      {
-	/* Because NP->dn->fileinfo->p is not a real reference,
-	   this might be nearly deallocated.  If that's so, then
-	   the port right will be null.  In that case, clear here
-	   and loop.  The deallocation will complete separately. */
-	right = pager_get_port (node->dn->fileinfo->p);
-	if (right == MACH_PORT_NULL)
-	  node->dn->fileinfo = 0;
-      }
+    {
+      struct pager *pager = node->dn->pager;
+      if (pager)
+	{
+	  /* Because PAGER is not a real reference,
+	     this might be nearly deallocated.  If that's so, then
+	     the port right will be null.  In that case, clear here
+	     and loop.  The deallocation will complete separately. */
+	  right = pager_get_port (pager);
+	  if (right == MACH_PORT_NULL)
+	    node->dn->pager = 0;
+	  else
+	    pager_get_upi (pager)->max_prot |= prot;
+	}
+      else
+	{
+	  struct user_pager_info *upi =
+	    malloc (sizeof (struct user_pager_info));
+	  upi->type = FILE_DATA;
+	  upi->node = node;
+	  upi->max_prot = 0;
+	  diskfs_nref_light (node);
+	  node->dn->pager = 
+	    pager_create (upi, pager_bucket, MAY_CACHE,
+			  MEMORY_OBJECT_COPY_DELAY);
+	  right = pager_get_port (node->dn->pager);
+	  ports_port_deref (node->dn->pager);
+	}
+    }
   while (right == MACH_PORT_NULL);
   spin_unlock (&node_to_page_lock);
   
@@ -701,18 +735,18 @@ diskfs_get_filemap (struct node *node)
 void
 drop_pager_softrefs (struct node *node)
 {
-  struct user_pager_info *upi;
+  struct pager *pager;
   
   spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    ports_port_ref (upi->p);
+  pager = node->dn->pager;
+  if (pager)
+    ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
 
-  if (MAY_CACHE && upi)
-    pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
-  if (upi)
-    ports_port_deref (upi->p);
+  if (MAY_CACHE && pager)
+    pager_change_attributes (pager, 0, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (pager)
+    ports_port_deref (pager);
 }
 
 /* Call this when we should turn on caching because it's no longer
@@ -720,18 +754,18 @@ drop_pager_softrefs (struct node *node)
 void
 allow_pager_softrefs (struct node *node)
 {
-  struct user_pager_info *upi;
+  struct pager *pager;
   
   spin_lock (&node_to_page_lock);
-  upi = node->dn->fileinfo;
-  if (upi)
-    ports_port_ref (upi->p);
+  pager = node->dn->pager;
+  if (pager)
+    ports_port_ref (pager);
   spin_unlock (&node_to_page_lock);
   
-  if (MAY_CACHE && upi)
-    pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);
-  if (upi)
-    ports_port_deref (upi->p);
+  if (MAY_CACHE && pager)
+    pager_change_attributes (pager, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (pager)
+    ports_port_deref (pager);
 }
 
 /* Call this to find out the struct pager * corresponding to the
@@ -741,9 +775,9 @@ allow_pager_softrefs (struct node *node)
 struct pager *
 diskfs_get_filemap_pager_struct (struct node *node)
 {
-  /* This is safe because fileinfo can't be cleared; there must be
+  /* This is safe because pager can't be cleared; there must be
      an active mapping for this to be called. */
-  return node->dn->fileinfo->p;
+  return node->dn->pager;
 }
 
 static struct ext2_super_block final_sblock;
@@ -755,7 +789,7 @@ diskfs_shutdown_pager ()
   error_t shutdown_one (void *v_p)
     {
       struct pager *p = v_p;
-      if (p != disk_pager->p)
+      if (p != disk_pager)
 	pager_shutdown (p);
       return 0;
     }
@@ -768,7 +802,7 @@ diskfs_shutdown_pager ()
   sblock = &final_sblock;
 
   ports_bucket_iterate (pager_bucket, shutdown_one);
-  pager_shutdown (disk_pager->p);
+  pager_shutdown (disk_pager);
 }
 
 /* Sync all the pagers. */
@@ -778,7 +812,7 @@ diskfs_sync_everything (int wait)
   error_t sync_one (void *v_p)
     {
       struct pager *p = v_p;
-      if (p != disk_pager->p)
+      if (p != disk_pager)
 	pager_sync (p, wait);
       return 0;
     }
@@ -792,13 +826,9 @@ diskfs_sync_everything (int wait)
 
 /* ---------------------------------------------------------------- */
 
-/* Tell diskfs if there are pagers exported, and if none, then
-   prevent any new ones from showing up.  */
-int
-diskfs_pager_users ()
+static void
+disable_caching ()
 {
-  int npagers;
-  
   error_t block_cache (void *arg)
     {
       struct pager *p = arg;
@@ -807,6 +837,14 @@ diskfs_pager_users ()
       return 0;
     }
   
+  /* Loop through the pagers and turn off caching one by one,
+     synchronously.  That should cause termination of each pager. */
+  ports_bucket_iterate (pager_bucket, block_cache);
+}
+
+static void
+enable_caching ()
+{
   error_t enable_cache (void *arg)
     {
       struct pager *p = arg;
@@ -829,30 +867,75 @@ diskfs_pager_users ()
       return 0;
     }
 
-  npagers = ports_count_bucket (pager_bucket);
+  ports_bucket_iterate (pager_bucket, enable_cache);
+}
+
+/* Tell diskfs if there are pagers exported, and if none, then
+   prevent any new ones from showing up.  */
+int
+diskfs_pager_users ()
+{
+  int npagers = ports_count_bucket (pager_bucket);
+
   if (npagers <= 1)
     return 0;
 
-  if (MAY_CACHE == 0)
+  if (MAY_CACHE)
     {
-      ports_enable_bucket (pager_bucket);
-      return 1;
+      disable_caching ();
+
+      /* Give it a second; the kernel doesn't actually shutdown
+	 immediately.  XXX */
+      sleep (1);
+  
+      npagers = ports_count_bucket (pager_bucket);
+      if (npagers <= 1)
+	return 0;
+
+      /* Darn, there are actual honest users.  Turn caching back on,
+	 and return failure. */
+      enable_caching ();
     }
   
-  /* Loop through the pagers and turn off caching one by one,
-     synchronously.  That should cause termination of each pager. */
-  ports_bucket_iterate (pager_bucket, block_cache);
+  ports_enable_bucket (pager_bucket);
 
-  /* Give it a second; the kernel doesn't actually shutdown
-     immediately.  XXX */
-  sleep (1);
-  
-  npagers = ports_count_bucket (pager_bucket);
-  if (npagers <= 1)
-    return 0;
-  
-  /* Darn, there are actual honest users.  Turn caching back on,
-     and return failure. */
-  ports_bucket_iterate (pager_bucket, enable_cache);
   return 1;
+}
+
+/* Return the bitwise or of the maximum prot parameter (the second arg to
+   diskfs_get_filemap) for all active user pagers. */
+vm_prot_t
+diskfs_max_user_pager_prot ()
+{
+  vm_prot_t max_prot = 0;
+  int npagers = ports_count_bucket (pager_bucket);
+
+  if (npagers > 1)
+    /* More than just the disk pager.  */
+    {
+      error_t add_pager_max_prot (void *v_p)
+	{
+	  struct pager *p = v_p;
+	  struct user_pager_info *upi = pager_get_upi (p);
+	  if (upi->type == FILE_DATA)
+	    max_prot |= upi->max_prot;
+	  /* Stop iterating if MAX_PROT is as filled as it's going to get. */
+	  return
+	    (max_prot == (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE)) ? 1 : 0;
+	}
+
+      disable_caching ();		/* Make any silly pagers go away. */
+
+      /* Give it a second; the kernel doesn't actually shutdown
+	 immediately.  XXX */
+      sleep (1);
+
+      ports_bucket_iterate (pager_bucket, add_pager_max_prot);
+
+      enable_caching ();
+    }
+
+  ports_enable_bucket (pager_bucket);
+
+  return max_prot;
 }
