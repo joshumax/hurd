@@ -304,7 +304,7 @@ diskfs_truncate (struct node *node, off_t length)
    * zeroed in case it ever becomes accessible again because of
    * subsequent file growth.
    */
-  offset = length % block_size;
+  offset = length & (block_size - 1);
   if (offset > 0)
     {
       diskfs_node_rdwr (node, (void *)zeroblock, length, block_size - offset,
@@ -312,7 +312,7 @@ diskfs_truncate (struct node *node, off_t length)
       diskfs_file_update (node, 1);
     }
 
-  ext2_discard_prealloc(node);
+  ext2_discard_prealloc (node);
 
   force_delayed_copies (node, length);
 
