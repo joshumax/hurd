@@ -1289,70 +1289,72 @@ process_signal (int signo)
       {
 	/* A child died.  Find its status.  */
 	int status;
-	pid_t pid = waitpid (WAIT_ANY, &status, WNOHANG);
-	if (pid < 0)
-	  error (0, errno, "waitpid");
-	else if (pid == 0)
-	  error (0, 0, "Spurious SIGCHLD");
-	else if (pid == shell_pid && system_state == SINGLE)
+	pid_t pid;
+
+	for (;;)
 	  {
-	    if (WIFSIGNALED (status))
+	    pid = waitpid (WAIT_ANY, &status, WNOHANG);
+	    if (pid <= 0)
+	      return;
+
+	    if (pid == shell_pid && system_state == SINGLE)
 	      {
-		error (0, 0,
-		       "Single-user terminated abnormally (%s), restarting",
-		       strsignal (WTERMSIG (status)));
-		launch_single_user ();
-	      }
-	    else if (WIFSTOPPED (status))
-	      {
-		error (0, 0,
-		       "Single-user stopped (%s), killing and restarting",
-		       strsignal (WSTOPSIG (status)));
-		kill (shell_pid, SIGKILL);
-		launch_single_user ();
-	      }
-	    else
-	      {
-		do_fastboot = 1;
-		fail = process_rc_script ();
-		if (fail)
+		if (WIFSIGNALED (status))
 		  {
-		    do_fastboot = 0;
+		    error (0, 0,
+			   "Single-user terminated abnormally (%s), restarting",
+			   strsignal (WTERMSIG (status)));
 		    launch_single_user ();
 		  }
+		else if (WIFSTOPPED (status))
+		  {
+		    error (0, 0,
+			   "Single-user stopped (%s), killing and restarting",
+			   strsignal (WSTOPSIG (status)));
+		    kill (shell_pid, SIGKILL);
+		    launch_single_user ();
+		  }
+		else
+		  {
+		    do_fastboot = 1;
+		    fail = process_rc_script ();
+		    if (fail)
+		      {
+			do_fastboot = 0;
+			launch_single_user ();
+		      }
+		  }
 	      }
-	  }
-	else if (pid == rc_pid && system_state == RUNCOM)
-	  {
-	    if (WIFSIGNALED (status))
+	    else if (pid == rc_pid && system_state == RUNCOM)
 	      {
-		error (0, 0,
-		       "%s terminated abnormally (%s), going to single user mode",
-		       _PATH_RUNCOM, strsignal (WTERMSIG (status)));
-		launch_single_user ();
+		if (WIFSIGNALED (status))
+		  {
+		    error (0, 0,
+			   "%s terminated abnormally (%s), \
+going to single user mode",
+			   _PATH_RUNCOM, strsignal (WTERMSIG (status)));
+		    launch_single_user ();
+		  }
+		else if (WIFSTOPPED (status))
+		  {
+		    error (0, 0,
+			   "%s stopped (%s), \
+killing it and going to single user mode",
+			   _PATH_RUNCOM, strsignal (WSTOPSIG (status)));
+		    kill (rc_pid, SIGKILL);
+		    launch_single_user ();
+		  }
+		else if (WEXITSTATUS (status))
+		  launch_single_user ();
+		else
+		  launch_multi_user ();
 	      }
-	    else if (WIFSTOPPED (status))
-	      {
-		error (0, 0,
-		       "%s stopped (%s), killing it and going to single user mode",
-		       _PATH_RUNCOM, strsignal (WSTOPSIG (status)));
-		kill (rc_pid, SIGKILL);
-		launch_single_user ();
-	      }
-	    else if (WEXITSTATUS (status))
-	      launch_single_user ();
-	    else
-	      launch_multi_user ();
-	  }
-	else if (system_state == MULTI)
-	  restart_terminal (pid);
-#if 0
-	else
-	  error (0, 0, "Random child pid %d died (%d)", pid, status);
-#endif
-	break;
-      }
+	    else if (system_state == MULTI)
+	      restart_terminal (pid);
 
+	    break;
+	  }
+      }
     default:
       break;
     }
