@@ -71,7 +71,7 @@ struct node
   int dn_set_atime;
   int dn_set_mtime;
   int dn_stat_dirty;
-  
+
   struct mutex lock;
 
   int references;		/* hard references */
@@ -209,7 +209,11 @@ extern int diskfs_edit_version;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting symlink translation.
-   See also diskfs_create_symlink_hook below. */
+   The library guarantees that users will not be able to read or write
+   the contents of the node directly, and the library will only do so
+   if the symlink hook functions return EINVAL or are not defined. 
+   The library knows that the dn_stat.st_size field is the length of
+   the symlink, even if the hook functions are used. */
 int diskfs_shortcut_symlink;
 
 /* The user may define this variable.  This should be nonzero iff the
@@ -445,6 +449,12 @@ void diskfs_init_completed ();
    then the normal method (writing the contents into the file data) is
    used.  If it returns any other error, it is returned to the user.  */
 error_t (*diskfs_create_symlink_hook)(struct node *np, char *target);
+
+/* If this function is nonzero (and diskfs_shortcut_symlink is set) it
+   is called to read the contents of a symlink.  If it returns EINVAL or
+   isn't set, then the normal method (reading from the file data) is
+   used.  If it returns any other error, it is returned to the user. */
+error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The library exports the following functions for general use */
 
