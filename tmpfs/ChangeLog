@@ -1,3 +1,8 @@
+2002-05-29  Roland McGrath  <roland@frob.com>
+
+	* node.c (diskfs_S_file_get_storage_info): Return a null port when the
+	peropen is not open for read/write.  Set STORE_READONLY if O_WRITE set.
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* dir.c (diskfs_get_directs): u_int -> size_t

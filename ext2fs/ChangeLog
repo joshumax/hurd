@@ -1,3 +1,17 @@
+2002-05-29  Roland McGrath  <roland@frob.com>
+
+	* dir.c (dirscanblock): Use %z format.
+	(diskfs_get_directs): Likewise.
+	* ext2fs.c (main): Likewise.
+	* hyper.c (get_hypermetadata): Likewise.
+	* pager.c (pager_unlock_page): Likewise.
+
+2002-05-28  Roland McGrath  <roland@frob.com>
+
+	* ext2fs.c (diskfs_append_args): unsigned -> size_t
+	* dir.c (count_dirents): int -> size_t
+	(diskfs_get_directs): u_int -> size_t
+
 2001-11-20  Neal H Walfield  <neal@cs.uml.edu>
 
 	* ext2fs.c (diskfs_synchronous): Removing superfluous zero initializer.
