@@ -257,10 +257,6 @@ See `tasks', the exported task list.
 *** writes don't seem to work properly !!!
 *** Report statfs correctly. !!
 
-** telnetd
-*** doesn't fill in the utmp host field !!
-*** telnet -l root hurd-machine works without any authorization checks at all !!!
-
 * Mach:
 ** Have some analogue of /dev/klog that syslogd can get kernel messages from
     (maybe there is already?); the boot file system, and other people
