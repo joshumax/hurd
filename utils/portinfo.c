@@ -100,6 +100,8 @@ parse_task (char *arg)
   err = proc_pid2task (proc, pid, &task);
   if (err)
     error (11, err, "%s", arg);
+  else if (task == MACH_PORT_NULL)
+    error (11, 0, "%s: Process %d is dead and has no task", arg, (int) pid);
 
   return task;
 }
