@@ -344,7 +344,10 @@ S_proc_dostop (struct proc *p,
     return err;
   err = task_threads (p->p_task, &threads, &nthreads);
   if (err)
-    return err;
+    {
+      task_resume (p->p_task);
+      return err;
+    }
   for (i = 0; i < nthreads; i++)
     {
       if (threads[i] != contthread)
