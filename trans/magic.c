@@ -51,7 +51,8 @@ main (int argc, char **argv)
 
   /* Reply to our parent */
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
-  err = fsys_startup (bootstrap, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
+  err =
+    fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
   if (err)
     error(1, err, "starting translator");
 
@@ -85,9 +86,8 @@ S_fsys_getroot (mach_port_t fsys_t,
 
 error_t
 S_fsys_startup (mach_port_t bootstrap,
-	      mach_port_t control,
-	      mach_port_t *real,
-	      mach_msg_type_name_t *realtype)
+		int flags, mach_port_t control,
+		mach_port_t *real, mach_msg_type_name_t *real_type)
 {
   return EOPNOTSUPP;
 }
@@ -111,6 +111,13 @@ error_t
 S_fsys_set_options (mach_port_t control,
 		    char *data, mach_msg_type_number_t len,
 		    int do_children)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_get_options (mach_port_t control,
+		    char **data, mach_msg_type_number_t *len)
 {
   return EOPNOTSUPP;
 }
