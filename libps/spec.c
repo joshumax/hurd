@@ -49,13 +49,13 @@ ps_get_thread_index(proc_stat_t ps)
 struct ps_getter ps_thread_index_getter =
 {"thread_index", PSTAT_THREAD, (vf) ps_get_thread_index};
 
-static int 
+static ps_user_t
 ps_get_owner(proc_stat_t ps)
 {
-  return proc_stat_info(ps)->owner;
+  return proc_stat_owner(ps);
 }
 struct ps_getter ps_owner_getter =
-{"owner", PSTAT_INFO, (vf) ps_get_owner};
+{"owner", PSTAT_OWNER, (vf) ps_get_owner};
 
 static int 
 ps_get_ppid(proc_stat_t ps)
@@ -217,15 +217,13 @@ ps_get_sleep(proc_stat_t ps)
 struct ps_getter ps_sleep_getter =
 {"sleep", PSTAT_THREAD_INFO, (vf) ps_get_sleep};
 
-static void 
-ps_get_tty_name(proc_stat_t ps, char **str_p, int *len_p)
+static ps_tty_t
+ps_get_tty(proc_stat_t ps)
 {
-  *str_p = proc_stat_tty_name(ps);
-  if (*str_p != NULL)
-    *len_p = strlen(*str_p) + 1;
+  return proc_stat_tty(ps);
 }
-struct ps_getter ps_tty_name_getter =
-{"tty_name", PSTAT_TTY_NAME, ps_get_tty_name};
+struct ps_getter ps_tty_getter =
+{"tty", PSTAT_TTY, (vf)ps_get_tty};
 
 static int 
 ps_get_page_faults(proc_stat_t ps)
@@ -511,19 +509,21 @@ ps_emit_seconds(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream,
 }
 
 error_t
-ps_emit_user(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+ps_emit_uid(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
 {
-  int uid = G(getter, int)(ps);
-  if (uid < 0)
-    return ps_write_padding(0, width, stream, count);
+  ps_user_t u = G(getter, ps_user_t)(ps);
+  return ps_write_int_field(ps_user_uid(u), width, stream, count);
+}
+
+error_t
+ps_emit_uname(proc_stat_t ps, ps_getter_t getter, int width, FILE *stream, int *count)
+{
+  ps_user_t u = G(getter, ps_user_t)(ps);
+  struct passwd *pw = ps_user_passwd(u);
+  if (pw == NULL)
+    return ps_write_int_field(ps_user_uid(u), width, stream, count);
   else
-    {
-      struct passwd *pw = getpwuid(uid);
-      if (pw == NULL)
-	return ps_write_int_field(uid, width, stream, count);
-      else
-	return ps_write_field(pw->pw_name, width, stream, count);
-    }
+    return ps_write_field(pw->pw_name, width, stream, count);
 }
 
 /* prints a string with embedded nuls as spaces */
@@ -593,11 +593,8 @@ error_t
 ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
 		 int width, FILE *stream, int *count)
 {
-  struct tty_abbrev
-  {
-    char *pfx, *subst;
-  }
-  abbrevs[] =
+  struct tty_abbrev { char *pfx, *subst; };
+  struct tty_abbrev abbrevs[] =
   {
     { "/tmp/console", "oc" },	/* temp hack */
     { "/dev/console", "co"},
@@ -606,33 +603,36 @@ ps_emit_tty_name(proc_stat_t ps, ps_getter_t getter,
     { "/dev/",	      ""},
     { 0 }
   };
-  char buf[20];
-  char *str;
-  int len;
+  char buf[20], *name;
+  ps_tty_t tty = G(getter, ps_tty_t)(ps);
 
-  G(getter, void)(ps, &str, &len);
-
-  if (str == NULL || len == 0)
-    str = "-";
+  if (tty == NULL)
+    name = "-";
   else
     {
-      struct tty_abbrev *abbrev = abbrevs;
-      while (abbrev->pfx != NULL)
+      name = ps_tty_name(tty);
+      if (name == NULL || *name == '\0')
+	name = "?";
+      else
 	{
-	  int pfx_len = strlen(abbrev->pfx);
-	  if (strncmp(str, abbrev->pfx, pfx_len) == 0)
+	  struct tty_abbrev *abbrev = abbrevs;
+	  while (abbrev->pfx != NULL)
 	    {
-	      strcpy(buf, abbrev->subst);
-	      strcat(buf, str + pfx_len);
-	      str = buf;
-	      break;
+	      int pfx_len = strlen(abbrev->pfx);
+	      if (strncmp(name, abbrev->pfx, pfx_len) == 0)
+		{
+		  strcpy(buf, abbrev->subst);
+		  strcat(buf, name + pfx_len);
+		  name = buf;
+		  break;
+		}
+	      else
+		abbrev++;
 	    }
-	  else
-	    abbrev++;
 	}
     }
 
-  return ps_write_field(str, width, stream, count);
+  return ps_write_field(name, width, stream, count);
 }
 
 error_t
@@ -667,6 +667,11 @@ ps_emit_state(proc_stat_t ps, ps_getter_t getter,
 /* ---------------------------------------------------------------- */
 /* comparison functions */
 
+/* Evaluates CALL if both s1 & s2 are non-NULL, and otherwise returns -1, 0,
+   or 1 ala strcmp, considering NULL to be less than non-NULL.  */
+#define GUARDED_CMP(s1, s2, call) \
+  ((s1) == NULL ? (((s2) == NULL) ? 0 : -1) : ((s2) == NULL ? 1 : (call)))
+
 int 
 ps_cmp_ints(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 {
@@ -684,6 +689,23 @@ ps_cmp_floats(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 }
 
 int 
+ps_cmp_uids(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
+{
+  ps_user_t (*gf)() = G(getter, ps_user_t);
+  ps_user_t u1 = gf(ps1), u2 = gf(ps2);
+  return ps_user_uid(u1) - ps_user_uid(u2);
+}
+
+int 
+ps_cmp_unames(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
+{
+  ps_user_t (*gf)() = G(getter, ps_user_t);
+  ps_user_t u1 = gf(ps1), u2 = gf(ps2);
+  struct passwd *pw1 = ps_user_passwd(u1), *pw2 = ps_user_passwd(u2);
+  return GUARDED_CMP(pw1, pw2, strcmp(pw1->pw_name, pw2->pw_name));
+}
+
+int 
 ps_cmp_strings(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 {
   void (*gf)() = G(getter, void);
@@ -694,16 +716,7 @@ ps_cmp_strings(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
   gf(ps1, &s1, &s1len);
   gf(ps2, &s2, &s2len);
 
-  if (s1 == NULL)
-    if (s2 == NULL)
-      return 0;
-    else 
-      return -1;
-  else
-    if (s2 == NULL)
-      return 1;
-    else
-      return strncmp(s1, s2, MIN(s1len, s2len));
+  return GUARDED_CMP(s1, s2, strncmp(s1, s2, MIN(s1len, s2len)));
 }
 
 /* ---------------------------------------------------------------- */
@@ -726,10 +739,10 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"PID",    &ps_pid_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
   {"TH#",    &ps_thread_index_getter,ps_emit_int,	ps_cmp_ints,	-2},
   {"PPID",   &ps_ppid_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
-  {"UID",    &ps_owner_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
+  {"UID",    &ps_owner_getter,	     ps_emit_uid,	ps_cmp_uids,	-5},
+  {"User",   &ps_owner_getter,	     ps_emit_uname,	ps_cmp_unames, 	 8},
   {"NTh",    &ps_num_threads_getter, ps_emit_int,	ps_cmp_ints,	-2},
   {"PGrp",   &ps_pgrp_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
-  {"User",   &ps_owner_getter,	     ps_emit_user,	ps_cmp_ints, 	 6},
   {"Sess",   &ps_session_getter,     ps_emit_int,	ps_cmp_ints,	-5},
   {"LColl",  &ps_login_col_getter,   ps_emit_int,	ps_cmp_ints,	-5},
   {"Args",   &ps_args_getter,	     ps_emit_string0,	ps_cmp_strings,	 0},
@@ -745,7 +758,7 @@ struct ps_fmt_spec ps_std_fmt_specs[] =
   {"%CPU",   &ps_cpu_frac_getter,    ps_emit_percent,	ps_cmp_floats,	-4},
   {"State",  &ps_state_getter,	     ps_emit_state,	NULL,	4},
   {"Sleep",  &ps_sleep_getter,	     ps_emit_int,	ps_cmp_ints,	-2},
-  {"TTY",    &ps_tty_name_getter,    ps_emit_tty_name,	ps_cmp_strings,	 2},
+  {"TTY",    &ps_tty_getter,	     ps_emit_tty_name,	ps_cmp_strings,	 2},
   {"PgFlts", &ps_page_faults_getter, ps_emit_int,	ps_cmp_ints,	-5},
   {"COWFlts",&ps_cow_faults_getter,  ps_emit_int,	ps_cmp_ints,	-5},
   {"PgIns",  &ps_pageins_getter,     ps_emit_int,	ps_cmp_ints,	-5},
