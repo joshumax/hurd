@@ -130,8 +130,8 @@ S_proc_gethostname (struct proc *p,
 /* Implement proc_getprivports as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_getprivports (struct proc *p,
-		   mach_port_t *hostpriv,
-		   mach_port_t *devpriv)
+		     mach_port_t *hostpriv,
+		     mach_port_t *devpriv)
 {
   if (! check_uid (p, 0))
     return EPERM;
@@ -145,10 +145,10 @@ S_proc_getprivports (struct proc *p,
 /* Implement proc_setexecdata as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_setexecdata (struct proc *p,
-		  mach_port_t *ports,
-		  u_int nports,
-		  int *ints,
-		  u_int nints)
+		    mach_port_t *ports,
+		    u_int nports,
+		    int *ints,
+		    u_int nints)
 {
   int i;
   struct execdata_notify *n;
@@ -183,11 +183,11 @@ S_proc_setexecdata (struct proc *p,
 /* Implement proc_getexecdata as described in <hurd/proc.defs>. */
 kern_return_t 
 S_proc_getexecdata (struct proc *p,
-		  mach_port_t **ports,
-		  mach_msg_type_name_t *portspoly,
-		  u_int *nports,
-		  int **ints,
-		  u_int *nints)
+		    mach_port_t **ports,
+		    mach_msg_type_name_t *portspoly,
+		    u_int *nports,
+		    int **ints,
+		    u_int *nints)
 {
   /* XXX memory leak here */
 
@@ -210,7 +210,7 @@ S_proc_getexecdata (struct proc *p,
 /* Implement proc_execdata_notify as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_execdata_notify (struct proc *p,
-		      mach_port_t notify)
+			mach_port_t notify)
 {
   struct execdata_notify *n = malloc (sizeof (struct execdata_notify));
   mach_port_t foo;
