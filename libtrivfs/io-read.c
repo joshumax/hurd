@@ -27,5 +27,5 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  int amt)
 {
   assert (!trivfs_support_read);
-  return cred ? EBADF : EOPNOTSUPP;
+  return EOPNOTSUPP;
 }  
