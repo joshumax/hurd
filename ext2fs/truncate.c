@@ -373,6 +373,8 @@ diskfs_truncate (struct node *node, off_t length)
   int offset;
   mode_t mode = node->dn_stat.st_mode;
 
+  if (diskfs_readonly)
+    return EROFS;
   if (S_ISDIR(mode))
     return EISDIR;
   if (!S_ISREG(mode))
@@ -382,8 +384,6 @@ diskfs_truncate (struct node *node, off_t length)
 
   if (length >= node->dn_stat.st_size)
     return 0;
-
-  assert (!diskfs_readonly);
 
   /*
    * If the file is not being truncated to a block boundary, the
@@ -441,6 +441,8 @@ diskfs_truncate (struct node *node, off_t length)
 error_t
 diskfs_grow (struct node *node, off_t size, struct protid *cred)
 {
+  if (diskfs_readonly)
+    return EROFS;
   if (size > node->allocsize)
     node->allocsize = size;
   return 0;
