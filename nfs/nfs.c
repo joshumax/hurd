@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <netinet/in.h>
+#include <stdio.h>
 
 /* Convert an NFS mode to a Hurd mode */
 mode_t
