@@ -101,7 +101,6 @@ extern spin_lock_t _diskfs_control_lock;
   									    \
   mutex_lock (&np->lock);						    \
   (OPERATION);								    \
-  diskfs_node_update (np, 0);						    \
   mutex_unlock (&np->lock);						    \
   return err;								    \
 })
