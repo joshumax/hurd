@@ -53,6 +53,7 @@ SRCS = $(NOTIFYSRCS) $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(INTSRCS) \
 	$(IFSOCKSRCS)
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o notifyServer.o execServer.o \
 	interruptServer.o fsys_replyUser.o ourmsgUser.o ifsockServer.o
+notify-MIGSFLAGS = -DSEQNOS
 
 OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
 
