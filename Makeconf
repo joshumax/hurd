@@ -459,6 +459,9 @@ vpath libutil.% $(libdir)/
 
 # How to build RPC stubs
 
+# We always need this setting, because libc does not include the bogus names.
+MIGCOMFLAGS := -subrprefix __
+
 # User settable variables:
 # 	MIGSFLAGS	   flags to CPP when building server stubs and headers
 #	foo-MIGSFLAGS	   same, but only for interface `foo'
@@ -476,7 +479,7 @@ vpath libutil.% $(libdir)/
 # But it's convenient to be able to explicitly make the intermediate
 # files when you want to deal with a problem in the MiG stub generator.
 %_S.h %Server.c: %.sdefsi
-	$(MIGCOM) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
+	$(MIGCOM) $(MIGCOMFLAGS) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
 		    -sheader $*_S.h -server $*Server.c \
 		    -user /dev/null -header /dev/null < $<
 %.sdefsi: %.defs
@@ -484,7 +487,7 @@ vpath libutil.% $(libdir)/
 %.udefsi: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) $< -o $@
 %_U.h %User.c: %.udefsi
-	$(MIGCOM) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) < $< \
+	$(MIGCOM) $(MIGCOMFLAGS) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) < $< \
 		  -user $*User.c -server /dev/null -header $*_U.h
 
 # Where to find .defs files.
