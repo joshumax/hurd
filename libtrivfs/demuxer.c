@@ -28,14 +28,12 @@ trivfs_demuxer (mach_msg_header_t *inp,
   int trivfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
   int trivfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
   int trivfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int trivfs_notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  int trivfs_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
   
   return (trivfs_io_server (inp, outp)
 	  || trivfs_fs_server (inp, outp)
-	  || trivfs_notify_server (inp, outp)
+	  || ports_notify_server (inp, outp)
 	  || trivfs_fsys_server (inp, outp)
-	  || trivfs_interrupt_server (inp, outp));
+	  || ports_interrupt_server (inp, outp));
 }
 
   
