@@ -49,12 +49,11 @@ trivfs_open (struct trivfs_control *cntl,
     err = (*trivfs_peropen_create_hook) (po);
   if (!err)
     {
-      struct trivfs_protid *new =
-	ports_allocate_port (cntl->protid_bucket,
-			     sizeof (struct trivfs_protid),
-			     cntl->protid_class);
+      struct trivfs_protid *new;
 
-      if (new)
+      err = ports_create_port (cntl->protid_class, cntl->protid_bucket,
+			       sizeof (struct trivfs_protid), &new);
+      if (! err)
 	{
 	  int i;
 
@@ -88,8 +87,6 @@ trivfs_open (struct trivfs_control *cntl,
 	  else
 	    *cred = new;
 	}
-      else
-	err = ENOMEM;
     }
 
   if (err)
