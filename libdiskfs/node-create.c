@@ -37,7 +37,7 @@ diskfs_create_node (struct node *dir,
   uid_t newuid;
   gid_t newgid;
   
-  if (diskfs_readonly)
+  if (diskfs_check_readonly ())
     return EROFS;
 
   /* Make the node */
