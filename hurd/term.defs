@@ -1,11 +1,11 @@
 /* Special protocol for terminal driver
-   Copyright (C) 1991 Free Software Foundation
+   Copyright (C) 1991, 1993 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
 The GNU Hurd is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 1, or (at your option)
+the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
 The GNU Hurd is distributed in the hope that it will be useful, 
@@ -88,7 +88,7 @@ term_on_machdev (
 	machdev: device_t);
 
 /* Start running with the bottom half as a hurd I/O port.  (It is
-   assumed that io_t is being served by a Hurd I/O server). */
+   assumed that io_t is being served by a Hurd I/O server).  */
 term_on_hurddev (
 	terminal: io_t;
 	hurddev: io_t);
@@ -96,7 +96,7 @@ term_on_hurddev (
 /* Start running with the bottom half being an exported hurd I/O port.
    This differs from term_on_hurddev in that with term_on_pty the
    terminal driver will serve the port.  The returned port is a pty,
-   similar in operation to the entity of the same name in BSD.
+   similar in operation to the entity of the same name in BSD.  */
 term_on_pty (
 	terminal: io_t;
 	out ptymaster: io_t);
