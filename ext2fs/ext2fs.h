@@ -368,8 +368,6 @@ global_block_modified (block_t block)
       spin_lock (&modified_global_blocks_lock);
       was_clean = !set_bit(block, modified_global_blocks);
       spin_unlock (&modified_global_blocks_lock);
- if (was_clean)
-   printf ("Marked block %lu as modified\n", block);
       return was_clean;
     }
   else
@@ -382,11 +380,7 @@ record_global_poke (void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
   if (global_block_modified (boffs_block (boffs)))
-    {
-      printf ("Adding block %u to global_pokel (%p)\n",
-	      boffs_block (boffs), &global_pokel);
-      pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
-    }
+    pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
 }
 
 /* This syncs a modification to a non-file block.  */
@@ -395,7 +389,6 @@ sync_global_ptr (void *bptr, int wait)
 {
   vm_offset_t boffs = trunc_block (bptr_offs (bptr));
   global_block_modified (boffs_block (boffs));
- printf ("Syncing block %d\n", boffs_block (boffs));
   pager_sync_some (disk_pager->p, trunc_page (boffs), vm_page_size, wait);
 }
 
@@ -405,11 +398,7 @@ record_indir_poke (struct node *node, void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
   if (global_block_modified (boffs_block (boffs)))
-    {
-      printf ("Adding block %u to indir pokel for inode %u (%p)\n", boffs_block
-	      (boffs), node->dn->number, &node->dn->indir_pokel);
-      pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
-    }
+    pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
 }
 
 /* ---------------------------------------------------------------- */
@@ -417,7 +406,6 @@ record_indir_poke (struct node *node, void *ptr)
 extern inline void
 sync_super_block ()
 {
- printf ("Syncing superblock\n");
   sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
   sync_global_ptr (sblock, 1);
 }
@@ -425,7 +413,6 @@ sync_super_block ()
 extern inline void
 sync_global_data ()
 {
- printf ("Syncing global data\n");
   pokel_sync (&global_pokel, 1);
   diskfs_set_hypermetadata (1, 0);
 }
@@ -438,11 +425,9 @@ alloc_sync (struct node *np)
     {
       if (np)
 	{
- printf ("Alloc sync inode %d\n", np->dn->number);
 	  diskfs_node_update (np, 1);
 	  pokel_sync (&np->dn->indir_pokel, 1);
 	}
-else  printf ("Alloc sync 0\n");
       sync_global_data ();
     }
 }
