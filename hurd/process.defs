@@ -347,10 +347,6 @@ routine proc_remove_collection (
 	process: process_t;
 	proccoll: proccoll_t);
 
-/* Remove the process from all process collections.  */
-routine proc_remove_all_collections (
-	process: process_t);
-
 /* Return all the process collections of which we are a member.  */
 routine proc_get_collections (
 	process: process_t;
