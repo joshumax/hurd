@@ -32,9 +32,14 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Ports port types.  */
-#define PT_CTL 0
-#define PT_NODE 1
+struct port_class *control_class;
+struct port_class *node_class;
+struct port_bucket *port_bucket;
+
+struct port_class *trivfs_protid_portclasses[1];
+struct port_class *trivfs_cntl_portclasses[1];
+int trivfs_protid_nportclasses = 1;
+int trivfs_cntl_nportclasses = 1;
 
 /* If true, then reading from this device will yield an endless stream of
    zeros instead of immediate EOF.  This also makes it mappable.  */
@@ -46,6 +51,12 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap;
   
+  control_class = ports_create_class (trivfs_clean_cntl, 0);
+  node_class = ports_create_class (trivfs_clean_protid, 0);
+  port_bucket = ports_create_bucket ();
+  trivfs_protid_portclasses[0] = node_class;
+  trivfs_cntl_portclasses[0] = control_class;
+
   if (argc == 2 &&
       (strcmp(argv[1], "-z") == 0 || strcmp(argv[1], "--zero") == 0))
     provide_zeros = 1;
@@ -60,12 +71,13 @@ main (int argc, char **argv)
     error(1, 0, "must be started as a translator");
 
   /* Reply to our parent */
-  err = trivfs_startup(bootstrap, PT_CTL, PT_NODE, NULL);
+  err = trivfs_startup(bootstrap, control_class, port_bucket,
+		       node_class, port_bucket, NULL);
   if (err)
     error(3, err, "Contacting parent");
 
   /* Launch. */
-  ports_manage_port_operations_onethread ();
+  ports_manage_port_operations_one_thread (port_bucket, trivfs_demuxer, 0);
 
   exit(0);
 }
@@ -82,11 +94,6 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ | O_WRITE;
 
-int trivfs_protid_porttypes[] = {PT_NODE};
-int trivfs_cntl_porttypes[] = {PT_CTL};
-int trivfs_protid_nporttypes = 1;
-int trivfs_cntl_nporttypes = 1;
-
 void
 trivfs_modify_stat (struct stat *st)
 {
@@ -100,54 +107,11 @@ trivfs_modify_stat (struct stat *st)
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, int ctltype, int pitype)
+trivfs_goaway (int flags, mach_port_t realnode, 
+	       struct port_class *control_class, 
+	       struct port_class *protid_class)
 {
   exit(0);
-}
-
-/* ---------------------------------------------------------------- */
-/* Ports hooks  */
-
-void (*ports_cleanroutines[])(void *) =
-{
-  [PT_CTL] = trivfs_clean_cntl,
-  [PT_NODE] = trivfs_clean_protid,
-};
-
-int
-ports_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
-{
-  return trivfs_demuxer(inp, outp);
-}
-
-/* This will be called whenever there have been no requests to the server for
-   a significant period of time.  NHARD is the number of live hard ports;
-   NSOFT is the number of live soft ports.  This function is called while an
-   internal lock is held, so it cannot reliably call any other functions of
-   the ports library. */
-void
-ports_notice_idle (int nhard, int nsoft)
-{
-  if (nhard == 0)
-    exit(0);
-}
-
-/* This will be called whenever there are no hard ports or soft ports
-   allocated.  This function is called while an internal lock is held, so it
-   cannot reliably call any other functions of the ports library. */
-void
-ports_no_live_ports ()
-{
-  exit(0);
-}
-
-/* This will be called whenever there are no hard ports allocated but there
-   are still some soft ports.  This function is called while an internal lock
-   is held, so it cannot reliably call any other functions of the ports
-   library. */
-void
-ports_no_hard_ports ()
-{
 }
 
 /* ---------------------------------------------------------------- */
