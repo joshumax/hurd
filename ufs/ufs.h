@@ -54,12 +54,6 @@ struct disknode
 
   struct rwlock allocptrlock;
 
-  daddr_t *dinloc;
-  daddr_t *sinloc;
-
-  size_t dinloclen;
-  size_t sinloclen;
-  
   struct user_pager_info *fileinfo;
 };  
 
@@ -79,6 +73,17 @@ rwlock_reader_lock (struct rwlock *lock)
   lock->readers++;
   mutex_unlock (&lock->master);
 }
+
+/* Identifies a particular block and where it's found
+   when interpreting indirect block structure.  */
+struct iblock_spec
+{
+  /* Disk address of block */
+  daddr_t bno;
+
+  /* Offset in next block up; -1 if it's in the inode itself. */
+  int offset;
+};
 
 /* Get a writer lock on reader-writer lock LOCK for disknode DN */
 extern inline void
@@ -145,19 +150,15 @@ struct user_pager_info
 };
 
 struct user_pager_info *diskpager;
+mach_port_t diskpagerport;
+off_t diskpagersize;
 
 vm_address_t zeroblock;
 
-/* These are copies (not mapped) of the hypermetadata; maintained
-   by hypen.c. */
 struct fs *sblock;
 struct csum *csum;
-int sblock_dirty;
-int csum_dirty;
 
-/* These are both mapped from the disk appropriately. */
-struct dinode *dinodes;
-vm_address_t cgs;
+void *disk_image;
 
 spin_lock_t alloclock;
 
@@ -181,7 +182,8 @@ enum compat_mode
       of the dinode. */
 int direct_symlink_extension;
 
-
+
+/* Handy macros */
 #define DEV_BSIZE 512
 #define NBBY 8
 #define btodb(n) ((n) / DEV_BSIZE)
@@ -191,6 +193,48 @@ int direct_symlink_extension;
 #define isset(a, i) ((a)[(i)/NBBY] & (1<<((i)%NBBY)))
 #define setbit(a,i) ((a)[(i)/NBBY] |= 1<<((i)%NBBY))
 #define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
+#define fsaddr(fs,n) (fsbtodb(fs,n)*DEV_BSIZE)
+
+
+/* Functions for looking inside disk_image */
+
+/* Convert an inode number to the dinode on disk. */
+extern inline struct dinode *
+dino (ino_t inum)
+{
+  return (struct disknode *)
+    (disk_image 
+     + fsaddr (sblock, ino_to_fsba (sblock, inum))
+     + ino_to_fsbo (sblock, inum));
+}
+
+/* Convert a indirect block number to a daddr_t table. */
+extern inline daddr_t *
+indir_block (daddr_t bno)
+{
+  return (daddr_t *) (disk_image + fsaddr (fsbtodb (bno)));
+}
+
+/* Convert a cg number to the cylinder group. */
+extern inline struct cg *
+cg_locate (int ncg)
+{
+  return (struct cg *) (disk_image + fsaddr (cgtod (sblock, ncg)));
+}
+
+/* Sync part of the disk */
+extern inline void
+sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
+{
+  pager_sync_some (diskpager->p, fsaddr (blkno), nbytes, wait);
+}
+
+/* Sync an disk inode */
+extern inline void
+sync_dinode (int inum, int wait)
+{
+  sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
+}
 
 /* From alloc.c: */
 error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *, 
@@ -215,7 +259,6 @@ void inode_init (void);
 void write_all_disknodes (void);
 
 /* From pager.c: */
-void sync_dinode (struct node *, int);
 void pager_init (void);
 void din_map (struct node *);
 void sin_map (struct node *);
