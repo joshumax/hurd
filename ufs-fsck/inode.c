@@ -147,8 +147,8 @@ allocino (ino_t request, mode_t mode)
   dino.di_modeh = (mode & 0xffff0000) >> 16;
   dino.di_model = (mode & 0x0000ffff);
   gettimeofday (&tv, 0);
-  dino.di_atime.ts_sec = tv.tv_sec;
-  dino.di_atime.ts_nsec = tv.tv_usec * 1000;
+  dino.di_atime.tv_sec = tv.tv_sec;
+  dino.di_atime.tv_nsec = tv.tv_usec * 1000;
   dino.di_mtime = dino.di_ctime = dino.di_atime;
   dino.di_size = 0;
   dino.di_blocks = 0;
