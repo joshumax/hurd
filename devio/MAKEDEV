@@ -11,7 +11,7 @@ for I; do
       $0 console tty null zero # fd
       ;;
     console)
-      settrans -cf console /hurd/term console ;;
+      settrans -cf console /hurd/term console `pwd`/console ;;
     tty)
       settrans -cf tty /hurd/magic tty ;;
     null)
@@ -19,7 +19,7 @@ for I; do
     zero)
       settrans -cf zero /hurd/null -z ;;
     fd)
-      settrans -cf stdin /hurd/magic fd
+      settrans -cf fd /hurd/magic fd
       ln -f -s fd/0 stdin
       ln -f -s fd/1 stdout
       ln -f -s fd/2 stderr
