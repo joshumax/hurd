@@ -1,6 +1,6 @@
 /* Store backend for unknown encodings
 
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001,02 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -122,10 +122,10 @@ store_unknown_decode (struct store_enc *enc,
      (or lack thereof) and the leading string of its encoded data bytes.  */
   if (enc->cur_int == enc->num_ints)
     asprintf (&(*store)->name, "notype:%.*s",
-	      us->data_len - us->cur_data, us->data + us->cur_data);
+	      (int) (us->data_len - us->cur_data), us->data + us->cur_data);
   else
     asprintf (&(*store)->name, "type-%d:%.*s", enc->ints[enc->cur_int],
-	      us->data_len - us->cur_data, us->data + us->cur_data);
+	     (int) ( us->data_len - us->cur_data), us->data + us->cur_data);
 
   return 0;
 }
@@ -135,6 +135,8 @@ error_t
 unknown_allocate_encoding (const struct store *store, struct store_enc *enc)
 {
   const struct store_enc *us = store->hook;
+  if (us == NULL)
+    return EOPNOTSUPP;
   enc->num_ports += us->num_ports;
   enc->num_ints += us->num_ints;
   enc->num_offsets += us->num_offsets;
@@ -146,6 +148,8 @@ error_t
 unknown_encode (const struct store *store, struct store_enc *enc)
 {
   const struct store_enc *us = store->hook;
+  if (us == NULL)
+    return EOPNOTSUPP;
 
   memcpy (enc->ports, us->ports, us->num_ports * sizeof enc->ports[0]);
   enc->ports += us->num_ports;
@@ -164,8 +168,11 @@ unknown_encode (const struct store *store, struct store_enc *enc)
 static void
 unknown_cleanup (struct store *store)
 {
-  store_enc_dealloc (store->hook);
-  free (store->hook);
+  if (store->hook != NULL)
+    {
+      store_enc_dealloc (store->hook);
+      free (store->hook);
+    }
 }
 
 /* Copy any format-dependent fields in FROM to TO; if there's some reason
@@ -174,14 +181,43 @@ unknown_cleanup (struct store *store)
 static error_t
 unknown_clone (const struct store *from, struct store *to)
 {
+  if (from->hook == NULL)
+    return 0;
   to->hook = duplicate_encoding (from->hook);
   return to->hook ? 0 : ENOMEM;
 }
 
+/* Unknown stores cannot be opened with a name.  */
+static error_t
+unknown_validate_name (const char *name,
+		       const struct store_class *const *classes)
+{
+  return name == NULL ? 0 : EINVAL;
+}
+
+static error_t
+unknown_open (const char *name, int flags,
+	      const struct store_class *const *classes,
+	      struct store **store)
+{
+  return (name == NULL
+	  ? _store_create (&store_unknown_class, MACH_PORT_NULL,
+			   STORE_ENFORCED, 0, NULL, 0, 0, store)
+	  : EINVAL);
+}
 
 const struct store_class store_unknown_class =
 {
-  -1, "unknown", noread, nowrite,
-  unknown_allocate_encoding, unknown_encode, store_unknown_decode,
-  noflags, noflags, unknown_cleanup, unknown_clone,
+  -1, "unknown",
+  read:			noread,
+  write:		nowrite,
+  allocate_encoding:	unknown_allocate_encoding,
+  encode:		unknown_encode,
+  decode:		store_unknown_decode,
+  set_flags:		noflags,
+  clear_flags:		noflags,
+  cleanup:		unknown_cleanup,
+  clone:		unknown_clone,
+  open:			unknown_open,
+  validate_name:	unknown_validate_name,
 };
