@@ -29,8 +29,7 @@ cd /dev
 
 set +v
 
-if test "$BOOT_DEV"; then
-  /bin/sh ./MAKEDEV "$BOOT_DEV"
+if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
   echo -n "Install grub as main boot record on $BOOT_DEV? [y] "
   read yn
   case "$yn" in
