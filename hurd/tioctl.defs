@@ -34,7 +34,7 @@ type speeds_t = array[2] of int;
 
 /* This is the arg for a struct winsize as specified by the
    definition of _IOT_winsize in <sys/ioctl.h>. */
-type sizes_t = array[4] of short;
+type winsize_t = struct[4] of short;
 
 skip; skip; skip; /* 0 1 2 unused */
 
@@ -162,12 +162,12 @@ routine tioctl_tiocucntl (
 /* 103 TIOCSWINSZ */
 routine tioctl_tiocswinsz (
 	port: io_t;
-	sizes: sizes_t);
+	sizes: winsize_t);
 
 /* 104 TIOCGWINSZ */
 routine tioctl_tiocgwinsz (
 	port: io_t;
-	out sizes: sizes_t);		
+	out sizes: winsize_t);		
 
 /* 105 TIOCREMOTE */
 routine tioctl_tiocremote (
