@@ -358,19 +358,18 @@ int
 apply_auth (struct auth *auth, pid_t pid, int ignore_bad_pid)
 {
   error_t err;
-  auth_t auth;
 
   if (! auth->ids)
     return 0;
 
   err = HURD_MSGPORT_RPC (proc_getmsgport (proc, pid, &msgport),
-			  proc_pid2task (proc, pid, &refport),
+			  proc_pid2task (proc, pid, &refport), 1,
 			  remove_ids ?
-			  del_auth (msgport, refport,
-				    &auth->ids[1], auth->ids[0],
-				    &idsauth->[1 + auth->ids[0] + 1],
-				    auth->ids[1 + auth->ids[0]]) :
-			  add_auth (msgport, auth->authport));
+			  msg_del_auth (msgport, refport,
+					&auth->ids[1], auth->ids[0],
+					&auth->ids[1 + auth->ids[0] + 1],
+					auth->ids[1 + auth->ids[0]]) :
+			  msg_add_auth (msgport, auth->authport));
   if (err &&
       (!ignore_bad_pid || (err != ESRCH && err != MIG_SERVER_DIED)))
     {
@@ -391,7 +390,7 @@ apply_auth_to_pids (struct auth *auth, unsigned int npids, pid_t pids[],
   unsigned int i;
 
   for (i = 0; i < npids; ++i)
-    status |= apply_auth (ids, pids[i], ignore_bad_pid);
+    status |= apply_auth (auth, pids[i], ignore_bad_pid);
 
   return status;
 }
@@ -411,7 +410,7 @@ apply_auth_to_loginid (struct auth *auth, int loginid)
       return 1;
     }
 
-  status = apply_auth_to_pids (ids, npids, pids, 1);
+  status = apply_auth_to_pids (auth, npids, pids, 1);
 
   if (pids != pidbuf)
     vm_deallocate (mach_task_self (),
@@ -435,7 +434,7 @@ apply_auth_to_pgrp (struct auth *auth, pid_t pgrp)
       return 1;
     }
 
-  status = apply_auth_to_pids (ids, npids, pids, 1);
+  status = apply_auth_to_pids (auth, npids, pids, 1);
 
   if (pids != pidbuf)
     vm_deallocate (mach_task_self (),
