@@ -233,7 +233,7 @@ load_image (task_t t,
 	    vm_size_t offs = ph->p_offset & (ph->p_align - 1);
 	    vm_size_t bufsz = round_page (ph->p_filesz + offs);
 
-	    buf = (vm_address_t) mmap (0, bufsz, 
+	    buf = (vm_address_t) mmap (0, bufsz,
 				       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
 	    lseek (fd, ph->p_offset, SEEK_SET);
@@ -759,7 +759,7 @@ set_mach_stack_args (task_t user_task,
 	    arg_page_size = (vm_size_t)(round_page(u_arg_start + arg_len)
 					- u_arg_page_start);
 
-	    k_arg_page_start = (vm_address_t) mmap (0, arg_page_size, 
+	    k_arg_page_start = (vm_address_t) mmap (0, arg_page_size,
 						    PROT_READ|PROT_WRITE,
 						    MAP_ANON, 0, 0);
 
@@ -1186,8 +1186,7 @@ ds_device_read (device_t device,
       ioctl (0, FIONREAD, &avail);
       if (avail)
 	{
-	  *data = (pointer_t) mmap (0, bytes_wanted, PROT_READ|PROT_WRITE,
-				    MAP_ANON, 0, 0);
+	  *data = mmap (0, bytes_wanted, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	  *datalen = read (0, *data, bytes_wanted);
 	  unlock_readlock ();
 	  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -1507,8 +1506,7 @@ S_io_read (mach_port_t object,
   if (avail)
     {
       if (amount > *datalen)
-	*data = (pointer_t) mmap (0, amount, PROT_READ|PROT_WRITE,
-				  MAP_ANON, 0, 0);
+	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       *datalen = read (0, *data, amount);
       unlock_readlock ();
       return *datalen == -1 ? errno : 0;
