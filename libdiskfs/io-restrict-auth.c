@@ -32,7 +32,6 @@ diskfs_S_io_restrict_auth (struct protid *cred,
   error_t err;
   struct iouser *user;
   struct protid *newpi;
-  int i;
 
   if (!cred)
     return EOPNOTSUPP;
