@@ -1,5 +1,5 @@
 /* Inode management routines
-   Copyright (C) 1994, 1995, 1996, 1997, 1998 Free Software Foundation
+   Copyright (C) 1994,95,96,97,98,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -320,7 +320,6 @@ write_node (struct node *np)
   struct dinode *di = dino (np->dn->number);
   error_t err;
 
-  assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
       assert (!diskfs_readonly);
