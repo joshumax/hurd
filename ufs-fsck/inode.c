@@ -152,6 +152,7 @@ allocino (ino_t request, mode_t mode)
   dino.di_mtime = dino.di_ctime = dino.di_atime;
   dino.di_size = 0;
   dino.di_blocks = 0;
+  num_files++;
   write_inode (ino, &dino);
   typemap[ino] = IFTODT (mode);
   return ino;
@@ -197,7 +198,6 @@ freeino (ino_t inum)
   
   clear_inode (inum, &dino);
   inodestate[inum] = UNALLOC;
+
+  num_files--;
 }
-
-
-      
