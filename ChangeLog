@@ -1,3 +1,7 @@
+1999-06-17  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* move-if-change: New file, canonical GNU script.
+
 1999-03-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makeconf [$(makemode) = library]
