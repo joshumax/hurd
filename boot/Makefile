@@ -19,10 +19,10 @@ dir := boot
 
 include ../Makeconf
 
-VPATH=.:../machine
+VPATH = ../machine
 
 OBJS = boot.o notifyServer.o execServer.o deviceServer.o ioServer.o \
-	io_replUser.o device_replyUser.o sigvec.o tioctlServer.o
+	io_replUser.o device_replyUser.o sigvec.o tioctlServer.o termServer.o
 
 DIST_FILES = boot.c Makefile io_repl.defs ChangeLog sigvec.S
 
@@ -76,3 +76,8 @@ tioctlServer.c tioctl_S.h: ../hurd/tioctl.defs
 	$(CPP) $(CPPFLAGS) $< | \
 	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
 	-sheader tioctl_S.h
+
+termServer.c term_S.h: ../hurd/term.defs
+	$(CPP) $(CPPFLAGS) $< | \
+	$(MIGCOM) -prefix S_ -user /dev/null -header /dev/null \
+	-sheader term_S.h
