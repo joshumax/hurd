@@ -1,3 +1,29 @@
+Tue Oct  8 13:21:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* procstat.c (set_procinfo_flags): Set bits in PS->inapp as appropriate.
+	(PSTAT_PROCINFO_THREAD, PSTAT_PROCINFO_TASK): New macro.
+	(PSTAT_PROCINFO_TASK_THREAD_DEP): Renamed from PSTAT_PROCINFO_THREAD.
+	(PSTAT_PROCINFO): Redefined.
+	(count_threads): Use PSTAT_PROCINFO_TASK_THREAD_DEP.
+	(proc_stat_set_flags): Don't use NEED macro for PSTAT_STATE.
+
+Mon Oct  7 17:40:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.h (struct ps_fmt): Add ERROR field, and rename INVAL to INAPP.
+	* fmt.c (_fmt_create): Initialize INAPP & ERROR fields.
+	(ps_fmt_clone): Propagate them.
+	(ps_fmt_write_proc_stat): Use them.
+	* procstat.c (proc_stat_set_flags): Add NEED & INAPP macros, and
+	use them to set the inapp field as well as the failed field.
+	(_proc_stat_create): Initialize INAPP field.
+	(proc_stat_thread_create): Initialize FAILED and INAPP fields.
+
+Sun Oct  6 18:42:52 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ps.h (struct ps): Add INAPP field.
+
+	* spec.c (ps_emit_wait): Correct mapping of init ports.
+
 Mon Sep 30 23:15:42 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* write.c (noise_write, noise_len): Correctly calculate the length
