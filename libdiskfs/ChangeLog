@@ -1,3 +1,10 @@
+2001-04-08  Neal H Walfield  <neal@cs.uml.edu>
+
+        * io-write.c (diskfs_S_io_write): Make local variable OFF an
+        off_t and not an int.
+        * io-read.c (diskfs_S_io_read): Likewise.
+        * io-stat.c (diskfs_S_io_stat): Use memcpy, not bcopy.
+
 2001-04-01  Roland McGrath  <roland@frob.com>
 
 	* io-interrupt.c: Obsolete file removed.
