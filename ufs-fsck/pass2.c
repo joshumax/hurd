@@ -19,13 +19,170 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-/* Verify root inode's basic validity; then traverse all directories
-   starting at root and mark those we find in inodetype with DIR_REF. */
+/* Verify root inode's allocation and check all directories for
+   viability.  Set DIRSORTED array fully and check to make sure
+   each directory has a correct . and .. in it.  */
 pass2 ()
 {
   int nd;
+  int change;
   struct dirinfo *dnp;
-  struct dinode dino, *di = &dino;
+  struct dinode dino;
+
+  /* Called for each DIRBLKSIZ chunk of the directory.
+     BUF is the data of the directory block.  Return
+     1 if this block has been modified and should be written
+     to disk; otherwise return 0.  */
+  int
+  check1block (void *buf)
+    {
+      struct directory_entry *dp;
+      int mod = 0;
+      u_char namlen = DIRECT_NAMLEN (dp);
+      u_char type = DIRECT_TYPE (dp);
+      int i;
+
+
+      for (dp = buf; (void *)dp - buf < DIRBLKSIZ;
+	   dp = (struct directory_entry *) ((void *) dp + dp->d_reclen))
+	{
+	  /* Check RECLEN for basic validity */
+	  if (dp->d_reclen == 0
+	      || dp->d_reclen + (void *)dp - buf > DIRBLKSIZ)
+	    {
+	      pfatal ("BAD RECLEN IN DIRECTORY");
+	      if (reply ("SALVAGE"))
+		{
+		  /* Skip over everything else in this dirblock;
+		     mark this entry free. */
+		  dp->d_ino = 0;
+		  dp->d_reclen = DIRBLKSIZ - ((void *)dp - buf);
+		  return 1;
+		}
+	      else
+		/* But give up regardless */
+		return mod;
+	    }
+	  
+	  /* Check INO */
+	  if (dp->d_ino > maxino)
+	    {
+	      pfatal ("BAD INODE NUMBER IN DIRECTORY");
+	      if (reply ("SALVAGE"))
+		{
+		  /* Mark this entry clear */
+		  dp->d_ino = 0;
+		  mod = 1;
+		}
+	    }
+
+	  if (!dp->d_ino)
+	    continue;
+	  
+	  /* Check INO */
+	  if (inodetype[dp->d_ino] == UNALLOC)
+	    {
+	      fileerror (dnp->i_number, dp->d_ino, "UNALLOCATED");
+	      if (reply ("REMOVE"))
+		{
+		  dp->d_ino = 0;
+		  mode = 1;
+		  continue;
+		}
+	    }
+
+	  /* Check NAMLEN */
+	  namlen = DIRECT_NAMLEN (dp);
+	  if (namlen > MAXNAMLEN)
+	    {
+	      pfatal ("BAD NAMLEN IN DIRECTORY");
+	      if (reply ("SALVAGE"))
+		{
+		  /* Mark this entry clear */
+		  dp->d_ino = 0;
+		  mod = 1
+		}
+	    }		  
+	  else
+	    {
+	      /* Check for illegal characters */
+	      for (i = 0; i < dp->d_namlen; i++)
+		if (dp->d_name[i] == '\0' || dp->d_name[i] == '/')
+		  {
+		    pfatal ("ILLEGAL CHARACTER IN FILE NAME");
+		    if (reply ("SALVAGE"))
+		      {
+			/* Mark this entry clear */
+			dp->d_ino = 0;
+			mod = 1;
+			break;
+		      }
+		  }
+	      if (dp->d_name[dp->d_namlen])
+		{
+		  pfatal ("DIRECTORY NAME NOT TERMINATED");
+		  if (reply ("SALVAGE"))
+		    {
+		      /* Mark this entry clear */
+		      dp->d_ino = 0;
+		      mod = 1;
+		    }
+		}
+	    }
+	  
+	  if (!dp->d_ino)
+	    continue;
+
+	  /* Check TYPE */
+	  if (type != DT_UNKNOWN && type != typemap[dp->d_ino])
+	    {
+	      pfatal ("INCORRECT NODE TYPE IN DIRECTORY");
+	      if (reply ("FIX"))
+		{
+		  assert (direct_symlink_extension);
+		  dp->d_type = typemap[dp->d_ino];
+		  mod = 1;
+		}
+	    }
+
+	  /* Here we should check for duplicate directory entries;
+	     that's too much trouble right now. */
+	  
+	  /* Account for the inode in the linkfound map */
+	  if (inodestate[number] != UNALLOC)
+	    linkfound[dp->d_ino]++;
+	  
+	  /* If this is `.' or `..' then note the value for 
+	     later examination.  */
+	  if (dp->d_namlen == 1 && dp->d_name[0] == '.')
+	    dnp->d_dot = dp->d_ino;
+	  if (dp->d_namlen == 2
+	      && dp->d_name[0] == '.' && dp->d_name[1] == '.')
+	    dnp->d_dotdot = dp->d_ino;
+	}
+    }
+
+  /* Called for each filesystem block of the directory.  Load BNO
+     into core and then call CHECK1BLOCK for each DIRBLKSIZ chunk. */
+  void
+  checkdirblock (daddr_t bno, int nfrags)
+    {
+      void *buf = alloca (nfrags * sblock->fs_fsize);
+      void *bufp;
+      int rewrite;
+
+      readblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+      rewrite = 0;
+      for (bufp = buf; 
+	   bufp - buf < nfrags * sblock->fs_fsize;
+	   bufp += DIRBLKSIZ)
+	{
+	  if (check1block (bufp))
+	    rewrite = 1;
+	}
+      if (rewrite)
+	writeblock (fsbtodb (bno), buf, fsbtodb (nfrags));
+    }
 
   switch (statemap [ROOTINO])
     {
@@ -64,8 +221,6 @@ pass2 ()
       break;
     }
   
-  statemap[ROOTINO] != DIR_REF;
-  
   /* Sort inpsort */
   qsort (dirsorted, dirarrayused, sizeof (struct dirinfo *), sortfunc);
   
@@ -90,9 +245,9 @@ pass2 ()
 	      write_inode (number, &dino);
 	    }
 	}
-      bzero (di, sizeof (struct dinode));
-      di->di_size = dnp->i_isize;
-      bcopy (dnp->i_blks, di->di_db, dnp->i_numblks);
+      bzero (&dino, sizeof (struct dinode));
+      dino.di_size = dnp->i_isize;
+      bcopy (dnp->i_blks, dino.di_db, dnp->i_numblks);
       
       datablocks_iterate (dp, checkdirblock);
     }
@@ -105,21 +260,47 @@ pass2 ()
   for (nd = 0; nd < dirarrayused; nd++)
     {
       dnp = dirsorted[nd];
-      if (dnp->i_parent == 0 || dnp->i_isize == 0)
+      if (dnp->i_isize == 0)
 	continue;
       
-      if (dnp->i_dotdot == dnp->i_parent
-	  || dnp->i_dotdot == -1)
-	continue;
-      
-      if (dnp->i_dotdot == 0)
+      /* Check `..' to make sure it exists and is correct */
+      if (dnp->i_parent && dnp->i_dotdot == 0)
 	{
 	  dnp->i_dotdot = dnp->i_parent;
 	  
 	  fileerror (dnp->i_parent, dnp->i_number, "MISSING `..'");
 	  if (reply ("FIX"))
+	    makeentry (dnp->i_number, dnp->i_parent, "..");
+}
+      else if (dnp->i_parent && dnp->i_dotdot != dnp->i_parent)
+	{
+	  fileerror (dnp->i_parent, dnp->i_number, 
+		     "BAD INODE NUMBER FOR `..'");
+	  if (reply ("FIX"))
 	    {
-	      makeentry (dnp->i_number, dnp->i_parent, "..");
+	      dnp->i_dotdot = dnp->i_parent;
+	      changeino (dnp->i_number, "..", dnp->i_parent);
+	    }
+	}
+      
+      /* Check `.' to make sure it exists and is correct */
+      if (dnp->i_dot == 0)
+	{
+	  dnp->i_dot = dnp->i_number;
+	  fileerror (dnp->i_number, dnp->i_number, "MISSING `.'");
+	  if (reply ("FIX"))
+	    makeentry (dnp->i_number, dnp->i_number, ".");
+	}
+      else if (dnp->i_dot != dnp->i_number)
+	{
+	  fileerror (dnp->i_number, dnp->i_number,
+		     "MAD INODE NUMBER FOR `.'");
+	  if (reply ("FIX"))
+	    {
+	      dnp->i_dot = dnp->i_number;
+	      changeino (dnp->i_number, ".", dnp->i_number);
+	    }
+	}
+    }
+}  
 	      
-	      
-	  
