@@ -79,15 +79,21 @@ thread_state (thread_basic_info_t bi)
 
 /* ---------------------------------------------------------------- */
 
-/* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
-#define PSTAT_PROCINFO \
-  (PSTAT_PROC_INFO | PSTAT_TASK_BASIC | PSTAT_NUM_THREADS \
-   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT \
-   | PSTAT_THREAD_WAITS)
-/* The set of things we get from procinfo that's thread dependent.  */
+/* The set of things we get from procinfo that are per-thread.  */
 #define PSTAT_PROCINFO_THREAD \
- (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED \
-  | PSTAT_THREAD_WAIT | PSTAT_THREAD_WAITS)
+ (PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT)
+
+/* The set of things we get from procinfo that are per-task, and thread dependent. */
+#define PSTAT_PROCINFO_TASK_THREAD_DEP \
+ (PSTAT_PROCINFO_THREAD | PSTAT_NUM_THREADS | PSTAT_THREAD_WAITS)
+
+/* The set of things we get from procinfo that are per-task (note that this
+   includes thread fields, because tasks use them for thread summaries).  */
+#define PSTAT_PROCINFO_TASK \
+ (PSTAT_PROCINFO_TASK_THREAD_DEP | PSTAT_PROC_INFO | PSTAT_TASK_BASIC)
+
+/* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
+#define PSTAT_PROCINFO PSTAT_PROCINFO_TASK 
 
 /* The set of things in PSTAT_PROCINFO that we will not attempt to refetch on
    subsequent getprocinfo calls.  */
@@ -526,7 +532,7 @@ summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
 static unsigned
 count_threads (struct procinfo *pi, ps_flags_t have)
 {
-  if (have & (PSTAT_PROCINFO_THREAD & ~PSTAT_NUM_THREADS))
+  if (have & (PSTAT_PROCINFO_TASK_THREAD_DEP & ~PSTAT_NUM_THREADS))
     /* If we have thread info besides the number of threads, then the
        threadinfos structures in PI are valid (we use the died bit).  */
     {
@@ -683,20 +689,19 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	  /* Now copy out the information for this particular thread from the
 	     ORIGIN's list of thread information.  */
 
-	  if ((need & PSTAT_THREAD_BASIC) && ! (have & PSTAT_THREAD_BASIC)
-	      && (oflags & PSTAT_THREAD_BASIC)
+	  need &= ~have;
+
+	  if ((need & PSTAT_THREAD_BASIC) && (oflags & PSTAT_THREAD_BASIC)
 	      && (ps->thread_basic_info =
 		  clone (&ti->pis_bi, sizeof (struct thread_basic_info))))
 	    have |= PSTAT_THREAD_BASIC;
 
-	  if ((need & PSTAT_THREAD_SCHED) && ! (have & PSTAT_THREAD_SCHED)
-	      && (oflags & PSTAT_THREAD_SCHED)
+	  if ((need & PSTAT_THREAD_SCHED) && (oflags & PSTAT_THREAD_SCHED)
 	      && (ps->thread_sched_info =
 		  clone (&ti->pis_si, sizeof (struct thread_sched_info))))
 	    have |= PSTAT_THREAD_SCHED;
 
-	  if ((need & PSTAT_THREAD_WAIT) && ! (have & PSTAT_THREAD_WAIT)
-	      && (oflags & PSTAT_THREAD_WAITS))
+	  if ((need & PSTAT_THREAD_WAIT) && (oflags & PSTAT_THREAD_WAITS))
 	    {
 	      ps->thread_wait =
 		get_thread_wait (origin->thread_waits,
@@ -709,6 +714,11 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 		}
 	    }
 	}
+
+      /* Mark things that don't apply to threads (note that we don't do the
+	 analogous thing for tasks above, as tasks do have thread fields
+	 containing summary information for all their threads).  */
+      ps->inapp |= need & ~have & PSTAT_PROCINFO & ~PSTAT_PROCINFO_THREAD;
     }
 
   return have;
@@ -762,23 +772,48 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   need = flags & ~have & ~ps->failed;
 
+  /* Returns true if some flag in FLAGS is `inapplicable'.  */
+#define INAPP(flags) (flags & (need & ~have) & ps->inapp)
+
+  /* Returns true if (1) FLAGS is in NEED, and (2) the appropriate
+     preconditions PRECOND are available; if only (1) is true, FLAG is added
+     to the INAPP set if appropiate (to distinguish it from an error), and
+     returns false.  */
+#define NEED(flag, precond)						      \
+  ({									      \
+    ps_flags_t __flag = (flag), _precond = (precond);			      \
+    int val;								      \
+    if (! (__flag & need))						      \
+      val = 0;								      \
+    else if ((_precond & have) == _precond)				      \
+      val = 1;								      \
+    else								      \
+      {									      \
+	val = 0;							      \
+	if (INAPP (_precond))						      \
+	  ps->inapp |= __flag;						      \
+      }									      \
+    val;								      \
+  })
+
   /* MGET: If we're trying to set FLAG, and the preconditions PRECOND are set
      in the flags already, then eval CALL and set ERR to the result.
      If the resulting ERR is 0 add FLAG to the set of valid flags.  ERR is
      returned.  */
-#define MGET(_flag, _precond, call) \
-  ({ ps_flags_t flag = (_flag), precond = (_precond); \
-     error_t err; \
-     if (!(need & (flag)) || (have & (precond)) != (precond)) \
-       err = 0; \
-     else \
-       { \
-	 err = (call); \
-	 if (!err) \
-	   have |= flag; \
-       } \
-     err; \
-   })
+#define MGET(flag, precond, call)					      \
+  ({									      \
+    error_t err;							      \
+    ps_flags_t _flag = (flag);						      \
+    if (NEED (_flag, precond))						      \
+      {									      \
+	err = (call);							      \
+	if (!err)							      \
+	  have |= _flag;						      \
+      }									      \
+    else								      \
+      err = 0;								      \
+    err;								      \
+  })
 
   /* A version of MGET specifically for the msg port, that turns off the msg
      port if a call to it times out.  It also implies a precondition of
@@ -795,11 +830,10 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
        later.  */
     have = set_procinfo_flags (ps, need & ~have & test_msgport_flags, have);
 
-  if ((need & PSTAT_SUSPEND_COUNT)
-      &&
-      ((have & PSTAT_PID)
-       ? (have & PSTAT_TASK_BASIC)
-       : (have & PSTAT_THREAD_BASIC)))
+  if (NEED (PSTAT_SUSPEND_COUNT, 
+	    ((have & PSTAT_PID)
+	     ? (have & PSTAT_TASK_BASIC)
+	     : (have & PSTAT_THREAD_BASIC))))
     {
       if (have & PSTAT_PID)
 	ps->suspend_count = ps->task_basic_info->suspend_count;
@@ -824,7 +858,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task (server, ps->pid, &ps->task));
 
   /* VM statistics for the task.  See <mach/task_info.h>.  */
-  if ((need & PSTAT_TASK_EVENTS) && (have & PSTAT_TASK))
+  if (NEED (PSTAT_TASK_EVENTS, PSTAT_TASK))
     {
       ps->task_events_info = &ps->task_events_info_buf;
       ps->task_events_info_size = TASK_EVENTS_INFO_COUNT;
@@ -881,7 +915,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
     }
 
   /* The process's exec arguments */
-  if ((need & PSTAT_ARGS) && (have & PSTAT_PID))
+  if (NEED (PSTAT_ARGS, PSTAT_PID))
     {
       char *buf = malloc (100);
       ps->args_len = 100;
@@ -922,7 +956,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	   ps_msg_get_init_int (ps->msgport, ps->task, INIT_UMASK,
 				&ps->umask));
 
-  if ((need & PSTAT_OWNER_UID) && (have & PSTAT_PROC_INFO))
+  if (NEED (PSTAT_OWNER_UID, PSTAT_PROC_INFO))
     {
       if (ps->proc_info->state & PI_NOTOWNED)
 	ps->owner_uid = -1;
@@ -932,7 +966,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
     }
 
   /* A ps_user object for the process's owner.  */
-  if ((need & PSTAT_OWNER) && (have & PSTAT_OWNER_UID))
+  if (NEED (PSTAT_OWNER, PSTAT_OWNER_UID))
     if (ps->owner_uid < 0)
       {
 	ps->owner = 0;
@@ -943,7 +977,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   /* A ps_tty for the process's controlling terminal, or NULL if it
      doesn't have one.  */
-  if ((need & PSTAT_TTY) && (have & PSTAT_CTTYID))
+  if (NEED (PSTAT_TTY, PSTAT_CTTYID))
     if (ps_context_find_tty_by_cttyid (ps->context, ps->cttyid, &ps->tty) == 0)
       have |= PSTAT_TTY;
 
@@ -1023,6 +1057,7 @@ _proc_stat_create (pid_t pid, struct ps_context *context, struct proc_stat **ps)
   (*ps)->pid = pid;
   (*ps)->flags = PSTAT_PID;
   (*ps)->failed = 0;
+  (*ps)->inapp = PSTAT_THREAD;
   (*ps)->context = context;
   (*ps)->hook = 0;
 
@@ -1057,6 +1092,8 @@ proc_stat_thread_create (struct proc_stat *ps, unsigned index, struct proc_stat 
       /* A value of -1 for the PID indicates that this is a thread.  */
       tps->pid = -1;
       tps->flags = PSTAT_THREAD;
+      tps->failed = 0;
+      tps->inapp = PSTAT_PID;
 
       tps->thread_origin = ps;
       tps->thread_index = index;
