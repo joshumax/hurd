@@ -1,3 +1,7 @@
+1999-06-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (trivfs_goaway): Exit if there are no socket ports.
+
 Sun Mar 14 18:33:54 1999  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* ethernet.c (ether_filter): Use a shorter filter program.
