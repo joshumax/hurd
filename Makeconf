@@ -145,6 +145,10 @@ endif
 # Provide default.
 install:
 
+# XXX HACK XXX
+ifneq ($(filter-out libports,$(HURDLIBS)),$(HURDLIBS))
+HURDLIBS+=libthreads
+endif
 
 # Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
 # a variable above with the complete file name to find it.
