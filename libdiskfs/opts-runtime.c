@@ -1,6 +1,6 @@
 /* Default definition for diskfs_runtime_argp
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2004 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -19,5 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <argp.h>
 
 struct argp *diskfs_runtime_argp = (struct argp *)&diskfs_std_runtime_argp;
