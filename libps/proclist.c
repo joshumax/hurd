@@ -1,6 +1,6 @@
 /* The type proc_stat_list_t, which holds lists of proc_stat_t's.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -83,30 +83,46 @@ proc_stat_list_grow(proc_stat_list_t pp, int amount)
    array PIDS (where NUM_PROCS is the length of PIDS).  Entries are only
    added for processes not already in PP.  ENOMEM is returned if a memory
    allocation error occurs, otherwise 0.  PIDs is not referenced by the
-   resulting proc_stat_list_t, and so may be subsequently freed.  */
+   resulting proc_stat_list_t, and so may be subsequently freed.  If
+   PROC_STATS is non-NULL, a malloced array NUM_PROCS entries long of the
+   resulting proc_stats is returned in it.  */
 error_t
-proc_stat_list_add_pids(proc_stat_list_t pp, pid_t *pids, unsigned num_procs)
+proc_stat_list_add_pids (proc_stat_list_t pp,
+			 pid_t *pids, unsigned num_procs,
+			 proc_stat_t **proc_stats)
 {
-  error_t err = proc_stat_list_grow(pp, num_procs);
+  error_t err = proc_stat_list_grow (pp, num_procs);
 
   if (err)
     return err;
   else
     {
+      int i;
       proc_stat_t *end = pp->proc_stats + pp->num_procs;
 
-      while (num_procs-- > 0)
+      if (proc_stats)
+	*proc_stats = NEWVEC (proc_stat_t, num_procs);
+
+      for (i = 0; i < num_procs; i++)
 	{
 	  int pid = *pids++;
+	  proc_stat_t ps = proc_stat_list_pid_proc_stat (pp, pid);
 
-	  if (proc_stat_list_pid_proc_stat(pp, pid) == NULL)
+	  if (ps == NULL)
 	    {
 	      err = ps_context_find_proc_stat(pp->context, pid, end);
 	      if (err)
-		return err;
+		{
+		  if (proc_stats)
+		    free (*proc_stats);
+		  return err;
+		}
 	      else
-		end++;
+		ps = *end++;
 	    }
+
+	  if (proc_stats)
+	    (*proc_stats)[i] = ps;
 	}
 
       pp->num_procs = end - pp->proc_stats;
@@ -117,11 +133,14 @@ proc_stat_list_add_pids(proc_stat_list_t pp, pid_t *pids, unsigned num_procs)
 
 /* Add a proc_stat_t for the process designated by PID at PP's proc context to
    PP.  If PID already has an entry in PP, nothing is done.  If a memory
-   allocation error occurs, ENOMEM is returned, otherwise 0.  */
+   allocation error occurs, ENOMEM is returned, otherwise 0.  If PS is
+   non-NULL, the resulting entry is returned in it.  */
 error_t
-proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid)
+proc_stat_list_add_pid (proc_stat_list_t pp, pid_t pid, proc_stat_t *ps)
 {
-  if (proc_stat_list_pid_proc_stat(pp, pid) == NULL)
+  proc_stat_t _ps = proc_stat_list_pid_proc_stat(pp, pid);
+
+  if (_ps == NULL)
     {
       error_t err;
 
@@ -132,14 +151,15 @@ proc_stat_list_add_pid(proc_stat_list_t pp, pid_t pid)
 	    return err;
 	}
 
-      err =
-	ps_context_find_proc_stat(pp->context,
-				  pid, &pp->proc_stats[pp->num_procs]);
+      err = ps_context_find_proc_stat (pp->context, pid, &_ps);
       if (err)
 	return err;
 
-      pp->num_procs++;
+      pp->proc_stats[pp->num_procs++] = _ps;
     }
+
+  if (ps)
+    *ps = _ps;
 
   return 0;
 }
@@ -216,12 +236,14 @@ proc_stat_list_merge(proc_stat_list_t pp, proc_stat_list_t mergee)
 
 /* Add to PP entries for all processes in the collection fetched from the
    proc server by the function FETCH_FN.  If an error occurs, the system
-   error code is returned, otherwise 0.  */
+   error code is returned, otherwise 0.  If PROC_STATS and NUM_PROCS are
+   non-NULL, a malloced vector of the resulting entries is returned in them. */
 static error_t
-proc_stat_list_add_fn_pids(proc_stat_list_t pp,
-			   kern_return_t (*fetch_fn)(process_t proc,
-						     pid_t **pids,
-						     unsigned *num_pids))
+proc_stat_list_add_fn_pids (proc_stat_list_t pp,
+			    kern_return_t (*fetch_fn)(process_t proc,
+						      pid_t **pids,
+						      unsigned *num_pids),
+			    proc_stat_t **proc_stats, unsigned *num_procs)
 {
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array;
@@ -231,7 +253,9 @@ proc_stat_list_add_fn_pids(proc_stat_list_t pp,
   if (err)
     return err;
 
-  err = proc_stat_list_add_pids(pp, pids, num_pids);
+  err = proc_stat_list_add_pids (pp, pids, num_pids, proc_stats);
+  if (!err && num_procs)
+    *num_procs = num_pids;
 
   if (pids != pid_array)
     VMFREE(pids, sizeof(pid_t) * num_pids);
@@ -240,56 +264,76 @@ proc_stat_list_add_fn_pids(proc_stat_list_t pp,
 }
 
 /* Add to PP entries for all processes in the collection fetched from the
-   proc server by the function FETCH_FN and ID.  If an error occurs, the system error code is returned,
-   otherwise 0.  */
+   proc server by the function FETCH_FN and ID.  If an error occurs, the
+   system error code is returned, otherwise 0.  If PROC_STATS and NUM_PROCS
+   are non-NULL, a malloced vector of the resulting entries is returned in
+   them.  */
 static error_t
-proc_stat_list_add_id_fn_pids(proc_stat_list_t pp, unsigned id,
-			      kern_return_t (*fetch_fn)(process_t proc, pid_t id,
-							pid_t **pids,
-							unsigned *num_pids))
+proc_stat_list_add_id_fn_pids (proc_stat_list_t pp, unsigned id,
+			       kern_return_t (*fetch_fn)(process_t proc,
+							 pid_t id,
+							 pid_t **pids,
+							 unsigned *num_pids),
+			       proc_stat_t **proc_stats, unsigned *num_procs)
 {
-  kern_return_t id_fetch_fn(process_t proc, pid_t **pids, unsigned *num_pids)
+  error_t id_fetch_fn (process_t proc, pid_t **pids, unsigned *num_pids)
     {
       return (*fetch_fn)(proc, id, pids, num_pids);
     }
-  return proc_stat_list_add_fn_pids(pp, id_fetch_fn);
+  return proc_stat_list_add_fn_pids (pp, id_fetch_fn, proc_stats, num_procs);
 }
 
 /* ---------------------------------------------------------------- */
 
 /* Add to PP entries for all processes at its context.  If an error occurs,
-   the system error code is returned, otherwise 0.  */
+   the system error code is returned, otherwise 0.  If PROC_STATS and
+   NUM_PROCS are non-NULL, a malloced vector of the resulting entries is
+   returned in them.  */
 error_t
-proc_stat_list_add_all(proc_stat_list_t pp)
+proc_stat_list_add_all (proc_stat_list_t pp,
+			proc_stat_t **proc_stats, unsigned *num_procs)
 {
-  return proc_stat_list_add_fn_pids(pp, proc_getallpids);
+  return
+    proc_stat_list_add_fn_pids (pp, proc_getallpids, proc_stats, num_procs);
 }
 
 /* Add to PP entries for all processes in the login collection LOGIN_ID at
    its context.  If an error occurs, the system error code is returned,
-   otherwise 0.  */
+   otherwise 0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector
+   of the resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_login_coll(proc_stat_list_t pp, pid_t login_id)
+proc_stat_list_add_login_coll (proc_stat_list_t pp, pid_t login_id,
+			       proc_stat_t **proc_stats, unsigned *num_procs)
 {
-  return proc_stat_list_add_id_fn_pids(pp, login_id, proc_getloginpids);
+  return
+    proc_stat_list_add_id_fn_pids (pp, login_id, proc_getloginpids,
+				   proc_stats, num_procs);
 }
 
 /* Add to PP entries for all processes in the session SESSION_ID at its
    context.  If an error occurs, the system error code is returned, otherwise
-   0.  */
+   0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
+   resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_session(proc_stat_list_t pp, pid_t session_id)
+proc_stat_list_add_session (proc_stat_list_t pp, pid_t session_id,
+			    proc_stat_t **proc_stats, unsigned *num_procs)
 {
-  return proc_stat_list_add_id_fn_pids(pp, session_id, proc_getsessionpids);
+  return
+    proc_stat_list_add_id_fn_pids (pp, session_id, proc_getsessionpids,
+				   proc_stats, num_procs);
 }
 
 /* Add to PP entries for all processes in the process group PGRP at its
    context.  If an error occurs, the system error code is returned, otherwise
-   0.  */
+   0.  If PROC_STATS and NUM_PROCS are non-NULL, a malloced vector of the
+   resulting entries is returned in them.  */
 error_t
-proc_stat_list_add_pgrp(proc_stat_list_t pp, pid_t pgrp)
+proc_stat_list_add_pgrp (proc_stat_list_t pp, pid_t pgrp,
+			 proc_stat_t **proc_stats, unsigned *num_procs)
 {
-  return proc_stat_list_add_id_fn_pids(pp, pgrp, proc_getpgrppids);
+  return
+    proc_stat_list_add_id_fn_pids (pp, pgrp, proc_getpgrppids,
+				   proc_stats, num_procs);
 }
 
 /* ---------------------------------------------------------------- */
