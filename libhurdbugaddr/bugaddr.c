@@ -1,6 +1,6 @@
 /* Hurd default for ARGP_PROGRAM_BUG_ADDRESS
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -20,4 +20,4 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-const char *argp_program_bug_address = "bug-hurd@prep.ai.mit.edu";
+const char *argp_program_bug_address = "bug-hurd@gnu.org";
