@@ -24,15 +24,12 @@
 /* Callback function needed for calls to fshelp_fetch_root.  See
    <hurd/fshelp.h> for the interface description.  */
 static error_t
-_diskfs_translator_callback_fn (void *cookie1, void *cookie2,
-				mach_port_t *underlying,
-				uid_t *uid, gid_t *gid, char **argz, 
-				int *argz_len)
+_diskfs_translator_callback1_fn (void *cookie1, void *cookie2,
+				 uid_t *uid, gid_t *gid,
+				 char **argz, int *argz_len)
 {
-  struct node *np = cookie1;
-  mach_port_t *dotdot = cookie2;
   error_t err;
-  struct protid *newpi;
+  struct node *np = cookie1;
 
   if (!np->istranslated)
     return ENOENT;
@@ -43,25 +40,33 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
 
   *uid = np->dn_stat.st_uid;
   *gid = np->dn_stat.st_gid;
-  
-  newpi = diskfs_make_protid (diskfs_make_peropen (np, 
-						   (O_READ|O_EXEC
-/* For now, don't give translators write access to their underlying node.
-   The fsys_startup interface will soon make this irrelevant anyway.  */
-#ifdef XXX
-						    | (!diskfs_readonly 
-						       ? O_WRITE : 0)
-#endif
-						   ),
-						   *dotdot),
-			      uid, 1, gid, 1);
 
-  *underlying = ports_get_right (newpi);
-  mach_port_insert_right (mach_task_self (), *underlying, *underlying,
-			  MACH_MSG_TYPE_MAKE_SEND);
-  ports_port_deref (newpi);
   return 0;
 }
 
-  
-fshelp_callback_t _diskfs_translator_callback = _diskfs_translator_callback_fn;
+/* Callback function needed for calls to fshelp_fetch_root.  See
+   <hurd/fshelp.h> for the interface description.  */
+static error_t
+_diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
+				 int flags,
+				 mach_port_t *underlying,
+				 mach_msg_type_name_t underlying_type)
+{
+  struct node *np = cookie1;
+  mach_port_t *dotdot = cookie2;
+  struct protid *newpi = 
+    diskfs_make_protid (diskfs_make_peropen (np, flags, *dotdot),
+			np->dn_stat.st_uid, 1, np->dn_stat.st_gid, 1);
+
+  *underlying = ports_get_right (newpi);
+  *underlying_type = MACH_MSG_TYPE_MAKE_SEND;
+
+  ports_port_deref (newpi);
+
+  return 0;
+}
+
+fshelp_fetch_root_callback1_t _diskfs_translator_callback1 =
+  _diskfs_translator_callback1_fn;
+fshelp_fetch_root_callback2_t _diskfs_translator_callback2 =
+  _diskfs_translator_callback2_fn;
