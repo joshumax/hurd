@@ -28,31 +28,39 @@
 
 #include "store.h"
 
+#define DEFAULT_STORE_TYPE "query"
+
 static const struct argp_option options[] = {
-  {"device",	'd', 0,        0, "DEVICE is a mach device, not a file"},
+  {"store-type",'T', "TYPE",   0, "Each DEVICE names a store of type TYPE"},
+  {"machdev",	'm', 0,        OPTION_HIDDEN}, /* deprecated */
   {"interleave",'I', "BLOCKS", 0, "Interleave in runs of length BLOCKS"},
   {"layer",   	'L', 0,        0, "Layer multiple devices for redundancy"},
   {0}
 };
 
 static const char args_doc[] = "DEVICE...";
-static const char doc[] = "\vIf multiple DEVICEs are specified, they are"
-" concatenated unless either --interleave or --layer is specified (mutually"
-" exlusive).";
+static const char doc[] = "\vIf neither --interleave or --layer is specified,"
+" multiple DEVICEs are concatenated.";
 
 struct store_parsed
 {
   char *names;
   size_t names_len;
+
+  const struct store_class *const *classes; /* CLASSES field passed to parser.  */
+
+  const struct store_class *type;	/* --store-type specified */
+  const struct store_class *default_type; /* DEFAULT_TYPE field passed to parser.  */
+
   off_t interleave;		/* --interleave value */
-  int device : 1;		/* --device specified */
   int layer : 1;		/* --layer specified */
 };
 
 void
 store_parsed_free (struct store_parsed *parsed)
 {
-  free (parsed->names);
+  if (parsed->names_len > 0)
+    free (parsed->names);
   free (parsed);
 }
 
@@ -61,19 +69,22 @@ error_t
 store_parsed_append_args (const struct store_parsed *parsed,
 			  char **args, size_t *args_len)
 {
+  char buf[40];
   error_t err = 0;
   size_t num_names = argz_count (parsed->names, parsed->names_len);
 
-  if (parsed->device)
-    err = argz_add (args, args_len, "--device");
-
   if (!err && num_names > 1 && (parsed->interleave || parsed->layer))
     {
-      char buf[40];
       if (parsed->interleave)
 	snprintf (buf, sizeof buf, "--interleave=%ld", parsed->interleave);
       else
 	snprintf (buf, sizeof buf, "--layer=%ld", parsed->layer);
+      err = argz_add (args, args_len, buf);
+    }
+
+  if (!err && parsed->type != parsed->default_type)
+    {
+      snprintf (buf, sizeof buf, "--store-type=%s", parsed->type->name);
       err = argz_add (args, args_len, buf);
     }
 
@@ -125,20 +136,22 @@ store_parsed_name (const struct store_parsed *parsed, char **name)
 /* Open PARSED, and return the corresponding store in STORE.  */
 error_t
 store_parsed_open (const struct store_parsed *parsed, int flags,
-		   struct store_class *classes,
 		   struct store **store)
 {
   size_t num = argz_count (parsed->names, parsed->names_len);
   error_t open (char *name, struct store **store)
     {
-      if (parsed->device)
-	return store_device_open (name, flags, store);
+      const struct store_class *type = parsed->type;
+      if (type->open)
+	return (*type->open) (name, flags, parsed->classes, store);
       else
-	return store_open (name, flags, classes, store);
+	return EOPNOTSUPP;
     }
 
   if (num == 1)
     return open (parsed->names, store);
+  else if (num == 0)
+    return open (0, store);
   else
     {
       int i;
@@ -174,6 +187,16 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
       return err;
     }
 }
+static const struct store_class *
+find_class (const char *name, const struct store_class *const *classes)
+{
+  while (*classes)
+    if ((*classes)->name && strcmp (name, (*classes)->name) == 0)
+      return *classes;
+    else
+      classes++;
+  return 0;
+}
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -188,8 +211,20 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
   switch (opt)
     {
-    case 'd':
-      parsed->device = 1; break;
+    case 'm':
+      arg = "device";
+      /* fall through */
+    case 'T':
+      {
+	const struct store_class *type = find_class (arg, parsed->classes);
+	if (!type || !type->open)
+	  PERR (EINVAL, "%s: Invalid argument to --store-type", arg);
+	else if (type != parsed->type && parsed->type != parsed->default_type)
+	  PERR (EINVAL, "--store-type specified multiple times");
+	else
+	  parsed->type = type;
+      }
+      break;
 
     case 'I':
       if (parsed->layer)
@@ -216,7 +251,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case ARGP_KEY_ARG:
       /* A store device to use!  */
-      err = argz_add (&parsed->names, &parsed->names_len, arg);
+      if (parsed->type->validate_name)
+	err = (*parsed->type->validate_name) (arg, parsed->classes);
+      else
+	err = 0;
+      if (! err)
+	err = argz_add (&parsed->names, &parsed->names_len, arg);
       if (err)
 	argp_failure (state, 1, err, "%s", arg);
       return err;
@@ -224,12 +264,25 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case ARGP_KEY_INIT:
       /* Initialize our parsing state.  */
-      if (! state->input)
-	return EINVAL;		/* Need at least a way to return a result.  */
-      state->hook = malloc (sizeof (struct store_parsed));
-      if (! state->hook)
-	return ENOMEM;
-      bzero (state->hook, sizeof (struct store_parsed));
+      {
+	struct store_argp_params *params = state->input;
+	if (! params)
+	  return EINVAL;	/* Need at least a way to return a result.  */
+	parsed = state->hook = malloc (sizeof (struct store_parsed));
+	if (! parsed)
+	  return ENOMEM;
+	bzero (parsed, sizeof (struct store_parsed));
+	parsed->classes = params->classes ?: store_std_classes;
+	parsed->default_type =
+	  find_class (params->default_type ?: DEFAULT_STORE_TYPE,
+		      parsed->classes);
+	if (! parsed->default_type)
+	  {
+	    free (parsed);
+	    return EINVAL;
+	  }
+	parsed->type = parsed->default_type;
+      }
       break;
 
     case ARGP_KEY_ERROR:
@@ -238,13 +291,15 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case ARGP_KEY_SUCCESS:
       /* Successfully finished parsing, return a result.  */
-      if (parsed->names == 0)
+      if (parsed->names == 0
+	  && (!parsed->type->validate_name
+	      || (*parsed->type->validate_name) (0, parsed->classes) != 0))
 	{
 	  store_parsed_free (parsed);
 	  PERR (EINVAL, "No store specified");
 	}
       else
-	*(struct store_parsed **)state->input = parsed;
+	((struct store_argp_params *)state->input)->result = parsed;
       break;
 
     default:
