@@ -335,46 +335,47 @@ const struct ps_getter ps_zero_fills_getter =
 
 /* G () is a helpful macro that just returns the getter G's access function
    cast into a function pointer returning TYPE, as how the function should be
-   called varies depending on the getter */
-#define G(g,type)((type (*)())ps_getter_function(g))
+   called varies depending on the getter.  */
+#define G(getter,type) ((type (*)())((getter)->fn))
+
+/* Similar to G, but takes a fmt field and uses its getter.  */
+#define FG(field,type) G(field->spec->getter, type)
 
 error_t
-ps_emit_int (struct proc_stat *ps,
-	     const struct ps_getter *getter,
-	     int width, struct ps_stream *stream)
+ps_emit_int (struct proc_stat *ps, struct ps_fmt_field *field,
+	     struct ps_stream *stream)
 {
-  return ps_stream_write_int_field (stream, G (getter, int)(ps), width);
+  return ps_stream_write_int_field (stream, FG (field, int)(ps), field->width);
 }
 
 error_t
-ps_emit_nz_int (struct proc_stat *ps,
-		const struct ps_getter *getter,
-		int width, struct ps_stream *stream)
+ps_emit_nz_int (struct proc_stat *ps, struct ps_fmt_field *field,
+		struct ps_stream *stream)
 {
-  int value = G (getter, int)(ps);
+  int value = FG (field, int)(ps);
   if (value)
-    return ps_stream_write_int_field  (stream, value, width);
+    return ps_stream_write_int_field  (stream, value, field->width);
   else
-    return ps_stream_write_field (stream, "-", width);
+    return ps_stream_write_field (stream, "-", field->width);
 }
 
 error_t
-ps_emit_priority (struct proc_stat *ps, const struct ps_getter *getter,
-		  int width, struct ps_stream *stream)
+ps_emit_priority (struct proc_stat *ps, struct ps_fmt_field *field,
+		  struct ps_stream *stream)
 {
   return
     ps_stream_write_int_field (stream,
-			       MACH_PRIORITY_TO_NICE (G (getter, int)(ps)),
-			       width);
+			       MACH_PRIORITY_TO_NICE (FG (field, int)(ps)),
+			       field->width);
 }
 
 error_t
-ps_emit_num_blocks (struct proc_stat *ps, const struct ps_getter *getter,
-		    int width, struct ps_stream *stream)
+ps_emit_num_blocks (struct proc_stat *ps, struct ps_fmt_field *field,
+		    struct ps_stream *stream)
 {
   char buf[20];
-  sprintf(buf, "%d", G (getter, int)(ps) / 1024);
-  return ps_stream_write_field (stream, buf, width);
+  sprintf(buf, "%d", FG (field, int)(ps) / 1024);
+  return ps_stream_write_field (stream, buf, field->width);
 }
 
 int 
@@ -410,11 +411,12 @@ sprint_frac_value (char *buf,
 }
 
 error_t
-ps_emit_percent (struct proc_stat *ps, const struct ps_getter *getter,
-		 int width, struct ps_stream *stream)
+ps_emit_percent (struct proc_stat *ps, struct ps_fmt_field *field,
+		 struct ps_stream *stream)
 {
   char buf[20];
-  float perc = G (getter, float)(ps) * 100;
+  int width = field->width;
+  float perc = FG (field, float)(ps) * 100;
 
   if (width == 0)
     sprintf (buf, "%g", perc);
@@ -428,11 +430,11 @@ ps_emit_percent (struct proc_stat *ps, const struct ps_getter *getter,
 
 /* prints its value nicely */
 error_t
-ps_emit_nice_int (struct proc_stat *ps, const struct ps_getter *getter,
-		  int width, struct ps_stream *stream)
+ps_emit_nice_int (struct proc_stat *ps, struct ps_fmt_field *field,
+		  struct ps_stream *stream)
 {
   char buf[20];
-  int value = G (getter, int)(ps);
+  int value = FG (field, int)(ps);
   char *sfx = " KMG";
   int frac = 0;
 
@@ -443,49 +445,55 @@ ps_emit_nice_int (struct proc_stat *ps, const struct ps_getter *getter,
       sfx++;
     }
 
-  sprintf(buf + sprint_frac_value (buf, value, 1, frac, 3, ABS (width) - 1),
+  sprintf(buf
+	  + sprint_frac_value (buf, value, 1, frac, 3, ABS (field->width) - 1),
 	  "%c", *sfx);
 
-  return ps_stream_write_field (stream, buf, width);
+  return ps_stream_write_field (stream, buf, field->width);
 }
 
 error_t
-ps_emit_seconds (struct proc_stat *ps, const struct ps_getter *getter,
-		 int width, struct ps_stream *stream)
+ps_emit_seconds (struct proc_stat *ps, struct ps_fmt_field *field,
+		 struct ps_stream *stream)
 {
   char buf[20];
   struct timeval tv;
+  int width = field->width, prec = field->precision;
 
-  G (getter, void)(ps, &tv);
+  FG (field, void)(ps, &tv);
 
-  fmt_seconds (&tv, width != 0, width ? -1 : 0, ABS (width), buf, sizeof (buf));
+  fmt_seconds (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), prec, ABS (width),
+	       buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
 
 error_t
-ps_emit_minutes (struct proc_stat *ps, const struct ps_getter *getter,
-		 int width, struct ps_stream *stream)
+ps_emit_minutes (struct proc_stat *ps, struct ps_fmt_field *field,
+		 struct ps_stream *stream)
 {
   char buf[20];
   struct timeval tv;
+  int width = field->width;
 
-  G (getter, int)(ps, &tv);
+  FG (field, int)(ps, &tv);
 
-  fmt_minutes (&tv, width != 0, ABS (width), buf, sizeof (buf));
+  fmt_minutes (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), ABS (width),
+	       buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
 
 error_t
-ps_emit_past_time (struct proc_stat *ps, const struct ps_getter *getter,
-		   int width, struct ps_stream *stream)
+ps_emit_past_time (struct proc_stat *ps, struct ps_fmt_field *field,
+		   struct ps_stream *stream)
 {
   static struct timeval now;
-  struct timeval tv;
   char buf[20];
+  struct timeval tv;
+  int width = field->width;
 
-  G (getter, int)(ps, &tv);
+  FG (field, int)(ps, &tv);
 
   if (now.tv_sec == 0 && gettimeofday (&now, 0) < 0)
     return errno;
@@ -496,21 +504,22 @@ ps_emit_past_time (struct proc_stat *ps, const struct ps_getter *getter,
 }
 
 error_t
-ps_emit_uid (struct proc_stat *ps, const struct ps_getter *getter,
-	     int width, struct ps_stream *stream)
+ps_emit_uid (struct proc_stat *ps, struct ps_fmt_field *field,
+	     struct ps_stream *stream)
 {
-  int uid = G (getter, int)(ps);
+  int uid = FG (field, int)(ps);
   if (uid < 0)
-    return ps_stream_write_field (stream, "-", width);
+    return ps_stream_write_field (stream, "-", field->width);
   else
-    return ps_stream_write_int_field (stream, uid, width);
+    return ps_stream_write_int_field (stream, uid, field->width);
 }
 
 error_t
-ps_emit_uname (struct proc_stat *ps, const struct ps_getter *getter,
-	       int width, struct ps_stream *stream)
+ps_emit_uname (struct proc_stat *ps, struct ps_fmt_field *field,
+	       struct ps_stream *stream)
 {
-  struct ps_user *u = G (getter, struct ps_user *)(ps);
+  int width = field->width;
+  struct ps_user *u = FG (field, struct ps_user *)(ps);
   if (u)
     {
       struct passwd *pw = ps_user_passwd (u);
@@ -523,18 +532,41 @@ ps_emit_uname (struct proc_stat *ps, const struct ps_getter *getter,
     return ps_stream_write_field (stream, "-", width);
 }
 
+error_t
+ps_emit_user_name (struct proc_stat *ps, struct ps_fmt_field *field,
+		   struct ps_stream *stream)
+{
+  int width = field->width;
+  struct ps_user *u = FG (field, struct ps_user *)(ps);
+  if (u)
+    {
+      struct passwd *pw = ps_user_passwd (u);
+      if (pw == NULL)
+	{
+	  char buf[20];
+	  sprintf (buf, "(UID %d)", pw->pw_uid);
+	  return ps_stream_write_field (stream, buf, width);
+	}
+      else
+	return ps_stream_write_field (stream, pw->pw_gecos, width);
+    }
+  else
+    return ps_stream_write_field (stream, "-", width);
+}
+
 /* prints a string with embedded nuls as spaces */
 error_t
-ps_emit_string0 (struct proc_stat *ps, const struct ps_getter *getter,
-		 int width, struct ps_stream *stream)
+ps_emit_args (struct proc_stat *ps, struct ps_fmt_field *field,
+	      struct ps_stream *stream)
 {
   char *s0, *p, *q;
   int s0len;
+  int width = field->width;
   int fwidth = ABS (width);
   char static_buf[200];
   char *buf = static_buf;
 
-  G (getter, void)(ps, &s0, &s0len);
+  FG (field, void)(ps, &s0, &s0len);
 
   if (s0 == NULL)
     *buf = '\0';
@@ -570,26 +602,26 @@ ps_emit_string0 (struct proc_stat *ps, const struct ps_getter *getter,
 }
 
 error_t
-ps_emit_string (struct proc_stat *ps, const struct ps_getter *getter,
-		int width, struct ps_stream *stream)
+ps_emit_string (struct proc_stat *ps, struct ps_fmt_field *field,
+		struct ps_stream *stream)
 {
   char *str;
   int len;
 
-  G (getter, void)(ps, &str, &len);
+  FG (field, void)(ps, &str, &len);
 
   if (str == NULL)
     str = "";
 
-  return ps_stream_write_trunc_field (stream, str, width);
+  return ps_stream_write_trunc_field (stream, str, field->width);
 }
 
 error_t
-ps_emit_tty_name (struct proc_stat *ps, const struct ps_getter *getter,
-		  int width, struct ps_stream *stream)
+ps_emit_tty_name (struct proc_stat *ps, struct ps_fmt_field *field,
+		  struct ps_stream *stream)
 {
   const char *name = "-";
-  struct ps_tty *tty = G (getter, struct ps_tty *)(ps);
+  struct ps_tty *tty = FG (field, struct ps_tty *)(ps);
 
   if (tty)
     {
@@ -598,7 +630,7 @@ ps_emit_tty_name (struct proc_stat *ps, const struct ps_getter *getter,
 	name = "?";
     }
 
-  return ps_stream_write_field (stream, name, width);
+  return ps_stream_write_field (stream, name, field->width);
 }
 
 struct state_shadow
@@ -630,11 +662,11 @@ state_shadows[] = {
 };
 
 error_t
-ps_emit_state (struct proc_stat *ps, const struct ps_getter *getter,
-	       int width, struct ps_stream *stream)
+ps_emit_state (struct proc_stat *ps, struct ps_fmt_field *field,
+	       struct ps_stream *stream)
 {
   char *tags;
-  int raw_state = G (getter, int)(ps);
+  int raw_state = FG (field, int)(ps);
   int state = raw_state;
   char buf[20], *p = buf;
   const struct state_shadow *shadow = state_shadows;
@@ -654,23 +686,23 @@ ps_emit_state (struct proc_stat *ps, const struct ps_getter *getter,
 
   *p = '\0';
 
-  return ps_stream_write_field (stream, buf, width);
+  return ps_stream_write_field (stream, buf, field->width);
 }
 
 error_t
-ps_emit_wait (struct proc_stat *ps, const struct ps_getter *getter,
-	      int width, struct ps_stream *stream)
+ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
+	      struct ps_stream *stream)
 {
   int rpc;
   char *wait;
   char buf[80];
 
-  G (getter, void)(ps, &wait, &rpc);
+  FG (field, void)(ps, &wait, &rpc);
 
   if (wait == 0)
-    return ps_stream_write_field (stream, "?", width);
+    return ps_stream_write_field (stream, "?", field->width);
   else if (*wait == 0)
-    return ps_stream_write_field (stream, "-", width);
+    return ps_stream_write_field (stream, "-", field->width);
   else if (strcmp (wait, "kernel") == 0)
     /* A syscall.  RPC is actually the syscall number.  */
     {
@@ -681,7 +713,7 @@ ps_emit_wait (struct proc_stat *ps, const struct ps_getter *getter,
 	  sprintf (buf, "syscall:%d", -rpc);
 	  name = buf;
 	}
-      return ps_stream_write_trunc_field (stream, name, width);
+      return ps_stream_write_trunc_field (stream, name, field->width);
     }
   else if (rpc)
     /* An rpc (with msg id RPC); WAIT describes the dest port.  */
@@ -719,10 +751,10 @@ ps_emit_wait (struct proc_stat *ps, const struct ps_getter *getter,
       else
 	snprintf (buf, sizeof buf, "%s:%d", wait, rpc);
 
-      return ps_stream_write_trunc_field (stream, buf, width);
+      return ps_stream_write_trunc_field (stream, buf, field->width);
     }
   else
-    return ps_stream_write_field (stream, wait, width);
+    return ps_stream_write_field (stream, wait, field->width);
 }
 /* ---------------------------------------------------------------- */
 /* comparison functions */
@@ -935,6 +967,8 @@ specs_add_alias (struct ps_fmt_specs *specs,
   /* Copy the rest of the fields from ALIAS, but defaulting to SRC.  */
   exp->title = alias->title ?: src->title;
   exp->width = alias->width ?: src->width;
+  exp->precision = alias->precision >= 0 ? alias->precision : src->precision;
+  exp->flags = src->flags ^ alias->flags;
   exp->getter = alias->getter ?: src->getter;
   exp->output_fn = alias->output_fn ?: src->output_fn;
   exp->cmp_fn = alias->cmp_fn ?: src->cmp_fn;
@@ -995,73 +1029,73 @@ ps_fmt_specs_find (struct ps_fmt_specs *specs, const char *name)
 
 static const struct ps_fmt_spec specs[] =
 {
-  {"PID",	0,	-5,
+  {"PID",	0,	-5, -1, 0,
    &ps_pid_getter,	   ps_emit_int,	    ps_cmp_ints,   0},
-  {"TH#",	0,	-2,
+  {"TH",	"TH#",	-2, -1, 0,
    &ps_thread_index_getter,ps_emit_int,	    ps_cmp_ints,   0},
-  {"PPID",	0,	-5,
+  {"PPID",	0,	-5, -1, 0,
    &ps_ppid_getter,	   ps_emit_int,     ps_cmp_ints,   0},
-  {"UID",	0,	-4,
+  {"UID",	0,	-4, -1, PS_FMT_FIELD_KEEP,
    &ps_owner_uid_getter,   ps_emit_uid,	    ps_cmp_ints,   ps_nominal_uid},
-  {"User",	0,	8,
+  {"User",	0,	 8, -1, PS_FMT_FIELD_KEEP,
    &ps_owner_getter,	   ps_emit_uname,   ps_cmp_unames, ps_nominal_user},
-  {"NTh",	0,	-2,
+  {"NTh",	0,	-2, -1, 0,
    &ps_num_threads_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_nth},
-  {"PGrp",	0,	-5,
+  {"PGrp",	0,	-5, -1, 0,
    &ps_pgrp_getter,	   ps_emit_int,	    ps_cmp_ints,   0},
-  {"Sess",	0,	-5,
+  {"Sess",	0,	-5, -1, 0,
    &ps_session_getter,     ps_emit_int,     ps_cmp_ints,   0},
-  {"LColl",	0,	-5,
+  {"LColl",	0,	-5, -1, 0,
    &ps_login_col_getter,   ps_emit_int,     ps_cmp_ints,   0},
-  {"Args",	0,	0,
-   &ps_args_getter,	   ps_emit_string0, ps_cmp_strings,0},
-  {"Arg0",	0,	0,
+  {"Args",	0,	 0, -1, 0,
+   &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,0},
+  {"Arg0",	0,	0, -1, 0,
    &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,0},
-  {"Time",	0,	-8,
+  {"Time",	0,	-8, -1, 0,
    &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
-  {"UTime",	0,	-8,
+  {"UTime",	0,	-8, -1, 0,
    &ps_usr_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
-  {"STime",	0,	-8,
+  {"STime",	0,	-8, -1, 0,
    &ps_sys_time_getter,    ps_emit_seconds, ps_cmp_times,  0},
-  {"VSize",	0,	-5,
+  {"VSize",	0,	-5, -1, 0,
    &ps_vsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
-  {"RSize",	0,	-5,
+  {"RSize",	0,	-5, -1, 0,
    &ps_rsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0},
-  {"Pri",	0,	-3,
+  {"Pri",	0,	-3, -1, 0,
    &ps_cur_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri},
-  {"BPri",	0,	-3,
+  {"BPri",	0,	-3, -1, 0,
    &ps_base_priority_getter,ps_emit_priority,ps_cmp_ints,  ps_nominal_pri},
-  {"MPri",	0,	-3,
+  {"MPri",	0,	-3, -1, 0,
    &ps_max_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri},
-  {"%Mem",	0,	-4,
+  {"Mem",	"%Mem",	-4, -1, 0,
    &ps_rmem_frac_getter,   ps_emit_percent, ps_cmp_floats, 0},
-  {"%CPU",	0,	-4,
+  {"CPU",	"%CPU",	-4, -1, 0,
    &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0},
-  {"State",	0,	4,
+  {"State",	0,	4, -1, 0,
    &ps_state_getter,	   ps_emit_state,   0,   	   0},
-  {"Wait",	0,	10,
+  {"Wait",	0,	10, -1, 0,
    &ps_wait_getter,        ps_emit_wait,    0,		   0},
-  {"Sleep",	0,	-2,
+  {"Sleep",	0,	-2, -1, 0,
    &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"Susp",	0,	-2,
+  {"Susp",	0,	-2, -1, 0,
    &ps_susp_count_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"PSusp",	0,	-2,
+  {"PSusp",	0,	-2, -1, 0,
    &ps_proc_susp_count_getter, ps_emit_int, ps_cmp_ints,   ps_nominal_zint},
-  {"TSusp",	0,	-2,
+  {"TSusp",	0,	-2, -1, 0,
    &ps_thread_susp_count_getter, ps_emit_int,ps_cmp_ints,  ps_nominal_zint},
-  {"TTY",	0,	-2,
+  {"TTY",	0,	-2, -1, 0,
    &ps_tty_getter,	   ps_emit_tty_name,ps_cmp_strings,0},
-  {"PgFlts",	0,	-5,
+  {"PgFlts",	0,	-5, -1, 0,
    &ps_page_faults_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"COWFlts",	0,	-5,
+  {"COWFlts",	0,	-5, -1, 0,
    &ps_cow_faults_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"PgIns",	0,	-5,
+  {"PgIns",	0,	-5, -1, 0,
    &ps_pageins_getter,     ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"MsgIn",	0,	-5,
+  {"MsgIn",	0,	-5, -1, 0,
    &ps_msgs_rcvd_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"MsgOut",	0,	-5,
+  {"MsgOut",	0,	-5, -1, 0,
    &ps_msgs_sent_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
-  {"ZFills",	0,	-5,
+  {"ZFills",	0,	-5, -1, 0,
    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {0}
 };
