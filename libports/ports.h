@@ -1,5 +1,5 @@
 /* Ports library for server construction
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,99 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -175,7 +175,7 @@ ports_create_port_noinstall (struct port_class *class,
 			     struct port_bucket *bucket,
 			     size_t size,
 			     void *result);
-   
+
 /* For an existing RECEIVE right, create and return in RESULT a new port
    structure; BUCKET, SIZE, and CLASS args are as for ports_create_port. */
 error_t ports_import_port (struct port_class *class,
@@ -193,12 +193,12 @@ void ports_reallocate_from_external (void *port, mach_port_t receive);
 
 /* Destroy the receive right currently associated with PORT.  After
    this call, ports_reallocate_port and ports_reallocate_from_external
-   may not be used. */
-void ports_destroy_right (void *port);
+   may not be used.  Always returns 0, for convenient use as an iterator.  */
+error_t ports_destroy_right (void *port);
 
 /* Return the receive right currently associated with PORT.  The effects
    on PORT are the same as in ports_destroy_right, except that the receive
-   right itself is not affected.  Note that in multi-threaded servers, 
+   right itself is not affected.  Note that in multi-threaded servers,
    messages might already have been dequeued for this port before it gets
    removed from the portset; such messages will get EOPNOTSUPP errors.  */
 mach_port_t ports_claim_right (void *port);
@@ -216,13 +216,13 @@ mach_port_t ports_get_right (void *port);
 
 
 /* Reference counting */
-   
+
 /* Look up PORT and return the associated port structure, allocating a
    reference.  If the call fails, return 0.  If BUCKET is nonzero,
    then it specifies a bucket to search; otherwise all buckets will be
    searched.  If CLASS is nonzero, then the lookup will fail if PORT
    is not in CLASS. */
-void *ports_lookup_port (struct port_bucket *bucket, 
+void *ports_lookup_port (struct port_bucket *bucket,
 			 mach_port_t port, struct port_class *class);
 
 /* Allocate another reference to PORT. */
@@ -251,7 +251,7 @@ int ports_count_class (struct port_class *class);
    of ports currently in BUCKET. */
 int ports_count_bucket (struct port_bucket *bucket);
 
-/* Permit suspended port creation (blocked by ports_count_class) 
+/* Permit suspended port creation (blocked by ports_count_class)
    to continue. */
 void ports_enable_class (struct port_class *class);
 
@@ -263,16 +263,23 @@ void ports_enable_bucket (struct port_bucket *bucket);
 error_t ports_bucket_iterate (struct port_bucket *bucket,
 			      error_t (*fun)(void *port));
 
+/* Call FUN once for each port in CLASS. */
+error_t ports_class_iterate (struct port_class *class,
+			     error_t (*fun)(void *port));
 
+/* Internal entrypoint for above two.  */
+error_t _ports_bucket_class_iterate (struct port_bucket *bucket,
+				     struct port_class *class,
+				     error_t (*fun)(void *port));
 
 /* RPC management */
-   
+
 /* Type of MiG demuxer routines. */
-typedef int (*ports_demuxer_type)(mach_msg_header_t *inp, 
+typedef int (*ports_demuxer_type)(mach_msg_header_t *inp,
 				  mach_msg_header_t *outp);
 
-/* Call this when an RPC is beginning on PORT.  INFO should be 
-   allocated by the caller and will be used to hold dynamic state. 
+/* Call this when an RPC is beginning on PORT.  INFO should be
+   allocated by the caller and will be used to hold dynamic state.
    If this RPC should be abandoned, return EDIED; otherwise we
    return zero. */
 error_t ports_begin_rpc (void *port, mach_msg_id_t msg_id,
@@ -304,7 +311,7 @@ void ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					       int thread_timeout,
 					       int global_timeout,
 					       void (*hook)(void));
-   
+
 /* Interrupt any pending RPC on PORT.  Wait for all pending RPC's to
    finish, and then block any new RPC's starting on that port. */
 error_t ports_inhibit_port_rpcs (void *port);
@@ -379,7 +386,7 @@ extern kern_return_t
 
 /* A default interrupt server */
 int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-extern kern_return_t ports_S_interrupt_operation (mach_port_t, 
+extern kern_return_t ports_S_interrupt_operation (mach_port_t,
 						  mach_port_seqno_t);
 
 /* Private data */
