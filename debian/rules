@@ -97,7 +97,10 @@ binary-arch: build
 	-strip --strip-all	debian/tmp/hurd/*
 	-strip --strip-all	debian/tmp/libexec/*
 	chmod			0644 debian/tmp/lib/lib*.a
-	chmod			0755 debian/tmp/include debian/tmp/include/hurd debian/tmp/lib debian/tmp/hurd debian/tmp/bin debian/tmp/sbin debian/tmp/dev debian/tmp/libexec debian/tmp/etc debian/tmp/etc/login
+	chmod			0755 $(addprefix debian/tmp/,		\
+						 include include/hurd	\
+						 lib hurd bin sbin	\
+						 dev libexec etc etc/login)
 
 # now distribute the files
 # first the source package
