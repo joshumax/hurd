@@ -217,6 +217,7 @@ make_hol (const struct argp_option *opt, struct hol_cluster *cluster)
   assert (hol);
 
   hol->num_entries = 0;
+  hol->clusters = 0;
 
   if (opt)
     {
@@ -1025,10 +1026,10 @@ argp_args_levels (const struct argp *argp)
    updated by this routine for the next call if ADVANCE is true.  True is
    returned as long as there are more patterns to output.  */
 static int
-argp_args_usage (const struct argp *argp, char *levels, int advance,
+argp_args_usage (const struct argp *argp, char **levels, int advance,
 		 argp_fmtstream_t stream)
 {
-  int level = 0;
+  char *our_level = *levels;
   const struct argp_child *child = argp->children;
   const char *doc = argp->args_doc, *nl = 0;
 
@@ -1039,9 +1040,10 @@ argp_args_usage (const struct argp *argp, char *levels, int advance,
 	/* This is a `multi-level' args doc; advance to the correct position
 	   as determined by our state in LEVELS, and update LEVELS.  */
 	{
-	  for (level = 0; level < *levels; level++)
+	  int i;
+	  for (i = 0; i < *our_level; i++)
 	    doc = nl + 1, nl = strchr (doc, '\n');
-	  levels++;
+	  (*levels)++;
 	}
       if (! nl)
 	nl = doc + strlen (doc);
@@ -1059,19 +1061,19 @@ argp_args_usage (const struct argp *argp, char *levels, int advance,
 
   if (child)
     while (child->argp)
-      advance = !argp_args_usage ((child++)->argp, levels++, advance, stream);
+      advance = !argp_args_usage ((child++)->argp, levels, advance, stream);
 
   if (advance)
     /* Need to increment our level.  */
     if (nl && *nl)
       /* There's more we can do here.  */
       {
-	levels[-1]++;
+	(*our_level)++;
 	advance = 0;		/* Our parent shouldn't advance also. */
       }
-    else if (level > 0)
+    else if (*our_level > 0)
       /* We had multiple levels, but used them up; reset to zero.  */
-      levels[-1] = 0;
+      *our_level = 0;
 
   return !advance;
 }
@@ -1160,6 +1162,7 @@ void __argp_help (const struct argp *argp, FILE *stream,
 	{
 	  int old_lm;
 	  int old_wm = __argp_fmtstream_set_wmargin (fs, USAGE_INDENT);
+	  char *levels = pattern_levels;
 
 	  __argp_fmtstream_printf (fs, "%s %s",
 				   first_pattern ? "Usage:" : "  or: ", name);
@@ -1181,7 +1184,7 @@ void __argp_help (const struct argp *argp, FILE *stream,
 	      flags |= ARGP_HELP_SHORT_USAGE; /* But only do so once.  */
 	    }
 
-	  more_patterns = argp_args_usage (argp, pattern_levels, 1, fs);
+	  more_patterns = argp_args_usage (argp, &levels, 1, fs);
 
 	  __argp_fmtstream_set_wmargin (fs, old_wm);
 	  __argp_fmtstream_set_lmargin (fs, old_lm);
