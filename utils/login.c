@@ -542,6 +542,10 @@ main(int argc, char *argv[])
 	  encrypted = crypt (unencrypted, password);
 	  /* Paranoia may destroya.  */
 	  memset (unencrypted, 0, strlen (unencrypted));
+
+	  if (! encrypted)
+	    /* Something went wrong.  */
+	    fail (51, errno, "Password encryption failed", 0);
 	}
       else
 	encrypted = unencrypted;
