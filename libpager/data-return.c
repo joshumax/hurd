@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_return for pager library
-   Copyright (C) 1994, 1995, 1996, 1999, 2000 Free Software Foundation
+   Copyright (C) 1994,95,96,99,2000,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -45,7 +45,7 @@ _pager_do_write_request (mach_port_t object,
 		    struct lock_list *next;} *lock_list, *ll;
   int wakeup;
   int omitdata = 0;
-  
+
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
@@ -53,7 +53,7 @@ _pager_do_write_request (mach_port_t object,
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
-  
+
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
@@ -62,7 +62,7 @@ _pager_do_write_request (mach_port_t object,
     }
   if (length % __vm_page_size)
     {
-      printf ("incg data return: bad length size %d\n", length);
+      printf ("incg data return: bad length size %zd\n", length);
       goto release_out;
     }
   if (offset % __vm_page_size)
@@ -103,7 +103,7 @@ _pager_do_write_request (mach_port_t object,
 	condition_wait (&p->wakeup, &p->interlock);
 	goto retry;
       }
-  
+
   /* Mark these pages as being paged out.  */
   if (initializing)
     {
@@ -150,8 +150,8 @@ _pager_do_write_request (mach_port_t object,
 
   for (i = 0; i < npages; i++)
     if (!(omitdata & (1 << i)))
-      pagerrs[i] = pager_write_page (p->upi, 
-				     offset + (vm_page_size * i), 
+      pagerrs[i] = pager_write_page (p->upi,
+				     offset + (vm_page_size * i),
 				     data + (vm_page_size * i));
 
   /* Acquire the right to meddle with the pagemap */
@@ -164,10 +164,10 @@ _pager_do_write_request (mach_port_t object,
     {
       if (omitdata & (1 << i))
 	continue;
-      
+
       if (pm_entries[i] & PM_WRITEWAIT)
 	wakeup = 1;
-      
+
       if (pagerrs[i] && ! (pm_entries[i] & PM_PAGEINWAIT))
 	/* The only thing we can do here is mark the page, and give
 	   errors from now on when it is to be read.  This is
@@ -179,13 +179,13 @@ _pager_do_write_request (mach_port_t object,
 	pm_entries[i] |= PM_INVALID;
 
       if (pm_entries[i] & PM_PAGEINWAIT)
-	memory_object_data_supply (p->memobjcntl, 
-				   offset + (vm_page_size * i), 
-				   data + (vm_page_size * i), 
+	memory_object_data_supply (p->memobjcntl,
+				   offset + (vm_page_size * i),
+				   data + (vm_page_size * i),
 				   vm_page_size, 1,
 				   VM_PROT_NONE, 0, MACH_PORT_NULL);
       else
-	munmap ((caddr_t) (data + (vm_page_size * i)), 
+	munmap ((caddr_t) (data + (vm_page_size * i)),
 		vm_page_size);
 
       pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT | PM_WRITEWAIT);
@@ -214,7 +214,7 @@ _pager_do_write_request (mach_port_t object,
 
 /* Implement pageout call back as described by <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_return (mach_port_t object, 
+_pager_seqnos_memory_object_data_return (mach_port_t object,
 					 mach_port_seqno_t seqno,
 					 mach_port_t control,
 					 vm_offset_t offset,

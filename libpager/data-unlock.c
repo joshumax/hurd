@@ -1,5 +1,5 @@
 /* Implementation of memory_object_data_unlock for pager library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994,95,2002 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,10 +19,10 @@
 #include "memory_object_S.h"
 #include <stdio.h>
 
-/* Implement kernel requests for access as described in 
+/* Implement kernel requests for access as described in
    <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_unlock (mach_port_t object, 
+_pager_seqnos_memory_object_data_unlock (mach_port_t object,
 					 mach_port_seqno_t seqno,
 					 mach_port_t control,
 					 vm_offset_t offset,
@@ -31,7 +31,7 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
 {
   struct pager *p;
   volatile int err;
-  
+
   p = ports_lookup_port (0, object, _pager_class);
   if (!p)
     return EOPNOTSUPP;
@@ -65,12 +65,12 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data unlock: bad length size %d\n", length);
+      printf ("incg data unlock: bad length size %zd\n", length);
       goto out;
     }
 
   err = pager_unlock_page (p->upi, offset);
-  
+
   if (!err)
     /* We can go ahead and release the lock.  */
     _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 0,
@@ -87,4 +87,3 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
   ports_port_deref (p);
   return 0;
 }
-

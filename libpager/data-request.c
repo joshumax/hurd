@@ -22,7 +22,7 @@
 
 /* Implement pagein callback as described in <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_request (mach_port_t object, 
+_pager_seqnos_memory_object_data_request (mach_port_t object,
 					  mach_port_seqno_t seqno,
 					  mach_port_t control,
 					  vm_offset_t offset,
@@ -43,7 +43,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
-  
+
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
     {
@@ -52,7 +52,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data request: bad length size %d\n", length);
+      printf ("incg data request: bad length size %zd\n", length);
       goto release_out;
     }
   if (offset % __vm_page_size)
@@ -61,7 +61,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
       goto release_out;
     }
 
-  _pager_block_termination (p);	/* prevent termination until 
+  _pager_block_termination (p);	/* prevent termination until
 				   mark_object_error is done */
 
   if (p->pager_state != NORMAL)
@@ -99,9 +99,9 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
 
   if (PM_NEXTERROR (*pm_entry) != PAGE_NOERR && (access & VM_PROT_WRITE))
     {
-      memory_object_data_error (control, offset, length, 
+      memory_object_data_error (control, offset, length,
 				_pager_page_errors[PM_NEXTERROR (*pm_entry)]);
-      _pager_mark_object_error (p, offset, length, 
+      _pager_mark_object_error (p, offset, length,
 				_pager_page_errors[PM_NEXTERROR (*pm_entry)]);
       *pm_entry = SET_PM_NEXTERROR (*pm_entry, PAGE_NOERR);
       doread = 0;
@@ -119,7 +119,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   err = pager_read_page (p->upi, offset, &page, &write_lock);
   if (err)
     goto error_read;
-  
+
   memory_object_data_supply (p->memobjcntl, offset, page, length, 1,
 			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE, 0,
 			     MACH_PORT_NULL);
