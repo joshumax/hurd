@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -62,7 +62,7 @@ ptyio_init (void)
   condition_implies (&pty_read_wakeup, &pty_select_wakeup);
   return 0;
 }
-    
+
 error_t
 pty_open_hook (struct trivfs_control *cntl,
 	       struct iouser *user,
@@ -70,7 +70,7 @@ pty_open_hook (struct trivfs_control *cntl,
 {
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
-  
+
   mutex_lock (&global_lock);
 
   if (ptyopen)
@@ -78,7 +78,7 @@ pty_open_hook (struct trivfs_control *cntl,
       mutex_unlock (&global_lock);
       return EBUSY;
     }
-    
+
   ptyopen = 1;
 
   /* Re-initialize pty state.  */
@@ -175,7 +175,7 @@ ptyio_suspend_physical_output ()
   return 0;
 }
 
-static int 
+static int
 ptyio_pending_output_size ()
 {
   /* We don't maintain any pending output buffer separate from the outputq. */
@@ -193,14 +193,14 @@ ptyio_notice_input_flushed ()
   return 0;
 }
 
-static error_t 
+static error_t
 ptyio_assert_dtr ()
 {
   dtr_on = 1;
   return 0;
 }
 
-static error_t 
+static error_t
 ptyio_desert_dtr ()
 {
   dtr_on = 0;
@@ -208,16 +208,16 @@ ptyio_desert_dtr ()
   return 0;
 }
 
-static error_t 
+static error_t
 ptyio_set_bits (struct termios *state)
 {
   if (packet_mode)
     {
       int wakeup = 0;
-      int stop = ((state->c_iflag & IXON) 
+      int stop = ((state->c_iflag & IXON)
 		  && CCEQ (state->c_cc[VSTOP], CHAR_DC3)
 		  && CCEQ (state->c_cc[VSTART], CHAR_DC1));
-  
+
       if (external_processing)
 	{
 	  control_byte |= TIOCPKT_IOCTL;
@@ -247,7 +247,7 @@ ptyio_set_bits (struct termios *state)
 
 /* These do nothing.  In BSD the associated ioctls get errors, but
    I'd rather just ignore them. */
-static error_t 
+static error_t
 ptyio_set_break ()
 {
   return 0;
@@ -303,9 +303,9 @@ pty_io_read (struct trivfs_protid *cred,
 	     mach_msg_type_number_t amount)
 {
   int size;
-  
+
   mutex_lock (&global_lock);
-  
+
   if ((cred->po->openmodes & O_READ) == 0)
     {
       mutex_unlock (&global_lock);
@@ -328,7 +328,7 @@ pty_io_read (struct trivfs_protid *cred,
 	  return EINTR;
 	}
     }
-  
+
   if (control_byte)
     {
       size = 1;
@@ -341,7 +341,7 @@ pty_io_read (struct trivfs_protid *cred,
       if (packet_mode || user_ioctl_mode)
 	size++;
     }
-        
+
   if (size > amount)
     size = amount;
   if (size > *datalen)
@@ -372,7 +372,7 @@ pty_io_read (struct trivfs_protid *cred,
   return 0;
 }
 
-	     
+
 /* Validation has already been done by trivfs_S_io_write. */
 error_t
 pty_io_write (struct trivfs_protid *cred,
@@ -384,7 +384,7 @@ pty_io_write (struct trivfs_protid *cred,
   int cancel = 0;
 
   mutex_lock (&global_lock);
-  
+
   if ((cred->po->openmodes & O_WRITE) == 0)
     {
       mutex_unlock (&global_lock);
@@ -411,7 +411,7 @@ pty_io_write (struct trivfs_protid *cred,
 
       for (i = 0; i < datalen; i++)
 	enqueue (&inputq, data[i]);
-      
+
       /* Extra garbage charater */
       enqueue (&inputq, 0);
     }
@@ -439,7 +439,7 @@ pty_io_write (struct trivfs_protid *cred,
 
 /* Validation has already been done by trivfs_S_io_readable */
 error_t
-pty_io_readable (int *amt)
+pty_io_readable (size_t *amt)
 {
   mutex_lock (&global_lock);
   if (control_byte)
@@ -460,7 +460,7 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
 	       int *type)
 {
   int avail = 0;
-  
+
   if (*type == 0)
     return 0;
 
@@ -477,7 +477,7 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
 
       if ((*type & SELECT_WRITE) && (!remote_input_mode || !qsize (inputq)))
 	avail |= SELECT_WRITE;
-      
+
       if (avail)
 	{
 	  *type = avail;
@@ -505,7 +505,7 @@ S_tioctl_tiocsig (io_t port,
 						  port, pty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   drop_output ();
@@ -525,12 +525,12 @@ S_tioctl_tiocpkt (io_t port,
 		  int mode)
 {
   error_t err;
-  
+
   struct trivfs_protid *cred = ports_lookup_port (term_bucket,
 						  port, pty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   if (!!mode == !!packet_mode)
@@ -555,12 +555,12 @@ S_tioctl_tiocucntl (io_t port,
 		    int mode)
 {
   error_t err;
-  
+
   struct trivfs_protid *cred = ports_lookup_port (term_bucket,
 						  port, pty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
 
   if (!!mode == !!user_ioctl_mode)
@@ -586,7 +586,7 @@ S_tioctl_tiocremote (io_t port,
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket,
 						  port, pty_class);
-  
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -609,7 +609,7 @@ S_tioctl_tiocext (io_t port,
 						  port, pty_class);
   if (!cred)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (mode && !external_processing)
     {

@@ -79,7 +79,7 @@ static error_t carrier_error;
 struct protid_hook
 {
   int refcnt;
-  pid_t pid, pgrp;
+  pid_t pid, pgrp, sid;
 };
 
 void
@@ -415,10 +415,10 @@ S_termctty_open_terminal (mach_port_t arg,
 /* Implement term_become_ctty as described in <hurd/term.defs>.  */
 kern_return_t
 S_term_open_ctty (mach_port_t arg,
-		    pid_t pid,
-		    pid_t pgrp,
-		    mach_port_t *newpt,
-		    mach_msg_type_name_t *newpttype)
+		  pid_t pid,
+		  pid_t pgrp,
+		  mach_port_t *newpt,
+		  mach_msg_type_name_t *newpttype)
 {
   error_t err;
   struct trivfs_protid *newcred;
@@ -426,6 +426,12 @@ S_term_open_ctty (mach_port_t arg,
 
   if (!cred)
     return EOPNOTSUPP;
+
+  if (pid <= 0 || pgrp <= 0)
+    {
+      ports_port_deref (cred);
+      return EINVAL;
+    }
 
   mutex_lock (&global_lock);
 
@@ -445,6 +451,7 @@ S_term_open_ctty (mach_port_t arg,
 
 	  hook->pid = pid;
 	  hook->pgrp = pgrp;
+	  hook->sid = getsid (pid);
 	  hook->refcnt = 1;
 
 	  if (newcred->hook)
@@ -560,9 +567,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
 		   char *data,
-		   u_int datalen,
-		   off_t offset,
-		   int *amt)
+		   size_t datalen,
+		   loff_t offset,
+		   size_t *amt)
 {
   int i;
   int cancel;
@@ -637,9 +644,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply,
 		  mach_msg_type_name_t replytype,
 		  char **data,
-		  u_int *datalen,
-		  off_t offset,
-		  int amount)
+		  size_t *datalen,
+		  loff_t offset,
+		  size_t amount)
 {
   int cancel;
   int i, max;
@@ -817,7 +824,7 @@ error_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply,
 		      mach_msg_type_name_t replytype,
-		      int *amt)
+		      size_t *amt)
 {
   if (!cred)
     return EOPNOTSUPP;
@@ -1634,6 +1641,9 @@ S_tioctl_tiocspgrp (io_t port,
   mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
+  else if (!cred->hook
+	   || getsid (-pgrp) != ((struct protid_hook *)cred->hook)->sid)
+    err = EPERM;
   else
     {
       termflags &= ~NO_OWNER;
@@ -2032,11 +2042,13 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 }
 
 kern_return_t
-trivfs_S_io_map (struct trivfs_protid *cred,
-		 mach_port_t *rdobj,
-		 mach_msg_type_name_t *rdtype,
-		 mach_port_t *wrobj,
-		 mach_msg_type_name_t *wrtype)
+trivfs_S_io_map  (struct trivfs_protid *cred,
+		  mach_port_t reply,
+		  mach_msg_type_name_t replyPoly,
+		  mach_port_t *rdobj,
+		  mach_msg_type_name_t *rdtype,
+		  mach_port_t *wrobj,
+		  mach_msg_type_name_t *wrtype)
 {
   return EOPNOTSUPP;
 }
