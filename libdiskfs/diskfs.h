@@ -831,7 +831,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
    appropriately; do the analogous operation for atime and mtime as well. */
 void diskfs_set_node_times (struct node *np);
 
-/* Shutdown the filesystem; flags are as for fsys_shutdown. */
+/* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t diskfs_shutdown (int flags);
 
 /* Change an active filesystem between read-only and writable modes, setting
