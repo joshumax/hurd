@@ -82,6 +82,9 @@ diskfs_start_bootstrap ()
   struct port_info *bootinfo;
   struct protid *rootpi;
 
+  printf ("Hurd server bootstrap: %s", program_invocation_short_name);
+  fflush (stdout);
+
   /* Get the execserver going and wait for its fsys_startup */
   mutex_init (&execstartlock);
   condition_init (&execstarted);
