@@ -184,8 +184,7 @@ main (int argc, char **argv)
   condition_implies (outputq->wait, &select_alert);
 
   /* Launch */
-  ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0,
-					    0, MACH_PORT_NULL);
+  ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0, 0);
 
   return 0;
 }  

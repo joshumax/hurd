@@ -1,3 +1,8 @@
+Wed Aug 20 14:07:35 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (main): New args for
+	ports_manage_port_operations_multithread.  
+
 Mon Jun  9 12:19:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* users.c (trivfs_S_file_chmod): Fix typo.
