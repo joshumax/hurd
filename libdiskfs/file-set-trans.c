@@ -52,20 +52,40 @@ diskfs_S_file_set_translator (struct protid *cred,
     }
 
   /* Handle exclusive bits */
-  if (((active_flags & FS_TRANS_SET)
-       && (active_flags & FS_TRANS_EXCL)
-       && np->translator.control != MACH_PORT_NULL)
-      || ((passive_flags & FS_TRANS_SET)
-	  && (passive_flags & FS_TRANS_EXCL)
-	  && diskfs_node_translated (np)))
+  if ((passive_flags & FS_TRANS_SET)
+      && (passive_flags & FS_TRANS_EXCL)
+      && diskfs_node_translated (np))
     {
       mutex_unlock (&np->lock);
+      return EBUSY;
+    }
+  
+  mutex_unlock (&np->lock);
+  mutex_lock (&np->translator.lock);
+  
+  if ((active_flags & FS_TRANS_SET)
+      && (active_flags & FS_TRANS_EXCL)
+      && np->translator.control != MACH_PORT_NULL)
+    {
+      mutex_unlock (&np->translator.lock);
       return EBUSY;
     }
   
   /* Kill existing active translator */
   if (np->translator.control != MACH_PORT_NULL)
     diskfs_destroy_translator (np, killtrans_flags);
+
+  if (active_flags & FS_TRANS_SET)
+    {
+      if (active != MACH_PORT_NULL)
+	fshelp_set_control (&np->translator, active);
+      else
+	/* Should have been cleared above. */
+	assert (np->translator.control == MACH_PORT_NULL);
+    }
+
+  mutex_unlock (&np->translator.lock);
+  mutex_lock (&np->lock);
 
   /* Set passive translator */
   if (passive_flags & FS_TRANS_SET)
@@ -157,16 +177,6 @@ diskfs_S_file_set_translator (struct protid *cred,
 	    }
 	}
       error = diskfs_set_translator (np, passive, passivelen, cred);
-    }
-
-  /* Set active translator */
-  if (active_flags & FS_TRANS_SET)
-    {
-      if (active != MACH_PORT_NULL)
-	fshelp_set_control (&np->translator, active);
-      else
-	/* Should have been cleared above. */
-	assert (np->translator.control == MACH_PORT_NULL);
     }
 
   mutex_unlock (&np->lock);
