@@ -42,6 +42,8 @@ mach_port_t php_child_name, psmdp_child_name;
 task_t child_task;
 mach_port_t bootport;
 
+int console_send_rights;
+
 /* These will prevent the Hurd-ish versions from being used */
 
 int
@@ -168,10 +170,8 @@ main (int argc, char **argv, char **envp)
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &pseudo_console);
   mach_port_move_member (mach_task_self (), pseudo_console, receive_set);
-  mach_port_insert_right (mach_task_self (), pseudo_console, pseudo_console,
-			  MACH_MSG_TYPE_MAKE_SEND);
   mach_port_request_notification (mach_task_self (), pseudo_console,
-				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_console,
+				  MACH_NOTIFY_NO_SENDERS, 0, pseudo_console,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &bootport);
@@ -332,6 +332,9 @@ ds_device_open (mach_port_t master_port,
   
   if (!strcmp (name, "console"))
     {
+      mach_port_insert_right (mach_task_self (), pseudo_console,
+			      pseudo_console, MACH_MSG_TYPE_MAKE_SEND);
+      console_send_rights++;
       *device = pseudo_console;
       return 0;
     }
@@ -358,7 +361,12 @@ ds_device_write (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
-  mach_port_deallocate (mach_task_self (), pseudo_console);
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
 
   *bytes_written = write (1, (void *)*data, datalen);
   
@@ -377,6 +385,13 @@ ds_device_write_inband (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
+
   *bytes_written = write (1, data, datalen);
   
   return (*bytes_written == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -394,6 +409,13 @@ ds_device_read (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
   
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
+
   vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
   *datalen = read (0, *data, bytes_wanted);
 
@@ -412,6 +434,13 @@ ds_device_read_inband (device_t device,
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
   
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
+
   *datalen = read (0, data, bytes_wanted);
   
   return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -547,6 +576,13 @@ S_io_write (mach_port_t object,
 {
   if (object != pseudo_console)
     return EOPNOTSUPP;
+
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
   
   *amtwritten = write (1, data, datalen);
   return *amtwritten == -1 ? errno : 0;
@@ -562,6 +598,13 @@ S_io_read (mach_port_t object,
   if (object != pseudo_console)
     return EOPNOTSUPP;
   
+  if (console_send_rights)
+    {
+      mach_port_mod_refs (mach_task_self (), pseudo_console, 
+			  MACH_PORT_TYPE_SEND, -console_send_rights);
+      console_send_rights = 0;
+    }
+
   if (amount > *datalen)
     vm_allocate (mach_task_self (), amount, data, 1);
   *datalen = read (0, *data, amount);
