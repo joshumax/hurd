@@ -1,3 +1,17 @@
+hurd (19991209) unstable; urgency=low
+
+  * New snapshot from CVS.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Thu,  9 Dec 1999 23:43:23 +0100
+
+hurd (19991022) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * libdiskfs/init-startup.c: Disable periodic syncing before shutting down.
+    This fixes the fs-unclean-on-reboot bug!
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri, 22 Oct 1999 21:32:02 +0200
+
 hurd (19991004) unstable; urgency=high
 
   * New snapshot from CVS.
