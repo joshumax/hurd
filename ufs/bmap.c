@@ -76,7 +76,7 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
   else
     {
       indirs[1].offset = -1;
-      indirs[1].bno = di->di_ib[INDIR_DOUBLE];
+      indirs[1].bno = di->di_ib[INDIR_SINGLE];
     }
 
   if (indirs[1].bno)
