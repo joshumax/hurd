@@ -285,6 +285,8 @@ error_t netfs_unparse_runtime_options (char **argz, size_t *argz_len);
 /* Definitions provided by netfs. */
 struct node *netfs_make_node (struct netnode *);
 
+mach_port_t netfs_startup (mach_port_t, int);
+
 extern spin_lock_t netfs_node_refcnt_lock;
 
 extern int netfs_maxsymlinks;
