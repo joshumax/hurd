@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1995 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -28,7 +28,7 @@ LCLHDRS = fsck.h
 target = fsck.ufs
 installationdir = $(sbindir)
 
-vpath tables.c ../ufs
+vpath tables.c $(srcdir)/ufs
 
 $(target): ../libshouldbeinlibc/libshouldbeinlibc.a
 
