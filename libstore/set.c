@@ -1,6 +1,6 @@
 /* Setting various store fields
 
-   Copyright (C) 1995, 1996, 1997, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2001,02 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -28,7 +28,7 @@
 /* Set STORE's current runs list to (a copy of) RUNS and NUM_RUNS.  */
 error_t
 store_set_runs (struct store *store,
-		const struct store_run *runs, unsigned num_runs)
+		const struct store_run *runs, size_t num_runs)
 {
   unsigned size = num_runs * sizeof (struct store_run);
   struct store_run *copy = malloc (size);
