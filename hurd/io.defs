@@ -1,5 +1,5 @@
 /* Definitions for generic IO interface
-   Copyright (C) 1991,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,95,96,99,2001,02,04 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -34,7 +34,7 @@ INTR_INTERFACE
 
 /* Write data to an IO object.  If offset is -1, write at the object
    maintained file pointer.  If the object is not seekable, offset is
-   ignored.  The amount successfully written is returned in amount.  A
+   ignored.  The amount successfully written is returned in AMOUNT.  A
    given user should not have more than one outstanding io_write on an
    object at a time; servers implement congestion control by delaying
    responses to io_write.  Servers may drop data (returning ENOBUFS)
@@ -48,7 +48,7 @@ routine io_write (
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
-   ignored.  The amount desired to be read is in amount.  */
+   ignored.  The amount desired to be read is in AMOUNT.  */
 routine io_read (
 	io_object: io_t;
 	RPT
@@ -146,9 +146,7 @@ routine io_get_icky_async_id (
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
-   return the types that are then available.  ID_TAG is returned as passed; it
-   is just for the convenience of the user in matching up reply messages with
-   specific requests sent.  */
+   return the types that are then available.  */
 /* INTR */
 routine io_select (
 	io_object: io_t;
