@@ -182,7 +182,7 @@ ifeq ($(makemode),library)
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(libdir) $(includedir)/$(installhdrsubdir) $(libdir)/$(libname).so.$(hurd-version $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install: $(libdir) $(includedir)/$(installhdrsubdir) $(libdir)/$(libname).so.$(hurd-version) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
 install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
@@ -207,11 +207,11 @@ $(addprefix $(libdir)/$(libname),_p.a .a): $(libdir)/%: %
 	$(INSTALL_DATA) $< $@
 	$(RANLIB) $@
 
-$(libdir)/$(libname).so.$(hurd-version): $(libname).so
+$(libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
 	$(INSTALL_DATA) $< $@
 
-$(libdir)/$(libname).so:
-	ln -f -s $(libname).so.$(hurd-version) $@
+$(libdir)/$(libname).so: $(libdir)/$(libname).so.$(hurd-version)
+	ln -f -s $(<F) $@
 
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
