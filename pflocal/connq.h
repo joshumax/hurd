@@ -38,7 +38,7 @@ error_t connq_create (struct connq **cq);
    left in the queue, otherwise connq_request_complete must be called on REQ
    to allow the requesting thread to continue.  If NOBLOCK is true,
    EWOULDBLOCK is returned when there are no immediate connections
-   available. */
+   available.  CQ should be unlocked.  */
 error_t connq_listen (struct connq *cq, int noblock,
 		      struct connq_request **req, struct sock **sock);
 
@@ -52,7 +52,15 @@ error_t connq_set_length (struct connq *cq, int length);
 
 /* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is true,
    then return EWOULDBLOCK immediately when there are no immediate
-   connections available. */
+   connections available. Neither SOCK nor CQ should be locked.  */
 error_t connq_connect (struct connq *cq, int noblock, struct sock *sock);
+
+/* Interrupt any threads waiting on CQ, both listeners and connectors, and
+   make them return with EINTR.  */
+void connq_interrupt (struct connq *cq);
+
+/* Interrupt any threads that are attempting to connect SOCK to CQ, and make
+   them return with EINTR.  */
+void connq_interrupt_sock (struct connq *cq, struct sock *sock);
 
 #endif /* __CONNQ_H__ */
