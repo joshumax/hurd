@@ -1,5 +1,18 @@
 1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* boot-start.c (_diskfs_boot_privports): Renamed from diskfs_*.
+	* priv.h: Declare it.
+	* console.c (diskfs_console_stdio): Change caller.
+
+	* file-statfs.c (diskfs_S_file_statfs): Remove __ from struct members.
+
+1998-12-21  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* file-statfs.c (diskfs_S_file_statfs): Initialize mount options
+	in statbuf.
+
+1998-12-27  Roland McGrath  <roland@baalperazim.frob.com>
+
 	* opts-std-startup.c (startup_options): Move -C above "Boot options:",
 	give it a docstring.  Docstrings for --bootflags, --boot-command.
 	(_diskfs_boot_command): New variable.
