@@ -194,7 +194,7 @@ sweep (struct ftpfs_dir *dir)
 
   for (i = 0; i < len; i++)
     for (e = htable[i]; e; e = e->next)
-      if (! e->valid)
+      if (!e->valid && !e->noent)
 	delete (e, dir);
 }
 
@@ -371,6 +371,12 @@ refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp)
   dfs.dir = dir;
   dfs.timestamp = timestamp;
   dfs.prev_entry_next_p = &dir->ordered;
+
+  /* Make sure `.' and `..' are always included (if the actual list also
+     includes `.' and `..', the ordered may be rearranged).  */
+  err = update_ordered_name (".", &dfs);
+  if (! err)
+    err = update_ordered_name ("..", &dfs);
 
   /* Refetch the directory from the server.  */
   if (update_stats)
