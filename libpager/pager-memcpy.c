@@ -59,7 +59,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 			memobj, offset - pageoff, 0,
 			prot, prot, VM_INHERIT_NONE);
 	  if (err)
-	    return;
+	    return 0;
 
 	  /* Realign the fault preempter for the new mapping window.  */
 	  preempter->first = window;
