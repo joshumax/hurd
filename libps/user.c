@@ -137,7 +137,7 @@ struct passwd *ps_user_passwd (struct ps_user *u)
   else
     {
       struct passwd *pw = getpwuid (u->uid);
-      if (pw != NULL && install_passwd (u, pw))
+      if (pw != NULL && install_passwd (u, pw) == 0)
 	{
 	  u->passwd_state = PS_USER_PASSWD_OK;
 	  return &u->passwd;
