@@ -46,8 +46,13 @@ _diskfs_translator_callback_fn (void *cookie1, void *cookie2,
   
   newpi = diskfs_make_protid (diskfs_make_peropen (np, 
 						   (O_READ|O_EXEC
+/* For now, don't give translators write access to their underlying node.
+   The fsys_startup interface will soon make this irrelevant anyway.  */
+#ifdef XXX
 						    | (!diskfs_readonly 
-						       ? O_WRITE : 0)),
+						       ? O_WRITE : 0)
+#endif
+						   ),
 						   *dotdot),
 			      uid, 1, gid, 1);
 
