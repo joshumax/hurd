@@ -36,6 +36,8 @@ diskfs_make_node (struct disknode *dn)
   np->references = 1;
   np->light_references = 0;
   np->owner = 0;
+
+  np->dirmod_reqs = 0;
   
   fshelp_init_trans_link (&np->translator);
   ioserver_initialize_conch (&np->conch, &np->lock);
