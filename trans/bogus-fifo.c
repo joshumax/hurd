@@ -150,3 +150,10 @@ S_fsys_init (mach_port_t fsys,
 {
   return EOPNOTSUPP;
 }
+
+error_t
+S_fsys_forward (mach_port_t server, mach_port_t requestor,
+		char *argz, size_t argz_len)
+{
+  return EOPNOTSUPP;
+}
