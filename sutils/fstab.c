@@ -27,6 +27,8 @@
 #include <fcntl.h>
 #include <error.h>
 #include <argz.h>
+#include <argp.h>
+#include <fnmatch.h>
 
 #include <hurd/fsys.h>
 
@@ -142,7 +144,7 @@ fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
 	    }
 
 	  if (stat.st_mode & S_IXUSR)
-	    /* Yup execute bit is set.  This must a program...  */
+	    /* Yup execute bit is set.  This must be a program...  */
 	    break;
 
 	  free (program);
@@ -159,6 +161,11 @@ fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
     }
 
   type->name = strdup (name);
+  if (type->name == 0)
+    {
+      free (type);
+      return ENOMEM;
+    }
   type->program = program;
   type->next = types->entries;
   types->entries = type;
@@ -167,6 +174,69 @@ fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
 
   return 0;
 }
+
+#if 0
+/* XXX nice idea, but not that useful since scanf's %s always eats all
+   non-ws, and it seems a bit overkill to convert it to a .+ regexp match */
+error_t
+fstypes_find_program (struct fstypes *types, const char *program,
+		      struct fstype **fstype)
+{
+  char *fmts, *fmt;
+  size_t fmts_len;
+  struct fstype *type;
+  char *typename;
+
+  /* First see if a known type matches this program.  */
+  for (type = types->entries; type; type = type->next)
+    if (type->program && !strcmp (type->program, program))
+      {
+	*fstype = type;
+	return 0;
+      }
+
+  /* No existing entry, see if we can make a new one.  */
+
+  typename = alloca (strlen (program) + 1);
+
+  fmts = types->program_search_fmts;
+  fmts_len = types->program_search_fmts_len;
+  for (fmt = fmts; fmt; fmt = argz_next (fmts, fmts_len, fmt))
+    /* XXX this only works for trailing %s */
+    if (sscanf (program, fmt, typename) == 1)
+      {
+	/* This format matches the program and yields the type name.
+	   Create a new entry for this type.  */
+
+	type = malloc (sizeof (struct fstype));
+	if (! type)
+	  return ENOMEM;
+	type->name = strdup (typename);
+	if (type->name == 0)
+	  {
+	    free (type);
+	    return ENOMEM;
+	  }
+	type->program = strdup (program);
+	if (type->program == 0)
+	  {
+	    free (type->name);
+	    free (type);
+	    return ENOMEM;
+	  }
+	type->next = types->entries;
+	types->entries = type;
+
+	*fstype = type;
+	return 0;
+      }
+
+  /* We could find no program search format that could have yielded this
+     program name.  */
+  *fstype = 0;
+  return 0;
+}
+#endif
 
 /* Copy MNTENT into FS, copying component strings as well.  */
 error_t
@@ -402,8 +472,12 @@ fstab_find_mount (const struct fstab *fstab, const char *name)
 
   /* Don't count "none" or "-" as matching any other mount point.
      It is canonical to use "none" for swap partitions, and multiple
-     such do not in fact conflict with each other.  */
-  if (!strcmp (name, "none") || !strcmp (name, "-"))
+     such do not in fact conflict with each other.  Likewise, the
+     special device name "ignore" is used for things that should not
+     be processed automatically.  */
+  if (!strcmp (name, "-")
+      || !strcmp (name, "none")
+      || !strcmp (name, "ignore"))
     return 0;
 
   for (fs = fstab->entries; fs; fs = fs->next)
@@ -584,10 +658,6 @@ fstab_read (struct fstab *fstab, const char *name)
 
 	  if (! mntent)
 	    err = errno;
-	  else if (!strcmp (mntent->mnt_type, MNTTYPE_IGNORE)
-		   || !strcmp (mntent->mnt_type, MNTTYPE_NFS)
-		   || !strcmp (mntent->mnt_type, MNTTYPE_SWAP))
-	    continue;
 	  else if (fstab_find_device (fstab, mntent->mnt_fsname))
 	    error (0, 0, "%s: Warning: duplicate entry for device %s (%s)",
 		   name, mntent->mnt_fsname, mntent->mnt_dir);
@@ -624,4 +694,263 @@ int fstab_next_pass (const struct fstab *fstab, int pass)
 	    break;		/* Only possible answer.  */
 	}
   return next_pass;
+}
+
+
+static const struct argp_option options[] =
+{
+  {"all",	 'a', 0,      0, "Do all filesystems in " _PATH_MNTTAB},
+  {0,		 'A', 0,      OPTION_ALIAS },
+  {"fstab",	 'F', "FILE", 0, "File to use instead of " _PATH_MNTTAB},
+  {"fstype",	 't', "TYPE", 0, "Do only filesystems of given type(s)"},
+  {"exclude-root",'R',0,      0,
+     "Exclude root (/) filesystem from " _PATH_MNTTAB " list"},
+  {"exclude",	 'X', "PATTERN", 0, "Exclude directories matching PATTERN"},
+
+  {"search-fmts",'S', "FMTS", 0,
+     "`:' separated list of formats to use for finding"
+     " filesystem-specific programs"},
+
+  {0, 0}
+};
+
+static error_t
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  error_t err;
+  struct fstab_argp_params *params = state->input;
+
+  switch (key)
+    {
+    case ARGP_KEY_INIT:
+      /* Initialize our parsing state.  */
+      if (! params)
+	return EINVAL;	/* Need at least a way to return a result.  */
+      bzero (params, sizeof *params);
+      break;
+
+    case 'A':
+    case 'a':
+      params->do_all = 1;
+      break;
+
+    case 'F':
+      params->fstab_path = arg;
+      break;
+
+    case 'S':
+      argz_create_sep (arg, ':',
+		       &params->program_search_fmts,
+		       &params->program_search_fmts_len);
+      break;
+
+    case 'R':
+      arg = "/";
+      /* FALLTHROUGH */
+    case 'X':
+      err = argz_add (&params->exclude, &params->exclude_len, arg);
+      if (err)
+	argp_failure (state, 100, ENOMEM, "%s", arg);
+      break;
+    case 't':
+      err = argz_add_sep (&params->types, &params->types_len, arg, ',');
+      if (err)
+	argp_failure (state, 100, ENOMEM, "%s", arg);
+      break;
+
+    case ARGP_KEY_ARG:
+      err = argz_add (&params->names, &params->names_len, arg);
+      if (err)
+	argp_failure (state, 100, ENOMEM, "%s", arg);
+      break;
+
+    case ARGP_KEY_END:
+      /* Check for bogus combinations of arguments.  */
+      if (params->names)
+	{
+	  if (params->do_all)
+	    argp_error (state, "filesystem arguments not allowed with --all");
+	  if (params->exclude)
+	    argp_error (state,
+			"--exclude not allowed with filesystem arguments");
+	  if (params->types)
+	    argp_error (state,
+			"--fstype not allowed with filesystem arguments");
+	}
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+
+  return 0;
+}
+
+const struct argp fstab_argp = {options, parse_opt, 0, 0};
+
+struct fstab *
+fstab_argp_create (struct fstab_argp_params *params,
+		   const char *default_search_fmts,
+		   size_t default_search_fmts_len)
+{
+  error_t err;
+  struct fstab *fstab, *check;
+  struct fstypes *types;
+
+  if (params->fstab_path == 0)
+    params->fstab_path = _PATH_MNTTAB;
+  if (params->program_search_fmts == 0)
+    {
+      params->program_search_fmts = (char *) default_search_fmts;
+      params->program_search_fmts_len = default_search_fmts_len;
+    }
+
+  err = fstypes_create (params->program_search_fmts,
+			params->program_search_fmts_len,
+			&types);
+  if (err)
+    error (102, err, "fstypes_create");
+
+  err = fstab_create (types, &fstab);
+  if (err)
+    error (101, err, "fstab_create");
+
+  err = fstab_read (fstab, params->fstab_path);
+  if (err)
+    error (103, err, "%s", params->fstab_path);
+
+  if (params->names)
+    {
+      /* Process specified filesystems; also look at /var/run/mtab.  */
+      const char *name;
+
+      err = fstab_read (fstab, _PATH_MOUNTED);
+      if (err && err != ENOENT)
+	error (104, err, "%s", _PATH_MOUNTED);
+
+      err = fstab_create (types, &check);
+      if (err)
+	error (105, err, "fstab_create");
+
+      for (name = params->names; name; name = argz_next (params->names,
+							 params->names_len,
+							 name))
+	{
+	  struct fs *fs = fstab_find (fstab, name);
+	  if (! fs)
+	    error (106, 0, "%s: Unknown device or filesystem", name);
+	  fstab_add_fs (check, fs, 0);
+	}
+
+      fstab_free (fstab);
+    }
+  else
+    {
+      /* Process everything in /etc/fstab.  */
+
+      if (params->exclude == 0 && params->types == 0)
+	check = fstab;
+      else
+	{
+	  struct fs *fs;
+	  const char *tn;
+	  unsigned int nonexclude_types;
+
+	  err = fstab_create (types, &check);
+	  if (err)
+	    error (105, err, "fstab_create");
+
+	  /* For each excluded type (i.e. `-t notype'), clobber the
+	     fstype entry's program with an empty string to mark it.  */
+	  nonexclude_types = 0;
+	  for (tn = params->types; tn;
+	       tn = argz_next (params->types, params->types_len, tn))
+	    {
+	      if (!strncasecmp (tn, "no", 2))
+		{
+		  struct fstype *type;
+		  err = fstypes_get (types, tn, &type);
+		  if (err)
+		    error (106, err, "fstypes_get");
+		  free (type->program);
+		  type->program = strdup ("");
+		}
+	      else
+		++nonexclude_types;
+	    }
+
+	  if (nonexclude_types != 0)
+	    {
+	      const char *tn;
+	      struct fstypes *wanttypes;
+
+	      /* We will copy the types we want to include into a fresh
+		 list in WANTTYPES.  Since we specify no search formats,
+		 `fstypes_get' applied to WANTTYPES can only create
+		 elements with a null `program' field.  */
+	      err = fstypes_create (0, 0, &wanttypes);
+	      if (err)
+		error (102, err, "fstypes_create");
+
+	      for (tn = params->types; tn;
+		   tn = argz_next (params->types, params->types_len, tn))
+		if (strncasecmp (tn, "no", 2))
+		  {
+		    struct fstype *type;
+		    err = fstypes_get (types, tn, &type);
+		    if (err)
+		      error (106, err, "fstypes_get");
+		    if (type->program == 0)
+		      error (0, 0,
+			     "requested filesystem type `%s' unknown", tn);
+		    else
+		      {
+			struct fstype *newtype = malloc (sizeof *newtype);
+			newtype->name = strdup (type->name);
+			newtype->program = strdup (type->program);
+			newtype->next = wanttypes->entries;
+			wanttypes->entries = newtype;
+		      }
+		  }
+
+	      /* fstypes_free (types); */
+	      types = wanttypes;
+	    }
+
+	  for (fs = fstab->entries; fs; fs = fs->next)
+	    {
+	      const char *ptn;
+	      struct fstype *type;
+
+	      err = fs_type (fs, &type);
+	      if (err || nonexclude_types)
+		{
+		  err = fstypes_get (types, fs->mntent.mnt_type, &type);
+		  if (err)
+		    error (106, err, "fstypes_get");
+		  if (params->types != 0)
+		    continue;
+		}
+	      if (nonexclude_types && type->program == 0)
+		continue;	/* Freshly created, was not in WANTTYPES.  */
+	      if (type->program != 0 && type->program[0] == '\0')
+		continue;	/* This type is marked as excluded.  */
+
+	      for (ptn = params->exclude; ptn;
+		   ptn = argz_next (params->exclude, params->exclude_len, ptn))
+		if (fnmatch (ptn, fs->mntent.mnt_dir, 0) == 0)
+		  break;
+	      if (ptn)	/* An exclude pattern matched.  */
+		continue;
+
+	      err = fstab_add_fs (check, fs, 0);
+	      if (err)
+		error (107, err, "fstab_add_fs");
+	    }
+
+	  fstab_free (fstab);
+	}
+    }
+
+  return check;
 }
