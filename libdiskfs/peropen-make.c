@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "protid.h"
+#include "priv.h"
 #include <sys/file.h>
 
 /* Create and return a new peropen structure on node NP with open
