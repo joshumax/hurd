@@ -40,7 +40,9 @@ AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
 LD=$(tooldir)/ld -L$(ccdir)
 
-INSTALL_BIN=objcopy -S
+INSTALL = install -c
+INSTALL_DATA = $(INSTALL) -m 644
+INSTALL_BIN = $(INSTALL) -m 755
 #INSTALL_BIN=cp
 
 machine := i386
