@@ -117,7 +117,7 @@ print_store (struct store *store, int level, unsigned what)
 
   pstr (store->class->name,W_TYPE);
 
-  if (store->flags && (what & W_FLAGS))
+  if ((store->flags & ~STORE_INACTIVE) && (what & W_FLAGS))
     {
       int t = 0;		/* flags tested */
       int f = 1;
