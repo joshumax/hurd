@@ -1,5 +1,5 @@
 /*
- *  linux/fs/ext2/balloc.c
+ *  Largely stolen from: linux/fs/ext2/balloc.c
  *
  * Copyright (C) 1992, 1993, 1994, 1995
  * Remy Card (card@masi.ibp.fr)
@@ -460,8 +460,6 @@ got_block:
 		return 0;
 	}
 	memset(bh, 0, sb->s_blocksize);
-	bh->b_uptodate = 1;
-	mark_buffer_dirty(bh, 1);
 	brelse (bh);
 
 	ext2_debug ("allocating block %d. "
