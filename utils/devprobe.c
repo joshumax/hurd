@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <argp.h>
-#include <error.h>
 
 #include <hurd.h>
 #include <mach.h>
@@ -40,7 +39,7 @@ int
 main (int argc, char **argv)
 {
   error_t err;
-  mach_port_t device_master;
+  mach_port_t device_master = MACH_PORT_NULL;
   /* Print devices found?  (otherwise only exit status matters)  */
   int print = 1;
   /* If printing, print all devices on the command line that are found. 
@@ -66,6 +65,13 @@ main (int argc, char **argv)
 	  all = 0; break;
 
 	case ARGP_KEY_ARG:
+	  if (device_master == MACH_PORT_NULL)
+	    {
+	      err = get_privileged_ports (0, &device_master);
+	      if (err)
+		argp_failure (state, 3, err, "Can't get device master port");
+	    }
+
 	  err = device_open (device_master, 0, arg, &device);
 	  if (err == 0)
 	    /* Got it.  */
@@ -85,7 +91,7 @@ main (int argc, char **argv)
 	    }
 	  else if (err != ED_NO_SUCH_DEVICE)
 	    /* Complain about unexpected errors.  */
-	    error (0, err, "%s", arg);
+	    argp_failure (state, 0, err, "%s", arg);
 	  break;
 
 	default:
@@ -97,10 +103,6 @@ main (int argc, char **argv)
 
   /* Parse our arguments.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
-
-  err = get_privileged_ports (0, &device_master);
-  if (err)
-    error (3, err, "Can't get device master port");
 
   exit (found_one ? 0 : 1);
 }
