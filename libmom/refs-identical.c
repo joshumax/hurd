@@ -24,20 +24,5 @@ int
 mom_ports_identical (struct mom_port_ref *obj1, 
 		     struct mom_port_ref *obj2)
 {
-  int ret;
-  
- tryagain:
-  spin_lock (&obj1->lock);
-  if (!spin_try_lock (&obj2->lock))
-    {
-      spin_unlock (&obj1->lock);
-      goto tryagain;
-    }
-  assert (obj1->refcnt);
-  assert (obj2->refcnt);
-  
-  ret = (obj1->port == obj2->port);
-  spin_unlock (&obj1->lock);
-  spin_unlock (&obj2->lock);
-  return ret;
+  return obj1->port == obj2->port;
 }
