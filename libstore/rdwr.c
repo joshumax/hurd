@@ -1,9 +1,7 @@
 /* Store I/O
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
-
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -18,7 +16,7 @@
 
    You should have received a copy of the GNU General Public License along
    with this program; if not, write to the Free Software Foundation, Inc.,
-   675 Mass Ave, Cambridge, MA 02139, USA. */
+   59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
 
@@ -165,22 +163,28 @@ error_t
 store_read (struct store *store,
 	    off_t addr, size_t amount, void **buf, size_t *len)
 {
-  error_t err;
   size_t index;
-  off_t base;
+  off_t base, first_run_size;
   struct store_run *run, *runs_end;
   int block_shift = store->log2_block_size;
   store_read_meth_t read = store->class->read;
 
   addr = store_find_first_run (store, addr, &run, &runs_end, &base, &index);
-  if (addr < 0)
-    err = EIO;
-  else if ((run->length << block_shift) >= amount)
+  if (addr < 0 || run->start < 0)
+    return EIO;			/* Reading from a hole.  */
+
+  first_run_size = (run->length << block_shift);
+  if (first_run_size >= amount)
     /* The first run has it all... */
-    err = (*read)(store, base + run->start + addr, index, amount, buf, len);
+    {
+      if (first_run_size < amount)
+	amount = first_run_size;
+      return (*read)(store, base + run->start + addr, index, amount, buf, len);
+    }
   else
     /* ARGH, we've got to split up the read ... This isn't fun. */
     {
+      error_t err;
       int all;
       /* WHOLE_BUF and WHOLE_BUF_LEN will point to a buff that's large enough
 	 to hold the entire request.  This is initially whatever the user
@@ -205,7 +209,11 @@ store_read (struct store *store,
 		 to use the buffer space we so kindly gave it, bcopy it to
 		 that space.  */
 	      if (seg_buf != buf_end)
-		bcopy (seg_buf, buf_end, seg_buf_len);
+		{
+		  bcopy (seg_buf, buf_end, seg_buf_len);
+		  vm_deallocate (mach_task_self (),
+				 (vm_address_t)seg_buf, seg_buf_len);
+		}
 	      buf_end += seg_buf_len;
 	      amount -= seg_buf_len;
 	      *all = (seg_buf_len == len);
@@ -226,7 +234,7 @@ store_read (struct store *store,
 
       buf_end = whole_buf;
 
-      err = seg_read (base + run->start + addr, run->length << block_shift, &all);
+      err = seg_read (base + run->start + addr, first_run_size, &all);
       while (!err && all && amount > 0
 	     && store_next_run (store, runs_end, &run, &base, &index))
 	{
@@ -263,8 +271,8 @@ store_read (struct store *store,
 			     unused);
 	    *buf = whole_buf;
 	  }
-    }
 
-  return err;
+      return err;
+    }
 }
 		
