@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -27,6 +27,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <mach/notify.h>
+#include <sys/mman.h>
 
 error_t
 S_io_write (struct sock_user *user,
@@ -36,7 +37,7 @@ S_io_write (struct sock_user *user,
 	    mach_msg_type_number_t *amount)
 {
   error_t err;
-  
+
   if (!user)
     return EOPNOTSUPP;
 
@@ -53,7 +54,7 @@ S_io_write (struct sock_user *user,
       *amount = err;
       err = 0;
     }
-  
+
   return err;
 }
 
@@ -69,7 +70,7 @@ S_io_read (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   /* Instead of this, we should peek and the socket and only
      allocate as much as necessary. */
   if (amount > *datalen)
@@ -77,13 +78,13 @@ S_io_read (struct sock_user *user,
       vm_allocate (mach_task_self (), (vm_address_t *)data, amount, 1);
       alloced = 1;
     }
-  
+
   mutex_lock (&global_lock);
   become_task (user);
-  err = (*user->sock->ops->read) (user->sock, *data, amount, 
+  err = (*user->sock->ops->read) (user->sock, *data, amount,
 				  user->sock->userflags);
   mutex_unlock (&global_lock);
-  
+
   if (err < 0)
     err = -err;
   else
@@ -112,19 +113,19 @@ S_io_readable (struct sock_user *user,
 {
   struct sock *sk;
   error_t err;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   become_task (user);
-  
+
   /* We need to avoid calling the Linux ioctl routines,
      so here is a rather ugly break of modularity. */
 
   sk = (struct sock *) user->sock->data;
   err = 0;
-  
+
   /* Linux's af_inet.c ioctl routine just calls the protocol-specific
      ioctl routine; it's those routines that we need to simulate.  So
      this switch corresponds to the initialization of SK->prot in
@@ -143,7 +144,7 @@ S_io_readable (struct sock_user *user,
 	  release_sock (sk);
 	}
       break;
-      
+
     case SOCK_DGRAM:
       /* These guts are copied from udp.c:udp_ioctl (TIOCINQ). */
       if (sk->state == TCP_LISTEN)
@@ -153,7 +154,7 @@ S_io_readable (struct sock_user *user,
 	*amount = (skb_peek (&sk->receive_queue)
 		   ? : &((struct sk_buff){}))->len;
       break;
-      
+
     case SOCK_RAW:
     default:
       err = EOPNOTSUPP;
@@ -170,7 +171,7 @@ S_io_set_all_openmodes (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->userflags |= O_NONBLOCK;
@@ -185,13 +186,13 @@ S_io_get_openmodes (struct sock_user *user,
 		    int *bits)
 {
   struct sock *sk;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   sk = user->sock->data;
-  
+
   *bits = 0;
   if (!(sk->shutdown & SEND_SHUTDOWN))
     *bits |= O_WRITE;
@@ -199,7 +200,7 @@ S_io_get_openmodes (struct sock_user *user,
     *bits |= O_READ;
   if (user->sock->userflags & O_NONBLOCK)
     *bits |= O_NONBLOCK;
-  
+
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -210,7 +211,7 @@ S_io_set_some_openmodes (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->userflags |= O_NONBLOCK;
@@ -224,7 +225,7 @@ S_io_clear_some_openmodes (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->userflags &= ~O_NONBLOCK;
@@ -249,7 +250,7 @@ S_io_select (struct sock_user *user,
   mutex_lock (&global_lock);
   become_task (user);
 
-  /* In Linux, this means (supposedly) that I/O will never be possible.  
+  /* In Linux, this means (supposedly) that I/O will never be possible.
      That's a lose, so prevent it from happening.  */
   assert (user->sock->ops->select);
 
@@ -263,17 +264,17 @@ S_io_select (struct sock_user *user,
     {
       condition_init (&table.master_condition);
       table.head = 0;
-      
+
       if (*select_type & SELECT_READ)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_IN, &table) 
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_IN, &table)
 		  ? SELECT_READ : 0);
       if (*select_type & SELECT_WRITE)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_OUT, &table) 
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_OUT, &table)
 		  ? SELECT_WRITE : 0);
       if (*select_type & SELECT_URG)
-	avail |= ((*user->sock->ops->select) (user->sock, SEL_EX, &table) 
+	avail |= ((*user->sock->ops->select) (user->sock, SEL_EX, &table)
 		  ? SELECT_URG : 0);
-    
+
       if (!avail)
 	{
 	  if (! requested_notify)
@@ -289,7 +290,7 @@ S_io_select (struct sock_user *user,
 	 select table. */
       for (elt = table.head; elt; elt = nxt)
 	{
-	  condition_unimplies (elt->dependent_condition, 
+	  condition_unimplies (elt->dependent_condition,
 			       &table.master_condition);
 	  nxt = elt->next;
 	  free (elt);
@@ -318,7 +319,7 @@ void
 select_wait (struct wait_queue **wait_address, select_table *p)
 {
   struct select_table_elt *elt;
-  
+
   /* tcp.c happens to use an uninitalized wait queue;
      so this special hack is for that. */
   if (*wait_address == 0)
@@ -341,13 +342,13 @@ S_io_stat (struct sock_user *user,
 {
   if (!user)
     return EOPNOTSUPP;
-  
+
   bzero (st, sizeof (struct stat));
-  
+
   st->st_fstype = FSTYPE_SOCKET;
   st->st_fsid = getpid ();
   st->st_ino = (ino_t) user->sock; /* why not? */
-  
+
   st->st_blksize = 512;		/* ???? */
   return 0;
 }
@@ -367,7 +368,7 @@ S_io_reauthenticate (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   genuidlen = gengidlen = auxuidlen = auxgidlen = 20;
   gen_uids = gubuf;
   gen_gids = ggbuf;
@@ -376,19 +377,19 @@ S_io_reauthenticate (struct sock_user *user,
 
   mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, 0, 1);
-  
+
   auth = getauth ();
   newright = ports_get_right (newuser);
   err = mach_port_insert_right (mach_task_self (), newright, newright,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
   do
-    err = auth_server_authenticate (auth, 
+    err = auth_server_authenticate (auth,
 				    rend,
 				    MACH_MSG_TYPE_COPY_SEND,
 				    newright,
 				    MACH_MSG_TYPE_COPY_SEND,
-				    &gen_uids, &genuidlen, 
+				    &gen_uids, &genuidlen,
 				    &aux_uids, &auxuidlen,
 				    &gen_gids, &gengidlen,
 				    &aux_gids, &auxgidlen);
@@ -446,7 +447,7 @@ S_io_restrict_auth (struct sock_user *user,
     for (i = 0; i < uidslen && !isroot; i++)
       if (uids[i] == 0)
 	isroot = 1;
-  
+
   newuser = make_sock_user (user->sock, isroot, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
@@ -463,7 +464,7 @@ S_io_duplicate (struct sock_user *user,
   struct sock_user *newuser;
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, user->isroot, 0);
   *newobject = ports_get_right (newuser);
@@ -485,7 +486,7 @@ S_io_identity (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
-  
+
   mutex_lock (&global_lock);
   if (user->sock->identity == MACH_PORT_NULL)
     {
@@ -503,7 +504,7 @@ S_io_identity (struct sock_user *user,
   *fsys = fsys_identity;
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
   *fileno = (ino_t) user->sock;	/* matches S_io_stat above */
-  
+
   mutex_unlock (&global_lock);
   return 0;
 }
@@ -539,8 +540,8 @@ S_io_get_owner (struct sock_user *user,
 {
   return EOPNOTSUPP;
 }
- 
-error_t  
+
+error_t
 S_io_get_icky_async_id (struct sock_user *user,
 			mach_port_t *id,
 			mach_msg_type_name_t *idtype)
@@ -637,4 +638,3 @@ S_io_sigio (struct sock_user *user)
 {
   return EOPNOTSUPP;
 }
-
