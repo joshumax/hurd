@@ -1,8 +1,7 @@
 /* Sock functions
 
-   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
-
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,2000,01 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,6 +25,7 @@
 
 #include "sock.h"
 #include "sserver.h"
+#include "connq.h"
 
 /* ---------------------------------------------------------------- */
 
