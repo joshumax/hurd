@@ -28,7 +28,7 @@ PREFIX = /usr
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man
 INFODIR = $(PREFIX)/info
-DOCDIR = $(PREFIX)/doc/$(package)
+DOCDIR = $(PREFIX)/share/doc/$(package)
 
 #  Package specific stuff.  The idea is to try to make the rules
 #  generic (gradually).
@@ -125,8 +125,8 @@ binary-arch: build
 
 # now distribute the files
 # first the source package
-	$(make_directory)	debian/$(package)-dev/{DEBIAN,usr/{doc,bin,lib}}
-	ln -s			$(package) debian/$(package)-dev/usr/doc/$(package)-dev
+	$(make_directory)	debian/$(package)-dev/{DEBIAN,usr/{share/doc,bin,lib}}
+	ln -s			$(package) debian/$(package)-dev$(DOCDIR)-dev
 	mv			debian/tmp/include debian/$(package)-dev/usr/.
 	mv			debian/tmp/lib/*.a debian/$(package)-dev/usr/lib/.
 	# Create development library links.
@@ -136,7 +136,7 @@ binary-arch: build
 	done
 	rm -f debian/tmp/lib/*.so
 
-	dpkg-gencontrol		-p$(package)-dev -Pdebian/$(package)-dev
+	dpkg-gencontrol		-isp -p$(package)-dev -Pdebian/$(package)-dev
 	chown -R root.root	debian/$(package)-dev
 	dpkg --build		debian/$(package)-dev ..
 
@@ -165,6 +165,8 @@ binary-arch: build
 # XXX-doc
 	$(install_file)		build/doc/hurd.info* debian/tmp$(INFODIR)
 	-gzip -9frq		debian/tmp$(INFODIR)
+# XXX Remove the vague attempt of the makefiles to install the docs.
+	rm -fR			debian/tmp/info
 
 	$(install_file)		debian/servers.boot debian/tmp/boot/servers.boot
 	$(make_directory)	debian/tmp/servers
@@ -185,7 +187,7 @@ binary-arch: build
 				debian/tmp/libexec/* debian/tmp/hurd/* \
 				debian/tmp/sbin/* ; do head -n1 $$f \
 				| sed -n -e '/^#!/!a\'$$'\n'$$f ; done`
-	dpkg-gencontrol         -p$(package) -Pdebian/tmp
+	dpkg-gencontrol         -isp -p$(package) -Pdebian/tmp
 	chown -R root.root      debian/tmp
 	dpkg --build            debian/tmp ..
 

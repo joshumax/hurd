@@ -1,5 +1,13 @@
 2001-07-18  Marcus Brinkmann  <marcus@gnu.org>
 
+	* copyright: Refer to new directory.
+	* rules: Move documentation to share directory.
+	Add -isp to dpkg-gencontrol invocation.
+	Remove crufty hurd.info.
+	* control: Bump up standards version.
+
+2001-07-18  Marcus Brinkmann  <marcus@gnu.org>
+
 	* rc: Do not excempt random-seed when cleaning up /var/run.  State
 	data should be in /var/lib (FHS) or /var/state.
 	* changelog: Update to current version.
