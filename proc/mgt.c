@@ -567,6 +567,8 @@ new_proc (task_t task)
 
   p->p_msgport = MACH_PORT_NULL;
 
+  condition_init (&p->p_wakeup);
+
   p->p_argv = p->p_envp = p->p_status = 0;
 
   p->p_exec = 0;
