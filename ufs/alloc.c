@@ -93,7 +93,7 @@ alloc(struct node *np,
 
   *bnp = 0;
   assert ("Alloc of bad sized block" && (unsigned) size <= sblock->fs_bsize
-	  && !fragoff(size));
+	  && !fragoff(size) && size != 0);
 
   spin_lock (&alloclock);
   
@@ -150,9 +150,9 @@ realloccg(struct node *np,
   
   *pbn = 0;
   assert ("bad old size" && (unsigned) osize <= sblock->fs_bsize
-	  && !fragoff (osize));
+	  && !fragoff (osize) && osize != 0 );
   assert ("bad new size" && (unsigned) nsize <= sblock->fs_bsize
-	  && !fragoff (nsize));
+	  && !fragoff (nsize) && nsize != 0);
 
   spin_lock (&alloclock);
 
@@ -273,12 +273,15 @@ diskfs_alloc_node(struct node *dir,
   
   *npp = 0;
 
+  spin_lock (&alloclock);
   if (sblock->fs_cstotal.cs_nifree == 0)
-    goto noinodes;
+    {
+      spin_unlock (&alloclock);
+      goto noinodes;
+    }
   if (ipref >= sblock->fs_ncg * sblock->fs_ipg)
     ipref = 0;
   cg = itog(ipref);
-  spin_lock (&alloclock);
   ino = (int)hashalloc(cg, (long)ipref, mode, ialloccg);
   spin_unlock (&alloclock);
   if (ino == 0)
@@ -852,7 +855,7 @@ blkfree(volatile daddr_t bno,
   int i;
   
   assert ("free of bad sized block" &&(unsigned) size <= sblock->fs_bsize
-	  && !fragoff (size));
+	  && !fragoff (size) && size != 0);
   cg = dtog(bno);
   if ((unsigned)bno >= sblock->fs_size)
     {
