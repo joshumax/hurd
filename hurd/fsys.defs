@@ -31,8 +31,8 @@ FSYS_IMPORTS
 routine fsys_startup (
 	bootstrap: mach_port_t;
 	control_port: fsys_t;
-	out realnode: file_t;
-	out dotdot_node: file_t);
+	out realnode: mach_port_send_t;
+	out dotdot_node: mach_port_send_t);
 
 /* Filesystem should go away.  Bye.  */
 routine fsys_goaway (
@@ -57,4 +57,4 @@ routine fsys_getfile (
 	uids: idarray_t;
 	gids: idarray_t;
 	filehandle: data_t;
-	out file: file_t);
+	out file: mach_port_send_t);
