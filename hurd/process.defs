@@ -85,6 +85,18 @@ routine proc_execdata_notify (
 	process: process_t;
 	notify: mach_port_send_t);
 
+/* Return a uname structure for the currently running system. */
+routine proc_uname (
+	process: process_t;
+	out uname: utsname_t);
+
+/* Tell the server who we are for inclusion in the uname string. */
+routine proc_register_version (
+	process: process_t;
+	credential: host_priv_t;
+	name: string_t;
+	release: string_t;
+	version: string_t);
 
 /*** Process creation and simple management.  ***/
 
