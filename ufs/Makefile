@@ -18,21 +18,13 @@
 dir := ufs
 makemode := server
 
+target = ufs
 SRCS = alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c
-OBJS = $(SRCS:.c=.o)
 LCLHDRS = ufs.h fs.h dinode.h dir.h
-REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
-		../hurd/ioserver.h ../hurd/fshelp.h
-#HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
-#	libfshelp libdiskfs libthreads libports
-HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads libihash
-LDFLAGS = -Wl,--no-keep-memory
-target = ufs
 
-CPPFLAGS += -I../lib
-CPPFLAGS += $(CPPFLAGS-$(notdir $<))
-vpath %.c ../lib
+OBJS = $(SRCS:.c=.o)
+
+ufs: $(OBJS) ../libdiskfs/libdiskfs.a ../libports/libports.a ../libpager/libpager.a ../libioserver/libioserver.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libihash/libihash.a
 
 include ../Makeconf
-
