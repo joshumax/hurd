@@ -1,3 +1,12 @@
+2004-09-03  Alfred M. Szmidt  <ams@kemisten.nu>
+
+	* linux-src/net/ipv4/udp.c (udp_v4_get_port): Put empty statement
+	after label to silence compiler warning.
+	* linux-src/net/ipv4/tcp_ipv4.c
+	(tcp_v4_get_port, tcp_v4_connect, tcp_v4_rcv): Likewise.
+	* linux-src/net/ipv4/route.c (ip_rt_redirect): Likewise.
+	* linux-src/net/ipv4/arp.c (arp_constructor): Likewise.
+
 2004-02-10  Roland McGrath  <roland@frob.com>
 
 	* linux-src/arch/i386/lib/checksum.S: Fix comment syntax.
