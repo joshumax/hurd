@@ -38,8 +38,6 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
   vm_offset_t offset = trunc_page (loc - pokel->image);
   vm_offset_t end = round_page (loc + length - pokel->image);
 
- printf ("pokel_add (%p, %p, %u) [%u, %u]\n", pokel, loc, length, offset, end);
-
   spin_lock (&pokel->lock);
 
   pl = pokel->pokes;
@@ -54,8 +52,6 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 	{
 	  pl->offset = offset < p_offs ? offset : p_offs;
 	  pl->length = (end > p_end ? end : p_end) - pl->offset;
- printf ("Extended %d[%d] to %d[%d] in pokel %p\n", p_offs, p_end,
-	 pl->offset, pl->length, pokel);
 	  break;
 	}
 
@@ -73,7 +69,6 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       pl->length = end - offset;
       pl->next = pokel->pokes;
       pokel->pokes = pl;
- printf ("Added %d[%d] to pokel %p\n", offset, end - offset, pokel);
     }
 
   spin_unlock (&pokel->lock);
@@ -89,7 +84,6 @@ pokel_sync (struct pokel *pokel, int wait)
 
   for (pl = pokel->pokes; pl; pl = next)
     {
- printf ("Syncing %d[%d] from pokel %p\n", pl->offset, pl->length, pokel);
       pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
       next = pl->next;
       pl->next = pokel->free_pokes;
