@@ -248,7 +248,8 @@ realloc(old_base, new_size)
 	char *new_base;
 
 	if (old_base == 0)
-		return 0;
+	  return malloc (new_size);
+
 	/*
 	 * Find size of old block.
 	 */
