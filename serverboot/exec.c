@@ -30,7 +30,7 @@
 #include <mach.h>
 #include <mach/machine/vm_param.h>
 #include <mach/machine/eflags.h>
-#include <mach/exec/exec.h>
+#include "mach-exec.h"
 
 #include <file_io.h>
 

@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <mach/mach_interface.h>
 #include <varargs.h>
-#include <mach/exec/exec.h>
+#include "mach-exec.h"
 #include "../boot/boot_script.h"
 
 #include <file_io.h>

@@ -1,3 +1,14 @@
+Thu Apr  3 20:00:58 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* elf-load.c (exec_load): Include <elf.h> instead of
+	<mach/exec/elf.h>.  Include "mach-exec.h" instead of
+	<mach/exec/elf.h>. 
+	(exec_load) [i386]: Check for i386 types directly; abandon old
+	MY_EI_DATA and MY_E_MACHINE.
+	* load.c: Include "mach-exec.h" instead of <mach/exec/elf.h>.
+	* exec.c: Likewise.
+	* mach-exec.h: New file.
+
 Wed Mar 19 14:45:27 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* panic.c (panic): Clear possible errors on stdout before printing

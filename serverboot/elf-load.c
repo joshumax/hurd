@@ -24,8 +24,8 @@
 
 #include <alloca.h>
 #include <mach/machine/vm_types.h>
-#include <mach/exec/elf.h>
-#include <mach/exec/exec.h>
+#include <elf.h>
+#include "mach-exec.h"
 
 int exec_load(exec_read_func_t *read, exec_read_exec_func_t *read_exec,
 		  void *handle, exec_info_t *out_info)
@@ -50,10 +50,14 @@ int exec_load(exec_read_func_t *read, exec_read_exec_func_t *read_exec,
 		return EX_NOT_EXECUTABLE;
 
 	/* Make sure the file is of the right architecture.  */
+#ifdef i386
 	if ((x.e_ident[EI_CLASS] != ELFCLASS32) ||
-	    (x.e_ident[EI_DATA] != MY_EI_DATA) ||
-	    (x.e_machine != MY_E_MACHINE))
+	    (x.e_ident[EI_DATA] != ELFDATA2LSB) ||
+	    (x.e_machine != EM_386))
 		return EX_WRONG_ARCH;
+#else
+#error Not ported to this architecture!
+#endif
 
 	/* XXX others */
 	out_info->entry = (vm_offset_t) x.e_entry;
