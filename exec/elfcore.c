@@ -1,3 +1,23 @@
+/* Write ELF core dump files for GNU Hurd.
+   Copyright (C) 2002 Free Software Foundation, Inc.
+   Written by Roland McGrath.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
 #include <hurd.h>
 #include <elf.h>
 #include <link.h>
@@ -7,9 +27,6 @@
 #include <sys/utsname.h>
 #include <sys/procfs.h>
 #include <stddef.h>
-
-
-#define ELF_MACHINE	EM_386	/* XXX */
 
 #define ELF_CLASS	PASTE (ELFCLASS, __ELF_NATIVE_CLASS)
 #define PASTE(a, b)	PASTE_1 (a, b)
@@ -22,6 +39,46 @@
 #define ELF_DATA ELFDATA2LSB
 #endif
 
+#include <mach/thread_status.h>
+#include <assert.h>
+
+#ifdef i386_THREAD_STATE
+# define ELF_MACHINE		EM_386
+
+/* There is a natural layout for this on x86, so it happens
+   that the canonical gregset_t from <sys/ucontext.h>
+   matches Mach's i386_thread_state exactly.  */
+static inline void
+fetch_thread_regset (thread_t thread, prgregset_t *gregs)
+{
+  mach_msg_type_number_t count = i386_THREAD_STATE_COUNT;
+  assert (sizeof (struct i386_thread_state) == sizeof (prgregset_t));
+  assert (offsetof (struct i386_thread_state, gs) == REG_GS);
+  assert (offsetof (struct i386_thread_state, eip) == REG_EIP * 4);
+  assert (offsetof (struct i386_thread_state, ss) == REG_SS * 4);
+  (void) thread_get_state (thread, i386_THREAD_STATE,
+			   (thread_state_t) gregs, &count);
+}
+
+static inline void
+fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
+{
+  struct i386_float_state st;
+  mach_msg_type_number_t count = i386_FLOAT_STATE_COUNT;
+  error_t err = thread_get_state (thread, i386_FLOAT_STATE,
+				  (thread_state_t) &st, &count);
+  if (err == 0 && st.initialized)
+    {
+      assert (sizeof *fpregs >= sizeof st.hw_state);
+      memcpy (fpregs, st.hw_state, sizeof st.hw_state);
+    }
+}
+
+#else
+# warning "do not understand this machine flavor, no registers in dumps"
+# define ELF_MACHINE		EM_NONE
+#endif
+
 
 #define TIME_VALUE_TO_TIMESPEC(tv, ts) \
   TIMEVAL_TO_TIMESPEC ((struct timeval *) (tv), (ts))
@@ -29,7 +86,7 @@
 #define PAGES_TO_KB(x)	((x) * (vm_page_size / 1024))
 #define ENCODE_PCT(f)	((uint16_t) ((f) * 32768.0))
 
-extern process_t procserver;
+extern process_t procserver;	/* crash.c */
 
 error_t
 dump_core (task_t task, file_t file, off_t corelimit,
@@ -227,13 +284,19 @@ dump_core (task_t task, file_t file, off_t corelimit,
   /* The psinfo_t note contains some process-global info we should get from
      the proc server, but no thread-specific info like register state.  */
   {
-    DEFINE_NOTE (psinfo_t) note;
+    DEFINE_NOTE (psinfo_t) psinfo;
+    DEFINE_NOTE (pstatus_t) pstatus;
     int flags = PI_FETCH_TASKINFO | PI_FETCH_THREADS | PI_FETCH_THREAD_BASIC;
     char *waits = 0;
     mach_msg_type_number_t num_waits = 0;
     char pibuf[offsetof (struct procinfo, threadinfos[2])];
     struct procinfo *pi = (void *) &pibuf;
     mach_msg_type_number_t pi_size = sizeof pibuf;
+
+    memset (&pstatus.data, 0, sizeof pstatus.data);
+    memset (&psinfo.data, 0, sizeof psinfo.data);
+    pstatus.data.pr_pid = psinfo.data.pr_pid = pid;
+
     err = proc_getprocinfo (procserver, pid, &flags,
 			    (procinfo_t *) &pi, &pi_size,
 			    &waits, &num_waits);
@@ -241,82 +304,88 @@ dump_core (task_t task, file_t file, off_t corelimit,
       {
 	if (num_waits != 0)
 	  munmap (waits, num_waits);
-	memset (&note.data, 0, sizeof note.data);
-	note.data.pr_flag = pi->state;
-	note.data.pr_nlwp = pi->nthreads;
-	note.data.pr_pid = pid;
-	note.data.pr_ppid = pi->ppid;
-	note.data.pr_pgid = pi->pgrp;
-	note.data.pr_sid = pi->session;
-	note.data.pr_euid = pi->owner;
+
+	pstatus.data.pr_flags = psinfo.data.pr_flag = pi->state;
+	pstatus.data.pr_nlwp = psinfo.data.pr_nlwp = pi->nthreads;
+	pstatus.data.pr_ppid = psinfo.data.pr_ppid = pi->ppid;
+	pstatus.data.pr_pgid = psinfo.data.pr_pgid = pi->pgrp;
+	pstatus.data.pr_sid = psinfo.data.pr_sid = pi->session;
+
+	psinfo.data.pr_euid = pi->owner;
 	/* XXX struct procinfo should have these */
-	note.data.pr_egid = note.data.pr_gid = note.data.pr_uid = -1;
-	note.data.pr_size = PAGES_TO_KB (pi->taskinfo.virtual_size);
-	note.data.pr_rssize = PAGES_TO_KB (pi->taskinfo.resident_size);
+	psinfo.data.pr_egid = psinfo.data.pr_gid = psinfo.data.pr_uid = -1;
+
+	psinfo.data.pr_size = PAGES_TO_KB (pi->taskinfo.virtual_size);
+	psinfo.data.pr_rssize = PAGES_TO_KB (pi->taskinfo.resident_size);
+
 	{
 	  /* Sum all the threads' cpu_usage fields.  */
 	  integer_t cpu_usage = 0;
 	  for (i = 0; i < pi->nthreads; ++i)
 	    cpu_usage += pi->threadinfos[i].pis_bi.cpu_usage;
-	  note.data.pr_pctcpu = ENCODE_PCT ((float) cpu_usage
-					    / (float) TH_USAGE_SCALE);
+	  psinfo.data.pr_pctcpu = ENCODE_PCT ((float) cpu_usage
+					      / (float) TH_USAGE_SCALE);
 	}
 	if (host_memory_size > 0.0)
-	  note.data.pr_pctmem = ENCODE_PCT ((float) pi->taskinfo.resident_size
-					    / host_memory_size);
+	  psinfo.data.pr_pctmem
+	    = ENCODE_PCT
+	    ((float) pi->taskinfo.resident_size / host_memory_size);
+
 	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.creation_time,
-				&note.data.pr_start);
+				&psinfo.data.pr_start);
+
+	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time,
+				&pstatus.data.pr_utime);
+	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.system_time,
+				&pstatus.data.pr_stime);
+	/* Sum the user and system time for pr_time.  */
 	timeradd ((const struct timeval *) &pi->taskinfo.user_time,
 		  (const struct timeval *) &pi->taskinfo.system_time,
 		  (struct timeval *) &pi->taskinfo.user_time);
-	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time, &note.data.pr_time);
-	/* XXX struct procinfo should have dead child info for pr_ctime */
-	note.data.pr_wstat = pi->exitstatus;
+	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time, &psinfo.data.pr_time);
+	/* XXX struct procinfo should have dead child info for pr_c[us]?time */
+
+	psinfo.data.pr_wstat = pi->exitstatus;
 
 	if ((void *) pi != &pibuf)
 	  munmap (pi, pi_size);
-
-	{
-	  /* We have to nab the process's own proc port to get the
-	     proc server to tell us its registered arg locations.  */
-	  process_t proc;
-	  err = proc_task2proc (procserver, task, &proc);
-	  if (err == 0)
-	    {
-	      err = proc_get_arg_locations (proc,
-					    &note.data.pr_argv,
-					    &note.data.pr_envp);
-	      mach_port_deallocate (mach_task_self (), proc);
-	    }
-	  err = 0;
-	}
+      }
+    if (err == 0)
+      {
+	/* We have to nab the process's own proc port to get the
+	   proc server to tell us its registered arg locations.  */
+	process_t proc;
+	err = proc_task2proc (procserver, task, &proc);
+	if (err == 0)
+	  {
+	    err = proc_get_arg_locations (proc,
+					  &psinfo.data.pr_argv,
+					  &psinfo.data.pr_envp);
+	    mach_port_deallocate (mach_task_self (), proc);
+	  }
 	{
 	  /* Now fetch the arguments.  We could do this directly from the
 	     task given the locations we now have.  But we are lazy and have
 	     the proc server do it for us.  */
-	  char *data = note.data.pr_psargs;
-	  size_t datalen = sizeof note.data.pr_psargs;
+	  char *data = psinfo.data.pr_psargs;
+	  size_t datalen = sizeof psinfo.data.pr_psargs;
 	  err = proc_getprocargs (procserver, pid, &data, &datalen);
 	  if (err == 0)
 	    {
-	      note.data.pr_argc = argz_count (data, datalen);
+	      psinfo.data.pr_argc = argz_count (data, datalen);
 	      argz_stringify (data, datalen, ' ');
-	      if (data != note.data.pr_psargs)
+	      if (data != psinfo.data.pr_psargs)
 		{
-		  memcpy (note.data.pr_psargs, data,
-			  sizeof note.data.pr_psargs);
+		  memcpy (psinfo.data.pr_psargs, data,
+			  sizeof psinfo.data.pr_psargs);
 		  munmap (data, datalen);
 		}
 	    }
 	}
-	err = WRITE_NOTE (NT_PSTATUS, note);
+	err = WRITE_NOTE (NT_PSINFO, psinfo);
       }
 
-#if 0
-    note.data.pr_info.si_signo = signo;
-    note.data.pr_info.si_code = sigcode;
-    note.data.pr_info.si_errno = sigerror;
-#endif
+    err = WRITE_NOTE (NT_PSTATUS, pstatus) ?: err;
   }
   if (err || (corelimit >= 0 && corelimit <= offset))
     return err;
@@ -328,28 +397,29 @@ dump_core (task_t task, file_t file, off_t corelimit,
     return err;
   for (i = 0; i < nthreads; ++i)
     {
-      {
-	/* lwpinfo_t a la Solaris gives thread's CPU time and such.  */
-	DEFINE_NOTE (struct thread_basic_info) note;
-	mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
-	err = thread_info (threads[i], THREAD_BASIC_INFO,
-			   (thread_info_t)&note.data, &count);
-	if (err == 0)
-	  err = WRITE_NOTE (NT_LWPSINFO, note);
-	else			/* Just skip it if we can't get the info.  */
-	  err = 0;
-      }
+      DEFINE_NOTE (lwpstatus_t) note;
+      memset (&note.data, 0, sizeof note.data);
+      note.data.pr_lwpid = i;
+
+      /* We have to write the death signal into every thread's record, even
+	 though only one thread really took the signal.  This is both because
+	 we don't know which thread it was, and because GDB blindly uses the
+	 value from each record to clobber the last (even if it's zero).  */
+      note.data.pr_cursig = signo;
+      note.data.pr_info.si_signo = signo;
+      note.data.pr_info.si_code = sigcode;
+      note.data.pr_info.si_errno = sigerror;
+
+      fetch_thread_regset (threads[i], &note.data.pr_reg);
+      fetch_thread_fpregset (threads[i], &note.data.pr_fpreg);
+
+      err = WRITE_NOTE (NT_LWPSTATUS, note);
       if (err || (corelimit >= 0 && corelimit <= offset))
 	break;
 
-#ifdef WRITE_THREAD_NOTES
-      /* XXX Here would go the note flavors for machine thread states.  */
-      err = WRITE_THREAD_NOTES (i, threads[i]);
-#endif
-      if (err || (corelimit >= 0 && corelimit <= offset))
-	break;
       mach_port_deallocate (mach_task_self (), threads[i]);
     }
+  /* If we broke out of the loop early, deallocate remaining thread ports.  */
   while (i < nthreads)
     mach_port_deallocate (mach_task_self (), threads[i++]);
   munmap (threads, nthreads * sizeof *threads);
