@@ -94,9 +94,14 @@ copy()
 
   makelocalhardlink ()
   {
-    fromino=`ls -dli "$from" | awk '{ print $1 }'`
-    toino=`ls -dli "$to" | awk '{print $1 }'`
-    if test $fromino != $toino; then
+    if test -e $to; then
+      fromino=`ls -dli "$from" | awk '{ print $1 }'`
+      toino=`ls -dli "$to" | awk '{print $1 }'`
+      if test $fromino != $toino; then
+        echo "$to linked to $old_inode"
+        ln -f $old_inode $to
+      fi
+    else
       echo "$to linked to $old_inode"
       ln -f $old_inode $to
     fi
