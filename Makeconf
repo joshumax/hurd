@@ -4,22 +4,32 @@
 hurdinst := /home/hm1/hurdinst
 
 # Where to find various things for compilation:
-headers := $(HURDINST)/include
-startup := $(HURDINST)/lib/crt0.a
-libc := $(HURDINST)/lib/libc.a
-libthreads := $(HURDINST)/lib/libthreads.a
+headers := $(hurdinst)/include
+startup := $(hurdinst)/lib/crt0.o
+libc := $(hurdinst)/lib/libc.a
+libthreads := $(hurdinst)/lib/libthreads.a
+gccheaders := /usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/include
 
 # Flags for compilation
-CPPFLAGS := -nostdinc -I$(HEADERS) -I$(GCCHEADERS)
+CPPFLAGS := -nostdinc -I$(headers) -I$(gccheaders)
 CFRAGS := -Wall -Wno-parentheses -O -g
 
 # Finding binaries
 CC=gcc
 MIGCOM=/usr/local/lib/migcom
+CPP=/usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/cpp
+MIG=mig
 
-# Finding the GCC headers (you must have GCC version 2.4.5 or later)
+# How to do some things:
 
-GCCHEADERS=$(exec $(CC) -v | head -1 | awk '{print $4}' | sed -e 's/specs/include/')
+ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 
+define link
+$(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$^ $(libc) -lgcc $(libc)
+endef
 
-
+define link-with-threads
+$(CC) -nostdlib -e__start $(ldflags) -o $@ $(CFLAGS) $(startup) \
+$^ $(libthreads) $(libc) -lgcc $(libc)
+endef
