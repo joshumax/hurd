@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <argz.h>
+#include <hurd/fsys.h>
 
 #include "priv.h"
 #include "fsys_S.h"
@@ -35,7 +36,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
   struct port_info *pt = ports_lookup_port (diskfs_port_bucket, fsys,
 					    diskfs_control_class);
   int ret;
-  void dochild (struct trans_link *trans, void *arg)
+  void dochild (struct trans_link *trans, void *arg __attribute__ ((unused)))
     {
       fsys_set_options (trans->control, data, len, do_children);
     }
