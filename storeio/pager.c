@@ -214,46 +214,50 @@ dev_stop_paging (struct dev *dev, int nosync)
 /* Returns in MEMOBJ the port for a memory object backed by the storage on
    DEV.  Returns 0 or the error code if an error occurred.  */
 error_t
-dev_get_memory_object (struct dev *dev, memory_object_t *memobj)
+dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 {
-  int created = 0;
-  error_t err = 0;
+  error_t err = store_map (dev->store, prot, memobj);
 
-  init_dev_paging ();
-
-  mutex_lock (&dev->pager_lock);
-
-  if (dev->pager == NULL)
+  if (err == EOPNOTSUPP)
     {
-      dev->pager =
-	pager_create ((struct user_pager_info *)dev, pager_port_bucket,
-		      1, MEMORY_OBJECT_COPY_DELAY);
-      created = 1;
-    }
+      int created = 0;
 
-  if (dev->pager == NULL)
-    err = ENODEV;		/* XXX ??? */
-  else
-    {
-      *memobj = pager_get_port (dev->pager);
+      init_dev_paging ();
 
-      if (*memobj == MACH_PORT_NULL)
-	/* Pager is currently being destroyed, try again.  */
+      mutex_lock (&dev->pager_lock);
+
+      if (dev->pager == NULL)
 	{
-	  dev->pager = 0;
-	  mutex_unlock (&dev->pager_lock);
-	  return dev_get_memory_object (dev, memobj);
+	  dev->pager =
+	    pager_create ((struct user_pager_info *)dev, pager_port_bucket,
+			  1, MEMORY_OBJECT_COPY_DELAY);
+	  created = 1;
 	}
+
+      if (dev->pager == NULL)
+	err = ENODEV;		/* XXX ??? */
       else
-	err =
-	  mach_port_insert_right (mach_task_self (),
-				  *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
+	{
+	  *memobj = pager_get_port (dev->pager);
+
+	  if (*memobj == MACH_PORT_NULL)
+	    /* Pager is currently being destroyed, try again.  */
+	    {
+	      dev->pager = 0;
+	      mutex_unlock (&dev->pager_lock);
+	      return dev_get_memory_object (dev, prot, memobj);
+	    }
+	  else
+	    err =
+	      mach_port_insert_right (mach_task_self (),
+				      *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
+	}
+
+      if (created)
+	ports_port_deref (dev->pager);
+
+      mutex_unlock (&dev->pager_lock);
     }
-
-  if (created)
-    ports_port_deref (dev->pager);
-
-  mutex_unlock (&dev->pager_lock);
 
   return err;
 }
