@@ -46,9 +46,58 @@ extern int fshelp_transboot_port_type;
    normally from your main node initialization routine. */
 void fshelp_init_trans_link (struct trans_link *LINK);
 
-/* Call this when the CONTROL field of a translator is null and 
-   you want to have the translator started so you can talk to it.
-   LINK is the trans_link structure for this node; NAME is the file
-   to execute as the translator.  
-*/
-void fshelp_start_translator
+/* The user must define this function.  This is used to create ports
+   for translator startup from files.  NODE identifies the file for
+   which a port is required; UID and GID identifies the identity of
+   the user for the open.  Both arguments are opaque to the library
+   (and must be provided to the fshelp_start_translator call).  This
+   should return the name of a receive right from which exactly one
+   send right will be created.  */
+void fshelp_get_node_port (void *node, uid_t uid, gid_t gid);
+
+/* Call this when the control field of a translator is null and you
+   want to have the translator started so you can talk to it.  LINK is
+   the trans_link structure for this node; NAME is the file to execute
+   as the translator (*NAME may be modified).  fshelp_get_node_port
+   will be called with DIR and NODE as necessary.  (These values must
+   remain valid until fshelp_done_with_node is called.)  DIR should
+   refer to the directory holding the node being translater, and will
+   be provided as the cwdir of the process and as the dotdot return
+   value from fsys_startup.  NODE will should refer to the node being
+   translated, and will be provided as the realnode return value from
+   fsys_startup.  UID and GID will be provided as the second and third
+   arguments to fshelp_get_node_port for both these calls.  LOCK must
+   be a mutex which you hold; it is assumed that the trans_link
+   structure will not be changed unless this is held. */
+error_t fshelp_start_translator (struct trans_link *link, char *name, 
+				 void *dir, void *node, uid_t uid, gid_t gid,
+				 struct mutex *lock);
+
+/* The user must define this function.  This will be called for the
+   DIR and NODE arguments to fshelp_start_translator when the library
+   no longer needs them.  */
+void fshelp_done_with_node (void *);
+
+/* Call this when you receive a fsys_startup message on a port of type
+   fshelp_transboot_port_type.  PORTSTRUCT is the result of
+   ports_check_port_type/ports_get_port; this routine does not call
+   ports_done_with_port so the caller normally should.  CTL, REAL,
+   REALPOLY, DOTDOT, and DOTDOTPOLY are copied from the fsys_startup
+   message; CTL will be installed as the control field of the
+   translator making this call, *REAL will be set to be the underlying
+   port (by calling the MAKE_PORT function set at
+   fshelp_start_translator time with the NODE argument to that call);
+   *DOTDOT will be set similarly, but from the DIR argument to
+   fshelp_start_translator. *REALPOLY and *DOTDOTPOLY will be set to
+   the Mach message transmission types for those two ports.  */
+error_t fshelp_handle_fsys_startup (void *portstruct, mach_port_t ctl,
+				    mach_port_t *real, 
+				    mach_msg_type_name_t *realpoly,
+				    mach_port_t *dotdot,
+				    mach_msg_type_name_t *dotdotpoly);
+
+/* Install this routine as the ports library type-specific clean routine
+   for ports of type fshelp_transboot_port_type. */
+void fshelp_transboot_clean (void *arg);
+
+
