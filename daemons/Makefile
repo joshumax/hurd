@@ -26,14 +26,13 @@ SRCS = rc.sh getty.c
 installationdir = $(libexecdir)
 
 OBJS = $(SRCS:.c=.o)
-
-libutil-libsubst = -lutil
+getty-LDLIBS = -lutil
 
 include ../Makeconf
 
-%: %.sh
-	cp $< $@ && chmod +w $@
-
-getty: ../libshouldbeinlibc/libshouldbeinlibc.a -lutil
+getty: ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
+
+%: %.sh
+	cp $< $@ && chmod +w $@
