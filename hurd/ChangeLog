@@ -1,6 +1,11 @@
+Wed Oct 28 22:49:18 1998  Joel N. Weber II  <devnull@methedrine.ai.mit.edu>
+
+	* hurd_types.h: Added FSTYPE_HTTP, FSTYPE_MEMFS, and
+	FSTYPE_ISO9660.
+
 Tue Aug 11 21:12:06 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 
-	* hurd_types.h (dir_changed_type, file_changed_type): Doc fix. 
+	* hurd_types.h (dir_changed_type, file_changed_type): Doc fix.
 
 Thu Jul 30 10:38:30 1998  Thomas Bushnell, BSG  <tb@mit.edu>
 

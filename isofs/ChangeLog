@@ -1,3 +1,7 @@
+Wed Oct 28 22:52:04 1998  Joel N. Weber II  <devnull@methedrine.ai.mit.edu>
+
+	* inode.c (read_disknode): Use FSTYPE_ISO9660.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* lookup.c (diskfs_lookup_hard): Fix defn with `const'.
