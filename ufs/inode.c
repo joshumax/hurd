@@ -412,15 +412,31 @@ write_all_disknodes ()
 {
   int n;
   struct node *np;
-  
+  struct item {struct item *next; struct node *np;} *list = 0;
+  struct item *i;
+
+  /* Acquire a reference on all the nodes in the hash table
+     and enter them into a list on the stack. */
   spin_lock (&diskfs_node_refcnt_lock);
   for (n = 0; n < INOHSZ; n++)
     for (np = nodehash[n]; np; np = np->dn->hnext)
       {
-	diskfs_set_node_times (np);
-	write_node (np);
+	np->references++;
+	i = alloc (sizeof (struct item));
+	i->next = list;
+	i->np = np;
+	list = i;
       }
   spin_unlock (&diskfs_node_refcnt_lock);
+  
+  /* Update each node. */
+  for (i = list; i; i = i->next)
+    {
+      mutex_lock (&i->np->lock);
+      diskfs_set_node_times (i->np);
+      write_node (i->np);
+      diskfs_nput (i->np);
+    }
 }
 	
 void
