@@ -1,3 +1,7 @@
+1999-08-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* init.c (notify_shutdown): Add const to argument type.
+
 1999-07-24  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (split-init): Set to `yes' by default.
