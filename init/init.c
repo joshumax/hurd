@@ -203,8 +203,10 @@ reboot_system (int flags)
 	    {
 	      struct procinfo *pi = 0;
 	      u_int pisize = 0;
-	      err = proc_getprocinfo (procserver, pp[ind], 
-				      (int **)&pi, &pisize);
+	      char *noise;
+	      unsigned noise_len;
+	      err = proc_getprocinfo (procserver, pp[ind], 0,
+				      (int **)&pi, &pisize, &noise,&noise_len);
 	      if (err == MACH_SEND_INVALID_DEST)
 		goto procbad; 
 	      if (err)
@@ -220,6 +222,9 @@ reboot_system (int flags)
 		  fflush (stdout);
 		  task_terminate (task);
 		}
+	      if (noise_len > 0)
+		vm_deallocate (mach_task_self (),
+			       (vm_address_t)noise, noise_len);
 	    }
 	}
       printf ("Killing proc server\n");
@@ -1174,3 +1179,12 @@ kern_return_t
 S_msg_clear_some_exec_flags (mach_port_t process, mach_port_t refport,
 			     int flags)
 { return _S_msg_clear_some_exec_flags (process, refport, flags); }
+
+error_t
+S_msg_report_wait (mach_port_t process, thread_t thread,
+		   string_t desc, int *rpc)
+{
+  *desc = 0;
+  *rpc = 0;
+  return 0;
+}
