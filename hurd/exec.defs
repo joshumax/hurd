@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -42,21 +42,7 @@ routine exec_exec (
 	deallocnames: mach_port_name_array_t;
 	destroynames: mach_port_name_array_t);
 
-/* This call is made by a new task to its bootstrap port to get its
-   startup ports and information.  */
-routine exec_startup (
-	bootstrap: mach_port_t;
-	/* These are the base address and size of the initial stack
-	   allocated by the exec server.  The rest of the information
-	   is that passed by exec_exec.  */
-	out stack_base: vm_address_t;
-	out stack_size: vm_size_t;
-	out flags: int;
-	out argv: data_t, dealloc;
-	out envp: data_t, dealloc;
-	out dtable: portarray_t, dealloc;
-	out portarray: portarray_t, dealloc;
-	out intarray: intarray_t, dealloc);
+skip;				/* obsolete exec_startup */
 
 /* This call is made by the bootstrapping filesystem to give the
    execserver its auth handle.  */
