@@ -1,31 +1,43 @@
 #
-# Makefile for the linux ext2-filesystem routines.
+#   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 #
-# Note! Dependencies are done automagically by 'make dep', which also
-# removes any old dependencies. DON'T put your own dependencies here
-# unless it's something special (ie not a .c file).
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License as
+#   published by the Free Software Foundation; either version 2, or (at
+#   your option) any later version.
 #
-# Note 2! The CFLAGS definitions are now in the main makefile...
-
-.c.s:
-	$(CC) $(CFLAGS) -S $<
-.c.o:
-	$(CC) $(CFLAGS) -c $<
-.s.o:
-	$(AS) -o $*.o $<
-
-OBJS=	acl.o balloc.o bitmap.o dir.o file.o fsync.o ialloc.o \
-	inode.o ioctl.o namei.o super.o symlink.o truncate.o
-
-ext2.o: $(OBJS)
-	$(LD) -r -o ext2.o $(OBJS)
-
-dep:
-	$(CPP) -M *.c > .depend
-
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#   General Public License for more details.
 #
-# include a dependency file if one exists
-#
-ifeq (.depend,$(wildcard .depend))
-include .depend
-endif
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+dir := ext21fs
+makemode := server
+
+SRCS alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
+       sizes.c subr.c tables.c bmap.c pokeloc.c
+OBJS = $(SRCS:.c=.o) exec_server_image.o
+LCLHDRS = ext2fs.h fs.h ext2_fs.h ext2_fs_sb.h ext2_fs_i.h
+DIST_FILE = BROKEN
+REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
+		../hurd/ioserver.h ../hurd/fshelp.h
+#HURDLIBS = libdiskfs libports libdiskfs libpager libioserver \
+#	libfshelp libdiskfs libthreads libports
+HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
+target = ext2fs
+
+include ../Makeconf
+
+exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
+	rsh $(mighost) -n cd `pwd` \; \
+	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
+
+$(OBJS): ext2fs.h 
+$(OBJS): $(REMHDRS)
+
+$(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
+	$(MAKE) -C $(@D) $(@F)
