@@ -148,10 +148,8 @@ diskfs_S_file_set_translator (struct protid *cred,
     }
 
   if (existing != MACH_PORT_NULL)
-    {    
-      np->translator.control = existing;
-      np->translator.starting = 0;
-    }
+    fshelp_set_control (&np->translator, existing);
+
   mutex_unlock (&np->lock);
   return error;
 }
