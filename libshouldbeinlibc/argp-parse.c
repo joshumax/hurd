@@ -43,7 +43,7 @@
 
 static struct argp_option argp_default_options[] =
 {
-  {"help",	OPT_HELP, 0, 0, "Give this help list"},
+  {"help",	OPT_HELP, 0, 0, "Give this help list", -1},
   {0, 0}
 };
 
