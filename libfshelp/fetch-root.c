@@ -38,6 +38,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
   error_t err;
   mach_port_t control;
   int cancel;
+  int i;
   
  start_over:
 
@@ -128,12 +129,16 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       
       err = fshelp_start_translator_long (fetch_underlying,
 					  argz, argz, argz_len,
-					  fds, MACH_MSG_TYPE_MOVE_SEND,
+					  fds, MACH_MSG_TYPE_COPY_SEND,
 					  STDERR_FILENO + 1,
-					  ports, MACH_MSG_TYPE_MOVE_SEND,
+					  ports, MACH_MSG_TYPE_COPY_SEND,
 					  INIT_PORT_MAX, 
 					  ints, INIT_INT_MAX,
 					  0, &control);
+      for (i = 0; i <= STDERR_FILENO; i++)
+	mach_port_deallocate (mach_task_self (), fds[i]);
+      for (i = 0; i < INIT_PORT_MAX; i++)
+	mach_port_deallocate (mach_task_self (), ports[i]);
       
       mutex_lock (box->lock);
       
