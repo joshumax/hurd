@@ -15,18 +15,26 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+dir := .
+
 include Makeconf
 
 LIB_SUBDIRS = libioserver libports
 PROG_SUBDIRS = auth boot exec fstests hello ifsock init mkbootfs proc term ufs
-OTHER_SUBDIR = hurd i386
+OTHER_SUBDIRS = hurd i386
 SUBDIRS = $(LIB_SUBDIRS) $(PROG_SUBDIRS) $(OTHER_SUBDIRS)
+
+DIST_FILES = COPYING Makeconf Makefile README NEWS
 
 all:
 	@echo 'Can't make all yet.'
 
-%-dist:
-	make -C $* dist
+%-lndist: hurd-snap
+	make -C $* lndist
 
-dist: $(addsuffix -dist,$(SUBDIRS))
+hurd-snap:
+	mkdir hurd-snap
 
+dist: hurd-snap $(addsuffix -lndist,$(SUBDIRS)) lndist
+	tar cfz hurd-snap.tar.gz hurd-snap
+	rm -rf hurd-snap
