@@ -22,36 +22,46 @@
 
 /* ---------------------------------------------------------------- */
 
-/* Returns the pipe that SOCK is reading from, locked and with an
-   additional reference, or NULL if it has none.  SOCK mustn't be locked.  */
-struct pipe *
-sock_aquire_read_pipe (struct sock *sock)
+/* Returns the pipe that SOCK is reading from in PIPE, locked and with an
+   additional reference, or an error saying why it's not possible.  A null
+   value may also be returned in PIPE with a 0 error, meaning that EOF should
+   be returned.  SOCK mustn't be locked.  */
+error_t
+sock_aquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
-  struct pipe *pipe;
+  error_t err;
 
   mutex_lock (&sock->lock);
-  pipe = user->sock->read_pipe;
-  if (pipe != NULL)
-    pipe_aquire (pipe);		/* Do this before unlocking the sock!  */
+  *pipe = user->sock->read_pipe;
+  if (*pipe != NULL)
+    pipe_aquire (*pipe);	/* Do this before unlocking the sock!  */
+  else if (! (sock->flags & SOCK_SHUTDOWN_READ))
+    /* We only return ENOTCONN if a shutdown hasn't been performed.  */
+    err = ENOTCONN;
   mutex_unlock (&sock->lock);
 
-  return pipe;
+  return err;
 }
 
-/* Returns the pipe that SOCK is writing from, locked and with an
-   additional reference, or NULL if it has none.  SOCK mustn't be locked.  */
-struct pipe *
-sock_aquire_write_pipe (struct sock *sock)
+/* Returns the pipe that SOCK is writing to in PIPE, locked and with an
+   additional reference, or an error saying why it's not possible.  SOCK
+   mustn't be locked.  */
+error_t
+sock_aquire_write_pipe (struct sock *sock, struct pipe **pipe)
 {
-  struct pipe *pipe;
+  error_t err = 0;
 
   mutex_lock (&sock->lock);
-  pipe = user->sock->write_pipe;
-  if (pipe != NULL)
-    pipe_aquire (pipe);		/* Do this before unlocking the sock!  */
+  *pipe = user->sock->write_pipe;
+  if (*pipe != NULL)
+    pipe_aquire (*pipe);	/* Do this before unlocking the sock!  */
+  else if (sock->flags & SOCK_SHUTDOWN_WRITE)
+    err = EPIPE;
+  else
+    err = ENOTCONN;
   mutex_unlock (&sock->lock);
 
-  return pipe;
+  return err;
 }
 
 /* ---------------------------------------------------------------- */
@@ -68,6 +78,7 @@ sock_create (struct pipe_ops *pipe_ops, struct sock **sock)
 
   new->refs = 0;
   new->read_pipe = new->write_pipe = NULL;
+  new->flags = 0;
   new->id = next_sock_id++;
   new->pipe_ops = pipe_ops;
   new->listenq = NULL;
@@ -85,10 +96,9 @@ sock_free (struct sock *sock)
   
 }
 
-/* Return a new user port on SOCK, in PORT and PORT_TYPE.  */
+/* Return a new user port on SOCK in PORT.  */
 error_t
-sock_create_port (struct sock *sock,
-		  mach_port_t *port, mach_msg_type_name_t *port_type)
+sock_create_port (struct sock *sock, mach_port_t *port)
 {
   struct sock_user *user =
     port_allocate_port (sock_user_bucket,
@@ -104,7 +114,6 @@ sock_create_port (struct sock *sock,
   user->sock = sock;
 
   *port = ports_get_right (user);
-  *port_type = MACH_MSG_TYPE_MAKE_SEND;
 
   return 0;
 }
@@ -121,30 +130,45 @@ static struct mutex connect_lock;
 error_t
 sock_connect (struct sock *sock1, struct sock *sock2)
 {
-  if (sock1->pipe_ops != sock2->pipe_ops)
+  error_t err = 0;
+  struct pipe_class *pipe_class = sock1->pipe_class;
+
+  if (sock2->pipe_class != pipe_class)
     return EOPNOTSUPP;		/* XXX?? */
 
   mutex_lock (&connect_lock);
   mutex_lock (&sock1->lock);
   mutex_lock (&sock2->lock);
 
-  if (sock1->read_pipe || sock1->write_pipe
-      || sock2->read_pipe || sock2->write_pipe)
+  if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
     err = EISCONN;
   else
     {
       struct pipe *pipe1, *pipe2;
-      err = pipe_create (sock1, sock2, sock1->pipe_ops, &pipe1);
+
+      /* Make one direction.... */
+      if ((sock1->flags & SOCK_SHUTDOWN_WRITE)
+	  || (sock2->flags & SOCK_SHUTDOWN_READ))
+	pipe1 = NULL;
+      else
+	err = pipe_create (pipe_class, &pipe1);
+
+      /* Then the other...  */
       if (!err)
 	{
-	  err = pipe_create (sock2, sock1, sock1->pipe_ops, &pipe2);
+	  if ((sock2->flags & SOCK_SHUTDOWN_WRITE)
+	      || (sock1->flags & SOCK_SHUTDOWN_READ))
+	    pipe2 = NULL;
+	  else
+	    err = pipe_create (pipe_class, &pipe2);
+
 	  if (err)
 	    pipe_free (pipe1);
-	}
-      if (!err)
-	{
-	  sock1->write_pipe = sock2->read_pipe = pipe1;
-	  sock2->write_pipe = sock1->read_pipe = pipe2;
+	  else
+	    {
+	      sock1->write_pipe = sock2->read_pipe = pipe1;
+	      sock2->write_pipe = sock1->read_pipe = pipe2;
+	    }
 	}
     }
 
@@ -153,4 +177,57 @@ sock_connect (struct sock *sock1, struct sock *sock2)
   mutex_unlock (&connect_lock);
 
   return err;
+}
+
+/* ---------------------------------------------------------------- */
+
+void
+sock_shutdown (struct sock *sock, unsigned flags)
+{
+  mutex_lock (&sock->lock);
+
+  sock->flags |= flags;
+
+  if (which & SOCK_SHUTDOWN_READ)
+    /* Shutdown the read half.  */
+    {
+      struct pipe *pipe = sock->read_pipe;
+      if (pipe != NULL)
+	{
+	  sock->read_pipe = NULL;
+	  mutex_lock (&pipe->lock);
+	  pipe->flags |= PIPE_BROKEN;
+	  pipe_release (pipe); /* Unlock PIPE and get rid of SOCK's ref.  */
+	}
+    }
+
+  if (which & SOCK_SHUTDOWN_WRITE)
+    /* Shutdown the write half.  */
+    {
+      struct pipe *pipe = sock->write_pipe;
+      if (pipe != NULL)
+	{
+	  sock->write_pipe = NULL;
+
+	  mutex_lock (&pipe->lock);
+
+	  /* As there may be multiple writers on a connectionless socket, we
+	     never allow EOF to be signaled on the reader.  */
+	  if (! (pipe->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
+	    pipe->flags |= PIPE_DRY;
+
+	  /* Unlock SOCK here, as we may subsequently wake up other threads. */
+	  mutex_unlock (&sock->lock);
+
+	  if (pipe->refs > 1)
+	    /* Other references to PIPE besides ours?  Wake 'em up.  */
+	    pipe_kick (pipe);
+
+	  pipe_release (pipe);
+	}
+      else
+	mutex_unlock (&sock->lock);
+    }
+  else
+    mutex_unlock (&sock->lock);
 }
