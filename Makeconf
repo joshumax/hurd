@@ -28,7 +28,7 @@ CFLAGS := -Wall -Wno-parentheses -O -g
 # Finding binaries
 CC=gcc
 MIGCOM=/usr/local/lib/migcom
-CPP=/usr/local/lib/gcc-lib/i386-compaq-mach/2.4.5/cpp
+CPP=/usr/local/lib/gcc-lib/i386-compaq-mach/2.5.7/cpp
 MIG=mig
 
 # How to do some things:
