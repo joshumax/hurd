@@ -1,5 +1,5 @@
 /* Process information queries
-   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -138,11 +138,11 @@ S_proc_pid2proc (struct proc *callerp,
 
 
 /* Read a string starting at address ADDR in task T; set *STR to point at
-   newly malloced storage holding it.  */
+   newly malloced storage holding it, and *LEN to its length with null.  */
 static error_t
 get_string (task_t t,
 	    vm_address_t addr,
-	    char **str)
+	    char **str, size_t *len)
 {
   /* This version assumes that a string is never more than one
      page in length.  */
@@ -170,12 +170,12 @@ get_string (task_t t,
   else
     {
       c++;			/* Include the null.  */
-      *str = malloc (c - (char *)(data + (addr - readaddr)));
+      *len = c - (char *) (data + (addr - readaddr));
+      *str = malloc (*len);
       if (*str == NULL)
 	err = ENOMEM;
       else
-	bcopy ((char *)(data + (addr - readaddr)), *str,
-	       c - (char *)(data + (addr - readaddr)));
+	memcpy (*str, (char *) data + (addr - readaddr), *len);
     }
 
   munmap ((caddr_t) data, readlen);
@@ -260,9 +260,9 @@ get_string_array (task_t t,
   for (vp = vector; *vp; ++vp)
     {
       char *string;
-      int len;
+      size_t len;
 
-      err = get_string (t, *vp, &string);
+      err = get_string (t, *vp, &string, &len);
       if (err)
 	{
 	  free (vector);
@@ -271,21 +271,21 @@ get_string_array (task_t t,
 	  return err;
 	}
 
-      len = strlen (string) + 1;
-      if (len > *(char **)buf + *buflen - bp)
+      if (len > (char *) *buf + *buflen - bp)
 	{
-	  vm_address_t newbuf;
-	  vm_size_t prev_len = bp - *(char **)buf;
+	  char *newbuf;
+	  vm_size_t prev_len = bp - (char *) *buf;
 	  vm_size_t newsize = *buflen * 2;
 
 	  if (newsize < prev_len + len)
-	    newsize = prev_len + len;
+	    /* Since we will mmap whole pages anyway,
+	       notice how much space we really have.  */
+	    newsize = round_page (prev_len + len);
 
-	  newbuf = (vm_address_t) mmap (0, newsize, PROT_READ|PROT_WRITE,
-					MAP_ANON, 0, 0);
-	  err = (newbuf == -1) ? errno : 0;
-	  if (err)
+	  newbuf = mmap (0, newsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (newbuf == MAP_FAILED)
 	    {
+	      err = errno;
 	      free (string);
 	      free (vector);
 	      if (*buf != origbuf)
@@ -293,19 +293,20 @@ get_string_array (task_t t,
 	      return err;
 	    }
 
-	  bcopy (*(char **) buf, (char *) newbuf, prev_len);
-	  bp = (char *)newbuf + prev_len;
+	  memcpy (newbuf, (char *) *buf, prev_len);
+	  bp = newbuf + prev_len;
 	  if (*buf != origbuf)
 	    munmap ((caddr_t) *buf, *buflen);
 
-	  *buf = newbuf;
+	  *buf = (vm_address_t) newbuf;
 	  *buflen = newsize;
 	}
 
-      bcopy (string, bp, len);
+      memcpy (bp, string, len);
       bp += len;
       free (string);
     }
+
   free (vector);
   *buflen = bp - (char *) *buf;
   return 0;
