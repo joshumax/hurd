@@ -28,7 +28,21 @@
  * 26-Oct-94 Johannes Helander (jvh) Helsinki University of Technology
  *	Set the wait_type field.
  *
- * $Log:	cprocs.c,v $
+ * $Log: cprocs.c,v $
+ * Revision 1.16  2002/05/27 02:50:10  roland
+ * 2002-05-26  Roland McGrath  <roland@frob.com>
+ *
+ * 	Changes merged from CMU MK83a version:
+ * 	* cthreads.h, options.h: Various cleanups.
+ * 	* call.c, cthread_data.c, sync.c, mig_support.c: Likewise.
+ * 	* i386/cthreads.h, i386/thread.c, i386/lock.s: Likewise.
+ * 	* cthread_internals.h: Add decls for internal functions.
+ * 	(struct cproc): Use vm_offset_t for stack_base and stack_size members.
+ * 	Use natural_t for context member.
+ * 	* cprocs.c: Use prototypes for all defns.
+ * 	* cthreads.c: Likewise.
+ * 	(cthread_exit): Cast any_t to integer_t before int.
+ *
  * Revision 2.18  93/03/09  10:59:10  danner
  * 	Lint.
  * 	[93/03/06            af]
@@ -609,7 +623,7 @@ cproc_waiter(void)
  * You must hold cproc_self()->lock when called.
  */
 
-private void
+void
 cproc_block(void)
 {
   extern unsigned int __hurd_threadvar_max; /* GNU */
