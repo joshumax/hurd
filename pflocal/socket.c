@@ -194,10 +194,10 @@ S_socket_peername (struct sock_user *user,
 		   mach_port_t *addr_port,
 		   mach_msg_type_name_t *addr_port_type)
 {
+  return EOPNOTSUPP;		/* XXX */
   if (!user)
     return EOPNOTSUPP;
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  return sock_get_write_addr_port (user->sock, addr_port);
 }
 
 /* Send data over a socket, possibly including Mach ports.  */
