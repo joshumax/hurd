@@ -2016,7 +2016,9 @@ static int tcp_read_urg(struct sock * sk, int nonblock,
 static int tcp_read(struct sock *sk, unsigned char *to,
 	int len, int nonblock, unsigned flags)
 {
+#ifndef _HURD_
 	struct wait_queue wait = { current, NULL };
+#endif
 	int copied = 0;
 	unsigned long peek_seq;
 	volatile unsigned long *seq;	/* So gcc doesn't overoptimise */
@@ -2047,7 +2049,9 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 	if (flags & MSG_PEEK)
 		seq = &peek_seq;
 
+#ifndef _HURD_
 	add_wait_queue(sk->sleep, &wait);
+#endif
 	sk->inuse = 1;
 	while (len > 0) 
 	{
@@ -2123,7 +2127,11 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		cleanup_rbuf(sk);
 		release_sock(sk);
 		sk->socket->flags |= SO_WAITDATA;
+#ifdef _HURD_
+		interruptible_sleep_on (sk->sleep);
+#else		
 		schedule();
+#endif
 		sk->socket->flags &= ~SO_WAITDATA;
 		sk->inuse = 1;
 
@@ -2231,8 +2239,10 @@ static int tcp_read(struct sock *sk, unsigned char *to,
 		break;
 
 	}
+#ifndef _HURD_
 	remove_wait_queue(sk->sleep, &wait);
 	current->state = TASK_RUNNING;
+#endif
 
 	/* Clean up data we have read: This will do ACK frames */
 	cleanup_rbuf(sk);
