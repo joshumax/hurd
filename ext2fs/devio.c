@@ -28,8 +28,7 @@ error_t
 dev_write_sync (daddr_t addr, vm_address_t data, long len)
 {
   int written;
-  if (diskfs_readonly)
-    return EROFS;
+  assert (!diskfs_readonly);
   if (device_write (device_port, 0, addr, (io_buf_ptr_t) data, len, &written)
       || written != len)
     return EIO;
