@@ -77,7 +77,7 @@ ext2_alloc_block (struct node *node, unsigned long goal)
       ext2_debug ("preallocation hit (%lu/%lu).\n",
 		  ++alloc_hits, ++alloc_attempts);
 
-      bh = bptr(result);
+      bh = block_image(result);
       memset (bh, 0, block_size);
     }
   else
@@ -110,7 +110,7 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
   block = node->dn->info.i_data[nr];
   if (block)
     {
-      *buf = bptr(block);
+      *buf = block_image(block);
       return 0;
     }
 
@@ -144,7 +144,7 @@ inode_getblk (struct node *node, int nr, int create, int new_block, char **buf)
   if (!block)
     return EIO;
 
-  *buf = bptr(block);
+  *buf = block_image(block);
   node->dn->info.i_data[nr] = block;
 
   node->dn->info.i_next_alloc_block = new_block;
@@ -172,7 +172,7 @@ block_getblk (struct node *node,
   block = ((u32 *)bh)[nr];
   if (block)
     {
-      *buf = bptr (block);
+      *buf = block_image (block);
       return 0;
     }
 
@@ -199,7 +199,7 @@ block_getblk (struct node *node,
   if (!block)
     return EIO;			/* XXX? */
 
-  *buf = bptr (block);
+  *buf = block_image (block);
   ((u32 *)bh)[nr] = block;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
