@@ -40,11 +40,70 @@ pfinet_demuxer (mach_msg_header_t *inp,
 {
   extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
   return (io_server (inp, outp)
 	  || socket_server (inp, outp)
-	  || trivfs_demuxer (inp, outp));
+	  || trivfs_demuxer (inp, outp)
+	  || startup_notify_server (inp, outp));
 }
+
+/* The system is going down; destroy all the extant port rights.  That
+   will cause net channels and such to close promptly.  */
+error_t
+S_startup_dosync (mach_port_t handle)
+{
+  struct port_info *inpi = ports_lookup_port (pfinet_bucket, 
+					      shutdown_notify_class);
+  error_t
+    do1 (void *port)
+      {
+	struct port_info *pi = port;
+	
+	if (pi->class == socketport_class)
+	  ports_destroy_right (pi);
+      }
+
+  if (!inpi)
+    return EOPNOTSUPP;
+
+  ports_bucket_iterate (pfinet_bucket, do1);
+  return 0;
+}
+
+void
+arrange_shutdown_notification ()
+{
+  error_t err;
+  mach_port_t initport, notify;
+  process_t procserver;
+  struct port_info *pi;
+  
+  /* Arrange to get notified when the system goes down,
+     but if we fail for some reason, just silently give up.  No big deal. */
+
+  err = ports_crease_port (shutdown_notify_class, pfinet_bucket, 
+			   sizeof (struct port_info), &pi);
+  if (err)
+    return;
+  
+  procserver = getproc ();
+  if (!procserver)
+    return;
+  
+  err = proc_getmsgport (procserver, 1, &initport);
+  mach_port_deallocate (mach_task_self (), procserver);
+  if (err)
+    return;
+  
+  notify = ports_get_right (pi);
+  ports_port_deref (pi);
+  startup_request_notification (initport, notify, 
+				MACH_MSG_TYPE_MAKE_SEND, 
+				program_invocation_short_name);
+  mach_port_deallocate (mach_task_self (), initport);
+}
+
 
 int
 main (int argc,
@@ -94,6 +153,8 @@ main (int argc,
   init_time ();
   setup_ethernet_device (argv[2]);
   inet_proto_init (0);
+
+  arrange_shutdown_notification ();
 
   /* XXX Simulate what should be user-level initialization */
 
