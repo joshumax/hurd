@@ -1,5 +1,5 @@
 /* Standard Hurd pathnames.
-   Copyright (C) 1992, 1994 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    the canonical pathname being /servers/foo.  */
 
 #define	_SERVERS		"/servers/"
-#define	_SERVERS_CORE		_SERVERS "core"
+#define	_SERVERS_CRASH		_SERVERS "crash"
 #define	_SERVERS_EXEC		_SERVERS "exec"
 #define _SERVERS_STARTUP	_SERVERS "startup"
 #define _SERVERS_PROC		_SERVERS "proc"
