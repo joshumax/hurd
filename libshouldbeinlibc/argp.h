@@ -84,8 +84,12 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
    EINVAL should be returned if they aren't understood.  
 
    The sequence of keys to parser calls is either (where opt is a user key):
-       (opt | ARGP_KEY_ARG)... ARGP_KEY_END
-   or  opt... ARGP_KEY_NO_ARGS ARGP_KEY_END.  */
+       ARGP_KEY_INIT (opt | ARGP_KEY_ARG)... ARGP_KEY_END
+   or  ARGP_KEY_INIT opt... ARGP_KEY_NO_ARGS ARGP_KEY_END
+
+   If an error occurs, then the parser is called with ARGP_KEY_ERR, and no
+   other calls are made.
+   */
 
 /* This is not an option at all, but rather a command line argument.  If a
    parser receiving this key returns success, the fact is recorded, and the
@@ -103,12 +107,25 @@ typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
    ARGP_KEY_END (where more general validity checks on previously parsed
    arguments can take place).  */
 #define ARGP_KEY_NO_ARGS	2
+/* Passed in before any parsing is done.  Afterwards, the values of each
+   element of the CHILD_HOOKS field, if any, in the state structure is
+   copied to each child's state to be the initial value of the HOOK field.  */
+#define ARGP_KEY_INIT		3
+/* Passed in when parsing has successfully been completed (even if there are
+   still arguments remaining).  Afterwards, the value of the HOOK field in
+   the state structure is passed back to the user or the parser above this
+   one.  */
+#define ARGP_KEY_SUCCESS	4
+/* Passed in if an error occurs (in which case a call with ARGP_KEY_SUCCESS is
+   never made, so any cleanup must be done here).  Note that HOOK fields are
+   *not* passed back.  */
+#define ARGP_KEY_ERROR		5
 
 /* An argp structure contains a set of getopt options declarations, a
    function to deal with getting one, and an optional pointer to another
    argp structure.  When actually parsing options, getopt is called with
    the union of all the argp structures chained together through their
-   PARENT pointers, with conflicts being resolved in favor of the first
+   CHILD pointers, with conflicts being resolved in favor of the first
    occurance in the chain.  */
 struct argp
 {
@@ -135,10 +152,10 @@ struct argp
 
   /* A NULL terminated list of other argp structures that should be parsed
      with this one.  Any conflicts are resolved in favor of this argp, or
-     early argps in the PARENTS list.  This field is useful if you use
+     early argps in the CHILDREN list.  This field is useful if you use
      libraries that supply their own argp structure, which you want to use in
      conjunction with your own.  */
-  const struct argp **parents;
+  const struct argp **children;
 };
 
 /* Parsing state.  This is provided to parsing functions called by argp,
@@ -168,6 +185,14 @@ struct argp_state
      `--' argument (which prevents anything following being interpreted as an
      option).  Only set once argument parsing has proceeded past this point. */
   int quoted;
+
+  /* An arbitrary pointer passed in from the user; the value of HOOK will be
+     similarly passed out after parsing is sucessfully concluded.  */
+  void *hook;
+  /* Hooks to pass to child parsers (and passed back from them).  This
+     vector will be the same length as the number of children for the current
+     parser.  */
+  void **child_hooks;
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
@@ -181,7 +206,8 @@ struct argp_state
 
 /* Don't print error messages for unknown options to stderr; unless this flag
    is set, ARGP_PARSE_ARGV0 is ignored, as ARGV[0] is used as the program
-   name in the error messages.  */
+   name in the error messages.  This flag implies ARGP_NO_EXIT (on the
+   assumption that silent exiting upon errors is bad behaviour).  */
 #define ARGP_NO_ERRS   0x2
 
 /* Don't parse any non-option args.  Normally non-option args are parsed by
@@ -200,18 +226,15 @@ struct argp_state
    line -- normally they're rearranged so that all options come first. */
 #define ARGP_IN_ORDER  0x8
 
-/* Don't provide the following standard help behavior:
-    o A long option --help is automatically added, which causes usage and
-      option help information to be output to stdout, and exit (0) called.
-    o Any option parsing errors will result in a short `Try --help' message
-      to be output to stderr and exit (1) called.  */
+/* Don't provide the standard long option --help, which causes usage and
+      option help information to be output to stdout, and exit (0) called. */
 #define ARGP_NO_HELP   0x16
 
-/* Disables the exiting behavior of the above default argp help messages. */
+/* Don't exit on errors (they may still result in error messages).  */
 #define ARGP_NO_EXIT   0x32
 
 /* Turns off any message-printing/exiting options.  */
-#define ARGP_SILENT    (ARGP_NO_ERRS | ARGP_NO_HELP)
+#define ARGP_SILENT    (ARGP_NO_EXIT | ARGP_NO_ERRS | ARGP_NO_HELP)
 
 /* Parse the options strings in ARGC & ARGV according to the options in
    ARGP.  FLAGS is one of the ARGP_ flags above.  If ARG_INDEX is
@@ -219,23 +242,21 @@ struct argp_state
    it.  If an unknown option is present, EINVAL is returned; if some parser
    routine returned a non-zero value, it is returned; otherwise 0 is
    returned.  This function may also call exit unless the ARGP_NO_HELP
-   flag is set.  */
+   flag is set.  HOOK is a pointer to a value to be passed in to the parser,
+   and which will be passed out again afterwards.  */
 error_t argp_parse (const struct argp *argp,
 		    int argc, char **argv, unsigned flags,
-		    int *arg_index);
+		    int *arg_index, void **hook);
 
 /* Flags for argp_help.  */
 #define ARGP_HELP_USAGE		0x01 /* Print a Usage: message. */
 #define ARGP_HELP_SHORT_USAGE	0x02 /*  " but don't actually print options. */
 #define ARGP_HELP_SEE		0x04 /* Print a `for more help...' message. */
 #define ARGP_HELP_LONG		0x08 /* Print a long help message. */
+
+/* These ARGP_HELP flags are only understood by argp_state_help.  */
 #define ARGP_HELP_EXIT_ERR	0x10 /* Call exit(1) instead of returning.  */
 #define ARGP_HELP_EXIT_OK	0x20 /* Call exit(0) instead of returning.  */
-
-/* If used as a flag to argp_help, this has the same effect as
-   ARGP_HELP_EXIT_ERR.  However it can be used to clear both types of exit
-   flags at once.  */
-#define ARGP_HELP_EXIT   (ARGP_HELP_EXIT_ERR | ARGP_HELP_EXIT_OK)
 
 /* The standard thing to do after a program command line parsing error, if an
    error messages has already been printed.  */
@@ -251,20 +272,32 @@ error_t argp_parse (const struct argp *argp,
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
-void argp_help (const struct argp *argp, FILE *stream, unsigned flags);
+extern void argp_help (const struct argp *argp, FILE *stream, unsigned flags);
+
+/* The following routines are intended to be called from within an argp
+   parsing routine (thus taking an argp_state structure as the first
+   argument).  They may or may not print an error message and exit, depending
+   on the flags in STATE -- in any case, the caller should be prepared for
+   them *not* to exit, and should return an appropiate error after calling
+   them.  [argp_usage & argp_error should probably be called argp_state_...,
+   but they're used often enough that they should be short]  */
 
-/* Output the standard usage message for ARGP to stderr and exit (1).  */
-void argp_usage (const struct argp *argp) __attribute__ ((noreturn));
-extern inline void argp_usage (const struct argp *argp)
+/* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
+   from the set ARGP_HELP_*.  */
+void argp_state_help (struct argp_state *state, FILE *stream, unsigned flags);
+
+/* Possibly output the standard usage message for ARGP to stderr and exit.  */
+extern inline void
+argp_usage (struct argp_state *state)
 {
-  argp_help (argp, stderr, ARGP_HELP_STD_USAGE);
+  argp_state_help (state, stderr, ARGP_HELP_STD_USAGE);
 }
 
-/* Print the printf string FMT and following args, preceded by the program
-   name and `:', to stderr, and followed by a `Try ... --help' message.  Then
-   exit (1).  */
-extern void argp_error (const struct argp *argp, const char *fmt, ...)
-     __attribute__ ((noreturn, format (printf, 2, 3)));
+/* If appropriate, print the printf string FMT and following args, preceded
+   by the program name and `:', to stderr, and followed by a `Try ... --help'
+   message, then exit (1).  */
+void argp_error (struct argp_state *state, const char *fmt, ...)
+     __attribute__ ((format (printf, 2, 3)));
 
 /* Returns true if the option OPT is a valid short option.  */
 extern inline int
