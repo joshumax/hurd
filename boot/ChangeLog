@@ -1,3 +1,10 @@
+2002-05-31  Roland McGrath  <roland@frob.com>
+
+	* boot.c: Don't include "exec_S.h".
+
+	* boot.c (boot_script_exec_cmd): Fix typos:
+	{I386,ALPHA}_THREAD_STATE -> {i386,ALPHA}_THREAD_STATE_COUNT
+
 2002-05-28  Roland McGrath  <roland@frob.com>
 
 	* boot_script.c (boot_script_set_variable): Values int -> integer_t.
