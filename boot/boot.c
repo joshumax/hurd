@@ -236,6 +236,18 @@ struct sigvec
 };
 
 int
+sigblock (int mask)
+{
+  return syscall (109, mask);
+}
+
+int
+sigsetmask (int mask)
+{
+  return syscall (110, mask);
+}
+ 	      
+int
 sigpause (int mask)
 {
   return syscall (111, mask);
@@ -1444,6 +1456,8 @@ ds_device_read (device_t device,
 		unsigned int *datalen)
 {
   int avail;
+  int mask;
+  
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
@@ -1456,16 +1470,19 @@ ds_device_read (device_t device,
     }
 #endif
 
+  mask = sigblock (sigmask (SIGIO));
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
       *datalen = read (0, *data, bytes_wanted);
+      sigsetmask (mask);
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
       queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
+      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
@@ -1481,6 +1498,8 @@ ds_device_read_inband (device_t device,
 		       unsigned int *datalen)
 {
   int avail;
+  int mask;
+
   if (device != pseudo_console)
     return D_NO_SUCH_DEVICE;
 
@@ -1493,15 +1512,18 @@ ds_device_read_inband (device_t device,
     }
 #endif
 
+  mask = sigblock (sigmask (SIGIO));
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       *datalen = read (0, data, bytes_wanted);
+      sigsetmask (mask);
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
       queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
+      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
@@ -1692,6 +1714,8 @@ S_io_read (mach_port_t object,
 	   mach_msg_type_number_t amount)
 {
   mach_msg_type_number_t avail;
+  int mask;
+
   if (object != pseudo_console)
     return EOPNOTSUPP;
   
@@ -1704,17 +1728,20 @@ S_io_read (mach_port_t object,
     }
 #endif
 
+  mask = sigblock (sigmask (SIGIO));
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       if (amount > *datalen)
 	vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
       *datalen = read (0, *data, amount);
+      sigsetmask (mask);
       return *datalen == -1 ? errno : 0;
     }
   else
     {
       queue_read (IO_READ, reply_port, reply_type, amount);
+      sigsetmask (mask);
       return MIG_NO_REPLY;
     }
 }
