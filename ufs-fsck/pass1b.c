@@ -26,7 +26,7 @@ pass1b ()
   struct dinode dino;
   struct dinode *dp = &dino;
   int cg, i;
-  ino_t number;
+  ino_t number = 0;
   int dupblk;
   struct dups *duphead = duplist;
 
