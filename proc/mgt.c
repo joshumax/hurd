@@ -290,23 +290,29 @@ S_proc_get_arg_locations (struct proc *p,
 /* Implement proc_dostop as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_dostop (struct proc *p,
-	     thread_t contthread)
+	       thread_t contthread)
 {
-  thread_t *threads;
-  int i;
-  u_int nthreads;
-  
-  task_suspend (p->p_task);
-  task_threads (p->p_task, &threads, &nthreads);
+  thread_t threadbuf[2], *threads = threadbuf;
+  unsigned int nthreads = 2, i;
+  error_t err;
+
+  if (err = task_suspend (p->p_task))
+    return err;
+  if (err = task_threads (p->p_task, &threads, &nthreads))
+    return err;
   for (i = 0; i < nthreads; i++)
-    if (threads[i] != contthread)
-      {
-	thread_suspend (threads[i]);
-	mach_port_deallocate (mach_task_self (), threads[i]);
-      }
-  vm_deallocate (mach_task_self (), (u_int) threads,
-		 nthreads * sizeof (thread_t));
-  task_resume (p->p_task);
+    {
+      if (threads[i] != contthread)
+	err = thread_suspend (threads[i]);
+      mach_port_deallocate (mach_task_self (), threads[i]);
+    }
+  if (threads != threadbuf)
+    vm_deallocate (mach_task_self (), (vm_address_t) threads,
+		   nthreads * sizeof (thread_t));
+  if (err = task_resume (p->p_task))
+    return err;
+
+  mach_port_deallocate (mach_task_self (), contthread);
   return 0;
 }
 
