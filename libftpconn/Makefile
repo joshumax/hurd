@@ -21,6 +21,7 @@ makemode := library
 
 libname = libftpconn
 installhdrs = ftpconn.h
+installhdrsubdir = .
 
 SRCS = ftpconn.c unix.c
 LCLHDRS = ftpconn.h
