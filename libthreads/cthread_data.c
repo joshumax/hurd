@@ -1,4 +1,4 @@
-/* 
+/*
  * Mach Operating System
  * Copyright (c) 1991 Carnegie-Mellon University
  * All rights reserved.  The CMU software License Agreement specifies
@@ -6,12 +6,15 @@
  */
 /*
  * HISTORY
- * $Log:	cthread_data.c,v $
+ * $Log: cthread_data.c,v $
+ * Revision 1.1  1992/10/06 18:31:04  mib
+ * entered into RCS
+ *
  * Revision 2.2  92/05/23  11:35:17  jfriedl
  * 	Snarfed from multi-server sources at CMU.
  * 	No stdio (for use with single-server).
- * 
- * 
+ *
+ *
  * Revision 2.2  91/03/25  14:14:45  jjc
  * 	For compatibility with cthread_data:
  * 		1) Added routines, cthread_data and cthread_set_data,
@@ -24,16 +27,16 @@
  * 	Made simple implementation from POSIX threads specification for
  * 	thread specific data.
  * 	[91/03/07            jjc]
- * 
+ *
  */
 #include <cthreads.h>
 
 
 #ifdef	CTHREAD_DATA
 #define	CTHREAD_KEY_FIRST	(cthread_key_t)1	/* first free key */
-#else	CTHREAD_DATA
+#else	 /* CTHREAD_DATA */
 #define	CTHREAD_KEY_FIRST	CTHREAD_KEY_NULL	/* first free key */
-#endif	CTHREAD_DATA
+#endif	 /* CTHREAD_DATA */
 #define	CTHREAD_KEY_MAX		(cthread_key_t)8	/* max. no. of keys */
 #define	CTHREAD_KEY_NULL	(cthread_key_t)0
 
@@ -42,7 +45,7 @@
  *	Key reserved for cthread_data
  */
 #define	CTHREAD_KEY_RESERVED	CTHREAD_KEY_NULL
-#endif	CTHREAD_DATA
+#endif	 /* CTHREAD_DATA */
 
 
 /* lock protecting key creation */
@@ -185,4 +188,4 @@ cthread_t	t;
 		ASSERT(t == self);
 	}
 }
-#endif	CTHREAD_DATA
+#endif	 /* CTHREAD_DATA */
