@@ -15,6 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include _HURD_IOSERVER_
+#define _HURD_IOSERVER_
+
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <cthreads.h>
@@ -61,3 +64,4 @@ void ioserver_fetch_shared_data (void *);
 void ioserver_put_shared_data (void *);
 
 
+#endif
