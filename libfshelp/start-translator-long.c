@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Miles Bader and Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -93,7 +93,7 @@ static const mach_msg_type_t realnodeType =
 
 /* Wait around for an fsys_startup message on the port PORT from the
    translator on NODE (timing out after TIMEOUT milliseconds), and return a
-   send right for the resulting fsys control port in CONTROL.  If a dead-name
+   send right for the resulting fsys control port in CONTROL.  If a no-senders
    notification is received on PORT, then it will be assumed that the
    translator died, and EDIED will be returned.  If an error occurs, the
    error code is returned, otherwise 0.  */
@@ -107,7 +107,6 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
     {
       mach_msg_header_t head;
       struct fsys_startup_request startup;
-      mach_dead_name_notification_t dead;
     }
   request;
   struct fsys_startup_reply reply;
@@ -119,7 +118,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn,
   if (err)
     return err;
 
-  /* Check whether we actually got a dead-name notification instead.  */
+  /* Check whether we actually got a no-senders notification instead.  */
   if (request.head.msgh_id == MACH_NOTIFY_NO_SENDERS)
     return EDIED;
 
