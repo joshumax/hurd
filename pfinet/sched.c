@@ -87,3 +87,14 @@ become_task (struct sock_user *user)
   current->state = TASK_RUNNING;
   current->isroot = user->isroot;
 }
+
+void
+become_task_protid (struct trivfs_protid *protid)
+{
+  current->pgrp = current->pid = 0;
+  current->flags = 0;
+  current->timeout = 0;
+  current->signal = current->blocked = 0;
+  current->state = TASK_RUNNING;
+  current->isroot = protid->isroot;
+}
