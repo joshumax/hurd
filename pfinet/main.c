@@ -22,6 +22,8 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <error.h>
+#include <argp.h>
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -34,6 +36,9 @@ int trivfs_protid_nportclasses = 1;
 struct port_class *trivfs_cntl_portclasses[1];
 int trivfs_cntl_nportclasses = 1;
 
+/* Option parser.  */
+extern struct argp pfinet_argp;
+
 int
 pfinet_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
@@ -103,31 +108,63 @@ arrange_shutdown_notification ()
 				program_invocation_short_name);
   mach_port_deallocate (mach_task_self (), initport);
 }
+
+static char *already_open = 0;
 
+/* Return an open device called NAME.  If NMAE is 0, and there is a single
+   active device, it is returned, otherwise an error.
+   XXX hacky single-interface version. */
+error_t
+find_device (char *name, struct device **device)
+{
+  if (already_open)
+    if (!name || strcmp (already_open, device) == 0)
+      {
+	*device = &ether_dev;
+	return 0;
+      }
+    else
+      return EBUSY;		/* XXXACK */
+  else if (! name)
+    return EXIO;		/* XXX */
 
+  name = already_open = strdup (name);
+
+  setup_ethernet_device (name);
+
+  /* Default mask is 255.255.255.0.  XXX should be class dependent.  */
+  {
+    char addr[4] = {255, 255, 255, 0};
+    ether_dev.pa_mask = *(u_long *)addr;
+  }
+
+  /* Turn on device. */
+  dev_open (&ether_dev);
+
+  *device = &ether_dev;
+
+  return 0;
+}
+
+/* Call FUN with each active device.  If a call to FUN returns a
+   non-zero value, this function will return immediately.  Otherwise 0 is
+   returned.
+   XXX hacky single-interface version.  */
+error_t
+enumerate_devices (error_t (*fun) (struct device *dev))
+{
+  if (already_open)
+    return (*fun) (&ether_dev);
+  else
+    return 0;
+}
+
 int
 main (int argc,
       char **argv)
 {
-  mach_port_t bootstrap;
   error_t err;
-
-  if (argc < 3 || argc > 4)
-    {
-      fprintf (stderr,
-	       "Usage: %s host-addr ether-device-name [gateway-addr]\n",
-	       argv[0]);
-      exit (1);
-    }
-
-  /* Talk to parent and link us in. */
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    {
-      fprintf (stderr, "%s: Must be started as a translator\n",
-	       argv[0]);
-      exit (1);
-    }
+  mach_port_t bootstrap;
 
   pfinet_bucket = ports_create_bucket ();
   trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
@@ -138,52 +175,28 @@ main (int argc,
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &fsys_identity);
 
-  err = trivfs_startup (bootstrap, 0,
-			trivfs_cntl_portclasses[0], pfinet_bucket,
-			trivfs_protid_portclasses[0], pfinet_bucket, 0);
-  if (err)
-    {
-      perror ("contacting parent");
-      exit (1);
-    }
-
   /* Generic initialization */
 
   init_devices ();
   init_time ();
-  setup_ethernet_device (argv[2]);
+
   inet_proto_init (0);
 
   arrange_shutdown_notification ();
 
-  /* XXX Simulate what should be user-level initialization */
+  /* Parse options.  */
+  argp_parse (&pfinet_argp, argv, argc, 0,0,0);
 
-  /* Simulate SIOCSIFADDR call. */
-  {
-    char addr[4];
+  /* Talk to parent and link us in. */
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  if (bootstrap == MACH_PORT_NULL)
+    error (1, 0, "Must be started as a translator");
 
-    ether_dev.pa_addr = inet_addr (argv[1]);
-
-    /* Mask is 255.255.255.0. */
-    addr[0] = addr[1] = addr[2] = 255;
-    addr[3] = 0;
-    ether_dev.pa_mask = *(u_long *)addr;
-
-    ether_dev.family = AF_INET;
-    ether_dev.pa_brdaddr = ether_dev.pa_addr | ~ether_dev.pa_mask;
-  }
-
-  /* Simulate SIOCADDRT call */
-  {
-    ip_rt_add (0, ether_dev.pa_addr & ether_dev.pa_mask, ether_dev.pa_mask,
-	       0, &ether_dev, 0, 0);
-  }
-
-  if (argv[3])
-    ip_rt_add (RTF_GATEWAY, 0, 0, inet_addr (argv[3]), &ether_dev, 0, 0);
-
-  /* Turn on device. */
-  dev_open (&ether_dev);
+  err = trivfs_startup (bootstrap, 0,
+			trivfs_cntl_portclasses[0], pfinet_bucket,
+			trivfs_protid_portclasses[0], pfinet_bucket, 0);
+  if (err)
+    error (1, errno, "contacting parent");
 
   /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,
