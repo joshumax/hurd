@@ -1,3 +1,10 @@
+2002-05-31  Roland McGrath  <roland@frob.com>
+
+	* Makefile (LINUXSRCS): Search for .S files as well as .c files
+	for arch-lib-srcs modules.
+
+	* sched.c (net_bh_worker): Add return stmt to quiet gcc warning.
+
 2002-05-29  Roland McGrath  <roland@frob.com>
 
 	* ethernet.c (setup_ethernet_device): u_int -> size_t
