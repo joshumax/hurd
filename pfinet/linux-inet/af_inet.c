@@ -577,6 +577,7 @@ static int inet_create(struct socket *sock, int protocol)
 			sk->num = protocol;
 			break;
 
+#ifndef _HURD_
 		case SOCK_PACKET:
 			if (!suser()) 
 			{
@@ -595,6 +596,7 @@ static int inet_create(struct socket *sock, int protocol)
 						 */
 			sk->num = protocol;
 			break;
+#endif
 
 		default:
 			kfree_s((void *)sk, sizeof(*sk));
