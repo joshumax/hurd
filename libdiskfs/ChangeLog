@@ -1,3 +1,23 @@
+Mon Nov 18 17:02:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* diskfs.h (struct node): Remove istranslated field.
+	* io-stat.c (diskfs_S_io_stat): Set S_IATRANS & S_IROOT bits in
+	st_mode field of returned buffer if appropiate.
+	* dir-lookup.c (diskfs_S_dir_lookup): Use S_IPTRANS bit in dn_stat
+ 	st_mode field rather than istranslated field.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise.
+	* file-inv-trans.c (diskfs_S_file_invoke_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* node-drop.c (diskfs_drop_node): Likewise.
+	* trans-callback.c (_diskfs_translator_callback1_fn): Likewise.
+	* dir-rmdir.c (diskfs_S_dir_rmdir): Likewise.
+
+	* file-get-transcntl.c (diskfs_S_file_get_translator_cntl): Use
+	MACH_MSG_TYPE_MOVE_SEND to return *ctl, rather than COPY.
+	(diskfs_S_file_get_translator_cntl): Correctly test for errors
+	from fshelp_fetch_control.
+
 Fri Nov 15 14:06:16 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* protid-make.c (diskfs_finish_protid): Fix typo.

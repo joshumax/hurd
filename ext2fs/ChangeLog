@@ -1,3 +1,13 @@
+Mon Nov 18 17:14:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ialloc.c (diskfs_alloc_node): Clear S_IPTRANS bit in ST->st_mode
+	instead of NP->istranslated.
+	* inode.c (read_node): Set S_IPTRANS bit in ST->st_mode (and clear
+	S_ITRANS) rather than NP->istranslated.
+	(write_node): Don't write S_IPTRANS to disk.
+	(diskfs_set_translator): Frob S_IPTRANS bit rather than
+	istranslated field.
+
 Sat Nov 16 17:26:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* storeinfo.c (diskfs_S_file_get_storage_info): diskfs_isuid ->
