@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <unistd.h>
 #include <string.h>
 
 #include <hurd/netfs.h>
@@ -27,26 +28,32 @@
 
 /* Return an alloca'd string containing NAME appended to DIR's path; if
    DIR_PFX_LEN is non-zero, the length of DIR's path is returned in it.  */
-#define path_append(dir, name, dir_pfx_len)					\
-({										\
-   struct ftpfs_dir *_dir = (dir);						\
-   const char *_name = (name);							\
-   size_t *_dir_pfx_len_p = (dir_pfx_len);					\
-   size_t _dir_pfx_len = strlen (_dir->rmt_path) + 1;				\
-   char *_path = alloca (_dir_pfx_len + strlen (_name) + 1);			\
-										\
-   /* Form the composite name.  */						\
-   if (_name && *_name)								\
-     stpcpy (stpcpy (stpcpy (_path, _dir->rmt_path), "/"), _name);		\
-   else										\
-     {										\
-       strcpy (_path, _dir->rmt_path);						\
-       _dir_pfx_len--;								\
-     }										\
-   if (_dir_pfx_len_p)								\
-     *_dir_pfx_len_p = _dir_pfx_len;						\
-										\
-   _path;									\
+#define path_append(dir, name, dir_pfx_len)				      \
+({									      \
+   const char *_dname = (dir)->rmt_path;				      \
+   const char *_name = (name);						      \
+   size_t *_dir_pfx_len_p = (dir_pfx_len);				      \
+   size_t _dir_pfx_len = strlen (_dname) + 1;				      \
+   char *_path = alloca (_dir_pfx_len + strlen (_name) + 1);		      \
+									      \
+   /* Form the composite name.  */					      \
+   if (_name && *_name)							      \
+     if (_dname[0] == '/' && _dname[1] == '\0')				      \
+       {								      \
+	 stpcpy (stpcpy (_path, _dname), _name);		     	      \
+	 _dir_pfx_len--;						      \
+       }								      \
+     else								      \
+       stpcpy (stpcpy (stpcpy (_path, _dname), "/"), _name);		      \
+   else									      \
+     {									      \
+       strcpy (_path, _dname);						      \
+       _dir_pfx_len--;							      \
+     }									      \
+   if (_dir_pfx_len_p)							      \
+     *_dir_pfx_len_p = _dir_pfx_len;					      \
+									      \
+   _path;								      \
 })
 
 /* Free the directory entry E and all resources it consumes.  */
@@ -144,6 +151,7 @@ lookup (struct ftpfs_dir *dir, const char *name, int add)
 	  e->symlink_target = 0;
 	  e->noent = 0;
 	  e->valid = 0;
+	  e->name_timestamp = e->stat_timestamp = 0;
 	  e->ordered_next = 0;
 	  e->ordered_self_p = 0;
 	  e->next = 0;
@@ -219,25 +227,36 @@ ino_t ftpfs_next_inode = 2;
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET.
    True is returned if successful, or false if there was a memory allocation
    error.  TIMESTAMP is used to record the time of this update.  */
-static struct ftpfs_dir_entry *
+static void
 update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
-	      const char *symlink_target, time_t timestamp, int no_lock)
+	      const char *symlink_target, time_t timestamp)
 {
   ino_t ino;
 
-  if (e->stat_timestamp == 0)
-    ino = ftpfs_next_inode++;
-  else
+  if (e->stat.st_ino)
     ino = e->stat.st_ino;
+  else
+    ino = ftpfs_next_inode++;
 
-  e->dirent_timestamp = timestamp;
+  e->name_timestamp = timestamp;
 
-  e->symlink_target = symlink_target ? strdup (symlink_target) : 0;
-  e->stat = *st;
+  if (st)
+    /* The ST and SYMLINK_TARGET parameters are only valid if ST isn't 0.  */
+    {
+      e->stat = *st;
+      e->stat_timestamp = timestamp;
+
+      if (!e->symlink_target || !symlink_target
+	  || strcmp (e->symlink_target, symlink_target) != 0)
+	{
+	  if (e->symlink_target)
+	    free (e->symlink_target);
+	  e->symlink_target = symlink_target ? strdup (symlink_target) : 0;
+	}
+    }
+
+  /* The st_ino field is always valid.  */
   e->stat.st_ino = ino;
-  e->stat_timestamp = timestamp;
-
-  return e;
 }
 
 /* Add the timestamp TIMESTAMP to the set used to detect bulk stats, and
@@ -247,7 +266,7 @@ static int
 need_bulk_stat (time_t timestamp, struct ftpfs_dir *dir)
 {
   time_t period = dir->fs->params.bulk_stat_period;
-  unsigned limit = dir->fs->params.bulk_stat_limit;
+  unsigned threshold = dir->fs->params.bulk_stat_threshold;
 
   if (timestamp > dir->bulk_stat_base_stamp + period * 3)
     /* No stats done in a while, just start over.  */
@@ -270,7 +289,7 @@ need_bulk_stat (time_t timestamp, struct ftpfs_dir *dir)
 
   return
     (dir->bulk_stat_count_first_half + dir->bulk_stat_count_second_half)
-    > limit;
+    > threshold;
 }
 
 static void
@@ -297,40 +316,57 @@ static error_t
 update_ordered_entry (const char *name, const struct stat *st,
 		      const char *symlink_target, void *hook)
 {
-  struct dir_fetch_state *rds = hook;
-  struct ftpfs_dir_entry *e = lookup (rds->dir, name, 1), *pe;
+  struct dir_fetch_state *dfs = hook;
+  struct ftpfs_dir_entry *e = lookup (dfs->dir, name, 1), *pe;
 
-  if (!e || !update_entry (e, st, symlink_target, rds->timestamp, 0))
+  if (! e)
     return ENOMEM;
 
+  update_entry (e, st, symlink_target, dfs->timestamp);
   e->valid = 1;
 
   assert (! e->ordered_self_p);
   assert (! e->ordered_next);
 
   /* Position E in the ordered chain.  */
-  pe = rds->prev_entry;		/* Previously seen entry.  */
+  pe = dfs->prev_entry;		/* Previously seen entry.  */
   if (pe)
     e->ordered_self_p = &pe->ordered_next; /* Put E after PE.  */
   else
-    e->ordered_self_p = &rds->dir->ordered; /* Put E at beginning.  */
-  assert (! *e->ordered_self_p);	/* There shouldn't be anything in E's place. */
+    e->ordered_self_p = &dfs->dir->ordered; /* Put E at beginning.  */
+  assert (! *e->ordered_self_p);/* There shouldn't be anything in E's place. */
 
-  *e->ordered_self_p = e;		/* Put E there.  */
-  rds->prev_entry = e;		/* Put the next entry after this one.  */
+  *e->ordered_self_p = e;	/* Put E there.  */
+  dfs->prev_entry = e;		/* Put the next entry after this one.  */
 
   return 0;
 }
 
-/* Refresh DIR from the directory DIR_NAME in the filesystem FS.  */
+/* Update the directory entry for NAME, rearranging the entries to reflect
+   the order in which they are sent from the server, and setting their valid
+   bits so that obsolete entries can be deleted.  HOOK points to the state
+   from ftpfs_dir_fetch.  */
 static error_t
-refresh_dir (struct ftpfs_dir *dir, time_t timestamp)
+update_ordered_name (const char *name, void *hook)
+{
+  /* We just do the same thing as for stats, but without the stat info.  */
+  return update_ordered_entry (name, 0, 0, hook);
+}
+
+/* Refresh DIR from the directory DIR_NAME in the filesystem FS.  If
+   UPDATE_STATS is true, then directory stat information will also be
+   updated.  */
+static error_t
+refresh_dir (struct ftpfs_dir *dir, int update_stats, time_t timestamp)
 {
   error_t err;
   struct ftp_conn *conn;
-  struct dir_fetch_state rds;
+  struct dir_fetch_state dfs;
 
-  if (dir->timestamp + dir->fs->params.dir_timeout >= timestamp)
+  if ((update_stats
+       ? dir->stat_timestamp + dir->fs->params.stat_timeout
+       : dir->name_timestamp + dir->fs->params.name_timeout)
+      >= timestamp)
     /* We've already refreshed this directory recently.  */
     return 0;
 
@@ -356,16 +392,26 @@ refresh_dir (struct ftpfs_dir *dir, time_t timestamp)
 
   reset_bulk_stat_info (dir);
 
-  /* Refetch the directory from the server.  */
-  rds.dir = dir;
-  rds.prev_entry = 0;
-  rds.timestamp = timestamp;
-  err = ftp_conn_get_stats (conn, dir->rmt_path, 1, update_ordered_entry, &rds);
+  /* Info passed to update_ordered_entry.  */
+  dfs.dir = dir;
+  dfs.prev_entry = 0;
+  dfs.timestamp = timestamp;
 
+  /* Refetch the directory from the server.  */
+  if (update_stats)
+    /* Fetch both names and stat info.  */
+    err = ftp_conn_get_stats (conn, dir->rmt_path, 1,
+			      update_ordered_entry, &dfs);
+  else
+    /* Just fetch names.  */
+    err = ftp_conn_get_names (conn, dir->rmt_path, update_ordered_name, &dfs);
+  
   if (! err)
     /* GC any directory entries that weren't seen this time.  */
     {
-      dir->timestamp = timestamp;
+      dir->name_timestamp = timestamp;
+      if (update_stats)
+	dir->stat_timestamp = timestamp;
       sweep (dir);
     }
 
@@ -379,7 +425,7 @@ error_t
 ftpfs_dir_refresh (struct ftpfs_dir *dir)
 {
   time_t timestamp = NOW;
-  return refresh_dir (dir, timestamp);
+  return refresh_dir (dir, 0, timestamp);
 }
 
 /* State shared between ftpfs_dir_entry_refresh and update_old_entry.  */
@@ -409,10 +455,9 @@ update_old_entry (const char *name, const struct stat *st,
   if (strcmp (name, res->entry->name) != 0)
     return EGRATUITOUS;
 
-  if (update_entry (res->entry, st, symlink_target, res->timestamp, 1))
-    return 0;
-  else
-    return ENOMEM;
+  update_entry (res->entry, st, symlink_target, res->timestamp);
+
+  return 0;
 }
 
 /* Refresh stat information for NODE.  This may actually refresh the whole
@@ -445,7 +490,7 @@ ftpfs_refresh_node (struct node *node)
 	/* Stat information needs updating.  */
 	if (need_bulk_stat (timestamp, dir))
 	  /* Refetch the whole directory from the server.  */
-	  err =  refresh_dir (entry->dir, timestamp);
+	  err =  refresh_dir (entry->dir, 1, timestamp);
 	else
 	  {
 	    struct ftp_conn *conn;
@@ -544,9 +589,10 @@ update_new_entry (const char *name, const struct stat *st,
     name += nes->dir_pfx_len;
 
   e = lookup (nes->dir, name, 1);
-  if (!e || !update_entry (e, st, symlink_target, nes->timestamp, 0))
+  if (! e)
     return ENOMEM;
 
+  update_entry (e, st, symlink_target, nes->timestamp);
   nes->entry = e;
 
   return 0;
@@ -590,13 +636,13 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
     }
 
   e = lookup (dir, name, 0);
-  if (!e || e->dirent_timestamp + dir->fs->params.dirent_timeout < timestamp)
+  if (!e || e->name_timestamp + dir->fs->params.name_timeout < timestamp)
     /* Try to fetch info about NAME.  */
     {
       if (need_bulk_stat (timestamp, dir))
 	/* Refetch the whole directory from the server.  */
 	{
-	  err =  refresh_dir (dir, timestamp);
+	  err =  refresh_dir (dir, 1, timestamp);
 	  if (! err)
 	    e = lookup (dir, name, 0);
 	}
@@ -700,7 +746,8 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
   new->rmt_path = rmt_path;
   new->fs = fs;
   new->node = node;
-  new->timestamp = 0;
+  new->stat_timestamp = 0;
+  new->name_timestamp = 0;
   new->bulk_stat_base_stamp = 0;
   new->bulk_stat_count_first_half = 0;
   new->bulk_stat_count_second_half = 0;
