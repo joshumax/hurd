@@ -37,6 +37,7 @@ diskfs_make_node (struct disknode *dn)
   
   fshelp_init_trans_link (&np->translator);
   ioserver_initialize_conch (&np->conch, &np->lock);
+  fshelp_lock_init (&np->userlock);
   
   np->flock_type = LOCK_UN;
   condition_init (&np->flockwait);
