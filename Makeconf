@@ -58,7 +58,8 @@ endif
 # Generic compiler options, appended to whatever the particular makefile set.
 # The config.make file will append the values chosed by configure.
 CPPFLAGS += -I. $(srcdirinc) -I.. $(top_srcdirinc) -I$(top_srcdir)/include \
-	    -D_GNU_SOURCE -D_IO_MTSAFE_IO $($*-CPPFLAGS)
+	    -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
+	    $($*-CPPFLAGS)
 CFLAGS += -Wall -g -O3
 
 # Include the configure-generated file of parameters.
