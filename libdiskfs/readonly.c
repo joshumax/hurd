@@ -1,6 +1,6 @@
 /* Change to/from read-only
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -35,42 +35,44 @@ diskfs_set_readonly (int readonly)
 
   if (readonly != diskfs_readonly)
     {
-      ports_inhibit_class_rpcs (diskfs_protid_class);
-
-      if (readonly)
+      err = ports_inhibit_class_rpcs (diskfs_protid_class);
+      if (! err)
 	{
-	  error_t peropen_writable (void *pi)
+	  if (readonly)
 	    {
-	      if (((struct port_info *)pi)->class == diskfs_protid_class
-		  && (((struct protid *)pi)->po->openstat & O_WRITE))
-		return EBUSY;
-	      else
-		return 0;
+	      error_t peropen_writable (void *pi)
+		{
+		  if (((struct port_info *)pi)->class == diskfs_protid_class
+		      && (((struct protid *)pi)->po->openstat & O_WRITE))
+		    return EBUSY;
+		  else
+		    return 0;
+		}
+
+	      /* Any writable open files?  */
+	      err = ports_bucket_iterate (diskfs_port_bucket, peropen_writable);
+
+	      /* Any writable pagers?  */
+	      if (!err && (diskfs_max_user_pager_prot () & VM_PROT_WRITE))
+		err = EBUSY;
+
+	      if (!err)
+		/* Sync */
+		{
+		  diskfs_sync_everything (1);
+		  diskfs_set_hypermetadata (1, 1);
+		  sleep (1);	/* XXX! */
+		}
 	    }
-
-	  /* Any writable open files?  */
-	  err = ports_bucket_iterate (diskfs_port_bucket, peropen_writable);
-
-	  /* Any writable pagers?  */
-	  if (!err && (diskfs_max_user_pager_prot () & VM_PROT_WRITE))
-	    err = EBUSY;
 
 	  if (!err)
-	    /* Sync */
 	    {
-	      diskfs_sync_everything (1);
-	      diskfs_set_hypermetadata (1, 1);
-	      sleep (1);	/* XXX! */
+	      diskfs_readonly = readonly;
+	      diskfs_readonly_changed (readonly);
 	    }
-	}
 
-      if (!err)
-	{
-	  diskfs_readonly = readonly;
-	  diskfs_readonly_changed (readonly);
+	  ports_resume_class_rpcs (diskfs_protid_class);
 	}
-
-      ports_resume_class_rpcs (diskfs_protid_class);
     }
 
   return err;
