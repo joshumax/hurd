@@ -4,7 +4,7 @@
 #include <cthreads.h>
 
 typedef struct { } spinlock_t;
-#define SPIN_LOCK_UNLOCKED (spinlock_t) { }
+#define SPIN_LOCK_UNLOCKED { }
 
 #undef	spin_lock_init
 #undef	spin_lock

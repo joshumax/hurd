@@ -1,5 +1,9 @@
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
+	* Makefile: Revert last change.
+	* glue-include/asm/spinlock.h (SPIN_LOCK_UNLOCKED): Do not use a
+	compound literal, which is not constant.
+	
 	* Makefile: For now, filter -std=gnu99 out of CPPFLAGS.
 
 2002-06-15  Roland McGrath  <roland@frob.com>

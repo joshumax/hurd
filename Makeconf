@@ -62,10 +62,10 @@ ifneq (.,$(dir))
 INCLUDES += -I.. $(top_srcdirinc)
 endif
 INCLUDES += -I$(..)include -I$(top_srcdir)/include
-CPPFLAGS += -std=gnu99 $(INCLUDES) \
+CPPFLAGS += $(INCLUDES) \
 	     -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
-CFLAGS += -Wall -g -O3
+CFLAGS += -std=gnu99 -Wall -g -O3
 
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.

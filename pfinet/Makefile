@@ -95,10 +95,6 @@ CPPFLAGS += -imacros $(srcdir)/config.h		\
 	    -I$(srcdir)/glue-include		\
 	    -I$(srcdir)/linux-src/include
 
-# GCC 3.2 is a bit buggy.  See #7946 and #7947 in GCC's GNATS
-# database.
-CPPFLAGS := $(filter-out -std=gnu99, $(CPPFLAGS))
-
 asm/checksum.h: ../config.status
 	mkdir -p $(@D)
 	echo > $@.new \

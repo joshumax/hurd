@@ -1,5 +1,8 @@
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
+	* Makeconf (CPPFLAGS): Move -std=gnu99 option to ...
+	(CFLAGS): ... here.
+
 	* Makefile (prog-subdirs): Add console-client.
 
 2002-09-05  Roland McGrath  <roland@frob.com>
