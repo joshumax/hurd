@@ -1,3 +1,11 @@
+Mon Oct 14 21:36:29 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* lmail.c: New file.
+	* Makefile (targets): Add mail.local.
+	(SRCS): Add lmail.c.
+	(rc, mail.local): New rules.
+	(%: %.sh): Rule removed.
+
 Thu Oct 10 16:12:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* rc.sh: Startup up sendmail if possible.
