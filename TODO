@@ -190,8 +190,6 @@ See `tasks', the exported task list.
 ** Fix bash to turn on interrupts around syscalls more generally,
     especially chdir.
 ** Make su work.
-** Bug: `hostname' command with no /etc/hostname hangs the system 
-   with disk light going.
 ** talk doesn't work
 ** login: Make --retry work correctly when invoked via a suid shell
     script by other than root (it doesn't now if the script specifies
