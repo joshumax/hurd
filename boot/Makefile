@@ -36,6 +36,8 @@ LDFLAGS += -Wl,-T -Wl,frank1.ld
 #/usr/local/bin/boot: boot
 #	cp boot /usr/local/bin/boot
 
+all: boot.a
+
 ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
