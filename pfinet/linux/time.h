@@ -4,10 +4,10 @@
 #include <sys/time.h>
 #include "mapped-time.h"
 
-extern inline void 
+extern inline void
 do_gettimeofday (struct timeval *tp)
 {
-  fill_timeval (tp);
+  maptime_read (mapped_time, &_xtime_buf);
 }
 
 #endif

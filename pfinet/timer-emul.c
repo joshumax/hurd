@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -21,6 +21,7 @@
 #include <linux/timer.h>
 #include <asm/system.h>
 #include <linux/sched.h>
+#include <error.h>
 #include <string.h>
 #include "pfinet.h"
 
@@ -144,24 +145,17 @@ init_timer (struct timer_list *timer)
 void
 init_time ()
 {
-  device_t timedev;
-  memory_object_t timeobj;
+  error_t err;
   struct timeval tp;
 
-  device_open (master_device, 0, "time", &timedev);
-  device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t),
-	      &timeobj, 0);
-  vm_map (mach_task_self (), (vm_address_t *)&mapped_time,
-	  sizeof (mapped_time_value_t), 0, 1, timeobj, 0, 0,
-	  VM_PROT_READ, VM_PROT_READ, VM_INHERIT_NONE);
-  mach_port_deallocate (mach_task_self (), timedev);
-  mach_port_deallocate (mach_task_self (), timeobj);
+  err = maptime_map (0, 0, &mapped_time);
+  if (err)
+    error (2, err, "cannot map time device");
 
-  fill_timeval (&tp);
+  maptime_read (mapped_time, &tp);
 
   root_jiffies = (long long) tp.tv_sec * HZ
     + ((long long) tp.tv_usec * HZ) / 1000000;
 
   cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
 }
-

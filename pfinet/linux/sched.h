@@ -53,9 +53,9 @@ void schedule (void);
 /* This function is used only to send SIGPIPE to the current
    task.  In all such cases, EPIPE is returned anyhow.  In the
    Hurd, servers are not responsible for SIGPIPE; the library
-   does that itself upon receiving EPIPE.  So we can just 
+   does that itself upon receiving EPIPE.  So we can just
    NOP such calls.  */
-extern inline int 
+extern inline int
 send_sig (u_long signo, struct task_struct *task, int priv)
 {
   assert (signo == SIGPIPE);
@@ -74,7 +74,7 @@ static struct timeval _xtime_buf;
 extern inline struct timeval
 fetch_xtime ()
 {
-  fill_timeval (&_xtime_buf);
+  maptime_read (mapped_time, &_xtime_buf);
   return _xtime_buf;
 }
 
