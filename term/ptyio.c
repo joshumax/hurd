@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -54,9 +54,7 @@ static int ptyopen = 0;
 
 static int nptyperopens = 0;
 
-
-static void ptyio_init (void) __attribute__ ((constructor));
-static void
+void
 ptyio_init ()
 {
   condition_implies (inputq->wait, &pty_select_wakeup);
