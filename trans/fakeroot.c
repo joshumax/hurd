@@ -645,8 +645,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 error_t
 netfs_report_access (struct iouser *cred, struct node *np, int *types)
 {
-  *types = np->nn->openmodes
-    & ((np->nn_stat.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) ? ~0 : ~O_EXEC);
+  *types = O_RDWR|O_EXEC;
   return 0;
 }
 
