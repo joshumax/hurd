@@ -26,7 +26,7 @@ prog-subdirs = auth boot exec fstests init.trim \
 	       proc term ufs utils trans fsck bsdfsck \
 	       devio newfs ext2fs benchmarks pflocal tmpfs defpager \
 	       login nfs
-other-subdirs = hurd doc init tmpfs dev lib
+other-subdirs = hurd doc init tmpfs dev
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = 
 working-prog-subdirs := $(filter-out \
