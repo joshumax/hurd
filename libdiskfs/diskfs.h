@@ -18,12 +18,6 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#ifdef MAKING_DISKFS
-#include "../machine/diskfs_machdep.h"
-#else
-#include <hurd/machine/diskfs_machdep.h>
-#endif
-
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library. */
 struct protid 
@@ -860,5 +854,32 @@ int ports_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    memory_object, interrupt, and notify interfaces.  All the server
    routines have the prefix `diskfs_S_'; `in' arguments of type
    file_t or io_t appear as `struct protid *' to the stub.  */
+
+
+/* Exception handling */
+
+#include <cthreads.h>
+#include <setjmp.h>
+struct thread_stuff
+{
+  jmp_buf buf;
+  struct thread_stuff *link;
+};
+
+#define diskfs_catch_exception() \
+  ({									    \
+    struct thread_stuff *tmp;						    \
+    tmp = __builtin_alloca (sizeof (struct thread_stuff));		    \
+    tmp->link = (struct thread_stuff *)cthread_data (cthread_self ());	    \
+    cthread_set_data (cthread_self (), (any_t)tmp);			    \
+    setjmp (tmp->buf);							    \
+  })
+
+#define diskfs_end_catch_exception() \
+  (void) ({								    \
+    struct thread_stuff *tmp;						    \
+    tmp = (struct thread_stuff *)cthread_data (cthread_self ());	    \
+    (void) cthread_set_data (cthread_self (), (any_t)tmp->link);	    \
+  })
 
 #endif
