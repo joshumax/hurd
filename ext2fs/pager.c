@@ -22,7 +22,7 @@
 #include "ext2fs.h"
 
 /* A ports bucket to hold pager ports.  */
-static struct port_bucket *pager_bucket;
+struct port_bucket *pager_bucket;
 
 spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 
@@ -665,7 +665,7 @@ create_disk_pager (void)
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
 
   upi->type = DISK;
-  disk_pager_setup (upi);
+  disk_pager_setup (upi, MAY_CACHE);
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
