@@ -20,7 +20,7 @@
 #include <hurd/paths.h>
 
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_file_set_translator (struct protid *cred,
 			      int flags,
 			      int killtrans_flags,
