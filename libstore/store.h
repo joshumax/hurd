@@ -78,7 +78,7 @@ struct store
   void *misc;			/* malloced */
   size_t misc_len;
 
-  struct store_class *class;
+  const struct store_class *class;
 
   /* A list of sub-stores.  The interpretation of this is type-specific.  */
   struct store **children;
@@ -142,7 +142,8 @@ struct store_class
 
   /* Decode from ENC a new store, which return in STORE.  CLASSES is used to
      lookup child classes.  */
-  error_t (*decode) (struct store_enc *enc, struct store_class *classes,
+  error_t (*decode) (struct store_enc *enc,
+		     const struct store_class *const *classes,
 		     struct store **store);
 
   /* Modify flags that reflect backend state, such as STORE_HARD_READONLY and
@@ -166,8 +167,21 @@ struct store_class
 		    const struct store_run *runs, size_t num_runs,
 		    struct store **store);
 
-  /* For making a list of classes to pass to e.g. store_create.  */
-  struct store_class *next;
+  /* Open a new store called NAME in this class.  CLASSES is supplied in case
+     it's desirable to open a sub-store in some manner.  */
+  error_t (*open) (const char *name, int flags,
+		   const struct store_class *const *classes,
+		   struct store **store);
+
+  /* Given a user argument ARG, this function should check it for syntactic
+     validaty, or print a syntax error, using ARGP_STATE in the normal
+     manner; if zero is returned, then this argument is assumed valid, and
+     can be passed to the open function.  If ARG is 0, then there were *no*
+     arguments specified; in this case, returning EINVAL means that this is
+     not kosher.  If PARSE is 0, then it is assumed that if this class has an
+     OPEN function, then validity can't be syntactically determined.  */
+  error_t (*validate_name) (const char *name,
+			    const struct store_class *const *classes);
 };
 
 /* Return a new store in STORE, which refers to the storage underlying
@@ -175,7 +189,8 @@ struct store_class
    it is 0, STORE_STD_CLASSES is used.  FLAGS is set with store_set_flags.  A
    reference to SOURCE is created (but may be destroyed with
    store_close_source).  */
-error_t store_create (file_t source, int flags, struct store_class *classes,
+error_t store_create (file_t source, int flags,
+		      const struct store_class *const *classes,
 		      struct store **store);
 
 void store_free (struct store *store);
@@ -185,13 +200,14 @@ void store_free (struct store *store);
    provider; if it is 0, STORE_STD_CLASSES is used.  FLAGS is set with
    store_set_flags.  A reference to the open file is created (but may be
    destroyed with store_close_source).  */
-error_t store_open (char *name, int flags, struct store_class *classes,
+error_t store_open (const char *name, int flags,
+		    const struct store_class *const *classes,
 		    struct store **store);
 
 /* Allocate a new store structure with class CLASS, and the various other
    fields initialized to the given parameters.  */
 struct store *
-_make_store (struct store_class *class, mach_port_t port, int flags,
+_make_store (const struct store_class *class, mach_port_t port, int flags,
 	     size_t block_size, const struct store_run *runs, size_t num_runs,
 	     off_t end);
 
@@ -320,20 +336,15 @@ error_t store_remap_create (struct store *source,
 error_t store_zero_create (size_t size, int flags, struct store **store);
 
 /* Standard store classes implemented by libstore.  */
-extern struct store_class *store_std_classes;
+extern const struct store_class *const store_std_classes[];
 
-/* Add CLASS to the list of standard classes.  It must not already be in the
-   list, or in any other, as its next field is simply written over.  */
-void _store_add_std_class (struct store_class *class);
-
-/* Use this macro to automagically add a class to STORE_STD_CLASSES at
-   startup.  */
-#define _STORE_STD_CLASS(class_struct)					    \
-static void _store_init_std_##class_struct () __attribute__ ((constructor));\
-static void _store_init_std_##class_struct ()				    \
-{									    \
-  _store_add_std_class (&class_struct);					    \
-}
+extern const struct store_class store_device_class;
+extern const struct store_class store_file_class;
+extern const struct store_class store_zero_class;
+extern const struct store_class store_ileave_class;
+extern const struct store_class store_concat_class;
+extern const struct store_class store_remap_class;
+extern const struct store_class store_query_class;
 
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
@@ -401,7 +412,8 @@ error_t store_encode (const struct store *store, struct store_enc *enc);
    defines the mapping from hurd storage class ids to store classes; if it is
    0, STORE_STD_CLASSES is used.  If nothing else is to be done with ENC, its
    contents may then be freed using store_enc_dealloc.  */
-error_t store_decode (struct store_enc *enc, struct store_class *classes,
+error_t store_decode (struct store_enc *enc,
+		      const struct store_class *const *classes,
 		      struct store **store);
 
 /* Calls the allocate_encoding method in each child store of STORE,
@@ -418,7 +430,7 @@ error_t store_encode_children (const struct store *store,
 /* Decodes NUM_CHILDREN from ENC, storing the results into successive
    positions in CHILDREN.  */
 error_t store_decode_children (struct store_enc *enc, int num_children,
-			       struct store_class *classes,
+			       const struct store_class *const *classes,
 			       struct store **children);
 
 /* Call FUN with the vector RUNS of length NUM_RUNS extracted from ENC.  */
@@ -448,9 +460,21 @@ error_t store_std_leaf_decode (struct store_enc *enc,
 
 /* An argument parser that may be used for parsing a simple command line
    specification for stores.  The accompanying input parameter must be a
-   pointer to a location in which to store the resulting pointer to a struct
-   store_parsed.  */
+   pointer to a struct store_argp_params.  */
 extern struct argp store_argp;
+
+/* The structure used to pass args back and forth from STORE_ARGP.  */
+struct store_argp_params
+{
+  /* The resulting parsed result.  */
+  struct store_parsed *result;
+
+  /* If --store-type isn't specified use this; 0 is equivalent to "query".  */
+  const char *default_type;
+
+  /* The set of classes used to validate store-types and argument syntax. */
+  const struct store_class *const *classes;
+};
 
 /* The result of parsing a store, which should be enough information to open
    it, or return the arguments.  */
@@ -461,7 +485,6 @@ void store_parsed_free (struct store_parsed *parsed);
 
 /* Open PARSED, and return the corresponding store in STORE.  */
 error_t store_parsed_open (const struct store_parsed *parsed, int flags,
-			   struct store_class *classes,
 			   struct store **store);
 
 /* Add the arguments  PARSED, and return the corresponding store in STORE.  */
