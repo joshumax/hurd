@@ -46,6 +46,7 @@ diskfs_S_file_exec (struct protid *cred,
 {
   struct node *np;
   error_t err;
+  mach_port_t newauth;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -67,8 +68,15 @@ diskfs_S_file_exec (struct protid *cred,
       && !diskfs_isuid (0, cred))
     flags |= EXEC_SECURE|EXEC_NEWTASK;
 
+  /* If the user can't read the file, then we should use a new task,
+     which would be inaccessible to the user.  Actually, this doesn't
+     work, because the proc server will still give out the task port
+     to the user.  Too many things depend on that that it can't be
+     changed.  So this vague attempt isn't even worth trying.  */
+#if 0
   if (diskfs_access (np, S_IREAD, cred))
     flags |= EXEC_NEWTASK;
+#endif
 
   err = exec_exec (diskfs_exec, 
 		   (ports_get_right 
