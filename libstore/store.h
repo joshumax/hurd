@@ -443,6 +443,16 @@ error_t store_gunzip_create (struct store *from, int flags,
 error_t store_gunzip_open (const char *name, int flags,
 			   const struct store_class *const *classes,
 			   struct store **store);
+
+/* Return a new store in STORE that multiplexes multiple physical volumes
+   from PHYS as one larger virtual volume.  SWAP_VOLS is a function that will
+   be called whenever the volume currently active isn't correct.  PHYS is
+   consumed.  */
+error_t store_mvol_create (struct store *phys,
+			   error_t (*swap_vols) (struct store *store, size_t new_vol,
+						 ssize_t old_vol),
+			   int flags,
+			   struct store **store);
 
 /* Standard store classes implemented by libstore.  */
 extern const struct store_class *const store_std_classes[];
@@ -458,6 +468,15 @@ extern const struct store_class store_query_class;
 extern const struct store_class store_copy_class;
 extern const struct store_class store_gunzip_class;
 extern const struct store_class store_typed_open_class;
+
+/* The following are not included in STORE_STD_CLASSES.  */
+extern const struct store_class store_mvol_class;
+
+/* Concatenates the store class vectors in CV1 and CV2, and returns a new
+   (malloced) vector in CONCAT.  */
+error_t store_concat_class_vectors (struct store_class **cv1,
+				    struct store_class **cv2,
+				    struct store_class ***concat);
 
 /* Used to hold the various bits that make up the representation of a store
    for transmission via rpc.  See <hurd/hurd_types.h> for an explanation of
