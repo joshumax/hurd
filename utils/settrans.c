@@ -195,7 +195,7 @@ main(int argc, char *argv[])
     file_set_translator(node,
 			passive_flags, active_flags, goaway_flags,
 			argz, argz_len,
-			active_control, MACH_MSG_TYPE_MOVE_SEND);
+			active_control, MACH_MSG_TYPE_COPY_SEND);
   if (err)
     error(5, err, "%s", node_name);
 
