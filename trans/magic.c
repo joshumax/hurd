@@ -1,6 +1,6 @@
 /* A translator for returning FS_RETRY_MAGIC strings.
 
-   Copyright (C) 1999, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1999,2001,02 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -243,7 +243,7 @@ error_t
 trivfs_S_dir_readdir (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      char **data,
-		      u_int *datalen,
+		      size_t *datalen,
 		      boolean_t *data_dealloc,
 		      int entry,
 		      int nentries,
