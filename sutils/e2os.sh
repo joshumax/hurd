@@ -83,7 +83,7 @@ trap "/bin/rm -f $SB $ERRS" 0
 
 # Read the superblock
 $DD 2>"$ERRS" if="$DEVICE" of="$SB" bs=1k skip=1 count=1 \
-|| { $SED 1>&2 "s;^$DD:;$0:;" "$ERRS"; exit 2 }
+|| { $SED 1>&2 "s;^$DD:;$0:;" "$ERRS"; exit 2; }
 
 # Extract a word of SZ bytes from byte offset POS in the superblock
 # Optional arg FMT is what format to use (x = hex, d = decimal)
@@ -129,7 +129,7 @@ if test "$OS"; then
 
   # Write the superblock
   $DD 2>"$ERRS" if="$SB" of="$DEVICE" bs=1k seek=1 count=1 \
-  || { $SED 1>&2 "s;^$DD:;$0:;" "$ERRS"; exit 6 }
+  || { $SED 1>&2 "s;^$DD:;$0:;" "$ERRS"; exit 6; }
 else
   # Print the os field.
   OS="`sbget $SB_OS`"
