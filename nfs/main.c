@@ -23,12 +23,16 @@
 #include <stdio.h>
 #include <device/device.h>
 #include "nfs.h"
+#include <netinet/in.h>
+#include <unistd.h>
 
 int
 main ()
 {
   mach_port_t bootstrap;
-  static volatile int hold = 1;
+  static volatile int hold = 0;
+  struct sockaddr_in addr;
+  int ret;
 
   while (hold);
     
@@ -36,6 +40,22 @@ main ()
   netfs_init ();
   
   main_udp_socket = socket (PF_INET, SOCK_DGRAM, 0);
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons (IPPORT_RESERVED);
+  do
+    {
+      addr.sin_port = htons (ntohs (addr.sin_port) - 1);
+      ret = bind (main_udp_socket, (struct sockaddr *)&addr, 
+		  sizeof (struct sockaddr_in));
+    }
+  while ((ret == -1) && (errno == EADDRINUSE));
+  if (ret == -1)
+    {
+      perror ("binding main udp socket");
+      exit (1);
+    }
+
   soft_mount_retries = 3;
 
   {
@@ -59,8 +79,9 @@ main ()
   cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
   cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));
   
+  hostname = malloc (1000);
+  gethostname (hostname, 1000);
   netfs_root_node = mount_root ("/home/gd4", "duality.gnu.ai.mit.edu");
-  hostname = "";
 
   if (!netfs_root_node)
     exit (1);
