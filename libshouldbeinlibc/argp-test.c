@@ -22,7 +22,47 @@
 #include <argp.h>
 
 char *argp_program_version = "argp-test 1.0";
+
+struct argp_option sub_options[] =
+{
+  {"subopt1",       's',     0,  0, "Nested option 1"},
+  {"subopt2",       'S',     0,  0, "Nested option 2"},
 
+  { 0, 0, 0, 0, "Some more nested options:", 10},
+  {"subopt3",       'p',     0,  0, "Nested option 3"},
+
+  {"subopt4",       'q',     0,  0, "Nested option 4", 1},
+
+  {0}
+};
+
+static const char sub_args_doc[] = "STRING...\n-";
+static const char sub_doc[] = "\vThis is the doc string from the sub-arg-parser.";
+
+static error_t 
+sub_parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case ARGP_KEY_NO_ARGS:
+      printf ("NO SUB ARGS\n");
+      break;
+    case ARGP_KEY_ARG:
+      printf ("SUB ARG: %s\n", arg);
+      break;
+
+    case 's' : case 'S': case 'p': case 'q':
+      printf ("SUB KEY %c\n", key);
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+      
+static struct argp sub_argp = { sub_options, sub_parse_opt, sub_args_doc, sub_doc };
+
 #define OPT_PGRP -1
 #define OPT_SESS -2
 
@@ -52,7 +92,7 @@ the current process)"},
   {0}
 };
 
-static const char args_doc[] = "STRING...\n-";
+static const char args_doc[] = "STRING";
 static const char doc[] = "Test program for argp.";
 
 static error_t 
@@ -63,10 +103,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case ARGP_KEY_NO_ARGS:
       printf ("NO ARGS\n");
       break;
+
     case ARGP_KEY_ARG:
-      if (state->arg_num == 0 && strcmp (arg, "-") == 0
-	  && state->next < state->argc)
-	argp_usage (state);
+      if (state->arg_num > 0)
+	return ARGP_ERR_UNKNOWN; /* Leave it for the sub-arg parser.  */
       printf ("ARG: %s\n", arg);
       break;
 
@@ -91,8 +131,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
-static struct argp argp = { options, parse_opt, args_doc, doc };
-
+static struct argp_child argp_children[] = { { &sub_argp }, { 0 } };
+static struct argp argp = { options, parse_opt, args_doc, doc, argp_children };
+
 int
 main (int argc, char **argv)
 {
