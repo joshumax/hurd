@@ -23,7 +23,7 @@ FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-rename.c    \
 	dir-rmdir.c dir-unlink.c file-chauthor.c file-chflags.c file-chown.c \
 	file-get-trans.c file-get-transcntl.c file-getfh.c file-getlinknode.c \
 	file-pathconf.c file-set-trans.c file-statfs.c file-sync.c 	    \
-	file-syncfs.c file-truncate.c file-utimes.c file-getcontrol.c       \
+	file-syncfs.c file-set-size.c file-utimes.c file-getcontrol.c       \
 	file-lock.c file-chmod.c dir-readdir.c file-lock-stat.c file-exec.c \
 	dir-chg.c file-chg.c file-access.c file-inv-trans.c
 IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c 	    \
