@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -57,7 +57,7 @@ diskfs_drop_node (struct node *np)
       diskfs_free_node (np, savemode);
     }
   else
-    diskfs_node_update (np, 0);
+    diskfs_node_update (np, diskfs_synchronous);
 
   if (np->dirmod_reqs)
     {
