@@ -2,12 +2,15 @@
 @setfilename hurd.info
 
 @c FIXME: might it be useful to have a glossary?
+@c   tb: yes, indeed.  very much so.  If you provide a list of words,
+@c   tb: then I'll write definitions.
 
 @c FIXME: Please use the active voice whenever possible.  There are
 @c a lot of sentences here that use passive voice, and it's therefore
 @c hard for me to tell who is doing what to whom.  I have not changed
 @c those sentences because I did not know what to make the subject and
 @c what the object.
+@c   tb: can you mark the unclear sentences so I can fix them up?
 
 @c FIXME: Be consistent with mood -- that is, when writing the
 @c descriptions of functions, either write them all as declaratives (as
@@ -18,6 +21,9 @@
 @c cleanup function').  This inconsistency is confusing.  A particularly
 @c confusing example is the description of `pager_unlock_page': it reads
 @c `A page should be made writable.'
+@c   tb: This is, I think, a consequence of many of the sections having
+@c   tb: been written by cut-and-paste from the header files (which is a
+@c   tb: decent way to start, but the results do need patching up).
 
 @c FIXME: Might we want to use some sort of highlighting when we
 @c refer to libraries by an abbreviated version of their name?  For
@@ -26,9 +32,15 @@
 @c we bother to spell out its full name, we use `@code', as we should;
 @c but when we abbreviate the name to `fshelp', we use no highlighting
 @c at all.  These un-highlighted abbreviated names look odd to me.
+@c   tb: Yes, perhaps so.  We should consult a Texinfo god for advice.
 
 @c FIXME: I think we should say `zero' instead of `NULL' or `NUL'.
 @c Currently, this document uses all three, which is confusing.
+@c   tb: I see no uses of "NULL".  "null" is used, as an adjective,
+@c   tb: which is synonymous with "zero" for pointers, but has different
+@c   tb: connotations.  "NUL" is an ASCII character, and is explicitly
+@c   tb: used only as such.
+
 
 @c FIXME: This document sometimes says something MUST be
 @c such-and-such, and other times says something SHOULD be
@@ -47,6 +59,27 @@
 @c nor may they ever change.  The server must fix the identification of
 @c a set of uids and gids with a particular port at the moment of the
 @c port's creation.'
+@c   tb: If the node is not locked on entry to diskfs_create_protid,
+@c   tb: then the user (the program linking against libdiskfs) is
+@c   tb: violating the interface, and the results are Undefined.  The
+@c   tb: resulting filesystem will experience difficult-to-trace and
+@c   tb: apparently random crashes and data corruption.   
+@c   tb: We don't WANT such functions to have to check for and return
+@c   tb: error codes any more than we want scanf to try and diagnose
+@c   tb: stray pointers.  But this does not mean that all things are as
+@c   tb: clear as they should be, either.  "must" means "if you don't do
+@c   tb: this, then you are violating the interface".  "should" often
+@c   tb: means the same same thing, sometimes it's looser.  The real
+@c   tb: issue here is that we should define exactly what the
+@c   tb: consequences of violating an interface are.  In the case of
+@c   tb: library interfaces, it means that the resulting program's
+@c   tb: behavior is undefined.  In the case of server interfaces, it
+@c   tb: means that one has Broken The Rules and that other programs
+@c   tb: will behave in correspondingly bad ways.  In any case, some
+@c   tb: careful auditing and editing of this kind of thing needs to
+@c   tb: happen, but not until we have written more actual text.
+
+
 
 @c Get the Hurd version we are documenting.
 @include version.texi
@@ -61,11 +94,11 @@
 
 @dircategory Kernel
 @direntry
-* Hurd: (hurd).                 Using and programming the Hurd kernel servers.
+* Hurd: (hurd).  Using and programming the Hurd kernel servers.
 @end direntry
 
 @ifinfo
-Copyright @copyright{} 1994-1998 Free Software Foundation, Inc.
+Copyright @copyright{} 1994-1999 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -344,20 +377,21 @@ If you are an end-user and you are looking for help on running the Hurd,
 the first few chapters of this manual describe the essential parts of
 installing, starting up, and shutting down a Hurd workstation.  If you
 need help with a specific program, the best way to use this manual is to
-find the program's name in the index and go directly to the appropriate section.  You
-may also wish to try running @kbd{@var{program} --help}, which will
-display a brief usage message for @var{program} (@pxref{Foundations}).
+find the program's name in the index and go directly to the appropriate
+section.  You may also wish to try running @kbd{@var{program} --help},
+which will display a brief usage message for @var{program}
+(@pxref{Foundations}).
 
 The rest of this manual is a technical discussion of the Hurd servers
 and their implementation, and would not be helpful until you want to
 learn how to modify the Hurd.
 
-This manual is organized according to the subsystems of the Hurd, and each chapter begins
-with descriptions of utilities and servers that are related to that
-subsystem.  If you are a system administrator, and you want to learn
-more about, say, the Hurd networking subsystem, you can skip to the
-networking chapter (@pxref{Networking}), and read about the related
-utilities and servers.
+This manual is organized according to the subsystems of the Hurd, and
+each chapter begins with descriptions of utilities and servers that are
+related to that subsystem.  If you are a system administrator, and you
+want to learn more about, say, the Hurd networking subsystem, you can
+skip to the networking chapter (@pxref{Networking}), and read about the
+related utilities and servers.
 
 Programmers who are interested in learning how to modify Hurd servers, or
 write new ones, should begin by learning about a microkernel to which the
@@ -368,17 +402,14 @@ libraries they use.  At that point, you should be able to study the
 source code of existing Hurd servers and understand how they use the
 Hurd libraries.
 
-@c FIXME: the footnote about RPC is not helpful.
-
-The final level of mastery is learning the RPC@footnote{Remote Procedure
-Call.  If you needed to ask, then you've got your work cut out for you
-before you'll be ready for Hurd programming.} interfaces which the Hurd
-libraries implement.  The last section of each chapter describes any
-Hurd interfaces used in that subsystem.  Those sections assume that you
-are perusing the referenced interface definitions as you read.  After
-you have understood a given interface, you will be in a good position to
-improve the Hurd libraries, design your own interfaces, and implement
-new subsystems.
+The final level of mastery is learning the about RPC.  If you needed to
+ask, then you've got your work cut out for you before you'll be ready
+for Hurd programming.} interfaces which the Hurd libraries implement.
+The last section of each chapter describes any Hurd interfaces used in
+that subsystem.  Those sections assume that you are perusing the
+referenced interface definitions as you read.  After you have understood
+a given interface, you will be in a good position to improve the Hurd
+libraries, design your own interfaces, and implement new subsystems.
 
 
 @node Features
@@ -726,12 +757,13 @@ Hurd, and initialize it with your favorite filesystem format.
 
 @item
 Copy the core servers, C library, and any of your modified programs onto
-the new partition.
+the new partition.  
 
-@item
-Use some clever shadowfs hacks (FIXME xref) to mirror the rest of your
-programs under the modified partition.  Copying them will work, too, if
-you don't like shadowfs.
+@c tb: this actually won't work, so I'm commenting it out
+@c @item
+@c Use some clever shadowfs hacks (FIXME xref) to mirror the rest of your
+@c programs under the modified partition.  Copying them will work, too, if
+@c you don't like shadowfs.
 
 @item
 Create a boot script on the new partition, in @file{/boot/servers.boot}.
@@ -749,6 +781,10 @@ programs to return control to the parent Hurd.
 @c FIXME: the `don't get any funny ideas' comment is confusing.  Am
 @c I genuinely in some sort of danger if I contemplate sharing
 @c microkernel devices between two running Hurds?
+@c  tb: not if you know what you are doing.  But there is no clever
+@c  device mediation going on.  Two hurds, with two filesystems writing
+@c  the same partition, will wreak havoc.  Two hurds reading from the
+@c  same terminal device will not share nicely.  
 
 If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
@@ -819,6 +855,8 @@ POSIX pthreads, which are documented in a lot of places.
 
 @c FIXME: it would be nice if we referred specifically to some of
 @c the places in which POSIX pthreads are documented.
+@c  tb: yes, but alas we are only allowed to refer to free
+@c  documentation, and IEEE Posix ain't that... ;-(
 
 Every single library in the Hurd distribution (including the GNU C
 library) is completely thread-safe, and the Hurd servers themselves are
@@ -1003,12 +1041,12 @@ searched.  If @var{class} is nonzero, then the lookup will fail if
 @end deftypefun
 
 @deftypefun error_t ports_bucket_iterate (@w{struct port_bucket *@var{bucket}}, @w{error_t (*@var{fun}) (void *@var{port})})
-Call @var{fun} once for each port in @var{bucket}.
+Call @var{fun} once for each port in @var{bucket}.  No guarantee is made
+about the order of iteration, which might vary from call to call.  If
+FUN returns an error, then no further calls to FUN are made for any
+remaining ports, and the return value of FUN is returned from
+ports_bucket_iterate.
 @end deftypefun
-
-@c FIXME: does ports_bucket_iterate make any guarantees about the
-@c order in which the ports are traversed?  What if fun returns an
-@c error?  What happens to the return values from fun?
 
 @node Port References
 @subsection Port References
@@ -1077,6 +1115,7 @@ Type of MiG demuxer routines.
 @end deftypefn
 
 @c FIXME: Should I know what `MiG' means?
+@c  tb: Yeah, it's the Mach Interface Generator.
 
 @deftypefun error_t ports_begin_rpc (@w{void *@var{port}}, @w{mach_msg_id_t @var{msg_id}}, @w{struct rpc_info *@var{info}})
 Call this when an RPC is beginning on @var{port}.  @var{info} should be
@@ -1627,6 +1666,8 @@ return send rights to a newly-constructed Mach port.
 
 @c FIXME: should be say `Mach' above, or should we say
 @c `microkernel'?
+@c  tb: We say Mach.  Other kernels might have different rules, and we
+@c  should document what we have now.
 
 @findex io_duplicate
 The @code{io_duplicate} call simply returns another port which is
@@ -1695,6 +1736,12 @@ parameters to @code{io_read} and @code{io_write}, and should return
 @code{ESPIPE} to the @code{io_seek} call.
 
 @c FIXME: should that last `should' be replaced with `must'?
+@c  tb: maybe, but perhaps not.  There might be a reason to implement a
+@c  semi-seekable object which permits some but not all of these
+@c  operations.  In the case of the Hurd interfaces (as opposed to
+@c  libraries) I like to be a little looser about this.  The rule is "do
+@c  what the interface says unless you really understand it and have a
+@c  good reason to do something different".  
 
 @findex io_seek
 On seekable objects, @code{io_seek} changes the default file pointer for
@@ -2126,6 +2173,8 @@ translator.
 
 @c FIXME: Shouldn't `NUL-separated', above, be changed to
 @c `NUL-terminated' (or, as I prefer, `zero-terminated')?
+@c  tb: no, it's a NUL-separated list.  Something like:
+@c     "foo\0bar\0baz\0quux"
 
 After your translator parses its command-line arguments, it should fetch
 its bootstrap port by using @code{task_get_bootstrap_port}.  If this
@@ -2178,6 +2227,7 @@ type to have the stubs called with either the control or protid pointer.
 
 @c FIXME: `intran' needs to be explained, or else there needs to be
 @c a cross-reference there.
+@c  tb: `intran' is a keyword in MiG.  
 
 @deftypefun void trivfs_end_using_control (@w{struct trivfs_control *@var{port}})
 @deftypefunx void trivfs_end_using_protid (@w{struct trivfs_protid *@var{port}})
@@ -2307,6 +2357,9 @@ allocated port buckets; if @code{*@var{bucket}} is zero, an attempt is
 made to allocate a new port bucket, which is then stored in
 @code{*@var{bucket}}.
 @c FIXME: what if the allocation attempt fails?
+@c  tb: then an appropriate error (ENOMEM in this case) is returned.
+@c  tb: Users are not supposed to assume they know all the possible error
+@c  tb: returns.  All functions that return error_t are like this.
 @end deftypefun
 
 @deftypefun void trivfs_remove_port_bucket (@w{struct port_bucket *@var{bucket}})
@@ -2499,7 +2552,11 @@ Check to see whether @var{user} is allowed to modify @var{dir} with respect to
 existing file @var{st}.  If there is no existing file, then @var{st}
 should be set to zero.  If the access is permissible, return zero;
 otherwise return an appropriate error code.
-@c FIXME: what does it mean to modify a directory with respect to an existing file?
+@c FIXME: what does it mean to modify a directory with respect to an
+@c existing file?
+@c  tb: If you delete a file, say, then you are modifying the directory
+@c  tb: (not the file) but with respect to that file.  This is relevant
+@c  tb: in implementing the directory sticky-bit permissions algorithm.
 @end deftypefun
 
 @node Fshelp Misc
@@ -3015,6 +3072,7 @@ simply modify @var{source} and return it.
 @end deftypefun
 
 @c FIXME: what does `is consumed' mean?
+@c  tb: gone; you can't use it any more.  libstore has taken it over.
 
 @node Store I/O
 @subsection Store I/O
@@ -3039,6 +3097,7 @@ and @var{len} (which follows the usual Mach buffer-return semantics) to
 
 @c FIXME: should be say `Mach' above, or should we say
 @c `microkernel'?
+@c  tb: nope, Mach-specific semantics.
 
 @deftypefun error_t store_write (@w{struct store *@var{store}}, @w{off_t @var{addr}}, @w{void *@var{buf}}, @w{size_t @var{len}}, @w{size_t *@var{amount}})
 Write @var{len} bytes from @var{buf} to @var{store} at @var{addr}.
@@ -3796,6 +3855,8 @@ new node will have one hard reference and no light references.
 @c FIXME: It's odd that `hard' and `light' seem to be opposites when
 @c we're talking about references.  Or is `weak' the opposite of `hard'?
 @c These terms need to be explained.
+@c  tb: hard is opposite to both light and weak, but we don't use both
+@c  tb: light and weak in the same context, so it's ok.
 
 These next node manipulation functions are not generally useful, but may
 come in handy if you need to redefine any diskfs functions.
