@@ -18,15 +18,25 @@
 dir := trans
 makemode := servers
 
-SRCS = ifsock.c symlink.c
-targets = symlink ifsock
+SRCS = ifsock.c symlink.c magic.c null.c
+targets = symlink ifsock magic null
+
+CPPFLAGS += -I../lib
+CPPFLAGS += $(CPPFLAGS-$(notdir $<))
+vpath %.c ../lib
 
 include ../Makeconf
 
 symlink: symlink.o fsysServer.o
-	$(CC) $(CFLAGS) -o symlink $^
 symlink.o: fsys_S.h
 
+magic: magic.o fsysServer.o error.o
+magic.o: fsys_S.h
+
+null: null.o error.o $(libtrivfs) $(libports)
+null.o: ../hurd/trivfs.h ../hurd/ports.h
+
 ifsock: ifsock.o $(libtrivfs) $(libports) ifsockServer.o
-	$(CC) $(CFLAGS) -o ifsock $^
 ifsock.o: ifsock_S.h ../hurd/trivfs.h ../hurd/ports.h
+
+CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
