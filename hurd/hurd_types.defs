@@ -1,5 +1,5 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993,94,95,96,98,2001 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,2001,02 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -192,18 +192,16 @@ serverprefix SERVERPREFIX;
 type data_t = array[] of char;
 type string_t = c_string[1024]; /* XXX */
 type io_statbuf_t = struct[32] of int;
-type uid_t = int;
-type gid_t = int;
-type mode_t = int;
-type dev_t = short;
-type retry_type = int;
-type pid_t = int;
-type wait_status_t = int;
-type off_t = int;
-type size_t = unsigned;
-type ssize_t = int;
-type file_changed_type_t = int;
-type dir_changed_type_t = int;
+type uid_t = unsigned32;
+type gid_t = unsigned32;
+type mode_t = unsigned32;
+type retry_type = unsigned32;
+type pid_t = int32;
+type wait_status_t = int32;
+type off_t = int32;
+type size_t = unsigned32;
+type file_changed_type_t = unsigned32;
+type dir_changed_type_t = unsigned32;
 
 type portarray_t = array[] of mach_port_send_t;
 type intarray_t = array[] of int;
