@@ -1,3 +1,8 @@
+2002-09-22  Marcus Brinkmann  <marcus@gnu.org>
+
+	* vcons-refresh.c (cons_vcons_refresh): Take VCONS->scrolling into
+	account.
+
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* opts-std-startup.c (OPT_NO_JUMP_DOWN_ON_INPUT): New macro.
