@@ -70,7 +70,6 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
     }
 
   /* Now P...P+PLIM contains any user parameters for HOST.  */
-#if 0				/* XXX don't do passwords */
   sep = memchr (p, ':', plim);
   if (sep)
     /* USERNAME:PASSWD */
@@ -82,13 +81,12 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
 	  if (*user)
 	    free (*user);
 	  if (*passwd)
-	    free (*passd);
+	    free (*passwd);
 	  free (*host);
 	  return ENOMEM;
 	}
     }
   else
-#endif
     /* Just USERNAME */
     {
       *user = strndup (p, plim);
