@@ -1155,7 +1155,8 @@ add_argless_short_opt (const struct argp_option *opt,
 		       void *cookie)
 {
   char **snao_end = cookie;
-  if (! (opt->arg || real->arg))
+  if (!(opt->arg || real->arg)
+      && !((opt->flags | real->flags) & OPTION_NO_USAGE))
     *(*snao_end)++ = opt->key;
   return 0;
 }
@@ -1169,15 +1170,16 @@ usage_argful_short_opt (const struct argp_option *opt,
 {
   argp_fmtstream_t stream = cookie;
   const char *arg = opt->arg;
+  int flags = opt->flags | real->flags;
 
   if (! arg)
     arg = real->arg;
 
-  if (arg)
+  if (arg && !(flags & OPTION_NO_USAGE))
     {
       arg = gettext (arg);
 
-      if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+      if (flags & OPTION_ARG_OPTIONAL)
 	__argp_fmtstream_printf (stream, " [-%c[%s]]", opt->key, arg);
       else
 	{
@@ -1200,20 +1202,22 @@ usage_long_opt (const struct argp_option *opt,
 {
   argp_fmtstream_t stream = cookie;
   const char *arg = opt->arg;
+  int flags = opt->flags | real->flags;
 
   if (! arg)
     arg = real->arg;
 
-  if (arg)
-    {
-      arg = gettext (arg);
-      if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-	__argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);
-      else
-	__argp_fmtstream_printf (stream, " [--%s=%s]", opt->name, arg);
-    }
-  else
-    __argp_fmtstream_printf (stream, " [--%s]", opt->name);
+  if (! (flags & OPTION_NO_USAGE))
+    if (arg)
+      {
+	arg = gettext (arg);
+	if (flags & OPTION_ARG_OPTIONAL)
+	  __argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);
+	else
+	  __argp_fmtstream_printf (stream, " [--%s=%s]", opt->name, arg);
+      }
+    else
+      __argp_fmtstream_printf (stream, " [--%s]", opt->name);
 
   return 0;
 }
