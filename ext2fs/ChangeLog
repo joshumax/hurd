@@ -1,3 +1,99 @@
+Thu Sep 19 17:57:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* Makefile (HURDLIBS): Add store.
+
+Wed Sep 18 15:28:32 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Remove CLASSES argument to store_parsed_open.
+	Use STORE_PARAMS variable to get result from parsing STORE_ARGP.
+	(diskfs_extra_version): Put `GNU Hurd' in here.
+
+Fri Sep 13 00:15:56 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (diskfs_append_args): Renamed from diskfs_get_options.
+	Don't initialize *ARGZ & *ARGZ_LEN anymore, or deallocate on errors.
+	Append store args too.
+	
+	* pager.c (file_pager_read_page:do_pending_reads, pager_unlock_page,
+ 	pending_blocks_write, diskfs_grow, find_block): Use filesystem blocks,
+ 	not device blocks, in block<->offset/size conversions.
+
+	* Makefile (ext2fs ext2fs.static): Add ../libstore/libstore.a.
+
+1996-09-12  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (diskfs_disk_name): Renamed from STORE_NAME.
+
+Wed Sep 11 12:59:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* pager.c (create_disk_pager): Create PAGER_BUCKET.  Pass in new
+	args to diskfs_pager_setup (renamed from disk_pager_setup).
+	(disk_image): New variable.
+	(service_paging_request): Function removed.
+	(diskfs_shutdown_pager): Use DISKFS_DISK_PAGER instead of DISK_PAGER.
+	* ext2fs.h (disk_image): New declaration.
+	(sync_global_ptr): Use DISKFS_DISK_PAGER instead of DISK_PAGER.
+	* ext2fs.c (main, diskfs_reload_global_state): Use
+	DISKFS_DISK_PAGER instead of DISK_PAGER.
+
+	* ext2fs.c (main): Change store_parsed_get_name to store_parsed_name.
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Clone STORE before
+	remapping it.
+
+Tue Sep 10 17:12:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): Rewritten to use
+	store functions.
+
+Mon Sep  9 11:10:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* ext2fs.c (main): Use store fields instead of diskfs variables.
+	(store, store_parsed, store_name): New variables.
+	(free_page_bufs, free_page_bufs_lock): Variables removed.
+	(get_page_buf, free_page_buf): Functions removed.
+	<argp.h>, <hurd/store.h>: New includes.
+	* ext2fs.h (store_parsed, store_name): New declarations.
+	(get_page_buf, free_page_buf): Declarations removed.
+	* hyper.c <hurd/store.h>: New include.
+	* pager.c <hurd/store.h>: New include.
+	(file_pager_write_pager): Make BUF void *.
+	(file_pager_read_page): Make BUF void **, NEW_BUF void *, and
+	LENGTH size_t.  Pass &LENGTH to store_read, not LENGTH.
+	(pending_blocks_write): Make PAGE_BUF void *, and LENGTH size_t.
+	Check amount written, and return EIO if it's wrong.
+	(disk_pager_read_page): Make BUF void **, and LENGTH size_t.
+	Check amount read, and return EIO if it's wrong.
+	(disk_pager_write_page): Make BUF void *, and LENGTH size_t.
+	Check amount written, and return EIO if it's wrong.
+	(pager_read_page, pager_read_page): Convert BUF to a pointer when
+	calling work functions.
+	(struct pending_blocks): Make BUF void *.
+	(free_page_bufs, free_page_bufs_lock): New variables.
+	(get_page_buf, free_page_buf): New functions.
+
+Sun Sep  8 18:47:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hyper.c (diskfs_readonly_changed): Use STORE->size.
+	(get_hypermetadata): Use STORE->size & STORE->block_size.
+
+	* pager.c (file_pager_read_page, pending_blocks_write,
+ 	disk_pager_read_page, disk_pager_read_page, disk_pager_write_page,
+ 	pager_report_extent, find_block, pager_unlock_page, diskfs_grow):
+	Use store_ operations instead of the old device ones, and some
+	store fields instead of globals.
+	* inode.c (read_disknode): Use STORE->log2_block_size instead of
+	LOG2_BLOCK_SIZE.
+	* ext2fs.h (store): New declaration.
+	* ext2fs.c (startup_parents): Use diskfs_store_startup_argp
+	instead of diskfs_std_device_startup_argp.
+	(startup_parents, startup_argp, runtime_parents, runtime_argp,
+	options, parse_opt, diskfs_get_options):
+	Define always, not just when EXT2FS_DEBUG is defined.
+	(parse_opt): Propagate our input to the first child argp.
+	(parse_opt, diskfs_get_options): Guard debug-specific bits with
+	#ifdef EXT2FS_DEBUG.
+
 Thu Sep 12 16:41:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.

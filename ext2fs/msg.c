@@ -49,8 +49,7 @@ void _ext2_error (const char * function, const char * fmt, ...)
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  fprintf (stderr, "ext2fs: %s: %s: %s\n",
-	   diskfs_device_arg, function, error_buf);
+  fprintf (stderr, "ext2fs: %s: %s: %s\n", diskfs_disk_name, function, error_buf);
 
   mutex_unlock(&printf_lock);
 }
@@ -66,7 +65,7 @@ void _ext2_panic (const char * function, const char * fmt, ...)
   va_end (args);
 
   fprintf(stderr, "ext2fs: %s: panic: %s: %s\n",
-	  diskfs_device_arg, function, error_buf);
+	  diskfs_disk_name, function, error_buf);
 
   mutex_unlock(&printf_lock);
 
@@ -83,7 +82,7 @@ void ext2_warning (const char * fmt, ...)
   vsprintf (error_buf, fmt, args);
   va_end (args);
 
-  fprintf (stderr, "ext2fs: %s: warning: %s\n", diskfs_device_arg, error_buf);
+  fprintf (stderr, "ext2fs: %s: warning: %s\n", diskfs_disk_name, error_buf);
 
   mutex_unlock(&printf_lock);
 }
