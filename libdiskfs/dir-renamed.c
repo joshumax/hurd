@@ -199,7 +199,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
   if (err)
     goto out;
   
-  diskfs_purge_cache_node (fdp, fnp);
   diskfs_dirremove (fdp, ds);
   ds = 0;
   fnp->dn_stat.st_nlink--;
