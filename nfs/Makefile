@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1995 Free Software Foundation
+#   Copyright (C) 1995, 1996 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -19,9 +19,13 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := nfs
-makemode := misc
+makemode := server
 
-LCLHDRS = mountv1.h nfs.h nfsv2.h rpc.h rpcv2.h
-SRCS = ops.c rpc.c
+target = nfs
+LCLHDRS = nfs.h rpc.h
+SRCS = ops.c rpc.c mount.c cred.c nfs.c cache.c consts.c main.c
+OBJS = $(subst .c,.o,$(SRCS))
+
+nfs: $(OBJS) ../libports/libports.a ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a
 
 include ../Makeconf
