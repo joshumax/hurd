@@ -53,10 +53,6 @@ include $(..)config.make
 # Append to any value set by the specific Makefile or by configure.
 CPPFLAGS += -I. -I$(srcdir) -I.. -I$(top_srcdir)
 CFLAGS += -Wall
-
-
-libthreads-libsubst=../libthreads/libthreads.a
-
 
 # Decode makemode:
 
