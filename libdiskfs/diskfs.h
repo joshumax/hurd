@@ -409,8 +409,10 @@ void diskfs_new_hardrefs (struct node *np);
    the directory, then this routine should fail). */
 int diskfs_dirempty (struct node *dp, struct protid *cred);
 
-/* The user may define this function.  Return 0 if NP's mode can
-   be changed to MODE; otherwise return an error code.  */
+/* The user may define this function.  Return 0 if NP's mode can be
+   changed to MODE; otherwise return an error code.  It must always be
+   possible to clear the mode; diskfs will not ask for permission
+   before doing so.  */
 error_t diskfs_validate_mode_change (struct node *np, mode_t mode);
 
 /* The user may define this function.  Return 0 if NP's owner can be
@@ -426,7 +428,8 @@ error_t diskfs_validate_group_change (struct node *np, gid_t gid);
 error_t diskfs_validate_author_change (struct node *np, uid_t author);
 
 /* The user may define this function.  Return 0 if NP's flags can be
-   changed to FLAGS; otherwise return an error code. */
+   changed to FLAGS; otherwise return an error code.  It must always
+   be possible to clear the flags.   */
 error_t diskfs_validate_flags_change (struct node *np, int flags);
 
 /* The user may define this function.  Return 0 if NP's rdev can be
