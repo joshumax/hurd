@@ -380,10 +380,8 @@ static void
 thread_function (any_t foo __attribute__ ((unused)))
 {
   for (;;)
-    ports_manage_port_operations_multithread (pager_bucket,
-					      pager_demuxer,
-					      1000 * 60 * 2,
-					      1000 * 60 * 10,
+    ports_manage_port_operations_multithread (pager_bucket, pager_demuxer,
+					      1000 * 60 * 2, 0,
 					      1, MACH_PORT_NULL);
 }
 
