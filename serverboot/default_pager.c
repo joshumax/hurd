@@ -2388,7 +2388,7 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	vm_size_t	amount_sent;
 	default_pager_t	ds;
 	static char	here[] = "%sdata_write";
-	int err
+	int err;
 
 #ifdef	lint
 	pager_request++;
