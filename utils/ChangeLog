@@ -1,3 +1,9 @@
+Fri Mar  7 11:53:02 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hurdids.c (args_doc): Initialize with "[PID]".
+	(main): Get the ids from the auth port instead of using libc grot.
+	Support getting ids from other processes.
+
 Sat Mar  1 21:27:03 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* w.c (add_utmp_procs): Ignore unused utmp entries.
