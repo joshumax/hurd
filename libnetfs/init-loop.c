@@ -23,7 +23,6 @@
 static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
-
 static any_t
 master_thread_function (any_t foo __attribute__ ((unused)))
 {
@@ -31,12 +30,12 @@ master_thread_function (any_t foo __attribute__ ((unused)))
 
   do 
     {
-      ports_manage_port_operations_multithread (diskfs_port_bucket,
-						diskfs_demuxer,
+      ports_manage_port_operations_multithread (netfs_port_bucket,
+						netfs_demuxer,
 						thread_timeout,
 						server_timeout,
 						1, MACH_PORT_NULL);
-      err = diskfs_shutdown (0);
+      err = netfs_shutdown (0);
     }
   while (err);
   
