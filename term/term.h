@@ -189,7 +189,11 @@ dequeue_quote (struct queue *q)
   if (qsize (q) == 1)
     beep = 1;
   if (beep)
-    condition_broadcast (q->wait);
+    {
+      condition_broadcast (q->wait);
+      if (q == outputq)
+	call_asyncs ();
+    }
   return *q->cs++;
 }
 
@@ -214,7 +218,11 @@ enqueue_internal (struct queue **qp, quoted_char c)
   *q->ce++ = c;
 
   if (qsize (q) == 1)
-    condition_broadcast (q->wait);
+    {
+      condition_broadcast (q->wait);
+      if (q == inputq)
+	call_asyncs ();
+    }      
   
   if (!q->susp && (qsize (q) > q->hiwat))
     q->susp = 1;
@@ -286,6 +294,7 @@ void copy_rawq (void);
 void rescan_inputq (void);
 void write_character (int);
 void init_users (void);
+void call_asyncs (void);
 
 /* Call this before using ptyio_bottom.  */
 void ptyio_init (void);
