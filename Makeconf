@@ -40,7 +40,7 @@ endif
 ifndef srcdir
 # We are building in the source directory itself.
 srcdir = .
-top_srcdir = $(..)
+top_srcdir = $(..:%/=%)
 endif
 
 # Include the configure-generated file of parameters.
