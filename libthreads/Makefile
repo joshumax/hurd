@@ -34,9 +34,8 @@ OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
 libname = libthreads
-
-# Don't put cthreads.h in installhdrs or else it will get installed into
-# $(prefix)/include/hurd instead of $(prefix)/include.
+installhdrs = cthreads.h rwlock.h
+installhdrdir = .
 
 VPATH += $(srcdir)/$(machine)
 
@@ -45,10 +44,6 @@ include ../Makeconf
 # The threads library was written by CMU.  If you've ever experienced
 # what that means, you'll understand this line.
 CFLAGS := $(filter-out -Wall,$(CFLAGS))
-
-install: $(includedir)/cthreads.h $(includedir)/rwlock.h
-
-$(includedir)/%.h: %.h; $(INSTALL_DATA) $< $@
 
 lndist: lndist-i386-files
 
