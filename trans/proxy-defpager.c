@@ -70,6 +70,18 @@ S_default_pager_objects (mach_port_t default_pager,
 }
 
 kern_return_t
+S_default_pager_object_pages (mach_port_t default_pager,
+			      mach_port_t memory_object,
+			      default_pager_page_array_t *pages,
+			      mach_msg_type_number_t *pagesCnt)
+{
+  return allowed (default_pager, O_WRITE)
+    ?: default_pager_object_pages (real_defpager, memory_object,
+				   pages, pagesCnt);
+}
+
+
+kern_return_t
 S_default_pager_paging_file (mach_port_t default_pager,
 			     mach_port_t master_device_port,
 			     default_pager_filename_t filename,
@@ -219,9 +231,9 @@ int
 proxy_defpager_demuxer (mach_msg_header_t *inp,
 			mach_msg_header_t *outp)
 {
-  extern int default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int S_default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
 
-  return default_pager_server (inp, outp)
+  return S_default_pager_server (inp, outp)
     || trivfs_demuxer (inp, outp);
 }
 
