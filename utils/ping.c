@@ -40,7 +40,7 @@ char copyright[] =
 /*
  * From: @(#)ping.c	5.9 (Berkeley) 5/12/91
  */
-char rcsid[] = "$Id: ping.c,v 1.1 1998/04/22 20:37:07 tb Exp $";
+char rcsid[] = "$Id: ping.c,v 1.2 1998/04/22 20:44:38 tb Exp $";
 char pkg[] = "netkit-base-0.10";
 
 /*
@@ -198,9 +198,6 @@ static void tvsub(struct timeval *out, struct timeval *in);
 static void pr_icmph(struct icmphdr *icp);
 static void pr_retip(struct ip *ip);
 
-/* Sorry for quick hack -- Kunihiro. */
-#define MAXHOSTNAMELEN 256
-
 /* Only wrapper to call pinger (). */
 pinger_wrapper ()
 {
@@ -222,7 +219,7 @@ main(int argc, char *argv[])
 	int i;
 	int ch, fdmask, hold, packlen, preload;
 	u_char *datap, *packet;
-	char *target, hnamebuf[MAXHOSTNAMELEN];
+	char *target;
 	u_char ttl, loop;
 	int am_i_root;
 #ifdef IP_OPTIONS
@@ -389,8 +386,8 @@ main(int argc, char *argv[])
 			hp->h_length = sizeof(to->sin_addr);
 		}
 		memcpy(&to->sin_addr, hp->h_addr, hp->h_length);
-		(void)strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
-		hostname = hnamebuf;
+		hostname = malloc (strlen (hp->h_name) + 1);
+		strcpy (hostname, hp->h_name);
 	}
 
 	if (options & F_FLOOD && options & F_INTERVAL) {
