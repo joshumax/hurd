@@ -20,15 +20,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include <fsys_S.h>
 
-error_t
+kern_return_t
 trivfs_S_fsys_goaway (mach_port_t fsys,
 		      int flags)
 {
   error_t err;
   struct port_info *pi;
   
-  pi = ports_get_port (fsys, trivfs_cntl_porttype);
+  pi = ports_check_type (fsys, trivfs_cntl_porttype);
   if (!pi)
     return EOPNOTSUPP;
 
