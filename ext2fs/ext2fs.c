@@ -42,7 +42,8 @@ int diskfs_shortcut_ifsock = 1;
 char *diskfs_server_name = "ext2fs";
 int diskfs_major_version = 0;
 int diskfs_minor_version = 2;
-int diskfs_edit_version = 0;
+int diskfs_edit_version = 1;
+char *diskfs_extra_version = "ext2 " EXT2FS_VERSION;
 
 int diskfs_synchronous = 0;
 int diskfs_readonly = 0;
