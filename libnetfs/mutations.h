@@ -20,13 +20,14 @@
 
 /* Only CPP macro definitions should go in this file. */
 
-#define FILE_INTRAN protid_t netfs_begin_using_protid_port (file_t)
-#define FILE_DESTRUCTOR netfs_end_using_protid_port (protid_t)
+#define FILE_INTRAN protid_t begin_using_protid_port (file_t)
+#define FILE_DESTRUCTOR end_using_protid_port (protid_t)
 
-#define IO_INTRAN protid_t netfs_begin_using_protid_port (io_t)
-#define IO_DESTRUCTOR netfs_end_using_protid_port (protid_t)
+#define IO_INTRAN protid_t begin_using_protid_port (io_t)
+#define IO_DESTRUCTOR end_using_protid_port (protid_t)
 
-#define FILE_IMPORTS import "netfs.h";
-#define IO_IMPORTS import "netfs.h";
-#define FSYS_IMPORTS import "netfs.h";
-#define IFSOCK_IMPORTS import "netfs.h";
+#define FILE_IMPORTS import "netfs.h"; import "priv.h";
+#define IO_IMPORTS import "netfs.h"; import "priv.h";
+#define FSYS_IMPORTS import "netfs.h"; import "priv.h";
+#define IFSOCK_IMPORTS import "netfs.h"; import "priv.h";
+
