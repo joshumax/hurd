@@ -20,8 +20,9 @@ makemode := server
 
 SRCS = exec.c hostarch.c
 OBJS = hostarch.o exec.o execServer.o fsysServer.o notifyServer.o \
-       unzip.o util.o inflate.o
-LCLHDRS = a.out.h a.out.gnu.h gzip.h crypt.h tailor.h
+       $(gzip-objects)
+gzip-objects = unzip.o util.o inflate.o
+LCLHDRS = gzip.h crypt.h tailor.h
 target = exec
 DIST_FILES = core.c gcore.c hashexec.c
 
@@ -33,7 +34,7 @@ include ../Makeconf
 
 vpath lib%.a $(crossdir)/lib
 
-CPPFLAGS += -DBFD # -DA_OUT_H=\"./a.out.h\"
+CPPFLAGS += -DGZIP -DBFD
 
 exec.o: exec.c fsys_S.h notify_S.h exec_S.h 
 exec.o hostarch.o: a.out.h a.out.gnu.h
