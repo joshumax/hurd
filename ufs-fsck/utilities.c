@@ -1,5 +1,5 @@
 /* Miscellaneous functions for fsck
-   Copyright (C) 1994, 1995, 1996, 1999, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,99,2001,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -355,7 +355,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
     }
 
   if (ino < ROOTINO || ino > maxino)
-    pextend (" (BOGUS INODE) I=%d", ino);
+    pextend (" (BOGUS INODE) I=%Ld", ino);
   else
     {
       char *p;
@@ -364,7 +364,7 @@ pinode (int severe, ino_t ino, char *fmt, ...)
 
       getinode (ino, &dino);
 
-      pextend (" %s I=%d", (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE",
+      pextend (" %s I=%Ld", (DI_MODE (&dino) & IFMT) == IFDIR ? "DIR" : "FILE",
 	     ino);
 
       pw = getpwuid (dino.di_uid);

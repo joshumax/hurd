@@ -1,5 +1,5 @@
 /* Pass 2 of GNU fsck -- examine all directories for validity
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994,96,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -70,7 +70,7 @@ pass2 ()
 		  for (bp = (char *)buf; bp < (char *)buf + DIRBLKSIZ; bp++)
 		    if (*bp)
 		      goto reclen_problem;
-		  
+
 		  problem (0, "NULL BLOCK IN DIRECTORY");
 		  if (preen || reply ("PATCH"))
 		    {
@@ -83,7 +83,7 @@ pass2 ()
 		  else
 		    return mod;
 		}
-	      
+
 	    reclen_problem:
 	      problem (1, "BAD RECLEN IN DIRECTORY");
 	      if (reply ("SALVAGE"))
@@ -98,7 +98,7 @@ pass2 ()
 		/* But give up regardless */
 		return mod;
 	    }
-	  
+
 	  /* Check INO */
 	  if (dp->d_ino > maxino)
 	    {
@@ -113,7 +113,7 @@ pass2 ()
 
 	  if (!dp->d_ino)
 	    continue;
-	  
+
 	  /* Check INO */
 	  if (inodestate[dp->d_ino] == UNALLOC)
 	    {
@@ -138,7 +138,7 @@ pass2 ()
 		  dp->d_ino = 0;
 		  mod = 1;
 		}
-	    }		  
+	    }
 	  else
 	    {
 	      /* Check for illegal characters */
@@ -165,7 +165,7 @@ pass2 ()
 		    }
 		}
 	    }
-	  
+
 	  if (!dp->d_ino)
 	    continue;
 
@@ -181,10 +181,10 @@ pass2 ()
 		  mod = 1;
 		}
 	    }
-	  
+
 	  /* Here we should check for duplicate directory entries;
 	     that's too much trouble right now. */
-	  
+
 	  /* Account for the inode in the linkfound map */
 	  if (inodestate[dp->d_ino] != UNALLOC)
 	    linkfound[dp->d_ino]++;
@@ -205,7 +205,7 @@ pass2 ()
 		    {
 		      problem (0, "EXTRANEOUS LINK `%s' TO DIR I=%ld",
 			       dp->d_name, dp->d_ino);
-		      pextend (" FOUND IN DIR I=%d", dnp->i_number);
+		      pextend (" FOUND IN DIR I=%Ld", dnp->i_number);
 		      if (preen || reply ("REMOVE"))
 			{
 			  dp->d_ino = 0;
@@ -234,9 +234,9 @@ pass2 ()
 
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       rewrite = 0;
-      for (bufp = buf; 
+      for (bufp = buf;
 	   bufp - buf < nfrags * sblock->fs_fsize
-	   && offset + (bufp - buf) + DIRBLKSIZ <= dnp->i_isize; 
+	   && offset + (bufp - buf) + DIRBLKSIZ <= dnp->i_isize;
 	   bufp += DIRBLKSIZ)
 	{
 	  if (check1block (bufp))
@@ -251,7 +251,7 @@ pass2 ()
     {
     default:
       errexit ("BAD STATE %d FOR ROOT INODE", (int) (inodestate[ROOTINO]));
-      
+
     case DIRECTORY:
       break;
 
@@ -262,7 +262,7 @@ pass2 ()
       if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
 	errexit ("CANNOT ALLOCATE ROOT INODE");
       break;
-      
+
     case REG:
       problem (1, "ROOT INODE NOT DIRECTORY");
       if (reply ("REALLOCATE"))
@@ -270,7 +270,7 @@ pass2 ()
       if (allocdir (ROOTINO, ROOTINO, 0755) != ROOTINO)
 	errexit ("CANNOT ALLOCATE ROOT INODE");
       break;
-      
+
     case BADDIR:
       problem (1, "DUPLICATE or BAD BLOCKS IN ROOT INODE");
       if (reply ("REALLOCATE"))
@@ -283,20 +283,20 @@ pass2 ()
 	errexit ("ABORTING");
       break;
     }
-  
+
   /* Sort inpsort */
   qsort (dirsorted, dirarrayused, sizeof (struct dirinfo *), sortfunc);
-  
+
   /* Check basic integrity of each directory */
   for (nd = 0; nd < dirarrayused; nd++)
     {
       dnp = dirsorted[nd];
-      
+
       if (dnp->i_isize == 0)
 	continue;
       if (dnp->i_isize % DIRBLKSIZ)
 	{
-	  problem (0, "DIRECTORY INO=%d: LENGTH %d NOT MULTIPLE OF %d",
+	  problem (0, "DIRECTORY INO=%Ld: LENGTH %d NOT MULTIPLE OF %d",
 		   dnp->i_number, dnp->i_isize, DIRBLKSIZ);
 	  if (preen || reply ("ADJUST"))
 	    {
@@ -310,10 +310,10 @@ pass2 ()
       dino.di_size = dnp->i_isize;
       assert (dnp->i_numblks <= (NDADDR + NIADDR) * sizeof (daddr_t));
       bcopy (dnp->i_blks, dino.di_db, dnp->i_numblks);
-      
+
       datablocks_iterate (&dino, checkdirblock);
     }
-  
+
 
   /* At this point for each directory:
      If this directory is an entry in another directory, then i_parent is
@@ -323,12 +323,12 @@ pass2 ()
   for (nd = 0; nd < dirarrayused; nd++)
     {
       dnp = dirsorted[nd];
-      
+
       /* Root is considered to be its own parent even though it isn't
 	 listed. */
       if (dnp->i_number == ROOTINO && !dnp->i_parent)
 	dnp->i_parent = ROOTINO;
-	  
+
       /* Check `.' to make sure it exists and is correct */
       if (dnp->i_dot == 0)
 	{
@@ -397,5 +397,4 @@ pass2 ()
 	    }
 	}
     }
-}  
-	      
+}

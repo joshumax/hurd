@@ -1,5 +1,5 @@
 /* Pass one of GNU fsck -- count blocks and verify inodes
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -24,7 +24,7 @@
 
 static struct dinode zino;
 
-/* Find all the blocks in use by files and filesystem reserved blocks. 
+/* Find all the blocks in use by files and filesystem reserved blocks.
    Set them in the global block map.  For each file, if a block is found
    allocated twice, then record the block and inode in DUPLIST.
    Initialize INODESTATE, LINKCOUNT, and TYPEMAP. */
@@ -52,7 +52,7 @@ pass1 ()
      node.  Increment NBLOCKS by the number of data blocks held.
      Set BLKERROR if this block is invalid.
      Return RET_GOOD, RET_BAD, RET_STOP if the block is good,
-     bad, or if we should entirely stop checking blocks in this 
+     bad, or if we should entirely stop checking blocks in this
      inode. */
   int
   checkblock (daddr_t bno, int nfrags, off_t offset)
@@ -69,10 +69,10 @@ pass1 ()
 	  blkerror = 1;
 	  wasbad = 1;
 	  if (nblkrngerrors == 0)
-	    warning (0, "I=%d HAS BAD BLOCKS", number);
+	    warning (0, "I=%Ld HAS BAD BLOCKS", number);
 	  if (nblkrngerrors++ > MAXBAD)
 	    {
-	      problem (0, "EXCESSIVE BAD BLKS I=%d", number);
+	      problem (0, "EXCESSIVE BAD BLKS I=%Ld", number);
 	      if (preen || reply ("SKIP"))
 		{
 		  pfail ("SKIPPING");
@@ -93,12 +93,12 @@ pass1 ()
 		{
 		  blkerror = 1;
 		  if (nblkduperrors == 0)
-		    warning (0, "I=%d HAS DUPLICATE BLOCKS", number);
+		    warning (0, "I=%Ld HAS DUPLICATE BLOCKS", number);
 		  warning (0, "DUPLICATE BLOCK %ld", bno);
 		  wasbad = 1;
 		  if (nblkduperrors++ > MAXBAD)
 		    {
-		      problem (0, "EXCESSIVE DUP BLKS I=%d", number);
+		      problem (0, "EXCESSIVE DUP BLKS I=%Ld", number);
 		      if (preen || reply ("SKIP"))
 			{
 			  pfail ("SKIPPING");
@@ -128,16 +128,16 @@ pass1 ()
 	}
       return wasbad ? RET_BAD : RET_GOOD;
     }
-  
+
 
   /* Account for blocks used by meta data */
   for (cg = 0; cg < sblock->fs_ncg; cg++)
     {
       daddr_t firstdata, firstcgblock, bno;
-      
+
       /* Each cylinder group past the first reserves data
 	 from its cylinder group copy to (but not including)
-	 the first datablock. 
+	 the first datablock.
 
 	 The first, however, reserves from the very front of the
 	 cylinder group (thus including the boot block), and it also
@@ -155,7 +155,7 @@ pass1 ()
       for (bno = firstcgblock; bno < firstdata; bno++)
 	setbmap (bno);
     }
-  
+
   /* Loop through each inode, doing initial checks */
   for (number = 0, cg = 0; cg < sblock->fs_ncg; cg++)
     for (i = 0; i < sblock->fs_ipg; i++, number++)
@@ -165,15 +165,15 @@ pass1 ()
 	int dbwarn = 0, ibwarn = 0;
 
 /*	if (!preen && !(number % 10000))
-	  printf ("I=%d\n", number); */
+	  printf ("I=%Ld\n", number); */
 
 	if (number < ROOTINO)
 	  continue;
-	
+
 	getinode (number, dp);
 	mode = DI_MODE (dp);
 	type = mode & IFMT;
-	
+
 	/* If the node is not allocated, then make sure it's
 	   properly clear */
 	if (type == 0)
@@ -184,7 +184,7 @@ pass1 ()
 		|| DI_MODE (dp)
 		|| dp->di_size)
 	      {
-		problem (0, "PARTIALLY ALLOCATED INODE I=%d", number);
+		problem (0, "PARTIALLY ALLOCATED INODE I=%Ld", number);
 		if (preen || reply ("CLEAR"))
 		  {
 		    clear_inode (number, dp);
@@ -196,15 +196,15 @@ pass1 ()
 	else
 	  {
 	    /* Node is allocated. */
-	    
+
 	    /* Check to see if we think the node should be cleared */
 
 	    /* Verify size for basic validity */
 	    holdallblocks = 0;
-	    
+
 	    if (dp->di_size + sblock->fs_bsize - 1 < dp->di_size)
 	      {
-		problem (1, "OVERFLOW IN FILE SIZE I=%d (SIZE == %lld)", number, 
+		problem (1, "OVERFLOW IN FILE SIZE I=%Ld (SIZE == %lld)", number,
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -213,12 +213,12 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED",
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%Ld AS ALLOCATED",
 			number);
 		holdallblocks = 1;
 	      }
 
-	    /* Decode type and set NDB 
+	    /* Decode type and set NDB
 	       also set inodestate correctly. */
 	    inodestate[number] = REG;
 	    switch (type)
@@ -227,19 +227,19 @@ pass1 ()
 	      case IFCHR:
 		ndb = 1;
 		break;
-		    
+
 	      case IFIFO:
 	      case IFSOCK:
 		ndb = 0;
 		break;
-		    
+
 	      case IFLNK:
 		if (sblock->fs_maxsymlinklen != -1)
 		  {
 		    /* Check to see if this is a fastlink.  The
 		       old fast link format has fs_maxsymlinklen
 		       of zero and di_blocks zero; the new format has
-		       fs_maxsymlinklen set and we ignore di_blocks. 
+		       fs_maxsymlinklen set and we ignore di_blocks.
 		       So check for either. */
 		    if ((sblock->fs_maxsymlinklen
 			 && dp->di_size < sblock->fs_maxsymlinklen)
@@ -262,16 +262,16 @@ pass1 ()
 		else
 		  ndb = howmany (dp->di_size, sblock->fs_bsize);
 		break;
-		    
+
 	      case IFDIR:
 		inodestate[number] = DIRECTORY;
 		/* Fall through */
 	      case IFREG:
 		ndb = howmany (dp->di_size, sblock->fs_bsize);
 		break;
-		
+
 	      default:
-		problem (1, "UNKNOWN FILE TYPE I=%d (MODE=%ol)", number, mode);
+		problem (1, "UNKNOWN FILE TYPE I=%Ld (MODE=%ol)", number, mode);
 		if (reply ("CLEAR"))
 		  {
 		    clear_inode (number, dp);
@@ -280,14 +280,14 @@ pass1 ()
 		  }
 		inodestate[number] = UNALLOC;
 		holdallblocks = 1;
-		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d "
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%Ld "
 			"AS ALLOCATED", number);
 		ndb = 0;
 	      }
 
 	    if (ndb < 0)
 	      {
-		problem (1, "BAD FILE SIZE I= %d (SIZE == %lld)", number,
+		problem (1, "BAD FILE SIZE I= %Ld (SIZE == %lld)", number,
 			dp->di_size);
 		if (reply ("CLEAR"))
 		  {
@@ -296,7 +296,7 @@ pass1 ()
 		    continue;
 		  }
 		inodestate[number] = UNALLOC;
-		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%d AS ALLOCATED", 
+		warning (0, "WILL TREAT ANY BLOCKS HELD BY I=%Ld AS ALLOCATED",
 			 number);
 		holdallblocks = 1;
 	      }
@@ -308,10 +308,10 @@ pass1 ()
 	    if (!holdallblocks)
 	      {
 		if (dp->di_size
-		    && (type == IFBLK || type == IFCHR 
+		    && (type == IFBLK || type == IFCHR
 			|| type == IFSOCK || type == IFIFO))
 		  {
-		    problem (1, "SPECIAL NODE I=%d (MODE=%ol) HAS SIZE %lld",
+		    problem (1, "SPECIAL NODE I=%Ld (MODE=%ol) HAS SIZE %lld",
 			    number, mode, dp->di_size);
 		    if (reply ("TRUNCATE"))
 		      {
@@ -319,10 +319,10 @@ pass1 ()
 			write_inode (number, dp);
 		      }
 		  }
-		
+
 		/* If we haven't set NDB speciall above, then it is set from
 		   the file size correctly by the size check. */
-		
+
 		/* Check all the direct and indirect blocks that are past the
 		   amount necessary to be zero. */
 		for (lbn = ndb; lbn < NDADDR; lbn++)
@@ -332,7 +332,7 @@ pass1 ()
 			if (!dbwarn)
 			  {
 			    dbwarn = 1;
-			    problem (0, "INODE I=%d HAS EXTRA DIRECT BLOCKS", 
+			    problem (0, "INODE I=%Ld HAS EXTRA DIRECT BLOCKS",
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
@@ -357,7 +357,7 @@ pass1 ()
 			if (ibwarn)
 			  {
 			    ibwarn = 1;
-			    problem (0, "INODE I=%d HAS EXTRA INDIRECT BLOCKS",
+			    problem (0, "INODE I=%Ld HAS EXTRA INDIRECT BLOCKS",
 				   number);
 			    if (preen || reply ("DEALLOCATE"))
 			      {
@@ -373,7 +373,7 @@ pass1 ()
 		      write_inode (number, dp);
 		  }
 	      }
-	    
+
 	    /* If this node is really allocated (as opposed to something
 	       that we should clear but the user won't) then set LINKCOUNT
 	       and TYPEMAP entries. */
@@ -397,7 +397,7 @@ pass1 ()
 		  warning (1, "DUPLICATE or BAD BLOCKS");
 		else
 		  {
-		    problem (0, "I=%d has ", number);
+		    problem (0, "I=%Ld has ", number);
 		    if (nblkduperrors)
 		      {
 			pextend ("%d DUPLICATE BLOCKS", nblkduperrors);
@@ -418,7 +418,7 @@ pass1 ()
 	      }
 	    else if (dp->di_blocks != nblocks)
 	      {
-		problem (0, "INCORRECT BLOCK COUNT I=%d (%ld should be %d)",
+		problem (0, "INCORRECT BLOCK COUNT I=%Ld (%ld should be %d)",
 			 number, dp->di_blocks, nblocks);
 		if (preen || reply ("CORRECT"))
 		  {
@@ -435,5 +435,3 @@ pass1 ()
 	  }
       }
 }
-
-	    

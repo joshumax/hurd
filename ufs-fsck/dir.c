@@ -1,5 +1,5 @@
 /* Directory management subroutines
-   Copyright (C) 1994, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1994,96,99,2002 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -28,19 +28,19 @@ record_directory (struct dinode *dp, ino_t number)
 {
   u_int blks;
   struct dirinfo *dnp;
-  
+
   blks = howmany (dp->di_size, sblock->fs_bsize);
   if (blks > NDADDR)
     blks = NDADDR + NIADDR;
   blks *= sizeof (daddr_t);
   dnp = malloc (sizeof (struct dirinfo) + blks);
-  
+
   dnp->i_number = number;
   dnp->i_parent = dnp->i_dotdot = 0;
   dnp->i_isize = dp->di_size;
   dnp->i_numblks = blks;
   bcopy (dp->di_db, dnp->i_blks, blks);
-  
+
   if (dirarrayused ==  dirarraysize)
     {
       if (dirarraysize == 0)
@@ -68,12 +68,12 @@ struct dirinfo *
 lookup_directory (ino_t ino)
 {
   int i;
-  
+
   for (i = 0; i < dirarrayused; i++)
     if (dirarray[i]->i_number == ino)
       return dirarray[i];
-  
-  errexit ("Cannot find chached directory I=%d\n", ino);
+
+  errexit ("Cannot find cached directory I=%Ld\n", ino);
 }
 
 /* Check to see if DIR is really a readable directory; if it
@@ -87,23 +87,23 @@ validdir (ino_t dir, char *action)
     case DIRECTORY:
     case DIRECTORY|DIR_REF:
       return 1;
-      
+
     case UNALLOC:
-      warning (1, "CANNOT %s I=%d; NOT ALLOCATED", action, dir);
+      warning (1, "CANNOT %s I=%Ld; NOT ALLOCATED", action, dir);
       return 0;
-      
+
     case BADDIR:
-      warning (1, "CANNOT %s I=%d; BAD BLOCKS", action, dir);
+      warning (1, "CANNOT %s I=%Ld; BAD BLOCKS", action, dir);
       return 0;
-      
+
     case REG:
-      warning (1, "CANNOT %s I=%d; NOT DIRECTORY", action, dir);
+      warning (1, "CANNOT %s I=%Ld; NOT DIRECTORY", action, dir);
       return 0;
 
     default:
       errexit ("ILLEGAL STATE");
     }
-}  
+}
 
 /* Search directory DIR for name NAME.  If NAME is found, then
    set *INO to the inode of the entry; otherwise clear INO.  Returns 1 if all
@@ -114,7 +114,7 @@ searchdir (ino_t dir, char *name, ino_t *ino)
   struct dinode dino;
   int len;
 
-  /* Scan through one directory block and see if it 
+  /* Scan through one directory block and see if it
      contains NAME. */
   void
   check1block (void *buf)
@@ -147,7 +147,7 @@ searchdir (ino_t dir, char *name, ino_t *ino)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
-      
+
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
 	   bufp - buf < nfrags * sblock->fs_fsize
@@ -160,7 +160,7 @@ searchdir (ino_t dir, char *name, ino_t *ino)
 	}
       return 1;
     }
-  
+
   *ino = 0;
 
   if (!validdir (dir, "READ"))
@@ -220,7 +220,7 @@ changeino (ino_t dir, char *name, ino_t ino)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
-      
+
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
 	   bufp - buf < nfrags * sblock->fs_fsize
@@ -236,10 +236,10 @@ changeino (ino_t dir, char *name, ino_t ino)
 	}
       return 1;
     }
-	
+
   if (!validdir (dir, "REWRITE"))
     return 0;
-  
+
   getinode (dir, &dino);
   len = strlen (name);
   madechange = 0;
@@ -254,7 +254,7 @@ expanddir (struct dinode *dp)
 {
   daddr_t lastbn, newblk;
   char *cp, buf[sblock->fs_bsize];
-  
+
   lastbn = lblkno (sblock, dp->di_size);
   if (blkoff (sblock, dp->di_size) && lastbn >= NDADDR - 1)
     return 0;
@@ -264,24 +264,24 @@ expanddir (struct dinode *dp)
     return 0;
   else if (!blkoff (sblock, dp->di_size) && dp->di_db[lastbn])
     return 0;
- 
+
   newblk = allocblk (sblock->fs_frag);
   if (!newblk)
     return 0;
-  
+
   if (blkoff (sblock, dp->di_size))
     dp->di_db[lastbn + 1] = dp->di_db[lastbn];
   dp->di_db[lastbn] = newblk;
   dp->di_size += sblock->fs_bsize;
   dp->di_blocks += sblock->fs_bsize / DEV_BSIZE;
-  
+
   for (cp = buf; cp < buf + sblock->fs_bsize; cp += DIRBLKSIZ)
     {
       struct directory_entry *dir = (struct directory_entry *) cp;
       dir->d_ino = 0;
       dir->d_reclen = DIRBLKSIZ;
     }
-  
+
   writeblock (fsbtodb (sblock, newblk), buf, sblock->fs_bsize);
   return 1;
 }
@@ -297,10 +297,10 @@ makeentry (ino_t dir, ino_t ino, char *name)
   struct dinode dino;
   int needed;
   int madeentry;
-  
+
   /* Read a directory block and see if it contains room for the
      new entry.  If so, add it and return 1; otherwise return 0. */
-  int 
+  int
   check1block (void *buf)
     {
       struct directory_entry *dp;
@@ -341,7 +341,7 @@ makeentry (ino_t dir, ino_t ino, char *name)
 	    }
 	}
       return 0;
-    }  
+    }
 
   /* Read part of a directory and look to see if it
      contains NAME.  Return 1 if we should keep looking
@@ -351,7 +351,7 @@ makeentry (ino_t dir, ino_t ino, char *name)
     {
       void *buf = alloca (nfrags * sblock->fs_fsize);
       void *bufp;
-      
+
       readblock (fsbtodb (sblock, bno), buf, nfrags * sblock->fs_fsize);
       for (bufp = buf;
 	   bufp - buf < nfrags * sblock->fs_fsize
@@ -367,10 +367,10 @@ makeentry (ino_t dir, ino_t ino, char *name)
 	}
       return 1;
     }
-	
+
   if (!validdir (dir, "MODIFY"))
     return 0;
-  
+
   getinode (dir, &dino);
   len = strlen (name);
   needed = DIRSIZ (len);
@@ -379,7 +379,7 @@ makeentry (ino_t dir, ino_t ino, char *name)
   if (!madeentry)
     {
       /* Attempt to expand the directory. */
-      problem (0, "NO SPACE LEFT IN DIR INO=%d", dir);
+      problem (0, "NO SPACE LEFT IN DIR INO=%Ld", dir);
       if (preen || reply ("EXPAND"))
 	{
 	  if (expanddir (&dino))
@@ -408,7 +408,7 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
   ino_t ino;
 
   mode |= IFDIR;
-  
+
   ino = allocino (request, mode);
   if (!ino)
     return 0;
@@ -416,11 +416,11 @@ allocdir (ino_t parent, ino_t request, mode_t mode)
     goto bad;
   if (!makeentry (ino, parent, ".."))
     goto bad;
-  
+
   linkfound[ino]++;
   linkfound[parent]++;
   return ino;
-  
+
  bad:
   freeino (ino);
   return 0;
@@ -471,16 +471,16 @@ linkup (ino_t ino, ino_t parent)
 	    }
 	}
     }
-  
+
   getinode (lfdir, &lfdino);
   if ((lfdino.di_model & IFMT) != IFDIR)
     {
       ino_t oldlfdir;
-      
+
       problem (1, "`%s' IS NOT A DIRECTORY", lfname);
       if (! reply ("REALLOCATE"))
 	return 0;
-      
+
       oldlfdir = lfdir;
 
       lfdir = allocdir (ROOTINO, 0, lfmode);
@@ -494,20 +494,20 @@ linkup (ino_t ino, ino_t parent)
 	  warning (1, "SORRY, CANNOT CREATE `%s' DIRECTORY", lfname);
 	  return 0;
 	}
-      
+
       /* One less link to the old one */
       linkfound[oldlfdir]--;
-  
+
       getinode (lfdir, &lfdino);
   }
-  
+
   if (inodestate[lfdir] != DIRECTORY && inodestate[lfdir] != (DIRECTORY|DIR_REF))
     {
       warning (1, "SORRY.  `%s' DIRECTORY NOT ALLOCATED", lfname);
       return 0;
     }
 
-  asprintf (&tempname, "#%d", ino);
+  asprintf (&tempname, "#%Ld", ino);
   search_failed = !searchdir (lfdir, tempname, &foo);
   while (foo)
     {
@@ -531,7 +531,7 @@ linkup (ino_t ino, ino_t parent)
     }
   free (tempname);
   linkfound[ino]++;
-  
+
   if (parent != -1)
     {
       /* Reset `..' in ino */
@@ -539,7 +539,7 @@ linkup (ino_t ino, ino_t parent)
 	{
 	  if (!changeino (ino, "..", lfdir))
 	    {
-	      warning (1, "CANNOT ADJUST `..' LINK I=%u", ino);
+	      warning (1, "CANNOT ADJUST `..' LINK I=%Ld", ino);
 	      return 0;
 	    }
 	  /* Forget about link to old parent */
@@ -547,21 +547,21 @@ linkup (ino_t ino, ino_t parent)
 	}
       else if (!makeentry (ino, lfdir, ".."))
 	{
-	  warning (1, "CANNOT CREAT `..' LINK I=%u", ino);
+	  warning (1, "CANNOT CREAT `..' LINK I=%Ld", ino);
 	  return 0;
 	}
-      
+
       /* Account for link to lost+found; update inode directly
 	 here to avoid confusing warning later. */
       linkfound[lfdir]++;
       linkcount[lfdir]++;
       lfdino.di_nlink++;
       write_inode (lfdir, &lfdino);
-      
+
       if (parent)
-	warning (0, "DIR I=%u CONNECTED; PARENT WAS I=%u", ino, parent);
+	warning (0, "DIR I=%Ld CONNECTED; PARENT WAS I=%Ld", ino, parent);
       else
-	warning (0, "DIR I=%u CONNECTED", ino);
+	warning (0, "DIR I=%Ld CONNECTED", ino);
     }
   return 1;
 }
