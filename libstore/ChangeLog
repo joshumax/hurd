@@ -1,3 +1,12 @@
+2001-12-26  Roland McGrath  <roland@frob.com>
+
+	* unknown.c: New file.
+	* Makefile (SRCS): Add it.
+	* store.h (store_unknown_class, store_unknown_decode): Declare them.
+	* create.c (store_create): If store_decode fails with EINVAL,
+	and we were called with the STORE_NO_FILEIO flag bit set,
+	then use store_unknown_decode.
+
 2001-12-23  Roland McGrath  <roland@frob.com>
 
 	* kids.c (store_set_child_flags): Move decrement to avoid ill-defined
