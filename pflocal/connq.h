@@ -55,12 +55,4 @@ error_t connq_set_length (struct connq *cq, int length);
    connections available. Neither SOCK nor CQ should be locked.  */
 error_t connq_connect (struct connq *cq, int noblock, struct sock *sock);
 
-/* Interrupt any threads waiting on CQ, both listeners and connectors, and
-   make them return with EINTR.  */
-void connq_interrupt (struct connq *cq);
-
-/* Interrupt any threads that are attempting to connect SOCK to CQ, and make
-   them return with EINTR.  */
-void connq_interrupt_sock (struct connq *cq, struct sock *sock);
-
 #endif /* __CONNQ_H__ */
