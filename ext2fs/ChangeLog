@@ -1,3 +1,7 @@
+2002-07-31  Roland McGrath  <roland@frob.com>
+
+	* dir.c (diskfs_direnter_hard): Fix test in last change.
+
 2002-06-08  Roland McGrath  <roland@frob.com>
 
 	* inode.c (diskfs_cached_lookup): Use ino_t for argument.
