@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994,95,96,97,99 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -17,6 +17,7 @@
 
 #include <mach.h>
 #include <hurd.h>
+#include <sys/mman.h>
 #include "pager.h"
 #include <hurd/ports.h>
 
@@ -35,20 +36,20 @@ struct pager
       NORMAL,			/* while running */
       SHUTDOWN,			/* ignore all further requests */
     } pager_state;
-  
+
   struct mutex interlock;
   struct condition wakeup;
 
   struct lock_request *lock_requests; /* pending lock requests */
   struct attribute_request *attribute_requests; /* pending attr requests */
-  
+
   boolean_t may_cache;
   memory_object_copy_strategy_t copy_strategy;
 
   /* Interface ports */
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
-  
+
   int seqno;
 
   int noterm;			/* number of threads blocking termination */
@@ -57,7 +58,7 @@ struct pager
 
   int termwaiting:1;
   int waitingforseqno:1;
-  
+
 #ifdef KERNEL_INIT_RACE
   /* Out of sequence object_init calls waiting for
      terminations. */
