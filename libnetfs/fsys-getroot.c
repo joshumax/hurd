@@ -64,7 +64,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   
   type = netfs_root_node->nn_stat.st_mode & S_IFMT;
 
-  if ((netfs_root_node->istranslated
+  if (((netfs_root_node->nn_stat.st_mode & S_IPTRANS)
        || fshelp_translated (&netfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
