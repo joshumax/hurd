@@ -35,7 +35,7 @@ pass1b ()
      Return RET_GOOD or RET_BAD if the block is
      good or bad, respectively.  */
   int
-  checkblock (daddr_t bno, int nfrags)
+  checkblock (daddr_t bno, int nfrags, off_t offset)
     {
       struct dups *dlp;
       int hadbad = 0;

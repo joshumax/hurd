@@ -30,19 +30,16 @@
 #include "../ufs/dir.h"
 
 /* Type of an inode */
-enum inodetype
-{
-  UNALLOC,			/* not allocated */
-  REG,				/* allocated, not dir */
-  DIRECTORY,			/* dir */
-  BADDIR,			/* dir with bad block pointers */
-};
+#define UNALLOC 0
+#define REG 1
+#define DIRECTORY 2
+#define BADDIR 3
 
 /* Added to directories in pass 2 */
-#define DIR_REF 0x80000000	/* dir has been found in connectivity search */
+#define DIR_REF 4	/* dir has been found in connectivity search */
 
 /* State of each inode (set by pass 1) */
-enum inodetype *inodestate;
+char *inodestate;
 
 /* Number of links claimed by each inode (set by pass 1) */
 nlink_t *linkcount;
@@ -160,8 +157,8 @@ int changeino (ino_t, char *, ino_t);
 
 int linkup (ino_t, ino_t);
 
-void datablocks_iterate (struct dinode *, int (*)(daddr_t, int));
-void allblock_iterate (struct dinode *, int (*)(daddr_t, int));
+void datablocks_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
+void allblock_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
 
 void record_directory (struct dinode *, ino_t);
 
