@@ -25,6 +25,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 mach_port_t diskfs_host_priv;
 mach_port_t diskfs_master_device;
 mach_port_t diskfs_default_pager;
+mach_port_t diskfs_auth_server_port;
 struct port_info *diskfs_control_port;
 struct mapped_time_value *diskfs_mtime;
 
@@ -73,4 +74,6 @@ diskfs_init_diskfs (void)
 	  VM_PROT_READ, VM_INHERIT_NONE);
   mach_port_deallocate (mach_task_self (), timedev);
   mach_port_deallocate (mach_task_self (), obj);
+
+  diskfs_auth_server_port = getauth ();
 }
