@@ -29,13 +29,12 @@ struct mom_port_ref
 /* Mach-specific functions */
 
 /* Initialize OBJ with a reference to Mach port PORT.  One Mach user
-   reference is consumed.  OBJ should not currently be used, and will
-   have one reference upon return.  */
+   reference is consumed.  */
 error_t mom_mach_port_set (struct mom_port_ref *obj, mach_port_t port);
 
 /* Return the Mach port corresponding to OBJ.  No new Mach user
-   references are created, so this Mach port should only be used as
-   long as the user has a reference to OBJ.  */
+   references are created, so this Mach port should not be used
+   after OBJ has been destroyed. */
 mach_port_t mom_fetch_mach_port (struct mom_port_ref *obj);
 
 /* Turn a Mach error number into a Mom error number. */
