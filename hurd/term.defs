@@ -57,3 +57,46 @@ term_become_ctty (
 	pgrp: pid_t;
 	sigpt: mach_port_t;
 	out newtty: io_t);
+
+/* This sets the name returned by future get_nodename calls.  This is
+   conventionally the name of a file which can be opened, resulting in
+   a clone of this port.  */
+term_set_nodename (
+	terminal: io_t;
+	name: string_t);
+
+/* Return the last value set with set_nodename.  */
+term_get_nodename (
+	terminal: io_t;
+	out name: string_t);
+
+/* Set the underlying file to be used for chown/chmod, etc. */
+term_set_filenode (
+	terminal: io_t;
+	filenode: file_t);
+
+/* Find out what the bottom half of this terminal is using.  */
+term_get_bottom_type (
+	terminal: io_t;
+	out type: int);
+
+/* Start running with the bottom half as a device port using the Mach
+   kernel device interface.  The old bottom half (if any) is
+   discarded.  */
+term_on_machdev (
+	terminal: io_t;
+	machdev: device_t);
+
+/* Start running with the bottom half as a hurd I/O port.  (It is
+   assumed that io_t is being served by a Hurd I/O server). */
+term_on_hurddev (
+	terminal: io_t;
+	hurddev: io_t);
+
+/* Start running with the bottom half being an exported hurd I/O port.
+   This differs from term_on_hurddev in that with term_on_pty the
+   terminal driver will serve the port.  The returned port is a pty,
+   similar in operation to the entity of the same name in BSD.
+term_on_pty (
+	terminal: io_t;
+	out ptymaster: io_t);
