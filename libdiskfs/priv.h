@@ -32,6 +32,9 @@
 /* These inhibit setuid or exec. */
 extern int _diskfs_nosuid, _diskfs_noexec;
 
+/* This relaxes the requirement to set `st_atime'.  */
+extern int _diskfs_noatime;
+
 /* This is the -C argument value.  */
 extern const char *_diskfs_chroot_directory;
 
@@ -43,7 +46,12 @@ extern struct hurd_port _diskfs_exec_portcell;
 
 volatile struct mapped_time_value *_diskfs_mtime;
 
-extern struct argp_option diskfs_common_options[];
+extern const struct argp_option diskfs_common_options[];
+/* Option keys for long-only options in diskfs_common_options.  */
+#define OPT_SUID_OK	600	/* --suid-ok */
+#define OPT_EXEC_OK	601	/* --exec-ok */
+#define OPT_ATIME	602	/* --atime */
+
 
 /* Diskfs thinks the disk is dirty if this is set. */
 extern int _diskfs_diskdirty;

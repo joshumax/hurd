@@ -1,6 +1,6 @@
 /* Parse standard run-time options
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -22,22 +22,17 @@
 
 #include "priv.h"
 
-#define OPT_SUID_OK 600
-#define OPT_EXEC_OK 601
-
 static const struct argp_option
 std_runtime_options[] =
 {
   {"update", 'u',  0, 0, "Flush any meta-data cached in core"},
   {"remount", 0, 0, OPTION_HIDDEN | OPTION_ALIAS}, /* deprecated */
-  {"suid-ok", OPT_SUID_OK, 0, 0, "Enable set-uid execution"},
-  {"exec-ok", OPT_EXEC_OK, 0, 0, "Enable execution of files"},
   {0, 0}
 };
 
 struct parse_hook
 {
-  int readonly, sync, sync_interval, remount, nosuid, noexec;
+  int readonly, sync, sync_interval, remount, nosuid, noexec, noatime;
 };
 
 /* Implement the options in H, and free H.  */
@@ -82,6 +77,8 @@ set_opts (struct parse_hook *h)
     _diskfs_nosuid = h->nosuid;
   if (h->noexec != -1)
     _diskfs_noexec = h->noexec;
+  if (h->noatime != -1)
+    _diskfs_noatime = h->noatime;
 
   free (h);
 
@@ -100,8 +97,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'u': h->remount = 1; break;
     case 'S': h->nosuid = 1; break;
     case 'E': h->noexec = 1; break;
+    case 'A': h->noatime = 1; break;
     case OPT_SUID_OK: h->nosuid = 0; break;
     case OPT_EXEC_OK: h->noexec = 0; break;
+    case OPT_ATIME: h->noatime = 0; break;
     case 'n': h->sync_interval = 0; h->sync = 0; break;
     case 's':
       if (arg)
@@ -112,7 +111,6 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       else
 	h->sync = 1;
       break;
-
 
     case ARGP_KEY_INIT:
       if (state->input)

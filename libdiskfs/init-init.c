@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1994, 95, 96, 97, 98, 99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -30,7 +30,8 @@ mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
 mach_port_t diskfs_fsys_identity;
 
-int _diskfs_nosuid = 0, _diskfs_noexec = 0;
+int _diskfs_nosuid, _diskfs_noexec;
+int _diskfs_noatime;
 
 struct hurd_port _diskfs_exec_portcell;
 

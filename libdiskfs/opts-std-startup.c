@@ -1,6 +1,6 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98, 99 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -67,14 +67,15 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
 {
   switch (opt)
     {
-    case 'r':
-      diskfs_readonly = 1; break;
-    case 'w':
-      diskfs_readonly = 0; break;
-    case 'S':
-      _diskfs_nosuid = 1; break;
-    case 'E':
-      _diskfs_noexec = 1; break;
+#define TOGGLE(var, on, off) \
+    case on: var = 1; break; \
+    case off: var = 1; break;
+      TOGGLE (diskfs_readonly, 'r', 'w');
+      TOGGLE (_diskfs_nosuid, 'S', OPT_SUID_OK);
+      TOGGLE (_diskfs_noexec, 'E', OPT_EXEC_OK);
+      TOGGLE (_diskfs_noatime, 'A', OPT_ATIME);
+#undef	TOGGLE
+
     case 's':
       if (arg == NULL)
 	diskfs_synchronous = 1;
@@ -85,7 +86,6 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       diskfs_synchronous = 0;
       diskfs_default_sync_interval = 0;
       break;
-
 
       /* Boot options */
     case OPT_DEVICE_MASTER_PORT:

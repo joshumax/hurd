@@ -1,8 +1,8 @@
 /* Get standard diskfs run-time options
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96,97,98,99 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
 
@@ -40,6 +40,8 @@ diskfs_append_std_options (char **argz, unsigned *argz_len)
     err = argz_add (argz, argz_len, "--no-suid");
   if (!err && _diskfs_noexec)
     err = argz_add (argz, argz_len, "--no-exec");
+  if (!err && _diskfs_noatime)
+    err = argz_add (argz, argz_len, "--no-atime");
 
   if (! err)
     {
