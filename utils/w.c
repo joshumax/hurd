@@ -1,6 +1,6 @@
 /* Hurdish w
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -222,7 +222,7 @@ w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
 {
   struct w_hook *hook = ps->hook;
   *host = hook->host;
-  *host_len = strlen (*host);
+  *host_len = *host ? strlen (*host) : 0;
 }
 const struct ps_getter w_host_getter =
 {"host", W_PSTAT_HOST, w_get_host};
