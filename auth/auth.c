@@ -264,23 +264,6 @@ struct pending
     mach_msg_type_name_t passthrough_type;
   };
 
-
-/* Request dead-name notification on RENDEZVOUS and arrange that
-   the current thread be cancelled should it die.  */
-static void
-cancel_on_dead_name (struct authhandle *auth, mach_port_t rendezvous)
-{
-  mach_port_t foo;
-  mach_port_request_notification (mach_task_self (), rendezvous,
-				  MACH_NOTIFY_DEAD_NAME, 1,
-				  auth->pi.port_right,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
-  ports_interrupt_self_on_port_death (auth, rendezvous);
-}
-
-
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_user_authenticate (struct authhandle *userauth,
@@ -331,11 +314,13 @@ S_auth_user_authenticate (struct authhandle *userauth,
              us up.  */
 	  u.user = userauth;
 	  condition_init (&u.wakeup);
-	  cancel_on_dead_name (userauth, rendezvous);
-	  err = hurd_condition_wait (&u.wakeup, &pending_lock);
-	  if (err)
+	  ports_interrupt_self_on_port_death (userauth, rendezvous);
+	  if (hurd_condition_wait (&u.wakeup, &pending_lock))
 	    /* We were interrupted; remove our record.  */
-	    ihash_locp_remove (pending_users, u.locp);
+	    {
+	      ihash_locp_remove (pending_users, u.locp);
+	      err = EINTR;
+	    }
 	}
       /* The server side has already removed U from the ihash table.  */
       mutex_unlock (&pending_lock);
@@ -409,11 +394,13 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 	  s.passthrough = newport;
 	  s.passthrough_type = newport_type;
 	  condition_init (&s.wakeup);
-	  cancel_on_dead_name (serverauth, rendezvous);
-	  err = hurd_condition_wait (&s.wakeup, &pending_lock);
-	  if (err)
+	  ports_interrupt_self_on_port_death (serverauth, rendezvous);
+	  if (hurd_condition_wait (&s.wakeup, &pending_lock))
 	    /* We were interrupted; remove our record.  */
-	    ihash_locp_remove (pending_servers, s.locp);
+	    {
+	      ihash_locp_remove (pending_servers, s.locp);
+	      err = EINTR;
+	    }
 	}
       /* The user side has already removed S from the ihash table.  */
       mutex_unlock (&pending_lock);
