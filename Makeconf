@@ -63,7 +63,16 @@ CFLAGS += -Wall -g -O3
 
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.
+ifneq (,$(wildard $(..)config.make))
 include $(..)config.make
+# Set a flag for the makefiles to indicated config.make was included.
+configured = yes
+endif
+
+# If we're not configured, don't do deps; then `make TAGS' and such can work.
+ifndef configured
+no_deps = t
+endif
 
 # Test build options set by configure.
 ifeq (no,$(build-profiled))
@@ -370,9 +379,7 @@ endif
 
 # TAGS files
 ifneq ($(dir),.)
-DEP_SRCS = sed -e 's/^.*://' -e 's/ \\$$//' | tr ' ' '\012'| \
-	   sed -n -e 's@^$(srcdir)@&@p' -e 's@^[^/]@&@p' | sort -ur
-ifeq ($(OBJS),)
+ifeq ($(SRCS),)
 TAGS: $(OTHERTAGS)
 ifeq ($(OTHERTAGS),)
 # no tags, but parent will include this file, so make empty one.
@@ -381,8 +388,8 @@ else
 	etags -o $@ $^
 endif
 else
-TAGS: $(OBJS:.o=.d) $(OTHERTAGS)
-	cat $(OBJS:.o=.d) | $(DEP_SRCS) | etags -o $@ - $(OTHERTAGS)
+TAGS: $(SRCS) $(OTHERTAGS)
+	etags -o $@ $^
 endif
 endif
 
