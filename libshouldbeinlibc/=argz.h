@@ -26,6 +26,13 @@
    ENOMEM is returned, otherwise 0.  The result can be destroyed using free. */
 error_t argz_create(char **argv, char **argz, int *len);
 
+/* Returns the number of strings in ARGZ.  */
+int argz_count (char *argz, int len);
+
+/* Puts pointers to each string in ARGZ into ARGV, which must be large enough
+   to hold them all.  */
+void argz_extract (char *argz, int len, char **argv);
+
 /* Make '\0' separated arg vector ARGZ printable by converting all the '\0's
    except the last into spaces.  */
 void argz_stringify(char *argz, int len);
