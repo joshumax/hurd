@@ -40,8 +40,7 @@ master_thread_function (any_t foo __attribute__ ((unused)))
     }
   while (err);
   
-  /* Successful diskfs_shutdown should never return. */
-  abort ();
+  exit (0);
 }
 
 void
