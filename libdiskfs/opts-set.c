@@ -55,7 +55,7 @@ diskfs_set_options (int argc, char **argv)
 	  break;
 
 	default:
-	  return EINVAL;
+	  return ARGP_ERR_UNKNOWN;
 	}
       return 0;
     }
