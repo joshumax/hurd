@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -54,8 +54,7 @@ free_packets (struct packet *head)
       if (head->buf_len > 0)
 	{
 	  if (head->buf_vm_alloced)
-	    vm_deallocate (mach_task_self (),
-			   (vm_address_t)head->buf, head->buf_len);
+	    munmap (head->buf, head->buf_len);
 	  else
 	    free (head->buf);
 	}

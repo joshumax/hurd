@@ -1,3 +1,7 @@
+1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* pq.c (free_packets): Use munmap instead of vm_deallocate.
+
 1998-10-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* pq.c (free_packets): Add braces to silence gcc warning.
