@@ -370,7 +370,6 @@ main(int argc, char *argv[])
   char *fmt_string = DEFAULT_FMT_STRING, *sort_key_name = NULL;
   int sort_reverse = 0, print_heading = 1, show_entries = 1, show_uptime = 1;
   int squash_bogus_fields = 1, squash_nominal_fields = 1;
-  int default_output = 1;	/* should show standard `all users' list.  */
   struct proc_stat_list *procs;
 #if 0
   char *tty_names = 0;
