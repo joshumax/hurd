@@ -1,3 +1,8 @@
+2001-06-10  Neal H Walfield  <neal@cs.uml.edu>
+
+        * file-inv-trans.c: Remove this file, function no longer exists.
+        * Makefile (FSSRCS): Remove reference to file-inv-trans.c.
+
 2001-05-13  Marcus Brinkmann  <marcus@gnu.org>
 
 	* file-exec.c: Initialize GID with st_gid rather than st_uid.

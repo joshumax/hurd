@@ -1,3 +1,8 @@
+2001-06-10  Neal H Walfield  <neal@cs.uml.edu>
+
+        * file-inv.c: Remove this file, function no longer exists.
+        * Makefile (FSSRCS): Remove reference to file-inv.c.
+
 2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* startup.c (trivfs_startup): Don't use MAKE_SEND in Hurd RPC.
