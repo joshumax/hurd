@@ -1,4 +1,4 @@
-# Copyright (C) 1993 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -24,4 +24,4 @@ DIST_FILES = fstests.c Makefile
 fstests: fstests.o; $(link)
 
 install: fstests
-	cp fstests $(hurdroot)/hurd/init
+	cp fstests $(hurdroot)/hurd/fstests
