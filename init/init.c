@@ -1,6 +1,7 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02
+   	Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -362,7 +363,11 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	error (0, errno, "%s", prog);
       else
 	{
-	  task_create (mach_task_self (), 0, task);
+	  task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		       NULL, 0,	/* OSF Mach */
+#endif
+		       0, task);
 	  if (bootstrap_args & RB_KDB)
 	    {
 	      printf ("Pausing for %s\n", prog);
@@ -434,7 +439,11 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     }
 #endif
 
-  task_create (mach_task_self (), 0, &task);
+  task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+	       NULL, 0,	/* OSF Mach */
+#endif
+	       0, &task);
   proc_child (procserver, task);
   proc_task2pid (procserver, task, &pid);
   proc_task2proc (procserver, task, &default_ports[INIT_PORT_PROC]);
@@ -1027,7 +1036,11 @@ start_child (const char *prog, char **progargs)
       return -1;
     }
 
-  task_create (mach_task_self (), 0, &child_task);
+  task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+	       NULL, 0,	/* OSF Mach */
+#endif
+	       0, &child_task);
   proc_child (procserver, child_task);
   proc_task2pid (procserver, child_task, &child_pid);
   proc_task2proc (procserver, child_task, &default_ports[INIT_PORT_PROC]);
