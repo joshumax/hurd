@@ -1,3 +1,8 @@
+1999-05-23  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* default_pager.c (new_partition): Fix arg order in printf for
+	linux-2.2 signature page.
+
 1999-05-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* default_pager.c (new_partition): Fix SWAP-SPACE page handling.
