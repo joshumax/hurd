@@ -59,10 +59,10 @@ extern int trivfs_support_exec;
    operations.)  */
 extern int trivfs_allow_open;
 
-extern int trivfs_protid_porttypes[];
-extern int trivfs_protid_nporttypes;
-extern int trivfs_cntl_porttypes[];
-extern int trivfs_cntl_nporttypes;
+extern struct port_class *trivfs_protid_portclasses;
+extern int trivfs_protid_nportclasses;
+extern struct port_class *trivfs_cntl_portclasses;
+extern int trivfs_cntl_nportclasses;
 
 /* The user must define this function.  This should modify a struct 
    stat (as returned from the underlying node) for presentation to
@@ -103,7 +103,8 @@ void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
    node.  If CONTROL isn't NULL, the trivfs control port is return in it.  If
    any error occurs sending fsys_startup, it is returned, otherwise 0.  */
 error_t trivfs_startup(mach_port_t bootstrap,
-		       int control_type, int protid_type,
+		       struct port_class *control_class,
+		       struct port_class *protid_class,
 		       struct trivfs_control **control);
 
 /* Call this to create a new control port and return a receive right
@@ -112,11 +113,12 @@ error_t trivfs_startup(mach_port_t bootstrap,
    returns as the realnode.  PROTIDTYPE is the ports type to be used
    for ports that refer to this underlying node.  CNTLTYPE is the ports type
    to be used for the control port for this node. */
-mach_port_t trivfs_handle_port (mach_port_t underlying, int cntltype,
-				int protidtype);
+mach_port_t trivfs_handle_port (mach_port_t underlying, 
+				struct port_class *control_class,
+				struct port_class *protid_class);
 
-/* Install these as libports cleanroutines for trivfs_protid_porttype
-   and trivfs_cntl_porttype respectively. */
+/* Install these as libports cleanroutines for trivfs_protid_class
+   and trivfs_cntl_class respectively. */
 void trivfs_clean_protid (void *);
 void trivfs_clean_cntl (void *);
 
@@ -127,8 +129,9 @@ int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
    to go away.  FLAGS are from the set FSYS_GOAWAY_*; REALNODE,
    CNTLTYPE, and PROTIDTYPE are as from the trivfs_handle_port
    call which creade this filesystem. */
-error_t trivfs_goaway (int flags, mach_port_t realnode, int cntltype,
-		       int protidtype);
+error_t trivfs_goaway (int flags, mach_port_t realnode, 
+		       struct port_class *control_class,
+		       struct port_class *protid_class);
 
 /* Call this to set atime for the node to the current time.  */
 error_t trivfs_set_atime (struct trivfs_control *cntl);
