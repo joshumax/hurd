@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -22,7 +22,8 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_dir_link (struct protid *diruser, struct protid *fileuser, char *name)
+netfs_S_dir_link (struct protid *diruser, struct protid *fileuser, char *name,
+		  int excl)
 {
   error_t err;
   
@@ -34,7 +35,7 @@ netfs_S_dir_link (struct protid *diruser, struct protid *fileuser, char *name)
   
   /* Note that nothing is locked here */
   err = netfs_attempt_link (diruser->credential, diruser->po->np, 
-			    fileuser->po->np, name);
+			    fileuser->po->np, name, excl);
   if (!err)
     mach_port_deallocate (mach_task_self (), fileuser->pi.port_right);
   return err;
