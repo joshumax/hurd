@@ -103,6 +103,7 @@ pager_return_some (struct pager *pager,
 void
 pager_offer_page (struct pager *pager,
 		  int precious,
+		  int writelock,
 		  vm_offset_t page,
 		  vm_address_t buf);  
 
