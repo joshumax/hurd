@@ -1,5 +1,10 @@
 2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
 
+	* part.c: Add const to type.
+	Reported by Jeroen Dekkers.
+
+2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
+
 	* device.c (dev_error): Add a break to silence gcc warning.
 	(store_device_class): Add const to type.
 	* typed.c (store_typed_open_class): Likewise.

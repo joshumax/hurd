@@ -190,5 +190,5 @@ store_part_open (const char *name, int flags,
   return err;
 }
 
-struct store_class
+const struct store_class
 store_part_class = { -1, "part", open: store_part_open };
