@@ -110,16 +110,16 @@ timespec_rep (struct timespec *ts)
 {
   static char buf[200];
   char *p = buf;
-  if (ts->ts_sec || ts->ts_nsec)
+  if (ts->tv_sec || ts->tv_nsec)
     {
-      time_t time = ts->ts_sec;
+      time_t time = ts->tv_sec;
       strcpy (buf, ctime (&time));
       p += strlen (buf);
       if (p[-1] == '\n')
 	p--;
       *p++ = ' ';
     }
-  snprintf (p, buf + sizeof buf - p, "[%ld, %ld]", ts->ts_sec, ts->ts_nsec);
+  snprintf (p, buf + sizeof buf - p, "[%ld, %ld]", ts->tv_sec, ts->tv_nsec);
   return buf;
 }
 
