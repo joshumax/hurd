@@ -130,7 +130,7 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
       if (err2)
 	{
 	  if (np)
-	    diskfs_nput (np);
+	    diskfs_nput (*np);
 	  return err2;
 	}
     }
