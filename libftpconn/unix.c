@@ -40,7 +40,7 @@
 struct ftp_conn_syshooks ftp_conn_unix_syshooks = {
   ftp_conn_unix_pasv_addr, ftp_conn_unix_interp_err,
   ftp_conn_unix_start_get_stats, ftp_conn_unix_cont_get_stats,
-  ftp_conn_unix_fix_nlist_name
+  ftp_conn_unix_append_name, ftp_conn_unix_basename
 };
 
 /* Try to get an internet address out of the reply to a PASV command.
@@ -603,6 +603,9 @@ ftp_conn_unix_cont_get_stats (struct ftp_conn *conn, int fd, void *state,
 		 prefix, removed it so the client gets back what it passed.  */
 	      name += 2;
 
+	  /* Pass only directory-relative names to the callback function.  */
+	  name = basename (name);
+
 	  /* Call the callback function to process the current entry; it is
 	     responsible for freeing S->name and SYMLINK_TARGET.  */
 	  err = (*add_stat) (name, &s->stat, symlink_target, hook);
@@ -658,19 +661,42 @@ finished:
   return err;
 }
 
-/* Some ftp servers return output from the nlist command that contains more
-   than just the simple names.  This functions looks at *NAME and rewrites it
-   to compensate, changing *NAME to point to the rewritten name.  DIR is the
-   name of the directory passed to the nlist command.  */
+/* Give a name which refers to a directory file, and a name in that
+   directory, this should return in COMPOSITE the composite name refering to
+   that name in that directory, in malloced storage.  */
 error_t
-ftp_conn_unix_fix_nlist_name (struct ftp_conn *conn, char *dir, char **name)
+ftp_conn_unix_append_name (struct ftp_conn *conn,
+			   const char *dir, const char *name,
+			   char **composite)
 {
-  size_t dir_len = strlen (dir);
-  if (strncmp (*name, dir, dir_len) == 0)
-    {
-      *name += dir_len;
-      if (**name == '/')
-	*name += 1;
-    }
+   char *path = malloc (strlen (dir) + 1 + strlen (name) + 1);
+
+   if (! path)
+     return ENOMEM;
+
+   /* Form the path name.  */
+   if (name && *name)
+     if (dir[0] == '/' && dir[1] == '\0')
+       stpcpy (stpcpy (path, dir), name);
+     else
+       stpcpy (stpcpy (stpcpy (path, dir), "/"), name);
+   else
+     strcpy (path, dir);
+
+   *composite = path;
+
+   return 0;
+}
+
+/* If the name of a file *NAME is a composite name (containing both a
+   filename and a directory name), this function should change *NAME to be
+   the name component only; if the result is shorter than the original
+   *NAME, the storage pointed to it may be modified, otherwise, *NAME
+   should be changed to point to malloced storage holding the result, which
+   will be freed by the caller.  */
+error_t
+ftp_conn_unix_basename (struct ftp_conn *conn, char **name)
+{
+  *name = basename (*name);
   return 0;
 }
