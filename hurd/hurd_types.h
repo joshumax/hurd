@@ -28,7 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    server interface definitions.  A "version" in Posix terminology is
    a distribution of the Hurd; there may be more than one distribution
    without changing the release number.  */
-#define HURD_RELEASE "0.0 pre-alpha"
+#define HURD_RELEASE "0.0"
 
 
 /*   Simple type declarations   */
