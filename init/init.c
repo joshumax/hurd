@@ -58,7 +58,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
 
-#define _PATH_RUNCOM "/etc/rc"
+#define _PATH_RUNCOM "/libexec/rc"
 #define _PATH_LOGIN "/bin/login"
 
 /* How long to wait after starting window specs before starting getty */
