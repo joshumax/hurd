@@ -16,7 +16,7 @@ main(argc, argv)
 	int pid, child, status, brksize;
 	int starttime, endtime;
 
-	if (argc < 2) {
+	if (argc < 3) {
 		printf("usage: %s number-of-forks sbrk-size\n", argv[0]);
 		exit(1);
 	}
