@@ -35,6 +35,7 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
   error_t error = 0;
   mode_t type;
   struct node *np;
+  struct protid *newpi;
   
   /* This code is very similar (but subtly different) from
      dir-pathtrans.c and fsys-getroot.c.  A way should be found to
@@ -136,13 +137,15 @@ diskfs_S_file_invoke_translator (struct protid *cred __attribute__ ((unused)),
 
   flags &= ~OPENONLY_STATE_MODES;
 
+  newpi = diskfs_make_protid (diskfs_make_peropen (np, flags,
+						   _diskfs_dotdot_file),
+			      cred->uids, cred->nuids, 
+			      cred->gids, cred->ngids);
   *retry = FS_RETRY_NONE;
   retry_name[0] = '\0';
-  *retrypt = (ports_get_right 
-	      (diskfs_make_protid
-	       (diskfs_make_peropen (np, flags, _diskfs_dotdot_file),
-		      cred->uids, cred->nuids, cred->gids, cred->ngids)));
+  *retrypt = ports_get_right (newpi);
   *retrypttype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
 
   mutex_unlock (&np->lock);
 
