@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -41,7 +41,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Create a new id structure with the given genuine uids and gids. */
 static inline struct ids *
-make_ids (uid_t *uids, int nuids, uid_t *gids, int ngids)
+make_ids (const uid_t *uids, size_t nuids, const uid_t *gids, size_t ngids)
 {
   struct ids *i;
 
@@ -491,15 +491,91 @@ S_proc_getallpids (struct proc *p,
   *pidslen = nprocs;
   return 0;
 }
-
+
 /* Create a process for TASK, which is not otherwise known to us.
-   The task will be placed as a child of init and in init's pgrp. */
+   The PID/parentage/job-control fields are not yet filled in,
+   and the proc is not entered into any hash table.  */
 struct proc *
-new_proc (task_t task)
+allocate_proc (task_t task)
 {
   struct proc *p;
   mach_port_t foo;
 
+  /* Pid 0 is us; pid 1 is init.  We handle those here specially;
+     all other processes inherit from init here (though proc_child
+     will move them to their actual parent usually).  */
+
+  ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
+
+  p->p_task = task;
+
+  mach_port_request_notification (mach_task_self (), p->p_task,
+				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
+
+  p->p_msgport = MACH_PORT_NULL;
+
+  condition_init (&p->p_wakeup);
+
+  p->p_argv = p->p_envp = p->p_status = 0;
+
+  p->p_owner = 0;
+  p->p_exec = 0;
+  p->p_stopped = 0;
+  p->p_waited = 0;
+  p->p_exiting = 0;
+  p->p_waiting = 0;
+  p->p_traced = 0;
+  p->p_nostopcld = 0;
+  p->p_deadmsg = 0;
+  p->p_checkmsghangs = 0;
+  p->p_msgportwait = 0;
+  p->p_dead = 0;
+
+  return p;
+}
+
+/* Allocate and initialize the proc structure for init (PID 1),
+   the original parent of all other procs.  */
+struct proc *
+create_startup_proc (void)
+{
+  static const uid_t zero;
+  struct proc *p;
+
+  p = allocate_proc (MACH_PORT_NULL);
+
+  p->p_pid = 1;
+
+  p->p_parent = p;
+  p->p_sib = 0;
+  p->p_prevsib = &p->p_ochild;
+  p->p_ochild = p;
+  p->p_parentset = 1;
+
+  p->p_deadmsg = 1;		/* Force initial "re-"fetch of msgport.  */
+
+  p->p_noowner = 0;
+  p->p_id = make_ids (&zero, 1, &zero, 1);
+
+  p->p_loginleader = 1;
+  p->p_login = malloc (sizeof (struct login) + 5);
+  p->p_login->l_refcnt = 1;
+  strcpy (p->p_login->l_name, "root");
+
+  boot_setsid (p);
+  add_proc_to_hash (p);
+
+  return p;
+}
+
+/* Complete a new process that has been allocated but not entirely initialized.
+   This gets called for every process except startup_proc (PID 1).  */
+void
+complete_proc (struct proc *p, pid_t pid)
+{
   /* Because these have a reference count of one before starting,
      they can never be freed, so we're safe. */
   static struct login *nulllogin;
@@ -512,120 +588,45 @@ new_proc (task_t task)
       strcpy (nulllogin->l_name, "<none>");
     }
 
-  /* Pid 0 is us; pid 1 is init.  We handle those here specially;
-     all other processes inherit from init here (though proc_child
-     will move them to their actual parent usually).  */
+  p->p_pid = pid;
 
-  ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
+  p->p_id = &nullids;
+  p->p_id->i_refcnt++;
 
-  p->p_pid = genpid ();
-  p->p_task = task;
+  p->p_login = nulllogin;
+  p->p_login->l_refcnt++;
 
-  mach_port_request_notification (mach_task_self (), p->p_task,
-				  MACH_NOTIFY_DEAD_NAME, 1, p->p_pi.port_right,
-				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
-  if (foo != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), foo);
+  /* Our parent is init for now.  */
+  p->p_parent = startup_proc;
 
-  switch (p->p_pid)
-    {
-    case 0:
-      p->p_login = malloc (sizeof (struct login) + 5);
-      p->p_login->l_refcnt = 1;
-      strcpy (p->p_login->l_name, "root");
-      break;
+  p->p_sib = startup_proc->p_ochild;
+  p->p_prevsib = &startup_proc->p_ochild;
+  if (p->p_sib)
+    p->p_sib->p_prevsib = &p->p_sib;
+  startup_proc->p_ochild = p;
+  p->p_loginleader = 0;
+  p->p_ochild = 0;
+  p->p_parentset = 0;
 
-    case 1:
-      p->p_login = self_proc->p_login;
-      p->p_login->l_refcnt++;
-      break;
+  p->p_noowner = 1;
 
-    default:
-      p->p_login = nulllogin;
-      p->p_login->l_refcnt++;
-    }
+  p->p_pgrp = startup_proc->p_pgrp;
 
-  p->p_owner = 0;
-
-  if (p->p_pid == 0)
-    {
-      uid_t foo = 0;
-      p->p_id = make_ids (&foo, 1, &foo, 1);
-      p->p_parent = p;
-      p->p_sib = 0;
-      p->p_prevsib = &p->p_ochild;
-      p->p_ochild = p;
-      p->p_loginleader = 1;
-      p->p_parentset = 1;
-      p->p_noowner = 0;
-    }
-  else if (p->p_pid == 1)
-    {
-      p->p_id = self_proc->p_id;
-      p->p_id->i_refcnt++;
-      p->p_parent = self_proc;
-
-      p->p_sib = self_proc->p_ochild;
-      p->p_prevsib = &self_proc->p_ochild;
-      if (p->p_sib)
-	p->p_sib->p_prevsib = &p->p_sib;
-      self_proc->p_ochild = p;
-      p->p_loginleader = 1;
-      p->p_ochild = 0;
-      p->p_parentset = 1;
-      p->p_noowner = 0;
-    }
-  else
-    {
-      p->p_id = &nullids;
-      p->p_id->i_refcnt++;
-
-      /* Our parent is init for now */
-      p->p_parent = startup_proc;
-
-      p->p_sib = startup_proc->p_ochild;
-      p->p_prevsib = &startup_proc->p_ochild;
-      if (p->p_sib)
-	p->p_sib->p_prevsib = &p->p_sib;
-      startup_proc->p_ochild = p;
-      p->p_loginleader = 0;
-      p->p_ochild = 0;
-      p->p_parentset = 0;
-      p->p_noowner = 1;
-    }
-
-  if (p->p_pid < 2)
-    boot_setsid (p);
-  else
-    p->p_pgrp = startup_proc->p_pgrp;
-
-  p->p_msgport = MACH_PORT_NULL;
-
-  condition_init (&p->p_wakeup);
-
-  p->p_argv = p->p_envp = p->p_status = 0;
-
-  p->p_exec = 0;
-  p->p_stopped = 0;
-  p->p_waited = 0;
-  p->p_exiting = 0;
-  p->p_waiting = 0;
-  p->p_traced = 0;
-  p->p_nostopcld = 0;
-  p->p_deadmsg = (p->p_pid == 1);
-  p->p_checkmsghangs = 0;
-  p->p_msgportwait = 0;
-  p->p_dead = 0;
-
-  if (p->p_pid > 1)
-    {
-      add_proc_to_hash (p);
-      join_pgrp (p);
-    }
-
-  return p;
+  add_proc_to_hash (p);
+  join_pgrp (p);
 }
 
+
+/* Create a process for TASK, which is not otherwise known to us
+   and initialize it in the usual ways.  */
+static struct proc *
+new_proc (task_t task)
+{
+  struct proc *p = allocate_proc (task);
+  complete_proc (p, genpid ());
+  return p;
+}
+
 /* The task associated with process P has died.  Drop most state,
    and then record us as dead.  Our parent will eventually complete the
    deallocation. */
@@ -781,8 +782,7 @@ add_tasks (task_t task)
   return foundp;
 }
 
-/* Allocate a new pid.  The first two times this is called it must return
-   0 and 1 in order; after that it must simply return an unused pid.
+/* Allocate a new unused PID.
    (Unused means it is neither the pid nor pgrp of any relevant data.) */
 int
 genpid ()
