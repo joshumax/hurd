@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include <hurd.h>
 #include <cthreads.h>
 #include <hurd/ihash.h>
 
@@ -32,7 +33,7 @@ inhibit_all_rpcs ()
       struct rpc_info *rpc;
 
       for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-	thread_cancel (rpc->thread);
+	hurd_thread_cancel (rpc->thread);
       return 0;
     }
 
