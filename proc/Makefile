@@ -38,6 +38,9 @@ all: proc
 proc: $(OBJS)
 	$(link)
 
+install: proc $(hurdroot)
+	cp proc $(hurdroot)/hurd/proc
+
 $(OBJS): proc.h proc_S.h
 notify.o: notify_S.h
 wait.o: process_reply.h msg.h interrupt_S.h
