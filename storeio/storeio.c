@@ -38,6 +38,7 @@ static struct argp_option options[] =
   {"readonly", 'r', 0,	  0,"Disallow writing"},
   {"writable", 'w', 0,	  0,"Allow writing"},
   {"no-cache", 'c', 0,	  0,"Never cache data--user io does direct device io"},
+  {"enforced",  'e', 0,	  0,"Never reveal underlying devices, even to root"},
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
@@ -59,6 +60,9 @@ static int readonly;
 /* Nonzero if user gave --no-cache flag.  */
 static int inhibit_cache;
 
+/* Nonzero if user gave --enforced flag.  */
+static int enforce_store;
+
 /* A unixy device number to return when the device is stat'd.  */
 static int rdev;
 
@@ -72,6 +76,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'w': readonly = 0; break;
 
     case 'c': inhibit_cache = 1; break;
+    case 'e': enforce_store = 1; break;
 
     case 'n':
       {
@@ -156,6 +161,9 @@ trivfs_append_args (struct trivfs_control *trivfs_control,
   if (!err && inhibit_cache)
     err = argz_add (argz, argz_len, "--no-cache");
 
+  if (!err && enforce_store)
+    err = argz_add (argz, argz_len, "--enforced");
+
   if (! err)
     err = argz_add (argz, argz_len, readonly ? "--readonly" : "--writable");
 
@@ -186,14 +194,12 @@ check_open_hook (struct trivfs_control *trivfs_control,
 		      &device);
       if (err)
 	device = NULL;
+      else
+	device->enforced = enforce_store;
       if (err && (flags & (O_READ|O_WRITE)) == 0)
 	/* If we're not opening for read or write, then just ignore the
 	   error, as this allows stat to word correctly.  XXX  */
 	err = 0;
-      if (err == D_NO_SUCH_DEVICE)
-	/* Give the canonical POSIX error code for an absent device,
-	   rather than letting the Mach code propagate up.  */
-	err = ENXIO;
     }
   mutex_unlock (&device_lock);
 
