@@ -74,6 +74,9 @@ check_hashbang (struct execdata *e,
 	{
 	  error_t err;
 	  mach_port_t ref;
+
+	  /* MAKE_SEND is safe here because we destroy REF ourselves. */
+
 	  error_t uauth (auth_t auth)
 	    {
 	      return auth_user_authenticate (auth,

@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
 
-   Copyright (C) 1992, 93, 94, 95, 96, 97, 98, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 97, 98, 1999, 2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
    This file is part of the GNU Hurd.
 
@@ -228,13 +228,16 @@ S_exec_init (struct trivfs_protid *protid,
      initial boot-time canonical sets.  */
   {
     struct trivfs_protid *cred;
+    mach_port_t right;
+    
     err = trivfs_open (fsys,
 		       iohelp_create_iouser (make_idvec (), make_idvec ()),
 		       0, MACH_PORT_NULL, &cred);
     assert_perror (err);
 
-    proc_execdata_notify (procserver, ports_get_right (cred),
-			  MACH_MSG_TYPE_MAKE_SEND);
+    right = ports_get_send_right (cred);
+    proc_execdata_notify (procserver, right, MACH_MSG_TYPE_COPY_SEND);
+    mach_port_deallocate (mach_task_self (), right);
   }
 
   err = get_privileged_ports (&host_priv, NULL);
