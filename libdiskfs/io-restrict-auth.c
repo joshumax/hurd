@@ -47,16 +47,28 @@ diskfs_S_io_restrict_auth (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  newuids = alloca (sizeof (uid_t) * cred->nuids);
-  newgids = alloca (sizeof (uid_t) * cred->ngids);
+  if (diskfs_isuid (0, cred))
+    /* CRED has root access, and so may use any ids.  */
+    {
+      newuids = uids;
+      newnuids = nuids;
+      newgids = gids;
+      newngids = ngids;
+    }
+  else
+    /* Otherwise, use any of the requested ids that CRED already has.  */
+    {
+      newuids = alloca (sizeof (uid_t) * cred->nuids);
+      newgids = alloca (sizeof (uid_t) * cred->ngids);
   
-  for (i = newnuids = 0; i < cred->nuids; i++)
-    if (listmember (uids, cred->uids[i], nuids))
-      newuids[newnuids++] = cred->uids[i];
-  for (i = newngids = 0; i < cred->ngids; i++)
-    if (listmember (gids, cred->gids[i], ngids))
-      newgids[newngids++] = cred->gids[i];
-      
+      for (i = newnuids = 0; i < cred->nuids; i++)
+	if (listmember (uids, cred->uids[i], nuids))
+	  newuids[newnuids++] = cred->uids[i];
+      for (i = newngids = 0; i < cred->ngids; i++)
+	if (listmember (gids, cred->gids[i], ngids))
+	  newgids[newngids++] = cred->gids[i];
+    }
+
   mutex_lock (&cred->po->np->lock);
   err = diskfs_create_protid (cred->po, newuids, newnuids, newgids, newngids,
 			      &newpi);
