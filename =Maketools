@@ -48,7 +48,6 @@ crossheaders := $(crossdir)/include
 
 INSTALL = install -c
 INSTALL_DATA = $(INSTALL) -m 644
-INSTALL_BIN = $(INSTALL) -m 755
-#INSTALL_BIN=cp
+INSTALL_PROGRAM = $(INSTALL) -m 755
 
 machine := i386
