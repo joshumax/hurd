@@ -44,8 +44,6 @@ pass4()
 		  write_inode (number, &dino);
 		  pfix ("ADJUSTED");
 		}
-	      else
-		pfail (0);
 	    }
 	}
       else if (linkfound[number] && inodestate[number] == UNALLOC)
@@ -73,21 +71,21 @@ pass4()
 	      
 	      if (preen || reply ("RECONNECT"))
 		reconn_failed = !linkup (number, -1);
-	      if (!reconn_failed)
+	      if (! reconn_failed)
 		pfix ("RECONNECTED");
-	      else
-		pfail ("FAILED");
 	    }
 	  if (dino.di_size == 0 || reconn_failed)
 	    {
+	      if (reconn_failed && !preen)
+		/* If preening, the previous call to problem is still active
+		   (more likely the failure was too severe, and exited).  */
+		problem (0, "RECONNECT FAILED");
 	      if (preen || reply ("CLEAR"))
 		{
 		  inodestate[number] = UNALLOC;
 		  clear_inode (number, &dino);
 		  pfix ("CLEARED");
 		}
-	      else
-		pfail (0);
 	    }
 	}
     }
