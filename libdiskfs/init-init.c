@@ -36,7 +36,6 @@ spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
 int _diskfs_ncontrol_ports = 0;
 
 struct port_class *diskfs_protid_class;
-struct port_class *diskfs_transboot_class;
 struct port_class *diskfs_control_class;
 struct port_class *diskfs_initboot_class;
 struct port_class *diskfs_execboot_class;
@@ -82,7 +81,6 @@ diskfs_init_diskfs (void)
   diskfs_auth_server_port = getauth ();
 
   diskfs_protid_class = ports_create_class (diskfs_protid_rele);
-  diskfs_transboot_class = ports_create_class (fshelp_transboot_clean);
   diskfs_control_class = ports_create_class (_diskfs_control_clean);
   diskfs_initboot_class = ports_create_class (0);
   diskfs_execboot_class = ports_create_class (0);
