@@ -1,3 +1,9 @@
+Sun Jul 21 03:00:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* fsysopts.c (main): Print an error for no args.
+	* portinfo.c (main): For no args, use argp_usage.
+	(options): Minor fixes.
+
 Fri Jul 19 21:09:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* settrans.c (options): Rearrange slightly.
