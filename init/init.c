@@ -19,11 +19,24 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Written by Michael I. Bushnell and Roland McGrath.  */
 
+#include <hurd.h>
+#include <hurd/fs.h>
+#include <hurd/fsys.h>
+#include <device/device.h>
+#include <stdio.h>
+#include <assert.h>
+
+#include "startup_reply.h"
+
+mach_port_t startup;
+
 int
 main (int argc, char **argv)
 {
   int err;
   mach_port_t bootport;
+  int i;
+  mach_port_t ports[INIT_PORT_MAX];
   
   /* Fetch a port to the bootstrap filesystem, the host priv and
      master device ports, and the console */
