@@ -1,7 +1,7 @@
 /* Write portions of a store to stdout
 
-   Copyright (C) 1996, 1997, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996,97,99,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -91,7 +91,7 @@ main (int argc, char **argv)
 	      else
 		err = store_create (source, 0, 0, &store);
 	      if (err)
-		error (err, 3, "%s", arg);
+		error (3, err, "%s", arg);
 	    }
 	  else if (addr < 0)
 	    addr = atoll (arg);
