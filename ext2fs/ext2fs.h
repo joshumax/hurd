@@ -34,7 +34,7 @@
    Normally, don't define it, but defining it causes a much greater rate
    of paging requests, which may be helpful in catching bugs. */
 
-#undef DONT_CACHE_MEMORY_OBJECTS
+#define DONT_CACHE_MEMORY_OBJECTS
 
 int printf (const char *fmt, ...);
 
