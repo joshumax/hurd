@@ -1,3 +1,8 @@
+2002-11-20  Roland McGrath  <roland@frob.com>
+
+	* main.c (parse_opt : case ARGP_KEY_SUCCESS): After initializing a new
+	bottomhalf, call its assert_dtr hook if TTY_OPEN is set in termflags.
+
 2002-11-19  Roland McGrath  <roland@frob.com>
 
 	* main.c (parse_opt: case ARGP_KEY_SUCCESS): Set tty_arg along with
