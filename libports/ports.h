@@ -31,6 +31,7 @@ struct port_info
   int refcnt;
   int weakrefcnt;
   mach_port_mscount_t mscount;
+  mach_msg_seqno_t cancel_threshhold;
   int flags;
   mach_port_t port_right;
   struct rpc_info *current_rpcs;
