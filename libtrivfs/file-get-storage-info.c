@@ -20,7 +20,8 @@
 
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred, int *class,
-				int **runs, mach_msg_type_number_t *runs_len,
+				off_t **runs, mach_msg_type_number_t *runs_len,
+				size_t *block_size,
 				char *dev_name, mach_port_t *dev_port,
 				mach_msg_type_name_t *dev_port_type,
 				char **misc, mach_msg_type_number_t *misc_len)
