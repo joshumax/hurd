@@ -1,7 +1,7 @@
 /* Ftp filesystem
 
-   Copyright (C) 1997, 1998 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,98,2002 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -261,9 +261,10 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 	    sep = strchr (ftpfs_remote_fs, ':');
 
 	  if (! sep)
-	    argp_error (state, "%s: No server specified", ftpfs_remote_fs);
-
-	  ftpfs_remote_root = sep + 1;
+	    /* We have just a host name, so treat it as "HOST:/". */
+	    ftpfs_remote_root = "/";
+	  else
+	    ftpfs_remote_root = sep + 1;
 
 	  /* Lookup the ftp server (the part before the `:').  */
 	  *sep = '\0';
