@@ -702,17 +702,31 @@ netfs_S_file_exec (struct protid *user,
                    size_t destroynameslen)
 {
   error_t err;
+  file_t file;
 
   if (!user)
     return EOPNOTSUPP;
 
-  /* We cannot use MACH_MSG_TYPE_MOVE_SEND because we might need to
-     retry an interrupted call that would have consumed the rights.  */
-  err = file_exec (user->po->np->nn->file, task, flags, argv, argvlen,
-		   envp, envplen, fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
-		   intarray, intarraylen, deallocnames, deallocnameslen,
-		   destroynames, destroynameslen);
+  mutex_lock (&user->po->np->lock);
+  err = check_openmodes (user->po->np->nn, O_EXEC, MACH_PORT_NULL);
+  file = user->po->np->nn->file;
+  if (!err)
+    err = mach_port_mod_refs (mach_task_self (),
+			      file, MACH_PORT_RIGHT_SEND, 1);
+  mutex_unlock (&user->po->np->lock);
+
+  if (!err)
+    {
+      /* We cannot use MACH_MSG_TYPE_MOVE_SEND because we might need to
+	 retry an interrupted call that would have consumed the rights.  */
+      err = file_exec (user->po->np->nn->file, task, flags, argv, argvlen,
+		       envp, envplen, fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
+		       intarray, intarraylen, deallocnames, deallocnameslen,
+		       destroynames, destroynameslen);
+      mach_port_deallocate (mach_task_self (), file);
+    }
+
   if (err == 0)
     {
       size_t i;
