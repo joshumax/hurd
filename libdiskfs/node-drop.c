@@ -80,9 +80,6 @@ diskfs_drop_node (struct node *np)
 	}
     }
 
-  if (np->identity != MACH_PORT_NULL)
-    mach_port_destroy (mach_task_self (), np->identity);
-
   assert (!np->sockaddr);
 
   diskfs_node_norefs (np);
