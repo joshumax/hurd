@@ -1,3 +1,8 @@
+Mon May 26 23:03:41 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* checklist: Add su, addauth, setauth, ids, & vminfo to list of
+	setuid programs.
+
 Wed May  7 15:07:48 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* INSTALL-binary (STEP VI): Suggest building a kernel.

@@ -35,7 +35,8 @@ Checklist for binary image filesystems
 *   /tmp is 1777.
 *   Chown /games games.games.
 *   Check permissions on set[gu]id files in binary tree.
-       (login, ps, w, vmstat, rsh, rlogin, games/lib/nethack/nethack)
+       (login, su, addauth, setauth, ids, ps, w, vmstat, vminfo, rsh, rlogin,
+        games/lib/nethack/nethack)
 *   Check each directory for bogus cruft files.
 *   Especially delete .bash_history, .gnunfs*, and .stamp files.
 *   Verify installation on bare machine.
