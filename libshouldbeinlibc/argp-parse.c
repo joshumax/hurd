@@ -242,7 +242,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
 			 values (the sign of the lower bits is preserved
 			 however)...  */
 		      long_end->val =
-			(opt->key & USER_MASK)
+			((opt->key | real->key) & USER_MASK)
 			  + (((group - groups) + 1) << USER_BITS);
 
 		      /* Keep the LONG_OPTS list terminated.  */
