@@ -1,4 +1,4 @@
-/* Remember where we've written the disk to speed up sync
+/* A data structure to remember modifications to a memory region.
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
@@ -38,6 +38,8 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
   vm_offset_t offset = trunc_page (loc - pokel->image);
   vm_offset_t end = round_page (loc + length - pokel->image);
 
+  ext2_debug ("adding %p[%ul] (range 0x%x to 0x%x)", loc, length, offset, end);
+
   spin_lock (&pokel->lock);
 
   pl = pokel->pokes;
@@ -52,6 +54,8 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 	{
 	  pl->offset = offset < p_offs ? offset : p_offs;
 	  pl->length = (end > p_end ? end : p_end) - pl->offset;
+	  ext2_debug ("extended 0x%x[%ul] to 0x%x[%ul]",
+		      p_offs, p_end - p_offs, pl->offset, pl->length);
 	  break;
 	}
 
@@ -84,6 +88,7 @@ pokel_sync (struct pokel *pokel, int wait)
 
   for (pl = pokel->pokes; pl; pl = next)
     {
+      ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
       pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
       next = pl->next;
       pl->next = pokel->free_pokes;
