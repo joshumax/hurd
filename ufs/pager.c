@@ -362,7 +362,8 @@ pager_clear_user_data (struct user_pager_info *upi)
   if (upi->type == FILE_DATA)
     {
       spin_lock (&node2pagelock);
-      upi->np->dn->fileinfo = 0;
+      if (upi->np->dn->fileinfo == upi)
+	upi->np->dn->fileinfo = 0;
       spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
@@ -450,24 +451,30 @@ diskfs_get_filemap (struct node *np)
 		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
 
   spin_lock (&node2pagelock);
-  if (!np->dn->fileinfo)
-    {
-      upi = malloc (sizeof (struct user_pager_info));
-      upi->type = FILE_DATA;
-      upi->np = np;
-      diskfs_nref_light (np);
-      upi->p = pager_create (upi, pager_bucket,
-			     MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
-      np->dn->fileinfo = upi;
-      right = pager_get_port (np->dn->fileinfo->p);
-      ports_port_deref (np->dn->fileinfo->p);
-    }
-  else
-    /* There is a race condition here.  If there are no references
-       to NP->dn->fileinfo->p, then the clean routine might be
-       blocked trying to get into node2pagelock, and this call is
-       invalid.   XXX */
-    right = pager_get_port (np->dn->fileinfo->p);
+  do
+    if (!np->dn->fileinfo)
+      {
+	upi = malloc (sizeof (struct user_pager_info));
+	upi->type = FILE_DATA;
+	upi->np = np;
+	diskfs_nref_light (np);
+	upi->p = pager_create (upi, pager_bucket,
+			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+	np->dn->fileinfo = upi;
+	right = pager_get_port (np->dn->fileinfo->p);
+	ports_port_deref (np->dn->fileinfo->p);
+      }
+    else
+      {
+	/* Because NP->dn->fileinfo->p is not a real reference,
+	   this might be nearly deallocated.  If that's so, then
+	   the port right will be null.  In that case, clear here
+	   and loop.  The deallocation will complete separately. */
+	right = pager_get_port (np->dn->fileinfo->p);
+	if (right == MACH_PORT_NULL)
+	  np->dn->fileinfo = 0;
+      }
+  while (right == MACH_PORT_NULL);
 
   spin_unlock (&node2pagelock);
   
