@@ -26,6 +26,10 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.12  1996/05/04 10:06:31  roland
+ * [lint] (NEVER): Spurious global variable removed.
+ * [!lint] (NEVER): Useless macro removed.
+ *
  * Revision 1.11  1996/01/24 18:37:59  roland
  * Use prototypes for functions of zero args.
  *
@@ -360,7 +364,7 @@ typedef struct mutex {
 	MACRO_END
 #define	mutex_set_name(m, x)	((m)->name = (x))
 #define	mutex_name(m)		((m)->name != 0 ? (m)->name : "?")
-#define	mutex_clear(m)		/* nop */???
+#define	mutex_clear(m)		((void) 0) /* nop */
 #define	mutex_free(m)		free((any_t) (m))
 
 extern void __mutex_lock_solid (void *mutex); /* blocking -- roland@gnu */
