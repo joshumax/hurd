@@ -30,10 +30,11 @@ Mark with * when installation into /gd4/gnu-0.2 has been done.
   [ Comment out basename in find/defs.h and find/util.c.
     Define _GNU_SOURCE at front of find/pred.c.
     Define ARG_MAX to be 20480 before its first use. ]
+finger (1.37) [what's the correct configuration?]
 * flex  (2.5.4)
 * from (special source)
 * g77 (0.5.19.1)
-* gawk  (3.0.0)  (don't use 3.0.2)
+* gawk  (3.0.3)
 * gcal (2.10)
 * gcc  (2.7.2.2) (includes patches from g77 0.5.19.1)
 * gdb (gdb-gnu-5 special!)
@@ -41,17 +42,12 @@ Mark with * when installation into /gd4/gnu-0.2 has been done.
     gdb installs as `i486-gnu-gdb' by default, so perhaps just copy
     by hand ]
 * gettext (0.10)
-glibc (2.0.3)
-  [ Fix typo in sysdeps/generic/sigset.h (__sigandset, __sigorset) SET -> DEST.
-  [ Initialize _hurdsig_preempters to 0 in hurd/hurdsig.c. ]
-  [ Initialize _hurdsig_fault_preemptor to {0} in hurd/hurdfault.c. ]
-  [ Initialize STACKSIZE to 8 pages, not 4, in hurd/hurdsig.c:_hurdsig_init. ]
-  [ New version of hurd/hurdauth.c ]
-glibc-crypt (??)
+glibc (2.0.4)
+[glibc-crypt (2.0.4)]
 * gmp (2.0.2)
 - gnat (3.09)
+gnuchess (4.0.pl77) [ in src/Makefile, use 'prefix=' ]
 gnumach (1.1.1) [ wait to decide what devices to include ]
-gperf (2.1a) (modified?)
 * grep (2.0)
 * grub (0.4)
 * gzip (1.2.4)
@@ -61,6 +57,7 @@ hurd (0.2)
 * indent (1.9.1)
 * inetutils (1.3a)
 * less (332)
+* libg++ (2.7.2)
 * m4 (1.4)
 * make (3.75) [ use latest getloadavg ]
 * miscfiles (1.1)
@@ -110,3 +107,53 @@ hurd (0.2)
 * textutils (1.22)
 * time (1.7)
 * wdiff (0.5)
+
+
+apache
+calc
+cfengine
+clisp
+common lisp
+dejagnu
+dld
+elib
+es
+enscript
+ffcall
+fontutils
+generic nqs
+gforth
+git
+gnans
+gnats
+gnumath
+gnuplot
+gnuserv
+hyperbole
+id utils
+ispell
+jacal
+lynx
+maxima
+meta-hmtl
+mc
+nih class library
+oaklisp
+objective c library
+octave
+oleo
+p2c
+pcl
+rc
+roxen
+screen
+shogi
+smalltalk
+superopt
+sneps
+tile-forth
+ucblogo
+uucp
+wget
+wn
+

@@ -18,6 +18,7 @@ Checklist for binary image filesystems
 *   Symlink /lib/libtermcap.a -> /lib/libncurses.a
 *   Check all symlinks to make sure they don't reference /gd4.
 *   Build some static fileutils: ls, ln, cp, mv, chmod.
+*   Make damn sure that we are only distributing the md5 libcrypt.
 *   Make sure /include/obstack.h is from libc and not binutils.
 *   Make sure there is no /include/i386.
 *   Make sure there is no /i486-gnu.
