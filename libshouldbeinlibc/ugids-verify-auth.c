@@ -28,27 +28,9 @@
 #include <grp.h>
 
 #include <hurd/paths.h>
-/*#include <hurd/password.h>*/ /* XXX commented out until new libc installed */
+#include <hurd/password.h>
 
 #include "ugids.h"
-
-/* XXXX these are dummies to use until libc gets re-installed.
-   The weak symbols should make the real libhurduser.so versions
-   get used as soon as they exist, even though we didn't #include
-   the header.  When they are available in a working libc dist,
-   then this page can be removed and the #include above uncommented.  */
-#pragma weak password_check_user
-error_t
-password_check_user (io_t a, uid_t b, const char *c, auth_t *d)
-{
-  return ENOSYS;
-}
-#pragma weak password_check_group
-error_t
-password_check_group (io_t a, uid_t b, const char *c, auth_t *d)
-{
-  return ENOSYS;
-}
 
 /* Accumulated information from authentication various passwords.  */
 struct svma_state
@@ -93,7 +75,7 @@ server_verify_make_auth (const char *password,
   error_t err = (*check) (svma_state->server, id, password, &auth);
 
   if (! err)
-    /* PASSWORD checked out ok; the corresponding authentication is in AUTH.  */
+    /* PASSWORD checked out ok; the corresponding authentication is in AUTH. */
     {
       err = svma_state_add_auths (svma_state, &auth, 1);
       if (err)
@@ -113,7 +95,8 @@ server_verify_make_auth (const char *password,
    for the idvec_verify function in <idvec.h>.  */
 error_t
 ugids_verify_make_auth (const struct ugids *ugids,
-			const struct idvec *have_uids, const struct idvec *have_gids,
+			const struct idvec *have_uids,
+			const struct idvec *have_gids,
 			char *(*getpass_fn) (const char *prompt,
 					     uid_t id, int is_group,
 					     void *pwd_or_grp, void *hook),

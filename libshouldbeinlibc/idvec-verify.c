@@ -65,6 +65,9 @@ verify_passwd (const char *password,
      ? ((struct passwd *)pwd_or_grp)->pw_passwd
      : ((struct group *)pwd_or_grp)->gr_passwd);
 
+  if (sys_encrypted && !*sys_encrypted)
+    return 0;			/* No password.  */
+  
   if (crypt)
     /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
     encrypted = crypt (password, sys_encrypted);
@@ -232,6 +235,9 @@ verify_id (uid_t id, int is_group, int multiple,
   char *prompt = 0, *password;
   char id_lookup_buf[1024];
 
+  /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
+  assert (verify_fn);
+
   if (id >= 0)
     do
       {
@@ -242,7 +248,7 @@ verify_id (uid_t id, int is_group, int multiple,
 		== 0)
 	      {
 		if (!gr->gr_passwd || !*gr->gr_passwd)
-		  return 0;	/* No password.  */
+		  return (*verify_fn) ("", id, 1, gr, verify_hook);
 		name = gr->gr_name;
 		pwd_or_grp = gr;
 	      }
@@ -254,7 +260,7 @@ verify_id (uid_t id, int is_group, int multiple,
 		== 0)
 	      {
 		if (!pw->pw_passwd || !*pw->pw_passwd)
-		  return 0;	/* No password.  */
+		  return (*verify_fn) ("", id, 0, pw, verify_hook);
 		name = pw->pw_name;
 		pwd_or_grp = pw;
 	      }
@@ -281,9 +287,6 @@ verify_id (uid_t id, int is_group, int multiple,
   if (! getpass_fn)
     /* Default GETPASS_FN to using getpass.  */
     getpass_fn = get_passwd;
-
-  /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
-  assert (verify_fn);
 
   if (multiple)
     {

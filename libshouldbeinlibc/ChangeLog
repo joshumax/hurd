@@ -1,3 +1,16 @@
+1998-12-21  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* ugids-verify-auth.c: Include <hurd/password.h> again and remove
+	temporary definitions of password_check_user and
+	password_check_group.
+
+1998-11-29  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* idvec-verify.c (verify_passwd): Grant access when the password
+	in the passwd DB is empty.
+	(verify_id): Also call verify_fn when the password in the password
+	DB is empty.
+	
 1999-02-12  Gordon Matzigkeit  <gord@trick.fig.org>
 
 	* Makefile (LCLHDRS): Purge argp-fmtstream.h and argp-namefrob.h.
