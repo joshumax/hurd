@@ -31,3 +31,5 @@ DIST_FILES= demuxer.c dir-link.c dir-mkdir.c dir-mkfile.c dir-pathtrans.c \
 	io-readable.c io-reauthenticate.c io-restrict-auth.c io-seek.c \
 	io-select.c io-stat.c io-stubs.c io-version.c io-write.c nosenders.c \
 	notify-stubs.c trivfs.h
+
+clean:
