@@ -151,8 +151,8 @@ routine proc_setprocargs (
 routine proc_getmsgport (
 	process: process_t;
 	sreplyport reply_port: reply_port_t;
-	pid: pidarray_t;
-	out msgport: portarray_t);
+	pid: pid_t;
+	out msgport: mach_port_t);
 
 /* Wait for a child process to exit.  If pid is zero, it waits for any
    child.  If pid is negative, it waits for any process in the
