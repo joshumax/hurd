@@ -19,7 +19,7 @@ dir := serverboot
 makemode := utility
 
 SRCS = bootstrap.c ffs_compat.c load.c wiring.c \
-	ffs_file_io.c minix_ffs_compat.c file_io.c\
+	ffs_file_io.c minix_ffs_compat.c file_io.c \
 	minix_file_io.c ext2_file_io.c strfcns.c exec.c \
 	panic.c elf-load.c gunzip.c bunzip2.c
 LCLHDRS = assert.h disk_inode_ffs.h fs.h queue.h defs.h \
@@ -35,18 +35,18 @@ OBJS = $(subst .c,.o,$(SRCS)) \
        boot_script.o userland-boot.o \
        $(UNZIP_OBJS)
 
+include ../Makeconf
+
 vpath boot_script.c $(srcdir)/../boot
 vpath userland-boot.c $(srcdir)/../boot
 
 # Look for zip stuff
-VPATH += $(srcdir)/../exec
+vpath %.c $(srcdir)/../exec
 # If SMALL_BZIP2 is defined, use relatively small memory.
 # It's crucial for serverboot, because swap is not enabled yet.
 CPPFLAGS += -I$(srcdir)/../exec -DGZIP -DBZIP2 -DSMALL_BZIP2
 
 LDFLAGS += -static
-
-include ../Makeconf
 
 # Don't even bother.
 CFLAGS := $(filter-out -Wall,$(CFLAGS))

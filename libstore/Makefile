@@ -54,11 +54,11 @@ BUNZIP2_OBJS = do-bunzip2.o
 OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
 DIST_FILES = unzipstore.c
 
+include ../Makeconf
+
 # Look for zip stuff
 vpath %.c $(srcdir)/../exec
 CPPFLAGS += -I$(srcdir)/../exec
-
-include ../Makeconf
 
 module-CPPFLAGS = -D'STORE_SONAME_SUFFIX=".so.$(hurd-version)"'
 
