@@ -179,6 +179,22 @@ int nextgennumber;
 
 mach_port_t ufs_device;
 
+/* The compat_mode specifies whether or not we write
+   extensions onto the disk. */
+enum compat_mode
+{
+  COMPAT_GNU = 0,
+  COMPAT_BSD42 = 1,
+  COMPAT_BSD44 = 2,
+};
+
+/* If this is set, then this filesystem has two extensions:
+   1) directory entries include the type field.
+   2) symlink targets might be written directly in the di_db field 
+      of the dinode. */
+int direct_symlink_extension;
+
+
 #define DEV_BSIZE 512
 #define NBBY 8
 #define btodb(n) ((n) / DEV_BSIZE)
@@ -190,11 +206,11 @@ mach_port_t ufs_device;
 #define clrbit(a,i) ((a)[(i)/NBBY] &= ~(1<<(i)%NBBY))
 
 /* From alloc.c: */
-error_t alloc (struct node *, daddr_t, daddr_t, int, daddr_t *, 
-	       struct protid *);
-void blkfree(volatile daddr_t bno, int size);
-daddr_t blkpref (struct node *, daddr_t, int, daddr_t *);
-error_t realloccg(struct node *, daddr_t, daddr_t,
+error_t ffs_alloc (struct node *, daddr_t, daddr_t, int, daddr_t *, 
+		   struct protid *);
+void ffs_blkfree(struct node *, volatile daddr_t bno, int size);
+daddr_t ffs_blkpref (struct node *, daddr_t, int, daddr_t *);
+error_t ffs_realloccg(struct node *, daddr_t, daddr_t,
 		  int, int, daddr_t *, struct protid *);
 
 /* From devio.c: */
