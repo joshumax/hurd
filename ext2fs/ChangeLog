@@ -1,3 +1,10 @@
+1998-12-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* inode.c (diskfs_write_disknode): Add braces to silence warning.
+	* pager.c (file_pager_read_page): Likewise.
+
+	* storeinfo.c: Don't include <netinet/in.h>.
+
 1998-09-04  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* dir.c (dirscanblock): Fix defn with `const'.
