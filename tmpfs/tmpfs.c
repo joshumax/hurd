@@ -26,6 +26,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "tmpfs.h"
 #include <limits.h>
 #include <version.h>
+#include <fcntl.h>
+#include <hurd.h>
+#include <hurd/paths.h>
 
 char *diskfs_server_name = "tmpfs";
 char *diskfs_server_version = HURD_VERSION;
@@ -287,7 +290,13 @@ main (int argc, char **argv)
   /* Get our port to the default pager.  Without that,
      we have no place to put file contents.  */
   err = get_privileged_ports (&host_priv, NULL);
-  if (err)
+  if (err == EPERM)
+    {
+      default_pager = file_name_lookup (_SERVERS_DEFPAGER, O_EXEC, 0);
+      if (default_pager == MACH_PORT_NULL)
+	error (0, errno, _SERVERS_DEFPAGER);
+    }
+  else if (err)
     error (0, err, "Cannot get host privileged port");
   else
     {
