@@ -305,9 +305,9 @@ S_proc_getprocenv (struct proc *callerp,
 /* Implement proc_getprocinfo as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_getprocinfo (struct proc *callerp,
-		  pid_t pid,
-		  int **piarray,
-		  u_int *piarraylen)
+		    pid_t pid,
+		    int **piarray,
+		    u_int *piarraylen)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
