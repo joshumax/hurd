@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -108,6 +108,7 @@ open_hook (struct trivfs_control *cntl,
 	   struct iouser *user,
 	   int flags)
 {
+  static int open_count = 0;	/* XXX debugging */
   int cancel = 0;
   error_t err;
   
@@ -137,11 +138,21 @@ open_hook (struct trivfs_control *cntl,
 
       termflags |= NO_OWNER;
     }
-  else if (termflags & EXCL_USE)
+  else
     {
-      mutex_unlock (&global_lock);
-      return EBUSY;
+      assert (open_count > 0);	/* XXX debugging */
+
+      if (termflags & EXCL_USE)
+	{
+	  mutex_unlock (&global_lock);
+	  return EBUSY;
+	}
     }
+
+  open_count++;			/* XXX debugging */
+
+  /* XXX debugging */
+  assert (! (termstate.c_oflag & OTILDE));
 
   /* Assert DTR if necessary. */
   if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
