@@ -27,7 +27,7 @@
 	Change return type to error_t, and return an error value, rather
 	than bailing out.  Declare as static.
 	(devio_bottom): Add type TERM_ON_MACHDEV and init function
-	devio_init.
+	devio_init, and define as const.
 	(devio_set_bits): Accept new argument STATE and use that to work
 	out the terminal state, rather than changing the global termstate.
 	(devio_mdmstate): Accept new argument STATE and use that to return
@@ -46,7 +46,7 @@
 	(ptyio_mdmstate): Likewise, and accept new argument STATE.
 	(ptyio_init): Declare as static and change return type to error_t.
 	(ptyio_bottom): Add type TERM_ON_MASTERPTY and init function
-	ptyio_init.
+	ptyio_init, and define as const.
 	(ptyio_set_bits): Accept new argument STATE and use that to work
 	out the terminal state, rather than changing the global termstate.
 	(ptyio_mdmstate): Accept new argument STATE and use that to return
