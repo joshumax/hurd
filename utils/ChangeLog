@@ -1,3 +1,14 @@
+Thu Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* vmstat.c (name_to_option): Correct test for malloc failure.
+	(get_memobj_hit_ratio): Renamed from get_cache_hit_ratio.
+	(fields): Add `max' field.
+	Rename `cache *' fields to `memobj *', and reword doc strings.
+	(val_width): New function.
+	(main): Calculate verbose output widths differently.
+	(main: FWIDTH): New macro.
+	(VAL_MAX_MEM, VAL_MAX_SWAP, K, M, G): New macros.
+	
 Wed Oct  2 10:24:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (struct field): Remove desc field, add doc field.
