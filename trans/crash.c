@@ -1,5 +1,5 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -23,6 +23,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/trivfs.h>
 #include <sys/wait.h>
 #include <error.h>
+#include <argp.h>
+#include <argz.h>
 
 #include "crash_S.h"
 #include "crash_reply_U.h"
@@ -49,6 +51,19 @@ int trivfs_cntl_nportclasses = 1;
 
 struct trivfs_control *fsys;
 
+enum crash_action
+{
+  crash_suspend,		/* default */
+  crash_kill,
+  crash_corefile
+};
+
+static enum crash_action crash_how;
+
+
+error_t dump_core (task_t task, file_t core_file,
+		   int signo, long int sigcode, int sigerror);
+
 
 /* This data structure describes a crashing task which we have suspended.
    This is attached to a receive right we have set as the process's message
@@ -100,7 +115,7 @@ stop_pgrp (process_t userproc, mach_port_t cttyid)
   err = proc_getpgrppids (userproc, pgrp, &pids, &numpids);
   if (err)
     return;
-  
+
   for (i = 0; i < numpids; i++)
     if (pids[i] != pid)
       {
@@ -132,11 +147,17 @@ S_crash_dump_task (mach_port_t port,
   if (! cred)
     return EOPNOTSUPP;
 
-  /* Suspend the task first thing before being twiddling it.  */
-  err = task_suspend (task);
-
-  if (! err)
+  switch (crash_how)
     {
+    default:
+      return EGRATUITOUS;
+
+    case crash_suspend:
+      /* Suspend the task first thing before being twiddling it.  */
+      err = task_suspend (task);
+      if (err)
+	break;
+
       err = proc_task2proc (procserver, task, &user_proc);
       if (! err)
 	{
@@ -179,7 +200,36 @@ S_crash_dump_task (mach_port_t port,
 	}
       if (err != MIG_NO_REPLY)
 	task_resume (task);
+      break;
+
+    case crash_corefile:
+      err = task_suspend (task);
+      if (!err)
+	{
+	  err = dump_core (task, core_file, signo, sigcode, sigerror);
+	  task_resume (task);
+	}
+      break;
+
+    case crash_kill:
+      {
+	mach_port_t user_proc;
+	err = proc_task2proc (procserver, task, &user_proc);
+	if (!err)
+	  {
+	    err = proc_mark_exit (user_proc, W_EXITCODE (0, signo), sigcode);
+	    mach_port_deallocate (mach_task_self (), user_proc);
+	  }
+	err = task_terminate (task);
+	if (!err)
+	  {
+	    mach_port_deallocate (mach_task_self (), task);
+	    mach_port_deallocate (mach_task_self (), core_file);
+	    mach_port_deallocate (mach_task_self (), ctty_id);
+	  }
+      }
     }
+
   ports_port_deref (cred);
   return err;
 }
@@ -358,6 +408,55 @@ dead_crasher (void *ptr)
 }
 
 
+static const struct argp_option options[] =
+{
+  {0,0,0,0,"These options specify the disposition of a crashing process:", 1},
+  {"suspend",	's', 0,		0, "Suspend the process", 1},
+  {"kill",	'k', 0,		0, "Kill the process", 1},
+  {"core-file", 'c', 0,		0, "Generate a core file", 1},
+  {0}
+};
+
+static error_t
+parse_opt (int opt, char *arg, struct argp_state *state)
+{
+  switch (opt)
+    {
+    default:
+      return ARGP_ERR_UNKNOWN;
+    case ARGP_KEY_INIT:
+    case ARGP_KEY_SUCCESS:
+    case ARGP_KEY_ERROR:
+      break;
+
+    case 's': crash_how = crash_suspend;	break;
+    case 'k': crash_how = crash_kill;		break;
+    case 'c': crash_how = crash_corefile;	break;
+    }
+  return 0;
+}
+
+error_t
+trivfs_append_args (struct trivfs_control *fsys,
+		    char **argz, size_t *argz_len)
+{
+  const char *opt;
+
+  switch (crash_how)
+    {
+    case crash_suspend: opt = "--suspend";	break;
+    case crash_kill:	opt = "--kill";		break;
+    case crash_corefile:opt = "--core-file";	break;
+    default:
+      return EGRATUITOUS;
+    }
+
+  return argz_add (argz, argz_len, opt);
+}
+
+struct argp crash_argp = { options, parse_opt, 0, 0 };
+struct argp *trivfs_runtime_argp = &crash_argp;
+
 
 static int
 crash_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -375,6 +474,7 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap;
 
+  argp_parse (&crash_argp, argc, argv, 0,0,0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
