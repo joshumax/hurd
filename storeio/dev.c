@@ -88,8 +88,7 @@ dev_buf_fill (struct dev *dev, off_t offs)
 
   if (buf != dev->buf)
     {
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t)dev->buf, store->block_size);
+      munmap (dev->buf, store->block_size);
       dev->buf = buf;
     }
 
@@ -188,8 +187,7 @@ dev_close (struct dev *dev)
 
       dev_buf_discard (dev);
 
-      vm_deallocate (mach_task_self (),
-		     (vm_address_t)dev->buf, dev->store->block_size);
+      munmap (dev->buf, dev->store->block_size);
     }
 
   store_free (dev->store);
@@ -414,8 +412,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 		    /* Copy from wherever the read put it. */
 		    {
 		      bcopy (req_buf, _req_buf, req_len);
-		      vm_deallocate (mach_task_self (),
-				     (vm_address_t)req_buf, req_len);
+		      munmap (req_buf, req_len);
 		    }
 		  *amount = req_len;
 		}
@@ -443,7 +440,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 
   err = dev_rw (dev, offs, whole_amount, len, buf_read, raw_read);
   if (err && allocated_buf)
-    vm_deallocate (mach_task_self (), (vm_address_t)*buf, whole_amount);
+    munmap (*buf, whole_amount);
 
   return err;
 }

@@ -86,7 +86,7 @@ pager_write_page (struct user_pager_info *upi,
 
       err = dev_write (dev, page, (char *)buf, want, &written);
 
-      vm_deallocate (mach_task_self (), buf, vm_page_size);
+      munmap ((caddr_t) buf, vm_page_size);
 
       if (err || written < want)
 	return EIO;
