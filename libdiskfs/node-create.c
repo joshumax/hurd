@@ -35,6 +35,7 @@ diskfs_create_node (struct node *dir,
   struct node *np;
   error_t err;
   uid_t newuid;
+  gid_t newgid;
   
   if (diskfs_readonly)
     return EROFS;
@@ -49,34 +50,34 @@ diskfs_create_node (struct node *dir,
     }
 
   np = *newnode;
+
   /* Initialize the on-disk fields. */
-  
   if (cred->nuids)
-    {
-      err = diskfs_validate_owner_change (np, cred->uids[0]);
-      if (err)
-	goto change_err;
-      np->dn_stat.st_uid = cred->uids[0];
-    }
+    newuid = cred->uids[0];
   else
     {
-      err = diskfs_validate_owner_change (np, dir->dn_stat.st_uid);
-      if (err)
-	goto change_err;
-      np->dn_stat.st_uid = dir->dn_stat.st_uid;
+      newuid = dir->dn_stat.st_uid;
       mode &= ~S_ISUID;
     }
+  err = diskfs_validate_owner_change (np, newuid);
+  if (err)
+    goto change_err;
+  np->dn_stat.st_uid = newuid;
 
   if (diskfs_groupmember (dir->dn_stat.st_gid, cred))
-    np->dn_stat.st_gid = dir->dn_stat.st_gid;
+    newgid = dir->dn_stat.st_gid;
   else if (cred->ngids)
-    np->dn_stat.st_gid = cred->gids[0];
+    newgid = cred->gids[0];
   else
     {
-      np->dn_stat.st_gid = dir->dn_stat.st_gid;
+      newgid = dir->dn_stat.st_gid;
       mode &= ~S_ISGID;
     }
-      
+  err = diskfs_validate_group_change (np, newgid);
+  if (err)
+    goto change_err;
+  np->dn_stat.st_gid = newgid;
+
   np->dn_stat.st_rdev = 0;
   np->dn_stat.st_nlink = !!name;
   err = diskfs_validate_mode_change (np, mode);
