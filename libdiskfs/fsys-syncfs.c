@@ -52,6 +52,8 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
   if (!pi)
     return EOPNOTSUPP;
   
+  rwlock_reader_lock (&diskfs_fsys_lock);
+
   if (children)
     diskfs_node_iterate (helper);
 
@@ -60,7 +62,11 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
   
   diskfs_sync_everything (wait);
   diskfs_set_hypermetadata (wait, 0);
+
+  rwlock_reader_unlock (&diskfs_fsys_lock);
+
   ports_port_deref (pi);
+
   return 0;
 }
 
