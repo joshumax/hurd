@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -20,6 +20,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "locks.h"
+
+#define EWOULDBLOCK EAGAIN /* XXX */
 
 error_t
 fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
