@@ -1,3 +1,10 @@
+Sun Feb 23 00:23:49 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* firmlink.c (argp): Use OPTIONS.
+	(getroot): If firmlink returns ENOENT, act like an unresolvable link.
+	Don't support visible mode.
+	(options, parse_opt): Remove -i.
+
 Wed Feb 19 21:34:01 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* null.c (argp_program_version): Make const.
