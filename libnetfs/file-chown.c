@@ -33,7 +33,7 @@ netfs_S_file_chown (struct protid *user,
   
   mutex_lock (&user->po->np->lock);
   err = netfs_attempt_chown (user->credential, user->po->np,
-			     uid, gid);
+			     owner, group);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

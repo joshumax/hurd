@@ -29,10 +29,10 @@ netfs_S_file_utimes (struct protid *user,
   struct timespec atime, mtime;
   error_t err;
   
-  atime.ts_secs = atimein.seconds;
-  atime.ts_nsecs = atimein.microseconds * 1000;
-  mtime.ts_secs = mtimein.seconds;
-  mtime.ts_nsecs = mtimein.microseconds * 1000;
+  atime.ts_sec = atimein.seconds;
+  atime.ts_nsec = atimein.microseconds * 1000;
+  mtime.ts_sec = mtimein.seconds;
+  mtime.ts_nsec = mtimein.microseconds * 1000;
   
   if (!user)
     return EOPNOTSUPP;

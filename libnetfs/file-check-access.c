@@ -25,13 +25,11 @@ error_t
 netfs_S_file_check_access (struct protid *user,
 			   int *types)
 {
-  error_t err;
-  
   if (!user)
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_report_access (user->credential, user->po->np, types);
+  netfs_report_access (user->credential, user->po->np, types);
   mutex_unlock (&user->po->np->lock);
-  return err;
+  return 0;
 }

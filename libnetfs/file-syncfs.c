@@ -28,7 +28,7 @@ netfs_S_file_syncfs (struct protid *user,
 {
   error_t err;
   
-  if (!cred)
+  if (!user)
     return EOPNOTSUPP;
   
   /* Translators not yet supported by netfs. XXX */

@@ -23,7 +23,7 @@
 
 error_t
 netfs_S_file_statfs (struct protid *user,
-		     struct statfs *st)
+		     struct fsys_statfsbuf *st)
 {
   error_t err;
   

@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
-#inlcude "io_S.h"
+#include "io_S.h"
 
 error_t
 netfs_S_io_read (struct protid *user,
