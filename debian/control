@@ -10,8 +10,8 @@ Section: base
 Essential: yes
 Depends: ${hurd:Depends}
 Provides: makedev, login
-Replaces: makedev
-Conflicts: makedev
+Replaces: makedev, login
+Conflicts: makedev, login
 Architecture: hurd-i386
 Description: The GNU Hurd
  This is the GNU Hurd package. It contains essential system software and
