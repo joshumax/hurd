@@ -75,7 +75,7 @@ sync_disk (int wait)
   spin_lock (&pokelistlock);
   for (pl = pokelist; pl; pl = tmp)
     {
-      pager_sync_some (disk_pager, pl->offset, pl->length, wait);
+      pager_sync_some (diskfs_disk_pager, pl->offset, pl->length, wait);
       tmp = pl->next;
       free (pl);
     }
