@@ -1,5 +1,7 @@
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* hashexec.c (check_hashbang): Fix fencepost error in last change.
+
 	* exec.c (map): Made global.
 	* priv.h: Declare it.
 	(map_fsize, map_vsize): New macros for accessing state set up by map.
