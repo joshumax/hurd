@@ -262,6 +262,9 @@ raw_write(struct dev *dev,
   int block_amount = ((buf_len + bsize - 1) / bsize) * bsize;
   vm_offset_t start_offs = *offs;
 
+  if (start_offs % bsize != 0)
+    return EINVAL;
+
   if (block_amount == buf_len && dev_write_valid(dev, buf, block_amount, offs))
     /* BUF is page-aligned, so we can do i/o directly to the device, or
        it is small enough that it doesn't matter.  */
@@ -295,8 +298,11 @@ raw_read(struct dev *dev,
   error_t err;
   int bsize = dev->block_size;
   int block_amount = ((amount + bsize - 1) / bsize) * bsize;
-  err = dev_read(dev, buf, buf_len, block_amount, offs);
 
+  if (*offs % bsize != 0)
+    return EINVAL;
+
+  err = dev_read(dev, buf, buf_len, block_amount, offs);
   if (!err)
     {
       int excess = *buf_len - amount;
@@ -371,11 +377,10 @@ open_write(struct open *open, vm_address_t buf, vm_size_t len,
 
   offs = *state.offs_p;
   if (offs < 0)
-    return EINVAL;
+    err = EINVAL;
   if (offs + len > dev->size)
-    return EIO;
-
-  if (!dev_is(dev, DEV_BUFFERED))
+    err = EIO;
+  else if (!dev_is(dev, DEV_BUFFERED))
     err = raw_write(dev, buf, len, amount, state.offs_p);
   else if (dev_is(dev, DEV_SERIAL))
     {
@@ -428,11 +433,10 @@ open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
 
   offs = *state.offs_p;
   if (offs < 0)
-    return EINVAL;
+    err = EINVAL;
   if (offs + amount > dev->size)
-    return EIO;
-
-  if (!dev_is(dev, DEV_BUFFERED))
+    err = EIO;
+  else if (!dev_is(dev, DEV_BUFFERED))
     err = raw_read(dev, buf, buf_len, amount, state.offs_p);
   else if (dev_is(dev, DEV_SERIAL))
     {
@@ -466,6 +470,46 @@ open_read(struct open *open, vm_address_t *buf, vm_size_t *buf_len,
 #endif
 
   rdwr_state_finalize(&state);
+
+  return err;
+}
+
+/* Set OPEN's location to OFFS, interpreted according to WHENCE as by seek.
+   The new absolute location is returned in NEW_OFFS (and may not be the same
+   as OFFS).  If no error occurs, zero is returned, otherwise the error code
+   is returned.  */
+error_t
+open_seek (struct open *open, off_t offs, int whence, off_t *new_offs)
+{
+  error_t err = 0;
+  struct io_state *io_state = open_get_io_state (open);
+
+  if (!dev_is (open->dev, DEV_SEEKABLE))
+    return ESPIPE;
+
+  io_state_lock (io_state);
+
+  switch (whence)
+    {
+    case SEEK_SET:
+      *new_offs = offs; break;
+    case SEEK_CUR:
+      *new_offs = io_state->location + offs; break;
+    case SEEK_END:
+      *new_offs = open->dev->size - offs; break;
+    default:
+      err = EINVAL;
+    }
+
+  if (!err)
+    {
+      if (!dev_is (open->dev, DEV_BUFFERED))
+	/* On unbuffered devices force seeks to the nearest block boundary.  */
+	*new_offs -= *new_offs % open->dev->block_size;
+      io_state->location = *new_offs;
+    }
+
+  io_state_unlock (io_state);
 
   return err;
 }
