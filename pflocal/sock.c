@@ -1,6 +1,6 @@
 /* Sock functions
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -134,6 +134,8 @@ void
 sock_free (struct sock *sock)
 {
   sock_shutdown (sock, SOCK_SHUTDOWN_READ | SOCK_SHUTDOWN_WRITE);
+  if (sock->id != MACH_PORT_NULL)
+    mach_port_destroy (mach_task_self (), sock->id);
   free (sock);
 }
 
