@@ -46,9 +46,23 @@ main()
 
   while (1)
     {
-      printf ("Pausing\n");
+      int c;
+      puts ("Pausing for input or one second...");
       fflush (stdout);
-      sigpause (0);
+      c = getchar ();
+      if (ferror (stdin))
+	{
+	  perror ("getchar");
+	  exit (1);
+	}
+      if (c == EOF)
+	{
+	  puts ("Saw EOF.  Pausing (no input)...");
+	  fflush (stdout);
+	  sigpause (0);
+	}
+      else
+	printf ("Saw %.3o\n", c);
     }
 }
 
