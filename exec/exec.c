@@ -98,6 +98,8 @@ struct execdata
 	       By `load' it is local alloca'd storage.  */
 	    Elf32_Phdr *phdr;
 	    Elf32_Word phnum;	/* Number of program header table elements.  */
+	    int anywhere;	/* Nonzero if image can go anywhere.  */
+	    vm_address_t loadbase; /* Actual mapping location.  */
 	  } elf;
       } info;
   };
@@ -193,6 +195,8 @@ load_section (void *section, struct execdata *u)
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
+  int anywhere;
+  vm_address_t mask = 0;
 #ifdef BFD
   asection *const sec = section;
 #endif
@@ -218,6 +222,7 @@ load_section (void *section, struct execdata *u)
       filesz = (sec->flags & SEC_LOAD) ? memsz : 0;
       if (sec->flags & (SEC_READONLY|SEC_ROM))
 	vm_prot &= ~VM_PROT_WRITE;
+      anywhere = 0;
     }
   else
 #endif
@@ -232,6 +237,24 @@ load_section (void *section, struct execdata *u)
 	vm_prot &= ~VM_PROT_WRITE;
       if ((ph->p_flags & PF_X) == 0)
 	vm_prot &= ~VM_PROT_EXECUTE;
+      anywhere = u->info.elf.anywhere;
+      if (! anywhere)
+	addr += u->info.elf.loadbase;
+      else
+	switch (elf_machine)
+	  {
+	  case EM_386:
+	  case EM_486:
+	    /* On the i386, programs normally load at 0x08000000, and
+	       expect their data segment to be able to grow dynamically
+	       upward from its start near that address.  We need to make
+	       sure that the dynamic linker is not mapped in a conflicting
+	       address.  */
+	    /* mask = 0xf8000000UL; */ /* XXX */
+	    break;
+	  default:
+	    break;
+	  }
     }
 
   if (memsz == 0)
@@ -249,7 +272,7 @@ load_section (void *section, struct execdata *u)
 	  vm_size_t off = size % vm_page_size;
 	  /* Allocate with vm_map to set max protections.  */
 	  u->error = vm_map (u->task,
-			     &mapstart, size, 0, 0,
+			     &mapstart, size, mask, anywhere,
 			     MACH_PORT_NULL, 0, 1,
 			     vm_prot|VM_PROT_WRITE,
 			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
@@ -291,7 +314,8 @@ load_section (void *section, struct execdata *u)
 	  else if (u->filemap != MACH_PORT_NULL)
 	    /* Map the data into the task directly from the file.  */
 	    u->error = vm_map (u->task,
-			       &mapstart, filesz - (mapstart - addr), 0, 0,
+			       &mapstart, filesz - (mapstart - addr),
+			       mask, anywhere,
 			       u->filemap, filepos + (mapstart - addr), 1, 
 			       vm_prot,
 			       VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
@@ -318,6 +342,17 @@ load_section (void *section, struct execdata *u)
 	    }
 	  if (u->error)
 	    return;
+
+	  if (anywhere)
+	    {
+	      /* We let the kernel choose the location of the mapping.
+		 Now record where it ended up.  Later sections cannot
+		 be mapped anywhere, they must come after this one.  */
+	      u->info.elf.loadbase = mapstart;
+	      addr = mapstart + (addr % vm_page_size);
+	      anywhere = u->info.elf.anywhere = 0;
+	      mask = 0;
+	    }
 	}
 
       if (mapstart > addr)
@@ -405,9 +440,21 @@ load_section (void *section, struct execdata *u)
 	  /* MAPSTART is the first page that starts inside the section.
 	     Allocate all the pages that start inside the section.  */
 
-	  if (u->error = vm_allocate (u->task, &mapstart, 
-				      memsz - (mapstart - addr), 0))
+	  if (u->error = vm_map (u->task, &mapstart, memsz - (mapstart - addr),
+				 mask, anywhere, MACH_PORT_NULL, 0, 1,
+				 vm_prot, VM_PROT_ALL, VM_INHERIT_COPY))
 	    return;
+	}
+
+      if (anywhere)
+	{
+	  /* We let the kernel choose the location of the zero space.
+	     Now record where it ended up.  Later sections cannot
+	     be mapped anywhere, they must come after this one.  */
+	  u->info.elf.loadbase = mapstart;
+	  addr = mapstart + (addr % vm_page_size);
+	  anywhere = u->info.elf.anywhere = 0;
+	  mask = 0;
 	}
 
       if (mapstart > addr)
@@ -729,6 +776,10 @@ check_elf (struct execdata *e)
       return;
     }
   e->info.elf.phdr = phdr;
+
+  e->info.elf.anywhere = (ehdr->e_type == ET_DYN ||
+			  ehdr->e_type == ET_REL);
+  e->info.elf.loadbase = 0;
 }
 
 static void
@@ -778,87 +829,6 @@ check (struct execdata *e)
 }
 
 
-/* Load the file.  */
-static void
-load (task_t usertask, struct execdata *e)
-{
-  if (e->error)
-    return;
-
-  e->task = usertask;
-#ifdef	BFD
-  if (e->bfd)
-    {
-      void load_bfd_section (bfd *bfd, asection *sec, void *userdata)
-	{
-	  load_section (sec, userdata);
-	}
-      bfd_map_over_sections (e->bfd, &load_bfd_section, e);
-    }
-  else
-#endif
-    {
-      Elf32_Word i;
-      for (i = 0; i < e->info.elf.phnum; ++i)
-	if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	  load_section (&e->info.elf.phdr[i], e);
-    }
-}
-
-/* Do post-loading processing on the task.  */
-static void
-postload (struct execdata *e)
-{
-  if (e->error)
-    return;
-
-#ifdef	BFD
-  if (e->bfd)
-    {
-      /* Do post-loading processing for a section.  This consists of
-	 peeking the pages of non-demand-paged executables.  */
-
-      void postload_section (bfd *bfd, asection *sec, void *userdata)
-	{
-	  struct execdata *u = userdata;
-	  vm_address_t addr = 0;
-	  vm_size_t secsize = 0;
-
-	  addr = (vm_address_t) sec->vma;
-	  secsize = sec->_raw_size;
-
-	  if ((sec->flags & SEC_LOAD) && !(bfd->flags & D_PAGED))
-	    {
-	      /* Pre-load the section by peeking every mapped page.  */
-	      vm_address_t myaddr, a;
-	      vm_size_t mysize;
-	      myaddr = 0;
-	  
-	      /* We have already mapped the file into the task in
-		 load_section.  Now read from the task's memory into our
-		 own address space so we can peek each page and cause it to
-		 be paged in.  */
-	      if (u->error = vm_read (u->task,
-				      trunc_page (addr), round_page (secsize),
-				      &myaddr, &mysize))
-		return;
-
-	      /* Peek at the first word of each page.  */
-	      for (a = ((myaddr + mysize) & ~(vm_page_size - 1));
-		   a >= myaddr; a -= vm_page_size)
-		/* Force it to be paged in.  */
-		(void) *(volatile int *) a;
-
-	      vm_deallocate (mach_task_self (), myaddr, mysize);
-	    }
-	}
-
-      bfd_map_over_sections (e->bfd, postload_section, e);
-    }
-#endif
-}
-
-
 /* Release the conch and clean up mapping the file and control page.  */
 static void
 finish_mapping (struct execdata *e)
@@ -893,20 +863,110 @@ finish_mapping (struct execdata *e)
       
 /* Clean up after reading the file (need not be completed).  */
 static void
-finish (struct execdata *e)
+finish (struct execdata *e, int dealloc_file)
 {
   finish_mapping (e);
 #ifdef	BFD
   if (e->bfd != NULL)
-    bfd_close (e->bfd);
+    {
+      bfd_close (e->bfd);
+      e->bfd = NULL;
+    }
   else
 #endif
     fclose (&e->stream);
-  if (e->file != MACH_PORT_NULL)
+  if (dealloc_file && e->file != MACH_PORT_NULL)
     {
       mach_port_deallocate (mach_task_self (), e->file);
       e->file = MACH_PORT_NULL;
     }
+}
+
+
+/* Load the file.  */
+static void
+load (task_t usertask, struct execdata *e)
+{
+  e->task = usertask;
+
+  if (! e->error)
+    {
+#ifdef	BFD
+      if (e->bfd)
+	{
+	  void load_bfd_section (bfd *bfd, asection *sec, void *userdata)
+	    {
+	      load_section (sec, userdata);
+	    }
+	  bfd_map_over_sections (e->bfd, &load_bfd_section, e);
+	}
+      else
+#endif
+	{
+	  Elf32_Word i;
+	  for (i = 0; i < e->info.elf.phnum; ++i)
+	    if (e->info.elf.phdr[i].p_type == PT_LOAD)
+	      load_section (&e->info.elf.phdr[i], e);
+
+	  /* The entry point address is relative to whereever we loaded the
+	     program text.  */
+	  e->entry += e->info.elf.loadbase;
+	}
+    }
+
+  /* Release the conch for the file.  */
+  finish_mapping (e);
+
+  if (! e->error)
+    {
+      /* Do post-loading processing on the task.  */
+
+#ifdef	BFD
+      if (e->bfd)
+	{
+	  /* Do post-loading processing for a section.  This consists of
+	     peeking the pages of non-demand-paged executables.  */
+
+	  void postload_section (bfd *bfd, asection *sec, void *userdata)
+	    {
+	      struct execdata *u = userdata;
+	      vm_address_t addr = 0;
+	      vm_size_t secsize = 0;
+
+	      addr = (vm_address_t) sec->vma;
+	      secsize = sec->_raw_size;
+
+	      if ((sec->flags & SEC_LOAD) && !(bfd->flags & D_PAGED))
+		{
+		  /* Pre-load the section by peeking every mapped page.  */
+		  vm_address_t myaddr, a;
+		  vm_size_t mysize;
+		  myaddr = 0;
+	  
+		  /* We have already mapped the file into the task in
+		     load_section.  Now read from the task's memory into our
+		     own address space so we can peek each page and cause it to
+		     be paged in.  */
+		  if (u->error = vm_read (u->task,
+					  trunc_page (addr), round_page (secsize),
+					  &myaddr, &mysize))
+		    return;
+
+		  /* Peek at the first word of each page.  */
+		  for (a = ((myaddr + mysize) & ~(vm_page_size - 1));
+		       a >= myaddr; a -= vm_page_size)
+		    /* Force it to be paged in.  */
+		    (void) *(volatile int *) a;
+
+		  vm_deallocate (mach_task_self (), myaddr, mysize);
+		}
+	    }
+
+	  bfd_map_over_sections (e->bfd, postload_section, e);
+	}
+    }
+#endif
+
 }
 
 #ifdef GZIP
@@ -998,7 +1058,7 @@ check_gzip (struct execdata *earg)
   e->file_size = zipdatasz;
 
   /* Clean up the old exec file stream's state.  */
-  finish (e);
+  finish (e, 0);
 
   /* Point the stream at the buffer of file data.  */
   memset (&e->stream, 0, sizeof (e->stream));
@@ -1120,7 +1180,6 @@ do_exec (mach_port_t execserver,
 	 mach_port_t *destroynames, u_int ndestroynames)
 {
   struct execdata e, interp;
-  int finished = 0;
   task_t newtask = MACH_PORT_NULL;
   thread_t thread = MACH_PORT_NULL;
   struct bootinfo *boot = 0;
@@ -1278,9 +1337,9 @@ do_exec (mach_port_t execserver,
 
   if (e.error)
     {
-      if (interp.file != MACH_PORT_NULL)
-	finish (&interp);
-      finish (&e);
+      if (e.interp.section)
+	finish (&interp, 1);
+      finish (&e, 0);
       return e.error;
     }
 
@@ -1335,39 +1394,30 @@ do_exec (mach_port_t execserver,
       newtask = oldtask;
     }
 
-  /* Load the file into the task.  */
-  load (newtask, &e);
-  if (e.error)
-    goto out;
-
-  /* Release the conch for the file.  */
-  finish_mapping (&e);
-
-  /* Further frobnicate the task after loading from the file.  */
-  postload (&e);
-  if (e.error)
-    goto out;
-
+/* XXX this should be below
+   it is here to work around a vm_map kernel bug. */
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
       load (newtask, &interp);
-      if (! interp.error)
-	{
-	  finish_mapping (&interp);
-	  postload (&interp);
-	}
       if (interp.error)
 	{
 	  e.error = interp.error;
 	  goto out;
 	}
-      finish (&interp);
+      finish (&interp, 1);
     }
 
+
+  /* Load the file into the task.  */
+  load (newtask, &e);
+  if (e.error)
+    goto out;
+
+  /* XXX loading of interp belongs here */
+
   /* Clean up.  */
-  finish (&e);
-  finished = 1;
+  finish (&e, 0);
 
   /* Create the initial thread.  */
   if (e.error = thread_create (newtask, &thread))
@@ -1595,15 +1645,9 @@ do_exec (mach_port_t execserver,
       task_terminate (newtask);
       mach_port_deallocate (mach_task_self (), newtask);
     }
-  if (!finished)
-    {
-      if (interp.file != MACH_PORT_NULL)
-	finish (&interp);
-      if (e.error)
-	/* Don't deallocate this port; mig will do it for us.  */
-	e.file = MACH_PORT_NULL;
-      finish (&e);
-    }
+  if (e.interp.section)
+    finish (&interp, 1);
+  finish (&e, !e.error);
 
   if (oldtask != newtask)
     task_resume (oldtask);
