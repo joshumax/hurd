@@ -73,8 +73,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 error_t
 diskfs_S_startup_dosync (mach_port_t handle)
 {
+  error_t err;
   struct port_info *pi 
-    = ports_lookup_port (diskfs_port_bucket,
+    = ports_lookup_port (diskfs_port_bucket, handle,
 			 diskfs_shutdown_notification_class);
   if (!pi)
     return EOPNOTSUPP;
