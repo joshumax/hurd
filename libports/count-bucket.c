@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
+#include <cthreads.h>
 
 int
 ports_count_bucket (struct port_bucket *bucket)
