@@ -175,14 +175,14 @@ add_list (void *ptr, void ***ptr_list, int *alloc, int *index, int incr)
 /* Create an argument with TEXT, value type TYPE, and value VAL.
    Add the argument to the argument list of CMD.  */
 static struct arg *
-add_arg (struct cmd *cmd, char *text, int type, int val)
+add_arg (struct cmd *cmd, const char *text, int textlen, int type, int val)
 {
   struct arg *arg;
 
-  arg = boot_script_malloc (sizeof (struct arg));
+  arg = boot_script_malloc (sizeof (struct arg) + textlen);
   if (arg)
     {
-      arg->text = text;
+      arg->text = text == 0 ? 0 : memcpy (arg + 1, text, textlen);
       arg->type = type;
       arg->val = val;
       if (add_list (arg, (void ***) &cmd->args,
@@ -255,16 +255,16 @@ boot_script_parse_line (void *hook, char *cmdline)
   if (p == q)
       return 0;
 
-  *q = '\0';
+  *q++ = '\0';
 
   /* Allocate a command structure.  */
-  cmd = boot_script_malloc (sizeof (struct cmd));
+  cmd = boot_script_malloc (sizeof (struct cmd) + (q - p));
   if (! cmd)
     return BOOT_SCRIPT_NOMEM;
   memset (cmd, 0, sizeof (struct cmd));
   cmd->hook = hook;
-  cmd->path = p;
-  p = q + 1;
+  cmd->path = memcpy (cmd + 1, p, q - p);
+  p = q;
 
   for (arg = 0;;)
     {
@@ -408,7 +408,7 @@ boot_script_parse_line (void *hook, char *cmdline)
 		     associated with an argument.  */
 		  if (! arg && end_char == '}')
 		    {
-		      if (! add_arg (cmd, 0, type, val))
+		      if (! add_arg (cmd, 0, 0, type, val))
 			{
 			  error = BOOT_SCRIPT_NOMEM;
 			  goto bad;
@@ -437,7 +437,7 @@ boot_script_parse_line (void *hook, char *cmdline)
 	  *q = '\0';
 
 	  /* Add argument to list.  */
-	  arg = add_arg (cmd, p, VAL_NONE, 0);
+	  arg = add_arg (cmd, p, q + 1 - p, VAL_NONE, 0);
 	  if (! arg)
 	    {
 	      error = BOOT_SCRIPT_NOMEM;
