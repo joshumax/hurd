@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -28,17 +28,26 @@ netfs_S_file_utimes (struct protid *user,
 {
   struct timespec atime, mtime;
   error_t err;
+
+  if (atimein.microseconds != -1)
+    {
+      atime.tv_sec = atimein.seconds;
+      atime.tv_nsec = atimein.microseconds * 1000;
+    }
   
-  atime.tv_sec = atimein.seconds;
-  atime.tv_nsec = atimein.microseconds * 1000;
-  mtime.tv_sec = mtimein.seconds;
-  mtime.tv_nsec = mtimein.microseconds * 1000;
+  if (mtimein.microseconds != -1)
+    {
+      mtime.tv_sec = mtimein.seconds;
+      mtime.tv_nsec = mtimein.microseconds * 1000;
+    }
   
   if (!user)
     return EOPNOTSUPP;
   
   mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_utimes (user->user, user->po->np, &atime, &mtime);
+  err = netfs_attempt_utimes (user->user, user->po->np, 
+			      atimein.microseconds != -1 ? &atime : 0, 
+			      mtimein.microseconds != -1 ? &mtime : 0);
   mutex_unlock (&user->po->np->lock);
   return err;
 }

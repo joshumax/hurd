@@ -1,6 +1,6 @@
 /* 
 
-   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -153,7 +153,8 @@ error_t netfs_attempt_chflags (struct iouser *cred, struct node *np,
 
 /* The user must define this function.  This should attempt a utimes
    call for the user specified by CRED on node NODE, to change the
-   atime to ATIME and the mtime to MTIME. */
+   atime to ATIME and the mtime to MTIME.  If ATIME or MTIME is null,
+   then set to the current time.  */
 error_t netfs_attempt_utimes (struct iouser *cred, struct node *np,
 			      struct timespec *atime, struct timespec *mtime);
 

@@ -1,3 +1,9 @@
+Sun Jan 31 18:27:42 1999  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* file-utimes.c (netfs_S_file_utimes): Understand new semantics
+	for setting to current time.
+	* netfs.h (netfs_attempt_utimes): Update documentation.
+
 1999-01-22  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-set-translator.c: Remove makedev, major, minor macro definition.
