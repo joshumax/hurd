@@ -1,5 +1,5 @@
 /* main.c - A translator that emulates a terminal.
-   Copyright (C) 1995, 1996, 1997, 2000, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,2000,02 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -27,6 +27,8 @@
 #include <hurd/fsys.h>
 #include <string.h>
 #include <error.h>
+#include <inttypes.h>
+#include <argz.h>
 
 #include <version.h>
 
@@ -40,11 +42,21 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = O_READ|O_WRITE;
 
+enum tty_type { T_NONE = 0, T_DEVICE, T_HURDIO, T_PTYMASTER, T_PTYSLAVE };
+static const char *const tty_type_names[] =
+{
+  [T_DEVICE] = "device",
+  [T_HURDIO] = "hurdio",
+  [T_PTYMASTER] = "pty-master",
+  [T_PTYSLAVE] = "pty-slave",
+};
+
+
 /* The argument line options.  */
 char *tty_name;
-enum { T_NONE = 0, T_DEVICE, T_HURDIO, T_PTYMASTER, T_PTYSLAVE } tty_type;
+enum tty_type tty_type;
 char *tty_arg;
-int rdev;
+dev_t rdev;
 
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -64,31 +76,49 @@ static struct argp_option options[] =
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
+  {"name",	'N', "NAME", 0,
+   "The name of this node, to be returned by term_get_nodename."},
+  {"type",	'T', "TYPE", 0,
+   "Backend type, see below.  This determines the meaning of the argument."},
   {0}
 };
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
 {
+  struct
+  {
+    dev_t rdev;
+    int rdev_set;
+    enum tty_type type;
+    char *name;
+    char *arg;
+  } *const v = state->hook;
+
   switch (opt)
     {
     default:
       return ARGP_ERR_UNKNOWN;
+
     case ARGP_KEY_INIT:
-    case ARGP_KEY_SUCCESS:
-    case ARGP_KEY_ERROR:
+      state->hook = calloc (1, sizeof *v);
       break;
+    case ARGP_KEY_FINI:
+      free (v);
+      state->hook = 0;
+      break;
+
     case 'n':
       {
         char *start = arg;
         char *end;
 
-        rdev = strtoul (start, &end, 0);
+        v->rdev = strtoumax (start, &end, 0);
         if (*end == ',')
           {
 	    /* MAJOR,MINOR form.  */
             start = end;
-            rdev = (rdev << 8) + strtoul (start, &end, 0);
+            v->rdev = (rdev << 8) + strtoul (start, &end, 0);
           }
 
         if (end == start || *end != '\0')
@@ -96,50 +126,161 @@ parse_opt (int opt, char *arg, struct argp_state *state)
             argp_error (state, "%s: Invalid argument to --rdev", arg);
             return EINVAL;
           }
+
+	v->rdev_set = 1;
       }
       break;
+
+    case 'N':
+      v->name = arg;
+      break;
+
     case ARGP_KEY_ARG:
-      if (!tty_name)
-	tty_name = arg;
-      else if (!tty_type)
+      if (!v->name && state->input == 0)
+	v->name = arg;
+      else if (!v->type && state->input == 0)
 	{
+	case 'T':
 	  if (!strcmp (arg, "device"))
-	    tty_type = T_DEVICE;
+	    v->type = T_DEVICE;
 	  else if (!strcmp (arg, "hurdio"))
-	    tty_type = T_HURDIO;
+	    v->type = T_HURDIO;
 	  else if (!strcmp (arg, "pty-master"))
-	    tty_type = T_PTYMASTER;
+	    v->type = T_PTYMASTER;
 	  else if (!strcmp (arg, "pty-slave"))
-	    tty_type = T_PTYSLAVE;
+	    v->type = T_PTYSLAVE;
 	  else
 	    {
 	      argp_error (state, "Invalid terminal type");
 	      return EINVAL;
 	    }
 	}
-      else if (!tty_arg)
-	tty_arg = arg;
+      else if (!v->arg)
+	v->arg = arg;
       else
-	argp_error (state, "Too many arguments");
+	{
+	  argp_error (state, "Too many arguments");
+	  return EINVAL;
+	}
       break;
+
     case ARGP_KEY_END:
-      if (!tty_name || !tty_type || !tty_arg)
-	argp_error (state, "Too few arguments");
+      if ((v->type && v->type != T_HURDIO && v->arg == 0)
+	  || (state->input == 0 && v->name == 0))
+	{
+	  argp_error (state, "Too few arguments");
+	  return EINVAL;
+	}
+      break;
+
+    case ARGP_KEY_SUCCESS:
+      /* Apply the values we've collected.  */
+      if (v->rdev_set)
+	rdev = v->rdev;
+      if (v->name)
+	{
+	  free (tty_name);
+	  tty_name = strdup (v->name);
+	}
+      if (state->input == 0)	/* This is startup time.  */
+	{
+	  tty_type = v->type ?: T_HURDIO;
+	  tty_arg = v->arg ? strdup (v->arg) : 0;
+	}
+      else if (v->type || v->arg)
+	{
+	  /* Dynamic backend switch.  */
+	  if (!v->type)
+	    v->type = T_HURDIO;
+	  switch (v->type)
+	    {
+	    case T_PTYMASTER:
+	    case T_PTYSLAVE:
+	      /* Cannot dynamically switch to pty flavors.  */
+	      return EINVAL;
+	    default:
+	      break;
+	    }
+	  switch (tty_type)
+	    {
+	    case T_PTYMASTER:
+	    case T_PTYSLAVE:
+	      /* Cannot dynamically switch from pty flavors either.  */
+	      return EINVAL;
+	    default:
+	      break;
+	    }
+
+	  mutex_lock (&global_lock);
+	  (*bottom->fini) ();
+
+	  tty_type = v->type;
+	  switch (tty_type)
+	    {
+	    case T_DEVICE:
+	      bottom = &devio_bottom;
+	      break;
+	    case T_HURDIO:
+	      bottom = &hurdio_bottom;
+	      break;
+	    default:
+	      assert (! "impossible type");
+	      break;
+	    }
+	  error_t err = (*bottom->init) ();
+	  mutex_unlock (&global_lock);
+	  return err;
+	}
+      break;
+
+    case ARGP_KEY_ERROR:
       break;
     }
   return 0;
 }
 
 static struct argp term_argp =
-  { options, parse_opt, "NAME TYPE ARG", "A translator that emulates a terminal.\v"\
-    "Possible values for TYPE:\n"\
-    "  device      Use Mach device ARG as bottom handler.\n"\
-    "  hurdio      Use file port ARG as bottom handler.\n"\
+  { options, parse_opt, "NAME TYPE ARG",
+    "A translator that implements POSIX termios discipline.\v"
+    "Possible values for TYPE:\n"
+    "  device      Use Mach device ARG for underlying i/o.\n"
+    "  hurdio      Use file ARG for i/o, underlying node if no ARG.\n"
     "  pty-master  Master for slave at ARG.\n"\
     "  pty-slave   Slave for master at ARG.\n"\
-    "\n"\
-    "The filename of the node that the translator is attached to should be\n"\
-    "supplied in NAME.\n" };
+    "\n"
+    "The default type is `hurdio', so no arguments uses the underlying node.\n"
+    "The filename of the node that the translator is attached to should be\n"
+    "supplied in NAME.\n"
+  };
+
+struct argp *trivfs_runtime_argp = &term_argp;
+
+error_t
+trivfs_append_args (struct trivfs_control *fsys,
+		    char **argz, size_t *argz_len)
+{
+  error_t err = 0;
+
+  if (rdev)
+    {
+      char buf[64];
+      snprintf (buf, sizeof buf, "--rdev=%#jx", (uintmax_t)rdev);
+      err = argz_add (argz, argz_len, buf);
+    }
+
+  if (!err && tty_name)
+    err = argz_add (argz, argz_len, "--name")
+      ?: argz_add (argz, argz_len, tty_name);
+
+  if (!err && tty_type != T_HURDIO)
+    err = argz_add (argz, argz_len, "--type")
+      ?: argz_add (argz, argz_len, tty_type_names[tty_type]);
+
+  if (!err && tty_arg)
+    err = argz_add (argz, argz_len, tty_arg);
+
+  return err;
+}
 
 int
 main (int argc, char **argv)
@@ -219,7 +360,7 @@ main (int argc, char **argv)
     error (1, 0, "Must be started as a translator");
 
   /* Set our node.  */
-  err = trivfs_startup (bootstrap, 0,
+  err = trivfs_startup (bootstrap, O_RDWR,
 			ourcntlclass, term_bucket, ourclass, term_bucket,
 			ourcntl);
   if (err)
