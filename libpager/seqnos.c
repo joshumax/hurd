@@ -33,7 +33,7 @@ _pager_wait_for_seqno (struct pager *p,
 
 /* Allow the next message in. */
 void
-release_seqno (struct pager *p)
+_pager_release_seqno (struct pager *p)
 {
   if (p->waitingforseqno)
     {
