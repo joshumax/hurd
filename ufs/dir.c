@@ -858,9 +858,7 @@ diskfs_get_directs (struct node *dp,
 	  userp->d_reclen = DIRSIZ (DIRECT_NAMLEN (entryp));
 	  userp->d_namlen = DIRECT_NAMLEN (entryp);
 	  bcopy (entryp->d_name, userp->d_name, DIRECT_NAMLEN (entryp) + 1);
-#ifdef notyet
-	  userp->d_type = entryp->d_type;
-#endif	  
+	  userp->d_type = DT_UNKNOWN; /* until fixed */
 	  i++;
 	  datap += DIRSIZ (DIRECT_NAMLEN (entryp));
 	}
