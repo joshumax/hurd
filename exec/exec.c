@@ -1320,40 +1320,6 @@ do_exec (file_t file,
 	if (e.error)
 	  goto stdout;
 	use (INIT_PORT_PROC, new, 0, 1);
-
-	if (secure)
-	  {
-	    /* Find out what our UID is from the auth server. */
-	    neuids = negids = nauids = nagids = 10;
-	    euids = euidbuf, egids = egidbuf;
-	    auids = auidbuf, agids = agidbuf;
-	    e.error = auth_getids (boot->portarray[INIT_PORT_AUTH],
-				   &euids, &neuids, &auids, &nauids,
-				   &egids, &negids, &agids, &nagids);
-	    if (e.error)
-	      goto stdout;
-
-	    /* Set the owner with the proc server */
-	    e.error = proc_setowner (boot->portarray[INIT_PORT_PROC],
-				     neuids ? euids[0] : 0, !neuids);
-
-	    /* Clean up */
-	    if (euids != euidbuf)
-	      vm_deallocate (mach_task_self (), (vm_address_t) euids,
-			     neuids * sizeof (uid_t));
-	    if (egids != egidbuf)
-	      vm_deallocate (mach_task_self (), (vm_address_t) egids,
-			     negids * sizeof (uid_t));
-	    if (auids != auidbuf)
-	      vm_deallocate (mach_task_self (), (vm_address_t) auids,
-			     nauids * sizeof (uid_t));
-	    if (agids != agidbuf)
-	      vm_deallocate (mach_task_self (), (vm_address_t) agids,
-			     nagids * sizeof (uid_t));
-
-	    if (e.error)
-	      goto stdout;
-	  }
       }
     else if (oldtask != newtask && oldtask != MACH_PORT_NULL
 	     && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
@@ -1577,6 +1543,41 @@ do_exec (file_t file,
 	}
 
       mach_port_deallocate (mach_task_self (), oldtask);
+    }
+
+  /* Make sure the proc server has the right idea of our identity. */
+  if (secure)
+    {
+      /* Find out what our UID is from the auth server. */
+      neuids = negids = nauids = nagids = 10;
+      euids = euidbuf, egids = egidbuf;
+      auids = auidbuf, agids = agidbuf;
+      e.error = auth_getids (boot->portarray[INIT_PORT_AUTH],
+			     &euids, &neuids, &auids, &nauids,
+			     &egids, &negids, &agids, &nagids);
+      if (e.error)
+	goto stdout;
+      
+      /* Set the owner with the proc server */
+      /* Not much we can do about errors here; caller is responsible
+	 for making sure that the provided proc port is correctly
+	 authenticated anyhow. */
+      proc_setowner (boot->portarray[INIT_PORT_PROC],
+		     neuids ? euids[0] : 0, !neuids);
+      
+      /* Clean up */
+      if (euids != euidbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) euids,
+		       neuids * sizeof (uid_t));
+      if (egids != egidbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) egids,
+		       negids * sizeof (uid_t));
+      if (auids != auidbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) auids,
+		       nauids * sizeof (uid_t));
+      if (agids != agidbuf)
+	vm_deallocate (mach_task_self (), (vm_address_t) agids,
+		       nagids * sizeof (uid_t));
     }
 
   {
