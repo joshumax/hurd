@@ -80,16 +80,18 @@ struct argp_state;		/* " */
 /* The type of a pointer to an argp parsing function.  */
 typedef error_t (*argp_parser_t)(int key, char *arg, struct argp_state *state);
 
+/* What to return for unrecognized keys.  */
+#define ARGP_ERR_UNKNOWN_KEY E2BIG /* Hurd should never need E2BIG.  XXX */
+
 /* Special values for the KEY argument to an argument parsing function.
-   EINVAL should be returned if they aren't understood.  
+   ARGP_ERR_UNKNOWN_KEY should be returned if they aren't understood.  
 
    The sequence of keys to parser calls is either (where opt is a user key):
        ARGP_KEY_INIT (opt | ARGP_KEY_ARG)... ARGP_KEY_END
    or  ARGP_KEY_INIT opt... ARGP_KEY_NO_ARGS ARGP_KEY_END
 
    If an error occurs, then the parser is called with ARGP_KEY_ERR, and no
-   other calls are made.
-   */
+   other calls are made.  */
 
 /* This is not an option at all, but rather a command line argument.  If a
    parser receiving this key returns success, the fact is recorded, and the
@@ -132,11 +134,11 @@ struct argp
 
   /* What to do with an option from this structure.  KEY is the key
      associated with the option, and ARG is any associated argument (NULL if
-     none was supplied).  If KEY isn't understood, EINVAL should be
-     returned.  If a non-zero, non-EINVAL value is returned, then parsing is
-     stopped immediately, and that value is returned from argp_parse().
-     For special (non-user-supplied) values of KEY, see the ARGP_KEY_
-     definitions below.  */
+     none was supplied).  If KEY isn't understood, ARGP_ERR_UNKNOWN_KEY
+     should be returned.  If a non-zero, non-ARGP_ERR_UNKNOWN_KEY value is
+     returned, then parsing is stopped immediately, and that value is
+     returned from argp_parse().  For special (non-user-supplied) values of
+     KEY, see the ARGP_KEY_ definitions below.  */
   argp_parser_t parser;
 
   /* A string describing what other arguments are wanted by this program.  It
@@ -209,15 +211,15 @@ struct argp_state
 #define ARGP_NO_ERRS   0x2
 
 /* Don't parse any non-option args.  Normally non-option args are parsed by
-   calling the parse functions with a key of ARGP_KEY_ARG, and the actual
-   arg as the value.  Since it's impossible to know which parse function
-   wants to handle it, each one is called in turn, until one returns 0 or an
-   error other than EINVAL; if an argument is handled by no one, the
-   argp_parse returns prematurely (but with a return value of 0).  If
-   all args have been parsed without error, all parsing functions are called
-   one last time with a key of ARGP_KEY_END.  This flag needn't normally
-   be set, as the normal behavior is to stop parsing as soon as some argument
-   can't be handled.  */
+   calling the parse functions with a key of ARGP_KEY_ARG, and the actual arg
+   as the value.  Since it's impossible to know which parse function wants to
+   handle it, each one is called in turn, until one returns 0 or an error
+   other than ARGP_ERR_UNKNOWN_KEY; if an argument is handled by no one, the
+   argp_parse returns prematurely (but with a return value of 0).  If all
+   args have been parsed without error, all parsing functions are called one
+   last time with a key of ARGP_KEY_END.  This flag needn't normally be set,
+   as the normal behavior is to stop parsing as soon as some argument can't
+   be handled.  */
 #define ARGP_NO_ARGS   0x4
 
 /* Parse options and arguments in the same order they occur on the command
@@ -234,13 +236,13 @@ struct argp_state
 /* Turns off any message-printing/exiting options.  */
 #define ARGP_SILENT    (ARGP_NO_EXIT | ARGP_NO_ERRS | ARGP_NO_HELP)
 
-/* Parse the options strings in ARGC & ARGV according to the options in
-   ARGP.  FLAGS is one of the ARGP_ flags above.  If ARG_INDEX is
-   non-NULL, the index in ARGV of the first unparsed option is returned in
-   it.  If an unknown option is present, EINVAL is returned; if some parser
-   routine returned a non-zero value, it is returned; otherwise 0 is
-   returned.  This function may also call exit unless the ARGP_NO_HELP
-   flag is set.  INPUT is a pointer to a value to be passed in to the parser.*/
+/* Parse the options strings in ARGC & ARGV according to the options in ARGP.
+   FLAGS is one of the ARGP_ flags above.  If ARG_INDEX is non-NULL, the
+   index in ARGV of the first unparsed option is returned in it.  If an
+   unknown option is present, ARGP_ERR_UNKNOWN_KEY is returned; if some
+   parser routine returned a non-zero value, it is returned; otherwise 0 is
+   returned.  This function may also call exit unless the ARGP_NO_HELP flag
+   is set.  INPUT is a pointer to a value to be passed in to the parser.  */
 error_t argp_parse (const struct argp *argp,
 		    int argc, char **argv, unsigned flags,
 		    int *arg_index, void *input);
