@@ -261,20 +261,24 @@ error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *) = open_hook;
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *) = close_hook;
 
 void
-trivfs_modify_stat (struct stat *st)
+trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
-  st->st_size = 0;
-  st->st_blocks = 0;
+  struct pipe *pipe = cred->po->hook;
+
   st->st_mode &= ~S_IFMT;
   st->st_mode |= S_IFIFO;
+
+  mutex_lock (&pipe->lock);
+  st->st_size = pipe_readable (pipe, 1);
+  st->st_blocks = st->st_size >> 9;
+  mutex_unlock (&pipe->lock);
+
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
 }
 
 error_t
-trivfs_goaway (int flags, mach_port_t realnode, 
-	       struct port_class *control_class, 
-	       struct port_class *protid_class)
+trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
   exit(0);
 }
