@@ -1,3 +1,7 @@
+2001-11-24  Roland McGrath  <roland@frob.com>
+
+	* Makefile (installationdir): Use $(bootdir).
+
 2001-08-16  Roland McGrath  <roland@frob.com>
 
 	* Makefile (OBJS): Add userland-boot.o here.

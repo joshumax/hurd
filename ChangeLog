@@ -1,3 +1,9 @@
+2001-11-24  Roland McGrath  <roland@frob.com>
+
+	* config.make.in (bootdir): New variable, set to $(exec_prefix)/boot.
+	(installationdirlist): Add $(bootdir) to the list.
+	From Alfred M. Szmidt <ams@kemisten.nu>.
+
 2001-11-15  Roland McGrath  <roland@frob.com>
 
 	* Makeconf: Typo fix in last change.
