@@ -83,6 +83,7 @@ routine tioctl_tiocseta (
 	speeds: speeds_t);
 
 /* 21 TIOCSETAW */
+/* INTR */
 routine tioctl_tiocsetaw (
 	port: io_t;
 	modes: modes_t;
@@ -90,6 +91,7 @@ routine tioctl_tiocsetaw (
 	speeds: speeds_t);
 
 /* 22 TIOCSETAF */
+/* INTR */
 routine tioctl_tiocsetaf (
 	port: io_t;
 	modes: modes_t;
@@ -118,6 +120,7 @@ skip; skip; skip; skip; skip; skip; skip; skip; skip; skip; /* 80-89 unused */
 skip; skip; skip; skip; /* 90 91 92 93 unused */
 
 /* 94 TIOCDRAIN */
+/* INTR */
 routine tioctl_tiocdrain (
 	port: io_t);
 
