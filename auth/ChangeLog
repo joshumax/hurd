@@ -1,3 +1,7 @@
+1999-05-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* auth.c: Include <error.h>.
+
 1999-05-01  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* auth.c (main): Give diagnostics for lack of bootstrap port or

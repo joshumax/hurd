@@ -1,3 +1,7 @@
+1999-05-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* main.c (main): Remove bogus uninitialized variable ERR.
+
 1999-01-23  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* main.c (main): Use diskfs_init_main.
