@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/sigpreempt.h>
 #include <unistd.h>
 #include <envz.h>
+#include <sys/param.h>
 
 /* This is called to check E for a #! interpreter specification.  E has
    already been prepared (successfully) and checked (unsuccessfully).  If
@@ -42,13 +43,10 @@ check_hashbang (struct execdata *e,
 		mach_port_t *deallocnames, u_int ndeallocnames,
 		mach_port_t *destroynames, u_int ndestroynames)
 {
-  char *ibuf = NULL;
-  size_t ibufsiz = 0;
   char *p;
   char *interp, *arg;		/* Interpreter file name, and first argument */
   size_t interp_len, len;
   file_t interp_file;		/* Port open on the interpreter file.  */
-  FILE *f = &e->stream;
   char *new_argv;
   size_t new_argvlen;
   mach_port_t *new_dtable = NULL;
@@ -126,41 +124,56 @@ check_hashbang (struct execdata *e,
 				    name, flags, 0, result);
     }
 
-  rewind (f);
+  const char *page = map (e, 0, 2);
+  char interp_buf[vm_page_size - 2 + 1];
+
+  if (!page)
+    {
+      e->error = errno;
+      return;
+    }
 
   /* Check for our ``magic number''--"#!".  */
-
-  errno = 0;
-  if (getc (f) != '#' || getc (f) != '!')
+  if (page[0] != '#' || page[1] != '!')
     {
-      /* No `#!' here.  If there was a read error (not including EOF),
-	 return that error indication.  Otherwise return ENOEXEC to
-	 say it's not a file we know how to execute.  */
-      e->error = ferror (f) ? errno : ENOEXEC;
+      /* These are not the droids we're looking for.  */
+      e->error = ENOEXEC;
       return;
     }
 
-  /* Read the rest of the first line of the file.  */
+  /* Read the rest of the first line of the file.
+     We in fact impose an arbitrary limit of about a page on this.  */
 
-  interp_len = getline (&ibuf, &ibufsiz, f);
-  if (ferror (f))
+  p = memccpy (interp_buf, page + 2, '\n',
+	       MIN (map_fsize (e) - 2, sizeof interp_buf));
+  if (p == NULL)
     {
-      e->error = errno ?: EIO;
-      return;
+      /* The first line went on for more than sizeof INTERP_BUF!  */
+      interp_len = sizeof interp_buf - 1;
+      interp_buf[interp_len] = '\0';
     }
-  if (ibuf[interp_len - 1] == '\n')
-    ibuf[--interp_len] = '\0';
+  else
+    {
+      *--p = '\0';		/* Kill the newline.  */
+      interp_len = p - interp_buf;
+    }
+
+  /* We are now done reading the script file.  */
+  finish (e, 0);
+
 
   /* Find the name of the interpreter.  */
-  p = ibuf + strspn (ibuf, " \t");
+  p = interp_buf;
+  p += strspn (p, " \t");
   interp = strsep (&p, " \t");
 
   if (p)
     {
       /* Skip remaining blanks, and the rest of the line is the argument.  */
-      p += strspn (p, " \t");
-      arg = p;
-      len = interp_len - (arg - ibuf);
+
+      arg = p + strspn (p, " \t");
+      len = interp_len - (arg - interp_buf);
+      interp_len = p - interp;
 
       if (len == 0)
 	arg = NULL;
@@ -179,8 +192,6 @@ check_hashbang (struct execdata *e,
       arg = NULL;
       len = 0;
     }
-
-  interp_len = strlen (interp) + 1;
 
   user_crdir = user_cwdir = MACH_PORT_NULL;
 
@@ -379,10 +390,6 @@ check_hashbang (struct execdata *e,
 			 (vm_address_t) argv, (vm_address_t) argv + argvlen,
 			 &setup_args, &fault_handler);
     }
-
-  /* We are now done reading the script file.  */
-  finish (e, 0);
-  free (ibuf);
 
   rwlock_reader_unlock (&std_lock);
 

@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, private declarations.
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -85,12 +85,19 @@ struct execdata
 
     /* Set by check.  */
     vm_address_t entry;
-    FILE stream;
     file_t file;
+
+#ifdef _STDIO_USES_IOSTREAM
+#else
+    FILE stream;
+#define map_fsize(e)	((e)->stream.__get_limit - (e)->stream.__buffer)
+#define map_vsize(e)	((e)->stream.__bufsize)
+#endif
 
 #ifdef BFD
     bfd *bfd;
 #endif
+
     union			/* Interpreter section giving name of file.  */
       {
 	asection *section;
@@ -127,6 +134,12 @@ struct execdata
 error_t elf_machine_matches_host (Elf32_Half e_machine);
 
 void finish (struct execdata *, int dealloc_file_port);
+
+/* Make sure our mapping window (or read buffer) covers
+   LEN bytes of the file starting at POSN.  */
+void *map (struct execdata *e, off_t posn, size_t len);
+
+
 
 void check_hashbang (struct execdata *e,
 		     file_t file,
