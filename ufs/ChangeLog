@@ -1,3 +1,7 @@
+2001-11-21  Roland McGrath  <roland@frob.com>
+
+	* inode.c (read_disknode): Just always call getpid for the fsid value.
+
 2001-10-01  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ufs.h (swab_long_long): Use LL, not lL, for constant.

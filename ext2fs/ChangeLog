@@ -1,3 +1,7 @@
+2001-11-21  Roland McGrath  <roland@frob.com>
+
+	* inode.c (read_node): Just always call getpid for the fsid value.
+
 2001-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ialloc.c (diskfs_alloc_node): Remove warnings about stale
