@@ -143,6 +143,8 @@ main (int argc, char **argv)
 	  /* Prompt the user to give us another name rather
 	     than just crashing */
 	  printf ("Cannot open device %s\n", devname);
+	  printf ("Open instead: ");
+	  fflush (stdout);
 	  len = getline (&line, &linesz, stdin);
 	  if (len > 2)
 	    devname = line;
