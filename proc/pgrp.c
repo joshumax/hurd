@@ -76,7 +76,7 @@ free_session (struct session *s)
 {
   if (s->s_sessionid)
     mach_port_mod_refs (mach_task_self (), s->s_sessionid,
-			MACH_PORT_RIGHT_RECEIVE, 1);
+			MACH_PORT_RIGHT_RECEIVE, -1);
   remove_session_from_hash (s);
   free (s);
 }
@@ -260,18 +260,20 @@ S_proc_getpgrppids (struct proc *callerp,
 /* Implement proc_getsidport as described in <hurd/proc.defs>. */
 kern_return_t
 S_proc_getsidport (struct proc *p,
-		 mach_port_t *sessport)
+		   mach_port_t *sessport, mach_msg_type_name_t *sessport_type)
 {
+  error_t err = 0;
   if (!p->p_pgrp)
     *sessport = MACH_PORT_NULL;
   else
     {
-      if (!p->p_pgrp->pg_session->s_sessionid)
-	mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-			    &p->p_pgrp->pg_session->s_sessionid);
+      if (p->p_pgrp->pg_session->s_sessionid == MACH_PORT_NULL)
+	err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+				  &p->p_pgrp->pg_session->s_sessionid);
       *sessport = p->p_pgrp->pg_session->s_sessionid;
     }
-  return 0;
+  *sessport_type = MACH_MSG_TYPE_MAKE_SEND_ONCE;
+  return err;
 }
 
 /* Implement proc_setpgrp as described in <hurd/proc.defs>. */
