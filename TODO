@@ -28,6 +28,7 @@ See `tasks', the exported task list.
 * Write coding standards suggestions for Hurd
 * Implement file_fetch_dir
 * Conform to coding standards (esp. CFLAGS setting)
+* Internationalization !
 
 * Fix emacs/src/unexelf.c to deal with occasional lack of mmap !
 

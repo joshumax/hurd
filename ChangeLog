@@ -1,13 +1,20 @@
+Fri May 23 10:06:34 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* configure.in: Use AC_PROG_CC_LOCAL instead of AC_PROG_CC.
+	* aclocal.m4: New file.
+	* Makefile (DIST_FILES): Add aclocal.m4.
+	(Patch from Marcus G. Daniels, marcus@cathcart.sysc.pdx.edu).
+	
 Wed May  7 12:28:58 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	(libftpconn, ftpfs): New directories.
+	* libftpconn, ftpfs: New directories.
 	* Makefile (lib-subdirs): Add libftpconn.
 	(prog-subdirs): Add ftpfs.
 
 Mon Mar 10 17:07:11 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (prog-subdirs): Add `serverboot'.
-	(serverboot): New directory.
+	* serverboot: New directory.
 
 Fri Oct 25 20:17:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 

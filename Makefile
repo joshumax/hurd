@@ -25,7 +25,7 @@ endif
 include $(srcdir)/Makeconf
 
 DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
-	     hurd.boot build.mk.in build.mkcf.in SETUP \
+	     hurd.boot build.mk.in build.mkcf.in SETUP aclocal.m4 \
 	     README NEWS tasks INSTALL INSTALL-cross version.h sh-version.sed
 
 

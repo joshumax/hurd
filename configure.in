@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.10 1996/09/25 01:49:10 miles Exp $])
+AC_REVISION([$Id: configure.in,v 1.11 1997/05/23 16:39:25 thomas Exp $])
 AC_PREREQ(2.4)			dnl Minimum Autoconf version required.
 AC_INIT(hurd/hurd_types.h)	dnl A distinctive file to look for in srcdir.
 
@@ -24,7 +24,7 @@ AC_PROG_INSTALL
 AC_CHECK_TOOL(CC, gcc)
 # That check handles cross-compilation well, but AC_PROG_CC tests for GCC
 # and sets default CFLAGS nicely for us, so do that too.
-AC_PROG_CC
+AC_PROG_CC_LOCAL
 # Require GCC.
 if test x$GCC != xyes; then
   AC_MSG_ERROR([this code uses GNU C extensions, you must compile with GCC])
