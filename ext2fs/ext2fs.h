@@ -188,7 +188,7 @@ spin_lock_t global_lock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
 
-struct pokel sblock_pokel;
+struct pokel global_pokel;
 
 #define SBLOCK_BLOCK 1
 #define SBLOCK_OFFS (SBLOCK_BLOCK * EXT2_MIN_BLOCK_SIZE)
@@ -300,7 +300,7 @@ record_global_poke (char *image)
   int boffs = trunc_block(bptr_offs(image));
   if (!modified_global_blocks
       || !set_bit (boffs_block (boffs), modified_global_blocks))
-    pokel_add (&sblock_pokel, boffs_ptr(boffs), block_size);
+    pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
 }
 
 /* ---------------------------------------------------------------- */
@@ -315,7 +315,7 @@ sync_disk_image (void *place, size_t nbytes, int wait)
 extern inline void
 sync_global_data ()
 {
-  pokel_sync (&sblock_pokel, 1);
+  pokel_sync (&global_pokel, 1);
   if (sblock_dirty)
     {
       sblock_dirty = 0;		/* It doesn't matter if this gets stomped.  */
