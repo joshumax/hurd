@@ -15,12 +15,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "priv.h"
-#include "fs_S.h"
+#include <stdio.h>
 #include <fcntl.h>
 #include <string.h>
 #include <hurd/fsys.h>
 #include <hurd/paths.h>
+
+#include "priv.h"
+#include "fs_S.h"
 
 /* XXX - Temporary hack; this belongs in a header file, probably types.h. */
 #define major(x) ((int)(((unsigned) (x) >> 8) & 0xff))
