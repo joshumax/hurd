@@ -14,3 +14,5 @@ source /usr/local/share/startups/default.login
 setenv SHELL /usr/scratch/bin/sun4/bash
 exec $SHELL -login
 hello
+
+zoing
