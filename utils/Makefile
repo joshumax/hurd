@@ -16,30 +16,10 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := utils
+makemode := utilities
+
+SRCS = sh.o ps.o su.o
+targets = sh ps su
+DIST_FILES = sh.ChangeLog ps.ChangeLog
+
 include ../Makeconf
-
-DIST_FILES = Makefile $(SRCS) ChangeLog sh.ChangeLog ps.ChangeLog
-
-UTILS=sh ps su
-
-SRCS = $(addsuffix .c,$(UTILS))
-UTILS_INST = $(addprefix $(hurdroot)/bin/,$(UTILS))
-
-all: $(UTILS)
-
-install: $(UTILS_INST)
-
-clean: 
-	rm -f $(UTILS)
-
-relink:
-	rm -f $(UTILS)
-
-$(UTILS_INST): $(hurdroot)
-
-$(hurdroot)/bin/%: %
-	$(INSTALL_BIN) $^ $@
-	
-
-
-
