@@ -38,23 +38,32 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
+  /* This routine must carefully ignore EINTR because we 
+     are a simpleroutine, so callers won't know to restart. */
+
   mutex_lock (&cred->po->np->lock);
-  err = diskfs_start_protid (cred->po, &newcred);
+  do
+    err = diskfs_start_protid (cred->po, &newcred);
+  while (err == EINTR);
   if (err)
     {
       mutex_unlock (&cred->po->np->lock);
       return err;
     }
 
-  err = auth_server_authenticate (diskfs_auth_server_port,
-				  rend_port,
-				  MACH_MSG_TYPE_COPY_SEND,
-				  ports_get_right (newcred),
-				  MACH_MSG_TYPE_MAKE_SEND,
-				  &gen_uids, &genuidlen,
-				  &aux_uids, &auxuidlen,
-				  &gen_gids, &gengidlen,
-				  &aux_gids, &auxgidlen);
+  do
+    {
+      err = auth_server_authenticate (diskfs_auth_server_port,
+				      rend_port,
+				      MACH_MSG_TYPE_COPY_SEND,
+				      ports_get_right (newcred),
+				      MACH_MSG_TYPE_MAKE_SEND,
+				      &gen_uids, &genuidlen,
+				      &aux_uids, &auxuidlen,
+				      &gen_gids, &gengidlen,
+				      &aux_gids, &auxgidlen);
+    }
+  while (err == EINTR);
   mach_port_deallocate (mach_task_self (), rend_port);
     
   if (err)
