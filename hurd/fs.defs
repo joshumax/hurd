@@ -1,5 +1,5 @@
 /* Definitions for the filesystem interface. 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -154,11 +154,14 @@ routine file_statfs (
 	RPT
 	out info: fsys_statfsbuf_t);
 
-/* Sync the individual file */
+/* Sync the individual file.  If OMIT_METADATA is set, then it is only
+necessary for the server to updated the actual contents of the file,
+not any associated metadata. */
 routine file_sync (
 	file: file_t;
 	RPT
-	wait: int);
+	wait: int;
+	omit_metadata: int);
 
 /* Sync the entire filesystem */
 routine file_syncfs (
@@ -257,21 +260,25 @@ routine dir_unlink (
    If DIR and FILE are not implemented by the same filesystem,
    EXDEV should be returned.  If the two filesystems, however can
    inter-operate and guarantee the appropriate Posix semantics, they can
-   communicate by a private protocol and allow hard links between them.  */
+   communicate by a private protocol and allow hard links between them. 
+   If EXCL is set, then fail if NAME already exists in DIR. */
 routine dir_link (
 	dir: file_t;
 	RPT
 	file: file_t;
-	name: string_t);
+	name: string_t;
+	excl: int);
 
 /* Rename file -- comments similar to those for dir_link apply here
-   about EXDEV. */
+   about EXDEV.  If EXCL is set, then fail if NEWNAME already exists in 
+   NEWDIRECTORY.  */
 routine dir_rename (
 	olddirectory: file_t;
 	RPT
 	oldname: string_t;
 	newdirectory: file_t;
-	newname: string_t);
+	newname: string_t;
+        excl: int);
 
 /* Create a new file without linking it into the filesystem.  You
    still must have write permission on the specified directory, even
