@@ -1,0 +1,16 @@
+-*- Text -*-
+
+These are the SUSP and RockRidge compliant extensions that GNU uses:
+
+See rr.h for format details.
+
+AU: Author, an additional uid on a file.  If this is not present, the
+author is the same as the owner.
+
+TR: Translator, specifying a command line to run as a translator.  
+
+MD: A full 32 bit hurd mode; if not present, the mode is the one found
+in the PX record.
+
+FL: 32 bits of flags; if not present, the flags are zero.
+
