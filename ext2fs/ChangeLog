@@ -1,3 +1,15 @@
+Tue Nov 12 17:53:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (diskfs_validate_flags_change): New function.
+  	(write_node): Convert generic flags in ST->st_flags to ext2-
+ 	specific flags in DI->i_flags.
+	(read_node): Renamed from read_disknode; all callers changed.
+	Convert ext2-specific flags on disk to generic flags in ST.
+	[!UF_APPEND] (UF_APPEND): New macro (temporary).
+	[!UF_NODUMP] (UF_NODUMP): New macro (temporary).
+	[!UF_IMMUTABLE] (UF_IMMUTABLE): New macro (temporary).
+	<sys/stat.h>: New include.
+
 Thu Oct 24 16:24:05 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* ext2fs.c (startup_children, runtime_children): New variables.
