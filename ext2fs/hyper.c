@@ -71,6 +71,24 @@ get_hypermetadata (void)
   assert ((vm_page_size % DEV_BSIZE) == 0);
   assert ((sblock->fs_bsize % DEV_BSIZE) == 0);
   assert (vm_page_size <= sblock->fs_bsize);
+
+  /* Set these handy variables.  */
+  inodes_per_block = block_size / sizeof (struct ext2_inode);
+
+  frag_size = EXT2_MIN_FRAG_SIZE << sblock->s_log_frag_size;
+  if (frag_size)
+    frags_per_block = block_size / frag_size;
+  else
+    ext2_panic("Frag size is zero!");
+
+  groups_count =
+    ((sblock->s_blocks_count - sblock->s_first_data_block +
+      sblock->s_blocks_per_group - 1)
+     / sblock->s_blocks_per_group);
+
+  itb_per_group = sblock->inodes_per_group / inodes_per_block;
+  desc_per_block = block_size / sizeof (struct ext2_group_desc);
+  db_per_group = (groups_count + desc_per_block - 1) / desc_per_block;
 }
 
 /* Write the csum data.  This isn't backed by a pager because it is
