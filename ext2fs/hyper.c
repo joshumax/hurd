@@ -148,19 +148,26 @@ void
 diskfs_set_hypermetadata (int wait, int clean)
 {
   if (clean && ext2fs_clean && !(sblock->s_state & EXT2_VALID_FS))
-    /* The filesystem is clean, so we need to set the clean flag.  We
-       just write the superblock directly, without using the paged copy.  */
+    /* The filesystem is clean, so we need to set the clean flag.  */
     {
-      vm_address_t page_buf = get_page_buf ();
-      sblock_dirty = 0;		/* doesn't matter if this gets stomped */
-      bcopy (sblock, (void *)page_buf, SBLOCK_SIZE);
-      ((struct ext2_super_block *)page_buf)->s_state |= EXT2_VALID_FS;
-      diskfs_device_write_sync (SBLOCK_OFFS >> diskfs_log2_device_block_size,
-				page_buf, block_size);
-      free_page_buf (page_buf);
+      sblock->s_state |= EXT2_VALID_FS;
+      sblock_dirty = 1;
     }
-  else if (sblock_dirty)
-    sync_super_block ();
+  else if (!clean && (sblock->s_state & EXT2_VALID_FS))
+    /* The filesystem just became dirty, so clear the clean flag.  */
+    {
+      sblock->s_state &= ~EXT2_VALID_FS;
+      sblock_dirty = 1;
+      wait = 1;
+    }
+
+ if (sblock_dirty)
+   {
+     sblock_dirty = 0;
+     record_global_poke (sblock);
+   }
+
+  sync_global (wait);
 }
 
 void
@@ -173,15 +180,6 @@ diskfs_readonly_changed (int readonly)
 	      diskfs_device_size << diskfs_log2_device_block_size,
 	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
-  if (! readonly)
-    {
-      if (sblock->s_state & EXT2_VALID_FS)
-	{
-	  /* Going writable; clear the clean bit.  */
-	  sblock->s_state &= ~EXT2_VALID_FS;
-	  sync_super_block ();
-	}
-      else
-	ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
-    }
+  if (!readonly && !(sblock->s_state & EXT2_VALID_FS))
+    ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
 }
