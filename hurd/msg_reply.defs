@@ -1,5 +1,5 @@
 /* Reply side of miscellaneous callbacks from Hurd servers to their clients
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -28,4 +28,29 @@ simpleroutine sig_post_reply (
 	reply_port: reply_port_t;
 	in return_code: kern_return_t);
 
-/* Add the others as necessary.  */
+skip; /* proc_newids */
+skip; /* add_auth */
+skip; /* del_auth */
+skip; /* get_init_port */
+skip; /* set_init_port */
+skip; /* get_init_ports */
+skip; /* set_init_ports */
+skip; /* get_init_int */
+skip; /* set_init_int */
+skip; /* get_init_ints */
+skip; /* set_init_ints */
+skip; /* get_dtable */
+skip; /* set_dtable */
+skip; /* get_fd */
+skip; /* set_fd */
+skip; /* get_environment */
+skip; /* set_environment */
+skip; /* get_env_variable */
+skip; /* set_env_variable */
+skip; /* startup_dosync */
+skip; /* dir_changed */
+skip; /* file_changed */
+
+simpleroutine sig_post_reply (
+	reply_port: reply_port_t;
+	in return_code: kern_return_t);
