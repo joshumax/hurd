@@ -20,4 +20,4 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-char *argp_program_bug_address = "bug-hurd@gnu.ai.mit.edu";
+const char *argp_program_bug_address = "bug-hurd@gnu.ai.mit.edu";
