@@ -1,4 +1,4 @@
-/* Fetching and storing the hypermetadata (superblock and bg summary info).
+/* Fetching and storing the hypermetadata (superblock and bg summary info)
 
    Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 

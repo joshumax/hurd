@@ -1,4 +1,4 @@
-/* File block to disk block mapping routines.
+/* File block to disk block mapping routines
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 

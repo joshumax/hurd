@@ -1,4 +1,4 @@
-/* File truncation & growth routines.
+/* File truncation
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 

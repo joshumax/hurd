@@ -1,4 +1,4 @@
-/* Bitmap perusing routines.
+/* Bitmap perusing routines
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
