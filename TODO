@@ -39,7 +39,6 @@ See `tasks', the exported task list.
 * Libraries
 
 ** general:
-*** expunge special cthreads malloc finally !!
 *** implement all the pathconf things from Posix.1 right.
 
 ** libmom work:
@@ -61,8 +60,6 @@ See `tasks', the exported task list.
 ** libports:
 *** Get rid of general `uninibited-rpcs' mechanism in libports, & just
     special-case interrupt_operation. !
-*** Drop wire parms to manage-operations; instead have a new-thread hook
-    function.  !
 
 ** libstore:
 *** Add lock protocol for mutable stores.
@@ -77,9 +74,6 @@ See `tasks', the exported task list.
 ** libpager:
 *** Put user-defined fns into a callback struct passed to pager_create. !
 *** Make libpager paging interface able to read/write multiple pages at once.
-*** Check all users of pager-create.c to make sure they DTRT when it returns
-    null.  (requires changing libdiskfs to deal with null
-    returns from diskfs_get_filemap). !!
 *** Remove pagers from portset if there are too many incoming requests to
     avoid forking too many threads. !
 *** flush functions don't actually force pending delayed copies. (and in
