@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -23,7 +23,7 @@
 
 error_t
 netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
-		    struct protid *todiruser, char *toname)
+		    struct protid *todiruser, char *toname, int excl)
 {
   error_t err;
   
@@ -35,7 +35,7 @@ netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
   
   /* Note that nothing is locked here */
   err = netfs_attempt_rename (fromdiruser->credential, fromdiruser->po->np, 
-			      fromname, todiruser->po->np, toname);
+			      fromname, todiruser->po->np, toname, excl);
   if (!err)
     mach_port_deallocate (mach_task_self (), todiruser->pi.port_right);
   return err;
