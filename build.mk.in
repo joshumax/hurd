@@ -1,0 +1,7 @@
+# @configure_input@
+# Generic subdirectory makefile for Hurd configured outside ${srcdir}.
+
+top_srcdir = @top_srcdir@
+srcdir = @srcdir@
+
+include $(srcdir)/Makefile
