@@ -55,45 +55,62 @@ tv_div (struct timeval *tv1, struct timeval *tv2)
 	: (tv1->tv_usec / tv2->tv_usec
 	   + (tv1->tv_sec ? tv1->tv_sec * 1000000 / tv2->tv_usec : 0));
 }
+
+/* Returns true if TV is zero.  */
+static inline int
+tv_is_zero (struct timeval *tv)
+{
+  return tv->tv_sec == 0 && tv->tv_usec == 0;
+}
+
+/* Returns true if TV1 >= TV2.  */
+static inline int
+tv_is_ge (struct timeval *tv1, struct timeval *tv2)
+{
+  return
+    tv1->tv_sec > tv2->tv_sec
+      || (tv1->tv_sec == tv2->tv_sec && tv1->tv_usec >= tv2->tv_usec);
+}
 
 /* Format into BUF & BUF_LEN the time interval represented by TV, trying to
    make the result less than WIDTH characters wide.  The number of characters
    used is returned.  */
 size_t
-fmt_named_interval (struct timeval *tv, size_t width, char *buf, size_t buf_len)
+fmt_named_interval (struct timeval *tv, size_t width,
+		    char *buf, size_t buf_len)
 {
   struct tscale
     {
       struct timeval thresh;	/* Minimum time to use this scale. */
       struct timeval unit;	/* Unit this scale is based on.  */
-      int fracs;		/* Allow a single fraction digit? */
+      struct timeval frac_thresh; /* If a emitting a single digit of precision
+				     will cause at least this much error, also
+				     emit a single fraction digit.  */
       char *sfxs[5];		/* Names to use, in descending length. */
     }
   time_scales[] =
   {
-    { {2*YEAR, 0},   {YEAR, 0},  0, { " years",  "years",  "yrs", "y", 0 }},
-    { {3*MONTH, 0},  {MONTH, 0}, 0, { " months", "months", "mo", 0 }},
-    { {2*WEEK, 0},   {WEEK, 0},  0, { " weeks",  "weeks",  "wks", "w", 0 }},
-    { {2*DAY, 0},    {DAY, 0},   0, { " days",   "days",   "dys", "d", 0 }},
-    { {2*HOUR, 0},   {HOUR, 0},  0, { " hours",  "hours",  "hrs", "h", 0 }},
-    { {2*MINUTE, 0}, {MINUTE, 0},0, { " minutes", "min",   "mi", "m", 0 }},
-    { {1, 100000},   {1, 0},     1, { " seconds", "sec", "s", 0 }},
-    { {1, 0},        {1, 0},     0, { " second", "sec", "s", 0 }},
-    { {0, 1100},     {0, 1000},  1, { " milliseconds", "ms", 0 }},
-    { {0, 1000},     {0, 1000},  0, { " millisecond", "ms", 0 }},
-    { {0, 2},        {0, 1},     0, { " microseconds", "us", 0 }},
-    { {0, 1},        {0, 1},     0, { " microsecond", "us", 0 }},
-    { {0, 0} }
+    {{2*YEAR, 0},  {YEAR, 0},  {MONTH, 0},{" years", "years", "yrs", "y", 0 }},
+    {{3*MONTH, 0}, {MONTH, 0}, {WEEK, 0}, {" months","months","mo",       0 }},
+    {{2*WEEK, 0},  {WEEK, 0},  {DAY, 0},  {" weeks", "weeks", "wks", "w", 0 }},
+    {{2*DAY, 0},   {DAY, 0},   {HOUR, 0}, {" days",  "days",  "dys", "d", 0 }},
+    {{2*HOUR, 0},  {HOUR, 0},  {MINUTE, 0},{" hours","hours", "hrs", "h", 0 }},
+    {{2*MINUTE, 0},{MINUTE, 0},{1, 0},    {" minutes","min",  "mi",  "m", 0 }},
+    {{1, 100000},  {1, 0},     {0, 100000},{" seconds", "sec", "s", 0 }},
+    {{1, 0},       {1, 0},     {0, 0},    {" second", "sec", "s", 0 }},
+    {{0, 1100},    {0, 1000},  {0, 100},  {" milliseconds", "ms", 0 }},
+    {{0, 1000},    {0, 1000},  {0, 0},    {" millisecond", "ms", 0 }},
+    {{0, 2},       {0, 1},     {0, 0},    {" microseconds", "us", 0 }},
+    {{0, 1},       {0, 1},     {0, 0},    {" microsecond", "us", 0 }},
+    {{0, 0} }
   };
   struct tscale *ts = time_scales;
 
   if (width <= 0 || width >= buf_len)
     width = buf_len - 1;
 
-  for (ts = time_scales; ts->thresh.tv_sec > 0 || ts->thresh.tv_usec > 0; ts++)
-    if (tv->tv_sec > ts->thresh.tv_sec
-	|| (tv->tv_sec == ts->thresh.tv_sec
-	    && tv->tv_usec >= ts->thresh.tv_usec))
+  for (ts = time_scales; !tv_is_zero (&ts->thresh); ts++)
+    if (tv_is_ge (tv, &ts->thresh))
       {
 	char **sfx;
 	struct timeval *u = &ts->unit;
@@ -101,7 +118,9 @@ fmt_named_interval (struct timeval *tv, size_t width, char *buf, size_t buf_len)
 	unsigned frac = 0;
 	unsigned num_len = int_len (num);
 
-	if (ts->fracs && num == 1)
+	if (num < 10
+	    && !tv_is_zero (&ts->frac_thresh)
+	    && tv_is_ge (tv, &ts->frac_thresh))
 	  /* Calculate another place of prec, but only for low numbers.  */
 	  {
 	    /* TV times 10.  */
@@ -113,10 +132,25 @@ fmt_named_interval (struct timeval *tv, size_t width, char *buf, size_t buf_len)
 	      num_len += 2;	/* Account for the extra `.' + DIGIT.  */
 	  }
 
-	/* While we have a choice, find a suffxi that fits in WIDTH.  */
+	/* While we have a choice, find a suffix that fits in WIDTH.  */
 	for (sfx = ts->sfxs; sfx[1]; sfx++)
 	  if (num_len + strlen (*sfx) <= width)
 	    break;
+
+	if (!sfx[1] && frac)
+	  /* We couldn't find a suffix that fits, and we're printing a
+	     fraction digit.  Sacrifice the fraction to make it fit.  */
+	  {
+	    num_len -= 2;
+	    frac = 0;
+	    for (sfx = ts->sfxs; sfx[1]; sfx++)
+	      if (num_len + strlen (*sfx) <= width)
+		break;
+	  }
+
+	if (!sfx[1])
+	  /* Still couldn't find a suffix that fits.  Oh well, use the best. */
+	  sfx--;
 
 	if (frac)
 	  return snprintf (buf, buf_len, "%d.%d%s", num, frac, *sfx);
