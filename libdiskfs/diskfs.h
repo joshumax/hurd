@@ -1083,6 +1083,10 @@ error_t diskfs_append_std_options (char **argz, unsigned *argz_len);
 /* Demultiplex incoming messages on ports created by libdiskfs.  */
 int diskfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 
+/* Check if the filesystem is readonly before an operation that
+   writes it.  Return 1 if readonly, zero otherwise. */
+int diskfs_check_readonly (void);
+
 /* The diskfs library provides functions to demultiplex the fs, io,
    fsys, interrupt, and notify interfaces.  All the server routines
    have the prefix `diskfs_S_'; `in' arguments of type file_t or io_t
