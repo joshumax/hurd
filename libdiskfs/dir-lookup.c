@@ -169,148 +169,57 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
-      /* The check for `np != dnp' simplifies this code a great
-	 deal.  Such a translator should already have been started,
-	 so there's no lossage in doing it this way. */
-      if ((!lastcomp || !(flags & O_NOTRANS))
-	  && np != dnp)
+      if (((flags & O_NOTRANS == 0) || !lastcomp)
+	  && (np->istranslated
+	      || fshelp_translated (&diskfs_root_node->transbox)))
 	{
-	  mach_port_t control;
-	  uid_t *uids = 0, *gids = 0;
-	  int nuids = 0, ngids = 0;
-	  file_t dirfile = MACH_PORT_NULL;
+	  mach_port_t dirport;
+	  
+	  /* Create an unauthenticated port for DNP, and then
+	     unlock it. */
+	  dirport = (ports_get_right
+		     (diskfs_make_protid
+		      (diskfs_make_peropen (dnp, 0, dircred->po->dotdotport),
+		       0, 0, 0, 0)));
+	  mach_port_insert_right (mach_task_self (), dirport, dirport,
+				  MACH_MSG_TYPE_MAKE_SEND);
+	  if (np != dnp)
+	    mutex_unlock (&dnp-lock);
+	  
+	  error = fshelp_fetch_root (&np->transbox, &dircred->po->dotdotport,
+				     dirport, dircred->uids, dircred->nuids,
+				     dircred->gids, dircred->ngids, 
+				     lastcomp ? flags : 0,
+				     retry, retryname, returned_port);
 
-	  /* Be very careful not to hold an inode lock while fetching
-	     a translator lock and vice versa.  */
-
-	  mutex_unlock (&np->lock);
-	  mutex_unlock (&dnp->lock);
-
-	repeat_trans:
-	  mutex_lock (&np->translator.lock);
-	  if (np->translator.control != MACH_PORT_NULL)
+	  if (error != ENOENT)
 	    {
-	      control = np->translator.control;
-	      mach_port_mod_refs (mach_task_self (), control, 
-				  MACH_PORT_RIGHT_SEND, 1);
-	      mutex_unlock (&np->translator.lock);
-	      
-	      /* Now we have a copy of the translator port that isn't
-		 dependent on the translator lock itself.  Relock
-		 the directory, make a port from it, and then call
-		 fsys_getroot. */
-
-	      if (dirfile == MACH_PORT_NULL)
-		{
-		  mutex_lock (&dnp->lock);
-		  dirfile = (ports_get_right
-			     (diskfs_make_protid
-			      (diskfs_make_peropen (dnp, 0, 
-						    dircred->po->dotdotport),
-			       0, 0, 0, 0)));
-		  mach_port_insert_right (mach_task_self (), dirfile, dirfile,
-					  MACH_MSG_TYPE_MAKE_SEND);
-		  mutex_unlock (&dnp->lock);
-		}
-
-	      if (!uids)
-		{
-		  uids = dircred->uids;
-		  gids = dircred->gids;
-		  nuids = dircred->nuids;
-		  ngids = dircred->ngids;
-		}
-	      
-	      error = fsys_getroot (control, dirfile, MACH_MSG_TYPE_COPY_SEND,
-				    uids, nuids, gids, ngids,
-				    lastcomp ? flags : 0,
-				    retry, retryname, returned_port);
-	      
-	      /* If we got MACH_SEND_INVALID_DEST or MIG_SERVER_DIED, then
-		 the server is dead.  Zero out the old control port and try
-		 everything again.  */
-
-	      if (error == MACH_SEND_INVALID_DEST || error == MIG_SERVER_DIED)
-		{
-		  mutex_lock (&np->translator.lock);
-
-		  /* Only zero it if it hasn't changed. */
-
-		  if (np->translator.control == control)
-		    fshelp_translator_drop (&np->translator);
-		  mutex_unlock (&np->translator.lock);
-	      
-		  /* And we're done with this port. */
-		  mach_port_deallocate (mach_task_self (), control);
-
-		  goto repeat_trans;
-		}
-	      
-	      /* Otherwise, we're done; return to the user.  If there
-		 are more components after this name, be sure to append
-		 them to the user's retry path. */
-	      if (!error && !lastcomp)
+	      diskfs_nrele (dnp);
+	      diskfs_nput (np);
+	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
+	      if (!lastcomp && !error)
 		{
 		  strcat (retryname, "/");
 		  strcat (retryname, nextname);
 		}
-	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-	      diskfs_nrele (dnp);
-	      diskfs_nrele (np);
-	      mach_port_deallocate (mach_task_self (), dirfile);
 	      return error;
 	    }
-	  else
+
+	  /* ENOENT means there was a hiccup, and the translator
+	     vanished while NP was unlocked inside fshelp_fetch_root.
+	     Reacquire the locks, and continue as normal. */
+	  error = 0;
+	  if (np != dnp)
 	    {
-	      /* If we get here, then we have no active control port.
-		 Check to see if there is a passive translator, and if so
-		 repeat the translator check. */
-	      mutex_unlock (&np->translator.lock);
-	      
-	      mutex_lock (&np->lock);
-	      if (np->istranslated)
+	      if (!strcmp (path, ".."))
+		mutex_lock (&dnp->lock);
+	      else
 		{
-		  /* Start the translator. */
-		  if (dirfile == MACH_PORT_NULL)
-		    {
-		      /* This code is the same as above. */
-		      mutex_unlock (&np->lock);
-		      mutex_lock (&dnp->lock);
-		      dirfile = (ports_get_right
-				 (diskfs_make_protid
-				  (diskfs_make_peropen (dnp, 0, 
-							dircred->po
-							->dotdotport),
-				   0, 0, 0, 0)));
-		      mach_port_insert_right (mach_task_self (), dirfile,
-					      dirfile,
-					      MACH_MSG_TYPE_MAKE_SEND);
-		      mutex_unlock (&dnp->lock);
-		      mutex_lock (&np->lock);
-		    }
-		  error = diskfs_start_translator (np, dirfile, dircred);
-		  if (error)
-		    {
-		      mach_port_deallocate (mach_task_self (), dirfile);
-		      diskfs_nrele (dnp);
-		      diskfs_nput (np);
-		      return error;
-		    }
-		  goto repeat_trans;
+		  mutex_unlock (&np->lock);
+		  mutex_lock (&dnp->lock);
+		  mutex_lock (&np->lock);
 		}
 	    }
-	  
-	  /* We're here if we tried the translator check, and it
-	     failed.   Lock everything back, and make sure we do it
-	     in the right order. */
-	  if (strcmp (path, ".."))
-	    {
-	      mutex_unlock (&np->lock);
-	      mutex_lock (&dnp->lock);
-	      mutex_lock (&np->lock);
-	    }
-	  else
-	    mutex_lock (&dnp->lock);
 	}
       
       if (S_ISLNK (np->dn_stat.st_mode)
