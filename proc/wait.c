@@ -36,18 +36,6 @@
 
 #include <mach/mig_errors.h>
 
-struct zombie 
-{
-  struct zombie *next;
-  pid_t pid, pgrp;
-  struct proc *parent;
-  int exit_status;
-  struct rusage ru;
-};
-
-static struct zombie *zombie_list;
-
-
 /* Return nonzero if a `waitpid' on WAIT_PID by a process
    in MYPGRP cares about the death of PID/PGRP.  */
 static inline int
