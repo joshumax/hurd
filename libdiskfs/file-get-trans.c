@@ -35,7 +35,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   if (!diskfs_node_translated (np))
     error = EINVAL;
   else
-    error = diskfs_get_translator (np, trans);
+    error = diskfs_get_translator (np, (char **)trans);
   mutex_unlock (&np->lock);
 
   return error;
