@@ -21,6 +21,8 @@ include ../Makeconf
 
 DIST_FILES = fstests.c Makefile fdtests.c ChangeLog timertest.c
 
+SRCS = fstests.c fdtests.c timertest.c
+
 #OBJS=fdtests.o 
 #OBJS=fstests.o
 OBJS=timertest.o
