@@ -66,7 +66,7 @@ instructions, after making the indicated minor modifications:
    #define setpgrp(a,b) setpgrp()
 * findutils (4.1)  
   [Comment out decl of basename in defs.h and defn in util.c
-   Add `#define ARG_MAX 20480' right after the includes]
+   Add `#define ARG_MAX 20480' in xargs/xargs.c, right after the includes]
 * gzip (1.2.4) 
   [commented out basename from gzip.h and util.c]
 * ncurses (1.9.9e) 
