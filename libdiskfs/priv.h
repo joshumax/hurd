@@ -68,9 +68,22 @@ end_using_protid_port (struct protid *cred)
    to write from or fill on read.  OFFSET is the absolute address (-1
    not permitted here); AMT is the size of the read/write to perform;
    DIR is set for writing and clear for reading.  The inode must
-   be locked.  */
+   be locked.   If NOTIME is set, then don't update the access or
+   modify times on the file.  */
 error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset, 
-			       int amt, int dir);
+			       int amt, int dir, int notime);
+
+/* Clean routine for control port. */
+void _diskfs_control_clean (void *);
+
+/* Number of outstanding PT_CTL ports. */
+extern int _diskfs_ncontrol_ports;
+
+/* Lock for _diskfs_ncontrol_ports. */
+extern spin_lock_t _diskfs_control_lock;
+
+/* Only temporary, until fsys_getroot/fsys_startup interface is fixed. */ 
+extern file_t _diskfs_dotdot_file;
 
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
@@ -96,6 +109,10 @@ error_t _diskfs_rdwr_internal (struct node *np, char *data, int offset,
   return err;								    \
 })
 
-#define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK)
+/* Bits the user is permitted to set with io_*_openmodes */
+#define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK|O_NOATIME)
+
+/* Bits that are turned off after open */
+#define OPENONLY_STATE_MODES (O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK)
 
 #endif
