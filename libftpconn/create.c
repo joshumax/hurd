@@ -49,6 +49,7 @@ ftp_conn_create (const struct ftp_conn_params *params,
   new->reply_txt_sz = 0;
   new->params = params;
   new->hooks = hooks;
+  new->syshooks_valid = 0;
   new->cwd = 0;
   new->type = 0;
   bzero (&new->syshooks, sizeof new->syshooks);
