@@ -71,10 +71,6 @@ diskfs_S_io_write (struct protid *cred,
 
   *amt = datalen;
   err = _diskfs_rdwr_internal (np, data, off, amt, 1, 0);
-  if (*amt)
-    /* If we wrote any, just return a short write count with no error;
-       the next write attempt will hit the error again and diagnose it.  */
-    err = 0;
 
   if (!err && offset == -1)
     cred->po->filepointer += *amt;
