@@ -1,3 +1,16 @@
+2000-12-21  Marcus Brinkmann  <marcus@gnu.org>
+
+	* boot.c (main): If malloc or realloc fails, print diagnostic
+	message and exit.
+	(queue_read): Change return type from void to kern_return_t.
+	If malloc fails, return D_NO_MEMORY, otherwise D_SUCCESS (to simplify
+	code flow, malloc before acquiring the queuelock).
+	(ds_device_read): New variable err (local to the block in which it is used).
+	If queue_read fails, pass through error.
+	(ds_device_read_inband): Likewise.
+	(S_io_read): Likewise.
+	Reported by Igor Khavkine <i_khavki@alcor.concordia.ca>.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* boot.c (S_io_reauthenticate): Check mach_port_insert_right result

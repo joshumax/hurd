@@ -540,6 +540,7 @@ main (int argc, char **argv, char **envp)
   {
     char *p, *line;
     static const char filemsg[] = "Can't open boot script\n";
+    static const char memmsg[] = "Not enough memory\n";
     int amt, fd, err;
 
     fd = open (bootscript, O_RDONLY, 0);
@@ -549,6 +550,11 @@ main (int argc, char **argv, char **envp)
 	host_exit (1);
       }
     p = buf = malloc (500);
+    if (!buf)
+      {
+	write (2, memmsg, sizeof (memmsg));
+	host_exit (1);
+      }
     len = 500;
     amt = 0;
     while (1)
@@ -564,6 +570,11 @@ main (int argc, char **argv, char **envp)
 
 	    len += 500;
 	    newbuf = realloc (buf, len);
+	    if (!newbuf)
+	      {
+		write (2, memmsg, sizeof (memmsg));
+		host_exit (1);
+	      }
 	    p = newbuf + (p - buf);
 	    buf = newbuf;
 	  }
@@ -850,7 +861,7 @@ struct qr
 struct qr *qrhead, *qrtail;
 
 /* Queue a read for later reply. */
-void
+kern_return_t
 queue_read (enum read_type type,
 	    mach_port_t reply_port,
 	    mach_msg_type_name_t reply_type,
@@ -858,9 +869,12 @@ queue_read (enum read_type type,
 {
   struct qr *qr;
 
+  qr = malloc (sizeof (struct qr));
+  if (!qr)
+    return D_NO_MEMORY;
+
   spin_lock (&queuelock);
 
-  qr = malloc (sizeof (struct qr));
   qr->type = type;
   qr->reply_port = reply_port;
   qr->reply_type = reply_type;
@@ -872,6 +886,7 @@ queue_read (enum read_type type,
     qrhead = qrtail = qr;
 
   spin_unlock (&queuelock);
+  return D_SUCCESS;
 }
 
 /* TRUE if there's data available on stdin, which should be used to satisfy
@@ -1194,8 +1209,12 @@ ds_device_read (device_t device,
 	}
       else
 	{
+	  kern_return_t err;
+
 	  unlock_readlock ();
-	  queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
+	  err = queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
+	  if (err)
+	    return err;
 	  return MIG_NO_REPLY;
 	}
     }
@@ -1244,8 +1263,12 @@ ds_device_read_inband (device_t device,
 	}
       else
 	{
+	  kern_return_t err;
+
 	  unlock_readlock ();
-	  queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
+	  err = queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
+	  if (err)
+	    return err;
 	  return MIG_NO_REPLY;
 	}
     }
@@ -1515,8 +1538,11 @@ S_io_read (mach_port_t object,
     }
   else
     {
+      kern_return_t err;
       unlock_readlock ();
-      queue_read (IO_READ, reply_port, reply_type, amount);
+      err = queue_read (IO_READ, reply_port, reply_type, amount);
+      if (err)
+	return err;
       return MIG_NO_REPLY;
     }
 }
