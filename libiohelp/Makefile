@@ -28,7 +28,8 @@ CPPFLAGS := -I. $(CPPFLAGS)
 all: libioserver.a(__.SYMDEF)
 
 libioserver.a(__.SYMDEF): $(OBJS)
-	ar r $@ $?
+	rm -f libioserver.a
+	ar r $@ $^
 	ranlib $@
 
 $(hurdinst)/lib/libioserver.a: libioserver.a(__.SYMDEF)
