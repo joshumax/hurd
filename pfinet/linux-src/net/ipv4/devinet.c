@@ -417,7 +417,7 @@ configure_device (struct device *dev,
       ifa = inet_alloc_ifa ();
       if (!ifa)
 	return ENOBUFS;
-      memcpy(ifa->ifa_label, dev->name, IFNAMSIZ);
+      memcpy (ifa->ifa_label, dev->name, IFNAMSIZ);
     }
 
   if (addr != INADDR_NONE)
@@ -432,7 +432,8 @@ configure_device (struct device *dev,
 	ifa->ifa_broadcast = 0;
     }
 
-  return - inet_set_ifa (dev, ifa);
+  return - (inet_set_ifa (dev, ifa)
+	    ?: dev_change_flags (dev, dev->flags | IFF_UP));
 }
 
 void

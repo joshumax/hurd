@@ -206,6 +206,10 @@ main (int argc,
      After this, we can use `register_netdevice' for new interfaces.  */
   net_dev_init ();
 
+  /* ifconfig lo up 127.0.0.1 netmask 0xff000000 */
+  configure_device (&loopback_dev,
+		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET));
+
   __mutex_unlock (&global_lock);
 
   /* Parse options.  When successful, this configures the interfaces
