@@ -150,6 +150,9 @@ main (int argc, char **argv)
   /* Map the entire disk. */
   create_disk_pager ();
 
+  /* Start the first request thread, to handle RPCs and page requests. */
+  diskfs_spawn_first_thread ();
+
   err = vm_map (mach_task_self (), (vm_address_t *)&disk_image,
 		diskpagersize, 0, 1, diskpagerport, 0, 0, 
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),
@@ -157,29 +160,19 @@ main (int argc, char **argv)
 		VM_INHERIT_NONE);
   assert (!err);
 
+  get_hypermetadata ();
+
   if (diskpagersize < sblock->fs_size * sblock->fs_fsize)
       {
 	fprintf (stderr, 
-		 "Disk size %d less than necessary "
+		 "Disk size (%d) less than necessary "
 		 "(superblock says we need %ld)\n",
 		 sizes[DEV_GET_SIZE_DEVICE_SIZE],
 		 sblock->fs_size * sblock->fs_fsize);
 	exit (1);
       }
 
-  get_hypermetadata ();
-
-  /* Check to make sure device size is big enough.  */
-  if (sizes[DEV_GET_SIZE_DEVICE_SIZE] != 0)
-    if (sizes[DEV_GET_SIZE_DEVICE_SIZE] < sblock->fs_size * sblock->fs_fsize)
-      {
-	fprintf (stderr, 
-		 "Disk size %d less than necessary "
-		 "(superblock says we need %ld)\n",
-		 sizes[DEV_GET_SIZE_DEVICE_SIZE],
-		 sblock->fs_size * sblock->fs_fsize);
-	exit (1);
-      }
+  vm_allocate (mach_task_self (), &zeroblock, sblock->fs_bsize, 1);
 
   /* If the filesystem has new features in it, don't pay attention to
      the user's request not to use them. */
@@ -200,10 +193,6 @@ main (int argc, char **argv)
   /* Initiialize our pagers so we can begin using them.  */
   inode_init ();
   pager_init ();
-
-  /* Start the first request thread, to handle RPCs and page requests
-     resulting from warp_root below.  */
-  diskfs_spawn_first_thread ();
 
   /* Find our root node.  */
   warp_root ();
