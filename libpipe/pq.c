@@ -226,8 +226,10 @@ packet_realloc (struct packet *packet, size_t new_len)
 
   /* Make a new buffer.  */
   if (vm_alloc)
-    err =
-      vm_allocate (mach_task_self (), (vm_address_t *)&new_buf, new_len, 1);
+    {
+      new_buf = mmap (0, new_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = (new_buf == (char *) -1) ? errno : 0;
+    }
   else
     {
       new_buf = malloc (new_len);
@@ -313,10 +315,9 @@ packet_read_ports (struct packet *packet,
   int length = packet->num_ports * sizeof (mach_port_t *);
   if (*num_ports < packet->num_ports)
     {
-      error_t err =
-	vm_allocate (mach_task_self (), (vm_address_t *)ports, length, 1);
-      if (err)
-	return err;
+      *ports = mmap (0, length, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*ports == (mach_port_t *) -1)
+	return errno;
     }
   *num_ports = packet->num_ports;
   bcopy (packet->ports, *ports, length);
@@ -403,7 +404,7 @@ packet_read (struct packet *packet,
 	/* Just copy the data the old fashioned way....  */
 	{
 	  if (*data_len < amount)
-	    vm_allocate (mach_task_self (), (vm_address_t *)data, amount, 1);
+	    *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
 	  bcopy (start, *data, amount);
 	  start += amount;
