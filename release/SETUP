@@ -38,7 +38,7 @@ if test "$BOOT_DEV" && /bin/sh ./MAKEDEV "$BOOT_DEV"; then
   read yn
   case "$yn" in
     "" | "[yY]*")
-      /bin/sh /INSTALL-GRUB-MBR /dev/r$BOOT_DEV;;
+      /bin/sh /INSTALL-GRUB-MBR /dev/$BOOT_DEV;;
   esac
 fi
 
