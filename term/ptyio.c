@@ -338,7 +338,8 @@ pty_io_readable (int *amt)
 
 /* Validation has already been done by trivfs_S_io_select. */
 error_t
-pty_io_select (int *type,
+pty_io_select (struct trivfs_protid *cred,
+	       int *type,
 	       int *idtag)
 {
   int avail = 0;
@@ -347,6 +348,8 @@ pty_io_select (int *type,
     return 0;
 
   mutex_lock (&global_lock);
+
+  /* Validate CRED. XXX */
 
   while (1)
     {
