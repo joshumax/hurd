@@ -156,16 +156,17 @@ reboot_system (int flags)
   for (n = ntfy_tasks; n != NULL; n = n->next)
     {
       error_t err;
-      printf ("init: notifying %p\n", (void *) n->notify_port);
+      printf ("%s: notifying %s of shutdown...", 
+	      program_invocation_short_name, n->name);
       fflush (stdout);
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
-      if (err && err != MACH_SEND_INVALID_DEST)
-	{
-	  printf ("init: %p complained: %s\n",
-		  (void *) n->notify_port,
-		  strerror (err));
-	  fflush (stdout);
-	}
+      if (err == MACH_SEND_INVALID_DEST)
+	printf ("(no longer present)\n");
+      else if (err)
+	printf ("%s", strerror (err));
+      else
+	printf ("done\n");
+      fflush (stdout);
     }
 
   if (fakeboot)
