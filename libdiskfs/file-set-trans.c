@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -39,9 +39,12 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   if (!cred)
     return EOPNOTSUPP;
-  
+
   if (!(passive_flags & FS_TRANS_SET) && !(active_flags & FS_TRANS_SET))
     return 0;
+
+  if ((passive_flags & FS_TRANS_SET) && diskfs_readonly)
+    return EROFS;
 
   if (passive && passive[passivelen - 1])
     return EINVAL;
@@ -65,19 +68,19 @@ diskfs_S_file_set_translator (struct protid *cred,
 	  mutex_unlock (&np->lock);
 	  return error;
 	}
-  
+
       if ((control != MACH_PORT_NULL) && ((active_flags & FS_TRANS_EXCL) == 0))
 	{
 	  mutex_unlock (&np->lock);
 	  error = fsys_goaway (control, killtrans_flags);
-	  if (error && (error != MIG_SERVER_DIED) 
+	  if (error && (error != MIG_SERVER_DIED)
 	      && (error != MACH_SEND_INVALID_DEST))
 	    return error;
 	  error = 0;
 	  mutex_lock (&np->lock);
 	}
     }
-  
+
   /* Handle exclusive passive bit *first*.  */
   if ((passive_flags & FS_TRANS_SET)
       && (passive_flags & FS_TRANS_EXCL)
@@ -86,7 +89,7 @@ diskfs_S_file_set_translator (struct protid *cred,
       mutex_unlock (&np->lock);
       return EBUSY;
     }
-  
+
   if (active_flags & FS_TRANS_SET)
     {
       error = fshelp_set_active (&np->transbox, active,
@@ -105,7 +108,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 	{
 	  /* Handle the short-circuited translators */
 	  mode_t newmode = 0;
-	
+
 	  if (diskfs_shortcut_symlink && !strcmp (passive, _HURD_SYMLINK))
 	    newmode = S_IFLNK;
 	  else if (diskfs_shortcut_chrdev && !(strcmp (passive, _HURD_CHRDEV)))
@@ -116,13 +119,13 @@ diskfs_S_file_set_translator (struct protid *cred,
 	    newmode = S_IFIFO;
 	  else if (diskfs_shortcut_ifsock && !strcmp (passive, _HURD_IFSOCK))
 	    newmode = S_IFSOCK;
-	
+
 	  if (newmode)
 	    {
 	      if (S_ISDIR (np->dn_stat.st_mode))
 		{
 		  /* We can't allow this, because if the mode of the directory
-		     changes, the links will be lost.  Perhaps it might be 
+		     changes, the links will be lost.  Perhaps it might be
 		     allowed for empty directories, but that's too much of a
 		     pain.  */
 		  mutex_unlock (&np->lock);
@@ -134,7 +137,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		     of the translator. */
 		  int major, minor;
 		  char *arg;
-	      
+
 		  arg = passive + strlen (passive) + 1;
 		  assert (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
@@ -152,7 +155,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		      return EINVAL;
 		    }
 		  minor = strtol (arg, 0, 0);
-	      
+
 		  np->dn_stat.st_rdev = makedev (major, minor);
 		}
 
