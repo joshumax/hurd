@@ -34,7 +34,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdlib.h>
 #include <hurd/msg.h>
 
-#include "startup_reply.h"
+#include "startup_reply_U.h"
 #include "startup_S.h"
 #include "notify_S.h"
 
@@ -345,10 +345,10 @@ static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
-  extern int notify_server (), S_startup_server ();
+  extern int notify_server (), startup_server ();
   
   return (notify_server (inp, outp) ||
-	  S_startup_server (inp, outp));
+	  startup_server (inp, outp));
 }
 
 int
