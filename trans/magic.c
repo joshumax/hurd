@@ -37,10 +37,6 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap, control, realnode;
   
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    error(3, 0, "Must be started as a translator");
-  
   if (argc != 2 || *argv[1] == '-')
     {
       fprintf(stderr, "Usage: %s MAGIC", program_invocation_name);
@@ -48,14 +44,16 @@ main (int argc, char **argv)
     }
 
   magic = argv[1];
+  
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  if (bootstrap == MACH_PORT_NULL)
+    error(3, 0, "Must be started as a translator");
 
   /* Reply to our parent */
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
   err = fsys_startup (bootstrap, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
   if (err)
     error(1, err, "starting translator");
-
-  mach_port_deallocate (mach_task_self (), realnode);
 
   /* Launch */
   while (1)
