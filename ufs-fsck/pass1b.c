@@ -1,4 +1,4 @@
-/* Pass 1b of fsck
+/* Pass 1b of fsck -- scan inodes for references to duplicate blocks
    Copyright (C) 1994 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
@@ -25,6 +25,7 @@ pass1b ()
   int cg, i;
   ino_t number;
   int dupblk;
+  struct dups *duphead = duplist;
 
   /* Check each block of file DP; if the block is in the dup block
      list then add it to the dup block list under this file.  
@@ -34,6 +35,7 @@ pass1b ()
   checkblock (daddr_t bno, int nfrags)
     {
       struct dups *dlp;
+      int hadbad = 0;
       
       for (nfrags; nfrags > 0; bno++, nfrags--)
 	{
@@ -45,19 +47,18 @@ pass1b ()
 		{
 		  if (!dupblk)
 		    printf ("I=%lu HAD DUPLICATE BLOCKS\n", number);
-		  dupblk = 1;
+		  dupblk++;
 		  printf ("DUPLICATE BLOCK %d\n", bno);
 		  dlp->dup = duphead->dup;
 		  duphead->dup = blkno;
 		  duphead = duphead->next;
+		  hadbad = 1;
 		}
 	      if (dlp == muldup)
 		break;
 	    }
-	  if (muldup == 0 || duphead == muldup->next)
-	    return RET_BAD;
 	}
-      return RET_GOOD;
+      return hadbad ? RET_BAD : RET_GOOD;
     }
 
   /* Call CHECKBLOCK for each block of each node, to see if it holds
@@ -72,6 +73,16 @@ pass1b ()
 	    getinode (number, dp);
 	    dupblk = 0;
 	    allblock_iterate (dp, checkblock);
+	    if (dupblk)
+	      {
+		printf ("I=%ld has %d DUPLICATE BLOCKS\n", number, dupblk);
+		if (reply ("CLEAR"))
+		  {
+		    clear_inode (number, dp);
+		    inode_state[number] = UNALLOC;
+		  }
+		else if (inodestate[number] == DIR)
+		  inodestate[number] = BADDIR;
 	  }
       }
 }
