@@ -81,11 +81,13 @@ struct execdata
     bfd *bfd;
 #else
     file_t file;
-    struct exec *header;
+    struct exec *header, headbuf;
 #endif
     memory_object_t filemap, cntlmap;
     struct shared_io *cntl;
+    char *file_data;		/* File data if already copied in core.  */
     off_t file_size;
+    size_t optimal_block;	/* Optimal size for io_read from file.  */
 
     /* Set by caller of load.  */
     task_t task;
@@ -140,6 +142,8 @@ b2he (error_t deflt)
 #define	b2he()	a2he (errno)
 #endif
 
+static void check_gzip (struct execdata *);
+
 #ifdef	BFD
 
 /* Check a section, updating the `locations' vector [BFD].  */
@@ -242,24 +246,85 @@ load_section (enum section section, struct execdata *u)
     {
       vm_address_t mapstart = round_page (addr);
 
+      /* Allocate space in the task and write CONTENTS into it.  */
+      void write_to_task (vm_address_t mapstart, vm_size_t size,
+			  vm_prot_t vm_prot, vm_address_t contents)
+	{
+	  vm_size_t off = size % vm_page_size;
+	  /* Allocate with vm_map to set max protections.  */
+	  u->error = vm_map (u->task,
+			     &mapstart, size, 0, 0,
+			     MACH_PORT_NULL, 0, 1,
+			     vm_prot|VM_PROT_WRITE,
+			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
+			     VM_INHERIT_COPY);
+	  if (! u->error && size >= vm_page_size)
+	    u->error = vm_write (u->task, mapstart, contents, size - off);
+	  if (! u->error && off != 0)
+	    {
+	      vm_address_t page = 0;
+	      u->error = vm_allocate (mach_task_self (),
+				      &page, vm_page_size, 1);
+	      if (! u->error)
+		{
+		  memcpy ((void *) page,
+			  (void *) (contents + (size - off)),
+			  off);
+		  u->error = vm_write (u->task, mapstart + (size - off),
+				       page, vm_page_size);
+		  vm_deallocate (mach_task_self (), page, vm_page_size);
+		}
+	    }
+	  /* Reset the current protections to the desired state.  */
+	  if (! u->error && (vm_prot & VM_PROT_WRITE) == 0)
+	    u->error = vm_protect (u->task, mapstart, size, 0, vm_prot);
+	}
+
       if (mapstart - addr < secsize)
 	{
 	  /* MAPSTART is the first page that starts inside the section.
 	     Map all the pages that start inside the section.  */
 
 #ifdef	BFD
-	  if (sec->flags & SEC_IN_MEMORY)
-	    u->error = vm_write (u->task, mapstart,
-				 contents + (mapstart - addr),
-				 secsize - (mapstart - addr));
-	  else
+#define SECTION_IN_MEMORY_P	(sec->flags & SEC_IN_MEMORY)
+#define SECTION_CONTENTS	sec->contents
+#else
+#define SECTION_IN_MEMORY_P	(u->file_data != NULL)
+#define SECTION_CONTENTS	(u->file_data + filepos)
 #endif
+	  if (SECTION_IN_MEMORY_P)
+	    /* Data is already in memory; write it into the task.  */
+	    write_to_task (mapstart, secsize - (mapstart - addr), vm_prot,
+			   (vm_address_t) SECTION_CONTENTS
+			   + (mapstart - addr));
+	  else if (u->filemap != MACH_PORT_NULL)
+	    /* Map the data into the task directly from the file.  */
 	    u->error = vm_map (u->task,
 			       &mapstart, secsize - (mapstart - addr), 0, 0,
 			       u->filemap, filepos + (mapstart - addr), 1, 
 			       vm_prot,
 			       VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
 			       VM_INHERIT_COPY);
+	  else
+	    {
+	      /* Cannot map the data.  Read it into a buffer and vm_write
+		 it into the task.  */
+	      void *buf;
+	      const vm_size_t size = secsize - (mapstart - addr);
+	      u->error = vm_allocate (mach_task_self (),
+				      (vm_address_t *) &buf, size, 1);
+	      if (! u->error)
+		{
+		  if (fseek (&u->stream,
+			     filepos + (mapstart - addr), SEEK_SET) ||
+		      fread (buf, size, 1, &u->stream) != 1)
+		    u->error = errno;
+		  else
+		    write_to_task (mapstart, size, vm_prot,
+				   (vm_address_t) buf);
+		  vm_deallocate (mach_task_self (), (vm_address_t) buf, size);
+		}
+	    }
 	  if (u->error)
 	    return;
 	}
@@ -293,50 +358,14 @@ load_section (enum section section, struct execdata *u)
 	  readaddr = (void *) (ourpage + (addr - overlap_page));
 	  readsize = size - (addr - overlap_page);
 
-#ifdef	BFD
-	  if (sec->flags & SEC_IN_MEMORY)
-	    bcopy (sec->contents, readaddr, readsize);
+	  if (SECTION_IN_MEMORY_P)
+	    bcopy (SECTION_CONTENTS, readaddr, readsize);
 	  else
-#endif
-#if	1
 	    if (fread (readaddr, readsize, 1, &u->stream) != 1)
 	      {
 		u->error = errno;
 		goto maplose;
 	      }
-#else
-	  if (u->cntl)
-	    {
-	      /* We cannot call io_read while holding the conch,
-		 so we must read by mapping the file ourselves.  */
-	      vm_address_t data;
-	      if (u->error = vm_map (mach_task_self (), &data, readsize, 0, 1,
-				     u->filemap, filepos, 1,
-				     VM_PROT_READ, VM_PROT_READ,
-				     VM_INHERIT_COPY))
-		goto maplose;
-	      bcopy ((void *) data, readaddr, readsize);
-	      vm_deallocate (mach_task_self (), data, readsize);
-	    }
-	  else
-	    do
-	      {
-		char *data;
-		unsigned int nread;
-		data = readaddr;
-		if (u->error = io_read (u->file, &data, &nread,
-					filepos, readsize))
-		  goto maplose;
-		if (data != readaddr)
-		  {
-		    bcopy (data, readaddr, nread);
-		    vm_deallocate (mach_task_self (), (vm_address_t) data, 
-				   nread);
-		  }
-		readaddr += nread;
-		readsize -= nread;
-	      } while (readsize > 0);
-#endif
 	  u->error = vm_write (u->task, overlap_page, ourpage, size);
 	  if (u->error == KERN_PROTECTION_FAILURE)
 	    {
@@ -481,38 +510,69 @@ input_room (FILE *f)
   struct execdata *e = f->__cookie;
   const size_t size = e->file_size;
 
-  if (f->__buffer != NULL)
-    vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
-		   f->__bufsize);
-
-  if (f->__target > size)
+  if (f->__target >= size)
     {
       f->__eof = 1;
       return EOF;
     }
 
-  f->__buffer = NULL;
-  if (vm_map (mach_task_self (),
-	      (vm_address_t *) &f->__buffer, vm_page_size, 0, 1,
-	      e->filemap, f->__target, 1, VM_PROT_READ, VM_PROT_READ,
-	      VM_INHERIT_NONE))
+  if (e->filemap == MACH_PORT_NULL)
     {
-      errno = EIO;
-      f->__error = 1;
+      mach_msg_type_number_t nread = f->__bufsize;
+      char *buffer = f->__buffer;
+      if (e->error = io_read (e->file, &buffer, &nread,
+			      f->__target, e->optimal_block))
+	{
+	  errno = e->error;
+	  f->__error = 1;
+	  return EOF;
+	}
+      if (buffer != f->__buffer)
+	{
+	  /* The data was returned out of line.  Discard the old buffer.  */
+	  vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
+			 f->__bufsize);
+	  f->__buffer = buffer;
+	  f->__bufsize = round_page (nread);
+	}
+
+      f->__get_limit = f->__buffer + nread;
+    }
+  else
+    {
+      if (f->__buffer != NULL)
+	vm_deallocate (mach_task_self (), (vm_address_t) f->__buffer,
+		       f->__bufsize);
+      f->__buffer = NULL;
+      if (vm_map (mach_task_self (),
+		  (vm_address_t *) &f->__buffer, vm_page_size, 0, 1,
+		  e->filemap, f->__target, 1, VM_PROT_READ, VM_PROT_READ,
+		  VM_INHERIT_NONE))
+	{
+	  errno = EIO;
+	  f->__error = 1;
+	  return EOF;
+	}
+      f->__bufsize = vm_page_size;
+
+      if (e->cntl)
+	e->cntl->accessed = 1;
+
+      if (f->__target + f->__bufsize > size)
+	f->__get_limit = f->__buffer + (size - f->__target);
+      else
+	f->__get_limit = f->__buffer + f->__bufsize;
+    }
+
+  f->__offset = f->__target;
+  f->__bufp = f->__buffer;
+
+  if (f->__get_limit == f->__buffer)
+    {
+      f->__eof = 1;
       return EOF;
     }
-  f->__bufsize = vm_page_size;
-  f->__offset = f->__target;
 
-  if (f->__target + f->__bufsize > size)
-    f->__get_limit = f->__buffer + (size - f->__target);
-  else
-    f->__get_limit = f->__buffer + f->__bufsize;
-
-  if (e->cntl)
-    e->cntl->accessed = 1;
-
-  f->__bufp = f->__buffer;
   return (unsigned char) *f->__bufp++;
 }
 
@@ -529,17 +589,16 @@ close_exec_stream (void *cookie)
 }
 
 
-/* Prepare to load FILE.
-   On successful return, the caller must allocate the
-   E->locations vector, and map check_section over the BFD.  */
+/* Prepare to check and load FILE.  */
 static inline void
-check (file_t file, struct execdata *e)
+prepare (file_t file, struct execdata *e)
 {
   e->file = file;
 
 #ifdef	BFD
   e->bfd = NULL;
 #endif
+  e->file_data = NULL;
   e->cntl = NULL;
   e->filemap = MACH_PORT_NULL;
   e->cntlmap = MACH_PORT_NULL;
@@ -548,7 +607,7 @@ check (file_t file, struct execdata *e)
     memory_object_t rd, wr;
     if (e->error = io_map (file, &rd, &wr))
       return;
-    if (wr)
+    if (wr != MACH_PORT_NULL)
       mach_port_deallocate (mach_task_self (), wr);
     if (rd == MACH_PORT_NULL)
       {
@@ -565,6 +624,7 @@ check (file_t file, struct execdata *e)
 	if (e->error = io_stat (file, &st))
 	  return;
 	e->file_size = st.st_size;
+	e->optimal_block = st.st_blksize;
       }
     else
       e->error = vm_map (mach_task_self (), (vm_address_t *) &e->cntl,
@@ -612,15 +672,26 @@ check (file_t file, struct execdata *e)
   e->stream.__room_funcs.__input = input_room;
   e->stream.__io_funcs.close = close_exec_stream;
   e->stream.__cookie = e;
+  e->stream.__seen = 1;
 
-#ifdef	BFD
+#ifdef BFD
   e->bfd = bfd_openstream (&e->stream);
   if (e->bfd == NULL)
     {
       e->error = b2he (ENOEXEC);
       return;
     }
+#endif
+}
+
+/* Check the magic number, etc. of the file.
+   On successful return, the caller must allocate the
+   E->locations vector, and map check_section over the BFD.  */
 
+static void
+check (struct execdata *e)
+{
+#ifdef	BFD
   bfd_error = no_error;
   if (!bfd_check_format (e->bfd, bfd_object))
     {
@@ -643,11 +714,25 @@ check (file_t file, struct execdata *e)
       return;
     }
   e->header = NULL;
-  if (e->error = vm_map (mach_task_self (),
-			 (vm_address_t *) &e->header, sizeof (*e->header),
-			 0, 1, e->filemap, 0, 1, VM_PROT_READ, VM_PROT_READ,
-			 VM_INHERIT_NONE))
-    return;
+  if (e->file_data)
+    /* Data already in core.  Just use it.  */
+    e->header = (void *) e->file_data;
+  else if (e->filemap == MACH_PORT_NULL)
+    {
+      /* Cannot map the file.  Read the header into a buffer.  */
+      if (fread (&e->headbuf, sizeof e->headbuf, 1, &e->stream) != 1)
+	{
+	  e->error = errno;
+	  return;
+	}
+      e->header = &e->headbuf;
+    }
+  else
+    if (e->error = vm_map (mach_task_self (),
+			   (vm_address_t *) &e->header, sizeof (*e->header),
+			   0, 1, e->filemap, 0, 1, VM_PROT_READ, VM_PROT_READ,
+			   VM_INHERIT_NONE))
+      return;
   if (N_BADMAG (*e->header))
     {
       e->error = ENOEXEC;
@@ -665,7 +750,7 @@ check (file_t file, struct execdata *e)
 
 
 /* Load the file.  */
-static inline void
+static void
 load (task_t usertask, struct execdata *e)
 {
   if (e->error)
@@ -682,7 +767,7 @@ load (task_t usertask, struct execdata *e)
 }
 
 /* Do post-loading processing on the task.  */
-static inline void
+static void
 postload (struct execdata *e)
 {
   if (e->error)
@@ -699,7 +784,7 @@ postload (struct execdata *e)
 
 
 /* Release the conch and clean up mapping the file and control page.  */
-static inline void
+static void
 finish_mapping (struct execdata *e)
 {
   if (e->cntl != NULL)
@@ -716,28 +801,145 @@ finish_mapping (struct execdata *e)
 	  spin_unlock (&e->cntl->lock);
 	}
       vm_deallocate (mach_task_self (), (vm_address_t) e->cntl, vm_page_size);
+      e->cntl = NULL;
     }
   if (e->filemap != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), e->filemap);
+    {
+      mach_port_deallocate (mach_task_self (), e->filemap);
+      e->filemap = MACH_PORT_NULL;
+    }
   if (e->cntlmap != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), e->cntlmap);
+    {
+      mach_port_deallocate (mach_task_self (), e->cntlmap);
+      e->cntlmap = MACH_PORT_NULL;
+    }
 }
       
 /* Clean up after reading the file (need not be completed).  */
-static inline void
+static void
 finish (struct execdata *e)
 {
   finish_mapping (e);
+  fclose (&e->stream);
 #ifdef	BFD
   if (e->bfd != NULL)
     (void) bfd_close (e->bfd);
 #else
-  if (e->header != NULL)
+  if (e->header != NULL && e->header != &e->headbuf &&
+      e->header != (void *) e->file_data)
     vm_deallocate (mach_task_self (),
 		   (vm_address_t) e->header, sizeof (*e->header));
-  mach_port_deallocate (mach_task_self (), e->file);
+  e->header = NULL;
 #endif
+  if (e->file != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), e->file);
+      e->file = MACH_PORT_NULL;
+    }
 }
+
+/* Check the file for being a gzip'd image.  Return with ENOEXEC means not
+   a valid gzip file; return with another error means lossage in decoding;
+   return with zero means the file was uncompressed into memory which E now
+   points to, and `check' can be run again.  */
+
+static void
+check_gzip (struct execdata *earg)
+{
+  struct execdata *e = earg;
+  /* Entry points to unzip engine.  */
+  int get_method (int);
+  void unzip (int, int);
+  extern long int bytes_out;
+  /* Callbacks from unzip for I/O and error interface.  */
+  extern int (*unzip_read) (char *buf, size_t maxread);
+  extern void (*unzip_write) (const char *buf, size_t nwrite);
+  extern void (*unzip_read_error) (void);
+  extern void (*unzip_error) (const char *msg);
+
+  char *zipdata = NULL;
+  size_t zipdatasz = 0;
+  FILE *zipout = NULL;
+  jmp_buf ziperr;
+  int zipread (char *buf, size_t maxread)
+    {
+      return fread (buf, 1, maxread, &e->stream);
+    }
+  void zipwrite (const char *buf, size_t nwrite)
+    {
+      if (fwrite (buf, nwrite, 1, zipout) != 1)
+	longjmp (ziperr, 1);
+    }
+  void ziprderr (void)
+    {
+      longjmp (ziperr, 2);
+    }
+  void ziperror (const char *msg)
+    {
+      errno = ENOEXEC;
+      longjmp (ziperr, 2);
+    }
+
+  unzip_read = zipread;
+  unzip_write = zipwrite;
+  unzip_read_error = ziprderr;
+  unzip_error = ziperror;
+
+  if (setjmp (ziperr))
+    {
+      /* Error in unzipping jumped out.  */
+      if (zipout)
+	{
+	  fclose (zipout);
+	  free (zipdata);
+	}
+      e->error = errno;
+      return;
+    }
+
+  if (get_method (0) != 0)
+    {
+      /* Not a happy gzip file.  */
+      e->error = ENOEXEC;
+      return;
+    }
+
+  /* Matched gzip magic number.  Ready to unzip.
+     Set up the output stream and let 'er rip.  */
+
+  zipout = open_memstream (&zipdata, &zipdatasz);
+  if (! zipout)
+    {
+      e->error = errno;
+      return;
+    }
+
+  /* Call the gunzip engine.  */
+  bytes_out = 0;
+  unzip (17, 23);		/* Arguments ignored.  */
+
+  /* The output is complete.  Clean up the stream and store its resultant
+     buffer and size in the execdata as the file contents.  */
+  fclose (zipout);
+  e->file_data = zipdata;
+  e->file_size = zipdatasz;
+
+  /* Clean up the old exec file stream's state.  */
+  finish (e);
+
+  /* Point the stream at the buffer of file data.  */
+  memset (&e->stream, 0, sizeof (e->stream));
+  e->stream.__magic = _IOMAGIC;
+  e->stream.__mode.__read = 1;
+  e->stream.__buffer = e->file_data;
+  e->stream.__bufsize = e->file_size;
+  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
+  e->stream.__bufp = e->stream.__buffer;
+  e->stream.__seen = 1;
+
+  e->error = 0;
+}
+
 
 static int
 request_server (mach_msg_header_t *inp,
@@ -857,8 +1059,21 @@ do_exec (mach_port_t execserver,
   if ((!std_ports || !std_ints) && (flags & (EXEC_SECURE|EXEC_DEFAULTS)))
     return EIEIO;
 
+  /* Prepare E to read the file.  */
+  prepare (file, &e);
+
   /* Check the file for validity first.  */
-  check (file, &e);
+  check (&e);
+  if (e.error == ENOEXEC)
+    {
+      /* See if it is a compressed image.  */
+      check_gzip (&e);
+      if (e.error == 0)
+	/* The file was uncompressed into memory, and now E describes the
+	   uncompressed image rather than the actual file.  Check it again
+	   for a valid magic number.  */
+	check (&e);
+    }
 #if 0
   if (e.error == ENOEXEC)
     /* Check for a #! executable file.  */
