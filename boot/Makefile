@@ -1,4 +1,4 @@
-# Copyright (C) 1993, 1994 Free Software Foundation, Inc.
+# Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 # 
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -18,9 +18,9 @@
 dir := boot
 makemode := utility
 
-SRCS = boot.c tcattr.c sigvec.S
+SRCS = boot.c tcattr.c sigvec.S syscall.S
 OBJS = boot.o notifyServer.o execServer.o ourdeviceServer.o ioServer.o \
-       io_replyUser.o device_replyUser.o sigvec.o \
+       io_replyUser.o device_replyUser.o sigvec.o syscall.o \
        termServer.o tcattr.o bootstrapServer.o
 HURDLIBS = libthreads
 target = boot
