@@ -95,7 +95,7 @@ int fakeboot;
 /* The tasks of auth and proc and the bootstrap filesystem. */
 task_t authtask, proctask, fstask;
 
-char *init_version = "0.0 pre-alpha";
+char *init_version = "0.0";
 
 mach_port_t default_ports[INIT_PORT_MAX];
 mach_port_t default_dtable[3];
