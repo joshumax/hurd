@@ -1,6 +1,14 @@
+2000-07-26  Mark Kettenis  <kettenis@gnu.org>
+
+	* Makefile (HURDLIBS): Reorder libs such that the threads lib
+	comes before the ports lib.  This makes sure the functions in
+	libthreads properly override the stubs in libports with the new
+	dynamic linker semantics in glibc 2.2.
+
 2000-07-26  Marcus Brinkmann  <marcus@gnu.org>
 
-	* truncate.c (trunc_indirect): Add missing argument to pager_flush_some.
+	* truncate.c (trunc_indirect): Add missing argument to
+	pager_flush_some.
 
 2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
 	
