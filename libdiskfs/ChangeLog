@@ -1,3 +1,9 @@
+Tue Sep 23 15:28:57 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* file-reparent.c (diskfs_S_file_reparent): Use diskfs_nrele
+ 	instead of protocol-violating up-tree lock.
+	* peropen-rele.c (diskfs_release_peropen): Likewise.
+
 1997-09-18  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* priv.h (fs_control_port): Declaration removed.
