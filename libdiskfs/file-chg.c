@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -19,8 +19,8 @@
 #include "fs_S.h"
 
 kern_return_t
-diskfs_S_file_notice_changes (struct protid *cred,
-			      mach_port_t notify)
+diskfs_S_file_notice_changes (struct protid *cred __attribute__ ((unused)),
+			      mach_port_t notify __attribute__ ((unused)))
 {
   return EOPNOTSUPP;
 }
