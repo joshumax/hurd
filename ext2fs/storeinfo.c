@@ -102,6 +102,14 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   if (! err)
     {
       err = store_remap (file_store, runs, num_runs, &file_store);
+      if (!err
+	  && !diskfs_isuid (0, cred)
+	  && !store_is_securely_returnable (file_store, cred->po->openstat))
+	{
+	  err = store_set_flags (file_store, STORE_INACTIVE);
+	  if (err == EINVAL)
+	    err = EACCES;
+	}
       if (! err)
 	err = store_return (file_store, ports, num_ports, ints, num_ints,
 			    offsets, num_offsets, data, data_len);
