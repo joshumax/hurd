@@ -6,11 +6,12 @@
 #include <hurd/hurd_types.h>
 #include <linux/kernel.h>
 #include <linux/net.h>
-
+#include <sys/time.h>
+#include "mapped-time.h"
+#include <assert.h>
 
 extern unsigned long intr_count;
-extern unsigned long volatile jiffies;
-#define HZ 100
+#define jiffies (fetch_jiffies ())
 extern struct task_struct *current;
 
 struct task_struct
@@ -48,12 +49,32 @@ void schedule (void);
 #define SEL_OUT SELECT_WRITE
 #define SEL_EX SELECT_URG
 
-int send_sig (u_long, struct task_struct *, int);
+/* This function is used only to send SIGPIPE to the current
+   task.  In all such cases, EPIPE is returned anyhow.  In the
+   Hurd, servers are not responsible for SIGPIPE; the library
+   does that itself upon receiving EPIPE.  So we can just 
+   NOP such calls.  */
+extern inline int 
+send_sig (u_long signo, struct task_struct *task, int priv)
+{
+  assert (signo == SIGPIPE);
+  assert (task == current);
+  return 0;
+}
 
 int fetch_current_time (void);
 struct timeval fetch_xtime (void);
 
-#define CURRENT_TIME (fetch_current_time())
 #define xtime (fetch_xtime ())
+#define CURRENT_TIME (xtime.tv_sec)
+
+static struct timeval _xtime_buf;
+
+extern inline struct timeval
+fetch_xtime ()
+{
+  fill_timeval (&_xtime_buf);
+  return _xtime_buf;
+}
 
 #endif
