@@ -1,3 +1,10 @@
+2002-06-07  Roland McGrath  <roland@frob.com>
+
+	* hurd_types.defs (dev_t, ssize_t): Remove unused types.
+	(uid_t, gid_t, mode_t, pid_t, off_t, size_t): Use int32/unsigned32.
+	(retry_type, wait_status_t): Likewise.
+	(file_changed_type_t, dir_changed_type_t): Likewise.
+
 2002-06-05  Roland McGrath  <roland@frob.com>
 
 	* hurd_types.h (struct procinfo): New member `taskevents'.
