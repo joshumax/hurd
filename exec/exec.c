@@ -929,7 +929,7 @@ check_elf_phdr (struct execdata *e, const ElfW(Phdr) *mapped_phdr)
 	if (!seen_phdr
 	    && (phdr->p_offset & -phdr->p_align) == 0 /* Sanity check.  */
 	    && phdr->p_offset <= e->info.elf.phdr_addr
-	    && e->info.elf.phdr_addr - phdr->p_offset < phr->p_filesz)
+	    && e->info.elf.phdr_addr - phdr->p_offset < phdr->p_filesz)
 	  {
 	    e->info.elf.phdr_addr += phdr->p_vaddr - phdr->p_offset;
 	    seen_phdr = true;
