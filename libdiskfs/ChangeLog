@@ -1,5 +1,33 @@
 2002-05-08  Roland McGrath  <roland@frob.com>
 
+	* sync-interval.c (diskfs_set_sync_interval): Cast int to intptr_t
+	before any_t.
+
+	* io-map-cntl.c (diskfs_S_io_map_cntl): u_int -> vm_address_t
+
+	* disk-pager.c (fault_handler): Use %z format for sc_pc.
+
+	* dir-lookup.c (diskfs_S_dir_lookup): int -> size_t
+	* dir-readdir.c (diskfs_S_dir_readdir): Likewise.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+
+	* diskfs.h (diskfs_append_args): unsigned -> size_t in argument type.
+	(diskfs_append_std_options): Likewise.
+	(diskfs_get_directs): Likewise.
+	* file-exec.c (diskfs_S_file_exec): Likewise.
+	* file-get-fs-opts.c (diskfs_S_file_get_fs_options): Likewise.
+	* file-get-trans.c (diskfs_S_file_get_translator): Likewise.
+	* file-getfh.c (diskfs_S_file_getfh): Likewise.
+	* file-set-trans.c (diskfs_S_file_set_translator): Likewise.
+	* fsys-getroot.c (diskfs_S_fsys_getroot): Likewise.
+	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Likewise.
+	* opts-append-std.c (diskfs_append_std_options): Likewise.
+	* opts-get.c (diskfs_append_args): Likewise.
+	* dir-readdir.c (diskfs_S_dir_readdir): Likewise.
+
+2002-05-08  Roland McGrath  <roland@frob.com>
+
 	* io-restrict-auth.c (diskfs_S_io_restrict_auth): Remove unused var.
 
 2002-05-04  Roland McGrath  <roland@frob.com>
