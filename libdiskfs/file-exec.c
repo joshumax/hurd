@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+   Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -8,7 +8,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -28,7 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <idvec.h>
 
-kern_return_t 
+kern_return_t
 diskfs_S_file_exec (struct protid *cred,
 		    task_t task,
 		    int flags,
@@ -54,15 +54,17 @@ diskfs_S_file_exec (struct protid *cred,
   int suid, sgid;
   struct protid *newpi;
   error_t err = 0;
-  
+  int cached_exec;
+
   if (!cred)
     return EOPNOTSUPP;
 
+  cached_exec = (diskfs_exec != MACH_PORT_NULL);
   if (diskfs_exec == MACH_PORT_NULL)
-    diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
+    diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0); /* XXX unlocked */
   if (diskfs_exec == MACH_PORT_NULL)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
 
   mutex_lock (&np->lock);
@@ -76,11 +78,11 @@ diskfs_S_file_exec (struct protid *cred,
 
   if ((cred->po->openstat & O_EXEC) == 0)
     return EBADF;
-  
+
   if (!((mode & (S_IXUSR|S_IXGRP|S_IXOTH))
 	|| ((mode & S_IUSEUNK) && (mode & (S_IEXEC << S_IUNKSHIFT)))))
     return EACCES;
-  
+
   if ((mode & S_IFMT) == S_IFDIR)
     return EACCES;
 
@@ -120,21 +122,40 @@ diskfs_S_file_exec (struct protid *cred,
 
   if (! err)
     {
-      err = exec_exec (diskfs_exec, 
-		       ports_get_right (newpi),
-		       MACH_MSG_TYPE_MAKE_SEND,
-		       task, flags, argv, argvlen, envp, envplen, 
-		       fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
-		       intarray, intarraylen, deallocnames, deallocnameslen,
-		       destroynames, destroynameslen);
+      do
+	{
+	  err = exec_exec (diskfs_exec,
+			   ports_get_right (newpi),
+			   MACH_MSG_TYPE_MAKE_SEND,
+			   task, flags, argv, argvlen, envp, envplen,
+			   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+			   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
+			   intarray, intarraylen,
+			   deallocnames, deallocnameslen,
+			   destroynames, destroynameslen);
+	  if (err == MACH_SEND_INVALID_DEST)
+	    {
+	      if (cached_exec)
+		{
+		  /* We were using a previously looked-up exec server port.
+		     Try looking up a new one before giving an error.  */
+		  cached_exec = 0;
+		  mach_port_deallocate (mach_task_self (), diskfs_exec);
+		  diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
+		  if (diskfs_exec == MACH_PORT_NULL)
+		    err = EOPNOTSUPP;
+		}
+	      else
+		err = EOPNOTSUPP;
+	    }
+	} while (err == MACH_SEND_INVALID_DEST);
       ports_port_deref (newpi);
     }
 
   if (! err)
     {
       unsigned int i;
-      
+
       mach_port_deallocate (mach_task_self (), task);
       for (i = 0; i < fdslen; i++)
 	mach_port_deallocate (mach_task_self (), fds[i]);
@@ -142,5 +163,5 @@ diskfs_S_file_exec (struct protid *cred,
 	mach_port_deallocate (mach_task_self (), portarray[i]);
     }
 
-  return err; 
+  return err;
 }
