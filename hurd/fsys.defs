@@ -30,7 +30,7 @@ FSYS_IMPORTS
    with all permissions.  */
 routine fsys_startup (
 	bootstrap: mach_port_t;
-	control_port: fsys_t;
+	control_port: mach_port_send_t;
 	out realnode: mach_port_send_t;
 	out dotdot_node: mach_port_send_t);
 
