@@ -176,10 +176,11 @@ static char *doc = "Hurd nfs translator"
 "\vIf HOST is not specified, an attempt is made to extract"
 " it from REMOTE_FS, using either the `HOST:FS' or `FS@HOST' notations.";
 
-static const struct argp *
-runtime_argp_parents[] = { &netfs_std_runtime_argp, 0 };
+static const struct argp_child
+runtime_argp_children[] = { {&netfs_std_runtime_argp}, {0} };
 static struct argp
-runtime_argp = { common_options, parse_common_opt, 0, 0, runtime_argp_parents };
+runtime_argp = { common_options, parse_common_opt, 0, 0,
+		 runtime_argp_children };
 
 /* Use by netfs_set_options to handle runtime option parsing.  */
 struct argp *netfs_runtime_argp = &runtime_argp;
@@ -311,10 +312,10 @@ int
 main (int argc, char **argv)
 {
   struct argp common_argp = { common_options, parse_common_opt };
-  const struct argp *argp_parents[] =
-    { &common_argp, &netfs_std_startup_argp, 0 };
+  const struct argp_child argp_children[] =
+    { {&common_argp}, {&netfs_std_startup_argp}, {0} };
   struct argp argp =
-    { startup_options, parse_startup_opt, args_doc, doc, argp_parents };
+    { startup_options, parse_startup_opt, args_doc, doc, argp_children };
   mach_port_t bootstrap;
   struct sockaddr_in addr;
   int ret;
