@@ -409,13 +409,6 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
     inp->msgh_bits = complex | MACH_MSGH_BITS (this_type, reply_type);
   }
 
-  if (inp->msgh_id == 3215)	/* mach_port_insert_right */
-    {
-      /* XXX
-       */
-      msg_buf_ptr = (void *) inp + inp->msgh_size;
-    }
-
   /* Process the message data, wrapping ports and printing data.  */
   while (msg_buf_ptr < (void *) inp + inp->msgh_size)
     {
@@ -475,7 +468,41 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	    {
 	      mach_port_t o=portnames[i];
 	      newtypes[i] = name;
+
+	      if (inp->msgh_id == 3215) /* mach_port_insert_right */
+		{
+		  /* XXX
+		   */
+		  fprintf (ostream,
+			   "\t\t[%d] = pass through port %d, type %d\n",
+			   i, portnames[i], name);
+		  continue;
+		}
+	      else if (inp->msgh_id == 2089) /* vm_map */
+		{
+		  /* XXX
+		   */
+		  struct traced_info *p = ports_lookup_port (traced_bucket,
+							     portnames[i], 0);
+		  if (p == 0)
+		    fprintf (ostream,
+			     "\t\t[%d] = pass through port %d, type %d\n",
+			     i, portnames[i], name);
+		  else
+		    {
+		      fprintf (ostream,
+			       "\t\t[%d] = traced port %d, type %d -> original port %d\n",
+			       i, portnames[i], name, p->forward);
+		      mach_port_deallocate (mach_task_self (), portnames[i]);
+		      portnames[i] = p->forward;
+		      newtypes[i] = MACH_MSG_TYPE_COPY_SEND;
+		      ports_port_deref (p);
+		      continue;
+		    }
+		}
+
 	      err = rewrite_right (&portnames[i], &newtypes[i]);
+	      assert_perror (err);
 
 	      if (portnames[i] == MACH_PORT_NULL)
 		fprintf (ostream, "\t\t[%d] = null\n", i);
