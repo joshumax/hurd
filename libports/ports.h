@@ -172,7 +172,7 @@ void port_enable_bucket (struct port_bucket *bucket);
 
 /* Call FUN once for each port in BUCKET. */
 error_t port_bucket_iterate (struct port_bucket *bucket,
-			     void (*fun)(void *port));
+			     error_t (*fun)(void *port));
 
 
 
