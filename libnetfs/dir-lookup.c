@@ -176,7 +176,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      struct node *np = cookie1;
 	      error_t err;
 
-	      err = netfs_validate_stat (np, diruser);
+	      err = netfs_validate_stat (np, diruser->credential);
 	      if (err)
 		return err;
 
@@ -262,7 +262,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    }
 	}
       
-      netfs_validate_stat (np, diruser);
+      netfs_validate_stat (np, diruser->credential);
       
       if (S_ISLNK (np->nn_stat.st_mode)
 	  && !(lastcomp && (flags & (O_NOLINK|O_NOTRANS))))
@@ -341,7 +341,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   if (mustbedir)
     {
-      netfs_validate_stat (np, diruser);
+      netfs_validate_stat (np, diruser->credential);
       if (!S_ISDIR (np->nn_stat.st_mode))
 	{
 	  error = ENOTDIR;
