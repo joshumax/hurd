@@ -1,6 +1,6 @@
 /* A translator for doing I/O to stores
 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -99,7 +99,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
 static const struct argp_child argp_kids[] = { { &store_argp }, {0} };
 static const struct argp argp = { options, parse_opt, 0, doc, argp_kids };
 
-void main (int argc, char *argv[])
+int
+main (int argc, char *argv[])
 {
   error_t err;
   mach_port_t bootstrap;
@@ -130,7 +131,7 @@ void main (int argc, char *argv[])
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
 					    30*1000, 5*60*1000, 0);
 
-  exit (0);
+  return 0;
 }
 
 error_t
@@ -306,9 +307,9 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
    USER and FLAGS are from the open; CNTL identifies the
    node being opened.  This call need not check permissions on the underlying
    node.  If the open call should block, then return EWOULDBLOCK.  Other
-   errors are immediately reflected to the user.  If O_NONBLOCK 
-   is not set in FLAGS and EWOULDBLOCK is returned, then call 
-   trivfs_complete_open when all pending open requests for this 
+   errors are immediately reflected to the user.  If O_NONBLOCK
+   is not set in FLAGS and EWOULDBLOCK is returned, then call
+   trivfs_complete_open when all pending open requests for this
    file can complete. */
 error_t (*trivfs_check_open_hook)(struct trivfs_control *trivfs_control,
 				  struct iouser *user,
