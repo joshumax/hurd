@@ -1,6 +1,6 @@
 /* Get runtime options
 
-   Copyright (C) 1996 Free Software Foundation
+   Copyright (C) 1996, 1998 Free Software Foundation
 
    This file is part of the GNU Hurd.
 
@@ -9,7 +9,7 @@
    the Free Software Foundation; either version 2, or (at your option)
    any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
+   The GNU Hurd is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
@@ -43,7 +43,7 @@ trivfs_S_fsys_get_options (struct trivfs_control *fsys,
   err = trivfs_append_args (fsys, &argz, &argz_len);
   if (! err)
     /* Put ARGZ into vm_alloced memory for the return trip.  */
-    err = fshelp_return_malloced_buffer (argz, argz_len, data, len);
+    err = iohelp_return_malloced_buffer (argz, argz_len, data, len);
   else
     free (argz);
 
