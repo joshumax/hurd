@@ -1,3 +1,8 @@
+2002-05-03  Marcus Brinkmann  <marcus@gnu.org>
+
+	* fakeroot.c (netfs_node_norefs): Unlock node after not dropping
+	it at all.
+
 2002-05-03  Roland McGrath  <roland@frob.com>
 
 	* Makefile (fakeroot): New target.

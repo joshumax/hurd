@@ -120,6 +120,7 @@ netfs_node_norefs (struct node *np)
 	  np->nn->faked |= FAKE_REFERENCE;
 	  ++np->references;
 	}
+      mutex_unlock (&np->lock);
       return;
     }
 
