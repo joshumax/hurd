@@ -27,11 +27,13 @@ ports_interrupt_rpc (void *portstruct)
 {
   struct port_info *pi = portstruct;
   struct rpc_info *rpc;
+  mach_port_t self = mach_thread_self ();
 
   mutex_lock (&_ports_lock);
   
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-    hurd_thread_cancel (rpc->thread);
+    if (rpc->thread != mach_thread_self ())
+      hurd_thread_cancel (rpc->thread);
 
   mutex_unlock (&_ports_lock);
 }
