@@ -1,4 +1,4 @@
-GNU Hurd Task List Version 1.17.  Last updated 3 September 1996.
+GNU Hurd Task List Version 1.18.  Last updated 21 August 1997.
 
 If you would like to work on one of these, please contact
 thomas@gnu.ai.mit.edu.  It's important that you let me know what's being
@@ -13,8 +13,7 @@ General system work
 
   * Compile all the free programs you can find to help us fix bugs in
   the system, and to submit necessary ports to the maintainers of
-  those programs.  A good place to start is the list in SOURCES under
-  the heading `Give up'.
+  those programs.
 
   * See how much of X compiles.
 
@@ -25,23 +24,15 @@ General system work
 
 Mach 3.0 Work
 
-If you plan to work on the microkernel, you should be on the mailing list
-for the University of Utah's Mach4 distribution; that is the microkernel
-distribution that GNU will use.  To get on the mailing list, send mail to
-mach4-users-request@schirf.cs.utah.edu.  You should discuss proposed
-microkernel work there as well as with mib@gnu.ai.mit.edu.
+We now have our own distribution of the microkernel.  Please discuss
+proposed microkernel work there as well as with thomas@gnu.ai.mit.edu.
 
 !!!
   * Mach 3.0 needs many new device drivers for popular PC devices.
-  Shantanu Goel at Utah is doing work in this area; coordinate with him.
+  Shantanu Goel is doing work in this area; coordinate with him.
 
 !!!
-  * A replacement for MiG that understood C .h files.
-  Utah is working on a new IDL compiler; coordinate with them.
-
-  * Bootstrap tools and documentation to help people set up Mach 3.0
-  machines if they already have Linux; if they already have Net BSD;
-  if they don't have anything.  (See Utah Lites dist.)
+  * A replacement for MiG that understands C .h files.
 
 !!!
   * Mach 3.0 needs to provide support for task virtual timers similar
@@ -68,24 +59,22 @@ microkernel work there as well as with mib@gnu.ai.mit.edu.
   * Utah Mach needs the OSF vm_remap call.
 
   * Mach 3.0 needs a replacement for MEMORY_OBJECT_COPY_CALL that
-  works at least for the cases needed in ordinary files.  (Write mib if
-  you want to know what the problem is and some ideas about how to
-  solve it.)
+  works at least for the cases needed in ordinary files.  (Write
+  thomas if you want to know what the problem is and some ideas about
+  how to solve it.)
 
 !!!
-  * Mach 3.0 needs proxy memory objects.  (mib can tell you what these
-  are and why they are important.)
+  * Mach 3.0 needs proxy memory objects.  (thomas can tell you what
+  these are and why they are important.)
 
   * Mach 3.0 needs a way to do per-task resource counters that are
   accessible to servers called by the task.
-
-  * Mach 3.0 should keep a timestamp of the creation of each task.
 
   * Mach 3.0 needs facilities to implement resource limits of various sorts.
 
   * Mach 3.0 needs a way to have a thread's CPU time statistics
   include time spent by servers on its behalf.  [This has been done
-  for the migrating-threads version of Mach; talk to mib before starting
+  for the migrating-threads version of Mach; talk to thomas before starting
   work on it.]
 
   * Of course, free ports are always necessary to machines that don't
@@ -93,12 +82,6 @@ microkernel work there as well as with mib@gnu.ai.mit.edu.
 
   * Much work can be done doing research in how to improve Mach VM
   performance and timesharing scheduling policy.
-
-!!!
-  * We need a good malloc for multi-threaded programs that uses
-  vm_allocate.  It should probably be based on the current GNU malloc,
-  as well as merge the mmalloc interfaces used by some existing GNU
-  packages.
 
   * Mach 3.0 needs facilities to get a list of all the devices which
   can be device_open'd, as well as to get the type of a device.
@@ -119,7 +102,7 @@ microkernel work there as well as with mib@gnu.ai.mit.edu.
   * Add an anonymous swap allocation statistic to the task info structure.
 
 
-Hurd work (these are brief descriptions; mib can give more information):
+Hurd work (these are brief descriptions; thomas can give more information):
 
 !!!
   * An RPC trace program to aid debugging.  Ask roland for more info.

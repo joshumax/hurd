@@ -93,7 +93,8 @@ See `tasks', the exported task list.
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
     routines and then share common code. !!
-*** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC.
+*** Implement Posix O_SYNC, O_DSYNC, and O_RSYNC under the right 
+    names; change libc header to match current Posix. 
 *** Handle dead name notifications on execserver ports. !
 *** Deal correctly with setting the translators on /servers/exec.
 *** Implement file_notice_changes.
@@ -101,7 +102,7 @@ See `tasks', the exported task list.
 *** Think of a way to have when-to-sync-nodes be more flexible so it can
     be done right for each format.
 *** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation. !
-*** Provide for MNT_SYNCHRONOUS, MNT_NOEXEC, MNT_NOSUID, MNT_NODEV, etc. !
+*** Provide for MNT_NODEV, etc. !
 *** Implement io_restrict_auth correctly. !
 *** Use off_t correctly. !!
 *** Add a consistent message printing facility for filesystems to use
