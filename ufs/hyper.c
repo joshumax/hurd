@@ -123,7 +123,9 @@ copy_sblock ()
   if (csum_dirty)
     {
       bcopy (csum, disk_image + fsaddr (sblock, sblock->fs_csaddr),
-	     fsaddr (sblock, howmany (sblock->fs_cssize, sblock->fs_fsize)));
+	     fragroundup (sblock, sblock->fs_cssize));
+      record_poke (disk_image + fsaddr (sblock, sblock->fs_csaddr),
+		   fragroundup (sblock, sblock->fs_cssize));
       csum_dirty = 0;
     }
 
@@ -153,6 +155,7 @@ copy_sblock ()
 	}
       else
 	bcopy (sblock, disk_image + SBOFF, SBSIZE);
+      record_poke (disk_image + SBOFF, SBSIZE);
       sblock_dirty = 0;
     }
 
