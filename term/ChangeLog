@@ -1,3 +1,7 @@
+1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* users.c: Reverted changes related to io_map_segment.
+
 1999-09-07  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* users.c (trivfs_S_io_map): Renamed to ...

@@ -486,11 +486,10 @@ void diskfs_sync_everything (int wait);
    irreversable.  */
 void diskfs_shutdown_pager ();
 
-/* The user must define this function.  Return a memory object port
-   (send right) for the INDEX'th 2^32 byte segment of the contents of
-   NP.  PROT is the maximum allowable access.  On errors, return
-   MACH_PORT_NULL and set errno.  */
-mach_port_t diskfs_get_filemap (struct node *np, int index, vm_prot_t prot);
+/* The user must define this function.  Return a memory object port (send
+   right) for the file contents of NP.  PROT is the maximum allowable
+   access.  On errors, return MACH_PORT_NULL and set errno.  */
+mach_port_t diskfs_get_filemap (struct node *np, vm_prot_t prot);
 
 /* The user must define this function.  Return true if there are pager
    ports exported that might be in use by users.  If this returns false, then

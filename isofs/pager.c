@@ -147,12 +147,10 @@ diskfs_file_update (struct node *np,
 
 /* Create a FILE_DATA pager for the specified node */
 mach_port_t
-diskfs_get_filemap (struct node *np, int index, vm_prot_t prot)
+diskfs_get_filemap (struct node *np, vm_prot_t prot)
 {
   struct user_pager_info *upi;
   mach_port_t right;
-
-  assert (index == 0);		/* XXX */
   
   assert (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)

@@ -1,6 +1,6 @@
 /* io_t rpc stubs; see <hurd/io.defs> for more info
 
-   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -82,14 +82,6 @@ treefs_S_io_map_cntl (struct treefs_protid *cred,
 
 error_t
 treefs_S_io_map (struct treefs_protid *cred,
-		 memory_object_t *rdobj, mach_msg_type_name_t *rd_type,
-		 memory_object_t *wrobj, mach_msg_type_name_t *wr_type)
-{
-  return treefs_S_io_map_segment (cred, 0, rdobj, rd_type, wrobj, wr_type);
-}
-
-error_t
-treefs_S_io_map_segment (struct treefs_protid *cred, ind index,
 		 memory_object_t *rdobj, mach_msg_type_name_t *rd_type,
 		 memory_object_t *wrobj, mach_msg_type_name_t *wr_type)
 {

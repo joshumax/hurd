@@ -1,3 +1,8 @@
+1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* dir.c, truncate.c, pager.c: Reverted changes related to
+	io_map_segment.
+
 1999-09-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile (makemode): server -> servers.

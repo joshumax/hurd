@@ -1,3 +1,8 @@
+1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* Makefile, rdwr-internal.c, io-map.c, io-map-segment.c, diskfs.h:
+	Reverted changes related to io_map_segment.
+
 1999-09-09  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* io-pathconf.c: Include <unistd.h>.

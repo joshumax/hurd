@@ -580,17 +580,6 @@ S_io_map (struct sock_user *user,
 }
 
 error_t
-S_io_map_segment (struct sock_user *user,
-		  int index,
-		  mach_port_t *rdobj,
-		  mach_msg_type_name_t *rdobj_type,
-		  mach_port_t *wrobj,
-		  mach_msg_type_name_t *wrobj_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
 S_io_map_cntl (struct sock_user *user,
 	       mach_port_t *obj,
 	       mach_msg_type_name_t *obj_type)

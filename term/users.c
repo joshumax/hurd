@@ -2035,12 +2035,11 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 }
 
 kern_return_t
-trivfs_S_io_map_segment (struct trivfs_protid *cred,
-			 int index,
-			 mach_port_t *rdobj,
-			 mach_msg_type_name_t *rdtype,
-			 mach_port_t *wrobj,
-			 mach_msg_type_name_t *wrtype)
+trivfs_S_io_map (struct trivfs_protid *cred,
+		 mach_port_t *rdobj,
+		 mach_msg_type_name_t *rdtype,
+		 mach_port_t *wrobj,
+		 mach_msg_type_name_t *wrtype)
 {
   return EOPNOTSUPP;
 }

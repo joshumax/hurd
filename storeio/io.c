@@ -34,13 +34,11 @@
    mapping; they will set none of the ports and return an error.  Such
    objects can still be accessed by io_read and io_write.  */
 error_t
-trivfs_S_io_map_segment (struct trivfs_protid *cred, int index,
+trivfs_S_io_map (struct trivfs_protid *cred,
 		 mach_port_t reply, mach_msg_type_name_t reply_type,
 		 memory_object_t *rd_obj, mach_msg_type_name_t *rd_type,
 		 memory_object_t *wr_obj, mach_msg_type_name_t *wr_type)
 {
-  assert (index == 0);		/* XXX */
-
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & (O_READ|O_WRITE)))
