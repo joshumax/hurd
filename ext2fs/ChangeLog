@@ -1,3 +1,8 @@
+2000-07-25  Thomas Bushnell, BSG  <tb@mit.edu>
+	
+	* truncate.c (trunc_indirect): Before freeing an indirect block,
+	remove it from the disk pager's kernel cache.
+
 2000-03-09  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* balloc.c (ext2_free_blocks, ext2_new_block): Fix formats to avoid

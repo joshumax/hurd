@@ -138,7 +138,10 @@ trunc_indirect (struct node *node, block_t end,
 	  }
 
       if (first == 0 && all_freed)
-	free_block_run_free_ptr (fbr, p);
+	{
+	  pager_flush_some (diskfs_disk_pager, boffs (*p), block_size);
+	  free_block_run_free_ptr (fbr, p);
+	}
       else if (modified)
 	record_indir_poke (node, ind_bh);
     }
