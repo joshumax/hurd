@@ -28,6 +28,21 @@
 
 #include "ux.h"
 
+#if 0
+static int (* const _sc)(int, ...) = &syscall;
+int _sc_print = 1;
+
+#define syscall(num, args...) \
+ ({ int _rv, _num = (num), _pr = _sc_print; \
+    _sc_print = 0; \
+    if (_pr) printf ("syscall (%d) start\r\n", _num); \
+    _rv = (*_sc) (_num , ##args); \
+    if (_pr) printf ("syscall (%d) end\r\n", _num); \
+    _sc_print = _pr; \
+    _rv; \
+   })
+#endif
+
 extern void __mach_init ();
 void	(*mach_init_routine)() = __mach_init;
 
@@ -211,7 +226,7 @@ void get_privileged_ports (mach_port_t *host_port, mach_port_t *device_port)
   *device_port = task_by_pid (-2);
 }
 
-/* A *really* stupid printf that only understands %s.  */
+/* A *really* stupid printf that only understands %s & %d.  */
 int
 printf (const char *fmt, ...)
 {
@@ -232,6 +247,23 @@ printf (const char *fmt, ...)
 	char *str = va_arg (ap, char *);
 	flush (p + 2);
 	write (1, str, strlen (str));
+      }
+    else if (*p == '%' && p[1] == 'd')
+      {
+	int i = va_arg (ap, int);
+	char rbuf[20], *e = rbuf + sizeof (rbuf), *b = e; 
+
+	if (i == 0)
+	  *--b = '0';
+	else
+	  while (i)
+	    {
+	      *--b = i % 10 + '0';
+	      i /= 10;
+	    }
+
+	flush (p + 2);
+	write (1, b, e - b);
       }
     else
       p++;
