@@ -45,7 +45,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 {
   struct trivfs_protid *cred;
   mach_port_t new_realnode;
-  error_t err;
+  error_t err = 0;
   int perms;
   int i;
 
@@ -76,6 +76,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (trivfs_check_open_hook)
     {
       err = (*trivfs_check_open_hook) (cntl, uids, nuids, gids, ngids, flags);
+      assert (err != EWOULDBLOCK);
       if (err && (err != EWOULDBLOCK 
 		  || (err == EWOULDBLOCK && (flags & O_NONBLOCK))))
 	{
@@ -115,10 +116,11 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 
   if (err == EWOULDBLOCK)
     {
+#if 0
       /* This open request must block. */
       struct pending_open *pendo;
       pendo = malloc (sizeof (struct pending_open));
-      pondo->users_port = ports_get_right (cred);
+      pendo->users_port = ports_get_right (cred);
       pendo->reply_port = reply_port;
       pendo->reply_port_type = reply_port_type;
       pendo->next = 0;
@@ -129,6 +131,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
       cntl->openstail = pendo;
       
       ports_done_with_port (cntl);
+#endif
       return MIG_NO_REPLY;
     }
   else
@@ -141,6 +144,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
     }
 }
 
+#if 0
 void
 trivfs_complete_open (struct trivfs_control *cntl,
 		      int multi)
@@ -172,5 +176,4 @@ trivfs_complete_open (struct trivfs_control *cntl,
       cntl->openshead = cntl->openstail = 0;
     }
 }
-
-	
+#endif
