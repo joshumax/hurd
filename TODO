@@ -64,6 +64,7 @@ See `tasks', the exported task list.
 
 ** libnetfs
 *** Support --readonly, --writable, and --update !
+*** Implement dir_reparent.
 
 ** libpager:
 *** Put user-defined fns into a callback struct passed to pager_create. !
