@@ -1,5 +1,5 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -27,15 +27,15 @@
 #include <hurd/ioserver.h>
 
 /* Each user port referring to a file points to one of these
-   (with the aid of the ports library. */
-struct protid 
+   (with the aid of the ports library).  */
+struct protid
 {
   struct port_info pi;		/* libports info block */
-  
+
   /* User identification */
   uid_t *uids, *gids;
   int nuids, ngids;
-  
+
   /* Object this refers to */
   struct peropen *po;
 
@@ -61,7 +61,7 @@ struct peropen
 struct node
 {
   struct node *next, **prevp;
-  
+
   struct disknode *dn;
 
   struct stat dn_stat;
@@ -79,11 +79,11 @@ struct node
 
   int references;		/* hard references */
   int light_references;		/* light references */
-  
+
   mach_port_t sockaddr;		/* address for S_IFSOCK shortcut */
 
   int owner;
-  
+
   struct transbox transbox;
 
   struct lock_box userlock;
@@ -169,7 +169,7 @@ extern struct port_bucket *diskfs_port_bucket;
    between calls to diskfs_lookup and diskfs_dir{enter,rewrite,rename}
    so that those calls work as described below.  */
 struct dirstat;
-   
+
 /* The user must define this variable; it should be the size in bytes
    of a struct dirstat. */
 extern size_t diskfs_dirstat_size;
@@ -180,8 +180,8 @@ extern size_t diskfs_dirstat_size;
    reimplement dir_rename yourself.  */
 extern int diskfs_link_max;
 
-/* The user must define this variable; it is the maximum number of 
-   symlinks to be traversed within a single call to dir_pathtrans. 
+/* The user must define this variable; it is the maximum number of
+   symlinks to be traversed within a single call to dir_pathtrans.
    If this is exceeded, dir_pathtrans will return ELOOP.  */
 extern int diskfs_maxsymlinks;
 
@@ -189,11 +189,11 @@ extern int diskfs_maxsymlinks;
    should be readonly.  */
 extern int diskfs_readonly;
 
-/* The user must define this variable.  Set this to be the node 
+/* The user must define this variable.  Set this to be the node
    of root of the filesystem.  */
 extern struct node *diskfs_root_node;
 
-/* The user must define this variable.  Set this to the name of the 
+/* The user must define this variable.  Set this to the name of the
    filesystem server. */
 extern char *diskfs_server_name;
 
@@ -207,7 +207,7 @@ extern int diskfs_edit_version;
    filesystem format supports shortcutting symlink translation.
    The library guarantees that users will not be able to read or write
    the contents of the node directly, and the library will only do so
-   if the symlink hook functions return EINVAL or are not defined. 
+   if the symlink hook functions return EINVAL or are not defined.
    The library knows that the dn_stat.st_size field is the length of
    the symlink, even if the hook functions are used. */
 int diskfs_shortcut_symlink;
@@ -281,7 +281,7 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
    Return EIO if appropriate.
 */
 error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
-			 struct node **np, struct dirstat *ds, 
+			 struct node **np, struct dirstat *ds,
 		       struct protid *cred);
 
 /* The user must define this function.  Add NP to directory DP
@@ -289,10 +289,10 @@ error_t diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
    unsuccessful call to diskfs_lookup of type CREATE or RENAME; DP
    has been locked continuously since that call and DS is as that call
    set it, NP is locked.   CRED identifies the user responsible
-   for the call (to be used only to validate directory growth). 
+   for the call (to be used only to validate directory growth).
    The routine should call diskfs_notice_dirchange if DP->dirmod_reqs
    is nonzero.  */
-error_t diskfs_direnter (struct node *dp, char *name, 
+error_t diskfs_direnter (struct node *dp, char *name,
 			 struct node *np, struct dirstat *ds,
 			 struct protid *cred);
 
@@ -300,7 +300,7 @@ error_t diskfs_direnter (struct node *dp, char *name,
    a successful call to diskfs_lookup of type RENAME; this call should change
    the name found in directory DP to point to node NP instead of its previous
    referent.  DP has been locked continuously since the call to diskfs_lookup
-   and DS is as that call set it; NP is locked.  This routine should call 
+   and DS is as that call set it; NP is locked.  This routine should call
    diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
 error_t diskfs_dirrewrite (struct node *dp, struct node *np,
 			     struct dirstat *ds);
@@ -308,7 +308,7 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *np,
 /* The user must define this function.  This will only be called after a
    successful call to diskfs_lookup of type REMOVE; this call should remove
    the name found from the directory DS.  DP has been locked continuously since
-   the call to diskfs_lookup and DS is as that call set it.  This routine 
+   the call to diskfs_lookup and DS is as that call set it.  This routine
    should call diskfs_notice_dirchange if DP->dirmod_reqs is nonzero.  */
 error_t diskfs_dirremove (struct node *dp, struct dirstat *ds);
 
@@ -324,17 +324,17 @@ error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
    starting at ENTRY from locked directory node DP.  Fill *DATA with
    the entries; that pointer currently points to *DATACNT bytes.  If
    it isn't big enough, vm_allocate into *DATA.  Set *DATACNT with the
-   total size used.  Fill AMT with the number of entries copied.  
+   total size used.  Fill AMT with the number of entries copied.
    Regardless, never copy more than BUFSIZ bytes.  If BUFSIZ is 0,
    then there is no limit on *DATACNT; if N is -1, then there is no limit
    on AMT. */
 error_t diskfs_get_directs (struct node *dp, int entry, int n,
-			    char **data, u_int *datacnt, 
+			    char **data, u_int *datacnt,
 			    vm_size_t bufsiz, int *amt);
 
 /* The user must define this function.  For locked node NP (for which
    diskfs_node_translated is true) look up the name of its translator.
-   Store the name into newly malloced storage; set *NAMELEN to the 
+   Store the name into newly malloced storage; set *NAMELEN to the
    total length.  */
 error_t diskfs_get_translator (struct node *np, char **namep, u_int *namelen);
 
@@ -347,7 +347,7 @@ error_t diskfs_set_translator (struct node *np, char *name, u_int namelen,
 /* The user must define this function.  Truncate locked node NP to be SIZE
    bytes long.  (If NP is already less than or equal to SIZE bytes
    long, do nothing.)  If this is a symlink (and diskfs_shortcut_symlink
-   is set) then this should clear the symlink, even if 
+   is set) then this should clear the symlink, even if
    diskfs_create_symlink_hook stores the link target elsewhere.  */
 error_t diskfs_truncate (struct node *np, off_t size);
 
@@ -371,7 +371,7 @@ void diskfs_set_hypermetadata (int wait, int clean);
    to be the newly allocated node.  */
 error_t diskfs_alloc_node (struct node *dp, mode_t mode, struct node **np);
 
-/* Free node NP; the on disk copy has already been synced with 
+/* Free node NP; the on disk copy has already been synced with
    diskfs_node_update (where NP->dn_stat.st_mode was 0).  It's
    mode used to be MODE.  */
 void diskfs_free_node (struct node *np, mode_t mode);
@@ -447,12 +447,12 @@ vm_prot_t diskfs_max_user_pager_prot ();
 
 /* The user must define this function.  Return a `struct pager *' suitable
    for use as an argument to diskfs_register_memory_fault_area that
-   refers to the pager returned by diskfs_get_filemap for node NP. 
+   refers to the pager returned by diskfs_get_filemap for node NP.
    NP is locked.  */
 struct pager *diskfs_get_filemap_pager_struct (struct node *np);
 
 /* The user may define this function if she calls diskfs_start_bootstrap.
-   It is called by the library after the filesystem has a normal 
+   It is called by the library after the filesystem has a normal
    environment (complete with auth and proc ports). */
 void diskfs_init_completed ();
 
@@ -540,7 +540,7 @@ mach_port_t diskfs_startup_diskfs (mach_port_t bootstrap, int flags);
 
 /* Call this after all format-specific initialization is done (except
    for setting diskfs_root_node); at this point the pagers should be
-   ready to go.  */ 
+   ready to go.  */
 void diskfs_spawn_first_thread (void);
 
 /* Once diskfs_root_node is set, call this if we are a bootstrap
@@ -558,8 +558,8 @@ void diskfs_drop_node (struct node *np);
    media has been completely updated.  */
 void diskfs_node_update (struct node *np, int wait);
 
-/* Add a hard reference to a node.  If there were no hard 
-   references previously, then the node cannot be locked 
+/* Add a hard reference to a node.  If there were no hard
+   references previously, then the node cannot be locked
    (because you must hold a hard reference to hold the lock). */
 extern inline void
 diskfs_nref (struct node *np)
@@ -584,7 +584,7 @@ extern inline void
 diskfs_nput (struct node *np)
 {
   int tried_drop_softrefs = 0;
-  
+
  loop:
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
@@ -631,7 +631,7 @@ extern inline void
 diskfs_nrele (struct node *np)
 {
   int tried_drop_softrefs = 0;
-  
+
  loop:
   spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
@@ -652,7 +652,7 @@ diskfs_nrele (struct node *np)
 	  spin_unlock (&diskfs_node_refcnt_lock);
 	  np->references++;
 	  spin_unlock (&diskfs_node_refcnt_lock);
-	  
+
 	  diskfs_try_dropping_softrefs (np);
 	  tried_drop_softrefs = 1;
 
@@ -693,7 +693,7 @@ diskfs_nput_light (struct node *np)
 
 /* Release a light reference on NP.  If NP is locked by anyone, then
    this cannot be the last reference (because you must hold a
-   hard reference in order to hold the lock).  */  
+   hard reference in order to hold the lock).  */
 extern inline void
 diskfs_nrele_light (struct node *np)
 {
@@ -748,10 +748,10 @@ diskfs_isowner (struct node *np, struct protid *cred)
     return EPERM;
 }
 
-/* Check to see is the user identified by CRED is permitted to do 
+/* Check to see is the user identified by CRED is permitted to do
    operation OP on node NP.  Op is one of S_IREAD, S_IWRITE, or S_IEXEC.
    Return 0 if the operation is permitted and EACCES if not. */
-extern inline error_t 
+extern inline error_t
 diskfs_access (struct node *np, int op, struct protid *cred)
 {
   int gotit;
@@ -763,7 +763,7 @@ diskfs_access (struct node *np, int op, struct protid *cred)
     gotit = np->dn_stat.st_mode & op;
   else if (diskfs_groupmember (np->dn_stat.st_gid, cred))
     gotit = np->dn_stat.st_mode & (op >> 3);
-  else 
+  else
     gotit = np->dn_stat.st_mode & (op >> 6);
   return gotit ? 0 : EACCES;
 }
@@ -773,23 +773,23 @@ diskfs_access (struct node *np, int op, struct protid *cred)
    as diskfs_access (dp, S_IWRITE, cred), except when the directory
    has the sticky bit set.  (If there is no existing file NP, then
    0 can be passed.)  */
-extern inline error_t 
+extern inline error_t
 diskfs_checkdirmod (struct node *dp, struct node *np,
 		    struct protid *cred)
 {
   error_t err;
-  
+
   /* The user must be able to write the directory, but if the directory
      is sticky, then the user must also be either the owner of the directory
      or the file.  */
   err = diskfs_access (dp, S_IWRITE, cred);
   if (err)
     return err;
-  
+
   if ((dp->dn_stat.st_mode & S_ISVTX) && np && !diskfs_isuid (0, cred)
       && !diskfs_isowner (dp, cred) && !diskfs_isowner (np, cred))
     return EACCES;
-  
+
   return 0;
 }
 
@@ -803,9 +803,9 @@ diskfs_checkdirmod (struct node *dp, struct node *np,
    extension).  For reads, *AMTREAD is filled with the amount actually
    read.  */
 error_t
-diskfs_node_rdwr (struct node *np, char *data, off_t off, 
-		  int amt, int dir, struct protid *cred,
-		  int *amtread);
+diskfs_node_rdwr (struct node *np, char *data, off_t off,
+		  size_t amt, int dir, struct protid *cred,
+		  size_t *amtread);
 
 
 /* Send notifications to users who have requested them with
@@ -818,7 +818,7 @@ void
 diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
 			 char *name);
 
-/* Create a new node structure with DS as its physical disknode. 
+/* Create a new node structure with DS as its physical disknode.
    The new node will have one hard reference and no light references.  */
 struct node *diskfs_make_node (struct disknode *dn);
 
@@ -826,7 +826,7 @@ struct node *diskfs_make_node (struct disknode *dn);
 /* Begin executing code which might fault.  This contains a call
    to setjmp and so callers must be careful with register variables.
    The first time through, this returns 0.  If the code faults
-   accessing a region of memory registered with 
+   accessing a region of memory registered with
    diskfs_register_memory_fault_area, then this routine will return
    again with the error number as reported by the pager.  */
 /* int diskfs_catch_exception (void); */
@@ -870,10 +870,10 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 /* Create and return a protid for an existing peropen.  The uid set is
    UID (length NUIDS); the gid set is GID (length NGIDS).  The node
    PO->np must be locked. */
-struct protid *diskfs_make_protid (struct peropen *cred, uid_t *uids, 
+struct protid *diskfs_make_protid (struct peropen *cred, uid_t *uids,
 				   int nuids, uid_t *gids, int ngids);
 
-/* Build and return a protid which has no user identification for 
+/* Build and return a protid which has no user identification for
    peropen PO.  The node PO->np must be locked.  */
 struct protid *diskfs_start_protid (struct peropen *po);
 
@@ -884,11 +884,11 @@ void diskfs_finish_protid (struct protid *cred, uid_t *uids, int nuids,
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
-struct peropen *diskfs_make_peropen (struct node *np, int flags, 
+struct peropen *diskfs_make_peropen (struct node *np, int flags,
 				     mach_port_t dotdotnode);
 
 /* Called when a protid CRED has no more references.  (Because references\
-   to protids are maintained by the port management library, this is 
+   to protids are maintained by the port management library, this is
    installed in the clean routines list.)  The ports library will
    free the structure for us.  */
 void diskfs_protid_rele (void *arg);
@@ -904,7 +904,7 @@ void diskfs_release_peropen (struct peropen *po);
    routine.  FROMCRED and TOCRED are the users responsible for
    FDP/FNP and TDP respectively.  This routine assumes the usual
    convention where `.' and `..' are represented by ordinary links;
-   if that is not true for your format, you have to redefine this 
+   if that is not true for your format, you have to redefine this
    function.*/
 error_t
 diskfs_rename_dir (struct node *fdp, struct node *fnp, char *fromname,
@@ -921,7 +921,7 @@ error_t diskfs_clear_directory (struct node *dp, struct node *pdp,
 				struct protid *cred);
 
 /* Locked node DP is a new directory; add whatever links are necessary
-   to give it structure; its parent is the (locked) node PDP. 
+   to give it structure; its parent is the (locked) node PDP.
    This routine may not call diskfs_lookup on PDP.  The new directory
    must be clear within the meaning of diskfs_dirempty.  This routine
    assumes the usual convention where `.' and `..' are represented by
@@ -1021,7 +1021,7 @@ extern off_t diskfs_device_start;
 /* The usable size of DISKFS_DEVICE, in units of DISKFS_DEVICE_BLOCK_SIZE.  */
 extern off_t diskfs_device_size;
 
-/* The unit of addressing for DISKFS_DEVICE.  */ 
+/* The unit of addressing for DISKFS_DEVICE.  */
 extern unsigned diskfs_device_block_size;
 
 /* Some handy calculations based on DISKFS_DEVICE_BLOCK_SIZE.  */
