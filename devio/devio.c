@@ -271,6 +271,7 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *fsys, int flags)
 {
+  error_t err;
   int force = (flags & FSYS_GOAWAY_FORCE);
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
 
@@ -280,7 +281,12 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
     exit (0);
 
   /* Wait until all pending rpcs are done.  */
-  ports_inhibit_class_rpcs (root_port_class);
+  err = ports_inhibit_class_rpcs (root_port_class);
+  if (err == EINTR || (err && !force))
+    {
+      mutex_unlock (&device_lock);
+      return err;
+    }
 
   if (force && nosync)
     /* Exit with extreme prejudice.  */
@@ -310,6 +316,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
  busy:
   /* Allow normal operations to proceed.  */
   ports_enable_class (root_port_class);
+  ports_resume_class_rpcs (root_port_class);
   mutex_unlock(&device_lock);
 
   /* Complain that there are still users.  */
