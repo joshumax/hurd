@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999 Free Software Foundation
+#   Copyright (C) 1993,94,95,96,97,98,99,2001 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -34,7 +34,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
-	       ufs ext2fs isofs nfs \
+	       ufs ext2fs isofs nfs tmpfs \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons nfsd boot serverboot \
 	       hostmux usermux ftpfs trans \
