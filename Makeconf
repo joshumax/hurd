@@ -102,8 +102,9 @@ libdiskfs := $(srcdir)/libdiskfs/libdiskfs.a
 libtrivfs := $(srcdir)/libtrivfs/libtrivfs.a
 libnetserv := $(srcdir)/libnetserv/libnetserv.a
 libps := $(srcdir)/libps/libps.a
+libihash := $(srcdir)/libihash/libihash.a
 alllibs := libthreads libports libioserver libpager libfshelp libdiskfs\
-	libtrivfs libnetserv libps
+	libtrivfs libnetserv libps libihash
 
 # Finding binaries
 include $(srcdir)/Maketools
