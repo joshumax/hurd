@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,6 +26,7 @@ void
 ioserver_fetch_shared_data (void *arg)
 {
   struct protid *cred = arg;
+  int mod = 0;
   
   /* Don't allow the user to grow the file past the alloc size. */
   if (cred->mapped->file_size > cred->po->np->allocsize)
@@ -44,6 +45,7 @@ ioserver_fetch_shared_data (void *arg)
 	{
 	  cred->po->np->dn_stat.st_size = cred->mapped->file_size;
 	  cred->po->np->dn_set_ctime = 1;
+	  mod = 1;
 	}
     }
   
@@ -52,10 +54,19 @@ ioserver_fetch_shared_data (void *arg)
   if (!diskfs_readonly)
     {
       if (cred->mapped->written)
-	cred->po->np->dn_set_mtime = 1;
+	{
+	  cred->po->np->dn_set_mtime = 1;
+	  mod = 1;
+	}
       if (cred->mapped->accessed)
-	cred->po->np->dn_set_atime = 1;
+	{
+	  cred->po->np->dn_set_atime = 1;
+	  mod = 1;
+	}
     }
   cred->mapped->written = 0;
   cred->mapped->accessed = 0;
+  if (diskfs_synchronous && mod)
+    diskfs_node_update (cred->po->np, 1);
 }
+
