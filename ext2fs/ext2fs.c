@@ -227,10 +227,8 @@ main (int argc, char **argv)
   /* Check to make sure device sector size is reasonable. */
   err = device_get_status (device_port, DEV_GET_SIZE, sizes, &sizescnt);
   assert (sizescnt == DEV_GET_SIZE_COUNT);
-  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != DEV_BSIZE)
-    error(1, 0, "Bad device record size %d (should be %d)\n",
-	  sizes[DEV_GET_SIZE_RECORD_SIZE], DEV_BSIZE);
-  
+
+  device_block_size = sizes[DEV_GET_SIZE_RECORD_SIZE];
   device_size = sizes[DEV_GET_SIZE_DEVICE_SIZE];
   assert (device_size >= SBLOCK_OFFS + SBLOCK_SIZE);
 
