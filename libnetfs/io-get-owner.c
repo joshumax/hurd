@@ -1,4 +1,3 @@
-
 /* 
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
@@ -19,31 +18,17 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <fcntl.h>
 #include "netfs.h"
 #include "io_S.h"
 
 error_t
-netfs_S_io_readable (struct protid *user,
-		     mach_msg_type_number_t *amount)
+netfs_S_io_get_owner (struct protid *user, pid_t *owner)
 {
-  error_t err;
-  
   if (!user)
     return EOPNOTSUPP;
   
-  if (!(user->po->openstat & O_READ))
-    return EINVAL;
-  
   mutex_lock (&user->po->np->lock);
-  err = netfs_validate_stat (user->po->np, user->credential);
-  if (!err)
-    {
-      if (user->po->np->nn_stat.st_size > user->po->filepointer)
-	*amount = user->po->np->nn_stat.st_size - user->po->filepointer;
-      else
-	*amount = 0;
-    }
+  *owner = user->po->np->owner;
   mutex_unlock (&user->po->np->lock);
-  return err;
+  return 0;
 }
