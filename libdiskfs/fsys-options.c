@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <argz.h>
 #include <hurd/fsys.h>
+#include <string.h>
 
 #include "priv.h"
 #include "fsys_S.h"
