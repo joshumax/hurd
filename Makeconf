@@ -53,7 +53,7 @@ endef
 # Mounting $(hurdroot)
 ifeq ($(hurdroot),)
 $(hurdroot): force
-	echo Cannot do install on this machine.
+	@echo Cannot do install on this machine.
 	false
 else
 $(hurdroot): $(hurdroot)/mounted
@@ -65,9 +65,9 @@ endif
 
 # Making a snapshot
 
-lndist: $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir)
+lndist: $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir) FORCE
 	ln $(DIST_FILES) $(hurdsource)/hurd-snap/$(dir)
-
+ 
 ifeq ($(dir),.)
 $(hurdsource)/hurd-snap/$(dir):
 else
