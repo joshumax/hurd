@@ -1,6 +1,6 @@
 
 /* 
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -161,6 +161,7 @@ void datablocks_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
 void allblock_iterate (struct dinode *, int (*)(daddr_t, int, off_t));
 
 void record_directory (struct dinode *, ino_t);
+struct dirinfo *lookup_directory (ino_t);
 
 void pinode (ino_t);
 
