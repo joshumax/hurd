@@ -42,7 +42,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (!tocred)
     return EXDEV;
 
-  if (diskfs_readonly)
+  if (diskfs_check_readonly ())
     return EROFS;
 
   fdp = fromcred->po->np;
