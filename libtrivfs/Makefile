@@ -38,7 +38,8 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c \
 
 OTHERSRCS=demuxer.c protid-clean.c protid-dup.c cntl-create.c \
 	cntl-clean.c migsupport.c times.c startup.c open.c \
-	runtime-argp.c set-options.c append-args.c
+	runtime-argp.c set-options.c append-args.c dyn-classes.c \
+	protid-classes.c cntl-classes.c
 
 SRCS=$(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(OTHERSRCS)
 
