@@ -264,6 +264,12 @@ nbd_read (struct store *store,
   return err;
 }
 
+static error_t
+nbd_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
 
 
 /* Setup hooks.  */
@@ -473,6 +479,7 @@ const struct store_class store_nbd_class =
   validate_name: nbd_validate_name,
   read: nbd_read,
   write: nbd_write,
+  set_size: nbd_set_size,
   allocate_encoding: store_std_leaf_allocate_encoding,
   encode: store_std_leaf_encode,
   decode: nbd_decode,

@@ -74,18 +74,22 @@ copy_write (struct store *store,
   *amount = len;
   return 0;
 }
+
+static error_t
+copy_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
 
 error_t
 copy_allocate_encoding (const struct store *store, struct store_enc *enc)
 {
-  /* ... */
   return EOPNOTSUPP;
 }
 
 error_t
 copy_encode (const struct store *store, struct store_enc *enc)
 {
-  /* ... */
   return EOPNOTSUPP;
 }
 
@@ -93,7 +97,6 @@ static error_t
 copy_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
-  /* ... */
   return EOPNOTSUPP;
 }
 
@@ -159,7 +162,7 @@ copy_clone (const struct store *from, struct store *to)
 const struct store_class
 store_copy_class =
 {
-  STORAGE_COPY, "copy", copy_read, copy_write,
+  STORAGE_COPY, "copy", copy_read, copy_write, copy_set_size,
   copy_allocate_encoding, copy_encode, copy_decode,
   copy_set_flags, copy_clear_flags, copy_cleanup, copy_clone, 0, copy_open
 };

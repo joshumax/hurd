@@ -27,6 +27,29 @@
 
 #include "store.h"
 
+/* Return 0 if STORE's range is enforced by the filesystem, otherwise an
+   error.  */
+static error_t
+enforced (struct store *store)
+{
+  if (store->num_runs != 1 || store->runs[0].start != 0)
+    /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
+    return EINVAL;
+  else
+    {
+      /* See if the the current (one) range is that the kernel is enforcing. */
+      struct stat st;
+      error_t err = io_stat (store->port, &st);
+
+      if (!err
+	  && store->runs[0].length != (st.st_size >> store->log2_block_size))
+	/* The single run is not the whole file.  */
+	err = EINVAL;
+
+      return err;
+    }
+}
+
 static error_t
 file_read (struct store *store,
 	   store_offset_t addr, size_t index, size_t amount, void **buf,
@@ -43,6 +66,27 @@ file_write (struct store *store,
 {
   size_t bsize = store->block_size;
   return io_write (store->port, buf, len, addr * bsize, amount);
+}
+
+static error_t
+file_store_set_size (struct store *store, size_t newsize)
+{
+  error_t err;
+
+  if (enforced (store) != 0)
+    /* Bail out if there is more than a single run.  */
+    return EOPNOTSUPP;
+
+  err = file_set_size (store->port, newsize);
+
+  if (!err)
+  {
+    /* Update STORE's size and run.  */
+    store->size = newsize;
+    store->runs[0].length = newsize >> store->log2_block_size;
+  }
+
+  return err;
 }
 
 static error_t
@@ -88,28 +132,7 @@ ficlose (struct store *store)
   store->port = MACH_PORT_NULL;
 }
 
-/* Return 0 if STORE's range is enforced by the filesystem, otherwise an
-   error.  */
-static error_t
-enforced (struct store *store)
-{
-  if (store->num_runs != 1 || store->runs[0].start != 0)
-    /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
-    return EINVAL;
-  else
-    /* See if the the current (one) range is that the kernel is enforcing. */
-    {
-      struct stat st;
-      error_t err = io_stat (store->port, &st);
 
-      if (!err
-	  && store->runs[0].length != (st.st_size >> store->log2_block_size))
-	/* The single run is not the whole file.  */
-	err = EINVAL;
-
-      return err;
-    }
-}
 
 static error_t
 file_set_flags (struct store *store, int flags)
@@ -192,7 +215,7 @@ file_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
 const struct store_class
 store_file_class =
 {
-  STORAGE_HURD_FILE, "file", file_read, file_write,
+  STORAGE_HURD_FILE, "file", file_read, file_write, file_store_set_size,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
   file_set_flags, file_clear_flags, 0, 0, 0, file_open, 0, file_map
 };
@@ -219,6 +242,7 @@ struct store_class
 store_file_byte_class =
 {
   STORAGE_HURD_FILE, "file", file_byte_read, file_byte_write,
+  file_store_set_size,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, file_decode,
   file_set_flags, file_clear_flags, 0, 0, 0, file_open, 0, file_map
 };

@@ -75,6 +75,12 @@ task_write (struct store *store,
 }
 
 static error_t
+task_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
+static error_t
 task_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
@@ -127,7 +133,7 @@ task_clear_flags (struct store *store, int flags)
 const struct store_class
 store_task_class =
 {
-  STORAGE_TASK, "task", task_read, task_write,
+  STORAGE_TASK, "task", task_read, task_write, task_set_size,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, task_decode,
   task_set_flags, task_clear_flags, 0, 0, 0, task_open
 };

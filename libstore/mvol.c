@@ -70,6 +70,12 @@ mvol_write (struct store *store,
   return err;
 }
 
+static error_t
+mvol_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
 error_t
 mvol_remap (struct store *source,
 	    const struct store_run *runs, size_t num_runs,
@@ -81,7 +87,7 @@ mvol_remap (struct store *source,
 const struct store_class
 store_mvol_class =
 {
-  -1, "mvol", mvol_read, mvol_write,
+  -1, "mvol", mvol_read, mvol_write, mvol_set_size,
   0, 0, 0,
   store_set_child_flags, store_clear_child_flags, 0, 0, mvol_remap
 };

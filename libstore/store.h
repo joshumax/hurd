@@ -132,6 +132,8 @@ typedef error_t (*store_read_meth_t)(struct store *store,
 				     store_offset_t addr, size_t index,
 				     mach_msg_type_number_t amount,
 				     void **buf, mach_msg_type_number_t *len);
+typedef error_t (*store_set_size_meth_t)(struct store *store,
+					 size_t newsize);
 
 struct store_enc;		/* fwd decl */
 
@@ -144,11 +146,13 @@ struct store_class
   const char *name;
 
   /* Read up to AMOUNT bytes at the underlying address ADDR from the storage
-     into BUF and LEN.  INDEX varies from 0 to the number of runs in STORE. */
+     into BUF and LEN.  INDEX varies from 0 to the number of runs in STORE.  */
   store_read_meth_t read;
   /* Write up to LEN bytes from BUF to the storage at the underlying address
-     ADDR.  INDEX varies from 0 to the number of runs in STORE. */
+     ADDR.  INDEX varies from 0 to the number of runs in STORE.  */
   store_write_meth_t write;
+  /* Set store's size to NEWSIZE (in bytes).  */
+  store_set_size_meth_t set_size;
 
   /* To the lengths of each for the four arrays in ENC, add how much STORE
      would need to be encoded.  */
@@ -304,6 +308,9 @@ error_t store_write (struct store *store,
    (as defined by STORE->block_size).  Note that LEN is in bytes.  */
 error_t store_read (struct store *store,
 		    store_offset_t addr, size_t amount, void **buf, size_t *len);
+
+/* Set STORE's size to NEWSIZE (in bytes).  */
+error_t store_set_size (struct store *store, size_t newsize);
 
 /* If STORE was created using store_create, remove the reference to the
    source from which it was created.  */

@@ -285,3 +285,16 @@ store_read (struct store *store,
       return err;
     }
 }
+
+/* Set STORE's size to NEWSIZE (in bytes).  */
+error_t
+store_set_size (struct store *store, size_t newsize)
+{
+  error_t err;
+  store_set_size_meth_t set_size = store->class->set_size;
+
+  /* Updating the runs list is up to the class set_size method.  */
+  err = (* set_size) (store, newsize);
+
+  return err;
+}

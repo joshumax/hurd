@@ -170,6 +170,12 @@ memobj_write (struct store *store,
 }
 
 static error_t
+memobj_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
+static error_t
 memobj_decode (struct store_enc *enc, const struct store_class *const *classes,
 	       struct store **store)
 {
@@ -182,6 +188,7 @@ store_memobj_class =
   STORAGE_MEMORY, "memobj",
   map: memobj_map,
   read: memobj_read,
+  set_size: memobj_set_size,
   write: memobj_write,
   allocate_encoding: store_std_leaf_allocate_encoding,
   encode: store_std_leaf_encode,

@@ -55,6 +55,12 @@ zero_write (struct store *store,
   return 0;
 }
 
+static error_t
+zero_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
 /* Modify SOURCE to reflect those runs in RUNS, and return it in STORE.  */
 error_t
 zero_remap (struct store *source,
@@ -173,7 +179,7 @@ zero_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
 const struct store_class
 store_zero_class =
 {
-  STORAGE_ZERO, "zero", zero_read, zero_write,
+  STORAGE_ZERO, "zero", zero_read, zero_write, zero_set_size,
   zero_allocate_encoding, zero_encode, zero_decode,
   0, 0, 0, 0, zero_remap, zero_open, zero_validate_name,
   zero_map

@@ -70,6 +70,12 @@ dev_write (struct store *store,
 }
 
 static error_t
+dev_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
+static error_t
 dev_decode (struct store_enc *enc, const struct store_class *const *classes,
 	    struct store **store)
 {
@@ -238,7 +244,7 @@ dev_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
 const struct store_class
 store_device_class =
 {
-  STORAGE_DEVICE, "device", dev_read, dev_write,
+  STORAGE_DEVICE, "device", dev_read, dev_write, dev_set_size,
   store_std_leaf_allocate_encoding, store_std_leaf_encode, dev_decode,
   dev_set_flags, dev_clear_flags, 0, 0, 0, dev_open, 0, dev_map
 };

@@ -42,6 +42,12 @@ nowrite (struct store *store,
 }
 
 static error_t
+noset_size (struct store *store, size_t newsize)
+{
+  return EFTYPE;
+}
+
+static error_t
 noflags (struct store *store, int flags)
 {
   return EINVAL;
@@ -211,6 +217,7 @@ const struct store_class store_unknown_class =
   -1, "unknown",
   read:			noread,
   write:		nowrite,
+  set_size:		noset_size,
   allocate_encoding:	unknown_allocate_encoding,
   encode:		unknown_encode,
   decode:		store_unknown_decode,

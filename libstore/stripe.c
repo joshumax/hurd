@@ -58,6 +58,12 @@ stripe_write (struct store *store,
 }
 
 error_t
+stripe_set_size (struct store *store, size_t newsize)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
 stripe_remap (struct store *source,
 	      const struct store_run *runs, size_t num_runs,
 	      struct store **store)
@@ -105,7 +111,7 @@ ileave_decode (struct store_enc *enc, const struct store_class *const *classes,
 const struct store_class
 store_ileave_class =
 {
-  STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write,
+  STORAGE_INTERLEAVE, "interleave", stripe_read, stripe_write, stripe_set_size,
   ileave_allocate_encoding, ileave_encode, ileave_decode,
   store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap
 };
@@ -149,7 +155,7 @@ concat_decode (struct store_enc *enc, const struct store_class *const *classes,
 const struct store_class
 store_concat_class =
 {
-  STORAGE_CONCAT, "concat", stripe_read, stripe_write,
+  STORAGE_CONCAT, "concat", stripe_read, stripe_write, stripe_set_size,
   concat_allocate_encoding, concat_encode, concat_decode,
   store_set_child_flags, store_clear_child_flags, 0, 0, stripe_remap,
   store_concat_open

@@ -3295,6 +3295,9 @@ Returns the amount written in @var{amount} (in bytes).  @var{addr} is in
 @var{blocks} (as defined by @code{@var{store}->block_size}).
 @end deftypefun
 
+@deftypefun error_t store_set_size (@w{struct store *@var{store}}, @w{store_offset_t @var{newsize}})
+Set @var{store}'s size to @var{newsize} (in bytes).
+@end deftypefun
 
 @node Store Classes
 @subsection Store Classes

@@ -1,3 +1,32 @@
+2002-10-01  Ludovic Courtès <ludovic.courtes@utbm.fr>
+
+	* store.h: New type store_set_size_meth_t: New type.  New
+	prototype store_set_size.
+	(struct store_class): Added a set_size () method.
+	* rdwr.c (store_set_size): New function.
+	* file.c (file_store_set_size): New function.
+	(store_file_class): Add file_store_set_size.
+	* concat.c (concat_set_size): New function.
+	(store_concat_class): concat_set_size.
+	* copy.c (copy_set_size): New function.
+	(store_copy_class): copy_set_size.
+	* device.c (device_set_size): New function.
+	(store_device_class): device_set_size.
+	* memobj.c (memobj_set_size): New function.
+	(store_memobj_class): memobj_set_size.
+	* mvol.c (mvol_set_size): New function.
+	(store_mvol_class): mvol_set_size.
+	* nbd.c (nbd_set_size): New function.
+	(store_nbd_class): nbd_set_size.
+	* remap.c (remap_set_size): New function.
+	(store_remap_class): remap_set_size.
+	* stripe.c (stripe_set_size): New function.
+	(store_stripe_class): stripe_set_size.
+	* unknown.c (unknown_set_size): New function.
+	(store_unknown_class): unknown_set_size.
+	* zero.c (zero_set_size): New function.
+	(store_zero_class): zero_set_size.
+
 2002-11-03  Neal H. Walfield  <neal@cs.uml.edu>
 
 	* kids.c: Do not include <malloc.h>.
