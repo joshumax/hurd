@@ -32,7 +32,7 @@ diskfs_S_io_select (struct protid *cred,
   
   mutex_lock (&cred->po->np->lock);
   if (((type & SELECT_READ) && !(cred->po->openstat & O_READ))
-      || ((type & SELECT_WRITE) && !(cred-po->openstat & O_WRITE)))
+      || ((type & SELECT_WRITE) && !(cred->po->openstat & O_WRITE)))
     {
       mutex_unlock (&cred->po->np->lock);
       return EBADF;
