@@ -28,7 +28,14 @@
 
 #include "argp.h"
 
-#define EOF (-1)
+/* What getopt returns after the end of the options.  */
+#define KEY_END (-1)
+/* What getopt returns for a non-option argument.  */
+#define KEY_ARG 1
+
+/* The meta-argument used to prevent any further arguments being interpreted
+   as options.  */
+#define QUOTE "--"
 
 /* The number of bits we steal in a long-option value for our own use.  */
 #define GROUP_BITS CHAR_BIT
@@ -146,8 +153,12 @@ error_t
 argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    int *end_index)
 {
-  int opt;
   error_t err = 0;
+  /* True if we think using getopt is still useful; if false, then
+     remaining arguments are just passed verbatim with ARGP_KEY_ARG.  This is
+     cleared whenever getopt returns KEY_END, but may be set again if the user
+     moves the next argument pointer backwards.  */
+  int try_getopt = 1;
   /* If true, then err == EINVAL is a result of a non-option argument failing
      to be parsed (which in some cases isn't actually an error).  */
   int arg_einval = 0;
@@ -164,7 +175,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   /* A pointer for people to use for iteration over GROUPS.  */
   struct group *group;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags, 0 };
+  struct argp_state state = { argp, argc, argv, 0, flags, 0, 0 };
 
   /* Parse the non-option argument ARG, at the current position.  Returns
      any error, and sets ARG_EINVAL to true if return EINVAL.  */
@@ -180,15 +191,53 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    err = (*group->parser)(ARGP_KEY_ARG, val, &state);
 	  }
 
-      if (!err && state.next >= index)
-	/* Remember that we successfully processed a non-option
-	   argument -- but only if the user hasn't gotten tricky and set
-	   the clock back.  */
-	(--group)->args_processed++;
+      if (!err)
+	if (state.next >= index)
+	  /* Remember that we successfully processed a non-option
+	     argument -- but only if the user hasn't gotten tricky and set
+	     the clock back.  */
+	  (--group)->args_processed++;
+	else
+	  /* The user wants to reparse some args, give getopt another try.  */
+	  try_getopt = 1;
 
       if (err == EINVAL)
 	*arg_einval = 1;
 
+      return err;
+    }
+
+  /* Parse the option OPT (with argument ARG), at the current position.
+     Returns any error, and sets ARG_EINVAL to true if it was actually an
+     argument and the parser returned EINVAL.  */
+  error_t process_opt (int opt, char *val, int *arg_einval)
+    {
+      /* The group key encoded in the high bits; 0 for short opts or
+	 group_number + 1 for long opts.  */
+      int group_key = opt >> USER_BITS;
+      error_t err = EINVAL;	/* until otherwise asserted */
+
+      if (group_key == 0)
+	/* A short option.  */
+	{
+	  /* By comparing OPT's position in SHORT_OPTS to the various
+	     starting positions in each group's SHORT_END field, we can
+	     determine which group OPT came from.  */
+	  char *short_index = index (short_opts, opt);
+	  if (short_index)
+	    for (group = groups; group < egroup; group++)
+	      if (group->short_end > short_index && group->parser)
+		{
+		  err = (*group->parser)(opt, optarg, &state);
+		  break;
+		}
+	}
+      else
+	/* A long option.  We use shifts instead of masking for extracting
+	   the user value in order to preserve the sign.  */
+	err =
+	  (*groups[group_key - 1].parser)(((opt << GROUP_BITS) >> GROUP_BITS),
+					  optarg, &state);
       return err;
     }
 
@@ -325,8 +374,8 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     short_opts = short_end = alloca (short_len + 1);
     if (state.flags & ARGP_IN_ORDER)
       *short_end++ = '-';
-    else if (! (state.flags & ARGP_NO_ARGS))
-      *short_end++ = '-';
+    else if (state.flags & ARGP_NO_ARGS)
+      *short_end++ = '+';
     *short_end = '\0';
 
     long_opts = long_end = alloca ((long_len + 1) * sizeof (struct option));
@@ -341,7 +390,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   mutex_lock (&getopt_lock);
 
   /* Tell getopt to initialize.  */
-  optind = state.next = 0;
+  state.next = 0;
 
   if (state.flags & ARGP_NO_ERRS)
     {
@@ -355,60 +404,56 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
     opterr = 1;			/* Print error messages.  */
 
   /* Now use getopt on our coalesced options lists.  */
-  while ((opt = getopt_long (state.argc, state.argv, short_opts, long_opts, 0)) != EOF)
+  while (! err)
     {
-      /* The group key encoded in the high bits; 0 for short opts or
-	 group_number + 1 for long opts.  */
-      int group_key = opt >> USER_BITS;
+      int opt;
 
-      err = EINVAL;		/* until otherwise asserted */
+      if (state.quoted && state.next < state.quoted)
+	/* The next argument pointer has been moved to before the quoted
+	   region, so pretend we never saw the quoting `--', and give getopt
+	   another chance.  If the user hasn't removed it, getopt will just
+	   process it again.  */
+	state.quoted = 0;
 
-      state.next = optind;	/* Store OPTIND in STATE while calling user
-				   functions.  */
-
-      if (opt == 1)
-	/* A non-option argument; try each parser in turn.  */
-	err = process_arg (optarg, &arg_einval);
-      else if (group_key == 0)
-	/* A short option.  */
+      if (try_getopt && !state.quoted)
+	/* Give getopt a chance to parse this.  */
 	{
-	  /* By comparing OPT's position in SHORT_OPTS to the various
-	     starting positions in each group's SHORT_END field, we can
-	     determine which group OPT came from.  */
-	  char *short_index = index (short_opts, opt);
-	  if (short_index)
-	    for (group = groups; group < egroup; group++)
-	      if (group->short_end > short_index && group->parser)
-		{
-		  err = (*group->parser)(opt, optarg, &state);
-		  break;
-		}
+	  optind = state.next;	/* Put it back in OPTIND for getopt.  */
+	  opt = getopt_long (state.argc, state.argv, short_opts, long_opts, 0);
+	  state.next = optind;	/* And see what getopt did.  */
+	  if (opt == KEY_END)
+	    /* Getopt says there are no more options, so stop using getopt.  */
+	    {
+	      try_getopt = 0;
+	      if (state.next > 1
+		  && strcmp (state.argv[state.next - 1], QUOTE) == 0)
+		/* Not only is this the end of the options, but it's a
+		   `quoted' region, which may have args that *look* like
+		   options, so we definitely shouldn't try to use getopt past
+		   here, whatever happens.  */
+		state.quoted = state.next;
+	    }
 	}
       else
-	/* A long option.  We use shifts instead of masking for extracting
-	   the user value in order to preserve the sign.  */
-	err =
-	  (*groups[group_key - 1].parser)(((opt << GROUP_BITS) >> GROUP_BITS),
-					  optarg, &state);
+	opt = KEY_END;
 
-      optind = state.next;	/* Put it back in OPTIND for getopt.  */
-
-      if (err)
-	break;
-    }
-
-  if (opt == EOF)
-    {
-      state.next = optind;	/* Only update NEXT if getopt just failed. */
-
-      /* Now process any non-option arguments that getopt didn't handle.  */
-      while (!err && state.next < state.argc)
-	err = process_arg (state.argv[state.next++], &arg_einval);
+      if (opt == KEY_END)
+	/* We're past what getopt considers the options.  */
+	if (state.next >= state.argc || (state.flags & ARGP_NO_ARGS))
+	  break;		/* done */
+	else
+	  /* A non-option arg.  */
+	  err = process_arg (state.argv[state.next++], &arg_einval);
+      else if (opt == KEY_ARG)
+	/* A non-option argument; try each parser in turn.  */
+	err = process_arg (optarg, &arg_einval);
+      else
+	err = process_opt (opt, optarg, &arg_einval);
     }
 
   mutex_unlock (&getopt_lock);
 
-  if (! err)
+  if (state.next == state.argc)
     /* We successfully parsed all arguments!  Call all the parsers again,
        just a few more times... */
     {
