@@ -72,9 +72,9 @@ main (int argc, char **argv)
     }
 
   /* Don't do anything with this for now. */
-  linespec = argv[1];
+  linespec = argv[2];
 
-  tt = getttynam (argv[1]);
+  tt = getttynam (argv[2]);
   asprintf (&ttyname, "%s/%s", _PATH_DEV, argv[2]);
   
   chown (ttyname, 0, 0);
