@@ -1,8 +1,8 @@
 /* Pid parsing/frobbing
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997,2001 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -44,4 +44,4 @@ struct pids_argp_params
 /* A parser for selecting a set of pids.  */
 extern struct argp pids_argp;
 
-#endif __PIDS_H__
+#endif /* __PIDS_H__ */
