@@ -57,7 +57,7 @@ struct ftpfs_params ftpfs_params;
 
 volatile struct mapped_time_value *ftpfs_maptime;
 
-int netfs_maxsymlinks = 0;
+int netfs_maxsymlinks = 12;
 
 extern error_t lookup_server (const char *server,
 			      struct ftp_conn_params **params, int *h_err);
@@ -160,25 +160,28 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
 	  if (! debug_stream_name)
 	    {
 	      argp_failure (state, 0, ENOMEM, "%s: Cannot open debugging file", arg);
-	      return ENOMEM;
+	      err = ENOMEM;
 	    }
 
-	  debug_stream = fopen (arg, "w+");
-	  if (! debug_stream)
+	  if (! err)
 	    {
-	      error_t err = errno;
-	      argp_failure (state, 0, err, "%s: Cannot open debugging file", arg);
-	      return err;
+	      debug_stream = fopen (arg, "w+");
+	      if (! debug_stream)
+		{
+		  error_t err = errno;
+		  argp_failure (state, 0, err, "%s: Cannot open debugging file", arg);
+		}
 	    }
 	}
       else
 	debug_stream = stderr;
 
-      ftpfs_ftp_hooks.cntl_debug = cntl_debug;
+      if (err)
+	ftpfs_ftp_hooks.cntl_debug = cntl_debug;
 
       mutex_unlock (&debug_lock);
 
-      break;
+      return err;
 
     case OPT_NO_DEBUG:
       mutex_lock (&debug_lock);
