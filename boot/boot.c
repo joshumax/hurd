@@ -60,6 +60,7 @@ mach_port_t pseudo_console;
 auth_t authserver;
 
 spin_lock_t queuelock = SPIN_LOCK_INITIALIZER;
+spin_lock_t readlock = SPIN_LOCK_INITIALIZER;
 
 mach_port_t php_child_name, psmdp_child_name, taskname;
 
@@ -1009,6 +1010,14 @@ read_reply ()
   char * buf;
   int amtread;
 
+  spin_lock (&readlock);
+  ioctl (0, FIONREAD, &avail);
+  if (!avail)
+    {
+      spin_unlock (&readlock);
+      return;
+    }
+
   spin_lock (&queuelock);
 
   if (!qrhead)
@@ -1024,15 +1033,13 @@ read_reply ()
 
   spin_unlock (&queuelock);
 
-  ioctl (0, FIONREAD, &avail);
-  if (!avail)
-    return;
-
   if (qr->type == DEV_READ)
     vm_allocate (mach_task_self (), (vm_address_t *)&buf, qr->amount, 1);
   else
     buf = alloca (qr->amount);
   amtread = read (0, buf, qr->amount);
+
+  spin_unlock (&readlock);
 
   switch (qr->type)
     {
@@ -1410,16 +1417,19 @@ ds_device_read (device_t device,
 #endif
 
   mask = sigblock (sigmask (SIGIO));
+  spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       vm_allocate (mach_task_self (), (pointer_t *)data, bytes_wanted, 1);
       *datalen = read (0, *data, bytes_wanted);
+      spin_unlock (&readlock);
       sigsetmask (mask);
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
+      spin_unlock (&readlock);
       queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
       sigsetmask (mask);
       return MIG_NO_REPLY;
@@ -1452,15 +1462,18 @@ ds_device_read_inband (device_t device,
 #endif
 
   mask = sigblock (sigmask (SIGIO));
+  spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       *datalen = read (0, data, bytes_wanted);
+      spin_lock (&readlock);
       sigsetmask (mask);
       return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
     }
   else
     {
+      spin_lock (&readlock);
       queue_read (DEV_READI, reply_port, reply_type, bytes_wanted);
       sigsetmask (mask);
       return MIG_NO_REPLY;
@@ -1668,17 +1681,20 @@ S_io_read (mach_port_t object,
 #endif
 
   mask = sigblock (sigmask (SIGIO));
+  spin_lock (&readlock);
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
       if (amount > *datalen)
 	vm_allocate (mach_task_self (), (vm_address_t *) data, amount, 1);
       *datalen = read (0, *data, amount);
+      spin_unlock (&readlock);
       sigsetmask (mask);
       return *datalen == -1 ? errno : 0;
     }
   else
     {
+      spin_unlock (&readlock);
       queue_read (IO_READ, reply_port, reply_type, amount);
       sigsetmask (mask);
       return MIG_NO_REPLY;
