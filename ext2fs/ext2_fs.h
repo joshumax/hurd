@@ -62,11 +62,10 @@ typedef signed char s8;
  * Debug code
  */
 #ifdef EXT2FS_DEBUG
-#	define ext2_debug(f, a...) \
-    do { printf ("ext2fs: DEBUG %s:%d: %s: ", __FILE__, __LINE__, __FUNCTION__); \
-      printf (f "\n", ## a); } while (0)
+#define ext2_debug(f, a...) \
+  do { printf ("ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a); } while (0)
 #else
-#	define ext2_debug(f, a...)	(void)0
+#define ext2_debug(f, a...)	(void)0
 #endif
 
 /*
