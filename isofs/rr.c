@@ -301,8 +301,8 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  rr->valid |= VALID_NM;
 	  if (name != nmbuf)
 	    {
-	      rr->name = malloc (namelen + 1);
-	      strcpy (rr->name, name);
+	      rr->name = strdup (name);
+	      assert (rr->name);
 	    }
 	  else
 	    {
@@ -567,6 +567,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 
 	  rr->translen = tr->len;
 	  rr->trans = malloc (rr->translen);
+	  assert (rr->trans);
 	  memcpy (tr->data, rr->trans, rr->translen);
 	  rr->valid |= VALID_TR;
 

@@ -1,3 +1,17 @@
+2000-12-21  Marcus Brinkmann  <marcus@gnu.org>
+
+	* rr.c (rrip_work): Use strdup instead malloc and strcpy.
+	Assert that strdup and malloc (for rr->trans) succeeds.
+	* pager.c: Include <errno.h>.
+	(create_disk_pager): If malloc fails, exit with error.
+	* main.c (read_sblock): Fail if malloc does.
+	* inode.c (diskfs_cached_lookup): When allocating memory for dn or
+	np fails, release spinlock, rrip (and allocated memory) and return
+	ENOMEM.
+	(load_inode): Likewise (but no rrip). Also, if *npp is non-zero,
+	release diskfs_node_refcnt_lock before returning.
+	Reported by Igor Khavkine <i_khavki@alcor.concordia.ca>.
+
 2000-11-27  Marcus Brinkmann  <marcus@gnu.org>
 
 	The last two changes introduced two new inode overlaps

@@ -101,6 +101,8 @@ read_sblock ()
     error (1, 0, "Could not find valid superblock");
 
   sblock = malloc (sizeof (struct sblock));
+  if (!sblock)
+    error (1, errno, "Could not allocate memory for superblock");
   bcopy (sb, sblock, sizeof (struct sblock));
   diskfs_end_catch_exception ();
 

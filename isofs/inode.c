@@ -188,10 +188,23 @@ diskfs_cached_lookup (int id, struct node **npp)
       assert (!(rr.valid & VALID_CL));
 
       dn = malloc (sizeof (struct disknode));
+      if (!dn)
+	{
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  release_rrip (&rr);
+	  return ENOMEM;
+	}
       dn->fileinfo = 0;
       dn->dr = c->dr;
       dn->file_start = c->file_start;
       np = diskfs_make_node (dn);
+      if (!np)
+	{
+	  free (dn);
+	  spin_unlock (&diskfs_node_refcnt_lock);
+	  release_rrip (&rr);
+	  return ENOMEM;
+	}
       np->cache_id = id + 1;	/* see above for rationale for increment */
       mutex_lock (&np->lock);
       c->np = np;
@@ -327,15 +340,29 @@ load_inode (struct node **npp, struct dirrect *record,
     inode_cache_find ((off_t) ((void *) record - (void *) disk_image), npp);
 
   if (*npp)
-    return 0;
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      return 0;
+    }
 
   /* Create a new node */
   dn = malloc (sizeof (struct disknode));
+  if (!dn)
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      return ENOMEM;
+    }
   dn->fileinfo = 0;
   dn->dr = record;
   dn->file_start = file_start;
 
   np = diskfs_make_node (dn);
+  if (!np)
+    {
+      free (dn);
+      spin_unlock (&diskfs_node_refcnt_lock);
+      return ENOMEM;
+    }
 
   mutex_lock (&np->lock);
 

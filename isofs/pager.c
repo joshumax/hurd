@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <error.h>
 #include <string.h>
 #include "isofs.h"
 
@@ -130,7 +131,9 @@ void
 create_disk_pager (void)
 {
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
-  
+
+  if (!upi)
+    error (1, errno, "Could not create disk pager");
   upi->type = DISK;
   upi->np = 0;
   pager_bucket = ports_create_bucket ();
