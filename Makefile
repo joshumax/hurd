@@ -24,7 +24,7 @@ endif
 
 include $(srcdir)/Makeconf
 
-lib-subdirs = libshouldbeinlibc libihash libioserver libports libpager \
+lib-subdirs = libshouldbeinlibc libihash libiohelp libports libpager \
 	      libfshelp libdiskfs libtrivfs libthreads libps \
 	      libnetfs libpipe libstore
 prog-subdirs = auth boot exec fstests init.trim \
