@@ -159,10 +159,7 @@ fetch_procinfo (process_t server, pid_t pid,
    with what was in *PI, and deallocates *PI.  NEED is the information, and
    *HAVE is the what we already have (which will be updated).  */
 static ps_flags_t
-merge_procinfo (process_t server, pid_t pid,
-		ps_flags_t need, ps_flags_t have,
-		struct procinfo **pi, size_t *pi_size,
-		char **waits, size_t *waits_len)
+merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 {
   error_t err;
   struct procinfo *new_pi, old_pi_hdr;
@@ -171,7 +168,7 @@ merge_procinfo (process_t server, pid_t pid,
   size_t new_waits_len = 0;
   /* We always re-fetch any thread-specific info, as the set of threads could
      have changed since the last time we did this, and we can't tell.  */
-  ps_flags_t really_need = need | (have & ~PSTAT_PROCINFO_REFETCH);
+  ps_flags_t really_need = need | (have & PSTAT_PROCINFO_REFETCH);
   ps_flags_t really_have = have & ~PSTAT_PROCINFO_REFETCH;
 
   /* Give NEW_PI, the default buffer to receive procinfo data, some storage. */
@@ -180,32 +177,34 @@ merge_procinfo (process_t server, pid_t pid,
        first saving the old values.  We know that below we'll never try to
        merge anything beyond the static struct procinfo header, so just save
        that.  */
-      old_pi_hdr = *new_pi;
+    old_pi_hdr = *ps->proc_info;
   else
     /* The first time we're getting procinfo stuff.  Malloc a block that's
        probably big enough for everything.  */
     {
-      *pi = malloc (PROCINFO_MALLOC_SIZE);
-      *pi_size = 0;
-      if (! *pi)
+      ps->proc_info = malloc (PROCINFO_MALLOC_SIZE);
+      ps->proc_info_size = PROCINFO_MALLOC_SIZE;
+      ps->proc_info_vm_alloced = 0;
+      if (! ps->proc_info)
 	return ENOMEM;
     }
-  new_pi = *pi;
-  new_pi_size = *pi_size ?: PROCINFO_MALLOC_SIZE;
+  new_pi = ps->proc_info;
+  new_pi_size = ps->proc_info_size;
 
   if (really_need & PSTAT_THREAD_WAITS)
     /* We're going to get thread waits info, so make some storage for it too.*/
     {
       if (! (have & PSTAT_THREAD_WAITS))
 	{
-	  *waits = malloc (WAITS_MALLOC_SIZE);
-	  *waits_len = 0;
+	  ps->thread_waits = malloc (WAITS_MALLOC_SIZE);
+	  ps->thread_waits_len = WAITS_MALLOC_SIZE;
+	  ps->thread_waits_vm_alloced = 0;
 	}
-      new_waits = *waits;
-      new_waits_len = *waits_len ?: WAITS_MALLOC_SIZE;
+      new_waits = ps->thread_waits;
+      new_waits_len = ps->thread_waits_len;
     }
 
-  err = fetch_procinfo (server, pid, really_need, &really_have,
+  err = fetch_procinfo (ps->context->server, ps->pid, really_need, &really_have,
 			&new_pi, &new_pi_size,
 			&new_waits, &new_waits_len);
   if (err)
@@ -226,16 +225,18 @@ merge_procinfo (process_t server, pid_t pid,
 	   sizeof (struct task_basic_info));
   /* That's it for now.  */
 
-  if (new_pi != *pi)
+  if (new_pi != ps->proc_info)
     /* We got new memory vm_alloced by the getprocinfo, discard the old.  */
     {
-      if (*pi_size)
-	vm_deallocate (mach_task_self (), (vm_address_t)*pi, *pi_size);
+      if (ps->proc_info_vm_alloced)
+	vm_deallocate (mach_task_self (),
+		       (vm_address_t)ps->proc_info, ps->proc_info_size);
       else
-	free (*pi);
-      *pi_size = new_pi_size;
+	free (ps->proc_info);
+      ps->proc_info = new_pi;
+      ps->proc_info_size = new_pi_size;
+      ps->proc_info_vm_alloced = 1;
     }
-  *pi = new_pi;
 
   if (really_need & PSTAT_THREAD_WAITS)
     /* We were trying to get thread waits....  */
@@ -243,16 +244,18 @@ merge_procinfo (process_t server, pid_t pid,
       if (! (really_have & PSTAT_THREAD_WAITS))
 	/* Failed to do so.  Make sure we deallocate memory for it.  */
 	new_waits = 0;
-      if (new_waits != *waits)
+      if (new_waits != ps->thread_waits)
 	/* We got new memory vm_alloced by the getprocinfo, discard the old. */
 	{
-	  if (*waits_len)
-	    vm_deallocate (mach_task_self(), (vm_address_t)*waits, *waits_len);
+	  if (ps->thread_waits_vm_alloced)
+	    vm_deallocate (mach_task_self (),
+			   (vm_address_t)ps->thread_waits, ps->thread_waits_len);
 	  else
-	    free (*waits);
-	  *waits_len = new_waits_len;
+	    free (ps->thread_waits);
+	  ps->thread_waits = new_waits;
+	  ps->thread_waits_len = new_waits_len;
+	  ps->thread_waits_vm_alloced = 1;
 	}
-      *waits = new_waits;
     }
 
   /* Return what thread info we have -- this may *decrease*, as all
@@ -585,7 +588,6 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
     {
       struct procinfo *pi;
       ps_flags_t had = have;
-      process_t server = ps->context->server;
 
       if (! (have & PSTAT_PROCINFO))
 	/* Never got any before; zero out our pointers.  */
@@ -604,9 +606,7 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	  if (! (have & PSTAT_NUM_THREADS))
 	    /* We've don't know how many threads there are yet; find out. */
 	    {
-	      have = merge_procinfo (server, ps->pid, PSTAT_NUM_THREADS, have,
-				     &ps->proc_info, &ps->proc_info_size,
-				     0, 0);
+	      have = merge_procinfo (ps, PSTAT_NUM_THREADS, have);
 	      if (have & PSTAT_NUM_THREADS)
 		ps->num_threads = count_threads (ps->proc_info);
 	    }
@@ -616,9 +616,7 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	    need |= PSTAT_THREAD_WAITS;
 	}
 
-      have = merge_procinfo (server, ps->pid, need, have,
-			     &ps->proc_info, &ps->proc_info_size,
-			     &ps->thread_waits, &ps->thread_waits_len);
+      have = merge_procinfo (ps, need, have);
       pi = ps->proc_info;
 
       /* Update dependent fields.  We redo these even if we've already
@@ -718,6 +716,8 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   ps_flags_t need;		/* flags not set in ps, but desired to be */
   ps_flags_t no_msgport_flags;	/* a version of FLAGS for use when we can't
 				   use the msg port.  */
+  ps_flags_t test_msgport_flags; /* Flags needed to test for msgport
+				    validity, including any preconditions.  */
   process_t server = ps_context_server (ps->context);
 
   /* Turn off use of the msg port if we decide somewhere along the way that
@@ -744,7 +744,12 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   if (flags & PSTAT_USES_MSGPORT)
     /* Add in some values that we can use to determine whether the msgport
        shouldn't be used.  */
-    flags |= add_preconditions (PSTAT_TEST_MSGPORT, ps->context);
+    {
+      test_msgport_flags = add_preconditions (PSTAT_TEST_MSGPORT, ps->context);
+      flags |= test_msgport_flags;
+    }
+  else
+    test_msgport_flags = 0;
 
   need = flags & ~have & ~ps->failed;
 
@@ -775,16 +780,11 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
      err; \
    })
 
-  if ((need & ~have & PSTAT_USES_MSGPORT & PSTAT_PROCINFO)
-      && (need & ~have & PSTAT_TEST_MSGPORT))
+  if (need & ~have & test_msgport_flags & PSTAT_PROCINFO)
     /* Pre-fetch information returned by set_procinfo_flags that we need for
-       msgport validity testing *before* we fetch information returned by
-       set_procinfo_flags that uses the msgport.  */
-    have = set_procinfo_flags (ps, need & ~have & PSTAT_TEST_MSGPORT, have);
-
-  /* the process's struct procinfo as returned by proc_getprocinfo.  */
-  if (need & ~have & PSTAT_PROCINFO)
-    have = set_procinfo_flags (ps, need, have);
+       msgport validity testing; if we need other procinfo stuff, we get that
+       later.  */
+    have = set_procinfo_flags (ps, need & ~have & test_msgport_flags, have);
 
   if ((need & PSTAT_SUSPEND_COUNT)
       &&
@@ -802,6 +802,10 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   ps->flags = have;		/* should_suppress_msgport looks at them.  */
   if (should_suppress_msgport (ps))
     suppress_msgport ();
+
+  /* the process's struct procinfo as returned by proc_getprocinfo.  */
+  if (need & ~have & PSTAT_PROCINFO)
+    have = set_procinfo_flags (ps, need, have);
 
   /* The process's libc msg port (see <hurd/msg.defs>).  */
   MGET(PSTAT_MSGPORT, PSTAT_PID, proc_getmsgport (server, ps->pid, &ps->msgport));
@@ -870,11 +874,19 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   /* The process's exec arguments */
   if ((need & PSTAT_ARGS) && (have & PSTAT_PID))
     {
-      ps->args_len = 0;
-      if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
-	ps->args_len = 0;
-      else
-	have |= PSTAT_ARGS;
+      char *buf = malloc (100);
+      ps->args_len = 100;
+      ps->args = buf;
+      if (ps->args)
+	if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
+	  free (buf);
+	else
+	  {
+	    have |= PSTAT_ARGS;
+	    ps->args_vm_alloced = (ps->args != buf);
+	    if (ps->args_vm_alloced)
+	      free (buf);
+	  }
     }
 
   /* The ctty id port; note that this is just a magic cookie;
@@ -960,14 +972,14 @@ _proc_stat_free (ps)
     ((ps->flags & (flag)) \
      ? mach_port_deallocate(mach_task_self (), (ps->port)) : 0)
 
-  /* If FLAG is set in PS's flags, then if SIZE is zero, free the malloced
+  /* If FLAG is set in PS's flags, then if VM_ALLOCED is zero, free the malloced
      field MEM in PS; othrewise, vm_deallocate MEM, consisting of SIZE 
      elements of type ELTYPE, *unless* MEM == SBUF, which usually means
      that MEM points to a static buffer somewhere instead of vm_alloc'd
      memory.  */
-#define MFREEMEM(flag, mem, size, sbuf, eltype) \
+#define MFREEMEM(flag, mem, size, vm_alloced, sbuf, eltype) \
     (((ps->flags & (flag)) && ps->mem != sbuf) \
-     ? (size ? (VMFREE(ps->mem, size * sizeof (eltype))) : free (ps->mem)) : 0)
+     ? (vm_alloced ? (VMFREE(ps->mem, size * sizeof (eltype))) : free (ps->mem)) : 0)
 
   /* free PS's ports */
   MFREEPORT (PSTAT_PROCESS, process);
@@ -978,13 +990,13 @@ _proc_stat_free (ps)
   MFREEPORT (PSTAT_AUTH, auth);
 
   /* free any allocated memory pointed to by PS */
-  MFREEMEM (PSTAT_PROCINFO, proc_info, ps->proc_info_size, 0, char);
-  MFREEMEM (PSTAT_THREAD_BASIC, thread_basic_info, 0, 0, 0);
-  MFREEMEM (PSTAT_THREAD_SCHED, thread_sched_info, 0, 0, 0);
-  MFREEMEM (PSTAT_ARGS, args, ps->args_len, 0, char);
-  MFREEMEM (PSTAT_TASK_EVENTS,
-	    task_events_info, ps->task_events_info_size,
-	    &ps->task_events_info_buf, char);
+  MFREEMEM (PSTAT_PROCINFO, proc_info, ps->proc_info_size,
+	    ps->proc_info_vm_alloced, 0, char);
+  MFREEMEM (PSTAT_THREAD_BASIC, thread_basic_info, 0, 0, 0, 0);
+  MFREEMEM (PSTAT_THREAD_SCHED, thread_sched_info, 0, 0, 0, 0);
+  MFREEMEM (PSTAT_ARGS, args, ps->args_len, ps->args_vm_alloced, 0, char);
+  MFREEMEM (PSTAT_TASK_EVENTS, task_events_info, ps->task_events_info_size,
+	    0, &ps->task_events_info_buf, char);
 
   FREE (ps);
 }
