@@ -44,21 +44,26 @@ trivfs_S_io_map (struct trivfs_protid *cred,
   else
     {
       mach_port_t memobj;
-      error_t err =
-	dev_get_memory_object (((struct open *)cred->po->hook)->dev, &memobj);
+      int flags = cred->po->openmodes;
+      vm_prot_t prot =
+	((flags & O_READ) ? VM_PROT_READ : 0)
+	| ((flags & O_WRITE) ? VM_PROT_WRITE : 0);
+      struct open *open = (struct open *)cred->po->hook;
+      error_t err = dev_get_memory_object (open->dev, prot, &memobj);
 
       if (!err)
 	{
-	  if (cred->po->openmodes & O_READ)
+	  if (flags & O_READ)
 	    *rd_obj = memobj;
 	  else
 	    *rd_obj = MACH_PORT_NULL;
-	  if (cred->po->openmodes & O_WRITE)
+	  if (flags & O_WRITE)
 	    *wr_obj = memobj;
 	  else
 	    *wr_obj = MACH_PORT_NULL;
 
-	  if ((cred->po->openmodes & (O_READ|O_WRITE)) == (O_READ|O_WRITE))
+	  if ((flags & (O_READ|O_WRITE)) == (O_READ|O_WRITE)
+	      && memobj != MACH_PORT_NULL)
 	    mach_port_mod_refs (mach_task_self (), memobj,
 				MACH_PORT_RIGHT_SEND, 1);
 	}
