@@ -1,3 +1,17 @@
+1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* exec.c (check_elf): Call elf_machine_matches_host instead of
+	comparing against elf_machine.
+	(load_section): #if 0 out no-op code that uses elf_machine.
+	* priv.h (elf_machine_matches_host): Declare it.
+	(elf_machine, mach_host_elf_machine): Remove decls.
+	* main.c (main) [!BFD]: Don't call mach_host_elf_machine.
+	(elf_machine): Variable removed.
+
+	* exec.c (map): Don't cast arg to munmap to vm_address_t.
+
+	* priv.h: Add #include <sys/mman.h> for munmap decl.
+
 1999-07-03  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* core.c (core_dump_task): Use munmap instead of vm_deallocate,
