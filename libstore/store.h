@@ -109,12 +109,12 @@ struct store
 
 typedef error_t (*store_write_meth_t)(struct store *store,
 				      off_t addr, size_t index,
-				      char *buf, mach_msg_type_number_t len,
+				      void *buf, mach_msg_type_number_t len,
 				      mach_msg_type_number_t *amount);
 typedef error_t (*store_read_meth_t)(struct store *store,
 				     off_t addr, size_t index,
 				     mach_msg_type_number_t amount,
-				     char **buf, mach_msg_type_number_t *len);
+				     void **buf, mach_msg_type_number_t *len);
 
 struct store_enc;		/* fwd decl */
 
@@ -157,6 +157,14 @@ struct store_class
      why the copy can't be made, an error should be returned.  This call is
      made after all format-indendependent fields have been cloned.  */
   error_t (*clone) (const struct store *from, struct store *to);
+
+  /* Return in STORE a store that only contains the parts of SOURCE as
+     enumerated in RUNS & RUNS_LEN, consuming SOURCE in the process.  The
+     default behavior, if REMAP is 0, is to replace SOURCE's run list with
+     the subset selected by RUNS, and return SOURCE.  */
+  error_t (*remap) (struct store *source,
+		    const struct store_run *runs, size_t num_runs,
+		    struct store **store);
 
   /* For making a list of classes to pass to e.g. store_create.  */
   struct store_class *next;
@@ -211,17 +219,24 @@ void _store_derive (struct store *store);
 
 /* Return in TO a copy of FROM.  */
 error_t store_clone (struct store *from, struct store **to);
+
+/* Return a store in STORE that reflects the blocks in RUNS & RUNS_LEN from
+   source; SOURCE is consumed, but not RUNS.  Unlike the store_remap_create
+   function, this may simply modify SOURCE and return it.  */
+error_t store_remap (struct store *source,
+		     const struct store_run *runs, size_t num_runs,
+		     struct store **store);
 
 /* Write LEN bytes from BUF to STORE at ADDR.  Returns the amount written in
    AMOUNT (in bytes).  ADDR is in BLOCKS (as defined by STORE->block_size).  */
 error_t store_write (struct store *store,
-		     off_t addr, char *buf, size_t len, size_t *amount);
+		     off_t addr, void *buf, size_t len, size_t *amount);
 
 /* Read AMOUNT bytes from STORE at ADDR into BUF & LEN (which following the
    usual mach buffer-return semantics) to STORE at ADDR.  ADDR is in BLOCKS
    (as defined by STORE->block_size).  Note that LEN is in bytes.  */
 error_t store_read (struct store *store,
-		    off_t addr, size_t amount, char **buf, size_t *len);
+		    off_t addr, size_t amount, void **buf, size_t *len);
 
 /* If STORE was created using store_create, remove the reference to the
    source from which it was created.  */
@@ -292,8 +307,17 @@ error_t store_ileave_create (struct store * const *stripes, size_t num_stripes,
 error_t store_concat_create (struct store * const *stores, size_t num_stores,
 			     int flags, struct store **store);
 
-/* Return a new null store SIZE bytes long in STORE.  */
-error_t store_null_create (size_t size, int flags, struct store **store);
+/* Return a new store in STORE that reflects the blocks in RUNS & RUNS_LEN
+   from SOURCE; SOURCE is consumed, but RUNS is not.  Unlike the store_remap
+   function, this function always operates by creating a new store of type
+   `remap' which has SOURCE as a child, and so may be less efficient than
+   store_remap for some types of stores.  */
+error_t store_remap_create (struct store *source,
+			    const struct store_run *runs, size_t num_runs,
+			    int flags, struct store **store);
+
+/* Return a new zero store SIZE bytes long in STORE.  */
+error_t store_zero_create (size_t size, int flags, struct store **store);
 
 /* Standard store classes implemented by libstore.  */
 extern struct store_class *store_std_classes;
@@ -349,7 +373,23 @@ void store_enc_init (struct store_enc *enc,
 /* Deallocate storage used by the fields in ENC (but nothing is done with ENC
    itself).  */
 void store_enc_dealloc (struct store_enc *enc);
+
+/* Copy out the parameters from ENC into the given variables suitably for
+   returning from a file_get_storage_info rpc, and deallocate ENC.  */
+void store_enc_return (struct store_enc *enc,
+		       mach_port_t **ports, mach_msg_type_number_t *num_ports,
+		       int **ints, mach_msg_type_number_t *num_ints,
+		       off_t **offsets, mach_msg_type_number_t *num_offsets,
+		       char **data, mach_msg_type_number_t *data_len);
 
+/* Encode STORE into the given return variables, suitably for returning from a
+   file_get_storage_info rpc.  */
+error_t store_return (const struct store *store,
+		      mach_port_t **ports, mach_msg_type_number_t *num_ports,
+		      int **ints, mach_msg_type_number_t *num_ints,
+		      off_t **offsets, mach_msg_type_number_t *num_offsets,
+		      char **data, mach_msg_type_number_t *data_len);
+
 /* Encode STORE into ENC, which should have been prepared with
    store_enc_init, or return an error.  The contents of ENC may then be
    return as the value of file_get_storage_info; if for some reason this
@@ -380,6 +420,11 @@ error_t store_encode_children (const struct store *store,
 error_t store_decode_children (struct store_enc *enc, int num_children,
 			       struct store_class *classes,
 			       struct store **children);
+
+/* Call FUN with the vector RUNS of length NUM_RUNS extracted from ENC.  */
+error_t store_with_decoded_runs (struct store_enc *enc, size_t num_runs,
+				 error_t (*fun) (const struct store_run *runs,
+						 size_t num_runs));
 
 /* Standard encoding used for most leaf store types.  */
 error_t store_std_leaf_allocate_encoding (const struct store *store,
@@ -422,5 +467,21 @@ error_t store_parsed_open (const struct store_parsed *parsed, int flags,
 /* Add the arguments  PARSED, and return the corresponding store in STORE.  */
 error_t store_parsed_append_args (const struct store_parsed *parsed,
 				  char **args, size_t *args_len);
+
+/* Make a string describing PARSED, and return it in malloced storage in
+   NAME.  */
+error_t store_parsed_name (const struct store_parsed *parsed, char **name);
+
+/* XXX Hacks to avoid touching hurd/hurd_types.h; these should be merged into
+   that file the next time it is updated (in enum storage_types). XXX  */
+#define STORAGE_REMAP (STORAGE_LAYER + 1) /* new type */
+#define STORAGE_ZERO  STORAGE_NULL        /* renaming of STORAGE_NULL  */
+
+/* Doc for STORAGE_REMAP:
+   STORAGE_REMAP is a layer on top of another store that remaps its blocks
+   ...
+    remap  - 	     TY, FL, NR      	     NR * (OFFS, LEN)  -	 1
+      (BS and SIZE are that of the child)
+*/
 
 #endif /* __STORE_H__ */
