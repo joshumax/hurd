@@ -19,7 +19,7 @@ main (int argc, char **argv)
   off_t addr = -1;
   int dumped = 0;
 
-  void dump (ssize_t addr,  size_t len)
+  void dump (off_t addr,  ssize_t len)
     {
       char buf[4096], *data = buf;
       size_t data_len = sizeof (buf);
@@ -28,7 +28,7 @@ main (int argc, char **argv)
 		    &data, &data_len);
       if (err)
 	error (5, err, store->name ? "%s" : "<store>", store->name);
-      if (write (1, data, data_len) <= 0)
+      if (write (1, data, data_len) < 0)
 	error (6, errno, "stdout");
       if (data != buf)
 	vm_deallocate (mach_task_self (), (vm_address_t)data, data_len);
@@ -61,10 +61,10 @@ main (int argc, char **argv)
 	  break;
 
 	case ARGP_KEY_END:
-	  if (addr < 0)
-	    dump (0, -1);
-	  else if (! dumped)
+	  if (addr >= 0)
 	    dump (addr, -1);
+	  else if (! dumped)
+	    dump (0, -1);
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
