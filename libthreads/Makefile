@@ -34,13 +34,19 @@ OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
 libname = libthreads
-installhdrs = cthreads.h
+
+# Don't put cthreads.h in installhdrs or else it will get installed into
+# $(hurdinst)/include/hurd instead of $(hurdinst)/include.
 
 VPATH = $(machine)
 
 include ../Makeconf
 
 $(objects): cthreads.h cthread_internals.h options.h i386/asm.h
+
+install: install-cthreads.h
+install-cthreads.h: cthreads.h
+	cp cthreads.h $(includedir)/cthreads.h
 
 lndist: lndist-i386-files
 
