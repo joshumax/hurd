@@ -78,20 +78,17 @@ diskfs_start_bootstrap (char **argv)
   mutex_unlock (&execstartlock);
   assert (diskfs_exec_ctl);
 
-  /* Create the port for current and root directory */
+  /* Create the port for current and root directory.  */
   root_pt = (ports_get_right
 	     (diskfs_make_protid
 	      (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC,
 				    MACH_PORT_NULL),
 	       0,0,0,0)));
+  /* Get us a send right to copy around.  */
   mach_port_insert_right (mach_task_self (), root_pt, root_pt,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
-  /* Tell the library what they are. */
-  setcwdir (root_pt);
-  setcrdir (root_pt);
-
-  /* Contact the exec server */
+  /* Contact the exec server.  */
   err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
 		      idlist, 3, idlist, 3, 0, 
 		      &retry, retry_name, &diskfs_exec);
@@ -100,22 +97,35 @@ diskfs_start_bootstrap (char **argv)
   assert (retry_name[0] == '\0');
   assert (diskfs_exec);
 
-  
-  /* Execute the startup server. */
+
+  /* Execute the startup server.  */
+  initnamebuf = NULL;
+  initname = default_init;
   if (diskfs_bootflags & RB_INITNAME)
     {
+      size_t bufsz;
+      ssize_t len;
       printf ("Init name [%s]: ", default_init);
-      fflush (stdout);
-      scanf ("%as\n", &initnamebuf);
-      initname = initnamebuf;
-      if (*initname)
-	while (*initname == '/')
-	  initname++;
-      else
-	initname = default_init;
+      bufsz = 0;
+      switch (len = getline (&initnamebuf, &bufsz, stdin))
+	{
+	case -1:
+	  perror ("getline");
+	  printf ("Using default of `%s'.\n", initname);
+	case 0:			/* Hmm.  */
+	case 1:			/* Empty line, just a newline.  */
+	  /* Use default.  */
+	  break;
+	default:
+	  initnamebuf[len - 1] = '\0'; /* Remove the newline.  */
+	  initname = initnamebuf;
+	  while (*initname == '/')
+	    initname++;
+	  break;
+	}
     }
   else
-    initnamebuf = initname = default_init;
+    initname = default_init;
   
   err = dir_lookup (root_pt, initname, O_READ, 0,
 		    &retry, pathbuf, &startup_pt);
@@ -144,10 +154,12 @@ diskfs_start_bootstrap (char **argv)
   fdarray[1] = con;
   fdarray[2] = con;
 /* XXX */
-  exec_argvlen = asprintf (&exec_argv, "%s%c%s%c", initname, '\0', diskfs_bootflagarg,
-		      '\0');
-  
-  task_create (mach_task_self (), 0, &newt);
+  exec_argvlen = asprintf (&exec_argv, "%s%c%s%c",
+			   initname, '\0',
+			   diskfs_bootflagarg, '\0');
+
+  err = task_create (mach_task_self (), 0, &newt);
+  assert_perror (err);
   if (diskfs_bootflags & RB_KDB)
     {
       printf ("pausing for init...\n");
@@ -315,6 +327,7 @@ diskfs_S_fsys_init (mach_port_t port,
   static int initdone = 0;
   process_t execprocess;
   error_t err;
+  mach_port_t root_pt;
 
   pt = ports_check_port_type (port, PT_INITBOOT);
   if (!pt)
@@ -353,6 +366,19 @@ diskfs_S_fsys_init (mach_port_t port,
   mach_port_deallocate (mach_task_self (), exectask);
   exectask = MACH_PORT_NULL;
 
+  /* Get a port to the root directory to put in the library's
+     data structures.  */
+  root_pt = (ports_get_right
+	     (diskfs_make_protid
+	      (diskfs_make_peropen (diskfs_root_node, O_READ|O_WRITE|O_EXEC,
+				    MACH_PORT_NULL),
+	       0,0,0,0)));
+  /* We need two send rights, for the crdir and cwdir slots.  */
+  mach_port_insert_right (mach_task_self (), root_pt, root_pt,
+			  MACH_MSG_TYPE_MAKE_SEND);
+  mach_port_mod_refs (mach_task_self (), root_pt,
+		      MACH_PORT_RIGHT_SEND, +1);
+
   if (_hurd_ports)
     {
       /* We already have a portarray, because somebody responded to
@@ -361,6 +387,8 @@ diskfs_S_fsys_init (mach_port_t port,
 	 UX does this.  */
       _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver); /* Consume. */
       _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authhandle); /* Consume. */
+      _hurd_port_set (&_hurd_ports[INIT_PORT_CRDIR], root_pt); /* Consume. */
+      _hurd_port_set (&_hurd_ports[INIT_PORT_CWDIR], root_pt); /* Consume. */
       _hurd_proc_init (saved_argv);
     }
   else
@@ -378,6 +406,8 @@ diskfs_S_fsys_init (mach_port_t port,
 	  portarray[i] = MACH_PORT_NULL;
       portarray[INIT_PORT_PROC] = procserver;
       portarray[INIT_PORT_AUTH] = authhandle;
+      portarray[INIT_PORT_CRDIR] = root_pt;
+      portarray[INIT_PORT_CWDIR] = root_pt;
       _hurd_init (0, saved_argv, portarray, INIT_PORT_MAX, NULL, 0);
     }  
 
