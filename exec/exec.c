@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server.
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    #ifdef BFD
@@ -59,7 +59,7 @@ bfd *bfd_openstream (FILE *);
 
 extern error_t bfd_mach_host_arch_mach (host_t host,
 					bfd_architecture *arch,
-					bfd_machine *machine);
+					long int *machine);
 #else
 #include A_OUT_H
 
@@ -101,8 +101,9 @@ struct execdata
   };
 
 #ifdef	BFD
-static bfd host_bfd;		/* A BFD whose architecture and machine type
-				   reflect those of the running system.  */
+/* A BFD whose architecture and machine type are those of the host system.  */
+static bfd_arch_info_type host_bfd_arch_info;
+static bfd host_bfd { arch_info: &host_bfd_arch_info };
 #else
 static enum machine_type host_machine; /* a.out machine_type of the host.  */
 #endif
@@ -698,9 +699,11 @@ check (struct execdata *e)
       e->error = b2he (ENOEXEC);
       return;
     }
-  else if (!bfd_arch_compatible (e->bfd, &host_bfd, NULL, NULL) ||
-	   !(bfd->flags & EXEC_P))
+  else if (!(e->bfd->flags & EXEC_P) ||
+	   bfd_arch_get_compatible (&host_bfd, e->bfd) != host_bfd.arch_info)
     {
+      /* This file is of a recognized binary file format, but it is not
+	 executable on this machine.  */
       e->error = b2he (EINVAL);
       return;
     }
@@ -1805,8 +1808,8 @@ main (int argc, char **argv)
   /* Put the Mach kernel's idea of what flavor of machine this is into the
      fake BFD against which architecture compatibility checks are made.  */
   err = bfd_mach_host_arch_mach (mach_host_self (),
-				 &host_bfd.obj_machine,
-				 &host_bfd.obj_arch);
+				 &host_bfd.arch_info->arch,
+				 &host_bfd.arch_info->mach);
 #else
   err = aout_mach_host_machine (mach_host_self (), (int *)&host_machine);
 #endif
