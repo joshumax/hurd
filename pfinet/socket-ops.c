@@ -18,7 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <hurd/trivfs.h>
 
+#include "pfinet.h"
 #include "socket_S.h"
 
 
@@ -132,9 +134,7 @@ S_socket_accept (struct sock_user *user,
   if (err)
     goto out;
   
-  /* O_NONBLOCK flag in Linux comes from fd table for third
-     arg here...  what to do?  XXX */
-  err = - (*sock->ops->accept) (sock, newsock, 0);
+  err = - (*sock->ops->accept) (sock, newsock, sock->userflags);
   if (err)
     goto out;
   
@@ -177,8 +177,8 @@ S_socket_connect (struct sock_user *user,
   
   
   if (!err)
-    /* Flags here come from fd table in Linux for O_NONBLOCK... XXX */
-    err = - (*sock->ops->connect) (sock, addr->address, addr->len, 0);
+    err = - (*sock->ops->connect) (sock, addr->address, addr->len, 
+				   sock->userflags);
   
   mutex_unlock (&global_lock);
   
@@ -383,12 +383,12 @@ S_socket_send (struct sock_user *user,
   become_task (user);
   
   if (addr)
-    /* O_NONBLOCK in fourth arg? XXX */
-    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 0,
-					flags,  addr->address, addr->len);
+    err = - (*user->sock->ops->sendto) (user->sock, data, datalen, 
+					user->sock->userflags, flags,
+					addr->address, addr->len);
   else
-    /* O_NONBLOCK in fourth arg? XXX */
-    err = - (*user->sock->ops->send) (user->sock, data, datalen, 0, flags);
+    err = - (*user->sock->ops->send) (user->sock, data, datalen, 
+				      user->sock->userflags, flags);
   
   mutex_unlock (&global_lock);
   
