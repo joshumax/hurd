@@ -147,6 +147,11 @@ enum scancode
     SC_FLAG_UP       = 0xF000	/* ORed to basic scancode.  */
   };
 
+/* In set 2 function keys don't have a logical order.  This macro can
+   determine if a function key was pressed.  */
+#define IS_FUNC_KEY(c) ((sc >= SC_F9 && sc <= SC_F4 ||    \
+			sc == SC_F7 || sc == SC_F11)
+
 /* Codes which can follow SC_EXTENDED1.  */
 enum scancode_x1
   {
@@ -799,8 +804,60 @@ input_loop (any_t unused)
 	    state.left_ctrl = down;
 	  else if (sc == SC_LEFT_ALT)
 	    state.left_alt = down;
-	  else if (state.left_alt && down && sc >= SC_F1 && sc <= SC_F10) /* XXX */
-	    console_switch (1 + (sc - SC_F1), 0);
+	  else if (state.left_alt && down && IS_FUNC_KEY (sc))
+	    {
+	      /* The virtual console to switch to.  */
+	      int vc = 0;
+	      
+	      /* Check if a funtion key was pressed. 
+		 Choose the virtual console corresponding to that key.  */
+	      switch (sc)
+		{
+		case SC_F1:
+		  vc = 1;
+		  break;
+		case SC_F2:
+		  vc = 2;
+		  break;
+		case SC_F3:
+		  vc = 3;
+		  break;
+		case SC_F4:
+		  vc = 4;
+		  break;
+		case SC_F5:
+		  vc = 5;
+		  break;
+		case SC_F6:
+		  vc = 6;
+		  break;
+		case SC_F7:
+		  vc = 7;
+		  break;
+		case SC_F8:
+		  vc = 8;
+		  break;
+		case SC_F9:
+		  vc = 9;
+		  break;
+		case SC_F10:
+		  vc = 10;
+		  break;
+		case SC_F11:
+		  vc = 11;
+		  break;
+		case SC_F12:
+		  vc = 12;
+		  break;
+		  /* No function key was pressed, don't
+		     switch to another vc.  */
+		default:
+		  vc = 0;
+		}
+
+	      if (vc)
+		console_switch (vc, 0);
+	    }
 	  else if (state.left_alt && state.left_ctrl && down && sc == SC_BACKSPACE)
 	    console_exit ();
 	  else if (state.right_alt && down && sc == SC_PAD_0) /* XXX */

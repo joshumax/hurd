@@ -1,3 +1,9 @@
+2002-11-21  Marco Gerards  <metgerards@student.han.nl>
+
+	* pc-kbd.c (IS_FUNC_KEY): New macro.
+	(input_loop): Replaced code for set1 for console switching by set2
+	code.  Also accept F11 and F12.
+
 2002-11-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* console.c (main): Pass ERR to error invocation.
