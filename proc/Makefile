@@ -76,5 +76,5 @@ msg.h msgUser.c: $(headers)/hurd/msg.defs $(headers)/hurd/hurd_types.defs
 	| $(MIGCOM) -prefix nowait_ -server /dev/null
 
 clean:
-	rm -f *.o *Server.c notify_S.h  proc_S.h proc process_reply.h \
-		process_replyUser.c msg.h msgUser.c
+	rm -f *.o *Server.c *_S.h *User.c proc process_reply.h \
+		msg.h proc_exc.h proc_excrepl.h
