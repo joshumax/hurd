@@ -75,5 +75,5 @@ diskfs_init_diskfs (void)
   mach_port_deallocate (mach_task_self (), timedev);
   mach_port_deallocate (mach_task_self (), obj);
 
-  diskfs_auth_server_port = getauth ();
+/*  diskfs_auth_server_port = getauth (); */
 }
