@@ -1074,6 +1074,7 @@ S_tioctl_tiocstop (io_t port)
   else
     {
       termflags |= USER_OUTPUT_SUSP;
+      (*bottom->suspend_physical_output) ();
       err = 0;
     }
   mutex_unlock (&global_lock);
