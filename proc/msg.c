@@ -1,5 +1,5 @@
 /* Message port manipulations
-   Copyright (C) 1994, 1995, 1996, 1999 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1999, 2001 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -116,10 +116,12 @@ S_proc_getmsgport (struct proc *callerp,
 		   mach_port_t *msgport)
 {
   int cancel;
-  struct proc *p = pid_find_allow_zombie (pid);
+  struct proc *p;
 
   if (!callerp)
     return EOPNOTSUPP;
+
+  p = pid_find_allow_zombie (pid);
 
 restart:  
   while (p && p->p_deadmsg && !p->p_dead)

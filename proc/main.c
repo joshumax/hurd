@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993,94,95,96,97,99,2000 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,99,2000,01 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -85,6 +85,8 @@ main (int argc, char **argv, char **envp)
 
   /* Create our own proc object (we are PID 0).  */
   self_proc = allocate_proc (mach_task_self ());
+  assert (self_proc);
+
   complete_proc (self_proc, 0);
 
   startup_port = ports_get_send_right (startup_proc);
@@ -101,8 +103,8 @@ main (int argc, char **argv, char **envp)
   add_proc_to_hash (startup_proc); /* Now that we have the task port.  */
 
   /* Set our own argv and envp locations.  */
-  self_proc->p_argv = (int) argv;
-  self_proc->p_envp = (int) envp;
+  self_proc->p_argv = (vm_address_t) argv;
+  self_proc->p_envp = (vm_address_t) envp;
 
   /* Give ourselves good scheduling performance, because we are so
      important. */
