@@ -208,10 +208,9 @@ check_hashbang (struct execdata *e,
 	      char *name;
 	      int free_name = 0; /* True if we should free NAME. */
 	      file_t name_file;
-	      struct stat st;
-	      int file_fstype;
-	      fsid_t file_fsid;
-	      ino_t file_fileno;
+	      mach_port_t fileid;
+	      dev_t filedev;
+	      ino_t fileno;
 
 	      /* Search $PATH for NAME, opening a port NAME_FILE on it.
 		 This is encapsulated in a function so we can catch faults
@@ -240,12 +239,9 @@ check_hashbang (struct execdata *e,
 		  return err;
 		}
 
-	      error = io_stat (file, &st); /* XXX insecure */
+	      error = io_identity (file, &fileid, &filedev, &fileno);
 	      if (error)
 		goto out;
-	      file_fstype = st.st_fstype;
-	      file_fsid = st.st_fsid;
-	      file_fileno = st.st_ino;
 
 	      if (memchr (argv, '\0', argvlen) == NULL)
 		{
@@ -266,18 +262,22 @@ check_hashbang (struct execdata *e,
 
 	      if (!error && name_file != MACH_PORT_NULL)
 		{
-		  if (!io_stat (name_file, &st) && /* XXX insecure */
-		      st.st_fstype == file_fstype &&
-		      st.st_fsid == file_fsid &&
-		      st.st_ino == file_fileno)
+		  mach_port_t id;
+		  dev_t dev;
+		  ino_t ino;
+		  error = io_identity (name_file, &id, &dev, &ino);
+		  __mach_port_deallocate (__mach_task_self (), id);
+		  if (!error && id == fileid)
 		    {
 		      file_name = name;
 		      free_file_name = free_name;
 		    }
 		  else if (free_name)
 		    free (name);
-		  mach_port_deallocate (mach_task_self (), name_file);
+		  __mach_port_deallocate (__mach_task_self (), name_file);
 		}
+
+	      __mach_port_deallocate (__mach_task_self (), fileid);
 	    }
 
 	  if (file_name == NULL)
