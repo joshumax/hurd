@@ -27,8 +27,7 @@ libioserver := $(hurdinst)/lib/libioserver.a
 libpager := $(hurdinst)/lib/libpager.a
 libfshelp := $(hurdinst)/lib/libfshelp.a
 libdiskfs := $(hurdinst)/lib/libdiskfs.a
-#malloc := $(hurdinst)/lib/malloc.o
-malloc := -u _malloc $(libthreads) # roland
+malloc := $(hurdinst)/lib/libmalloc.a
 
 # Finding binaries
 include $(hurdsource)/Maketools
@@ -48,7 +47,7 @@ ldflags = $(addprefix -Xlinker ,$(LDFLAGS))
 
 define link
 $(LD) -e __start $(LDFLAGS) -o $@ $(startup) \
-$(OBJS) $(LIBS) $(malloc) $(libc) $(libgcc)
+$(OBJS) $(LIBS) -u _malloc $(malloc) $(libc) $(libgcc)
 endef
 
 # Mounting $(hurdroot)
