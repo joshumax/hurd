@@ -36,6 +36,8 @@ char *netfs_server_name = "fakeroot";
 char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 16;	/* arbitrary */
 
+static auth_t fakeroot_auth_port;
+
 struct netnode
 {
   void **idport_locp;		/* easy removal pointer in idport ihash */
@@ -56,8 +58,10 @@ struct mutex idport_ihash_lock = MUTEX_INITIALIZER;
 struct ihash idport_ihash;
 
 
+/* Make a new virtual node.  Always consumes the ports.  */
 static error_t
-new_node (file_t file, mach_port_t idport, int openmodes, struct node **np)
+new_node (file_t file, mach_port_t idport, int locked, int openmodes,
+	  struct node **np)
 {
   error_t err;
   struct netnode *nn = calloc (1, sizeof *nn);
@@ -66,6 +70,8 @@ new_node (file_t file, mach_port_t idport, int openmodes, struct node **np)
       mach_port_deallocate (mach_task_self (), file);
       if (idport != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), idport);
+      if (locked)
+	mutex_unlock (&idport_ihash_lock);
       return ENOMEM;
     }
   nn->file = file;
@@ -76,6 +82,7 @@ new_node (file_t file, mach_port_t idport, int openmodes, struct node **np)
     {
       int fileno;
       mach_port_t fsidport;
+      assert (!locked);
       err = io_identity (file, &nn->idport, &fsidport, &fileno);
       if (err)
 	{
@@ -86,11 +93,18 @@ new_node (file_t file, mach_port_t idport, int openmodes, struct node **np)
     }
   *np = netfs_make_node (nn);
   if (*np == 0)
-    err = ENOMEM;
+    {
+      if (locked)
+	mutex_unlock (&idport_ihash_lock);
+      err = ENOMEM;
+    }
   else
     {
-      mutex_lock (&idport_ihash_lock);
+      if (!locked)
+	mutex_lock (&idport_ihash_lock);
       err = ihash_add (&idport_ihash, nn->idport, *np, &nn->idport_locp);
+      if (!err)
+	netfs_nref (*np);	/* Return a reference to the caller.  */
       mutex_unlock (&idport_ihash_lock);
     }
   if (err)
@@ -143,6 +157,214 @@ netfs_node_norefs (struct node *np)
   free (np);
 }
 
+/* Given an existing node, make sure it has NEWMODES in its openmodes.
+   If not null, FILE is a port with those openmodes.  */
+static error_t
+check_openmodes (struct netnode *nn, int newmodes, file_t file)
+{
+  error_t err = 0;
+
+  if (newmodes &~ nn->openmodes)
+    {
+      /* The user wants openmodes we haven't tried before.  */
+
+      if (file != MACH_PORT_NULL && (nn->openmodes & ~newmodes))
+	{
+	  /* Intersecting sets.
+	     We need yet another new peropen on this node.  */
+	  mach_port_deallocate (mach_task_self (), file);
+	  file = MACH_PORT_NULL;
+	}
+      if (file == MACH_PORT_NULL);
+	{
+	  enum retry_type bad_retry;
+	  char bad_retryname[1024];	/* XXX */
+	  if (file != MACH_PORT_NULL)
+	  err = dir_lookup (nn->file, "", nn->openmodes | newmodes, 0,
+			    &bad_retry, bad_retryname, &file);
+	  if (!err && (bad_retry != FS_RETRY_NORMAL
+		       || bad_retryname[0] != '\0'))
+	    {
+	      mach_port_deallocate (mach_task_self (), file);
+	      err = EGRATUITOUS;
+	    }
+	}
+      if (! err)
+	{
+	  /* The new port has more openmodes than
+	     the old one.  We can just use it now.  */
+	  mach_port_deallocate (mach_task_self (), nn->file);
+	  nn->file = file;
+	  nn->openmodes = newmodes;
+	}
+    }
+  else if (file != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), file);
+
+  return err;
+}
+
+/* This is called by netfs_S_fsys_getroot.  */
+error_t
+netfs_check_open_permissions (struct iouser *user, struct node *np,
+			      int flags, int newnode)
+{
+  return check_openmodes (np->nn, flags & (O_RDWR|O_EXEC), MACH_PORT_NULL);
+}
+
+error_t
+netfs_S_dir_lookup (struct protid *diruser,
+		    char *filename,
+		    int flags,
+		    mode_t mode,
+		    retry_type *do_retry,
+		    char *retry_name,
+		    mach_port_t *retry_port,
+		    mach_msg_type_name_t *retry_port_type)
+{
+  struct node *dnp, *np;
+  error_t err;
+  struct protid *newpi;
+  struct iouser *user;
+  mach_port_t file;
+  mach_port_t idport, fsidport;
+  int fileno;
+
+  if (!diruser)
+    return EOPNOTSUPP;
+
+  dnp = diruser->po->np;
+  err = dir_lookup (dnp->nn->file, filename,
+		    O_NOLINK | (flags
+				& (O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK)),
+		    mode, do_retry, retry_name, &file);
+  if (err)
+    return err;
+
+  switch (*do_retry)
+    {
+    case FS_RETRY_REAUTH:
+      {
+	mach_port_t ref = mach_reply_port ();
+	err = io_reauthenticate (file, ref, MACH_MSG_TYPE_MAKE_SEND);
+	if (! err)
+	  {
+	    mach_port_deallocate (mach_task_self (), file);
+	    err = auth_user_authenticate (fakeroot_auth_port, ref,
+					  MACH_MSG_TYPE_MAKE_SEND,
+					  retry_port);
+	  }
+	mach_port_destroy (mach_task_self (), ref);
+	if (err)
+	  return err;
+      }
+      *do_retry = FS_RETRY_NORMAL;
+      /*FALLTHROUGH*/
+
+    case FS_RETRY_NORMAL:
+    case FS_RETRY_MAGICAL:
+    default:
+      if (file == MACH_PORT_NULL)
+	{
+	  *retry_port = MACH_PORT_NULL;
+	  *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+	  return 0;
+	}
+      break;
+    }
+
+  /* We have a new port to an underlying node.
+     Find or make our corresponding virtual node.  */
+
+  np = 0;
+  err = io_identity (file, &idport, &fsidport, &fileno);
+  if (err)
+    mach_port_deallocate (mach_task_self (), file);
+  else
+    {
+      mach_port_deallocate (mach_task_self (), fsidport);
+      if (fsidport == netfs_fsys_identity)
+	{
+	  /* Talking to ourselves!  We just looked up one of our
+	     own nodes.  Find the node and return it.  */
+	  struct protid *cred
+	    = ports_lookup_port (netfs_port_bucket, file,
+				 netfs_protid_class);
+	  mach_port_deallocate (mach_task_self (), idport);
+	  mach_port_deallocate (mach_task_self (), file);
+	  if (cred == 0)
+	    return EGRATUITOUS;
+	  np = cred->po->np;
+	  netfs_nref (np);
+	  ports_port_deref (cred);
+	}
+      else
+	{
+	  mutex_lock (&idport_ihash_lock);
+	  np = ihash_find (&idport_ihash, idport);
+	  if (np != 0)
+	    {
+	      /* We already know about this node.  */
+	      mach_port_deallocate (mach_task_self (), idport);
+	      mutex_lock (&np->lock);
+	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
+	      if (!err)
+		netfs_nref (np);
+	      mutex_unlock (&np->lock);
+	      mutex_unlock (&idport_ihash_lock);
+	    }
+	  else
+	    err = new_node (file, idport, 1, flags, &np);
+	}
+    }
+  if (err)
+    return err;
+
+  if (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL)
+    flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
+  else
+    flags = 0;
+
+  err = iohelp_dup_iouser (&user, diruser->user);
+  if (!err)
+    {
+      newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
+				 user);
+      if (! newpi)
+	{
+	  iohelp_free_iouser (user);
+	  err = errno;
+	}
+      else
+	{
+	  *retry_port = ports_get_right (newpi);
+	  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
+	  ports_port_deref (newpi);
+	}
+    }
+
+  netfs_nrele (np);
+  return err;
+}
+
+/* These callbacks are used only by the standard netfs_S_dir_lookup,
+   which we do not use.  But the shared library requires us to define them.  */
+error_t
+netfs_attempt_lookup (struct iouser *user, struct node *dir,
+		      char *name, struct node **np)
+{
+  assert (! "should not be here");
+  return EIEIO;
+}
+
+error_t
+netfs_attempt_create_file (struct iouser *user, struct node *dir,
+			   char *name, mode_t mode, struct node **np)
+{
+  assert (! "should not be here");
+  return EIEIO;
+}
+
 /* Make sure that NP->nn_stat is filled with the most current information.
    CRED identifies the user responsible for the operation. NP is locked.  */
 error_t
@@ -321,104 +543,6 @@ netfs_attempt_syncfs (struct iouser *cred, int wait)
   return 0;
 }
 
-/* Lookup NAME in DIR (which is locked) for USER; set *NP to the found name
-   upon return.  If the name was not found, then return ENOENT.  On any
-   error, clear *NP.  (*NP, if found, should be locked and a reference to
-   it generated.  This call should unlock DIR no matter what.)  */
-error_t
-netfs_attempt_lookup (struct iouser *user, struct node *dir,
-		      char *name, struct node **np)
-{
-  error_t err;
-  int flags;
-  const file_t dirfile = dir->nn->file;
-  file_t file;
-
-  /* We must unlock the directory before making RPCs to the underlying
-     filesystem in case they somehow wind up trying to refer back to one of
-     our nodes.  The DIRFILE port will not change or die as long as DIR
-     lives, and our caller holds a reference keeping it alive.  */
-  mutex_unlock (&dir->lock);
-
-  flags = O_RDWR|O_EXEC;
-  file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
-				 || errno == EROFS || errno == EISDIR))
-    {
-      flags = O_RDWR;
-      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-    }
-  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
-				 || errno == EROFS || errno == EISDIR))
-    {
-      flags = O_READ|O_EXEC;
-      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-    }
-  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
-				 || errno == EISDIR))
-    {
-      flags = O_READ;
-      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-    }
-  if (file == MACH_PORT_NULL && (errno == EACCES || errno == EOPNOTSUPP
-				 || errno == EISDIR))
-    {
-      flags = 0;
-      file = file_name_lookup_under (dirfile, name, flags | O_NOLINK, 0);
-    }
-  *np = 0;
-  if (file == MACH_PORT_NULL)
-    err = errno;
-  else
-    {
-      mach_port_t idport, fsidport;
-      int fileno;
-      err = io_identity (file, &idport, &fsidport, &fileno);
-      if (err)
-	mach_port_deallocate (mach_task_self (), file);
-      else
-	{
-	  mach_port_deallocate (mach_task_self (), fsidport);
-	  if (fsidport == netfs_fsys_identity)
-	    {
-	      /* Talking to ourselves!  We just looked up one of our own nodes.
-		 Find the node and return it.  */
-	      struct protid *cred = ports_lookup_port (netfs_port_bucket, file,
-						       netfs_protid_class);
-	      mach_port_deallocate (mach_task_self (), idport);
-	      mach_port_deallocate (mach_task_self (), file);
-	      if (cred == 0)
-		return EGRATUITOUS;
-	      *np = cred->po->np;
-	      netfs_nref (*np);
-	      ports_port_deref (cred);
-	    }
-	  else
-	    {
-	      mutex_lock (&idport_ihash_lock);
-	      *np = ihash_find (&idport_ihash, idport);
-	      if (*np != 0)
-		{
-		  /* We already know about this node.  */
-		  mach_port_deallocate (mach_task_self (), idport);
-		  mach_port_deallocate (mach_task_self (), file);
-		  netfs_nref (*np);
-		  mutex_unlock (&idport_ihash_lock);
-		}
-	      else
-		{
-		  mutex_unlock (&idport_ihash_lock);
-		  err = new_node (file, idport, flags, np);
-		}
-	    }
-	}
-    }
-
-  if (*np)
-    mutex_lock (&(*np)->lock);
-  return err;
-}
-
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 		     char *name, mode_t mode)
@@ -468,23 +592,10 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
   file_t newfile;
   error_t err = dir_mkfile (dir->nn->file, O_RDWR|O_EXEC,
 			    real_from_fake_mode (mode), &newfile);
+  mutex_unlock (&dir->lock);
   if (err == 0)
-    err = new_node (newfile, MACH_PORT_NULL, O_RDWR|O_EXEC, np);
-  mutex_unlock (&dir->lock);
+    err = new_node (newfile, MACH_PORT_NULL, 0, O_RDWR|O_EXEC, np);
   return err;
-}
-
-error_t
-netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **np)
-{
-  file_t newfile = file_name_lookup_under (dir->nn->file, name,
-					   O_CREAT|O_RDWR|O_EXEC,
-					   real_from_fake_mode (mode));
-  mutex_unlock (&dir->lock);
-  if (newfile == MACH_PORT_NULL)
-    return errno;
-  return new_node (newfile, MACH_PORT_NULL, O_RDWR|O_EXEC, np);
 }
 
 error_t
@@ -509,13 +620,6 @@ netfs_attempt_readlink (struct iouser *user, struct node *np, char *buf)
 	munmap (trans, translen);
     }
   return err;
-}
-
-error_t
-netfs_check_open_permissions (struct iouser *user, struct node *np,
-			      int flags, int newnode)
-{
-  return (flags & (O_READ|O_WRITE|O_EXEC) & ~np->nn->openmodes) ? EACCES : 0;
 }
 
 error_t
@@ -776,12 +880,14 @@ any user to open nodes regardless of permissions as is done for root." };
   /* Parse our command line arguments (all none of them).  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
+  fakeroot_auth_port = getauth ();
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
 
   /* Get our underlying node (we presume it's a directory) and use
      that to make the root node of the filesystem.  */
-  err = new_node (netfs_startup (bootstrap, O_READ), MACH_PORT_NULL, O_READ,
+  err = new_node (netfs_startup (bootstrap, O_READ), MACH_PORT_NULL, 0, O_READ,
 		  &netfs_root_node);
   if (err)
     error (5, err, "Cannot create root node");
