@@ -65,6 +65,10 @@ end_using_protid_port (struct protid *cred)
 error_t _diskfs_rdwr_internal (struct node *np, char *data, off_t offset,
 			       size_t *amt, int dir, int notime);
 
+/* Called when we have a real user environment (complete with proc
+   and auth ports). */
+void _diskfs_init_completed (void);
+
 /* Clean routine for control port. */
 void _diskfs_control_clean (void *);
 
