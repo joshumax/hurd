@@ -32,7 +32,7 @@ DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libpager libfshelp libdiskfs libtrivfs libps \
 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
-	      libpthread libtermserver
+	      libpthread
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
