@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -45,18 +45,18 @@ diskfs_S_io_prenotify (struct protid *cred,
       goto out;
     }
 
-  err = ioserver_verify_user_conch (&np->conch, cred);
+  err = iohelp_verify_user_conch (&np->conch, cred);
   if (err)
     goto out;
   
-  ioserver_fetch_shared_data (cred);
+  iohelp_fetch_shared_data (cred);
   
   if ((off_t) end < np->allocsize)
     {
       /* The user didn't need to do this, so we'll make sure they
 	 have the right shared page info.  */
       spin_lock (&cred->mapped->lock);
-      ioserver_put_shared_data (cred);
+      iohelp_put_shared_data (cred);
       spin_unlock (&cred->mapped->lock);
       goto out;
     }
