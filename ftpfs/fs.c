@@ -1,7 +1,7 @@
 /* Fs operations
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1997,2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -67,11 +67,13 @@ ftpfs_create (char *rmt_path, int fsid,
       super_root = netfs_make_node (0);
       if (! super_root)
 	err = ENOMEM;
+      else
+	{
+	  err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
+	  if (! err)
+	    err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
+	}
     }
-  if (! err)
-    err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
-  if (! err)
-    err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
 
   if (err)
     free (new);
