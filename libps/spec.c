@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <pwd.h>
 #include <hurd/resource.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "ps.h"
@@ -724,6 +725,45 @@ ps_cmp_strings(proc_stat_t ps1, proc_stat_t ps2, ps_getter_t getter)
 }
 
 /* ---------------------------------------------------------------- */
+/* `Nominal' functions -- return true for `unexciting' values.  */
+
+/* For many things, zero is not so interesting.  */
+bool
+ps_nominal_zint (proc_stat_t ps, ps_getter_t getter)
+{
+  return G(getter, int)(ps) == 0;
+}
+
+/* Priorities are similar, but have to be converted to the unix nice scale
+   first.  */
+bool
+ps_nominal_pri (proc_stat_t ps, ps_getter_t getter)
+{
+  return MACH_PRIORITY_TO_NICE(G(getter, int)(ps)) == 0;
+}
+
+/* Hurd processes usually have 2 threads;  XXX is there someplace we get get
+   this number from?  */
+bool
+ps_nominal_nth (proc_stat_t ps, ps_getter_t getter)
+{
+  return G(getter, int)(ps) == 2;
+}
+
+/* A user is nominal if it's the current user.  */
+bool 
+ps_nominal_user (proc_stat_t ps, ps_getter_t getter)
+{
+  static int own_uid = -1;
+  ps_user_t u = G(getter, ps_user_t)(ps);
+
+  if (own_uid < 0)
+    own_uid = getuid();
+
+  return u->uid == own_uid;
+}
+
+/* ---------------------------------------------------------------- */
 
 ps_fmt_spec_t 
 find_ps_fmt_spec(char *name, ps_fmt_spec_t specs)
@@ -740,38 +780,71 @@ find_ps_fmt_spec(char *name, ps_fmt_spec_t specs)
 
 struct ps_fmt_spec ps_std_fmt_specs[] =
 {
-  {"PID",    &ps_pid_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
-  {"TH#",    &ps_thread_index_getter,ps_emit_int,	ps_cmp_ints,	-2},
-  {"PPID",   &ps_ppid_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
-  {"UID",    &ps_owner_getter,	     ps_emit_uid,	ps_cmp_uids,	-5},
-  {"User",   &ps_owner_getter,	     ps_emit_uname,	ps_cmp_unames, 	 8},
-  {"NTh",    &ps_num_threads_getter, ps_emit_int,	ps_cmp_ints,	-2},
-  {"PGrp",   &ps_pgrp_getter,	     ps_emit_int,	ps_cmp_ints,	-5},
-  {"Sess",   &ps_session_getter,     ps_emit_int,	ps_cmp_ints,	-5},
-  {"LColl",  &ps_login_col_getter,   ps_emit_int,	ps_cmp_ints,	-5},
-  {"Args",   &ps_args_getter,	     ps_emit_string0,	ps_cmp_strings,	 0},
-  {"Arg0",   &ps_args_getter,	     ps_emit_string,	ps_cmp_strings,	 0},
-  {"Time",   &ps_tot_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
-  {"UTime",  &ps_usr_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
-  {"STime",  &ps_sys_time_getter,    ps_emit_seconds,	ps_cmp_ints,	-8},
-  {"VSize",  &ps_vsize_getter,	     ps_emit_nice_int,	ps_cmp_ints,	-5},
-  {"RSize",  &ps_rsize_getter,	     ps_emit_nice_int,	ps_cmp_ints,	-5},
-  {"Pri",    &ps_cur_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
-  {"BPri",   &ps_base_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
-  {"MPri",   &ps_max_priority_getter,ps_emit_priority,	ps_cmp_ints,	-3},
-  {"%Mem",   &ps_rmem_frac_getter,   ps_emit_percent,	ps_cmp_floats,	-4},
-  {"%CPU",   &ps_cpu_frac_getter,    ps_emit_percent,	ps_cmp_floats,	-4},
-  {"State",  &ps_state_getter,	     ps_emit_state,	NULL,	4},
-  {"Sleep",  &ps_sleep_getter,	     ps_emit_int,	ps_cmp_ints,	-2},
-  {"Susp",   &ps_susp_count_getter,  ps_emit_int,	ps_cmp_ints,	-2},
-  {"PSusp",  &ps_proc_susp_count_getter, ps_emit_int,	ps_cmp_ints,	-2},
-  {"TSusp",  &ps_thread_susp_count_getter, ps_emit_int,	ps_cmp_ints,	-2},
-  {"TTY",    &ps_tty_getter,	     ps_emit_tty_name,	ps_cmp_strings,	 2},
-  {"PgFlts", &ps_page_faults_getter, ps_emit_int,	ps_cmp_ints,	-5},
-  {"COWFlts",&ps_cow_faults_getter,  ps_emit_int,	ps_cmp_ints,	-5},
-  {"PgIns",  &ps_pageins_getter,     ps_emit_int,	ps_cmp_ints,	-5},
-  {"MsgIn",  &ps_msgs_rcvd_getter,   ps_emit_int,	ps_cmp_ints,	-5},
-  {"MsgOut", &ps_msgs_sent_getter,   ps_emit_int,	ps_cmp_ints,	-5},
-  {"ZFills", &ps_zero_fills_getter,  ps_emit_int,	ps_cmp_ints,	-5},
+  {"PID",
+   &ps_pid_getter,	   ps_emit_int,	    ps_cmp_ints,   0,		   -5},
+  {"TH#",
+   &ps_thread_index_getter,ps_emit_int,	    ps_cmp_ints,   0,		   -2},
+  {"PPID",
+   &ps_ppid_getter,	   ps_emit_int,     ps_cmp_ints,   0,		   -5},
+  {"UID",
+   &ps_owner_getter,	   ps_emit_uid,	    ps_cmp_uids,   ps_nominal_user,-5},
+  {"User",
+   &ps_owner_getter,	   ps_emit_uname,   ps_cmp_unames, ps_nominal_user, 8},
+  {"NTh",
+   &ps_num_threads_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_nth, -2},
+  {"PGrp",
+   &ps_pgrp_getter,	   ps_emit_int,	    ps_cmp_ints,   0,		   -5},
+  {"Sess",
+   &ps_session_getter,     ps_emit_int,     ps_cmp_ints,   0,		   -5},
+  {"LColl",
+   &ps_login_col_getter,   ps_emit_int,     ps_cmp_ints,   0,		   -5},
+  {"Args",
+   &ps_args_getter,	   ps_emit_string0, ps_cmp_strings,0,		    0},
+  {"Arg0",
+   &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,0,	            0},
+  {"Time",
+   &ps_tot_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
+  {"UTime",
+   &ps_usr_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
+  {"STime",
+   &ps_sys_time_getter,    ps_emit_seconds, ps_cmp_ints,   0,		   -8},
+  {"VSize",
+   &ps_vsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0,		   -5},
+  {"RSize",
+   &ps_rsize_getter,	   ps_emit_nice_int,ps_cmp_ints,   0,		   -5},
+  {"Pri",
+   &ps_cur_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri, -3},
+  {"BPri",
+   &ps_base_priority_getter,ps_emit_priority,ps_cmp_ints,  ps_nominal_pri, -3},
+  {"MPri",
+   &ps_max_priority_getter,ps_emit_priority,ps_cmp_ints,   ps_nominal_pri, -3},
+  {"%Mem",
+   &ps_rmem_frac_getter,   ps_emit_percent, ps_cmp_floats, 0,		   -4},
+  {"%CPU",
+   &ps_cpu_frac_getter,    ps_emit_percent, ps_cmp_floats, 0,		   -4},
+  {"State",
+   &ps_state_getter,	   ps_emit_state,   0,   	   0,		    4},
+  {"Sleep",
+   &ps_sleep_getter,	   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-2},
+  {"Susp",
+   &ps_susp_count_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-2},
+  {"PSusp",
+   &ps_proc_susp_count_getter, ps_emit_int, ps_cmp_ints,   ps_nominal_zint,-2},
+  {"TSusp",
+   &ps_thread_susp_count_getter, ps_emit_int,ps_cmp_ints,  ps_nominal_zint,-2},
+  {"TTY",
+   &ps_tty_getter,	   ps_emit_tty_name,ps_cmp_strings,0,		    2},
+  {"PgFlts",
+   &ps_page_faults_getter, ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"COWFlts",
+   &ps_cow_faults_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"PgIns",
+   &ps_pageins_getter,     ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"MsgIn",
+   &ps_msgs_rcvd_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"MsgOut",
+   &ps_msgs_sent_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
+  {"ZFills",
+   &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint,-5},
   {0}
 };
