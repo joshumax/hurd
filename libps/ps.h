@@ -343,11 +343,11 @@ struct proc_stat
 #define PSTAT_STATE_P_WAIT	0x40000 /* w process waiting for a child */
 #define PSTAT_STATE_P_GETMSG	0x80000 /* g waiting for a msgport */
 
-#define PSTAT_STATE_P_ATTRS	(PSTAT_STATE_P_FG | PSTAT_P_SESSLDR \
-				 | PSTAT_P_LOGINLDR | PSTAT_P_FORKED \
-				 | PSTAT_P_NOMSG | PSTAT_STATE_P_NOPARENT \
-				 | PSTAT_STATE_P_ORPHAN | PSTAT_STATE_P_TRACE \
-				 | PSTAT_STATE_P_WAIT | PSTAT_STATE_P_GETMSG)
+#define PSTAT_STATE_P_ATTRS  (PSTAT_STATE_P_FG | PSTAT_STATE_P_SESSLDR \
+			      | PSTAT_STATE_P_LOGINLDR | PSTAT_STATE_P_FORKED \
+			      | PSTAT_STATE_P_NOMSG | PSTAT_STATE_P_NOPARENT \
+			      | PSTAT_STATE_P_ORPHAN | PSTAT_STATE_P_TRACE \
+			      | PSTAT_STATE_P_WAIT | PSTAT_STATE_P_GETMSG)
 
 /* Per-thread state; in a process, these represent the union of its threads. */
 
