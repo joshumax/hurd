@@ -441,12 +441,12 @@ linkup (ino_t ino, ino_t parent)
     {
       if (!searchdir (ROOTINO, lfname, &lfdir))
 	{
-	  warning (1, "FAILURE SEARCHING FOR %s", lfname);
+	  warning (1, "FAILURE SEARCHING FOR `%s'", lfname);
 	  return 0;
 	}
       if (lfdir == 0)
 	{
-	  problem (0, "NO %s DIRECTORY", lfname);
+	  problem (0, "NO `%s' DIRECTORY", lfname);
 	  if (preen || reply ("CREATE"))
 	    {
 	      lfdir = allocdir (ROOTINO, 0, lfmode);
@@ -465,7 +465,7 @@ linkup (ino_t ino, ino_t parent)
 	  else
 	    {
 	      pfail (0);
-	      warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
+	      warning (1, "SORRY, CANNOT CREATE `%s' DIRECTORY", lfname);
 	      return 0;
 	    }
 	}
@@ -476,7 +476,7 @@ linkup (ino_t ino, ino_t parent)
     {
       ino_t oldlfdir;
       
-      problem (1, "%s IS NOT A DIRECTORY", lfname);
+      problem (1, "`%s' IS NOT A DIRECTORY", lfname);
       if (! reply ("REALLOCATE"))
 	return 0;
       
@@ -485,12 +485,12 @@ linkup (ino_t ino, ino_t parent)
       lfdir = allocdir (ROOTINO, 0, lfmode);
       if (!lfdir)
 	{
-	  warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
+	  warning (1, "SORRY, CANNOT CREATE `%s' DIRECTORY", lfname);
 	  return 0;
 	}
       if (!changeino (ROOTINO, lfname, lfdir))
 	{
-	  warning (1, "SORRY, CANNOT CREATE %s DIRECTORY", lfname);
+	  warning (1, "SORRY, CANNOT CREATE `%s' DIRECTORY", lfname);
 	  return 0;
 	}
       
@@ -502,7 +502,7 @@ linkup (ino_t ino, ino_t parent)
   
   if (inodestate[lfdir] != DIRECTORY && inodestate[lfdir] != (DIRECTORY|DIR_REF))
     {
-      warning (1, "SORRY.  %s DIRECTORY NOT ALLOCATED", lfname);
+      warning (1, "SORRY.  `%s' DIRECTORY NOT ALLOCATED", lfname);
       return 0;
     }
 
@@ -519,13 +519,13 @@ linkup (ino_t ino, ino_t parent)
   if (search_failed)
     {
       free (tempname);
-      warning (1, "FAILURE SEARCHING FOR %s in %s", tempname, lfname);
+      warning (1, "FAILURE SEARCHING FOR `%s' IN `%s'", tempname, lfname);
       return 0;
     }
   if (!makeentry (lfdir, ino, tempname))
     {
       free (tempname);
-      warning (1, "SORRY, NO SPACE IN %s DIRECTORY", lfname);
+      warning (1, "SORRY, NO SPACE IN `%s' DIRECTORY", lfname);
       return 0;
     }
   free (tempname);
@@ -538,7 +538,7 @@ linkup (ino_t ino, ino_t parent)
 	{
 	  if (!changeino (ino, "..", lfdir))
 	    {
-	      warning (1, "CANNOT ADJUST .. LINK I=%u", ino);
+	      warning (1, "CANNOT ADJUST `..' LINK I=%u", ino);
 	      return 0;
 	    }
 	  /* Forget about link to old parent */
@@ -546,7 +546,7 @@ linkup (ino_t ino, ino_t parent)
 	}
       else if (!makeentry (ino, lfdir, ".."))
 	{
-	  warning (1, "CANNOT CREAT .. LINK I=%u", ino);
+	  warning (1, "CANNOT CREAT `..' LINK I=%u", ino);
 	  return 0;
 	}
       
