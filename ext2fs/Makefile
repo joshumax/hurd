@@ -18,9 +18,9 @@
 dir := ext2fs
 makemode := server
 
-SRCS = balloc.c bitmap.c dir.c ext2fs.c getblk.c hyper.c ialloc.c inode.c \
-       pager.c pokeloc.c truncate.c getopt.o error.o
-OBJS = $(SRCS:.c=.o) # exec_server_image.o
+SRCS = balloc.c bitmap.c devio.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
+       inode.c pager.c pokel.c truncate.c
+OBJS = $(SRCS:.c=.o) error.o exec_server_image.o
 LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h
 DIST_FILES = BROKEN
 REMHDRS = ../hurd/diskfs.h ../hurd/ports.h ../hurd/pager.h\
@@ -29,6 +29,7 @@ HURDLIBS = libdiskfs libports libpager libioserver libfshelp libthreads
 target = ext2fs
 
 CPPFLAGS += -I../lib
+CPPFLAGS += $(CPPFLAGS-$(notdir $<))
 vpath %.c ../lib
 
 include ../Makeconf
@@ -42,3 +43,5 @@ $(OBJS): $(REMHDRS)
 
 $(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
 	$(MAKE) -C $(@D) $(@F)
+
+CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
