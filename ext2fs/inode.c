@@ -295,7 +295,9 @@ read_disknode (struct node *np)
   return 0;
 }
 
-static void
+/* Writes everything from NP's inode to the disk image, and returns a pointer
+   to it, or NULL if nothing need be done.  */
+static struct ext2_inode *
 write_node (struct node *np)
 {
   error_t err;
@@ -314,7 +316,7 @@ write_node (struct node *np)
 
       err = diskfs_catch_exception ();
       if (err)
-	return;
+	return NULL;
   
       di->i_version = st->st_gen;
 
@@ -361,9 +363,12 @@ write_node (struct node *np)
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
-      record_global_poke (di);
+
+      return di;
     }
-}  
+  else
+    return NULL;
+}
 
 /* Write all active disknodes into the ext2_inode pager. */
 void
@@ -398,23 +403,39 @@ write_all_disknodes ()
   p = node_list;
   while (num_nodes-- > 0)
     {
+      struct ext2_inode *di;
+
       np = *p++;
       mutex_lock (&np->lock);
+
       diskfs_set_node_times (np);
-      write_node (np);
+
+      /* Sync the indirect blocks here; they'll all be done before any
+	 inodes.  Waiting for them shouldn't be too bad.  */
+      pokel_sync (&np->dn->indir_pokel, 1);
+
+      /* Update the inode image.  */
+      di = write_node (np);
+      if (di)
+	record_global_poke (di);
+
       diskfs_nput (np);
     }
 }
-	
+
+/* Sync the info in NP->dn_stat and any associated format-specific
+   information to disk.  If WAIT is true, then return only after the
+   physicial media has been completely updated.  */
 void
 diskfs_write_disknode (struct node *np, int wait)
 {
-  write_node (np);
-  pokel_sync (&np->dn->indir_pokel, wait);
+  struct ext2_inode *di = write_node (np);
+  if (di)
+    sync_global_ptr (di, wait);
 }
 
-/* Implement the diskfs_set_statfs callback from the diskfs library;
-   see <hurd/diskfs.h> for the interface description.  */
+/* Set *ST with appropriate values to reflect the current state of the
+   filesystem.  */
 error_t
 diskfs_set_statfs (struct fsys_statfsbuf *st)
 {
