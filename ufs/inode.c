@@ -179,7 +179,7 @@ read_disknode (struct node *np)
     return err;
 
   st->st_fstype = FSTYPE_UFS;
-  st->st_fsid = 0;		/* XXX should fill this */
+  st->st_fsid = getpid ();
   st->st_ino = np->dn->number;
   st->st_gen = di->di_gen;
   st->st_rdev = di->di_rdev;
@@ -392,7 +392,7 @@ diskfs_set_statfs (struct fsys_statfsbuf *st)
 			- (sblock->fs_dsize - st->fsys_stb_bfree));
   st->fsys_stb_files = sblock->fs_ncg * sblock->fs_ipg - 2; /* not 0 or 1 */
   st->fsys_stb_ffree = sblock->fs_cstotal.cs_nifree;
-  st->fsys_stb_fsid = 0;
+  st->fsys_stb_fsid = getpid ();
   return 0;
 }
 
