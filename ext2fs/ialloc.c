@@ -63,7 +63,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   spin_lock (&global_lock);
 
-  if (inum < EXT2_FIRST_INO || inum > sblock->s_inodes_count)
+  if (inum < EXT2_FIRST_INO (sblock) || inum > sblock->s_inodes_count)
     {
       ext2_error ("reserved inode or nonexistent inode: %u", inum);
       spin_unlock (&global_lock);
@@ -236,7 +236,7 @@ repeat:
     }
 
   inum += i * sblock->s_inodes_per_group + 1;
-  if (inum < EXT2_FIRST_INO || inum > sblock->s_inodes_count)
+  if (inum < EXT2_FIRST_INO (sblock) || inum > sblock->s_inodes_count)
     {
       ext2_error ("reserved inode or inode > inodes count - "
 		  "block_group = %d,inode=%d", i, inum);
