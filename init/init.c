@@ -34,9 +34,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdlib.h>
 #include <hurd/msg.h>
 #include <hurd/term.h>
+#include <hurd/fshelp.h>
 #include <paths.h>
 #include <sys/wait.h>
 #include <hurd/msg_server.h>
+#include <wire.h>
 
 #include "startup_reply_U.h"
 #include "startup_S.h"
@@ -635,19 +637,41 @@ launch_single_user ()
     }
 
   if (term == MACH_PORT_NULL || err || st.st_fstype != FSTYPE_TERM)
+    /* Start the terminal server ourselves. */
     {
-      /* Start the terminal server ourselves. */
-      termname = terminal + strlen (terminal) + 1; /* first arg is name */
-      unlink (termname);
-      term = file_name_lookup (termname, O_CREAT|O_NOTRANS|O_EXCL, 0666);
-      if (term == MACH_PORT_NULL)
+      mach_port_t control;	/* Control port for term translator.  */
+      error_t open_node (int flags,
+			 mach_port_t *underlying,
+			 mach_msg_type_name_t *underlying_type)
 	{
-	  perror (termname);
+	  term = file_name_lookup (termname, flags | O_CREAT|O_NOTRANS, 0666);
+	  if (term == MACH_PORT_NULL)
+	    {
+	      perror (termname);
+	      return errno;
+	    }
+
+	  *underlying = term;
+	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
+
+	  return 0;
+	}
+
+      termname = terminal + strlen (terminal) + 1; /* first arg is name */
+
+      /* The callback to start_translator opens TERM as a side effect.  */
+      errno =
+	fshelp_start_translator (open_node,
+				 terminal, terminal, sizeof terminal, 3000,
+				 &control);
+      if (errno)
+	{
+	  perror (terminal);
 	  goto fail;
 	}
-      errno = file_set_translator (term, FS_TRANS_SET, 0, 0,
-				   terminal, sizeof terminal,
-				   MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
+
+      errno = file_set_translator (term, 0, FS_TRANS_SET, 0, 0, 0,
+				   control, MACH_MSG_TYPE_MOVE_SEND);
       if (errno)
 	{
 	  perror (termname);
