@@ -1,3 +1,7 @@
+1998-07-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* swapon.c (main): Fix return type to int, and use return.
+
 1997-10-28  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh (mkdev): Support 256 ptys.
@@ -86,7 +90,7 @@ Tue Sep 24 14:46:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh: Fix argument parsing.
 	(zero): Use `storeio -Tzero' instead of `null -z'.
-	
+
 Thu Sep 19 17:48:59 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fstab.c (fs_remount): Use fsys_update instead of fsys_remount.
@@ -119,7 +123,7 @@ Sun Sep  8 13:57:34 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* MAKEDEV.sh: New file.
 	* Makefile (DIST_FILES): New variable.
-	(install): Depend on $(prefix)/dev/MAKEDEV.	
+	(install): Depend on $(prefix)/dev/MAKEDEV.
 	(all): Depend on MAKEDEV.
 	($(prefix)/dev/MAKEDEV): New rule.
 
@@ -129,7 +133,7 @@ Thu Sep  5 11:40:00 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	from .sh files.
 
 	* fsck.c: Include <version.h>.
- 	(argp_program_version): Define with STANDARD_HURD_VERSION. 
+ 	(argp_program_version): Define with STANDARD_HURD_VERSION.
 	* halt.c: Likewise.
 	* reboot.c: Likewise.
 
@@ -209,7 +213,7 @@ Wed Jun 19 10:44:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* clookup.c: New file.
 	* fsck.c (_debug): New variable.
 	(debug, fs_debug): New macros.
-	(fs_start_fsck, fscks_start_fsck, fsck_cleanup, fscks_wait, fsck, main): 
+	(fs_start_fsck, fscks_start_fsck, fsck_cleanup, fscks_wait, fsck, main):
 	Add debugging noise.
 	(main): Use FSTAB_PATH instead of _PATH_MNTTAB.
 	(args_doc): Fix.
@@ -217,4 +221,3 @@ Wed Jun 19 10:44:16 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Tue Jun 18 22:56:11 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* fsck.c (options): Rename `--max-parallel' to `--parallel'.
-

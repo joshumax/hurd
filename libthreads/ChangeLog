@@ -1,3 +1,10 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* i386/csw.S (cproc_prepare): Take address of cthread_body as third
+	arg, so we don't have to deal with PIC magic to find its address
+	without producing a text reloc.
+	* cprocs.c (cproc_create): Pass &cthread_body to cproc_prepare.
+
 Tue Jun  9 13:50:09 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* cthreads.c (cthread_fork_prepare): Don't call
@@ -15,7 +22,7 @@ Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Fri Aug  8 13:21:17 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (SRCS): Delete malloc.c; libc now has a thread safe
-	malloc. 
+	malloc.
 	(malloc.c): Delete file.
 
 Mon Jun  9 21:18:46 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
@@ -54,7 +61,7 @@ Wed Sep  4 09:06:09 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (VPATH): Look in $(asm_syntax) instead of old
 	$(machine); Hurd configure now folds equivalent CPU types into
-	asm_syntax. 
+	asm_syntax.
 
 Thu Aug 29 12:50:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -64,7 +71,7 @@ Thu Aug 29 12:50:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 Sat Jul 20 15:47:24 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (lndist-i386-files): Look for I386SRCS and I386HDRS in
-	$(srcdir). 
+	$(srcdir).
 
 Thu Jun  6 07:29:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -74,7 +81,7 @@ Thu Jun  6 07:29:31 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 Thu May  9 11:13:42 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (installhdrs, installhdrsubdir): Install headers using
-	the generic technique, now that installhdrsubdir is available. 
+	the generic technique, now that installhdrsubdir is available.
 
 	* rwlock.h: If _RWLOCK_DEFINE_FUNCTIONS is defined, then clear
  	_EXTERN_INLINE, but *after* header files have been included.

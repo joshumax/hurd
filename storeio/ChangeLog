@@ -1,10 +1,14 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* storeio.c (main): Fix return type to int, and use return.
+
 Wed Aug 20 14:07:05 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* pager.c (dev_get_memory_object): Deal with errors from
 	pager_create properly.
-	
+
 	* pager.c (service_paging_requests): New args for
-	ports_manage_port_operations_multithread. 
+	ports_manage_port_operations_multithread.
 	* storeio.c (main): Likewise.
 
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -118,4 +122,3 @@ Tue Sep 10 17:13:55 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	DEV's buffer with valloc; other things depend on it being vm_allocated.
 
 	* io.c (trivfs_S_file_get_storage_info): Use store_return.
-

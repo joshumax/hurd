@@ -1,3 +1,16 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* ps.c (main): Fix return type to int, and use return.
+	* ids.c (main): Likewise.
+	* w.c (main): Likewise.
+	* login.c (main): Likewise.
+	* settrans.c (main): Likewise.
+	* showtrans.c (main): Likewise.
+	* fsysopts.c (main): Likewise.
+	* storeinfo.c (main): Likewise.
+
+	* w.c (main): Avoid warning from `while (a = b)'.
+
 Wed Apr 22 16:38:59 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 
 	* ping.c (MAXHOSTNAMELEN): Don't define.
@@ -9,7 +22,7 @@ Wed Apr 22 16:29:18 1998  Thomas Bushnell, n/BSG  <tb@mit.edu>
 	* ping.c: New file.  Originally P.D. from US Army; then modified
 	by BSD, then added to Linux.  Taken from Linux ping and adapted
 	for Hurd and submitted for inclusion by Kunihiro Ishiguro
-	(kunihiro@zebra.org). 
+	(kunihiro@zebra.org).
 	* Makefile (targets): Add `ping'.
 	(SRCS): Add `ping.c'.
 	(ping-CPPFLAGS): New variable, to find <linux/icmp.h> in the
@@ -129,13 +142,13 @@ Mon May 26 02:21:19 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
 Tue May 20 14:38:22 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist): 
+	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist):
 	Change void * HOOK parameters to struct argp_state *STATE.
 	* parse.h (parse_enum, parse_numlist, parse_strlist): Likewise.
 
 Mon May 19 23:04:54 1997  Miles Bader  <miles@gnu.ai.mit.edu>
 
-	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist): 
+	* parse.c (parse_enum, parse_numlist, parse_strlist, _parse_strlist):
 	Add HOOK argument, and pass it to callback functions.
 	* parse.h (parse_enum, parse_numlist, parse_strlist): Likewise.
 
@@ -257,7 +270,7 @@ Thu Oct 10 13:53:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	* psout.c (psout): Add TOP parameter.
 	* psout.h (psout): Add TOP parameter.
 	* w.c (main): Supply new TOP arg to psout.
-	
+
 Wed Oct  9 14:24:54 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* w.c (w_fetch): Use tty st_atime for idle time.
@@ -294,7 +307,7 @@ Thu Oct  3 16:08:21 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	(main): Calculate verbose output widths differently.
 	(main: FWIDTH): New macro.
 	(VAL_MAX_MEM, VAL_MAX_SWAP, K, M, G): New macros.
-	
+
 Wed Oct  2 10:24:04 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* vmstat.c (struct field): Remove desc field, add doc field.
@@ -417,7 +430,7 @@ Wed Jul 31 14:24:05 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* login.c (main/verify_passwd): Declare crypt weak in a portable
 	way.
 	* su.c (check_password): Likewise.
-	
+
 Tue Jul 30 14:49:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* login.c (main/verify_passwd): If government is broken, don't use
@@ -425,7 +438,7 @@ Tue Jul 30 14:49:48 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* su.c (check_password): Likewise.
 
 	* login.c (main/verify_passwd): Provide correct prototype for
-	crypt. 
+	crypt.
 	* su.c (check_password): Likewise.
 
 Mon Jul 29 03:22:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -481,7 +494,7 @@ Sat Jul 20 15:54:10 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (DIST_FILES): Deleted var (which was `shd.ChangeLog').
 	(shd.ChangeLog): Deleted file.
-	
+
 Fri Jul 19 21:09:57 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* settrans.c (options): Rearrange slightly.
@@ -567,7 +580,7 @@ Thu Jun 20 14:41:25 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(targets): Remove `getty'.
 	(SRCS): Remove getty.c.
 	* getty.c: Removed file to daemons directory.
-	
+
 Wed Jun 19 14:11:14 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* login.c (hurd_file_name_path_lookup): Declaration removed.
@@ -609,7 +622,7 @@ Tue May 28 17:48:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	Print newline before message.
 	(check_owned): Return OWNED, not NOTOWNED.
 
-	* ps.c (fmts): Use %sz for vmem format, not %size. 
+	* ps.c (fmts): Use %sz for vmem format, not %size.
 	(spec_abbrevs): Still use `NTH' for field name, just `TH' for title.
 	(fmts): Use %nth.
 
@@ -1542,4 +1555,3 @@ Mon Aug 22 12:18:09 1994  Roland McGrath  <roland@churchy.gnu.ai.mit.edu>
 Fri Jul 22 12:26:27 1994  Michael I Bushnell  <mib@geech.gnu.ai.mit.edu>
 
 	* Makefile: Rewritten to use new scheme.
-

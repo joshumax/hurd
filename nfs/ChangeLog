@@ -1,7 +1,14 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* mount.c (mount_root): Make perror explanation strings consistent.
+
+	* mount.c (pmap_initialize_rpc): Make static.
+	(mount_initialize_rpc): Likewise.
+
 Wed Aug 20 14:31:03 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_link): Implement EXCL == 0 case.
-	(netfs_attempt_rename): Implement EXCL != 0 case. 
+	(netfs_attempt_rename): Implement EXCL != 0 case.
 
 	* pager.c (netfs_get_filemap): If pager_create fails, return
 	error to caller.
@@ -40,7 +47,7 @@ Tue Jul 29 15:38:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* name-cache.c (check_lookup_cache): Use name_cache_neg_timeout in
 	preference to name_cache_timeout for negative hits.
-	
+
 	* nfs.h (name_cache_neg_timeout): New variable.
 	* main.c (DEFAULT_NAME_CACHE_NEG_TIMEOUT): New macro.
 	(name_cache_neg_timeout): Initialize new variable.
@@ -60,7 +67,7 @@ Tue Jul 29 15:38:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* ops.c (netfs_attempt_lookup): Cash all lookups, both positive
 	and negative.
 	(netfs_attempt_mkdir): Purge cache before creating directory
-	entry. 
+	entry.
 	(netfs_attempt_link): Likewise.
 	(netfs_attempt_create_file): Likewise.
 
@@ -90,7 +97,7 @@ Thu Jul 24 13:15:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	take a length arg.  Return void.  All callers changed to use new
 	function xdr_decode_fhandle.
 	* nfs.c (xdr_decode_fhandle): New function.
-	* nfs.h (xdr_decode_fhandle): New prototype.  
+	* nfs.h (xdr_decode_fhandle): New prototype.
 	(lookup_fhandle): Update prototype.
 
 1997-07-23  Miles Bader  <miles@gnu.ai.mit.edu>
@@ -180,7 +187,7 @@ Thu Oct 24 23:01:35 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	(main): Rename ARGP_PARENTS to ARGP_CHILDREN, and change the
  	element type to `struct argp_child'; change the reference in ARGP
  	accordingly.
-	
+
 Fri Oct  4 00:00:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mount.c: Add hacks to avoid idiotic sun definitions of TRUE,
@@ -191,7 +198,7 @@ Thu Oct  3 12:04:36 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* ops.c (netfs_attempt_write): If we get EINTR after having
 	already written something, return a short count.
-	
+
 	* ops.c (netfs_attempt_create_file): If verify_nonexistent returns
 	an error, bother to properly unlock NP before returning.
 
@@ -212,7 +219,7 @@ Wed Sep 18 13:03:22 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 	Add remote filesystem spec to output.
 	(hold): Variable removed.
 	(main): Don't use HOLD anymore.
-	
+
 Thu Sep 12 16:46:47 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (HURDLIBS): New variable.
@@ -238,7 +245,7 @@ Thu Aug 29 10:41:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* nfs.c (hurd_mode_to_nfs_type): New function.
 	* nfs.h (hurd_mode_to_nfs_type): New decl.
 	* ops.c (netfs_attempt_rmdir): process_wcc_stat for NP, not DIR.
-	(netfs_attempt_link): Spell netfs_validate_stat correctly. 
+	(netfs_attempt_link): Spell netfs_validate_stat correctly.
 	(minor, major): New macros.
 	(netfs_report_access): Don't try and return an error.
 
@@ -247,7 +254,7 @@ Thu Aug 29 10:41:27 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* Makefile (RPCSVC_FILES): New variable.
 	(lndist): Depend on lndist-rpcsvc-files.
 	(lndist-rpcsvc-files, $(top_srcdir)/hurd-snap/$(dir)/rpcsvc): New
-	targets. 
+	targets.
 
 Fri Aug 16 11:56:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -268,10 +275,10 @@ Fri Aug 16 11:56:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	appropriate.
 	(netfs_attempt_read): Pack and unpack v3 READ structure in
 	appropriate.  Use process_returned_stat instead of
-	register_fresh_stat. 
+	register_fresh_stat.
 	(netfs_attempt_write): Pack and unpack v3 WRITE structure in
 	appropriate.  Use process_wcc_stat instead of
-	register_fresh_stat. 
+	register_fresh_stat.
 	(netfs_attempt_create_file): Pack and unpack v3 CREATE structure
 	if appropriate.  Use process_returned_stat instead of
 	register_fresh_stat.
@@ -287,7 +294,7 @@ Fri Aug 16 11:56:53 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	ACCESS3_EXTEND, ACCESS3_DELETE, ACCESS3_EXECUTE): New macros.
 
 	* ops.c (netfs_attempt_chown): Bother to read NFS error/success
-	value. 
+	value.
 
 Thu Aug 15 15:24:29 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -307,18 +314,18 @@ Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	(lookup_fhandle): Changed to be more like xdr_decode_* functions.
 	All callers changed.  Do the right thing for v3.
 	(recache_handle): Likewise.
-	* nfs.h (struct fhandle): New type.  
-	(struct netnode): Member `handle' is now a `struct fhandle'.  
+	* nfs.h (struct fhandle): New type.
+	(struct netnode): Member `handle' is now a `struct fhandle'.
 	(xdr_encode_fhandle): Second arg now a `struct fhandle *'.
 	(lookup_fhandle, recache_handle): Changed to be more like
-	xdr_decode_* functions. 
+	xdr_decode_* functions.
 
 	* rpcsvc/nfs_prot.h (enum sattr_time_how): New type.
 	* nfs.c (xdr_encode_64bit): New function.
 	(xdr_encode_sattr_mode, xdr_encode_sattr_ids,
 	xdr_encode_sattr_size, xdr_encode_sattr_times,
 	xdr_encode_create_state, xdr_encode_sattr_stat): Encode v3 sattr
-	if appropriate. 
+	if appropriate.
 	(xdr_decode_fattr): Decode v3 fattr if appropriate.
 
 	* rpcsvc/nfs_prot.h (NFS_FHSIZE): Deleted macro.
@@ -332,7 +339,7 @@ Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	NFSPROC_RENAME, NFSPROC_LINK, NFSPROC_SYMLINK, NFSPROC_MKDIR,
 	NFSPROC_RMDIR, NFSPROC_READDIR): Replace with new
 	macros that take a version arg.  All users changed to use new
-	version arg. 
+	version arg.
 	(NFS_PROTOCOL_FUNC): New macro.
 	(NFS2PROC_NULL, NFS2PROC_GETATTR, NFS2PROC_SETATTR, NFS2PROC_ROOT,
 	NFS2PROC_LOOKUP, NFS2PROC_READLINK, NFS2PROC_READ,
@@ -347,7 +354,7 @@ Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	NFS3PROC_READDIRPLUS, NFS3PROC_FSSTAT, NFS3PROC_FSINFO,
 	NFS3PROC_PATHCONF, NFS3PROC_COMMIT): New macros.  All callers
 	appropriately changed.
-	
+
 	* nfs.c (nfs_error_trans): NFS_SERVERFAULT maps to EIO;
 	NFSERR_BADTYPE maps to EOPNOTSUPP.
 
@@ -377,7 +384,7 @@ Wed Aug 14 12:33:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	nfsproc_remove_2, nfsproc_rename_2, nfsproc_link_2,
 	nfsproc_symlink_2, nfsproc_mkdir_2, nfsproc_rmdir_2,
 	nfsproc_readdir_2, nfsproc_statfs_2): Delete unused function
-	declarations. 
+	declarations.
 
 Tue Aug 13 14:57:03 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -478,7 +485,7 @@ Thu Apr 11 13:51:33 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* ops.c (guess_mode_use): New function.
 	(netfs_check_open_permissions, netfs_report_access): Replace old
 	clever versions with less obtrusive one.
-	
+
 Tue Apr  2 09:12:28 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* ops.c (netfs_report_access):  Bother to initialize LEN.
@@ -507,7 +514,7 @@ Tue Mar 19 11:00:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	* nfs.c: Likewise.
 	* ops.c: Likewise.
 	* rpc.c: Likewise.
-	
+
 	* rpc.c (rpc_receive_thread): Allocate receive buffer big enough
 	for largest read we expect.
 
@@ -518,7 +525,7 @@ Tue Mar 19 11:00:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	to argp_error.
 
 	* cache.c (lookup_fhandle): Initialize NN->dead_dir and
-	NN->dead_name. 
+	NN->dead_name.
 
 	* ops.c: Include <unistd.h>.
 	(register_fresh_stat): Repair syntax.
@@ -540,7 +547,7 @@ Mon Mar 18 11:19:27 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* nfs.c (xdr_encode_create_state): Call hurd_mode_to_nfs_mode and
  	htonl on MODE.
-	
+
 	* nfs.c (xdr_encode_sattr_stat): New function.
 
 Thu Mar 14 15:11:41 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
@@ -551,14 +558,14 @@ Thu Mar 14 15:11:41 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 	(recache_handle): New function.
 	* ops.c (netfs_attempt_mkfile): Make dtrans possible if it
 	isn't already.
-	(netfs_attempt_unlink): Likewise, when doing the rename hack. 
+	(netfs_attempt_unlink): Likewise, when doing the rename hack.
 	(netfs_attempt_mksymlink): Implement using dtrans and transarg.
 	(netfs_attempt_mkdev): Likewise.
 	(register_fresh_stat): If NP->nn->dtrans is set, then mutate the
 	mode here.
 	(netfs_attempt_readlink): If NP->nn->dtrans is SYMLINK, then DTRT.
 	(netfs_attempt_link): Only issue NFSPROC_LINK if dtrans is not
-	operative.  Otherwise, DTRT. 
+	operative.  Otherwise, DTRT.
 	(netfs_attempt_chmod): Implement type-changing using dtrans.
 
 Tue Mar 12 15:23:32 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
@@ -577,4 +584,3 @@ Wed Feb 28 19:24:23 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (options): New variable.
 	(main): Parse our arguments.
-

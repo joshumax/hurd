@@ -1,7 +1,13 @@
+1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* users.c: Include <hurd/fshelp.h> for fshelp_isowner decl.
+
+	* term.h (clear_queue): Change return type to void.
+
 Wed Aug 20 14:07:35 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c (main): New args for
-	ports_manage_port_operations_multithread.  
+	ports_manage_port_operations_multithread.
 
 Mon Jun  9 12:19:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -50,16 +56,16 @@ Fri Nov 15 17:37:12 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	(trivfs_check_open_hook): Likewise.
 	* ptyio.c (pty_open_hook): Likewise.
 	* term.h (pty_open_hook): Likewise.
-	
+
 	* users.c (S_termctty_open_terminal): New syntax of trivfs_open.
-	
+
 	* users.c (trivfs_S_file_chown): Rewrite using idvecs.
 	(trivfs_S_file_chmod): Likewise.
 
 Thu Oct 24 14:44:57 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
-	* users.c (open_hook): Always assert DTR (even if O_NONBLOCK).  
-	Don't return any errors if O_NONBLOCK and we don't have carrier. 
+	* users.c (open_hook): Always assert DTR (even if O_NONBLOCK).
+	Don't return any errors if O_NONBLOCK and we don't have carrier.
 
 Tue Oct  8 22:46:09 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
@@ -103,7 +109,7 @@ Thu Aug 29 17:26:37 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 	* devio.c (device_open_reply): After error from ports_create_port,
 	unlock global_lock before returning.
 	* users.c (trivfs_S_io_readable): Likewise before returning
-	EBADF. 
+	EBADF.
 
 Thu Aug 15 16:07:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
@@ -535,5 +541,3 @@ Fri Sep  1 09:51:11 1995  Michael I. Bushnell, p/BSG  <mib@duality.gnu.ai.mit.ed
 	* users.c (trivfs_S_io_write): Use write_character instead of
 	output_character.
 	* main.c (main): Don't initialize output_psize.
-
-
