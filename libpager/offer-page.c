@@ -28,6 +28,12 @@ pager_offer_page (struct pager *p,
 		  vm_offset_t offset,
 		  vm_address_t buf)
 {
+  /* The caller expects this to get written back, but if the page is 
+     currently resident then our request will get ignored, so flush it
+     first */
+  if (precious)
+    pager_flush_some (p, offset, vm_page_size, 1);
+
   memory_object_data_supply (p->memobjcntl, offset, buf, vm_page_size, 0,
 			     writelock ? VM_PROT_WRITE : VM_PROT_NONE, 
 			     precious, MACH_PORT_NULL);
