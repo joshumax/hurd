@@ -644,7 +644,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		}
 	      diskfs_end_catch_exception ();
 
-	      if (err)
+	      if (! err)
 		/* Reflect how much we allocated successfully.  */
 		new_size = (end_block - 1) << log2_block_size;
 	      else
