@@ -1,3 +1,8 @@
+2002-03-10  Roland McGrath  <roland@frob.com>
+
+	* dev.c (dev_read): Return success with *LEN = 0 when reading
+	exactly at the end of the store.
+
 2001-12-28  Roland McGrath  <roland@frob.com>
 
 	* dev.h (struct dev): New member `no_fileio' (flag).
