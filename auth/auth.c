@@ -137,7 +137,7 @@ S_auth_makeauth (struct authhandle *auth,
     if (!(auths[i + 1] = auth_port_to_handle (authpts[i])))
       return EINVAL;
 
-  nauths = i;
+  ++nauths;
 
   /* Verify that the union of the handles passed in either contains euid 0
      (root), or contains all the requested ids.  */
@@ -494,6 +494,12 @@ main (int argc, char **argv)
 			  hostpriv);
   mach_port_deallocate (mach_task_self (), boot);
   mach_port_deallocate (mach_task_self (), hostpriv);
+
+  /* Allocate the hash tables.  */
+  err = ihash_create (&pending_users);
+  assert_perror (err);
+  err = ihash_create (&pending_servers);
+  assert_perror (err);
 
   /* Be a server.  */
   while (1)
