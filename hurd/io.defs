@@ -44,7 +44,7 @@ routine io_write (
 	RPT
 	data: data_t;
 	offset: off_t;
-	out amount: int);
+	out amount: mach_msg_type_number_t);
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
@@ -54,7 +54,7 @@ routine io_read (
 	RPT
 	out data: data_t, dealloc;
 	offset: off_t;
-	amount: int);
+	amount: mach_msg_type_number_t);
 
 /* Change current read/write offset */
 routine io_seek (
@@ -70,7 +70,7 @@ routine io_seek (
 routine io_readable (
 	io_object: io_t;
 	RPT
-	out amount: int);
+	out amount: mach_msg_type_number_t);
 
 /* These four routines modify the O_APPEND, O_ASYNC, O_FSYNC, and
    O_NONBLOCK bits for the IO object. In addition, io_get_openmodes
