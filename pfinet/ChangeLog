@@ -1,3 +1,8 @@
+2002-06-15  Roland McGrath  <roland@frob.com>
+
+	* socket-ops.c (S_socket_getopt): Use a local int for result param of
+	getsockopt hook function.
+
 2002-06-13  Roland McGrath  <roland@frob.com>
 
 	* tunnel.c (trivfs_S_io_read): off_t -> loff_t

@@ -1,3 +1,8 @@
+2002-06-15  Roland McGrath  <roland@frob.com>
+
+	* setup.c (page_write_file_direct): Use proper type for result param
+	of device_write.
+
 2002-03-23  Roland McGrath  <roland@frob.com>
 
 	* setup.c (default_pager_paging_storage): Fail if receiver port is not
