@@ -1,3 +1,9 @@
+1999-06-02  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* boot-start.c (diskfs_start_bootstrap): Pass environment collected
+	from `environ' on to init.  The kernel can send more parameters
+	through this way without us knowing about them specifically.
+
 1999-05-19  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* console.c (diskfs_console_stdio): If there is an fd 2 that appears
