@@ -1,6 +1,6 @@
 /* Common definitions for the ext2 filesystem translator
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -46,7 +46,7 @@ typedef u32 block_t;
 
 /* ---------------------------------------------------------------- */
 
-struct poke 
+struct poke
 {
   vm_offset_t offset;
   vm_size_t length;
@@ -134,7 +134,7 @@ void *memscan(void *buf, unsigned char ch, unsigned len);
 /* ---------------------------------------------------------------- */
 
 /* ext2fs specific per-file data.  */
-struct disknode 
+struct disknode
 {
   /* The inode number of this file.  */
   ino_t number;
@@ -167,11 +167,11 @@ struct disknode
      consistent on-disk state, but delaying it can improveme allocation, and
      it's an inconsistency easily fixed by fsck.  */
   int last_block_allocated;
-};  
+};
 
-struct user_pager_info 
+struct user_pager_info
 {
-  enum pager_type 
+  enum pager_type
     {
       DISK,
       FILE_DATA,
@@ -183,12 +183,7 @@ struct user_pager_info
 /* ---------------------------------------------------------------- */
 /* pager.c */
 
-struct pager *disk_pager;
-mach_port_t disk_pager_port;
-void *disk_image;
-
-/* Create the global disk pager.  */
-void create_disk_pager ();
+#include <hurd/diskfs-pager.h>
 
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
