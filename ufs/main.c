@@ -29,18 +29,18 @@ static char **save_argv;
 
 /* Parse the arguments for ufs when started as a translator. */
 char *
-trans_parse_args (int argc, char **arg)
+trans_parse_args (int argc, char **argv)
 {
-  #ifdef notyet
-  /* Option to set compat_mode should be provided here. */
-
+  char *devname;
   /* When started as a translator, we are called with
      the device name and an optional argument -r, which
      signifies read-only. */
   if (argc < 2 || argc > 3)
-    usage_trans ();
+    exit (1);
+
   if (argc == 2)
     devname = argv[1];
+
   else if (argc == 3)
     {
       if (argv[1][0] == '-' && argv[1][1] == 'r')
@@ -54,28 +54,10 @@ trans_parse_args (int argc, char **arg)
 	  devname = argv[1];
 	}
       else
-	usage_trans ();
+	exit (1);
     }
-  
-  get_privileged_ports (&host_priv_port, &master_device_port);
-  if (!master_device_port)
-    {
-      fprintf (stderr, "%s: Cannot get master device port\n",
-	       argv[0]);
-      exit (1);
-    }
-  /* We only need the host port if we are a bootstrap filesystem. */
-  if (host_priv_port)
-    mach_port_deallocate (mach_task_self (), host_priv_port);
 
-  mach_port_insert_right (mach_task_self (), ufs_control_port,
-			  ufs_control_port, MACH_MSG_TYPE_MAKE_SEND);
-  fsys_startup (bootstrap, ufs_control_port, &ufs_realnode);
-  mach_port_deallocate (mach_task_self (), ufs_control_port);
-#else
-  task_terminate (mach_task_self ());
-  for (;;);
-#endif
+  return devname;
 }
 
 struct node *diskfs_root_node;
