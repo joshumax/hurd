@@ -16,47 +16,27 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 dir := libpager
-
-include ../Makeconf
+makemode := library
 
 COBJS = data-request.o data-return.o data-unlock.o pager-port.o \
 	inhibit-term.o lock-completed.o lock-object.o mark-error.o \
 	 no-senders.o object-init.o object-terminate.o pagemap.o \
 	 pager-create.o pager-flush.o pager-shutdown.o pager-sync.o \
 	 reference.o stubs.o seqnos.o demuxer.o chg-compl.o pager-attr.o
-
 OBJS = $(COBJS) memory_objectServer.o
-
 SRCS = $(subst .o,.c,$(COBJS))
-TAGSHDRS = pager.h priv.h
+LCLHDRS = pager.h priv.h
+REMHDRS = ../hurd/ports.h
+libname = libpager
+installhdrs = pager.h
 
-DIST_FILES = $(SRCS) Makefile pager.h priv.h ChangeLog
+MIGSFLAGS = -DSEQNOS
+MIGCOMSFLAGS = -prefix _pager_
 
-all: libpager.a
+include ../Makeconf
 
-libpager.a: $(OBJS)
-	rm -f libpager.a
-	$(AR) r $@ $^
+$(OBJS): pager.h priv.h ../hurd/ports.h
+data-request.o data-return.o data-unlock.o lock-completed.o: memory_object_S.h
+demuxer.o stubs.o object-init.o object-terminate.o: memory_object_S.h
 
-$(hurdinst)/lib/libpager.a: libpager.a
-	cp libpager.a $@
-	$(RANLIB) $@
 
-$(includedir)/hurd/pager.h: pager.h
-	cp pager.h $@
-
-install: $(hurdinst)/lib/libpager.a $(includedir)/hurd/pager.h
-
-$(OBJS): pager.h priv.h $(includedir)/hurd/ports.h
-
-data-request.o data-return.o data-unlock.o lock-completed.o: memory_object.h
-stubs.o object-init.o object-terminate.o: memory_object.h
-
-clean:
-	rm -f libpager.a *.o memory_object.h memory_objectServer.c
-
-# MiG gook
-memory_object.h memory_objectServer.c:
-	$(CPP) $(CPPFLAGS) -DSEQNOS $(includedir)/mach/memory_object.defs \
-	| $(MIGCOM) -prefix _pager_ -sheader memory_object.h \
-		-header /dev/null -user /dev/null

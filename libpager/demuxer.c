@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "memory_object.h"
+#include "memory_object_S.h"
 
 /* Demultiplex a single message directed at a pager port; INP is the
    message received; fille OUTP with the reply.  */
