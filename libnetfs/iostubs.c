@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -24,6 +24,14 @@
 
 error_t
 netfs_S_io_map (struct protid *user, 
+		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
+		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+netfs_S_io_map_segment (struct protid *user, int index,
 		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
 		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
 {
@@ -87,3 +95,4 @@ netfs_S_io_sigio (struct protid *user)
 {
   return EOPNOTSUPP;
 }
+
