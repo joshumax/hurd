@@ -1,3 +1,23 @@
+2001-03-31  Neal H Walfield  <neal@cs.uml.edu>
+
+        * fsys-goaway.c (netfs_S_fsys_goaway): Actually implement it.
+        * shutdown.c (netfs_shutdown): Likewise.
+
+        * Makefile (fsys-MIGSFLAGS): Add -DREPLY_PORTS, which we want for
+	netfs_S_fsys_goaway.
+        * fsys-get-options.c (netfs_S_fsys_getoptions): Add reply port
+	arguments to declaration.
+        * fsys-getroot.c (netfs_S_fsys_getroot): Likewise.
+        * fsys-goaway.c (netfs_S_fsys_goaway): Likewise.
+        * fsys-set-options.c (netfs_S_fsys_set_options): Likewise.
+        * fsys-syncfs.c (netfs_S_fsys_syncfs): Likewise.
+        * fsysstubs.c (netfs_S_fsys_getfile): Likewise.
+        (netfs_S_fsys_getpriv): Likewise.
+        (netfs_S_fsys_forward): Likewise.
+        (netfs_S_fsys_startup): Likewise.
+
+        * Makefile (MIGSTUBS): Add fsys_replyUser.o.
+
 2001-01-15  Neal H Walfield   <neal@cs.uml.edu>
 
 	* netfs.h: Added netfs_get_storage_info.

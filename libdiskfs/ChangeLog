@@ -1,5 +1,7 @@
 2001-03-28 Neal H Walfield  <neal@cs.uml.edu>
 
+	* protid-rele.c: Doc typo fix.
+
         * shutdown.c: Move initialization of diskfs_fsys_lock from here ...
         * init-init.c: ... to here with the rest of the initialization
         code.
