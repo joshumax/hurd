@@ -17,7 +17,6 @@
 
 
 #include "ufs.h"
-#include "fs.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <device/device.h>
