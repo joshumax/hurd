@@ -36,10 +36,10 @@ AUTH_IMPORTS
 /* Given an authentication handle, return the identification. */
 routine auth_getids (
 	handle: auth_t;
-	out gen_uids: idarray_t;
-	out aux_uids: idarray_t;
-	out gen_gids: idarray_t;
-	out aux_gids: idarray_t);
+	out gen_uids: idarray_t, dealloc;
+	out aux_uids: idarray_t, dealloc;
+	out gen_gids: idarray_t, dealloc;
+	out aux_gids: idarray_t, dealloc);
 
 /* Create a new authentication handle.  */
 routine auth_makeauth (
@@ -73,9 +73,9 @@ routine auth_server_authenticate (
 	rendezvous: mach_port_send_t;
 	rendezvous2: mach_port_send_t;
 	newport: mach_port_send_t;
-	out gen_uids: idarray_t;
-	out aux_uids: idarray_t;
-	out gen_gids: idarray_t;
-	out aux_gids: idarray_t);
+	out gen_uids: idarray_t, dealloc;
+	out aux_uids: idarray_t, dealloc;
+	out gen_gids: idarray_t, dealloc;
+	out aux_gids: idarray_t, dealloc);
 
 
