@@ -176,7 +176,7 @@ unsigned long nextgennumber;
 #define offsb(offs) ((block) / block_size)
 #define offsaddr(offs) (((char *)disk_image) + (offs))
 #define addroffs(offs) ((addr) - ((char *)disk_image))
-#define bptr(block) offsaddr(boffs(block))
+#define block_image(block) offsaddr(boffs(block))
 #define addrb(addr) offsb(addroffs(addr))
 
 /* Get the descriptor for the block group inode INUM is in.  */
@@ -186,7 +186,7 @@ group_desc(unsigned long bg_num)
   int desc_per_block = EXT2_DESC_PER_BLOCK(sblock);
   unsigned long group_desc = bg_num / desc_per_block;
   unsigned long desc = bg_num % desc_per_block;
-  return ((struct ext2_group_desc *)bptr(1 + group_desc)) + desc;
+  return ((struct ext2_group_desc *)block_image(1 + group_desc)) + desc;
 }
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
@@ -199,7 +199,7 @@ dino (ino_t inum)
   struct ext2_group_desc *bg = group_desc(bg_num);
   unsigned long inodes_per_block = EXT2_INODES_PER_BLOCK(sblock);
   unsigned long block = bg->bg_inode_table + (bg_num / inodes_per_block);
-  return ((struct ext2_inode *)bptr(block)) + inum % inodes_per_block;
+  return ((struct ext2_inode *)block_image(block)) + inum % inodes_per_block;
 }
 
 /* Sync part of the disk */
