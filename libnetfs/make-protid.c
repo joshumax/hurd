@@ -29,7 +29,7 @@ netfs_make_protid (struct peropen *po, struct netcred *cred)
 			    netfs_protid_class);
   po->refcnt++;
   pi->po = po;
-  pi->cred = cred;
+  pi->credential = cred;
   pi->shared_object = MACH_PORT_NULL;
   pi->mapped = 0;
   return pi;
