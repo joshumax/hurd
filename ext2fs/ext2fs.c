@@ -215,8 +215,11 @@ vm_address_t get_page_buf ()
   buf = free_page_bufs;
   if (buf == 0)
     {
+      error_t err;
       spin_unlock (&free_page_bufs_lock);
-      vm_allocate (mach_task_self (), &buf, vm_page_size, 1);
+      err = vm_allocate (mach_task_self (), &buf, vm_page_size, 1);
+      if (err)
+	buf = 0;
     }
   else
     {
