@@ -186,5 +186,24 @@ void fshelp_lock_init (struct lock_box *box);
    concocted by appending ARGV[0] to _SERVERS.  */
 error_t fshelp_delegate_translation (char *server_name,
 				     mach_port_t requestor, char **argv);
+
+struct idvec;			/* Include <idvec.h> to get the real thing. */
+
+/* If SUID or SGID is true, adds UID and/or GID respectively to the
+   authentication in PORTS[INIT_PORT_AUTH], and replaces it with the result.
+   All the other ports in PORTS and FDS are then reauthenticated, using any
+   privileges available through AUTH.  If GET_FILE_IDS is non-NULL, and the
+   auth port in PORTS[INIT_PORT_AUTH] is bogus, it is called to get a list of
+   uids and gids from the file to use as a replacement.  If SECURE is
+   non-NULL, whether not the added ids are new is returned in it.  If either
+   the uid or gid case fails, then the other may still be applied.  */
+error_t
+fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
+		    auth_t auth,
+		    error_t
+		      (*get_file_ids)(struct idvec *uids, struct idvec *gids),
+		    mach_port_t *ports, mach_msg_type_number_t num_ports,
+		    mach_port_t *fds, mach_msg_type_number_t num_fds,
+		    int *secure);
 
 #endif
