@@ -44,3 +44,5 @@ startup_reply.h startup_replyUser.c: $(headers)/hurd/startup_reply.defs $(header
 
 clean:
 	rm -f init *.o
+relink:
+	rm -f init
