@@ -40,7 +40,8 @@ S_io_read (struct sock_user *user,
   if (!err)
     {
       err =
-	pipe_read (pipe, sock->flags & SOCK_NONBLOCK, data, data_len, amount);
+	pipe_read (pipe, sock->flags & SOCK_NONBLOCK,
+		   NULL, data, data_len, amount, NULL, NULL, NULL, NULL);
       pipe_release (pipe);
     }
 
@@ -111,7 +112,7 @@ S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
   err = sock_aquire_read_pipe (user->sock, &pipe);
   if (!err)
     {
-      *amount = pipe_readable (user->sock->read_pipe);
+      *amount = pipe_readable (user->sock->read_pipe, 1);
       pipe_release (pipe);
     }
 
@@ -213,7 +214,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 	  if (!pipe)
 	    return EBADF;
 
-	  if (! pipe_readable (pipe))
+	  if (! pipe_is_readable (pipe, 1))
 	    /* Nothing to read on PIPE yet...  */
 	    if (*select_type & ~SELECT_READ)
 	      /* But there's other stuff to report, so return that.  */
@@ -221,7 +222,7 @@ S_io_select (struct sock_user *user, int *select_type, int *id_tag)
 	    else
 	      /* The user only cares about reading, so wait until something is
 		 readable.  */
-	      err = pipe_wait (pipe, 0);
+	      err = pipe_wait (pipe, 0, 1);
 
 	  pipe_release (pipe);
 	}
