@@ -28,6 +28,7 @@ subsystem ifsock 34000;
 IFSOCK_IMPORTS
 #endif
 
+routine
 ifsock_getsockaddr (
 	file: file_t;
 	out sockaddr: mach_port_copy_send_t);
