@@ -31,4 +31,10 @@ cd /tmp
 dd if="$DEV" of=mbr bs=512 count=1					 \
 && cp /boot/grub/stage1_ffs stage1					 \
 && dd if=mbr of=stage1 conv=notrunc bs=1 seek=446 skip=446 count=64	 \
-&& dd if=stage1 of="$DEV" bs=512 count=1
+&& dd if=stage1 of="$DEV" bs=512 count=1				 \
+|| { echo 2>&1 "$0: Install failed!" ; exit 5 ; }
+
+rm mbr stage1
+
+echo "$0: /boot/grub/stage1_ffs installed in MBR"
+echo "$0: Don't forget to use the grub `install=' command to install stage2"
