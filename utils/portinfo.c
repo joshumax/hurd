@@ -36,6 +36,8 @@ static const struct argp_option options[] = {
   {"verbose",	'v', 0, 0, "Give more detailed information"},
   {"members",   'm', 0, 0, "Show members of port-sets"},
   {"hex-names",	'x', 0, 0, "Show port names in hexadecimal"},
+  {"translate", 't', "PID", 0, "Translate port names from process PID"},
+  {"hold", '*', 0, OPTION_HIDDEN},
 
   {0,0,0,0, "Selecting which names to show:", 2},
   {"receive",	'r', 0, 0, "Show ports with receive rights"},
@@ -48,8 +50,11 @@ static const struct argp_option options[] = {
 };
 static const char *args_doc = "PID [NAME...]";
 static const char *doc =
-"If no port NAMEs are given, all ports in process PID are reported.  NAMEs"
-" may be specified in hexadecimal or octal by using a 0x or 0 prefix.";
+"If no port NAMEs are given, all ports in process PID are reported (if"
+" translation is used, then only those common to both processes).  NAMEs"
+" may be specified in hexadecimal or octal by using a 0x or 0 prefix.  When"
+" translating, the port-type selection options apply to the"
+" translated task, not the destination one.";
 
 #define SHOW_DETAILS	0x1
 #define SHOW_MEMBERS	0x4
@@ -186,6 +191,248 @@ ports_info (task_t task, mach_port_type_t only, unsigned show)
   return 0;
 }
 
+struct name_xlator
+{
+  /* The tasks between which we are translating port names.  */
+  mach_port_t from_task;
+  mach_port_t to_task;
+
+  /* True if we're translating receive rights in FROM_TASK; otherwise, we're
+     translating send rights.  */
+  int from_is_receive;
+
+  /* Arrays of port names and type masks from TO_TASK, fetched by
+     mach_port_names.  These are vm_allocated.  */
+  mach_port_t *to_names;
+  mach_msg_type_number_t to_names_len;
+  mach_port_type_t *to_types;
+  mach_msg_type_number_t to_types_len;
+
+  /* An array of rights in the current task to the ports in TO_NAMES/TO_TASK,
+     or MACH_PORT_NULL, indicating that none has been fetched yet.
+     This vector is malloced.  */
+  mach_port_t *ports;
+};
+
+static error_t 
+name_xlator_create (mach_port_t from_task, mach_port_t to_task,
+		    struct name_xlator **xlator)
+{
+  error_t err;
+  struct name_xlator *x = malloc (sizeof (struct name_xlator));
+
+  if (! x)
+    return ENOMEM;
+
+  x->from_task = from_task;
+  x->to_task = to_task;
+  x->to_names = 0;
+  x->to_types = 0;
+  x->to_names_len = 0;
+  x->to_types_len = 0;
+
+  /* Cache a list of names in TO_TASK.  */
+  err = mach_port_names (to_task,
+			 &x->to_names, &x->to_names_len,
+			 &x->to_types, &x->to_types_len);
+
+  if (! err)
+    /* Make an array to hold ports from TO_TASK which have been translated
+       into our namespace.  */
+    {
+      x->ports = malloc (sizeof (mach_port_t) * x->to_names_len);
+      if (x->ports)
+	{
+	  int i;
+	  for (i = 0; i < x->to_names_len; i++)
+	    x->ports[i] = MACH_PORT_NULL;
+	}
+      else
+	{
+	  vm_deallocate (mach_task_self (),
+			 (vm_address_t)x->to_names,
+			 x->to_names_len * sizeof (mach_port_t));
+	  vm_deallocate (mach_task_self (),
+			 (vm_address_t)x->to_types,
+			 x->to_types_len * sizeof (mach_port_type_t));
+	  err = ENOMEM;
+	}
+    }
+
+  if (err)
+    free (x);
+  else
+    *xlator = x;
+
+  return err;
+}
+
+static void
+name_xlator_free (struct name_xlator *x)
+{
+  int i;
+
+  for (i = 0; i < x->to_names_len; i++)
+    if (x->ports[i] != MACH_PORT_NULL)
+      mach_port_deallocate (mach_task_self (), x->ports[i]);
+  free (x->ports);
+
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t)x->to_names,
+		 x->to_names_len * sizeof (mach_port_t));
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t)x->to_types,
+		 x->to_types_len * sizeof (mach_port_type_t));
+
+  mach_port_deallocate (mach_task_self (), x->to_task);
+  mach_port_deallocate (mach_task_self (), x->from_task);
+
+  free (x);
+}
+
+/* Translate the port FROM between the tasks in X, returning the translated
+   name in TO, and the types of TO in TO_TYPE, or an error.  If TYPE is
+   non-zero, it should be what mach_port_type returns for FROM.  */
+static error_t
+name_xlator_xlate (struct name_xlator *x,
+		   mach_port_t from, mach_port_type_t from_type,
+		   mach_port_t *to, mach_port_type_t *to_type)
+{
+  error_t err;
+  mach_port_t port;
+  mach_msg_type_number_t i;
+  mach_port_type_t aquired_type;
+  mach_port_type_t valid_to_types;
+
+  if (from_type == 0)
+    {
+      error_t err = mach_port_type (x->from_task, from, &from_type);
+      if (err)
+	return err;
+    }
+
+  if (from_type & MACH_PORT_TYPE_RECEIVE)
+    valid_to_types = MACH_PORT_TYPE_SEND;
+  else if (from_type & MACH_PORT_TYPE_SEND)
+    valid_to_types = MACH_PORT_TYPE_SEND | MACH_PORT_TYPE_RECEIVE;
+  else
+    return EKERN_INVALID_RIGHT;
+
+  /* Translate the name FROM, in FROM_TASK's namespace into our namespace. */
+  err = 
+    mach_port_extract_right (x->from_task, from,
+			     ((from_type & MACH_PORT_TYPE_RECEIVE)
+			      ? MACH_MSG_TYPE_MAKE_SEND
+			      : MACH_MSG_TYPE_COPY_SEND),
+			     &port,
+			     &aquired_type);
+
+  if (err)
+    return err;
+
+  /* Look for likely candidates in TO_TASK's namespace to test against PORT. */
+  for (i = 0; i < x->to_names_len; i++)
+    {
+      if (x->ports[i] == MACH_PORT_NULL && (x->to_types[i] & valid_to_types))
+	/* Port I shows possibilities... */
+	{
+	  err =
+	    mach_port_extract_right (x->to_task,
+				     x->to_names[i],
+				     ((x->to_types[i] & MACH_PORT_TYPE_RECEIVE)
+				      ? MACH_MSG_TYPE_MAKE_SEND
+				      : MACH_MSG_TYPE_COPY_SEND),
+				     &x->ports[i],
+				     &aquired_type);
+	  if (err)
+	    x->to_types[i] = 0;	/* Don't try to fetch this port again.  */
+	}
+
+      if (x->ports[i] == port)
+	/* We win!  Port I in TO_TASK is the same as PORT.  */
+	break;
+  }
+
+  mach_port_deallocate (mach_task_self (), port);
+
+  if (i < x->to_names_len)
+    /* Port I is the right translation; return its name in TO_TASK.  */
+    {
+      *to = x->to_names[i];
+      *to_type = x->to_types[i];
+      return 0;
+    }
+  else
+    return EKERN_INVALID_NAME;
+}
+
+/* Prints info in SHOW about NAME translated through X to stdout.  If TYPE is
+   non-zero, it should be what mach_port_type returns for NAME.  */
+static error_t
+xlated_port_info (mach_port_t name, mach_port_type_t type,
+		  struct name_xlator *x, unsigned show)
+{
+  mach_port_t old_name = name;
+  error_t err = name_xlator_xlate (x, name, type, &name, &type);
+  if (! err)
+    {
+      printf ((show & SHOW_HEX_NAMES) ? "%#6x => " : "%6d => ", old_name);
+      err = port_info (name, type, x->to_task, show);
+    }
+  return err;
+}
+
+/* Prints info about every port common to both tasks in X, but only if the
+   port in X->from_task has a type in ONLY, to stdout.  */
+static error_t
+xlated_ports_info (struct name_xlator *x, mach_port_type_t only, unsigned show)
+{
+  mach_port_t *names = 0;
+  mach_port_type_t *types = 0;
+  mach_msg_type_number_t names_len = 0, types_len = 0, i;
+  error_t err =
+    mach_port_names (x->from_task, &names, &names_len, &types, &types_len);
+
+  if (err)
+    return err;
+
+  for (i = 0; i < names_len; i++)
+    if (types[i] & only)
+      xlated_port_info (names[i], types[i], x, show);
+
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t)names, names_len * sizeof *names);
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t)types, types_len * sizeof *types);
+
+  return 0;
+}
+
+/* Return the task corresponding to the user argument ARG, exiting with an
+   appriate error message if we can't.  */
+static task_t
+parse_task (char *arg)
+{
+  error_t err;
+  task_t task;
+  pid_t pid = atoi (arg);
+  static process_t proc = MACH_PORT_NULL;
+
+  if (proc == MACH_PORT_NULL)
+    proc = getproc ();
+
+  if (! pid)
+    error (10, 0, "%s: Invalid process id", arg);
+
+  err = proc_pid2task (proc, pid, &task);
+  if (err)
+    error (11, err, "%s", arg);
+
+  return task;
+}
+
+static volatile hold = 0;
+
 int
 main (int argc, char **argv)
 {
@@ -193,6 +440,8 @@ main (int argc, char **argv)
   task_t task;
   unsigned show = 0;		/* what info we print */
   mach_port_type_t only = 0;	/* Which names to show */
+  task_t xlate_task = MACH_PORT_NULL;
+  struct name_xlator *xlator = 0;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -209,6 +458,14 @@ main (int argc, char **argv)
 	case 'd': only |= MACH_PORT_TYPE_DEAD_NAME; break;
 	case 'p': only |= MACH_PORT_TYPE_PORT_SET; break;
 
+	case 't': xlate_task = parse_task (arg); break;
+
+	case '*':
+	  hold = 1;
+	  while (hold)
+	    sleep (1);
+	  break;
+
 	case ARGP_KEY_NO_ARGS:
 	  argp_error (state->argp, "No process specified");
 
@@ -216,21 +473,25 @@ main (int argc, char **argv)
 	  if (state->arg_num == 0)
 	    /* The task  */
 	    {
-	      pid_t pid = atoi (arg);
-	      if (! pid)
-		error (10, 0, "%s: Invalid PID", arg);
-
-	      err = proc_pid2task (getproc (), pid, &task);
-	      if (err)
-		error (11, err, "%s", arg);
+	      task = parse_task (arg);
 
 	      if (only == 0)
 		only = ~0;
 
+	      if (xlate_task != MACH_PORT_NULL)
+		{
+		  err = name_xlator_create (xlate_task, task, &xlator);
+		  if (err)
+		    error (13, err, "Cannot setup task translation");
+		}
+
 	      if (state->next == state->argc)
 		/* No port names specified, print all of them.  */
 		{
-		  err = ports_info (task, only, show);
+		  if (xlator)
+		    err = xlated_ports_info (xlator, only, show);
+		  else
+		    err = ports_info (task, only, show);
 		  if (err)
 		    error (12, err, "%s", arg);
 		}
@@ -240,12 +501,15 @@ main (int argc, char **argv)
 	  /* A port name  */
 	  {
 	    char *end;
-	    unsigned long name = strtoul (arg, &end, 0);
+	    mach_port_t name = strtoul (arg, &end, 0);
 	    if (name == 0)
 	      error (0, 0, "%s: Invalid port name", arg);
 	    else
 	      {
-		err = port_info (name, 0, task, show);
+		if (xlator)
+		  err = xlated_port_info (name, 0, xlator, show);
+		else
+		  err = port_info (name, 0, task, show);
 		if (err)
 		  error (0, err, "%s", arg);
 	      }
