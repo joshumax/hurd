@@ -50,10 +50,9 @@ inode_init ()
 error_t 
 iget (ino_t inum, struct node **npp)
 {
-  int offset;
-  struct disknode *dn;
-  struct node *np;
   error_t err;
+  struct node *np;
+  struct disknode *dn;
 
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
@@ -72,10 +71,8 @@ iget (ino_t inum, struct node **npp)
   dn->dirents = 0;
   
   rwlock_init (&dn->alloc_lock);
-  pokel_init (&dn->indir_pokel, disk_pager->p, disk_image);
-  dn->fileinfo = 0;
-  dn->last_page_partially_writable = 0;
-  dn->last_block_allocated = 1;
+  pokel_init (&dn->indir_pokel, disk_pager, disk_image);
+  dn->pager = 0;
   
   np = diskfs_make_node (dn);
   mutex_lock (&np->lock);
@@ -87,11 +84,6 @@ iget (ino_t inum, struct node **npp)
   spin_unlock (&diskfs_node_refcnt_lock);
   
   err = read_disknode (np);
-  
-  np->allocsize = np->dn_stat.st_size;
-  offset = np->allocsize % block_size;
-  if (offset > 0)
-    np->allocsize += block_size - offset;
   
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
@@ -143,7 +135,7 @@ diskfs_node_norefs (struct node *np)
 
   if (np->dn->dirents)
     free (np->dn->dirents);
-  assert (!np->dn->fileinfo);
+  assert (!np->dn->pager);
 
   free (np->dn);
   free (np);
@@ -161,49 +153,6 @@ diskfs_try_dropping_softrefs (struct node *np)
 void
 diskfs_lost_hardrefs (struct node *np)
 {
-#ifdef notanymore
-  struct port_info *pi;
-  struct pager *p;
-  
-  /* Check and see if there is a pager which has only
-     one reference (ours).  If so, then drop that reference,
-     breaking the cycle.  The complexity in this routine
-     is all due to this cycle.  */
-
-  if (np->dn->fileinfo)
-    {
-      spin_lock (&_libports_portrefcntlock);
-      pi = (struct port_info *) np->dn->fileinfo->p;
-      if (pi->refcnt == 1)
-	{
-	  
-	  /* The only way to get a new reference to the pager
-	     in this state is to call diskfs_get_filemap; this
-	     can't happen as long as we hold NP locked.  So
-	     we can safely unlock _libports_portrefcntlock for
-	     the following call. */
-	  spin_unlock (&_libports_portrefcntlock);
-	  
-	  /* Right now the node is locked with no hard refs;
-	     this is an anomolous situation.  Before messing with
-	     the reference count on the file pager, we have to 
-	     give ourselves a reference back so that we are really
-	     allowed to hold the lock.  Then we can do the
-	     unreference. */
-	  p = np->dn->fileinfo->p;
-	  np->dn->fileinfo = 0;
-	  diskfs_nref (np);
-	  ports_port_deref (p);
-
-	  assert (np->references == 1 && np->light_references == 0);
-
-	  /* This will do the real deallocate.  Whew. */
-	  diskfs_nput (np);
-	}
-      else
-	spin_unlock (&_libports_portrefcntlock);
-    }
-#endif
 }
 
 /* A new hard reference to a node has been created; it's now OK to
@@ -218,11 +167,13 @@ diskfs_new_hardrefs (struct node *np)
 static error_t
 read_disknode (struct node *np)
 {
+  error_t err;
+  unsigned offset;
   static int fsid, fsidset;
   struct stat *st = &np->dn_stat;
-  struct ext2_inode *di = dino (np->dn->number);
-  struct ext2_inode_info *info = &np->dn->info;
-  error_t err;
+  struct disknode *dn = np->dn;
+  struct ext2_inode *di = dino (dn->number);
+  struct ext2_inode_info *info = &dn->info;
   
   err = diskfs_catch_exception ();
   if (err)
@@ -238,7 +189,7 @@ read_disknode (struct node *np)
 
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = fsid;
-  st->st_ino = np->dn->number;
+  st->st_ino = dn->number;
   st->st_blksize = vm_page_size * 2;
 
   st->st_mode = di->i_mode | (di->i_mode_high << 16);
@@ -275,7 +226,7 @@ read_disknode (struct node *np)
   info->i_file_acl = di->i_file_acl;
   info->i_dir_acl = di->i_dir_acl;
   info->i_version = di->i_version;
-  info->i_block_group = inode_group_num(np->dn->number);
+  info->i_block_group = inode_group_num(dn->number);
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
   info->i_prealloc_count = 0;
@@ -291,6 +242,15 @@ read_disknode (struct node *np)
     }
 
   diskfs_end_catch_exception ();
+
+  /* Set these to conservative values.  */
+  dn->last_page_partially_writable = 0;
+  dn->last_block_allocated = 1;
+  
+  np->allocsize = np->dn_stat.st_size;
+  offset = np->allocsize & ((1 << log2_block_size) - 1);
+  if (offset > 0)
+    np->allocsize += block_size - offset;
 
   return 0;
 }
@@ -368,6 +328,25 @@ write_node (struct node *np)
     }
   else
     return NULL;
+}
+
+/* Reload all data specific to NODE from disk, without writing anything.
+   Always called with DISKFS_READONLY true.  */
+error_t
+diskfs_node_reload (struct node *node)
+{
+  struct disknode *dn = node->dn;
+
+  if (dn->dirents)
+    {
+      free (dn->dirents);
+      dn->dirents = 0;
+    }
+  pokel_flush (&dn->indir_pokel);
+  flush_node_pager (node);
+  read_disknode (node);
+
+  return 0;
 }
 
 /* For each active node, call FUN.  The node is to be locked around the call
