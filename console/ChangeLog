@@ -1,3 +1,9 @@
+2002-09-10  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c (display_output_some): If iconv fails with EILSEQ,
+	skip the next byte in the buffer and print a replacement
+	character.
+
 2002-08-30  Marcus Brinkmann  <marcus@gnu.org>
 
 	* display.c (display_create): Likewise.  Set

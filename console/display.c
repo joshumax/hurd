@@ -1629,8 +1629,17 @@ display_output_some (display_t display, char **buffer, size_t *length)
 
       if (nconv == (size_t) -1)
 	{
-	  /* Conversion didn't work out.  */
-	  if (saved_err == EINVAL)
+	    /* Conversion is not completed, look for recoverable
+	       errors.  */
+#define UNICODE_REPLACEMENT_CHARACTER ((wchar_t) 0xfffd)
+	  if (saved_err == EILSEQ)
+	    {
+	      assert (*length);
+	      (*length)--;
+	      (*buffer)++;
+	      display_output_one (display, UNICODE_REPLACEMENT_CHARACTER);
+	    }
+	  else if (saved_err == EINVAL)
 	    /* This is only an unfinished byte sequence at the end of
 	       the input buffer.  */
 	    break;
