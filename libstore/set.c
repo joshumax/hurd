@@ -27,7 +27,7 @@
 
 /* Set STORE's current runs list to (a copy of) RUNS and RUNS_LEN.  */
 error_t
-store_set_runs (struct store *store, off_t *runs, unsigned runs_len)
+store_set_runs (struct store *store, const off_t *runs, unsigned runs_len)
 {
   unsigned size = runs_len * sizeof (off_t);
   off_t *copy = malloc (size);
@@ -50,7 +50,7 @@ store_set_runs (struct store *store, off_t *runs, unsigned runs_len)
 
 /* Sets the name associated with STORE to a copy of NAME.  */
 error_t
-store_set_name (struct store *store, char *name)
+store_set_name (struct store *store, const char *name)
 {
   char *copy = malloc (strlen (name) + 1);
 

@@ -40,7 +40,7 @@ store_find_first_run (struct store *store, off_t addr,
     /* Locate the correct position within a repeating pattern of runs.  */
     {
       *base = addr / store->wrap_dst;
-      addr %= wrap;
+      addr %= wrap_src;
     }
   else
     *base = 0;

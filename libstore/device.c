@@ -64,7 +64,7 @@ store_device_create (device_t device, struct store **store)
 {
   off_t runs[2];
   size_t sizes[DEV_GET_SIZE_COUNT], block_size;
-  unsigned sizes_len = DEV_GET_SIZE_COUNT;
+  size_t sizes_len = DEV_GET_SIZE_COUNT;
   error_t err = device_get_status (device, DEV_GET_SIZE, sizes, &sizes_len);
 
   if (err)
@@ -82,7 +82,7 @@ store_device_create (device_t device, struct store **store)
 /* Like store_device_create, but doesn't query the device for information.   */
 error_t
 _store_device_create (device_t device, size_t block_size,
-		      off_t *runs, unsigned runs_len,
+		      const off_t *runs, size_t runs_len,
 		      struct store **store)
 {
   *store = _make_store (STORAGE_DEVICE, &device_meths, device, block_size,

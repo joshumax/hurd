@@ -29,7 +29,7 @@
 struct store *
 _make_store (enum file_storage_class class, struct store_meths *meths,
 	     mach_port_t port, size_t block_size,
-	     off_t *runs, size_t runs_len, off_t end)
+	     const off_t *runs, size_t runs_len, off_t end)
 {
   if (block_size & (block_size - 1))
     return 0;			/* block size not a power of two.  */
@@ -42,7 +42,8 @@ _make_store (enum file_storage_class class, struct store_meths *meths,
 	  store->port = port;
 	  store->runs = 0;
 	  store->runs_len = 0;
-	  store->wrap = 0;
+	  store->wrap_src = 0;
+	  store->wrap_dst = 0;
 	  store->end = end;
 	  store->block_size = block_size;
 	  store->source = MACH_PORT_NULL;

@@ -125,7 +125,7 @@ store_file_create (file_t file, struct store **store)
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t
 _store_file_create (file_t file, size_t block_size,
-		    off_t *runs, unsigned runs_len,
+		    const off_t *runs, size_t runs_len,
 		    struct store **store)
 {
   if (block_size == 1)
