@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1994, 1998 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
@@ -53,16 +53,17 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
   if ((flags & (O_READ|O_WRITE|O_EXEC) & perms)
       != (flags & (O_READ|O_WRITE|O_EXEC)))
     return EACCES;
-  
+
   /* Execute the open */
+  err = 0;
   if (trivfs_check_open_hook)
-    err = (*trivfs_check_open_hook) (cred->po->cntl, user, flags);
+    err = (*trivfs_check_open_hook) (cred->po->cntl, cred->user, flags);
   if (!err)
-    err = trivfs_open (cred->po->cntl, cred->user, flags, 
+    err = trivfs_open (cred->po->cntl, cred->user, flags,
 		       cred->realnode, &newcred);
   if (err)
     return err;
-  
+
   *retry_type = FS_RETRY_NORMAL;
   *retry_name = '\0';
   *retrypt = ports_get_right (newcred);
