@@ -124,7 +124,7 @@ main (int argc, char **argv)
 	mode = pgrp;
 	break;
 
-      case '\0':		/* Non-option argument.  */
+      case 1:		/* Non-option argument.  */
 	switch (mode)
 	  {
 	  case user:
