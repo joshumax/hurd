@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/io.h>
 #include <hurd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 void
 main ()
@@ -42,9 +43,9 @@ main ()
   root = _hurd_ports[INIT_PORT_CRDIR].port;
   stdout = mach_open_devstream (_hurd_init_dtable[1], "w");
 
-/*  if (err = dir_unlink (root, "CREATED"))
+  if ((err = dir_unlink (root, "CREATED")) && err != ENOENT)
     printf ("Error on unlink: %d\n", err);
-  else */ if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
+  else if (err = dir_pathtrans (root, "CREATED", O_WRITE | O_CREAT, 0666,
 				&retry, pathbuf, &filetowrite))
     printf ("Error on pathtrans: %d\n", err);
   else if (err = io_write (filetowrite, string, strlen (string), -1, &written))
