@@ -18,6 +18,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <string.h>		/* For bzero */
+
+#include <sys/types.h>
+#include <sys/fcntl.h>
+#include <sys/stat.h>
+#include <hurd/hurd_types.h>
+
 #include "sock.h"
 #include "pipe.h"
 #include "connq.h"
@@ -40,8 +47,8 @@ S_io_read (struct sock_user *user,
   if (!err)
     {
       err =
-	pipe_read (pipe, sock->flags & SOCK_NONBLOCK,
-		   NULL, data, data_len, amount, NULL, NULL, NULL, NULL);
+	pipe_read (pipe, user->sock->flags & SOCK_NONBLOCK, NULL, NULL,
+		   data, data_len, amount, NULL, NULL, NULL, NULL);
       pipe_release (pipe);
     }
 
@@ -68,9 +75,23 @@ S_io_write (struct sock_user *user,
 
   err = sock_aquire_write_pipe (user->sock, &pipe);
   if (!err)
-    err = pipe_write (pipe, data, data_len, amount);
+    {
+      struct addr *source_addr;
+      if (pipe->class->flags & PIPE_CLASS_CONNECTIONLESS)
+	err = sock_get_addr (user->sock, &source_addr);
+      else
+	source_addr = NULL;
+      if (!err)
+	{
+	  err = pipe_write (pipe, source_addr,
+			    data, data_len, NULL, 0, NULL, 0,
+			    amount);
+	  if (source_addr)
+	    ports_port_deref (source_addr);
+	}
+      pipe_release (pipe);
+    }
 
-  pipe_release (pipe);
   return err;
 }
 
@@ -132,28 +153,11 @@ error_t
 S_io_duplicate (struct sock_user *user,
 		mach_port_t *new_port, mach_msg_type_name_t *new_port_type)
 {
-  struct sock *sock;
-  struct sock_user *new_user;
-
   if (!user)
     return EOPNOTSUPP;
-
-  sock = user->sock;
-  mutex_lock (&sock->lock);
-  sock->refs++;
-  mutex_unlock (&sock->lock);
-
-  new_user =
-    port_allocate_port (sock_user_bucket,
-			sizeof (struct sock_user),
-			sock_user_class);
-  new_user->sock = sock;
-
-  *new_port = ports_get_right (new_user);
   *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  return 0;
+  return sock_create_port (user->sock, new_port);
 }
-
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
@@ -241,10 +245,10 @@ error_t
 S_io_stat (struct sock_user *user, struct stat *st)
 {
   struct sock *sock;
-  void copy_time (time_value_t from, time_t *to_sec, unsigned long *to_usec)
+  void copy_time (time_value_t *from, time_t *to_sec, unsigned long *to_usec)
     {
-      *to_sec = from.seconds;
-      *to_usec = from.microseconds;
+      *to_sec = from->seconds;
+      *to_usec = from->microseconds;
     }
 
   if (!user)
@@ -263,10 +267,10 @@ S_io_stat (struct sock_user *user, struct stat *st)
   mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
   if (sock->read_pipe)
-    copy_time (&sock->read_pipe->read_time, &st->st_atime, &st->atime_usec);
+    copy_time (&sock->read_pipe->read_time, &st->st_atime, &st->st_atime_usec);
   if (sock->write_pipe)
-    copy_time (&sock->read_pipe->write_time, &st->st_mtime, &st->mtime_usec);
-  copy_time (&sock->change_time, &st->st_ctime, &st->ctime_usec);
+    copy_time (&sock->read_pipe->write_time, &st->st_mtime, &st->st_mtime_usec);
+  copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
 
   return 0;
 }
@@ -295,7 +299,7 @@ S_io_set_all_openmodes (struct sock_user *user, int bits)
     user->sock->flags |= SOCK_NONBLOCK;
   else
     user->sock->flags &= ~SOCK_NONBLOCK;
-  mutex_unlock (user->sock->lock);
+  mutex_unlock (&user->sock->lock);
   return 0;
 }
 
@@ -307,7 +311,7 @@ S_io_set_some_openmodes (struct sock_user *user, int bits)
   mutex_lock (&user->sock->lock);
   if (bits & SOCK_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
-  mutex_unlock (user->sock->lock);
+  mutex_unlock (&user->sock->lock);
   return 0;
 }
 
@@ -319,7 +323,7 @@ S_io_clear_some_openmodes (struct sock_user *user, int bits)
   mutex_lock (&user->sock->lock);
   if (bits & SOCK_NONBLOCK)
     user->sock->flags &= ~SOCK_NONBLOCK;
-  mutex_unlock (user->sock->lock);
+  mutex_unlock (&user->sock->lock);
   return 0;
 }
 
