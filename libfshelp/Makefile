@@ -20,10 +20,12 @@ dir := libfshelp
 include ../Makeconf
 
 SRCS = handle-startup.c init-trans.c start-trans.c transboot-clean.c \
-	kill-trans.c trans-iter.c lock-acquire.c lock-init.c trans-cntl.c
+	kill-trans.c trans-iter.c lock-acquire.c lock-init.c trans-cntl.c \
+	trans-drop.c
 
 OBJS = handle-startup.o init-trans.o start-trans.o transboot-clean.o \
-	kill-trans.o trans-iter.o lock-acquire.o lock-init.o trans-cntl.o
+	kill-trans.o trans-iter.o lock-acquire.o lock-init.o trans-cntl.o \
+	trans-drop.o
 
 TAGSHDRS = trans.h fshelp.h locks.h
 
