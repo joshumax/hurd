@@ -1,8 +1,8 @@
 /* Get the disklabel from a device node
 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -46,7 +46,7 @@ fd_get_device (int fd, device_t *device)
   err = store_create (node, 0, 0, &store);
   if (! err)
     {
-      if (store->class != STORAGE_DEVICE
+      if (store->class->id != STORAGE_DEVICE
 	  /* In addition to requiring a device, we also want the *whole*
 	     device -- one contiguous run starting at 0.  */
 	  || store->num_runs != 1
