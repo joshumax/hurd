@@ -238,9 +238,6 @@ S_proc_mark_stop (struct proc *p,
   p->p_status = W_STOPCODE (signo);
   p->p_waited = 0;
   
-  /* Don't allow init to stop */
-  assert (p->p_parent);
-  
   if (p->p_parent->p_waiting)
     {
       struct wait_c *w = &p->p_parent->p_continuation.wait_c;
