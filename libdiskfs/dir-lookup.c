@@ -415,9 +415,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
       else if (flags & O_SHLOCK)
 	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_SH);
+      if (error)
+	ports_port_deref (newpi); /* Get rid of NEWPI.  */
     }
   
-  if (!error)
+  if (! error)
     {
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);
@@ -425,13 +427,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
   
  out:
   if (np)
-    {
-      if (dnp == np)
-	diskfs_nrele (np);
-      else
-	diskfs_nput (np);
-    }
+    if (dnp == np)
+      diskfs_nrele (np);
+    else
+      diskfs_nput (np);
   if (dnp)
     diskfs_nput (dnp);
+
   return error;
 }
