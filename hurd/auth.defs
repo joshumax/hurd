@@ -1,5 +1,5 @@
 /* Definitions for the authentication server
-   Copyright (C) 1991, 1992 Free Software Foundation
+   Copyright (C) 1991, 1992, 1993 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -28,23 +28,29 @@ AUTH_IMPORTS
 type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 	ctype: mach_port_t;
 
-/* Throughout, uid's and gid's are passed as arrays.  Conventionally,
-   the first uid is the real uid and the second is the saved uid.
-   Neither of these should be used for permissions checking.
-   Similarly, the first gid is the real gid and the second gid is the
-   saved gid.  */
+/* Throughout, uid's and gid's are passed as arrays.  One of these
+   arrays is called the "genuine" ids; these id's should be used to
+   compute whether a given user is permitted a given operation.  The
+   other array is called the "auxiliary" ids; these should not be used
+   for such computation (though they can be turned into genuine ids
+   when calling auth_makeauth).  The first auxiliary id is
+   conventionally called the "real" id, and the second the "saved" id.  */
 
 /* Given an authentication handle, return the identification. */
 routine auth_getids (
 	handle: auth_t;
-	out uids: idarray_t;
-	out gids: idarray_t);
+	out gen_uids: idarray_t;
+	out aux_uids: idarray_t;
+	out gen_gids: idarray_t;
+	out aux_gids: idarray_t);
 
 /* Create a new authentication handle.  */
 routine auth_makeauth (
 	handle: auth_t;
-	uids: idarray_t;
-	gids: idarray_t;
+	gen_uids: idarray_t;
+	aux_uids: idarray_t;
+	gen_gids: idarray_t;
+	aux_uids: idarray_t;
 	out newhandle: mach_port_make_send_t);
 
 routine auth_combine (
@@ -60,6 +66,7 @@ routine auth_user_authenticate (
 	handle: auth_t;
 	sreplyport reply_port: reply_port_t;
 	rendezvous: mach_port_t;
+	rend_int: int;
 	out newport: mach_port_t);
    
 /* Called by a server in a reauthentication transaction.  The
@@ -70,9 +77,12 @@ routine auth_user_authenticate (
 routine auth_server_authenticate (
 	handle: auth_t;
 	sreplyport reply_port: reply_port_t;
-	rendezvous: mach_port_t;
-	newport: mach_port_t;
-	out uids: idarray_t;
-	out gids: idarray_t);
+	rendezvous: mach_port_send_;
+	rend_int: int;
+	newport: mach_port_send_t;
+	out gen_uids: idarray_t;
+	out aux_uids: idarray_t;
+	out gen_gids: idarray_t;
+	out aux_gids: idarray_t);
 
 
