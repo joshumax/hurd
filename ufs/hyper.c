@@ -105,13 +105,24 @@ get_hypermetadata (void)
   diskfs_end_catch_exception ();
 }
 
-/* We don't need this callback; all our data is backed by pagers. */
+/* Write the csum data.  This isn't backed by a pager because it is
+   taken from ordinary data blocks and might not be an even number
+   of pages; in that case writing it through the pager would nuke whatever
+   pages came after it on the disk and were backed by file pagers. */
 void
 diskfs_set_hypermetadata (int wait, int clean)
 {
+  spin_lock (&alloclock);
+  if (csum_dirty)
+    (wait ? dev_write_sync : dev_write) (fsbtodb (sblock, sblock->fs_csaddr),
+					 (vm_address_t) csum,
+					 fragroundup (sblock, 
+						      sblock->fs_cssize));
+  csum_dirty = 0;
+  spin_unlock (&alloclock);
 }
 
-/* Copy the sblock and csum into the disk */
+/* Copy the sblock into the disk */
 void
 copy_sblock ()
 {
@@ -120,14 +131,6 @@ copy_sblock ()
   assert (!diskfs_catch_exception ());
 
   spin_lock (&alloclock);
-  if (csum_dirty)
-    {
-      bcopy (csum, disk_image + fsaddr (sblock, sblock->fs_csaddr),
-	     fragroundup (sblock, sblock->fs_cssize));
-      record_poke (disk_image + fsaddr (sblock, sblock->fs_csaddr),
-		   fragroundup (sblock, sblock->fs_cssize));
-      csum_dirty = 0;
-    }
 
   if (clean && !diskfs_readonly)
     {
