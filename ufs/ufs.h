@@ -292,3 +292,7 @@ void ffs_clrblock(struct fs *, u_char *, daddr_t);
 void ffs_setblock (struct fs *, u_char *, daddr_t);
 int skpc (int, int, char *);
 int scanc (u_int, u_char *, u_char [], int);
+
+/* From pokeloc.c: */
+void record_poke (void *, vm_size_t);
+void sync_disk (int);
