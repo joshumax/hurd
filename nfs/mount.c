@@ -147,7 +147,9 @@ mount_root (char *name, char *host)
     }
   
   /* Create the node for root */
-  np = lookup_fhandle (p);
+  np = lookup_fhandle (p, 0);
+  np->nn->dir = np;
+  netfs_nref (np);
   p += NFS_FHSIZE / sizeof (int);
   free (rpcbuf);
   mutex_unlock (&np->lock);
