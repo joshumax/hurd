@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include <hurd/ioserver.h>
+#include <fcntl.h>
 
 /* Write current values into the shared page.  Callers must have the
    share lock on the shared page, as well as the inode toplock.
@@ -40,7 +41,7 @@ ioserver_put_shared_data (void *arg)
   cred->mapped->xx_file_pointer = cred->po->filepointer;
   cred->mapped->rd_file_pointer = -1;
   cred->mapped->wr_file_pointer = -1;
-  cred->mapped->file_size = cred->po->ip->dn_stat.st_size;
+  cred->mapped->file_size = cred->po->np->dn_stat.st_size;
   cred->mapped->written = 0;
   cred->mapped->accessed = 0;
 }
