@@ -214,10 +214,18 @@ dev_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
     return EOPNOTSUPP;
   else
     {
-      /* We pass in 0 for the OFFSET and SIZE argument because in many cases
-	 we can't supply them (devices that can't otherwise do I/O are often
-	 still mappable) and mach ignores them entirely.  XXXX */
-      error_t err = device_map (store->port, prot, 0, 0, memobj, 0);
+      /* Note that older Mach drivers (through GNU Mach 1.x) ignore
+	 the OFFSET and SIZE parameters.  The OSKit-Mach drivers obey
+	 them, and so the size we pass must be large enough (or zero
+	 only if the size is indeterminable).  If using only the newer
+	 drivers, we could remove the `start != 0' condition above and
+	 support kernel mapping of partial devices.  However, since
+	 the older drivers silently ignore the OFFSET argument, that
+	 would produce scrambled results on old kernels.  */
+      error_t err = device_map (store->port, prot,
+				store->runs[0].start,
+				store->runs[0].length,
+				memobj, 0);
       if (err == ED_INVALID_OPERATION)
 	err = EOPNOTSUPP;	/* This device doesn't support paging.  */
       return err;
