@@ -31,6 +31,7 @@
 #endif
 
 static struct node *nodehash[INOHSZ];
+
 static error_t read_disknode (struct node *np);
 
 spin_lock_t generation_lock = SPIN_LOCK_INITIALIZER;
@@ -56,28 +57,26 @@ iget (ino_t inum, struct node **npp)
 
   spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    {
-      if (np->dn->number != inum)
-	continue;
-
-      np->references++;
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_lock (&np->lock);
-      *npp = np;
-      return 0;
-    }
-
+    if (np->dn->number == inum)
+      {
+	np->references++;
+	spin_unlock (&diskfs_node_refcnt_lock);
+	mutex_lock (&np->lock);
+	*npp = np;
+	return 0;
+      }
+  
   dn = malloc (sizeof (struct disknode));
-
+  
   dn->number = inum;
   dn->dirents = 0;
-
+  
   rwlock_init (&dn->alloc_lock);
   pokel_init (&dn->indir_pokel, disk_pager->p, disk_image);
   dn->fileinfo = 0;
   dn->last_page_partially_writable = 0;
   dn->last_block_allocated = 1;
-
+  
   np = diskfs_make_node (dn);
   mutex_lock (&np->lock);
   dn->hnext = nodehash[INOHASH(inum)];
@@ -86,9 +85,9 @@ iget (ino_t inum, struct node **npp)
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
   spin_unlock (&diskfs_node_refcnt_lock);
-
+  
   err = read_disknode (np);
-
+  
   np->allocsize = np->dn_stat.st_size;
   offset = np->allocsize % block_size;
   if (offset > 0)
@@ -141,9 +140,6 @@ diskfs_node_norefs (struct node *np)
   *np->dn->hprevp = np->dn->hnext;
   if (np->dn->hnext)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
-
-  if (np->dn->info.i_prealloc_count)
-    ext2_discard_prealloc (np);
 
   if (np->dn->dirents)
     free (np->dn->dirents);
@@ -260,7 +256,7 @@ read_disknode (struct node *np)
   st->st_ctime_usec = di->i_ctime.ts_nsec / 1000;
 #endif
 
-  st->st_blocks = di->i_blocks << log2_stat_blocks_per_fs_block;
+  st->st_blocks = di->i_blocks;
   st->st_flags = di->i_flags;
   
   st->st_uid = di->i_uid | (di->i_uid_high << 16);
@@ -282,8 +278,8 @@ read_disknode (struct node *np)
   info->i_block_group = inode_group_num(np->dn->number);
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
-  if (info->i_prealloc_count)
-    ext2_error ("ext2_read_inode", "New inode has non-zero prealloc count!");
+  info->i_prealloc_count = 0;
+
   if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
     st->st_rdev = di->i_block[0];
   else
@@ -302,14 +298,19 @@ read_disknode (struct node *np)
 static void
 write_node (struct node *np)
 {
+  error_t err;
   struct stat *st = &np->dn_stat;
   struct ext2_inode *di = dino (np->dn->number);
-  error_t err;
+
+  if (np->dn->info.i_prealloc_count)
+    ext2_discard_prealloc (np);
   
   assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
       assert (!diskfs_readonly);
+
+      ext2_debug ("writing inode %d to disk", np->dn->number);
 
       err = diskfs_catch_exception ();
       if (err)
@@ -343,7 +344,7 @@ write_node (struct node *np)
       di->i_ctime.ts_nsec = st->st_ctime_usec * 1000;
 #endif
 
-      di->i_blocks = st->st_blocks >> log2_stat_blocks_per_fs_block;
+      di->i_blocks = st->st_blocks;
       di->i_flags = st->st_flags;
 
       /* Set dtime non-zero to indicate a deleted file.  */
@@ -368,17 +369,41 @@ write_node (struct node *np)
 void
 write_all_disknodes ()
 {
-  int n;
-  struct node *np;
+  int n, num_nodes = 0;
+  struct node *np, **node_list, **p;
   
   spin_lock (&diskfs_node_refcnt_lock);
+
+  /* We must copy everything from the hash table into another data structure
+     to avoid running into any problems with the hash-table being modified
+     during processing (normally we delegate access to hash-table with
+     diskfs_node_refcnt_lock, but we can't hold this while locking the
+     individual node locks).  */
+
+  for (n = 0; n < INOHSZ; n++)
+    for (np = nodehash[n]; np; np = np->dn->hnext)
+      num_nodes++;
+
+  node_list = alloca (num_nodes * sizeof (struct node *));
+  p = node_list;
   for (n = 0; n < INOHSZ; n++)
     for (np = nodehash[n]; np; np = np->dn->hnext)
       {
-	diskfs_set_node_times (np);
-	write_node (np);
+	*p++ = np;
+	np->references++;
       }
+
   spin_unlock (&diskfs_node_refcnt_lock);
+
+  p = node_list;
+  while (num_nodes-- > 0)
+    {
+      np = *p++;
+      mutex_lock (&np->lock);
+      diskfs_set_node_times (np);
+      write_node (np);
+      diskfs_nput (np);
+    }
 }
 	
 void
