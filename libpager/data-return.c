@@ -181,7 +181,6 @@ _pager_do_write_request (mach_port_t object,
 
   mutex_unlock (&p->interlock);
 
- out:
   ports_port_deref (p);
   return 0;
 
