@@ -109,23 +109,23 @@ file_byte_meths = {file_byte_read, file_byte_write};
 error_t
 store_file_create (file_t file, struct store **store)
 {
-  off_t runs[2];
+  struct store_run run;
   struct stat stat;
   error_t err = io_stat (file, &stat);
 
   if (err)
     return err;
 
-  runs[0] = 0;
-  runs[1] = stat.st_size;
+  run.start = 0;
+  run.length = stat.st_size;
 
-  return _store_file_create (file, 1, runs, 2, store);
+  return _store_file_create (file, 1, &run, 1, store);
 }
 
 /* Like store_file_create, but doesn't query the file for information.  */
 error_t
 _store_file_create (file_t file, size_t block_size,
-		    const off_t *runs, size_t num_runs,
+		    const struct store_run *runs, size_t num_runs,
 		    struct store **store)
 {
   if (block_size == 1)
