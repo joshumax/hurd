@@ -52,7 +52,8 @@ fshelp_start_translator_long (mach_port_t underlying,
    are copied from our own state, fd[2] is copied from our own stderr,
    and the other fds are cleared.  */
 error_t
-fshelp_start_translator (mach_port_t underlying,
+fshelp_start_translator (mach_port_t underlying, 
+			 mach_msg_type_name_t  underlying_type,
 			 char *name, char *argz, int argz_len,
 			 int timeout, fsys_t *control);
 
