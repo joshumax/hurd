@@ -89,6 +89,9 @@ diskfs_parse_bootargs (int argc, char **argv)
 	devname = tmp;
     }
 
+  printf ("\nInitial bootstrap: %s", argv[0]);
+  fflush (stdout);
+
   diskfs_bootflagarg = argv[1];
 
   return devname;
