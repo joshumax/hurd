@@ -476,8 +476,8 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
       if (err)
 	goto out;
 
-      if (!idvec_contains (cred->user->uids, uid)
-	  || !idvec_contains (cred->user->gids, gid))
+      if ((uid != (uid_t) -1 && !idvec_contains (cred->user->uids, uid))
+	  || (gid != (gid_t) -1 && !idvec_contains (cred->user->gids, gid)))
 	{
 	  err = EPERM;
 	  goto out;
@@ -485,8 +485,10 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
     }
 
   /* Make the change */
-  term_owner = uid;
-  term_group = gid;
+  if (uid != (uid_t) -1)
+    term_owner = uid;
+  if (gid != (gid_t) -1)
+    term_group = gid;
   err = 0;
 
 out:
@@ -2198,14 +2200,14 @@ S_term_get_peername (io_t arg,
 {
   struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, 0);
   struct trivfs_control *peer;
-  
+
   if (!cred || (cred->pi.class != tty_class && cred->pi.class != pty_class))
     {
       if (cred)
 	ports_port_deref (cred);
       return EOPNOTSUPP;
     }
-  
+
   peer = (cred->pi.class == tty_class) ? ptyctl : termctl;
 
   if (bottom != &ptyio_bottom || !peer->hook)
@@ -2213,7 +2215,7 @@ S_term_get_peername (io_t arg,
       ports_port_deref (cred);
       return ENOENT;
     }
-  
+
   strcpy (name, (char *) peer->hook);
   ports_port_deref (cred);
 
