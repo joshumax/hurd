@@ -38,8 +38,10 @@ static struct argp_option options[] =
 };
 static char *args_doc = "SRC [DST]";
 static char *doc = "Copy file SRC over ftp to DST."
-"\vBoth SRC and DST may have the form HOST:FILE, FILE, or -, where - is standard"
-" input for SRC or standard output for DST, and FILE is a local file.";
+"\vBoth SRC and DST may have the form HOST:FILE, FILE, or -, where - is"
+" standard input for SRC or standard output for DST, and FILE is a local"
+" file.  DST may be a directory, in which case the basename of SRC is"
+" appended to make the actual destination filename.";
 
 /* customization hooks.  */
 static struct ftp_conn_hooks conn_hooks = { 0 };
@@ -121,19 +123,105 @@ cp (int src, const char *src_name, int dst, const char *dst_name)
 struct epoint
 {
   char *name;			/* Name, of the form HOST:FILE, FILE, or -.  */
-  char *rmt_file;		/* If NAME is remote, the FILE portion, or 0. */
-  char *rmt_host;		/* If NAME is remote, the HOST portion, or 0. */
+  char *file;			/* If remote, the FILE portion, or 0. */
   int fd;			/* A file descriptor to use.  */
   struct ftp_conn *conn;	/* An ftp connection to use.  */
   struct ftp_conn_params params;
 };
 
+static void
+econnect (struct epoint *e, struct ftp_conn_params *def_params)
+{
+  char *rmt;
+
+  if (! e->name)
+    e->name = "-";
+
+  rmt = strchr (e->name, ':');
+  if (rmt)
+    {
+      error_t err;
+
+      *rmt++ = 0;
+
+      if (! e->params.user)
+	e->params.user = def_params->user;
+      if (! e->params.pass)
+	e->params.pass = def_params->pass;
+      if (! e->params.acct)
+	e->params.acct = def_params->acct;
+
+      e->conn = get_host_conn (e->name, &e->params, &e->name);
+      e->name = realloc (e->name, strlen (e->name) + 1 + strlen (rmt) + 1);
+      if (! e->name)
+	error (22, ENOMEM, "Cannot allocate name storage");
+
+      err = ftp_conn_set_type (e->conn, "I");
+      if (err)
+	error (23, err, "%s: Cannot set connection type to binary",
+	       e->name);
+
+      strcat (e->name, ":");
+      strcat (e->name, rmt);
+
+      e->file = rmt;
+    }
+  else if (e->params.user || e->params.pass || e->params.acct)
+    error (20, 0,
+	   "%s: Ftp login parameter specified for a local endpoint (%s,%s,%s)",
+	   e->name, e->params.user, e->params.pass, e->params.acct);
+  else
+    e->file = strdup (e->name);
+}
+
+static error_t
+eopen_wr (struct epoint *e, int *fd)
+{
+  if (e->conn)
+    return ftp_conn_start_store (e->conn, e->file, fd);
+  else if (strcmp (e->name, "-") == 0)
+    *fd = 1;
+  else
+    {
+      *fd = open (e->name, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+      if (*fd < 0)
+	return errno;
+    }
+  return 0;
+}
+
+static error_t
+eopen_rd (struct epoint *e, int *fd)
+{
+  if (e->conn)
+    return ftp_conn_start_retrieve (e->conn, e->file, fd);
+  else if (strcmp (e->name, "-") == 0)
+    *fd = 0;
+  else
+    {
+      *fd = open (e->name, O_RDONLY, 0666);
+      if (*fd < 0)
+	return errno;
+    }
+  return 0;
+}
+
+static void
+efinish (struct epoint *e)
+{
+  if (e->conn)
+    {
+      error_t err = ftp_conn_finish_transfer (e->conn);
+      if (err)
+	error (31, err, "%s", e->name);
+    }	      
+}
+
 int 
 main (int argc, char **argv)
 {
-  int i;
   error_t err;
-  struct epoint epoints[2] = { {0}, {0} };
+  struct epoint rd = { 0 }, wr = { 0 };
   struct ftp_conn_params def_params = { 0 }; /* default params */
 
   /* Parse our options...  */
@@ -142,10 +230,13 @@ main (int argc, char **argv)
       switch (key)
 	{
 	case ARGP_KEY_ARG:
-	  if (state->arg_num < 2)
-	    epoints[state->arg_num].name = arg;
+	  switch (state->arg_num)
+	    {
+	    case 0: rd.name = arg; break;
+	    case 1: wr.name = arg; break;
+	    default: return ARGP_ERR_UNKNOWN;
+	    }
 	  break;
-
 	case ARGP_KEY_NO_ARGS:
 	  argp_usage (state);
 
@@ -153,13 +244,13 @@ main (int argc, char **argv)
 	case 'p': def_params.pass = arg; break;
 	case 'a': def_params.acct = arg; break;
 
-	case OPT_SRC_U: epoints[0].params.user = arg; break;
-	case OPT_SRC_P: epoints[0].params.pass = arg; break;
-	case OPT_SRC_A: epoints[0].params.acct = arg; break;
+	case OPT_SRC_U: rd.params.user = arg; break;
+	case OPT_SRC_P: rd.params.pass = arg; break;
+	case OPT_SRC_A: rd.params.acct = arg; break;
 
-	case OPT_DST_U: epoints[1].params.user = arg; break;
-	case OPT_DST_P: epoints[1].params.pass = arg; break;
-	case OPT_DST_A: epoints[1].params.acct = arg; break;
+	case OPT_DST_U: wr.params.user = arg; break;
+	case OPT_DST_P: wr.params.pass = arg; break;
+	case OPT_DST_A: wr.params.acct = arg; break;
 
 	case 'D': conn_hooks.cntl_debug = cntl_debug; break;
 
@@ -172,100 +263,53 @@ main (int argc, char **argv)
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
-  for (i = 0; i < 2; i++)
+  econnect (&rd, &def_params);
+  econnect (&wr, &def_params);
+
+  if (rd.conn && wr.conn)
     {
-      char *rmt;
-
-      if (! epoints[i].name)
-	epoints[i].name = "-";
-
-      rmt = strchr (epoints[i].name, ':');
-      if (rmt)
-	{
-	  *rmt++ = 0;
-
-	  if (! epoints[i].params.user)
-	    epoints[i].params.user = def_params.user;
-	  if (! epoints[i].params.pass)
-	    epoints[i].params.pass = def_params.pass;
-	  if (! epoints[i].params.acct)
-	    epoints[i].params.acct = def_params.acct;
-
-	  epoints[i].conn =
-	    get_host_conn (epoints[i].name, &epoints[i].params,
-			   &epoints[i].name);
-	  epoints[i].name =
-	    realloc (epoints[i].name,
-		     strlen (epoints[i].name) + 1 + strlen (rmt) + 1);
-	  if (! epoints[i].name)
-	    error (22, ENOMEM, "Cannot allocate name storage");
-
-	  err = ftp_conn_set_type (epoints[i].conn, "I");
-	  if (err)
-	    error (23, err, "%s: Cannot set connection type to binary",
-		   epoints[i].name);
-
-	  strcat (epoints[i].name, ":");
-	  strcat (epoints[i].name, rmt);
-
-	  epoints[i].rmt_file = rmt;
-	}
-      else if (epoints[i].params.user
-	       || epoints[i].params.pass
-	       || epoints[i].params.acct)
-	error (20, 0,
-	       "%s: Ftp login parameter specified for a local endpoint (%s,%s,%s)",
-	       epoints[i].name,
-	       epoints[i].params.user,
-	       epoints[i].params.pass,
-	       epoints[i].params.acct);
-    }
-
-  if (epoints[0].conn && epoints[1].conn)
-    {
-      err = ftp_conn_rmt_copy (epoints[0].conn, epoints[0].rmt_file,
-			       epoints[1].conn, epoints[1].rmt_file);
+      err = ftp_conn_rmt_copy (rd.conn, rd.file, wr.conn, wr.file);
       if (err)
 	error (30, err, "Remote copy");
     }
   else
     {
-      for (i = 0; i < 2; i++)
-	if (epoints[i].conn)
-	  {
-	    if (i == 0)
-	      err = ftp_conn_start_retrieve (epoints[i].conn,
-					     epoints[i].rmt_file,
-					     &epoints[i].fd);
-	    else
-	      err = ftp_conn_start_store (epoints[i].conn,
-					  epoints[i].rmt_file,
-					  &epoints[i].fd);
-	    if (err)
-	      error (31, err, "%s", epoints[i].name);
-	  }
-	else if (strcmp (epoints[i].name, "-") == 0)
-	  epoints[i].fd = i;
-	else
-	  {
-	    int flags = (i == 0) ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
-	    epoints[i].fd = open (epoints[i].name, flags, 0666);
-	    if (epoints[i].fd < 0)
-	      error (32, errno, "%s", epoints[i].name);
-	  }
+      int rd_fd, wr_fd;
 
-      cp (epoints[0].fd, epoints[0].name, epoints[1].fd, epoints[1].name);
+      err = eopen_rd (&rd, &rd_fd);
+      if (err)
+	error (31, err, "%s", rd.name);
 
-      for (i = 0; i < 2; i++)
+      err = eopen_wr (&wr, &wr_fd);
+      if (err == EISDIR)
+	/* The destination name is a directory; try again with the source
+	   basename appended.  */
 	{
-	  close (epoints[i].fd);
-	  if (epoints[i].conn)
-	    {
-	      err = ftp_conn_finish_transfer (epoints[i].conn);
-	      if (err)
-		error (31, err, "%s", epoints[i].name);
-	    }
-	}	      
+	  char *bname = basename (rd.file);
+	  size_t bname_len = strlen (bname);
+	  char *dir = wr.file;
+	  char *name = malloc (strlen (dir) + 1 + bname_len + 1);
+
+	  if (! name)
+	    error (99, ENOMEM, "%s", dir);
+
+	  strcpy (name, dir);
+	  strcat (name, "/");
+	  strcat (name, bname);
+	  wr.file = name;
+
+	  err = eopen_wr (&wr, &wr_fd);
+	}
+      if (err)
+	error (32, err, "%s", wr.name);
+
+      cp (rd_fd, rd.name, wr_fd, wr.name);
+
+      close (rd_fd);
+      close (wr_fd);
+
+      efinish (&rd);
+      efinish (&wr);
     }
 
   exit (0);
