@@ -20,16 +20,20 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Implement pageout call back as described by <mach/memory_object.defs>. */
+/* Worker function used by _pager_seqnos_memory_object_data_return
+   and _pager_seqnos_memory_object_data_initialize.  All args are
+   as for _pager_seqnos_memory_object_data_return; the additional
+   INITIALIZING arg identifies which function is calling us. *
 kern_return_t
-_pager_seqnos_memory_object_data_return (mach_port_t object, 
-					 mach_port_seqno_t seqno,
-					 mach_port_t control,
-					 vm_offset_t offset,
-					 pointer_t data,
-					 vm_size_t length,
-					 int dirty,
-					 int kcopy)
+_pager_do_write_request (mach_port_t object,
+			 mach_port_seqno_t seqno,
+			 mach_port_t control,
+			 vm_offset_t offset,
+			 pointer_t data,
+			 vm_size_t length,
+			 int dirty,
+			 int kcopy,
+			 int initializing)
 {
   struct pager *p;
   char *pm_entries;
@@ -40,6 +44,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   struct lock_list {struct lock_request *lr;
 		    struct lock_list *next;} *lock_list, *ll;
   int wakeup;
+  int omitdata = 0;
   
   if (!(p = ports_check_port_type (object, pager_port_type)))
     return EOPNOTSUPP;
@@ -93,8 +98,20 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   pm_entries = &p->pagemap[offset / __vm_page_size];
 
   /* Mark these pages as being paged out.  */
-  for (i = 0; i < npages; i++)
-    pm_entries[i] |= PM_PAGINGOUT;
+  if (initializing)
+    {
+      assert (npages <= 32);
+      for (i = 0; i < npages; i++)
+	{
+	  if (pm_entries[i] & PM_INIT)
+	    omitdata |= 1 << i;
+	  else
+	    pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
+	}
+    }
+  else
+    for (i = 0; i < npages; i++)
+      pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
@@ -121,9 +138,10 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
      but until the pager library interface is changed, this will have to do. */
 
   for (i = 0; i < npages; i++)
-    pagerrs[i] = pager_write_page (p->upi, 
-				   offset + (vm_page_size * i), 
-				   data + (vm_page_size * i));
+    if (!(omitdata & (1 << i)))
+      pagerrs[i] = pager_write_page (p->upi, 
+				     offset + (vm_page_size * i), 
+				     data + (vm_page_size * i));
 
   /* Acquire the right to meddle with the pagemap */
   mutex_lock (&p->interlock);
@@ -132,6 +150,9 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 
   for (i = 0; i < npages; i++)
     {
+      if (omitdata & (1 << i))
+	continue;
+      
       if (pagerrs[i] && ! (pm_entries[i] & PM_PAGEINWAIT))
 	/* The only thing we can do here is mark the page, and give
 	   errors from now on when it is to be read.  This is
@@ -171,3 +192,21 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   ports_done_with_port (p);
   return 0;
 }
+
+/* Implement pageout call back as described by <mach/memory_object.defs>. */
+kern_return_t
+_pager_seqnos_memory_object_data_return (mach_port_t object, 
+					 mach_port_seqno_t seqno,
+					 mach_port_t control,
+					 vm_offset_t offset,
+					 pointer_t data,
+					 vm_size_t length,
+					 int dirty,
+					 int kcopy)
+{
+  _pager_do_write_request (object, seqno, control, offset, data,
+			   length, dirty, kcopy, 0);
+}
+
+			   
+
