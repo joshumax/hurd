@@ -35,7 +35,7 @@ OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
 libname = libthreads
 installhdrs = cthreads.h rwlock.h
-installhdrdir = .
+installhdrsubdir = .
 
 VPATH += $(srcdir)/$(machine)
 
