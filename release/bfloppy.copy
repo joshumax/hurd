@@ -9,4 +9,3 @@ gzip objcopy hurd/ext2fs.static
 copy boot/grub/menu.lst
 copy boot/grub/stage1
 copy boot/grub/stage2
-copy boot/grub/ffs_stage1_5
