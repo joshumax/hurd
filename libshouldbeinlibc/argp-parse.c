@@ -1,6 +1,6 @@
 /* Hierarchial argument parsing, layered over getopt
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -42,7 +42,7 @@
 #define OPT_HELP	-1
 #define OPT_PROGNAME	-2
 
-static struct argp_option argp_default_options[] =
+static const struct argp_option argp_default_options[] =
 {
   {"help",	  OPT_HELP,    0, 0,  "Give this help list", -1},
   {"program-name",OPT_PROGNAME,"NAME", OPTION_HIDDEN, "Set the program name"},
@@ -81,7 +81,7 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
-static struct argp argp_default_argp =
+static const struct argp argp_default_argp =
   {argp_default_options, &argp_default_parser};
 
 
@@ -144,7 +144,7 @@ struct group
    routine returned a non-zero value, it is returned; otherwise 0 is
    returned.  */
 error_t
-argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
+argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    int *end_index)
 {
   int opt;
@@ -167,7 +167,7 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
   if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
     {
-      struct argp **plist = alloca (3 * sizeof (struct argp *));
+      const struct argp **plist = alloca (3 * sizeof (struct argp *));
       struct argp *top_argp = alloca (sizeof (struct argp));
 
       /* TOP_ARGP has no options, it just serves to group the user & default
@@ -194,10 +194,10 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
        descended from it, and SHORT_LEN & LONG_LEN by the maximum lengths of
        the resulting merged getopt short options string and long-options
        array, respectively.  */
-    void calc_lengths (struct argp *argp)
+    void calc_lengths (const struct argp *argp)
       {
-	struct argp **parents = argp->parents;
-	struct argp_option *opt = argp->options;
+	const struct argp **parents = argp->parents;
+	const struct argp_option *opt = argp->options;
 
 	if (opt || argp->parser)
 	  {
@@ -221,15 +221,16 @@ argp_parse (struct argp *argp, int argc, char **argv, unsigned flags,
        into getopt options stored in SHORT_OPTS and LONG_OPTS; SHORT_END and
        LONG_END are the points at which new options are added.  Returns the
        next unused group entry.  */
-    struct group *convert_options (struct argp *argp, struct group *group)
+    struct group *convert_options (const struct argp *argp,
+				   struct group *group)
       {
 	/* REAL is the most recent non-alias value of OPT.  */
-	struct argp_option *real = argp->options;
-	struct argp **parents = argp->parents;
+	const struct argp_option *real = argp->options;
+	const struct argp **parents = argp->parents;
 
 	if (real || argp->parser)
 	  {
-	    struct argp_option *opt;
+	    const struct argp_option *opt;
 
 	    if (real)
 	      for (opt = real; !_option_is_end (opt); opt++)
