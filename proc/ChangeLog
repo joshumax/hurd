@@ -1,3 +1,8 @@
+Mon Feb  3 16:52:14 1997  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* hash.c (pid_find, task_find, task_find_nocreate, reqport_find):
+	Don't dereference P if it's 0.
+
 Fri Oct 25 20:30:22 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* host.c: Include <version.h>.
