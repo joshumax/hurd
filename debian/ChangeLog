@@ -1,3 +1,8 @@
+1999-04-18  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rules (binary-arch): Fix $ -> $$ and \\ -> \.
+	From Marcus Brinkmann.
+
 1999-04-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* control (Provides): Add login.
