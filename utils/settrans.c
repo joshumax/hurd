@@ -1,6 +1,6 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -39,6 +39,7 @@ static struct argp_option options[] =
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist"},
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
   {"goaway",      'g', 0, 0, "Make any existing active translator go away"},
+  {"pause",       'P', 0, 0, "When starting an active translator, prompt and wait for a newline on stdin before completing the startup handshake"},
 
   {0,0,0,0, "When an active translator is told to go away:", 2},
   {"recursive",   'R', 0, 0, "Shutdown its children too"},
@@ -76,7 +77,7 @@ main(int argc, char *argv[])
   int goaway_flags = 0;
 
   /* Various option flags.  */
-  int passive = 0, active = 0, keep_active = 0;
+  int passive = 0, active = 0, keep_active = 0, pause = 0;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -97,6 +98,7 @@ main(int argc, char *argv[])
 	case 'a': active = 1; break;
 	case 'p': passive = 1; break;
 	case 'k': keep_active = 1; break;
+	case 'P': pause = 1; break;
 
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
@@ -126,6 +128,12 @@ main(int argc, char *argv[])
 			 mach_port_t *underlying,
 			 mach_msg_type_name_t *underlying_type)
 	{
+	  if (pause)
+	    {
+	      fprintf (stderr, "Pausing...\n");
+	      getchar ();
+	    }
+
 	  node = file_name_lookup (node_name, flags | lookup_flags, 0666);
 	  if (node == MACH_PORT_NULL)
 	    return errno;
