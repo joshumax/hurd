@@ -22,7 +22,7 @@
 /* The kernel calls this (as described in <mach/memory_object.defs>)
    when a memory_object_lock_request call has completed.  Read this
    in combination with lock-object.c.  */
-error_t
+kern_return_t
 _pager_seqnos_memory_object_lock_completed (mach_port_t object,
 					    mach_port_seqno_t seqno,
 					    mach_port_t control,
