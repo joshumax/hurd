@@ -75,7 +75,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   dnp = diruser->po->np;
   mutex_lock (&dnp->lock);
-  np = 0;
 
   netfs_nref (dnp);		/* acquire a reference for later netfs_nput */
 
@@ -300,7 +299,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  if (nextname)
 	    {
 	      linkbuf[linklen] = '/';
-	      bcopy (nextname, linkbuf + linklen + 1,
+	      memcpy (linkbuf + linklen + 1, nextname,
 		     nextnamelen - 1);
 	    }
 	  linkbuf[nextnamelen + linklen] = '\0';

@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2000 Free Software Foundation, Inc.
    Written by Thomas Bushnell, BSG.
 
    This file is part of the GNU Hurd.
@@ -28,6 +28,7 @@ netfs_nput (struct node *np)
   np->references--;
   if (np->references == 0)
     netfs_drop_node (np);
+    /* netfs_drop_node drops netfs_node_refcnt_lock for us.  */
   else
     {
       spin_unlock (&netfs_node_refcnt_lock);

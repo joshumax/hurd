@@ -22,6 +22,9 @@
 
 #include "netfs.h"
 
+/* Default implementations of the netfs_set_translator and
+   netfs_set_translator functions. */
+
 /* The user may define this function.  Attempt to set the passive
    translator record for FILE to ARGZ (of length ARGZLEN) for user
    CRED. */

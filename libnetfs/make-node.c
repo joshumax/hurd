@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -25,6 +25,8 @@ struct node *
 netfs_make_node (struct netnode *nn)
 {
   struct node *np = malloc (sizeof (struct node));
+  if (! np)
+    return NULL;
   
   np->nn = nn;
 

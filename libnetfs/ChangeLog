@@ -1,3 +1,25 @@
+2000-12-30  Marcus Brinkmann  <marcus@gnu.org>
+
+	* netfs.h (struct node): Adjust comment fixes by last change
+	to be more in line with similar comments elsewhere.
+	* make-node.c (netfs_make_node): Return 0 if malloc does.
+	Reported by Neal H Walfield <neal@cs.uml.edu>.
+
+2000-12-29  Neal H Walfield <neal@cs.uml.edu>
+
+        * dir-lookup.c (netfs_S_dir_lookup):  Do not bother zeroing np, it
+	happens later anyway.  Replace bcopy with memcpy.
+	* file-get-translator.c (netfs_S_file_get_translator): Replace
+	bcopy with memcpy.
+	* io-seek.c (netfs_S_io_seek): Only get the lock if we need it.
+	* io-stat.c (netfs_S_io_stat): Replace bcopy with memcpy.
+	* io-write.c (netfs_S_io_write): Wait until the lock is needed.
+	* netfs.h: Complete documentation revision.  The locking protocol
+	is now very explicit.
+	* nput.c (netfs_nput): Added comment.
+	* nrele.c (netfs_nrele): Likewise.
+	* set-get-trans.c: Likewise.
+
 2000-03-17  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* file-exec.c (netfs_S_file_exec): Fix typo and braino in last change.

@@ -30,6 +30,7 @@ netfs_nrele (struct node *np)
     {
       mutex_lock (&np->lock);
       netfs_drop_node (np);
+      /* netfs_drop_node drops netfs_node_refcnt_lock for us.  */
     }
   else
     spin_unlock (&netfs_node_refcnt_lock);

@@ -26,17 +26,16 @@ netfs_S_io_revoke (struct protid *cred)
   error_t err;
   struct node *np;
 
-  error_t
-    iterator_function (void *port)
+  error_t iterator_function (void *port)
     {
       struct protid *user = port;
-
+      
       if ((user != cred)
 	  && (user->po->np == np))
 	ports_destroy_right (user);
       return 0;
     }
-
+  
   if (!cred)
     return EOPNOTSUPP;
 

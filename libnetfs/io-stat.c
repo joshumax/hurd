@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 2000 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -37,7 +37,7 @@ netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
   err = netfs_validate_stat (node, user->user);
   if (! err)
     {
-      bcopy (&node->nn_stat, statbuf, sizeof (struct stat));
+      memcpy (statbuf, &node->nn_stat, sizeof (struct stat));
 
       /* Set S_IATRANS and S_IROOT bits as appropriate.  */
       statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
