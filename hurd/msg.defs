@@ -79,7 +79,7 @@ routine set_init_port (
 	process: mach_port_t;
 	refport: mach_port_t;
 	which: int;
-	port: mach_port_t);
+	port: mach_port_send_t);
 
 routine get_init_ports (
 	process: mach_port_t;
@@ -137,7 +137,7 @@ routine set_fd (
 	process: mach_port_t;
 	refport: mach_port_t;
 	fd: int;
-	port: mach_port_t);
+	port: mach_port_send_t);
 
 /* These two calls fetch and store the whole environment,
    in "a=b\0c=d\0" form.  */
