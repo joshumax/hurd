@@ -1,6 +1,6 @@
 /* Redirect stdio to the console if possible
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 98 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -31,6 +31,8 @@
 #include <device/device.h>
 #include <hurd.h>
 
+#include "priv.h"
+
 /* Make errors go somewhere reasonable.  */
 void
 diskfs_console_stdio ()
@@ -49,6 +51,8 @@ diskfs_console_stdio ()
     {
       mach_port_t dev, cons;
       error_t err;
+      if (diskfs_boot_flags)
+	diskfs_boot_privports ();
       err = get_privileged_ports (NULL, &dev);
       assert_perror (err);
       err = device_open (dev, D_READ|D_WRITE, "console", &cons);

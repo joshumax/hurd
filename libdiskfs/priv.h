@@ -33,6 +33,9 @@ extern int _diskfs_nosuid, _diskfs_noexec;
 /* This is the -C argument value.  */
 extern const char *_diskfs_chroot_directory;
 
+/* If --boot-command is given, this points to the program and args.  */
+extern char **_diskfs_boot_command;
+
 volatile struct mapped_time_value *_diskfs_mtime;
 
 extern struct argp_option diskfs_common_options[];

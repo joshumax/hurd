@@ -1,6 +1,6 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995, 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 96, 97, 98 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,7 +25,8 @@
 #include <hurd/store.h>
 #include "priv.h"
 
-char *diskfs_boot_flags = 0;
+char *diskfs_boot_flags;
+char **_diskfs_boot_command;
 
 extern char **diskfs_argv;
 
@@ -37,18 +38,26 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 #define OPT_DEVICE_MASTER_PORT	(-2)
 #define OPT_EXEC_SERVER_TASK	(-3)
 #define OPT_BOOTFLAGS		(-4)
+#define OPT_BOOT_COMMAND	(-5)
 
 static const struct argp_option
 startup_options[] =
 {
+  {"directory",		 'C',			 "DIRECTORY", 0,
+   "Use DIRECTORY as the root of the filesystem"},
+  {"virtual-root",	 0, 0, OPTION_ALIAS},
+  {"chroot",		 0, 0, OPTION_ALIAS},
+
   {0,0,0,0, "Boot options:", -2},
+  {"bootflags",          OPT_BOOTFLAGS,          "FLAGS", 0,
+   "Required for bootstrap filesystem, the FLAGS"
+   " argument is passed on to init"},
+  {"boot-command",	 OPT_BOOT_COMMAND,	 0, 0,
+   "Remaining arguments form command line to run"
+   " at bootstrap instead of init"},
   {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
   {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
   {"exec-server-task",   OPT_EXEC_SERVER_TASK,   "PORT"},
-  {"bootflags",          OPT_BOOTFLAGS,          "FLAGS"},
-  {"directory",		 'C',			 "DIRECTORY"},
-  {"virtual-root",	 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
-  {"chroot",		 0, 0, OPTION_ALIAS | OPTION_HIDDEN},
 
   {0}
 };
@@ -89,6 +98,14 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       diskfs_boot_flags = arg; break;
     case 'C':
       _diskfs_chroot_directory = arg; break;
+
+    case OPT_BOOT_COMMAND:
+      if (state->next == state->argc)
+	argp_error (state, "Command line must follow --boot-command option");
+      _diskfs_boot_command = state->argv + state->next;
+      state->next = state->argc; /* stop parsing */
+      {char **p; for (p = _diskfs_boot_command; *p; ++p) printf("BC %s\n",*p);}
+      break;
 
     case ARGP_KEY_END:
       diskfs_argv = state->argv; break;

@@ -30,12 +30,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <device/device.h>
 #include <sys/reboot.h>
 #include <string.h>
+#include <argz.h>
+#include <error.h>
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 
-mach_port_t diskfs_exec_ctl;
-mach_port_t diskfs_exec;
+static mach_port_t diskfs_exec_ctl;
+mach_port_t diskfs_exec = MACH_PORT_NULL;
 extern task_t diskfs_exec_server_task;
+static task_t parent_task = MACH_PORT_NULL;
 
 static struct mutex execstartlock;
 static struct condition execstarted;
@@ -62,6 +65,25 @@ get_console ()
   return console;
 }
 
+/* Make sure we have the privileged ports.  */
+void
+diskfs_boot_privports (void)
+{
+  assert (diskfs_boot_flags);
+  if (_hurd_host_priv == MACH_PORT_NULL)
+    {
+      /* We are the boot command run by the real bootstrap filesystem.
+	 We get the privileged ports from it as init would.  */
+      mach_port_t bootstrap;
+      error_t err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      assert_perror (err);
+      err = fsys_getpriv (bootstrap, &_hurd_host_priv, &_hurd_device_master,
+			  &parent_task);
+      mach_port_deallocate (mach_task_self (), bootstrap);
+      assert_perror (err);
+    }
+}
+
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  */
 void
@@ -71,28 +93,14 @@ diskfs_start_bootstrap ()
   retry_type retry;
   char pathbuf[1024];
   string_t retry_name;
-  uid_t idlist[] = {0, 0, 0};
   mach_port_t portarray[INIT_PORT_MAX];
   mach_port_t fdarray[3];	/* XXX */
   task_t newt;
   error_t err;
-  char *initname, *initnamebuf;
-  char *exec_argv;
-  int exec_argvlen;
+  char *exec_argv, *initname;
+  size_t exec_argvlen;
   struct port_info *bootinfo;
   struct protid *rootpi;
-
-  printf ("Hurd server bootstrap: %s", program_invocation_short_name);
-  fflush (stdout);
-
-  /* Get the execserver going and wait for its fsys_startup */
-  mutex_init (&execstartlock);
-  condition_init (&execstarted);
-  mutex_lock (&execstartlock);
-  start_execserver ();
-  condition_wait (&execstarted, &execstartlock);
-  mutex_unlock (&execstartlock);
-  assert (diskfs_exec_ctl);
 
   /* Create the port for current and root directory.  */
   err = diskfs_create_protid (diskfs_make_peropen (diskfs_root_node,
@@ -107,49 +115,144 @@ diskfs_start_bootstrap ()
 
   ports_port_deref (rootpi);
 
-  /* Contact the exec server.  */
-  err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
-		      idlist, 3, idlist, 3, 0,
-		      &retry, retry_name, &diskfs_exec);
-  assert_perror (err);
-  assert (retry == FS_RETRY_NORMAL);
-  assert (retry_name[0] == '\0');
-  assert (diskfs_exec);
-
-
-  /* Execute the startup server.  */
-  initnamebuf = NULL;
-  initname = default_init;
-  if (index (diskfs_boot_flags, 'i'))
+  if (diskfs_exec_server_task == MACH_PORT_NULL)
     {
-      size_t bufsz;
-      ssize_t len;
-      printf ("Init name [%s]: ", default_init);
-      bufsz = 0;
-      switch (len = getline (&initnamebuf, &bufsz, stdin))
+      /* We are the boot command run by the real bootstrap filesystem.
+	 Our parent (the real bootstrap filesystem) provides us a root
+	 directory where we look up /servers/exec like any non-bootstrap
+	 filesystem would.  */
+      assert (_hurd_ports);
+      assert (_hurd_ports[INIT_PORT_CRDIR].port != MACH_PORT_NULL);
+      diskfs_exec = file_name_lookup (_SERVERS_EXEC, 0, 0);
+      if (diskfs_exec == MACH_PORT_NULL)
+	error (1, errno, "%s", _SERVERS_EXEC);
+      else
 	{
-	case -1:
-	  perror ("getline");
-	  printf ("Using default of `%s'.\n", initname);
-	case 0:			/* Hmm.  */
-	case 1:			/* Empty line, just a newline.  */
-	  /* Use default.  */
-	  break;
-	default:
-	  initnamebuf[len - 1] = '\0'; /* Remove the newline.  */
-	  initname = initnamebuf;
-	  while (*initname == '/')
-	    initname++;
-	  break;
+#ifndef NDEBUG
+	  /* Make sure this is really a port to another server.  */
+	  struct port_info *pi = ports_lookup_port (diskfs_port_bucket,
+						    diskfs_exec, 0);
+	  assert (!pi);
+#endif
 	}
+
+      /* Here we assume the parent has already printed:
+	 	Hurd server bootstrap: bootfs exec ourfs
+      */
+      printf ("[re-bootstrap]:");
+      fflush (stdout);
     }
   else
-    initname = default_init;
+    {
+      uid_t idlist[] = {0, 0, 0};
+      file_t execnode;
+
+      printf ("Hurd server bootstrap: %s", program_invocation_short_name);
+      fflush (stdout);
+
+      /* Get the execserver going and wait for its fsys_startup */
+      mutex_init (&execstartlock);
+      condition_init (&execstarted);
+      mutex_lock (&execstartlock);
+      start_execserver ();
+      condition_wait (&execstarted, &execstartlock);
+      mutex_unlock (&execstartlock);
+      assert (diskfs_exec_ctl != MACH_PORT_NULL);
+
+      /* Contact the exec server.  */
+      err = fsys_getroot (diskfs_exec_ctl, root_pt, MACH_MSG_TYPE_COPY_SEND,
+			  idlist, 3, idlist, 3, 0,
+			  &retry, retry_name, &diskfs_exec);
+      assert_perror (err);
+      assert (retry == FS_RETRY_NORMAL);
+      assert (retry_name[0] == '\0');
+      assert (diskfs_exec != MACH_PORT_NULL);
+
+      /* Attempt to set the active translator for the exec server so that
+	 filesystems other than the bootstrap can find it.  */
+      err = dir_lookup (root_pt, _SERVERS_EXEC, O_NOTRANS, 0,
+			&retry, pathbuf, &execnode);
+      if (err)
+	{
+	  error (0, err, "cannot set translator on %s", _SERVERS_EXEC);
+	  mach_port_deallocate (mach_task_self (), diskfs_exec_ctl);
+	}
+      else
+	{
+	  assert (retry == FS_RETRY_NORMAL);
+	  assert (retry_name[0] == '\0');
+	  assert (execnode != MACH_PORT_NULL);
+	  err = file_set_translator (execnode, 0, FS_TRANS_SET, 0, 0, 0,
+				     diskfs_exec_ctl, MACH_MSG_TYPE_MOVE_SEND);
+	  mach_port_deallocate (mach_task_self (), execnode);
+	  assert_perror (err);
+	}
+      diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
+    }
+
+  if (_diskfs_boot_command)
+    {
+      /* We have a boot command line to run instead of init.  */
+      err = argz_create (_diskfs_boot_command, &exec_argv, &exec_argvlen);
+      assert_perror (err);
+      initname = exec_argv;
+      while (*initname == '/')
+	initname++;
+    }
+  else
+    {
+      /* Choose the name of the startup server to execute.  */
+      char *initnamebuf;
+      if (index (diskfs_boot_flags, 'i'))
+	{
+	  size_t bufsz;
+	  ssize_t len;
+	  initname = default_init;
+	prompt:
+	  initnamebuf = NULL;
+	  printf ("\nInit name [%s]: ", initname);
+	  fflush (stdout);
+	  bufsz = 0;
+	  switch (len = getline (&initnamebuf, &bufsz, stdin))
+	    {
+	    case -1:
+	      perror ("getline");
+	      printf ("Using default of `%s'.\n", initname);
+	    case 0:			/* Hmm.  */
+	    case 1:			/* Empty line, just a newline.  */
+	      /* Use default.  */
+	      break;
+	    default:
+	      initnamebuf[len - 1] = '\0'; /* Remove the newline.  */
+	      initname = initnamebuf;
+	      while (*initname == '/')
+		initname++;
+	      break;
+	    }
+	}
+      else
+	{
+	  initname = default_init;
+	  initnamebuf = NULL;
+	}
+
+      exec_argvlen = asprintf (&exec_argv, "/%s%c%s%c",
+			       initname, '\0', diskfs_boot_flags, '\0');
+      if (initname != default_init)
+	free (initnamebuf);
+      initname = exec_argv + 1;
+    }
 
   err = dir_lookup (root_pt, initname, O_READ, 0,
 		    &retry, pathbuf, &startup_pt);
-
-  assert_perror (err);
+  if (err)
+    {
+      printf ("\nCannot find startup program `%s': %s\n",
+	      initname, strerror (err));
+      fflush (stdout);
+      free (exec_argv);
+      goto prompt;
+    }
   assert (retry == FS_RETRY_NORMAL);
   assert (pathbuf[0] == '\0');
 
@@ -170,17 +273,14 @@ diskfs_start_bootstrap ()
 
   fdarray[0] = fdarray[1] = fdarray[2] = get_console (); /* XXX */
 
-  exec_argvlen =
-    asprintf (&exec_argv, "%s%c%s%c", initname, '\0', diskfs_boot_flags, '\0');
-
   err = task_create (mach_task_self (), 0, &newt);
   assert_perror (err);
   if (index (diskfs_boot_flags, 'd'))
     {
-      printf ("pausing for init...\n");
+      printf ("pausing for %s...\n", exec_argv);
       getc (stdin);
     }
-  printf (" init");
+  printf (" %s", basename (exec_argv));
   fflush (stdout);
   err = exec_exec (diskfs_exec, startup_pt, MACH_MSG_TYPE_COPY_SEND,
 		   newt, 0, exec_argv, exec_argvlen, 0, 0,
@@ -193,8 +293,6 @@ diskfs_start_bootstrap ()
   mach_port_deallocate (mach_task_self (), root_pt);
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
-  if (initnamebuf != default_init)
-    free (initnamebuf);
   assert_perror (err);
 }
 
@@ -362,7 +460,6 @@ diskfs_S_fsys_init (mach_port_t port,
 {
   struct port_infe *pt;
   static int initdone = 0;
-  process_t execprocess;
   mach_port_t host, startup;
   error_t err;
   mach_port_t root_pt;
@@ -380,8 +477,11 @@ diskfs_S_fsys_init (mach_port_t port,
      anything which might attempt to send an RPC to init.  */
   fsys_init_reply (reply, replytype, 0);
 
-  /* Allocate our reference here; _hurd_init will consume a reference
+  /* Allocate our references here; _hurd_init will consume a reference
      for the library itself. */
+  err = mach_port_mod_refs (mach_task_self (),
+			    procserver, MACH_PORT_RIGHT_SEND, +1);
+  assert_perror (err);
   err = mach_port_mod_refs (mach_task_self (),
 			    authhandle, MACH_PORT_RIGHT_SEND, +1);
   assert_perror (err);
@@ -390,22 +490,74 @@ diskfs_S_fsys_init (mach_port_t port,
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
   diskfs_auth_server_port = authhandle;
 
-  assert (diskfs_exec_server_task != MACH_PORT_NULL);
-  err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
-  assert_perror (err);
+  if (diskfs_exec_server_task != MACH_PORT_NULL)
+    {
+      process_t execprocess;
+      err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
+      assert_perror (err);
 
-  /* Declare that the exec server is our child. */
-  proc_child (procserver, diskfs_exec_server_task);
-  proc_mark_exec (execprocess);
+      /* Declare that the exec server is our child. */
+      proc_child (procserver, diskfs_exec_server_task);
+      proc_mark_exec (execprocess);
 
-  /* Don't start this until now so that exec is fully authenticated
-     with proc. */
-  exec_init (diskfs_exec, authhandle, execprocess, MACH_MSG_TYPE_COPY_SEND);
-  mach_port_deallocate (mach_task_self (), execprocess);
+      /* Don't start this until now so that exec is fully authenticated
+	 with proc. */
+      exec_init (diskfs_exec, authhandle,
+		 execprocess, MACH_MSG_TYPE_COPY_SEND);
+      mach_port_deallocate (mach_task_self (), execprocess);
 
-  /* We don't need this anymore. */
-  mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
-  diskfs_exec_server_task = MACH_PORT_NULL;
+      /* We don't need this anymore. */
+      mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
+      diskfs_exec_server_task = MACH_PORT_NULL;
+    }
+  else
+    {
+      mach_port_t bootstrap;
+      process_t parent_proc;
+
+      assert (parent_task != MACH_PORT_NULL);
+
+      /* Tell the proc server that our parent task is our child.  This
+	 makes the process hierarchy fail to represent the real order of
+	 who created whom, but it sets the owner and authentication ids to
+	 root.  It doesn't really matter that the parent fs task be
+	 authenticated, but the exec server needs to be authenticated to
+	 complete the boot handshakes with init.  The exec server gets its
+	 privilege by the parent fs doing proc_child (code above) after
+	 we send it fsys_init (below).  */
+
+      err = proc_child (procserver, parent_task);
+      assert_perror (err);
+
+      /* Get the parent's proc server port so we can send it in the fsys_init
+	 RPC just as init would.  */
+      err = proc_task2proc (procserver, parent_task, &parent_proc);
+      assert_perror (err);
+      {
+	pid_t pid;
+	err = proc_task2pid (procserver, parent_task, &pid);
+	assert_perror (err);
+	printf("BOOT parent pid %d\n",pid);
+	err = proc_task2pid (procserver, mach_task_self(), &pid);
+	assert_perror (err);
+	printf("BOOT our pid %d\n",pid);
+      }
+
+      /* We don't need this anymore. */
+      mach_port_deallocate (mach_task_self (), parent_task);
+      parent_task = MACH_PORT_NULL;
+
+      proc_mark_exec (parent_proc);
+
+      /* Give our parent (the real bootstrap filesystem) an fsys_init
+	 RPC of its own, as init would have sent it.  */
+      err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      assert_perror (err);
+      err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_MOVE_SEND,
+		       authhandle);
+      mach_port_deallocate (mach_task_self (), bootstrap);
+      assert_perror (err);
+    }
 
   /* Get a port to the root directory to put in the library's
      data structures.  */
@@ -458,7 +610,7 @@ diskfs_S_fsys_init (mach_port_t port,
   if (err)
     return err;
 
-  proc_register_version (procserver, host, diskfs_server_name, "", 
+  proc_register_version (procserver, host, diskfs_server_name, "",
 			 diskfs_server_version);
 
   err = proc_getmsgport (procserver, 1, &startup);
@@ -470,6 +622,7 @@ diskfs_S_fsys_init (mach_port_t port,
     }
 
   mach_port_deallocate (mach_task_self (), host);
+  mach_port_deallocate (mach_task_self (), procserver);
 
   _diskfs_init_completed ();
 
@@ -507,4 +660,3 @@ start_execserver (void)
   printf (" exec");
   fflush (stdout);
 }
-
