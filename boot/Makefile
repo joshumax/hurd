@@ -35,6 +35,8 @@ install: boot
 
 clean: 
 	rm -f boot $(OBJS) *_S.h *Server.c
+relink:
+	rm -f boot
 
 boot.o: notify_S.h exec_S.h device_S.h io_S.h
 
