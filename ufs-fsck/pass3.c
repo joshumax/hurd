@@ -57,13 +57,13 @@ pass3 ()
 	{
 	  if (inodestate[dnp->i_number] & DIR_REF)
 	    errexit ("ORPHANED DIR MARKED WITH CONNECT");
-	  pwarn ("UNREF DIR");
-	  pinode (dnp->i_number);
-	  if (preen)
-	    printf (" (RECONNECTED)");
+	  pinode (dnp->i_number, "UNREF");
 	  if (preen || reply ("RECONNECT"))
-	    if (linkup (dnp->i_number, dnp->i_dotdot))
-	      dnp->i_parent = dnp->i_dotdot = lfdir;
+	    {
+	      if (linkup (dnp->i_number, dnp->i_dotdot))
+		dnp->i_parent = dnp->i_dotdot = lfdir;
+	      pfix ("RECONNECTED");
+	    }
 	}
     }
 }
