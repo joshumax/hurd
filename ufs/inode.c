@@ -232,7 +232,7 @@ read_disknode (struct node *np)
   st->st_gen = read_disk_entry (di->di_gen);
   st->st_rdev = read_disk_entry(di->di_rdev);
   st->st_mode = (read_disk_entry (di->di_model) 
-		 | (read_disk_entry (di->di_modeh) << 16);
+		 | (read_disk_entry (di->di_modeh) << 16));
   st->st_nlink = read_disk_entry (di->di_nlink);
   st->st_size = read_disk_entry (di->di_size);
 #ifdef notyet
