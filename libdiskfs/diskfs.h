@@ -924,10 +924,6 @@ diskfs_create_node (struct node *dir, char *name, mode_t mode,
 error_t diskfs_create_protid (struct peropen *po, uid_t *uids, int nuids,
 			      uid_t *gids, int ngids, struct protid **cred);
 
-/* Backward compatibility.  Use diskfs_create_protid. */
-struct protid *diskfs_make_protid (struct peropen *cred, uid_t *uids,
-				   int nuids, uid_t *gids, int ngids);
-
 /* Build and return in CRED a protid which has no user identification, for
    peropen PO.  The node PO->np must be locked.  */
 error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
