@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,6 +29,8 @@ netfs_S_file_chmod (struct protid *user,
   
   if (!user)
     return EOPNOTSUPP;
+
+  mode &= ~(S_IFMT | S_ISPARE | S_ITRANS);
   
   mutex_lock (&user->po->np->lock);
   err = netfs_attempt_chmod (user->user, user->po->np, mode);
