@@ -40,10 +40,12 @@
 /* ---------------------------------------------------------------- */
 
 #define OPT_HELP	-1
+#define OPT_PROGNAME	-2
 
 static struct argp_option argp_default_options[] =
 {
-  {"help",	OPT_HELP, 0, 0, "Give this help list", -1},
+  {"help",	  OPT_HELP,    0, 0,  "Give this help list", -1},
+  {"program-name",OPT_PROGNAME,"NAME", OPTION_HIDDEN, "Set the program name"},
   {0, 0}
 };
 
@@ -57,10 +59,26 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
       if (state->flags & ARGP_NO_EXIT)
 	usage_flags &= ~ARGP_HELP_EXIT;
       argp_help (state->argp, stdout, usage_flags);
-      return 0;
+      break;
+
+    case OPT_PROGNAME:		/* Set the program name.  */
+      program_invocation_name = arg;
+      program_invocation_short_name = rindex (arg, '/');
+      if (program_invocation_short_name)
+	program_invocation_short_name++;
+      else
+	program_invocation_short_name = program_invocation_name;
+
+      if ((state->flags & (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
+	  == (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
+	state->argv[0] = arg;	/* Update what getopt uses too.  */
+
+      break;
+
     default:
       return EINVAL;
     }
+  return 0;
 }
 
 static struct argp argp_default_argp =
