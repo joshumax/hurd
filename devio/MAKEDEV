@@ -18,19 +18,28 @@ for I; do
     console|tty[0-9]?|tty[0-9a-f])
       $ST $I /hurd/term $_CWD/$I device $I;;
     null)
-      $ST $I /hurd/null ;;
+      $ST $I /hurd/null 
+      chmod 666 $I
+      ;;
     zero)
-      $ST $I /hurd/null -z ;;
+      $ST $I /hurd/null -z
+      chmod 666 $I
+      ;;
     tty)
-      $ST $I /hurd/magic tty ;;
+      $ST $I /hurd/magic tty
+      chmod 666 $I
+      ;;
     fd)
       $ST $I /hurd/magic fd
+      chmod 666 $I
       ln -f -s fd/0 stdin
       ln -f -s fd/1 stdout
       ln -f -s fd/2 stderr
       ;;
     time)
-      $ST $I /hurd/devport time ;;
+      $ST $I /hurd/devport time
+      chmod 666 $I
+      ;;
 
     # ptys
     [pt]ty[pqPQ]?)
@@ -38,6 +47,7 @@ for I; do
       ID="`expr substr $I 4 99`"
       $ST pty$ID /hurd/term $_CWD/pty$ID pty-master $_CWD/tty$ID
       $ST tty$ID /hurd/term $_CWD/tty$ID pty-slave $_CWD/pty$ID
+      chmod 666 pty$ID tty$ID
       ;;
     [pt]ty[pqPQ])
       # Make a bunch of ptys
