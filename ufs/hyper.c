@@ -72,22 +72,42 @@ diskfs_set_hypermetadata (int wait, int clean)
   error_t (*writefn) (daddr_t, vm_address_t, long);
   writefn = (wait ? dev_write_sync : dev_write);
   
-  (*writefn)(fsbtodb (sblock->fs_csaddr), (vm_address_t) csum,
-	     sblock->fs_fsize * howmany (sblock->fs_cssize,
-					 sblock->fs_fsize));
+  spin_lock (&alloclock);
+  if (csum_dirty)
+    {
+      (*writefn)(fsbtodb (sblock->fs_csaddr), (vm_address_t) csum,
+		 sblock->fs_fsize * howmany (sblock->fs_cssize,
+					     sblock->fs_fsize));
+      csum_dirty = 0;
+    }
 
   if (clean)
-    sblock->fs_clean = 1;
-  if (sblock->fs_postblformat == FS_42POSTBLFMT)
     {
-      char sblockcopy[SBSIZE];
-      bcopy (sblock, sblockcopy, SBSIZE);
-      ((struct fs *)sblockcopy)->fs_nrpos = -1;
-      (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
+      sblock->fs_clean = 1;
+      sblock_dirty = 1;
     }
-  else
-    (*writefn) (SBLOCK, (vm_address_t) sblock, SBSIZE);
-  sblock->fs_clean = 0;
+
+  if (sblock_dirty)
+    {
+      if (sblock->fs_postblformat == FS_42POSTBLFMT)
+	{
+	  char sblockcopy[SBSIZE];
+	  bcopy (sblock, sblockcopy, SBSIZE);
+	  ((struct fs *)sblockcopy)->fs_nrpos = -1;
+	  (*writefn) (SBLOCK, (vm_address_t) sblockcopy, SBSIZE);
+	}
+      else
+	(*writefn) (SBLOCK, (vm_address_t) sblock, SBSIZE);
+      sblock_dirty = 0;
+    }
+
+  if (clean)
+    {
+      sblock->fs_clean = 0;
+      sblock_dirty = 1;
+    }
+  
+  spin_unlock (&alloclock);
 }
 
 
