@@ -1,5 +1,5 @@
 /* Interpretation of indirect block structure
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -45,7 +45,7 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
     {
       if (lbn >= 0)
 	{
-	  indirs[0].bno = di->di_db[lbn];
+	  indirs[0].bno = read_disk_entry (di->di_db[lbn]);
 	  indirs[0].offset = -1;
 	}
   
@@ -72,12 +72,12 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
       assert (!(ibn / NINDIR (sblock)));
   
       indirs[2].offset = -1;
-      indirs[2].bno = di->di_ib[INDIR_DOUBLE];
+      indirs[2].bno = read_disk_entry (di->di_ib[INDIR_DOUBLE]);
 
       if (indirs[2].bno)
 	{
 	  diblock = indir_block (indirs[2].bno);
-	  indirs[1].bno = diblock[indirs[1].offset];
+	  indirs[1].bno = read_disk_entry (diblock[indirs[1].offset]);
 	}
       else
 	indirs[1].bno = 0;
@@ -85,13 +85,13 @@ fetch_indir_spec (struct node *np, volatile daddr_t lbn,
   else
     {
       indirs[1].offset = -1;
-      indirs[1].bno = di->di_ib[INDIR_SINGLE];
+      indirs[1].bno = read_disk_entry (di->di_ib[INDIR_SINGLE]);
     }
 
   if (indirs[1].bno)
     {
       siblock = indir_block (indirs[1].bno);
-      indirs[0].bno = siblock[indirs[0].offset];
+      indirs[0].bno = read_disk_entry (siblock[indirs[0].offset]);
     }
   else
     indirs[0].bno = 0;
