@@ -18,9 +18,10 @@
 dir := doc
 makemode := misc
 
-DIST_FILES = navigating gpl.texinfo hurd.texi version.texi \
-	hurd.info $(wildcard hurd.info-*)
+DIST_FILES := navigating gpl.texinfo hurd.texi version.texi \
+	      hurd.info $(wildcard hurd.info-*)
 targets = hurd.info
+installationdir = $(infodir)
 
 DVIPS = dvips
 
@@ -55,5 +56,3 @@ stamp-version: $(top_srcdir)/Makeconf
 	echo '@set VERSION $(hurd-version)' > version.texi.new
 	$(move-if-change) version.texi.new version.texi
 	touch $@
-
-all: $(targets)
