@@ -55,6 +55,27 @@ netfs_S_fsys_getroot (mach_port_t cntl,
     goto out;
   
   type = netfs_root_node->nn_stat.st_mode & S_IFMT;
+
+  if ((netfs_root_node->istranslated
+       || fshelp_translated (&netfs_root_node->transbox))
+      && !(flags & O_NOTRANS))
+    {
+      err = fshelp_fetch_root (&netfs_root_node->transbox,
+			       &dotdot, dotdot, uids, nuids,
+			       gids, ngids, flags,
+			       _netfs_translator_callback1,
+			       _netfs_translator_callback2,
+			       do_retry, retry_name, retry_port);
+      if (err != ENOENT)
+	{
+	  mutex_unlock (&netfs_root_node->lock);
+	  if (!err)
+	    *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
+	  return err;
+	}
+      /* ENOENT means translator has vanished inside fshelp_fetch_root. */
+      err = 0;
+    }
   
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))
     {
