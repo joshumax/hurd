@@ -395,6 +395,7 @@ store_nbd_open (const char *name, int flags, struct store **store)
   err = nbdopen (name, &flags, &sock, &blocksize, &run.length);
   if (!err)
     {
+      run.length /= blocksize;
       err = _store_nbd_create (sock, flags, blocksize, &run, 1, store);
       if (! err)
 	{
