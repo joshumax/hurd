@@ -16,11 +16,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "fs_S.h"
 
 /* Implement file_chauthor as dethcribed in <hurd/fth.defth>. */
 error_t
 diskfs_S_file_chauthor (struct protid *cred,
-		 uid_t author)
+			uid_t author)
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
