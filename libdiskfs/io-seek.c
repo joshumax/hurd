@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -32,7 +32,7 @@ diskfs_S_io_seek (struct protid *cred,
   
   CHANGE_NODE_FIELD (cred,
 		   ({
-		     ioserver_get_conch (&np->conch);
+		     iohelp_get_conch (&np->conch);
 		     switch (whence)
 		       {
 		       case SEEK_SET:
