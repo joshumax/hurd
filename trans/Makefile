@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+#   Copyright (C) 1994,95,96,97,99 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,9 +18,10 @@
 dir := trans
 makemode := servers
 
-targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash password
+targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
+	  password hello
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
-	crash.c firmlink.c password.c
+	crash.c firmlink.c password.c hello.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o
 HURDLIBS=ports trivfs threads fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
@@ -35,8 +36,8 @@ password: passwordServer.o
 crash password: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd new-fifo: ../libfshelp/libfshelp.a ../libports/libports.a
-magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
+hello magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
-magic fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
+hello magic fwd null ifsock fifo new-fifo firmlink: ../libthreads/libthreads.a
 
 $(targets): %: %.o
