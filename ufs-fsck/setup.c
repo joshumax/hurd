@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1994, 1996, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -51,7 +51,7 @@ setup (char *dev)
   struct stat st;
   int changedsb;
   size_t bmapsize;
-  
+
   device_name = dev;
 
   if (stat (dev, &st) == -1)
@@ -59,9 +59,9 @@ setup (char *dev)
       error (0, errno, "%s", dev);
       return 0;
     }
-  if (!S_ISCHR (st.st_mode))
+  if (!S_ISCHR (st.st_mode) && !S_ISBLK (st.st_mode))
     {
-      problem (1, "%s is not a character device", dev);
+      problem (1, "%s is not a character or block device", dev);
       if (! reply ("CONTINUE"))
 	return 0;
     }
@@ -88,7 +88,7 @@ setup (char *dev)
 
   if (preen == 0)
     printf ("\n");
-  
+
   lfdir = 0;
 
   /* We don't do the alternate superblock stuff here (yet). */
@@ -171,10 +171,10 @@ setup (char *dev)
       sblock->fs_qfmask = ~sblock->fs_fmask;
       newinofmt = 0;
     }
-  
+
   if (changedsb)
     writeblock (SBLOCK, sblock, SBSIZE);
-      
+
   /* Constants */
   maxfsblock = sblock->fs_size;
   maxino = sblock->fs_ncg * sblock->fs_ipg;
@@ -189,6 +189,3 @@ setup (char *dev)
   linkfound = calloc (maxino + 1, sizeof (nlink_t));
   return 1;
 }
-
-      
-	
