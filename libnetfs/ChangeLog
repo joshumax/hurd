@@ -1,3 +1,7 @@
+2002-03-9  James A. Morrison <ja2morri@uwaterloo.ca>
+
+ 	* init-startup (netfs_startup): Use err, not errno.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* priv.h (begin_using_protid_port): Change extern inline decl
