@@ -28,6 +28,10 @@ makemode := misc
 SYSCONFFILES = protocols services shells motd ttys
 installed_conf = $(addprefix $(sysconfdir)/$(SYSCONFFILES))
 
+# Mere symlinks are installed for these
+LINKEDCONFFILES = rc
+installed_links = $(addprefix $(sysconfdir)/$(LINKEDCONFFILES))
+
 ifeq ($(override_conf),t)
 foo=$(shell touch /dev/null)
 override_spec = /dev/null
@@ -35,9 +39,12 @@ else
 override_spec = 
 endif
 
-install: $(installed_conf)
+install: $(installed_conf) $(installed_links)
 $(installed_conf): $(sysconfdir)/%: %
 	$(INSTALL_DATA) $< $@
+
+$(sysconfdir)/rc:
+	ln -s ../libexec/rc $(sysconfdir)/rc
 
 include ../Makeconf
 
