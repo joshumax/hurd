@@ -1,3 +1,11 @@
+1997-07-08  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* bfloppy2.boot: Renamed from bfloppy1.boot.
+	Use ext2fs.static rather than ufs.static.
+	* bfloppy2-special.copy: mkdir boot.
+	Use bfloppy2.boot rather than bfloppy1.boot.
+	* bfloppy1.copy: Don't compress boot/serverboot (grub can't handle it).
+
 1997-07-07  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* mkfsimage.sh: Add support for dependency generation.
