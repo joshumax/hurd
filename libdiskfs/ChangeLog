@@ -1,3 +1,8 @@
+2000-01-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* rdwr-internal.c (_diskfs_rdwr_internal): Short-circuit return for
+	zero-length transfer to avoid side effects, as POSIX requires.
+
 1999-12-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	Rewrite of a fix provided by Bill White <bill.white@griggsinst.com>:

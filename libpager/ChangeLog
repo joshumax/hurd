@@ -1,3 +1,7 @@
+2000-01-24  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* pager-memcpy.c (pager_memcpy): Short-circuit return for zero size.
+
 1999-07-10  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* priv.h: Add #include <sys/mman.h> for munmap decl.
