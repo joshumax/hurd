@@ -378,6 +378,7 @@ S_termctty_open_terminal (mach_port_t arg,
 {
   error_t err;
   mach_port_t new_realnode;
+  struct iouser *user;
   struct trivfs_protid *newcred;
   struct port_info *pi = ports_lookup_port (term_bucket, arg, cttyid_class);
 
@@ -390,9 +391,9 @@ S_termctty_open_terminal (mach_port_t arg,
 
   if (!err)
     {
-      err = trivfs_open (termctl,
-			 iohelp_create_iouser (make_idvec (), make_idvec ()),
-			 flags, new_realnode, &newcred);
+      err = iohelp_create_empty_iouser (&user);
+      if (! err)
+        err = trivfs_open (termctl, user, flags, new_realnode, &newcred);
       if (!err)
 	{
 	  *result = ports_get_right (newcred);
