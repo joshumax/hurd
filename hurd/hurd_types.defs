@@ -1,5 +1,5 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 1995 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -159,6 +159,15 @@ type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
 #define RPTLAST
 #define RPT
 #endif
+
+/* This macros are used in some .defs files so that every out data_t
+   (or equivalent) has a servercopy keyword #ifdef SERVERCOPY. */
+#ifdef SERVERCOPY
+#define SCP , servercopy
+#else
+#define SCP
+#endif
+
 
 #ifdef USERPREFIX
 userprefix USERPREFIX;
