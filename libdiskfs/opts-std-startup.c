@@ -1,4 +1,4 @@
-/* Standard startup-time command line options
+/* Standard startup-time command line parser
 
    Copyright (C) 1995 Free Software Foundation, Inc.
 
@@ -21,41 +21,46 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <stdio.h>
-#include <options.h>
+#include <argp.h>
 #include "priv.h"
 
 char *diskfs_boot_flags = 0;
 
+extern char **diskfs_argv;
+
 mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 
 /* ---------------------------------------------------------------- */
-
-#define STD_SHORT_OPTS "rwsnV"
 
 #define OPT_HOST_PRIV_PORT	(-1)
 #define OPT_DEVICE_MASTER_PORT	(-2)
 #define OPT_EXEC_SERVER_TASK	(-3)
 #define OPT_BOOTFLAGS		(-4)
 
-static struct option
-std_long_opts[] =
+static struct argp_option
+startup_options[] =
 {
-  {"readonly", no_argument, 0, 'r'},
-  {"writable", no_argument, 0, 'w'},
-  {"sync", optional_argument, 0, 's'},
-  {"nosync", no_argument, 0, 'n'},
-  {"version", no_argument, 0, 'V'},
+  {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
+  {"rdonly",   0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"writable", 'w', 0, 0, "Use normal read/write behavior"},
+  {"rdwr",     0,   0, OPTION_ALIAS | OPTION_HIDDEN},
+  {"sync",     's', "INTERVAL", OPTION_ARG_OPTIONAL,
+     "If INTERVAL is supplied, sync all data not actually written to disk"
+     " every INTERVAL seconds, otherwise operate in synchronous mode (the"
+     " default is to sync every 30 seconds)"},
+  {"nosync",  'n',  0, 0, "Don't automatically sync data to disk"},
+  {"version", 'V'},
 
-  {"host-priv-port", required_argument, 0, OPT_HOST_PRIV_PORT},
-  {"device-master-port", required_argument, 0, OPT_DEVICE_MASTER_PORT},
-  {"exec-server-task", required_argument, 0, OPT_EXEC_SERVER_TASK},
-  {"bootflags", required_argument, 0, OPT_BOOTFLAGS},
+  {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
+  {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
+  {"exec-server-task",   OPT_EXEC_SERVER_TASK,   "PORT"},
+  {"bootflags",          OPT_BOOTFLAGS,          "FLAGS"},
 
   {0, 0, 0, 0}
 };
 
 static error_t
-parse_std_startup_opt (int opt, char *arg)
+parse_startup_opt (int opt, char *arg, struct argp_state *state)
 {
   switch (opt)
     {
@@ -88,6 +93,9 @@ parse_std_startup_opt (int opt, char *arg)
     case OPT_BOOTFLAGS:
       diskfs_boot_flags = arg; break;
 
+    case ARGP_KEY_END:
+      diskfs_argv = state->argv; break;
+
     default:
       return EINVAL;
     }
@@ -95,9 +103,55 @@ parse_std_startup_opt (int opt, char *arg)
   return 0;
 }
 
-/* This may be used with options_parse to parse standard diskfs startup
-   options, possible chained onto the end of a user options structure.  */
-static struct options std_startup_opts =
-  { STD_SHORT_OPTS, std_long_opts, parse_std_startup_opt, 0 };
+/* This may be used with argp_parse to parse standard diskfs startup
+   options, possible chained onto the end of a user argp structure.  */
+static struct argp startup_argp =
+  { startup_options, parse_startup_opt };
 
-struct options *diskfs_standard_startup_options = &std_startup_opts;
+struct argp *diskfs_startup_argp = &startup_argp;
+
+/* ---------------------------------------------------------------- */
+
+int diskfs_use_mach_device = 0;
+char *diskfs_device_arg = 0;
+
+static struct argp_option
+dev_startup_options[] =
+{
+  {"machdev", 'm', 0, 0, "DEVICE is a mach device, not a file"},
+  {0, 0}
+};
+
+static error_t
+parse_dev_startup_opt (int opt, char *arg, struct argp_state *state)
+{
+  switch (opt)
+    {
+    case 'm':
+      diskfs_use_mach_device = 1;
+      break;
+    case ARGP_KEY_ARG:
+      diskfs_device_arg = arg;
+      break;
+
+    case ARGP_KEY_END:
+      if (diskfs_boot_flags)
+	diskfs_use_mach_device = 1; /* Can't do much else... */
+      break;
+
+    case ARGP_KEY_NO_ARGS:
+      fprintf (stderr, "%s: No device specified\n", program_invocation_name);
+      argp_help (state->argp, stderr, ARGP_HELP_STD_ERR); /* exits */
+
+    default: return EINVAL;
+    }
+
+  return 0;
+}
+
+static struct argp *dev_startup_argp_parents[] = { &startup_argp, 0 };
+static struct argp dev_startup_argp =
+  { dev_startup_options, parse_dev_startup_opt, "DEVICE", 0,
+      &dev_startup_argp_parents };
+
+struct argp *diskfs_device_startup_argp = &dev_startup_argp;
