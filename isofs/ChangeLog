@@ -1,0 +1,4 @@
+Mon Jul 21 16:00:04 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makefile (LCLHDRS): Remove susp.h.
+
