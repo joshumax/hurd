@@ -19,8 +19,8 @@
 #include "fs_S.h"
 
 kern_return_t
-trivfs_S_dir_link (struct trivfs_protid *file, 
-		   struct trivfs_protid *dir, char *name)
+trivfs_S_dir_link (struct trivfs_protid *dir, 
+		   struct trivfs_protid *file, char *name)
 {
   if (!file)
     return EOPNOTSUPP;
