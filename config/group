@@ -1,2 +1,4 @@
 wheel:*:0:wheel
+kmem:*:0:
+bin:*:0:
 games:*:13:games
