@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,7 +28,7 @@ diskfs_S_io_set_all_openmodes (struct protid *cred,
     return EOPNOTSUPP;
   
   mutex_lock (&cred->po->np->lock);
-  ioserver_get_conch (&cred->po->np->conch);
+  iohelp_get_conch (&cred->po->np->conch);
   cred->po->openstat &= ~HONORED_STATE_MODES;
   cred->po->openstat |= (newbits & HONORED_STATE_MODES);
   mutex_unlock (&cred->po->np->lock);
