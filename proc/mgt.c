@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02,03 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -348,14 +348,17 @@ S_proc_dostop (struct proc *p,
       task_resume (p->p_task);
       return err;
     }
+  /* We can not compare the thread ports with CONTTHREAD, as CONTTHREAD
+     might be a proxy port (for example in rpctrace).  For this reason
+     we suspend all threads and then resume  CONTTHREAD.  */
   for (i = 0; i < nthreads; i++)
     {
-      if (threads[i] != contthread)
-	thread_suspend (threads[i]);
+      thread_suspend (threads[i]);
       mach_port_deallocate (mach_task_self (), threads[i]);
     }
   if (threads != threadbuf)
     munmap (threads, nthreads * sizeof (thread_t));
+  thread_resume (contthread);
   err = task_resume (p->p_task);
   if (err)
     return err;

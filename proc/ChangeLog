@@ -1,3 +1,8 @@
+2003-06-16  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* mgt.c (S_proc_dostop): Instead of suspending all threads except
+	CONTTHREAD, first suspend all threads, and then resume CONTTHREAD.
+
 2002-06-05  Roland McGrath  <roland@frob.com>
 
 	* info.c (S_proc_getprocinfo): If PI_FETCH_TASKEVENTS is set in *FLAGS,
