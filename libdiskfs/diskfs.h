@@ -212,7 +212,7 @@ extern int diskfs_name_max;
    If this is exceeded, dir_pathtrans will return ELOOP.  */
 extern int diskfs_maxsymlinks;
 
-/* This variable is defined by diskfs; the suer should set it if
+/* This variable is defined by diskfs; the user should set it if
    the filesystem media cannot be made writeable. */
 extern int diskfs_hard_readonly;
 
@@ -270,7 +270,9 @@ extern int diskfs_default_sync_interval;
 extern char *diskfs_disk_name;
 
 /* The user must define this function.  Set *STATFSBUF with
-   appropriate values to reflect the current state of the filesystem.  */
+   appropriate values to reflect the current state of the filesystem.
+   The buffer will be initialized to all zeros by the caller;
+   the caller will set f_namelen to diskfs_name_max.  */
 error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
 
 /* The user must define this function.  Lookup in directory DP (which

@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_statfs
-   Copyright (C) 1992, 1993, 1994, 1998 Free Software Foundation
+   Copyright (C) 1992,93,94,98,2000 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,7 +28,10 @@ diskfs_S_file_statfs (struct protid *file,
   if (!file)
     return EOPNOTSUPP;
 
-  statbuf->f_flag = 0;
+  /* Start will all zeros, so the fs can skip fields for which
+     it has no information to contribute.  */
+  bzero (statbuf, sizeof *statbuf);
+
   if (diskfs_readonly)
     statbuf->f_flag |= ST_RDONLY;
   if (_diskfs_nosuid)
@@ -39,6 +42,8 @@ diskfs_S_file_statfs (struct protid *file,
     statbuf->f_flag |= ST_SYNCHRONOUS;
 
   diskfs_set_statfs (statbuf);
+
+  statbuf->f_namelen = diskfs_name_max;
 
   return 0;
 }
