@@ -1,3 +1,8 @@
+2002-04-01  Neal H Walfield  <neal@cs.uml.edu>
+
+	* data-request.c (_pager_seqnos_memory_object_data_request): Must
+	hold P->interlock when calling _pager_allow_termination.
+
 2002-01-19  Roland McGrath  <roland@frob.com>
 
 	* demuxer.c (pager_demuxer): Fix last change so it works.  Add comment.
