@@ -36,7 +36,7 @@ install-dist: dist-links
 	cp INSTALL-binary $(dist-root)/
 	cp dist-README $(dist-root)/README
 	cp SETUP $(dist-root)/SETUP
-	cp servers.boot $(dist-root)/boot
+	cp servers.boot $(dist-root)/boot/servers.boot
 
 dist-links:
 	mkdir -p $(dist-root)/boot
