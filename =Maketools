@@ -26,8 +26,8 @@ ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
 ifndef HOST_CC
 export HOST_CC := $(CC)
 endif
-CC=gcc $(CCTYPE) -O2 -pipe # Ceci n'est pas une pipe.
-MIGHOSTCC= gcc $(MIGHOSTCCTYPE) -O2 -pipe
+CC=gcc $(CCTYPE) -O2 
+MIGHOSTCC= gcc $(MIGHOSTCCTYPE) -O2 
 ifeq (,$(wildcard /usr/local/lib/migcom))
 MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom 
 else
