@@ -44,5 +44,5 @@ MIGCOMSFLAGS = -prefix ports_
 
 include ../Makeconf
 
-libports.so: $(foreach lib,threads ihash,\
+libports.so: $(foreach lib,ihash,\
 			../lib$(lib)/lib$(lib).so)
