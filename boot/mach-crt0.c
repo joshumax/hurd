@@ -71,6 +71,7 @@ static char sccsid[] = "@(#)crt0.c	5.2 (Berkeley) 5/14/90";
 
 #include <mach/machine/asm.h>
 
+int __data_start = 0;
 char **environ = (char **)0;
 #ifdef paranoid
 static int fd;
