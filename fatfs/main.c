@@ -1,5 +1,5 @@
 /* main.c - FAT filesystem.
-   Copyright (C) 1997, 1998, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999, 2002, 2003 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -263,3 +263,15 @@ diskfs_readonly_changed (int readonly)
   abort ();
 }
 
+/* FIXME: libdiskfs doesn't lock the parent dir when looking up a node
+   for fsys_getfile, so we disable NFS.  */
+error_t
+diskfs_S_fsys_getfile (mach_port_t fsys,
+                      mach_port_t reply, mach_msg_type_name_t reply_type,
+                      uid_t *uids, mach_msg_type_number_t nuids,
+                      gid_t *gids, mach_msg_type_number_t ngids,
+                      char *handle, mach_msg_type_number_t handle_len,
+                      mach_port_t *file, mach_msg_type_name_t *file_type)
+{
+  return EOPNOTSUPP;
+}

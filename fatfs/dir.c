@@ -839,7 +839,7 @@ diskfs_get_directs (struct node *dp,
 	 filenames).  */
       if ((char)ep->name[0] == FAT_DIR_NAME_DELETED
 	  || (ep->attribute & FAT_DIR_ATTR_LABEL))
-	  i--;
+	i--;
       bufp = bufp + FAT_DIR_REC_LEN;
     }
 
@@ -857,13 +857,10 @@ diskfs_get_directs (struct node *dp,
 
       /* The root directory in FAT file systems doesn't contain
 	 entries for DOT and DOTDOT, they are special cased below.  */
-      if (dp == diskfs_root_node && i < 2)
-	{
-	  if (i == 0)
-	    ep = &dot;
-	  else
-	    ep = &dotdot;
-	}
+      if (dp == diskfs_root_node && (i + entry == 0))
+        ep = &dot;
+      else if (dp == diskfs_root_node && (i + entry == 1))
+        ep = &dotdot;
       else
 	ep = (struct dirrect *) bufp;
 
@@ -931,7 +928,7 @@ diskfs_get_directs (struct node *dp,
 
       /* And move along.  */
       datap = datap + reclen;
-      if (!(dp == diskfs_root_node && i < 2))
+      if (!(dp == diskfs_root_node && i + entry < 2))
 	bufp = bufp + FAT_DIR_REC_LEN;
       i++;
     }

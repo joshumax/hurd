@@ -1,3 +1,12 @@
+2003-04-26  Marco Gerards  <metgerards@student.han.nl>
+
+	* dir.c (diskfs_get_directs): Consider ENTRY when adding
+	"." and ".." for the rootnode.
+
+	* inode.c (read_node): Use ifind instead of diskfs_cached_lookup
+	and do not use diskfs_nput anymore.
+	* main.c (diskfs_S_fsys_getfile): New function.
+
 2002-10-06  Marcus Brinkmann  <marcus@gnu.org>
 
 	* main.c (diskfs_server_version): Set to HURD_VERSION.

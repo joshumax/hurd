@@ -1,5 +1,5 @@
 /* inode.c - Inode management routines.
-   Copyright (C) 1994,95,96,97,98,99, 2000, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,02,03 Free Software Foundation, Inc.
    Modified for fatfs by Marcus Brinkmann <marcus@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -273,18 +273,16 @@ read_node (struct node *np, vm_address_t buf)
     {
       if (buf == 0)
 	{
-	  err = diskfs_cached_lookup (vk.dir_inode, &dp);
-	  if (err)
-	    return err;
+	  /* FIXME: We know intimately that the parent dir is locked
+	     by libdiskfs.  The only case it is not locked is for NFS
+	     (fsys_getfile) and we disabled that.  */
+	  dp = ifind (vk.dir_inode);
       
 	  /* Map in the directory contents. */
 	  memobj = diskfs_get_filemap (dp, prot);
       
 	  if (memobj == MACH_PORT_NULL)
-	    {
-	      diskfs_nput (dp);
-	      return errno;
-	    }
+	    return errno;
 
 	  buflen = round_page (dp->dn_stat.st_size);
 	  err = vm_map (mach_task_self (),
@@ -347,8 +345,6 @@ read_node (struct node *np, vm_address_t buf)
 	    {
 	      if (our_buf && buf)
 		munmap ((caddr_t) buf, buflen);
-	      if (dp)
-		diskfs_nput (dp);
 	      return err;
 	    }
 	  st->st_size = np->allocsize;
@@ -384,8 +380,6 @@ read_node (struct node *np, vm_address_t buf)
 
   if (our_buf && buf)
     munmap ((caddr_t) buf, buflen);
-  if (dp)
-    diskfs_nput (dp);
   return 0;
 }
 
