@@ -49,6 +49,9 @@ S_io_read (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
+{unsigned refs;
+ mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
+ debug (user, "send rights: %d", refs);}
 
   err = sock_aquire_read_pipe (user->sock, &pipe);
   if (!err)
@@ -79,6 +82,9 @@ S_io_write (struct sock_user *user,
 
   if (!user)
     return EOPNOTSUPP;
+{unsigned refs;
+ mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
+ debug (user, "send rights: %d", refs);}
 
   err = sock_aquire_write_pipe (user->sock, &pipe);
   if (!err)
@@ -119,6 +125,9 @@ S_interrupt_operation (mach_port_t port)
   if (!user)
     return EOPNOTSUPP;
 debug (user, "interrupt, sock: %p", user->sock);
+{unsigned refs;
+ mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
+ debug (user, "send rights: %d", refs);}
 
   /* Interrupt pending reads on this socket.  We don't bother with writes
      since they never block.  */
@@ -170,10 +179,20 @@ error_t
 S_io_duplicate (struct sock_user *user,
 		mach_port_t *new_port, mach_msg_type_name_t *new_port_type)
 {
+  error_t err;
+
   if (!user)
     return EOPNOTSUPP;
-  *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
-  return sock_create_port (user->sock, new_port);
+
+debug (user, "duping, sock: %p", user->sock);
+  err = sock_create_port (user->sock, new_port);
+  if (! err)
+    *new_port_type = MACH_MSG_TYPE_MAKE_SEND;
+{unsigned refs;
+ mach_port_get_refs (mach_task_self (), user->pi.port_right, MACH_PORT_RIGHT_SEND, &refs);
+ debug (user, "send rights: %d", refs);}
+
+  return err;
 }
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
