@@ -1,4 +1,5 @@
 /* display.c - The display component of a virtual console.
+   Copyright (C) 1999 Kalle Olavi Niemitalo (emu.c from colortext 0.3).
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann and Kalle Olavi Niemitalo.
 

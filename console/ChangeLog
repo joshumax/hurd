@@ -1,3 +1,8 @@
+2002-07-15  Marcus Brinkmann  <marcus@gnu.org>
+
+	* display.c: Restore copyright notice until the papers by Kalle
+	are actually received.
+
 2002-06-27  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (MIGSTUBS): Add fs_notifyUser.o.
