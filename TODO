@@ -270,3 +270,4 @@ List for version 0.2 binary release
 * Arrange GCC not to install assert.h on GNU.
 * recompile libraries after libc release
 * complete `extern inline' proofing of header files.
+* Change all copyright notices to say "GNU Hurd" instead of "This program".

@@ -1,3 +1,34 @@
+Wed Oct 23 01:36:35 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf ($(target)): Repair rule for building of .prof_d
+	files. 
+	($(target), $(target).prof): Refer to generated variables
+	(-CFLAGS, -LFLAGS, -LDLIBS) by the base name ($*) not $@.
+	(_libext): Likewise.
+
+Mon Oct 21 22:22:49 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (cleantarg) [makemode == library]: Add $(libname)_p.a.
+	(targets) [makemode == library]: Include $(libname)_p.a in default
+	value.
+	($(libdir)/$(libname)_p.a) [makemode == library]: New rule.
+	($(libname)_p.a) [makemode == library]: New rule.
+	(%_p.o): Two new rules (depend on %.c or %.S).
+	(make_deps): Make dependency now specify $*_p.o too.
+	($(addsuffix .prof,$(target))): New rule to link profiled objects.
+	($(target)): Surround usual build rule with if prof-depend == nil.
+	($(addsuffix .prof_d, $(target))): Include this if not a library.
+	Also a new rule to build them.
+	($(target)) [prof-depend == t]: Kludge to write out its dependencies.
+	
+Tue Oct 15 12:29:26 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf (relink): Remove $(linktarg) always.
+	(linktarg) [makemode == library]: Set variable.
+	(linktarg): And also a default.
+	* Makefile (%-relink): Set no_deps=t here.
+	(relink): Do $(lib-subdirs) too.
+
 Tue Oct  8 22:39:12 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makeconf ($(includedir)/$(installhdrsubdir),

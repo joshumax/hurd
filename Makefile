@@ -80,7 +80,7 @@ dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(
 
 clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
 
-relink: $(addsuffix -relink,$(prog-subdirs))
+relink: $(addsuffix -relink,$(lib-subdirs) $(prog-subdirs))
 
 install: $(addsuffix -install,$(lib-subdirs) $(working-prog-subdirs) \
 	   $(other-subdirs))
@@ -104,7 +104,7 @@ FORCE:
 	$(MAKE) -C $* clean no_deps=t
 
 %-relink:
-	$(MAKE) -C $* relink
+	$(MAKE) -C $* relink no_deps=t
 
 %-install:
 	$(MAKE) -C $* install

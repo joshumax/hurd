@@ -117,13 +117,18 @@ endif
 
 ifeq ($(makemode),library)
  clean := yes
- cleantarg := $(libname).a $(libname).so
+ cleantarg := $(libname).a $(libname).so $(libname)_p.a
+ linktarg := $(libname).so
  ifndef installhdrsubdir
   installhdrsubdir = hurd
  endif
  ifndef targets
-  targets = $(libname).a $(libname).so
+  targets = $(libname).a $(libname).so $(libname)_p.a
  endif
+endif
+
+ifeq ($(linktarg),)
+ linktarg:=$(cleantarg)
 endif
 
 # This is a hack to give all hurd utilities a default bug-reporting
@@ -175,6 +180,9 @@ $(INSTALLED_LOCAL_HEADERS): $(top_srcdir)/$(installhdrsubdir)/%:
 endif
 libs: $(INSTALLED_LOCAL_HEADERS)
 
+$(libdir)/$(libname)_p.a: $(libname)_p.a
+	$(INSTALL_DATA) $(libname)_p.a $(libdir)/$(libname)_p.a
+	$(RANLIB) $(libdir)/$(libname)_p.a
 $(libdir)/$(libname).a: $(libname).a
 	$(INSTALL_DATA) $(libname).a $(libdir)/$(libname).a
 	$(RANLIB) $(libdir)/$(libname).a
@@ -211,7 +219,7 @@ endif
 # is used in LDFLAGS.
 __libext=.so
 __libext-static=.a
-_libext=$(__libext$(findstring -static,$(LDFLAGS) $($@-LDFLAGS)))
+_libext=$(__libext$(findstring -static,$(LDFLAGS) $($*-LDFLAGS)))
 
 libsubst=$(basename ${lib})$(_libext)
 libsubst-override=${$(notdir $(basename ${lib}))-libsubst}
@@ -221,16 +229,37 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 # dependencies of other shared objects it encounters.
 rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 
+# Main rule to link executables
+#
+# (prof-depend is a special kind of run not normally used; see the rules
+# below for %.prof_d which uses it.)
+ifeq ($(prof-depend),)
 $(target): %$(target-suffix): $(BUGADDR)
-	$(CC) $(rpath) $(CFLAGS) $($@-CFLAGS) $(LDFLAGS) $($@-LDFLAGS) $(BUGADDR_REF) \
+	$(CC) $(rpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) $(BUGADDR_REF) \
 	      -o $@ \
 	      '-Wl,-(' $(filter %.o,$^) \
-		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) $($@-LDLIBS) $(LDLIBS) \
+		       $(foreach lib,$(filter-out %.o,$+),${_libsubst}) $($*-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)'
+endif
+
+# Just like above, but tell how to make .prof versions of programs.
+$(addsuffix .prof,$(target)): %$(target-suffix).prof: $(BUGADDR)
+	$(CC) -pg $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
+		$(BUGADDR_REF) -static \
+		-o $@ \
+		'-Wl,-(' $(filter %.o,$^) \
+			$(patsubst %.a,%_p.a,$(filter-out %.o,$+)) \
+			$($*-LDLIBS) $(LDLIBS) \
+		'-Wl,-)'
 
 ifeq ($(makemode),library)
 $(libname).a: $(OBJS)
 	rm -f $(libname).a
+	$(AR) r $@ $^
+	$(RANLIB) $@
+
+$(libname)_p.a: $(patsubst %.o,%_p.o,$(OBJS))
+	rm -f $(libname)_p.a
 	$(AR) r $@ $^
 	$(RANLIB) $@
 
@@ -273,11 +302,10 @@ endif
 ifeq ($(clean),yes)
 clean:
 	rm -f *.d *.*_d *.o *Server.c *User.c *_S.h *_U.h $(cleantarg)
-ifneq ($(makemode),library)
 relink:
-	rm -f $(cleantarg)
+	rm -f $(linktarg)
 endif
-endif
+
 clean:
 relink:
 
@@ -319,12 +347,19 @@ relink:
 vpath libutil.% $(libdir)/
 
 
-# Default rule to build PIC object files.
+# Default rules to build PIC object files.
 %_pic.o: %.c
 	$(COMPILE.c) $< -DPIC -fPIC -o $@
 
 %_pic.o: %.S
 	$(COMPILE.S) $< -DPIC -o $@
+
+# Default rules to build profiled object files.
+%_p.o: %.c
+	$(COMPILE.c) $< -DPROF -pg -o $@
+
+%_p.o: %.S
+	$(COMPILE.S) $< -DPROF -o $@
 
 # How to build RPC stubs
 
@@ -387,6 +422,10 @@ ifneq ($(no_deps),t)
 -include $(subst Server.o,.migsh_d,$(filter %Server.o,$(OBJS))) /dev/null
 -include $(subst User.o,.miguh_d,$(filter %User.o,$(OBJS))) /dev/null
 
+ifneq ($(makemode),library)
+-include $(addsuffix .prof_d,$(target)) /dev/null
+endif
+
 # For each .o file we need a .d file.
 -include $(subst .o,.d,$(filter %.o,$(OBJS))) /dev/null
 
@@ -413,9 +452,18 @@ endif
 %.miguh_d: %.migu_d
 	sed -e 's/User\.c/_U\.h/' -e 's/migu_d/miguh_d/' < $< > $@
 
+%.prof_d: Makefile
+	$(MAKE) $* prof-depend=t no_deps=t
+
+ifeq ($(prof-depend),t)
+$(target): %: FORCE
+	rm -f $@.prof_d
+	echo $@.prof: $(subst .o,_p.o,$(filter-out FORCE,$+)) > $@.prof_d
+endif
+
 define make-deps
 set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $@:/' \
+sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $*_p.o $@:/' \
 	     -e 's% [^ ]*/gcc-lib/[^ ]*\.h%%g'
 mv -f $@.new $@
 endef
@@ -436,3 +484,4 @@ endef
 %: %.sh $(top_srcdir)/sh-version.sed
 	sed -f $(top_srcdir)/sh-version.sed < $< > $@
 	chmod +x $@
+
