@@ -79,6 +79,9 @@ struct user_pager_info
     } type;
   struct pager *p;
   vm_prot_t max_prot;
+  
+  vm_offset_t allow_unlocked_pagein;
+  vm_size_t unlocked_pagein_length;
 };
 
 #include <hurd/diskfs-pager.h>
@@ -96,6 +99,8 @@ spin_lock_t alloclock;
 
 spin_lock_t gennumberlock;
 u_long nextgennumber;
+
+spin_lock_t unlocked_pagein_lock;
 
 /* The compat_mode specifies whether or not we write
    extensions onto the disk. */
