@@ -73,7 +73,17 @@ struct pipe
   time_value_t write_time;
 
   struct condition pending_reads;
-  struct condition pending_selects;
+  struct condition pending_read_selects;
+
+  struct condition pending_writes;
+  struct condition pending_write_selects;
+
+  /* The maximum number of characters that this pipe will hold without
+     further writes blocking.  */
+  size_t write_limit;
+
+  /* Write requests of less than this much are always done atomically.  */
+  size_t write_atomic;
 
   struct mutex lock;
 
@@ -127,7 +137,7 @@ pipe_is_readable (struct pipe *pipe, int data_only)
    immediately available.  If DATA_ONLY is true, then `control' packets are
    ignored.  */
 extern inline error_t
-pipe_wait (struct pipe *pipe, int noblock, int data_only)
+pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
     {
@@ -140,20 +150,51 @@ pipe_wait (struct pipe *pipe, int noblock, int data_only)
 }
 
 /* Waits for PIPE to be readable, or an error to occurr.  This call only
-   returns once threads waiting using pipe_wait have been woken and given a
-   chance to read, and if there is still data available thereafter.  If
-   DATA_ONLY is true, then `control' packets are ignored.  */
+   returns once threads waiting using pipe_wait_readable have been woken and
+   given a chance to read, and if there is still data available thereafter.
+   If DATA_ONLY is true, then `control' packets are ignored.  */
 extern inline error_t
-pipe_select (struct pipe *pipe, int data_only)
+pipe_select_readable (struct pipe *pipe, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
-    if (hurd_condition_wait (&pipe->pending_selects, &pipe->lock))
-	return EINTR;
+    if (hurd_condition_wait (&pipe->pending_read_selects, &pipe->lock))
+      return EINTR;
   return 0;
 }
 
-/* Wake up all threads waiting on PIPE, which should be locked.  */
-void pipe_kick (struct pipe *pipe);
+/* Block until data can be written to PIPE.  If NOBLOCK is true, then
+   EWOULDBLOCK is returned instead of blocking if this can't be done
+   immediately.  */
+extern inline error_t
+pipe_wait_writable (struct pipe *pipe, int noblock)
+{
+  size_t limit = pipe->write_limit;
+  if (pipe->flags & PIPE_BROKEN)
+    return EPIPE;
+  while (pipe_readable (pipe, 1) >= limit)
+    {
+      if (noblock)
+	return EWOULDBLOCK;
+      if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+	return EINTR;
+      if (pipe->flags & PIPE_BROKEN)
+	return EPIPE;
+    }
+  return 0;
+}
+
+/* Block until some data can be written to PIPE.  This call only returns once
+   threads waiting using pipe_wait_writable have been woken and given a
+   chance to write, and if there is still space available thereafter.  */
+extern inline error_t
+pipe_select_writable (struct pipe *pipe)
+{
+  size_t limit = pipe->write_limit;
+  while (! (pipe->flags & PIPE_BROKEN) && pipe_readable (pipe, 1) >= limit)
+    if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+      return EINTR;
+  return 0;
+}
 
 /* Creates a new pipe of class CLASS and returns it in RESULT.  */
 error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
@@ -161,7 +202,10 @@ error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
 /* Free PIPE and any resources it holds.  */
 void pipe_free (struct pipe *pipe);
 
-/* Take any actions necessary when PIPE acquires its first writer.  */
+/* Take any actions necessary when PIPE acquires its first reader.  */ 
+void _pipe_first_reader (struct pipe *pipe);
+
+/* Take any actions necessary when PIPE acquires its first writer.  */ 
 void _pipe_first_writer (struct pipe *pipe);
 
 /* Take any actions necessary when PIPE's last reader has gone away.  PIPE
@@ -177,7 +221,8 @@ extern inline void
 pipe_acquire_reader (struct pipe *pipe)
 {
   mutex_lock (&pipe->lock);
-  pipe->readers++;
+  if (pipe->readers++ == 0)
+    _pipe_first_reader (pipe);
 }
 
 /* Lock PIPE and increment its writers count.  */
@@ -258,7 +303,7 @@ pipe_drain (struct pipe *pipe)
    returned, nothing is done.  If non-NULL, SOURCE is recorded as the source
    of the data, to be provided to any readers of it; if no reader ever reads
    it, it's deallocated by calling pipe_dealloc_addr.  */
-error_t pipe_send (struct pipe *pipe, void *source,
+error_t pipe_send (struct pipe *pipe, int noblock, void *source,
 		   char *data, size_t data_len,
 		   char *control, size_t control_len,
 		   mach_port_t *ports, size_t num_ports,
@@ -269,8 +314,8 @@ error_t pipe_send (struct pipe *pipe, void *source,
    done.  If non-NULL, SOURCE is recorded as the source of the data, to be
    provided to any readers of it; if no reader ever reads it, it's
    deallocated by calling pipe_dealloc_addr.  */
-#define pipe_write(pipe, source, data, data_len, amount) \
-  pipe_send (pipe, source, data, data_len, 0, 0, 0, 0, amount)
+#define pipe_write(pipe, noblock, source, data, data_len, amount) \
+  pipe_send (pipe, noblock, source, data, data_len, 0, 0, 0, 0, amount)
 
 /* Reads up to AMOUNT bytes from PIPE, which should be locked, into DATA, and
    returns the amount read in DATA_LEN.  If NOBLOCK is true, EWOULDBLOCK is
@@ -305,6 +350,18 @@ error_t pipe_recv (struct pipe *pipe, int noblock, unsigned *flags,
    connection-oriented protcols).  */
 #define pipe_read(pipe, noblock, source, data, data_len, amount) \
   pipe_recv (pipe, noblock, 0, source, data, data_len, amount, 0,0,0,0)
+
+/* Hold this lock before attempting to lock multiple pipes. */
+extern struct mutex pipe_multiple_lock;
+
+/* Return when either RPIPE is available for reading (if SELECT_READ is set
+   in *SELECT_TYPE), or WPIPE is available for writing (if select_write is
+   set in *SELECT_TYPE).  *SELECT_TYPE is modified to reflect which (or both)
+   is now available.  DATA_ONLY should be true if only data packets should be
+   waited for on RPIPE.  Neither RPIPE or WPIPE should be locked when calling
+   this function (unlike most pipe functions).  */
+error_t pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
+			  int *select_type, int data_only);
 
 /* ---------------------------------------------------------------- */
 /* User-provided functions.  */
