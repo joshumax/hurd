@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -28,5 +28,5 @@ trivfs_S_fsys_syncfs (struct trivfs_control *cntl,
 		      int wait,
 		      int dochildren)
 {
-  return cntl ? file_sync (cntl->underlying, wait) : EOPNOTSUPP;
+  return cntl ? file_sync (cntl->underlying, wait, 0) : EOPNOTSUPP;
 }
