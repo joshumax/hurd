@@ -482,7 +482,8 @@ S_socket_recv (struct sock_user *user,
   mutex_lock (&global_lock);
   become_task (user);
 
-  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount, 0, flags,
+  recvd =  (*user->sock->ops->recvfrom) (user->sock, *data, amount, 
+					 user->sock->userflags, flags,
 					 (struct sockaddr *)addr, &addrlen);
   
   mutex_unlock (&global_lock);

@@ -1,5 +1,5 @@
 -*- Text -*-
-GNU Hurd 0.0
+GNU Hurd 0.1
 
 This is the Hurd.  Welcome.
 
@@ -19,8 +19,9 @@ want to use is already installed, and you know both it and this
 version of the Hurd will interoperate together, then see the
 instructions "Bulding the Hurd by itself" below.
 
-The Hurd version 0.0 is known to work with version 1.93 of the GNU C
-Library.
+The Hurd version 0.1 is known to work with version 1.93 of the GNU C
+Library--but not the normal released copy.  We suggest you use the
+copy distributed with GNU 0.0.
 
 Bug reports for the GNU Hurd should be sent to the mailing list
 `bug-hurd@prep.ai.mit.edu'.  Please do not send requests for

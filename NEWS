@@ -1,6 +1,6 @@
 -*- Text -*-
 
-5 September 1996
+6 September 1996
 Version 0.1.
 
 Summary of important externally visible changes since version 0.0:
@@ -32,8 +32,8 @@ Version information in uname is now calculated differently.
 
 Some improvements have been made in the SETUP script.
 
-sync, reboot and halt now do argument parsing and understand --help and
---version. 
+sync, reboot, and halt now do argument parsing and understand --help
+and --version.
 
 The new `e2os' program has been added to change the "creator OS" field
 on an ext2fs filesystem.

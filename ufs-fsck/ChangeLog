@@ -1,3 +1,7 @@
+Fri Sep  6 16:44:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (argp_program_version): Fix typo.
+
 Thu Sep  5 11:42:21 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* main.c: Include <version.h>.

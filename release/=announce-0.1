@@ -1,0 +1,68 @@
+
+
+I am pleased to announce version 0.1 of the GNU Hurd, available via
+anonymous FTP from prep.ai.mit.edu [18.159.0.42] in the file
+/pub/gnu/hurd-0.1.tar.gz (about 1.2 MB compressed).
+
+(The GNU Hurd, plus Mach, is a kernel, not an operating system.  The
+GNU operating system, like the Unix operating system, consists of many
+components, including kernel, libraries, compilers, assembler, shell,
+parser generators, utilities, window system, editors, text formatters,
+and so on.  The GNU project set out a decade ago to develop this
+system, and we've been writing various components of it ever since.)
+
+This release contains many bug fixes from version 0.0.  Many thanks to
+all the people who are helping find bugs!  
+
+The best way you can help find bugs is to try and compile and use on
+the Hurd as many programs as you can find and find out where bugs
+still exist.  There are also unimplemented features, and your reports
+will help us to prioritize which things we work on.
+
+Brief description of important news:
+
+  This release contains several new utilities:
+  *  e2os
+      which modifies the "creator OS" field of an ext2fs filesystem
+  *  nfsd
+      which implements an NFS server.  It's still relatively untested,
+      so people are invited to use it for non-critical things and
+      report on successes and failures.
+  *  vminfo
+      prints the virtual memory map of a process
+
+  This release contains one new shared library, `hurdbugaddr' which is
+  only used internally to various Hurd servers and utilities.
+
+  Problems in version 0.1 that prevented ext2fs from working correctly
+  have all been fixed, and the source files that were accidentally
+  missing from 0.0 have been added.
+
+For more detailed news, see the NEWS file in the distribution.
+
+There is no binary release corresponding to this source release.  A
+new binary release will probably be made together with the next source
+release.
+
+This release contains complete source code for the following:
+
+Hurd servers: 
+ 
+ auth, crash, devio, devport, exec, ext2fs, fifo, fwd, ifsock, init,
+ magic, new-fifo, nfs, null, pfinet, pflocal, proc, symlink, term,
+ ufs.
+
+Hurd libraries: 
+ 
+ diskfs, fshelp, ihash, iohelp, netfs, pager, pipe, ports, ps,
+ shouldbeinlibc, store, threads, trivfs, hurdbugaddr.
+
+Hurd utilities and other programs: 
+
+ boot, shd, ps, settrans, showtrans, sync, su, mount, fsysopts,
+ storeinfo, login, w, uptime, hurdids, loginpr, sush, vmstat,
+ portinfo, devprobe, reboot, halt, fsck, fsck.ufs, mkfs.ufs, clri.ufs,
+ stati.ufs, getty, rc, e2os, vminfo.
+
+
+Thomas Bushnell, n/BSG

@@ -144,6 +144,7 @@ See `tasks', the exported task list.
     IP addresses.
 *** Diagnose why shutdown doesn't close TCP channels properly or reliably.
 *** select for read on a UDP socket seems never to return.
+*** Undefined functions at the end of pfinet/io-ops.c.
 
 ** nfs
 *** Implement async I/O
@@ -253,9 +254,9 @@ List for version 0.2 binary release
 * Try and get new mach4 from Shantanu.
 * pfinet needs to support no-network operation
 * Have term do scancodes, at least kludgily.
-* Make sure nfs still works
 * nfsd?
 * released libc
 * Arrange GCC not to install assert.h on GNU.
 * zero (/dev/null) doesn't do access right; probably many in trans/ too.
 * recompile libraries after libc release
+* complete `extern inline' proofing of header files.

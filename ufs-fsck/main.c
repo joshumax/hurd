@@ -25,7 +25,7 @@
 
 #include "fsck.h"
 
-char *argp_program_version = STANDARD_HURD_VERSION (fsck.ufs)
+char *argp_program_version = STANDARD_HURD_VERSION (fsck.ufs);
 
 char *lfname = "lost+found";
 mode_t lfmode = 0755;

@@ -1,3 +1,10 @@
+Fri Sep  6 16:00:42 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* consts.c: Include <version.h>.
+ 	(diskfs_major_version, diskfs_minor_version, diskfs_edit_version):
+	Deleted variables. 
+	(diskfs_server_version): New variable.
+
 Thu Aug 29 16:07:07 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* dir.c (diskfs_lookup_hard): When setting ds->stat to EXTEND, set

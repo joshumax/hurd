@@ -1,3 +1,8 @@
+Fri Sep  6 16:46:43 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* socket-ops.c (S_socket_recv): Bother to pass
+	USER->sock->userflags through to the recvfrom routine.
+
 Sat Jul 20 15:48:29 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* Makefile (lndist-asm-files): Look for files in $(srcdir).

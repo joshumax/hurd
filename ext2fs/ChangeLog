@@ -1,3 +1,10 @@
+Fri Sep  6 16:03:11 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ext2fs.c: Include <version.h>.
+	(diskfs_major_version, diskfs_minor_version, diskfs_edit_version):
+	Deleted variables.
+	(diskfs_server_version): New variable.
+
 Thu Aug 29 16:59:51 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	Changes from ufs/dir.c:

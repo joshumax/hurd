@@ -27,6 +27,7 @@
 #include <string.h>
 #include <error.h>
 #include <argz.h>
+#include <version.h>
 #include "ext2fs.h"
 
 /* ---------------------------------------------------------------- */
@@ -40,9 +41,7 @@ int diskfs_shortcut_fifo = 1;
 int diskfs_shortcut_ifsock = 1;
 
 char *diskfs_server_name = "ext2fs";
-int diskfs_major_version = 0;
-int diskfs_minor_version = 2;
-int diskfs_edit_version = 1;
+char *diskfs_server_version = HURD_VERSION;
 char *diskfs_extra_version = "ext2 " EXT2FS_VERSION;
 
 int diskfs_synchronous = 0;

@@ -1,5 +1,5 @@
 /* Various constants wanted by the diskfs library
-   Copyright (C) 1994, 1995 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ufs.h"
+#include <version.h>
 
 int diskfs_link_max = LINK_MAX;
 int diskfs_maxsymlinks = 8;
@@ -25,7 +26,5 @@ int diskfs_shortcut_blkdev = 1;
 int diskfs_shortcut_fifo = 1;
 int diskfs_shortcut_ifsock = 1;
 char *diskfs_server_name = "ufs";
-int diskfs_major_version = 0;
-int diskfs_minor_version = 0;
-int diskfs_edit_version = 0;
+char *diskfs_server_version = HURD_VERSION;
 int diskfs_synchronous = 0;
