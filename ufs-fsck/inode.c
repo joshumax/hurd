@@ -18,6 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "fsck.h"
+
 static void
 inode_iterate (struct dinode *dp, 
 	       int (*fn) (daddr_t, int),
@@ -32,7 +34,7 @@ inode_iterate (struct dinode *dp,
   scaniblock (daddr_t iblock, int level)
     {
       int cont;
-      daddr_t ptrs[NIADDR(sblock)];
+      daddr_t ptrs[NINDIR(sblock)];
       int i;
 
       if (doaddrblocks)
@@ -44,8 +46,8 @@ inode_iterate (struct dinode *dp,
 	    return RET_GOOD;
 	}
       
-      readblock (fsbtodb (iblock), buf, sblock->fs_bsize);
-      for (i = 0; i < NIADDR (sblock); i++)
+      readblock (fsbtodb (sblock, iblock), ptrs, sblock->fs_bsize);
+      for (i = 0; i < NINDIR (sblock); i++)
 	{
 	  if (level == 0)
 	    cont = (*fn)(ptrs[i], sblock->fs_frag);
@@ -68,7 +70,6 @@ inode_iterate (struct dinode *dp,
     {
       int offset;
       int nfrags;
-      int cont;
       
       if (nb == maxb && (offset = blkoff (sblock, dp->di_size)))
 	nfrags = numfrags (sblock, fragroundup (sblock, offset));
@@ -101,3 +102,92 @@ allblock_iterate (struct dinode *dp,
   inode_iterate (dp, fn, 1);
 }
 
+/* Allocate an inode.  If INUM is nonzero, then allocate that 
+   node specifically, otherwise allocate any available inode.
+   MODE is the mode of the new file.  Return the allocated 
+   inode number (or 0 if the allocation failed). */
+ino_t
+allocino (ino_t request, mode_t mode)
+{
+  ino_t ino;
+  struct dinode dino;
+  struct timeval tv;
+  
+  if (request)
+    {
+      if (inodestate[request] != UNALLOC)
+	return 0;
+      ino = request;
+    }
+  else
+    {
+      for (ino = ROOTINO; ino < maxino; ino++)
+	if (inodestate[ino] == UNALLOC)
+	  break;
+      if (ino == maxino)
+	return 0;
+    }
+  
+  if (mode & IFMT == IFDIR)
+    inodestate[ino] = DIRECTORY | DIR_REF;
+  else
+    inodestate[ino] = REG;
+  
+  getinode (ino, &dino);
+  dino.di_modeh = (mode & 0xffff0000) >> 16;
+  dino.di_model = (mode & 0x0000ffff);
+  gettimeofday (&tv, 0);
+  dino.di_atime.ts_sec = tv.tv_sec;
+  dino.di_atime.ts_nsec = tv.tv_usec * 1000;
+  dino.di_mtime = dino.di_ctime = dino.di_atime;
+  dino.di_size = 0;
+  dino.di_blocks = 0;
+  write_inode (ino, &dino);
+  typemap[ino] = IFTODT (mode);
+  return ino;
+}
+
+/* Deallocate inode INUM.  */
+void
+freeino (ino_t inum)
+{
+  struct dinode dino;
+  
+  int
+  clearblock (daddr_t bno, int nfrags)
+    {
+      int i;
+      
+      for (i = 0; i < nfrags; i++)
+	{
+	  if (check_range (bno + i, 1))
+	    return RET_BAD;
+	  if (testbmap (bno + i))
+	    {
+	      struct dups *dlp;
+	      for (dlp = duplist; dlp; dlp = dlp->next)
+		{
+		  if (dlp->dup != bno + i)
+		    continue;
+		  dlp->dup = duplist->dup;
+		  dlp = duplist;
+		  duplist = duplist->next;
+		  free (dlp);
+		  break;
+		}
+	      if (dlp == 0)
+		clrbmap (bno + i);
+	    }
+	}
+      return RET_GOOD;
+    }
+
+  getinode (inum, &dino);
+  allblock_iterate (&dino, clearblock);
+  
+  clear_inode (inum, &dino);
+  inodestate[inum] = UNALLOC;
+}
+
+
+      
