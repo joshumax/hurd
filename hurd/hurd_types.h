@@ -46,8 +46,6 @@ typedef pid_t *pidarray_t;
 typedef uid_t *idarray_t;
 typedef struct rusage rusage_t;
 
-#define INBAND_MAX_DATA 1024
-
 typedef struct stat io_statbuf_t;
 
 /* stb_fstype is one of: */
@@ -103,18 +101,6 @@ enum
     INIT_INT_MAX,
   };
 
-/* Bits for flags in dir_pathtrans call are as follows: */
-#define FS_LOOKUP_READ     0x00000001 /* return read-validated port */
-#define FS_LOOKUP_WRITE    0x00000002 /* return write-validated port */
-#define FS_LOOKUP_EXEC     0x00000004 /* return exec-validated port */
-#define FS_LOOKUP_NDELAY   0x00000008 /* don't delay open */
-#define FS_LOOKUP_NOATIME  0x00000010 /* don't set atime (root/owner only) */
-#define FS_LOOKUP_CREATE   0x00000020 /* create if nonexistent */
-#define FS_LOOKUP_TRUNCATE 0x00000040 /* truncate atomically */
-#define FS_LOOKUP_EXCL     0x00000080 /* error if exists and CREATE */
-#define FS_LOOKUP_NOLINK   0x00000100 /* no name mappings on last name */
-#define	FS_LOOKUP_NOTRANS  0x00000200 /* No translator on last name.  */
-
 /* Bits for flags in file_set_translator call are as follows: */
 #define FS_TRANS_FORCE     0x00000001 /* must use translator(no sht circuit) */
 #define FS_TRANS_EXCL      0x00000002 /* don't do it if already translated */
@@ -137,7 +123,8 @@ typedef enum retry_type retry_type;
 #define SELECT_WRITE 0x00000002
 #define SELECT_URG   0x00000004
 
-/* Flags for fsys_goaway and file_set_translator */
+/* Flags for fsys_goaway.  Also, these flags are sent as the oldtrans_flags
+   in file_set_translator to describe how to terminate the old translator. */
 #define FSYS_GOAWAY_NOWAIT    0x00000001 /* Return immediately */
 #define FSYS_GOAWAY_NOSYNC    0x00000002 /* Don't update physical media */
 #define FSYS_GOAWAY_FORCE     0x00000004 /* Go away despite current users */
@@ -196,6 +183,7 @@ typedef int *procinfo_t;
 #define PI_SESSLD  0x00000020	/* Session leader */
 #define PI_NOTOWNED 0x0000040	/* Process has no owner */
 #define PI_NOPARENT 0x0000080	/* Hasn't identified a parent */
+#define PI_ZOMBIE  0x00000100	/* Has no associated task */
 
 /* Types of ports the terminal driver can run on top of. */
 #define TERM_ON_MACHDEV		1
