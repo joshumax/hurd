@@ -1,5 +1,5 @@
 /* GNU Hurd standard exec server, private declarations.
-   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -9,7 +9,7 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2, or (at your option)
 any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful, 
+The GNU Hurd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <hurd/trivfs.h>
 #include <hurd/ports.h>
 #include <hurd/lookup.h>
@@ -44,8 +45,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 extern bfd_arch_info_type host_bfd_arch_info;
 extern bfd host_bfd;
 #endif
-
-extern Elf32_Half elf_machine;	/* ELF e_machine for the host.  */
 
 /* Information kept around to be given to a new task
    in response to a message on the task's bootstrap port.  */
@@ -125,7 +124,7 @@ struct execdata
       } info;
   };
 
-error_t mach_host_elf_machine (host_t, Elf32_Half *);
+error_t elf_machine_matches_host (Elf32_Half e_machine);
 
 void finish (struct execdata *, int dealloc_file_port);
 
