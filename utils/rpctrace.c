@@ -48,12 +48,21 @@ static const char *doc =
 "Trace Mach Remote Procedure Calls."
 "\v.";
 
-/* The msgid_ihash table maps msgh_id values to names (malloc'd strings).  */
+/* The msgid_ihash table maps msgh_id values to names.  */
+
+struct msgid_info
+{
+  char *name;
+  char *subsystem;
+};
 
 static void
 msgid_ihash_cleanup (void *element, void *arg)
 {
-  free (element);
+  struct msgid_info *info = element;
+  free (info->name);
+  free (info->subsystem);
+  free (info);
 }
 
 static struct ihash msgid_ihash = { cleanup: msgid_ihash_cleanup };
@@ -68,7 +77,7 @@ parse_msgid_list (const char *filename)
   char *buffer = NULL;
   size_t bufsize = 0;
   unsigned int lineno = 0;
-  char *name;
+  char *name, *subsystem;
   unsigned int msgid;
 
   fp = fopen (filename, "r");
@@ -83,14 +92,20 @@ parse_msgid_list (const char *filename)
       ++lineno;
       if (buffer[0] == '#' || buffer[0] == '\0')
 	continue;
-      if (sscanf (buffer, "%*s %*u %as %*u %u %*u\n", &name, &msgid) != 2)
+      if (sscanf (buffer, "%as %*u %as %*u %u %*u\n",
+		  &subsystem, &name, &msgid) != 2)
 	error (0, 0, "%s:%u: invalid format in RPC list file",
 	       filename, lineno);
       else
 	{
-	  error_t err = ihash_add (&msgid_ihash, msgid, name, NULL);
-	  if (err)
-	    error (1, err, "ihash_add");
+	  struct msgid_info *info = malloc (sizeof *info);
+	  if (info == 0)
+	    error (1, errno, "malloc");
+	  info->name = name;
+	  info->subsystem = subsystem;
+	  errno = ihash_add (&msgid_ihash, msgid, info, NULL);
+	  if (errno)
+	    error (1, errno, "ihash_add");
 	}
     }
 
@@ -101,32 +116,59 @@ parse_msgid_list (const char *filename)
 /* Look for a name describing MSGID.  We check the table directly, and
    also check if this looks like the ID of a reply message whose request
    ID is already in the table.  */
-static const char *
-msgid_name (mach_msg_id_t msgid)
+static const struct msgid_info *
+msgid_info (mach_msg_id_t msgid)
 {
-  const char *msgname = ihash_find (&msgid_ihash, msgid);
-  if (msgname == 0 && (msgid / 100) % 2 == 1)
+  const struct msgid_info *info = ihash_find (&msgid_ihash, msgid);
+  if (info == 0 && (msgid / 100) % 2 == 1)
     {
       /* This message ID is not in the table, and its number makes it
 	 what should be an RPC reply message ID.  So look up the message
 	 ID of the corresponding RPC request and synthesize a name from
 	 that.  Then stash that name in the table so the next time the
 	 lookup will match directly.  */
-      msgname = ihash_find (&msgid_ihash, msgid - 100);
-      if (msgname != 0)
+      info = ihash_find (&msgid_ihash, msgid - 100);
+      if (info != 0)
 	{
-	  char *reply_name = 0;
-	  asprintf (&reply_name, "%s-reply", reply_name);
-	  if (reply_name != 0)
+	  struct msgid_info *reply_info = malloc (sizeof *info);
+	  if (reply_info != 0)
 	    {
-	      ihash_add (&msgid_ihash, msgid, reply_name, NULL);
-	      msgname = reply_name;
+	      reply_info->subsystem = strdup (info->subsystem);
+	      reply_info->name = 0;
+	      asprintf (&reply_info->name, "%s-reply", info->name);
+	      ihash_add (&msgid_ihash, msgid, reply_info, NULL);
+	      info = reply_info;
 	    }
 	  else
-	    msgname = 0;
+	    info = 0;
 	}
     }
-    return msgname;
+  return info;
+}
+
+static const char *
+msgid_name (mach_msg_id_t msgid)
+{
+  const struct msgid_info *info = msgid_info (msgid);
+  return info ? info->name : 0;
+}
+
+/* Return true if this message's data should be printed out.
+   For a request message, that means the in parameters.
+   For a reply messages, that means the return code and out parameters.  */
+static int
+msgid_display (const struct msgid_info *info)
+{
+  return 1;
+}
+
+/* Return true if we should interpose on this RPC's reply port.  If this
+   returns false, we will pass the caller's original reply port through so
+   we never see the reply message at all.  */
+static int
+msgid_trace_replies (const struct msgid_info *info)
+{
+  return 1;
 }
 
 /* We keep one of these structures for each port right we are tracing.  */
@@ -594,6 +636,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
   };
 
   error_t err;
+  const struct msgid_info *msgid;
   struct traced_info *info;
   mach_msg_bits_t complex;
 
@@ -640,27 +683,28 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 
   complex = inp->msgh_bits & MACH_MSGH_BITS_COMPLEX;
 
+  msgid = msgid_info (inp->msgh_id);
+
   /* Swap the header data like a crossover cable. */
   {
     mach_msg_type_name_t this_type = MACH_MSGH_BITS_LOCAL (inp->msgh_bits);
     mach_msg_type_name_t reply_type = MACH_MSGH_BITS_REMOTE (inp->msgh_bits);
 
     inp->msgh_local_port = inp->msgh_remote_port;
-    if (reply_type)
+    if (reply_type && msgid_trace_replies (msgid))
       {
 	struct traced_info *info;
 	info = rewrite_right (&inp->msgh_local_port, &reply_type);
 	assert (info);
 	if (info->name == 0)
 	  {
-	    const char *msgname = msgid_name (inp->msgh_id);
-	    if (msgname == 0)
+	    if (msgid == 0)
 	      asprintf (&info->name, "reply(%u:%u)",
 			(unsigned int) info->pi.port_right,
 			(unsigned int) inp->msgh_id);
 	    else
 	      asprintf (&info->name, "reply(%u:%s)",
-			(unsigned int) info->pi.port_right, msgname);
+			(unsigned int) info->pi.port_right, msgid->name);
 	  }
 	if (info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE)
 	  {
@@ -691,29 +735,32 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
   /* The message now appears as it would if we were the sender.
      It is ready to be resent.  */
 
-  if (inp->msgh_local_port == MACH_PORT_NULL
-      && info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE
-      && inp->msgh_size >= sizeof (mig_reply_header_t)
-      && (*(int *) &((mig_reply_header_t *) inp)->RetCodeType
-	  == *(int *)&RetCodeType))
+  if (msgid_display (msgid))
     {
-      /* This sure looks like an RPC reply message.  */
-      mig_reply_header_t *rh = (void *) inp;
-      print_reply_header (info, rh);
-      putc (' ', ostream);
-      print_contents (&rh->Head, rh + 1);
-      putc ('\n', ostream);
-    }
-  else
-    {
-      /* Print something about the message header.  */
-      print_request_header (info, inp);
-      print_contents (inp, inp + 1);
-      if (inp->msgh_local_port == MACH_PORT_NULL) /* simpleroutine */
-	fprintf (ostream, ");\n");
+      if (inp->msgh_local_port == MACH_PORT_NULL
+	  && info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE
+	  && inp->msgh_size >= sizeof (mig_reply_header_t)
+	  && (*(int *) &((mig_reply_header_t *) inp)->RetCodeType
+	      == *(int *)&RetCodeType))
+	{
+	  /* This sure looks like an RPC reply message.  */
+	  mig_reply_header_t *rh = (void *) inp;
+	  print_reply_header (info, rh);
+	  putc (' ', ostream);
+	  print_contents (&rh->Head, rh + 1);
+	  putc ('\n', ostream);
+	}
       else
-	/* Leave a partial line that will be finished later.  */
-	fprintf (ostream, ")");
+	{
+	  /* Print something about the message header.  */
+	  print_request_header (info, inp);
+	  print_contents (inp, inp + 1);
+	  if (inp->msgh_local_port == MACH_PORT_NULL) /* simpleroutine */
+	    fprintf (ostream, ");\n");
+	  else
+	    /* Leave a partial line that will be finished later.  */
+	    fprintf (ostream, ")");
+	}
     }
 
   /* Resend the message to the tracee.  */
