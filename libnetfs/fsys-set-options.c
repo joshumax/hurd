@@ -76,15 +76,10 @@ netfs_S_fsys_set_options (fsys_t fsys,
 
   if (!err)
     {
-      int argc = argz_count (data, data_len);
-      char **argv = alloca (sizeof (char *) * (argc + 1));
-
-      argz_extract (data, data_len, argv);
-
 #if NOT_YET
       rwlock_writer_lock (&netfs_fsys_lock);
 #endif
-      err = netfs_set_options (argc, argv);
+      err = netfs_set_options (data, data_len);
 #if NOT_YET
       rwlock_writer_unlock (&netfs_fsys_lock);
 #endif
