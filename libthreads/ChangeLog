@@ -1,3 +1,7 @@
+2002-03-24  Roland McGrath  <roland@frob.com>
+
+	* libthreads.map: Use GLIBC_2.2.6 set instead of GLIBC_2.2.
+
 2001-12-22  Roland McGrath  <roland@frob.com>
 
 	* i386/thread.c (cthread_sp): Use __thread_stack_pointer.
