@@ -1,3 +1,9 @@
+Fri Aug  2 15:12:19 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* procstat.c (set_procinfo_flags): Pass HAVE to count_threads.
+	(count_threads): Take new argument HAVE, and use different thread
+	counting method depending on whether we have thread detail info.
+
 Thu Jul 18 18:54:07 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* tty.c (ps_tty_abbrevs): Add an entry for /dev/comX -> cX.
