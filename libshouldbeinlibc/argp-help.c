@@ -26,9 +26,12 @@
 #include <stdarg.h>
 #include <malloc.h>
 #include <ctype.h>
-#include <linewrap.h>
+
+extern char *__progname, *__progname_full;
 
 #include "argp.h"
+#include "argp-fmtstream.h"
+#include "argp-namefrob.h"
 
 #define SHORT_OPT_COL 2		/* column in which short options start */
 #define LONG_OPT_COL  6		/* column in which long options start */
@@ -49,10 +52,10 @@
 #define odoc(opt) ((opt)->flags & OPTION_DOC)
 
 /* Returns true if OPT is the end-of-list marker for a list of options.  */
-#define oend(opt) _option_is_end (opt)
+#define oend(opt) __option_is_end (opt)
 
 /* Returns true if OPT has a short option.  */
-#define oshort(opt) (!odoc(opt) && _option_is_short (opt))
+#define oshort(opt) __option_is_short (opt)
 
 /*
    The help format for a particular option is like:
@@ -67,39 +70,54 @@
    indented slighly in a way that's supposed to make most long options appear
    to be in a separate column.
 
-   For example (from ps): 
+   For example, the following output (from ps): 
 
-  -p PID, --pid=PID           List the process PID
-      --pgrp=PGRP            List processes in the process group PGRP
-  -P, -x, --no-parent        Include processes without parents
-  -Q, --all-fields           Don't elide unusable fields (normally if there's
-                             some reason ps can't print a field for any
-                             process, it's removed from the output entirely)
-  -r, --reverse, --gratuitously-long-reverse-option
-                             Reverse the order of any sort
-      --session[=SID]        Add the processes from the session SID (which
-                             defaults to the sid of the current process)
+     -p PID, --pid=PID          List the process PID
+	 --pgrp=PGRP            List processes in the process group PGRP
+     -P, -x, --no-parent        Include processes without parents
+     -Q, --all-fields           Don't elide unusable fields (normally if there's
+				some reason ps can't print a field for any
+				process, it's removed from the output entirely)
+     -r, --reverse, --gratuitously-long-reverse-option
+				Reverse the order of any sort
+	 --session[=SID]        Add the processes from the session SID (which
+				defaults to the sid of the current process)
+
+    Here are some more options:
+     -f ZOT, --foonly=ZOT       Glork a foonly
+     -z, --zaza                 Snit a zar
+
+     -?, --help                 Give this help list
+	 --usage                Give a short usage message
+     -V, --version              Print program version
 
    The struct argp_option array for the above could look like:
 
    {
-     {"pid",       'p',      "PID",  0,
-	"List the process PID"},
-     {"pgrp",      OPT_PGRP, "PGRP", 0,
-	"List processes in the process group PGRP"},
-     {"no-parent", 'P',	      0,     0,
-	"Include processes without parents"},
+     {"pid",       'p',      "PID",  0, "List the process PID"},
+     {"pgrp",      OPT_PGRP, "PGRP", 0, "List processes in the process group PGRP"},
+     {"no-parent", 'P',	      0,     0, "Include processes without parents"},
      {0,           'x',       0,     OPTION_ALIAS},
-     {"all-fields",'Q',       0,     0,
-	"Don't elide unusable fields (normally if there's some reason ps \
-can't print a field for any process, it's removed from the output entirely)"},
-     {"reverse",   'r',       0,     0,
-	"Reverse the order of any sort"},
+     {"all-fields",'Q',       0,     0, "Don't elide unusable fields (normally"
+                                        " if there's some reason ps can't"
+					" print a field for any process, it's"
+                                        " removed from the output entirely)" },
+     {"reverse",   'r',       0,     0, "Reverse the order of any sort"},
      {"gratuitously-long-reverse-option", 0, 0, OPTION_ALIAS},
      {"session",   OPT_SESS,  "SID", OPTION_ARG_OPTIONAL,
-	"Add the processes from the session SID (which defaults to the sid of \
-the current process)"},
+                                        "Add the processes from the session"
+					" SID (which defaults to the sid of"
+					" the current process)" },
+
+     {0,0,0,0, "Here are some more options:"},
+     {"foonly", 'f', "ZOT", 0, "Glork a foonly"},
+     {"zaza", 'z', 0, 0, "Snit a zar"},
+
+     {0}
    }
+
+   Note that the last three options are automatically supplied by argp_parse,
+   unless you tell it not to with ARGP_NO_HELP.
 
 */
 
@@ -187,8 +205,8 @@ struct hol
 
 /* Create a struct hol from an array of struct argp_option.  CLUSTER is the
    hol_cluster in which these entries occur, or 0, if at the root.  */
-struct hol *make_hol (const struct argp_option *opt,
-		      struct hol_cluster *cluster)
+static struct hol *
+make_hol (const struct argp_option *opt, struct hol_cluster *cluster)
 {
   char *so;
   const struct argp_option *o;
@@ -228,7 +246,12 @@ struct hol *make_hol (const struct argp_option *opt,
 	  entry->opt = o;
 	  entry->num = 0;
 	  entry->short_options = so;
-	  entry->group = cur_group = o->group ?: cur_group;
+	  entry->group = cur_group =
+	    o->group
+	    ? o->group
+	    : ((!o->name && !o->key)
+	       ? cur_group + 1
+	       : cur_group);
 	  entry->cluster = cluster;
 
 	  do
@@ -344,7 +367,7 @@ static inline int
 until_short (const struct argp_option *opt, const struct argp_option *real,
 	     void *cookie)
 {
-  return oshort (opt);
+  return oshort (opt) ? opt->key : 0;
 }
 
 /* Returns the first valid short option in ENTRY, or 0 if there is none.  */
@@ -400,14 +423,14 @@ hol_set_group (struct hol *hol, char *name, int group)
     entry->group = group;
 }
 
-/* Order by group:  1, 2, ..., n, 0, -m, ..., -2, -1.
+/* Order by group:  0, 1, 2, ..., n, -m, ..., -2, -1.
    EQ is what to return if GROUP1 and GROUP2 are the same.  */
 static int
 group_cmp (int group1, int group2, int eq)
 {
   if (group1 == group2)
     return eq;
-  else if ((group1 < 0 && group2 < 0) || (group1 > 0 && group2 > 0))
+  else if ((group1 < 0 && group2 < 0) || (group1 >= 0 && group2 >= 0))
     return group1 - group2;
   else
     return group2 - group1;
@@ -517,7 +540,7 @@ hol_entry_cmp (const struct hol_entry *entry1, const struct hol_entry *entry2)
 	return doc1 - doc2;
       else if (!short1 && !short2 && long1 && long2)
 	/* Only long options.  */
-	return strcasecmp (long1, long2);
+	return __strcasecmp (long1, long2);
       else
 	/* Compare short/short, long/short, short/long, using the first
 	   character of long options.  Entries without *any* valid
@@ -525,11 +548,12 @@ hol_entry_cmp (const struct hol_entry *entry1, const struct hol_entry *entry2)
 	   first, but as they're not displayed, it doesn't matter where
 	   they are.  */
 	{
-	  char first1 = short1 ?: long1 ? *long1 : 0;
-	  char first2 = short2 ?: long2 ? *long2 : 0;
+	  char first1 = short1 ? short1 : long1 ? *long1 : 0;
+	  char first2 = short2 ? short2 : long2 ? *long2 : 0;
+	  int lower_cmp = tolower (first1) - tolower (first2);
 	  /* Compare ignoring case, except when the options are both the
 	     same letter, in which case lower-case always comes first.  */
-	  return (tolower (first1) - tolower (first2)) ?: first2 - first1;
+	  return lower_cmp ? lower_cmp : first2 - first1;
 	}
     }
   else
@@ -592,12 +616,12 @@ hol_append (struct hol *hol, struct hol *more)
 	char *short_options =
 	  malloc (hol_so_len + strlen (more->short_options) + 1);
 
-	bcopy (hol->entries, entries,
-	       hol->num_entries * sizeof (struct hol_entry));
-	bcopy (more->entries, entries + hol->num_entries,
-	       more->num_entries * sizeof (struct hol_entry));
+	memcpy (entries, hol->entries,
+		hol->num_entries * sizeof (struct hol_entry));
+	memcpy (entries + hol->num_entries, more->entries,
+		more->num_entries * sizeof (struct hol_entry));
 
-	bcopy (hol->short_options, short_options, hol_so_len);
+	memcpy (short_options, hol->short_options, hol_so_len);
 
 	/* Fix up the short options pointers from HOL.  */
 	for (e = entries, left = hol->num_entries; left > 0; e++, left--)
@@ -644,11 +668,11 @@ hol_append (struct hol *hol, struct hol *more)
 
 /* Inserts enough spaces to make sure STREAM is at column COL.  */
 static void
-indent_to (FILE *stream, unsigned col)
+indent_to (argp_fmtstream_t stream, unsigned col)
 {
-  int needed = col - line_wrap_point (stream);
+  int needed = col - __argp_fmtstream_point (stream);
   while (needed-- > 0)
-    putc (' ', stream);
+    __argp_fmtstream_putc (stream, ' ');
 }
 
 /* If the option REAL has an argument, we print it in using the printf
@@ -656,13 +680,13 @@ indent_to (FILE *stream, unsigned col)
    optional argument.  */
 static void
 arg (const struct argp_option *real, char *req_fmt, char *opt_fmt,
-     FILE *stream)
+     argp_fmtstream_t stream)
 {
   if (real->arg)
     if (real->flags & OPTION_ARG_OPTIONAL)
-      fprintf (stream, opt_fmt, real->arg);
+      __argp_fmtstream_printf (stream, opt_fmt, real->arg);
     else
-      fprintf (stream, req_fmt, real->arg);
+      __argp_fmtstream_printf (stream, req_fmt, real->arg);
 }
 
 /* Helper functions for hol_entry_help.  */
@@ -673,7 +697,7 @@ arg (const struct argp_option *real, char *req_fmt, char *opt_fmt,
 struct pentry_state
 {
   const struct hol_entry *entry;
-  FILE *stream;
+  argp_fmtstream_t stream;
   struct hol_entry **prev_entry;
   int *sep_groups;
 
@@ -690,12 +714,12 @@ print_header (const char *str, struct pentry_state *st)
   if (*str)
     {
       if (st->prev_entry && *st->prev_entry)
-	putc ('\n', st->stream); /* Precede with a blank line.  */
+	__argp_fmtstream_putc (st->stream, '\n'); /* Precede with a blank line.  */
       indent_to (st->stream, HEADER_COL);
-      line_wrap_set_lmargin (st->stream, HEADER_COL);
-      line_wrap_set_wmargin (st->stream, HEADER_COL);
-      fputs (str, st->stream);
-      line_wrap_set_lmargin (st->stream, 0);
+      __argp_fmtstream_set_lmargin (st->stream, HEADER_COL);
+      __argp_fmtstream_set_wmargin (st->stream, HEADER_COL);
+      __argp_fmtstream_puts (st->stream, str);
+      __argp_fmtstream_set_lmargin (st->stream, 0);
     }
 
   if (st->sep_groups)
@@ -714,7 +738,7 @@ comma (unsigned col, struct pentry_state *st)
 
       if (st->sep_groups && *st->sep_groups
 	  && pe && st->entry->group != pe->group)
-	putc ('\n', st->stream);
+	__argp_fmtstream_putc (st->stream, '\n');
 
       if (pe && cl && pe->cluster != cl && cl->header && *cl->header
 	  && !hol_cluster_is_child (pe->cluster, cl))
@@ -723,16 +747,16 @@ comma (unsigned col, struct pentry_state *st)
 	   (in which case we had just popped into a sub-cluster for a bit).
 	   If so, then print the cluster's header line.  */
 	{
-	  int old_wm = line_wrap_wmargin (st->stream);
+	  int old_wm = __argp_fmtstream_wmargin (st->stream);
 	  print_header (cl->header, st);
-	  putc ('\n', st->stream);
-	  line_wrap_set_wmargin (st->stream, old_wm);
+	  __argp_fmtstream_putc (st->stream, '\n');
+	  __argp_fmtstream_set_wmargin (st->stream, old_wm);
 	}
 
       st->first = 0;
     }
   else
-    fputs (", ", st->stream);
+    __argp_fmtstream_puts (st->stream, ", ");
 
   indent_to (st->stream, col);
 }
@@ -743,18 +767,18 @@ comma (unsigned col, struct pentry_state *st)
    printed before any output.  *SEP_GROUPS is also set to true if a
    user-specified group header is printed.  */
 static void
-hol_entry_help (struct hol_entry *entry, FILE *stream,
+hol_entry_help (struct hol_entry *entry, argp_fmtstream_t stream,
 		struct hol_entry **prev_entry, int *sep_groups)
 {
   unsigned num;
   const struct argp_option *real = entry->opt, *opt;
   char *so = entry->short_options;
-  int old_lm = line_wrap_set_lmargin (stream, 0);
-  int old_wm = line_wrap_wmargin (stream);
+  int old_lm = __argp_fmtstream_set_lmargin (stream, 0);
+  int old_wm = __argp_fmtstream_wmargin (stream);
   struct pentry_state pest = { entry, stream, prev_entry, sep_groups, 1 };
 
   /* First emit short options.  */
-  line_wrap_set_wmargin (stream, SHORT_OPT_COL); /* For truly bizarre cases. */
+  __argp_fmtstream_set_wmargin (stream, SHORT_OPT_COL); /* For truly bizarre cases. */
   for (opt = real, num = entry->num; num > 0; opt++, num--)
     if (oshort (opt) && opt->key == *so)
       /* OPT has a valid (non shadowed) short option.  */
@@ -762,8 +786,8 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
 	if (ovisible (opt))
 	  {
 	    comma (SHORT_OPT_COL, &pest);
-	    putc ('-', stream);
-	    putc (*so, stream);
+	    __argp_fmtstream_putc (stream, '-');
+	    __argp_fmtstream_putc (stream, *so);
 	    arg (real, " %s", "[%s]", stream);
 	  }
 	so++;
@@ -773,28 +797,28 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
   if (odoc (real))
     /* Really a `documentation' option.  */
     {
-      line_wrap_set_wmargin (stream, DOC_OPT_COL);
+      __argp_fmtstream_set_wmargin (stream, DOC_OPT_COL);
       for (opt = real, num = entry->num; num > 0; opt++, num--)
 	if (opt->name && ovisible (opt))
 	  {
 	    comma (DOC_OPT_COL, &pest);
-	    fputs (opt->name, stream);
+	    __argp_fmtstream_puts (stream, opt->name);
 	  }
     }
   else
     /* A realy long option.  */
     {      
-      line_wrap_set_wmargin (stream, LONG_OPT_COL);
+      __argp_fmtstream_set_wmargin (stream, LONG_OPT_COL);
       for (opt = real, num = entry->num; num > 0; opt++, num--)
 	if (opt->name && ovisible (opt))
 	  {
 	    comma (LONG_OPT_COL, &pest);
-	    fprintf (stream, "--%s", opt->name);
+	    __argp_fmtstream_printf (stream, "--%s", opt->name);
 	    arg (real, "=%s", "[=%s]", stream);
 	  }
     }
 
-  line_wrap_set_lmargin (stream, 0);
+  __argp_fmtstream_set_lmargin (stream, 0);
   if (pest.first)
     /* Didn't print any switches, what's up?  */
     if (!oshort (real) && !real->name && real->doc)
@@ -806,38 +830,38 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
   else if (real->doc)
     /* Now the option documentation.  */
     {
-      unsigned col = line_wrap_point (stream);
+      unsigned col = __argp_fmtstream_point (stream);
       const char *doc = real->doc;
 
-      line_wrap_set_lmargin (stream, OPT_DOC_COL);
-      line_wrap_set_wmargin (stream, OPT_DOC_COL);
+      __argp_fmtstream_set_lmargin (stream, OPT_DOC_COL);
+      __argp_fmtstream_set_wmargin (stream, OPT_DOC_COL);
 
       if (col > OPT_DOC_COL + 3)
-	putc ('\n', stream);
+	__argp_fmtstream_putc (stream, '\n');
       else if (col >= OPT_DOC_COL)
-	fprintf (stream, "   ");
+	__argp_fmtstream_puts (stream, "   ");
       else
 	indent_to (stream, OPT_DOC_COL);
 
-      fputs (doc, stream);
+      __argp_fmtstream_puts (stream, doc);
 
       /* Reset the left margin.  */
-      line_wrap_set_lmargin (stream, 0);
+      __argp_fmtstream_set_lmargin (stream, 0);
     }
 
-  putc ('\n', stream);
+  __argp_fmtstream_putc (stream, '\n');
 
   if (prev_entry)
     *prev_entry = entry;
 
 cleanup:
-  line_wrap_set_lmargin (stream, old_lm);
-  line_wrap_set_wmargin (stream, old_wm);
+  __argp_fmtstream_set_lmargin (stream, old_lm);
+  __argp_fmtstream_set_wmargin (stream, old_wm);
 }
 
 /* Output a long help message about the options in HOL to STREAM.  */
 static void
-hol_help (struct hol *hol, FILE *stream)
+hol_help (struct hol *hol, argp_fmtstream_t stream)
 {
   unsigned num;
   struct hol_entry *entry;
@@ -870,23 +894,25 @@ usage_argful_short_opt (const struct argp_option *opt,
 			const struct argp_option *real,
 			void *cookie)
 {
-  FILE *stream = cookie;
+  argp_fmtstream_t stream = cookie;
+  const char *arg = opt->arg;
 
-  if (opt->arg || real->arg)
+  if (! arg)
+    arg = real->arg;
+
+  if (arg)
     if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-      fprintf (stream, " [-%c[%s]]",
-	       opt->key, opt->arg ?: real->arg);
+      __argp_fmtstream_printf (stream, " [-%c[%s]]", opt->key, arg);
     else
       {
-	const char *arg = opt->arg ?: real->arg;
 	/* Manually do line wrapping so that it (probably) won't
 	   get wrapped at the embedded space.  */
-	if (line_wrap_point (stream) + 6 + strlen (arg)
-	    >= line_wrap_rmargin (stream))
-	  putc ('\n', stream);
+	if (__argp_fmtstream_point (stream) + 6 + strlen (arg)
+	    >= __argp_fmtstream_rmargin (stream))
+	  __argp_fmtstream_putc (stream, '\n');
 	else
-	  putc (' ', stream);
-	fprintf (stream, "[-%c %s]", opt->key, arg);
+	  __argp_fmtstream_putc (stream, ' ');
+	__argp_fmtstream_printf (stream, "[-%c %s]", opt->key, arg);
       }
 
   return 0;
@@ -899,20 +925,26 @@ usage_long_opt (const struct argp_option *opt,
 		const struct argp_option *real,
 		void *cookie)
 {
-  FILE *stream = cookie;
-  if (opt->arg || real->arg)
+  argp_fmtstream_t stream = cookie;
+  const char *arg = opt->arg;
+
+  if (! arg)
+    arg = real->arg;
+    
+  if (arg)
     if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-      fprintf (stream, " [--%s[=%s]]", opt->name, opt->arg ?: real->arg);
+      __argp_fmtstream_printf (stream, " [--%s[=%s]]", opt->name, arg);
     else
-      fprintf (stream, " [--%s=%s]", opt->name, opt->arg ?: real->arg);
+      __argp_fmtstream_printf (stream, " [--%s=%s]", opt->name, arg);
   else
-    fprintf (stream, " [--%s]", opt->name);
+    __argp_fmtstream_printf (stream, " [--%s]", opt->name);
+
   return 0;
 }
 
 /* Print a short usage description for the arguments in HOL to STREAM.  */
 static void
-hol_usage (struct hol *hol, FILE *stream)
+hol_usage (struct hol *hol, argp_fmtstream_t stream)
 {
   if (hol->num_entries > 0)
     {
@@ -929,7 +961,7 @@ hol_usage (struct hol *hol, FILE *stream)
       if (snao_end > short_no_arg_opts)
 	{
 	  *snao_end++ = 0;
-	  fprintf (stream, " [-%s]", short_no_arg_opts);
+	  __argp_fmtstream_printf (stream, " [-%s]", short_no_arg_opts);
 	}
 
       /* Now a list of short options *with* arguments.  */
@@ -972,7 +1004,7 @@ argp_hol (const struct argp *argp, struct hol_cluster *cluster)
 /* Print all the non-option args documented in ARGP to STREAM.  Any output is
    preceded by a space.  */
 static void
-argp_args_usage (const struct argp *argp, FILE *stream)
+argp_args_usage (const struct argp *argp, argp_fmtstream_t stream)
 {
   const struct argp_child *child = argp->children;
   const char *doc = argp->args_doc;
@@ -980,12 +1012,12 @@ argp_args_usage (const struct argp *argp, FILE *stream)
     {
       /* Manually do line wrapping so that it (probably) won't get wrapped at
 	 any embedded spaces.  */
-      if (line_wrap_point (stream) + 1 + strlen (doc)
-	  >= line_wrap_rmargin (stream))
-	putc ('\n', stream);
+      if (__argp_fmtstream_point (stream) + 1 + strlen (doc)
+	  >= __argp_fmtstream_rmargin (stream))
+	__argp_fmtstream_putc (stream, '\n');
       else
-	putc (' ', stream);
-      fputs (doc, stream);
+	__argp_fmtstream_putc (stream, ' ');
+      __argp_fmtstream_puts (stream, doc);
     }
   if (child)
     while (child->argp)
@@ -1001,7 +1033,7 @@ argp_args_usage (const struct argp *argp, FILE *stream)
    occurance is output.  Returns true if anything was output.  */
 static int
 argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
-	  FILE *stream)
+	  argp_fmtstream_t stream)
 {
   const struct argp_child *child = argp->children;
   const char *doc = argp->doc;
@@ -1009,21 +1041,21 @@ argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 
   if (doc)
     {
-      char *vt = index (doc, '\v');
+      char *vt = strchr (doc, '\v');
 
       if (pre_blank && (vt || !post))
-	putc ('\n', stream);
+	__argp_fmtstream_putc (stream, '\n');
 
       if (vt)
 	if (post)
-	  fputs (vt + 1, stream);
+	  __argp_fmtstream_puts (stream, vt + 1);
 	else
-	  fwrite (doc, 1, vt - doc, stream);
+	  __argp_fmtstream_write (stream, doc, vt - doc);
       else
 	if (! post)
-	  fputs (doc, stream);
-      if (line_wrap_point (stream) > line_wrap_lmargin (stream))
-	putc ('\n', stream);
+	  __argp_fmtstream_puts (stream, doc);
+      if (__argp_fmtstream_point (stream) > __argp_fmtstream_lmargin (stream))
+	__argp_fmtstream_putc (stream, '\n');
 
       anything = 1;
     }
@@ -1038,17 +1070,19 @@ argp_doc (const struct argp *argp, int post, int pre_blank, int first_only,
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  NAME is what to use wherever a `program name' is needed. */
-void argp_help (const struct argp *argp, FILE *stream,
-		unsigned flags, char *name)
+void __argp_help (const struct argp *argp, FILE *stream,
+		  unsigned flags, char *name)
 {
   int anything = 0;		/* Whether we've output anything.  */
   struct hol *hol = 0;
+  argp_fmtstream_t fs;
 
   if (! stream)
     return;
 
-  stream = line_wrap_stream (stream, 0, RMARGIN, 0);
-  assert (stream);
+  fs = __argp_make_fmtstream (stream, 0, RMARGIN, 0);
+  if (! fs)
+    return;
 
   if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG))
     {
@@ -1065,38 +1099,38 @@ void argp_help (const struct argp *argp, FILE *stream,
     /* Print a short `Usage:' message.  */
     {
       int old_lm;
-      int old_wm = line_wrap_set_wmargin (stream, USAGE_INDENT);
+      int old_wm = __argp_fmtstream_set_wmargin (fs, USAGE_INDENT);
 
-      fprintf (stream, "Usage: %s", name);
+      __argp_fmtstream_printf (fs, "Usage: %s", name);
 
       /* We set the lmargin as well as the wmargin, because hol_usage
 	 manually wraps options with newline to avoid annoying breaks.  */
-      old_lm = line_wrap_set_lmargin (stream, USAGE_INDENT);
+      old_lm = __argp_fmtstream_set_lmargin (fs, USAGE_INDENT);
 
       if (flags & ARGP_HELP_SHORT_USAGE)
 	/* Just show where the options go.  */
 	{
 	  if (hol->num_entries > 0)
-	    fputs (" [OPTION...]", stream);
+	    __argp_fmtstream_puts (fs, " [OPTION...]");
 	}
       else
 	/* Actually print the options.  */
-	hol_usage (hol, stream);
-      argp_args_usage (argp, stream);
+	hol_usage (hol, fs);
+      argp_args_usage (argp, fs);
 
-      line_wrap_set_wmargin (stream, old_wm);
-      line_wrap_set_lmargin (stream, old_lm);
+      __argp_fmtstream_set_wmargin (fs, old_wm);
+      __argp_fmtstream_set_lmargin (fs, old_lm);
 
-      putc ('\n', stream);
+      __argp_fmtstream_putc (fs, '\n');
       anything = 1;
     }
 
   if (flags & ARGP_HELP_PRE_DOC)
-    anything |= argp_doc (argp, 0, 0, 1, stream);
+    anything |= argp_doc (argp, 0, 0, 1, fs);
 
   if (flags & ARGP_HELP_SEE)
     {
-      fprintf (stream,
+      __argp_fmtstream_printf (fs,
 	       "Try `%s --help' or `%s --usage' for more information.\n",
 	       name, name);
       anything = 1;
@@ -1109,34 +1143,37 @@ void argp_help (const struct argp *argp, FILE *stream,
       if (hol->num_entries > 0)
 	{
 	  if (anything)
-	    putc ('\n', stream);
-	  hol_help (hol, stream);
+	    __argp_fmtstream_putc (fs, '\n');
+	  hol_help (hol, fs);
 	  anything = 1;
 	}
     }
 
   if (flags & ARGP_HELP_POST_DOC)
     /* Print any documentation strings at the end.  */
-    anything |= argp_doc (argp, 1, anything, 0, stream);
+    anything |= argp_doc (argp, 1, anything, 0, fs);
 
   if ((flags & ARGP_HELP_BUG_ADDR) && argp_program_bug_address)
     {
       if (anything)
-	putc ('\n', stream);
-      fprintf (stream, "Report bugs to %s.\n", argp_program_bug_address);
+	__argp_fmtstream_putc (fs, '\n');
+      __argp_fmtstream_printf (fs, "Report bugs to %s.\n", argp_program_bug_address);
       anything = 1;
     }
 
   if (hol)
     hol_free (hol);
 
-  line_unwrap_stream (stream);
+  __argp_fmtstream_free (fs);
 }
+#ifdef weak_alias
+weak_alias (__argp_help, argp_help)
+#endif
 
 /* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
    from the set ARGP_HELP_*.  */
 void
-argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
+__argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 {
   if ((!state || ! (state->flags & ARGP_NO_ERRS)) && stream)
     {
@@ -1144,7 +1181,7 @@ argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 	flags |= ARGP_HELP_LONG_ONLY;
 
       argp_help (state ? state->argp : 0, stream, flags,
-		 state ? state->name : program_invocation_name);
+		 state ? state->name : __progname_full);
 
       if (!state || ! (state->flags & ARGP_NO_EXIT))
 	{
@@ -1155,12 +1192,15 @@ argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 	}
   }
 }
+#ifdef weak_alias
+weak_alias (__argp_state_help, argp_state_help)
+#endif
 
 /* If appropriate, print the printf string FMT and following args, preceded
    by the program name and `:', to stderr, and followed by a `Try ... --help'
    message, then exit (1).  */
 void
-argp_error (struct argp_state *state, const char *fmt, ...)
+__argp_error (struct argp_state *state, const char *fmt, ...)
 {
   if (!state || !(state->flags & ARGP_NO_ERRS))
     {
@@ -1170,7 +1210,7 @@ argp_error (struct argp_state *state, const char *fmt, ...)
 	{
 	  va_list ap;
 
-	  fputs (program_invocation_name, stream);
+	  fputs (__progname_full, stream);
 	  putc (':', stream);
 	  putc (' ', stream);
 
@@ -1180,10 +1220,13 @@ argp_error (struct argp_state *state, const char *fmt, ...)
 
 	  putc ('\n', stream);
 
-	  argp_state_help (state, stream, ARGP_HELP_STD_ERR);
+	  __argp_state_help (state, stream, ARGP_HELP_STD_ERR);
 	}
     }
 }
+#ifdef weak_alias
+weak_alias (__argp_error, argp_error)
+#endif
 
 /* Similar to the standard gnu error-reporting function error(), but will
    respect the ARGP_NO_EXIT and ARGP_NO_ERRS flags in STATE, and will print
@@ -1194,7 +1237,7 @@ argp_error (struct argp_state *state, const char *fmt, ...)
    *parsing errors*, and the former is for other problems that occur during
    parsing but don't reflect a (syntactic) problem with the input.  */
 void
-argp_failure (struct argp_state *state, int status, int errnum,
+__argp_failure (struct argp_state *state, int status, int errnum,
 	      const char *fmt, ...)
 {
   if (!state || !(state->flags & ARGP_NO_ERRS))
@@ -1203,7 +1246,7 @@ argp_failure (struct argp_state *state, int status, int errnum,
 
       if (stream)
 	{
-	  fputs (state ? state->name : program_invocation_name, stream);
+	  fputs (state ? state->name : __progname_full, stream);
 
 	  if (fmt)
 	    {
@@ -1231,3 +1274,6 @@ argp_failure (struct argp_state *state, int status, int errnum,
 	}
     }
 }
+#ifdef weak_alias
+weak_alias (__argp_failure, argp_failure)
+#endif
