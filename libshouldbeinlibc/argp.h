@@ -194,7 +194,26 @@ struct argp
      their own argp structure, which you want to use in conjunction with your
      own.  */
   __const struct argp_child *children;
+
+  /* If non-zero, this should be a function to filter the output of help
+     messages.  KEY is either a key from an option, in which case TEXT is
+     that option's help text, or a special key from the ARGP_KEY_HELP_
+     defines, below, describing which other help text TEXT is.  The function
+     should return either TEXT, if it should be used as-is, a replacement
+     string, which should be malloced, and will be freed by argp, or NULL,
+     meaning `print nothing'.  The value for TEXT is *after* any translation
+     has been done, so if any of the replacement text also needs translation,
+     that should be done by the filter function.  INPUT is either the input
+     supplied to argp_parse, or NULL, if argp_help was called directly.  */
+  char *(*help_filter)(int __key, __const char *__text, void *__input);
 };
+
+/* Possible KEY arguments to a help filter function.  */
+#define ARGP_KEY_HELP_PRE_DOC	0x2000001 /* Help text preceeding options. */
+#define ARGP_KEY_HELP_POST_DOC	0x2000002 /* Help text following options. */
+#define ARGP_KEY_HELP_HEADER	0x2000003 /* Option header string. */
+#define ARGP_KEY_HELP_EXTRA	0x2000004 /* After all other documentation;
+					     TEXT is NULL for this key.  */
 
 /* When an argp has a non-zero CHILDREN field, it should point to a vector of
    argp_child structures, each of which describes a subsidiary argp.  */
@@ -265,6 +284,8 @@ struct argp_state
   /* Streams used when argp prints something.  */
   FILE *err_stream;		/* For errors; initialized to stderr. */
   FILE *out_stream;		/* For information; initialized to stdout. */
+
+  void *pstate;			/* Private, for use by argp.  */
 };
 
 /* Flags for argp_parse (note that the defaults are those that are
@@ -434,6 +455,11 @@ extern int __option_is_short __P ((__const struct argp_option *__opt));
    options array.  */
 extern int _option_is_end __P ((__const struct argp_option *__opt));
 extern int __option_is_end __P ((__const struct argp_option *__opt));
+
+/* Return the input field for ARGP in the parser corresponding to STATE; used
+   by the help routines.  */
+void *_argp_input (__const struct argp *argp, __const struct argp_state *state);
+void *__argp_input (__const struct argp *argp, __const struct argp_state *state);
 
 #ifdef __OPTIMIZE__
 
