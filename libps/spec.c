@@ -462,8 +462,11 @@ ps_emit_seconds (struct proc_stat *ps, struct ps_fmt_field *field,
 
   FG (field, void)(ps, &tv);
 
-  fmt_seconds (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), prec, ABS (width),
-	       buf, sizeof (buf));
+  if ((field->flags & PS_FMT_FIELD_COLON_MOD) && tv.tv_sec == 0)
+    strcpy (buf, "-");
+  else
+    fmt_seconds (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), prec, ABS (width),
+		 buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
@@ -478,8 +481,11 @@ ps_emit_minutes (struct proc_stat *ps, struct ps_fmt_field *field,
 
   FG (field, int)(ps, &tv);
 
-  fmt_minutes (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), ABS (width),
-	       buf, sizeof (buf));
+  if ((field->flags & PS_FMT_FIELD_COLON_MOD) && tv.tv_sec < 60)
+    strcpy (buf, "-");
+  else
+    fmt_minutes (&tv, !(field->flags & PS_FMT_FIELD_AT_MOD), ABS (width),
+		 buf, sizeof (buf));
 
   return ps_stream_write_field (stream, buf, width);
 }
