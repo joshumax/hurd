@@ -123,7 +123,11 @@ ifeq ($(makemode),library)
   installhdrsubdir = hurd
  endif
  ifndef targets
-  targets = $(libname).a $(libname).so $(libname)_p.a
+   ifeq ($(no_prof),t)
+    targets = $(libname).a $(libname).so
+   else
+    targets = $(libname).a $(libname).so $(libname)_p.a
+   endif
  endif
 endif
 

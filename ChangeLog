@@ -1,3 +1,8 @@
+Thu Jul 10 14:10:32 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* Makeconf ($(makemode) == library): If $(no_prof) is `t', then
+	don't build _p.a versions of libraries.
+
 1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* Makefile (prog-subdirs): Add hostmux.
