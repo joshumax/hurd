@@ -42,8 +42,6 @@ then
 	esac
 fi
 
-touch /var/run/uptime
-
 echo -n cleaning up left over files...
 rm -f /etc/nologin
 rm -f /var/lock/LCK.*
@@ -54,6 +52,12 @@ if test -d /var/run; then
   (cd /var/run && { rm -rf -- *; cp /dev/null utmp; chmod 644 utmp; })
 fi
 echo done
+
+# This file records when the system was booted.
+date > /var/run/uptime
+
+# This file must exist for e2fsck to work. XXX
+touch /var/run/mtab
 
 #echo -n restoring pty permissions...
 #chmod 666 /dev/tty[pqrs]*
