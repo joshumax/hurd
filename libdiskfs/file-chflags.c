@@ -29,8 +29,10 @@ diskfs_S_file_chflags (struct protid *cred,
 		     if (!err)
 		       err = diskfs_validate_flags_change (np, flags);
 		     if (!err)
-		       np->dn_stat.st_flags = flags;
-		     np->dn_set_ctime = 1;
+		       {
+			 np->dn_stat.st_flags = flags;
+			 np->dn_set_ctime = 1;
+		       }
 		     if (!err && np->filemod_reqs)
 		       diskfs_notice_filechange(np, FILE_CHANGED_META, 
 						0, 0);
