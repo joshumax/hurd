@@ -1,7 +1,7 @@
 /* Write a store to stdout
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1996, 1997, 2001 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
    59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <argp.h>
 #include <error.h>
 
@@ -54,7 +55,7 @@ main (int argc, char **argv)
       char buf[4096];
       void *data = buf;
       size_t data_len = sizeof (buf);
-     
+
       err = store_read (s, addr, read, &data, &data_len);
       if (err)
 	error (5, err, "%s", name);

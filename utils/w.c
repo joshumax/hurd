@@ -1,6 +1,6 @@
 /* Hurdish w
 
-   Copyright (C) 1995,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <paths.h>
 #include <ctype.h>
