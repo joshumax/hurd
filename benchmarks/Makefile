@@ -19,6 +19,7 @@ dir := benchmarks
 makemode := utility
 
 SRCS = forks.c
+OBJS = forks.o
 target = forks
 
 include ../Makeconf
