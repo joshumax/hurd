@@ -24,6 +24,10 @@
 #include <hurd/diskfs.h>
 #include <assert.h>
 
+/* XXX */
+typedef unsigned long long u_quad_t;
+
+
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
    of paging requests, which may be helpful in catching bugs. */
