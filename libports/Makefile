@@ -1,5 +1,5 @@
-# 
-#   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
+#
+#   Copyright (C) 1995,96,97,99 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -30,7 +30,7 @@ SRCS = create-bucket.c create-class.c \
  inhibit-all-rpcs.c resume-port-rpcs.c resume-class-rpcs.c \
  resume-bucket-rpcs.c resume-all-rpcs.c interrupt-rpcs.c \
  init.c complete-deallocate.c get-right.c count-class.c count-bucket.c \
- enable-class.c enable-bucket.c bucket-iterate.c stubs.c \
+ enable-class.c enable-bucket.c bucket-iterate.c class-iterate.c stubs.c \
  notify-dead-name.c notify-no-senders.c notify-port-destroyed.c \
  notify-msg-accepted.c notify-port-deleted.c notify-send-once.c \
  interrupt-operation.c interrupt-on-notify.c interrupt-notified-rpcs.c \
@@ -43,8 +43,7 @@ installhdrs = ports.h
 
 HURDLIBS= ihash
 OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
- 
+
 MIGCOMSFLAGS = -prefix ports_
 
 include ../Makeconf
-

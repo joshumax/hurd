@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/* Iterate a function over the ports in a bucket.
+   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -22,13 +22,17 @@
 #include <cthreads.h>
 #include <hurd/ihash.h>
 
-/* This is obsecenely ineffecient.  ihash and ports need to cooperate
-   more closely to do it effeciently. */
+
+/* Internal entrypoint for both ports_bucket_iterate and ports_class_iterate.
+   If CLASS is non-null, call FUN only for ports in that class.  */
 error_t
-ports_bucket_iterate (struct port_bucket *bucket,
-		      error_t (*fun)(void *))
+_ports_bucket_class_iterate (struct port_bucket *bucket,
+			     struct port_class *class,
+			     error_t (*fun)(void *))
 {
-  struct item 
+  /* This is obsecenely ineffecient.  ihash and ports need to cooperate
+     more closely to do it effeciently. */
+  struct item
     {
       struct item *next;
       void *p;
@@ -36,22 +40,26 @@ ports_bucket_iterate (struct port_bucket *bucket,
   struct item *i, *nxt;
   error_t err;
 
-  error_t enqueue (void *pi)
+  error_t enqueue (void *arg)
     {
+      struct port_info *const pi = arg;
       struct item *j;
-      
-      j = malloc (sizeof (struct item));
-      j->next = list;
-      j->p = pi;
-      list = j;
-      ((struct port_info *)pi)->refcnt++;
+
+      if (class == 0 || pi->class == class)
+	{
+	  j = malloc (sizeof (struct item));
+	  j->next = list;
+	  j->p = pi;
+	  list = j;
+	  pi->refcnt++;
+	}
       return 0;
     }
-  
+
   mutex_lock (&_ports_lock);
   ihash_iterate (bucket->htable, enqueue);
   mutex_unlock (&_ports_lock);
-  
+
   err = 0;
   for (i = list; i; i = nxt)
     {
@@ -62,4 +70,11 @@ ports_bucket_iterate (struct port_bucket *bucket,
       free (i);
     }
   return err;
-}  
+}
+
+error_t
+ports_bucket_iterate (struct port_bucket *bucket,
+		      error_t (*fun)(void *))
+{
+  return _ports_bucket_class_iterate (bucket, 0, fun);
+}
