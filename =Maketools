@@ -47,7 +47,7 @@ crossheaders := $(crossdir)/include
 
 INSTALL = install -c
 INSTALL_DATA = $(INSTALL) -m 644
-INSTALL_BIN = /gd4/hurd-cross/install-stripped
+INSTALL_BIN = $(INSTALL) -m 755
 #INSTALL_BIN=cp
 
 machine := i386
