@@ -1,3 +1,11 @@
+2001-08-25  Roland McGrath  <roland@frob.com>
+
+	* Makefile (parted.o, parted_pic.o): Pass -nostdlib.
+
+2001-08-25  Neal H Walfield  <neal@cs.uml.edu>
+
+        * Makefile (libstore.so-LDFLAGS): Renamed from LDFLAGS-libstore.so.
+
 2001-08-24  Roland McGrath  <roland@frob.com>
 
 	* Makefile (SRCS): Add part.c here.
