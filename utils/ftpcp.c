@@ -351,6 +351,7 @@ main (int argc, char **argv)
   econnect (&wr, &def_params, "DST");
 
   if (rd.conn && wr.conn)
+    /* Both endpoints are remote; directly copy between ftp servers.  */
     {
       err = ftp_conn_rmt_copy (rd.conn, rd.file, wr.conn, wr.file);
       if (err == EISDIR)
@@ -364,6 +365,7 @@ main (int argc, char **argv)
 	error (30, err, "Remote copy");
     }
   else
+    /* One endpoint is local, so do the copying ourself.  */
     {
       int rd_fd, wr_fd;
 
