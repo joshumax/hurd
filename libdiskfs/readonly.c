@@ -43,7 +43,7 @@ diskfs_check_readonly ()
 	    {
 	      error (0, 0, 
 		     "%s: MEDIA NOT WRITABLE; switching to READ-ONLY",
-		     diskfs_device_arg);
+		     diskfs_disk_name ?: "-");
 	      diskfs_readonly = 1;
 	      return 1;
 	    }
