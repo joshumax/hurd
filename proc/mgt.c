@@ -500,6 +500,7 @@ new_proc (task_t task)
       p->p_ochild = p;
       p->p_loginleader = 1;
       p->p_parentset = 1;
+      p->p_noowner = 0;
     }
   else if (p->p_pid == 1)
     {
@@ -515,6 +516,7 @@ new_proc (task_t task)
       p->p_loginleader = 1;
       p->p_ochild = 0;
       p->p_parentset = 1;
+      p->p_noowner = 0;
     }
   else
     {
@@ -532,6 +534,7 @@ new_proc (task_t task)
       p->p_loginleader = 0;
       p->p_ochild = 0;
       p->p_parentset = 0;
+      p->p_noowner = 1;
     }
   
   if (p->p_pid < 2)
@@ -553,7 +556,6 @@ new_proc (task_t task)
   p->p_deadmsg = (p->p_pid == 1);
   p->p_checkmsghangs = 0;
   p->p_msgportwait = 0;
-  p->p_noowner = 1;
 
   if (p->p_pid > 1)
     {
