@@ -713,7 +713,7 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
 	  sprintf (buf, "syscall:%d", -rpc);
 	  name = buf;
 	}
-      return ps_stream_write_trunc_field (stream, name, field->width);
+      return ps_stream_write_field (stream, name, field->width);
     }
   else if (rpc)
     /* An rpc (with msg id RPC); WAIT describes the dest port.  */
@@ -751,7 +751,7 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
       else
 	snprintf (buf, sizeof buf, "%s:%d", wait, rpc);
 
-      return ps_stream_write_trunc_field (stream, buf, field->width);
+      return ps_stream_write_field (stream, buf, field->width);
     }
   else
     return ps_stream_write_field (stream, wait, field->width);
