@@ -167,9 +167,7 @@ open_hook (struct trivfs_control *cntl,
     }
   
   termflags |= TTY_OPEN;
-  if (!(termstate.c_cflag & CIGNORE))
-    (*bottom->set_bits) ();
-
+  (*bottom->set_bits) ();
 
   mutex_unlock (&global_lock);
   return 0;
@@ -1071,8 +1069,8 @@ set_state (io_t port,
       else
 	termstate.c_lflag &= ~EXTPROC;
 
-      if (external_processing || !(termstate.c_cflag & CIGNORE))
-	(*bottom->set_bits) ();
+      (*bottom->set_bits) ();
+
       if (oldlflag & ICANON)
 	{
 	  if (!(termstate.c_lflag & ICANON))
