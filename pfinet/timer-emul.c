@@ -21,104 +21,128 @@
 #include <linux/timer.h>
 #include <asm/system.h>
 #include <linux/sched.h>
+#include <string.h>
 #include "pfinet.h"
 
 long long root_jiffies;
 volatile struct mapped_time_value *mapped_time;
 
-static spin_lock_t timer_lock;
 struct timer_list *timers;
-mach_thread_t timer_thread;
+thread_t timer_thread = 0;
 
-  err = mach_msg (NULL, MACH_RCV_MSG|MACH_RCV_TIMEOUT|MACH_RCV_INTERRUPT, 
-		  0, 0, recv, timer->expires * (1000 / HZ), MACH_PORT_NULL);
+static int
+timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
+{
+  mach_port_t recv;
+  int wait = 0;
+
+  recv = mach_reply_port ();
+  
+  timer_thread = mach_thread_self ();
+  
+  mutex_lock (&global_lock);
+  while (1)
+    {
+      int jiff = jiffies;
+      
+      if (!timers)
+	wait = -1;
+      else if (timers->expires < jiff)
+	wait = 0;
+      else
+	wait = ((timers->expires - jiff) * 1000) / HZ;
+	
+      mutex_unlock (&global_lock);
+      
+      mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT 
+		       | (wait == -1 ? 0 : MACH_RCV_TIMEOUT)),
+		0, 0, recv, wait, MACH_PORT_NULL);
+
+      mutex_lock (&global_lock);
+      
+      while (timers->expires < jiffies)
+	{
+	  struct timer_list *tp;
+	  
+	  tp = timers;
+
+	  timers = timers->next;
+	  if (timers->next)
+	    timers->next->prevp = &timers;
+	  
+	  tp->next = 0;
+	  tp->prevp = 0;
+	  
+	  (*tp->function) (tp->data);
+	}
+    }
+}  
 
 
 void
 add_timer (struct timer_list *timer)
 {
-  spin_lock (&timer_lock);
-
+  struct timer_list **tp;
+  
   timer->expires += jiffies;
 
-
-  spin_unlock (&timer_lock);
+  for (tp = &timers; *tp; tp = &(*tp)->next)
+    if ((*tp)->expires > timer->expires)
+      {
+	timer->next = *tp;
+	timer->next->prevp = &timer->next;
+	timer->prevp = tp;
+	*tp = timer;
+	break;
+      }
+  if (!*tp)
+    {
+      timer->next = 0;
+      timer->prevp = tp;
+      *tp = timer;
+    }
+  
+  if (timers == timer)
+    {
+      /* We have change the first one, so tweak the timer thread
+	 to push things up. */
+      while (timer_thread == 0)
+	swtch_pri (0);
+	  
+      thread_suspend (timer_thread);
+      thread_abort (timer_thread);
+    }
 }
 
 int
 del_timer (struct timer_list *timer)
 {
-  thread_t thread;
-
-  spin_lock (&timer_lock);
-  
- recheck:
-  switch (timer->state)
+  if (timer->prevp)
     {
-    case TIMER_INACTIVE:
-      break;
-
-    case TIMER_STARTING:
-      /* Wait until it's had a chance to set its ID. */
-      spin_unlock (&timer_lock);
-      swtch_pri (0);
-      spin_lock (&timer_lock);
-      goto recheck;
-      
-    case TIMER_STARTED:
-      /* 
-	
+      *timer->prevp = timer->next;
+      if (timer->next)
+	timer->next->prevp = timer->prevp;
   
-  if (timer->thread == -1)
-    {
-      /* It hasn't had a chance to set its ID.  Wait a bit
-	 until it does. */
-      do
-	swtch_pri (0);
-      while (timer->thread == -1);
+      timer->next = 0;
+      timer->prevp = 0;
+      return 1;
     }
-  
-  thread = timer->thread;
-  if (thread == MACH_PORT_NULL)
-    return 0;  /* ??? */
-
-  thread_suspend (thread);
-
-  /* Test again, because it might have run and completed the mach_msg
-     after we tested above and before we suspended, and we don't want
-     to abort the mach_port_destroy and certainly not anything inside
-     the timer function\ which might have started running. */
-  if (timer->thread)
-    thread_abort (thread);
-
-  thread_resume (thread);
-
-  /* What to return? */
-  return 0; /* ???*/
+  else
+    return 0;
 }
 
 void
 init_timer (struct timer_list *timer)
 {
-  timer->state = TIMER_INACTIVE;
+  bzero (timer, sizeof (struct timer_list));
 }
 
 void
-init_root_jiffies ()
-{
-  struct timeval tp;
-  
-  fill_timeval (&tp);
-  
-  root_jiffies = (long long) tp.tv_sec * HZ 
-    + (long long) tp.tv_usec * HZ / 1000.0;
-}
-
-void
-init_mapped_time ()
+init_time ()
 {
   device_t timedev;
   memory_object_t timeobj;
+  struct timeval tp;
   
   device_open (master_device, 0, "time", &timedev);
   device_map (timedev, VM_PROT_READ, 0, sizeof (mapped_time_value_t),
@@ -128,4 +152,12 @@ init_mapped_time ()
 	  VM_PROT_READ, VM_PROT_READ, VM_INHERIT_NONE);
   mach_port_deallocate (mach_task_self (), timedev);
   mach_port_deallocate (mach_task_self (), timeobj);
+
+  fill_timeval (&tp);
+  
+  root_jiffies = (long long) tp.tv_sec * HZ 
+    + (long long) tp.tv_usec * HZ / 1000.0;
+
+  cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
 }
+
