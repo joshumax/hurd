@@ -328,7 +328,6 @@ got_block:
 
   bh = bptr (j);
   memset (bh, 0, block_size);
-  record_global_poke (bh);
 
   ext2_debug ("allocating block %d. "
 	      "Goal hits %d of %d.\n", j, goal_hits, goal_attempts);
@@ -363,12 +362,12 @@ ext2_count_free_blocks ()
     {
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      x = count_free (bptr (gdb->bg_block_bitmap), block_size);
-      printk ("group %d: stored = %d, counted = %lu\n",
+      x = count_free (bptr (gdp->bg_block_bitmap), block_size);
+      printf ("group %d: stored = %d, counted = %lu\n",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
     }
-  printk ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
+  printf ("ext2_count_free_blocks: stored = %lu, computed = %lu, %lu\n",
 	  sblock->s_free_blocks_count, desc_count, bitmap_count);
   spin_unlock (&global_lock);
   return bitmap_count;
