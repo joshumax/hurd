@@ -1,3 +1,7 @@
+1999-05-16  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* hashexec.c (check_hashbang): Fix bug in last change.
+
 1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* hashexec.c (check_hashbang): Trim trailing blanks after interpreter
