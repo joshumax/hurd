@@ -600,13 +600,22 @@ netfs_S_file_exec (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  /* We cannot use MACH_MSG_TYPE_MOVE_SEND because we might need to
+     retry an interrupted call that would have consumed the rights.  */
   err = file_exec (user->po->np->nn->file, task, flags, argv, argvlen,
-		   envp, envplen, fds, MACH_MSG_TYPE_MOVE_SEND, fdslen,
-		   portarray, MACH_MSG_TYPE_MOVE_SEND, portarraylen,
+		   envp, envplen, fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+		   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		   intarray, intarraylen, deallocnames, deallocnameslen,
 		   destroynames, destroynameslen);
-  mutex_unlock (&user->po->np->lock);
+  if (err == 0)
+    {
+      size_t i;
+      mach_port_deallocate (mach_task_self (), task);
+      for (i = 0; i < fdslen; ++i)
+	mach_port_deallocate (mach_task_self (), fds[i]);
+      for (i = 0; i < portarraylen; ++i)
+	mach_port_deallocate (mach_task_self (), portarray[i]);
+    }
   return err;
 }
 
