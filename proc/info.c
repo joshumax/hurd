@@ -321,9 +321,6 @@ S_proc_getprocinfo (struct proc *callerp,
   if (!p)
     return ESRCH;
   
-  /* Avoid nasty blockage; awaiting further thought.  XXX */
-  flags &= ~PI_FETCH_THREAD_WAITS;
-
   if (flags & (PI_FETCH_THREAD_SCHED | PI_FETCH_THREAD_BASIC
 	       | PI_FETCH_THREAD_WAITS))
     flags |= PI_FETCH_THREADS;
@@ -419,10 +416,13 @@ S_proc_getprocinfo (struct proc *callerp,
       if ((flags & PI_FETCH_THREAD_WAITS) 
 	  && p->p_msgport != MACH_PORT_NULL
 	  && !p->p_deadmsg)
+#ifdef notyet
 	/* Errors are not significant here. */
 	msg_report_wait (p->p_msgport, thds[i], 
 			 &pi->threadinfos[i].rpc_block);
-
+#else
+        pi->threadinfos[i].rpc_block = 0;
+#endif      
       mach_port_deallocate (mach_task_self (), thds[i]);
     }
   
