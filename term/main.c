@@ -85,8 +85,6 @@ main (int argc, char **argv)
       exit (1);
     }
 
-  nodename = argv[1];
-
   if (!strcmp (argv[2], "device"))
     {
       type = T_DEVICE;
@@ -147,13 +145,19 @@ main (int argc, char **argv)
   assert (*ourcntl);
   (*ourcntl)->underlying = file;
 
+  /* For ptys, the nodename depends on which half is used.  For now just use
+     the hook to store the nodename.  */
+  (*ourcntl)->hook = argv[1];
+
   /* Set peer */
   if (peerclass)
     {
-      file = file_name_lookup (argv[3], O_CREAT|O_NOTRANS, 0666);
+      char *peer_name = argv[3];
+
+      file = file_name_lookup (peer_name, O_CREAT|O_NOTRANS, 0666);
       if (file == MACH_PORT_NULL)
 	{
-	  perror (argv[3]);
+	  perror (peer_name);
 	  exit (1);
 	}
       ctlport = trivfs_handle_port (file, peercntlclass, term_bucket,
@@ -164,9 +168,11 @@ main (int argc, char **argv)
 				   0, 0, 0, ctlport, MACH_MSG_TYPE_MAKE_SEND);
       if (errno)
 	{
-	  perror (argv[3]);
+	  perror (peer_name);
 	  exit (1);
 	}
+
+      (*peercntl)->hook = peer_name;
     }
 
   bzero (&termstate, sizeof (termstate));
