@@ -19,7 +19,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 subsystem auth 25000;
 
-#include <hurd/hurd.defs>
+#include <hurd/hurd_types.defs>
 
 #ifdef AUTH_IMPORTS
 AUTH_IMPORTS
