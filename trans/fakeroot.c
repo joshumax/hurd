@@ -80,7 +80,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     nn->idport = idport;
   else
     {
-      int fileno;
+      ino_t fileno;
       mach_port_t fsidport;
       assert (!locked);
       err = io_identity (file, &nn->idport, &fsidport, &fileno);
@@ -227,7 +227,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   struct iouser *user;
   mach_port_t file;
   mach_port_t idport, fsidport;
-  int fileno;
+  ino_t fileno;
 
   if (!diruser)
     return EOPNOTSUPP;
