@@ -110,7 +110,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
     {
       err = store_remap (file_store, runs, num_runs, &file_store);
       if (!err
-	  && !diskfs_isuid (0, cred)
+	  && !idvec_contains (cred->user->uids, 0)
 	  && !store_is_securely_returnable (file_store, cred->po->openstat))
 	{
 	  err = store_set_flags (file_store, STORE_INACTIVE);

@@ -1,3 +1,8 @@
+Sat Nov 16 17:26:20 1996  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* storeinfo.c (diskfs_S_file_get_storage_info): diskfs_isuid ->
+ 	idvec_contains.
+
 Tue Nov 12 17:53:08 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* inode.c (diskfs_validate_flags_change): New function.
