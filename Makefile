@@ -39,7 +39,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 # Hurd programs
 prog-subdirs = auth boot exec fstests init \
 	       proc term ufs utils sutils trans ufs-fsck \
-	       devio storeio ufs-utils ext2fs benchmarks pflocal defpager \
+	       storeio ufs-utils ext2fs benchmarks pflocal defpager \
 	       login nfs pfinet daemons nfsd
 
 # Other directories
