@@ -651,7 +651,8 @@ launch_core_servers (void)
   proc_task2proc (procserver, authtask, &authproc);
   proc_mark_exec (authproc);
   startup_authinit_reply (authreply, authreplytype, 0, authproc,
-			  MACH_MSG_TYPE_MOVE_SEND);
+			  MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), authproc);
 
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -699,7 +700,8 @@ launch_core_servers (void)
     mach_port_deallocate (mach_task_self (), old);
 
   /* Give the bootstrap FS its proc and auth ports.  */
-  errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND, authserver);
+  errno = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
+  mach_port_deallocate (mach_task_self (), fsproc);
   if (errno)
     error (0, errno, "fsys_init"); /* Not necessarily fatal.  */
 }
@@ -724,6 +726,8 @@ init_stdarrays ()
   __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));
 
+  /* MAKE_SEND is safe in these transactions because we destroy REF 
+     ourselves each time. */
   pt = getcwdir ();
   ref = mach_reply_port ();
   io_reauthenticate (pt, ref, MACH_MSG_TYPE_MAKE_SEND);

@@ -1,3 +1,7 @@
+2000-03-17  Thomas Bushnell, BSG  <tb@mit.edu>
+
+	* init.c (launch_core_servers): Don't use MOVE_SEND in Hurd RPCs. 
+
 2000-03-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* stubs.c (send_signal): Don't use mach_msg_destroy, since it wants
