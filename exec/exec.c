@@ -1312,13 +1312,34 @@ do_exec (file_t file,
       {
 	/* Ask the proc server for the proc port for this task.  */
 	mach_port_t new;
+	uid_t euidbuf[10], egidbuf[10], auidbuf[10], agidbuf[10];
+	uid_t *euids, *egids, *auids, *agids;
+	size_t neuids, negids, nauids, nagids;
+	uid_t uid;
+	
 	e.error = proc_task2proc (procserver, newtask, &new);
 	if (e.error)
 	  goto stdout;
-
 	use (INIT_PORT_PROC, new, 0, 1);
 
-	/* XXX We should also call proc_setowner at this point. */
+	if (secure)
+	  {
+	    /* Find out what our UID is from the auth server. */
+	    neuids = negids = nauids = nagids = 10;
+	    euids = euidbuf, egids = egidbuf;
+	    auids = auidbuf, agids = agidbuf;
+	    e.error = auth_getids (boot->portarray[INIT_PORT_AUTH],
+				   &euids, &neuids, &auids, &nauids,
+				   &egids, &negids, &agids, &nagids);
+	    if (e.error)
+	      goto stdout;
+	    
+	    /* Set the owner with the proc server */
+	    e.error = proc_setowner (boot->portarray[INIT_PORT_PROC],
+				     neuids ? euids[0] : 0, !neuids);
+	    if (e.error)
+	      goto stdout;
+	  }
       }
     else if (oldtask != newtask && oldtask != MACH_PORT_NULL
 	     && boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
