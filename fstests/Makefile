@@ -25,3 +25,6 @@ fstests: fstests.o; $(link)
 
 install: fstests
 	cp fstests $(hurdroot)/hurd/init
+
+clean: 
+	rm -f fstests fstests.o
