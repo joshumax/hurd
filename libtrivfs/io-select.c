@@ -1,5 +1,5 @@
 /* Stub io_select RPC for trivfs library.
-   Copyright (C) 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -27,8 +27,7 @@ kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply,
 		    mach_msg_type_name_t replytype,
-		    int *seltype,
-		    int *tag)
+		    int *seltype)
 {
   if (!cred)
     return EOPNOTSUPP;

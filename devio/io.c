@@ -139,13 +139,11 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
-   return the types that are then available.  ID_TAG is returned as passed; it
-   is just for the convenience of the user in matching up reply messages with
-   specific requests sent.  */
+   return the types that are then available.  */
 kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t replytype,
-		    int *type, int *tag)
+		    int *type)
 {
   if (!cred)
     return EOPNOTSUPP;
