@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -441,6 +441,9 @@ devio_assert_dtr ()
       ports_port_deref (phys_reply_pi);
       phys_reply_pi = 0;
     }
+  else
+    open_pending = 1;
+
   return err;
 }
 
