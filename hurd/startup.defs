@@ -27,8 +27,6 @@ subsystem startup 29000;
 STARTUP_IMPORTS
 #endif
 
-type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
 
 /* This call registers a task as "essential", which means that if it
    dies, the system should crash.  If the specified task dies or an
@@ -62,7 +60,7 @@ routine startup_reboot (
    bootstrap port.  */
 routine startup_procinit (
 	server: startup_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	startup_proc: process_t;
 	out startup_task: task_t;
 	out auth: auth_t;
@@ -74,7 +72,7 @@ routine startup_procinit (
    to give to the startup server.  */
 routine startup_authinit (
 	server: startup_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	auth: mach_port_send_t;
 	out proc: mach_port_send_t);
 
