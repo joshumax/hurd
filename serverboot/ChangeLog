@@ -1,5 +1,8 @@
 1999-05-15  Roland McGrath  <roland@baalperazim.frob.com>
 
+	* default_pager.c (new_partition): Check if requested partition is
+	already in our list, and refuse it.
+
 	* bootstrap.c (main): Remove vars HAD_A_PARITION, DOING_DEFAULT_PAGER.
 	Remove $(default-pager) boot script tag.  We always stick around and
 	act as the default pager (this was already the case, just removed some
