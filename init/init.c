@@ -75,7 +75,7 @@ mach_port_t authserver;
 mach_port_t procserver;
 
 /* The tasks of auth and proc and the bootstrap filesystem. */
-task_t authtask, prottask, fstask;
+task_t authtask, proctask, fstask;
 
 char **global_argv;
 
@@ -146,9 +146,10 @@ request_server (mach_msg_header_t *inp,
 	  startup_server (inp, outp));
 }
 
-/* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.  */
+/* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS. 
+   Set TASK to be the task port of the new image. */
 void
-run (char *server, mach_port_t *ports)
+run (char *server, mach_port_t *ports, task_t *task)
 {
   error_t err;
   char buf[BUFSIZ];
@@ -170,7 +171,8 @@ run (char *server, mach_port_t *ports)
 	perror (prog);
       else
 	{
-	  err = file_exec (file, MACH_PORT_NULL, EXEC_NEWTASK,
+	  task_create (mach_task_self (), task);
+	  err = file_exec (file, *task, 0,
 			   NULL, 0, /* No args.  */
 			   NULL, 0, /* No env.  */
 			   NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No dtable.  */
@@ -271,8 +273,8 @@ launch_system (void)
 			  MACH_MSG_TYPE_MOVE_SEND);
 
   /* Give the library our auth and proc server ports.  */
-  _hurd_port_init (&_hurd_ports[INIT_PORT_AUTH], authserver);
-  _hurd_port_init (&_hurd_ports[INIT_PORT_PROC], procserver);
+  _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
+  _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], procserver);
 
   /* Tell the proc server our msgport and where our args and
      environment are.  */
