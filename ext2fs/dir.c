@@ -22,9 +22,12 @@
 #include <stdio.h>
 #include <dirent.h>
 
-/* Don't straddle block boundaries between blocks of this length.  The Linux
-   implementation of ext2fs doesn't enforce this, but we may as well.  */
-#define DIRBLKSIZ device_block_size
+/* This isn't quite right because a file system block may straddle several
+   device blocks, and so a write failure between writing two device blocks
+   may scramble things up a bit.  But the linux doesn't do this.  We could
+   try and make sure that we never wrote any modified directories with
+   entries that straddle device blocks (but read those that do)...  */
+#define DIRBLKSIZ block_size
 
 enum slot_status
 {
@@ -332,8 +335,10 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx, char *name,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  fprintf (stderr, "Bad directory entry: inode: %d offset: %d\n",
-		  dp->dn->number, currentoff - blockaddr + idx * DIRBLKSIZ);
+	  ext2_warning ("dirscanblock", 
+			"Bad directory entry: inode: %d offset: %ld",
+			dp->dn->number,
+			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;
 	}
       
