@@ -175,21 +175,23 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  dirfile = (ports_get_right
 		     (diskfs_make_protid
-		      (diskfs_make_peropen (np, 0, 
+		      (diskfs_make_peropen (dnp, 0, 
 					    dircred->po->dotdotport),
 		       0, 0, 0, 0)));
 	  mach_port_insert_right (mach_task_self (), dirfile, dirfile,
 				  MACH_MSG_TYPE_MAKE_SEND);
+	  mach_port_mod_refs (mach_task_self (), dirfile,
+			      MACH_PORT_RIGHT_SEND, 1);
 
 	  if (control == MACH_PORT_NULL)
 	    {
 	      mutex_unlock (&dnp->lock);
-	      error = diskfs_start_translator (np, dirfile);
+	      error = diskfs_start_translator (np, dirfile, dircred);
 	      if (error)
 		{
+		  mach_port_deallocate (mach_task_self (), dirfile);
 		  diskfs_nrele (dnp);
 		  dnp = 0;
-		  mach_port_deallocate (mach_task_self (), dirfile);
 		  goto out;
 		}
 	      control = np->translator.control;
@@ -216,6 +218,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 				uids, nuids, gids, ngids, 
 				lastcomp ? flags : flags & ~O_NOLINK,
 				retry, retryname, returned_port);
+	  mach_port_deallocate (mach_task_self (), dirfile);
 	  if (error == MACH_SEND_INVALID_DEST)
 	    {
 	      /* The server has died.  Deallocate our right and
