@@ -1,5 +1,13 @@
 2002-03-23  Roland McGrath  <roland@frob.com>
 
+	* tmpfs.c (options): New static const variable.  Add --mode/-m.
+	(struct option_values): New type.
+	(parse_opt): Use that for VALUES.  Grok -m to set VALUES->mode.
+	Grok ARGP_KEY_FINI and free our data structure.
+	(tmpfs_root_mode): New variable, set by -m.
+	(main): If -m was given, use that instead of underlying node's
+	permissions.
+
 	* tmpfs.c (main): Don't release REALNODE.
 
 	* node.c: Include "default_pager_U.h", not <mach/default_pager.h>.
