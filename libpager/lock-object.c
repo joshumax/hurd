@@ -17,9 +17,10 @@
 
 #include "priv.h"
 
-/* Request a lock from the kernel.  Parameters are as for
-   memory_object_lock_request.  If SYNC is set, then wait for
-   the operation to fully complete before returning.  */
+/* Request a lock from the kernel on pager P.  Parameters OFFSET,
+   SIZE, SHOULD_RETURN, SHOULD_FLUSH, and LOCK_VALUE are as for
+   memory_object_lock_request.  If SYNC is set, then wait for the
+   operation to fully complete before returning.  */
 void
 _pager_lock_object (struct pager *p, 
 		    vm_offset_t offset,
