@@ -1,6 +1,6 @@
 /* Definitions for process server interface (request-only version)
 
-   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -149,7 +149,8 @@ simpleroutine proc_reassign_request (
 simpleroutine proc_setowner_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
-	owner: uid_t);
+	owner: uid_t;
+	clear: int);
 
 /* Get the process ID and the parent process ID, also find out if we
    are orphaned.  */
@@ -215,7 +216,8 @@ simpleroutine proc_handle_exceptions_request (
 simpleroutine proc_mark_stop_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
-	signo: int);
+	signo: int;
+	sigcode: int);
 
 /* Mark the process as continued after a stop.  */
 simpleroutine proc_mark_cont_request (
@@ -228,7 +230,8 @@ simpleroutine proc_mark_cont_request (
 simpleroutine proc_mark_exit_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
-	status: int);
+	status: int;
+	sigcode:int );
 
 /* Inform the process server that the process has completed an exec.  */
 simpleroutine proc_mark_exec_request (
@@ -378,4 +381,8 @@ simpleroutine proc_getpgrppids_request (
 	ureplyport reply: reply_port_t;
 	pgrp: pid_t);
 
+simpleroutine proc_get_tty_request (
+	process: process_t;
+	ureplyport reply: reply_port_t;
+	pid: pid_t);
 
