@@ -1,3 +1,18 @@
+1997-06-24  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* mkfsimage.sh: New file.
+	* bfloppy.copy, rfloppy.copy, bfloppy-special.copy: New files.
+	* Makefile (tool-files): Variable removed.
+	(install-tools): Rule removed.
+	(bfloppy.ext2, rfloppy.ext2.gz): New rules.
+	(dist-files): Include mkfsimage.sh, bfloppy.copy,
+	bfloppy-special.copy, rfloppy.copy.
+
+1997-06-19  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* bfloppy.boot: New file.
+	* tool-Makefile: Trash everything but floppy production rules.
+
 Mon Jun 23 11:47:51 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* INSTALL-binary (STEP I): Tell to use e2os if the filesystem was
