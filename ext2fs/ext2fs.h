@@ -115,9 +115,9 @@ struct user_pager_info
 
 /* ---------------------------------------------------------------- */
 
-struct user_pager_info *diskpager;
-mach_port_t diskpagerport;
-off_t diskpagersize;
+struct user_pager_info *disk_pager;
+mach_port_t disk_pagerport;
+off_t disk_pagersize;
 
 void *disk_image;
 char *devname;
@@ -203,7 +203,7 @@ dino (ino_t inum)
 extern inline void
 sync_disk_image (void *place, size_t nbytes, int wait)
 {
-  pager_sync_some (diskpager->p,
+  pager_sync_some (disk_pager->p,
 		   (char *)place - (char *)disk_image, nbytes, wait);
 }
 
