@@ -1,3 +1,9 @@
+1998-11-12  Mark Kettenis  <kettenis@phys.uva.nl>
+
+	* cthreads.c (cthread_init): Move cthread_alloc call before
+	cproc_init call, since cthread_alloc uses malloc, and malloc won't
+	work between initializing the new stack and switching over to it.
+
 1998-07-20  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* i386/csw.S (cproc_prepare): Take address of cthread_body as third
