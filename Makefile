@@ -87,7 +87,7 @@ install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
 		$(other-subdirs))
 
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
-
+	etags -o $@ $(patsubst %-TAGS,-i %/TAGS,$^)
 
 ## Targets used by the main targets above.
 $(prog-subdirs) $(lib-subdirs): FORCE
