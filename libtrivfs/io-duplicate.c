@@ -60,6 +60,7 @@ trivfs_S_io_duplicate (struct trivfs_protid *cred,
 
   *newport = ports_get_right (newcred);
   *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newcred);
   return 0;
 }
 
