@@ -92,8 +92,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       ourauth = getauth ();
       uidarray[0] = uidarray[1] = uid;
       gidarray[0] = gidarray[1] = gid;
-      err = auth_makeauth (ourauth, MACH_PORT_NULL, 0, 
-			   MACH_MSG_TYPE_MAKE_SEND,
+      err = auth_makeauth (ourauth, 0, MACH_MSG_TYPE_MAKE_SEND, 0,
 			   uidarray, 1, uidarray, 2,
 			   gidarray, 1, gidarray, 2, &newauth);
       assert_perror (err);
@@ -111,10 +110,10 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       err = fshelp_start_translator_long (reauth (underlying),
 					  MACH_MSG_TYPE_MOVE_SEND,
 					  argz, argz, argz_len,
-					  fds, STDERR_FILENO + 1,
-					  MACH_MSG_TYPE_MOVE_SEND,
-					  ports, INIT_PORT_MAX, 
-					  MACH_MSG_TYPE_MOVE_SEND,
+					  fds, MACH_MSG_TYPE_MOVE_SEND,
+					  STDERR_FILENO + 1,
+					  ports, MACH_MSG_TYPE_MOVE_SEND,
+					  INIT_PORT_MAX, 
 					  ints, INIT_INT_MAX,
 					  0, &control);
       
