@@ -402,8 +402,8 @@ block_extended (struct node *np,
 	  /* There's *got* to be a better way to do this... */
 
 	  /* Force it out to disk */
-	  assert (np->fileinfo);
-	  pager_sync_some (np->fileinfo->p, lbn * sblock->fs_bsize + off,
+	  assert (np->dn->fileinfo);
+	  pager_sync_some (np->dn->fileinfo->p, lbn * sblock->fs_bsize + off,
 			   vm_page_size, 1);
 
 	  /* Read it back in */
@@ -421,7 +421,7 @@ block_extended (struct node *np,
 	     write of this file, maybe even one from before we started
 	     running may have been fsynced.  We can't cause data already
 	     on disk to be lossy at any time in the future while we move it. */
-	  pager_sync_some (np->fileinfo->p, lbn * sblock->fs_bsize + off,
+	  pager_sync_some (np->dn->fileinfo->p, lbn * sblock->fs_bsize + off,
 			   vm_page_size, 1);
 	}
       
@@ -494,9 +494,10 @@ diskfs_grow (struct node *np,
 	  if (err)
 	    goto out;
 
+	  old_pbn = read_disk_entry (di->di_db[olbn]);
+
 	  block_extended (np, olbn, old_pbn, bno, osize, sblock->fs_bsize);
 
-	  old_pbn = read_disk_entry (di->di_db[olbn]);
 	  write_disk_entry (di->di_db[olbn], bno);
 	  record_poke (di, sizeof (struct dinode));
 	  np->dn_set_ctime = 1;
