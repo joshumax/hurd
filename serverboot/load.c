@@ -318,8 +318,8 @@ boot_script_exec_cmd (void *hook,
 		 * It might be gzip file.
 		 */
 		int err;
-		extern int
-		serverboot_gunzip(struct file *, void **, size_t *);
+		extern int serverboot_gunzip(struct file *,
+					     vm_offset_t *, size_t *);
 
 		err = serverboot_gunzip(st.fp,
 					&(st.image_addr),
@@ -343,8 +343,8 @@ boot_script_exec_cmd (void *hook,
 		 * It might be bzip2 file.
 		 */
 		int err;
-		extern int
-		serverboot_bunzip2(struct file *, void **, size_t *);
+		extern int serverboot_bunzip2(struct file *,
+					      vm_offset_t *, size_t *);
 
 		err = serverboot_bunzip2(st.fp,
 					 &(st.image_addr),
@@ -449,7 +449,7 @@ boot_script_exec_cmd (void *hook,
 	    /*
 	     * first the argument count
 	     */
-	    *k_ap++ = (char *)arg_count;
+	    *k_ap++ = (char *)(intptr_t)arg_count;
 
 	    /*
 	     * Then the strings and string pointers for each argument
