@@ -92,5 +92,5 @@ diskfs_shutdown (int flags)
       diskfs_set_hypermetadata (1, 1);
     }
 
-  exit (0);
+  return 0;
 }
