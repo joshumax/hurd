@@ -40,8 +40,6 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 static const struct argp_option
 startup_options[] =
 {
-  {"version", 'V'},
-
   {0,0,0,0, "Boot options:", -2},
   {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
   {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
@@ -70,10 +68,6 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       diskfs_synchronous = 0;
       diskfs_default_sync_interval = 0;
       break;
-    case 'V':
-      printf("%s %d.%d.%d\n", diskfs_server_name, diskfs_major_version,
-	     diskfs_minor_version, diskfs_edit_version);
-      exit(0);
 
       /* Boot options */
     case OPT_DEVICE_MASTER_PORT:
