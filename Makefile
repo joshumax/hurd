@@ -27,11 +27,14 @@ prog-subdirs = auth boot exec fstests init.trim mkbootfs \
 other-subdirs = hurd doc init tmpfs dev ext2fs 
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 subdirs-nodist = ext2fs libnetserv
-
+working-prog-subdirs := $(filter-out \
+			  $(patsubst %/,%,\
+				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
+			  $(prog-subdirs))
 DIST_FILES = COPYING Makeconf Maketools README NEWS missing \
 	gcc-specs tasks INSTALL
 
-all: $(addsuffix -all,$(prog-subdirs))
+all: $(addsuffix -all,$(working-prog-subdirs))
 
 %-all: 
 	$(MAKE) -C $* all
@@ -62,6 +65,6 @@ clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(prog-subdirs))
 
 relink: $(addsuffix -relink,$(prog-subdirs))
 
-install: $(addsuffix -install,$(prog-subdirs))
+install: $(addsuffix -install,$(working-prog-subdirs))
 
 TAGS: $(addsuffix -TAGS,$(prog-subdirs) $(lib-subdirs))
