@@ -301,29 +301,12 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 				mach_msg_type_number_t *num_offsets,
 				char **data, mach_msg_type_number_t *data_len)
 {
-  error_t err = 0;
-  struct store_enc enc;
+  *ports_type = MACH_MSG_TYPE_COPY_SEND;
 
   if (! cred)
     return EOPNOTSUPP;
-
-  store_enc_init (&enc, *ports, *num_ports, *ints, *num_ints,
-		  *offsets, *num_offsets, *data, *data_len);
-
-  err = store_encode (((struct open *)cred->po->hook)->dev->store, &enc);
-  if (! err)
-    {
-      *ports = enc.ports;
-      *num_ports = enc.num_ports;
-      *ints = enc.ints;
-      *num_ints = enc.num_ints;
-      *offsets = enc.offsets;
-      *num_offsets = enc.num_offsets;
-      *data = enc.data;
-      *data_len = enc.data_len;
-
-      *ports_type = MACH_MSG_TYPE_COPY_SEND;
-    }
-
-  return err;
+  else
+    return store_return (((struct open *)cred->po->hook)->dev->store,
+			 ports, num_ports, ints, num_ints,
+			 offsets, num_offsets, data, data_len);
 }
