@@ -59,6 +59,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	    mach_port_t rend, ret;
 	    error_t err;
 
+	    if (port == MACH_PORT_NULL)
+	      return port;
+
 	    rend = mach_reply_port ();
 	    err = io_reauthenticate (port, rend, 
 				     MACH_MSG_TYPE_MAKE_SEND);
