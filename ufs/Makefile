@@ -19,12 +19,14 @@ dir := ufs
 
 include ../Makeconf
 
+VPATH=.:../machine
+
 SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
 	sizes.c subr.c tables.c 
 
 DIST_FILES=$(SRCS) ufs.h Makefile fs.h dinode.h dir.h
 
-OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
+OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o boot_machdep.o
 
 #LIBS = $(hurdinst)/lib/libdiskfscombined.a $(libthreads)
 LIBS = $(libdiskfs) $(libports) $(libdiskfs) $(libpager) $(libioserver) \
