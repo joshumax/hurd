@@ -20,12 +20,15 @@
 /* Needed in order to get the RPC header files to include correctly */
 #undef TRUE
 #undef FALSE
+#define malloc spoiufasdf	/* Avoid bogus definition in rpc/types.h */
 
 #include <rpc/types.h>
 #include <rpc/xdr.h>
 #include <rpc/auth.h>
 #include <rpc/rpc_msg.h>
 #include <rpc/auth_unix.h>
+
+#undef malloc			/* Get rid protection.  */
 
 #include <netinet/in.h>
 #include <assert.h>
