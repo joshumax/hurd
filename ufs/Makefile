@@ -19,3 +19,36 @@ dir := ufs
 
 include ../Makeconf
 
+SRCS=alloc.c consts.c devio.c dir.c hyper.c inode.c main.c pager.c \
+	subr.c tables.c 
+
+DISTFILES=$(SRCS) ufs.h Makefile
+
+OBJS=$(subst .c,.o,$(SRCS)) exec_server_image.o
+
+LIBS= $(libdiskfs) $(libpager) $(libioserver) $(libfshelp) \
+	$(libports) $(libthreads)
+
+all: ufs
+
+ufs: $(OBJS) $(LIBS)
+	$(link)
+
+exec_server_image.o: ../exec/exec ../mkbootfs/mkbootfs
+	../mkbootfs/mkbootfs ../exec/exec exec_server_image.o
+
+$(OBJS): ufs.h 
+$(OBJS): $(addprefix $(headers)/hurd/,diskfs.h pager.h ioserver.h \
+				      fshelp.h ports.h)
+alloc.o: fs.h dinode.h
+consts.o: dinode.h
+dir.o: dir.h
+hyper.o: fs.h
+inode.o: dinode.h fs.h
+main.o: fs.h
+pager.o: fs.h dinode.h
+subr.o: fs.h
+tables.o: fs.h
+
+$(foreach dir,mkbootfs exec,../$(dir)/%): FORCE
+	$(MAKE) -C $(@D) $(@F)
