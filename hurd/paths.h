@@ -28,6 +28,11 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define _SERVERS_STARTUP	"/servers/startup"
 #define _SERVERS_PROC		"/servers/proc"
 
+/* Directory containing naming points for socket servers.
+   Entries are named by the string representing the domain number
+   in simple decimal (e.g. "/servers/socket/23").  */
+#define	_SERVERS_SOCKET		"/servers/socket"
+
 /* Hurd servers are specified by symbols _HURD_FOO,
    the canonical pathname being /hurd/foo.  */
 
