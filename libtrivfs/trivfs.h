@@ -21,7 +21,7 @@ struct trivfs_protid
   struct port_info pi;
   int isroot;
   mach_port_t realnode;		/* restricted permissions */
-  struct control *cntl;
+  struct trivfs_control *cntl;
 };
 
 struct trivfs_control
