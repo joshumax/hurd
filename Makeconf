@@ -93,16 +93,16 @@ endif
 
 
 # Hurd libraries
-libthreads := $(srcdir)/libthreads/libthreads.a
-libports := $(srcdir)/libports/libports.a
-libioserver := $(srcdir)/libioserver/libioserver.a
-libpager := $(srcdir)/libpager/libpager.a
-libfshelp := $(srcdir)/libfshelp/libfshelp.a
-libdiskfs := $(srcdir)/libdiskfs/libdiskfs.a
-libtrivfs := $(srcdir)/libtrivfs/libtrivfs.a
-libnetserv := $(srcdir)/libnetserv/libnetserv.a
-libps := $(srcdir)/libps/libps.a
-libihash := $(srcdir)/libihash/libihash.a
+#libthreads := $(srcdir)/libthreads/libthreads.a
+#libports := $(srcdir)/libports/libports.a
+#libioserver := $(srcdir)/libioserver/libioserver.a
+#libpager := $(srcdir)/libpager/libpager.a
+#libfshelp := $(srcdir)/libfshelp/libfshelp.a
+#libdiskfs := $(srcdir)/libdiskfs/libdiskfs.a
+#libtrivfs := $(srcdir)/libtrivfs/libtrivfs.a
+#libnetserv := $(srcdir)/libnetserv/libnetserv.a
+#libps := $(srcdir)/libps/libps.a
+#libihash := $(srcdir)/libihash/libihash.a
 alllibs := libthreads libports libioserver libpager libfshelp libdiskfs\
 	libtrivfs libnetserv libps libihash
 
@@ -145,15 +145,19 @@ endif
 # Provide default.
 install:
 
+LDFLAGS += -static
+
 # Each word of $(HURDLIBS) is a library name `libfoo', which is defined as
 # a variable above with the complete file name to find it.
 # Yippee!  A use for computed variable references!
-HURDLIBS-files := $(foreach var,$(HURDLIBS),$($(var)))
+ifeq ($(filter-out -static,$(LDFLAGS)),$(LDFLAGS))
+HURDLIBS-files := $(patsubst lib%,../lib%/lib%.so,$(HURDLIBS))
+else
+HURDLIBS-files := $(patsubst lib%,../lib%/lib%.a,$(HURDLIBS))
+endif
 HURDLIBS-libs := $(foreach lib,$(HURDLIBS-files), \
 			   -L$(dir $(lib)) \
 			   $(patsubst lib%.a,-l%,$(notdir $(lib))))
-
-LDFLAGS += -static
 
 # Building the target
 ifeq ($(doinst),one)
