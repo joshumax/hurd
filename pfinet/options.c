@@ -44,10 +44,10 @@ extern error_t find_device (char *name, struct device **device);
 extern error_t enumerate_devices (error_t (*fun) (struct device *dev));
 
 /* devinet.c */
-extern error_t configure_device (struct device *dev,
-				 uint32_t addr, uint32_t netmask);
-extern void inquire_device (struct device *dev,
-			    uint32_t *addr, uint32_t *netmask);
+extern error_t configure_device (struct device *dev, uint32_t addr,
+				 uint32_t netmask, uint32_t peer);
+extern void inquire_device (struct device *dev, uint32_t *addr,
+			    uint32_t *netmask, uint32_t *peer);
 
 /* Pfinet options.  Used for both startup and runtime.  */
 static const struct argp_option options[] =
@@ -56,6 +56,7 @@ static const struct argp_option options[] =
   {0,0,0,0,"These apply to a given interface:", 2},
   {"address",   'a', "ADDRESS", 0, "Set the network address"},
   {"netmask",   'm', "MASK",    0, "Set the netmask"},
+  {"peer",      'p', "ADDRESS", 0, "Set the peer address"},
   {"gateway",   'g', "ADDRESS", 0, "Set the default gateway"},
   {"shutdown",  's', 0,         0, "Shut it down"},
   {0}
@@ -72,7 +73,7 @@ struct parse_interface
   struct device *device;
 
   /* New values to apply to it.  */
-  uint32_t address, netmask, gateway;
+  uint32_t address, netmask, peer, gateway;
 };
 
 /* Used to hold data during argument parsing.  */
@@ -103,6 +104,7 @@ parse_hook_add_interface (struct parse_hook *h)
   h->curint->device = 0;
   h->curint->address = INADDR_NONE;
   h->curint->netmask = INADDR_NONE;
+  h->curint->peer = INADDR_NONE;
   h->curint->gateway = INADDR_NONE;
   return 0;
 }
@@ -187,6 +189,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
     case 'm':
       h->curint->netmask = ADDR (arg, "netmask"); break;
+    case 'p':
+      h->curint->peer = ADDR (arg, "peer"); break;
     case 'g':
       h->curint->gateway = ADDR (arg, "gateway"); break;
 
@@ -244,7 +248,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	if (in->address != INADDR_NONE || in->netmask != INADDR_NONE)
 	  {
-	    err = configure_device (in->device, in->address, in->netmask);
+	    err = configure_device (in->device, in->address, in->netmask, in->peer);
 	    if (err)
 	      FAIL (err, 16, 0, "cannot configure interface");
 	  }
@@ -328,9 +332,9 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
   error_t add_dev_opts (struct device *dev)
     {
       error_t err = 0;
-      uint32_t addr, mask;
+      uint32_t addr, mask, peer;
 
-      inquire_device (dev, &addr, &mask);
+      inquire_device (dev, &addr, &mask, &peer);
 
 #define ADD_OPT(fmt, args...)						\
   do { char buf[100];							\
@@ -347,7 +351,8 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
         ADD_ADDR_OPT ("address", addr);
       if (mask != INADDR_NONE)
         ADD_ADDR_OPT ("netmask", mask);
-
+      if (peer != addr)
+	ADD_ADDR_OPT ("peer", peer);
       /* XXX how do we figure out the default gateway?  */
 
 #undef ADD_ADDR_OPT

@@ -61,7 +61,7 @@ ipv4-srcs	:= af_inet.c						      \
 LINUXSRCS	= $(core-srcs) $(ethernet-srcs) $(ipv4-srcs) $(arch-lib-srcs)
 SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
 		  io-ops.c socket-ops.c misc.c time.c options.c loopback.c \
-		  kmem_cache.c stubs.c dummy.c
+		  kmem_cache.c stubs.c dummy.c tunnel.c
 MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c
 OBJS		:= $(patsubst %.c,%.o,$(LINUXSRCS) $(SRCS) $(MIGSRCS))
 LCLHDRS		= config.h mapped-time.h mutations.h pfinet.h

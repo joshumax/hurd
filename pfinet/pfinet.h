@@ -58,6 +58,7 @@ void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
 void setup_ethernet_device (char *, struct device **);
 void setup_dummy_device (char *, struct device **);
+void setup_tunnel_device (char *, struct device **);
 struct sock_user *make_sock_user (struct socket *, int, int, int);
 error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);

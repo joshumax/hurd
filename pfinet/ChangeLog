@@ -1,3 +1,31 @@
+2000-10-06  Marcus Brinkmann  <marcus@gnu.org>
+
+	* Makefile (SRCS): Add tunnel.c
+	* tunnel.c: New file.
+	* linux-src/net/ipv4/devinet.c (configure_device): New argument PEER.
+	Implement support for setting the destination address for
+	point-to-point interfaces.
+	(inquire_device): New argument PEER.
+	Implement support to get the destination address.
+	* main.c: Include fcntl.h.
+	Update prototype of configure_device.
+	Set trivfs_support_read and trivfs_support_write to 1, as we support
+	those in some cases now. For the same reason, set trivfs_allow_open
+	to O_READ | O_WRITE.
+	(pfinet_demuxer): If the port is not in the socketport_class,
+	don't try io_server (so requests for trivfs are not catched too early).
+	(find_device): Use setup_tunnel_device for tun* interfaces.
+	(main): Add peer argument to configure_device call for the lo interface.
+	* options.c: Update prototypes for configure_device, inquire_device.
+	(options): Add --peer option.
+	(stuct parse_interface): Add peer member.
+	(parse_hook_add_interface): Initialize peer.
+	(parse_opt): Add a case for --peer.
+	Add peer argument to configure_device call.
+	(add_dev_opts): Add peer variable, add it to inquire_device call arguments.
+	Check for peer argument and add it to command line if it is there.
+	* pfinet.h: Add prototype for setup_tunnel_device.
+
 2000-10-04  Marcus Brinkmann  <marcus@gnu.org>
 
 	* Makefile (SRCS): Add dummy.c

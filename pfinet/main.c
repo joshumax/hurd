@@ -26,20 +26,21 @@
 #include <argp.h>
 #include <hurd/startup.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include <linux/netdevice.h>
 #include <linux/inet.h>
 
 /* devinet.c */
 extern error_t configure_device (struct device *dev,
-                                 uint32_t addr, uint32_t netmask);
+                                 uint32_t addr, uint32_t netmask, uint32_t peer);
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
-int trivfs_support_read = 0;
-int trivfs_support_write = 0;
+int trivfs_support_read = 1;
+int trivfs_support_write = 1;
 int trivfs_support_exec = 0;
-int trivfs_allow_open = 0;
+int trivfs_allow_open = O_READ | O_WRITE;
 struct port_class *trivfs_protid_portclasses[1];
 int trivfs_protid_nportclasses = 1;
 struct port_class *trivfs_cntl_portclasses[1];
@@ -58,10 +59,16 @@ pfinet_demuxer (mach_msg_header_t *inp,
   extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
-  return (io_server (inp, outp)
-	  || socket_server (inp, outp)
-	  || trivfs_demuxer (inp, outp)
-	  || startup_notify_server (inp, outp));
+  
+  if (ports_lookup_port(pfinet_bucket, inp->msgh_local_port, socketport_class) != 0)
+      return (io_server (inp, outp)
+	      || socket_server (inp, outp)
+	      || trivfs_demuxer (inp, outp)
+	      || startup_notify_server (inp, outp));
+  else
+    return (socket_server (inp, outp)
+	    || trivfs_demuxer (inp, outp)
+	    || startup_notify_server (inp, outp));
 }
 
 /* The system is going down; destroy all the extant port rights.  That
@@ -161,7 +168,9 @@ find_device (char *name, struct device **device)
 	return 0;
       }
 
-  if (strncmp(name, "dummy", 5) == 0)
+  if (strncmp(name, "tun", 3) == 0)
+    setup_tunnel_device (name, device);
+  else if (strncmp(name, "dummy", 5) == 0)
     setup_dummy_device (name, device);
   else
     setup_ethernet_device (name, device);
@@ -238,7 +247,7 @@ main (int argc,
 
   /* ifconfig lo up 127.0.0.1 netmask 0xff000000 */
   configure_device (&loopback_dev,
-		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET));
+		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET), htonl (INADDR_NONE));
 
   __mutex_unlock (&global_lock);
 

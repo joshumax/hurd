@@ -401,7 +401,7 @@ static __inline__ int inet_abc_len(u32 addr)
 
 error_t
 configure_device (struct device *dev,
-		  uint32_t addr, uint32_t netmask)
+		  uint32_t addr, uint32_t netmask, uint32_t peer)
 {
   struct in_device *in_dev = dev->ip_ptr;
   struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
@@ -422,7 +422,7 @@ configure_device (struct device *dev,
 
   if (addr != INADDR_NONE)
     ifa->ifa_address = ifa->ifa_local = addr;
-  if (netmask != INADDR_NONE)
+  if (netmask != INADDR_NONE && !(dev->flags & IFF_POINTOPOINT))
     {
       ifa->ifa_mask = netmask;
       ifa->ifa_prefixlen = inet_mask_len (ifa->ifa_mask);
@@ -431,6 +431,15 @@ configure_device (struct device *dev,
       else
 	ifa->ifa_broadcast = 0;
     }
+  if (peer != INADDR_NONE && (dev->flags & IFF_POINTOPOINT))
+    {
+      ifa->ifa_prefixlen = 32;
+      if (netmask != INADDR_NONE)
+	ifa->ifa_mask = netmask;
+      else
+	ifa->ifa_mask = inet_make_mask(32);
+      ifa->ifa_address = peer;
+    }
 
   return - (inet_set_ifa (dev, ifa)
 	    ?: dev_change_flags (dev, dev->flags | IFF_UP));
@@ -438,7 +447,7 @@ configure_device (struct device *dev,
 
 void
 inquire_device (struct device *dev,
-		uint32_t *addr, uint32_t *netmask)
+		uint32_t *addr, uint32_t *netmask, uint32_t *peer)
 {
   struct in_device *in_dev = dev->ip_ptr;
   struct in_ifaddr *ifa = in_dev ? in_dev->ifa_list : 0;
@@ -447,9 +456,10 @@ inquire_device (struct device *dev,
     {
       *addr = ifa->ifa_local;
       *netmask = ifa->ifa_mask;
+      *peer = ifa->ifa_address;
     }
   else
-    *addr = *netmask = INADDR_NONE;
+    *addr = *netmask = *peer = INADDR_NONE;
 }
 
 #else
