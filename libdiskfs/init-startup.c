@@ -32,6 +32,7 @@ char *_diskfs_chroot_directory;
 mach_port_t
 diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 {
+  error_t err;
   mach_port_t realnode, right;
   struct port_info *newpi;
 
@@ -39,7 +40,6 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
     {
       /* The boot options requested we change to a subdirectory
 	 and treat that as the root of the filesystem.  */
-      error_t err;
       struct node *np, *old;
       struct protid *rootpi;
 
@@ -85,21 +85,19 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 
   if (bootstrap != MACH_PORT_NULL)
     {
-      errno = ports_create_port (diskfs_control_class, diskfs_port_bucket,
-				 sizeof (struct port_info), &newpi);
-      if (! errno)
+      err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
+			       sizeof (struct port_info), &newpi);
+      if (! err)
 	{
 	  right = ports_get_send_right (newpi);
-	  errno = fsys_startup (bootstrap, flags, right,
-				MACH_MSG_TYPE_COPY_SEND, &realnode);
+	  err = fsys_startup (bootstrap, flags, right,
+			      MACH_MSG_TYPE_COPY_SEND, &realnode);
 	  mach_port_deallocate (mach_task_self (), right);
 	  ports_port_deref (newpi);
 	}
-      if (errno)
-	{
-	  perror ("Translator startup failure: fsys_startup");
-	  exit (1);
-	}
+      if (err)
+        error (1, err, "Translator startup failure: fsys_startup");
+
       mach_port_deallocate (mach_task_self (), bootstrap);
       _diskfs_ncontrol_ports++;
 
