@@ -258,6 +258,9 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
   int pos;
   struct proc_stat *ps;
 
+  if (u->ut_type == DEAD_PROCESS || !*u->ut_name)
+    return;			/* Unused entry.  */
+
   strncpy (tty, u->ut_line, sizeof u->ut_line);
   tty[sizeof u->ut_line] = '\0'; /* Ensure it's '\0' terminated. */
 
@@ -372,11 +375,22 @@ main(int argc, char *argv[])
 #if 0
   char *tty_names = 0;
   unsigned num_tty_names = 0;
-  struct idvec *uids = make_idvec ();
 #endif
+  uid_t *users = 0;
+  size_t num_users = 0;
   struct ps_user_hooks ps_hooks = { w_deps, w_fetch, w_cleanup };
 
   int has_hook (struct proc_stat *ps) { return ps->hook != 0; }
+
+  int keep_users (struct proc_stat *ps)
+    {
+      int i;
+      struct w_hook *h = ps->hook;
+      for (i = 0; i < num_users; i++)
+	if (users[i] == h->user->uid)
+	  return 1;
+      return 0;
+    }
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -394,6 +408,19 @@ main(int argc, char *argv[])
 	case 'w': output_width = arg ? atoi (arg) : 0; break;
 
 	case ARGP_KEY_ARG:
+	  num_users++;
+	  users = realloc (users, num_users * sizeof (*users));
+	  if (! users)
+	    argp_failure (state, 5, ENOMEM, "%s", arg);
+	  else if (isdigit (*arg))
+	    users[num_users - 1] = atoi (arg);
+	  else
+	    {
+	      struct passwd *pw = getpwnam (arg);
+	      if (! pw)
+		argp_failure (state, 6, 0, "%s: Unknown user", arg);
+	      users[num_users - 1] = pw->pw_uid;
+	    }
 	  break;
 
 	default:
@@ -426,6 +453,9 @@ main(int argc, char *argv[])
 
   /* Keep only processes that have our hooks attached.  */
   proc_stat_list_filter1 (procs, has_hook, 0, 0);
+
+  if (num_users > 0)
+    proc_stat_list_filter1 (procs, keep_users, W_PSTAT_USER, 0);
 
   if (show_uptime)
     uptime (procs);
