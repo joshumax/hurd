@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994 Free Software Foundation
+#   Copyright (C) 1994, 1995 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -36,7 +36,7 @@ magic.o: fsys_S.h
 null: null.o error.o $(libtrivfs) $(libports)
 null.o: ../hurd/trivfs.h ../hurd/ports.h
 
-ifsock: ifsock.o error.o $(libtrivfs) $(libports) ifsockServer.o
+ifsock: ifsock.o error.o $(libtrivfs) $(libports) $(libihash) ifsockServer.o
 ifsock.o: ifsock_S.h ../hurd/trivfs.h ../hurd/ports.h
 
 CPPFLAGS-error.c = -Dprogram_name=program_invocation_name -DHAVE_VPRINTF -DSTDC_HEADERS -DHAVE_STRERROR
