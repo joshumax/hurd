@@ -150,10 +150,9 @@ routine proc_setprocargs (
 /* INTR */
 routine proc_getmsgport (
 	process: process_t;
-	other_proces: portarray_t;
 	sreplyport reply_port: reply_port_t;
-	pid: pid_t;
-	out msgport: mach_port_t);
+	pid: pidarray_t;
+	out msgport: portarray_t);
 
 /* Wait for a child process to exit.  If pid is zero, it waits for any
    child.  If pid is negative, it waits for any process in the
@@ -312,10 +311,16 @@ routine proc_getsid (
 	out sid: pid_t);
 
 /* Get the pgids of all the members of a session.  */
-routine proc_getsessionpids (
+routine proc_getsessionpgids (
 	process: process_t;
 	sid: pid_t;
 	out pgidset: pidarray_t);
+
+/* Get the pids of all the members of a session. */
+routine proc_getsessionpids (
+	process: process_t;
+	sid: pid_t;
+	out pidset: pidarray_t);
 
 /* Return a "session ID" port for the session of the caller.
    This port is generally only available to members of the session.
