@@ -251,8 +251,6 @@ main (int argc, char **argv)
   /* Map the entire disk. */
   create_disk_pager ();
 
-  pokel_init (&global_pokel, disk_pager->p, disk_image);
-
   /* Start the first request thread, to handle RPCs and page requests. */
   diskfs_spawn_first_thread ();
 
@@ -265,6 +263,8 @@ main (int argc, char **argv)
     error (2, err, "vm_map");
 
   diskfs_register_memory_fault_area (disk_pager->p, 0, disk_image, device_size);
+
+  pokel_init (&global_pokel, disk_pager->p, disk_image);
 
   err = get_hypermetadata();
   if (err)
