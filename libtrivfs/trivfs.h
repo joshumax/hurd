@@ -39,7 +39,7 @@ struct trivfs_control
 {
   struct port_info pi;
   struct mutex lock;
-  int protidtypes;
+  struct port_class *protid_class;
   mach_port_t underlying;
 };
 
