@@ -125,11 +125,13 @@ See `tasks', the exported task list.
 ** Login/utmp?
 ** fifos are flaky.  ?? Details ??
 ** pflocal: make peer addresses work?
+** pflocal: using emacsclient causes massive thread creation in pflocal, and
+   emacsclient hangs in connect().
 
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
     gdb; maybe just a flag WNOREAP to proc_wait that doesn't reap and allows
-    anyone to use it.
+   anyone to use it.
 *** Add proc_get_tty() [returns tty opened with no flags], so that ps can be
     non-suid.
 *** Remove hostname/hostid functions
