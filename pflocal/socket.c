@@ -110,12 +110,29 @@ S_socket_listen (struct sock_user *user, int queue_limit)
 error_t
 S_socket_connect (struct sock_user *user, struct addr *addr)
 {
+  struct sock *peer;
+
   if (! user)
     return EOPNOTSUPP;
   if (!addr)
     return EADDRNOTAVAIL;
 
-  
+  err = addr_get_sock (addr, &peer);
+  if (err)
+    return err;
+
+  return sock_connect (user->sock, peer);
+}
+
+error_t
+S_socket_bind (struct sock_user *user, struct addr *addr)
+{
+  if (! user)
+    return EOPNOTSUPP;
+  if (!addr)
+    return EADDRNOTAVAIL;
+
+  return sock_bind (user->sock, addr);
 }
 
 error_t
