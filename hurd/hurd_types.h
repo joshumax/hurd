@@ -157,8 +157,7 @@ enum verstype
   MACHINE,
 };
 
-stru
-ct procinfo
+struct procinfo
 {
   int state;
   uid_t owner;
