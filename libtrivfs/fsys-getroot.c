@@ -52,10 +52,9 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   if (!cntl)
     return EOPNOTSUPP;
 
-  if (((flags & O_READ) && !trivfs_support_read)
-      || ((flags & O_WRITE) && !trivfs_support_write)
-      || ((flags & O_EXEC) && !trivfs_support_exec))
-    return EACCES;
+  if ((flags & (O_READ|O_WRITE|O_EXEC) & trivfs_allow_open)
+      != (flags & (O_READ|O_WRITE|O_EXEC)))
+    return EOPNOTSUPP;
 
   /* O_CREAT and O_EXCL are not meaningful here; O_NOLINK and O_NOTRANS
      will only be useful when trivfs supports translators (which it doesn't 
@@ -85,8 +84,6 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 	}
     }
   
-  /* At this point we are commited to the open, now or in the
-     future. */
   cred = ports_allocate_port (sizeof (struct trivfs_protid),
 			      cntl->protidtypes);
   cred->isroot = 0;
@@ -147,9 +144,12 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 #if 0
 void
 trivfs_complete_open (struct trivfs_control *cntl,
-		      int multi)
+		      int multi,
+		      error_t err)
 {
   struct pending_open *pendo, *nxt;
+
+#error CHECK ERR HERE.  
   
   if (!multi)
     {
