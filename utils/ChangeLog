@@ -1,5 +1,10 @@
 2002-05-04  Roland McGrath  <roland@frob.com>
 
+	* fakeauth.c (main): Update doc strings, clean up argp_parse call.
+
+	* fakeroot.sh: New file.
+	* Makefile (targets, special-targets, SRCS): Add it.
+
 	* settrans.c (options): Add --chroot/-C option.
 	(main_opt): Parse that option, take following args until "--"
 	as a command to exec chroot'd to the translated node.
