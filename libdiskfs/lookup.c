@@ -95,7 +95,8 @@ diskfs_lookup (struct node *dp, char *name, enum lookup_type type,
 
   if (name[0] == '\0')
     {
-      diskfs_null_dirstat (ds);
+      if (ds)
+	diskfs_null_dirstat (ds);
       return EINVAL;
     }
 
