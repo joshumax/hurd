@@ -1,3 +1,8 @@
+1999-11-09  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* priv.h (_diskfs_chroot_directory): Remove const from type.
+	* init-startup.c (_diskfs_chroot_directory): Likewise.
+
 1999-11-08  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* disk-pager.c (fault_handler): Put more detail in assert failures.
