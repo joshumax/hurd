@@ -112,7 +112,8 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       err = auth_makeauth (ourauth, 0, MACH_MSG_TYPE_MAKE_SEND, 0,
 			   uidarray, 1, uidarray, 2,
 			   gidarray, 1, gidarray, 2, &newauth);
-      assert_perror (err);
+      if (err)
+	goto return_error;
       
       bzero (ports, INIT_PORT_MAX * sizeof (mach_port_t));
       bzero (fds, (STDERR_FILENO + 1) * sizeof (mach_port_t));
