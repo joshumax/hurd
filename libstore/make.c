@@ -1,6 +1,6 @@
 /* Store allocation/deallocation
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -24,18 +24,21 @@
 
 #include "store.h"
 
-/* Allocate a new store structure of class CLASS, with meths METHS.  */
+/* Allocate a new store structure of class CLASS, with meths METHS, and the
+   various other fields initialized to the given parameters.  */
 struct store *
-_make_store (enum file_storage_class class, struct store_meths *meths)
+_make_store (enum file_storage_class class, struct store_meths *meths,
+	     mach_port_t port, size_t block_size,
+	     off_t *runs, size_t runs_len)
 {
   struct store *store = malloc (sizeof (struct store));
   if (store)
     {
       store->name = 0;
-      store->port = MACH_PORT_NULL;
+      store->port = port;
       store->runs = 0;
       store->runs_len = 0;
-      store->block_size = 0;
+      store->block_size = block_size;
       store->source = MACH_PORT_NULL;
       store->blocks = 0;
       store->size = 0;
@@ -44,6 +47,8 @@ _make_store (enum file_storage_class class, struct store_meths *meths)
 
       store->class = class;
       store->meths = meths;
+
+      store_set_runs (store, runs, runs_len); /* Also calls _store_derive(). */
     }
   return store;
 }
