@@ -27,7 +27,7 @@ prog-subdirs = auth boot exec fstests init.trim mkbootfs \
 	       devio newfs
 other-subdirs = hurd doc init tmpfs dev ext2fs lib
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
-subdirs-nodist = libnetserv
+subdirs-nodist = 
 working-prog-subdirs := $(filter-out \
 			  $(patsubst %/,%,\
 				 $(dir $(wildcard $(prog-subdirs:=/BROKEN)))),\
