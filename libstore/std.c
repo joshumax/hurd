@@ -22,12 +22,11 @@
 
 #include "store.h"
 
-struct store_class *
-store_std_classes = 0;
-
-void
-_store_add_std_class (struct store_class *class)
+const struct store_class *const
+store_std_classes[] = 
 {
-  class->next = store_std_classes;
-  store_std_classes = class;
-}
+  &store_device_class, &store_file_class, &store_zero_class,
+  &store_ileave_class, &store_concat_class, &store_remap_class,
+  &store_query_class, 0
+};
+
