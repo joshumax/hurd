@@ -73,6 +73,8 @@ pass4()
 		reconn_failed = !linkup (number, -1);
 	      if (! reconn_failed)
 		pfix ("RECONNECTED");
+	      if (preen && reconn_failed)
+		pfail ("RECONNECT FAILED");
 	    }
 	  if (dino.di_size == 0 || reconn_failed)
 	    {
