@@ -1,3 +1,7 @@
+2001-06-17  Marcus Brinkmann  <marcus@gnu.org>
+
+	* changelog: Update to current version.
+
 2001-06-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* rc: Merge in recent changes from daemons/rc.sh.

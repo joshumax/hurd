@@ -1,3 +1,22 @@
+hurd (20010608) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+    Compiled with -O2 rather than -O3.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Fri,  8 Jun 2001 23:02:47 +0200
+
+hurd (20010527) unstable; urgency=low
+
+  * New snapshot from CVS.
+  * Additional patches:
+    kbd, mouse as usual.
+    Change terminal type to mach-color.
+
+ -- Marcus Brinkmann <brinkmd@debian.org>  Sat, 27 May 2001 01:34:21 +0200
+
 hurd (20010426) unstable; urgency=low
 
   * New snapshot from CVS.
