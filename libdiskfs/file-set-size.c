@@ -1,5 +1,5 @@
 /* libdiskfs implementation of fs.defs: file_truncate
-   Copyright (C) 1992, 1993, 1994 Free Software Foundation
+   Copyright (C) 1992, 1993, 1994, 1995 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,6 @@ diskfs_S_file_truncate (struct protid *cred,
 		     if (!(cred->po->openstat & O_WRITE))
 		       err = EINVAL;
 		     else
-		       diskfs_truncate (np, size);
+		       err = diskfs_truncate (np, size);
 		   }));
 }
