@@ -46,6 +46,43 @@ static struct argp_option options[] =
 };
 char *args_doc = "DEVICE";
 
+/* Returns a malloced buffer containing a nice printable size for FRAGS.  */
+static char *
+nice_size (long frags)
+{
+  char *rep;
+  char *units = "KMGT", *u = units;
+  float num = ((float)frags * sblock->fs_fsize) / 1024;
+
+  while (num > 1024)
+    {
+      num /= 1024;
+      u++;
+    }
+
+  asprintf (&rep, "%#.4g%c", num, *u);
+
+  return rep;
+}
+
+/* Print summary statistics.  */
+static void
+show_stats ()
+{
+  long num_ffree = sblock->fs_cstotal.cs_nffree;
+  long num_bfree = sblock->fs_cstotal.cs_nbfree;
+  long tot_ffree = num_ffree + sblock->fs_frag * num_bfree;
+  char *urep = nice_size (sblock->fs_dsize - tot_ffree);
+  char *frep = nice_size (tot_ffree);
+  warning (0, "%ld files, %s used, %s free (%ld.%ld%% fragmentation)",
+	   num_files, urep, frep,
+	   (num_ffree * 100) / sblock->fs_dsize,
+	   (((num_ffree * 1000 + sblock->fs_dsize / 2) / sblock->fs_dsize)
+	    % 10));
+  free (urep);
+  free (frep);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -118,19 +155,7 @@ main (int argc, char **argv)
       pass5 ();
       
       if (! silent)
-	/* Print summary statistics.  */
-	{
-	  long num_ffree = sblock->fs_cstotal.cs_nffree;
-	  long num_bfree = sblock->fs_cstotal.cs_nbfree;
-	  long tot_ffree = num_ffree + sblock->fs_frag * num_bfree;
-	  warning (0,
-		   "%ld files, %ld used, %ld free (%ld.%ld%% fragmentation)",
-		   num_files, sblock->fs_dsize - tot_ffree, tot_ffree,
-		   (num_ffree * 100) / sblock->fs_dsize,
-		   (((num_ffree * 1000 + sblock->fs_dsize / 2)
-		     / sblock->fs_dsize)
-		    % 10));
-	}
+	show_stats (sblock);
     }
 
   if (fsmodified && !preen)
