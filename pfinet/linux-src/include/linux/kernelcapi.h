@@ -1,11 +1,15 @@
 /*
- * $Id: kernelcapi.h,v 1.3 1999/07/01 15:26:56 calle Exp $
+ * $Id: kernelcapi.h,v 1.4 1999/09/10 17:24:19 calle Exp $
  * 
  * Kernel CAPI 2.0 Interface for Linux
  * 
  * (c) Copyright 1997 by Carsten Paeth (calle@calle.in-berlin.de)
  * 
  * $Log: kernelcapi.h,v $
+ * Revision 1.4  1999/09/10 17:24:19  calle
+ * Changes for proposed standard for CAPI2.0:
+ * - AK148 "Linux Exention"
+ *
  * Revision 1.3  1999/07/01 15:26:56  calle
  * complete new version (I love it):
  * + new hardware independed "capi_driver" interface that will make it easy to:
@@ -70,19 +74,19 @@ typedef struct kcapi_flagdef {
 #ifdef __KERNEL__
 
 struct capi_interface {
-	int (*capi_installed) (void);
+	__u16 (*capi_isinstalled) (void);
 
-	 __u16(*capi_register) (capi_register_params * rparam, __u16 * applidp);
-	 __u16(*capi_release) (__u16 applid);
-	 __u16(*capi_put_message) (__u16 applid, struct sk_buff * msg);
-	 __u16(*capi_get_message) (__u16 applid, struct sk_buff ** msgp);
-	 __u16(*capi_set_signal) (__u16 applid,
+	__u16 (*capi_register) (capi_register_params * rparam, __u16 * applidp);
+	__u16 (*capi_release) (__u16 applid);
+	__u16 (*capi_put_message) (__u16 applid, struct sk_buff * msg);
+	__u16 (*capi_get_message) (__u16 applid, struct sk_buff ** msgp);
+	__u16 (*capi_set_signal) (__u16 applid,
 			      void (*signal) (__u16 applid, __u32 param),
 				  __u32 param);
-	 __u16(*capi_get_manufacturer) (__u16 contr, __u8 buf[CAPI_MANUFACTURER_LEN]);
-	 __u16(*capi_get_version) (__u16 contr, struct capi_version * verp);
-	 __u16(*capi_get_serial) (__u16 contr, __u8 serial[CAPI_SERIAL_LEN]);
-	 __u16(*capi_get_profile) (__u16 contr, struct capi_profile * profp);
+	__u16 (*capi_get_manufacturer) (__u32 contr, __u8 buf[CAPI_MANUFACTURER_LEN]);
+	__u16 (*capi_get_version) (__u32 contr, struct capi_version * verp);
+	 __u16(*capi_get_serial) (__u32 contr, __u8 serial[CAPI_SERIAL_LEN]);
+	 __u16(*capi_get_profile) (__u32 contr, struct capi_profile * profp);
 
 	/*
 	 * to init controllers, data is always in user memory
@@ -96,7 +100,7 @@ struct capi_interface {
 
 struct capi_interface_user {
 	char name[20];
-	void (*callback) (unsigned int cmd, __u16 contr, void *data);
+	void (*callback) (unsigned int cmd, __u32 contr, void *data);
 	/* internal */
 	struct capi_interface_user *next;
 };

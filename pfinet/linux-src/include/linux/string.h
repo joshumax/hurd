@@ -2,10 +2,7 @@
 #define _LINUX_STRING_H_
 
 #include <linux/types.h>	/* for size_t */
-
-#ifndef NULL
-#define NULL ((void *) 0)
-#endif
+#include <linux/stddef.h>	/* for NULL */
 
 #ifdef __cplusplus
 extern "C" {

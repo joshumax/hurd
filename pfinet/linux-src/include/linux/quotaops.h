@@ -99,8 +99,7 @@ extern __inline__ int DQUOT_TRANSFER(struct dentry *dentry, struct iattr *iattr)
 	int error = -EDQUOT;
 
 	if (dentry->d_inode->i_sb->dq_op) {
-		if (IS_QUOTAINIT(dentry->d_inode) == 0)
-			dentry->d_inode->i_sb->dq_op->initialize(dentry->d_inode, -1);
+		dentry->d_inode->i_sb->dq_op->initialize(dentry->d_inode, -1);
 		error = dentry->d_inode->i_sb->dq_op->transfer(dentry, iattr, current->fsuid);
 	} else {
 		error = notify_change(dentry, iattr);

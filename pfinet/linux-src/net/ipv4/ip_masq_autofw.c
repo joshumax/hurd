@@ -2,7 +2,7 @@
  *		IP_MASQ_AUTOFW auto forwarding module
  *
  *
- * 	$Id: ip_masq_autofw.c,v 1.3 1998/08/29 23:51:10 davem Exp $
+ * 	$Id: ip_masq_autofw.c,v 1.3.2.1 1999/08/13 18:26:20 davem Exp $
  *
  * Author:	Richard Lynch
  *
@@ -179,13 +179,13 @@ static __inline__ int ip_autofw_add(struct ip_autofw_user * af)
 {
 	struct ip_autofw * newaf;
 	newaf = kmalloc( sizeof(struct ip_autofw), GFP_KERNEL );
-	init_timer(&newaf->timer);
 	if ( newaf == NULL ) 
 	{
 		printk("ip_autofw_add:  malloc said no\n");
 		return( ENOMEM );
 	}
 
+	init_timer(&newaf->timer);
 	MOD_INC_USE_COUNT;
 
 	memcpy(newaf, af, sizeof(struct ip_autofw_user));

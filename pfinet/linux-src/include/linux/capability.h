@@ -89,9 +89,9 @@ typedef __u32 kernel_cap_t;
 /* Overrides the following restrictions that the effective user ID
    shall match the file owner ID when setting the S_ISUID and S_ISGID
    bits on that file; that the effective group ID (or one of the
-   supplementary group IDs shall match the file owner ID when setting
+   supplementary group IDs) shall match the file owner ID when setting
    the S_ISGID bit on that file; that the S_ISUID and S_ISGID bits are
-   cleared on successful return from chown(2). */
+   cleared on successful return from chown(2) (not implemented). */
 
 #define CAP_FSETID           4
 

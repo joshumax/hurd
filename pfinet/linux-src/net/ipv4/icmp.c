@@ -3,7 +3,7 @@
  *	
  *		Alan Cox, <alan@redhat.com>
  *
- *	Version: $Id: icmp.c,v 1.52.2.2 1999/06/20 21:27:39 davem Exp $
+ *	Version: $Id: icmp.c,v 1.52.2.3 1999/09/22 16:33:02 davem Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *	modify it under the terms of the GNU General Public License
@@ -320,6 +320,8 @@ int sysctl_icmp_echo_ignore_broadcasts = 0;
 /* Control parameter - ignore bogus broadcast responses? */
 int sysctl_icmp_ignore_bogus_error_responses =0;
 
+extern int sysctl_ip_always_defrag;
+
 /*
  *	ICMP control array. This specifies what to do with each ICMP.
  */
@@ -537,10 +539,9 @@ void icmp_send(struct sk_buff *skb_in, int type, int code, unsigned long info)
 	 *	Now check at the protocol level
 	 */
 	if (!rt) {
-#ifndef CONFIG_IP_ALWAYS_DEFRAG
-		if (net_ratelimit())
+                if (sysctl_ip_always_defrag == 0 &&
+                    net_ratelimit())
 			printk(KERN_DEBUG "icmp_send: destinationless packet\n");
-#endif
 		return;
 	}
 	if (rt->rt_flags&(RTCF_BROADCAST|RTCF_MULTICAST))
@@ -698,7 +699,7 @@ static void icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb, int len)
 				break;
 			case ICMP_FRAG_NEEDED:
 				if (ipv4_config.no_pmtu_disc) {
-					if (net_ratelimit())
+					if (sysctl_ip_always_defrag == 0 && net_ratelimit())
 						printk(KERN_INFO "ICMP: %d.%d.%d.%d: fragmentation needed and DF set.\n",
 					       NIPQUAD(iph->daddr));
 				} else {
@@ -710,7 +711,7 @@ static void icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb, int len)
 				}
 				break;
 			case ICMP_SR_FAILED:
-				if (net_ratelimit())
+				if (sysctl_ip_always_defrag == 0 && net_ratelimit())
 					printk(KERN_INFO "ICMP: %d.%d.%d.%d: Source Route Failed.\n", NIPQUAD(iph->daddr));
 				break;
 			default:
@@ -923,7 +924,7 @@ static void icmp_timestamp(struct icmphdr *icmph, struct sk_buff *skb, int len)
 static void icmp_address(struct icmphdr *icmph, struct sk_buff *skb, int len)
 {
 #if 0
-	if (net_ratelimit())
+	if (sysctl_ip_always_defrag == 0 && net_ratelimit())
 		printk(KERN_DEBUG "a guy asks for address mask. Who is it?\n");
 #endif		
 }
@@ -953,8 +954,8 @@ static void icmp_address_reply(struct icmphdr *icmph, struct sk_buff *skb, int l
 		if (mask == ifa->ifa_mask && inet_ifa_match(rt->rt_src, ifa))
 			return;
 	}
-	if (net_ratelimit())
-		printk(KERN_INFO "Wrong address mask %08lX from %08lX/%s\n",
+	if (sysctl_ip_always_defrag == 0 && net_ratelimit())
+		printk(KERN_INFO "Wrong address mask %08X from %08X/%s\n",
 		       ntohl(mask), ntohl(rt->rt_src), dev->name);
 }
 

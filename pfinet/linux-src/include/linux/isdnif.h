@@ -1,10 +1,10 @@
-/* $Id: isdnif.h,v 1.29 1999/07/31 13:00:02 armin Exp $
+/* $Id: isdnif.h,v 1.31 1999/09/06 07:29:36 fritz Exp $
  *
  * Linux ISDN subsystem
  *
  * Definition of the interface between the subsystem and its low-level drivers.
  *
- * Copyright 1994,95,96 by Fritz Elfert (fritz@wuemaus.franken.de)
+ * Copyright 1994,95,96 by Fritz Elfert (fritz@isdn4linux.de)
  * Copyright 1995,96    Thinking Objects Software GmbH Wuerzburg
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,12 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. 
  *
  * $Log: isdnif.h,v $
+ * Revision 1.31  1999/09/06 07:29:36  fritz
+ * Changed my mail-address.
+ *
+ * Revision 1.30  1999/08/23 15:54:29  keil
+ * more backported changes from kernel 2.3.14
+ *
  * Revision 1.29  1999/07/31 13:00:02  armin
  * Added tty fax capabilities.
  *
@@ -134,7 +140,7 @@
 #ifndef isdnif_h
 #define isdnif_h
 
-#include <linux/isdn_compat.h>
+#include <linux/config.h>
 
 /*
  * Values for general protocol-selection
