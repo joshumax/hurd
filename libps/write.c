@@ -42,7 +42,7 @@ ps_stream_write (ps_stream_t stream, char *string, ssize_t max_len)
   if (len > 0)
     {
       size_t output;
-      size_t spaces_needed = stream->spaces;
+      ssize_t spaces_needed = stream->spaces;
 
       stream->spaces = 0;
       while (spaces_needed > 0)
