@@ -1,7 +1,6 @@
 /* A translator for returning FS_RETRY_MAGIC strings.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
-
+   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
    This program is free software; you can redistribute it and/or
@@ -21,10 +20,14 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <error.h>
+#include <argp.h>
 #include <hurd/fsys.h>
 #include "fsys_S.h"
-
-/* ---------------------------------------------------------------- */
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (magic);
+static char args_doc[] = "MAGIC";
+static char doc[] = "A translator that returns the magic retry result MAGIC";
 
 extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
 
@@ -36,25 +39,22 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap, control, realnode;
-  
-  if (argc != 2 || *argv[1] == '-')
-    {
-      fprintf(stderr, "Usage: %s MAGIC", program_invocation_name);
-      exit(-1);
-    }
+  struct argp argp = { 0, 0, args_doc, doc };
+
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   magic = argv[1];
   
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    error(3, 0, "Must be started as a translator");
+    error (3, 0, "Must be started as a translator");
 
   /* Reply to our parent */
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
   err =
     fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_MAKE_SEND, &realnode);
   if (err)
-    error(1, err, "starting translator");
+    error (1, err, "starting translator");
 
   /* Launch */
   while (1)
@@ -67,8 +67,6 @@ main (int argc, char **argv)
     }
 }
 
-/* ---------------------------------------------------------------- */
-
 error_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
