@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+
+/* ports_wire_threads is set in init-init.c. */
 int ports_use_multiple_threads = 1;
-int ports_wire_threads = 1;
 int ports_wire_cthreads = 1;
