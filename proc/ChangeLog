@@ -1,3 +1,11 @@
+2001-08-06  Roland McGrath  <roland@frob.com>
+
+	* wait.c (S_proc_wait: reap): Set *PID_STATUS to CHILD->p_pid.
+	Reported by Neal H Walfield  <neal@cs.uml.edu>.
+
+	* mgt.c (allocate_proc): Don't zero P->p_pi.
+	Reported by Neal H Walfield  <neal@cs.uml.edu>.
+
 2001-08-05  Roland McGrath  <roland@frob.com>
 
 	* wait.c (sample_rusage): New function.
