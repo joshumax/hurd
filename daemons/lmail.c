@@ -1,6 +1,6 @@
 /* Local mail delivery
 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -33,6 +33,8 @@
 #include <hurd.h>
 #include <hurd/fd.h>
 #include <version.h>
+#include <time.h>
+#include <sys/time.h>
 
 #define OPT_FILE -5
 
@@ -140,7 +142,7 @@ bfree (char *blk, size_t blk_len)
 
 /* Read up to MAX chars from IN into BLK & BLK_LEN, which may be reused or
    freed.  */
-static int 
+static int
 bread (int in, char *in_name, size_t max, char **blk, size_t *blk_len)
 {
   char *orig_blk = *blk;
@@ -192,7 +194,7 @@ copy (int in, char *in_name, int out, char *out_name)
   return ex;
 }
 
-static int 
+static int
 write_header (int out, char *out_name, struct params *params)
 {
   char *hdr;
@@ -338,7 +340,7 @@ deliver (int msg, char *msg_name, char *rcpt, int flags, struct params *params)
   asprintf (&mbox, "%s/%s", params->mail_dir, rcpt);
   if (! mbox)
     return SYSERRX (ENOMEM, "%s", rcpt);
-  
+
   do
     {
       /* First try to open an existing mailbox.  */
