@@ -52,7 +52,6 @@ ftp_conn_create (const struct ftp_conn_params *params,
   new->syshooks_valid = 0;
   new->use_passive = 1;
   new->actv_data_addr = 0;
-  new->actv_data_conn_queue = -1;
   new->cwd = 0;
   new->type = 0;
   bzero (&new->syshooks, sizeof new->syshooks);
