@@ -122,7 +122,7 @@ main (int argc, char **argv)
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
      outside world.  */
-  diskfs_startup_diskfs (bootstrap);
+  diskfs_startup_diskfs (bootstrap, 0);
   
   /* And this thread is done with its work. */
   cthread_exit (0);
