@@ -1,5 +1,9 @@
 2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
 
+	* Makefile (HURDLIBS): Add pager, reported by Alfred M. Szmidt.
+
+2002-06-25  Marcus Brinkmann  <marcus@gnu.org>
+
 	* Makefile (LCLHDRS): Add priv.h and mutations.h.
 	(MIGSTUBS): Add tioctlServer.o
 	* console.c: Include <hurd/ioctl-types.h>.

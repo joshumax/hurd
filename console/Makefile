@@ -28,7 +28,7 @@ LCLHDRS = console.h display.h input.h priv.h mutations.h
 
 MIGSTUBS = notifyServer.o tioctlServer.o
 
-HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp pager threads ports ihash shouldbeinlibc
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
 # This is the old monolithic version of the console server.
