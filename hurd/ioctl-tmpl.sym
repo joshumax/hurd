@@ -1,0 +1,13 @@
+/* This file is used by the Makefile rules for generating
+   Xioctl-proto.defs, see Makefile for details.  */
+
+#include <sys/ioctl.h>
+#include <hurd/ioctls.defs>
+
+#include "ioctl-decode.h"
+
+#include "@HEADER_LIST@"
+#define GROUPCHAR	'@GROUP@'
+
+expr	GROUPCHAR			GROUP
+expr	IOC_GROUP_SUBSYSTEM(GROUPCHAR)	SUBSYSTEM
