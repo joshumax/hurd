@@ -27,7 +27,6 @@ ports_interrupt_rpc (void *portstruct)
 {
   struct port_info *pi = portstruct;
   struct rpc_info *rpc;
-  mach_port_t self = mach_thread_self ();
 
   mutex_lock (&_ports_lock);
   
