@@ -31,10 +31,13 @@
  * SUCH DAMAGE.
  *
  *	from: @(#)fsck.h	8.1 (Berkeley) 6/5/93
- *	$Id: fsck.h,v 1.7 1994/09/01 18:50:58 mib Exp $
+ *	$Id: fsck.h,v 1.8 1994/09/16 14:56:55 mib Exp $
  */
 
 /* Begin GNU Hurd */
+
+/* GNU ufs doesn't define struct direct, but fsck needs it. */
+#define direct directory_entry
 
 /* For GNU Hurd: the ufs DIRSIZ macro is different than the BSD 
    4.4 version that fsck expects.  So we provide here the BSD version. */
