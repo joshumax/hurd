@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996, 1997 Free Software Foundation
+#   Copyright (C) 1994, 95, 96, 97, 98 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -39,7 +39,7 @@ IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
-	init-init.c init-startup.c init-first.c  \
+	init-init.c init-startup.c init-first.c init-main.c \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \
 	sync-interval.c sync-default.c \
 	opts-set.c opts-get.c opts-std-startup.c opts-std-runtime.c \
