@@ -1,0 +1,20 @@
+These are the base MiG code numbers for each subsystem in the GNU Hurd.
+Each subsystem takes 200 in space.  
+
+FS		20000	Filesystem nodes
+IO		21000	Generic IO
+FSYS		22000	Filesystem control operations
+MSG		23000	Calls made on process message ports
+PROCESS		24000	Process abstraction
+AUTH   		25000	Authentication
+SOCKET 		26000	Sockets
+NEWTERM		27000	Creation of terminal processing thingies
+TERM		28000	Terminal-specific operations
+STARTUP		29000	System initialization and destruction
+EXEC		30000	Process execution
+BOOT		31000	Bootstrapping
+CORE		32000	Core dumping
+INTR		33000	Interruption
+IFSOCK		34000	S_IFSOCK node protocol for AF_LOCAL rendezvous
+TAPE		35000	Special control operations for magtapes
+TIOCTL	       156000	Ioctl class 't'
