@@ -305,85 +305,101 @@ ps_fmt_write_proc_stat(ps_fmt_t fmt, proc_stat_t ps,
 
 /* ---------------------------------------------------------------- */
 
-/* Remove those fields from FMT which would need the proc_stat flags FLAGS.
-   Appropiate inter-field characters are also removed: those *following*
-   deleted fields at the beginning of the fmt, and those *preceeding* deleted
-   fields *not* at the beginning. */
+/* Remove those fields from FMT for which the function FN, when called on the
+   field's format spec, returns true.  Appropiate inter-field characters are
+   also removed: those *following* deleted fields at the beginning of the
+   fmt, and those *preceeding* deleted fields *not* at the beginning. */
 void
-ps_fmt_squash(ps_fmt_t fmt, ps_flags_t flags)
+ps_fmt_squash (ps_fmt_t fmt, bool (*fn)(ps_fmt_spec_t spec))
 {
   int nfields = fmt->num_fields;
   ps_fmt_field_t fields = fmt->fields, field = fields;
+  /* As we're removing some fields, we must recalculate the set of ps flags
+     needed by all fields.  */
+  ps_flags_t need = 0;
 
   while ((field - fields) < nfields)
     {
       ps_fmt_spec_t spec = field->spec;
 
-      if (spec != NULL)
+      if (spec != NULL && (*fn)(spec))
+	/* Squash this field! */
 	{
-	  ps_getter_t getter = ps_fmt_spec_getter(spec);
+	  /* Save the old prefix, in case we're deleting the first field,
+	     and need to prepend it to the next field.  */
+	  char *beg_pfx = field->pfx; 
+	  int beg_pfx_len = field->pfx_len;
 
-	  if (ps_getter_needs(getter) & flags)
-	    /* some of FLAGS are needed -- squash this field! */
+	  nfields--;
+
+	  /* Shift down all following fields over this one.  */
+	  if (nfields > 0)
+	    bcopy(field + 1, field,
+		  (nfields - (field - fields)) * sizeof *field);
+
+	  if (field == fields)
+	    /* This is the first field, so move its prefix to the
+	       following field (overwriting that field's prefix).  This
+	       is to ensure that the beginning of the format string is
+	       preserved in preference to the middle, as it is more
+	       likely to be significant.  */
 	    {
-	      /* Save the old prefix, in case we're deleting the first field,
-		 and need to prepend it to the next field.  */
-	      char *beg_pfx = field->pfx; 
-	      int beg_pfx_len = field->pfx_len;
-
-	      nfields--;
-
-	      /* Shift down all following fields over this one.  */
-	      if (nfields > 0)
-		bcopy(field + 1, field,
-		      (nfields - (field - fields)) * sizeof *field);
-
-	      if (field == fields)
-		/* This is the first field, so move its prefix to the
-		   following field (overwriting that field's prefix).  This
-		   is to ensure that the beginning of the format string is
-		   preserved in preference to the middle, as it is more
-		   likely to be significant.  */
+	      if (nfields == 0)
+		/* no following fields, so just make a new end field (we're
+		   sure to have room, as we just vacated a space).  */
 		{
-		  if (nfields == 0)
-		    /* no following fields, so just make a new end field (we're
-		       sure to have room, as we just vacated a space).  */
-		    {
-		      nfields++;
-		      field->pfx = beg_pfx;
-		      field->pfx_len = beg_pfx_len;
-		      field->spec = NULL;
-		    }
-		  else if (field->spec == NULL)
-		    /* One following field with only a prefix -- the suffix
-		       of the format string.  Tack the prefix on before the
-		       suffix so we preserve both the beginning and the end
-		       of the format string.  We know there's space in our
-		       copy of the source string, because we've just squashed
-		       a field which took at least that much room (as it
-		       previously contained the same prefix).  */
-		    {
-		      field->pfx -= beg_pfx_len;
-		      field->pfx_len += beg_pfx_len;
-		      bcopy(beg_pfx, field->pfx, beg_pfx_len);
-		    }
-		  else
-		    /* otherwise just replace the next field's prefix with
-		       the beginning one */
-		    {
-		      field->pfx = beg_pfx;
-		      field->pfx_len = beg_pfx_len;
-		    }
+		  nfields++;
+		  field->pfx = beg_pfx;
+		  field->pfx_len = beg_pfx_len;
+		  field->spec = NULL;
+		}
+	      else if (field->spec == NULL)
+		/* One following field with only a prefix -- the suffix
+		   of the format string.  Tack the prefix on before the
+		   suffix so we preserve both the beginning and the end
+		   of the format string.  We know there's space in our
+		   copy of the source string, because we've just squashed
+		   a field which took at least that much room (as it
+		   previously contained the same prefix).  */
+		{
+		  field->pfx -= beg_pfx_len;
+		  field->pfx_len += beg_pfx_len;
+		  bcopy(beg_pfx, field->pfx, beg_pfx_len);
+		}
+	      else
+		/* otherwise just replace the next field's prefix with
+		   the beginning one */
+		{
+		  field->pfx = beg_pfx;
+		  field->pfx_len = beg_pfx_len;
 		}
 	    }
-	  else
-	    /* don't squash this field, just move to the next one */
-	    field++;
 	}
       else
-	field++;
+	/* don't squash this field, just move to the next one */
+	{
+	  need |= ps_getter_needs (ps_fmt_spec_getter (spec));
+	  field++;
+	}
     }
 
-  fmt->needs &= ~flags;		/* we don't need any of them anymore */
   fmt->num_fields = nfields;
+  fmt->needs = need;
+}
+
+/* ---------------------------------------------------------------- */
+
+/* Remove those fields from FMT which would need the proc_stat flags FLAGS.
+   Appropiate inter-field characters are also removed: those *following*
+   deleted fields at the beginning of the fmt, and those *preceeding* deleted
+   fields *not* at the beginning.  */
+void
+ps_fmt_squash_flags(ps_fmt_t fmt, ps_flags_t flags)
+{
+  bool squashable_spec (ps_fmt_spec_t spec)
+    {
+      return ps_getter_needs (ps_fmt_spec_getter (spec)) & flags;
+    }
+
+  ps_fmt_squash (fmt, squashable_spec);
 }
