@@ -23,5 +23,5 @@ DIST_FILES = fstests.c Makefile
 
 fstests: fstests.o; $(link)
 
-install:
+install: fstests
 	cp fstests $(hurdroot)/hurd/init
