@@ -18,8 +18,8 @@
 dir := utils
 makemode := utilities
 
-SRCS = sh.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh
-targets = sh ps settrans showtrans update clri sync reboot halt su mount
+SRCS = shd.c ps.c su.c settrans.c update.c clri.c sync.c reboot.c halt.c showtrans.c mount.sh
+targets = shd ps settrans showtrans update clri sync reboot halt su mount
 DIST_FILES = sh.ChangeLog ps.ChangeLog
 
 HURDLIBS=libps  # Only used by ps.  
