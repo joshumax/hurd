@@ -26,6 +26,7 @@
    Set them in the global block map.  For each file, if a block is found
    allocated twice, then record the block and inode in DUPLIST.
    Initialize INODESTATE, LINKCOUNT, and TYPEMAP. */
+void
 pass1 ()
 {
   ino_t number;
@@ -211,7 +212,7 @@ pass1 ()
 
 	    /* Decode type and set NDB 
 	       also set inodestate correctly. */
-	    inodestate[number] = FILE;
+	    inodestate[number] = REG;
 	    switch (type)
 	      {
 	      case IFBLK:
