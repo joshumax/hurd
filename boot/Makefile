@@ -31,27 +31,24 @@ DIST_FILES=frank1.ld frankemul.ld
 
 include ../Makeconf
 
-#install: /usr/local/bin/boot
+#install: /usr/local/bin/uxboot
 #
-#/usr/local/bin/boot: boot
-#	cp boot /usr/local/bin/boot
+#/usr/local/bin/uxboot: uxboot
+#	cp $< $@
 
 all: boot uxboot
 
 ourdevice.defs: $(includedir)/device/device.defs
 	sed -e '/out	device		: device_t/s/device_t/mach_port_send_t/' $< > $@
 
-LDFLAGS += $($@-LDFLAGS)
-
-boot: ../libthreads/libthreads.a
+boot: ../libthreads/libthreads.so
 
 uxboot.o: boot.c
 	$(COMPILE.c) -DUX $< -o $@
 
-uxboot.0-LDFLAGS += -static -nostartfiles -Wl,-T -Wl,frank1.ld
 uxboot.0: $(UX-OBJS) ../libthreads/libthreads.a
-	$(LINK.o) -o $@ $(UX-OBJS) ../libthreads/libthreads.a
-uxboot.1: uxboot.0 frankemul.ld
-	$(LD) -o $@ -T frankemul.ld uxboot.0
+	$(LINK.o) -o $@ -static -nostartfiles -Wl,-T -Wl,frank1.ld $^
+uxboot.1: frankemul.ld uxboot.0
+	$(LD) -o $@ -T $^
 uxboot: uxboot.1
 	$(OBJCOPY) -S --remove-section=.comment -O a.out-mach3 $< $@
