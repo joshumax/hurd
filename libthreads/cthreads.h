@@ -26,6 +26,9 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.5  1995/04/04 21:06:16  roland
+ * (mutex_lock, mutex_unlock): Use __ names for *_solid.
+ *
  * Revision 1.4  1994/05/05  10:52:06  roland
  * entered into RCS
  *
@@ -427,7 +430,7 @@ typedef struct cthread {
 	struct mutex lock;
 	struct condition done;
 	int state;
-	jmp_buf catch;
+/*	jmp_buf catch; */
 	cthread_fn_t func;
 	any_t arg;
 	any_t result;
