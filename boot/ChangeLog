@@ -1,5 +1,16 @@
 2001-08-16  Roland McGrath  <roland@frob.com>
 
+	* userland-boot.c (boot_script_insert_right): New function.
+	* boot_script.h: Declare it.
+	* boot_script.c (boot_script_exec): Use that instead of
+	mach_port_insert_right.
+
+	* boot_script.h: Protect from multiple inclusion.
+	(safe_gets): Remove decl.
+
+	* boot_script.h (boot_script_exec_cmd): Change TASK arg type to task_t.
+	* userland-boot.c: Likewise.
+
 	* boot_script.h (struct cmd): Change `task' member type to `task_t'.
 	(boot_script_task_create, boot_script_task_resume,
 	boot_script_prompt_task_resume, boot_script_free_task): Declare new
