@@ -1,3 +1,8 @@
+2001-02-20  Marcus Brinkmann  <marcus@gnu.org>
+
+	* inode.c: Include <time.h>. Reported by Arkadi E. Shishlov
+	<arkadi@it.lv>.
+
 2001-01-07  Marcus Brinkmann  <marcus@gnu.org>
 
 	* lookup.c: Make diskfs_dirstat_size const.
