@@ -31,7 +31,7 @@
 
 /* These directly correspond to the bits in a state, starting from 0.  See
    ps.h for an explanation of what each of these means.  */
-char *proc_stat_state_tags = "TZRHDSIN<u+sfmpox";
+char *proc_stat_state_tags = "TZRHDSIN<u+slfmpoxwg";
 
 /* ---------------------------------------------------------------- */
 
@@ -73,6 +73,98 @@ thread_state(thread_basic_info_t bi)
 
 /* ---------------------------------------------------------------- */
 
+/* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
+#define PSTAT_PROCINFO \
+  (PSTAT_PROC_INFO | PSTAT_TASK_BASIC | PSTAT_NUM_THREADS \
+   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_RPC)
+/* The set of things we get from procinfo that's thread dependent.  */
+#define PSTAT_PROCINFO_THREAD \
+  (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED |PSTAT_THREAD_RPC)
+
+/* Fetches process information from the set in PSTAT_PROCINFO, returning it
+   in PI & PI_SIZE.  NEED is the information, and HAVE is the what we already
+   have.  */
+static error_t
+fetch_procinfo (process_t server, pid_t pid,
+		ps_flags_t need, ps_flags_t have,
+		struct procinfo **pi, size_t *pi_size)
+{
+  int pi_flags = 0;
+
+  if ((need & PSTAT_TASK_BASIC) && !(have & PSTAT_TASK_BASIC))
+    pi_flags |= PI_FETCH_TASKINFO;
+  if ((need & PSTAT_NUM_THREADS) && !(have & PSTAT_NUM_THREADS))
+    pi_flags |= PI_FETCH_THREADS;
+  if ((need & PSTAT_THREAD_BASIC) && !(have & PSTAT_THREAD_BASIC))
+    pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
+  if ((need & PSTAT_THREAD_BASIC) && !(have & PSTAT_THREAD_BASIC))
+    pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
+  if ((need & PSTAT_THREAD_SCHED) && !(have & PSTAT_THREAD_SCHED))
+    pi_flags |= PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS;
+  if ((need & PSTAT_THREAD_RPC) && !(have & PSTAT_THREAD_RPC))
+    pi_flags |= PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS;
+
+  if (pi_flags || ((need & PSTAT_PROC_INFO) && !(have & PSTAT_PROC_INFO)))
+    {
+      char *noise;
+      unsigned noise_len = 0;
+
+      error_t err =
+	proc_getprocinfo (server, pid, pi_flags, (procinfo_t *)pi, pi_size,
+			  &noise, &noise_len);
+
+      if (!err && noise_len > 0)
+	vm_deallocate (mach_task_self (), noise, noise_len);
+
+      return err;
+    }
+  else
+    return 0;
+}
+
+/* Fetches process information from the set in PSTAT_PROCINFO, returning it
+   in PI & PI_SIZE, and if *PI_SIZE is non-zero, merges the new information
+   with what was in *PI, and deallocates *PI.  NEED is the information, and
+   HAVE is the what we already have.  */
+static error_t
+merge_procinfo (process_t server, pid_t pid,
+		ps_flags_t need, ps_flags_t have,
+		struct procinfo **pi, size_t *pi_size)
+{
+  struct procinfo *new_pi;
+  size_t new_pi_size = 0;
+  /* We always re-fetch any thread-specific info, as the set of threads could
+     have changed since the last time we did this, and we can't tell.  */
+  error_t err =
+    fetch_procinfo (server, pid,
+		    (need | (have & PSTAT_PROCINFO_THREAD)),
+		    have & ~PSTAT_PROCINFO_THREAD,
+		    &new_pi, &new_pi_size);
+
+  if (err)
+    return err;
+
+  if (*pi_size > 0)
+    /* There was old information, try merging it. */
+    {
+      if ((need & PSTAT_TASK_BASIC) && ~(have & PSTAT_TASK_BASIC))
+	/* Task info */
+	bcopy (&(*pi)->taskinfo, &new_pi->taskinfo,
+	       sizeof (struct task_basic_info));
+      /* That's it for now.  */
+
+      vm_deallocate (mach_task_self (), (vm_address_t)*pi, *pi_size);
+    }
+
+  *pi = new_pi;
+  *pi_size = new_pi_size;
+
+  return 0;
+}
+
+
+/* ---------------------------------------------------------------- */
+
 /* Returns FLAGS augmented with any other flags that are necessary
    preconditions to setting them.  */
 static ps_flags_t 
@@ -84,11 +176,11 @@ add_preconditions (ps_flags_t flags)
   if (flags & PSTAT_TTY)
     flags |= PSTAT_CTTYID;
   if (flags & PSTAT_STATE)
-    flags |= PSTAT_EXEC_FLAGS;	/* For the traced bit.  */
+    flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
   if (flags & PSTAT_SUSPEND_COUNT)
     /* We just request the resources require for both the thread and task
        versions, as the extraneous info won't be possible to aquire anyway. */
-    flags |= PSTAT_INFO | PSTAT_THREAD_INFO;
+    flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK
 	       | PSTAT_EXEC_FLAGS)
       && !(flags & PSTAT_NO_MSGPORT))
@@ -96,16 +188,15 @@ add_preconditions (ps_flags_t flags)
       flags |= PSTAT_MSGPORT;
       flags |= PSTAT_TASK;	/* for authentication */
     }
-  if (flags & (PSTAT_THREAD_INFO | PSTAT_STATE | PSTAT_OWNER))
-    flags |= PSTAT_INFO;
-  if (flags & PSTAT_TASK_EVENTS_INFO)
+  if (flags & PSTAT_TASK_EVENTS)
     flags |= PSTAT_TASK;
 
   return flags;
 }
 
 /* Those flags that should be set before calling should_suppress_msgport.  */
-#define SHOULD_SUPPRESS_MSGPORT_FLAGS (PSTAT_INFO | PSTAT_THREAD_INFO)
+#define SHOULD_SUPPRESS_MSGPORT_FLAGS \
+  (PSTAT_NUM_THREADS | PSTAT_SUSPEND_COUNT | PSTAT_THREAD_BASIC)
 
 /* Return true when there's some condition indicating that we shouldn't use
    PS's msg port.  For this routine to work correctly, PS's flags should
@@ -115,15 +206,15 @@ should_suppress_msgport (proc_stat_t ps)
 {
   ps_flags_t have = ps->flags;
 
-  if ((have & PSTAT_INFO) && ps->info->taskinfo.suspend_count != 0)
+  if ((have & PSTAT_SUSPEND_COUNT) && ps->suspend_count != 0)
     /* Task is suspended.  */
     return TRUE;
 
-  if ((have & PSTAT_THREAD_INFO) && ps->thread_basic_info.suspend_count != 0)
+  if ((have & PSTAT_THREAD_BASIC) && ps->thread_basic_info->suspend_count != 0)
     /* All threads are suspended.  */
     return TRUE;
 
-  if ((have & PSTAT_INFO) && ps->info->nthreads == 0)
+  if ((have & PSTAT_NUM_THREADS) && ps->num_threads == 0)
     /* No threads (some bug could cause the procserver still to think there's
        a msgport).  */
     return TRUE;
@@ -136,6 +227,176 @@ should_suppress_msgport (proc_stat_t ps)
    (((flags) & ~PSTAT_MSGPORT) | PSTAT_NO_MSGPORT)
 
 /* ---------------------------------------------------------------- */
+
+/* Returns a new malloced struct thread_basic_info containing a summary of
+   all the thread basic info in PI.  Sizes and cumulative times are summed,
+   delta time are averaged.  The run_states are added by having running
+   thread take precedence over waiting ones, and if there are any other
+   incompatible states, simply using a bogus value of -1.  */
+static struct thread_basic_info *
+summarize_thread_basic_info (struct procinfo *pi)
+{
+  int i;
+  unsigned num_threads = 0;
+  thread_basic_info_t tbi = malloc (sizeof (struct thread_basic_info));
+
+  if (!tbi)
+    return 0;
+
+  bzero(tbi, sizeof *tbi);
+
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died)
+      {
+	thread_basic_info_t bi = &pi->threadinfos[i].pis_bi;
+	int thread_run_state = bi->run_state;
+
+	/* Construct some aggregate run-state for the process:  besides the
+	   defined thread run_states, we use 0 to mean no threads, and -1
+	   to mean two threads have conflicting run_stats.  */
+
+	if (tbi->run_state == 0)
+	  /* No prior state, just copy this thread's.  */
+	  tbi->run_state = thread_run_state;
+	else if (tbi->run_state == TH_STATE_RUNNING
+		 || thread_run_state == TH_STATE_RUNNING)
+	  /* If any thread is running, mark the process as running.  */
+	  tbi->run_state = TH_STATE_RUNNING;
+	else if (tbi->run_state != bi->run_state)
+	  /* Otherwise there are two conflicting non-running states, so
+	     just give up and say we don't know.  */
+	  tbi->run_state = -1;
+
+	tbi->cpu_usage += bi->cpu_usage;
+	tbi->sleep_time += bi->sleep_time;
+
+	/* The aggregate suspend count is the minimum of all threads.  */
+	if (i == 0 || tbi->suspend_count > bi->suspend_count)
+	  tbi->suspend_count = bi->suspend_count;
+
+	tbi->user_time.seconds += bi->user_time.seconds;
+	tbi->user_time.microseconds += bi->user_time.microseconds;
+	tbi->system_time.seconds += bi->system_time.seconds;
+	tbi->system_time.microseconds += bi->system_time.microseconds;
+
+	num_threads++;
+      }
+
+  if (num_threads > 0)
+    tbi->sleep_time /= num_threads;
+
+  tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
+  tbi->user_time.microseconds %= 1000000;
+  tbi->system_time.seconds += tbi->system_time.microseconds / 1000000;
+  tbi->system_time.microseconds %= 1000000;
+
+  return tbi;
+}
+
+/* Returns a new malloced struct thread_sched_info containing a summary of
+   all the thread scheduling info in PI.  The prioritys are an average of the
+   thread priorities.  */
+static struct thread_sched_info *
+summarize_thread_sched_info (struct procinfo *pi)
+{
+  int i;
+  unsigned num_threads = 0;
+  thread_sched_info_t tsi = malloc (sizeof (struct thread_sched_info));
+
+  if (!tsi)
+    return 0;
+
+  bzero(tsi, sizeof *tsi);
+
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died)
+      {
+	thread_sched_info_t si = &pi->threadinfos[i].pis_si;
+	tsi->base_priority += si->base_priority;
+	tsi->cur_priority += si->cur_priority;
+	num_threads++;
+      }
+
+  if (num_threads > 0)
+    {
+      tsi->base_priority /= num_threads;
+      tsi->cur_priority /= num_threads;
+    }
+
+  return tsi;
+}
+
+/* Returns the union of the state bits for all the threads in PI.  */
+static int
+summarize_thread_states (struct procinfo *pi)
+{
+  int i;
+  int state = 0;
+
+  /* The union of all thread state bits...  */
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died)
+      state |= thread_state(&pi->threadinfos[i].pis_bi);
+
+  return state;
+}
+
+/* Returns the rpc blocking the first blocked thread in PI.  */
+static int
+summarize_thread_rpcs (struct procinfo *pi)
+{
+  int i;
+
+  /* The union of all thread state bits...  */
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died && pi->threadinfos[i].rpc_block)
+      return pi->threadinfos[i].rpc_block;
+
+  return 0;
+}
+
+/* Returns the number of threads in PI that aren't marked dead.  */
+static unsigned
+count_threads (struct procinfo *pi)
+{
+  int i;
+  unsigned num_threads = 0;
+
+  /* The union of all thread state bits...  */
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died)
+      num_threads++;
+
+  return num_threads;
+}
+
+typedef typeof (((struct procinfo *)0)->threadinfos[0]) *threadinfo_t;
+
+/* Returns the threadinfo for the INDEX'th thread from PI that isn't marked
+   dead.  */
+threadinfo_t
+get_thread_info (struct procinfo *pi, unsigned index)
+{
+  int i;
+
+  /* The union of all thread state bits...  */
+  for (i = 0; i < pi->nthreads; i++)
+    if (! pi->threadinfos[i].died && index-- == 0)
+      return &pi->threadinfos[i];
+
+  return 0;
+}
+
+/* Returns a malloced block of memory SIZE bytes long, containing a copy of
+   SRC.  */
+static void *
+clone (void *src, size_t size)
+{
+  void *dst = malloc (size);
+  if (dst)
+    bcopy (src, dst, size);
+  return dst;
+}
 
 /* Add FLAGS to PS's flags, fetching information as necessary to validate
    the corresponding fields in PS.  Afterwards you must still check the flags
@@ -203,90 +464,87 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
    })
 
   /* the process's struct procinfo as returned by proc_getprocinfo.  */
-  if ((need & PSTAT_INFO) && (have & PSTAT_PID))
-    {
-      ps->info_size = 0;
-      if (proc_getprocinfo(server, ps->pid, (int **)&ps->info, &ps->info_size)
-	  == 0)
-	have |= PSTAT_INFO;
-    }
+  if ((need & PSTAT_PROCINFO) != (have & PSTAT_PROCINFO))
+    if (have & PSTAT_PID)
+      {
+	error_t err =
+	  merge_procinfo (server, ps->pid, need, have,
+			  &ps->proc_info, &ps->proc_info_size);
+	if (!err)
+	  {
+	    struct procinfo *pi = ps->proc_info;
+	    ps_flags_t added =
+	      (need & PSTAT_PROCINFO) & ~(have & PSTAT_PROCINFO);
 
-  /* A summary of the proc's thread_{basic,sched}_info_t structures: sizes
-     and cumulative times are summed, prioritys and delta time are
-     averaged.  The run_states are added by having running thread take
-     precedence over waiting ones, and if there are any other incompatible
-     states, simply using a bogus value of -1 */
-  if ((need & PSTAT_THREAD_INFO) && (have & PSTAT_INFO))
-    {
-      int i;
-      struct procinfo *pi = ps->info;
-      thread_sched_info_t tsi = &ps->thread_sched_info;
-      thread_basic_info_t tbi = &ps->thread_basic_info;
+	    have |= added;
 
-      bzero(tbi, sizeof *tbi);
-      bzero(tsi, sizeof *tsi);
+	    /* Update dependent fields.  */
+	    if (added & PSTAT_TASK_BASIC)
+	      ps->task_basic_info = &pi->taskinfo;
+	    if (added & PSTAT_THREAD_BASIC)
+	      ps->thread_basic_info = summarize_thread_basic_info (pi);
+	    if (added & PSTAT_THREAD_SCHED)
+	      ps->thread_sched_info = summarize_thread_sched_info (pi);
+	    if (added & PSTAT_THREAD_RPC)
+	      ps->thread_rpc = summarize_thread_rpcs (pi);
 
-      for (i = 0; i < pi->nthreads; i++)
-	{
-	  thread_basic_info_t bi = &pi->threadinfos[i].pis_bi;
-	  thread_sched_info_t si = &pi->threadinfos[i].pis_si;
-	  int thread_run_state = bi->run_state;
+	    if (have & PSTAT_PROCINFO_THREAD)
+	      /* Any thread information automatically gets us this for free. */
+	      {
+		have |= PSTAT_NUM_THREADS;
+		ps->num_threads = count_threads (pi);
+	      }
+	  }
+      }
+    else
+      /* For a thread, we get use the proc_info from the containing process. */
+      {
+	proc_stat_t origin = ps->thread_origin;
+	ps_flags_t oflags = need & PSTAT_PROCINFO_THREAD;
 
-	  /* Construct some aggregate run-state for the process:  besides the
-	     defined thread run_states, we use 0 to mean no threads, and -1
-	     to mean two threads have conflicting run_stats.  */
+	proc_stat_set_flags (origin, oflags);
+	oflags = origin->flags;
 
-	  if (tbi->run_state == 0)
-	    /* No prior state, just copy this thread's.  */
-	    tbi->run_state = thread_run_state;
-	  else if (tbi->run_state == TH_STATE_RUNNING
-		   || thread_run_state == TH_STATE_RUNNING)
-	    /* If any thread is running, mark the process as running.  */
-	    tbi->run_state = TH_STATE_RUNNING;
-	  else if (tbi->run_state != bi->run_state)
-	    /* Otherwise there are two conflicting non-running states, so
-	       just give up and say we don't know.  */
-	    tbi->run_state = -1;
+	if (oflags & PSTAT_PROCINFO_THREAD)
+	  /* Got some threadinfo at least.  */
+	  {
+	    threadinfo_t ti =
+	      get_thread_info (origin->proc_info, ps->thread_index);
 
-	  tsi->base_priority += si->base_priority;
-	  tsi->cur_priority += si->cur_priority;
+	    /* Now copy out the information for this particular thread from the
+	       ORIGINS's list of thread information.  */
 
-	  tbi->cpu_usage += bi->cpu_usage;
-	  tbi->sleep_time += bi->sleep_time;
+	    if ((need  & PSTAT_THREAD_BASIC) && ! (have & PSTAT_THREAD_BASIC)
+		&& (oflags & PSTAT_THREAD_BASIC)
+		&& (ps->thread_basic_info =
+		    clone (&ti->pis_bi, sizeof (struct thread_basic_info))))
+	      have |= PSTAT_THREAD_BASIC;
 
-	  /* The aggregate suspend count is the minimum of all threads.  */
-	  if (i == 0 || tbi->suspend_count > bi->suspend_count)
-	    tbi->suspend_count = bi->suspend_count;
+	    if ((need  & PSTAT_THREAD_SCHED) && ! (have & PSTAT_THREAD_SCHED)
+		&& (oflags & PSTAT_THREAD_SCHED)
+		&& (ps->thread_sched_info =
+		    clone (&ti->pis_si, sizeof (struct thread_sched_info))))
+	      have |= PSTAT_THREAD_SCHED;
 
-	  tbi->user_time.seconds += bi->user_time.seconds;
-	  tbi->user_time.microseconds += bi->user_time.microseconds;
-	  tbi->system_time.seconds += bi->system_time.seconds;
-	  tbi->system_time.microseconds += bi->system_time.microseconds;
-	}
-
-      if (pi->nthreads > 0)
-	{
-	  tsi->base_priority /= pi->nthreads;
-	  tsi->cur_priority /= pi->nthreads;
-	  tbi->sleep_time /= pi->nthreads;
-	}
-
-      tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
-      tbi->user_time.microseconds %= 1000000;
-      tbi->system_time.seconds += tbi->system_time.microseconds / 1000000;
-      tbi->system_time.microseconds %= 1000000;
-
-      have |= PSTAT_THREAD_INFO;
-    }
+	    if ((need  & PSTAT_THREAD_RPC) && ! (have & PSTAT_THREAD_RPC)
+		&& (oflags & PSTAT_THREAD_RPC))
+	      {
+		ps->thread_rpc = ti->rpc_block;
+		have |= PSTAT_THREAD_RPC;
+	      }
+	  }
+      }
 
   if ((need & PSTAT_SUSPEND_COUNT)
       &&
-      ((have & PSTAT_PID) ? (have & PSTAT_INFO) : (have & PSTAT_THREAD_INFO)))
+      ((have & PSTAT_PID)
+       ? (have & PSTAT_TASK_BASIC)
+       : (have & PSTAT_THREAD_BASIC)))
     {
       if (have & PSTAT_PID)
-	ps->suspend_count = ps->info->taskinfo.suspend_count;
+	ps->suspend_count = ps->task_basic_info->suspend_count;
       else
-	ps->suspend_count = ps->thread_basic_info.suspend_count;
+	ps->suspend_count = ps->thread_basic_info->suspend_count;
       have |= PSTAT_SUSPEND_COUNT;
     }
 
@@ -302,7 +560,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
   MGET(PSTAT_TASK, PSTAT_PID, proc_pid2task(server, ps->pid, &ps->task));
 
   /* VM statistics for the task.  See <mach/task_info.h>.  */
-  if ((need & PSTAT_TASK_EVENTS_INFO) && (have & PSTAT_TASK))
+  if ((need & PSTAT_TASK_EVENTS) && (have & PSTAT_TASK))
     {
       ps->task_events_info = &ps->task_events_info_buf;
       ps->task_events_info_size = TASK_EVENTS_INFO_COUNT;
@@ -310,7 +568,7 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 		    (task_info_t)&ps->task_events_info,
 		    &ps->task_events_info_size)
 	  == 0)
-	have |= PSTAT_TASK_EVENTS_INFO;
+	have |= PSTAT_TASK_EVENTS;
     }
 
   /* Get the process's exec flags (see <hurd/hurd_types.h>).  */
@@ -318,37 +576,47 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	  msg_get_exec_flags(ps->msgport, ps->task, &ps->exec_flags));
 
   /* PSTAT_STATE_ bits for the process and all its threads.  */
-  if ((need & PSTAT_STATE) && (have & PSTAT_INFO))
+  if ((need & PSTAT_STATE) && (have & (PSTAT_PROC_INFO | PSTAT_THREAD_BASIC)))
     {
-      int i;
-      int state = 0;
-      struct procinfo *pi = ps->info;
-      int pi_flags = pi->state;
+      ps->state = 0;
 
-      /* The union of all thread state bits...  */
-      for (i = 0; i < pi->nthreads; i++)
-	state |= thread_state(&pi->threadinfos[i].pis_bi);
+      if (have & PSTAT_THREAD_BASIC)
+	/* Thread states.  */
+	if (have & PSTAT_THREAD)
+	  ps->state |= thread_state (ps->thread_basic_info);
+	else
+	  /* For a process, we use the thread list instead of
+	     PS->thread_basic_info because it contains more information.  */
+	  ps->state |= summarize_thread_states (ps->proc_info);
 
-      /* ... and process-only state bits.  */
-      if (pi_flags & PI_STOPPED)
-	state |= PSTAT_STATE_P_STOP;
-      if (pi_flags & PI_ZOMBIE)
-	state |= PSTAT_STATE_P_ZOMBIE;
-      if (pi_flags & PI_SESSLD)
-	state |= PSTAT_STATE_P_SESSLDR;
-      if (!(pi_flags & PI_EXECED))
-	state |= PSTAT_STATE_P_FORKED;
-      if (pi_flags & PI_NOMSG)
-	state |= PSTAT_STATE_P_NOMSG;
-      if (pi_flags & PI_NOPARENT)
-	state |= PSTAT_STATE_P_NOPARENT;
-      if (pi_flags & PI_ORPHAN)
-	state |= PSTAT_STATE_P_ORPHAN;
+      if (have & PSTAT_PROC_INFO)
+	/* Process state.  */
+	{
+	  int pi_flags = ps->proc_info->state;
+	  if (pi_flags & PI_STOPPED)
+	    ps->state |= PSTAT_STATE_P_STOP;
+	  if (pi_flags & PI_ZOMBIE)
+	    ps->state |= PSTAT_STATE_P_ZOMBIE;
+	  if (pi_flags & PI_SESSLD)
+	    ps->state |= PSTAT_STATE_P_SESSLDR;
+	  if (pi_flags & PI_LOGINLD)
+	    ps->state |= PSTAT_STATE_P_LOGINLDR;
+	  if (!(pi_flags & PI_EXECED))
+	    ps->state |= PSTAT_STATE_P_FORKED;
+	  if (pi_flags & PI_NOMSG)
+	    ps->state |= PSTAT_STATE_P_NOMSG;
+	  if (pi_flags & PI_NOPARENT)
+	    ps->state |= PSTAT_STATE_P_NOPARENT;
+	  if (pi_flags & PI_ORPHAN)
+	    ps->state |= PSTAT_STATE_P_ORPHAN;
+	  if (pi_flags & PI_TRACED)
+	    ps->state |= PSTAT_STATE_P_TRACE;
+	  if (pi_flags & PI_WAITING)
+	    ps->state |= PSTAT_STATE_P_WAIT;
+	  if (pi_flags & PI_GETMSG)
+	    ps->state |= PSTAT_STATE_P_GETMSG;
+	}
 
-      if ((have & PSTAT_EXEC_FLAGS) & (ps->exec_flags & EXEC_TRACED))
-	state |= PSTAT_STATE_P_TRACE;
-
-      ps->state = state;
       have |= PSTAT_STATE;
     }
 
@@ -385,8 +653,8 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	  msg_get_init_int(ps->msgport, ps->task, INIT_UMASK, &ps->umask));
 
   /* A ps_user_t object for the process's owner.  */
-  if ((need & PSTAT_OWNER) && (have & PSTAT_INFO))
-    if (ps_context_find_user(ps->context, ps->info->owner, &ps->owner) == 0)
+  if ((need & PSTAT_OWNER) && (have & PSTAT_PROC_INFO))
+    if (! ps_context_find_user(ps->context, ps->proc_info->owner, &ps->owner))
       have |= PSTAT_OWNER;
 
   /* A ps_tty_t for the process's controlling terminal, or NULL if it
@@ -419,6 +687,9 @@ _proc_stat_free(ps)
     (((ps->flags & (flag)) && ps->mem != sbuf) \
      ? (VMFREE(ps->mem, ps->size * sizeof(eltype))) : 0)
 
+  /* if FLAG is set in PS's flags, free the malloc'd memory MEM. */
+#define MFREEM(flag, mem) ((ps->flags & (flag)) ? free (ps->mem) : 0)
+
   /* free PS's ports */
   MFREEPORT(PSTAT_PROCESS, process);
   MFREEPORT(PSTAT_TASK, task);
@@ -428,9 +699,11 @@ _proc_stat_free(ps)
   MFREEPORT(PSTAT_AUTH, auth);
 
   /* free any allocated memory pointed to by PS */
-  MFREEVM(PSTAT_INFO, info, info_size, 0, char);
+  MFREEVM(PSTAT_PROCINFO, proc_info, proc_info_size, 0, char);
+  MFREEM(PSTAT_THREAD_BASIC, thread_basic_info);
+  MFREEM(PSTAT_THREAD_SCHED, thread_sched_info);
   MFREEVM(PSTAT_ARGS, args, args_len, 0, char);
-  MFREEVM(PSTAT_TASK_EVENTS_INFO,
+  MFREEVM(PSTAT_TASK_EVENTS,
 	  task_events_info, task_events_info_size,
 	  &ps->task_events_info_buf, char);
 
@@ -466,10 +739,11 @@ _proc_stat_create(pid_t pid, ps_context_t context, proc_stat_t *ps)
 error_t
 proc_stat_thread_create(proc_stat_t ps, unsigned index, proc_stat_t *thread_ps)
 {
-  error_t err = proc_stat_set_flags(ps, PSTAT_THREAD_INFO);
+  error_t err = proc_stat_set_flags(ps, PSTAT_NUM_THREADS);
+
   if (err)
     return err;
-  else if (index >= ps->info->nthreads)
+  else if (index >= ps->num_threads)
     return EINVAL;
   else
     {
@@ -480,20 +754,7 @@ proc_stat_thread_create(proc_stat_t ps, unsigned index, proc_stat_t *thread_ps)
 
       /* A value of -1 for the PID indicates that this is a thread.  */
       tps->pid = -1;
-
-      /* TPS is initialized with these values; any attempts to set other
-	 flags will fail because PSTAT_PID isn't one of them.  */
-      tps->flags = PSTAT_THREAD | PSTAT_THREAD_INFO | PSTAT_STATE;
-
-      bcopy(&ps->info->threadinfos[index].pis_bi,
-	    &tps->thread_basic_info,
-	    sizeof(thread_basic_info_data_t));
-      bcopy(&ps->info->threadinfos[index].pis_si,
-	    &tps->thread_sched_info,
-	    sizeof(thread_sched_info_data_t));
-
-      /* Construct the state with only the per-thread bits.  */
-      tps->state = thread_state(&tps->thread_basic_info);
+      tps->flags = PSTAT_THREAD;
 
       tps->thread_origin = ps;
       tps->thread_index = index;
