@@ -348,7 +348,10 @@ $(libname)_pic.a: $(patsubst %.o,%_pic.o,$(OBJS))
 # we make that a symlink.
 $(libname).so.$(hurd-version): $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
-	      $(rpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) $^
+	      $(rpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) \
+	      '-Wl,-(' $^ $($(libname).so-LDLIBS) $(LDLIBS) \
+	      '-Wl,-)'
+
 $(libname).so: $(libname).so.$(hurd-version)
 	ln -f -s $< $@
 endif
@@ -453,6 +456,9 @@ relink:
 # Tell make where to find other -l libraries that we use
 vpath libutil.% $(libdir)/
 
+ifneq ($(dir),libstore)
+$(boot-store-types:%=../libstore/libstore_%.a): ../libstore/libstore.so
+endif
 
 # Default rules to build PIC object files.
 %_pic.o: %.c
