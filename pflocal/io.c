@@ -283,17 +283,19 @@ S_io_stat (struct sock_user *user, struct stat *st)
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
 
-debug (sock, "lock");
   mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
   rpipe = sock->read_pipe;
   wpipe = sock->write_pipe;
 
-  mutex_lock (&rpipe->lock);
-  copy_time (&rpipe->read_time, &st->st_atime, &st->st_atime_usec);
-  /* This seems useful.  */
-  st->st_size = pipe_readable (rpipe, 1);
-  mutex_unlock (&rpipe->lock);
+  if (rpipe)
+    {
+      mutex_lock (&rpipe->lock);
+      copy_time (&rpipe->read_time, &st->st_atime, &st->st_atime_usec);
+      /* This seems useful.  */
+      st->st_size = pipe_readable (rpipe, 1);
+      mutex_unlock (&rpipe->lock);
+    }
 
   if (wpipe)
     {
@@ -304,7 +306,6 @@ debug (sock, "lock");
 
   copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
 
-debug (sock, "unlock");
   mutex_unlock (&sock->lock);
 
   return 0;
