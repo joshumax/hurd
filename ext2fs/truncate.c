@@ -102,7 +102,7 @@ trunc_direct (struct node *node, block_t end, struct free_block_run *fbr)
 {
   block_t *blocks = node->dn->info.i_data;
 
-  ext2_debug ("truncating direct blocks from %d", direct_block);
+  ext2_debug ("truncating direct blocks from %ld", end);
 
   while (end < EXT2_NDIR_BLOCKS)
     free_block_run_free_ptr (fbr, blocks + end++);
