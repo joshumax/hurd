@@ -28,7 +28,7 @@ ports_resume_all_rpcs ()
   mutex_lock (&_ports_lock);
   assert (_ports_flags & _PORTS_INHIBITED);
   _ports_flags &= ~_PORTS_INHIBITED;
-  if (_ports_flags | _PORTS_BLOCKED)
+  if (_ports_flags & _PORTS_BLOCKED)
     {
       _ports_flags &= ~_PORTS_BLOCKED;
       condition_broadcast (&_ports_block);

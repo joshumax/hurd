@@ -28,7 +28,7 @@ ports_resume_class_rpcs (struct port_class *class)
   mutex_lock (&_ports_lock);
   assert (class->flags & PORT_CLASS_INHIBITED);
   class->flags &= ~PORT_CLASS_INHIBITED;
-  if (class->flags | PORT_CLASS_BLOCKED)
+  if (class->flags & PORT_CLASS_BLOCKED)
     {
       class->flags &= ~PORT_CLASS_BLOCKED;
       condition_broadcast (&_ports_block);

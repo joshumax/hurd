@@ -1,3 +1,11 @@
+2004-11-03  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
+
+	* resume-all-rpcs.c (ports_resume_all_rpcs): Fix check for block
+	condition.
+	* resume-bucket-rpcs.c (ports_resume_bucket_rpcs): Likewise.
+	* resume-class-rpcs.c (ports_resume_class_rpcs): Likewise.
+	* resume-port-rpcs.c (ports_resume_port_rpcs): Likewise.
+
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ports.h (struct port_bucket): Change type of HTABLE to struct

@@ -28,7 +28,7 @@ ports_resume_bucket_rpcs (struct port_bucket *bucket)
   mutex_lock (&_ports_lock);
   assert (bucket->flags & PORT_BUCKET_INHIBITED);
   bucket->flags &= ~PORT_BUCKET_INHIBITED;
-  if (bucket->flags | PORT_BUCKET_BLOCKED)
+  if (bucket->flags & PORT_BUCKET_BLOCKED)
     {
       bucket->flags &= ~PORT_BUCKET_BLOCKED;
       condition_broadcast (&_ports_block);

@@ -31,7 +31,7 @@ ports_resume_port_rpcs (void *portstruct)
   
   assert (pi->flags & PORT_INHIBITED);
   pi->flags &= ~PORT_INHIBITED;
-  if (pi->flags | PORT_BLOCKED)
+  if (pi->flags & PORT_BLOCKED)
     {
       pi->flags &= ~PORT_BLOCKED;
       condition_broadcast (&_ports_block);
