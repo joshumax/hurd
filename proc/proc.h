@@ -170,6 +170,7 @@ void abort_getmsgport (struct proc *);
 int zombie_check_pid (pid_t);
 void check_message_dying (struct proc *, struct proc *);
 void message_port_dead (struct proc *);
+void check_dead_execdata_notify (mach_port_t);
 
 void add_proc_to_hash (struct proc *);
 void add_exc_to_hash (struct exc *);
