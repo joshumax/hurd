@@ -16,7 +16,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 
-static void
+/* Have the kernel write back all dirty pages in the pager; if
+   WAIT is set, then wait for them to be finally written before
+   returning. */
+void
 pager_sync (struct pager *p, int wait)
 {
   vm_address_t offset;
@@ -26,8 +29,19 @@ pager_sync (struct pager *p, int wait)
   
   lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
 	       VM_PROT_NO_CHANGE, wait);
+
   if (shutting_down)
     p->pager_state = SHUTDOWN;
 }
 
 
+/* Have the kernel write back some pages of a pager; if WAIT is set,
+   then wait for them to be finally written before returning. */
+void
+pager_sync_some (struct pager *p, vm_address_t offset,
+		 vm_size_t size, int wait)
+{
+  lock_object (p, offset, len, MEMORY_OBJECT_RETURN_DIRTY, 0
+	       VM_PROT_NO_CHANGE, wait);
+}
+  
