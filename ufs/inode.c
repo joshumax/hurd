@@ -19,6 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <netinet/in.h>
 
 #define	INOHSZ	512
 #if	((INOHSZ&(INOHSZ-1)) == 0)
@@ -590,7 +591,7 @@ diskfs_shutdown_soft_ports ()
    disk address of transator spec (4 bytes)
    disk address of inode structure (4 bytes)
    offset into inode block holding inode (4 bytes) */
-void
+error_t
 diskfs_S_file_get_storage_info (struct protid *cred,
 				int *class,
 				int **addresses,
@@ -621,13 +622,15 @@ diskfs_S_file_get_storage_info (struct protid *cred,
     }
   
   if (*naddresses < NDADDR * 2)
-    vm_allocate (mach_task_self (), addresses, sizeof (int) * NDADDR * 2, 1);
+    vm_allocate (mach_task_self (), (vm_address_t *) addresses, 
+		 sizeof (int) * NDADDR * 2, 1);
   else
     bzero (addresses, *naddresses * 2 * sizeof (int));
   *naddresses = NDADDR * 2;
 
   if (*storage_data_len < 4 * sizeof (int))
-    vm_allocate (mach_task_self (), storage_data, sizeof (int) * 4, 1);
+    vm_allocate (mach_task_self (), (vm_address_t *) storage_data, 
+		 sizeof (int) * 4, 1);
   *storage_data_len = 4 * sizeof (int);
 
   di = dino (np->dn->number);
@@ -647,11 +650,11 @@ diskfs_S_file_get_storage_info (struct protid *cred,
     {
       for (i = 0; i < NDADDR; i++)
 	{
-	  addresses[2 * i] = fsbtodb (di->di_db[i]);
+	  (*addresses)[2 * i] = fsbtodb (sblock, di->di_db[i]);
 	  if ((i + 1) * sblock->fs_bsize > np->allocsize)
-	    addresses[2 * i + 1] = np->allocsize - i * sblock->fs_bsize;
+	    (*addresses)[2 * i + 1] = np->allocsize - i * sblock->fs_bsize;
 	  else
-	    addresses[2 * i + 1] = sblock->fs_bsize;
+	    (*addresses)[2 * i + 1] = sblock->fs_bsize;
 	}
     }
 
@@ -664,7 +667,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   *(int *)cp = htonl (di->di_trans);
   cp += sizeof (int);
   
-  *(int *)cp = htonl (fsbtodb (ino_to_fsba (sblock, np->dn->number)));
+  *(int *)cp = htonl (fsbtodb (sblock, ino_to_fsba (sblock, np->dn->number)));
   cp += sizeof (int);
   
   *(int *)cp = htonl (ino_to_fsbo (sblock, np->dn->number)
