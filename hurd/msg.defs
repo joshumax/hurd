@@ -25,9 +25,6 @@ subsystem msg 23000;
 MSG_IMPORTS
 #endif
 
-type reply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
-
 /* Post a signal to the process.  The refport indicates some
    permission attribute that the caller provides in the hope that the
    receiver will honor the signal.  Conventional values include:
@@ -41,7 +38,7 @@ async IO ID (see io_async)	URG, IO
 */
 routine sig_post (
 	process: mach_port_t;
-	sreplyport reply_port: reply_port_t;
+	sreplyport reply_port: sreply_port_t;
 	signal: int;
 	refport: mach_port_t);
 
@@ -74,78 +71,84 @@ routine del_auth (
 
 routine get_init_port (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	which: int;
 	out port: mach_port_send_t);
 
 routine set_init_port (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	which: int;
-	port: mach_port_send_t);
+	port: mach_port_t);
 
 routine get_init_ports (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	out ports: portarray_t);
 
 routine set_init_ports (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	ports: portarray_t);
 
 routine get_init_int (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	which: int;
 	out value: int);
 
 routine set_init_int (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	which: int;
 	value: int);
 
 routine get_init_ints (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	out values: intarray_t);
 
 routine set_init_ints (
 	process: mach_port_t;
-	task: task_t;
+	refport: mach_port_t;
 	values: intarray_t);
 
 /* These two calls fetch and store the file descriptor table.  */
 
 routine get_dtable (
 	process: mach_port_t;
+	refport: mach_port_t;
 	out dtable: portarray_t);
 
 routine set_dtable (
 	process: mach_port_t;
+	refport: mach_port_t;
 	dtable: portarray_t);
 
 /* These two calls fetch and store a single file descriptor.  */
 
 routine get_fd (
 	process: mach_port_t;
-	out fd: mach_port_send_t);
+	refport: mach_port_t;
+	fd: int;
+	out port: mach_port_send_t);
 
 routine set_fd (
 	process: mach_port_t;
-	fd: mach_port_send_t);
+	refport: mach_port_t;
+	fd: int;
+	port: mach_port_t);
 
 /* These two calls fetch and store the whole environment,
    in "a=b\0c=d\0" form.  */
 
 routine get_environment (
 	process: mach_port_t;
-	out value: data_t);
+	out value: data_t, dealloc);
 
 routine set_environment (
 	process: mach_port_t;
-	auth: mach_port_t;
+	refport: mach_port_t;
 	value: data_t);
 
 /* These two calls fetch and store a single environment variable.  */
@@ -157,7 +160,7 @@ routine get_env_variable (
 
 routine set_env_variable (
 	process: mach_port_t;
-	auth: mach_port_t;
+	refport: mach_port_t;
 	variable: string_t;
 	value: string_t;
 	replace: boolean_t);
