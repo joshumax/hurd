@@ -202,4 +202,9 @@ void reparent_zombies (struct proc *);
 
 void initialize_version_info (void);
 
+void send_signal (mach_port_t, int, mach_port_t);
+
+
+
+
 #endif
