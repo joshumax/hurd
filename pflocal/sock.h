@@ -1,6 +1,6 @@
 /* Internal sockets
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -53,8 +53,9 @@ struct sock
   /* FLAGS from SOCK_*, below.  */
   unsigned flags;
 
-  /* An identifying number for the socket.  */
-  unsigned id;
+  /* A receive right for this socket's id ports.  */
+  mach_port_t id;
+
   /* Last time the socket got frobbed.  */
   time_value_t change_time;
 
