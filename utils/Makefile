@@ -20,7 +20,7 @@ makemode := utilities
 
 targets = shd ps settrans showtrans syncfs su mount fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
-	devprobe vminfo addauth freeauth rmauth unsu setauth ftpcp ftpdir storecat \
+	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
 	storeread ping msgport rpctrace
 special-targets = mount loginpr sush uptime
 SRCS = shd.c ps.c su.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
