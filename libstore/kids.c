@@ -19,7 +19,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -31,7 +31,7 @@ error_t
 store_set_children (struct store *store,
 		    struct store *const *children, size_t num_children)
 {
-  unsigned size = num_children * sizeof (struct store_run);
+  unsigned size = num_children * sizeof (struct store *);
   struct store **copy = malloc (size);
 
   if (!copy)
@@ -40,7 +40,7 @@ store_set_children (struct store *store,
   if (store->children)
     free (store->children);
 
-  bcopy (children, copy, size);
+  memcpy (copy, children, size);
   store->children = copy;
   store->num_children = num_children;
 

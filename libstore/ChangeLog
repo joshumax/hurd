@@ -1,3 +1,12 @@
+2002-11-03  Neal H. Walfield  <neal@cs.uml.edu>
+
+	* kids.c: Do not include <malloc.h>.
+	Include <stdlib.h>.
+	(store_set_children): Use memcpy, not bcopy.
+	Calculate SIZE correctly: STORE->children is a struct store **,
+	not a struct store_run *.
+	Reported by Moritz Schulte <moritz@duesseldorf.ccc.de>.
+
 2002-06-07  Roland McGrath  <roland@frob.com>
 
 	* store.h (struct store_enc): Use loff_t instead of off_t.
