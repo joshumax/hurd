@@ -225,7 +225,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       err = (*data == MAP_FAILED) ? errno : 0;
       if (!err && amount > 0)
 	{
-	  memcpy ((char *)(*data + start), target, amount);
+	  memcpy (*data, target + start, amount);
 	  if (offs < 0)
 	    cred->po->hook = (void *)(start + amount); /* Update PO offset.  */
 	}
