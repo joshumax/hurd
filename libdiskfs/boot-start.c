@@ -54,6 +54,7 @@ diskfs_start_bootstrap (void)
   mach_port_t root_pt, startup_pt, bootpt;
   retry_type retry;
   char pathbuf[1024];
+  string_t retry_name;
   uid_t idlist[] = {0, 0, 0};
   mach_port_t portarray[INIT_PORT_MAX];
   mach_port_t fdarray[3];	/* XXX */
@@ -73,11 +74,14 @@ diskfs_start_bootstrap (void)
   mutex_unlock (&execstartlock);
   assert (diskfs_exec_ctl);
 
-  /* Create the port for current and root directory */
-  err = fsys_getroot (diskfs_exec_ctl, 0, idlist, 3, idlist, 3, &diskfs_exec);
+  /* Contact the exec server */
+  err = fsys_getroot (diskfs_exec_ctl, idlist, 3, idlist, 3, 0, 
+		      &retry, retry_name, &diskfs_exec);
   assert (!err);
+  assert (retry == FS_RETRY_NONE); /* XXX */
   assert (diskfs_exec);
   
+  /* Create the port for current and root directory */
   root_pt = (ports_get_right
 	     (diskfs_make_protid
 	      (diskfs_make_peropen (diskfs_root_node, O_READ | O_EXEC),
@@ -117,7 +121,6 @@ diskfs_start_bootstrap (void)
   portarray[INIT_PORT_CWDIR] = root_pt;
   portarray[INIT_PORT_AUTH] = MACH_PORT_NULL;
   portarray[INIT_PORT_PROC] = MACH_PORT_NULL;
-  portarray[INIT_PORT_LOGINCOLL] = MACH_PORT_NULL;
   portarray[INIT_PORT_CTTYID] = MACH_PORT_NULL;
   portarray[INIT_PORT_BOOTSTRAP] = bootpt;
   
@@ -218,7 +221,6 @@ diskfs_S_exec_startup (mach_port_t port,
   portarray[INIT_PORT_CRDIR] = rootport;
   portarray[INIT_PORT_AUTH] = MACH_PORT_NULL;
   portarray[INIT_PORT_PROC] = MACH_PORT_NULL;
-  portarray[INIT_PORT_LOGINCOLL] = MACH_PORT_NULL;
   portarray[INIT_PORT_CTTYID] = MACH_PORT_NULL;
   portarray[INIT_PORT_BOOTSTRAP] = port; /* use the same port */
 
