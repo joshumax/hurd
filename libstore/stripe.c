@@ -60,6 +60,50 @@ stripe_write (struct store *store,
 }
 
 error_t
+stripe_set_flags (struct store *store, int flags)
+{
+  int i;
+  error_t err = 0;
+  int old_flags[store->num_children];
+
+  for (i = 0; i < store->num_children && !err; i++)
+    {
+      old_flags[i] = store->children[i]->flags;
+      err = store_set_flags (store->children[i], flags);
+    }
+
+  if (err)
+    while (i > 0)
+      store_clear_flags (store->children[--i], flags & ~old_flags[i]);
+  else
+    store->flags |= flags;
+
+  return err;
+}
+
+error_t
+stripe_clear_flags (struct store *store, int flags)
+{
+  int i;
+  error_t err = 0;
+  int old_flags[store->num_children];
+
+  for (i = 0; i < store->num_children && !err; i++)
+    {
+      old_flags[i] = store->children[i]->flags;
+      err = store_clear_flags (store->children[i], flags);
+    }
+
+  if (err)
+    while (i > 0)
+      store_set_flags (store->children[--i], flags & ~old_flags[i]);
+  else
+    store->flags &= ~flags;
+
+  return err;
+}
+
+error_t
 stripe_remap (struct store *source,
 	      const struct store_run *runs, size_t num_runs,
 	      struct store **store)
@@ -168,6 +212,7 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
   error_t err;
   off_t block_size = 1, min_end = 0;
   struct store_run runs[num_stripes];
+  int common_flags = STORE_BACKEND_FLAGS;
 
   /* Find a common block size.  */
   for (i = 0; i < num_stripes; i++)
@@ -194,9 +239,12 @@ store_ileave_create (struct store *const *stripes, size_t num_stripes,
       else if (min_end > end)
 	/* Only use as much space as the smallest stripe has.  */
 	min_end = end;
+
+      common_flags &= stripes[i]->flags;
     }
 
-  *store = _make_store (&store_ileave_class, MACH_PORT_NULL, flags, block_size,
+  *store = _make_store (&store_ileave_class, MACH_PORT_NULL,
+			common_flags | flags, block_size,
 			runs, num_stripes, min_end);
   if (! *store)
     return ENOMEM;
@@ -221,6 +269,7 @@ store_concat_create (struct store * const *stores, size_t num_stores,
   size_t i;
   error_t err;
   off_t block_size = 1;
+  int common_flags = STORE_BACKEND_FLAGS;
   struct store_run runs[num_stores];
 
   /* Find a common block size.  */
@@ -231,9 +280,11 @@ store_concat_create (struct store * const *stores, size_t num_stores,
     {
       runs[i].start = 0;
       runs[i].length = stores[i]->end;
+      common_flags &= stores[i]->flags;
     }
 
-  *store = _make_store (&store_concat_class, MACH_PORT_NULL, flags, block_size,
+  *store = _make_store (&store_concat_class, MACH_PORT_NULL,
+			flags | common_flags, block_size,
 			runs, num_stores * 2, 0);
   if (! *store)
     return ENOMEM;
