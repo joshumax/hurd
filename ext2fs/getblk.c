@@ -203,7 +203,9 @@ block_getblk (struct node *node,
   ((u32 *)bh)[nr] = block;
 
   if (diskfs_synchronous || node->dn->info.i_osync)
-    sync_disk_image (bh, block_size, 1);
+    sync_global_ptr (bh, 1);
+  else
+    pokel_add (&node->dn->pokel, bh, block_size);
 
   node->dn_set_ctime = 1;
   node->dn->info.i_next_alloc_block = new_block;
