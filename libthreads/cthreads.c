@@ -26,6 +26,12 @@
 /*
  * HISTORY
  * $Log: cthreads.c,v $
+ * Revision 1.6  1997/06/10 01:22:19  thomas
+ * Mon Jun  9 21:18:46 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+ *
+ * 	* cthreads.c (cthread_fork): Delete debugging oddity that crept
+ * 	into source.
+ *
  * Revision 1.5  1997/04/04 01:30:35  thomas
  * *** empty log message ***
  *
@@ -258,6 +264,7 @@ cthread_body(self)
 			mutex_unlock(&cthread_lock);
 			cthread_assoc(self, t);		/* assume thread's identity */
 			if (_setjmp(t->catch) == 0) {	/* catch for cthread_exit() */
+			        cthread_wire ();
 				/*
 				 * Execute the fork request.
 				 */

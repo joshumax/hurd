@@ -1,3 +1,9 @@
+Wed Aug 20 15:39:44 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* cthreads.c (cthread_body): Wire self before calling user work
+ 	function.  This way all cthreads will be wired, which the ports
+	library (and hurd_thread_cancel, etc.) depend on.
+
 Fri Aug  8 13:21:17 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* Makefile (SRCS): Delete malloc.c; libc now has a thread safe
