@@ -19,9 +19,9 @@
 #include "fs_S.h"
 
 kern_return_t
-trivfs_S_get_trans (struct trivfs_protid *cred,
-		    char *trans,
-		    u_int *translen)
+trivfs_S_file_get_translator (struct trivfs_protid *cred,
+			      char **trans,
+			      u_int *translen)
 {
   return EOPNOTSUPP;
 }
