@@ -28,6 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
+mach_port_t diskfs_fsys_identity;
 
 spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
 
@@ -67,6 +68,11 @@ diskfs_init_diskfs (void)
   else
     err = maptime_map (0, 0, &diskfs_mtime);
 
+  if (err)
+    return err;
+
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &diskfs_fsys_identity);
   if (err)
     return err;
 
