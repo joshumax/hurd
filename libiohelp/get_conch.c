@@ -18,9 +18,9 @@
 #include "ioserver.h"
 
 /* The conch must be locked when calling this routine. */
-/* Remove any current holder of the conch. */
+/* Remove any current holder of conch C. */
 error_t
-get_conch (struct conch *c)
+ioserver_get_conch (struct conch *c)
 {
   struct shared_io *user_sh;
   int error = 0;
