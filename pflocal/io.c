@@ -394,20 +394,28 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
 
   if (!user)
     return EOPNOTSUPP;
-  
-  err = sock_create_port (user->sock, &new_user_port);
+
+  do
+    err = sock_create_port (user->sock, &new_user_port);
+  while (err == EINTR);
   if (err)
     return err;
 
   auth_server = getauth ();
-  err =
-    auth_server_authenticate (auth_server, 
-			      rendezvous, MACH_MSG_TYPE_COPY_SEND,
-			      new_user_port, MACH_MSG_TYPE_MAKE_SEND, 
-			      &uids, &num_uids, &aux_uids, &num_aux_uids,
-			      &gids, &num_gids, &aux_gids, &num_aux_gids);
+  err = mach_port_insert_right (mach_task_self (), new_user_port, 
+				new_user_port, MACH_MSG_TYPE_MAKE_SEND);
+  assert_perror (err);
+  do
+    err =
+      auth_server_authenticate (auth_server, 
+				rendezvous, MACH_MSG_TYPE_COPY_SEND,
+				new_user_port, MACH_MSG_TYPE_COPY_SEND, 
+				&uids, &num_uids, &aux_uids, &num_aux_uids,
+				&gids, &num_gids, &aux_gids, &num_aux_gids);
+  while (err == EINTR);
   mach_port_deallocate (mach_task_self (), rendezvous);
   mach_port_deallocate (mach_task_self (), auth_server);
+  mach_port_deallocate (mach_task_self (), new_user_port);
 
   /* Throw away the ids we went through all that trouble to get... */
 #define TRASH_IDS(ids, buf, num) \
