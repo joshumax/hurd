@@ -1,5 +1,6 @@
 /* Inode management routines
-   Copyright (C) 1994, 1995 Free Software Foundation
+
+   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -46,6 +47,7 @@ inode_init ()
 error_t 
 iget (ino_t inum, struct node **npp)
 {
+  int offset;
   struct disknode *dn;
   struct node *np;
   error_t err;
@@ -69,7 +71,7 @@ iget (ino_t inum, struct node **npp)
   dn->dirents = 0;
 
   rwlock_init (&dn->allocptrlock);
-  dn->dirty = 0;
+  pokel_init (&dn->pokel, diskpager->p, disk_image);
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
@@ -83,10 +85,10 @@ iget (ino_t inum, struct node **npp)
 
   err = read_disknode (np);
 
-  if (lblkno (sblock, np->dn_stat.st_size) < NDADDR)
-    np->allocsize = fragroundup (sblock, np->dn_stat.st_size);
-  else
-    np->allocsize = blkroundup (sblock, np->dn_stat.st_size);
+  np->allocsize = np->dn_stat.st_size;
+  offset = np->allocsize % block_size;
+  if (offset > 0)
+    np->allocsize += block_size - offset;
   
   if (!diskfs_readonly && !np->dn_stat.st_gen)
     {
@@ -221,7 +223,7 @@ read_disknode (struct node *np)
   if (err)
     return err;
 
-  np->istranslated = !! di->di_trans;
+  np->istranslated = !! di->i_translator;
 
   if (!fsidset)
     {
@@ -268,7 +270,7 @@ read_disknode (struct node *np)
   info->i_file_acl = di->i_file_acl;
   info->i_dir_acl = di->i_dir_acl;
   info->i_version = di->i_version;
-  info->i_block_group = block_group;
+  info->i_block_group = inode_group_num(np->dn->number);
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
   if (info->i_prealloc_count)
@@ -305,9 +307,6 @@ write_node (struct node *np)
 	return;
   
       di->i_version = st->st_gen;
-      
-      if (S_ISBLK (st->st_mode) || S_ISCHR (st->st_mode))
-	di->i_rdev = st->st_rdev;
 
       /* We happen to know that the stat mode bits are the same
 	 as the ext2fs mode bits. */
@@ -339,7 +338,7 @@ write_node (struct node *np)
       di->i_flags = st->st_flags;
 
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
-	di->i_block[0] = stat->st_rdev;
+	di->i_block[0] = st->st_rdev;
       else
 	{
 	  int block;
@@ -349,7 +348,7 @@ write_node (struct node *np)
   
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
-      record_poke (di, sizeof (struct ext2_inode));
+      pokel_add (&np->dn->pokel, di, sizeof (struct ext2_inode));
     }
 }  
 
@@ -374,7 +373,7 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   write_node (np);
-  sync_ext2_inode (np->dn->number, wait);
+  pokel_sync (&np->dn->pokel, wait);
 }
 
 /* Implement the diskfs_set_statfs callback from the diskfs library;
@@ -387,9 +386,9 @@ diskfs_set_statfs (struct fsys_statfsbuf *st)
   st->fsys_stb_fsize = EXT2_FRAG_SIZE(sblock);
   st->fsys_stb_blocks = sblock->s_blocks_count;
   st->fsys_stb_bfree = sblock->s_free_blocks_count;
-  st->fsys_stb_bavail = st->fsys_stb_free - sblock->s_r_blocks_count;
-  st->fsys_stb_files = sblock->inodes_count;
-  st->fsys_stb_ffree = sblock->free_inodes_count;
+  st->fsys_stb_bavail = st->fsys_stb_bfree - sblock->s_r_blocks_count;
+  st->fsys_stb_files = sblock->s_inodes_count;
+  st->fsys_stb_ffree = sblock->s_free_inodes_count;
   st->fsys_stb_fsid = getpid ();
   return 0;
 }
@@ -429,7 +428,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
 	  return err;
 	}
       di->i_trans = blkno;
-      record_poke (di, sizeof (struct ext2_inode));
+      pokel_add (&np->dn.pokel, di, sizeof (struct ext2_inode));
       np->dn_set_ctime = 1;
     }
   else if (!namelen && blkno)
@@ -437,7 +436,7 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
       /* Clear block for translator going away. */
       ffs_blkfree (np, blkno, sblock->fs_bsize);
       di->i_trans = 0;
-      record_poke (di, sizeof (struct ext2_inode));
+      pokel_add (&np->dn.pokel, di, sizeof (struct ext2_inode));
       np->dn_stat.st_blocks -= btodb (sblock->fs_bsize);
       np->istranslated = 0;
       np->dn_set_ctime = 1;
@@ -457,6 +456,8 @@ diskfs_set_translator (struct node *np, char *name, u_int namelen,
   
   diskfs_end_catch_exception ();
   return err;
+#else
+  return EOPNOTSUPP;
 #endif
 }
 
@@ -488,6 +489,8 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 
   *namelen = datalen;
   return 0;
+#else
+  return EOPNOTSUPP;
 #endif
 }
 
