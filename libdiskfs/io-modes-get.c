@@ -18,10 +18,10 @@
 #include "priv.h"
 #include "io_S.h"
 
-/* Implement io_get_all_openmodes as described in <hurd/io.defs>. */
+/* Implement io_get_openmodes as described in <hurd/io.defs>. */
 error_t
-S_io_get_all_openmodes (struct protid *cred,
-			int *bits)
+diskfs_S_io_get_openmodes (struct protid *cred,
+			   int *bits)
 {
   if (!cred)
     return EOPNOTSUPP;
