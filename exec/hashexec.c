@@ -149,13 +149,13 @@ check_hashbang (struct execdata *e,
   if (p == NULL)
     {
       /* The first line went on for more than sizeof INTERP_BUF!  */
-      interp_len = sizeof interp_buf - 1;
+      interp_len = sizeof interp_buf;
       interp_buf[interp_len] = '\0';
     }
   else
     {
+      interp_len = p - interp_buf; /* Includes null terminator.  */
       *--p = '\0';		/* Kill the newline.  */
-      interp_len = p - interp_buf;
     }
 
   /* We are now done reading the script file.  */
