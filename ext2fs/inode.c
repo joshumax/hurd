@@ -1,6 +1,6 @@
 /* Inode management routines
 
-   Copyright (C) 1994,95,96,97,98,99 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000 Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
@@ -488,11 +488,8 @@ write_node (struct node *np)
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
 	di->i_block[0] = st->st_rdev;
       else
-	{
-	  int block;
-	  for (block = 0; block < EXT2_N_BLOCKS; block++)
-	    di->i_block[block] = np->dn->info.i_data[block];
-	}
+	memcpy (di->i_block, np->dn->info.i_data,
+		EXT2_N_BLOCKS * sizeof di->i_block[0]);
 
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
