@@ -117,9 +117,13 @@ argp_default_parser (int key, char *arg, struct argp_state *state)
       else
 	program_invocation_short_name = program_invocation_name;
 
+      /* Update what we use for messages.  */
+      state->name = program_invocation_short_name;
+
       if ((state->flags & (ARGP_PARSE_ARGV0 | ARGP_NO_ERRS))
 	  == ARGP_PARSE_ARGV0)
-	state->argv[0] = program_invocation_name; /* Update what getopt uses too.  */
+	/* Update what getopt uses too.  */
+	state->argv[0] = program_invocation_name;
 
       break;
 
@@ -421,7 +425,7 @@ convert_options (const struct argp *argp,
 
 /* Find the merged set of getopt options, with keys appropiately prefixed. */
 static void
-parser_convert (struct parser *parser, const struct argp *argp)
+parser_convert (struct parser *parser, const struct argp *argp, int flags)
 {
   struct parser_convert_state cvt;
 
@@ -430,9 +434,9 @@ parser_convert (struct parser *parser, const struct argp *argp)
   cvt.long_end = parser->long_opts;
   cvt.child_inputs_end = parser->child_inputs;
 
-  if (parser->state.flags & ARGP_IN_ORDER)
+  if (flags & ARGP_IN_ORDER)
     *cvt.short_end++ = '-';
-  else if (parser->state.flags & ARGP_NO_ARGS)
+  else if (flags & ARGP_NO_ARGS)
     *cvt.short_end++ = '+';
   *cvt.short_end = '\0';
 
@@ -513,6 +517,14 @@ parser_init (struct parser *parser, const struct argp *argp,
   if (! parser->storage)
     return ENOMEM;
 
+  parser->groups = parser->storage;
+  parser->child_inputs = parser->storage + GLEN;
+  parser->long_opts = parser->storage + GLEN + CLEN;
+  parser->short_opts = parser->storage + GLEN + CLEN + LLEN;
+
+  memset (parser->child_inputs, 0, szs.num_child_inputs * sizeof (void *));
+  parser_convert (parser, argp, flags);
+
   memset (&parser->state, 0, sizeof (struct argp_state));
   parser->state.argp = parser->argp;
   parser->state.argc = argc;
@@ -522,14 +534,6 @@ parser_init (struct parser *parser, const struct argp *argp,
   parser->state.out_stream = stdout;
   parser->state.next = 0;	/* Tell getopt to initialize.  */
   parser->state.pstate = parser;
-
-  parser->groups = parser->storage;
-  parser->child_inputs = parser->storage + GLEN;
-  parser->long_opts = parser->storage + GLEN + CLEN;
-  parser->short_opts = parser->storage + GLEN + CLEN + LLEN;
-
-  memset (parser->child_inputs, 0, szs.num_child_inputs * sizeof (void *));
-  parser_convert (parser, argp);
 
   parser->try_getopt = 1;
 
@@ -568,9 +572,12 @@ parser_init (struct parser *parser, const struct argp *argp,
 
   if (parser->state.argv == argv && argv[0])
     /* There's an argv[0]; use it for messages.  */
-    parser->state.name = argv[0];
+    {
+      char *short_name = strrchr (argv[0], '/');
+      parser->state.name = short_name ? short_name + 1 : argv[0];
+    }
   else
-    parser->state.name = program_invocation_name;
+    parser->state.name = program_invocation_short_name;
 
   return 0;
 }
