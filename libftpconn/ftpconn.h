@@ -157,6 +157,7 @@ struct ftp_conn
   const struct ftp_conn_hooks *hooks; /* Customization hooks. */
 
   struct ftp_conn_syshooks syshooks; /* host-dependent hook functions */
+  int syshooks_valid;		/* True if the system type has been determined. */
 
   int control;			/* fd for ftp control connection */
 
@@ -228,6 +229,18 @@ void ftp_conn_set_syshooks (struct ftp_conn *conn,
 error_t ftp_conn_open (struct ftp_conn *conn);
 
 void ftp_conn_close (struct ftp_conn *conn);
+
+/* Makes sure that CONN's syshooks are set according to the remote system
+   type.  */
+static inline error_t
+ftp_conn_validate_syshooks (struct ftp_conn *conn)
+{
+  if (conn->syshooks_valid)
+    return 0;
+  else
+    /* Opening the connection should set the syshooks.  */
+    return ftp_conn_open (conn);
+}
 
 /* Create a new ftp connection as specified by PARAMS, and return it in CONN;
    HOOKS contains customization hooks used by the connection.  Neither PARAMS
