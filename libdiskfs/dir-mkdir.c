@@ -55,7 +55,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
   mode &= ~(S_ISPARE | S_IFMT);
   mode |= S_IFDIR;
 
-  error = diskfs_create_and_link (dnp, name, mode, &np, dircred, ds);
+  error = diskfs_create_node (dnp, name, mode, &np, dircred, ds);
 
   if (!error)
     diskfs_nput (np);
