@@ -1,3 +1,26 @@
+1999-09-19  Roland McGrath  <roland@baalperazim.frob.com>
+
+	* node-times.c (diskfs_set_node_times): If _diskfs_noatime is set and
+	neither NP->dn_set_mtime nor NP->dn_set_ctime is set, clear
+	NP->dn_set_atime.  Short-circuit return if none of dn_set_?time set.
+	* opts-common.c (diskfs_common_options): Include "priv.h".
+	Add aliases --ro/--rw for -r/-w.  Add alias --nosuid for --no-suid,
+	--noexec for --no-exec. Move --suid-ok, --exec-ok here from ...
+	* opts-std-runtime.c (std_runtime_options): ... here.
+	(struct parse_hook): New member `noatime'.
+	(set_opts): Use H->noatime to set _diskfs_noatime.
+	(parse_opt): Grok -A and OPT_ATIME to set/clear H->noatime.
+	(OPT_ATIME): New macro.
+	(OPT_SUID_OK, OPT_EXEC_OK): Moved to ...
+	* priv.h: ... here.
+	(diskfs_common_options): Add const to decl.
+	* opts-std-startup.c (parse_startup_opt): Grok OPT_SUID_OK,
+	OPT_EXEC_OK, -A, and OPT_ATIME.
+	* init-init.c (_diskfs_noatime): New variable.
+	(_diskfs_nosuid, _diskfs_noexec): Use uninitialized defns.
+	* opts-append-std.c (diskfs_append_std_options): Add --no-atime if
+	_diskfs_noatime is set.
+
 1999-09-13  Roland McGrath  <roland@baalperazim.frob.com>
 
 	* Makefile, rdwr-internal.c, io-map.c, io-map-segment.c, diskfs.h:
