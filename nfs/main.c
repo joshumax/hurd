@@ -242,6 +242,8 @@ netfs_append_args (char **argz, size_t *argz_len)
   FOPT ("--cache-timeout=%d", cache_timeout);
   FOPT ("--init-transmit-timeout=%d", initial_transmit_timeout);
   FOPT ("--max-transmit-timeout=%d", max_transmit_timeout);
+  FOPT ("--name-cache-timeout=%d", name_cache_timeout);
+  FOPT ("--name-cache-neg-timeout=%d", name_cache_neg_timeout);
 
   if (! err)
     err = netfs_append_std_options (argz, argz_len);

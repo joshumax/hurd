@@ -191,3 +191,4 @@ int *recache_handle (int *, struct node *);
 void enter_lookup_cache (char *, size_t, struct node *, char *);
 void purge_lookup_cache (struct node *, char *, size_t);
 struct node *check_lookup_cache (struct node *, char *);
+void purge_lookup_cache_node (struct node *);

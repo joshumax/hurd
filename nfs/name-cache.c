@@ -36,11 +36,14 @@ struct lookup_cache
   struct cacheq_hdr hdr;
 
   /* File handles and lengths for cache entries.  0 for NODE_CACHE_LEN
-     means a `negative' entry -- recording that there's definitely no node with
-     this name.  */
-  char dir_cache_fh[NFS3_FHSIZE], node_cache_fh[NFS3_FHSIZE];
-  size_t dir_cache_len, node_cache_len;
-  
+     means a  */
+  char dir_cache_fh[NFS3_FHSIZE];
+  size_t dir_cache_len;
+
+  /* Zero means a `negative' entry -- recording that there's
+     definitely no node with this name.  */
+  struct node *np;
+
   /* Name of the node NODE_CACHE_ID in the directory DIR_CACHE_ID.  Entries
      with names too long to fit in this buffer aren't cached at all.  */
   char name[CACHE_NAME_LEN];
@@ -126,9 +129,11 @@ enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
   /* Fill C with the new entry.  */
   bcopy (dir, c->dir_cache_fh, len);
   c->dir_cache_len = len;
-  if (np)
-    bcopy (np->nn->handle.data, c->node_cache_fh, np->nn->handle.size);
-  c->node_cache_len = np ? np->nn->handle.size : 0;
+  if (c->np)
+    netfs_nrele (c->np);
+  c->np = np;
+  if (c->np)
+    netfs_nref (c->np);
   strcpy (c->name, name);
   c->name_len = name_len;
   c->cache_stamp = mapped_time->seconds;
@@ -156,13 +161,40 @@ purge_lookup_cache (struct node *dp, char *name, size_t namelen)
 	  && bcmp (c->dir_cache_fh, dp->nn->handle.data, c->dir_cache_len) == 0
 	  && strcmp (c->name, name) == 0)
 	{
+	  if (c->np)
+	    netfs_nrele (c->np);
 	  c->name_len = 0;
+	  c->np = 0;
 	  cacheq_make_lru (&lookup_cache, c); /* Use C as the next free
 						 entry. */
 	}
     }
   spin_unlock (&cache_lock);
 }
+
+/* Purge all references in the cache to node NP. */
+void
+purge_lookup_cache_node (struct node *np)
+{
+  struct lookup_cache *c, *next;
+  
+  spin_lock (&cache_lock);
+  for (c = lookup_cache.mru; c; c = next)
+    {
+      next = c->hdr.next;
+      
+      if (c->np == np)
+	{
+	  netfs_nrele (c->np);
+	  c->name_len = 0;
+	  c->np = 0;
+	  cacheq_make_lru (&lookup_cache, c);
+	}
+    }
+  spin_unlock (&cache_lock);
+}
+
+
 
 /* Register a negative hit for an entry in the Nth stat class */
 void
@@ -221,7 +253,7 @@ check_lookup_cache (struct node *dir, char *name)
 		  name, strlen (name));
   if (c)
     {
-      int timeout = c->node_cache_len 
+      int timeout = c->np
 	? name_cache_timeout 
 	: name_cache_neg_timeout;
 
@@ -229,7 +261,10 @@ check_lookup_cache (struct node *dir, char *name)
       if (mapped_time->seconds - c->cache_stamp >= timeout)
 	{
 	  register_neg_hit (c->stati);
+	  if (c->np)
+	    netfs_nrele (c->np);
 	  c->name_len = 0;
+	  c->np = 0;
 	  cacheq_make_lru (&lookup_cache, c);
 	  spin_unlock (&cache_lock);
 	  return 0;
@@ -237,7 +272,7 @@ check_lookup_cache (struct node *dir, char *name)
 
       cacheq_make_mru (&lookup_cache, c); /* Record C as recently used.  */
 
-      if (c->node_cache_len == 0)
+      if (c->np == 0)
 	/* A negative cache entry.  */
 	{
 	  register_neg_hit (c->stati);
@@ -248,18 +283,14 @@ check_lookup_cache (struct node *dir, char *name)
       else 
 	{
 	  struct node *np;
-	  char handle[NFS3_FHSIZE];
-	  size_t len;
 	  
+	  np = c->np;
+	  netfs_nref (np);
 	  register_pos_hit (c->stati);
-	  mutex_unlock (&dir->lock);
-
-	  bcopy (c->node_cache_fh, handle, c->node_cache_len);
-	  len = c->node_cache_len;
-	  
 	  spin_unlock (&cache_lock);
-
-	  lookup_fhandle (handle, len, &np);
+	  
+	  mutex_unlock (&dir->lock);
+	  mutex_lock (&np->lock);
 
 	  return np;
 	}

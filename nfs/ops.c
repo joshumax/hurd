@@ -1108,6 +1108,14 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       return err;
     }
 
+  /* Restore the locks to sanity. */
+  mutex_unlock (&np->lock);
+  mutex_lock (&dir->lock);
+
+  /* Purge the cache of entries for this node, so that we don't
+     regard cache-held references as live. */
+  purge_lookup_cache_node (np);
+
   /* See if there are any other users of this node than the 
      one we just got; if so, we must give this file another link
      so that when we delete the one we are asked for it doesn't go
@@ -1117,8 +1125,9 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       char *newname;
       int n = 0;
 
+      mutex_unlock (&dir->lock);
+
       newname = malloc (50);
-      mutex_unlock (&np->lock);
       do
 	{
 	  sprintf (newname, ".nfs%xgnu.%d", (int) np, n++);
@@ -1137,6 +1146,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       /* Write down what name we gave it; we'll delete this when all
 	 our uses vanish.  */
       mutex_lock (&np->lock);
+
       if (np->nn->dead_dir)
 	netfs_nrele (np->nn->dead_dir);
       netfs_nref (dir);
@@ -1146,12 +1156,12 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       np->nn->dead_name = newname;
       if (np->nn->dtrans == NOT_POSSIBLE)
 	np->nn->dtrans = POSSIBLE;
+
+      netfs_nput (np);
+      mutex_lock (&dir->lock);
     }
-  netfs_nput (np);
-
-  mutex_lock (&dir->lock);
-
-  purge_lookup_cache (dir, name, strlen (name));
+  else
+    netfs_nrele (np);
 
   p = nfs_initialize_rpc (NFSPROC_REMOVE (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);

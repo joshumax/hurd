@@ -89,6 +89,28 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
   *npp = np;
 }
 
+/* Package holding args to forked_node_delete. */
+struct fnd
+{
+  struct node *dir;
+  char *name;
+};
+
+/* Worker function to delete nodes that don't have any more local references
+   or links.  */
+any_t
+forked_node_delete (any_t arg)
+{
+  struct fnd *args = arg;
+  
+  mutex_lock (&args->dir->lock);
+  netfs_attempt_unlink ((struct iouser *)-1, args->dir, args->name);
+  netfs_nput (args->dir);
+  free (args->name);
+  free (args);
+  return 0;
+};
+
 /* Called by libnetfs when node NP has no more references.  (See
    <hurd/libnetfs.h> for details.  Just clear local state and remove
    from the hash table. */
@@ -97,23 +119,22 @@ netfs_node_norefs (struct node *np)
 {
   if (np->nn->dead_dir)
     {
-      struct node *dir;
-      char *name;
+      struct fnd *args;
+
+      args = malloc (sizeof (struct fnd));
 
       np->references++;
       spin_unlock (&netfs_node_refcnt_lock);
 
-      dir = np->nn->dead_dir;
-      name = np->nn->dead_name;
+      args->dir = np->nn->dead_dir;
+      args->name = np->nn->dead_name;
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
       netfs_nput (np);
 
-      mutex_lock (&dir->lock);
-      netfs_attempt_unlink ((struct iouser *)-1, dir, name);
-
-      netfs_nput (dir);
-      free (name);
+      /* Do this in a separate thread so that we don't wait for it;
+	 it acquires a lock on the dir, which we are not allowed to do. */
+      cthread_detach (cthread_fork (forked_node_delete, (any_t) args));
 
       /* Caller expects us to leave this locked... */
       spin_lock (&netfs_node_refcnt_lock);

@@ -1,3 +1,33 @@
+Wed Aug  6 15:23:03 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* ops.c (netfs_attempt_unlink): Purge cache-held references
+ 	*before* counting live references.  Use new function.
+	* name-cache.c (purge_lookup_cache_node): New function.
+	* nfs.h (purge_lookup_cache_node): New decl.
+
+	* cache.c (netfs_node_norefs): Don't do delete RPC here, fork off
+	a separate thread to do it.
+	(struct fnd): New type.
+	(forked_node_delete): New function.
+
+Mon Aug  4 15:56:37 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* name-cache.c (struct lookup_cache): Drop members `node_cache_fh'
+	and `node_cache_len'.  New member `np'.
+	(enter_lookup_cache): Fill C->np instead of C->node_cache_fh.
+	Acquire an additional reference on NP to keep it live.  If there
+	was a reference there before, release it.
+	(purge_lookup_cache): If there is a reference to a node on a
+	purged entry, release it.
+	(check_lookup_cache): If there is a reference to a node on an
+	out-of-date entry, release it.  When returning live positive hits,
+	use the NP stored instead of looking one up.
+
+Fri Aug  1 15:56:56 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
+
+	* main.c (netfs_append_args): Append --name-cache-timeout and
+	--name-cache-neg-timeout values.
+
 Tue Jul 29 15:38:15 1997  Thomas Bushnell, n/BSG  <thomas@gnu.ai.mit.edu>
 
 	* name-cache.c (check_lookup_cache): Use name_cache_neg_timeout in
