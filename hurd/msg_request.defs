@@ -1,5 +1,5 @@
 /* Reply side of canonical Hurd process message port RPCs.
-   Copyright (C) 1994, 1995 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -28,6 +28,7 @@ simpleroutine msg_sig_post_request (
 	process: mach_port_t;
 	replyport reply_port: reply_port_t;
 	signal: int;
+	sigcode: natural_t;
 	refport: mach_port_t);
 
 skip; /* msg_proc_newids */
@@ -56,4 +57,5 @@ simpleroutine msg_sig_post_untraced_request (
 	process: mach_port_t;
 	replyport reply_port: reply_port_t;
 	signal: int;
+	sigcode: natural_t;
 	refport: mach_port_t);
