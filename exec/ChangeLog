@@ -1,3 +1,8 @@
+2002-05-10  Roland McGrath  <roland@frob.com>
+
+	* exec.c (prepare): Do io_stat when io_map fails as for when
+	io_map_cntl fails.
+
 2002-05-01  Roland McGrath  <roland@frob.com>
 
 	* elfcore.c [ALPHA_THREAD_STATE]
