@@ -1,6 +1,6 @@
 /* Hierarchial argument parsing help output
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -32,6 +32,7 @@
 
 #define SHORT_OPT_COL 2		/* column in which short options start */
 #define LONG_OPT_COL  6		/* column in which long options start */
+#define DOC_OPT_COL   2		/* column in which doc options start */
 #define OPT_DOC_COL  29		/* column in which option text starts */
 #define HEADER_COL    1		/* column in which group headers are printed */
 #define USAGE_INDENT 12		/* indentation of wrapped usage lines */
@@ -44,11 +45,14 @@
 /* Returns true if OPT is an alias for an earlier option.  */
 #define oalias(opt) ((opt)->flags & OPTION_ALIAS)
 
+/* Returns true if OPT is an documentation-only entry.  */
+#define odoc(opt) ((opt)->flags & OPTION_DOC)
+
 /* Returns true if OPT is the end-of-list marker for a list of options.  */
 #define oend(opt) _option_is_end (opt)
 
 /* Returns true if OPT has a short option.  */
-#define oshort(opt) _option_is_short (opt)
+#define oshort(opt) (!odoc(opt) && _option_is_short (opt))
 
 /*
    The help format for a particular option is like:
@@ -290,7 +294,9 @@ hol_free (struct hol *hol)
 static inline int
 hol_entry_short_iterate (const struct hol_entry *entry,
 			 int (*func)(const struct argp_option *opt,
-				     const struct argp_option *real))
+				     const struct argp_option *real,
+				     void *cookie),
+			 void *cookie)
 {
   unsigned nopts;
   int val = 0;
@@ -303,7 +309,7 @@ hol_entry_short_iterate (const struct hol_entry *entry,
 	if (!oalias (opt))
 	  real = opt;
 	if (ovisible (opt))
-	  val = (*func)(opt, real);
+	  val = (*func)(opt, real, cookie);
 	so++;
       }
 
@@ -313,7 +319,9 @@ hol_entry_short_iterate (const struct hol_entry *entry,
 static inline int
 hol_entry_long_iterate (const struct hol_entry *entry,
 			int (*func)(const struct argp_option *opt,
-				    const struct argp_option *real))
+				    const struct argp_option *real,
+				    void *cookie),
+			void *cookie)
 {
   unsigned nopts;
   int val = 0;
@@ -325,22 +333,25 @@ hol_entry_long_iterate (const struct hol_entry *entry,
 	if (!oalias (opt))
 	  real = opt;
 	if (ovisible (opt))
-	  val = (*func)(opt, real);
+	  val = (*func)(opt, real, cookie);
       }
 
   return val;
 }
 
+/* Iterator that returns true for the first short option.  */
+static inline int
+until_short (const struct argp_option *opt, const struct argp_option *real,
+	     void *cookie)
+{
+  return oshort (opt);
+}
+
 /* Returns the first valid short option in ENTRY, or 0 if there is none.  */
 static char
 hol_entry_first_short (const struct hol_entry *entry)
 {
-  inline int func1 (const struct argp_option *opt,
-		    const struct argp_option *real)
-    {
-      return opt->key;
-    }
-  return hol_entry_short_iterate (entry, func1);
+  return hol_entry_short_iterate (entry, until_short, 0);
 }
 
 /* Returns the first valid long option in ENTRY, or 0 if there is none.  */
@@ -442,6 +453,24 @@ hol_cluster_is_child (const struct hol_cluster *cl1,
   return cl1 == cl2;
 }
 
+/* Given the name of a OPTION_DOC option, modifies NAME to start at the tail
+   that should be used for comparisons, and returns true iff it should be
+   treated as a non-option.  */
+static int
+canon_doc_option (const char **name)
+{
+  int non_opt;
+  /* Skip initial whitespace.  */
+  while (isspace (*name))
+    (*name)++;
+  /* Decide whether this looks like an option (leading `-') or not.  */
+  non_opt = (**name != '-');
+  /* Skip until part of name used for sorting.  */
+  while (**name && !isalnum (*name))
+    (*name)++;
+  return non_opt;
+}
+
 /* Order ENTRY1 & ENTRY2 by the order which they should appear in a help
    listing.  */
 static int
@@ -472,10 +501,21 @@ hol_entry_cmp (const struct hol_entry *entry1, const struct hol_entry *entry2)
     {
       int short1 = hol_entry_first_short (entry1);
       int short2 = hol_entry_first_short (entry2);
+      int doc1 = odoc (entry1->opt);
+      int doc2 = odoc (entry2->opt);
       const char *long1 = hol_entry_first_long (entry1);
       const char *long2 = hol_entry_first_long (entry2);
 
-      if (!short1 && !short2 && long1 && long2)
+      if (doc1)
+	doc1 = canon_doc_option (&long1);
+      if (doc2)
+	doc2 = canon_doc_option (&long2);
+
+      if (doc1 != doc2)
+	/* `documentation' options always follow normal options (or
+	   documentation options that *look* like normal options).  */
+	return doc1 - doc2;
+      else if (!short1 && !short2 && long1 && long2)
 	/* Only long options.  */
 	return strcasecmp (long1, long2);
       else
@@ -498,18 +538,22 @@ hol_entry_cmp (const struct hol_entry *entry1, const struct hol_entry *entry2)
     return group_cmp (group1, group2, 0);
 }
 
+/* Version of hol_entry_cmp with correct signature for qsort.  */
+static int
+hol_entry_qcmp (const void *entry1_v, const void *entry2_v)
+{
+  return hol_entry_cmp (entry1_v, entry2_v);
+}
+
 /* Sort HOL by group and alphabetically by option name (with short options
    taking precedence over long).  Since the sorting is for display purposes
    only, the shadowing of options isn't effected.  */
 static void
 hol_sort (struct hol *hol)
 {
-  int cmp (const void *entry1_v, const void *entry2_v)
-    {
-      return hol_entry_cmp (entry1_v, entry2_v);
-    }
   if (hol->num_entries > 0)
-    qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry), cmp);
+    qsort (hol->entries, hol->num_entries, sizeof (struct hol_entry),
+	   hol_entry_qcmp);
 }
 
 /* Append MORE to HOL, destroying MORE in the process.  Options in HOL shadow
@@ -606,6 +650,92 @@ indent_to (FILE *stream, unsigned col)
   while (needed-- > 0)
     putc (' ', stream);
 }
+
+/* If the option REAL has an argument, we print it in using the printf
+   format REQ_FMT or OPT_FMT depending on whether it's a required or
+   optional argument.  */
+static void
+arg (const struct argp_option *real, char *req_fmt, char *opt_fmt,
+     FILE *stream)
+{
+  if (real->arg)
+    if (real->flags & OPTION_ARG_OPTIONAL)
+      fprintf (stream, opt_fmt, real->arg);
+    else
+      fprintf (stream, req_fmt, real->arg);
+}
+
+/* Helper functions for hol_entry_help.  */
+
+/* Some state used while printing a help entry (used to communicate with
+   helper functions).  See the doc for hol_entry_help for more info, as most
+   of the fields are copied from its arguments.  */
+struct pentry_state
+{
+  const struct hol_entry *entry;
+  FILE *stream;
+  struct hol_entry **prev_entry;
+  int *sep_groups;
+
+  int first;			/* True if nothing's been printed so far.  */
+};
+
+/* Prints STR as a header line, with the margin lines set appropiately, and
+   notes the fact that groups should be separated with a blank line.  Note
+   that the previous wrap margin isn't restored, but the left margin is reset
+   to 0.  */
+static void
+print_header (const char *str, struct pentry_state *st)
+{
+  if (*str)
+    {
+      if (st->prev_entry && *st->prev_entry)
+	putc ('\n', st->stream); /* Precede with a blank line.  */
+      indent_to (st->stream, HEADER_COL);
+      line_wrap_set_lmargin (st->stream, HEADER_COL);
+      line_wrap_set_wmargin (st->stream, HEADER_COL);
+      fputs (str, st->stream);
+      line_wrap_set_lmargin (st->stream, 0);
+    }
+
+  if (st->sep_groups)
+    *st->sep_groups = 1;	/* Separate subsequent groups. */
+}
+
+/* Inserts a comma if this isn't the first item on the line, and then makes
+   sure we're at least to column COL.  Also clears FIRST.  */
+static void
+comma (unsigned col, struct pentry_state *st)
+{
+  if (st->first)
+    {
+      const struct hol_entry *pe = st->prev_entry ? *st->prev_entry : 0;
+      const struct hol_cluster *cl = st->entry->cluster;
+
+      if (st->sep_groups && *st->sep_groups
+	  && pe && st->entry->group != pe->group)
+	putc ('\n', st->stream);
+
+      if (pe && cl && pe->cluster != cl && cl->header && *cl->header
+	  && !hol_cluster_is_child (pe->cluster, cl))
+	/* If we're changing clusters, then this must be the start of the
+	   ENTRY's cluster unless that is an ancestor of the previous one
+	   (in which case we had just popped into a sub-cluster for a bit).
+	   If so, then print the cluster's header line.  */
+	{
+	  int old_wm = line_wrap_wmargin (st->stream);
+	  print_header (cl->header, st);
+	  putc ('\n', st->stream);
+	  line_wrap_set_wmargin (st->stream, old_wm);
+	}
+
+      st->first = 0;
+    }
+  else
+    fputs (", ", st->stream);
+
+  indent_to (st->stream, col);
+}
 
 /* Print help for ENTRY to STREAM.  *PREV_ENTRY should contain the last entry
    printed before this, or null if it's the first, and if ENTRY is in a
@@ -617,72 +747,11 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
 		struct hol_entry **prev_entry, int *sep_groups)
 {
   unsigned num;
-  int first = 1;		/* True if nothing's been printed so far.  */
   const struct argp_option *real = entry->opt, *opt;
-  const struct hol_entry *pe = prev_entry ? *prev_entry : 0;
-  const struct hol_cluster *cl = entry->cluster;
   char *so = entry->short_options;
   int old_lm = line_wrap_set_lmargin (stream, 0);
   int old_wm = line_wrap_wmargin (stream);
-
-  /* Prints STR as a header line, with the margin lines set appropiately, and
-     notes the fact that groups should be separated with a blank line.  Note
-     that the previous wrap margin isn't restored, but the left margin is reset
-     to 0.  */
-  void print_header (const char *str)
-    {
-      if (*str)
-	{
-	  if (pe)
-	    putc ('\n', stream); /* Precede with a blank line.  */
-	  indent_to (stream, HEADER_COL);
-	  line_wrap_set_lmargin (stream, HEADER_COL);
-	  line_wrap_set_wmargin (stream, HEADER_COL);
-	  fputs (str, stream);
-	  line_wrap_set_lmargin (stream, 0);
-	}
-      if (sep_groups)
-	*sep_groups = 1;	/* Separate subsequent groups. */
-    }
-
-  /* Inserts a comma if this isn't the first item on the line, and then makes
-     sure we're at least to column COL.  Also clears FIRST.  */
-  void comma (unsigned col)
-    {
-      if (first)
-	{
-	  if (sep_groups && *sep_groups && pe && entry->group != pe->group)
-	    putc ('\n', stream);
-	  if (pe && cl && pe->cluster != cl && cl->header && *cl->header
-	      && !hol_cluster_is_child (pe->cluster, cl))
-	    /* If we're changing clusters, then this must be the start of the
-	       ENTRY's cluster unless that is an ancestor of the previous one
-	       (in which case we had just popped into a sub-cluster for a bit).
-	       If so, then print the cluster's header line.  */
-	    {
-	      int old_wm = line_wrap_wmargin (stream);
-	      print_header (cl->header);
-	      putc ('\n', stream);
-	      line_wrap_set_wmargin (stream, old_wm);
-	    }
-	  first = 0;
-	}
-      else
-	fputs (", ", stream);
-      indent_to (stream, col);
-    }
-
-  /* If the option REAL has an argument, we print it in using the printf
-     format REQ_FMT or OPT_FMT depending on whether it's a required or
-     optional argument.  */
-  void arg (char *req_fmt, char *opt_fmt)
-    {
-      if (real->arg)
-	if (real->flags & OPTION_ARG_OPTIONAL)
-	  fprintf (stream, opt_fmt, real->arg);
-	else
-	  fprintf (stream, req_fmt, real->arg);
-    }
+  struct pentry_state pest = { entry, stream, prev_entry, sep_groups, 1 };
 
   /* First emit short options.  */
   line_wrap_set_wmargin (stream, SHORT_OPT_COL); /* For truly bizarre cases. */
@@ -692,30 +761,45 @@ hol_entry_help (struct hol_entry *entry, FILE *stream,
       {
 	if (ovisible (opt))
 	  {
-	    comma (SHORT_OPT_COL);
+	    comma (SHORT_OPT_COL, &pest);
 	    putc ('-', stream);
 	    putc (*so, stream);
-	    arg (" %s", "[%s]");
+	    arg (real, " %s", "[%s]", stream);
 	  }
 	so++;
       }
 
   /* Now, long options.  */
-  line_wrap_set_wmargin (stream, LONG_OPT_COL);
-  for (opt = real, num = entry->num; num > 0; opt++, num--)
-    if (opt->name && ovisible (opt))
-      {
-	comma (LONG_OPT_COL);
-	fprintf (stream, "--%s", opt->name);
-	arg ("=%s", "[=%s]");
-      }
+  if (odoc (real))
+    /* Really a `documentation' option.  */
+    {
+      line_wrap_set_wmargin (stream, DOC_OPT_COL);
+      for (opt = real, num = entry->num; num > 0; opt++, num--)
+	if (opt->name && ovisible (opt))
+	  {
+	    comma (DOC_OPT_COL, &pest);
+	    fputs (opt->name, stream);
+	  }
+    }
+  else
+    /* A realy long option.  */
+    {      
+      line_wrap_set_wmargin (stream, LONG_OPT_COL);
+      for (opt = real, num = entry->num; num > 0; opt++, num--)
+	if (opt->name && ovisible (opt))
+	  {
+	    comma (LONG_OPT_COL, &pest);
+	    fprintf (stream, "--%s", opt->name);
+	    arg (real, "=%s", "[=%s]", stream);
+	  }
+    }
 
   line_wrap_set_lmargin (stream, 0);
-  if (first)
+  if (pest.first)
     /* Didn't print any switches, what's up?  */
     if (!oshort (real) && !real->name && real->doc)
       /* This is a group header, print it nicely.  */
-      print_header (real->doc);
+      print_header (real->doc, &pest);
     else
       /* Just a totally shadowed option or null header; print nothing.  */
       goto cleanup;		/* Just return, after cleaning up.  */
@@ -764,6 +848,68 @@ hol_help (struct hol *hol, FILE *stream)
     hol_entry_help (entry, stream, &last_entry, &sep_groups);
 }
 
+/* Helper functions for hol_usage.  */
+
+/* If OPT is a short option without an arg, append its key to the string
+   pointer pointer to by COOKIE, and advance the pointer.  */
+static int
+add_argless_short_opt (const struct argp_option *opt,
+		       const struct argp_option *real,
+		       void *cookie)
+{
+  char **snao_end = cookie;
+  if (! (opt->arg || real->arg))
+    *(*snao_end)++ = opt->key;
+  return 0;
+}
+
+/* If OPT is a short option with an arg, output a usage entry for it to the
+   stream pointed at by COOKIE.  */
+static int
+usage_argful_short_opt (const struct argp_option *opt,
+			const struct argp_option *real,
+			void *cookie)
+{
+  FILE *stream = cookie;
+
+  if (opt->arg || real->arg)
+    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+      fprintf (stream, " [-%c[%s]]",
+	       opt->key, opt->arg ?: real->arg);
+    else
+      {
+	const char *arg = opt->arg ?: real->arg;
+	/* Manually do line wrapping so that it (probably) won't
+	   get wrapped at the embedded space.  */
+	if (line_wrap_point (stream) + 6 + strlen (arg)
+	    >= line_wrap_rmargin (stream))
+	  putc ('\n', stream);
+	else
+	  putc (' ', stream);
+	fprintf (stream, "[-%c %s]", opt->key, arg);
+      }
+
+  return 0;
+}
+
+/* Output a usage entry for the long option opt to the stream pointed at by
+   COOKIE.  */
+static int
+usage_long_opt (const struct argp_option *opt,
+		const struct argp_option *real,
+		void *cookie)
+{
+  FILE *stream = cookie;
+  if (opt->arg || real->arg)
+    if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
+      fprintf (stream, " [--%s[=%s]]", opt->name, opt->arg ?: real->arg);
+    else
+      fprintf (stream, " [--%s=%s]", opt->name, opt->arg ?: real->arg);
+  else
+    fprintf (stream, " [--%s]", opt->name);
+  return 0;
+}
+
 /* Print a short usage description for the arguments in HOL to STREAM.  */
 static void
 hol_usage (struct hol *hol, FILE *stream)
@@ -779,16 +925,7 @@ hol_usage (struct hol *hol, FILE *stream)
       for (entry = hol->entries, nentries = hol->num_entries
 	   ; nentries > 0
 	   ; entry++, nentries--)
-	{
-	  inline int func2 (const struct argp_option *opt,
-			    const struct argp_option *real)
-	    {
-	      if (! (opt->arg || real->arg))
-		*snao_end++ = opt->key;
-	      return 0;
-	    }
-	  hol_entry_short_iterate (entry, func2);
-	}
+	hol_entry_short_iterate (entry, add_argless_short_opt, &snao_end);
       if (snao_end > short_no_arg_opts)
 	{
 	  *snao_end++ = 0;
@@ -799,52 +936,13 @@ hol_usage (struct hol *hol, FILE *stream)
       for (entry = hol->entries, nentries = hol->num_entries
 	   ; nentries > 0
 	   ; entry++, nentries--)
-	{
-	  inline int func3 (const struct argp_option *opt,
-			    const struct argp_option *real)
-	    {
-	      if (opt->arg || real->arg)
-		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  fprintf (stream, " [-%c[%s]]",
-			   opt->key, opt->arg ?: real->arg);
-		else
-		  {
-		    const char *arg = opt->arg ?: real->arg;
-		    /* Manually do line wrapping so that it (probably) won't
-		       get wrapped at the embedded space.  */
-		    if (line_wrap_point (stream) + 6 + strlen (arg)
-			>= line_wrap_rmargin (stream))
-		      putc ('\n', stream);
-		    else
-		      putc (' ', stream);
-		    fprintf (stream, "[-%c %s]", opt->key, arg);
-		  }
-	      return 0;
-	    }
-	  hol_entry_short_iterate (entry, func3);
-	}
+	hol_entry_short_iterate (entry, usage_argful_short_opt, stream);
 
       /* Finally, a list of long options (whew!).  */
       for (entry = hol->entries, nentries = hol->num_entries
 	   ; nentries > 0
 	   ; entry++, nentries--)
-	{
-	  int func4 (const struct argp_option *opt,
-		     const struct argp_option *real)
-	    {
-	      if (opt->arg || real->arg)
-		if ((opt->flags | real->flags) & OPTION_ARG_OPTIONAL)
-		  fprintf (stream, " [--%s[=%s]]",
-			   opt->name, opt->arg ?: real->arg);
-		else
-		  fprintf (stream, " [--%s=%s]",
-			   opt->name, opt->arg ?: real->arg);
-	      else
-		fprintf (stream, " [--%s]", opt->name);
-	      return 0;
-	    }
-	  hol_entry_long_iterate (entry, func4);
-	}
+	hol_entry_long_iterate (entry, usage_long_opt, stream);
     }
 }
 
@@ -1042,6 +1140,9 @@ argp_state_help (struct argp_state *state, FILE *stream, unsigned flags)
 {
   if ((!state || ! (state->flags & ARGP_NO_ERRS)) && stream)
     {
+      if (state && (state->flags & ARGP_LONG_ONLY))
+	flags |= ARGP_HELP_LONG_ONLY;
+
       argp_help (state ? state->argp : 0, stream, flags,
 		 state ? state->name : program_invocation_name);
 
