@@ -25,7 +25,7 @@ LINUXSRCS= af_inet.c arp.c datagram.c dev.c dev_mcast.c devinet.c eth.c \
 	proc.c protocol.c psnap.c rarp.c raw.c route.c skbuff.c sock.c \
 	tcp.c timer.c udp.c utils.c
 UNUSEDSRC = packet.c
-SRCS = sched.c timer.c
+SRCS = sched.c timer-emul.c
 OBJS= $(subst .c,.o,$(LINUXSRCS) $(SRCS))
 
 vpath %.c linux-inet
