@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1996 Free Software Foundation, Inc.
+/* Main server loop for nfs server.
+   Copyright (C) 1996, 98 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -53,7 +53,6 @@ server_loop (int fd)
   struct cache_handle *c, fakec;
   error_t err;
   size_t addrlen;
-  int *errloc;
   int cc;
 
   bzero (&fakec, sizeof (struct cache_handle));
@@ -67,18 +66,18 @@ server_loop (int fd)
       if (cc == -1)
 	continue;		/* ignore errors */
       xid = *p++;
-      
+
       /* Ignore things that aren't proper RPCs. */
       if (ntohl (*p++) != CALL)
 	continue;
-      
+
       cr = check_cached_replies (xid, &sender);
       if (cr->data)
 	/* This transacation has already completed */
 	goto repost_reply;
-      
+
       r = (int *) rbuf = malloc (MAXIOSIZE);
-      
+
       if (ntohl (*p++) != RPC_MSG_VERSION)
 	{
 	  /* Reject RPC */
@@ -90,7 +89,7 @@ server_loop (int fd)
 	  *r++ = htonl (RPC_MSG_VERSION);
 	  goto send_reply;
 	}
-      
+
       program = ntohl (*p++);
       switch (program)
 	{
@@ -98,17 +97,17 @@ server_loop (int fd)
 	  version = MOUNTVERS;
 	  table = &mounttable;
 	  break;
-	  
+
 	case NFS_PROGRAM:
 	  version = NFS_VERSION;
 	  table = &nfs2table;
 	  break;
-	  
+
 	case PMAPPROG:
 	  version = PMAPVERS;
 	  table = &pmaptable;
 	  break;
-	  
+
 	default:
 	  /* Program unavailable */
 	  *r++ = xid;
@@ -118,8 +117,8 @@ server_loop (int fd)
 	  *r++ = htonl (0);
 	  *r++ = htonl (PROG_UNAVAIL);
 	  goto send_reply;
-	}	  
-      
+	}
+
       if (ntohl (*p++) != version)
 	{
 	  /* Program mismatch */
@@ -133,7 +132,7 @@ server_loop (int fd)
 	  *r++ = htonl (version);
 	  goto send_reply;
 	}
-      
+
       procedure = htonl (*p++);
       if (procedure < table->min
 	  || procedure > table->max
@@ -151,9 +150,9 @@ server_loop (int fd)
 	  goto send_reply;
 	}
       proc = &table->procs[procedure - table->min];
-      
+
       p = process_cred (p, &cred);
-      
+
       if (proc->need_handle)
 	p = lookup_cache_handle (p, &c, cred);
       else
@@ -161,7 +160,7 @@ server_loop (int fd)
 	  fakec.ids = cred;
 	  c = &fakec;
 	}
-      
+
       if (proc->alloc_reply)
 	{
 	  size_t amt;
@@ -172,7 +171,7 @@ server_loop (int fd)
 	      r = (int *) rbuf = malloc (amt);
 	    }
 	}
-      
+
       /* Fill in beginning of reply */
       *r++ = xid;
       *r++ = htonl (REPLY);
@@ -180,34 +179,39 @@ server_loop (int fd)
       *r++ = htonl (AUTH_NULL);
       *r++ = htonl (0);
       *r++ = htonl (SUCCESS);
-      if (proc->process_error)
-	{
-	  /* Assume success for now and patch it later if necessary */
-	  errloc = r;
-	  *r++ = htonl (0);
-	}
-      
-      if (c)
-	err = (*proc->func) (c, p, &r, version);
+      if (!proc->process_error)
+	/* The function does its own error processing,
+	   and we ignore its return value.  */
+	(void) (*proc->func) (c, p, &r, version);
       else
-	err = ESTALE;
-      
-      if (proc->process_error && err)
 	{
-	  r = errloc;
-	  *r++ = htonl (nfs_error_trans (err, version));
+	  if (c)
+	    {
+	      /* Assume success for now and patch it later if necessary */
+	      int *errloc = r;
+	      *r++ = htonl (0);
+	      /* Call processing function, its output after error code.  */
+	      err = (*proc->func) (c, p, &r, version);
+	      if (err)
+		{
+		  r = errloc;	/* Back up, patch error code, discard rest.  */
+		  *r++ = htonl (nfs_error_trans (err, version));
+		}
+	    }
+	  else
+	    *r++ = htonl (nfs_error_trans (ESTALE, version));
 	}
-      
+
       cred_rele (cred);
       if (c && c != &fakec)
 	cache_handle_rele (c);
-      
+
     send_reply:
       cr->data = rbuf;
       cr->len = (char *)r - rbuf;
-      
+
     repost_reply:
-      sendto (fd, cr->data, cr->len, 0, 
+      sendto (fd, cr->data, cr->len, 0,
 	      (struct sockaddr *)&sender, addrlen);
       release_cached_reply (cr);
     }
