@@ -42,7 +42,8 @@ netfs_file_get_storage_info (struct iouser *cred,
       return snprintf (*data, buflen,
 		       "nfsv%u://%s:%u/%n%*c?rsize=%u&wsize=%u",
 		       protocol_version, mounted_hostname, mounted_nfs_port,
-		       &fhpos, np->nn->handle.size * 2, 'X', /* filled below */
+		       &fhpos, (int) (np->nn->handle.size * 2),
+		       'X', /* filled below */
 		       read_size, write_size);
     }
 
