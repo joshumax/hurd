@@ -1,7 +1,7 @@
 /* Zero store backend
 
-   Copyright (C) 1995, 1996, 1997, 1999 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+   Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -118,8 +118,26 @@ zero_open (const char *name, int flags,
     {
       char *end;
       off_t size = strtoul (name, &end, 0);
-      if (end == name)
+      if (end == name || end == NULL)
 	return EINVAL;
+      switch (*end)
+	{
+	case 'b':
+	  size *= 512;
+	  break;
+	case 'k':
+	case 'K':
+	  size *= 1024;
+	  break;
+	case 'm':
+	case 'M':
+	  size *= 1024 * 1024;
+	  break;
+	case 'g':
+	case 'G':
+	  size *= 1024 * 1024 * 1024;
+	  break;
+	}
       return store_zero_create (size, flags, store);
     }
   else
