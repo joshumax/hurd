@@ -57,7 +57,7 @@ diskfs_S_file_set_translator (struct protid *cred,
       return error;
     }
 
-  if (active_flags & FS_TRANS_SET
+  if ((active_flags & FS_TRANS_SET)
       && ! (active_flags & FS_TRANS_ORPHAN))
     {
       error = fshelp_fetch_control (&np->transbox, &control);
