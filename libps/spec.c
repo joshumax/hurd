@@ -481,7 +481,7 @@ error_t
 ps_emit_past_time (struct proc_stat *ps, const struct ps_getter *getter,
 		   int width, struct ps_stream *stream)
 {
-  
+  return 0;
 }
 
 error_t
