@@ -20,8 +20,14 @@
 
 #include "netfs.h"
 
+/* The user may define this function, in which case it is called when the the
+   filesystem receives a get-options request.  ARGZ & ARGZ_LEN will contain
+   information on `standard' netfs options; the user may extend them
+   (probably by using argz_add), or ignore them, in which case case ARGZ
+   should be freed, as it is malloced.  The default implementation simply
+   leaves ARGZ & ARGZ_LEN unmodified and returns sucess (0).  */
 error_t
-netfs_unparse_runtime_options (char **argz, size_t *argz_len);
+netfs_unparse_runtime_options (char **argz, size_t *argz_len)
 {
   return 0;
 }
