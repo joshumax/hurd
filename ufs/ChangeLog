@@ -1,3 +1,8 @@
+Tue Jul 23 15:58:28 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* inode.c (write_node, read_disknode): `struct timespec' now uses
+	a field prefix of `tv_'.
+
 Sat Jul  6 16:14:10 1996  Miles Bader  <miles@gnu.ai.mit.edu>
 
 	* main.c (ufs_version): Variable removed.

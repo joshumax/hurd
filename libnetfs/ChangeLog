@@ -1,3 +1,8 @@
+Tue Jul 23 14:28:33 1996  Miles Bader  <miles@gnu.ai.mit.edu>
+
+	* file-utimes.c (netfs_S_file_utimes): `struct timespec' now uses
+	a field prefix of `tv_'.
+
 Thu Jul 18 23:09:54 1996  Michael I. Bushnell, p/BSG  <mib@gnu.ai.mit.edu>
 
 	* io-reauthenticate.c (netfs_S_io_reauthenticate): After attaching
