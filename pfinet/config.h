@@ -6,7 +6,7 @@
 #define CONFIG_NET
 
 /* #undef CONFIG_INET_RARP */
-#define CONFIG_IP_MULTICAST
+/* #undef CONFIG_IP_MULTICAST */
 /* #undef CONFIG_IP_FORWARD */
 /* #undef CONFIG_IP_FIREWALL */
 /* #undef CONFIG_IP_FIREWALL_DEBUG */
