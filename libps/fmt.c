@@ -121,23 +121,27 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	  int clr_flags = global_clr_flags, inv_flags = global_inv_flags;
 
 	  /* Set modifiers.   */
-	  while (*src == '@' || *src == ':' || *src == '!' || *src == '?')
-	    if (*src == '@')
-	      inv_flags ^= PS_FMT_FIELD_AT_MOD;	/* Toggle */
-	    else if (*src == ':')
-	      inv_flags ^= PS_FMT_FIELD_COLON_MOD; /* Toggle */
-	    else if (*src == '^')
-	      inv_flags ^= PS_FMT_FIELD_UPCASE_TITLE; /* Toggle */
-	    else if (*src == '!')
-	      {			/* Set */
-		clr_flags |= PS_FMT_FIELD_KEEP;
-		inv_flags |= PS_FMT_FIELD_KEEP;
-	      }
-	    else if (*src == '?')
-	      {			/* Clear */
-		clr_flags |= PS_FMT_FIELD_KEEP;
-		inv_flags &= ~PS_FMT_FIELD_KEEP;
-	      }
+	  while (*src == '@' || *src == ':'
+		 || *src == '!' || *src == '?' || *src == '^')
+	    {
+	      if (*src == '@')
+		inv_flags ^= PS_FMT_FIELD_AT_MOD; /* Toggle */
+	      else if (*src == ':')
+		inv_flags ^= PS_FMT_FIELD_COLON_MOD; /* Toggle */
+	      else if (*src == '^')
+		inv_flags ^= PS_FMT_FIELD_UPCASE_TITLE; /* Toggle */
+	      else if (*src == '!')
+		{		/* Set */
+		  clr_flags |= PS_FMT_FIELD_KEEP;
+		  inv_flags |= PS_FMT_FIELD_KEEP;
+		}
+	      else if (*src == '?')
+		{		/* Clear */
+		  clr_flags |= PS_FMT_FIELD_KEEP;
+		  inv_flags &= ~PS_FMT_FIELD_KEEP;
+		}
+	      src++;
+	    }
 
 	  /* Read an explicit field width.  */
 	  field->width = 0;
