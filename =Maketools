@@ -16,6 +16,8 @@ CCTYPE=-b $(CCTARGET) -V $(CCVERSION)
 CCVERSION-douglas.gnu.ai.mit.edu = 2.5.7
 CCVERSION-ernst.gnu.ai.mit.edu = 2.5.7
 
+ccdir = /usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)
+
 ifndef HOST_CC
 export HOST_CC := $(CC)
 endif
@@ -25,11 +27,11 @@ MIGCOM=rsh $(mighost) cd `pwd` \; /usr/local/lib/migcom
 else
 MIGCOM=/usr/local/lib/migcom
 endif
-CPP=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/cpp
+CPP=$(ccdir)/cpp
 export CPP
 # I put a /usr/local/bin/mig on the hp300s that will run $CPP locally and
 # rsh to ernst to run migcom. --roland
 MIG=mig # rsh $(mighost) cd `pwd` \; mig
 AR=$(tooldir)/ar
 RANLIB=$(tooldir)/ranlib
-LD=/usr/local/lib/gcc-lib/$(CCTARGET)/$(CCVERSION)/ld
+LD=$(ccdir)/ld -L$(ccdir)
