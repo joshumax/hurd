@@ -157,6 +157,8 @@ error_t
 store_zero_create (size_t size, int flags, struct store **store)
 {
   struct store_run run = { 0, size };
-  *store = _make_store (&store_zero_class, MACH_PORT_NULL, flags, 1, &run, 1, 0);
+  *store =
+    _make_store (&store_zero_class, MACH_PORT_NULL,
+		 flags | STORE_INNOCUOUS, 1, &run, 1, 0);
   return *store ? 0 : ENOMEM;
 }
