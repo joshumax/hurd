@@ -26,7 +26,7 @@
 #include <maptime.h>
 
 /* Handy source of time.  */
-volatile struct mapped_time_value *hostmux_mapped_time;
+volatile struct mapped_time_value *hostmux_maptime;
 
 /* The state associated with a host multiplexer translator.  */
 struct hostmux
@@ -85,38 +85,8 @@ struct netnode
   struct hostmux_name *name;
 };
 
-/* Timestamps to change.  */
-#define TOUCH_ATIME 0x1
-#define TOUCH_MTIME 0x2
-#define TOUCH_CTIME 0x4
-
 #ifndef HOSTMUX_EI
 # define HOSTMUX_EI extern inline
 #endif
-
-/* Change the stat times of NODE as indicated by WHAT (from the set TOUCH_*)
-   to the current time.  */
-HOSTMUX_EI void touch (struct node *node, unsigned what)
-{
-  struct timeval tv;
-
-  maptime_read (hostmux_mapped_time, &tv);
-
-  if (what & TOUCH_ATIME)
-    {
-      netfs_root_node->nn_stat.st_atime = tv.tv_sec;
-      netfs_root_node->nn_stat.st_atime_usec = tv.tv_usec;
-    }
-  if (what & TOUCH_CTIME)
-    {
-      netfs_root_node->nn_stat.st_ctime = tv.tv_sec;
-      netfs_root_node->nn_stat.st_ctime_usec = tv.tv_usec;
-    }
-  if (what & TOUCH_MTIME)
-    {
-      netfs_root_node->nn_stat.st_mtime = tv.tv_sec;
-      netfs_root_node->nn_stat.st_mtime_usec = tv.tv_usec;
-    }
-}
 
 #endif /* __HOSTMUX_H__ */
