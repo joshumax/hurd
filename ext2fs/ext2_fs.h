@@ -63,7 +63,7 @@ typedef signed char s8;
  */
 #ifdef EXT2FS_DEBUG
 #	define ext2_debug(f, a...) \
-    { printf ("ext2fs DEBUG %s:%d: %s: ", __FILE__, __LINE__, __FUNCTION__);
+    { printf ("ext2fs: DEBUG %s:%d: %s: ", __FILE__, __LINE__, __FUNCTION__); \
       printf (f, ## a); }
 #else
 #	define ext2_debug(f, a...)	/**/
