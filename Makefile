@@ -26,7 +26,7 @@ include $(srcdir)/Makeconf
 
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libpager \
 	      libfshelp libdiskfs libtrivfs libthreads libps \
-	      libnetfs libpipe libstore
+	      libnetfs libpipe libstore libmom
 prog-subdirs = auth boot exec fstests init.trim \
 	       proc term ufs utils trans fsck \
 	       devio ufs-utils ext2fs benchmarks pflocal defpager \
