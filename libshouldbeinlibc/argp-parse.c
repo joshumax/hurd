@@ -162,7 +162,7 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
   /* A pointer for people to use for iteration over GROUPS.  */
   struct group *group;
   /* State block supplied to parsing routines.  */
-  struct argp_state state = { argp, argc, argv, 0, flags };
+  struct argp_state state = { argp, argc, argv, 0, flags, 0 };
 
   if (! (state.flags & ARGP_NO_HELP))
     /* Add our own options.  */
@@ -357,7 +357,10 @@ argp_parse (const struct argp *argp, int argc, char **argv, unsigned flags,
 	    /* Remember that we successfully processed a non-option
 	       argument -- but only if the user hasn't gotten tricky and set
 	       the clock back.  */
-	    (--group)->processed_arg = 1;
+	    {
+	      (--group)->processed_arg = 1;
+	      state.arg_num++;
+	    }
 	}
       else if (group_key == 0)
 	/* A short option.  */
