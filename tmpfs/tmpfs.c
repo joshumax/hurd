@@ -255,7 +255,7 @@ main (int argc, char **argv)
   if (err)
     error (4, err, "cannot create root directory");
 
-  diskfs_spawn_first_thread ();
+  diskfs_spawn_first_thread (diskfs_demuxer);
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
