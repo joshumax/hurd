@@ -1,6 +1,6 @@
 /* The type proc_stat_t, which holds information about a hurd process.
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -76,10 +76,10 @@ thread_state(thread_basic_info_t bi)
 /* The set of PSTAT_ flags that we get using proc_getprocinfo.  */
 #define PSTAT_PROCINFO \
   (PSTAT_PROC_INFO | PSTAT_TASK_BASIC | PSTAT_NUM_THREADS \
-   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_RPC)
+   | PSTAT_THREAD_BASIC | PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT)
 /* The set of things we get from procinfo that's thread dependent.  */
 #define PSTAT_PROCINFO_THREAD \
-  (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED |PSTAT_THREAD_RPC)
+ (PSTAT_NUM_THREADS |PSTAT_THREAD_BASIC |PSTAT_THREAD_SCHED |PSTAT_THREAD_WAIT)
 
 /* Fetches process information from the set in PSTAT_PROCINFO, returning it
    in PI & PI_SIZE.  NEED is the information, and HAVE is the what we already
@@ -87,7 +87,8 @@ thread_state(thread_basic_info_t bi)
 static error_t
 fetch_procinfo (process_t server, pid_t pid,
 		ps_flags_t need, ps_flags_t have,
-		struct procinfo **pi, size_t *pi_size)
+		struct procinfo **pi, size_t *pi_size,
+		char **waits, size_t *waits_len)
 {
   int pi_flags = 0;
 
@@ -101,21 +102,14 @@ fetch_procinfo (process_t server, pid_t pid,
     pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
   if ((need & PSTAT_THREAD_SCHED) && !(have & PSTAT_THREAD_SCHED))
     pi_flags |= PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_RPC) && !(have & PSTAT_THREAD_RPC))
+  if ((need & PSTAT_THREAD_WAIT) && !(have & PSTAT_THREAD_WAIT))
     pi_flags |= PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS;
 
   if (pi_flags || ((need & PSTAT_PROC_INFO) && !(have & PSTAT_PROC_INFO)))
     {
-      char *noise;
-      unsigned noise_len = 0;
-
       error_t err =
 	proc_getprocinfo (server, pid, pi_flags, (procinfo_t *)pi, pi_size,
-			  &noise, &noise_len);
-
-      if (!err && noise_len > 0)
-	vm_deallocate (mach_task_self (), noise, noise_len);
-
+			  waits, waits_len);
       return err;
     }
   else
@@ -129,17 +123,21 @@ fetch_procinfo (process_t server, pid_t pid,
 static error_t
 merge_procinfo (process_t server, pid_t pid,
 		ps_flags_t need, ps_flags_t have,
-		struct procinfo **pi, size_t *pi_size)
+		struct procinfo **pi, size_t *pi_size,
+		char **waits, size_t *waits_len)
 {
   struct procinfo *new_pi;
   size_t new_pi_size = 0;
+  char *new_waits = 0;
+  size_t new_waits_len = 0;
   /* We always re-fetch any thread-specific info, as the set of threads could
      have changed since the last time we did this, and we can't tell.  */
   error_t err =
     fetch_procinfo (server, pid,
 		    (need | (have & PSTAT_PROCINFO_THREAD)),
 		    have & ~PSTAT_PROCINFO_THREAD,
-		    &new_pi, &new_pi_size);
+		    &new_pi, &new_pi_size,
+		    &new_waits, &new_waits_len);
 
   if (err)
     return err;
@@ -155,9 +153,13 @@ merge_procinfo (process_t server, pid_t pid,
 
       vm_deallocate (mach_task_self (), (vm_address_t)*pi, *pi_size);
     }
+  if (*waits_len > 0)
+    vm_deallocate (mach_task_self (), (vm_address_t)*waits, *waits_len);
 
   *pi = new_pi;
   *pi_size = new_pi_size;
+  *waits = new_waits;
+  *waits_len = new_waits_len;
 
   return 0;
 }
@@ -208,7 +210,7 @@ add_preconditions (ps_flags_t flags, ps_context_t context)
   (PSTAT_NUM_THREADS | PSTAT_SUSPEND_COUNT | PSTAT_THREAD_BASIC)
 
 /* Those flags that need the msg port, perhaps implicitly.  */
-#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_RPC)
+#define PSTAT_USES_MSGPORT (PSTAT_MSGPORT | PSTAT_THREAD_WAIT)
 
 /* Return true when there's some condition indicating that we shouldn't use
    PS's msg port.  For this routine to work correctly, PS's flags should
@@ -383,18 +385,31 @@ summarize_thread_states (struct procinfo *pi)
   return state;
 }
 
-/* Returns the rpc blocking the first blocked thread in PI.  */
-static int
-summarize_thread_rpcs (struct procinfo *pi)
+/* Returns what's blocking the first blocked thread in PI in WAIT and RPC.  */
+static void
+summarize_thread_waits (struct procinfo *pi, char *waits, size_t waits_len,
+			char **wait, int *rpc)
 {
   int i;
+  char *next_wait = waits;
+
+  *wait = 0;			/* Defaults */
+  *rpc = 0;
 
   /* The union of all thread state bits...  */
   for (i = 0; i < pi->nthreads; i++)
-    if (! pi->threadinfos[i].died && pi->threadinfos[i].rpc_block)
-      return pi->threadinfos[i].rpc_block;
-
-  return 0;
+    if (! pi->threadinfos[i].died)
+      if (next_wait > waits + waits_len)
+	break;
+      else if (*next_wait
+	       && strncmp (next_wait, "msgport",
+			   waits + waits_len - next_wait) != 0)
+	{
+	  *wait = next_wait;
+	  *rpc = pi->threadinfos[i].rpc_block;
+	}
+      else
+	next_wait++;
 }
 
 /* Returns the number of threads in PI that aren't marked dead.  */
@@ -427,6 +442,20 @@ get_thread_info (struct procinfo *pi, unsigned index)
       return &pi->threadinfos[i];
 
   return 0;
+}
+
+/* Returns a pointer to the Nth entry in the '\0'-separated vector of strings
+   in ARGZ & ARGZ_LEN.  */
+char *
+get_thread_wait (char *waits, size_t waits_len, unsigned n)
+{
+  char *wait = waits;
+  while (n && wait)
+    if (wait >= waits + waits_len)
+      wait = 0;
+    else
+      wait = memchr (wait, '\0', wait + waits_len - waits);
+  return wait;
 }
 
 /* Returns a malloced block of memory SIZE bytes long, containing a copy of
@@ -519,11 +548,14 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	  {
 	    ps->proc_info = 0;
 	    ps->proc_info_size = 0;
+	    ps->thread_waits = 0;
+	    ps->thread_waits_len = 0;
 	  }
 
 	err =
 	  merge_procinfo (server, ps->pid, need, have,
-			  &ps->proc_info, &ps->proc_info_size);
+			  &ps->proc_info, &ps->proc_info_size,
+			  &ps->thread_waits, &ps->thread_waits_len);
 	if (!err)
 	  {
 	    struct procinfo *pi = ps->proc_info;
@@ -544,12 +576,14 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	      }
 	    if (have & PSTAT_THREAD_SCHED)
 	      {
-		if (! (added & PSTAT_THREAD_BASIC))
+		if (! (added & PSTAT_THREAD_SCHED))
 		  free (ps->thread_sched_info);
 		ps->thread_sched_info = summarize_thread_sched_info (pi);
 	      }
-	    if (have & PSTAT_THREAD_RPC)
-	      ps->thread_rpc = summarize_thread_rpcs (pi);
+	    if (have & PSTAT_THREAD_WAIT)
+	      summarize_thread_waits (pi,
+				      ps->thread_waits, ps->thread_waits_len,
+				      &ps->thread_wait, &ps->thread_rpc);
 
 	    if (have & PSTAT_PROCINFO_THREAD)
 	      /* Any thread information automatically gets us this for free. */
@@ -577,23 +611,30 @@ proc_stat_set_flags (proc_stat_t ps, ps_flags_t flags)
 	    /* Now copy out the information for this particular thread from the
 	       ORIGIN's list of thread information.  */
 
-	    if ((need  & PSTAT_THREAD_BASIC) && ! (have & PSTAT_THREAD_BASIC)
+	    if ((need & PSTAT_THREAD_BASIC) && ! (have & PSTAT_THREAD_BASIC)
 		&& (oflags & PSTAT_THREAD_BASIC)
 		&& (ps->thread_basic_info =
 		    clone (&ti->pis_bi, sizeof (struct thread_basic_info))))
 	      have |= PSTAT_THREAD_BASIC;
 
-	    if ((need  & PSTAT_THREAD_SCHED) && ! (have & PSTAT_THREAD_SCHED)
+	    if ((need & PSTAT_THREAD_SCHED) && ! (have & PSTAT_THREAD_SCHED)
 		&& (oflags & PSTAT_THREAD_SCHED)
 		&& (ps->thread_sched_info =
 		    clone (&ti->pis_si, sizeof (struct thread_sched_info))))
 	      have |= PSTAT_THREAD_SCHED;
 
-	    if ((need  & PSTAT_THREAD_RPC) && ! (have & PSTAT_THREAD_RPC)
-		&& (oflags & PSTAT_THREAD_RPC))
+	    if ((need & PSTAT_THREAD_WAIT) && ! (have & PSTAT_THREAD_WAIT)
+		&& (oflags & PSTAT_THREAD_WAIT))
 	      {
-		ps->thread_rpc = ti->rpc_block;
-		have |= PSTAT_THREAD_RPC;
+		ps->thread_wait =
+		  get_thread_wait (origin->thread_waits,
+				   origin->thread_waits_len,
+				   ps->thread_index);
+		if (ps->thread_wait)
+		  {
+		    ps->thread_rpc = ti->rpc_block;
+		    have |= PSTAT_THREAD_WAIT;
+		  }
 	      }
 	  }
       }
