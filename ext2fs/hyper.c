@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <error.h>
+#include <hurd/store.h>
 #include "ext2fs.h"
 
 vm_address_t zeroblock = 0;
@@ -85,12 +86,11 @@ get_hypermetadata (void)
   if ((1 << log2_block_size) != block_size)
     ext2_panic ("block size %ld isn't a power of two!", block_size);
 
-  log2_dev_blocks_per_fs_block
-    = log2_block_size - diskfs_log2_device_block_size;
+  log2_dev_blocks_per_fs_block = log2_block_size - store->log2_block_size;
   if (log2_dev_blocks_per_fs_block < 0)
     ext2_panic ("block size %ld isn't a power-of-two multiple of the device"
 		" block size (%d)!",
-		block_size, diskfs_device_block_size);
+		block_size, store->block_size);
 
   log2_stat_blocks_per_fs_block = 0;
   while ((512 << log2_stat_blocks_per_fs_block) < block_size)
@@ -99,12 +99,9 @@ get_hypermetadata (void)
     ext2_panic ("block size %ld isn't a power-of-two multiple of 512!",
 		block_size);
 
-  if (diskfs_device_size
-      < (sblock->s_blocks_count << log2_dev_blocks_per_fs_block))
-    ext2_panic ("disk size (%ld blocks) too small "
-		"(superblock says we need %ld)",
-		diskfs_device_size,
-		sblock->s_blocks_count << log2_dev_blocks_per_fs_block);
+  if (store->size < (sblock->s_blocks_count << log2_block_size))
+    ext2_panic ("disk size (%d bytes) too small; superblock says we need %d",
+		store->size, sblock->s_blocks_count << log2_block_size);
 
   /* Set these handy variables.  */
   inodes_per_block = block_size / EXT2_INODE_SIZE (sblock);
@@ -195,10 +192,8 @@ diskfs_readonly_changed (int readonly)
 {
   allocate_mod_map ();
 
-  vm_protect (mach_task_self (),
-	      (vm_address_t)disk_image,
-	      diskfs_device_size << diskfs_log2_device_block_size,
-	      0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
+  vm_protect (mach_task_self (), (vm_address_t)disk_image,
+	      store->size, 0, VM_PROT_READ | (readonly ? 0 : VM_PROT_WRITE));
 
   if (!readonly && !(sblock->s_state & EXT2_VALID_FS))
     ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
