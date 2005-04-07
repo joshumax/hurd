@@ -1,3 +1,8 @@
+2005-04-07  Alfred M. Szmidt  <ams@gnu.org>
+
+	* configure.in: Error out if MiG couldn't be found.
+	* configure: Regenerated.
+
 2004-09-29  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* config.make.in (datadir): New variable.

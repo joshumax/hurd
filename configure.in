@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_REVISION([$Id: configure.in,v 1.35 2003/02/15 23:57:50 roland Exp $])
+AC_REVISION([$Id: configure.in,v 1.36 2005/04/07 20:48:40 ams Exp $])
 AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
 AC_INIT
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
@@ -87,6 +87,14 @@ AC_CHECK_TOOL(OBJCOPY, objcopy)
 AC_CHECK_TOOL(AR, ar)
 AC_CHECK_TOOL(RANLIB, ranlib)
 AC_CHECK_TOOL(MIG, mig)
+# Require MiG.
+if test x${MIG} = x; then
+  AC_MSG_ERROR([
+*** You need GNU MiG to compile the GNU Hurd, please see
+*** http://www.gnu.org/software/hurd/mig.html for further details, or
+*** download it directly from the main GNU server (ftp.gnu.org) or any
+*** GNU mirror.])
+fi
 
 dnl Let these propagate from the environment.
 AC_SUBST(CFLAGS) AC_SUBST(CPPFLAGS) AC_SUBST(LDFLAGS)
