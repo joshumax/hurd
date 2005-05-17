@@ -1,6 +1,6 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995, 1996, 1998, 1999, 2000, 2002, 2007
+   Copyright (C) 1995, 1996, 1998, 1999, 2000, 2002, 2007, 2012
      Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
@@ -199,16 +199,16 @@ S_io_select (struct sock_user *user,
 
       if (*select_type & SELECT_READ)
 	{
-	  /* Wait for a connect.  Passing in NULL for REQ means that the
-	     request won't be dequeued.  */
-	  if (connq_listen (sock->listen_queue, 1, NULL, NULL) == 0)
+	  /* Wait for a connect.  Passing in NULL for SOCK means that
+	     the request won't be dequeued.  */
+	  if (connq_listen (sock->listen_queue, 1, NULL) == 0)
 	    /* We can satisfy this request immediately. */
 	    return 0;
 	  else
 	    /* Gotta wait...  */
 	    {
 	      ports_interrupt_self_on_port_death (user, reply);
-	      return connq_listen (sock->listen_queue, 0, NULL, NULL);
+	      return connq_listen (sock->listen_queue, 0, NULL);
 	    }
 	}
     }
