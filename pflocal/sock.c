@@ -1,6 +1,6 @@
 /* Sock functions
 
-   Copyright (C) 1995,96,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,2000,01,02, 2005 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -138,8 +138,6 @@ sock_free (struct sock *sock)
     mach_port_destroy (mach_task_self (), sock->id);
   if (sock->listen_queue)
     connq_destroy (sock->listen_queue);
-  if (sock->connect_queue)
-    connq_destroy (sock->connect_queue);
   free (sock);
 }
 
