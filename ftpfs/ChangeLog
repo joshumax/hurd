@@ -1,3 +1,10 @@
+2005-06-14  Hugues Larrive  <hugues.larrive@gmail.com>
+
+	* ftpfs.c (parse_startup_opt): User names may contain a @, so take
+	the last @ of FTPFS_REMOTE_FS.
+	* host.c (split_server_name): User names may contain a @, so take
+	the last @ of P.
+
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ftpfs.h: Include <hurd/ihash.h>.

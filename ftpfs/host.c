@@ -38,7 +38,7 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
 
   /* Extract the hostname; syntax is either `HOST:...', `...@HOST', or just
      HOST if there are no user parameters specified.  */
-  sep = strchr (p, '@');
+  sep = strrchr (p, '@');
   if (sep)
     /* ...@HOST */
     {

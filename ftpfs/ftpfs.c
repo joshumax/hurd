@@ -255,7 +255,7 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 	{
 	  int h_err;		/* Host lookup error.  */
 	  error_t err;
-	  char *sep = strchr (ftpfs_remote_fs, '@');
+	  char *sep = strrchr (ftpfs_remote_fs, '@');
 
 	  if (sep)
 	    /* FTPFS_REMOTE_FS includes a '@', which means that it's in
