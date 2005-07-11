@@ -54,6 +54,12 @@ struct consnode
   /* The demuxer used for this node.  */
   int (*demuxer) (mach_msg_header_t *inp, mach_msg_header_t *outp);
 
+  /* Called when the symlink is read */
+  error_t (*readlink) (struct iouser *user, struct node *np, char *buf);
+
+  /* Called when the symlink is written */
+  error_t (*mksymlink) (struct iouser *cred, struct node *np, char *name);
+  
   struct consnode *next;
 };
 

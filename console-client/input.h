@@ -55,6 +55,9 @@ error_t console_input (char *buf, size_t size);
    cons_vcons_scrollback.  */
 int console_scrollback (cons_scroll_t type, float value);
 
+/* Returns current console ID.  */
+error_t console_current_id (int *cur);
+
 /* Switch the active console to console ID or DELTA (relative to the
    active console).  */
 error_t console_switch (int id, int delta);

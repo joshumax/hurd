@@ -41,7 +41,7 @@ driver-CPPFLAGS = -D'CONSOLE_DEFPATH="$(module-dir)\0"' \
 console: ../libcons/libcons.a ../libports/libports.a \
 	../libthreads/libthreads.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
-modules = vga pc_kbd generic_speaker pc_mouse
+modules = vga pc_kbd generic_speaker pc_mouse current_vcs
 
 vga-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
 vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,bdf.c vga-dynafont.c \
@@ -49,6 +49,7 @@ vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,bdf.c vga-dynafont.c \
 pc_kbd.so.$(hurd-version): $(patsubst %.c,%_pic.o,pc-kbd.c kdioctlServer.o kbd-repeat.c)
 pc_mouse.so.$(hurd-version): $(patsubst %.c,%_pic.o,pc-mouse.c)
 generic_speaker.so.$(hurd-version): $(patsubst %.c,%_pic.o,generic-speaker.c)
+current_vcs.so.$(hurd-version): $(patsubst %.c,%_pic.o,current-vcs.c)
 
 ifneq ($(LIBNCURSESW),)
 modules += ncursesw

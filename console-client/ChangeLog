@@ -1,3 +1,25 @@
+2005-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* Makefile (modules): Add `current-vcs' and its rules.
+	* console.c (console_current_id): New function.
+	* input.h (console_current_id): New prototype.
+	* trans.c (struct netnode): New member `symlink_path'.
+	(console_demuxer): Handle case when node it anonymous.
+	(netfs_S_io_select): Likewise.
+	(netfs_S_io_read): Likewise.
+	(netfs_S_io_write): Likewise.
+	(netfs_report_access): Likewise.
+	(netfs_attempt_mksymlink): Implement symlinks.
+	(netfs_attempt_lookup): Likewise.
+	(netfs_attempt_unlink): Likewise.
+	(netfs_attempt_link): Likewise.
+	(netfs_attempt_mkfile): Likewise.
+	(netfs_attempt_readlink): Likewise.
+	(netfs_get_dirents): Likewise.
+	(netfs_create_consnode): Likewise.
+	* trans.h (struct consnode): New members `readlink' and `mksymlink'.
+	* current-vcs.c: New file.
+
 2005-01-10  Alfred M. Szmidt  <ams@gnu.org>
 
 	* console.c (consnode_path): Renamed to ...

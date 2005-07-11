@@ -64,6 +64,24 @@ static char *console_node;
 
 /* Callbacks for input source drivers.  */
 
+/* Returns current console ID.  */
+error_t
+console_current_id (int *cur)
+{
+  vcons_t vcons;
+
+  mutex_lock (&global_lock);
+  vcons = active_vcons;
+  if (!vcons)
+    {
+      mutex_unlock (&global_lock);
+      return ENODEV;
+    }
+  *cur = vcons->id;
+  mutex_unlock (&global_lock);
+  return 0;
+}
+
 /* Switch the active console to console ID or DELTA (relative to the
    active console).  */
 error_t

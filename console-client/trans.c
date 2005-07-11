@@ -41,6 +41,7 @@ static consnode_t node_list = 0;
 struct netnode
 {
   consnode_t node;
+  char *symlink_path;
 };
 
 typedef mach_msg_header_t request_t;
@@ -69,7 +70,7 @@ console_demuxer (mach_msg_header_t *inp,
       return 0;
     }    
   
-  if (!ret && user->po->np->nn->node->demuxer)
+  if (!ret && user->po->np->nn->node && user->po->np->nn->node->demuxer)
     ret = user->po->np->nn->node->demuxer (inp, outp);
   
   ports_port_deref (user);
@@ -125,6 +126,15 @@ error_t
 netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
 			 char *name)
 {
+  if (!np->nn->node)
+    {
+      if (np->nn->symlink_path)
+	free (np->nn->symlink_path);
+      np->nn->symlink_path = strdup (name);
+      return 0;
+    }
+  else if (np->nn->node->mksymlink)
+    return np->nn->node->mksymlink (cred, np, name);
   return EOPNOTSUPP;
 }
 
@@ -272,8 +282,18 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	    
 	    nn->node = cn;
 	    (*node)->nn_stat = netfs_root_node->nn_stat;
-	    (*node)->nn_stat.st_mode = S_IFCHR | (netfs_root_node->nn_stat.st_mode & ~S_IFMT & ~S_ITRANS);
+	    (*node)->nn_stat.st_mode = (netfs_root_node->nn_stat.st_mode & ~S_IFMT & ~S_ITRANS);
 	    (*node)->nn_stat.st_ino = 5;
+	    if (cn->readlink)
+	      {
+		(*node)->nn_stat.st_mode |= S_IFLNK;
+		(*node)->nn_stat.st_size = cn->readlink (user, NULL, NULL);
+	      }
+	    else
+	      {
+		(*node)->nn_stat.st_mode |= S_IFCHR;
+		(*node)->nn_stat.st_size = 0;
+	      }
 	    cn->node = *node;
 	    goto out;
 	  }
@@ -325,7 +345,7 @@ netfs_S_io_select (struct protid *user, mach_port_t reply,
   
   np = user->po->np;
   
-  if (np->nn->node->select)
+  if (np->nn->node && np->nn->node->select)
     return np->nn->node->select (user, reply, replytype, type);
   return EOPNOTSUPP;
 }
@@ -336,6 +356,21 @@ error_t
 netfs_attempt_unlink (struct iouser *user, struct node *dir,
 		      char *name)
 {
+  error_t err;
+  consnode_t cn;
+
+  err = fshelp_access (&dir->nn_stat, S_IWRITE, user);
+  if (err)
+    return err;
+
+  for (cn = node_list; cn; cn = cn->next)
+    if (!strcmp (name, cn->name))
+      {
+	if (cn->mksymlink)
+	  return 0;
+	else
+	  break;
+      }
   return EOPNOTSUPP;
 }
 
@@ -378,6 +413,30 @@ error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
 		    struct node *file, char *name, int excl)
 {
+  error_t err;
+  consnode_t cn;
+
+  err = fshelp_access (&dir->nn_stat, S_IWRITE, user);
+  if (err)
+    return err;
+
+  if (!file->nn->node && file->nn->symlink_path)
+    {
+      for (cn = node_list; cn; cn = cn->next)
+	if (!strcmp (name, cn->name))
+	  {
+	    if (cn->mksymlink)
+	      {
+		file->nn->node = cn;
+		cn->mksymlink (user, file, file->nn->symlink_path);
+		free (file->nn->symlink_path);
+		file->nn->symlink_path = NULL;
+		return 0;
+	      }
+	    else
+	      break;
+	  }
+    }
   return EOPNOTSUPP;
 }
 
@@ -389,7 +448,27 @@ error_t
 netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 			     mode_t mode, struct node **np)
 {
-  return EOPNOTSUPP;
+  error_t err;
+  struct netnode *nn;
+
+  err = fshelp_access (&dir->nn_stat, S_IWRITE, user);
+  if (err)
+    {
+      *np = 0;
+      return err;
+    }
+
+  mutex_unlock (&dir->lock);
+
+  nn = calloc (1, sizeof (*nn));
+  if (!nn)
+    return ENOMEM;
+
+  *np = netfs_make_node (nn);
+  mutex_lock (&(*np)->lock);
+  spin_unlock (&netfs_node_refcnt_lock);
+
+  return 0;
 }
 
 
@@ -413,6 +492,8 @@ error_t
 netfs_attempt_readlink (struct iouser *user, struct node *np,
 			char *buf)
 {
+  if (np->nn->node && np->nn->node->readlink)
+    return np->nn->node->readlink (user, np, buf);
   return EOPNOTSUPP;
 }
 
@@ -471,7 +552,7 @@ netfs_S_io_read (struct protid *user,
     return EOPNOTSUPP;
   np = user->po->np;
   
-  if (np->nn->node->read)
+  if (np->nn->node && np->nn->node->read)
     return np->nn->node->read (user, data, datalen, offset, amount);
   return EOPNOTSUPP;
 }
@@ -490,7 +571,7 @@ netfs_S_io_write (struct protid *user,
     return EOPNOTSUPP;
   
   np = user->po->np;
-  if (np->nn->node->read)
+  if (np->nn->node && np->nn->node->write)
     return np->nn->node->write (user, data, datalen, offset, amount);
   return EOPNOTSUPP;
 }
@@ -517,9 +598,15 @@ netfs_report_access (struct iouser *cred, struct node *np,
 void netfs_node_norefs (struct node *np)
      
 {
-  if (np->nn->node->close)
-    np->nn->node->close ();
-  np->nn->node->node = 0;
+  if (np->nn->node)
+    {
+      if (np->nn->node->close)
+	np->nn->node->close ();
+      np->nn->node->node = 0;
+    }
+
+  if (np->nn->symlink_path)
+    free (np->nn->symlink_path);
 
   spin_unlock (&netfs_node_refcnt_lock);
   free (np->nn);
@@ -645,7 +732,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
       
       /* Fill in the real directory entries.  */
       for (cn = first_node; cn; cn = cn->next)
-	if (!add_dir_entry (cn->name, cn->id, DT_CHR))
+	if (!add_dir_entry (cn->name, cn->id, cn->readlink ? DT_LNK : DT_CHR))
 	  break;
     }
       
@@ -688,6 +775,9 @@ console_create_consnode (const char *name, consnode_t *cn)
       free (cn);
       return ENOMEM;
     }
+
+  (*cn)->readlink = NULL;
+  (*cn)->mksymlink = NULL;
 
   return 0;
 }
