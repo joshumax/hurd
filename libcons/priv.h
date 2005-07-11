@@ -45,9 +45,6 @@ extern int _cons_jump_down_on_input;
 /* If we jump down at output.  */
 extern int _cons_jump_down_on_output;
 
-/* The filename of the console server.  */
-extern char *_cons_file;
-
 /* The type of bell used for the visual bell.  */
 extern bell_type_t _cons_visual_bell;
 

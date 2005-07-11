@@ -58,7 +58,7 @@ int _cons_jump_down_on_input = 1;
 int _cons_jump_down_on_output;
 
 /* The filename of the console server.  */
-char *_cons_file;
+char *cons_file;
 
 /* The type of bell used for the visual bell.  */
 bell_type_t _cons_visual_bell = BELL_VISUAL;
@@ -206,7 +206,7 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       if (state->arg_num > 0)
 	/* Too many arguments.  */
 	argp_error (state, "Too many non option arguments");
-      _cons_file = arg;
+      cons_file = arg;
       break;
 
     case ARGP_KEY_NO_ARGS:

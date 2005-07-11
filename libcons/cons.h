@@ -298,6 +298,9 @@ extern const struct argp cons_startup_argp;
 extern struct port_bucket *cons_port_bucket;
 extern struct port_class *cons_port_class;
 
+/* The filename of the console server.  */
+extern char *cons_file;
+
 error_t cons_init (void);
 void cons_server_loop (void);
 int cons_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp);

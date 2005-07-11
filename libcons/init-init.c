@@ -56,7 +56,7 @@ cons_init (void)
   mutex_init (&cons->lock);
   cons->vcons_list = NULL;
   cons->vcons_last = NULL;
-  cons->dir = opendir (_cons_file);
+  cons->dir = opendir (cons_file);
   cons->slack = _cons_slack;
   if (!cons->dir)
     {

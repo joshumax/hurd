@@ -1,3 +1,11 @@
+2005-03-05  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* priv.h (_cons_file): Prototype moved and renamed to...
+	* cons.h (cons_file): ... this.
+	* init-init.c (cons_init): Updated `_cons_file' reference.
+	* opts-std-startup.c (_cons_file): Renamed into `cons_file'.  Updated
+	reference.
+
 2005-01-06  Marco Gerards  <metgerards@student.han.nl>
 
 	* Makefile (SRCS): Add `vcons-move-mouse.c' and `vcons-event.c'.
