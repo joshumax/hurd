@@ -1,3 +1,7 @@
+2005-07-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pager.c (diskfs_get_filemap): Initialize upi->max_prot to PROT.
+
 2004-11-08  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* storeinfo.c (diskfs_S_file_get_storage_info): Cast -1 to

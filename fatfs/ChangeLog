@@ -1,3 +1,7 @@
+2005-07-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* pager.c (diskfs_get_filemap): Initialize upi->max_prot to PROT.
+
 2003-08-09  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fat.h: Include <byteswap.h>.

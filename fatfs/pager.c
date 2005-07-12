@@ -790,7 +790,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
             malloc (sizeof (struct user_pager_info));
           upi->type = FILE_DATA;
           upi->node = node;
-          upi->max_prot = 0;
+          upi->max_prot = prot;
           diskfs_nref_light (node);
           node->dn->pager =
             pager_create (upi, pager_bucket, MAY_CACHE,
