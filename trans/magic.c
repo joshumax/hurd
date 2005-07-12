@@ -150,6 +150,7 @@ magic_getroot (struct trivfs_control *cntl,
 	       retry_type *do_retry, char *retry_name,
 	       mach_port_t *node, mach_msg_type_name_t *node_type)
 {
+  error_t err;
   struct magic *const m = cntl->hook;
 
   if (m->directory)
@@ -159,6 +160,10 @@ magic_getroot (struct trivfs_control *cntl,
   *do_retry = FS_RETRY_MAGICAL;
   *node = MACH_PORT_NULL;
   *node_type = MACH_MSG_TYPE_COPY_SEND;
+
+  err = mach_port_deallocate (mach_task_self (), dotdot);
+  assert_perror (err);
+
   return 0;
 }
 
@@ -178,17 +183,20 @@ magic_open  (struct trivfs_control *cntl,
   error_t err = trivfs_open (cntl, user, flags, realnode, cred);
   if (!err)
     {
+      /* We consume the reference for DOTDOT.  */
       (*cred)->po->hook = (void *) dotdot;
-      err = mach_port_mod_refs (mach_task_self (), dotdot,
-				MACH_PORT_RIGHT_SEND, +1);
-      assert_perror (err);
-      err = mach_port_deallocate (mach_task_self (), dotdot);
-      assert_perror (err);
       struct magic *const m = cntl->hook;
       m->nusers++;
     }
   return err;
 }
+
+static void
+magic_peropen_destroy (struct trivfs_peropen *po)
+{
+  mach_port_deallocate (mach_task_self (), (mach_port_t) po->hook);
+}
+
 
 /* We have this hook only for simple tracking of the live user ports.  */
 static void
@@ -467,6 +475,8 @@ main (int argc, char **argv)
   trivfs_getroot_hook = &magic_getroot;
   trivfs_open_hook = &magic_open;
   trivfs_protid_destroy_hook = &magic_protid_destroy;
+  if (m->directory)
+    trivfs_peropen_destroy_hook = &magic_peropen_destroy;
 
   /* Reply to our parent */
   err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);

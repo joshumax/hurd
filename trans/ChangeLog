@@ -1,3 +1,11 @@
+2005-07-12  Marcus Brinkmann  <marcus@gnu.org>
+
+	* magic.c (magic_getroot): Deallocate DOTDOT if processing here.
+	(magic_open): Do not allocate and deallocate DOTDOT, just consume
+	the reference given to us.
+	(magic_peropen_destroy): New function.
+	(main): If in directory mode, install magic_peropen_destroy hook.
+
 2003-08-17  Marcus Brinkmann  <marcus@gnu.org>
 
 	* fakeroot.c: Include <stddef.h>.
