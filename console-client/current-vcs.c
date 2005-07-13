@@ -32,7 +32,7 @@
 #define DEFAULT_REPEATER_NODE "vcs"
 
 /* The name of the repeater node.  */
-static char *repeater_node = DEFAULT_REPEATER_NODEM;
+static char *repeater_node = DEFAULT_REPEATER_NODE;
 
 /* The repeater node.  */
 static consnode_t vcs_node;
