@@ -1,3 +1,7 @@
+2005-07-13  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* current-vcs.c (repeater_node): Set default.
+
 2005-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* Makefile (modules): Add `current-vcs' and its rules.
