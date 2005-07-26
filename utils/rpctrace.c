@@ -1,6 +1,6 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998,99,2001,02,03 Free Software Foundation, Inc.
+   Copyright (C) 1998,99,2001,02,03,05 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -25,6 +25,9 @@
 #include <mach/message.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <fnmatch.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <argp.h>
 #include <error.h>
@@ -39,8 +42,10 @@ const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 static const struct argp_option options[] =
 {
   {"output", 'o', "FILE", 0, "Send trace output to FILE instead of stderr."},
-  {"rpc-list", 'I', "FILE", 0,
+  {"rpc-list", 'i', "FILE", 0,
    "Read FILE for assocations of message ID numbers to names."},
+  {0, 'I', "DIR", 0,
+   "Add the directory DIR to the list of directories to be searched for files containing message ID numbers."},
   {0}
 };
 
@@ -1059,7 +1064,6 @@ main (int argc, char **argv, char **envp)
 {
   const char *outfile = 0;
   char **cmd_argv = 0;
-  error_t err;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -1070,8 +1074,40 @@ main (int argc, char **argv, char **envp)
 	  outfile = arg;
 	  break;
 
-	case 'I':
+	case 'i':
 	  parse_msgid_list (arg);
+	  break;
+
+	case 'I':
+	  {
+	    struct dirent **eps;
+	    int n;
+	    
+	    static int
+	      msgids_file_p (const struct dirent *eps)
+	      {
+		if (fnmatch ("*.msgids", eps->d_name, 0) != FNM_NOMATCH)
+		  return 1;
+		return 0;
+	      }
+	    
+	    n = scandir (arg, &eps, msgids_file_p, NULL);
+	    if (n >= 0)
+	      {
+		for (int cnt = 0; cnt < n; ++cnt)
+		  {
+		    char *msgids_file;
+		    struct stat st;
+		    if (asprintf (&msgids_file,
+				  "%s/%s", arg, eps[cnt]->d_name) < 0)
+		      error (1, errno, "asprintf");
+		    parse_msgid_list (msgids_file);
+		    free (msgids_file);
+		  }
+	      }
+	    /* If the directory couldn't be scanned for whatever
+	       reason, just ignore it. */
+	  }
 	  break;
 
 	case ARGP_KEY_NO_ARGS:

@@ -1,3 +1,11 @@
+2005-07-26  Alfred M. Szmidt  <ams@gnu.org>
+
+	* rpctrace.c: Include <fnmatch.h>, <sys/stat.h>, and <dirent.h>.
+	(main, options): Renamed the option `-I' to `-i', and
+	reimplemented `-I' to search a given directory for message ID
+	files.
+	(main): Variable `err' removed.
+
 2004-09-21  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* fsysopts.c (doc): Changed `--remount' to `--update'.
