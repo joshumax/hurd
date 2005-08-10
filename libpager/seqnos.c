@@ -1,5 +1,5 @@
 /* Sequence number synchronization routines for pager library
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 2011 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -45,5 +45,25 @@ _pager_release_seqno (struct pager *p,
     {
       p->waitingforseqno = 0;
       condition_broadcast (&p->wakeup);
+    }
+}
+
+
+/* Just update the seqno.  */
+void
+_pager_stubs_update_seqno (mach_port_t object,
+                           int seqno)
+{
+  struct pager *p;
+
+  p = ports_lookup_port (0, object, _pager_class);
+  if (p)
+    {
+      mutex_lock (&p->interlock);
+      _pager_wait_for_seqno (p, seqno);
+      _pager_release_seqno (p, seqno);
+      mutex_unlock (&p->interlock);
+
+      ports_port_deref (p);
     }
 }

@@ -1,5 +1,5 @@
  /* Unused memory object interface stubs
-   Copyright (C) 1994 Free Software Foundation
+   Copyright (C) 1994, 2011 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -29,6 +29,9 @@ _pager_seqnos_memory_object_copy (mach_port_t old,
 			   mach_port_t new)
 {
   printf ("m_o_copy called\n");
+
+  _pager_stubs_update_seqno (old, seq);
+
   return EOPNOTSUPP;
 }
 
@@ -41,6 +44,9 @@ _pager_seqnos_memory_object_data_write (mach_port_t old,
 				 vm_size_t data_cnt)
 {
   printf ("m_o_data_write called\n");
+
+  _pager_stubs_update_seqno (old, seq);
+
   return EOPNOTSUPP;
 }
 
@@ -54,6 +60,8 @@ _pager_seqnos_memory_object_supply_completed (mach_port_t obj,
 				       vm_offset_t err_off)
 {
   printf ("m_o_supply_completed called\n");
+
+  _pager_stubs_update_seqno (obj, seq);
+
   return EOPNOTSUPP;
 }
-

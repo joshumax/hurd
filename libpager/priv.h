@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994,95,96,97,99, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1994-1997, 1999, 2000, 2011 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -133,6 +133,7 @@ struct port_class *_pager_class;
 
 void _pager_wait_for_seqno (struct pager *, int);
 void _pager_release_seqno (struct pager *, int);
+void _pager_stubs_update_seqno (mach_port_t, int);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 error_t _pager_pagemap_resize (struct pager *, vm_address_t);
