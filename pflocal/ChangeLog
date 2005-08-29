@@ -1,41 +1,5 @@
 2005-05-17  Neal H. Walfield  <neal@gnu.org>
 
-	* connq.h (struct connq_request): Remove forward.
-	(connq_listen): Wait for a request to be queued not until there is
-	a connection attempt.  Remove REQ parameter.  Update callers.
-	(connq_request_complete): Remove declaration.
-	(connq_connect): Wait for a slot to queue a request not until
-	there is an acceptor.  Remove SOCK parameter.  Update callers.
-	(connq_connect_complete): New declaration.
-	(connq_connect_cancel): New declaration.
-	
-	* connq.c (struct connq): Remove fields noqueue, queue, length,
-	head and tail.  Add fields head, tail, count, max, connectors and
-	num_connectors.  That is, replace the circular buffer with a
-	singly linked list.
-	(qnext): Remove function.
-	(struct connq_request): Remove field signal, lock, completed and
-	err.  Add field next.
-	(connq_request_init): Rewrite according to new semantics.
-	(connq_request_enqueue): New function.
-	(connq_request_dequeue): New function.
-	(connq_create): Update according to new semantics.
-	(connq_destroy): Likewise.
-	(connq_listen): Rewrite to not block until there is a connector
-	but until there is a request in the queue.
-	(connq_request_complete): Remove function.
-	(connq_connect): Rewrite to not block until there is an acceptor
-	but until there is space for a request.
-	(connq_connect_complete): New function.
-	(connq_connect_cancel): New function.
-	(connq_compress): Remove dead code.
-	(connq_set_length): Rewrite.
-
-	* socket.c (S_socket_connect): Create the server socket here...
-	(S_socket_accept): ... not here.
-
-2005-05-17  Neal H. Walfield  <neal@gnu.org>
-
 	* sock.c (sock_free): Don't destroy SOCK->CONNECT_QUEUE.
 
 2002-06-08  Roland McGrath  <roland@frob.com>

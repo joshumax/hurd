@@ -1,6 +1,6 @@
 /* Socket-specific operations
 
-   Copyright (C) 1995, 2005 Free Software Foundation, Inc.
+   Copyright (C) 1995 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -110,7 +110,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	  else if (sock->flags & SOCK_CONNECTED)
 	    /* SOCK_CONNECTED is only set for connection-oriented sockets,
 	       which can only ever connect once.  [If we didn't do this test
-	       here, it would eventually fail when the listening socket
+	       here, it would eventually fail when it the listening socket
 	       tried to accept our connection request.]  */
 	    err = EISCONN;
 	  else
@@ -118,35 +118,16 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	      /* Assert that we're trying to connect, so anyone else trying
 	         to do so will fail with EALREADY.  */
 	      sock->connect_queue = cq;
-	      /* Unlock SOCK while waiting.  */
-	      mutex_unlock (&sock->lock);
+	      mutex_unlock (&sock->lock); /* Unlock SOCK while waiting.  */
 
-	      err = connq_connect (peer->listen_queue,
-				   sock->flags & SOCK_NONBLOCK);
-	      if (!err)
-		{
-		  struct sock *server;
+	      /* Try to connect.  */
+	      err = connq_connect (cq, sock->flags & SOCK_NONBLOCK, sock);
 
-		  err = sock_clone (peer, &server);
-		  if (!err)
-		    {
-		      err = sock_connect (sock, server);
-		      if (!err)
-			connq_connect_complete (peer->listen_queue, server);
-		      else
-			sock_free (server);
-		    }
-
-	          mutex_lock (&sock->lock);
-		  if (err)
-		    connq_connect_cancel (peer->listen_queue);
-		}
-
-	      /* We must set CONNECT_QUEUE to NULL, as no one else can
+	      /* We can safely set CONNECT_QUEUE to NULL, as no one else can
 		 set it until we've done so.  */
+	      mutex_lock (&sock->lock);
 	      sock->connect_queue = NULL;
 	    }
-
 	  mutex_unlock (&sock->lock);
 	}
       else
@@ -176,25 +157,42 @@ S_socket_accept (struct sock_user *user,
   err = ensure_connq (sock);
   if (!err)
     {
+      struct connq_request *req;
       struct sock *peer_sock;
 
-      err = connq_listen (sock->listen_queue, sock->flags & SOCK_NONBLOCK,
-			  &peer_sock);
+      err =
+	connq_listen (sock->listen_queue, sock->flags & SOCK_NONBLOCK,
+		      &req, &peer_sock);
       if (!err)
 	{
-	  struct addr *peer_addr;
-	  *port_type = MACH_MSG_TYPE_MAKE_SEND;
-	  err = sock_create_port (peer_sock, port);
-	  if (!err)
-	    err = sock_get_addr (peer_sock, &peer_addr);
+	  struct sock *conn_sock;
+
+	  err = sock_clone (sock, &conn_sock);
 	  if (!err)
 	    {
-	      *peer_addr_port = ports_get_right (peer_addr);
-	      *peer_addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
-	      ports_port_deref (peer_addr);
+	      err = sock_connect (conn_sock, peer_sock);
+	      if (!err)
+		{
+		  struct addr *peer_addr;
+		  *port_type = MACH_MSG_TYPE_MAKE_SEND;
+		  err = sock_create_port (conn_sock, port);
+		  if (!err)
+		    err = sock_get_addr (peer_sock, &peer_addr);
+		  if (!err)
+		    {
+		      *peer_addr_port = ports_get_right (peer_addr);
+		      *peer_addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+		      ports_port_deref (peer_addr);
+		    }
+		  else
+		    /* TEAR DOWN THE CONNECTION XXX */;
+		}
+	      if (err)
+		sock_free (conn_sock);
 	    }
-	  else
-	    /* TEAR DOWN THE CONNECTION XXX */;
+
+	  /* Communicate any error (or success) to the connecting thread.  */
+	  connq_request_complete (req, err);
 	}
     }
 
