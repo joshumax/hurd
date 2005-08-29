@@ -1,6 +1,6 @@
 /* Connection queues
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2005 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -23,9 +23,8 @@
 
 #include <errno.h>
 
-/* Unknown types */
+/* Forward.  */
 struct connq;
-struct connq_request;
 struct sock;
 
 /* Create a new listening queue, returning it in CQ.  The resulting queue
@@ -36,26 +35,26 @@ error_t connq_create (struct connq **cq);
 /* Destroy a queue.  */
 void connq_destroy (struct connq *cq);
 
-/* Wait for a connection attempt to be made on CQ, and return the connecting
-   socket in SOCK, and a request tag in REQ.  If REQ is NULL, the request is
-   left in the queue, otherwise connq_request_complete must be called on REQ
-   to allow the requesting thread to continue.  If NOBLOCK is true,
-   EWOULDBLOCK is returned when there are no immediate connections
-   available.  CQ should be unlocked.  */
-error_t connq_listen (struct connq *cq, int noblock,
-		      struct connq_request **req, struct sock **sock);
+/* Return a connection request on CQ.  If SOCK is NULL, the request is
+   left in the queue.  If NOBLOCK is true, EWOULDBLOCK is returned
+   when there are no immediate connections available.  */
+error_t connq_listen (struct connq *cq, int noblock, struct sock **sock);
 
-/* Return the error code ERR to the thread that made the listen request REQ,
-   returned from a previous connq_listen.  */
-void connq_request_complete (struct connq_request *req, error_t err);
+/* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is
+   true, then return EWOULDBLOCK if there are no connections
+   immediately available.  On success, this call must be followed up
+   either connq_connect_complete or connq_connect_cancel.  */
+error_t connq_connect (struct connq *cq, int noblock);
+
+/* Follow up to connq_connect.  Completes the connection, SOCK is the
+   new server socket.  */
+void connq_connect_complete (struct connq *cq, struct sock *sock);
+
+/* Follow up to connq_connect.  Cancel the connect.  */
+void connq_connect_cancel (struct connq *cq);
 
 /* Set CQ's queue length to LENGTH.  Any sockets already waiting for a
-   connections that are past the new length will fail with ECONNREFUSED.  */
+   connections that are past the new length remain.  */
 error_t connq_set_length (struct connq *cq, int length);
-
-/* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is true,
-   then return EWOULDBLOCK immediately when there are no immediate
-   connections available. Neither SOCK nor CQ should be locked.  */
-error_t connq_connect (struct connq *cq, int noblock, struct sock *sock);
 
 #endif /* __CONNQ_H__ */
