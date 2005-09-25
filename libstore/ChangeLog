@@ -1,3 +1,8 @@
+2005-09-24  Roland McGrath  <roland@frob.com>
+
+	* store.h (STORE_STD_CLASS): Use __attribute_used__ macro
+	instead of `unused' attribute.
+
 2004-09-03  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* store.h (__start_store_std_classes, __stop_store_std_classes):
