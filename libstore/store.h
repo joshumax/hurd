@@ -1,6 +1,6 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001,02,04 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2001,02,04,05 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
@@ -627,7 +627,7 @@ extern const struct store_class store_mvol_class;
 
 #define STORE_STD_CLASS(name) \
   static const struct store_class *const store_std_classes_##name[] \
-    __attribute__ ((unused, section ("store_std_classes"))) \
+    __attribute_used__ __attribute__ ((section ("store_std_classes"))) \
     = { &store_##name##_class }
 
 
