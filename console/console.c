@@ -1999,7 +1999,7 @@ main (int argc, char **argv)
   struct netnode root_nn = { vcons: 0 };
 
   cons = malloc (sizeof (struct cons));
-  if (!malloc)
+  if (!cons)
     error (1, ENOMEM, "Cannot create console structure");
   mutex_init (&cons->lock);
   cons->encoding = NULL;

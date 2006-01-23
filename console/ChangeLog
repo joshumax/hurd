@@ -1,5 +1,7 @@
 2006-01-23  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
+	* console.c (main): Check CONS instead of MALLOC.
+
 	* input.c (input_create): Fix arguments order of iconv_open()
 	call.
 	
