@@ -62,7 +62,7 @@ error_t input_create (input_t *r_input, const char *encoding)
   condition_init (&input->data_available);
   condition_init (&input->space_available);
 
-  input->cd = iconv_open ("UTF-8", encoding);
+  input->cd = iconv_open (encoding, "UTF-8");
   if (input->cd == (iconv_t) -1)
     {
       free (input);
