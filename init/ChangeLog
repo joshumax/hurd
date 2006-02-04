@@ -1,4 +1,4 @@
-2005-02-24  Ben Asselstine <benasselstine@gmail.com>
+2005-02-24  Ben Asselstine  <benasselstine@gmail.com>
 
 	* init.c (main): Only pass ARGP_NO_ERRS to argp_parse when invoked
 	by the bootstrap filesystem.
