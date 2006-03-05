@@ -1,3 +1,8 @@
+2006-03-05  Roland McGrath  <roland@frob.com>
+
+	* io-seek.c (diskfs_S_io_seek): Return EINVAL if file pointer would
+	become negative.
+
 2004-02-10  Roland McGrath  <roland@frob.com>
 
 	* opts-runtime.c (diskfs_runtime_argp): Include <argp.h>.
