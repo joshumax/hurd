@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1994, 1995, 1996, 2000 Free Software Foundation
+/*
+   Copyright (C) 1994,1995,1996,2000,2006 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -28,31 +28,33 @@ diskfs_S_io_seek (struct protid *cred,
 {
   error_t err = 0;
   struct node *np;
-  
+
   if (!cred)
     return EOPNOTSUPP;
-  
+
   np = cred->po->np;
-  
+
   mutex_lock (&np->lock);
-  
+
   iohelp_get_conch (&np->conch);
   switch (whence)
     {
-    case SEEK_SET:
-      cred->po->filepointer = offset;
-      break;
     case SEEK_CUR:
-      cred->po->filepointer += offset;
-      break;
+      offset += cred->po->filepointer;
+      goto check;
     case SEEK_END:
-      cred->po->filepointer = (np->dn_stat.st_size + offset);
-      break;
+      offset += np->dn_stat.st_size;
+    case SEEK_SET:
+    check:
+      if (offset >= 0)
+	{
+	  *newoffset = cred->po->filepointer = offset;
+	  break;
+	}
     default:
       err = EINVAL;
       break;
     }
-  *newoffset = cred->po->filepointer;
 
   mutex_unlock (&np->lock);
   return err;
