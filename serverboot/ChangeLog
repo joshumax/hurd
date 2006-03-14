@@ -1,3 +1,10 @@
+2006-03-15  Alfred M. Szmidt  <ams@gnu.org>
+
+	* kalloc.c: #include <malloc.h>.
+	(init_hook, malloc_hook, free_hook): New functions.
+	(__malloc_initialize_hook): New variable.
+	(malloc, free): Functions removed.
+
 2003-05-07  Ognyan Kulev  <ogi@fmi.uni-sofia.bg>
 
 	* strfcns.c: #include <stdarg.h> instead of <varargs.h>.

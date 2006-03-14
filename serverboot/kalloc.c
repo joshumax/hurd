@@ -34,6 +34,14 @@
 
 #include <mach.h>
 #include <cthreads.h>		/* for spin locks */
+#include <malloc.h> 		/* for malloc_hook/free_hook */
+
+static void init_hook (void);
+static void *malloc_hook (size_t size, const void *caller);
+static void free_hook (void *ptr, const void *caller);
+
+void (*__malloc_initialize_hook) (void) = init_hook;
+
 
 #define	DEBUG
 
@@ -250,12 +258,21 @@ kfree(	void *data,
 	}
 }
 
-void *malloc(vm_size_t size)
+static void
+init_hook (void)
 {
-	return (void *)kalloc(size);
+  __malloc_hook = malloc_hook;
+  __free_hook = free_hook;
 }
 
-void free(void *addr)
+static void *
+malloc_hook (size_t size, const void *caller)
+{
+  return (void *) kalloc ((vm_size_t) size);
+}
+
+static void
+free_hook (void *ptr, const void *caller)
 {
   /* Just ignore harmless attempts at cleanliness.  */
   /*	panic("free not implemented"); */
