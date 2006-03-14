@@ -1,3 +1,7 @@
+2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* boot.c (boot_script_exec_cmd): Fix invalid lvalues.
+
 2003-01-04  Roland McGrath  <roland@frob.com>
 
 	* boot_script.c (boot_script_parse_line): Copy the file name into

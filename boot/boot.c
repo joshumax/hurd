@@ -1,6 +1,7 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,2006
+     Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -367,11 +368,17 @@ boot_script_exec_cmd (void *hook,
   str_start = ((vm_address_t) arg_pos
 	       + (argc + 2) * sizeof (char *) + sizeof (integer_t));
   p = args + ((vm_address_t) arg_pos & (vm_page_size - 1));
-  *((int *) p)++ = argc;
+  *(int *) p = argc;
+  p = (void *) p + sizeof (int);
   for (i = 0; i < argc; i++)
-    *((char **) p)++ = argv[i] - strings + (char *) str_start;
-  *((char **) p)++ = 0;
-  *((char **) p)++ = 0;
+    {
+      *(char **) p = argv[i] - strings + (char *) str_start;
+      p = (void *) p + sizeof (char *);
+    }
+  *(char **) p = 0;
+  p = (void *) p + sizeof (char *);
+  *(char **) p = 0;
+  p = (void *) p + sizeof (char *);
   memcpy (p, strings, stringlen);
   bzero (args, (vm_offset_t) arg_pos & (vm_page_size - 1));
   vm_write (task, trunc_page ((vm_offset_t) arg_pos), (vm_address_t) args,
