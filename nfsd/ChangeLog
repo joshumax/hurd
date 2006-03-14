@@ -1,3 +1,7 @@
+2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* loop.c (server_loop): Fix invalid lvalues.
+
 2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* loop.c (server_loop): Use memset instead bzero.

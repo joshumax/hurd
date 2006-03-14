@@ -1,5 +1,5 @@
 /* loop.c - Main server loop for nfs server.
-   Copyright (C) 1996,98,2002 Free Software Foundation, Inc.
+   Copyright (C) 1996,98,2002,2006 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -77,7 +77,7 @@ server_loop (int fd)
 	/* This transacation has already completed.  */
 	goto repost_reply;
 
-      r = (int *) rbuf = malloc (MAXIOSIZE);
+      r = (int *) (rbuf = malloc (MAXIOSIZE));
 
       if (ntohl (*p) != RPC_MSG_VERSION)
 	{
@@ -173,7 +173,7 @@ server_loop (int fd)
 	  if (amt > MAXIOSIZE)
 	    {
 	      free (rbuf);
-	      r = (int *) rbuf = malloc (amt);
+	      r = (int *) (rbuf = malloc (amt));
 	    }
 	}
 
