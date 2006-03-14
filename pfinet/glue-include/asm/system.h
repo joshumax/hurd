@@ -9,7 +9,7 @@
 #define xchg(ptr, x)							      \
   ({									      \
     __typeof__ (*(ptr)) *_ptr = (ptr), _x = *_ptr;			      \
-    (uintptr_t) *_ptr = (x); _x;					      \
+    *_ptr = (x); _x;							      \
   })
 
 #define mb()	((void) 0)	/* memory barrier */

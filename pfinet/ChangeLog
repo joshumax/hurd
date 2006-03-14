@@ -1,3 +1,9 @@
+2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* glue-include/asm/system.h (xchg): Fix invalid lvalue.
+	* linux-src/net/ipv4/tcp_ipv4.c (tcp_v4_rst_req): Don't use ?: as a
+	lvalue.
+
 2004-09-03  Alfred M. Szmidt  <ams@kemisten.nu>
 
 	* linux-src/net/ipv4/udp.c (udp_v4_get_port): Put empty statement

@@ -1584,7 +1584,10 @@ static void tcp_v4_rst_req(struct sock *sk, struct sk_buff *skb)
 	    after(TCP_SKB_CB(skb)->seq, req->rcv_isn+1))
 		return;
 	tcp_synq_unlink(tp, req, prev);
-	(req->sk ? sk->ack_backlog : tp->syn_backlog)--;
+	if (req->sk)
+		sk->ack_backlog--;
+	else
+		tp->syn_backlog--;
 	req->class->destructor(req);
 	tcp_openreq_free(req); 
 
