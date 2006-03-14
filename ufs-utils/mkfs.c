@@ -33,7 +33,7 @@
 
 #ifndef lint
 /*static char sccsid[] = "from: @(#)mkfs.c	8.3 (Berkeley) 2/3/94";*/
-static char *rcsid = "$Id: mkfs.c,v 1.21 2002/06/11 21:43:19 roland Exp $";
+static char *rcsid = "$Id: mkfs.c,v 1.22 2006/03/14 23:27:50 tschwinge Exp $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -279,10 +279,8 @@ main (int argc, char **argv)
 	case 'N': Nflag = 1; break;
 	case 'O': Oflag = 1; break;
 
-	  /* Mark &VAR as being a uparam, and return a lvalue for VAR.  */
-#define UP(var) (amarks_add (&uparams, &var), var)
-	  /* Record an integer uparam into VAR.  */
-#define UP_INT(var) { int _i = atoi (arg); UP (var) = _i; }
+/* Mark &VAR as being a uparam, and set VAR.  */
+#define UP_INT(var) { amarks_add (&uparams, &var); var = atoi (arg); }
 
 	case 'a': UP_INT (maxcontig); break;
 	case 'b': UP_INT (bsize); break;
