@@ -1,3 +1,9 @@
+2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* ps.c (current_tty_name): Don't declare as static.
+	* rpctrace.c (print_contents): Don't use ?: as a lvalue.
+	(msgids_file_p): Don't declare as static.
+
 2005-07-26  Alfred M. Szmidt  <ams@gnu.org>
 
 	* rpctrace.c: Include <fnmatch.h>, <sys/stat.h>, and <dirent.h>.

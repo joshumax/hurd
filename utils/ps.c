@@ -1,6 +1,6 @@
 /* Show process information.
 
-   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2002,2006 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -249,7 +249,7 @@ main(int argc, char *argv[])
     }
 
   /* Returns the name of the current controlling terminal.  */
-  static const char *current_tty_name()
+  const char *current_tty_name()
     {
       error_t err;
       struct ps_tty *tty;

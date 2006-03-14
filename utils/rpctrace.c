@@ -1,6 +1,6 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998,99,2001,02,03,05 Free Software Foundation, Inc.
+   Copyright (C) 1998,99,2001,02,03,05,2006 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -616,11 +616,16 @@ print_contents (mach_msg_header_t *inp,
 
 		  name = MACH_MSG_TYPE_MOVE_SEND;
 		}
-	      (type->msgt_longform ? lt->msgtl_name : type->msgt_name) = name;
+	      if (type->msgt_longform)
+		lt->msgtl_name = name;
+	      else
+		type->msgt_name = name;
 	    }
 	  else if (newtypes[0] != name)
-	    (type->msgt_longform ? lt->msgtl_name : type->msgt_name)
-	      = newtypes[0];
+	    if (type->msgt_longform)
+	      lt->msgtl_name = newtypes[0];
+	    else
+	      type->msgt_name = newtypes[0];
 	}
       else
 	print_data (name, data, nelt, eltsize);
@@ -1083,7 +1088,7 @@ main (int argc, char **argv, char **envp)
 	    struct dirent **eps;
 	    int n;
 	    
-	    static int
+	    int
 	      msgids_file_p (const struct dirent *eps)
 	      {
 		if (fnmatch ("*.msgids", eps->d_name, 0) != FNM_NOMATCH)
