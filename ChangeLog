@@ -1,5 +1,6 @@
-2006-03-20  Leonardo Lopes Pereira  <leonardolopespereira@gmail.com>
+2006-03-21  Leonardo Lopes Pereira  <leonardolopespereira@gmail.com>
 
+	[patch #4984]
 	* Makeconf (mach_defs_names): Remove `mach_norma' and `norma_task'.
 
 2006-01-26  Thomas Schwinge  <tschwinge@gnu.org>
