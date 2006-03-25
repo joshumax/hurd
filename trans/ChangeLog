@@ -1,3 +1,12 @@
+2006-03-25  Thomas Schwinge  <tschwinge@gnu.org>
+
+	[bug #15808]
+	* ifsock.c: Include <argp.h>, <sys/cdefs.h> and <version.h>.
+	(__XSTRING): New macro.
+	(argp_program_version, doc, argp): New variables.
+	(main): Call argp_parse().
+	Based on a patch by Ben Asselstine <benasselstine@gmail.com>.
+
 2005-07-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* magic.c (magic_getroot): Deallocate DOTDOT if processing here.

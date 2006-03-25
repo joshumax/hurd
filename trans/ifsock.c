@@ -1,5 +1,5 @@
 /* Server for S_IFSOCK nodes
-   Copyright (C) 1994, 1995, 2001, 02 Free Software Foundation
+   Copyright (C) 1994, 1995, 2001, 02, 2006 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -26,9 +26,24 @@
 #include <stdlib.h>
 #include <error.h>
 #include <fcntl.h>
+#include <argp.h>
+
+#include <sys/cdefs.h>
+#ifndef __XSTRING /* Could / should (?) be provided by glibc.  */
+#define __XSTRING(x) __STRING(x) /* Expand x, then stringify.  */
+#endif
+
+#include <version.h>
 
 #include "ifsock_S.h"
 
+const char *argp_program_version = STANDARD_HURD_VERSION (ifsock);
+
+static const char doc[] = "A translator to provide Unix domain sockets."
+"\vThis translator acts as a hook for Unix domain sockets."
+"  The pflocal translator on " _SERVERS_SOCKET "/" __XSTRING(PF_LOCAL)
+" implements the sockets.";
+
 mach_port_t address_port;
 
 struct port_class *control_class;
@@ -63,6 +78,9 @@ main (int argc, char **argv)
   mach_port_t pflocal;
   mach_port_t bootstrap;
   char buf[512];
+  const struct argp argp = { 0, 0, 0, doc };
+
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   control_class = ports_create_class (trivfs_clean_cntl, 0);
   node_class = ports_create_class (trivfs_clean_protid, 0);
@@ -99,7 +117,7 @@ main (int argc, char **argv)
   ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
   return 0;
 }
-
+
 void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
