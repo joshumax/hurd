@@ -1,11 +1,18 @@
-GNU Hurd Task List Version 1.22.  Last updated 21 March 2000.
+GNU Hurd Task List Version 1.23.  Last updated 25 April 2006.
 
-If you would like to work on one of these, please contact thomas@gnu.org.
-It's important that you let me know what's being worked on, because
-someone else might also be interested, and you should coordinate work.
+If you would like to work on one of these, please contact
+bug-hurd@gnu.org.  It's important that you let us know what's being
+worked on, because someone else might also be interested, and we should
+coordinate work.
 
 Items that we want done with more priority are marked with !!!.
 
+
+Some of these items might be outdated.  If someone feels like triaging
+this list, please go ahead.
+
+These days, we tend to use the Savannah task tracker,
+<URL:http://savannah.gnu.org/task/?group=hurd>.
 
 
 General system work
