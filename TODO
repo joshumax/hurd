@@ -19,7 +19,6 @@ See `tasks', the exported task list.
 
 * Contents of =pending-changes.
 * Make sure all the pieces of the Hurd have adequate version stuff. !
-* syslogify everything !
 * fix root dependencies in filesystem, network, etc. !
 * Profile things !!
 * Write coding standards suggestions for Hurd
