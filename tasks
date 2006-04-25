@@ -17,9 +17,6 @@ General system work
   * Do whatever magic is necessary for Perl to take advantage of all
   the nifty Hurd features that Unix doesn't have.
 
-  * Something to deal with the case where the system clock is in local
-  time instead of UCT.  Linux deals already; we should too.
-
 
 GNU Mach Work
 
