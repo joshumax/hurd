@@ -68,6 +68,11 @@ ethernet_set_multi (struct device *dev)
 
 static short ether_filter[] =
 {
+#ifdef NETF_IN
+  /* We have to tell the packet filtering code that we're interested in
+     incoming packets.  */
+  NETF_IN, /* Header.  */
+#endif
   NETF_PUSHLIT | NETF_NOP,
   1
 };

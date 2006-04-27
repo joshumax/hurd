@@ -1,3 +1,8 @@
+2006-04-27  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* ethernet.c (ether_filter) [NETF_IN]: Prefix `NETF_IN' to the actual
+	rules.
+
 2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* glue-include/asm/system.h (xchg): Fix invalid lvalue.
