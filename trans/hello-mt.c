@@ -1,5 +1,5 @@
 /* hello-mt.c - A trivial single-file translator, multithreaded version
-   Copyright (C) 1998,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1998,99,2001,02,2006 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -195,18 +195,21 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 
   switch (whence)
     {
-    case SEEK_SET:
-      op->offs = offs; break;
     case SEEK_CUR:
-      op->offs += offs; break;
+      offs += op->offs;
+      goto check;
     case SEEK_END:
-      op->offs = contents_len - offs; break;
+      offs += contents_len;
+    case SEEK_SET:
+    check:
+      if (offs >= 0)
+	{
+	  *new_offs = op->offs = offs;
+	  break;
+	}
     default:
       err = EINVAL;
     }
-
-  if (! err)
-    *new_offs = op->offs;
 
   mutex_unlock (&op->lock);
 

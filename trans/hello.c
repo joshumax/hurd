@@ -1,5 +1,5 @@
 /* hello.c - A trivial single-file translator
-   Copyright (C) 1998, 1999,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1998,1999,2001,02,2006 Free Software Foundation, Inc.
    Gordon Matzigkeit <gord@fig.org>, 1999
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -171,18 +171,21 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
   op = cred->po->hook;
   switch (whence)
     {
-    case SEEK_SET:
-      op->offs = offs; break;
     case SEEK_CUR:
-      op->offs += offs; break;
+      offs += op->offs;
+      goto check;
     case SEEK_END:
-      op->offs = contents_len - offs; break;
+      offs += contents_len;
+    case SEEK_SET:
+    check:
+      if (offs >= 0)
+	{
+	  *new_offs = op->offs = offs;
+	  break;
+	}
     default:
       err = EINVAL;
     }
-
-  if (! err)
-    *new_offs = op->offs;
 
   return err;
 }
