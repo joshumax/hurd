@@ -1,6 +1,6 @@
 /* Per-open information for storeio
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2006 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -105,18 +105,21 @@ open_seek (struct open *open, off_t offs, int whence, off_t *new_offs)
 
   switch (whence)
     {
-    case SEEK_SET:
-      open->offs = offs; break;
     case SEEK_CUR:
-      open->offs += offs; break;
+      offs += open->offs;
+      goto check;
     case SEEK_END:
-      open->offs = open->dev->store->size - offs; break;
+      offs += open->dev->store->size;
+    case SEEK_SET:
+    check:
+      if (offs >= 0)
+	{
+	  *new_offs = open->offs = offs;
+	  break;
+	}
     default:
       err = EINVAL;
     }
-
-  if (! err)
-    *new_offs = open->offs;
 
   mutex_unlock (&open->lock);
 

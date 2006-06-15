@@ -1,3 +1,8 @@
+2006-06-15  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* open.c (open_seek): Seek into the correct direction for `SEEK_END'.
+	Return EINVAL if file pointer would become negative.
+
 2005-01-08  Marco Gerards  <metgerards@student.han.nl>
 
 	* storeio.c (trivfs_modify_stat): Don't initialize st_blocks.
