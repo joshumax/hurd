@@ -1,6 +1,6 @@
 2006-06-15  Thomas Schwinge  <tschwinge@gnu.org>
 
-	* hello-mt.c (trivfs_S_io_seek): Seek into the right direction for
+	* hello-mt.c (trivfs_S_io_seek): Seek into the correct direction for
 	`SEEK_END'.  Return EINVAL if file pointer would become negative.
 	* hello.c (trivfs_S_io_seek): Likewise.
 
