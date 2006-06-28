@@ -1,3 +1,7 @@
+2006-06-28  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): Add `iohelp' and `ports'.
+
 2004-02-10  Roland McGrath  <roland@frob.com>
 
 	* start-translator-long.c (service_fsys_startup): Move mach_msg_type_t
