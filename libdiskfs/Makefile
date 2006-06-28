@@ -1,5 +1,6 @@
 #
-#   Copyright (C) 1994,95,96,97,98,99,2000,01 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,2006
+#     Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -61,7 +62,7 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-HURDLIBS = fshelp iohelp store threads ports shouldbeinlibc
+HURDLIBS = fshelp iohelp store threads ports shouldbeinlibc pager
 
 fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
