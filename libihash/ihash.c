@@ -1,5 +1,6 @@
 /* ihash.c - Integer-keyed hash table functions.
-   Copyright (C) 1993-1997, 2001, 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1993-1997, 2001, 2003, 2004, 2006
+     Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
    Revised by Miles Bader <miles@gnu.org>.
    Revised by Marcus Brinkmann <marcus@gnu.org>.
@@ -329,7 +330,7 @@ add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
       ht->items[first_free].key = key;
 
       if (ht->locp_offset != HURD_IHASH_NO_LOCP)
-	*((hurd_ihash_locp_t) (((char *) value) + ht->locp_offset))
+	*((hurd_ihash_locp_t *) (((char *) value) + ht->locp_offset))
 	  = &ht->items[first_free].value;
 
       return 1;

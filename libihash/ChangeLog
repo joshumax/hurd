@@ -1,3 +1,8 @@
+2006-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* ihash.c (add_one): Cast VALUE with (hurd_ihash_locp_t *) instead of
+	(hurd_ihash_locp_t).
+
 2004-04-21  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ihash.h (HURD_IHASH_ITERATE): Don't use increment operator in
