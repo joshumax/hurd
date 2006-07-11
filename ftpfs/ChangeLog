@@ -1,3 +1,8 @@
+2006-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* node.c (ftpfs_create_node): Check the result from hurd_ihash_add().
+	Add E to the hash table instead of NEW.
+
 2005-06-14  Hugues Larrive  <hugues.larrive@gmail.com>
 
 	* ftpfs.c (parse_startup_opt): User names may contain a @, so take

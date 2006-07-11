@@ -1,6 +1,6 @@
 /* General fs node functions
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2006 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.ai.mit.edu>
    This file is part of the GNU Hurd.
 
@@ -39,6 +39,7 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
 {
   struct node *new;
   struct netnode *nn = malloc (sizeof (struct netnode));
+  error_t err;
 
   if (! nn)
     return ENOMEM;
@@ -61,8 +62,15 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
 		ftpfs_maptime);
 
   spin_lock (&nn->fs->inode_mappings_lock);
-  hurd_ihash_add (&nn->fs->inode_mappings, e->stat.st_ino, new);
+  err = hurd_ihash_add (&nn->fs->inode_mappings, e->stat.st_ino, e);
   spin_unlock (&nn->fs->inode_mappings_lock);
+
+  if (err)
+    {
+      free (nn);
+      free (new);
+      return err;
+    }
 
   e->node = new;
   *node = new;
