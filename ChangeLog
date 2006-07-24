@@ -1,3 +1,14 @@
+2006-07-24  Thomas Schwinge  <tschwinge@gnu.org>
+
+	[bug #17127]
+	* Makeconf (clean): Don't remove `*.*_d' files.
+	(%.sdefsi): Add `%.sdefs.d' to the target list.  Create these files by
+	specifying `-MD' as a flag for CPP and mangle the output as needed.
+	Include these `*.sdefs.d' files instead of `*.migs_d' and `*.migsh_d'
+	files.
+	(%.udefsi): Likewise for `%.udefs.d' / `*.migu_d' and `*.miguh_d'.
+	(%.migs_d, %.migu_d, %.migsh_d, %.miguh_d): Remove targets.
+
 2006-03-21  Leonardo Lopes Pereira  <leonardolopespereira@gmail.com>
 
 	[patch #4984]
