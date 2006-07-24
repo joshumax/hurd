@@ -1,3 +1,9 @@
+2006-07-24  Ben Asselstine  <benasselstine@canada.com>
+
+	[bug #17135]
+	* psout.c (psout): Exit returning `1' if there aren't any applicable
+	processes.
+
 2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* ps.c (current_tty_name): Don't declare as static.

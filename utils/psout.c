@@ -106,7 +106,7 @@ psout (struct proc_stat_list *procs,
 	  ps_stream_newline (output);
 	}
       else
-	error (0, 0, "No applicable processes");
+	error (1, 0, "No applicable processes");
     }
 
   if (output_width)
