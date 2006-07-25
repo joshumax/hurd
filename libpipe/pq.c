@@ -1,6 +1,7 @@
 /* Packet queues
 
-   Copyright (C) 1995, 1996, 1998, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999, 2002, 2006
+     Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -329,7 +330,7 @@ packet_read_ports (struct packet *packet,
 }
 
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
-   and return the amount appended in AMOUNT.  */
+   and return the amount appended in AMOUNT if that's not the null pointer.  */
 error_t
 packet_write (struct packet *packet,
 	      char *data, size_t data_len, size_t *amount)
@@ -342,7 +343,8 @@ packet_write (struct packet *packet,
   /* Add the new data.  */
   bcopy (data, packet->buf_end, data_len);
   packet->buf_end += data_len;
-  *amount = data_len;
+  if (amount != NULL)
+    *amount = data_len;
 
   return 0;
 }

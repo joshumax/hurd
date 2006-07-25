@@ -1,3 +1,9 @@
+2006-07-25  Stefan Siegl  <stesie@brokenpipe.de>
+
+	* pq.c (packet_write): Only dereference AMOUNT if it is not the null
+	pointer and document the change.
+	* pq.h (packet_write): Document the change.
+
 2002-04-22  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pq.c (packet_set_ports): Correctly replace old ports buffer with

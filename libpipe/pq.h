@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2006 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -78,7 +78,7 @@ packet_readable (struct packet *packet)
 }
 
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
-   and return the amount appended in AMOUNT.  */
+   and return the amount appended in AMOUNT if that's not the null pointer.  */
 error_t packet_write (struct packet *packet,
 		      char *data, size_t data_len, size_t *amount);
 
