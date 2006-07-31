@@ -1,6 +1,6 @@
 /* Pfinet option parsing
 
-   Copyright (C) 1996,97,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000, 2001, 2006 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -345,6 +345,8 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
     {
       error_t err = 0;
       uint32_t addr, mask, peer, broad;
+      struct rt_key key = { 0 };
+      struct fib_result res;
 
       inquire_device (dev, &addr, &mask, &peer, &broad);
 
@@ -365,7 +367,9 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
         ADD_ADDR_OPT ("netmask", mask);
       if (peer != addr)
 	ADD_ADDR_OPT ("peer", peer);
-      /* XXX how do we figure out the default gateway?  */
+      key.iif = dev->ifindex;
+      if (! main_table->tb_lookup (main_table, &key, &res)) 
+	ADD_ADDR_OPT ("gateway", FIB_RES_GW (res));
 
 #undef ADD_ADDR_OPT
 #undef ADD_OPT
