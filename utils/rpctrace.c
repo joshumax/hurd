@@ -1,6 +1,7 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998,99,2001,02,03,05,2006 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2001, 2002, 2003, 2005, 2006
+   Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -35,17 +36,26 @@
 #include <version.h>
 #include <sys/wait.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <argz.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 
+#define STD_MSGIDS_DIR DATADIR "/msgids/"
+
+#define OPT_NOSTDINC -1
 static const struct argp_option options[] =
 {
   {"output", 'o', "FILE", 0, "Send trace output to FILE instead of stderr."},
+  {"nostdinc", OPT_NOSTDINC, 0, 0, 
+   "Do not search inside the standard system directory, `" STD_MSGIDS_DIR
+   "', for `.msgids' files."},
   {"rpc-list", 'i', "FILE", 0,
    "Read FILE for assocations of message ID numbers to names."},
   {0, 'I', "DIR", 0,
-   "Add the directory DIR to the list of directories to be searched for files containing message ID numbers."},
+   "Add the directory DIR to the list of directories to be searched for files "
+   "containing message ID numbers."},
   {0}
 };
 
@@ -1064,9 +1074,54 @@ traced_spawn (char **argv, char **envp)
 }
 
 
+static void
+scan_msgids_dir (char **argz, size_t *argz_len, char *dir, bool append)
+{
+  struct dirent **eps;
+  int n;
+	    
+  int
+    msgids_file_p (const struct dirent *eps)
+    {
+      if (fnmatch ("*.msgids", eps->d_name, 0) != FNM_NOMATCH)
+        return 1;
+      return 0;
+    }
+	    
+  n = scandir (dir, &eps, msgids_file_p, NULL);
+  if (n >= 0)
+    {
+      for (int cnt = 0; cnt < n; ++cnt)
+	{
+	  char *msgids_file;
+
+	  if (asprintf (&msgids_file, "%s/%s", dir, eps[cnt]->d_name) < 0)
+	    error (1, errno, "asprintf");
+
+	  if (append == TRUE)
+	    {
+	      if (argz_add (argz, argz_len, msgids_file) != 0)
+		error (1, errno, "argz_add");
+	    }
+	  else
+	    {
+	      if (argz_insert (argz, argz_len, *argz, msgids_file) != 0)
+		error (1, errno, "argz_insert");
+	    }
+	  free (msgids_file);
+	}
+    }
+
+  /* If the directory couldn't be scanned for whatever reason, just ignore
+     it. */
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
+  char *msgids_files_argz = NULL;
+  size_t msgids_files_argz_len = 0;
+  bool nostdinc = FALSE;
   const char *outfile = 0;
   char **cmd_argv = 0;
 
@@ -1079,40 +1134,19 @@ main (int argc, char **argv, char **envp)
 	  outfile = arg;
 	  break;
 
+	case OPT_NOSTDINC:
+	  nostdinc = TRUE;
+	  break;
+
 	case 'i':
-	  parse_msgid_list (arg);
+	  if (argz_add (&msgids_files_argz, &msgids_files_argz_len, 
+			arg) != 0)
+	    error (1, errno, "argz_add");
 	  break;
 
 	case 'I':
-	  {
-	    struct dirent **eps;
-	    int n;
-	    
-	    int
-	      msgids_file_p (const struct dirent *eps)
-	      {
-		if (fnmatch ("*.msgids", eps->d_name, 0) != FNM_NOMATCH)
-		  return 1;
-		return 0;
-	      }
-	    
-	    n = scandir (arg, &eps, msgids_file_p, NULL);
-	    if (n >= 0)
-	      {
-		for (int cnt = 0; cnt < n; ++cnt)
-		  {
-		    char *msgids_file;
-		    struct stat st;
-		    if (asprintf (&msgids_file,
-				  "%s/%s", arg, eps[cnt]->d_name) < 0)
-		      error (1, errno, "asprintf");
-		    parse_msgid_list (msgids_file);
-		    free (msgids_file);
-		  }
-	      }
-	    /* If the directory couldn't be scanned for whatever
-	       reason, just ignore it. */
-	  }
+	  scan_msgids_dir (&msgids_files_argz, &msgids_files_argz_len,
+			  arg, TRUE);
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
@@ -1133,6 +1167,23 @@ main (int argc, char **argv, char **envp)
 
   /* Parse our arguments.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
+
+  /* Insert the files from STD_MSGIDS_DIR at the beginning of the list, so that
+     their content can be overridden by subsequently parsed files.  */
+  if (nostdinc == FALSE)
+    scan_msgids_dir (&msgids_files_argz, &msgids_files_argz_len,
+		    STD_MSGIDS_DIR, FALSE);
+
+  if (msgids_files_argz != NULL)
+    {
+      char *msgids_file = NULL;
+
+      while ((msgids_file = argz_next (msgids_files_argz,
+				       msgids_files_argz_len, msgids_file)))
+	parse_msgid_list (msgids_file);
+
+      free (msgids_files_argz);
+    }
 
   if (outfile)
     {

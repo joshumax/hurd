@@ -1,3 +1,17 @@
+2006-11-27  Ben Asselstine  <benasselstine@canada.com>
+	    Thomas Schwinge  <tschwinge@gnu.org>
+
+	[task #5994 --- ``rpctrace: Consider PREFIX/shared/msgids/*.msgids by
+	default'']
+	* rpctrace.c: Include <stdbool.h> and <argz.h>.
+	(scan_msgids_dir): New function, factored out of the <case 'I'> code,
+	with the change of not directly parsing the files, but instead adding
+	them to an argz vector.
+	(STD_MSGIDS_DIR): New definition.
+	(options): Add new `--nostdinc' option.
+	(main): Handle that new option.  Utilize an argz vector.  Include the
+	files in STD_MSGIDS_DIR unless prohibited by the new option.
+	
 2006-07-24  Ben Asselstine  <benasselstine@canada.com>
 
 	[bug #17135]
