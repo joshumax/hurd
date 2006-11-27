@@ -1,5 +1,8 @@
 /* GNU Hurd standard crash dump server.
-   Copyright (C) 1995,96,97,99,2000,01,02 Free Software Foundation, Inc.
+
+   Copyright (C) 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006
+   Free Software Foundation, Inc.
+
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -444,11 +447,11 @@ static const struct argp_option options[] =
   {"dump-core",   0, 0,		OPTION_ALIAS },
   {0}
 };
-static const char doc[] = "\
-Server to handle crashing tasks and dump core files or equivalent.\v\
-The ACTION values can be `suspend', `kill', or `core-file'.\n\
-If --orphan-action is not specified, the --action value is used for orphans.\
-The default is `--action=suspend --orphan-action=core-file'.";
+static const char doc[] =
+"Server to handle crashing tasks and dump core files or equivalent.\v"
+"The ACTION values can be `suspend', `kill', or `core-file'.\n\n"
+"If `--orphan-action' is not specified, the `--action' value is used for "
+"orphans.  The default is `--action=suspend --orphan-action=core-file'.";
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -516,7 +519,7 @@ trivfs_append_args (struct trivfs_control *fsys,
   return argz_add (argz, argz_len, opt);
 }
 
-struct argp crash_argp = { options, parse_opt, doc, 0 };
+struct argp crash_argp = { options, parse_opt, 0, doc };
 struct argp *trivfs_runtime_argp = &crash_argp;
 
 

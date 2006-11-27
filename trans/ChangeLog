@@ -1,5 +1,7 @@
 2006-11-27  Thomas Schwinge  <tschwinge@gnu.org>
 
+	* crash.c: Correct the usage of the argp documentation string.
+
 	* Makefile (HURDLIBS): Add `netfs'.
 
 2006-06-15  Thomas Schwinge  <tschwinge@gnu.org>
