@@ -1,3 +1,8 @@
+2006-11-27  Ben Asselstine  <benasselstine@canada.com>
+	    Thomas Schwinge  <tschwinge@gnu.org>
+
+	* crash.c (trivfs_append_args): Handle CRASH_ORPHANS_HOW.
+
 2006-11-27  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* crash.c: Correct the usage of the argp documentation string.

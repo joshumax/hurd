@@ -505,18 +505,33 @@ error_t
 trivfs_append_args (struct trivfs_control *fsys,
 		    char **argz, size_t *argz_len)
 {
+  error_t err;
   const char *opt;
 
   switch (crash_how)
     {
-    case crash_suspend: opt = "--suspend";	break;
-    case crash_kill:	opt = "--kill";		break;
-    case crash_corefile:opt = "--core-file";	break;
+    case crash_suspend:		opt = "--action=suspend";	break;
+    case crash_kill:		opt = "--action=kill";		break;
+    case crash_corefile:	opt = "--action=core-file";	break;
     default:
       return EGRATUITOUS;
     }
+  err = argz_add (argz, argz_len, opt);
 
-  return argz_add (argz, argz_len, opt);
+  if (!err)
+    {
+      switch (crash_orphans_how)
+        {
+	case crash_suspend:	opt = "--orphan-action=suspend";	break;
+	case crash_kill:	opt = "--orphan-action=kill";		break;
+	case crash_corefile:	opt = "--orphan-action=core-file";	break;
+	default:
+	  return EGRATUITOUS;
+        }
+      err = argz_add (argz, argz_len, opt);
+    }
+
+  return err;
 }
 
 struct argp crash_argp = { options, parse_opt, 0, doc };
