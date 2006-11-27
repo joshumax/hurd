@@ -1,5 +1,6 @@
 #
-#   Copyright (C) 1994,95,96,97,99,2000,01,02 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006
+#   Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,7 +28,7 @@ OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
 	device_replyServer.o elfcore.o
-HURDLIBS = threads ports trivfs fshelp pipe ihash shouldbeinlibc
+HURDLIBS = threads ports netfs trivfs fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
