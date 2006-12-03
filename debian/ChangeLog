@@ -1,5 +1,6 @@
 2006-12-03  Thomas Schwinge  <tschwinge@gnu.org>
 
+	[bug #17121 --- ``GNU Hurd debian dir'']
 	* debian/Makefile: Remove file.
 	* debian/README.Debian: Likewise.
 	* debian/TODO: Likewise.
