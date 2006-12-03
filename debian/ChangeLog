@@ -1,3 +1,21 @@
+2006-12-03  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* debian/Makefile: Remove file.
+	* debian/README.Debian: Likewise.
+	* debian/TODO: Likewise.
+	* debian/changelog: Likewise.
+	* debian/conffiles: Likewise.
+	* debian/control: Likewise.
+	* debian/copyright: Likewise.
+	* debian/postinst: Likewise.
+	* debian/prerm: Likewise.
+	* debian/rc: Likewise.
+	* debian/rules: Likewise.
+	* debian/servers.boot: Likewise.
+	* debian/shlibs: Likewise.
+	* debian/shlibs.local: Likewise.
+	* debian/update-rc.d: Likewise.
+
 2002-11-18  Marcus Brinkmann  <marcus@gnu.org>
 
 	* control (Uploader): Add Neal.

@@ -1,7 +1,0 @@
-/boot/servers.boot
-/etc/ttys
-/etc/login/.bash_login
-/etc/login/.bashrc
-/etc/login/.hushlogin
-/etc/login/.profile
-/etc/login/README
