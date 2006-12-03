@@ -1,3 +1,9 @@
+2006-12-03  Thomas Schwinge  <tschwinge@gnu.org>
+
+	[bug #17121 --- ``GNU Hurd debian dir'']
+	* debian/ChangeLog: Remove file.
+	* Makefile (other-subdirs): Remove `debian'.
+
 2006-07-24  Thomas Schwinge  <tschwinge@gnu.org>
 
 	[bug #17127]

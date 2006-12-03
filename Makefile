@@ -1,6 +1,6 @@
 #
-#   Copyright (C) 1993,94,95,96,97,98,99,2001,02,04
-#	Free Software Foundation, Inc.
+#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
+#   2006 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -44,7 +44,7 @@ prog-subdirs = auth proc exec init term \
 	       benchmarks fstests
 
 # Other directories
-other-subdirs = hurd doc config release include debian
+other-subdirs = hurd doc config release include
 
 # All the subdirectories together
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
