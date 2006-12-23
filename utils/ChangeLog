@@ -11,7 +11,8 @@
 	(options): Add new `--nostdinc' option.
 	(main): Handle that new option.  Utilize an argz vector.  Include the
 	files in STD_MSGIDS_DIR unless prohibited by the new option.
-	
+	* Makefile (rpctrace-CPPFLAGS): New variable.
+
 2006-07-24  Ben Asselstine  <benasselstine@canada.com>
 
 	[bug #17135]

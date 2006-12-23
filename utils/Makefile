@@ -65,6 +65,7 @@ $(filter-out $(special-targets), $(targets)): %: %.o
 
 rpctrace: ../libthreads/libthreads.a \
 	  ../libports/libports.a ../libihash/libihash.a
+rpctrace-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
 	  ../libthreads/libthreads.a \
