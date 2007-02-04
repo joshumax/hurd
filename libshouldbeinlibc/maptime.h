@@ -1,6 +1,6 @@
 /* Support for mach's mapped time
 
-   Copyright (C) 1996, 1997, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -30,10 +30,10 @@
 #include <errno.h>
 
 /* Return the mach mapped time page in MTIME.  If USE_MACH_DEV is false, then
-   the hurd uptime device DEV_NAME, or "/dev/uptime" if DEV_NAME is 0, is
+   the hurd time device DEV_NAME, or "/dev/time" if DEV_NAME is 0, is
    used.  If USE_MACH_DEV is true, the mach device DEV_NAME, or "time" if
-   DEV_NAME is 0, is used; this is a privileged operation.  The mapped uptime
-   may be converted to a struct timeval at any time using read_uptime.  */
+   DEV_NAME is 0, is used; this is a privileged operation.  The mapped time
+   may be converted to a struct timeval at any time using maptime_read.  */
 error_t maptime_map (int use_mach_dev, char *dev_name,
 		     volatile struct mapped_time_value **mtime);
 

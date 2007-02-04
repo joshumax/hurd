@@ -1,3 +1,7 @@
+2007-02-04  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* maptime.h: Fix a comment.
+
 2004-10-23  Marcus Brinkmann  <marcus@gnu.org>
 
 	* ugids-xinl.c (__OPTIMIZE__): Define to 1 instead of nothing.
