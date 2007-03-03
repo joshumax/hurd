@@ -1,3 +1,9 @@
+2006-03-04  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* libpthread/sysdeps/i386/machine-sp.h (thread_stack_pointer):
+	Optimize esp read.
+	* libpthread/i386/cthreads.h (cthread_sp): Likewise.
+
 2006-01-20  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
         Do not let other libraries (like libX11) override libpthread's
