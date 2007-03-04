@@ -3,6 +3,12 @@
 	* libpthread/sysdeps/i386/machine-sp.h (thread_stack_pointer):
 	Optimize esp read.
 	* libpthread/i386/cthreads.h (cthread_sp): Likewise.
+	* libpthread/include/pthread/pthread.h: Add the restrict keyword where
+	appropriate for full compliance.
+	* libpthread/pthread/pt-internal.h: Likewise.
+	* libpthread/sysdeps/generic/bits/mutex.h: Likewise.
+	* libpthread/sysdeps/generic/bits/rwlock.h: Likewise.
+	* libpthread/TODO: Drop that TODO item.
 
 2006-01-20  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
