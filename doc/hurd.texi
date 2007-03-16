@@ -98,7 +98,8 @@
 @end direntry
 
 @ifinfo
-Copyright @copyright{} 1994-2002  Free Software Foundation, Inc.
+Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
+2004, 2005, 2007 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -131,7 +132,8 @@ into another language, under the above conditions for modified versions.
 @page
 
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1994--2002 Free Software Foundation, Inc.
+Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
+2004, 2005, 2007 Free Software Foundation, Inc.
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -190,9 +192,8 @@ Bootstrap
 
 Server Bootstrap
 
-* Invoking serverboot::         Starting a set of interdependent servers.
-* Boot Scripts::                Describing server bootstrap relationships.
 * Recursive Bootstrap::         Running a Hurd under another Hurd.
+* Boot Scripts::                Describing server bootstrap relationships.
 * Invoking boot::               How to use the boot program.
 
 Foundations
@@ -557,7 +558,7 @@ disk, and directly start a more advanced bootloader.
 
 @cindex GRUB
 @cindex GRand Unified Bootloader
-Currently, @dfn{GRUB}@footnote{The GRand Unified Bootloader, available
+GNU @dfn{GRUB}@footnote{The GRand Unified Bootloader, available
 from @uref{http://www.gnu.org/software/grub/}.} is the GNU bootloader.
 GNU GRUB provides advanced functionality, and is capable of loading several
 different kernels (such as Linux, DOS, and the *BSD family).
@@ -570,89 +571,33 @@ for more information about the details of this process.
 
 @node Server Bootstrap
 @section Server Bootstrap
-@pindex serverboot
 
-The @code{serverboot} program has been deprecated.  Newer kernels
-support processing the bootscript parameters and boot the Hurd
-directly.
+As it can be seen from the GNU GRUB configuration, the Hurd is
+bootstrapped by starting the GNU Mach microkernel and two programs:
+the root filesystem and the exec server.
 
-The @code{serverboot} program is responsible for loading and executing
-the rest of the Hurd servers.  Rather than containing specific
-instructions for starting the Hurd, it follows general steps given in a
-user-supplied boot script.
+The @option{--multiboot-command-line} option tells the file system server that
+it is a root filesystem, which triggers it to run @command{/hurd/init} as PID
+1.  @command{/hurd/init} starts the @command{/hurd/proc} and
+@command{/hurd/auth} servers.  After the servers are launched
+@command{/hurd/init} starts the @command{/libexec/runsystem.sh} script to
+finish booting.
 
-To boot the Hurd using @code{serverboot}, the microkernel must start
-@code{serverboot} as its
-first task, and pass it appropriate arguments.  @code{serverboot} has a
-counterpart, called @code{boot}, which can be invoked while the Hurd is
-already running, and allows users to start their own complete sub-Hurds
+After the Hurd has been booted, other sets of core Hurd servers can be
+started in parallel.  They're called sub-Hurds or neighbor Hurds
 (@pxref{Recursive Bootstrap}).
 
 @menu
-* Invoking serverboot::         Starting a set of interdependent servers.
-* Boot Scripts::                Describing server bootstrap relationships.
 * Recursive Bootstrap::         Running a Hurd under another Hurd.
+* Boot Scripts::                Describing server bootstrap relationships.
 * Invoking boot::               How to use the boot program.
 @end menu
-
-
-@node Invoking serverboot
-@subsection Invoking @code{serverboot}
-
-The @code{serverboot} program has the following synopsis:
-
-@example
-serverboot -@var{switch}... [[@var{host-port} @var{device-port}] @var{root-name}]
-@end example
-
-@c FIXME: serverboot should accept --help and --version, for consistency
-Each @var{switch} is a single character, out of the following set:
-
-@table @samp
-@item a
-Prompt the user for the @var{root-name}, even if it was already supplied
-on the command line.
-
-@item d
-Prompt the user to strike a key after the boot script has been read.
-
-@item q
-Prompt the user for the name of the boot script.  By default, use
-@file{@var{root-name}:/boot/servers.boot}.
-@end table
-
-All the @var{switches} are put into the @code{$@{boot-args@}} script
-variable.
-
-@var{host-port} and @var{device-port} are integers which represent the
-microkernel host and device ports, respectively (and are used to
-initialize the @code{$@{host-port@}} and @code{$@{device-port@}} boot
-script variables).  If these ports are not specified, then
-@code{serverboot} assumes that the Hurd is already running, and fetches
-the current ports from the procserver (FIXME xref).
-
-@var{root-name} is the name of the microkernel device that should be
-used as the Hurd bootstrap filesystem.  @code{serverboot} uses this name
-to locate the boot script (described above), and to initialize the
-@code{$@{root-device@}} script variable.
-
-
-@node Boot Scripts
-@subsection Boot Scripts
-@pindex /boot/servers.boot
-@pindex servers.boot
-
-Boot Scripts are used to boot further Hurd systems in parallel to the
-first, and are parsed by @code{serverboot} to boot the Hurd.  See
-@file{/boot/servers.boot} for an example of a Hurd boot script.
-
-FIXME: finish
 
 
 @node Recursive Bootstrap
 @subsection Recursive Bootstrap
 
-The @code{boot} program can be used to start a set of core Hurd servers
+The @command{boot} program can be used to start a set of core Hurd servers
 while another Hurd is already running.  You will rarely need to do this,
 and it requires superuser privileges to control the new Hurd (or allow
 it to access certain devices), but it is interesting to note that it can
@@ -672,7 +617,7 @@ Here are the steps you can follow to test out a new set of servers:
 @item
 Create a pseudo-root device.  Usually, you would do this by creating a
 new partition under your old Hurd, and initializing it with your
-favorite filesystem format.  @code{boot} understands the regular
+favorite filesystem format.  @command{boot} understands the regular
 @code{libstore} options (FIXME xref), so you may use a file or other
 store instead of a partition.
 
@@ -713,14 +658,13 @@ $ @kbd{cd my-root}
 $ @kbd{tar -zxpf /pub/debian/FIXME/gnu-20000929.tar.gz}
 $ @kbd{cd ..}
 $ @kbd{fsysopts ./my-root --readonly}
-$
 @end example
 
 @item
 Create a new boot script (FIXME xref).
 
 @item
-Run @code{boot}.
+Run @command{boot}.
 
 @example
 $ @kbd{boot -D ./my-boot ./my-boot/boot/servers.boot ./my-partition}
@@ -742,7 +686,7 @@ See @pxref{Invoking boot} for help with boot.
 
 Note that it is impossible to share microkernel devices between the two
 running Hurds, so don't get any funny ideas.  When you're finished
-testing your new Hurd, then you can run the @code{halt} or @code{reboot}
+testing your new Hurd, then you can run the @command{halt} or @command{reboot}
 programs to return control to the parent Hurd.
 
 @c FIXME: the `don't get any funny ideas' comment is confusing.  Am
@@ -757,6 +701,34 @@ If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
 safe place to overwrite your old Hurd with the new one, and reboot back
 to your old configuration (with the new Hurd servers).
+
+
+@node Boot Scripts
+@subsection Boot Scripts
+@pindex /boot/servers.boot
+@pindex servers.boot
+
+Boot Scripts are used to boot further Hurd systems in parallel to the first,
+and are parsed by @command{boot} to boot a sub-Hurd.
+@c See @file{/boot/servers.boot} for an example of a Hurd boot script.
+
+
+In that script, the variables @var{host-port} and @var{device-port} are
+integers which represent the microkernel host and device ports, respectively
+(and are used to initialize the @code{$@{host-port@}} and
+@code{$@{device-port@}} boot script variables).  If these ports are not
+specified, then it is assumed that the Hurd is already running, and the current
+ports will be fetched from the procserver.
+@c (FIXME xref).
+
+@var{root-name} is the name of the microkernel device that should be used as
+the Hurd bootstrap filesystem.
+@c @code{serverboot} uses this name
+@c to locate the boot script (described above), and to initialize the
+@c @code{$@{root-device@}} script variable.
+
+
+FIXME: finish
 
 
 @node Invoking boot

@@ -1,3 +1,9 @@
+2007-03-15  Ben Asselstine  <benasselstine@gmail.com>
+	    Thomas Schwinge  <tschwinge@gnu.org>
+
+	* hurd.texi (Invoking serverboot): Remove.
+	(Server Bootstrap, Boot Scripts): Update.
+
 2005-01-21  Alfred M. Szmidt  <ams@gnu.org>
 
 	* hurd.texi: Doc fixes.
