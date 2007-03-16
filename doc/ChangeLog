@@ -1,4 +1,4 @@
-2007-03-15  Ben Asselstine  <benasselstine@gmail.com>
+2007-03-16  Ben Asselstine  <benasselstine@gmail.com>
 	    Thomas Schwinge  <tschwinge@gnu.org>
 
 	* hurd.texi (Invoking serverboot): Remove.
