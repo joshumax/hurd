@@ -1,5 +1,7 @@
 /* Reply half of fsys
-   Copyright (C) 1991,93,94,95,2001 Free Software Foundation, Inc.
+
+   Copyright (C) 1991, 1993, 1994, 1995, 2001, 2007
+     Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -49,7 +51,7 @@ simpleroutine fsys_getfile_reply (
 
 simpleroutine fsys_syncfs_reply (
 	reply_port: reply_port_t;
-	retocde: kern_return_t);
+	RETURN_CODE_ARG);
 
 simpleroutine fsys_set_options_reply (
 	reply_port: reply_port_t;
