@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1997,98,2002 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 2002, 2007 Free Software Foundation, Inc.
    Written by Thomas Bushnell, n/BSG.
 
    This file is part of the GNU Hurd.
@@ -433,7 +433,7 @@ read_disknode (struct node *np, struct dirrect *dr,
       isodate_915 (dr->date, &ts);
       st->st_ctime = st->st_mtime = st->st_atime = ts.tv_sec;
       st->st_ctime_usec = st->st_mtime_usec = st->st_atime_usec
-	= ts.tv_nsec * 1000;
+	= ts.tv_nsec / 1000;
     }
 
   /* Override what we have better info for */
@@ -442,19 +442,19 @@ read_disknode (struct node *np, struct dirrect *dr,
       if (rl->tfflags & TF_CREATION)
 	{
 	  st->st_ctime = rl->ctime.tv_sec;
-	  st->st_ctime_usec = rl->ctime.tv_nsec * 1000;
+	  st->st_ctime_usec = rl->ctime.tv_nsec / 1000;
 	}
 
       if (rl->tfflags & TF_ACCESS)
 	{
 	  st->st_atime = rl->atime.tv_sec;
-	  st->st_atime_usec = rl->atime.tv_nsec * 1000;
+	  st->st_atime_usec = rl->atime.tv_nsec / 1000;
 	}
 
       if (rl->tfflags & TF_MODIFY)
 	{
 	  st->st_mtime = rl->mtime.tv_sec;
-	  st->st_mtime_usec = rl->mtime.tv_nsec * 1000;
+	  st->st_mtime_usec = rl->mtime.tv_nsec / 1000;
 	}
     }
 

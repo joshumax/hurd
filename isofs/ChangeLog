@@ -1,3 +1,8 @@
+2007-03-25  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* isofs/inode.c (read_disknode): Correctly convert from nanoseconds to
+	microseconds.
+
 2005-02-23  Alfred M. Szmidt  <ams@gnu.org>
 
 	* Makefile (iso9660fs.static): New target.
