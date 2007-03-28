@@ -1,5 +1,7 @@
 2007-03-28  Thomas Schwinge  <tschwinge@gnu.org>
 
+	* Makefile (fatfs.static): New target.
+
 	* main.c (diskfs_readonly): Remove variable.
 	(main): Set `diskfs_readonly' and `diskfs_hard_readonly' to one.
 

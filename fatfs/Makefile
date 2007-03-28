@@ -1,4 +1,4 @@
-#   Copyright (C) 1997, 2003 Free Software Foundation
+#   Copyright (C) 1997, 2003, 2007 Free Software Foundation
 #   Modified by Marcus Brinkmann, 2000-05-05
 #
 #   This program is free software; you can redistribute it and/or
@@ -27,3 +27,5 @@ OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
 
 include ../Makeconf
+
+fatfs.static: $(boot-store-types:%=../libstore/libstore_%.a)
