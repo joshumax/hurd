@@ -1,3 +1,8 @@
+2007-03-28  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* main.c (diskfs_readonly): Remove variable.
+	(main): Set `diskfs_readonly' and `diskfs_hard_readonly' to one.
+
 2005-07-12  Marcus Brinkmann  <marcus@gnu.org>
 
 	* pager.c (diskfs_get_filemap): Initialize upi->max_prot to PROT.

@@ -1,5 +1,8 @@
 /* main.c - FAT filesystem.
-   Copyright (C) 1997, 1998, 1999, 2002, 2003 Free Software Foundation, Inc.
+
+   Copyright (C) 1997, 1998, 1999, 2002, 2003, 2007
+     Free Software Foundation, Inc.
+
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -41,9 +44,6 @@ int diskfs_synchronous = 0;
 int diskfs_link_max = 1;
 int diskfs_name_max = FAT_NAME_MAX;
 int diskfs_maxsymlinks = 8;     /* XXX */
-
-/* This filesystem is not capable of writing yet.  */
-int diskfs_readonly = 1;
 
 /* Handy source of zeroes.  */
 vm_address_t zerocluster;
@@ -218,6 +218,10 @@ main (int argc, char **argv)
   default_fs_gid = getgid ();
   fs_uid = default_fs_uid;
   fs_gid = default_fs_gid;
+
+  /* This filesystem is not capable of writing yet.  */
+  diskfs_readonly = 1;
+  diskfs_hard_readonly = 1;
 
   /* Initialize the diskfs library, parse arguments, and open the
      store.  This starts the first diskfs thread for us.  */
