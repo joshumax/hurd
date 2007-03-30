@@ -1,3 +1,8 @@
+2007-03-30  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* inode.c (read_node): Correctly convert from nanoseconds to
+	microseconds.
+
 2007-03-28  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* Makefile (fatfs.static): New target.

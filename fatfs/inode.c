@@ -1,5 +1,8 @@
 /* inode.c - Inode management routines.
-   Copyright (C) 1994,95,96,97,98,99,2000,02,03 Free Software Foundation, Inc.
+
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2003, 2007
+     Free Software Foundation, Inc.
+
    Modified for fatfs by Marcus Brinkmann <marcus@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -384,7 +387,7 @@ read_node (struct node *np, vm_address_t buf)
     fat_to_epoch (dr->write_date, dr->write_time, &ts);
     st->st_ctime = st->st_mtime = st->st_atime = ts.tv_sec;
     st->st_ctime_usec = st->st_mtime_usec = st->st_atime_usec
-      = ts.tv_nsec * 1000;
+      = ts.tv_nsec / 1000;
   }
   
   st->st_blksize = bytes_per_sector;
