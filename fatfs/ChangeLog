@@ -1,3 +1,7 @@
+2007-03-31  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): Put ``threads'' in front of ``ports''.
+
 2007-03-30  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* inode.c (read_node): Correctly convert from nanoseconds to

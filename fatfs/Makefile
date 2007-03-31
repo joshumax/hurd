@@ -24,7 +24,7 @@ LCLHDRS = fat.h fatfs.h virt-inode.h
 DIST_FILES = EXTENSIONS
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs iohelp fshelp store pager ports threads ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
 
 include ../Makeconf
 
