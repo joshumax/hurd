@@ -1,3 +1,9 @@
+2007-04-04  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* opts-std-startup.c (parse_startup_opt)
+	<_diskfs_no_inherit_dir_group>: Swap the options into the correct
+	order.  Reported by Olaf Buddenhagen <olafbuddenhagen@gmx.net>.
+
 2006-06-28  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* Makefile (HURDLIBS): Add `pager'.

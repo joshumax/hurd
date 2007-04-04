@@ -1,6 +1,8 @@
 /* Standard startup-time command line parser
 
-   Copyright (C) 1995,96,97,98,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2001, 2007
+     Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.org>
 
    This file is part of the GNU Hurd.
@@ -82,8 +84,8 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       TOGGLE (_diskfs_nosuid, 'S', OPT_SUID_OK);
       TOGGLE (_diskfs_noexec, 'E', OPT_EXEC_OK);
       TOGGLE (_diskfs_noatime, 'A', OPT_ATIME);
-      TOGGLE (_diskfs_no_inherit_dir_group, OPT_INHERIT_DIR_GROUP,
-	      OPT_NO_INHERIT_DIR_GROUP);
+      TOGGLE (_diskfs_no_inherit_dir_group, OPT_NO_INHERIT_DIR_GROUP,
+	      OPT_INHERIT_DIR_GROUP);
 #undef	TOGGLE
 
     case 's':
