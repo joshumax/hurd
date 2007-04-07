@@ -1,7 +1,10 @@
 /* Add/remove paging devices
 
-   Copyright (C) 1997,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2007
+     Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.org>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -55,11 +58,17 @@ static struct argp_option options[] =
 };
 static char *args_doc = "DEVICE...";
 
+static char *doc = 
 #ifdef SWAPOFF
-static char *doc = "Stop paging on DEVICE...";
+  "Stop paging on DEVICE..."
+  "\vUnless overridden, a swap space signature is not considered when deciding"
+  " whether to remove a paging device or not."
 #else
-static char *doc = "Start paging onto DEVICE...";
+  "Start paging onto DEVICE..."
+  "\vUnless overridden, only devices with a valid (Linux) swap space signature"
+  " are considered when deciding whether to add a paging device or not."
 #endif
+;
 
 #define verbose(fmt, arg...) \
   if (quiet_now) ((void)0); else error (0, 0, fmt ,##arg)
@@ -486,6 +495,15 @@ main (int argc, char *argv[])
       return 0;
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
+
+  /* See the documentation string DOC.  */
+#ifdef SWAPOFF
+  ignore_signature = 1;
+  require_signature = 0;
+#else
+  ignore_signature = 0;
+  require_signature = 1;
+#endif
 
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 

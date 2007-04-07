@@ -1,6 +1,9 @@
 2007-04-07  Thomas Schwinge  <tschwinge@gnu.org>
 
-	* MAKEDEV.sh (mkdev): Specify the creation of `lpr[0-9' devices.
+	* swapon.c (main, doc) [!SWAPOFF]: Unless overridden, consider a
+	swap signature when deciding whether to add a paging device or not.
+
+	* MAKEDEV.sh (mkdev): Specify the creation of `lpr[0-9]' devices.
 
 2002-09-17  Marcus Brinkmann  <marcus@gnu.org>
 
