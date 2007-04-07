@@ -79,7 +79,7 @@ function lose {
 function mkdev {
   local I
   for I; do
-    case "$I" in
+    case $I in
       /* | */*)
         lose "Device names cannot contain directories" \
 	     "Change to target directory and run $0 from there."
@@ -95,6 +95,8 @@ function mkdev {
       tty[1-9][0-9]|tty[1-9])
         st $I root 600 /hurd/term ${DEVDIR}/$I hurdio \
 	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
+      lpr[0-9])
+        st $I root 660 /hurd/streamio "$I";;
       null)
 	st $I root 666 /hurd/null;;
       full)
