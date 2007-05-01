@@ -1,3 +1,7 @@
+2007-05-01  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* crash.c (S_msg_startup_dosync): Remove function.
+
 2006-11-27  Ben Asselstine  <benasselstine@canada.com>
 	    Thomas Schwinge  <tschwinge@gnu.org>
 

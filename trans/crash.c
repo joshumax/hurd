@@ -1,6 +1,6 @@
 /* GNU Hurd standard crash dump server.
 
-   Copyright (C) 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006
+   Copyright (C) 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006, 2007
    Free Software Foundation, Inc.
 
    Written by Roland McGrath.
@@ -775,9 +775,6 @@ S_msg_set_env_variable (mach_port_t process,
 			string_t variable,
 			string_t value,
 			boolean_t replace)
-{ return EBUSY; }
-kern_return_t
-S_msg_startup_dosync (mach_port_t process)
 { return EBUSY; }
 kern_return_t
 S_msg_get_exec_flags (mach_port_t process, mach_port_t refport, int *flags)
