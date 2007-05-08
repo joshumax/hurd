@@ -229,7 +229,7 @@ vga_fini (void)
   outb (VGA_CRT_CURSOR_LOW, VGA_CRT_ADDR_REG);
   outb (vga_state->crt_cursor_low, VGA_CRT_DATA_REG);
 
-  ioperm (VGA_MIN_REG, VGA_MAX_REG, 0);
+  ioperm (VGA_MIN_REG, VGA_MAX_REG - VGA_MIN_REG + 1, 0);
   munmap (vga_videomem, VGA_VIDEO_MEM_LENGTH);
 }
 

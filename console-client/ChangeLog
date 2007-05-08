@@ -1,3 +1,7 @@
+2007-05-08  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* vga-support.c (vga_fini): Fix call to ioperm().
+
 2005-07-13  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* current-vcs.c (repeater_node): Set default.
