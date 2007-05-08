@@ -472,12 +472,10 @@ generic_speaker_start (void *handle)
 {
   error_t err;
 
-#if OSKIT_MACH
   if (ioperm (SPEAKER, 1, 1) < 0)
     return errno;
   if (ioperm (PIT_COUNTER_2, PIT_CTRL - PIT_COUNTER_2 + 1, 1) < 0)
     return errno;
-#endif
 
   beep_off ();
 

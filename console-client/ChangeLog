@@ -1,6 +1,8 @@
 2007-05-08  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* vga-support.c (vga_fini): Fix call to ioperm().
+	* generic-speaker.c (generic_speaker_start): Call ioperm() on GNU Mach
+	1 too.
 
 2005-07-13  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
