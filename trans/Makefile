@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006
+#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006, 2007
 #   Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -32,10 +32,6 @@ HURDLIBS = threads ports netfs trivfs fshelp pipe ihash shouldbeinlibc
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
-
-# hurd/default_pager.defs doesn't include hurd/hurd_types.defs and so won't
-# obey SERVERPREFIX.
-default_pager-MIGCOMSFLAGS = -prefix S_
 
 vpath elfcore.c $(top_srcdir)/exec
 

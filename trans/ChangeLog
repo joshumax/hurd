@@ -1,3 +1,9 @@
+2007-06-06  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (default_pager-MIGCOMSFLAGS): Remove variable.
+	* proxy-defpager.c (proxy_defpager_demuxer): Invoke
+	`default_pager_server' instead of `S_default_pager_server'.
+
 2007-05-01  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* crash.c (S_msg_startup_dosync): Remove function.

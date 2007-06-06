@@ -1,6 +1,6 @@
 /* A translator for providing access to Mach default_pager.defs control calls
 
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2007 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -231,9 +231,9 @@ int
 proxy_defpager_demuxer (mach_msg_header_t *inp,
 			mach_msg_header_t *outp)
 {
-  extern int S_default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
 
-  return S_default_pager_server (inp, outp)
+  return default_pager_server (inp, outp)
     || trivfs_demuxer (inp, outp);
 }
 
