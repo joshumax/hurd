@@ -1,3 +1,12 @@
+2007-06-06  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* default_pager.c (default_pager_object_create,	default_pager_info)
+	(default_pager_objects, default_pager_object_pages)
+	(default_pager_object_set_size,	default_pager_paging_file): Rename to
+	`S_default_pager_object_create', `S_default_pager_info',
+	`S_default_pager_objects', `S_default_pager_object_pages',
+	`S_default_pager_object_set_size' and `S_default_pager_paging_file'.
+
 2006-03-15  Alfred M. Szmidt  <ams@gnu.org>
 
 	* kalloc.c: #include <malloc.h>.

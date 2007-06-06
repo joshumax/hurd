@@ -3303,10 +3303,10 @@ default_pager()
 /*
  * Create an external object.
  */
-kern_return_t default_pager_object_create(pager, mem_obj, size)
-	mach_port_t pager;
-	mach_port_t *mem_obj;
-	vm_size_t size;
+kern_return_t
+S_default_pager_object_create (mach_port_t pager,
+			       mach_port_t *mem_obj,
+			       vm_size_t size)
 {
 	default_pager_t ds;
 	mach_port_t port;
@@ -3347,9 +3347,9 @@ rename_it:
 	return (KERN_SUCCESS);
 }
 
-kern_return_t default_pager_info(pager, infop)
-	mach_port_t pager;
-	default_pager_info_t *infop;
+kern_return_t
+S_default_pager_info (mach_port_t pager,
+		      default_pager_info_t *infop)
 {
 	vm_size_t		total, free;
 
@@ -3366,12 +3366,12 @@ kern_return_t default_pager_info(pager, infop)
 	return KERN_SUCCESS;
 }
 
-kern_return_t default_pager_objects(pager, objectsp, ocountp, portsp, pcountp)
-	mach_port_t			pager;
-	default_pager_object_array_t	*objectsp;
-	natural_t			*ocountp;
-	mach_port_array_t		*portsp;
-	natural_t			*pcountp;
+kern_return_t
+S_default_pager_objects (mach_port_t pager,
+			 default_pager_object_array_t *objectsp,
+			 natural_t *ocountp,
+			 mach_port_array_t *portsp,
+			 natural_t *pcountp)
 {
 	vm_offset_t			oaddr;	/* memory for objects */
 	vm_size_t			osize;	/* current size */
@@ -3602,11 +3602,10 @@ not_this_one:
 
 
 kern_return_t
-default_pager_object_pages(pager, object, pagesp, countp)
-	mach_port_t			pager;
-	mach_port_t			object;
-	default_pager_page_array_t	*pagesp;
-	natural_t			*countp;
+S_default_pager_object_pages (mach_port_t pager,
+			      mach_port_t object,
+			      default_pager_page_array_t *pagesp,
+			      natural_t *countp)
 {
 	vm_offset_t			addr;	/* memory for page offsets */
 	vm_size_t			size;	/* current memory size */
@@ -3708,10 +3707,10 @@ default_pager_object_pages(pager, object, pagesp, countp)
 
 
 kern_return_t
-default_pager_object_set_size(mach_port_t pager,
-			      mach_port_seqno_t seqno,
-			      mach_port_t reply_to,
-			      vm_size_t limit)
+S_default_pager_object_set_size (mach_port_t pager,
+				 mach_port_seqno_t seqno,
+				 mach_port_t reply_to,
+				 vm_size_t limit)
 {
   kern_return_t kr;
   default_pager_t ds;
@@ -3765,7 +3764,7 @@ extern mach_port_t bootstrap_master_device_port;
 extern mach_port_t bootstrap_master_host_port;
 
 kern_return_t
-default_pager_paging_file(pager, mdport, file_name, add)
+S_default_pager_paging_file (pager, mdport, file_name, add)
 	mach_port_t			pager;
 	mach_port_t			mdport;
 	default_pager_filename_t	file_name;
