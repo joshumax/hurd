@@ -1,5 +1,6 @@
 /* Backing store access callbacks for Hurd version of Mach default pager.
-   Copyright (C) 2001,02 Free Software Foundation, Inc.
+
+   Copyright (C) 2001, 2002, 2007 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -37,11 +38,11 @@ extern void *kalloc (vm_size_t);
 extern mach_port_t default_pager_default_port; /* default_pager.c */
 
 kern_return_t
-default_pager_paging_storage (mach_port_t pager,
-			      mach_port_t device,
-			      recnum_t *runs, mach_msg_type_number_t nrun,
-			      default_pager_filename_t name,
-			      boolean_t add)
+S_default_pager_paging_storage (mach_port_t pager,
+				mach_port_t device,
+				recnum_t *runs, mach_msg_type_number_t nrun,
+				default_pager_filename_t name,
+				boolean_t add)
 {
   struct file_direct *fdp;
   int sizes[DEV_GET_SIZE_COUNT];

@@ -1,3 +1,9 @@
+2007-06-06  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile: Remove a comment.
+	* setup.c (default_pager_paging_storage): Rename to
+	`S_default_pager_paging_storage'.
+
 2002-06-15  Roland McGrath  <roland@frob.com>
 
 	* setup.c (page_write_file_direct): Use proper type for result param
