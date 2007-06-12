@@ -65,10 +65,12 @@ extern bzero();
  * so that it will invoke routine(child)
  * when it is resumed.
  */
+#warning TLS support not implemented
 void
 cproc_setup(
 	register cproc_t child,
 	thread_t	 thread,
+	tcbhead_t	*tcb,
 	void 	 	(*routine)(cproc_t))
 {
 	register integer_t			*top;

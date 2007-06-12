@@ -1,3 +1,17 @@
+2007-06-13  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	TLS support for libthreads.
+
+	* libthreads/cprocs.c (cproc_create): Call into glibc to allocate
+	static TLS block.
+	* libthreads/cthread_internals.h (tcbhead_t): New structure; as in
+	glibc.
+	(cproc_setup): Take TCB parameter.
+	(_dl_allocate_tls): Declare; from glibc.
+	* libthreads/alpha/thread.c (cproc_setup): Compile-time warning for
+	missing TLS support.
+	* libthreads/i386/thread.c (cproc_setup): Imlement TLS support.
+
 2002-08-26  Roland McGrath  <roland@frob.com>
 
 	* cthreads.c (cthread_body) [HAVE_USELOCALE]: Call uselocale to

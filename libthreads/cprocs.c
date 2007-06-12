@@ -725,10 +725,11 @@ cproc_create(void)
 	spin_lock(&n_kern_lock);
 	if (cthread_max_kernel_threads == 0 ||
 	    cthread_kernel_threads < cthread_max_kernel_threads) {
+		tcbhead_t *tcb = _dl_allocate_tls(NULL);
 		cthread_kernel_threads++;
 		spin_unlock(&n_kern_lock);
 		MACH_CALL(thread_create(mach_task_self(), &n), r);
-		cproc_setup(child, n, cthread_body);	/* machine dependent */
+		cproc_setup(child, n, tcb, cthread_body);	/* machine dependent */
 		MACH_CALL(thread_resume(n), r);
 #ifdef STATISTICS
 		spin_lock(&ready_lock);
