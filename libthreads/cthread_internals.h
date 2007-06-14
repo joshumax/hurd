@@ -28,7 +28,21 @@
  * 26-Oct-94  Johannes Helander (jvh) Helsinki University of Technology
  *	Defined WAIT_DEBUG and initialized wait_enum
  *
- * $Log:	cthread_internals.h,v $
+ * $Log: cthread_internals.h,v $
+ * Revision 1.6  2002/05/27 02:50:10  roland
+ * 2002-05-26  Roland McGrath  <roland@frob.com>
+ *
+ * 	Changes merged from CMU MK83a version:
+ * 	* cthreads.h, options.h: Various cleanups.
+ * 	* call.c, cthread_data.c, sync.c, mig_support.c: Likewise.
+ * 	* i386/cthreads.h, i386/thread.c, i386/lock.s: Likewise.
+ * 	* cthread_internals.h: Add decls for internal functions.
+ * 	(struct cproc): Use vm_offset_t for stack_base and stack_size members.
+ * 	Use natural_t for context member.
+ * 	* cprocs.c: Use prototypes for all defns.
+ * 	* cthreads.c: Likewise.
+ * 	(cthread_exit): Cast any_t to integer_t before int.
+ *
  * Revision 2.17  93/05/10  21:33:36  rvb
  * 	Context is a natural_t.  Assumming, that is, that on
  * 	some future architecture one word might be enough.
@@ -259,6 +273,8 @@ extern void		stack_fork_child(void);
 extern vm_offset_t	cproc_init(void);
 
 extern void		cproc_waiting(cproc_t _waiter);
+
+extern void		cproc_block(void);
 
 extern cproc_t		cproc_create(void);
 
