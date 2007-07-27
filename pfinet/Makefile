@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1995,96,97,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -94,6 +94,10 @@ vpath %.S $(srcdir)/linux-src/arch/$(asm_syntax)/lib
 CPPFLAGS += -imacros $(srcdir)/config.h		\
 	    -I$(srcdir)/glue-include		\
 	    -I$(srcdir)/linux-src/include
+
+# Don't ask...  We use Linux code.  The problem was first noticed when
+# compiling `pfinet' with GCC 4.2.
+CFLAGS += -fno-strict-aliasing
 
 asm/checksum.h: ../config.status
 	mkdir -p $(@D)
