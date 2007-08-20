@@ -431,8 +431,7 @@ read_symlink_hook (struct node *np,
 
   bcopy ((dino (np->dn->number))->di_shortlink, buf, np->dn_stat.st_size);
 
-  if (! diskfs_check_readonly ())
-    np->dn_set_atime = 1;
+  diskfs_set_node_atime (dp);
 
   diskfs_end_catch_exception ();
   return 0;

@@ -864,6 +864,10 @@ error_t diskfs_clear_directory (struct node *dp, struct node *pdp,
 error_t
 diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
 
+/* If disk is not readonly and the noatime option is not enabled, set
+   NP->dn_set_atime.  */
+void diskfs_set_node_atime (struct node *np);
+
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
    appropriately; do the analogous operation for atime and mtime as well. */
 void diskfs_set_node_times (struct node *np);

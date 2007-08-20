@@ -22,6 +22,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include "priv.h"
 #include <maptime.h>
 
+/* If disk is not readonly and the noatime option is not enabled, set
+   NP->dn_set_atime.  */
+void
+diskfs_set_node_atime (struct node *np)
+{
+  if (!_disk_noatime && !diskfs_check_readonly ())
+    np->dn_set_atime = 1;
+}
+
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
    appropriately; do the analogous operation for atime and mtime as well. */
 void

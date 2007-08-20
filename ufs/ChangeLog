@@ -1,3 +1,9 @@
+2007-08-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir.c (diskfs_lookup_hard, diskfs_dirempty): Call
+	diskfs_set_node_atime instead of setting dp->dn_set_atime.
+	* inode.c (read_symlink_hook): Likewise.
+
 2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* dir.h (DIRECT_NAMELEN): Don't use ?: as a lvalue.

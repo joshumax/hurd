@@ -3928,6 +3928,11 @@ locked since).  @var{dir} must always be provided as at least a hint for
 disk allocation strategies.
 @end deftypefun
 
+@deftypefun void diskfs_set_node_atime (@w{struct node *@var{np}})
+If disk is not readonly and the noatime option is not enabled, set
+@code{@var{np}->dn_set_atime}.
+@end deftypefun
+
 @deftypefun void diskfs_set_node_times (@w{struct node *@var{np}})
 If @code{@var{np}->dn_set_ctime} is set, then modify
 @code{@var{np}->dn_stat.st_ctime} appropriately; do the analogous

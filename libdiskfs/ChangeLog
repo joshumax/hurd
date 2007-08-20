@@ -1,3 +1,8 @@
+2007-08-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* diskfs.h (diskfs_set_node_atime): New declaration.
+	* node-times.c (diskfs_set_node_atime): New function.
+
 2007-04-04  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* opts-std-startup.c (parse_startup_opt)

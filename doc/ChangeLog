@@ -1,3 +1,7 @@
+2007-08-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* hurd.texi: Document diskfs_set_node_atime.
+
 2007-03-16  Ben Asselstine  <benasselstine@gmail.com>
 	    Thomas Schwinge  <tschwinge@gnu.org>
 
