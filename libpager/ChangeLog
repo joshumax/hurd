@@ -29,7 +29,7 @@
 
 	* demuxer.c (pager_demuxer): Fix last change so it works.  Add comment.
 
-2001-01-16  Marcus Brinkmann <marcus@gnu.org>
+2002-01-16  Marcus Brinkmann <marcus@gnu.org>
 
 	* demuxer.c (pager_demuxer): If the message was not accepted by
 	one of the servers, acquire a reference to the pager and its lock,
