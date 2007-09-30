@@ -4,8 +4,7 @@ Cross-compiling the GNU Hurd                             -*- Outline -*-
 
 The procedure described below -- albeit not completely obsolete, of course --
 is outdated a bit.  If you attempt to build a cross compiler, have a look at
-<http://nic-nac-project.de/~schwinge/tmp/cross-gnu-env> and
-<http://nic-nac-project.de/~schwinge/tmp/cross-gnu> for now.
+<http://www.bddebian.com/~wiki/hurd/building/cross-compiling/> for now.
 
 Last update 1998-06-01  Gordon Matzigkeit  <gord@gnu.org>.
 Previous update 1996-04-11  Thomas Bushnell, n/BSG  <thomas@gnu.org>.

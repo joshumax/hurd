@@ -1,3 +1,7 @@
+2007-09-30  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* INSTALL-cross: Refer to the wiki.
+
 2007-06-14  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* Makeconf (CFLAGS): Allow for appending target-specific flags.
