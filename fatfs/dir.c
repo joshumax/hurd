@@ -1,5 +1,8 @@
 /* dir.c - FAT filesystem.
-   Copyright (C) 1997, 1998, 1999, 2002, 2003 Free Software Foundation, Inc.
+
+   Copyright (C) 1997, 1998, 1999, 2002, 2003, 2007
+     Free Software Foundation, Inc.
+
    Written by Thomas Bushnell, n/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
