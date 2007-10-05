@@ -1,5 +1,6 @@
 /* Process st_?time updates marked for a diskfs node.
-   Copyright (C) 1994,96,99,2000 Free Software Foundation, Inc.
+
+   Copyright (C) 1994, 1996, 1999, 2000, 2007 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 

@@ -1,5 +1,7 @@
 /* Definitions for fileserver helper functions
-   Copyright (C) 1994,95,96,97,98,99,2001,02 Free Software Foundation, Inc.
+
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007
+     Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
