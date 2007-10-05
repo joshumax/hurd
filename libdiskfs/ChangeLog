@@ -1,3 +1,7 @@
+2007-10-05  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* node-times.c (diskfs_set_node_atime): Fix typo from last commit.
+
 2007-08-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* diskfs.h (diskfs_set_node_atime): New declaration.

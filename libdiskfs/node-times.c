@@ -28,7 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 void
 diskfs_set_node_atime (struct node *np)
 {
-  if (!_disk_noatime && !diskfs_check_readonly ())
+  if (!_diskfs_noatime && !diskfs_check_readonly ())
     np->dn_set_atime = 1;
 }
 
