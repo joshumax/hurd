@@ -1,6 +1,8 @@
 /* Directory management routines
 
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2007
+     Free Software Foundation, Inc.
+
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
