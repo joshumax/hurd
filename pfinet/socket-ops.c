@@ -1,5 +1,5 @@
 /* Interface functions for the socket.defs interface.
-   Copyright (C) 1995,96,97,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,02,07 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -80,7 +80,11 @@ S_socket_create (struct trivfs_protid *master,
 	isroot = 1;
     }
 
-  err = - (*net_families[PF_INET]->create) (sock, protocol);
+  if (master->pi.class == trivfs_protid_portclasses[PORTCLASS_INET])
+    err = - (*net_families[PF_INET]->create) (sock, protocol);
+  else
+    err = - (*net_families[PF_INET6]->create) (sock, protocol);
+
   if (err)
     sock_release (sock);
   else
@@ -295,7 +299,7 @@ S_socket_create_address (mach_port_t server,
   struct sock_addr *addrstruct;
   const struct sockaddr *const sa = (void *) data;
 
-  if (sockaddr_type != AF_INET)
+  if (sockaddr_type != AF_INET && sockaddr_type != AF_INET6)
     return EAFNOSUPPORT;
   if (sa->sa_family != sockaddr_type
       || data_len < offsetof (struct sockaddr, sa_data))

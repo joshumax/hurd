@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: ip6_fib.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: ip6_fib.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@
 #undef CONFIG_IPV6_SUBTREES
 
 #if RT6_DEBUG >= 1
-#define BUG_TRAP(x) ({ if (!(x)) { printk("Assertion (" #x ") failed at " __FILE__ "(%d):" __FUNCTION__ "\n", __LINE__); } })
+#define BUG_TRAP(x) ({ if (!(x)) { printk("Assertion (" #x ") failed at " __FILE__ "(%d):%s\n", __LINE__, __FUNCTION__); } })
 #else
 #define BUG_TRAP(x) do { ; } while (0)
 #endif
@@ -94,7 +94,7 @@ static struct timer_list ip6_fib_timer = {
 	fib6_run_gc
 };
 
-static struct fib6_walker_t fib6_walker_list = {
+struct fib6_walker_t fib6_walker_list = {
 	&fib6_walker_list, &fib6_walker_list, 
 };
 

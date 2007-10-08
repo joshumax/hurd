@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,02,07 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -29,13 +29,24 @@
 #include <fcntl.h>
 #include <version.h>
 
+/* Include Hurd's errno.h file, but don't include glue-include/hurd/errno.h,
+   since it #undef's the errno macro. */
+#define _HACK_ERRNO_H
+#include <errno.h>
+
 #include <linux/netdevice.h>
 #include <linux/inet.h>
+
+static void pfinet_activate_ipv6 (void);
 
 /* devinet.c */
 extern error_t configure_device (struct device *dev,
                                  uint32_t addr, uint32_t netmask,
 				 uint32_t peer, uint32_t broadcast);
+
+/* addrconf.c */
+extern int addrconf_notify(struct notifier_block *this, unsigned long event, 
+			   void * data);
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid;
@@ -43,10 +54,15 @@ int trivfs_support_read = 1;
 int trivfs_support_write = 1;
 int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ | O_WRITE;
-struct port_class *trivfs_protid_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_cntl_nportclasses = 1;
+
+struct port_class *trivfs_protid_portclasses[2];
+int trivfs_protid_nportclasses = 2;
+
+struct port_class *trivfs_cntl_portclasses[2];
+int trivfs_cntl_nportclasses = 2;
+
+/* Which portclass to install on the bootstrap port, default to IPv4. */
+int pfinet_bootstrap_portclass = PORTCLASS_INET;
 
 struct port_class *shutdown_notify_class;
 
@@ -224,6 +240,7 @@ enumerate_devices (error_t (*fun) (struct device *dev))
 
 extern void sk_init (void), skb_init (void);
 extern int net_dev_init (void);
+extern void inet6_proto_init (struct net_proto *pro);
 
 int
 main (int argc,
@@ -234,8 +251,6 @@ main (int argc,
   struct stat st;
 
   pfinet_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
-  trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
   addrport_class = ports_create_class (clean_addrport, 0);
   socketport_class = ports_create_class (clean_socketport, 0);
   trivfs_fsid = getpid ();
@@ -276,36 +291,59 @@ main (int argc,
      (And when not sucessful, it never returns.)  */
   argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
+  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+
+  pfinet_owner = pfinet_group = 0;
+
+  if (bootstrap != MACH_PORT_NULL) {
+    /* Create portclass to install on the bootstrap port. */
+    if(trivfs_protid_portclasses[pfinet_bootstrap_portclass]
+       != MACH_PORT_NULL)
+      error(1, 0, "No portclass left to assign to bootstrap port");
+
+#ifdef CONFIG_IPV6
+    if (pfinet_bootstrap_portclass == PORTCLASS_INET6)
+      pfinet_activate_ipv6 ();
+#endif
+    
+    trivfs_protid_portclasses[pfinet_bootstrap_portclass] =
+      ports_create_class (trivfs_clean_protid, 0);
+    trivfs_cntl_portclasses[pfinet_bootstrap_portclass] =
+      ports_create_class (trivfs_clean_cntl, 0);
+
+    /* Talk to parent and link us in.  */
+    err = trivfs_startup (bootstrap, 0,
+			  trivfs_cntl_portclasses[pfinet_bootstrap_portclass],
+			  pfinet_bucket, trivfs_protid_portclasses
+			  [pfinet_bootstrap_portclass], pfinet_bucket, 
+			  &pfinetctl);
+
+    if (err)
+      error (1, err, "contacting parent");
+
+    /* Initialize status from underlying node.  */
+    err = io_stat (pfinetctl->underlying, &st);
+    if (! err)
+      {
+	pfinet_owner = st.st_uid;
+	pfinet_group = st.st_gid;
+      }
+  }
+  else { /* no bootstrap port. */
+    int i;
+    /* Check that at least one portclass has been bound, 
+       error out otherwise. */
+    for (i = 0; i < trivfs_protid_nportclasses; i ++)
+      if (trivfs_protid_portclasses[i] != MACH_PORT_NULL)
+	break;
+
+    if (i == trivfs_protid_nportclasses)
+      error (1, 0, "should be started as a translator.\n");
+  }
+
   /* Ask init to tell us when the system is going down,
      so we can try to be friendly to our correspondents on the network.  */
   arrange_shutdown_notification ();
-
-  /* Talk to parent and link us in.  */
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    error (1, 0, "Must be started as a translator");
-
-  err = trivfs_startup (bootstrap, 0,
-			trivfs_cntl_portclasses[0], pfinet_bucket,
-			trivfs_protid_portclasses[0], pfinet_bucket,
-			&pfinetctl);
-
-  if (err)
-    error (1, err, "contacting parent");
-
-  /* Initialize status from underlying node.  */
-  err = io_stat (pfinetctl->underlying, &st);
-  if (err)
-    {
-      /* We cannot stat the underlying node.  Fallback to the defaults.  */
-      pfinet_owner = pfinet_group = 0;
-      err = 0;
-    }
-  else
-    {
-      pfinet_owner = st.st_uid;
-      pfinet_group = st.st_gid;
-    }
 
   /* Launch */
   ports_manage_port_operations_multithread (pfinet_bucket,
@@ -313,6 +351,76 @@ main (int argc,
 					    0, 0, 0);
   return 0;
 }
+
+#ifdef CONFIG_IPV6
+static void
+pfinet_activate_ipv6 (void)
+{
+  inet6_proto_init (0);
+
+  /* Since we're registering the protocol after the devices have been
+     initialized, we need to care for the linking by ourselves. */
+  struct device *dev = dev_base;
+  
+  if (dev)
+    do
+      {
+	if (!(dev->flags & IFF_UP))
+	  continue;
+
+	addrconf_notify (NULL, NETDEV_REGISTER, dev);
+	addrconf_notify (NULL, NETDEV_UP, dev);
+      }
+    while ((dev = dev->next));
+}
+#endif /* CONFIG_IPV6 */
+
+void
+pfinet_bind (int portclass, const char *name)
+{
+  struct trivfs_control *cntl;
+  error_t err = 0;
+  mach_port_t right;
+  file_t file = file_name_lookup (name, O_CREAT|O_NOTRANS, 0666);
+
+  if (file == MACH_PORT_NULL)
+    err = errno;
+
+  if (! err) {
+    if (trivfs_protid_portclasses[portclass] != MACH_PORT_NULL)
+      error (1, 0, "Cannot bind one protocol to multiple nodes.\n");
+
+#ifdef CONFIG_IPV6
+    if (portclass == PORTCLASS_INET6)
+      pfinet_activate_ipv6 ();
+#endif
+
+    trivfs_protid_portclasses[portclass] =
+      ports_create_class (trivfs_clean_protid, 0);
+    trivfs_cntl_portclasses[portclass] =
+      ports_create_class (trivfs_clean_cntl, 0);
+
+    err = trivfs_create_control (file, trivfs_cntl_portclasses[portclass],
+				 pfinet_bucket, 
+				 trivfs_protid_portclasses[portclass], 
+				 pfinet_bucket, &cntl);
+  }
+
+  if (! err)
+    {
+      right = ports_get_send_right (cntl);
+      err = file_set_translator (file, 0, FS_TRANS_EXCL | FS_TRANS_SET,
+				 0, 0, 0, right, MACH_MSG_TYPE_COPY_SEND);
+      mach_port_deallocate (mach_task_self (), right);
+    }
+  
+  if (err)
+    error (1, err, name);
+
+  ports_port_deref (cntl);
+
+}
+
 
 void
 trivfs_modify_stat (struct trivfs_protid *cred,

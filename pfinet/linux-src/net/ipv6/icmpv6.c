@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>
  *
- *	$Id: icmpv6.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: icmpv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	Based on net/ipv4/icmp.c
  *
@@ -499,6 +499,7 @@ int icmpv6_rcv(struct sk_buff *skb, unsigned long len)
 		}
 	default:
 		/* CHECKSUM_UNNECESSARY */
+		break;
 	};
 
 	/*
@@ -600,8 +601,10 @@ int __init icmpv6_init(struct net_proto_family *ops)
 		       "Failed to create the ICMP6 control socket.\n");
 		return -1;
 	}
+#ifndef _HURD_
 	icmpv6_socket->inode->i_uid = 0;
 	icmpv6_socket->inode->i_gid = 0;
+#endif
 	icmpv6_socket->type = SOCK_RAW;
 
 	if ((err = ops->create(icmpv6_socket, IPPROTO_ICMPV6)) < 0) {

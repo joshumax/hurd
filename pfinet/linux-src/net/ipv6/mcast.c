@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: mcast.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: mcast.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	Based on linux/ipv4/igmp.c and linux/ipv4/ip_sockglue.c 
  *
@@ -671,8 +671,10 @@ __initfunc(int igmp6_init(struct net_proto_family *ops))
 		       "Failed to create the IGMP6 control socket.\n");
 		return -1;
 	}
+#ifndef _HURD_
 	igmp6_socket->inode->i_uid = 0;
 	igmp6_socket->inode->i_gid = 0;
+#endif
 	igmp6_socket->type = SOCK_RAW;
 
 	if((err = ops->create(igmp6_socket, IPPROTO_ICMPV6)) < 0) {

@@ -7,7 +7,7 @@
  *
  *	Adapted from linux/net/ipv4/af_inet.c
  *
- *	$Id: af_inet6.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: af_inet6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -337,6 +337,10 @@ static int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
 	return(0);
 }
 
+#ifdef _HURD_
+#define inet6_ioctl 0
+#else
+
 static int inet6_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 {
 	struct sock *sk = sock->sk;
@@ -395,6 +399,8 @@ static int inet6_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 	/*NOTREACHED*/
 	return(0);
 }
+
+#endif /* not _HURD_ */
 
 struct proto_ops inet6_stream_ops = {
 	PF_INET6,
@@ -542,7 +548,9 @@ __initfunc(void inet6_proto_init(struct net_proto *pro))
 	ip6_route_init();
 	ip6_flowlabel_init();
 	addrconf_init();
+#ifndef _HURD_
 	sit_init();
+#endif
 
 	/* Init v6 transport protocols. */
 	udpv6_init();

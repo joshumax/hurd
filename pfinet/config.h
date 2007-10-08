@@ -7,6 +7,7 @@
 
 #define CONFIG_NET 1
 #define CONFIG_INET 1
+#define CONFIG_IPV6 1
 
 #undef  CONFIG_IPX
 #undef  CONFIG_ATALK
@@ -34,3 +35,6 @@
 #define CONFIG_SKB_LARGE 1
 
 #define CONFIG_IP_NOSIOCRT 1	/* How convenient.  */
+
+#define CONFIG_IPV6_EUI64 1
+#undef  CONFIG_IPV6_NO_PB

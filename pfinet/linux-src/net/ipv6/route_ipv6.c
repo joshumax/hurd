@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: route_ipv6.c,v 1.1 2007/10/08 21:12:31 stesie Exp $
+ *	$Id: route_ipv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -1156,6 +1156,7 @@ restart:
 	}
 }
 
+#ifndef _HURD_
 int ipv6_route_ioctl(unsigned int cmd, void *arg)
 {
 	struct in6_rtmsg rtmsg;
@@ -1194,6 +1195,7 @@ int ipv6_route_ioctl(unsigned int cmd, void *arg)
 
 	return -EINVAL;
 }
+#endif /* not _HURD_ */
 
 /*
  *	Drop the packet on the floor

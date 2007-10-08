@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: addrconf.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: addrconf.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -247,7 +247,10 @@ static struct inet6_dev * ipv6_add_dev(struct device *dev)
 	return ndev;
 }
 
-static struct inet6_dev * ipv6_find_idev(struct device *dev)
+#ifndef _HURD_
+static 
+#endif
+struct inet6_dev * ipv6_find_idev(struct device *dev)
 {
 	struct inet6_dev *idev;
 
@@ -808,6 +811,7 @@ ok:
 	}
 }
 
+#ifndef _HURD_
 /*
  *	Set destination address.
  *	Special case for SIT interfaces where we create a new "virtual"
@@ -865,11 +869,15 @@ err_exit:
 	rtnl_unlock();
 	return err;
 }
+#endif /* not _HURD_ */
 
 /*
  *	Manual configuration of address on an interface
  */
-static int inet6_addr_add(int ifindex, struct in6_addr *pfx, int plen)
+#ifndef _HURD_
+static 
+#endif
+int inet6_addr_add(int ifindex, struct in6_addr *pfx, int plen)
 {
 	struct inet6_ifaddr *ifp;
 	struct inet6_dev *idev;
@@ -900,7 +908,10 @@ static int inet6_addr_add(int ifindex, struct in6_addr *pfx, int plen)
 	return -ENOBUFS;
 }
 
-static int inet6_addr_del(int ifindex, struct in6_addr *pfx, int plen)
+#ifndef _HURD_
+static 
+#endif
+int inet6_addr_del(int ifindex, struct in6_addr *pfx, int plen)
 {
 	struct inet6_ifaddr *ifp;
 	struct inet6_dev *idev;
@@ -932,6 +943,7 @@ static int inet6_addr_del(int ifindex, struct in6_addr *pfx, int plen)
 }
 
 
+#ifndef _HURD_
 int addrconf_add_ifaddr(void *arg)
 {
 	struct in6_ifreq ireq;
@@ -948,7 +960,9 @@ int addrconf_add_ifaddr(void *arg)
 	rtnl_unlock();
 	return err;
 }
+#endif /* not _HURD_ */
 
+#ifndef _HURD_
 int addrconf_del_ifaddr(void *arg)
 {
 	struct in6_ifreq ireq;
@@ -965,6 +979,7 @@ int addrconf_del_ifaddr(void *arg)
 	rtnl_unlock();
 	return err;
 }
+#endif /* not _HURD_ */
 
 static void sit_add_v4_addrs(struct inet6_dev *idev)
 {

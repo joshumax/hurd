@@ -119,7 +119,7 @@ ethernet_demuxer (mach_msg_header_t *inp,
 
   __mutex_lock (&net_bh_lock);
   skb = alloc_skb (datalen, GFP_ATOMIC);
-  skb->len = datalen;
+  skb_put (skb, datalen);
   skb->dev = dev;
 
   /* Copy the two parts of the frame into the buffer. */

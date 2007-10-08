@@ -1164,8 +1164,10 @@ __initfunc(int ndisc_init(struct net_proto_family *ops))
 		       "Failed to create the NDISC control socket.\n");
 		return -1;
 	}
+#ifndef _HURD_
 	ndisc_socket->inode->i_uid = 0;
 	ndisc_socket->inode->i_gid = 0;
+#endif
 	ndisc_socket->type = SOCK_RAW;
 
 	if((err = ops->create(ndisc_socket, IPPROTO_ICMPV6)) < 0) {

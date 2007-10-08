@@ -340,8 +340,15 @@ fl_create(struct in6_flowlabel_req *freq, char *optval, int optlen, int *err_p)
 		fl->owner = current->pid;
 		break;
 	case IPV6_FL_S_USER:
+#ifdef _HURD_
+		/* FIXME
+		 * Which euid shall be assigned?  Where to get it, 
+		 * `struct task_struct' doesn't have a `euid'.
+		 */
+#else
 		fl->owner = current->euid;
 		break;
+#endif
 	default:
 		err = -EINVAL;
 		goto done;

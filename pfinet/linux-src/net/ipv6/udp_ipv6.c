@@ -7,7 +7,7 @@
  *
  *	Based on linux/ipv4/udp.c
  *
- *	$Id: udp_ipv6.c,v 1.1 2007/10/08 21:12:31 stesie Exp $
+ *	$Id: udp_ipv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -79,7 +79,9 @@ static int udp_v6_get_port(struct sock *sk, unsigned short snum)
 			} while ((sk = sk->next) != NULL);
 			best_size_so_far = size;
 			best = result;
+
 		next:
+			(void) 0;
 		}
 		result = best;
 		for(;; result += UDP_HTABLE_SIZE) {
@@ -889,6 +891,10 @@ static struct inet6_protocol udpv6_protocol =
 	NULL,			/* data			*/
 	"UDPv6"			/* name			*/
 };
+
+#ifdef _HURD_
+#define udp_ioctl 0
+#endif
 
 struct proto udpv6_prot = {
 	(struct sock *)&udpv6_prot,	/* sklist_next */

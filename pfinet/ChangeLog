@@ -1,5 +1,77 @@
 2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
 
+	* config.h (CONFIG_IPV6, CONFIG_IPV6_EUI64): New defines, 
+	set to 1.
+	* Makefile (ipv6-srcs): New variable.
+	(LINUXSRCS): Add ipv6-srcs.
+	
+	* ethernet.c (ethernet_demuxer): Call skb_put instead of changing
+	skb->len directly, and thus now update skb->tail accordingly.
+	* pfinet.h (PORTCLASS_INET, PORTCLASS_INET6): New enums.
+	(trivfs_protid_portclasses, trivfs_protid_nportclasses)
+	(trivfs_cntl_portclasses, trivfs_cntl_nportclasses): Declare
+	these.
+	(pfinet_bootstrap_portclass): New variable.
+	(pfinet_bind): New function.
+	* main.c: Define _HACK_ERRNO_H.  Include <errno.h>.  
+	(trivfs_protid_portclasses, trivfs_cntl_portclasses): New slots
+	for PORTCLASS_INET6.
+	(trivfs_protid_nportclasses, trivfs_cntl_nportclasses): Set to 2.
+	(pfinet_bootstrap_portclass): New variable.
+	(pfinet_bind): New function.
+	(pfinet_activate_ipv6) [CONFIG_IPV6]: New function.
+	(main) [CONFIG_IPV6]: Call inet6_proto_init.
+	(main): Reordered to allow pfinet to not be started as a
+	translator, if pfinet_bind is used.  If started as a translator,
+	treat pfinet_bootstrap_portclass when calling trivfs_startup.
+	* options.c: Include <net/sock.h>, <net/ip6_fib.h>,
+	<net/ip6_route.h> and <net/addrconf.h>. 
+	(options): New option `ipv4'.
+	(options) [CONFIG_IPV6]: New options `ipv6', `address6' and
+	`gateway6'.
+	(parse_interface) [CONFIG_IPV6]: Add address6 and gateway6.
+	(parse_hook_add_interface) [CONFIG_IPV6]: Initialize address6 and
+	gateway6. 
+	(parse_opt): Parse new args.
+	* socket-ops.c (S_socket_create): Call either
+	net_families[PF_INET]->create or net_families[PF_INET6]->create,
+	depending on receiving master.
+	(S_socket_create_address): Allow creation of AF_INET6 addresses.
+	
+	* glue-include/asm/delay.h: New stub file.
+	* glue-include/linux/ipv6.h: Merged many bits unmodified from Linux
+	header file.
+	* glue-include/linux/in6.h: Likewise.
+	(ipv6mr_ifindex): New define, glue to ipv6mr_interface. 
+	* glue-include/linux/socket.h (SOL_IPV6, SOL_ICMPV6): New defines.
+
+	* linux-src/net/ipv6/addrconf.c (ipv6_find_idev, inet6_addr_add)
+	(inet6_addr_del) [_HURD_]: Make these non-static.
+	(addrconf_set_dstaddr, addrconf_add_ifaddr, addrconf_del_ifaddr)
+	[_HURD_]: Don't define these functions.
+	* linux-src/net/ipv6/route_ipv6.c (ipv6_route_ioctl) [_HURD_]:
+	Likewise. 
+	* linux-src/net/ipv6/af_inet6.c (inet6_ioctl) [_HURD_]: Don't
+	define the function, instead #define it to 0.
+	(inet6_proto_init) [_HURD_]: Don't call sit_init.
+	* linux-src/net/ipv6/udp_ipv6.c (udp_ioctl) [_HURD_]: Define 
+	to 0. 
+	(udp_v6_get_port): Put empty statement after label to silence
+	compiler. 
+	* linux-src/net/ipv6/tcp_ipv6.c (tcp_v6_get_port, tcp_v6_rcv):
+	Likewise. 
+	* linux-src/net/ipv6/icmpv6.c (icmpv6_rcv): Likewise.
+	(icmpv6_init) [_HURD_]: Don't initialize i_uid and i_gid.
+	* linux-src/net/ipv6/mcast.c (igmp6_init): Likewise.
+	* linux-src/net/ipv6/ndisc.c (ndisc_init): Likewise.
+	* linux-src/net/ipv6/ip6_fib.c (BUG_TRAP): Don't use __FUNCTION__
+	as a string but a variable, to keep gcc happy.
+	(fib6_walker_list): Make it non-static, to keep gcc happy.
+	* linux-src/net/ipv6/ip6_flowlabel.c (fl_create) [_HURD_]: Drop
+	IPV6_FL_S_USER support, since current->euid is not available.
+
+2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
+
 	Import a number of files from Linux 2.2.14.  Renamed some of them,
 	to have unique filenames as required by the make system.
 	
