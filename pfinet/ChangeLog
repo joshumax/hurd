@@ -1,3 +1,27 @@
+2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
+
+	Import a number of files from Linux 2.2.14.  Renamed some of them,
+	to have unique filenames as required by the make system.
+	
+	* linux-src/net/ipv6/addrconf.c: Import file.
+	* linux-src/net/ipv6/af_inet6.c: Likewise.
+	* linux-src/net/ipv6/exthdrs.c: Likewise.
+	* linux-src/net/ipv6/ip6_fib.c: Likewise.
+	* linux-src/net/ipv6/ip6_flowlabel.c: Likewise.
+	* linux-src/net/ipv6/ip6_input.c: Likewise.
+	* linux-src/net/ipv6/ip6_output.c: Likewise.
+	* linux-src/net/ipv6/ipv6_sockglue.c: Likewise.
+	* linux-src/net/ipv6/mcast.c: Likewise.
+	* linux-src/net/ipv6/ndisc.c: Likewise.
+	* linux-src/net/ipv6/reassembly.c: Likewise.
+	* linux-src/net/ipv6/tcp_ipv6.c: Likewise.
+	* linux-src/net/ipv6/datagram_ipv6.c: Import file (was datagram.c).
+	* linux-src/net/ipv6/icmpv6.c: Import file (was icmp.c).
+	* linux-src/net/ipv6/protocol_ipv6.c: Import file (was protocol.c).
+	* linux-src/net/ipv6/raw_ipv6.c: Import file (was raw.c).
+	* linux-src/net/ipv6/route_ipv6.c: Import file (was route.c).
+	* linux-src/net/ipv6/udp_ipv6.c: Import file (was udp.c). 
+
 2007-07-27  Thomas Schwinge  <tschwinge@gnu.org>
 
 	[bug #17124 -- ``-fno-strict-aliasing for pfinet'']
