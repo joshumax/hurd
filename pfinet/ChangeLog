@@ -1,3 +1,9 @@
+2007-10-09  Stefan Siegl  <stesie@brokenpipe.de>
+
+	* iioctl-ops.c: Include <net/sock.h>.
+	(siocgifXaddr): Return EINVAL unless socket family is AF_INET.
+	(siocsifXaddr): Likewise.
+
 2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
 
 	[task #5470: ``Implement pfinet6'']

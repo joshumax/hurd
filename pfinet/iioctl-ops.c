@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2007 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -34,6 +34,7 @@
 
 #include <sys/ioctl.h>
 #include <net/if.h>
+#include <net/sock.h>
 
 extern struct notifier_block *netdev_chain;
 
@@ -87,17 +88,20 @@ siocgifXaddr (io_t port,
 	      sockaddr_t *addr,
 	      enum siocgif_type type)
 {
+  struct sock_user *user = begin_using_socket_port (port);
   error_t err = 0;
   struct device *dev;
   struct sockaddr_in *sin = (struct sockaddr_in *) addr;
   uint32_t addrs[4];
 
-  if (!port)
+  if (!user)
     return EOPNOTSUPP;
 
   dev = get_dev (ifnam);
   if (!dev)
     err = ENODEV;
+  else if (user->sock->sk->family != AF_INET)
+    err = EINVAL;
   else
     {
       sin->sin_family = AF_INET;
@@ -105,7 +109,9 @@ siocgifXaddr (io_t port,
       inquire_device (dev, &addrs[0], &addrs[1], &addrs[2], &addrs[3]);
       sin->sin_addr.s_addr = addrs[type];
     }
+
   __mutex_unlock (&global_lock);
+  end_using_socket_port (user);
   return err;
 }
 
@@ -141,6 +147,8 @@ siocsifXaddr (io_t port,
   else if (!dev)
     err = ENODEV;
   else if (sin->sin_family != AF_INET)
+    err = EINVAL;
+  else if (user->sock->sk->family != AF_INET)
     err = EINVAL;
   else
     {
