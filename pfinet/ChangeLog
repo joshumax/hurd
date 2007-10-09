@@ -1,5 +1,7 @@
 2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
 
+	[task #5470: ``Implement pfinet6'']
+
 	* config.h (CONFIG_IPV6, CONFIG_IPV6_EUI64): New defines, 
 	set to 1.
 	* Makefile (ipv6-srcs): New variable.
@@ -70,11 +72,8 @@
 	* linux-src/net/ipv6/ip6_flowlabel.c (fl_create) [_HURD_]: Drop
 	IPV6_FL_S_USER support, since current->euid is not available.
 
-2007-10-08  Stefan Siegl  <stesie@brokenpipe.de>
-
 	Import a number of files from Linux 2.2.14.  Renamed some of them,
 	to have unique filenames as required by the make system.
-	
 	* linux-src/net/ipv6/addrconf.c: Import file.
 	* linux-src/net/ipv6/af_inet6.c: Likewise.
 	* linux-src/net/ipv6/exthdrs.c: Likewise.
