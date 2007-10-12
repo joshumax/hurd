@@ -47,3 +47,9 @@ conditionalized by #ifdef _HURD_.
 
 
 	-- Roland McGrath <roland@gnu.org>	2000-02-03
+
+---
+
+See <http://www.bddebian.com/~wiki/hurd/translator/pfinet/ipv6/> about IPv6
+support and <http://lists.gnu.org/archive/html/bug-hurd/2007-10/msg00014.html>
+for some further details.

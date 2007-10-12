@@ -1,3 +1,7 @@
+2007-10-12  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* README: How to find information about IPv6 support.
+
 2007-10-09  Stefan Siegl  <stesie@brokenpipe.de>
 
 	* iioctl-ops.c: Include <net/sock.h>.
