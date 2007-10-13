@@ -2144,6 +2144,13 @@ some common ones are:
 If no options are supplied, @var{filesys}' current options are
 printed.
 
+The options passed as @var{fs_option}s are meant to augment or change those
+which are already set, they're not meant to completely replace the existing
+command line options.  For example, passing @code{--readonly} to a file system
+server will change the server from writable to read-only, but will not touch
+the used backing store.  Passing @code{--address=new_IP} to
+@file{/servers/socket/2} will change the local IP address to @var{new_IP}, but
+will not touch the interface, netmask and gateway settings.
 
 @node Trivfs Library
 @section Trivfs Library
