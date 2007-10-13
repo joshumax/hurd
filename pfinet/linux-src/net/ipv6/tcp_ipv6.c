@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: tcp_ipv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
+ *	$Id: tcp_ipv6.c,v 1.3 2007/10/13 01:43:00 stesie Exp $
  *
  *	Based on: 
  *	linux/net/ipv4/tcp.c
@@ -420,6 +420,24 @@ static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr,
 
 	if(addr_type & IPV6_ADDR_MULTICAST)
 		return -ENETUNREACH;
+
+	if (addr_type&IPV6_ADDR_LINKLOCAL) {
+		if (addr_len >= sizeof(struct sockaddr_in6) &&
+		    usin->sin6_scope_id) {
+			/* If interface is set while binding, indices
+			 * must coincide.
+			 */
+			if (sk->bound_dev_if &&
+			    sk->bound_dev_if != usin->sin6_scope_id)
+				return -EINVAL;
+
+			sk->bound_dev_if = usin->sin6_scope_id;
+		}
+
+		/* Connect to link-local address requires an interface */
+		if (!sk->bound_dev_if)
+			return -EINVAL;
+	}
 
 	/*
 	 *	connect to self not allowed
@@ -1587,6 +1605,10 @@ static void v6_addr2sockaddr(struct sock *sk, struct sockaddr * uaddr)
 	sin6->sin6_port	= sk->dport;
 	/* We do not store received flowlabel for TCP */
 	sin6->sin6_flowinfo = 0;
+	sin6->sin6_scope_id = 0;
+	if (sk->bound_dev_if &&
+	    ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+		sin6->sin6_scope_id = sk->bound_dev_if;
 }
 
 static struct tcp_func ipv6_specific = {

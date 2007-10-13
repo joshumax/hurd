@@ -7,7 +7,7 @@
  *
  *	Based on linux/ipv4/udp.c
  *
- *	$Id: udp_ipv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
+ *	$Id: udp_ipv6.c,v 1.3 2007/10/13 01:43:00 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -272,6 +272,24 @@ ipv4_connected:
 		return 0;
 	}
 
+	if (addr_type&IPV6_ADDR_LINKLOCAL) {
+		if (addr_len >= sizeof(struct sockaddr_in6) &&
+		    usin->sin6_scope_id) {
+			if (sk->bound_dev_if &&
+			    sk->bound_dev_if != usin->sin6_scope_id)
+				return(-EINVAL);
+
+			sk->bound_dev_if = usin->sin6_scope_id;
+			if (!sk->bound_dev_if &&
+			    (addr_type & IPV6_ADDR_MULTICAST))
+				fl.oif = np->mcast_oif;
+		}
+
+		/* Connect to link-local address requires an interface */
+		if (!sk->bound_dev_if)
+			return(-EINVAL);
+	}
+
 	ipv6_addr_copy(&np->daddr, daddr);
 	np->flow_label = fl.fl6_flowlabel;
 
@@ -416,6 +434,7 @@ int udpv6_recvmsg(struct sock *sk, struct msghdr *msg, int len,
 		sin6->sin6_family = AF_INET6;
 		sin6->sin6_port = skb->h.uh->source;
 		sin6->sin6_flowinfo = 0;
+		sin6->sin6_scope_id = 0;
 
 		if (skb->protocol == __constant_htons(ETH_P_IP)) {
 			ipv6_addr_set(&sin6->sin6_addr, 0, 0,
@@ -425,6 +444,9 @@ int udpv6_recvmsg(struct sock *sk, struct msghdr *msg, int len,
 		} else {
 			memcpy(&sin6->sin6_addr, &skb->nh.ipv6h->saddr,
 			       sizeof(struct in6_addr));
+			if (ipv6_addr_type(&sin6->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+				sin6->sin6_scope_id =
+					((struct inet6_skb_parm *) skb->cb)->iif;
 
 			if (sk->net_pinfo.af_inet6.rxopt.all)
 				datagram_recv_ctl(sk, msg, skb);
@@ -805,6 +827,11 @@ static int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, int ulen)
 		if (sk->state == TCP_ESTABLISHED &&
 		    !ipv6_addr_cmp(daddr, &sk->net_pinfo.af_inet6.daddr))
 			daddr = &sk->net_pinfo.af_inet6.daddr;
+
+		if (addr_len >= sizeof(struct sockaddr_in6) &&
+		    sin6->sin6_scope_id &&
+		    ipv6_addr_type(daddr)&IPV6_ADDR_LINKLOCAL)
+			fl.oif = sin6->sin6_scope_id;
 	} else {
 		if (sk->state != TCP_ESTABLISHED)
 			return(-ENOTCONN);

@@ -7,7 +7,7 @@
  *
  *	Adapted from linux/net/ipv4/af_inet.c
  *
- *	$Id: af_inet6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
+ *	$Id: af_inet6.c,v 1.3 2007/10/13 01:43:00 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -214,6 +214,26 @@ static int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 			return(-EADDRNOTAVAIL);
 	} else {
 		if (addr_type != IPV6_ADDR_ANY) {
+			struct net_device *dev = NULL;
+
+			if (addr_type & IPV6_ADDR_LINKLOCAL) {
+				if (addr_len >= sizeof(struct sockaddr_in6) &&
+				    addr->sin6_scope_id) {
+					/* Override any existing binding,
+					   if another one is supplied
+					   by user. */
+					sk->bound_dev_if = addr->sin6_scope_id;
+				}
+
+				/* Binding to link-local address requires
+				   an interface */
+				if (!sk->bound_dev_if)
+					return(-EINVAL);
+				dev = dev_get_by_index(sk->bound_dev_if);
+				if (!dev)
+					return(-ENODEV);
+			}
+
 			/* ipv4 addr of the socket is invalid.  Only the
 			 * unpecified and mapped address have a v4 equivalent.
 			 */
@@ -312,6 +332,8 @@ static int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
   
 	sin->sin6_family = AF_INET6;
 	sin->sin6_flowinfo = 0;
+	sin->sin6_scope_id = 0;
+
 	sk = sock->sk;
 	if (peer) {
 		if (!tcp_connected(sk->state))
@@ -333,6 +355,8 @@ static int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
 
 		sin->sin6_port = sk->sport;
 	}
+	if (ipv6_addr_type(&sin->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+		sin->sin6_scope_id = sk->bound_dev_if;
 	*uaddr_len = sizeof(*sin);	
 	return(0);
 }

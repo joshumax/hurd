@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: datagram_ipv6.c,v 1.1 2007/10/08 21:12:30 stesie Exp $
+ *	$Id: datagram_ipv6.c,v 1.2 2007/10/13 01:43:00 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -134,10 +134,14 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
 		sin->sin6_family = AF_INET6;
 		sin->sin6_flowinfo = 0;
 		sin->sin6_port = serr->port; 
+		sin->sin6_scope_id = 0;
 		if (serr->ee.ee_origin == SO_EE_ORIGIN_ICMP6) {
 			memcpy(&sin->sin6_addr, skb->nh.raw + serr->addr_offset, 16);
 			if (sk->net_pinfo.af_inet6.sndflow)
 				sin->sin6_flowinfo = *(u32*)(skb->nh.raw + serr->addr_offset - 24) & IPV6_FLOWINFO_MASK;
+			if (ipv6_addr_type(&sin->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+				sin->sin6_scope_id =
+					((struct inet6_skb_parm *) skb->cb)->iif;
 		} else
 			ipv6_addr_set(&sin->sin6_addr, 0, 0,
 				      __constant_htonl(0xffff),
@@ -150,10 +154,14 @@ int ipv6_recv_error(struct sock *sk, struct msghdr *msg, int len)
 	if (serr->ee.ee_origin != SO_EE_ORIGIN_LOCAL) {
 		sin->sin6_family = AF_INET6;
 		sin->sin6_flowinfo = 0;
+		sin->sin6_scope_id = 0;
 		if (serr->ee.ee_origin == SO_EE_ORIGIN_ICMP6) {
 			memcpy(&sin->sin6_addr, &skb->nh.ipv6h->saddr, 16);
 			if (sk->net_pinfo.af_inet6.rxopt.all)
 				datagram_recv_ctl(sk, msg, skb);
+			if (ipv6_addr_type(&sin->sin6_addr) & IPV6_ADDR_LINKLOCAL)
+				sin->sin6_scope_id = 
+					((struct inet6_skb_parm *) skb->cb)->iif;
 		} else {
 			ipv6_addr_set(&sin->sin6_addr, 0, 0,
 				      __constant_htonl(0xffff),

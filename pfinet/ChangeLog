@@ -1,3 +1,23 @@
+2007-10-13  Stefan Siegl  <stesie@brokenpipe.de>
+
+	* linux-src/net/ipv6/af_inet6.c (inet6_getname): Initialize
+	sin6_scope_id.
+	* linux-src/net/ipv6/datagram_ipv6.c (ipv6_recv_error): Likewise.
+	* linux-src/net/ipv6/tcp_ipv6.c (v6_addr2sockaddr): Likewise.
+	* linux-src/net/ipv6/udp_ipv6.c (udpv6_recvmsg): Likewise.
+	* linux-src/net/ipv6/raw_ipv6.c (rawv6_recvmsg): Likewise.
+	
+	* linux-src/net/ipv6/af_inet6.c (inet6_bind): For link-local IPv6
+	addresses copy sin6_scope_id to bound_dev_if and error out unless
+	bound.
+	* linux-src/net/ipv6/tcp_ipv6.c (tcp_v6_connect): Likewise.
+	* linux-src/net/ipv6/udp_ipv6.c (udpv6_connect): Likewise.
+	* linux-src/net/ipv6/raw_ipv6.c (rawv6_bind): Likewise.
+	
+	* linux-src/net/ipv6/raw_ipv6.c (rawv6_sendmsg): For link-local
+	IPv6 addresses bind packet to interface specified by sin6_scope_id.
+	* linux-src/net/ipv6/udp_ipv6.c (udpv6_sendmsg): Likewise.
+
 2007-10-12  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* README: How to find information about IPv6 support.
