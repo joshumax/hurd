@@ -1,3 +1,7 @@
+2007-10-13  Marco Gerards  <metgerards@student.han.nl>
+
+	* iioctl.defs (iioctl_siocgifhwaddr): New RPC.
+
 2007-03-24  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* fsys_reply.defs (fsys_syncfs_reply): Fix typo.  Reported by Austin

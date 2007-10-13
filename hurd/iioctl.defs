@@ -1,5 +1,5 @@
 /* Definitions for interface ioctls
-   Copyright (C) 2000 Free Software Foundation, Inc.
+   Copyright (C) 2000, 2007 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -131,7 +131,14 @@ routine iioctl_siocgifnetmask (
 	inout ifnam: ifname_t;
 	inout netmask: sockaddr_t);
 
-skip; skip; skip; skip; /* 38, 39, 40, 41 unused */
+skip; /* 38 SIOCGARP -- Not implemented yet */
+
+routine iioctl_siocgifhwaddr (
+	reqport: io_t;
+	inout ifnam: ifname_t;
+	inout netmask: sockaddr_t);
+
+skip; skip; /* 40, 41 unused */
 skip; skip; skip; skip; /* 42, 43, 44, 45 unused */
 skip; skip; skip; skip; /* 46, 47, 48, 49 unused */
 skip; /* 50 unused */
