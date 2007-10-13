@@ -1,3 +1,7 @@
+2007-10-13  Marco Gerards  <metgerards@student.han.nl>
+
+        * iioctl-ops.c (S_iioctl_siocgifhwaddr): New function.
+
 2007-10-13  Stefan Siegl  <stesie@brokenpipe.de>
 
 	* linux-src/net/ipv6/af_inet6.c (inet6_getname): Initialize

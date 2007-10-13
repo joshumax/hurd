@@ -271,6 +271,31 @@ SIOCGIF (brdaddr, BRDADDR);
 /* 37 SIOCGIFNETMASK -- Get netmask of a network interface.  */
 SIOCGIF (netmask, NETMASK);
 
+/* 39 SIOCGIFHWADDR -- Get the hardware address of a network interface.  */
+error_t
+S_iioctl_siocgifhwaddr (io_t port,
+			ifname_t ifname,
+			sockaddr_t *addr)
+{
+  error_t err = 0;
+  struct device *dev;
+
+  if (!port)
+    return EOPNOTSUPP;
+
+  dev = get_dev (ifname);
+  if (!dev)
+    err = ENODEV;
+  else
+    {
+      memcpy (addr->sa_data, dev->dev_addr, dev->addr_len);
+      addr->sa_family = dev->type;
+    }
+  
+  __mutex_unlock (&global_lock);
+  return err;
+}
+
 /* 51 SIOCGIFMTU -- Get mtu of a network interface.  */
 error_t
 S_iioctl_siocgifmtu (io_t port,
