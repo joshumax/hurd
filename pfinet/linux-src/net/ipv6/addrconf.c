@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
- *	$Id: addrconf.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
+ *	$Id: addrconf.c,v 1.3 2007/10/14 02:26:10 stesie Exp $
  *
  *	This program is free software; you can redistribute it and/or
  *      modify it under the terms of the GNU General Public License
@@ -367,6 +367,7 @@ static void ipv6_del_addr(struct inet6_ifaddr *ifp)
 	}
 
 	ipv6_ifa_notify(RTM_DELADDR, ifp);
+	del_timer(&ifp->timer);
 	
 	kfree(ifp);
 }

@@ -1,3 +1,14 @@
+2007-10-14  Stefan Siegl  <stesie@brokenpipe.de>
+
+	* options.c (ipv6_get_dflt_router) [CONFIG_IPV6]: New function.
+	(parse_opt) [CONFIG_IPV6]: Don't delete IPv6 interface address, if
+	it would be re-added immediately, but delete if otherwise.
+	Do not touch inet6_ifaddr after inet6_addr_del was called.
+	Don't purge and re-add IPv6 default router unless necessary.
+	(trivfs_append_args) [CONFIG_IPV6]: Use ipv6_get_dflt_router.
+	* linux-src/net/ipv6/addrconf.c (ipv6_del_addr): Call del_timer
+	on ifp->timer. 
+
 2007-10-13  Marco Gerards  <metgerards@student.han.nl>
 
         * iioctl-ops.c (S_iioctl_siocgifhwaddr): New function.

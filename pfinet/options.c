@@ -138,6 +138,19 @@ parse_hook_add_interface (struct parse_hook *h)
 
   return 0;
 }
+
+#ifdef CONFIG_IPV6
+static struct rt6_info *
+ipv6_get_dflt_router (void)
+{
+  struct in6_addr daddr = { 0 };
+
+  struct fib6_node *fib = fib6_lookup
+    (&ip6_routing_table, &daddr, NULL);
+  return fib->leaf;
+}
+#endif /* CONFIG_IPV6 */
+
 
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -363,17 +376,25 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  if (!idev)
 	    continue;
 
+	  /* First let's remove all non-local addresses. */
+	  struct inet6_ifaddr *ifa = idev->addr_list;
+
+	  while (ifa)
+	    {
+	      struct inet6_ifaddr *c_ifa = ifa;
+	      ifa = ifa->if_next;
+
+	      if (IN6_ARE_ADDR_EQUAL (&c_ifa->addr, &in->address6.addr))
+		memset (&in->address6, 0, sizeof (struct inet6_ifaddr));
+
+	      else if (!IN6_IS_ADDR_LINKLOCAL (&c_ifa->addr)
+		       && !IN6_IS_ADDR_SITELOCAL (&c_ifa->addr))
+		inet6_addr_del (in->device->ifindex, &c_ifa->addr,
+				c_ifa->prefix_len);
+	    }
+
 	  if (!IN6_IS_ADDR_UNSPECIFIED (&in->address6.addr))
 	    {
-	      /* First let's remove all non-local addresses. */
-	      struct inet6_ifaddr *ifa = idev->addr_list;
-	      do 
-		if (!IN6_IS_ADDR_LINKLOCAL (&ifa->addr)
-		    && !IN6_IS_ADDR_SITELOCAL (&ifa->addr))
-		  inet6_addr_del (in->device->ifindex, &ifa->addr,
-				  ifa->prefix_len);
-	      while ((ifa = ifa->if_next));
-
 	      /* Now assign the new address */
 	      inet6_addr_add (in->device->ifindex, &in->address6.addr,
 			      in->address6.prefix_len);
@@ -441,9 +462,15 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 #ifdef CONFIG_IPV6
       if (trivfs_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
 	{
-	  rt6_purge_dflt_routers (0);
-	  if (gw6_in)
-	    rt6_add_dflt_router (&gw6_in->gateway6, gw6_in->device);
+	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
+
+	  if (!gw6_in || rt6i->rt6i_dev != gw6_in->device
+	      || !IN6_ARE_ADDR_EQUAL (&rt6i->rt6i_gateway, &gw6_in->gateway6))
+	    {
+	      rt6_purge_dflt_routers (0);
+	      if (gw6_in)
+		rt6_add_dflt_router (&gw6_in->gateway6, gw6_in->device);
+	    }
 	}
 #endif       
 
@@ -514,16 +541,8 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
       if (idev)
 	{
 	  struct inet6_ifaddr *ifa = idev->addr_list;
-	  struct in6_addr daddr;
 	  static char addr_buf[INET6_ADDRSTRLEN];
 
-	  /* Look for IPv6 default route (we use the first ifa->addr as
-	     source address), but don't yet push it to the option stack. */
-	  memset (&daddr, 0, sizeof(daddr));
-	  struct fib6_node *fib = fib6_lookup
-	    (&ip6_routing_table, &daddr, &ifa->addr);
-	  struct rt6_info *rt6i = fib->leaf;
-	  
 	  /* Push all IPv6 addresses assigned to the interface. */
 	  do 
 	    {
@@ -533,6 +552,7 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 	  while ((ifa = ifa->if_next));
 
 	  /* Last not least push --gateway6 option. */
+	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
 	  if(rt6i->rt6i_dev == dev) 
 	    {
 	      inet_ntop (AF_INET6, &rt6i->rt6i_gateway, addr_buf,
