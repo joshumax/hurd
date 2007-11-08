@@ -97,10 +97,14 @@
 * Hurd: (hurd).  Using and programming the Hurd kernel servers.
 @end direntry
 
-@ifinfo
+@copying
+This file documents the GNU Hurd kernel component.  This edition of the
+documentation was last updated for version @value{VERSION} of the Hurd.
+
 Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
 2004, 2005, 2007 Free Software Foundation, Inc.
 
+@quotation
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
 are preserved on all copies.
@@ -120,10 +124,12 @@ permission notice identical to this one.
 
 Permission is granted to copy and distribute translations of this manual
 into another language, under the above conditions for modified versions.
-@end ifinfo
+@end quotation
+@end copying
 
 @setchapternewpage none
 @settitle Hurd Reference Manual
+
 @titlepage
 @finalout
 @title The GNU Hurd Reference Manual
@@ -132,29 +138,15 @@ into another language, under the above conditions for modified versions.
 @page
 
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
-2004, 2005, 2007 Free Software Foundation, Inc.
-
-Permission is granted to make and distribute verbatim copies of
-this manual provided the copyright notice and this permission notice
-are preserved on all copies.
-
-Permission is granted to copy and distribute modified versions of this
-manual under the conditions for verbatim copying, provided also that
-the entire resulting derived work is distributed under the terms of a
-permission notice identical to this one.
-
-Permission is granted to copy and distribute translations of this manual
-into another language, under the above conditions for modified versions.
+@insertcopying
 @end titlepage
 
-@ifinfo
-
+@ifnottex
 @node Top
 @top The GNU Hurd
 
-This file documents the GNU Hurd kernel component.  This edition of the
-documentation was last updated for version @value{VERSION} of the Hurd.
+@insertcopying
+@end ifnottex
 
 @menu
 * Introduction::                How to use this manual.
@@ -335,8 +327,6 @@ Auth Interface
 
 @end detailmenu
 @end menu
-
-@end ifinfo
 
 
 @node Introduction
