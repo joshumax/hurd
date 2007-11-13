@@ -1,5 +1,7 @@
 /* trans.c -- Control a translator node for the repeaters.
-   Copyright (C) 2004, 2005 Free Software Foundation, Inc.
+
+   Copyright (C) 2004, 2005, 2007 Free Software Foundation, Inc.
+
    Written by Marco Gerards.
    
    This program is free software; you can redistribute it and/or
@@ -173,18 +175,12 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   if (! err)
     {
       if (mtime)
-        {
-          np->nn_stat.st_mtime = mtime->tv_sec;
-          np->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
-        }
+	np->nn_stat.st_mtim = *mtime;
       else
         flags |= TOUCH_MTIME;
       
       if (atime)
-        {
-          np->nn_stat.st_atime = atime->tv_sec;
-          np->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
-        }
+	np->nn_stat.st_atim = *atime;
       else
         flags |= TOUCH_ATIME;
       

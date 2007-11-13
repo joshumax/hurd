@@ -1,3 +1,7 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* trans.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.
+
 2007-05-08  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* vga-support.c (vga_fini): Fix call to ioperm().
