@@ -1,5 +1,6 @@
 /* 
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2007 Free Software Foundation, Inc.
+
    Written by Thomas Bushnell, BSG.
 
    This file is part of the GNU Hurd.
@@ -32,17 +33,17 @@ fshelp_touch (struct stat *st, unsigned what,
 
   if (what & TOUCH_ATIME)
     {
-      st->st_atime = tv.tv_sec;
-      st->st_atime_usec = tv.tv_usec;
+      st->st_atim.tv_sec = tv.tv_sec;
+      st->st_atim.tv_nsec = tv.tv_usec * 1000;
     }
   if (what & TOUCH_CTIME)
     {
-      st->st_ctime = tv.tv_sec;
-      st->st_ctime_usec = tv.tv_usec;
+      st->st_ctim.tv_sec = tv.tv_sec;
+      st->st_ctim.tv_nsec = tv.tv_usec * 1000;
     }
   if (what & TOUCH_MTIME)
     {
-      st->st_mtime = tv.tv_sec;
-      st->st_mtime_usec = tv.tv_usec;
+      st->st_mtim.tv_sec = tv.tv_sec;
+      st->st_mtim.tv_nsec = tv.tv_usec * 1000;
     }
 }
