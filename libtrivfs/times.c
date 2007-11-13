@@ -25,8 +25,8 @@ trivfs_set_atime (struct trivfs_control *cntl)
   time_value_t mtime;
   
   io_stat (cntl->underlying, &st);
-  mtime.seconds = st.st_mtime;
-  mtime.microseconds = st.st_mtime_usec;
+  mtime.seconds = st.st_mtim.tv_sec;
+  mtime.microseconds = st.st_mtim.tv_nsec / 1000;
   atime.microseconds = -1;
   file_utimes (cntl->underlying, atime, mtime);
   return 0;
@@ -40,8 +40,8 @@ trivfs_set_mtime (struct trivfs_control *cntl)
   time_value_t mtime;
 
   io_stat (cntl->underlying, &st);
-  atime.seconds = st.st_atime;
-  atime.microseconds = st.st_atime_usec;
+  atime.seconds = st.st_atim.tv_sec;
+  atime.microseconds = st.st_atim.tv_nsec / 1000;
   mtime.microseconds = -1;
   file_utimes (cntl->underlying, atime, mtime);
   return 0;
