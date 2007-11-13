@@ -1,3 +1,8 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* nfs.c (xdr_encode_sattr_stat, xdr_decode_fattr): Adapt to ``struct
+	stat'' changes.
+
 2002-09-29  Marcus Brinkmann  <marcus@gnu.org>
 
 	* mount.c (mount_root): Add parenthesis for post-decrement (even

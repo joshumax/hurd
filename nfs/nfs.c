@@ -1,5 +1,8 @@
 /* nfs.c - XDR frobbing and lower level routines for NFS client.
-   Copyright (C) 1995, 1996, 1997, 1999, 2002 Free Software Foundation, Inc.
+
+   Copyright (C) 1995, 1996, 1997, 1999, 2002, 2007
+     Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -335,10 +338,10 @@ xdr_encode_sattr_stat (int *p,
       *(p++) = htonl (st->st_uid);
       *(p++) = htonl (st->st_gid);
       *(p++) = htonl (st->st_size);
-      *(p++) = htonl (st->st_atime);
-      *(p++) = htonl (st->st_atime_usec);
-      *(p++) = htonl (st->st_mtime);
-      *(p++) = htonl (st->st_mtime_usec);
+      *(p++) = htonl (st->st_atim.tv_sec);
+      *(p++) = htonl (st->st_atim.tv_nsec / 1000);
+      *(p++) = htonl (st->st_mtim.tv_sec);
+      *(p++) = htonl (st->st_mtim.tv_nsec / 1000);
     }
   else
     {
@@ -351,11 +354,11 @@ xdr_encode_sattr_stat (int *p,
       *(p++) = htonl (1);		/* set size */
       p = xdr_encode_64bit (p, st->st_size);
       *(p++) = htonl (SET_TO_CLIENT_TIME); /* set atime */
-      *(p++) = htonl (st->st_atime);
-      *(p++) = htonl (st->st_atime_usec * 1000);
+      *(p++) = htonl (st->st_atim.tv_sec);
+      *(p++) = htonl (st->st_atim.tv_nsec);
       *(p++) = htonl (SET_TO_CLIENT_TIME); /* set mtime */
-      *(p++) = htonl (st->st_mtime);
-      *(p++) = htonl (st->st_mtime_usec * 1000);
+      *(p++) = htonl (st->st_mtim.tv_sec);
+      *(p++) = htonl (st->st_mtim.tv_nsec);
     }
   return p;
 }
@@ -442,24 +445,24 @@ xdr_decode_fattr (int *p, struct stat *st)
   p++;
   st->st_ino = ntohl (*p);
   p++;
-  st->st_atime = ntohl (*p);
+  st->st_atim.tv_sec = ntohl (*p);
   p++;
-  st->st_atime_usec = ntohl (*p);
+  st->st_atim.tv_nsec = ntohl (*p);
   p++;
-  st->st_mtime = ntohl (*p);
+  st->st_mtim.tv_sec = ntohl (*p);
   p++;
-  st->st_mtime_usec = ntohl (*p);
+  st->st_mtim.tv_nsec = ntohl (*p);
   p++;
-  st->st_ctime = ntohl (*p);
+  st->st_ctim.tv_sec = ntohl (*p);
   p++;
-  st->st_ctime_usec = ntohl (*p);
+  st->st_ctim.tv_nsec = ntohl (*p);
   p++;
 
-  if (protocol_version == 3)
+  if (protocol_version < 3)
     {
-      st->st_atime_usec /= 1000;
-      st->st_mtime_usec /= 1000;
-      st->st_ctime_usec /= 1000;
+      st->st_atim.tv_nsec *= 1000;
+      st->st_mtim.tv_nsec *= 1000;
+      st->st_ctim.tv_nsec *= 1000;
     }
 
   return p;
