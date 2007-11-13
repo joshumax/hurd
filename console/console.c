@@ -1,5 +1,7 @@
 /* console.c -- A console server.
-   Copyright (C) 1997, 1999, 2002, 2003 Free Software Foundation, Inc.
+
+   Copyright (C) 1997, 1999, 2002, 2003, 2007 Free Software Foundation, Inc.
+
    Written by Miles Bader and Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or
@@ -500,18 +502,12 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
   if (! err)
     {
       if (mtime)
-	{
-	  node->nn_stat.st_mtime = mtime->tv_sec;
-	  node->nn_stat.st_mtime_usec = mtime->tv_nsec / 1000;
-	}
+	node->nn_stat.st_mtim = *mtime;
       else
 	flags |= TOUCH_MTIME;
       
       if (atime)
-	{
-	  node->nn_stat.st_atime = atime->tv_sec;
-	  node->nn_stat.st_atime_usec = atime->tv_nsec / 1000;
-	}
+	node->nn_stat.st_atim = *atime;
       else
 	flags |= TOUCH_ATIME;
       

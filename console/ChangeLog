@@ -1,3 +1,7 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* console.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.
+
 2006-01-23  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* console.c (main): Check CONS instead of MALLOC.
