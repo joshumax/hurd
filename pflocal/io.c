@@ -1,6 +1,8 @@
 /* Socket I/O operations
 
-   Copyright (C) 1995,96,98,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999, 2000, 2002, 2007
+     Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -272,10 +274,10 @@ S_io_stat (struct sock_user *user, struct stat *st)
   struct sock *sock;
   struct pipe *rpipe, *wpipe;
 
-  void copy_time (time_value_t *from, time_t *to_sec, unsigned long *to_usec)
+  void copy_time (time_value_t *from, time_t *to_sec, unsigned long *to_nsec)
     {
       *to_sec = from->seconds;
-      *to_usec = from->microseconds;
+      *to_nsec = from->microseconds * 1000;
     }
 
   if (!user)
@@ -300,7 +302,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
   if (rpipe)
     {
       mutex_lock (&rpipe->lock);
-      copy_time (&rpipe->read_time, &st->st_atime, &st->st_atime_usec);
+      copy_time (&rpipe->read_time, &st->st_atim.tv_sec, &st->st_atim.tv_nsec);
       /* This seems useful.  */
       st->st_size = pipe_readable (rpipe, 1);
       mutex_unlock (&rpipe->lock);
@@ -309,11 +311,11 @@ S_io_stat (struct sock_user *user, struct stat *st)
   if (wpipe)
     {
       mutex_lock (&wpipe->lock);
-      copy_time (&wpipe->write_time, &st->st_mtime, &st->st_mtime_usec);
+      copy_time (&wpipe->write_time, &st->st_mtim.tv_sec, &st->st_mtim.tv_nsec);
       mutex_unlock (&wpipe->lock);
     }
 
-  copy_time (&sock->change_time, &st->st_ctime, &st->st_ctime_usec);
+  copy_time (&sock->change_time, &st->st_ctim.tv_sec, &st->st_ctim.tv_nsec);
 
   mutex_unlock (&sock->lock);
 
