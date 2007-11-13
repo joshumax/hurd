@@ -431,31 +431,20 @@ read_disknode (struct node *np, struct dirrect *dr,
     {
       struct timespec ts;
       isodate_915 (dr->date, &ts);
-      st->st_ctime = st->st_mtime = st->st_atime = ts.tv_sec;
-      st->st_ctime_usec = st->st_mtime_usec = st->st_atime_usec
-	= ts.tv_nsec / 1000;
+      st->st_ctim = st->st_mtim = st->st_atim = ts;
     }
 
   /* Override what we have better info for */
   if (rl->valid & VALID_TF)
     {
       if (rl->tfflags & TF_CREATION)
-	{
-	  st->st_ctime = rl->ctime.tv_sec;
-	  st->st_ctime_usec = rl->ctime.tv_nsec / 1000;
-	}
+	st->st_ctim = rl->ctime;
 
       if (rl->tfflags & TF_ACCESS)
-	{
-	  st->st_atime = rl->atime.tv_sec;
-	  st->st_atime_usec = rl->atime.tv_nsec / 1000;
-	}
+	st->st_atim = rl->atime;
 
       if (rl->tfflags & TF_MODIFY)
-	{
-	  st->st_mtime = rl->mtime.tv_sec;
-	  st->st_mtime_usec = rl->mtime.tv_nsec / 1000;
-	}
+	st->st_mtim = rl->mtime;
     }
 
   st->st_blksize = logical_block_size;
