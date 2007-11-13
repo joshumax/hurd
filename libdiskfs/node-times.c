@@ -51,37 +51,22 @@ diskfs_set_node_times (struct node *np)
      the update will happen at the next call.  */
   if (np->dn_set_mtime)
     {
-#ifdef notyet
-      np->dn_stat.st_mtimespec.ts_sec = t.tv_sec;
-      np->dn_stat.st_mtimespec.ts_nsec = t.tv_usec * 1000;
-#else
-      np->dn_stat.st_mtime = t.tv_sec;
-      np->dn_stat.st_mtime_usec = t.tv_usec;
-#endif
+      np->dn_stat.st_mtim.tv_sec = t.tv_sec;
+      np->dn_stat.st_mtim.tv_nsec = t.tv_usec * 1000;
       np->dn_stat_dirty = 1;
       np->dn_set_mtime = 0;
     }
   if (np->dn_set_atime)
     {
-#ifdef notyet
-      np->dn_stat.st_atimespec.ts_sec = t.tv_sec;
-      np->dn_stat.st_atimespec.ts_nsec = t.tv_usec * 1000;
-#else
-      np->dn_stat.st_atime = t.tv_sec;
-      np->dn_stat.st_atime_usec = t.tv_usec;
-#endif
+      np->dn_stat.st_atim.tv_sec = t.tv_sec;
+      np->dn_stat.st_atim.tv_nsec = t.tv_usec * 1000;
       np->dn_stat_dirty = 1;
       np->dn_set_atime = 0;
     }
   if (np->dn_set_ctime)
     {
-#ifdef notyet
-      np->dn_stat.st_ctimespec.ts_sec = t.tv_sec;
-      np->dn_stat.st_ctimespec.ts_nsec = t.tv_usec * 1000;
-#else
-      np->dn_stat.st_ctime = t.tv_sec;
-      np->dn_stat.st_ctime_usec = t.tv_usec;
-#endif
+      np->dn_stat.st_ctim.tv_sec = t.tv_sec;
+      np->dn_stat.st_ctim.tv_nsec = t.tv_usec * 1000;
       np->dn_stat_dirty = 1;
       np->dn_set_ctime = 0;
     }

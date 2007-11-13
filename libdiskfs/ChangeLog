@@ -1,3 +1,8 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* node-times.c (diskfs_set_node_times): Adapt to ``struct stat''
+	changes.
+
 2007-10-05  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* node-times.c (diskfs_set_node_atime): Fix typo from last commit.
