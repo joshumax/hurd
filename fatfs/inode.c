@@ -385,9 +385,7 @@ read_node (struct node *np, vm_address_t buf)
   {
     struct timespec ts;
     fat_to_epoch (dr->write_date, dr->write_time, &ts);
-    st->st_ctime = st->st_mtime = st->st_atime = ts.tv_sec;
-    st->st_ctime_usec = st->st_mtime_usec = st->st_atime_usec
-      = ts.tv_nsec / 1000;
+    st->st_ctim = st->st_mtim = st->st_atim = ts;
   }
   
   st->st_blksize = bytes_per_sector;
