@@ -1,5 +1,7 @@
 /* ops.c NFS daemon protocol operations.
-   Copyright (C) 1996, 2001, 2002 Free Software Foundation, Inc.
+
+   Copyright (C) 1996, 2001, 2002, 2007 Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -104,18 +106,18 @@ complete_setattr (mach_port_t port,
     mtime.microseconds = 0;
 
   if (atime.seconds == -1)
-    atime.seconds = st.st_atime;
+    atime.seconds = st.st_atim.tv_sec;
   if (atime.microseconds == -1)
-    atime.microseconds = st.st_atime_usec;
+    atime.microseconds = st.st_atim.tv_nsec / 1000;
   if (mtime.seconds == -1)
-    mtime.seconds = st.st_mtime;
+    mtime.seconds = st.st_mtim.tv_sec;
   if (mtime.microseconds == -1)
-    mtime.microseconds = st.st_mtime_usec;
+    mtime.microseconds = st.st_mtim.tv_nsec / 1000;
 
-  if (atime.seconds != st.st_atime
-      || atime.microseconds != st.st_atime_usec
-      || mtime.seconds != st.st_mtime
-      || mtime.microseconds != st.st_mtime_usec)
+  if (atime.seconds != st.st_atim.tv_sec
+      || atime.microseconds != st.st_atim.tv_nsec / 1000
+      || mtime.seconds != st.st_mtim.tv_sec
+      || mtime.microseconds != st.st_mtim.tv_nsec / 1000)
     err = file_utimes (port, atime, mtime);
 
   return err;

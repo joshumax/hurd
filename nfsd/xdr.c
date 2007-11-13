@@ -1,5 +1,7 @@
 /* xdr.c - XDR packing and unpacking in nfsd.
-   Copyright (C) 1996, 2002 Free Software Foundation, Inc.
+
+   Copyright (C) 1996, 2002, 2007 Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -76,12 +78,12 @@ encode_fattr (int *p, struct stat *st, int version)
   *(p++) = htonl (st->st_blocks);
   *(p++) = htonl (st->st_fsid);
   *(p++) = htonl (st->st_ino);
-  *(p++) = htonl (st->st_atime);
-  *(p++) = htonl (st->st_atime_usec);
-  *(p++) = htonl (st->st_mtime);
-  *(p++) = htonl (st->st_mtime_usec);
-  *(p++) = htonl (st->st_ctime);
-  *(p++) = htonl (st->st_ctime_usec);
+  *(p++) = htonl (st->st_atim.tv_sec);
+  *(p++) = htonl (st->st_atim.tv_nsec / 1000);
+  *(p++) = htonl (st->st_mtim.tv_sec);
+  *(p++) = htonl (st->st_mtim.tv_nsec / 1000);
+  *(p++) = htonl (st->st_ctim.tv_sec);
+  *(p++) = htonl (st->st_ctim.tv_nsec / 1000);
   return p;
 }
 

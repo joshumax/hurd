@@ -1,3 +1,8 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* ops.c (complete_setattr): Adapt to ``struct stat'' changes.
+	* xdr.c (encode_fattr): Likewise.
+
 2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* loop.c (server_loop): Fix invalid lvalues.
