@@ -1,3 +1,7 @@
+2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* netfs.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.
+
 2006-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* node.c (ftpfs_create_node): Check the result from hurd_ihash_add().
