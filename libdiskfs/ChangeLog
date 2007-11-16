@@ -1,3 +1,9 @@
+2007-11-15  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir-rename.c (diskfs_S_dir_rename): Call diskfs_nput (tnp) in
+	the EISDIR and EMLINK cases too.  Reported by Olaf Buddenhagen
+	<olafbuddenhagen@gmx.net>.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* node-times.c (diskfs_set_node_times): Adapt to ``struct stat''

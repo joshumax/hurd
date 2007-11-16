@@ -138,6 +138,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
     {
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
+      diskfs_nput (tnp);
       mutex_unlock (&tdp->lock);
       return EISDIR;
     }
@@ -149,6 +150,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
     {
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nput (fnp);
+      if (tnp)
+        diskfs_nput (tnp);
       mutex_unlock (&tdp->lock);
       return EMLINK;
     }
