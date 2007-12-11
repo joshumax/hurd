@@ -1,6 +1,7 @@
 /* Inode management routines
 
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2007
+     Free Software Foundation, Inc.
 
    Converted for ext2fs by Miles Bader <miles@gnu.org>
 
@@ -216,14 +217,23 @@ read_node (struct node *np)
   st->st_size = di->i_size;
   st->st_gen = di->i_generation;
 
-  st->st_atime = di->i_atime;
-  st->st_mtime = di->i_mtime;
-  st->st_ctime = di->i_ctime;
-
-#ifdef XXX
-  st->st_atime_usec = di->i_atime.ts_nsec / 1000;
-  st->st_mtime_usec = di->i_mtime.ts_nsec / 1000;
-  st->st_ctime_usec = di->i_ctime.ts_nsec / 1000;
+  st->st_atim.tv_sec = di->i_atime;
+#ifdef not_yet
+  /* ``struct ext2_inode'' doesn't do better than sec. precision yet.  */
+#else
+  st->st_atim.tv_nsec = 0;
+#endif
+  st->st_mtim.tv_sec = di->i_mtime;
+#ifdef not_yet
+  /* ``struct ext2_inode'' doesn't do better than sec. precision yet.  */
+#else
+  st->st_mtim.tv_nsec = 0;
+#endif
+  st->st_ctim.tv_sec = di->i_ctime;
+#ifdef not_yet
+  /* ``struct ext2_inode'' doesn't do better than sec. precision yet.  */
+#else
+  st->st_ctim.tv_nsec = 0;
 #endif
 
   st->st_blocks = di->i_blocks;
@@ -446,13 +456,18 @@ write_node (struct node *np)
 
       di->i_links_count = st->st_nlink;
 
-      di->i_atime = st->st_atime;
-      di->i_mtime = st->st_mtime;
-      di->i_ctime = st->st_ctime;
-#ifdef XXX
-      di->i_atime.ts_nsec = st->st_atime_usec * 1000;
-      di->i_mtime.ts_nsec = st->st_mtime_usec * 1000;
-      di->i_ctime.ts_nsec = st->st_ctime_usec * 1000;
+      di->i_atime = st->st_atim.tv_sec;
+#ifdef not_yet
+      /* ``struct ext2_inode'' doesn't do better than sec. precision yet.  */
+      di->i_atime.tv_nsec = st->st_atim.tv_nsec;
+#endif
+      di->i_mtime = st->st_mtim.tv_sec;
+#ifdef not_yet
+      di->i_mtime.tv_nsec = st->st_mtim.tv_nsec;
+#endif
+      di->i_ctime = st->st_ctim.tv_sec;
+#ifdef not_yet
+      di->i_ctime.tv_nsec = st->st_ctim.tv_nsec;
 #endif
 
       /* Convert generic flags in ST->st_flags to ext2-specific flags in DI
