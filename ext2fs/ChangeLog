@@ -1,7 +1,8 @@
 2007-12-11  Thomas Schwinge  <tschwinge@gnu.org>
 
-	* inode.c (read_node, write_node): Suggest what needs to be done in the
-	future w.r.t. ``struct stat'' changes.
+	* inode.c (read_node, write_node): Use `st->st_atim', `st->st_mtim',
+	`st->st_ctim'.  Suggest what needs to be done in the future.
+	(read_node): Correctly initialize those.
 
 2007-08-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
