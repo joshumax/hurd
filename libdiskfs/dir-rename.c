@@ -1,5 +1,7 @@
 /* libdiskfs implementation of fs.defs: dir_rename
-   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997 Free Software Foundation
+
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 2007
+     Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
