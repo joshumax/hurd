@@ -1,5 +1,7 @@
 /* Stubby version of getty for Hurd
-   Copyright (C) 1996, 1998, 1999 Free Software Foundation, Inc.
+
+   Copyright (C) 1996, 1998, 1999, 2007 Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -127,10 +129,10 @@ main (int argc, char **argv)
 
   if (tt && strcmp (tt->ty_type, "dialup") == 0)
     /* Dialup lines time out (which is login's default).  */
-    execl (_PATH_LOGIN, "login", "-e", arg, 0);
+    execl (_PATH_LOGIN, "login", "-e", arg, NULL);
   else
     /* Hardwired lines don't.  */
-    execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", 0);
+    execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", NULL);
 
   syslog (LOG_ERR, "%s: %m", _PATH_LOGIN);
 

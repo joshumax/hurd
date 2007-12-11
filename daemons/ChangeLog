@@ -1,3 +1,8 @@
+2007-12-11  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* getty.c (main) <execl>: Correctly specify sentinels to avoid GCC 4.3
+	warnings.
+
 2002-09-15  Marcus Brinkmann  <marcus@gnu.org>
 
 	* getty.c: Include <termios.h>.
