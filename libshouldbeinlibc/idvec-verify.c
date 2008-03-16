@@ -258,7 +258,7 @@ verify_id (uid_t id, int is_group, int multiple,
   /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
   assert (verify_fn);
 
-  if (id >= 0)
+  if (id != (uid_t) -1)
     do
       {
 	if (is_group)
