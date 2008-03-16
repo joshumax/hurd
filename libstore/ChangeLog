@@ -1,3 +1,7 @@
+2008-03-04  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* nbd.c (nbd_read): Initialize piecelen.
+
 2005-09-24  Roland McGrath  <roland@frob.com>
 
 	* store.h (STORE_STD_CLASS): Use __attribute_used__ macro

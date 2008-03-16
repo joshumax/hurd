@@ -199,7 +199,7 @@ nbd_read (struct store *store,
 
   /* Read the first piece, which can go directly into the caller's buffer.  */
   databuf = *buf;
-  databuflen = *len;
+  piecelen = databuflen = *len;
   err = request_chunk (&databuf, &piecelen);
   if (err)
     return err;
