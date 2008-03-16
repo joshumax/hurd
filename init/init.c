@@ -253,7 +253,7 @@ reboot_system (int flags)
 	      struct procinfo *pi = 0;
 	      size_t pisize = 0;
 	      char *noise;
-	      size_t noise_len;
+	      size_t noise_len = 0;
 	      int flags;
 	      err = proc_getprocinfo (procserver, pp[ind], &flags,
 				      (int **)&pi, &pisize,

@@ -1,3 +1,7 @@
+2008-03-04  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* init.c (reboot_system): Initialize noise_len.
+
 2005-02-24  Ben Asselstine  <benasselstine@gmail.com>
 
 	* init.c (main): Only pass ARGP_NO_ERRS to argp_parse when invoked
