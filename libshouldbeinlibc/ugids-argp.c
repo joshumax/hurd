@@ -83,13 +83,24 @@ parse_opt (int key, char *arg, struct argp_state *state)
       else
 	{
 	  struct passwd _pw, *pw;
-	  if (getpwnam_r (arg, &_pw, id_lookup_buf, sizeof id_lookup_buf, &pw)
-	      == 0)
-	    uid = pw->pw_uid;
+	  int err;
+	  err = getpwnam_r (arg, &_pw, id_lookup_buf,
+		    sizeof id_lookup_buf, &pw);
+	  if (err == 0)
+	    {
+	      if (pw == NULL)
+		{
+		  argp_failure (state, 10, 0, "%s: Unknown user", arg);
+		  return EINVAL;
+		}
+
+	      uid = pw->pw_uid;
+	    }
 	  else
 	    {
-	      argp_failure (state, 10, 0, "%s: Unknown user", arg);
-	      return EINVAL;
+	      argp_failure (state, 12, err,
+		    "Could not get uid for user: %s", arg);
+	      return err;
 	    }
 	}
 
@@ -121,14 +132,24 @@ parse_opt (int key, char *arg, struct argp_state *state)
       else
 	{
 	  struct group _gr, *gr;
-	  if (getgrnam_r (arg, &_gr, id_lookup_buf, sizeof id_lookup_buf, &gr)
-	      == 0)
-	    return ugids_add_gid (ugids, gr->gr_gid, key == 'G');
-	  else
+	  int err = getgrnam_r (arg, &_gr, id_lookup_buf,
+		    sizeof id_lookup_buf, &gr);
+	  if (err == 0)
 	    {
-	      argp_failure (state, 11, 0, "%s: Unknown group", arg);
-	      return EINVAL;
+	      if (gr == NULL)
+		{
+		  argp_failure (state, 11, 0, "%s: Unknown group", arg);
+		  return EINVAL;
+		}
+
+	      return ugids_add_gid (ugids, gr->gr_gid, key == 'G');
 	    }
+	      else
+		{
+		  argp_failure (state, 13, err,
+			"Could not get gid for group: %s", arg);
+		  return err;
+		}
 	}
 
     default:

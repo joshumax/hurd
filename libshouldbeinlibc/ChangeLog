@@ -1,3 +1,8 @@
+2008-03-19  Marc-Olivier Mercier  <mercier.m@sympatico.ca>
+
+	* ugids-argp.c (parse_opt): Check NULL condition for struct passwd
+	(resp. group) pointer returned by getpwnam_r (resp. getgrnam_r).
+
 2008-03-16  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* idvec-verify.c (verify_id): Compare id to (uid_t) -1 instead of
