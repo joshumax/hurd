@@ -1,3 +1,9 @@
+2008-04-24  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* mux.c (lookup_user): Check null condition for struct passwd returnd
+	by getpwnam_r.
+	Reported by Marc-Olivier Mercier <mercier.m@sympatico.ca>.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* node.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.

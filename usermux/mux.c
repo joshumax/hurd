@@ -384,10 +384,14 @@ lookup_user (struct usermux *mux, const char *user, struct node **node)
 
   if (was_cached)
     return 0;
-  else if (getpwnam_r (user, &_pw, pwent_data, sizeof pwent_data, &pw) == 0)
-    return lookup_pwent (mux, user, pw, node);
-  else
-    return ENOENT;
+  else 
+    {
+      if (getpwnam_r (user, &_pw, pwent_data, sizeof pwent_data, &pw))
+	return ENOENT;
+      if (pw == NULL)
+	return ENOENT;
+      return lookup_pwent (mux, user, pw, node);
+    }
 }
 
 /* This should sync the entire remote filesystem.  If WAIT is set, return
