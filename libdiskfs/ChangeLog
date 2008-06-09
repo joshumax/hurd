@@ -1,3 +1,7 @@
+2008-06-06  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Unlock np in case of errors.
+
 2007-11-15  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* dir-rename.c (diskfs_S_dir_rename): Call diskfs_nput (tnp) in

@@ -463,7 +463,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
     {
       error = diskfs_create_protid (newpo, dircred->user, &newpi);
       if (error)
-	diskfs_release_peropen (newpo);
+	{
+	  mutex_unlock(&np->lock);
+	  diskfs_release_peropen (newpo);
+	}
     }
 
   if (! error)
@@ -475,7 +478,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_SH);
       if (error)
-	ports_port_deref (newpi); /* Get rid of NEWPI.  */
+	{
+	  mutex_unlock(&np->lock);
+	  ports_port_deref (newpi); /* Get rid of NEWPI.  */
+	}
     }
 
   if (! error)
