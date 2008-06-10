@@ -1,3 +1,7 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* glue-include/linux/if.h (IFF_DYNAMIC): Remove macro.
+
 2007-10-14  Stefan Siegl  <stesie@brokenpipe.de>
 
 	* options.c (ipv6_get_dflt_router) [CONFIG_IPV6]: New function.
