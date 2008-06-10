@@ -1364,7 +1364,7 @@ parse_color (const char *name, int *number)
       errno = 0;
 
       nr = strtol (name, &tail, 0);
-      if (errno || &tail || nr < 0 || nr > CONS_COLOR_MAX)
+      if (errno || *tail || nr < 0 || nr > CONS_COLOR_MAX)
 	return EINVAL;
       *number = nr;
       return 0;

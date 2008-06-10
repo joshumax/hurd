@@ -1,3 +1,8 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* console.c (parse_color): Check the character pointed by tail instead
+	of its address.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* console.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.
