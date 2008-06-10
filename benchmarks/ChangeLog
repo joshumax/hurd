@@ -1,3 +1,7 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* forks.c (main): Set type of `argc' to `int'.
+
 2002-06-15  Roland McGrath  <roland@frob.com>
 
 	* forks.c (main): Fix cast of sbrk result.

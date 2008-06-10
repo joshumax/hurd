@@ -16,6 +16,7 @@
 
 int
 main(argc, argv)
+	int argc;
 	char *argv[];
 {
 	register int nforks, i;
