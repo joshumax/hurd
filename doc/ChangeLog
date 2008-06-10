@@ -1,3 +1,8 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* hurd.texi (Diskfs Callbacks): Add const qualifier to parameter
+	`name' of function diskfs_lookup.
+
 2007-11-08  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* hurd.texi: Do some copyright, licensing and menu things as suggested

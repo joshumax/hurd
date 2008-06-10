@@ -4018,8 +4018,8 @@ Set @code{*@var{statfsbuf}} with appropriate values to reflect the
 current state of the filesystem.
 @end deftypefun
 
-@deftypefun error_t diskfs_lookup (@w{struct node *@var{dp}}, @w{char *@var{name}}, @w{enum lookup_type @var{type}}, @w{struct node **@var{np}}, @w{struct dirstat *@var{ds}}, @w{struct protid *@var{cred}})
-@deftypefunx error_t diskfs_lookup_hard (@w{struct node *@var{dp}}, @w{char *@var{name}}, @w{enum lookup_type @var{type}}, @w{struct node **@var{np}}, @w{struct dirstat *@var{ds}}, @w{struct protid *@var{cred}})
+@deftypefun error_t diskfs_lookup (@w{struct node *@var{dp}}, @w{const char *@var{name}}, @w{enum lookup_type @var{type}}, @w{struct node **@var{np}}, @w{struct dirstat *@var{ds}}, @w{struct protid *@var{cred}})
+@deftypefunx error_t diskfs_lookup_hard (@w{struct node *@var{dp}}, @w{const char *@var{name}}, @w{enum lookup_type @var{type}}, @w{struct node **@var{np}}, @w{struct dirstat *@var{ds}}, @w{struct protid *@var{cred}})
 You should not define @code{diskfs_lookup}, because it is simply a
 wrapper for @code{diskfs_lookup_hard}, and is already defined in
 @code{libdiskfs}.

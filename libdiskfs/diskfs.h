@@ -717,7 +717,7 @@ struct node *diskfs_make_node (struct disknode *dn);
    This function is a wrapper for diskfs_lookup_hard.
 */
 error_t diskfs_lookup (struct node *dp,
-		       char *name, enum lookup_type type,
+		       const char *name, enum lookup_type type,
 		       struct node **np, struct dirstat *ds,
 		       struct protid *cred);
 

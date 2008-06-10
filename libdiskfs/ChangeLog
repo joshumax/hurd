@@ -1,3 +1,9 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir-lookup.c (diskfs_lookup): Add const qualifier to parameter
+	`name'.
+	* dir-lookup.h (diskfs_lookup): Likewise.
+
 2008-06-06  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Unlock np in case of errors.
