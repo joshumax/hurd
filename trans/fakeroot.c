@@ -502,22 +502,26 @@ error_t
 netfs_attempt_utimes (struct iouser *cred, struct node *np,
 		      struct timespec *atime, struct timespec *mtime)
 {
-  struct timeval a, m;
+  union tv
+  {
+    struct timeval tv;
+    time_value_t tvt;
+  }
+  union tv a, m;
   if (atime)
     {
-      TIMESPEC_TO_TIMEVAL (&a, atime);
+      TIMESPEC_TO_TIMEVAL (&a.tv, atime);
     }
   else
-    a.tv_sec = a.tv_usec = -1;
+    a.tv.tv_sec = a.tv.tv_usec = -1;
   if (mtime)
     {
-      TIMESPEC_TO_TIMEVAL (&m, mtime);
+      TIMESPEC_TO_TIMEVAL (&m.tv, mtime);
     }
   else
-    m.tv_sec = m.tv_usec = -1;
+    m.tv.tv_sec = m.tv.tv_usec = -1;
 
-  return file_utimes (np->nn->file,
-		      *(time_value_t *) &a, *(time_value_t *) &m);
+  return file_utimes (np->nn->file, &a.tvt, &m.tvt);
 }
 
 error_t

@@ -1,3 +1,8 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* fakeroot.c (netfs_attempt_utimes): Use a union to avoid an improper
+	cast.
+
 2007-06-06  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* Makefile (default_pager-MIGCOMSFLAGS): Remove variable.
