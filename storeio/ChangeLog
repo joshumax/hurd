@@ -1,3 +1,8 @@
+2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dev.c (dev_buf_rw, buffered_rw, dev_rw): Remove inline qualifier from
+	parameters `buf_rw'.
+
 2006-06-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* open.c (open_seek): Seek into the correct direction for `SEEK_END'.

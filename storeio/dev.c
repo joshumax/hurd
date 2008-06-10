@@ -100,8 +100,8 @@ dev_buf_fill (struct dev *dev, off_t offs)
 /* Do an in-buffer partial-block I/O operation.  */
 static error_t
 dev_buf_rw (struct dev *dev, size_t buf_offs, size_t *io_offs, size_t *len,
-	    inline error_t (*const buf_rw) (size_t buf_offs,
-					    size_t io_offs, size_t len))
+	    error_t (*const buf_rw) (size_t buf_offs,
+				     size_t io_offs, size_t len))
 {
   size_t block_size = dev->store->block_size;
 
@@ -230,11 +230,11 @@ dev_sync(struct dev *dev, int wait)
    and RAW_RW to do I/O directly to DEV's store.  */
 static inline error_t
 buffered_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
-	     inline error_t (* const buf_rw) (size_t buf_offs,
-					      size_t io_offs, size_t len),
-	     inline error_t (* const raw_rw) (off_t offs,
-					      size_t io_offs, size_t len,
-					      size_t *amount))
+	     error_t (* const buf_rw) (size_t buf_offs,
+				       size_t io_offs, size_t len),
+	     error_t (* const raw_rw) (off_t offs,
+				       size_t io_offs, size_t len,
+				       size_t *amount))
 {
   error_t err = 0;
   unsigned block_mask = dev->block_mask;
@@ -291,11 +291,11 @@ buffered_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
    buffered in DEV, and RAW_RW to do I/O directly to DEV's store.  */
 static inline error_t
 dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
-	inline error_t (* const buf_rw) (size_t buf_offs,
-					 size_t io_offs, size_t len),
-	inline error_t (* const raw_rw) (off_t offs,
-					 size_t io_offs, size_t len,
-					 size_t *amount))
+	error_t (* const buf_rw) (size_t buf_offs,
+				  size_t io_offs, size_t len),
+	error_t (* const raw_rw) (off_t offs,
+				  size_t io_offs, size_t len,
+				  size_t *amount))
 {
   error_t err;
   unsigned block_mask = dev->block_mask;
