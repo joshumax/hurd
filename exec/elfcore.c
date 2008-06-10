@@ -121,8 +121,10 @@ fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 #endif
 
 
-#define TIME_VALUE_TO_TIMESPEC(tv, ts) \
-  TIMEVAL_TO_TIMESPEC ((struct timeval *) (tv), (ts))
+#define TIME_VALUE_TO_TIMESPEC(tv, ts) {                                \
+        (ts)->tv_sec = (tv)->seconds;                                   \
+        (ts)->tv_nsec = (tv)->microseconds * 1000;                      \
+}
 
 #define PAGES_TO_KB(x)	((x) * (vm_page_size / 1024))
 #define ENCODE_PCT(f)	((uint16_t) ((f) * 32768.0))
@@ -380,9 +382,13 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.system_time,
 				&pstatus.data.pr_stime);
 	/* Sum the user and system time for pr_time.  */
-	timeradd ((const struct timeval *) &pi->taskinfo.user_time,
-		  (const struct timeval *) &pi->taskinfo.system_time,
-		  (struct timeval *) &pi->taskinfo.user_time);
+	pi->taskinfo.user_time.seconds += pi->taskinfo.system_time.seconds;
+	pi->taskinfo.user_time.microseconds += pi->taskinfo.system_time.microseconds;
+	if (pi->taskinfo.user_time.microseconds >= 1000000)
+	  {
+	    ++pi->taskinfo.user_time.seconds;
+	    pi->taskinfo.user_time.microseconds -= 1000000;
+	  }
 	TIME_VALUE_TO_TIMESPEC (&pi->taskinfo.user_time, &psinfo.data.pr_time);
 	/* XXX struct procinfo should have dead child info for pr_c[us]?time */
 
