@@ -506,7 +506,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   {
     struct timeval tv;
     time_value_t tvt;
-  }
+  };
   union tv a, m;
   if (atime)
     {
