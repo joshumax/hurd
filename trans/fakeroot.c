@@ -521,7 +521,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   else
     m.tv.tv_sec = m.tv.tv_usec = -1;
 
-  return file_utimes (np->nn->file, &a.tvt, &m.tvt);
+  return file_utimes (np->nn->file, a.tvt, m.tvt);
 }
 
 error_t
