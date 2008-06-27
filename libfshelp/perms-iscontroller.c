@@ -30,7 +30,7 @@ fshelp_iscontroller (struct stat *st, struct iouser *user)
 {
   /* Permitted if USER has the superuser uid, the owner uid or if the
      USER has authority over the process's effective id.  */
-  if (idvec_contains (user->uids, st->st_uid)
+  if (idvec_contains (user->uids, 0)
       || idvec_contains (user->uids, st->st_uid)
       || idvec_contains (user->uids, geteuid ()))
     return 0;

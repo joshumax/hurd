@@ -1,3 +1,8 @@
+2008-06-27  Flávio Cruz <flaviocruz@gmail.com>
+
+	* parms-iscontroller.c (fshelp_iscontroller): Replace duplicate check
+	for st->ts_uid in user->uids by check for 0 in user->uids.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* touch.c (fshelp_touch): Adapt to ``struct stat'' changes.
