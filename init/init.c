@@ -1,7 +1,7 @@
 /* Start and maintain hurd core servers and system run state
 
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,05
-   	Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+     2005, 2008 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify

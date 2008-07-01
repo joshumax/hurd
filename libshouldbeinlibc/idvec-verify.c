@@ -1,6 +1,7 @@
 /* Verify user passwords
 
-   Copyright (C) 1996,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 1999, 2002, 2008
+     Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or

@@ -1,5 +1,5 @@
 /* see whether a user should be considered a controller of the filesystem
-   Copyright (C) 2001 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2008 Free Software Foundation, Inc.
    Written by Neal H Walfield <neal@cs.uml.edu>.
 
    This file is part of the GNU Hurd.

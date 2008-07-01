@@ -1,6 +1,7 @@
 /* Root usermux node
 
-   Copyright (C) 1997,98,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1997, 1998, 1999, 2000, 2002, 2008
+     Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
    This file is part of the GNU Hurd.
 
