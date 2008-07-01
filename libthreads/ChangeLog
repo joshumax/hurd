@@ -2,6 +2,10 @@
 
 	* cthread_internals.h (cproc_block): Add prototype.
 
+2006-03-04  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* i386/cthreads.h (cthread_sp): Likewise.
+
 2002-08-26  Roland McGrath  <roland@frob.com>
 
 	* cthreads.c (cthread_body) [HAVE_USELOCALE]: Call uselocale to
