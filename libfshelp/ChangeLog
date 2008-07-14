@@ -1,4 +1,10 @@
-2008-06-27  Flávio Cruz <flaviocruz@gmail.com>
+2008-07-14  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* perms-access.c (fshelp_access): If user->uids contain 0 and the op
+	is S_IEXEC, return 1 only if st_mode contains at least one executable
+	bit.
+
+2008-06-27  Flávio Cruz  <flaviocruz@gmail.com>
 
 	* perms-iscontroller.c (fshelp_iscontroller): Replace duplicate check
 	for st->ts_uid in user->uids by check for 0 in user->uids.
