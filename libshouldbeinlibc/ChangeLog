@@ -1,3 +1,7 @@
+2008-07-17  Flávio Cruz  <flaviocruz@gmail.com>
+
+	* idvec-auth.c (idvec_merge_auth): Fix size in munmap calls.
+
 2008-03-19  Marc-Olivier Mercier  <mercier.m@sympatico.ca>
 
 	* ugids-argp.c (parse_opt): Check NULL condition for struct passwd

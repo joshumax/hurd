@@ -70,13 +70,13 @@ idvec_merge_auth (struct idvec *eff_uids, struct idvec *avail_uids,
 
   /* Deallocate any out-of-line memory we got back.  */
   if (_eff_uids != eff_uid_buf)
-    munmap ((caddr_t) _eff_uids, num_eff_uids);
+    munmap ((caddr_t) _eff_uids, num_eff_uids * sizeof (uid_t));
   if (_avail_uids != avail_uid_buf)
-    munmap ((caddr_t) _avail_uids, num_avail_uids);
+    munmap ((caddr_t) _avail_uids, num_avail_uids * sizeof (uid_t));
   if (_eff_gids != eff_gid_buf)
-    munmap ((caddr_t) _eff_gids, num_eff_gids);
+    munmap ((caddr_t) _eff_gids, num_eff_gids * sizeof (gid_t));
   if (_avail_gids != avail_gid_buf)
-    munmap ((caddr_t) _avail_gids, num_avail_gids);
+    munmap ((caddr_t) _avail_gids, num_avail_gids * sizeof (gid_t));
 
   return err;
 }
