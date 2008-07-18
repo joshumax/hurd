@@ -1,4 +1,4 @@
-2008-07-17  Fl·vio Cruz  <flaviocruz@gmail.com>
+2008-07-17  Fl√°vio Cruz  <flaviocruz@gmail.com>
 
 	* idvec-auth.c (idvec_merge_auth): Fix size in munmap calls.
 
