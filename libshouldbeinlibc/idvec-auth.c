@@ -1,6 +1,8 @@
 /* Idvec functions that interact with an auth server
 
-   Copyright (C) 1995,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1998, 1999, 2001, 2002, 2008
+     Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
