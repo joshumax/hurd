@@ -71,8 +71,8 @@ netfs_S_file_get_translator (struct protid *user,
 			 (S_ISCHR (np->nn_stat.st_mode)
 			  ? _HURD_CHRDEV
 			  : _HURD_BLKDEV),
-			 '\0', (np->nn_stat.st_rdev >> 8) & 0377,
-			 '\0', (np->nn_stat.st_rdev) & 0377);
+			 '\0', major (np->nn_stat.st_rdev),
+			 '\0', minor (np->nn_stat.st_rdev));
       if (buflen < 0)
 	err = ENOMEM;
       else
