@@ -1,4 +1,4 @@
-2008-07-19  Fl·vio Cruz  <flaviocruz@gmail.com>
+2008-07-19  Fl√°vio Cruz  <flaviocruz@gmail.com>
 
 	* file-get-translator.c (netfs_S_file_get_translator): Call major()
 	and minor() macros.
