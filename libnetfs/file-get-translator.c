@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1996, 1999, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1999, 2000, 2008 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
