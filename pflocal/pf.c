@@ -108,6 +108,7 @@ S_socket_fabricate_address (mach_port_t pf,
 
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (addr);
 
   return 0;
 }

@@ -245,6 +245,7 @@ S_socket_name (struct sock_user *user,
 
   *addr_port = ports_get_right (addr);
   *addr_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (addr);
 
   return 0;
 }

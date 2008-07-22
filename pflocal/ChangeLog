@@ -1,3 +1,9 @@
+2008-07-22  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* pf.c (S_socket_fabricate_address): Drop one reference from addr since
+	we only take the send right.
+	* socket.c (S_socket_name): Likewise.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* io.c (S_io_stat): Adapt to ``struct stat'' changes.
