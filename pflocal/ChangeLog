@@ -3,6 +3,8 @@
 	* pf.c (S_socket_fabricate_address): Drop one reference from addr since
 	we only take the send right.
 	* socket.c (S_socket_name): Likewise.
+	(S_socket_send): Release a reader reference instead of a writer
+	reference when the destination is given.
 
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 

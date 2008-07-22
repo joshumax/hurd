@@ -323,7 +323,10 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 			   source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
-	  pipe_release_writer (pipe);
+	  if (dest_sock)
+	    pipe_release_reader (pipe);
+	  else
+	    pipe_release_writer (pipe);
 	}
 
       if (err)
