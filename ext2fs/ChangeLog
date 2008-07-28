@@ -1,3 +1,7 @@
+2003-08-10  Peter Bruin  <pjbruin@dds.nl>
+
+	* ext2_fs.h (i_frag, i_fsize): Drop spurious `;'.
+
 2007-12-11  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* inode.c (read_node, write_node): Use `st->st_atim', `st->st_mtim',
