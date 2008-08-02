@@ -26,6 +26,13 @@
 /*
  * HISTORY
  * $Log: cthreads.h,v $
+ * Revision 1.3  2007/03/03 23:57:37  sthibaul
+ * 2006-03-04  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+ *
+ * 	* libpthread/sysdeps/i386/machine-sp.h (thread_stack_pointer):
+ * 	Optimize esp read.
+ * 	* libpthread/i386/cthreads.h (cthread_sp): Likewise.
+ *
  * Revision 1.2  2002/05/27 02:50:10  roland
  * 2002-05-26  Roland McGrath  <roland@frob.com>
  *
@@ -91,14 +98,14 @@ typedef volatile int spin_lock_t;
 	({  register int _u__ ; \
 	    __asm__ volatile("xorl %0, %0; \n\
 			  xchgl %0, %1" \
-			: "=&r" (_u__), "=m" (*(p)) ); \
+			: "=&r" (_u__), "=m" (*(p)) :: "memory" ); \
 	    0; })
 
 #define	spin_try_lock(p)\
 	(!({  boolean_t _r__; \
 	    __asm__ volatile("movl $1, %0; \n\
 			  xchgl %0, %1" \
-			: "=&r" (_r__), "=m" (*(p)) ); \
+			: "=&r" (_r__), "=m" (*(p)) :: "memory" ); \
 	    _r__; }))
 
 #define	cthread_sp() \

@@ -1,3 +1,7 @@
+2008-08-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* i386/cthreads.h (spin_unlock, spin_try_lock): Add memory clobbers.
+
 2007-06-14  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* cthread_internals.h (cproc_block): Add prototype.
