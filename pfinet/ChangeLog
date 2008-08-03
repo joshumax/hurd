@@ -1,3 +1,7 @@
+2008-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* glue-include/linux/socket.h (MSG_NOSIGNAL): Remove macro.
+
 2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* glue-include/linux/if.h (IFF_DYNAMIC): Remove macro.
