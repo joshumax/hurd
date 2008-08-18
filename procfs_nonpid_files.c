@@ -269,7 +269,7 @@ error_t procfs_write_nonpid_stat (struct dir_entry *dir_entry,
           idle_time_secs = uptime_secs - 
                            total_system_time_secs;
 
-          /* If the values are multiplied by 100, it iss done so to adjust
+          /* If the values are multiplied by 100, it is done so to adjust
              values in seconds to jiffies. */
           if (asprintf (&stat_data, "cpu  %ld %ld %ld %ld %ld %ld %d %d %d\n"
                    "cpu0 %ld %ld %ld %ld %ld %ld %d %d %d\n"
@@ -458,5 +458,21 @@ error_t procfs_write_nonpid_uptime (struct dir_entry *dir_entry,
   *len = strlen (data);
 
   free (uptime_data);
+  return err;
+}
+
+error_t procfs_write_nonpid_version (struct dir_entry *dir_entry,
+                        off_t offset, size_t *len, void *data)
+{  
+  char *version_data;
+  error_t err = 0;
+  
+  if (asprintf (&version_data, "Linux version 2.6.18\n", NULL) == -1)
+    return errno;
+
+  memcpy (data, version_data, strlen(version_data));
+  *len = strlen (data);
+
+  free (version_data);
   return err;
 }

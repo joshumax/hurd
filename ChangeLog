@@ -1,3 +1,11 @@
+2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
+        * procfs_nonpid_files.c: 
+        (procfs_write_nonpid_version): New function.
+        * procfs_pid_files.c: 
+        (procfs_write_files_contents): Add a check
+        to find if the read is requested for the 
+        version file and corresponding a call to it.
+        
 2008-08-14  Madhusudan.C.S <madhusudancs@gmail.com>
         * procfs.h: (jiffy_t): New typedef.
         * procfs_pid.h: "procfs.h" is included.

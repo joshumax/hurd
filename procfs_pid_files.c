@@ -565,5 +565,12 @@ procfs_write_files_contents (struct node *node,
     else 
       err = ENOENT;                                                                    
     
+  if (! strcmp (node->nn->dir_entry->name, "version"))
+    if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
+      err = procfs_write_nonpid_version (node->nn->dir_entry,
+                                      offset, len, data);
+    else 
+      err = ENOENT; 
+      
   return err;
 }
