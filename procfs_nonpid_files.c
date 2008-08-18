@@ -263,7 +263,7 @@ error_t get_total_times (struct timeval *total_user_time,
   return err;
 }
 
-error_t procfs_write_nonpid_stat (struct dir_entry *dir_entry,
+error_t procfs_read_nonpid_stat (struct dir_entry *dir_entry,
                         off_t offset, size_t *len, void *data)
 {  
   char *stat_data;
@@ -387,7 +387,7 @@ SWAP_FIELD (get_swap_page_size, def_pager_info.dpi_page_size)
 SWAP_FIELD (get_swap_active, (def_pager_info.dpi_total_space
 			      - def_pager_info.dpi_free_space))
 
-error_t procfs_write_nonpid_meminfo (struct dir_entry *dir_entry,
+error_t procfs_read_nonpid_meminfo (struct dir_entry *dir_entry,
                         off_t offset, size_t *len, void *data)
 {  
   char *meminfo_data;
@@ -427,7 +427,7 @@ error_t procfs_write_nonpid_meminfo (struct dir_entry *dir_entry,
   return err;
 }
 
-error_t procfs_write_nonpid_loadavg (struct dir_entry *dir_entry,
+error_t procfs_read_nonpid_loadavg (struct dir_entry *dir_entry,
                         off_t offset, size_t *len, void *data)
 {  
   char *loadavg_data;
@@ -455,7 +455,7 @@ error_t procfs_write_nonpid_loadavg (struct dir_entry *dir_entry,
   return err;
 }
 
-error_t procfs_write_nonpid_uptime (struct dir_entry *dir_entry,
+error_t procfs_read_nonpid_uptime (struct dir_entry *dir_entry,
                         off_t offset, size_t *len, void *data)
 {  
   char *uptime_data;
@@ -497,7 +497,7 @@ error_t procfs_write_nonpid_uptime (struct dir_entry *dir_entry,
   return err;
 }
 
-error_t procfs_write_nonpid_version (struct dir_entry *dir_entry,
+error_t procfs_read_nonpid_version (struct dir_entry *dir_entry,
                         off_t offset, size_t *len, void *data)
 {  
   char *version_data;

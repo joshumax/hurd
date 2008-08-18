@@ -1,4 +1,59 @@
 2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
+        * procfs_nonpid_files.c:
+        (procfs_write_nonpid_stat): Changed to
+        procfs_read_nonpid_stat.
+        (procfs_write_nonpid_meminfo): Changed to
+        procfs_read_nonpid_meminfo.
+        (procfs_write_nonpid_loadavg): Changed to
+        procfs_read_nonpid_loadavg.
+        (procfs_write_nonpid_uptime): Changed to
+        procfs_read_nonpid_uptime.
+        (procfs_write_nonpid_version):Changed to
+        procfs_read_nonpid_version.
+        * procfs_pid_files.c: 
+        (procfs_write_stat_file): Changed to 
+        procfs_read_stat_file.
+        Changed the comment correspondingly from
+        Write to Read.
+        (procfs_write_cmdline_file ): Changed to
+        procfs_read_cmdline_file.
+        Changed the comment correspondingly from
+        Write to Read.
+        (procfs_write_status_file): Changed to
+        procfs_read_status_file.
+        Changed the comment correspondingly from
+        Write to Read.
+        (procfs_write_statm_file): Changed to
+        procfs_read_statm_file.
+        Changed the comment correspondingly from
+        Write to Read.
+        (procfs_write_files_contents): Changed to
+        procfs_read_files_contents.
+        Changed the comment correspondingly from
+        Write to Read.
+        Changed the call to procfs_write_nonpid_stat
+        to procfs_read_nonpid_stat.
+        Changed the call to procfs_write_stat_file
+        to procfs_read_stat_file.
+        Changed the call to procfs_write_cmdline_file
+        to procfs_read_cmdline_file.
+        Changed the call to procfs_write_status_file
+        to procfs_read_status_file.
+        Changed the call to procfs_write_statm_file
+        to procfs_read_statm_file.
+        Changed the call to procfs_write_nonpid_meminfo
+        to procfs_read_nonpid_meminfo.
+        Changed the call to procfs_write_nonpid_loadavg
+        to procfs_read_nonpid_loadavg.
+        Changed the call to procfs_write_nonpid_uptime
+        to procfs_read_nonpid_uptime.
+        Changed the call to procfs_write_nonpid_version
+        to procfs_read_nonpid_version.
+        netfs.c: (netfs_attempt_read): Changed
+        the call from procfs_write_files_contents
+        to procfs_read_files_contents.
+        
+2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
         * README: Initial Documentation.
 
 2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>

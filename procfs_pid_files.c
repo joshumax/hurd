@@ -367,12 +367,12 @@ error_t get_stat_data (pid_t pid,
   return err;
 }
 
-/* Writes required process information to stat file
+/* Reads required process information from stat file
    within the directory represented by pid. Return
    the data in DATA and actual length to be written
    in LEN. */
 error_t
-procfs_write_stat_file (struct procfs_dir_entry *dir_entry, 
+procfs_read_stat_file (struct procfs_dir_entry *dir_entry, 
                         off_t offset, size_t *len, void *data)
 {
   error_t err;
@@ -417,12 +417,12 @@ procfs_write_stat_file (struct procfs_dir_entry *dir_entry,
   return err;  
 }
 
-/* Writes required process's command line information
-   to cmline file within the directory represented by
-   pid. Return the data in DATA and actual length to
-   be written in LEN. */
+/* Reads required process's command line information
+   from cmline file within the directory represented
+   by pid. Return the data in DATA and actual length
+   to be written in LEN. */
 error_t
-procfs_write_cmdline_file (struct procfs_dir_entry *dir_entry, 
+procfs_read_cmdline_file (struct procfs_dir_entry *dir_entry, 
                         off_t offset, size_t *len, void *data)
 {	
   char *cmdline_data;
@@ -445,12 +445,12 @@ procfs_write_cmdline_file (struct procfs_dir_entry *dir_entry,
   return err;
 }
 
-/* Writes required process's information that is represented by
-   stat and statm in a human readable format to status file
+/* Reads required process's information that is represented by
+   stat and statm in a human readable format from status file
    within the directory represented by pid. Return the data
    in DATA and actual length to be written in LEN. */
 error_t
-procfs_write_status_file (struct procfs_dir_entry *dir_entry, 
+procfs_read_status_file (struct procfs_dir_entry *dir_entry, 
                         off_t offset, size_t *len, void *data)
 {	
   char *status_data;
@@ -478,12 +478,12 @@ procfs_write_status_file (struct procfs_dir_entry *dir_entry,
   return err;
 }
 
-/* Writes required process information to statm file
+/* Reads required process information from statm file
    within the directory represented by pid. Return
    the data in DATA and actual length to be written
    in LEN. */
 error_t
-procfs_write_statm_file (struct procfs_dir_entry *dir_entry, 
+procfs_read_statm_file (struct procfs_dir_entry *dir_entry, 
                         off_t offset, size_t *len, void *data)
 {	
   char *statm_data;
@@ -514,60 +514,60 @@ procfs_write_statm_file (struct procfs_dir_entry *dir_entry,
   return err;
 }
 
-/* Writes required process information to each of files
+/* Reads required process information from each of files
    within directory represented by pid, for files specified
    by NODE. Return the data in DATA and actual length of 
    data in LEN. */
 error_t 
-procfs_write_files_contents (struct node *node,
+procfs_read_files_contents (struct node *node,
                  off_t offset, size_t *len, void *data)
 {
   error_t err;
   
   if (! strcmp (node->nn->dir_entry->name, "stat"))
     if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
-      err = procfs_write_nonpid_stat (node->nn->dir_entry,
+      err = procfs_read_nonpid_stat (node->nn->dir_entry,
                                       offset, len, data);
     else 
-      err = procfs_write_stat_file (node->nn->dir_entry, 
+      err = procfs_read_stat_file (node->nn->dir_entry, 
                                      offset, len, data);
 
   if (! strcmp (node->nn->dir_entry->name, "cmdline"))
-      err = procfs_write_cmdline_file (node->nn->dir_entry, 
+      err = procfs_read_cmdline_file (node->nn->dir_entry, 
                                      offset, len, data);
 
   if (! strcmp (node->nn->dir_entry->name, "status"))
-      err = procfs_write_status_file (node->nn->dir_entry, 
+      err = procfs_read_status_file (node->nn->dir_entry, 
                                      offset, len, data);
                                      
   if (! strcmp (node->nn->dir_entry->name, "statm"))
-      err = procfs_write_statm_file (node->nn->dir_entry, 
+      err = procfs_read_statm_file (node->nn->dir_entry, 
                                      offset, len, data);
                                                                           
   if (! strcmp (node->nn->dir_entry->name, "meminfo"))
     if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
-      err = procfs_write_nonpid_meminfo (node->nn->dir_entry,
+      err = procfs_read_nonpid_meminfo (node->nn->dir_entry,
                                       offset, len, data); 
     else
       err = ENOENT;
       
   if (! strcmp (node->nn->dir_entry->name, "loadavg"))
     if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
-      err = procfs_write_nonpid_loadavg (node->nn->dir_entry,
+      err = procfs_read_nonpid_loadavg (node->nn->dir_entry,
                                       offset, len, data);
     else 
       err = ENOENT;  
       
   if (! strcmp (node->nn->dir_entry->name, "uptime"))
     if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
-      err = procfs_write_nonpid_uptime (node->nn->dir_entry,
+      err = procfs_read_nonpid_uptime (node->nn->dir_entry,
                                       offset, len, data);
     else 
       err = ENOENT;                                                                    
     
   if (! strcmp (node->nn->dir_entry->name, "version"))
     if (! strcmp (node->nn->dir_entry->dir->fs_path, ""))
-      err = procfs_write_nonpid_version (node->nn->dir_entry,
+      err = procfs_read_nonpid_version (node->nn->dir_entry,
                                       offset, len, data);
     else 
       err = ENOENT; 

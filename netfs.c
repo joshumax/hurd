@@ -435,7 +435,7 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *node,
   if (! err)
     {
       if (*len > 0)
-        procfs_write_files_contents (node, offset,
+        procfs_read_files_contents (node, offset,
                                     len, data);
       if (*len > 0)
         if (offset >= *len)
