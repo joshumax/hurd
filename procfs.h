@@ -53,6 +53,8 @@
 #include <hurd/ihash.h>
 #include <ps.h>
 
+typedef unsigned long long jiffy_t;
+
 /* A single entry in a directory.  */
 struct procfs_dir_entry
 {

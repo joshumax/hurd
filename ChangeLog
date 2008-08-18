@@ -1,4 +1,19 @@
 2008-08-14  Madhusudan.C.S <madhusudancs@gmail.com>
+        * procfs.h: (jiffy_t): New typedef.
+        * procfs_pid.h: "procfs.h" is included.
+        (struct procfs_pid_files): Changed all the 
+        occurrences of time_t to jiffy_t.
+        * procfs_pid_files.c: Removed "procfs.h".
+        (adjust_jiffy_time): Changed return type 
+        from time_t to jiffy_t.
+        Changed the type of jiffy_time variable 
+        from time_t to jiffy_t.
+        (get_live_threads_time): Changed the type
+        of utime and stime from time_t to jiffy_t.
+        (get_stat_data): Changed the type of utime
+        and stime from time_t to jiffy_t.
+
+2008-08-14  Madhusudan.C.S <madhusudancs@gmail.com>
 
         * ChangeLog: New file.
         * AUTHORS: New file.

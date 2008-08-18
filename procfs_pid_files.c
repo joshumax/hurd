@@ -37,7 +37,6 @@
 #include <mach/task_info.h>
 #include <sys/resource.h>
 
-#include "procfs.h"
 #include "procfs_pid.h"
 
 /* Update the files named NAME within the directory named
@@ -148,9 +147,9 @@ error_t set_field_value (struct proc_stat *ps, int pstat_flag)
    Microseconds into the value in jiffies. The
    value of jiffy is a hack to adjust to what
    procps uses. */
-time_t adjust_jiffy_time (time_value_t time_val)
+jiffy_t adjust_jiffy_time (time_value_t time_val)
 {
-  time_t jiffy_time = time_val.seconds * JIFFY_ADJUST;
+  jiffy_t jiffy_time = time_val.seconds * JIFFY_ADJUST;
   jiffy_time += (time_val.microseconds * JIFFY_ADJUST) 
                  / (1000 * 1000);
 
@@ -178,7 +177,7 @@ error_t get_task_thread_times (task_t task,
    MACH directly since this is neither made available by libps 
    nor by proc server. */
 error_t get_live_threads_time (struct proc_stat *ps,
-                               time_t *utime, time_t *stime)
+                               jiffy_t *utime, jiffy_t *stime)
 {
   struct task_thread_times_info live_threads_times;
   error_t err = set_field_value (ps, PSTAT_TASK);
@@ -208,7 +207,7 @@ error_t get_stat_data (pid_t pid,
                     malloc (sizeof (struct procfs_stat));
 
   struct proc_stat *ps;
-  time_t utime, stime;
+  jiffy_t utime, stime;
   
   err = _proc_stat_create (pid, ps_context, &ps);
 

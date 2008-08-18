@@ -26,6 +26,8 @@
 #ifndef __PROCFS_PID_H__
 #define __PROCFS_PID_H__
 
+#include "procfs.h"
+
 struct procfs_pid_files
 {
   struct procfs_cwd *procfs_cwd;
@@ -52,10 +54,10 @@ struct procfs_stat
   long unsigned cminflt;
   long unsigned majflt;
   long unsigned cmajflt;
-  time_t utime;
-  time_t stime;
-  time_t cutime;
-  time_t cstime;
+  jiffy_t utime;
+  jiffy_t stime;
+  jiffy_t cutime;
+  jiffy_t cstime;
   long priority;
   long nice;
   long num_threads;
