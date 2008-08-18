@@ -1,4 +1,57 @@
 2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
+        * procfs_nonpid_files.c: (get_uptime):
+        Changed the parameter type from double to
+        struct timeval.
+        Changed the parameter name from uptime_secs
+        to uptime.
+        Removed uptime variable.
+        Changed timersub to use the passed pointer
+        instead of the local variable.
+        Removed the calculation of uptime_secs.
+        (get_total_times): Changed the parameters
+        type from double to struct timeval.
+        Changed the parameters name from 
+        total_user_time_secs to total_user_time
+        and total_system_time_secs to
+        total_system_time.
+        New variables total_user_time_tmp, 
+        total_system_time_tmp and tmpval of type
+        struct timeval.
+        Call timerclear to clear the tmp variables.
+        Remove calculation of times in seconds and
+        do the same on struct timeval variables 
+        throughout using the timeradd macro.
+        Assign values of temporary local variables
+        to the pointers passed as parameters.
+        (procfs_write_nonpid_stat): Replaced
+        variables that hold time in seconds with 
+        struct timeval type variables and jiffy_t
+        type variables.
+        Argument to get_uptime changed from 
+        uptime_secs to uptime.
+        Arguments to get_total_times changed from
+        total_user_time_secs to total_user_time and
+        total_system_time_secs to total_system_time.
+        Replace arithematic time subtraction with 
+        timersub macro.
+        Convert all the times in struct timeval type
+        variables to jiffy_t type.
+        Changed the type casting for the asprintf 
+        arguments to be compatible with jiffy_t type.
+        (procfs_write_nonpid_uptime): Replaced
+        variables that hold time in seconds with 
+        struct timeval type variables.
+        Argument to get_uptime changed from 
+        uptime_secs to uptime.
+        Arguments to get_total_times changed from
+        total_user_time_secs to total_user_time and
+        total_system_time_secs to total_system_time.
+        Replace arithematic time subtraction with 
+        timersub macro.
+        Convert all the times in struct timeval type
+        variables to seconds.       
+        
+2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
         * procfs_nonpid_files.c: 
         (procfs_write_nonpid_version): New function.
         * procfs_pid_files.c: 

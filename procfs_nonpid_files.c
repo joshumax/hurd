@@ -166,9 +166,9 @@ error_t procfs_create_loadavg (struct procfs_dir *dir,
   return err;
 }
 
-error_t get_uptime (double *uptime_secs)
+error_t get_uptime (struct timeval *uptime)
 {
-  struct timeval boot_time, uptime, now;
+  struct timeval boot_time, now;
   error_t err;
   struct proc_stat *ps;
   
@@ -188,15 +188,15 @@ error_t get_uptime (double *uptime_secs)
       boot_time.tv_usec = tv->microseconds;
       if (gettimeofday (&now, 0) < 0)
         error (0, errno, "gettimeofday");
-      timersub (&now, &boot_time, &uptime);
-      *uptime_secs = (double)uptime.tv_sec + ((double)uptime.tv_usec / 1000000);
+      timersub (&now, &boot_time, uptime);      
     }
     
   _proc_stat_free (ps); 
   return err;
 }
 
-error_t get_total_times (double *total_user_time_secs , double *total_system_time_secs )
+error_t get_total_times (struct timeval *total_user_time,
+                        struct timeval *total_system_time)
 {
   error_t err;
   pid_t *pids;
@@ -204,8 +204,12 @@ error_t get_total_times (double *total_user_time_secs , double *total_system_tim
   struct proc_stat *ps;
   struct task_thread_times_info live_threads_times;
   
-  *total_user_time_secs = 0;
-  *total_system_time_secs = 0;
+  struct timeval total_user_time_tmp;
+  struct timeval total_system_time_tmp;
+  struct timeval tmpval;
+  
+  timerclear (&total_user_time_tmp);
+  timerclear (&total_system_time_tmp);
   
   pids = NULL;
   err = proc_getallpids (getproc (), &pids, &pidslen);
@@ -222,33 +226,40 @@ error_t get_total_times (double *total_user_time_secs , double *total_system_tim
           err = EGRATUITOUS;
         
         if (! err)
-          {           
-            *total_user_time_secs += 
-              ((double) (proc_stat_task_basic_info (ps)->user_time.seconds)) + 
-              (((double) (proc_stat_task_basic_info (ps)->user_time.microseconds)) /
-              (1000 * 1000));
+          {
+            tmpval.tv_sec = proc_stat_task_basic_info (ps)->user_time.seconds;
+            tmpval.tv_usec = proc_stat_task_basic_info (ps)->user_time.seconds;
+            timeradd (&total_user_time_tmp, &tmpval, &total_user_time_tmp);
+
+            tmpval.tv_sec = proc_stat_task_basic_info (ps)->system_time.seconds;
+            tmpval.tv_usec = proc_stat_task_basic_info (ps)->system_time.seconds;
+            timeradd (&total_system_time_tmp, &tmpval, &total_system_time_tmp);
               
-            *total_system_time_secs += 
-              ((double) (proc_stat_task_basic_info (ps)->system_time.seconds)) + 
-                  (((double) (proc_stat_task_basic_info (ps)->system_time.microseconds)) / (1000 * 1000));
-                            
             error_t err = set_field_value (ps, PSTAT_TASK); 
             if (! err)
               {
                 err = get_task_thread_times (ps->task, &live_threads_times);
                 if (! err)
                   {
-                    *total_user_time_secs += ((double) (live_threads_times.user_time.seconds)) + 
-                            (((double) (live_threads_times.user_time.microseconds)) / (1000 * 1000));
-                    *total_system_time_secs += ((double) (live_threads_times.system_time.seconds)) + 
-                            (((double) (live_threads_times.system_time.microseconds)) / (1000 * 1000));
-                            
+                    tmpval.tv_sec = live_threads_times.user_time.seconds;
+                    tmpval.tv_usec = live_threads_times.user_time.microseconds;
+                    timeradd (&total_user_time_tmp, &tmpval, &total_user_time_tmp);
+
+                    tmpval.tv_sec = live_threads_times.system_time.seconds;
+                    tmpval.tv_usec = live_threads_times.system_time.microseconds;
+                    timeradd (&total_system_time_tmp, &tmpval, &total_system_time_tmp);
                   }          
               }
           }
         _proc_stat_free (ps); 
       }   
-    
+      
+  total_user_time->tv_sec = total_user_time_tmp.tv_sec;
+  total_user_time->tv_usec = total_user_time_tmp.tv_usec;
+  
+  total_system_time->tv_sec = total_system_time_tmp.tv_sec;
+  total_system_time->tv_usec = total_system_time_tmp.tv_usec; 
+   
   return err;
 }
 
@@ -257,30 +268,45 @@ error_t procfs_write_nonpid_stat (struct dir_entry *dir_entry,
 {  
   char *stat_data;
   error_t err;
-  double uptime_secs, total_user_time_secs;
-  double total_system_time_secs, idle_time_secs;
+  jiffy_t total_user_time_jiffy, total_system_time_jiffy;
+  jiffy_t idle_time_jiffy;
+  struct timeval uptime, total_user_time, total_system_time;
+  struct timeval idle_time;
 
-  err = get_uptime (&uptime_secs);
+  err = get_uptime (&uptime);
+  
   if (! err)
     {
-      err = get_total_times (&total_user_time_secs, &total_system_time_secs); 
+      err = get_total_times (&total_user_time, &total_system_time); 
+      
       if (! err)
         {
-          idle_time_secs = uptime_secs - 
-                           total_system_time_secs;
-
-          /* If the values are multiplied by 100, it is done so to adjust
-             values in seconds to jiffies. */
-          if (asprintf (&stat_data, "cpu  %ld %ld %ld %ld %ld %ld %d %d %d\n"
-                   "cpu0 %ld %ld %ld %ld %ld %ld %d %d %d\n"
-                   "intr %ld %ld %ld %ld %ld %ld %d %d %d\n",
-                        (long)(total_user_time_secs * 100), 0,
-                        (long)(total_system_time_secs * 100), 
-                        (long) (idle_time_secs * 100), 0, 0, 0, 0,
-                        0, (long)(total_user_time_secs * 100), 0,
-                        (long)(total_system_time_secs * 100), 
-                        (long)(idle_time_secs * 100), 0, 0, 0, 
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == -1)
+          timersub (&uptime, &total_system_time,
+                  &idle_time);
+          
+          total_user_time_jiffy = 100 * ((double) total_user_time.tv_sec + 
+                       (double) total_user_time.tv_usec / (1000 * 1000));
+          total_system_time_jiffy = 100 * ((double) total_system_time.tv_sec + 
+                       (double) total_system_time.tv_usec / (1000 * 1000));
+          idle_time_jiffy = 100 * ((double) idle_time.tv_sec + 
+                       (double) idle_time.tv_usec / (1000 * 1000));
+                       
+          if (asprintf (&stat_data, "cpu  %llu %llu %llu %llu %llu %llu %d %d %d\n"
+                   "cpu0 %llu %llu %llu %llu %llu %llu %d %d %d\n"
+                   "intr %llu %llu %llu %llu %llu %llu %d %d %d\n",
+                        total_user_time_jiffy, (long long unsigned) 0,
+                        total_system_time_jiffy, idle_time_jiffy, 
+                        (long long unsigned) 0, (long long unsigned) 0,
+                        0, 0, 0, 
+                        total_user_time_jiffy, (long long unsigned) 0,
+                        total_system_time_jiffy, idle_time_jiffy, 
+                        (long long unsigned) 0, (long long unsigned) 0,
+                        0, 0, 0,
+                        (long long unsigned) 0,
+                        (long long unsigned) 0, (long long unsigned) 0, (long long unsigned) 0,
+                        (long long unsigned) 0, 
+                        (long long unsigned) 0, (long long unsigned) 0,
+                        (long long unsigned) 0, (long long unsigned) 0) == -1)
             return errno;
         }    
     }      
@@ -434,23 +460,33 @@ error_t procfs_write_nonpid_uptime (struct dir_entry *dir_entry,
 {  
   char *uptime_data;
   error_t err;
-  double uptime_secs, total_user_time_secs;
-  double total_system_time_secs, idle_time_secs;
+  double uptime_secs, idle_time_secs;
+
+  struct timeval uptime_val;
+  struct timeval uptime, total_user_time, total_system_time;
+  struct timeval idle_time;
+ 
   
-  err = get_uptime (&uptime_secs);
+  err = get_uptime (&uptime);
   if (! err)
     {
-      err = get_total_times (&total_user_time_secs,
-                           &total_system_time_secs);
+      err = get_total_times (&total_user_time,
+                           &total_system_time);
       if (! err)
         {
-          idle_time_secs = uptime_secs - 
-                           total_system_time_secs;
-                           
-          if (asprintf (&uptime_data, "%.2f %.2f \n", 
+          timersub (&uptime, &total_system_time,
+                    &idle_time);
+                    
+          uptime_secs = (double) uptime.tv_sec + 
+                       (double) uptime.tv_usec / (1000 * 1000);
+                       
+          idle_time_secs = (double) idle_time.tv_sec + 
+                       (double) idle_time.tv_usec / (1000 * 1000);
+
+          if (asprintf (&uptime_data, "%.2f %.2f\n", 
 	          uptime_secs, idle_time_secs) == -1)
             return errno;
-        }                         
+         }                         
     }                       
 
 
