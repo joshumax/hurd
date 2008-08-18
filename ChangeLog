@@ -1,4 +1,7 @@
 2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
+        * README: Initial Documentation.
+
+2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
         * procfs_nonpid_files.c: (get_uptime):
         Changed the parameter type from double to
         struct timeval.
