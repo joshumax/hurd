@@ -1,20 +1,20 @@
 2008-08-14  Madhusudan.C.S <madhusudancs@gmail.com>
 
-        * ChangeLog: New file added to procfs
-        * AUTHORS: New file added to procfs
-        * COPYING: New file added to procfs
-        * README: New file added to procfs
-        * Makefile: New file added to procfs
-        * bootstrap.c: New file added to procfs
-        * netfs.c: New file added to procfs
-        * node.c: New file added to procfs
-        * procfs.c: New file added to procfs
-        * procfs.h: New file added to procfs
-        * procfs_dir.c: New file added to procfs
-        * procfs_nonpid_files.c: New file added to procfs
-        * procfs_pid.h: New file added to procfs
-        * procfs_pid_files.c: New file added to procfs
+        * ChangeLog: New file.
+        * AUTHORS: New file.
+        * COPYING: New file.
+        * README: New file.
+        * Makefile: New file.
+        * bootstrap.c: New file.
+        * netfs.c: New file.
+        * node.c: New file.
+        * procfs.c: New file.
+        * procfs.h: New file.
+        * procfs_dir.c: New file.
+        * procfs_nonpid_files.c: New file.
+        * procfs_pid.h: New file.
+        * procfs_pid_files.c: New file.
                         
 2008-05-13  Madhusudan.C.S <madhusudancs@gmail.com>
 
-        * /sources/hurd/procfs: New directory added to the repository
+        * /sources/hurd/procfs: New directory added to the repository.
