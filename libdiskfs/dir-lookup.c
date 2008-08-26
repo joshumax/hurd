@@ -53,8 +53,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int mustbedir = 0;
   size_t amt;
   int type;
-  struct protid *newpi;
-  struct peropen *newpo;
+  struct protid *newpi = 0;
+  struct peropen *newpo = 0;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -257,8 +257,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (! error)
 		{
 		  error = diskfs_create_protid (newpo, user, &newpi);
-		  if (error)
-		    diskfs_release_peropen (newpo);
+		  if (! error)
+		    newpo = 0;
 		}
 
 	      iohelp_free_iouser (user);
@@ -269,6 +269,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  dirport = ports_get_send_right (newpi);
 	  ports_port_deref (newpi);
+	  newpi = 0;
 	  if (np != dnp)
 	    mutex_unlock (&dnp->lock);
 
@@ -460,28 +461,24 @@ diskfs_S_dir_lookup (struct protid *dircred,
 			       dircred->po, &newpo);
 
   if (! error)
-    {
-      error = diskfs_create_protid (newpo, dircred->user, &newpi);
-      if (error)
-	diskfs_release_peropen (newpo);
-    }
+    error = diskfs_create_protid (newpo, dircred->user, &newpi);
 
   if (! error)
     {
+      newpo = 0;
       if (flags & O_EXLOCK)
 	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_EX);
       else if (flags & O_SHLOCK)
 	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_SH);
-      if (error)
-	ports_port_deref (newpi); /* Get rid of NEWPI.  */
     }
 
   if (! error)
     {
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);
+      newpi = 0;
     }
 
  out:
@@ -494,6 +491,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
     }
   if (dnp)
     diskfs_nput (dnp);
+
+  if (newpi)
+    ports_port_deref (newpi);
+  if (newpo)
+    diskfs_release_peropen (newpo);
 
   return error;
 }

@@ -1,3 +1,9 @@
+2008-08-21  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir-lookup.c (diskfs_S_dir_lookup): Initialize NEWPI and NEWPO to
+	0, set back to 0 when they do not need to be referenced any more,
+	dereference them if needed just before exit, after all unlocking.
+
 2008-08-20  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Revert 2008-06-06 change, as it
