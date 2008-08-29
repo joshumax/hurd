@@ -1,6 +1,6 @@
 #   Makefile - for procfs
 # 
-#   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
+#   Copyright (C) 2008 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -21,20 +21,10 @@ makemode := server
 
 target = procfs
 
-CC = gcc
-CFLAGS = -Wall -g -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
-INCLUDES = -I.
-
 SRCS = procfs.c bootstrap.c netfs.c procfs_dir.c node.c procfs_pid_files.c procfs_nonpid_files.c
 LCLHDRS = procfs.h procfs_pid.h
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = -lnetfs -lfshelp -liohelp -lthreads -lports -lihash -lps -lshouldbeinlibc
-
-all: $(target)
-
-$(target): $(OBJS)
-	$(CC) $(CFLAGS) -o $(target) $(OBJS) $(HURDLIBS)
-        
-%.o: %.c $(LCLHDRS)
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
+HURDLIBS = netfs fshelp iohelp threads ports ihash ps shouldbeinlibc
+	
+include ../Makeconf

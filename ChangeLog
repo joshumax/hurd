@@ -1,3 +1,19 @@
+2008-08-29  Madhusudan.C.S <madhusudancs@gmail.com>
+        * Makefile: (Copyright): 1997, 2000 -> 2008
+        (CC): Removed.
+        (CFLAGS): Removed.
+        (INCLUDES): Removed.
+        (all): Removed.
+        ($(target)): Removed.
+        (%.o): Removed.
+        (HURDLIBS): -lnetfs -> netfs,
+        -lfshelp -> fshelp,
+        -liohelp -> iohelp, -lthreads -> threads, 
+        -lports -> ports, -lihash -> ihash,
+        -lps -> ps, 
+        -lshouldbeinlibc -> shouldbeinlibc.
+        (include): Add include ../Makeconf
+        
 2008-08-18  Madhusudan.C.S <madhusudancs@gmail.com>
         * procfs_nonpid_files.c:
         (procfs_write_nonpid_stat): Changed to
