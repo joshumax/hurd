@@ -1,5 +1,11 @@
 2008-08-29  Madhusudan.C.S  <madhusudancs@gmail.com>
 
+	* AUTHORS: File removed.
+	* COPYING: Likewise.
+	* README: Likewise.	
+	
+2008-08-29  Madhusudan.C.S  <madhusudancs@gmail.com>
+
 	* Makefile: (Copyright): 1997, 2000 -> 2008.
 	(CC): Removed.
 	(CFLAGS): Removed.
