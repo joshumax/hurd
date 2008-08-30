@@ -48,7 +48,7 @@ update_pid_entries (struct procfs_dir *dir, const char *name,
 {
   struct procfs_dir_entry *dir_entry;
   struct stat *stat = (struct stat *) malloc (sizeof (struct stat));
-  stat->st_mode = S_IFREG;
+  stat->st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
 
   dir_entry = update_entries_list (dir, name, stat, 
                                  timestamp, symlink_target);

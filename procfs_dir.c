@@ -77,6 +77,9 @@ error_t procfs_dir_create (struct procfs *fs, struct node *node,
 
   *dir = new;
 
+  if (fs->root != 0)
+    node->nn->dir = new;
+
   return 0;
 }
 
@@ -343,14 +346,50 @@ procfs_dir_null_lookup (struct procfs_dir *dir, struct node **node)
   return err;
 }
 
-/* Remove the specified DIR and free all its allocated
-   storage. */
-void procfs_dir_remove (struct procfs_dir *dir)
+/* Free the directory entry DIR_ENTRY and all resources it consumes.  */
+void
+free_entry (struct procfs_dir_entry *dir_entry)
 {
 
-  /*  STUB */
+  assert (! dir_entry->self_p);	      /* We should only free deleted nodes.  */
+  free (dir_entry->name);
+  if (dir_entry->symlink_target)
+    free (dir_entry->symlink_target);
+  free (dir_entry->node->nn->dir);
+  free (dir_entry->node->nn);
+  free (dir_entry->node);
+  free (dir_entry); 
+}
+
+/* Remove DIR_ENTRY from its position in the ordered_next chain.  */
+static void
+ordered_unlink (struct procfs_dir_entry *dir_entry)
+{
+  if (dir_entry->ordered_self_p)
+    *dir_entry->ordered_self_p = dir_entry->ordered_next;
+  if (dir_entry->ordered_next)
+    dir_entry->ordered_next->self_p = dir_entry->ordered_self_p;
+}
+
+/* Delete DIR_ENTRY from its directory, freeing any resources it holds.  */
+static void
+delete (struct procfs_dir_entry *dir_entry, struct procfs_dir *dir)
+{
+  dir->num_entries--;
   
-  return 0;
+  /* Take out of the hash chain.  */
+  if (dir_entry->self_p)
+    *dir_entry->self_p = dir_entry->next;
+  if (dir_entry->next)
+    dir_entry->next->self_p = dir_entry->self_p;
+
+  /* Take out of the directory ordered list.  */
+  ordered_unlink (dir_entry); 
+
+  /* If there's a node attached, we'll delete the entry whenever it goes
+     away, otherwise, just delete it now.  */
+  if (! dir_entry->node)
+    free_entry (dir_entry);    
 }
 
 /* Make all the directory entries invalid  */
@@ -371,6 +410,41 @@ make_dir_invalid (struct procfs_dir *dir)
           dir_entry = dir_entry->next;
         }
     }  
+}
+
+/* Delete any entries in DIR which don't have their valid bit set.  */
+static void
+sweep (struct procfs_dir *dir)
+{
+  size_t len = dir->htable_len, i;
+  struct procfs_dir_entry **htable = dir->htable, *dir_entry;
+
+  for (i = 0; i < len; i++)
+    {
+      dir_entry = htable[i];
+      while (dir_entry)
+        {
+          if (!dir_entry->valid && !dir_entry->noent && dir->num_entries)
+            delete (dir_entry, dir);	
+          dir_entry = dir_entry->next;
+        }
+      if (htable[i])
+        {
+          free (htable[i]);
+          htable[i] = 0;
+        }
+
+    }      
+
+}
+
+/* Remove the specified DIR and free all its allocated
+   storage. */
+void procfs_dir_entries_remove (struct procfs_dir *dir)
+{
+  /* Free all entries.  */
+  make_dir_invalid (dir);
+  sweep (dir);  
 }
 
 /* Checks if the DIR name is in list of 
@@ -417,7 +491,6 @@ error_t procfs_dir_refresh (struct procfs_dir *dir, int isroot)
   error_t err;
   int is_parent_pid;
   struct node *node;
-  make_dir_invalid (dir);
   
   struct timeval tv;
   maptime_read (procfs_maptime, &tv); 
@@ -513,14 +586,18 @@ procfs_fill_root_dir(struct procfs_dir *dir, time_t timestamp)
   char *data;
   pid_t *pids;
   int pidslen;
-  struct stat *stat = (struct stat *) malloc (sizeof (struct stat));
-  stat->st_mode = S_IFDIR;
+  struct stat stat;
+  stat.st_mode = S_IFDIR | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | 
+                  S_IROTH | S_IXOTH;
+  stat.st_nlink = 1;
+  stat.st_size = 0;
 
   int count;
   char *dir_name_pid;
   struct node *node;
   struct procfs_dir *new_dir;
   struct procfs_dir_entry *dir_entry;
+  struct proc_stat *ps;
     
   pids = NULL;
   pidslen = 0;
@@ -540,13 +617,25 @@ procfs_fill_root_dir(struct procfs_dir *dir, time_t timestamp)
           if (! node || ! new_dir )
            return ENOMEM;
 #endif
-          dir_entry = update_entries_list (dir, dir_name_pid,
-                                 stat, timestamp, NULL);
-          err = procfs_create_node (dir_entry, dir_name_pid, &node);
+          err = _proc_stat_create (pids[count], ps_context, &ps);
+          if (! err)
+            {
+              err = set_field_value (ps, PSTAT_PROC_INFO);
+              if (! err)
+                {
+                  stat.st_uid = proc_stat_proc_info (ps)->owner;
+                  stat.st_gid = proc_stat_proc_info (ps)->pgrp;
 
-          procfs_dir_create (dir->fs, node, 
-                                 dir_name_pid, &new_dir);
-          free(dir_name_pid);
+                  dir_entry = update_entries_list (dir, dir_name_pid,
+                                 &stat, timestamp, NULL);
+                  err = procfs_create_node (dir_entry, dir_name_pid, &node);
+
+                  procfs_dir_create (dir->fs, node, 
+                                      dir_name_pid, &new_dir);
+                  free(dir_name_pid);
+                  _proc_stat_free (ps);
+                }
+            }
 	}
     }
 

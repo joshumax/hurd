@@ -1,3 +1,24 @@
+2008-08-30  Madhusudan.C.S  <madhusudancs@gmail.com>
+
+	*  procfs_dir.c: (procfs_dir_create): Assign newly created directory to
+	its pointer in netnode.
+	(procfs_dir_remove): Removed function.
+	(free_entry): New function.
+	(ordered_unlink): Likewise.
+	(delete): Likewise.
+	(sweep): Likewise.
+	(procfs_dir_entries_remove): Likewise.
+	(is_in_pid_list): Removed call to make_dir_invalid ().
+	(procfs_fill_root_dir): struct stat *stat ->  struct stat stat.
+	Add Read and Execute permissions to all in stat.st_mode. 
+	Set stat.st_nlink to 1.
+	Set stat.st_size to 0.
+	Add struct proc_stat *ps definition.
+	Set struct proc_stat data from _proc_stat_create () function and
+	set stat.st_uid and stat.st_gid from the data in that structure.
+	* procfs_pid_files.c: (update_pid_entries): Add Read permissions
+	to all in stat->st_mode.
+	
 2008-08-29  Madhusudan.C.S  <madhusudancs@gmail.com>
 
 	* AUTHORS: File removed.
