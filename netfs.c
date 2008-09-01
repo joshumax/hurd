@@ -278,6 +278,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
         return ENOTDIR;          
     }      
     
+  procfs_dir_entries_remove (dir->nn->dir);
   return err;
 }		 
 

@@ -1,3 +1,8 @@
+2008-09-02  Madhusudan.C.S  <madhusudancs@gmail.com>
+
+	* netfs.c: (netfs_get_dirents): Add call to 
+	procfs_dir_entries_remove().
+	
 2008-08-30  Madhusudan.C.S  <madhusudancs@gmail.com>
 
 	*  procfs_dir.c: (procfs_dir_create): Assign newly created directory to
