@@ -1,3 +1,8 @@
+2008-10-02  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* glue-include/linux/socket.h: Revert last change.
+	(MSG_NOSIGNAL): Guard definition and add a compile-time warning.
+
 2008-07-11  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* glue-include/linux/socket.h (MSG_NOSIGNAL): Remove macro.

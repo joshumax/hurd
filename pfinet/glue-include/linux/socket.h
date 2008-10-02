@@ -75,6 +75,10 @@ put_cmsg(struct msghdr *msg, int level, int type, int len, void *data)
 { return 0; }
 #endif
 
+#ifndef MSG_NOSIGNAL
+# warning "http://lists.gnu.org/archive/html/bug-hurd/2008-10/msg00007.html"
+# define MSG_NOSIGNAL	0
+#endif
 #define MSG_ERRQUEUE	0
 
 /* There is no SOCK_PACKET, it is a bad bad thing.  This chicanery is
