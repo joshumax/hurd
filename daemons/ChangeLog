@@ -1,3 +1,7 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): Add fshelp and ports.
+
 2007-12-11  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* getty.c (main) <execl>: Correctly specify sentinels to avoid GCC 4.3
