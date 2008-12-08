@@ -1,3 +1,7 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makeconf (local-installhdrsubdir): Always put files below `include/'.
+
 2008-11-17  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* configure.in: Unconditionally use the provided `install-sh'.  Make

@@ -246,17 +246,12 @@ $(includedir)/$(installhdrsubdir): $(includedir)
 # Arrange to have the headers installed locally anytime we build the library.
 # Not quite perfect, but at least it does end up getting done; and once done
 # it never needs to be repeated for a particular header.
-ifeq ($(installhdrsubdir),.)
-local-installhdrsubdir = include
-else
-local-installhdrsubdir = $(installhdrsubdir)
-endif
-ifneq ($(local-installhdrsubdir),$(dir))
+local-installhdrsubdir = include/$(installhdrsubdir)
 INSTALLED_LOCAL_HEADERS := $(installhdrs:%=../$(local-installhdrsubdir)/%)
 $(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: ../config.make
 	@rm -f $@
+	@test -d $(@D)/ || $(MKINSTALLDIRS) $(@D)
 	echo '#include "../$(dir)/$*"' > $@
-endif
 libs: $(INSTALLED_LOCAL_HEADERS)
 # Make sure we make those before compiling, since -MG will be unhelpful.
 $(patsubst %.o,%.d,$(filter %.o,$(OBJS))): $(INSTALLED_LOCAL_HEADERS)
