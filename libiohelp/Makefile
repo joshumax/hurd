@@ -1,5 +1,5 @@
-#
-#   Copyright (C) 1993,94,95,96,98,2002 Free Software Foundation, Inc.
+#   Copyright (C) 1993, 1994, 1995, 1996, 1998, 2002, 2008 Free Software
+#   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,7 +24,7 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	shared.c return-buffer.c
 OBJS = $(SRCS:.c=.o)
 LCLHDRS = iohelp.h
-HURDLIBS = threads
+HURDLIBS = threads shouldbeinlibc
 libname = libiohelp
 installhdrs = iohelp.h
 
