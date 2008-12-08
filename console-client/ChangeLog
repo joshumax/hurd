@@ -1,3 +1,9 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile: Rework, so that dependency tracking is done for all files.
+
+	* Makefile (HURDLIBS): Add ihash and shouldbeinlibc.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* trans.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.
