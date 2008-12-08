@@ -1,5 +1,7 @@
 # 
-#   Copyright (C) 1995,96,97,99,2001,02 Free Software Foundation
+#   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2002, 2008 Free Software
+#   Foundation
+#
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -21,6 +23,8 @@
 dir := libnetfs
 makemode := library
 libname = libnetfs
+
+HURDLIBS = fshelp iohelp threads ports shouldbeinlibc
 
 FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	dir-notice-changes.c dir-readdir.c dir-rename.c \
