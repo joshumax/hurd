@@ -1,3 +1,7 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): Add iohelp.
+
 2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* fakeroot.c (netfs_attempt_utimes): Use a union to avoid an improper
