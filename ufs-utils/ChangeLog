@@ -1,3 +1,7 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): New variable.
+
 2006-03-15  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* mkfs.c (parse_opt): Move UP's functionality into UP_INT in order to

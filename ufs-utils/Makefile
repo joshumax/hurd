@@ -1,5 +1,5 @@
 # 
-#   Copyright (C) 1994, 1996 Free Software Foundation
+#   Copyright (C) 1994, 1996, 2008 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -27,6 +27,7 @@ SRCS = mkfs.c clri.c stati.c dlabel.c
 installationdir = $(sbindir)
 
 OBJS = $(SRCS:.c=.o)
+HURDLIBS = store shouldbeinlibc
 
 include ../Makeconf
 
