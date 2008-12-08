@@ -1,5 +1,7 @@
 #
-#   Copyright (C) 1995,96,97,2000,01 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 2000, 2001, 2008 Free Software Foundation,
+#   Inc.
+#
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -26,6 +28,6 @@ LCLHDRS = nfs.h mount.h nfs-spec.h
 SRCS = ops.c rpc.c mount.c nfs.c cache.c consts.c main.c name-cache.c \
        storage-info.c
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = netfs fshelp iohelp threads ports
+HURDLIBS = netfs fshelp iohelp threads ports shouldbeinlibc
 
 include ../Makeconf

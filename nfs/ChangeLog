@@ -1,3 +1,7 @@
+2008-12-08  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* Makefile (HURDLIBS): Add shouldbeinlibc.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* nfs.c (xdr_encode_sattr_stat, xdr_decode_fattr): Adapt to ``struct
