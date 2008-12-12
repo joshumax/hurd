@@ -1,3 +1,9 @@
+2008-12-12  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* procfs_nonpid_files.c (procfs_read_nonpid_meminfo): Divide by
+	1024 value returned by get_swap_size and get_swap_free to get
+	kilobytes.
+
 2008-09-02  Madhusudan.C.S  <madhusudancs@gmail.com>
 
 	* netfs.c: (netfs_get_dirents): Add call to 

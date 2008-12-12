@@ -417,7 +417,7 @@ error_t procfs_read_nonpid_meminfo (struct dir_entry *dir_entry,
          mem_size, (PAGES_TO_BYTES(vmstats.free_count)) / 1024 , 0, 0, 0, 
          (PAGES_TO_BYTES(vmstats.active_count)) / 1024, 
          (PAGES_TO_BYTES(vmstats.inactive_count)) / 1024, 0, 0, 0, 0, 
-         get_swap_size (), get_swap_free ()) == -1)
+         get_swap_size () / 1024, get_swap_free () / 1024) == -1)
       return errno;
 
   memcpy (data, meminfo_data, strlen(meminfo_data));
