@@ -157,8 +157,6 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       return 0;
     }
 
-  thread_timeout = global_timeout = 0; /* XXX */
-
   nreqthreads = 1;
   totalthreads = 1;
   thread_function (1);
