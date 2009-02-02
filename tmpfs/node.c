@@ -96,9 +96,9 @@ diskfs_node_norefs (struct node *np)
       np->dn->uid = np->dn_stat.st_uid;
       np->dn->author = np->dn_stat.st_author;
       np->dn->gid = np->dn_stat.st_gid;
-      np->dn->atime = np->dn_stat.st_atime;
-      np->dn->mtime = np->dn_stat.st_mtime;
-      np->dn->ctime = np->dn_stat.st_ctime;
+      np->dn->atime = np->dn_stat.st_atim;
+      np->dn->mtime = np->dn_stat.st_mtim;
+      np->dn->ctime = np->dn_stat.st_ctim;
       np->dn->flags = np->dn_stat.st_flags;
 
       switch (np->dn->type)
@@ -200,9 +200,9 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
       st->st_uid = dn->uid;
       st->st_author = dn->author;
       st->st_gid = dn->gid;
-      st->st_atime = dn->atime;
-      st->st_mtime = dn->mtime;
-      st->st_ctime = dn->ctime;
+      st->st_atim = dn->atime;
+      st->st_mtim = dn->mtime;
+      st->st_ctim = dn->ctime;
       st->st_flags = dn->flags;
 
       st->st_rdev = 0;

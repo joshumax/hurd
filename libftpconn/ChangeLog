@@ -1,3 +1,8 @@
+2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* unix.c (parse_dir_entry): Use st_mtim.tv_sec instead of st_mtime.
+	Set st_atim.tv_nsec, st_ctim.tv_nsec and st_mtim.tv_nsec to 0.
+
 2002-10-19  Roland McGrath  <roland@frob.com>
 
 	* unix.c (ftp_conn_unix_start_get_stats): Pass dirname a copy of NAME

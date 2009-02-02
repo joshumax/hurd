@@ -355,9 +355,9 @@ main (int argc, char **argv)
       diskfs_root_node->dn_stat.st_uid = st.st_uid;
       diskfs_root_node->dn_stat.st_author = st.st_author;
       diskfs_root_node->dn_stat.st_gid = st.st_gid;
-      diskfs_root_node->dn_stat.st_atime = st.st_atime;
-      diskfs_root_node->dn_stat.st_mtime = st.st_mtime;
-      diskfs_root_node->dn_stat.st_ctime = st.st_ctime;
+      diskfs_root_node->dn_stat.st_atim = st.st_atim;
+      diskfs_root_node->dn_stat.st_mtim = st.st_mtim;
+      diskfs_root_node->dn_stat.st_ctim = st.st_ctim;
       diskfs_root_node->dn_stat.st_flags = st.st_flags;
     }
   diskfs_root_node->dn_stat.st_mode &= ~S_ITRANS;

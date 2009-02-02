@@ -532,7 +532,9 @@ ftpfs_refresh_node (struct node *node)
 	    }
 	}
 
-      if ((entry->stat.st_mtime < node->nn_stat.st_mtime
+      if ((entry->stat.st_mtim.tv_sec < node->nn_stat.st_mtim.tv_sec
+           || (entry->stat.st_mtim.tv_sec == node->nn_stat.st_mtim.tv_sec
+               && entry->stat.st_mtim.tv_nsec < node->nn_stat.st_mtim.tv_nsec)
 	   || entry->stat.st_size != node->nn_stat.st_size)
 	  && nn && nn->contents)
 	/* The file has changed.  */

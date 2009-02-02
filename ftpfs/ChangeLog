@@ -1,3 +1,8 @@
+2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* dir.c (ftpfs_refresh_node): Use st_mtim.tv_sec members instead
+	of st_mtime.  Also compare st_mtim.tv_nsec members.
+
 2007-11-13  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* netfs.c (netfs_attempt_utimes): Adapt to ``struct stat'' changes.

@@ -1,3 +1,9 @@
+2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* file-utimes.c (diskfs_S_file_utimes): Use st_atim.tv_sec/
+	st_mtim.tv_sec members instead of st_atime/st_mtime.  Also set
+	st_atim.tv_nsec/st_mtim.tv_nsec members.
+
 2008-08-21  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* dir-lookup.c (diskfs_S_dir_lookup): Initialize NEWPI and NEWPO to

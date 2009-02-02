@@ -510,12 +510,13 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
   else
     tm.tm_year = PARSE_INT () - 1900;
 
-  stat->st_mtime = mktime (&tm);
-  if (stat->st_mtime == (time_t)-1)
+  stat->st_mtim.tv_sec = mktime (&tm);
+  if (stat->st_mtim.tv_sec == (time_t)-1)
     return EGRATUITOUS;
 
   /* atime and ctime are the same as mtime.  */
-  stat->st_atime = stat->st_ctime = stat->st_mtime;
+  stat->st_atim.tv_sec  = stat->st_ctim.tv_sec  = stat->st_mtim.tv_sec;
+  stat->st_atim.tv_nsec = stat->st_ctim.tv_nsec = stat->st_mtim.tv_nsec = 0;
 
   /* Update *LINE to point to the filename.  */
   SKIP_WS ();

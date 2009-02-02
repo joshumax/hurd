@@ -326,12 +326,12 @@ S_login_get_idle_time(file_t utmp, time_value_t *tv)
 	{
 	  struct stat stat;
 	  if (stat(dev, &state) == 0
-	      && (stat.st_atime < tv->seconds
-		  || (stat.st_atime == tv->seconds
-		      && stat.st_atime_usec < tv->microseconds)))
+	      && (stat.st_atim.tv_sec < tv->seconds
+		  || (stat.st_atim.tv_sec == tv->seconds
+		      && stat.st_atim.tv_nsec / 1000 < tv->microseconds)))
 	    {
-	      tv->seconds = stat.st_atime;
-	      tv->microseconds = stat.st_atime_usec;
+	      tv->seconds = stat.st_atim.tv_sc;
+	      tv->microseconds = stat.st_atim.tv_nsec / 1000;
 	    }
 	}
     }

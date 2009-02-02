@@ -1,3 +1,8 @@
+2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* utmp.c (S_login_get_idle_time): Use st_atim.tv_sec and
+	st_atim.tv_nsec members instead of st_atime and st_atime_usec.
+
 1999-07-09  Thomas Bushnell, BSG  <tb@mit.edu>
 
 	* utmp.c (return_data): Use mmap instead of vm_allocate.

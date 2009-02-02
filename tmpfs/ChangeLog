@@ -1,3 +1,13 @@
+2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* tmpfs.h (struct disknode): Make atime, mtime and ctime members
+	struct timespec instead of time_t.
+	* tmpfs.c (main): Copy st_atim/st_mtim/st_ctim members from st to
+	diskfs_root_node->dn_stat instead of st_atime/st_mtime/st_ctime.
+	* node.c (diskfs_node_norefs): Copy st_atime/st_mtime/st_ctime
+	members from np->dn_stat to atime/mtime/ctime members of np->dn
+	(diskfs_cached_lookup): Conversely.
+
 2005-03-20  Marcus Brinkmann  <marcus@gnu.org>
 
 	* tmpfs.c (parse_opt): Use the right argument for parsing the

@@ -35,7 +35,7 @@ struct disknode
   nlink_t nlink;
   uid_t uid, author;
   gid_t gid;
-  time_t atime, mtime, ctime;
+  struct timespec atime, mtime, ctime;
   unsigned int flags;
 
   char *trans;
