@@ -1,7 +1,7 @@
 /* Definitions for fileserver helper functions
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007
-     Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007, 2008,
+   2009 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -81,7 +81,7 @@ struct node
 
   /* Stat has been modified if one of the following four fields
      is nonzero.  Also, if one of the dn_set_?time fields is nonzero,
-     the appropriate dn_stat.st_?time field needs to be updated. */
+     the appropriate dn_stat.st_?tim field needs to be updated. */
   int dn_set_ctime;
   int dn_set_atime;
   int dn_set_mtime;
@@ -870,7 +870,7 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
    NP->dn_set_atime.  */
 void diskfs_set_node_atime (struct node *np);
 
-/* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
+/* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctim
    appropriately; do the analogous operation for atime and mtime as well. */
 void diskfs_set_node_times (struct node *np);
 

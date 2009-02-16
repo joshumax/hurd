@@ -1,3 +1,9 @@
+2009-02-16  Thomas Schwinge  <tschwinge@gnu.org>
+
+	* diskfs.h: Instead of `st_?time', talk about `st_?tim'.
+	* node-times.c: Likewise.
+	* priv.h: Likewise.
+
 2009-02-02  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* file-utimes.c (diskfs_S_file_utimes): Use st_atim.tv_sec/

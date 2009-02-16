@@ -1,6 +1,7 @@
-/* Process st_?time updates marked for a diskfs node.
+/* Process st_?tim updates marked for a diskfs node.
 
-   Copyright (C) 1994, 1996, 1999, 2000, 2007 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1996, 1999, 2000, 2007, 2009 Free Software Foundation,
+   Inc.
 
 This file is part of the GNU Hurd.
 
@@ -32,7 +33,7 @@ diskfs_set_node_atime (struct node *np)
     np->dn_set_atime = 1;
 }
 
-/* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctime
+/* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctim
    appropriately; do the analogous operation for atime and mtime as well. */
 void
 diskfs_set_node_times (struct node *np)

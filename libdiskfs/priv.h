@@ -1,5 +1,7 @@
 /* Private declarations for fileserver library
-   Copyright (C) 1994,95,96,97,98,99,2001,2006 Free Software Foundation, Inc.
+
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2006, 2009 Free
+   Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -33,7 +35,7 @@
 /* These inhibit setuid or exec. */
 extern int _diskfs_nosuid, _diskfs_noexec;
 
-/* This relaxes the requirement to set `st_atime'.  */
+/* This relaxes the requirement to set `st_atim'.  */
 extern int _diskfs_noatime;
 
 /* This enables SysV style group behaviour.  New nodes inherit the GID
