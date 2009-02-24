@@ -5,7 +5,7 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>
  *
- *	$Id: icmpv6.c,v 1.2 2007/10/08 21:59:10 stesie Exp $
+ *	$Id: icmpv6.c,v 1.3 2009/02/24 01:21:16 sthibaul Exp $
  *
  *	Based on net/ipv4/icmp.c
  *
@@ -479,22 +479,22 @@ int icmpv6_rcv(struct sk_buff *skb, unsigned long len)
 		if (csum_ipv6_magic(saddr, daddr, len, IPPROTO_ICMPV6, 
 				    skb->csum)) {
 			printk(KERN_DEBUG "ICMPv6 checksum failed [%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x > %04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x]\n",
-				ntohs(saddr->in6_u.u6_addr16[0]),
-				ntohs(saddr->in6_u.u6_addr16[1]),
-				ntohs(saddr->in6_u.u6_addr16[2]),
-				ntohs(saddr->in6_u.u6_addr16[3]),
-				ntohs(saddr->in6_u.u6_addr16[4]),
-				ntohs(saddr->in6_u.u6_addr16[5]),
-				ntohs(saddr->in6_u.u6_addr16[6]),
-				ntohs(saddr->in6_u.u6_addr16[7]),
-				ntohs(daddr->in6_u.u6_addr16[0]),
-				ntohs(daddr->in6_u.u6_addr16[1]),
-				ntohs(daddr->in6_u.u6_addr16[2]),
-				ntohs(daddr->in6_u.u6_addr16[3]),
-				ntohs(daddr->in6_u.u6_addr16[4]),
-				ntohs(daddr->in6_u.u6_addr16[5]),
-				ntohs(daddr->in6_u.u6_addr16[6]),
-				ntohs(daddr->in6_u.u6_addr16[7]));
+				ntohs(saddr->__in6_u.__u6_addr16[0]),
+				ntohs(saddr->__in6_u.__u6_addr16[1]),
+				ntohs(saddr->__in6_u.__u6_addr16[2]),
+				ntohs(saddr->__in6_u.__u6_addr16[3]),
+				ntohs(saddr->__in6_u.__u6_addr16[4]),
+				ntohs(saddr->__in6_u.__u6_addr16[5]),
+				ntohs(saddr->__in6_u.__u6_addr16[6]),
+				ntohs(saddr->__in6_u.__u6_addr16[7]),
+				ntohs(daddr->__in6_u.__u6_addr16[0]),
+				ntohs(daddr->__in6_u.__u6_addr16[1]),
+				ntohs(daddr->__in6_u.__u6_addr16[2]),
+				ntohs(daddr->__in6_u.__u6_addr16[3]),
+				ntohs(daddr->__in6_u.__u6_addr16[4]),
+				ntohs(daddr->__in6_u.__u6_addr16[5]),
+				ntohs(daddr->__in6_u.__u6_addr16[6]),
+				ntohs(daddr->__in6_u.__u6_addr16[7]));
 			goto discard_it;
 		}
 	default:

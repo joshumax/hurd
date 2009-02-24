@@ -1,3 +1,10 @@
+2009-02-24  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* linux-src/net/ipv6/addrconf.c (ipv6_addr_type): Use
+	__in6_u.__u6_addr32 member instead of in6_u.u6_addr32.
+	* linux-src/net/ipv6/icmpv6.c (icmpv6_rcv): Use
+	__in6_u.__u6_addr16 member instead of in6_u.u6_addr16.
+
 2008-10-02  Thomas Schwinge  <tschwinge@gnu.org>
 
 	* glue-include/linux/socket.h: Revert last change.
