@@ -1,3 +1,8 @@
+2009-04-03  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* exec.c (prepare): Call PREPARE_STREAM earlier to permit calling
+	finish_mapping on E even after errors, as is already done in do_exec.
+
 2008-06-10  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* elfcore.c (TIME_VALUE_TO_TIMESPEC): Completely implement instead of

@@ -726,6 +726,9 @@ prepare (file_t file, struct execdata *e)
 
   e->interp.section = NULL;
 
+  /* Initialize E's stdio stream.  */
+  prepare_stream (e);
+
   /* Try to mmap FILE.  */
   e->error = io_map (file, &rd, &wr);
   if (! e->error)
@@ -790,9 +793,6 @@ prepare (file_t file, struct execdata *e)
       e->file_size = st.st_size;
       e->optimal_block = st.st_blksize;
     }
-
-  /* Initialize E's stdio stream.  */
-  prepare_stream (e);
 }
 
 /* Check the magic number, etc. of the file.
