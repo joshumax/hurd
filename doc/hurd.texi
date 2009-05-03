@@ -319,6 +319,7 @@ Networking
 * pflocal::
 * libpipe::
 * Socket Interface::            Network communication I/O protocol.
+* eth-multiplexer::		The multiplexer of ethernet.
 
 Authentication
 
@@ -753,6 +754,10 @@ system.
 @item --layer
 @itemx -L
 Layer multiple devices for redundancy.
+
+@item --device-map=@var{devicename}=@var{devicefile}
+@itemx -m
+Map the device in subhurd to the device in the main Hurd.
 
 @item --single-user
 @itemx -s
@@ -4619,6 +4624,7 @@ FIXME: this subsystem is in flux @c Thomas, 26-03-1998
 * pflocal::
 * libpipe::
 * Socket Interface::            Network communication I/O protocol.
+* eth-multiplexer::		The multiplexer of ethernet.
 @end menu
 
 @node pfinet
@@ -4637,6 +4643,65 @@ FIXME: this subsystem is in flux @c Thomas, 26-03-1998
 FIXME: net frobbing stuff may be added to socket.defs
 @c Thomas, 26-03-1998
 
+@node eth-multiplexer
+@section eth-multiplexer
+
+The @dfn{eth-multiplexer} is a network multiplexer. It creates virtual
+ethernet interfaces and dispatches packets to the right client that
+connect to the virtual interface. It also works as a bridge to connect the
+real ethernet interface and the virtual ones.
+
+@menu
+* Invoking eth-multiplexer::	How to use the program.
+* Internal::			The brief introduction of the internal.
+@end menu
+
+@node Invoking eth-multiplexer
+@subsection Invoking eth-multiplexer
+
+Usage: eth-multiplexer [@var{option}@dots{}]
+
+@table @code
+@item --number_device=@var{number}
+@itemx -v
+The number of virtual network interfaces to be created.
+
+@item --interface=@var{device}
+@itemx -i
+Network interface to use.
+
+@end table
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+Users can create as many virtual devices as they wants. The name of the
+virtual device follows the rule "veth%d", and the number in the name
+starts from 0.
+
+@dfn{eth-multiplexer} can only connect to one network interface. If no
+@option{--interface} is specified, the created virtual network is isolated
+with the real network completely.
+
+@node Internal
+@subsection Internal
+
+@dfn{eth-multiplexer} implements the server side functions in device.defs,
+so clients can access the virtual device as kernel devices. All information
+about the virtual interface is kept in the @dfn{vether_device} structure.
+
+When @dfn{eth-multiplexer} gets a packet from a virtual interface (which
+happens in @dfn{ds_device_write}) or from the underlying interface where it
+sit on (in @dfn{ethernet_demuxer}), it sends the packet to all other interfaces.
+@dfn{eth-multipexer} has BPF filters for each client. The BPF filter decides
+whether to deliver the packet. The packet delivery is done by
+@dfn{deliver_pack}. There is no filter for the underlying interface in 
+@dfn{eth-multiplexer}, so every packet from the virtual interface will be
+sent to the underlying interface.
+
+@dfn{eth-multiplexer} sets the underlying interface into the promiscuous mode
+if it can, so it can receive the packet with the virtual interface's hardware
+address from the underlying interface.
 
 @node Terminal Handling
 @chapter Terminal Handling
