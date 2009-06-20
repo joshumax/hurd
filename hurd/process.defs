@@ -356,7 +356,7 @@ routine proc_getpgrppids (
 	out pidset: pidarray_t, dealloc);
 
 
-/*** Another miscelleneous info query ***/
+/*** Other miscelleneous info queries ***/
 
 /* Return the controlling TTY used by PID in TTY; opened without read or
    write access. */
@@ -364,3 +364,9 @@ routine proc_get_tty (
 	calling_process: process_t;
 	target_process: pid_t;
 	out tty: mach_port_send_t);
+
+/* Return the number of Mach ports used by PID */
+routine proc_getnports (
+	process: process_t;
+	which: pid_t;
+	out nports: mach_msg_type_number_t);

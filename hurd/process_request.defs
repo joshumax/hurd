@@ -365,3 +365,9 @@ simpleroutine proc_get_tty_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
 	pid: pid_t);
+
+/* Return the number of Mach ports used by PID */
+simpleroutine proc_getnports_request (
+	process: process_t;
+	ureplyport reply: reply_port_t;
+	which: pid_t);

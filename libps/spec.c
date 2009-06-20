@@ -349,6 +349,14 @@ ps_get_zero_fills (struct proc_stat *ps)
 const struct ps_getter ps_zero_fills_getter =
 {"zero_fills", PSTAT_TASK_EVENTS, (vf) ps_get_zero_fills};
 
+static int
+ps_get_num_ports (struct proc_stat *ps)
+{
+  return proc_stat_num_ports (ps);
+}
+const struct ps_getter ps_num_ports_getter =
+{"num_ports", PSTAT_NUM_PORTS, (vf) ps_get_num_ports};
+
 /* ---------------------------------------------------------------- */
 /* some printing functions */
 
@@ -1155,6 +1163,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_msgs_sent_getter,   ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {"ZFills",	0,	-5, -1, 0,
    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
+  {"Ports",	0,	-5, -1, 0,
+   &ps_num_ports_getter,       ps_emit_int,	    ps_cmp_ints,   0},
   {0}
 };
 

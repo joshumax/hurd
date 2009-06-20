@@ -990,6 +990,10 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
     if (ps_context_find_tty_by_cttyid (ps->context, ps->cttyid, &ps->tty) == 0)
       have |= PSTAT_TTY;
 
+  /* The number of Mach ports in the task. */
+  MGET (PSTAT_NUM_PORTS, PSTAT_PID,
+        proc_getnports (server, ps->pid, &ps->num_ports));
+
   /* Update PS's flag state.  We haven't tried user flags yet, so don't mark
      them as having failed.  We do this before checking user bits so that the
      user fetch hook sees PS in a consistent state.  */

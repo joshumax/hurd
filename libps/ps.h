@@ -303,6 +303,8 @@ struct proc_stat
   char *env;
   /* The length of ENV.  */
   size_t env_len;
+
+  unsigned num_ports;
 };
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
@@ -340,6 +342,7 @@ struct proc_stat
 #define PSTAT_OWNER_UID	      0x200000 /* The uid of the the proc's owner */
 #define PSTAT_UMASK	      0x400000 /* The proc's current umask */
 #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
+#define PSTAT_NUM_PORTS      0x4000000 /* Number of Mach ports in the task */
 
 /* Flag bits that don't correspond precisely to any field.  */
 #define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
@@ -443,6 +446,7 @@ extern char *proc_stat_state_tags;
 #define proc_stat_umask(ps) ((ps)->umask)
 #define proc_stat_tty(ps) ((ps)->tty)
 #define proc_stat_task_events_info(ps) ((ps)->task_events_info)
+#define proc_stat_num_ports(ps) ((ps)->num_ports)
 #define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
 
 /* True if PS refers to a thread and not a process.  */
