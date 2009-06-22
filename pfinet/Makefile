@@ -1,5 +1,6 @@
 #
-#   Copyright (C) 1995, 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 2000, 2007, 2009 Free Software Foundation,
+#   Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -116,6 +117,8 @@ CPPFLAGS += -imacros $(srcdir)/config.h		\
 # Don't ask...  We use Linux code.  The problem was first noticed when
 # compiling `pfinet' with GCC 4.2.
 CFLAGS += -fno-strict-aliasing
+# It's too cumbersome to fix all these third-party header files.
+CFLAGS += $(gnu89-inline-CFLAGS)
 
 asm/checksum.h: ../config.status
 	mkdir -p $(@D)

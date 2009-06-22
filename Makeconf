@@ -65,7 +65,7 @@ INCLUDES += -I$(..)include -I$(top_srcdir)/include
 CPPFLAGS += $(INCLUDES) \
 	     -D_GNU_SOURCE -D_IO_MTSAFE_IO -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
-CFLAGS += -std=gnu99 $(gnu89-inline-CFLAGS) -Wall -g -O3 \
+CFLAGS += -std=gnu99 -Wall -g -O3 \
 	    $($*-CFLAGS)
 
 # Include the configure-generated file of parameters.
