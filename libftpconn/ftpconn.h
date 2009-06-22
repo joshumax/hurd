@@ -1,6 +1,6 @@
 /* Manage an ftp connection
 
-   Copyright (C) 1997,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2001, 2002, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -33,10 +33,6 @@
 #ifndef __error_t_defined
 typedef int error_t;
 #define __error_t_defined
-#endif
-
-#ifndef FTP_CONN_EI
-# define FTP_CONN_EI extern inline
 #endif
 
 struct ftp_conn;
@@ -244,15 +240,7 @@ void ftp_conn_close (struct ftp_conn *conn);
 
 /* Makes sure that CONN's syshooks are set according to the remote system
    type.  */
-FTP_CONN_EI error_t
-ftp_conn_validate_syshooks (struct ftp_conn *conn)
-{
-  if (conn->syshooks_valid)
-    return 0;
-  else
-    /* Opening the connection should set the syshooks.  */
-    return ftp_conn_open (conn);
-}
+error_t ftp_conn_validate_syshooks (struct ftp_conn *conn);
 
 /* Create a new ftp connection as specified by PARAMS, and return it in CONN;
    HOOKS contains customization hooks used by the connection.  Neither PARAMS
@@ -383,5 +371,26 @@ error_t ftp_conn_append_name (struct ftp_conn *conn,
    newly malloced copy of COMPOSITE in BASE.  */
 error_t ftp_conn_basename (struct ftp_conn *conn,
 			   const char *composite, char **base);
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef FTPCONN_H_EXTERN_INLINE
+#  define FTPCONN_H_EXTERN_INLINE __extern_inline
+# endif
+
+FTPCONN_H_EXTERN_INLINE error_t
+ftp_conn_validate_syshooks (struct ftp_conn *conn)
+{
+  if (conn->syshooks_valid)
+    return 0;
+  else
+    /* Opening the connection should set the syshooks.  */
+    return ftp_conn_open (conn);
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __FTPCONN_H__ */

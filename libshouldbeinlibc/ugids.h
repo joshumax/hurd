@@ -1,6 +1,6 @@
 /* Uid/gid parsing/frobbing
 
-   Copyright (C) 1997,2001 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2001, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -24,10 +24,6 @@
 #include <stdlib.h>		/* For inline function stuff.  */
 #include <idvec.h>
 
-#ifndef UGIDS_EI
-#define UGIDS_EI extern inline
-#endif
-
 /* A structure holding a set of the common various types of ids.  */
 struct ugids
 {
@@ -48,50 +44,16 @@ struct ugids
 struct ugids *make_ugids ();
 
 /* Free all resources used by UGIDS except UGIDS itself.  */
-UGIDS_EI void
-ugids_fini (struct ugids *ugids)
-{
-  idvec_fini (&ugids->eff_uids);
-  idvec_fini (&ugids->eff_gids);
-  idvec_fini (&ugids->avail_uids);
-  idvec_fini (&ugids->avail_gids);
-  idvec_fini (&ugids->imp_eff_gids);
-  idvec_fini (&ugids->imp_avail_gids);
-}
+void ugids_fini (struct ugids *ugids);
 
 /* Free all resources used by UGIDS.  */
-UGIDS_EI void
-ugids_free (struct ugids *ugids)
-{
-  ugids_fini (ugids);
-  free (ugids);
-}
+void ugids_free (struct ugids *ugids);
 
 /* Return true if UGIDS contains no ids.  */
-UGIDS_EI int
-ugids_is_empty (const struct ugids *ugids)
-{
-  /* We needn't test the imp_*_gids vectors because they are subsets of the
-     corresponding *_gids vectors.  */
-  return
-    idvec_is_empty (&ugids->eff_uids)
-    && idvec_is_empty (&ugids->eff_gids)
-    && idvec_is_empty (&ugids->avail_uids)
-    && idvec_is_empty (&ugids->avail_gids);
-}
+int ugids_is_empty (const struct ugids *ugids);
 
 /* Free all resources used by UGIDS except UGIDS itself.  */
-UGIDS_EI int
-ugids_equal (const struct ugids *ugids1, const struct ugids *ugids2)
-{
-  return
-    idvec_equal (&ugids1->eff_uids, &ugids2->eff_uids)
-    && idvec_equal (&ugids1->eff_gids, &ugids2->eff_gids)
-    && idvec_equal (&ugids1->avail_uids, &ugids2->avail_uids)
-    && idvec_equal (&ugids1->avail_gids, &ugids2->avail_gids)
-    && idvec_equal (&ugids1->imp_eff_gids, &ugids2->imp_eff_gids)
-    && idvec_equal (&ugids1->imp_avail_gids, &ugids2->imp_avail_gids);
-}
+int ugids_equal (const struct ugids *ugids1, const struct ugids *ugids2);
 
 /* Add all ids in NEW to UGIDS.  */
 error_t ugids_merge (struct ugids *ugids, const struct ugids *new);
@@ -210,5 +172,58 @@ struct ugids_argp_params
 
 /* A parser for selecting a set of ugids.  */
 extern struct argp ugids_argp;
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef UGIDS_H_EXTERN_INLINE
+#  define UGIDS_H_EXTERN_INLINE __extern_inline
+# endif
+
+UGIDS_H_EXTERN_INLINE void
+ugids_fini (struct ugids *ugids)
+{
+  idvec_fini (&ugids->eff_uids);
+  idvec_fini (&ugids->eff_gids);
+  idvec_fini (&ugids->avail_uids);
+  idvec_fini (&ugids->avail_gids);
+  idvec_fini (&ugids->imp_eff_gids);
+  idvec_fini (&ugids->imp_avail_gids);
+}
+
+UGIDS_H_EXTERN_INLINE void
+ugids_free (struct ugids *ugids)
+{
+  ugids_fini (ugids);
+  free (ugids);
+}
+
+UGIDS_H_EXTERN_INLINE int
+ugids_is_empty (const struct ugids *ugids)
+{
+  /* We needn't test the imp_*_gids vectors because they are subsets of the
+     corresponding *_gids vectors.  */
+  return
+    idvec_is_empty (&ugids->eff_uids)
+    && idvec_is_empty (&ugids->eff_gids)
+    && idvec_is_empty (&ugids->avail_uids)
+    && idvec_is_empty (&ugids->avail_gids);
+}
+
+UGIDS_H_EXTERN_INLINE int
+ugids_equal (const struct ugids *ugids1, const struct ugids *ugids2)
+{
+  return
+    idvec_equal (&ugids1->eff_uids, &ugids2->eff_uids)
+    && idvec_equal (&ugids1->eff_gids, &ugids2->eff_gids)
+    && idvec_equal (&ugids1->avail_uids, &ugids2->avail_uids)
+    && idvec_equal (&ugids1->avail_gids, &ugids2->avail_gids)
+    && idvec_equal (&ugids1->imp_eff_gids, &ugids2->imp_eff_gids)
+    && idvec_equal (&ugids1->imp_avail_gids, &ugids2->imp_avail_gids);
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __UGIDS_H__ */

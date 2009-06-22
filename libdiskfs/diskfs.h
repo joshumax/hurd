@@ -28,10 +28,6 @@
 #include <hurd/iohelp.h>
 #include <idvec.h>
 
-#ifndef DISKFS_EXTERN_INLINE
-#define DISKFS_EXTERN_INLINE extern inline
-#endif
-
 /* Each user port referring to a file points to one of these
    (with the aid of the ports library).  */
 struct protid
@@ -784,21 +780,12 @@ void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 /* Called by MiG to translate ports into struct protid *.
    fsmutations.h arranges for this to happen for the io and
    fs interfaces. */
-DISKFS_EXTERN_INLINE struct protid *
-diskfs_begin_using_protid_port (file_t port)
-{
-  return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
-}
+struct protid *diskfs_begin_using_protid_port (file_t port);
 
 /* Called by MiG after server routines have been run; this
    balances begin_using_protid_port, and is arranged for the io
    and fs interfaces by fsmutations.h. */
-DISKFS_EXTERN_INLINE void
-diskfs_end_using_protid_port (struct protid *cred)
-{
-  if (cred)
-    ports_port_deref (cred);
-}
+void diskfs_end_using_protid_port (struct protid *cred);
 
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is
@@ -978,5 +965,29 @@ struct store *diskfs_init_main (struct argp *startup_argp,
 
 /* Make errors go somewhere reasonable.  */
 void diskfs_console_stdio ();
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef DISKFS_H_EXTERN_INLINE
+#  define DISKFS_H_EXTERN_INLINE __extern_inline
+# endif
+
+DISKFS_H_EXTERN_INLINE struct protid *
+diskfs_begin_using_protid_port (file_t port)
+{
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
+}
+
+DISKFS_H_EXTERN_INLINE void
+diskfs_end_using_protid_port (struct protid *cred)
+{
+  if (cred)
+    ports_port_deref (cred);
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif	/* hurd/diskfs.h */

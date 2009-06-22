@@ -1,7 +1,10 @@
 /* Store I/O
 
-   Copyright (C) 1995,96,97,98,99,2001,02,04,05 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004, 2005, 2009
+   Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.org>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -33,11 +36,6 @@
 #include <mach.h>
 #include <device/device.h>
 #include <hurd/hurd_types.h>
-
-#ifndef STORE_EI
-#define STORE_EI extern inline
-#endif
-
 
 /* Type for addresses inside the store.  */
 typedef off64_t store_offset_t;
@@ -272,16 +270,7 @@ error_t store_clear_child_flags (struct store *store, int flags);
 
 /* Returns true if STORE can safely be returned to a user who has accessed it
    via a node using OPEN_FLAGS, without compromising security.  */
-STORE_EI int
-store_is_securely_returnable (struct store *store, int open_flags)
-{
-  int flags = store->flags;
-  return
-    (flags & (STORE_INNOCUOUS | STORE_INACTIVE))
-    || ((flags & STORE_ENFORCED)
-	&& (((open_flags & O_ACCMODE) == O_RDWR)
-	    || (flags & STORE_HARD_READONLY)));
-}
+int store_is_securely_returnable (struct store *store, int open_flags);
 
 /* Fills in the values of the various fields in STORE that are derivable from
    the set of runs & the block size.  */
@@ -787,6 +776,27 @@ error_t store_parsed_append_args (const struct store_parsed *parsed,
 /* Make a string describing PARSED, and return it in malloced storage in
    NAME.  */
 error_t store_parsed_name (const struct store_parsed *parsed, char **name);
+
+/* Inlining optimizations.  */
 
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef STORE_H_EXTERN_INLINE
+#  define STORE_H_EXTERN_INLINE __extern_inline
+# endif
+
+STORE_H_EXTERN_INLINE int
+store_is_securely_returnable (struct store *store, int open_flags)
+{
+  int flags = store->flags;
+  return
+    (flags & (STORE_INNOCUOUS | STORE_INACTIVE))
+    || ((flags & STORE_ENFORCED)
+	&& (((open_flags & O_ACCMODE) == O_RDWR)
+	    || (flags & STORE_HARD_READONLY)));
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __STORE_H__ */

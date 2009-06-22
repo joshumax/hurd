@@ -1,6 +1,6 @@
 /* Simple reader/writer locks.
 
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 2009 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -31,12 +31,34 @@ struct rwlock
   int readers_waiting;
 };
 
-#ifndef RWLOCK_EI
-#define RWLOCK_EI extern inline
-#endif
-
 /* Get a reader lock on reader-writer lock LOCK for disknode DN */
-RWLOCK_EI void
+void rwlock_reader_lock (struct rwlock *lock);
+
+/* Get a writer lock on reader-writer lock LOCK for disknode DN */
+void rwlock_writer_lock (struct rwlock *lock);
+
+/* Release a reader lock on reader-writer lock LOCK for disknode DN */
+void rwlock_reader_unlock (struct rwlock *lock);
+
+/* Release a writer lock on reader-writer lock LOCK for disknode DN */
+void rwlock_writer_unlock (struct rwlock *lock);
+
+/* Initialize reader-writer lock LOCK */
+void rwlock_init (struct rwlock *lock);
+
+#define RWLOCK_INITIALIZER \
+  { MUTEX_INITIALIZER, CONDITION_INITIALIZER, 0, 0, 0 }
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef RWLOCK_H_EXTERN_INLINE
+#  define RWLOCK_H_EXTERN_INLINE __extern_inline
+# endif
+
+RWLOCK_H_EXTERN_INLINE void
 rwlock_reader_lock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -52,8 +74,7 @@ rwlock_reader_lock (struct rwlock *lock)
   mutex_unlock (&lock->master);
 }
 
-/* Get a writer lock on reader-writer lock LOCK for disknode DN */
-RWLOCK_EI void
+RWLOCK_H_EXTERN_INLINE void
 rwlock_writer_lock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -69,8 +90,7 @@ rwlock_writer_lock (struct rwlock *lock)
   mutex_unlock (&lock->master);
 }
 
-/* Release a reader lock on reader-writer lock LOCK for disknode DN */
-RWLOCK_EI void
+RWLOCK_H_EXTERN_INLINE void
 rwlock_reader_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -81,8 +101,7 @@ rwlock_reader_unlock (struct rwlock *lock)
   mutex_unlock (&lock->master);
 }
 
-/* Release a writer lock on reader-writer lock LOCK for disknode DN */
-RWLOCK_EI void
+RWLOCK_H_EXTERN_INLINE void
 rwlock_writer_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
@@ -93,8 +112,7 @@ rwlock_writer_unlock (struct rwlock *lock)
   mutex_unlock (&lock->master);
 }
 
-/* Initialize reader-writer lock LOCK */
-RWLOCK_EI void
+RWLOCK_H_EXTERN_INLINE void
 rwlock_init (struct rwlock *lock)
 {
   mutex_init (&lock->master);
@@ -104,8 +122,6 @@ rwlock_init (struct rwlock *lock)
   lock->writers_waiting = 0;
 }
 
-#define RWLOCK_INITIALIZER \
-  { MUTEX_INITIALIZER, CONDITION_INITIALIZER, 0, 0, 0 }
-
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* rwlock.h */

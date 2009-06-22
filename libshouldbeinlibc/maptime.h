@@ -1,6 +1,6 @@
 /* Support for mach's mapped time
 
-   Copyright (C) 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2000, 2007, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -21,10 +21,6 @@
 #ifndef __MAPTIME_H__
 #define __MAPTIME_H__
 
-#ifndef MAPTIME_EI
-#define MAPTIME_EI extern inline
-#endif
-
 #include <mach/time_value.h>
 #include <sys/time.h>
 #include <errno.h>
@@ -38,7 +34,18 @@ error_t maptime_map (int use_mach_dev, char *dev_name,
 		     volatile struct mapped_time_value **mtime);
 
 /* Read the current time from MTIME into TV.  This should be very fast.  */
-MAPTIME_EI void
+void maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv);
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef MAPTIME_H_EXTERN_INLINE
+#  define MAPTIME_H_EXTERN_INLINE __extern_inline
+# endif
+
+MAPTIME_H_EXTERN_INLINE void
 maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv)
 {
   do
@@ -48,5 +55,7 @@ maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv)
     }
   while (tv->tv_sec != mtime->check_seconds);
 }
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __MAPTIME_H__ */

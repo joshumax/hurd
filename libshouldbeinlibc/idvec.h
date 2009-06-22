@@ -1,6 +1,8 @@
 /* Routines for vectors of uids/gids
 
-   Copyright (C) 1995,96,97,99,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2009 Free Software Foundation,
+   Inc.
+
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -25,10 +27,6 @@
 #include <errno.h>
 #include <string.h>
 
-#ifndef IDVEC_EI
-#define IDVEC_EI extern inline
-#endif
-
 struct idvec
 {
   uid_t *ids;
@@ -51,28 +49,13 @@ void idvec_free_wrapper (struct idvec *idvec);
 void idvec_free (struct idvec *idvec);
 
 /* Mark IDVEC as not containing any ids.  */
-IDVEC_EI void
-idvec_clear (struct idvec *idvec)
-{
-  idvec->num = 0;
-}
+void idvec_clear (struct idvec *idvec);
 
 /* Returns true if IDVEC contains no ids.  */
-IDVEC_EI int
-idvec_is_empty (const struct idvec *idvec)
-{
-  return idvec->num == 0;
-}
+int idvec_is_empty (const struct idvec *idvec);
 
 /* Return true if IDVEC1 has contents identical to IDVEC2.  */
-IDVEC_EI int
-idvec_equal (const struct idvec *idvec1, const struct idvec *idvec2)
-{
-  size_t num = idvec1->num;
-  return idvec2->num == num
-    && (num == 0
-	|| memcmp (idvec1->ids, idvec2->ids, num * sizeof *idvec1->ids) == 0);
-}
+int idvec_equal (const struct idvec *idvec1, const struct idvec *idvec2);
 
 /* Ensure that IDVEC has enough spaced allocated to hold NUM ids, thus
    ensuring that any subsequent ids added won't return a memory allocation
@@ -88,11 +71,7 @@ error_t idvec_grow (struct idvec *idvec, unsigned inc);
 int idvec_tail_contains (const struct idvec *idvec, unsigned pos, uid_t id);
 
 /* Returns true if IDVEC contains ID.  */
-IDVEC_EI int
-idvec_contains (const struct idvec *idvec, uid_t id)
-{
-  return idvec_tail_contains (idvec, 0, id);
-}
+int idvec_contains (const struct idvec *idvec, uid_t id);
 
 /* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
    enough memory, or 0.  */
@@ -214,5 +193,43 @@ char *idvec_uids_rep (const struct idvec *idvec,
 char *idvec_gids_rep (const struct idvec *idvec,
 		      int show_values, int show_names,
 		      const char *sep);
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef IDVEC_H_EXTERN_INLINE
+#  define IDVEC_H_EXTERN_INLINE __extern_inline
+# endif
+
+IDVEC_H_EXTERN_INLINE void
+idvec_clear (struct idvec *idvec)
+{
+  idvec->num = 0;
+}
+
+IDVEC_H_EXTERN_INLINE int
+idvec_is_empty (const struct idvec *idvec)
+{
+  return idvec->num == 0;
+}
+
+IDVEC_H_EXTERN_INLINE int
+idvec_equal (const struct idvec *idvec1, const struct idvec *idvec2)
+{
+  size_t num = idvec1->num;
+  return idvec2->num == num
+    && (num == 0
+	|| memcmp (idvec1->ids, idvec2->ids, num * sizeof *idvec1->ids) == 0);
+}
+
+IDVEC_H_EXTERN_INLINE int
+idvec_contains (const struct idvec *idvec, uid_t id)
+{
+  return idvec_tail_contains (idvec, 0, id);
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __IDVEC_H__ */

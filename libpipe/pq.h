@@ -1,6 +1,6 @@
 /* Packet queues
 
-   Copyright (C) 1995, 1996, 2006 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2006, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -25,11 +25,6 @@
 #include <stddef.h>		/* for size_t */
 #include <string.h>
 #include <mach/mach.h>
-
-#ifndef PQ_EI
-#define PQ_EI extern inline
-#endif
-
 
 struct packet
 {
@@ -71,11 +66,7 @@ error_t packet_set_ports (struct packet *packet,
 void packet_dealloc_ports (struct packet *packet);
 
 /* Returns the number of bytes of data in PACKET.  */
-PQ_EI size_t
-packet_readable (struct packet *packet)
-{
-  return packet->buf_end - packet->buf_start;
-}
+size_t packet_readable (struct packet *packet);
 
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
    and return the amount appended in AMOUNT if that's not the null pointer.  */
@@ -96,12 +87,7 @@ error_t packet_read_ports (struct packet *packet,
 
 /* Return the source addressd in PACKET in SOURCE, deallocating it from
    PACKET.  */
-PQ_EI void
-packet_read_source (struct packet *packet, void **source)
-{
-  *source = packet->source;
-  packet->source = 0;
-}
+void packet_read_source (struct packet *packet, void **source);
 
 /* The packet size above which we start to do things differently to avoid
    copying around data.  */
@@ -127,7 +113,82 @@ error_t packet_realloc (struct packet *packet, size_t new_len);
 
 /* Try to make space in PACKET for AMOUNT more bytes without growing the
    buffer, returning true if we could do it.  */
-PQ_EI int
+int packet_fit (struct packet *packet, size_t amount);
+
+/* Make sure that PACKET has room for at least AMOUNT more bytes, or return
+   the reason why not.  */
+error_t packet_ensure (struct packet *packet, size_t amount);
+
+/* Make sure that PACKET has room for at least AMOUNT more bytes, *only* if
+   it can be done efficiently, e.g., the packet can be grown in place, rather
+   than moving the contents (or there is little enough data so that copying
+   it is OK).  True is returned if room was made, false otherwise.  */
+int packet_ensure_efficiently (struct packet *packet, size_t amount);
+
+struct pq
+{
+  struct packet *head, *tail;	/* Packet queue */
+  struct packet *free;		/* Free packets */
+};
+
+/* Pushes a new packet of type TYPE and source SOURCE, and returns it, or
+   NULL if there was an allocation error.  SOURCE is returned to readers of
+   the packet, or deallocated by calling pipe_dealloc_addr.  */
+struct packet *pq_queue (struct pq *pq, unsigned type, void *source);
+
+/* Returns the tail of the packet queue PQ, which may mean pushing a new
+   packet if TYPE and SOURCE do not match the current tail, or this is the
+   first packet.  */
+struct packet *pq_tail (struct pq *pq, unsigned type, void *source);
+
+/* Remove the first packet (if any) in PQ, deallocating any resources it
+   holds.  True is returned if a packet was found, false otherwise.  */
+int pq_dequeue (struct pq *pq);
+
+/* Returns the next available packet in PQ, without removing it from the
+   queue, or NULL if there is none, or the next packet isn't appropiate.  
+   A packet is inappropiate if SOURCE is non-NULL its source field doesn't
+   match it, or TYPE is non-NULL and the packet's type field doesn't match
+   it.  */
+struct packet *pq_head (struct pq *pq, unsigned type, void *source);
+
+/* The same as pq_head, but first discards the head of the queue.  */
+struct packet *pq_next (struct pq *pq, unsigned type, void *source);
+
+/* Dequeues all packets in PQ.  */
+void pq_drain (struct pq *pq);
+
+/* Create a new packet queue, returning it in PQ.  The only possible error is
+   ENOMEM.  */
+error_t pq_create (struct pq **pq);
+
+/* Frees PQ and any resources it holds, including deallocating any ports in
+   packets left in the queue.  */
+void pq_free (struct pq *pq);
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef PQ_H_EXTERN_INLINE
+#  define PQ_H_EXTERN_INLINE __extern_inline
+# endif
+
+PQ_H_EXTERN_INLINE size_t
+packet_readable (struct packet *packet)
+{
+  return packet->buf_end - packet->buf_start;
+}
+
+PQ_H_EXTERN_INLINE void
+packet_read_source (struct packet *packet, void **source)
+{
+  *source = packet->source;
+  packet->source = 0;
+}
+
+PQ_H_EXTERN_INLINE int
 packet_fit (struct packet *packet, size_t amount)
 {
   char *buf = packet->buf, *end = packet->buf_end;
@@ -157,9 +218,7 @@ packet_fit (struct packet *packet, size_t amount)
   return 1;
 }
 
-/* Make sure that PACKET has room for at least AMOUNT more bytes, or return
-   the reason why not.  */
-PQ_EI error_t
+PQ_H_EXTERN_INLINE error_t
 packet_ensure (struct packet *packet, size_t amount)
 {
   if (! packet_fit (packet, amount))
@@ -172,11 +231,7 @@ packet_ensure (struct packet *packet, size_t amount)
   return 0;
 }
 
-/* Make sure that PACKET has room for at least AMOUNT more bytes, *only* if
-   it can be done efficiently, e.g., the packet can be grown in place, rather
-   than moving the contents (or there is little enough data so that copying
-   it is OK).  True is returned if room was made, false otherwise.  */
-PQ_EI int
+PQ_H_EXTERN_INLINE int
 packet_ensure_efficiently (struct packet *packet, size_t amount)
 {
   if (! packet_fit (packet, amount))
@@ -189,22 +244,8 @@ packet_ensure_efficiently (struct packet *packet, size_t amount)
     }
   return 0;
 }
-
-struct pq
-{
-  struct packet *head, *tail;	/* Packet queue */
-  struct packet *free;		/* Free packets */
-};
 
-/* Pushes a new packet of type TYPE and source SOURCE, and returns it, or
-   NULL if there was an allocation error.  SOURCE is returned to readers of
-   the packet, or deallocated by calling pipe_dealloc_addr.  */
-struct packet *pq_queue (struct pq *pq, unsigned type, void *source);
-
-/* Returns the tail of the packet queue PQ, which may mean pushing a new
-   packet if TYPE and SOURCE do not match the current tail, or this is the
-   first packet.  */
-PQ_EI struct packet *
+PQ_H_EXTERN_INLINE struct packet *
 pq_tail (struct pq *pq, unsigned type, void *source)
 {
   struct packet *tail = pq->tail;
@@ -214,16 +255,7 @@ pq_tail (struct pq *pq, unsigned type, void *source)
   return tail;
 }
 
-/* Remove the first packet (if any) in PQ, deallocating any resources it
-   holds.  True is returned if a packet was found, false otherwise.  */
-int pq_dequeue (struct pq *pq);
-
-/* Returns the next available packet in PQ, without removing it from the
-   queue, or NULL if there is none, or the next packet isn't appropiate.  
-   A packet is inappropiate if SOURCE is non-NULL its source field doesn't
-   match it, or TYPE is non-NULL and the packet's type field doesn't match
-   it.  */
-PQ_EI struct packet *
+PQ_H_EXTERN_INLINE struct packet *
 pq_head (struct pq *pq, unsigned type, void *source)
 {
   struct packet *head = pq->head;
@@ -236,8 +268,7 @@ pq_head (struct pq *pq, unsigned type, void *source)
   return head;
 }
 
-/* The same as pq_head, but first discards the head of the queue.  */
-PQ_EI struct packet *
+PQ_H_EXTERN_INLINE struct packet *
 pq_next (struct pq *pq, unsigned type, void *source)
 {
   if (!pq->head)
@@ -246,15 +277,6 @@ pq_next (struct pq *pq, unsigned type, void *source)
   return pq_head (pq, type, source);
 }
 
-/* Dequeues all packets in PQ.  */
-void pq_drain (struct pq *pq);
-
-/* Create a new packet queue, returning it in PQ.  The only possible error is
-   ENOMEM.  */
-error_t pq_create (struct pq **pq);
-
-/* Frees PQ and any resources it holds, including deallocating any ports in
-   packets left in the queue.  */
-void pq_free (struct pq *pq);
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __PQ_H__ */

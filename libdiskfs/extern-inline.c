@@ -1,5 +1,6 @@
 /* Run time callable functions for extern inlines.
-   Copyright (C) 2001 Free Software Foundation, Inc.
+
+   Copyright (C) 2001, 2009 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,6 +16,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#define DISKFS_EXTERN_INLINE
-
+#define __USE_EXTERN_INLINES
+#define DISKFS_H_EXTERN_INLINE
 #include "diskfs.h"

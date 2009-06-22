@@ -1,6 +1,6 @@
 /* Real definitions for extern inline functions in ugids.h
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -19,7 +19,6 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-#define UGIDS_EI
-#undef __OPTIMIZE__
-#define __OPTIMIZE__	1
+#define __USE_EXTERN_INLINES
+#define UGIDS_H_EXTERN_INLINE
 #include "ugids.h"

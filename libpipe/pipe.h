@@ -1,6 +1,6 @@
 /* Generic one-way pipes
 
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -26,11 +26,6 @@
 #include <cthreads.h>		/* For conditions & mutexes */
 
 #include "pq.h"
-
-#ifndef PIPE_EI
-#define PIPE_EI extern inline
-#endif
-
 
 /* A description of a class of pipes and how to operate on them.  */
 struct pipe_class
@@ -109,99 +104,35 @@ struct pipe
 
 /* Returns the number of characters quickly readable from PIPE.  If DATA_ONLY
    is true, then `control' packets are ignored.  */
-PIPE_EI size_t
-pipe_readable (struct pipe *pipe, int data_only)
-{
-  size_t readable = 0;
-  struct pq *pq = pipe->queue;
-  struct packet *packet = pq_head (pq, PACKET_TYPE_ANY, NULL);
-  while (packet)
-    {
-      if (packet->type == PACKET_TYPE_DATA)
-	readable += packet_readable (packet);
-      packet = packet->next;
-    }
-  return readable;
-}
+size_t pipe_readable (struct pipe *pipe, int data_only);
 
 /* Returns true if there's any data available in PIPE.  If DATA_ONLY is true,
    then `control' packets are ignored.  Note that this is different than
    (pipe_readable (PIPE) > 0) in the case where a control packet containing
    only ports is present.  */
-PIPE_EI int
-pipe_is_readable (struct pipe *pipe, int data_only)
-{
-  struct pq *pq = pipe->queue;
-  struct packet *packet = pq_head (pq, PACKET_TYPE_ANY, NULL);
-  if (data_only)
-    while (packet && packet->type == PACKET_TYPE_CONTROL)
-      packet = packet->next;
-  return (packet != NULL);
-}
+int pipe_is_readable (struct pipe *pipe, int data_only);
 
 /* Waits for PIPE to be readable, or an error to occurr.  If NOBLOCK is true,
    this operation will return EWOULDBLOCK instead of blocking when no data is
    immediately available.  If DATA_ONLY is true, then `control' packets are
    ignored.  */
-PIPE_EI error_t
-pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
-{
-  while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
-    {
-      if (noblock)
-	return EWOULDBLOCK;
-      if (hurd_condition_wait (&pipe->pending_reads, &pipe->lock))
-	return EINTR;
-    }
-  return 0;
-}
+error_t pipe_wait_readable (struct pipe *pipe, int noblock, int data_only);
 
 /* Waits for PIPE to be readable, or an error to occurr.  This call only
    returns once threads waiting using pipe_wait_readable have been woken and
    given a chance to read, and if there is still data available thereafter.
    If DATA_ONLY is true, then `control' packets are ignored.  */
-PIPE_EI error_t
-pipe_select_readable (struct pipe *pipe, int data_only)
-{
-  while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
-    if (hurd_condition_wait (&pipe->pending_read_selects, &pipe->lock))
-      return EINTR;
-  return 0;
-}
+error_t pipe_select_readable (struct pipe *pipe, int data_only);
 
 /* Block until data can be written to PIPE.  If NOBLOCK is true, then
    EWOULDBLOCK is returned instead of blocking if this can't be done
    immediately.  */
-PIPE_EI error_t
-pipe_wait_writable (struct pipe *pipe, int noblock)
-{
-  size_t limit = pipe->write_limit;
-  if (pipe->flags & PIPE_BROKEN)
-    return EPIPE;
-  while (pipe_readable (pipe, 1) >= limit)
-    {
-      if (noblock)
-	return EWOULDBLOCK;
-      if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
-	return EINTR;
-      if (pipe->flags & PIPE_BROKEN)
-	return EPIPE;
-    }
-  return 0;
-}
+error_t pipe_wait_writable (struct pipe *pipe, int noblock);
 
 /* Block until some data can be written to PIPE.  This call only returns once
    threads waiting using pipe_wait_writable have been woken and given a
    chance to write, and if there is still space available thereafter.  */
-PIPE_EI error_t
-pipe_select_writable (struct pipe *pipe)
-{
-  size_t limit = pipe->write_limit;
-  while (! (pipe->flags & PIPE_BROKEN) && pipe_readable (pipe, 1) >= limit)
-    if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
-      return EINTR;
-  return 0;
-}
+error_t pipe_select_writable (struct pipe *pipe);
 
 /* Creates a new pipe of class CLASS and returns it in RESULT.  */
 error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
@@ -224,85 +155,35 @@ void _pipe_no_readers (struct pipe *pipe);
 void _pipe_no_writers (struct pipe *pipe);
 
 /* Lock PIPE and increment its readers count.  */
-PIPE_EI void
-pipe_acquire_reader (struct pipe *pipe)
-{
-  mutex_lock (&pipe->lock);
-  if (pipe->readers++ == 0)
-    _pipe_first_reader (pipe);
-}
+void pipe_acquire_reader (struct pipe *pipe);
 
 /* Lock PIPE and increment its writers count.  */
-PIPE_EI void
-pipe_acquire_writer (struct pipe *pipe)
-{
-  mutex_lock (&pipe->lock);
-  if (pipe->writers++ == 0)
-    _pipe_first_writer (pipe);
-}
+void pipe_acquire_writer (struct pipe *pipe);
 
 /* Decrement PIPE's (which should be locked) reader count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-PIPE_EI void
-pipe_release_reader (struct pipe *pipe)
-{
-  if (--pipe->readers == 0)
-    _pipe_no_readers (pipe);
-  else
-    mutex_unlock (&pipe->lock);
-}
+void pipe_release_reader (struct pipe *pipe);
 
 /* Decrement PIPE's (which should be locked) writer count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-PIPE_EI void
-pipe_release_writer (struct pipe *pipe)
-{
-  if (--pipe->writers == 0)
-    _pipe_no_writers (pipe);
-  else
-    mutex_unlock (&pipe->lock);
-}
+void pipe_release_writer (struct pipe *pipe);
 
 /* Increment PIPE's reader count.  PIPE should be unlocked.  */
-PIPE_EI void
-pipe_add_reader (struct pipe *pipe)
-{
-  pipe_acquire_reader (pipe);
-  mutex_unlock (&pipe->lock);
-}
+void pipe_add_reader (struct pipe *pipe);
 
 /* Increment PIPE's writer count.  PIPE should be unlocked.  */
-PIPE_EI void
-pipe_add_writer (struct pipe *pipe)
-{
-  pipe_acquire_writer (pipe);
-  mutex_unlock (&pipe->lock);
-}
+void pipe_add_writer (struct pipe *pipe);
 
 /* Decrement PIPE's (which should be unlocked) reader count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-PIPE_EI void
-pipe_remove_reader (struct pipe *pipe)
-{
-  mutex_lock (&pipe->lock);
-  pipe_release_reader (pipe);
-}
+void pipe_remove_reader (struct pipe *pipe);
 
 /* Decrement PIPE's (which should be unlocked) writer count and unlock it.  If
    there are no more refs to PIPE, it will be destroyed.  */
-PIPE_EI void
-pipe_remove_writer (struct pipe *pipe)
-{
-  mutex_lock (&pipe->lock);
-  pipe_release_writer (pipe);
-}
+void pipe_remove_writer (struct pipe *pipe);
 
 /* Empty out PIPE of any data.  PIPE should be locked.  */
-PIPE_EI void
-pipe_drain (struct pipe *pipe)
-{
-  pq_drain (pipe->queue);
-}
+void pipe_drain (struct pipe *pipe);
 
 /* Writes up to LEN bytes of DATA, to PIPE, which should be locked, and
    returns the amount written in AMOUNT.  If present, the information in
@@ -377,5 +258,160 @@ error_t pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
    function taking a non-NULL source address and deallocating it.  It
    defaults to calling ports_port_deref.  */
 void pipe_dealloc_addr (void *addr);
+
+/* Inlining optimizations.  */
+
+#include <features.h>
+
+#ifdef __USE_EXTERN_INLINES
+# ifndef PIPE_H_EXTERN_INLINE
+#  define PIPE_H_EXTERN_INLINE __extern_inline
+# endif
+
+PIPE_H_EXTERN_INLINE size_t
+pipe_readable (struct pipe *pipe, int data_only)
+{
+  size_t readable = 0;
+  struct pq *pq = pipe->queue;
+  struct packet *packet = pq_head (pq, PACKET_TYPE_ANY, NULL);
+  while (packet)
+    {
+      if (packet->type == PACKET_TYPE_DATA)
+	readable += packet_readable (packet);
+      packet = packet->next;
+    }
+  return readable;
+}
+
+PIPE_H_EXTERN_INLINE int
+pipe_is_readable (struct pipe *pipe, int data_only)
+{
+  struct pq *pq = pipe->queue;
+  struct packet *packet = pq_head (pq, PACKET_TYPE_ANY, NULL);
+  if (data_only)
+    while (packet && packet->type == PACKET_TYPE_CONTROL)
+      packet = packet->next;
+  return (packet != NULL);
+}
+
+PIPE_H_EXTERN_INLINE error_t
+pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
+{
+  while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
+    {
+      if (noblock)
+	return EWOULDBLOCK;
+      if (hurd_condition_wait (&pipe->pending_reads, &pipe->lock))
+	return EINTR;
+    }
+  return 0;
+}
+
+PIPE_H_EXTERN_INLINE error_t
+pipe_select_readable (struct pipe *pipe, int data_only)
+{
+  while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
+    if (hurd_condition_wait (&pipe->pending_read_selects, &pipe->lock))
+      return EINTR;
+  return 0;
+}
+
+PIPE_H_EXTERN_INLINE error_t
+pipe_wait_writable (struct pipe *pipe, int noblock)
+{
+  size_t limit = pipe->write_limit;
+  if (pipe->flags & PIPE_BROKEN)
+    return EPIPE;
+  while (pipe_readable (pipe, 1) >= limit)
+    {
+      if (noblock)
+	return EWOULDBLOCK;
+      if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+	return EINTR;
+      if (pipe->flags & PIPE_BROKEN)
+	return EPIPE;
+    }
+  return 0;
+}
+
+PIPE_H_EXTERN_INLINE error_t
+pipe_select_writable (struct pipe *pipe)
+{
+  size_t limit = pipe->write_limit;
+  while (! (pipe->flags & PIPE_BROKEN) && pipe_readable (pipe, 1) >= limit)
+    if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+      return EINTR;
+  return 0;
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_acquire_reader (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  if (pipe->readers++ == 0)
+    _pipe_first_reader (pipe);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_acquire_writer (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  if (pipe->writers++ == 0)
+    _pipe_first_writer (pipe);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_release_reader (struct pipe *pipe)
+{
+  if (--pipe->readers == 0)
+    _pipe_no_readers (pipe);
+  else
+    mutex_unlock (&pipe->lock);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_release_writer (struct pipe *pipe)
+{
+  if (--pipe->writers == 0)
+    _pipe_no_writers (pipe);
+  else
+    mutex_unlock (&pipe->lock);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_add_reader (struct pipe *pipe)
+{
+  pipe_acquire_reader (pipe);
+  mutex_unlock (&pipe->lock);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_add_writer (struct pipe *pipe)
+{
+  pipe_acquire_writer (pipe);
+  mutex_unlock (&pipe->lock);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_remove_reader (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  pipe_release_reader (pipe);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_remove_writer (struct pipe *pipe)
+{
+  mutex_lock (&pipe->lock);
+  pipe_release_writer (pipe);
+}
+
+PIPE_H_EXTERN_INLINE void
+pipe_drain (struct pipe *pipe)
+{
+  pq_drain (pipe->queue);
+}
+
+#endif /* __USE_EXTERN_INLINES */
 
 #endif /* __PIPE_H__ */
