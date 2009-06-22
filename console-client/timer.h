@@ -1,5 +1,7 @@
 /* timer.h - Interface to a timer module for Mach.
-   Copyright (C) 1995,96,2000,02 Free Software Foundation, Inc.
+
+   Copyright (C) 1995, 1996, 2000, 2002, 2009 Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG and Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
@@ -54,7 +56,7 @@ int timer_remove (struct timer_list *timer);
 /* Change the expiration time of the timer TIMER to EXPIRES.  */
 void timer_change (struct timer_list *timer, long long expires);
 
-extern inline long long
+static inline long long
 fetch_jiffies ()
 {
   extern volatile struct mapped_time_value *timer_mapped_time;

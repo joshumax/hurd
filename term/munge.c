@@ -1,5 +1,6 @@
 /*
-   Copyright (C) 1995, 1996, 1999, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2002, 2009 Free Software Foundation, Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -38,7 +39,7 @@ int output_psize;
 /* Actually drop character onto output queue.  This should be the
    only place where we actually enqueue characters on the output queue;
    it is responsible for keeping track of cursor positions. */
-inline void
+static inline void
 poutput (int c)
 {
   if (termflags & FLUSH_OUTPUT)

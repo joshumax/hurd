@@ -1,6 +1,6 @@
 /* libftpconn private definitions
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2009 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -20,10 +20,6 @@
 
 #ifndef __FTPCONN_PRIV_H__
 #define __FTPCONN_PRIV_H__
-
-#ifndef FTP_CONN_EI
-# define FTP_CONN_EI extern inline
-#endif
 
 /* Ftp reply codes.  */
 #define REPLY_DELAY	120	/* Service ready in nnn minutes */
@@ -61,7 +57,7 @@
 #define REPLY_IS_TRANSIENT(rep) ((rep) >= 400 && (rep) < 500)
 #define REPLY_IS_FAILURE(rep) ((rep) >= 500 && (rep) < 600)
 
-FTP_CONN_EI error_t
+static inline error_t
 unexpected_reply (struct ftp_conn *conn, int reply, const char *reply_txt,
 		  const error_t *poss_errs)
 {

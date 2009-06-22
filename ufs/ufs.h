@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994, 1995, 1996, 1997, 1999 Free Software Foundation
+   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2009 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -151,7 +151,7 @@ unsigned log2_dev_blocks_per_dev_bsize;
 /* Functions for looking inside disk_image */
 
 /* Convert an inode number to the dinode on disk. */
-extern inline struct dinode *
+static inline struct dinode *
 dino (ino_t inum)
 {
   return (struct dinode *)
@@ -161,28 +161,28 @@ dino (ino_t inum)
 }
 
 /* Convert a indirect block number to a daddr_t table. */
-extern inline daddr_t *
+static inline daddr_t *
 indir_block (daddr_t bno)
 {
   return (daddr_t *) (disk_image + fsaddr (sblock, bno));
 }
 
 /* Convert a cg number to the cylinder group. */
-extern inline struct cg *
+static inline struct cg *
 cg_locate (int ncg)
 {
   return (struct cg *) (disk_image + fsaddr (sblock, cgtod (sblock, ncg)));
 }
 
 /* Sync part of the disk */
-extern inline void
+static inline void
 sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
 {
   pager_sync_some (diskfs_disk_pager, fsaddr (sblock, blkno), nbytes, wait);
 }
 
 /* Sync an disk inode */
-extern inline void
+static inline void
 sync_dinode (int inum, int wait)
 {
   sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
@@ -190,21 +190,21 @@ sync_dinode (int inum, int wait)
 
 
 /* Functions for byte swapping */
-extern inline short
+static inline short
 swab_short (short arg)
 {
   return (((arg & 0xff) << 8)
 	  | ((arg & 0xff00) >> 8));
 }
 
-extern inline long
+static inline long
 swab_long (long arg)
 {
   return (((long) swab_short (arg & 0xffff) << 16)
 	  | swab_short ((arg & 0xffff0000) >> 16));
 }
 
-extern inline long long
+static inline long long
 swab_long_long (long long arg)
 {
   return (((long long) swab_long (arg & 0xffffffff) << 32)

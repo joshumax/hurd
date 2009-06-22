@@ -1,5 +1,7 @@
 /*
-   Copyright (C) 1995,96,98,99, 2002 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1998, 1999, 2002, 2009 Free Software Foundation,
+   Inc.
+
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -185,21 +187,21 @@ struct queue
 struct queue *create_queue (int size, int lowat, int hiwat);
 
 /* Return the number of characters in Q. */
-extern inline int
+static inline int
 qsize (struct queue *q)
 {
   return q->ce - q->cs;
 }
 
 /* Return nonzero if characters can be added to Q. */
-extern inline int
+static inline int
 qavail (struct queue *q)
 {
   return !q->susp;
 }
 
 /* Flush all the characters from Q. */
-extern inline void
+static inline void
 clear_queue (struct queue *q)
 {
   q->susp = 0;
@@ -211,7 +213,7 @@ clear_queue (struct queue *q)
 void call_asyncs (int dir);
 
 /* Return the next character off Q; leave the quoting bit on. */
-extern inline quoted_char
+static inline quoted_char
 dequeue_quote (struct queue *q)
 {
   int beep = 0;
@@ -234,7 +236,7 @@ dequeue_quote (struct queue *q)
 }
 
 /* Return the next character off Q. */
-extern inline char
+static inline char
 dequeue (struct queue *q)
 {
   return dequeue_quote (q) & ~QUEUE_QUOTE_MARK;
@@ -243,7 +245,7 @@ dequeue (struct queue *q)
 struct queue *reallocate_queue (struct queue *);
 
 /* Add C to *QP. */
-extern inline void
+static inline void
 enqueue_internal (struct queue **qp, quoted_char c)
 {
   struct queue *q = *qp;
@@ -265,28 +267,28 @@ enqueue_internal (struct queue **qp, quoted_char c)
 }
 
 /* Add C to *QP. */
-extern inline void
+static inline void
 enqueue (struct queue **qp, char c)
 {
   enqueue_internal (qp, c);
 }
 
 /* Add C to *QP, marking it with a quote. */
-extern inline void
+static inline void
 enqueue_quote (struct queue **qp, char c)
 {
   enqueue_internal (qp, c | QUEUE_QUOTE_MARK);
 }
 
 /* Return the unquoted version of a quoted_char. */
-extern inline char
+static inline char
 unquote_char (quoted_char c)
 {
   return c & ~QUEUE_QUOTE_MARK;
 }
 
 /* Tell if a quoted_char is actually quoted. */
-extern inline int
+static inline int
 char_quoted_p (quoted_char c)
 {
   return c & QUEUE_QUOTE_MARK;
@@ -294,7 +296,7 @@ char_quoted_p (quoted_char c)
 
 /* Remove the most recently enqueue character from Q; leaving
    the quote mark on. */
-extern inline short
+static inline short
 queue_erase (struct queue *q)
 {
   short answer;

@@ -1,6 +1,8 @@
 /* Common definitions for the ext2 filesystem translator
 
-   Copyright (C) 1995, 1996, 1999, 2002, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1999, 2002, 2004, 2009 Free Software Foundation,
+   Inc.
+
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -101,17 +103,13 @@ void pokel_flush (struct pokel *pokel);
 /* Transfer all regions from FROM to POKEL, which must have the same pager. */
 void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
-#ifndef EXT2FS_EI
-#define EXT2FS_EI extern inline
-#endif
-
 /* ---------------------------------------------------------------- */
 /* Bitmap routines.  */
 
 #include <stdint.h>
 
 /* Returns TRUE if bit NUM is set in BITMAP.  */
-EXT2FS_EI int
+static inline int
 test_bit (unsigned num, char *bitmap)
 {
   const uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
@@ -121,7 +119,7 @@ test_bit (unsigned num, char *bitmap)
 
 /* Sets bit NUM in BITMAP, and returns the previous state of the bit.  Unlike
    the linux version, this function is NOT atomic!  */
-EXT2FS_EI int
+static inline int
 set_bit (unsigned num, char *bitmap)
 {
   uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
@@ -131,7 +129,7 @@ set_bit (unsigned num, char *bitmap)
 
 /* Clears bit NUM in BITMAP, and returns the previous state of the bit.
    Unlike the linux version, this function is NOT atomic!  */
-EXT2FS_EI int
+static inline int
 clear_bit (unsigned num, char *bitmap)
 {
   uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
@@ -295,7 +293,7 @@ struct ext2_group_desc *group_desc_image;
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
 /* Convert an inode number to the dinode on disk. */
-EXT2FS_EI struct ext2_inode *
+static inline struct ext2_inode *
 dino (ino_t inum)
 {
   unsigned long inodes_per_group = sblock->s_inodes_per_group;
@@ -337,7 +335,7 @@ spin_lock_t modified_global_blocks_lock;
    think it may have been clean before (but we may not be sure).  Note that
    this isn't enough to cause the block to be synced; you must call
    record_global_poke to do that.  */
-EXT2FS_EI int
+static inline int
 global_block_modified (block_t block)
 {
   if (modified_global_blocks)
@@ -353,7 +351,7 @@ global_block_modified (block_t block)
 }
 
 /* This records a modification to a non-file block.  */
-EXT2FS_EI void
+static inline void
 record_global_poke (void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
@@ -362,7 +360,7 @@ record_global_poke (void *ptr)
 }
 
 /* This syncs a modification to a non-file block.  */
-EXT2FS_EI void
+static inline void
 sync_global_ptr (void *bptr, int wait)
 {
   vm_offset_t boffs = trunc_block (bptr_offs (bptr));
@@ -371,7 +369,7 @@ sync_global_ptr (void *bptr, int wait)
 }
 
 /* This records a modification to one of a file's indirect blocks.  */
-EXT2FS_EI void
+static inline void
 record_indir_poke (struct node *node, void *ptr)
 {
   int boffs = trunc_block (bptr_offs (ptr));
@@ -381,14 +379,14 @@ record_indir_poke (struct node *node, void *ptr)
 
 /* ---------------------------------------------------------------- */
 
-EXT2FS_EI void
+static inline void
 sync_global (int wait)
 {
   pokel_sync (&global_pokel, wait);
 }
 
 /* Sync all allocation information and node NP if diskfs_synchronous. */
-EXT2FS_EI void
+static inline void
 alloc_sync (struct node *np)
 {
   if (diskfs_synchronous)
