@@ -1,7 +1,9 @@
 /* Multiplexing filesystems by user
 
-   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2000, 2009 Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.ai.mit.edu>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -91,9 +93,5 @@ struct netnode
 
 error_t create_user_node (struct usermux *mux, struct usermux_name *name,
 			  struct passwd *pw, struct node **node);
-
-#ifndef USERMUX_EI
-# define USERMUX_EI extern inline
-#endif
 
 #endif /* __USERMUX_H__ */

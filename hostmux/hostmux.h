@@ -1,7 +1,9 @@
 /* Multiplexing filesystems by host
 
-   Copyright (C) 1997 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2009 Free Software Foundation, Inc.
+
    Written by Miles Bader <miles@gnu.ai.mit.edu>
+
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -84,9 +86,5 @@ struct netnode
      looked up. */
   struct hostmux_name *name;
 };
-
-#ifndef HOSTMUX_EI
-# define HOSTMUX_EI extern inline
-#endif
 
 #endif /* __HOSTMUX_H__ */
