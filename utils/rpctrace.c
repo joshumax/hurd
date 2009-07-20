@@ -632,10 +632,12 @@ print_contents (mach_msg_header_t *inp,
 		type->msgt_name = name;
 	    }
 	  else if (nelt > 0 && newtypes[0] != name)
-	    if (type->msgt_longform)
-	      lt->msgtl_name = newtypes[0];
-	    else
-	      type->msgt_name = newtypes[0];
+	    {
+	      if (type->msgt_longform)
+		lt->msgtl_name = newtypes[0];
+	      else
+		type->msgt_name = newtypes[0];
+	    }
 	}
       else
 	print_data (name, data, nelt, eltsize);
