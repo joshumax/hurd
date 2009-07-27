@@ -1,6 +1,6 @@
 #
 #   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006 Free Software Foundation, Inc.
+#   2006, 2009 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -31,8 +31,7 @@ DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
 # Hurd libraries
 lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libpager libfshelp libdiskfs libtrivfs libps \
-	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons \
-	      libpthread
+	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
