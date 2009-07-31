@@ -631,7 +631,7 @@ print_contents (mach_msg_header_t *inp,
 	      else
 		type->msgt_name = name;
 	    }
-	  else if (newtypes[0] != name)
+	  else if (nelt > 0 && newtypes[0] != name)
 	    if (type->msgt_longform)
 	      lt->msgtl_name = newtypes[0];
 	    else
