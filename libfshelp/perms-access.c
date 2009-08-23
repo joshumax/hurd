@@ -30,7 +30,7 @@ fshelp_access (struct stat *st, int op, struct iouser *user)
 {
   int gotit;
   if (idvec_contains (user->uids, 0))
-    gotit = (op != S_IEXEC) || (st->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
+    gotit = (op != S_IEXEC) || !S_ISREG(st->st_mode) || (st->st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
   else if (user->uids->num == 0 && (st->st_mode & S_IUSEUNK))
     gotit = st->st_mode & (op << S_IUNKSHIFT);
   else if (!fshelp_isowner (st, user))
