@@ -613,7 +613,7 @@ int tcp_v4_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 		return -ENETUNREACH;
 	}
 
-	dst_release(xchg(&sk->dst_cache, rt));
+	dst_release(xchg(&sk->dst_cache, &rt->u.dst));
 
 	buff = sock_wmalloc(sk, (MAX_HEADER + sk->prot->max_header),
 			    0, GFP_KERNEL);
