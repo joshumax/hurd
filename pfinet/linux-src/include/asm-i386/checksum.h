@@ -109,7 +109,8 @@ static inline unsigned short ip_fast_csum(unsigned char * iph,
 	   are modified, we must also specify them as outputs, or gcc
 	   will assume they contain their original values. */
 	: "=r" (sum), "=r" (iph), "=r" (ihl)
-	: "1" (iph), "2" (ihl));
+	: "1" (iph), "2" (ihl)
+	: "memory");
 	return(sum);
 }
 
@@ -185,7 +186,8 @@ static __inline__ unsigned short int csum_ipv6_magic(struct in6_addr *saddr,
 		"adcl $0, %0\n"
 		: "=&r" (sum)
 		: "r" (saddr), "r" (daddr), 
-		  "r"(htonl((__u32) (len))), "r"(htonl(proto)), "0"(sum));
+		  "r"(htonl((__u32) (len))), "r"(htonl(proto)), "0"(sum)
+		: "memory");
 
 	return csum_fold(sum);
 }
