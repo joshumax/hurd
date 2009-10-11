@@ -19,6 +19,7 @@
 
 #include "priv.h"
 #include "fs_S.h"
+#include <string.h>
 
 /* To avoid races in checkpath, and to prevent a directory from being
    simultaneously renamed by two processes, we serialize all renames of
@@ -43,6 +44,10 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* Verify that tocred really is a port to us. */
   if (! tocred)
     return EXDEV;
+
+  if (!strcmp (fromname, ".") || !strcmp (fromname, "..")
+   || !strcmp (toname,   ".") || !strcmp (toname,   ".."))
+    return EINVAL;
 
   if (tocred->po->shadow_root != fromcred->po->shadow_root)
     /* Same translator, but in different shadow trees.  */
