@@ -1,6 +1,6 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998, 1999, 2001, 2002, 2003, 2005, 2006
+   Copyright (C) 1998, 1999, 2001, 2002, 2003, 2005, 2006, 2009
    Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
@@ -631,7 +631,7 @@ print_contents (mach_msg_header_t *inp,
 	      else
 		type->msgt_name = name;
 	    }
-	  else if (newtypes[0] != name)
+	  else if (nelt > 0 && newtypes[0] != name)
 	    if (type->msgt_longform)
 	      lt->msgtl_name = newtypes[0];
 	    else
