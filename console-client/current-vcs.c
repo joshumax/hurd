@@ -167,7 +167,7 @@ static struct argp argp = {options, parse_opt, 0, doc};
 
 /* Initialize the current VCS driver.  */
 static error_t
-vcs_repeat_init (void **handle, int no_exit, int argc, char *argv[], int *next)
+current_vcs_init (void **handle, int no_exit, int argc, char *argv[], int *next)
 {
   error_t err;
   int pos = 1;
@@ -184,7 +184,7 @@ vcs_repeat_init (void **handle, int no_exit, int argc, char *argv[], int *next)
 }
 
 static error_t
-vcs_repeat_start (void *handle)
+current_vcs_start (void *handle)
 {
   error_t err;
   
@@ -206,7 +206,7 @@ vcs_repeat_start (void *handle)
 }
 
 static error_t
-vcs_repeat_fini (void *handle, int force)
+current_vcs_fini (void *handle, int force)
 {
   console_unregister_consnode (vcs_node);
   console_destroy_consnode (vcs_node);
@@ -214,10 +214,10 @@ vcs_repeat_fini (void *handle, int force)
 }
 
 
-struct driver_ops driver_vcs_repeat_ops =
+struct driver_ops driver_current_vcs_ops =
   {
-    vcs_repeat_init,
-    vcs_repeat_start,
-    vcs_repeat_fini
+    current_vcs_init,
+    current_vcs_start,
+    current_vcs_fini
   };
 
