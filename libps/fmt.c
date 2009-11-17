@@ -194,7 +194,9 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 		  while (*src != '\0' && *src != stop)
 		    src++;
 		}
-	      *src++ = '\0';	/* NUL terminhate NAME. */
+
+	      if (*src)
+	        *src++ = '\0';	/* NUL terminate NAME. */
 	    }
 	  else
 	    /* A gnu-style field spec: `NAME' or `NAME:TITLE'.  */
