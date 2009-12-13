@@ -108,7 +108,7 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 	  if (suid && !err)
 	    err = idvec_setid (eff_uids, avail_uids, uid, &_secure);
 	  if (sgid && !err)
-	    err = idvec_setid (eff_uids, avail_uids, gid, &_secure);
+	    err = idvec_setid (eff_gids, avail_gids, gid, &_secure);
 	  if (err)
 	    goto abandon_suid;
 
