@@ -327,7 +327,8 @@ S_auth_user_authenticate (struct authhandle *userauth,
 	  u.user = userauth;
 	  condition_init (&u.wakeup);
 	  ports_interrupt_self_on_port_death (userauth, rendezvous);
-	  if (hurd_condition_wait (&u.wakeup, &pending_lock))
+	  if (hurd_condition_wait (&u.wakeup, &pending_lock)
+	      && hurd_ihash_find (&pending_users, rendezvous))
 	    /* We were interrupted; remove our record.  */
 	    {
 	      hurd_ihash_locp_remove (&pending_users, u.locp);
@@ -408,7 +409,8 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 	  s.passthrough = newport;
 	  condition_init (&s.wakeup);
 	  ports_interrupt_self_on_port_death (serverauth, rendezvous);
-	  if (hurd_condition_wait (&s.wakeup, &pending_lock))
+	  if (hurd_condition_wait (&s.wakeup, &pending_lock)
+	      && hurd_ihash_find (&pending_servers, rendezvous))
 	    /* We were interrupted; remove our record.  */
 	    {
 	      hurd_ihash_locp_remove (&pending_servers, s.locp);
