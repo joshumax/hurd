@@ -1353,12 +1353,16 @@ S_msg_sig_post_untraced (mach_port_t msgport,
 			 mach_port_t reply, mach_msg_type_name_t reply_type,
 			 int signo, natural_t sigcode, mach_port_t refport)
 {
+  kern_return_t err;
+
   if (refport != mach_task_self ())
     return EPERM;
   mach_port_deallocate (mach_task_self (), refport);
 
   /* Reply immediately */
-  msg_sig_post_untraced_reply (reply, reply_type, 0);
+  err = msg_sig_post_untraced_reply (reply, reply_type, 0);
+  if (err)
+    return err;
 
   process_signal (signo);
   return MIG_NO_REPLY;
@@ -1369,12 +1373,16 @@ S_msg_sig_post (mach_port_t msgport,
 		mach_port_t reply, mach_msg_type_name_t reply_type,
 		int signo, natural_t sigcode, mach_port_t refport)
 {
+  kern_return_t err;
+
   if (refport != mach_task_self ())
     return EPERM;
   mach_port_deallocate (mach_task_self (), refport);
 
   /* Reply immediately */
-  msg_sig_post_reply (reply, reply_type, 0);
+  err = msg_sig_post_reply (reply, reply_type, 0);
+  if (err)
+    return err;
 
   process_signal (signo);
   return MIG_NO_REPLY;

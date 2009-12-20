@@ -367,6 +367,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 {
   struct pending *u;
   struct authhandle *user;
+  error_t err;
 
   if (! serverauth)
     return EOPNOTSUPP;
@@ -399,7 +400,6 @@ S_auth_server_authenticate (struct authhandle *serverauth,
       /* No pending user RPC for this port.
 	 Create a pending server RPC record.  */
       struct pending s;
-      error_t err;
 
       err = hurd_ihash_add (&pending_servers, rendezvous, &s);
       if (! err)
@@ -428,12 +428,16 @@ S_auth_server_authenticate (struct authhandle *serverauth,
   /* Extract the ids.  We must use a separate reply stub so
      we can deref the user auth handle after the reply uses its
      contents.  */
-  auth_server_authenticate_reply (reply, reply_type, 0,
-				  user->euids.ids, user->euids.num,
-				  user->auids.ids, user->auids.num,
-				  user->egids.ids, user->egids.num,
-				  user->agids.ids, user->agids.num);
+  err = auth_server_authenticate_reply (reply, reply_type, 0,
+					user->euids.ids, user->euids.num,
+					user->auids.ids, user->auids.num,
+					user->egids.ids, user->egids.num,
+					user->agids.ids, user->agids.num);
+
   ports_port_deref (user);
+  if (err)
+    return err;
+
   mach_port_deallocate (mach_task_self (), rendezvous);
   return MIG_NO_REPLY;
 }
