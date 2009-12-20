@@ -436,10 +436,9 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 					user->egids.ids, user->egids.num,
 					user->agids.ids, user->agids.num);
 
-  ports_port_deref (user);
   if (err)
-    return err;
-
+    mach_port_deallocate (mach_task_self (), reply);
+  ports_port_deref (user);
   mach_port_deallocate (mach_task_self (), rendezvous);
   return MIG_NO_REPLY;
 }
