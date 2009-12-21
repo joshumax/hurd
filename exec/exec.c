@@ -1884,8 +1884,6 @@ do_exec (file_t file,
 	  proc_reassign (proc, newtask);
 	  mach_port_deallocate (mach_task_self (), proc);
 	}
-
-      mach_port_deallocate (mach_task_self (), oldtask);
     }
 
   /* Make sure the proc server has the right idea of our identity. */
