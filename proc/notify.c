@@ -41,12 +41,10 @@ do_mach_notify_dead_name (mach_port_t notify,
 {
   struct proc *p;
 
-  /* Drop gratuitous extra reference that the notification creates. */
-  mach_port_deallocate (mach_task_self (), deadport);
-
   if (notify == generic_port)
     {
       check_dead_execdata_notify (deadport);
+      mach_port_deallocate (mach_task_self (), deadport);
       return 0;
     }
 
@@ -59,6 +57,7 @@ do_mach_notify_dead_name (mach_port_t notify,
     {
       process_has_exited (p);
       ports_port_deref (p);
+      mach_port_deallocate (mach_task_self (), deadport);
       return 0;
     }
   else
