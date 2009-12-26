@@ -127,12 +127,16 @@ check_hashbang (struct execdata *e,
 				    name, flags, 0, result);
     }
 
-  const char *page = map (e, 0, 2);
+  const char *page;
   char interp_buf[vm_page_size - 2 + 1];
+
+  e->error = 0;
+  page = map (e, 0, 2);
 
   if (!page)
     {
-      e->error = errno;
+      if (!e->error)
+	e->error = ENOEXEC;
       return;
     }
 
