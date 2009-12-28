@@ -474,6 +474,7 @@ S_proc_register_version (pstruct_t server,
 
   rebuild_uname ();
 out:
-  mach_port_deallocate (mach_task_self (), credential);
+  if (!err)
+    mach_port_deallocate (mach_task_self (), credential);
   return err;
 }
