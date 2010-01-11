@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # Make standard devices
 #
@@ -51,12 +51,12 @@ case  "$#" in 0)
   exit 1;;
 esac
 
-function cmd {
+cmd() {
   eval $ECHO "$@"
   eval $EXEC "$@"
 }
 
-function st {
+st() {
   local NODE="$1"
   local OWNER="$2"
   local PERM="$3"
@@ -68,7 +68,7 @@ function st {
   fi
 }
 
-function lose {
+lose() {
   local line
   for line; do
     echo 1>&2 "$0: $line"
@@ -76,7 +76,7 @@ function lose {
   exit 1
 }
 
-function mkdev {
+mkdev() {
   local I
   for I; do
     case $I in
@@ -120,7 +120,7 @@ function mkdev {
       # ptys
       [pt]ty[pqrstuvwxyzPQRS]?)
 	# Make one pty, both the master and slave halves.
-	local id="${I:3}"
+	local id="${I#???}"
 	st pty$id root 666 /hurd/term ${DEVDIR}/pty$id \
 				      pty-master ${DEVDIR}/tty$id
 	st tty$id root 666 /hurd/term ${DEVDIR}/tty$id \
