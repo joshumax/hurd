@@ -324,6 +324,28 @@ main(int argc, char *argv[])
 	  state->child_inputs[0] = &pids_argp_params;
 	  break;
 
+	case ARGP_KEY_SUCCESS:
+	  /* Select an explicit format string if FMT_STRING is a format
+	     name.  This is done here because parse_enum needs STATE.  */
+	  {
+	    const char *fmt_name (unsigned n)
+	      {
+		return
+		  n >= (sizeof output_fmts / sizeof *output_fmts)
+		    ? 0
+		    : output_fmts[n].name;
+	      }
+	    int fmt_index = parse_enum (fmt_string, fmt_name,
+					"format type", 1, state);
+	    if (fmt_index >= 0)
+	      {
+		fmt_string = output_fmts[fmt_index].fmt;
+		if (sort_key_name == NULL)
+		  sort_key_name = output_fmts[fmt_index].sort_key;
+	      }
+	  }
+	  break;
+
 	default:
 	  return ARGP_ERR_UNKNOWN;
 	}
@@ -342,24 +364,6 @@ main(int argc, char *argv[])
 
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
-
-  /* Select an explicit format string if FMT_STRING is a format name.  */
-  {
-    const char *fmt_name (unsigned n)
-      {
-	return
-	  n >= (sizeof output_fmts / sizeof *output_fmts)
-  	    ? 0
-	    : output_fmts[n].name;
-      }
-    int fmt_index = parse_enum (fmt_string, fmt_name, "format type", 1, 0);
-    if (fmt_index >= 0)
-      {
-	fmt_string = output_fmts[fmt_index].fmt;
-	if (sort_key_name == NULL)
-	  sort_key_name = output_fmts[fmt_index].sort_key;
-      }
-  }
 
   err = proc_stat_list_create(context, &procset);
   if (err)
