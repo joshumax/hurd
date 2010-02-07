@@ -63,19 +63,17 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 
       err = ext2_getblk (node, index++, 0, &block);
       if (err == EINVAL)
-	/* Either a hole, or past the end of the file.  */
-	{
-	  block = 0;
-	  err = 0;
-	}
-      else if (err)
+	/* Either a hole, or past the end of the file.
+	   A hole can't be mapped in runs since we don't know
+	   where the blocks will be allocated, so we can't return the
+	   underlying storage.  */
+	err = EOPNOTSUPP;
+      if (err)
 	break;
 
       block <<= log2_dev_blocks_per_fs_block;
       if (num_runs == 0
-	  || ((block && run->start >= 0) /* Neither is a hole and... */
-	      ? (block != run->start + run->length) /* BLOCK doesn't follow RUN */
-	      : (block || run->start >= 0))) /* or one is, but not both */
+	  || block != run->start + run->length) /* BLOCK doesn't follow RUN */
 	/* Add a new run.  */
 	{
 	  if (num_runs == runs_alloced)
@@ -93,8 +91,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 	    }
 
 	  run = runs + num_runs++;
-	  /* -1 means a hole in OFFSETS.  */
-	  run->start = block ?: (store_offset_t) -1;
+	  run->start = block;
 	  /* The length will get extended just below.  */
 	  run->length = 0;
 	}
