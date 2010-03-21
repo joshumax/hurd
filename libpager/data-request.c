@@ -74,7 +74,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
 
   err = _pager_pagemap_resize (p, offset + length);
   if (err)
-    goto release_out;		/* Can't do much about the actual error.  */
+    goto allow_release_out;	/* Can't do much about the actual error.  */
 
   /* If someone is paging this out right now, the disk contents are
      unreliable, so we have to wait.  It is too expensive (right now) to
@@ -140,6 +140,8 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   ports_port_deref (p);
   return 0;
 
+ allow_release_out:
+  _pager_allow_termination (p);
  release_out:
   _pager_release_seqno (p, seqno);
   mutex_unlock (&p->interlock);
