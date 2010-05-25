@@ -1,6 +1,7 @@
 /* Hurdish login
 
-   Copyright (C) 1995,96,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2002, 2010
+   Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.org>
 
@@ -882,12 +883,22 @@ main(int argc, char *argv[])
 	}
     }
 
-  err = file_exec (exec, mach_task_self (), EXEC_DEFAULTS,
-		   sh_args, sh_args_len, env, env_len,
-		   fds, MACH_MSG_TYPE_COPY_SEND, 3,
-		   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-		   ints, INIT_INT_MAX,
-		   0, 0, 0, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (exec, mach_task_self (), EXEC_DEFAULTS, shell, shell,
+			 sh_args, sh_args_len, env, env_len,
+			 fds, MACH_MSG_TYPE_COPY_SEND, 3,
+			 ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			 ints, INIT_INT_MAX,
+			 0, 0, 0, 0);
+  /* Fallback in case the file server hasn't been restarted.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (exec, mach_task_self (), EXEC_DEFAULTS,
+		     sh_args, sh_args_len, env, env_len,
+		     fds, MACH_MSG_TYPE_COPY_SEND, 3,
+		     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+		     ints, INIT_INT_MAX,
+		     0, 0, 0, 0);
   if (err)
     error(5, err, "%s", shell);
 

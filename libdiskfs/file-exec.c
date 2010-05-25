@@ -1,5 +1,6 @@
-/* File execution (file_exec RPC) for diskfs servers, using exec server.
-   Copyright (C) 1993,94,95,96,97,98,2000,02 Free Software Foundation, Inc.
+/* File execution (file_exec_paths RPC) for diskfs servers, using exec server.
+   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 2000, 2002,
+   2010 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -46,6 +47,41 @@ diskfs_S_file_exec (struct protid *cred,
 		    size_t deallocnameslen,
 		    mach_port_t *destroynames,
 		    size_t destroynameslen)
+{
+  return diskfs_S_file_exec_paths (cred,
+				   task,
+				   flags,
+				   "",
+				   "",
+				   argv, argvlen,
+				   envp, envplen,
+				   fds, fdslen,
+				   portarray, portarraylen,
+				   intarray, intarraylen,
+				   deallocnames, deallocnameslen,
+				   destroynames, destroynameslen);
+}
+
+kern_return_t
+diskfs_S_file_exec_paths (struct protid *cred,
+			  task_t task,
+			  int flags,
+			  char *path,
+			  char *abspath,
+			  char *argv,
+			  size_t argvlen,
+			  char *envp,
+			  size_t envplen,
+			  mach_port_t *fds,
+			  size_t fdslen,
+			  mach_port_t *portarray,
+			  size_t portarraylen,
+			  int *intarray,
+			  size_t intarraylen,
+			  mach_port_t *deallocnames,
+			  size_t deallocnameslen,
+			  mach_port_t *destroynames,
+			  size_t destroynameslen)
 {
   struct node *np;
   uid_t uid;
@@ -136,9 +172,9 @@ diskfs_S_file_exec (struct protid *cred,
 
   if (! err)
     /* Make a new peropen for the exec server to access the file, since any
-       seeking the exec server might want to do should not affect the
-       original peropen on which file_exec was called.  (The new protid for
-       this peropen clones the caller's iouser to preserve the caller's
+       seeking the exec server might want to do should not affect the original
+       peropen on which file_exec_paths was called.  (The new protid
+       for this peropen clones the caller's iouser to preserve the caller's
        authentication credentials.)  The new peropen's openmodes must have
        O_READ even if the caller had only O_EXEC privilege, so the exec
        server can read the executable file.  We also include O_EXEC so that
@@ -159,14 +195,31 @@ diskfs_S_file_exec (struct protid *cred,
       do
 	{
 	  right = ports_get_send_right (newpi);
-	  err = exec_exec (execserver,
-			   right, MACH_MSG_TYPE_COPY_SEND,
-			   task, flags, argv, argvlen, envp, envplen,
-			   fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-			   portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
-			   intarray, intarraylen,
-			   deallocnames, deallocnameslen,
-			   destroynames, destroynameslen);
+#ifdef HAVE_EXEC_EXEC_PATHS
+	  err = exec_exec_paths (execserver,
+				 right, MACH_MSG_TYPE_COPY_SEND,
+				 task, flags, path, abspath,
+				 argv, argvlen, envp, envplen,
+				 fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+				 portarray, MACH_MSG_TYPE_COPY_SEND,
+				 portarraylen,
+				 intarray, intarraylen,
+				 deallocnames, deallocnameslen,
+				 destroynames, destroynameslen);
+	  /* For backwards compatibility.  Just drop it when we kill
+	     exec_exec.  */
+	  if (err == MIG_BAD_ID)
+#endif
+	    err = exec_exec (execserver,
+			     right, MACH_MSG_TYPE_COPY_SEND,
+			     task, flags, argv, argvlen, envp, envplen,
+			     fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+			     portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
+			     intarray, intarraylen,
+			     deallocnames, deallocnameslen,
+			     destroynames, destroynameslen);
+
+
 	  mach_port_deallocate (mach_task_self (), right);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {

@@ -423,16 +423,32 @@ check_hashbang (struct execdata *e,
     /* We cannot open the interpreter file to execute it.  Lose!  */
     return;
 
+#ifdef HAVE_FILE_EXEC_PATHS
   /* Execute the interpreter program.  */
-  e->error = file_exec (interp_file,
-			oldtask, flags,
-			new_argv, new_argvlen, envp, envplen,
-			new_dtable ?: dtable, MACH_MSG_TYPE_COPY_SEND,
-			new_dtable ? new_dtablesize : dtablesize,
-			portarray, MACH_MSG_TYPE_COPY_SEND, nports,
-			intarray, nints,
-			deallocnames, ndeallocnames,
-			destroynames, ndestroynames);
+  e->error = file_exec_paths (interp_file,
+			      oldtask, flags, interp, interp,
+			      new_argv, new_argvlen, envp, envplen,
+			      new_dtable ?: dtable,
+			      MACH_MSG_TYPE_COPY_SEND,
+			      new_dtable ? new_dtablesize : dtablesize,
+			      portarray, MACH_MSG_TYPE_COPY_SEND, nports,
+			      intarray, nints,
+			      deallocnames, ndeallocnames,
+			      destroynames, ndestroynames);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (e->error == MIG_BAD_ID)
+#endif
+    e->error = file_exec (interp_file,
+			  oldtask, flags,
+			  new_argv, new_argvlen, envp, envplen,
+			  new_dtable ?: dtable, MACH_MSG_TYPE_COPY_SEND,
+			  new_dtable ? new_dtablesize : dtablesize,
+			  portarray, MACH_MSG_TYPE_COPY_SEND, nports,
+			  intarray, nints,
+			  deallocnames, ndeallocnames,
+			  destroynames, ndestroynames);
+
+
   mach_port_deallocate (mach_task_self (), interp_file);
   munmap (new_argv, new_argvlen);
 

@@ -1,5 +1,6 @@
 /* Definitions for the filesystem interface.
-   Copyright (C) 1994,95,96,97,98,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2002, 2010
+   Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -35,7 +36,8 @@ INTR_INTERFACE
 /* Overlay a task with a file.  Necessary initialization, including
    authentication changes associated with set[ug]id execution must be
    handled by the filesystem.  Filesystems normally implement this by
-   using exec_newtask or exec_loadtask as appropriate.  */
+   using exec_newtask or exec_loadtask as appropriate.
+   Deprecated: use file_exec_paths instead.  */
 routine file_exec (
 	exec_file: file_t;
 	RPT
@@ -129,8 +131,8 @@ routine file_lock_stat (
    (regardless of the current open modes for this port).  ALLOWED is a
    bitwise OR of O_READ, O_WRITE, and O_EXEC.  This is not necessarily the
    same as what an open or exec would allow; O_EXEC is set for root even if
-   no executable bits are on (in which case file_exec should fail) and
-   O_WRITE is set a directory can be modified, even though it can't be
+   no executable bits are on (in which case file_exec_paths should fail)
+   and O_WRITE is set a directory can be modified, even though it can't be
    written directly.  */
 routine file_check_access (
 	file: file_t;
@@ -355,3 +357,22 @@ routine file_reparent (
 
 skip;	/* Was: file_get_children.  */
 skip;	/* Was: file_get_source.  */
+
+/* Overlay a task with a file.  Necessary initialization, including
+   authentication changes associated with set[ug]id execution must be
+   handled by the filesystem.  Filesystems normally implement this by
+   using exec_newtask or exec_loadtask as appropriate.  */
+routine file_exec_paths (
+	exec_file: file_t;
+	RPT
+	exec_task: task_t;
+	flags: int;
+	path: string_t;
+	abspath: string_t;
+	argv: data_t SCP;
+	envp: data_t SCP;
+	fdarray: portarray_t SCP;
+	portarray: portarray_t SCP;
+	intarray: intarray_t SCP;
+	deallocnames: mach_port_name_array_t SCP;
+	destroynames: mach_port_name_array_t SCP);

@@ -2736,10 +2736,10 @@ write the file.
 @node Program Execution
 @subsection Program Execution
 
-@findex file_exec
+@findex file_exec_paths
 Execution of programs on the Hurd is done through fileservers with the
-@code{file_exec} RPC.  The fileserver is expected to verify that the
-user is allowed to execute the file, make whatever modifications to the
+@code{file_exec_paths} RPC.  The fileserver is expected to verify that
+the user is allowed to execute the file, make whatever modifications to the
 ports are necessary for setuid execution, and then invoke the standard
 execserver found on @file{/servers/exec}.
 
@@ -2751,13 +2751,13 @@ The file must be opened for execution; if it is not, @code{EBADF} should
 be returned.  In addition, at least one of the execute bits must be on.  A
 failure of this check should result in @code{EACCES}---not
 @code{ENOEXEC}.  It is not proper for the fileserver ever to respond to
-the @code{file_exec} RPC with @code{ENOEXEC}.
+the @code{file_exec_paths} RPC with @code{ENOEXEC}.
 
 If either the setuid or setgid bits are set, the server needs to
 construct a new authentication handle with the additional new ID's.
-Then all the ports passed to @code{file_exec} need to be reauthenticated
-with the new handle.  If the fileserver is unable to make the new
-authentication handle (for example, because it is not running as root)
+Then all the ports passed to @code{file_exec_paths} need to be
+reauthenticated with the new handle.  If the fileserver is unable to make the
+new authentication handle (for example, because it is not running as root)
 it is not acceptable to return an error; in such a case the server
 should simply silently fail to implement the setuid/setgid semantics.
 
@@ -2772,7 +2772,7 @@ will not share any file pointers with the port the user passed in,
 opened with @code{O_READ}.  Finally, all the information (mutated
 appropriately for setuid/setgid) should be sent to the execserver with
 @code{exec_exec_paths}.  Whatever error code @code{exec_exec_paths}
-returns should be returned to the caller of @code{file_exec}.
+returns should be returned to the caller of @code{file_exec_paths}.
 
 @node File Locking
 @subsection File Locking

@@ -1,7 +1,7 @@
 /* Start and maintain hurd core servers and system run state
 
    Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-     2005, 2008, 2013 Free Software Foundation, Inc.
+     2005, 2008, 2010, 2013 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -402,13 +402,28 @@ run (const char *server, mach_port_t *ports, task_t *task,
 	      fprintf (stderr, "Pausing for %s\n", prog);
 	      getchar ();
 	    }
-	  err = file_exec (file, *task, 0,
-			   argz, argz_len, /* Args.  */
-			   startup_envz, startup_envz_len,
-			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-			   default_ints, INIT_INT_MAX,
-			   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+	  err = file_exec_paths (file, *task, 0, (char *)prog, (char *)prog,
+				 argz,
+				 argz_len, /* Args.  */
+				 startup_envz, startup_envz_len,
+				 default_dtable,
+				 MACH_MSG_TYPE_COPY_SEND, 3,
+				 ports, MACH_MSG_TYPE_COPY_SEND,
+				 INIT_PORT_MAX,
+				 default_ints, INIT_INT_MAX,
+				 NULL, 0, NULL, 0);
+	  /* For backwards compatibility.  Just drop it when we kill
+	     file_exec.  */
+	  if (err == MIG_BAD_ID)
+#endif
+	    err = file_exec (file, *task, 0,
+			     argz, argz_len, /* Args.  */
+			     startup_envz, startup_envz_len,
+			     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			     ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+			     default_ints, INIT_INT_MAX,
+			     NULL, 0, NULL, 0);
 	  if (!err)
 	    break;
 
@@ -538,14 +553,27 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     ++progname;
   else
     progname = filename;
-  err = file_exec (file, task, 0,
-		   args, arglen,
-		   startup_envz, startup_envz_len,
-		   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
-		   default_ports, MACH_MSG_TYPE_COPY_SEND,
-		   INIT_PORT_MAX,
-		   default_ints, INIT_INT_MAX,
-		   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (file, task, 0, filename, filename,
+			 args, arglen,
+			 startup_envz, startup_envz_len,
+			 default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+			 default_ports, MACH_MSG_TYPE_COPY_SEND,
+			 INIT_PORT_MAX,
+			 default_ints, INIT_INT_MAX,
+			 NULL, 0, NULL, 0);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (file, task, 0,
+		     args, arglen,
+		     startup_envz, startup_envz_len,
+		     default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
+		     default_ports, MACH_MSG_TYPE_COPY_SEND,
+		     INIT_PORT_MAX,
+		     default_ints, INIT_INT_MAX,
+		     NULL, 0, NULL, 0);
+
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), task);
   if (ctty != MACH_PORT_NULL)
@@ -1244,13 +1272,26 @@ start_child (const char *prog, char **progargs)
       getchar ();
     }
 
-  err = file_exec (file, child_task, 0,
-		   args, arglen,
-		   startup_envz, startup_envz_len,
-		   NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
-		   default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
-		   default_ints, INIT_INT_MAX,
-		   NULL, 0, NULL, 0);
+#ifdef HAVE_FILE_EXEC_PATHS
+  err = file_exec_paths (file, child_task, 0, args, args,
+			 args, arglen,
+			 startup_envz, startup_envz_len,
+			 NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
+			 default_ports, MACH_MSG_TYPE_COPY_SEND,
+			 INIT_PORT_MAX,
+			 default_ints, INIT_INT_MAX,
+			 NULL, 0, NULL, 0);
+  /* For backwards compatibility.  Just drop it when we kill file_exec.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = file_exec (file, child_task, 0,
+		     args, arglen,
+		     startup_envz, startup_envz_len,
+		     NULL, MACH_MSG_TYPE_COPY_SEND, 0, /* No fds.  */
+		     default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+		     default_ints, INIT_INT_MAX,
+		     NULL, 0, NULL, 0);
+
   proc_mark_important (default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), file);

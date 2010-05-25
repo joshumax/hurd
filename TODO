@@ -131,7 +131,7 @@ See `tasks', the exported task list.
 
 ** libtrivfs
 *** Allow for read/write/exec to be passed down.
-*** Implement file_exec when appropriate. !!
+*** Implement file_exec_paths when appropriate. !!
 *** Provide for the visible owner, etc., to be held in command-line args
     instead of the underlying node, when it's important. !!
 

@@ -202,7 +202,7 @@ diskfs_start_bootstrap ()
       diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
     }
 
-  /* Cache the exec server port for file_exec to use.  */
+  /* Cache the exec server port for file_exec_paths to use.  */
   _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
 
   if (_diskfs_boot_command)

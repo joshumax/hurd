@@ -1,5 +1,6 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993,94,95,96,98,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1993, 1994, 1995, 1996, 1998, 1999, 2001, 2002,
+   2010 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -81,7 +82,7 @@ typedef struct timespec timespec_t;
 /* Many such parameters and flags are also defined in various libc
    headers. */
 
-/* Bits for flags in fs.defs:file_exec and exec.defs:exec_* calls: */
+/* Bits for flags in fs.defs:file_exec_paths and exec.defs:exec_* calls: */
 #define EXEC_NEWTASK	0x00000001 /* Create new task; kill old one.  */
 #define EXEC_SECURE	0x00000002 /* Use secure values of portarray, etc. */
 #define EXEC_DEFAULTS	0x00000004 /* Use defaults for unspecified ports.  */
@@ -350,7 +351,7 @@ typedef int *procinfo_t;
 #define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
 #define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
 
-/* Standard port assignments for file_exec and exec_* */
+/* Standard port assignments for file_exec_paths and exec_* */
 enum
   {
     INIT_PORT_CWDIR,
@@ -364,7 +365,7 @@ enum
     INIT_PORT_MAX
   };
 
-/* Standard ints for file_exec and exec_* */
+/* Standard ints for file_exec_paths and exec_* */
 enum
   {
     INIT_UMASK,
