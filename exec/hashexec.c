@@ -1,5 +1,6 @@
 /* GNU Hurd standard exec server, #! script execution support.
-   Copyright (C) 1995,96,97,98,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2010
+   Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    This file is part of the GNU Hurd.
@@ -35,6 +36,7 @@ check_hashbang (struct execdata *e,
 		file_t file,
 		task_t oldtask,
 		int flags,
+		char *file_name_exec,
 		char *argv, u_int argvlen, boolean_t argv_copy,
 		char *envp, u_int envplen, boolean_t envp_copy,
 		mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
@@ -227,10 +229,12 @@ check_hashbang (struct execdata *e,
 	    file_name = NULL;
 	  else if (! (flags & EXEC_SECURE))
 	    {
-	      /* Try to figure out the file's name.  We guess that if ARGV[0]
-		 contains a slash, it might be the name of the file; and that
-		 if it contains no slash, looking for files named by ARGV[0] in
-		 the `PATH' environment variable might find it.  */
+	      /* Try to figure out the file's name.  If FILE_NAME_EXEC
+		 is not NULL, then it's the file's name.  Otherwise we
+		 guess that if ARGV[0] contains a slash, it might be
+		 the name of the file; and that if it contains no slash,
+		 looking for files named by ARGV[0] in the `PATH'
+		 environment variable might find it.  */
 
 	      error_t error;
 	      char *name;
@@ -280,7 +284,9 @@ check_hashbang (struct execdata *e,
 	      else
 		name = argv;
 
-	      if (strchr (name, '/') != NULL)
+	      if (file_name_exec && file_name_exec[0] != '\0')
+		error = lookup (name = file_name_exec, 0, &name_file);
+	      else if (strchr (name, '/') != NULL)
 		error = lookup (name, 0, &name_file);
 	      else if ((error = hurd_catch_signal
 			(sigmask (SIGBUS) | sigmask (SIGSEGV),

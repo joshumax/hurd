@@ -102,7 +102,7 @@ This file documents the GNU Hurd kernel component.  This edition of the
 documentation was last updated for version @value{VERSION} of the Hurd.
 
 Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
-2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
+2004, 2005, 2007, 2008, 2009, 2010 Free Software Foundation, Inc.
 
 @quotation
 Permission is granted to make and distribute verbatim copies of
@@ -2765,14 +2765,14 @@ If the setuid/setgid transformation adds a new uid or gid to the user's
 authentication handle that was not previously present (as opposed to
 merely reordering them), then the @code{EXEC_SECURE} and
 @code{EXEC_NEWTASK} flags should both be added in the call to
-@code{exec_exec}.
+@code{exec_exec_paths}.
 
 The server then needs to open a new port onto the executed file which
 will not share any file pointers with the port the user passed in,
 opened with @code{O_READ}.  Finally, all the information (mutated
 appropriately for setuid/setgid) should be sent to the execserver with
-@code{exec_exec}.  Whatever error code @code{exec_exec} returns should
-returned to the caller of @code{file_exec}.
+@code{exec_exec_paths}.  Whatever error code @code{exec_exec_paths}
+returns should be returned to the caller of @code{file_exec}.
 
 @node File Locking
 @subsection File Locking

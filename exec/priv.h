@@ -1,5 +1,6 @@
 /* GNU Hurd standard exec server, private declarations.
-   Copyright (C) 1992,93,94,95,96,99,2000,02, 04 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1999, 2000, 2002, 2004,
+   2010 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
 This file is part of the GNU Hurd.
@@ -135,6 +136,7 @@ void check_hashbang (struct execdata *e,
 		     file_t file,
 		     task_t oldtask,
 		     int flags,
+		     char *filename,
 		     char *argv, u_int argvlen, boolean_t argv_copy,
 		     char *envp, u_int envplen, boolean_t envp_copy,
 		     mach_port_t *dtable, u_int dtablesize,
