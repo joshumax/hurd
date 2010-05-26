@@ -611,6 +611,6 @@ endef
 	echo '$*.o: $<' > $@
 
 # Rule to make executable shell scripts from .sh files.
-%: %.sh $(top_srcdir)/sh-version.sed
-	sed -e 's/STANDARD_HURD_VERSION_\\(.[^_]*\\)_/\\1 (GNU Hurd) $(hurd-version)/' < $< > $@
+%: %.sh
+	sed -e 's/STANDARD_HURD_VERSION_\(.[^_]*\)_/\1 (GNU Hurd) $(hurd-version)/' < $< > $@
 	chmod +x $@
