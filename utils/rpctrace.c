@@ -1661,7 +1661,11 @@ traced_spawn (char **argv, char **envp)
   /* Now actually run the command they told us to trace.  We do the exec on
      the actual task, so the RPCs to map in the program itself do not get
      traced.  Could have an option to use TASK_WRAPPER here instead.  */
+#ifdef HAVE__HURD_EXEC_PATHS
+  err = _hurd_exec_paths (traced_task, file, *argv, *argv, argv, envp);
+#else
   err = _hurd_exec (traced_task, file, argv, envp);
+#endif
   if (err)
     error (2, err, "cannot exec `%s'", argv[0]);
 

@@ -1,5 +1,5 @@
 /* fakeauth -- proxy auth server to lie to users about what their IDs are
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2010 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -397,7 +397,7 @@ believe it has restricted them to different identities or no identity at all.\
   /* We cannot use fork because it doesn't do the right thing with our send
      rights that point to our own receive rights, i.e. the new auth port.
      Since posix_spawn might be implemented with fork (prior to glibc 2.3),
-     we cannot use that simple interface either.  We use _hurd_exec
+     we cannot use that simple interface either.  We use _hurd_exec_paths
      directly to effect what posix_spawn does in the simple case.  */
   {
     task_t newtask;
@@ -426,7 +426,12 @@ believe it has restricted them to different identities or no identity at all.\
     if (err)
       error (3, err, "proc_child");
 
+#ifdef HAVE__HURD_EXEC_PATHS
+    err = _hurd_exec_paths (newtask, execfile, argv[argi], argv[argi],
+			    &argv[argi], environ);
+#else
     err = _hurd_exec (newtask, execfile, &argv[argi], environ);
+#endif
     mach_port_deallocate (mach_task_self (), newtask);
     mach_port_deallocate (mach_task_self (), execfile);
     if (err)

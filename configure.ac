@@ -163,7 +163,7 @@ else
 fi
 AC_SUBST(VERSIONING)
 # Check if libc contains these functions.
-AC_CHECK_FUNCS(file_exec_paths exec_exec_paths)
+AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 
 
 # From glibc HEAD, 2007-11-07.

@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,99,2002 Free Software Foundation
+   Copyright (C) 1994, 1995, 1999, 2002, 2010 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -160,15 +160,18 @@ run (char **argv, int fd0, int fd1)
 	      movefd (fd1, 1, &save1))
 	    return -1;
 
+#ifdef HAVE__HURD_EXEC_PATHS
+	  err = _hurd_exec_paths (task, file, program, program, argv, environ);
+#else
 	  err = _hurd_exec (task, file, argv, environ);
-
+#endif
 	  if (restorefd (fd0, 0, &save0) ||
 	      restorefd (fd1, 1, &save1))
 	    return -1;
 
 	  if (err)
 	    {
-	      error (0, err, "_hurd_exec");
+	      error (0, err, "_hurd_exec_paths");
 	      err = task_terminate (task);
 	      if (err)
 		error (0, err, "task_terminate");
