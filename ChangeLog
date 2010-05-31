@@ -1,3 +1,8 @@
+2010-05-31  Samuel Thibault  <samuel.thibault@ens-lyon.org>
+
+	* procfs_nonpid_files.c (procfs_read_nonpid_meminfo): Print swap sizes
+	using %llu.
+
 2008-12-12  Samuel Thibault  <samuel.thibault@ens-lyon.org>
 
 	* procfs_nonpid_files.c (procfs_read_nonpid_meminfo): Divide by

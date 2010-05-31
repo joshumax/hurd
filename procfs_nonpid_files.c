@@ -412,8 +412,8 @@ error_t procfs_read_nonpid_meminfo (struct dir_entry *dir_entry,
         "HighFree:\t%lu kB\n" 
         "LowTotal:\t%lu kB\n" 
         "LowFree:\t%lu kB\n" 
-        "SwapTotal:\t%lu kB\n"
-        "SwapFree:\t%lu kB\n", 
+        "SwapTotal:\t%llu kB\n"
+        "SwapFree:\t%llu kB\n", 
          mem_size, (PAGES_TO_BYTES(vmstats.free_count)) / 1024 , 0, 0, 0, 
          (PAGES_TO_BYTES(vmstats.active_count)) / 1024, 
          (PAGES_TO_BYTES(vmstats.inactive_count)) / 1024, 0, 0, 0, 0, 
