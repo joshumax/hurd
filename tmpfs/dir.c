@@ -247,7 +247,7 @@ diskfs_direnter_hard (struct node *dp, const char *name,
       > tmpfs_page_limit)
     return ENOSPC;
 
-  new = malloc (entsize);
+  new = malloc (offsetof (struct tmpfs_dirent, name) + namelen + 1);
   if (new == 0)
     return ENOSPC;
 
