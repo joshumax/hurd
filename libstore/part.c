@@ -25,11 +25,14 @@
 #include <cthreads.h>
 
 #include <parted/parted.h>
-#include <parted/device_gnu.h>
+/*#include <parted/device_gnu.h>*/
 #include <string.h>
 #include <error.h>
 
 #define NEED_PARTED_VERSION "1.5.4"
+#ifndef PED_SECTOR_SIZE
+#define PED_SECTOR_SIZE PED_SECTOR_SIZE_DEFAULT
+#endif
 
 /* Return a new store in STORE which contains a remap store of partition
    PART from the contents of SOURCE; SOURCE is consumed.  */
@@ -141,7 +144,7 @@ store_part_create (struct store *source, int index, int flags,
 
 out_with_disk:
   assert (ped_device_close (dev) != 0);
-  assert (ped_disk_destroy (disk));
+  ped_disk_destroy (disk);
 out_with_dev:
   ped_device_destroy (dev);
 out:

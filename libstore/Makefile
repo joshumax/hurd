@@ -40,6 +40,7 @@ store-types = \
 	      module \
 	      mvol \
 	      nbd \
+	      part \
 	      remap \
 	      task \
 	      zero
