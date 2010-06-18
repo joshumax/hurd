@@ -40,10 +40,14 @@ store-types = \
 	      module \
 	      mvol \
 	      nbd \
-	      part \
 	      remap \
 	      task \
 	      zero
+
+ifeq (HAVE_PARTED,yes)
+store-types += part
+libstore.so-LDLIBS += -lparted
+endif
 
 libstore.so-LDLIBS += -ldl
 LCLHDRS=store.h
