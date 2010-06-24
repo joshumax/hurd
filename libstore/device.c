@@ -119,6 +119,7 @@ dopen (const char *name, device_t *device, int *mod_flags)
 static void
 dclose (struct store *store)
 {
+  device_close (store->port);
   mach_port_deallocate (mach_task_self (), store->port);
   store->port = MACH_PORT_NULL;
 }
