@@ -162,7 +162,8 @@ schedule_timeout (long timeout)
 {
   long expire = timeout + jiffies;
   struct timer_list timer;
-  struct wait_queue *sleep = 0;  /* See comment in wait.h why this suffices.  */
+  static struct wait_queue *sleep = 0;  /* See comment in wait.h why this suffices.  */
+  /* TODO: but free it !! */
 
   init_timer (&timer);
   timer.expires = expire;
