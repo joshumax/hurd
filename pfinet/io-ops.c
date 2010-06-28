@@ -102,7 +102,11 @@ S_io_read (struct sock_user *user,
   __mutex_unlock (&global_lock);
 
   if (err < 0)
-    err = -err;
+    {
+      err = -err;
+      if (alloced)
+	munmap (*data, amount);
+    }
   else
     {
       *datalen = err;
