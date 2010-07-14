@@ -1,6 +1,6 @@
 /* Socket-specific operations
 
-   Copyright (C) 1995, 2008 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2008, 2010 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -411,19 +411,58 @@ S_socket_recv (struct sock_user *user,
   return err;
 }
 
-/* Stubs for currently unsupported rpcs.  */
-
 error_t
 S_socket_getopt (struct sock_user *user,
 		 int level, int opt,
 		 char **value, size_t *value_len)
 {
-  return EOPNOTSUPP;
+  int ret = 0;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&user->sock->lock);
+  switch (level)
+    {
+    case SOL_SOCKET:
+      switch (opt)
+	{
+	case SO_TYPE:
+	  assert (*value_len >= sizeof (int));
+	  *(int *)*value = user->sock->pipe_class->sock_type;
+	  *value_len = sizeof (int);
+	  break;
+	default:
+	  ret = ENOPROTOOPT;
+	  break;
+	}
+      break;
+    default:
+      ret = ENOPROTOOPT;
+      break;
+    }
+  mutex_unlock (&user->sock->lock);
+
+  return ret;
 }
 
 error_t
 S_socket_setopt (struct sock_user *user,
 		 int level, int opt, char *value, size_t value_len)
 {
-  return EOPNOTSUPP;
+  int ret = 0;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  mutex_lock (&user->sock->lock);
+  switch (level)
+    {
+    default:
+      ret = ENOPROTOOPT;
+      break;
+    }
+  mutex_unlock (&user->sock->lock);
+
+  return ret;
 }
