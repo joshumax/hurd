@@ -27,7 +27,7 @@
 #include "default_pager_S.h"
 
 /* This should be in some system header...  XXX  */
-static inline int page_aligned (vm_offset_t num)
+int page_aligned (vm_offset_t num)
 {
   return trunc_page (num) == num;
 }
