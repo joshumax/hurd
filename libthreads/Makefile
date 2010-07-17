@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1994,95,96,97,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,2000,2010 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -56,5 +56,10 @@ ifeq ($(VERSIONING),yes)
 # Adding this dependency gets it included in the command line,
 # where ld will read it as a linker script.
 $(libname).so.$(hurd-version): $(srcdir)/$(libname).map
+
+lndist: lndist-map-file
+
+lndist-map-file: $(top_srcdir)/hurd-snap/$(dir)
+	ln $(addprefix $(srcdir)/,$(libname).map) $<
 
 endif
