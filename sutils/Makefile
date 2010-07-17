@@ -1,6 +1,6 @@
 # Makefile for sutils
 #
-#   Copyright (C) 1996,97,99,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1996,97,99,2000,2010 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -25,7 +25,7 @@ scripts = e2os MAKEDEV losetup
 targets = $(special-targets) $(progs)
 special-targets = $(scripts)
 installationdir = $(sbindir)
-SRCS = $(progs:=.c) $(scripts:=.sh)
+SRCS = $(progs:=.c) clookup.c fstab.c update.c $(scripts:=.sh)
 LCLHDRS = fstab.h
 
 OBJS = $(progs:=.c)
