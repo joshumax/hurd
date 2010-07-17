@@ -1,4 +1,4 @@
-# Copyright (C) 1993,94,95,96,98,99,2000,01,02 Free Software Foundation, Inc.
+# Copyright (C) 1993,94,95,96,98,99,2000,01,02,10 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -18,12 +18,16 @@
 dir := exec
 makemode := server
 
-SRCS = exec.c main.c hashexec.c hostarch.c unzip.c util.c inflate.c
+SRCS = exec.c main.c hashexec.c hostarch.c \
+       $(gzip-sources) $(bzip2-sources)
 OBJS = main.o hostarch.o exec.o hashexec.o \
        execServer.o exec_startupServer.o \
        $(gzip-objects) $(bzip2-objects)
-gzip-objects = unzip.o util.o inflate.o
-bzip2-objects = do-bunzip2.o
+gzip-sources = unzip.c util.c inflate.c
+gzip-objects = $(gzip-sources:%.c=%.o)
+bzip2-sources = do-bunzip2.c
+bzip2-objects = $(bzip2-sources:%.c=%.o)
+
 LCLHDRS = gzip.h crypt.h tailor.h priv.h execmutations.h
 target = exec
 #targets = exec exec.static
