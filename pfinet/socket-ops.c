@@ -499,6 +499,11 @@ S_socket_recv (struct sock_user *user,
   if (amount > *datalen)
     {
       *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (*data == MAP_FAILED)
+        /* Should check whether errno is indeed ENOMEM --
+           but this can't be done in a straightforward way,
+           because the glue headers #undef errno. */
+        return ENOMEM;
       alloced = 1;
     }
 
