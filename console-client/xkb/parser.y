@@ -336,8 +336,8 @@ mods:
   mods '+' rmod { $$.rmods = $1.rmods | $3; }
 | mods '+' vmod { $$.vmods = $1.vmods | $3; }
 	/* Use a mid-rule action to start with no modifiers.  */
-| { $$.rmods = 0; $$.vmods = 0 } rmod		{ $$.rmods = $2; }
-| { $$.rmods = 0; $$.vmods = 0 } vmod 		{ $$.vmods = $2; }
+| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0 } rmod		{ $$.rmods = $2; }
+| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0 } vmod 		{ $$.vmods = $2; }
 | "all"	{ $$.rmods = 0xFF; $$.vmods = 0xFFFF}
 | "none"  { $$.rmods = 0; $$.vmods = 0 }
 ;
