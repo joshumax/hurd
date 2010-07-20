@@ -78,6 +78,10 @@ mergemode merge_mode = override;
 
 //#define	YYDEBUG	1
 
+#ifndef YY_NULL
+#define YY_NULL 0
+#endif
+
 static struct keytype *current_keytype;
 %}
 
@@ -1142,7 +1146,7 @@ geometry:
 %%
 /* Skip all tokens until a section of the type SECTIONSYMBOL with the
    name SECTIONNAME is found.  */
-static void
+static int
 skip_to_sectionname (char *sectionname, int sectionsymbol)
 {
   int symbol;
@@ -1152,17 +1156,22 @@ skip_to_sectionname (char *sectionname, int sectionsymbol)
       do 
 	{
 	  symbol = yylex ();
-	} while (symbol != sectionsymbol);
-      symbol = yylex ();
+	} while ((symbol != YY_NULL) && (symbol != sectionsymbol));
 
-      if (symbol != STR)
+      if (symbol != YY_NULL)
+        symbol = yylex ();
+
+      if (symbol == YY_NULL) {
+        return 1;
+      } else if (symbol != STR)
 	continue;
 
     } while (strcmp (yylval.str, sectionname));
+    return 0;
 }
 
 /* Skip all tokens until the default section is found.  */
-static void
+static int
 skip_to_defaultsection (void)
 {
   int symbol;
@@ -1170,14 +1179,17 @@ skip_to_defaultsection (void)
   /* Search the default section.  */
   do
     {
-      symbol = yylex ();
+      if ((symbol = yylex ()) == YY_NULL)
+          return 1;
     } while (symbol != DEFAULT);
 
   do
     {
-      symbol = yylex ();
+      if ((symbol = yylex ()) == YY_NULL)
+          return 1;
     } while (symbol != '{');
   scanner_unput ('{');
+  return 0;
 }
 
 /* Include a single file. INCL is the filename. SECTIONSYMBOL is the
