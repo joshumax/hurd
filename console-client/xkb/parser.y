@@ -1201,9 +1201,15 @@ include_section (char *incl, int sectionsymbol, char *dirname,
 		 mergemode new_mm)
 {
   void include_file (FILE *, mergemode, char *);
+  int scanner_get_current_location ();
+  const char* scanner_get_current_file ();
+
   char *filename;
   char *sectionname = NULL;
   FILE *includefile;
+
+  int current_location = scanner_get_current_location ();
+  char* current_file = strdup (scanner_get_current_file ());
   
   sectionname = strchr (incl, '(');
   if (sectionname)
@@ -1212,18 +1218,27 @@ include_section (char *incl, int sectionsymbol, char *dirname,
 
       snlen = strlen (sectionname);
       if (sectionname[snlen-1] != ')')
-	return 0;
+        {
+          free(current_file);
+          return 0;
+        }
       sectionname[snlen-1] = '\0';
       sectionname[0] = '\0';
       sectionname++;
 
       if (asprintf (&filename, "%s/%s", dirname, incl) < 0)
-	return ENOMEM;
+        {
+          free (current_file);
+          return ENOMEM;
+        }
     }
   else
     {
       if (asprintf (&filename, "%s/%s", dirname, incl) < 0)
-	return ENOMEM;
+        {
+          free (current_file);
+          return ENOMEM;
+        }
     }
 
   includefile = fopen (strdup (filename), "r");
@@ -1231,6 +1246,7 @@ include_section (char *incl, int sectionsymbol, char *dirname,
   if (includefile == NULL)
     {
       fprintf (stderr, "Couldn't open include file \"%s\"\n", filename);
+      free (current_file);
       exit (EXIT_FAILURE);
     }
   
@@ -1238,11 +1254,25 @@ include_section (char *incl, int sectionsymbol, char *dirname,
 
   /* If there is a sectionname not the entire file should be included,
      the scanner should be positioned at the required section.  */
+  int err;
   if (sectionname)
-      skip_to_sectionname (sectionname, sectionsymbol);
+      err = skip_to_sectionname (sectionname, sectionsymbol);
   else
-      skip_to_defaultsection ();
+      err = skip_to_defaultsection ();
 
+  if (err != 0) {
+     char* tmpbuf = malloc (sizeof(char)*1024);
+     if (tmpbuf) {
+         snprintf (tmpbuf, 1023, "cannot find section %s in file %s included from %s:%d.\n"
+             , (sectionname ? sectionname : "DEFAULT")
+             , filename, current_file, current_location);
+	 yyerror (tmpbuf);
+	 free (tmpbuf);
+     }
+     free (current_file);
+     exit (err);
+  }
+  free (current_file);
   return 0;
 }
 
