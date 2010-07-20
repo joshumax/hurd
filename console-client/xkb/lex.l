@@ -30,7 +30,7 @@
 %option nodebug
 
 %option UNPUT
-KEYCODE		"<"[A-Z][A-Z0-9]*">"
+KEYCODE		"<"[A-Z][-+A-Z0-9]*">"
 DIGIT		[0-9]
 NUM		{DIGIT}{DIGIT}*
 FLOAT		{DIGIT}{DIGIT}*\.{DIGIT}{DIGIT}*
@@ -91,6 +91,7 @@ level1			{ yylval.val = 1; return LEVEL; }
 level2			{ yylval.val = 2; return LEVEL; }
 level3			{ yylval.val = 3; return LEVEL; }
 level4			{ yylval.val = 4; return LEVEL; }
+level[1-9][0-9]*	{ yylval.val = atoi(yytext + 5); return LEVEL; }
 
 			/* Groups.  */
 group1			{ yylval.val = 1; return GROUPNUM; }
