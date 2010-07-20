@@ -23,7 +23,7 @@
 	#include <stdio.h>
 	#include <error.h>
 
-	void close_include (void);
+	int close_include (void);
 	int lineno = 1;
 	char *filename = "foo";
 
@@ -299,8 +299,10 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	int
 	yywrap (void)
 	 {
-	   close_include ();
-	   return 0;
+           if (close_include () == 0)
+             return 0;
+           else
+             return 1;
 	 }
 
 	#define	MAX_INCLUDE_DEPTH	50
@@ -339,15 +341,14 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
   	  yy_switch_to_buffer (buffer);
 	}
 
-	/* Close an includefile.  */
-	void
+	/* Close an includefile. returns 0 on success */
+	int
 	close_include (void)
 	{
 	  if ( --include_stack_ptr < 0 )
 	    {
-	    //	      yyterminate ();
 	      fprintf (stderr, "Unexpected end of file at %s:%d.\n", filename, lineno);
-	      exit (1);
+	      return (1);
 	    }
 	  else
 	    {
@@ -357,6 +358,7 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	      lineno = include_stack[include_stack_ptr].currline;
 	      filename = include_stack[include_stack_ptr].filename;
 	      yy_switch_to_buffer (include_stack[include_stack_ptr].buffer);
+              return (0);
 	    }
 	}
 
