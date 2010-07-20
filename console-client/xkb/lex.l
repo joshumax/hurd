@@ -368,3 +368,15 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	   fprintf (stderr, "%s:%d: %s\n", filename, lineno, s);
  //	   error_at_line (0, 1, filename, lineno, "foo %d\n", 2);
 	}
+
+	int
+	scanner_get_current_location()
+	{
+	  return lineno;
+	}
+
+	const char*
+	scanner_get_current_file()
+	{
+	  return filename;
+	}
