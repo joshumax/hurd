@@ -376,6 +376,8 @@ vmod_add (char *vmodname)
   vmodnamel = vmn;
 
   lastvmod++;
+  if (lastvmod > 16)
+	  debug_printf("warning: only sixteen virtual modifiers are supported, %s will not be functional.\n", vmodname);
 
   return 0;
 }
