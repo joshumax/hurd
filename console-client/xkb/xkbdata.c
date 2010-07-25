@@ -50,6 +50,14 @@ keyname_init ()
   /* XXX: error.  */
 }
 
+static inline int
+keyname_hash(char *keyname)
+{
+  char tmp[4] = { 0 };
+  strncpy(tmp, keyname, sizeof tmp);
+  return tmp[0] + (tmp[1] << 8) + (tmp[2] << 16) + (tmp[3] << 24);
+}
+
 /* Assign the name KEYNAME to the keycode KEYCODE.  */
 error_t
 keyname_add (char *keyname, int keycode)
@@ -74,7 +82,7 @@ keyname_add (char *keyname, int keycode)
   kn->keycode = keycode;
   kn->rmods = 0;
 
-  kn_int = keyname[0] + (keyname[1] << 8) + (keyname[2] << 16) + (keyname[3] << 24);
+  kn_int = keyname_hash(keyname);
   debug_printf ("add : %d\n", kn_mapping.locp_offset);
   hurd_ihash_add (&kn_mapping, kn_int, kn);
 
@@ -98,7 +106,7 @@ keyname_find (char *keyname)
       /* XXX: Abort?  */
       return 0;
     } 
-  kn_int = keyname[0] + (keyname[1] << 8) + (keyname[2] << 16) + (keyname[3] << 24);
+  kn_int = keyname_hash(keyname);
 
   kn = hurd_ihash_find (&kn_mapping, kn_int);
   if (kn)
