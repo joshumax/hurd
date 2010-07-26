@@ -323,6 +323,8 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	{
 	  YY_BUFFER_STATE buffer;
 
+          debug_printf ("including file %s\n.", fname);
+
 	  if (include_stack_ptr >= MAX_INCLUDE_DEPTH)
 	    {
   	      fprintf (stderr, "Includes nested too deeply\n");
@@ -358,6 +360,7 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	      lineno = include_stack[include_stack_ptr].currline;
 	      filename = include_stack[include_stack_ptr].filename;
 	      yy_switch_to_buffer (include_stack[include_stack_ptr].buffer);
+              debug_printf ("closing file. going back to %s.\n", filename);
               return (0);
 	    }
 	}
