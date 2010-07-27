@@ -244,11 +244,11 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case 'm':
-      vga_display_max_glyphs = 1;
+      vga_display_max_glyphs = 0;
       break;
 
     case 'g':
-      vga_display_max_glyphs = 0;
+      vga_display_max_glyphs = 1;
       break;
 
     case ARGP_KEY_END:
