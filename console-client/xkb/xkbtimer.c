@@ -24,9 +24,6 @@
 #include "xkb.h"
 #include <timer.h>
 
-/* Lock the access to handle_key.  */
-static struct mutex *lock_key;
-
 /* Timer used to time key controls.  */
 //static struct timer_list key_timer;
 

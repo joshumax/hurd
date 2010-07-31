@@ -414,12 +414,10 @@ ksrm_apply (void)
 	    {
 	      symbol ks = keys[kc].groups[group].symbols[cursym];
 	      int rmods = (int) hurd_ihash_find (&ksrm_mapping, ks);
-	      struct ksrm *ksrm;
 
 		if (rmods)
 		  {
 		    keys[kc].mods.rmods = rmods;
-		    debug_printf ("kss %d = %d\n", kc, ksrm->rmods);
 		  }
 	    }
 	}

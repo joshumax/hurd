@@ -38,6 +38,7 @@
 #include "keysymdef.h"
 #include <driver.h>
 #include <mach-inputdev.h>
+#include <wctype.h>
 
 
 
@@ -98,13 +99,15 @@ static xkb_indicator_t *indicators;
 static int indicator_count;
 static int indicator_map = 0;
 
+/* unused
 static int stickykeys_active = 1;
+*/
 
 int
 debug_printf (const char *f, ...)
 {
   va_list ap;
-  int ret;
+  int ret = 0;
 
   va_start (ap, f);
 #ifdef XKB_DEBUG  
@@ -1358,7 +1361,6 @@ error_t
 xkb_load_layout (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
 {
   error_t err;
-  int lastarg;
 
   err = parse_xkbconfig (xkbdir, xkbkeymapfile, xkbkeymap);
   if (err)
