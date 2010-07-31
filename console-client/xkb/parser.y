@@ -315,7 +315,10 @@ vmods_def:
 
 /* Return the number of the virtual modifier.  */
 vmod:
-	IDENTIFIER		{ $$ = vmod_find ($1); }
+	IDENTIFIER
+	{ if (($$ = vmod_find ($1)) != 0)
+	    $$ = 1 << ($$ - 1);
+	}
 ;
 
 /* A single realmodifier.  */
