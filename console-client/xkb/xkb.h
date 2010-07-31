@@ -356,9 +356,6 @@ typedef struct xkb_indicator
   unsigned int ctrls;
 } xkb_indicator_t;
 
-extern xkb_indicator_t *indicators;
-extern int indicator_count;
-
 unsigned int KeySymToUcs4(int keysym);
 symbol compose_symbols (symbol symbol);
 error_t read_composefile (char *);
