@@ -1,6 +1,6 @@
 /* Backing store access callbacks for Hurd version of Mach default pager.
 
-   Copyright (C) 2001, 2002, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2007, 2010 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -45,7 +45,7 @@ S_default_pager_paging_storage (mach_port_t pager,
 				boolean_t add)
 {
   struct file_direct *fdp;
-  int sizes[DEV_GET_SIZE_COUNT];
+  int sizes[DEV_GET_RECORDS_COUNT];
   natural_t count;
   mach_msg_type_number_t i;
   error_t err;
@@ -60,15 +60,15 @@ S_default_pager_paging_storage (mach_port_t pager,
   if (nrun < 2 || nrun % 2 != 0)
     return EINVAL;
 
-  count = DEV_GET_SIZE_COUNT;
-  err = device_get_status (device, DEV_GET_SIZE, sizes, &count);
+  count = DEV_GET_RECORDS_COUNT;
+  err = device_get_status (device, DEV_GET_RECORDS, sizes, &count);
   if (err)
     return err;
-  if (count < DEV_GET_SIZE_COUNT || sizes[DEV_GET_SIZE_RECORD_SIZE] <= 0)
+  if (count < DEV_GET_RECORDS_COUNT || sizes[DEV_GET_RECORDS_RECORD_SIZE] <= 0)
     return EINVAL;
-  devsize = sizes[DEV_GET_SIZE_DEVICE_SIZE] / sizes[DEV_GET_SIZE_RECORD_SIZE];
+  devsize = sizes[DEV_GET_RECORDS_DEVICE_RECORDS];
 
-  if (vm_page_size % sizes[DEV_GET_SIZE_RECORD_SIZE] != 0)
+  if (vm_page_size % sizes[DEV_GET_RECORDS_RECORD_SIZE] != 0)
     /* We can't write disk blocks larger than pages.  */
     return EINVAL;
 
@@ -77,8 +77,8 @@ S_default_pager_paging_storage (mach_port_t pager,
     return ENOMEM;
 
   fdp->device = device;
-  fdp->bshift = ffs (sizes[DEV_GET_SIZE_RECORD_SIZE]) - 1;
-  fdp->fd_bsize = sizes[DEV_GET_SIZE_RECORD_SIZE];
+  fdp->bshift = ffs (sizes[DEV_GET_RECORDS_RECORD_SIZE]) - 1;
+  fdp->fd_bsize = sizes[DEV_GET_RECORDS_RECORD_SIZE];
   fdp->nruns = nrun / 2;
   fdp->fd_size = 0;
   for (i = 0; i < nrun; i += 2)
