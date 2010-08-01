@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <locale.h>
 
 #include <argp.h>
 #include <argz.h>
@@ -2017,6 +2018,8 @@ main (int argc, char **argv)
 
   /* Parse our command line arguments.  */
   argp_parse (&netfs_std_runtime_argp, argc, argv, 0, 0, cons);
+
+  setlocale (LC_CTYPE, "C.UTF-8");
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
 

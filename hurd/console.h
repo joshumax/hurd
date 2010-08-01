@@ -50,7 +50,13 @@ typedef struct
   uint32_t italic : 1;
   uint32_t bold : 1;
 } conchar_attr_t; 
-  
+
+/* We support double-width characters by using an extra bit to identify the
+   continuation in the character matrix.  The constants below document our
+   usage of wchar_t.  */
+#define CONS_WCHAR_MASK       ((wchar_t) 0x401fffff)
+#define CONS_WCHAR_CONTINUED  ((wchar_t) 0x40000000)
+
 typedef struct
 {
   wchar_t chr;
