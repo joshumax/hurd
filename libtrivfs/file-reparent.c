@@ -1,6 +1,6 @@
 /* Reparent a directory
 
-   Copyright (C) 1997,2002 Free Software Foundation, Inc.
+   Copyright (C) 1997,2002,2010 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -26,5 +26,6 @@ trivfs_S_file_reparent (struct trivfs_protid *cred,
 			mach_port_t parent,
 			mach_port_t *new, mach_msg_type_name_t *new_type)
 {
-  return EOPNOTSUPP;
+  /* This is not a directory, so we just duplicate it */
+  return trivfs_S_io_duplicate (cred, reply, reply_type, new, new_type);
 }
