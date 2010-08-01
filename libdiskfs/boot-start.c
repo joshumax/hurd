@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,10
    	Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -194,6 +194,9 @@ diskfs_start_bootstrap ()
       diskfs_exec_ctl = MACH_PORT_NULL;	/* Not used after this.  */
     }
 
+  /* Cache the exec server port for file_exec to use.  */
+  _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
+
   if (_diskfs_boot_command)
     {
       /* We have a boot command line to run instead of init.  */
@@ -276,9 +279,6 @@ diskfs_start_bootstrap ()
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
   assert_perror (err);
-
-  /* Cache the exec server port for file_exec to use.  */
-  _hurd_port_set (&_diskfs_exec_portcell, diskfs_exec);
 }
 
 /* We look like an execserver to the execserver itself; it makes this
