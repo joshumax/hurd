@@ -1,5 +1,5 @@
 /* console.h -- Public interface to the console server.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002,10 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This program is free software; you can redistribute it and/or

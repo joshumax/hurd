@@ -1,6 +1,6 @@
 /* console.c -- A console server.
 
-   Copyright (C) 1997, 1999, 2002, 2003, 2007, 2008
+   Copyright (C) 1997, 1999, 2002, 2003, 2007, 2008, 2010
      Free Software Foundation, Inc.
 
    Written by Miles Bader and Marcus Brinkmann.

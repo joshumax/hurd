@@ -1,6 +1,6 @@
 /* display.c - The display component of a virtual console.
    Copyright (C) 1999 Kalle Olavi Niemitalo (emu.c from colortext 0.3).
-   Copyright (C) 2002, 2003 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2010 Free Software Foundation, Inc.
    Written by Marcus Brinkmann and Kalle Olavi Niemitalo.
 
    This file is part of the GNU Hurd.

@@ -1,5 +1,5 @@
 /* vga-dynafont.c - Dynamic font handling for VGA cards.
-   Copyright (C) 2002 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2010 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 
    This file is part of the GNU Hurd.
