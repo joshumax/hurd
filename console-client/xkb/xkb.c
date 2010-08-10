@@ -901,7 +901,6 @@ action_exec (xkb_action_t *action, keypress_t key)
     case SA_RedirectKey:
       {
 	action_redirkey_t *redirkeyac = (action_redirkey_t *) action;	    
-	keypress_t key;
 	
 	key.keycode = redirkeyac->newkey & (key.rel ? 0x80:0);
 	
