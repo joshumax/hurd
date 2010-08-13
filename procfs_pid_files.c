@@ -49,7 +49,16 @@ update_pid_entries (struct procfs_dir *dir, const char *name,
   struct stat stat;
 
   memset (&stat, 0, sizeof stat);
-  stat->st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
+  if (symlink_target)
+    {
+      stat.st_size = strlen (symlink_target);
+      stat.st_mode = S_IFLNK | 0777;
+    }
+  else
+    {
+      stat.st_size = 0;
+      stat.st_mode = S_IFREG | 0444;
+    }
 
   return update_entries_list (dir, name, &stat, timestamp, symlink_target);
 }
