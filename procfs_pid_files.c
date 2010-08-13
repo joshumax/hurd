@@ -46,14 +46,12 @@ update_pid_entries (struct procfs_dir *dir, const char *name,
                           time_t timestamp,
                           const char *symlink_target)
 {
-  struct procfs_dir_entry *dir_entry;
-  struct stat *stat = (struct stat *) malloc (sizeof (struct stat));
+  struct stat stat;
+
+  memset (&stat, 0, sizeof stat);
   stat->st_mode = S_IFREG | S_IRUSR | S_IRGRP | S_IROTH;
 
-  dir_entry = update_entries_list (dir, name, stat, 
-                                 timestamp, symlink_target);
-
-  return dir_entry;
+  return update_entries_list (dir, name, &stat, timestamp, symlink_target);
 }
 
 /* Creates files to store process information for DIR 
