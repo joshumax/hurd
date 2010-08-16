@@ -166,6 +166,19 @@ error_t procfs_create_loadavg (struct procfs_dir *dir,
   return err;
 }
 
+error_t procfs_create_mounts (struct procfs_dir *dir,
+                           struct node **node,
+                           time_t timestamp)
+{
+  struct procfs_dir_entry *dir_entry;
+  int err;
+
+  dir_entry = update_pid_entries (dir, "mounts", timestamp, "/etc/mtab");
+  err = procfs_create_node (dir_entry, "mounts", node);
+
+  return err;
+}
+
 error_t get_uptime (struct timeval *uptime)
 {
   struct timeval boot_time, now;
