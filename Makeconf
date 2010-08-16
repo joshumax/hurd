@@ -325,7 +325,8 @@ $(progtarg): %$(target-suffix): $(BUGADDR)
 $(addsuffix .static,$(progtarg)): %$(target-suffix).static: $(BUGADDR)
 	$(link-executable) -static \
 	      '-Wl,-(' $(patsubst %.so,%.a,$^) $($*-LDLIBS) $(LDLIBS) \
-	      '-Wl,-)'
+	      '-Wl,-)' \
+	      $(and $(filter %/libstore_part.a,$^), $(PARTED_LIBS))
 endif
 
 # Just like above, but tell how to make .prof versions of programs.
@@ -468,6 +469,7 @@ relink:
 # Tell make where to find other -l libraries that we use
 vpath libutil.% $(libdir)/
 
+# The libstore_%.a files fetch symbols from libstore.so
 ifneq ($(dir),libstore)
 $(boot-store-types:%=../libstore/libstore_%.a): ../libstore/libstore.so
 endif

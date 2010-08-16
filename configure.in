@@ -190,9 +190,26 @@ fi
 AC_SUBST(libc_cv_gnu89_inline)
 
 
-AC_ARG_WITH(parted, dnl
-[  --without-parted        don't try to use GNU Parted libraries],
-	    , with_parted=yes)
+# Insist on libparted unless the user declines explicitely
+AC_ARG_WITH([parted],
+  [AS_HELP_STRING([--without-parted], [disable user-space partition stores])],
+  [],
+  [with_parted=yes])
+
+PARTED_LIBS=
+AC_DEFUN([PARTED_FAIL], [
+  AC_MSG_FAILURE([Please install required libraries or use --without-parted.])
+])
+AS_IF([test "x$with_parted" != xno], [
+  AC_CHECK_HEADER([parted/parted.h],
+    [AC_DEFINE(HAVE_PARTED_PARTED_H)],
+    [PARTED_FAIL])
+  AC_CHECK_LIB([parted], [ped_device_read], [], [PARTED_FAIL])
+  AC_CHECK_LIB([uuid], [uuid_generate], [], [PARTED_FAIL])
+  AC_CHECK_LIB([dl], [dlopen], [], [PARTED_FAIL])
+  PARTED_LIBS="-lparted -luuid -ldl"
+])
+AC_SUBST([PARTED_LIBS])
 
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
@@ -200,15 +217,7 @@ AC_ARG_ENABLE(boot-store-types,
 			  linked filesystems used for booting])dnl
 if test -z "$enable_boot_store_types"; then
   boot_store_types='device remap gunzip bunzip2'
-
-  # Check for Parted's static store module.
-  if test "x$with_parted" != xno; then
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS -static"
-    AC_CHECK_LIB(store_part, store_part_open, [dnl
-		 boot_store_types="$boot_store_types part"], , -luuid -lstore)
-    LDFLAGS="$save_LDFLAGS"
-  fi
+  test -z "$PARTED_LIBS" || boot_store_types="$boot_store_types part"
 elif test "x$enable_boot_store_types" = xno; then
   AC_MSG_WARN([you probably wanted --disable-static-progs])
 else
