@@ -7,6 +7,7 @@
 struct process_node {
   process_t procserv;
   pid_t pid;
+  struct procinfo info;
 };
 
 
@@ -57,8 +58,8 @@ process_argz_make_node (void *dir_hook, void *entry_hook)
 }
 
 
-struct node *
-process_make_node (process_t procserv, pid_t pid)
+static struct node *
+process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
 {
   static const struct procfs_dir_entry entries[] = {
     { "cmdline",	process_argz_make_node,		proc_getprocargs,	},
@@ -73,7 +74,34 @@ process_make_node (process_t procserv, pid_t pid)
 
   pn->procserv = procserv;
   pn->pid = pid;
+  memcpy (&pn->info, info, sizeof pn->info);
 
-  return procfs_dir_make_node (entries, pn, free);
+  return procfs_dir_make_node (entries, pn, process_cleanup);
 }
 
+error_t
+process_lookup_pid (process_t procserv, pid_t pid, struct node **np)
+{
+  procinfo_t info;
+  size_t info_sz;
+  data_t tw;
+  size_t tw_sz;
+  int flags;
+  error_t err;
+
+  tw_sz = info_sz = 0, flags = 0;
+  err = proc_getprocinfo (procserv, pid, &flags, &info, &info_sz, &tw, &tw_sz);
+  if (err == ESRCH)
+    return ENOENT;
+  if (err)
+    return EIO;
+
+  assert (info_sz * sizeof *info >= sizeof (struct procinfo));
+  *np = process_make_node (procserv, pid, (struct procinfo *) info);
+  vm_deallocate (mach_task_self (), (vm_address_t) info, info_sz);
+
+  if (! *np)
+    return ENOMEM;
+
+  return 0;
+}

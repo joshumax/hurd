@@ -52,12 +52,18 @@ proclist_lookup (void *hook, const char *name, struct node **np)
   char *endp;
   pid_t pid;
 
-  pid = strtol (name, &endp, 10);
-  if (name[0] == '0' || !name[0] || *endp)
+  /* Self-lookups should not end up here. */
+  assert (name[0]);
+
+  /* No leading zeros allowed */
+  if (name[0] == '0' && name[1])
     return ENOENT;
 
-  *np = process_make_node (pl->process, pid);
-  return *np ? 0 : ENOMEM;
+  pid = strtol (name, &endp, 10);
+  if (*endp)
+    return ENOENT;
+
+  return process_lookup_pid (pl->process, pid, np);
 }
 
 struct node *
