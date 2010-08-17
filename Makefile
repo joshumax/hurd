@@ -1,5 +1,5 @@
 TARGET = procfs
-OBJS = procfs.o netfs.o main.o
+OBJS = procfs.o netfs.o procfs_file.o main.o
 LIBS = -lnetfs
 
 CC = gcc

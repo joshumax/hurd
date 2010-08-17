@@ -3,14 +3,7 @@
 #include <argp.h>
 #include <hurd/netfs.h>
 #include "procfs.h"
-
-static error_t get_contents (void *hook, void **contents, size_t *contents_len)
-{
-  static const char hello[] = "Hello, World!\n";
-  *contents = (void *) hello;
-  *contents_len = sizeof hello - 1;
-  return 0;
-}
+#include "procfs_file.h"
 
 static error_t get_entries (void *hook, void **contents, size_t *contents_len)
 {
@@ -22,12 +15,10 @@ static error_t get_entries (void *hook, void **contents, size_t *contents_len)
 
 static error_t lookup (void *hook, const char *name, struct node **np)
 {
-  static const struct procfs_node_ops ops = { .get_contents = get_contents };
-
   if (strcmp (name, "hello"))
     return ENOENT;
 
-  *np = procfs_make_node (&ops, NULL);
+  *np = procfs_file_make_node ("Hello, World!\n", -1, NULL);
   if (! *np)
     return ENOMEM;
 
