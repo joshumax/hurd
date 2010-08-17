@@ -4,8 +4,7 @@
 #include <mach.h>
 #include <hurd/process.h>
 #include "procfs.h"
-#include "procfs_file.h"
-#include "procfs_dir.h"
+#include "process.h"
 
 #define PID_STR_SIZE (3 * sizeof (pid_t) + 1)
 
@@ -49,7 +48,15 @@ proclist_get_contents (void *hook, void **contents, size_t *contents_len)
 static error_t
 proclist_lookup (void *hook, const char *name, struct node **np)
 {
-  *np = procfs_file_make_node ("Ceci n'est pas un processus\n", -1, NULL);
+  struct proclist_node *pl = hook;
+  char *endp;
+  pid_t pid;
+
+  pid = strtol (name, &endp, 10);
+  if (name[0] == '0' || !name[0] || *endp)
+    return ENOENT;
+
+  *np = process_make_node (pl->process, pid);
   return *np ? 0 : ENOMEM;
 }
 
