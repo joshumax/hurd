@@ -35,7 +35,7 @@ int main (int argc, char **argv)
     error (1, 0, "Must be started as a translator");
 
   netfs_init ();
-  netfs_root_node = procfs_dir_make_node (entries, NULL);
+  netfs_root_node = procfs_dir_make_node (entries, NULL, NULL);
 
   netfs_startup (bootstrap, 0);
   for (;;)

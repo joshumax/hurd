@@ -59,7 +59,7 @@ proclist_make_node (process_t process)
   static const struct procfs_node_ops ops = {
     .get_contents = proclist_get_contents,
     .lookup = proclist_lookup,
-    .cleanup_contents = free,
+    .cleanup_contents = procfs_cleanup_contents_with_free,
     .cleanup = free,
   };
   struct proclist_node *pl;

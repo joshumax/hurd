@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#include <mach.h>
 #include <hurd/netfs.h>
 #include <hurd/fshelp.h>
 #include "procfs.h"
@@ -14,6 +15,18 @@ struct netnode
   void *contents;
   size_t contents_len;
 };
+
+void
+procfs_cleanup_contents_with_free (void *hook, void *cont, size_t len)
+{
+  free (cont);
+}
+
+void
+procfs_cleanup_contents_with_vm_deallocate (void *hook, void *cont, size_t len)
+{
+  vm_deallocate (mach_task_self (), (vm_address_t) cont, (vm_size_t) len);
+}
 
 struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook)
 {
@@ -85,7 +98,7 @@ error_t procfs_lookup (struct node *np, const char *name, struct node **npp)
 void procfs_cleanup (struct node *np)
 {
   if (np->nn->contents && np->nn->ops->cleanup_contents)
-    np->nn->ops->cleanup_contents (np->nn->contents);
+    np->nn->ops->cleanup_contents (np->nn->hook, np->nn->contents, np->nn->contents_len);
 
   if (np->nn->ops->cleanup)
     np->nn->ops->cleanup (np->nn->hook);

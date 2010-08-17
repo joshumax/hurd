@@ -18,7 +18,7 @@ struct procfs_node_ops
      you would expect; for directories, they are an argz vector of the
      names of the entries.  */
   error_t (*get_contents) (void *hook, void **contents, size_t *contents_len);
-  void (*cleanup_contents) (void *contents);
+  void (*cleanup_contents) (void *hook, void *contents, size_t contents_len);
 
   /* Lookup NAME in this directory, and store the result in *np.  The
      returned node should be created by lookup() using procfs_make_node() 
@@ -28,6 +28,10 @@ struct procfs_node_ops
   /* Destroy this node.  */
   void (*cleanup) (void *hook);
 };
+
+/* These helper functions can be used as procfs_node_ops.cleanup_contents. */
+void procfs_cleanup_contents_with_free (void *, void *, size_t);
+void procfs_cleanup_contents_with_vm_deallocate (void *, void *, size_t);
 
 /* Create a new node and return it.  Returns NULL if it fails to allocate
    enough memory.  In this case, ops->cleanup will be invoked.  */
