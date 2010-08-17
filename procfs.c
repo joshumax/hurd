@@ -22,7 +22,7 @@ struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook)
  
   nn = malloc (sizeof *nn);
   if (! nn)
-    return NULL;
+    goto fail;
 
   memset (nn, 0, sizeof *nn);
   nn->ops = ops;
@@ -30,10 +30,7 @@ struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook)
 
   np = netfs_make_node (nn);
   if (! np)
-    {
-      free (nn);
-      return NULL;
-    }
+    goto fail;
 
   np->nn = nn;
   memset (&np->nn_stat, 0, sizeof np->nn_stat);
@@ -45,6 +42,13 @@ struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook)
     np->nn_stat.st_mode = S_IFREG | 0444;
 
   return np;
+
+fail:
+  if (ops->cleanup)
+    ops->cleanup (hook);
+
+  free (nn);
+  return NULL;
 }
 
 error_t procfs_get_contents (struct node *np, void **data, size_t *data_len)

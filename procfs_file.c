@@ -40,7 +40,6 @@ procfs_file_make_node (void *contents, ssize_t len, void (*cleanup)(void *))
     .cleanup = procfs_file_cleanup,
   };
   struct procfs_file *f;
-  struct node *np;
 
   f = malloc (sizeof *f);
   if (! f)
@@ -50,10 +49,6 @@ procfs_file_make_node (void *contents, ssize_t len, void (*cleanup)(void *))
   f->len = (len >= 0) ? len : strlen (f->contents);
   f->cleanup = cleanup;
 
-  np = procfs_make_node (&ops, f);
-  if (! np)
-    free (f);
-
-  return np;
+  return procfs_make_node (&ops, f);
 }
 

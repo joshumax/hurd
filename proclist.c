@@ -63,7 +63,6 @@ proclist_make_node (process_t process)
     .cleanup = free,
   };
   struct proclist_node *pl;
-  struct node *np;
 
   pl = malloc (sizeof *pl);
   if (! pl)
@@ -72,10 +71,6 @@ proclist_make_node (process_t process)
   memset (pl, 0, sizeof *pl);
   pl->process = process;
 
-  np = procfs_make_node (&ops, pl);
-  if (! np)
-    free (pl);
-
-  return np;
+  return procfs_make_node (&ops, pl);
 }
 

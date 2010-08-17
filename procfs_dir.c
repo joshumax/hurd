@@ -61,7 +61,6 @@ procfs_dir_make_node (const struct procfs_dir_entry *entries, void *dir_hook)
     .cleanup = free,
   };
   struct procfs_dir_node *dn;
-  struct node *np;
 
   dn = malloc (sizeof *dn);
   if (! dn)
@@ -70,10 +69,6 @@ procfs_dir_make_node (const struct procfs_dir_entry *entries, void *dir_hook)
   dn->entries = entries;
   dn->hook = dir_hook;
 
-  np = procfs_make_node (&ops, dn);
-  if (! np)
-    free (dn);
-
-  return np;
+  return procfs_make_node (&ops, dn);
 }
 
