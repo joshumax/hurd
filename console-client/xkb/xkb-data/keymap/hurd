@@ -20,31 +20,31 @@ default xkb_keymap "us" {
 // "ar" addition by Arabeyes Team, <support@arabeyes.org>
 xkb_keymap "ar" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ara"	};
+    xkb_symbols		{ include "pc(pc105)+ara+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "be"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+be"	};
+    xkb_symbols		{ include "pc(pc105)+be+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "bg"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+bg"	};
+    xkb_symbols		{ include "pc(pc105)+bg+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 // us_intl and br by Ricardo Y. Igarashi (iga@that.com.br)
 xkb_keymap "br"	{
     xkb_keycodes	{ include "xfree86"	};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+br"	};
+    xkb_symbols		{ include "pc(pc105)+br+hurd"	};
     xkb_geometry 	{ include "pc(abnt2)"		};
 };
 // cz and sk keymaps by Kamil Toman (ktoman@email.cz) 
@@ -52,213 +52,213 @@ xkb_keymap "br"	{
 // and their prog variants. Those are now obsolete and should not be used anymore.
 xkb_keymap "cz" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+cz"	};
+    xkb_symbols		{ include "pc(pc105)+cz+hurd"	};
     xkb_geometry	{ include "pc"			};
 };
 xkb_keymap "de"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+de"	};
+    xkb_symbols		{ include "pc(pc105)+de+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "ch_de"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ch(de)"	};
+    xkb_symbols		{ include "pc(pc105)+ch(de)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "ch_fr"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ch(fr)"	};
+    xkb_symbols		{ include "pc(pc105)+ch(fr)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "dk"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+dk"	};
+    xkb_symbols		{ include "pc(pc105)+dk+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "dvorak" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+us(dvorak)"};
+    xkb_symbols		{ include "pc(pc105)+us(dvorak)+hurd"};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "en_US" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols 	{ include "pc(pc105)+us"	};
+    xkb_symbols 	{ include "pc(pc105)+us+hurd"	};
     xkb_geometry 	{ include "pc"			};
 };
 xkb_keymap "es"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default+hurd"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
     xkb_symbols		{ include "pc(pc105)+es+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "fr"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default+hurd"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
     xkb_symbols		{ include "pc(pc105)+fr+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "fr-latin9" {
     xkb_keycodes        { include "xfree86"             };
-    xkb_types           { include "default"             };
+    xkb_types           { include "default+hurd"        };
     xkb_compatibility   { include "default"             };
-    xkb_symbols         { include "pc(pc105)+fr-latin9" };
+    xkb_symbols         { include "pc(pc105)+fr-latin9+hurd" };
     xkb_geometry        { include "pc"           	};
 };
 xkb_keymap "fr_CA"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ca"	};
+    xkb_symbols		{ include "pc(pc105)+ca+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "gb"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+gb"	};
+    xkb_symbols		{ include "pc(pc105)+gb+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "hr"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+hr"	};
+    xkb_symbols		{ include "pc(pc105)+hr+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "it"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+it"	};
+    xkb_symbols		{ include "pc(pc105)+it+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "jp106" {
     xkb_keycodes	{ include "xfree86"	};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "jp(jp106)"		};
+    xkb_symbols		{ include "jp(jp106)+hurd"	};
     xkb_geometry	{ include "pc(jp106)"		};
 };
 xkb_keymap "lt"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+lt"	};
+    xkb_symbols		{ include "pc(pc105)+lt+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "lt_std"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+lt(std)"	};
+    xkb_symbols		{ include "pc(pc105)+lt(std)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "lv"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+lv"	};
+    xkb_symbols		{ include "pc(pc105)+lv+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "mk" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+mk"	};
+    xkb_symbols		{ include "pc(pc105)+mk+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "mt" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+mt"	};
+    xkb_symbols		{ include "pc(pc105)+mt+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "no"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+no"	};
+    xkb_symbols		{ include "pc(pc105)+no+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "pl"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+pl"	};
+    xkb_symbols		{ include "pc(pc105)+pl+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "pt"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+pt"	};
+    xkb_symbols		{ include "pc(pc105)+pt+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 // ro: additions by Cristian Gafton, <gafton@redhat.com>
 xkb_keymap "ro" {
     xkb_keycodes	{ include "xfree86"			};
-    xkb_types		{ include "default"			};
+    xkb_types		{ include "default+hurd"		};
     xkb_compatibility	{ include "default"			};
-    xkb_symbols		{ include "pc(pc105)+ro(pc101)"	};
+    xkb_symbols		{ include "pc(pc105)+ro(pc101)+hurd"	};
     xkb_geometry	{ include "pc(pc101)"			};
 };
 xkb_keymap "ro_microsoft" {
     xkb_keycodes	{ include "xfree86"			};
-    xkb_types		{ include "default"			};
+    xkb_types		{ include "default+hurd"		};
     xkb_compatibility	{ include "default"			};
-    xkb_symbols		{ include "pc(pc105)+ro(pc105)"	};
+    xkb_symbols		{ include "pc(pc105)+ro(pc105)+hurd"	};
     xkb_geometry	{ include "pc(pc105)"			};
 };
 xkb_keymap "ru"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ru"	};
+    xkb_symbols		{ include "pc(pc105)+ru+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "se_FI"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+fi"	};
+    xkb_symbols		{ include "pc(pc105)+fi+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "se_SE"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+se"	};
+    xkb_symbols		{ include "pc(pc105)+se+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "sl" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+si"	};
+    xkb_symbols		{ include "pc(pc105)+si+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "sl_SI" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+si"	};
+    xkb_symbols		{ include "pc(pc105)+si+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 // cz and sk keymaps by Kamil Toman (ktoman@email.cz) 
@@ -266,59 +266,59 @@ xkb_keymap "sl_SI" {
 // and their prog variants. Those are now obsolete and should not be used anymore.
 xkb_keymap "sk" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+sk"	};
+    xkb_symbols		{ include "pc(pc105)+sk+hurd"	};
     xkb_geometry	{ include "pc"			};
 };
 // Additions by Emil Soleyman-Zomalan, <emil@nishra.com>
 xkb_keymap "syr" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default" 		};
-    xkb_symbols		{ include "pc(pc105)+syr"	};
+    xkb_symbols		{ include "pc(pc105)+syr+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };    
 xkb_keymap "th"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+th"	};
+    xkb_symbols		{ include "pc(pc105)+th+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "th_tis"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+th(tis)"	};
+    xkb_symbols		{ include "pc(pc105)+th(tis)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "th_pat"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+th(pat)"	};
+    xkb_symbols		{ include "pc(pc105)+th(pat)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "tr" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+tr"	};
+    xkb_symbols		{ include "pc(pc105)+tr+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "uk" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+uk)"	};
+    xkb_symbols		{ include "pc(pc105)+uk)+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "us_flexpro" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "us(pc105)"		};
+    xkb_symbols		{ include "us(pc105)+hurd"	};
     xkb_geometry	{ include "keytronic(FlexPro)"	};
 };
 // us_intl and br by Ricardo Y. Igarashi (iga@that.com.br)
@@ -326,60 +326,60 @@ xkb_keymap "us_flexpro" {
 // these keyboards are very popular in Brazil
 xkb_keymap "us_intl" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "us(pc101)+us(intl)"	};
+    xkb_symbols		{ include "us(pc101)+us(intl)+hurd"	};
     xkb_geometry	{ include "pc"			};
 };
 xkb_keymap "us_microsoft" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "us(pc105)"		};
+    xkb_symbols		{ include "us(pc105)+hurd"	};
     xkb_geometry	{ include "microsoft"		};
 };
 
 xkb_keymap "uz" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+uz"	};
+    xkb_symbols		{ include "pc(pc105)+uz+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 
 # svu: compatibility keymaps, based on variants
 xkb_keymap "cz_qwerty" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+cz(qwerty)"	};
+    xkb_symbols		{ include "pc(pc105)+cz(qwerty)+hurd"	};
     xkb_geometry	{ include "pc"			};
 };
 xkb_keymap "de_CH"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ch(de)"	};
+    xkb_symbols		{ include "pc(pc105)+ch(de)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "fr_CH"	{
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+ch(fr)"	};
+    xkb_symbols		{ include "pc(pc105)+ch(fr)+hurd"	};
     xkb_geometry 	{ include "pc(pc102)"		};
 };
 xkb_keymap "mt_us" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+mt(us)"	};
+    xkb_symbols		{ include "pc(pc105)+mt(us)+hurd"	};
     xkb_geometry	{ include "pc(pc102)"		};
 };
 xkb_keymap "sk_qwerty" {
     xkb_keycodes	{ include "xfree86"		};
-    xkb_types		{ include "default"		};
+    xkb_types		{ include "default+hurd"	};
     xkb_compatibility	{ include "default"		};
-    xkb_symbols		{ include "pc(pc105)+sk(qwerty)"	};
+    xkb_symbols		{ include "pc(pc105)+sk(qwerty)+hurd"	};
     xkb_geometry	{ include "pc"			};
 };
