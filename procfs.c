@@ -66,6 +66,14 @@ fail:
 
 error_t procfs_get_contents (struct node *np, void **data, size_t *data_len)
 {
+  if (np->nn->ops->enable_refresh_hack_and_break_readdir && np->nn->contents)
+    {
+      if (np->nn->ops->cleanup_contents)
+	np->nn->ops->cleanup_contents (np->nn->hook, np->nn->contents,
+				       np->nn->contents_len);
+      np->nn->contents = NULL;
+    }
+
   if (! np->nn->contents && np->nn->ops->get_contents)
     {
       void *contents;

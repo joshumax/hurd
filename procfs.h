@@ -27,6 +27,14 @@ struct procfs_node_ops
 
   /* Destroy this node.  */
   void (*cleanup) (void *hook);
+
+  /* FIXME: This is needed because the root node is persistent, and we
+     want the list of processes to be updated. However, this means that
+     readdir() on the root node runs the risk of returning incoherent
+     results if done in multiple runs and processes are added/removed in
+     the meantime.  The right way to fix this is probably to add a
+     getroot() user hook function to libnetfs.  */
+  int enable_refresh_hack_and_break_readdir;
 };
 
 /* These helper functions can be used as procfs_node_ops.cleanup_contents. */

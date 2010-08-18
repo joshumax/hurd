@@ -74,6 +74,7 @@ proclist_make_node (process_t process)
     .lookup = proclist_lookup,
     .cleanup_contents = procfs_cleanup_contents_with_free,
     .cleanup = free,
+    .enable_refresh_hack_and_break_readdir = 1,
   };
   struct proclist_node *pl;
 
