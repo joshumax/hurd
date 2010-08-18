@@ -67,6 +67,7 @@ process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
     { NULL, }
   };
   struct process_node *pn;
+  struct node *np;
 
   pn = malloc (sizeof *pn);
   if (! pn)
@@ -76,7 +77,10 @@ process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
   pn->pid = pid;
   memcpy (&pn->info, info, sizeof pn->info);
 
-  return procfs_dir_make_node (entries, pn, process_cleanup);
+  np = procfs_dir_make_node (entries, pn, process_cleanup);
+  np->nn_stat.st_uid = pn->info.owner;
+
+  return np;
 }
 
 error_t
