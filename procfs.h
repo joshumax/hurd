@@ -22,7 +22,10 @@ struct procfs_node_ops
 
   /* Lookup NAME in this directory, and store the result in *np.  The
      returned node should be created by lookup() using procfs_make_node() 
-     or a derived function.  */
+     or a derived function.  Note that the parent will be kept alive as
+     long as the child exists, so you can safely reference the parent's
+     data from the child.  You may want to consider locking if there's
+     any mutation going on, though.  */
   error_t (*lookup) (void *hook, const char *name, struct node **np);
 
   /* Destroy this node.  */

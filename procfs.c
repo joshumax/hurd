@@ -14,6 +14,9 @@ struct netnode
   /* (cached) contents of the node */
   void *contents;
   size_t contents_len;
+
+  /* parent directory, if applicable */
+  struct node *parent;
 };
 
 void
@@ -97,8 +100,24 @@ error_t procfs_lookup (struct node *np, const char *name, struct node **npp)
 {
   error_t err = ENOENT;
 
-  if (np->nn->ops->lookup)
-    err = np->nn->ops->lookup (np->nn->hook, name, npp);
+  if (err && ! strcmp (name, "."))
+    {
+      netfs_nref(*npp = np);
+      err = 0;
+    }
+
+  if (err && np->nn->parent && ! strcmp (name, ".."))
+    {
+      netfs_nref(*npp = np->nn->parent);
+      err = 0;
+    }
+
+  if (err && np->nn->ops->lookup)
+    {
+      err = np->nn->ops->lookup (np->nn->hook, name, npp);
+      if (! err)
+	netfs_nref ((*npp)->nn->parent = np);
+    }
 
   return err;
 }
@@ -110,6 +129,9 @@ void procfs_cleanup (struct node *np)
 
   if (np->nn->ops->cleanup)
     np->nn->ops->cleanup (np->nn->hook);
+
+  if (np->nn->parent)
+    netfs_nrele (np->nn->parent);
 
   free (np->nn);
 }

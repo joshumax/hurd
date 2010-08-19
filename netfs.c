@@ -151,10 +151,11 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
   error_t err;
 
   err = procfs_lookup (dir, name, np);
+  mutex_unlock (&dir->lock);
+
   if (! err)
     mutex_lock (&(*np)->lock);
 
-  mutex_unlock (&dir->lock);
   return err;
 }
 
