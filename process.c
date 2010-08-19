@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <hurd/process.h>
 #include "procfs.h"
@@ -57,6 +58,113 @@ process_argz_make_node (void *dir_hook, void *entry_hook)
   return procfs_make_node (&ops, zn);
 }
 
+/* The other files don't need any information besides the data in struct
+   process_node. Furthermore, their contents don't have any nul byte.
+   Consequently, we use a simple "multiplexer" based on the information
+   below.  */
+
+struct process_file_node
+{
+  struct process_node pn;
+  error_t (*get_contents) (struct process_node *pn, char **contents);
+};
+
+static char mapstate (int hurd_state)
+{
+  return '?';
+}
+
+static error_t
+process_file_gc_stat (struct process_node *pn, char **contents)
+{
+  char *argz;
+  size_t argz_len;
+  int len;
+
+  argz = NULL, argz_len = 0;
+  proc_getprocargs(pn->procserv, pn->pid, &argz, &argz_len);
+
+  len = asprintf (contents,
+      "%d (%s) %c "		/* pid, command, state */
+      "%d %d %d "		/* ppid, pgid, session */
+      "%d %d "			/* controling tty stuff */
+      "%u "			/* flags, as defined by <linux/sched.h> */
+      "%lu %lu %lu %lu "	/* page fault counts */
+      "%lu %lu %ld %ld "	/* user/sys times, in sysconf(_SC_CLK_TCK) */
+      "%ld %ld "		/* scheduler params (priority, nice) */
+      "%ld %ld "		/* number of threads, [obsolete] */
+      "%llu "			/* start time since boot (jiffies) */
+      "%lu %ld %lu "		/* virtual size, rss, rss limit */
+      "%lu %lu %lu %lu %lu "	/* some vm addresses (code, stack, sp, pc) */
+      "%lu %lu %lu %lu "	/* pending, blocked, ignored and caught sigs */
+      "%lu "			/* wait channel */
+      "%lu %lu "		/* swap usage (not maintained in Linux) */
+      "%d "			/* exit signal, to be sent to the parent */
+      "%d "			/* last processor used */
+      "%u %u "			/* RT priority and policy */
+      "%llu "			/* aggregated block I/O delay */
+      "\n",
+      pn->pid, argz ?: "", mapstate (pn->info.state),
+      pn->info.ppid, pn->info.pgrp, pn->info.session,
+      0, 0,
+      0,
+      0L, 0L, 0L, 0L,
+      0L, 0L, 0L, 0L,
+      0L, 0L,
+      0L, 0L,
+      0LL,
+      0L, 0L, 0L,
+      0L, 0L, 0L, 0L, 0L,
+      0L, 0L, 0L, 0L,
+      0L,
+      0L, 0L,
+      0,
+      0,
+      0, 0,
+      0LL);
+
+  vm_deallocate (mach_task_self (), (vm_address_t) argz, argz_len);
+
+  if (len < 0)
+    return ENOMEM;
+
+  return 0;
+}
+
+static error_t
+process_file_get_contents (void *hook, void **contents, size_t *contents_len)
+{
+  struct process_file_node *fn = hook;
+  error_t err;
+
+  err = fn->get_contents (&fn->pn, (char **) contents);
+  if (err)
+    return err;
+
+  *contents_len = strlen (*contents);
+  return 0;
+}
+
+static struct node *
+process_file_make_node (void *dir_hook, void *entry_hook)
+{
+  static const struct procfs_node_ops ops = {
+    .get_contents = process_file_get_contents,
+    .cleanup_contents = procfs_cleanup_contents_with_free,
+    .cleanup = free,
+  };
+  struct process_file_node *fn;
+
+  fn = malloc (sizeof *fn);
+  if (! fn)
+    return NULL;
+
+  memcpy (&fn->pn, dir_hook, sizeof fn->pn);
+  fn->get_contents = entry_hook;
+
+  return procfs_make_node (&ops, fn);
+}
+
 
 static struct node *
 process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
@@ -64,6 +172,7 @@ process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
   static const struct procfs_dir_entry entries[] = {
     { "cmdline",	process_argz_make_node,		proc_getprocargs,	},
     { "environ",	process_argz_make_node,		proc_getprocenv,	},
+    { "stat",		process_file_make_node,		process_file_gc_stat,	},
     { NULL, }
   };
   struct process_node *pn;
