@@ -13,11 +13,12 @@ struct procfs_dir_node
 static error_t
 procfs_dir_get_contents (void *hook, void **contents, size_t *contents_len)
 {
+  static const char dot_dotdot[] = ".\0..";
   struct procfs_dir_node *dn = hook;
   const struct procfs_dir_entry *ent;
   char *pos;
 
-  *contents_len = 0;
+  *contents_len = sizeof dot_dotdot;
   for (ent = dn->entries; ent->name; ent++)
     *contents_len += strlen (ent->name) + 1;
 
@@ -25,7 +26,8 @@ procfs_dir_get_contents (void *hook, void **contents, size_t *contents_len)
   if (! *contents)
     return ENOMEM;
 
-  pos = *contents;
+  memcpy (*contents, dot_dotdot, sizeof dot_dotdot);
+  pos = *contents + sizeof dot_dotdot;
   for (ent = dn->entries; ent->name; ent++)
     {
       strcpy (pos, ent->name);
