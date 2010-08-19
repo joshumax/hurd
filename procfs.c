@@ -67,6 +67,29 @@ fail:
   return NULL;
 }
 
+/* FIXME: possibly not the fastest hash function... */
+ino64_t
+procfs_make_ino (struct node *np, const char *filename)
+{
+  unsigned short x[3];
+
+  if (! strcmp (filename, "."))
+    return np->nn_stat.st_ino;
+  if (! strcmp (filename, ".."))
+    return np->nn->parent ? np->nn->parent->nn_stat.st_ino : /* FIXME: */ 42;
+
+  assert (sizeof np->nn_stat.st_ino > sizeof x);
+  memcpy (x, &np->nn_stat.st_ino, sizeof x);
+
+  while (*filename)
+    {
+      x[0] ^= *(filename++);
+      jrand48 (x);
+    }
+
+  return jrand48 (x);
+}
+
 error_t procfs_get_contents (struct node *np, void **data, size_t *data_len)
 {
   if (np->nn->ops->enable_refresh_hack_and_break_readdir && np->nn->contents)
@@ -116,7 +139,10 @@ error_t procfs_lookup (struct node *np, const char *name, struct node **npp)
     {
       err = np->nn->ops->lookup (np->nn->hook, name, npp);
       if (! err)
-	netfs_nref ((*npp)->nn->parent = np);
+        {
+	  (*npp)->nn_stat.st_ino = procfs_make_ino (np, name);
+	  netfs_nref ((*npp)->nn->parent = np);
+	}
     }
 
   return err;

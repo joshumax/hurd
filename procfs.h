@@ -51,6 +51,11 @@ struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook);
 
 /* Interface for the libnetfs side. */
 
+/* Get the inode number which will be given to a child of NP named FILENAME.
+   This allows us to retreive them for readdir() without creating the
+   corresponding child nodes.  */
+ino64_t procfs_make_ino (struct node *np, const char *filename);
+
 error_t procfs_get_contents (struct node *np, void **data, size_t *data_len);
 error_t procfs_lookup (struct node *np, const char *name, struct node **npp);
 void procfs_cleanup (struct node *np);

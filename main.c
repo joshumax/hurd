@@ -42,6 +42,10 @@ root_make_node (struct node **np)
   if (! *np)
     return ENOMEM;
 
+  /* Since this one is not created through proc_lookup(), we have to affect an
+     inode number to it.  */
+  (*np)->nn_stat.st_ino = * (uint32_t *) "PROC";
+
   return 0;
 }
 
