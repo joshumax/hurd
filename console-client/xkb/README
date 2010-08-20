@@ -61,14 +61,14 @@ current Hurd version this is /lib/hurd/console).
 Using it:
 
 To use it you need XKB configuration files. These are included with
-XFree and will be placed in /etc/X11/xkb on most systems.
+XFree and will be placed in /share/X11/xkb on most systems.
 
 You can replace "pc_kbd" in your console client startup line with
 "xkb" and it will work with the default configuration. If you want a
 non-default configuration these options exists:
 
 --xkbdir : The root directory of the xkb configuration, by default
- this is /etc/X11/xkb.
+ this is /share/X11/xkb.
 
 --keymapfile : The file that hold the descriptions of the default
  keymaps file. This file holds the description of all keymaps. This
@@ -85,9 +85,9 @@ non-default configuration these options exists:
 By default console switching, etc. is not possible. I wrote some XKB
 extensions and configuration files to use these extensions. You can
 find these files in the xkb directory in the tarball. Copy these files
-to where your XKB configuration files are (usually /etc/X11/xkb). 
+to where your XKB configuration files are (usually /share/X11/xkb). 
 
-for example: xkb/keymap/hurd will be copied to /etc/X11/xkb/keymap.
+for example: xkb/keymap/hurd will be copied to /share/X11/xkb/keymap.
 
 To use these extensions you have to use the hurd keymaps file. This
 holds all keymaps extended with Hurd features. Use "--keymapfile
