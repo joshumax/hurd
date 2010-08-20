@@ -76,7 +76,7 @@ non-default configuration these options exists:
  "keymap/xfree86" is used.
 
 --keymap : The keymap to use. By default en_US is used. Examples of
- some other keymaps are: fr, us, de, dvorak.
+ some other keymaps are: fr, us, de, dvorak. Example: --keymap=de
 
 --ctrlaltbs : CTRL+Alt+Backspace will exit the console client.
 --no-ctrlaltbs : CTRL+Alt+Backspace will not exit the console client.
