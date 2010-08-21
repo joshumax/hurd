@@ -24,6 +24,28 @@ char *netfs_server_version = PROCFS_SERVER_VERSION;
 /* Maximum number of symlinks to follow before returning ELOOP. */
 int netfs_maxsymlinks = PROCFS_MAXSYMLINKS;
 
+/* The user must define this function.  Make sure that NP->nn_stat is
+   filled with the most current information.  CRED identifies the user
+   responsible for the operation. NP is locked.  */
+error_t netfs_validate_stat (struct node *np, struct iouser *cred)
+{
+  void *contents;
+  size_t contents_len;
+  error_t err;
+
+  /* Only symlinks need to have their size filled, before a read is
+     attempted.  */
+  if (! S_ISLNK (np->nn_stat.st_mode))
+    return 0;
+
+  err = procfs_get_contents (np, &contents, &contents_len);
+  if (err)
+    return err;
+
+  np->nn_stat.st_size = contents_len;
+  return 0;
+}
+
 /* The user must define this function.  Read from the locked file NP
    for user CRED starting at OFFSET and continuing for up to *LEN
    bytes.  Put the data at DATA.  Set *LEN to the amount successfully
@@ -56,7 +78,17 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
 error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
 				char *buf)
 {
-  return EIO;
+  char *contents;
+  size_t contents_len;
+  error_t err;
+
+  err = procfs_get_contents (np, (void **) &contents, &contents_len);
+  if (err)
+    return err;
+
+  assert (contents_len == np->nn_stat.st_size);
+  memcpy (buf, contents, contents_len);
+  return 0;
 }
 
 /* Helper function for netfs_get_dirents() below.  CONTENTS is an argz
@@ -209,14 +241,6 @@ error_t netfs_report_access (struct iouser *cred, struct node *np,
 
 
 /* Trivial or unsupported libnetfs callbacks. */
-
-/* The user must define this function.  Make sure that NP->nn_stat is
-   filled with the most current information.  CRED identifies the user
-   responsible for the operation. NP is locked.  */
-error_t netfs_validate_stat (struct node *np, struct iouser *cred)
-{
-  return 0;
-}
 
 /* The user must define this function.  This should attempt a chmod
    call for the user specified by CRED on locked node NP, to change
