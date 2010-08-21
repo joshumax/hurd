@@ -235,6 +235,7 @@ alias			{ return ALIAS;	  	}
 indicator		{ return INDICATOR; 	}
 virtual_modifiers	{ return VMODS; 	}
 virtualmods		{ return VMODS; 	}
+vmods			{ return VMODS; 	}
 type			{ return TYPE;    	}
 data                    { return DATA;          }
 modifiers		{ return MODS; 		}
