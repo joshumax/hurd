@@ -1062,6 +1062,7 @@ symbolssect:
 symbolname:
   IDENTIFIER { $$ = XStringToKeysym ($1); }
 | NUM { $$ = $1 + '0' }
+| HEX { $$ = $1; }
 ;
 
 /* None or more keysyms, assigned to a single group of the current
