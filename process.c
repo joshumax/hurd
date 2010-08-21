@@ -224,6 +224,6 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
   if (! *np)
     return ENOMEM;
 
-  (*np)->nn_stat.st_uid = proc_stat_owner_uid (ps);
+  procfs_node_chown (*np, proc_stat_owner_uid (ps));
   return 0;
 }

@@ -67,6 +67,25 @@ fail:
   return NULL;
 }
 
+void procfs_node_chown (struct node *np, uid_t owner)
+{
+  np->nn_stat.st_uid = owner;
+}
+
+void procfs_node_chmod (struct node *np, mode_t mode)
+{
+  np->nn_stat.st_mode = (np->nn_stat.st_mode & S_IFMT) | mode;
+  np->nn_translated = np->nn_stat.st_mode;
+}
+
+void procfs_node_chtype (struct node *np, mode_t type)
+{
+  np->nn_stat.st_mode = (np->nn_stat.st_mode & ~S_IFMT) | type;
+  np->nn_translated = np->nn_stat.st_mode;
+  if (type == S_IFLNK)
+    procfs_node_chmod (np, 0777);
+}
+
 /* FIXME: possibly not the fastest hash function... */
 ino64_t
 procfs_make_ino (struct node *np, const char *filename)

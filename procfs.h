@@ -48,6 +48,19 @@ void procfs_cleanup_contents_with_vm_deallocate (void *, void *, size_t);
    enough memory.  In this case, ops->cleanup will be invoked.  */
 struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook);
 
+/* Set the owner of the node NP.  Must be called right after the node
+   has been created.  */
+void procfs_node_chown (struct node *np, uid_t owner);
+
+/* Set the permission bits of the node NP.  Must be called right after
+   the node has been created.  */
+void procfs_node_chmod (struct node *np, mode_t mode);
+
+/* Set the type of the node NP.  If type is S_IFLNK, appropriate
+   permission bits will be set as well.  Must be called right after the
+   node has been created.  */
+void procfs_node_chtype (struct node *np, mode_t type);
+
 
 /* Interface for the libnetfs side. */
 
