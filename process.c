@@ -119,6 +119,9 @@ struct process_file_desc
   /* The cmdline and environ contents don't need any cleaning since they are
      part of a proc_stat structure.  */
   int no_cleanup;
+
+  /* If specified, the file mode to be set with procfs_node_chmod().  */
+  mode_t mode;
 };
 
 /* Information associated to an actual file node.  */
@@ -160,6 +163,7 @@ process_file_make_node (void *dir_hook, void *entry_hook)
     .cleanup = free,
   };
   struct process_file_node *f;
+  struct node *np;
 
   f = malloc (sizeof *f);
   if (! f)
@@ -168,7 +172,15 @@ process_file_make_node (void *dir_hook, void *entry_hook)
   f->desc = entry_hook;
   f->ps = dir_hook;
 
-  return procfs_make_node (f->desc->no_cleanup ? &ops_no_cleanup : &ops, f);
+  np = procfs_make_node (f->desc->no_cleanup ? &ops_no_cleanup : &ops, f);
+  if (! np)
+    return NULL;
+
+  procfs_node_chown (np, proc_stat_owner_uid (f->ps));
+  if (f->desc->mode)
+    procfs_node_chmod (np, f->desc->mode);
+
+  return np;
 }
 
 
@@ -189,6 +201,7 @@ static struct procfs_dir_entry entries[] = {
       .get_contents = process_file_gc_environ,
       .needs = PSTAT_ENV,
       .no_cleanup = 1,
+      .mode = 0400,
     },
   },
   {
@@ -199,6 +212,7 @@ static struct procfs_dir_entry entries[] = {
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
 	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
 	| PSTAT_THREAD_WAIT,
+      .mode = 0400,
     },
   },
   {}
