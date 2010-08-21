@@ -108,6 +108,28 @@ rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
   return *contents_len >= 0 ? 0 : ENOMEM;
 }
 
+static error_t
+rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
+{
+  host_load_info_data_t hli;
+  mach_msg_type_number_t cnt;
+  error_t err;
+
+  cnt = HOST_LOAD_INFO_COUNT;
+  err = host_info (mach_host_self (), HOST_LOAD_INFO, (host_info_t) &hli, &cnt);
+  if (err)
+    return err;
+
+  assert (cnt == HOST_LOAD_INFO_COUNT);
+  *contents_len = asprintf ((char **) contents,
+      "%.2f %.2f %.2f 1/0 0\n",
+      hli.avenrun[0] / (double) LOAD_SCALE,
+      hli.avenrun[1] / (double) LOAD_SCALE,
+      hli.avenrun[2] / (double) LOAD_SCALE);
+
+  return *contents_len >= 0 ? 0 : ENOMEM;
+}
+
 static struct node *
 rootdir_file_make_node (void *dir_hook, void *entry_hook)
 {
@@ -136,6 +158,14 @@ static struct procfs_dir_entry rootdir_entries[] = {
     .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_stat,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "loadavg",
+    .make_node = rootdir_file_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_loadavg,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },
