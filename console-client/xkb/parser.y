@@ -1377,7 +1377,7 @@ key_set_keysym (struct key *key, group_t group, int level, symbol ks)
 
   if ((level + 1) > key->groups[group].width)
     {
-      keysyms = realloc (keysyms, level + 1);
+      keysyms = realloc (keysyms, (level + 1)*sizeof(symbol));
 
       if (!keys)
 	{
@@ -1408,9 +1408,9 @@ key_set_action (struct key *key, group_t group, int level, xkb_action_t *action)
 
   if ((size_t) (level + 1) > width)
     {
-      actions = realloc (actions, level + 1);
-      /* Previous levels have no actions defined.  */
-      memset (&actions[level - 1], 0, level - width);
+      actions = realloc (actions, (level + 1)*sizeof(xkb_action_t *));
+      /* Levels between 'width' and 'level' have no actions defined. */
+      memset (&actions[width], 0, (level - width)*sizeof(xkb_action_t *));
 
       if (!keys)
 	{
