@@ -87,7 +87,7 @@ procfs_make_ino (struct node *np, const char *filename)
       jrand48 (x);
     }
 
-  return jrand48 (x);
+  return (unsigned long) jrand48 (x);
 }
 
 error_t procfs_get_contents (struct node *np, void **data, size_t *data_len)

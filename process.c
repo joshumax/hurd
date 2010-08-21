@@ -1,100 +1,75 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <hurd/process.h>
+#include <hurd/resource.h>
+#include <mach/vm_param.h>
+#include <ps.h>
 #include "procfs.h"
 #include "procfs_dir.h"
 #include "process.h"
+
+/* Implementations for the process_file_desc.get_contents callback.  */
 
-struct process_node {
-  process_t procserv;
-  pid_t pid;
-  struct procinfo info;
-};
-
-
-/* The proc_getprocargs() and proc_getprocenv() calls have the same
-   prototype and we use them in the same way; namely, publish the data
-   they return as-is.  We take advantage of this to have common code and
-   use a function pointer as the procfs_dir "entry hook" to choose the
-   call to use on a file by file basis.  */
-
-struct process_argz_node
+static char *
+process_file_gc_cmdline (struct proc_stat *ps, size_t *len)
 {
-  struct process_node pn;
-  error_t (*getargz) (process_t, pid_t, void **, mach_msg_type_number_t *);
-};
-
-static error_t
-process_argz_get_contents (void *hook, void **contents, size_t *contents_len)
-{
-  struct process_argz_node *pz = hook;
-  error_t err;
-
-  *contents_len = 0;
-  err = pz->getargz (pz->pn.procserv, pz->pn.pid, contents, contents_len);
-  if (err)
-    return EIO;
-
-  return 0;
+  *len = proc_stat_args_len(ps);
+  return proc_stat_args(ps);
 }
 
-static struct node *
-process_argz_make_node (void *dir_hook, void *entry_hook)
+static char *
+process_file_gc_environ (struct proc_stat *ps, size_t *len)
 {
-  static const struct procfs_node_ops ops = {
-    .get_contents = process_argz_get_contents,
-    .cleanup_contents = procfs_cleanup_contents_with_vm_deallocate,
-    .cleanup = free,
-  };
-  struct process_argz_node *zn;
-
-  zn = malloc (sizeof *zn);
-  if (! zn)
-    return NULL;
-
-  memcpy (&zn->pn, dir_hook, sizeof zn->pn);
-  zn->getargz = entry_hook;
-
-  return procfs_make_node (&ops, zn);
+  *len = proc_stat_args_len(ps);
+  return proc_stat_args(ps);
 }
 
-/* The other files don't need any information besides the data in struct
-   process_node. Furthermore, their contents don't have any nul byte.
-   Consequently, we use a simple "multiplexer" based on the information
-   below.  */
-
-struct process_file_node
+static char state_char (struct proc_stat *ps)
 {
-  struct process_node pn;
-  error_t (*get_contents) (struct process_node *pn, char **contents);
-};
+  int i;
 
-static char mapstate (int hurd_state)
-{
+  for (i = 0; (1 << i) & (PSTAT_STATE_P_STATES | PSTAT_STATE_T_STATES); i++)
+    if (proc_stat_state (ps) & (1 << i))
+      return proc_stat_state_tags[i];
+
   return '?';
 }
 
-static error_t
-process_file_gc_stat (struct process_node *pn, char **contents)
+static long int sc_tv (time_value_t tv)
 {
-  char *argz;
-  size_t argz_len;
-  int len;
+  double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
+  return usecs * sysconf(_SC_CLK_TCK) / 1000000;
+}
 
-  argz = NULL, argz_len = 0;
-  proc_getprocargs(pn->procserv, pn->pid, &argz, &argz_len);
+static long long int jiff_tv (time_value_t tv)
+{
+  double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
+  /* Let's say a jiffy is 1/100 of a second.. */
+  return usecs * 100 / 1000000;
+}
 
-  len = asprintf (contents,
+static char *
+process_file_gc_stat (struct proc_stat *ps, size_t *len)
+{
+  struct procinfo *pi = proc_stat_proc_info (ps);
+  task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+  thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
+  char *contents;
+
+  /* See proc(5) for more information about the contents of each field for the
+     Linux procfs.  */
+  *len = asprintf (&contents,
       "%d (%s) %c "		/* pid, command, state */
       "%d %d %d "		/* ppid, pgid, session */
       "%d %d "			/* controling tty stuff */
       "%u "			/* flags, as defined by <linux/sched.h> */
       "%lu %lu %lu %lu "	/* page fault counts */
       "%lu %lu %ld %ld "	/* user/sys times, in sysconf(_SC_CLK_TCK) */
-      "%ld %ld "		/* scheduler params (priority, nice) */
-      "%ld %ld "		/* number of threads, [obsolete] */
+      "%d %d "			/* scheduler params (priority, nice) */
+      "%d %ld "			/* number of threads, [obsolete] */
       "%llu "			/* start time since boot (jiffies) */
-      "%lu %ld %lu "		/* virtual size, rss, rss limit */
+      "%lu %ld %lu "		/* virtual size (bytes), rss (pages), rss lim */
       "%lu %lu %lu %lu %lu "	/* some vm addresses (code, stack, sp, pc) */
       "%lu %lu %lu %lu "	/* pending, blocked, ignored and caught sigs */
       "%lu "			/* wait channel */
@@ -104,44 +79,71 @@ process_file_gc_stat (struct process_node *pn, char **contents)
       "%u %u "			/* RT priority and policy */
       "%llu "			/* aggregated block I/O delay */
       "\n",
-      pn->pid, argz ?: "", mapstate (pn->info.state),
-      pn->info.ppid, pn->info.pgrp, pn->info.session,
-      0, 0,
-      0,
-      0L, 0L, 0L, 0L,
-      0L, 0L, 0L, 0L,
-      0L, 0L,
-      0L, 0L,
-      0LL,
-      0L, 0L, 0L,
+      proc_stat_pid (ps), proc_stat_args (ps), state_char (ps),
+      pi->ppid, pi->pgrp, pi->session,
+      0, 0,		/* no such thing as a major:minor for ctty */
+      0,		/* no such thing as CLONE_* flags on Hurd */
+      0L, 0L, 0L, 0L,	/* TASK_EVENTS_INFO is unavailable on GNU Mach */
+      sc_tv (thbi->user_time), sc_tv (thbi->system_time),
+      0L, 0L,		/* cumulative time for children */
+      MACH_PRIORITY_TO_NICE(thbi->base_priority) + 20,
+      MACH_PRIORITY_TO_NICE(thbi->base_priority),
+      pi->nthreads, 0L,
+      jiff_tv (thbi->creation_time), /* FIXME: ... since boot */
+      (long unsigned int) tbi->virtual_size,
+      (long unsigned int) tbi->resident_size / PAGE_SIZE, 0L,
       0L, 0L, 0L, 0L, 0L,
       0L, 0L, 0L, 0L,
-      0L,
+      (long unsigned int) proc_stat_thread_rpc (ps), /* close enough */
       0L, 0L,
       0,
       0,
       0, 0,
       0LL);
 
-  vm_deallocate (mach_task_self (), (vm_address_t) argz, argz_len);
-
-  if (len < 0)
-    return ENOMEM;
-
-  return 0;
+  return len >= 0 ? contents : NULL;
 }
+
+
+/* Describes a file in a process directory.  This is used as an "entry hook"
+ * for our procfs_dir entry table, passed to process_file_make_node.  */
+struct process_file_desc
+{
+  /* The proc_stat information required to get the contents of this file.  */
+  ps_flags_t needs;
+
+  /* Once we have acquired the necessary information, there can be only
+     memory allocation errors, hence this simplified signature.  */
+  char *(*get_contents) (struct proc_stat *ps, size_t *len);
+
+  /* The cmdline and environ contents don't need any cleaning since they are
+     part of a proc_stat structure.  */
+  int no_cleanup;
+};
+
+/* Information associated to an actual file node.  */
+struct process_file_node
+{
+  const struct process_file_desc *desc;
+  struct proc_stat *ps;
+};
 
 static error_t
 process_file_get_contents (void *hook, void **contents, size_t *contents_len)
 {
-  struct process_file_node *fn = hook;
+  struct process_file_node *file = hook;
   error_t err;
 
-  err = fn->get_contents (&fn->pn, (char **) contents);
+  err = proc_stat_set_flags (file->ps, file->desc->needs);
   if (err)
-    return err;
+    return EIO;
+  if ((proc_stat_flags (file->ps) & file->desc->needs) != file->desc->needs)
+    return EIO;
 
-  *contents_len = strlen (*contents);
+  *contents = file->desc->get_contents (file->ps, contents_len);
+  if (! *contents)
+    return ENOMEM;
+
   return 0;
 }
 
@@ -153,68 +155,75 @@ process_file_make_node (void *dir_hook, void *entry_hook)
     .cleanup_contents = procfs_cleanup_contents_with_free,
     .cleanup = free,
   };
-  struct process_file_node *fn;
-
-  fn = malloc (sizeof *fn);
-  if (! fn)
-    return NULL;
-
-  memcpy (&fn->pn, dir_hook, sizeof fn->pn);
-  fn->get_contents = entry_hook;
-
-  return procfs_make_node (&ops, fn);
-}
-
-
-static struct node *
-process_make_node (process_t procserv, pid_t pid, const struct procinfo *info)
-{
-  static const struct procfs_dir_entry entries[] = {
-    { "cmdline",	process_argz_make_node,		proc_getprocargs,	},
-    { "environ",	process_argz_make_node,		proc_getprocenv,	},
-    { "stat",		process_file_make_node,		process_file_gc_stat,	},
-    { NULL, }
+  static const struct procfs_node_ops ops_no_cleanup = {
+    .get_contents = process_file_get_contents,
+    .cleanup = free,
   };
-  struct process_node *pn;
-  struct node *np;
+  struct process_file_node *f;
 
-  pn = malloc (sizeof *pn);
-  if (! pn)
+  f = malloc (sizeof *f);
+  if (! f)
     return NULL;
 
-  pn->procserv = procserv;
-  pn->pid = pid;
-  memcpy (&pn->info, info, sizeof pn->info);
+  f->desc = entry_hook;
+  f->ps = dir_hook;
 
-  np = procfs_dir_make_node (entries, pn, process_cleanup);
-  np->nn_stat.st_uid = pn->info.owner;
-
-  return np;
+  return procfs_make_node (f->desc->no_cleanup ? &ops_no_cleanup : &ops, f);
 }
+
+
+static struct procfs_dir_entry entries[] = {
+  {
+    .name = "cmdline",
+    .make_node = process_file_make_node,
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_cmdline,
+      .needs = PSTAT_ARGS,
+      .no_cleanup = 1,
+    },
+  },
+  {
+    .name = "environ",
+    .make_node = process_file_make_node,
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_environ,
+      .needs = PSTAT_ENV,
+      .no_cleanup = 1,
+    },
+  },
+  {
+    .name = "stat",
+    .make_node = process_file_make_node,
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_stat,
+      .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
+	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
+	| PSTAT_THREAD_WAIT,
+    },
+  },
+  {}
+};
 
 error_t
-process_lookup_pid (process_t procserv, pid_t pid, struct node **np)
+process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
 {
-  procinfo_t info;
-  size_t info_sz;
-  data_t tw;
-  size_t tw_sz;
-  int flags;
+  struct proc_stat *ps;
   error_t err;
 
-  tw_sz = info_sz = 0, flags = 0;
-  err = proc_getprocinfo (procserv, pid, &flags, &info, &info_sz, &tw, &tw_sz);
+  err = _proc_stat_create (pid, pc, &ps);
   if (err == ESRCH)
     return ENOENT;
   if (err)
     return EIO;
 
-  assert (info_sz * sizeof *info >= sizeof (struct procinfo));
-  *np = process_make_node (procserv, pid, (struct procinfo *) info);
-  vm_deallocate (mach_task_self (), (vm_address_t) info, info_sz);
+  err = proc_stat_set_flags (ps, PSTAT_OWNER_UID);
+  if (err || ! (proc_stat_flags (ps) & PSTAT_OWNER_UID))
+    return EIO;
 
+  *np = procfs_dir_make_node (entries, ps, (void (*)(void *)) _proc_stat_free);
   if (! *np)
     return ENOMEM;
 
+  (*np)->nn_stat.st_uid = proc_stat_owner_uid (ps);
   return 0;
 }

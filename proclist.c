@@ -3,27 +3,23 @@
 #include <string.h>
 #include <mach.h>
 #include <hurd/process.h>
+#include <ps.h>
 #include "procfs.h"
 #include "process.h"
 
 #define PID_STR_SIZE (3 * sizeof (pid_t) + 1)
 
-struct proclist_node
-{
-  process_t process;
-};
-
 static error_t
 proclist_get_contents (void *hook, void **contents, size_t *contents_len)
 {
-  struct proclist_node *pl = hook;
+  struct ps_context *pc = hook;
   pidarray_t pids;
   mach_msg_type_number_t num_pids;
   error_t err;
   int i;
 
   num_pids = 0;
-  err = proc_getallpids (pl->process, &pids, &num_pids);
+  err = proc_getallpids (pc->server, &pids, &num_pids);
   if (err)
     return EIO;
 
@@ -48,7 +44,7 @@ proclist_get_contents (void *hook, void **contents, size_t *contents_len)
 static error_t
 proclist_lookup (void *hook, const char *name, struct node **np)
 {
-  struct proclist_node *pl = hook;
+  struct ps_context *pc = hook;
   char *endp;
   pid_t pid;
 
@@ -63,28 +59,27 @@ proclist_lookup (void *hook, const char *name, struct node **np)
   if (*endp)
     return ENOENT;
 
-  return process_lookup_pid (pl->process, pid, np);
+  return process_lookup_pid (pc, pid, np);
 }
 
-struct node *
-proclist_make_node (process_t process)
+error_t
+proclist_create_node (process_t procserv, struct node **np)
 {
   static const struct procfs_node_ops ops = {
     .get_contents = proclist_get_contents,
     .lookup = proclist_lookup,
     .cleanup_contents = procfs_cleanup_contents_with_free,
-    .cleanup = free,
+    .cleanup = (void (*)(void *)) ps_context_free,
     .enable_refresh_hack_and_break_readdir = 1,
   };
-  struct proclist_node *pl;
+  struct ps_context *pc;
+  error_t err;
 
-  pl = malloc (sizeof *pl);
-  if (! pl)
-    return NULL;
+  err = ps_context_create (procserv, &pc);
+  if (err)
+    return err;
 
-  memset (pl, 0, sizeof *pl);
-  pl->process = process;
-
-  return procfs_make_node (&ops, pl);
+  *np = procfs_make_node (&ops, pc);
+  return 0;
 }
 

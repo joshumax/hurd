@@ -25,16 +25,17 @@ root_make_node (struct node **np)
   /* We never have two root nodes alive simultaneously, so it's ok to
      have this as static data.  */
   static struct node *root_dirs[3];
+  error_t err;
 
   root_dirs[0] = procfs_dir_make_node (static_entries, NULL, NULL);
   if (! root_dirs[0])
     return ENOMEM;
 
-  root_dirs[1] = proclist_make_node (getproc ());
-  if (! root_dirs[1])
+  err = proclist_create_node (getproc (), &root_dirs[1]);
+  if (err)
     {
       netfs_nrele (root_dirs[0]);
-      return ENOMEM;
+      return err;
     }
 
   root_dirs[2] = NULL;
