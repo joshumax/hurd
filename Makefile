@@ -1,6 +1,6 @@
 TARGET = procfs
 OBJS = procfs.o netfs.o procfs_file.o procfs_dir.o \
-       process.o proclist.o dircat.o main.o
+       process.o proclist.o rootdir.o dircat.o main.o
 LIBS = -lnetfs -lps
 
 CC = gcc

@@ -4,34 +4,23 @@
 #include <argp.h>
 #include <hurd/netfs.h>
 #include "procfs.h"
-#include "procfs_file.h"
-#include "procfs_dir.h"
 #include "proclist.h"
+#include "rootdir.h"
 #include "dircat.h"
-
-static struct node *
-make_file (void *dir_hook, void *ent_hook)
-{
-  return procfs_file_make_node (ent_hook, -1, NULL);
-}
 
 error_t
 root_make_node (struct node **np)
 {
-  static const struct procfs_dir_entry static_entries[] = {
-    { "hello",		make_file,	"Hello, World!\n" },
-    { "goodbye",	make_file,	"Goodbye, cruel World!\n" },
-  };
   /* We never have two root nodes alive simultaneously, so it's ok to
      have this as static data.  */
   static struct node *root_dirs[3];
   error_t err;
 
-  root_dirs[0] = procfs_dir_make_node (static_entries, NULL, NULL);
-  if (! root_dirs[0])
-    return ENOMEM;
+  err = proclist_create_node (getproc (), &root_dirs[0]);
+  if (err)
+    return err;
 
-  err = proclist_create_node (getproc (), &root_dirs[1]);
+  err = rootdir_create_node (&root_dirs[1]);
   if (err)
     {
       netfs_nrele (root_dirs[0]);
