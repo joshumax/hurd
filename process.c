@@ -8,6 +8,7 @@
 #include "procfs.h"
 #include "procfs_dir.h"
 #include "process.h"
+#include "main.h"
 
 /* Implementations for the process_file_desc.get_contents callback.  */
 
@@ -39,7 +40,7 @@ static char state_char (struct proc_stat *ps)
 static long int sc_tv (time_value_t tv)
 {
   double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
-  return usecs * sysconf(_SC_CLK_TCK) / 1000000;
+  return usecs * opt_clk_tck / 1000000;
 }
 
 static long long int jiff_tv (time_value_t tv)

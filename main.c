@@ -1,5 +1,6 @@
 #include <mach.h>
 #include <hurd.h>
+#include <unistd.h>
 #include <error.h>
 #include <argp.h>
 #include <hurd/netfs.h>
@@ -7,6 +8,42 @@
 #include "proclist.h"
 #include "rootdir.h"
 #include "dircat.h"
+#include "main.h"
+
+/* Command-line options */
+int opt_clk_tck;
+
+static error_t
+argp_parser (int key, char *arg, struct argp_state *state)
+{
+  char *endp;
+
+  switch (key)
+  {
+    case 'h':
+      opt_clk_tck = strtol (arg, &endp, 0);
+      if (*endp || ! *arg || opt_clk_tck <= 0)
+	error (1, 0, "--clk-tck: HZ should be a positive integer");
+      break;
+  }
+
+  return 0;
+}
+
+struct argp argp = {
+  .options = (struct argp_option []) {
+    { "clk-tck", 'h', "HZ", 0,
+	"Unit used for the values expressed in system clock ticks "
+	"(default: sysconf(_SC_CLK_TCK))" },
+    {}
+  },
+  .parser = argp_parser,
+  .doc = "A virtual filesystem emulating the Linux procfs.",
+  .children = (struct argp_child []) {
+    { &netfs_std_startup_argp, },
+    {}
+  },
+};
 
 error_t
 root_make_node (struct node **np)
@@ -43,7 +80,8 @@ int main (int argc, char **argv)
 {
   mach_port_t bootstrap;
 
-  argp_parse (&netfs_std_startup_argp, argc, argv, 0, 0, 0);
+  opt_clk_tck = sysconf(_SC_CLK_TCK);
+  argp_parse (&argp, argc, argv, 0, 0, 0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)

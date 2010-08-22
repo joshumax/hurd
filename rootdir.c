@@ -7,6 +7,7 @@
 #include <ps.h>
 #include "procfs.h"
 #include "procfs_dir.h"
+#include "main.h"
 
 /* This implements a directory node with the static files in /proc */
 
@@ -105,7 +106,7 @@ rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
     return EIO;
 
   timersub (&time, &boottime, &time);
-  up_ticks = sysconf(_SC_CLK_TCK) * (time.tv_sec + time.tv_usec / 1000000.);
+  up_ticks = opt_clk_tck * (time.tv_sec + time.tv_usec / 1000000.);
 
   *contents_len = asprintf ((char **) contents,
       /* Does Mach keeps track of any of this? */
