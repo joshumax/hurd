@@ -1,5 +1,6 @@
 #include <mach/vm_statistics.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
@@ -74,8 +75,11 @@ rootdir_gc_uptime (void *hook, void **contents, size_t *contents_len)
   up_secs = time.tv_sec + time.tv_usec / 1000000.;
 
   /* The second field is the total idle time. As far as I know we don't
-     keep track of it. */
-  *contents_len = asprintf ((char **) contents, "%.2lf %.2lf\n", up_secs, 0.);
+     keep track of it.  However, procps uses it to compute "USER_HZ", and
+     proc(5) specifies that it should be equal to USER_HZ times the idle value
+     in ticks from /proc/stat.  So we assume a completely idle system both here
+     and there to make that work.  */
+  *contents_len = asprintf ((char **) contents, "%.2lf %.2lf\n", up_secs, up_secs);
 
   return *contents_len >= 0 ? 0 : ENOMEM;
 }
@@ -83,9 +87,14 @@ rootdir_gc_uptime (void *hook, void **contents, size_t *contents_len)
 static error_t
 rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
 {
-  struct timeval boottime;
+  struct timeval boottime, time;
   struct vm_statistics vmstats;
+  unsigned long up_ticks;
   error_t err;
+
+  err = gettimeofday (&time, NULL);
+  if (err < 0)
+    return errno;
 
   err = get_boottime (hook, &boottime);
   if (err)
@@ -95,14 +104,19 @@ rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
   if (err)
     return EIO;
 
+  timersub (&time, &boottime, &time);
+  up_ticks = sysconf(_SC_CLK_TCK) * (time.tv_sec + time.tv_usec / 1000000.);
+
   *contents_len = asprintf ((char **) contents,
       /* Does Mach keeps track of any of this? */
-      "cpu  0 0 0 0 0 0 0 0 0\n"
-      "cpu0 0 0 0 0 0 0 0 0 0\n"
+      "cpu  0 0 0 %lu 0 0 0 0 0\n"
+      "cpu0 0 0 0 %lu 0 0 0 0 0\n"
       "intr 0\n"
       /* This we know. */
       "page %d %d\n"
       "btime %lu\n",
+      up_ticks,
+      up_ticks,
       vmstats.pageins, vmstats.pageouts,
       boottime.tv_sec);
 
