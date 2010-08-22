@@ -12,6 +12,7 @@
 
 /* Command-line options */
 int opt_clk_tck;
+mode_t opt_stat_mode;
 
 static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
@@ -25,6 +26,12 @@ argp_parser (int key, char *arg, struct argp_state *state)
       if (*endp || ! *arg || opt_clk_tck <= 0)
 	error (1, 0, "--clk-tck: HZ should be a positive integer");
       break;
+
+    case 's':
+      opt_stat_mode = strtol (arg, &endp, 8);
+      if (*endp || ! *arg || opt_stat_mode & ~07777)
+	error (1, 0, "--stat-mode: MODE should be an octal mode");
+      break;
   }
 
   return 0;
@@ -35,6 +42,12 @@ struct argp argp = {
     { "clk-tck", 'h', "HZ", 0,
 	"Unit used for the values expressed in system clock ticks "
 	"(default: sysconf(_SC_CLK_TCK))" },
+    { "stat-mode", 's', "MODE", 0,
+	"The [pid]/stat file publishes information which on Hurd is only "
+	"available to the process owner.  "
+	"You can use this option to override its mode to be more permissive "
+	"for compatibility purposes.  "
+	"(default: 0400)" },
     {}
   },
   .parser = argp_parser,
@@ -81,6 +94,7 @@ int main (int argc, char **argv)
   mach_port_t bootstrap;
 
   opt_clk_tck = sysconf(_SC_CLK_TCK);
+  opt_stat_mode = 0400;
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);

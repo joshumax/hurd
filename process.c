@@ -206,6 +206,7 @@ static struct procfs_dir_entry entries[] = {
     },
   },
   {
+    /* Beware of the hack below, which requires this to be entries[2].  */
     .name = "stat",
     .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
@@ -234,6 +235,10 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
   err = proc_stat_set_flags (ps, PSTAT_OWNER_UID);
   if (err || ! (proc_stat_flags (ps) & PSTAT_OWNER_UID))
     return EIO;
+
+  /* FIXME: have a separate proc_desc structure for each file, so this can be
+     accessed in a more robust and straightforward way. */
+  ((struct process_file_desc *) entries[2].hook)->mode = opt_stat_mode;
 
   *np = procfs_dir_make_node (entries, ps, (void (*)(void *)) _proc_stat_free);
   if (! *np)
