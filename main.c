@@ -13,6 +13,7 @@
 /* Command-line options */
 int opt_clk_tck;
 mode_t opt_stat_mode;
+pid_t opt_fake_self;
 
 static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
@@ -32,6 +33,17 @@ argp_parser (int key, char *arg, struct argp_state *state)
       if (*endp || ! *arg || opt_stat_mode & ~07777)
 	error (1, 0, "--stat-mode: MODE should be an octal mode");
       break;
+
+    case 'S':
+      if (arg)
+        {
+	  opt_fake_self = strtol (arg, &endp, 0);
+	  if (*endp || ! *arg)
+	    error (1, 0, "--fake-self: PID must be an integer");
+	}
+      else
+	opt_fake_self = 1;
+      break;
   }
 
   return 0;
@@ -48,6 +60,10 @@ struct argp argp = {
 	"You can use this option to override its mode to be more permissive "
 	"for compatibility purposes.  "
 	"(default: 0400)" },
+    { "fake-self", 'S', "PID", OPTION_ARG_OPTIONAL,
+	"Provide a fake \"self\" symlink to the given PID, for compatibility "
+	"purposes.  If PID is omitted, \"self\" will point to init.  "
+	"(default: no self link)" },
     {}
   },
   .parser = argp_parser,
@@ -95,6 +111,7 @@ int main (int argc, char **argv)
 
   opt_clk_tck = sysconf(_SC_CLK_TCK);
   opt_stat_mode = 0400;
+  opt_fake_self = -1;
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);

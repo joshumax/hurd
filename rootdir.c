@@ -156,9 +156,8 @@ rootdir_gc_empty (void *hook, void **contents, size_t *contents_len)
 static error_t
 rootdir_gc_fakeself (void *hook, void **contents, size_t *contents_len)
 {
-  *contents = "1";
-  *contents_len = strlen (*contents);
-  return 0;
+  *contents_len = asprintf ((char **) contents, "%d", opt_fake_self);
+  return *contents_len >= 0 ? 0 : ENOMEM;
 }
 
 
@@ -177,7 +176,15 @@ rootdir_symlink_make_node (void *dir_hook, void *entry_hook)
   return np;
 }
 
-static struct procfs_dir_entry rootdir_entries[] = {
+static const struct procfs_dir_entry rootdir_entries[] = {
+  {
+    .name = "self",
+    .make_node = rootdir_symlink_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_fakeself,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
   {
     .name = "version",
     .make_node = rootdir_file_make_node,
@@ -217,13 +224,6 @@ static struct procfs_dir_entry rootdir_entries[] = {
       .get_contents = rootdir_gc_empty,
     },
   },
-  {
-    .name = "self",
-    .make_node = rootdir_symlink_make_node,
-    .hook = & (struct procfs_node_ops) {
-      .get_contents = rootdir_gc_fakeself,
-    },
-  },
   {}
 };
 
@@ -231,14 +231,18 @@ error_t
 rootdir_create_node (struct node **np)
 {
   struct ps_context *pc;
+  const struct procfs_dir_entry *entries;
   error_t err;
 
   err = ps_context_create (getproc (), &pc);
   if (err)
     return err;
 
-  *np = procfs_dir_make_node (rootdir_entries, pc,
-			      (void (*)(void *)) ps_context_free);
+  entries = rootdir_entries;
+  if (opt_fake_self < 0)
+    entries++;
+
+  *np = procfs_dir_make_node (entries, pc, (void (*)(void *)) ps_context_free);
   return 0;
 }
 
