@@ -4,7 +4,8 @@
 
 struct dircat_node
 {
-  struct node **dirs;
+  int num_dirs;
+  struct node *dirs[0];
 };
 
 static error_t
@@ -17,7 +18,7 @@ dircat_get_contents (void *hook, char **contents, ssize_t *contents_len)
   pos = 0;
   *contents = malloc (sz = 512);
 
-  for (i=0; dcn->dirs[i]; i++)
+  for (i=0; i < dcn->num_dirs; i++)
     {
       char *subcon;
       ssize_t sublen;
@@ -49,19 +50,20 @@ dircat_lookup (void *hook, const char *name, struct node **np)
   int i;
 
   err = ENOENT;
-  for (i=0; err && dcn->dirs[i]; i++)
+  for (i=0; err && i < dcn->num_dirs; i++)
     err = procfs_lookup (dcn->dirs[i], name, np);
 
   return err;
 }
 
 static void
-dircat_release_dirs (struct node **dirs)
+dircat_release_dirs (struct node *const *dirs, int num_dirs)
 {
   int i;
 
-  for (i=0; dirs[i]; i++)
-    netfs_nrele (dirs[i]);
+  for (i=0; i < num_dirs; i++)
+    if (dirs[i])
+      netfs_nrele (dirs[i]);
 }
 
 static void
@@ -69,12 +71,12 @@ dircat_cleanup (void *hook)
 {
   struct dircat_node *dcn = hook;
 
-  dircat_release_dirs (dcn->dirs);
+  dircat_release_dirs (dcn->dirs, dcn->num_dirs);
   free (dcn);
 }
 
 struct node *
-dircat_make_node (struct node **dirs)
+dircat_make_node (struct node *const *dirs, int num_dirs)
 {
   static struct procfs_node_ops ops = {
     .get_contents = dircat_get_contents,
@@ -85,15 +87,22 @@ dircat_make_node (struct node **dirs)
     .enable_refresh_hack_and_break_readdir = 1,
   };
   struct dircat_node *dcn;
+  int i;
 
-  dcn = malloc (sizeof *dcn);
+  for (i=0; i < num_dirs; i++)
+    if (! dirs[i])
+      goto fail;
+
+  dcn = malloc (sizeof *dcn + num_dirs * sizeof dcn->dirs[0]);
   if (! dcn)
-    {
-      dircat_release_dirs (dirs);
-      return NULL;
-    }
+    goto fail;
 
-  dcn->dirs = dirs;
+  dcn->num_dirs = num_dirs;
+  memcpy (dcn->dirs, dirs, num_dirs * sizeof dcn->dirs[0]);
   return procfs_make_node (&ops, dcn);
+
+fail:
+  dircat_release_dirs (dirs, num_dirs);
+  return NULL;
 }
 

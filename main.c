@@ -118,35 +118,20 @@ struct argp argp = {
 error_t
 root_make_node (struct ps_context *pc, struct node **np)
 {
-  /* We never have two root nodes alive simultaneously, so it's ok to
-     have this as static data.  */
-  static struct node *root_dirs[3];
+  struct node *root_dirs[] = {
+    proclist_make_node (pc),
+    rootdir_make_node (pc),
+  };
 
-  root_dirs[0] = proclist_make_node (pc);
-  if (! root_dirs[0])
-    goto nomem;
-
-  root_dirs[1] = rootdir_make_node (pc);
-  if (! root_dirs[1])
-    goto nomem;
-
-  root_dirs[2] = NULL;
-  *np = dircat_make_node (root_dirs);
+  *np = dircat_make_node (root_dirs, sizeof root_dirs / sizeof root_dirs[0]);
   if (! *np)
-    goto nomem;
+    return ENOMEM;
 
   /* Since this one is not created through proc_lookup(), we have to affect an
      inode number to it.  */
   (*np)->nn_stat.st_ino = * (uint32_t *) "PROC";
 
   return 0;
-
-nomem:
-  if (root_dirs[1])
-    netfs_nrele (root_dirs[1]);
-  if (root_dirs[0])
-    netfs_nrele (root_dirs[0]);
-  return ENOMEM;
 }
 
 int main (int argc, char **argv)
