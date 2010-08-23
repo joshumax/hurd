@@ -69,7 +69,6 @@ proclist_make_node (struct ps_context *pc)
     .get_contents = proclist_get_contents,
     .lookup = proclist_lookup,
     .cleanup_contents = procfs_cleanup_contents_with_free,
-    .enable_refresh_hack_and_break_readdir = 1,
   };
   return procfs_make_node (&ops, pc);
 }

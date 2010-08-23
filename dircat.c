@@ -23,6 +23,9 @@ dircat_get_contents (void *hook, char **contents, ssize_t *contents_len)
       char *subcon;
       ssize_t sublen;
 
+      /* Make sure we're not getting some old stuff.  */
+      procfs_refresh (dcn->dirs[i]);
+
       err = procfs_get_contents (dcn->dirs[i], &subcon, &sublen);
       if (err)
         {
@@ -83,8 +86,6 @@ dircat_make_node (struct node *const *dirs, int num_dirs)
     .cleanup_contents = procfs_cleanup_contents_with_free,
     .lookup = dircat_lookup,
     .cleanup = dircat_cleanup,
-    /* necessary so that it propagates to proclist */
-    .enable_refresh_hack_and_break_readdir = 1,
   };
   struct dircat_node *dcn;
   int i;

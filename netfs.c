@@ -57,6 +57,9 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
   ssize_t contents_len;
   error_t err;
 
+  if (offset == 0)
+    procfs_refresh (np);
+
   err = procfs_get_contents (np, &contents, &contents_len);
   if (err)
     return err;
@@ -139,6 +142,9 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
   char *contents;
   ssize_t contents_len;
   error_t err;
+
+  if (entry == 0)
+    procfs_refresh (dir);
  
   err = procfs_get_contents (dir, &contents, &contents_len);
   if (err)

@@ -111,14 +111,6 @@ procfs_make_ino (struct node *np, const char *filename)
 
 error_t procfs_get_contents (struct node *np, char **data, ssize_t *data_len)
 {
-  if (np->nn->ops->enable_refresh_hack_and_break_readdir && np->nn->contents)
-    {
-      if (np->nn->ops->cleanup_contents)
-	np->nn->ops->cleanup_contents (np->nn->hook, np->nn->contents,
-				       np->nn->contents_len);
-      np->nn->contents = NULL;
-    }
-
   if (! np->nn->contents && np->nn->ops->get_contents)
     {
       char *contents;
@@ -139,6 +131,14 @@ error_t procfs_get_contents (struct node *np, char **data, ssize_t *data_len)
   *data = np->nn->contents;
   *data_len = np->nn->contents_len;
   return 0;
+}
+
+void procfs_refresh (struct node *np)
+{
+  if (np->nn->contents && np->nn->ops->cleanup_contents)
+    np->nn->ops->cleanup_contents (np->nn->hook, np->nn->contents, np->nn->contents_len);
+
+  np->nn->contents = NULL;
 }
 
 error_t procfs_lookup (struct node *np, const char *name, struct node **npp)
@@ -172,8 +172,7 @@ error_t procfs_lookup (struct node *np, const char *name, struct node **npp)
 
 void procfs_cleanup (struct node *np)
 {
-  if (np->nn->contents && np->nn->ops->cleanup_contents)
-    np->nn->ops->cleanup_contents (np->nn->hook, np->nn->contents, np->nn->contents_len);
+  procfs_refresh (np);
 
   if (np->nn->ops->cleanup)
     np->nn->ops->cleanup (np->nn->hook);
