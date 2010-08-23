@@ -147,7 +147,8 @@ int main (int argc, char **argv)
     error (1, err, "Could not create the root node");
 
   netfs_startup (bootstrap, 0);
-  for (;;)
-    netfs_server_loop ();
+  netfs_server_loop ();
+
+  assert (0 /* netfs_server_loop returned after all */);
 }
 
