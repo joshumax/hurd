@@ -1,3 +1,4 @@
+#include <mach/vm_param.h>
 #include <mach/vm_statistics.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -9,7 +10,10 @@
 #include "procfs_dir.h"
 #include "main.h"
 
-/* This implements a directory node with the static files in /proc */
+/* This implements a directory node with the static files in /proc.
+   NB: the libps functions for host information return static storage;
+   using them would require locking and as a consequence it would be
+   more complicated, not simpler.  */
 
 #define INIT_PID 1
 
@@ -147,10 +151,83 @@ rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
-rootdir_gc_empty (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_meminfo (void *hook, void **contents, size_t *contents_len)
 {
-  *contents_len = 0;
-  return 0;
+  host_basic_info_data_t hbi;
+  mach_msg_type_number_t cnt;
+  struct vm_statistics vmstats;
+  error_t err;
+
+  err = vm_statistics (mach_task_self (), &vmstats);
+  if (err)
+    return EIO;
+
+  cnt = HOST_BASIC_INFO_COUNT;
+  err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
+  if (err)
+    return err;
+
+  assert (cnt == HOST_BASIC_INFO_COUNT);
+  *contents_len = asprintf ((char **) contents,
+      "MemTotal: %14lu kB\n"
+      "MemFree:  %14lu kB\n"
+      "Active:   %14lu kB\n"
+      "Inactive: %14lu kB\n"
+      "Mlocked:  %14lu kB\n"
+      ,
+      /* TODO: check that these are really 1024-bytes kBs. */
+      (long unsigned) hbi.memory_size / 1024,
+      (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
+      (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
+      (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
+      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024);
+
+  return *contents_len >= 0 ? 0 : ENOMEM;
+}
+
+static error_t
+rootdir_gc_vmstat (void *hook, void **contents, size_t *contents_len)
+{
+  host_basic_info_data_t hbi;
+  mach_msg_type_number_t cnt;
+  struct vm_statistics vmstats;
+  error_t err;
+
+  err = vm_statistics (mach_task_self (), &vmstats);
+  if (err)
+    return EIO;
+
+  cnt = HOST_BASIC_INFO_COUNT;
+  err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
+  if (err)
+    return err;
+
+  assert (cnt == HOST_BASIC_INFO_COUNT);
+  *contents_len = asprintf ((char **) contents,
+      "nr_free_pages %lu\n"
+      "nr_inactive_anon %lu\n"
+      "nr_active_anon %lu\n"
+      "nr_inactive_file %lu\n"
+      "nr_active_file %lu\n"
+      "nr_unevictable %lu\n"
+      "nr_mlock %lu\n"
+      "pgpgin %lu\n"
+      "pgpgout %lu\n"
+      "pgfault %lu\n",
+      (long unsigned) vmstats.free_count,
+      /* FIXME: how can we distinguish the anon/file pages? Maybe we can
+         ask the default pager how many it manages? */
+      (long unsigned) vmstats.inactive_count,
+      (long unsigned) vmstats.active_count,
+      (long unsigned) 0,
+      (long unsigned) 0,
+      (long unsigned) vmstats.wire_count,
+      (long unsigned) vmstats.wire_count,
+      (long unsigned) vmstats.pageins,
+      (long unsigned) vmstats.pageouts,
+      (long unsigned) vmstats.faults);
+
+  return *contents_len >= 0 ? 0 : ENOMEM;
 }
 
 static error_t
@@ -221,7 +298,16 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "meminfo",
     .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
-      .get_contents = rootdir_gc_empty,
+      .get_contents = rootdir_gc_meminfo,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "vmstat",
+    .make_node = rootdir_file_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_vmstat,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },
   {}
