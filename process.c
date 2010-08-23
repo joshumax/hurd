@@ -9,22 +9,20 @@
 #include "procfs_dir.h"
 #include "process.h"
 #include "main.h"
+
+/* This module implements the process directories and the files they
+   contain.  A libps proc_stat structure is created for each process
+   node, and is used by the individual file content generators as a
+   source of information.  Each possible file (cmdline, environ, ...) is
+   decribed in a process_file_desc structure, which specifies which bits
+   of information (ie. libps flags) it needs, and what function should
+   be used to generate the file's contents.
+
+   The content generators are defined first, followed by glue logic and
+   entry table.  */
+
 
-/* Implementations for the process_file_desc.get_contents callback.  */
-
-static ssize_t
-process_file_gc_cmdline (struct proc_stat *ps, char **contents)
-{
-  *contents = proc_stat_args(ps);
-  return proc_stat_args_len(ps);
-}
-
-static ssize_t
-process_file_gc_environ (struct proc_stat *ps, char **contents)
-{
-  *contents = proc_stat_env(ps);
-  return proc_stat_env_len(ps);
-}
+/* Helper functions */
 
 static char state_char (struct proc_stat *ps)
 {
@@ -58,17 +56,26 @@ static const char *state_string (struct proc_stat *ps)
   return "? (unknown)";
 }
 
-static long int sc_tv (time_value_t tv)
+static long long int timeval_jiffies (time_value_t tv)
 {
-  double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
-  return usecs * opt_clk_tck / 1000000;
+  double secs = tv.seconds + tv.microseconds / 1000000.;
+  return secs * opt_clk_tck;
 }
 
-static long long int jiff_tv (time_value_t tv)
+/* Actual content generators */
+
+static ssize_t
+process_file_gc_cmdline (struct proc_stat *ps, char **contents)
 {
-  double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
-  /* Let's say a jiffy is 1/100 of a second.. */
-  return usecs * 100 / 1000000;
+  *contents = proc_stat_args(ps);
+  return proc_stat_args_len(ps);
+}
+
+static ssize_t
+process_file_gc_environ (struct proc_stat *ps, char **contents)
+{
+  *contents = proc_stat_env(ps);
+  return proc_stat_env_len(ps);
 }
 
 static ssize_t
@@ -105,17 +112,18 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       0, 0,		/* no such thing as a major:minor for ctty */
       0,		/* no such thing as CLONE_* flags on Hurd */
       0L, 0L, 0L, 0L,	/* TASK_EVENTS_INFO is unavailable on GNU Mach */
-      sc_tv (thbi->user_time), sc_tv (thbi->system_time),
+      (long unsigned) timeval_jiffies (thbi->user_time),
+      (long unsigned) timeval_jiffies (thbi->system_time),
       0L, 0L,		/* cumulative time for children */
       MACH_PRIORITY_TO_NICE(thbi->base_priority) + 20,
       MACH_PRIORITY_TO_NICE(thbi->base_priority),
       pi->nthreads, 0L,
-      jiff_tv (thbi->creation_time), /* FIXME: ... since boot */
-      (long unsigned int) tbi->virtual_size,
-      (long unsigned int) tbi->resident_size / PAGE_SIZE, 0L,
+      timeval_jiffies (thbi->creation_time), /* FIXME: ... since boot */
+      (long unsigned) tbi->virtual_size,
+      (long unsigned) tbi->resident_size / PAGE_SIZE, 0L,
       0L, 0L, 0L, 0L, 0L,
       0L, 0L, 0L, 0L,
-      (long unsigned int) proc_stat_thread_rpc (ps), /* close enough */
+      (long unsigned) proc_stat_thread_rpc (ps), /* close enough */
       0L, 0L,
       0,
       0,
@@ -127,6 +135,7 @@ static ssize_t
 process_file_gc_statm (struct proc_stat *ps, char **contents)
 {
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+
   return asprintf (contents,
       "%lu %lu 0 0 0 0 0\n",
       tbi->virtual_size  / sysconf(_SC_PAGE_SIZE),
@@ -137,6 +146,7 @@ static ssize_t
 process_file_gc_status (struct proc_stat *ps, char **contents)
 {
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+
   return asprintf (contents,
       "Name:\t%s\n"
       "State:\t%s\n"
@@ -165,47 +175,62 @@ process_file_gc_status (struct proc_stat *ps, char **contents)
       proc_stat_num_threads (ps));
 }
 
+
+/* Implementation of the file nodes. */
 
-/* Describes a file in a process directory.  This is used as an "entry hook"
- * for our procfs_dir entry table, passed to process_file_make_node.  */
+/* Describes a file in the process directories.  This structure is
+   filled in as an "entry hook" in our procfs_dir entry table and is
+   passed to the process_file_make_node function defined below.  */
 struct process_file_desc
 {
   /* The proc_stat information required to get the contents of this file.  */
   ps_flags_t needs;
 
-  /* Once we have acquired the necessary information, there can be only
-     memory allocation errors, hence this simplified signature.  */
+  /* Content generator to use for this file.  Once we have acquired the
+     necessary information, there can be only memory allocation errors,
+     hence this simplified signature.  */
   ssize_t (*get_contents) (struct proc_stat *ps, char **contents);
 
-  /* The cmdline and environ contents don't need any cleaning since they are
-     part of a proc_stat structure.  */
+  /* The cmdline and environ contents don't need any cleaning since they
+     point directly into the proc_stat structure.  */
   int no_cleanup;
 
   /* If specified, the file mode to be set with procfs_node_chmod().  */
   mode_t mode;
 };
 
-/* Information associated to an actual file node.  */
 struct process_file_node
 {
   const struct process_file_desc *desc;
   struct proc_stat *ps;
 };
 
+/* FIXME: lock the parent! */
 static error_t
 process_file_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   struct process_file_node *file = hook;
   error_t err;
 
+  /* Fetch the required information.  */
   err = proc_stat_set_flags (file->ps, file->desc->needs);
   if (err)
     return EIO;
   if ((proc_stat_flags (file->ps) & file->desc->needs) != file->desc->needs)
     return EIO;
 
+  /* Call the actual content generator (see the definitions below).  */
   *contents_len = file->desc->get_contents (file->ps, contents);
   return 0;
+}
+
+static void
+process_file_cleanup_contents (void *hook, char *contents, ssize_t len)
+{
+  struct process_file_node *file = hook;
+
+  if (! file->desc->no_cleanup)
+    free (contents);
 }
 
 static struct node *
@@ -213,11 +238,7 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
 {
   static const struct procfs_node_ops ops = {
     .get_contents = process_file_get_contents,
-    .cleanup_contents = procfs_cleanup_contents_with_free,
-    .cleanup = free,
-  };
-  static const struct procfs_node_ops ops_no_cleanup = {
-    .get_contents = process_file_get_contents,
+    .cleanup_contents = process_file_cleanup_contents,
     .cleanup = free,
   };
   struct process_file_node *f;
@@ -230,7 +251,7 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   f->desc = entry_hook;
   f->ps = dir_hook;
 
-  np = procfs_make_node (f->desc->no_cleanup ? &ops_no_cleanup : &ops, f);
+  np = procfs_make_node (&ops, f);
   if (! np)
     return NULL;
 
@@ -241,6 +262,18 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   return np;
 }
 
+/* Stat needs its own constructor in oreder to set its mode according to
+   the --stat-mode command-line option.  */
+static struct node *
+process_stat_make_node (void *dir_hook, const void *entry_hook)
+{
+  struct node *np = process_file_make_node (dir_hook, entry_hook);
+  if (np) procfs_node_chmod (np, opt_stat_mode);
+  return np;
+}
+
+
+/* Implementation of the process directory per se.  */
 
 static struct procfs_dir_entry entries[] = {
   {
@@ -261,22 +294,22 @@ static struct procfs_dir_entry entries[] = {
     },
   },
   {
-    /* Beware of the hack below, which requires this to be entries[2].  */
     .name = "stat",
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_stat,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
 	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
 	| PSTAT_THREAD_WAIT,
-      .mode = 0400,
     },
+    .ops = {
+      .make_node = process_stat_make_node,
+    }
   },
   {
     .name = "statm",
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_statm,
       .needs = PSTAT_TASK_BASIC,
-      .mode = 0444,
     },
   },
   {
@@ -285,7 +318,6 @@ static struct procfs_dir_entry entries[] = {
       .get_contents = process_file_gc_status,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
         | PSTAT_TASK_BASIC | PSTAT_OWNER_UID | PSTAT_NUM_THREADS,
-      .mode = 0444,
     },
   },
   {}
@@ -314,6 +346,10 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
   err = proc_stat_set_flags (ps, PSTAT_OWNER_UID);
   if (err || ! (proc_stat_flags (ps) & PSTAT_OWNER_UID))
     return EIO;
+
+  /* FIXME: have a separate proc_desc structure for each file, so this can be
+     accessed in a more robust and straightforward way. */
+  ((struct process_file_desc *) entries[2].hook)->mode = opt_stat_mode;
 
   /* FIXME: have a separate proc_desc structure for each file, so this can be
      accessed in a more robust and straightforward way. */
