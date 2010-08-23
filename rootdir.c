@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <sys/utsname.h>
+#include <sys/stat.h>
 #include <ps.h>
 #include "procfs.h"
 #include "procfs_dir.h"
@@ -130,10 +131,28 @@ rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
   return *contents_len >= 0 ? 0 : ENOMEM;
 }
 
+static error_t
+rootdir_gc_fakeself (void *hook, void **contents, size_t *contents_len)
+{
+  *contents = "1";
+  *contents_len = strlen (*contents);
+  return 0;
+}
+
+
 static struct node *
 rootdir_file_make_node (void *dir_hook, void *entry_hook)
 {
   return procfs_make_node (entry_hook, dir_hook);
+}
+
+static struct node *
+rootdir_symlink_make_node (void *dir_hook, void *entry_hook)
+{
+  struct node *np = procfs_make_node (entry_hook, dir_hook);
+  if (np)
+    procfs_node_chtype (np, S_IFLNK);
+  return np;
 }
 
 static struct procfs_dir_entry rootdir_entries[] = {
@@ -167,6 +186,13 @@ static struct procfs_dir_entry rootdir_entries[] = {
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_loadavg,
       .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "self",
+    .make_node = rootdir_symlink_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_fakeself,
     },
   },
   {}
