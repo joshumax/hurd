@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
+#include <argz.h>
 #include <ps.h>
 #include "procfs.h"
 #include "procfs_dir.h"
@@ -231,6 +232,41 @@ rootdir_gc_vmstat (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
+rootdir_gc_cmdline (void *hook, void **contents, size_t *contents_len)
+{
+  struct ps_context *pc = hook;
+  struct proc_stat *ps;
+  error_t err;
+
+  err = _proc_stat_create (opt_kernel_pid, pc, &ps);
+  if (err)
+    return EIO;
+
+  err = proc_stat_set_flags (ps, PSTAT_ARGS);
+  if (err || ! (proc_stat_flags (ps) & PSTAT_ARGS))
+    {
+      err = EIO;
+      goto out;
+    }
+
+  *contents_len = proc_stat_args_len (ps);
+  *contents = malloc (*contents_len);
+  if (! *contents)
+    {
+      err = ENOMEM;
+      goto out;
+    }
+
+  memcpy (*contents, proc_stat_args (ps), *contents_len);
+  argz_stringify (*contents, *contents_len, ' ');
+  ((char *) *contents)[*contents_len - 1] = '\n';
+
+out:
+  _proc_stat_free (ps);
+  return err;
+}
+
+static error_t
 rootdir_gc_fakeself (void *hook, void **contents, size_t *contents_len)
 {
   *contents_len = asprintf ((char **) contents, "%d", opt_fake_self);
@@ -307,6 +343,14 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_vmstat,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "cmdline",
+    .make_node = rootdir_file_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_cmdline,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },
