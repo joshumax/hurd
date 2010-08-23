@@ -37,6 +37,27 @@ static char state_char (struct proc_stat *ps)
   return '?';
 }
 
+static const char *state_string (struct proc_stat *ps)
+{
+  static const char *const state_strings[] = {
+    "T (stopped)",
+    "Z (zombie)",
+    "R (running)",
+    "H (halted)",
+    "D (disk sleep)",
+    "S (sleeping)",
+    "I (idle)",
+    NULL
+  };
+  int i;
+
+  for (i = 0; state_strings[i]; i++)
+    if (proc_stat_state (ps) & (1 << i))
+      return state_strings[i];
+
+  return "? (unknown)";
+}
+
 static long int sc_tv (time_value_t tv)
 {
   double usecs = ((double) tv.seconds) * 1000000 + tv.microseconds;
@@ -115,6 +136,42 @@ process_file_gc_statm (struct proc_stat *ps, size_t *len)
       "%lu %lu 0 0 0 0 0\n",
       tbi->virtual_size  / sysconf(_SC_PAGE_SIZE),
       tbi->resident_size / sysconf(_SC_PAGE_SIZE));
+
+  return len >= 0 ? contents : NULL;
+}
+
+static char *
+process_file_gc_status (struct proc_stat *ps, size_t *len)
+{
+  task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+  char *contents;
+
+  *len = asprintf (&contents,
+      "Name:\t%s\n"
+      "State:\t%s\n"
+      "Tgid:\t%u\n"
+      "Pid:\t%u\n"
+      "PPid:\t%u\n"
+      "Uid:\t%u\t%u\t%u\t%u\n"
+      "VmSize:\t%8u kB\n"
+      "VmPeak:\t%8u kB\n"
+      "VmRSS:\t%8u kB\n"
+      "VmHWM:\t%8u kB\n" /* ie. resident peak */
+      "Threads:\t%u\n",
+      proc_stat_args (ps),
+      state_string (ps),
+      proc_stat_pid (ps), /* XXX will need more work for threads */
+      proc_stat_pid (ps),
+      proc_stat_proc_info (ps)->ppid,
+      proc_stat_owner_uid (ps),
+      proc_stat_owner_uid (ps),
+      proc_stat_owner_uid (ps),
+      proc_stat_owner_uid (ps),
+      tbi->virtual_size / 1024,
+      tbi->virtual_size / 1024,
+      tbi->resident_size / 1024,
+      tbi->resident_size / 1024,
+      proc_stat_num_threads (ps));
 
   return len >= 0 ? contents : NULL;
 }
@@ -237,6 +294,16 @@ static struct procfs_dir_entry entries[] = {
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_statm,
       .needs = PSTAT_TASK_BASIC,
+      .mode = 0444,
+    },
+  },
+  {
+    .name = "status",
+    .make_node = process_file_make_node,
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_status,
+      .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
+        | PSTAT_TASK_BASIC | PSTAT_OWNER_UID | PSTAT_NUM_THREADS,
       .mode = 0444,
     },
   },
