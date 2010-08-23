@@ -105,6 +105,20 @@ process_file_gc_stat (struct proc_stat *ps, size_t *len)
   return len >= 0 ? contents : NULL;
 }
 
+static char *
+process_file_gc_statm (struct proc_stat *ps, size_t *len)
+{
+  task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+  char *contents;
+
+  *len = asprintf (&contents,
+      "%lu %lu 0 0 0 0 0\n",
+      tbi->virtual_size  / sysconf(_SC_PAGE_SIZE),
+      tbi->resident_size / sysconf(_SC_PAGE_SIZE));
+
+  return len >= 0 ? contents : NULL;
+}
+
 
 /* Describes a file in a process directory.  This is used as an "entry hook"
  * for our procfs_dir entry table, passed to process_file_make_node.  */
@@ -215,6 +229,15 @@ static struct procfs_dir_entry entries[] = {
 	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
 	| PSTAT_THREAD_WAIT,
       .mode = 0400,
+    },
+  },
+  {
+    .name = "statm",
+    .make_node = process_file_make_node,
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_statm,
+      .needs = PSTAT_TASK_BASIC,
+      .mode = 0444,
     },
   },
   {}
