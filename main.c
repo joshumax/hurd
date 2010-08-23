@@ -127,19 +127,24 @@ root_make_node (struct node **np)
 int main (int argc, char **argv)
 {
   mach_port_t bootstrap;
+  error_t err;
 
   opt_clk_tck = sysconf(_SC_CLK_TCK);
   opt_stat_mode = 0400;
   opt_fake_self = -1;
   opt_kernel_pid = 2;
-  argp_parse (&argp, argc, argv, 0, 0, 0);
+  err = argp_parse (&argp, argc, argv, 0, 0, 0);
+  if (err)
+    error (1, err, "Could not parse command line");
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
 
   netfs_init ();
-  root_make_node (&netfs_root_node);
+  err = root_make_node (&netfs_root_node);
+  if (err)
+    error (1, err, "Could not create the root node");
 
   netfs_startup (bootstrap, 0);
   for (;;)
