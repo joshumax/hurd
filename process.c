@@ -204,7 +204,7 @@ struct process_file_node
 };
 
 static error_t
-process_file_get_contents (void *hook, void **contents, size_t *contents_len)
+process_file_get_contents (void *hook, char **contents, size_t *contents_len)
 {
   struct process_file_node *file = hook;
   error_t err;

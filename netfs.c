@@ -29,7 +29,7 @@ int netfs_maxsymlinks = PROCFS_MAXSYMLINKS;
    responsible for the operation. NP is locked.  */
 error_t netfs_validate_stat (struct node *np, struct iouser *cred)
 {
-  void *contents;
+  char *contents;
   size_t contents_len;
   error_t err;
 
@@ -57,7 +57,7 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
   size_t contents_len;
   error_t err;
 
-  err = procfs_get_contents (np, (void **) &contents, &contents_len);
+  err = procfs_get_contents (np, &contents, &contents_len);
   if (err)
     return err;
 
@@ -82,7 +82,7 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
   size_t contents_len;
   error_t err;
 
-  err = procfs_get_contents (np, (void **) &contents, &contents_len);
+  err = procfs_get_contents (np, &contents, &contents_len);
   if (err)
     return err;
 
@@ -140,7 +140,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
   size_t contents_len;
   error_t err;
  
-  err = procfs_get_contents (dir, (void **) &contents, &contents_len);
+  err = procfs_get_contents (dir, &contents, &contents_len);
   if (err)
     return err;
 
@@ -159,7 +159,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
   putentries (contents, contents_len, nentries, NULL, datacnt);
   if (bufsize < *datacnt)
     {
-      void *n = mmap (0, *datacnt, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, 0, 0);
+      char *n = mmap (0, *datacnt, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, 0, 0);
       if (n == MAP_FAILED)
 	return ENOMEM;
 

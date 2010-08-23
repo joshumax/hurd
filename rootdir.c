@@ -44,7 +44,7 @@ get_boottime (struct ps_context *pc, struct timeval *tv)
 }
 
 static error_t
-rootdir_gc_version (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_version (void *hook, char **contents, size_t *contents_len)
 {
   struct utsname uts;
   int r;
@@ -53,7 +53,7 @@ rootdir_gc_version (void *hook, void **contents, size_t *contents_len)
   if (r < 0)
     return errno;
 
-  *contents_len = asprintf ((char **) contents,
+  *contents_len = asprintf (contents,
       "Linux version 2.6.1 (%s %s %s %s)\n",
       uts.sysname, uts.release, uts.version, uts.machine);
 
@@ -63,7 +63,7 @@ rootdir_gc_version (void *hook, void **contents, size_t *contents_len)
 /* Uptime -- we use the start time of init to deduce it. This is probably a bit
    fragile, as any clock update will make the result inaccurate. */
 static error_t
-rootdir_gc_uptime (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_uptime (void *hook, char **contents, size_t *contents_len)
 {
   struct timeval time, boottime;
   double up_secs;
@@ -85,13 +85,13 @@ rootdir_gc_uptime (void *hook, void **contents, size_t *contents_len)
      proc(5) specifies that it should be equal to USER_HZ times the idle value
      in ticks from /proc/stat.  So we assume a completely idle system both here
      and there to make that work.  */
-  *contents_len = asprintf ((char **) contents, "%.2lf %.2lf\n", up_secs, up_secs);
+  *contents_len = asprintf (contents, "%.2lf %.2lf\n", up_secs, up_secs);
 
   return *contents_len >= 0 ? 0 : ENOMEM;
 }
 
 static error_t
-rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_stat (void *hook, char **contents, size_t *contents_len)
 {
   struct timeval boottime, time;
   struct vm_statistics vmstats;
@@ -113,7 +113,7 @@ rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
   timersub (&time, &boottime, &time);
   up_ticks = opt_clk_tck * (time.tv_sec + time.tv_usec / 1000000.);
 
-  *contents_len = asprintf ((char **) contents,
+  *contents_len = asprintf (contents,
       /* Does Mach keeps track of any of this? */
       "cpu  0 0 0 %lu 0 0 0 0 0\n"
       "cpu0 0 0 0 %lu 0 0 0 0 0\n"
@@ -130,7 +130,7 @@ rootdir_gc_stat (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
-rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_loadavg (void *hook, char **contents, size_t *contents_len)
 {
   host_load_info_data_t hli;
   mach_msg_type_number_t cnt;
@@ -142,7 +142,7 @@ rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
     return err;
 
   assert (cnt == HOST_LOAD_INFO_COUNT);
-  *contents_len = asprintf ((char **) contents,
+  *contents_len = asprintf (contents,
       "%.2f %.2f %.2f 1/0 0\n",
       hli.avenrun[0] / (double) LOAD_SCALE,
       hli.avenrun[1] / (double) LOAD_SCALE,
@@ -152,7 +152,7 @@ rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
-rootdir_gc_meminfo (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_meminfo (void *hook, char **contents, size_t *contents_len)
 {
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
@@ -169,7 +169,7 @@ rootdir_gc_meminfo (void *hook, void **contents, size_t *contents_len)
     return err;
 
   assert (cnt == HOST_BASIC_INFO_COUNT);
-  *contents_len = asprintf ((char **) contents,
+  *contents_len = asprintf (contents,
       "MemTotal: %14lu kB\n"
       "MemFree:  %14lu kB\n"
       "Active:   %14lu kB\n"
@@ -187,7 +187,7 @@ rootdir_gc_meminfo (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
-rootdir_gc_vmstat (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_vmstat (void *hook, char **contents, size_t *contents_len)
 {
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
@@ -204,7 +204,7 @@ rootdir_gc_vmstat (void *hook, void **contents, size_t *contents_len)
     return err;
 
   assert (cnt == HOST_BASIC_INFO_COUNT);
-  *contents_len = asprintf ((char **) contents,
+  *contents_len = asprintf (contents,
       "nr_free_pages %lu\n"
       "nr_inactive_anon %lu\n"
       "nr_active_anon %lu\n"
@@ -232,7 +232,7 @@ rootdir_gc_vmstat (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
-rootdir_gc_cmdline (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_cmdline (void *hook, char **contents, size_t *contents_len)
 {
   struct ps_context *pc = hook;
   struct proc_stat *ps;
@@ -259,7 +259,7 @@ rootdir_gc_cmdline (void *hook, void **contents, size_t *contents_len)
 
   memcpy (*contents, proc_stat_args (ps), *contents_len);
   argz_stringify (*contents, *contents_len, ' ');
-  ((char *) *contents)[*contents_len - 1] = '\n';
+  (*contents)[*contents_len - 1] = '\n';
 
 out:
   _proc_stat_free (ps);
@@ -267,9 +267,9 @@ out:
 }
 
 static error_t
-rootdir_gc_fakeself (void *hook, void **contents, size_t *contents_len)
+rootdir_gc_fakeself (void *hook, char **contents, size_t *contents_len)
 {
-  *contents_len = asprintf ((char **) contents, "%d", opt_fake_self);
+  *contents_len = asprintf (contents, "%d", opt_fake_self);
   return *contents_len >= 0 ? 0 : ENOMEM;
 }
 

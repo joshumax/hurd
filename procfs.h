@@ -17,8 +17,8 @@ struct procfs_node_ops
      netnode->nn_stat.  For regular files and symlinks, they are what
      you would expect; for directories, they are an argz vector of the
      names of the entries.  */
-  error_t (*get_contents) (void *hook, void **contents, size_t *contents_len);
-  void (*cleanup_contents) (void *hook, void *contents, size_t contents_len);
+  error_t (*get_contents) (void *hook, char **contents, size_t *contents_len);
+  void (*cleanup_contents) (void *hook, char *contents, size_t contents_len);
 
   /* Lookup NAME in this directory, and store the result in *np.  The
      returned node should be created by lookup() using procfs_make_node() 
@@ -41,8 +41,8 @@ struct procfs_node_ops
 };
 
 /* These helper functions can be used as procfs_node_ops.cleanup_contents. */
-void procfs_cleanup_contents_with_free (void *, void *, size_t);
-void procfs_cleanup_contents_with_vm_deallocate (void *, void *, size_t);
+void procfs_cleanup_contents_with_free (void *, char *, size_t);
+void procfs_cleanup_contents_with_vm_deallocate (void *, char *, size_t);
 
 /* Create a new node and return it.  Returns NULL if it fails to allocate
    enough memory.  In this case, ops->cleanup will be invoked.  */
@@ -69,7 +69,7 @@ void procfs_node_chtype (struct node *np, mode_t type);
    corresponding child nodes.  */
 ino64_t procfs_make_ino (struct node *np, const char *filename);
 
-error_t procfs_get_contents (struct node *np, void **data, size_t *data_len);
+error_t procfs_get_contents (struct node *np, char **data, size_t *data_len);
 error_t procfs_lookup (struct node *np, const char *name, struct node **npp);
 void procfs_cleanup (struct node *np);
 
