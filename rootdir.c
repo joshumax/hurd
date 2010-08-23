@@ -266,6 +266,12 @@ out:
   return err;
 }
 
+static int
+rootdir_fakeself_exists ()
+{
+  return opt_fake_self >= 0;
+}
+
 static error_t
 rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -275,13 +281,13 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 
 
 static struct node *
-rootdir_file_make_node (void *dir_hook, void *entry_hook)
+rootdir_file_make_node (void *dir_hook, const void *entry_hook)
 {
   return procfs_make_node (entry_hook, dir_hook);
 }
 
 static struct node *
-rootdir_symlink_make_node (void *dir_hook, void *entry_hook)
+rootdir_symlink_make_node (void *dir_hook, const void *entry_hook)
 {
   struct node *np = procfs_make_node (entry_hook, dir_hook);
   if (np)
@@ -292,15 +298,17 @@ rootdir_symlink_make_node (void *dir_hook, void *entry_hook)
 static const struct procfs_dir_entry rootdir_entries[] = {
   {
     .name = "self",
-    .make_node = rootdir_symlink_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_fakeself,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
+    .ops = {
+      .make_node = rootdir_symlink_make_node,
+      .exists = rootdir_fakeself_exists,
+    }
   },
   {
     .name = "version",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_version,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -308,7 +316,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "uptime",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_uptime,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -316,7 +323,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "stat",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_stat,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -324,7 +330,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "loadavg",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_loadavg,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -332,7 +337,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "meminfo",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_meminfo,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -340,7 +344,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "vmstat",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_vmstat,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -348,7 +351,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "cmdline",
-    .make_node = rootdir_file_make_node,
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_cmdline,
       .cleanup_contents = procfs_cleanup_contents_with_free,
@@ -360,12 +362,12 @@ static const struct procfs_dir_entry rootdir_entries[] = {
 struct node
 *rootdir_make_node (struct ps_context *pc)
 {
-  const struct procfs_dir_entry *entries;
-
-  entries = rootdir_entries;
-  if (opt_fake_self < 0)
-    entries++;
-
-  return procfs_dir_make_node (entries, pc, NULL);
+  static const struct procfs_dir_ops ops = {
+    .entries = rootdir_entries,
+    .entry_ops = {
+      .make_node = rootdir_file_make_node,
+    },
+  };
+  return procfs_dir_make_node (&ops, pc);
 }
 

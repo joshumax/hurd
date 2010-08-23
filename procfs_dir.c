@@ -5,49 +5,71 @@
 
 struct procfs_dir_node
 {
-  const struct procfs_dir_entry *entries;
+  const struct procfs_dir_ops *ops;
   void *hook;
-  void (*cleanup) (void *hook);
 };
+
+static int
+entry_exists (struct procfs_dir_node *dir, const struct procfs_dir_entry *ent)
+{
+  if (ent->ops.exists)
+    return ent->ops.exists (dir->hook, ent->hook);
+  if (dir->ops->entry_ops.exists)
+    return dir->ops->entry_ops.exists (dir->hook, ent->hook);
+
+  return 1;
+}
 
 static error_t
 procfs_dir_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   static const char dot_dotdot[] = ".\0..";
-  struct procfs_dir_node *dn = hook;
+  struct procfs_dir_node *dir = hook;
   const struct procfs_dir_entry *ent;
-  char *pos;
+  int pos;
 
-  *contents_len = sizeof dot_dotdot;
-  for (ent = dn->entries; ent->name; ent++)
-    *contents_len += strlen (ent->name) + 1;
+  /* Evaluate how much space is needed.  Note that we include the hidden
+     entries, just in case their status changes between now and then.  */
+  pos = sizeof dot_dotdot;
+  for (ent = dir->ops->entries; ent->name; ent++)
+    pos += strlen (ent->name) + 1;
 
-  *contents = malloc (*contents_len);
+  *contents = malloc (pos);
   if (! *contents)
     return ENOMEM;
 
   memcpy (*contents, dot_dotdot, sizeof dot_dotdot);
-  pos = *contents + sizeof dot_dotdot;
-  for (ent = dn->entries; ent->name; ent++)
+  pos = sizeof dot_dotdot;
+  for (ent = dir->ops->entries; ent->name; ent++)
     {
-      strcpy (pos, ent->name);
+      if (! entry_exists (dir, ent))
+	continue;
+
+      strcpy (*contents + pos, ent->name);
       pos += strlen (ent->name) + 1;
     }
 
+  *contents_len = pos;
   return 0;
 }
 
 static error_t
 procfs_dir_lookup (void *hook, const char *name, struct node **np)
 {
-  struct procfs_dir_node *dn = hook;
+  struct procfs_dir_node *dir = hook;
   const struct procfs_dir_entry *ent;
 
-  for (ent = dn->entries; ent->name && strcmp (name, ent->name); ent++);
+  for (ent = dir->ops->entries; ent->name && strcmp (name, ent->name); ent++);
   if (! ent->name)
     return ENOENT;
 
-  *np = ent->make_node (dn->hook, ent->hook);
+  if (ent->ops.make_node)
+    *np = ent->ops.make_node (dir->hook, ent->hook);
+  else if (dir->ops->entry_ops.make_node)
+    *np = dir->ops->entry_ops.make_node (dir->hook, ent->hook);
+  else
+    return EGRATUITOUS;
+
   if (! *np)
     return ENOMEM;
 
@@ -57,17 +79,16 @@ procfs_dir_lookup (void *hook, const char *name, struct node **np)
 static void
 procfs_dir_cleanup (void *hook)
 {
-  struct procfs_dir_node *dn = hook;
+  struct procfs_dir_node *dir = hook;
 
-  if (dn->cleanup)
-    dn->cleanup (dn->hook);
+  if (dir->ops->cleanup)
+    dir->ops->cleanup (dir->hook);
 
-  free (dn);
+  free (dir);
 }
 
 struct node *
-procfs_dir_make_node (const struct procfs_dir_entry *entries,
-		      void *dir_hook, void (*cleanup) (void *dir_hook))
+procfs_dir_make_node (const struct procfs_dir_ops *dir_ops, void *dir_hook)
 {
   static const struct procfs_node_ops ops = {
     .get_contents = procfs_dir_get_contents,
@@ -75,21 +96,20 @@ procfs_dir_make_node (const struct procfs_dir_entry *entries,
     .cleanup_contents = procfs_cleanup_contents_with_free,
     .cleanup = procfs_dir_cleanup,
   };
-  struct procfs_dir_node *dn;
+  struct procfs_dir_node *dir;
 
-  dn = malloc (sizeof *dn);
-  if (! dn)
+  dir = malloc (sizeof *dir);
+  if (! dir)
     {
-      if (cleanup)
-	cleanup (dir_hook);
+      if (dir_ops->cleanup)
+	dir_ops->cleanup (dir_hook);
 
       return NULL;
     }
 
-  dn->entries = entries;
-  dn->hook = dir_hook;
-  dn->cleanup = cleanup;
+  dir->ops = dir_ops;
+  dir->hook = dir_hook;
 
-  return procfs_make_node (&ops, dn);
+  return procfs_make_node (&ops, dir);
 }
 

@@ -209,7 +209,7 @@ process_file_get_contents (void *hook, char **contents, ssize_t *contents_len)
 }
 
 static struct node *
-process_file_make_node (void *dir_hook, void *entry_hook)
+process_file_make_node (void *dir_hook, const void *entry_hook)
 {
   static const struct procfs_node_ops ops = {
     .get_contents = process_file_get_contents,
@@ -245,7 +245,6 @@ process_file_make_node (void *dir_hook, void *entry_hook)
 static struct procfs_dir_entry entries[] = {
   {
     .name = "cmdline",
-    .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_cmdline,
       .needs = PSTAT_ARGS,
@@ -254,7 +253,6 @@ static struct procfs_dir_entry entries[] = {
   },
   {
     .name = "environ",
-    .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_environ,
       .needs = PSTAT_ENV,
@@ -265,7 +263,6 @@ static struct procfs_dir_entry entries[] = {
   {
     /* Beware of the hack below, which requires this to be entries[2].  */
     .name = "stat",
-    .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_stat,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
@@ -276,7 +273,6 @@ static struct procfs_dir_entry entries[] = {
   },
   {
     .name = "statm",
-    .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_statm,
       .needs = PSTAT_TASK_BASIC,
@@ -285,7 +281,6 @@ static struct procfs_dir_entry entries[] = {
   },
   {
     .name = "status",
-    .make_node = process_file_make_node,
     .hook = & (struct process_file_desc) {
       .get_contents = process_file_gc_status,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
@@ -299,6 +294,13 @@ static struct procfs_dir_entry entries[] = {
 error_t
 process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
 {
+  static const struct procfs_dir_ops dir_ops = {
+    .entries = entries,
+    .cleanup = (void (*)(void *)) _proc_stat_free,
+    .entry_ops = {
+      .make_node = process_file_make_node,
+    },
+  };
   struct proc_stat *ps;
   int owner;
   error_t err;
@@ -317,7 +319,7 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
      accessed in a more robust and straightforward way. */
   ((struct process_file_desc *) entries[2].hook)->mode = opt_stat_mode;
 
-  *np = procfs_dir_make_node (entries, ps, (void (*)(void *)) _proc_stat_free);
+  *np = procfs_dir_make_node (&dir_ops, ps);
   if (! *np)
     return ENOMEM;
 
