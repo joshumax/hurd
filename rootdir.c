@@ -16,15 +16,16 @@
    using them would require locking and as a consequence it would be
    more complicated, not simpler.  */
 
-#define INIT_PID 1
+#define KERNEL_PID 2
 
+/* We get the boot time by using that of the kernel process. */
 static error_t
 get_boottime (struct ps_context *pc, struct timeval *tv)
 {
   struct proc_stat *ps;
   error_t err;
 
-  err = _proc_stat_create (INIT_PID, pc, &ps);
+  err = _proc_stat_create (KERNEL_PID, pc, &ps);
   if (err)
     return err;
 
@@ -39,6 +40,63 @@ get_boottime (struct ps_context *pc, struct timeval *tv)
       tv->tv_usec = tbi->creation_time.microseconds;
     }
 
+  _proc_stat_free (ps);
+  return err;
+}
+
+/* We get the idle time by querying the kernel's idle thread. */
+static error_t
+get_idletime (struct ps_context *pc, struct timeval *tv)
+{
+  struct proc_stat *ps, *pst;
+  thread_basic_info_t tbi;
+  error_t err;
+  int i;
+
+  err = _proc_stat_create (KERNEL_PID, pc, &ps);
+  if (err)
+    return err;
+
+  pst = NULL, tbi = NULL;
+
+  err = proc_stat_set_flags (ps, PSTAT_NUM_THREADS);
+  if (err || !(proc_stat_flags (ps) & PSTAT_NUM_THREADS))
+    {
+      err = EIO;
+      goto out;
+    }
+
+  /* Look for the idle thread */
+  for (i=0; !tbi || !(tbi->flags & TH_FLAGS_IDLE); i++)
+    {
+      if (pst)
+	_proc_stat_free (pst);
+
+      pst = NULL, tbi = NULL;
+      if (i >= proc_stat_num_threads (ps))
+	{
+	  err = ESRCH;
+	  goto out;
+	}
+
+      err = proc_stat_thread_create (ps, i, &pst);
+      if (err)
+	continue;
+
+      err = proc_stat_set_flags (pst, PSTAT_THREAD_BASIC);
+      if (err || ! (proc_stat_flags (pst) & PSTAT_THREAD_BASIC))
+	continue;
+
+      tbi = proc_stat_thread_basic_info (pst);
+    }
+
+  /* We found it! */
+  tv->tv_sec = tbi->system_time.seconds;
+  tv->tv_usec = tbi->system_time.microseconds;
+  err = 0;
+
+out:
+  if (pst) _proc_stat_free (pst);
   _proc_stat_free (ps);
   return err;
 }
@@ -65,8 +123,8 @@ rootdir_gc_version (void *hook, char **contents, ssize_t *contents_len)
 static error_t
 rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
 {
-  struct timeval time, boottime;
-  double up_secs;
+  struct timeval time, boottime, idletime;
+  double up_secs, idle_secs;
   error_t err;
 
   err = gettimeofday (&time, NULL);
@@ -77,15 +135,20 @@ rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
+  err = get_idletime (hook, &idletime);
+  if (err)
+    return err;
+
   timersub (&time, &boottime, &time);
   up_secs = time.tv_sec + time.tv_usec / 1000000.;
+  idle_secs = idletime.tv_sec + idletime.tv_usec / 1000000.;
 
   /* The second field is the total idle time. As far as I know we don't
      keep track of it.  However, procps uses it to compute "USER_HZ", and
      proc(5) specifies that it should be equal to USER_HZ times the idle value
      in ticks from /proc/stat.  So we assume a completely idle system both here
      and there to make that work.  */
-  *contents_len = asprintf (contents, "%.2lf %.2lf\n", up_secs, up_secs);
+  *contents_len = asprintf (contents, "%.2lf %.2lf\n", up_secs, idle_secs);
 
   return 0;
 }
@@ -93,9 +156,9 @@ rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
 static error_t
 rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
 {
-  struct timeval boottime, time;
+  struct timeval boottime, time, idletime;
   struct vm_statistics vmstats;
-  unsigned long up_ticks;
+  unsigned long up_ticks, idle_ticks;
   error_t err;
 
   err = gettimeofday (&time, NULL);
@@ -103,6 +166,10 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
     return errno;
 
   err = get_boottime (hook, &boottime);
+  if (err)
+    return err;
+
+  err = get_idletime (hook, &idletime);
   if (err)
     return err;
 
@@ -112,17 +179,16 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
 
   timersub (&time, &boottime, &time);
   up_ticks = opt_clk_tck * (time.tv_sec + time.tv_usec / 1000000.);
+  idle_ticks = opt_clk_tck * (idletime.tv_sec + idletime.tv_usec / 1000000.);
 
   *contents_len = asprintf (contents,
-      /* Does Mach keeps track of any of this? */
-      "cpu  0 0 0 %lu 0 0 0 0 0\n"
-      "cpu0 0 0 0 %lu 0 0 0 0 0\n"
+      "cpu  %lu 0 0 %lu 0 0 0 0 0\n"
+      "cpu0 %lu 0 0 %lu 0 0 0 0 0\n"
       "intr 0\n"
-      /* This we know. */
       "page %d %d\n"
       "btime %lu\n",
-      up_ticks,
-      up_ticks,
+      up_ticks - idle_ticks, idle_ticks,
+      up_ticks - idle_ticks, idle_ticks,
       vmstats.pageins, vmstats.pageouts,
       boottime.tv_sec);
 
