@@ -62,24 +62,15 @@ proclist_lookup (void *hook, const char *name, struct node **np)
   return process_lookup_pid (pc, pid, np);
 }
 
-error_t
-proclist_create_node (process_t procserv, struct node **np)
+struct node *
+proclist_make_node (struct ps_context *pc)
 {
   static const struct procfs_node_ops ops = {
     .get_contents = proclist_get_contents,
     .lookup = proclist_lookup,
     .cleanup_contents = procfs_cleanup_contents_with_free,
-    .cleanup = (void (*)(void *)) ps_context_free,
     .enable_refresh_hack_and_break_readdir = 1,
   };
-  struct ps_context *pc;
-  error_t err;
-
-  err = ps_context_create (procserv, &pc);
-  if (err)
-    return err;
-
-  *np = procfs_make_node (&ops, pc);
-  return 0;
+  return procfs_make_node (&ops, pc);
 }
 

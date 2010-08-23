@@ -357,22 +357,15 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   {}
 };
 
-error_t
-rootdir_create_node (struct node **np)
+struct node
+*rootdir_make_node (struct ps_context *pc)
 {
-  struct ps_context *pc;
   const struct procfs_dir_entry *entries;
-  error_t err;
-
-  err = ps_context_create (getproc (), &pc);
-  if (err)
-    return err;
 
   entries = rootdir_entries;
   if (opt_fake_self < 0)
     entries++;
 
-  *np = procfs_dir_make_node (entries, pc, (void (*)(void *)) ps_context_free);
-  return 0;
+  return procfs_dir_make_node (entries, pc, NULL);
 }
 

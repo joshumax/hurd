@@ -1,2 +1,4 @@
-error_t
-rootdir_create_node (struct node **np);
+#include <ps.h>
+
+struct node *
+rootdir_make_node (struct ps_context *pc);

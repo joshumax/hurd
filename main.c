@@ -4,6 +4,7 @@
 #include <error.h>
 #include <argp.h>
 #include <hurd/netfs.h>
+#include <ps.h>
 #include "procfs.h"
 #include "proclist.h"
 #include "rootdir.h"
@@ -94,38 +95,42 @@ struct argp argp = {
 };
 
 error_t
-root_make_node (struct node **np)
+root_make_node (struct ps_context *pc, struct node **np)
 {
   /* We never have two root nodes alive simultaneously, so it's ok to
      have this as static data.  */
   static struct node *root_dirs[3];
-  error_t err;
 
-  err = proclist_create_node (getproc (), &root_dirs[0]);
-  if (err)
-    return err;
+  root_dirs[0] = proclist_make_node (pc);
+  if (! root_dirs[0])
+    goto nomem;
 
-  err = rootdir_create_node (&root_dirs[1]);
-  if (err)
-    {
-      netfs_nrele (root_dirs[0]);
-      return err;
-    }
+  root_dirs[1] = rootdir_make_node (pc);
+  if (! root_dirs[1])
+    goto nomem;
 
   root_dirs[2] = NULL;
   *np = dircat_make_node (root_dirs);
   if (! *np)
-    return ENOMEM;
+    goto nomem;
 
   /* Since this one is not created through proc_lookup(), we have to affect an
      inode number to it.  */
   (*np)->nn_stat.st_ino = * (uint32_t *) "PROC";
 
   return 0;
+
+nomem:
+  if (root_dirs[1])
+    netfs_nrele (root_dirs[1]);
+  if (root_dirs[0])
+    netfs_nrele (root_dirs[0]);
+  return ENOMEM;
 }
 
 int main (int argc, char **argv)
 {
+  struct ps_context *pc;
   mach_port_t bootstrap;
   error_t err;
 
@@ -137,12 +142,16 @@ int main (int argc, char **argv)
   if (err)
     error (1, err, "Could not parse command line");
 
+  err = ps_context_create (getproc (), &pc);
+  if (err)
+    error (1, err, "Could not create libps context");
+
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
 
   netfs_init ();
-  err = root_make_node (&netfs_root_node);
+  err = root_make_node (pc, &netfs_root_node);
   if (err)
     error (1, err, "Could not create the root node");
 

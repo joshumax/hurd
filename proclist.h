@@ -1,2 +1,4 @@
-#include <hurd/hurd_types.h>
-error_t proclist_create_node (process_t procserv, struct node **np);
+#include <ps.h>
+
+struct node *
+proclist_make_node (struct ps_context *pc);
