@@ -140,8 +140,8 @@ rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
     return err;
 
   timersub (&time, &boottime, &time);
-  up_secs = time.tv_sec + time.tv_usec / 1000000.;
-  idle_secs = idletime.tv_sec + idletime.tv_usec / 1000000.;
+  up_secs = (time.tv_sec * 1000000. + time.tv_usec) / 1000000.;
+  idle_secs = (idletime.tv_sec * 1000000. + idletime.tv_usec) / 1000000.;
 
   /* The second field is the total idle time. As far as I know we don't
      keep track of it.  However, procps uses it to compute "USER_HZ", and
@@ -178,8 +178,8 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
     return EIO;
 
   timersub (&time, &boottime, &time);
-  up_ticks = opt_clk_tck * (time.tv_sec + time.tv_usec / 1000000.);
-  idle_ticks = opt_clk_tck * (idletime.tv_sec + idletime.tv_usec / 1000000.);
+  up_ticks = opt_clk_tck * (time.tv_sec * 1000000. + time.tv_usec) / 1000000.;
+  idle_ticks = opt_clk_tck * (idletime.tv_sec * 1000000. + idletime.tv_usec) / 1000000.;
 
   *contents_len = asprintf (contents,
       "cpu  %lu 0 0 %lu 0 0 0 0 0\n"

@@ -58,8 +58,8 @@ static const char *state_string (struct proc_stat *ps)
 
 static long long int timeval_jiffies (time_value_t tv)
 {
-  double secs = tv.seconds + tv.microseconds / 1000000.;
-  return secs * opt_clk_tck;
+  double secs = tv.seconds * 1000000. + tv.microseconds;
+  return secs * opt_clk_tck / 1000000.;
 }
 
 /* Actual content generators */
