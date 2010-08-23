@@ -8,7 +8,7 @@ struct dircat_node
 };
 
 static error_t
-dircat_get_contents (void *hook, char **contents, size_t *contents_len)
+dircat_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   struct dircat_node *dcn = hook;
   int i, sz, pos;
@@ -20,7 +20,7 @@ dircat_get_contents (void *hook, char **contents, size_t *contents_len)
   for (i=0; dcn->dirs[i]; i++)
     {
       char *subcon;
-      size_t sublen;
+      ssize_t sublen;
 
       err = procfs_get_contents (dcn->dirs[i], &subcon, &sublen);
       if (err)

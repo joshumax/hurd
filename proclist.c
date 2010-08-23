@@ -10,7 +10,7 @@
 #define PID_STR_SIZE (3 * sizeof (pid_t) + 1)
 
 static error_t
-proclist_get_contents (void *hook, char **contents, size_t *contents_len)
+proclist_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   struct ps_context *pc = hook;
   pidarray_t pids;

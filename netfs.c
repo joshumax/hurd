@@ -30,7 +30,7 @@ int netfs_maxsymlinks = PROCFS_MAXSYMLINKS;
 error_t netfs_validate_stat (struct node *np, struct iouser *cred)
 {
   char *contents;
-  size_t contents_len;
+  ssize_t contents_len;
   error_t err;
 
   /* Only symlinks need to have their size filled, before a read is
@@ -54,7 +54,7 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
 			    loff_t offset, size_t *len, void *data)
 {
   char *contents;
-  size_t contents_len;
+  ssize_t contents_len;
   error_t err;
 
   err = procfs_get_contents (np, &contents, &contents_len);
@@ -79,7 +79,7 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
 				char *buf)
 {
   char *contents;
-  size_t contents_len;
+  ssize_t contents_len;
   error_t err;
 
   err = procfs_get_contents (np, &contents, &contents_len);
@@ -137,7 +137,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
 			   vm_size_t bufsize, int *amt)
 {
   char *contents;
-  size_t contents_len;
+  ssize_t contents_len;
   error_t err;
  
   err = procfs_get_contents (dir, &contents, &contents_len);

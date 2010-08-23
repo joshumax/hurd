@@ -13,20 +13,20 @@ struct netnode
 
   /* (cached) contents of the node */
   char *contents;
-  size_t contents_len;
+  ssize_t contents_len;
 
   /* parent directory, if applicable */
   struct node *parent;
 };
 
 void
-procfs_cleanup_contents_with_free (void *hook, char *cont, size_t len)
+procfs_cleanup_contents_with_free (void *hook, char *cont, ssize_t len)
 {
   free (cont);
 }
 
 void
-procfs_cleanup_contents_with_vm_deallocate (void *hook, char *cont, size_t len)
+procfs_cleanup_contents_with_vm_deallocate (void *hook, char *cont, ssize_t len)
 {
   vm_deallocate (mach_task_self (), (vm_address_t) cont, (vm_size_t) len);
 }
@@ -109,7 +109,7 @@ procfs_make_ino (struct node *np, const char *filename)
   return (unsigned long) jrand48 (x);
 }
 
-error_t procfs_get_contents (struct node *np, char **data, size_t *data_len)
+error_t procfs_get_contents (struct node *np, char **data, ssize_t *data_len)
 {
   if (np->nn->ops->enable_refresh_hack_and_break_readdir && np->nn->contents)
     {
@@ -122,12 +122,15 @@ error_t procfs_get_contents (struct node *np, char **data, size_t *data_len)
   if (! np->nn->contents && np->nn->ops->get_contents)
     {
       char *contents;
-      size_t contents_len;
+      ssize_t contents_len;
       error_t err;
 
+      contents_len = -1;
       err = np->nn->ops->get_contents (np->nn->hook, &contents, &contents_len);
       if (err)
 	return err;
+      if (contents_len < 0)
+	return ENOMEM;
 
       np->nn->contents = contents;
       np->nn->contents_len = contents_len;

@@ -12,18 +12,18 @@
 
 /* Implementations for the process_file_desc.get_contents callback.  */
 
-static char *
-process_file_gc_cmdline (struct proc_stat *ps, size_t *len)
+static ssize_t
+process_file_gc_cmdline (struct proc_stat *ps, char **contents)
 {
-  *len = proc_stat_args_len(ps);
-  return proc_stat_args(ps);
+  *contents = proc_stat_args(ps);
+  return proc_stat_args_len(ps);
 }
 
-static char *
-process_file_gc_environ (struct proc_stat *ps, size_t *len)
+static ssize_t
+process_file_gc_environ (struct proc_stat *ps, char **contents)
 {
-  *len = proc_stat_args_len(ps);
-  return proc_stat_args(ps);
+  *contents = proc_stat_env(ps);
+  return proc_stat_env_len(ps);
 }
 
 static char state_char (struct proc_stat *ps)
@@ -71,17 +71,16 @@ static long long int jiff_tv (time_value_t tv)
   return usecs * 100 / 1000000;
 }
 
-static char *
-process_file_gc_stat (struct proc_stat *ps, size_t *len)
+static ssize_t
+process_file_gc_stat (struct proc_stat *ps, char **contents)
 {
   struct procinfo *pi = proc_stat_proc_info (ps);
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
   thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
-  char *contents;
 
   /* See proc(5) for more information about the contents of each field for the
      Linux procfs.  */
-  *len = asprintf (&contents,
+  return asprintf (contents,
       "%d (%s) %c "		/* pid, command, state */
       "%d %d %d "		/* ppid, pgid, session */
       "%d %d "			/* controling tty stuff */
@@ -122,31 +121,23 @@ process_file_gc_stat (struct proc_stat *ps, size_t *len)
       0,
       0, 0,
       0LL);
-
-  return len >= 0 ? contents : NULL;
 }
 
-static char *
-process_file_gc_statm (struct proc_stat *ps, size_t *len)
+static ssize_t
+process_file_gc_statm (struct proc_stat *ps, char **contents)
 {
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
-  char *contents;
-
-  *len = asprintf (&contents,
+  return asprintf (contents,
       "%lu %lu 0 0 0 0 0\n",
       tbi->virtual_size  / sysconf(_SC_PAGE_SIZE),
       tbi->resident_size / sysconf(_SC_PAGE_SIZE));
-
-  return len >= 0 ? contents : NULL;
 }
 
-static char *
-process_file_gc_status (struct proc_stat *ps, size_t *len)
+static ssize_t
+process_file_gc_status (struct proc_stat *ps, char **contents)
 {
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
-  char *contents;
-
-  *len = asprintf (&contents,
+  return asprintf (contents,
       "Name:\t%s\n"
       "State:\t%s\n"
       "Tgid:\t%u\n"
@@ -172,8 +163,6 @@ process_file_gc_status (struct proc_stat *ps, size_t *len)
       tbi->resident_size / 1024,
       tbi->resident_size / 1024,
       proc_stat_num_threads (ps));
-
-  return len >= 0 ? contents : NULL;
 }
 
 
@@ -186,7 +175,7 @@ struct process_file_desc
 
   /* Once we have acquired the necessary information, there can be only
      memory allocation errors, hence this simplified signature.  */
-  char *(*get_contents) (struct proc_stat *ps, size_t *len);
+  ssize_t (*get_contents) (struct proc_stat *ps, char **contents);
 
   /* The cmdline and environ contents don't need any cleaning since they are
      part of a proc_stat structure.  */
@@ -204,7 +193,7 @@ struct process_file_node
 };
 
 static error_t
-process_file_get_contents (void *hook, char **contents, size_t *contents_len)
+process_file_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   struct process_file_node *file = hook;
   error_t err;
@@ -215,10 +204,7 @@ process_file_get_contents (void *hook, char **contents, size_t *contents_len)
   if ((proc_stat_flags (file->ps) & file->desc->needs) != file->desc->needs)
     return EIO;
 
-  *contents = file->desc->get_contents (file->ps, contents_len);
-  if (! *contents)
-    return ENOMEM;
-
+  *contents_len = file->desc->get_contents (file->ps, contents);
   return 0;
 }
 

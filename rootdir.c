@@ -44,7 +44,7 @@ get_boottime (struct ps_context *pc, struct timeval *tv)
 }
 
 static error_t
-rootdir_gc_version (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_version (void *hook, char **contents, ssize_t *contents_len)
 {
   struct utsname uts;
   int r;
@@ -57,13 +57,13 @@ rootdir_gc_version (void *hook, char **contents, size_t *contents_len)
       "Linux version 2.6.1 (%s %s %s %s)\n",
       uts.sysname, uts.release, uts.version, uts.machine);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 /* Uptime -- we use the start time of init to deduce it. This is probably a bit
    fragile, as any clock update will make the result inaccurate. */
 static error_t
-rootdir_gc_uptime (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
 {
   struct timeval time, boottime;
   double up_secs;
@@ -87,11 +87,11 @@ rootdir_gc_uptime (void *hook, char **contents, size_t *contents_len)
      and there to make that work.  */
   *contents_len = asprintf (contents, "%.2lf %.2lf\n", up_secs, up_secs);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 static error_t
-rootdir_gc_stat (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
 {
   struct timeval boottime, time;
   struct vm_statistics vmstats;
@@ -126,11 +126,11 @@ rootdir_gc_stat (void *hook, char **contents, size_t *contents_len)
       vmstats.pageins, vmstats.pageouts,
       boottime.tv_sec);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 static error_t
-rootdir_gc_loadavg (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_loadavg (void *hook, char **contents, ssize_t *contents_len)
 {
   host_load_info_data_t hli;
   mach_msg_type_number_t cnt;
@@ -148,11 +148,11 @@ rootdir_gc_loadavg (void *hook, char **contents, size_t *contents_len)
       hli.avenrun[1] / (double) LOAD_SCALE,
       hli.avenrun[2] / (double) LOAD_SCALE);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 static error_t
-rootdir_gc_meminfo (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
 {
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
@@ -183,11 +183,11 @@ rootdir_gc_meminfo (void *hook, char **contents, size_t *contents_len)
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 static error_t
-rootdir_gc_vmstat (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_vmstat (void *hook, char **contents, ssize_t *contents_len)
 {
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
@@ -228,11 +228,11 @@ rootdir_gc_vmstat (void *hook, char **contents, size_t *contents_len)
       (long unsigned) vmstats.pageouts,
       (long unsigned) vmstats.faults);
 
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 static error_t
-rootdir_gc_cmdline (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_cmdline (void *hook, char **contents, ssize_t *contents_len)
 {
   struct ps_context *pc = hook;
   struct proc_stat *ps;
@@ -267,10 +267,10 @@ out:
 }
 
 static error_t
-rootdir_gc_fakeself (void *hook, char **contents, size_t *contents_len)
+rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 {
   *contents_len = asprintf (contents, "%d", opt_fake_self);
-  return *contents_len >= 0 ? 0 : ENOMEM;
+  return 0;
 }
 
 

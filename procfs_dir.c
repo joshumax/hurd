@@ -11,7 +11,7 @@ struct procfs_dir_node
 };
 
 static error_t
-procfs_dir_get_contents (void *hook, char **contents, size_t *contents_len)
+procfs_dir_get_contents (void *hook, char **contents, ssize_t *contents_len)
 {
   static const char dot_dotdot[] = ".\0..";
   struct procfs_dir_node *dn = hook;
