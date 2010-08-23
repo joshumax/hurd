@@ -132,6 +132,13 @@ rootdir_gc_loadavg (void *hook, void **contents, size_t *contents_len)
 }
 
 static error_t
+rootdir_gc_empty (void *hook, void **contents, size_t *contents_len)
+{
+  *contents_len = 0;
+  return 0;
+}
+
+static error_t
 rootdir_gc_fakeself (void *hook, void **contents, size_t *contents_len)
 {
   *contents = "1";
@@ -186,6 +193,13 @@ static struct procfs_dir_entry rootdir_entries[] = {
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_loadavg,
       .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "meminfo",
+    .make_node = rootdir_file_make_node,
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_empty,
     },
   },
   {
