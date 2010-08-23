@@ -51,6 +51,12 @@ argp_parser (int key, char *arg, struct argp_state *state)
       if (*endp || ! *arg || (signed) opt_kernel_pid < 0)
 	error (1, 0, "--kernel-process: PID must be a positive integer");
       break;
+
+    case 'c':
+      opt_clk_tck = 100;
+      opt_stat_mode = 0444;
+      opt_fake_self = 1;
+      break;
   }
 
   return 0;
@@ -74,6 +80,9 @@ struct argp argp = {
     { "kernel-process", 'k', "PID", 0,
 	"Process identifier for the kernel, used to retreive its command line "
 	"(default: 2)" },
+    { "compatible", 'c', NULL, 0,
+	"Try to be compatible with the Linux procps utilities.  "
+	"Currently equivalent to -h 100 -s 0444 -S 1." },
     {}
   },
   .parser = argp_parser,
