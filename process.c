@@ -314,6 +314,7 @@ error_t
 process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
 {
   struct proc_stat *ps;
+  int owner;
   error_t err;
 
   err = _proc_stat_create (pid, pc, &ps);
@@ -334,6 +335,7 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
   if (! *np)
     return ENOMEM;
 
-  procfs_node_chown (*np, proc_stat_owner_uid (ps));
+  owner = proc_stat_owner_uid (ps);
+  procfs_node_chown (*np, owner >= 0 ? owner : opt_anon_owner);
   return 0;
 }

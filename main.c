@@ -16,10 +16,12 @@ int opt_clk_tck;
 mode_t opt_stat_mode;
 pid_t opt_fake_self;
 pid_t opt_kernel_pid;
+uid_t opt_anon_owner;
 
 static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
 {
+  struct passwd *pw;
   char *endp;
 
   switch (key)
@@ -58,6 +60,20 @@ argp_parser (int key, char *arg, struct argp_state *state)
       opt_stat_mode = 0444;
       opt_fake_self = 1;
       break;
+
+    case 'a':
+      pw = getpwnam (arg);
+      if (pw)
+	{
+	  opt_anon_owner = pw->pw_uid;
+	  break;
+	}
+
+      opt_anon_owner = strtol (arg, &endp, 0);
+      if (*endp || ! *arg || (signed) opt_anon_owner < 0)
+	error(1, 0, "--anonymous-owner: USER should be the a user name "
+		    "or a numeric UID.");
+      break;
   }
 
   return 0;
@@ -84,6 +100,11 @@ struct argp argp = {
     { "compatible", 'c', NULL, 0,
 	"Try to be compatible with the Linux procps utilities.  "
 	"Currently equivalent to -h 100 -s 0444 -S 1." },
+    { "anonymous-owner", 'a', "USER", 0,
+	"Make USER the owner of files related to processes without one.  "
+	"Be aware that USER will be granted access to the environment and "
+	"other sensitive information about the processes in question.  "
+	"(default: use uid 0)" },
     {}
   },
   .parser = argp_parser,
@@ -138,6 +159,7 @@ int main (int argc, char **argv)
   opt_stat_mode = 0400;
   opt_fake_self = -1;
   opt_kernel_pid = 2;
+  opt_anon_owner = 0;
   err = argp_parse (&argp, argc, argv, 0, 0, 0);
   if (err)
     error (1, err, "Could not parse command line");
