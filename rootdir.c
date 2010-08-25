@@ -1,7 +1,10 @@
 #include <mach/vm_param.h>
 #include <mach/vm_statistics.h>
+#include <mach/default_pager.h>
+#include <hurd/paths.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/time.h>
 #include <sys/utsname.h>
 #include <sys/stat.h>
@@ -98,6 +101,22 @@ get_idletime (struct ps_context *pc, struct timeval *tv)
 out:
   if (pst) _proc_stat_free (pst);
   _proc_stat_free (ps);
+  return err;
+}
+
+static error_t
+get_swapinfo (default_pager_info_t *info)
+{
+  mach_port_t defpager;
+  error_t err;
+
+  defpager = file_name_lookup (_SERVERS_DEFPAGER, O_READ, 0);
+  if (defpager == MACH_PORT_NULL)
+    return errno;
+
+  err = default_pager_info (defpager, info);
+  mach_port_deallocate (mach_task_self (), defpager);
+
   return err;
 }
 
@@ -223,6 +242,7 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
   struct vm_statistics vmstats;
+  default_pager_info_t swap;
   error_t err;
 
   err = vm_statistics (mach_task_self (), &vmstats);
@@ -234,6 +254,10 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
+  err = get_swapinfo (&swap);
+  if (err)
+    return err;
+
   assert (cnt == HOST_BASIC_INFO_COUNT);
   *contents_len = asprintf (contents,
       "MemTotal: %14lu kB\n"
@@ -241,13 +265,17 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       "Active:   %14lu kB\n"
       "Inactive: %14lu kB\n"
       "Mlocked:  %14lu kB\n"
+      "SwapTotal:%14lu kB\n"
+      "SwapFree: %14lu kB\n"
       ,
       /* TODO: check that these are really 1024-bytes kBs. */
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
-      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024);
+      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024,
+      (long unsigned) swap.dpi_total_space / 1024,
+      (long unsigned) swap.dpi_free_space / 1024);
 
   return 0;
 }
