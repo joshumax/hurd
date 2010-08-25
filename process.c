@@ -345,7 +345,10 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
 
   err = proc_stat_set_flags (ps, PSTAT_OWNER_UID);
   if (err || ! (proc_stat_flags (ps) & PSTAT_OWNER_UID))
-    return EIO;
+    {
+      _proc_stat_free (ps);
+      return EIO;
+    }
 
   /* FIXME: have a separate proc_desc structure for each file, so this can be
      accessed in a more robust and straightforward way. */
