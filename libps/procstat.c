@@ -961,7 +961,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
      when creating a file.  */
   MP_MGET (PSTAT_UMASK, PSTAT_TASK,
 	   ps_msg_get_init_int (ps->msgport, ps->task, INIT_UMASK,
-				&ps->umask));
+				(int *) &ps->umask));
 
   if (NEED (PSTAT_OWNER_UID, PSTAT_PROC_INFO))
     {
