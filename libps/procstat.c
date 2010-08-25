@@ -1050,7 +1050,7 @@ _proc_stat_free (ps)
   MFREEPORT (PSTAT_AUTH, auth);
 
   /* free any allocated memory pointed to by PS */
-  MFREEMEM (PSTAT_PROCINFO, proc_info, ps->proc_info_size,
+  MFREEMEM (PSTAT_PROC_INFO, proc_info, ps->proc_info_size,
 	    ps->proc_info_vm_alloced, 0, char);
   MFREEMEM (PSTAT_THREAD_BASIC, thread_basic_info, 0, 0, 0, 0);
   MFREEMEM (PSTAT_THREAD_SCHED, thread_sched_info, 0, 0, 0, 0);
