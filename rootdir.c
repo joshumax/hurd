@@ -21,6 +21,9 @@
 
 #define KERNEL_PID 2
 
+
+/* Helper functions */
+
 /* We get the boot time by using that of the kernel process. */
 static error_t
 get_boottime (struct ps_context *pc, struct timeval *tv)
@@ -120,6 +123,9 @@ get_swapinfo (default_pager_info_t *info)
   return err;
 }
 
+
+/* Content generators */
+
 static error_t
 rootdir_gc_version (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -137,8 +143,6 @@ rootdir_gc_version (void *hook, char **contents, ssize_t *contents_len)
   return 0;
 }
 
-/* Uptime -- we use the start time of init to deduce it. This is probably a bit
-   fragile, as any clock update will make the result inaccurate. */
 static error_t
 rootdir_gc_uptime (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -373,10 +377,16 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
   return 0;
 }
 
+
+/* Glue logic and entries table */
 
 static struct node *
 rootdir_file_make_node (void *dir_hook, const void *entry_hook)
 {
+  /* The entry hook we use is actually a procfs_node_ops for the file to be
+     created.  The hook associated to these newly created files (and passed
+     to the generators above as a consequence) is always the same global
+     ps_context, which we get from rootdir_make_node as the directory hook. */
   return procfs_make_node (entry_hook, dir_hook);
 }
 
