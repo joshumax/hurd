@@ -109,20 +109,22 @@ fetch_procinfo (process_t server, pid_t pid,
 		struct procinfo **pi, size_t *pi_size,
 		char **waits, size_t *waits_len)
 {
+  static const struct { ps_flags_t ps_flag; int pi_flags; } map[] =
+  {
+    { PSTAT_TASK_BASIC,     PI_FETCH_TASKINFO				},
+    { PSTAT_TASK_EVENTS,    PI_FETCH_TASKEVENTS				},
+    { PSTAT_NUM_THREADS,    PI_FETCH_THREADS				},
+    { PSTAT_THREAD_BASIC,   PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS	},
+    { PSTAT_THREAD_SCHED,   PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS	},
+    { PSTAT_THREAD_WAITS,   PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS	},
+    { 0, }
+  };
   int pi_flags = 0;
+  int i;
 
-  if ((need & PSTAT_TASK_BASIC) && !(*have & PSTAT_TASK_BASIC))
-    pi_flags |= PI_FETCH_TASKINFO;
-  if ((need & PSTAT_TASK_EVENTS) && !(*have & PSTAT_TASK_EVENTS))
-    pi_flags |= PI_FETCH_TASKEVENTS;
-  if ((need & PSTAT_NUM_THREADS) && !(*have & PSTAT_NUM_THREADS))
-    pi_flags |= PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_BASIC) && !(*have & PSTAT_THREAD_BASIC))
-    pi_flags |= PI_FETCH_THREAD_BASIC | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_SCHED) && !(*have & PSTAT_THREAD_SCHED))
-    pi_flags |= PI_FETCH_THREAD_SCHED | PI_FETCH_THREADS;
-  if ((need & PSTAT_THREAD_WAITS) && !(*have & PSTAT_THREAD_WAITS))
-    pi_flags |= PI_FETCH_THREAD_WAITS | PI_FETCH_THREADS;
+  for (i = 0; map[i].ps_flag; i++)
+    if ((need & map[i].ps_flag) && !(*have & map[i].ps_flag))
+      pi_flags |= map[i].pi_flags;
 
   if (pi_flags || ((need & PSTAT_PROC_INFO) && !(*have & PSTAT_PROC_INFO)))
     {
@@ -137,16 +139,9 @@ fetch_procinfo (process_t server, pid_t pid,
 	/* Update *HAVE to reflect what we've successfully fetched.  */
 	{
 	  *have |= PSTAT_PROC_INFO;
-	  if (pi_flags & PI_FETCH_TASKINFO)
-	    *have |= PSTAT_TASK_BASIC;
-	  if (pi_flags & PI_FETCH_THREADS)
-	    *have |= PSTAT_NUM_THREADS;
-	  if (pi_flags & PI_FETCH_THREAD_BASIC)
-	    *have |= PSTAT_THREAD_BASIC;
-	  if (pi_flags & PI_FETCH_THREAD_SCHED)
-	    *have |= PSTAT_THREAD_SCHED;
-	  if (pi_flags & PI_FETCH_THREAD_WAITS)
-	    *have |= PSTAT_THREAD_WAITS;
+	  for (i = 0; map[i].ps_flag; i++)
+	    if ((pi_flags & map[i].pi_flags) == map[i].pi_flags)
+	      *have |= map[i].ps_flag;
 	}
       return err;
     }
