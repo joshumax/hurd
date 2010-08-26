@@ -454,7 +454,9 @@ error_t _proc_stat_create (pid_t pid, struct ps_context *context,
 
 /* Frees PS and any memory/ports it references.  Users shouldn't use this
    routine; proc_stats are normally freed only when their ps_context goes
-   away.  */
+   away.  Insubordinate users will make sure they free the thread proc_stats
+   before they free the corresponding process proc_stat since the thread_wait
+   fields of the former may reference the latter.  */
 void _proc_stat_free (struct proc_stat *ps);
 
 /* Adds FLAGS to PS's flags, fetching information as necessary to validate

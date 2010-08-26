@@ -1053,6 +1053,8 @@ _proc_stat_free (ps)
   MFREEMEM (PSTAT_ENV, env, ps->env_len, ps->env_vm_alloced, 0, char);
   MFREEMEM (PSTAT_TASK_EVENTS, task_events_info, ps->task_events_info_size,
 	    0, &ps->task_events_info_buf, char);
+  MFREEMEM (PSTAT_THREAD_WAITS, thread_waits, ps->thread_waits_len,
+	    ps->thread_waits_vm_alloced, 0, char);
 
   FREE (ps);
 }
