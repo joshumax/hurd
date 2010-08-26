@@ -1154,6 +1154,7 @@ pager_read_offset(pager, offset)
 	  {
 	    ddprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
 		    my_name, pager, f_page, pager->size);
+	    mutex_unlock(&pager->lock);
 	    return (union dp_map) (union dp_map *) NO_BLOCK;
 #if 0
 	    panic("%spager_read_offset",my_name);
