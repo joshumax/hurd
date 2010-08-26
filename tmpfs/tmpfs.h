@@ -65,7 +65,6 @@ struct tmpfs_dirent
 {
   struct tmpfs_dirent *next;
   struct disknode *dn;
-  uint32_t pad;
   uint8_t namelen;
   char name[0];
 };

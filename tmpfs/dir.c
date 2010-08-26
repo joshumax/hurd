@@ -58,9 +58,6 @@ diskfs_get_directs (struct node *dp, int entry, int n,
   struct dirent *entp;
   int i;
 
-  assert (offsetof (struct tmpfs_dirent, name)
-	  >= offsetof (struct dirent, d_name));
-
   if (bufsiz == 0)
     bufsiz = dp->dn_stat.st_size
 	     + 2 * ((offsetof (struct dirent, d_name[3]) + 7) & ~7);
