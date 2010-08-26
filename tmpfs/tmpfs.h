@@ -47,6 +47,7 @@ struct disknode
     struct
     {
       mach_port_t memobj;
+      vm_address_t memref;
       unsigned int allocpages;	/* largest size while memobj was live */
     } reg;
     struct

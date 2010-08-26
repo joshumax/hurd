@@ -61,8 +61,10 @@ diskfs_free_node (struct node *np, mode_t mode)
   switch (np->dn->type)
     {
     case DT_REG:
-      if (np->dn->u.reg.memobj != MACH_PORT_NULL)
+      if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
+	vm_deallocate (mach_task_self (), np->dn->u.reg.memref, 4096);
 	mach_port_deallocate (mach_task_self (), np->dn->u.reg.memobj);
+      }	
       break;
     case DT_DIR:
       assert (np->dn->u.dir.entries == 0);
@@ -500,6 +502,13 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	 past the specified size of the file.  */
       err = default_pager_object_set_size (np->dn->u.reg.memobj,
 					   np->allocsize);
+      assert_perror (err);
+      
+      /* XXX we need to keep a reference to the object, or GNU Mach
+	 could try to terminate it while cleaning object cache */
+      vm_map (mach_task_self (), &np->dn->u.reg.memref, 4096, 0, 1,
+	      np->dn->u.reg.memobj, 0, 0, VM_PROT_NONE, VM_PROT_NONE,
+	      VM_INHERIT_NONE);
     }
 
   /* XXX always writable */
