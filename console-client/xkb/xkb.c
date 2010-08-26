@@ -200,7 +200,7 @@ iskeypad (int width, int *sym)
 {
   int i;
   
-  for (i = 0; i <= width; i++, sym++)
+  for (i = 0; i < width; i++, sym++)
     {
       /* Numlock is in the keypad range but shouldn't be of the type
 	 keypad because it will depend on itself in that case.  */
