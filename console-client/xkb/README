@@ -81,6 +81,12 @@ non-default configuration these options exists:
 --ctrlaltbs : CTRL+Alt+Backspace will exit the console client.
 --no-ctrlaltbs : CTRL+Alt+Backspace will not exit the console client.
 
+--repeat-delay : The number of jiffies the driver should wait before
+  starting to repeat keys. By default this is 50 jiffies.
+
+--repeat-interval : The number of jiffies the driver should wait
+  between each repeated key. By default this is 10 jiffies.
+
 
 By default console switching, etc. is not possible. I wrote some XKB
 extensions and configuration files to use these extensions. You can
