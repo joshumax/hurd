@@ -261,6 +261,8 @@ struct proc_stat
 
   /* Virtual memory statistics for the process, as returned by task_info;
      see <mach/task_info.h> for a description of task_events_info_t.  */
+  /* FIXME: we are actually currently storing it into proc_info, see
+     fetch_procinfo.  */
   task_events_info_t task_events_info;
   task_events_info_data_t task_events_info_buf;
   size_t task_events_info_size;
