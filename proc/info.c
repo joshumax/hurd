@@ -495,6 +495,12 @@ S_proc_getprocinfo (struct proc *callerp,
 		       (task_info_t) &pi->taskevents, &tkcount);
       if (err == MACH_SEND_INVALID_DEST)
 	err = ESRCH;
+      if (err)
+	{
+	  /* Something screwy, give up on this bit of info.  */
+	  *flags &= ~PI_FETCH_TASKEVENTS;
+	  err = 0;
+	}
     }
 
   for (i = 0; i < nthreads; i++)
