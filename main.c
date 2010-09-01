@@ -114,7 +114,8 @@ struct argp argp = {
 	"purposes.  If PID is omitted, \"self\" will point to init.  "
 	"(default: no self link)" },
     { "kernel-process", 'k', "PID", 0,
-	"Process identifier for the kernel, used to retreive its command line "
+	"Process identifier for the kernel, used to retreive its command "
+	"line, as well as the global up and idle times. "
 	"(default: 2)" },
     { "compatible", 'c', NULL, 0,
 	"Try to be compatible with the Linux procps utilities.  "

@@ -38,8 +38,6 @@
    using them would require locking and as a consequence it would be
    more complicated, not simpler.  */
 
-#define KERNEL_PID 2
-
 
 /* Helper functions */
 
@@ -50,7 +48,7 @@ get_boottime (struct ps_context *pc, struct timeval *tv)
   struct proc_stat *ps;
   error_t err;
 
-  err = _proc_stat_create (KERNEL_PID, pc, &ps);
+  err = _proc_stat_create (opt_kernel_pid, pc, &ps);
   if (err)
     return err;
 
@@ -78,7 +76,7 @@ get_idletime (struct ps_context *pc, struct timeval *tv)
   error_t err;
   int i;
 
-  err = _proc_stat_create (KERNEL_PID, pc, &ps);
+  err = _proc_stat_create (opt_kernel_pid, pc, &ps);
   if (err)
     return err;
 
