@@ -114,7 +114,7 @@ procfs_make_ino (struct node *np, const char *filename)
   if (! strcmp (filename, "."))
     return np->nn_stat.st_ino;
   if (! strcmp (filename, ".."))
-    return np->nn->parent ? np->nn->parent->nn_stat.st_ino : /* FIXME: */ 42;
+    return np->nn->parent ? np->nn->parent->nn_stat.st_ino : /* FIXME: */ 2;
 
   assert (sizeof np->nn_stat.st_ino > sizeof x);
   memcpy (x, &np->nn_stat.st_ino, sizeof x);
