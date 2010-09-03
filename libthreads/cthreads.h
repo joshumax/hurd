@@ -269,6 +269,11 @@ typedef void *any_t;	    /* XXX - obsolete, should be deleted. */
 #define	FALSE	0
 #endif
 
+/* Enable mutex holder debugging */
+/* #define WAIT_DEBUG */
+/* Record function name instead of thread pointer */
+/* #define WAIT_FUNC_DEBUG */
+
 /*
  * C Threads package initialization.
  */
@@ -377,8 +382,25 @@ typedef struct mutex {
 	const char *name;
 	struct cthread_queue queue;
 	/* holder is for WAIT_DEBUG. Not ifdeffed to keep size constant. */
+#ifdef WAIT_FUNC_DEBUG
+	const char *fname;
+#else /* WAIT_FUNC_DEBUG */
 	struct cthread *holder;
+#endif /* WAIT_FUNC_DEBUG */
 } *mutex_t;
+
+#ifdef WAIT_DEBUG
+#ifdef WAIT_FUNC_DEBUG
+#define WAIT_CLEAR_DEBUG(m)	(m)->fname = 0
+#define WAIT_SET_DEBUG(m)	(m)->fname = __FUNCTION__
+#else /* WAIT_FUNC_DEBUG */
+#define WAIT_CLEAR_DEBUG(m)	(m)->holder = 0
+#define WAIT_SET_DEBUG(m)	(m)->holder = cthread_self()
+#endif /* WAIT_FUNC_DEBUG */
+#else /* WAIT_DEBUG */
+#define WAIT_CLEAR_DEBUG(m)	(void) 0
+#define WAIT_SET_DEBUG(m)	(void) 0
+#endif /* WAIT_DEBUG */
 
 /* Rearranged accordingly for GNU: */
 #define	MUTEX_INITIALIZER	{ SPIN_LOCK_INITIALIZER, SPIN_LOCK_INITIALIZER, 0, QUEUE_INITIALIZER, }
@@ -390,7 +412,7 @@ typedef struct mutex {
 	spin_lock_init(&(m)->lock); \
 	cthread_queue_init(&(m)->queue); \
 	spin_lock_init(&(m)->held); \
-	(m)->holder = 0; \
+	WAIT_CLEAR_DEBUG(m); \
 	MACRO_END
 #define	mutex_set_name(m, x)	((m)->name = (x))
 #define	mutex_name(m)		((m)->name != 0 ? (m)->name : "?")
@@ -398,13 +420,12 @@ typedef struct mutex {
 #define	mutex_free(m)		free((m))
 
 #define mutex_try_lock(m) spin_try_lock(&(m)->held)
-#if defined(WAIT_DEBUG)
 #define mutex_lock(m) \
 	MACRO_BEGIN \
 	if (!spin_try_lock(&(m)->held)) { \
 		__mutex_lock_solid(m); \
 	} \
-	(m)->holder = cthread_self(); \
+	WAIT_SET_DEBUG(m); \
 	MACRO_END
 #define mutex_unlock(m) \
 	MACRO_BEGIN \
@@ -412,23 +433,8 @@ typedef struct mutex {
 	    cthread_queue_head(&(m)->queue, vm_offset_t) != 0) { \
 		__mutex_unlock_solid(m); \
 	} \
-	(m)->holder = 0; \
+	WAIT_CLEAR_DEBUG(m); \
 	MACRO_END
-#else /* defined(WAIT_DEBUG */
-#define mutex_lock(m) \
-	MACRO_BEGIN \
-	if (!spin_try_lock(&(m)->held)) { \
-		__mutex_lock_solid(m); \
-	} \
-	MACRO_END
-#define mutex_unlock(m) \
-	MACRO_BEGIN \
-	if (spin_unlock(&(m)->held), \
-	    cthread_queue_head(&(m)->queue, vm_offset_t) != 0) { \
-		__mutex_unlock_solid(m); \
-	} \
-	MACRO_END
-#endif /* defined(WAIT_DEBUG) */
 /*
  * Condition variables.
  */
