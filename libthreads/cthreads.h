@@ -419,7 +419,7 @@ typedef struct mutex {
 #define	mutex_clear(m)		mutex_init(m)
 #define	mutex_free(m)		free((m))
 
-#define mutex_try_lock(m) spin_try_lock(&(m)->held)
+#define mutex_try_lock(m) (spin_try_lock(&(m)->held) ? WAIT_SET_DEBUG(m), 1 : 0)
 #define mutex_lock(m) \
 	MACRO_BEGIN \
 	if (!spin_try_lock(&(m)->held)) { \
