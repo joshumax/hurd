@@ -443,7 +443,9 @@ map (struct execdata *e, off_t posn, size_t len)
   else if (posn + len > size)
     /* The requested data wouldn't fit in the file.  */
     return NULL;
-  else if (e->filemap == MACH_PORT_NULL)
+  else if (e->file_data != NULL) {
+    return e->file_data + posn;
+  } else if (e->filemap == MACH_PORT_NULL)
     {
       /* No mapping for the file.  Read the data by RPC.  */
       char *buffer = map_buffer (e);
@@ -519,7 +521,10 @@ prepare_stream (struct execdata *e)
   e->map_filepos = 0;
 }
 
-static void prepare_in_memory (struct execdata *e) {}
+static void prepare_in_memory (struct execdata *e)
+{
+  prepare_stream(e);
+}
 
 #else
 
