@@ -1151,6 +1151,7 @@ check_gzip (struct execdata *earg)
 	}
       n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
       memcpy (buf, contents, n); /* XXX/fault */
+      zipread_pos += n;
       return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
@@ -1210,8 +1211,6 @@ check_gzip (struct execdata *earg)
   /* The output is complete.  Clean up the stream and store its resultant
      buffer and size in the execdata as the file contents.  */
   fclose (zipout);
-  e->file_data = zipdata;
-  e->file_size = zipdatasz;
 
   /* Clean up the old exec file stream's state.
      Now that we have the contents all in memory (in E->file_data),
@@ -1219,6 +1218,8 @@ check_gzip (struct execdata *earg)
   finish (e, 0);
 
   /* Prepare the stream state to use the file contents already in memory.  */
+  e->file_data = zipdata;
+  e->file_size = zipdatasz;
   prepare_in_memory (e);
 }
 #endif
@@ -1257,6 +1258,7 @@ check_bzip2 (struct execdata *earg)
 	}
       n = MIN (maxread, map_buffer (e) + map_fsize (e) - contents);
       memcpy (buf, contents, n); /* XXX/fault */
+      zipread_pos += n;
       return n;
     }
   void zipwrite (const char *buf, size_t nwrite)
@@ -1305,8 +1307,6 @@ check_bzip2 (struct execdata *earg)
   /* The output is complete.  Clean up the stream and store its resultant
      buffer and size in the execdata as the file contents.  */
   fclose (zipout);
-  e->file_data = zipdata;
-  e->file_size = zipdatasz;
 
   /* Clean up the old exec file stream's state.
      Now that we have the contents all in memory (in E->file_data),
@@ -1314,6 +1314,8 @@ check_bzip2 (struct execdata *earg)
   finish (e, 0);
 
   /* Prepare the stream state to use the file contents already in memory.  */
+  e->file_data = zipdata;
+  e->file_size = zipdatasz;
   prepare_in_memory (e);
 }
 #endif
