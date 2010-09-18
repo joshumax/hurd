@@ -58,13 +58,13 @@ sock_wake_async (struct socket *sock, int how)
 any_t
 net_bh_worker (any_t arg)
 {
-  __mutex_lock (&global_lock);
+  __mutex_lock (&net_bh_lock);
   while (1)
     {
-      condition_wait (&net_bh_wakeup, &global_lock);
-      __mutex_lock (&net_bh_lock);
+      condition_wait (&net_bh_wakeup, &net_bh_lock);
+      __mutex_lock (&global_lock);
       net_bh ();
-      __mutex_unlock (&net_bh_lock);
+      __mutex_unlock (&global_lock);
     }
   /*NOTREACHED*/
   return 0;
