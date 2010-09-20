@@ -432,14 +432,53 @@ static struct argp_option options[] =
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
     "Do not disable terminal signals, so you can suspend and interrupt boot."},
+  { "device",	   'f', "device_name=device_file", 0,
+    "Specify a device file used by subhurd and its virtual name."},
   { 0 }
 };
 static char args_doc[] = "BOOT-SCRIPT";
 static char doc[] = "Boot a second hurd";
 
+struct dev_map 
+{
+  char *name;
+  mach_port_t port;
+  struct dev_map *next;
+};
+
+static struct dev_map *dev_map_head;
+
+static struct dev_map *add_dev_map (char *dev_name, char *dev_file)
+{
+  struct dev_map *map = malloc (sizeof (*map));
+
+  assert (map);
+  map->name = dev_name;
+  map->port = file_name_lookup (dev_file, 0, 0);
+  if (map->port == MACH_PORT_NULL)
+    error (1, errno, "file_name_lookup: %s", dev_file);
+  map->next = dev_map_head;
+  dev_map_head = map;
+  return map;
+}
+
+static struct dev_map *lookup_dev (char *dev_name)
+{
+  struct dev_map *map;
+
+  for (map = dev_map_head; map; map = map->next)
+    {
+      if (strcmp (map->name, dev_name) == 0)
+	return map;
+    }
+  return NULL;
+}
+
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
 {
+  char *dev_file;
+
   switch (key)
     {
       size_t len;
@@ -456,6 +495,14 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	argp_error (state, "Too many bootstrap args");
       bootstrap_args[len++] = key;
       bootstrap_args[len] = '\0';
+      break;
+
+    case 'f':
+      dev_file = strchr (arg, '=');
+      if (dev_file == NULL)
+	return ARGP_ERR_UNKNOWN;
+      *dev_file = 0;
+      add_dev_map (arg, dev_file+1);
       break;
 
     case ARGP_KEY_ARG:
@@ -942,6 +989,8 @@ ds_device_open (mach_port_t master_port,
 		mach_port_t *device,
 		mach_msg_type_name_t *devicetype)
 {
+  struct dev_map *map;
+
   if (master_port != pseudo_master_device_port)
     return D_INVALID_OPERATION;
 
@@ -963,6 +1012,13 @@ ds_device_open (mach_port_t master_port,
       *device = pseudo_root;
       *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
+    }
+
+  map = lookup_dev (name);
+  if (map)
+    {
+      *devicetype = MACH_MSG_TYPE_MOVE_SEND;
+      return device_open (map->port, mode, "", device);
     }
 
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
