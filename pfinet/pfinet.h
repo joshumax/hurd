@@ -67,6 +67,7 @@ uid_t pfinet_group;
 
 void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+int ethernet_change_flags (struct device *, short);
 void setup_ethernet_device (char *, struct device **);
 void setup_dummy_device (char *, struct device **);
 void setup_tunnel_device (char *, struct device **);

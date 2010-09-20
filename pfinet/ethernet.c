@@ -199,6 +199,22 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
   return 0;
 }
 
+/* Set device flags (e.g. promiscuous) */
+int
+ethernet_change_flags (struct device *dev, short flags)
+{
+  error_t err = 0;
+#ifdef NET_FLAGS
+  int status = flags;
+  struct ether_device *edev = (struct ether_device *) dev->priv;
+  err = device_set_status (edev->ether_port, NET_FLAGS, &status, 1);
+  if (err == D_INVALID_OPERATION)
+    /* Not supported, ignore.  */
+    err = 0;
+#endif
+  return err;
+}
+
 void
 setup_ethernet_device (char *name, struct device **device)
 {
