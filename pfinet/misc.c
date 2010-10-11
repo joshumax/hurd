@@ -42,7 +42,7 @@ make_sockaddr_port (struct socket *sock,
 
   err = (*sock->ops->getname) (sock, &buf.sa, &buflen, peer);
   if (err)
-    return err;
+    return -err;
 
   err = ports_create_port (addrport_class, pfinet_bucket,
 			   (offsetof (struct sock_addr, address)
