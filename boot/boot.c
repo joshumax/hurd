@@ -730,6 +730,7 @@ main (int argc, char **argv, char **envp)
 	int i = strlen (str);
 
 	write (2, str, i);
+	write (2, "\n",  1);
 	host_exit (1);
       }
     free (buf);
