@@ -1061,7 +1061,13 @@ symbolssect:
 /* Returns a keysymbols, the numberic representation.  */
 symbolname:
   IDENTIFIER { $$ = XStringToKeysym ($1); }
-| NUM { $$ = $1 + '0' }
+| NUM
+  {
+    if (($1 >= 0) && ($1 < 10))
+      $$ = $1 + '0';
+    else
+      $$ = $1;
+  }
 | HEX { $$ = $1; }
 ;
 
