@@ -100,7 +100,7 @@ _ports_create_port_internal (struct port_class *class,
       err = mach_port_move_member (mach_task_self (), pi->port_right,
 				   bucket->portset);
       if (err)
-	goto lose;
+	goto lose_unlocked;
     }
 
   *(void **)result = pi;
@@ -110,6 +110,7 @@ _ports_create_port_internal (struct port_class *class,
   err = EINTR;
  lose:
   mutex_unlock (&_ports_lock);
+ lose_unlocked:
   err = mach_port_mod_refs (mach_task_self (), port,
 			    MACH_PORT_RIGHT_RECEIVE, -1);
   assert_perror (err);
