@@ -862,7 +862,6 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 	    if (!add_dir_entry (vcons->name,
 				vcons->id << 2, DT_DIR))
 	      break;
-	  mutex_unlock (&dir->nn->cons->lock);
 	}
       else
 	{
@@ -880,7 +879,10 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 	    add_dir_entry ("input", (dir->nn->vcons->id << 3) + 2, DT_FIFO);
 	}	  
     }
-      
+
+  if (dir->nn->cons)
+      mutex_unlock(&dir->nn->cons->lock);
+
   fshelp_touch (&dir->nn_stat, TOUCH_ATIME, console_maptime);
   return err;
 }
