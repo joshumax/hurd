@@ -227,7 +227,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   vcons = calloc (1, sizeof (struct vcons));
   if (!vcons)
     {
-      mutex_unlock (&vcons->cons->lock);
+      mutex_unlock (&cons->lock);
       return ENOMEM;
     }
   vcons->cons = cons;
@@ -244,7 +244,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
     {
       free (vcons->name);
       free (vcons);
-      mutex_unlock (&vcons->cons->lock);
+      mutex_unlock (&cons->lock);
       return err;
     }
 
@@ -254,7 +254,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
       display_destroy (vcons->display);
       free (vcons->name);
       free (vcons);
-      mutex_unlock (&vcons->cons->lock);
+      mutex_unlock (&cons->lock);
       return err;
     }
   
