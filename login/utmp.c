@@ -272,7 +272,7 @@ return_data(char *data, int data_len, char **buf, int *buf_len)
   if (data_len > *buf_len)
     {
       *buf = mmap (0, data_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      if (*buf == (char *) -1))
+      if (*buf == (char *) -1)
 	return errno;
     }
 
