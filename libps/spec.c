@@ -579,7 +579,7 @@ ps_emit_user_name (struct proc_stat *ps, struct ps_fmt_field *field,
       if (pw == NULL)
 	{
 	  char buf[20];
-	  sprintf (buf, "(UID %d)", pw->pw_uid);
+	  sprintf (buf, "(UID %d)", u->uid);
 	  return ps_stream_write_field (stream, buf, width);
 	}
       else
