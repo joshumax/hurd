@@ -744,7 +744,7 @@ struct fib6_node * fib6_locate(struct fib6_node *root,
 #ifdef CONFIG_IPV6_SUBTREES
 	if (src_len) {
 		BUG_TRAP(saddr!=NULL);
-		if (fn == NULL)
+		if (fn != NULL)
 			fn = fn->subtree;
 		if (fn)
 			fn = fib6_locate_1(fn, saddr, src_len,
