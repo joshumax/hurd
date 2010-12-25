@@ -272,14 +272,16 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 	    ftpfs_remote_root = sep + 1;
 
 	  /* Lookup the ftp server (the part before the `:').  */
-	  *sep = '\0';
+	  if (sep)
+	    *sep = '\0';
 	  err = lookup_server (ftpfs_remote_fs, &ftpfs_ftp_params, &h_err);
 	  if (err == EINVAL)
 	    argp_failure (state, 10, 0, "%s: %s",
 			  ftpfs_remote_fs, hstrerror (h_err));
 	  else if (err)
 	    argp_failure (state, 11, err, "%s", ftpfs_remote_fs);
-	  *sep = ':';
+	  if (sep)
+	    *sep = ':';
 	}
 
     case ARGP_KEY_INIT:
