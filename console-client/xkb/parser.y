@@ -1257,6 +1257,7 @@ include_section (char *incl, int sectionsymbol, char *dirname,
     {
       fprintf (stderr, "Couldn't open include file \"%s\"\n", filename);
       free (current_file);
+      free (filename);
       exit (EXIT_FAILURE);
     }
   
@@ -1280,9 +1281,11 @@ include_section (char *incl, int sectionsymbol, char *dirname,
 	 free (tmpbuf);
      }
      free (current_file);
+     free (filename);
      exit (err);
   }
   free (current_file);
+  free (filename);
   return 0;
 }
 
