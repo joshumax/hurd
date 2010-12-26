@@ -1251,7 +1251,7 @@ include_section (char *incl, int sectionsymbol, char *dirname,
         }
     }
 
-  includefile = fopen (strdup (filename), "r");
+  includefile = fopen (filename, "r");
   
   if (includefile == NULL)
     {
