@@ -1180,6 +1180,29 @@ skip_to_sectionname (char *sectionname, int sectionsymbol)
     return 0;
 }
 
+/* Skip all tokens until the first section of the type SECTIONSYMBOL
+   is found.  */
+static int
+skip_to_firstsection (int sectionsymbol)
+{
+  int symbol;
+
+  do 
+    {
+      do 
+        {
+          symbol = yylex ();
+        } while ((symbol != YY_NULL) && (symbol != sectionsymbol));
+
+      if (symbol != YY_NULL)
+        symbol = yylex ();
+
+      if (symbol == YY_NULL)
+        return 1;
+    } while (symbol != STR);
+  return 0;
+}
+
 /* Skip all tokens until the default section is found.  */
 static int
 skip_to_defaultsection (void)
@@ -1269,8 +1292,13 @@ include_section (char *incl, int sectionsymbol, char *dirname,
   if (sectionname)
       err = skip_to_sectionname (sectionname, sectionsymbol);
   else
-      err = skip_to_defaultsection ();
-
+      if ((err = skip_to_defaultsection ()) != 0)
+        {
+          /* XXX: after skip_to_defaultsection failed the whole file was
+             consumed and it is required to include it here, too. */
+          include_file (includefile, new_mm, strdup (filename));
+          err =  skip_to_firstsection (sectionsymbol);
+        }
   if (err != 0) {
      char* tmpbuf = malloc (sizeof(char)*1024);
      if (tmpbuf) {
