@@ -22,7 +22,10 @@ makemode := utilities
 targets = console
 CONSOLE_SRCS = console.c timer.c driver.c trans.c
 VGA_SO_SRCS = bdf.c vga-dynafont.c vga-dynacolor.c vga-support.c vga.c
-PC_KBD_SO_SRCS = pc-kbd.c kbd-repeat.c
+PC_KBD_SO_SRCS = pc-kbd.c kbd-repeat.c \
+	xkb/compose.c xkb/kstoucs.c xkb/parser.y xkb/lex.l \
+	xkb/symname.c xkb/xkb.c xkb/xkbdata.c xkb/xkbdefaults.c \
+	xkb/xkbtimer.c
 PC_MOUSE_SO_SRCS = pc-mouse.c
 GENERIC_SPEAKER_SO_SRCS = generic-speaker.c
 CURRENT_VCS_SO_SRCS = current-vcs.c
@@ -35,16 +38,26 @@ SRCS = $(CONSOLE_SRCS) \
 LCLHDRS = timer.h driver.h display.h input.h bell.h \
 	  unicode.h bdf.h mach-inputdev.h \
 	  vga-dynafont.h vga-dynacolor.h vga-hw.h vga-support.h \
-	  trans.h
+	  trans.h \
+	  xkb/keysymdef.h xkb/ks_tables.h xkb/xkb.h
 
-OBJS = $(SRCS:.c=.o) kdioctlServer.o
+VPATH += $(srcdir)/xkb
+OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS)))) kdioctlServer.o
 HURDLIBS = cons threads ports netfs fshelp iohelp ihash shouldbeinlibc
 LDLIBS = -ldl
 module-dir = $(libdir)/hurd/console
 console-LDFLAGS = -Wl,-E
 
+CPPFLAGS += -I$(srcdir)/xkb
+LFLAGS = -i
+YFLAGS = -by
+
 # In seeking, thou shalt find it!
 CPPFLAGS += -DQUAERENDO_INVENIETIS
+
+DIST_FILES = xkb/HACKING xkb/MISSING-FEATURES xkb/README xkb/TODO \
+             xkb/Compose xkb/default.xkb xkb/makeconf.sh \
+             $(wildcard xkb/xkb-data/*/hurd)
 
 include ../Makeconf
 
@@ -59,8 +72,9 @@ console: $(CONSOLE_SRCS:.c=.o) \
 modules = vga pc_kbd generic_speaker pc_mouse current_vcs
 
 vga-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
+pc-kbd-CFLAGS = -DXKB_SUPPORT -DXKB_DATA_DIR=\"$(datadir)/X11/xkb\"
 vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(VGA_SO_SRCS))
-pc_kbd.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(PC_KBD_SO_SRCS))	\
+pc_kbd.so.$(hurd-version): $(addsuffix _pic.o, $(basename $(notdir $(PC_KBD_SO_SRCS)))) \
 	kdioctlServer_pic.o
 pc_mouse.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(PC_MOUSE_SO_SRCS))
 generic_speaker.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(GENERIC_SPEAKER_SO_SRCS))
@@ -91,3 +105,10 @@ $(module-dir)/%: %
 	$(CC) -shared -Wl,-soname=$@ -o $@ $(rpath) \
 		$(CFLAGS) $($*-CFLAGS) $(LDFLAGS) \
 		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
+
+lex.c: lex.l parser.tab.h
+parser.tab.h: parser.y
+	if $(YACC) $(YFLAGS) -d $<; then \
+	    mv y.tab.h $@; \
+	    rm y.tab.c; \
+	fi
