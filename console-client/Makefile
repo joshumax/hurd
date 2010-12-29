@@ -51,13 +51,15 @@ console-LDFLAGS = -Wl,-E
 CPPFLAGS += -I$(srcdir)/xkb
 LFLAGS = -i
 YFLAGS = -by
+XKB_DATA_DIR = $(datadir)/X11/xkb
+XKB_DATA_FILES = keymap/hurd types/hurd symbols/hurd
 
 # In seeking, thou shalt find it!
 CPPFLAGS += -DQUAERENDO_INVENIETIS
 
 DIST_FILES = xkb/HACKING xkb/MISSING-FEATURES xkb/README xkb/TODO \
              xkb/Compose xkb/default.xkb xkb/makeconf.sh \
-             $(wildcard xkb/xkb-data/*/hurd)
+             $(addprefix xkb/xkb-data/, $(XKB_DATA_FILES))
 
 include ../Makeconf
 
@@ -72,7 +74,7 @@ console: $(CONSOLE_SRCS:.c=.o) \
 modules = vga pc_kbd generic_speaker pc_mouse current_vcs
 
 vga-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
-pc-kbd-CFLAGS = -DXKB_SUPPORT -DXKB_DATA_DIR=\"$(datadir)/X11/xkb\"
+pc-kbd-CFLAGS = -DXKB_SUPPORT -DXKB_DATA_DIR=\"$(XKB_DATA_DIR)\"
 vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(VGA_SO_SRCS))
 pc_kbd.so.$(hurd-version): $(addsuffix _pic.o, $(basename $(notdir $(PC_KBD_SO_SRCS)))) \
 	kdioctlServer_pic.o
@@ -91,12 +93,19 @@ all: $(addsuffix .so.$(hurd-version), $(modules))
 
 cleantarg += $(addsuffix .so.$(hurd-version), $(modules))
 
-install: $(module-dir) $(addprefix $(module-dir)/,$(addsuffix .so.$(hurd-version),$(modules)))
+install: $(module-dir) $(addprefix $(module-dir)/,$(addsuffix .so.$(hurd-version),$(modules))) \
+         $(XKB_DATA_DIR) $(addprefix $(XKB_DATA_DIR)/, $(XKB_DATA_FILES))
 
 $(module-dir):
 	@$(MKINSTALLDIRS) $@
 
 $(module-dir)/%: %
+	$(INSTALL_DATA) $< $@
+
+$(XKB_DATA_DIR):
+	@$(MKINSTALLDIRS) $@
+
+$(XKB_DATA_DIR)/%: xkb/xkb-data/%
 	$(INSTALL_DATA) $< $@
 
 # You can use this rule to make a dynamically-loadable version of any
