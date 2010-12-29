@@ -215,9 +215,9 @@ static struct keytype *current_keytype;
 %%
 /* A XKB keymap.  */
 xkbkeymap:
-  "xkb_keymap" '{' keymap '}' ';' { YYACCEPT }  
-| "xkb_keymap" STR '{' keymap '}' ';' { YYACCEPT }
-| '{' keymap '}' { YYACCEPT } ';'
+  "xkb_keymap" '{' keymap '}' ';' { YYACCEPT; }
+| "xkb_keymap" STR '{' keymap '}' ';' { YYACCEPT; }
+| '{' keymap '}' { YYACCEPT; } ';'
 ;
 
 /* A XKB configuration has many sections. */
@@ -231,10 +231,10 @@ keymap:
 ;
 
 include:
-  "include"  { $$ = defaultmm }
-| "augment"  { $$ = augment   }
-| "replace"  { $$ = replace   }
-| "override" { $$= override   }
+  "include"  { $$ = defaultmm; }
+| "augment"  { $$ = augment;   }
+| "replace"  { $$ = replace;   }
+| "override" { $$= override;   }
 ;
 
 /* All flags assigned to a section.  */
@@ -251,8 +251,8 @@ keycodes:
 
 /* Process the includes on the stack.  */
 keycodesinclude:
-  '{' keycodesect '}'			 { close_include () }
-| keycodesinclude '{' keycodesect '}'	 { close_include () }
+  '{' keycodesect '}'			 { close_include (); }
+| keycodesinclude '{' keycodesect '}'	 { close_include (); }
 ;
 
 /* The first lines of a keycode section. The amount of keycodes are
@@ -305,7 +305,7 @@ types:
    by commas.  */
 vmodslist:
   IDENTIFIER { vmod_add ($1); }
-| vmodslist ',' IDENTIFIER { vmod_add ($3) }
+| vmodslist ',' IDENTIFIER { vmod_add ($3); }
 ;
 
 /* Virtual modifiers must be declared before they can be used.  */
@@ -320,14 +320,14 @@ vmod:
 
 /* A single realmodifier.  */
 rmod:
-  "shift" 	{ $$ = RMOD_SHIFT }
-| "lock" 	{ $$ = RMOD_LOCK }
-| "control"	{ $$ = RMOD_CTRL }
-| "mod1"	{ $$ = RMOD_MOD1 }
-| "mod2"	{ $$ = RMOD_MOD2 }
-| "mod3"	{ $$ = RMOD_MOD3 }
-| "mod4"	{ $$ = RMOD_MOD4 }
-| "mod5"	{ $$ = RMOD_MOD5 }
+  "shift" 	{ $$ = RMOD_SHIFT; }
+| "lock" 	{ $$ = RMOD_LOCK; }
+| "control"	{ $$ = RMOD_CTRL; }
+| "mod1"	{ $$ = RMOD_MOD1; }
+| "mod2"	{ $$ = RMOD_MOD2; }
+| "mod3"	{ $$ = RMOD_MOD3; }
+| "mod4"	{ $$ = RMOD_MOD4; }
+| "mod5"	{ $$ = RMOD_MOD5; }
 ;
 
 /* One of more modifiers, seperated by '+'. A modmap_t will return all real
@@ -336,45 +336,45 @@ mods:
   mods '+' rmod { $$.rmods = $1.rmods | $3; }
 | mods '+' vmod { $$.vmods = $1.vmods | $3; }
 	/* Use a mid-rule action to start with no modifiers.  */
-| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0 } rmod		{ $$.rmods = $2; }
-| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0 } vmod 		{ $$.vmods = $2; }
-| "all"	{ $$.rmods = 0xFF; $$.vmods = 0xFFFF}
-| "none"  { $$.rmods = 0; $$.vmods = 0 }
+| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0; } rmod		{ $$.rmods = $2; }
+| { $<modmap>$.rmods = 0; $<modmap>$.vmods = 0; } vmod 		{ $$.vmods = $2; }
+| "all"	{ $$.rmods = 0xFF; $$.vmods = 0xFFFF; }
+| "none"  { $$.rmods = 0; $$.vmods = 0; }
 ;
 
 /* The numeric level starts with 0. Level1-Level4 returns 0-3, also
    numeric values can be used to describe a level.  */
 level:
-  LEVEL	{ $$ = $1 - 1 }
-| "any" { $$ = 0      }
-| NUM	{ $$ = $1 - 1 }
+  LEVEL	{ $$ = $1 - 1; }
+| "any" { $$ = 0;      }
+| NUM	{ $$ = $1 - 1; }
 ;
 
 /* A single keytype.  */
 type:
 	/* Empty */
 | type MODS '=' mods ';'
-   { current_keytype->modmask = $4 }
+   { current_keytype->modmask = $4; }
 | type MAP '[' mods ']' '=' level ';' 	     
-   { keytype_mapadd (current_keytype, $4, $7) }
+   { keytype_mapadd (current_keytype, $4, $7); }
 | type "level_name" '[' level ']' '=' STR ';'
 | type "preserve" '[' mods ']' '=' mods ';'    
-   { keytype_preserve_add (current_keytype, $4, $7) }
+   { keytype_preserve_add (current_keytype, $4, $7); }
 ;
 
 /* Process the includes on the stack.  */
 typesinclude:
-  '{' typessect '}'			 { close_include () }
-| typesinclude '{' typessect '}'	 { close_include () }
+  '{' typessect '}'			 { close_include (); }
+| typesinclude '{' typessect '}'	 { close_include (); }
 ;
 
 /* A keytype section contains keytypes and virtual modifier declarations.  */
 typessect:
 	/* Empty */
 | typessect vmods_def
-| typessect TYPE STR { keytype_new ($3, &current_keytype) }'{' type '}' ';' { }
+| typessect TYPE STR { keytype_new ($3, &current_keytype); }'{' type '}' ';' { }
 | typessect include STR 
-   { include_sections ($3, XKBTYPES, "types", $2) }
+   { include_sections ($3, XKBTYPES, "types", $2); }
   typesinclude
 ;
 
@@ -387,16 +387,16 @@ compat:
 /* XXX: A symbol can be more than just an identifier (hex).  */
 symbol:
   IDENTIFIER		{ $$ = (int) XStringToKeysym ( $1) ? : -1;  }
-| ANY 			{ $$ = 0  }
-| error 		{ yyerror ("Invalid symbol.") }
+| ANY 			{ $$ = 0;  }
+| error 		{ yyerror ("Invalid symbol."); }
 ;
 
 /* Which kinds of modifiers (like base, locked, etc.) can affect the
    indicator.  */
 whichstate:
-  WHICHSTATE { $$ = $1 }
-| "none"     { $$ = 0 }
-| "any"      { $$ = 0xff } /* XXX */
+  WHICHSTATE { $$ = $1; }
+| "none"     { $$ = 0; }
+| "any"      { $$ = 0xff; } /* XXX */
 ;  
 
 /* The groups that can affect a indicator.  */
@@ -404,7 +404,7 @@ groups:
   groups '+' group
 | groups '-' group
 | group {}
-| "all" { $$ = 0xff } /* XXX */ 
+| "all" { $$ = 0xff; } /* XXX */
 ;
 
 indicators:
@@ -414,11 +414,11 @@ indicators:
 
 /* An indicator desciption.  */
 indicator:
-  "mods" '=' mods ';' { current_indicator->modmap = $3 }
-| "groups" '=' groups ';' { current_indicator->groups = $3 }
+  "mods" '=' mods ';' { current_indicator->modmap = $3; }
+| "groups" '=' groups ';' { current_indicator->groups = $3; }
 | "controls" '=' ctrls ';'
-| "whichmodstate" '=' whichstate ';' { current_indicator->which_mods = $3 }
-| "whichgroupstate" '=' whichstate ';' { current_indicator->which_mods = $3 }
+| "whichmodstate" '=' whichstate ';' { current_indicator->which_mods = $3; }
+| "whichgroupstate" '=' whichstate ';' { current_indicator->which_mods = $3; }
 | allowexplicit ';' {} /* Ignored for now.  */
 | driveskbd ';' {}
 | "index" '=' NUM ';' {}
@@ -426,18 +426,18 @@ indicator:
 
 /* Boolean for allowexplicit.  */
 allowexplicit:
-  '~' "allowexplicit"		 { $$ = 0  }
-| '!' "allowexplicit"		 { $$ = 0  }
-| "allowexplicit"		 { $$ = 1  }
-| "allowexplicit" '=' BOOLEAN	 { $$ = $3 }
+  '~' "allowexplicit"		 { $$ = 0;  }
+| '!' "allowexplicit"		 { $$ = 0;  }
+| "allowexplicit"		 { $$ = 1;  }
+| "allowexplicit" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 /* Boolean for driveskbd.  */
 driveskbd:
-  '~' "driveskbd"		 { $$ = 0  }
-| '!' "driveskbd"		 { $$ = 0  }
-| "driveskbd"			 { $$ = 1  }
-| "driveskbd" '=' BOOLEAN	 { $$ = $3 }
+  '~' "driveskbd"		 { $$ = 0;  }
+| '!' "driveskbd"		 { $$ = 0;  }
+| "driveskbd"			 { $$ = 1;  }
+| "driveskbd" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 interprets:
@@ -448,14 +448,14 @@ interprets:
 /* A single interpretation.  */
 interpret:
   "usemodmap" '=' level ';'
-	{ current_interpretation->match &= 0x7F | ($3 << 7) } /* XXX */
+	{ current_interpretation->match &= 0x7F | ($3 << 7); } /* XXX */
 | repeat ';'
   {
     current_interpretation->flags &= ~(KEYREPEAT | KEYNOREPEAT);
     current_interpretation->flags |= $1;
   }
 | locking ';' {}
-| "virtualmod" '=' vmod ';' 	{ current_interpretation->vmod = $3 }
+| "virtualmod" '=' vmod ';' 	{ current_interpretation->vmod = $3; }
 | "action" '=' action ';' 	
    { 
      memcpy (&current_interpretation->action, $3, sizeof (xkb_action_t));
@@ -465,8 +465,8 @@ interpret:
 
 /* Process the includes on the stack.  */
 compatinclude:
-  '{' compatsect '}'			 { close_include () }
-| compatinclude '{' compatsect '}'	 { close_include () }
+  '{' compatsect '}'			 { close_include (); }
+| compatinclude '{' compatsect '}'	 { close_include (); }
 ;
 
 /* The body of a compatibility section.  */
@@ -474,7 +474,7 @@ compatsect:
 	/* Empty */
 | compatsect vmods_def
 | compatsect "interpret" '.' 
-   { current_interpretation = &default_interpretation }
+   { current_interpretation = &default_interpretation; }
   interpret
 | compatsect "interpret" symbol 
 	{ 
@@ -518,7 +518,7 @@ compatsect:
 | compatsect GROUP NUM '=' mods ';'
 | compatsect "indicator" STR '{' indicators '}' ';'
 | compatsect include STR
-   { include_sections ($3, XKBCOMPAT, "compat", $2) }
+   { include_sections ($3, XKBCOMPAT, "compat", $2); }
   compatinclude
 | compatsect actiondef
 | compatsect "indicator" '.' indicator
@@ -528,41 +528,41 @@ compatsect:
 	/* Booleans  */
 /* Boolean for clearlocks.  */
 clearlocks:
-  '~' "clearlocks"		 { $$ = 0 }
-| '!' "clearlocks"		 { $$ = 0 }
-| "clearlocks"			 { $$ = 1 }
-| "clearlocks" '=' BOOLEAN	 { $$ = $3 }
+  '~' "clearlocks"		 { $$ = 0; }
+| '!' "clearlocks"		 { $$ = 0; }
+| "clearlocks"			 { $$ = 1; }
+| "clearlocks" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 /* Boolean for latchtolock.  */
 latchtolock:
-  '~' "latchtolock"		 { $$ = 0 }
-| '!' "latchtolock"		 { $$ = 0 }
-| "latchtolock"			 { $$ = 1 }
-| "latchtolock" '=' BOOLEAN	 { $$ = $3 }
+  '~' "latchtolock"		 { $$ = 0; }
+| '!' "latchtolock"		 { $$ = 0; }
+| "latchtolock"			 { $$ = 1; }
+| "latchtolock" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 /* Boolean for useModMap.  */
 usemodmap:
-  '~' "usemodmap"	 	 { $$ = 0 }
-| '!' "usemodmap"		 { $$ = 0 }
-| "usemodmap"			 { $$ = 1 }
-| "usemodmap" '=' BOOLEAN 	 { $$ = $3 }
+  '~' "usemodmap"	 	 { $$ = 0; }
+| '!' "usemodmap"		 { $$ = 0; }
+| "usemodmap"			 { $$ = 1; }
+| "usemodmap" '=' BOOLEAN 	 { $$ = $3; }
 ;
 
 /* Boolean for locking.  */
 locking:
-  '~' "locking"		 	 { $$ = 0 }
-| '!' "locking"		 	 { $$ = 0 }
-| "locking"			 { $$ = 1 }
-| "locking" '=' BOOLEAN		 { $$ = $3 }
+  '~' "locking"		 	 { $$ = 0; }
+| '!' "locking"		 	 { $$ = 0; }
+| "locking"			 { $$ = 1; }
+| "locking" '=' BOOLEAN		 { $$ = $3; }
 ;
 
 /* Boolean for repeat.  */
 repeat:
-  '~' "repeat"			 { $$ = KEYNOREPEAT }
-| '!' "repeat"			 { $$ = KEYNOREPEAT }
-| "repeat"			 { $$ = KEYREPEAT   }
+  '~' "repeat"			 { $$ = KEYNOREPEAT; }
+| '!' "repeat"			 { $$ = KEYNOREPEAT; }
+| "repeat"			 { $$ = KEYREPEAT;   }
 | "repeat" '=' BOOLEAN	 
   {
     if ($3)
@@ -574,34 +574,34 @@ repeat:
 
 /* Boolean for groupswrap.  */
 groupswrap:
-  '~' "groupswrap"		 { $$ = 0 }
-| '!' "groupswrap"		 { $$ = 0 }
-| "groupswrap"			 { $$ = 1 }
-| "groupswrap" '=' BOOLEAN	 { $$ = $3 }
+  '~' "groupswrap"		 { $$ = 0; }
+| '!' "groupswrap"		 { $$ = 0; }
+| "groupswrap"			 { $$ = 1; }
+| "groupswrap" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 /* Boolean for groupsclamp.  */
 groupsclamp:
-  '~' "groupsclamp"		 { $$ = 0  }
-| '!' "groupsclamp"		 { $$ = 0  }
-| "groupsclamp"			 { $$ = 1  }
-| "groupsclamp" '=' BOOLEAN	 { $$ = $3 }
+  '~' "groupsclamp"		 { $$ = 0;  }
+| '!' "groupsclamp"		 { $$ = 0;  }
+| "groupsclamp"			 { $$ = 1;  }
+| "groupsclamp" '=' BOOLEAN	 { $$ = $3; }
 ;
 
 /* Boolean for noaccel.  */
 noaccel:
-  '~' "accel"		 	 { $$ = 0  }
-| '!' "accel"		 	 { $$ = 0  }
-| "accel"		 	 { $$ = 1  }
-| "accel" '=' BOOLEAN	 	 { $$ = $3 }
+  '~' "accel"		 	 { $$ = 0;  }
+| '!' "accel"		 	 { $$ = 0;  }
+| "accel"		 	 { $$ = 1;  }
+| "accel" '=' BOOLEAN	 	 { $$ = $3; }
 ;
 
 
 sameserver:
-  '~' "sameserver"		 { $$ = 0  }
-| '!' "sameserver"		 { $$ = 0  }
-| "sameserver"			 { $$ = 1  }
-| "sameserver" '=' BOOLEAN 	 { $$ = $3 }
+  '~' "sameserver"		 { $$ = 0;  }
+| '!' "sameserver"		 { $$ = 0;  }
+| "sameserver"			 { $$ = 1;  }
+| "sameserver" '=' BOOLEAN 	 { $$ = $3; }
 ;
 
 setmodsparams:
@@ -697,9 +697,9 @@ moveptrparam:
 
 /* A mouse button.  */
 button:
-  NUM 			{ $$ = $1 }
-| BUTTONNUM		{ $$ = $1 }
-| "default"		{ $$ = 0  }
+  NUM 			{ $$ = $1; }
+| BUTTONNUM		{ $$ = $1; }
+| "default"		{ $$ = 0;  }
 ;
 
 affectbtnlock:
@@ -750,16 +750,16 @@ ptrdfltparam:
 
 /* A list of controlflags.  */
 ctrls:
-  ctrls '+' CONTROLFLAG// { $$ |= $3 }
-| CONTROLFLAG// 		{ $$ = $1  }
+  ctrls '+' CONTROLFLAG// { $$ |= $3; }
+| CONTROLFLAG// 		{ $$ = $1;  }
 | OVERLAY
 ;
 
 /* Modified controlflags.  */
 ctrlflags:
-  ctrls { /*$$ = $1*/ 	}
-| "all" 	{ $$ = 0xFFFF 	}
-| "none" 	{ $$ = 0 	}
+  ctrls { /*$$ = $1;*/ 	}
+| "all" 	{ $$ = 0xFFFF; 	}
+| "none" 	{ $$ = 0; 	}
 ;
 
 /* The parameters of a (Set|Lock|Latch)Ctrls Action.  */
@@ -877,116 +877,116 @@ action:
      if (set_default_action (&default_setmods, &current_action))
        YYABORT;
    }
-  '(' setmodsparams ')'		{ $$ = current_action }
+  '(' setmodsparams ')'		{ $$ = current_action; }
 | "latchmods" 
    { 
      if (set_default_action (&default_latchmods, &current_action))
        YYABORT;
    }
-  '(' setmodsparams ')' 	{ $$ = current_action }
+  '(' setmodsparams ')' 	{ $$ = current_action; }
 | "lockmods"
    {
      if (set_default_action (&default_lockmods, &current_action))
        YYABORT;
    }
-  '(' setmodsparams ')' 	{ $$ = current_action }
+  '(' setmodsparams ')' 	{ $$ = current_action; }
 | "setgroup"
    {
      if (set_default_action (&default_setgroup, &current_action))
        YYABORT;
    }
-  '(' setgroupparams ')' 	{ $$ = current_action }
+  '(' setgroupparams ')' 	{ $$ = current_action; }
 | "latchgroup" 
    { 
      if (set_default_action (&default_latchgroup, &current_action))
        YYABORT;
    }
-  '(' setgroupparams ')' 	{ $$ = current_action }
+  '(' setgroupparams ')' 	{ $$ = current_action; }
 | "lockgroup"
    {
      if (set_default_action (&default_lockgroup, &current_action))
        YYABORT;
    }
-     '(' setgroupparams ')' 	{ $$ = current_action }
+     '(' setgroupparams ')' 	{ $$ = current_action; }
 | "moveptr"
    { 
      if (set_default_action (&default_moveptr, &current_action))
        YYABORT;
    }
-  '(' moveptrparams ')' 	{ $$ = current_action }
+  '(' moveptrparams ')' 	{ $$ = current_action; }
 | "ptrbtn"
    {
      if (set_default_action (&default_ptrbtn, &current_action))
        YYABORT;
    }
-  '(' ptrbtnparams ')' 		{ $$ = current_action }
+  '(' ptrbtnparams ')' 		{ $$ = current_action; }
 | "lockptrbtn"
    {
      if (set_default_action (&default_lockptrbtn, &current_action))
        YYABORT;
    }
-  '(' ptrbtnparams ')' 		{ $$ = current_action }
+  '(' ptrbtnparams ')' 		{ $$ = current_action; }
 | "setptrdflt"
    {
      if (set_default_action (&default_ptrdflt, &current_action))
        YYABORT;
    }
-  '(' ptrdfltparams ')'	 	{ $$ = current_action }
+  '(' ptrdfltparams ')'	 	{ $$ = current_action; }
 | "setcontrols"
    {
      if (set_default_action (&default_setcontrols, &current_action))
        YYABORT;
    }
-  '(' ctrlparams ')'	 	{ $$ = current_action }
+  '(' ctrlparams ')'	 	{ $$ = current_action; }
 | "lockcontrols"
    { 
      if (set_default_action (&default_lockcontrols, &current_action))
        YYABORT;
    }
-  '(' ctrlparams ')'	 	{ $$ = current_action }
+  '(' ctrlparams ')'	 	{ $$ = current_action; }
 | "terminate" '(' ')'
-   { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_TerminateServer }
+   { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_TerminateServer; }
 | "switchscreen"
    {
      if (set_default_action (&default_switchscrn, &current_action))
        YYABORT;
    }
-'(' switchscrnparams ')' 	{ $$ = current_action }
+'(' switchscrnparams ')' 	{ $$ = current_action; }
 | "consscroll"
    { 
      if (set_default_action (&default_consscroll, &current_action))
        YYABORT;
    }
-   '(' consscrollparams ')' 	{ $$ = current_action }
+   '(' consscrollparams ')' 	{ $$ = current_action; }
 | "isolock"
   {
     if (set_default_action (&default_isolock, &current_action))
       YYABORT;
   }
-  '(' isolockparams ')'	 	{ $$ = current_action }
+  '(' isolockparams ')'	 	{ $$ = current_action; }
 | "private" '(' privateparams ')'
-  { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_NoAction }
+  { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_NoAction; }
 | "noaction" '(' ')'
-  { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_NoAction }
-| error ')'	{ yyerror ("Invalid action\n") }
+  { $$ = calloc (1, sizeof (xkb_action_t)); $$->type = SA_NoAction; }
+| error ')'	{ yyerror ("Invalid action\n"); }
 ;
 
 /* Define values for default actions.  */
 actiondef:
-  "setmods"      '.' { current_action = &default_setmods   } setmodsparam ';'
-| "latchmods"    '.' { current_action = &default_latchmods } setmodsparam ';'
-| "lockmods"     '.' { current_action = &default_lockmods } setmodsparam ';'
-| "setgroup"     '.' { current_action = &default_setgroup } setgroupparam ';'
-| "latchgroup"   '.' { current_action = &default_latchgroup } setgroupparam ';'
-| "lockgroup"    '.' { current_action = &default_lockgroup } setgroupparam ';'
-| "moveptr"      '.' { current_action = &default_moveptr } moveptrparam ';'
-| "ptrbtn"       '.' { current_action = &default_ptrbtn } ptrbtnparam ';'
-| "lockptrbtn"   '.' { current_action = &default_lockptrbtn } ptrbtnparam ';'
-| "setptrdflt"   '.' { current_action = &default_ptrdflt } ptrdfltparam ';'
-| "setcontrols"  '.' { current_action = &default_setcontrols } ctrlparams ';'
-| "lockcontrols" '.' { current_action = &default_lockcontrols } ctrlparams ';'
-| "isolock"      '.' { current_action = &default_isolock } isolockparam ';'
-| "switchscreen" '.' { current_action = &default_switchscrn } switchscrnparam ';'
+  "setmods"      '.' { current_action = &default_setmods;   } setmodsparam ';'
+| "latchmods"    '.' { current_action = &default_latchmods; } setmodsparam ';'
+| "lockmods"     '.' { current_action = &default_lockmods;  } setmodsparam ';'
+| "setgroup"     '.' { current_action = &default_setgroup;  } setgroupparam ';'
+| "latchgroup"   '.' { current_action = &default_latchgroup; } setgroupparam ';'
+| "lockgroup"    '.' { current_action = &default_lockgroup; } setgroupparam ';'
+| "moveptr"      '.' { current_action = &default_moveptr;   } moveptrparam ';'
+| "ptrbtn"       '.' { current_action = &default_ptrbtn;    } ptrbtnparam ';'
+| "lockptrbtn"   '.' { current_action = &default_lockptrbtn; } ptrbtnparam ';'
+| "setptrdflt"   '.' { current_action = &default_ptrdflt;   } ptrdfltparam ';'
+| "setcontrols"  '.' { current_action = &default_setcontrols; } ctrlparams ';'
+| "lockcontrols" '.' { current_action = &default_lockcontrols; } ctrlparams ';'
+| "isolock"      '.' { current_action = &default_isolock;   } isolockparam ';'
+| "switchscreen" '.' { current_action = &default_switchscrn; } switchscrnparam ';'
 ;
 
 /* The header of a symbols section.  */
@@ -997,23 +997,23 @@ symbols:
 
 /* A group.  */
 group:
-  GROUPNUM 		{ $$ = $1 - 1 }
-| NUM 			{ $$ = $1 - 1}
-| HEX 			{ $$ = $1 - 1}
+  GROUPNUM 		{ $$ = $1 - 1; }
+| NUM 			{ $$ = $1 - 1; }
+| HEX 			{ $$ = $1 - 1; }
 ;
 
 /* A list of keysyms and keycodes bound to a realmodifier.  */
 key_list:
-  key_list ',' KEYCODE		{ set_rmod_keycode ($3, current_rmod) }
-| key_list ',' symbolname 	{ ksrm_add ($3, current_rmod)  }
-| KEYCODE 			{ set_rmod_keycode ($1, current_rmod) }
-| symbolname    		{ ksrm_add ($1, current_rmod)  }
+  key_list ',' KEYCODE		{ set_rmod_keycode ($3, current_rmod); }
+| key_list ',' symbolname 	{ ksrm_add ($3, current_rmod);  }
+| KEYCODE 			{ set_rmod_keycode ($1, current_rmod); }
+| symbolname    		{ ksrm_add ($1, current_rmod);  }
 ;
 
 /* Process the includes on the stack.  */
 symbolinclude:
-  '{' symbolssect '}'			 { close_include () }
-| symbolinclude '{' symbolssect '}'	 { close_include () }
+  '{' symbolssect '}'			 { close_include (); }
+| symbolinclude '{' symbolssect '}'	 { close_include (); }
 ;
 
 /* A XKB symbol section. It is used to bind keysymbols, actions and
@@ -1039,13 +1039,13 @@ symbolssect:
     key_new ($4);
     current_group = 0;
   } '{' keydescs '}' ';'
-| symbolssect "modifier_map" rmod { current_rmod = $3 } '{' key_list '}' ';'
+| symbolssect "modifier_map" rmod { current_rmod = $3; } '{' key_list '}' ';'
 | symbolssect include STR
-   { include_sections ($3, XKBSYMBOLS, "symbols", $2) }
+   { include_sections ($3, XKBSYMBOLS, "symbols", $2); }
   symbolinclude
 | symbolssect actiondef
-| symbolssect "key" '.' {current_key = default_key } keydesc ';'
-| symbolssect error ';' { yyerror ("Error in symbol section\n") }
+| symbolssect "key" '.' {current_key = default_key; } keydesc ';'
+| symbolssect error ';' { yyerror ("Error in symbol section\n"); }
 ;
 
 /* Returns a keysymbols, the numberic representation.  */
@@ -1059,8 +1059,8 @@ symbolname:
 groupsyms:
 	/* empty */
 | groupsyms ',' symbolname  
-   { key_set_keysym (current_key, current_group, symbolcnt++, $3) }
-| { symbolcnt = 0 } symbolname
+   { key_set_keysym (current_key, current_group, symbolcnt++, $3); }
+| { symbolcnt = 0; } symbolname
    { 
      symbolcnt = 0;
      key_set_keysym (current_key, current_group, symbolcnt++, $2);
@@ -1070,9 +1070,9 @@ groupsyms:
 /* A list of actions.  */
 actions:
   actions ',' action
-   { key_set_action (current_key, current_group, actioncnt++, $3) }
-|  { actioncnt = 0 } action
-   { key_set_action ( current_key, current_group, actioncnt++, $2) }
+   { key_set_action (current_key, current_group, actioncnt++, $3); }
+|  { actioncnt = 0; } action
+   { key_set_action ( current_key, current_group, actioncnt++, $2); }
 ;
 
 keydescs:
@@ -1086,21 +1086,21 @@ keydesc:
    {
      current_key->groups[$3].keytype = keytype_find ($6);
    }
-| "type" '[' error ']' 	{ yyerror ("Invalid group.\n") }
+| "type" '[' error ']' 	{ yyerror ("Invalid group.\n"); }
 | "type" '=' STR
-   { current_key->groups[current_group].keytype = keytype_find ($3) }
-| { symbolcnt = 0 } "symbols" '[' group ']' { current_group = $4 } '=' '[' groupsyms ']'
+   { current_key->groups[current_group].keytype = keytype_find ($3); }
+| { symbolcnt = 0; } "symbols" '[' group ']' { current_group = $4; } '=' '[' groupsyms ']'
    {
      current_key->numgroups = ($4 + 1) > current_key->numgroups ?
        ($4 + 1) : current_key->numgroups;
    }
-| {actioncnt = 0 } "actions" '[' group ']' { current_group = $4 } '=' '[' actions ']' 
+| {actioncnt = 0; } "actions" '[' group ']' { current_group = $4; } '=' '[' actions ']'
    {
      current_key->numgroups = ($4 + 1) > current_key->numgroups ?
        ($4 + 1) : current_key->numgroups;   
    }
 | "virtualmods" '=' mods
-   { current_key->mods.vmods = $3.vmods }
+   { current_key->mods.vmods = $3.vmods; }
 | '[' groupsyms ']'
   {
      current_group++;
@@ -1132,8 +1132,8 @@ keydesc:
 
 /* The header of a geometry section.  */
 geometry:
-  flags "xkb_geometry" '{' { skipsection () } '}' ';'
-| flags "xkb_geometry" STR '{' { skipsection () } '}' ';'
+  flags "xkb_geometry" '{' { skipsection (); } '}' ';'
+| flags "xkb_geometry" STR '{' { skipsection (); } '}' ';'
 ;
 
 %%
