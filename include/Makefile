@@ -34,4 +34,4 @@ $(includedir)/%: $(srcdir)/%
 	$(INSTALL_DATA) $< $@
 
 lndist: $(top_srcdir)/hurd-snap/$(dir)
-	cp -r --parent Makefile $(installhdrs) $<
+	cp -r --parent $(addprefix $(srcdir)/, Makefile $(installhdrs)) $<
