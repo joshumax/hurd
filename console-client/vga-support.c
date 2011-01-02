@@ -488,4 +488,5 @@ vga_exchange_palette_attributes (unsigned char index,
      operation.  */
   inb (VGA_INPUT_STATUS_1_REG);
   outb (0x20, VGA_ATTR_ADDR_DATA_REG);
+  outb (0x00, VGA_ATTR_ADDR_DATA_REG);
 }
