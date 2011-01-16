@@ -835,7 +835,7 @@ main(int argc, char *argv[])
   if (err)
     error (21, err, "Error building shell args");
 
-  /* Maybe output the message of the day.  Note that we we the child's
+  /* Maybe output the message of the day.  Note that we use the child's
      authentication to do it, so that this program can't be used to read
      arbitrary files!  */
   arg = envz_get (args, args_len, "MOTD");
