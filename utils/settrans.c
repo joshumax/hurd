@@ -45,8 +45,8 @@ const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 
 static struct argp_option options[] =
 {
-  {"active",      'a', 0, 0, "Set NODE's active translator" },
-  {"passive",     'p', 0, 0, "Set NODE's passive translator (default)" },
+  {"active",      'a', 0, 0, "Start and set NODE's active translator" },
+  {"passive",     'p', 0, 0, "Change NODE's passive translator record (default)" },
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist" },
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
   {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
