@@ -283,15 +283,18 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   *contents_len = asprintf (contents,
       "MemTotal: %14lu kB\n"
       "MemFree:  %14lu kB\n"
+      "Buffers:  %14lu kB\n"
+      "Cached:   %14lu kB\n"
       "Active:   %14lu kB\n"
       "Inactive: %14lu kB\n"
       "Mlocked:  %14lu kB\n"
       "SwapTotal:%14lu kB\n"
       "SwapFree: %14lu kB\n"
       ,
-      /* TODO: check that these are really 1024-bytes kBs. */
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
+      0,
+      0,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024,
