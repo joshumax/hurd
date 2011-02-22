@@ -29,7 +29,7 @@ INTR_INTERFACE
 
 /* Return a list of interfaces as expected by the SIOCGIFCONF ioctl.
    The maximum number of bytes returned can be given in AMOUNT, but if
-   AMOUNT is negative, all interfaces will be returned. Always
+   AMOUNT is -1, all interfaces will be returned. Always
    succeeds (and interface list will be truncated to fit into AMOUNT
    space) for BSD compatibility.  */
 routine pfinet_siocgifconf (

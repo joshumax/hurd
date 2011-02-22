@@ -49,7 +49,7 @@ S_pfinet_siocgifconf (io_t port,
   struct ifconf ifc;
 
   __mutex_lock (&global_lock);
-  if (amount < 0)
+  if (amount == (vm_size_t) -1)
     {
       /* Get the needed buffer length.  */
       ifc.ifc_buf = NULL;
