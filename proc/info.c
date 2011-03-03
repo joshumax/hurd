@@ -426,7 +426,11 @@ S_proc_getprocinfo (struct proc *callerp,
 	{
 	  err = errno;
 	  if (*flags & PI_FETCH_THREADS)
-	    munmap (thds, nthreads * sizeof (thread_t));
+	    {
+	      for (i = 0; i < nthreads; i++)
+		mach_port_deallocate (mach_task_self (), thds[i]);
+	      munmap (thds, nthreads * sizeof (thread_t));
+	    }
 	  return err;
 	}
       pi_alloced = 1;
