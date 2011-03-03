@@ -186,10 +186,9 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 	diskfs_release_peropen (newpo);
     }
 
-  mach_port_deallocate (mach_task_self (), dotdot);
-
   if (! error)
     {
+      mach_port_deallocate (mach_task_self (), dotdot);
       *retry = FS_RETRY_NORMAL;
       *retryname = '\0';
       *returned_port = ports_get_right (newpi);
