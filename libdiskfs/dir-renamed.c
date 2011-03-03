@@ -32,7 +32,6 @@ checkpath(struct node *source,
   error_t err;
   struct node *np;
 
-  np = target;
   for (np = target, err = 0;
        /* nothing */;
        /* This special lookup does a diskfs_nput on its first argument
