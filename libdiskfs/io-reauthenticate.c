@@ -53,9 +53,9 @@ diskfs_S_io_reauthenticate (struct protid *cred,
     {
       diskfs_finish_protid (newcred, user);
       iohelp_free_iouser (user);
+      mach_port_deallocate (mach_task_self (), rend_port);
     }
 
-  mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
 
   mutex_unlock (&cred->po->np->lock);
