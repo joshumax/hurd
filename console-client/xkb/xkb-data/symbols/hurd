@@ -1,0 +1,125 @@
+// -*- Mode: C -*- 
+default
+xkb_symbols "hurd" {
+  /* Switch to local consoles by default.  */
+  //  SwitchScreen.SameServer;
+
+  /* Make F1 - F10 switch virtual consoles when Alt is held down.  */
+  key <FK01>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 1),
+ 			  NoAction () ]
+    };
+  key <FK02>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 2),
+ 			  NoAction () ]
+    };
+  key <FK03>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 3),
+ 			  NoAction () ]
+    };
+  key <FK04>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 4),
+ 			  NoAction () ]
+    };
+  key <FK05>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 5),
+ 			  NoAction () ]
+    };
+  key <FK06>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 6),
+ 			  NoAction () ]
+    };
+  key <FK07>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 7),
+ 			  NoAction () ]
+    };
+  key <FK08>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 8),
+ 			  NoAction () ]
+    };
+  key <FK09>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 9),
+ 			  NoAction () ]
+    };
+  key <FK10>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction () , SwitchScreen (screen = 10),
+ 			  NoAction () ]
+    };
+ 
+  // Make the left and right cursor keys switch virtual consoles when
+  // Alt is held down. 
+  key <LEFT>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), SwitchScreen (screen -= 1),
+ 			  NoAction () ]
+    };
+  key <RGHT>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), SwitchScreen (screen += 1),
+			  NoAction  () ]
+    };
+
+  // Scroll the console up or down (one line).
+  key <UP>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), ConsScroll (line -= 1) ]
+    };
+  key <DOWN>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), ConsScroll (line += 1) ]
+    };
+
+  // Scroll the console up or down (1/2 screen).
+  key <PGUP>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), NoAction (),
+			  ConsScroll (screen -= 0.5) ]
+    };
+  key <PGDN>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), NoAction (),
+			  ConsScroll (screen += 0.5) ]
+    };
+
+  // Scroll the console to 0%, 25%, 75% or 100%.
+  key <HOME>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (),
+			  ConsScroll (percentage = 0),
+			  ConsScroll (percentage = 25) ]
+    };
+  key <END>
+    {
+      type[Group1] = "HURD",
+      actions[Group1] = [ NoAction (), 
+			  ConsScroll (percentage = 100),
+			  ConsScroll (percentage = 75) ]
+    };
+};

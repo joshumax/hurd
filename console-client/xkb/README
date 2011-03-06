@@ -1,0 +1,177 @@
+-- Some random notes about the XKB input driver. --
+
+This XKB input driver can be compared with the pc_kbd input driver, it
+has the same function. But this input driver has many advantages. It
+can load XKB configuration files. XKB configuration files, the keymap
+files currently used in XFree, are very versatile.
+
+One of the biggest advantages of using XKB configurations is that both
+the Hurd and XFree work simular. Another advantage is that it has many
+features:
+
+* Human readable configuration files with mechanisms like include
+  files, replacing keys, etc.
+
+* Many shift levels, all configurable per key type.
+
+* Support for four groups. These groups can be used for things like
+  additional alphabets.
+
+* Accessibility features like SlowKeys, StickyKeys, etc.
+
+* Dynamic behaviour; the user can define how all keys and indicators operate.
+
+
+Most support for basic operation have been implemented. Still there
+are many things not implemented. If some of these things are really
+important to you, please tell me!
+
+List of not implemented XKB features:
+
+* Accessibility and software repeat.
+* Jukebox support (user configurable audible messages)
+* Key database; loading new keynames from the X key database.
+* Error handling; partially done.
+* Indicators (Keyboard LEDs, etc.) not working, partially implemented.
+* ISOLock not implemented.
+* Key repeater for >> X.
+* No support for non UTF-8 locales.
+* No support for rarely used features (Many of they don't even work in
+  X AFAIK).
+* Many other stuff doesn't work (lock, radio group, overlays, etc.).
+  If I forgot something important, please report it :)
+
+* The scanner and parser are still ugly and far from optimal!
+
+---
+
+Installation:
+
+You need gcc, binutils and the glibc- and GNUMach headerfiles to
+compile this. If you want to generate the scanner and parser yourself
+you need bison and flex, but this is not required because I included
+the generated files.
+
+Run "make" to compile it. This will result in xkb.so.0.3, the actual
+plugin. Copy this file to the console-client driver directory (For the
+current Hurd version this is /lib/hurd/console).
+
+--
+
+Using it:
+
+To use it you need XKB configuration files. These are included with
+XFree and will be placed in /etc/X11/xkb on most systems.
+
+You can replace "pc_kbd" in your console client startup line with
+"xkb" and it will work with the default configuration. If you want a
+non-default configuration these options exists:
+
+--xkbdir : The root directory of the xkb configuration, by default
+ this is /etc/X11/xkb.
+
+--keymapfile : The file that hold the descriptions of the default
+ keymaps file. This file holds the description of all keymaps. This
+ path should be relative to the path set by `xkbdir'. By default
+ "keymap/xfree86" is used.
+
+--keymap : The keymap to use. By default en_US is used. Examples of
+ some other keymaps are: fr, us, de, dvorak.
+
+--ctrlaltbs : CTRL+Alt+Backspace will exit the console client.
+--no-ctrlaltbs : CTRL+Alt+Backspace will not exit the console client.
+
+
+By default console switching, etc. is not possible. I wrote some XKB
+extensions and configuration files to use these extensions. You can
+find these files in the xkb directory in the tarball. Copy these files
+to where your XKB configuration files are (usually /etc/X11/xkb). 
+
+for example: xkb/keymap/hurd will be copied to /etc/X11/xkb/keymap.
+
+To use these extensions you have to use the hurd keymaps file. This
+holds all keymaps extended with Hurd features. Use "--keymapfile
+keymap/hurd" to select this file.
+
+After that you can use these keybindings:
+
+Alt + F1...F12: Switch VC.
+
+Alt + Left, Right: Switch to the console left or right of the current
+		   console.
+
+Alt + Up, Down: Scroll the console by one line up or down.
+Ctrl + PgUp, PgDown: Scroll the console up or down with 1/2 screen.
+
+Alt + Home: Scroll the console to the 0% of the scrollback buffer.
+Ctrl + Home: Scroll the console to the 25% of the scrollback buffer.
+Alt + End: Scroll the console to the 100% of the scrollback buffer.
+Alt + End: Scroll the console to the 75% of the scrollback buffer.
+
+--
+
+Hurd features:
+
+If you want to use the Hurd features yourself make sure you put the
+changes in files that are not used by Xfree because it cannot parse
+these options. See how I did it for the configuration described in the
+previous paragraph.
+
+Function list:
+
+--
+ConsScroll: scroll the console x lines or to a fixed position.
+
+parameters:
+Screen = pos : Scroll to screen #pos.
+Screen += i : Scroll i screens up.
+Screen -= i : Scroll i screens down.
+line = pos : Scroll to line #pos.
+line += i : Scroll i lines up.
+line -= i : Scroll i lines down.
+percent = percentage : Scroll to PERCENTAGE % of the scrollback
+	  buffer.
+
+Example:
+ConsScroll (screen += 0.5) --> Scroll down a 1/2 screen.
+
+--
+SwitchScreen: Switch to a VC.
+
+paramaters:
+screen = i  : Switch to VC #i.
+screen += i : Switch to #i consoles to the right.
+screen -= i : Switch to #i consoles to the left.
+
+sameserver is a flag that will be added. I want to use it to switch to
+external consoles like X servers and SVGALib screens.
+
+example:
+SwitchScreen (screen += 1) --> Switch to the console right of the
+			       current console.
+
+
+--
+More functions will be added. One to send keysyms to other VCs (can be
+usefull to control a mixer, ogg vorbis player, etc.). It should also
+be capable of inserting often used strings like "apfelkorn" :).
+
+A function to call the configuration dialog should be added.
+
+Functions to execute things should be added. Think about binding the
+reboot command to Ctrl+Alt+Delete for example. Wolfgang also asked me
+for scheme support, but I don't know enough about scheme to know what
+cool stuff is possible with this (I don't know scheme... Hey! Not
+everyone can be perfect ;)).
+
+Perhaps functions can be added to control the console client in other
+ways.
+
+More ideas would be interesting to hear :)
+
+--
+
+Enjoy this stuff and please send me many bug reports :)
+
+Marco Gerards
+(metgerards@student.han.nl)

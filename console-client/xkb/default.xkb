@@ -1,0 +1,1316 @@
+xkb_keymap {
+xkb_keycodes "xfree86" {
+    minimum = 8;
+    maximum = 255;
+     <ESC> = 9;
+    <AE01> = 10;
+    <AE02> = 11;
+    <AE03> = 12;
+    <AE04> = 13;
+    <AE05> = 14;
+    <AE06> = 15;
+    <AE07> = 16;
+    <AE08> = 17;
+    <AE09> = 18;
+    <AE10> = 19;
+    <AE11> = 20;
+    <AE12> = 21;
+    <BKSP> = 22;
+     <TAB> = 23;
+    <AD01> = 24;
+    <AD02> = 25;
+    <AD03> = 26;
+    <AD04> = 27;
+    <AD05> = 28;
+    <AD06> = 29;
+    <AD07> = 30;
+    <AD08> = 31;
+    <AD09> = 32;
+    <AD10> = 33;
+    <AD11> = 34;
+    <AD12> = 35;
+    <RTRN> = 36;
+    <LCTL> = 37;
+    <AC01> = 38;
+    <AC02> = 39;
+    <AC03> = 40;
+    <AC04> = 41;
+    <AC05> = 42;
+    <AC06> = 43;
+    <AC07> = 44;
+    <AC08> = 45;
+    <AC09> = 46;
+    <AC10> = 47;
+    <AC11> = 48;
+    <TLDE> = 49;
+    <LFSH> = 50;
+    <BKSL> = 51;
+    <AB01> = 52;
+    <AB02> = 53;
+    <AB03> = 54;
+    <AB04> = 55;
+    <AB05> = 56;
+    <AB06> = 57;
+    <AB07> = 58;
+    <AB08> = 59;
+    <AB09> = 60;
+    <AB10> = 61;
+    <RTSH> = 62;
+    <KPMU> = 63;
+    <LALT> = 64;
+    <SPCE> = 65;
+    <CAPS> = 66;
+    <FK01> = 67;
+    <FK02> = 68;
+    <FK03> = 69;
+    <FK04> = 70;
+    <FK05> = 71;
+    <FK06> = 72;
+    <FK07> = 73;
+    <FK08> = 74;
+    <FK09> = 75;
+    <FK10> = 76;
+    <NMLK> = 77;
+    <SCLK> = 78;
+     <KP7> = 79;
+     <KP8> = 80;
+     <KP9> = 81;
+    <KPSU> = 82;
+     <KP4> = 83;
+     <KP5> = 84;
+     <KP6> = 85;
+    <KPAD> = 86;
+     <KP1> = 87;
+     <KP2> = 88;
+     <KP3> = 89;
+     <KP0> = 90;
+    <KPDL> = 91;
+    <SYRQ> = 92;
+    <LSGT> = 94;
+    <FK11> = 95;
+    <FK12> = 96;
+    <HOME> = 97;
+      <UP> = 98;
+    <PGUP> = 99;
+    <LEFT> = 100;
+    <RGHT> = 102;
+     <END> = 103;
+    <DOWN> = 104;
+    <PGDN> = 105;
+     <INS> = 106;
+    <DELE> = 107;
+    <KPEN> = 108;
+    <RCTL> = 109;
+    <PAUS> = 110;
+    <PRSC> = 111;
+    <KPDV> = 112;
+    <RALT> = 113;
+     <BRK> = 114;
+    <LWIN> = 115;
+    <RWIN> = 116;
+    <MENU> = 117;
+    <FK13> = 118;
+    <FK14> = 119;
+    <FK15> = 120;
+    <FK16> = 121;
+    <FK17> = 122;
+    <KPDC> = 123;
+    <XFER> = 129;
+     <I02> = 130;
+    <NFER> = 131;
+     <I04> = 132;
+    <AE13> = 133;
+     <I06> = 134;
+     <I07> = 135;
+     <I08> = 136;
+     <I09> = 137;
+     <I0A> = 138;
+     <I0B> = 139;
+     <I0C> = 140;
+     <I0D> = 141;
+     <I0E> = 142;
+     <I0F> = 143;
+     <I10> = 144;
+     <I11> = 145;
+     <I12> = 146;
+     <I13> = 147;
+     <I14> = 148;
+     <I15> = 149;
+     <I16> = 150;
+     <I17> = 151;
+     <I18> = 152;
+     <I19> = 153;
+     <I1A> = 154;
+     <I1B> = 155;
+     <I1E> = 158;
+     <I1F> = 159;
+     <I20> = 160;
+     <I21> = 161;
+     <I22> = 162;
+     <I23> = 163;
+     <I24> = 164;
+     <I25> = 165;
+     <I26> = 166;
+     <I27> = 167;
+     <I28> = 168;
+     <I29> = 169;
+     <I2B> = 171;
+     <I2C> = 172;
+     <I2D> = 173;
+     <I2E> = 174;
+     <I2F> = 175;
+     <I30> = 176;
+     <I31> = 177;
+     <I32> = 178;
+     <I33> = 179;
+     <I34> = 180;
+     <I39> = 185;
+     <I3A> = 186;
+     <I3B> = 187;
+     <I3C> = 188;
+     <I42> = 194;
+     <I43> = 195;
+     <I44> = 196;
+     <I45> = 197;
+     <I4A> = 202;
+     <I54> = 212;
+     <I55> = 213;
+     <I56> = 214;
+     <I57> = 215;
+     <I58> = 216;
+     <I59> = 217;
+     <I5A> = 218;
+     <I5E> = 222;
+     <I5F> = 223;
+     <I60> = 224;
+     <I61> = 225;
+     <I62> = 226;
+     <I63> = 227;
+     <I64> = 228;
+     <I65> = 229;
+     <I66> = 230;
+     <I67> = 231;
+     <I68> = 232;
+     <I69> = 233;
+     <I6A> = 234;
+     <I6B> = 235;
+     <I6C> = 236;
+     <I6D> = 237;
+     <I6E> = 238;
+     <I6F> = 239;
+     <I70> = 240;
+     <I71> = 241;
+     <I72> = 242;
+     <I73> = 243;
+     <I74> = 244;
+     <I75> = 245;
+     <I76> = 246;
+     <I77> = 247;
+     <I78> = 248;
+     <I79> = 249;
+     <I7A> = 250;
+     <I7B> = 251;
+     <I7C> = 252;
+     <I7D> = 253;
+     <I7E> = 254;
+     <I7F> = 255;
+    indicator 1 = "Caps Lock";
+    indicator 2 = "Num Lock";
+    indicator 3 = "Scroll Lock";
+    virtual indicator 4 = "Shift Lock";
+    virtual indicator 5 = "Group 2";
+    virtual indicator 6 = "Mouse Keys";
+    alias <HZTG> = <TLDE>;
+    alias <HKTG> = <FK15>;
+    alias <AB11> = <KPDC>;
+    alias <AC12> = <BKSL>;
+    alias <ALGR> = <RALT>;
+};
+
+xkb_types "complete" {
+
+    virtual_modifiers NumLock,Alt,LevelThree,AltGr,ScrollLock;
+
+    type "ONE_LEVEL" {
+        modifiers= none;
+        level_name[Level1]= "Any";
+    };
+    type "TWO_LEVEL" {
+        modifiers= Shift;
+        map[Shift]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift";
+    };
+    type "ALPHABETIC" {
+        modifiers= Shift+Lock;
+        map[Shift]= Level2;
+        map[Lock]= Level1;
+        preserve[Lock]= Lock;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Caps";
+    };
+    type "KEYPAD" {
+        modifiers= Shift+NumLock;
+        map[Shift]= Level2;
+        map[NumLock]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Number";
+    };
+    type "SHIFT+ALT" {
+        modifiers= Shift+Alt;
+        map[Shift+Alt]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift+Alt";
+    };
+    type "PC_BREAK" {
+        modifiers= Control;
+        map[Control]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Control";
+    };
+    type "PC_SYSRQ" {
+        modifiers= Alt;
+        map[Alt]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Alt";
+    };
+    type "CTRL+ALT" {
+        modifiers= Control+Alt;
+        map[Control+Alt]= Level2;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Ctrl+Alt";
+    };
+    type "THREE_LEVEL" {
+        modifiers= Shift+LevelThree;
+        map[Shift]= Level2;
+        map[LevelThree]= Level3;
+        map[Shift+LevelThree]= Level3;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift";
+        level_name[Level3]= "Level3";
+    };
+    type "FOUR_LEVEL" {
+        modifiers= Shift+LevelThree;
+        map[Shift]= Level2;
+        map[LevelThree]= Level3;
+        map[Shift+LevelThree]= Level4;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Shift";
+        level_name[Level3]= "Alt Base";
+        level_name[Level4]= "Shift Alt";
+    };
+    type "FOUR_LEVEL_KEYPAD" {
+        modifiers= Shift+NumLock+LevelThree;
+        map[Shift]= Level2;
+        map[NumLock]= Level2;
+        map[LevelThree]= Level3;
+        map[Shift+LevelThree]= Level4;
+        map[NumLock+LevelThree]= Level4;
+        map[Shift+NumLock+LevelThree]= Level3;
+        level_name[Level1]= "Base";
+        level_name[Level2]= "Number";
+        level_name[Level3]= "Alt Base";
+        level_name[Level4]= "Alt Number";
+    };
+};
+
+xkb_compatibility "complete" {
+
+    virtual_modifiers NumLock,Alt,LevelThree,AltGr,ScrollLock;
+
+    interpret.useModMapMods= AnyLevel;
+    interpret.repeat= False;
+    interpret.locking= False;
+    interpret ISO_Level2_Latch+Exactly(Shift) {
+        useModMapMods=level1;
+        action= LatchMods(modifiers=Shift,clearLocks,latchToLock);
+    };
+    interpret Shift_Lock+AnyOf(Shift+Lock) {
+        action= LockMods(modifiers=Shift);
+    };
+    interpret Num_Lock+AnyOf(all) {
+        virtualModifier= NumLock;
+        action= LockMods(modifiers=NumLock);
+    };
+    interpret ISO_Lock+AnyOf(all) {
+        action= ISOLock(modifiers=modMapMods,affect=all);
+    };
+    interpret ISO_Level3_Shift+AnyOf(all) {
+        virtualModifier= LevelThree;
+        useModMapMods=level1;
+        action= SetMods(modifiers=LevelThree,clearLocks);
+    };
+    interpret ISO_Level3_Latch+AnyOf(all) {
+        virtualModifier= LevelThree;
+        useModMapMods=level1;
+        action= LatchMods(modifiers=LevelThree,clearLocks,latchToLock);
+    };
+    interpret Alt_L+AnyOf(all) {
+        virtualModifier= Alt;
+        action= SetMods(modifiers=modMapMods,clearLocks);
+    };
+    interpret Alt_R+AnyOf(all) {
+        virtualModifier= Alt;
+        action= SetMods(modifiers=modMapMods,clearLocks);
+    };
+    interpret Scroll_Lock+AnyOf(all) {
+        virtualModifier= ScrollLock;
+        action= LockMods(modifiers=modMapMods);
+    };
+    interpret Mode_switch+AnyOfOrNone(all) {
+        virtualModifier= AltGr;
+        useModMapMods=level1;
+        action= SetGroup(group=+1);
+    };
+    interpret ISO_Group_Latch+AnyOfOrNone(all) {
+        virtualModifier= AltGr;
+        useModMapMods=level1;
+        action= LatchGroup(group=2);
+    };
+    interpret ISO_Next_Group+AnyOfOrNone(all) {
+        virtualModifier= AltGr;
+        useModMapMods=level1;
+        action= LockGroup(group=+1);
+    };
+    interpret ISO_Prev_Group+AnyOfOrNone(all) {
+        virtualModifier= AltGr;
+        useModMapMods=level1;
+        action= LockGroup(group=-1);
+    };
+    interpret ISO_First_Group+AnyOfOrNone(all) {
+        action= LockGroup(group=1);
+    };
+    interpret ISO_Last_Group+AnyOfOrNone(all) {
+        action= LockGroup(group=2);
+    };
+    interpret KP_1+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=+1);
+    };
+    interpret KP_End+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=+1);
+    };
+    interpret KP_2+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+0,y=+1);
+    };
+    interpret KP_Down+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+0,y=+1);
+    };
+    interpret KP_3+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=+1);
+    };
+    interpret KP_Next+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=+1);
+    };
+    interpret KP_4+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=+0);
+    };
+    interpret KP_Left+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=+0);
+    };
+    interpret KP_6+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=+0);
+    };
+    interpret KP_Right+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=+0);
+    };
+    interpret KP_7+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=-1);
+    };
+    interpret KP_Home+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=-1,y=-1);
+    };
+    interpret KP_8+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+0,y=-1);
+    };
+    interpret KP_Up+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+0,y=-1);
+    };
+    interpret KP_9+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=-1);
+    };
+    interpret KP_Prior+AnyOfOrNone(all) {
+        repeat= True;
+        action= MovePtr(x=+1,y=-1);
+    };
+    interpret KP_5+AnyOfOrNone(all) {
+        repeat= True;
+        action= PtrBtn(button=default);
+    };
+    interpret KP_Begin+AnyOfOrNone(all) {
+        repeat= True;
+        action= PtrBtn(button=default);
+    };
+    interpret KP_F2+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=1);
+    };
+    interpret KP_Divide+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=1);
+    };
+    interpret KP_F3+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=2);
+    };
+    interpret KP_Multiply+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=2);
+    };
+    interpret KP_F4+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=3);
+    };
+    interpret KP_Subtract+AnyOfOrNone(all) {
+        repeat= True;
+        action= SetPtrDflt(affect=button,button=3);
+    };
+    interpret KP_Separator+AnyOfOrNone(all) {
+        repeat= True;
+        action= PtrBtn(button=default,count=2);
+    };
+    interpret KP_Add+AnyOfOrNone(all) {
+        repeat= True;
+        action= PtrBtn(button=default,count=2);
+    };
+    interpret KP_0+AnyOfOrNone(all) {
+        repeat= True;
+        action= LockPtrBtn(button=default,affect=lock);
+    };
+    interpret KP_Insert+AnyOfOrNone(all) {
+        repeat= True;
+        action= LockPtrBtn(button=default,affect=lock);
+    };
+    interpret KP_Decimal+AnyOfOrNone(all) {
+        repeat= True;
+        action= LockPtrBtn(button=default,affect=unlock);
+    };
+    interpret KP_Delete+AnyOfOrNone(all) {
+        repeat= True;
+        action= LockPtrBtn(button=default,affect=unlock);
+    };
+    interpret Pointer_Button_Dflt+AnyOfOrNone(all) {
+        action= PtrBtn(button=default);
+    };
+    interpret Pointer_Button1+AnyOfOrNone(all) {
+        action= PtrBtn(button=1);
+    };
+    interpret Pointer_Button2+AnyOfOrNone(all) {
+        action= PtrBtn(button=2);
+    };
+    interpret Pointer_Button3+AnyOfOrNone(all) {
+        action= PtrBtn(button=3);
+    };
+    interpret Pointer_DblClick_Dflt+AnyOfOrNone(all) {
+        action= PtrBtn(button=default,count=2);
+    };
+    interpret Pointer_DblClick1+AnyOfOrNone(all) {
+        action= PtrBtn(button=1,count=2);
+    };
+    interpret Pointer_DblClick2+AnyOfOrNone(all) {
+        action= PtrBtn(button=2,count=2);
+    };
+    interpret Pointer_DblClick3+AnyOfOrNone(all) {
+        action= PtrBtn(button=3,count=2);
+    };
+    interpret Pointer_Drag_Dflt+AnyOfOrNone(all) {
+        action= LockPtrBtn(button=default,affect=both);
+    };
+    interpret Pointer_Drag1+AnyOfOrNone(all) {
+        action= LockPtrBtn(button=1,affect=both);
+    };
+    interpret Pointer_Drag2+AnyOfOrNone(all) {
+        action= LockPtrBtn(button=2,affect=both);
+    };
+    interpret Pointer_Drag3+AnyOfOrNone(all) {
+        action= LockPtrBtn(button=3,affect=both);
+    };
+    interpret Pointer_EnableKeys+AnyOfOrNone(all) {
+        action= LockControls(controls=MouseKeys);
+    };
+    interpret Pointer_Accelerate+AnyOfOrNone(all) {
+        action= LockControls(controls=MouseKeysAccel);
+    };
+    interpret Pointer_DfltBtnNext+AnyOfOrNone(all) {
+        action= SetPtrDflt(affect=button,button=+1);
+    };
+    interpret Pointer_DfltBtnPrev+AnyOfOrNone(all) {
+        action= SetPtrDflt(affect=button,button=-1);
+    };
+    interpret AccessX_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=AccessXKeys);
+    };
+    interpret AccessX_Feedback_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=AccessXFeedback);
+    };
+    interpret RepeatKeys_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=RepeatKeys);
+    };
+    interpret SlowKeys_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=SlowKeys);
+    };
+    interpret BounceKeys_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=BounceKeys);
+    };
+    interpret StickyKeys_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=StickyKeys);
+    };
+    interpret MouseKeys_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=MouseKeys);
+    };
+    interpret MouseKeys_Accel_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=MouseKeysAccel);
+    };
+    interpret Overlay1_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=Overlay1);
+    };
+    interpret Overlay2_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=Overlay2);
+    };
+    interpret AudibleBell_Enable+AnyOfOrNone(all) {
+        action= LockControls(controls=AudibleBell);
+    };
+    interpret Terminate_Server+AnyOfOrNone(all) {
+        action= Terminate();
+    };
+    interpret Any+Exactly(Lock) {
+        action= LockMods(modifiers=Lock);
+    };
+    interpret Any+AnyOf(all) {
+        action= SetMods(modifiers=modMapMods,clearLocks);
+    };
+    group 2 = AltGr;
+    group 3 = AltGr;
+    group 4 = AltGr;
+    indicator "Caps Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= Lock;
+    };
+    indicator "Num Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= NumLock;
+    };
+    indicator "Scroll Lock" {
+        whichModState= locked;
+        modifiers= ScrollLock;
+    };
+    indicator "Shift Lock" {
+        !allowExplicit;
+        whichModState= locked;
+        modifiers= Shift;
+    };
+    indicator "Group 2" {
+        !allowExplicit;
+        groups= 0xfe;
+    };
+    indicator "Mouse Keys" {
+        indicatorDrivesKeyboard;
+        controls= mouseKeys;
+    };
+};
+
+xkb_symbols "en_US(pc104)" {
+
+    name[group1]="US/ASCII";
+    name[group2]="ISO9995-3";
+
+    key  <ESC> {         [          Escape ] };
+    key <AE01> {
+        symbols[Group1]= [               1,          exclam ],
+        symbols[Group2]= [     onesuperior,      exclamdown ]
+    };
+    key <AE02> {
+        symbols[Group1]= [               2,              at ],
+        symbols[Group2]= [     twosuperior,       oneeighth ]
+    };
+    key <AE03> {
+        symbols[Group1]= [               3,      numbersign ],
+        symbols[Group2]= [   threesuperior,        sterling ]
+    };
+    key <AE04> {
+        symbols[Group1]= [               4,          dollar ],
+        symbols[Group2]= [      onequarter,          dollar ]
+    };
+    key <AE05> {
+        symbols[Group1]= [               5,         percent ],
+        symbols[Group2]= [         onehalf,    threeeighths ]
+    };
+    key <AE06> {
+        symbols[Group1]= [               6,     asciicircum ],
+        symbols[Group2]= [   threequarters,     fiveeighths ]
+    };
+    key <AE07> {
+        symbols[Group1]= [               7,       ampersand ],
+        symbols[Group2]= [       braceleft,    seveneighths ]
+    };
+    key <AE08> {
+        symbols[Group1]= [               8,        asterisk ],
+        symbols[Group2]= [     bracketleft,       trademark ]
+    };
+    key <AE09> {
+        symbols[Group1]= [               9,       parenleft ],
+        symbols[Group2]= [    bracketright,       plusminus ]
+    };
+    key <AE10> {
+        symbols[Group1]= [               0,      parenright ],
+        symbols[Group2]= [      braceright,          degree ]
+    };
+    key <AE11> {
+        symbols[Group1]= [           minus,      underscore ],
+        symbols[Group2]= [       backslash,    questiondown ]
+    };
+    key <AE12> {
+        symbols[Group1]= [           equal,            plus ],
+        symbols[Group2]= [    dead_cedilla,     dead_ogonek ]
+    };
+    key <BKSP> {         [       BackSpace ] };
+    key  <TAB> {         [             Tab,    ISO_Left_Tab ] };
+    key <AD01> {
+        symbols[Group1]= [               q,               Q ],
+        symbols[Group2]= [              at,     Greek_OMEGA ]
+    };
+    key <AD02> {
+        symbols[Group1]= [               w,               W ],
+        symbols[Group2]= [         lstroke,         Lstroke ]
+    };
+    key <AD03> {
+        symbols[Group1]= [               e,               E ],
+        symbols[Group2]= [        EuroSign ]
+    };
+    key <AD04> {
+        symbols[Group1]= [               r,               R ],
+        symbols[Group2]= [       paragraph,      registered ]
+    };
+    key <AD05> {
+        symbols[Group1]= [               t,               T ],
+        symbols[Group2]= [          tslash,          Tslash ]
+    };
+    key <AD06> {
+        symbols[Group1]= [               y,               Y ],
+        symbols[Group2]= [       leftarrow,             yen ]
+    };
+    key <AD07> {
+        symbols[Group1]= [               u,               U ],
+        symbols[Group2]= [       downarrow,         uparrow ]
+    };
+    key <AD08> {
+        symbols[Group1]= [               i,               I ],
+        symbols[Group2]= [      rightarrow,        idotless ]
+    };
+    key <AD09> {
+        symbols[Group1]= [               o,               O ],
+        symbols[Group2]= [          oslash,        Ooblique ]
+    };
+    key <AD10> {
+        symbols[Group1]= [               p,               P ],
+        symbols[Group2]= [           thorn,           THORN ]
+    };
+    key <AD11> {
+        symbols[Group1]= [     bracketleft,       braceleft ],
+        symbols[Group2]= [  dead_diaeresis,  dead_abovering ]
+    };
+    key <AD12> {
+        symbols[Group1]= [    bracketright,      braceright ],
+        symbols[Group2]= [      dead_tilde,     dead_macron ]
+    };
+    key <RTRN> {         [          Return ] };
+    key <LCTL> {
+        symbols[Group1]= [       Control_L ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <AC01> {
+        symbols[Group1]= [               a,               A ],
+        symbols[Group2]= [              ae,              AE ]
+    };
+    key <AC02> {
+        symbols[Group1]= [               s,               S ],
+        symbols[Group2]= [          ssharp,         section ]
+    };
+    key <AC03> {
+        symbols[Group1]= [               d,               D ],
+        symbols[Group2]= [             eth,             ETH ]
+    };
+    key <AC04> {
+        symbols[Group1]= [               f,               F ],
+        symbols[Group2]= [         dstroke,     ordfeminine ]
+    };
+    key <AC05> {
+        symbols[Group1]= [               g,               G ],
+        symbols[Group2]= [             eng,             ENG ]
+    };
+    key <AC06> {
+        symbols[Group1]= [               h,               H ],
+        symbols[Group2]= [         hstroke,         Hstroke ]
+    };
+    key <AC07> {         [               j,               J ] };
+    key <AC08> {
+        symbols[Group1]= [               k,               K ],
+        symbols[Group2]= [             kra,       ampersand ]
+    };
+    key <AC09> {
+        symbols[Group1]= [               l,               L ],
+        symbols[Group2]= [         lstroke,         Lstroke ]
+    };
+    key <AC10> {
+        symbols[Group1]= [       semicolon,           colon ],
+        symbols[Group2]= [      dead_acute, dead_doubleacute ]
+    };
+    key <AC11> {
+        symbols[Group1]= [      apostrophe,        quotedbl ],
+        symbols[Group2]= [ dead_circumflex,      dead_caron ]
+    };
+    key <TLDE> {
+        symbols[Group1]= [           grave,      asciitilde ],
+        symbols[Group2]= [         notsign ]
+    };
+    key <LFSH> {
+        symbols[Group1]= [         Shift_L ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <BKSL> {
+        symbols[Group1]= [       backslash,             bar ],
+        symbols[Group2]= [      dead_grave,      dead_breve ]
+    };
+    key <AB01> {
+        symbols[Group1]= [               z,               Z ],
+        symbols[Group2]= [   guillemotleft,            less ]
+    };
+    key <AB02> {
+        symbols[Group1]= [               x,               X ],
+        symbols[Group2]= [  guillemotright,         greater ]
+    };
+    key <AB03> {
+        symbols[Group1]= [               c,               C ],
+        symbols[Group2]= [            cent,       copyright ]
+    };
+    key <AB04> {
+        symbols[Group1]= [               v,               V ],
+        symbols[Group2]= [ leftdoublequotemark,           grave ]
+    };
+    key <AB05> {
+        symbols[Group1]= [               b,               B ],
+        symbols[Group2]= [ rightdoublequotemark,      apostrophe ]
+    };
+    key <AB06> {         [               n,               N ] };
+    key <AB07> {
+        symbols[Group1]= [               m,               M ],
+        symbols[Group2]= [              mu,       masculine ]
+    };
+    key <AB08> {
+        symbols[Group1]= [           comma,            less ],
+        symbols[Group2]= [  horizconnector,        multiply ]
+    };
+    key <AB09> {
+        symbols[Group1]= [          period,         greater ],
+        symbols[Group2]= [  periodcentered,        division ]
+    };
+    key <AB10> {
+        symbols[Group1]= [           slash,        question ],
+        symbols[Group2]= [   dead_belowdot,   dead_abovedot ]
+    };
+    key <RTSH> {
+        symbols[Group1]= [         Shift_R ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <KPMU> {
+        symbols[Group1]= [     KP_Multiply ],
+        actions[Group1]= [ SetPtrDflt(affect=button,button=2) ]
+    };
+    key <LALT> {
+        symbols[Group1]= [           Alt_L,          Meta_L ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks), SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <SPCE> {         [           space ] };
+    key <CAPS> {
+        symbols[Group1]= [       Caps_Lock ],
+        actions[Group1]= [ LockMods(modifiers=Lock) ]
+    };
+    key <FK01> {         [              F1 ] };
+    key <FK02> {         [              F2 ] };
+    key <FK03> {         [              F3 ] };
+    key <FK04> {         [              F4 ] };
+    key <FK05> {         [              F5 ] };
+    key <FK06> {         [              F6 ] };
+    key <FK07> {         [              F7 ] };
+    key <FK08> {         [              F8 ] };
+    key <FK09> {         [              F9 ] };
+    key <FK10> {         [             F10 ] };
+    key <NMLK> {
+        symbols[Group1]= [        Num_Lock, Pointer_EnableKeys ],
+        actions[Group1]= [ LockMods(modifiers=NumLock), LockControls(controls=MouseKeys) ]
+    };
+    key <SCLK> {
+        symbols[Group1]= [     Scroll_Lock ],
+        actions[Group1]= [ LockMods(modifiers=modMapMods) ]
+    };
+    key  <KP7> {
+        symbols[Group1]= [         KP_Home,            KP_7 ],
+        actions[Group1]= [ MovePtr(x=-1,y=-1), MovePtr(x=-1,y=-1) ]
+    };
+    key  <KP8> {
+        symbols[Group1]= [           KP_Up,            KP_8 ],
+        actions[Group1]= [ MovePtr(x=+0,y=-1), MovePtr(x=+0,y=-1) ]
+    };
+    key  <KP9> {
+        symbols[Group1]= [        KP_Prior,            KP_9 ],
+        actions[Group1]= [ MovePtr(x=+1,y=-1), MovePtr(x=+1,y=-1) ]
+    };
+    key <KPSU> {
+        symbols[Group1]= [     KP_Subtract ],
+        actions[Group1]= [ SetPtrDflt(affect=button,button=3) ]
+    };
+    key  <KP4> {
+        symbols[Group1]= [         KP_Left,            KP_4 ],
+        actions[Group1]= [ MovePtr(x=-1,y=+0), MovePtr(x=-1,y=+0) ]
+    };
+    key  <KP5> {
+        symbols[Group1]= [        KP_Begin,            KP_5 ],
+        actions[Group1]= [ PtrBtn(button=default), PtrBtn(button=default) ]
+    };
+    key  <KP6> {
+        symbols[Group1]= [        KP_Right,            KP_6 ],
+        actions[Group1]= [ MovePtr(x=+1,y=+0), MovePtr(x=+1,y=+0) ]
+    };
+    key <KPAD> {
+        symbols[Group1]= [          KP_Add ],
+        actions[Group1]= [ PtrBtn(button=default,count=2) ]
+    };
+    key  <KP1> {
+        symbols[Group1]= [          KP_End,            KP_1 ],
+        actions[Group1]= [ MovePtr(x=-1,y=+1), MovePtr(x=-1,y=+1) ]
+    };
+    key  <KP2> {
+        symbols[Group1]= [         KP_Down,            KP_2 ],
+        actions[Group1]= [ MovePtr(x=+0,y=+1), MovePtr(x=+0,y=+1) ]
+    };
+    key  <KP3> {
+        symbols[Group1]= [         KP_Next,            KP_3 ],
+        actions[Group1]= [ MovePtr(x=+1,y=+1), MovePtr(x=+1,y=+1) ]
+    };
+    key  <KP0> {
+        symbols[Group1]= [       KP_Insert,            KP_0 ],
+        actions[Group1]= [ LockPtrBtn(button=default,affect=lock), LockPtrBtn(button=default,affect=lock) ]
+    };
+    key <KPDL> {
+        symbols[Group1]= [       KP_Delete,      KP_Decimal ],
+        actions[Group1]= [ LockPtrBtn(button=default,affect=unlock), LockPtrBtn(button=default,affect=unlock) ]
+    };
+    key <SYRQ> {
+        type= "PC_SYSRQ",
+        symbols[Group1]= [           Print,         Sys_Req ]
+    };
+    key <FK11> {         [             F11 ] };
+    key <FK12> {         [             F12 ] };
+    key <HOME> {         [            Home ] };
+    key   <UP> {         [              Up ] };
+    key <PGUP> {         [           Prior ] };
+    key <LEFT> {         [            Left ] };
+    key <RGHT> {         [           Right ] };
+    key  <END> {         [             End ] };
+    key <DOWN> {         [            Down ] };
+    key <PGDN> {         [            Next ] };
+    key  <INS> {         [          Insert ] };
+    key <DELE> {         [          Delete ] };
+    key <KPEN> {         [        KP_Enter ] };
+    key <RCTL> {
+        symbols[Group1]= [       Control_R ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <PAUS> {
+        type= "PC_BREAK",
+        symbols[Group1]= [           Pause,           Break ]
+    };
+    key <PRSC> {
+        type= "PC_SYSRQ",
+        symbols[Group1]= [           Print,         Sys_Req ]
+    };
+    key <KPDV> {
+        symbols[Group1]= [       KP_Divide ],
+        actions[Group1]= [ SetPtrDflt(affect=button,button=1) ]
+    };
+    key <RALT> {
+        symbols[Group1]= [     Mode_switch ],
+        actions[Group1]= [ SetGroup(group=+1) ]
+    };
+    key  <BRK> {
+        type= "PC_BREAK",
+        symbols[Group1]= [           Pause,           Break ]
+    };
+    key <LWIN> {
+        symbols[Group1]= [         Super_L ],
+        actions[Group1]= [ SetMods(modifiers=modMapMods,clearLocks) ]
+    };
+    key <RWIN> {         [       Multi_key ] };
+    key <MENU> {         [            Menu ] };
+    modifier_map Control { <LCTL> };
+    modifier_map Shift { <LFSH> };
+    modifier_map Shift { <RTSH> };
+    modifier_map Mod1 { <LALT> };
+    modifier_map Lock { <CAPS> };
+    modifier_map Mod2 { <NMLK> };
+    modifier_map Mod5 { <SCLK> };
+    modifier_map Control { <RCTL> };
+    modifier_map Mod3 { <RALT> };
+    modifier_map Mod4 { <LWIN> };
+};
+
+xkb_geometry "pc(pc104)" {
+
+    width=       470;
+    height=      210;
+
+    alias <AC00> = <CAPS>;
+    alias <AA00> = <LCTL>;
+
+    baseColor=   "white";
+    labelColor=  "black";
+    xfont=       "-*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1";
+    description= "Generic 104";
+
+    shape "NORM" {
+        corner= 1,
+        { [  18,  18 ] },
+        { [   2,   1 ], [  16,  16 ] }
+    };
+    shape "BKSP" {
+        corner= 1,
+        { [  38,  18 ] },
+        { [   2,   1 ], [  36,  16 ] }
+    };
+    shape "TABK" {
+        corner= 1,
+        { [  28,  18 ] },
+        { [   2,   1 ], [  26,  16 ] }
+    };
+    shape "BKSL" {
+        corner= 1,
+        { [  28,  18 ] },
+        { [   2,   1 ], [  26,  16 ] }
+    };
+    shape "RTRN" {
+        corner= 1,
+        { [  42,  18 ] },
+        { [   2,   1 ], [  40,  16 ] }
+    };
+    shape "CAPS" {
+        corner= 1,
+        { [  33,  18 ] },
+        { [   2,   1 ], [  31,  16 ] }
+    };
+    shape "LFSH" {
+        corner= 1,
+        { [  42,  18 ] },
+        { [   2,   1 ], [  40,  16 ] }
+    };
+    shape "RTSH" {
+        corner= 1,
+        { [  52,  18 ] },
+        { [   2,   1 ], [  50,  16 ] }
+    };
+    shape "MODK" {
+        corner= 1,
+        { [  27,  18 ] },
+        { [   2,   1 ], [  25,  16 ] }
+    };
+    shape "SMOD" {
+        corner= 1,
+        { [  23,  18 ] },
+        { [   2,   1 ], [  21,  16 ] }
+    };
+    shape "SPCE" {
+        corner= 1,
+        { [ 113,  18 ] },
+        { [   2,   1 ], [ 111,  16 ] }
+    };
+    shape "KP0" {
+        corner= 1,
+        { [  37,  18 ] },
+        { [   2,   1 ], [  35,  16 ] }
+    };
+    shape "KPAD" {
+        corner= 1,
+        { [  18,  37 ] },
+        { [   2,   1 ], [  16,  35 ] }
+    };
+    shape "LEDS" { { [  75,  20 ] } };
+    shape "LED" { { [   5,   1 ] } };
+    section "Function" {
+        key.color= "grey20";
+        priority=  7;
+        top=       52;
+        left=      19;
+        width=     351;
+        height=    19;
+        row {
+            top=  1;
+            left= 1;
+            keys {
+                {  <ESC>, "NORM",   1 },
+                { <FK01>, "NORM",  20, color="white" },
+                { <FK02>, "NORM",   1, color="white" },
+                { <FK03>, "NORM",   1, color="white" },
+                { <FK04>, "NORM",   1, color="white" },
+                { <FK05>, "NORM",  11, color="white" },
+                { <FK06>, "NORM",   1, color="white" },
+                { <FK07>, "NORM",   1, color="white" },
+                { <FK08>, "NORM",   1, color="white" },
+                { <FK09>, "NORM",  11, color="white" },
+                { <FK10>, "NORM",   1, color="white" },
+                { <FK11>, "NORM",   1, color="white" },
+                { <FK12>, "NORM",   1, color="white" },
+                { <PRSC>, "NORM",   8, color="white" },
+                { <SCLK>, "NORM",   1, color="white" },
+                { <PAUS>, "NORM",   1, color="white" }
+            };
+        };
+    }; // End of "Function" section
+
+    section "Alpha" {
+        key.color= "white";
+        priority=  8;
+        top=       91;
+        left=      19;
+        width=     287;
+        height=    95;
+        row {
+            top=  1;
+            left= 1;
+            keys {
+                { <TLDE>, "NORM",   1 }, { <AE01>, "NORM",   1 },
+                { <AE02>, "NORM",   1 }, { <AE03>, "NORM",   1 },
+                { <AE04>, "NORM",   1 }, { <AE05>, "NORM",   1 },
+                { <AE06>, "NORM",   1 }, { <AE07>, "NORM",   1 },
+                { <AE08>, "NORM",   1 }, { <AE09>, "NORM",   1 },
+                { <AE10>, "NORM",   1 }, { <AE11>, "NORM",   1 },
+                { <AE12>, "NORM",   1 },
+                { <BKSP>, "BKSP",   1, color="grey20" }
+            };
+        };
+        row {
+            top=  20;
+            left= 1;
+            keys {
+                {  <TAB>, "TABK",   1, color="grey20" },
+                { <AD01>, "NORM",   1 }, { <AD02>, "NORM",   1 },
+                { <AD03>, "NORM",   1 }, { <AD04>, "NORM",   1 },
+                { <AD05>, "NORM",   1 }, { <AD06>, "NORM",   1 },
+                { <AD07>, "NORM",   1 }, { <AD08>, "NORM",   1 },
+                { <AD09>, "NORM",   1 }, { <AD10>, "NORM",   1 },
+                { <AD11>, "NORM",   1 }, { <AD12>, "NORM",   1 },
+                { <BKSL>, "BKSL",   1 }
+            };
+        };
+        row {
+            top=  39;
+            left= 1;
+            keys {
+                { <CAPS>, "CAPS",   1, color="grey20" },
+                { <AC01>, "NORM",   1 }, { <AC02>, "NORM",   1 },
+                { <AC03>, "NORM",   1 }, { <AC04>, "NORM",   1 },
+                { <AC05>, "NORM",   1 }, { <AC06>, "NORM",   1 },
+                { <AC07>, "NORM",   1 }, { <AC08>, "NORM",   1 },
+                { <AC09>, "NORM",   1 }, { <AC10>, "NORM",   1 },
+                { <AC11>, "NORM",   1 },
+                { <RTRN>, "RTRN",   1, color="grey20" }
+            };
+        };
+        row {
+            top=  58;
+            left= 1;
+            keys {
+                { <LFSH>, "LFSH",   1, color="grey20" },
+                { <AB01>, "NORM",   1 }, { <AB02>, "NORM",   1 },
+                { <AB03>, "NORM",   1 }, { <AB04>, "NORM",   1 },
+                { <AB05>, "NORM",   1 }, { <AB06>, "NORM",   1 },
+                { <AB07>, "NORM",   1 }, { <AB08>, "NORM",   1 },
+                { <AB09>, "NORM",   1 }, { <AB10>, "NORM",   1 },
+                { <RTSH>, "RTSH",   1, color="grey20" }
+            };
+        };
+        row {
+            top=  77;
+            left= 1;
+            keys {
+                { <LCTL>, "MODK",   1, color="grey20" },
+                { <LWIN>, "SMOD",   1, color="grey20" },
+                { <LALT>, "SMOD",   1, color="grey20" },
+                { <SPCE>, "SPCE",   1 },
+                { <RALT>, "SMOD",   1, color="grey20" },
+                { <RWIN>, "SMOD",   1, color="grey20" },
+                { <MENU>, "SMOD",   1, color="grey20" },
+                { <RCTL>, "SMOD",   1, color="grey20" }
+            };
+        };
+    }; // End of "Alpha" section
+
+    section "Editing" {
+        key.color= "grey20";
+        priority=  9;
+        top=       91;
+        left=      312;
+        width=     58;
+        height=    95;
+        row {
+            top=  1;
+            left= 1;
+            keys {
+                {  <INS>, "NORM",   1 }, { <HOME>, "NORM",   1 },
+                { <PGUP>, "NORM",   1 }
+            };
+        };
+        row {
+            top=  20;
+            left= 1;
+            keys {
+                { <DELE>, "NORM",   1 }, {  <END>, "NORM",   1 },
+                { <PGDN>, "NORM",   1 }
+            };
+        };
+        row {
+            top=  58;
+            left= 20;
+            keys {
+                {   <UP>, "NORM",   1 }
+            };
+        };
+        row {
+            top=  77;
+            left= 1;
+            keys {
+                { <LEFT>, "NORM",   1 }, { <DOWN>, "NORM",   1 },
+                { <RGHT>, "NORM",   1 }
+            };
+        };
+    }; // End of "Editing" section
+
+    section "Keypad" {
+        key.color= "grey20";
+        priority=  10;
+        top=       91;
+        left=      376;
+        width=     77;
+        height=    95;
+        row {
+            top=  1;
+            left= 1;
+            keys {
+                { <NMLK>, "NORM",   1 }, { <KPDV>, "NORM",   1 },
+                { <KPMU>, "NORM",   1 }, { <KPSU>, "NORM",   1 }
+            };
+        };
+        row {
+            top=  20;
+            left= 1;
+            keys {
+                {  <KP7>, "NORM",   1, color="white" },
+                {  <KP8>, "NORM",   1, color="white" },
+                {  <KP9>, "NORM",   1, color="white" },
+                { <KPAD>, "KPAD",   1 }
+            };
+        };
+        row {
+            top=  39;
+            left= 1;
+            keys {
+                {  <KP4>, "NORM",   1, color="white" },
+                {  <KP5>, "NORM",   1, color="white" },
+                {  <KP6>, "NORM",   1, color="white" }
+            };
+        };
+        row {
+            top=  58;
+            left= 1;
+            keys {
+                {  <KP1>, "NORM",   1, color="white" },
+                {  <KP2>, "NORM",   1, color="white" },
+                {  <KP3>, "NORM",   1, color="white" },
+                { <KPEN>, "KPAD",   1 }
+            };
+        };
+        row {
+            top=  77;
+            left= 1;
+            keys {
+                {  <KP0>, "KP0",   1, color="white" },
+                { <KPDL>, "NORM",   1, color="white" }
+            };
+        };
+    }; // End of "Keypad" section
+
+    solid "LedPanel" {
+        top=      52;
+        left=     377;
+        priority= 0;
+        color= "grey10";
+        shape= "LEDS";
+    };
+    indicator "NumLock" {
+        top=      67;
+        left=     382;
+        priority= 1;
+        onColor= "green";
+        offColor= "green30";
+        shape= "LED";
+    };
+    indicator "CapsLock" {
+        top=      67;
+        left=     407;
+        priority= 2;
+        onColor= "green";
+        offColor= "green30";
+        shape= "LED";
+    };
+    indicator "ScrollLock" {
+        top=      67;
+        left=     433;
+        priority= 3;
+        onColor= "green";
+        offColor= "green30";
+        shape= "LED";
+    };
+    text "NumLockLabel" {
+        top=      55;
+        left=     378;
+        priority= 4;
+        width=  19.8;
+        height=  10;
+        XFont= "-*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1";
+        text=  "Num\nLock";
+    };
+    text "CapsLockLabel" {
+        top=      55;
+        left=     403;
+        priority= 5;
+        width=  26.4;
+        height=  10;
+        XFont= "-*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1";
+        text=  "Caps\nLock";
+    };
+    text "ScrollLockLabel" {
+        top=      55;
+        left=     428;
+        priority= 6;
+        width=  39.6;
+        height=  10;
+        XFont= "-*-helvetica-medium-r-normal--*-120-*-*-*-*-iso8859-1";
+        text=  "Scroll\nLock";
+    };
+};
+
+};
