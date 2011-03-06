@@ -788,7 +788,7 @@ user_create (display_t display, uint32_t width, uint32_t height,
 
   user = display->user;
   user->magic = CONS_MAGIC;
-  user->version = CONS_VERSION_MAJ << 16 | CONS_VERSION_AGE;
+  user->version = CONS_VERSION_MAJ << CONS_VERSION_MAJ_SHIFT | CONS_VERSION_AGE;
   user->changes.buffer = offsetof (struct cons_display, changes._buffer)
     / sizeof (uint32_t);
   user->changes.length = _CONS_CHANGES_LENGTH;
