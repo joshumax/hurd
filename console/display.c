@@ -1590,9 +1590,18 @@ display_output_one (display_t display, wchar_t chr)
 	  break;
 	default:
 	  {
-	    int line = (user->screen.cur_line + user->cursor.row)
+	    int line;
+	    int idx;
+
+	    if (user->cursor.col >= user->screen.width)
+	      {
+	        user->cursor.col = 0;
+	        linefeed (display);
+	      }
+
+	    line = (user->screen.cur_line + user->cursor.row)
 	      % user->screen.lines;
-	    int idx = line * user->screen.width + user->cursor.col;
+	    idx = line * user->screen.width + user->cursor.col;
 	    int width, i;
 
 	    width = wcwidth (chr);
@@ -1625,10 +1634,10 @@ display_output_one (display_t display, wchar_t chr)
 	    if (i > 0)
 	      display_record_filechange (display, idx, idx + i - 1);
 
-	    if (user->cursor.col == user->screen.width)
+	    if (user->cursor.col > user->screen.width)
 	      {
-		user->cursor.col = 0;
-		linefeed (display);
+	        user->cursor.col = 0;
+	        linefeed (display);
 	      }
 	  }
 	  break;
