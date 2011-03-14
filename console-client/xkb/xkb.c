@@ -42,9 +42,9 @@
 
 
 #define	NoSymbol	0
-  
-  /* The converter.  */
-  static iconv_t cd;
+
+/* The converter.  */
+extern iconv_t cd;
 
 /* All interpretations for compatibility.  (Translation from keysymbol
    to actions).  */
