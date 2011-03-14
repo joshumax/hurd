@@ -1353,3 +1353,18 @@ xkb_input (keypress_t key)
 }
 
 error_t parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap);
+
+error_t
+xkb_load_layout (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
+{
+  error_t err;
+  int lastarg;
+
+  err = parse_xkbconfig (xkbdir, xkbkeymapfile, xkbkeymap);
+  if (err)
+    return err;
+
+  determine_keytypes ();
+  interpret_all ();
+  return 0;
+}

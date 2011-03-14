@@ -433,3 +433,5 @@ error_t xkb_init_repeat (int delay, int repeat);
 void xkb_input (keypress_t key);
 
 int debug_printf (const char *f, ...);
+
+error_t xkb_load_layout (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap);
