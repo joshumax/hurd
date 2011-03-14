@@ -22,7 +22,7 @@
 #include <assert.h>
 
 #include "xkb.h"
-#include "timer.h"
+#include <timer.h>
 
 /* Lock the access to handle_key.  */
 static struct mutex *lock_key;
