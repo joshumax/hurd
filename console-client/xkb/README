@@ -1,12 +1,11 @@
--- Some random notes about the XKB input driver. --
+-- Some random notes about the XKB module. --
 
-This XKB input driver can be compared with the pc_kbd input driver, it
-has the same function. But this input driver has many advantages. It
-can load XKB configuration files. XKB configuration files, the keymap
-files currently used in XFree, are very versatile.
+This XKB module used by the pc_kbd input driver can load XKB configuration
+files. XKB configuration files, the keymap files currently used in XFree,
+are very versatile.
 
 One of the biggest advantages of using XKB configurations is that both
-the Hurd and XFree work simular. Another advantage is that it has many
+the Hurd and XFree work similarly. Another advantage is that it has many
 features:
 
 * Human readable configuration files with mechanisms like include
@@ -34,7 +33,6 @@ List of not implemented XKB features:
 * Error handling; partially done.
 * Indicators (Keyboard LEDs, etc.) not working, partially implemented.
 * ISOLock not implemented.
-* Key repeater for >> X.
 * No support for non UTF-8 locales.
 * No support for rarely used features (Many of they don't even work in
   X AFAIK).
@@ -47,14 +45,12 @@ List of not implemented XKB features:
 
 Installation:
 
-You need gcc, binutils and the glibc- and GNUMach headerfiles to
-compile this. If you want to generate the scanner and parser yourself
-you need bison and flex, but this is not required because I included
-the generated files.
+This XKB module is an optional feature of pc-kbd input driver. Whether
+it is compiled in or not is defined by the precense of XKB_SUPPORT
+preprocessor symbol.
 
-Run "make" to compile it. This will result in xkb.so.0.3, the actual
-plugin. Copy this file to the console-client driver directory (For the
-current Hurd version this is /lib/hurd/console).
+In addition to the usual Hurd dependencies, you need yacc and lex
+programs to generate the scanner and parser.
 
 --
 
@@ -63,9 +59,8 @@ Using it:
 To use it you need XKB configuration files. These are included with
 XFree and will be placed in /share/X11/xkb on most systems.
 
-You can replace "pc_kbd" in your console client startup line with
-"xkb" and it will work with the default configuration. If you want a
-non-default configuration these options exists:
+This module adds the following set of options to pc-kbd for overriding
+the default behaviour:
 
 --xkbdir : The root directory of the xkb configuration, by default
  this is /share/X11/xkb.
@@ -87,13 +82,13 @@ non-default configuration these options exists:
 --repeat-interval : The number of jiffies the driver should wait
   between each repeated key. By default this is 10 jiffies.
 
+I wrote some XKB extensions and configuration files to use these
+extensions. You can find these files in the xkb-data directory.
 
-By default console switching, etc. is not possible. I wrote some XKB
-extensions and configuration files to use these extensions. You can
-find these files in the xkb directory in the tarball. Copy these files
-to where your XKB configuration files are (usually /share/X11/xkb). 
+The build system will copy these files to where your XKB
+configuration files are (usually /share/X11/xkb).
 
-for example: xkb/keymap/hurd will be copied to /share/X11/xkb/keymap.
+for example: xkb-data/keymap/hurd will be copied to /share/X11/xkb/keymap.
 
 To use these extensions you have to use the hurd keymaps file. This
 holds all keymaps extended with Hurd features. Use "--keymapfile
