@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 1995, 1996, 1997, 2000, 2007 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 2000, 2007, 2011 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -76,8 +76,10 @@ ipv6-srcs      :=  addrconf.c						      \
 		   route_ipv6.c						      \
 		   tcp_ipv6.c						      \
 		   udp_ipv6.c
-LINUXSRCS	= $(core-srcs) $(ethernet-srcs) $(ipv4-srcs) $(ipv6-srcs) \
-		  $(notdir $(wildcard $(addprefix \
+ARCHS		= alpha arm i386 m68k ppc s390 sparc sparc64
+
+LINUXSRCS	= $(core-srcs) $(ethernet-srcs) $(ipv4-srcs) $(ipv6-srcs)
+ARCHSRCS	= $(notdir $(wildcard $(addprefix \
 			   $(srcdir)/linux-src/arch/$(asm_syntax)/lib/,\
 			   $(arch-lib-srcs) $(arch-lib-srcs:.c=.S))))
 SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
@@ -87,17 +89,31 @@ SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
 MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c \
 		  pfinetServer.c iioctlServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o,\
-			     $(LINUXSRCS) $(SRCS) $(MIGSRCS)))
+			     $(LINUXSRCS) $(ARCHSRCS) $(SRCS) $(MIGSRCS)))
 LCLHDRS		= config.h mapped-time.h mutations.h pfinet.h
-LINUXHDRS	= arp.h datalink.h eth.h icmp.h ip.h ipx.h ipxcall.h p8022.h \
-		  p8022call.h protocol.h psnap.h psnapcall.h \
-		  rarp.h raw.h route.h snmp.h sock.h tcp.h udp.h
-FROBBEDLINUXHEADERS = autoconf.h config.h errno.h etherdevice.h fcntl.h \
-	icmp.h if.h if_arp.h if_ether.h igmp.h in.h inet.h interrupt.h \
-	ip.h ip_fw.h ipx.h kernel.h major.h malloc.h mm.h net.h netdevice.h \
-	notifier.h param.h route.h sched.h skbuff.h socket.h sockios.h stat.h \
-	string.h tcp.h termios.h time.h timer.h types.h udp.h un.h wait.h
-ASMHEADERS=bitops.h segment.h system.h
+LINUXHDRS	= bitops.h capability.h delay.h errqueue.h etherdevice.h \
+		  fddidevice.h firewall.h icmp.h icmpv6.h if_arp.h if_ether.h \
+		  if_fddi.h if_packet.h if_ppp.h if_tunnel.h if_tr.h \
+		  igmp.h in.h in_route.h inet.h inetdevice.h init.h ip.h \
+		  ip_fw.h ipsec.h ipv6_route.h ipx.h kmod.h linkage.h lists.h \
+		  module.h mroute.h net.h netdevice.h netlink.h notifier.h \
+		  pkt_cls.h pkt_sched.h ppp_defs.h random.h route.h \
+		  rtnetlink.h skbuff.h stddef.h sysctl.h tasks.h tcp.h times.h \
+		  trdevice.h udp.h
+LINUXNETHDRS	= addrconf.h arp.h br.h checksum.h datalink.h dst.h flow.h \
+		  icmp.h if_inet6.h inet_common.h ip.h ip_fib.h ip6_fib.h \
+		  ip6_route.h ipip.h ipv6.h ipx.h ipxcall.h ndisc.h \
+		  neighbour.h p8022.h p8022call.h pkt_cls.h pkt_sched.h \
+		  profile.h protocol.h psnap.h psnapcall.h rarp.h raw.h \
+		  rawv6.h route.h slhc.h snmp.h sock.h tcp.h transp_v6.h udp.h
+ARCHHDRS	= checksum.h
+FROBBEDLINUXHEADERS = autoconf.h binfmts.h config.h errno.h fcntl.h fs.h \
+	if.h in.h in6.h interrupt.h ioctl.h ipv6.h \
+	kernel.h limits.h major.h malloc.h mm.h param.h personality.h \
+	poll.h proc_fs.h sched.h slab.h socket.h sockios.h stat.h \
+	string.h termios.h time.h timer.h timex.h types.h un.h version.h wait.h
+ASMHEADERS = atomic.h bitops.h byteorder.h delay.h errno.h hardirq.h init.h \
+	segment.h spinlock.h system.h types.h uaccess.h
 
 HURDLIBS=trivfs fshelp threads ports ihash shouldbeinlibc iohelp
 
@@ -130,20 +146,62 @@ socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
 $(OBJS): config.h
 
-lndist: lndist-linux-inet-files lndist-linux-files lndist-asm-files
+lndist: lndist-linux-src-net-core-files lndist-linux-src-net-ethernet-files lndist-linux-src-net-ipv4-files lndist-linux-src-net-ipv6-files lndist-linux-src-asm-files lndist-linux-src-include-asm-files lndist-linux-src-include-linux-files lndist-linux-src-include-net-files lndist-glue-include-linux-files lndist-glue-include-asm-files
 
-lndist-linux-inet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-inet
-	ln $(addprefix $(srcdir)/linux-inet/,$(LINUXSRCS) $(UNUSEDSRC) $(LINUXHDRS)) $<
+lndist-linux-src-net-core-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/core
+	ln $(addprefix $(srcdir)/linux-src/net/core/,$(core-srcs)) $<
 
-lndist-linux-files: $(top_srcdir)/hurd-snap/$(dir)/linux
-	ln $(addprefix $(srcdir)/linux/,$(FROBBEDLINUXHEADERS)) $<
+lndist-linux-src-net-ethernet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ethernet
+	ln $(addprefix $(srcdir)/linux-src/net/ethernet/,$(ethernet-srcs)) $<
 
-lndist-asm-files: $(top_srcdir)/hurd-snap/$(dir)/asm
-	ln $(addprefix $(srcdir)/asm/,$(ASMHEADERS)) $<
+lndist-linux-src-net-ipv4-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv4
+	ln $(addprefix $(srcdir)/linux-src/net/ipv4/,$(ipv4-srcs)) $<
 
-$(top_srcdir)/hurd-snap/$(dir)/linux-inet:
+lndist-linux-src-net-ipv6-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv6
+	ln $(addprefix $(srcdir)/linux-src/net/ipv6/,$(ipv6-srcs)) $<
+
+# FIXME !i386
+lndist-linux-src-asm-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/arch/i386/lib
+	ln $(addprefix $(srcdir)/linux-src/arch/i386/lib/,$(ARCHSRCS)) $<
+
+lndist-linux-src-include-linux-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/linux
+	ln $(addprefix $(srcdir)/linux-src/include/linux/,$(LINUXHDRS)) $<
+
+lndist-linux-src-include-net-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/net
+	ln $(addprefix $(srcdir)/linux-src/include/net/,$(LINUXNETHDRS)) $<
+
+lndist-linux-src-include-asm-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/asm-i386
+	ln $(addprefix $(srcdir)/linux-src/include/asm-$(asm_syntax)/,$(ARCHHDRS)) $<
+
+lndist-glue-include-linux-files: $(top_srcdir)/hurd-snap/$(dir)/glue-include/linux
+	ln $(addprefix $(srcdir)/glue-include/linux/,$(FROBBEDLINUXHEADERS)) $<
+
+lndist-glue-include-asm-files: $(top_srcdir)/hurd-snap/$(dir)/glue-include/asm
+	ln $(addprefix $(srcdir)/glue-include/asm/,$(ASMHEADERS)) $<
+
+$(top_srcdir)/hurd-snap/$(dir)/linux-src:
 	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux:
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/arch: $(top_srcdir)/hurd-snap/$(dir)/linux-src
 	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/asm:
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/arch/%/lib: $(top_srcdir)/hurd-snap/$(dir)/linux-src/arch
+	mkdir -p $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/include: $(top_srcdir)/hurd-snap/$(dir)/linux-src
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/include/%: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/net: $(top_srcdir)/hurd-snap/$(dir)/linux-src
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/core: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ethernet: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv4: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv6: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/glue-include:
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/glue-include/asm: $(top_srcdir)/hurd-snap/$(dir)/glue-include
+	mkdir $@
+$(top_srcdir)/hurd-snap/$(dir)/glue-include/linux: $(top_srcdir)/hurd-snap/$(dir)/glue-include
 	mkdir $@
