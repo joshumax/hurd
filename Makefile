@@ -21,7 +21,7 @@ makemode := misc
 
 include ./Makeconf
 
-DIST_FILES = COPYING Makeconf config.make.in configure.in configure \
+DIST_FILES = ChangeLog COPYING Makeconf config.make.in configure.in configure \
 	     move-if-change hurd.boot build.mk.in build.mkcf.in aclocal.m4 \
 	     README NEWS tasks INSTALL INSTALL-cross version.h.in
 

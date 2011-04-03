@@ -382,7 +382,7 @@ $(..)$(dir).d: $(srcdir)/Makefile
 	echo $(dir): $(hurd-bug-addr-dir-dep) $(addprefix lib,$(HURDLIBS)) > $@
 
 # Making a snapshot
-distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
+distfiles = Makefile $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
 	ln $(addprefix $(srcdir)/,$(distfiles)) $(top_srcdir)/hurd-snap/$(dir)
 
