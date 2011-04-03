@@ -55,7 +55,7 @@ XKB_DATA_FILES = keymap/hurd types/hurd symbols/hurd
 CPPFLAGS += -DQUAERENDO_INVENIETIS
 
 DIST_FILES = xkb/HACKING xkb/MISSING-FEATURES xkb/README xkb/TODO \
-             xkb/Compose xkb/default.xkb xkb/makeconf.sh \
+             xkb/Compose xkb/default.xkb xkb/makeconf.sh xkb/kstoucs_map.sh \
              $(addprefix xkb/xkb-data/, $(XKB_DATA_FILES))
 
 include ../Makeconf
@@ -127,4 +127,12 @@ $(XKB_BASE):
 
 $(XKB_BASE)/%: xkb/xkb-data/%
 	$(INSTALL_DATA) $< $@
+
+kstoucs_map.c: $(includedir)/X11/keysymdef.h $(srcdir)/xkb/kstoucs_map.sh
+	SED=$(SED) \
+	AWK=$(AWK) \
+	sh $(srcdir)/xkb/kstoucs_map.sh \
+	     < $< \
+	     > map.tmp && \
+	mv map.tmp $@
 endif
