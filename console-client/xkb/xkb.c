@@ -35,7 +35,7 @@
 #include <hurd/console.h>
 #define XK_XKB_KEYS
 #define XK_MISCELLANY
-#include "keysymdef.h"
+#include <X11/keysymdef.h>
 #include <driver.h>
 #include <mach-inputdev.h>
 #include <wctype.h>

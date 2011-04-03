@@ -230,6 +230,21 @@ AC_MSG_RESULT($boot_store_types)
 # Check for ncursesw, which is needed for the console-curses client.
 hurd_LIB_NCURSESW
 
+# Check for those Xorg modules needed for keyboard mappings.
+PKG_CHECK_MODULES([X11], [x11 xproto],
+  [ have_x11=yes
+    pkg_failed=no
+    AC_MSG_CHECKING([for xkb base])
+    _PKG_CONFIG([XKB_BASE], [variable=xkb_base], [xkeyboard-config])
+    AS_IF([test $pkg_failed = no],
+      [XKB_BASE="$pkg_cv_XKB_BASE"
+       AC_MSG_RESULT([$XKB_BASE])],
+      [XKB_BASE="$datadir/X11/xkb"
+       AC_MSG_RESULT([(default) $XKB_BASE])])
+  ], [have_x11=no])
+AC_SUBST([have_x11])
+AC_SUBST([XKB_BASE])
+
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.
   makefiles=

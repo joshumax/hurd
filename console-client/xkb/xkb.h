@@ -16,7 +16,7 @@
 
 #include <errno.h>
 #include <argp.h>
-//#include "kbd_driver.h"
+#include <X11/Xlib.h>
 
 typedef int keycode_t;
 typedef unsigned int scancode_t;
@@ -359,7 +359,6 @@ typedef struct xkb_indicator
 unsigned int KeySymToUcs4(int keysym);
 symbol compose_symbols (symbol symbol);
 error_t read_composefile (char *);
-KeySym XStringToKeysym(char *s);
 struct keytype *keytype_find (char *name);
 
 void key_set_action (struct key *key, group_t group, int level,
