@@ -23,7 +23,6 @@ typedef unsigned int scancode_t;
 typedef int symbol;
 typedef int group_t;
 typedef unsigned int boolctrls;
-//typedef int error_t;
 
 #define	KEYCONSUMED	1
 #define	KEYNOTCONSUMED	0
@@ -328,7 +327,6 @@ typedef struct keypress
 {
   keycode_t keycode;
   keycode_t prevkc;
-  //  struct keystate *state;
   unsigned short repeat:1;	/* It this a real keypress?.  */
   unsigned short redir:1;	/* This is not a real keypress.  */
   unsigned short rel;		/* Key release.  */

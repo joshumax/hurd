@@ -161,9 +161,6 @@ interpret_kc (keycode_t kc)
 			  SA_NoAction)
 			continue;
 
-/* 		      if (action->type == 13) */
-/* 			printf ("AA %d AAAAAAAAAAAAAAA %d: %d - %d\n", kc, flags, symbol, interp->symbol);  */
-
 		      action = malloc (sizeof (xkb_action_t));
 		      memcpy (action, &interp->action, sizeof (xkb_action_t));
 		      
@@ -1187,7 +1184,6 @@ xkb_input (keypress_t key)
   if (key.rel)
     keystate[key.keycode].lmods = lmods;
   input = handle_key (key);
-  //printf ("sym: %d\n", input);
 
   debug_printf ("handle: %d\n", input);
   if (input == -1)
@@ -1200,7 +1196,6 @@ xkb_input (keypress_t key)
 
   buf[size] = '\0';
 
-  debug_printf ("input: %d\n", input);
   if (!input)
     return;
 
@@ -1319,7 +1314,6 @@ xkb_input (keypress_t key)
       break;
     }
 
-  debug_printf ("bla\n");
   if (escseq != NULL)
     {
       strcat (buf + size, escseq);
@@ -1366,7 +1360,6 @@ xkb_input (keypress_t key)
       size = sizeof (buf) - left;
     }
 
-  //  printf ("SIZE: %d\n", size);
   if (size)
     console_input (buf, size);
   size = 0;

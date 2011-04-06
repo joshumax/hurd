@@ -1545,20 +1545,8 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
   extern FILE *yyin;
   extern char *filename;
 
-  //  xkbkeymap = 0;
-
-  //  xkbkeymapfile = 0;
-
-  //  xkbdir = "/etc/X11/xkb";
-  //  xkbdir ="/home/marco/xkb";
-  //  xkbkeymapfile = "keymap/hurd";
-  //  xkbkeymap = "hack";
-    
   debug_printf ("Dir: %s, file: %s sect: %s\n", xkbdir, xkbkeymapfile, xkbkeymap);
 
-  //  xkbkeymapfile = "default.xkb";
-  //xkbkeymap = "us";
-  //  yydebug = 1;
   if (xkbkeymapfile)
     {
       filename = xkbkeymapfile;

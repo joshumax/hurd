@@ -24,9 +24,6 @@
 #include "xkb.h"
 #include <timer.h>
 
-/* Timer used to time key controls.  */
-//static struct timer_list key_timer;
-
 /* For key repeat.  */
 static int key_delay = 0;
 static int key_repeat = 0;
@@ -48,6 +45,7 @@ enum timer_status
     timer_repeating
   };
 
+/* Timer used to time key controls.  */
 static struct per_key_timer
 {
   /* Used for slowkeys and repeat.  */
