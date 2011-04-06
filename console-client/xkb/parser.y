@@ -1582,23 +1582,10 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
       else
         skip_to_defaultsection();
     } 
-  else /* Use defaults.  */
+  else
     {
-      extern char *default_xkb_keymap;
-      filename = "<<INTERNAL>>";
-
-      yyin = tmpfile ();
-      //yyin = fopen ("TEST", "w+");
-
-      if (yyin == NULL)
-	{
-	  fprintf (stderr, "Couldn't create tmp file.\n");
-	  return errno;
-	}
-      /* XXX: error handling.  */
-      fprintf (yyin, "%s\n", default_xkb_keymap);
-      
-      rewind (yyin);
+      free (cwd);
+      return EINVAL;
     }
   err = yyparse ();
   fclose (yyin);
