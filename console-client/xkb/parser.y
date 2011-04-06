@@ -1567,6 +1567,7 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
 	{
 	  fprintf (stderr, "Could not set \"%s\" as the active directory\n", 
 		   xkbdir);
+          free (cwd);
 	  return errno;
 	}
 
@@ -1574,6 +1575,7 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
       if (yyin == NULL)
 	{
 	  fprintf (stderr, "Couldn't open keymap file\n");
+          free (cwd);
 	  return errno;
 	}
 
@@ -1591,7 +1593,10 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
   fclose (yyin);
 
   if (err || yynerrs > 0)
-    return EINVAL;
+    {
+      free (cwd);
+      return EINVAL;
+    }
 
   if (xkbkeymapfile)
     {
@@ -1599,6 +1604,7 @@ parse_xkbconfig (char *xkbdir, char *xkbkeymapfile, char *xkbkeymap)
 	{
 	  fprintf (stderr, 
 		   "Could not set \"%s\" as the active directory\n", cwd);
+          free (cwd);
 	  return errno;
 	}
     }
