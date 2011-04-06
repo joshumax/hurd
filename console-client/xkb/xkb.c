@@ -215,28 +215,46 @@ iskeypad (int width, int *sym)
 /* Get the keytype (the keytype determines which modifiers are used
    for shifting.
 
+   For reference, see FindAutomaticType@xkbcomp/symbols.c.
+
    These rules are used:
 
    * If the width is 1 the keytype is ONE_LEVEL.
    * If the first symbol is lowercase and the second is uppercase
    (latin alphabeth) the keytype is ALPHABETHIC.
    * If one of the symbols is in the keypad range the keytype is KEYPAD.
+   * If width is 4 the type is either FOUR_LEVEL, FOUR_LEVEL_ALPHABETIC,
+     FOUR_LEVEL_SEMI_ALPHABETIC (first sym pair is alphabetic) or
+     FOUR_LEVEL_KEYPAD.
    * Else the keytype is TWO_LEVEL. */
 static struct keytype *
 get_keytype (int width, symbol *sym)
 {
-  struct keytype *ktfound;
+  struct keytype *ktfound = NULL;
 
-  if (!width || !sym)
+  if (!sym)
     ktfound = keytype_find ("TWO_LEVEL");
-  else if (iskeypad (width, sym))
-    ktfound = keytype_find ("KEYPAD");
-  else if (width == 1)
+  else if ((width == 1) || (width == 0))
     ktfound = keytype_find ("ONE_LEVEL");
-  else if (width >= 2 && islatin_lower (sym[0]) && islatin_upper (sym[1]))
-    ktfound = keytype_find ("ALPHABETIC");
-  else
-    ktfound = keytype_find ("TWO_LEVEL");
+  else if (width == 2) {
+    if (islatin_lower (sym[0]) && islatin_upper (sym[1]))
+      ktfound = keytype_find ("ALPHABETIC");
+    else if (iskeypad (width, sym))
+      ktfound = keytype_find ("KEYPAD");
+    else
+      ktfound = keytype_find ("TWO_LEVEL");
+  }
+  else if (width <= 4) {
+    if (islatin_lower (sym[0]) && islatin_upper (sym[1]))
+      if (islatin_lower(sym[2]) && islatin_upper(sym[3]))
+        ktfound = keytype_find ("FOUR_LEVEL_ALPHABETIC");
+      else
+        ktfound = keytype_find ("FOUR_LEVEL_SEMIALPHABETIC");
+    else if (iskeypad (2, sym))
+      ktfound = keytype_find ("FOUR_LEVEL_KEYPAD");
+    else
+      ktfound = keytype_find ("FOUR_LEVEL");
+  }
 
   if (!ktfound)
     ktfound = keytype_find ("TWO_LEVEL");
