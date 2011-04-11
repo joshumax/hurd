@@ -230,6 +230,12 @@ AC_MSG_RESULT($boot_store_types)
 # Check for ncursesw, which is needed for the console-curses client.
 hurd_LIB_NCURSESW
 
+AC_PROG_LEX
+AC_PROG_YACC
+AS_IF([test "$LEX" = ":" -o "$YACC" = ":"], [
+have_x11=no
+AC_MSG_WARN([lex or yacc is mising, XKB will be disabled.])
+],[
 # Check for those Xorg modules needed for keyboard mappings.
 PKG_CHECK_MODULES([X11], [x11 xproto],
   [ have_x11=yes
@@ -242,6 +248,7 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
       [XKB_BASE="$datadir/X11/xkb"
        AC_MSG_RESULT([(default) $XKB_BASE])])
   ], [have_x11=no])
+])
 AC_SUBST([have_x11])
 AC_SUBST([XKB_BASE])
 
