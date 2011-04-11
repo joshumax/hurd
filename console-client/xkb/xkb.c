@@ -42,8 +42,6 @@
 
 
 
-#define	NoSymbol	0
-
 /* The converter.  */
 extern iconv_t cd;
 

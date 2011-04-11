@@ -26,8 +26,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#define	NoSymbol	0
-
 /* Tokens that can be recognised by the scanner.  */
 enum tokentype
   {
