@@ -25,6 +25,10 @@
 #include "xkb.h"
 #include <ctype.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <locale.h>
+#include <assert.h>
 
 /* Tokens that can be recognised by the scanner.  */
 enum tokentype
@@ -401,6 +405,171 @@ compose_symbols (symbol s)
   return -1;
 }
 
+struct map_entry
+{
+  const char *left;
+  const char *right;
+};
+
+enum callback_result
+  {
+    NEXT,
+    DONE
+  };
+
+typedef enum callback_result (*map_callback) (void *context, struct map_entry *entry);
+
+static error_t
+map_iterate(const char *map_path, map_callback action, void *context)
+{
+  FILE *map;
+  char *buffer = NULL;
+  size_t buffer_size = 0;
+  size_t line_length = 0;
+
+  assert (map_path != NULL);
+  assert (action != NULL);
+
+  map = fopen (map_path, "r");
+
+  if (map == NULL)
+    return errno;
+
+  while ( (line_length = getline (&buffer, &buffer_size, map)) != -1)
+    {
+      /* skips empty lines and comments */
+      if (line_length < 1 || buffer[0] == '#')
+        continue;
+      else
+        {
+          struct map_entry entry = {NULL, NULL};
+          char *end = buffer + line_length;
+          char *p = buffer;
+
+          while (p != end && isspace(*p)) p++;
+
+          if (p == end)
+            continue;
+
+          entry.left = p;
+
+          while (p != end && !isspace(*p)) p++;
+
+          if (p != end)
+            {
+              *(p++) = 0;
+              while (p != end && isspace(*p)) p++;
+
+              if (p != end)
+                {
+                  entry.right = p;
+                  while (p != end && !isspace(*p)) p++;
+                  if (p != end)
+                    *p = 0;
+                }
+            }
+
+          if (action (context, &entry) == DONE)
+            break;
+        }
+    }
+  free (buffer);
+  fclose (map);
+  return 0;
+}
+
+struct matcher_context
+{
+  char *value;
+  char *result;
+};
+
+static enum callback_result
+match_left_set_right (void *context, struct map_entry *entry)
+{
+  struct matcher_context *ctx = (struct matcher_context *) context;
+
+  if (strcmp (ctx->value, entry->left) == 0)
+    {
+      ctx->result = strdup (entry->right);
+      return DONE;
+    }
+  return NEXT;
+}
+
+static enum callback_result
+match_right_set_left (void *context, struct map_entry *entry)
+{
+  struct matcher_context *ctx = (struct matcher_context *) context;
+
+  if (strcmp (ctx->value, entry->right) == 0)
+    {
+      ctx->result = strdup (entry->left);
+      return DONE;
+    }
+  return NEXT;
+}
+
+/* Search for a compose file.
+
+   According to Compose(5) man page the compose file searched in the
+   following locations:
+     - XCOMPOSEFILE variable.
+     - .XCompose at $HOME.
+     - System wide compose file for the current locale. */
+static char *
+get_compose_file_for_locale()
+{
+  struct matcher_context context = { NULL };
+  char *xcomposefile;
+  char *to_be_freed;
+  char *home;
+  int err;
+
+  xcomposefile = getenv ("XCOMPOSEFILE");
+  if (xcomposefile != NULL)
+    return strdup (xcomposefile);
+
+  home = getenv ("HOME");
+  if (home != NULL)
+    {
+      err = asprintf (&xcomposefile, "%s/.XCompose", home);
+      if (err != -1)
+        {
+          if (faccessat(AT_FDCWD, xcomposefile, R_OK, AT_EACCESS) == 0)
+            return xcomposefile;
+          else
+            {
+              free (xcomposefile);
+              /* TODO: check and report whether the compose file doesn't exist or
+                 read permission was not granted to us. */
+            }
+        }
+    }
+
+  context.value = setlocale (LC_ALL, NULL);
+  map_iterate (DATADIR "/X11/locale/locale.alias", match_left_set_right, &context);
+  to_be_freed = context.result;
+
+  if (context.result != NULL)
+    {
+      /* Current locale is an alias. Use the real name to index the database. */
+      context.value = context.result;
+    }
+  context.result = NULL;
+  map_iterate (DATADIR "/X11/locale/compose.dir", match_right_set_left, &context);
+  free (to_be_freed);
+
+  /* compose.dir contains relative paths to compose files. */
+  to_be_freed = context.result;
+  err = asprintf (&context.result, DATADIR "/X11/locale/%s", context.result);
+  if (err == -1)
+    context.result = NULL;
+
+  free (to_be_freed);
+  return context.result;
+}
+
 /* Read a Compose file.  */
 error_t
 read_composefile (char *composefn)
@@ -408,6 +577,10 @@ read_composefile (char *composefn)
   FILE *cf;
 
   error_t err;
+
+  if (composefn == NULL)
+    composefn = get_compose_file_for_locale ();
+
   cf = fopen (composefn, "r");
   if (cf == NULL)
     return errno;

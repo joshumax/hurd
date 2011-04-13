@@ -1329,12 +1329,9 @@ pc_kbd_init (void **handle, int no_exit, int argc, char *argv[], int *next)
   xkb_repeat_delay = arguments.repeat_delay;
   xkb_repeat_interval = arguments.repeat_interval;
 
-  if (arguments.composefile)
-    {
-      err = read_composefile (arguments.composefile);
-      if (err)
-        return err;
-    }
+  err = read_composefile (arguments.composefile);
+  if (err)
+    return err;
 
   xkb_data_init ();
   err = xkb_load_layout (arguments.xkbdir, arguments.keymapfile,

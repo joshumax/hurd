@@ -118,6 +118,7 @@ XKB_UNITS = $(basename $(notdir $(XKB_SRCS)))
 pc_kbd.so.$(hurd-version): $(addsuffix _pic.o,$(XKB_UNITS))
 pc-kbd-CFLAGS = -DXKB_SUPPORT -DXKB_DATA_DIR=\"$(XKB_BASE)\" $(X11_CFLAGS)
 $(foreach XKB_UNIT, $(XKB_UNITS), $(eval $(XKB_UNIT)-CFLAGS = $(X11_CFLAGS)))
+compose-CFLAGS += -DDATADIR=\"$(datadir)\"
 pc_kbd-LDLIBS = $(X11_LIBS)
 install: $(XKB_BASE) $(addprefix $(XKB_BASE)/, $(XKB_DATA_FILES))
 
