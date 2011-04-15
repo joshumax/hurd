@@ -8,6 +8,13 @@ struct ksmap {
 unsigned int
 KeySymToUcs4 (int keysym)
 {
+#ifdef XKB_DEBUG
+  char *XKeysymToString(int keysym);
+  printf ("KeySymToUcs4: %s (%d) -> ", XKeysymToString (keysym), keysym);
+unsigned int doit (int keysym)
+{
+#endif
+
   /* Control characters not covered by keysym map. */
   if (keysym > 0 && keysym < 32)
     return keysym;
@@ -34,4 +41,10 @@ KeySymToUcs4 (int keysym)
 
   #define NUM_KEYSYMS (sizeof kstoucs_map / sizeof(struct ksmap))
   return find_ucs(keysym, &kstoucs_map[0], &kstoucs_map[NUM_KEYSYMS - 1]);
+#ifdef XKB_DEBUG
+}
+  unsigned int ret = doit (keysym);
+  printf ("%d\n", ret);
+  return ret;
+#endif
 }
