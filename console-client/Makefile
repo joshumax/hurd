@@ -130,7 +130,7 @@ $(XKB_BASE)/%: xkb/xkb-data/%
 
 # FIXME: dependency files won't catch this one.
 $(srcdir)/xkb/kstoucs.c: kstoucs_map.c
-kstoucs_map.c: $(includedir)/X11/keysymdef.h $(srcdir)/xkb/kstoucs_map.sh
+kstoucs_map.c: $(X11_KEYSYMDEF_H) $(srcdir)/xkb/kstoucs_map.sh
 	SED=$(SED) \
 	AWK=$(AWK) \
 	sh $(srcdir)/xkb/kstoucs_map.sh \

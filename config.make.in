@@ -44,6 +44,7 @@ RANLIB = @RANLIB@
 MIG = @MIG@
 MIGCOM = $(MIG) -cc cat - /dev/null
 AWK = @AWK@
+SED = @SED@
 
 # Compilation flags.  Append these to the definitions already made by
 # the specific Makefile.
@@ -71,6 +72,7 @@ HAVE_X11 = @have_x11@
 X11_CFLAGS = @X11_CFLAGS@
 X11_LIBS = @X11_LIBS@
 XKB_BASE = @XKB_BASE@
+X11_KEYSYMDEF_H = @X11_KEYSYMDEF_H@
 
 # Installation tools.
 INSTALL = @INSTALL@

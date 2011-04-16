@@ -82,6 +82,7 @@ AC_SUBST(enable_static_progs)
 INSTALL="$SHELL $(readlink -f "$ac_install_sh")"\ -C || unset INSTALL]
 AC_PROG_INSTALL
 AC_PROG_AWK
+AC_PROG_SED
 
 AC_PROG_CC
 # Require GCC.
@@ -247,10 +248,28 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
        AC_MSG_RESULT([$XKB_BASE])],
       [XKB_BASE="$datadir/X11/xkb"
        AC_MSG_RESULT([(default) $XKB_BASE])])
+
+    have_keysymdef_h=no
+    AC_CHECK_HEADER([X11/keysymdef.h],
+      [AC_MSG_CHECKING([for X11/keysymdef.h absolute location])
+       AC_PREPROC_IFELSE([#include <X11/keysymdef.h>],
+         [[X11_KEYSYMDEF_H=`$SED -n 's%^[^"]*"\([^"]*X11/keysymdef.h\)".*$%\1%p' conftest.i`]
+          # did the sed magic above work?
+          AS_IF([test -f "$X11_KEYSYMDEF_H"],
+            [have_keysymdef_h=yes],
+            [X11_KEYSYMDEF_H=not-found])
+         ],
+         [X11_KEYSYMDEF_H=not-found])
+       AC_MSG_RESULT([$X11_KEYSYMDEF_H])
+      ])
+    AS_IF([test $have_keysymdef_h = no],
+      [AC_MSG_WARN([X11/keysymdef.h was not found, XKB will be disabled.])
+       have_x11=no])
   ], [have_x11=no])
 ])
 AC_SUBST([have_x11])
 AC_SUBST([XKB_BASE])
+AC_SUBST([X11_KEYSYMDEF_H])
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.
