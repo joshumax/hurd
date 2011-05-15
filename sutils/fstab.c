@@ -497,7 +497,29 @@ fstab_find_mount (const struct fstab *fstab, const char *name)
 inline struct fs *
 fstab_find (const struct fstab *fstab, const char *name)
 {
-  return fstab_find_device (fstab, name) ?: fstab_find_mount (fstab, name);
+  struct fs *ret;
+  const char *real_name;
+
+  ret = fstab_find_device (fstab, name);
+  if (ret)
+    return ret;
+
+  ret = fstab_find_mount (fstab, name);
+  if (ret)
+    return ret;
+
+  real_name = realpath (name, NULL);
+
+  ret = fstab_find_device (fstab, real_name);
+  if (ret) {
+    free (real_name);
+    return ret;
+  }
+
+  ret = fstab_find_mount (fstab, real_name);
+  free (real_name);
+
+  return ret;
 }
 
 /* Cons FS onto the beginning of FSTAB's entry list.  */
