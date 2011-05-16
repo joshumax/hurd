@@ -593,7 +593,7 @@ fstab_add_mntent (struct fstab *const fstab, const struct mntent *mntent,
 	free (fs);
     }
 
-  if (!err && mounted_fs)
+  if (!err && mounted_fs && mounted_fs != fs)
     /* Get rid of the conflicting entry MOUNTED_FS.  */
     fs_free (mounted_fs);
 
