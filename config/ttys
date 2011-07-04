@@ -5,4 +5,10 @@
 # name	program				type		status	comments
 
 console	"/libexec/getty 9600"		mach-color	on	secure trusted console
+tty1	"/libexec/getty 38400"		hurd		on	secure trusted console
+tty2	"/libexec/getty 38400"		hurd		on	secure trusted console
+tty3	"/libexec/getty 38400"		hurd		on	secure trusted console
+tty4	"/libexec/getty 38400"		hurd		on	secure trusted console
+tty5	"/libexec/getty 38400"		hurd		on	secure trusted console
+tty6	"/libexec/getty 38400"		hurd		on	secure trusted console
 #com0	"/libexec/getty 9600"		dialup		on	secure
