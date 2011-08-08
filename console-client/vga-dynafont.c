@@ -846,7 +846,7 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
   chr->refs = 1;
   chr->character = (wide_chr | attr);
 
-  /* Copy the glyph bitmap, taking into account double-width charcters.  */
+  /* Copy the glyph bitmap, taking into account double-width characters.  */
   {
     int height = (glyph->bbox.height > 32) ? 32 : glyph->bbox.height;
     int bwidth = (glyph->bbox.width + 7) / 8;
