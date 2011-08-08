@@ -59,19 +59,6 @@ struct vga_state
 static struct vga_state *vga_state;
 
 
-#if OSKIT_MACH
-#else
-
-#include <device/device.h>
-#include <hurd.h>
-
-/* Constants from Mach.  */
-#define VIDMMAP_BEGIN 0xA0000
-#define VIDMMAP_SIZE (0xC0000 - 0xA0000)
-#define VIDMMAP_KDOFS 0xA0000 /* == kd_bitmap_start in mach/i386/i386at/kd.c */
-
-#endif
-
 error_t
 vga_init (void)
 {
@@ -100,43 +87,6 @@ vga_init (void)
       close (fd);
       if (vga_videomem == (void *) -1)
 	return err;
-    }
-  else if (errno == ENXIO)
-    {
-      /* GNU Mach v1 does not provide /dev/mem, but allows direct
-	 memory access to the video memory through the special "kd"
-	 kernel device.  */
-      device_t device_master = MACH_PORT_NULL;
-      memory_object_t kd_mem = MACH_PORT_NULL;
-      static device_t kd_device = MACH_PORT_NULL;
-      vm_address_t mapped;
-
-      err = get_privileged_ports (0, &device_master);
-      if (err)
-	return err;
-
-      err = device_open (device_master, D_WRITE, "kd", &kd_device);
-      if (err)
-	return err;
-
-      err = device_map (kd_device, VM_PROT_READ | VM_PROT_WRITE,
-			VIDMMAP_BEGIN - VIDMMAP_KDOFS, VIDMMAP_SIZE,
-			&kd_mem, 0);
-      if (err)
-	return err;
-
-      err = vm_map (mach_task_self (), &mapped, VIDMMAP_SIZE,
-		    0, 1, kd_mem, VIDMMAP_BEGIN - VIDMMAP_KDOFS, 0,
-		    VM_PROT_READ | VM_PROT_WRITE, VM_PROT_READ | VM_PROT_WRITE,
-		    VM_INHERIT_NONE);
-      if (err)
-	return err;
-
-      vga_videomem = (char *) mapped;
-      assert (vga_videomem != NULL);
-
-      mach_port_deallocate (mach_task_self (), device_master);
-      mach_port_deallocate (mach_task_self (), kd_mem);
     }
   else
     return errno;
@@ -175,7 +125,7 @@ vga_init (void)
 
   /* Read/write in interleaved mode.  */
   outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
-  outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_A0TOAF, VGA_GFX_DATA_REG);
+  outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_B8TOBF, VGA_GFX_DATA_REG);
   outb (VGA_GFX_MODE_ADDR, VGA_GFX_ADDR_REG);
   outb (VGA_GFX_MODE_HOSTOE, VGA_GFX_DATA_REG);
 
@@ -269,7 +219,7 @@ vga_read_write_font_buffer (int write, int buffer, int index,
   outb (VGA_GFX_MODE_READ0, VGA_GFX_DATA_REG);
   outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
   saved_gfx_misc = inb (VGA_GFX_DATA_REG);
-  outb (VGA_GFX_MISC_A0TOBF, VGA_GFX_DATA_REG);
+  outb (VGA_GFX_MISC_B8TOBF, VGA_GFX_DATA_REG);
 
   if (write)
     memcpy (vga_videomem + offset, data, datalen);    

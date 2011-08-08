@@ -21,7 +21,7 @@
 #ifndef _VGA_HW_H_
 #define _VGA_HW_H_ 1
 
-#define VGA_VIDEO_MEM_BASE_ADDR	0x0a0000
+#define VGA_VIDEO_MEM_BASE_ADDR	0x0b8000
 #define VGA_VIDEO_MEM_LENGTH	0x004000
 
 #define VGA_FONT_BUFFER		8
