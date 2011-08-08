@@ -394,7 +394,7 @@ vga_display_restore_status (void *handle)
   /* Read/write in interleaved mode.  This is not preserved by the
      XFree VESA driver.  */
   outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
-  outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_A0TOAF, VGA_GFX_DATA_REG);
+  outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_B8TOBF, VGA_GFX_DATA_REG);
 }
 
 
