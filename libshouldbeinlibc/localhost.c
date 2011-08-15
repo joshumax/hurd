@@ -39,18 +39,25 @@ localhost ()
 	errno = 0;
 
 	if (buf) {
+	  char *new;
 	  buf_len += buf_len;
-	  buf = realloc (buf, buf_len);
+	  new = realloc (buf, buf_len);
+	  if (! new)
+	    {
+	      errno = ENOMEM;
+	      return 0;
+	    }
+	  else
+	    buf = new;
 	} else {
 	  buf_len = 128;	/* Initial guess */
 	  buf = malloc (buf_len);
+	  if (! buf)
+	    {
+	      errno = ENOMEM;
+	      return 0;
+	    }
 	}
-
-	if (! buf)
-	  {
-	    errno = ENOMEM;
-	    return 0;
-	  }
       } while ((gethostname(buf, buf_len) == 0 && !memchr (buf, '\0', buf_len))
 	       || errno == ENAMETOOLONG);
 
