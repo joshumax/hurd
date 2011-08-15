@@ -664,7 +664,7 @@ diskfs_direnter_hard(struct node *dp,
 /* Following a lookup call for REMOVE, this removes the link from the
    directory.  DP is the directory being changed and DS is the cached
    information returned from lookup.  This call is only valid if the
-   directory has been locked continously since the call to lookup, and
+   directory has been locked continuously since the call to lookup, and
    only if that call succeeded.  */
 error_t
 diskfs_dirremove_hard(struct node *dp,

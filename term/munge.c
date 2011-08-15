@@ -582,7 +582,7 @@ input_character (int c)
   echo_char (c, 0, 0);
   if (CCEQ (cc[VEOF], c) && (lflag & ECHO))
     {
-      /* Special bizzare echo processing for VEOF character. */
+      /* Special bizarre echo processing for VEOF character. */
       int n;
       n = echo_double (c, 0) ? 2 : output_width (c, output_psize);
       while (n--)
@@ -642,7 +642,7 @@ input_break ()
   enqueue_quote (qp, '\0');
 }
 
-/* Called when a character is recived with a framing error. */
+/* Called when a character is received with a framing error. */
 void
 input_framing_error (int c)
 {

@@ -53,7 +53,7 @@
  * Revision 2.3  90/08/07  14:27:48  rpd
  * 	When we recycle the global reply port by giving it to the first
  * 	cthread, clear the global reply port.  This will take care of
- * 	someone accidently calling this twice.
+ * 	someone accidentally calling this twice.
  * 	[90/08/07            rwd]
  *
  * Revision 2.2  90/06/02  15:14:04  rpd

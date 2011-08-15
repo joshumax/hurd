@@ -92,7 +92,7 @@ masq_quake_in (struct ip_masq_app *mapp, struct ip_masq *ms, struct sk_buff **sk
 	iph = skb->nh.iph;
 	uh = (struct udphdr *)&(((char *)iph)[iph->ihl*4]);
 
-	/* Check for lenght */
+	/* Check for length */
 	if(ntohs(uh->len) < 5)
 	  return 0;
 	
@@ -178,7 +178,7 @@ masq_quake_out (struct ip_masq_app *mapp, struct ip_masq *ms, struct sk_buff **s
 	iph = skb->nh.iph;
 	uh = (struct udphdr *)&(((char *)iph)[iph->ihl*4]);
 
-	/* Check for lenght */
+	/* Check for length */
 	if(ntohs(uh->len) < 5)
 	  return 0;
 	

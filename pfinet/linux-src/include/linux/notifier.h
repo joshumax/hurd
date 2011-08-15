@@ -106,7 +106,7 @@ extern __inline__ int notifier_call_chain(struct notifier_block **n, unsigned lo
 #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
 
 /*
- *	Publically visible notifier objects
+ *	Publicly visible notifier objects
  */
  
 extern struct notifier_block *boot_notifier_list;

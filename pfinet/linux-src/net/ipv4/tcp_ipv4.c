@@ -1516,7 +1516,7 @@ struct sock * tcp_v4_syn_recv_sock(struct sock *sk, struct sk_buff *skb,
 #ifdef CONFIG_IP_TRANSPARENT_PROXY
 	/* The new socket created for transparent proxy may fall
 	 * into a non-existed bind bucket because sk->num != newsk->num.
-	 * Ensure existance of the bucket now. The placement of the check
+	 * Ensure existence of the bucket now. The placement of the check
 	 * later will require to destroy just created newsk in the case of fail.
 	 * 1998/04/22 Andrey V. Savochkin <saw@msu.ru>
 	 */

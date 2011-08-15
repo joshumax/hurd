@@ -32,17 +32,17 @@
    types of the arguments, so we treat a string as an 8-bit string
    which must not contain a binary null, and a number like an integer
    as an int.  Leading and trailing white space are removed, multiple
-   spaces that seperate arguments are replaced by a single white
+   spaces that separate arguments are replaced by a single white
    space, and empty lines are ignored.  */
 
 
 /* Possible error values returned by the BDF functions.  */
 typedef enum
 {
-  /* No error occured.  This is guaranteed to be zero.  */
+  /* No error occurred.  This is guaranteed to be zero.  */
   BDF_NO_ERROR = 0,
 
-  /* A system error occured.  The caller should consult errno.  */
+  /* A system error occurred.  The caller should consult errno.  */
   BDF_SYSTEM_ERROR,
 
   /* All following errors indicate that the file is not a valid BDF
@@ -200,7 +200,7 @@ typedef struct bdf_font *bdf_font_t;
 
 /* Read the font from stream FILE, and return it in FONT.  If
    LINECOUNT is not zero, it will contain the number of lines in the
-   file at success, and the current line an error occured at
+   file at success, and the current line an error occurred at
    failure.  */
 bdf_error_t bdf_read (FILE *file, bdf_font_t *font, int *linecount);
 

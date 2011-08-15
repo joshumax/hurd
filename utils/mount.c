@@ -48,7 +48,7 @@ static const struct argp_option argp_opts[] =
   {"timeout",	'T',	"MILLISECONDS",	0, "Timeout for translator startup"},
   {"format",	'p',	"mount|fstab|translator", OPTION_ARG_OPTIONAL,
    "Output format for query (no filesystem arguments)"},
-  {"options", 'o', "OPTIONS", 0, "A `,' seperated list of options"},
+  {"options", 'o', "OPTIONS", 0, "A `,' separated list of options"},
   {"readonly", 'r', 0, 0, "Never write to disk or allow opens for writing"},
   {"writable", 'w', 0, 0, "Use normal read/write behavior"},
   {"update", 'u', 0, 0, "Flush any meta-data cached in core"},

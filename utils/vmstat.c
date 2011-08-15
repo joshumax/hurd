@@ -456,7 +456,7 @@ main (int argc, char **argv)
       if (field->standard)
 	output_fields |= (1 << (field - fields));
 
-  /* Returns an appropiate SIZE_UNITS for printing FIELD.  */
+  /* Returns an appropriate SIZE_UNITS for printing FIELD.  */
 #define SIZE_UNITS(field)						      \
   (size_units >= 0							      \
    ? size_units								      \

@@ -31,7 +31,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 			     error_t (*fun)(void *))
 {
   /* This is obscenely ineffecient.  ihash and ports need to cooperate
-     more closely to do it effeciently. */
+     more closely to do it efficiently. */
   struct item
     {
       struct item *next;

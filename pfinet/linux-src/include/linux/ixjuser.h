@@ -31,7 +31,7 @@ static char ixjuser_h_rcsid[] = "$Id: ixjuser.h,v 3.4 1999/12/16 22:18:36 root E
 /***************************************************************************
 
   If you use the IXJCTL_TESTRAM command, the card must be power
-  cycled to reset the SRAM values before futher use.
+  cycled to reset the SRAM values before further use.
 
 ***************************************************************************/
 #define IXJCTL_DSP_RESET 		_IO  ('q', 0xC0)
@@ -332,7 +332,7 @@ typedef struct {
 * This group of IOCTLs deal with the Acoustic Echo Cancellation settings
 * of the DSP
 *
-* Issueing the IXJCTL_AEC_START command with a value of AEC_OFF has the
+* Issuing the IXJCTL_AEC_START command with a value of AEC_OFF has the
 * same effect as IXJCTL_AEC_STOP.  This is to simplify slider bar
 * controls.  IXJCTL_AEC_GET_LEVEL returns the current setting of the AEC.
 ******************************************************************************/

@@ -62,7 +62,7 @@
  * void	(*set_termios)(struct tty_struct *tty, struct termios * old);
  *
  * 	This function notifies the line discpline that a change has
- * 	been made to the termios stucture.
+ * 	been made to the termios structure.
  * 
  * int	(*poll)(struct tty_struct * tty, struct file * file,
  * 		  poll_table *wait);

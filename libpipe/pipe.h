@@ -98,7 +98,7 @@ struct pipe
      PACKET_TYPE_CONTROL.  Each data packet represents one datagram for
      protocols that maintain record boundaries.  Control packets always
      represent the control information to be returned from one read
-     operation, and will be returned in conjuction with the following data
+     operation, and will be returned in conjunction with the following data
      packet (if any).  Reads interested only in data just skip control
      packets until they find a data packet.  */
   struct pq *queue;
@@ -139,7 +139,7 @@ pipe_is_readable (struct pipe *pipe, int data_only)
   return (packet != NULL);
 }
 
-/* Waits for PIPE to be readable, or an error to occurr.  If NOBLOCK is true,
+/* Waits for PIPE to be readable, or an error to occur.  If NOBLOCK is true,
    this operation will return EWOULDBLOCK instead of blocking when no data is
    immediately available.  If DATA_ONLY is true, then `control' packets are
    ignored.  */
@@ -156,7 +156,7 @@ pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
   return 0;
 }
 
-/* Waits for PIPE to be readable, or an error to occurr.  This call only
+/* Waits for PIPE to be readable, or an error to occur.  This call only
    returns once threads waiting using pipe_wait_readable have been woken and
    given a chance to read, and if there is still data available thereafter.
    If DATA_ONLY is true, then `control' packets are ignored.  */

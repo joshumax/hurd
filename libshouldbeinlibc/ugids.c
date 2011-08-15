@@ -49,7 +49,7 @@ ugids_add_gid (struct ugids *ugids, gid_t gid, int avail)
   error_t err =
     idvec_add_new (avail ? &ugids->avail_gids : &ugids->eff_gids, gid);
   if (! err)
-    /* Since this gid is now explicit, remove it from the appropiate implied
+    /* Since this gid is now explicit, remove it from the appropriate implied
        set. */
     idvec_remove (avail ? &ugids->imp_avail_gids : &ugids->imp_eff_gids,
 		  0, gid);
@@ -70,7 +70,7 @@ ugids_add_user (struct ugids *ugids, uid_t uid, int avail)
   idvec_merge_implied_gids (&imp_gids, &uids);
 
   /* Now remove any gids we already know about from IMP_GIDS.  For gids
-     that weren't in the appropiate implied set before, this will
+     that weren't in the appropriate implied set before, this will
      ensure that they remain out after we merge IMP_GIDS into it, and
      ones that *were*, they will remain so.  */
   idvec_subtract (&imp_gids, gids);

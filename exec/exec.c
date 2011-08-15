@@ -1061,7 +1061,7 @@ load (task_t usertask, struct execdata *e)
 	    if (e->info.elf.phdr[i].p_type == PT_LOAD)
 	      load_section (&e->info.elf.phdr[i], e);
 
-	  /* The entry point address is relative to whereever we loaded the
+	  /* The entry point address is relative to wherever we loaded the
 	     program text.  */
 	  e->entry += e->info.elf.loadbase;
 	}

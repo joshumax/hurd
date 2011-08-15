@@ -146,7 +146,7 @@
  * The "flags" member indicate if the ESSID is active or not (promiscuous).
  */
 
-/* Other parameters usefull in 802.11 and some other devices */
+/* Other parameters useful in 802.11 and some other devices */
 #define SIOCSIWRATE	0x8B20		/* set default bit rate (bps) */
 #define SIOCGIWRATE	0x8B21		/* get default bit rate (bps) */
 #define SIOCSIWRTS	0x8B22		/* set RTS/CTS threshold (bytes) */

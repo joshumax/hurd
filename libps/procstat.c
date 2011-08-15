@@ -288,7 +288,7 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
     flags |= PSTAT_PROC_INFO;
   if (flags & PSTAT_SUSPEND_COUNT)
     /* We just request the resources require for both the thread and task
-       versions, as the extraneous info won't be possible to aquire anyway. */
+       versions, as the extraneous info won't be possible to acquire anyway. */
     flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK)
       && !(flags & PSTAT_NO_MSGPORT))
@@ -774,7 +774,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   /* Returns true if (1) FLAGS is in NEED, and (2) the appropriate
      preconditions PRECOND are available; if only (1) is true, FLAG is added
-     to the INAPP set if appropiate (to distinguish it from an error), and
+     to the INAPP set if appropriate (to distinguish it from an error), and
      returns false.  */
 #define NEED(flag, precond)						      \
   ({									      \
@@ -1090,7 +1090,7 @@ _proc_stat_create (pid_t pid, struct ps_context *context, struct proc_stat **ps)
    resulting proc_stat isn't fully functional -- most flags can't be set in
    it.  It also contains a pointer to PS, so PS shouldn't be freed without
    also freeing THREAD_PS.  If N was out of range, EINVAL is returned.  If a
-   memory allocation error occured, ENOMEM is returned.  Otherwise, 0 is
+   memory allocation error occurred, ENOMEM is returned.  Otherwise, 0 is
    returned.  */
 error_t
 proc_stat_thread_create (struct proc_stat *ps, unsigned index, struct proc_stat **thread_ps)

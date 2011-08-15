@@ -36,7 +36,7 @@
    any passive translators.  If a node with an unstarted passive translator
    is encountered, ENXIO is returned in ERRNO; other errors are as for
    file_name_lookup.  Note that checking for an active translator currently
-   requires fetching the control port, which is a priveleged operation.  */
+   requires fetching the control port, which is a privileged operation.  */
 file_t
 file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 {

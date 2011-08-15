@@ -106,7 +106,7 @@ cacheq_set_length (struct cacheq *cq, int length)
 	      th->next = next_th;
 	    }
 
-	  /* Call user hooks as appropiate.  */
+	  /* Call user hooks as appropriate.  */
 	  if (fh && th)
 	    {
 	      if (cq->move_entry)

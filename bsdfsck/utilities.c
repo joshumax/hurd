@@ -520,7 +520,7 @@ errexit(s1, s2, s3, s4)
 }
 
 /*
- * An unexpected inconsistency occured.
+ * An unexpected inconsistency occurred.
  * Die if preening, otherwise just print message and continue.
  */
 /* VARARGS1 */

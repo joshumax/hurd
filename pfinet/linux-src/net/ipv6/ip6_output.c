@@ -481,7 +481,7 @@ int ip6_build_xmit(struct sock *sk, inet_getfrag_t getfrag, const void *data,
 		if (err) {
 #if IP6_DEBUG >= 2
 			printk(KERN_DEBUG "ip6_build_xmit: "
-			       "no availiable source address\n");
+			       "no available source address\n");
 #endif
 			goto out;
 		}

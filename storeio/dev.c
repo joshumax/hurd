@@ -226,7 +226,7 @@ dev_sync(struct dev *dev, int wait)
 }
 
 /* Takes care of buffering I/O to/from DEV for a transfer at position OFFS,
-   length LEN; the amount of I/O sucessfully done is returned in AMOUNT.
+   length LEN; the amount of I/O successfully done is returned in AMOUNT.
    BUF_RW is called to do I/O that's entirely inside DEV's internal buffer,
    and RAW_RW to do I/O directly to DEV's store.  */
 static inline error_t
@@ -312,8 +312,8 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
     /* Some non-aligned I/O has been done, or is needed, so we need to deal
        with DEV's buffer, which means getting an exclusive lock.  */
     {
-      /* Aquire a writer lock instead of a reader lock.  Note that other
-	 writers may have aquired the lock by the time we get it.  */
+      /* Acquire a writer lock instead of a reader lock.  Note that other
+	 writers may have acquired the lock by the time we get it.  */
       rwlock_reader_unlock (&dev->io_lock);
       err = buffered_rw (dev, offs, len, amount, buf_rw, raw_rw);
     }

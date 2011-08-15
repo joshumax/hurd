@@ -103,7 +103,7 @@ store_decode_children (struct store_enc *enc, int num_children,
   return err;
 }
 
-/* Set FLAGS in all children of STORE, and if successfull, add FLAGS to
+/* Set FLAGS in all children of STORE, and if successful, add FLAGS to
    STORE's flags.  */
 error_t
 store_set_child_flags (struct store *store, int flags)
@@ -127,7 +127,7 @@ store_set_child_flags (struct store *store, int flags)
   return err;
 }
 
-/* Clear FLAGS in all children of STORE, and if successfull, remove FLAGS from
+/* Clear FLAGS in all children of STORE, and if successful, remove FLAGS from
    STORE's flags.  */
 error_t
 store_clear_child_flags (struct store *store, int flags)

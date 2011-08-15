@@ -1759,7 +1759,7 @@ new reference port.  (FIXME: xref the C library manual for information
 on how to send sig_post messages.)
 
 The server then sends one @code{SIGIO} signal to each registered async
-user everytime I/O becomes possible.  I/O is possible if at least one
+user every time I/O becomes possible.  I/O is possible if at least one
 byte can be read or written immediately.  The definition of
 ``immediately'' must be the same as for the implementation of the
 @code{O_NONBLOCK} flag (@pxref{Open Modes}).  In addition, every time a

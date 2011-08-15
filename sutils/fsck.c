@@ -41,7 +41,7 @@
 
    Although it knows something about the hurd, this fsck still uses
    /etc/fstab, and is generally not very integrated.  That will have to wait
-   until the appropiate mechanisms for doing so are decided.  */
+   until the appropriate mechanisms for doing so are decided.  */
 
 #include <stdlib.h>
 #include <string.h>

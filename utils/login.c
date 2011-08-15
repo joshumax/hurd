@@ -663,7 +663,7 @@ main(int argc, char *argv[])
       if (ugids.eff_uids.num + ugids.avail_uids.num == 0)
 	/* We're transiting from having some uids to having none, which means
 	   this is probably a new login session.  Unless specified otherwise,
-	   set a timer to kill this session if it hasn't aquired any ids by
+	   set a timer to kill this session if it hasn't acquired any ids by
 	   then.  Note that we fork off the timer process before clearing the
 	   process owner: because we're interested in killing unowned
 	   processes, proc's in-same-login-session rule should apply to us

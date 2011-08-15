@@ -454,7 +454,7 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
 	  mutex_unlock (&display->lock);
 	  return 0;
 	}
-      /* The message was succesfully queued, fall through.  */
+      /* The message was successfully queued, fall through.  */
     }
   /* Remove request from pending queue.  */
   *preq = req->next;

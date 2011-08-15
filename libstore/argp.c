@@ -365,7 +365,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_ERROR:
-      /* Parsing error occured, free everything. */
+      /* Parsing error occurred, free everything. */
       store_parsed_free (parsed); break;
 
     case ARGP_KEY_SUCCESS:

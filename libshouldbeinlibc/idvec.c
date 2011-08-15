@@ -202,7 +202,7 @@ idvec_merge (struct idvec *idvec, const struct idvec *new)
   return idvec_merge_ids (idvec, new->ids, new->num);
 }
 
-/* Remove any occurances of ID in IDVEC after position POS.
+/* Remove any occurrences of ID in IDVEC after position POS.
    Returns true if anything was done.  */
 int
 idvec_remove (struct idvec *idvec, unsigned pos, uid_t id)

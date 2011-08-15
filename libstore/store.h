@@ -262,11 +262,11 @@ error_t store_set_flags (struct store *store, int flags);
 /* Remove FLAGS from STORE's currently set flags.  */
 error_t store_clear_flags (struct store *store, int flags);
 
-/* Set FLAGS in all children of STORE, and if successfull, add FLAGS to
+/* Set FLAGS in all children of STORE, and if successful, add FLAGS to
    STORE's flags.  */
 error_t store_set_child_flags (struct store *store, int flags);
 
-/* Clear FLAGS in all children of STORE, and if successfull, remove FLAGS from
+/* Clear FLAGS in all children of STORE, and if successful, remove FLAGS from
    STORE's flags.  */
 error_t store_clear_child_flags (struct store *store, int flags);
 

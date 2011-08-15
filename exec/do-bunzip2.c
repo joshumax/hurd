@@ -150,7 +150,7 @@ bz2_fclose (void *stream)
       with *all* the algorithms contained herein, and with the
       consequences of modifying them, you should NOT meddle with the
       compression or decompression machinery.  Incorrect changes can
-      and very likely *will* lead to disasterous loss of data.
+      and very likely *will* lead to disastrous loss of data.
 
    DISCLAIMER:
       I TAKE NO RESPONSIBILITY FOR ANY LOSS OF DATA ARISING FROM THE

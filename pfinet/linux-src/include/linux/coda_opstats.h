@@ -85,7 +85,7 @@ struct cfs_op_stats {
 
 
 /*
- * With each call to the minicache, we'll bump the counters whenver
+ * With each call to the minicache, we'll bump the counters whenever
  * a call is satisfied internally (through the cache or through a
  * redirect), and whenever an operation is caused internally.
  * Then, we can add the total operations caught by the minicache

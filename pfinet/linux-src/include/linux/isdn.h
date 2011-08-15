@@ -23,7 +23,7 @@
  * $Log: isdn.h,v $
  * Revision 1.81  1999/10/27 21:21:18  detabc
  * Added support for building logically-bind-group's per interface.
- * usefull for outgoing call's with more then one isdn-card.
+ * useful for outgoing call's with more then one isdn-card.
  *
  * Switchable support to dont reset the hangup-timeout for
  * receive frames. Most part's of the timru-rules for receiving frames
@@ -192,7 +192,7 @@
  * Added changes for recent 2.1.x kernels:
  *   changed return type of isdn_close
  *   queue_task_* -> queue_task
- *   clear/set_bit -> test_and_... where apropriate.
+ *   clear/set_bit -> test_and_... where appropriate.
  *   changed type of hard_header_cache parameter.
  *
  * Revision 1.28  1997/03/07 01:33:01  fritz

@@ -23,7 +23,7 @@
 
 /* Check to see whether USER is allowed to modify DIR with respect to
    existing file ST.  (If there is no existing file, pass 0 for ST.)
-   If the access is permissable return 0; otherwise return an
+   If the access is permissible return 0; otherwise return an
    appropriate error code.  */
 error_t
 fshelp_checkdirmod (struct stat *dir, struct stat *st, struct iouser *user)

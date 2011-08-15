@@ -476,7 +476,7 @@ choose_partition(size, cur_part)
 	mutex_lock(&all_partitions.lock);
 	for (i = 0; i < all_partitions.n_partitions; i++) {
 
-		/* the undesireable one ? */
+		/* the undesirable one ? */
 		if (i == cur_part)
 			continue;
 

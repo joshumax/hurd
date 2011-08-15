@@ -309,7 +309,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
       if (dest_sock)
 	/* Grab the destination socket's read pipe directly, and stuff data
 	   into it.  This is not quite the usage sock_acquire_read_pipe was
-	   intended for, but it will work, as the only inappropiate errors
+	   intended for, but it will work, as the only inappropriate errors
 	   occur on a broken pipe, which shouldn't be possible with the sort of
 	   sockets with which we can use socket_send...  XXXX */
 	err = sock_acquire_read_pipe (dest_sock, &pipe);

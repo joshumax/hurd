@@ -239,7 +239,7 @@ struct ip_chain
 	ip_chainlabel label;	    /* Defines the label for each block */
  	struct ip_chain *next;	    /* Pointer to next block */
 	struct ip_fwkernel *chain;  /* Pointer to first rule in block */
-	__u32 refcount; 	    /* Number of refernces to block */
+	__u32 refcount; 	    /* Number of references to block */
 	int policy;		    /* Default rule for chain.  Only *
 				     * used in built in chains */
 	struct ip_reent reent[0];   /* Actually several of these */

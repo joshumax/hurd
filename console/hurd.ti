@@ -116,7 +116,7 @@ hurd|The GNU Hurd console server,
 	kpp=\E[5~, knp=\E[6~,
 # Keycode for center of keypad area.
 	kb2=\E[G,
-# Mouse event has occured.
+# Mouse event has occurred.
 	kmous=\E[M,
 
 # Text attribute capabilities.

@@ -187,7 +187,7 @@ int netdev_nit=0;
  *
  *	BEWARE!!! Protocol handlers, mangling input packets,
  *	MUST BE last in hash buckets and checking protocol handlers
- *	MUST start from promiscous ptype_all chain in net_bh.
+ *	MUST start from promiscuous ptype_all chain in net_bh.
  *	It is true now, do not change it.
  *	Explantion follows: if protocol handler, mangling packet, will
  *	be the first on list, it is not able to sense, that packet

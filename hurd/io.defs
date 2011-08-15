@@ -101,7 +101,7 @@ routine io_clear_some_openmodes (
    when appropriate, to the designated port using sig_post.  A
    port is also returned which will be used as the reference port in
    sending such signals (this is the "async IO ID" port).  The async
-   call is cancelled by deleting all refernces to the async_id_port.
+   call is cancelled by deleting all references to the async_id_port.
    Each call to io_async generates a new ASYNC_ID_PORT.
    */
 routine io_async (

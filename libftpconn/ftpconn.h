@@ -91,7 +91,7 @@ struct ftp_conn_syshooks
 			     ftp_conn_add_stat_fun_t add_stat, void *hook);
 
   /* Give a name which refers to a directory file, and a name in that
-     directory, this should return in COMPOSITE the composite name refering
+     directory, this should return in COMPOSITE the composite name referring
      to that name in that directory, in malloced storage.  */
   error_t (*append_name) (struct ftp_conn *conn,
 			  const char *dir, const char *name,
@@ -371,7 +371,7 @@ error_t ftp_conn_get_names (struct ftp_conn *conn, const char *name,
 			    ftp_conn_add_name_fun_t add_name, void *hook);
 
 /* Give a name which refers to a directory file, and a name in that
-   directory, this should return in COMPOSITE the composite name refering to
+   directory, this should return in COMPOSITE the composite name referring to
    that name in that directory, in malloced storage.  */
 error_t ftp_conn_append_name (struct ftp_conn *conn,
 			      const char *dir, const char *name,

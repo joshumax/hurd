@@ -583,7 +583,7 @@ gnumach_v1_input_next ()
       error_t err = device_read_inband (kbd_dev, 0, -1, sizeof (kd_event),
 					(void *) &data_buf, &data_cnt);
 
-      /* XXX The error occured likely because KBD_DEV was closed, so
+      /* XXX The error occurred likely because KBD_DEV was closed, so
 	 terminate.  */
       if (err)
 	return 0;
@@ -661,7 +661,7 @@ input_next ()
       error_t err = device_read_inband (kbd_dev, 0, -1, 1,
 					(void *) &next, &data_cnt);
 
-      /* XXX The error occured likely because KBD_DEV was closed, so
+      /* XXX The error occurred likely because KBD_DEV was closed, so
 	 terminate.  */
       if (err)
 	return 0;
@@ -761,7 +761,7 @@ input_loop (any_t unused)
 	      /* The virtual console to switch to.  */
 	      int vc = 0;
 	      
-	      /* Check if a funtion key was pressed. 
+	      /* Check if a function key was pressed.
 		 Choose the virtual console corresponding to that key.  */
 	      switch (sc)
 		{

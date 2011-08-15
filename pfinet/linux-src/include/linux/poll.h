@@ -51,7 +51,7 @@ extern inline void poll_wait(struct file * filp, struct wait_queue ** wait_addre
 typedef unsigned long kernel_fd_set[KFDS_NR/__NFDBITS];
 
 /*
- * Scaleable version of the fd_set.
+ * Scalable version of the fd_set.
  */
 
 typedef struct {

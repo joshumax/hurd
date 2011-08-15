@@ -69,7 +69,7 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 	    }
 	  else
 	    {
-	      /* No need to check cancel threshhold here, because
+	      /* No need to check cancel threshold here, because
 		 in a single threaded server the cancel is always
 		 handled in order. */
 	      status = demuxer (inp, outheadp);

@@ -365,7 +365,7 @@ void ipip_err(struct sk_buff *skb, unsigned char *dp, int len)
 			/* Impossible event. */
 			return;
 		case ICMP_FRAG_NEEDED:
-			/* And it is the only really necesary thing :-) */
+			/* And it is the only really necessary thing :-) */
 			rel_info = ntohs(skb->h.icmph->un.frag.mtu);
 			if (rel_info < hlen+68)
 				return;

@@ -131,7 +131,7 @@ int idvec_subtract (struct idvec *idvec, const struct idvec *sub);
    anything was changed. */
 int idvec_keep (struct idvec *idvec, const struct idvec *keep);
 
-/* Remove any occurances of ID in IDVEC after position POS>  Returns true if
+/* Remove any occurrences of ID in IDVEC after position POS>  Returns true if
    anything was done.  */
 int idvec_remove (struct idvec *idvec, unsigned pos, uid_t id);
 

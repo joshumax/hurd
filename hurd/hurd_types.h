@@ -201,7 +201,7 @@ enum term_bottom_type
     remap  - 	     TY, FL, NR      	     NR * (OFFS, LEN)  -	 1
       (BS and SIZE are that of the child)
     copy   -         TY, FL, SIZE	     -		       DATA	 -
-      (DATA is preceeded by padding to the next page boundary, and is
+      (DATA is preceded by padding to the next page boundary, and is
        SIZE bytes long itself)
 
   For ileave, concat, and layer, the children are encoded following the parent.

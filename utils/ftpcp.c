@@ -240,7 +240,7 @@ efinish (struct epoint *e)
 }
 
 /* Give a name which refers to a directory file, and a name in that
-   directory, this should return in COMPOSITE the composite name refering to
+   directory, this should return in COMPOSITE the composite name referring to
    that name in that directory, in malloced storage.  */
 error_t
 eappend (struct epoint *e,

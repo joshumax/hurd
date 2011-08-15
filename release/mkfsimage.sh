@@ -75,7 +75,7 @@ while :; do
       --help                 Display this help and exit
       --version              Output version information and exit
 
-If multiple SRCs are specified, then each occurance of --files pertains only to
+If multiple SRCs are specified, then each occurrence of --files pertains only to
 the corresponding SRC.
 
 Each FILE named in a --copy-rules option contains lines of the form:
@@ -83,8 +83,8 @@ Each FILE named in a --copy-rules option contains lines of the form:
   [gzip] [rename TARGET] COPY-OP NAME
 
 and says to copy NAME from the source tree to the destination, using the
-method specified by COPY-OP.  A preceeding "\`"rename TARGET"\'" says to give
-NAME a different name in the target tree, and a preceeding "\`"gzip"\'" says
+method specified by COPY-OP.  A preceding "\`"rename TARGET"\'" says to give
+NAME a different name in the target tree, and a preceding "\`"gzip"\'" says
 to compress the result (appending .gz to the name).  COPY-OP may be one of the
 following:
 

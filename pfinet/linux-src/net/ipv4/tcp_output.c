@@ -257,7 +257,7 @@ static int tcp_fragment(struct sock *sk, struct sk_buff *skb, u32 len)
    for TCP options, but includes only bare TCP header.
 
    tp->mss_clamp is mss negotiated at connection setup.
-   It is minumum of user_mss and mss received with SYN.
+   It is minimum of user_mss and mss received with SYN.
    It also does not include TCP options.
 
    tp->pmtu_cookie is last pmtu, seen by this function.

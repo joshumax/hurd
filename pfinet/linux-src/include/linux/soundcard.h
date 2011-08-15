@@ -1204,7 +1204,7 @@ extern int OSS_write_patch2(int fd, unsigned char *buf, int len);
 #define SEQ_PANNING(dev, voice, pos) SEQ_CONTROL(dev, voice, CTL_PAN, (pos+128) / 2)
 
 /*
- * Timing and syncronization macros
+ * Timing and synchronization macros
  */
 
 #define _TIMER_EVENT(ev, parm)		{_SEQ_NEEDBUF(8);\

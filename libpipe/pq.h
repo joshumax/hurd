@@ -219,8 +219,8 @@ pq_tail (struct pq *pq, unsigned type, void *source)
 int pq_dequeue (struct pq *pq);
 
 /* Returns the next available packet in PQ, without removing it from the
-   queue, or NULL if there is none, or the next packet isn't appropiate.  
-   A packet is inappropiate if SOURCE is non-NULL its source field doesn't
+   queue, or NULL if there is none, or the next packet isn't appropriate.
+   A packet is inappropriate if SOURCE is non-NULL its source field doesn't
    match it, or TYPE is non-NULL and the packet's type field doesn't match
    it.  */
 PQ_EI struct packet *

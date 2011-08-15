@@ -567,15 +567,15 @@ int icmpv6_rcv(struct sk_buff *skb, unsigned long len)
 
 	default:
 		if (net_ratelimit())
-			printk(KERN_DEBUG "icmpv6: msg of unkown type\n");
+			printk(KERN_DEBUG "icmpv6: msg of unknown type\n");
 		
 		/* informational */
 		if (type & 0x80)
 			break;
 
-		/* 
-		 * error of unkown type. 
-		 * must pass to upper level 
+		/*
+		 * error of unknown type.
+		 * must pass to upper level
 		 */
 
 		icmpv6_notify(skb, type, hdr->icmp6_code, hdr->icmp6_mtu,
