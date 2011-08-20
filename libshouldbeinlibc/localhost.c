@@ -44,6 +44,8 @@ localhost ()
 	  new = realloc (buf, buf_len);
 	  if (! new)
 	    {
+	      free (buf);
+	      buf = 0;
 	      errno = ENOMEM;
 	      return 0;
 	    }
