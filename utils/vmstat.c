@@ -111,7 +111,7 @@ print_val (val_t val, enum val_type type,
       float fval = val;
       char *units = " KMGT", *u = units;
 
-      while (fval > 1024)
+      while (fval >= 10000)
 	{
 	  fval /= 1024;
 	  u++;
