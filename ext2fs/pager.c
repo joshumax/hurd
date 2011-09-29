@@ -851,7 +851,10 @@ drop_pager_softrefs (struct node *node)
   spin_unlock (&node_to_page_lock);
 
   if (MAY_CACHE && pager)
-    pager_change_attributes (pager, 0, MEMORY_OBJECT_COPY_DELAY, 0);
+    {
+      pager_sync (pager, 0);
+      pager_change_attributes (pager, 0, MEMORY_OBJECT_COPY_DELAY, 0);
+    }
   if (pager)
     ports_port_deref (pager);
 }
