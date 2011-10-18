@@ -86,7 +86,7 @@ run (char **argv, int fd0, int fd1)
   file = file_name_lookup (program, O_EXEC, 0);
   if (file == MACH_PORT_NULL)
     {
-      error (0, errno, program);
+      error (0, errno, "%s", program);
       return -1;
     }
   else

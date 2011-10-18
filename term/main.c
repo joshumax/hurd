@@ -405,7 +405,7 @@ main (int argc, char **argv)
 	}
 
       if (err)
-	  error (1, err, peer_name);
+	  error (1, err, "%s", peer_name);
 
       (*peercntl)->hook = peer_name;
       ports_port_deref (*peercntl);

@@ -270,7 +270,7 @@ retch (char *reason)
 static void
 punt (char *msg)
 {
-  problem (0, msg);
+  problem (0, "%s", msg);
   flush_problems ();
   exit (8);
 }

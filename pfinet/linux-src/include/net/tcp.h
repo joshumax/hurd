@@ -1066,7 +1066,7 @@ static inline void tcp_clear_xmit_timer(struct sock *sk, int what)
 		timer = &tp->probe_timer;
 		break;	
 	default:
-		printk(timer_bug_msg);
+		printk("%s", timer_bug_msg);
 		return;
 	};
 	if(timer->prev != NULL)
@@ -1088,7 +1088,7 @@ static inline int tcp_timer_is_set(struct sock *sk, int what)
 		return tp->probe_timer.prev != NULL;
 		break;	
 	default:
-		printk(timer_bug_msg);
+		printk("%s", timer_bug_msg);
 	};
 	return 0;
 }

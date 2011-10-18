@@ -199,7 +199,7 @@ mount_root (char *name, char *host)
   err = conduct_rpc (&rpcbuf, &p);
   if (err)
     {
-      error (0, err, name);
+      error (0, err, "%s", name);
       goto error_with_rpcbuf;
     }
   /* XXX Protocol spec says this should be a "unix error code"; we'll
@@ -209,7 +209,7 @@ mount_root (char *name, char *host)
   p++;
   if (err)
     {
-      error (0, err, name);
+      error (0, err, "%s", name);
       goto error_with_rpcbuf;
     }
 

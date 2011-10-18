@@ -415,7 +415,7 @@ pfinet_bind (int portclass, const char *name)
     }
   
   if (err)
-    error (1, err, name);
+    error (1, err, "%s", name);
 
   ports_port_deref (cntl);
 
