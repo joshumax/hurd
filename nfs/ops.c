@@ -1,5 +1,5 @@
 /* ops.c - Libnetfs callbacks for node operations in NFS client.
-   Copyright (C) 1994,95,96,97,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,99,2002,2011 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -1880,17 +1880,6 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
   return 0;
 }
 
-
-/* Implement the netfs_set_translator callback as described in
-   <hurd/netfs.h>.  */
-error_t
-netfs_set_translator (struct iouser *cred,
-		      struct node *np,
-		      char *argz,
-		      size_t argzlen)
-{
-  return EOPNOTSUPP;
-}
 
 /* Implement the netfs_attempt_mksymlink callback as described in
    <hurd/netfs.h>.  */
