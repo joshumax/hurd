@@ -273,6 +273,15 @@ $(libdir)/$(libname).so: $(libdir)/$(libname).so.$(hurd-version)
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
 
+# Arrange to have the shared libraries available locally in one single
+# directory.  This is not used by the build system itself, but is just for easy
+# testing.
+local-libdir = lib
+../$(local-libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
+	@test -d $(@D)/ || $(MKINSTALLDIRS) $(@D)
+	ln -sf ../$(dir)/$< $@
+libs: ../$(local-libdir)/$(libname).so.$(hurd-version)
+
 endif
 
 # Provide default.
