@@ -150,6 +150,11 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       else
 	{
 	  spin_lock (&lock);
+	  if (nreqthreads == 1)
+	    {
+	      spin_unlock (&lock);
+	      goto startover;
+	    }
 	  nreqthreads--;
 	  totalthreads--;
 	  spin_unlock (&lock);
