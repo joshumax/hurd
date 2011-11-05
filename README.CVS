@@ -17,6 +17,13 @@ GNU Mach	at least 1.3
 GNU C library	CVS from 2004-03-09 or later
 GNU C compiler	at least 3.3.2
 
+Optionally, a Sun RPC implementation is needed to build the NFS
+translator and daemon:
+
+GNU C library   at most 2.13
+TI-RPC          (currently fails to build on GNU, see
+                 <http://lists.debian.org/debian-hurd/2010/12/msg00007.html>.)
+
 Obviously, you also need somewhat recent versions of binutils, make,
 bash and some other tools.  No hard requirements are currently known
 for these, though.

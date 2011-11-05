@@ -230,6 +230,11 @@ AC_MSG_RESULT($boot_store_types)
 # Check for ncursesw, which is needed for the console-curses client.
 hurd_LIB_NCURSESW
 
+# Check for Sun RPC headers and library.
+AC_CHECK_HEADER([rpc/types.h], [HAVE_SUN_RPC=yes], [HAVE_SUN_RPC=no])
+AC_SEARCH_LIBS([clnt_create], [], [:], [HAVE_SUN_RPC=no])
+AC_SUBST([HAVE_SUN_RPC])
+
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.
   makefiles=
