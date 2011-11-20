@@ -2514,30 +2514,11 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%
 	pager_port_unlock(ds);
 
 	/*
-	 *	Now we deallocate our various port rights.
+	 *	Now we destroy our port rights.
 	 */
 
-	kr = mach_port_get_refs(default_pager_self, pager_request,
-				MACH_PORT_RIGHT_SEND, &request_refs);
-	kr = mach_port_mod_refs(default_pager_self, pager_request,
-				MACH_PORT_RIGHT_SEND, -request_refs);
-	if (kr != KERN_SUCCESS)
-	    panic(here,my_name);
-
-	kr = mach_port_mod_refs(default_pager_self, pager_request,
-				MACH_PORT_RIGHT_RECEIVE, -1);
-	if (kr != KERN_SUCCESS)
-	    panic(here,my_name);
-
-	kr = mach_port_mod_refs(default_pager_self, pager_name,
-				MACH_PORT_RIGHT_SEND, -name_refs);
-	if (kr != KERN_SUCCESS)
-	    panic(here,my_name);
-
-	kr = mach_port_mod_refs(default_pager_self, pager_name,
-				MACH_PORT_RIGHT_RECEIVE, -1);
-	if (kr != KERN_SUCCESS)
-	    panic(here,my_name);
+	mach_port_destroy(mach_task_self(), pager_request);
+	mach_port_destroy(mach_task_self(), pager_name);
 
 	return (KERN_SUCCESS);
 }
