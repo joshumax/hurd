@@ -91,6 +91,5 @@ routine default_pager_paging_storage(
    will fail.  */
 routine default_pager_object_set_size(
 		memory_object		: mach_port_t;
-     sreplyport reply_port		: mach_port_send_once_t;
        msgseqno seqno			: mach_port_seqno_t;
 		object_size_limit	: vm_size_t);

@@ -107,7 +107,6 @@ S_default_pager_paging_storage (mach_port_t default_pager,
 
 kern_return_t
 S_default_pager_object_set_size (mach_port_t memory_object,
-				 mach_port_t reply_port,
 				 mach_port_seqno_t seqno,
 				 vm_size_t object_size_limit)
 {

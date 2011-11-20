@@ -2500,6 +2500,8 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 
 	pager_port_wait_for_refs(ds);
 
+	if (ds->external)
+		pager_request = ds->pager_request;
 	ds->pager_request = MACH_PORT_NULL;
 	request_refs = ds->request_refs;
 	ds->request_refs = 0;
@@ -2515,6 +2517,8 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%
 	 *	Now we deallocate our various port rights.
 	 */
 
+	kr = mach_port_get_refs(default_pager_self, pager_request,
+				MACH_PORT_RIGHT_SEND, &request_refs);
 	kr = mach_port_mod_refs(default_pager_self, pager_request,
 				MACH_PORT_RIGHT_SEND, -request_refs);
 	if (kr != KERN_SUCCESS)
@@ -3724,7 +3728,6 @@ S_default_pager_object_pages (mach_port_t pager,
 
 kern_return_t
 S_default_pager_object_set_size (mach_port_t pager,
-				 mach_port_t reply_to,
 				 mach_port_seqno_t seqno,
 				 vm_size_t limit)
 {
@@ -3736,7 +3739,7 @@ S_default_pager_object_set_size (mach_port_t pager,
     return KERN_INVALID_ARGUMENT;
 
   pager_port_lock(ds, seqno);
-  pager_port_check_request(ds, reply_to);
+  pager_port_check_request(ds, ds->pager_request);
   pager_port_wait_for_readers(ds);
   pager_port_wait_for_writers(ds);
 
@@ -3760,7 +3763,7 @@ S_default_pager_object_set_size (mach_port_t pager,
 				       VM_PROT_ALL, ds->pager);
       if (kr != KERN_SUCCESS)
 	panic ("memory_object_lock_request: %d", kr);
-      ds->lock_request = reply_to;
+      ds->lock_request = ds->pager_request;
       kr = MIG_NO_REPLY;
     }
   else
