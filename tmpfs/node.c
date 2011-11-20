@@ -332,6 +332,7 @@ static error_t
 create_symlink_hook (struct node *np, const char *target)
 {
   assert (np->dn->u.lnk == 0);
+  np->dn_stat.st_size = strlen (target);
   if (np->dn_stat.st_size > 0)
     {
       const size_t size = np->dn_stat.st_size + 1;
@@ -339,6 +340,7 @@ create_symlink_hook (struct node *np, const char *target)
       if (np->dn->u.lnk == 0)
 	return ENOSPC;
       memcpy (np->dn->u.lnk, target, size);
+      np->dn->type = DT_LNK;
       adjust_used (size);
       recompute_blocks (np);
     }
@@ -382,9 +384,6 @@ diskfs_node_reload (struct node *node)
 error_t
 diskfs_truncate (struct node *np, off_t size)
 {
-  if (np->allocsize <= size)
-    return 0;
-
   if (np->dn->type == DT_LNK)
     {
       free (np->dn->u.lnk);
@@ -393,6 +392,9 @@ diskfs_truncate (struct node *np, off_t size)
       np->dn_stat.st_size = size;
       return 0;
     }
+
+  if (np->allocsize <= size)
+    return 0;
 
   assert (np->dn->type == DT_REG);
 
