@@ -1,5 +1,8 @@
 # @configure_input@
 
+# What version of the Hurd is this?
+hurd-version := @PACKAGE_VERSION@
+
 # Machine architecture.
 machine = @host_cpu@
 asm_syntax = @asm_syntax@
