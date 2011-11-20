@@ -498,17 +498,18 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  return MACH_PORT_NULL;
 	}
       assert (np->dn->u.reg.memobj != MACH_PORT_NULL);
-      /* A new-fangled default pager lets us prevent user accesses
-	 past the specified size of the file.  */
-      err = default_pager_object_set_size (np->dn->u.reg.memobj,
-					   np->allocsize);
-      assert_perror (err);
       
       /* XXX we need to keep a reference to the object, or GNU Mach
 	 will terminate it when we release the map. */
       vm_map (mach_task_self (), &np->dn->u.reg.memref, 4096, 0, 1,
 	      np->dn->u.reg.memobj, 0, 0, VM_PROT_NONE, VM_PROT_NONE,
 	      VM_INHERIT_NONE);
+
+      /* A new-fangled default pager lets us prevent user accesses
+	 past the specified size of the file.  */
+      err = default_pager_object_set_size (np->dn->u.reg.memobj,
+					   np->allocsize);
+      assert_perror (err);
     }
 
   /* XXX always writable */
