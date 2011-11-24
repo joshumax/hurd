@@ -1,5 +1,5 @@
 /* Private data for pager library.
-   Copyright (C) 1994,95,96,97,99, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1994-1997, 1999, 2000, 2011 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -50,7 +50,7 @@ struct pager
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
 
-  int seqno;
+  mach_port_seqno_t seqno;
 
   int noterm;			/* number of threads blocking termination */
 
@@ -131,8 +131,9 @@ extern int _pager_page_errors[];
 struct port_class *_pager_class;
 
 
-void _pager_wait_for_seqno (struct pager *, int);
-void _pager_release_seqno (struct pager *, int);
+void _pager_wait_for_seqno (struct pager *, mach_port_seqno_t);
+void _pager_release_seqno (struct pager *, mach_port_seqno_t);
+void _pager_update_seqno (mach_port_t, mach_port_seqno_t);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 error_t _pager_pagemap_resize (struct pager *, vm_address_t);

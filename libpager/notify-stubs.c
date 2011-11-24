@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2011 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -18,58 +18,59 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include "priv.h"
 #include "notify_S.h"
 #include <errno.h>
 
 error_t
-_pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify 
-					     __attribute__ ((unused)),
-					   mach_port_seqno_t seqno
-					     __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
+					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					   __attribute__ ((unused)))
 {
+  _pager_update_seqno (notify, seqno);
+
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_msg_accepted (mach_port_t notify
-					     __attribute__ ((unused)),
-					   mach_port_seqno_t seqno
-					     __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
+					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					     __attribute__ ((unused)))
 {
+  _pager_update_seqno (notify, seqno);
+
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_port_destroyed (mach_port_t notify
-					       __attribute__ ((unused)),
-					     mach_port_seqno_t seqno
-					       __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
+					     mach_port_seqno_t seqno,
 					     mach_port_t name
 					       __attribute__ ((unused)))
 {
+  _pager_update_seqno (notify, seqno);
+
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_send_once (mach_port_t notify 
-					  __attribute__ ((unused)),
-					mach_port_seqno_t seqno
-					  __attribute__ ((unused)))
+_pager_do_seqnos_mach_notify_send_once (mach_port_t notify,
+					mach_port_seqno_t seqno)
 {
+  _pager_update_seqno (notify, seqno);
+
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_dead_name (mach_port_t notify 
-					  __attribute__ ((unused)),
-					mach_port_seqno_t seqno
-					  __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_dead_name (mach_port_t notify,
+					mach_port_seqno_t seqno,
 					mach_port_t name
 					  __attribute__ ((unused)))
 {
+  _pager_update_seqno (notify, seqno);
+
   return 0;
 }
