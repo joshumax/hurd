@@ -23,64 +23,54 @@
 #include <errno.h>
 
 error_t
-_pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify 
-					     __attribute__ ((unused)),
-					   mach_port_seqno_t seqno
-					     __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
+					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					   __attribute__ ((unused)))
 {
-  _pager_stubs_update_seqno (notify, seqno);
+  _pager_update_seqno (notify, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_msg_accepted (mach_port_t notify
-					     __attribute__ ((unused)),
-					   mach_port_seqno_t seqno
-					     __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
+					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					     __attribute__ ((unused)))
 {
-  _pager_stubs_update_seqno (notify, seqno);
+  _pager_update_seqno (notify, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_port_destroyed (mach_port_t notify
-					       __attribute__ ((unused)),
-					     mach_port_seqno_t seqno
-					       __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
+					     mach_port_seqno_t seqno,
 					     mach_port_t name
 					       __attribute__ ((unused)))
 {
-  _pager_stubs_update_seqno (notify, seqno);
+  _pager_update_seqno (notify, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_send_once (mach_port_t notify 
-					  __attribute__ ((unused)),
-					mach_port_seqno_t seqno
-					  __attribute__ ((unused)))
+_pager_do_seqnos_mach_notify_send_once (mach_port_t notify,
+					mach_port_seqno_t seqno)
 {
-  _pager_stubs_update_seqno (notify, seqno);
+  _pager_update_seqno (notify, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_dead_name (mach_port_t notify 
-					  __attribute__ ((unused)),
-					mach_port_seqno_t seqno
-					  __attribute__ ((unused)),
+_pager_do_seqnos_mach_notify_dead_name (mach_port_t notify,
+					mach_port_seqno_t seqno,
 					mach_port_t name
 					  __attribute__ ((unused)))
 {
-  _pager_stubs_update_seqno (notify, seqno);
+  _pager_update_seqno (notify, seqno);
 
   return 0;
 }

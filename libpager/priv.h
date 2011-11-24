@@ -50,7 +50,7 @@ struct pager
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
 
-  int seqno;
+  mach_port_seqno_t seqno;
 
   int noterm;			/* number of threads blocking termination */
 
@@ -131,9 +131,9 @@ extern int _pager_page_errors[];
 struct port_class *_pager_class;
 
 
-void _pager_wait_for_seqno (struct pager *, int);
-void _pager_release_seqno (struct pager *, int);
-void _pager_stubs_update_seqno (mach_port_t, int);
+void _pager_wait_for_seqno (struct pager *, mach_port_seqno_t);
+void _pager_release_seqno (struct pager *, mach_port_seqno_t);
+void _pager_update_seqno (mach_port_t, mach_port_seqno_t);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 error_t _pager_pagemap_resize (struct pager *, vm_address_t);

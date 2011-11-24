@@ -23,7 +23,7 @@
    return.  */
 void
 _pager_wait_for_seqno (struct pager *p,
-		       int seqno)
+		       mach_port_seqno_t seqno)
 {
   while (seqno != p->seqno + 1)
     {
@@ -37,7 +37,7 @@ _pager_wait_for_seqno (struct pager *p,
    _pager_wait_for_seqno) to be handled.  */
 void
 _pager_release_seqno (struct pager *p,
-		      int seqno)
+		      mach_port_seqno_t seqno)
 {
   assert (seqno == p->seqno + 1);
   p->seqno = seqno;
@@ -51,8 +51,8 @@ _pager_release_seqno (struct pager *p,
 
 /* Just update the seqno.  */
 void
-_pager_stubs_update_seqno (mach_port_t object,
-                           int seqno)
+_pager_update_seqno (mach_port_t object,
+                     mach_port_seqno_t seqno)
 {
   struct pager *p;
 
