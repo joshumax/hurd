@@ -106,7 +106,7 @@ S_io_write (struct sock_user *user,
 	{
 	  err = pipe_write (pipe, user->sock->flags & SOCK_NONBLOCK,
 			    source_addr, data, data_len, amount);
-	  if (source_addr)
+	  if (err && source_addr)
 	    ports_port_deref (source_addr);
 	}
 

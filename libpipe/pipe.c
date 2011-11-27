@@ -383,6 +383,8 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
 
 	  if (source)
 	    packet_read_source (packet, source);
+	  else if (packet->source)
+	    pipe_dealloc_addr(packet->source);
 
 	  err = (*pipe->class->read)(packet, &dq, flags,
 				     data, data_len, amount);
