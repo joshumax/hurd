@@ -554,8 +554,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (!(cred->po->openmodes & O_WRITE) && (*type & SELECT_WRITE))
     return EBADF;
 
-  if (*type & ~(SELECT_READ | SELECT_WRITE))
-    return EINVAL;
+  *type &= SELECT_READ | SELECT_WRITE;
 
   if (*type == 0)
     return 0;

@@ -469,8 +469,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
   /* We only deal with SELECT_READ here.  */
-  if (*type & ~SELECT_READ)
-    return EINVAL;
+  *type &= SELECT_READ;
 
   if (*type == 0)
     return 0;
