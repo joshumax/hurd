@@ -65,7 +65,7 @@ S_socket_create (mach_port_t pf,
     case SOCK_SEQPACKET:
       pipe_class = seqpack_pipe_class; break;
     default:
-      return ESOCKTNOSUPPORT;
+      return EPROTOTYPE;
     }
 
   err = sock_create (pipe_class, mode, &sock);

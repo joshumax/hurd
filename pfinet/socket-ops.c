@@ -51,12 +51,14 @@ S_socket_create (struct trivfs_protid *master,
 
   /* Don't allow bogus SOCK_PACKET here. */
 
-  if ((sock_type != SOCK_STREAM
-       && sock_type != SOCK_DGRAM
-       && sock_type != SOCK_SEQPACKET
-       && sock_type != SOCK_RAW)
-      || protocol < 0)
-    return EINVAL;
+  if (sock_type != SOCK_STREAM
+      && sock_type != SOCK_DGRAM
+      && sock_type != SOCK_SEQPACKET
+      && sock_type != SOCK_RAW)
+    return EPROTOTYPE;
+
+  if (protocol < 0)
+    return EPROTONOSUPPORT;
 
   __mutex_lock (&global_lock);
 
