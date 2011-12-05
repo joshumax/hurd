@@ -228,8 +228,6 @@ get_vector (task_t task,
       if (err)
 	return err;
 
-      /* XXX fault bad here */
-
       /* Scan for a null.  */
       for (t = (vm_address_t *) (data + (scanned - readaddr));
 	   t < (vm_address_t *) (data + readlen);
@@ -248,7 +246,7 @@ get_vector (task_t task,
 
       /* If we didn't find the null terminator, then we will loop
 	 to read an additional page.  */
-      scanned = data + readlen;
+      scanned = readaddr + readlen;
       munmap ((caddr_t) data, readlen);
     } while (!err && *vec == NULL);
 
