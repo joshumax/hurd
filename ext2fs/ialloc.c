@@ -315,9 +315,8 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
     }
 
   /* Propagate initial inode flags from the directory, as Linux does.  */
-  np->dn->info.i_flags = dir->dn->info.i_flags;
-  if (S_ISLNK (mode))
-     np->dn->info.i_flags &= ~(EXT2_IMMUTABLE_FL | EXT2_APPEND_FL);
+  np->dn->info.i_flags =
+    ext2_mask_flags(mode, dir->dn->info.i_flags & EXT2_FL_INHERITED);
 
   st->st_flags = 0;
 
