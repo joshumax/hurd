@@ -362,6 +362,8 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
   if (err)
     return EIO;
 
+  proc_stat_set_flags (ps, PSTAT_NO_MSGPORT);
+
   err = proc_stat_set_flags (ps, PSTAT_OWNER_UID);
   if (err || ! (proc_stat_flags (ps) & PSTAT_OWNER_UID))
     {

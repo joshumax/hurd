@@ -52,6 +52,8 @@ get_boottime (struct ps_context *pc, struct timeval *tv)
   if (err)
     return err;
 
+  proc_stat_set_flags (ps, PSTAT_NO_MSGPORT);
+
   err = proc_stat_set_flags (ps, PSTAT_TASK_BASIC);
   if (err || !(proc_stat_flags (ps) & PSTAT_TASK_BASIC))
     err = EIO;
@@ -81,6 +83,8 @@ get_idletime (struct ps_context *pc, struct timeval *tv)
     return err;
 
   pst = NULL, tbi = NULL;
+
+  proc_stat_set_flags (ps, PSTAT_NO_MSGPORT);
 
   err = proc_stat_set_flags (ps, PSTAT_NUM_THREADS);
   if (err || !(proc_stat_flags (ps) & PSTAT_NUM_THREADS))
@@ -359,6 +363,8 @@ rootdir_gc_cmdline (void *hook, char **contents, ssize_t *contents_len)
   err = _proc_stat_create (opt_kernel_pid, pc, &ps);
   if (err)
     return EIO;
+
+  proc_stat_set_flags (ps, PSTAT_NO_MSGPORT);
 
   err = proc_stat_set_flags (ps, PSTAT_ARGS);
   if (err || ! (proc_stat_flags (ps) & PSTAT_ARGS))
