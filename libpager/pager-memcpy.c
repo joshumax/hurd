@@ -23,9 +23,10 @@
 #include <assert.h>
 #include <string.h>
 
-/* Start using vm_copy over memcpy when we have at a page.  (This
-   value *cannot* be less than vm_page_size.)  */
-#define VMCOPY_BETTER_THAN_MEMCPY (vm_page_size)
+/* Start using vm_copy over memcpy when we have that many page. This is
+   roughly the L1 cache size.  (This value *cannot* be less than
+   vm_page_size.) */
+#define VMCOPY_BETTER_THAN_MEMCPY (8*vm_page_size)
 
 /* Try to copy *SIZE bytes between the region OTHER points to
    and the region at OFFSET in the pager indicated by PAGER and MEMOBJ.
@@ -42,8 +43,8 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   error_t err;
   size_t n = *size;
 
-#define VMCOPY_WINDOW_DEFAULT_SIZE (16 * vm_page_size)
-#define MEMCPY_WINDOW_DEFAULT_SIZE (8 * vm_page_size)
+#define VMCOPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
+#define MEMCPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
   vm_address_t window;
   vm_size_t window_size;
 
