@@ -255,6 +255,30 @@ diskfs_append_args (char **argz, size_t *argz_len)
   return err;
 }
 
+/* Handling of operations for the ports in diskfs_port_bucket, calling 
+ * demuxer for each incoming message */
+static any_t
+diskfs_thread_function (any_t demuxer)
+{
+  error_t err;
+
+  do
+    {
+      ports_manage_port_operations_multithread (diskfs_port_bucket,
+						(ports_demuxer_type) demuxer,
+						0,
+						0,
+						0);
+      err = diskfs_shutdown (0);
+    }
+  while (err);
+
+  exit (0);
+  /* NOTREACHED */
+  return (any_t) 0;
+}
+
+
 /* Add our startup arguments to the standard diskfs set.  */
 static const struct argp_child startup_children[] =
   {{&diskfs_startup_argp}, {0}};
@@ -317,7 +341,9 @@ main (int argc, char **argv)
   if (err)
     error (4, err, "cannot create root directory");
 
-  diskfs_spawn_first_thread (diskfs_demuxer);
+  /* Like diskfs_spawn_first_thread. But do it manually, without timeout */
+  cthread_detach (cthread_fork ((cthread_fn_t) diskfs_thread_function,
+				(any_t) diskfs_demuxer));
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
