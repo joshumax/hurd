@@ -44,17 +44,18 @@
 
 #include <queue.h>
 #include <wiring.h>
+#include <kalloc.h>
+#include <default_pager.h>
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <file_io.h>
 
 #include "default_pager_S.h"
 
 #define debug 0
-
-extern void *kalloc();
 
 static char my_name[] = "(default pager):";
 
@@ -144,9 +145,10 @@ void set_partition_of(x, p)
  * Saves space, filenames can be long.
  */
 unsigned int
-part_id(const unsigned char *name)
+part_id(const char *name)
 {
-	register unsigned int len, id, xorid;
+	register unsigned int id, xorid;
+	size_t len;
 
 	len = strlen(name);
 	id = xorid = 0;
@@ -157,6 +159,7 @@ part_id(const unsigned char *name)
 	return (id << 8) | xorid;
 }
 
+void
 partition_init()
 {
 	mutex_init(&all_partitions.lock);
@@ -513,6 +516,7 @@ ddprintf ("choose_partition(%x,%d,%d)\n",size,cur_part,i);
 vm_offset_t
 pager_alloc_page(pindex, lock_it)
 	p_index_t	pindex;
+	boolean_t	lock_it;
 {
 	register int	bm_e;
 	register int	bit;
@@ -577,6 +581,7 @@ void
 pager_dealloc_page(pindex, page, lock_it)
 	p_index_t		pindex;
 	register vm_offset_t	page;
+	boolean_t		lock_it;
 {
 	register partition_t	part;
 	register int	bit, bm_e;
@@ -1185,7 +1190,7 @@ pager_read_offset(pager, offset)
 /*
  * Release a single disk block.
  */
-pager_release_offset(pager, offset)
+void pager_release_offset(pager, offset)
 	register dpager_t	pager;
 	vm_offset_t		offset;
 {
@@ -3792,6 +3797,7 @@ dprintf("bmd %x md %x\n", bootstrap_master_device_port, mdport);
 	return kr;
 }
 
+kern_return_t
 default_pager_register_fileserver(pager, fileserver)
 	mach_port_t			pager;
 	mach_port_t			fileserver;
@@ -3808,7 +3814,7 @@ default_pager_register_fileserver(pager, fileserver)
 /*
  * When things do not quite workout...
  */
-no_paging_space(out_of_memory)
+void no_paging_space(out_of_memory)
 	boolean_t		out_of_memory;
 {
 	static char		here[] = "%s *** NOT ENOUGH PAGING SPACE ***";
@@ -3818,7 +3824,7 @@ no_paging_space(out_of_memory)
 	panic(here, my_name);
 }
 
-overcommitted(got_more_space, space)
+void overcommitted(got_more_space, space)
 	boolean_t	got_more_space;
 	vm_size_t	space;		/* in pages */
 {
@@ -3859,7 +3865,7 @@ overcommitted(got_more_space, space)
 #endif
 }
 
-paging_space_info(totp, freep)
+void paging_space_info(totp, freep)
 	vm_size_t	*totp, *freep;
 {
 	register vm_size_t	total, free;

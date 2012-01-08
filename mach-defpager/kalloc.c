@@ -36,6 +36,8 @@
 #include <cthreads.h>		/* for spin locks */
 #include <malloc.h> 		/* for malloc_hook/free_hook */
 
+#include "wiring.h"
+
 static void init_hook (void);
 static void *malloc_hook (size_t size, const void *caller);
 static void free_hook (void *ptr, const void *caller);

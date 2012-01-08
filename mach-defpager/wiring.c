@@ -29,6 +29,7 @@
 #include <mach.h>
 #include <mach_init.h>
 #include <mach/machine/vm_param.h>
+#include "default_pager.h"
 
 mach_port_t	this_task;		/* our task */
 mach_port_t	priv_host_port = MACH_PORT_NULL;

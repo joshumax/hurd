@@ -27,7 +27,7 @@ OBJS 	:= $(SRCS:.c=.o) \
 	   $(addsuffix Server.o,\
 		       memory_object default_pager memory_object_default exc) \
 	   default_pager_replyUser.o
-LCLHDRS := file_io.h queue.h wiring.h
+LCLHDRS := file_io.h queue.h wiring.h kalloc.h default_pager.h
 
 HURDLIBS:= threads
 LDFLAGS += -static

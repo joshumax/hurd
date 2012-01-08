@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <error.h>
 #include <signal.h>
+#include <string.h>
 
 /* XXX */
 #include <fcntl.h>
@@ -42,6 +43,7 @@
 #include <hurd/fd.h>
 /* XXX */
 
+#include <default_pager.h>
 
 extern
 vm_size_t	cthread_wait_stack_size;
