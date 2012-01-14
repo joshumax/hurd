@@ -81,6 +81,12 @@ static long long int timeval_jiffies (time_value_t tv)
   return secs * opt_clk_tck / 1000000.;
 }
 
+static const char *args_filename (const char *name)
+{
+  char *sp = strrchr (name, '/');
+  return sp != NULL && *(sp + 1) != '\0' ? sp + 1 : name;
+}
+
 /* Actual content generators */
 
 static ssize_t
@@ -126,7 +132,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       "%u %u "			/* RT priority and policy */
       "%llu "			/* aggregated block I/O delay */
       "\n",
-      proc_stat_pid (ps), proc_stat_args (ps), state_char (ps),
+      proc_stat_pid (ps), args_filename (proc_stat_args (ps)), state_char (ps),
       pi->ppid, pi->pgrp, pi->session,
       0, 0,		/* no such thing as a major:minor for ctty */
       0,		/* no such thing as CLONE_* flags on Hurd */
@@ -178,7 +184,7 @@ process_file_gc_status (struct proc_stat *ps, char **contents)
       "VmRSS:\t%8u kB\n"
       "VmHWM:\t%8u kB\n" /* ie. resident peak */
       "Threads:\t%u\n",
-      proc_stat_args (ps),
+      args_filename (proc_stat_args (ps)),
       state_string (ps),
       proc_stat_pid (ps), /* XXX will need more work for threads */
       proc_stat_pid (ps),
