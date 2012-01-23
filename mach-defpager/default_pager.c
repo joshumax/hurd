@@ -2950,6 +2950,11 @@ seqnos_memory_object_supply_completed(pager, seqno, pager_request,
 	return(KERN_FAILURE);
 }
 
+/*
+ * memory_object_data_return: split up the stuff coming in from
+ * a memory_object_data_write call
+ * into individual pages and pass them off to default_write.
+ */
 kern_return_t
 seqnos_memory_object_data_return(pager, seqno, pager_request,
 				 offset, addr, data_cnt,
