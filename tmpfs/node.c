@@ -403,13 +403,12 @@ diskfs_truncate (struct node *np, off_t size)
 
   np->dn_stat.st_size = size;
 
+  off_t set_size = size;
   size = round_page (size);
-  if (size == np->allocsize)
-    return 0;
 
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
     {
-      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, set_size);
       if (err == MIG_BAD_ID)
 	/* This is an old default pager.  We have no way to truncate the
 	   memory object.  Note that the behavior here will be wrong in
@@ -442,6 +441,7 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
   if (np->allocsize >= size)
     return 0;
 
+  off_t set_size = size;
   size = round_page (size);
   if (round_page (tmpfs_space_used + size - np->allocsize)
       / vm_page_size > tmpfs_page_limit)
@@ -453,7 +453,7 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
     {
       /* Increase the limit the memory object will allow to be accessed.  */
-      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, set_size);
       if (err == MIG_BAD_ID)	/* Old default pager, never limited it.  */
 	err = 0;
       if (err)
@@ -507,11 +507,6 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       vm_map (mach_task_self (), &np->dn->u.reg.memref, 4096, 0, 1,
 	      np->dn->u.reg.memobj, 0, 0, VM_PROT_NONE, VM_PROT_NONE,
 	      VM_INHERIT_NONE);
-
-      /* A new-fangled default pager lets us prevent user accesses
-	 past the specified size of the file.  */
-      err = default_pager_object_set_size (np->dn->u.reg.memobj,
-					   np->allocsize);
       assert_perror (err);
     }
 
