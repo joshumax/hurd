@@ -443,7 +443,8 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
     return 0;
 
   size = round_page (size);
-  if (round_page (tmpfs_space_used + size) / vm_page_size > tmpfs_page_limit)
+  if (round_page (tmpfs_space_used + size - np->allocsize)
+      / vm_page_size > tmpfs_page_limit)
     return ENOSPC;
 
   if (default_pager == MACH_PORT_NULL)
