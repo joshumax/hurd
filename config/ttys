@@ -4,7 +4,7 @@
 
 # name	program				type		status	comments
 
-console	"/libexec/getty 9600"		mach-color	on	secure trusted console
+console	"/libexec/getty 9600"		mach-gnu-color	on	secure trusted console
 tty1	"/libexec/getty 38400"		hurd		on	secure trusted console
 tty2	"/libexec/getty 38400"		hurd		on	secure trusted console
 tty3	"/libexec/getty 38400"		hurd		on	secure trusted console
