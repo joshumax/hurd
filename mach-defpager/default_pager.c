@@ -1056,6 +1056,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	}
     }
 
+  mutex_lock(&pager->lock);		/* XXX lock_write */
   old_size = pager->size;
 
   if (INDIRECT_PAGEMAP(old_size))
@@ -1124,6 +1125,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
     }
 
   pager->size = new_size;
+  mutex_unlock(&pager->lock);
 
 #ifdef	CHECKSUM
 #error write me
