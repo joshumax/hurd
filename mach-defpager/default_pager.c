@@ -2915,7 +2915,7 @@ seqnos_memory_object_lock_completed (memory_object_t pager,
     /* Deallocate the old backing store pages and shrink the page map.  */
     pager_truncate (&ds->dpager, ds->dpager.limit / vm_page_size);
 
-  pager_port_unlock(ds, seqno);
+  pager_port_unlock(ds);
 
   return KERN_SUCCESS;
 }
@@ -3758,7 +3758,7 @@ S_default_pager_object_set_size (mach_port_t pager,
     /* There is already another call in progress.  Tough titties.  */
     kr = KERN_FAILURE;
 
-  pager_port_unlock(ds, seqno);
+  pager_port_unlock(ds);
 
   return kr;
 }
