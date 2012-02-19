@@ -203,14 +203,14 @@ ethernet_open (struct device *dev)
       err = get_privileged_ports (0, &master_device);
       if (err)
 	{
-	  error (0, errno, "file_name_lookup %s", dev->name);
+	  error (0, file_errno, "file_name_lookup %s", dev->name);
 	  error (2, err, "and cannot get device master port");
 	}
       err = device_open (master_device, D_WRITE | D_READ, dev->name, &edev->ether_port);
       mach_port_deallocate (mach_task_self (), master_device);
       if (err)
 	{
-	  error (0, errno, "file_name_lookup %s", dev->name);
+	  error (0, file_errno, "file_name_lookup %s", dev->name);
 	  error (2, err, "device_open(%s)", dev->name);
 	}
 
