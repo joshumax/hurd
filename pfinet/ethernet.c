@@ -83,6 +83,18 @@ static short ether_filter[] =
 };
 static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
 
+/* The BPF instruction allows IP and ARP packets */
+static struct bpf_insn bpf_ether_filter[] =
+{
+    {NETF_IN|NETF_BPF, /* Header. */ 0, 0, 0},
+    {40, 0, 0, 12},
+    {21, 1, 0, 2054},
+    {21, 0, 1, 2048},
+    {6, 0, 0, 1500},
+    {6, 0, 0, 0},
+};
+static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
+
 static struct port_bucket *etherport_bucket;
 
 
@@ -177,6 +189,12 @@ ethernet_open (struct device *dev)
       mach_port_deallocate (mach_task_self (), master_device);
       if (err)
 	error (2, err, "device_open on %s", dev->name);
+
+      err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
+			       MACH_MSG_TYPE_MAKE_SEND, 0,
+			       bpf_ether_filter, bpf_ether_filter_len);
+      if (err)
+	error (2, err, "device_set_filter on %s", dev->name);
     }
   else
     {
@@ -195,13 +213,14 @@ ethernet_open (struct device *dev)
 	  error (0, errno, "file_name_lookup %s", dev->name);
 	  error (2, err, "device_open(%s)", dev->name);
 	}
+
+      err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
+			       MACH_MSG_TYPE_MAKE_SEND, 0,
+			       ether_filter, ether_filter_len);
+      if (err)
+	error (2, err, "device_set_filter on %s", dev->name);
     }
 
-  err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
-			   MACH_MSG_TYPE_MAKE_SEND, 0,
-			   ether_filter, ether_filter_len);
-  if (err)
-    error (2, err, "device_set_filter on %s", dev->name);
   return 0;
 }
 
