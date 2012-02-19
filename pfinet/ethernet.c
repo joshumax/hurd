@@ -176,7 +176,7 @@ ethernet_open (struct device *dev)
       err = device_open (master_device, D_WRITE | D_READ, "eth", &edev->ether_port);
       mach_port_deallocate (mach_task_self (), master_device);
       if (err)
-	error (2, err, "%s", dev->name);
+	error (2, err, "device_open on %s", dev->name);
     }
   else
     {
@@ -193,7 +193,7 @@ ethernet_open (struct device *dev)
       if (err)
 	{
 	  error (0, errno, "file_name_lookup %s", dev->name);
-	  error (2, err, "%s", dev->name);
+	  error (2, err, "device_open(%s)", dev->name);
 	}
     }
 
@@ -201,7 +201,7 @@ ethernet_open (struct device *dev)
 			   MACH_MSG_TYPE_MAKE_SEND, 0,
 			   ether_filter, ether_filter_len);
   if (err)
-    error (2, err, "%s", dev->name);
+    error (2, err, "device_set_filter on %s", dev->name);
   return 0;
 }
 
