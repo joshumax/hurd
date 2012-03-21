@@ -29,6 +29,12 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
 {
   dp->dn->u.dir.dotdot = pdp->dn;
   dp->dn->u.dir.entries = 0;
+
+  /* Increase hardlink count for parent directory */
+  pdp->dn_stat.st_nlink++;
+  /* Take '.' directory into account */
+  dp->dn_stat.st_nlink++;
+
   return 0;
 }
 
@@ -40,6 +46,12 @@ diskfs_clear_directory (struct node *dp, struct node *pdp,
     return ENOTEMPTY;
   assert (dp->dn_stat.st_size == 0);
   assert (dp->dn->u.dir.dotdot == pdp->dn);
+
+  /* Decrease hardlink count for parent directory */
+  pdp->dn_stat.st_nlink--;
+  /* Take '.' directory into account */
+  dp->dn_stat.st_nlink--;
+
   return 0;
 }
 
