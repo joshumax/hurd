@@ -21,13 +21,16 @@
 #ifndef __MAPTIME_H__
 #define __MAPTIME_H__
 
-#ifndef MAPTIME_EI
-#define MAPTIME_EI extern inline
-#endif
-
 #include <mach/time_value.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <features.h>
+
+#ifdef MAPTIME_DEFINE_EI
+#define MAPTIME_EI
+#else
+#define MAPTIME_EI __extern_inline
+#endif
 
 /* Return the mach mapped time page in MTIME.  If USE_MACH_DEV is false, then
    the hurd time device DEV_NAME, or "/dev/time" if DEV_NAME is 0, is
@@ -36,6 +39,10 @@
    may be converted to a struct timeval at any time using maptime_read.  */
 error_t maptime_map (int use_mach_dev, char *dev_name,
 		     volatile struct mapped_time_value **mtime);
+
+extern void maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv);
+
+#if defined(__USE_EXTERN_INLINES) || defined(MAPTIME_DEFINE_EI)
 
 /* Read the current time from MTIME into TV.  This should be very fast.  */
 MAPTIME_EI void
@@ -48,5 +55,7 @@ maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv)
     }
   while (tv->tv_sec != mtime->check_seconds);
 }
+
+#endif /* Use extern inlines.  */
 
 #endif /* __MAPTIME_H__ */

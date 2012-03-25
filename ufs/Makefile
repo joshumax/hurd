@@ -21,7 +21,7 @@ makemode := server
 
 target = ufs
 SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
-       sizes.c subr.c tables.c bmap.c pokeloc.c
+       sizes.c subr.c tables.c bmap.c pokeloc.c xinl.c
 LCLHDRS = ufs.h fs.h dinode.h dir.h
 
 OBJS = $(SRCS:.c=.o)

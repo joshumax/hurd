@@ -15,6 +15,6 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#define DISKFS_EXTERN_INLINE
+#define DISKFS_DEFINE_EXTERN_INLINE
 
 #include "diskfs.h"

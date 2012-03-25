@@ -21,8 +21,12 @@
 #ifndef __FTPCONN_PRIV_H__
 #define __FTPCONN_PRIV_H__
 
-#ifndef FTP_CONN_EI
-# define FTP_CONN_EI extern inline
+#include <features.h>
+
+#ifdef FTP_CONN_DEFINE_EI
+#define FTP_CONN_EI
+#else
+#define FTP_CONN_EI __extern_inline
 #endif
 
 /* Ftp reply codes.  */
@@ -61,6 +65,9 @@
 #define REPLY_IS_TRANSIENT(rep) ((rep) >= 400 && (rep) < 500)
 #define REPLY_IS_FAILURE(rep) ((rep) >= 500 && (rep) < 600)
 
+extern error_t unexpected_reply (struct ftp_conn *conn, int reply, const char *reply_txt,
+		  const error_t *poss_errs);
+#if defined(__USE_EXTERN_INLINES) || defined(FTP_CONN_DEFINE_EI)
 FTP_CONN_EI error_t
 unexpected_reply (struct ftp_conn *conn, int reply, const char *reply_txt,
 		  const error_t *poss_errs)
@@ -79,6 +86,7 @@ unexpected_reply (struct ftp_conn *conn, int reply, const char *reply_txt,
   else
     return EGRATUITOUS;
 }
+#endif /* Use extern inlines.  */
 
 /* Error codes we think may result from file operations we do.  */
 extern const error_t ftp_conn_poss_file_errs[];

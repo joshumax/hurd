@@ -1,2 +1,2 @@
-#define RWLOCK_EI
+#define RWLOCK_DEFINE_EI
 #include "rwlock.h"

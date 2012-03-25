@@ -1,2 +1,2 @@
-#define PQ_EI
+#define PQ_DEFINE_EI
 #include "pq.h"

@@ -1,2 +1,2 @@
-#define IDVEC_EI
+#define IDVEC_DEFINE_EI
 #include "idvec.h"

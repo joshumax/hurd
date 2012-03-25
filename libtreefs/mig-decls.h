@@ -25,7 +25,11 @@
 /* For mig */
 typedef struct treefs_handle *treefs_handle_t;
 
-extern inline
+extern treefs_handle_t treefs_begin_using_handle_port(mach_port_t port);
+extern void treefs_end_using_handle_port (treefs_handle_t handle);
+
+#if defined(__USE_EXTERN_INLINES) || defined(TREEFS_DEFINE_EI)
+TREEFS_EI
 treefs_handle_t treefs_begin_using_handle_port(mach_port_t port)
 {
   return 
@@ -33,9 +37,10 @@ treefs_handle_t treefs_begin_using_handle_port(mach_port_t port)
       ports_lookup_port (0, port, treefs_fsys_port_class);
 }
 
-extern inline void
+TREEFS_EI void
 treefs_end_using_handle_port (treefs_handle_t handle)
 {
   if (handle != NULL)
     ports_port_deref (&handle->pi);
 }
+#endif /* Use extern inlines.  */
