@@ -23,9 +23,12 @@
 
 #include <stdlib.h>		/* For inline function stuff.  */
 #include <idvec.h>
+#include <features.h>
 
-#ifndef UGIDS_EI
-#define UGIDS_EI extern inline
+#ifdef UGIDS_DEFINE_EI
+#define UGIDS_EI
+#else
+#define UGIDS_EI __extern_inline
 #endif
 
 /* A structure holding a set of the common various types of ids.  */
@@ -46,6 +49,16 @@ struct ugids
 
 /* Return a new ugids structure, or 0 if an allocation error occurs.  */
 struct ugids *make_ugids ();
+
+extern void ugids_fini (struct ugids *ugids);
+
+extern void ugids_free (struct ugids *ugids);
+
+extern int ugids_is_empty (const struct ugids *ugids);
+
+extern int ugids_equal (const struct ugids *ugids1, const struct ugids *ugids2);
+
+#if defined(__USE_EXTERN_INLINES) || defined(UGIDS_DEFINE_EI)
 
 /* Free all resources used by UGIDS except UGIDS itself.  */
 UGIDS_EI void
@@ -92,6 +105,8 @@ ugids_equal (const struct ugids *ugids1, const struct ugids *ugids2)
     && idvec_equal (&ugids1->imp_eff_gids, &ugids2->imp_eff_gids)
     && idvec_equal (&ugids1->imp_avail_gids, &ugids2->imp_avail_gids);
 }
+
+#endif /* Use extern inlines.  */
 
 /* Add all ids in NEW to UGIDS.  */
 error_t ugids_merge (struct ugids *ugids, const struct ugids *new);

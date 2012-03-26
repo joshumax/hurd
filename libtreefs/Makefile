@@ -25,12 +25,12 @@ installhdrs = treefs.h
 S_SRCS = s-file.c s-dir.c s-io.c s-fsys.c
 OTHERSRCS = defhooks.c dir-hooks.c dir-lookup.c fsys-getroot.c fsys-hooks.c \
 	fsys-startup.c hooks.c mdir.c nlist.c node-hooks.c rights.c \
-	trans-help.c trans-start.c
+	trans-help.c trans-start.c xinl.c
 SRCS = $(OTHERSRCS) $(S_SRCS)
 LCLHDRS = treefs.h fs-mutate.h
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o 
-OBJS = $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS)
+OBJS = $(sort $(SRCS:.c=.o)) $(MIGSTUBS)
 
 MIGSFLAGS = -imacros fs-mutate.h
 MIGCOMSFLAGS = -prefix treefs_

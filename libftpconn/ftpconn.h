@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <features.h>
 
 #define __need_error_t
 #include <errno.h>
@@ -35,8 +36,10 @@ typedef int error_t;
 #define __error_t_defined
 #endif
 
-#ifndef FTP_CONN_EI
-# define FTP_CONN_EI extern inline
+#ifdef FTP_CONN_DEFINE_EI
+#define FTP_CONN_EI
+#else
+#define FTP_CONN_EI __extern_inline
 #endif
 
 struct ftp_conn;
@@ -242,6 +245,9 @@ error_t ftp_conn_open (struct ftp_conn *conn);
 
 void ftp_conn_close (struct ftp_conn *conn);
 
+extern error_t ftp_conn_validate_syshooks (struct ftp_conn *conn);
+
+#if defined(__USE_EXTERN_INLINES) || defined(FTP_CONN_DEFINE_EI)
 /* Makes sure that CONN's syshooks are set according to the remote system
    type.  */
 FTP_CONN_EI error_t
@@ -253,6 +259,7 @@ ftp_conn_validate_syshooks (struct ftp_conn *conn)
     /* Opening the connection should set the syshooks.  */
     return ftp_conn_open (conn);
 }
+#endif /* Use extern inlines.  */
 
 /* Create a new ftp connection as specified by PARAMS, and return it in CONN;
    HOOKS contains customization hooks used by the connection.  Neither PARAMS

@@ -25,7 +25,14 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <features.h>
 #include <hurd/hurd_types.h>
+
+#ifdef TERM_DEFINE_EI
+#define TERM_EI
+#else
+#define TERM_EI __extern_inline
+#endif
 
 #undef MDMBUF
 #undef ECHO
@@ -184,34 +191,49 @@ struct queue
 
 struct queue *create_queue (int size, int lowat, int hiwat);
 
+extern int qsize (struct queue *q);
+extern int qavail (struct queue *q);
+extern void clear_queue (struct queue *q);
+extern quoted_char dequeue_quote (struct queue *q);
+extern char dequeue (struct queue *q);
+extern void enqueue_internal (struct queue **qp, quoted_char c);
+extern void enqueue (struct queue **qp, char c);
+extern void enqueue_quote (struct queue **qp, char c);
+extern char unquote_char (quoted_char c);
+extern int char_quoted_p (quoted_char c);
+extern short queue_erase (struct queue *q);
+
+#if defined(__USE_EXTERN_INLINES) || defined(TERM_DEFINE_EI)
 /* Return the number of characters in Q. */
-extern inline int
+TERM_EI int
 qsize (struct queue *q)
 {
   return q->ce - q->cs;
 }
 
 /* Return nonzero if characters can be added to Q. */
-extern inline int
+TERM_EI int
 qavail (struct queue *q)
 {
   return !q->susp;
 }
 
 /* Flush all the characters from Q. */
-extern inline void
+TERM_EI void
 clear_queue (struct queue *q)
 {
   q->susp = 0;
   q->cs = q->ce = q->array;
   condition_broadcast (q->wait);
 }
+#endif /* Use extern inlines.  */
 
 /* Should be below, but inlines need it. */
 void call_asyncs (int dir);
 
+#if defined(__USE_EXTERN_INLINES) || defined(TERM_DEFINE_EI)
 /* Return the next character off Q; leave the quoting bit on. */
-extern inline quoted_char
+TERM_EI quoted_char
 dequeue_quote (struct queue *q)
 {
   int beep = 0;
@@ -234,16 +256,18 @@ dequeue_quote (struct queue *q)
 }
 
 /* Return the next character off Q. */
-extern inline char
+TERM_EI char
 dequeue (struct queue *q)
 {
   return dequeue_quote (q) & ~QUEUE_QUOTE_MARK;
 }
+#endif /* Use extern inlines.  */
 
 struct queue *reallocate_queue (struct queue *);
 
+#if defined(__USE_EXTERN_INLINES) || defined(TERM_DEFINE_EI)
 /* Add C to *QP. */
-extern inline void
+TERM_EI void
 enqueue_internal (struct queue **qp, quoted_char c)
 {
   struct queue *q = *qp;
@@ -265,28 +289,28 @@ enqueue_internal (struct queue **qp, quoted_char c)
 }
 
 /* Add C to *QP. */
-extern inline void
+TERM_EI void
 enqueue (struct queue **qp, char c)
 {
   enqueue_internal (qp, c);
 }
 
 /* Add C to *QP, marking it with a quote. */
-extern inline void
+TERM_EI void
 enqueue_quote (struct queue **qp, char c)
 {
   enqueue_internal (qp, c | QUEUE_QUOTE_MARK);
 }
 
 /* Return the unquoted version of a quoted_char. */
-extern inline char
+TERM_EI char
 unquote_char (quoted_char c)
 {
   return c & ~QUEUE_QUOTE_MARK;
 }
 
 /* Tell if a quoted_char is actually quoted. */
-extern inline int
+TERM_EI int
 char_quoted_p (quoted_char c)
 {
   return c & QUEUE_QUOTE_MARK;
@@ -294,7 +318,7 @@ char_quoted_p (quoted_char c)
 
 /* Remove the most recently enqueue character from Q; leaving
    the quote mark on. */
-extern inline short
+TERM_EI short
 queue_erase (struct queue *q)
 {
   short answer;
@@ -313,6 +337,7 @@ queue_erase (struct queue *q)
     condition_broadcast (q->wait);
   return answer;
 }
+#endif /* Use extern inlines.  */
 
 
 /* Functions devio is supposed to call */

@@ -21,6 +21,13 @@
 
 #include <cthreads.h>
 #include <assert.h>
+#include <features.h>
+
+#ifdef RWLOCK_DEFINE_EI
+#define RWLOCK_EI
+#else
+#define RWLOCK_EI __extern_inline
+#endif
 
 struct rwlock
 {
@@ -31,9 +38,17 @@ struct rwlock
   int readers_waiting;
 };
 
-#ifndef RWLOCK_EI
-#define RWLOCK_EI extern inline
-#endif
+extern void rwlock_reader_lock (struct rwlock *lock);
+
+extern void rwlock_writer_lock (struct rwlock *lock);
+
+extern void rwlock_reader_unlock (struct rwlock *lock);
+
+extern void rwlock_writer_unlock (struct rwlock *lock);
+
+extern void rwlock_init (struct rwlock *lock);
+
+#if defined(__USE_EXTERN_INLINES) || defined(RWLOCK_DEFINE_EI)
 
 /* Get a reader lock on reader-writer lock LOCK for disknode DN */
 RWLOCK_EI void
@@ -103,6 +118,8 @@ rwlock_init (struct rwlock *lock)
   lock->readers_waiting = 0;
   lock->writers_waiting = 0;
 }
+
+#endif /* Use extern inlines.  */
 
 #define RWLOCK_INITIALIZER \
   { MUTEX_INITIALIZER, CONDITION_INITIALIZER, 0, 0, 0 }

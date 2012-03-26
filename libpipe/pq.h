@@ -25,9 +25,12 @@
 #include <stddef.h>		/* for size_t */
 #include <string.h>
 #include <mach/mach.h>
+#include <features.h>
 
-#ifndef PQ_EI
-#define PQ_EI extern inline
+#ifdef PQ_DEFINE_EI
+#define PQ_EI
+#else
+#define PQ_EI __extern_inline
 #endif
 
 
@@ -70,12 +73,18 @@ error_t packet_set_ports (struct packet *packet,
 /* If PACKET has any ports, deallocates them.  */
 void packet_dealloc_ports (struct packet *packet);
 
+extern size_t packet_readable (struct packet *packet);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PQ_DEFINE_EI)
+
 /* Returns the number of bytes of data in PACKET.  */
 PQ_EI size_t
 packet_readable (struct packet *packet)
 {
   return packet->buf_end - packet->buf_start;
 }
+
+#endif /* Use extern inlines.  */
 
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
    and return the amount appended in AMOUNT if that's not the null pointer.  */
@@ -94,6 +103,10 @@ error_t packet_read (struct packet *packet,
 error_t packet_read_ports (struct packet *packet,
 			   mach_port_t **ports, size_t *num_ports);
 
+extern void packet_read_source (struct packet *packet, void **source);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PQ_DEFINE_EI)
+
 /* Return the source addressd in PACKET in SOURCE, deallocating it from
    PACKET.  */
 PQ_EI void
@@ -102,6 +115,8 @@ packet_read_source (struct packet *packet, void **source)
   *source = packet->source;
   packet->source = 0;
 }
+
+#endif /* Use extern inlines.  */
 
 /* The packet size above which we start to do things differently to avoid
    copying around data.  */
@@ -124,6 +139,14 @@ int packet_extend (struct packet *packet, size_t new_len);
    VM_PAGE_SIZE.  If an error occurs, PACKET is not modified and the error is
    returned.  */
 error_t packet_realloc (struct packet *packet, size_t new_len);
+
+extern int packet_fit (struct packet *packet, size_t amount);
+
+extern error_t packet_ensure (struct packet *packet, size_t amount);
+
+extern int packet_ensure_efficiently (struct packet *packet, size_t amount);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PQ_DEFINE_EI)
 
 /* Try to make space in PACKET for AMOUNT more bytes without growing the
    buffer, returning true if we could do it.  */
@@ -189,6 +212,8 @@ packet_ensure_efficiently (struct packet *packet, size_t amount)
     }
   return 0;
 }
+
+#endif /* Use extern inlines.  */
 
 struct pq
 {
@@ -200,6 +225,10 @@ struct pq
    NULL if there was an allocation error.  SOURCE is returned to readers of
    the packet, or deallocated by calling pipe_dealloc_addr.  */
 struct packet *pq_queue (struct pq *pq, unsigned type, void *source);
+
+extern struct packet * pq_tail (struct pq *pq, unsigned type, void *source);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PQ_DEFINE_EI)
 
 /* Returns the tail of the packet queue PQ, which may mean pushing a new
    packet if TYPE and SOURCE do not match the current tail, or this is the
@@ -214,9 +243,17 @@ pq_tail (struct pq *pq, unsigned type, void *source)
   return tail;
 }
 
+#endif /* Use extern inlines.  */
+
 /* Remove the first packet (if any) in PQ, deallocating any resources it
    holds.  True is returned if a packet was found, false otherwise.  */
 int pq_dequeue (struct pq *pq);
+
+extern struct packet * pq_head (struct pq *pq, unsigned type, void *source);
+
+extern struct packet * pq_next (struct pq *pq, unsigned type, void *source);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PQ_DEFINE_EI)
 
 /* Returns the next available packet in PQ, without removing it from the
    queue, or NULL if there is none, or the next packet isn't appropriate.
@@ -245,6 +282,8 @@ pq_next (struct pq *pq, unsigned type, void *source)
   pq_dequeue (pq);
   return pq_head (pq, type, source);
 }
+
+#endif /* Use extern inlines.  */
 
 /* Dequeues all packets in PQ.  */
 void pq_drain (struct pq *pq);
