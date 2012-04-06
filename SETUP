@@ -8,4 +8,4 @@ set -v
 
 # Setup crucial devices
 cd /dev
-/bin/sh /sbin/MAKEDEV std
+/bin/sh ./MAKEDEV std
