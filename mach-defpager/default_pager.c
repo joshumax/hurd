@@ -1060,16 +1060,27 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 			      vm_size_t old_size, vm_size_t new_size)
     {
       vm_size_t i;
+
+      if (!mapptr)
+        return;
+
       for (i = new_size; i < old_size; ++i)
 	{
 	  const union dp_map entry = mapptr[i];
-	  pager_dealloc_page(entry.block.p_index, entry.block.p_offset,
-			     TRUE);
-	  invalidate_block(mapptr[i]);
+	  if (!no_block(entry))
+	    {
+	      pager_dealloc_page(entry.block.p_index, entry.block.p_offset,
+				 TRUE);
+	      invalidate_block(mapptr[i]);
+	    }
 	}
     }
 
   mutex_lock(&pager->lock);		/* XXX lock_write */
+
+  if (!pager->map)
+    goto done;
+
   old_size = pager->size;
 
   if (INDIRECT_PAGEMAP(old_size))
@@ -1134,6 +1145,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	}
     }
 
+ done:
   pager->size = new_size;
   mutex_unlock(&pager->lock);
 
@@ -1178,17 +1190,19 @@ pager_read_offset(pager, offset)
 #endif
 	  }
 
+	invalidate_block(pager_offset);
 	if (INDIRECT_PAGEMAP(pager->size)) {
 	    register dp_map_t	mapptr;
 
-	    mapptr = pager->map[f_page/PAGEMAP_ENTRIES].indirect;
-	    if (mapptr == 0)
-		invalidate_block(pager_offset);
-	    else
-		pager_offset = mapptr[f_page%PAGEMAP_ENTRIES];
+	    if (pager->map) {
+		mapptr = pager->map[f_page/PAGEMAP_ENTRIES].indirect;
+		if (mapptr)
+		    pager_offset = mapptr[f_page%PAGEMAP_ENTRIES];
+	    }
 	}
 	else {
-	    pager_offset = pager->map[f_page];
+	    if (pager->map)
+		pager_offset = pager->map[f_page];
 	}
 
 #if	DEBUG_READER_CONFLICTS
@@ -1212,6 +1226,7 @@ void pager_release_offset(pager, offset)
 
 	mutex_lock(&pager->lock);	/* XXX lock_read */
 
+	assert (pager->map);
 	if (INDIRECT_PAGEMAP(pager->size)) {
 		register dp_map_t	mapptr;
 
@@ -1568,6 +1583,9 @@ pager_dealloc(pager)
 	register dp_map_t	mapptr;
 	register union dp_map	block;
 
+	if (!pager->map)
+	    return;
+
 	if (INDIRECT_PAGEMAP(pager->size)) {
 	    for (i = INDIRECT_PAGEMAP_ENTRIES(pager->size); --i >= 0; ) {
 		mapptr = pager->map[i].indirect;
@@ -1579,9 +1597,11 @@ pager_dealloc(pager)
 			    			block.block.p_offset, TRUE);
 		    }
 		    kfree((char *)mapptr, PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+		    pager->map[i].indirect = (dp_map_t) 0;
 		}
 	    }
 	    kfree((char *)pager->map, INDIRECT_PAGEMAP_SIZE(pager->size));
+	    pager->map = (dp_map_t) 0;
 #ifdef	CHECKSUM
 	    for (i = INDIRECT_PAGEMAP_ENTRIES(pager->size); --i >= 0; ) {
 		mapptr = (vm_offset_t *)pager->checksum[i];
@@ -1602,6 +1622,7 @@ pager_dealloc(pager)
 		    			block.block.p_offset, TRUE);
 	    }
 	    kfree((char *)pager->map, PAGEMAP_SIZE(pager->size));
+	    pager->map = (dp_map_t) 0;
 #ifdef	CHECKSUM
 	    kfree((char *)pager->checksum, PAGEMAP_SIZE(pager->size));
 #endif	 /* CHECKSUM */
@@ -1623,6 +1644,9 @@ pager_realloc(pager, pindex)
 	register dp_map_t	map, emap;
 	vm_size_t		size;
 	union dp_map		block;
+
+	if (!pager->map)
+	    return TRUE;
 
 	size = pager->size;	/* in pages */
 	map = pager->map;
