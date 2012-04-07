@@ -668,6 +668,8 @@ struct dpager {
 	dp_map_t	map;		/* block map */
 	vm_size_t	size;		/* size of paging object, in pages */
 	vm_size_t	limit;	/* limit (bytes) allowed to grow to */
+	vm_size_t	byte_limit; /* limit, which wasn't
+				       rounded to page boundary */
 	p_index_t	cur_partition;
 #ifdef	CHECKSUM
 	vm_offset_t	*checksum;	/* checksum - parallel to block map */
@@ -2802,7 +2804,28 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 
 	pager_port_lock(ds, seqno);
 	pager_port_start_write(ds);
+
+	vm_size_t limit = ds->dpager.byte_limit;
 	pager_port_unlock(ds);
+	if ((limit != round_page(limit)) && (trunc_page(limit) == offset)) {
+	    assert(trunc_page(limit) == offset);
+	    assert(data_cnt == vm_page_size);
+
+	    vm_offset_t tail = addr + limit - trunc_page(limit);
+	    vm_size_t tail_size = round_page(limit) - limit;
+	    memset((void *) tail, 0, tail_size);
+
+	    unsigned *arr = (unsigned *)addr;
+	    memory_object_data_supply(pager_request, trunc_page(limit), addr,
+				      vm_page_size, TRUE, VM_PROT_NONE,
+				      TRUE, MACH_PORT_NULL);
+	    dstruct_lock(ds);
+	    ds->dpager.byte_limit = round_page(limit);
+	    dstruct_unlock(ds);
+	    pager_port_finish_write(ds);
+
+	    return(KERN_SUCCESS);
+	  }
 
 	for (amount_sent = 0;
 	     amount_sent < data_cnt;
@@ -2857,30 +2880,8 @@ seqnos_memory_object_lock_completed (memory_object_t pager,
 				     vm_offset_t offset,
 				     vm_size_t length)
 {
-  default_pager_t ds;
-
-  ds = pager_port_lookup(pager);
-  assert(ds != DEFAULT_PAGER_NULL);
-
-  pager_port_lock(ds, seqno);
-  pager_port_wait_for_readers(ds);
-  pager_port_wait_for_writers(ds);
-
-  /* Now that any in-core pages have been flushed, we can apply
-     the limit to prevent any new page-ins.  */
-  assert (page_aligned (offset));
-  ds->dpager.limit = offset;
-
-  default_pager_object_set_size_reply (ds->lock_request, KERN_SUCCESS);
-  ds->lock_request = MACH_PORT_NULL;
-
-  if (ds->dpager.size > ds->dpager.limit / vm_page_size)
-    /* Deallocate the old backing store pages and shrink the page map.  */
-    pager_truncate (&ds->dpager, ds->dpager.limit / vm_page_size);
-
-  pager_port_unlock(ds);
-
-  return KERN_SUCCESS;
+	panic("%slock_completed",my_name);
+	return KERN_FAILURE;
 }
 
 kern_return_t
@@ -3696,36 +3697,61 @@ S_default_pager_object_set_size (mach_port_t pager,
     return KERN_INVALID_ARGUMENT;
 
   pager_port_lock(ds, seqno);
-  pager_port_check_request(ds, ds->pager_request);
   pager_port_wait_for_readers(ds);
   pager_port_wait_for_writers(ds);
 
-  limit = round_page (limit);
-  if (ds->dpager.size <= limit / vm_page_size)
+  vm_size_t rounded_limit = round_page (limit);
+  vm_size_t trunc_limit = trunc_page (limit);
+
+
+  if (ds->dpager.limit < rounded_limit)
     {
       /* The limit has not been exceeded heretofore.  Just change it.  */
-      ds->dpager.limit = limit;
-      kr = KERN_SUCCESS;
-    }
-  else if (ds->lock_request == MACH_PORT_NULL)
-    {
-      /* Tell the kernel to flush from core all the pages being removed.
-	 We will get the memory_object_lock_completed callback when they
-	 have been flushed.  We handle that by completing the limit update
-	 and posting the reply to the pending truncation.  */
-      kr = memory_object_lock_request (ds->pager_request,
-				       limit,
-				       ds->dpager.size * vm_page_size - limit,
-				       MEMORY_OBJECT_RETURN_NONE, TRUE,
-				       VM_PROT_ALL, ds->pager);
+      ds->dpager.limit = rounded_limit;
+
+      /* Byte limit is used for truncation of file, which aren't rounded to
+	 page boundary.  But by enlarging of file we are free to increase this value*/
+      ds->dpager.byte_limit = rounded_limit;
+      kr = memory_object_lock_request(ds->pager_request, 0,
+                                      rounded_limit,
+                                      MEMORY_OBJECT_RETURN_NONE, FALSE,
+                                      VM_PROT_NONE, MACH_PORT_NULL);
       if (kr != KERN_SUCCESS)
-	panic ("memory_object_lock_request: %d", kr);
-      ds->lock_request = ds->pager_request;
-      kr = MIG_NO_REPLY;
+        panic ("memory_object_lock_request: %d", kr);
     }
   else
-    /* There is already another call in progress.  Tough titties.  */
-    kr = KERN_FAILURE;
+    {
+      union dp_map block;
+
+      if (ds->dpager.limit != rounded_limit)
+        {
+          kr = memory_object_lock_request(ds->pager_request, rounded_limit,
+                                          ds->dpager.limit - rounded_limit,
+                                          MEMORY_OBJECT_RETURN_NONE, TRUE,
+                                          VM_PROT_ALL, MACH_PORT_NULL);
+          if (kr != KERN_SUCCESS)
+            panic ("memory_object_lock_request: %d", kr);
+
+          ds->dpager.limit = rounded_limit;
+	}
+
+      /* Deallocate the old backing store pages and shrink the page map.  */
+      if (ds->dpager.size > ds->dpager.limit / vm_page_size)
+        pager_truncate (&ds->dpager, ds->dpager.limit / vm_page_size);
+
+      /* If memory object size isn't page aligned, fill the tail
+         of last page with zeroes */
+      if ((limit != rounded_limit) && (ds->dpager.limit > limit))
+	{
+          /* Clean part of last page which isn't part of file.
+             For file sizes that aren't multiple of vm_page_size */
+          ds->dpager.byte_limit = limit;
+          kr = memory_object_lock_request(ds->pager_request, trunc_limit,
+                                          vm_page_size,
+                                          MEMORY_OBJECT_RETURN_ALL, TRUE,
+                                          VM_PROT_NONE, MACH_PORT_NULL);
+        }
+    }
 
   pager_port_unlock(ds);
 
