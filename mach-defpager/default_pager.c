@@ -894,7 +894,8 @@ pager_extend(pager, new_size)
 	old_size = pager->size;
 
 	if (new_size <= atop(max_doubled_size)) {
-	    i = old_size;
+	    /* New size cannot be less than 1 */
+	    i = old_size ? old_size : 1;
 	    while (i < new_size)
 		i <<= 1;
 	    new_size = i;
@@ -1114,9 +1115,6 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	  old_size = PAGEMAP_ENTRIES;
 	}
     }
-
-  if (new_size == 0)
-    new_size = 1;
 
   if (! INDIRECT_PAGEMAP(old_size))
     {
