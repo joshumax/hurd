@@ -3318,6 +3318,7 @@ rename_it:
 	 */
 
 	ds->pager = port;
+	ds->dpager.limit = size;
 	pager_port_list_insert(port, ds);
 	default_pager_add(ds, FALSE);
 
