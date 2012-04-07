@@ -1125,7 +1125,6 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	  const dp_map_t mapptr = pager->map[0].indirect;
 	  kfree((char *)pager->map, INDIRECT_PAGEMAP_SIZE(old_size));
 	  pager->map = mapptr;
-	  old_size = PAGEMAP_ENTRIES;
 	}
     }
 
