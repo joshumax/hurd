@@ -59,7 +59,7 @@ int netfs_maxsymlinks = 16;	/* Arbitrary.  */
 /* Handy source of time.  */
 volatile struct mapped_time_value *console_maptime;
 
-#define DEFAULT_ENCODING "ISO-8859-1"
+#define DEFAULT_ENCODING "UTF-8"
 #define DEFAULT_INTENSITY CONS_ATTR_INTENSITY_NORMAL
 #define DEFAULT_UNDERLINED 0
 #define DEFAULT_BLINKING 0
