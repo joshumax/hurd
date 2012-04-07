@@ -61,9 +61,19 @@ static char my_name[] = "(default pager):";
 
 static struct mutex printf_lock = MUTEX_INITIALIZER;
 
+#if 0
 #define dprintf(f, x...) \
   ({ mutex_lock (&printf_lock); printf (f , ##x); fflush (stdout); mutex_unlock (&printf_lock); })
-#define ddprintf(f, x...) ((void)0)
+#else
+#define dprintf(f, x...)
+#endif
+
+#if 0
+#define ddprintf(f, x...) \
+  ({ mutex_lock (&printf_lock); printf (f , ##x); fflush (stdout); mutex_unlock (&printf_lock); })
+#else
+#define ddprintf(f, x...)
+#endif
 
 /*
  * parallel vs serial switch
@@ -1535,9 +1545,6 @@ dprintf("extending object %x (size %x) to %x.\n",
 	    block.block.p_offset = off;
 	    block.block.p_index  = pager->cur_partition;
 	    mapptr[f_page] = block;
-	    ddprintf ("pager_write_offset: mapptr %x [3b] = %x\n", mapptr,
-		     mapptr[0x3b]);
-	    ddprintf ("pager_write_offset: block is finally %x\n", block);
 	}
 
 out:
@@ -2058,14 +2065,10 @@ void pager_port_lock(ds, seqno)
 	mach_port_seqno_t seqno;
 {
 	default_pager_total++;
-ddprintf ("pager_port_lock <%p>: <%p>: %d: 1\n", &ds, ds, seqno);
 	dstruct_lock(ds);
-ddprintf ("pager_port_lock <%p>: <%p>: %d: 2\n", &ds, ds, seqno);
 	while (ds->seqno != seqno) {
-ddprintf ("pager_port_lock <%p>: <%p>: %d: 3\n", &ds, ds, seqno);
 		default_pager_wait_seqno++;
 		condition_wait(&ds->waiting_seqno, &ds->lock);
-ddprintf ("pager_port_lock <%p>: <%p>: %d: 4\n", &ds, ds, seqno);
 	}
 }
 
@@ -2076,11 +2079,8 @@ void pager_port_unlock(ds)
 	default_pager_t ds;
 {
 	ds->seqno++;
-ddprintf ("pager_port_unlock <%p>: <%p>: seqno => %d\n", &ds, ds, ds->seqno);
 	dstruct_unlock(ds);
-ddprintf ("pager_port_unlock <%p>: <%p>: 2\n", &ds, ds);
 	condition_broadcast(&ds->waiting_seqno);
-ddprintf ("pager_port_unlock <%p>: <%p>: 3\n", &ds, ds);
 }
 
 /*
@@ -2795,56 +2795,28 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	pager_request++;
 #endif	 /* lint */
 
-ddprintf ("seqnos_memory_object_data_write <%p>: 1\n", &err);
 	if ((data_cnt % vm_page_size) != 0)
-	  {
-	    ddprintf ("fail 1: %d %d\n", data_cnt, vm_page_size);
 	    panic(here,my_name);
-	  }
 
-
-ddprintf ("seqnos_memory_object_data_write <%p>: 2\n", &err);
 	ds = pager_port_lookup(pager);
-ddprintf ("seqnos_memory_object_data_write <%p>: 3\n", &err);
 	if (ds == DEFAULT_PAGER_NULL)
-	  {
-	    ddprintf ("fail 2: %d %d\n", pager, ds);
 	    panic(here,my_name);
-	  }
 
-ddprintf ("seqnos_memory_object_data_write <%p>: 4\n", &err);
-ddprintf ("seqnos_memory_object_data_write <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&err, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
-ddprintf ("seqnos_memory_object_data_write <%p>: 5\n", &err);
-	pager_port_check_request(ds, pager_request);
-ddprintf ("seqnos_memory_object_data_write <%p>: 6\n", &err);
 	pager_port_start_write(ds);
-ddprintf ("seqnos_memory_object_data_write <%p>: 7\n", &err);
-ddprintf ("seqnos_memory_object_data_write <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&err, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
-ddprintf ("seqnos_memory_object_data_write <%p>: 8\n", &err);
 	for (amount_sent = 0;
 	     amount_sent < data_cnt;
 	     amount_sent += vm_page_size) {
 
 	    register int result;
 
-ddprintf ("seqnos_memory_object_data_write <%p>: 9\n", &err);
 	    result = default_write(&ds->dpager,
 			      addr + amount_sent,
 			      vm_page_size,
 			      offset + amount_sent);
-ddprintf ("seqnos_memory_object_data_write <%p>: 10\n", &err);
 	    if (result != KERN_SUCCESS) {
-ddprintf ("seqnos_memory_object_data_write <%p>: 11\n", &err);
-#if debug
-		dprintf("%s WRITE ERROR on default_pageout:", my_name);
-		dprintf(" pager=%x, offset=0x%x, length=0x%x, result=%d\n",
-			pager, offset+amount_sent, vm_page_size, result);
-#endif
 		dstruct_lock(ds);
 		ds->errors++;
 		dstruct_unlock(ds);
@@ -2852,20 +2824,13 @@ ddprintf ("seqnos_memory_object_data_write <%p>: 11\n", &err);
 	    default_pager_pageout_count++;
 	}
 
-ddprintf ("seqnos_memory_object_data_write <%p>: 12\n", &err);
 	pager_port_finish_write(ds);
-ddprintf ("seqnos_memory_object_data_write <%p>: 13\n", &err);
 	err = vm_deallocate(default_pager_self, addr, data_cnt);
-ddprintf ("seqnos_memory_object_data_write <%p>: 14\n", &err);
 	if (err != KERN_SUCCESS)
 	  {
-	    ddprintf ("fail 3: %s %s %s %s\n", default_pager_self, addr, data_cnt, &err);
-
 	      panic(here,my_name);
 	  }
 
-
-ddprintf ("seqnos_memory_object_data_write <%p>: 15\n", &err);
 	return(KERN_SUCCESS);
 }
 
