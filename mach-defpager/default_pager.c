@@ -2451,10 +2451,9 @@ seqnos_memory_object_init(pager, seqno, pager_request, pager_name,
 	 *	until we unlock the object.
 	 */
 
-	kr = memory_object_set_attributes(pager_request,
-					  TRUE,
-					  FALSE,	/* do not cache */
-					  default_pager_copy_strategy);
+	kr = memory_object_ready(pager_request,
+				 FALSE, /* Do not cache */
+				 default_pager_copy_strategy);
 	if (kr != KERN_SUCCESS)
 	    panic(here, my_name);
 
@@ -2676,10 +2675,11 @@ ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,
 			VM_PROT_NONE,
 			FALSE, MACH_PORT_NULL);
 		} else {
-		    (void) memory_object_data_provided(
+		    (void) memory_object_data_supply(
 			reply_to, offset,
-			addr, vm_page_size,
-			VM_PROT_NONE);
+			addr, vm_page_size, FALSE,
+			VM_PROT_NONE,
+			FALSE, MACH_PORT_NULL);
 		}
 		break;
 
@@ -2933,8 +2933,9 @@ seqnos_memory_object_data_return(pager, seqno, pager_request,
 	boolean_t	dirty;
 	boolean_t	kernel_copy;
 {
-	panic("%sdata_return",my_name);
-	return(KERN_FAILURE);
+
+	return seqnos_memory_object_data_write (pager, seqno, pager_request,
+						offset, addr, data_cnt);
 }
 
 kern_return_t
