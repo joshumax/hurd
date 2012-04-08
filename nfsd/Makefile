@@ -1,5 +1,4 @@
-# 
-#   Copyright (C) 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -23,7 +22,6 @@ makemode := utility
 
 SRCS = cache.c loop.c main.c ops.c fsys.c xdr.c
 OBJS = $(subst .c,.o,$(SRCS))
-LCLHDRS = nfsd.h
 target = nfsd
 installationdir = $(sbindir)
 HURDLIBS=threads shouldbeinlibc

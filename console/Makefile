@@ -1,4 +1,3 @@
-#
 #   Copyright (C) 2002, 2012 Free Software Foundation, Inc.
 #   Written by Marcus Brinkmann.
 #
@@ -24,8 +23,6 @@ makemode := server
 target = console
 
 SRCS = console.c display.c pager.c input.c
-LCLHDRS = display.h pager.h input.h priv.h mutations.h
-DIST_FILES = hurd.ti motd.UTF8
 
 MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 
@@ -36,8 +33,6 @@ MIGSFLAGS += -imacros $(srcdir)/mutations.h
 
 # This is the old monolithic version of the console server.
 #SRCS = main.c vcons.c focus.c vga-display.c vga.c dynafont.c bdf.c
-#LCLHDRS = focus.h input-drv.h vcons.h display-drv.h vga.h vga-hw.h	\
-#          dynafont.h bdf.h mutations.h priv.h
 #
 #HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
 #OBJS = $(subst .c,.o,$(SRCS)) tioctlServer.o

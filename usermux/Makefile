@@ -1,6 +1,6 @@
 # Makefile for usermux
 # 
-#   Copyright (C) 1997, 2000 Free Software Foundation, Inc.
+#   Copyright (C) 1997, 2000, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,7 +22,6 @@ makemode := server
 target = usermux
 
 SRCS = usermux.c mux.c leaf.c node.c stubs.c
-LCLHDRS = usermux.h
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc

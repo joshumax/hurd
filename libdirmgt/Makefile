@@ -1,5 +1,4 @@
-# 
-#   Copyright (C) 1995 Free Software Foundation
+#   Copyright (C) 1995, 2012 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -20,7 +19,5 @@
 
 dir := libdirmgt
 makemode := misc
-
-LCLHDRS = dirmgt.h
 
 include ../Makeconf

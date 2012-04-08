@@ -1,6 +1,6 @@
 # Makefile for tmpfs
 #
-#   Copyright (C) 2000,01,02 Free Software Foundation, Inc.
+#   Copyright (C) 2000,01,02,12 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,7 +22,6 @@ makemode := server
 target = tmpfs
 SRCS = tmpfs.c node.c dir.c pager-stubs.c
 OBJS = $(SRCS:.c=.o) default_pagerUser.o
-LCLHDRS = tmpfs.h
 # XXX The shared libdiskfs requires libstore even though we don't use it here.
 HURDLIBS = diskfs pager iohelp fshelp store threads ports ihash shouldbeinlibc
 

@@ -1,5 +1,4 @@
-# 
-#   Copyright (C) 1994, 1995, 1996 Free Software Foundation
+#   Copyright (C) 1994, 1995, 1996, 2012 Free Software Foundation
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -24,7 +23,6 @@ makemode := utility
 SRCS = dir.c main.c pass1.c pass1b.c pass2.c pass3.c pass4.c \
 	pass5.c setup.c utilities.c inode.c
 OBJS = $(subst .c,.o,$(SRCS)) tables.o
-LCLHDRS = fsck.h
 target = fsck.ufs
 installationdir = $(sbindir)
 HURDLIBS=shouldbeinlibc

@@ -1,5 +1,5 @@
-#
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,2005,2010 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,2005,2010,2012 Free Software
+#   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -24,7 +24,6 @@ SRCS= demuxer.c init-init.c init-loop.c opts-version.c extra-version.c \
       cons-switch.c vcons-remove.c vcons-add.c vcons-open.c \
       vcons-close.c vcons-destroy.c vcons-refresh.c vcons-scrollback.c \
       vcons-input.c vcons-move-mouse.c vcons-event.c
-LCLHDRS = priv.h mutations.h $(installhdrs)
 installhdrs = cons.h
 
 fs_notify-MIGSFLAGS = -imacros $(srcdir)/mutations.h

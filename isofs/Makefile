@@ -1,5 +1,4 @@
-
-#   Copyright (C) 1997, 2000, 2005 Free Software Foundation
+#   Copyright (C) 1997, 2000, 2005, 2012 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -20,8 +19,6 @@ makemode := server
 
 target = iso9660fs
 SRCS = inode.c main.c lookup.c pager.c rr.c
-LCLHDRS = iso9660.h isofs.h rr.h 
-DIST_FILES = EXTENSIONS
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc

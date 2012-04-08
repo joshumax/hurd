@@ -1,6 +1,6 @@
 # Makefile for libtreefs 
 #
-#   Copyright (C) 1995 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -27,7 +27,6 @@ OTHERSRCS = defhooks.c dir-hooks.c dir-lookup.c fsys-getroot.c fsys-hooks.c \
 	fsys-startup.c hooks.c mdir.c nlist.c node-hooks.c rights.c \
 	trans-help.c trans-start.c xinl.c
 SRCS = $(OTHERSRCS) $(S_SRCS)
-LCLHDRS = treefs.h fs-mutate.h
 
 MIGSTUBS = fsServer.o ioServer.o fsysServer.o 
 OBJS = $(sort $(SRCS:.c=.o)) $(MIGSTUBS)

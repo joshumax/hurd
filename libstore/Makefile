@@ -50,14 +50,12 @@ store-types = \
 	      zero
 
 libstore.so-LDLIBS += $(PARTED_LIBS) -ldl
-LCLHDRS=store.h
 installhdrs=store.h
 
 HURDLIBS = shouldbeinlibc
 GUNZIP_OBJS = unzip.o inflate.o util.o
 BUNZIP2_OBJS = do-bunzip2.o
 OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
-DIST_FILES = unzipstore.c
 
 include ../Makeconf
 

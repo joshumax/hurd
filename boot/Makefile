@@ -1,4 +1,4 @@
-# Copyright (C) 1993,94,95,96,97,2001 Free Software Foundation, Inc.
+# Copyright (C) 1993,94,95,96,97,2001,2012 Free Software Foundation, Inc.
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -25,10 +25,8 @@ COMMON-OBJS = notifyServer.o ourdeviceServer.o \
        termServer.o bootstrapServer.o boot_script.o userland-boot.o
 OBJS = boot.o $(COMMON-OBJS)
 UX-OBJS = mach-crt0.o uxboot.o sigvec.o syscall.o ux.o $(COMMON-OBJS)
-LCLHDRS = boot_script.h ux.h
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
-DIST_FILES=frank1.ld frankemul.ld
 HURDLIBS=store shouldbeinlibc threads
 
 include ../Makeconf

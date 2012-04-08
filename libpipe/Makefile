@@ -1,6 +1,6 @@
 # Makefile for libpipe
 # 
-#   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -23,7 +23,6 @@ libname = libpipe
 installhdrs = pipe.h pq.h
 
 SRCS = pq.c dgram.c pipe.c stream.c seqpack.c addr.c pq-funcs.c pipe-funcs.c
-LCLHDRS = pipe.h pq.h
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS=threads ports

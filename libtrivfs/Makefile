@@ -1,6 +1,5 @@
-#
-#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2001, 2002, 2003, 2008 Free
-#   Software Foundation, Inc.
+#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2001, 2002, 2003, 2008, 2012
+#   Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -49,7 +48,6 @@ MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 libname = libtrivfs
 HURDLIBS = fshelp iohelp ports shouldbeinlibc
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
-LCLHDRS = trivfs.h fsmutations.h priv.h
 MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix trivfs_
 installhdrs := trivfs.h

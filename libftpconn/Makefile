@@ -1,6 +1,6 @@
 # Makefile for libftpconn
 # 
-#   Copyright (C) 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1997, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -25,7 +25,6 @@ installhdrsubdir = .
 
 SRCS = addr.c cmd.c create.c cwd.c errs.c names.c open.c reply.c   \
 	rmt.c set-type.c stats.c unix.c xfer.c xinl.c fname.c
-LCLHDRS = ftpconn.h priv.h
 
 OBJS = $(SRCS:.c=.o)
 

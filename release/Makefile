@@ -1,5 +1,5 @@
 # Makefile for Hurd release tools
-#   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 1997, 2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -20,18 +20,6 @@
 
 dir := release
 makemode := misc
-
-# Files that go into the root of binary distributions
-dist-files = INSTALL-binary dist-README SETUP servers.boot bfloppy.boot \
-	menu.lst COPYING.LIB SOURCES.0.2
-
-# Files describing the contents of boot floppies
-floppy-copy = bfloppy.copy bfloppy-special.copy rfloppy.copy rfloppy-special.copy \
-	bfloppy1.copy bfloppy1-special.copy bfloppy2.copy bfloppy2-special.copy
-
-scripts = mkfsimage.sh mksmallso.sh mkemptyso.sh
-
-DIST_FILES = README $(dist-files) $(floppy-copy) $(scripts)
 
 include ../Makeconf
 

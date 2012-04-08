@@ -1,6 +1,6 @@
 # Makefile for pflocal
 # 
-#   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 2000, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -22,7 +22,6 @@ makemode := server
 target = pflocal
 
 SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
-LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h sserver.h
 
 MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)

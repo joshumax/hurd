@@ -17,9 +17,10 @@
 dir := doc
 makemode := misc
 
-DIST_FILES := navigating gpl.texinfo hurd.texi version.texi
 targets = hurd.info $(wildcard hurd.info-*)
 installationdir = $(infodir)
+
+DISTFILES = $(targets)
 
 DVIPS = dvips
 
@@ -52,10 +53,3 @@ stamp-version: $(..)config.make
 	echo '@set VERSION $(hurd-version)' > version.texi.new
 	$(move-if-change) version.texi.new version.texi
 	touch $@
-
-# XXX: the default lndist target will try to look for target files
-# in the source directory. Special case them.
-lndist: lndist-info-targets
-lndist-info-targets: hurd.info $(wildcard hurd.info-*)
-	ln $? $(top_srcdir)/hurd-snap/$(dir)
-

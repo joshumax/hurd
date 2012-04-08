@@ -1,5 +1,5 @@
-#
-#   Copyright (C) 1994, 95, 96, 98, 1999, 2006 Free Software Foundation, Inc.
+#   Copyright (C) 1994, 95, 96, 98, 1999, 2006, 2012 Free Software Foundation,
+#   Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -30,7 +30,6 @@ SRCS =	lock-acquire.c lock-init.c \
 	perms-isowner.c perms-iscontroller.c perms-access.c \
 	perms-checkdirmod.c \
 	touch.c
-LCLHDRS = fshelp.h locks.h trans.h
 installhdrs = fshelp.h
 
 HURDLIBS = shouldbeinlibc threads iohelp ports
