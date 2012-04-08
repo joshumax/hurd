@@ -703,6 +703,43 @@ typedef struct dpager	*dpager_t;
 vm_size_t	max_doubled_size = 4 * 1024 * 1024;	/* 4 meg */
 
 /*
+ * Return first level map for pager.
+ * If there is no such map, than allocate it.
+ */
+dp_map_t pager_get_direct_map(pager)
+	register dpager_t	pager;
+{
+	register dp_map_t	mapptr, emapptr;
+	register vm_size_t	size = pager->size;
+
+	if (pager->map)
+	    return pager->map;
+	/*
+	 * Allocate and initialize the block map
+	 */
+	{
+	    register vm_size_t	alloc_size;
+	    dp_map_t		init_value;
+
+	    if (INDIRECT_PAGEMAP(size)) {
+		alloc_size = INDIRECT_PAGEMAP_SIZE(size);
+		init_value = (dp_map_t)0;
+	    } else {
+		alloc_size = PAGEMAP_SIZE(size);
+		init_value = (dp_map_t)NO_BLOCK;
+	    }
+
+	    mapptr = (dp_map_t) kalloc(alloc_size);
+	    for (emapptr = &mapptr[(alloc_size-1) / sizeof(vm_offset_t)];
+		 emapptr >= mapptr;
+		 emapptr--)
+	        emapptr->indirect = init_value;
+	}
+	pager->map = mapptr;
+        return mapptr;
+}
+
+/*
  * Attach a new paging object to a paging partition
  */
 void
@@ -734,29 +771,7 @@ pager_alloc(pager, part, size)
 	} else
 	    size = ROUNDUP_TO_PAGEMAP(size);
 
-	/*
-	 * Allocate and initialize the block map
-	 */
-	{
-		register vm_size_t	alloc_size;
-		dp_map_t		init_value;
-
-		if (INDIRECT_PAGEMAP(size)) {
-			alloc_size = INDIRECT_PAGEMAP_SIZE(size);
-			init_value = (dp_map_t)0;
-		} else {
-			alloc_size = PAGEMAP_SIZE(size);
-			init_value = (dp_map_t)NO_BLOCK;
-		}
-
-		mapptr = (dp_map_t) kalloc(alloc_size);
-		for (emapptr = &mapptr[(alloc_size-1) / sizeof(vm_offset_t)];
-		     emapptr >= mapptr;
-		     emapptr--)
-			emapptr->indirect = init_value;
-
-	}
-	pager->map = mapptr;
+ 	pager->map = NULL;
 	pager->size = size;
 	pager->limit = (vm_size_t)-1;
 
@@ -790,7 +805,7 @@ pager_allocated(pager)
 
 	size = pager->size;	/* in pages */
 	asize = 0;		/* allocated, in pages */
-	map = pager->map;
+	map = pager_get_direct_map(pager);
 
 	if (INDIRECT_PAGEMAP(size)) {
 		for (emap = &map[INDIRECT_PAGEMAP_ENTRIES(size)];
@@ -834,7 +849,7 @@ pager_pages(pager, pages, numpages)
 	vm_offset_t     offset;
 
 	size = pager->size;	/* in pages */
-	map = pager->map;
+	map = pager_get_direct_map(pager);
 	actual = 0;
 	offset = 0;
 
@@ -911,7 +926,7 @@ pager_extend(pager, new_size)
 	     */
 	    new_mapptr = (dp_map_t)
 			kalloc(INDIRECT_PAGEMAP_SIZE(new_size));
-	    old_mapptr = pager->map;
+	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < INDIRECT_PAGEMAP_ENTRIES(old_size); i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
@@ -956,7 +971,7 @@ pager_extend(pager, new_size)
 	     * Allocate new second-level map first.
 	     */
 	    new_mapptr = (dp_map_t) kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
-	    old_mapptr = pager->map;
+	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < old_size; i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < PAGEMAP_ENTRIES; i++)
@@ -1015,7 +1030,7 @@ pager_extend(pager, new_size)
 	 * Enlarging a direct block.
 	 */
 	new_mapptr = (dp_map_t)	kalloc(PAGEMAP_SIZE(new_size));
-	old_mapptr = pager->map;
+	old_mapptr = pager_get_direct_map(pager);
 	for (i = 0; i < old_size; i++)
 	    new_mapptr[i] = old_mapptr[i];
 	for (; i < new_size; i++)
@@ -1464,7 +1479,8 @@ pager_write_offset(pager, offset)
 
 	if (INDIRECT_PAGEMAP(pager->size)) {
 	  ddprintf ("pager_write_offset: indirect\n");
-	    mapptr = pager->map[f_page/PAGEMAP_ENTRIES].indirect;
+	    mapptr = pager_get_direct_map(pager);
+	    mapptr = mapptr[f_page/PAGEMAP_ENTRIES].indirect;
 	    if (mapptr == 0) {
 		/*
 		 * Allocate the indirect block
@@ -1503,7 +1519,7 @@ pager_write_offset(pager, offset)
 	    f_page %= PAGEMAP_ENTRIES;
 	}
 	else {
-	    mapptr = pager->map;
+	    mapptr = pager_get_direct_map(pager);
 	}
 
 	block = mapptr[f_page];
