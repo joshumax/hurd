@@ -66,6 +66,7 @@ vpath %.c $(srcdir)/../exec
 CPPFLAGS += -I$(srcdir)/../exec
 
 module-CPPFLAGS = -D'STORE_SONAME_SUFFIX=".so.$(hurd-version)"'
+module-DEPS = $(..)config.make
 
 libstore_gunzip.so.$(hurd-version): $(GUNZIP_OBJS:.o=_pic.o)
 libstore_bunzip2.so.$(hurd-version): $(BUNZIP2_OBJS:.o=_pic.o)

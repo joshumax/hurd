@@ -1,6 +1,6 @@
 #
 #   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006, 2009, 2011 Free Software Foundation, Inc.
+#   2006, 2009, 2011, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -65,9 +65,12 @@ working-prog-subdirs := $(filter-out \
 
 $(subdirs): version.h
 
-version.h: version.h.in
-	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' < $< > $@
-
+version.h: stamp-version; @:
+stamp-version: version.h.in config.make
+	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' \
+	  < $< > version.h.new
+	$(move-if-change) version.h.new version.h
+	touch $@
 
 ## GNU Coding Standards targets (not all are here yet), and some other
 ## similar sorts of things

@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1994, 1998, 1999, 2003 Free Software Foundation
+#   Copyright (C) 1994, 1998, 1999, 2003, 2012 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -48,10 +47,8 @@ include ../Makeconf
 %.ps: %.dvi
 	$(DVIPS) $< -o $@
 
-move-if-change = $(SHELL) $(top_srcdir)/move-if-change
-
 version.texi: stamp-version; @:
-stamp-version: $(top_srcdir)/Makeconf
+stamp-version: $(..)config.make
 	echo '@set VERSION $(hurd-version)' > version.texi.new
 	$(move-if-change) version.texi.new version.texi
 	touch $@

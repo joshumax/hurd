@@ -121,8 +121,7 @@ library_deps=$(foreach lib,$(HURDLIBS),$(..)lib$(lib)/lib$(lib).so)
 
 # Local programs:
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
-
-
+move-if-change = $(SHELL) $(top_srcdir)/move-if-change
 
 # Decode makemode.
 # After this section, $(targets) and $(progtarg) will be defined,
@@ -618,7 +617,7 @@ endif
 
 define make-deps
 set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $*_p.o $@:/' \
+sed > $@.new -e 's%$*\.o:%$*.o $*_pic.o $*_p.o $@: $($*-DEPS)%' \
 	     -e 's% [^ ]*/gcc-lib/[^ ]*\.h%%g'
 mv -f $@.new $@
 endef
@@ -636,6 +635,6 @@ endef
 	echo '$*.o: $<' > $@
 
 # Rule to make executable shell scripts from .sh files.
-%: %.sh
+%: %.sh $(..)config.make
 	sed -e 's/STANDARD_HURD_VERSION_\(.[^_]*\)_/\1 (GNU Hurd) $(hurd-version)/' < $< > $@
 	chmod +x $@
