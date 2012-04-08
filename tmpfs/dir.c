@@ -150,6 +150,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 struct dirstat
 {
   struct tmpfs_dirent **prevp;
+  int dotdot;
 };
 const size_t diskfs_dirstat_size = sizeof (struct dirstat);
 
@@ -177,6 +178,9 @@ diskfs_lookup_hard (struct node *dp,
 
   if (type == REMOVE || type == RENAME)
     assert (np);
+
+  if (ds)
+    ds->dotdot = type & SPEC_DOTDOT;
 
   if (namelen == 1 && name[0] == '.')
     {
@@ -279,7 +283,11 @@ error_t
 diskfs_dirrewrite_hard (struct node *dp, struct node *np,
 			struct dirstat *ds)
 {
-  (*ds->prevp)->dn = np->dn;
+  if (ds->dotdot)
+    dp->dn->u.dir.dotdot = np->dn;
+  else
+    (*ds->prevp)->dn = np->dn;
+
   return 0;
 }
 
