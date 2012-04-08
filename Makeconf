@@ -262,7 +262,7 @@ $(includedir)/$(installhdrsubdir): $(includedir)
 # it never needs to be repeated for a particular header.
 local-installhdrsubdir = include/$(installhdrsubdir)
 INSTALLED_LOCAL_HEADERS := $(installhdrs:%=../$(local-installhdrsubdir)/%)
-$(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: ../config.make
+$(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: Makefile
 	@rm -f $@
 	@test -d $(@D)/ || $(MKINSTALLDIRS) $(@D)
 	echo '#include "../$(dir)/$*"' > $@
