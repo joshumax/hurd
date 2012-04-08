@@ -1103,19 +1103,10 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 
       if (INDIRECT_PAGEMAP (new_size))
 	{
-	  if (INDIRECT_PAGEMAP_SIZE (new_size) >= vm_page_size)
-	    /* XXX we know how kalloc.c works; avoid copying.  */
-	    kfree ((char *) round_page ((vm_address_t) pager->map
-					+ INDIRECT_PAGEMAP_SIZE (new_size)),
-		   round_page (INDIRECT_PAGEMAP_SIZE (old_size))
-		   - round_page (INDIRECT_PAGEMAP_SIZE (new_size)));
-	  else
-	    {
-	      const dp_map_t old_mapptr = pager->map;
-	      pager->map = (dp_map_t) kalloc (INDIRECT_PAGEMAP_SIZE(new_size));
-	      memcpy (pager->map, old_mapptr, INDIRECT_PAGEMAP_SIZE(new_size));
-	      kfree ((char *) old_mapptr, INDIRECT_PAGEMAP_SIZE (old_size));
-	    }
+	  const dp_map_t old_mapptr = pager->map;
+	  pager->map = (dp_map_t) kalloc (INDIRECT_PAGEMAP_SIZE(new_size));
+	  memcpy (pager->map, old_mapptr, INDIRECT_PAGEMAP_SIZE(new_size));
+	  kfree ((char *) old_mapptr, INDIRECT_PAGEMAP_SIZE (old_size));
 	}
       else
 	{
