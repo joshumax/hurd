@@ -64,13 +64,6 @@ working-prog-subdirs := $(filter-out \
 
 
 $(subdirs): version.h
-
-version.h: stamp-version; @:
-stamp-version: version.h.in config.make
-	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' \
-	  < $< > version.h.new
-	$(move-if-change) version.h.new version.h
-	touch $@
 
 ## GNU Coding Standards targets (not all are here yet), and some other
 ## similar sorts of things
@@ -164,3 +157,28 @@ endif
 # How to build them
 $(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
 	$(MAKE) -C $* directory-depend no_deps=t
+
+
+## Build system
+
+AUTOCONF = autoconf
+AUTOCONF_FLAGS = -I $(top_srcdir)
+
+$(top_srcdir)/configure: $(top_srcdir)/configure.in $(top_srcdir)/aclocal.m4
+	$(AUTOCONF) $(AUTOCONF_FLAGS) $< > $@
+	chmod +x $@
+
+config.status: $(top_srcdir)/configure
+	$(SHELL) $@ --recheck
+
+config.make: config.status $(top_srcdir)/config.make.in
+# No stamp file is used here, as config.make's timestamp changing will not have
+# any far-reaching consequences.
+	$(SHELL) $< --file=$@
+
+version.h: stamp-version; @:
+stamp-version: version.h.in config.make
+	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' \
+	  < $< > version.h.new
+	$(move-if-change) version.h.new version.h
+	touch $@
