@@ -89,7 +89,7 @@ dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(
 	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
 	rm -rf $(srcdir)/$(dirname)-$(version)
 
-clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
+clean: $(addsuffix -clean,$(subdirs)) clean-misc
 
 relink: $(addsuffix -relink,$(lib-subdirs) $(prog-subdirs))
 
