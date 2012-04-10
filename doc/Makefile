@@ -17,7 +17,7 @@
 dir := doc
 makemode := misc
 
-targets = hurd.info $(wildcard hurd.info-*)
+targets = hurd.info $(wildcard hurd.info-*) version.texi
 installationdir = $(infodir)
 
 DISTFILES = $(targets)
