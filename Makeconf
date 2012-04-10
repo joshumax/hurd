@@ -448,7 +448,7 @@ dist.tar: $(DISTFILES) FORCE
 # the source directory, but that must not affect the name it gets in dist.tar.
 	for f in $(DISTFILES); do \
 	  if test -e "$$f"; then d=.; else d=$(srcdir); fi && \
-	  tar --append -f $@ \
+	  tar --append -f $@ --owner=0 --group=0 \
 	    --transform=s%^%$(dist-version)/$(dir)/% -C "$$d" "$$f" \
 	  || exit $$?; \
 	done
