@@ -98,6 +98,13 @@ error_t packet_write (struct packet *packet,
 error_t packet_read (struct packet *packet,
 		     char **data, size_t *data_len, size_t amount);
 
+/* Peek up to AMOUNT bytes from the beginning of the data in PACKET, and
+   puts it into *DATA, and the amount read into DATA_LEN.  If more than the
+   original *DATA_LEN bytes are available, new memory is vm_allocated, and
+   the address and length of this array put into DATA and DATA_LEN.  */
+error_t packet_peek (struct packet *packet,
+		     char **data, size_t *data_len, size_t amount);
+
 /* Returns any ports in PACKET in PORTS and NUM_PORTS, and removes them from
    PACKET.  */
 error_t packet_read_ports (struct packet *packet,
