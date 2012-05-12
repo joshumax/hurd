@@ -45,7 +45,7 @@ diskfs_S_dir_link (struct protid *dircred,
   if (S_ISDIR (np->dn_stat.st_mode))
     {
       mutex_unlock (&np->lock);
-      return EISDIR;
+      return EPERM;
     }
   mutex_unlock (&np->lock);
 
