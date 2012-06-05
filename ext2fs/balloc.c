@@ -197,7 +197,7 @@ repeat:
 	     * The goal was occupied; search forward for a free
 	     * block within the next 32 blocks
 	   */
-	  if (j & 31 == 31)
+	  if ((j & 31) == 31)
 	    lmap = 0;
 	  else
 	    lmap = ((((unsigned long *) bh)[j >> 5]) >>
