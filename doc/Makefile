@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1994, 1998, 1999, 2003 Free Software Foundation
+#   Copyright (C) 1994, 1998, 1999, 2003, 2012 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -18,9 +17,10 @@
 dir := doc
 makemode := misc
 
-DIST_FILES := navigating gpl.texinfo hurd.texi version.texi
-targets = hurd.info $(wildcard hurd.info-*)
+targets = hurd.info $(wildcard hurd.info-*) version.texi
 installationdir = $(infodir)
+
+DISTFILES = $(targets)
 
 DVIPS = dvips
 
@@ -48,17 +48,8 @@ include ../Makeconf
 %.ps: %.dvi
 	$(DVIPS) $< -o $@
 
-move-if-change = $(SHELL) $(top_srcdir)/move-if-change
-
 version.texi: stamp-version; @:
-stamp-version: $(top_srcdir)/Makeconf
+stamp-version: $(..)config.make
 	echo '@set VERSION $(hurd-version)' > version.texi.new
 	$(move-if-change) version.texi.new version.texi
 	touch $@
-
-# XXX: the default lndist target will try to look for target files
-# in the source directory. Special case them.
-lndist: lndist-info-targets
-lndist-info-targets: hurd.info $(wildcard hurd.info-*)
-	ln $? $(top_srcdir)/hurd-snap/$(dir)
-

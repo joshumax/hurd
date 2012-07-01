@@ -184,7 +184,7 @@ idvec_merge_ids (struct idvec *idvec, const uid_t *ids, unsigned num)
   unsigned num_old = idvec->num;
   while (num-- > 0 && !err)
     {
-      int i;
+      unsigned int i;
       for (i = 0; i < num_old; i++)
 	if (idvec->ids[i] == *ids)
 	  break;
@@ -234,7 +234,7 @@ idvec_remove (struct idvec *idvec, unsigned pos, uid_t id)
 int
 idvec_subtract (struct idvec *idvec, const struct idvec *sub)
 {
-  int i;
+  unsigned int i;
   int done = 0;
   for (i = 0; i < sub->num; i++)
     done |= idvec_remove (idvec, 0, sub->ids[i]);

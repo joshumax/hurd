@@ -50,14 +50,12 @@ store-types = \
 	      zero
 
 libstore.so-LDLIBS += $(PARTED_LIBS) -ldl
-LCLHDRS=store.h
 installhdrs=store.h
 
 HURDLIBS = shouldbeinlibc
 GUNZIP_OBJS = unzip.o inflate.o util.o
 BUNZIP2_OBJS = do-bunzip2.o
 OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
-DIST_FILES = unzipstore.c
 
 include ../Makeconf
 
@@ -66,6 +64,7 @@ vpath %.c $(srcdir)/../exec
 CPPFLAGS += -I$(srcdir)/../exec
 
 module-CPPFLAGS = -D'STORE_SONAME_SUFFIX=".so.$(hurd-version)"'
+module-DEPS = $(..)config.make
 
 libstore_gunzip.so.$(hurd-version): $(GUNZIP_OBJS:.o=_pic.o)
 libstore_bunzip2.so.$(hurd-version): $(BUNZIP2_OBJS:.o=_pic.o)

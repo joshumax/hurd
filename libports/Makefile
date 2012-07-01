@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1995,96,97,99,2000 Free Software Foundation, Inc.
+#   Copyright (C) 1995,96,97,99,2000,2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -39,7 +38,6 @@ SRCS = create-bucket.c create-class.c \
  claim-right.c transfer-right.c create-port-noinstall.c create-internal.c \
  interrupted.c
 
-LCLHDRS = ports.h
 installhdrs = ports.h
 
 HURDLIBS= ihash

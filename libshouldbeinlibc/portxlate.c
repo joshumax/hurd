@@ -54,7 +54,7 @@ port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
       x->ports = malloc (sizeof (mach_port_t) * x->to_names_len);
       if (x->ports)
 	{
-	  int i;
+	  unsigned int i;
 	  for (i = 0; i < x->to_names_len; i++)
 	    x->ports[i] = MACH_PORT_NULL;
 	}
@@ -80,7 +80,7 @@ port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
 void
 port_name_xlator_free (struct port_name_xlator *x)
 {
-  int i;
+  unsigned int i;
 
   for (i = 0; i < x->to_names_len; i++)
     if (x->ports[i] != MACH_PORT_NULL)

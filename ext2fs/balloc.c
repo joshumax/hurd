@@ -197,8 +197,11 @@ repeat:
 	     * The goal was occupied; search forward for a free
 	     * block within the next 32 blocks
 	   */
-	  lmap = ((((unsigned long *) bh)[j >> 5]) >>
-		  ((j & 31) + 1));
+	  if ((j & 31) == 31)
+	    lmap = 0;
+	  else
+	    lmap = ((((unsigned long *) bh)[j >> 5]) >>
+		    ((j & 31) + 1));
 	  if (j < sblock->s_blocks_per_group - 32)
 	    lmap |= (((unsigned long *) bh)[(j >> 5) + 1]) <<
 	      (31 - (j & 31));

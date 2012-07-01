@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1995, 1996, 2001, 2003 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 2001, 2003, 2012 Free Software Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -23,7 +22,6 @@ makemode := library
 libname := libihash
 SRCS = ihash.c
 installhdrs = ihash.h
-LCLHDRS = $(installhdrs)
 
 OBJS = $(SRCS:.c=.o)
 

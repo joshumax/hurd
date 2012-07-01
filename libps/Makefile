@@ -1,6 +1,6 @@
 # Makefile for libps
 #
-#   Copyright (C) 1995,96,99,2002 Free Software Foundation, Inc.
+#   Copyright (C) 1995,96,99,2002,2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell.
 #
 #   This file is part of the GNU Hurd.
@@ -25,7 +25,6 @@ makemode := library
 libname = libps
 SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
 	tty.c user.c write.c
-LCLHDRS=ps.h common.h
 installhdrs = ps.h
 installhdrsubdir = .
 

@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1995, 1996, 1997, 2000, 2001, 2008, 2011 Free Software
+#   Copyright (C) 1995, 1996, 1997, 2000, 2001, 2008, 2011, 2012 Free Software
 #     Foundation, Inc.
 #
 #   Written by Michael I. Bushnell.
@@ -24,7 +23,6 @@ dir := nfs
 makemode := server
 
 target = nfs
-LCLHDRS = nfs.h mount.h nfs-spec.h
 SRCS = ops.c rpc.c mount.c nfs.c cache.c consts.c main.c name-cache.c \
        storage-info.c
 OBJS = $(SRCS:.c=.o)

@@ -1,4 +1,21 @@
-# Generic configuration for Hurd compilation
+# Generic configuration for Hurd compilation		-*- makefile-gmake -*-
+
+# Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2003,
+# 2006, 2007, 2008, 2010, 2011, 2012 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 # Directory makefiles should set the variable makemode to either
 # `server' if they compile and install a single program for /hurd
@@ -10,12 +27,12 @@
 
 # Every makefile should define
 # SRCS (all actual source code)
-# LCLHDRS (all source headers in this directory [NOT MiG created])
 # OBJS (all .o files used to produce some target).
 # HURDLIBS (all Hurd libraries used; with no directory name or `lib' attached)
 #   For types `server' and `utility' an automatic dependency will be
 #   written for these, and type `library' will include a .so dependency.
 #   Types `servers' and `utilities'; you have to do it yourself.
+# DISTFILES (any built files to be included in distributions).
 
 # Types `server' and `utility' should define
 #   target (the name of the program built)
@@ -104,8 +121,7 @@ library_deps=$(foreach lib,$(HURDLIBS),$(..)lib$(lib)/lib$(lib).so)
 
 # Local programs:
 MKINSTALLDIRS = $(top_srcdir)/mkinstalldirs
-
-
+move-if-change = $(SHELL) $(top_srcdir)/move-if-change
 
 # Decode makemode.
 # After this section, $(targets) and $(progtarg) will be defined,
@@ -203,7 +219,7 @@ BUGADDR_REF = -uargp_program_bug_address
 
 # Standard targets
 
-.PHONY: all install libs relink clean objs
+.PHONY: all install libs relink dist-hook clean objs
 
 # Just build all the object files.
 objs: $(OBJS)
@@ -245,7 +261,7 @@ $(includedir)/$(installhdrsubdir): $(includedir)
 # it never needs to be repeated for a particular header.
 local-installhdrsubdir = include/$(installhdrsubdir)
 INSTALLED_LOCAL_HEADERS := $(installhdrs:%=../$(local-installhdrsubdir)/%)
-$(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: ../config.make
+$(INSTALLED_LOCAL_HEADERS): ../$(local-installhdrsubdir)/%: Makefile
 	@rm -f $@
 	@test -d $(@D)/ || $(MKINSTALLDIRS) $(@D)
 	echo '#include "../$(dir)/$*"' > $@
@@ -387,18 +403,6 @@ $(..)$(dir).d: $(srcdir)/Makefile
 	rm -f $@
 	echo $(dir): $(hurd-bug-addr-dir-dep) $(addprefix lib,$(HURDLIBS)) > $@
 
-# Making a snapshot
-distfiles = Makefile $(SRCS) $(LCLHDRS) $(DIST_FILES)
-lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
-	ln $(addprefix $(srcdir)/,$(distfiles)) $(top_srcdir)/hurd-snap/$(dir)
-
-ifeq ($(dir),.)
-$(top_srcdir)/hurd-snap/$(dir):
-else
-$(top_srcdir)/hurd-snap/$(dir):
-	mkdir $@
-endif
-
 # TAGS files
 ifneq ($(dir),.)
 ifdef configured
@@ -426,19 +430,42 @@ endif
 endif
 endif
 
-# Cleaning
-ifeq ($(clean),yes)
-clean:
-	rm -f *.d *.o *Server.c *User.c *_S.h *_U.h *.[su]defsi \
-	      $(cleantarg)
-relink:
-	rm -f $(linktarg)
+.PHONY: dist-hook
+ifdef DISTFILES
+dist-hook: dist.tar
+else
+# Don't bother creating an empty tarball.
+dist-hook:
 endif
 
+# FORCE is needed as $(dist-version) can change between two invocations.
+dist.tar: $(DISTFILES) FORCE
+	@[ x$(dist-version) != x ] || \
+	  { echo >&2 Can\''t make $@ without dist-version set.' && \
+	    false; }
+	tar -c -f $@ --files-from=/dev/null
+# Every file from $(DISTFILES) can exist either in the build directory or in
+# the source directory, but that must not affect the name it gets in dist.tar.
+	for f in $(DISTFILES); do \
+	  if test -e "$$f"; then d=.; else d=$(srcdir); fi && \
+	  if test "$(dir)" = "."; then subdir=""; else subdir="$(dir)/"; fi && \
+	  tar --append -f $@ --owner=0 --group=0 \
+	    --transform="s%^%$(dist-version)/$$subdir%" -C "$$d" "$$f" \
+	  || exit $$?; \
+	done
+
+# Cleaning
 clean:
+	rm -f dist.tar
+ifeq ($(clean),yes)
+	rm -f *.d *.o *Server.c *User.c *_S.h *_U.h *.[su]defsi \
+	      $(cleantarg)
+endif
+
 relink:
-
-
+ifeq ($(clean),yes)
+	rm -f $(linktarg)
+endif
 
 # Subdependencies
 
@@ -601,7 +628,7 @@ endif
 
 define make-deps
 set -e; $(CC) $(CFLAGS) $(CPPFLAGS) -M -MG $<  | \
-sed > $@.new -e 's/$*\.o:/$*.o $*_pic.o $*_p.o $@:/' \
+sed > $@.new -e 's%$*\.o:%$*.o $*_pic.o $*_p.o $@: $($*-DEPS)%' \
 	     -e 's% [^ ]*/gcc-lib/[^ ]*\.h%%g'
 mv -f $@.new $@
 endef
@@ -619,6 +646,6 @@ endef
 	echo '$*.o: $<' > $@
 
 # Rule to make executable shell scripts from .sh files.
-%: %.sh
+%: %.sh $(..)config.make
 	sed -e 's/STANDARD_HURD_VERSION_\(.[^_]*\)_/\1 (GNU Hurd) $(hurd-version)/' < $< > $@
 	chmod +x $@

@@ -1,4 +1,4 @@
-#   Copyright (C) 1997, 2003, 2007 Free Software Foundation
+#   Copyright (C) 1997, 2003, 2007, 2012 Free Software Foundation
 #   Modified by Marcus Brinkmann, 2000-05-05
 #
 #   This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@ makemode := server
 
 target = fatfs
 SRCS = inode.c main.c dir.c pager.c fat.c virt-inode.c node-create.c
-LCLHDRS = fat.h fatfs.h virt-inode.h
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc

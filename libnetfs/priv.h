@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#ifndef _LIBNETFS_PRIV_H
+#define _LIBNETFS_PRIV_H
+
 #include <hurd/hurd_types.h>
 
 #include "netfs.h"
@@ -34,3 +37,4 @@ end_using_protid_port (struct protid *cred)
   if (cred)
     ports_port_deref (cred);
 }
+#endif

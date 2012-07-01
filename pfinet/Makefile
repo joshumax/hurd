@@ -1,5 +1,5 @@
-#
-#   Copyright (C) 1995, 1996, 1997, 2000, 2007, 2011 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 2000, 2007, 2011, 2012 Free Software
+#   Foundation, Inc.
 #
 #   This file is part of the GNU Hurd.
 #
@@ -90,7 +90,6 @@ MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c \
 		  pfinetServer.c iioctlServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o,\
 			     $(LINUXSRCS) $(ARCHSRCS) $(SRCS) $(MIGSRCS)))
-LCLHDRS		= config.h mapped-time.h mutations.h pfinet.h
 LINUXHDRS	= bitops.h capability.h delay.h errqueue.h etherdevice.h \
 		  fddidevice.h firewall.h icmp.h icmpv6.h if_arp.h if_ether.h \
 		  if_fddi.h if_packet.h if_ppp.h if_tunnel.h if_tr.h \
@@ -145,63 +144,3 @@ socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
 $(OBJS): config.h
-
-lndist: lndist-linux-src-net-core-files lndist-linux-src-net-ethernet-files lndist-linux-src-net-ipv4-files lndist-linux-src-net-ipv6-files lndist-linux-src-asm-files lndist-linux-src-include-asm-files lndist-linux-src-include-linux-files lndist-linux-src-include-net-files lndist-glue-include-linux-files lndist-glue-include-asm-files
-
-lndist-linux-src-net-core-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/core
-	ln $(addprefix $(srcdir)/linux-src/net/core/,$(core-srcs)) $<
-
-lndist-linux-src-net-ethernet-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ethernet
-	ln $(addprefix $(srcdir)/linux-src/net/ethernet/,$(ethernet-srcs)) $<
-
-lndist-linux-src-net-ipv4-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv4
-	ln $(addprefix $(srcdir)/linux-src/net/ipv4/,$(ipv4-srcs)) $<
-
-lndist-linux-src-net-ipv6-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv6
-	ln $(addprefix $(srcdir)/linux-src/net/ipv6/,$(ipv6-srcs)) $<
-
-# FIXME !i386
-lndist-linux-src-asm-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/arch/i386/lib
-	ln $(addprefix $(srcdir)/linux-src/arch/i386/lib/,$(ARCHSRCS)) $<
-
-lndist-linux-src-include-linux-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/linux
-	ln $(addprefix $(srcdir)/linux-src/include/linux/,$(LINUXHDRS)) $<
-
-lndist-linux-src-include-net-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/net
-	ln $(addprefix $(srcdir)/linux-src/include/net/,$(LINUXNETHDRS)) $<
-
-lndist-linux-src-include-asm-files: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include/asm-i386
-	ln $(addprefix $(srcdir)/linux-src/include/asm-$(asm_syntax)/,$(ARCHHDRS)) $<
-
-lndist-glue-include-linux-files: $(top_srcdir)/hurd-snap/$(dir)/glue-include/linux
-	ln $(addprefix $(srcdir)/glue-include/linux/,$(FROBBEDLINUXHEADERS)) $<
-
-lndist-glue-include-asm-files: $(top_srcdir)/hurd-snap/$(dir)/glue-include/asm
-	ln $(addprefix $(srcdir)/glue-include/asm/,$(ASMHEADERS)) $<
-
-$(top_srcdir)/hurd-snap/$(dir)/linux-src:
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/arch: $(top_srcdir)/hurd-snap/$(dir)/linux-src
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/arch/%/lib: $(top_srcdir)/hurd-snap/$(dir)/linux-src/arch
-	mkdir -p $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/include: $(top_srcdir)/hurd-snap/$(dir)/linux-src
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/include/%: $(top_srcdir)/hurd-snap/$(dir)/linux-src/include
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/net: $(top_srcdir)/hurd-snap/$(dir)/linux-src
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/core: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ethernet: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv4: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/linux-src/net/ipv6: $(top_srcdir)/hurd-snap/$(dir)/linux-src/net
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/glue-include:
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/glue-include/asm: $(top_srcdir)/hurd-snap/$(dir)/glue-include
-	mkdir $@
-$(top_srcdir)/hurd-snap/$(dir)/glue-include/linux: $(top_srcdir)/hurd-snap/$(dir)/glue-include
-	mkdir $@

@@ -19,7 +19,7 @@
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */
 static inline int
-listmember (const uid_t *list, int query, int n)
+listmember (const uid_t *list, uid_t query, int n)
 {
   int i;
   for (i = 0; i < n; i++)
@@ -40,7 +40,7 @@ iohelp_restrict_iouser (struct iouser **new_user,
   else
     {
       struct idvec *uvec, *gvec;
-      int i;
+      unsigned int i;
       error_t err;
 
       uvec = make_idvec ();

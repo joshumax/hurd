@@ -176,6 +176,11 @@ mkdev() {
 	st $I root 640 /hurd/storeio $I
 	;;
 
+      netdde)
+	st $I root 660 /hurd/netdde;;
+      eth*)
+	st $I root 660 /hurd/devnode -M /dev/netdde $I;;
+
       # /dev/shm is used by the POSIX.1 shm_open call in libc.
       # We don't want the underlying node to be written by randoms,
       # but the filesystem presented should be writable by anyone

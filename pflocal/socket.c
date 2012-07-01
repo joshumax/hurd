@@ -372,7 +372,7 @@ S_socket_recv (struct sock_user *user,
     return EINVAL;		/* XXX */
 
   /* Fill in the pipe FLAGS from any corresponding ones in IN_FLAGS.  */
-  flags = 0;
+  flags = in_flags & MSG_PEEK;
 
   err = sock_acquire_read_pipe (user->sock, &pipe);
   if (err == EPIPE)

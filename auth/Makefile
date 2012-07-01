@@ -1,4 +1,5 @@
-# Copyright (C) 1991, 93, 94, 95, 96, 2000 Free Software Foundation, Inc.
+# Copyright (C) 1991, 93, 94, 95, 96, 2000, 2012 Free Software Foundation, Inc.
+#
 # This file is part of the GNU Hurd.
 #
 # The GNU Hurd is free software; you can redistribute it and/or modify
@@ -20,11 +21,9 @@ makemode := server
 
 SRCS = auth.c
 OBJS = auth.o authServer.o auth_replyUser.o
-LCLHDRS = authmutations.h auth_mig.h
 target = auth
 HURDLIBS = threads ports ihash shouldbeinlibc
 
 MIGSFLAGS = -imacros $(srcdir)/authmutations.h
 
 include ../Makeconf
-

@@ -91,6 +91,8 @@ find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
 
 found_first:
   tmp |= ~0UL << size;
+  if (!~tmp)
+    return result + size;
 found_middle:
   return result + ffz(tmp);
 }

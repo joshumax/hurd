@@ -226,7 +226,7 @@ fmt_seconds (struct timeval *tv, int leading_zeros, int frac_places,
   p += add_field (&secs, MINUTE, &leading_zeros, 4, ":", width, p);
   p += add_field (&secs, SECOND, &leading_zeros, 1, "", width, p);
 
-  if (frac_places < 0 && (p - buf) < width - 2)
+  if (frac_places < 0 && (p - buf) < (int) width - 2)
     /* If FRAC_PLACES is < 0, then use any space remaining before WIDTH.  */
     frac_places = width - (p - buf) - 1;
 

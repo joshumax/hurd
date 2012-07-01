@@ -1,5 +1,4 @@
-# 
-#   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2002, 2008 Free Software
+#   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2002, 2008, 2012 Free Software
 #   Foundation
 #
 #   Written by Michael I. Bushnell.
@@ -56,7 +55,6 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 
-LCLHDRS = netfs.h callbacks.h misc.h modes.h mutations.h priv.h execserver.h
 installhdrs=netfs.h
 
 MIGSTUBS= ioServer.o fsServer.o fsysServer.o fsys_replyUser.o ifsockServer.o

@@ -1,6 +1,6 @@
 # Makefile for include subdirectory.
 #
-#   Copyright (C) 1996, 2002, 2010 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 2002, 2010, 2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -24,14 +24,9 @@ makemode := misc
 
 installhdrs := sys/procfs.h
 
-LCLHDRS := $(patsubst $(srcdir)/%,%,$(wildcard $(srcdir)/*.h $(srcdir)/*/*.h))
-
 include ../Makeconf
 
 install-headers install: $(installhdrs:%=$(includedir)/%)
 $(includedir)/%: $(srcdir)/%
 	@$(MKINSTALLDIRS) $(@D)
 	$(INSTALL_DATA) $< $@
-
-lndist: $(top_srcdir)/hurd-snap/$(dir)
-	cp -r --parent $(addprefix $(srcdir)/, Makefile $(installhdrs)) $<

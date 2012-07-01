@@ -1,5 +1,5 @@
-#
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,12 Free Software Foundation,
+#   Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -29,7 +29,6 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh
-LCLHDRS = psout.h parse.h pids.h frobauth.h
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp threads ports ftpconn shouldbeinlibc

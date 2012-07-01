@@ -1,5 +1,4 @@
-#
-#   Copyright (C) 1996, 1997, 1999, 2004 Free Software Foundation, Inc.
+#   Copyright (C) 1996, 1997, 1999, 2004, 2012 Free Software Foundation, Inc.
 #   Written by Michael I. Bushnell, p/BSG.
 #
 #   This file is part of the GNU Hurd.
@@ -31,8 +30,6 @@ installed_conf = $(addprefix $(sysconfdir)/,$(SYSCONFFILES))
 
 LOGINDOTS = .bash_login .bashrc .hushlogin .profile README
 installed_logins = $(addprefix $(sysconfdir)/login/,$(LOGINDOTS))
-
-DIST_FILES=$(SYSCONFFILES) $(addprefix login-,$(LOGINDOTS))
 
 FORCE:
 

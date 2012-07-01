@@ -1,4 +1,4 @@
-#   Copyright (C) 1993, 1994, 1995, 1996, 1998, 2002, 2008 Free Software
+#   Copyright (C) 1993, 1994, 1995, 1996, 1998, 2002, 2008, 2012 Free Software
 #   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	iouser-dup.c iouser-reauth.c iouser-free.c iouser-restrict.c \
 	shared.c return-buffer.c
 OBJS = $(SRCS:.c=.o)
-LCLHDRS = iohelp.h
 HURDLIBS = threads shouldbeinlibc
 libname = libiohelp
 installhdrs = iohelp.h

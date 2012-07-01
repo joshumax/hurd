@@ -349,7 +349,7 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
 {
   struct hurd_ihash old_ht = *ht;
   int was_added;
-  int i;
+  unsigned int i;
 
   if (ht->size)
     {

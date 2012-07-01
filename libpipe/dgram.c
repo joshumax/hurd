@@ -40,8 +40,16 @@ static error_t
 dgram_read (struct packet *packet, int *dequeue, unsigned *flags,
 	    char **data, size_t *data_len, size_t amount)
 {
-  *dequeue = 1;
-  return packet_read (packet, data, data_len, amount);
+  if (flags && *flags & MSG_PEEK)
+    {
+      *dequeue = 0;
+      return packet_peek (packet, data, data_len, amount);
+    }
+  else
+    {
+      *dequeue = 1;
+      return packet_read (packet, data, data_len, amount);
+    }
 }
 
 struct pipe_class _dgram_pipe_class =

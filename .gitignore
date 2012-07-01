@@ -1,0 +1,15 @@
+*~
+
+*.d
+*.o
+*.a
+*.so
+*.so.*
+TAGS
+
+autom4te.cache/
+/config.log
+/config.make
+/config.status
+/configure
+/version.h

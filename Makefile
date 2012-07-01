@@ -1,6 +1,6 @@
 #
 #   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006, 2009, 2011 Free Software Foundation, Inc.
+#   2006, 2009, 2011, 2012 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,12 +19,9 @@
 dir := .
 makemode := misc
 
+DISTFILES := configure
+
 include ./Makeconf
-
-DIST_FILES = ChangeLog COPYING Makeconf config.make.in configure.in configure \
-	     move-if-change hurd.boot build.mk.in build.mkcf.in aclocal.m4 \
-	     README NEWS tasks INSTALL INSTALL-cross version.h.in
-
 
 ## Subdirectories of this directory should all be mentioned here
 
@@ -52,9 +49,6 @@ other-subdirs = hurd doc config release include
 # All the subdirectories together
 subdirs = $(lib-subdirs) $(prog-subdirs) $(other-subdirs)
 
-# Any subdirectories here that we don't want to distribute to the world
-subdirs-nodist =
-
 # This allows the creation of a file BROKEN in any of the prog-subdirs;
 # that will prevent this top level Makefile from attempting to make it.
 working-prog-subdirs := $(filter-out \
@@ -64,29 +58,43 @@ working-prog-subdirs := $(filter-out \
 
 
 $(subdirs): version.h
-
-version.h: version.h.in
-	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' < $< > $@
-
 
 ## GNU Coding Standards targets (not all are here yet), and some other
 ## similar sorts of things
 
 all: $(lib-subdirs) $(working-prog-subdirs)
 
-# Create a distribution tar file.  Set make variable `version' on the
-# command line; otherwise the tar file will be a dated snapshot.
-ifeq ($(version),)
-version:=$(shell date +%Y%m%d)
+# Create a distribution tar file.
+
+git_describe := git describe --match '*release*'
+dist-version := $(shell cd $(top_srcdir)/ && $(git_describe))
+
+.PHONY: dist
+ifdef configured
+dist: $(foreach Z,bz2 gz,$(dist-version).tar.$(Z))
+else
+dist:
+	@echo >&2 'Cannot build a distribution from an unconfigured tree.'
+	false
 endif
-dirname:=hurd
 
-dist: $(srcdir)/hurd-snap $(addsuffix -lndist,$(filter-out $(subdirs-nodist), $(subdirs))) lndist
-	mv $(srcdir)/hurd-snap $(srcdir)/$(dirname)-$(version)
-	cd $(srcdir); tar cfz $(dirname)-$(version).tar.gz $(dirname)-$(version)
-	rm -rf $(srcdir)/$(dirname)-$(version)
+HEAD.tar: FORCE
+	cd $(top_srcdir)/ && git status --short \
+	  | $(AWK) '{ print; rc=1 } END { exit rc }' \
+	  || { echo >&2 \
+		'Refusing to build a distribution from dirty sources.' && \
+		false; }
+	(cd $(top_srcdir)/ && git archive --prefix=$(dist-version)/ HEAD) > $@
 
-clean: $(addsuffix -clean,$(lib-subdirs)) $(addsuffix -clean,$(working-prog-subdirs)) clean-misc
+$(dist-version).tar: HEAD.tar $(addsuffix /dist-hook,hurd/.. $(subdirs))
+	tar -c -f $@ --files-from=/dev/null
+# Concatenate HEAD.tar and all subdirs' dist.tar that have been created.  Have
+# to do it one by one: <http://savannah.gnu.org/patch/?7757>.
+	for f in HEAD.tar dist.tar */dist.tar; do \
+	  tar -v --concatenate -f $@ "$$f"; \
+	done
+
+clean: $(addsuffix -clean,$(subdirs)) clean-misc
 
 relink: $(addsuffix -relink,$(lib-subdirs) $(prog-subdirs))
 
@@ -101,14 +109,17 @@ install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
 
 TAGS: $(addsuffix -TAGS,$(working-prog-subdirs) $(lib-subdirs))
 	etags -o $@ $(patsubst %-TAGS,-i %/TAGS,$^)
+
+%.bz2: %
+	bzip2 -9 < $< > $@
+
+%.gz: %
+	gzip -9n < $< > $@
 
 ## Targets used by the main targets above.
 $(prog-subdirs) $(lib-subdirs): FORCE
 	$(MAKE) -C $@ all
 FORCE:
-
-%-lndist: $(top_srcdir)/hurd-snap
-	$(MAKE) -C $* lndist no_deps=t
 
 %-clean:
 	$(MAKE) -C $* clean no_deps=t
@@ -128,19 +139,13 @@ FORCE:
 %-TAGS:
 	$(MAKE) -C $* TAGS no_deps=t
 
-$(srcdir)/hurd-snap:
-	mkdir $(srcdir)/hurd-snap
-
-lndist: cp-linked-files
-
-linked-files = install-sh config.guess config.sub mkinstalldirs
-lf-inst = $(addprefix $(srcdir)/hurd-snap/,$(linked-files))
-cp-linked-files: $(lf-inst)
-$(lf-inst): $(srcdir)/hurd-snap/%: $(srcdir)/%
-	cp $< $@
+.PHONY: %/dist-hook
+%/dist-hook:
+	$(MAKE) -C $* dist-hook no_deps=t dist-version=$(dist-version)
 
 .PHONY: clean-misc distclean
 clean-misc:
+	rm -f HEAD.tar
 
 distclean: clean
 	rm -f config.make config.log config.status config.cache
@@ -161,3 +166,28 @@ endif
 # How to build them
 $(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
 	$(MAKE) -C $* directory-depend no_deps=t
+
+
+## Build system
+
+AUTOCONF = autoconf
+AUTOCONF_FLAGS = -I $(top_srcdir)
+
+$(top_srcdir)/configure: $(top_srcdir)/configure.in $(top_srcdir)/aclocal.m4
+	$(AUTOCONF) $(AUTOCONF_FLAGS) $< > $@
+	chmod +x $@
+
+config.status: $(top_srcdir)/configure
+	$(SHELL) $@ --recheck
+
+config.make: config.status $(top_srcdir)/config.make.in
+# No stamp file is used here, as config.make's timestamp changing will not have
+# any far-reaching consequences.
+	$(SHELL) $< --file=$@
+
+version.h: stamp-version; @:
+stamp-version: version.h.in config.make
+	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' \
+	  < $< > version.h.new
+	$(move-if-change) version.h.new version.h
+	touch $@

@@ -1,6 +1,6 @@
 # Makefile for ext2fs
 #
-#   Copyright (C) 1994,95,96,99,2000,02 Free Software Foundation, Inc.
+#   Copyright (C) 1994,95,96,99,2000,02,12 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -23,7 +23,6 @@ target = ext2fs
 SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c
 OBJS = $(SRCS:.c=.o)
-LCLHDRS = ext2fs.h ext2_fs.h ext2_fs_i.h bitmap.c
 HURDLIBS = diskfs pager iohelp fshelp store threads ports ihash shouldbeinlibc
 
 include ../Makeconf

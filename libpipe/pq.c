@@ -349,13 +349,13 @@ packet_write (struct packet *packet,
   return 0;
 }
 
-/* Removes up to AMOUNT bytes from the beginning of the data in PACKET, and
+/* Remove or peek up to AMOUNT bytes from the beginning of the data in PACKET, and
    puts it into *DATA, and the amount read into DATA_LEN.  If more than the
    original *DATA_LEN bytes are available, new memory is vm_allocated, and
    the address and length of this array put into DATA and DATA_LEN.  */
-error_t
-packet_read (struct packet *packet,
-	     char **data, size_t *data_len, size_t amount)
+static error_t
+packet_fetch (struct packet *packet,
+	     char **data, size_t *data_len, size_t amount, int remove)
 {
   char *start = packet->buf_start;
   char *end = packet->buf_end;
@@ -367,7 +367,7 @@ packet_read (struct packet *packet,
     {
       char *buf = packet->buf;
 
-      if (packet->buf_vm_alloced && amount >= vm_page_size)
+      if (remove && packet->buf_vm_alloced && amount >= vm_page_size)
 	/* We can return memory from BUF directly without copying.  */
 	{
 	  if (buf + vm_page_size <= start)
@@ -414,7 +414,7 @@ packet_read (struct packet *packet,
 	  bcopy (start, *data, amount);
 	  start += amount;
 
-	  if (start - buf > 2 * PACKET_SIZE_LARGE)
+	  if (remove && start - buf > 2 * PACKET_SIZE_LARGE)
 	    /* Get rid of unused space at the beginning of the buffer -- we
 	       know it's vm_alloced because of the size, and this will allow
 	       the buffer to just slide through memory.  Because we wait for
@@ -430,10 +430,33 @@ packet_read (struct packet *packet,
 	      packet->buf_len -= dealloc;
 	    }
 
-	  packet->buf_start = start;
+	  if (remove)
+	    packet->buf_start = start;
 	}
     }
   *data_len = amount;
 
   return 0;
+}
+
+/* Removes up to AMOUNT bytes from the beginning of the data in PACKET, and
+   puts it into *DATA, and the amount read into DATA_LEN.  If more than the
+   original *DATA_LEN bytes are available, new memory is vm_allocated, and
+   the address and length of this array put into DATA and DATA_LEN.  */
+error_t
+packet_read (struct packet *packet,
+	     char **data, size_t *data_len, size_t amount)
+{
+  return packet_fetch (packet, data, data_len, amount, 1);
+}
+
+/* Peek up to AMOUNT bytes from the beginning of the data in PACKET, and
+   puts it into *DATA, and the amount read into DATA_LEN.  If more than the
+   original *DATA_LEN bytes are available, new memory is vm_allocated, and
+   the address and length of this array put into DATA and DATA_LEN.  */
+error_t
+packet_peek (struct packet *packet,
+	     char **data, size_t *data_len, size_t amount)
+{
+  return packet_fetch (packet, data, data_len, amount, 0);
 }
