@@ -173,7 +173,7 @@ ugids_verify_make_auth (const struct ugids *ugids,
   if (verify_fn)
     /* Clean up any left over state.  */
     {
-      int i;
+      unsigned int i;
 
       /* Get rid of auth ports.  */
       for (i = 0; i < svma_state.num_auths; i++)

@@ -115,7 +115,7 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 error_t
 idvec_merge_implied_gids (struct idvec *gids, const struct idvec *uids)
 {
-  int i;
+  unsigned int i;
   error_t err = 0;
   for (i = 0; i < uids->num; i++)
     {

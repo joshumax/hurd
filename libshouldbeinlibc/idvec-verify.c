@@ -159,7 +159,7 @@ idvec_verify (const struct idvec *uids, const struct idvec *gids,
     return 0;
   else
     {
-      int i;
+      unsigned int i;
       int multiple = 0;		/* Asking for multiple ids? */
       error_t  err = 0;		/* Our return status.  */
       struct idvec implied_gids = IDVEC_INIT; /* Gids implied by uids.  */

@@ -87,7 +87,7 @@ idvec_rep (const struct idvec *idvec, int show_values, int show_names,
 
   if (idvec->num > 0)
     {
-      int i;
+      unsigned int i;
 
       for (i = 0; i < idvec->num; i++)
 	{
