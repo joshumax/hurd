@@ -44,7 +44,7 @@
 #include "ext2fs.h"
 #include "bitmap.c"
 
-/* Returns a pointer to the first occurence of CH in the buffer BUF of len
+/* Returns a pointer to the first occurrence of CH in the buffer BUF of len
    LEN, or BUF + LEN if CH doesn't occur.  */
 static inline void *
 memscan (void *buf, unsigned char ch, size_t len)

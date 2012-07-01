@@ -35,9 +35,6 @@
 # Put this first so it's the default
 all:
 
-# What version of the Hurd is this?
-hurd-version := 0.3
-
 # Figure out how to locate the parent directory from here.
 ifeq (.,$(dir))
 .. =
@@ -273,6 +270,15 @@ $(libdir)/$(libname).so: $(libdir)/$(libname).so.$(hurd-version)
 $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
 
+# Arrange to have the shared libraries available locally in one single
+# directory.  This is not used by the build system itself, but is just for easy
+# testing.
+local-libdir = lib
+../$(local-libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
+	@test -d $(@D)/ || $(MKINSTALLDIRS) $(@D)
+	ln -sf ../$(dir)/$< $@
+libs: ../$(local-libdir)/$(libname).so.$(hurd-version)
+
 endif
 
 # Provide default.
@@ -382,7 +388,7 @@ $(..)$(dir).d: $(srcdir)/Makefile
 	echo $(dir): $(hurd-bug-addr-dir-dep) $(addprefix lib,$(HURDLIBS)) > $@
 
 # Making a snapshot
-distfiles = Makefile ChangeLog $(SRCS) $(LCLHDRS) $(DIST_FILES)
+distfiles = Makefile $(SRCS) $(LCLHDRS) $(DIST_FILES)
 lndist: $(distfiles) $(top_srcdir)/hurd-snap/$(dir) FORCE
 	ln $(addprefix $(srcdir)/,$(distfiles)) $(top_srcdir)/hurd-snap/$(dir)
 

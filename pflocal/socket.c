@@ -37,6 +37,8 @@ S_socket_connect2 (struct sock_user *user1, struct sock_user *user2)
     return EOPNOTSUPP;
 
   err = sock_connect (user1->sock, user2->sock);
+  if (!err && user1->sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
+    err = sock_connect (user2->sock, user1->sock);
 
   /* Since USER2 isn't in the receiver position in the rpc, we get a send
      right for it (although we only use the receive right with the same
@@ -309,7 +311,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
       if (dest_sock)
 	/* Grab the destination socket's read pipe directly, and stuff data
 	   into it.  This is not quite the usage sock_acquire_read_pipe was
-	   intended for, but it will work, as the only inappropiate errors
+	   intended for, but it will work, as the only inappropriate errors
 	   occur on a broken pipe, which shouldn't be possible with the sort of
 	   sockets with which we can use socket_send...  XXXX */
 	err = sock_acquire_read_pipe (dest_sock, &pipe);

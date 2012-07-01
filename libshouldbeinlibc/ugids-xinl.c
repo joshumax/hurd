@@ -19,7 +19,5 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
-#define UGIDS_EI
-#undef __OPTIMIZE__
-#define __OPTIMIZE__	1
+#define UGIDS_DEFINE_EI
 #include "ugids.h"

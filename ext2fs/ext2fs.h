@@ -101,8 +101,11 @@ void pokel_flush (struct pokel *pokel);
 /* Transfer all regions from FROM to POKEL, which must have the same pager. */
 void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
-#ifndef EXT2FS_EI
-#define EXT2FS_EI extern inline
+#include <features.h>
+#ifdef EXT2FS_DEFINE_EI
+#define EXT2FS_EI
+#else
+#define EXT2FS_EI __extern_inline
 #endif
 
 /* ---------------------------------------------------------------- */
@@ -110,6 +113,11 @@ void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
 #include <stdint.h>
 
+extern int test_bit (unsigned num, char *bitmap);
+
+extern int set_bit (unsigned num, char *bitmap);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Returns TRUE if bit NUM is set in BITMAP.  */
 EXT2FS_EI int
 test_bit (unsigned num, char *bitmap)
@@ -138,6 +146,7 @@ clear_bit (unsigned num, char *bitmap)
   const uint_fast32_t mask = 1 << (num & 31);
   return (*bw & mask) ? (*bw &= ~mask, mask) : 0;
 }
+#endif /* Use extern inlines.  */
 
 /* ---------------------------------------------------------------- */
 
@@ -294,6 +303,9 @@ struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
+extern struct ext2_inode *dino (ino_t inum);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
 EXT2FS_EI struct ext2_inode *
 dino (ino_t inum)
@@ -305,6 +317,7 @@ dino (ino_t inum)
   block_t block = bg->bg_inode_table + (group_inum / inodes_per_block);
   return ((struct ext2_inode *)bptr(block)) + group_inum % inodes_per_block;
 }
+#endif /* Use extern inlines.  */
 
 /* ---------------------------------------------------------------- */
 /* inode.c */
@@ -333,6 +346,14 @@ struct pokel global_pokel;
 char *modified_global_blocks;
 spin_lock_t modified_global_blocks_lock;
 
+extern int global_block_modified (block_t block);
+extern void record_global_poke (void *ptr);
+extern void sync_global_ptr (void *bptr, int wait);
+extern void record_indir_poke (struct node *node, void *ptr);
+extern void sync_global (int wait);
+extern void alloc_sync (struct node *np);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Marks the global block BLOCK as being modified, and returns true if we
    think it may have been clean before (but we may not be sure).  Note that
    this isn't enough to cause the block to be synced; you must call
@@ -401,6 +422,7 @@ alloc_sync (struct node *np)
       diskfs_set_hypermetadata (1, 0);
     }
 }
+#endif /* Use extern inlines.  */
 
 /* ---------------------------------------------------------------- */
 /* getblk.c */

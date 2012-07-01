@@ -24,9 +24,12 @@
 #include <hurd/hurd_types.h>
 #include <errno.h>
 #include <string.h>
+#include <features.h>
 
-#ifndef IDVEC_EI
-#define IDVEC_EI extern inline
+#ifdef IDVEC_DEFINE_EI
+#define IDVEC_EI
+#else
+#define IDVEC_EI __extern_inline
 #endif
 
 struct idvec
@@ -49,6 +52,14 @@ void idvec_free_wrapper (struct idvec *idvec);
 
 /* Free IDVEC and any storage associated with it.  */
 void idvec_free (struct idvec *idvec);
+
+extern void idvec_clear (struct idvec *idvec);
+
+extern int idvec_is_empty (const struct idvec *idvec);
+
+extern int idvec_equal (const struct idvec *idvec1, const struct idvec *idvec2);
+
+#if defined(__USE_EXTERN_INLINES) || defined(IDVEC_DEFINE_EI)
 
 /* Mark IDVEC as not containing any ids.  */
 IDVEC_EI void
@@ -74,6 +85,8 @@ idvec_equal (const struct idvec *idvec1, const struct idvec *idvec2)
 	|| memcmp (idvec1->ids, idvec2->ids, num * sizeof *idvec1->ids) == 0);
 }
 
+#endif /* Use extern inlines.  */
+
 /* Ensure that IDVEC has enough spaced allocated to hold NUM ids, thus
    ensuring that any subsequent ids added won't return a memory allocation
    error unless it would result in more ids that NUM.  ENOMEM is returned if
@@ -87,12 +100,18 @@ error_t idvec_grow (struct idvec *idvec, unsigned inc);
 /* Returns true if IDVEC contains ID, at or after position POS.  */
 int idvec_tail_contains (const struct idvec *idvec, unsigned pos, uid_t id);
 
+extern int idvec_contains (const struct idvec *idvec, uid_t id);
+
+#if defined(__USE_EXTERN_INLINES) || defined(IDVEC_DEFINE_EI)
+
 /* Returns true if IDVEC contains ID.  */
 IDVEC_EI int
 idvec_contains (const struct idvec *idvec, uid_t id)
 {
   return idvec_tail_contains (idvec, 0, id);
 }
+
+#endif /* Use extern inlines.  */
 
 /* Insert ID into IDVEC at position POS, returning ENOMEM if there wasn't
    enough memory, or 0.  */
@@ -131,7 +150,7 @@ int idvec_subtract (struct idvec *idvec, const struct idvec *sub);
    anything was changed. */
 int idvec_keep (struct idvec *idvec, const struct idvec *keep);
 
-/* Remove any occurances of ID in IDVEC after position POS>  Returns true if
+/* Remove any occurrences of ID in IDVEC after position POS>  Returns true if
    anything was done.  */
 int idvec_remove (struct idvec *idvec, unsigned pos, uid_t id);
 

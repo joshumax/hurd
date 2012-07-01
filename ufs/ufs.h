@@ -25,8 +25,15 @@
 #include <hurd/diskfs.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <features.h>
 #include "fs.h"
 #include "dinode.h"
+
+#ifdef UFS_DEFINE_EI
+#define UFS_EI
+#else
+#define UFS_EI __extern_inline
+#endif
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
@@ -150,8 +157,18 @@ unsigned log2_dev_blocks_per_dev_bsize;
 
 /* Functions for looking inside disk_image */
 
+extern struct dinode * dino (ino_t inum);
+extern daddr_t * indir_block (daddr_t bno);
+extern struct cg * cg_locate (int ncg);
+extern void sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait);
+extern void sync_dinode (int inum, int wait);
+extern short swab_short (short arg);
+extern long swab_long (long arg);
+extern long long swab_long_long (long long arg);
+
+#if defined(__USE_EXTERN_INLINES) || defined(UFS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
-extern inline struct dinode *
+UFS_EI struct dinode *
 dino (ino_t inum)
 {
   return (struct dinode *)
@@ -161,28 +178,28 @@ dino (ino_t inum)
 }
 
 /* Convert a indirect block number to a daddr_t table. */
-extern inline daddr_t *
+UFS_EI daddr_t *
 indir_block (daddr_t bno)
 {
   return (daddr_t *) (disk_image + fsaddr (sblock, bno));
 }
 
 /* Convert a cg number to the cylinder group. */
-extern inline struct cg *
+UFS_EI struct cg *
 cg_locate (int ncg)
 {
   return (struct cg *) (disk_image + fsaddr (sblock, cgtod (sblock, ncg)));
 }
 
 /* Sync part of the disk */
-extern inline void
+UFS_EI void
 sync_disk_blocks (daddr_t blkno, size_t nbytes, int wait)
 {
   pager_sync_some (diskfs_disk_pager, fsaddr (sblock, blkno), nbytes, wait);
 }
 
 /* Sync an disk inode */
-extern inline void
+UFS_EI void
 sync_dinode (int inum, int wait)
 {
   sync_disk_blocks (ino_to_fsba (sblock, inum), sblock->fs_fsize, wait);
@@ -190,26 +207,27 @@ sync_dinode (int inum, int wait)
 
 
 /* Functions for byte swapping */
-extern inline short
+UFS_EI short
 swab_short (short arg)
 {
   return (((arg & 0xff) << 8)
 	  | ((arg & 0xff00) >> 8));
 }
 
-extern inline long
+UFS_EI long
 swab_long (long arg)
 {
   return (((long) swab_short (arg & 0xffff) << 16)
 	  | swab_short ((arg & 0xffff0000) >> 16));
 }
 
-extern inline long long
+UFS_EI long long
 swab_long_long (long long arg)
 {
   return (((long long) swab_long (arg & 0xffffffff) << 32)
 	  | swab_long ((arg & 0xffffffff00000000LL) >> 32));
 }
+#endif /* Use extern inlines.  */
 
 /* Return ENTRY, after byteswapping it if necessary */
 #define read_disk_entry(entry)						    \

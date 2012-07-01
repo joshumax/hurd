@@ -91,7 +91,7 @@ free_page_buf (void *buf)
 
 /* Find the location on disk of page OFFSET in NODE.  Return the disk
    cluster in CLUSTER. If *LOCK is 0, then it a reader
-   lock is aquired on NODE's ALLOC_LOCK before doing anything, and left
+   lock is acquired on NODE's ALLOC_LOCK before doing anything, and left
    locked after return -- even if an error is returned.  0 on success or an
    error code otherwise is returned.  */
 static error_t

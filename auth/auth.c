@@ -251,11 +251,22 @@ S_auth_makeauth (struct authhandle *auth,
 
 /* Transaction handling.  */
 
-/* A pending transaction.  */
-struct pending
+/* Since the user is responsible for freeing the rendezvous port, it has to
+ * wait for the server to have finished transmitting uids.
+ *
+ * The server thus waits for the user to give it uids (unless it was already
+ * there), transmits them and provides the passthrough port.
+ *
+ * The user gives the uids and waits for the passthrough port from the server.
+ *
+ * If the user is early, it has to tell the server it arrived.
+ */
+
+/* A pending user.  */
+struct pending_user
   {
-    hurd_ihash_locp_t locp;	/* Position in one of the ihash tables.  */
-    struct condition wakeup;    /* The waiter is blocked on this condition.  */
+    hurd_ihash_locp_t locp;	/* Position in the pending_users ihash table.  */
+    struct condition wakeup;    /* The reader is blocked on this condition.  */
 
     /* The user's auth handle.  */
     struct authhandle *user;
@@ -264,11 +275,18 @@ struct pending
     mach_port_t passthrough;
   };
 
+/* A pending server.  */
+struct pending_server
+  {
+    hurd_ihash_locp_t locp;	/* Position in the pending_servers ihash table.  */
+    struct condition wakeup;    /* The server is blocked on this condition.  */
+  };
+
 /* Table of pending transactions keyed on RENDEZVOUS.  */
 struct hurd_ihash pending_users
-  = HURD_IHASH_INITIALIZER (offsetof (struct pending, locp));
+  = HURD_IHASH_INITIALIZER (offsetof (struct pending_user, locp));
 struct hurd_ihash pending_servers
-  = HURD_IHASH_INITIALIZER (offsetof (struct pending, locp));
+  = HURD_IHASH_INITIALIZER (offsetof (struct pending_server, locp));
 struct mutex pending_lock = MUTEX_INITIALIZER;
 
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
@@ -280,7 +298,9 @@ S_auth_user_authenticate (struct authhandle *userauth,
 			  mach_port_t *newport,
 			  mach_msg_type_name_t *newporttype)
 {
-  struct pending *s;
+  struct pending_server *s;
+  struct pending_user u;
+  error_t err;
 
   if (! userauth)
     return EOPNOTSUPP;
@@ -288,65 +308,54 @@ S_auth_user_authenticate (struct authhandle *userauth,
   if (rendezvous == MACH_PORT_DEAD) /* Port died in transit.  */
     return EINVAL;
 
+  u.user = userauth;
+  condition_init (&u.wakeup);
+
   mutex_lock (&pending_lock);
 
-  /* Look for this port in the server list.  */
+  err = hurd_ihash_add (&pending_users, rendezvous, &u);
+  if (err) {
+    mutex_unlock (&pending_lock);
+    return err;
+  }
+
+  /* Give the server the auth port.
+     We need to add a ref in case the port dies.  */
+  ports_port_ref (userauth);
+
+  /* Look for this rendezvous in the server list.  */
   s = hurd_ihash_find (&pending_servers, rendezvous);
-  if (s)
+  if (s) {
+    /* Found it!  */
+
+    /* Remove it from the pending list.  */
+    hurd_ihash_locp_remove (&pending_servers, s->locp);
+
+    /* Tell it we eventually arrived.  */
+    condition_signal (&s->wakeup);
+  }
+
+  ports_interrupt_self_on_port_death (userauth, rendezvous);
+  /* Wait for server answer.  */
+  if (hurd_condition_wait (&u.wakeup, &pending_lock) &&
+      hurd_ihash_find (&pending_users, rendezvous))
+    /* We were interrupted; remove our record.  */
     {
-      /* Found it!  Extract the port.  */
-      *newport = s->passthrough;
+      hurd_ihash_locp_remove (&pending_users, u.locp);
+      err = EINTR;
+    }
+
+  mutex_unlock (&pending_lock);
+
+  if (! err)
+    {
+      /* Extract the port.  */
+      *newport = u.passthrough;
       *newporttype = MACH_MSG_TYPE_MOVE_SEND;
-
-      /* Remove it from the pending list.  */
-      hurd_ihash_locp_remove (&pending_servers, s->locp);
-
-      /* Give the server the auth port and wake the RPC up.
-	 We need to add a ref in case the port dies.  */
-      s->user = userauth;
-      ports_port_ref (userauth);
-
-      condition_signal (&s->wakeup);
-      mutex_unlock (&pending_lock);
-
       mach_port_deallocate (mach_task_self (), rendezvous);
-      return 0;
     }
-  else
-    {
-      /* No pending server RPC for this port.
-	 Create a pending user RPC record.  */
-      struct pending u;
-      error_t err;
 
-      err = hurd_ihash_add (&pending_users, rendezvous, &u);
-      if (! err)
-	{
-	  /* Store the user auth port and wait for the server RPC to wake
-             us up.  */
-	  u.user = userauth;
-	  condition_init (&u.wakeup);
-	  ports_interrupt_self_on_port_death (userauth, rendezvous);
-	  if (hurd_condition_wait (&u.wakeup, &pending_lock)
-	      && hurd_ihash_find (&pending_users, rendezvous))
-	    /* We were interrupted; remove our record.  */
-	    {
-	      hurd_ihash_locp_remove (&pending_users, u.locp);
-	      err = EINTR;
-	    }
-	}
-      /* The server side has already removed U from the ihash table.  */
-      mutex_unlock (&pending_lock);
-
-      if (! err)
-	{
-	  /* The server RPC has set the port and signalled U.wakeup.  */
-	  *newport = u.passthrough;
-	  *newporttype = MACH_MSG_TYPE_MOVE_SEND;
-	  mach_port_deallocate (mach_task_self (), rendezvous);
-	}
-      return err;
-    }
+  return err;
 }
 
 /* Implement auth_server_authenticate as described in <hurd/auth.defs>. */
@@ -366,7 +375,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 			    uid_t **agids,
 			    size_t *nagids)
 {
-  struct pending *u;
+  struct pending_user *u;
   struct authhandle *user;
   error_t err;
 
@@ -378,66 +387,69 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 
   mutex_lock (&pending_lock);
 
-  /* Look for this port in the user list.  */
+  /* Look for this rendezvous in the user list.  */
   u = hurd_ihash_find (&pending_users, rendezvous);
-  if (u)
+  if (! u)
     {
-      /* Remove it from the pending list.  */
-      hurd_ihash_locp_remove (&pending_users, u->locp);
-
-      /* Found it!  We must add a ref because the one held by the
-	 user RPC might die as soon as we unlock pending_lock.  */
-      user = u->user;
-      ports_port_ref (user);
-
-      /* Give the user the new port and wake the RPC up.  */
-      u->passthrough = newport;
-
-      condition_signal (&u->wakeup);
-      mutex_unlock (&pending_lock);
-    }
-  else
-    {
-      /* No pending user RPC for this port.
-	 Create a pending server RPC record.  */
-      struct pending s;
-
+      /* User not here yet, have to wait for it.  */
+      struct pending_server s;
+      condition_init (&s.wakeup);
       err = hurd_ihash_add (&pending_servers, rendezvous, &s);
       if (! err)
-	{
-	  /* Store the new port and wait for the user RPC to wake us up.  */
-	  s.passthrough = newport;
-	  condition_init (&s.wakeup);
+        {
 	  ports_interrupt_self_on_port_death (serverauth, rendezvous);
-	  if (hurd_condition_wait (&s.wakeup, &pending_lock)
-	      && hurd_ihash_find (&pending_servers, rendezvous))
+	  if (hurd_condition_wait (&s.wakeup, &pending_lock) &&
+	      hurd_ihash_find (&pending_servers, rendezvous))
 	    /* We were interrupted; remove our record.  */
 	    {
 	      hurd_ihash_locp_remove (&pending_servers, s.locp);
 	      err = EINTR;
 	    }
-	}
-      /* The user side has already removed S from the ihash table.  */
-      mutex_unlock (&pending_lock);
-
-      if (err)
-	return err;
-
-      /* The user RPC has set the port (with a ref) and signalled S.wakeup.  */
-      user = s.user;
+	  else
+	    {
+	      u = hurd_ihash_find (&pending_users, rendezvous);
+	      if (! u)
+		/* User still not here, odd! */
+		err = EINTR;
+	    }
+        }
     }
 
-  /* Extract the ids.  We must use a separate reply stub so
-     we can deref the user auth handle after the reply uses its
-     contents.  */
-  err = auth_server_authenticate_reply (reply, reply_type, 0,
-					user->euids.ids, user->euids.num,
-					user->auids.ids, user->auids.num,
-					user->egids.ids, user->egids.num,
-					user->agids.ids, user->agids.num);
+  if (u)
+    {
+      error_t err2;
+
+      /* Remove it from the pending list.  */
+      hurd_ihash_locp_remove (&pending_users, u->locp);
+
+      /* Found it!  */
+      user = u->user;
+
+      mutex_unlock (&pending_lock);
+
+      /* Tell third party.  */
+      err2 = auth_server_authenticate_reply (reply, reply_type, 0,
+					     user->euids.ids, user->euids.num,
+				      	     user->auids.ids, user->auids.num,
+				      	     user->egids.ids, user->egids.num,
+				      	     user->agids.ids, user->agids.num);
+
+      if (err2)
+        mach_port_deallocate (mach_task_self (), reply);
+
+      mutex_lock (&pending_lock);
+
+      /* Give the user the new port and wake the RPC up.  */
+      u->passthrough = newport;
+
+      condition_signal (&u->wakeup);
+    }
+
+  mutex_unlock (&pending_lock);
 
   if (err)
-    mach_port_deallocate (mach_task_self (), reply);
+    return err;
+
   ports_port_deref (user);
   mach_port_deallocate (mach_task_self (), rendezvous);
   return MIG_NO_REPLY;

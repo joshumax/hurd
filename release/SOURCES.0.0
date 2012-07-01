@@ -107,5 +107,5 @@ sh-utils (1.12m from alpha.gnu.ai.mit.edu)
   [ copy libc's time/strftime.c into lib/strftime.c to fix a date bug. ]
 make (3.74.5 from alpha.gnu.ai.mit.edu; unmodified)
 gdb (Modified from Cygnus snapshot of 960526) 
-mach4 (UK22, slighly hacked) [already includes `serverboot' program.]
+mach4 (UK22, slightly hacked) [already includes `serverboot' program.]
 libc (1.93, with modifications)

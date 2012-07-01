@@ -72,17 +72,17 @@ main (int argc, char **argv)
 }
 
 /* Open /dev/console.  If it isn't there, or it isn't a terminal, then
-   create /tmp/console and put the terminal on it.  If we get EROFS,
-   in trying to create /tmp/console then as a last resort, put the
-   console on /tmp itself.  If all fail, we exit.
+   create /dev/console and put the terminal on it.  If we get EROFS,
+   in trying to create /dev/console then as a last resort, create
+   /tmp/console.  If all fail, we exit.
 
    Return nonzero if the vanilla open of /dev/console didn't work.
    In any case, after the console has been opened, put it on fds 0, 1, 2.  */
 static int
 open_console (char **namep)
 {
-#define TERMINAL_FIRST_TRY "/hurd/term\0/tmp/console\0device\0console"
-#define TERMINAL_SECOND_TRY "/hurd/term\0/tmp\0device\0console"
+#define TERMINAL_FIRST_TRY "/hurd/term\0/dev/console\0device\0console"
+#define TERMINAL_SECOND_TRY "/hurd/term\0/tmp/console\0device\0console"
   mach_port_t term, proc;
   static char *termname;
   struct stat st;
@@ -183,7 +183,13 @@ open_console (char **namep)
 
 	  if (term != MACH_PORT_NULL)
 	    {
-	      error (0, 0, "Using temporary console %s", termname);
+	      if (try == 1)
+		/* We created /dev/console, started, and installed the
+		   translator on it, so it really isn't a fallback
+		   console.  */
+		fallback = 0;
+	      else
+		error (0, 0, "Using temporary console %s", termname);
 	      break;
 	    }
 	}

@@ -20,6 +20,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+/* Do not include glue-include/linux/errno.h */
+#define _HACK_ERRNO_H
 #include "pfinet.h"
 
 #include <device/device.h>
@@ -27,6 +29,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <error.h>
+#include <fcntl.h>
 
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
@@ -79,6 +82,18 @@ static short ether_filter[] =
   1
 };
 static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
+
+/* The BPF instruction allows IP and ARP packets */
+static struct bpf_insn bpf_ether_filter[] =
+{
+    {NETF_IN|NETF_BPF, /* Header. */ 0, 0, 0},
+    {40, 0, 0, 12},
+    {21, 1, 0, 2054},
+    {21, 0, 1, 2048},
+    {6, 0, 0, 1500},
+    {6, 0, 0, 0},
+};
+static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
 
 static struct port_bucket *etherport_bucket;
 
@@ -166,20 +181,46 @@ ethernet_open (struct device *dev)
 
   mach_port_set_qlimit (mach_task_self (), edev->readptname, MACH_PORT_QLIMIT_MAX);
 
-  err = get_privileged_ports (0, &master_device);
-  if (err)
-    error (2, err, "cannot get device master port");
+  master_device = file_name_lookup (dev->name, O_READ | O_WRITE, 0);
+  if (master_device != MACH_PORT_NULL)
+    {
+      /* The device name here is the path of a device file.  */
+      err = device_open (master_device, D_WRITE | D_READ, "eth", &edev->ether_port);
+      mach_port_deallocate (mach_task_self (), master_device);
+      if (err)
+	error (2, err, "device_open on %s", dev->name);
 
-  err = device_open (master_device, D_WRITE | D_READ, dev->name, &edev->ether_port);
-  mach_port_deallocate (mach_task_self (), master_device);
-  if (err)
-    error (2, err, "%s", dev->name);
+      err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
+			       MACH_MSG_TYPE_MAKE_SEND, 0,
+			       bpf_ether_filter, bpf_ether_filter_len);
+      if (err)
+	error (2, err, "device_set_filter on %s", dev->name);
+    }
+  else
+    {
+      /* No, perhaps a Mach device?  */
+      int file_errno = errno;
+      err = get_privileged_ports (0, &master_device);
+      if (err)
+	{
+	  error (0, file_errno, "file_name_lookup %s", dev->name);
+	  error (2, err, "and cannot get device master port");
+	}
+      err = device_open (master_device, D_WRITE | D_READ, dev->name, &edev->ether_port);
+      mach_port_deallocate (mach_task_self (), master_device);
+      if (err)
+	{
+	  error (0, file_errno, "file_name_lookup %s", dev->name);
+	  error (2, err, "device_open(%s)", dev->name);
+	}
 
-  err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
-			   MACH_MSG_TYPE_MAKE_SEND, 0,
-			   ether_filter, ether_filter_len);
-  if (err)
-    error (2, err, "%s", dev->name);
+      err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
+			       MACH_MSG_TYPE_MAKE_SEND, 0,
+			       ether_filter, ether_filter_len);
+      if (err)
+	error (2, err, "device_set_filter on %s", dev->name);
+    }
+
   return 0;
 }
 

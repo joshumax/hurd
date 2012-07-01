@@ -27,5 +27,8 @@ trivfs_S_file_reparent (struct trivfs_protid *cred,
 			mach_port_t *new, mach_msg_type_name_t *new_type)
 {
   /* This is not a directory, so we just duplicate it */
-  return trivfs_S_io_duplicate (cred, reply, reply_type, new, new_type);
+  error_t ret = trivfs_S_io_duplicate (cred, reply, reply_type, new, new_type);
+  if (!ret)
+    mach_port_deallocate (mach_task_self (), parent);
+  return ret;
 }

@@ -26,7 +26,7 @@ LCLHDRS = connq.h sock.h mig-decls.h mig-mutate.h sserver.h
 
 MIGSTUBS = ioServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
-HURDLIBS = pipe trivfs fshelp threads ports ihash shouldbeinlibc
+HURDLIBS = pipe trivfs iohelp fshelp threads ports ihash shouldbeinlibc
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 

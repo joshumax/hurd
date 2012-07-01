@@ -827,7 +827,7 @@ read_reply ()
   if (! spin_try_lock (&readlock))
     return;
 
-  /* Since we're commited to servicing the read, no one else need do so.  */
+  /* Since we're committed to servicing the read, no one else need do so.  */
   should_read = 0;
 
   ioctl (0, FIONREAD, &avail);

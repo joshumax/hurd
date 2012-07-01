@@ -234,7 +234,7 @@ static __inline__ void rt6_release(struct rt6_info *rt)
 /*
  *	Routing Table
  *
- *	return the apropriate node for a routing tree "add" operation
+ *	return the appropriate node for a routing tree "add" operation
  *	by either creating and inserting or by returning an existing
  *	node.
  */

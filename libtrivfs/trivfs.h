@@ -96,7 +96,7 @@ extern int trivfs_cntl_nportclasses;
 
 /* The user must define this function.  This should modify a struct
    stat (as returned from the underlying node) for presentation to
-   callers of io_stat.  It is permissable for this function to do
+   callers of io_stat.  It is permissible for this function to do
    nothing.  */
 void trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *);
 

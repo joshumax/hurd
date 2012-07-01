@@ -332,6 +332,7 @@ static error_t
 create_symlink_hook (struct node *np, const char *target)
 {
   assert (np->dn->u.lnk == 0);
+  np->dn_stat.st_size = strlen (target);
   if (np->dn_stat.st_size > 0)
     {
       const size_t size = np->dn_stat.st_size + 1;
@@ -339,6 +340,7 @@ create_symlink_hook (struct node *np, const char *target)
       if (np->dn->u.lnk == 0)
 	return ENOSPC;
       memcpy (np->dn->u.lnk, target, size);
+      np->dn->type = DT_LNK;
       adjust_used (size);
       recompute_blocks (np);
     }
@@ -382,9 +384,6 @@ diskfs_node_reload (struct node *node)
 error_t
 diskfs_truncate (struct node *np, off_t size)
 {
-  if (np->allocsize <= size)
-    return 0;
-
   if (np->dn->type == DT_LNK)
     {
       free (np->dn->u.lnk);
@@ -394,6 +393,9 @@ diskfs_truncate (struct node *np, off_t size)
       return 0;
     }
 
+  if (np->allocsize <= size)
+    return 0;
+
   assert (np->dn->type == DT_REG);
 
   if (default_pager == MACH_PORT_NULL)
@@ -401,13 +403,12 @@ diskfs_truncate (struct node *np, off_t size)
 
   np->dn_stat.st_size = size;
 
+  off_t set_size = size;
   size = round_page (size);
-  if (size == np->allocsize)
-    return 0;
 
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
     {
-      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, set_size);
       if (err == MIG_BAD_ID)
 	/* This is an old default pager.  We have no way to truncate the
 	   memory object.  Note that the behavior here will be wrong in
@@ -440,8 +441,10 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
   if (np->allocsize >= size)
     return 0;
 
+  off_t set_size = size;
   size = round_page (size);
-  if (round_page (tmpfs_space_used + size) / vm_page_size > tmpfs_page_limit)
+  if (round_page (tmpfs_space_used + size - np->allocsize)
+      / vm_page_size > tmpfs_page_limit)
     return ENOSPC;
 
   if (default_pager == MACH_PORT_NULL)
@@ -450,7 +453,7 @@ diskfs_grow (struct node *np, off_t size, struct protid *cred)
   if (np->dn->u.reg.memobj != MACH_PORT_NULL)
     {
       /* Increase the limit the memory object will allow to be accessed.  */
-      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, size);
+      error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, set_size);
       if (err == MIG_BAD_ID)	/* Old default pager, never limited it.  */
 	err = 0;
       if (err)
@@ -498,17 +501,13 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  return MACH_PORT_NULL;
 	}
       assert (np->dn->u.reg.memobj != MACH_PORT_NULL);
-      /* A new-fangled default pager lets us prevent user accesses
-	 past the specified size of the file.  */
-      err = default_pager_object_set_size (np->dn->u.reg.memobj,
-					   np->allocsize);
-      assert_perror (err);
       
       /* XXX we need to keep a reference to the object, or GNU Mach
 	 will terminate it when we release the map. */
       vm_map (mach_task_self (), &np->dn->u.reg.memref, 4096, 0, 1,
 	      np->dn->u.reg.memobj, 0, 0, VM_PROT_NONE, VM_PROT_NONE,
 	      VM_INHERIT_NONE);
+      assert_perror (err);
     }
 
   /* XXX always writable */

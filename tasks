@@ -94,7 +94,7 @@ Please discuss proposed microkernel work with thomas@gnu.org.
   can be device_open'd, as well as to get the type of a device.
 
   * A way to have the kernel send a message on some designated port
-  everytime a new task is started.
+  every time a new task is started.
 
   * OSF has enhanced the exception_raise protocol to include thread_state
     information.  This code should be merged into the kernel; OSF people

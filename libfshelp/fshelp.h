@@ -38,7 +38,7 @@
    or the ports library. */
 
 /* A callback used by the translator starting functions, which should be a
-   function that given some open flags, opens the appropiate file, and
+   function that given some open flags, opens the appropriate file, and
    returns the node port.  */
 typedef error_t (*fshelp_open_fn_t) (int flags,
 				     file_t *node,
@@ -253,7 +253,7 @@ error_t fshelp_access (io_statbuf_t *st, int op, struct iouser *user);
 
 /* Check to see whether USER is allowed to modify DIR with respect to
    existing file ST.  (If there is no existing file, pass 0 for ST.)
-   If the access is permissable return 0; otherwise return an
+   If the access is permissible return 0; otherwise return an
    appropriate error code.  */
 error_t fshelp_checkdirmod (io_statbuf_t *dir, io_statbuf_t *st,
 			    struct iouser *user);

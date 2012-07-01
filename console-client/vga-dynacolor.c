@@ -177,7 +177,7 @@ dynacolor_replace_colors (dynacolor_t *dc,
      based on pairs, but that increases the number of cases a
      lot. */
   /* Note that no color must occur twice in one replacement list,
-     and that the color to be replaced must not occure either.  */
+     and that the color to be replaced must not occur either.  */
   static signed char pref[16][9] =
     {
       /* Replacements for CONS_COLOR_BLACK.  */

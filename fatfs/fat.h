@@ -72,7 +72,7 @@
    Data
 
      The data region occupies the rest of the filesystem and stores
-     the actual file and directory data. It is seperated in clusters,
+     the actual file and directory data. It is separated in clusters,
      which are indexed in the FAT.
 
      The size of the data region is stored in the word at offset 19

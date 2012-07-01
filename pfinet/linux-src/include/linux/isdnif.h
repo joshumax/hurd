@@ -73,7 +73,7 @@
  * Added changes for recent 2.1.x kernels:
  *   changed return type of isdn_close
  *   queue_task_* -> queue_task
- *   clear/set_bit -> test_and_... where apropriate.
+ *   clear/set_bit -> test_and_... where appropriate.
  *   changed type of hard_header_cache parameter.
  *
  * Revision 1.19  1997/03/25 23:13:56  keil
@@ -189,7 +189,7 @@
 /*                                                                         */ 
 /* The proceed command holds a incoming call in a state to leave processes */
 /* enough time to check whether ist should be accepted.                    */
-/* The PROT_IO Command extends the interface to make protocol dependant    */
+/* The PROT_IO Command extends the interface to make protocol dependent    */
 /* features available (call diversion, call waiting...).                   */
 /*                                                                         */ 
 /* The PROT_IO Command is executed with the desired driver id and the arg  */

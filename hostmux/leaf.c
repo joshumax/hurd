@@ -53,7 +53,7 @@ netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
       *argz = 0;			/* Initialize return value.  */
       *argz_len = 0;
 
-      /* Return a copy of MUX's translator template, with occurances of
+      /* Return a copy of MUX's translator template, with occurrences of
 	 HOST_PAT replaced by the canonical hostname.  */
       err = argz_append (argz, argz_len,
 			 mux->trans_template, mux->trans_template_len);

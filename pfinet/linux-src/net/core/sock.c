@@ -138,7 +138,7 @@ __u32 sysctl_rmem_max = SK_RMEM_MAX;
 __u32 sysctl_wmem_default = SK_WMEM_MAX;
 __u32 sysctl_rmem_default = SK_RMEM_MAX;
 
-/* Maximal space eaten by iovec or ancilliary data plus some space */
+/* Maximal space eaten by iovec or ancillary data plus some space */
 int sysctl_optmem_max = sizeof(unsigned long)*(2*UIO_MAXIOV + 512);
 
 /*
@@ -693,7 +693,7 @@ struct sk_buff *sock_alloc_send_skb(struct sock *sk, unsigned long size,
 		 *	1003.1g draft 6.4. If we (the user) did a shutdown()
 		 *	call however we should not. 
 		 *
-		 *	Note: This routine isnt just used for datagrams and
+		 *	Note: This routine isn't just used for datagrams and
 		 *	anyway some datagram protocols have a notion of
 		 *	close down.
 		 */

@@ -36,11 +36,19 @@
 #include <cthreads.h>		/* for spin locks */
 #include <malloc.h> 		/* for malloc_hook/free_hook */
 
+#include "wiring.h"
+
 static void init_hook (void);
 static void *malloc_hook (size_t size, const void *caller);
 static void free_hook (void *ptr, const void *caller);
 
-void (*__malloc_initialize_hook) (void) = init_hook;
+/* GNU libc 2.14 defines this macro to declare hook variables as volatile.
+   Define it as empty for older libc versions.  */
+#ifndef __MALLOC_HOOK_VOLATILE
+# define __MALLOC_HOOK_VOLATILE
+#endif
+
+void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = init_hook;
 
 
 #define	DEBUG

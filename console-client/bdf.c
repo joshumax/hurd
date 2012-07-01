@@ -154,7 +154,7 @@ next_line (char **line, int *size, FILE *file, int *count)
 }
 
 
-/* Isolate the next white-space seperated argument from the current
+/* Isolate the next white-space separated argument from the current
    line, and set ARGP to the beginning of the next argument.  It is an
    error if there is no further argument.  */
 static bdf_error_t
@@ -178,7 +178,7 @@ find_arg (char **argp)
 
 /* Read the font from stream FILE, and return it in FONT.  If
    LINECOUNT is not zero, it will contain the number of lines in the
-   file at success, and the line an error occured at failure.  */
+   file at success, and the line an error occurred at failure.  */
 bdf_error_t
 bdf_read (FILE *filep, bdf_font_t *font, int *linecount)
 {

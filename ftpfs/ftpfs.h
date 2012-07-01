@@ -138,7 +138,7 @@ struct netnode
 /* Various parameters that can be used to change the behavior of an ftpfs.  */
 struct ftpfs_params
 {
-  /* Amount of time name existance is cached.  */
+  /* Amount of time name existence is cached.  */
   time_t name_timeout;
 
   /* Amount of time stat information is cached.  */
@@ -240,7 +240,7 @@ error_t ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 			  struct node **node);
 
 /* Lookup the null name in DIR, and return a node for it in NODE.  Unlike
-   ftpfs_dir_lookup, this won't attempt to validate the existance of the
+   ftpfs_dir_lookup, this won't attempt to validate the existence of the
    entry (to avoid opening a new connection if possible) -- that will happen
    the first time the entry is refreshed.  Also unlink ftpfs_dir_lookup, this
    function doesn't expect DIR to be locked, and won't return *NODE locked.

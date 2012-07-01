@@ -161,6 +161,14 @@
 # endif
 #endif
 
+/* Type of the TCB.  */
+typedef struct
+{
+	void *tcb;			/* Points to this structure.  */
+	void *dtv;			/* Vector of pointers to TLS data.  */
+	thread_t self;			/* This thread's control port.  */
+} tcbhead_t;
+
 /*
  * Low-level thread implementation.
  * This structure must agree with struct ur_cthread in cthreads.h
@@ -307,4 +315,10 @@ extern void		cproc_prepare(cproc_t _child,
 				      void (*cthread_body_pc)());
 
 extern void		cproc_setup(cproc_t _child, thread_t _mach_thread,
-				    void (*_routine)(cproc_t));
+				    tcbhead_t *tcb, void (*_routine)(cproc_t));
+
+
+/* From glibc.  */
+
+/* Dynamic linker TLS allocation.  */
+extern void *_dl_allocate_tls(void *);

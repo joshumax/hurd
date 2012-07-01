@@ -93,7 +93,7 @@ $DD 2>"$ERRS" if="$DEVICE" of="$SB" bs=1k skip=1 count=1 \
 
 # Extract a word of SZ bytes from byte offset POS in the superblock
 # Optional arg FMT is what format to use (x = hex, d = decimal)
-function sbget
+sbget ()
 {
   local pos="$1" sz="$2" fmt="${3-d}"
   pos=$(($pos / $sz))
@@ -103,7 +103,7 @@ function sbget
 }
 
 # Set a word of SZ bytes at byte offset POS in the superblock to VAL
-function sbset
+sbset ()
 {
   local pos="$1" sz="$2" val="$3"
   pos=$(($pos / $sz))

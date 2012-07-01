@@ -24,12 +24,15 @@
 #define EWOULDBLOCK EAGAIN /* XXX */
 
 #include <cthreads.h>		/* For conditions & mutexes */
+#include <features.h>
+
+#ifdef PIPE_DEFINE_EI
+#define PIPE_EI
+#else
+#define PIPE_EI __extern_inline
+#endif
 
 #include "pq.h"
-
-#ifndef PIPE_EI
-#define PIPE_EI extern inline
-#endif
 
 
 /* A description of a class of pipes and how to operate on them.  */
@@ -98,7 +101,7 @@ struct pipe
      PACKET_TYPE_CONTROL.  Each data packet represents one datagram for
      protocols that maintain record boundaries.  Control packets always
      represent the control information to be returned from one read
-     operation, and will be returned in conjuction with the following data
+     operation, and will be returned in conjunction with the following data
      packet (if any).  Reads interested only in data just skip control
      packets until they find a data packet.  */
   struct pq *queue;
@@ -107,6 +110,21 @@ struct pipe
 /* Pipe flags.  */
 #define PIPE_BROKEN	0x1	/* This pipe isn't connected.  */
 
+
+extern size_t pipe_readable (struct pipe *pipe, int data_only);
+
+extern int pipe_is_readable (struct pipe *pipe, int data_only);
+
+extern error_t pipe_wait_readable (struct pipe *pipe, int noblock, int data_only);
+
+extern error_t pipe_select_readable (struct pipe *pipe, int data_only);
+
+extern error_t pipe_wait_writable (struct pipe *pipe, int noblock);
+
+extern error_t pipe_select_writable (struct pipe *pipe);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PIPE_DEFINE_EI)
+
 /* Returns the number of characters quickly readable from PIPE.  If DATA_ONLY
    is true, then `control' packets are ignored.  */
 PIPE_EI size_t
@@ -139,7 +157,7 @@ pipe_is_readable (struct pipe *pipe, int data_only)
   return (packet != NULL);
 }
 
-/* Waits for PIPE to be readable, or an error to occurr.  If NOBLOCK is true,
+/* Waits for PIPE to be readable, or an error to occur.  If NOBLOCK is true,
    this operation will return EWOULDBLOCK instead of blocking when no data is
    immediately available.  If DATA_ONLY is true, then `control' packets are
    ignored.  */
@@ -156,7 +174,7 @@ pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
   return 0;
 }
 
-/* Waits for PIPE to be readable, or an error to occurr.  This call only
+/* Waits for PIPE to be readable, or an error to occur.  This call only
    returns once threads waiting using pipe_wait_readable have been woken and
    given a chance to read, and if there is still data available thereafter.
    If DATA_ONLY is true, then `control' packets are ignored.  */
@@ -203,6 +221,8 @@ pipe_select_writable (struct pipe *pipe)
   return 0;
 }
 
+#endif /* Use extern inlines.  */
+
 /* Creates a new pipe of class CLASS and returns it in RESULT.  */
 error_t pipe_create (struct pipe_class *class, struct pipe **pipe);
 
@@ -222,6 +242,26 @@ void _pipe_no_readers (struct pipe *pipe);
 /* Take any actions necessary when PIPE's last writer has gone away.  PIPE
    should be locked.  */
 void _pipe_no_writers (struct pipe *pipe);
+
+extern void pipe_acquire_reader (struct pipe *pipe);
+
+extern void pipe_acquire_writer (struct pipe *pipe);
+
+extern void pipe_release_reader (struct pipe *pipe);
+
+extern void pipe_release_writer (struct pipe *pipe);
+
+extern void pipe_add_reader (struct pipe *pipe);
+
+extern void pipe_add_writer (struct pipe *pipe);
+
+extern void pipe_remove_reader (struct pipe *pipe);
+
+extern void pipe_remove_writer (struct pipe *pipe);
+
+extern void pipe_drain (struct pipe *pipe);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PIPE_DEFINE_EI)
 
 /* Lock PIPE and increment its readers count.  */
 PIPE_EI void
@@ -303,6 +343,8 @@ pipe_drain (struct pipe *pipe)
 {
   pq_drain (pipe->queue);
 }
+
+#endif /* Use extern inlines.  */
 
 /* Writes up to LEN bytes of DATA, to PIPE, which should be locked, and
    returns the amount written in AMOUNT.  If present, the information in

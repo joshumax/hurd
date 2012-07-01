@@ -78,7 +78,7 @@ ftp_conn_getline (struct ftp_conn *conn, const char **line, size_t *line_len)
 	      offs = nl + 1 - l; /* Consume the line */
 
 	      /* Null terminate the result by overwriting the newline; if
-		 there's a CR preceeding it, get rid of that too.  */
+		 there's a CR preceding it, get rid of that too.  */
 	      if (nl > *line && nl[-1] == '\r')
 		nl--;
 	      *nl = '\0';

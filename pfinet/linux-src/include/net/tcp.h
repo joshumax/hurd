@@ -713,7 +713,7 @@ extern __inline__ __u32 tcp_recalc_ssthresh(struct tcp_opt *tp)
 
 /* TCP timestamps are only 32-bits, this causes a slight
  * complication on 64-bit systems since we store a snapshot
- * of jiffies in the buffer control blocks below.  We decidely
+ * of jiffies in the buffer control blocks below.  We decidedly
  * only use of the low 32-bits of jiffies and hide the ugly
  * casts with the following macro.
  */
@@ -1066,7 +1066,7 @@ static inline void tcp_clear_xmit_timer(struct sock *sk, int what)
 		timer = &tp->probe_timer;
 		break;	
 	default:
-		printk(timer_bug_msg);
+		printk("%s", timer_bug_msg);
 		return;
 	};
 	if(timer->prev != NULL)
@@ -1088,7 +1088,7 @@ static inline int tcp_timer_is_set(struct sock *sk, int what)
 		return tp->probe_timer.prev != NULL;
 		break;	
 	default:
-		printk(timer_bug_msg);
+		printk("%s", timer_bug_msg);
 	};
 	return 0;
 }

@@ -63,7 +63,7 @@ typedef	int (* transfer_proc_t)(struct loop_device *, int cmd,
 #endif 
 
 /*
- *	This uses kdev_t because glibc currently has no appropiate
+ *	This uses kdev_t because glibc currently has no appropriate
  *	conversion version for the loop ioctls. 
  * 	The situation is very unpleasant	
  */

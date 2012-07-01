@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 2002 Free Software Foundation, Inc.
+#   Copyright (C) 2002, 2012 Free Software Foundation, Inc.
 #   Written by Marcus Brinkmann.
 #
 #   This file is part of the GNU Hurd.
@@ -25,7 +25,7 @@ target = console
 
 SRCS = console.c display.c pager.c input.c
 LCLHDRS = display.h pager.h input.h priv.h mutations.h
-DIST_FILES = hurd.ti
+DIST_FILES = hurd.ti motd.UTF8
 
 MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 

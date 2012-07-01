@@ -246,7 +246,7 @@ int ip6_mc_input(struct sk_buff *skb)
 		deliver = 1;
 
 	/*
-	 *	IPv6 multicast router mode isnt currently supported.
+	 *	IPv6 multicast router mode isn't currently supported.
 	 */
 #if 0
 	if (ipv6_config.multicast_route) {

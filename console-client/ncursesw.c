@@ -47,7 +47,7 @@ static WINDOW *conspad;
 static unsigned int padx;
 static unsigned int pady;
 
-/* Autoscroll is on or off.  Autoscroll makes scrolling dependant on
+/* Autoscroll is on or off.  Autoscroll makes scrolling dependent on
    the cursor position.  */
 static int autoscroll;
 

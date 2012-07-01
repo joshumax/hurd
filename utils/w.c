@@ -253,7 +253,7 @@ static void
 add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
 {
   /* The tty name, with space for '\0' termination and an
-     appropiate prefix.  */
+     appropriate prefix.  */
   char tty[sizeof _PATH_DEV + sizeof u->ut_line];
   io_t tty_node;
   error_t err;

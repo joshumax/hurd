@@ -83,7 +83,7 @@ driver_fini (void)
 
 /* Load, intialize and (if START is non-zero) start the driver DRIVER
    under the given NAME (which must be unique among all loaded
-   drivers) with arguments ARGZ with length ARGZ_LEN.  This funtion
+   drivers) with arguments ARGZ with length ARGZ_LEN.  This function
    will grab the driver list lock.  The driver itself might try to
    grab the display, input source and bell list locks as well.  */
 error_t driver_add (const char *const name, const char *const driver,

@@ -181,7 +181,7 @@ diskfs_lost_hardrefs (struct node *np)
 	  spin_unlock (&_libports_portrefcntlock);
 
 	  /* Right now the node is locked with no hard refs;
-	     this is an anomolous situation.  Before messing with
+	     this is an anomalous situation.  Before messing with
 	     the reference count on the file pager, we have to
 	     give ourselves a reference back so that we are really
 	     allowed to hold the lock.  Then we can do the

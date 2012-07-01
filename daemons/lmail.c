@@ -60,7 +60,7 @@ static const char doc[] = "Deliver mail to the local mailboxes of USER...";
 
 #define HDR_PFX "From "		/* Header, at the beginning of a line,
 				   starting each msg in a mailbox.  */
-#define ESC_PFX ">"		/* Used to escape occurances of HDR_PFX in
+#define ESC_PFX ">"		/* Used to escape occurrences of HDR_PFX in
 				   the msg body.  */
 
 #define BMAX (64*1024)		/* Chunk size for I/O.  */
@@ -71,7 +71,7 @@ struct params
   char *mail_dir;		/* Mailbox directory.  */
 };
 
-/* Convert the system error code ERR to an appropiate exit value.  This
+/* Convert the system error code ERR to an appropriate exit value.  This
    function currently only returns three sorts: success, temporary failure,
    or error, with exit codes 0, EX_TEMPFAIL, or EX_UNAVAILABLE.  The table of
    temporary failures is from the bsd original of this program.  */
@@ -116,7 +116,7 @@ err_to_ex (error_t err)
 }
 
 /* Print and syslog the given error message, with the system error string for
-   ERRNO appended.  Return an appropiate exit code for ERRNO.  */
+   ERRNO appended.  Return an appropriate exit code for ERRNO.  */
 #define SYSERR(fmt, args...) \
   ({ syslog (LOG_ERR, fmt ": %m" , ##args); err_to_ex (errno); })
 
@@ -126,7 +126,7 @@ err_to_ex (error_t err)
   ({ syslog (LOG_ERR, fmt , ##args); EX_UNAVAILABLE; })
 
 /* Print and syslog the given error message, with the system error string for
-   CODE appended.  Return an appropiate exit code for CODE.  */
+   CODE appended.  Return an appropriate exit code for CODE.  */
 #define SYSERRX(code, fmt, args...)					      \
   ({ error_t _code = (code);						      \
      syslog (LOG_ERR, fmt ": %s" , ##args , strerror (_code));		      \
@@ -225,7 +225,7 @@ write_header (int out, char *out_name, struct params *params)
 /* Copy from file descriptor IN to OUT, making any changes needed to make the
    contents a valid mailbox entry.  These include:
     (1) Prepending a `From ...' line, and appending a blank line.
-    (2) Replacing any occurances of `From ' at the beginning of lines with
+    (2) Replacing any occurrences of `From ' at the beginning of lines with
         `>From '.
    An exit status is returned.  */
 static int
@@ -326,7 +326,7 @@ process (int in, char *in_name, int out, char *out_name, struct params *params)
 #define D_REWIND  0x2		/* Rewind MSG before using it.  */
 
 /* Deliver the text from the file descriptor MSG to the mailbox of the user
-   RCPT in MAIL_DIR.  FLAGS is from the set D_* above.  An exit appropiate
+   RCPT in MAIL_DIR.  FLAGS is from the set D_* above.  An exit appropriate
    exit code is returned.  */
 static int
 deliver (int msg, char *msg_name, char *rcpt, int flags, struct params *params)
@@ -437,7 +437,7 @@ cache (int in, char *in_name, struct params *params, int *cached)
 int
 main (int argc, char **argv)
 {
-  int rcpt = 0;			/* Index in ARGV of next recepient.  */
+  int rcpt = 0;			/* Index in ARGV of next recipient.  */
   char *file = 0;		/* File containing message.  */
   int remove = 0;		/* Remove file after successful delivery.  */
   int in = 0;			/* Raw input file descriptor.  */

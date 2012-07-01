@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_REVISION([$Id: configure.in,v 1.38 2008/11/17 11:34:18 tschwinge Exp $])
 AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
-AC_INIT
+AC_INIT([GNU Hurd], [0.3], [bug-hurd@gnu.org])
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
 
 AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.
@@ -270,6 +270,11 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
 AC_SUBST([have_x11])
 AC_SUBST([XKB_BASE])
 AC_SUBST([X11_KEYSYMDEF_H])
+
+# Check for Sun RPC headers and library.
+AC_CHECK_HEADER([rpc/types.h], [HAVE_SUN_RPC=yes], [HAVE_SUN_RPC=no])
+AC_SEARCH_LIBS([clnt_create], [], [:], [HAVE_SUN_RPC=no])
+AC_SUBST([HAVE_SUN_RPC])
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.

@@ -33,11 +33,13 @@
 #include <mach.h>
 #include <device/device.h>
 #include <hurd/hurd_types.h>
+#include <features.h>
 
-#ifndef STORE_EI
-#define STORE_EI extern inline
+#ifdef STORE_DEFINE_EI
+#define STORE_EI
+#else
+#define STORE_EI __extern_inline
 #endif
-
 
 /* Type for addresses inside the store.  */
 typedef off64_t store_offset_t;
@@ -262,13 +264,17 @@ error_t store_set_flags (struct store *store, int flags);
 /* Remove FLAGS from STORE's currently set flags.  */
 error_t store_clear_flags (struct store *store, int flags);
 
-/* Set FLAGS in all children of STORE, and if successfull, add FLAGS to
+/* Set FLAGS in all children of STORE, and if successful, add FLAGS to
    STORE's flags.  */
 error_t store_set_child_flags (struct store *store, int flags);
 
-/* Clear FLAGS in all children of STORE, and if successfull, remove FLAGS from
+/* Clear FLAGS in all children of STORE, and if successful, remove FLAGS from
    STORE's flags.  */
 error_t store_clear_child_flags (struct store *store, int flags);
+
+extern int store_is_securely_returnable (struct store *store, int open_flags);
+
+#if defined(__USE_EXTERN_INLINES) || defined(STORE_DEFINE_EI)
 
 /* Returns true if STORE can safely be returned to a user who has accessed it
    via a node using OPEN_FLAGS, without compromising security.  */
@@ -282,6 +288,8 @@ store_is_securely_returnable (struct store *store, int open_flags)
 	&& (((open_flags & O_ACCMODE) == O_RDWR)
 	    || (flags & STORE_HARD_READONLY)));
 }
+
+#endif /* Use extern inlines.  */
 
 /* Fills in the values of the various fields in STORE that are derivable from
    the set of runs & the block size.  */

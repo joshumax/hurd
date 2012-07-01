@@ -18,7 +18,5 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#define HOSTMUX_EI
-#undef __OPTIMIZE__
-#define __OPTIMIZE__	1
+#define HOSTMUX_DEFINE_EI
 #include "hostmux.h"

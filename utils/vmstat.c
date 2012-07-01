@@ -111,7 +111,7 @@ print_val (val_t val, enum val_type type,
       float fval = val;
       char *units = " KMGT", *u = units;
 
-      while (fval > 1024)
+      while (fval >= 10000)
 	{
 	  fval /= 1024;
 	  u++;
@@ -456,7 +456,7 @@ main (int argc, char **argv)
       if (field->standard)
 	output_fields |= (1 << (field - fields));
 
-  /* Returns an appropiate SIZE_UNITS for printing FIELD.  */
+  /* Returns an appropriate SIZE_UNITS for printing FIELD.  */
 #define SIZE_UNITS(field)						      \
   (size_units >= 0							      \
    ? size_units								      \

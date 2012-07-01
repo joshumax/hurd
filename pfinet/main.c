@@ -288,7 +288,7 @@ main (int argc,
 
   /* Parse options.  When successful, this configures the interfaces
      before returning; to do so, it will acquire the global_lock.
-     (And when not sucessful, it never returns.)  */
+     (And when not successful, it never returns.)  */
   argp_parse (&pfinet_argp, argc, argv, 0,0,0);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
@@ -415,7 +415,7 @@ pfinet_bind (int portclass, const char *name)
     }
   
   if (err)
-    error (1, err, name);
+    error (1, err, "%s", name);
 
   ports_port_deref (cntl);
 

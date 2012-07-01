@@ -35,7 +35,7 @@ static const struct argp_option options[] = {
   {0}
 };
 static const char *args_doc = "DEVNAME...";
-static const char *doc = "Test for the existance of mach device DEVNAME..."
+static const char *doc = "Test for the existence of mach device DEVNAME..."
   "\vThe exit status is 0 if any devices were found.";
 
 int

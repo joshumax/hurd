@@ -844,7 +844,7 @@ int __init ip_auto_config(void)
 	}
 
 	/*
-	 * Use defaults whereever applicable.
+	 * Use defaults wherever applicable.
 	 */
 	if (ic_defaults() < 0)
 		return -1;

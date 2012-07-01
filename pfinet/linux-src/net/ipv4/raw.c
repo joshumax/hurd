@@ -379,7 +379,7 @@ static void raw_close(struct sock *sk, long timeout)
 	sk->state = TCP_CLOSE;
 	raw_v4_unhash(sk);
         /*
-	   B. Raw sockets may have direct kernel refereneces. Kill them.
+	   B. Raw sockets may have direct kernel references. Kill them.
 	 */
 	ip_ra_control(sk, 0, NULL);
 

@@ -50,11 +50,11 @@ isonamematch (const char *dirname, size_t dnamelen,
       if (dnamelen == unamelen)
 	return 1;
 
-      /* User has ommitted the version number */
+      /* User has omitted the version number */
       if (dirname[unamelen] == ';')
 	return 1;
 
-      /* User has ommitted an empty extension */
+      /* User has omitted an empty extension */
       if (dirname[unamelen] == '.'
 	  && (dirname[unamelen+1] == '\0' || dirname[unamelen+1] == ';'))
 	return 1;

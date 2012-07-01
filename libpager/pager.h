@@ -151,7 +151,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 /* The user must define this function.  For pager PAGER, read one
    page from offset PAGE.  Set *BUF to be the address of the page,
    and set *WRITE_LOCK if the page must be provided read-only.
-   The only permissable error returns are EIO, EDQUOT, and ENOSPC. */
+   The only permissible error returns are EIO, EDQUOT, and ENOSPC. */
 error_t
 pager_read_page (struct user_pager_info *pager,
 		 vm_offset_t page,
@@ -160,7 +160,7 @@ pager_read_page (struct user_pager_info *pager,
 
 /* The user must define this function.  For pager PAGER, synchronously
    write one page from BUF to offset PAGE.  In addition, mfree
-   (or equivalent) BUF.  The only permissable error returns are EIO,
+   (or equivalent) BUF.  The only permissible error returns are EIO,
    EDQUOT, and ENOSPC. */
 error_t
 pager_write_page (struct user_pager_info *pager,

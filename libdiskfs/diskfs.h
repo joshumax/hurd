@@ -27,9 +27,12 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <idvec.h>
+#include <features.h>
 
-#ifndef DISKFS_EXTERN_INLINE
-#define DISKFS_EXTERN_INLINE extern inline
+#ifdef DISKFS_DEFINE_EXTERN_INLINE
+#define DISKFS_EXTERN_INLINE
+#else
+#define DISKFS_EXTERN_INLINE __extern_inline
 #endif
 
 /* Each user port referring to a file points to one of these
@@ -781,6 +784,12 @@ error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
    the user to install is USER.  */
 void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
+extern struct protid * diskfs_begin_using_protid_port (file_t port);
+
+extern void diskfs_end_using_protid_port (struct protid *cred);
+
+#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+
 /* Called by MiG to translate ports into struct protid *.
    fsmutations.h arranges for this to happen for the io and
    fs interfaces. */
@@ -799,6 +808,8 @@ diskfs_end_using_protid_port (struct protid *cred)
   if (cred)
     ports_port_deref (cred);
 }
+
+#endif /* Use extern inlines.  */
 
 /* Called when a protid CRED has no more references.  (Because references\
    to protids are maintained by the port management library, this is

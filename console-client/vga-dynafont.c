@@ -529,6 +529,31 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
       df->vga_font_last_free_index_lgc = 0;
     }
 
+  /* Ensure that ASCII is always available 1-to-1, for kernel messages.  */
+  for (int c = ' '; c <= '~'; c++)
+    {
+      glyph = bdf_find_glyph (df->font, c, 0);
+      if (!glyph)
+	glyph = bdf_find_glyph (df->font, -1, c);
+      if (glyph)
+	{
+	  struct mapped_character *chr = &df->charmap_data[c];
+	  df->vga_font_free_indices--;
+	  chr->refs = 1;
+
+	  for (int i = 0; i < ((glyph->bbox.height > 32)
+			       ? 32 : glyph->bbox.height); i++)
+	    df->vga_font[c][i]
+	      = glyph->bitmap[i * ((glyph->bbox.width + 7) / 8)];
+	  if (glyph->bbox.height < 32)
+	    memset (((char *) df->vga_font[c])
+		    + glyph->bbox.height, 0, 32 - glyph->bbox.height);
+
+	  /* Update the hash table.  */
+	  hurd_ihash_add (&df->charmap, c, chr);
+	}
+    }
+
   /* Ensure that we always have the replacement character
      available.  */
   {
@@ -846,7 +871,7 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
   chr->refs = 1;
   chr->character = (wide_chr | attr);
 
-  /* Copy the glyph bitmap, taking into account double-width charcters.  */
+  /* Copy the glyph bitmap, taking into account double-width characters.  */
   {
     int height = (glyph->bbox.height > 32) ? 32 : glyph->bbox.height;
     int bwidth = (glyph->bbox.width + 7) / 8;

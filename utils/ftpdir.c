@@ -39,7 +39,7 @@ static struct argp_option options[] =
   {"account",  'a', "ACCT",0, "Account to login as"},
   {"separator",'S', "SEP", 0, "String to separate multiple listings"},
   {"prefix",   'P', "PFX", 0, "String to proceed listings; the first and second"
-                              " occurances of %s are replace by HOST and DIR"},
+                              " occurrences of %s are replace by HOST and DIR"},
   {"host",     'h', "HOST",0, "Use HOST as a default host"},
   {"debug",    'D', 0,     0, "Turn on debugging output for ftp connections"},
   {"intepret", 'i', 0,     0, "Parse the directory output"},

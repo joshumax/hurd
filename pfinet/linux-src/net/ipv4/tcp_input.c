@@ -130,7 +130,7 @@ static __inline__ void tcp_remember_ack(struct tcp_opt *tp, struct tcphdr *th,
 {
 	tp->delayed_acks++; 
 
-	/* Tiny-grams with PSH set artifically deflate our
+	/* Tiny-grams with PSH set artificially deflate our
 	 * ato measurement, but with a lower bound.
 	 */
 	if(th->psh && (skb->len < (tp->mss_cache >> 1))) {
@@ -989,7 +989,7 @@ tcp_timewait_state_process(struct tcp_tw_bucket *tw, struct sk_buff *skb,
 
 	/* Check RST or SYN */
 	if(th->rst || th->syn) {
-		/* This is TIME_WAIT assasination, in two flavors.
+		/* This is TIME_WAIT assassination, in two flavors.
 		 * Oh well... nobody has a sufficient solution to this
 		 * protocol bug yet.
 		 */
@@ -1931,7 +1931,7 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
 	 * Dave!!! Phrase above (and all about rcv_mss) has 
 	 * nothing to do with reality. rcv_mss must measure TOTAL
 	 * size, including sacks, IP options etc. Hence, measure_rcv_mss
-	 * must occure before pulling etc, otherwise it will flap
+	 * must occur before pulling etc, otherwise it will flap
 	 * like hell. Even putting it before tcp_data is wrong,
 	 * it should use skb->tail - skb->nh.raw instead.
 	 *					--ANK (980805)
@@ -1939,7 +1939,7 @@ int tcp_rcv_established(struct sock *sk, struct sk_buff *skb,
 	 * BTW I broke it. Now all TCP options are handled equally
 	 * in mss_clamp calculations (i.e. ignored, rfc1122),
 	 * and mss_cache does include all of them (i.e. tstamps)
-	 * except for sacks, to calulate effective mss faster.
+	 * except for sacks, to calculate effective mss faster.
 	 * 					--ANK (980805)
 	 */
 	tcp_measure_rcv_mss(sk, skb); 

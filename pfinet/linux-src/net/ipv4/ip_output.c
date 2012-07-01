@@ -782,7 +782,7 @@ void ip_fragment(struct sk_buff *skb, int (*output)(struct sk_buff*))
 		/* IF: it doesn't fit, use 'mtu' - the data space left */
 		if (len > mtu)
 			len = mtu;
-		/* IF: we are not sending upto and including the packet end
+		/* IF: we are not sending up to and including the packet end
 		   then align the next start on an eight byte boundary */
 		if (len < left)	{
 			len &= ~7;

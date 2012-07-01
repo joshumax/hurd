@@ -1,2 +1,2 @@
-#define PIPE_EI
+#define PIPE_DEFINE_EI
 #include "pipe.h"

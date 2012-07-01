@@ -22,18 +22,20 @@
 #include <stddef.h>
 #include <assert.h>
 #include <mach.h>
+#include <string.h>
+#include <strings.h>
+
+#include <default_pager.h>
+#include <kalloc.h>
 
 #include "file_io.h"
 #include "default_pager_S.h"
 
 /* This should be in some system header...  XXX  */
-static inline int page_aligned (vm_offset_t num)
+int page_aligned (vm_offset_t num)
 {
   return trunc_page (num) == num;
 }
-
-/* From serverboot/kalloc.c.  */
-extern void *kalloc (vm_size_t);
 
 extern mach_port_t default_pager_default_port; /* default_pager.c */
 
@@ -87,7 +89,7 @@ S_default_pager_paging_storage (mach_port_t pager,
       fdp->runs[i].length = runs[i + 1];
       if (fdp->runs[i].start + fdp->runs[i].length > devsize)
 	{
-	  kfree (fdp);
+	  kfree (fdp, offsetof (struct file_direct, runs[nrun]));
 	  return EINVAL;
 	}
       fdp->fd_size += fdp->runs[i].length;
@@ -295,7 +297,7 @@ remove_paging_file (char *file_name)
   struct file_direct *fdp = 0;
   kern_return_t kr;
 
-  kr = destroy_paging_partition(file_name, &fdp);
+  kr = destroy_paging_partition(file_name, (void **)&fdp);
   if (kr == KERN_SUCCESS && fdp != 0)
     {
       mach_port_deallocate (mach_task_self (), fdp->device);

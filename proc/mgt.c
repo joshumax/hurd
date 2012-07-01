@@ -499,7 +499,7 @@ S_proc_exception_raise (mach_port_t excport,
 
       mach_port_destroy (mach_task_self (), thread);
 
-      return 0;
+      return MIG_NO_REPLY;
     }
 
 }

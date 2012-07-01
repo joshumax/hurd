@@ -24,6 +24,13 @@
 #include <hurd/netfs.h>
 #include <rwlock.h>
 #include <maptime.h>
+#include <features.h>
+
+#ifdef HOSTMUX_DEFINE_EI
+#define HOSTMUX_EI
+#else
+#define HOSTMUX_EI __extern_inline
+#endif
 
 /* Handy source of time.  */
 volatile struct mapped_time_value *hostmux_maptime;
@@ -84,9 +91,5 @@ struct netnode
      looked up. */
   struct hostmux_name *name;
 };
-
-#ifndef HOSTMUX_EI
-# define HOSTMUX_EI extern inline
-#endif
 
 #endif /* __HOSTMUX_H__ */

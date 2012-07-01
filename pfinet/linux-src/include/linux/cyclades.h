@@ -134,7 +134,7 @@ struct CYZ_BOOT_CTRL {
 /****************** ****************** *******************/
 /*
  *	The data types defined below are used in all ZFIRM interface
- *	data structures. They accomodate differences between HW
+ *	data structures. They accommodate differences between HW
  *	architectures and compilers.
  */
 
@@ -167,7 +167,7 @@ struct	CUSTOM_REG {
 	uclong	fpga_version;		/* FPGA Version Number Register */
 	uclong	cpu_start;		/* CPU start Register (write) */
 	uclong	cpu_stop;		/* CPU stop Register (write) */
-	uclong	misc_reg;		/* Miscelaneous Register */
+	uclong	misc_reg;		/* Miscellaneous Register */
 	uclong	idt_mode;		/* IDT mode Register */
 	uclong	uart_irq_status;	/* UART IRQ status Register */
 	uclong	clear_timer0_irq;	/* Clear timer interrupt Register */

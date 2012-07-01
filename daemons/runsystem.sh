@@ -14,6 +14,8 @@
 PATH=/bin:/sbin
 export PATH
 
+umask 022
+
 # If we lose badly, try to exec each of these in turn.
 fallback_shells='/bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
 

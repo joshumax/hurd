@@ -230,7 +230,7 @@ extern struct module *module_list;
    In the kernel, the symbol is added to the kernel's global symbol table.
 
    In a module, it controls which variables are exported.  If no
-   variables are explicitly exported, the action is controled by the
+   variables are explicitly exported, the action is controlled by the
    insmod -[xX] flags.  Otherwise, only the variables listed are exported.
    This obviates the need for the old register_symtab() function.  */
 

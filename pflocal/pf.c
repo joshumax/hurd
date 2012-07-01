@@ -65,7 +65,7 @@ S_socket_create (mach_port_t pf,
     case SOCK_SEQPACKET:
       pipe_class = seqpack_pipe_class; break;
     default:
-      return ESOCKTNOSUPPORT;
+      return EPROTOTYPE;
     }
 
   err = sock_create (pipe_class, mode, &sock);
@@ -114,7 +114,7 @@ S_socket_fabricate_address (mach_port_t pf,
 }
 
 /* Implement socket_whatis_address as described in <hurd/socket.defs>.
-   Since we cannot tell what our adress is, return an empty string as
+   Since we cannot tell what our address is, return an empty string as
    the file name.  This is primarily for the implementation of accept
    and recvfrom.  The functions getsockname and getpeername remain
    unsupported for the local namespace.  */

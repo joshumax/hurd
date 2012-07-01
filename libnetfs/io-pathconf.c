@@ -39,6 +39,7 @@ netfs_S_io_pathconf (struct protid *user,
     case _PC_PIPE_BUF:
     case _PC_VDISABLE:
     case _PC_SOCK_MAXBUF:
+    case _PC_PATH_MAX:
       *value = -1;
       break;
       

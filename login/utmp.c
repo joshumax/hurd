@@ -134,7 +134,7 @@ next_device(char *dev)
 
 /* ---------------------------------------------------------------- */
 
-/* Try and start the translator for CTL_PORT on NODE.  If succesful, this
+/* Try and start the translator for CTL_PORT on NODE.  If successful, this
    call will not return until the translator is stopped; otherwise it returns
    an error code describing the reason why it couldn't start.  */
 static error_t
@@ -163,7 +163,7 @@ start_translator(file_t node, fsys_t ctl_port)
 }
 
 /* Find an unoccupied (one with no active translator) filename starting with
-   NAME_PFX, and start the translator for CTL_PORT on it.  If succesful, this
+   NAME_PFX, and start the translator for CTL_PORT on it.  If successful, this
    call will not return until the translator is stopped; otherwise it returns
    an error code describing the reason why it couldn't start.  When
    successful, this function sets UTMP_NODE_NAME to the name of the file we

@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <cthreads.h>
 #include <assert.h>
+#include <features.h>
 
 #include <sys/stat.h>
 
@@ -36,6 +37,12 @@
 /* Include the hook calling macros and non-rpc hook definitions (to get
    those, include "trees-s-hooks.h").  */
 #include "treefs-hooks.h"
+
+#ifdef TREEFS_DEFINE_EI
+#define TREEFS_EI
+#else
+#define TREEFS_EI __extern_inline
+#endif
 
 /* ---------------------------------------------------------------- */
 
@@ -237,10 +244,18 @@ void treefs_hooks_set (treefs_hook_vector_t hooks,
 
 extern spin_lock_t treefs_node_refcnt_lock;
 
+extern void treefs_node_ref (struct treefs_node *node);
+extern void treefs_node_release (struct treefs_node *node);
+extern void treefs_node_unref (struct treefs_node *node);
+extern void treefs_node_ref_weak (struct treefs_node *node);
+extern void treefs_node_release_weak (struct treefs_node *node);
+extern void treefs_node_unref_weak (struct treefs_node *node);
+
+#if defined(__USE_EXTERN_INLINES) || defined(TREEFS_DEFINE_EI)
 /* Add a hard reference to a node.  If there were no hard
    references previously, then the node cannot be locked
    (because you must hold a hard reference to hold the lock). */
-extern inline void
+TREEFS_EI void
 treefs_node_ref (struct treefs_node *node)
 {
   int new_ref;
@@ -259,7 +274,7 @@ treefs_node_ref (struct treefs_node *node)
 /* Unlock node NODE and release a hard reference; if this is the last
    hard reference and there are no links to the file then request
    weak references to be dropped.  */
-extern inline void
+TREEFS_EI void
 treefs_node_release (struct treefs_node *node)
 {
   int tried_drop_weak_refs = 0;
@@ -306,7 +321,7 @@ treefs_node_release (struct treefs_node *node)
    hard reference in order to hold the lock).  If this is the last
    hard reference and there are no links, then request weak references
    to be dropped.  */
-extern inline void
+TREEFS_EI void
 treefs_node_unref (struct treefs_node *node)
 {
   int tried_drop_weak_refs = 0;
@@ -346,7 +361,7 @@ treefs_node_unref (struct treefs_node *node)
 }
 
 /* Add a weak reference to a node. */
-extern inline void
+TREEFS_EI void
 treefs_node_ref_weak (struct treefs_node *node)
 {
   spin_lock (&treefs_node_refcnt_lock);
@@ -355,7 +370,7 @@ treefs_node_ref_weak (struct treefs_node *node)
 }
 
 /* Unlock node NODE and release a weak reference */
-extern inline void
+TREEFS_EI void
 treefs_node_release_weak (struct treefs_node *node)
 {
   spin_lock (&treefs_node_refcnt_lock);
@@ -373,7 +388,7 @@ treefs_node_release_weak (struct treefs_node *node)
 /* Release a weak reference on NODE.  If NODE is locked by anyone, then
    this cannot be the last reference (because you must hold a
    hard reference in order to hold the lock).  */
-extern inline void
+TREEFS_EI void
 treefs_node_unref_weak (struct treefs_node *node)
 {
   spin_lock (&treefs_node_refcnt_lock);
@@ -387,6 +402,7 @@ treefs_node_unref_weak (struct treefs_node *node)
   else
     spin_unlock (&treefs_node_refcnt_lock);
 }
+#endif /* Use extern inlines.  */
 
 /* ---------------------------------------------------------------- */
 
@@ -408,8 +424,12 @@ treefs_node_create_right (struct treefs_node *node, int flags,
 /* ---------------------------------------------------------------- */
 /* Auth functions; copied from diskfs.  */
 
+extern int treefs_auth_has_uid (struct treefs_auth *auth, uid_t uid);
+extern int treefs_auth_in_group (struct treefs_auth *auth, gid_t gid);
+
+#if defined(__USE_EXTERN_INLINES) || defined(TREEFS_DEFINE_EI)
 /* Return nonzero iff the user identified by AUTH has uid UID. */
-extern inline int
+TREEFS_EI int
 treefs_auth_has_uid (struct treefs_auth *auth, uid_t uid)
 {
   int i;
@@ -420,7 +440,7 @@ treefs_auth_has_uid (struct treefs_auth *auth, uid_t uid)
 }
 
 /* Return nonzero iff the user identified by AUTH has group GID. */
-extern inline int
+TREEFS_EI int
 treefs_auth_in_group (struct treefs_auth *auth, gid_t gid)
 {
   int i;
@@ -429,6 +449,7 @@ treefs_auth_in_group (struct treefs_auth *auth, gid_t gid)
       return 1;
   return 0;
 }
+#endif /* Use extern inlines.  */
 
 /* ---------------------------------------------------------------- */
 /* Helper routines for dealing with translators.  */

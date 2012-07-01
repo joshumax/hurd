@@ -479,7 +479,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       /* Fall through to free hook.  */
 
     case ARGP_KEY_ERROR:
-      /* Parsing error occured, free everything. */
+      /* Parsing error occurred, free everything. */
     free_hook:
       free (h->interfaces);
       free (h);

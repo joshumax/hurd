@@ -75,7 +75,7 @@ generate_xid ()
    credential structure with UID, GID, and SECOND_GID;  any of these
    may be -1 to indicate that it does not apply, however, exactly zero
    or two of UID and GID must be -1.  The returned address is a pointer
-   to the start of the payload.  If NULL is returned, an error occured
+   to the start of the payload.  If NULL is returned, an error occurred
    and the code is set in errno.  */
 int *
 initialize_rpc (int program, int version, int rpc_proc, 

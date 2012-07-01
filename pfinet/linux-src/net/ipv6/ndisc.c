@@ -554,7 +554,7 @@ static void ndisc_router_discovery(struct sk_buff *skb)
 
 	if (skb->nh.ipv6h->hop_limit != 255) {
 		printk(KERN_INFO
-		       "NDISC: fake router advertisment received\n");
+		       "NDISC: fake router advertisement received\n");
 		return;
 	}
 
@@ -694,7 +694,7 @@ static void ndisc_router_discovery(struct sk_buff *skb)
 			ND_PRINTK0("got illegal option with RA");
 			break;
 		default:
-			ND_PRINTK0("unkown option in RA\n");
+			ND_PRINTK0("unknown option in RA\n");
                 };
                 optlen -= len;
                 opt += len;

@@ -204,7 +204,7 @@ main (int argc, char *argv[])
 	  struct store *store;
 
 	  if (file == MACH_PORT_NULL)
-	    error (3, err, source);
+	    error (3, err, "%s", source);
 
 	  if (print_prefix < 0)
 	    /* By default, only print filename prefixes for multiple files. */
@@ -220,7 +220,7 @@ main (int argc, char *argv[])
 	     of what the unknown data looked like.  */
 	  err = store_create (file, STORE_INACTIVE|STORE_NO_FILEIO, 0, &store);
 	  if (err)
-	    error (4, err, source);
+	    error (4, err, "%s", source);
 
 	  print_store (store, 0, what);
 	  store_free (store);

@@ -505,7 +505,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 		 we got here from the exit point of the function, then
 		 VALID_NM is actually clear. */
 
-	      /* Save these, becuase rrip_work will clear them. */
+	      /* Save these, because rrip_work will clear them. */
 	      savename = (rr->valid & VALID_NM) ? rr->name : 0;
 	      realdir = rr->realdirent;
 
