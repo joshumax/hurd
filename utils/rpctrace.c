@@ -85,6 +85,8 @@ msgid_ihash_cleanup (void *element, void *arg)
 static struct hurd_ihash msgid_ihash
   = HURD_IHASH_INITIALIZER (HURD_IHASH_NO_LOCP);
 
+task_t traced_task;
+
 /* Parse a file of RPC names and message IDs as output by mig's -list
    option: "subsystem base-id routine n request-id reply-id".  Put each
    request-id value into `msgid_ihash' with the routine name as its value.  */
@@ -647,6 +649,82 @@ print_contents (mach_msg_header_t *inp,
     }
 }
 
+/* Wrap all thread port in the task */
+static void
+wrap_all_threads (task_t task)
+{
+  struct traced_info *thread_send_wrapper;
+  thread_t *threads;
+  size_t nthreads;
+  error_t err;
+
+  err = task_threads (task, &threads, &nthreads);
+  if (err)
+    error (2, err, "task_threads");
+
+  for (int i = 0; i < nthreads; ++i)
+    {
+      thread_send_wrapper = hurd_ihash_find (&traced_names, threads[i]);
+      /* We haven't seen the port. */
+      if (thread_send_wrapper == NULL)
+	{
+	  mach_port_t new_thread_port;
+	  thread_send_wrapper = new_send_wrapper (threads[i], &new_thread_port);
+	  free (thread_send_wrapper->name);
+	  asprintf (&thread_send_wrapper->name, "thread%d", threads[i]);
+
+	  err = mach_port_insert_right (mach_task_self (),
+					new_thread_port, new_thread_port,
+					MACH_MSG_TYPE_MAKE_SEND);
+	  if (err)
+	    error (2, err, "mach_port_insert_right");
+
+	  err = thread_set_kernel_port (threads[i], new_thread_port);
+	  if (err)
+	    error (2, err, "thread_set_kernel_port");
+
+	  mach_port_deallocate (mach_task_self (), new_thread_port);
+	}
+    }
+  vm_deallocate (mach_task_self (), threads, nthreads * sizeof (thread_t));
+}
+
+/* Wrap the new thread port that is in the message. */
+static void
+wrap_new_thread (mach_msg_header_t *inp)
+{
+  error_t err;
+  mach_port_t thread_port;
+  struct
+    {
+      mach_msg_header_t head;
+      mach_msg_type_t retcode_type;
+      kern_return_t retcode;
+      mach_msg_type_t child_thread_type;
+      mach_port_t child_thread;
+    } *reply = (void *) inp;
+  /* This function is called after rewrite_right,
+   * so the wrapper for the thread port has been created. */
+  struct traced_info *send_wrapper = ports_lookup_port (traced_bucket,
+							reply->child_thread, 0);
+
+  assert (send_wrapper);
+  thread_port = send_wrapper->forward;
+
+  err = mach_port_insert_right (mach_task_self (), reply->child_thread,
+				reply->child_thread, MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (2, err, "mach_port_insert_right");
+  err = thread_set_kernel_port (thread_port, reply->child_thread);
+  if (err)
+    error (2, err, "thread_set_kernel_port");
+  mach_port_deallocate (mach_task_self (), reply->child_thread);
+
+  free (send_wrapper->name);
+  asprintf (&send_wrapper->name, "thread%d", thread_port);
+  ports_port_deref (send_wrapper);
+}
+
 int
 trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
@@ -775,6 +853,9 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  putc (' ', ostream);
 	  print_contents (&rh->Head, rh + 1);
 	  putc ('\n', ostream);
+
+	  if (inp->msgh_id == 2161)/* the reply message for thread_create */
+	    wrap_new_thread (inp);
 	}
       else
 	{
@@ -786,6 +867,11 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  else
 	    /* Leave a partial line that will be finished later.  */
 	    fprintf (ostream, ")");
+
+	  /* If it's the request of exec_startup_get_info,
+	   * it means that the traced process starts to run */
+	  if (inp->msgh_id == 30500)
+	    wrap_all_threads (traced_task);
 	}
     }
 
@@ -1020,8 +1106,6 @@ print_data (mach_msg_type_name_t type,
 
 
 /*** Main program and child startup ***/
-
-task_t traced_task;
 
 
 /* Run a child and have it do more or else `execvpe (argv, envp);'.  */
