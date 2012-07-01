@@ -248,6 +248,13 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
        AC_MSG_RESULT([$XKB_BASE])],
       [XKB_BASE="$datadir/X11/xkb"
        AC_MSG_RESULT([(default) $XKB_BASE])])
+    AC_MSG_CHECKING([for X11 prefix])
+    _PKG_CONFIG([X11_PREFIX], [variable=prefix], [x11])
+    AS_IF([test $pkg_failed = no],
+      [X11_PREFIX="$pkg_cv_X11_PREFIX"
+       AC_MSG_RESULT([$X11_PREFIX])],
+      [X11_PREFIX="$prefix"
+       AC_MSG_RESULT([(default) $X11_PREFIX])])
 
     have_keysymdef_h=no
     AC_CHECK_HEADER([X11/keysymdef.h],
@@ -269,6 +276,7 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
 ])
 AC_SUBST([have_x11])
 AC_SUBST([XKB_BASE])
+AC_DEFINE_UNQUOTED([X11_PREFIX], "$X11_PREFIX")
 AC_SUBST([X11_KEYSYMDEF_H])
 
 # Check for Sun RPC headers and library.

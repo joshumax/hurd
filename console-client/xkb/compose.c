@@ -548,7 +548,7 @@ get_compose_file_for_locale()
     }
 
   context.value = setlocale (LC_ALL, NULL);
-  map_iterate (DATADIR "/X11/locale/locale.alias", match_left_set_right, &context);
+  map_iterate (X11_PREFIX "/share/X11/locale/locale.alias", match_left_set_right, &context);
   to_be_freed = context.result;
 
   if (context.result != NULL)
@@ -557,12 +557,12 @@ get_compose_file_for_locale()
       context.value = context.result;
     }
   context.result = NULL;
-  map_iterate (DATADIR "/X11/locale/compose.dir", match_right_set_left, &context);
+  map_iterate (X11_PREFIX "/share/X11/locale/compose.dir", match_right_set_left, &context);
   free (to_be_freed);
 
   /* compose.dir contains relative paths to compose files. */
   to_be_freed = context.result;
-  err = asprintf (&context.result, DATADIR "/X11/locale/%s", context.result);
+  err = asprintf (&context.result, X11_PREFIX "/share/X11/locale/%s", context.result);
   if (err == -1)
     context.result = NULL;
 
