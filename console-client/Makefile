@@ -124,9 +124,9 @@ $(XKB_BASE):
 $(XKB_BASE)/%: xkb/xkb-data/%
 	$(INSTALL_DATA) $< $@
 
-# FIXME: dependency files won't catch this one.
-$(srcdir)/xkb/kstoucs.c: kstoucs_map.c
-kstoucs_map.c: $(X11_KEYSYMDEF_H) $(srcdir)/xkb/kstoucs_map.sh
+kstoucs.o: xkb/kstoucs_map.c
+kstoucs_pic.o: xkb/kstoucs_map.c
+xkb/kstoucs_map.c: $(X11_KEYSYMDEF_H) $(srcdir)/xkb/kstoucs_map.sh
 	SED=$(SED) \
 	AWK=$(AWK) \
 	sh $(srcdir)/xkb/kstoucs_map.sh \
