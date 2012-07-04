@@ -552,7 +552,16 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
     for (node = nodehash[n]; node; node = node->dn->hnext)
       num_nodes++;
 
-  node_list = alloca (num_nodes * sizeof (struct node *));
+  /* TODO This method doesn't scale beyond a few dozen nodes and should be
+     replaced.  */
+  node_list = malloc (num_nodes * sizeof (struct node *));
+  if (node_list == NULL)
+    {
+      spin_unlock (&diskfs_node_refcnt_lock);
+      ext2_debug ("unable to allocate temporary node table");
+      return ENOMEM;
+    }
+
   p = node_list;
   for (n = 0; n < INOHSZ; n++)
     for (node = nodehash[n]; node; node = node->dn->hnext)
@@ -576,6 +585,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
       diskfs_nrele (node);
     }
 
+  free (node_list);
   return err;
 }
 
