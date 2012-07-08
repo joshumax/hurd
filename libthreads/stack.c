@@ -176,9 +176,7 @@ setup_stack(p, base)
 	register cproc_t p;
 	register vm_address_t base;
 {
-#if	defined(RED_ZONE)
 	register kern_return_t r;
-#endif	/* defined(RED_ZONE) */
 
 	p->stack_base = base;
 	/*
@@ -188,9 +186,11 @@ setup_stack(p, base)
 	/*
 	 * Protect red zone.
 	 */
-#if	defined(RED_ZONE)
+#ifdef  STACK_GROWTH_UP
+	MACH_CALL(vm_protect(mach_task_self(), base + cthread_stack_size - 2*vm_page_size, vm_page_size, FALSE, VM_PROT_NONE), r);
+#else
 	MACH_CALL(vm_protect(mach_task_self(), base + vm_page_size, vm_page_size, FALSE, VM_PROT_NONE), r);
-#endif	/* defined(RED_ZONE) */
+#endif
 	/*
 	 * Store self pointer.
 	 */
