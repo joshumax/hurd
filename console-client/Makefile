@@ -41,7 +41,7 @@ LDLIBS = -ldl
 module-dir = $(libdir)/hurd/console
 console-LDFLAGS = -Wl,-E
 
-CPPFLAGS += -I$(srcdir)/xkb
+CPPFLAGS += -I$(CURDIR)/xkb -I$(srcdir)/xkb
 LFLAGS = -i
 YFLAGS = -by
 XKB_DATA_FILES = keymap/hurd types/hurd symbols/hurd
@@ -127,6 +127,7 @@ $(XKB_BASE)/%: xkb/xkb-data/%
 kstoucs.o: xkb/kstoucs_map.c
 kstoucs_pic.o: xkb/kstoucs_map.c
 xkb/kstoucs_map.c: $(X11_KEYSYMDEF_H) $(srcdir)/xkb/kstoucs_map.sh
+	mkdir -p xkb ; \
 	SED=$(SED) \
 	AWK=$(AWK) \
 	sh $(srcdir)/xkb/kstoucs_map.sh \
