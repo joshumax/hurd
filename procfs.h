@@ -1,220 +1,93 @@
-/* procfs -- a translator for providing GNU/Linux compatible 
-             proc pseudo-filesystem
+/* Hurd /proc filesystem, basic infrastructure.
+   Copyright (C) 2010 Free Software Foundation, Inc.
 
-   procfs.h -- This file is the main header file of this
-               translator. This has important header 
-               definitions for constants and functions 
-               used in the translator.
-               
-   Copyright (C) 2008, FSF.
-   Written as a Summer of Code Project
-   
-   procfs is free software; you can redistribute it and/or
+   This file is part of the GNU Hurd.
+
+   The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
    your option) any later version.
 
-   procfs is distributed in the hope that it will be useful, but
+   The GNU Hurd is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. 
-   
-   A portion of the code in this file is based on ftpfs code
-   present in the hurd repositories copyrighted to FSF. The
-   Copyright notice from that file is given below.
-   
-   Copyright (C) 1997,98,2002 Free Software Foundation, Inc.
-   Written by Miles Bader <miles@gnu.org>
-   This file is part of the GNU Hurd.
-*/
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#ifndef __PROCFS_H__
-#define __PROCFS_H__
+#include <hurd/hurd_types.h>
+#include <hurd/netfs.h>
 
-#define PROCFS_SERVER_NAME "procfs"
-#define PROCFS_SERVER_VERSION "0.0.1"
+
+/* Interface for the procfs side. */
 
-/* /proc Filesystem type. */
-#define PROCFILESYSTEM "procfs"
-
-#define NUMBER_OF_FILES_PER_PID 1
-#define JIFFY_ADJUST 100
-#define PAGES_TO_BYTES(pages) ((pages) * sysconf(_SC_PAGESIZE))
-#define BYTES_TO_PAGES(bytes) ((bytes) / sysconf(_SC_PAGESIZE))
-
-#include <stdlib.h>
-#include <unistd.h>
-#include <cthreads.h>
-#include <maptime.h>
-#include <hurd/ihash.h>
-#include <ps.h>
-
-typedef unsigned long long jiffy_t;
-
-/* A single entry in a directory.  */
-struct procfs_dir_entry
+/* Any of these callback functions can be omitted, in which case
+   reasonable defaults will be used.  The initial file mode and type
+   depend on whether a lookup function is provided, but can be
+   overridden in update_stat().  */
+struct procfs_node_ops
 {
-  char *name;			/* Name of this entry */
-  size_t hv;			/* Hash value of NAME  */
+  /* Fetch the contents of a node.  A pointer to the contents should be
+     returned in *CONTENTS and their length in *CONTENTS_LEN.  The exact
+     nature of these data depends on whether the node is a regular file,
+     symlink or directory, as determined by the file mode in
+     netnode->nn_stat.  For regular files and symlinks, they are what
+     you would expect; for directories, they are an argz vector of the
+     names of the entries.  If upon return, *CONTENTS_LEN is negative or
+     unchanged, the call is considered to have failed because of a memory
+     allocation error.  */
+  error_t (*get_contents) (void *hook, char **contents, ssize_t *contents_len);
+  void (*cleanup_contents) (void *hook, char *contents, ssize_t contents_len);
 
-  /* The active node referred to by this name (may be 0).
-     NETFS_NODE_REFCNT_LOCK should be held while frobbing this.  */
-  struct node *node;
+  /* Lookup NAME in this directory, and store the result in *np.  The
+     returned node should be created by lookup() using procfs_make_node() 
+     or a derived function.  Note that the parent will be kept alive as
+     long as the child exists, so you can safely reference the parent's
+     data from the child.  You may want to consider locking if there's
+     any mutation going on, though.  */
+  error_t (*lookup) (void *hook, const char *name, struct node **np);
 
-  struct stat stat;
-  char *symlink_target;
-  time_t stat_timestamp;
-
-  /* The directory to which this entry belongs.  */
-  struct procfs_dir *dir;
-
-  /* Link to next entry in hash bucket, and address of previous entry's (or
-     hash table's) pointer to this entry.  If the SELF_P field is 0, then
-     this is a deleted entry, awaiting final disposal.  */
-  struct procfs_dir_entry *next, **self_p;
-
-  /* Next entry in 'directory order', or 0 if none known.  */
-  struct procfs_dir_entry *ordered_next, **ordered_self_p;
-
-  /* When the presence/absence of this file was last checked.  */
-  time_t name_timestamp;
-
-  hurd_ihash_locp_t inode_locp;	/* Used for removing this entry */
-
-  int noent : 1;		/* A negative lookup result.  */
-  int valid : 1;		/* Marker for GC'ing.  */
+  /* Destroy this node.  */
+  void (*cleanup) (void *hook);
 };
 
-/* A directory.  */
-struct procfs_dir
-{
-  /* Number of entries in HTABLE.  */
-  size_t num_entries;
+/* These helper functions can be used as procfs_node_ops.cleanup_contents. */
+void procfs_cleanup_contents_with_free (void *, char *, ssize_t);
+void procfs_cleanup_contents_with_vm_deallocate (void *, char *, ssize_t);
 
-  /* The number of entries that have nodes attached.  We keep an additional
-     reference to our node if there are any, to prevent it from going away.  */
-  size_t num_live_entries;
+/* Create a new node and return it.  Returns NULL if it fails to allocate
+   enough memory.  In this case, ops->cleanup will be invoked.  */
+struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook);
 
-  /* Hash table of entries.  */
-  struct procfs_dir_entry **htable;
-  size_t htable_len;		/* # of elements in HTABLE (not bytes).  */
+/* Set the owner of the node NP.  Must be called right after the node
+   has been created.  */
+void procfs_node_chown (struct node *np, uid_t owner);
 
-  /* List of dir entries in 'directory order', in a linked list using the
-     ORDERED_NEXT and ORDERED_SELF_P fields in each entry.  Not all entries
-     in HTABLE need be in this list.  */
-  struct procfs_dir_entry *ordered;
+/* Set the permission bits of the node NP.  Must be called right after
+   the node has been created.  */
+void procfs_node_chmod (struct node *np, mode_t mode);
 
-  /* The filesystem node that this is the directory for.  */
-  struct node *node;
+/* Set the type of the node NP.  If type is S_IFLNK, appropriate
+   permission bits will be set as well.  Must be called right after the
+   node has been created.  */
+void procfs_node_chtype (struct node *np, mode_t type);
 
-  /* The filesystem this directory is in.  */
-  struct procfs *fs;
+
+/* Interface for the libnetfs side. */
 
-  /* The path to this directory in the filesystem.  */
-  const char *fs_path;
+/* Get the inode number which will be given to a child of NP named FILENAME.
+   This allows us to retreive them for readdir() without creating the
+   corresponding child nodes.  */
+ino64_t procfs_make_ino (struct node *np, const char *filename);
 
-  time_t stat_timestamp;
-  time_t name_timestamp;
+/* Forget the current cached contents for the node.  This is done before reads
+   from offset 0, to ensure that the data are recent even for utilities such as
+   top which keep some nodes open.  */
+void procfs_refresh (struct node *np);
 
-};
+error_t procfs_get_contents (struct node *np, char **data, ssize_t *data_len);
+error_t procfs_lookup (struct node *np, const char *name, struct node **npp);
+void procfs_cleanup (struct node *np);
 
-
-/* libnetfs node structure */
-struct netnode 
-{ 
-  /* Name of this node */
-  char *name; 
-
-  /* The path in the filesystem that corresponds
-     this node. */
-  char *fs_path;
-    
-  /* The directory entry for this node.  */
-  struct procfs_dir_entry *dir_entry;
-  
-  /* The proc filesystem */
-  struct procfs *fs;
-  
-  /* inode number, assigned to this netnode structure. */
-  unsigned int inode_num;
-  
-  /* If this is a directory, the contents, or 0 if not fetched.  */
-  struct procfs_dir *dir;
-  
-  /* pointer to node structure, assigned to this node. */
-  struct node *node;
-  
-  /* links to the previous and next nodes in the list */
-  struct netnode *nextnode, *prevnode;
-  
-  /* link to parent netnode of this file or directory */
-  struct netnode *parent;
-  
-  /* link to the first child netnode of this directory */
-  struct netnode *child_first;
-};
-
-/* The actual procfs filesystem structure */
-struct procfs 
-{
-  /* Root of the filesystem. */
-  struct node *root;
-  
-  /* Inode numbers are assigned sequentially in order of creation.  */
-  ino_t next_inode;
-  int fsid;
-  
-  /* A hash table mapping inode numbers to directory entries.  */
-  struct hurd_ihash inode_mappings;
-  spin_lock_t inode_mappings_lock;
-};
-
-extern struct procfs *procfs;
-
-extern volatile struct mapped_time_value *procfs_maptime;
-
-extern struct ps_context *ps_context;
-
-/* Create a new procfs filesystem.  */
-error_t procfs_create (char *procfs_root, int fsid,
-                       struct procfs **fs);
-
-/* Initialize the procfs filesystem for use. */
-error_t procfs_init ();
-
-/* Refresh stat information for NODE */
-error_t procfs_refresh_node (struct node *node);
-
-/* Return a new node in NODE, with a name NAME, 
-   and return the new node with a single
-   reference in NODE. */
-error_t procfs_create_node (struct procfs_dir_entry *dir_entry, 
-                            const char *fs_path,
-                            struct node **node);
-
-/* Remove NODE from its entry */
-error_t procfs_remove_node (struct node *node);
-
-/* Return in DIR a new procfs directory, in the filesystem FS,
-   with node NODE and path PATH. */
-error_t procfs_dir_create (struct procfs *fs, struct node *node,
-			  const char *path, struct procfs_dir **dir);
-
-/* Remove the specified DIR and free all its allocated
-   storage. */
-void procfs_dir_remove (struct procfs_dir *dir);
-
-/* Refresh DIR.  */
-error_t procfs_dir_refresh (struct procfs_dir *dir, int isroot);
-
-/* Lookup NAME in DIR, returning its entry, or an error. 
-   *NODE will contain the result node, locked, and with
-   an additional reference, or 0 if an error occurs.  */
-error_t procfs_dir_lookup (struct procfs_dir *dir, const char *name,
-			  struct node **node);
-
-#endif /* __PROCFS_H__ */

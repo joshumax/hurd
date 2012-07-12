@@ -1,0 +1,24 @@
+Known bugs to be fixed
+----------------------
+
+* The non-owned processes sometimes show up with INT_MAX as their owner,
+  instead of opt_anon_uid. This is likely to be a libps problem.
+
+Improvements and new features
+-----------------------------
+
+* There is a lot of dynamic memory allocation going on and it comes with a
+  cost in performance. We could try to limit such allocation, as long as it
+  keeps the inner interface simple and preserves the read/readdir semantics
+  (performance is probably not critical for a proc filesystem.)
+  One way would be to add an (optional) "needed_length" field to
+  procfs_node_ops, and arrange to pass a sufficent buffer in (*contents,
+  *contents_len) when get_contents is called. Then the user-provided buffer
+  might be used directly under some circumstances.
+
+* Add thread directories as [pid]/task/[n]. This shouldn't be too hard if we
+  use "process" nodes for threads, and provide an "exists" hook for the "task"
+  entry itself so that it's disabled in thread nodes. It might prove necessary
+  to have "optional" libps flags for some content generators, though, since
+  some of them might be missing for threads.
+
