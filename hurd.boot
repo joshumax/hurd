@@ -3,7 +3,7 @@
 
 # First, the bootstrap filesystem.  It needs several ports as arguments,
 # as well as the user flags from the boot loader.
-/hurd/ufs --multiboot-command-line=${kernel-command-line} --host-priv-port=${host-port} --device-master-port=${device-port} --exec-server-task=${exec-task} --machdev ${root-device} $(task-create) $(task-resume)
+/hurd/ext2fs --multiboot-command-line=${kernel-command-line} --host-priv-port=${host-port} --device-master-port=${device-port} --exec-server-task=${exec-task} -T device ${root-device} $(task-create) $(task-resume)
 
 # Now the exec server; to load the dynamically-linked exec server program,
 # we have the boot loader in fact load and run ld.so, which in turn
