@@ -48,7 +48,8 @@ static struct aux *dynamic_port_buckets_aux = 0;
 static size_t dynamic_port_buckets_sz = 0;
 
 /* Lock used to control access to all the above vectors.  */
-static struct mutex dyn_lock = MUTEX_INITIALIZER;
+static pthread_mutex_t dyn_lock = PTHREAD_MUTEX_INITIALIZER;
+
 
 /* Add EL to the vector pointed to by VEC_V, which should point to a vector
    of pointers of some type, and has a length stored in *SZ; If there's
@@ -74,7 +75,7 @@ add_el (void *el, void (*free_el)(),
   if (! el)
     return ENOMEM;
 
-  mutex_lock (&dyn_lock);
+  pthread_mutex_lock (&dyn_lock);
 
   vec = vec_v;
 
@@ -85,13 +86,13 @@ add_el (void *el, void (*free_el)(),
 	(*aux_vec)[i].free_el = free_el;
 	(*aux_vec)[i].refs = 1;
 	(*num)++;
-	mutex_unlock (&dyn_lock);
+	pthread_mutex_unlock (&dyn_lock);
 	return 0;
       }
     else if ((*vec)[i] == el)
       {
 	(*aux_vec)[i].refs++;
-	mutex_unlock (&dyn_lock);
+	pthread_mutex_unlock (&dyn_lock);
 	return 0;
       }
 
@@ -119,7 +120,7 @@ add_el (void *el, void (*free_el)(),
   *aux_vec = new_aux_vec;
   *sz = new_sz;
 
-  mutex_unlock (&dyn_lock);
+  pthread_mutex_unlock (&dyn_lock);
 
   return 0;
 }
@@ -138,7 +139,7 @@ drop_el (void *el, void *vec_v, struct aux *aux_vec,
   if (! el)
     return;
 
-  mutex_lock (&dyn_lock);
+  pthread_mutex_lock (&dyn_lock);
 
   vec = vec_v;
 
@@ -157,7 +158,7 @@ drop_el (void *el, void *vec_v, struct aux *aux_vec,
 	break;
       }
 
-  mutex_unlock (&dyn_lock);
+  pthread_mutex_unlock (&dyn_lock);
 }
 
 /* Add the port class *CLASS to the list of control port classes recognized

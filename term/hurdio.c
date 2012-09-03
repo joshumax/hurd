@@ -26,8 +26,9 @@
 #include <errno.h>
 #include <error.h>
 #include <string.h>
+#include <stdio.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -68,7 +69,7 @@ thread_t writer_thread = MACH_PORT_NULL;
 
 /* This flag is set if the output was suspended.  */
 static int output_stopped;
-static struct condition hurdio_writer_condition;
+static pthread_cond_t hurdio_writer_condition;
 
 /* Hold the amount of bytes that are currently in the progress of
    being written.  May be set to zero while you hold the global lock
@@ -77,24 +78,41 @@ size_t npending_output;
 
 /* True if we should assert the dtr.  */
 int assert_dtr;
-static struct condition hurdio_assert_dtr_condition;
+static pthread_cond_t hurdio_assert_dtr_condition;
 
 
 /* Forward */
 static error_t hurdio_desert_dtr ();
-static any_t hurdio_reader_loop (any_t arg);
-static any_t hurdio_writer_loop (any_t arg);
+static void *hurdio_reader_loop (void *arg);
+static void *hurdio_writer_loop (void *arg);
 static error_t hurdio_set_bits (struct termios *state);
 
 
 static error_t
 hurdio_init (void)
 {
-  condition_init (&hurdio_writer_condition);
-  condition_init (&hurdio_assert_dtr_condition);
+  pthread_t thread;
+  error_t err;
 
-  cthread_detach (cthread_fork (hurdio_reader_loop, 0));
-  cthread_detach (cthread_fork (hurdio_writer_loop, 0));
+  pthread_cond_init (&hurdio_writer_condition, NULL);
+  pthread_cond_init (&hurdio_assert_dtr_condition, NULL);
+
+  err = pthread_create (&thread, NULL, hurdio_reader_loop, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
+  err = pthread_create (&thread, NULL, hurdio_writer_loop, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
   return 0;
 }
 
@@ -129,7 +147,7 @@ static void
 wait_for_dtr (void)
 {
   while (!assert_dtr)
-    hurd_condition_wait (&hurdio_assert_dtr_condition, &global_lock);
+    pthread_cond_wait (&hurdio_assert_dtr_condition, &global_lock);
   assert_dtr = 0;
 
   if (tty_arg == 0)
@@ -165,15 +183,15 @@ wait_for_dtr (void)
       report_carrier_on ();
 
       /* Signal that the writer thread should resume its work.  */
-      condition_broadcast (&hurdio_writer_condition);
+      pthread_cond_broadcast (&hurdio_writer_condition);
     }
 }
 
 
 /* Read and enqueue input characters.  Is also responsible to assert
    the DTR if necessary.  */
-static any_t
-hurdio_reader_loop (any_t arg)
+static void *
+hurdio_reader_loop (void *arg)
 {
   /* XXX The input buffer has 256 bytes.  */
 #define BUFFER_SIZE 256
@@ -182,7 +200,7 @@ hurdio_reader_loop (any_t arg)
   size_t datalen;
   error_t err;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   reader_thread = mach_thread_self ();
 
   while (1)
@@ -190,14 +208,14 @@ hurdio_reader_loop (any_t arg)
       /* We can only start when the DTR has been asserted.  */
       while (ioport == MACH_PORT_NULL)
 	wait_for_dtr ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
 
       data = buffer;
       datalen = BUFFER_SIZE;
 
       err = io_read (ioport, &data, &datalen, -1, BUFFER_SIZE);
 
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
       /* Error or EOF can mean the carrier has been dropped.  */
       if (err || !datalen)
 	hurdio_desert_dtr ();
@@ -223,8 +241,8 @@ hurdio_reader_loop (any_t arg)
 
 
 /* Output characters.  */
-static any_t
-hurdio_writer_loop (any_t arg)
+static void *
+hurdio_writer_loop (void *arg)
 {
   /* XXX The output buffer has 256 bytes.  */
 #define BUFFER_SIZE 256
@@ -236,7 +254,7 @@ hurdio_writer_loop (any_t arg)
   int npending_output_copy;
   mach_port_t ioport_copy;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   writer_thread = mach_thread_self ();
 
   while (1)
@@ -244,7 +262,7 @@ hurdio_writer_loop (any_t arg)
       while (writer_thread != MACH_PORT_NULL
 	     && (ioport == MACH_PORT_NULL || !qsize (outputq)
 		 || output_stopped))
-	hurd_condition_wait (&hurdio_writer_condition, &global_lock);
+	pthread_cond_wait (&hurdio_writer_condition, &global_lock);
       if (writer_thread == MACH_PORT_NULL) /* A sign to die.  */
 	return 0;
 
@@ -269,10 +287,10 @@ hurdio_writer_loop (any_t arg)
 	*bufp++ = dequeue (outputq);
 
       /* Submit all the outstanding characters to the I/O port.  */
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       err = io_write (ioport_copy, pending_output, npending_output_copy,
 		      -1, &amount);
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
 
       mach_port_mod_refs (mach_task_self (), ioport_copy,
 			  MACH_PORT_RIGHT_SEND, -1);
@@ -285,8 +303,8 @@ hurdio_writer_loop (any_t arg)
 	  if (amount >= npending_output)
 	    {
 	      npending_output = 0;
-	      condition_broadcast (outputq->wait);
-	      condition_broadcast (&select_alert);
+	      pthread_cond_broadcast (outputq->wait);
+	      pthread_cond_broadcast (&select_alert);
 	    }
 	  else
 	    {
@@ -321,7 +339,7 @@ hurdio_start_output ()
 	}
       output_stopped = 0;
     }
-  condition_broadcast (&hurdio_writer_condition);
+  pthread_cond_broadcast (&hurdio_writer_condition);
   return 0;
 }
 
@@ -468,7 +486,7 @@ hurdio_assert_dtr ()
   if (ioport == MACH_PORT_NULL)
     {
       assert_dtr = 1;
-      condition_signal (&hurdio_assert_dtr_condition);
+      pthread_cond_signal (&hurdio_assert_dtr_condition);
     }
 
   return 0;

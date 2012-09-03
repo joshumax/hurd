@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/stat.h>
 #include <hurd/fsys.h>
 #include <hurd/fshelp.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t
@@ -39,10 +39,10 @@ netfs_shutdown (int flags)
       err = fshelp_fetch_control (&node->transbox, &control);
       if (!err && (control != MACH_PORT_NULL))
         {
-          mutex_unlock (&node->lock);
+          pthread_mutex_unlock (&node->lock);
           err = fsys_goaway (control, flags);
           mach_port_deallocate (mach_task_self (), control);
-          mutex_lock (&node->lock);
+          pthread_mutex_lock (&node->lock);
         }
       else
         err = 0;

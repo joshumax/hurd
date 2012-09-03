@@ -40,22 +40,22 @@ diskfs_S_dir_readdir (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if ((cred->po->openstat & O_READ) == 0)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EBADF;
     }
 
   if ((np->dn_stat.st_mode & S_IFMT) != S_IFDIR)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return ENOTDIR;
     }
 
   err = diskfs_get_directs (np, entry, nentries, data, datacnt, bufsiz, amt);
   *data_dealloc = 1;		/* XXX */
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

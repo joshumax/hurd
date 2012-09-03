@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
@@ -27,16 +26,16 @@ ports_resume_port_rpcs (void *portstruct)
 {
   struct port_info *pi = portstruct;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
   assert (pi->flags & PORT_INHIBITED);
   pi->flags &= ~PORT_INHIBITED;
   if (pi->flags & PORT_BLOCKED)
     {
       pi->flags &= ~PORT_BLOCKED;
-      condition_broadcast (&_ports_block);
+      pthread_cond_broadcast (&_ports_block);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }
 
 

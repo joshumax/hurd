@@ -39,9 +39,9 @@ diskfs_S_file_get_fs_options (struct protid *cred,
   if (err)
     return err;
 
-  rwlock_reader_lock (&diskfs_fsys_lock);
+  pthread_rwlock_rdlock (&diskfs_fsys_lock);
   err = diskfs_append_args (&argz, &argz_len);
-  rwlock_reader_unlock (&diskfs_fsys_lock);
+  pthread_rwlock_unlock (&diskfs_fsys_lock);
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */

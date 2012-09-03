@@ -40,21 +40,21 @@ treefs_node_get_active_trans (struct treefs_node *node,
   /* Fill in dir_port */
   void make_dir_port ()
     {
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       *dir_port = treefs_node_make_right (dir, 0, parent_port, 0);
       mach_port_insert_right (mach_task_self (),
 			      *dir_port, *dir_port, MACH_MSG_TYPE_MAKE_SEND);
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
     }
 
-  mutex_lock (&node->active_trans.lock);
+  pthread_mutex_lock (&node->active_trans.lock);
 
   if (node->active_trans.control != MACH_PORT_NULL)
     {
       mach_port_t control = node->active_trans.control;
       mach_port_mod_refs (mach_task_self (), control, 
 			  MACH_PORT_RIGHT_SEND, 1);
-      mutex_unlock (&node->active_trans.lock);
+      pthread_mutex_unlock (&node->active_trans.lock);
 
       /* Now we have a copy of the translator port that isn't
 	 dependent on the translator lock itself.  Relock
@@ -69,12 +69,12 @@ treefs_node_get_active_trans (struct treefs_node *node,
       return 0;
     }
 
-  mutex_unlock (&node->active_trans.lock);
+  pthread_mutex_unlock (&node->active_trans.lock);
 
   /* If we get here, then we have no active control port.
      Check to see if there is a passive translator, and if so
      repeat the translator check. */
-  mutex_lock (&node->lock);
+  pthread_mutex_lock (&node->lock);
   if (!node->istranslated)
     {
       *control_port = MACH_PORT_NULL;
@@ -89,15 +89,15 @@ treefs_node_get_active_trans (struct treefs_node *node,
     }
   if (err)
     {
-      mutex_unlock (&node->lock);
+      pthread_mutex_unlock (&node->lock);
       return err;
     }
 
   if (*dir_port == MACH_PORT_NULL)
     {
-      mutex_unlock (&node->lock);
+      pthread_mutex_unlock (&node->lock);
       make_dir_port ();
-      mutex_lock (&node->lock);
+      pthread_mutex_lock (&node->lock);
     }
 
   /* Try starting the translator (this unlocks NODE).  */
@@ -118,11 +118,11 @@ void
 treefs_node_drop_active_trans (struct treefs_node *node,
 			       mach_port_t control_port)
 {
-  mutex_lock (&node->active_trans.lock);
+  pthread_mutex_lock (&node->active_trans.lock);
   /* Only zero the control port if it hasn't changed. */
   if (node->active_trans.control == control)
     fshelp_translator_drop (&node->active_trans);
-  mutex_unlock (&node->active_trans.lock);
+  pthread_mutex_unlock (&node->active_trans.lock);
 	      
   /* And we're done with this port. */
   mach_port_deallocate (mach_task_self (), control_port);

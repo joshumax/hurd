@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
 #define INHIBITED (PORTS_INHIBITED | PORTS_INHIBIT_WAIT)
 
@@ -30,14 +29,14 @@ ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
 
   struct port_info *pi = portstruct;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
   do
     {
       /* If our receive right is gone, then abandon the RPC. */
       if (pi->port_right == MACH_PORT_NULL)
 	{
-	  mutex_unlock (&_ports_lock);
+	  pthread_mutex_unlock (&_ports_lock);
 	  return EOPNOTSUPP;
 	}
   
@@ -76,13 +75,13 @@ ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
 	  if (block_flags)
 	    {
 	      *block_flags |= PORTS_BLOCKED;
-	      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+	      if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 		/* We've been cancelled, just return EINTR.  If we were the
 		   only one blocking, PORTS_BLOCKED will still be turned on,
 		   but that's ok, it will just cause a (harmless) extra
-		   condition_broadcast().  */
+		   pthread_cond_broadcast().  */
 		{
-		  mutex_unlock (&_ports_lock);
+		  pthread_mutex_unlock (&_ports_lock);
 		  return EINTR;
 		}
 	    }
@@ -103,7 +102,7 @@ ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
   pi->bucket->rpcs++;
   _ports_total_rpcs++;
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   return 0;
 }

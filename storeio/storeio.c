@@ -128,7 +128,7 @@ main (int argc, char *argv[])
   struct storeio_argp_params params;
 
   bzero (&device, sizeof device);
-  mutex_init (&device.lock);
+  pthread_mutex_init (&device.lock, NULL);
 
   params.dev = &device;
   argp_parse (&argp, argc, argv, 0, 0, &params);
@@ -221,7 +221,7 @@ check_open_hook (struct trivfs_control *trivfs_control,
   if (!err && dev_is_readonly (dev) && (flags & O_WRITE))
     return EROFS;
 
-  mutex_lock (&dev->lock);
+  pthread_mutex_lock (&dev->lock);
   if (dev->store == NULL)
     {
       /* Try and open the store.  */
@@ -231,7 +231,7 @@ check_open_hook (struct trivfs_control *trivfs_control,
 	   error, as this allows stat to work correctly.  XXX  */
 	err = 0;
     }
-  mutex_unlock (&dev->lock);
+  pthread_mutex_unlock (&dev->lock);
 
   return err;
 }
@@ -244,10 +244,10 @@ open_hook (struct trivfs_peropen *peropen)
 
   if (dev->store)
     {
-      mutex_lock (&dev->lock);
+      pthread_mutex_lock (&dev->lock);
       if (dev->nperopens++ == 0)
 	err = store_clear_flags (dev->store, STORE_INACTIVE);
-      mutex_unlock (&dev->lock);
+      pthread_mutex_unlock (&dev->lock);
       if (!err)
 	err = open_create (dev, (struct open **)&peropen->hook);
     }
@@ -261,10 +261,10 @@ close_hook (struct trivfs_peropen *peropen)
 
   if (peropen->hook)
     {
-      mutex_lock (&dev->lock);
+      pthread_mutex_lock (&dev->lock);
       if (--dev->nperopens == 0)
 	store_set_flags (dev->store, STORE_INACTIVE);
-      mutex_unlock (&dev->lock);
+      pthread_mutex_unlock (&dev->lock);
       open_free (peropen->hook);
     }
 }
@@ -325,7 +325,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
   struct port_class *root_port_class = fsys->protid_class;
 
-  mutex_lock (&device->lock);
+  pthread_mutex_lock (&device->lock);
 
   if (device->store == NULL)
     /* The device is not actually open.
@@ -337,7 +337,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   err = ports_inhibit_class_rpcs (root_port_class);
   if (err == EINTR || (err && !force))
     {
-      mutex_unlock (&device->lock);
+      pthread_mutex_unlock (&device->lock);
       return err;
     }
 
@@ -370,7 +370,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   /* Allow normal operations to proceed.  */
   ports_enable_class (root_port_class);
   ports_resume_class_rpcs (root_port_class);
-  mutex_unlock (&device->lock);
+  pthread_mutex_unlock (&device->lock);
 
   /* Complain that there are still users.  */
   return EBUSY;

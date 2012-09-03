@@ -23,7 +23,8 @@ SRCS = get_conch.c handle_io_get_conch.c handle_io_release_conch.c \
 	iouser-dup.c iouser-reauth.c iouser-free.c iouser-restrict.c \
 	shared.c return-buffer.c
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = threads shouldbeinlibc
+HURDLIBS = shouldbeinlibc
+LDLIBS += -lpthread
 libname = libiohelp
 installhdrs = iohelp.h
 

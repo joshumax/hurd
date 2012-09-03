@@ -41,16 +41,16 @@ diskfs_S_dir_link (struct protid *dircred,
     return EXDEV;
 
   np = filecred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   if (S_ISDIR (np->dn_stat.st_mode))
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EPERM;
     }
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   dnp = dircred->po->np;
-  mutex_lock (&dnp->lock);
+  pthread_mutex_lock (&dnp->lock);
 
   /* Lookup new location */
   error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
@@ -64,15 +64,15 @@ diskfs_S_dir_link (struct protid *dircred,
       if (error == EAGAIN)
 	error = EINVAL;
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return error;
     }
 
   if (np == tnp)
     {
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
-      mutex_unlock (&tnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&tnp->lock);
       mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
       return 0;
     }
@@ -80,8 +80,8 @@ diskfs_S_dir_link (struct protid *dircred,
   if (tnp && S_ISDIR (tnp->dn_stat.st_mode))
     {
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
-      mutex_unlock (&tnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&tnp->lock);
       return EISDIR;
     }
 
@@ -89,14 +89,14 @@ diskfs_S_dir_link (struct protid *dircred,
 
   /* This is safe because NP is not a directory (thus not DNP) and
      not TNP and is a leaf. */
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   /* Increment link count */
   if (np->dn_stat.st_nlink == diskfs_link_max - 1)
     {
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&np->lock);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return EMLINK;
     }
   np->dn_stat.st_nlink++;
@@ -124,8 +124,8 @@ diskfs_S_dir_link (struct protid *dircred,
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
 
-  mutex_unlock (&dnp->lock);
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&dnp->lock);
+  pthread_mutex_unlock (&np->lock);
   if (!error)
     /* MiG won't do this for us, which it ought to. */
     mach_port_deallocate (mach_task_self (), filecred->pi.port_right);

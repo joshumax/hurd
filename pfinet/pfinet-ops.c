@@ -48,7 +48,7 @@ S_pfinet_siocgifconf (io_t port,
   error_t err = 0;
   struct ifconf ifc;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (amount == (vm_size_t) -1)
     {
       /* Get the needed buffer length.  */
@@ -57,7 +57,7 @@ S_pfinet_siocgifconf (io_t port,
       err = dev_ifconf ((char *) &ifc);
       if (err)
 	{
-	  __mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return -err;
 	}
       amount = ifc.ifc_len;
@@ -88,6 +88,6 @@ S_pfinet_siocgifconf (io_t port,
       *ifr = ifc.ifc_buf;
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }

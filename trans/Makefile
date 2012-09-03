@@ -28,7 +28,8 @@ OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
 	device_replyServer.o elfcore.o
-HURDLIBS = threads ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
+HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
+LDLIBS += -lpthread
 password-LDLIBS = $(LIBCRYPT)
 
 include ../Makeconf
@@ -42,13 +43,13 @@ password: passwordServer.o
 streamio: device_replyServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
 
-proxy-defpager crash password streamio: ../libthreads/libthreads.a ../libports/libports.a ../libtrivfs/libtrivfs.a ../libthreads/libthreads.a ../libfshelp/libfshelp.a
+proxy-defpager crash password streamio: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a
 fifo new-fifo: ../libpipe/libpipe.a
 fwd: ../libfshelp/libfshelp.a ../libports/libports.a
-hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 magic: ../libiohelp/libiohelp.a
 hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
-fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libthreads/libthreads.a ../libports/libports.a ../libihash/libihash.a
+fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libports/libports.a ../libihash/libihash.a
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(targets): %: %.o

@@ -40,8 +40,8 @@ static mach_port_t diskfs_exec_ctl;
 extern task_t diskfs_exec_server_task;
 static task_t parent_task = MACH_PORT_NULL;
 
-static struct mutex execstartlock;
-static struct condition execstarted;
+static pthread_mutex_t execstartlock;
+static pthread_cond_t execstarted;
 
 const char *diskfs_boot_init_program = _HURD_INIT;
 
@@ -155,12 +155,12 @@ diskfs_start_bootstrap ()
       fflush (stdout);
 
       /* Get the execserver going and wait for its fsys_startup */
-      mutex_init (&execstartlock);
-      condition_init (&execstarted);
-      mutex_lock (&execstartlock);
+      pthread_mutex_init (&execstartlock, NULL);
+      pthread_cond_init (&execstarted, NULL);
+      pthread_mutex_lock (&execstartlock);
       start_execserver ();
-      condition_wait (&execstarted, &execstartlock);
-      mutex_unlock (&execstartlock);
+      pthread_cond_wait (&execstarted, &execstartlock);
+      pthread_mutex_unlock (&execstartlock);
       assert (diskfs_exec_ctl != MACH_PORT_NULL);
 
       /* Contact the exec server.  */
@@ -414,9 +414,9 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
 
   diskfs_exec_ctl = ctl;
 
-  mutex_lock (&execstartlock);
-  condition_signal (&execstarted);
-  mutex_unlock (&execstartlock);
+  pthread_mutex_lock (&execstartlock);
+  pthread_cond_signal (&execstarted);
+  pthread_mutex_unlock (&execstartlock);
   ports_port_deref (pt);
   return 0;
 }

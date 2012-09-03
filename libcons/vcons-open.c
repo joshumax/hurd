@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/fcntl.h>
+#include <pthread.h>
 
 #include <hurd.h>
 #include <mach.h>
@@ -55,7 +56,7 @@ cons_vcons_open (cons_t cons, vcons_list_t vcons_entry, vcons_t *r_vcons)
   vcons->cons = cons;
   vcons->vcons_entry = vcons_entry;
   vcons->id = vcons_entry->id;
-  mutex_init (&vcons->lock);
+  pthread_mutex_init (&vcons->lock, NULL);
   vcons->input = -1;
   vcons->display = MAP_FAILED;
   vcons->scrolling = 0;
@@ -138,7 +139,7 @@ cons_vcons_open (cons_t cons, vcons_list_t vcons_entry, vcons_t *r_vcons)
 
   /* When this succeeds, we will immediately receive notification
      messages for this virtual console.  */
-  mutex_lock (&vcons->lock);
+  pthread_mutex_lock (&vcons->lock);
   err = file_notice_changes (file, notify, MACH_MSG_TYPE_MAKE_SEND);
   if (!err)
     {

@@ -53,7 +53,7 @@ struct lookup_cache
 /* The contents of the cache in no particular order */
 static struct cacheq lookup_cache = { sizeof (struct lookup_cache) };
 
-static spin_lock_t cache_lock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t cache_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Buffer to hold statistics */
 static struct stats
@@ -104,7 +104,7 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, const char *name)
   if (name_len > CACHE_NAME_LEN - 1)
     return;
 
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
 
   if (lookup_cache.length == 0)
     /* There should always be an lru_cache; this being zero means that the
@@ -124,7 +124,7 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, const char *name)
   /* Now C becomes the MRU entry!  */
   cacheq_make_mru (&lookup_cache, c);
 
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 }
 
 /* Purge all references in the cache to NP as a node inside
@@ -134,7 +134,7 @@ diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 {
   struct lookup_cache *c, *next;
 
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
   for (c = lookup_cache.mru; c; c = next)
     {
       /* Save C->hdr.next, since we may move C from this position. */
@@ -149,7 +149,7 @@ diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 						 entry. */
 	}
     }
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 }
 
 /* Register a negative hit for an entry in the Nth stat class */
@@ -202,7 +202,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 {
   struct lookup_cache *c;
 
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
 
   c = find_cache (dir, name, strlen (name));
   if (c)
@@ -215,14 +215,14 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	/* A negative cache entry.  */
 	{
 	  register_neg_hit (c->stati);
-	  spin_unlock (&cache_lock);
+	  pthread_spin_unlock (&cache_lock);
 	  return (struct node *)-1;
 	}
       else if (id == dir->cache_id)
 	/* The cached node is the same as DIR.  */
 	{
 	  register_pos_hit (c->stati);
-	  spin_unlock (&cache_lock);
+	  pthread_spin_unlock (&cache_lock);
 	  diskfs_nref (dir);
 	  return dir;
 	}
@@ -233,13 +233,13 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	  error_t err;
 
 	  register_pos_hit (c->stati);
-	  spin_unlock (&cache_lock);
+	  pthread_spin_unlock (&cache_lock);
 
 	  if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 	    {
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
 	      err = diskfs_cached_lookup (id, &np);
-	      mutex_lock (&dir->lock);
+	      pthread_mutex_lock (&dir->lock);
 
 	      /* In the window where DP was unlocked, we might
 		 have lost.  So check the cache again, and see
@@ -248,7 +248,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	      if (!c || c->node_cache_id != id)
 		{
 		  /* Lose */
-		  mutex_unlock (&np->lock);
+		  pthread_mutex_unlock (&np->lock);
 		  return 0;
 		}
 	    }
@@ -259,7 +259,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
     }
 
   register_miss ();
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 
   return 0;
 }

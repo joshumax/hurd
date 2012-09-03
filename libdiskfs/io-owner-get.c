@@ -29,8 +29,8 @@ diskfs_S_io_get_owner (struct protid *cred,
     return EOPNOTSUPP;
   np = cred->po->np;
   
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   *owner = np->owner;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }

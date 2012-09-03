@@ -31,7 +31,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
   struct iouser *user;
   struct protid *newpi;
 
-  mutex_lock (&diruser->po->np->lock);
+  pthread_mutex_lock (&diruser->po->np->lock);
   err = netfs_attempt_mkfile (diruser->user, diruser->po->np, mode, &np);
 
   if (!err)

@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "cons.h"
 #include "priv.h"
@@ -33,7 +34,7 @@ cons_vcons_move_mouse (vcons_t vcons, mouse_event_t ev)
   char event[CONS_MOUSE_EVENT_LENGTH];
   uint32_t report_events;
   
-  mutex_lock (&vcons->lock);
+  pthread_mutex_lock (&vcons->lock);
   report_events = vcons->display->flags & CONS_FLAGS_TRACK_MOUSE;
   
   switch (ev->mouse_movement)
@@ -98,6 +99,6 @@ cons_vcons_move_mouse (vcons_t vcons, mouse_event_t ev)
 	}
     }
   
-  mutex_unlock (&vcons->lock);
+  pthread_mutex_unlock (&vcons->lock);
   return 0;
 }

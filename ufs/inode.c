@@ -35,7 +35,7 @@
 static struct node *nodehash[INOHSZ];
 static error_t read_disknode (struct node *np);
 
-spin_lock_t gennumberlock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t gennumberlock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Initialize the inode hash table. */
 void
@@ -55,15 +55,15 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   struct node *np;
   error_t err;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->dn->number != inum)
 	continue;
 
       np->references++;
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_lock (&np->lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_mutex_lock (&np->lock);
       *npp = np;
       return 0;
     }
@@ -74,30 +74,32 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   dn->dirents = 0;
   dn->dir_idx = 0;
 
-  rwlock_init (&dn->allocptrlock);
+  pthread_rwlock_init (&dn->allocptrlock, NULL);
+  pthread_mutex_init (&dn->waitlock, NULL);
+  pthread_cond_init (&dn->waitcond, NULL);
   dn->dirty = 0;
   dn->fileinfo = 0;
 
   np = diskfs_make_node (dn);
   np->cache_id = inum;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   dn->hnext = nodehash[INOHASH(inum)];
   if (dn->hnext)
     dn->hnext->dn->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np);
 
   if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
-      spin_lock (&gennumberlock);
+      pthread_spin_lock (&gennumberlock);
       if (++nextgennumber < diskfs_mtime->seconds)
 	nextgennumber = diskfs_mtime->seconds;
       np->dn_stat.st_gen = nextgennumber;
-      spin_unlock (&gennumberlock);
+      pthread_spin_unlock (&gennumberlock);
       np->dn_set_ctime = 1;
     }
 
@@ -117,14 +119,14 @@ ifind (ino_t inum)
 {
   struct node *np;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->dn->number != inum)
 	continue;
 
       assert (np->references);
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return np;
     }
   assert (0);
@@ -168,7 +170,7 @@ diskfs_lost_hardrefs (struct node *np)
 
   if (np->dn->fileinfo)
     {
-      spin_lock (&_libports_portrefcntlock);
+      pthread_spin_lock (&_libports_portrefcntlock);
       pi = (struct port_info *) np->dn->fileinfo->p;
       if (pi->refcnt == 1)
 	{
@@ -178,7 +180,7 @@ diskfs_lost_hardrefs (struct node *np)
 	     can't happen as long as we hold NP locked.  So
 	     we can safely unlock _libports_portrefcntlock for
 	     the following call. */
-	  spin_unlock (&_libports_portrefcntlock);
+	  pthread_spin_unlock (&_libports_portrefcntlock);
 
 	  /* Right now the node is locked with no hard refs;
 	     this is an anomalous situation.  Before messing with
@@ -197,7 +199,7 @@ diskfs_lost_hardrefs (struct node *np)
 	  diskfs_nput (np);
 	}
       else
-	spin_unlock (&_libports_portrefcntlock);
+	pthread_spin_unlock (&_libports_portrefcntlock);
     }
 #endif
 }
@@ -440,7 +442,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 
   /* Acquire a reference on all the nodes in the hash table
      and enter them into a list on the stack. */
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (n = 0; n < INOHSZ; n++)
     for (np = nodehash[n]; np; np = np->dn->hnext)
       {
@@ -450,16 +452,16 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 	i->np = np;
 	list = i;
       }
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   err = 0;
   for (i = list; i; i = i->next)
     {
       if (!err)
 	{
-	  mutex_lock (&i->np->lock);
+	  pthread_mutex_lock (&i->np->lock);
 	  err = (*fun)(i->np);
-	  mutex_unlock (&i->np->lock);
+	  pthread_mutex_unlock (&i->np->lock);
 	}
       diskfs_nrele (i->np);
     }
@@ -646,14 +648,14 @@ diskfs_S_file_get_storage_info (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   /* See if this file fits in the direct block pointers.  If not, punt
      for now.  (Reading indir blocks is a pain, and I'm postponing
      pain.)  XXX */
   if (np->allocsize > NDADDR * sblock->fs_bsize)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EINVAL;
     }
 
@@ -685,7 +687,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
       }
   diskfs_end_catch_exception ();
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (! err)
     err = store_clone (store, &file_store);

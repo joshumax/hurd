@@ -671,7 +671,7 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
   dirlen = np->nn->handle.size;
   memcpy (dirhandle, np->nn->handle.data, dirlen);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
@@ -688,12 +688,12 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
       if (protocol_version == 3)
 	{
 	  if (*newnp)
-	    mutex_unlock (&(*newnp)->lock);
-	  mutex_lock (&np->lock);
+	    pthread_mutex_unlock (&(*newnp)->lock);
+	  pthread_mutex_lock (&np->lock);
 	  p = process_returned_stat (np, p, 0); /* XXX Do we have to lock np? */
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  if (*newnp)
-	    mutex_lock (&(*newnp)->lock);
+	    pthread_mutex_lock (&(*newnp)->lock);
 	}
     }
   else
@@ -815,9 +815,9 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       /* We have no RPC available that will do an atomic replacement,
 	 so we settle for second best; just doing an unlink and ignoring
 	 any errors. */
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       netfs_attempt_unlink (cred, dir, name);
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
     }
 
   /* If we have postponed a translator setting on an unlinked node,
@@ -828,22 +828,22 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
     {
     case POSSIBLE:
     case NOT_POSSIBLE:
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_LINK (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
       if (! p)
 	{
-          mutex_unlock (&dir->lock);
+          pthread_mutex_unlock (&dir->lock);
           return errno;
 	}
 
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
 
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       p = xdr_encode_fhandle (p, &np->nn->handle);
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
 
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       purge_lookup_cache (dir, name, strlen (name));
 
       p = xdr_encode_fhandle (p, &dir->nn->handle);
@@ -855,32 +855,32 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  err = nfs_error_trans (ntohl (*p));
 	  p++;
 	}
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
 
       free (rpcbuf);
 
       break;
 
     case SYMLINK:
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       p = nfs_initialize_rpc (NFSPROC_SYMLINK (protocol_version),
 			      cred, 0, &rpcbuf, dir, -1);
       if (! p)
 	{
-          mutex_unlock (&dir->lock);
+          pthread_mutex_unlock (&dir->lock);
           return errno;
 	}
 
       p = xdr_encode_fhandle (p, &dir->nn->handle);
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
 
       p = xdr_encode_string (p, name);
 
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       err = netfs_validate_stat (np, cred);
       if (err)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  free (rpcbuf);
 	  return err;
 	}
@@ -895,9 +895,9 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  p = xdr_encode_string (p, np->nn->transarg.name);
 	}
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
 
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
 
       purge_lookup_cache (dir, name, strlen (name));
       err = conduct_rpc (&rpcbuf, &p);
@@ -916,13 +916,13 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 				      cred, 0, &rpcbuf, dir, -1);
 	      if (! p)
 		{
-		  mutex_unlock (&dir->lock);
+		  pthread_mutex_unlock (&dir->lock);
 		  return errno;
 		}
 	      p = xdr_encode_fhandle (p, &dir->nn->handle);
 	      p = xdr_encode_string (p, name);
 
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
 
 	      err = conduct_rpc (&rpcbuf, &p);
 	      if (!err)
@@ -932,10 +932,10 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 		}
 	      if (!err)
 		{
-		  mutex_lock (&np->lock);
+		  pthread_mutex_lock (&np->lock);
 		  p = recache_handle (p, np);
 		  p = process_returned_stat (np, p, 1);
-		  mutex_unlock (&np->lock);
+		  pthread_mutex_unlock (&np->lock);
 		}
 	      if (err)
 		err = EGRATUITOUS; /* damn */
@@ -944,21 +944,21 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	    {
 	      if (!err)
 		{
-		  mutex_unlock (&dir->lock);
-		  mutex_lock (&np->lock);
+		  pthread_mutex_unlock (&dir->lock);
+		  pthread_mutex_lock (&np->lock);
 		  p = recache_handle (p, np);
 		  p = process_returned_stat (np, p, 1);
-		  mutex_unlock (&np->lock);
-		  mutex_lock (&dir->lock);
+		  pthread_mutex_unlock (&np->lock);
+		  pthread_mutex_lock (&dir->lock);
 		}
 	      p = process_wcc_stat (dir, p, !err);
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
 	    }
 	  else
-	    mutex_unlock (&dir->lock);
+	    pthread_mutex_unlock (&dir->lock);
 	}
       else
-	mutex_unlock (&dir->lock);
+	pthread_mutex_unlock (&dir->lock);
 
       free (rpcbuf);
       break;
@@ -970,7 +970,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
       if (protocol_version == 2)
 	{
-	  mutex_lock (&dir->lock);
+	  pthread_mutex_lock (&dir->lock);
 	  err = verify_nonexistent (cred, dir, name);
 	  if (err)
 	    return err;
@@ -979,29 +979,29 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 				  cred, 0, &rpcbuf, dir, -1);
           if (! p)
 	    {
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
               return errno;
             }
 
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
-	  mutex_unlock (&dir->lock);
+	  pthread_mutex_unlock (&dir->lock);
 
-	  mutex_lock (&np->lock);
+	  pthread_mutex_lock (&np->lock);
 	  err = netfs_validate_stat (np, cred);
 	  if (err)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      free (rpcbuf);
 	      return err;
 	    }
 
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 
-	  mutex_lock (&dir->lock);
+	  pthread_mutex_lock (&dir->lock);
 	  purge_lookup_cache (dir, name, strlen (name));
-	  mutex_unlock (&dir->lock); /* XXX Should this really be after the
+	  pthread_mutex_unlock (&dir->lock); /* XXX Should this really be after the
 					_lengthy_ (blocking) conduct_rpc? */
 	  err = conduct_rpc (&rpcbuf, &p);
 	  if (!err)
@@ -1012,32 +1012,32 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
 	  if (!err)
 	    {
-	      mutex_lock (&np->lock);
+	      pthread_mutex_lock (&np->lock);
 	      p = recache_handle (p, np);
 	      register_fresh_stat (np, p);
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	    }
 
 	  free (rpcbuf);
 	}
       else /* protocol_version != 2 */
 	{
-	  mutex_lock (&dir->lock);
+	  pthread_mutex_lock (&dir->lock);
 	  p = nfs_initialize_rpc (NFS3PROC_MKNOD, cred, 0, &rpcbuf, dir, -1);
 	  if (! p)
 	    {
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
 	      return errno;
 	    }
 	  p = xdr_encode_fhandle (p, &dir->nn->handle);
 	  p = xdr_encode_string (p, name);
-	  mutex_unlock (&dir->lock);
+	  pthread_mutex_unlock (&dir->lock);
 
-	  mutex_lock (&np->lock);
+	  pthread_mutex_lock (&np->lock);
 	  err = netfs_validate_stat (np, cred);
 	  if (err)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      free (rpcbuf);
 	      return err;
 	    }
@@ -1048,7 +1048,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	      *(p++) = htonl (major (np->nn_stat.st_rdev));
 	      *(p++) = htonl (minor (np->nn_stat.st_rdev));
 	    }
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 
 	  purge_lookup_cache (dir, name, strlen (name));
 	  err = conduct_rpc (&rpcbuf, &p);
@@ -1059,14 +1059,14 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 
 	      if (!err)
 		{
-		  mutex_lock (&np->lock);
+		  pthread_mutex_lock (&np->lock);
 		  p = recache_handle (p, np);
 		  p = process_returned_stat (np, p, 1);
-		  mutex_unlock (&np->lock);
+		  pthread_mutex_unlock (&np->lock);
 		}
-	      mutex_lock (&dir->lock);
+	      pthread_mutex_lock (&dir->lock);
 	      p = process_wcc_stat (dir, p, !err);
-	      mutex_unlock (&dir->lock);
+	      pthread_mutex_unlock (&dir->lock);
 	    }
 	  free (rpcbuf);
 	}
@@ -1076,7 +1076,7 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
   if (err)
     return err;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if (np->nn->dtrans == SYMLINK)
     free (np->nn->transarg.name);
@@ -1089,14 +1089,14 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
       char *name = np->nn->dead_name;
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
 
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       netfs_attempt_unlink ((struct iouser *)-1, dir, name);
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
     }
   else
-    mutex_unlock (&np->lock);
+    pthread_mutex_unlock (&np->lock);
 
   return 0;
 }
@@ -1122,7 +1122,7 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
       sprintf (name, ".nfstmpgnu.%d", n++);
       err = netfs_attempt_create_file (cred, dir, name, mode, newnp);
       if (err == EEXIST)
-	mutex_lock (&dir->lock);  /* XXX is this right? does create need this
+	pthread_mutex_lock (&dir->lock);  /* XXX is this right? does create need this
 				     and drop this on error? Doesn't look
 				     like it. */
     }
@@ -1172,7 +1172,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
       err = verify_nonexistent (cred, np, name);
       if (err)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  return err;
 	}
     }
@@ -1201,7 +1201,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
 
   err = conduct_rpc (&rpcbuf, &p);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (!err)
     {
@@ -1217,12 +1217,12 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
       if (protocol_version == 3)
 	{
 	  if (*newnp)
-	    mutex_unlock (&(*newnp)->lock);
-	  mutex_lock (&np->lock);
+	    pthread_mutex_unlock (&(*newnp)->lock);
+	  pthread_mutex_lock (&np->lock);
 	  p = process_wcc_stat (np, p, 1);
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  if (*newnp)
-	    mutex_lock (&(*newnp)->lock);
+	    pthread_mutex_lock (&(*newnp)->lock);
 	}
 
       if (*newnp && !netfs_validate_stat (*newnp, (struct iouser *) -1)
@@ -1251,13 +1251,13 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
   err = netfs_attempt_lookup (cred, dir, name, &np);
   if (err)
     {
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
       return err;
     }
 
   /* Restore the locks to sanity. */
-  mutex_unlock (&np->lock);
-  mutex_lock (&dir->lock);
+  pthread_mutex_unlock (&np->lock);
+  pthread_mutex_lock (&dir->lock);
 
   /* Purge the cache of entries for this node, so that we don't
      regard cache-held references as live. */
@@ -1272,12 +1272,12 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       char *newname = 0;
       int n = 0;
 
-      mutex_unlock (&dir->lock);
+      pthread_mutex_unlock (&dir->lock);
 
       newname = malloc (50);
       if (! newname)
 	{
-	  mutex_lock (&dir->lock);
+	  pthread_mutex_lock (&dir->lock);
 	  netfs_nrele (np);         /* XXX Is this the correct thing to do? */
 	  return ENOMEM;
 	}
@@ -1292,14 +1292,14 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
       if (err)
 	{
 	  free (newname);
-	  mutex_lock (&dir->lock);
+	  pthread_mutex_lock (&dir->lock);
 	  netfs_nrele (np);
 	  return err;
 	}
 
       /* Write down what name we gave it; we'll delete this when all
 	 our uses vanish.  */
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
 
       if (np->nn->dead_dir)
 	netfs_nrele (np->nn->dead_dir);
@@ -1312,7 +1312,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
 	np->nn->dtrans = POSSIBLE;
 
       netfs_nput (np);
-      mutex_lock (&dir->lock);
+      pthread_mutex_lock (&dir->lock);
     }
   else
     netfs_nrele (np);
@@ -1356,9 +1356,9 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
 
       /* Just do a lookup/link/unlink sequence. */
 
-      mutex_lock (&fromdir->lock);
+      pthread_mutex_lock (&fromdir->lock);
       err = netfs_attempt_lookup (cred, fromdir, fromname, &np);
-      mutex_unlock (&fromdir->lock);
+      pthread_mutex_unlock (&fromdir->lock);
       if (err)
 	return err;
 
@@ -1367,41 +1367,41 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
       if (err)
 	return err;
 
-      mutex_lock (&fromdir->lock);
+      pthread_mutex_lock (&fromdir->lock);
       err = netfs_attempt_unlink (cred, fromdir, fromname);
-      mutex_unlock (&fromdir->lock);
+      pthread_mutex_unlock (&fromdir->lock);
 
       /* If the unlink failed, then back out the link */
       if (err)
 	{
-	  mutex_lock (&todir->lock);
+	  pthread_mutex_lock (&todir->lock);
 	  netfs_attempt_unlink (cred, todir, toname);
-	  mutex_unlock (&todir->lock);
+	  pthread_mutex_unlock (&todir->lock);
 	  return err;
 	}
 
       return 0;
     }
 
-  mutex_lock (&fromdir->lock);
+  pthread_mutex_lock (&fromdir->lock);
   purge_lookup_cache (fromdir, fromname, strlen (fromname));
   p = nfs_initialize_rpc (NFSPROC_RENAME (protocol_version),
 			  cred, 0, &rpcbuf, fromdir, -1);
   if (! p)
     {
-      mutex_unlock (&fromdir->lock);
+      pthread_mutex_unlock (&fromdir->lock);
       return errno;
     }
 
   p = xdr_encode_fhandle (p, &fromdir->nn->handle);
   p = xdr_encode_string (p, fromname);
-  mutex_unlock (&fromdir->lock);
+  pthread_mutex_unlock (&fromdir->lock);
 
-  mutex_lock (&todir->lock);
+  pthread_mutex_lock (&todir->lock);
   purge_lookup_cache (todir, toname, strlen (toname));
   p = xdr_encode_fhandle (p, &todir->nn->handle);
   p = xdr_encode_string (p, toname);
-  mutex_unlock (&todir->lock);
+  pthread_mutex_unlock (&todir->lock);
 
   err = conduct_rpc (&rpcbuf, &p);
   if (!err)
@@ -1410,7 +1410,7 @@ netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
       p++;
       if (protocol_version == 3)  /* XXX Should we add `&& !err' ? */
 	{
-	  mutex_lock (&fromdir->lock);
+	  pthread_mutex_lock (&fromdir->lock);
 	  p = process_wcc_stat (fromdir, p, !err);
 	  p = process_wcc_stat (todir, p, !err);
 	}

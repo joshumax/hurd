@@ -35,13 +35,13 @@
 #include <version.h>
 
 /* The global lock */
-struct mutex global_lock;
+pthread_mutex_t global_lock;
 
 /* Wakeup when device_open is finished */
-struct condition open_alert;
+pthread_cond_t open_alert;
 
 /* Wakeup for select */
-struct condition select_alert;
+pthread_cond_t select_alert;
 
 /* Bucket for all out ports */
 struct port_bucket *streamdev_bucket;
@@ -60,7 +60,7 @@ struct buffer
   /* The buffer array size.  */
   size_t size;
   /* Wakeup when the buffer is not empty or not full.  */
-  struct condition *wait;
+  pthread_cond_t *wait;
   /* The buffer.  */
   char buf[0];
 };
@@ -73,9 +73,9 @@ create_buffer (size_t size)
   assert (new);
   new->head = new->tail = new->buf;
   new->size = size;
-  new->wait = malloc (sizeof (struct condition));
+  new->wait = malloc (sizeof (pthread_cond_t));
   assert (new->wait);
-  condition_init (new->wait);
+  pthread_cond_init (new->wait, NULL);
   return new;
 }
 
@@ -107,8 +107,8 @@ clear_buffer (struct buffer *b)
   if (b == 0)
     return;
   b->head = b->tail = b->buf;
-  condition_broadcast (b->wait);
-  condition_broadcast (&select_alert);
+  pthread_cond_broadcast (b->wait);
+  pthread_cond_broadcast (&select_alert);
 }
 
 /* Read up to LEN bytes from B to DATA, returning the amount actually read.  */
@@ -132,8 +132,8 @@ buffer_read (struct buffer *b, void *data, size_t len)
       b->tail = b->buf + size;
     }
 
-  condition_broadcast (b->wait);
-  condition_broadcast (&select_alert);
+  pthread_cond_broadcast (b->wait);
+  pthread_cond_broadcast (&select_alert);
   return len;
 }
 
@@ -149,8 +149,8 @@ buffer_write (struct buffer *b, void *data, size_t len)
   memcpy (b->tail, data, len);
   b->tail += len;
 
-  condition_broadcast (b->wait);
-  condition_broadcast (&select_alert);
+  pthread_cond_broadcast (b->wait);
+  pthread_cond_broadcast (&select_alert);
   return len;
 }
 
@@ -297,10 +297,10 @@ main (int argc, char *argv[])
   if (err)
     error (3, err, "trivfs_startup");
 
-  mutex_init (&global_lock);
+  pthread_mutex_init (&global_lock, NULL);
 
-  condition_init (&open_alert);
-  condition_init (&select_alert);
+  pthread_cond_init (&open_alert, NULL);
+  pthread_cond_init (&select_alert, NULL);
 
   if (trivfs_allow_open & O_READ)
     input_buffer = create_buffer (256);
@@ -342,7 +342,7 @@ open_hook (struct trivfs_control *cntl, struct iouser *user, int flags)
   if (flags & O_ASYNC)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   mode = 0;
   if (flags & O_READ)
@@ -355,27 +355,27 @@ open_hook (struct trivfs_control *cntl, struct iouser *user, int flags)
       err = dev_open (stream_name, mode);
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
 
       if (!(flags & O_NONBLOCK))
 	{
-	  if (hurd_condition_wait (&open_alert, &global_lock))
+	  if (pthread_hurd_cond_wait_np (&open_alert, &global_lock))
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EINTR;
 	    }
 
 	  if (!dev_already_opened ())
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return ENODEV;
 	    }
 	}
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -386,9 +386,9 @@ error_t (*trivfs_check_open_hook) (struct trivfs_control *,
 static error_t
 po_create_hook (struct trivfs_peropen *po)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   nperopens++;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -398,7 +398,7 @@ error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *) =
 static void
 po_destroy_hook (struct trivfs_peropen *po)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   nperopens--;
   if (!nperopens)
     {
@@ -408,7 +408,7 @@ po_destroy_hook (struct trivfs_peropen *po)
 	  dev_close ();
 	}
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *)
@@ -437,7 +437,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   int nosync = (flags & FSYS_GOAWAY_NOSYNC);
   struct port_class *root_port_class = fsys->protid_class;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!dev_already_opened ())
     exit (0);
@@ -445,7 +445,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   err = ports_inhibit_class_rpcs (root_port_class);
   if (err == EINTR || (err && !force))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return err;
     }
 
@@ -462,7 +462,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
  busy:
   ports_enable_class (root_port_class);
   ports_resume_class_rpcs (root_port_class);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return EBUSY;
 }
@@ -482,9 +482,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   if (!(cred->po->openmodes & O_READ))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = dev_read (amount, (void **)data, data_len, cred->po->openmodes & O_NONBLOCK);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -501,9 +501,9 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   if (!(cred->po->openmodes & O_READ))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = dev_readable (amount);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -521,9 +521,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   if (!(cred->po->openmodes & O_WRITE))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = dev_write ((void *)data, data_len, amount, cred->po->openmodes & O_NONBLOCK);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -560,7 +560,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 
   while (1)
     {
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
       if ((*type & SELECT_READ) && buffer_readable (input_buffer))
 	available |= SELECT_READ;
       if (output_buffer)
@@ -572,21 +572,21 @@ trivfs_S_io_select (struct trivfs_protid *cred,
       if (available)
 	{
 	  *type = available;
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return 0;
 	}
 
       if (cred->po->openmodes & O_NONBLOCK)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EWOULDBLOCK;
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
-      if (hurd_condition_wait (&select_alert, &global_lock))
+      if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
 	{
 	  *type = 0;
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EINTR;
 	}
     }
@@ -665,9 +665,9 @@ trivfs_S_file_sync (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = dev_sync (wait);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -681,9 +681,9 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = dev_sync (wait);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -804,15 +804,15 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   if (reply != phys_reply)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   open_pending = 0;
-  condition_broadcast (&open_alert);
+  pthread_cond_broadcast (&open_alert);
 
   if (returncode != 0)
     {
       dev_close ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
 
@@ -840,7 +840,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   else
     {
       dev_close ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
 
@@ -848,7 +848,7 @@ device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
   if (dev_blksize != 1)
     amount = amount / dev_blksize * dev_blksize;
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -948,7 +948,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
       if (nowait)
 	return EWOULDBLOCK;
 
-      if (hurd_condition_wait (input_buffer->wait, &global_lock))
+      if (pthread_hurd_cond_wait_np (input_buffer->wait, &global_lock))
 	return EINTR;
     }
 
@@ -971,7 +971,7 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
   if (reply != phys_reply)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   input_pending = 0;
   err = errorcode;
@@ -981,7 +981,7 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
 	{
 	  eof = 1;
 	  dev_close ();
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return 0;
 	}
 
@@ -990,22 +990,22 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
 	  size_t nwritten;
 
 	  while (!buffer_writable (input_buffer))
-	    condition_wait (input_buffer->wait, &global_lock);
+	    pthread_cond_wait (input_buffer->wait, &global_lock);
 
 	  nwritten = buffer_write (input_buffer, data, datalen);
 	  data += nwritten;
 	  datalen -= nwritten;
-	  condition_broadcast (input_buffer->wait);
-	  condition_broadcast (&select_alert);
+	  pthread_cond_broadcast (input_buffer->wait);
+	  pthread_cond_broadcast (&select_alert);
 	}
     }
   else
     {
       dev_close ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1074,7 +1074,7 @@ dev_write (void *buf, size_t len, size_t *amount, int nowait)
       if (nowait)
 	return EWOULDBLOCK;
 
-      if (hurd_condition_wait (output_buffer->wait, &global_lock))
+      if (pthread_hurd_cond_wait_np (output_buffer->wait, &global_lock))
 	return EINTR;
     }
 
@@ -1090,7 +1090,7 @@ device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
   if (reply != phys_reply_writes)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   output_pending = 0;
 
@@ -1099,8 +1099,8 @@ device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
       if (amount >= npending_output)
 	{
 	  npending_output = 0;
-	  condition_broadcast (output_buffer->wait);
-	  condition_broadcast (&select_alert);
+	  pthread_cond_broadcast (output_buffer->wait);
+	  pthread_cond_broadcast (&select_alert);
 	}
       else
 	{
@@ -1111,7 +1111,7 @@ device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
   else
     dev_close ();
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1136,7 +1136,7 @@ dev_sync (int wait)
       if (!wait)
 	return 0;
 
-      if (hurd_condition_wait (output_buffer->wait, &global_lock))
+      if (pthread_hurd_cond_wait_np (output_buffer->wait, &global_lock))
 	return EINTR;
     }
 

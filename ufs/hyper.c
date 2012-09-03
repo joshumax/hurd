@@ -280,7 +280,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 {
   error_t err;
 
-  spin_lock (&alloclock);
+  pthread_spin_lock (&alloclock);
 
   if (csum_dirty)
     {
@@ -316,7 +316,7 @@ diskfs_set_hypermetadata (int wait, int clean)
 
       if (err)
 	{
-	  spin_unlock (&alloclock);
+	  pthread_spin_unlock (&alloclock);
 	  return err;
 	}
 
@@ -337,7 +337,7 @@ diskfs_set_hypermetadata (int wait, int clean)
       wait = 1;			/* must be synchronous */
     }
 
-  spin_unlock (&alloclock);
+  pthread_spin_unlock (&alloclock);
 
   /* Update the superblock if necessary (clean bit was just set).  */
   copy_sblock ();
@@ -355,7 +355,7 @@ copy_sblock ()
   err = diskfs_catch_exception ();
   assert_perror (err);
 
-  spin_lock (&alloclock);
+  pthread_spin_lock (&alloclock);
 
   if (sblock_dirty)
     {
@@ -386,7 +386,7 @@ copy_sblock ()
       sblock_dirty = 0;
     }
 
-  spin_unlock (&alloclock);
+  pthread_spin_unlock (&alloclock);
 
   diskfs_end_catch_exception ();
 }

@@ -34,13 +34,13 @@ diskfs_S_io_reauthenticate (struct protid *cred,
   /* This routine must carefully ignore EINTR because we
      are a simpleroutine, so callers won't know to restart. */
 
-  mutex_lock (&cred->po->np->lock);
+  pthread_mutex_lock (&cred->po->np->lock);
   do
     err = diskfs_start_protid (cred->po, &newcred);
   while (err == EINTR);
   if (err)
     {
-      mutex_unlock (&cred->po->np->lock);
+      pthread_mutex_unlock (&cred->po->np->lock);
       return err;
     }
 
@@ -58,7 +58,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
 
   mach_port_deallocate (mach_task_self (), newright);
 
-  mutex_unlock (&cred->po->np->lock);
+  pthread_mutex_unlock (&cred->po->np->lock);
 
   ports_port_deref (newcred);
 

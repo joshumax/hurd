@@ -61,9 +61,9 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
   fshelp_touch (&new->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
 		ftpfs_maptime);
 
-  spin_lock (&nn->fs->inode_mappings_lock);
+  pthread_spin_lock (&nn->fs->inode_mappings_lock);
   err = hurd_ihash_add (&nn->fs->inode_mappings, e->stat.st_ino, e);
-  spin_unlock (&nn->fs->inode_mappings_lock);
+  pthread_spin_unlock (&nn->fs->inode_mappings_lock);
 
   if (err)
     {
@@ -87,7 +87,7 @@ netfs_node_norefs (struct node *node)
   /* Ftpfs_detach_node does ref count frobbing (of other nodes), so we have
      to unlock NETFS_NODE_REFCNT_LOCK during it.  */
   node->references++;
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   /* Remove NODE from any entry it is attached to.  */
   ftpfs_detach_node (node);
@@ -99,9 +99,9 @@ netfs_node_norefs (struct node *node)
     }
 
   /* Remove this entry from the set of known inodes.  */
-  spin_lock (&nn->fs->inode_mappings_lock);
+  pthread_spin_lock (&nn->fs->inode_mappings_lock);
   hurd_ihash_locp_remove (&nn->fs->inode_mappings, nn->dir_entry->inode_locp);
-  spin_unlock (&nn->fs->inode_mappings_lock);
+  pthread_spin_unlock (&nn->fs->inode_mappings_lock);
 
   if (nn->contents)
     ccache_free (nn->contents);
@@ -110,5 +110,5 @@ netfs_node_norefs (struct node *node)
   free (node);
 
   /* Caller expects us to leave this locked... */
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
 }

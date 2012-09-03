@@ -22,7 +22,8 @@ makemode := server
 SRCS = auth.c
 OBJS = auth.o authServer.o auth_replyUser.o
 target = auth
-HURDLIBS = threads ports ihash shouldbeinlibc
+HURDLIBS = ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 MIGSFLAGS = -imacros $(srcdir)/authmutations.h
 

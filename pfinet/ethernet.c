@@ -98,13 +98,13 @@ static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
 static struct port_bucket *etherport_bucket;
 
 
-static any_t
-ethernet_thread (any_t arg)
+static void *
+ethernet_thread (void *arg)
 {
   ports_manage_port_operations_one_thread (etherport_bucket,
 					   ethernet_demuxer,
 					   0);
-  return 0;
+  return NULL;
 }
 
 int
@@ -134,7 +134,7 @@ ethernet_demuxer (mach_msg_header_t *inp,
   datalen = ETH_HLEN
     + msg->packet_type.msgt_number - sizeof (struct packet_header);
 
-  __mutex_lock (&net_bh_lock);
+  pthread_mutex_lock (&net_bh_lock);
   skb = alloc_skb (datalen, GFP_ATOMIC);
   skb_put (skb, datalen);
   skb->dev = dev;
@@ -148,7 +148,7 @@ ethernet_demuxer (mach_msg_header_t *inp,
   /* Drop it on the queue. */
   skb->protocol = eth_type_trans (skb, dev);
   netif_rx (skb);
-  __mutex_unlock (&net_bh_lock);
+  pthread_mutex_unlock (&net_bh_lock);
 
   return 1;
 }
@@ -157,10 +157,19 @@ ethernet_demuxer (mach_msg_header_t *inp,
 void
 ethernet_initialize (void)
 {
+  pthread_t thread;
+  error_t err;
   etherport_bucket = ports_create_bucket ();
   etherreadclass = ports_create_class (0, 0);
 
-  cthread_detach (cthread_fork (ethernet_thread, 0));
+  err = pthread_create (&thread, NULL, ethernet_thread, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 }
 
 int

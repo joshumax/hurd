@@ -30,7 +30,7 @@ ports_dead_name (void *notify, mach_port_t dead_name)
   if (pi)
     {
       np = pi->po->np;
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       if (dead_name == np->sockaddr)
 	{
 	  mach_port_deallocate (mach_task_self (), np->sockaddr);
@@ -38,7 +38,7 @@ ports_dead_name (void *notify, mach_port_t dead_name)
 	  diskfs_nput (np);
 	}
       else
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
     }
   
   ports_interrupt_notified_rpcs (notify, dead_name, MACH_NOTIFY_DEAD_NAME);

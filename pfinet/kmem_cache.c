@@ -20,12 +20,12 @@
 /* Hack replacement for Linux's kmem_cache_t allocator, using plain malloc
    and cthreads locking.  The locking here is probably unnecessary.  */
 
-#include <cthreads.h>
+#include <pthread.h>
 #include <linux/malloc.h>
 
 struct kmem_cache_s
 {
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   void *freelist;
   size_t item_size;
@@ -43,7 +43,7 @@ kmem_cache_create (const char *name, size_t item_size,
   kmem_cache_t *new = malloc (sizeof *new);
   if (!new)
     return 0;
-  mutex_init (&new->lock);
+  pthread_mutex_init (&new->lock, NULL);
   new->freelist = 0;
   new->item_size = item_size;
   new->ctor = ctor;
@@ -58,14 +58,14 @@ kmem_cache_alloc (kmem_cache_t *cache, int flags)
 {
   void *p;
 
-  __mutex_lock (&cache->lock);
+  pthread_mutex_lock (&cache->lock);
   p = cache->freelist;
   if (p != 0) {
     cache->freelist = *(void **)(p + cache->item_size);
-    __mutex_unlock (&cache->lock);
+    pthread_mutex_unlock (&cache->lock);
     return p;
   }
-  __mutex_unlock (&cache->lock);
+  pthread_mutex_unlock (&cache->lock);
 
   p = malloc (cache->item_size + sizeof (void *));
   if (p && cache->ctor)
@@ -79,10 +79,10 @@ kmem_cache_free (kmem_cache_t *cache, void *p)
 {
   void **const nextp = (void **) (p + cache->item_size);
 
-  __mutex_lock (&cache->lock);
+  pthread_mutex_lock (&cache->lock);
   *nextp = cache->freelist;
   cache->freelist = p;
-  __mutex_unlock (&cache->lock);
+  pthread_mutex_unlock (&cache->lock);
 
   /* XXX eventually destroy some... */
 }

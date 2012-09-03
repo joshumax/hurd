@@ -38,7 +38,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
 
       if (ds)
 	diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
 
       return error;
     }
@@ -50,7 +50,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (diskfs_check_readonly ())
     return EROFS;
 
-  mutex_lock (&dnp->lock);
+  pthread_mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error)
@@ -61,7 +61,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
       /* Attempt to rmdir(".") */
       diskfs_nrele (np);
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return EINVAL;
     }
 

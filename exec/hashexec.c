@@ -205,7 +205,7 @@ check_hashbang (struct execdata *e,
 
   user_crdir = user_cwdir = MACH_PORT_NULL;
 
-  rwlock_reader_lock (&std_lock);
+  pthread_rwlock_rdlock (&std_lock);
 
   /* Open a port on the interpreter file.  */
   e->error = lookup (interp, O_EXEC, &interp_file);
@@ -404,7 +404,7 @@ check_hashbang (struct execdata *e,
 			 &setup_args, &fault_handler);
     }
 
-  rwlock_reader_unlock (&std_lock);
+  pthread_rwlock_unlock (&std_lock);
 
   if (user_crdir != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), user_crdir);

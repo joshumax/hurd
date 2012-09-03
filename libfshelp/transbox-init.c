@@ -19,17 +19,17 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "fshelp.h"
-#include <cthreads.h>
+#include <pthread.h>
 
 void
 fshelp_transbox_init (struct transbox *transbox,
-		      struct mutex *lock,
+		      pthread_mutex_t *lock,
 		      void *cookie)
 {
   transbox->active = MACH_PORT_NULL;
   transbox->flags = 0;
   transbox->lock = lock;
-  condition_init (&transbox->wakeup);
+  pthread_cond_init (&transbox->wakeup, NULL);
   transbox->cookie = cookie;
 }
 

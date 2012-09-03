@@ -216,7 +216,7 @@ mount_root (char *name, char *host)
   /* Create the node for root */
   xdr_decode_fhandle (p, &np);
   free (rpcbuf);
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (nfs_port_override)
     port = nfs_port;

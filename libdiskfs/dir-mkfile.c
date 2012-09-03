@@ -41,23 +41,23 @@ diskfs_S_dir_mkfile (struct protid *cred,
   if (diskfs_check_readonly ())
     return EROFS;
   dnp = cred->po->np;
-  mutex_lock (&dnp->lock);
+  pthread_mutex_lock (&dnp->lock);
   if (!S_ISDIR (dnp->dn_stat.st_mode))
     {
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return ENOTDIR;
     }
   err = fshelp_access (&dnp->dn_stat, S_IWRITE, cred->user);
   if (err)
     {
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return err;
     }
 
   mode &= ~(S_IFMT | S_ISPARE | S_ISVTX | S_ITRANS);
   mode |= S_IFREG;
   err = diskfs_create_node (dnp, 0, mode, &np, cred, 0);
-  mutex_unlock (&dnp->lock);
+  pthread_mutex_unlock (&dnp->lock);
 
   if (diskfs_synchronous)
     {

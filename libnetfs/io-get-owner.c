@@ -27,8 +27,8 @@ netfs_S_io_get_owner (struct protid *user, pid_t *owner)
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   *owner = user->po->np->owner;
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return 0;
 }

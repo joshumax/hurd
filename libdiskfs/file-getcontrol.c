@@ -40,9 +40,9 @@ diskfs_S_file_getcontrol (struct protid *cred,
   if (error)
     return error;
 
-  spin_lock (&_diskfs_control_lock);
+  pthread_spin_lock (&_diskfs_control_lock);
   _diskfs_ncontrol_ports++;
-  spin_unlock (&_diskfs_control_lock);
+  pthread_spin_unlock (&_diskfs_control_lock);
   *control = ports_get_right (newpi);
   *controltype = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newpi);

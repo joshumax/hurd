@@ -49,7 +49,7 @@ fshelp_set_active (struct transbox *box,
   while (box->flags & TRANSBOX_STARTING)
     {
       box->flags |= TRANSBOX_WANTED;
-      cancel = hurd_condition_wait (&box->wakeup, box->lock);
+      cancel = pthread_hurd_cond_wait_np (&box->wakeup, box->lock);
       if (cancel)
 	return EINTR;
     }

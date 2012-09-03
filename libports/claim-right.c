@@ -34,7 +34,7 @@ ports_claim_right (void *portstruct)
   if (ret == MACH_PORT_NULL)
     return ret;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
   err = mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
   assert_perror (err);
@@ -42,11 +42,11 @@ ports_claim_right (void *portstruct)
   if (pi->flags & PORT_HAS_SENDRIGHTS)
     {
       pi->flags &= ~PORT_HAS_SENDRIGHTS;
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       ports_port_deref (pi);
     }
   else
-    mutex_unlock (&_ports_lock);
+    pthread_mutex_unlock (&_ports_lock);
 
   return ret;
 }

@@ -19,7 +19,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <hurd/ihash.h>
 
 
@@ -40,7 +39,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
   struct item *i, *nxt;
   error_t err;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   HURD_IHASH_ITERATE (&bucket->htable, arg)
     {
       struct port_info *const pi = arg;
@@ -55,7 +54,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 	  pi->refcnt++;
 	}
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   err = 0;
   for (i = list; i; i = nxt)

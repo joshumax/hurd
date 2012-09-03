@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include <mach.h>
 
@@ -37,7 +38,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
   if (!notify || notify->cons)
     return EOPNOTSUPP;
 
-  mutex_lock (&vcons->lock);
+  pthread_mutex_lock (&vcons->lock);
   switch (change)
     {
     case FILE_CHANGED_NULL:
@@ -361,6 +362,6 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
       err = EINVAL;
     };
 
-  mutex_unlock (&vcons->lock);
+  pthread_mutex_unlock (&vcons->lock);
   return err;
 }

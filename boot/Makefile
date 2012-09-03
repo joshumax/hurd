@@ -27,7 +27,8 @@ OBJS = boot.o $(COMMON-OBJS)
 UX-OBJS = mach-crt0.o uxboot.o sigvec.o syscall.o ux.o $(COMMON-OBJS)
 target = boot
 io-MIGSFLAGS=-DREPLY_PORTS
-HURDLIBS=store shouldbeinlibc threads
+HURDLIBS = store shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf
 
@@ -45,7 +46,7 @@ ourdevice.defs: device.defs
 uxboot.o: boot.c
 	$(COMPILE.c) -DUX $< -o $@
 
-uxboot.0: $(UX-OBJS) ../libthreads/libthreads.a
+uxboot.0: $(UX-OBJS)
 	$(LINK.o) -o $@ -static -nostartfiles -Wl,-T -Wl,$(srcdir)/frank1.ld $^
 uxboot.1: frankemul.ld uxboot.0
 	$(LD) -o $@ -T $^

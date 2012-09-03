@@ -72,7 +72,7 @@ extern error_t lookup_server (const char *server,
 
 static FILE *debug_stream = 0;
 static char *debug_stream_name = 0;
-static struct mutex debug_lock = MUTEX_INITIALIZER;
+static pthread_mutex_t debug_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Prints ftp connection log to DEBUG_STREAM.  */
 static void
@@ -87,14 +87,14 @@ cntl_debug (struct ftp_conn *conn, int type, const char *txt)
     default: type_str = "?"; break;
     }
 
-  mutex_lock (&debug_lock);
+  pthread_mutex_lock (&debug_lock);
   if (debug_stream)
     {
       fprintf (debug_stream, "%u.%s%s\n",
 	       (unsigned)(uintptr_t)conn->hook, type_str, txt);
       fflush (debug_stream);
     }
-  mutex_unlock (&debug_lock);
+  pthread_mutex_unlock (&debug_lock);
 }
 
 /* Various default parameters.  */
@@ -154,7 +154,7 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
     case 'D':
-      mutex_lock (&debug_lock);
+      pthread_mutex_lock (&debug_lock);
 
       if (debug_stream && debug_stream != stderr)
 	fclose (debug_stream);
@@ -189,16 +189,16 @@ parse_common_opt (int key, char *arg, struct argp_state *state)
       if (! err)
 	ftpfs_ftp_hooks.cntl_debug = cntl_debug;
 
-      mutex_unlock (&debug_lock);
+      pthread_mutex_unlock (&debug_lock);
 
       return err;
 
     case OPT_NO_DEBUG:
-      mutex_lock (&debug_lock);
+      pthread_mutex_lock (&debug_lock);
       if (debug_stream && debug_stream != stderr)
 	fclose (debug_stream);
       ftpfs_ftp_hooks.cntl_debug = 0;
-      mutex_unlock (&debug_lock);
+      pthread_mutex_unlock (&debug_lock);
       break;
 
     case OPT_NODE_CACHE_MAX:
@@ -338,7 +338,7 @@ netfs_append_args (char **argz, size_t *argz_len)
       } \
   } while (0)
 
-  mutex_lock (&debug_lock);
+  pthread_mutex_lock (&debug_lock);
   if (ftpfs_ftp_hooks.cntl_debug && debug_stream)
     {
       if (debug_stream != stderr)
@@ -351,7 +351,7 @@ netfs_append_args (char **argz, size_t *argz_len)
       else
 	err = argz_add (argz, argz_len, "--debug");
     }
-  mutex_unlock (&debug_lock);
+  pthread_mutex_unlock (&debug_lock);
 
   if (ftpfs->params.name_timeout != DEFAULT_NAME_TIMEOUT)
     FOPT ("--name-timeout=%ld", ftpfs->params.name_timeout);

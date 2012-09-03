@@ -86,7 +86,7 @@ _treefs_s_fsys_getroot (struct treefs_fsys *fsys,
 	}
     }
 
-  mutex_lock (&root->lock);
+  pthread_mutex_lock (&root->lock);
 
   type = treefs_node_type (root);
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))

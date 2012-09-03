@@ -25,9 +25,9 @@ pager_shutdown (struct pager *p)
   /* Sync and flush pager */
   pager_sync (p, 1);
   pager_flush (p, 1);
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   p->pager_state = SHUTDOWN;
   ports_destroy_right (p);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 }
 

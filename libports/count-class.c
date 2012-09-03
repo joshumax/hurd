@@ -19,17 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
 int
 ports_count_class (struct port_class *class)
 {
   int ret;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   ret = class->count;
   class->flags |= PORT_CLASS_NO_ALLOC;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   return ret;
 }
 

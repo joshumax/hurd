@@ -39,7 +39,7 @@ diskfs_S_io_map (struct protid *cred,
   node = cred->po->np;
   flags = cred->po->openstat & (O_READ | O_WRITE);
 
-  mutex_lock (&node->lock);
+  pthread_mutex_lock (&node->lock);
   switch (flags)
     {
     case O_READ | O_WRITE:
@@ -59,7 +59,7 @@ diskfs_S_io_map (struct protid *cred,
 	goto error;
       break;
     }
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
 
   *rdtype = MACH_MSG_TYPE_MOVE_SEND;
   *wrtype = MACH_MSG_TYPE_MOVE_SEND;
@@ -67,7 +67,7 @@ diskfs_S_io_map (struct protid *cred,
   return 0;
   
 error:
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
   return errno;
 }
 

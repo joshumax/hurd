@@ -37,12 +37,12 @@ netfs_S_file_get_translator (struct protid *user,
     return EOPNOTSUPP;
 
   np = user->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   err = netfs_validate_stat (np, user->user);
 
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
 
@@ -112,7 +112,7 @@ netfs_S_file_get_translator (struct protid *user,
   else
     err = EINVAL;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   return err;
 }

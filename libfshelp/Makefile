@@ -32,7 +32,8 @@ SRCS =	lock-acquire.c lock-init.c \
 	touch.c
 installhdrs = fshelp.h
 
-HURDLIBS = shouldbeinlibc threads iohelp ports
+HURDLIBS = shouldbeinlibc iohelp ports
+LDLIBS += -lpthread
 OBJS = $(subst .c,.o,$(SRCS))
 
 include ../Makeconf

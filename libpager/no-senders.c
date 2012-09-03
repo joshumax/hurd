@@ -29,10 +29,10 @@ _pager_do_seqnos_mach_notify_no_senders (mach_port_t notify,
   if (!p)
     return EOPNOTSUPP;
   
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   
   ports_no_senders (p, mscount);
 

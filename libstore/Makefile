@@ -53,6 +53,7 @@ libstore.so-LDLIBS += $(PARTED_LIBS) -ldl
 installhdrs=store.h
 
 HURDLIBS = shouldbeinlibc
+LDLIBS += -lpthread
 GUNZIP_OBJS = unzip.o inflate.o util.o
 BUNZIP2_OBJS = do-bunzip2.o
 OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)

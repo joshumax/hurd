@@ -48,12 +48,12 @@ S_io_write (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   become_task (user);
   if (user->sock->flags & O_NONBLOCK)
     m.msg_flags |= MSG_DONTWAIT;
   err = (*user->sock->ops->sendmsg) (user->sock, &m, datalen, 0);
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (err < 0)
     err = -err;
@@ -98,13 +98,13 @@ S_io_read (struct sock_user *user,
   iov.iov_base = *data;
   iov.iov_len = amount;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   become_task (user);
   err = (*user->sock->ops->recvmsg) (user->sock, &m, amount,
 				     ((user->sock->flags & O_NONBLOCK)
     				      ? MSG_DONTWAIT : 0),
 				     0);
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (err < 0)
     {
@@ -142,7 +142,7 @@ S_io_readable (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   become_task (user);
 
   /* We need to avoid calling the Linux ioctl routines,
@@ -178,7 +178,7 @@ S_io_readable (struct sock_user *user,
       break;
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -189,12 +189,12 @@ S_io_set_all_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->flags |= O_NONBLOCK;
   else
     user->sock->flags &= ~O_NONBLOCK;
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -207,7 +207,7 @@ S_io_get_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   sk = user->sock->sk;
 
   *bits = 0;
@@ -218,7 +218,7 @@ S_io_get_openmodes (struct sock_user *user,
   if (user->sock->flags & O_NONBLOCK)
     *bits |= O_NONBLOCK;
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -229,10 +229,10 @@ S_io_set_some_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->flags |= O_NONBLOCK;
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -243,10 +243,10 @@ S_io_clear_some_openmodes (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (bits & O_NONBLOCK)
     user->sock->flags &= ~O_NONBLOCK;
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -262,7 +262,7 @@ S_io_select (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   become_task (user);
 
   /* In Linux, this means (supposedly) that I/O will never be possible.
@@ -283,7 +283,7 @@ S_io_select (struct sock_user *user,
 	  interruptible_sleep_on (user->sock->sk->sleep);
 	  if (signal_pending (current)) /* This means we were cancelled.  */
 	    {
-	      __mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EINTR;
 	    }
 	  avail = (*user->sock->ops->poll) ((void *) 0xdeadbeef,
@@ -296,7 +296,7 @@ S_io_select (struct sock_user *user,
   /* We got something.  */
   *select_type = avail;
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -342,7 +342,7 @@ S_io_reauthenticate (struct sock_user *user,
   aux_uids = aubuf;
   aux_gids = agbuf;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, 0, 1, 0);
 
   auth = getauth ();
@@ -380,7 +380,7 @@ S_io_reauthenticate (struct sock_user *user,
   mach_port_move_member (mach_task_self (), newuser->pi.port_right,
 			 pfinet_bucket->portset);
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (newuser);
 
@@ -410,7 +410,7 @@ S_io_restrict_auth (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   isroot = 0;
   if (user->isroot)
@@ -429,7 +429,7 @@ S_io_restrict_auth (struct sock_user *user,
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -442,12 +442,12 @@ S_io_duplicate (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   newuser = make_sock_user (user->sock, user->isroot, 0, 0);
   *newobject = ports_get_right (newuser);
   *newobject_type = MACH_MSG_TYPE_MAKE_SEND;
   ports_port_deref (newuser);
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -464,14 +464,14 @@ S_io_identity (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (user->sock->identity == MACH_PORT_NULL)
     {
       err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 				&user->sock->identity);
       if (err)
 	{
-	  __mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
     }
@@ -482,7 +482,7 @@ S_io_identity (struct sock_user *user,
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
   *fileno = user->sock->st_ino;
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 

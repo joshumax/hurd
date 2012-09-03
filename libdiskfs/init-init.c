@@ -29,7 +29,7 @@ mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;
 
-struct rwlock diskfs_fsys_lock = RWLOCK_INITIALIZER;
+pthread_rwlock_t diskfs_fsys_lock = PTHREAD_RWLOCK_INITIALIZER;
 mach_port_t diskfs_fsys_identity;
 
 int _diskfs_nosuid, _diskfs_noexec;
@@ -37,9 +37,9 @@ int _diskfs_noatime;
 
 struct hurd_port _diskfs_exec_portcell;
 
-spin_lock_t diskfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t diskfs_node_refcnt_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
-spin_lock_t _diskfs_control_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t _diskfs_control_lock = PTHREAD_SPINLOCK_INITIALIZER;
 int _diskfs_ncontrol_ports;
 
 struct port_class *diskfs_protid_class;
@@ -101,7 +101,7 @@ diskfs_init_diskfs (void)
 void
 _diskfs_control_clean (void *arg __attribute__ ((unused)))
 {
-  spin_lock (&_diskfs_control_lock);
+  pthread_spin_lock (&_diskfs_control_lock);
   _diskfs_ncontrol_ports--;
-  spin_unlock (&_diskfs_control_lock);
+  pthread_spin_unlock (&_diskfs_control_lock);
 }

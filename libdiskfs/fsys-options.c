@@ -45,7 +45,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	mach_port_t control;
 
 	error = fshelp_fetch_control (&np->transbox, &control);
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_set_options (control, data, len, do_children);
@@ -53,7 +53,7 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	  }
 	else
 	  error = 0;
-	mutex_lock (&np->lock);
+	pthread_mutex_lock (&np->lock);
 
 	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
 	  error = 0;
@@ -65,16 +65,16 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 
   if (do_children)
     {
-      rwlock_writer_lock (&diskfs_fsys_lock);
+      pthread_rwlock_wrlock (&diskfs_fsys_lock);
       err = diskfs_node_iterate (helper);
-      rwlock_writer_unlock (&diskfs_fsys_lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
     }
 
   if (!err)
     {
-      rwlock_writer_lock (&diskfs_fsys_lock);
+      pthread_rwlock_wrlock (&diskfs_fsys_lock);
       err = diskfs_set_options (data, len);
-      rwlock_writer_unlock (&diskfs_fsys_lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
     }
 
   ports_port_deref (pt);
@@ -101,9 +101,9 @@ diskfs_S_fsys_get_options (fsys_t fsys,
   if (err)
     return err;
 
-  rwlock_reader_lock (&diskfs_fsys_lock);
+  pthread_rwlock_rdlock (&diskfs_fsys_lock);
   err = diskfs_append_args (&argz, &argz_len);
-  rwlock_reader_unlock (&diskfs_fsys_lock);
+  pthread_rwlock_unlock (&diskfs_fsys_lock);
 
   if (! err)
     /* Move ARGZ from a malloced buffer into a vm_alloced one.  */

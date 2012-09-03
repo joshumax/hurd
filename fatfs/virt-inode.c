@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include <spin-lock.h>
+#include <pthread.h>
 #include "virt-inode.h"
 
 /* Each virtual inode contains the UNIQUE key it belongs to,
@@ -56,7 +56,7 @@ struct table_page
 
 struct table_page *inode_table;
 
-spin_lock_t inode_table_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t inode_table_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* See vi_new and vi_rlookup.  */
 error_t
@@ -119,9 +119,9 @@ vi_new(vi_key_t key, ino_t *inode, inode_t *v_inode)
 
   assert (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
 
-  spin_lock (&inode_table_lock);
+  pthread_spin_lock (&inode_table_lock);
   err = _vi_new(key, inode, v_inode);
-  spin_unlock (&inode_table_lock);
+  pthread_spin_unlock (&inode_table_lock);
 
   return err;
 }
@@ -144,7 +144,7 @@ vi_lookup(ino_t inode)
   int offset = (inode - 1) & (TABLE_PAGE_SIZE - 1);
   inode_t v_inode = 0;
 
-  spin_lock (&inode_table_lock);
+  pthread_spin_lock (&inode_table_lock);
 
   while (table && page > 0)
     {
@@ -155,7 +155,7 @@ vi_lookup(ino_t inode)
   if (table)
     v_inode = &table->vi[offset];
 
-  spin_unlock (&inode_table_lock);
+  pthread_spin_unlock (&inode_table_lock);
 
   return v_inode;
 }
@@ -173,7 +173,7 @@ vi_rlookup(vi_key_t key, ino_t *inode, inode_t *v_inode, int create)
 
   assert (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
 
-  spin_lock (&inode_table_lock);
+  pthread_spin_lock (&inode_table_lock);
 
   while (table && memcmp(&table->vi[offset].key, &key, sizeof (vi_key_t)))
     {
@@ -200,7 +200,7 @@ vi_rlookup(vi_key_t key, ino_t *inode, inode_t *v_inode, int create)
 	err = EINVAL;
     }
 
-  spin_unlock (&inode_table_lock);
+  pthread_spin_unlock (&inode_table_lock);
 
   return err;
 }
@@ -221,10 +221,10 @@ vi_key_t vi_change(inode_t v_inode, vi_key_t key)
 vi_key_t vi_free(inode_t v_inode)
 {
   vi_key_t key;
-  spin_lock (&inode_table_lock);
+  pthread_spin_lock (&inode_table_lock);
   key = v_inode->key;
   v_inode->key = vi_zero_key;
-  spin_unlock (&inode_table_lock);
+  pthread_spin_unlock (&inode_table_lock);
   return key;
 }
 

@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include <pthread.h>
 #include <sys/types.h>		/* Defines `off_t'.  */
 
 struct shared_io
@@ -24,7 +25,7 @@ struct shared_io
   int shared_page_magic;
 
   /* This lock protects against modification to conch_status. */
-  spin_lock_t lock;
+  pthread_spinlock_t lock;
 
   enum
     {

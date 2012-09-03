@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <malloc.h>
+#include <pthread.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -53,7 +54,7 @@ cons_init (void)
   cons = malloc (sizeof (*cons));
   if (!cons)
     return errno;
-  mutex_init (&cons->lock);
+  pthread_mutex_init (&cons->lock, NULL);
   cons->vcons_list = NULL;
   cons->vcons_last = NULL;
   cons->dir = opendir (cons_file);

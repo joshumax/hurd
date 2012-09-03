@@ -24,7 +24,8 @@ SRCS = cache.c loop.c main.c ops.c fsys.c xdr.c
 OBJS = $(subst .c,.o,$(SRCS))
 target = nfsd
 installationdir = $(sbindir)
-HURDLIBS=threads shouldbeinlibc
+HURDLIBS = shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf
 

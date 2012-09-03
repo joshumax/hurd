@@ -91,11 +91,11 @@ diskfs_truncate (struct node *np,
      immediately.  (We are implicitly changing the data to zeros
      and doing it without the kernel's immediate knowledge;
      accordingl we must help out the kernel thusly.) */
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (upi)
     {
@@ -115,7 +115,7 @@ diskfs_truncate (struct node *np,
       ports_port_deref (upi->p);
     }
 
-  rwlock_writer_lock (&np->dn->allocptrlock);
+  pthread_rwlock_wrlock (&np->dn->allocptrlock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
@@ -250,7 +250,13 @@ diskfs_truncate (struct node *np,
   np->dn_set_ctime = 1;
   diskfs_node_update (np, 1);
 
-  rwlock_writer_unlock (&np->dn->allocptrlock);
+  pthread_rwlock_unlock (&np->dn->allocptrlock);
+  /* Wake up any remaining sleeping readers.
+     This sequence of three calls is now necessary whenever we acquire a write
+     lock on allocptrlock. If we do not, we may leak some readers. */
+  pthread_mutex_lock (&np->dn->waitlock);
+  pthread_cond_broadcast (&np->dn->waitcond);
+  pthread_mutex_unlock (&np->dn->waitlock);
 
   /* At this point the last block (as defined by np->allocsize)
      might not be allocated.  We need to allocate it to maintain
@@ -275,11 +281,11 @@ diskfs_truncate (struct node *np,
   diskfs_end_catch_exception ();
 
   /* Now we can permit delayed copies again. */
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
   if (upi)
     {
       pager_change_attributes (upi->p, MAY_CACHE,
@@ -415,15 +421,23 @@ block_extended (struct node *np,
       assert_perror (err);
       
       /* Allow these pageins to occur even though we're holding the lock */
-      spin_lock (&unlocked_pagein_lock);
+      pthread_spin_lock (&unlocked_pagein_lock);
       np->dn->fileinfo->allow_unlocked_pagein = lbn * sblock->fs_bsize;
       np->dn->fileinfo->unlocked_pagein_length = round_page (old_size);
-      spin_unlock (&unlocked_pagein_lock);
+      pthread_spin_unlock (&unlocked_pagein_lock);
 
       /* Make sure all waiting pageins see this change. */
-      mutex_lock (&np->dn->allocptrlock.master);
-      condition_broadcast (&np->dn->allocptrlock.wakeup);
-      mutex_unlock (&np->dn->allocptrlock.master);
+      /* BDD - Is this sane? */
+      /* TD - No... no it wasn't. But, it looked right. */
+       /*
+	 This new code should, SHOULD, behave as the original code did.
+	 This will wake up all readers waiting on the lock. This code favors
+	 strongly writers, but, as of making this change, pthreads favors
+	 writers, and cthreads did favor writers.
+       */
+      pthread_mutex_lock (&np->dn->waitlock);
+      pthread_cond_broadcast (&np->dn->waitcond);
+      pthread_mutex_unlock (&np->dn->waitlock);
 
       /* Force the pages in core and make sure they are dirty */
       for (pokeaddr = (int *)mapaddr; 
@@ -432,10 +446,10 @@ block_extended (struct node *np,
 	*pokeaddr = *pokeaddr;
 
       /* Turn off the special pagein permission */
-      spin_lock (&unlocked_pagein_lock);
+      pthread_spin_lock (&unlocked_pagein_lock);
       np->dn->fileinfo->allow_unlocked_pagein = 0;
       np->dn->fileinfo->unlocked_pagein_length = 0;
-      spin_unlock (&unlocked_pagein_lock);
+      pthread_spin_unlock (&unlocked_pagein_lock);
 
       /* Undo mapping */
       mach_port_deallocate (mach_task_self (), mapobj);
@@ -497,7 +511,7 @@ diskfs_grow (struct node *np,
   if (size == 0)
     size = sblock->fs_bsize;
 
-  rwlock_writer_lock (&np->dn->allocptrlock);
+  pthread_rwlock_wrlock (&np->dn->allocptrlock);
 
   /* The old last block of the file. */
   olbn = lblkno (sblock, np->allocsize - 1);
@@ -680,7 +694,10 @@ diskfs_grow (struct node *np,
       np->allocsize = newallocsize;
     }
 
-  rwlock_writer_unlock (&np->dn->allocptrlock);
+  pthread_rwlock_unlock (&np->dn->allocptrlock);
+  pthread_mutex_lock (&np->dn->waitlock);
+  pthread_cond_broadcast (&np->dn->waitcond);
+  pthread_mutex_unlock (&np->dn->waitlock);
 
   if (need_sync)
     diskfs_file_update (np, 1);

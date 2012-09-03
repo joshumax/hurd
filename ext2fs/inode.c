@@ -50,7 +50,7 @@ static struct node *nodehash[INOHSZ];
 
 static error_t read_node (struct node *np);
 
-spin_lock_t generation_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t generation_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Initialize the inode hash table. */
 void
@@ -70,13 +70,13 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   struct node *np;
   struct disknode *dn;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     if (np->cache_id == inum)
       {
 	np->references++;
-	spin_unlock (&diskfs_node_refcnt_lock);
-	mutex_lock (&np->lock);
+	pthread_spin_unlock (&diskfs_node_refcnt_lock);
+	pthread_mutex_lock (&np->lock);
 	*npp = np;
 	return 0;
       }
@@ -85,20 +85,20 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   dn = malloc (sizeof (struct disknode));
   if (! dn)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
   dn->dirents = 0;
   dn->dir_idx = 0;
   dn->pager = 0;
-  rwlock_init (&dn->alloc_lock);
+  pthread_rwlock_init (&dn->alloc_lock, NULL);
   pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_image);
 
   /* Create the new node.  */
   np = diskfs_make_node (dn);
   np->cache_id = inum;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   /* Put NP in NODEHASH.  */
   dn->hnext = nodehash[INOHASH(inum)];
@@ -107,18 +107,18 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   /* Get the contents of NP off disk.  */
   err = read_node (np);
 
   if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
     {
-      spin_lock (&generation_lock);
+      pthread_spin_lock (&generation_lock);
       if (++next_generation < diskfs_mtime->seconds)
 	next_generation = diskfs_mtime->seconds;
       np->dn_stat.st_gen = next_generation;
-      spin_unlock (&generation_lock);
+      pthread_spin_unlock (&generation_lock);
       np->dn_set_ctime = 1;
     }
 
@@ -138,14 +138,14 @@ ifind (ino_t inum)
 {
   struct node *np;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->cache_id != inum)
 	continue;
 
       assert (np->references);
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return np;
     }
   assert (0);
@@ -540,7 +540,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   int n, num_nodes = 0;
   struct node *node, **node_list, **p;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
 
   /* We must copy everything from the hash table into another data structure
      to avoid running into any problems with the hash-table being modified
@@ -557,7 +557,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   node_list = malloc (num_nodes * sizeof (struct node *));
   if (node_list == NULL)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       ext2_debug ("unable to allocate temporary node table");
       return ENOMEM;
     }
@@ -570,7 +570,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 	node->references++;
       }
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   p = node_list;
   while (num_nodes-- > 0)
@@ -578,9 +578,9 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
       node = *p++;
       if (!err)
 	{
-	  mutex_lock (&node->lock);
+	  pthread_mutex_lock (&node->lock);
 	  err = (*fun)(node);
-	  mutex_unlock (&node->lock);
+	  pthread_mutex_unlock (&node->lock);
 	}
       diskfs_nrele (node);
     }

@@ -22,7 +22,7 @@
 
 #include <hurd.h>
 #include <hurd/ports.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "cons.h"
 
@@ -33,11 +33,11 @@ cons_vcons_close (vcons_t vcons)
   cons_t cons = vcons->cons;
   vcons_list_t vcons_entry = vcons->vcons_entry;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   /* The same virtual console should never be opened twice.  */
   assert (vcons_entry->vcons == vcons);
   vcons_entry->vcons = NULL;
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
 
   /* Destroy the port.  */
   ports_port_deref (vcons);

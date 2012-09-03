@@ -26,7 +26,8 @@ SRCS = console.c display.c pager.c input.c
 
 MIGSTUBS = notifyServer.o tioctlServer.o fs_notifyUser.o
 
-HURDLIBS = netfs fshelp iohelp pager threads ports ihash shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp pager ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
 MIGSFLAGS += -imacros $(srcdir)/mutations.h

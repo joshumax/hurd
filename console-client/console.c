@@ -25,7 +25,7 @@
 #include <error.h>
 #include <assert.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd/console.h>
 #include <hurd/cons.h>
@@ -45,7 +45,7 @@ const char *cons_client_version = HURD_VERSION;
 
 /* The global lock protects the active_vcons variable, and thus all
    operations on the virtual console that is currently active.  */
-static struct mutex global_lock;
+static pthread_mutex_t global_lock;
 
 /* The active virtual console.  This is the one currently
    displayed.  */
@@ -70,15 +70,15 @@ console_current_id (int *cur)
 {
   vcons_t vcons;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   vcons = active_vcons;
   if (!vcons)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return ENODEV;
     }
   *cur = vcons->id;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -99,28 +99,28 @@ console_switch (int id, int delta)
      it isn't deallocated while we are outside of the global lock.  We
      also know that */
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   vcons = active_vcons;
   if (!vcons)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EINVAL;
     }
   ports_port_ref (vcons);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   err = cons_switch (vcons, id, delta, &new_vcons);
   if (!err)
     {
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
       if (active_vcons != new_vcons)
         {
           cons_vcons_close (active_vcons);
           active_vcons = new_vcons;
         }
-      mutex_unlock (&new_vcons->lock);
+      pthread_mutex_unlock (&new_vcons->lock);
       ports_port_deref (vcons);
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
     }
   return err;
 }
@@ -134,15 +134,15 @@ console_input (char *buf, size_t size)
   error_t err = 0;
   vcons_t vcons;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   vcons = active_vcons;
   if (!vcons)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EINVAL;
     }
   ports_port_ref (vcons);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (vcons)
     {
@@ -161,16 +161,16 @@ console_move_mouse (mouse_event_t ev)
   error_t err;
   vcons_t vcons;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   
   vcons = active_vcons;
   if (!vcons)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EINVAL;
     }
   ports_port_ref (vcons);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (vcons)
     {
@@ -178,7 +178,7 @@ console_move_mouse (mouse_event_t ev)
       ports_port_deref (vcons);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -192,15 +192,15 @@ console_scrollback (cons_scroll_t type, float value)
   int nr = 0;
   vcons_t vcons;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   vcons = active_vcons;
   if (!vcons)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EINVAL;
     }
   ports_port_ref (vcons);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (vcons)
     {
@@ -216,7 +216,7 @@ console_scrollback (cons_scroll_t type, float value)
 void
 console_switch_away (void)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   driver_iterate
     if (driver->ops->save_status)
@@ -226,7 +226,7 @@ console_switch_away (void)
   saved_cons = active_vcons->cons;
   cons_vcons_close (active_vcons);
   active_vcons = NULL;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 /* Switch back to the console client from an external user of the
@@ -235,7 +235,7 @@ void
 console_switch_back (void)
 {
   vcons_list_t conslist;
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   driver_iterate
     if (driver->ops->restore_status)
@@ -248,22 +248,22 @@ console_switch_back (void)
       err = cons_lookup (saved_cons, saved_id, 1, &conslist);
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return;
 	}
 
       err = cons_vcons_open (saved_cons, conslist, &active_vcons);
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return;
 	}
 	
       conslist->vcons = active_vcons;
       saved_cons = NULL;
-      mutex_unlock (&active_vcons->lock);
+      pthread_mutex_unlock (&active_vcons->lock);
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -278,18 +278,18 @@ console_exit (void)
 /* Signal an error to the user.  */
 void console_error (const wchar_t *const err_msg)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   bell_iterate
     if (bell->ops->beep)
       bell->ops->beep (bell->handle);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 #if QUAERENDO_INVENIETIS
 void
 console_deprecated (int key)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   input_iterate
     if (input->ops->deprecated)
       (*input->ops->deprecated) (input->handle, key);
@@ -299,7 +299,7 @@ console_deprecated (int key)
   bell_iterate
     if (bell->ops->deprecated)
       (*bell->ops->deprecated) (bell->handle, key);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 #endif	/* QUAERENDO_INVENIETIS */
 
@@ -312,7 +312,7 @@ void
 cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
 {
   error_t err = 0;
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!active_vcons)
     {
       vcons_t vcons;
@@ -324,10 +324,10 @@ cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
         {
           vcons_entry->vcons = vcons;
           active_vcons = vcons;
-          mutex_unlock (&vcons->lock);
+          pthread_mutex_unlock (&vcons->lock);
         }
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -341,12 +341,12 @@ cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
 void
 cons_vcons_update (vcons_t vcons)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->update)
 	display->ops->update (display->handle);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -355,12 +355,12 @@ cons_vcons_update (vcons_t vcons)
 void
 cons_vcons_set_cursor_pos (vcons_t vcons, uint32_t col, uint32_t row)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->set_cursor_pos)
 	display->ops->set_cursor_pos (display->handle, col, row);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -369,12 +369,12 @@ cons_vcons_set_cursor_pos (vcons_t vcons, uint32_t col, uint32_t row)
 void
 cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->set_cursor_status)
 	display->ops->set_cursor_status (display->handle, status);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -388,12 +388,12 @@ cons_vcons_set_cursor_status (vcons_t vcons, uint32_t status)
 void
 cons_vcons_scroll (vcons_t vcons, int delta)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->scroll)
 	display->ops->scroll (display->handle, delta);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -407,12 +407,12 @@ cons_vcons_scroll (vcons_t vcons, int delta)
 void cons_vcons_clear (vcons_t vcons, size_t length,
 		       uint32_t col, uint32_t row)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->clear)
 	display->ops->clear (display->handle, length, col, row);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -423,12 +423,12 @@ void
 cons_vcons_write (vcons_t vcons, conchar_t *str, size_t length,
 		  uint32_t col, uint32_t row)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->write)
 	display->ops->write (display->handle, str, length, col, row);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -437,12 +437,12 @@ cons_vcons_write (vcons_t vcons, conchar_t *str, size_t length,
 void
 cons_vcons_beep (vcons_t vcons)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     bell_iterate
       if (bell->ops->beep)
 	bell->ops->beep (bell->handle);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -451,12 +451,12 @@ cons_vcons_beep (vcons_t vcons)
 void
 cons_vcons_flash (vcons_t vcons)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->flash)
 	display->ops->flash (display->handle);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -465,12 +465,12 @@ cons_vcons_flash (vcons_t vcons)
 void
 cons_vcons_set_scroll_lock (vcons_t vcons, int onoff)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     input_iterate
       if (input->ops->set_scroll_lock_status)
 	input->ops->set_scroll_lock_status (input->handle, onoff);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 
 
@@ -481,12 +481,12 @@ cons_vcons_set_scroll_lock (vcons_t vcons, int onoff)
 error_t
 cons_vcons_set_dimension (vcons_t vcons, uint32_t col, uint32_t row)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->set_dimension)
 	display->ops->set_dimension (display->handle, col, row);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -494,12 +494,12 @@ cons_vcons_set_dimension (vcons_t vcons, uint32_t col, uint32_t row)
 error_t
 cons_vcons_set_mousecursor_pos (vcons_t vcons, float x, float y)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->set_mousecursor_pos)
 	display->ops->set_mousecursor_pos (display->handle, x, y);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -507,12 +507,12 @@ cons_vcons_set_mousecursor_pos (vcons_t vcons, float x, float y)
 error_t
 cons_vcons_set_mousecursor_status (vcons_t vcons, int status)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (vcons == active_vcons)
     display_iterate
       if (display->ops->set_mousecursor_status)
 	display->ops->set_mousecursor_status (display->handle, status);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 
 }
@@ -615,7 +615,7 @@ main (int argc, char *argv[])
   if (err)
     error (1, err, "Starting driver %s failed", errname);
     
-  mutex_init (&global_lock);
+  pthread_mutex_init (&global_lock, NULL);
 
   err = cons_init ();
   if (err)

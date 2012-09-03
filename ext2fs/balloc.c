@@ -63,14 +63,14 @@ ext2_free_blocks (block_t block, unsigned long count)
   unsigned long i;
   struct ext2_group_desc *gdp;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   if (block < sblock->s_first_data_block ||
       (block + count) > sblock->s_blocks_count)
     {
       ext2_error ("freeing blocks not in datazone - "
 		  "block = %u, count = %lu", block, count);
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return;
     }
 
@@ -122,7 +122,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 
   sblock_dirty = 1;
 
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
 
   alloc_sync (0);
 }
@@ -149,7 +149,7 @@ ext2_new_block (block_t goal,
   static int goal_hits = 0, goal_attempts = 0;
 #endif
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
 #ifdef XXX /* Auth check to use reserved blocks  */
   if (sblock->s_free_blocks_count <= sblock->s_r_blocks_count &&
@@ -157,7 +157,7 @@ ext2_new_block (block_t goal,
        (sb->u.ext2_sb.s_resgid == 0 ||
 	!in_group_p (sb->u.ext2_sb.s_resgid))))
     {
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return 0;
     }
 #endif
@@ -264,7 +264,7 @@ repeat:
     }
   if (k >= groups_count)
     {
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return 0;
     }
   bh = bptr (gdp->bg_block_bitmap);
@@ -278,7 +278,7 @@ repeat:
   if (j >= sblock->s_blocks_per_group)
     {
       ext2_error ("free blocks count corrupted for block group %d", i);
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return 0;
     }
 
@@ -312,9 +312,9 @@ got_block:
      block is being allocated to a file (see pager.c).  */
   if (modified_global_blocks)
     {
-      spin_lock (&modified_global_blocks_lock);
+      pthread_spin_lock (&modified_global_blocks_lock);
       clear_bit (tmp, modified_global_blocks);
-      spin_unlock (&modified_global_blocks_lock);
+      pthread_spin_unlock (&modified_global_blocks_lock);
     }
 
   ext2_debug ("found bit %d", j);
@@ -337,9 +337,9 @@ got_block:
 	  /* (See comment before the clear_bit above) */
 	  if (modified_global_blocks)
 	    {
-	      spin_lock (&modified_global_blocks_lock);
+	      pthread_spin_lock (&modified_global_blocks_lock);
 	      clear_bit (tmp + k, modified_global_blocks);
-	      spin_unlock (&modified_global_blocks_lock);
+	      pthread_spin_unlock (&modified_global_blocks_lock);
 	    }
 	}
       gdp->bg_free_blocks_count -= *prealloc_count;
@@ -369,7 +369,7 @@ got_block:
   sblock_dirty = 1;
 
  sync_out:
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
   alloc_sync (0);
 
   return j;
@@ -383,7 +383,7 @@ ext2_count_free_blocks ()
   struct ext2_group_desc *gdp;
   int i;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -399,7 +399,7 @@ ext2_count_free_blocks ()
     }
   printf ("ext2_count_free_blocks: stored = %u, computed = %lu, %lu",
 	  sblock->s_free_blocks_count, desc_count, bitmap_count);
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
   return bitmap_count;
 #else
   return sblock->s_free_blocks_count;
@@ -422,7 +422,7 @@ ext2_check_blocks_bitmap ()
   struct ext2_group_desc *gdp;
   int i, j;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -489,5 +489,5 @@ ext2_check_blocks_bitmap ()
     ext2_error ("wrong free blocks count in super block,"
 		" stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_blocks_count, bitmap_count);
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
 }

@@ -35,7 +35,7 @@ diskfs_make_node (struct disknode *dn)
   np->dn_set_mtime = 0;
   np->dn_stat_dirty = 0;
 
-  mutex_init (&np->lock);
+  pthread_mutex_init (&np->lock, NULL);
   np->references = 1;
   np->light_references = 0;
   np->owner = 0;

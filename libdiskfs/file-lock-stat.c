@@ -30,9 +30,9 @@ diskfs_S_file_lock_stat (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->np->lock);
+  pthread_mutex_lock (&cred->po->np->lock);
   *mystatus = cred->po->lock_status;
   *otherstatus = cred->po->np->userlock.type;
-  mutex_unlock (&cred->po->np->lock);
+  pthread_mutex_unlock (&cred->po->np->lock);
   return 0;
 }

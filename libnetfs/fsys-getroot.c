@@ -55,7 +55,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 
   flags &= O_HURD;
 
-  mutex_lock (&netfs_root_node->lock);
+  pthread_mutex_lock (&netfs_root_node->lock);
   err = netfs_validate_stat (netfs_root_node, cred);
   if (err)
     goto out;
@@ -73,7 +73,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 			       do_retry, retry_name, retry_port);
       if (err != ENOENT)
 	{
-	  mutex_unlock (&netfs_root_node->lock);
+	  pthread_mutex_unlock (&netfs_root_node->lock);
 	  iohelp_free_iouser (cred);
 	  if (!err)
 	    *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
@@ -92,7 +92,7 @@ netfs_S_fsys_getroot (mach_port_t cntl,
       if (err)
 	goto out;
 
-      mutex_unlock (&netfs_root_node->lock);
+      pthread_mutex_unlock (&netfs_root_node->lock);
       iohelp_free_iouser (cred);
 
       if (pathbuf[0] == '/')
@@ -141,6 +141,6 @@ netfs_S_fsys_getroot (mach_port_t cntl,
  out:
   if (err)
     iohelp_free_iouser (cred);
-  mutex_unlock (&netfs_root_node->lock);
+  pthread_mutex_unlock (&netfs_root_node->lock);
   return err;
 }

@@ -29,7 +29,7 @@ static struct
   int dot;
   int dotdot;
 } cache_misses;
-static spin_lock_t cm_lock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t cm_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 
 /* Lookup in directory DP (which is locked) the name NAME.  TYPE will
@@ -176,7 +176,7 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
     {
       err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
 
-      spin_lock (&cm_lock);
+      pthread_spin_lock (&cm_lock);
       if (type == LOOKUP)
 	{
 	  if (err == ENOENT)
@@ -193,7 +193,7 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
 		cache_misses.dotdot++;
 	    }
 	}
-      spin_unlock (&cm_lock);
+      pthread_spin_unlock (&cm_lock);
 
       if (err && err != ENOENT)
 	return err;

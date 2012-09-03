@@ -21,8 +21,9 @@
 #include <errno.h>
 #include <string.h>
 #include <maptime.h>
-
-#include <cthreads.h>
+#include <mach.h>
+#include <pthread.h>
+#include <stdio.h>
 
 #include "timer.h"
 
@@ -37,7 +38,7 @@ volatile struct mapped_time_value *timer_mapped_time;
 static thread_t timer_thread;
 
 /* The lock protects the timer list TIMERS.  */
-static struct mutex timer_lock;
+static pthread_mutex_t timer_lock;
 
 /* A list of all active timers.  */
 static struct timer_list *timers;
@@ -84,15 +85,15 @@ kick_timer_thread (void)
 }
 
 /* The timer thread.  */
-static int
-timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
+static void *
+timer_function (void *this_is_a_pointless_variable_with_a_rather_long_name)
 {
   mach_port_t recv = mach_reply_port ();
   int wait = 0;
 
   timer_thread = mach_thread_self ();
 
-  mutex_lock (&timer_lock);
+  pthread_mutex_lock (&timer_lock);
   while (1)
     {
       int jiff = fetch_jiffies ();
@@ -104,11 +105,11 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
       else
 	wait = ((timers->expires - jiff) * 1000) / HZ;
 
-      mutex_unlock (&timer_lock);
+      pthread_mutex_unlock (&timer_lock);
       mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT
 		       | (wait == -1 ? 0 : MACH_RCV_TIMEOUT)),
 		0, 0, recv, wait, MACH_PORT_NULL);
-      mutex_lock (&timer_lock);
+      pthread_mutex_lock (&timer_lock);
 
       while (timers && timers->expires < fetch_jiffies ())
 	{
@@ -128,7 +129,7 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 	}
     }
 
-  return 0;
+  return NULL;
 }
 
 
@@ -138,8 +139,9 @@ timer_init (void)
 {
   error_t err;
   struct timeval tp;
+  pthread_t thread;
 
-  mutex_init (&timer_lock);
+  pthread_mutex_init (&timer_lock, NULL);
 
   err = maptime_map (0, 0, &timer_mapped_time);
   if (err)
@@ -150,7 +152,15 @@ timer_init (void)
   timer_root_jiffies = (long long) tp.tv_sec * HZ
     + ((long long) tp.tv_usec * HZ) / 1000000;
 
-  cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
+  err = pthread_create (&thread, NULL, timer_function, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
+
   return 0;
 }
 
@@ -166,20 +176,20 @@ timer_clear (struct timer_list *timer)
 void
 timer_add (struct timer_list *timer)
 {
-  mutex_lock (&timer_lock);
+  pthread_mutex_lock (&timer_lock);
   timer_add_internal (timer);
 
   if (timers == timer)
     kick_timer_thread ();
 
-  mutex_unlock (&timer_lock);
+  pthread_mutex_unlock (&timer_lock);
 }
 
 /* Remove the timer TIMER from the list.  */
 int
 timer_remove (struct timer_list *timer)
 {
-  mutex_lock (&timer_lock);
+  pthread_mutex_lock (&timer_lock);
   if (timer->prev)
     {
       *timer->prev = timer->next;
@@ -188,12 +198,12 @@ timer_remove (struct timer_list *timer)
 
       timer->next = 0;
       timer->prev = 0;
-      mutex_unlock (&timer_lock);
+      pthread_mutex_unlock (&timer_lock);
       return 1;
     }
   else
     {
-      mutex_unlock (&timer_lock);
+      pthread_mutex_unlock (&timer_lock);
       return 0;
     }
 }

@@ -77,9 +77,9 @@ extern mach_port_t default_pager;
 static inline void
 adjust_used (off_t change)
 {
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   tmpfs_space_used += change;
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }
 
 #endif

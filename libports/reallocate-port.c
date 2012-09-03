@@ -21,7 +21,6 @@
 #include "ports.h"
 #include <hurd/ihash.h>
 #include <assert.h>
-#include <cthreads.h>
 
 void
 ports_reallocate_port (void *portstruct)
@@ -30,7 +29,7 @@ ports_reallocate_port (void *portstruct)
   error_t err;
   int dropref = 0;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (pi->port_right);
 
   err = mach_port_mod_refs (mach_task_self (), pi->port_right, 
@@ -50,7 +49,7 @@ ports_reallocate_port (void *portstruct)
   pi->cancel_threshold = 0;
   pi->mscount = 0;
   hurd_ihash_add (&pi->bucket->htable, pi->port_right, pi);
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   err = mach_port_move_member (mach_task_self (), pi->port_right, 
 			       pi->bucket->portset);

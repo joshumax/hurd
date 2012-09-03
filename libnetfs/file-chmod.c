@@ -32,8 +32,8 @@ netfs_S_file_chmod (struct protid *user,
 
   mode &= ~(S_IFMT | S_ISPARE | S_ITRANS);
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_chmod (user->user, user->po->np, mode);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

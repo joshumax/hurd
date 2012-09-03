@@ -41,6 +41,7 @@ SRCS = create-bucket.c create-class.c \
 installhdrs = ports.h
 
 HURDLIBS= ihash
+LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
 
 MIGCOMSFLAGS = -prefix ports_

@@ -314,9 +314,9 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
               /* Drop what we *thought* was .. (but isn't any more) and
                  try *again*.  */
               diskfs_nput (np);
-              mutex_unlock (&dp->lock);
+              pthread_mutex_unlock (&dp->lock);
               err = diskfs_cached_lookup_in_dirbuf (inum, &np, buf);
-              mutex_lock (&dp->lock);
+              pthread_mutex_lock (&dp->lock);
               if (err)
                 goto out;
               retry_dotdot = inum;
@@ -329,9 +329,9 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
           /* Lock them in the proper order, and then
              repeat the directory scan to see if this is still
              right.  */
-          mutex_unlock (&dp->lock);
+          pthread_mutex_unlock (&dp->lock);
           err = diskfs_cached_lookup_in_dirbuf (inum, &np, buf);
-          mutex_lock (&dp->lock);
+          pthread_mutex_lock (&dp->lock);
           if (err)
             goto out;
           retry_dotdot = inum;

@@ -20,7 +20,6 @@
 
 #include "ports.h"
 #include <hurd.h>
-#include <cthreads.h>
 
 void
 ports_interrupt_rpcs (void *portstruct)
@@ -28,7 +27,7 @@ ports_interrupt_rpcs (void *portstruct)
   struct port_info *pi = portstruct;
   struct rpc_info *rpc;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
     {
@@ -36,5 +35,5 @@ ports_interrupt_rpcs (void *portstruct)
       _ports_record_interruption (rpc);
     }
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }

@@ -26,8 +26,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <cthreads.h>
-#include <rwlock.h>
+#include <pthread.h>
 
 #include <version.h>
 
@@ -39,7 +38,7 @@ static char *contents = (char *) hello;
 static size_t contents_len = sizeof hello - 1;
 
 /* This lock protects access to contents and contents_len.  */
-static struct rwlock contents_lock;
+static pthread_rwlock_t contents_lock;
 
 /* Trivfs hooks. */
 int trivfs_fstype = FSTYPE_MISC;
@@ -72,7 +71,7 @@ int trivfs_support_exec = 0;
 /* A hook for us to keep track of the file descriptor state. */
 struct open
 {
-  struct mutex lock;
+  pthread_mutex_t lock;
   off_t offs;
 };
 
@@ -101,7 +100,7 @@ open_hook (struct trivfs_peropen *peropen)
 
   /* Initialize the offset. */
   op->offs = 0;
-  mutex_init (&op->lock);
+  pthread_mutex_init (&op->lock, NULL);
   peropen->hook = op;
   return 0;
 }
@@ -112,7 +111,7 @@ close_hook (struct trivfs_peropen *peropen)
 {
   struct open *op = peropen->hook;
 
-  mutex_clear (&op->lock);
+  pthread_mutex_init (&op->lock, NULL);
   free (op);
 }
 
@@ -136,13 +135,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   op = cred->po->hook;
 
-  mutex_lock (&op->lock);
+  pthread_mutex_lock (&op->lock);
 
   /* Get the offset. */
   if (offs == -1)
     offs = op->offs;
 
-  rwlock_reader_lock (&contents_lock);
+  pthread_rwlock_rdlock (&contents_lock);
 
   /* Prune the amount they want to read. */
   if (offs > contents_len)
@@ -157,8 +156,8 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*data == MAP_FAILED)
 	{
-	  mutex_unlock (&op->lock);
-	  rwlock_reader_unlock (&contents_lock);
+	  pthread_mutex_unlock (&op->lock);
+	  pthread_rwlock_unlock (&contents_lock);
 	  return ENOMEM;
 	}
 
@@ -169,9 +168,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       op->offs += amount;
     }
 
-  mutex_unlock (&op->lock);
+  pthread_mutex_unlock (&op->lock);
 
-  rwlock_reader_unlock (&contents_lock);
+  pthread_rwlock_unlock (&contents_lock);
 
   *data_len = amount;
   return 0;
@@ -191,7 +190,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 
   op = cred->po->hook;
 
-  mutex_lock (&op->lock);
+  pthread_mutex_lock (&op->lock);
 
   switch (whence)
     {
@@ -211,7 +210,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
       err = EINVAL;
     }
 
-  mutex_unlock (&op->lock);
+  pthread_mutex_unlock (&op->lock);
 
   return err;
 }
@@ -252,12 +251,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	char *new = strdup (arg);
 	if (new == NULL)
 	  return ENOMEM;
-	rwlock_writer_lock (&contents_lock);
+	pthread_rwlock_wrlock (&contents_lock);
 	if (contents != hello)
 	  free (contents);
 	contents = new;
 	contents_len = strlen (new);
-	rwlock_writer_unlock (&contents_lock);
+	pthread_rwlock_unlock (&contents_lock);
 	break;
       }
     }
@@ -273,9 +272,9 @@ trivfs_append_args (struct trivfs_control *fsys,
   error_t err;
   char *opt;
 
-  rwlock_reader_lock (&contents_lock);
+  pthread_rwlock_rdlock (&contents_lock);
   err = asprintf (&opt, "--contents=%s", contents) < 0 ? ENOMEM : 0;
-  rwlock_reader_unlock (&contents_lock);
+  pthread_rwlock_unlock (&contents_lock);
 
   if (!err)
     {
@@ -305,7 +304,7 @@ main (int argc, char **argv)
   /* Initialize the lock that will protect CONTENTS and CONTENTS_LEN.
      We must do this before argp_parse, because parse_opt (above) will
      use the lock.  */
-  rwlock_init (&contents_lock);
+  pthread_rwlock_init (&contents_lock, NULL);
 
   /* We use the same argp for options available at startup
      as for options we'll accept in an fsys_set_options RPC.  */

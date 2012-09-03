@@ -38,9 +38,9 @@ diskfs_S_io_identity (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   inum = np->dn_stat.st_ino;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   err = fshelp_get_identity (diskfs_port_bucket, inum, id);
   if (! err)

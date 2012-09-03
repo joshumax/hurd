@@ -43,7 +43,7 @@ netfs_S_file_set_translator (struct protid *user,
     return EINVAL;
 
   np = user->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if (active_flags & FS_TRANS_SET
       && ! (active_flags & FS_TRANS_ORPHAN))
@@ -64,12 +64,12 @@ netfs_S_file_set_translator (struct protid *user,
       if (control != MACH_PORT_NULL
 	  && (active_flags & FS_TRANS_EXCL) == 0)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  err = fsys_goaway (control, killtrans_flags);
 	  if (err && err != MIG_SERVER_DIED && err != MACH_SEND_INVALID_DEST)
 	    return err;
 	  err = 0;
-	  mutex_lock (&np->lock);
+	  pthread_mutex_lock (&np->lock);
 	}
     }
 
@@ -123,7 +123,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  assert (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      return EINVAL;
 	    }
 	  major = strtol (arg, 0, 0);
@@ -132,7 +132,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  assert (arg < passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      return EINVAL;
 	    }
 	  minor = strtol (arg, 0, 0);
@@ -148,7 +148,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  assert (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      return EINVAL;
 	    }
 
@@ -176,6 +176,6 @@ netfs_S_file_set_translator (struct protid *user,
     }
 
  out:
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

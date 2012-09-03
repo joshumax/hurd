@@ -20,7 +20,6 @@
 
 #include "ports.h"
 #include <hurd.h>
-#include <cthreads.h>
 #include <hurd/ihash.h>
 
 error_t
@@ -28,7 +27,7 @@ ports_inhibit_all_rpcs ()
 {
   error_t err = 0;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (_ports_flags & (_PORTS_INHIBITED | _PORTS_INHIBIT_WAIT))
     err = EBUSY;
@@ -59,7 +58,7 @@ ports_inhibit_all_rpcs ()
       while (_ports_total_rpcs > this_one)
 	{
 	  _ports_flags |= _PORTS_INHIBIT_WAIT;
-	  if (hurd_condition_wait (&_ports_block, &_ports_lock))
+	  if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	    /* We got cancelled.  */
 	    {
 	      err = EINTR;
@@ -72,7 +71,7 @@ ports_inhibit_all_rpcs ()
 	_ports_flags |= _PORTS_INHIBITED;
     }
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   return err;
 }

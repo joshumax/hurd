@@ -28,7 +28,7 @@ pager_offer_page (struct pager *p,
 		  vm_offset_t offset,
 		  vm_address_t buf)
 {
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
 
   if (_pager_pagemap_resize (p, offset + vm_page_size))
     {
@@ -36,9 +36,9 @@ pager_offer_page (struct pager *p,
 
       while (*pm_entry & PM_INCORE)
 	{
-	  mutex_unlock (&p->interlock);
+	  pthread_mutex_unlock (&p->interlock);
 	  pager_flush_some (p, offset, vm_page_size, 1);
-	  mutex_lock (&p->interlock);
+	  pthread_mutex_lock (&p->interlock);
 	}
       *pm_entry |= PM_INCORE;
 
@@ -47,6 +47,6 @@ pager_offer_page (struct pager *p,
 				 precious, MACH_PORT_NULL);
     }
 
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 }
 

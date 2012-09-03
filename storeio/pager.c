@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <stdio.h>
 
 #include "dev.h"
 
@@ -127,22 +128,26 @@ void
 pager_clear_user_data (struct user_pager_info *upi)
 {
   struct dev *dev = (struct dev *)upi;
-  mutex_lock (&dev->pager_lock);
+  pthread_mutex_lock (&dev->pager_lock);
   dev->pager = 0;
-  mutex_unlock (&dev->pager_lock);
+  pthread_mutex_unlock (&dev->pager_lock);
 }
 
 static struct port_bucket *pager_port_bucket = 0;
 
 /* A top-level function for the paging thread that just services paging
    requests.  */
-static void
-service_paging_requests (any_t arg)
+static void *
+service_paging_requests (void *arg)
 {
+  (void) arg;
+
   for (;;)
     ports_manage_port_operations_multithread (pager_port_bucket,
 					      pager_demuxer,
 					      1000 * 30, 1000 * 60 * 5, 0);
+
+  return NULL;
 }
 
 /* Initialize paging for this device.  */
@@ -151,18 +156,27 @@ init_dev_paging ()
 {
   if (! pager_port_bucket)
     {
-      static struct mutex pager_global_lock = MUTEX_INITIALIZER;
+      static pthread_mutex_t pager_global_lock = PTHREAD_MUTEX_INITIALIZER;
 
-      mutex_lock (&pager_global_lock);
+      pthread_mutex_lock (&pager_global_lock);
       if (pager_port_bucket == NULL)
 	{
+	  pthread_t thread;
+	  error_t err;
+
 	  pager_port_bucket = ports_create_bucket ();
 
 	  /* Make a thread to service paging requests.  */
-	  cthread_detach (cthread_fork ((cthread_fn_t)service_paging_requests,
-					(any_t)0));
+	  err = pthread_create (&thread, NULL, service_paging_requests, NULL);
+	  if (!err)
+	    pthread_detach (thread);
+	  else
+	    {
+	      errno = err;
+	      perror ("pthread_create");
+	    }
 	}
-      mutex_unlock (&pager_global_lock);
+      pthread_mutex_unlock (&pager_global_lock);
     }
 }
 
@@ -226,7 +240,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 
       init_dev_paging ();
 
-      mutex_lock (&dev->pager_lock);
+      pthread_mutex_lock (&dev->pager_lock);
 
       if (dev->pager == NULL)
 	{
@@ -235,7 +249,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 			  1, MEMORY_OBJECT_COPY_DELAY);
 	  if (dev->pager == NULL)
 	    {
-	      mutex_unlock (&dev->pager_lock);
+	      pthread_mutex_unlock (&dev->pager_lock);
 	      return errno;
 	    }
 	  created = 1;
@@ -247,7 +261,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 	/* Pager is currently being destroyed, try again.  */
 	{
 	  dev->pager = 0;
-	  mutex_unlock (&dev->pager_lock);
+	  pthread_mutex_unlock (&dev->pager_lock);
 	  return dev_get_memory_object (dev, prot, memobj);
 	}
       else
@@ -258,7 +272,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
       if (created)
 	ports_port_deref (dev->pager);
 
-      mutex_unlock (&dev->pager_lock);
+      pthread_mutex_unlock (&dev->pager_lock);
     }
 
   return err;

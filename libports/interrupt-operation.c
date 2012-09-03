@@ -30,10 +30,10 @@ ports_S_interrupt_operation (mach_port_t port,
   struct port_info *pi = ports_lookup_port (0, port, 0);
   if (!pi)
     return EOPNOTSUPP;
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   if (pi->cancel_threshold < seqno)
     pi->cancel_threshold = seqno;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   ports_interrupt_rpcs (pi);
   ports_port_deref (pi);
   return 0;

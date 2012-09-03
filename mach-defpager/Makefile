@@ -29,7 +29,7 @@ OBJS 	:= $(SRCS:.c=.o) \
 		       memory_object default_pager memory_object_default exc) \
 	   default_pager_replyUser.o
 
-HURDLIBS:= threads
+OTHERLIBS:= -lpthread
 LDFLAGS += -static
 
 include ../Makeconf

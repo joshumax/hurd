@@ -61,7 +61,7 @@ struct lookup_cache
 /* The contents of the cache in no particular order */
 static struct cacheq lookup_cache = { sizeof (struct lookup_cache) };
 
-static spin_lock_t cache_lock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t cache_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Buffer to hold statistics */
 static struct stats
@@ -115,7 +115,7 @@ enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
   if (name_len > CACHE_NAME_LEN - 1)
     return;
 
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
 
   if (lookup_cache.length == 0)
     /* There should always be an lru_cache; this being zero means that the
@@ -141,7 +141,7 @@ enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
   /* Now C becomes the MRU entry!  */
   cacheq_make_mru (&lookup_cache, c);
 
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 }
 
 /* Purge all references in the cache to NAME within directory DIR. */
@@ -150,7 +150,7 @@ purge_lookup_cache (struct node *dp, char *name, size_t namelen)
 {
   struct lookup_cache *c, *next;
   
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
   for (c = lookup_cache.mru; c; c = next)
     {
       /* Save C->hdr.next, since we may move C from this position. */
@@ -170,7 +170,7 @@ purge_lookup_cache (struct node *dp, char *name, size_t namelen)
 						 entry. */
 	}
     }
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 }
 
 /* Purge all references in the cache to node NP. */
@@ -179,7 +179,7 @@ purge_lookup_cache_node (struct node *np)
 {
   struct lookup_cache *c, *next;
   
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
   for (c = lookup_cache.mru; c; c = next)
     {
       next = c->hdr.next;
@@ -192,7 +192,7 @@ purge_lookup_cache_node (struct node *np)
 	  cacheq_make_lru (&lookup_cache, c);
 	}
     }
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 }
 
 
@@ -249,7 +249,7 @@ check_lookup_cache (struct node *dir, char *name)
 {
   struct lookup_cache *c;
   
-  spin_lock (&cache_lock);
+  pthread_spin_lock (&cache_lock);
 
   c = find_cache (dir->nn->handle.data, dir->nn->handle.size,
 		  name, strlen (name));
@@ -268,7 +268,7 @@ check_lookup_cache (struct node *dir, char *name)
 	  c->name_len = 0;
 	  c->np = 0;
 	  cacheq_make_lru (&lookup_cache, c);
-	  spin_unlock (&cache_lock);
+	  pthread_spin_unlock (&cache_lock);
 	  return 0;
 	}
 
@@ -278,8 +278,8 @@ check_lookup_cache (struct node *dir, char *name)
 	/* A negative cache entry.  */
 	{
 	  register_neg_hit (c->stati);
-	  spin_unlock (&cache_lock);
-	  mutex_unlock (&dir->lock);
+	  pthread_spin_unlock (&cache_lock);
+	  pthread_mutex_unlock (&dir->lock);
 	  return (struct node *)-1;
 	}
       else 
@@ -289,17 +289,17 @@ check_lookup_cache (struct node *dir, char *name)
 	  np = c->np;
 	  netfs_nref (np);
 	  register_pos_hit (c->stati);
-	  spin_unlock (&cache_lock);
+	  pthread_spin_unlock (&cache_lock);
 	  
-	  mutex_unlock (&dir->lock);
-	  mutex_lock (&np->lock);
+	  pthread_mutex_unlock (&dir->lock);
+	  pthread_mutex_lock (&np->lock);
 
 	  return np;
 	}
     }
   
   register_miss ();
-  spin_unlock (&cache_lock);
+  pthread_spin_unlock (&cache_lock);
 
   return 0;
 }

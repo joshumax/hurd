@@ -19,10 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
-struct mutex _ports_lock = MUTEX_INITIALIZER;
-struct condition _ports_block = CONDITION_INITIALIZER;
+pthread_mutex_t _ports_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t _ports_block = PTHREAD_COND_INITIALIZER;
 struct port_bucket *_ports_all_buckets;
 int _ports_total_rpcs;
 int _ports_flags;

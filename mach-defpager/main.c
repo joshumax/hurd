@@ -21,7 +21,7 @@
 
 #include <mach.h>
 #include <hurd.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <device/device.h>
 #include <device/device_types.h>
 
@@ -44,9 +44,6 @@
 /* XXX */
 
 #include <default_pager.h>
-
-extern
-vm_size_t	cthread_wait_stack_size;
 
 mach_port_t	bootstrap_master_device_port;	/* local name */
 mach_port_t	bootstrap_master_host_port;	/* local name */
@@ -86,11 +83,6 @@ main (int argc, char **argv)
   const task_t my_task = mach_task_self();
   error_t err;
   memory_object_t defpager;
-
-  /*
-   * Use 4Kbyte cthread wait stacks.
-   */
-  cthread_wait_stack_size = 4 * 1024;
 
   err = get_privileged_ports (&bootstrap_master_host_port,
 			      &bootstrap_master_device_port);

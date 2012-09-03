@@ -31,7 +31,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, 0);
 
   newright = ports_get_send_right (newpi);
@@ -46,7 +46,7 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   mach_port_move_member (mach_task_self (), newpi->pi.port_right,
 			 netfs_port_bucket->portset);
 
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   ports_port_deref (newpi);
 
   return err;

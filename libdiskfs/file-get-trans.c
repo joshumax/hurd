@@ -35,7 +35,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   /* First look for short-circuited translators. */
   if (S_ISLNK (np->dn_stat.st_mode))
@@ -132,7 +132,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	}
     }
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   return error;
 }

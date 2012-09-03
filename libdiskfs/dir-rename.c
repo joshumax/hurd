@@ -24,7 +24,7 @@
 /* To avoid races in checkpath, and to prevent a directory from being
    simultaneously renamed by two processes, we serialize all renames of
    directores with this lock */
-static struct mutex renamedirlock = MUTEX_INITIALIZER;
+static pthread_mutex_t renamedirlock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Implement dir_rename as described in <hurd/fs.defs>. */
 kern_return_t
@@ -63,9 +63,9 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* Acquire the source; hold a reference to it.  This 
      will prevent anyone from deleting it before we create
      the new link. */
-  mutex_lock (&fdp->lock);
+  pthread_mutex_lock (&fdp->lock);
   err = diskfs_lookup (fdp, fromname, LOOKUP, &fnp, 0, fromcred);
-  mutex_unlock (&fdp->lock);
+  pthread_mutex_unlock (&fdp->lock);
   if (err == EAGAIN)
     err = EINVAL;
   if (err)
@@ -73,44 +73,44 @@ diskfs_S_dir_rename (struct protid *fromcred,
 
   if (S_ISDIR (fnp->dn_stat.st_mode))
     {
-      mutex_unlock (&fnp->lock);
-      if (!mutex_try_lock (&renamedirlock))
+      pthread_mutex_unlock (&fnp->lock);
+      if (pthread_mutex_trylock (&renamedirlock))
 	{
 	  diskfs_nrele (fnp);
-	  mutex_lock (&renamedirlock);
+	  pthread_mutex_lock (&renamedirlock);
 	  goto try_again;
 	}
       err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
 			       tocred);
       if (diskfs_synchronous)
 	{
-	  mutex_lock (&fdp->lock);
+	  pthread_mutex_lock (&fdp->lock);
 	  diskfs_file_update (fdp, 1);
-	  mutex_unlock (&fdp->lock);
+	  pthread_mutex_unlock (&fdp->lock);
 	  
-	  mutex_lock (&fnp->lock);
+	  pthread_mutex_lock (&fnp->lock);
 	  diskfs_file_update (fnp, 1);
-	  mutex_unlock (&fnp->lock);
+	  pthread_mutex_unlock (&fnp->lock);
 
-	  mutex_lock (&tdp->lock);
+	  pthread_mutex_lock (&tdp->lock);
 	  diskfs_file_update (tdp, 1);
-	  mutex_unlock (&tdp->lock);
+	  pthread_mutex_unlock (&tdp->lock);
 	}
       
       diskfs_nrele (fnp);
-      mutex_unlock (&renamedirlock);
+      pthread_mutex_unlock (&renamedirlock);
       if (!err)
 	/* MiG won't do this for us, which it ought to. */
 	mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return err;
     }
 
-  mutex_unlock (&fnp->lock);
+  pthread_mutex_unlock (&fnp->lock);
 
   /* We now hold no locks */
 
   /* Link the node into the new directory. */
-  mutex_lock (&tdp->lock);
+  pthread_mutex_lock (&tdp->lock);
   
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   if (err == EAGAIN)
@@ -124,7 +124,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
     {
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       return err;
     }
 
@@ -135,7 +135,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return 0;
     }
@@ -146,11 +146,11 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       return EISDIR;
     }
 
-  mutex_lock (&fnp->lock);
+  pthread_mutex_lock (&fnp->lock);
 
   /* Increment the link count for the upcoming link */
   if (fnp->dn_stat.st_nlink == diskfs_link_max - 1)
@@ -159,7 +159,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nput (fnp);
       if (tnp)
         diskfs_nput (tnp);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       return EMLINK;
     }
   fnp->dn_stat.st_nlink++;
@@ -184,8 +184,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (diskfs_synchronous)
     diskfs_node_update (tdp, 1);
 
-  mutex_unlock (&tdp->lock);
-  mutex_unlock (&fnp->lock);
+  pthread_mutex_unlock (&tdp->lock);
+  pthread_mutex_unlock (&fnp->lock);
   if (err)
     {
       diskfs_nrele (fnp);
@@ -197,12 +197,12 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* Now we remove the source.  Unfortunately, we haven't held 
      fdp locked (nor could we), so someone else might have already
      removed it. */
-  mutex_lock (&fdp->lock);
+  pthread_mutex_lock (&fdp->lock);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   if (err)
     {
       diskfs_drop_dirstat (tdp, ds);
-      mutex_unlock (&fdp->lock);
+      pthread_mutex_unlock (&fdp->lock);
       diskfs_nrele (fnp);
       return err;
     }
@@ -213,7 +213,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nput (tmpnp);
       diskfs_nrele (fnp);
-      mutex_unlock (&fdp->lock);
+      pthread_mutex_unlock (&fdp->lock);
       mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
       return 0;
     }
@@ -231,7 +231,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
     diskfs_node_update (fnp, 1);
   
   diskfs_nput (fnp);
-  mutex_unlock (&fdp->lock);
+  pthread_mutex_unlock (&fdp->lock);
   if (!err)
     mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
 

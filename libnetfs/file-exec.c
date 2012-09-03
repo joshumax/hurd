@@ -70,12 +70,12 @@ netfs_S_file_exec (struct protid *cred,
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   mode = np->nn_stat.st_mode;
   uid = np->nn_stat.st_uid;
   gid = np->nn_stat.st_gid;
   err = netfs_validate_stat (np, cred->user);
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (err)
     return err;

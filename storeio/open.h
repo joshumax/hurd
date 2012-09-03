@@ -36,7 +36,7 @@ struct open
   off_t offs;
 
   /* A lock used to control write access to OFFS.  */
-  struct mutex lock;
+  pthread_mutex_t lock;
 };
 
 /* Returns a new per-open structure for the device DEV in OPEN.  If an error

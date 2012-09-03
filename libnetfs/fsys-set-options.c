@@ -48,7 +48,7 @@ netfs_S_fsys_set_options (fsys_t fsys,
 	mach_port_t control;
 
 	error = fshelp_fetch_control (&np->transbox, &control);
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_set_options (control, data, data_len, do_children);
@@ -56,7 +56,7 @@ netfs_S_fsys_set_options (fsys_t fsys,
 	  }
 	else
 	  error = 0;
-	mutex_lock (&np->lock);
+	pthread_mutex_lock (&np->lock);
 
 	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
 	  error = 0;

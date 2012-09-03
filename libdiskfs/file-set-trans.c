@@ -48,12 +48,12 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   error = fshelp_isowner (&np->dn_stat, cred->user);
   if (error)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return error;
     }
 
@@ -63,20 +63,20 @@ diskfs_S_file_set_translator (struct protid *cred,
       error = fshelp_fetch_control (&np->transbox, &control);
       if (error)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  return error;
 	}
 
       if ((control != MACH_PORT_NULL) && ((active_flags & FS_TRANS_EXCL) == 0))
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  error = fsys_goaway (control, killtrans_flags);
 	  mach_port_deallocate (mach_task_self (), control);
 	  if (error && (error != MIG_SERVER_DIED)
 	      && (error != MACH_SEND_INVALID_DEST))
 	    return error;
 	  error = 0;
-	  mutex_lock (&np->lock);
+	  pthread_mutex_lock (&np->lock);
 	}
       else if (control != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), control);
@@ -87,7 +87,7 @@ diskfs_S_file_set_translator (struct protid *cred,
       && (passive_flags & FS_TRANS_EXCL)
       && (np->dn_stat.st_mode & S_IPTRANS))
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EBUSY;
     }
 
@@ -97,7 +97,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 				 active_flags & FS_TRANS_EXCL);
       if (error)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  return error;
 	}
     }
@@ -129,7 +129,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		     changes, the links will be lost.  Perhaps it might be
 		     allowed for empty directories, but that's too much of a
 		     pain.  */
-		  mutex_unlock (&np->lock);
+		  pthread_mutex_unlock (&np->lock);
 		  return EISDIR;
 		}
 	      if (newmode == S_IFBLK || newmode == S_IFCHR)
@@ -143,7 +143,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  assert (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
-		      mutex_unlock (&np->lock);
+		      pthread_mutex_unlock (&np->lock);
 		      return EINVAL;
 		    }
 		  major = strtol (arg, 0, 0);
@@ -152,7 +152,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  assert (arg < passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
-		      mutex_unlock (&np->lock);
+		      pthread_mutex_unlock (&np->lock);
 		      return EINVAL;
 		    }
 		  minor = strtol (arg, 0, 0);
@@ -161,7 +161,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 						       makedev (major, minor));
 		  if (error)
 		    {
-		      mutex_unlock (&np->lock);
+		      pthread_mutex_unlock (&np->lock);
 		      return error;
 		    }
 		  np->dn_stat.st_rdev = makedev (major, minor);
@@ -174,7 +174,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  assert (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {
-		      mutex_unlock (&np->lock);
+		      pthread_mutex_unlock (&np->lock);
 		      return EINVAL;
 		    }
 
@@ -187,7 +187,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 					      1, cred, 0);
 		  if (error)
 		    {
-		      mutex_unlock (&np->lock);
+		      pthread_mutex_unlock (&np->lock);
 		      return error;
 		    }
 		}
@@ -198,13 +198,13 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  np->dn_stat.st_mode = newmode;
 		  diskfs_node_update (np, diskfs_synchronous);
 		}
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      return error;
 	    }
 	}
       error = diskfs_set_translator (np, passive, passivelen, cred);
     }
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return error;
 }

@@ -76,7 +76,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   struct dirstat *ds;
   struct dirstat *tmpds;
 
-  mutex_lock (&tdp->lock);
+  pthread_mutex_lock (&tdp->lock);
   diskfs_nref (tdp);		/* reference and lock will get consumed by
 				   checkpath */
   err = checkpath (fnp, tdp, tocred);
@@ -86,9 +86,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 
   /* Now, lock the parent directories.  This is legal because tdp is not
      a child of fnp (guaranteed by checkpath above). */
-  mutex_lock (&fdp->lock);
+  pthread_mutex_lock (&fdp->lock);
   if (fdp != tdp)
-    mutex_lock (&tdp->lock);
+    pthread_mutex_lock (&tdp->lock);
 
   /* 1: Lookup target; if it exists, make sure it's an empty directory. */
   ds = buf;
@@ -99,9 +99,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
     {
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nput (tnp);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       if (fdp != tdp)
-	mutex_unlock (&fdp->lock);
+	pthread_mutex_unlock (&fdp->lock);
       return 0;
     }
 
@@ -167,9 +167,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
      tdp. */
   if (fnp->dn_stat.st_nlink == diskfs_link_max - 1)
     {
-      mutex_unlock (&fnp->lock);
+      pthread_mutex_unlock (&fnp->lock);
       diskfs_drop_dirstat (tdp, ds);
-      mutex_unlock (&tdp->lock);
+      pthread_mutex_unlock (&tdp->lock);
       if (tnp)
 	diskfs_nput (tnp);
       return EMLINK;
@@ -203,7 +203,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 
   /* 4: Remove the entry in fdp. */
   ds = buf;
-  mutex_unlock (&fnp->lock);
+  pthread_mutex_unlock (&fnp->lock);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
   assert (!tmpnp || tmpnp == fnp);
   if (tmpnp)
@@ -223,13 +223,13 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 
  out:
   if (tdp)
-    mutex_unlock (&tdp->lock);
+    pthread_mutex_unlock (&tdp->lock);
   if (tnp)
     diskfs_nput (tnp);
   if (fdp && fdp != tdp)
-    mutex_unlock (&fdp->lock);
+    pthread_mutex_unlock (&fdp->lock);
   if (fnp)
-    mutex_unlock (&fnp->lock);
+    pthread_mutex_unlock (&fnp->lock);
   if (ds)
     diskfs_drop_dirstat (tdp, ds);
   return err;

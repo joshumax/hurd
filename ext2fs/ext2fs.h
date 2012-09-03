@@ -25,7 +25,7 @@
 #include <hurd/iohelp.h>
 #include <hurd/diskfs.h>
 #include <assert.h>
-#include <rwlock.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 #define __hurd__		/* Enable some hurd-specific fields.  */
@@ -80,7 +80,7 @@ struct poke
 struct pokel
 {
   struct poke *pokes, *free_pokes;
-  spin_lock_t lock;
+  pthread_spinlock_t lock;
   struct pager *pager;
   void *image;
 };
@@ -161,7 +161,7 @@ struct disknode
   struct node *hnext, **hprevp;
 
   /* Lock to lock while fiddling with this inode's block allocation info.  */
-  struct rwlock alloc_lock;
+  pthread_rwlock_t alloc_lock;
 
   /* Where changes to our indirect blocks are added.  */
   struct pokel indir_pokel;
@@ -268,9 +268,9 @@ unsigned long groups_count;	/* Number of groups in the fs */
 
 /* ---------------------------------------------------------------- */
 
-spin_lock_t node_to_page_lock;
+pthread_spinlock_t node_to_page_lock;
 
-spin_lock_t generation_lock;
+pthread_spinlock_t generation_lock;
 unsigned long next_generation;
 
 /* ---------------------------------------------------------------- */
@@ -335,7 +335,7 @@ void inode_init (void);
 
 /* What to lock if changing global data data (e.g., the superblock or block
    group descriptors or bitmaps).  */
-spin_lock_t global_lock;
+pthread_spinlock_t global_lock;
 
 /* Where to record such changes.  */
 struct pokel global_pokel;
@@ -344,7 +344,7 @@ struct pokel global_pokel;
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
 char *modified_global_blocks;
-spin_lock_t modified_global_blocks_lock;
+pthread_spinlock_t modified_global_blocks_lock;
 
 extern int global_block_modified (block_t block);
 extern void record_global_poke (void *ptr);
@@ -364,9 +364,9 @@ global_block_modified (block_t block)
   if (modified_global_blocks)
     {
       int was_clean;
-      spin_lock (&modified_global_blocks_lock);
+      pthread_spin_lock (&modified_global_blocks_lock);
       was_clean = !set_bit(block, modified_global_blocks);
-      spin_unlock (&modified_global_blocks_lock);
+      pthread_spin_unlock (&modified_global_blocks_lock);
       return was_clean;
     }
   else

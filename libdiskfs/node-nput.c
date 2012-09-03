@@ -29,14 +29,14 @@ diskfs_nput (struct node *np)
   int tried_drop_softrefs = 0;
 
  loop:
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
   if (np->references + np->light_references == 0)
     diskfs_drop_node (np);
   else if (np->references == 0 && !tried_drop_softrefs)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
       /* This is our cue that something akin to "last process closes file"
 	 in the POSIX.1 sense happened, so make sure any pending node time
@@ -52,9 +52,9 @@ diskfs_nput (struct node *np)
 	     routine, which might result in further recursive calls to
 	     the ref-counting system.  So we have to reacquire our
 	     reference around the call to forestall disaster. */
-	  spin_lock (&diskfs_node_refcnt_lock);
+	  pthread_spin_lock (&diskfs_node_refcnt_lock);
 	  np->references++;
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
 	  diskfs_try_dropping_softrefs (np);
 
@@ -65,11 +65,11 @@ diskfs_nput (struct node *np)
 	  /* Now we can drop the reference back... */
 	  goto loop;
 	}
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
     }
   else
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
-      mutex_unlock (&np->lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_mutex_unlock (&np->lock);
     }
 }

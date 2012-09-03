@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <hurd/ihash.h>
 
 void *
@@ -29,7 +28,7 @@ ports_lookup_port (struct port_bucket *bucket,
 {
   struct port_info *pi = 0;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (bucket)
     pi = hurd_ihash_find (&bucket->htable, port);
@@ -47,7 +46,7 @@ ports_lookup_port (struct port_bucket *bucket,
   if (pi)
     pi->refcnt++;
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   return pi;
 }

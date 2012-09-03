@@ -19,7 +19,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <assert.h>
-#include <cthreads.h>
 #include <hurd/ihash.h>
 #include "ports.h"
 
@@ -64,20 +63,20 @@ _ports_create_port_internal (struct port_class *class,
   pi->current_rpcs = 0;
   pi->bucket = bucket;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
  loop:
   if (class->flags & PORT_CLASS_NO_ALLOC)
     { 
       class->flags |= PORT_CLASS_ALLOC_WAIT;
-      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+      if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	goto cancelled;
       goto loop;
     }
   if (bucket->flags & PORT_BUCKET_NO_ALLOC)
     {
       bucket->flags |= PORT_BUCKET_ALLOC_WAIT;
-      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+      if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	goto cancelled;
       goto loop;
     }
@@ -93,7 +92,7 @@ _ports_create_port_internal (struct port_class *class,
   class->ports = pi;
   bucket->count++;
   class->count++;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   if (install)
     {
@@ -109,7 +108,7 @@ _ports_create_port_internal (struct port_class *class,
  cancelled:
   err = EINTR;
  lose:
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
  lose_unlocked:
   err = mach_port_mod_refs (mach_task_self (), port,
 			    MACH_PORT_RIGHT_RECEIVE, -1);

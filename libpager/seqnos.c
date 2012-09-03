@@ -28,7 +28,7 @@ _pager_wait_for_seqno (struct pager *p,
   while (seqno != p->seqno + 1)
     {
       p->waitingforseqno = 1;
-      condition_wait (&p->wakeup, &p->interlock);
+      pthread_cond_wait (&p->wakeup, &p->interlock);
     }
 }
 
@@ -44,7 +44,7 @@ _pager_release_seqno (struct pager *p,
   if (p->waitingforseqno)
     {
       p->waitingforseqno = 0;
-      condition_broadcast (&p->wakeup);
+      pthread_cond_broadcast (&p->wakeup);
     }
 }
 
@@ -59,10 +59,10 @@ _pager_update_seqno (mach_port_t object,
   p = ports_lookup_port (0, object, _pager_class);
   if (p)
     {
-      mutex_lock (&p->interlock);
+      pthread_mutex_lock (&p->interlock);
       _pager_wait_for_seqno (p, seqno);
       _pager_release_seqno (p, seqno);
-      mutex_unlock (&p->interlock);
+      pthread_mutex_unlock (&p->interlock);
 
       ports_port_deref (p);
     }

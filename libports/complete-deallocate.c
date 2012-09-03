@@ -21,7 +21,6 @@
 #include "ports.h"
 #include <assert.h>
 #include <hurd/ihash.h>
-#include <cthreads.h>
 
 void
 _ports_complete_deallocate (struct port_info *pi)
@@ -43,7 +42,7 @@ _ports_complete_deallocate (struct port_info *pi)
   pi->bucket->count--;
   pi->class->count--;
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   if (pi->class->clean_routine)
     (*pi->class->clean_routine)(pi);

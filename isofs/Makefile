@@ -21,7 +21,8 @@ target = iso9660fs
 SRCS = inode.c main.c lookup.c pager.c rr.c
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf
 

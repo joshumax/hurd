@@ -38,18 +38,18 @@ diskfs_alloc_node (struct node *dp, mode_t mode, struct node **npp)
   dn = calloc (1, sizeof *dn);
   if (dn == 0)
     return ENOSPC;
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   if (round_page (tmpfs_space_used + sizeof *dn) / vm_page_size
       > tmpfs_page_limit)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       free (dn);
       return ENOSPC;
     }
   dn->gen = gen++;
   ++num_files;
   tmpfs_space_used += sizeof *dn;
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   dn->type = IFTODT (mode & S_IFMT);
   return diskfs_cached_lookup ((ino_t) (uintptr_t) dn, npp);
@@ -179,13 +179,13 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
       np = diskfs_make_node (dn);
       np->cache_id = (ino_t) (uintptr_t) dn;
 
-      spin_lock (&diskfs_node_refcnt_lock);
+      pthread_spin_lock (&diskfs_node_refcnt_lock);
       dn->hnext = all_nodes;
       if (dn->hnext)
 	dn->hnext->dn->hprevp = &dn->hnext;
       dn->hprevp = &all_nodes;
       all_nodes = np;
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
       st = &np->dn_stat;
       memset (st, 0, sizeof *st);
@@ -212,7 +212,7 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
       recompute_blocks (np);
     }
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   *npp = np;
   return 0;
 }
@@ -224,7 +224,7 @@ diskfs_node_iterate (error_t (*fun) (struct node *))
   unsigned int num_nodes = 0;
   struct node *node, **node_list, **p;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
 
   /* We must copy everything from the hash table into another data structure
      to avoid running into any problems with the hash-table being modified
@@ -242,7 +242,7 @@ diskfs_node_iterate (error_t (*fun) (struct node *))
       node->references++;
     }
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   p = node_list;
   while (num_nodes-- > 0)
@@ -250,9 +250,9 @@ diskfs_node_iterate (error_t (*fun) (struct node *))
       node = *p++;
       if (!err)
 	{
-	  mutex_lock (&node->lock);
+	  pthread_mutex_lock (&node->lock);
 	  err = (*fun) (node);
-	  mutex_unlock (&node->lock);
+	  pthread_mutex_unlock (&node->lock);
 	}
       diskfs_nrele (node);
     }

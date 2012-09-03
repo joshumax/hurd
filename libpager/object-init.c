@@ -34,7 +34,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
   if (!p)
     return EOPNOTSUPP;
 
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
 
   if (pagesize != __vm_page_size)
@@ -72,7 +72,7 @@ _pager_seqnos_memory_object_init (mach_port_t object,
 
  out:
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
 
   return 0;

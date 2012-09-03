@@ -33,9 +33,8 @@
 #include <dirent.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <rwlock.h>
 #include <maptime.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <version.h>
 
@@ -104,7 +103,7 @@ struct vcons
   display_t display;
   input_t input;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
   /* Nodes in the filesystem referring to this virtual console.  */
   struct node *dir_node;
   struct node *cons_node;
@@ -124,7 +123,7 @@ struct cons
   /* The lock protects the console, all virtual consoles contained in
      it and the reference counters.  It also locks the configuration
      parameters.  */
-  struct mutex lock;
+  pthread_mutex_t lock;
   vcons_t vcons_list;
   /* The encoding.  */
   char *encoding;
@@ -188,7 +187,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   if (!id && !create)
     return EINVAL;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   if (id)
     {
       if (cons->vcons_list && cons->vcons_list->id <= id)
@@ -199,14 +198,14 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
           if (previous_vcons->id == id)
             {
               previous_vcons->refcnt++;
-	      mutex_unlock (&cons->lock);
+	      pthread_mutex_unlock (&cons->lock);
               *r_vcons = previous_vcons;
               return 0;
             }
 	}
       else if (!create)
 	{
-	  mutex_unlock (&cons->lock);
+	  pthread_mutex_unlock (&cons->lock);
 	  return ESRCH;
 	}
     }
@@ -227,7 +226,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   vcons = calloc (1, sizeof (struct vcons));
   if (!vcons)
     {
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return ENOMEM;
     }
   vcons->cons = cons;
@@ -236,7 +235,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
   asprintf (&vcons->name, "%i", id);
   /* XXX Error checking.  */
 
-  mutex_init (&vcons->lock);
+  pthread_mutex_init (&vcons->lock, NULL);
   err = display_create (&vcons->display, cons->encoding ?: DEFAULT_ENCODING,
 			cons->attribute, cons->lines, cons->width,
 			cons->height);
@@ -244,7 +243,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
     {
       free (vcons->name);
       free (vcons);
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return err;
     }
 
@@ -254,7 +253,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
       display_destroy (vcons->display);
       free (vcons->name);
       free (vcons);
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return err;
     }
   
@@ -280,7 +279,7 @@ vcons_lookup (cons_t cons, int id, int create, vcons_t *r_vcons)
     }
   cons_notice_dirchange (cons, DIR_CHANGED_NEW, vcons->name);
 
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   *r_vcons = vcons;
   return 0;
 }
@@ -291,9 +290,9 @@ vcons_ref (vcons_t vcons)
 {
   cons_t cons = vcons->cons;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   vcons->refcnt++;
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
 }
 
 /* Release a reference to the virtual console VCONS.  If this was the
@@ -303,7 +302,7 @@ vcons_release (vcons_t vcons)
 {
   cons_t cons = vcons->cons;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   if (!--vcons->refcnt)
     {
       /* As we keep a reference for all input focus groups pointing to
@@ -326,7 +325,7 @@ vcons_release (vcons_t vcons)
       free (vcons->name);
       free (vcons);
     }
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
 }
 
 struct netnode
@@ -424,19 +423,19 @@ netfs_node_norefs (struct node *np)
   assert (!np->nn->cons && np->nn->vcons);
 
   /* Avoid deadlock.  */
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   /* Find the back reference to ourself in the virtual console
      structure, and delete it.  */
-  mutex_lock (&vcons->lock);
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_mutex_lock (&vcons->lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   if (np->references)
     {
       /* Someone else got a reference while we were attempting to go
 	 away.  This can happen in netfs_attempt_lookup.  In this
 	 case, just unlock the node and do nothing else.  */
-      mutex_unlock (&vcons->lock);
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&vcons->lock);
+      pthread_mutex_unlock (&np->lock);
       return;
     }
   if (np == vcons->dir_node)
@@ -450,7 +449,7 @@ netfs_node_norefs (struct node *np)
       assert (np == vcons->inpt_node);
       vcons->inpt_node = 0;
     }
-  mutex_unlock (&vcons->lock);
+  pthread_mutex_unlock (&vcons->lock);
 
   /* Release our reference.  */
   vcons_release (vcons);
@@ -470,7 +469,7 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
   /* We create virtual consoles dynamically on the fly, so there is no
      need for an explicit create operation.  */
   *np = 0;
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
   return EOPNOTSUPP;
 }
 
@@ -616,7 +615,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       if (err)
 	goto out;
 
-      mutex_lock (&vcons->lock);
+      pthread_mutex_lock (&vcons->lock);
       if (vcons->dir_node)
 	{
 	  /* We already have a directory node for this virtual
@@ -636,7 +635,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	  else
 	    release_vcons = 1;
 	}
-      mutex_unlock (&vcons->lock);
+      pthread_mutex_unlock (&vcons->lock);
       if (release_vcons)
 	vcons_release (vcons);
     }
@@ -649,7 +648,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
       if (!strcmp (name, "console"))
 	{
-	  mutex_lock (&vcons->lock);
+	  pthread_mutex_lock (&vcons->lock);
 	  if (vcons->cons_node)
 	    {
 	      *node = vcons->cons_node;
@@ -664,11 +663,11 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		  ref_vcons = 1;
 		}
 	    }
-	  mutex_unlock (&vcons->lock);
+	  pthread_mutex_unlock (&vcons->lock);
 	}
       else if (!strcmp (name, "display"))
 	{
-	  mutex_lock (&vcons->lock);
+	  pthread_mutex_lock (&vcons->lock);
 	  if (vcons->disp_node)
 	    {
 	      *node = vcons->disp_node;
@@ -683,11 +682,11 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		  ref_vcons = 1;
 		}
 	    }
-	  mutex_unlock (&vcons->lock);
+	  pthread_mutex_unlock (&vcons->lock);
 	}
       else if (!strcmp (name, "input"))
 	{
-	  mutex_lock (&vcons->lock);
+	  pthread_mutex_lock (&vcons->lock);
 	  if (vcons->inpt_node)
 	    {
 	      *node = vcons->inpt_node;
@@ -702,7 +701,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		  ref_vcons = 1;
 		}
 	    }
-	  mutex_unlock (&vcons->lock);
+	  pthread_mutex_unlock (&vcons->lock);
 	}
       else
 	err = ENOENT;
@@ -715,11 +714,11 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
     fshelp_touch (&dir->nn_stat, TOUCH_ATIME, console_maptime);
 
  out:
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
   if (err)
     *node = 0;
   else
-    mutex_lock (&(*node)->lock);
+    pthread_mutex_lock (&(*node)->lock);
 
   return err;
 }
@@ -771,7 +770,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   if (dir->nn->cons)
     {
-      mutex_lock (&dir->nn->cons->lock);
+      pthread_mutex_lock (&dir->nn->cons->lock);
 
       /* Find the first entry.  */
       for (first_vcons = dir->nn->cons->vcons_list, count = 2;
@@ -881,7 +880,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
     }
 
   if (dir->nn->cons)
-      mutex_unlock(&dir->nn->cons->lock);
+      pthread_mutex_unlock(&dir->nn->cons->lock);
 
   fshelp_touch (&dir->nn_stat, TOUCH_ATIME, console_maptime);
   return err;
@@ -916,7 +915,7 @@ netfs_attempt_chown (struct iouser *cred, struct node *node,
   node->nn_stat.st_uid = uid;
   node->nn_stat.st_gid = gid;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   cons->stat_template.st_uid = uid;
   cons->stat_template.st_gid = gid;
 
@@ -944,7 +943,7 @@ netfs_attempt_chown (struct iouser *cred, struct node *node,
 	  vcons->inpt_node->nn_stat.st_gid = gid;
 	}
     }
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   fshelp_touch (&node->nn_stat, TOUCH_CTIME, console_maptime);
   return err;
 }
@@ -968,7 +967,7 @@ netfs_attempt_chauthor (struct iouser *cred, struct node *node, uid_t author)
   /* Change NODE's author.  */
   node->nn_stat.st_author = author;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   cons->stat_template.st_author = author;
 
   /* Change the author of each leaf node.  */
@@ -983,7 +982,7 @@ netfs_attempt_chauthor (struct iouser *cred, struct node *node, uid_t author)
       if (vcons->inpt_node)
 	vcons->inpt_node->nn_stat.st_author = author;
     }
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   fshelp_touch (&node->nn_stat, TOUCH_CTIME, console_maptime);
   return err;
 }
@@ -1113,7 +1112,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
       || np == vcons->inpt_node)
     return EOPNOTSUPP;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   if (np == vcons->cons_node)
     {
       ssize_t amt = input_dequeue (vcons->input,
@@ -1143,7 +1142,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
       else
 	*len = amt;
     }
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   return err;
 }
 
@@ -1157,7 +1156,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
       || np == vcons->disp_node)
     return EOPNOTSUPP;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   if (np == vcons->cons_node)
     {
       /* The term server is writing to the console device.  Feed the
@@ -1185,7 +1184,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
       else
 	*len = amt;
     }
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   return err;
 }
 
@@ -1214,7 +1213,7 @@ netfs_S_io_map (struct protid *cred,
 
   flags = cred->po->openstat & (O_READ | O_WRITE);
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   switch (flags)
     {
     case O_READ | O_WRITE:
@@ -1235,7 +1234,7 @@ netfs_S_io_map (struct protid *cred,
         goto error;
       break;
     }
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   *rdtype = MACH_MSG_TYPE_MOVE_SEND;
   *wrtype = MACH_MSG_TYPE_MOVE_SEND;
@@ -1243,7 +1242,7 @@ netfs_S_io_map (struct protid *cred,
   return 0;
 
  error:
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return errno;
 }
 
@@ -1263,7 +1262,7 @@ netfs_S_dir_notice_changes (struct protid *cred, mach_port_t notify)
   if (!cons)
     return EOPNOTSUPP;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   /* We have to prevent that we accumulate dead-names in the
      notification list.  They are cleaned up in cons_notice_dirchange,
      but that is not called often enough, so we also clean them up
@@ -1292,19 +1291,19 @@ netfs_S_dir_notice_changes (struct protid *cred, mach_port_t notify)
   err = dir_changed (notify, cons->dirmod_tick, DIR_CHANGED_NULL, "");
   if (err)
     {
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return err;
     }
   req = malloc (sizeof (struct modreq));
   if (!req)
     {
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return errno;
     }
   req->port = notify;
   req->next = cons->dirmod_reqs;
   cons->dirmod_reqs = req;
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   return 0;
 }
 
@@ -1473,11 +1472,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_INIT:
-      mutex_lock (&cons->lock);
+      pthread_mutex_lock (&cons->lock);
       break;
 
     case ARGP_KEY_FINI:
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       break;
 
     case 'f':
@@ -2001,7 +2000,7 @@ main (int argc, char **argv)
   cons = malloc (sizeof (struct cons));
   if (!cons)
     error (1, ENOMEM, "Cannot create console structure");
-  mutex_init (&cons->lock);
+  pthread_mutex_init (&cons->lock, NULL);
   cons->encoding = NULL;
   cons->width = DEFAULT_WIDTH;
   cons->height = DEFAULT_HEIGHT;

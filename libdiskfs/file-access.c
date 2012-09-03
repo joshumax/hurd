@@ -29,7 +29,7 @@ diskfs_S_file_check_access (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   *type = 0;
   if (fshelp_access (&np->dn_stat, S_IREAD, cred->user) == 0)
     *type |= O_READ;
@@ -38,7 +38,7 @@ diskfs_S_file_check_access (struct protid *cred,
   if (fshelp_access (&np->dn_stat, S_IEXEC, cred->user) == 0)
     *type |= O_EXEC;
   
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   
   return 0;
 }

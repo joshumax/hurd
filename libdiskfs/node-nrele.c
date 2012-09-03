@@ -31,35 +31,35 @@ diskfs_nrele (struct node *np)
   int tried_drop_softrefs = 0;
 
  loop:
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
   if (np->references + np->light_references == 0)
     {
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       diskfs_drop_node (np);
     }
   else if (np->references == 0)
     {
-      mutex_lock (&np->lock);
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_mutex_lock (&np->lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink && !tried_drop_softrefs)
 	{
 	  /* Same issue here as in nput; see that for explanation */
-	  spin_lock (&diskfs_node_refcnt_lock);
+	  pthread_spin_lock (&diskfs_node_refcnt_lock);
 	  np->references++;
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
 	  diskfs_try_dropping_softrefs (np);
 	  tried_drop_softrefs = 1;
 
 	  /* Now we can drop the reference back... */
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  goto loop;
 	}
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
     }
   else
-    spin_unlock (&diskfs_node_refcnt_lock);
+    pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }

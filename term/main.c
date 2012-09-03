@@ -211,7 +211,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      break;
 	    }
 
-	  mutex_lock (&global_lock);
+	  pthread_mutex_lock (&global_lock);
 	  (*bottom->fini) ();
 
 	  tty_type = v->type;
@@ -232,7 +232,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  error_t err = (*bottom->init) ();
 	  if (err == 0 && (termflags & TTY_OPEN))
 	    err = (*bottom->assert_dtr) ();
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
       break;
@@ -413,7 +413,7 @@ main (int argc, char **argv)
 
   memset (&termstate, 0, sizeof (termstate));
   termflags = NO_CARRIER | NO_OWNER;
-  mutex_init (&global_lock);
+  pthread_mutex_init (&global_lock, NULL);
 
   /* Initialize status from underlying node.  */
   err = io_stat ((*ourcntl)->underlying, &st);
@@ -441,8 +441,8 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "Initializing bottom handler");
 
-  condition_init (&carrier_alert);
-  condition_init (&select_alert);
+  pthread_cond_init (&carrier_alert, NULL);
+  pthread_cond_init (&select_alert, NULL);
 
   /* Launch.  */
   ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0, 0);

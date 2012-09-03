@@ -26,8 +26,8 @@ netfs_S_dir_unlink (struct protid *user, char *name)
 {
   error_t err;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_unlink (user->user, user->po->np, name);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

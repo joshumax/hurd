@@ -19,21 +19,20 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
 ports_resume_all_rpcs ()
 {
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (_ports_flags & _PORTS_INHIBITED);
   _ports_flags &= ~_PORTS_INHIBITED;
   if (_ports_flags & _PORTS_BLOCKED)
     {
       _ports_flags &= ~_PORTS_BLOCKED;
-      condition_broadcast (&_ports_block);
+      pthread_cond_broadcast (&_ports_block);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }
 
       

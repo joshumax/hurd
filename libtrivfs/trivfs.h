@@ -19,7 +19,7 @@
 #define __TRIVFS_H__
 
 #include <errno.h>
-#include <cthreads.h>		/* for mutexes &c */
+#include <pthread.h>		/* for mutexes &c */
 #include <sys/types.h>		/* for uid_t &c */
 #include <mach/mach.h>
 #include <hurd/ports.h>
@@ -53,7 +53,7 @@ struct trivfs_peropen
 struct trivfs_control
 {
   struct port_info pi;
-  struct mutex lock;
+  pthread_mutex_t lock;
   struct port_class *protid_class;
   struct port_bucket *protid_bucket;
   mach_port_t filesys_id;

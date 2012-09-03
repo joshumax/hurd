@@ -51,7 +51,7 @@ _pager_do_write_request (mach_port_t object,
     return EOPNOTSUPP;
 
   /* Acquire the right to meddle with the pagemap */
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
 
   /* sanity checks -- we don't do multi-page requests yet.  */
@@ -100,7 +100,7 @@ _pager_do_write_request (mach_port_t object,
     if (pm_entries[i] & PM_PAGINGOUT)
       {
 	pm_entries[i] |= PM_WRITEWAIT;
-	condition_wait (&p->wakeup, &p->interlock);
+	pthread_cond_wait (&p->wakeup, &p->interlock);
 	goto retry;
       }
 
@@ -143,7 +143,7 @@ _pager_do_write_request (mach_port_t object,
 
   /* Let someone else in. */
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 
   /* This is inefficient; we should send all the pages to the device at once
      but until the pager library interface is changed, this will have to do. */
@@ -155,7 +155,7 @@ _pager_do_write_request (mach_port_t object,
 				     data + (vm_page_size * i));
 
   /* Acquire the right to meddle with the pagemap */
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_pagemap_resize (p, offset + length);
   pm_entries = &p->pagemap[offset / __vm_page_size];
 
@@ -196,18 +196,18 @@ _pager_do_write_request (mach_port_t object,
       wakeup = 1;
 
   if (wakeup)
-    condition_broadcast (&p->wakeup);
+    pthread_cond_broadcast (&p->wakeup);
 
   _pager_allow_termination (p);
 
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 
   ports_port_deref (p);
   return 0;
 
  release_out:
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 }

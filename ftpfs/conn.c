@@ -39,11 +39,11 @@ ftpfs_get_ftp_conn (struct ftpfs *fs, struct ftp_conn **conn)
 {
   struct ftpfs_conn *fsc;
 
-  spin_lock (&fs->conn_lock);
+  pthread_spin_lock (&fs->conn_lock);
   fsc = fs->free_conns;
   if (fsc)
     fs->free_conns = fsc->next;
-  spin_unlock (&fs->conn_lock);
+  pthread_spin_unlock (&fs->conn_lock);
 
   if (! fsc)
     {
@@ -73,10 +73,10 @@ ftpfs_get_ftp_conn (struct ftpfs *fs, struct ftp_conn **conn)
       fsc->conn->hook = (void *)(uintptr_t)conn_id++;
     }
 
-  spin_lock (&fs->conn_lock);
+  pthread_spin_lock (&fs->conn_lock);
   fsc->next = fs->conns;
   fs->conns = fsc;
-  spin_unlock (&fs->conn_lock);
+  pthread_spin_unlock (&fs->conn_lock);
 
   *conn = fsc->conn;
 
@@ -89,7 +89,7 @@ ftpfs_release_ftp_conn (struct ftpfs *fs, struct ftp_conn *conn)
 {
   struct ftpfs_conn *fsc, *pfsc;
 
-  spin_lock (&fs->conn_lock);
+  pthread_spin_lock (&fs->conn_lock);
   for (pfsc = 0, fsc = fs->conns; fsc; pfsc = fsc, fsc = fsc->next)
     if (fsc->conn == conn)
       {
@@ -102,5 +102,5 @@ ftpfs_release_ftp_conn (struct ftpfs *fs, struct ftp_conn *conn)
 	break;
       }
   assert (fsc);
-  spin_unlock (&fs->conn_lock);
+  pthread_spin_unlock (&fs->conn_lock);
 }

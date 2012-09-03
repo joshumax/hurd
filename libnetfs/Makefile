@@ -23,7 +23,8 @@ dir := libnetfs
 makemode := library
 libname = libnetfs
 
-HURDLIBS = fshelp iohelp threads ports shouldbeinlibc
+HURDLIBS = fshelp iohelp ports shouldbeinlibc
+LDLIBS += -lpthread
 
 FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	dir-notice-changes.c dir-readdir.c dir-rename.c \

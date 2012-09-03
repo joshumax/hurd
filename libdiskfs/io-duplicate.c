@@ -30,7 +30,7 @@ diskfs_S_io_duplicate (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->np->lock);
+  pthread_mutex_lock (&cred->po->np->lock);
 
   err = diskfs_create_protid (cred->po, cred->user, &newpi);
   if (! err)
@@ -40,7 +40,7 @@ diskfs_S_io_duplicate (struct protid *cred,
       ports_port_deref (newpi);
     }
 
-  mutex_unlock (&cred->po->np->lock);
+  pthread_mutex_unlock (&cred->po->np->lock);
 
   return err;
 }

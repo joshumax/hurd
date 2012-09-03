@@ -42,17 +42,17 @@ netfs_S_io_restrict_auth (struct protid *user,
   if (err)
     return err;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, new_user);
   if (newpi)
     {
       *newport = ports_get_right (newpi);
-      mutex_unlock (&user->po->np->lock);
+      pthread_mutex_unlock (&user->po->np->lock);
       *newporttype = MACH_MSG_TYPE_MAKE_SEND;
     }
   else
     {
-      mutex_unlock (&user->po->np->lock);
+      pthread_mutex_unlock (&user->po->np->lock);
       iohelp_free_iouser (new_user);
       err = ENOMEM;
     }

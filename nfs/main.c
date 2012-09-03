@@ -351,7 +351,9 @@ parse_startup_opt (int key, char *arg, struct argp_state *state)
 int
 main (int argc, char **argv)
 {
+  pthread_t thread;
   error_t err;
+
   struct argp common_argp = { common_options, parse_common_opt };
   const struct argp_child argp_children[] =
     { {&common_argp}, {&netfs_std_startup_argp}, {0} };
@@ -391,8 +393,22 @@ main (int argc, char **argv)
   if (err)
     error (2, err, "mapping time");
 
-  cthread_detach (cthread_fork ((cthread_fn_t) timeout_service_thread, 0));
-  cthread_detach (cthread_fork ((cthread_fn_t) rpc_receive_thread, 0));
+  err = pthread_create (&thread, NULL, timeout_service_thread, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
+  err = pthread_create (&thread, NULL, rpc_receive_thread, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
   
   hostname = localhost ();
 

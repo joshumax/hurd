@@ -22,7 +22,7 @@
 #define __SOCK_H__
 
 #include <assert.h>
-#include <cthreads.h>		/* For mutexes */
+#include <pthread.h>		/* For mutexes */
 #include <sys/mman.h>
 #include <sys/types.h>
 
@@ -42,7 +42,7 @@ struct sock_user
 struct sock
 {
   int refs;
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* What kind of socket this is.  */
   struct pipe_class *pipe_class;
@@ -118,11 +118,11 @@ void _sock_norefs (struct sock *sock);
 static inline void __attribute__ ((unused))
 sock_deref (struct sock *sock)
 {
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   if (--sock->refs == 0)
     _sock_norefs (sock);
   else
-    mutex_unlock (&sock->lock);
+    pthread_mutex_unlock (&sock->lock);
 }
 
 /* Return a new socket just like TEMPLATE in SOCK.  */

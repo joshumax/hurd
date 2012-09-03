@@ -33,8 +33,8 @@ netfs_S_file_syncfs (struct protid *user,
   
   /* Translators not yet supported by netfs. XXX */
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_syncfs (user->user, wait);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

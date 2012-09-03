@@ -31,7 +31,8 @@ MIGSFLAGS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
 MIGSTUBS = processServer.o notifyServer.o \
 	ourmsgUser.o proc_excUser.o proc_excServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
-HURDLIBS=threads ihash ports shouldbeinlibc
+HURDLIBS = ihash ports shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf
 

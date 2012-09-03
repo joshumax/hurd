@@ -41,7 +41,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
     return EOPNOTSUPP;
 
   /* Acquire the right to meddle with the pagemap */
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seqno);
 
   /* sanity checks -- we don't do multi-page requests yet.  */
@@ -107,7 +107,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
 
   /* Let someone else in.  */
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 
   if (!doread)
     goto allow_term_out;
@@ -121,10 +121,10 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   memory_object_data_supply (p->memobjcntl, offset, page, length, 1,
 			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE, 0,
 			     MACH_PORT_NULL);
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_mark_object_error (p, offset, length, 0);
   _pager_allow_termination (p);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 
@@ -132,9 +132,9 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   memory_object_data_error (p->memobjcntl, offset, length, EIO);
   _pager_mark_object_error (p, offset, length, EIO);
  allow_term_out:
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_allow_termination (p);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 
@@ -142,7 +142,7 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   _pager_allow_termination (p);
  release_out:
   _pager_release_seqno (p, seqno);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 }

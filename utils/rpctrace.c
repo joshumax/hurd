@@ -1437,7 +1437,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 }
 
 /* This function runs in the tracing thread and drives all the tracing.  */
-static any_t
+static void *
 trace_thread_function (void *arg)
 {
   struct port_bucket *const bucket = arg;
@@ -1716,6 +1716,7 @@ main (int argc, char **argv, char **envp)
   bool nostdinc = FALSE;
   const char *outfile = 0;
   char **cmd_argv = 0;
+  pthread_t thread;
   error_t err;
 
   /* Parse our options...  */
@@ -1809,7 +1810,14 @@ main (int argc, char **argv, char **envp)
      them, and interpose on the ports they carry.  The access to the
      `traced_info' and ihash data structures is all single-threaded,
      happening only in this new thread.  */
-  cthread_detach (cthread_fork (trace_thread_function, traced_bucket));
+  err = pthread_create (&thread, NULL, trace_thread_function, traced_bucket);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   /* Run the program on the command line and wait for it to die.
      The other thread does all the tracing and interposing.  */

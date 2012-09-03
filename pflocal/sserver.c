@@ -18,7 +18,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <cthreads.h>
+#include <pthread.h>
+#include <stdio.h>
 
 #include <hurd/ports.h>
 
@@ -29,7 +30,7 @@ struct port_bucket *sock_port_bucket;
 
 /* True if there are threads servicing sock requests.  */
 static int sock_server_active = 0;
-static spin_lock_t sock_server_active_lock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t sock_server_active_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* A demuxer for socket operations.  */
 static int
@@ -45,8 +46,8 @@ sock_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 }
 
 /* Handle socket requests while there are sockets around.  */
-static void
-handle_sock_requests ()
+static void *
+handle_sock_requests (void *unused)
 {
   while (ports_count_bucket (sock_port_bucket) > 0)
     {
@@ -56,12 +57,14 @@ handle_sock_requests ()
     }
 
   /* The last service thread is about to exist; make this known.  */
-  spin_lock (&sock_server_active_lock);
+  pthread_spin_lock (&sock_server_active_lock);
   sock_server_active = 0;
-  spin_unlock (&sock_server_active_lock);
+  pthread_spin_unlock (&sock_server_active_lock);
 
   /* Let the whole joke start once again.  */
   ports_enable_bucket (sock_port_bucket);
+
+  return NULL;
 }
 
 /* Makes sure there are some request threads for sock operations, and starts
@@ -71,14 +74,23 @@ handle_sock_requests ()
 void
 ensure_sock_server ()
 {
-  spin_lock (&sock_server_active_lock);
+  pthread_t thread;
+  error_t err;
+
+  pthread_spin_lock (&sock_server_active_lock);
   if (sock_server_active)
-    spin_unlock (&sock_server_active_lock);
+    pthread_spin_unlock (&sock_server_active_lock);
   else
     {
       sock_server_active = 1;
-      spin_unlock (&sock_server_active_lock);
-      cthread_detach (cthread_fork ((cthread_fn_t)handle_sock_requests,
-				    (any_t)0));
+      pthread_spin_unlock (&sock_server_active_lock);
+      err = pthread_create (&thread, NULL, handle_sock_requests, NULL);
+      if (!err)
+	pthread_detach (thread);
+      else
+	{
+	  errno = err;
+	  perror ("pthread_create");
+	}
     }
 }

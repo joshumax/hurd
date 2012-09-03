@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "cons.h"
 #include "priv.h"
@@ -50,7 +51,7 @@ _cons_vcons_input (vcons_t vcons, char *buf, size_t size)
 error_t
 cons_vcons_input (vcons_t vcons, char *buf, size_t size)
 {
-  mutex_lock (&vcons->lock);
+  pthread_mutex_lock (&vcons->lock);
 
   _cons_vcons_console_event (vcons, CONS_EVT_KEYPRESS);
   
@@ -59,6 +60,6 @@ cons_vcons_input (vcons_t vcons, char *buf, size_t size)
 
   _cons_vcons_input (vcons, buf, size);
 
-  mutex_unlock (&vcons->lock);
+  pthread_mutex_unlock (&vcons->lock);
   return 0;
 }

@@ -23,8 +23,6 @@
 #include <string.h>
 #include <argp.h>
 
-#include <cthreads.h>
-
 #include "driver.h"
 #include "timer.h"
 

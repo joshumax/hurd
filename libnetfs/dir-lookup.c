@@ -69,13 +69,13 @@ netfs_S_dir_lookup (struct protid *diruser,
       /* Set things up in the state expected by the code from gotit: on. */
       dnp = 0;
       np = diruser->po->np;
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       netfs_nref (np);
       goto gotit;
     }
 
   dnp = diruser->po->np;
-  mutex_lock (&dnp->lock);
+  pthread_mutex_lock (&dnp->lock);
 
   netfs_nref (dnp);		/* acquire a reference for later netfs_nput */
 
@@ -120,7 +120,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    if (! lastcomp)
 	      strcpy (retry_name, nextname);
 	    error = 0;
-	    mutex_unlock (&dnp->lock);
+	    pthread_mutex_unlock (&dnp->lock);
 	    goto out;
 	  }
 	else if (diruser->po->root_parent != MACH_PORT_NULL)
@@ -134,7 +134,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    if (!lastcomp)
 	      strcpy (retry_name, nextname);
 	    error = 0;
-	    mutex_unlock (&dnp->lock);
+	    pthread_mutex_unlock (&dnp->lock);
 	    goto out;
 	  }
 	else
@@ -159,7 +159,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	{
 	  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	  mode |= S_IFREG;
-	  mutex_lock (&dnp->lock);
+	  pthread_mutex_lock (&dnp->lock);
 	  error = netfs_attempt_create_file (diruser->user, dnp,
 					     filename, mode, &np);
 
@@ -168,7 +168,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	     EXCL, that's fine; otherwise, we have to retry the lookup. */
 	  if (error == EEXIST && !excl)
 	    {
-	      mutex_lock (&dnp->lock);
+	      pthread_mutex_lock (&dnp->lock);
 	      goto retry_lookup;
 	    }
 
@@ -338,7 +338,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      create = 0;
 	    }
 	  netfs_nput (np);
-	  mutex_lock (&dnp->lock);
+	  pthread_mutex_lock (&dnp->lock);
 	  np = 0;
 	}
       else

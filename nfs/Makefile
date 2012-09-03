@@ -26,6 +26,7 @@ target = nfs
 SRCS = ops.c rpc.c mount.c nfs.c cache.c consts.c main.c name-cache.c \
        storage-info.c
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf

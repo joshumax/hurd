@@ -67,10 +67,10 @@ diskfs_set_statfs (struct statfs *st)
   st->f_bsize = vm_page_size;
   st->f_blocks = tmpfs_page_limit;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   st->f_files = num_files;
   pages = round_page (tmpfs_space_used) / vm_page_size;
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   st->f_bfree = pages < tmpfs_page_limit ? tmpfs_page_limit - pages : 0;
   st->f_bavail = st->f_bfree;
@@ -293,8 +293,8 @@ diskfs_append_args (char **argz, size_t *argz_len)
 
 /* Handling of operations for the ports in diskfs_port_bucket, calling 
  * demuxer for each incoming message */
-static any_t
-diskfs_thread_function (any_t demuxer)
+static void *
+diskfs_thread_function (void *demuxer)
 {
   error_t err;
 
@@ -311,7 +311,7 @@ diskfs_thread_function (any_t demuxer)
 
   exit (0);
   /* NOTREACHED */
-  return (any_t) 0;
+  return NULL;
 }
 
 
@@ -338,6 +338,7 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap, realnode, host_priv;
+  pthread_t pthread_id;
   struct stat st;
 
   err = argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, NULL);
@@ -378,8 +379,15 @@ main (int argc, char **argv)
     error (4, err, "cannot create root directory");
 
   /* Like diskfs_spawn_first_thread. But do it manually, without timeout */
-  cthread_detach (cthread_fork ((cthread_fn_t) diskfs_thread_function,
-				(any_t) diskfs_demuxer));
+  err = pthread_create (&pthread_id, NULL, diskfs_thread_function,
+			diskfs_demuxer);
+  if (!err)
+    pthread_detach (pthread_id);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
@@ -429,10 +437,10 @@ main (int argc, char **argv)
   /* We must keep the REALNODE send right to remain the active
      translator for the underlying node.  */
 
-  mutex_unlock (&diskfs_root_node->lock);
+  pthread_mutex_unlock (&diskfs_root_node->lock);
 
   /* and so we die, leaving others to do the real work.  */
-  cthread_exit (0);
+  pthread_exit (NULL);
   /* NOTREACHED */
   return 0;
 }

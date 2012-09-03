@@ -21,7 +21,7 @@
 
 #include "netfs.h"
 
-spin_lock_t netfs_node_refcnt_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t netfs_node_refcnt_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 struct node *netfs_root_node = 0;
 struct port_bucket *netfs_port_bucket = 0;

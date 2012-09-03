@@ -193,7 +193,7 @@ main (int argc, char **argv)
     ext2_panic ("can't get root: %s", strerror (err));
   else if ((diskfs_root_node->dn_stat.st_mode & S_IFMT) == 0)
     ext2_panic ("no root node!");
-  mutex_unlock (&diskfs_root_node->lock);
+  pthread_mutex_unlock (&diskfs_root_node->lock);
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
@@ -201,7 +201,7 @@ main (int argc, char **argv)
   diskfs_startup_diskfs (bootstrap, 0);
 
   /* and so we die, leaving others to do the real work.  */
-  cthread_exit (0);
+  pthread_exit (NULL);
   /* NOTREACHED */
   return 0;
 }

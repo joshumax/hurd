@@ -24,7 +24,7 @@
 #define __TREEFS_H__
 
 #include <errno.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <assert.h>
 #include <features.h>
 
@@ -100,7 +100,7 @@ struct treefs_node
   char *passive_trans;
   struct lock_box user_lock;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
   unsigned refs, weak_refs;
 
   /* Node ops */
@@ -123,7 +123,7 @@ struct treefs_node_list
 struct treefs_fsys
 {
   struct port_info pi;
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* The root node in this filesystem.  */
   struct treefs_node *root;
@@ -242,7 +242,7 @@ void treefs_hooks_set (treefs_hook_vector_t hooks,
 /* ---------------------------------------------------------------- */
 /* Reference counting function (largely stolen from diskfs).  */
 
-extern spin_lock_t treefs_node_refcnt_lock;
+extern pthread_spinlock_t treefs_node_refcnt_lock;
 
 extern void treefs_node_ref (struct treefs_node *node);
 extern void treefs_node_release (struct treefs_node *node);
@@ -259,15 +259,15 @@ TREEFS_EI void
 treefs_node_ref (struct treefs_node *node)
 {
   int new_ref;
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   node->refs++;
   new_ref = (node->refs == 1);
-  spin_unlock (&treefs_node_refcnt_lock);
+  pthread_spin_unlock (&treefs_node_refcnt_lock);
   if (new_ref)
     {
-      mutex_lock (&node->lock);
+      pthread_mutex_lock (&node->lock);
       treefs_node_new_refs (node);
-      mutex_unlock (&node->lock);
+      pthread_mutex_unlock (&node->lock);
     }
 }
 
@@ -280,14 +280,14 @@ treefs_node_release (struct treefs_node *node)
   int tried_drop_weak_refs = 0;
 
  loop:
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   assert (node->refs);
   node->refs--;
   if (node->refs + node->weak_refs == 0)
     treefs_node_drop (node);
   else if (node->refs == 0 && !tried_drop_weak_refs)
     {
-      spin_unlock (&treefs_node_refcnt_lock);
+      pthread_spin_unlock (&treefs_node_refcnt_lock);
       treefs_node_lost_refs (node);
       if (treefs_node_unlinked (node))
 	{
@@ -297,9 +297,9 @@ treefs_node_release (struct treefs_node *node)
 	     routine, which might result in further recursive calls to
 	     the ref-counting system.  So we have to reacquire our
 	     reference around the call to forestall disaster. */
-	  spin_unlock (&treefs_node_refcnt_lock);
+	  pthread_spin_unlock (&treefs_node_refcnt_lock);
 	  node->refs++;
-	  spin_unlock (&treefs_node_refcnt_lock);
+	  pthread_spin_unlock (&treefs_node_refcnt_lock);
 
 	  treefs_node_try_dropping_weak_refs (node);
 
@@ -312,8 +312,8 @@ treefs_node_release (struct treefs_node *node)
 	}
     }
   else
-    spin_unlock (&treefs_node_refcnt_lock);
-  mutex_unlock (&node->lock);
+    pthread_spin_unlock (&treefs_node_refcnt_lock);
+  pthread_mutex_unlock (&node->lock);
 }
 
 /* Release a hard reference on NODE.  If NODE is locked by anyone, then
@@ -327,61 +327,61 @@ treefs_node_unref (struct treefs_node *node)
   int tried_drop_weak_refs = 0;
 
  loop:
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   assert (node->refs);
   node->refs--;
   if (node->refs + node->weak_refs == 0)
     {
-      mutex_lock (&node->lock);
+      pthread_mutex_lock (&node->lock);
       treefs_node_drop (node);
     }
   else if (node->refs == 0)
     {
-      mutex_lock (&node->lock);
-      spin_unlock (&treefs_node_refcnt_lock);
+      pthread_mutex_lock (&node->lock);
+      pthread_spin_unlock (&treefs_node_refcnt_lock);
       treefs_node_lost_refs (node);
       if (treefs_node_unlinked(node) && !tried_drop_weak_refs)
 	{
 	  /* Same issue here as in nodeut; see that for explanation */
-	  spin_unlock (&treefs_node_refcnt_lock);
+	  pthread_spin_unlock (&treefs_node_refcnt_lock);
 	  node->refs++;
-	  spin_unlock (&treefs_node_refcnt_lock);
+	  pthread_spin_unlock (&treefs_node_refcnt_lock);
 
 	  treefs_node_try_dropping_weak_refs (node);
 	  tried_drop_weak_refs = 1;
 
 	  /* Now we can drop the reference back... */
-	  mutex_unlock (&node->lock);
+	  pthread_mutex_unlock (&node->lock);
 	  goto loop;
 	}
-      mutex_unlock (&node->lock);
+      pthread_mutex_unlock (&node->lock);
     }
   else
-    spin_unlock (&treefs_node_refcnt_lock);
+    pthread_spin_unlock (&treefs_node_refcnt_lock);
 }
 
 /* Add a weak reference to a node. */
 TREEFS_EI void
 treefs_node_ref_weak (struct treefs_node *node)
 {
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   node->weak_refs++;
-  spin_unlock (&treefs_node_refcnt_lock);
+  pthread_spin_unlock (&treefs_node_refcnt_lock);
 }
 
 /* Unlock node NODE and release a weak reference */
 TREEFS_EI void
 treefs_node_release_weak (struct treefs_node *node)
 {
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   assert (node->weak_refs);
   node->weak_refs--;
   if (node->refs + node->weak_refs == 0)
     treefs_node_drop (node);
   else
     {
-      spin_unlock (&treefs_node_refcnt_lock);
-      mutex_unlock (&node->lock);
+      pthread_spin_unlock (&treefs_node_refcnt_lock);
+      pthread_mutex_unlock (&node->lock);
     }
 }
 
@@ -391,16 +391,16 @@ treefs_node_release_weak (struct treefs_node *node)
 TREEFS_EI void
 treefs_node_unref_weak (struct treefs_node *node)
 {
-  spin_lock (&treefs_node_refcnt_lock);
+  pthread_spin_lock (&treefs_node_refcnt_lock);
   assert (node->weak_refs);
   node->weak_refs--;
   if (node->refs + node->weak_refs == 0)
     {
-      mutex_lock (&node->lock);
+      pthread_mutex_lock (&node->lock);
       treefs_node_drop (node);
     }
   else
-    spin_unlock (&treefs_node_refcnt_lock);
+    pthread_spin_unlock (&treefs_node_refcnt_lock);
 }
 #endif /* Use extern inlines.  */
 

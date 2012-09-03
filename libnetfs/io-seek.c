@@ -43,13 +43,13 @@ netfs_S_io_seek (struct protid *user,
         struct node *np;
 
         np = user->po->np;
-        mutex_lock (&np->lock);
+        pthread_mutex_lock (&np->lock);
 
         err = netfs_validate_stat (np, user->user);
         if (!err)
 	  offset += np->nn_stat.st_size;
 
-        mutex_unlock (&np->lock);
+        pthread_mutex_unlock (&np->lock);
       }
     case SEEK_SET:
     check:

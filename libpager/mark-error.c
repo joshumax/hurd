@@ -103,7 +103,7 @@ pager_get_error (struct pager *p, vm_address_t addr)
 {
   error_t err;
   
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
 
   addr /= vm_page_size;
 
@@ -116,7 +116,7 @@ pager_get_error (struct pager *p, vm_address_t addr)
   if (! err)
     err = _pager_page_errors[PM_ERROR(p->pagemap[addr])];
 
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 
   return err;
 }

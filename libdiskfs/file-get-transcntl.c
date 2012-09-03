@@ -32,7 +32,7 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   error = fshelp_isowner (&np->dn_stat, cred->user);
   if (!error)
@@ -42,7 +42,7 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
   if (!error)
     *ctltype = MACH_MSG_TYPE_MOVE_SEND;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   return error;
 }

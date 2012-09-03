@@ -29,16 +29,16 @@ diskfs_S_io_get_conch (struct protid *cred)
   
   np = cred->po->np;
   
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if (!cred->mapped)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EINVAL;
     }
 
   iohelp_handle_io_get_conch (&np->conch, cred, cred->mapped);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }

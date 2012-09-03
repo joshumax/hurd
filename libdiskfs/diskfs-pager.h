@@ -22,10 +22,12 @@
 #include <hurd/pager.h>
 #include <hurd/ports.h>
 #include <setjmp.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
+
+extern __thread struct disk_image_user *diskfs_exception_diu;
 
 /* Start a pager for the whole disk, and store it in DISKFS_DISK_PAGER,
    preparing a signal preemptor so that the `diskfs_catch_exception' macro
@@ -51,10 +53,10 @@ struct disk_image_user
 ({									      \
     struct disk_image_user *diu = alloca (sizeof *diu);			      \
     error_t err;							      \
-    diu->next = (void *) cthread_data (cthread_self ());		      \
+    diu->next = diskfs_exception_diu;					      \
     err = setjmp (diu->env);						      \
     if (err == 0)							      \
-      cthread_set_data (cthread_self (), diu);				      \
+      diskfs_exception_diu = diu;					      \
     err;								      \
 })
 
@@ -62,8 +64,8 @@ struct disk_image_user
    Any unexpected fault hereafter will crash the program.  */
 #define diskfs_end_catch_exception()					      \
 ({									      \
-    struct disk_image_user *diu = (void *) cthread_data (cthread_self ());    \
-    cthread_set_data (cthread_self (), diu->next);			      \
+    struct disk_image_user *diu = diskfs_exception_diu; 		      \
+    diskfs_exception_diu = diu->next;					      \
 })
 
 

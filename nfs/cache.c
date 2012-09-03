@@ -21,6 +21,7 @@
 #include "nfs.h"
 
 #include <string.h>
+#include <stdio.h>
 #include <netinet/in.h>
 
 /* Hash table containing all the nodes currently active.  XXX Was 512,
@@ -59,7 +60,7 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
 
   h = hash (p, len);
 
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   for (np = nodehash[h]; np; np = np->nn->hnext)
     {
       if (np->nn->handle.size != len
@@ -67,8 +68,8 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
 	continue;
       
       np->references++;
-      spin_unlock (&netfs_node_refcnt_lock);
-      mutex_lock (&np->lock);
+      pthread_spin_unlock (&netfs_node_refcnt_lock);
+      pthread_mutex_lock (&np->lock);
       *npp = np;
       return;
     }
@@ -85,14 +86,14 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
   nn->dead_name = 0;
   
   np = netfs_make_node (nn);
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   nn->hnext = nodehash[h];
   if (nn->hnext)
     nn->hnext->nn->hprevp = &nn->hnext;
   nn->hprevp = &nodehash[h];
   nodehash[h] = np;
 
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
   
   *npp = np;
 }
@@ -106,12 +107,12 @@ struct fnd
 
 /* Worker function to delete nodes that don't have any more local
    references or links.  */
-any_t
-forked_node_delete (any_t arg)
+void *
+forked_node_delete (void *arg)
 {
   struct fnd *args = arg;
   
-  mutex_lock (&args->dir->lock);
+  pthread_mutex_lock (&args->dir->lock);
   netfs_attempt_unlink ((struct iouser *)-1, args->dir, args->name);
   netfs_nput (args->dir);
   free (args->name);
@@ -129,12 +130,14 @@ netfs_node_norefs (struct node *np)
   if (np->nn->dead_dir)
     {
       struct fnd *args;
+      pthread_t thread;
+      error_t err;
 
       args = malloc (sizeof (struct fnd));
       assert (args);
 
       np->references++;
-      spin_unlock (&netfs_node_refcnt_lock);
+      pthread_spin_unlock (&netfs_node_refcnt_lock);
 
       args->dir = np->nn->dead_dir;
       args->name = np->nn->dead_name;
@@ -145,10 +148,17 @@ netfs_node_norefs (struct node *np)
       /* Do this in a separate thread so that we don't wait for it; it
 	 acquires a lock on the dir, which we are not allowed to
 	 do.  */
-      cthread_detach (cthread_fork (forked_node_delete, (any_t) args));
+      err = pthread_create (&thread, NULL, forked_node_delete, args);
+      if (!err)
+	pthread_detach (thread);
+      else
+	{
+	  errno = err;
+	  perror ("pthread_create");
+	}
 
       /* Caller expects us to leave this locked... */
-      spin_lock (&netfs_node_refcnt_lock);
+      pthread_spin_lock (&netfs_node_refcnt_lock);
     }
   else
     {
@@ -180,7 +190,7 @@ recache_handle (int *p, struct node *np)
     }
   
   /* Unlink it */
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   *np->nn->hprevp = np->nn->hnext;
   if (np->nn->hnext)
     np->nn->hnext->nn->hprevp = np->nn->hprevp;
@@ -196,7 +206,7 @@ recache_handle (int *p, struct node *np)
     np->nn->hnext->nn->hprevp = &np->nn->hnext;
   np->nn->hprevp = &nodehash[h];
   
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
   return p + len / sizeof (int);
 }
 

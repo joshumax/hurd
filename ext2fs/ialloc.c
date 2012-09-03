@@ -62,12 +62,12 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   ext2_debug ("freeing inode %u", inum);
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   if (inum < EXT2_FIRST_INO (sblock) || inum > sblock->s_inodes_count)
     {
       ext2_error ("reserved inode or nonexistent inode: %Ld", inum);
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return;
     }
 
@@ -92,7 +92,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
     }
 
   sblock_dirty = 1;
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
   alloc_sync(0);
 }
 
@@ -116,7 +116,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
 repeat:
   gdp = NULL;
@@ -209,7 +209,7 @@ repeat:
 
   if (!gdp)
     {
-      spin_unlock (&global_lock);
+      pthread_spin_unlock (&global_lock);
       return 0;
     }
 
@@ -254,7 +254,7 @@ repeat:
   sblock_dirty = 1;
 
  sync_out:
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
   alloc_sync (0);
 
   return inum;
@@ -323,12 +323,12 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   /*
    * Set up a new generation number for this inode.
    */
-  spin_lock (&generation_lock);
+  pthread_spin_lock (&generation_lock);
   sex = diskfs_mtime->seconds;
   if (++next_generation < (u_long)sex)
     next_generation = sex;
   st->st_gen = next_generation;
-  spin_unlock (&generation_lock);
+  pthread_spin_unlock (&generation_lock);
 
   alloc_sync (np);
 
@@ -346,7 +346,7 @@ ext2_count_free_inodes ()
   struct ext2_group_desc *gdp;
   int i;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -363,7 +363,7 @@ ext2_count_free_inodes ()
     }
   ext2_debug ("stored = %u, computed = %lu, %lu",
 	      sblock->s_free_inodes_count, desc_count, bitmap_count);
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
   return desc_count;
 #else
   return sblock->s_free_inodes_count;
@@ -379,7 +379,7 @@ ext2_check_inodes_bitmap ()
   struct ext2_group_desc *gdp;
   unsigned long desc_count, bitmap_count, x;
 
-  spin_lock (&global_lock);
+  pthread_spin_lock (&global_lock);
 
   desc_count = 0;
   bitmap_count = 0;
@@ -401,5 +401,5 @@ ext2_check_inodes_bitmap ()
 		"stored = %lu, counted = %lu",
 		(unsigned long) sblock->s_free_inodes_count, bitmap_count);
 
-  spin_unlock (&global_lock);
+  pthread_spin_unlock (&global_lock);
 }

@@ -42,16 +42,16 @@ message_demuxer (mach_msg_header_t *inp,
   extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
   int status;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   status = (process_server (inp, outp)
 	    || notify_server (inp, outp)
 	    || ports_interrupt_server (inp, outp)
 	    || proc_exc_server (inp, outp));
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return status;
 }
 
-struct mutex global_lock = MUTEX_INITIALIZER;
+pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int
 main (int argc, char **argv, char **envp)

@@ -25,7 +25,7 @@
 void
 pokel_init (struct pokel *pokel, struct pager *pager, void *image)
 {
-  pokel->lock = SPIN_LOCK_INITIALIZER;
+  pokel->lock = PTHREAD_SPINLOCK_INITIALIZER;
   pokel->pokes = NULL;
   pokel->free_pokes = NULL;
   pokel->pager = pager;
@@ -59,7 +59,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
 
   ext2_debug ("adding %p[%ul] (range 0x%x to 0x%x)", loc, length, offset, end);
 
-  spin_lock (&pokel->lock);
+  pthread_spin_lock (&pokel->lock);
 
   pl = pokel->pokes;
   while (pl != NULL)
@@ -97,7 +97,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       pokel->pokes = pl;
     }
 
-  spin_unlock (&pokel->lock);
+  pthread_spin_unlock (&pokel->lock);
 }
 
 /* Move all pending pokes from POKEL into its free list.  If SYNC is true,
@@ -107,10 +107,10 @@ _pokel_exec (struct pokel *pokel, int sync, int wait)
 {
   struct poke *pl, *pokes, *last = NULL;
   
-  spin_lock (&pokel->lock);
+  pthread_spin_lock (&pokel->lock);
   pokes = pokel->pokes;
   pokel->pokes = NULL;
-  spin_unlock (&pokel->lock);
+  pthread_spin_unlock (&pokel->lock);
 
   for (pl = pokes; pl; last = pl, pl = pl->next)
     if (sync)
@@ -121,10 +121,10 @@ _pokel_exec (struct pokel *pokel, int sync, int wait)
 
   if (last)
     {
-      spin_lock (&pokel->lock);
+      pthread_spin_lock (&pokel->lock);
       last->next = pokel->free_pokes;
       pokel->free_pokes = pokes;
-      spin_unlock (&pokel->lock);
+      pthread_spin_unlock (&pokel->lock);
     }
 }
 
@@ -152,13 +152,13 @@ pokel_inherit (struct pokel *pokel, struct pokel *from)
   assert (pokel->image == from->image);
 
   /* Take all pokes from FROM...  */
-  spin_lock (&from->lock);
+  pthread_spin_lock (&from->lock);
   pokes = from->pokes;
   from->pokes = NULL;
-  spin_unlock (&from->lock);
+  pthread_spin_unlock (&from->lock);
 
   /* And put them in POKEL.  */
-  spin_lock (&pokel->lock);
+  pthread_spin_lock (&pokel->lock);
   last = pokel->pokes;
   if (last)
     {
@@ -168,5 +168,5 @@ pokel_inherit (struct pokel *pokel, struct pokel *from)
     }
   else
     pokel->pokes = pokes;
-  spin_unlock (&pokel->lock);
+  pthread_spin_unlock (&pokel->lock);
 }

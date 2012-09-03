@@ -35,9 +35,10 @@
 #include <rpc/rpc_msg.h>
 #undef malloc
 
-void
-server_loop (int fd)
+void *
+server_loop (void *arg)
 {
+  int fd = (int) arg;
   char buf[MAXIOSIZE];
   int xid;
   int *p, *r;

@@ -224,11 +224,11 @@ force_delayed_copies (struct node *node, off_t length)
 {
   struct pager *pager;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (pager)
     {
@@ -254,11 +254,11 @@ enable_delayed_copies (struct node *node)
 {
   struct pager *pager;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (pager)
     {
@@ -317,7 +317,7 @@ diskfs_truncate (struct node *node, off_t length)
 
   force_delayed_copies (node, length);
 
-  rwlock_writer_lock (&node->dn->alloc_lock);
+  pthread_rwlock_wrlock (&node->dn->alloc_lock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
@@ -363,7 +363,7 @@ diskfs_truncate (struct node *node, off_t length)
   /* Now we can permit delayed copies again. */
   enable_delayed_copies (node);
 
-  rwlock_writer_unlock (&node->dn->alloc_lock);
+  pthread_rwlock_unlock (&node->dn->alloc_lock);
 
   return err;
 }

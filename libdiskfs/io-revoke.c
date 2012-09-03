@@ -42,11 +42,11 @@ diskfs_S_io_revoke (struct protid *cred)
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   err = fshelp_isowner (&np->dn_stat, cred->user);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (err)
     return err;

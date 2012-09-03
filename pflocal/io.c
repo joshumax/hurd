@@ -186,14 +186,14 @@ S_io_select (struct sock_user *user,
   *select_type &= SELECT_READ | SELECT_WRITE;
 
   sock = user->sock;
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
 
   if (sock->listen_queue)
     /* Sock is used for accepting connections, not I/O.  For these, you can
        only select for reading, which will block until a connection request
        comes along.  */
     {
-      mutex_unlock (&sock->lock);
+      pthread_mutex_unlock (&sock->lock);
 
       *select_type &= SELECT_READ;
 
@@ -233,17 +233,17 @@ S_io_select (struct sock_user *user,
 	  pipe_acquire_reader (read_pipe);
 	  if (pipe_wait_readable (read_pipe, 1, 1) != EWOULDBLOCK)
 	    ready |= SELECT_READ; /* Data immediately readable (or error). */
-	  mutex_unlock (&read_pipe->lock);
+	  pthread_mutex_unlock (&read_pipe->lock);
 	}
       if (valid & SELECT_WRITE)
 	{
 	  pipe_acquire_writer (write_pipe);
 	  if (pipe_wait_writable (write_pipe, 1) != EWOULDBLOCK)
 	    ready |= SELECT_WRITE; /* Data immediately writable (or error). */
-	  mutex_unlock (&write_pipe->lock);
+	  pthread_mutex_unlock (&write_pipe->lock);
 	}
 
-      mutex_unlock (&sock->lock);
+      pthread_mutex_unlock (&sock->lock);
 
       if (ready)
 	/* No need to block, we've already got some results.  */
@@ -294,30 +294,30 @@ S_io_stat (struct sock_user *user, struct stat *st)
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
 
-  mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
+  pthread_mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
   rpipe = sock->read_pipe;
   wpipe = sock->write_pipe;
 
   if (rpipe)
     {
-      mutex_lock (&rpipe->lock);
+      pthread_mutex_lock (&rpipe->lock);
       copy_time (&rpipe->read_time, &st->st_atim.tv_sec, &st->st_atim.tv_nsec);
       /* This seems useful.  */
       st->st_size = pipe_readable (rpipe, 1);
-      mutex_unlock (&rpipe->lock);
+      pthread_mutex_unlock (&rpipe->lock);
     }
 
   if (wpipe)
     {
-      mutex_lock (&wpipe->lock);
+      pthread_mutex_lock (&wpipe->lock);
       copy_time (&wpipe->write_time, &st->st_mtim.tv_sec, &st->st_mtim.tv_nsec);
-      mutex_unlock (&wpipe->lock);
+      pthread_mutex_unlock (&wpipe->lock);
     }
 
   copy_time (&sock->change_time, &st->st_ctim.tv_sec, &st->st_ctim.tv_nsec);
 
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return 0;
 }
@@ -343,12 +343,12 @@ S_io_set_all_openmodes (struct sock_user *user, int bits)
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&user->sock->lock);
   if (bits & O_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
   else
     user->sock->flags &= ~SOCK_NONBLOCK;
-  mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&user->sock->lock);
 
   return 0;
 }
@@ -359,10 +359,10 @@ S_io_set_some_openmodes (struct sock_user *user, int bits)
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&user->sock->lock);
   if (bits & O_NONBLOCK)
     user->sock->flags |= SOCK_NONBLOCK;
-  mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&user->sock->lock);
 
   return 0;
 }
@@ -373,10 +373,10 @@ S_io_clear_some_openmodes (struct sock_user *user, int bits)
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&user->sock->lock);
   if (bits & O_NONBLOCK)
     user->sock->flags &= ~SOCK_NONBLOCK;
-  mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&user->sock->lock);
 
   return 0;
 }
@@ -454,12 +454,12 @@ S_io_pathconf (struct sock_user *user, int name, int *value)
     return EOPNOTSUPP;
   else if (name == _PC_PIPE_BUF)
     {
-      mutex_lock (&user->sock->lock);
+      pthread_mutex_lock (&user->sock->lock);
       if (user->sock->write_pipe == NULL)
 	*value = 0;
       else
 	*value = user->sock->write_pipe->write_atomic;
-      mutex_unlock (&user->sock->lock);
+      pthread_mutex_unlock (&user->sock->lock);
       return 0;
     }
   else
@@ -481,13 +481,13 @@ S_io_identity (struct sock_user *user,
 
   if (server_id == MACH_PORT_NULL)
     {
-      static struct mutex server_id_lock = MUTEX_INITIALIZER;
+      static pthread_mutex_t server_id_lock = PTHREAD_MUTEX_INITIALIZER;
 
-      mutex_lock (&server_id_lock);
+      pthread_mutex_lock (&server_id_lock);
       if (server_id == MACH_PORT_NULL) /* Recheck with the lock held.  */
 	err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 				  &server_id);
-      mutex_unlock (&server_id_lock);
+      pthread_mutex_unlock (&server_id_lock);
 
       if (err)
 	return err;
@@ -495,11 +495,11 @@ S_io_identity (struct sock_user *user,
 
   sock = user->sock;
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   if (sock->id == MACH_PORT_NULL)
     err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 			      &sock->id);
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   if (! err)
     {

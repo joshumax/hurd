@@ -65,13 +65,13 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
   struct node *np;
   struct disknode *dn;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     if (np->cache_id == inum)
       {
         np->references++;
-        spin_unlock (&diskfs_node_refcnt_lock);
-        mutex_lock (&np->lock);
+        pthread_spin_unlock (&diskfs_node_refcnt_lock);
+        pthread_mutex_lock (&np->lock);
         *npp = np;
         return 0;
       }
@@ -80,7 +80,7 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
   dn = malloc (sizeof (struct disknode));
   if (! dn)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
   dn->pager = 0;
@@ -88,16 +88,16 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
   dn->last = 0;
   dn->length_of_chain = 0;
   dn->chain_complete = 0;
-  dn->chain_extension_lock = SPIN_LOCK_INITIALIZER;
-  rwlock_init (&dn->alloc_lock);
-  rwlock_init (&dn->dirent_lock);
+  dn->chain_extension_lock = PTHREAD_SPINLOCK_INITIALIZER;
+  pthread_rwlock_init (&dn->alloc_lock, NULL);
+  pthread_rwlock_init (&dn->dirent_lock, NULL);
   
   /* Create the new node.  */
   np = diskfs_make_node (dn);
   np->cache_id = inum;
   np->dn->inode = vi_lookup(inum);
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   
   /* Put NP in NODEHASH.  */
   dn->hnext = nodehash[INOHASH(inum)];
@@ -106,7 +106,7 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
   
   /* Get the contents of NP off disk.  */
   err = read_node (np, 0);
@@ -130,13 +130,13 @@ diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
   struct node *np;
   struct disknode *dn;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     if (np->cache_id == inum)
       {
         np->references++;
-        spin_unlock (&diskfs_node_refcnt_lock);
-        mutex_lock (&np->lock);
+        pthread_spin_unlock (&diskfs_node_refcnt_lock);
+        pthread_mutex_lock (&np->lock);
         *npp = np;
         return 0;
       }
@@ -145,7 +145,7 @@ diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
   dn = malloc (sizeof (struct disknode));
   if (! dn)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
   dn->pager = 0;
@@ -153,16 +153,16 @@ diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
   dn->last = 0;
   dn->length_of_chain = 0;
   dn->chain_complete = 0;
-  dn->chain_extension_lock = SPIN_LOCK_INITIALIZER;
-  rwlock_init (&dn->alloc_lock);
-  rwlock_init (&dn->dirent_lock);
+  dn->chain_extension_lock = PTHREAD_SPINLOCK_INITIALIZER;
+  pthread_rwlock_init (&dn->alloc_lock, NULL);
+  pthread_rwlock_init (&dn->dirent_lock, NULL);
   
   /* Create the new node.  */
   np = diskfs_make_node (dn);
   np->cache_id = inum;
   np->dn->inode = vi_lookup(inum);
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   
   /* Put NP in NODEHASH.  */
   dn->hnext = nodehash[INOHASH(inum)];
@@ -171,7 +171,7 @@ diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
   
   /* Get the contents of NP off disk.  */
   err = read_node (np, buf);
@@ -192,14 +192,14 @@ ifind (ino_t inum)
 {
   struct node *np;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
     {
       if (np->cache_id != inum)
         continue;
 
       assert (np->references);
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return np;
     }
   assert (0);
@@ -230,9 +230,9 @@ diskfs_node_norefs (struct node *np)
      all references to the node have been deleted.  */
   if (np->dn->dirnode)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       diskfs_nrele (np->dn->dirnode);
-      spin_lock (&diskfs_node_refcnt_lock);
+      pthread_spin_lock (&diskfs_node_refcnt_lock);
     }
 
   assert (!np->dn->pager);
@@ -336,7 +336,7 @@ read_node (struct node *np, vm_address_t buf)
   if (dp)
     dp->references++;
 
-  rwlock_reader_lock(&np->dn->dirent_lock);
+  pthread_rwlock_rdlock (&np->dn->dirent_lock);
 
   dn->start_cluster = (read_word (dr->first_cluster_high) << 16)
     + read_word (dr->first_cluster_low);
@@ -355,9 +355,9 @@ read_node (struct node *np, vm_address_t buf)
       else
 	{
 	  np->allocsize = 0;
-	  rwlock_reader_lock(&dn->alloc_lock);
+	  pthread_rwlock_rdlock (&dn->alloc_lock);
 	  err = fat_extend_chain (np, FAT_EOC, 0);
-	  rwlock_reader_unlock(&dn->alloc_lock);
+	  pthread_rwlock_unlock (&dn->alloc_lock);
 	  if (err)
 	    {
 	      if (our_buf && buf)
@@ -391,7 +391,7 @@ read_node (struct node *np, vm_address_t buf)
   st->st_blksize = bytes_per_sector;
   st->st_blocks = (st->st_size - 1) / bytes_per_sector + 1;
 
-  rwlock_reader_unlock(&np->dn->dirent_lock);
+  pthread_rwlock_unlock (&np->dn->dirent_lock);
 
   if (our_buf && buf)
     munmap ((caddr_t) buf, buflen);
@@ -482,14 +482,14 @@ write_node (struct node *np)
       dp = np->dn->dirnode;
       assert (dp);
 
-      mutex_lock (&dp->lock);
+      pthread_mutex_lock (&dp->lock);
 
       /* Map in the directory contents. */
       memobj = diskfs_get_filemap (dp, prot);
 
       if (memobj == MACH_PORT_NULL)
 	{
-	  mutex_unlock (&dp->lock);
+	  pthread_mutex_unlock (&dp->lock);
 	  /* FIXME: We shouldn't ignore this error.  */
 	  return;
 	}
@@ -501,7 +501,7 @@ write_node (struct node *np)
 
       dr = (struct dirrect *) (buf + vk.dir_offset);
 
-      rwlock_writer_lock(&np->dn->dirent_lock);
+      pthread_rwlock_wrlock (&np->dn->dirent_lock);
       write_word (dr->first_cluster_low, np->dn->start_cluster & 0xffff);
       write_word (dr->first_cluster_high, np->dn->start_cluster >> 16);
 
@@ -511,11 +511,11 @@ write_node (struct node *np)
       fat_from_epoch ((unsigned char *) &dr->write_date,
 		      (unsigned char *) &dr->write_time, &st->st_mtime);
 
-      rwlock_writer_unlock(&np->dn->dirent_lock);
+      pthread_rwlock_unlock (&np->dn->dirent_lock);
       np->dn_stat_dirty = 0;
 
       munmap ((caddr_t) buf, buflen);
-      mutex_unlock (&dp->lock);
+      pthread_mutex_unlock (&dp->lock);
     }
 }
 
@@ -548,7 +548,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   int n, num_nodes = 0;
   struct node *node, **node_list, **p;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
 
   /* We must copy everything from the hash table into another data structure
      to avoid running into any problems with the hash-table being modified
@@ -569,7 +569,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
         node->references++;
       }
 
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   p = node_list;
   while (num_nodes-- > 0)
@@ -577,9 +577,9 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
       node = *p++;
       if (!err)
         {
-          mutex_lock (&node->lock);
+          pthread_mutex_lock (&node->lock);
           err = (*fun)(node);
-          mutex_unlock (&node->lock);
+          pthread_mutex_unlock (&node->lock);
         }
       diskfs_nrele (node);
     }
@@ -700,7 +700,7 @@ diskfs_truncate (struct node *node, loff_t length)
       diskfs_file_update (node, 1);
     }
 
-  rwlock_writer_lock (&node->dn->alloc_lock);
+  pthread_rwlock_wrlock (&node->dn->alloc_lock);
 
   /* Update the size on disk; if we crash, we'll loose.  */
   node->dn_stat.st_size = length;
@@ -720,7 +720,7 @@ diskfs_truncate (struct node *node, loff_t length)
   node->dn_set_ctime = 1;
   node->dn_stat_dirty = 1;
 
-  rwlock_writer_unlock (&node->dn->alloc_lock);
+  pthread_rwlock_unlock (&node->dn->alloc_lock);
   
   return err;
 }

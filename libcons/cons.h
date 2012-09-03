@@ -65,7 +65,7 @@ struct vcons
   int id;
 
   /* The lock that protects all other members.  */
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* The FD of the input node.  */
   int input;
@@ -112,7 +112,7 @@ struct cons
 {
   /* Protects the cons structure and the linked list in
      VCONS_LIST.  */
-  struct mutex lock;
+  pthread_mutex_t lock;
   vcons_list_t vcons_list;
   vcons_list_t vcons_last;
 

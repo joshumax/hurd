@@ -30,11 +30,11 @@
 error_t
 _treefs_fsys_get_root (struct treefs_fsys *fsys, struct treefs_node **root)
 {
-  mutex_lock (&fsys->lock);
+  pthread_mutex_lock (&fsys->lock);
   *root = fsys->root;
   if (*root != NULL)
     treefs_node_ref (*root);
-  mutex_unlock (&fsys->lock);
+  pthread_mutex_unlock (&fsys->lock);
 
   return *root ? 0 : EOPNOTSUPP;
 }

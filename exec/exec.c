@@ -47,7 +47,7 @@ mach_port_t procserver;	/* Our proc port.  */
 mach_port_t *std_ports;
 int *std_ints;
 size_t std_nports, std_nints;
-struct rwlock std_lock = RWLOCK_INITIALIZER;
+pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 
 #ifdef	BFD
@@ -762,19 +762,19 @@ prepare (file_t file, struct execdata *e)
       if (e->cntl)
 	while (1)
 	  {
-	    spin_lock (&e->cntl->lock);
+	    pthread_spin_lock (&e->cntl->lock);
 	    switch (e->cntl->conch_status)
 	      {
 	      case USER_COULD_HAVE_CONCH:
 		e->cntl->conch_status = USER_HAS_CONCH;
 	      case USER_HAS_CONCH:
-		spin_unlock (&e->cntl->lock);
+		pthread_spin_unlock (&e->cntl->lock);
 		/* Break out of the loop.  */
 		break;
 	      case USER_RELEASE_CONCH:
 	      case USER_HAS_NOT_CONCH:
 	      default:		/* Oops.  */
-		spin_unlock (&e->cntl->lock);
+		pthread_spin_unlock (&e->cntl->lock);
 		e->error = io_get_conch (e->file);
 		if (e->error)
 		  return;
@@ -974,16 +974,16 @@ finish_mapping (struct execdata *e)
 {
   if (e->cntl != NULL)
     {
-      spin_lock (&e->cntl->lock);
+      pthread_spin_lock (&e->cntl->lock);
       if (e->cntl->conch_status == USER_RELEASE_CONCH)
 	{
-	  spin_unlock (&e->cntl->lock);
+	  pthread_spin_unlock (&e->cntl->lock);
 	  io_release_conch (e->file);
 	}
       else
 	{
 	  e->cntl->conch_status = USER_HAS_NOT_CONCH;
-	  spin_unlock (&e->cntl->lock);
+	  pthread_spin_unlock (&e->cntl->lock);
 	}
       munmap (e->cntl, vm_page_size);
       e->cntl = NULL;
@@ -1394,13 +1394,13 @@ do_exec (file_t file,
       if (e->error == ENOEXEC)
 	{
 	  /* See if it is a compressed image.  */
-	  static struct mutex lock = MUTEX_INITIALIZER;
+	  static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	  /* The gzip code is really cheesy, not even close to thread-safe.
 	     So we serialize all uses of it.  */
-	  mutex_lock (&lock);
+	  pthread_mutex_lock (&lock);
 	  e->error = 0;
 	  check_gzip (e);
-	  mutex_unlock (&lock);
+	  pthread_mutex_unlock (&lock);
 	  if (e->error == 0)
 	    /* The file was uncompressed into memory, and now E describes the
 	       uncompressed image rather than the actual file.  Check it again
@@ -1412,13 +1412,13 @@ do_exec (file_t file,
       if (e->error == ENOEXEC)
 	{
 	  /* See if it is a compressed image.  */
-	  static struct mutex lock = MUTEX_INITIALIZER;
+	  static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	  /* The bzip2 code is really cheesy, not even close to thread-safe.
 	     So we serialize all uses of it.  */
-	  mutex_lock (&lock);
+	  pthread_mutex_lock (&lock);
 	  e->error = 0;
 	  check_bzip2 (e);
-	  mutex_unlock (&lock);
+	  pthread_mutex_unlock (&lock);
 	  if (e->error == 0)
 	    /* The file was uncompressed into memory, and now E describes the
 	       uncompressed image rather than the actual file.  Check it again
@@ -1505,7 +1505,7 @@ do_exec (file_t file,
     newtask = oldtask;
 
 
-  rwlock_reader_lock (&std_lock);
+  pthread_rwlock_rdlock (&std_lock);
   {
     /* Store the data that we will give in response
        to the RPC on the new task's bootstrap port.  */
@@ -1550,7 +1550,7 @@ do_exec (file_t file,
     if (boot == NULL)
       {
       stdout:
-	rwlock_reader_unlock (&std_lock);
+	pthread_rwlock_unlock (&std_lock);
 	goto out;
       }
     bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
@@ -1675,7 +1675,7 @@ do_exec (file_t file,
 	&& boot->portarray[INIT_PORT_CWDIR] == MACH_PORT_NULL)
       use (INIT_PORT_CWDIR, std_ports[INIT_PORT_CWDIR], 1, 0);
   }
-  rwlock_reader_unlock (&std_lock);
+  pthread_rwlock_unlock (&std_lock);
 
 
   /* We have now concocted in BOOT the complete Hurd context (ports and
@@ -2192,7 +2192,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
       return err;
     }
 
-  rwlock_writer_lock (&std_lock);
+  pthread_rwlock_wrlock (&std_lock);
 
   if (std_ports)
     {
@@ -2211,7 +2211,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
   std_ints = ints;
   std_nints = nints;
 
-  rwlock_writer_unlock (&std_lock);
+  pthread_rwlock_unlock (&std_lock);
 
   return 0;
 }

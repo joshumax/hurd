@@ -23,7 +23,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <hurd/ihash.h>
-#include <cthreads.h>
 
 struct port_bucket *
 ports_create_bucket ()
@@ -50,10 +49,10 @@ ports_create_bucket ()
   hurd_ihash_init (&ret->htable, offsetof (struct port_info, hentry));
   ret->rpcs = ret->flags = ret->count = 0;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   ret->next = _ports_all_buckets;
   _ports_all_buckets = ret;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   return ret;
 }

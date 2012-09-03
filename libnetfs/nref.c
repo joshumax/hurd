@@ -23,7 +23,7 @@
 void
 netfs_nref (struct node *np)
 {
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   np->references++;
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
 }

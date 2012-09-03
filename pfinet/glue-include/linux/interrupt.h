@@ -14,13 +14,13 @@
 #define start_bh_atomic()	((void) 0)
 #define end_bh_atomic()		((void) 0)
 /*
-extern struct mutex net_bh_lock;
-#define start_bh_atomic()	__mutex_lock (&net_bh_lock)
-#define end_bh_atomic()		__mutex_unlock (&net_bh_lock)
+extern pthread_mutex_t net_bh_lock;
+#define start_bh_atomic()	pthread_mutex_lock (&net_bh_lock)
+#define end_bh_atomic()		pthread_mutex_unlock (&net_bh_lock)
 */
 
 /* See sched.c::net_bh_worker comments.  */
-extern struct condition net_bh_wakeup;
+extern pthread_cond_t net_bh_wakeup;
 
 #define NET_BH	0xb00bee51
 
@@ -30,7 +30,7 @@ static inline void
 mark_bh (int bh)
 {
   assert (bh == NET_BH);
-  condition_broadcast (&net_bh_wakeup);
+  pthread_cond_broadcast (&net_bh_wakeup);
 }
 
 void net_bh (void);

@@ -22,7 +22,7 @@
 #include <string.h>
 #include "isofs.h"
 
-spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t node2pagelock = PTHREAD_SPINLOCK_INITIALIZER;
 
 struct port_bucket *pager_bucket;
 
@@ -111,10 +111,10 @@ pager_clear_user_data (struct user_pager_info *upi)
 {
   if (upi->type == FILE_DATA)
     {
-      spin_lock (&node2pagelock);
+      pthread_spin_lock (&node2pagelock);
       if (upi->np->dn->fileinfo == upi)
 	upi->np->dn->fileinfo = 0;
-      spin_unlock (&node2pagelock);
+      pthread_spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
   free (upi);
@@ -159,7 +159,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  || S_ISREG (np->dn_stat.st_mode)
 	  || S_ISLNK (np->dn_stat.st_mode));
   
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   
   do
     if (!np->dn->fileinfo)
@@ -173,7 +173,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  {
 	    diskfs_nrele_light (np);
 	    free (upi);
-	    spin_unlock (&node2pagelock);
+	    pthread_spin_unlock (&node2pagelock);
 	    return MACH_PORT_NULL;
 	  }
 	np->dn->fileinfo = upi;
@@ -192,7 +192,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       }
   while (right == MACH_PORT_NULL);
   
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
   
   mach_port_insert_right (mach_task_self (), right, right, 
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -207,11 +207,11 @@ drop_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (upi)
     {
@@ -227,11 +227,11 @@ allow_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (upi)
     {

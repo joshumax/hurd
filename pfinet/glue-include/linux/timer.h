@@ -1,7 +1,7 @@
 #ifndef _HACK_TIMER_H_
 #define _HACK_TIMER_H_
 
-#include <cthreads.h>
+#include <pthread.h>
 
 enum tstate
 {

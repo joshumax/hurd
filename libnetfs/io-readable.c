@@ -35,7 +35,7 @@ netfs_S_io_readable (struct protid *user,
   if (!(user->po->openstat & O_READ))
     return EINVAL;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_validate_stat (user->po->np, user->user);
   if (!err)
     {
@@ -44,6 +44,6 @@ netfs_S_io_readable (struct protid *user,
       else
 	*amount = 0;
     }
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

@@ -28,7 +28,7 @@ struct pokeloc
 };
 
 struct pokeloc *pokelist;
-spin_lock_t pokelistlock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t pokelistlock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Remember that data here on the disk has been modified. */
 void
@@ -41,10 +41,10 @@ record_poke (void *loc, vm_size_t length)
   pl->offset = trunc_page (offset);
   pl->length = round_page (offset + length) - pl->offset;
 
-  spin_lock (&pokelistlock);
+  pthread_spin_lock (&pokelistlock);
   pl->next = pokelist;
   pokelist = pl;
-  spin_unlock (&pokelistlock);
+  pthread_spin_unlock (&pokelistlock);
 }
 
 /* Get rid of any outstanding pokes.  */
@@ -53,10 +53,10 @@ flush_pokes ()
 {
   struct pokeloc *pl;
 
-  spin_lock (&pokelistlock);
+  pthread_spin_lock (&pokelistlock);
   pl = pokelist;
   pokelist = 0;
-  spin_unlock (&pokelistlock);
+  pthread_spin_unlock (&pokelistlock);
 
   while (pl)
     {
@@ -72,7 +72,7 @@ sync_disk (int wait)
 {
   struct pokeloc *pl, *tmp;
 
-  spin_lock (&pokelistlock);
+  pthread_spin_lock (&pokelistlock);
   for (pl = pokelist; pl; pl = tmp)
     {
       pager_sync_some (diskfs_disk_pager, pl->offset, pl->length, wait);
@@ -80,6 +80,6 @@ sync_disk (int wait)
       free (pl);
     }
   pokelist = 0;
-  spin_unlock (&pokelistlock);
+  pthread_spin_unlock (&pokelistlock);
 }
 

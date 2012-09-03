@@ -19,20 +19,19 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
 ports_resume_class_rpcs (struct port_class *class)
 {
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (class->flags & PORT_CLASS_INHIBITED);
   class->flags &= ~PORT_CLASS_INHIBITED;
   if (class->flags & PORT_CLASS_BLOCKED)
     {
       class->flags &= ~PORT_CLASS_BLOCKED;
-      condition_broadcast (&_ports_block);
+      pthread_cond_broadcast (&_ports_block);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }
 

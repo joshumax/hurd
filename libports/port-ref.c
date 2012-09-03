@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
@@ -27,10 +26,10 @@ ports_port_ref (void *portstruct)
 {
   struct port_info *pi = portstruct;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (pi->refcnt || pi->weakrefcnt);
   pi->refcnt++;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }
 
   

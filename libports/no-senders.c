@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <mach/notify.h>
 
 void
@@ -30,10 +29,10 @@ ports_no_senders (void *portstruct,
   int dealloc;
   mach_port_t old;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   if ((pi->flags & PORT_HAS_SENDRIGHTS) == 0)
     {
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       return;
     }
   if (mscount >= pi->mscount)
@@ -54,7 +53,7 @@ ports_no_senders (void *portstruct,
 	mach_port_deallocate (mach_task_self (), old);
       dealloc = 0;
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   if (dealloc)
     {

@@ -53,10 +53,10 @@ static error_t
 ensure_connq (struct sock *sock)
 {
   error_t err = 0;
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   if (!sock->listen_queue)
     err = connq_create (&sock->listen_queue);
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
   return err;
 }
 
@@ -105,7 +105,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	/* For connection-oriented protocols, only connect with sockets that
            are actually listening.  */
 	{
-	  mutex_lock (&sock->lock);
+	  pthread_mutex_lock (&sock->lock);
 	  if (sock->connect_queue)
 	    /* SOCK is already doing a connect.  */
 	    err = EALREADY;
@@ -121,7 +121,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	         to do so will fail with EALREADY.  */
 	      sock->connect_queue = cq;
 	      /* Unlock SOCK while waiting.  */
-	      mutex_unlock (&sock->lock);
+	      pthread_mutex_unlock (&sock->lock);
 
 	      err = connq_connect (peer->listen_queue,
 				   sock->flags & SOCK_NONBLOCK);
@@ -139,7 +139,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 			sock_free (server);
 		    }
 
-	          mutex_lock (&sock->lock);
+	          pthread_mutex_lock (&sock->lock);
 		  if (err)
 		    connq_connect_cancel (peer->listen_queue);
 		}
@@ -149,7 +149,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	      sock->connect_queue = NULL;
 	    }
 
-	  mutex_unlock (&sock->lock);
+	  pthread_mutex_unlock (&sock->lock);
 	}
       else
 	err = ECONNREFUSED;
@@ -425,7 +425,7 @@ S_socket_getopt (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&user->sock->lock);
   switch (level)
     {
     case SOL_SOCKET:
@@ -445,7 +445,7 @@ S_socket_getopt (struct sock_user *user,
       ret = ENOPROTOOPT;
       break;
     }
-  mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&user->sock->lock);
 
   return ret;
 }
@@ -459,14 +459,14 @@ S_socket_setopt (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&user->sock->lock);
   switch (level)
     {
     default:
       ret = ENOPROTOOPT;
       break;
     }
-  mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&user->sock->lock);
 
   return ret;
 }

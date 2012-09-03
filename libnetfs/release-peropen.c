@@ -23,9 +23,9 @@
 void
 netfs_release_peropen (struct peropen *po)
 {
-  mutex_lock (&po->np->lock);
+  pthread_mutex_lock (&po->np->lock);
   if (--po->refcnt)
-    mutex_unlock (&po->np->lock);
+    pthread_mutex_unlock (&po->np->lock);
   else
     {
       if (po->root_parent)
@@ -33,7 +33,7 @@ netfs_release_peropen (struct peropen *po)
 
       if (po->shadow_root && po->shadow_root != po->np)
 	{
-	  mutex_lock (&po->shadow_root->lock);
+	  pthread_mutex_lock (&po->shadow_root->lock);
 	  netfs_nput (po->shadow_root);
 	}
       if (po->shadow_root_parent)

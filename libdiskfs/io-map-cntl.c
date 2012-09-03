@@ -29,7 +29,7 @@ diskfs_S_io_map_cntl (struct protid *cred,
     return EOPNOTSUPP;
 
   assert (__vm_page_size >= sizeof (struct shared_io));
-  mutex_lock (&cred->po->np->lock);
+  pthread_mutex_lock (&cred->po->np->lock);
   if (!cred->mapped)
     {
       default_pager_object_create (diskfs_default_pager, &cred->shared_object,
@@ -39,15 +39,15 @@ diskfs_S_io_map_cntl (struct protid *cred,
 	      VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE, 0);
       cred->mapped->shared_page_magic = SHARED_PAGE_MAGIC;
       cred->mapped->conch_status = USER_HAS_NOT_CONCH;
-      spin_lock_init (&cred->mapped->lock);
+      pthread_spin_init (&cred->mapped->lock, PTHREAD_PROCESS_PRIVATE);
       *ctlobj = cred->shared_object;
       *ctlobj_type = MACH_MSG_TYPE_COPY_SEND;
-      mutex_unlock (&cred->po->np->lock);
+      pthread_mutex_unlock (&cred->po->np->lock);
       return 0;
     }
   else
     {
-      mutex_unlock (&cred->po->np->lock);
+      pthread_mutex_unlock (&cred->po->np->lock);
       return EBUSY;
     }
 }

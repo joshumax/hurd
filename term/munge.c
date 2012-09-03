@@ -707,7 +707,7 @@ drain_output ()
   while ((qsize (outputq) || (*bottom->pending_output_size) ())
 	 && (!(termflags & NO_CARRIER) || (termstate.c_cflag & CLOCAL))
 	 && !cancel)
-    cancel = hurd_condition_wait (outputq->wait, &global_lock);
+    cancel = pthread_hurd_cond_wait_np (outputq->wait, &global_lock);
 
   return cancel ? EINTR : 0;
 }
@@ -726,10 +726,10 @@ create_queue (int size, int lowat, int hiwat)
   q->hiwat = hiwat;
   q->cs = q->ce = q->array;
   q->arraylen = size;
-  q->wait = malloc (sizeof (struct condition));
+  q->wait = malloc (sizeof (pthread_cond_t));
   assert (q->wait);
 
-  condition_init (q->wait);
+  pthread_cond_init (q->wait, NULL);
   return q;
 }
 

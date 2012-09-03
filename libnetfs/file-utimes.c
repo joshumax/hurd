@@ -44,10 +44,10 @@ netfs_S_file_utimes (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_utimes (user->user, user->po->np, 
 			      atimein.microseconds != -1 ? &atime : 0, 
 			      mtimein.microseconds != -1 ? &mtime : 0);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

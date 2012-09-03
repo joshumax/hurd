@@ -24,7 +24,8 @@ SRCS = alloc.c consts.c dir.c hyper.c inode.c main.c pager.c \
        sizes.c subr.c tables.c bmap.c pokeloc.c xinl.c
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = diskfs iohelp fshelp store pager threads ports ihash shouldbeinlibc
+HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf
 

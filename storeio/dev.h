@@ -22,7 +22,7 @@
 
 #include <mach.h>
 #include <device/device.h>
-#include <rwlock.h>
+#include <pthread.h>
 #include <hurd/store.h>
 #include <hurd/trivfs.h>
 
@@ -57,7 +57,7 @@ struct dev
   /* This lock protects `store', `owner' and `nperopens'.  The other
      members never change after creation, except for those locked by
      io_lock (below).  */
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* Nonzero iff the --no-cache flag was given.
      If this is set, the remaining members are not used at all
@@ -71,7 +71,7 @@ struct dev
   /* Lock to arbitrate I/O through this device.  Block I/O can occur in
      parallel, and requires only a reader-lock.
      Non-block I/O is always serialized, and requires a writer-lock.  */
-  struct rwlock io_lock;
+  pthread_rwlock_t io_lock;
 
   /* Non-block I/O is buffered through BUF.  BUF_OFFS is the device offset
      corresponding to the start of BUF (which holds one block); if it is -1,
@@ -81,7 +81,7 @@ struct dev
   int buf_dirty;
 
   struct pager *pager;
-  struct mutex pager_lock;
+  pthread_mutex_t pager_lock;
 };
 
 static inline int

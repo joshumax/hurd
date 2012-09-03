@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/mman.h>
 #include <hurd/ports.h>
 #include <hurd/ihash.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 struct proc
 {
@@ -60,7 +60,7 @@ struct proc
   /* Communication */
   mach_port_t p_msgport;	/* send right */
 
-  struct condition p_wakeup;
+  pthread_cond_t p_wakeup;
 
   /* Miscellaneous information */
   vm_address_t p_argv, p_envp;
@@ -145,7 +145,7 @@ mach_port_t master_device_port;
 
 mach_port_t generic_port;	/* messages not related to a specific proc */
 
-struct mutex global_lock;
+pthread_mutex_t global_lock;
 
 static inline void __attribute__ ((unused))
 process_drop (struct proc *p)

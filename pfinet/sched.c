@@ -23,9 +23,9 @@
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 
-struct mutex global_lock = MUTEX_INITIALIZER;
-struct mutex net_bh_lock = MUTEX_INITIALIZER;
-struct condition net_bh_wakeup = CONDITION_INITIALIZER;
+pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t net_bh_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t net_bh_wakeup = PTHREAD_COND_INITIALIZER;
 
 struct task_struct current_contents; /* zeros are right default values */
 
@@ -55,16 +55,16 @@ sock_wake_async (struct socket *sock, int how)
    queue, or dropped, without synchronizing with RPC service threads.
    (The RPC service threads lock out the running of net_bh, but not
    the queuing/dropping of packets in netif_rx.)  */
-any_t
-net_bh_worker (any_t arg)
+void *
+net_bh_worker (void *arg)
 {
-  __mutex_lock (&net_bh_lock);
+  pthread_mutex_lock (&net_bh_lock);
   while (1)
     {
-      condition_wait (&net_bh_wakeup, &net_bh_lock);
-      __mutex_lock (&global_lock);
+      pthread_cond_wait (&net_bh_wakeup, &net_bh_lock);
+      pthread_mutex_lock (&global_lock);
       net_bh ();
-      __mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
     }
   /*NOTREACHED*/
   return 0;

@@ -205,7 +205,7 @@ fetch_root ()
 
   assert_perror (err);
 
-  mutex_unlock (&diskfs_root_node->lock);
+  pthread_mutex_unlock (&diskfs_root_node->lock);
 }
 
 
@@ -239,7 +239,7 @@ main (int argc, char **argv)
 
   diskfs_startup_diskfs (bootstrap, 0);
 
-  cthread_exit (0);
+  pthread_exit (NULL);
 
   return 0;
 }

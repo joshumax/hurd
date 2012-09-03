@@ -29,8 +29,8 @@ netfs_S_dir_rmdir (struct protid *diruser, char *name)
   if (!diruser)
     return EOPNOTSUPP;
 
-  mutex_lock (&diruser->po->np->lock);
+  pthread_mutex_lock (&diruser->po->np->lock);
   err = netfs_attempt_rmdir (diruser->user, diruser->po->np, name);
-  mutex_unlock (&diruser->po->np->lock);
+  pthread_mutex_unlock (&diruser->po->np->lock);
   return err;
 }

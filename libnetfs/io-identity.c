@@ -36,19 +36,19 @@ netfs_S_io_identity (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   err = netfs_validate_stat (np, cred->user);
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
 
   err = fshelp_get_identity (netfs_port_bucket, np->nn_stat.st_ino, id);
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
@@ -56,6 +56,6 @@ netfs_S_io_identity (struct protid *cred,
   *fsystype = MACH_MSG_TYPE_MAKE_SEND;
   *fileno = np->nn_stat.st_ino;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }

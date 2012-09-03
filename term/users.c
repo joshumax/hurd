@@ -25,7 +25,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <hurd/trivfs.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd.h>
 #include <stdio.h>
 #include <hurd/iohelp.h>
@@ -70,7 +70,7 @@ int foreground_id;
 struct winsize window_size;
 
 static int sigs_in_progress;
-static struct condition input_sig_wait = CONDITION_INITIALIZER;
+static pthread_cond_t input_sig_wait = PTHREAD_COND_INITIALIZER;
 static int input_sig_wakeup;
 
 static error_t carrier_error;
@@ -114,7 +114,7 @@ check_access_hook (struct trivfs_control *cntl,
 {
   struct stat st;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   st.st_uid = term_owner;
   st.st_gid = term_group;
@@ -126,7 +126,7 @@ check_access_hook (struct trivfs_control *cntl,
   if (fshelp_access (&st, S_IWRITE, user) == 0)
     *allowed |= O_WRITE;
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 error_t (*trivfs_check_access_hook) (struct trivfs_control *, struct iouser *,
@@ -148,7 +148,7 @@ open_hook (struct trivfs_control *cntl,
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(termflags & TTY_OPEN))
     {
@@ -174,7 +174,7 @@ open_hook (struct trivfs_control *cntl,
 
       if (termflags & EXCL_USE)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EBUSY;
 	}
     }
@@ -190,7 +190,7 @@ open_hook (struct trivfs_control *cntl,
       err = (*bottom->assert_dtr) ();
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
     }
@@ -199,11 +199,11 @@ open_hook (struct trivfs_control *cntl,
   while (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
 	 && !(flags & O_NONBLOCK)
 	 && !cancel)
-    cancel = hurd_condition_wait (&carrier_alert, &global_lock);
+    cancel = pthread_hurd_cond_wait_np (&carrier_alert, &global_lock);
 
   if (cancel)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EINTR;
     }
 
@@ -224,7 +224,7 @@ open_hook (struct trivfs_control *cntl,
 	(*bottom->gwinsz) (&window_size);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 error_t (*trivfs_check_open_hook) (struct trivfs_control *,
@@ -237,10 +237,10 @@ pi_create_hook (struct trivfs_protid *cred)
   if (cred->pi.class == pty_class)
     return 0;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (cred->hook)
     ((struct protid_hook *)cred->hook)->refcnt++;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -252,7 +252,7 @@ pi_destroy_hook (struct trivfs_protid *cred)
   if (cred->pi.class == pty_class)
     return;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (cred->hook)
     {
       assert (((struct protid_hook *)cred->hook)->refcnt > 0);
@@ -261,7 +261,7 @@ pi_destroy_hook (struct trivfs_protid *cred)
 	   bug.  */
 	/* free (cred->hook) */;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 void (*trivfs_protid_destroy_hook) (struct trivfs_protid *) = pi_destroy_hook;
 
@@ -271,7 +271,7 @@ po_create_hook (struct trivfs_peropen *po)
   if (po->cntl == ptyctl)
     return pty_po_create_hook (po);
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   nperopens++;
   if (po->openmodes & O_ASYNC)
     {
@@ -279,7 +279,7 @@ po_create_hook (struct trivfs_peropen *po)
       num_icky_async_peropens++;
       call_asyncs (O_READ | O_WRITE);
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *) =
@@ -294,7 +294,7 @@ po_destroy_hook (struct trivfs_peropen *po)
       return;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if ((po->openmodes & O_ASYNC) && --num_icky_async_peropens == 0)
     termflags &= ~ICKY_ASYNC;
@@ -316,7 +316,7 @@ po_destroy_hook (struct trivfs_peropen *po)
       termflags &= ~TTY_OPEN;
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }
 void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *)
      = po_destroy_hook;
@@ -363,7 +363,7 @@ S_term_getctty (mach_port_t arg,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -374,7 +374,7 @@ S_term_getctty (mach_port_t arg,
       err = 0;
     }
   ports_port_deref (cred);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -436,16 +436,16 @@ S_term_open_ctty (mach_port_t arg,
       return EINVAL;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!cred->po->openmodes & (O_READ|O_WRITE))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       err = EBADF;
     }
   else
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       err = trivfs_protid_dup (cred, &newcred);
 
       if (!err)
@@ -489,7 +489,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   /* XXX */
   st.st_uid = term_owner;
@@ -517,7 +517,7 @@ trivfs_S_file_chown (struct trivfs_protid *cred,
   err = 0;
 
 out:
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -534,7 +534,7 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!cred->isroot)
     {
       /* XXX */
@@ -558,7 +558,7 @@ trivfs_S_file_chmod (struct trivfs_protid *cred,
   err = 0;
 
 out:
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -584,25 +584,25 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   if (cred->pi.class == pty_class)
     return pty_io_write (cred, data, datalen, amt);
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   /* Check for errors first. */
 
   if ((cred->po->openmodes & O_WRITE) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
 
   if ((termstate.c_lflag & TOSTOP) && !fg_p (cred))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBACKGROUND;
     }
 
   if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EIO;
 
     }
@@ -618,7 +618,8 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 	  else
 	    {
 	      if (!qavail (outputq))
-		cancel = hurd_condition_wait (outputq->wait, &global_lock);
+		cancel = pthread_hurd_cond_wait_np (outputq->wait,
+						    &global_lock);
 	    }
 	}
       if (cancel)
@@ -636,7 +637,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   call_asyncs (O_WRITE);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return ((cancel && datalen && !*amt) ? (err ?: EINTR) : 0);
 }
@@ -662,17 +663,17 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   if (cred->pi.class == pty_class)
     return pty_io_read (cred, data, datalen, amount);
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if ((cred->po->openmodes & O_READ) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
 
   if (!fg_p (cred))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBACKGROUND;
     }
 
@@ -681,20 +682,20 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL) || !amount)
 	{
 	  /* Return EOF, Posix.1 7.1.1.10. */
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  *datalen = 0;
 	  return 0;
 	}
 
       if (cred->po->openmodes & O_NONBLOCK)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EWOULDBLOCK;
 	}
 
-      if (hurd_condition_wait (inputq->wait, &global_lock))
+      if (pthread_hurd_cond_wait_np (inputq->wait, &global_lock))
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EINTR;
 	}
 
@@ -713,9 +714,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       if (sigs_in_progress)
 	{
 	  input_sig_wakeup++;
-	  if (hurd_condition_wait (&input_sig_wait, &global_lock))
+	  if (pthread_hurd_cond_wait_np (&input_sig_wait, &global_lock))
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EINTR;
 	    }
 	}
@@ -778,7 +779,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   call_asyncs (O_READ);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return !*datalen && cancel ? EINTR : 0;
 }
@@ -835,16 +836,16 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   if (cred->pi.class == pty_class)
     return pty_io_readable (amt);
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_READ) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
   *amt = qsize (inputq);
   if (remote_input_mode && *amt)
     --*amt;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -868,7 +869,7 @@ trivfs_S_io_revoke (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!cred->isroot)
     {
@@ -881,12 +882,12 @@ trivfs_S_io_revoke (struct trivfs_protid *cred,
       err = fshelp_isowner (&st, cred->user);
       if (err)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_inhibit_bucket_rpcs (term_bucket);
   ports_class_iterate (cred->pi.class, iterator_function);
@@ -917,9 +918,9 @@ S_tioctl_tiocmodg (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = (*bottom->mdmstate) (state);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -942,14 +943,14 @@ S_tioctl_tiocmods (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_SET, state);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -971,7 +972,7 @@ S_tioctl_tiocexcl (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -981,7 +982,7 @@ S_tioctl_tiocexcl (io_t port)
       err = 0;
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1003,7 +1004,7 @@ S_tioctl_tiocnxcl (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
@@ -1012,7 +1013,7 @@ S_tioctl_tiocnxcl (io_t port)
       err = 0;
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1035,7 +1036,7 @@ S_tioctl_tiocflush (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err =  EBADF;
@@ -1054,7 +1055,7 @@ S_tioctl_tiocflush (io_t port,
 	err = drop_output ();
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1078,7 +1079,7 @@ S_tioctl_tiocgeta (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   modes[0] = termstate.c_iflag;
   modes[1] = termstate.c_oflag;
   modes[2] = termstate.c_cflag;
@@ -1086,7 +1087,7 @@ S_tioctl_tiocgeta (io_t port,
   memcpy (ccs, termstate.c_cc, NCCS);
   speeds[0] = termstate.__ispeed;
   speeds[1] = termstate.__ospeed;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return 0;
@@ -1115,7 +1116,7 @@ set_state (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -1179,7 +1180,7 @@ set_state (io_t port,
     }
 
  leave:
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1257,10 +1258,10 @@ S_tioctl_tiocsetd (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (disc != 0)
     err = ENXIO;
@@ -1288,16 +1289,16 @@ S_tioctl_tiocdrain (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & O_WRITE))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       ports_port_deref (cred);
       return EBADF;
     }
 
   err = drain_output ();
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1320,7 +1321,7 @@ S_tioctl_tiocswinsz (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -1341,7 +1342,7 @@ S_tioctl_tiocswinsz (io_t port,
       send_signal (SIGWINCH);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -1362,9 +1363,9 @@ S_tioctl_tiocgwinsz (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   *size = window_size;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return 0;
@@ -1388,9 +1389,9 @@ S_tioctl_tiocmget (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   err = (*bottom->mdmstate) (bits);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1414,13 +1415,13 @@ S_tioctl_tiocmset (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_SET, bits);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1443,12 +1444,12 @@ S_tioctl_tiocmbic (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_BIC, bits);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1472,13 +1473,13 @@ S_tioctl_tiocmbis (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_BIS, bits);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return err;
 }
@@ -1500,7 +1501,7 @@ S_tioctl_tiocstart (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -1513,7 +1514,7 @@ S_tioctl_tiocstart (io_t port)
       if (err)
 	termflags = old_termflags;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1535,7 +1536,7 @@ S_tioctl_tiocstop (io_t port)
       ports_port_deref (cred);
       return EOPNOTSUPP;
     }
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -1547,7 +1548,7 @@ S_tioctl_tiocstop (io_t port)
       if (err)
 	termflags = old_termflags;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1571,7 +1572,7 @@ S_tioctl_tiocsti (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   /* BSD returns EACCES if this is not our controlling terminal,
      but we have no way to do that.  (And I don't think it actually
@@ -1584,7 +1585,7 @@ S_tioctl_tiocsti (io_t port,
       input_character (c);
       err = 0;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1608,7 +1609,7 @@ S_tioctl_tiocoutq (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
@@ -1617,7 +1618,7 @@ S_tioctl_tiocoutq (io_t port,
       *queue_size = qsize (outputq) + (*bottom->pending_output_size) ();
       err = 0;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1641,7 +1642,7 @@ S_tioctl_tiocspgrp (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
@@ -1650,7 +1651,7 @@ S_tioctl_tiocspgrp (io_t port,
       foreground_id = -pgrp;
       err = 0;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1674,7 +1675,7 @@ S_tioctl_tiocgpgrp (io_t port,
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
     ret = ENOTTY;		/* that's what BSD says... */
   else
@@ -1682,7 +1683,7 @@ S_tioctl_tiocgpgrp (io_t port,
       *pgrp = - foreground_id;
       ret = 0;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return ret;
@@ -1705,12 +1706,12 @@ S_tioctl_tioccdtr (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_BIC, TIOCM_DTR);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1733,12 +1734,12 @@ S_tioctl_tiocsdtr (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->mdmctl) (MDMCTL_BIS, TIOCM_DTR);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1761,12 +1762,12 @@ S_tioctl_tioccbrk (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->clear_break) ();
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1789,12 +1790,12 @@ S_tioctl_tiocsbrk (io_t port)
       return EOPNOTSUPP;
     }
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     err = EBADF;
   else
     err = (*bottom->set_break) ();
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   ports_port_deref (cred);
   return err;
@@ -1807,13 +1808,13 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_WRITE) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1836,9 +1837,9 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   *bits = cred->po->openmodes;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1855,7 +1856,7 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   obits = cred->po->openmodes;
   if ((obits & O_ASYNC) && --num_icky_async_peropens == 0)
@@ -1871,7 +1872,7 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
       call_asyncs (O_READ | O_WRITE);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -1887,7 +1888,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   obits = cred->po->openmodes;
   cred->po->openmodes |= (bits & HONORED_STATE_MODES);
   if ((bits & O_ASYNC) && !(obits & O_ASYNC))
@@ -1896,7 +1897,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
       num_icky_async_peropens++;
       call_asyncs (O_READ | O_WRITE);
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1909,11 +1910,11 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_ASYNC) && --num_icky_async_peropens == 0)
     termflags &= ~ICKY_ASYNC;
   cred->po->openmodes &= ~(bits & HONORED_STATE_MODES);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -1927,10 +1928,10 @@ trivfs_S_io_mod_owner (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   termflags &= ~NO_OWNER;
   foreground_id = owner;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1943,14 +1944,14 @@ trivfs_S_io_get_owner (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (termflags & NO_OWNER)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return ENOTTY;
     }
   *owner = foreground_id;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1963,15 +1964,15 @@ trivfs_S_io_get_icky_async_id (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
   *id = async_icky_id;
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -1985,10 +1986,10 @@ trivfs_S_io_async (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
   ar = malloc (sizeof (struct async_req));
@@ -1997,7 +1998,7 @@ trivfs_S_io_async (struct trivfs_protid *cred,
   async_requests = ar;
   *id = async_id;
   *idtype = MACH_MSG_TYPE_MAKE_SEND;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -2018,7 +2019,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if ((cred->po->openmodes & O_WRITE) == 0)
     *type &= ~SELECT_WRITE;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   while (1)
     {
@@ -2031,12 +2032,12 @@ trivfs_S_io_select (struct trivfs_protid *cred,
       if (available == 0)
 	{
 	  ports_interrupt_self_on_port_death (cred, reply);
-	  if (hurd_condition_wait (&select_alert, &global_lock) == 0)
+	  if (pthread_hurd_cond_wait_np (&select_alert, &global_lock) == 0)
 	    continue;
 	}
 
       *type = available;
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return available ? 0 : EINTR;
     }
 }
@@ -2066,7 +2067,7 @@ report_sig_end ()
   if ((sigs_in_progress == 0) && input_sig_wakeup)
     {
       input_sig_wakeup = 0;
-      condition_broadcast (&input_sig_wait);
+      pthread_cond_broadcast (&input_sig_wait);
     }
 }
 
@@ -2091,9 +2092,9 @@ call_asyncs (int dir)
   if ((termflags & ICKY_ASYNC) && !(termflags & NO_OWNER))
     {
       report_sig_start ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, SIGIO, async_icky_id);
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
       report_sig_end ();
     }
 
@@ -2125,9 +2126,9 @@ send_signal (int signo)
     {
       right = ports_get_send_right (cttyid);
       report_sig_start ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       hurd_sig_post (foreground_id, signo, right);
-      mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
       report_sig_end ();
       mach_port_deallocate (mach_task_self (), right);
     }
@@ -2148,14 +2149,14 @@ void
 report_carrier_on ()
 {
   termflags &= ~NO_CARRIER;
-  condition_broadcast (&carrier_alert);
+  pthread_cond_broadcast (&carrier_alert);
 }
 
 void
 report_carrier_error (error_t err)
 {
   carrier_error = err;
-  condition_broadcast (&carrier_alert);
+  pthread_cond_broadcast (&carrier_alert);
 }
 
 kern_return_t

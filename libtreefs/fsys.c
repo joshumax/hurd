@@ -40,7 +40,7 @@ treefs_create_node (struct treefs_fsys *fsys, struct treefs_node **node)
   n->hooks = fsys->hooks;
   n->children = NULL;
   n->u = NULL;
-  mutex_init (&n->lock);
+  pthread_mutex_init (&n->lock, NULL);
   fshelp_init_trans_link (&n->active_trans);
   fshelp_lock_init (&n->lock_box);
 
@@ -77,7 +77,7 @@ treefs_create_fsys (struct port_bucket *port_bucket,
   if (*fsys == NULL)
     return ENOMEM;
 
-  mutex_init (&(*fsys)->lock);
+  pthread_mutex_init (&(*fsys)->lock, NULL);
   (*fsys)->root = NULL;
 
   (*fsys)->underlying_port = MACH_PORT_NULL;

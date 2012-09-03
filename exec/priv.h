@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/trivfs.h>
 #include <hurd/ports.h>
 #include <hurd/lookup.h>
-#include <rwlock.h>
+#include <pthread.h>
 
 #ifdef BFD
 #include <bfd.h>
@@ -186,7 +186,7 @@ void check_hashbang (struct execdata *e,
 extern mach_port_t *std_ports;
 extern int *std_ints;
 extern size_t std_nports, std_nints;
-extern struct rwlock std_lock;
+extern pthread_rwlock_t std_lock;
 
 
 #endif /* exec_priv_h */

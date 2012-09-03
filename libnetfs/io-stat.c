@@ -32,7 +32,7 @@ netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
     return EOPNOTSUPP;
 
   node = user->po->np;
-  mutex_lock (&node->lock);
+  pthread_mutex_lock (&node->lock);
 
   err = netfs_validate_stat (node, user->user);
   if (! err)
@@ -47,7 +47,7 @@ netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
 	statbuf->st_mode |= S_IROOT; /* Is a root node.  */
     }
 
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
 
   return err;
 }

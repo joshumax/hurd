@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <mach/notify.h>
 #include <assert.h>
 
@@ -30,11 +29,11 @@ ports_get_right (void *port)
   mach_port_t foo;
   error_t err;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (pi->port_right == MACH_PORT_NULL)
     {
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       return MACH_PORT_NULL;
     }
 
@@ -54,6 +53,6 @@ ports_get_right (void *port)
       if (foo != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), foo);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   return pi->port_right;
 }

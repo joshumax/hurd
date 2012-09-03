@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <hurd/socket.h>
 
-static spin_lock_t pflocalserverlock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t pflocalserverlock = PTHREAD_SPINLOCK_INITIALIZER;
 static mach_port_t pflocalserver = MACH_PORT_NULL;
 
 kern_return_t
@@ -39,16 +39,16 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
   np = cred->po->np;
   
  retry:
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   if ((np->dn_stat.st_mode & S_IFMT) != S_IFSOCK)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EOPNOTSUPP;
     }
   err = fshelp_access (&np->dn_stat, S_IWRITE, cred->user);
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
 
@@ -58,17 +58,17 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
       mach_port_t sockaddr;
       mach_port_t old;
 
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
 
       /* Fetch a port to the PF_LOCAL server, caching it. */
 
-      spin_lock (&pflocalserverlock);
+      pthread_spin_lock (&pflocalserverlock);
       if (pflocalserver == MACH_PORT_NULL)
 	{
 	  /* Find out who the PF_LOCAL server is. */
 	  char buf[100];
 
-	  spin_unlock (&pflocalserverlock);
+	  pthread_spin_unlock (&pflocalserverlock);
 
 	  /* Look it up */
 	  sprintf (buf, "%s/%d", _SERVERS_SOCKET, PF_LOCAL);
@@ -77,17 +77,17 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	    return EIEIO;
 
 	  /* Set it unless someone is already here */
-	  spin_lock (&pflocalserverlock);
+	  pthread_spin_lock (&pflocalserverlock);
 	  if (pflocalserver != MACH_PORT_NULL)
 	    mach_port_deallocate (mach_task_self (), server);
 	  else
 	    pflocalserver = server;
-	  spin_unlock (&pflocalserverlock);
+	  pthread_spin_unlock (&pflocalserverlock);
 	  
 	  goto retry;
 	}
       server = pflocalserver;
-      spin_unlock (&pflocalserverlock);
+      pthread_spin_unlock (&pflocalserverlock);
       
       /* Create an address for the node */
       err = socket_fabricate_address (server, AF_LOCAL, &sockaddr);
@@ -95,19 +95,19 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	  && restart_tries++ == 0)
 	/* The PF_LOCAL server died; try to restart it.  */
 	{
-	  spin_lock (&pflocalserverlock);
+	  pthread_spin_lock (&pflocalserverlock);
 	  if (pflocalserver == server)
 	    pflocalserver = MACH_PORT_NULL;
-	  spin_unlock (&pflocalserverlock);
+	  pthread_spin_unlock (&pflocalserverlock);
 	  goto retry;
 	}
       if (err)
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  return EIEIO;
 	}
 
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       if (np->sockaddr != MACH_PORT_NULL)
 	/* Someone beat us */
 	mach_port_deallocate (mach_task_self (), sockaddr);
@@ -129,7 +129,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
     }      
   
   *address = np->sockaddr;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }
       

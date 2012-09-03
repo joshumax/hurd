@@ -21,6 +21,7 @@
 #include <mach.h>
 #include <hurd.h>
 #include <sys/mman.h>
+#include <pthread.h>
 #include "pager.h"
 #include <hurd/ports.h>
 
@@ -40,8 +41,8 @@ struct pager
       SHUTDOWN,			/* ignore all further requests */
     } pager_state;
 
-  struct mutex interlock;
-  struct condition wakeup;
+  pthread_mutex_t interlock;
+  pthread_cond_t wakeup;
 
   struct lock_request *lock_requests; /* pending lock requests */
   struct attribute_request *attribute_requests; /* pending attr requests */

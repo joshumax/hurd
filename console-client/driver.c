@@ -25,7 +25,7 @@
 
 #include <dlfcn.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "driver.h"
 
@@ -42,7 +42,7 @@ char *driver_path;
 
 /* The driver list lock, the list itself, its current length and the
    total number of entries in the list.  */
-struct mutex driver_list_lock;
+pthread_mutex_t driver_list_lock;
 driver_t driver_list;
 size_t driver_list_len;
 size_t driver_list_alloc;
@@ -52,10 +52,10 @@ size_t driver_list_alloc;
 error_t
 driver_init (void)
 {
-  mutex_init (&driver_list_lock);
-  mutex_init (&display_list_lock);
-  mutex_init (&input_list_lock);
-  mutex_init (&bell_list_lock);
+  pthread_mutex_init (&driver_list_lock, NULL);
+  pthread_mutex_init (&display_list_lock, NULL);
+  pthread_mutex_init (&input_list_lock, NULL);
+  pthread_mutex_init (&bell_list_lock, NULL);
   return 0;
 }
 
@@ -67,7 +67,7 @@ driver_fini (void)
 {
   unsigned int i;
 
-  mutex_lock (&driver_list_lock);
+  pthread_mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
     {
       driver_list[i].ops->fini (driver_list[i].handle, 1);
@@ -76,7 +76,7 @@ driver_fini (void)
       free (driver_list[i].driver);
     }
   driver_list_len = 0;
-  mutex_unlock (&driver_list_lock);
+  pthread_mutex_unlock (&driver_list_lock);
   return 0;
 }
 
@@ -101,11 +101,11 @@ error_t driver_add (const char *const name, const char *const driver,
   int defpath = 0;
   char *opt_backup;
 
-  mutex_lock (&driver_list_lock);
+  pthread_mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
     if (driver_list[i].name && !strcmp (driver_list[i].name, name))
       {
-	mutex_unlock (&driver_list_lock);
+	pthread_mutex_unlock (&driver_list_lock);
 	return EEXIST;
       }
 
@@ -122,7 +122,7 @@ error_t driver_add (const char *const name, const char *const driver,
       if (asprintf (&filename,
 		    "%s/%s%s", dir, driver, CONSOLE_SONAME_SUFFIX) < 0)
 	{
-	  mutex_unlock (&driver_list_lock);
+	  pthread_mutex_unlock (&driver_list_lock);
 	  return ENOMEM;
 	}
 
@@ -134,7 +134,7 @@ error_t driver_add (const char *const name, const char *const driver,
 	  if (errno != ENOENT)
 	    {
 	      free (filename);
-	      mutex_unlock (&driver_list_lock);
+	      pthread_mutex_unlock (&driver_list_lock);
 	      return errno ?: EGRATUITOUS;
 	    }
 	}
@@ -158,7 +158,7 @@ error_t driver_add (const char *const name, const char *const driver,
     {
       if (filename)
 	free (filename);
-      mutex_unlock (&driver_list_lock);
+      pthread_mutex_unlock (&driver_list_lock);
       return ENOENT;
     }
 
@@ -166,7 +166,7 @@ error_t driver_add (const char *const name, const char *const driver,
     {
       dlclose (shobj);
       free (filename);
-      mutex_unlock (&driver_list_lock);
+      pthread_mutex_unlock (&driver_list_lock);
       return ENOMEM;
     }
 
@@ -176,7 +176,7 @@ error_t driver_add (const char *const name, const char *const driver,
     {
       dlclose (shobj);
       free (filename);
-      mutex_unlock (&driver_list_lock);
+      pthread_mutex_unlock (&driver_list_lock);
       return EGRATUITOUS;
     }
 
@@ -189,7 +189,7 @@ error_t driver_add (const char *const name, const char *const driver,
 	{
 	  dlclose (shobj);
 	  free (filename);
-	  mutex_unlock (&driver_list_lock);
+	  pthread_mutex_unlock (&driver_list_lock);
 	  return errno;
 	}
       driver_list = new_list;
@@ -210,7 +210,7 @@ error_t driver_add (const char *const name, const char *const driver,
 	free (drv->driver);
       dlclose (shobj);
       free (filename);
-      mutex_unlock (&driver_list_lock);
+      pthread_mutex_unlock (&driver_list_lock);
       return ENOMEM;
     }
 
@@ -229,12 +229,12 @@ error_t driver_add (const char *const name, const char *const driver,
       free (drv->driver);
       dlclose (shobj);
       free (filename);
-      mutex_unlock (&driver_list_lock);
+      pthread_mutex_unlock (&driver_list_lock);
       return err;
     }
 
   driver_list_len++;
-  mutex_unlock (&driver_list_lock);
+  pthread_mutex_unlock (&driver_list_lock);
   return 0;
 }
 
@@ -250,7 +250,7 @@ driver_start (char **name)
   error_t err = 0;
   int i;
   
-  mutex_lock (&driver_list_lock);
+  pthread_mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
     {
       if (driver_list[i].ops->start)
@@ -266,7 +266,7 @@ driver_start (char **name)
 	  break;
 	}
     }
-  mutex_unlock (&driver_list_lock);
+  pthread_mutex_unlock (&driver_list_lock);
   return err;
 }
 
@@ -279,7 +279,7 @@ error_t driver_remove (const char *const name)
   error_t err;
   unsigned int i;
 
-  mutex_lock (&driver_list_lock);
+  pthread_mutex_lock (&driver_list_lock);
   for (i = 0; i < driver_list_len; i++)
     if (driver_list[i].name && !strcmp (driver_list[i].name, name))
       {
@@ -297,15 +297,15 @@ error_t driver_remove (const char *const name)
 	      }
 	    driver_list_len--;
 	  }
-	mutex_unlock (&driver_list_lock);
+	pthread_mutex_unlock (&driver_list_lock);
 	return err;
       }
-  mutex_unlock (&driver_list_lock);
+  pthread_mutex_unlock (&driver_list_lock);
   return ESRCH;
 }
 
 #define ADD_REMOVE_COMPONENT(component)					\
-struct mutex component##_list_lock;					\
+pthread_mutex_t component##_list_lock;					\
 component##_t component##_list;						\
 size_t component##_list_len;						\
 size_t component##_list_alloc;						\
@@ -313,7 +313,7 @@ size_t component##_list_alloc;						\
 error_t									\
 driver_add_##component (component##_ops_t ops, void *handle)		\
 {									\
-  mutex_lock (&component##_list_lock);					\
+  pthread_mutex_lock (&component##_list_lock);				\
   if (component##_list_len == component##_list_alloc)			\
     {									\
       size_t new_alloc = component##_list_alloc + LIST_GROW;		\
@@ -322,7 +322,7 @@ driver_add_##component (component##_ops_t ops, void *handle)		\
 					* sizeof (*component##_list));	\
       if (!new_list)							\
 	{								\
-	  mutex_unlock (&component##_list_lock);			\
+	  pthread_mutex_unlock (&component##_list_lock);		\
 	  return errno;							\
 	}								\
       component##_list = new_list;					\
@@ -331,7 +331,7 @@ driver_add_##component (component##_ops_t ops, void *handle)		\
   component##_list[component##_list_len].ops = ops;			\
   component##_list[component##_list_len].handle = handle;		\
   component##_list_len++;						\
-  mutex_unlock (&component##_list_lock);				\
+  pthread_mutex_unlock (&component##_list_lock);			\
   return 0;								\
 }									\
 									\
@@ -340,7 +340,7 @@ driver_remove_##component (component##_ops_t ops, void *handle)		\
 {									\
   unsigned int i;								\
 									\
-  mutex_lock (&component##_list_lock);					\
+  pthread_mutex_lock (&component##_list_lock);				\
   for (i = 0; i < component##_list_len; i++)				\
     if (component##_list[i].ops == ops					\
 	&& component##_list[i].handle == handle)			\
@@ -352,7 +352,7 @@ driver_remove_##component (component##_ops_t ops, void *handle)		\
 	  }								\
 	component##_list_len--;						\
       }									\
-  mutex_unlock (&component##_list_lock);				\
+  pthread_mutex_unlock (&component##_list_lock);			\
   return 0;								\
 }
 

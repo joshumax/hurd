@@ -28,9 +28,9 @@ netfs_S_io_set_all_openmodes (struct protid *user, int newbits)
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   user->po->openstat &= ~HONORED_STATE_MODES;
   user->po->openstat |= (newbits & HONORED_STATE_MODES);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return 0;
 }

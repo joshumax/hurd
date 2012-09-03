@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <cthreads.h>
+#include <pthread.h>
 #include <assert.h>
 
 #include "connq.h"
@@ -33,14 +33,14 @@ struct connq
   unsigned max;
 
   /* Threads that have done an accept on this queue wait on this condition.  */
-  struct condition listeners;
+  pthread_cond_t listeners;
   unsigned num_listeners;
 
   /* Threads that have done a connect on this queue wait on this condition.  */
-  struct condition connectors;
+  pthread_cond_t connectors;
   unsigned num_connectors;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
 };
 
 /* ---------------------------------------------------------------- */
@@ -65,7 +65,7 @@ connq_request_init (struct connq_request *req, struct sock *sock)
 static void
 connq_request_enqueue (struct connq *cq, struct connq_request *req)
 {
-  assert (! mutex_try_lock (&cq->lock));
+  assert (pthread_mutex_trylock (&cq->lock));
 
   req->next = NULL;
   *cq->tail = req;
@@ -81,7 +81,7 @@ connq_request_dequeue (struct connq *cq)
 {
   struct connq_request *req;
 
-  assert (! mutex_try_lock (&cq->lock));
+  assert (pthread_mutex_trylock (&cq->lock));
   assert (cq->head);
 
   req = cq->head;
@@ -117,9 +117,9 @@ connq_create (struct connq **cq)
   new->num_listeners = 0;
   new->num_connectors = 0;
 
-  mutex_init (&new->lock);
-  condition_init (&new->listeners);
-  condition_init (&new->connectors);
+  pthread_mutex_init (&new->lock, NULL);
+  pthread_cond_init (&new->listeners, NULL);
+  pthread_cond_init (&new->connectors, NULL);
 
   *cq = new;
   return 0;
@@ -147,18 +147,18 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
 {
   error_t err = 0;
 
-  mutex_lock (&cq->lock);
+  pthread_mutex_lock (&cq->lock);
 
   if (noblock && cq->count == 0 && cq->num_connectors == 0)
     {
-      mutex_unlock (&cq->lock);
+      pthread_mutex_unlock (&cq->lock);
       return EWOULDBLOCK;
     }
 
   if (! sock && (cq->count > 0 || cq->num_connectors > 0))
     /* The caller just wants to know if a connection ready.  */
     {
-      mutex_unlock (&cq->lock);
+      pthread_mutex_unlock (&cq->lock);
       return 0;
     }
 
@@ -172,10 +172,10 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
       if (cq->num_connectors > 0)
 	/* Someone is waiting for an acceptor.  Signal that we can
 	   service their request.  */
-	condition_signal (&cq->connectors);
+	pthread_cond_signal (&cq->connectors);
 
       do
-	if (hurd_condition_wait (&cq->listeners, &cq->lock))
+	if (pthread_hurd_cond_wait_np (&cq->listeners, &cq->lock))
 	  {
 	    cq->num_listeners--;
 	    err = EINTR;
@@ -198,7 +198,7 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
        else could.  (This case is rare but possible: it would require
        one thread to do a select on the socket and a second to do an
        accept.)  */
-    condition_signal (&cq->listeners);
+    pthread_cond_signal (&cq->listeners);
   else
     /* There is no one else to process the request and the connection
        has now been initiated.  This is not actually a problem as even
@@ -209,7 +209,7 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
     ;
 
  out:
-  mutex_unlock (&cq->lock);
+  pthread_mutex_unlock (&cq->lock);
   return err;
 }
 
@@ -220,7 +220,7 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
 error_t
 connq_connect (struct connq *cq, int noblock)
 {
-  mutex_lock (&cq->lock);
+  pthread_mutex_lock (&cq->lock);
 
   /* Check for listeners after we've locked CQ for good.  */
 
@@ -229,7 +229,7 @@ connq_connect (struct connq *cq, int noblock)
     /* We are in non-blocking mode and would have to wait to secure an
        entry in the listen queue.  */
     {
-      mutex_unlock (&cq->lock);
+      pthread_mutex_unlock (&cq->lock);
       return EWOULDBLOCK;
     }
 
@@ -238,14 +238,14 @@ connq_connect (struct connq *cq, int noblock)
   while (cq->count + cq->num_connectors > cq->max + cq->num_listeners)
     /* The queue is full and there is no immediate listener to service
        us.  Block until we can get a slot.  */
-    if (hurd_condition_wait (&cq->connectors, &cq->lock))
+    if (pthread_hurd_cond_wait_np (&cq->connectors, &cq->lock))
       {
 	cq->num_connectors --;
-	mutex_unlock (&cq->lock);
+	pthread_mutex_unlock (&cq->lock);
 	return EINTR;
       }
 
-  mutex_unlock (&cq->lock);
+  pthread_mutex_unlock (&cq->lock);
 
   return 0;
 }
@@ -263,7 +263,7 @@ connq_connect_complete (struct connq *cq, struct sock *sock)
 
   connq_request_init (req, sock);
 
-  mutex_lock (&cq->lock);
+  pthread_mutex_lock (&cq->lock);
 
   assert (cq->num_connectors > 0);
   cq->num_connectors --;
@@ -276,26 +276,26 @@ connq_connect_complete (struct connq *cq, struct sock *sock)
        thread dequeues this request.  */
     {
       cq->num_listeners --;
-      condition_signal (&cq->listeners);
+      pthread_cond_signal (&cq->listeners);
     }
 
-  mutex_unlock (&cq->lock);
+  pthread_mutex_unlock (&cq->lock);
 }
 
 /* Follow up to connq_connect.  Cancel the connect.  */
 void
 connq_connect_cancel (struct connq *cq)
 {
-  mutex_lock (&cq->lock);
+  pthread_mutex_lock (&cq->lock);
 
   assert (cq->num_connectors > 0);
   cq->num_connectors --;
 
   if (cq->count + cq->num_connectors >= cq->max + cq->num_listeners)
     /* A connector is blocked and could use the spot we reserved.  */
-    condition_signal (&cq->connectors);
+    pthread_cond_signal (&cq->connectors);
 
-  mutex_unlock (&cq->lock);
+  pthread_mutex_unlock (&cq->lock);
 }
 
 /* Set CQ's queue length to LENGTH.  */
@@ -304,7 +304,7 @@ connq_set_length (struct connq *cq, int max)
 {
   int omax;
 
-  mutex_lock (&cq->lock);
+  pthread_mutex_lock (&cq->lock);
   omax = cq->max;
   cq->max = max;
 
@@ -313,9 +313,9 @@ connq_set_length (struct connq *cq, int max)
     /* This is an increase in the number of connection slots which has
        made some slots available and there are waiting threads.  Wake
        them up.  */
-    condition_broadcast (&cq->listeners);
+    pthread_cond_broadcast (&cq->listeners);
 
-  mutex_unlock (&cq->lock);
+  pthread_mutex_unlock (&cq->lock);
 
   return 0;
 }

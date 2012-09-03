@@ -35,7 +35,7 @@ timestamp (time_value_t *stamp)
 }
 
 /* Hold this lock before attempting to lock multiple pipes. */
-struct mutex pipe_multiple_lock = MUTEX_INITIALIZER;
+pthread_mutex_t pipe_multiple_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* ---------------------------------------------------------------- */
 
@@ -60,12 +60,12 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
   bzero (&new->read_time, sizeof (new->read_time));
   bzero (&new->write_time, sizeof (new->write_time));
 
-  condition_init (&new->pending_reads);
-  condition_init (&new->pending_read_selects);
-  condition_init (&new->pending_writes);
-  condition_init (&new->pending_write_selects);
+  pthread_cond_init (&new->pending_reads, NULL);
+  pthread_cond_init (&new->pending_read_selects, NULL);
+  pthread_cond_init (&new->pending_writes, NULL);
+  pthread_cond_init (&new->pending_write_selects, NULL);
   new->pending_selects = NULL;
-  mutex_init (&new->lock);
+  pthread_mutex_init (&new->lock, NULL);
 
   pq_create (&new->queue);
 
@@ -135,7 +135,7 @@ pipe_select_cond_broadcast (struct pipe *pipe)
 
   do
     {
-      condition_broadcast (&cond->cond);
+      pthread_cond_broadcast (&cond->cond);
       cond = cond->next;
     }
   while (cond != last);
@@ -169,12 +169,12 @@ void _pipe_no_readers (struct pipe *pipe)
 	  if (pipe->writers)
 	    /* Wake up writers for the bad news... */
 	    {
-	      condition_broadcast (&pipe->pending_writes);
-	      condition_broadcast (&pipe->pending_write_selects);
+	      pthread_cond_broadcast (&pipe->pending_writes);
+	      pthread_cond_broadcast (&pipe->pending_write_selects);
 	      pipe_select_cond_broadcast (pipe);
 	    }
 	}
-      mutex_unlock (&pipe->lock);
+      pthread_mutex_unlock (&pipe->lock);
     }
 }
 
@@ -192,12 +192,12 @@ void _pipe_no_writers (struct pipe *pipe)
 	  if (pipe->readers)
 	    /* Wake up readers for the bad news... */
 	    {
-	      condition_broadcast (&pipe->pending_reads);
-	      condition_broadcast (&pipe->pending_read_selects);
+	      pthread_cond_broadcast (&pipe->pending_reads);
+	      pthread_cond_broadcast (&pipe->pending_read_selects);
 	      pipe_select_cond_broadcast (pipe);
 	    }
 	}
-      mutex_unlock (&pipe->lock);
+      pthread_mutex_unlock (&pipe->lock);
     }
 }
 
@@ -217,15 +217,15 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 
   if (*select_type == SELECT_READ)
     {
-      mutex_lock (&rpipe->lock);
+      pthread_mutex_lock (&rpipe->lock);
       err = pipe_select_readable (rpipe, data_only);
-      mutex_unlock (&rpipe->lock);
+      pthread_mutex_unlock (&rpipe->lock);
     }
   else if (*select_type == SELECT_WRITE)
     {
-      mutex_lock (&wpipe->lock);
+      pthread_mutex_lock (&wpipe->lock);
       err = pipe_select_writable (wpipe);
-      mutex_unlock (&wpipe->lock);
+      pthread_mutex_unlock (&wpipe->lock);
     }
   else
     /* ugh */
@@ -233,18 +233,18 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
       int rpipe_blocked, wpipe_blocked;
       struct pipe_select_cond pending_select;
       size_t wlimit = wpipe->write_limit;
-      struct mutex *lock =
+      pthread_mutex_t *lock =
 	(wpipe == rpipe ? &rpipe->lock : &pipe_multiple_lock);
 
-      condition_init (&pending_select.cond);
+      pthread_cond_init (&pending_select.cond, NULL);
 
-      mutex_lock (lock);
+      pthread_mutex_lock (lock);
       if (rpipe == wpipe)
 	pipe_add_select_cond (rpipe, &pending_select);
       else
 	{
-	  mutex_lock (&rpipe->lock);
-	  mutex_lock (&wpipe->lock);
+	  pthread_mutex_lock (&rpipe->lock);
+	  pthread_mutex_lock (&wpipe->lock);
 	  pipe_add_select_cond (rpipe, &pending_select);
 	  pipe_add_select_cond (wpipe, &pending_select);
 	}
@@ -257,15 +257,15 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 	{
 	  if (rpipe != wpipe)
 	    {
-	      mutex_unlock (&rpipe->lock);
-	      mutex_unlock (&wpipe->lock);
+	      pthread_mutex_unlock (&rpipe->lock);
+	      pthread_mutex_unlock (&wpipe->lock);
 	    }
-	  if (hurd_condition_wait (&pending_select.cond, lock))
+	  if (pthread_hurd_cond_wait_np (&pending_select.cond, lock))
 	    err = EINTR;
 	  if (rpipe != wpipe)
 	    {
-	      mutex_lock (&rpipe->lock);
-	      mutex_lock (&wpipe->lock);
+	      pthread_mutex_lock (&rpipe->lock);
+	      pthread_mutex_lock (&wpipe->lock);
 	    }
 	  rpipe_blocked =
 	    ! ((rpipe->flags & PIPE_BROKEN)
@@ -289,10 +289,10 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 	{
 	  pipe_remove_select_cond (rpipe, &pending_select);
 	  pipe_remove_select_cond (wpipe, &pending_select);
-	  mutex_unlock (&rpipe->lock);
-	  mutex_unlock (&wpipe->lock);
+	  pthread_mutex_unlock (&rpipe->lock);
+	  pthread_mutex_unlock (&wpipe->lock);
 	}
-      mutex_unlock (lock);
+      pthread_mutex_unlock (lock);
     }
 
   return err;
@@ -357,14 +357,14 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
       timestamp (&pipe->write_time);
 
       /* And wakeup anyone that might be interested in it.  */
-      condition_broadcast (&pipe->pending_reads);
-      mutex_unlock (&pipe->lock);
+      pthread_cond_broadcast (&pipe->pending_reads);
+      pthread_mutex_unlock (&pipe->lock);
 
-      mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
+      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
       /* Only wakeup selects if there's still data available.  */
       if (pipe_is_readable (pipe, 0))
 	{
-	  condition_broadcast (&pipe->pending_read_selects);
+	  pthread_cond_broadcast (&pipe->pending_read_selects);
 	  pipe_select_cond_broadcast (pipe);
 	  /* We leave PIPE locked here, assuming the caller will soon unlock
 	     it and allow others access.  */
@@ -459,14 +459,14 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
       timestamp (&pipe->read_time);
 
       /* And wakeup anyone that might be interested in it.  */
-      condition_broadcast (&pipe->pending_writes);
-      mutex_unlock (&pipe->lock);
+      pthread_cond_broadcast (&pipe->pending_writes);
+      pthread_mutex_unlock (&pipe->lock);
 
-      mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
+      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
       /* Only wakeup selects if there's still writing space available.  */
       if (pipe_readable (pipe, 1) < pipe->write_limit)
 	{
-	  condition_broadcast (&pipe->pending_write_selects);
+	  pthread_cond_broadcast (&pipe->pending_write_selects);
 	  pipe_select_cond_broadcast (pipe);
 	  /* We leave PIPE locked here, assuming the caller will soon unlock
 	     it and allow others access.  */

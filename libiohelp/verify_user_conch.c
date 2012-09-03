@@ -28,13 +28,13 @@ iohelp_verify_user_conch (struct conch *c, void *user)
   if (user != c->holder)
     return EPERM;
   user_sh = c->holder_shared_page;
-  spin_lock (&user_sh->lock);
+  pthread_spin_lock (&user_sh->lock);
   if (user_sh->conch_status != USER_HAS_CONCH
       && user_sh->conch_status != USER_RELEASE_CONCH)
     {
-      spin_unlock (&user_sh->lock);
+      pthread_spin_unlock (&user_sh->lock);
       return EPERM;
     }
-  spin_unlock (&user_sh->lock);
+  pthread_spin_unlock (&user_sh->lock);
   return 0;
 }

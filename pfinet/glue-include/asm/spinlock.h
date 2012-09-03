@@ -1,8 +1,6 @@
 #ifndef _HACK_ASM_SPINLOCK_H_
 #define _HACK_ASM_SPINLOCK_H_
 
-#include <cthreads.h>
-
 typedef struct { } spinlock_t;
 #define SPIN_LOCK_UNLOCKED { }
 

@@ -23,6 +23,7 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <assert.h>
+#include <pthread.h>
 
 /* This library supports client-side network file system
    implementations.  It is analogous to the diskfs library provided for
@@ -79,7 +80,7 @@ struct node
      are ignored, so you can set this to nn_stat.st_mode if you want that.  */
   mode_t nn_translated;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* The number of references to this node.  */
   int references;
@@ -359,7 +360,7 @@ struct node *netfs_make_node (struct netnode *);
 
 /* Whenever node->references is to be touched, this lock must be
    held.  Cf. netfs_nrele, netfs_nput, netfs_nref and netfs_drop_node.  */
-extern spin_lock_t netfs_node_refcnt_lock;
+extern pthread_spinlock_t netfs_node_refcnt_lock;
 
 /* Normally called in main.  This function sets up some of the netfs
    server's internal state.  */

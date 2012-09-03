@@ -23,6 +23,7 @@ target = storeio
 SRCS = dev.c storeio.c open.c pager.c io.c
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = trivfs pager fshelp iohelp store threads ports ihash shouldbeinlibc
+HURDLIBS = trivfs pager fshelp iohelp store ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf

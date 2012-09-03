@@ -106,7 +106,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   naux_gids = sizeof (agbuf) / sizeof (uid_t);
 
   /* Release the global lock while blocking on the auth server and client.  */
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   err = auth_server_authenticate (authserver,
 				  rendport, MACH_MSG_TYPE_COPY_SEND,
 				  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
@@ -114,7 +114,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 				  &aux_uids, &naux_uids,
 				  &gen_gids, &ngen_gids,
 				  &aux_gids, &naux_gids);
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (err)
     return err;
@@ -565,7 +565,7 @@ allocate_proc (task_t task)
   p->p_task = task;
   p->p_msgport = MACH_PORT_NULL;
 
-  condition_init (&p->p_wakeup);
+  pthread_cond_init (&p->p_wakeup, NULL);
 
   return p;
 }
@@ -756,7 +756,7 @@ process_has_exited (struct proc *p)
   /* If an operation is in progress for this process, cause it
      to wakeup and return now. */
   if (p->p_waiting || p->p_msgportwait)
-    condition_broadcast (&p->p_wakeup);
+    pthread_cond_broadcast (&p->p_wakeup);
 
   p->p_dead = 1;
 

@@ -36,7 +36,7 @@ diskfs_shutdown (int flags)
 	mach_port_t control;
 
 	error = fshelp_fetch_control (&np->transbox, &control);
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    error = fsys_goaway (control, flags);
@@ -44,7 +44,7 @@ diskfs_shutdown (int flags)
 	  }
 	else
 	  error = 0;
-	mutex_lock (&np->lock);
+	pthread_mutex_lock (&np->lock);
 
 	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
 	  error = 0;
@@ -63,14 +63,14 @@ diskfs_shutdown (int flags)
 	return err;
     }
 
-  rwlock_writer_lock (&diskfs_fsys_lock);
+  pthread_rwlock_wrlock (&diskfs_fsys_lock);
 
   /* Permit all the current RPC's to finish, and then
      suspend new ones.  */
   err = ports_inhibit_class_rpcs (diskfs_protid_class);
   if (err)
     {
-      rwlock_writer_unlock (&diskfs_fsys_lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
       return err;
     }
 
@@ -88,7 +88,7 @@ diskfs_shutdown (int flags)
     {
       ports_enable_class (diskfs_protid_class);
       ports_resume_class_rpcs (diskfs_protid_class);
-      rwlock_writer_unlock (&diskfs_fsys_lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
       return EBUSY;
     }
 

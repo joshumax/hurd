@@ -48,7 +48,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       while (*_diskfs_chroot_directory == '/')
 	++_diskfs_chroot_directory;
 
-      mutex_lock (&diskfs_root_node->lock);
+      pthread_mutex_lock (&diskfs_root_node->lock);
 
       /* Create a protid we can use in diskfs_lookup.  */
       err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC,
@@ -60,7 +60,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       /* Look up the directory name.  */
       err = diskfs_lookup (diskfs_root_node, _diskfs_chroot_directory,
 			   LOOKUP, &np, NULL, rootpi);
-      mutex_unlock (&diskfs_root_node->lock);
+      pthread_mutex_unlock (&diskfs_root_node->lock);
       ports_port_deref (rootpi);
 
       if (err == EAGAIN)
@@ -71,7 +71,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 
       if (!S_ISDIR (np->dn_stat.st_mode))
 	{
-	  mutex_unlock (&np->lock);
+	  pthread_mutex_unlock (&np->lock);
 	  error (1, ENOTDIR, "%s", _diskfs_chroot_directory);
 	}
 
@@ -81,7 +81,7 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
 	 if _diskfs_chroot_directory is non-null.  */
       old = diskfs_root_node;
       diskfs_root_node = np;
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       diskfs_nput (old);
     }
 
@@ -138,7 +138,7 @@ diskfs_S_startup_dosync (mach_port_t handle)
       diskfs_sync_everything (0);
       diskfs_set_hypermetadata (0, 0);
 
-      rwlock_writer_lock (&diskfs_fsys_lock);
+      pthread_rwlock_wrlock (&diskfs_fsys_lock);
 
       /* Permit all the current RPC's to finish, and then suspend new ones */
       err = ports_inhibit_class_rpcs (diskfs_protid_class);
@@ -158,7 +158,7 @@ diskfs_S_startup_dosync (mach_port_t handle)
 	  ports_resume_class_rpcs (diskfs_protid_class);
 	}
 
-      rwlock_writer_unlock (&diskfs_fsys_lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
     }
 
   ports_port_deref (pi);

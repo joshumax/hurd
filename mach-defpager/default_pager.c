@@ -37,7 +37,7 @@
 #include <mach/task_info.h>
 #include <mach/default_pager_types.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <device/device_types.h>
 #include <device/device.h>
@@ -59,18 +59,24 @@
 
 static char my_name[] = "(default pager):";
 
-static struct mutex printf_lock = MUTEX_INITIALIZER;
+static pthread_mutex_t printf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #if 0
-#define dprintf(f, x...) \
-  ({ mutex_lock (&printf_lock); printf (f , ##x); fflush (stdout); mutex_unlock (&printf_lock); })
+#define dprintf(f, x...)			\
+  ({ pthread_mutex_lock (&printf_lock);		\
+     printf (f , ##x);				\
+     fflush (stdout);				\
+     pthread_mutex_unlock (&printf_lock); })
 #else
 #define dprintf(f, x...)
 #endif
 
 #if 0
-#define ddprintf(f, x...) \
-  ({ mutex_lock (&printf_lock); printf (f , ##x); fflush (stdout); mutex_unlock (&printf_lock); })
+#define ddprintf(f, x...)			\
+  ({ pthread_mutex_lock (&printf_lock);		\
+     printf (f , ##x);				\
+     fflush (stdout);				\
+     pthread_mutex_unlock (&printf_lock); })
 #else
 #define ddprintf(f, x...)
 #endif
@@ -111,7 +117,7 @@ typedef unsigned int	bm_entry_t;
  * Controls allocation of blocks within paging area.
  */
 struct part {
-	struct mutex	p_lock;		/* for bitmap/free */
+	pthread_mutex_t	p_lock;		/* for bitmap/free */
 	vm_size_t	total_size;	/* total number of blocks */
 	vm_size_t	free;		/* number of blocks free */
 	unsigned int	id;		/* named lookup */
@@ -122,7 +128,7 @@ struct part {
 typedef	struct part	*partition_t;
 
 struct {
-	struct mutex	lock;
+	pthread_mutex_t	lock;
 	int		n_partitions;
 	partition_t	*partition_list;/* array, for quick mapping */
 } all_partitions;			/* list of all such */
@@ -172,7 +178,7 @@ part_id(const char *name)
 void
 partition_init()
 {
-	mutex_init(&all_partitions.lock);
+	pthread_mutex_init(&all_partitions.lock, NULL);
 	all_partitions.n_partitions = 0;
 }
 
@@ -187,7 +193,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	int rc;
 	unsigned int id = part_id(name);
 
-	mutex_lock(&all_partitions.lock);
+	pthread_mutex_lock(&all_partitions.lock);
 	{
 	  unsigned int i;
 	  for (i = 0; i < all_partitions.n_partitions; i++)
@@ -197,18 +203,18 @@ new_partition (const char *name, struct file_direct *fdp,
 		{
 		  printf ("(default pager): Already paging to partition %s!\n",
 			  name);
-		  mutex_unlock(&all_partitions.lock);
+		  pthread_mutex_unlock(&all_partitions.lock);
 		  return 0;
 		}
 	    }
 	}
-	mutex_unlock(&all_partitions.lock);
+	pthread_mutex_unlock(&all_partitions.lock);
 
 	size = atop(fdp->fd_size * fdp->fd_bsize);
 	bmsize = howmany(size, NB_BM) * sizeof(bm_entry_t);
 
 	part = (partition_t) kalloc(sizeof(struct part));
-	mutex_init(&part->p_lock);
+	pthread_mutex_init(&part->p_lock, NULL);
 	part->total_size = size;
 	part->free	= size;
 	part->id	= id;
@@ -436,7 +442,7 @@ create_paging_partition(const char *name,
 	if (!part)
 	  return;
 
-	mutex_lock(&all_partitions.lock);
+	pthread_mutex_lock(&all_partitions.lock);
 	{
 		register int i;
 
@@ -462,7 +468,7 @@ create_paging_partition(const char *name,
 		}
 		set_partition_of(i, part);
 	}
-	mutex_unlock(&all_partitions.lock);
+	pthread_mutex_unlock(&all_partitions.lock);
 
 #if 0
 	dprintf("%s Added paging %s %s\n", my_name,
@@ -486,7 +492,7 @@ choose_partition(size, cur_part)
 	register boolean_t	found = FALSE;
 	register int		i;
 
-	mutex_lock(&all_partitions.lock);
+	pthread_mutex_lock(&all_partitions.lock);
 	for (i = 0; i < all_partitions.n_partitions; i++) {
 
 		/* the undesirable one ? */
@@ -503,19 +509,19 @@ ddprintf ("choose_partition(%x,%d,%d)\n",size,cur_part,i);
 			continue;
 
 		/* is it big enough ? */
-		mutex_lock(&part->p_lock);
+		pthread_mutex_lock(&part->p_lock);
 		if (ptoa(part->free) >= size) {
 			if (cur_part != P_INDEX_INVALID) {
-				mutex_unlock(&all_partitions.lock);
+				pthread_mutex_unlock(&all_partitions.lock);
 				return (p_index_t)i;
 			} else
 				found = TRUE;
 		}
-		mutex_unlock(&part->p_lock);
+		pthread_mutex_unlock(&part->p_lock);
 
 		if (found) break;
 	}
-	mutex_unlock(&all_partitions.lock);
+	pthread_mutex_unlock(&all_partitions.lock);
 	return (found) ? (p_index_t)i : P_INDEX_INVALID;
 }
 
@@ -545,11 +551,11 @@ ddprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 	    return (NO_BLOCK);
 
 	if (lock_it)
-	    mutex_lock(&part->p_lock);
+	    pthread_mutex_lock(&part->p_lock);
 
 	if (part->free == 0) {
 	    /* out of paging space */
-	    mutex_unlock(&part->p_lock);
+	    pthread_mutex_unlock(&part->p_lock);
 	    return (NO_BLOCK);
 	}
 
@@ -579,7 +585,7 @@ ddprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 
 	}
 
-	mutex_unlock(&part->p_lock);
+	pthread_mutex_unlock(&part->p_lock);
 
 	return (bm_e*NB_BM+bit);
 }
@@ -609,13 +615,13 @@ ddprintf ("pager_dealloc_page(%d,%x,%d)\n",pindex,page,lock_it);
 	bit  = page % NB_BM;
 
 	if (lock_it)
-	    mutex_lock(&part->p_lock);
+	    pthread_mutex_lock(&part->p_lock);
 
 	part->bitmap[bm_e] &= ~(1<<bit);
 	part->free++;
 
 	if (lock_it)
-	    mutex_unlock(&part->p_lock);
+	    pthread_mutex_unlock(&part->p_lock);
 }
 
 /*
@@ -659,7 +665,7 @@ typedef union dp_map	*dp_map_t;
 #define	invalidate_block(e)	((e).indirect = (dp_map_t)NO_BLOCK)
 
 struct dpager {
-	struct mutex	lock;		/* lock for extending block map */
+	pthread_mutex_t	lock;		/* lock for extending block map */
 					/* XXX should be read-write lock */
 #if	DEBUG_READER_CONFLICTS
 	int		readers;
@@ -751,7 +757,7 @@ pager_alloc(pager, part, size)
 	register int    i;
 	register dp_map_t mapptr, emapptr;
 
-	mutex_init(&pager->lock);
+	pthread_mutex_init(&pager->lock, NULL);
 #if	DEBUG_READER_CONFLICTS
 	pager->readers = 0;
 	pager->writer = FALSE;
@@ -900,7 +906,7 @@ pager_extend(pager, new_size)
 	register int		i;
 	register vm_size_t	old_size;
 
-	mutex_lock(&pager->lock);		/* XXX lock_write */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_write */
 #if	DEBUG_READER_CONFLICTS
 	pager->writer = TRUE;
 #endif
@@ -948,7 +954,7 @@ pager_extend(pager, new_size)
 #if	DEBUG_READER_CONFLICTS
 	    pager->writer = FALSE;
 #endif
-	    mutex_unlock(&pager->lock);
+	    pthread_mutex_unlock(&pager->lock);
 #if 0
 	    ddprintf ("pager_extend 1 mapptr %x [3b] = %x\n", new_mapptr,
 		     new_mapptr[0x3b]);
@@ -1023,7 +1029,7 @@ pager_extend(pager, new_size)
 #if	DEBUG_READER_CONFLICTS
 	    pager->writer = FALSE;
 #endif
-	    mutex_unlock(&pager->lock);
+	    pthread_mutex_unlock(&pager->lock);
 	    return;
 	}
 	/*
@@ -1052,7 +1058,7 @@ pager_extend(pager, new_size)
 #if	DEBUG_READER_CONFLICTS
 	pager->writer = FALSE;
 #endif
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 }
 
 /* Truncate a memory object.  First, any pages between the new size
@@ -1091,7 +1097,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	}
     }
 
-  mutex_lock(&pager->lock);		/* XXX lock_write */
+  pthread_mutex_lock(&pager->lock);	/* XXX lock_write */
 
   if (!pager->map)
     goto done;
@@ -1152,7 +1158,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 
  done:
   pager->size = new_size;
-  mutex_unlock(&pager->lock);
+  pthread_mutex_unlock(&pager->lock);
 
 #ifdef	CHECKSUM
 #error write me
@@ -1180,7 +1186,7 @@ pager_read_offset(pager, offset)
 	    default_pager_read_conflicts++;	/* would have proceeded with
 						   read/write lock */
 #endif
-	mutex_lock(&pager->lock);		/* XXX lock_read */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 #if	DEBUG_READER_CONFLICTS
 	pager->readers++;
 #endif
@@ -1188,7 +1194,7 @@ pager_read_offset(pager, offset)
 	  {
 	    ddprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
 		    my_name, pager, f_page, pager->size);
-	    mutex_unlock(&pager->lock);
+	    pthread_mutex_unlock(&pager->lock);
 	    return (union dp_map) (union dp_map *) NO_BLOCK;
 #if 0
 	    panic("%spager_read_offset",my_name);
@@ -1213,7 +1219,7 @@ pager_read_offset(pager, offset)
 #if	DEBUG_READER_CONFLICTS
 	pager->readers--;
 #endif
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 	return (pager_offset);
 }
 
@@ -1229,7 +1235,7 @@ void pager_release_offset(pager, offset)
 
 	offset = atop(offset);
 
-	mutex_lock(&pager->lock);	/* XXX lock_read */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 
 	assert (pager->map);
 	if (INDIRECT_PAGEMAP(pager->size)) {
@@ -1243,7 +1249,7 @@ void pager_release_offset(pager, offset)
 		invalidate_block(pager->map[offset]);
 	}
 
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 
 	pager_dealloc_page(entry.block.p_index, entry.block.p_offset, TRUE);
 }
@@ -1329,7 +1335,7 @@ pager_get_checksum(pager, offset)
 
 	f_page = atop(offset);
 
-	mutex_lock(&pager->lock);		/* XXX lock_read */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 	if (f_page >= pager->size)
 	    panic("%spager_get_checksum",my_name);
 
@@ -1346,7 +1352,7 @@ pager_get_checksum(pager, offset)
 	    checksum = pager->checksum[f_page];
 	}
 
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 	return (checksum);
 }
 
@@ -1364,7 +1370,7 @@ pager_put_checksum(pager, offset, checksum)
 
 	f_page = atop(offset);
 
-	mutex_lock(&pager->lock);		/* XXX lock_read */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 	if (f_page >= pager->size)
 	    panic(here,my_name);
 
@@ -1380,7 +1386,7 @@ pager_put_checksum(pager, offset, checksum)
 	else {
 	    pager->checksum[f_page] = checksum;
 	}
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 }
 
 /*
@@ -1431,7 +1437,7 @@ pager_write_offset(pager, offset)
 	    default_pager_read_conflicts++;	/* would have proceeded with
 						   read/write lock */
 #endif
-	mutex_lock(&pager->lock);		/* XXX lock_read */
+	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 #if	DEBUG_READER_CONFLICTS
 	pager->readers++;
 #endif
@@ -1463,14 +1469,14 @@ pager_write_offset(pager, offset)
 #if	DEBUG_READER_CONFLICTS
 	    pager->readers--;
 #endif
-	    mutex_unlock(&pager->lock);
+	    pthread_mutex_unlock(&pager->lock);
 	    pager_extend(pager, f_page + 1);
 #if	DEBUG_READER_CONFLICTS
 	    if (pager->readers > 0)
 		default_pager_read_conflicts++;	/* would have proceeded with
 						   read/write lock */
 #endif
-	    mutex_lock(&pager->lock);		/* XXX lock_read */
+	    pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 #if	DEBUG_READER_CONFLICTS
 	    pager->readers++;
 #endif
@@ -1573,7 +1579,7 @@ out:
 #if	DEBUG_READER_CONFLICTS
 	pager->readers--;
 #endif
-	mutex_unlock(&pager->lock);
+	pthread_mutex_unlock(&pager->lock);
 	return (block);
 }
 
@@ -1886,8 +1892,8 @@ default_has_page(ds, offset)
 struct dstruct {
 	queue_chain_t	links;		/* Link in pager-port list */
 
-	struct mutex	lock;		/* Lock for the structure */
-	struct condition
+	pthread_mutex_t	lock;		/* Lock for the structure */
+	pthread_cond_t
 			waiting_seqno,	/* someone waiting on seqno */
 			waiting_read,	/* someone waiting on readers */
 			waiting_write,	/* someone waiting on writers */
@@ -1915,9 +1921,9 @@ typedef struct dstruct *	default_pager_t;
 #define	DEFAULT_PAGER_NULL	((default_pager_t)0)
 
 #if	PARALLEL
-#define	dstruct_lock_init(ds)	mutex_init(&ds->lock)
-#define	dstruct_lock(ds)	mutex_lock(&ds->lock)
-#define	dstruct_unlock(ds)	mutex_unlock(&ds->lock)
+#define	dstruct_lock_init(ds)	pthread_mutex_init(&ds->lock, NULL)
+#define	dstruct_lock(ds)	pthread_mutex_lock(&ds->lock)
+#define	dstruct_unlock(ds)	pthread_mutex_unlock(&ds->lock)
 #else	/* PARALLEL */
 #define	dstruct_lock_init(ds)
 #define	dstruct_lock(ds)
@@ -1932,14 +1938,14 @@ typedef struct dstruct *	default_pager_t;
  */
 struct pager_port {
 	queue_head_t	queue;
-	struct mutex	lock;
+	pthread_mutex_t	lock;
 	int		count;	/* saves code */
 	queue_head_t	leak_queue;
 } all_pagers;
 
 #define pager_port_list_init()					\
 {								\
-	mutex_init(&all_pagers.lock);				\
+	pthread_mutex_init(&all_pagers.lock, NULL);		\
 	queue_init(&all_pagers.queue);				\
 	queue_init(&all_pagers.leak_queue);			\
 	all_pagers.count = 0;					\
@@ -1949,10 +1955,10 @@ void pager_port_list_insert(port, ds)
 	mach_port_t port;
 	default_pager_t	ds;
 {
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 	queue_enter(&all_pagers.queue, ds, default_pager_t, links);
 	all_pagers.count++;
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 }
 
 /* given a data structure return a good port-name to associate it to */
@@ -1969,10 +1975,10 @@ void pager_port_list_insert(port, ds)
 void pager_port_list_delete(ds)
 	default_pager_t ds;
 {
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 	queue_remove(&all_pagers.queue, ds, default_pager_t, links);
 	all_pagers.count--;
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 }
 
 /*
@@ -1995,17 +2001,17 @@ destroy_paging_partition(name, pp_private)
 	 * This prevents choose_partition from
 	 * getting in the way.
 	 */
-	mutex_lock(&all_partitions.lock);
+	pthread_mutex_lock(&all_partitions.lock);
 	for (pindex = 0; pindex < all_partitions.n_partitions; pindex++) {
 		part = partition_of(pindex);
 		if (part && (part->id == id)) break;
 	}
 	if (pindex == all_partitions.n_partitions) {
-		mutex_unlock(&all_partitions.lock);
+		pthread_mutex_unlock(&all_partitions.lock);
 		return KERN_INVALID_ARGUMENT;
 	}
 	part->going_away = TRUE;
-	mutex_unlock(&all_partitions.lock);
+	pthread_mutex_unlock(&all_partitions.lock);
 
 	/*
 	 * This might take a while..
@@ -2015,18 +2021,18 @@ all_over_again:
 dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 #endif
 	all_ok = TRUE;
-	mutex_lock(&part->p_lock);
+	pthread_mutex_lock(&part->p_lock);
 
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 	queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
 
 		dstruct_lock(entry);
 
-		if (!mutex_try_lock(&entry->dpager.lock)) {
+		if (pthread_mutex_trylock(&entry->dpager.lock)) {
 
 			dstruct_unlock(entry);
-			mutex_unlock(&all_pagers.lock);
-			mutex_unlock(&part->p_lock);
+			pthread_mutex_unlock(&all_pagers.lock);
+			pthread_mutex_unlock(&part->p_lock);
 
 			/* yield the processor */
 			(void) thread_switch(MACH_PORT_NULL,
@@ -2042,13 +2048,13 @@ dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 		 */
 		all_ok = pager_realloc(&entry->dpager, pindex);
 
-		mutex_unlock(&entry->dpager.lock);
+		pthread_mutex_unlock(&entry->dpager.lock);
 		dstruct_unlock(entry);
 
 		if (!all_ok)  break;
 
 	}
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 
 	if (all_ok) {
 		/* No need to unlock partition, there are no refs left */
@@ -2098,7 +2104,7 @@ void pager_port_lock(ds, seqno)
 	dstruct_lock(ds);
 	while (ds->seqno != seqno) {
 		default_pager_wait_seqno++;
-		condition_wait(&ds->waiting_seqno, &ds->lock);
+		pthread_cond_wait(&ds->waiting_seqno, &ds->lock);
 	}
 }
 
@@ -2110,7 +2116,7 @@ void pager_port_unlock(ds)
 {
 	ds->seqno++;
 	dstruct_unlock(ds);
-	condition_broadcast(&ds->waiting_seqno);
+	pthread_cond_broadcast(&ds->waiting_seqno);
 }
 
 /*
@@ -2130,7 +2136,7 @@ void pager_port_wait_for_readers(ds)
 {
 	while (ds->readers != 0) {
 		default_pager_wait_read++;
-		condition_wait(&ds->waiting_read, &ds->lock);
+		pthread_cond_wait(&ds->waiting_read, &ds->lock);
 	}
 }
 
@@ -2143,7 +2149,7 @@ void pager_port_finish_read(ds)
 	dstruct_lock(ds);
 	if (--ds->readers == 0) {
 		dstruct_unlock(ds);
-		condition_broadcast(&ds->waiting_read);
+		pthread_cond_broadcast(&ds->waiting_read);
 	}
 	else {
 		dstruct_unlock(ds);
@@ -2167,7 +2173,7 @@ void pager_port_wait_for_writers(ds)
 {
 	while (ds->writers != 0) {
 		default_pager_wait_write++;
-		condition_wait(&ds->waiting_write, &ds->lock);
+		pthread_cond_wait(&ds->waiting_write, &ds->lock);
 	}
 }
 
@@ -2180,7 +2186,7 @@ void pager_port_finish_write(ds)
 	dstruct_lock(ds);
 	if (--ds->writers == 0) {
 		dstruct_unlock(ds);
-		condition_broadcast(&ds->waiting_write);
+		pthread_cond_broadcast(&ds->waiting_write);
 	}
 	else {
 		dstruct_unlock(ds);
@@ -2196,7 +2202,7 @@ void pager_port_wait_for_refs(ds)
 {
 	while (ds->name_refs == 0) {
 		default_pager_wait_refs++;
-		condition_wait(&ds->waiting_refs, &ds->lock);
+		pthread_cond_wait(&ds->waiting_refs, &ds->lock);
 	}
 }
 
@@ -2206,7 +2212,7 @@ void pager_port_wait_for_refs(ds)
 void pager_port_finish_refs(ds)
 	default_pager_t ds;
 {
-	condition_broadcast(&ds->waiting_refs);
+	pthread_cond_broadcast(&ds->waiting_refs);
 }
 
 #else	/* PARALLEL */
@@ -2239,7 +2245,7 @@ mach_port_t default_pager_external_set;	/* Port set for external objects. */
 mach_port_t default_pager_default_set;	/* Port set for "default" thread. */
 
 typedef struct default_pager_thread {
-	cthread_t	dpt_thread;	/* Server thread. */
+	pthread_t	dpt_thread;	/* Server thread. */
 	vm_offset_t	dpt_buffer;	/* Read buffer. */
 	boolean_t	dpt_internal;	/* Do we handle internal objects? */
 } default_pager_thread_t;
@@ -2410,9 +2416,9 @@ rename_it:
 			panic("%s m_o_create", my_name);
 		ds1 = (default_pager_t) kalloc(sizeof *ds1);
 		*ds1 = *ds;
-		mutex_lock(&all_pagers.lock);
+		pthread_mutex_lock(&all_pagers.lock);
 		queue_enter(&all_pagers.leak_queue, ds, default_pager_t, links);
-		mutex_unlock(&all_pagers.lock);
+		pthread_mutex_unlock(&all_pagers.lock);
 		ds = ds1;
 		goto rename_it;
 	}
@@ -2620,7 +2626,7 @@ void default_pager_no_senders(pager, seqno, mscount)
 	 * Recover memory that we might have wasted because
 	 * of name conflicts
 	 */
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 
 	while (!queue_empty(&all_pagers.leak_queue)) {
 
@@ -2629,11 +2635,13 @@ void default_pager_no_senders(pager, seqno, mscount)
 		kfree((char *) ds, sizeof(*ds));
 	}
 
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 }
 
 int		default_pager_pagein_count = 0;
 int		default_pager_pageout_count = 0;
+
+static __thread default_pager_thread_t *dpt;
 
 kern_return_t
 seqnos_memory_object_data_request(pager, seqno, reply_to, offset,
@@ -2645,14 +2653,11 @@ seqnos_memory_object_data_request(pager, seqno, reply_to, offset,
 	vm_size_t	length;
 	vm_prot_t	protection_required;
 {
-	default_pager_thread_t	*dpt;
 	default_pager_t		ds;
 	vm_offset_t		addr;
 	unsigned int 		errors;
 	kern_return_t		rc;
 	static char		here[] = "%sdata_request";
-
-	dpt = (default_pager_thread_t *) cthread_data(cthread_self());
 
 	if (length != vm_page_size)
 	    panic(here,my_name);
@@ -3103,14 +3108,12 @@ default_pager_thread_privileges()
 	/*
 	 *	Set thread privileges.
 	 */
-	cthread_wire();		/* attach kernel thread to cthread */
 	wire_thread();		/* grab a kernel stack and memory allocation
 				   privileges */
 }
 
-any_t
-default_pager_default_thread (arg)
-     any_t arg;
+void *
+default_pager_default_thread(void *arg)
 {
   kern_return_t kr;
 	default_pager_thread_privileges ();
@@ -3124,16 +3127,13 @@ default_pager_default_thread (arg)
 
 
 
-any_t
-default_pager_thread(arg)
-	any_t	arg;
+void *
+default_pager_thread(void *arg)
 {
-	default_pager_thread_t *dpt = (default_pager_thread_t *) arg;
 	mach_port_t pset;
 	kern_return_t kr;
 
-	cthread_set_data(cthread_self(), (any_t) dpt);
-
+	dpt = (default_pager_thread_t *) arg;
 
 	/*
 	 *	Threads handling external objects cannot have
@@ -3162,23 +3162,31 @@ void
 start_default_pager_thread(internal)
 	boolean_t internal;
 {
-	default_pager_thread_t *dpt;
+	default_pager_thread_t *ndpt;
 	kern_return_t kr;
+	error_t err;
 
-	dpt = (default_pager_thread_t *) kalloc(sizeof *dpt);
-	if (dpt == 0)
+	ndpt = (default_pager_thread_t *) kalloc(sizeof *ndpt);
+	if (ndpt == 0)
 		panic(my_name);
 
-	dpt->dpt_internal = internal;
+	ndpt->dpt_internal = internal;
 
-	kr = vm_allocate(default_pager_self, &dpt->dpt_buffer,
+	kr = vm_allocate(default_pager_self, &ndpt->dpt_buffer,
 			 vm_page_size, TRUE);
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
-	wire_memory(dpt->dpt_buffer, vm_page_size,
+	wire_memory(ndpt->dpt_buffer, vm_page_size,
 		    VM_PROT_READ|VM_PROT_WRITE);
 
-	dpt->dpt_thread = cthread_fork(default_pager_thread, (any_t) dpt);
+	err = pthread_create(&ndpt->dpt_thread, NULL, default_pager_thread,
+			     ndpt);
+	if (!err)
+		pthread_detach (ndpt->dpt_thread);
+	else {
+		errno = err;
+		perror ("pthread_create");
+	}
 }
 
 void
@@ -3335,9 +3343,9 @@ rename_it:
 
 		ds1 = (default_pager_t) kalloc(sizeof *ds1);
 		*ds1 = *ds;
-		mutex_lock(&all_pagers.lock);
+		pthread_mutex_lock(&all_pagers.lock);
 		queue_enter(&all_pagers.leak_queue, ds, default_pager_t, links);
-		mutex_unlock(&all_pagers.lock);
+		pthread_mutex_unlock(&all_pagers.lock);
 		ds = ds1;
 		goto rename_it;
 	}
@@ -3365,9 +3373,9 @@ S_default_pager_info (mach_port_t pager,
 	if (pager != default_pager_default_port)
 		return KERN_INVALID_ARGUMENT;
 
-	mutex_lock(&all_partitions.lock);
+	pthread_mutex_lock(&all_partitions.lock);
 	paging_space_info(&total, &free);
-	mutex_unlock(&all_partitions.lock);
+	pthread_mutex_unlock(&all_partitions.lock);
 
 	infop->dpi_total_space = ptoa(total);
 	infop->dpi_free_space = ptoa(free);
@@ -3410,12 +3418,12 @@ S_default_pager_objects (mach_port_t pager,
 	ports = *portsp;
 	ppotential = *pcountp;
 
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 	/*
 	 * We will send no more than this many
 	 */
 	actual = all_pagers.count;
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 
 	if (opotential < actual) {
 		vm_offset_t	newaddr;
@@ -3453,7 +3461,7 @@ S_default_pager_objects (mach_port_t pager,
 	 * Now scan the list.
 	 */
 
-	mutex_lock(&all_pagers.lock);
+	pthread_mutex_lock(&all_pagers.lock);
 
 	num_pagers = 0;
 	queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
@@ -3474,10 +3482,10 @@ S_default_pager_objects (mach_port_t pager,
 		/*
 		 * Avoid interfering with normal operations
 		 */
-		if (!mutex_try_lock(&entry->dpager.lock))
+		if (pthread_mutex_trylock(&entry->dpager.lock))
 			goto not_this_one;
 		size = pager_allocated(&entry->dpager);
-		mutex_unlock(&entry->dpager.lock);
+		pthread_mutex_unlock(&entry->dpager.lock);
 
 		dstruct_lock(entry);
 
@@ -3533,7 +3541,7 @@ not_this_one:
 
 	}
 
-	mutex_unlock(&all_pagers.lock);
+	pthread_mutex_unlock(&all_pagers.lock);
 
 	/*
 	 *	Deallocate and clear unused memory.
@@ -3633,16 +3641,16 @@ S_default_pager_object_pages (mach_port_t pager,
 	for (;;) {
 		default_pager_t		entry;
 
-		mutex_lock(&all_pagers.lock);
+		pthread_mutex_lock(&all_pagers.lock);
 		queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
 			dstruct_lock(entry);
 			if (entry->pager_name == object) {
-				mutex_unlock(&all_pagers.lock);
+				pthread_mutex_unlock(&all_pagers.lock);
 				goto found_object;
 			}
 			dstruct_unlock(entry);
 		}
-		mutex_unlock(&all_pagers.lock);
+		pthread_mutex_unlock(&all_pagers.lock);
 
 		/* did not find the object */
 
@@ -3652,7 +3660,7 @@ S_default_pager_object_pages (mach_port_t pager,
 
 	    found_object:
 
-		if (!mutex_try_lock(&entry->dpager.lock)) {
+		if (pthread_mutex_trylock(&entry->dpager.lock)) {
 			/* oh well bad luck */
 
 			dstruct_unlock(entry);
@@ -3664,7 +3672,7 @@ S_default_pager_object_pages (mach_port_t pager,
 		}
 
 		actual = pager_pages(&entry->dpager, pages, potential);
-		mutex_unlock(&entry->dpager.lock);
+		pthread_mutex_unlock(&entry->dpager.lock);
 		dstruct_unlock(entry);
 
 		if (actual <= potential)

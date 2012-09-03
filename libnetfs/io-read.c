@@ -39,11 +39,11 @@ netfs_S_io_read (struct protid *user,
     return EOPNOTSUPP;
 
   node = user->po->np;
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
 
   if ((user->po->openstat & O_READ) == 0)
     {
-      mutex_unlock (&node->lock);
+      pthread_mutex_unlock (&node->lock);
       return EBADF;
     }
 
@@ -96,7 +96,7 @@ netfs_S_io_read (struct protid *user,
   if (offset == -1 && !err)
     user->po->filepointer += *datalen;
 
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
 
   if (err && alloced)
     munmap (*data, amount);

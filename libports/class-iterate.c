@@ -18,19 +18,18 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
 error_t
 ports_class_iterate (struct port_class *class,
 		     error_t (*fun)(void *))
 {
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   if (class->ports != 0)
     {
       struct port_bucket *bucket = class->ports->bucket;
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       return _ports_bucket_class_iterate (bucket, class, fun);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   return 0;
 }

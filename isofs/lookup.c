@@ -132,9 +132,9 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 	  /* We don't have to do the normal rigamarole, because
 	     we are permanently read-only, so things are necessarily
 	     quiescent.  Just be careful to honor the locking order. */
-	  mutex_unlock (&dp->lock);
+	  pthread_mutex_unlock (&dp->lock);
 	  err = load_inode (npp, record, &rr);
-	  mutex_lock (&dp->lock);
+	  pthread_mutex_lock (&dp->lock);
 	}
     }
   else if (namelen == 1 && name[0] == '.')

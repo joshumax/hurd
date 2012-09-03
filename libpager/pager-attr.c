@@ -30,7 +30,7 @@ pager_change_attributes (struct pager *p,
 {
   struct attribute_request *ar = 0;
   
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
 
   /* If there's nothing to do we might be able to return.  However,
      if the user asked us to wait, and there are pending changes,
@@ -39,7 +39,7 @@ pager_change_attributes (struct pager *p,
   if (p->may_cache == may_cache && p->copy_strategy == copy_strategy
       && ! (p->attribute_requests && wait))
     {
-      mutex_unlock (&p->interlock);
+      pthread_mutex_unlock (&p->interlock);
       return;
     }
 
@@ -48,7 +48,7 @@ pager_change_attributes (struct pager *p,
   
   if (p->pager_state == NOTINIT)
     {
-      mutex_unlock (&p->interlock);
+      pthread_mutex_unlock (&p->interlock);
       return;
     }
 
@@ -83,7 +83,7 @@ pager_change_attributes (struct pager *p,
   if (wait)
     {
       while (ar->attrs_pending)
-	condition_wait (&p->wakeup, &p->interlock);
+	pthread_cond_wait (&p->wakeup, &p->interlock);
 
       if (! --ar->threads_waiting)
 	{
@@ -94,5 +94,5 @@ pager_change_attributes (struct pager *p,
 	}
     }
   
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
 }

@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "ux.h"
 
@@ -54,14 +54,14 @@ struct free_reply_port
   struct free_reply_port *next;
 };
 static struct free_reply_port *free_reply_ports = NULL;
-static spin_lock_t free_reply_ports_lock = SPIN_LOCK_INITIALIZER;
+static pthread_spinlock_t free_reply_ports_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 mach_port_t __mig_get_reply_port ()
 {
-  spin_lock (&free_reply_ports_lock);
+  pthread_spin_lock (&free_reply_ports_lock);
   if (free_reply_ports == NULL)
     {
-      spin_unlock (&free_reply_ports_lock);
+      pthread_spin_unlock (&free_reply_ports_lock);
       return __mach_reply_port ();
     }
   else
@@ -69,7 +69,7 @@ mach_port_t __mig_get_reply_port ()
       struct free_reply_port *frp = free_reply_ports;
       mach_port_t reply_port = frp->port;
       free_reply_ports = free_reply_ports->next;
-      spin_unlock (&free_reply_ports_lock);
+      pthread_spin_unlock (&free_reply_ports_lock);
       free (frp);
       return reply_port;
     }
@@ -82,10 +82,10 @@ void __mig_put_reply_port (mach_port_t port)
 {
   struct free_reply_port *frp = malloc (sizeof (struct free_reply_port));
   frp->port = port;
-  spin_lock (&free_reply_ports_lock);
+  pthread_spin_lock (&free_reply_ports_lock);
   frp->next = free_reply_ports;
   free_reply_ports = frp;
-  spin_unlock (&free_reply_ports_lock);
+  pthread_spin_unlock (&free_reply_ports_lock);
 }
 void mig_put_reply_port (mach_port_t port)
 {

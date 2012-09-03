@@ -22,7 +22,7 @@
 
 #include <assert.h>
 #include <unistd.h>
-#include <rwlock.h>
+#include <pthread.h>
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
@@ -90,7 +90,7 @@ struct node
   int dn_set_mtime;
   int dn_stat_dirty;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   int references;		/* hard references */
   int light_references;		/* light references */
@@ -174,7 +174,7 @@ extern const char *diskfs_boot_init_program;
 /* Hold this lock while do fsys level operations.  Innocuous users can just
    hold a reader lock, and anyone who's going to do nasty things that would
    screw anyone else should hold a writer lock.  */
-extern struct rwlock diskfs_fsys_lock;
+extern pthread_rwlock_t diskfs_fsys_lock;
 
 extern volatile struct mapped_time_value *diskfs_mtime;
 
@@ -184,7 +184,7 @@ extern volatile struct mapped_time_value *diskfs_mtime;
    be done by format independent code. */
 extern int diskfs_synchronous;
 
-extern spin_lock_t diskfs_node_refcnt_lock;
+extern pthread_spinlock_t diskfs_node_refcnt_lock;
 
 extern int pager_port_type;
 

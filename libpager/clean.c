@@ -32,7 +32,7 @@ _pager_clean (void *arg)
 
   if (p->pager_state != NOTINIT)
     {
-      mutex_lock (&p->interlock);
+      pthread_mutex_lock (&p->interlock);
       _pager_free_structure (p);
 #ifdef KERNEL_INIT_RACE
       for (i = p->init_head; i; i = tmp)
@@ -43,7 +43,7 @@ _pager_clean (void *arg)
 	  free (i);
 	}
 #endif
-      mutex_unlock (&p->interlock);
+      pthread_mutex_unlock (&p->interlock);
     }
 
   pager_clear_user_data (p->upi);

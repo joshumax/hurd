@@ -42,7 +42,7 @@ netfs_S_io_write (struct protid *user,
   *amount = datalen;
 
   np = user->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if (off == -1)
     {
@@ -51,7 +51,7 @@ netfs_S_io_write (struct protid *user,
 	  err = netfs_validate_stat (np, user->user);
 	  if (err)
 	    {
-	      mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&np->lock);
 	      return err;
 	    }
 	  user->po->filepointer = np->nn_stat.st_size;
@@ -62,7 +62,7 @@ netfs_S_io_write (struct protid *user,
   err =  netfs_attempt_write (user->user, np, off, amount, data);
   if (offset == -1 && !err)
     user->po->filepointer += *amount;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   
   return err;
 }

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <parted/parted.h>
 /*#include <parted/device_gnu.h>*/
@@ -40,8 +40,9 @@ error_t
 store_part_create (struct store *source, int index, int flags,
 		   struct store **store)
 {
-  static struct mutex parted_lock = MUTEX_INITIALIZER;
+  static pthread_mutex_t parted_lock = PTHREAD_MUTEX_INITIALIZER;
   static int version_check;
+
   error_t err = 0;
   PedDevice *dev;
   PedDisk *disk;
@@ -54,7 +55,7 @@ store_part_create (struct store *source, int index, int flags,
 	  && source->block_size % PED_SECTOR_SIZE != 0))
     return EINVAL;
 
-  mutex_lock (&parted_lock);
+  pthread_mutex_lock (&parted_lock);
 
   /* Since Parted provides no source-level information about
      version compatibility, we have to check at run time.  */
@@ -73,7 +74,7 @@ store_part_create (struct store *source, int index, int flags,
   if (version_check <= 0)
     {
       error (0, 0, "the `part' store type is not available");
-      mutex_unlock (&parted_lock);
+      pthread_mutex_unlock (&parted_lock);
       return ENOTSUP;
     }
 
@@ -149,7 +150,7 @@ out_with_dev:
   ped_device_destroy (dev);
 out:
   ped_exception_leave_all ();
-  mutex_unlock (&parted_lock);
+  pthread_mutex_unlock (&parted_lock);
 
   if (! err)
     err = store_remap (source, &run, 1, store);

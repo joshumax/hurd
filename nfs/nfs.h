@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include <pthread.h>
 #include <sys/mman.h>
 #include "nfs-spec.h"
 #include <hurd/netfs.h>
@@ -187,8 +188,8 @@ int *register_fresh_stat (struct node *, int *);
 /* rpc.c */
 int *initialize_rpc (int, int, int, size_t, void **, uid_t, gid_t, gid_t);
 error_t conduct_rpc (void **, int **);
-void timeout_service_thread (void);
-void rpc_receive_thread (void);
+void *timeout_service_thread (void *);
+void *rpc_receive_thread (void *);
 
 /* cache.c */
 void lookup_fhandle (void *, size_t, struct node **);

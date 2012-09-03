@@ -15,12 +15,13 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <cthreads.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <hurd/hurd_types.h>
 #include <mach/message.h>
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "proc.h"
 
@@ -41,8 +42,8 @@ struct msg_sig_post_request
 
 /* Send the Mach message indicated by msg_spec.   call cthread_exit
    when it has been delivered. */
-static any_t
-blocking_message_send (any_t arg)
+static void *
+blocking_message_send (void *arg)
 {
   struct msg_sig_post_request *const req = arg;
   error_t err;
@@ -146,8 +147,17 @@ send_signal (mach_port_t msgport,
 	struct msg_sig_post_request *copy = malloc (sizeof *copy);
 	if (copy)
 	  {
+	    pthread_t thread;
+	    error_t err;
 	    memcpy (copy, &message, sizeof message);
-	    cthread_detach (cthread_fork (blocking_message_send, copy));
+	    err = pthread_create (&thread, NULL, blocking_message_send, copy);
+	    if (!err)
+	      pthread_detach (thread);
+	    else
+	      {
+		errno = err;
+		perror ("pthread_create");
+	      }
 	  }
 	break;
       }

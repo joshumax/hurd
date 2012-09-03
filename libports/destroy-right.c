@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <hurd/ihash.h>
 #include <assert.h>
 
@@ -31,12 +30,12 @@ ports_destroy_right (void *portstruct)
 
   if (pi->port_right != MACH_PORT_NULL)
     {
-      mutex_lock (&_ports_lock);
+      pthread_mutex_lock (&_ports_lock);
       hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
       err = mach_port_mod_refs (mach_task_self (), pi->port_right,
 				MACH_PORT_RIGHT_RECEIVE, -1);
       assert_perror (err);
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
 
       pi->port_right = MACH_PORT_NULL;
 

@@ -21,9 +21,10 @@
 #include <errno.h>
 #include <assert.h>
 #include <error.h>
+#include <stdio.h>
 
 #include <sys/mman.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd.h>
 #include <hurd/pager.h>
@@ -114,8 +115,8 @@ pager_dropweak (struct user_pager_info *upi)
 
 /* A top-level function for the paging thread that just services paging
    requests.  */
-static void
-service_paging_requests (any_t arg)
+static void *
+service_paging_requests (void *arg)
 {
   struct port_bucket *pager_bucket = arg;
   for (;;)
@@ -123,6 +124,7 @@ service_paging_requests (any_t arg)
                                               pager_demuxer,
                                               1000 * 60 * 2,
                                               1000 * 60 * 10, 0);
+  return NULL;
 }    
 
 
@@ -130,14 +132,23 @@ service_paging_requests (any_t arg)
 void
 user_pager_init (void)
 {
+  pthread_t thread;
+  error_t err;
+
   /* Create the pager bucket, and start to serve paging requests.  */
   pager_bucket = ports_create_bucket ();
   if (! pager_bucket)
     error (5, errno, "Cannot create pager bucket");
 
   /* Make a thread to service paging requests.  */
-  cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
-                                (any_t) pager_bucket));
+  err = pthread_create (&thread, NULL, service_paging_requests, pager_bucket);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 }
 
 

@@ -65,8 +65,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   idvec_set_ids (user.gids, gids, ngids);
 #define drop_idvec() idvec_free (user.gids); idvec_free (user.uids)
 
-  rwlock_reader_lock (&diskfs_fsys_lock);
-  mutex_lock (&diskfs_root_node->lock);
+  pthread_rwlock_rdlock (&diskfs_fsys_lock);
+  pthread_mutex_lock (&diskfs_root_node->lock);
 
   /* This code is similar (but not the same as) the code in
      dir-lookup.c that does the same thing.  Perhaps a way should
@@ -85,8 +85,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 				 retry, retryname, returned_port);
       if (error != ENOENT)
 	{
-	  mutex_unlock (&diskfs_root_node->lock);
-	  rwlock_reader_unlock (&diskfs_fsys_lock);
+	  pthread_mutex_unlock (&diskfs_root_node->lock);
+	  pthread_rwlock_unlock (&diskfs_fsys_lock);
 	  drop_idvec ();
 	  if (!error)
 	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
@@ -111,8 +111,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 				  0, &amt);
       pathbuf[amt] = '\0';
 
-      mutex_unlock (&diskfs_root_node->lock);
-      rwlock_reader_unlock (&diskfs_fsys_lock);
+      pthread_mutex_unlock (&diskfs_root_node->lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
       if (error)
 	{
 	  drop_idvec ();
@@ -164,8 +164,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   if (error)
     {
-      mutex_unlock (&diskfs_root_node->lock);
-      rwlock_reader_unlock (&diskfs_fsys_lock);
+      pthread_mutex_unlock (&diskfs_root_node->lock);
+      pthread_rwlock_unlock (&diskfs_fsys_lock);
       drop_idvec ();
       return error;
     }
@@ -196,8 +196,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       ports_port_deref (newpi);
     }
 
-  mutex_unlock (&diskfs_root_node->lock);
-  rwlock_reader_unlock (&diskfs_fsys_lock);
+  pthread_mutex_unlock (&diskfs_root_node->lock);
+  pthread_rwlock_unlock (&diskfs_fsys_lock);
 
   ports_port_deref (pt);
 

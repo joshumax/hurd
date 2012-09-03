@@ -37,19 +37,19 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
       return EOPNOTSUPP;
     }
   
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   _pager_wait_for_seqno (p, seq);
 
   for (ar = p->attribute_requests; ar; ar = ar->next)
     if (ar->may_cache == maycache && ar->copy_strategy == strat)
       {
 	if (ar->attrs_pending && !--ar->attrs_pending)
-	  condition_broadcast (&p->wakeup);
+	  pthread_cond_broadcast (&p->wakeup);
 	break;
       }
   
   _pager_release_seqno (p, seq);
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   ports_port_deref (p);
   return 0;
 }

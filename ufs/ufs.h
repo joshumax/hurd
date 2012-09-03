@@ -25,6 +25,7 @@
 #include <hurd/diskfs.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <pthread.h>
 #include <features.h>
 #include "fs.h"
 #include "dinode.h"
@@ -54,7 +55,9 @@ struct disknode
   /* Links on hash list. */
   struct node *hnext, **hprevp;
 
-  struct rwlock allocptrlock;
+  pthread_rwlock_t allocptrlock;
+  pthread_mutex_t waitlock;
+  pthread_cond_t waitcond;
 
   struct dirty_indir *dirty;
 
@@ -112,14 +115,14 @@ extern struct csum *csum;
 int sblock_dirty;
 int csum_dirty;
 
-spin_lock_t node2pagelock;
+pthread_spinlock_t node2pagelock;
 
-spin_lock_t alloclock;
+pthread_spinlock_t alloclock;
 
-spin_lock_t gennumberlock;
+pthread_spinlock_t gennumberlock;
 u_long nextgennumber;
 
-spin_lock_t unlocked_pagein_lock;
+pthread_spinlock_t unlocked_pagein_lock;
 
 /* The compat_mode specifies whether or not we write
    extensions onto the disk. */

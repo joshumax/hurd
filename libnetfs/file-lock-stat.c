@@ -29,9 +29,9 @@ netfs_S_file_lock_stat (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
   
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   *mystatus = user->po->lock_status;
   *otherstatus = user->po->np->userlock.type;
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return 0;
 }

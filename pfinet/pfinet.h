@@ -28,9 +28,10 @@
 #include <hurd/trivfs.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <pthread.h>
 
-extern struct mutex global_lock;
-extern struct mutex net_bh_lock;
+extern pthread_mutex_t global_lock;
+extern pthread_mutex_t net_bh_lock;
 
 struct port_bucket *pfinet_bucket;
 struct port_class *addrport_class;
@@ -75,7 +76,7 @@ struct sock_user *make_sock_user (struct socket *, int, int, int);
 error_t make_sockaddr_port (struct socket *, int,
 			    mach_port_t *, mach_msg_type_name_t *);
 void init_devices (void);
-any_t net_bh_worker (any_t);
+void *net_bh_worker (void *);
 void init_time (void);
 void ip_rt_add (short, u_long, u_long, u_long, struct device *,
 		u_short, u_long);

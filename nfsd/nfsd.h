@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 #include <errno.h>
 #include <netinet/in.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <rpc/types.h>
 #include "../nfs/nfs-spec.h" /* XXX */
 #include <hurd/fs.h>
@@ -55,7 +55,7 @@ struct cache_handle
 struct cached_reply
 {
   struct cached_reply *next, **prevp;
-  struct mutex lock;
+  pthread_mutex_t lock;
   struct sockaddr_in source;
   int xid;
   time_t lastuse;
@@ -109,7 +109,7 @@ void release_cached_reply (struct cached_reply *cr);
 void scan_replies (void);
 
 /* loop.c */
-void server_loop (int);
+void * server_loop (void *);
 
 /* ops.c */
 extern struct proctable nfs2table, mounttable, pmaptable;

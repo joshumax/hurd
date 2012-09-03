@@ -30,7 +30,8 @@ fs_notify-MIGSFLAGS = -imacros $(srcdir)/mutations.h
 MIGSTUBS = fs_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-HURDLIBS = threads ports
+HURDLIBS = ports
+LDLIBS += -lpthread
 
 MIGCOMSFLAGS = -prefix cons_
 

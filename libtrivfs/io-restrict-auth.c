@@ -109,10 +109,10 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
     }
 
   newcred->isroot = 0;
-  mutex_lock (&cred->po->cntl->lock);
+  pthread_mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
   newcred->po->refcnt++;
-  mutex_unlock (&cred->po->cntl->lock);
+  pthread_mutex_unlock (&cred->po->cntl->lock);
   if (cred->isroot && idvec_contains (user->uids, 0))
     newcred->isroot = 1;
   newcred->user = user;

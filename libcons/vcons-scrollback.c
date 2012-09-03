@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "cons.h"
 #include "priv.h"
@@ -154,11 +154,11 @@ cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
 {
   int ret;
 
-  mutex_lock (&vcons->lock);
+  pthread_mutex_lock (&vcons->lock);
   ret = _cons_vcons_scrollback (vcons, type, value);
   _cons_vcons_console_event (vcons, CONS_EVT_OUTPUT);
   cons_vcons_update (vcons);
-  mutex_unlock (&vcons->lock);
+  pthread_mutex_unlock (&vcons->lock);
   return ret;
 }
 

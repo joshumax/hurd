@@ -31,7 +31,8 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
-HURDLIBS = ps ihash store fshelp threads ports ftpconn shouldbeinlibc
+HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
+LDLIBS += -lpthread
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
@@ -52,9 +53,7 @@ ps w: psout.o ../libps/libps.a ../libihash/libihash.a
 storeinfo storecat storeread: ../libstore/libstore.a
 ftpcp ftpdir: ../libftpconn/libftpconn.a
 
-# We must include libthreads because of a bug in the way shared libraries
-# work: all libraries that *any* routine in libfshelp uses must be defined.
-settrans: ../libfshelp/libfshelp.a ../libports/libports.a ../libthreads/libthreads.a
+settrans: ../libfshelp/libfshelp.a ../libports/libports.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
   storecat msgport mount: \
@@ -62,12 +61,10 @@ ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-rpctrace: ../libthreads/libthreads.a \
-	  ../libports/libports.a ../libihash/libihash.a
+rpctrace: ../libports/libports.a ../libihash/libihash.a
 rpctrace-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
-	  ../libthreads/libthreads.a \
 	  ../libports/libports.a ../libihash/libihash.a \
 	  ../libshouldbeinlibc/libshouldbeinlibc.a
 auth-MIGSFLAGS = -imacros $(srcdir)/../auth/authmutations.h

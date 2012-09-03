@@ -25,16 +25,16 @@
 #include <malloc.h>
 #include <sys/types.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "input.h"
 
 struct input
 {
-  struct mutex lock;
+  pthread_mutex_t lock;
 
-  struct condition data_available;
-  struct condition space_available;
+  pthread_cond_t data_available;
+  pthread_cond_t space_available;
 #define INPUT_QUEUE_SIZE 300
   char buffer[INPUT_QUEUE_SIZE];
   int full;
@@ -58,9 +58,9 @@ error_t input_create (input_t *r_input, const char *encoding)
   if (!input)
     return ENOMEM;
 
-  mutex_init (&input->lock);
-  condition_init (&input->data_available);
-  condition_init (&input->space_available);
+  pthread_mutex_init (&input->lock, NULL);
+  pthread_cond_init (&input->data_available, NULL);
+  pthread_cond_init (&input->space_available, NULL);
 
   input->cd = iconv_open (encoding, "UTF-8");
   if (input->cd == (iconv_t) -1)
@@ -119,7 +119,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
       return 0;
     }
 
-  mutex_lock (&input->lock);
+  pthread_mutex_lock (&input->lock);
   was_empty = !input->size;
 
   while (datalen)
@@ -133,7 +133,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
 	      err = EWOULDBLOCK;
 	      goto out;
 	    }
-	  if (hurd_condition_wait (&input->space_available, &input->lock))
+	  if (pthread_hurd_cond_wait_np (&input->space_available, &input->lock))
 	    {
 	      err = EINTR;
 	      goto out;
@@ -180,7 +180,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
 		 readers and go to sleep (above).  */
 	      input->full = 1;
 	      if (was_empty)
-		condition_broadcast (&input->data_available);
+		pthread_cond_broadcast (&input->data_available);
 	      /* Prevent calling condition_broadcast again if nonblock.  */
 	      was_empty = 0;
 	    }
@@ -201,7 +201,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
       err = ensure_cd_buffer_size (datalen);
       if (err)
         {
-          mutex_unlock (&input->lock);
+          pthread_mutex_unlock (&input->lock);
 	  errno = err;
           return enqueued ?: -1;
         }
@@ -212,11 +212,11 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
   if (enqueued)
     {
       if (was_empty)
-	condition_broadcast (&input->data_available);
+	pthread_cond_broadcast (&input->data_available);
     }
   else
     errno = err;
-  mutex_unlock (&input->lock);
+  pthread_mutex_unlock (&input->lock);
   return enqueued ?: -1;
 }
 
@@ -231,18 +231,18 @@ ssize_t input_dequeue (input_t input, int nonblock, char *data,
 {
   size_t amount = datalen;
 
-  mutex_lock (&input->lock);
+  pthread_mutex_lock (&input->lock);
   while (!input->size)
     {
       if (nonblock)
 	{
-	  mutex_unlock (&input->lock);
+	  pthread_mutex_unlock (&input->lock);
 	  errno = EWOULDBLOCK;
 	  return -1;
 	}
-      if (hurd_condition_wait (&input->data_available, &input->lock))
+      if (pthread_hurd_cond_wait_np (&input->data_available, &input->lock))
 	{
-	  mutex_unlock (&input->lock);
+	  pthread_mutex_unlock (&input->lock);
 	  errno = EINTR;
 	  return -1;
 	}
@@ -256,9 +256,9 @@ ssize_t input_dequeue (input_t input, int nonblock, char *data,
   if (amount && input->full)
     {
       input->full = 0;
-      condition_broadcast (&input->space_available);
+      pthread_cond_broadcast (&input->space_available);
     }
-  mutex_unlock (&input->lock);
+  pthread_mutex_unlock (&input->lock);
   return amount;
 }
 
@@ -266,12 +266,12 @@ ssize_t input_dequeue (input_t input, int nonblock, char *data,
 /* Flush the input buffer, discarding all pending data.  */
 void input_flush (input_t input)
 {
-  mutex_lock (&input->lock);
+  pthread_mutex_lock (&input->lock);
   input->size = 0;
   if (input->full)
     {
       input->full = 0;
-      condition_broadcast (&input->space_available);
+      pthread_cond_broadcast (&input->space_available);
     }
-  mutex_unlock (&input->lock);
+  pthread_mutex_unlock (&input->lock);
 }

@@ -21,7 +21,7 @@
 #include "pfinet.h"
 
 #include <hurd.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <fcntl.h>
 #include <device/device.h>
 #include <device/net_status.h>
@@ -47,9 +47,9 @@ struct tunnel_device
   file_t underlying;
   struct iouser *user;
   struct sk_buff_head xq;         /* Transmit queue.  */
-  struct condition wait;         /* For read and select.  */
-  struct condition select_alert; /* For read and select.  */
-  struct mutex lock;              /* For read and select.  */
+  pthread_cond_t wait;            /* For read and select.  */
+  pthread_cond_t select_alert;    /* For read and select.  */
+  pthread_mutex_t lock;           /* For read and select.  */
   int read_blocked;               /* For read and select.  */
   struct device dev;
   struct net_device_stats stats;
@@ -117,7 +117,7 @@ tunnel_xmit (struct sk_buff *skb, struct device *dev)
 
   assert (tdev);
 
-  __mutex_lock (&tdev->lock);
+  pthread_mutex_lock (&tdev->lock);
 
   /* Avoid unlimited growth.  */
   if (skb_queue_len(&tdev->xq) > 128)
@@ -134,11 +134,11 @@ tunnel_xmit (struct sk_buff *skb, struct device *dev)
   if (tdev->read_blocked)
     {
       tdev->read_blocked = 0;
-      condition_broadcast (&tdev->wait);
-      condition_broadcast (&tdev->select_alert);
+      pthread_cond_broadcast (&tdev->wait);
+      pthread_cond_broadcast (&tdev->select_alert);
     }
 
-  __mutex_unlock (&tdev->lock);
+  pthread_mutex_unlock (&tdev->lock);
 
   return 0;
 }
@@ -211,9 +211,9 @@ setup_tunnel_device (char *name, struct device **device)
   if (err)
     error (2, err, "%s", tdev->dev.name);
 
-  __mutex_init (&tdev->lock);
-  condition_init (&tdev->wait);
-  condition_init (&tdev->select_alert);
+  pthread_mutex_init (&tdev->lock, NULL);
+  pthread_cond_init (&tdev->wait, NULL);
+  pthread_cond_init (&tdev->select_alert, NULL);
 
   /* This call adds the device to the `dev_base' chain,
      initializes its `ifindex' member (which matters!),
@@ -294,20 +294,20 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
-  __mutex_lock (&tdev->lock);
+  pthread_mutex_lock (&tdev->lock);
 
   while (skb_queue_len(&tdev->xq) == 0)
     {
       if (cred->po->openmodes & O_NONBLOCK)
 	{
-	  __mutex_unlock (&tdev->lock);
+	  pthread_mutex_unlock (&tdev->lock);
 	  return EWOULDBLOCK;
 	}
 
       tdev->read_blocked = 1;
-      if (hurd_condition_wait (&tdev->wait, &tdev->lock))
+      if (pthread_hurd_cond_wait_np (&tdev->wait, &tdev->lock))
         {
-          __mutex_unlock (&tdev->lock);
+          pthread_mutex_unlock (&tdev->lock);
           return EINTR;
         }
       /* See term/users.c for possible race?  */
@@ -327,7 +327,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	  if (*data == MAP_FAILED)
 	    {
 	      dev_kfree_skb (skb);
-	      __mutex_unlock (&tdev->lock);
+	      pthread_mutex_unlock (&tdev->lock);
 	      return ENOMEM;
 	    }
 	}
@@ -340,7 +340,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   /* Set atime, see term/users.c */
 
-  __mutex_unlock (&tdev->lock);
+  pthread_mutex_unlock (&tdev->lock);
 
   return 0;
 }
@@ -375,9 +375,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
-  __mutex_lock (&tdev->lock);
+  pthread_mutex_lock (&tdev->lock);
 
-  __mutex_lock (&net_bh_lock);
+  pthread_mutex_lock (&net_bh_lock);
   skb = alloc_skb (datalen, GFP_ATOMIC);
   skb->len = datalen;
   skb->dev = &tdev->dev;
@@ -388,11 +388,11 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   skb->mac.raw = skb->data;
   skb->protocol = htons (ETH_P_IP);
   netif_rx (skb);
-  __mutex_unlock (&net_bh_lock);
+  pthread_mutex_unlock (&net_bh_lock);
 
   *amount = datalen;
 
-  __mutex_unlock (&tdev->lock);
+  pthread_mutex_unlock (&tdev->lock);
   return 0;
 }
 
@@ -418,7 +418,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
-  __mutex_lock (&tdev->lock);
+  pthread_mutex_lock (&tdev->lock);
 
   /* XXX: Now return the length of the next entry in the queue.
      From the BSD manual:
@@ -442,7 +442,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   else
     *amount = 0;
 
-  __mutex_unlock (&tdev->lock);
+  pthread_mutex_unlock (&tdev->lock);
 
   return 0;
 }
@@ -474,23 +474,23 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (*type == 0)
     return 0;
 
-  __mutex_lock (&tdev->lock);
+  pthread_mutex_lock (&tdev->lock);
 
   while (1)
     {
       if (skb_queue_len (&tdev->xq) != 0)
 	{
 	  *type = SELECT_READ;
-	  __mutex_unlock (&tdev->lock);
+	  pthread_mutex_unlock (&tdev->lock);
 	  return 0;
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
       tdev->read_blocked = 1;
-      if (hurd_condition_wait (&tdev->select_alert, &tdev->lock))
+      if (pthread_hurd_cond_wait_np (&tdev->select_alert, &tdev->lock))
         {
           *type = 0;
-          __mutex_unlock (&tdev->lock);
+          pthread_mutex_unlock (&tdev->lock);
           return EINTR;
         }
     }

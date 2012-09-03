@@ -34,9 +34,9 @@ diskfs_S_file_sync (struct protid *cred,
 
   np = cred->po->np;
   
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   iohelp_get_conch (&np->conch);
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   diskfs_file_update (np, wait);
   return 0;
 }

@@ -43,13 +43,13 @@ sock_alloc (void)
 {
   static ino_t nextino;		/* locked by global_lock */
   struct socket *sock;
-  struct condition *c;
+  pthread_cond_t *c;
 
-  sock = malloc (sizeof *sock + sizeof (struct condition));
+  sock = malloc (sizeof *sock + sizeof (pthread_cond_t));
   if (!sock)
     return 0;
   c = (void *) &sock[1];
-  condition_init (c);
+  pthread_cond_init (c, NULL);
   bzero (sock, sizeof *sock);
   sock->state = SS_UNCONNECTED;
   sock->identity = MACH_PORT_NULL;
@@ -120,7 +120,7 @@ clean_socketport (void *arg)
 {
   struct sock_user *const user = arg;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   sock_release (user->sock);
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 }

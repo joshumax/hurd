@@ -26,14 +26,14 @@
 void
 diskfs_nrele_light (struct node *np)
 {
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   assert (np->light_references);
   np->light_references--;
   if (np->references + np->light_references == 0)
     {
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       diskfs_drop_node (np);
     }
   else
-    spin_unlock (&diskfs_node_refcnt_lock);
+    pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }

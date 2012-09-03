@@ -31,7 +31,7 @@
 #include <sys/io.h>
 #include <sys/mman.h>
 #include <sys/fcntl.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/console.h>
 
 #include "driver.h"
@@ -69,7 +69,7 @@ static int vga_display_max_glyphs;
 static struct timer_list vga_display_timer;
 
 /* The lock that protects the color palette manipulation.  */
-static struct mutex vga_display_lock;
+static pthread_mutex_t vga_display_lock;
 
 /* Forward declaration.  */
 static struct display_ops vga_display_ops;
@@ -134,13 +134,13 @@ vga_display_invert_border (void)
 {
   unsigned char col[3];
 
-  mutex_lock (&vga_display_lock);
+  pthread_mutex_lock (&vga_display_lock);
   vga_read_palette (0, col, 1);
   col[0] = 0xff - col[0];
   col[1] = 0xff - col[1];
   col[2] = 0xff - col[2];
   vga_write_palette (0, col, 1);
-  mutex_unlock (&vga_display_lock);
+  pthread_mutex_unlock (&vga_display_lock);
 }
 
 
@@ -274,7 +274,7 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
   int pos = 1;
 
   /* XXX Assert that we are called only once.  */
-  mutex_init (&vga_display_lock);
+  pthread_mutex_init (&vga_display_lock, NULL);
   timer_clear (&vga_display_timer);
   vga_display_timer.fnc = &vga_display_flash_off;
   
@@ -578,10 +578,10 @@ vga_display_recalculate_attr (dynacolor_t *dc, conchar_attr_t attr)
   /* Try to get the colors as desired.  This might change the palette,
      so we need to take the lock (in case a flash operation times
      out).  */
-  mutex_lock (&vga_display_lock);
+  pthread_mutex_lock (&vga_display_lock);
   res_bgcol = dynacolor_lookup (*dc, bgcol);
   res_fgcol = dynacolor_lookup (*dc, fgcol);
-  mutex_unlock (&vga_display_lock);
+  pthread_mutex_unlock (&vga_display_lock);
   if (res_bgcol == -1 || res_fgcol == -1)
     dynacolor_replace_colors (dc, fgcol, bgcol, &res_fgcol, &res_bgcol);
   vga_attr = res_bgcol << 4 | res_fgcol;

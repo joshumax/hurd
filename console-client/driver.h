@@ -23,6 +23,7 @@
 
 #include <errno.h>
 #include <stddef.h>
+#include <pthread.h>
 
 #include "display.h"
 #include "input.h"
@@ -87,10 +88,10 @@ error_t driver_remove (const char *const name);
 
    The variable DRIVER is provided by the macro.  */
 #define driver_iterate							\
-  for (driver_t driver = (mutex_lock (&driver_list_lock),		\
+  for (driver_t driver = (pthread_mutex_lock (&driver_list_lock),	\
 			  &driver_list[0]);				\
        driver < &driver_list[driver_list_len]				\
-	 || (mutex_unlock (&driver_list_lock), 0);			\
+	 || (pthread_mutex_unlock (&driver_list_lock), 0);		\
        driver++)
 
 
@@ -194,7 +195,7 @@ typedef struct driver *driver_t;
 
 /* Forward declarations needed by the macro above.  Don't use these
    variables directly.  */
-extern struct mutex driver_list_lock;
+extern pthread_mutex_t driver_list_lock;
 extern driver_t driver_list;
 extern size_t driver_list_len;
 
@@ -206,10 +207,10 @@ extern size_t driver_list_len;
 
    The variable DISPLAY is provided by the macro.  */
 #define display_iterate							\
-  for (display_t display = (mutex_lock (&display_list_lock),		\
+  for (display_t display = (pthread_mutex_lock (&display_list_lock),	\
 			    &display_list[0]);				\
        display < &display_list[display_list_len]			\
-	 || (mutex_unlock (&display_list_lock), 0);			\
+	 || (pthread_mutex_unlock (&display_list_lock), 0);		\
        display++)
 
 
@@ -224,7 +225,7 @@ typedef struct display *display_t;
 
 /* Forward declarations needed by the macro above.  Don't use these
    variables directly.  */
-extern struct mutex display_list_lock;
+extern pthread_mutex_t display_list_lock;
 extern display_t display_list;
 extern size_t display_list_len;
 
@@ -235,10 +236,10 @@ extern size_t display_list_len;
    input_iterate input->ops->set_scroll_lock_status (input->handle, 0);
 
    The variable INPUT is provided by the macro.  */
-#define input_iterate							\
-  for (input_t input = (mutex_lock (&input_list_lock), &input_list[0]);	\
-       input < &input_list[input_list_len]				\
-	 || (mutex_unlock (&input_list_lock), 0);			\
+#define input_iterate								\
+  for (input_t input = (pthread_mutex_lock (&input_list_lock), &input_list[0]);	\
+       input < &input_list[input_list_len]					\
+	 || (pthread_mutex_unlock (&input_list_lock), 0);			\
        input++)
 
 
@@ -253,7 +254,7 @@ typedef struct input *input_t;
 
 /* Forward declarations needed by the macro above.  Don't use these
    variables directly.  */
-extern struct mutex input_list_lock;
+extern pthread_mutex_t input_list_lock;
 extern input_t input_list;
 extern size_t input_list_len;
 
@@ -264,10 +265,10 @@ extern size_t input_list_len;
    bell_iterate bell->ops->beep (bell->handle);
 
    The variable BELL is provided by the macro.  */
-#define bell_iterate							\
-  for (bell_t bell = (mutex_lock (&bell_list_lock), &bell_list[0]);	\
-       bell < &bell_list[bell_list_len]					\
-	 || (mutex_unlock (&bell_list_lock), 0);			\
+#define bell_iterate								\
+  for (bell_t bell = (pthread_mutex_lock (&bell_list_lock), &bell_list[0]);	\
+       bell < &bell_list[bell_list_len]						\
+	 || (pthread_mutex_unlock (&bell_list_lock), 0);			\
        bell++)
 
 
@@ -282,7 +283,7 @@ typedef struct bell *bell_t;
 
 /* Forward declarations needed by the macro above.  Don't use these
    variables directly.  */
-extern struct mutex bell_list_lock;
+extern pthread_mutex_t bell_list_lock;
 extern bell_t bell_list;
 extern size_t bell_list_len;
 

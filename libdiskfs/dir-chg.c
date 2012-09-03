@@ -31,28 +31,28 @@ diskfs_S_dir_notice_changes (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   if (!S_ISDIR (np->dn_stat.st_mode))
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return ENOTDIR;
     }
   err = dir_changed (notify, np->dirmod_tick, DIR_CHANGED_NULL, "");
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
   req = malloc (sizeof (struct modreq));
   if (! req)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return ENOMEM;
     }
   req->port = notify;
   req->next = np->dirmod_reqs;
   np->dirmod_reqs = req;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }
 

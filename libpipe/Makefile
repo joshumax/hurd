@@ -25,7 +25,8 @@ installhdrs = pipe.h pq.h
 SRCS = pq.c dgram.c pipe.c stream.c seqpack.c addr.c pq-funcs.c pipe-funcs.c
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS=threads ports
+HURDLIBS= ports
+LDLIBS += -lpthread
 
 include ../Makeconf
 

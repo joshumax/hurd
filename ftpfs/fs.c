@@ -48,10 +48,10 @@ ftpfs_create (char *rmt_path, int fsid,
 
   new->free_conns = 0;
   new->conns = 0;
-  spin_lock_init (&new->conn_lock);
+  pthread_spin_init (&new->conn_lock, PTHREAD_PROCESS_PRIVATE);
   new->node_cache_mru = new->node_cache_lru = 0;
   new->node_cache_len = 0;
-  mutex_init (&new->node_cache_lock);
+  pthread_mutex_init (&new->node_cache_lock, NULL);
 
   new->fsid = fsid;
   new->next_inode = 2;
@@ -62,7 +62,7 @@ ftpfs_create (char *rmt_path, int fsid,
 
   hurd_ihash_init (&new->inode_mappings,
 		   offsetof (struct ftpfs_dir_entry, inode_locp));
-  spin_lock_init (&new->inode_mappings_lock);
+  pthread_spin_init (&new->inode_mappings_lock, PTHREAD_PROCESS_PRIVATE);
 
   super_root = netfs_make_node (0);
   if (! super_root)

@@ -23,15 +23,15 @@
 void
 netfs_nrele (struct node *np)
 {
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   assert (np->references);
   np->references--;
   if (np->references == 0)
     {
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       netfs_drop_node (np);
       /* netfs_drop_node drops netfs_node_refcnt_lock for us.  */
     }
   else
-    spin_unlock (&netfs_node_refcnt_lock);
+    pthread_spin_unlock (&netfs_node_refcnt_lock);
 }

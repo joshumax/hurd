@@ -29,7 +29,8 @@ struct port_bucket *pager_bucket;
 /* Mapped image of the disk.  */
 void *disk_image;
 
-spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t node_to_page_lock = PTHREAD_SPINLOCK_INITIALIZER;
+
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -42,7 +43,7 @@ spin_lock_t node_to_page_lock = SPIN_LOCK_INITIALIZER;
 #ifdef STATS
 struct ext2fs_pager_stats
 {
-  spin_lock_t lock;
+  pthread_spinlock_t lock;
 
   unsigned long disk_pageins;
   unsigned long disk_pageouts;
@@ -58,12 +59,13 @@ struct ext2fs_pager_stats
   unsigned long file_grows;
 };
 
-static struct ext2fs_pager_stats ext2s_pager_stats;
+static struct ext2fs_pager_stats ext2s_pager_stats =
+  { .lock = PTHREAD_SPINLOCK_INITIALIZER };
 
 #define STAT_INC(field)							      \
-do { spin_lock (&ext2s_pager_stats.lock);				      \
+do { pthread_spin_lock (&ext2s_pager_stats.lock);			      \
      ext2s_pager_stats.field++;						      \
-     spin_unlock (&ext2s_pager_stats.lock); } while (0)
+     pthread_spin_unlock (&ext2s_pager_stats.lock); } while (0)
 
 #else /* !STATS */
 #define STAT_INC(field) /* nop */0
@@ -75,12 +77,12 @@ do { spin_lock (&ext2s_pager_stats.lock);				      \
 static void *
 get_page_buf ()
 {
-  static struct mutex free_page_bufs_lock = MUTEX_INITIALIZER;
+  static pthread_mutex_t free_page_bufs_lock = PTHREAD_MUTEX_INITIALIZER;
   static void *free_page_bufs;
   static int num_free_page_bufs;
   void *buf;
 
-  mutex_lock (&free_page_bufs_lock);
+  pthread_mutex_lock (&free_page_bufs_lock);
   if (num_free_page_bufs > 0)
     {
       buf = free_page_bufs;
@@ -106,7 +108,7 @@ get_page_buf ()
 	}
     }
 
-  mutex_unlock (&free_page_bufs_lock);
+  pthread_mutex_unlock (&free_page_bufs_lock);
   return buf;
 }
 
@@ -124,14 +126,14 @@ free_page_buf (void *buf)
    on success otherwise an error code.  */
 static error_t
 find_block (struct node *node, vm_offset_t offset,
-	    block_t *block, struct rwlock **lock)
+	    block_t *block, pthread_rwlock_t **lock)
 {
   error_t err;
 
   if (!*lock)
     {
       *lock = &node->dn->alloc_lock;
-      rwlock_reader_lock (*lock);
+      pthread_rwlock_rdlock (*lock);
     }
 
   if (offset + block_size > node->allocsize)
@@ -158,7 +160,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
   error_t err;
   int offs = 0;
   int partial = 0;		/* A page truncated by the EOF.  */
-  struct rwlock *lock = NULL;
+  pthread_rwlock_t *lock = NULL;
   int left = vm_page_size;
   block_t pending_blocks = 0;
   int num_pending_blocks = 0;
@@ -271,7 +273,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
     node->dn->last_page_partially_writable = 1;
 
   if (lock)
-    rwlock_reader_unlock (lock);
+    pthread_rwlock_unlock (lock);
 
   return err;
 }
@@ -365,7 +367,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
 {
   error_t err = 0;
   struct pending_blocks pb;
-  struct rwlock *lock = &node->dn->alloc_lock;
+  pthread_rwlock_t *lock = &node->dn->alloc_lock;
   block_t block;
   int left = vm_page_size;
 
@@ -374,7 +376,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   /* Holding NODE->dn->alloc_lock effectively locks NODE->allocsize,
      at least for the cases we care about: pager_unlock_page,
      diskfs_grow and diskfs_truncate.  */
-  rwlock_reader_lock (&node->dn->alloc_lock);
+  pthread_rwlock_rdlock (&node->dn->alloc_lock);
 
   if (offset >= node->allocsize)
     left = 0;
@@ -399,7 +401,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   if (!err)
     pending_blocks_write (&pb);
 
-  rwlock_reader_unlock (&node->dn->alloc_lock);
+  pthread_rwlock_unlock (&node->dn->alloc_lock);
 
   return err;
 }
@@ -525,7 +527,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       struct node *node = pager->node;
       struct disknode *dn = node->dn;
 
-      rwlock_writer_lock (&dn->alloc_lock);
+      pthread_rwlock_wrlock (&dn->alloc_lock);
 
       partial_page = (page + vm_page_size > node->allocsize);
 
@@ -567,7 +569,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 
       STAT_INC (file_page_unlocks);
 
-      rwlock_writer_unlock (&dn->alloc_lock);
+      pthread_rwlock_unlock (&dn->alloc_lock);
 
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
@@ -598,7 +600,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
       block_t new_end_block;
       struct disknode *dn = node->dn;
 
-      rwlock_writer_lock (&dn->alloc_lock);
+      pthread_rwlock_wrlock (&dn->alloc_lock);
 
       old_size = node->allocsize;
       new_size = round_block (size);
@@ -665,7 +667,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
       node->allocsize = new_size;
 
-      rwlock_writer_unlock (&dn->alloc_lock);
+      pthread_rwlock_unlock (&dn->alloc_lock);
 
       return err;
     }
@@ -680,11 +682,11 @@ diskfs_file_update (struct node *node, int wait)
 {
   struct pager *pager;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (pager)
     {
@@ -704,11 +706,11 @@ flush_node_pager (struct node *node)
   struct pager *pager;
   struct disknode *dn = node->dn;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (pager)
     {
@@ -745,11 +747,11 @@ pager_clear_user_data (struct user_pager_info *upi)
     {
       struct pager *pager;
 
-      spin_lock (&node_to_page_lock);
+      pthread_spin_lock (&node_to_page_lock);
       pager = upi->node->dn->pager;
       if (pager && pager_get_upi (pager) == upi)
 	upi->node->dn->pager = 0;
-      spin_unlock (&node_to_page_lock);
+      pthread_spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
     }
@@ -789,7 +791,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	  || S_ISREG (node->dn_stat.st_mode)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   do
     {
       struct pager *pager = node->dn->pager;
@@ -820,7 +822,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	    {
 	      diskfs_nrele_light (node);
 	      free (upi);
-	      spin_unlock (&node_to_page_lock);
+	      pthread_spin_unlock (&node_to_page_lock);
 	      return MACH_PORT_NULL;
 	    }
 
@@ -829,7 +831,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	}
     }
   while (right == MACH_PORT_NULL);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -844,11 +846,11 @@ drop_pager_softrefs (struct node *node)
 {
   struct pager *pager;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (MAY_CACHE && pager)
     {
@@ -866,11 +868,11 @@ allow_pager_softrefs (struct node *node)
 {
   struct pager *pager;
 
-  spin_lock (&node_to_page_lock);
+  pthread_spin_lock (&node_to_page_lock);
   pager = node->dn->pager;
   if (pager)
     ports_port_ref (pager);
-  spin_unlock (&node_to_page_lock);
+  pthread_spin_unlock (&node_to_page_lock);
 
   if (MAY_CACHE && pager)
     pager_change_attributes (pager, 1, MEMORY_OBJECT_COPY_DELAY, 0);

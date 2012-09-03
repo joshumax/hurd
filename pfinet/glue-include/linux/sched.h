@@ -7,7 +7,7 @@
 #include <hurd/hurd_types.h>
 #include <limits.h>
 #include <assert.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "mapped-time.h"
 
@@ -90,12 +90,12 @@ capable(int cap)
 }
 
 
-extern struct mutex global_lock;
+extern pthread_mutex_t global_lock;
 
 static inline void
 interruptible_sleep_on (struct wait_queue **p)
 {
-  struct condition **condp = (void *) p, *c;
+  pthread_cond_t **condp = (void *) p, *c;
   int isroot;
   struct wait_queue **next_wait;
 
@@ -104,14 +104,14 @@ interruptible_sleep_on (struct wait_queue **p)
     {
       c = malloc (sizeof **condp);
       assert (c);
-      condition_init (c);
+      pthread_cond_init (c, NULL);
       *condp = c;
     }
 
   isroot = current->isroot;	/* This is our context that needs switched.  */
   next_wait = current->next_wait; /* This too, for multiple schedule calls.  */
   current->next_wait = 0;
-  if (hurd_condition_wait (c, &global_lock))
+  if (pthread_hurd_cond_wait_np (c, &global_lock))
     current->signal = 1;	/* We got cancelled, mark it for later.  */
   current->isroot = isroot;	/* Switch back to our context.  */
   current->next_wait = next_wait;
@@ -121,9 +121,9 @@ interruptible_sleep_on (struct wait_queue **p)
 static inline void
 wake_up_interruptible (struct wait_queue **p)
 {
-  struct condition **condp = (void *) p, *c = *condp;
+  pthread_cond_t **condp = (void *) p, *c = *condp;
   if (c)
-    condition_broadcast (c);
+    pthread_cond_broadcast (c);
 }
 #define wake_up		wake_up_interruptible
 

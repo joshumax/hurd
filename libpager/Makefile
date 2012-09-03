@@ -27,7 +27,8 @@ SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
 	offer-page.c
 installhdrs = pager.h
 
-HURDLIBS= threads ports
+HURDLIBS= ports
+LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) memory_objectServer.o notifyServer.o
 
 MIGSFLAGS = -DSEQNOS

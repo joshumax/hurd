@@ -46,19 +46,19 @@ warp_root (void)
   error_t err;
   err = diskfs_cached_lookup (2, &diskfs_root_node);
   assert (!err);
-  mutex_unlock (&diskfs_root_node->lock);
+  pthread_mutex_unlock (&diskfs_root_node->lock);
 }
 
 /* XXX */
-struct mutex printf_lock = MUTEX_INITIALIZER;
+pthread_mutex_t printf_lock = PTHREAD_MUTEX_INITIALIZER;
 int printf (const char *fmt, ...)
 {
   va_list arg;
   int done;
   va_start (arg, fmt);
-  mutex_lock (&printf_lock);
+  pthread_mutex_lock (&printf_lock);
   done = vprintf (fmt, arg);
-  mutex_unlock (&printf_lock);
+  pthread_mutex_unlock (&printf_lock);
   va_end (arg);
   return done;
 }
@@ -195,7 +195,7 @@ main (int argc, char **argv)
   /* SET HOST NAME */
 
   /* And this thread is done with its work. */
-  cthread_exit (0);
+  pthread_exit (NULL);
 
   return 0;
 }

@@ -19,17 +19,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
 void
 ports_enable_bucket (struct port_bucket *bucket)
 {
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   bucket->flags &= ~PORT_BUCKET_NO_ALLOC;
   if (bucket->flags & PORT_BUCKET_ALLOC_WAIT)
     {
       bucket->flags &= ~PORT_BUCKET_ALLOC_WAIT;
-      condition_broadcast (&_ports_block);
+      pthread_cond_broadcast (&_ports_block);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }

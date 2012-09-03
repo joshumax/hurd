@@ -35,10 +35,10 @@ trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 
   if (! err)
     {
-      mutex_lock (&cred->po->cntl->lock);
+      pthread_mutex_lock (&cred->po->cntl->lock);
       new->po = cred->po;
       new->po->refcnt++;
-      mutex_unlock (&cred->po->cntl->lock);
+      pthread_mutex_unlock (&cred->po->cntl->lock);
 
       new->isroot = cred->isroot;
 

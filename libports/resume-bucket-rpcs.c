@@ -19,19 +19,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
 ports_resume_bucket_rpcs (struct port_bucket *bucket)
 {
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (bucket->flags & PORT_BUCKET_INHIBITED);
   bucket->flags &= ~PORT_BUCKET_INHIBITED;
   if (bucket->flags & PORT_BUCKET_BLOCKED)
     {
       bucket->flags &= ~PORT_BUCKET_BLOCKED;
-      condition_broadcast (&_ports_block);
+      pthread_cond_broadcast (&_ports_block);
     }
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }

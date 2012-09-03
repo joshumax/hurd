@@ -26,7 +26,7 @@
 #include <argp.h>
 
 #include <device/device.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd/console.h>
 #include <hurd/cons.h>
@@ -786,8 +786,8 @@ read_keycode (void)
 #endif /* XKB_SUPPORT */
 
 /* The input loop.  */
-static any_t
-input_loop (any_t unused)
+static void *
+input_loop (void *unused)
 {
 #ifdef XKB_SUPPORT
   /* XXX: until conversion from scancode to keycode is properly implemented
@@ -1350,6 +1350,7 @@ static error_t
 pc_kbd_start (void *handle)
 {
   error_t err;
+  pthread_t thread;
   device_t device_master;
 
   cd = iconv_open ("UTF-8", "WCHAR_T");
@@ -1412,7 +1413,14 @@ pc_kbd_start (void *handle)
   if (repeater_node)
     kbd_setrepeater (repeater_node, &cnode);
   
-  cthread_detach (cthread_fork (input_loop, NULL));
+  err = pthread_create (&thread, NULL, input_loop, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   return 0;
 }

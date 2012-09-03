@@ -40,19 +40,19 @@ netfs_S_file_reparent (struct protid *cred, mach_port_t parent,
 
   node = cred->po->np;
 
-  mutex_lock (&node->lock);
+  pthread_mutex_lock (&node->lock);
   
   new_cred =
     netfs_make_protid (netfs_make_peropen (node, cred->po->openstat, cred->po),
 		       user);
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
 
   if (new_cred)
     {
       /* Remove old shadow root state.  */
       if (new_cred->po->shadow_root && new_cred->po->shadow_root != node)
 	{
-	  mutex_lock (&new_cred->po->shadow_root->lock);
+	  pthread_mutex_lock (&new_cred->po->shadow_root->lock);
 	  netfs_nput (new_cred->po->shadow_root);
 	}
       if (new_cred->po->shadow_root_parent)

@@ -39,20 +39,20 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 	mach_port_t control;
 	
 	error = fshelp_fetch_control (&np->transbox, &control);
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    fsys_syncfs (control, wait, 1);
 	    mach_port_deallocate (mach_task_self (), control);
 	  }
-	mutex_lock (&np->lock);
+	pthread_mutex_lock (&np->lock);
 	return 0;
       }
   
   if (!pi)
     return EOPNOTSUPP;
   
-  rwlock_reader_lock (&diskfs_fsys_lock);
+  pthread_rwlock_rdlock (&diskfs_fsys_lock);
 
   if (children)
     diskfs_node_iterate (helper);
@@ -66,7 +66,7 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
       diskfs_set_hypermetadata (wait, 0);
     }
 
-  rwlock_reader_unlock (&diskfs_fsys_lock);
+  pthread_rwlock_unlock (&diskfs_fsys_lock);
 
   ports_port_deref (pi);
 

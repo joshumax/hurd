@@ -38,7 +38,7 @@ diskfs_S_io_write (struct protid *cred,
   if (!(cred->po->openstat & O_WRITE))
     return EBADF;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   assert (!S_ISDIR(np->dn_stat.st_mode));
 
@@ -89,6 +89,6 @@ diskfs_S_io_write (struct protid *cred,
   if (!err && np->filemod_reqs)
     diskfs_notice_filechange (np, FILE_CHANGED_WRITE, off, off + *amt);
  out:
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

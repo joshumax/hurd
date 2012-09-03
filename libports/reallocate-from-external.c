@@ -20,7 +20,6 @@
 
 #include "ports.h"
 #include <assert.h>
-#include <cthreads.h>
 #include <hurd/ihash.h>
 #include <mach/notify.h>
 
@@ -36,7 +35,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   err = mach_port_get_receive_status (mach_task_self (), receive, &stat);
   assert_perror (err);
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
   assert (pi->port_right);
   
@@ -62,7 +61,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   pi->mscount = stat.mps_mscount;
   
   hurd_ihash_add (&pi->bucket->htable, receive, pi);
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   mach_port_move_member (mach_task_self (), receive, pi->bucket->portset);
   

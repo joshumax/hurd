@@ -22,7 +22,7 @@
 #define __USERMUX_H__
 
 #include <hurd/netfs.h>
-#include <rwlock.h>
+#include <pthread.h>
 #include <maptime.h>
 
 struct passwd;
@@ -38,7 +38,7 @@ struct usermux
 {
   /* The user nodes in this mux.  */
   struct usermux_name *names;
-  struct rwlock names_lock;
+  pthread_rwlock_t names_lock;
 
   /* A template argz, which is used to start each user-specific translator
      with the user name appropriately added.  */

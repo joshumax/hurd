@@ -19,15 +19,15 @@ makemode := library
 
 # In GNU mig_support.c, sync.c and machine/lock.s are omitted; that work is
 # all done in libc.
-SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c \
-	cancel-cond.c rwlock.c lockfile.c
-I386SRCS := i386/csw.S i386/thread.c
+#SRCS := call.c cprocs.c cthread_data.c cthreads.c stack.c \
+#	cancel-cond.c rwlock.c lockfile.c
+#I386SRCS := i386/csw.S i386/thread.c
 
 # In GNU machine/cthreads.h is omitted; that work is done in libc headers.
 
-OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
+#OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS) $(I386SRCS))))
 
-OTHERTAGS = $(I386SRCS) $(I386HDRS)
+#OTHERTAGS = $(I386SRCS) $(I386HDRS)
 
 libname = libthreads
 installhdrs = cthreads.h rwlock.h
@@ -39,10 +39,10 @@ include ../Makeconf
 
 # The threads library was written by CMU.  If you've ever experienced
 # what that means, you'll understand this line.
-CFLAGS := $(filter-out -Wall,$(CFLAGS))
+#CFLAGS := $(filter-out -Wall,$(CFLAGS))
 
-ifeq ($(VERSIONING),yes)
+#ifeq ($(VERSIONING),yes)
 # Adding this dependency gets it included in the command line,
 # where ld will read it as a linker script.
-$(libname).so.$(hurd-version): $(srcdir)/$(libname).map
-endif
+#$(libname).so.$(hurd-version): $(srcdir)/$(libname).map
+#endif

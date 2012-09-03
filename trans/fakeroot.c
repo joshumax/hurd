@@ -25,7 +25,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/ihash.h>
 #include <hurd/paths.h>
 
@@ -55,7 +55,7 @@ struct netnode
 #define FAKE_MODE	(1 << 3)
 #define FAKE_REFERENCE	(1 << 4) /* got node_norefs with st_nlink > 0 */
 
-struct mutex idport_ihash_lock = MUTEX_INITIALIZER;
+pthread_mutex_t idport_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 struct hurd_ihash idport_ihash
   = HURD_IHASH_INITIALIZER (offsetof (struct netnode, idport_locp));
 
@@ -73,7 +73,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
       if (idport != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), idport);
       if (locked)
-	mutex_unlock (&idport_ihash_lock);
+	pthread_mutex_unlock (&idport_ihash_lock);
       return ENOMEM;
     }
   nn->file = file;
@@ -97,17 +97,17 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
   if (*np == 0)
     {
       if (locked)
-	mutex_unlock (&idport_ihash_lock);
+	pthread_mutex_unlock (&idport_ihash_lock);
       err = ENOMEM;
     }
   else
     {
       if (!locked)
-	mutex_lock (&idport_ihash_lock);
+	pthread_mutex_lock (&idport_ihash_lock);
       err = hurd_ihash_add (&idport_ihash, nn->idport, *np);
       if (!err)
 	netfs_nref (*np);	/* Return a reference to the caller.  */
-      mutex_unlock (&idport_ihash_lock);
+      pthread_mutex_unlock (&idport_ihash_lock);
     }
   if (err)
     {
@@ -138,21 +138,21 @@ netfs_node_norefs (struct node *np)
 	  np->nn->faked |= FAKE_REFERENCE;
 	  ++np->references;
 	}
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return;
     }
 
-  spin_unlock (&netfs_node_refcnt_lock); /* Avoid deadlock.  */
-  mutex_lock (&idport_ihash_lock);
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock); /* Avoid deadlock.  */
+  pthread_mutex_lock (&idport_ihash_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   /* Previous holder of this lock might have just got a reference.  */
   if (np->references > 0)
     {
-      mutex_unlock (&idport_ihash_lock);
+      pthread_mutex_unlock (&idport_ihash_lock);
       return;
     }
   hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
-  mutex_unlock (&idport_ihash_lock);
+  pthread_mutex_unlock (&idport_ihash_lock);
   mach_port_deallocate (mach_task_self (), np->nn->file);
   mach_port_deallocate (mach_task_self (), np->nn->idport);
   free (np->nn);
@@ -300,18 +300,18 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
       else
 	{
-	  mutex_lock (&idport_ihash_lock);
+	  pthread_mutex_lock (&idport_ihash_lock);
 	  np = hurd_ihash_find (&idport_ihash, idport);
 	  if (np != 0)
 	    {
 	      /* We already know about this node.  */
 	      mach_port_deallocate (mach_task_self (), idport);
-	      mutex_lock (&np->lock);
+	      pthread_mutex_lock (&np->lock);
 	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
 	      if (!err)
 		netfs_nref (np);
-	      mutex_unlock (&np->lock);
-	      mutex_unlock (&idport_ihash_lock);
+	      pthread_mutex_unlock (&np->lock);
+	      pthread_mutex_unlock (&idport_ihash_lock);
 	    }
 	  else
 	    err = new_node (file, idport, 1, flags, &np);
@@ -597,7 +597,7 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
   file_t newfile;
   error_t err = dir_mkfile (dir->nn->file, O_RDWR|O_EXEC,
 			    real_from_fake_mode (mode), &newfile);
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
   if (err == 0)
     err = new_node (newfile, MACH_PORT_NULL, 0, O_RDWR|O_EXEC, np);
   return err;
@@ -711,13 +711,13 @@ netfs_S_file_exec (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = check_openmodes (user->po->np->nn, O_EXEC, MACH_PORT_NULL);
   file = user->po->np->nn->file;
   if (!err)
     err = mach_port_mod_refs (mach_task_self (),
 			      file, MACH_PORT_RIGHT_SEND, 1);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
 
   if (!err)
     {
@@ -754,9 +754,9 @@ netfs_S_io_map (struct protid *user,
     return EOPNOTSUPP;
   *rdobjtype = *wrobjtype = MACH_MSG_TYPE_MOVE_SEND;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = io_map (user->po->np->nn->file, rdobj, wrobj);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
 
@@ -771,9 +771,9 @@ netfs_S_io_map_cntl (struct protid *user,
     return EOPNOTSUPP;
   *objtype = MACH_MSG_TYPE_MOVE_SEND;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = io_map_cntl (user->po->np->nn->file, obj);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
 
@@ -786,9 +786,9 @@ netfs_S_##name (struct protid *user)		\
   if (!user)					\
     return EOPNOTSUPP;				\
 						\
-  mutex_lock (&user->po->np->lock);		\
+  pthread_mutex_lock (&user->po->np->lock);	\
   err = name (user->po->np->nn->file);		\
-  mutex_unlock (&user->po->np->lock);		\
+  pthread_mutex_unlock (&user->po->np->lock);	\
   return err;					\
 }
 
@@ -808,9 +808,9 @@ netfs_S_io_prenotify (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = io_prenotify (user->po->np->nn->file, start, stop);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
 
@@ -823,9 +823,9 @@ netfs_S_io_postnotify (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = io_postnotify (user->po->np->nn->file, start, stop);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
 

@@ -85,7 +85,7 @@ trivfs_create_control (mach_port_t underlying,
 	}
 
       (*control)->hook = 0;
-      mutex_init (&(*control)->lock);
+      pthread_mutex_init (&(*control)->lock, NULL);
     }
 
 out:

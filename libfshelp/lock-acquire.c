@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define EWOULDBLOCK EAGAIN /* XXX */
 
 error_t
-fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
+fshelp_acquire_lock (struct lock_box *box, int *user, pthread_mutex_t *mut,
 		     int flags)
 {
   if (!(flags & (LOCK_UN | LOCK_EX | LOCK_SH)))
@@ -58,7 +58,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
       if (box->type == LOCK_UN && box->waiting)
 	{
 	  box->waiting = 0;
-	  condition_broadcast (&box->wait);
+	  pthread_cond_broadcast (&box->wait);
 	}
       *user = LOCK_UN;
     }
@@ -72,7 +72,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	  if (box->waiting)
 	    {
 	      box->waiting = 0;
-	      condition_broadcast (&box->wait);
+	      pthread_cond_broadcast (&box->wait);
 	    }
 	}
       
@@ -82,7 +82,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	  if (flags & LOCK_NB)
 	    return EWOULDBLOCK;
 	  box->waiting = 1;
-	  if (hurd_condition_wait (&box->wait, mut))
+	  if (pthread_hurd_cond_wait_np (&box->wait, mut))
 	    return EINTR;
 	}
 
@@ -96,7 +96,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	      if (box->waiting)
 		{
 		  box->waiting = 0;
-		  condition_broadcast (&box->wait);
+		  pthread_cond_broadcast (&box->wait);
 		}
 	    }
 	}
@@ -119,7 +119,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, struct mutex *mut,
 	      else
 		{
 		  box->waiting = 1;
-		  if (hurd_condition_wait (&box->wait, mut))
+		  if (pthread_hurd_cond_wait_np (&box->wait, mut))
 		    return EINTR;
 		}
 	    }

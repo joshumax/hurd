@@ -32,8 +32,8 @@ netfs_S_dir_mkdir (struct protid *user, char *name, mode_t mode)
   mode &= ~(S_IFMT|S_ISPARE|S_ISVTX);
   mode |= S_IFDIR;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_mkdir (user->user, user->po->np, name, mode);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

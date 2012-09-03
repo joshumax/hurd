@@ -36,12 +36,12 @@ netfs_S_file_get_storage_info (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = netfs_file_get_storage_info (user->user, user->po->np, ports,
       				     ports_type, num_ports, ints,
 				     num_ints, offsets, num_offsets,
 				     data, data_len);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
 
   return err;
 }

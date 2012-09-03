@@ -35,7 +35,7 @@ ports_transfer_right (void *tostruct,
   int hassendrights = 0;
   error_t err;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   /* Fetch the port in FROMPI and clear its use */
   port = frompi->port_right;
@@ -86,7 +86,7 @@ ports_transfer_right (void *tostruct,
 	}
     }
   
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   /* Take care of any lowered reference counts. */
   if (dereffrompi)

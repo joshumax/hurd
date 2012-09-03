@@ -24,6 +24,7 @@ target = usermux
 SRCS = usermux.c mux.c leaf.c node.c stubs.c
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = netfs fshelp iohelp threads ports ihash shouldbeinlibc
+HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 include ../Makeconf

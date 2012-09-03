@@ -41,13 +41,13 @@ netfs_S_io_revoke (struct protid *cred)
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   err = netfs_validate_stat (np, cred->user);
   if (!err)
     err = fshelp_isowner (&np->nn_stat, cred->user);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (err)
     return err;

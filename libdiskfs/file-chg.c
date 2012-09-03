@@ -30,18 +30,18 @@ diskfs_S_file_notice_changes (struct protid *cred, mach_port_t notify)
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   err = file_changed (notify, np->filemod_tick, FILE_CHANGED_NULL, 0, 0);
   if (err)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return err;
     }
   req = malloc (sizeof (struct modreq));
   req->port = notify;
   req->next = np->filemod_reqs;
   np->filemod_reqs = req;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }
 

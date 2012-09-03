@@ -49,10 +49,10 @@ static struct rpc_list *outstanding_rpcs;
 
 /* Wake up this condition when an outstanding RPC has received a reply
    or we should check for timeouts.  */
-static struct condition rpc_wakeup = CONDITION_INITIALIZER;
+static pthread_cond_t rpc_wakeup = PTHREAD_COND_INITIALIZER;
 
 /* Lock the global data and the REPLY fields of outstanding RPC's.  */
-static struct mutex outstanding_lock = MUTEX_INITIALIZER;
+static pthread_mutex_t outstanding_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 
@@ -186,7 +186,7 @@ conduct_rpc (void **rpcbuf, int **pp)
   int n;
   int cancel;
   
-  mutex_lock (&outstanding_lock);
+  pthread_mutex_lock (&outstanding_lock);
 
   link_rpc (&outstanding_rpcs, hdr);
 
@@ -198,7 +198,7 @@ conduct_rpc (void **rpcbuf, int **pp)
       if (mounted_soft && ntransmit == soft_retries)
 	{
 	  unlink_rpc (hdr);
-	  mutex_unlock (&outstanding_lock);
+	  pthread_mutex_unlock (&outstanding_lock);
 	  return ETIMEDOUT;
 	}
 
@@ -210,7 +210,7 @@ conduct_rpc (void **rpcbuf, int **pp)
       if (cc == -1)
 	{
 	  unlink_rpc (hdr);
-	  mutex_unlock (&outstanding_lock);
+	  pthread_mutex_unlock (&outstanding_lock);
 	  return errno;
 	}
       else 
@@ -221,12 +221,12 @@ conduct_rpc (void **rpcbuf, int **pp)
       while (!hdr->reply
 	     && (mapped_time->seconds - lasttrans < timeout)
 	     && !cancel)
-	cancel = hurd_condition_wait (&rpc_wakeup, &outstanding_lock);
+	cancel = pthread_hurd_cond_wait_np (&rpc_wakeup, &outstanding_lock);
   
       if (cancel)
 	{
 	  unlink_rpc (hdr);
-	  mutex_unlock (&outstanding_lock);
+	  pthread_mutex_unlock (&outstanding_lock);
 	  return EINTR;
 	}
 
@@ -242,7 +242,7 @@ conduct_rpc (void **rpcbuf, int **pp)
     }
   while (!hdr->reply);
 
-  mutex_unlock (&outstanding_lock);
+  pthread_mutex_unlock (&outstanding_lock);
 
   /* Switch to the reply buffer.  */
   *rpcbuf = hdr->reply;
@@ -349,24 +349,30 @@ conduct_rpc (void **rpcbuf, int **pp)
 
 /* Dedicated thread to signal those waiting on rpc_wakeup
    once a second.  */
-void
-timeout_service_thread ()
+void *
+timeout_service_thread (void *arg)
 {
+  (void) arg;
+
   while (1)
     {
       sleep (1);
-      mutex_lock (&outstanding_lock);
-      condition_broadcast (&rpc_wakeup);
-      mutex_unlock (&outstanding_lock);
+      pthread_mutex_lock (&outstanding_lock);
+      pthread_cond_broadcast (&rpc_wakeup);
+      pthread_mutex_unlock (&outstanding_lock);
     }
+
+  return NULL;
 }
 
 /* Dedicate thread to receive RPC replies, register them on the queue
    of pending wakeups, and deal appropriately.  */
-void
-rpc_receive_thread ()
+void *
+rpc_receive_thread (void *arg)
 {
   void *buf;
+
+  (void) arg;
 
   /* Allocate a receive buffer.  */
   buf = malloc (1024 + read_size);
@@ -385,7 +391,7 @@ rpc_receive_thread ()
           struct rpc_list *r;
           int xid = *(int *)buf;
 
-          mutex_lock (&outstanding_lock);
+          pthread_mutex_lock (&outstanding_lock);
 
           /* Find the rpc that we just fulfilled.  */
           for (r = outstanding_rpcs; r; r = r->next)
@@ -394,7 +400,7 @@ rpc_receive_thread ()
 	        {
 	          unlink_rpc (r);
 	          r->reply = buf;
-	          condition_broadcast (&rpc_wakeup);
+	          pthread_cond_broadcast (&rpc_wakeup);
 		  break;
 	        }
 	    }
@@ -402,7 +408,7 @@ rpc_receive_thread ()
 	  if (! r)
 	    fprintf (stderr, "NFS dropping reply xid %d\n", xid);
 #endif
-	  mutex_unlock (&outstanding_lock);
+	  pthread_mutex_unlock (&outstanding_lock);
 
 	  /* If r is not null then we had a message from a pending
 	     (i.e. known) rpc.  Thus, it was fulfilled and if we want
@@ -414,4 +420,6 @@ rpc_receive_thread ()
 	    }
         }
     }
+
+  return NULL;
 }

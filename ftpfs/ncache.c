@@ -51,7 +51,7 @@ ftpfs_cache_node (struct node *node)
   struct netnode *nn = node->nn;
   struct ftpfs *fs = nn->fs;
 
-  mutex_lock (&fs->node_cache_lock);
+  pthread_mutex_lock (&fs->node_cache_lock);
 
   if (fs->params.node_cache_max > 0 || fs->node_cache_len > 0)
     {
@@ -83,5 +83,5 @@ ftpfs_cache_node (struct node *node)
 	}
     }
 
-  mutex_unlock (&fs->node_cache_lock);
+  pthread_mutex_unlock (&fs->node_cache_lock);
 }

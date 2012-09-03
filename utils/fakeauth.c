@@ -310,8 +310,8 @@ auth_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 }
 
 
-static any_t
-handle_auth_requests (any_t ignored)
+static void *
+handle_auth_requests (void *ignored)
 {
   while (1)
     ports_manage_port_operations_multithread (auth_bucket, auth_demuxer,
@@ -326,6 +326,7 @@ main (int argc, char **argv)
   struct authhandle *firstauth;
   auth_t authport;
   pid_t child;
+  pthread_t thread;
   int status;
   int argi;
 
@@ -375,7 +376,14 @@ believe it has restricted them to different identities or no identity at all.\
   real_auth_port = getauth ();
 
   /* Start handling auth requests on our fake handles.  */
-  cthread_detach (cthread_fork (&handle_auth_requests, (any_t)0));
+  err = pthread_create (&thread, NULL, &handle_auth_requests, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   /* Now we start faking ourselves out.  This will immediately
      reauthenticate all our descriptors through our proxy auth port.

@@ -350,7 +350,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	}
       /* Successfully finished parsing, return a result.  */
 
-      __mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
 
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	{
@@ -367,7 +367,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 				      in->peer, INADDR_NONE);
 	      if (err)
 		{
-		  __mutex_unlock (&global_lock);
+		  pthread_mutex_unlock (&global_lock);
 		  FAIL (err, 16, 0, "cannot configure interface");
 		}
 	    }
@@ -436,7 +436,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 		err = - (*tb->tb_delete) (tb, &req.rtm, &rta, &req.nlh, 0);
 		if (err && err != ESRCH)
 		  {
-		    __mutex_unlock (&global_lock);
+		    pthread_mutex_unlock (&global_lock);
 		    FAIL (err, 17, 0, "cannot remove old default gateway");
 		  }
 		err = 0;
@@ -452,7 +452,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 		   : - (*tb->tb_insert) (tb, &req.rtm, &rta, &req.nlh, 0));
 	    if (err)
 	      {
-		__mutex_unlock (&global_lock);
+		pthread_mutex_unlock (&global_lock);
 	        FAIL (err, 17, 0, "cannot set default gateway");
 	      }
 	  }
@@ -474,7 +474,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	}
 #endif       
 
-      __mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
 
       /* Fall through to free hook.  */
 

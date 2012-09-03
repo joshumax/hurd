@@ -22,7 +22,7 @@
 #include <dirent.h>
 #include <assert.h>
 #include <mach.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include "cons.h"
 #include "fs_notify_S.h"
@@ -69,7 +69,7 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
     return EOPNOTSUPP;
   cons = notify->cons;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
 
   switch (change)
     {
@@ -121,9 +121,9 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
     case DIR_CHANGED_RENUMBER:
     default:
       assert ("Unexpected dir-changed type.");
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return EINVAL;
     }
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   return 0;
 }

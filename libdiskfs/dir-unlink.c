@@ -37,7 +37,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (diskfs_check_readonly ())
     return EROFS;
 
-  mutex_lock (&dnp->lock);
+  pthread_mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
   if (error == EAGAIN)
@@ -45,7 +45,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (error)
     {
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return error;
     }
 
@@ -58,7 +58,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
       else
 	diskfs_nput (np);
       diskfs_drop_dirstat (dnp, ds);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return EPERM;		/* 1003.1-1996 5.5.1.4 */
     }
 
@@ -68,7 +68,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (error)
     {
       diskfs_nput (np);
-      mutex_unlock (&dnp->lock);
+      pthread_mutex_unlock (&dnp->lock);
       return error;
     }
 
@@ -86,7 +86,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
     diskfs_nrele (np);
   else
     diskfs_nput (np);
-  mutex_unlock (&dnp->lock);
+  pthread_mutex_unlock (&dnp->lock);
 
   if (control)
     {

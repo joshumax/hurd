@@ -32,8 +32,8 @@ pager_create (struct user_pager_info *upi,
 
   p->upi = upi;
   p->pager_state = NOTINIT;
-  mutex_init (&p->interlock);
-  condition_init (&p->wakeup);
+  pthread_mutex_init (&p->interlock, NULL);
+  pthread_cond_init (&p->wakeup, NULL);
   p->lock_requests = 0;
   p->attribute_requests = 0;
   p->may_cache = may_cache;

@@ -36,7 +36,7 @@ size_t bmap_len;
 /* Allocation rotor */
 char *bmap_rotor;
 
-struct mutex bmap_lock;
+pthread_mutex_t bmap_lock = PTHREAD_MUTEX_INITIALIZER;
 
 error_t
 init_backing (char *name)
@@ -69,7 +69,7 @@ allocate_backing_page ()
   int bit;
   int pfn;
 
-  mutex_lock (&bmap_lock);
+  pthread_mutex_lock (&bmap_lock);
 
   wrapped = (bmap_rotor == bmap);
 
@@ -85,7 +85,7 @@ allocate_backing_page ()
   if (wrapped == 2)
     {
       /* Didn't find one... */
-      mutex_unlock (&bmap_lock);
+      pthread_mutex_unlock (&bmap_lock);
       printf ("WARNING: Out of paging space; pageout failing.");
       return 0;
     }
@@ -101,7 +101,7 @@ allocate_backing_page ()
   /* Return the correct offset */
   pfn = (bmap_rotor - bmap) * 8 + bit;
 
-  mutex_unlock (&bmap_lock);
+  pthread_mutex_unlock (&bmap_lock);
   
   return pfn * (vm_page_size / store->block_size);
 }
@@ -112,7 +112,7 @@ return_backing_pages (off_t *map, int maplen)
 {
   int i;
   
-  mutex_lock (&bmap_lock);
+  pthread_mutex_lock (&bmap_lock);
   for (i = 0; i < maplen; i++)
     {
       int pfn;
@@ -126,6 +126,6 @@ return_backing_pages (off_t *map, int maplen)
       assert ((*b & (1 << bit)) == 0);
       *b |= 1 << bit;
     }
-  mutex_unlock (&bmap_lock);
+  pthread_mutex_unlock (&bmap_lock);
 }
 

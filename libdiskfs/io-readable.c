@@ -34,13 +34,13 @@ diskfs_S_io_readable (struct protid *cred,
 
   np = cred->po->np;
   
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   iohelp_get_conch (&np->conch);
   if (np->dn_stat.st_size > cred->po->filepointer)
     *amount = np->dn_stat.st_size - cred->po->filepointer;
   else
     *amount = 0;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }

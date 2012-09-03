@@ -30,9 +30,9 @@
 static int pty_read_blocked = 0;
 
 /* Wake this up when tty output occurs and pty_read_blocked is set */
-static struct condition pty_read_wakeup = CONDITION_INITIALIZER;
+static pthread_cond_t pty_read_wakeup = PTHREAD_COND_INITIALIZER;
 
-static struct condition pty_select_wakeup = CONDITION_INITIALIZER;
+static pthread_cond_t pty_select_wakeup = PTHREAD_COND_INITIALIZER;
 
 /* Set if "dtr" is on. */
 static int dtr_on = 0;
@@ -70,11 +70,11 @@ pty_open_hook (struct trivfs_control *cntl,
   if ((flags & (O_READ|O_WRITE)) == 0)
     return 0;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (ptyopen)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBUSY;
     }
 
@@ -87,7 +87,7 @@ pty_open_hook (struct trivfs_control *cntl,
   control_byte = 0;
   pktnostop = 0;
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -95,23 +95,23 @@ pty_open_hook (struct trivfs_control *cntl,
 error_t
 pty_po_create_hook (struct trivfs_peropen *po)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (po->openmodes & (O_READ | O_WRITE))
     {
       nptyperopens++;
       report_carrier_on ();
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
 error_t
 pty_po_destroy_hook (struct trivfs_peropen *po)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if ((po->openmodes & (O_READ | O_WRITE)) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
   nptyperopens--;
@@ -120,7 +120,7 @@ pty_po_destroy_hook (struct trivfs_peropen *po)
       ptyopen = 0;
       report_carrier_off ();
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -130,8 +130,8 @@ wake_reader ()
   if (pty_read_blocked)
     {
       pty_read_blocked = 0;
-      condition_broadcast (&pty_read_wakeup);
-      condition_broadcast (&pty_select_wakeup);
+      pthread_cond_broadcast (&pty_read_wakeup);
+      pthread_cond_broadcast (&pty_select_wakeup);
     }
 }
 
@@ -306,11 +306,11 @@ pty_io_read (struct trivfs_protid *cred,
 {
   int size;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if ((cred->po->openmodes & O_READ) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
 
@@ -320,13 +320,13 @@ pty_io_read (struct trivfs_protid *cred,
     {
       if (cred->po->openmodes & O_NONBLOCK)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EWOULDBLOCK;
 	}
       pty_read_blocked = 1;
-      if (hurd_condition_wait (&pty_read_wakeup, &global_lock))
+      if (pthread_hurd_cond_wait_np (&pty_read_wakeup, &global_lock))
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EINTR;
 	}
     }
@@ -370,7 +370,7 @@ pty_io_read (struct trivfs_protid *cred,
 	*cp++ = dequeue (outputq);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -385,11 +385,11 @@ pty_io_write (struct trivfs_protid *cred,
   int i, flush;
   int cancel = 0;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if ((cred->po->openmodes & O_WRITE) == 0)
     {
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
 
@@ -400,14 +400,14 @@ pty_io_write (struct trivfs_protid *cred,
 	{
 	  if (cred->po->openmodes & O_NONBLOCK)
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EWOULDBLOCK;
 	    }
-	  cancel = hurd_condition_wait (inputq->wait, &global_lock);
+	  cancel = pthread_hurd_cond_wait_np (inputq->wait, &global_lock);
 	}
       if (cancel)
 	{
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EINTR;
 	}
 
@@ -433,7 +433,7 @@ pty_io_write (struct trivfs_protid *cred,
 	  }
       }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   *amount = datalen;
   return 0;
@@ -443,7 +443,7 @@ pty_io_write (struct trivfs_protid *cred,
 error_t
 pty_io_readable (size_t *amt)
 {
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (control_byte)
     {
       *amt = 1;
@@ -452,7 +452,7 @@ pty_io_readable (size_t *amt)
     }
   else
     *amt = qsize (outputq);
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -466,7 +466,7 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
   if (*type == 0)
     return 0;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   while (1)
     {
@@ -483,17 +483,17 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
       if (avail)
 	{
 	  *type = avail;
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return 0;
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
 
       pty_read_blocked = 1;
-      if (hurd_condition_wait (&pty_select_wakeup, &global_lock))
+      if (pthread_hurd_cond_wait_np (&pty_select_wakeup, &global_lock))
 	{
 	  *type = 0;
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return EINTR;
 	}
     }
@@ -508,7 +508,7 @@ S_tioctl_tiocsig (io_t port,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   drop_output ();
   clear_queue (inputq);
@@ -516,7 +516,7 @@ S_tioctl_tiocsig (io_t port,
   ptyio_notice_input_flushed ();
   send_signal (sig);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
 
   return 0;
@@ -533,7 +533,7 @@ S_tioctl_tiocpkt (io_t port,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!!mode == !!packet_mode)
     err = 0;
@@ -546,7 +546,7 @@ S_tioctl_tiocpkt (io_t port,
       err = 0;
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
 
   return err;
@@ -563,7 +563,7 @@ S_tioctl_tiocucntl (io_t port,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (!!mode == !!user_ioctl_mode)
     err = 0;
@@ -576,7 +576,7 @@ S_tioctl_tiocucntl (io_t port,
       err = 0;
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
 
   return err;
@@ -592,13 +592,13 @@ S_tioctl_tiocremote (io_t port,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   remote_input_mode = how;
   drop_output ();
   clear_queue (inputq);
   clear_queue (rawq);
   ptyio_notice_input_flushed ();
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return 0;
 }
@@ -612,7 +612,7 @@ S_tioctl_tiocext (io_t port,
   if (!cred)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   if (mode && !external_processing)
     {
       if (packet_mode)
@@ -633,7 +633,7 @@ S_tioctl_tiocext (io_t port,
       external_processing = 0;
       termstate.c_lflag &= ~EXTPROC;
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   ports_port_deref (cred);
   return 0;
 }

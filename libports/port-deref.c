@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
@@ -30,12 +29,12 @@ ports_port_deref (void *portstruct)
 
  retry:
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
   if (pi->refcnt == 1 && pi->weakrefcnt
       && pi->class->dropweak_routine && !trieddroppingweakrefs)
     {
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       (*pi->class->dropweak_routine) (pi);
       trieddroppingweakrefs = 1;
       goto retry;
@@ -47,7 +46,7 @@ ports_port_deref (void *portstruct)
   if (pi->refcnt == 0 && pi->weakrefcnt == 0)
     _ports_complete_deallocate (pi);
   else
-    mutex_unlock (&_ports_lock);
+    pthread_mutex_unlock (&_ports_lock);
 }
 
       

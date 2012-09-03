@@ -24,6 +24,7 @@
 #include <hurd/fsys.h>
 #include <assert.h>
 #include <string.h>
+#include <pthread.h>
 #include <hurd/io.h>
 #include <hurd/auth.h>
 #include "nfsd.h"
@@ -42,7 +43,7 @@
 
 
 static struct idspec *idhashtable[IDHASH_TABLE_SIZE];
-spin_lock_t idhashlock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t idhashlock = PTHREAD_SPINLOCK_INITIALIZER;
 static int nfreeids;
 static int leastidlastuse;
 
@@ -90,14 +91,14 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
 
   hash = idspec_hash (nuids, ngids, uids, gids);
 
-  spin_lock (&idhashlock);
+  pthread_spin_lock (&idhashlock);
   for (i = idhashtable[hash]; i; i = i->next)
     if (idspec_compare (i, nuids, ngids, uids, gids))
       {
 	i->references++;
 	if (i->references == 1)
 	  nfreeids--;
-	spin_unlock (&idhashlock);
+	pthread_spin_unlock (&idhashlock);
 	return i;
       }
 
@@ -117,7 +118,7 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
   i->prevp = &idhashtable[hash];
   idhashtable[hash] = i;
 
-  spin_unlock (&idhashlock);
+  pthread_spin_unlock (&idhashlock);
   return i;
 }
 
@@ -184,7 +185,7 @@ process_cred (int *p, struct idspec **credp)
 void
 cred_rele (struct idspec *i)
 {
-  spin_lock (&idhashlock);
+  pthread_spin_lock (&idhashlock);
   i->references--;
   if (i->references == 0)
     {
@@ -193,16 +194,16 @@ cred_rele (struct idspec *i)
 	leastidlastuse = i->lastuse;
       nfreeids++;
     }
-  spin_unlock (&idhashlock);
+  pthread_spin_unlock (&idhashlock);
 }
 
 void
 cred_ref (struct idspec *i)
 {
-  spin_lock (&idhashlock);
+  pthread_spin_lock (&idhashlock);
   assert (i->references);
   i->references++;
-  spin_unlock (&idhashlock);
+  pthread_spin_unlock (&idhashlock);
 }
 
 void
@@ -211,7 +212,7 @@ scan_creds ()
   int n;
   int newleast = mapped_time->seconds;
 
-  spin_lock (&idhashlock);
+  pthread_spin_lock (&idhashlock);
 
   if (mapped_time->seconds - leastidlastuse > ID_KEEP_TIMEOUT)
     {
@@ -245,13 +246,13 @@ scan_creds ()
       if (nfreeids)
 	leastidlastuse = newleast;
     }
-  spin_unlock (&idhashlock);
+  pthread_spin_unlock (&idhashlock);
 }
 
 
 
 static struct cache_handle *fhhashtable[FHHASH_TABLE_SIZE];
-struct mutex fhhashlock = MUTEX_INITIALIZER;
+pthread_mutex_t fhhashlock = PTHREAD_MUTEX_INITIALIZER;
 static int nfreefh;
 static int leastfhlastuse;
 
@@ -275,14 +276,14 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   file_t port;
 
   hash = fh_hash ((char *)p, i);
-  mutex_lock (&fhhashlock);
+  pthread_mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
     if (c->ids == i && ! bcmp (c->handle, p, NFS2_FHSIZE))
       {
 	if (c->references == 0)
 	  nfreefh--;
 	c->references++;
-	mutex_unlock (&fhhashlock);
+	pthread_mutex_unlock (&fhhashlock);
 	*cp = c;
 	return p + NFS2_FHSIZE / sizeof (int);
       }
@@ -295,7 +296,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
       || fsys_getfile (fsys, i->uids, i->nuids, i->gids, i->ngids,
 		       (char *)(p + 1), NFS2_FHSIZE - sizeof (int), &port))
     {
-      mutex_unlock (&fhhashlock);
+      pthread_mutex_unlock (&fhhashlock);
       *cp = 0;
       return p + NFS2_FHSIZE / sizeof (int);
     }
@@ -313,7 +314,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   c->prevp = &fhhashtable[hash];
   fhhashtable[hash] = c;
 
-  mutex_unlock (&fhhashlock);
+  pthread_mutex_unlock (&fhhashlock);
   *cp = c;
   return p + NFS2_FHSIZE / sizeof (int);
 }
@@ -321,7 +322,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
 void
 cache_handle_rele (struct cache_handle *c)
 {
-  mutex_lock (&fhhashlock);
+  pthread_mutex_lock (&fhhashlock);
   c->references--;
   if (c->references == 0)
     {
@@ -330,7 +331,7 @@ cache_handle_rele (struct cache_handle *c)
 	leastfhlastuse = c->lastuse;
       nfreefh++;
     }
-  mutex_unlock (&fhhashlock);
+  pthread_mutex_unlock (&fhhashlock);
 }
 
 void
@@ -339,7 +340,7 @@ scan_fhs ()
   int n;
   int newleast = mapped_time->seconds;
 
-  mutex_lock (&fhhashlock);
+  pthread_mutex_lock (&fhhashlock);
 
   if (mapped_time->seconds - leastfhlastuse > FH_KEEP_TIMEOUT)
     {
@@ -373,7 +374,7 @@ scan_fhs ()
       if (nfreefh)
 	leastfhlastuse = newleast;
     }
-  mutex_unlock (&fhhashlock);
+  pthread_mutex_unlock (&fhhashlock);
 }
 
 struct cache_handle *
@@ -416,7 +417,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
   /* Cache it.  */
   hash = fh_hash (fhandle, credc->ids);
-  mutex_lock (&fhhashlock);
+  pthread_mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
     if (c->ids == credc->ids && ! bcmp (fhandle, c->handle, NFS2_FHSIZE))
       {
@@ -424,7 +425,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 	if (c->references == 0)
 	  nfreefh--;
 	c->references++;
-	mutex_unlock (&fhhashlock);
+	pthread_mutex_unlock (&fhhashlock);
 	return c;
       }
 
@@ -438,7 +439,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 		      &newport);
   if (err)
     {
-      mutex_unlock (&fhhashlock);
+      pthread_mutex_unlock (&fhhashlock);
       return 0;
     }
 
@@ -456,7 +457,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
     c->next->prevp = &c->next;
   c->prevp = &fhhashtable[hash];
   fhhashtable[hash] = c;
-  mutex_unlock (&fhhashlock);
+  pthread_mutex_unlock (&fhhashlock);
 
   return c;
 }
@@ -464,7 +465,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
 
 static struct cached_reply *replyhashtable [REPLYHASH_TABLE_SIZE];
-static spin_lock_t replycachelock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t replycachelock = PTHREAD_SPINLOCK_INITIALIZER;
 static int nfreereplies;
 static int leastreplylastuse;
 
@@ -480,7 +481,7 @@ check_cached_replies (int xid,
 
   hash = abs(xid % REPLYHASH_TABLE_SIZE);
 
-  spin_lock (&replycachelock);
+  pthread_spin_lock (&replycachelock);
   for (cr = replyhashtable[hash]; cr; cr = cr->next)
     if (cr->xid == xid
 	&& !bcmp (sender, &cr->source, sizeof (struct sockaddr_in)))
@@ -488,14 +489,14 @@ check_cached_replies (int xid,
 	cr->references++;
 	if (cr->references == 1)
 	  nfreereplies--;
-	spin_unlock (&replycachelock);
-	mutex_lock (&cr->lock);
+	pthread_spin_unlock (&replycachelock);
+	pthread_mutex_lock (&cr->lock);
 	return cr;
       }
 
   cr = malloc (sizeof (struct cached_reply));
-  mutex_init (&cr->lock);
-  mutex_lock (&cr->lock);
+  pthread_mutex_init (&cr->lock, NULL);
+  pthread_mutex_lock (&cr->lock);
   memcpy (&cr->source, sender, sizeof (struct sockaddr_in));
   cr->xid = xid;
   cr->data = 0;
@@ -507,7 +508,7 @@ check_cached_replies (int xid,
   cr->prevp = &replyhashtable[hash];
   replyhashtable[hash] = cr;
 
-  spin_unlock (&replycachelock);
+  pthread_spin_unlock (&replycachelock);
   return cr;
 }
 
@@ -516,8 +517,8 @@ check_cached_replies (int xid,
 void
 release_cached_reply (struct cached_reply *cr)
 {
-  mutex_unlock (&cr->lock);
-  spin_lock (&replycachelock);
+  pthread_mutex_unlock (&cr->lock);
+  pthread_spin_lock (&replycachelock);
   cr->references--;
   if (cr->references == 0)
     {
@@ -526,7 +527,7 @@ release_cached_reply (struct cached_reply *cr)
 	leastreplylastuse = cr->lastuse;
       nfreereplies++;
     }
-  spin_unlock (&replycachelock);
+  pthread_spin_unlock (&replycachelock);
 }
 
 void
@@ -535,7 +536,7 @@ scan_replies ()
   int n;
   int newleast = mapped_time->seconds;
 
-  spin_lock (&replycachelock);
+  pthread_spin_lock (&replycachelock);
 
   if (mapped_time->seconds - leastreplylastuse > REPLY_KEEP_TIMEOUT)
     {
@@ -569,5 +570,5 @@ scan_replies ()
       if (nfreereplies)
 	leastreplylastuse = newleast;
     }
-  spin_unlock (&replycachelock);
+  pthread_spin_unlock (&replycachelock);
 }

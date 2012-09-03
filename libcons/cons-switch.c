@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "cons.h"
 
@@ -36,7 +37,7 @@ cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
   if (!id && !delta)
     return 0;
 
-  mutex_lock (&cons->lock);
+  pthread_mutex_lock (&cons->lock);
   if (id)
     {
       vcons_entry = cons->vcons_list;
@@ -67,14 +68,14 @@ cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
 
   if (!vcons_entry)
     {
-      mutex_unlock (&cons->lock);
+      pthread_mutex_unlock (&cons->lock);
       return ESRCH;
     }
 
   if (vcons_entry->vcons)
     {
       *r_vcons = vcons_entry->vcons;
-      mutex_lock (&vcons_entry->vcons->lock);
+      pthread_mutex_lock (&vcons_entry->vcons->lock);
     }
   else
     {
@@ -83,6 +84,6 @@ cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
         vcons_entry->vcons = *r_vcons;
     }
 
-  mutex_unlock (&cons->lock);
+  pthread_mutex_unlock (&cons->lock);
   return err;
 }

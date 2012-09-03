@@ -19,7 +19,7 @@
 
 #include <string.h>		/* For memset() */
 
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd/pipe.h>
 
@@ -38,7 +38,7 @@ sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
 
   *pipe = sock->read_pipe;
   if (*pipe != NULL)
@@ -57,7 +57,7 @@ sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
   else
     err = ENOTCONN;
 
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return err;
 }
@@ -70,7 +70,7 @@ sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
 {
   error_t err = 0;
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   *pipe = sock->write_pipe;
   if (*pipe != NULL)
     pipe_acquire_writer (*pipe); /* Do this before unlocking the sock!  */
@@ -85,7 +85,7 @@ sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
   else
     err = ENOTCONN;
 
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return err;
 }
@@ -123,7 +123,7 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->pipe_class = pipe_class;
   new->addr = NULL;
   memset (&new->change_time, 0, sizeof (new->change_time));
-  mutex_init (&new->lock);
+  pthread_mutex_init (&new->lock, NULL);
 
   *sock = new;
   return 0;
@@ -148,7 +148,7 @@ _sock_norefs (struct sock *sock)
   /* A sock should never have an address when it has 0 refs, as the
      address should hold a reference to the sock!  */
   assert (sock->addr == NULL);
-  mutex_unlock (&sock->lock);	/* Unlock so sock_free can do stuff.  */
+  pthread_mutex_unlock (&sock->lock);	/* Unlock so sock_free can do stuff.  */
   sock_free (sock);
 }
 
@@ -195,9 +195,9 @@ sock_create_port (struct sock *sock, mach_port_t *port)
 
   ensure_sock_server ();
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   sock->refs++;
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   user->sock = sock;
 
@@ -214,7 +214,7 @@ struct addr
 {
   struct port_info pi;
   struct sock *sock;
-  struct mutex lock;
+  pthread_mutex_t lock;
 };
 
 struct port_class *addr_port_class;
@@ -227,18 +227,18 @@ addr_unbind (void *vaddr)
   struct sock *sock;
   struct addr *addr = vaddr;
 
-  mutex_lock (&addr->lock);
+  pthread_mutex_lock (&addr->lock);
   sock = addr->sock;
   if (sock)
     {
-      mutex_lock (&sock->lock);
+      pthread_mutex_lock (&sock->lock);
       sock->addr = NULL;
       addr->sock = NULL;
       ports_port_deref_weak (addr);
-      mutex_unlock (&sock->lock);
+      pthread_mutex_unlock (&sock->lock);
       sock_deref (sock);
     }
-  mutex_unlock (&addr->lock);
+  pthread_mutex_unlock (&addr->lock);
 }
 
 /* Cleanup after the address ADDR, which is going away... */
@@ -264,7 +264,7 @@ addr_create (struct addr **addr)
     {
       ensure_sock_server ();
       (*addr)->sock = NULL;
-      mutex_init (&(*addr)->lock);
+      pthread_mutex_init (&(*addr)->lock, NULL);
     }
 
   return err;
@@ -277,8 +277,8 @@ sock_bind (struct sock *sock, struct addr *addr)
   error_t err = 0;
   struct addr *old_addr;
 
-  mutex_lock (&addr->lock);
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&addr->lock);
+  pthread_mutex_lock (&sock->lock);
 
   old_addr = sock->addr;
   if (addr && old_addr)
@@ -304,8 +304,8 @@ sock_bind (struct sock *sock, struct addr *addr)
 	}
     }
 
-  mutex_unlock (&sock->lock);
-  mutex_unlock (&addr->lock);
+  pthread_mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&addr->lock);
 
   return err;
 }
@@ -341,11 +341,11 @@ ensure_addr (struct sock *sock, struct addr **addr)
 error_t
 addr_get_sock (struct addr *addr, struct sock **sock)
 {
-  mutex_lock (&addr->lock);
+  pthread_mutex_lock (&addr->lock);
   *sock = addr->sock;
   if (*sock)
     (*sock)->refs++;
-  mutex_unlock (&addr->lock);
+  pthread_mutex_unlock (&addr->lock);
   return *sock ? 0 : EADDRNOTAVAIL;
 }
 
@@ -356,9 +356,9 @@ sock_get_addr (struct sock *sock, struct addr **addr)
 {
   error_t err;
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
   err = ensure_addr (sock, addr);
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return err;			/* XXX */
 }
@@ -368,7 +368,7 @@ sock_get_addr (struct sock *sock, struct addr **addr)
 /* We hold this lock before we lock two sockets at once, to prevent someone
    else trying to lock the same two sockets in the reverse order, resulting
    in a deadlock.  */
-static struct mutex socket_pair_lock;
+static pthread_mutex_t socket_pair_lock;
 
 /* Connect SOCK1 and SOCK2.  */
 error_t
@@ -396,11 +396,11 @@ sock_connect (struct sock *sock1, struct sock *sock2)
     /* Incompatible socket types.  */
     return EOPNOTSUPP;		/* XXX?? */
 
-  mutex_lock (&socket_pair_lock);
-  mutex_lock (&sock1->lock);
+  pthread_mutex_lock (&socket_pair_lock);
+  pthread_mutex_lock (&sock1->lock);
   if (sock1 != sock2)
     /* If SOCK1 == SOCK2, then we get a fifo!  */
-    mutex_lock (&sock2->lock);
+    pthread_mutex_lock (&sock2->lock);
 
   if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
     /* An already-connected socket.  */
@@ -426,9 +426,9 @@ sock_connect (struct sock *sock1, struct sock *sock2)
     }
 
   if (sock1 != sock2)
-    mutex_unlock (&sock2->lock);
-  mutex_unlock (&sock1->lock);
-  mutex_unlock (&socket_pair_lock);
+    pthread_mutex_unlock (&sock2->lock);
+  pthread_mutex_unlock (&sock1->lock);
+  pthread_mutex_unlock (&socket_pair_lock);
 
   if (old_sock1_write_pipe)
     {
@@ -450,7 +450,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
   struct pipe *read_pipe = NULL;
   struct pipe *write_pipe = NULL;
 
-  mutex_lock (&sock->lock);
+  pthread_mutex_lock (&sock->lock);
 
   old_flags = sock->flags;
   sock->flags |= flags;
@@ -469,7 +469,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
     }
 
   /* Unlock SOCK here, as we may subsequently wake up other threads. */
-  mutex_unlock (&sock->lock);
+  pthread_mutex_unlock (&sock->lock);
   
   if (read_pipe)
     pipe_remove_reader (read_pipe);

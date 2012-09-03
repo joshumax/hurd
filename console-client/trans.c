@@ -22,11 +22,13 @@
 #include <maptime.h>
 #include <stddef.h>
 #include <dirent.h>
+#include <pthread.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <hurd/hurd_types.h>
 #include <error.h>
 #include <version.h>
+#include <stdio.h>
 
 #include "trans.h"
 
@@ -305,11 +307,11 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
   err = ENOENT;
   
  out:
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
   if (err)
     *node = 0;
   else
-    mutex_lock (&(*node)->lock);
+    pthread_mutex_lock (&(*node)->lock);
   
   if (!err && *node != dir && (*node)->nn->node->open)
     (*node)->nn->node->open ();
@@ -454,15 +456,15 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
       return err;
     }
 
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
 
   nn = calloc (1, sizeof (*nn));
   if (!nn)
     return ENOMEM;
 
   *np = netfs_make_node (nn);
-  mutex_lock (&(*np)->lock);
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_mutex_lock (&(*np)->lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   return 0;
 }
@@ -477,7 +479,7 @@ netfs_attempt_create_file (struct iouser *user, struct node *dir,
 			   char *name, mode_t mode, struct node **np)
 {
   *np = 0;
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
   return EOPNOTSUPP;
 }
 
@@ -604,7 +606,7 @@ void netfs_node_norefs (struct node *np)
   if (np->nn->symlink_path)
     free (np->nn->symlink_path);
 
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
   free (np->nn);
   free (np);
 }
@@ -738,8 +740,8 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
 
 
-static any_t
-console_client_translator (any_t unused)
+static void *
+console_client_translator (void *unused)
 {
   error_t err;
 
@@ -831,6 +833,7 @@ console_setup_node (char *path)
   file_t node;
   struct port_info *newpi;
   mach_port_t right;
+  pthread_t thread;
   
   node = file_name_lookup (path, O_CREAT|O_NOTRANS, 0664);
   if (node == MACH_PORT_NULL)
@@ -886,7 +889,14 @@ console_setup_node (char *path)
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
                 console_maptime);
   
-  cthread_detach (cthread_fork (console_client_translator, NULL));
+  err = pthread_create (&thread, NULL, console_client_translator, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   return 0;
 }

@@ -19,7 +19,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 #include <assert.h>
 
 void
@@ -27,12 +26,12 @@ ports_port_deref_weak (void *portstruct)
 {
   struct port_info *pi = portstruct;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   assert (pi->weakrefcnt);
   pi->weakrefcnt--;
   if (pi->refcnt == 0 && pi->weakrefcnt == 0)
     _ports_complete_deallocate (pi);
   else
-    mutex_unlock (&_ports_lock);
+    pthread_mutex_unlock (&_ports_lock);
 }
 

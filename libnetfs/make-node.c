@@ -30,7 +30,7 @@ netfs_make_node (struct netnode *nn)
   
   np->nn = nn;
 
-  mutex_init (&np->lock);
+  pthread_mutex_init (&np->lock, NULL);
   np->references = 1;
   np->sockaddr = MACH_PORT_NULL;
   np->owner = 0;

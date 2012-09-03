@@ -21,6 +21,8 @@
 #include <hurd/sigpreempt.h>
 #include <error.h>
 
+__thread struct disk_image_user *diskfs_exception_diu;
+
 struct pager *diskfs_disk_pager;
 
 static void fault_handler (int sig, long int sigcode, struct sigcontext *scp);
@@ -33,8 +35,8 @@ static struct hurd_signal_preemptor preemptor =
 
 /* A top-level function for the paging thread that just services paging
    requests.  */
-static void
-service_paging_requests (any_t arg)
+static void *
+service_paging_requests (void *arg)
 {
   struct port_bucket *pager_bucket = arg;
   for (;;)
@@ -42,6 +44,7 @@ service_paging_requests (any_t arg)
 					      pager_demuxer,
 					      1000 * 60 * 2,
 					      1000 * 60 * 10, 0);
+  return NULL;
 }
 
 void
@@ -49,12 +52,19 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
 			 struct port_bucket *pager_bucket, int may_cache,
 			 size_t size, void **image)
 {
+  pthread_t thread;
   error_t err;
   mach_port_t disk_pager_port;
 
   /* Make a thread to service paging requests.  */
-  cthread_detach (cthread_fork ((cthread_fn_t) service_paging_requests,
-				(any_t)pager_bucket));
+  err = pthread_create (&thread, NULL, service_paging_requests, pager_bucket);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   /* Create the pager.  */
   diskfs_disk_pager = pager_create (upi, pager_bucket,
@@ -87,11 +97,10 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
 static void
 fault_handler (int sig, long int sigcode, struct sigcontext *scp)
 {
-  jmp_buf *env = cthread_data (cthread_self ());
   error_t err;
 
 #ifndef NDEBUG
-  if (!env)
+  if (diskfs_exception_diu == NULL)
     {
       error (0, 0,
 	     "BUG: unexpected fault on disk image (%d, %#lx) in [%#lx,%#lx)"
@@ -107,7 +116,7 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
 #endif
 
   /* Clear the record, since the faulting thread will not.  */
-  cthread_set_data (cthread_self (), 0);
+  diskfs_exception_diu = NULL;
 
   /* Fetch the error code from the pager.  */
   assert (scp->sc_error == EKERN_MEMORY_ERROR);
@@ -115,5 +124,5 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
   assert (err);
 
   /* Make `diskfault_catch' return the error code.  */
-  longjmp (*env, err);
+  longjmp (diskfs_exception_diu->env, err);
 }

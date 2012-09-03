@@ -49,7 +49,7 @@ _treefs_node_start_translator (struct treefs_node *node,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
 
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
   
   /* XXXX Change libfshelp so that it take more than 1 uid/gid? */
   uid = auth->nuids > 0 ? auth->uids[0] : -1;

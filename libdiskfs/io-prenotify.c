@@ -37,7 +37,7 @@ diskfs_S_io_prenotify (struct protid *cred,
   np = cred->po->np;
 
   /* Clamp it down */
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   if (!cred->mapped)
     {
@@ -55,9 +55,9 @@ diskfs_S_io_prenotify (struct protid *cred,
     {
       /* The user didn't need to do this, so we'll make sure they
 	 have the right shared page info.  */
-      spin_lock (&cred->mapped->lock);
+      pthread_spin_lock (&cred->mapped->lock);
       iohelp_put_shared_data (cred);
-      spin_unlock (&cred->mapped->lock);
+      pthread_spin_unlock (&cred->mapped->lock);
       goto out;
     }
   
@@ -67,6 +67,6 @@ diskfs_S_io_prenotify (struct protid *cred,
   if (!err && np->filemod_reqs)
     diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, end);
  out:
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

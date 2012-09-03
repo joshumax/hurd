@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <sys/mman.h>
 
 #include "store.h"
@@ -29,7 +29,7 @@
 #define IN_BUFFERING  (256*1024)
 #define OUT_BUFFERING (512*1024)
 
-static struct mutex unzip_lock = MUTEX_INITIALIZER;
+static pthread_mutex_t unzip_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #define STORE_UNZIP(name)		STORE_UNZIP_1 (UNZIP, name)
 #define STORE_UNZIP_1(unzip,name)	STORE_UNZIP_2 (unzip, name)
@@ -182,7 +182,7 @@ unzip_store (struct store *from, void **buf, size_t *buf_len)
   if (zerr)
     return zerr;
 
-  mutex_lock (&unzip_lock);
+  pthread_mutex_lock (&unzip_lock);
 
   unzip_read = zread;
   unzip_write = zwrite;
@@ -195,7 +195,7 @@ unzip_store (struct store *from, void **buf, size_t *buf_len)
       zerr = DO_UNZIP ();
     }
 
-  mutex_unlock (&unzip_lock);
+  pthread_mutex_unlock (&unzip_lock);
 
   if (in_buf_size > 0)
     munmap (in_buf, in_buf_size);

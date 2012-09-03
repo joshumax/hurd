@@ -20,14 +20,13 @@
 
 #include "ports.h"
 #include <hurd.h>
-#include <cthreads.h>
 
 error_t
 ports_inhibit_class_rpcs (struct port_class *class)
 {
   error_t err = 0;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (class->flags & (PORT_CLASS_INHIBITED | PORT_CLASS_INHIBIT_WAIT))
     err = EBUSY;
@@ -50,7 +49,7 @@ ports_inhibit_class_rpcs (struct port_class *class)
       while (class->rpcs > this_one)
 	{
 	  class->flags |= PORT_CLASS_INHIBIT_WAIT;
-	  if (hurd_condition_wait (&_ports_block, &_ports_lock))
+	  if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	    /* We got cancelled.  */
 	    {
 	      err = EINTR;
@@ -63,7 +62,7 @@ ports_inhibit_class_rpcs (struct port_class *class)
 	class->flags |= PORT_CLASS_INHIBITED;
     }
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   return err;
 }

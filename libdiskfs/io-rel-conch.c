@@ -28,10 +28,10 @@ diskfs_S_io_release_conch (struct protid *cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   if (!cred->mapped)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EINVAL;
     }
   
@@ -39,6 +39,6 @@ diskfs_S_io_release_conch (struct protid *cred)
   
   iohelp_handle_io_release_conch (&np->conch, cred);
   
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return 0;
 }

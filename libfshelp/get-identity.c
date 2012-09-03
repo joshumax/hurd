@@ -24,7 +24,7 @@
 #include <assert.h>
 
 static struct port_class *idclass = 0;
-static struct mutex idlock = MUTEX_INITIALIZER;
+static pthread_mutex_t idlock = PTHREAD_MUTEX_INITIALIZER;
 
 struct idspec
 {
@@ -59,7 +59,7 @@ fshelp_get_identity (struct port_bucket *bucket,
 	return 0;
     }
 
-  mutex_lock (&idlock);
+  pthread_mutex_lock (&idlock);
   if (!idclass)
     id_initialize ();
 
@@ -69,20 +69,20 @@ fshelp_get_identity (struct port_bucket *bucket,
 
   if (*pt != MACH_PORT_NULL)
     {
-      mutex_unlock (&idlock);
+      pthread_mutex_unlock (&idlock);
       return 0;
     }
 
   err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
   if (err)
     {
-      mutex_unlock (&idlock);
+      pthread_mutex_unlock (&idlock);
       return err;
     }
   i->fileno = fileno;
 
   *pt = ports_get_right (i);
   ports_port_deref (i);
-  mutex_unlock (&idlock);
+  pthread_mutex_unlock (&idlock);
   return 0;
 }

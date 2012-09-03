@@ -23,7 +23,7 @@
 
 #define EWOULDBLOCK EAGAIN /* XXX */
 
-#include <cthreads.h>		/* For conditions & mutexes */
+#include <pthread.h>		/* For conditions & mutexes */
 #include <features.h>
 
 #ifdef PIPE_DEFINE_EI
@@ -66,7 +66,7 @@ struct pipe_select_cond
 {
   struct pipe_select_cond *next;
   struct pipe_select_cond *prev;
-  struct condition cond;
+  pthread_cond_t cond;
 };
 
 /* A unidirectional data pipe; it transfers data from READER to WRITER.  */
@@ -89,11 +89,11 @@ struct pipe
   time_value_t read_time;
   time_value_t write_time;
 
-  struct condition pending_reads;
-  struct condition pending_read_selects;
+  pthread_cond_t pending_reads;
+  pthread_cond_t pending_read_selects;
 
-  struct condition pending_writes;
-  struct condition pending_write_selects;
+  pthread_cond_t pending_writes;
+  pthread_cond_t pending_write_selects;
 
   struct pipe_select_cond *pending_selects;
 
@@ -104,7 +104,7 @@ struct pipe
   /* Write requests of less than this much are always done atomically.  */
   size_t write_atomic;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* A queue of incoming packets, of type either PACKET_TYPE_DATA or
      PACKET_TYPE_CONTROL.  Each data packet represents one datagram for
@@ -177,7 +177,7 @@ pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
     {
       if (noblock)
 	return EWOULDBLOCK;
-      if (hurd_condition_wait (&pipe->pending_reads, &pipe->lock))
+      if (pthread_hurd_cond_wait_np (&pipe->pending_reads, &pipe->lock))
 	return EINTR;
     }
   return 0;
@@ -191,7 +191,7 @@ PIPE_EI error_t
 pipe_select_readable (struct pipe *pipe, int data_only)
 {
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
-    if (hurd_condition_wait (&pipe->pending_read_selects, &pipe->lock))
+    if (pthread_hurd_cond_wait_np (&pipe->pending_read_selects, &pipe->lock))
       return EINTR;
   return 0;
 }
@@ -209,7 +209,7 @@ pipe_wait_writable (struct pipe *pipe, int noblock)
     {
       if (noblock)
 	return EWOULDBLOCK;
-      if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+      if (pthread_hurd_cond_wait_np (&pipe->pending_writes, &pipe->lock))
 	return EINTR;
       if (pipe->flags & PIPE_BROKEN)
 	return EPIPE;
@@ -225,7 +225,7 @@ pipe_select_writable (struct pipe *pipe)
 {
   size_t limit = pipe->write_limit;
   while (! (pipe->flags & PIPE_BROKEN) && pipe_readable (pipe, 1) >= limit)
-    if (hurd_condition_wait (&pipe->pending_writes, &pipe->lock))
+    if (pthread_hurd_cond_wait_np (&pipe->pending_writes, &pipe->lock))
       return EINTR;
   return 0;
 }
@@ -276,7 +276,7 @@ extern void pipe_drain (struct pipe *pipe);
 PIPE_EI void
 pipe_acquire_reader (struct pipe *pipe)
 {
-  mutex_lock (&pipe->lock);
+  pthread_mutex_lock (&pipe->lock);
   if (pipe->readers++ == 0)
     _pipe_first_reader (pipe);
 }
@@ -285,7 +285,7 @@ pipe_acquire_reader (struct pipe *pipe)
 PIPE_EI void
 pipe_acquire_writer (struct pipe *pipe)
 {
-  mutex_lock (&pipe->lock);
+  pthread_mutex_lock (&pipe->lock);
   if (pipe->writers++ == 0)
     _pipe_first_writer (pipe);
 }
@@ -298,7 +298,7 @@ pipe_release_reader (struct pipe *pipe)
   if (--pipe->readers == 0)
     _pipe_no_readers (pipe);
   else
-    mutex_unlock (&pipe->lock);
+    pthread_mutex_unlock (&pipe->lock);
 }
 
 /* Decrement PIPE's (which should be locked) writer count and unlock it.  If
@@ -309,7 +309,7 @@ pipe_release_writer (struct pipe *pipe)
   if (--pipe->writers == 0)
     _pipe_no_writers (pipe);
   else
-    mutex_unlock (&pipe->lock);
+    pthread_mutex_unlock (&pipe->lock);
 }
 
 /* Increment PIPE's reader count.  PIPE should be unlocked.  */
@@ -317,7 +317,7 @@ PIPE_EI void
 pipe_add_reader (struct pipe *pipe)
 {
   pipe_acquire_reader (pipe);
-  mutex_unlock (&pipe->lock);
+  pthread_mutex_unlock (&pipe->lock);
 }
 
 /* Increment PIPE's writer count.  PIPE should be unlocked.  */
@@ -325,7 +325,7 @@ PIPE_EI void
 pipe_add_writer (struct pipe *pipe)
 {
   pipe_acquire_writer (pipe);
-  mutex_unlock (&pipe->lock);
+  pthread_mutex_unlock (&pipe->lock);
 }
 
 /* Decrement PIPE's (which should be unlocked) reader count and unlock it.  If
@@ -333,7 +333,7 @@ pipe_add_writer (struct pipe *pipe)
 PIPE_EI void
 pipe_remove_reader (struct pipe *pipe)
 {
-  mutex_lock (&pipe->lock);
+  pthread_mutex_lock (&pipe->lock);
   pipe_release_reader (pipe);
 }
 
@@ -342,7 +342,7 @@ pipe_remove_reader (struct pipe *pipe)
 PIPE_EI void
 pipe_remove_writer (struct pipe *pipe)
 {
-  mutex_lock (&pipe->lock);
+  pthread_mutex_lock (&pipe->lock);
   pipe_release_writer (pipe);
 }
 
@@ -410,7 +410,7 @@ error_t pipe_recv (struct pipe *pipe, int noblock, unsigned *flags,
   pipe_recv (pipe, noblock, 0, source, data, data_len, amount, 0,0,0,0)
 
 /* Hold this lock before attempting to lock multiple pipes. */
-extern struct mutex pipe_multiple_lock;
+extern pthread_mutex_t pipe_multiple_lock;
 
 /* Return when either RPIPE is available for reading (if SELECT_READ is set
    in *SELECT_TYPE), or WPIPE is available for writing (if select_write is

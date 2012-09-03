@@ -173,10 +173,10 @@ dev_open (struct dev *dev)
   if (!dev->inhibit_cache)
     {
       dev->buf_offs = -1;
-      rwlock_init (&dev->io_lock);
+      pthread_rwlock_init (&dev->io_lock, NULL);
       dev->block_mask = (1 << dev->store->log2_block_size) - 1;
       dev->pager = 0;
-      mutex_init (&dev->pager_lock);
+      pthread_mutex_init (&dev->pager_lock, NULL);
     }
 
   return 0;
@@ -218,9 +218,9 @@ dev_sync(struct dev *dev, int wait)
   if (dev->pager != NULL)
     pager_sync (dev->pager, wait);
 
-  rwlock_writer_lock (&dev->io_lock);
+  pthread_rwlock_wrlock (&dev->io_lock);
   err = dev_buf_discard (dev);
-  rwlock_writer_unlock (&dev->io_lock);
+  pthread_rwlock_unlock (&dev->io_lock);
 
   return err;
 }
@@ -243,7 +243,7 @@ buffered_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
   size_t io_offs = 0;		/* Offset within this I/O operation.  */
   unsigned block_offs = offs & block_mask; /* Offset within a block.  */
 
-  rwlock_writer_lock (&dev->io_lock);
+  pthread_rwlock_wrlock (&dev->io_lock);
 
   if (block_offs != 0)
     /* The start of the I/O isn't block aligned.  */
@@ -282,7 +282,7 @@ buffered_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
   if (! err)
     *amount = io_offs;
 
-  rwlock_writer_unlock (&dev->io_lock);
+  pthread_rwlock_unlock (&dev->io_lock);
 
   return err;
 }
@@ -306,7 +306,7 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
   else if (offs + len > dev->store->size)
     len = dev->store->size - offs;
 
-  rwlock_reader_lock (&dev->io_lock);
+  pthread_rwlock_rdlock (&dev->io_lock);
   if (dev_buf_is_active (dev)
       || (offs & block_mask) != 0 || (len & block_mask) != 0)
     /* Some non-aligned I/O has been done, or is needed, so we need to deal
@@ -314,14 +314,14 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
     {
       /* Acquire a writer lock instead of a reader lock.  Note that other
 	 writers may have acquired the lock by the time we get it.  */
-      rwlock_reader_unlock (&dev->io_lock);
+      pthread_rwlock_unlock (&dev->io_lock);
       err = buffered_rw (dev, offs, len, amount, buf_rw, raw_rw);
     }
   else
     /* Only block-aligned I/O is being done, so things are easy.  */
     {
       err = (*raw_rw) (offs, 0, len, amount);
-      rwlock_reader_unlock (&dev->io_lock);
+      pthread_rwlock_unlock (&dev->io_lock);
     }
 
   return err;

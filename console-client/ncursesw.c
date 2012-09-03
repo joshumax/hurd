@@ -26,7 +26,7 @@
    -I${prefix}/ncursesw.  */
 #include <curses.h>
 
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/console.h>
 
 #include "driver.h"
@@ -34,7 +34,7 @@
 
 /* ncurses is not thread-safe.  This lock protects all calls into the
    ncurses library.  */
-static struct mutex ncurses_lock;
+static pthread_mutex_t ncurses_lock;
 
 /* The current width and height the ncursesw driver is using.  */
 static unsigned int current_width;
@@ -286,8 +286,8 @@ refresh_screen (void)
 		    ? current_width : (unsigned int) COLS) - 1); 
 }
 
-static any_t
-input_loop (any_t unused)
+static void *
+input_loop (void *unused)
 {
   int fd = 0;
   fd_set rfds;
@@ -309,7 +309,7 @@ input_loop (any_t unused)
 	  char *buf = buffer;
 	  size_t size = 0;
 
-	  mutex_lock (&ncurses_lock);
+	  pthread_mutex_lock (&ncurses_lock);
 	  while ((ret = wgetch (conspad)) != ERR)
 	    {
 	      unsigned int i;
@@ -320,7 +320,7 @@ input_loop (any_t unused)
 		  switch (ret)
 		    {
 		    case 'x':
-		      mutex_unlock (&ncurses_lock);
+		      pthread_mutex_unlock (&ncurses_lock);
 		      console_exit ();
 		      break;
 		    case 23:	/* ^W */
@@ -337,9 +337,9 @@ input_loop (any_t unused)
 		    case '8':
 		    case '9':
 		      /* Avoid a dead lock.  */
-		      mutex_unlock (&ncurses_lock);
+		      pthread_mutex_unlock (&ncurses_lock);
 		      console_switch (1 + (ret - '1'), 0);
-		      mutex_lock (&ncurses_lock);
+		      pthread_mutex_lock (&ncurses_lock);
 		      break;
 		    case 'j':
 		      /* Scroll pad to left.  */
@@ -414,7 +414,7 @@ input_loop (any_t unused)
 		    break;
 		  }
 	    }
-	  mutex_unlock (&ncurses_lock);
+	  pthread_mutex_unlock (&ncurses_lock);
 	  if (size)
 	    console_input (buf, size);
 	}
@@ -494,9 +494,9 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 static error_t
 ncursesw_update (void *handle)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   refresh_screen ();
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -504,7 +504,7 @@ ncursesw_update (void *handle)
 static error_t
 ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   assert (current_width && current_height);
   if (autoscroll)
     {
@@ -544,7 +544,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 
   wmove (conspad, row, col);
 
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -552,7 +552,7 @@ ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 static error_t
 ncursesw_set_cursor_status (void *handle, uint32_t status)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
 
   /* If the cursor is invisible and switching to one visible state is
      impossible, switch to the other visible state or else the cursor
@@ -560,7 +560,7 @@ ncursesw_set_cursor_status (void *handle, uint32_t status)
   if (curs_set (status) == -1 && status)
     curs_set (status == 1 ? 2 : 1);
 
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -571,13 +571,13 @@ ncursesw_scroll (void *handle, int delta)
   /* XXX We don't support scrollback for now.  */
   assert (delta >= 0);
 
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   idlok (conspad, TRUE);
   scrollok (conspad, TRUE);
   wscrl (conspad, delta);
   idlok (conspad, FALSE);
   scrollok (conspad, FALSE);
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -589,11 +589,11 @@ ncursesw_write (void *handle, conchar_t *str, size_t length,
   int x;
   int y;
 
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   getyx (conspad, y, x);
   mvwputsn (str, length, col, row);
   wmove (conspad, y, x);
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -601,9 +601,9 @@ ncursesw_write (void *handle, conchar_t *str, size_t length,
 static error_t
 ncursesw_flash (void *handle)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   flash ();
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -612,9 +612,9 @@ ncursesw_flash (void *handle)
 error_t
 ncursesw_beep (void *handle)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   beep ();
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
   return 0;
 }
 
@@ -624,13 +624,14 @@ static error_t
 ncursesw_driver_init (void **handle, int no_exit,
 		      int argc, char *argv[], int *next)
 {
-  mutex_init (&ncurses_lock);
+  pthread_mutex_init (&ncurses_lock, NULL);
   return 0;
 }
 
 static error_t
 ncursesw_driver_start (void *handle)
 {
+  pthread_t thread;
   error_t err;
   int i;
 
@@ -675,7 +676,14 @@ ncursesw_driver_start (void *handle)
       return err;
     }
 
-  cthread_detach (cthread_fork (input_loop, NULL));
+  err = pthread_create (&thread, NULL, input_loop, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
   return 0;
 }
@@ -685,11 +693,11 @@ static error_t
 ncursesw_driver_fini (void *handle, int force)
 {
   /* XXX Cancel the input thread.  */
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   driver_remove_display (&ncursesw_display_ops, NULL);
   driver_remove_input (&ncursesw_input_ops, NULL);
   driver_remove_bell (&ncursesw_bell_ops, NULL);
-  mutex_unlock (&ncurses_lock);
+  pthread_mutex_unlock (&ncurses_lock);
 
   endwin ();
   return 0;
@@ -698,7 +706,7 @@ ncursesw_driver_fini (void *handle, int force)
 static error_t
 ncursesw_set_dimension (void *handle, unsigned int width, unsigned int height)
 {
-  mutex_lock (&ncurses_lock);
+  pthread_mutex_lock (&ncurses_lock);
   if (width != current_width || height != current_height)
     {
       wresize (conspad, height, width);
@@ -707,7 +715,7 @@ ncursesw_set_dimension (void *handle, unsigned int width, unsigned int height)
     }
   current_width = width;
   current_height = height;
-  mutex_unlock(&ncurses_lock);
+  pthread_mutex_unlock(&ncurses_lock);
   return 0;
 }
 

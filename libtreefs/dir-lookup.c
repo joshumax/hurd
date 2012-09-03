@@ -58,13 +58,13 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
       /* Set things up in the state expected by the code from gotit: on. */
       dir = 0;
       node = h->po->node;
-      mutex_lock (&node->lock);
+      pthread_mutex_lock (&node->lock);
       treefs_node_ref (node);
       goto gotit;
     }
 
   dir = h->po->node;
-  mutex_lock (&dir->lock);
+  pthread_mutex_lock (&dir->lock);
   node = 0;
 
   treefs_node_ref (dir);	/* acquire a ref for later node_release */
@@ -147,8 +147,8 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	  /* Be very careful not to hold an inode lock while fetching
 	     a translator lock and vice versa.  */
 
-	  mutex_unlock (&node->lock);
-	  mutex_unlock (&dir->lock);
+	  pthread_mutex_unlock (&node->lock);
+	  pthread_mutex_unlock (&dir->lock);
 
 	  do
 	    {
@@ -199,12 +199,12 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	     in the right order. */
 	  if (strcmp (path, "..") != 0)
 	    {
-	      mutex_unlock (&node->lock);
-	      mutex_lock (&dir->lock);
-	      mutex_lock (&node->lock);
+	      pthread_mutex_unlock (&node->lock);
+	      pthread_mutex_lock (&dir->lock);
+	      pthread_mutex_lock (&node->lock);
 	    }
 	  else
-	    mutex_lock (&dir->lock);
+	    pthread_mutex_lock (&dir->lock);
 	}
       
       if (treefs_node_type (node) == S_IFLNK

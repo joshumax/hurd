@@ -36,8 +36,8 @@ SRCS = $(CONSOLE_SRCS) \
 
 VPATH += $(srcdir)/xkb
 OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS)))) kdioctlServer.o
-HURDLIBS = cons threads ports netfs fshelp iohelp ihash shouldbeinlibc
-LDLIBS = -ldl
+HURDLIBS = cons ports netfs fshelp iohelp ihash shouldbeinlibc
+LDLIBS = -ldl -lpthread
 module-dir = $(libdir)/hurd/console
 console-LDFLAGS = -Wl,-E
 
@@ -62,7 +62,7 @@ driver-DEPS = $(..)config.make
 console: $(CONSOLE_SRCS:.c=.o) \
 	../libnetfs/libnetfs.a ../libfshelp/libfshelp.a \
 	../libcons/libcons.a ../libports/libports.a \
-	../libthreads/libthreads.a ../libshouldbeinlibc/libshouldbeinlibc.a
+	../libshouldbeinlibc/libshouldbeinlibc.a
 
 modules = vga pc_kbd generic_speaker pc_mouse current_vcs
 

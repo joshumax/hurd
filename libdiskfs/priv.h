@@ -98,7 +98,7 @@ void _diskfs_control_clean (void *);
 extern int _diskfs_ncontrol_ports;
 
 /* Lock for _diskfs_ncontrol_ports. */
-extern spin_lock_t _diskfs_control_lock;
+extern pthread_spinlock_t _diskfs_control_lock;
 
 /* Callback routines for active translator startup */
 extern fshelp_fetch_root_callback1_t _diskfs_translator_callback1;
@@ -121,11 +121,11 @@ extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
   									    \
   np = (PROTID)->po->np;						    \
   									    \
-  mutex_lock (&np->lock);						    \
+  pthread_mutex_lock (&np->lock);					    \
   (OPERATION);								    \
   if (diskfs_synchronous)						    \
     diskfs_node_update (np, 1);						    \
-  mutex_unlock (&np->lock);						    \
+  pthread_mutex_unlock (&np->lock);					    \
   return err;								    \
 })
 

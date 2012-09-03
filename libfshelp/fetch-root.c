@@ -95,13 +95,13 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       if (box->flags & TRANSBOX_STARTING)
 	{
 	  box->flags |= TRANSBOX_WANTED;
-	  cancel = hurd_condition_wait (&box->wakeup, box->lock);
+	  cancel = pthread_hurd_cond_wait_np (&box->wakeup, box->lock);
 	  if (cancel)
 	    return EINTR;
 	  goto start_over;
 	}
       box->flags |= TRANSBOX_STARTING;
-      mutex_unlock (box->lock);
+      pthread_mutex_unlock (box->lock);
 
       err = (*callback1) (box->cookie, cookie, &uid, &gid, &argz, &argz_len);
       if (err)
@@ -147,7 +147,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	if (i != INIT_PORT_CWDIR)
 	  mach_port_deallocate (mach_task_self (), ports[i]);
 
-      mutex_lock (box->lock);
+      pthread_mutex_lock (box->lock);
 
       free (argz);
 
@@ -157,7 +157,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       if (box->flags & TRANSBOX_WANTED)
 	{
 	  box->flags &= ~TRANSBOX_WANTED;
-	  condition_broadcast (&box->wakeup);
+	  pthread_cond_broadcast (&box->wakeup);
 	}
 
       if (err)
@@ -173,7 +173,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
   control = box->active;
   mach_port_mod_refs (mach_task_self (), control,
 		      MACH_PORT_RIGHT_SEND, 1);
-  mutex_unlock (box->lock);
+  pthread_mutex_unlock (box->lock);
 
   /* Cancellation point XXX */
   err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
@@ -181,7 +181,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 		      user->gids->ids, user->gids->num,
 		      flags, retry, retryname, root);
 
-  mutex_lock (box->lock);
+  pthread_mutex_lock (box->lock);
 
   if ((err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED)
       && control == box->active)

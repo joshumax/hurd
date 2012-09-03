@@ -55,7 +55,7 @@ struct device *get_dev (char *name)
   memcpy (ifname, name, IFNAMSIZ-1);
   ifname[IFNAMSIZ-1] = 0;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   for (dev = dev_base; dev; dev = dev->next)
     if (strcmp (dev->name, ifname) == 0)
@@ -110,7 +110,7 @@ siocgifXaddr (io_t port,
       sin->sin_addr.s_addr = addrs[type];
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   end_using_socket_port (user);
   return err;
 }
@@ -157,7 +157,7 @@ siocsifXaddr (io_t port,
       err = configure_device (dev, addrs[0], addrs[1], addrs[2], addrs[3]);
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   end_using_socket_port (user);
   return err;
 }
@@ -194,7 +194,7 @@ S_iioctl_siocsifflags (io_t port,
         err = ethernet_change_flags (dev, flags);
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   end_using_socket_port (user);
   return err;
 }
@@ -215,7 +215,7 @@ S_iioctl_siocgifflags (io_t port,
     {
       *flags = dev->flags;
     }
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -241,7 +241,7 @@ S_iioctl_siocgifmetric (io_t port,
     {
       *metric = 0; /* Not supported.  */
     }
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -296,7 +296,7 @@ S_iioctl_siocgifhwaddr (io_t port,
       addr->sa_family = dev->type;
     }
   
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -316,7 +316,7 @@ S_iioctl_siocgifmtu (io_t port,
     {
       *mtu = dev->mtu;
     }
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -351,7 +351,7 @@ S_iioctl_siocsifmtu (io_t port,
       notifier_call_chain (&netdev_chain, NETDEV_CHANGEMTU, dev);
     }
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   end_using_socket_port (user);
   return err;
 }
@@ -372,7 +372,7 @@ S_iioctl_siocgifindex (io_t port,
     {
       *index = dev->ifindex;
     }
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 
@@ -385,7 +385,7 @@ S_iioctl_siocgifname (io_t port,
   error_t err = 0;
   struct device *dev;
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   dev = dev_get_by_index (*index);
   if (!dev)
     err = ENODEV;
@@ -394,7 +394,7 @@ S_iioctl_siocgifname (io_t port,
       strncpy (ifnam, dev->name, IFNAMSIZ);
       ifnam[IFNAMSIZ-1] = '\0';
     }
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return err;
 }

@@ -37,7 +37,7 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
   error_t err = 0;
   size_t max = offs + len;
 
-  mutex_lock (&cc->lock);
+  pthread_mutex_lock (&cc->lock);
 
   if (max > cc->size)
     max = cc->size;
@@ -48,7 +48,7 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 	/* Some thread is fetching data, so just let it do its thing, but get
 	   a wakeup call when it's done.  */
 	{
-	  if (hurd_condition_wait (&cc->wakeup, &cc->lock))
+	  if (pthread_hurd_cond_wait_np (&cc->wakeup, &cc->lock))
 	    err = EINTR;
 	}
       else
@@ -60,7 +60,7 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 
 	  while (cc->max < max && !err)
 	    {
-	      mutex_unlock (&cc->lock);
+	      pthread_mutex_unlock (&cc->lock);
 
 	      if (! cc->conn)
 		/* We need to setup a connection to fetch data over.  */
@@ -179,12 +179,12 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 		    err = EINTR;
 		}
 
-	      mutex_lock (&cc->lock);
+	      pthread_mutex_lock (&cc->lock);
 
 	      if (cc->max < max && !err)
 		/* If anyone's waiting for data, let them look (if we're done
 		   fetching, this gets delayed until below).  */
-		condition_broadcast (&cc->wakeup);
+		pthread_cond_broadcast (&cc->wakeup);
 	    }
 
 	  if (!err && cc->conn && cc->max == cc->size)
@@ -200,14 +200,14 @@ ccache_read (struct ccache *cc, off_t offs, size_t len, void *data)
 	  cc->fetching_active = 0;
 
 	  /* Let others know something's going on.  */
-	  condition_broadcast (&cc->wakeup);
+	  pthread_cond_broadcast (&cc->wakeup);
 	}
     }
 
   if (! err)
     bcopy (cc->image + offs, data, max - offs);
 
-  mutex_unlock (&cc->lock);
+  pthread_mutex_unlock (&cc->lock);
 
   return err;
 }
@@ -218,13 +218,13 @@ ccache_invalidate (struct ccache *cc)
 {
   error_t err = 0;
 
-  mutex_lock (&cc->lock);
+  pthread_mutex_lock (&cc->lock);
 
   while  (cc->fetching_active && !err)
     /* Some thread is fetching data, so just let it do its thing, but get
        a wakeup call when it's done.  */
     {
-      if (hurd_condition_wait (&cc->wakeup, &cc->lock))
+      if (pthread_hurd_cond_wait_np (&cc->wakeup, &cc->lock))
 	err = EINTR;
     }
 
@@ -246,7 +246,7 @@ ccache_invalidate (struct ccache *cc)
 	}
     }
 
-  mutex_unlock (&cc->lock);
+  pthread_mutex_unlock (&cc->lock);
 
   return err;
 }
@@ -265,8 +265,8 @@ ccache_create (struct node *node, struct ccache **cc)
   new->size = node->nn_stat.st_size;
   new->max = 0;
   new->alloced = 0;
-  mutex_init (&new->lock);
-  condition_init (&new->wakeup);
+  pthread_mutex_init (&new->lock, NULL);
+  pthread_cond_init (&new->wakeup, NULL);
   new->fetching_active = 0;
   new->conn = 0;
   new->data_conn = -1;

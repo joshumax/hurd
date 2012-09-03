@@ -71,8 +71,8 @@ inode_cache_find (off_t id, struct node **npp)
       {
 	*npp = node_cache[i].np;
 	(*npp)->references++;
-	spin_unlock (&diskfs_node_refcnt_lock);
-	mutex_lock (&(*npp)->lock);
+	pthread_spin_unlock (&diskfs_node_refcnt_lock);
+	pthread_mutex_lock (&(*npp)->lock);
 	return;
       }
   *npp = 0;
@@ -154,7 +154,7 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
      to avoid presenting zero cache ID's. */
   id--;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   assert (id < node_cache_size);
 
   np = node_cache[id].np;
@@ -173,7 +173,7 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       dn = malloc (sizeof (struct disknode));
       if (!dn)
 	{
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 	  release_rrip (&rr);
 	  return ENOMEM;
 	}
@@ -184,14 +184,14 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       if (!np)
 	{
 	  free (dn);
-	  spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 	  release_rrip (&rr);
 	  return ENOMEM;
 	}
       np->cache_id = id + 1;	/* see above for rationale for increment */
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       c->np = np;
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
       err = read_disknode (np, node_cache[id].dr, &rr);
       if (!err)
@@ -204,8 +204,8 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
 
 
   np->references++;
-  spin_unlock (&diskfs_node_refcnt_lock);
-  mutex_lock (&np->lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_mutex_lock (&np->lock);
   *npp = np;
   return 0;
 }
@@ -314,7 +314,7 @@ load_inode (struct node **npp, struct dirrect *record,
   if (rr->valid & VALID_CL)
     record = rr->realdirent;
 
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
 
   /* First check the cache */
   if (use_file_start_id (record, rr))
@@ -324,7 +324,7 @@ load_inode (struct node **npp, struct dirrect *record,
 
   if (*npp)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return 0;
     }
 
@@ -332,7 +332,7 @@ load_inode (struct node **npp, struct dirrect *record,
   dn = malloc (sizeof (struct disknode));
   if (!dn)
     {
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
   dn->fileinfo = 0;
@@ -343,14 +343,14 @@ load_inode (struct node **npp, struct dirrect *record,
   if (!np)
     {
       free (dn);
-      spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   cache_inode (np, record, rr);
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
   err = read_disknode (np, record, rr);
   *npp = np;

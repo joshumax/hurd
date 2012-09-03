@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <mach.h>
 #include <hurd/hurd_types.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
@@ -78,16 +78,16 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn, void *cookie,
 /* Active translator linkage */
 
 /* These routines implement the linkage to active translators needed
-   by any filesystem which supports them.  They require cthreads and
+   by any filesystem which supports them.  They require pthreads and
    use the passive translator routines above, but they don't require
    the ports library at all.  */
 
 struct transbox
 {
   fsys_t active;
-  struct mutex *lock;
+  pthread_mutex_t *lock;
   int flags;
-  struct condition wakeup;
+  pthread_cond_t wakeup;
   void *cookie;
 };
 #define TRANSBOX_STARTING 1
@@ -137,7 +137,7 @@ fshelp_fetch_root (struct transbox *transbox, void *cookie,
 
 void
 fshelp_transbox_init (struct transbox *transbox,
-		      struct mutex *lock,
+		      pthread_mutex_t *lock,
 		      void *cookie);
 
 /* Return true iff there is an active translator on this box */
@@ -163,7 +163,7 @@ void fshelp_drop_transbox (struct transbox *box);
 struct lock_box
 {
   int type;
-  struct condition wait;
+  pthread_cond_t wait;
   int waiting;
   int shcount;
 };
@@ -174,7 +174,7 @@ struct lock_box
    per file_lock.  MUT is a mutex which will be held whenever this
    routine is called, to lock BOX->wait.  */
 error_t fshelp_acquire_lock (struct lock_box *box, int *user,
-			     struct mutex *mut, int flags);
+			     pthread_mutex_t *mut, int flags);
 
 
 /* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock

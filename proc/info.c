@@ -467,7 +467,7 @@ S_proc_getprocinfo (struct proc *callerp,
 
   /* Release GLOBAL_LOCK around time consuming bits, and more importatantly,
      potential calls to P's msgport, which can block.  */
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   if (*flags & PI_FETCH_TASKINFO)
     {
@@ -618,7 +618,7 @@ S_proc_getprocinfo (struct proc *callerp,
     *waits_len = waits_used;
 
   /* Reacquire GLOBAL_LOCK to make the central locking code happy.  */
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   return err;
 }

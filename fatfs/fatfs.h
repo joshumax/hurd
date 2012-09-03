@@ -45,7 +45,7 @@ struct disknode
   /* The directory that hold this file, always hold a reference.  */
   struct node *dirnode;
 
-  struct rwlock dirent_lock;
+  pthread_rwlock_t dirent_lock;
     
   char *link_target;            /* For S_ISLNK.  */
 
@@ -54,11 +54,11 @@ struct disknode
 
   /* Lock to hold while fiddling with this inode's block allocation
      info.  */
-  struct rwlock alloc_lock;
+  pthread_rwlock_t alloc_lock;
   /* Lock to hold while extending this inode's block allocation info.
      Hold only if you hold readers alloc_lock, then you don't need to
      hold it if you hold writers alloc_lock already.  */
-  spin_lock_t chain_extension_lock;
+  pthread_spinlock_t chain_extension_lock;
   struct cluster_chain *first;
   struct cluster_chain *last;
   cluster_t length_of_chain;

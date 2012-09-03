@@ -21,6 +21,7 @@
 #include <hurd/startup.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /* Check to see if process P is blocked trying to get the message
    port of process AVAILP; if so, return its call.  */
@@ -29,18 +30,18 @@ check_message_return (struct proc *p, void *availpaddr)
 {
   if (p->p_msgportwait)
     {
-      condition_broadcast (&p->p_wakeup);
+      pthread_cond_broadcast (&p->p_wakeup);
       p->p_msgportwait = 0;
     }
 }
 
 /* Register ourselves with init. */
-static any_t
-tickle_init (any_t initport)
+static void *
+tickle_init (void *initport)
 {
   startup_essential_task ((mach_port_t) initport, mach_task_self (),
 			  MACH_PORT_NULL, "proc", master_host_port);
-  return 0;
+  return NULL;
 }
 
 error_t
@@ -63,9 +64,21 @@ S_proc_setmsgport (struct proc *p,
   p->p_checkmsghangs = 0;
 
   if (p == startup_proc)
+    {
     /* Init is single threaded, so we can't delay our reply for
        the essential task RPC; spawn a thread to do it. */
-    cthread_detach (cthread_fork (tickle_init, (any_t) msgport));
+      pthread_t thread;
+      error_t err;
+      err = pthread_create (&thread, NULL, tickle_init,
+			    (void*) (uintptr_t) msgport);
+      if (!err)
+	pthread_detach (thread);
+      else
+	{
+	  errno = err;
+	  perror ("pthread_create");
+	}
+    }
       
   return 0;
 }
@@ -77,7 +90,7 @@ check_message_dying (struct proc *p, struct proc *dyingp)
 {
   if (p->p_msgportwait)
     {
-      condition_broadcast (&p->p_wakeup);
+      pthread_cond_broadcast (&p->p_wakeup);
       p->p_msgportwait = 0;
     }
 }
@@ -128,7 +141,7 @@ restart:
     {
       callerp->p_msgportwait = 1;
       p->p_checkmsghangs = 1;
-      cancel = hurd_condition_wait (&callerp->p_wakeup, &global_lock);
+      cancel = pthread_hurd_cond_wait_np (&callerp->p_wakeup, &global_lock);
       if (callerp->p_dead)
 	return EOPNOTSUPP;
       if (cancel)

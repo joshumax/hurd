@@ -154,7 +154,7 @@ alert_parent (struct proc *p)
 
   if (p->p_parent->p_waiting)
     {
-      condition_broadcast (&p->p_parent->p_wakeup);
+      pthread_cond_broadcast (&p->p_parent->p_wakeup);
       p->p_parent->p_waiting = 0;
     }
 }
@@ -228,7 +228,7 @@ S_proc_wait (struct proc *p,
     return EWOULDBLOCK;
 
   p->p_waiting = 1;
-  cancel = hurd_condition_wait (&p->p_wakeup, &global_lock);
+  cancel = pthread_hurd_cond_wait_np (&p->p_wakeup, &global_lock);
   if (p->p_dead)
     return EOPNOTSUPP;
   if (cancel)
@@ -252,7 +252,7 @@ S_proc_mark_stop (struct proc *p,
 
   if (p->p_parent->p_waiting)
     {
-      condition_broadcast (&p->p_parent->p_wakeup);
+      pthread_cond_broadcast (&p->p_parent->p_wakeup);
       p->p_parent->p_waiting = 0;
     }
 

@@ -26,6 +26,7 @@
 #include <hurd.h>
 #include <hurd/ihash.h>
 #include <mach/notify.h>
+#include <pthread.h>
 
 /* These are global values for common flags used in the various structures.
    Not all of these are meaningful in all flag fields.  */
@@ -115,7 +116,7 @@ struct ports_notify
   mach_port_t port;		/*  */
   mach_msg_id_t what;		/* MACH_NOTIFY_* */
   unsigned pending : 1;		/* There's a notification outstanding.  */
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   struct rpc_notify *reqs;	/* Which rpcs are notified by this port. */
   struct ports_notify *next, **prevp; /* Linked list of all notified ports.  */
@@ -396,8 +397,8 @@ extern kern_return_t ports_S_interrupt_operation (mach_port_t,
 						  mach_port_seqno_t);
 
 /* Private data */
-extern struct mutex _ports_lock;
-extern struct condition _ports_block;
+extern pthread_mutex_t _ports_lock;
+extern pthread_cond_t _ports_block;
 extern struct port_bucket *_ports_all_buckets;
 extern int _ports_total_rpcs;
 extern int _ports_flags;

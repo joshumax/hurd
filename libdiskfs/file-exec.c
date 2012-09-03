@@ -85,11 +85,11 @@ diskfs_S_file_exec (struct protid *cred,
 
   np = cred->po->np;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
   mode = np->dn_stat.st_mode;
   uid = np->dn_stat.st_uid;
   gid = np->dn_stat.st_gid;
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   if (_diskfs_noexec)
     RETURN (EACCES);

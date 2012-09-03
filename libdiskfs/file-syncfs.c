@@ -32,13 +32,13 @@ diskfs_S_file_syncfs (struct protid *cred,
 	mach_port_t control;
 	
 	error = fshelp_fetch_control (&np->transbox, &control);
-	mutex_unlock (&np->lock);
+	pthread_mutex_unlock (&np->lock);
 	if (!error && (control != MACH_PORT_NULL))
 	  {
 	    fsys_syncfs (control, wait, 1);
 	    mach_port_deallocate (mach_task_self (), control);
 	  }
-	mutex_lock (&np->lock);
+	pthread_mutex_lock (&np->lock);
 	return 0;
       }
   

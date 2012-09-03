@@ -24,12 +24,29 @@
 #include <rpc/pmap_prot.h>
 #include <maptime.h>
 #include <hurd.h>
+#include <pthread.h>
 #include <error.h>
 
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
 static char index_file[] = LOCALSTATEDIR "/state/misc/nfsd.index";
 char *index_file_name = index_file;
+
+/* Launch a server loop thread */
+static void
+create_server_thread (int socket)
+{
+  pthread_t thread;
+  int fail;
+
+  fail = pthread_create (&thread, NULL, server_loop, (void *) socket);
+  if (fail)
+    error (1, fail, "Creating main server thread");
+
+  fail = pthread_detach (thread);
+  if (fail)
+    error (1, fail, "Detaching main server thread");
+}
 
 int
 main (int argc, char **argv)
@@ -73,12 +90,10 @@ main (int argc, char **argv)
 
   init_filesystems ();
 
-  cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
-				(any_t)(intptr_t) pmap_udp_socket));
+  create_server_thread (pmap_udp_socket);
 
   while (nthreads--)
-    cthread_detach (cthread_fork ((cthread_fn_t) server_loop,
-				  (any_t)(intptr_t) main_udp_socket));
+    create_server_thread (main_udp_socket);
 
   for (;;)
     {

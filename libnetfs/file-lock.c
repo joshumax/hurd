@@ -28,9 +28,9 @@ netfs_S_file_lock (struct protid *user,
   error_t err;
   if (!user)
     return EOPNOTSUPP;
-  mutex_lock (&user->po->np->lock);
+  pthread_mutex_lock (&user->po->np->lock);
   err = fshelp_acquire_lock (&user->po->np->userlock, &user->po->lock_status,
 			     &user->po->np->lock, flags);
-  mutex_unlock (&user->po->np->lock);
+  pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

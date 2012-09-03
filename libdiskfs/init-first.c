@@ -27,8 +27,8 @@ static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
 
-static any_t
-master_thread_function (any_t demuxer)
+static void *
+master_thread_function (void *demuxer)
 {
   error_t err;
 
@@ -45,12 +45,21 @@ master_thread_function (any_t demuxer)
 
   exit (0);
   /* NOTREACHED */
-  return (any_t) 0;
+  return NULL;
 }
 
 void
 diskfs_spawn_first_thread (ports_demuxer_type demuxer)
 {
-  cthread_detach (cthread_fork ((cthread_fn_t) master_thread_function,
-				(any_t) demuxer));
+  pthread_t thread;
+  error_t err;
+
+  err = pthread_create (&thread, NULL, master_thread_function, demuxer);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 }

@@ -33,7 +33,8 @@ bzip2-objects = $(bzip2-sources:%.c=%.o)
 target = exec
 #targets = exec exec.static
 #OTHERLIBS = -lbfd -liberty
-HURDLIBS = trivfs fshelp iohelp threads ports ihash shouldbeinlibc
+HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
+OTHERLIBS = -lpthread
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 

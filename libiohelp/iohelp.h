@@ -20,20 +20,20 @@
 
 #include <mach.h>
 #include <hurd/hurd_types.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/shared.h>
 
 /* Conch manipulation.  */
 struct conch
 {
-  struct mutex *lock;
-  struct condition wait;
+  pthread_mutex_t *lock;
+  pthread_cond_t wait;
   void *holder;
   struct shared_io *holder_shared_page;
 };
 
 /* Initialize a conch box */
-void iohelp_initialize_conch (struct conch *, struct mutex *);
+void iohelp_initialize_conch (struct conch *, pthread_mutex_t *);
 
 /* These routines are not reentrant.  The server is responsible
    for ensuring that all calls to these routines are serialized

@@ -19,14 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <cthreads.h>
 
 void
 ports_end_rpc (void *port, struct rpc_info *info)
 {
   struct port_info *pi = port;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (info->notifies)
     _ports_remove_notified_rpc (info);
@@ -42,7 +41,7 @@ ports_end_rpc (void *port, struct rpc_info *info)
       || (pi->bucket->flags & PORT_BUCKET_INHIBIT_WAIT)
       || (pi->class->flags & PORT_CLASS_INHIBIT_WAIT)
       || (_ports_flags & _PORTS_INHIBIT_WAIT))
-    condition_broadcast (&_ports_block);
+    pthread_cond_broadcast (&_ports_block);
 
   /* This removes the current thread's rpc (which should be INFO) from the
      ports interrupted list.  */
@@ -52,5 +51,5 @@ ports_end_rpc (void *port, struct rpc_info *info)
      RPC is now finished anwhow. */
   hurd_check_cancel ();
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 }

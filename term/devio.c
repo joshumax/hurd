@@ -51,7 +51,7 @@
 #include <device/device.h>
 #include <device/device_request.h>
 #include <device/tty_status.h>
-#include <cthreads.h>
+#include <pthread.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -313,7 +313,7 @@ device_write_reply_inband (mach_port_t replypt,
   if (replypt != phys_reply_writes)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   output_pending = 0;
 
@@ -322,8 +322,8 @@ device_write_reply_inband (mach_port_t replypt,
       if (amount >= npending_output)
 	{
 	  npending_output = 0;
-	  condition_broadcast (outputq->wait);
-	  condition_broadcast (&select_alert);
+	  pthread_cond_broadcast (outputq->wait);
+	  pthread_cond_broadcast (&select_alert);
 	}
       else
 	{
@@ -340,7 +340,7 @@ device_write_reply_inband (mach_port_t replypt,
   else
     devio_start_output ();
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -356,7 +356,7 @@ device_read_reply_inband (mach_port_t replypt,
   if (replypt != phys_reply)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   input_pending = 0;
 
@@ -376,7 +376,7 @@ device_read_reply_inband (mach_port_t replypt,
   else if (error_code == D_WOULD_BLOCK)
     {
       devio_desert_dtr ();
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
 
@@ -390,7 +390,7 @@ device_read_reply_inband (mach_port_t replypt,
   else
     input_pending = 1;
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -542,7 +542,7 @@ device_open_reply (mach_port_t replyport,
   if (replyport != phys_reply)
     return EOPNOTSUPP;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   assert (open_pending != NOTPENDING);
 
@@ -556,7 +556,7 @@ device_open_reply (mach_port_t replyport,
       phys_reply_pi = 0;
 
       open_pending = NOTPENDING;
-      mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
       return 0;
     }
 
@@ -574,7 +574,7 @@ device_open_reply (mach_port_t replyport,
       if (err)
 	{
 	  open_pending = NOTPENDING;
-	  mutex_unlock (&global_lock);
+	  pthread_mutex_unlock (&global_lock);
 	  return err;
 	}
       phys_reply_writes = ports_get_send_right (phys_reply_writes_pi);
@@ -604,7 +604,7 @@ device_open_reply (mach_port_t replyport,
     devio_desert_dtr ();
 
   open_pending = NOTPENDING;
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -735,7 +735,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
 {
   error_t err;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (notify == phys_reply_writes)
     {
@@ -778,7 +778,7 @@ ports_do_mach_notify_send_once (mach_port_t notify)
   else
     err = EOPNOTSUPP;
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return err;
 }
 

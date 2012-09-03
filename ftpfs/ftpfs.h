@@ -22,7 +22,7 @@
 #define __FTPFS_H__
 
 #include <stdlib.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <ftpconn.h>
 #include <maptime.h>
 #include <hurd/ihash.h>
@@ -163,7 +163,7 @@ struct ftpfs
   /* A pool of ftp connections for server threads to use.  */
   struct ftpfs_conn *free_conns;
   struct ftpfs_conn *conns;
-  spin_lock_t conn_lock;
+  pthread_spinlock_t conn_lock;
 
   /* Parameters for making new ftp connections.  */
   struct ftp_conn_params *ftp_params;
@@ -175,14 +175,14 @@ struct ftpfs
 
   /* A hash table mapping inode numbers to directory entries.  */
   struct hurd_ihash inode_mappings;
-  spin_lock_t inode_mappings_lock;
+  pthread_spinlock_t inode_mappings_lock;
 
   struct ftpfs_params params;
 
   /* A cache that holds a reference to recently used nodes.  */
   struct node *node_cache_mru, *node_cache_lru;
   size_t node_cache_len;	/* Number of entries in it.  */
-  struct mutex node_cache_lock;
+  pthread_mutex_t node_cache_lock;
 };
 
 extern volatile struct mapped_time_value *ftpfs_maptime;

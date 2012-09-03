@@ -114,7 +114,8 @@ FROBBEDLINUXHEADERS = autoconf.h binfmts.h config.h errno.h fcntl.h fs.h \
 ASMHEADERS = atomic.h bitops.h byteorder.h delay.h errno.h hardirq.h init.h \
 	segment.h spinlock.h system.h types.h uaccess.h
 
-HURDLIBS=trivfs fshelp threads ports ihash shouldbeinlibc iohelp
+HURDLIBS=trivfs fshelp ports ihash shouldbeinlibc iohelp
+OTHERLIBS = -lpthread
 
 target = pfinet
 

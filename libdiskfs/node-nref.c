@@ -27,14 +27,14 @@ void
 diskfs_nref (struct node *np)
 {
   int new_hardref;
-  spin_lock (&diskfs_node_refcnt_lock);
+  pthread_spin_lock (&diskfs_node_refcnt_lock);
   np->references++;
   new_hardref = (np->references == 1);
-  spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_spin_unlock (&diskfs_node_refcnt_lock);
   if (new_hardref)
     {
-      mutex_lock (&np->lock);
+      pthread_mutex_lock (&np->lock);
       diskfs_new_hardrefs (np);
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
     }
 }

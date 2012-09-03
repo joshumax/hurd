@@ -20,7 +20,6 @@
 
 #include "ports.h"
 #include <hurd.h>
-#include <cthreads.h>
 
 error_t
 ports_inhibit_port_rpcs (void *portstruct)
@@ -28,7 +27,7 @@ ports_inhibit_port_rpcs (void *portstruct)
   error_t err = 0;
   struct port_info *pi = portstruct;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (pi->flags & (PORT_INHIBITED | PORT_INHIBIT_WAIT))
     err = EBUSY;
@@ -51,7 +50,7 @@ ports_inhibit_port_rpcs (void *portstruct)
 	     && !(pi->current_rpcs == this_rpc && ! this_rpc->next))
 	{
 	  pi->flags |= PORT_INHIBIT_WAIT;
-	  if (hurd_condition_wait (&_ports_block, &_ports_lock))
+	  if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	    /* We got cancelled.  */
 	    {
 	      err = EINTR;
@@ -64,7 +63,7 @@ ports_inhibit_port_rpcs (void *portstruct)
 	pi->flags |= PORT_INHIBITED;
     }
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   return err;
 }

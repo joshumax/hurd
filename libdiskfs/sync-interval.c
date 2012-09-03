@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <errno.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <unistd.h>
 
 #include <hurd/fsys.h>
@@ -29,14 +29,14 @@
 int diskfs_sync_interval = 0;
 
 /* The thread that's doing the syncing.  */
-static cthread_t periodic_sync_thread;
+static pthread_t periodic_sync_thread;
 
 /* This port represents the periodic sync service as if it were
    an RPC.  We can use ports_inhibit_port_rpcs on this port to guarantee
    that the periodic_sync_thread is quiescent.  */
 static struct port_info *pi;
 
-static void periodic_sync ();
+static void * periodic_sync (void *);
 
 /* Establish a thread to sync the filesystem every INTERVAL seconds, or
    never, if INTERVAL is zero.  If an error occurs creating the thread, it is
@@ -66,12 +66,15 @@ diskfs_set_sync_interval (int interval)
     periodic_sync_thread = 0;
   else
     {
-      periodic_sync_thread =
-	cthread_fork ((cthread_fn_t)periodic_sync, (any_t)(intptr_t)interval);
-      if (periodic_sync_thread)
-	cthread_detach (periodic_sync_thread);
+      err = pthread_create (&periodic_sync_thread, NULL, periodic_sync,
+			    (void *)(intptr_t) interval);
+      if (!err)
+        pthread_detach (periodic_sync_thread);
       else
-	err = ENOMEM;
+	{
+	  errno = err;
+	  perror ("pthread_create");
+	}
     }
 
   if (!err)
@@ -87,9 +90,10 @@ diskfs_set_sync_interval (int interval)
 /* Sync the filesystem (pointed to by the variable CONTROL_PORT above) every
    INTERVAL seconds, as long as it's in the thread pointed to by the global
    variable PERIODIC_SYNC_THREAD.   */
-static void
-periodic_sync (int interval)
+static void *
+periodic_sync (void * arg)
 {
+  int interval = (int) arg;
   for (;;)
     {
       error_t err;
@@ -99,18 +103,18 @@ periodic_sync (int interval)
 	 while we are in the process of syncing.  */
       err = ports_begin_rpc (pi, 0, &link);
 
-      if (periodic_sync_thread != cthread_self ())
+      if (periodic_sync_thread != pthread_self ())
 	{
 	  /* We've been superseded as the sync thread.  Just die silently.  */
 	  ports_end_rpc (pi, &link);
-	  return;
+	  return NULL;
 	}
 
       if (! err)
 	{
 	  if (! diskfs_readonly)
 	    {
-	      rwlock_reader_lock (&diskfs_fsys_lock);
+	      pthread_rwlock_rdlock (&diskfs_fsys_lock);
 	      /* Only sync if we need to, to avoid clearing the clean flag
 		 when it's just been set.  Any other thread doing a sync
 		 will have held the lock while it did its work.  */
@@ -119,7 +123,7 @@ periodic_sync (int interval)
 		  diskfs_sync_everything (0);
 		  diskfs_set_hypermetadata (0, 0);
 		}
-	      rwlock_reader_unlock (&diskfs_fsys_lock);
+	      pthread_rwlock_unlock (&diskfs_fsys_lock);
 	    }
 	  ports_end_rpc (pi, &link);
 	}
@@ -127,4 +131,6 @@ periodic_sync (int interval)
       /* Wait until next time.  */
       sleep (interval);
     }
+
+  return NULL;
 }

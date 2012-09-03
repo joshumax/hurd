@@ -29,26 +29,26 @@ iohelp_get_conch (struct conch *c)
   
   if (user_sh)
     {
-      spin_lock (&user_sh->lock);
+      pthread_spin_lock (&user_sh->lock);
       switch (user_sh->conch_status)
 	{
 	case USER_HAS_CONCH:
 	  user_sh->conch_status = USER_RELEASE_CONCH;
 	  /* fall through ... */
 	case USER_RELEASE_CONCH:
-	  spin_unlock (&user_sh->lock);
-	  condition_wait (&c->wait, c->lock);
+	  pthread_spin_unlock (&user_sh->lock);
+	  pthread_cond_wait (&c->wait, c->lock);
 	  /* Anything can have happened */
 	  goto again;
 	  
 	case USER_COULD_HAVE_CONCH:
 	  user_sh->conch_status = USER_HAS_NOT_CONCH;
-	  spin_unlock (&user_sh->lock);
+	  pthread_spin_unlock (&user_sh->lock);
 	  iohelp_fetch_shared_data (c->holder);
 	  break;
 	  
 	case USER_HAS_NOT_CONCH:
-	  spin_unlock (&user_sh->lock);
+	  pthread_spin_unlock (&user_sh->lock);
 	  break;
 	}
     }

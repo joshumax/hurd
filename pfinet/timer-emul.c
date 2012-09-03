@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+/* Do not include glue-include/linux/errno.h */
+#define _HACK_ERRNO_H
+
 #include <linux/timer.h>
 #include <asm/system.h>
 #include <linux/sched.h>
@@ -31,8 +34,8 @@ volatile struct mapped_time_value *mapped_time;
 struct timer_list *timers;
 thread_t timer_thread = 0;
 
-static int
-timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
+static void *
+timer_function (void *this_is_a_pointless_variable_with_a_rather_long_name)
 {
   mach_port_t recv;
   int wait = 0;
@@ -41,7 +44,7 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 
   timer_thread = mach_thread_self ();
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   while (1)
     {
       int jiff = jiffies;
@@ -53,13 +56,13 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
       else
 	wait = ((timers->expires - jiff) * 1000) / HZ;
 
-      __mutex_unlock (&global_lock);
+      pthread_mutex_unlock (&global_lock);
 
       mach_msg (NULL, (MACH_RCV_MSG | MACH_RCV_INTERRUPT
 		       | (wait == -1 ? 0 : MACH_RCV_TIMEOUT)),
 		0, 0, recv, wait, MACH_PORT_NULL);
 
-      __mutex_lock (&global_lock);
+      pthread_mutex_lock (&global_lock);
 
       while (timers->expires < jiffies)
 	{
@@ -78,7 +81,7 @@ timer_function (int this_is_a_pointless_variable_with_a_rather_long_name)
 	}
     }
 
-  return 0;
+  return NULL;
 }
 
 
@@ -157,6 +160,7 @@ init_time ()
 {
   error_t err;
   struct timeval tp;
+  pthread_t thread;
 
   err = maptime_map (0, 0, &mapped_time);
   if (err)
@@ -167,5 +171,12 @@ init_time ()
   root_jiffies = (long long) tp.tv_sec * HZ
     + ((long long) tp.tv_usec * HZ) / 1000000;
 
-  cthread_detach (cthread_fork ((cthread_fn_t) timer_function, 0));
+  err = pthread_create (&thread, NULL, timer_function, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 }

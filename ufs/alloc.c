@@ -64,7 +64,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 extern u_long nextgennumber;
 
-spin_lock_t alloclock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t alloclock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Forward declarations */
 static u_long ffs_hashalloc (struct node *, int, long, int,
@@ -244,7 +244,7 @@ ffs_alloc(register struct node *np,
 	}
 	assert (cred);
 #endif /* DIAGNOSTIC */
-	spin_lock (&alloclock);
+	pthread_spin_lock (&alloclock);
 	if (size == fs->fs_bsize && fs->fs_cstotal.cs_nbfree == 0)
 		goto nospace;
 	if (cred && !idvec_contains (cred->user->uids, 0)
@@ -263,7 +263,7 @@ ffs_alloc(register struct node *np,
 	bno = (daddr_t)ffs_hashalloc(np, cg, (long)bpref, size,
 	    (u_long (*)())ffs_alloccg);
 	if (bno > 0) {
-		spin_unlock (&alloclock);
+		pthread_spin_unlock (&alloclock);
 		np->dn_stat.st_blocks += btodb(size);
 		np->dn_set_ctime = 1;
 		np->dn_set_mtime = 1;
@@ -278,7 +278,7 @@ ffs_alloc(register struct node *np,
 	(void) chkdq(ip, (long)-btodb(size), cred, FORCE);
 #endif
 nospace:
-	spin_unlock (&alloclock);
+	pthread_spin_unlock (&alloclock);
 	printf ("file system full");
 /*	ffs_fserr(fs, cred->cr_uid, "file system full"); */
 /* 	uprintf("\n%s: write failed, file system is full\n", fs->fs_fsmnt); */
@@ -321,7 +321,7 @@ ffs_realloccg(register struct node *np,
 		panic("ffs_realloccg: missing credential\n");
 #endif /* DIAGNOSTIC */
 
-	spin_lock (&alloclock);
+	pthread_spin_lock (&alloclock);
 
 	if (!idvec_contains (cred->user->uids, 0)
 	    && freespace(fs, fs->fs_minfree) <= 0)
@@ -356,7 +356,7 @@ ffs_realloccg(register struct node *np,
 	bno = ffs_fragextend(np, cg, (long)bprev, osize, nsize);
 	if (bno) {
 		assert (bno == bprev);
-		spin_unlock (&alloclock);
+		pthread_spin_unlock (&alloclock);
 		np->dn_stat.st_blocks += btodb(nsize - osize);
 		np->dn_set_ctime = 1;
 		np->dn_set_mtime = 1;
@@ -430,7 +430,7 @@ ffs_realloccg(register struct node *np,
 		if (nsize < request)
 			ffs_blkfree(np, bno + numfrags(fs, nsize),
 			    (long)(request - nsize));
-		spin_unlock (&alloclock);
+		pthread_spin_unlock (&alloclock);
 		np->dn_stat.st_blocks += btodb(nsize - osize);
 		np->dn_set_mtime = 1;
 		np->dn_set_ctime = 1;
@@ -457,7 +457,7 @@ nospace:
 	/*
 	 * no space available
 	 */
-	spin_unlock (&alloclock);
+	pthread_spin_unlock (&alloclock);
 	printf ("file system full");
 /* 	ffs_fserr(fs, cred->cr_uid, "file system full"); */
 /* 	uprintf("\n%s: write failed, file system is full\n", fs->fs_fsmnt); */
@@ -660,11 +660,11 @@ diskfs_alloc_node (struct node *dir,
 	fs = sblock;
 
 
-	spin_lock (&alloclock);
+	pthread_spin_lock (&alloclock);
 
 	if (fs->fs_cstotal.cs_nifree == 0)
 	  {
-	    spin_unlock (&alloclock);
+	    pthread_spin_unlock (&alloclock);
 	    goto noinodes;
 	  }
 
@@ -678,7 +678,7 @@ diskfs_alloc_node (struct node *dir,
 	cg = ino_to_cg(fs, ipref);
 	ino = (ino_t)ffs_hashalloc(dir, cg, (long)ipref,
 				   mode, ffs_nodealloccg);
-	spin_unlock (&alloclock);
+	pthread_spin_unlock (&alloclock);
 	if (ino == 0)
 		goto noinodes;
 	error = diskfs_cached_lookup (ino, &np);
@@ -694,12 +694,12 @@ diskfs_alloc_node (struct node *dir,
 	/*
 	 * Set up a new generation number for this inode.
 	 */
-	spin_lock (&gennumberlock);
+	pthread_spin_lock (&gennumberlock);
 	sex = diskfs_mtime->seconds;
 	if (++nextgennumber < (u_long)sex)
 		nextgennumber = sex;
 	np->dn_stat.st_gen = nextgennumber;
-	spin_unlock (&gennumberlock);
+	pthread_spin_unlock (&gennumberlock);
 
 	*npp = np;
 	alloc_sync (np);
@@ -773,11 +773,11 @@ ffs_blkpref(struct node *np,
 	daddr_t nextblk;
 
 	fs = sblock;
-	spin_lock (&alloclock);
+	pthread_spin_lock (&alloclock);
 	if (indx % fs->fs_maxbpg == 0 || bap[indx - 1] == 0) {
 		if (lbn < NDADDR) {
 			cg = ino_to_cg(fs, np->dn->number);
-			spin_unlock (&alloclock);
+			pthread_spin_unlock (&alloclock);
 			return (fs->fs_fpg * cg + fs->fs_frag);
 		}
 		/*
@@ -796,19 +796,19 @@ ffs_blkpref(struct node *np,
 		for (cg = startcg; cg < fs->fs_ncg; cg++)
 			if (csum[cg].cs_nbfree >= avgbfree) {
 				fs->fs_cgrotor = cg;
-				spin_unlock (&alloclock);
+				pthread_spin_unlock (&alloclock);
 				return (fs->fs_fpg * cg + fs->fs_frag);
 			}
 		for (cg = 0; cg <= startcg; cg++)
 			if (csum[cg].cs_nbfree >= avgbfree) {
 				fs->fs_cgrotor = cg;
-				spin_unlock (&alloclock);
+				pthread_spin_unlock (&alloclock);
 				return (fs->fs_fpg * cg + fs->fs_frag);
 			}
-		spin_unlock (&alloclock);
+		pthread_spin_unlock (&alloclock);
 		return 0;
 	}
-	spin_unlock (&alloclock);
+	pthread_spin_unlock (&alloclock);
 	/*
 	 * One or more previous blocks have been laid out. If less
 	 * than fs_maxcontig previous blocks are contiguous, the

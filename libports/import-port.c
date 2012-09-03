@@ -22,7 +22,6 @@
 
 #include "ports.h"
 #include <assert.h>
-#include <cthreads.h>
 #include <hurd/ihash.h>
 #include <mach/notify.h>
 
@@ -58,20 +57,20 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
   pi->current_rpcs = 0;
   pi->bucket = bucket;
   
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   
  loop:
   if (class->flags & PORT_CLASS_NO_ALLOC)
     { 
       class->flags |= PORT_CLASS_ALLOC_WAIT;
-      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+      if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	goto cancelled;
       goto loop;
     }
   if (bucket->flags & PORT_BUCKET_NO_ALLOC)
     {
       bucket->flags |= PORT_BUCKET_ALLOC_WAIT;
-      if (hurd_condition_wait (&_ports_block, &_ports_lock))
+      if (pthread_hurd_cond_wait_np (&_ports_block, &_ports_lock))
 	goto cancelled;
       goto loop;
     }
@@ -87,7 +86,7 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
   class->ports = pi;
   bucket->count++;
   class->count++;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   
   mach_port_move_member (mach_task_self (), port, bucket->portset);
 
@@ -109,7 +108,7 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
  cancelled:
   err = EINTR;
  lose:
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
   free (pi);
 
   return err;

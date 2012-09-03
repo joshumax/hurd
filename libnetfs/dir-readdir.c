@@ -40,7 +40,7 @@ netfs_S_dir_readdir (struct protid *user,
     return EOPNOTSUPP;
 
   np = user->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   err = 0;
   if ((user->po->openstat & O_READ) == 0)
@@ -53,6 +53,6 @@ netfs_S_dir_readdir (struct protid *user,
     err = netfs_get_dirents (user->user, np, entry, nentries, data,
 			     datacnt, bufsiz, amt);
   *data_dealloc = 1;		/* XXX */
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

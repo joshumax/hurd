@@ -17,7 +17,7 @@
 
 #include <mach.h>
 #include <hurd.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd/ports.h>
 #include "fshelp.h"
 
@@ -28,5 +28,5 @@ struct transboot
   struct trans_link *link;
 };
 
-spin_lock_t _fshelp_translistlock;
+pthread_spinlock_t _fshelp_translistlock;
 struct trans_link *_fshelp_translist;

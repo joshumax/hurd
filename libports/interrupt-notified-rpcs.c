@@ -36,7 +36,7 @@ ports_interrupt_notified_rpcs (void *object,
     {
       struct ports_notify *np;
 
-      mutex_lock (&_ports_lock);
+      pthread_mutex_lock (&_ports_lock);
       for (np = _ports_notifications; np; np = np->next)
 	if (np->port == port && np->what == what)
 	  {
@@ -49,7 +49,7 @@ ports_interrupt_notified_rpcs (void *object,
 		}
 	    break;
 	  }
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
     }
 }
 

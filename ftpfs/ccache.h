@@ -40,10 +40,10 @@ struct ccache
   /* Amount of IMAGE that has been allocated.  */
   size_t alloced;
 
-  struct mutex lock;
+  pthread_mutex_t lock;
 
   /* People can wait for a reading thread on this condition.  */
-  struct condition wakeup;
+  pthread_cond_t wakeup;
 
   /* True if some thread is now fetching data.  Only that thread should
      modify the DATA_CONN, DATA_CONN_POS, and MAX fields.  */

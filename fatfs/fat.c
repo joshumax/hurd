@@ -51,10 +51,10 @@ size_t first_fat_sector;
 cluster_t nr_of_clusters;
 
 /* Hold this lock while converting times using gmtime.  */
-spin_lock_t epoch_to_time_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t epoch_to_time_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Hold this lock while allocating a new cluster in the FAT.  */
-spin_lock_t allocate_free_cluster_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t allocate_free_cluster_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 /* Where to look for the next free cluster. This is meant to avoid
    searching through a nearly full file system from the beginning at
@@ -323,7 +323,7 @@ fat_allocate_cluster (cluster_t content, cluster_t *cluster)
 
   assert (content != FAT_FREE_CLUSTER);
 
-  spin_lock (&allocate_free_cluster_lock);
+  pthread_spin_lock (&allocate_free_cluster_lock);
   old_next_free_cluster = next_free_cluster;
 
   /* Loop over all clusters, starting from next_free_cluster and
@@ -356,7 +356,7 @@ fat_allocate_cluster (cluster_t content, cluster_t *cluster)
   else 
     err = ENOSPC;
 
-  spin_unlock(&allocate_free_cluster_lock);
+  pthread_spin_unlock (&allocate_free_cluster_lock);
   return err;
 }
 
@@ -390,14 +390,14 @@ fat_extend_chain (struct node *node, cluster_t new_last_cluster, int create)
       return 0;
     }
   
-  spin_lock(&dn->chain_extension_lock);
+  pthread_spin_lock (&dn->chain_extension_lock);
 
   /* If we already have what we need, or we have all clusters that are
      available without allocating new ones, go out.  */
   if (new_last_cluster < dn->length_of_chain
       || (!create && dn->chain_complete))
     {
-      spin_unlock(&dn->chain_extension_lock);
+      pthread_spin_unlock (&dn->chain_extension_lock);
       return 0;
     }
 
@@ -460,7 +460,7 @@ fat_extend_chain (struct node *node, cluster_t new_last_cluster, int create)
    if (dn->length_of_chain << log2_bytes_per_cluster > node->allocsize)
      node->allocsize = dn->length_of_chain << log2_bytes_per_cluster;
 
-   spin_unlock(&dn->chain_extension_lock);
+   pthread_spin_unlock (&dn->chain_extension_lock);
    return err;
 }
    
@@ -739,7 +739,7 @@ fat_from_epoch (char *date, char *time, time_t *tp)
 {
   struct tm *tm;
 
-  spin_lock(&epoch_to_time_lock);
+  pthread_spin_lock (&epoch_to_time_lock);
   tm = gmtime (tp);
 
   /* Date format:
@@ -757,5 +757,5 @@ fat_from_epoch (char *date, char *time, time_t *tp)
 	     | ((tm->tm_year - 80) << 9));
   write_word(time, (tm->tm_hour << 11) | (tm->tm_min << 5)
 	     | (tm->tm_sec >> 1));
-  spin_unlock(&epoch_to_time_lock);
+  pthread_spin_unlock (&epoch_to_time_lock);
 }

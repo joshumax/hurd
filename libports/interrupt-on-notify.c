@@ -34,13 +34,13 @@ ports_interrupt_rpc_on_notification (void *object,
   struct rpc_notify *new_req, *req;
   struct port_info *pi = object;
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
 
   if (! MACH_PORT_VALID (port))
     /* PORT is already dead or bogus, so interrupt the rpc immediately.  */
     {
       hurd_thread_cancel (rpc->thread);
-      mutex_unlock (&_ports_lock);
+      pthread_mutex_unlock (&_ports_lock);
       return 0;
     }
 
@@ -53,11 +53,11 @@ ports_interrupt_rpc_on_notification (void *object,
        time we'll add a new structure, so we malloc while we don't have the
        lock, and free it if we're wrong.  */
     {
-      mutex_unlock (&_ports_lock); /* Don't hold the lock during malloc. */
+      pthread_mutex_unlock (&_ports_lock); /* Don't hold the lock during malloc. */
       new_req = malloc (sizeof (struct rpc_notify));
       if (! new_req)
 	return ENOMEM;
-      mutex_lock (&_ports_lock);
+      pthread_mutex_lock (&_ports_lock);
     }
 
   /* Find any existing entry for PORT/WHAT.  */
@@ -80,7 +80,7 @@ ports_interrupt_rpc_on_notification (void *object,
 	    {
 	      new_req->next = _ports_free_rpc_notifies;
 	      _ports_free_rpc_notifies = new_req;
-	      mutex_unlock (&_ports_lock);
+	      pthread_mutex_unlock (&_ports_lock);
 	      return ENOMEM;
 	    }
 	}
@@ -89,7 +89,7 @@ ports_interrupt_rpc_on_notification (void *object,
       pn->port = port;
       pn->what = what;
       pn->pending = 0;
-      mutex_init (&pn->lock);
+      pthread_mutex_init (&pn->lock, NULL);
 
       pn->next = _ports_notifications;
       pn->prevp = &_ports_notifications;
@@ -136,9 +136,9 @@ ports_interrupt_rpc_on_notification (void *object,
      immediate notification).  */
   req_notify = !pn->pending;
   if (req_notify)
-    mutex_lock (&pn->lock);
+    pthread_mutex_lock (&pn->lock);
 
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   if (req_notify)
     {
@@ -152,7 +152,7 @@ ports_interrupt_rpc_on_notification (void *object,
 	mach_port_deallocate (mach_task_self (), old);
 
       pn->pending = 1;
-      mutex_unlock (&pn->lock);
+      pthread_mutex_unlock (&pn->lock);
 
       return err;
     }
@@ -170,11 +170,11 @@ ports_interrupt_self_on_notification (void *object,
   struct port_info *pi = object;
   thread_t thread = hurd_thread_self ();
 
-  mutex_lock (&_ports_lock);
+  pthread_mutex_lock (&_ports_lock);
   for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
     if (rpc->thread == thread)
       break;
-  mutex_unlock (&_ports_lock);
+  pthread_mutex_unlock (&_ports_lock);
 
   assert (rpc);
 

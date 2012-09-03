@@ -45,7 +45,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   if (! runs)
     return ENOMEM;
 
-  mutex_lock (&node->lock);
+  pthread_mutex_lock (&node->lock);
 
   /* NUM_FS_BLOCKS counts down the blocks in the file that we've not
      enumerated yet; when it hits zero, we can stop.  */
@@ -100,7 +100,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
       run->length += 1 << log2_dev_blocks_per_fs_block;
     }
 
-  mutex_unlock (&node->lock);
+  pthread_mutex_unlock (&node->lock);
 
   if (! err)
     err = store_clone (store, &file_store);

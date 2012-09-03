@@ -40,7 +40,7 @@ diskfs_S_io_read (struct protid *cred,
   if (!(cred->po->openstat & O_READ))
     return EBADF;
 
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   iohelp_get_conch (&np->conch);
 
@@ -48,7 +48,7 @@ diskfs_S_io_read (struct protid *cred,
     off = cred->po->filepointer;
   if (off < 0)
     {
-      mutex_unlock (&np->lock);
+      pthread_mutex_unlock (&np->lock);
       return EINVAL;
     }
 
@@ -104,6 +104,6 @@ diskfs_S_io_read (struct protid *cred,
   if (err && ourbuf)
     munmap (buf, maxread);
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
   return err;
 }

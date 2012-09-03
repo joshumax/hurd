@@ -30,7 +30,7 @@ diskfs_S_io_stat (struct protid *cred,
     return EOPNOTSUPP;
 
   np = cred->po->np;
-  mutex_lock (&np->lock);
+  pthread_mutex_lock (&np->lock);
 
   iohelp_get_conch (&np->conch);
   if (diskfs_synchronous)
@@ -45,7 +45,7 @@ diskfs_S_io_stat (struct protid *cred,
   if (cred->po->shadow_root == np || np == diskfs_root_node)
     statbuf->st_mode |= S_IROOT;
 
-  mutex_unlock (&np->lock);
+  pthread_mutex_unlock (&np->lock);
 
   return 0;
 }

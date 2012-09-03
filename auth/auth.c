@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mach.h>
-#include <cthreads.h>
+#include <pthread.h>
 #include <hurd.h>
 #include <hurd/startup.h>
 #include <hurd/ports.h>
@@ -266,7 +266,7 @@ S_auth_makeauth (struct authhandle *auth,
 struct pending_user
   {
     hurd_ihash_locp_t locp;	/* Position in the pending_users ihash table.  */
-    struct condition wakeup;    /* The reader is blocked on this condition.  */
+    pthread_cond_t wakeup;	/* The reader is blocked on this condition.  */
 
     /* The user's auth handle.  */
     struct authhandle *user;
@@ -279,7 +279,7 @@ struct pending_user
 struct pending_server
   {
     hurd_ihash_locp_t locp;	/* Position in the pending_servers ihash table.  */
-    struct condition wakeup;    /* The server is blocked on this condition.  */
+    pthread_cond_t wakeup;	/* The server is blocked on this condition.  */
   };
 
 /* Table of pending transactions keyed on RENDEZVOUS.  */
@@ -287,7 +287,7 @@ struct hurd_ihash pending_users
   = HURD_IHASH_INITIALIZER (offsetof (struct pending_user, locp));
 struct hurd_ihash pending_servers
   = HURD_IHASH_INITIALIZER (offsetof (struct pending_server, locp));
-struct mutex pending_lock = MUTEX_INITIALIZER;
+pthread_mutex_t pending_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Implement auth_user_authenticate as described in <hurd/auth.defs>. */
 kern_return_t
@@ -309,13 +309,13 @@ S_auth_user_authenticate (struct authhandle *userauth,
     return EINVAL;
 
   u.user = userauth;
-  condition_init (&u.wakeup);
+  pthread_cond_init (&u.wakeup, NULL);
 
-  mutex_lock (&pending_lock);
+  pthread_mutex_lock (&pending_lock);
 
   err = hurd_ihash_add (&pending_users, rendezvous, &u);
   if (err) {
-    mutex_unlock (&pending_lock);
+    pthread_mutex_unlock (&pending_lock);
     return err;
   }
 
@@ -332,12 +332,12 @@ S_auth_user_authenticate (struct authhandle *userauth,
     hurd_ihash_locp_remove (&pending_servers, s->locp);
 
     /* Tell it we eventually arrived.  */
-    condition_signal (&s->wakeup);
+    pthread_cond_signal (&s->wakeup);
   }
 
   ports_interrupt_self_on_port_death (userauth, rendezvous);
   /* Wait for server answer.  */
-  if (hurd_condition_wait (&u.wakeup, &pending_lock) &&
+  if (pthread_hurd_cond_wait_np (&u.wakeup, &pending_lock) &&
       hurd_ihash_find (&pending_users, rendezvous))
     /* We were interrupted; remove our record.  */
     {
@@ -349,7 +349,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
       err = type & MACH_PORT_TYPE_DEAD_NAME ? EINVAL : EINTR;
     }
 
-  mutex_unlock (&pending_lock);
+  pthread_mutex_unlock (&pending_lock);
 
   if (! err)
     {
@@ -389,7 +389,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
   if (rendezvous == MACH_PORT_NULL || rendezvous == MACH_PORT_DEAD)
     return EINVAL;
 
-  mutex_lock (&pending_lock);
+  pthread_mutex_lock (&pending_lock);
 
   /* Look for this rendezvous in the user list.  */
   u = hurd_ihash_find (&pending_users, rendezvous);
@@ -397,12 +397,12 @@ S_auth_server_authenticate (struct authhandle *serverauth,
     {
       /* User not here yet, have to wait for it.  */
       struct pending_server s;
-      condition_init (&s.wakeup);
+      pthread_cond_init (&s.wakeup, NULL);
       err = hurd_ihash_add (&pending_servers, rendezvous, &s);
       if (! err)
         {
 	  ports_interrupt_self_on_port_death (serverauth, rendezvous);
-	  if (hurd_condition_wait (&s.wakeup, &pending_lock) &&
+	  if (pthread_hurd_cond_wait_np (&s.wakeup, &pending_lock) &&
 	      hurd_ihash_find (&pending_servers, rendezvous))
 	    /* We were interrupted; remove our record.  */
 	    {
@@ -433,7 +433,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
       /* Found it!  */
       user = u->user;
 
-      mutex_unlock (&pending_lock);
+      pthread_mutex_unlock (&pending_lock);
 
       /* Tell third party.  */
       err2 = auth_server_authenticate_reply (reply, reply_type, 0,
@@ -445,15 +445,15 @@ S_auth_server_authenticate (struct authhandle *serverauth,
       if (err2)
         mach_port_deallocate (mach_task_self (), reply);
 
-      mutex_lock (&pending_lock);
+      pthread_mutex_lock (&pending_lock);
 
       /* Give the user the new port and wake the RPC up.  */
       u->passthrough = newport;
 
-      condition_signal (&u->wakeup);
+      pthread_cond_signal (&u->wakeup);
     }
 
-  mutex_unlock (&pending_lock);
+  pthread_mutex_unlock (&pending_lock);
 
   if (err)
     return err;

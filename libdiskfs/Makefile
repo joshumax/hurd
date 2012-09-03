@@ -60,7 +60,8 @@ MIGSTUBS = fsServer.o ioServer.o fsysServer.o exec_startupServer.o \
 	startup_notifyServer.o
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-HURDLIBS = fshelp iohelp store threads ports shouldbeinlibc pager
+HURDLIBS = fshelp iohelp store ports shouldbeinlibc pager
+LDLIBS += -lpthread
 
 fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h

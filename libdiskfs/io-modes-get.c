@@ -26,9 +26,9 @@ diskfs_S_io_get_openmodes (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   
-  mutex_lock (&cred->po->np->lock);
+  pthread_mutex_lock (&cred->po->np->lock);
   *bits = cred->po->openstat;
-  mutex_unlock (&cred->po->np->lock);
+  pthread_mutex_unlock (&cred->po->np->lock);
   return 0;
 }
 

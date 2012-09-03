@@ -21,9 +21,9 @@
 #include <unistd.h>
 #include <hurd/store.h>
 
-spin_lock_t node2pagelock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t node2pagelock = PTHREAD_SPINLOCK_INITIALIZER;
 
-spin_lock_t unlocked_pagein_lock = SPIN_LOCK_INITIALIZER;
+pthread_spinlock_t unlocked_pagein_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
 #define MAY_CACHE 0
@@ -47,11 +47,11 @@ find_address (struct user_pager_info *upi,
 	      vm_address_t offset,
 	      daddr_t *addr,
 	      int *disksize,
-	      struct rwlock **nplock,
+	      pthread_rwlock_t **nplock,
 	      int isread)
 {
   error_t err;
-  struct rwlock *lock;
+  pthread_rwlock_t *lock;
 
   assert (upi->type == DISK || upi->type == FILE_DATA);
 
@@ -81,37 +81,49 @@ find_address (struct user_pager_info *upi,
 	     I think this is sufficiently rare to put it off for the time
 	     being.) */
 
-	  spin_lock (&unlocked_pagein_lock);
+	  pthread_spin_lock (&unlocked_pagein_lock);
 	  if (offset >= upi->allow_unlocked_pagein
 	      && (offset + vm_page_size
 		  <= upi->allow_unlocked_pagein + upi->unlocked_pagein_length))
 	    {
-	      spin_unlock (&unlocked_pagein_lock);
+	      pthread_spin_unlock (&unlocked_pagein_lock);
 	      *nplock = 0;
 	      goto have_lock;
 	    }
-	  spin_unlock (&unlocked_pagein_lock);
+	  pthread_spin_unlock (&unlocked_pagein_lock);
 
 	  /* Block on the rwlock if necessary; but when we wake up,
 	     don't acquire it; check again from the top.
 	     This is mutated inline from rwlock.h.  */
 	  lock = &np->dn->allocptrlock;
-	  mutex_lock (&lock->master);
-	  if (lock->readers == -1 || lock->writers_waiting)
+	   /*
+	      TD - Why do we lock first?
+		To prevent this nigh-impossible scenario:
+		  1) trylock - writer has lock
+		  2) switch back to writer before we lock waitlock
+		  3) writer finishes: releases lock and broadcasts
+		  4) we wait for a condition that will never get broadcast
+		With this, either we get the lock, or we get the signal.
+	   */
+	  pthread_mutex_lock (&np->dn->waitlock);
+	  if (pthread_rwlock_tryrdlock (lock))
 	    {
-	      lock->readers_waiting++;
-	      condition_wait (&lock->wakeup, &lock->master);
-	      lock->readers_waiting--;
-	      mutex_unlock (&lock->master);
+	       /*
+		  TD - we now don't block on the rwlock. Instead, we wait on a
+		  condition that will be signalled when the lock is unlocked,
+		  or when it is safe not to lock the page. We don't spin on an
+		  invariant, as spurius wakeups can do no harm.
+	       */
+	      pthread_cond_wait (&np->dn->waitcond, &np->dn->waitlock);
+	      pthread_mutex_unlock (&np->dn->waitlock);
 	      goto try_again;
 	    }
-	  lock->readers++;
-	  mutex_unlock (&lock->master);
+	  pthread_mutex_unlock (&np->dn->waitlock);
 	  *nplock = lock;
 	}
       else
 	{
-	  rwlock_reader_lock (&np->dn->allocptrlock);
+	  pthread_rwlock_rdlock (&np->dn->allocptrlock);
 	  *nplock = &np->dn->allocptrlock;
 	}
 
@@ -120,7 +132,7 @@ find_address (struct user_pager_info *upi,
       if (offset >= np->allocsize)
 	{
 	  if (*nplock)
-	    rwlock_reader_unlock (*nplock);
+	    pthread_rwlock_unlock (*nplock);
 	  if (isread)
 	    return EIO;
 	  else
@@ -138,7 +150,7 @@ find_address (struct user_pager_info *upi,
 
       err = fetch_indir_spec (np, lblkno (sblock, offset), indirs);
       if (err && *nplock)
-	rwlock_reader_unlock (*nplock);
+	pthread_rwlock_unlock (*nplock);
       else
 	{
 	  if (indirs[0].bno)
@@ -162,7 +174,7 @@ pager_read_page (struct user_pager_info *pager,
 		 int *writelock)
 {
   error_t err;
-  struct rwlock *nplock;
+  pthread_rwlock_t *nplock;
   daddr_t addr;
   int disksize;
 
@@ -193,7 +205,7 @@ pager_read_page (struct user_pager_info *pager,
     }
 
   if (nplock)
-    rwlock_reader_unlock (nplock);
+    pthread_rwlock_unlock (nplock);
 
   return err;
 }
@@ -207,7 +219,7 @@ pager_write_page (struct user_pager_info *pager,
 {
   daddr_t addr;
   int disksize;
-  struct rwlock *nplock;
+  pthread_rwlock_t *nplock;
   error_t err;
 
   err = find_address (pager, page, &addr, &disksize, &nplock, 0);
@@ -226,7 +238,7 @@ pager_write_page (struct user_pager_info *pager,
     err = 0;
 
   if (nplock)
-    rwlock_reader_unlock (nplock);
+    pthread_rwlock_unlock (nplock);
 
   return err;
 }
@@ -268,7 +280,7 @@ pager_unlock_page (struct user_pager_info *pager,
   dn = np->dn;
   di = dino (dn->number);
 
-  rwlock_writer_lock (&dn->allocptrlock);
+  pthread_rwlock_wrlock (&dn->allocptrlock);
 
   /* If this is the last block, we don't let it get unlocked. */
   if (address + __vm_page_size
@@ -276,21 +288,31 @@ pager_unlock_page (struct user_pager_info *pager,
     {
       printf ("attempt to unlock at last block denied\n");
       fflush (stdout);
-      rwlock_writer_unlock (&dn->allocptrlock);
+      pthread_rwlock_unlock (&dn->allocptrlock);
+      /* Wake up any remaining sleeping readers. Wow, so much work.... */
+      pthread_mutex_lock (&dn->waitlock);
+      pthread_cond_broadcast (&dn->waitcond);
+      pthread_mutex_unlock (&dn->waitlock);
       return EIO;
     }
 
   err = fetch_indir_spec (np, lblkno (sblock, address), indirs);
   if (err)
     {
-      rwlock_writer_unlock (&dn->allocptrlock);
+      pthread_rwlock_unlock (&dn->allocptrlock);
+      pthread_mutex_lock (&dn->waitlock);
+      pthread_cond_broadcast (&dn->waitcond);
+      pthread_mutex_unlock (&dn->waitlock);
       return EIO;
     }
 
   err = diskfs_catch_exception ();
   if (err)
     {
-      rwlock_writer_unlock (&dn->allocptrlock);
+      pthread_rwlock_unlock (&dn->allocptrlock);
+      pthread_mutex_lock (&dn->waitlock);
+      pthread_cond_broadcast (&dn->waitcond);
+      pthread_mutex_unlock (&dn->waitlock);
       return EIO;
     }
 
@@ -421,7 +443,10 @@ pager_unlock_page (struct user_pager_info *pager,
 
  out:
   diskfs_end_catch_exception ();
-  rwlock_writer_unlock (&dn->allocptrlock);
+  pthread_rwlock_unlock (&dn->allocptrlock);
+  pthread_mutex_lock (&dn->waitlock);
+  pthread_cond_broadcast (&dn->waitcond);
+  pthread_mutex_unlock (&dn->waitlock);
   return err;
 }
 
@@ -452,10 +477,10 @@ pager_clear_user_data (struct user_pager_info *upi)
   /* XXX Do the right thing for the disk pager here too. */
   if (upi->type == FILE_DATA)
     {
-      spin_lock (&node2pagelock);
+      pthread_spin_lock (&node2pagelock);
       if (upi->np->dn->fileinfo == upi)
 	upi->np->dn->fileinfo = 0;
-      spin_unlock (&node2pagelock);
+      pthread_spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
   free (upi);
@@ -491,11 +516,11 @@ diskfs_file_update (struct node *np,
   struct dirty_indir *d, *tmp;
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (upi)
     {
@@ -522,11 +547,11 @@ flush_node_pager (struct node *node)
   struct disknode *dn = node->dn;
   struct dirty_indir *dirty = dn->dirty;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (upi)
     {
@@ -558,7 +583,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	      && (!direct_symlink_extension
 		  || np->dn_stat.st_size >= sblock->fs_maxsymlinklen)));
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   do
     if (!np->dn->fileinfo)
       {
@@ -575,7 +600,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  {
 	    diskfs_nrele_light (np);
 	    free (upi);
-	    spin_unlock (&node2pagelock);
+	    pthread_spin_unlock (&node2pagelock);
 	    return MACH_PORT_NULL;
 	  }
 	np->dn->fileinfo = upi;
@@ -596,7 +621,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       }
   while (right == MACH_PORT_NULL);
 
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   mach_port_insert_right (mach_task_self (), right, right,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -611,11 +636,11 @@ drop_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 0, MEMORY_OBJECT_COPY_DELAY, 0);
@@ -630,11 +655,11 @@ allow_pager_softrefs (struct node *np)
 {
   struct user_pager_info *upi;
 
-  spin_lock (&node2pagelock);
+  pthread_spin_lock (&node2pagelock);
   upi = np->dn->fileinfo;
   if (upi)
     ports_port_ref (upi->p);
-  spin_unlock (&node2pagelock);
+  pthread_spin_unlock (&node2pagelock);
 
   if (MAY_CACHE && upi)
     pager_change_attributes (upi->p, 1, MEMORY_OBJECT_COPY_DELAY, 0);

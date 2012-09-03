@@ -31,5 +31,5 @@ void
 _pager_allow_termination (struct pager *p)
 {
   if (!--p->noterm && p->termwaiting)
-    condition_broadcast (&p->wakeup);
+    pthread_cond_broadcast (&p->wakeup);
 }

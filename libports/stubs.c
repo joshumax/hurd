@@ -21,6 +21,7 @@
 /* This file contains stubs for some cthreads functions.
    It should only get used if the user isn't otherwise using cthreads. */
 
+#if 0
 #include <cthreads.h>
 
 void condition_wait (condition_t c, mutex_t m) __attribute__ ((weak));
@@ -36,3 +37,4 @@ void
 cond_broadcast (condition_t c)
 {
 }
+#endif

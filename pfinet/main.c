@@ -249,6 +249,7 @@ main (int argc,
   error_t err;
   mach_port_t bootstrap;
   struct stat st;
+  pthread_t thread;
 
   pfinet_bucket = ports_create_bucket ();
   addrport_class = ports_create_class (clean_addrport, 0);
@@ -261,9 +262,16 @@ main (int argc,
 
   init_time ();
   ethernet_initialize ();
-  cthread_detach (cthread_fork (net_bh_worker, 0));
+  err = pthread_create (&thread, NULL, net_bh_worker, NULL);
+  if (!err)
+    pthread_detach (thread);
+  else
+    {
+      errno = err;
+      perror ("pthread_create");
+    }
 
-  __mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   prepare_current (1);		/* Set up to call into Linux initialization. */
 
@@ -284,7 +292,7 @@ main (int argc,
 		    htonl (INADDR_LOOPBACK), htonl (IN_CLASSA_NET),
 		    htonl (INADDR_NONE), htonl (INADDR_NONE));
 
-  __mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   /* Parse options.  When successful, this configures the interfaces
      before returning; to do so, it will acquire the global_lock.

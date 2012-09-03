@@ -22,7 +22,7 @@
 #define __HOSTMUX_H__
 
 #include <hurd/netfs.h>
-#include <rwlock.h>
+#include <pthread.h>
 #include <maptime.h>
 #include <features.h>
 
@@ -40,7 +40,7 @@ struct hostmux
 {
   /* The host hodes in this mux.  */
   struct hostmux_name *names;
-  struct rwlock names_lock;
+  pthread_rwlock_t names_lock;
 
   /* The next inode number we'll use; protected by NAMES_LOCK.  */
   ino_t next_fileno;
