@@ -443,8 +443,6 @@ main (int argc, char **argv)
 
   condition_init (&carrier_alert);
   condition_init (&select_alert);
-  condition_implies (inputq->wait, &select_alert);
-  condition_implies (outputq->wait, &select_alert);
 
   /* Launch.  */
   ports_manage_port_operations_multithread (term_bucket, demuxer, 0, 0, 0);

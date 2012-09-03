@@ -108,6 +108,7 @@ clear_buffer (struct buffer *b)
     return;
   b->head = b->tail = b->buf;
   condition_broadcast (b->wait);
+  condition_broadcast (&select_alert);
 }
 
 /* Read up to LEN bytes from B to DATA, returning the amount actually read.  */
@@ -132,6 +133,7 @@ buffer_read (struct buffer *b, void *data, size_t len)
     }
 
   condition_broadcast (b->wait);
+  condition_broadcast (&select_alert);
   return len;
 }
 
@@ -148,6 +150,7 @@ buffer_write (struct buffer *b, void *data, size_t len)
   b->tail += len;
 
   condition_broadcast (b->wait);
+  condition_broadcast (&select_alert);
   return len;
 }
 
@@ -300,15 +303,9 @@ main (int argc, char *argv[])
   condition_init (&select_alert);
 
   if (trivfs_allow_open & O_READ)
-    {
-      input_buffer = create_buffer (256);
-      condition_implies (input_buffer->wait, &select_alert);
-    }
+    input_buffer = create_buffer (256);
   if (trivfs_allow_open & O_WRITE)
-    {
-      output_buffer = create_buffer (256);
-      condition_implies (output_buffer->wait, &select_alert);
-    }
+    output_buffer = create_buffer (256);
 
   /* Launch */
   ports_manage_port_operations_multithread (streamdev_bucket, demuxer,
@@ -999,6 +996,7 @@ device_read_reply_inband (mach_port_t reply, error_t errorcode,
 	  data += nwritten;
 	  datalen -= nwritten;
 	  condition_broadcast (input_buffer->wait);
+	  condition_broadcast (&select_alert);
 	}
     }
   else
@@ -1102,6 +1100,7 @@ device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
 	{
 	  npending_output = 0;
 	  condition_broadcast (output_buffer->wait);
+	  condition_broadcast (&select_alert);
 	}
       else
 	{

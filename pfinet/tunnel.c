@@ -135,6 +135,7 @@ tunnel_xmit (struct sk_buff *skb, struct device *dev)
     {
       tdev->read_blocked = 0;
       condition_broadcast (&tdev->wait);
+      condition_broadcast (&tdev->select_alert);
     }
 
   __mutex_unlock (&tdev->lock);
@@ -213,7 +214,6 @@ setup_tunnel_device (char *name, struct device **device)
   __mutex_init (&tdev->lock);
   condition_init (&tdev->wait);
   condition_init (&tdev->select_alert);
-  condition_implies (&tdev->wait, &tdev->select_alert);
 
   /* This call adds the device to the `dev_base' chain,
      initializes its `ifindex' member (which matters!),

@@ -286,6 +286,7 @@ hurdio_writer_loop (any_t arg)
 	    {
 	      npending_output = 0;
 	      condition_broadcast (outputq->wait);
+	      condition_broadcast (&select_alert);
 	    }
 	  else
 	    {

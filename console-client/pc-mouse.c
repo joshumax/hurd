@@ -105,6 +105,7 @@ repeat_event (kd_event *evt)
   memcpy (ev, evt, sizeof (kd_event));
   
   condition_broadcast (&mousebuf.readcond);
+  condition_broadcast (&select_alert);
   mutex_unlock (&global_lock);
 }
 
@@ -499,9 +500,7 @@ setrepeater (const char *nodename)
   
   condition_init (&mousebuf.readcond);
   condition_init (&mousebuf.writecond);
-  
   condition_init (&select_alert);
-  condition_implies (&mousebuf.readcond, &select_alert);
   
   console_register_consnode (cnode);
   

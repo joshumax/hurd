@@ -103,6 +103,9 @@ struct condition carrier_alert;
 /* Wakeup for select */
 struct condition select_alert;
 
+/* Wakeup for pty select, if not null */
+struct condition *pty_select_alert;
+
 /* Bucket for all our ports. */
 struct port_bucket *term_bucket;
 
@@ -225,6 +228,9 @@ clear_queue (struct queue *q)
   q->susp = 0;
   q->cs = q->ce = q->array;
   condition_broadcast (q->wait);
+  condition_broadcast (&select_alert);
+  if (q == inputq && pty_select_alert != NULL)
+    condition_broadcast (pty_select_alert);
 }
 #endif /* Use extern inlines.  */
 
@@ -249,7 +255,10 @@ dequeue_quote (struct queue *q)
   if (beep)
     {
       condition_broadcast (q->wait);
-      if (q == outputq)
+      condition_broadcast (&select_alert);
+      if (q == inputq && pty_select_alert != NULL)
+	condition_broadcast (pty_select_alert);
+      else if (q == outputq)
 	call_asyncs (O_WRITE);
     }
   return *q->cs++;
@@ -280,8 +289,13 @@ enqueue_internal (struct queue **qp, quoted_char c)
   if (qsize (q) == 1)
     {
       condition_broadcast (q->wait);
+      condition_broadcast (&select_alert);
       if (q == inputq)
-	call_asyncs (O_READ);
+	{
+	  if (pty_select_alert != NULL)
+	    condition_broadcast (pty_select_alert);
+	  call_asyncs (O_READ);
+	}
     }
 
   if (!q->susp && (qsize (q) > q->hiwat))
@@ -334,7 +348,12 @@ queue_erase (struct queue *q)
   if (qsize (q) == 0)
     beep = 1;
   if (beep)
-    condition_broadcast (q->wait);
+    {
+      condition_broadcast (q->wait);
+      condition_broadcast (&select_alert);
+      if (q == inputq && pty_select_alert != NULL)
+	condition_broadcast (pty_select_alert);
+    }
   return answer;
 }
 #endif /* Use extern inlines.  */

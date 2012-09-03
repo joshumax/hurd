@@ -81,6 +81,7 @@ kbd_repeat_key (kd_event *key)
   memcpy (ev, key, sizeof (kd_event));
   
   condition_broadcast (&kbdbuf.readcond);
+  condition_broadcast (&select_alert);
   mutex_unlock (&global_lock);
 }
 
@@ -231,9 +232,7 @@ kbd_setrepeater (const char *nodename, consnode_t *cn)
 
   condition_init (&kbdbuf.readcond);
   condition_init (&kbdbuf.writecond);
-
   condition_init (&select_alert);
-  condition_implies (&kbdbuf.readcond, &select_alert);
   
   console_register_consnode (*cn);
   

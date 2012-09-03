@@ -62,6 +62,13 @@ extern struct pipe_class *stream_pipe_class;
 extern struct pipe_class *dgram_pipe_class;
 extern struct pipe_class *seqpack_pipe_class;
 
+struct pipe_select_cond
+{
+  struct pipe_select_cond *next;
+  struct pipe_select_cond *prev;
+  struct condition cond;
+};
+
 /* A unidirectional data pipe; it transfers data from READER to WRITER.  */
 struct pipe
 {
@@ -87,6 +94,8 @@ struct pipe
 
   struct condition pending_writes;
   struct condition pending_write_selects;
+
+  struct pipe_select_cond *pending_selects;
 
   /* The maximum number of characters that this pipe will hold without
      further writes blocking.  */

@@ -58,8 +58,7 @@ static int nptyperopens = 0;
 static error_t
 ptyio_init (void)
 {
-  condition_implies (inputq->wait, &pty_select_wakeup);
-  condition_implies (&pty_read_wakeup, &pty_select_wakeup);
+  pty_select_alert = &pty_select_wakeup;
   return 0;
 }
 
@@ -132,6 +131,7 @@ wake_reader ()
     {
       pty_read_blocked = 0;
       condition_broadcast (&pty_read_wakeup);
+      condition_broadcast (&pty_select_wakeup);
     }
 }
 

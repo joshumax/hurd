@@ -323,6 +323,7 @@ device_write_reply_inband (mach_port_t replypt,
 	{
 	  npending_output = 0;
 	  condition_broadcast (outputq->wait);
+	  condition_broadcast (&select_alert);
 	}
       else
 	{
