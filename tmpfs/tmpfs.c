@@ -100,9 +100,12 @@ diskfs_reload_global_state ()
 
 int diskfs_synchronous = 0;
 
+#define OPT_SIZE 600	/* --size */
+
 static const struct argp_option options[] =
 {
   {"mode", 'm', "MODE", 0, "Permissions (octal) for root directory"},
+  {"size", OPT_SIZE, "MAX-BYTES", 0, "Maximum size"},
   {NULL,}
 };
 
@@ -188,7 +191,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (values == 0)
 	return ENOMEM;
       state->hook = values;
-      values->size = 0;
+      values->size = -1;
       values->mode = -1;
       break;
     case ARGP_KEY_FINI:
@@ -214,15 +217,35 @@ parse_opt (int key, char *arg, struct argp_state *state)
       }
       break;
 
+    case OPT_SIZE:		/* --size=MAX-BYTES */
+      {
+	error_t err = parse_opt_size (arg, state, &values->size);
+	if (err)
+	  return err;
+      }
+      break;
+
     case ARGP_KEY_NO_ARGS:
-      argp_error (state, "must supply maximum size");
-      return EINVAL;
+      if (values->size < 0)
+	{
+	  argp_error (state, "must supply maximum size");
+	  return EINVAL;
+	}
+      break;
 
     case ARGP_KEY_ARGS:
       if (state->argv[state->next + 1] != 0)
 	{
 	  argp_error (state, "too many arguments");
 	  return EINVAL;
+	}
+      else if (values->size >= 0)
+	{
+	  if (strcmp (state->argv[state->next], "tmpfs") != 0)
+	    {
+	      argp_error (state, "size specified with --size and argument is not \"tmpfs\"");
+	      return EINVAL;
+	    }
 	}
       else
 	{
