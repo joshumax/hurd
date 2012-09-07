@@ -112,6 +112,66 @@ struct option_values
   mode_t mode;
 };
 
+/* Parse the size string ARG, and set *NEWSIZE with the resulting size.  */
+static error_t
+parse_opt_size (const char *arg, struct argp_state *state, off_t *newsize)
+{
+  char *end = NULL;
+  intmax_t size = strtoimax (arg, &end, 0);
+  if (end == NULL || end == arg)
+    {
+      argp_error (state, "argument must be a number");
+      return EINVAL;
+    }
+  if (size < 0)
+    {
+      argp_error (state, "negative size not meaningful");
+      return EINVAL;
+    }
+  switch (*end)
+    {
+      case 'g':
+      case 'G':
+	size <<= 10;
+      case 'm':
+      case 'M':
+	size <<= 10;
+      case 'k':
+      case 'K':
+	size <<= 10;
+	break;
+      case '%':
+	{
+	  /* Set as a percentage of the machine's physical memory.  */
+	  struct vm_statistics vmstats;
+	  error_t err = vm_statistics (mach_task_self (), &vmstats);
+	  if (err)
+	    {
+	      argp_error (state, "cannot find total physical memory: %s",
+			  strerror (err));
+	      return err;
+	    }
+	  size = round_page ((((vmstats.free_count
+				+ vmstats.active_count
+				+ vmstats.inactive_count
+				+ vmstats.wire_count)
+			       * vm_page_size)
+			      * size + 99) / 100);
+	  break;
+	}
+    }
+  size = (off_t) size;
+  if (size < 0)
+    {
+      argp_error (state, "size too large");
+      return EINVAL;
+    }
+
+  *newsize = size;
+
+  return 0;
+}
+
 /* Parse a command line option.  */
 static error_t
 parse_opt (int key, char *arg, struct argp_state *state)
@@ -166,57 +226,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	}
       else
 	{
-	  char *end = NULL;
-	  intmax_t size = strtoimax (state->argv[state->next], &end, 0);
-	  if (end == NULL || end == arg)
-	    {
-	      argp_error (state, "argument must be a number");
-	      return EINVAL;
-	    }
-	  if (size < 0)
-	    {
-	      argp_error (state, "negative size not meaningful");
-	      return EINVAL;
-	    }
-	  switch (*end)
-	    {
-	    case 'g':
-	    case 'G':
-	      size <<= 10;
-	    case 'm':
-	    case 'M':
-	      size <<= 10;
-	    case 'k':
-	    case 'K':
-	      size <<= 10;
-	      break;
-	    case '%':
-	      {
-		/* Set as a percentage of the machine's physical memory.  */
-		struct vm_statistics vmstats;
-		error_t err = vm_statistics (mach_task_self (), &vmstats);
-		if (err)
-		  {
-		    argp_error (state, "cannot find total physical memory: %s",
-				strerror (err));
-		    return err;
-		  }
-		size = round_page ((((vmstats.free_count
-				      + vmstats.active_count
-				      + vmstats.inactive_count
-				      + vmstats.wire_count)
-				     * vm_page_size)
-				    * size + 99) / 100);
-		break;
-	      }
-	    }
-	  size = (off_t) size;
-	  if (size < 0)
-	    {
-	      argp_error (state, "size too large");
-	      return EINVAL;
-	    }
-	  values->size = size;
+	  error_t err = parse_opt_size (state->argv[state->next], state,
+					&values->size);
+	  if (err)
+	    return err;
 	}
       break;
 
