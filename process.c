@@ -87,6 +87,11 @@ static const char *args_filename (const char *name)
   return sp != NULL && *(sp + 1) != '\0' ? sp + 1 : name;
 }
 
+static int args_filename_length (const char *name)
+{
+  return strchrnul (name, ' ') - name;
+}
+
 /* Actual content generators */
 
 static ssize_t
@@ -109,11 +114,12 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   struct procinfo *pi = proc_stat_proc_info (ps);
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
   thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
+  const char *fn = args_filename (proc_stat_args (ps));
 
   /* See proc(5) for more information about the contents of each field for the
      Linux procfs.  */
   return asprintf (contents,
-      "%d (%s) %c "		/* pid, command, state */
+      "%d (%.*s) %c "		/* pid, command, state */
       "%d %d %d "		/* ppid, pgid, session */
       "%d %d "			/* controling tty stuff */
       "%u "			/* flags, as defined by <linux/sched.h> */
@@ -132,7 +138,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       "%u %u "			/* RT priority and policy */
       "%llu "			/* aggregated block I/O delay */
       "\n",
-      proc_stat_pid (ps), args_filename (proc_stat_args (ps)), state_char (ps),
+      proc_stat_pid (ps), args_filename_length (fn), fn, state_char (ps),
       pi->ppid, pi->pgrp, pi->session,
       0, 0,		/* no such thing as a major:minor for ctty */
       0,		/* no such thing as CLONE_* flags on Hurd */
@@ -171,9 +177,10 @@ static ssize_t
 process_file_gc_status (struct proc_stat *ps, char **contents)
 {
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
+  const char *fn = args_filename (proc_stat_args (ps));
 
   return asprintf (contents,
-      "Name:\t%s\n"
+      "Name:\t%.*s\n"
       "State:\t%s\n"
       "Tgid:\t%u\n"
       "Pid:\t%u\n"
@@ -184,7 +191,7 @@ process_file_gc_status (struct proc_stat *ps, char **contents)
       "VmRSS:\t%8u kB\n"
       "VmHWM:\t%8u kB\n" /* ie. resident peak */
       "Threads:\t%u\n",
-      args_filename (proc_stat_args (ps)),
+      args_filename_length (fn), fn,
       state_string (ps),
       proc_stat_pid (ps), /* XXX will need more work for threads */
       proc_stat_pid (ps),
