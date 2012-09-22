@@ -148,6 +148,13 @@ diskfs_S_startup_dosync (mach_port_t handle)
 	  diskfs_set_hypermetadata (1, 1);
 	  _diskfs_diskdirty = 0;
 
+	  /* XXX: if some application writes something after that, we will
+	   * crash. That is still better than creating pending writes before
+	   * poweroff, and thus fsck on next reboot.
+	   */
+	  diskfs_readonly = 1;
+	  diskfs_readonly_changed (1);
+
 	  ports_resume_class_rpcs (diskfs_protid_class);
 	}
 
