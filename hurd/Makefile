@@ -21,15 +21,20 @@ hdrs = $(wildcard $(srcdir)/*.defs $(srcdir)/*.h)
 
 INSTHDRS = hurd_types.h version.h ioctl_types.h paths.h shared.h console.h \
 	$(notdir $(wildcard $(srcdir)/*.defs))
+MSGIDS := hurd.msgids $(patsubst %.defs,%.msgids,$(filter %.defs,$(INSTHDRS)))
 
 include ../Makeconf
 
-install-headers install: $(includedir)/hurd \
+all: $(MSGIDS)
+
+install: install-msgids install-headers
+install-headers: $(includedir)/hurd \
 	$(addprefix $(includedir)/hurd/,$(INSTHDRS))
+install-msgids: $(MSGIDS) $(datadir)/msgids; $(INSTALL_DATA) $^
 
 $(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
 
-$(includedir)/hurd:;mkdir -p $@
+$(datadir)/msgids $(includedir)/hurd:;mkdir -p $@
 
 %.msgids: $(srcdir)/%.defs
 	if grep -q '^subsystem' $<; \
