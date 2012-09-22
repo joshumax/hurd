@@ -10,6 +10,7 @@ EXEC=""		# Change to ":" to suppress command execution.
 DEVDIR=`pwd`	# Reset below by -D/--devdir command line option.
 STFLAGS="-g"	# Set to -k if active translators are to be kept.
 KEEP=		# Set to something if existing files are to be left alone.
+USE_PARTSTORE=	# Whether to use the newer part: stores
 
 while :; do
   case "$1" in
@@ -22,6 +23,8 @@ Make filesystem nodes for accessing standard system devices
                              embedded in a translator; default is the cwd
   -k, --keep-active          Leave any existing active translator running
   -K, --keep-all             Don't overwrite existing files
+  -p, --parted               Prefer user-space parted stores to kernel devices
+                             for partition devices
   -n, --dry-run              Don't actually execute any commands
   -v, --verbose              Show what commands are executed to make the devices
   -?, --help                 Give this help list
@@ -34,11 +37,12 @@ Make filesystem nodes for accessing standard system devices
     -D*)        DEVDIR="`echo "$1" | sed 's/^-D//'`"; shift 1;;
     --keep-active|-k) STFLAGS="-k"; shift;;
     --keep-all|-K) KEEP=1; shift;;
+    --parted|-p) USE_PARTSTORE=1; shift;;
     --verbose|-v) ECHO=echo; shift;;
     --dry-run|-n) EXEC=:; shift;;
     -nv|-vn)      ECHO=echo; EXEC=:; shift;;
     --usage)
-      echo "Usage: $0 [-V?] [-D DIR] [--help] [--usage] [--version]"
+      echo "Usage: $0 [-V?] [-D DIR] [--help] [--usage] [--version] [--parted]"
       echo "                [--devdir=DIR] [--keep-active] [--keep-all] DEVNAME..."
       exit 0;;
     --version|-V)
@@ -150,6 +154,7 @@ mkdev() {
 	;;
 
       [hrsc]d*)
+	local sliceno=
         local n="${I#?d}"
 	local major="${n%%[!0-9]*}"
 	if [ -z "$major" ]; then
@@ -170,7 +175,9 @@ mkdev() {
 	    ;;
 	  esac
 	  case "$rest" in
-	  '') ;;	# Whole slice
+	  '')		# Whole slice, can use parted stores
+	    sliceno=$slice
+	    ;;
 	  [a-z]) ;;	# BSD partition after slice
 	  *)
 	    lose "$I: Invalid partition \`$rest'"
@@ -183,7 +190,12 @@ mkdev() {
 	esac
 
 	# The device name passed all syntax checks, so finally use it!
-	st $I root 640 /hurd/storeio $I
+	if [ "$USE_PARTSTORE" ] && [ -z "$rest" ] && [ "$sliceno" ]; then
+	  local dev=${I%s[0-9]*}
+	  st $I root 640 /hurd/storeio -T typed part:$sliceno:device:$dev
+	else
+	  st $I root 640 /hurd/storeio $I
+	fi
 	;;
 
       netdde)
