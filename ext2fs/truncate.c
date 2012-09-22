@@ -294,7 +294,7 @@ diskfs_truncate (struct node *node, off_t length)
       node->dn_stat.st_size = length;
       node->dn_set_mtime = 1;
       node->dn_set_ctime = 1;
-      diskfs_node_update (node, 1);
+      diskfs_node_update (node, diskfs_synchronous);
       return 0;
     }
 
@@ -309,6 +309,7 @@ diskfs_truncate (struct node *node, off_t length)
     {
       diskfs_node_rdwr (node, (void *)zeroblock, length, block_size - offset,
 			1, 0, 0);
+      /* Make sure that really happens to avoid leaks.  */
       diskfs_file_update (node, 1);
     }
 
@@ -323,7 +324,7 @@ diskfs_truncate (struct node *node, off_t length)
   node->dn_stat.st_size = length;
   node->dn_set_mtime = 1;
   node->dn_set_ctime = 1;
-  diskfs_node_update (node, 1);
+  diskfs_node_update (node, diskfs_synchronous);
 
   err = diskfs_catch_exception ();
   if (!err)

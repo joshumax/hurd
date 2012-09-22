@@ -78,7 +78,7 @@ diskfs_drop_node (struct node *np)
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
       np->dn_set_ctime = np->dn_set_atime = 1;
-      diskfs_node_update (np, 1);
+      diskfs_node_update (np, diskfs_synchronous);
       diskfs_free_node (np, savemode);
     }
   else

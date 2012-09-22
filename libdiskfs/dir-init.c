@@ -63,6 +63,6 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
       return err;
     }
 
-  diskfs_node_update (dp, 1);
+  diskfs_node_update (dp, diskfs_synchronous);
   return 0;
 }

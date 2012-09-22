@@ -176,7 +176,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
     }
   fnp->dn_stat.st_nlink++;
   fnp->dn_set_ctime = 1;
-  diskfs_node_update (fnp, 1);
+  diskfs_node_update (fnp, diskfs_synchronous);
 
   if (tnp)
     {

@@ -196,7 +196,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 	      if (!error)
 		{
 		  np->dn_stat.st_mode = newmode;
-		  diskfs_node_update (np, 1);
+		  diskfs_node_update (np, diskfs_synchronous);
 		}
 	      mutex_unlock (&np->lock);
 	      return error;

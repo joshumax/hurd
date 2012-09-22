@@ -164,7 +164,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
     }
   fnp->dn_stat.st_nlink++;
   fnp->dn_set_ctime = 1;
-  diskfs_node_update (fnp, 1);
+  diskfs_node_update (fnp, diskfs_synchronous);
 
   if (tnp)
     {

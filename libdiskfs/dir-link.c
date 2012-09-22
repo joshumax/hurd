@@ -101,7 +101,7 @@ diskfs_S_dir_link (struct protid *dircred,
     }
   np->dn_stat.st_nlink++;
   np->dn_set_ctime = 1;
-  diskfs_node_update (np, 1);
+  diskfs_node_update (np, diskfs_synchronous);
 
   /* Attach it */
   if (tnp)

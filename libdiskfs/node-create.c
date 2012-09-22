@@ -131,7 +131,7 @@ diskfs_create_node (struct node *dir,
   if (S_ISDIR (mode))
     err = diskfs_init_dir (np, dir, cred);
 
-  diskfs_node_update (np, 1);
+  diskfs_node_update (np, diskfs_synchronous);
 
   if (err)
     {
