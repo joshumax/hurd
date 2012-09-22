@@ -49,6 +49,7 @@ int
 main (int argc, char **argv)
 {
   mach_port_t consdev = get_console ();
+  mach_port_t runsystem;
   char *consname;
 
   if (consdev == MACH_PORT_NULL)
@@ -61,6 +62,12 @@ main (int argc, char **argv)
 
   if (argc < 2)
     error (1, 0, "Usage: %s PROGRAM [ARG...]", program_invocation_short_name);
+
+  /* Check whether runsystem exists before opening a console for it.  */
+  runsystem = file_name_lookup (argv[1], O_RDONLY, 0);
+  if (runsystem == MACH_PORT_NULL)
+    error (127, errno, "cannot open file `%s' for execution", argv[1]);
+  mach_port_deallocate (mach_task_self (), runsystem);
 
   if (open_console (&consname))
     setenv ("FALLBACK_CONSOLE", consname, 1);

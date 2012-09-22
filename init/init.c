@@ -1082,6 +1082,7 @@ start_child (const char *prog, char **progargs)
 static void
 launch_something (const char *why)
 {
+  file_t something;
   static unsigned int try;
   static const char *const tries[] =
   {
@@ -1093,12 +1094,26 @@ launch_something (const char *why)
   if (why)
     error (0, 0, "%s %s", tries[try - 1], why);
 
-  if (try == 0 && start_child (tries[try++], &global_argv[1]) == 0)
-      return;
+  something = file_name_lookup (tries[try], O_EXEC, 0);
+  if (something != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), something);
+      if (try == 0 && start_child (tries[try++], &global_argv[1]) == 0)
+        return;
+    }
+  else
+    try++;
 
   while (try < sizeof tries / sizeof tries[0])
-    if (start_child (tries[try++], NULL) == 0)
-      return;
+    {
+      something = file_name_lookup (tries[try], O_EXEC, 0);
+      if (something != MACH_PORT_NULL)
+	{
+	  mach_port_deallocate (mach_task_self (), something);
+	  if (start_child (tries[try++], NULL) == 0)
+	    return;
+	}
+    }
 
   crash_system ();
 }
