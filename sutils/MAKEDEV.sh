@@ -8,6 +8,8 @@ PATH=/bin:/usr/bin
 ECHO=:		# Change to "echo" to echo commands.
 EXEC=""		# Change to ":" to suppress command execution.
 DEVDIR=`pwd`	# Reset below by -D/--devdir command line option.
+STFLAGS="-g"	# Set to -k if active translators are to be kept.
+KEEP=		# Set to something if existing files are to be left alone.
 
 while :; do
   case "$1" in
@@ -18,6 +20,8 @@ Make filesystem nodes for accessing standard system devices
 
   -D, --devdir=DIR           Use DIR when a device node name must be
                              embedded in a translator; default is the cwd
+  -k, --keep-active          Leave any existing active translator running
+  -K, --keep-all             Don't overwrite existing files
   -n, --dry-run              Don't actually execute any commands
   -v, --verbose              Show what commands are executed to make the devices
   -?, --help                 Give this help list
@@ -28,11 +32,14 @@ Make filesystem nodes for accessing standard system devices
     --devdir=*) DEVDIR="`echo "$1" | sed 's/^--devdir=//'`"; shift 1;;
     -D)         DEVDIR="$2"; shift 2;;
     -D*)        DEVDIR="`echo "$1" | sed 's/^-D//'`"; shift 1;;
+    --keep-active|-k) STFLAGS="-k"; shift;;
+    --keep-all|-K) KEEP=1; shift;;
     --verbose|-v) ECHO=echo; shift;;
     --dry-run|-n) EXEC=:; shift;;
     -nv|-vn)      ECHO=echo; EXEC=:; shift;;
     --usage)
-      echo "Usage: $0 [-V?] [-D DIR] [--help] [--usage] [--version] [--devdir=DIR] DEVNAME..."
+      echo "Usage: $0 [-V?] [-D DIR] [--help] [--usage] [--version]"
+      echo "                [--devdir=DIR] [--keep-active] [--keep-all] DEVNAME..."
       exit 0;;
     --version|-V)
       echo "STANDARD_HURD_VERSION_MAKEDEV_"; exit 0;;
@@ -61,10 +68,13 @@ st() {
   local OWNER="$2"
   local PERM="$3"
   shift 3
-  if cmd settrans -cg "$NODE"; then
+  if [ "$KEEP" ] && showtrans "$NODE" > /dev/null 2>&1 ; then
+    return;
+  fi
+  if cmd settrans $STFLAGS -c "$NODE"; then
     cmd chown "$OWNER" "$NODE"
     cmd chmod "$PERM" "$NODE"
-    cmd settrans "$NODE" "$@"
+    cmd settrans $STFLAGS "$NODE" "$@"
   fi
 }
 
