@@ -23,6 +23,49 @@
 #include <assert.h>
 #include <cthreads.h>
 #include <mach/message.h>
+#include <mach/thread_info.h>
+#include <mach/thread_switch.h>
+
+/* A very high priority is assigned to reduce thread storms in core servers. */
+#define THREAD_PRI 2
+
+static void
+adjust_priority (void)
+{
+  mach_port_t host_priv, self, pset, pset_priv;
+  error_t err;
+
+  self = MACH_PORT_NULL;
+
+  err = get_privileged_ports (&host_priv, NULL);
+  if (err)
+    goto out;
+
+  self = mach_thread_self ();
+  err = thread_get_assignment (self, &pset);
+  if (err)
+    goto out;
+
+  err = host_processor_set_priv (host_priv, pset, &pset_priv);
+  if (err)
+    goto out;
+
+  err = thread_max_priority (self, pset_priv, 0);
+  if (err)
+    goto out;
+
+  err = thread_priority (self, THREAD_PRI, 0);
+
+out:
+  if (self != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), self);
+
+  if (err)
+    {
+      errno = err;
+      perror ("unable to adjust libports thread priority");
+    }
+}
 
 void
 ports_manage_port_operations_multithread (struct port_bucket *bucket,
@@ -122,6 +165,19 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
     {
       int timeout;
       error_t err;
+
+      /* XXX To reduce starvation, the priority of new threads is initially
+	 depressed. This helps already existing threads complete their job
+	 and be recycled to handle new messages. The duration of this
+	 depression is made a function of the total number of threads because
+	 more threads implies more contention, and the priority of threads
+	 blocking on a contented spin lock is also implicitely depressed.
+	 The lock isn't needed, since an approximation is sufficient. */
+      timeout = (((totalthreads - 1) / 100) + 1) * 10;
+      thread_switch (MACH_PORT_NULL, SWITCH_OPTION_DEPRESS, timeout);
+
+      /* XXX Give servers a greater priority when possible. */
+      adjust_priority ();
 
       if (hook)
 	(*hook) ();
