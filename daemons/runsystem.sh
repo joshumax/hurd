@@ -55,6 +55,12 @@ function singleuser ()
 }
 
 
+# See whether pflocal is setup already, and do so if not (install case)
+
+if ! test -e /servers/socket/1 && which settrans >/dev/null ; then
+  settrans -c /servers/socket/1 /hurd/pflocal
+fi
+
 # We expect to be started by console-run, which gives us no arguments and
 # puts FALLBACK_CONSOLE=file-name in the environment if our console is
 # other than a normal /dev/console.
