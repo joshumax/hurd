@@ -79,7 +79,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	  if (err)
 	    ret = MACH_PORT_NULL;
 
-	  mach_port_destroy (mach_task_self (), rend);
+	  mach_port_mod_refs (mach_task_self (), rend, MACH_PORT_RIGHT_RECEIVE, -1);
 
 	  return ret;
 	}
