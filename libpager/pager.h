@@ -76,6 +76,15 @@ struct pager_ops
      If the user doesn't either, then it's OK for this function to do
      nothing or be set to NULL.  */
   void (*dropweak)(struct user_pager_info *upi);
+
+  /* The user may define this function.  If non-NULL, it is called when
+     you want be able to change association of pages to backing store.
+     You can change association of page only when notify_evict has been
+     called and you haven't touched page content after that.  Note there
+     is a possibility that a page is evicted, but user is not notified
+     about that.  The user should be able to handle this case.  */
+  void (*notify_evict) (struct user_pager_info *upi, off_t page,
+			off_t npages);
 };
 
 /* This de-muxer function is for use within libports_demuxer. */

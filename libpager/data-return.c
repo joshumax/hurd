@@ -37,6 +37,7 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   off_t start;
   int npages;
   int i;
+  char notified;
   struct lock_request *lr;
   struct lock_list {struct lock_request *lr;
     struct lock_list *next;} *lock_list, *ll;
@@ -66,9 +67,6 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
       goto release_out;
     }
 
-  if (! dirty)
-    goto release_out;
-
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for write\n");
@@ -84,6 +82,20 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   _pager_pagemap_resize (p, start + length);
 
   pm_entries = &p->pagemap[start];
+
+  /* Prepare notified flag.  */
+  notified = !kcopy && p->ops->notify_evict;
+  if (! dirty && ! kcopy)
+    {
+      _pager_release_seqno (p, seqno);
+      goto notify;
+    }
+
+  if (! dirty)
+    {
+      _pager_allow_termination (p);
+      goto release_out;
+    }
 
   /* Make sure there are no other in-progress writes for any of these
      pages before we begin.  This imposes a little more serialization
@@ -151,6 +163,24 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
   if (wakeup)
     condition_broadcast (&p->wakeup);
 
+ notify:
+
+  if (notified)
+    {
+      for (i = 0; i < npages; i++)
+	{
+	  short *pm_entry = &pm_entries[i];
+
+	  /* Clear any error that is left.  Notification on eviction
+	     is used only to change association of page, so any
+	     error may no longer be valid.  */
+	  *pm_entry = SET_PM_ERROR (SET_PM_NEXTERROR (*pm_entry, 0), 0);
+	}
+
+      /* Do notify user.  */
+      p->ops->notify_evict ((struct user_pager_info *) &p->upi,
+			    start, npages);
+    }
   _pager_allow_termination (p);
   mutex_unlock (&p->interlock);
   ports_port_deref (p);

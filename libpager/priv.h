@@ -53,6 +53,7 @@ struct pager
 
   boolean_t may_cache;
   memory_object_copy_strategy_t copy_strategy;
+  boolean_t notify_on_evict;
 
   /* Interface ports */
   memory_object_control_t memobjcntl;
