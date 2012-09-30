@@ -273,4 +273,54 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	      off_t offset, void *other, size_t *size,
 	      vm_prot_t prot);
 
+/* Inline function that helps process multiple blocks one by one, but
+   report about consecutive blocks with same status in one rpc call.
+   Function accept start page in START and number of pages in NPAGES.
+   Size of block is supplied via CHUNK_SIZE. PROCESS is function that
+   handles blocks, NO_ERROR_CODE and ERROR_CODE are functions that are
+   called to inform kernel about status of processed range */
+static inline void
+pager_process_pages(off_t start, off_t npages,
+		    size_t chunk_size, error_t (*process)(off_t),
+		    void (*no_error_code)(off_t, off_t),
+		    void (*error_code)(error_t, off_t, off_t))
+{
+  error_t last_error = 0;
+  off_t range_start = start;
+  off_t range_len = 0;
+  error_t err = 0;		/* Silent the warning */
+  while (range_start + range_len / vm_page_size < start + npages)
+    {
+      err = process (range_start * vm_page_size + range_len);
+      if (err != last_error)
+	{
+	  if (!last_error)
+	    {
+	      if (range_len >= vm_page_size)
+		{
+		  no_error_code (range_start, range_len);
+		  range_start += range_len / vm_page_size;
+		  range_len %= vm_page_size;
+		}
+	      range_len += chunk_size;
+	    }
+	  else
+	    {
+	      error_code (err, range_start, range_len);
+	      range_start += round_page (range_len) / vm_page_size;
+	      range_len = 0;
+	    }
+	  last_error = err;
+	}
+      else
+	range_len += chunk_size;
+    }
+
+  range_len = round_page (range_len);
+  if (!err)
+    no_error_code (range_start, range_len);
+  else
+    error_code (err, range_start, range_len);
+}
+
 #endif
