@@ -23,7 +23,7 @@
 
 #if 0
 #include <stdio.h>
-#define DEBUG(fmt, args...) printf (__FUNCTION__ ": " fmt "\n" , ## args)
+#define DEBUG(fmt, args...) printf ("%s: " fmt "\n" , __FUNCTION__, ## args)
 #else
 #define DEBUG(fmt, args...)
 #endif
