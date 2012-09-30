@@ -32,8 +32,9 @@
    below works.  SIZE should be the size of the image to map, and the address
    mapped is returned in IMAGE.  INFO, PAGER_BUCKET, & MAY_CACHE are passed
    to `pager_create'.  */
-extern void diskfs_start_disk_pager (struct user_pager_info *info,
-				     struct port_bucket *pager_bucket, int may_cache,
+extern void diskfs_start_disk_pager (struct pager_ops *ops, size_t upi_size,
+				     struct port_bucket *pager_bucket,
+				     int may_cache,
 				     size_t size, void **image);
 
 extern struct pager *diskfs_disk_pager;
