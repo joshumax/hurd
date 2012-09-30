@@ -101,8 +101,7 @@
 This file documents the GNU Hurd kernel component.  This edition of the
 documentation was last updated for version @value{VERSION} of the Hurd.
 
-Copyright @copyright{} 1994, 1996, 1998, 1999, 2000, 2001, 2002, 2003,
-2004, 2005, 2007, 2008, 2009 Free Software Foundation, Inc.
+Copyright @copyright{} 1994, 1996, 1998-2005, 2007-2009, 2012 Free Software Foundation, Inc.
 
 @quotation
 Permission is granted to make and distribute verbatim copies of
@@ -1395,20 +1394,22 @@ the threads and ports libraries.
 
 The pager library defines the @code{struct pager} data type in order to
 represent a multi-threaded pager.  The general procedure for creating a
-pager is to define the functions listed in @ref{Pager Callbacks},
-allocate a @code{libports} bucket for the ports which will access the
-pager, and create at least one new @code{struct pager} with
-@code{pager_create}.
+pager is to create @code{struct pager_ops}, fill it with pointers to
+callback functions listed in @ref{Pager Callbacks}, allocate a
+@code{libports} bucket for the ports which will access the pager, and
+create at least one new @code{struct pager} with @code{pager_create}.
 
-@deftypefun {struct pager *} pager_create (@w{struct user_pager_info *@var{u_pager}}, @w{struct port_bucket *@var{bucket}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}})
+@deftypefun {struct pager *} pager_create (@w{struct pager_ops *@var{ops}}, @w{size_t @var{upi_size}}, @w{struct port_bucket *@var{bucket}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}})
 Create a new pager.  The pager will have a port created for it (using
-@code{libports}, in @var{bucket}) and will be immediately ready to
-receive requests.  @var{u_pager} will be provided to later calls to
-@code{pager_find_address}.  The pager will have one user reference
-created.  @var{may_cache} and @var{copy_strategy} are the original
-values of those attributes as for @code{memory_object_ready}.  Users may
-create references to pagers by use of the relevant ports library
-functions.  On errors, return null and set @code{errno}.
+@code{libports}, in @var{bucket}), but associated with the @var{ops}
+operation structure and will be immediately ready to receive requests.
+The pager will have one user reference created.  @var{may_cache} and
+@var{copy_strategy} are the original values of those attributes as for
+@code{memory_object_ready}.  Users may create references to pagers by use
+of the relevant ports library functions.  A block of memory of size
+@var{upi_size} for pager state will be allocated and provided to the call
+back functions or via pager_get_upi.  On errors, return null and set
+@code{errno}.
 @end deftypefun
 
 Once you are ready to turn over control to the pager library, you should
@@ -1454,14 +1455,78 @@ delayed copies.  Wait for all pages to be flushed if and only if
 @var{start}, for @var{len} bytes.
 @end deftypefun
 
-@deftypefun void pager_offer_page (@w{struct pager *@var{pager}}, @w{int @var{precious}}, @w{int @var{writelock}}, @w{vm_offset_t @var{page}}, @w{vm_address_t @var{buf}})
-Offer a page of data to the kernel.  If @var{precious} is set, then this
-page will be paged out at some future point, otherwise it might be
-dropped by the kernel.  If the page is currently in core, the kernel
-might ignore this call.
+@deftypefun void pager_data_supply (@w{struct pager *@var{pager}}, @w{int @var{precious}}, @w{int @var{readonly}}, @w{off_t @var{start}}, @w{off_t @var{npages}}, @w{void *@var{buf}}, @w{int @var{dealloc}})
+Offer the @var{npages} pages from @var{buf} to the kernel for pager
+@var{pager} starting at page @var{start}.  If @var{precious} is set,
+then the pages will be paged out at some future point, otherwise they
+may be dropped with out notice.  If @var{readonly} is set, this data
+will be provided read only to the kernel.  In this case, any attempts to
+write to the pages will cause the @code{@var{pager}->unlock} method to
+be called.  If @var{dealloc} is set, the buffer pointed to by @var{buf}
+will be deallocated.
+
+NB: If the data is currently in core, the kernel may ignore this call.
+As such, pager_flush_some should be called if the call was not in
+response to a @code{@var{pager}->read} event.
+
+This function is normally called as a response to the
+@code{@var{pager}->read} method.
 @end deftypefun
 
-attributes@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
+@deftypefun void pager_data_unavailable (@w{struct pager *@var{pager}}, @w{off_t @var{start}}, @w{off_t @var{npages}})
+Indicate to the kernel that the @var{npages} pages starting at
+@var{start} are unavailable and should be supplied as anonymous
+(i.e. zero) pages.
+
+This function is normally only called in response to the
+@code{@var{pager}->read} method.
+@end deftypefun
+
+@deftypefun void pager_data_read_error (@w{struct pager *@var{pager}}, @w{off_t @var{start}}, @w{off_t @var{npages}}, @w{error_t @var{error}})
+Indicate that an error has occured while trying to read the @var{npages}
+pages starting at page @var{start} from pager @var{PAGER}'s backing
+store.  The only permissable values for @var{error} are: @code{EIO},
+@code{EDQUOT}, @code{ENOSPC} and @code{KERN_NO_DATA} (all others will be
+ignored and squashed to @code{EIO}). @code{KERN_NO_DATA} is special error
+that indicates that pager does not have data at the moment, but it could
+have it later. This error value should be used in case when kernel tries
+to perform readahead, but pager can't supply any data.
+
+This is normally only called in response to the @code{@var{pager}->read}
+method.
+@end deftypefun
+
+@deftypefun void pager_data_write_error (@w{struct pager *@var{pager}}, @w{off_t @var{start}}, @w{off_t @var{npages}}, @w{error_t @var{error}})
+Indicate that an error has occured while trying to write the
+@var{npages} pages starting at page @var{start} to pager @var{PAGER}'s
+backing store.  The only permissable values for @var{error} are:
+@code{EIO}, @code{EDQUOT}, and @code{ENOSPC} (all others will be ignored
+and squashed to @code{EIO}).
+
+This is normally only called in response to the
+@code{@var{pager}->write} method.
+@end deftypefun
+
+@deftypefun void pager_data_unlock (@w{struct pager *@var{pager}}, @w{off_t @var{start}}, @w{off_t @var{npages}})
+Indicate that the @var{npages} pages starting at page @var{start} in
+pager @var{pager} have been made writable.
+
+This is normally only called in response to the
+@code{@var{pager}->unlock} method.
+@end deftypefun
+
+@deftypefun void pager_data_unlock_error (@w{struct pager *@var{pager}}, @w{off_t @var{start}}, @w{off_t @var{npages}}, @w{error_t @var{error}});
+Indicate that an error has occured unlocking (i.e. making writable) the
+@var{npages} pages starting at page @var{start} in pager @var{pager}.
+The only permissable values for @var{error} are: @code{EIO},
+@code{EDQUOT}, and @code{ENOSPC} (all others will be ignored and
+squashed to @code{EIO}).
+
+This is normally only called in response to the
+@code{@var{pager}->unlock} method.
+@end deftypefun
+
+@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
 Change the attributes of the memory object underlying pager @var{pager}.
 The @var{may_cache} and @var{copy_strategy} arguments are as for
 @code{memory_object_change_}.  Wait for the kernel to report
@@ -1513,46 +1578,69 @@ right.
 @subsection Pager Callbacks
 
 Like several other Hurd libraries, @code{libpager} depends on you to
-implement application-specific callback functions.  You @emph{must}
-define the following functions:
+implement application-specific callback functions.  There are following
+callbacks, that programmer has write on his own and specify pointers to
+them via function @code{pager_create} in structure @code{pager_ops}.
+This structure has following fields:
 
-@deftypefun error_t pager_read_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{page}}, @w{vm_address_t *@var{buf}}, @w{int *@var{write_lock}})
-For pager @var{pager}, read one page from offset @var{page}.  Set
-@code{*@var{buf}} to be the address of the page, and set
-@code{*@var{write_lock}} if the page must be provided read-only.  The
-only permissible error returns are @code{EIO}, @code{EDQUOT}, and
-@code{ENOSPC}.
+@deftypefun void (*@var{read})(@w{struct pager *@var{pager}}, @w{struct user_pager_info *@var{upi}}, @w{off_t @var{start}}, @w{off_t @var{npages}})
+Read from @var{pager}'s backing store, starting at page @var{start},
+@var{npages} pages.
+
+The data is to be provided using either @code{pager_data_supply} or
+@code{pager_data_unavailable}.
+
+If an error is encountered reading any pages, it is to be reported using
+@code{pager_data_read_error}.
+
+For each indicated page, the callee @emph{must} call exactly one of the
+above methods; the pager library will not rerequest pages.
 @end deftypefun
 
-@deftypefun error_t pager_write_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{page}}, @w{vm_address_t @var{buf}})
-For pager @var{pager}, synchronously write one page from @var{buf} to
-offset @var{page}.  In addition, @code{vm_deallocate} (or equivalent)
-@var{buf}.  The only permissible error returns are @code{EIO},
-@code{EDQUOT}, and @code{ENOSPC}.
+@deftypefun void (*@var{write})(@w{struct pager *@var{pager}}, @w{struct user_pager_info *@var{upi}}, @w{off_t @var{start}}, @w{off_t @var{npages}}, @w{void *@var{buf}}, @w{int @var{dealloc}})
+Synchronously write to @var{pager}'s backing store the @var{npages} pages
+pointed to be @var{buf} starting at page @var{start}.
+
+If @var{dealloc} is set, @var{buf} must be deallocate be the callee.
+
+If an error is encountered while writing the pages to the backing
+store, it must be reported using @code{pager_data_write_error}.
 @end deftypefun
 
-@deftypefun error_t pager_unlock_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{address}})
-A page should be made writable.
+@deftypefun void (*@var{unlock})(@w{struct pager *@var{pager}}, @w{struct user_pager_info *@var{upi}}, @w{off_t @var{start}}, @w{off_t @var{npages}})
+The @var{npages} pages, starting at page @var{start}, should be made
+writable.
+
+Success is to be indicated using @code{pager_data_unlock}; errors using
+@code{pager_data_unlock_error}.
 @end deftypefun
 
-@deftypefun error_t pager_report_extent (@w{struct user_pager_info *@var{pager}}, @w{vm_address_t *@var{offset}}, @w{vm_size_t *@var{size}})
-This function should report in @code{*@var{offset}} and
-@code{*@var{size}} the minimum valid address the pager will accept and
-the size of the object.
+@deftypefun void (*@var{report_extent})(@w{struct user_pager_info *@var{upi}}, @w{off_t *@var{start}}, @w{off_t *@var{end}})
+Report the first (normally zero) and last valid pages that the pager
+will accept and store them in @var{start} and @code{*end} respectively.
 @end deftypefun
 
-@deftypefun void pager_clear_user_data (@w{struct user_pager_info *@var{pager}})
-This is called when a pager is being deallocated after all extant send
-rights have been destroyed.
+@deftypefun void (*@var{clear_user_data})(@w{struct user_pager_info *@var{upi}})
+The user may define this function.  If non-@code{NULL}, it is called
+when a pager is being deallocated after all extant send rights have been
+destroyed.
 @end deftypefun
 
-@deftypefun void pager_dropweak (@w{struct user_pager_info *@var{p}})
-This will be called when the ports library wants to drop weak
-references.  The pager library creates no weak references itself, so if
-the user doesn't either, then it is all right for this function to do
-nothing.
+@deftypefun void (*@var{dropweak})(@w{struct user_pager_info *@var{upi}})
+This is called when the ports library wants to drop weak references.
+The pager library creates no weak references itself.  If the user
+doesn't either, then it's OK for this function to do nothing or be set
+to @code{NULL}.
 @end deftypefun
 
+@deftypefun void (*@var{notify_evict}) (@w{struct user_pager_info *@var{upi}}, @w{off_t @var{page}})
+The user may define this function.  If non-@code{NULL}, it is called
+when you want be able to change association of pages to backing store.
+You can change association of page only when notify_evict has been
+called and you haven't touched page content after that.  Note there is a
+possibility that a page is evicted, but user is not notified about that.
+The user should be able to handle this case.
+@end deftypefun
 
 @node I/O Interface
 @section I/O Interface
