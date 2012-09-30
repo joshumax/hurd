@@ -72,6 +72,10 @@ diskfs_S_io_pathconf (struct protid *cred,
       *value = 32;
       break;
 
+    case _PC_2_SYMLINKS:
+      *value = diskfs_shortcut_symlink ? 1 : 0;
+      break;
+
     default:
       return EINVAL;
     }
