@@ -364,15 +364,13 @@ offer_data (struct node *np,
 	    size_t len,
 	    vm_address_t buf)
 {
-  vm_address_t addr;
-  
   len = round_page (len);
   
   assert (start % vm_page_size == 0);
   
   assert (np->dn->fileinfo);
-  for (addr = start; addr < start + len; addr += vm_page_size)
-    pager_offer_page (np->dn->fileinfo->p, 1, 0, addr, buf + (addr - start));
+  pager_data_supply (np->dn->fileinfo->p, 1, 0, start / vm_page_size,
+                     len / vm_page_size, (void *)buf, 1);
 }
 
 /* Logical block LBN of node NP has been extended with ffs_realloccg.

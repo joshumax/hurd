@@ -153,13 +153,13 @@ find_address (struct user_pager_info *upi,
 }
 
 
-/* Implement the pager_read_page callback from the pager library.  See
+/* Implement the read_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
-pager_read_page (struct user_pager_info *pager,
-		 vm_offset_t page,
-		 vm_address_t *buf,
-		 int *writelock)
+ufs_read_page (struct user_pager_info *pager,
+               vm_offset_t page,
+               vm_address_t *buf,
+               int *writelock)
 {
   error_t err;
   struct rwlock *nplock;
@@ -198,12 +198,34 @@ pager_read_page (struct user_pager_info *pager,
   return err;
 }
 
-/* Implement the pager_write_page callback from the pager library.  See
+void
+ufs_read_pages (struct pager *pager, struct user_pager_info *upi,
+                off_t start, off_t npages)
+{
+  off_t offset = start * vm_page_size;
+  int writelock;
+  void *buf;
+  int i;
+
+  for (i = start; i < start + npages; i++, offset += vm_page_size)
+    {
+      error_t err = ufs_read_page (upi, offset, (vm_address_t *)&buf,
+                                   &writelock);
+
+      if (!err)
+        pager_data_supply (pager, 0 /* precious */, writelock,
+                           i, 1, buf, 1 /* dealloc */);
+      else
+        pager_data_read_error (pager, i, 1, err);
+    }
+}
+
+/* Implement the write_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
-pager_write_page (struct user_pager_info *pager,
-		  vm_offset_t page,
-		  vm_address_t buf)
+ufs_write_page (struct user_pager_info *pager,
+                vm_offset_t page,
+                vm_address_t buf)
 {
   daddr_t addr;
   int disksize;
@@ -231,11 +253,43 @@ pager_write_page (struct user_pager_info *pager,
   return err;
 }
 
+void
+ufs_write_pages (struct pager *pager, struct user_pager_info *upi,
+                 off_t start, off_t npages, void *buf, int dealloc)
+{
+  void *cur_buf = buf;
+
+  inline error_t process_code (off_t block_offset)
+  {
+    error_t err = ufs_write_page (upi, block_offset, (vm_address_t)cur_buf);
+    cur_buf += vm_page_size;
+    return err;
+  }
+
+  inline void no_error_code (off_t range_start, off_t range_len)
+  {
+    return;
+  }
+
+  inline void error_code (error_t err, off_t range_start, off_t range_len)
+  {
+    off_t err_pages = round_page (range_len) / vm_page_size;
+    pager_data_write_error (pager, start, err_pages, err);
+  }
+
+  pager_process_pages (start, npages, vm_page_size,
+                       process_code, no_error_code, error_code);
+
+  if (dealloc)
+    vm_deallocate (mach_task_self (), (vm_address_t) buf,
+                   npages * vm_page_size);
+}
+
 /* Implement the pager_unlock_page callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 error_t
-pager_unlock_page (struct user_pager_info *pager,
-		   vm_offset_t address)
+ufs_unlock_page (struct user_pager_info *pager,
+                 vm_offset_t address)
 {
   struct node *np;
   error_t err;
@@ -425,29 +479,52 @@ pager_unlock_page (struct user_pager_info *pager,
   return err;
 }
 
-/* Implement the pager_report_extent callback from the pager library.  See
-   <hurd/pager.h> for the interface description. */
-inline error_t
-pager_report_extent (struct user_pager_info *pager,
-		     vm_address_t *offset,
-		     vm_size_t *size)
+void
+ufs_unlock_pages (struct pager *pager,
+                  struct user_pager_info *upi,
+                  off_t start, off_t npages)
 {
-  assert (pager->type == DISK || pager->type == FILE_DATA);
+
+  inline error_t process_code (off_t block_offset)
+  {
+    return ufs_unlock_page (upi, block_offset);
+  }
+
+  inline void no_error_code (off_t range_start, off_t range_len)
+  {
+    pager_data_unlock (pager, range_start, range_len / vm_page_size);
+  }
+
+  inline void error_code (error_t err, off_t range_start, off_t range_len)
+  {
+    off_t err_pages = round_page (range_len) / vm_page_size;
+    pager_data_unlock_error (pager, range_start, err_pages, err);
+  }
+
+  pager_process_pages (start, npages, vm_page_size,
+                       process_code, no_error_code, error_code);
+}
+
+/* Implement the report_extent callback from the pager library.  See
+   <hurd/pager.h> for the interface description. */
+void
+ufs_report_extent (struct user_pager_info *upi,
+                   off_t *offset, off_t *size)
+{
+  assert (upi->type == DISK || upi->type == FILE_DATA);
 
   *offset = 0;
 
-  if (pager->type == DISK)
+  if (upi->type == DISK)
     *size = store->size;
   else
-    *size = pager->np->allocsize;
-
-  return 0;
+    *size = upi->np->allocsize;
 }
 
-/* Implement the pager_clear_user_data callback from the pager library.
+/* Implement the clear_user_data callback from the pager library.
    See <hurd/pager.h> for the interface description. */
 void
-pager_clear_user_data (struct user_pager_info *upi)
+ufs_clear_user_data (struct user_pager_info *upi)
 {
   /* XXX Do the right thing for the disk pager here too. */
   if (upi->type == FILE_DATA)
@@ -458,27 +535,31 @@ pager_clear_user_data (struct user_pager_info *upi)
       spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
-  free (upi);
 }
 
-void
-pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
-{
-}
-
+struct pager_ops ufs_ops =
+  {
+    .read = &ufs_read_pages,
+    .write = &ufs_write_pages,
+    .unlock = &ufs_unlock_pages,
+    .report_extent = &ufs_report_extent,
+    .clear_user_data = &ufs_clear_user_data,
+    .dropweak = NULL
+  };
 
 
 /* Create the DISK pager.  */
 void
 create_disk_pager (void)
 {
-  struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
+  struct user_pager_info *upi;
 
+  pager_bucket = ports_create_bucket ();
+  diskfs_start_disk_pager (&ufs_ops, sizeof (*upi), pager_bucket,
+                           MAY_CACHE, store->size, &disk_image);
+  upi = pager_get_upi (diskfs_disk_pager);
   upi->type = DISK;
   upi->np = 0;
-  pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,
-			   &disk_image);
   upi->p = diskfs_disk_pager;
 }
 
@@ -562,22 +643,22 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   do
     if (!np->dn->fileinfo)
       {
-	upi = malloc (sizeof (struct user_pager_info));
+        struct pager *temp;
+        temp = pager_create (&ufs_ops, sizeof (*upi), pager_bucket,
+                             MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+	if (temp == 0)
+	  {
+	    spin_unlock (&node2pagelock);
+	    return MACH_PORT_NULL;
+	  }
+        upi = pager_get_upi (temp);
 	upi->type = FILE_DATA;
 	upi->np = np;
 	upi->max_prot = prot;
 	upi->allow_unlocked_pagein = 0;
 	upi->unlocked_pagein_length = 0;
 	diskfs_nref_light (np);
-	upi->p = pager_create (upi, pager_bucket,
-			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
-	if (upi->p == 0)
-	  {
-	    diskfs_nrele_light (np);
-	    free (upi);
-	    spin_unlock (&node2pagelock);
-	    return MACH_PORT_NULL;
-	  }
+        upi->p = temp;
 	np->dn->fileinfo = upi;
 	right = pager_get_port (np->dn->fileinfo->p);
 	ports_port_deref (np->dn->fileinfo->p);
