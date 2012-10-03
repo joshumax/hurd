@@ -1222,13 +1222,13 @@ pager_read_offset(pager, offset)
 /*
  * Release a single disk block.
  */
-void pager_release_offset(pager, offset)
+void pager_release_offset(pager, offset, size)
 	register dpager_t	pager;
 	vm_offset_t		offset;
+	vm_size_t		size;
 {
 	register union dp_map	entry;
 	vm_offset_t		cur;
-	vm_size_t		size = vm_page_size;
 
 	offset = atop(offset);
 
@@ -1719,93 +1719,273 @@ ok:
 #define	PAGER_ABSENT	1
 #define	PAGER_ERROR	2
 
-/*
- * Read data from a default pager.  Addr is the address of a buffer
- * to fill.  Out_addr returns the buffer that contains the data;
- * if it is different from <addr>, it must be deallocated after use.
- */
-int
-default_read(ds, addr, size, offset, out_addr, deallocate, external)
-	register dpager_t	ds;
-	vm_offset_t		addr;	/* pointer to block to fill */
-	register vm_size_t	size;
-	register vm_offset_t	offset;
-	vm_offset_t		*out_addr;
-				/* returns pointer to data */
-	boolean_t		deallocate;
-	boolean_t		external;
+struct block {
+	int state;
+	vm_size_t offset;
+	partition_t part;
+};
+
+static void
+get_block_address (ds, offset, map_entry)
+	dpager_t	ds;
+	vm_offset_t	offset;
+	struct block	*map_entry;
 {
-	register union dp_map	block;
-	vm_offset_t	raddr;
-	vm_size_t	rsize;
-	register int	rc;
-	boolean_t	first_time;
-	register partition_t	part;
-#ifdef	CHECKSUM
-	vm_size_t	original_size = size;
-#endif	 /* CHECKSUM */
-	vm_offset_t	original_offset = offset;
+	union dp_map block;
 
 	/*
 	 * Find the block in the paging partition
 	 */
 	block = pager_read_offset(ds, offset);
-	if ( no_block(block) ) {
-	    if (external) {
-		/* 
-		 * An external object is requesting unswapped data,
-		 * zero fill the page and return.
-		 */ 
-		bzero((char *) addr, vm_page_size);
-		*out_addr = addr;
-		return (PAGER_SUCCESS);
-	    }
-	    return (PAGER_ABSENT);
+	if (no_block(block))
+		map_entry->state = PAGER_ABSENT;
+	else {
+		/*
+		 * The block exists for this offset, so unpack it.
+		 */
+		map_entry->part = partition_of(block.block.p_index);
+		map_entry->offset = ptoa(block.block.p_offset);
+		map_entry->state = PAGER_SUCCESS;
 	}
+}
 
-	/*
-	 * Read it, trying for the entire page.
-	 */
-	offset = ptoa(block.block.p_offset);
-ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
-	part   = partition_of(block.block.p_index);
-	first_time = TRUE;
-	*out_addr = addr;
+static int
+is_range_extendable (base, new, range_len)
+	struct block	*base;
+	struct block	*new;
+	vm_size_t	range_len;
+{
+	return ((base->state == new->state) && (base->part == new->part) &&
+		(base->offset + ptoa(range_len) == new->offset));
+}
+
+static void
+upload_range (map, start_page, base, range_len)
+	struct block	*map;
+	vm_offset_t	start_page;
+	struct block	*base;
+	vm_size_t	range_len;
+{
+	vm_offset_t offset = base->offset;
+	vm_offset_t buf_ptr = addr + ptoa(start_page);
+	vm_offset_t raddr = buf_ptr;
+	vm_size_t size = ptoa (range_len);
+	vm_size_t rsize = size;
 
 	do {
-	    rc = page_read_file_direct(part->file,
-				       offset,
-				       size,
-				       &raddr,
-				       &rsize);
-	    if (rc != 0)
-		return (PAGER_ERROR);
+		/*
+		 * XXX Here should be used variable size instead of
+		 * vm_page_size, but following function is backed by RPC
+		 * device_read. And I doubt that there is big chance that
+		 * server, that will handle this request supports multipage
+		 * requests. So, it is should be kept in mind that size
+		 * parameter should be updated some day.
+		 */
+		int rc = page_read_file_direct(base->part->file, offset,
+					       size, &raddr, &rsize);
 
-	    /*
-	     * If we got the entire page on the first read, return it.
-	     */
-	    if (first_time && rsize == size) {
-		*out_addr = raddr;
-		break;
-	    }
-	    /*
-	     * Otherwise, copy the data into the
-	     * buffer we were passed, and try for
-	     * the next piece.
-	     */
-	    first_time = FALSE;
-	    bcopy((char *)raddr, (char *)addr, rsize);
-	    addr += rsize;
-	    offset += rsize;
-	    size -= rsize;
+		assert (page_aligned (rsize));
+		assert (page_aligned (raddr));
+
+		if (rc != 0) {
+			/* Mark pages where error occurred */
+
+			/* First page in range where error occurred */
+			int page = atop (offset - base->offset);
+
+			int i;
+			for (i = 0; i < atop (size); i++)
+				map [page + i].state = PAGER_ERROR;
+		}
+
+		/* Check data is returned in another buffer */
+		if (buf_ptr != raddr) {
+			/*
+			 * Move acquired range to dpt_buffer using vm_copy.
+			 */
+			vm_copy (mach_task_self (), raddr, rsize, buf_ptr);
+			vm_deallocate (mach_task_self (), raddr, rsize);
+		}
+
+		offset += rsize;
+		size -= rsize;
+		buf_ptr += rsize;
 	} while (size != 0);
+}
+
+/* START_PAGE is number of first page of range in map, where BASE
+ * is address of first page of range in backing store.*/
+static void
+get_data_for_range (map, start_page, base, range_len)
+	struct block	*map;
+	vm_offset_t	start_page;
+	struct block	*base;
+	vm_size_t	range_len;
+{
+	if (base->state == PAGER_SUCCESS) {
+		/* Upload range from backing store */
+		upload_range(map, start_page, base, range_len);
+	}
+	else if ((base->state == PAGER_ABSENT) && (external)) {
+		/* Fill range with zeroes */
+		void *s = (void *)addr + ptoa(start_page);
+		memset(s, 0, ptoa(range_len));
+	}
+	else
+		/* Nothing to do with range at this stage */
+	;
+}
+
+static void
+apply_to_ranges (map, size, action_for_range, parameters)
+	struct block	*map;
+	vm_size_t	size;
+	void		(*action_for_range)(struct block *, vm_offset_t,
+					    struct block *, vm_size_t));
+	void		*parameters;
+{
+	vm_size_t	range_len = 0;
+	struct block	*base, *new;
+	int		i;
+
+	for (i = 0; i < atop(size); i ++) {
+		base = &map[i - range_len];
+		new = &map[i];
+		if (is_range_extendable (base, new, range_len)) {
+			/* Extend range */
+			range_len ++;
+		}
+		else {
+			action_for_range (map, i - range_len, base,
+					  range_len, parameters);
+			/* Now the range starts from current block */
+			range_len = 1;
+		}
+	}
+
+	vm_offset_t range_start = atop (size) - range_len;
+	base = &map[range_start];
+	action_for_range (map, range_start, base, range_len, parameters);
+}
+
+struct send_range_parameters {
+	mach_port_t	reply_to;
+	boolean_t	deallocate;
+};
+
+static void
+send_range (start_page, base, size, parameters)
+	vm_offset_t	start_page;
+	struct block 	*base;
+	vm_size_t	size;
+	void		*parameters;
+{
+	vm_offset_t	range_start = offset + ptoa (start_page);
+	vm_offset_t	data = addr + ptoa (start_page);
+	struct send_range_parameters *param_struct = parameters;
+	mach_port_t	reply_to = param_struct->reply_to;
+	boolean_t	deallocate = param_struct->deallocate;
+	size = ptoa (size);
+
+	switch (base->state) {
+	case PAGER_SUCCESS:
+		memory_object_data_supply (reply_to, range_start, data,
+					   size, deallocate, VM_PROT_NONE,
+					   FALSE, MACH_PORT_NULL);
+		break;
+
+	case PAGER_ABSENT:
+		memory_object_data_unavailable (reply_to, range_start, size);
+		break;
+
+	case PAGER_ERROR:
+		memory_object_data_error (reply_to, range_start, size,
+					  KERN_FAILURE);
+		break;
+	}
+}
+
+/*
+ * Read data from a default pager.  Addr is the address of a buffer
+ * to fill.  Out_addr returns the buffer that contains the data;
+ * if it is different from <addr>, it must be deallocated after use.
+ */
+void
+default_read(ds, addr, size, offset, deallocate, external, reply_to)
+	register dpager_t	ds;
+	vm_offset_t		addr;	/* pointer to block to fill */
+	register vm_size_t	size;
+	register vm_offset_t	offset;
+	boolean_t		deallocate;
+	boolean_t		external;
+	mach_port_t		reply_to;
+{
+#ifdef	CHECKSUM
+	vm_size_t	original_size = size;
+#endif	 /* CHECKSUM */
+
+	assert(page_aligned(size));
+#if 1
+	/* It's better to check this, but macro is defined later */
+	extern size_t max_dpt_buffer_size;
+	assert(size <= max_dpt_buffer_size);
+#endif
+
+	/*
+	 * Create map (offset in object) -> (block address, its state)
+	 * At this stage states could be: 1/ PAGER_SUCCESS -- block for
+	 * this offset exist in backing store; 2/ PAGER_ABSENT -- block for
+	 * this offset does not exist in backing store. This block should
+	 * be filled with zeroes or reported as unavailable in future.
+	 */
+
+	assert(page_aligned(size));
+
+	struct block map[atop(size)];
+
+	assert(page_aligned(vm_page_size));
+	vm_offset_t cur = offset;
+	/* Fill the map */
+
+	int i;
+	for (i = 0; i < atop(size); i ++, cur += vm_page_size)
+		get_block_address(ds, cur, map + i);
+
+	/*
+	 * Read data from backing store to dpt buffer, using created map.
+	 * At the same time modify this map to represent in this map found
+	 * errors. At this stage states could be:
+	 *   1/ PAGER_SUCCESS -- there is actual data in dpt buffer;
+	 *   2/ PAGER_ABSENT -- no data in dpt buffer, kernel should supply
+	 * zero filled pages to client;
+	 *   3/ PAGER_ERROR -- no data in dpt buffer and error occurred
+	 * during reading data from backing store
+	 */
+
+	apply_to_ranges(map, size, get_data_for_range, NULL);
+
+	/*
+	 * Last stage is sending data to kernel or reporting about their
+	 * unavailability.
+	 */
+
+	struct send_range_parameters parameters = {
+		.reply_to = reply_to,
+		.deallocate = deallocate,
+	};
+
+	apply_to_ranges(map, size, send_range, &parameters);
 
 #if	USE_PRECIOUS
 	if (deallocate)
-		pager_release_offset(ds, original_offset);
+		pager_release_offset(ds, offset, size);
 #endif	/*USE_PRECIOUS*/
 
 #ifdef	CHECKSUM
+#error write me
+	/* This is old checksum code for this function, that works only
+	   for one page. But since checksum code isn't written yet I
+	   don't write it either */
 	{
 	    int	write_checksum,
 		read_checksum;
@@ -1819,7 +1999,6 @@ ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 	    }
 	}
 #endif	 /* CHECKSUM */
-	return (PAGER_SUCCESS);
 }
 
 int
@@ -2657,15 +2836,10 @@ seqnos_memory_object_data_request(pager, seqno, reply_to, offset,
 {
 	default_pager_thread_t	*dpt;
 	default_pager_t		ds;
-	vm_offset_t		addr;
 	unsigned int 		errors;
-	kern_return_t		rc;
 	static char		here[] = "%sdata_request";
 
 	dpt = (default_pager_thread_t *) cthread_data(cthread_self());
-
-	if (length != vm_page_size)
-	    panic(here,my_name);
 
 	ds = pager_port_lookup(pager);
 	if (ds == DEFAULT_PAGER_NULL)
@@ -2689,55 +2863,13 @@ ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,
 	if (errors) {
 	    dprintf("%s %s\n", my_name,
 		   "dropping data_request because of previous paging errors");
-	    (void) memory_object_data_error(reply_to,
-				offset, vm_page_size,
-				KERN_FAILURE);
+	    memory_object_data_error(reply_to, offset, length, KERN_FAILURE);
 	    goto done;
 	}
 
-	if (offset >= ds->dpager.limit)
-	  rc = PAGER_ERROR;
-	else
-	  rc = default_read(&ds->dpager, dpt->dpt_buffer,
-			    vm_page_size, offset,
-			    &addr, protection_required & VM_PROT_WRITE,
-			    ds->external);
-
-	switch (rc) {
-	    case PAGER_SUCCESS:
-		if (addr != dpt->dpt_buffer) {
-		    /*
-		     *	Deallocates data buffer
-		     */
-		    (void) memory_object_data_supply(
-		        reply_to, offset,
-			addr, vm_page_size, TRUE,
-			VM_PROT_NONE,
-			FALSE, MACH_PORT_NULL);
-		} else {
-		    (void) memory_object_data_supply(
-			reply_to, offset,
-			addr, vm_page_size, FALSE,
-			VM_PROT_NONE,
-			FALSE, MACH_PORT_NULL);
-		}
-		break;
-
-	    case PAGER_ABSENT:
-		(void) memory_object_data_unavailable(
-			reply_to,
-			offset,
-			vm_page_size);
-		break;
-
-	    case PAGER_ERROR:
-		(void) memory_object_data_error(
-			reply_to,
-			offset,
-			vm_page_size,
-			KERN_FAILURE);
-		break;
-	}
+	default_read(&ds->dpager, dpt->dpt_buffer, length, offset,
+		     protection_required & VM_PROT_WRITE,
+		     ds->external, reply_to);
 
 	default_pager_pagein_count++;
 
@@ -3054,6 +3186,7 @@ return rval;
 }
 
 mach_msg_size_t default_pager_msg_size_default = 8 * 1024;
+size_t max_dpt_buffer_size;
 
 boolean_t
 default_pager_demux_default(in, out)
@@ -3173,6 +3306,7 @@ start_default_pager_thread(internal)
 {
 	default_pager_thread_t *dpt;
 	kern_return_t kr;
+	vm_size_t size = max_dpt_buffer_size;
 
 	dpt = (default_pager_thread_t *) kalloc(sizeof *dpt);
 	if (dpt == 0)
@@ -3180,12 +3314,16 @@ start_default_pager_thread(internal)
 
 	dpt->dpt_internal = internal;
 
-	kr = vm_allocate(default_pager_self, &dpt->dpt_buffer,
-			 vm_page_size, TRUE);
+	/* We want to allocate page aligned memory */
+	kr = vm_map(default_pager_self, &dpt->dpt_buffer, size,
+		    vm_page_size - 1, TRUE, MEMORY_OBJECT_NULL, 0, 0,
+		    VM_PROT_READ | VM_PROT_WRITE,
+		    VM_PROT_READ | VM_PROT_WRITE, 0);
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
-	wire_memory(dpt->dpt_buffer, vm_page_size,
-		    VM_PROT_READ|VM_PROT_WRITE);
+	wire_memory(dpt->dpt_buffer, size, VM_PROT_READ|VM_PROT_WRITE);
+
+	assert (page_aligned (dpt->dpt_buffer));
 
 	dpt->dpt_thread = cthread_fork(default_pager_thread, (any_t) dpt);
 }
@@ -3302,6 +3440,10 @@ default_pager()
 	 *	Now we create the threads that will actually
 	 *	manage objects.
 	 */
+
+	kr = vm_get_advice_info(default_pager_self, &max_dpt_buffer_size);
+	if (kr != KERN_SUCCESS)
+		panic(my_name);
 
 	for (i = 0; i < default_pager_internal_count; i++)
 		start_default_pager_thread(TRUE);
