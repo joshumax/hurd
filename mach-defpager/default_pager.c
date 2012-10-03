@@ -1275,7 +1275,7 @@ pager_move_page(block)
 	union dp_map	ret;
 	vm_size_t	size;
 	vm_offset_t	raddr, offset, new_offset;
-	vm_offset_t	wsize;
+	int		wsize;
 	kern_return_t	rc;
 	static char	here[] = "%spager_move_page";
 
@@ -2017,7 +2017,7 @@ default_write(ds, addr, size, offset)
 {
 	register union dp_map	block;
 	partition_t		part;
-	vm_offset_t		wsize;
+	int			wsize;
 	register int		rc;
 
 	ddprintf ("default_write: pager offset %x\n", offset);
