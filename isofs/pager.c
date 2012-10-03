@@ -30,36 +30,37 @@ struct port_bucket *pager_bucket;
 void *disk_image;
 
 
-/* Implement the pager_read_page callback from the pager library.  See
+/* Implement the read_page callback from the pager library.  See
    <hurd/pager.h> for the interface definition.  */
-error_t
-pager_read_page (struct user_pager_info *upi,
-		 vm_offset_t page,
-		 vm_address_t *buf,
-		 int *writelock)
+void
+iso_read_pages (struct pager *pager, struct user_pager_info *upi,
+                off_t start, off_t npages)
 {
+  void *buf;
   error_t err;
   daddr_t addr;
-  struct node *np = upi->np;
   size_t read = 0;
+  int writelock = 1;   /* This is a read-only medium */
   size_t overrun = 0;
-
-  /* This is a read-only medium */
-  *writelock = 1;
+  struct node *np = upi->np;
+  size_t size = npages * vm_page_size;
+  vm_offset_t page = start * vm_page_size;
 
   if (upi->type == FILE_DATA)
     {
       addr = np->dn->file_start + (page >> store->log2_block_size);
-  
+
+      /* XXX ??? */
       if (page >= np->dn_stat.st_size)
 	{
-	  *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
-				      MAP_ANON, 0, 0);
-	  return 0;
+	  buf = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+          pager_data_supply (pager, 0 /* precious */, writelock,
+                             start, npages, buf, 1 /* dealloc */);
+	  return;
 	}
 
-      if (page + vm_page_size > np->dn_stat.st_size)
-	overrun = page + vm_page_size - np->dn_stat.st_size;
+      if (page + size > np->dn_stat.st_size)
+	overrun = page + size - np->dn_stat.st_size;
     }
   else
     {
@@ -67,47 +68,41 @@ pager_read_page (struct user_pager_info *upi,
       addr = page >> store->log2_block_size;
     }
 
-  err = store_read (store, addr, vm_page_size, (void **) buf, &read);
-  if (read != vm_page_size)
-    return EIO;
+  err = store_read (store, addr, size, (void **) &buf, &read);
+  if ((read != size) || err)
+    {
+      pager_data_read_error (pager, start, npages, err ? err : EIO);
+      return;
+    }
 
   if (overrun)
-    bzero ((void *) *buf + vm_page_size - overrun, overrun);
+    memset (buf + size - overrun, 0, overrun);
     
-  return 0;
-}
-
-/* This function should never be called.  */
-error_t
-pager_write_page (struct user_pager_info *pager,
-		  vm_offset_t page,
-		  vm_address_t buf)
-{
-  assert (0);
+  pager_data_supply (pager, 0 /* precious */, writelock,
+                     start, npages, buf, 1 /* dealloc */);
 }
 
 /* Never permit unlocks to succeed. */
-error_t
-pager_unlock_page (struct user_pager_info *pager,
-		   vm_offset_t address)
+void
+iso_unlock_pages (struct pager *pager,
+                  struct user_pager_info *upi,
+                  off_t start, off_t npages)
 {
-  return EROFS;
+  pager_data_unlock_error (pager, start, npages, EROFS);
 }
 
 /* Tell how big the file is. */
-error_t
-pager_report_extent (struct user_pager_info *pager,
-		     vm_address_t *offset,
-		     vm_size_t *size)
+void
+iso_report_extent (struct user_pager_info *pager,
+                   off_t *offset, off_t *size)
 {
   *offset = 0;
   *size = pager->np->dn_stat.st_size;
-  return 0;
 }
 
 /* Implement the pager_clear_user_data callback from the pager library. */
 void
-pager_clear_user_data (struct user_pager_info *upi)
+iso_clear_user_data (struct user_pager_info *upi)
 {
   if (upi->type == FILE_DATA)
     {
@@ -117,27 +112,30 @@ pager_clear_user_data (struct user_pager_info *upi)
       spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
-  free (upi);
 }
 
-void
-pager_dropweak (struct user_pager_info *upi)
-{
-}
+struct pager_ops iso_ops =
+  {
+    .read = &iso_read_pages,
+    .write = NULL,
+    .unlock = &iso_unlock_pages,
+    .report_extent = &iso_report_extent,
+    .clear_user_data = &iso_clear_user_data,
+    .dropweak = NULL
+  };
 
 
 /* Create the disk pager */
 void
 create_disk_pager (void)
 {
-  struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
-
-  if (!upi)
-    error (1, errno, "Could not create disk pager");
+  struct user_pager_info *upi;
+  pager_bucket = ports_create_bucket ();
+  diskfs_start_disk_pager (&iso_ops, sizeof (*upi), pager_bucket,
+                           1, store->size, &disk_image);
+  upi = pager_get_upi (diskfs_disk_pager);
   upi->type = DISK;
   upi->np = 0;
-  pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, 1, store->size, &disk_image);
   upi->p = diskfs_disk_pager;
 }
 
@@ -164,18 +162,19 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   do
     if (!np->dn->fileinfo)
       {
-	upi = malloc (sizeof (struct user_pager_info));
-	upi->type = FILE_DATA;
-	upi->np = np;
-	diskfs_nref_light (np);
-	upi->p = pager_create (upi, pager_bucket, 1, MEMORY_OBJECT_COPY_DELAY);
-	if (upi->p == 0)
+        struct pager *p;
+        p = pager_create (&iso_ops, sizeof (*upi), pager_bucket,
+                          1, MEMORY_OBJECT_COPY_DELAY);
+	if (p == 0)
 	  {
-	    diskfs_nrele_light (np);
-	    free (upi);
 	    spin_unlock (&node2pagelock);
 	    return MACH_PORT_NULL;
 	  }
+        upi = pager_get_upi (p);
+	upi->type = FILE_DATA;
+	upi->np = np;
+	diskfs_nref_light (np);
+	upi->p = p;
 	np->dn->fileinfo = upi;
 	right = pager_get_port (np->dn->fileinfo->p);
 	ports_port_deref (np->dn->fileinfo->p);
