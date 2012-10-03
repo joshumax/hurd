@@ -63,7 +63,7 @@ int page_write_file_direct(struct file_direct *fdp,
 			   vm_offset_t offset,
 			   vm_offset_t addr,
 			   vm_size_t size,
-			   vm_offset_t *size_written); /* out */
+			   int *size_written); /* out */
 
 
 #endif /* file_io.h */
