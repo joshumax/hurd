@@ -539,8 +539,8 @@ fat_pager_write_page (vm_offset_t page, void *buf)
    PAGER, to the page at offset PAGE into BUF.  WRITELOCK should be set if
    the pager should make the page writeable.  */
 error_t
-pager_read_page (struct user_pager_info *pager, vm_offset_t page,
-                 vm_address_t *buf, int *writelock)
+fat_read_page (struct user_pager_info *pager, vm_offset_t page,
+               vm_address_t *buf, int *writelock)
 {
   if (pager->type == FAT)
     return fat_pager_read_page (page, (void **)buf, writelock);
@@ -561,11 +561,33 @@ pager_read_page (struct user_pager_info *pager, vm_offset_t page,
     }
 }
 
+void
+fat_read_pages (struct pager *pager, struct user_pager_info *upi,
+                off_t start, off_t npages)
+{
+  off_t offset = start * vm_page_size;
+  int writelock;
+  void *buf;
+  int i;
+
+  for (i = start; i < start + npages; i++, offset += vm_page_size)
+    {
+      error_t err = fat_read_page (upi, offset, (vm_address_t *)&buf,
+                                   &writelock);
+
+      if (!err)
+        pager_data_supply (pager, 0 /* precious */, writelock,
+                           i, 1, buf, 1 /* dealloc */);
+      else
+        pager_data_read_error (pager, i, 1, err);
+    }
+}
+
 /* Satisfy a pager write request for either the disk pager or file pager
    PAGER, from the page at offset PAGE from BUF.  */
 error_t
-pager_write_page (struct user_pager_info *pager, vm_offset_t page,
-                  vm_address_t buf)
+fat_write_page (struct user_pager_info *pager, vm_offset_t page,
+                vm_address_t buf)
 {
   if (pager->type == FAT)
     return fat_pager_write_page (page, (void *)buf);
@@ -586,14 +608,37 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
     }
 }
 
-/* Make page PAGE writable, at least up to ALLOCSIZE.  */
-error_t
-pager_unlock_page (struct user_pager_info *pager,
-		   vm_offset_t page)
+
+void
+fat_write_pages (struct pager *pager, struct user_pager_info *upi,
+                 off_t start, off_t npages, void *buf, int dealloc)
 {
-  /* All pages are writeable. The disk pages anyway, and the file
-     pages because blocks are directly allocated in diskfs_grow.  */
-  return 0;
+  void *cur_buf = buf;
+
+  inline error_t process_code (off_t block_offset)
+  {
+    error_t err = fat_write_page (upi, block_offset, (vm_address_t)cur_buf);
+    cur_buf += vm_page_size;
+    return err;
+  }
+
+  inline void no_error_code (off_t range_start, off_t range_len)
+  {
+    return;
+  }
+
+  inline void error_code (error_t err, off_t range_start, off_t range_len)
+  {
+    off_t err_pages = round_page (range_len) / vm_page_size;
+    pager_data_write_error (pager, start, err_pages, err);
+  }
+
+  pager_process_pages (start, npages, vm_page_size,
+                       process_code, no_error_code, error_code);
+
+  if (dealloc)
+    vm_deallocate (mach_task_self (), (vm_address_t) buf,
+                   npages * vm_page_size);
 }
 
 /* Grow the disk allocated to locked node NODE to be at least SIZE
@@ -699,9 +744,9 @@ flush_node_pager (struct node *node)
 
 /* Return in *OFFSET and *SIZE the minimum valid address the pager
    will accept and the size of the object.  */
-inline error_t
-pager_report_extent (struct user_pager_info *pager,
-                     vm_address_t *offset, vm_size_t *size)
+void
+fat_report_extent (struct user_pager_info *pager,
+                   off_t *offset, off_t *size)
 {
   assert (pager->type == FAT || pager->type == FILE_DATA);
 
@@ -711,50 +756,49 @@ pager_report_extent (struct user_pager_info *pager,
     *size = bytes_per_sector * sectors_per_fat;
   else
     *size = pager->node->allocsize;
-
-  return 0;
 }
 
 /* This is called when a pager is being deallocated after all extant
    send rights have been destroyed.  */
 void
-pager_clear_user_data (struct user_pager_info *upi)
+fat_clear_user_data (struct user_pager_info *upi)
 {
   if (upi->type == FILE_DATA)
     {
       struct pager *pager;
-      
+
       spin_lock (&node_to_page_lock);
       pager = upi->node->dn->pager;
       if (pager && pager_get_upi (pager) == upi)
 	upi->node->dn->pager = 0;
       spin_unlock (&node_to_page_lock);
-      
+
       diskfs_nrele_light (upi->node);
     }
-  
-  free (upi);
 }
 
-/* This will be called when the ports library wants to drop weak
-   references.  The pager library creates no weak references itself.
-   If the user doesn't either, then it's OK for this function to do
-   nothing.  */
-void
-pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
-{
-}
+struct pager_ops fat_ops =
+  {
+    .read = &fat_read_pages,
+    .write = &fat_write_pages,
+    .unlock = NULL,
+    .report_extent = &fat_report_extent,
+    .clear_user_data = &fat_clear_user_data,
+    .dropweak = NULL
+  };
 
 /* Create the disk pager.  */
 void
 create_fat_pager (void)
 {
-  struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
-  upi->type = FAT;
+  struct user_pager_info *upi;
+
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE,
-			   bytes_per_sector * sectors_per_fat,
+  diskfs_start_disk_pager (&fat_ops, sizeof (*upi), pager_bucket,
+                           MAY_CACHE, bytes_per_sector * sectors_per_fat,
 			   &fat_image);
+  upi = pager_get_upi (diskfs_disk_pager);
+  upi->type = FAT;
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
@@ -786,22 +830,22 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
         }
       else
         {
-          struct user_pager_info *upi =
-            malloc (sizeof (struct user_pager_info));
+          struct user_pager_info *upi;
+
+          node->dn->pager =
+            pager_create (&fat_ops, sizeof (*upi), pager_bucket,
+                          MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+          if (node->dn->pager == 0)
+            {
+              spin_unlock (&node_to_page_lock);
+              return MACH_PORT_NULL;
+            }
+
+          upi = pager_get_upi (node->dn->pager);
           upi->type = FILE_DATA;
           upi->node = node;
           upi->max_prot = prot;
           diskfs_nref_light (node);
-          node->dn->pager =
-            pager_create (upi, pager_bucket, MAY_CACHE,
-                          MEMORY_OBJECT_COPY_DELAY);
-          if (node->dn->pager == 0)
-            {
-              diskfs_nrele_light (node);
-              free (upi);
-              spin_unlock (&node_to_page_lock);
-              return MACH_PORT_NULL;
-            }
 
           right = pager_get_port (node->dn->pager);
           ports_port_deref (node->dn->pager);
