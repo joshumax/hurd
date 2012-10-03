@@ -45,71 +45,125 @@ static struct port_bucket *pager_bucket;
 
 /* Implement the pager_clear_user_data callback from the pager library. */
 void
-pager_clear_user_data (struct user_pager_info *upi)
+cons_clear_user_data (struct user_pager_info *upi)
 {
   int idx;
+  int len = 1;
 
-  for (idx = 0; idx < upi->memobj_npages; idx++)
-    if (upi->memobj_pages[idx])
-      vm_deallocate (mach_task_self (), upi->memobj_pages[idx], vm_page_size);
-  free (upi);
-}
+  for (idx = 1; idx < upi->memobj_npages; idx++)
+    if (upi->memobj_pages[idx] - vm_page_size != upi->memobj_pages[idx - 1])
+      {
+        if (upi->memobj_pages[idx - len])
+          {
+            vm_deallocate (mach_task_self (), upi->memobj_pages[idx - len],
+                           len * vm_page_size);
+            len = 1;
+          }
+      }
+    else
+      len ++;
 
-
-error_t
-pager_read_page (struct user_pager_info *upi, vm_offset_t page,
-                 vm_address_t *buf, int *writelock)
-{
-  /* XXX clients should get a read only object.  */
-  *writelock = 0;
-
-  if (upi->memobj_pages[page / vm_page_size] != (vm_address_t) NULL)
-    {
-      *buf = upi->memobj_pages[page / vm_page_size];
-      upi->memobj_pages[page / vm_page_size] = (vm_address_t) NULL;
-    }
-  else
-    *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
-				MAP_ANON, 0, 0);
-  return 0;
-}
-
-
-error_t
-pager_write_page (struct user_pager_info *upi, vm_offset_t page,
-                  vm_address_t buf)
-{
-  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
-  upi->memobj_pages[page / vm_page_size] = buf;
-  return 0;
-}
-
-
-error_t
-pager_unlock_page (struct user_pager_info *pager,
-                   vm_offset_t address)
-{
-  assert (!"unlocking requested on unlocked page");
-  return 0;
-}
-
-
-/* Tell how big the file is. */
-error_t
-pager_report_extent (struct user_pager_info *upi,
-                     vm_address_t *offset,
-                     vm_size_t *size)
-{
-  *offset = 0;
-  *size =  upi->memobj_npages * vm_page_size;
-  return 0;
+  vm_deallocate (mach_task_self (), upi->memobj_pages[idx - len],
+                 len * vm_page_size);
 }
 
 
 void
-pager_dropweak (struct user_pager_info *upi)
+cons_read_pages (struct pager *pager, struct user_pager_info *upi,
+                 off_t start, off_t npages)
 {
+  enum read_state {NO_PAGE = 0, CONSECUTIVE_PAGE, RANDOM_PAGE};
+
+  inline error_t process_code (off_t address)
+  {
+    off_t page = address / vm_page_size;
+    vm_address_t cur_addr = upi->memobj_pages[page];
+    if (cur_addr == (vm_address_t) NULL)
+      return NO_PAGE;
+    else if (cur_addr - vm_page_size == upi->memobj_pages[page - 1])
+      return CONSECUTIVE_PAGE;
+    else
+      return RANDOM_PAGE;
+  }
+
+  inline void no_error_code (off_t range_start, off_t range_len)
+  {
+    /* We haven't allocated memory for this range, so just do it. */
+    void * buf;
+    buf = mmap (0, range_len, PROT_READ | PROT_WRITE, MAP_ANON, 0, 0);
+    pager_data_supply (pager, 0 /* precious */, 0 /* writelock */,
+                       range_start, range_len / vm_page_size,
+                       buf, 1 /* dealloc */);
+  }
+
+  inline void error_code (int err, off_t range_start, off_t range_len)
+  {
+    off_t page = range_start;
+    switch (err)
+      {
+      case CONSECUTIVE_PAGE:
+        /* It is range of pages that are placed consecutive.
+           Supply all of them at once. */
+        pager_data_supply (pager, 0, 0, range_start,
+                           range_len / vm_page_size,
+                           (void *)upi->memobj_pages[range_start], 1);
+        for (; page < range_start + range_len / vm_page_size; page ++)
+          upi->memobj_pages[page] = (vm_address_t) NULL;
+        break;
+      case RANDOM_PAGE:
+        /* Range is not of consecutive pages, so report about each page
+           separately */
+        for (; page < range_start + range_len / vm_page_size; page ++)
+          {
+            pager_data_supply (pager, 0, 0, page, 1,
+                               (void *)upi->memobj_pages[page], 1);
+            upi->memobj_pages[page] = (vm_address_t) NULL;
+          }
+        break;
+      }
+  }
+
+  pager_process_pages (start, npages, vm_page_size,
+                       &process_code, &no_error_code, &error_code);
 }
+
+
+void
+cons_write_pages (struct pager *pager, struct user_pager_info *upi,
+                  off_t start, off_t npages, void *buf, int dealloc)
+{
+  off_t page;
+
+  for (page = start; page < npages; page++)
+    {
+      assert (upi->memobj_pages[page] == (vm_address_t) NULL);
+      upi->memobj_pages[page] = (vm_address_t) buf;
+      buf += vm_page_size;
+    }
+
+  assert (!dealloc && "There shouldn't be deallocation");
+}
+
+
+/* Tell how big the file is. */
+void
+cons_report_extent (struct user_pager_info *upi,
+                    off_t *offset,
+                    off_t *size)
+{
+  *offset = 0;
+  *size =  upi->memobj_npages * vm_page_size;
+}
+
+struct pager_ops cons_ops =
+  {
+    .read = &cons_read_pages,
+    .write = &cons_write_pages,
+    .unlock = NULL,
+    .report_extent = &cons_report_extent,
+    .clear_user_data = &cons_clear_user_data,
+    .dropweak = NULL
+  };
 
 
 /* A top-level function for the paging thread that just services paging
@@ -148,21 +202,15 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
 		   struct cons_display **user)
 {
   error_t err;
-  struct user_pager_info *upi;
+  size_t upi_size = (sizeof (struct user_pager_info)
+                     + sizeof (vm_address_t) * npages);
 
-  upi = calloc (1, sizeof (struct user_pager_info)
-		+ sizeof (vm_address_t) * npages);
-  if (!upi)
-    return errno;
-
-  upi->memobj_npages = npages;
 
   /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
-  user_pager->pager = pager_create (upi, pager_bucket,
+  user_pager->pager = pager_create (&cons_ops, upi_size, pager_bucket,
 				    1, MEMORY_OBJECT_COPY_DELAY);
   if (!user_pager->pager)
     {
-      free (upi);
       return errno;
     }
   user_pager->memobj = pager_get_port (user_pager->pager);
@@ -187,6 +235,8 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
       mach_port_deallocate (mach_task_self (), user_pager->memobj);
       return err;
     }
+
+  pager_get_upi(user_pager->pager)->memobj_npages = npages;
 
   return 0;
 }
