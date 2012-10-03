@@ -40,4 +40,10 @@ void overcommitted(boolean_t got_more_space, vm_size_t space);
 
 void panic (const char *fmt, ...);
 
+/* This should be in some system header...  XXX  */
+static inline int
+page_aligned(vm_offset_t num)
+{
+	return trunc_page(num) == num;
+}
 #endif /* _DEFAULT_PAGER_H_ */

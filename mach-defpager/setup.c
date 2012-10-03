@@ -31,12 +31,6 @@
 #include "file_io.h"
 #include "default_pager_S.h"
 
-/* This should be in some system header...  XXX  */
-int page_aligned (vm_offset_t num)
-{
-  return trunc_page (num) == num;
-}
-
 extern mach_port_t default_pager_default_port; /* default_pager.c */
 
 kern_return_t
@@ -116,7 +110,6 @@ page_read_file_direct (struct file_direct *fdp,
   mach_msg_type_number_t nread;
 
   assert (page_aligned (offset));
-  assert (size == vm_page_size);
 
   offset >>= fdp->bshift;
 
@@ -154,16 +147,17 @@ page_read_file_direct (struct file_direct *fdp,
 			 &page, &nread);
       if (err)
 	{
-	  vm_deallocate (mach_task_self (),
-			 (vm_address_t) *addr, vm_page_size);
+	  vm_deallocate (mach_task_self (), (vm_address_t) *addr,
+			 round_page (readloc - *addr));
 	  return err;
 	}
       memcpy (readloc, page, nread);
-      vm_deallocate (mach_task_self (), (vm_address_t) page, vm_page_size);
+      vm_deallocate (mach_task_self (), (vm_address_t) page,
+		     round_page (nread));
       size -= nread;
     } while (size > 0);
 
-  *size_read = vm_page_size;
+  *size_read = round_page (readloc - *addr + nread);
   return 0;
 }
 
