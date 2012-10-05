@@ -139,7 +139,7 @@ ext2_new_block (block_t goal,
 		block_t prealloc_goal,
 		block_t *prealloc_count, block_t *prealloc_block)
 {
-  char *bh;
+  char *bh = 0;
   char *p, *r;
   int i, j, k, tmp;
   unsigned long lmap;
@@ -165,6 +165,7 @@ ext2_new_block (block_t goal,
   ext2_debug ("goal=%u", goal);
 
 repeat:
+  assert (! bh);
   /*
      * First, test whether the goal block is free.
    */
@@ -245,6 +246,7 @@ repeat:
 	  j = k;
 	  goto got_block;
 	}
+      bh = 0;
     }
 
   ext2_debug ("bit not found in block group %d", i);
@@ -277,12 +279,14 @@ repeat:
 			     sblock->s_blocks_per_group);
   if (j >= sblock->s_blocks_per_group)
     {
+      bh = 0;
       ext2_error ("free blocks count corrupted for block group %d", i);
       spin_unlock (&global_lock);
       return 0;
     }
 
 search_back:
+  assert (bh);
   /*
      * We have succeeded in finding a free byte in the block
      * bitmap.  Now search backwards up to 7 bits to find the
@@ -291,6 +295,7 @@ search_back:
   for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh); k++, j--);
 
 got_block:
+  assert (bh);
 
   ext2_debug ("using block group %d (%d)", i, gdp->bg_free_blocks_count);
 
@@ -304,6 +309,7 @@ got_block:
   if (set_bit (j, bh))
     {
       ext2_warning ("bit already set for block %d", j);
+      bh = 0;
       goto repeat;
     }
 
@@ -351,6 +357,7 @@ got_block:
   j = tmp;
 
   record_global_poke (bh);
+  bh = 0;
 
   if (j >= sblock->s_blocks_count)
     {
@@ -363,12 +370,14 @@ got_block:
 	      j, goal_hits, goal_attempts);
 
   gdp->bg_free_blocks_count--;
+  disk_cache_block_ref_ptr (gdp);
   record_global_poke (gdp);
 
   sblock->s_free_blocks_count--;
   sblock_dirty = 1;
 
  sync_out:
+  assert (! bh);
   spin_unlock (&global_lock);
   alloc_sync (0);
 
