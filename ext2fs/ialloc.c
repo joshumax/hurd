@@ -111,7 +111,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 ino_t
 ext2_alloc_inode (ino_t dir_inum, mode_t mode)
 {
-  char *bh;
+  char *bh = 0;
   int i, j, inum, avefreei;
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
@@ -119,6 +119,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   spin_lock (&global_lock);
 
 repeat:
+  assert (! bh);
   gdp = NULL;
   i = 0;
 
@@ -221,12 +222,15 @@ repeat:
       if (set_bit (inum, bh))
 	{
 	  ext2_warning ("bit already set for inode %d", inum);
+	  bh = 0;
 	  goto repeat;
 	}
       record_global_poke (bh);
+      bh = 0;
     }
   else
     {
+      bh = 0;
       if (gdp->bg_free_inodes_count != 0)
 	{
 	  ext2_error ("free inodes count corrupted in group %d", i);
@@ -254,6 +258,7 @@ repeat:
   sblock_dirty = 1;
 
  sync_out:
+  assert (! bh);
   spin_unlock (&global_lock);
   alloc_sync (0);
 
