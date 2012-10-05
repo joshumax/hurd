@@ -31,56 +31,65 @@
 /* ---------------------------------------------------------------- */
 /* Pager library callbacks; see <hurd/pager.h> for more info.  */
 
-/* For pager PAGER, read one page from offset PAGE.  Set *BUF to be the
+struct user_pager_info
+{
+  struct dev *dev;
+};
+
+/* For pager PAGER, read NPAGES pages from page PAGE.  Set *BUF to be the
    address of the page, and set *WRITE_LOCK if the page must be provided
    read-only.  The only permissible error returns are EIO, EDQUOT, and
    ENOSPC. */
-error_t
-pager_read_page (struct user_pager_info *upi,
-		 vm_offset_t page, vm_address_t *buf, int *writelock)
+void
+store_read_pages (struct pager *pager, struct user_pager_info *upi,
+        	  off_t start, off_t npages)
 {
   error_t err;
-  size_t read = 0;		/* bytes actually read */
-  int want = vm_page_size;	/* bytes we want to read */
-  struct dev *dev = (struct dev *)upi;
+  void *buf;
+  int writelock;
+  size_t read = 0;			/* bytes actually read */
+  off_t page = start * vm_page_size;
+  int want = npages * vm_page_size;	/* bytes we want to read */
+  struct dev *dev = upi->dev;
   struct store *store = dev->store;
 
   if (page + want > store->size)
     /* Read a partial page if necessary to avoid reading off the end.  */
     want = store->size - page;
 
-  err = dev_read (dev, page, want, (void **)buf, &read);
+  err = dev_read (dev, page, want, &buf, &read);
 
-  if (!err && want < vm_page_size)
+  if (!err && want < round_page (want))
     /* Zero anything we didn't read.  Allocation only happens in page-size
        multiples, so we know we can write there.  */
-    memset ((char *)*buf + want, '\0', vm_page_size - want);
+    memset ((char *)buf + want, '\0', round_page (want) - want);
 
-  *writelock = (store->flags & STORE_READONLY);
+  writelock = (store->flags & STORE_READONLY);
 
   if (err || read < want)
-    return EIO;
+    pager_data_read_error (pager, start, npages, EIO);
   else
-    return 0;
+    pager_data_supply (pager, 0, writelock, start, npages, buf, 1);
 }
 
-/* For pager PAGER, synchronously write one page from BUF to offset PAGE.  In
-   addition, vm_deallocate (or equivalent) BUF.  The only permissible error
-   returns are EIO, EDQUOT, and ENOSPC. */
-error_t
-pager_write_page (struct user_pager_info *upi,
-		  vm_offset_t page, vm_address_t buf)
+/* For pager PAGER, synchronously write NPAGES pages from BUF to page PAGE.
+   In DEALLOC is TRUE, vm_deallocate (or equivalent) BUF.  The only
+   permissible error returns are EIO, EDQUOT, and ENOSPC. */
+void
+store_write_pages (struct pager *pager, struct user_pager_info *upi,
+		   off_t start, off_t npages, void *buf, int dealloc)
 {
-  struct dev *dev = (struct dev *)upi;
+  struct dev *dev = upi->dev;
   struct store *store = dev->store;
+  off_t page = start * vm_page_size;
 
   if (store->flags & STORE_READONLY)
-    return EROFS;
+    return pager_data_write_error (pager, start, npages, EROFS);
   else
     {
       error_t err;
       size_t written;
-      int want = vm_page_size;
+      int want = npages * vm_page_size;
 
       if (page + want > store->size)
 	/* Write a partial page if necessary to avoid reading off the end.  */
@@ -88,45 +97,45 @@ pager_write_page (struct user_pager_info *upi,
 
       err = dev_write (dev, page, (char *)buf, want, &written);
 
-      munmap ((caddr_t) buf, vm_page_size);
+      if (dealloc)
+	munmap (buf, npages * vm_page_size);
 
       if (err || written < want)
-	return EIO;
-      else
-	return 0;
+	return pager_data_write_error (pager, start, npages, EIO);
     }
 }
 
 /* A page should be made writable. */
-error_t
-pager_unlock_page (struct user_pager_info *upi, vm_offset_t address)
+void
+store_unlock_pages (struct pager *pager,
+		   struct user_pager_info *upi,
+		   off_t start, off_t npages)
 {
-  struct dev *dev = (struct dev *)upi;
+  struct dev *dev = upi->dev;
 
   if (dev->store->flags & STORE_READONLY)
-    return EROFS;
+    pager_data_unlock_error (pager, start, npages, EROFS);
   else
-    return 0;
+    pager_data_unlock (pager, start, npages);
 }
 
 /* The user must define this function.  It should report back (in
    *OFFSET and *SIZE the minimum valid address the pager will accept
    and the size of the object.   */
-error_t
-pager_report_extent (struct user_pager_info *upi,
-		    vm_address_t *offset, vm_size_t *size)
+void
+store_report_extent (struct user_pager_info *upi,
+		     off_t *offset, off_t *size)
 {
   *offset = 0;
-  *size = ((struct dev *)upi)->store->size;
-  return 0;
+  *size = upi->dev->store->size;
 }
 
 /* This is called when a pager is being deallocated after all extant send
    rights have been destroyed.  */
 void
-pager_clear_user_data (struct user_pager_info *upi)
+store_clear_user_data (struct user_pager_info *upi)
 {
-  struct dev *dev = (struct dev *)upi;
+  struct dev *dev = upi->dev;
   mutex_lock (&dev->pager_lock);
   dev->pager = 0;
   mutex_unlock (&dev->pager_lock);
@@ -166,10 +175,15 @@ init_dev_paging ()
     }
 }
 
-void
-pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
-{
-}
+struct pager_ops store_ops =
+  {
+    .read = &store_read_pages,
+    .write = &store_write_pages,
+    .unlock = &store_unlock_pages,
+    .report_extent = &store_report_extent,
+    .clear_user_data = &store_clear_user_data,
+    .dropweak = NULL
+  };
 
 /* Try to stop all paging activity on DEV, returning true if we were
    successful.  If NOSYNC is true, then we won't write back any (kernel)
@@ -230,15 +244,17 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 
       if (dev->pager == NULL)
 	{
+	  size_t upi_size = sizeof (struct user_pager_info);
 	  dev->pager =
-	    pager_create ((struct user_pager_info *)dev, pager_port_bucket,
-			  1, MEMORY_OBJECT_COPY_DELAY);
+	    pager_create (&store_ops, upi_size, pager_port_bucket,
+			  TRUE, MEMORY_OBJECT_COPY_DELAY);
 	  if (dev->pager == NULL)
 	    {
 	      mutex_unlock (&dev->pager_lock);
 	      return errno;
 	    }
 	  created = 1;
+	  pager_get_upi (dev->pager)->dev = dev;
 	}
 
       *memobj = pager_get_port (dev->pager);
