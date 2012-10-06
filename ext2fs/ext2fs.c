@@ -211,6 +211,7 @@ diskfs_reload_global_state ()
 {
   pokel_flush (&global_pokel);
   pager_flush (diskfs_disk_pager, 1);
+  sblock = 0;
   get_hypermetadata ();
   return 0;
 }
