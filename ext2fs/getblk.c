@@ -105,7 +105,7 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
   if (result && zero)
     {
       char *bh = bptr (result);
-      bzero (bh, block_size);
+      memset (bh, 0, block_size);
       record_indir_poke (node, bh);
     }
 

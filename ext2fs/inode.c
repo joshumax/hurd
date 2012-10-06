@@ -705,7 +705,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
     {
       buf[0] = namelen & 0xFF;
       buf[1] = (namelen >> 8) & 0xFF;
-      bcopy (name, buf + 2, namelen);
+      memcpy (buf + 2, name, namelen);
 
       bcopy (buf, bptr (blkno), block_size);
       record_global_poke (bptr (blkno));
@@ -772,7 +772,7 @@ write_symlink (struct node *node, const char *target)
 
   assert (node->dn_stat.st_blocks == 0);
 
-  bcopy (target, node->dn->info.i_data, len);
+  memcpy (node->dn->info.i_data, target, len);
   node->dn_stat.st_size = len - 1;
   node->dn_set_ctime = 1;
   node->dn_set_mtime = 1;
@@ -789,7 +789,7 @@ read_symlink (struct node *node, char *target)
 
   assert (node->dn_stat.st_size < MAX_INODE_SYMLINK);
 
-  bcopy (node->dn->info.i_data, target, node->dn_stat.st_size);
+  memcpy (target, node->dn->info.i_data, node->dn_stat.st_size);
   return 0;
 }
 
