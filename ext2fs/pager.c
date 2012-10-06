@@ -298,7 +298,7 @@ pending_blocks_write (struct pending_blocks *pb)
       block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
       size_t length = pb->num << log2_block_size, amount;
 
-      ext2_debug ("writing block %u[%ld]", pb->block, pb->num);
+      ext2_debug ("writing block %u[%Ld]", pb->block, pb->num);
 
       if (pb->offs > 0)
 	/* Put what we're going to write into a page-aligned buffer.  */
@@ -381,7 +381,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   else if (offset + left > node->allocsize)
     left = node->allocsize - offset;
 
-  ext2_debug ("writing inode %d page %d[%d]", node->cache_id, offset, left);
+  ext2_debug ("writing inode %Ld page %lu[%d]", node->cache_id, offset, left);
 
   STAT_INC (file_pageouts);
 
@@ -435,7 +435,7 @@ disk_pager_write_page (vm_offset_t page, void *buf)
   if (page + vm_page_size > dev_end)
     length = dev_end - page;
 
-  ext2_debug ("writing disk page %d[%d]", page, length);
+  ext2_debug ("writing disk page %ld[%zd]", page, length);
 
   STAT_INC (disk_pageouts);
 
@@ -619,8 +619,8 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 	  block_t old_page_end_block =
 	    round_page (old_size) >> log2_block_size;
 
-	  ext2_debug ("growing inode %d to %lu bytes (from %lu)", node->cache_id,
-		      new_size, old_size);
+	  ext2_debug ("growing inode %Ld to %Lu bytes (from %Lu)",
+		      node->cache_id, new_size, old_size);
 
 	  if (dn->last_page_partially_writable
 	      && old_page_end_block > end_block)
@@ -630,7 +630,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		 ? new_end_block
 		 : old_page_end_block);
 
-	      ext2_debug ("extending writable page %u by %d blocks"
+	      ext2_debug ("extending writable page %lu by %d blocks"
 			  "; first new block = %u",
 			  trunc_page (old_size),
 			  writable_end - end_block,
@@ -656,11 +656,11 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 
       STAT_INC (file_grows);
 
-      ext2_debug ("new size: %ld%s.", new_size,
+      ext2_debug ("new size: %Lu%s.", new_size,
 		  dn->last_page_partially_writable
 		  ? " (last page writable)": "");
       if (err)
-	ext2_warning ("inode=%Ld, target=%Ld: %s",
+	ext2_warning ("inode=%Ld, target=%Lu: %s",
 		      node->cache_id, new_size, strerror (err));
 
       node->allocsize = new_size;

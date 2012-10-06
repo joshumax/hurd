@@ -52,7 +52,7 @@ ext2_discard_prealloc (struct node *node)
   if (node->dn->info.i_prealloc_count)
     {
       int i = node->dn->info.i_prealloc_count;
-      ext2_debug ("discarding %d prealloced blocks for inode %d",
+      ext2_debug ("discarding %d prealloced blocks for inode %Ld",
 		  i, node->cache_id);
       node->dn->info.i_prealloc_count = 0;
       ext2_free_blocks (node->dn->info.i_prealloc_block, i);

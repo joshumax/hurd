@@ -419,7 +419,7 @@ write_node (struct node *np)
 
       assert (!diskfs_readonly);
 
-      ext2_debug ("writing inode %d to disk", np->cache_id);
+      ext2_debug ("writing inode %Ld to disk", np->cache_id);
 
       err = diskfs_catch_exception ();
       if (err)
