@@ -276,12 +276,13 @@ unsigned long next_generation;
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_image */
 
-#define trunc_block(offs) (((offs) >> log2_block_size) << log2_block_size)
+#define trunc_block(offs) \
+  ((off_t) ((offs) >> log2_block_size) << log2_block_size)
 #define round_block(offs) \
-  ((((offs) + block_size - 1) >> log2_block_size) << log2_block_size)
+  ((off_t) (((offs) + block_size - 1) >> log2_block_size) << log2_block_size)
 
 /* block num --> byte offset on disk */
-#define boffs(block) ((block) << log2_block_size)
+#define boffs(block) ((off_t) (block) << log2_block_size)
 /* byte offset on disk --> block num */
 #define boffs_block(offs) ((offs) >> log2_block_size)
 
