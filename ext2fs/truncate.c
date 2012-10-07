@@ -223,7 +223,7 @@ poke_pages (memory_object_t obj, vm_offset_t start, vm_offset_t end)
 /* Flush all the data past the new size from the kernel.  Also force any
    delayed copies of this data to take place immediately.  (We are implicitly
    changing the data to zeros and doing it without the kernel's immediate
-   knowledge; accordingl we must help out the kernel thusly.) */
+   knowledge; accordingly we must help out the kernel thusly.) */
 static void
 force_delayed_copies (struct node *node, off_t length)
 {
