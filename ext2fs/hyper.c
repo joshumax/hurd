@@ -58,11 +58,14 @@ static int ext2fs_clean;	/* fs clean before we started writing? */
 void
 get_hypermetadata (void)
 {
-  error_t err = diskfs_catch_exception ();
-  if (err)
-    ext2_panic ("can't read superblock: %s", strerror (err));
+  error_t err;
+  size_t read = 0;
 
-  sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
+  assert (! sblock);
+  err = store_read (store, SBLOCK_OFFS >> store->log2_block_size,
+		    SBLOCK_SIZE, (void **)&sblock, &read);
+  if (err || read != SBLOCK_SIZE)
+    ext2_panic ("Cannot read hypermetadata");
 
   if (sblock->s_magic != EXT2_SUPER_MAGIC
 #ifdef EXT2FS_PRE_02B_COMPAT
@@ -152,15 +155,22 @@ get_hypermetadata (void)
 
   allocate_mod_map ();
 
-  diskfs_end_catch_exception ();
+  /* A handy source of page-aligned zeros.  */
+  if (zeroblock == 0)
+    zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ, MAP_ANON, 0, 0);
+
+  munmap (sblock, SBLOCK_SIZE);
+  sblock = NULL;
+}
+
+void
+map_hypermetadata (void)
+{
+  sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
 
   /* Cache a convenient pointer to the block group descriptors for allocation.
      These are stored in the filesystem blocks following the superblock.  */
   group_desc_image = (struct ext2_group_desc *) bptr (bptr_block (sblock) + 1);
-
-  /* A handy source of page-aligned zeros.  */
-  if (zeroblock == 0)
-    zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ, MAP_ANON, 0, 0);
 }
 
 error_t
@@ -183,6 +193,7 @@ diskfs_set_hypermetadata (int wait, int clean)
  if (sblock_dirty)
    {
      sblock_dirty = 0;
+     disk_cache_block_ref_ptr (sblock);
      record_global_poke (sblock);
    }
 
@@ -199,7 +210,8 @@ diskfs_readonly_changed (int readonly)
 
   (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
 
-  mprotect (disk_image, store->size, PROT_READ | (readonly ? 0 : PROT_WRITE));
+  mprotect (disk_cache, disk_cache_size,
+	    PROT_READ | (readonly ? 0 : PROT_WRITE));
 
   if (!readonly && !(sblock->s_state & EXT2_VALID_FS))
     ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");

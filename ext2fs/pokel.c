@@ -67,12 +67,27 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       vm_offset_t p_offs = pl->offset;
       vm_size_t p_end = p_offs + pl->length;
 
-      if (p_offs == offset && p_end == end)
-	break;
+      if (p_offs <= offset && end <= p_end)
+	{
+	  if (pokel->image == disk_cache)
+	    for (vm_offset_t i = offset; i < end; i += block_size)
+	      disk_cache_block_deref (disk_cache + i);
+
+	  break;
+	}
       else if (p_end >= offset && end >= p_offs)
 	{
 	  pl->offset = offset < p_offs ? offset : p_offs;
 	  pl->length = (end > p_end ? end : p_end) - pl->offset;
+
+	  if (pokel->image == disk_cache)
+	    {
+	      vm_offset_t i_begin = p_offs > offset ? p_offs : offset;
+	      vm_offset_t i_end = p_end < end ? p_end : end;
+	      for (vm_offset_t i = i_begin; i < i_end; i += block_size)
+		disk_cache_block_deref (disk_cache + i);
+	    }
+
 	  ext2_debug ("extended 0x%x[%ul] to 0x%x[%ul]",
 		      p_offs, p_end - p_offs, pl->offset, pl->length);
 	  break;
@@ -113,11 +128,22 @@ _pokel_exec (struct pokel *pokel, int sync, int wait)
   spin_unlock (&pokel->lock);
 
   for (pl = pokes; pl; last = pl, pl = pl->next)
-    if (sync)
-      {
-	ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
-	pager_sync_some (pokel->pager, pl->offset, pl->length, wait);
-      }
+    {
+      if (sync)
+	{
+	  ext2_debug ("syncing 0x%x[%ul]", pl->offset, pl->length);
+	  pager_sync_some (pokel->pager, pl->offset / vm_page_size,
+                           pl->length / vm_page_size, wait);
+	}
+
+      if (pokel->image == disk_cache)
+	{
+	  vm_offset_t begin = trunc_block (pl->offset);
+	  vm_offset_t end = round_block (pl->offset + pl->length);
+	  for (vm_offset_t i = begin; i != end; i += block_size)
+	    disk_cache_block_deref (pokel->image + i);
+	}
+    }
 
   if (last)
     {

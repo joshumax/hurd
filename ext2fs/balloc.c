@@ -92,7 +92,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 		      block, count);
 	}
       gdp = group_desc (block_group);
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       if (in_range (gdp->bg_block_bitmap, block, gcount) ||
 	  in_range (gdp->bg_inode_bitmap, block, gcount) ||
@@ -114,6 +114,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 	}
 
       record_global_poke (bh);
+      disk_cache_block_ref_ptr (gdp);
       record_global_poke (gdp);
 
       block += gcount;
@@ -180,7 +181,7 @@ repeat:
       if (j)
 	goal_attempts++;
 #endif
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       ext2_debug ("goal is at %d:%d", i, j);
 
@@ -246,6 +247,8 @@ repeat:
 	  j = k;
 	  goto got_block;
 	}
+
+      disk_cache_block_deref (bh);
       bh = 0;
     }
 
@@ -269,7 +272,8 @@ repeat:
       spin_unlock (&global_lock);
       return 0;
     }
-  bh = bptr (gdp->bg_block_bitmap);
+
+  bh = disk_cache_block_ref (gdp->bg_block_bitmap);
   r = memscan (bh, 0, sblock->s_blocks_per_group >> 3);
   j = (r - bh) << 3;
   if (j < sblock->s_blocks_per_group)
@@ -279,6 +283,7 @@ repeat:
 			     sblock->s_blocks_per_group);
   if (j >= sblock->s_blocks_per_group)
     {
+      disk_cache_block_deref (bh);
       bh = 0;
       ext2_error ("free blocks count corrupted for block group %d", i);
       spin_unlock (&global_lock);
@@ -309,6 +314,7 @@ got_block:
   if (set_bit (j, bh))
     {
       ext2_warning ("bit already set for block %d", j);
+      disk_cache_block_deref (bh);
       bh = 0;
       goto repeat;
     }
@@ -399,9 +405,12 @@ ext2_count_free_blocks ()
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
+      void *bh;
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      x = count_free (bptr (gdp->bg_block_bitmap), block_size);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
+      x = count_free (bh, block_size);
+      disk_cache_block_deref (bh);
       printf ("group %d: stored = %d, counted = %lu",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
@@ -462,7 +471,7 @@ ext2_check_blocks_bitmap ()
 
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       if (!EXT2_HAS_RO_COMPAT_FEATURE (sblock,
 				       EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER)
@@ -488,6 +497,7 @@ ext2_check_blocks_bitmap ()
 	  ext2_error ("block #%d of the inode table in group %d is marked free", j, i);
 
       x = count_free (bh, block_size);
+      disk_cache_block_deref (bh);
       if (gdp->bg_free_blocks_count != x)
 	ext2_error ("wrong free blocks count for group %d,"
 		    " stored = %d, counted = %lu",
