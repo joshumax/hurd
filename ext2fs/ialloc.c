@@ -268,6 +268,14 @@ repeat:
   spin_unlock (&global_lock);
   alloc_sync (0);
 
+  /* Make sure the coming read_node won't complain about bad
+     fields.  */
+  {
+    struct ext2_inode *di = dino_ref (inum);
+    memset (di, 0, sizeof *di);
+    dino_deref (di);
+  }
+
   return inum;
 }
 
