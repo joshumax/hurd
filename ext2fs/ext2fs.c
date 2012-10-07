@@ -181,9 +181,9 @@ main (int argc, char **argv)
   /* Map the entire disk. */
   create_disk_pager ();
 
-  pokel_init (&global_pokel, diskfs_disk_pager, disk_image);
+  pokel_init (&global_pokel, diskfs_disk_pager, disk_cache);
 
-  get_hypermetadata();
+  map_hypermetadata ();
 
   inode_init ();
 
@@ -213,5 +213,6 @@ diskfs_reload_global_state ()
   pager_flush (diskfs_disk_pager, 1);
   sblock = 0;
   get_hypermetadata ();
+  map_hypermetadata ();
   return 0;
 }

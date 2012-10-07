@@ -92,7 +92,7 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   dn->dir_idx = 0;
   dn->pager = 0;
   rwlock_init (&dn->alloc_lock);
-  pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_image);
+  pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_cache);
 
   /* Create the new node.  */
   np = diskfs_make_node (dn);
@@ -201,12 +201,16 @@ read_node (struct node *np)
   error_t err;
   struct stat *st = &np->dn_stat;
   struct disknode *dn = np->dn;
-  struct ext2_inode *di = dino (np->cache_id);
+  struct ext2_inode *di;
   struct ext2_inode_info *info = &dn->info;
+
+  ext2_debug ("(%d)", np->cache_id);
 
   err = diskfs_catch_exception ();
   if (err)
     return err;
+
+  di = dino_ref (np->cache_id);
 
   st->st_fstype = FSTYPE_EXT2FS;
   st->st_fsid = getpid ();	/* This call is very cheap.  */
@@ -285,6 +289,7 @@ read_node (struct node *np)
       info->i_high_size = di->i_size_high;
       if (info->i_high_size)	/* XXX */
 	{
+	  dino_deref (di);
 	  ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
 	  return EFBIG;
 	}
@@ -307,20 +312,12 @@ read_node (struct node *np)
     }
   dn->info_i_translator = di->i_translator;
 
+  dino_deref (di);
   diskfs_end_catch_exception ();
 
   if (S_ISREG (st->st_mode) || S_ISDIR (st->st_mode)
       || (S_ISLNK (st->st_mode) && st->st_blocks))
-    {
-      unsigned offset;
-
-      np->allocsize = np->dn_stat.st_size;
-
-      /* Round up to a block multiple.  */
-      offset = np->allocsize & ((1 << log2_block_size) - 1);
-      if (offset > 0)
-	np->allocsize += block_size - offset;
-    }
+    np->allocsize = round_block (np->dn_stat.st_size);
   else
     /* Allocsize should be zero for anything except directories, files, and
        long symlinks.  These are the only things allowed to have any blocks
@@ -408,7 +405,9 @@ write_node (struct node *np)
 {
   error_t err;
   struct stat *st = &np->dn_stat;
-  struct ext2_inode *di = dino (np->cache_id);
+  struct ext2_inode *di;
+
+  ext2_debug ("(%d)", np->cache_id);
 
   if (np->dn->info.i_prealloc_count)
     ext2_discard_prealloc (np);
@@ -424,6 +423,8 @@ write_node (struct node *np)
       err = diskfs_catch_exception ();
       if (err)
 	return NULL;
+
+      di = dino_ref (np->cache_id);
 
       di->i_generation = st->st_gen;
 
@@ -505,6 +506,7 @@ write_node (struct node *np)
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
 
+      /* Leave invoking dino_deref (di) to the caller.  */
       return di;
     }
   else
@@ -664,7 +666,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
   if (err)
     return err;
 
-  di = dino (np->cache_id);
+  di = dino_ref (np->cache_id);
   blkno = di->i_translator;
 
   if (namelen && !blkno)
@@ -677,6 +679,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 			0, 0, 0);
       if (blkno == 0)
 	{
+	  dino_deref (di);
 	  diskfs_end_catch_exception ();
 	  return ENOSPC;
 	}
@@ -700,15 +703,20 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
       np->dn_stat.st_mode &= ~S_IPTRANS;
       np->dn_set_ctime = 1;
     }
+  else
+    dino_deref (di);
 
   if (namelen)
     {
+      void *blkptr;
+
       buf[0] = namelen & 0xFF;
       buf[1] = (namelen >> 8) & 0xFF;
       memcpy (buf + 2, name, namelen);
 
-      bcopy (buf, bptr (blkno), block_size);
-      record_global_poke (bptr (blkno));
+      blkptr = disk_cache_block_ref (blkno);
+      memcpy (blkptr, buf, block_size);
+      record_global_poke (blkptr);
 
       np->dn_stat.st_mode |= S_IPTRANS;
       np->dn_set_ctime = 1;
@@ -726,7 +734,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   error_t err = 0;
   daddr_t blkno;
   unsigned datalen;
-  const void *transloc;
+  void *transloc;
 
   assert (sblock->s_creator_os == EXT2_OS_HURD);
 
@@ -734,9 +742,11 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
   if (err)
     return err;
 
-  blkno = (dino (np->cache_id))->i_translator;
+  struct ext2_inode *di = dino_ref (np->cache_id);
+  blkno = di->i_translator;
+  dino_deref (di);
   assert (blkno);
-  transloc = bptr (blkno);
+  transloc = disk_cache_block_ref (blkno);
 
   datalen =
     ((unsigned char *)transloc)[0] + (((unsigned char *)transloc)[1] << 8);
@@ -751,6 +761,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 	memcpy (*namep, transloc + 2, datalen);
     }
 
+  disk_cache_block_deref (transloc);
   diskfs_end_catch_exception ();
 
   *namelen = datalen;
