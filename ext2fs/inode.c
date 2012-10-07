@@ -291,6 +291,7 @@ read_node (struct node *np)
 	{
 	  dino_deref (di);
 	  ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
+	  diskfs_end_catch_exception ();
 	  return EFBIG;
 	}
     }
