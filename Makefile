@@ -1,7 +1,7 @@
 TARGET = procfs
 OBJS = procfs.o netfs.o procfs_dir.o \
        process.o proclist.o rootdir.o dircat.o main.o
-LIBS = -lnetfs -lps
+LIBS = -lnetfs -lps -lfshelp
 
 CC = gcc
 CFLAGS = -Wall -g
