@@ -454,7 +454,7 @@ extern char *proc_stat_state_tags;
 
 /* Returns in PS a new proc_stat for the process PID in the ps context PC.
    If a memory allocation error occurs, ENOMEM is returned, otherwise 0.
-   Users shouldn't use this routine, use pc_context_find_proc_stat instead.  */
+   Users shouldn't use this routine, use ps_context_find_proc_stat instead.  */
 error_t _proc_stat_create (pid_t pid, struct ps_context *context,
 			   struct proc_stat **ps);
 
