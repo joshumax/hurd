@@ -1726,10 +1726,8 @@ struct block {
 };
 
 static void
-get_block_address (ds, offset, map_entry)
-	dpager_t	ds;
-	vm_offset_t	offset;
-	struct block	*map_entry;
+get_block_address (dpager_t ds, vm_offset_t offset,
+		   struct block *map_entry)
 {
 	union dp_map block;
 
@@ -1750,21 +1748,36 @@ get_block_address (ds, offset, map_entry)
 }
 
 static int
-is_range_extendable (base, new, range_len)
-	struct block	*base;
-	struct block	*new;
-	vm_size_t	range_len;
+is_range_extendable (struct block *base, struct block *new,
+		     vm_size_t range_len)
 {
 	return ((base->state == new->state) && (base->part == new->part) &&
 		(base->offset + ptoa(range_len) == new->offset));
 }
 
-static void
-upload_range (map, start_page, base, range_len)
+/*
+ * This structure is used for parameters that are used by functions, that
+ * are supplied as parameter ACTION_FOR_RANGE tu function APPLY_TO_RANGES.
+ * This structure is used because different action-functions use different
+ * parameters. All common parameters are supplied directly to function
+ * ACITON_FOR_RANGE.
+ *
+ * XXX
+ * If size that is used by this structure does matter it can be converted
+ * to union. But be attentive to set parameters properly before calling
+ * function APPLY_TO_RANGES!
+ */
+struct send_range_parameters {
+	mach_port_t	reply_to;
+	boolean_t	deallocate;
+	boolean_t	external;
+	vm_offset_t	offset;
 	struct block	*map;
-	vm_offset_t	start_page;
-	struct block	*base;
-	vm_size_t	range_len;
+};
+
+static void
+upload_range (vm_offset_t addr, struct block *map, vm_offset_t start_page,
+	      struct block *base, vm_size_t range_len)
 {
 	vm_offset_t offset = base->offset;
 	vm_offset_t buf_ptr = addr + ptoa(start_page);
@@ -1780,6 +1793,9 @@ upload_range (map, start_page, base, range_len)
 		 * server, that will handle this request supports multipage
 		 * requests. So, it is should be kept in mind that size
 		 * parameter should be updated some day.
+		 *
+		 * XXX Seems "some day" came, I changed size, but didn't
+		 * notice that. Have to look more attentively.
 		 */
 		int rc = page_read_file_direct(base->part->file, offset,
 					       size, &raddr, &rsize);
@@ -1816,15 +1832,16 @@ upload_range (map, start_page, base, range_len)
 /* START_PAGE is number of first page of range in map, where BASE
  * is address of first page of range in backing store.*/
 static void
-get_data_for_range (map, start_page, base, range_len)
-	struct block	*map;
-	vm_offset_t	start_page;
-	struct block	*base;
-	vm_size_t	range_len;
+get_data_for_range (vm_offset_t addr, vm_offset_t start_page,
+		    struct block *base, vm_size_t range_len,
+		    struct send_range_parameters *parameters)
 {
+	boolean_t external = parameters->external;
+	struct block *map = parameters->map;
+
 	if (base->state == PAGER_SUCCESS) {
 		/* Upload range from backing store */
-		upload_range(map, start_page, base, range_len);
+		upload_range(addr, map, start_page, base, range_len);
 	}
 	else if ((base->state == PAGER_ABSENT) && (external)) {
 		/* Fill range with zeroes */
@@ -1837,54 +1854,14 @@ get_data_for_range (map, start_page, base, range_len)
 }
 
 static void
-apply_to_ranges (map, size, action_for_range, parameters)
-	struct block	*map;
-	vm_size_t	size;
-	void		(*action_for_range)(struct block *, vm_offset_t,
-					    struct block *, vm_size_t));
-	void		*parameters;
+send_range (vm_offset_t addr, vm_offset_t start_page, struct block *base,
+	    vm_size_t size, struct send_range_parameters *parameters)
 {
-	vm_size_t	range_len = 0;
-	struct block	*base, *new;
-	int		i;
-
-	for (i = 0; i < atop(size); i ++) {
-		base = &map[i - range_len];
-		new = &map[i];
-		if (is_range_extendable (base, new, range_len)) {
-			/* Extend range */
-			range_len ++;
-		}
-		else {
-			action_for_range (map, i - range_len, base,
-					  range_len, parameters);
-			/* Now the range starts from current block */
-			range_len = 1;
-		}
-	}
-
-	vm_offset_t range_start = atop (size) - range_len;
-	base = &map[range_start];
-	action_for_range (map, range_start, base, range_len, parameters);
-}
-
-struct send_range_parameters {
-	mach_port_t	reply_to;
-	boolean_t	deallocate;
-};
-
-static void
-send_range (start_page, base, size, parameters)
-	vm_offset_t	start_page;
-	struct block 	*base;
-	vm_size_t	size;
-	void		*parameters;
-{
+	mach_port_t	reply_to = parameters->reply_to;
+	boolean_t	deallocate = parameters->deallocate;
+	vm_offset_t	offset = parameters->offset;
 	vm_offset_t	range_start = offset + ptoa (start_page);
 	vm_offset_t	data = addr + ptoa (start_page);
-	struct send_range_parameters *param_struct = parameters;
-	mach_port_t	reply_to = param_struct->reply_to;
-	boolean_t	deallocate = param_struct->deallocate;
 	size = ptoa (size);
 
 	switch (base->state) {
@@ -1905,20 +1882,48 @@ send_range (start_page, base, size, parameters)
 	}
 }
 
+static void
+apply_to_ranges (vm_offset_t addr, struct block *map, vm_size_t size,
+		 void (*action_for_range)(vm_offset_t, vm_offset_t,
+					  struct block *, vm_size_t,
+					  struct send_range_parameters *),
+		 struct send_range_parameters *parameters)
+{
+	vm_size_t	range_len = 0;
+	struct block	*base, *new;
+	int		i;
+
+	for (i = 0; i < atop(size); i ++) {
+		base = &map[i - range_len];
+		new = &map[i];
+		if (is_range_extendable (base, new, range_len)) {
+			/* Extend range */
+			range_len ++;
+		}
+		else {
+			action_for_range (addr, i - range_len, base,
+					  range_len, parameters);
+			/* Now the range starts from current block */
+			range_len = 1;
+		}
+	}
+
+	vm_offset_t range_start = atop (size) - range_len;
+	base = &map[range_start];
+	action_for_range (addr, range_start, base, range_len, parameters);
+}
+
 /*
  * Read data from a default pager.  Addr is the address of a buffer
  * to fill.  Out_addr returns the buffer that contains the data;
  * if it is different from <addr>, it must be deallocated after use.
  */
 void
-default_read(ds, addr, size, offset, deallocate, external, reply_to)
-	register dpager_t	ds;
-	vm_offset_t		addr;	/* pointer to block to fill */
-	register vm_size_t	size;
-	register vm_offset_t	offset;
-	boolean_t		deallocate;
-	boolean_t		external;
-	mach_port_t		reply_to;
+default_read(register dpager_t ds,
+	     vm_offset_t addr /* pointer to block to fill */,
+	     register vm_size_t size, register vm_offset_t offset,
+	     boolean_t deallocate, boolean_t external,
+	     mach_port_t reply_to)
 {
 #ifdef	CHECKSUM
 	vm_size_t	original_size = size;
@@ -1961,20 +1966,22 @@ default_read(ds, addr, size, offset, deallocate, external, reply_to)
 	 *   3/ PAGER_ERROR -- no data in dpt buffer and error occurred
 	 * during reading data from backing store
 	 */
+	struct send_range_parameters parameters = {
+		.reply_to = reply_to,
+		.deallocate = deallocate,
+		.external = external,
+		.offset = offset,
+		.map = map
+	};
 
-	apply_to_ranges(map, size, get_data_for_range, NULL);
+	apply_to_ranges(addr, map, size, get_data_for_range, &parameters);
 
 	/*
 	 * Last stage is sending data to kernel or reporting about their
 	 * unavailability.
 	 */
 
-	struct send_range_parameters parameters = {
-		.reply_to = reply_to,
-		.deallocate = deallocate,
-	};
-
-	apply_to_ranges(map, size, send_range, &parameters);
+	apply_to_ranges(addr, map, size, send_range, &parameters);
 
 #if	USE_PRECIOUS
 	if (deallocate)
