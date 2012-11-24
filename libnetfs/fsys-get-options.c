@@ -49,11 +49,11 @@ netfs_S_fsys_get_options (fsys_t fsys,
   if (! err)
     {
 #if NOT_YET
-      rwlock_reader_lock (&netfs_fsys_lock);
+      pthread_rwlock_rdlock (&netfs_fsys_lock);
 #endif
       err = netfs_append_args (&argz, &argz_len);
 #if NOT_YET
-      rwlock_reader_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
     }
 

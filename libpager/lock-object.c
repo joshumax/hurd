@@ -65,11 +65,11 @@ _pager_lock_object (struct pager *p,
 	}
     }
 
-  mutex_unlock (&p->interlock);
+  pthread_mutex_unlock (&p->interlock);
   memory_object_lock_request (p->memobjcntl, offset, size, should_return,
 			      should_flush, lock_value, 
 			      sync ? p->port.port_right : MACH_PORT_NULL);
-  mutex_lock (&p->interlock);
+  pthread_mutex_lock (&p->interlock);
   
   if (sync)
     {

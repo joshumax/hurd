@@ -465,7 +465,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
 
 static struct cached_reply *replyhashtable [REPLYHASH_TABLE_SIZE];
-pthread_spinlock_t replycachelock = PTHREAD_SPINLOCK_INITIALIZER;
+static pthread_spinlock_t replycachelock = PTHREAD_SPINLOCK_INITIALIZER;
 static int nfreereplies;
 static int leastreplylastuse;
 

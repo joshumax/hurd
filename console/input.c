@@ -181,7 +181,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
 	      input->full = 1;
 	      if (was_empty)
 		pthread_cond_broadcast (&input->data_available);
-	      /* Prevent calling condition_broadcast again if nonblock.  */
+	      /* Prevent calling pthread_cond_broadcast again if nonblock.  */
 	      was_empty = 0;
 	    }
 	  else

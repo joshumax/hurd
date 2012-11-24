@@ -70,20 +70,20 @@ netfs_S_fsys_set_options (fsys_t fsys,
 #if NOT_YET
   if (do_children)
     {
-      rwlock_writer_lock (&netfs_fsys_lock);
+      pthread_rwlock_wrlock (&netfs_fsys_lock);
       err = netfs_node_iterate (helper);
-      rwlock_writer_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
     }
 #endif
 
   if (!err)
     {
 #if NOT_YET
-      rwlock_writer_lock (&netfs_fsys_lock);
+      pthread_rwlock_wrlock (&netfs_fsys_lock);
 #endif
       err = netfs_set_options (data, data_len);
 #if NOT_YET
-      rwlock_writer_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
     }
 

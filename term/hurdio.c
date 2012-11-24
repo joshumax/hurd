@@ -147,7 +147,7 @@ static void
 wait_for_dtr (void)
 {
   while (!assert_dtr)
-    pthread_cond_wait (&hurdio_assert_dtr_condition, &global_lock);
+    pthread_hurd_cond_wait_np (&hurdio_assert_dtr_condition, &global_lock);
   assert_dtr = 0;
 
   if (tty_arg == 0)
@@ -262,7 +262,7 @@ hurdio_writer_loop (void *arg)
       while (writer_thread != MACH_PORT_NULL
 	     && (ioport == MACH_PORT_NULL || !qsize (outputq)
 		 || output_stopped))
-	pthread_cond_wait (&hurdio_writer_condition, &global_lock);
+	pthread_hurd_cond_wait_np (&hurdio_writer_condition, &global_lock);
       if (writer_thread == MACH_PORT_NULL) /* A sign to die.  */
 	return 0;
 

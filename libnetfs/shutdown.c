@@ -70,7 +70,7 @@ netfs_shutdown (int flags)
 #endif
 
 #ifdef NOTYET
-  rwlock_writer_lock (&netfs_fsys_lock);
+  pthread_rwlock_wrlock (&netfs_fsys_lock);
 #endif
 
   /* Permit all current RPC's to finish, and then suspend any new ones.  */
@@ -78,7 +78,7 @@ netfs_shutdown (int flags)
   if (err)
     {
 #ifdef  NOTYET
-      rwlock_writer_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
       return err;
     }
@@ -90,7 +90,7 @@ netfs_shutdown (int flags)
       ports_enable_class (netfs_protid_class);
       ports_resume_class_rpcs (netfs_protid_class);
 #ifdef NOTYET
-      rwlock_writer_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
       return EBUSY;
     }

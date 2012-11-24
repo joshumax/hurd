@@ -44,11 +44,11 @@ netfs_S_file_get_fs_options (struct protid *user,
   if (! err)
     {
 #if NOT_YET
-      rwlock_reader_lock (&netfs_fsys_lock);
+      pthread_rwlock_rdlock (&netfs_fsys_lock);
 #endif
       err = netfs_append_args (&argz, &argz_len);
 #if NOT_YET
-      rwlock_reader_unlock (&netfs_fsys_lock);
+      pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
     }
 
