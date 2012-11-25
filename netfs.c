@@ -208,10 +208,10 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
   error_t err;
 
   err = procfs_lookup (dir, name, np);
-  mutex_unlock (&dir->lock);
+  pthread_mutex_unlock (&dir->lock);
 
   if (! err)
-    mutex_lock (&(*np)->lock);
+    pthread_mutex_lock (&(*np)->lock);
 
   return err;
 }
@@ -220,12 +220,12 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
    free all its associated storage. */
 void netfs_node_norefs (struct node *np)
 {
-  spin_unlock (&netfs_node_refcnt_lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   procfs_cleanup (np);
   free (np);
 
-  spin_lock (&netfs_node_refcnt_lock);
+  pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
 
