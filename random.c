@@ -27,8 +27,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <cthreads.h>
-#include <rwlock.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include <version.h>
 
@@ -39,8 +39,8 @@
 struct trivfs_control *fsys;
 
 int read_blocked;		/* For read and select.  */
-struct condition wait;		/* For read and select.  */
-struct condition select_alert;	/* For read and select.  */
+pthread_cond_t wait;		/* For read and select.  */
+pthread_cond_t select_alert;	/* For read and select.  */
 
 
 /* The quality of randomness we provide.
@@ -105,7 +105,7 @@ gather_random( void (*add)(const void*, size_t, int), int requester,
 const char *argp_program_version = STANDARD_HURD_VERSION (random);
 
 /* This lock protects the GnuPG code.  */
-static struct mutex global_lock;
+static pthread_mutex_t global_lock;
 
 /* Trivfs hooks. */
 int trivfs_fstype = FSTYPE_MISC;
@@ -148,7 +148,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   if (amount > 0)
     {
@@ -156,13 +156,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	{
 	  if (cred->po->openmodes & O_NONBLOCK)
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EWOULDBLOCK;
 	    }
 	  read_blocked = 1;
-	  if (hurd_condition_wait (&wait, &global_lock))
+	  if (pthread_hurd_cond_wait_np (&wait, &global_lock))
 	    {
-	      mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      return EINTR;
 	    }
 	  /* See term/users.c for possible race?  */
@@ -179,7 +179,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   /* Set atime, see term/users.c */
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -207,7 +207,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   else if (! (cred->po->openmodes & O_WRITE))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   while (i < datalen)
     {
@@ -222,10 +222,11 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   if (datalen > 0 && read_blocked)
     {
       read_blocked = 0;
-      condition_broadcast (&wait);
+      pthread_cond_broadcast (&wait);
+      pthread_cond_broadcast (&select_alert);
     }
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
   return 0;
 }
 
@@ -243,13 +244,13 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
 
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
   /* XXX: Before initialization, the amount depends on the amount we
      want to read.  Assume some medium value.  */
   *amount = readable_pool (POOLSIZE/2, level);
 
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return 0;
 }
@@ -275,7 +276,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (*type == 0)
     return 0;
 
-    mutex_lock (&global_lock);
+    pthread_mutex_lock (&global_lock);
 
     while (1)
       {
@@ -285,17 +286,17 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 	if (avail != 0 || *type & SELECT_WRITE)
 	  {
 	    *type = (avail ? SELECT_READ : 0) | (*type & SELECT_WRITE);
-	    mutex_unlock (&global_lock);
+	    pthread_mutex_unlock (&global_lock);
 	    return 0;
 	  }
 
 	ports_interrupt_self_on_port_death (cred, reply);
 	read_blocked = 1;
 
-	if (hurd_condition_wait (&select_alert, &global_lock))
+	if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
 	  {
 	    *type = 0;
-	    mutex_unlock (&global_lock);
+	    pthread_mutex_unlock (&global_lock);
 	    return EINTR;
 	  }
       }
@@ -473,7 +474,7 @@ trivfs_append_args (struct trivfs_control *fsys,
   error_t err = 0;
   char *opt;
   
-  mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
   switch (level)
     {
     case 0:
@@ -505,7 +506,7 @@ trivfs_append_args (struct trivfs_control *fsys,
 	  free (opt);
 	}
     }
-  mutex_unlock (&global_lock);
+  pthread_mutex_unlock (&global_lock);
 
   return err;
 }
@@ -591,13 +592,12 @@ main (int argc, char **argv)
   /* Initialize the lock that will protect everything.
      We must do this before argp_parse, because parse_opt (above) will
      use the lock.  */
-  mutex_init (&global_lock);
+  pthread_mutex_init (&global_lock, NULL);
 
   /* The conditions are used to implement proper read/select
      behaviour.  */
-  condition_init (&wait);
-  condition_init (&select_alert);
-  condition_implies (&wait, &select_alert);
+  pthread_cond_init (&wait, NULL);
+  pthread_cond_init (&select_alert, NULL);
 
   /* We use the same argp for options available at startup
      as for options we'll accept in an fsys_set_options RPC.  */
