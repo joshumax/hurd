@@ -23,6 +23,8 @@
 #include <mach/vm_param.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/statvfs.h>
+#include <unistd.h>
 #include "procfs.h"
 
 #define PROCFS_SERVER_NAME "procfs"
@@ -347,7 +349,10 @@ error_t netfs_attempt_set_size (struct iouser *cred, struct node *np,
 error_t netfs_attempt_statfs (struct iouser *cred, struct node *np,
 			      fsys_statfsbuf_t *st)
 {
-  return ENOSYS;
+  memset (st, 0, sizeof *st);
+  st->f_type = FSTYPE_PROC;
+  st->f_fsid = getpid ();
+  return 0;
 }
 
 /* The user must define this function.  This should sync the locked
