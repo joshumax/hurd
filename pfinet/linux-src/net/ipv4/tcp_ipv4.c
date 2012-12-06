@@ -113,7 +113,11 @@ struct sock *tcp_regs[TCP_NUM_REGS];
  * For high-usage systems, use sysctl to change this to
  * 32768-61000
  */
+#if 0
 int sysctl_local_port_range[2] = { 1024, 4999 };
+#else
+int sysctl_local_port_range[2] = { 32768, 61000 };
+#endif
 int tcp_port_rover = (1024 - 1);
 
 static __inline__ int tcp_hashfn(__u32 laddr, __u16 lport,
