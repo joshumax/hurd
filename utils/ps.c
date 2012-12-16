@@ -328,6 +328,8 @@ main(int argc, char *argv[])
 	  /* Select an explicit format string if FMT_STRING is a format
 	     name.  This is done here because parse_enum needs STATE.  */
 	  {
+	    if (posix_fmt)
+	      break;
 	    const char *fmt_name (unsigned n)
 	      {
 		return
