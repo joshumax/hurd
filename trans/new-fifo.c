@@ -610,12 +610,21 @@ trivfs_S_io_select (struct trivfs_protid *cred,
       if (cred->po->openmodes & O_READ)
 	{
 	  pthread_mutex_lock (&pipe->lock);
-	  if (pipe_wait_readable (pipe, 1, 1) != EWOULDBLOCK)
-	    ready |= SELECT_READ; /* Data immediately readable (or error). */
+	  err = pipe_wait_readable (pipe, 1, 1);
+	  if (err == EWOULDBLOCK)
+	    err = 0; /* Not readable, actually not an error.  */
+	  else
+	    ready |= SELECT_READ; /* Data immediately readable (or error).  */
 	  pthread_mutex_unlock (&pipe->lock);
 	}
       else
-	ready |= SELECT_READ;	/* Error immediately available...  */
+	{
+	  err = EBADF;
+	  ready |= SELECT_READ;	/* Error immediately available...  */
+	}
+      if (err)
+	/* Prevent write test from overwriting err.  */
+	*select_type &= ~SELECT_WRITE;
     }
 
   if (*select_type & SELECT_WRITE)
@@ -623,12 +632,18 @@ trivfs_S_io_select (struct trivfs_protid *cred,
       if (cred->po->openmodes & O_WRITE)
 	{
 	  pthread_mutex_lock (&pipe->lock);
-	  if (pipe_wait_writable (pipe, 1) != EWOULDBLOCK)
-	    ready |= SELECT_WRITE; /* Data immediately writable (or error). */
+	  err = pipe_wait_writable (pipe, 1);
+	  if (err == EWOULDBLOCK)
+	    err = 0; /* Not writable, actually not an error.  */
+	  else
+	    ready |= SELECT_WRITE; /* Data immediately writable (or error).  */
 	  pthread_mutex_unlock (&pipe->lock);
 	}
       else
-	ready |= SELECT_WRITE;	/* Error immediately available...  */
+	{
+	  err = EBADF;
+	  ready |= SELECT_WRITE;	/* Error immediately available...  */
+	}
     }
 
   if (ready)

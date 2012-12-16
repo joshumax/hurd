@@ -231,15 +231,24 @@ S_io_select (struct sock_user *user,
       if (valid & SELECT_READ)
 	{
 	  pipe_acquire_reader (read_pipe);
-	  if (pipe_wait_readable (read_pipe, 1, 1) != EWOULDBLOCK)
-	    ready |= SELECT_READ; /* Data immediately readable (or error). */
+	  err = pipe_wait_readable (read_pipe, 1, 1);
+	  if (err == EWOULDBLOCK)
+	    err = 0; /* Not readable, actually not an error.  */
+	  else
+	    ready |= SELECT_READ; /* Data immediately readable (or error).  */
 	  pthread_mutex_unlock (&read_pipe->lock);
+	  if (err)
+	    /* Prevent write test from overwriting err.  */
+	    valid &= ~SELECT_WRITE;
 	}
       if (valid & SELECT_WRITE)
 	{
 	  pipe_acquire_writer (write_pipe);
-	  if (pipe_wait_writable (write_pipe, 1) != EWOULDBLOCK)
-	    ready |= SELECT_WRITE; /* Data immediately writable (or error). */
+	  err = pipe_wait_writable (write_pipe, 1);
+	  if (err == EWOULDBLOCK)
+	    err = 0; /* Not writable, actually not an error.  */
+	  else
+	    ready |= SELECT_WRITE; /* Data immediately writable (or error).  */
 	  pthread_mutex_unlock (&write_pipe->lock);
 	}
 
