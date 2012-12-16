@@ -102,10 +102,7 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	  goto retry;
 	}
       if (err)
-	{
-	  pthread_mutex_unlock (&np->lock);
-	  return EIEIO;
-	}
+	return EIEIO;
 
       pthread_mutex_lock (&np->lock);
       if (np->sockaddr != MACH_PORT_NULL)
