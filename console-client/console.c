@@ -178,8 +178,6 @@ console_move_mouse (mouse_event_t ev)
       ports_port_deref (vcons);
     }
 
-  pthread_mutex_unlock (&global_lock);
-
   return 0;
 }
 
