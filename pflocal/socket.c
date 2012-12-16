@@ -139,11 +139,11 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 			sock_free (server);
 		    }
 
-	          pthread_mutex_lock (&sock->lock);
 		  if (err)
 		    connq_connect_cancel (peer->listen_queue);
 		}
 
+              pthread_mutex_lock (&sock->lock);
 	      /* We must set CONNECT_QUEUE to NULL, as no one else can
 		 set it until we've done so.  */
 	      sock->connect_queue = NULL;
