@@ -69,8 +69,8 @@ kbd_repeat_key (kd_event *key)
   pthread_mutex_lock (&global_lock);
   while (kbdbuf.size + sizeof (kd_event) > KBDBUFSZ)
     {
-      /* The input buffer is full, wait until there is some space. If this call
-       * is interrupted, silently continue. */
+      /* The input buffer is full, wait until there is some space.  If this call
+         is interrupted, silently continue.  */
       (void) pthread_hurd_cond_wait_np (&kbdbuf.writecond, &global_lock);
     }
   ev = (kd_event *) &kbdbuf.keybuffer[KBDBUF_POS (kbdbuf.pos 
