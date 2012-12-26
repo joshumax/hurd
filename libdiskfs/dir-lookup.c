@@ -310,9 +310,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		pthread_mutex_lock (&dnp->lock);
 	      else
 		{
-		  pthread_mutex_unlock (&np->lock);
-		  pthread_mutex_lock (&dnp->lock);
-		  pthread_mutex_lock (&np->lock);
+		  if (pthread_mutex_trylock (&dnp->lock))
+		    {
+		      pthread_mutex_unlock (&np->lock);
+		      pthread_mutex_lock (&dnp->lock);
+		      pthread_mutex_lock (&np->lock);
+		    }
 		}
 	    }
 	}

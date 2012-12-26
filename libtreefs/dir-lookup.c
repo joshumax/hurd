@@ -199,9 +199,12 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	     in the right order. */
 	  if (strcmp (path, "..") != 0)
 	    {
-	      pthread_mutex_unlock (&node->lock);
-	      pthread_mutex_lock (&dir->lock);
-	      pthread_mutex_lock (&node->lock);
+	      if (pthread_mutex_trylock (&dir->lock))
+	        {
+		  pthread_mutex_unlock (&node->lock);
+		  pthread_mutex_lock (&dir->lock);
+		  pthread_mutex_lock (&node->lock);
+		}
 	    }
 	  else
 	    pthread_mutex_lock (&dir->lock);
