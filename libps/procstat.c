@@ -226,6 +226,10 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
     /* Task info.  */
     bcopy (&old_pi_hdr.taskinfo, &new_pi->taskinfo,
 	   sizeof (struct task_basic_info));
+  if (have & PSTAT_TASK_EVENTS)
+    /* Event info. */
+    bcopy (&old_pi_hdr.taskevents, &new_pi->taskevents,
+	   sizeof (struct task_events_info));
   /* That's it for now.  */
 
   if (new_pi != ps->proc_info)
@@ -637,6 +641,8 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	 gotten them, as the information will be newer.  */
       if (have & PSTAT_TASK_BASIC)
 	ps->task_basic_info = &pi->taskinfo;
+      if (have & PSTAT_TASK_EVENTS)
+	ps->task_events_info = &pi->taskevents;
       if (have & PSTAT_NUM_THREADS)
 	ps->num_threads = count_threads (pi, have);
       if (had & PSTAT_THREAD_BASIC)

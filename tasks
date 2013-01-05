@@ -101,8 +101,6 @@ Please discuss proposed microkernel work with thomas@gnu.org.
     have said their could could be released to the public (but it has not
     appeared).
 
-  * Implement TASK_EVENTS_INFO.
-
   * Add an anonymous swap allocation statistic to the task info structure.
 
 
