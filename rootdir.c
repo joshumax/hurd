@@ -17,8 +17,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <mach/gnumach.h>
 #include <mach/vm_param.h>
 #include <mach/vm_statistics.h>
+#include <mach/vm_cache_statistics.h>
 #include <mach/default_pager.h>
 #include <hurd/paths.h>
 #include <stdio.h>
@@ -263,10 +265,15 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   host_basic_info_data_t hbi;
   mach_msg_type_number_t cnt;
   struct vm_statistics vmstats;
+  struct vm_cache_statistics cache_stats;
   default_pager_info_t swap;
   error_t err;
 
   err = vm_statistics (mach_task_self (), &vmstats);
+  if (err)
+    return EIO;
+
+  err = vm_cache_statistics (mach_task_self (), &cache_stats);
   if (err)
     return EIO;
 
@@ -294,7 +301,7 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
       0,
-      0,
+      (long unsigned) cache_stats.cache_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024,
