@@ -23,6 +23,7 @@
 #include <linux/wait.h>
 #include <linux/socket.h>
 #include <linux/net.h>
+#include <linux/poll.h>
 #include <net/sock.h>
 
 #include "io_S.h"
@@ -256,8 +257,9 @@ S_io_select (struct sock_user *user,
 	     mach_msg_type_name_t reply_type,
 	     int *select_type)
 {
-  const int want = *select_type;
+  const int want = *select_type | POLLERR;
   int avail;
+  int ret = 0;
 
   if (!user)
     return EOPNOTSUPP;
@@ -293,12 +295,15 @@ S_io_select (struct sock_user *user,
       while ((avail & want) == 0);
     }
 
-  /* We got something.  */
-  *select_type = avail;
+  if (avail & POLLERR)
+    ret = EIO;
+  else
+    /* We got something.  */
+    *select_type = avail;
 
   pthread_mutex_unlock (&global_lock);
 
-  return 0;
+  return ret;
 }
 
 error_t
