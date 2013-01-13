@@ -61,6 +61,9 @@
  *					return ENOTCONN for unconnected sockets (POSIX)
  *		Janos Farkas	:	don't deliver multi/broadcasts to a different
  *					bound-to-device socket
+ *	YOSHIFUJI Hideaki @USAGI and:	Support IPV6_V6ONLY socket option, which
+ *	Alexey Kuznetsov:		allow both IPv4 and IPv6 sockets to bind
+ *					a single port at the same time.
  *
  *
  *		This program is free software; you can redistribute it and/or
@@ -104,6 +107,7 @@
 #include <linux/mm.h>
 #include <linux/config.h>
 #include <linux/inet.h>
+#include <linux/ipv6.h>
 #include <linux/netdevice.h>
 #include <net/snmp.h>
 #include <net/ip.h>
@@ -178,6 +182,7 @@ gotit:
 		     sk2 = sk2->next) {
 			if (sk2->num == snum &&
 			    sk2 != sk &&
+			    !ipv6_only_sock(sk2) &&
 			    sk2->bound_dev_if == sk->bound_dev_if &&
 			    (!sk2->rcv_saddr ||
 			     !sk->rcv_saddr ||
@@ -236,29 +241,30 @@ struct sock *udp_v4_lookup_longway(u32 saddr, u16 sport, u32 daddr, u16 dport, i
 	int badness = -1;
 
 	for(sk = udp_hash[hnum & (UDP_HTABLE_SIZE - 1)]; sk != NULL; sk = sk->next) {
-		if((sk->num == hnum) && !(sk->dead && (sk->state == TCP_CLOSE))) {
-			int score = 0;
+	  if((sk->num == hnum) && !ipv6_only_sock(sk)
+	      && !(sk->dead && (sk->state == TCP_CLOSE))) {
+			int score = (sk->family == PF_INET ? 1 : 0);
 			if(sk->rcv_saddr) {
 				if(sk->rcv_saddr != daddr)
 					continue;
-				score++;
+				score+=2;
 			}
 			if(sk->daddr) {
 				if(sk->daddr != saddr)
 					continue;
-				score++;
+				score+=2;
 			}
 			if(sk->dport) {
 				if(sk->dport != sport)
 					continue;
-				score++;
+				score+=2;
 			}
 			if(sk->bound_dev_if) {
 				if(sk->bound_dev_if != dif)
 					continue;
-				score++;
+				score+=2;
 			}
-			if(score == 4) {
+			if(score == 9) {
 				result = sk;
 				break;
 			} else if(score > badness) {
@@ -389,6 +395,7 @@ static inline struct sock *udp_v4_mcast_next(struct sock *sk,
 		    (s->daddr && s->daddr!=raddr)			||
 		    (s->dport != rnum && s->dport != 0)			||
 		    (s->rcv_saddr  && s->rcv_saddr != laddr)		||
+		    ipv6_only_sock(s)					||
 		    (s->bound_dev_if && s->bound_dev_if != dif))
 			continue;
 		break;

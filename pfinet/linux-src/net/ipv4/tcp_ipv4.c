@@ -45,9 +45,13 @@
  *	Vitaly E. Lavrov	:	Transparent proxy revived after year coma.
  *	Andi Kleen		:	Fix new listen.
  *	Andi Kleen		:	Fix accept error reporting.
+ *	YOSHIFUJI Hideaki @USAGI and:	Support IPV6_V6ONLY socket option, which
+ *	Alexey Kuznetsov		allow both IPv4 and IPv6 sockets to bind
+ *					a single port at the same time.
  */
 
 #include <linux/config.h>
+
 #include <linux/types.h>
 #include <linux/fcntl.h>
 #include <linux/random.h>
@@ -61,6 +65,7 @@
 #include <asm/segment.h>
 
 #include <linux/inet.h>
+#include <linux/ipv6.h>
 #include <linux/stddef.h>
 
 extern int sysctl_tcp_timestamps;
@@ -258,7 +263,8 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 			int sk_reuse = sk->reuse;
 
 			for( ; sk2 != NULL; sk2 = sk2->bind_next) {
-				if (sk->bound_dev_if == sk2->bound_dev_if) {
+				if (!ipv6_only_sock(sk2) &&
+				    sk->bound_dev_if == sk2->bound_dev_if) {
 					if (!sk_reuse	||
 					    !sk2->reuse	||
 					    sk2->state == TCP_LISTEN) {
@@ -378,23 +384,23 @@ static struct sock *tcp_v4_lookup_listener(u32 daddr, unsigned short hnum, int d
 	struct sock *result = NULL;
 	int score, hiscore;
 
-	hiscore=0;
+	hiscore=-1;
 	for(sk = tcp_listening_hash[tcp_lhashfn(hnum)]; sk; sk = sk->next) {
-		if(sk->num == hnum) {
+		if(sk->num == hnum && !ipv6_only_sock(sk)) {
 			__u32 rcv_saddr = sk->rcv_saddr;
 
-			score = 1;
+			score = (sk->family == PF_INET ? 1 : 0);
 			if(rcv_saddr) {
 				if (rcv_saddr != daddr)
 					continue;
-				score++;
+				score+=2;
 			}
 			if (sk->bound_dev_if) {
 				if (sk->bound_dev_if != dif)
 					continue;
-				score++;
+				score+=2;
 			}
-			if (score == 3)
+			if (score == 5)
 				return sk;
 			if (score > hiscore) {
 				hiscore = score;

@@ -86,6 +86,9 @@ struct frag_hdr {
 
 #include <net/sock.h>
 
+/* sysctls */
+extern int sysctl_ipv6_bindv6only;
+
 extern struct ipv6_mib		ipv6_statistics;
 extern struct icmpv6_mib	icmpv6_statistics;
 extern struct udp_mib		udp_stats_in6;

@@ -1,6 +1,7 @@
 #ifndef _IPV6_H
 #define _IPV6_H
 
+#include <linux/config.h>
 #include <linux/in6.h>
 #include <asm/byteorder.h>
 
@@ -111,6 +112,14 @@ struct inet6_skb_parm
 	__u16			srcrt;
 	__u16			dst1;
 };
+
+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+#define __ipv6_only_sock(sk)   (sk->net_pinfo.af_inet6.ipv6only)
+#define ipv6_only_sock(sk)     ((sk)->family == PF_INET6 && __ipv6_only_sock(sk))
+#else
+#define __ipv6_only_sock(sk)   0
+#define ipv6_only_sock(sk)     0
+#endif
 
 #endif
 

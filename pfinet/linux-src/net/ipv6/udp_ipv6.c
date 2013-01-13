@@ -5,6 +5,10 @@
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
  *
+ *	YOSHIFUJI Hideaki @USAGI and:	Support IPV6_V6ONLY socket option, which
+ *	Alexey Kuznetsov		allow both IPv4 and IPv6 sockets to bind
+ *					a single port at the same time.
+ *
  *	Based on linux/ipv4/udp.c
  *
  *	$Id: udp_ipv6.c,v 1.3 2007/10/13 01:43:00 stesie Exp $
@@ -45,6 +49,41 @@
 #include <net/checksum.h>
 
 struct udp_mib udp_stats_in6;
+
+static __inline__ int udv6_rcv_saddr_equal(struct sock *sk, struct sock *sk2)
+{
+	struct ipv6_pinfo *np = &sk->net_pinfo.af_inet6;
+	int addr_type = ipv6_addr_type(&np->rcv_saddr);
+
+	if (!sk2->rcv_saddr && !ipv6_only_sock(sk))
+		return 1;
+
+	if (sk2->family == AF_INET6 &&
+	    ipv6_addr_any(&sk2->rcv_saddr) &&
+	    !(ipv6_only_sock(sk2) && addr_type == IPV6_ADDR_MAPPED))
+		return 1;
+
+	if (addr_type == IPV6_ADDR_ANY &&
+	    (!ipv6_only_sock(sk) ||
+	     !(sk2->family == AF_INET6 ?
+	       ipv6_addr_type(&sk2->rcv_saddr) == IPV6_ADDR_MAPPED : 1)))
+		return 1;
+
+	if (sk2->family == AF_INET6 &&
+	    !ipv6_addr_cmp(&sk->rcv_saddr,
+			   &sk2->rcv_saddr))
+		return 1;
+
+	if (addr_type == IPV6_ADDR_MAPPED &&
+	    !ipv6_only_sock(sk2) &&
+	    (!sk2->rcv_saddr ||
+	     !sk->rcv_saddr ||
+	     sk->rcv_saddr == sk2->rcv_saddr))
+		return 1;
+
+	return 0;
+}
+
 
 /* Grrr, addr_type already calculated by caller, but I don't want
  * to add some silly "cookie" argument to this method just for that.
@@ -104,11 +143,8 @@ gotit:
 			if (sk2->num == snum &&
 			    sk2 != sk &&
 			    sk2->bound_dev_if == sk->bound_dev_if &&
-			    (!sk2->rcv_saddr ||
-			     addr_type == IPV6_ADDR_ANY ||
-			     !ipv6_addr_cmp(&sk->net_pinfo.af_inet6.rcv_saddr,
-					    &sk2->net_pinfo.af_inet6.rcv_saddr)) &&
-			    (!sk2->reuse || !sk->reuse))
+			    (!sk2->reuse || !sk->reuse) &&
+			    udv6_rcv_saddr_equal(sk, sk2))
 				goto fail;
 		}
 	}
@@ -208,6 +244,8 @@ int udpv6_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 	int			err;
 
 	if (usin->sin6_family == AF_INET) {
+		if (__ipv6_only_sock(sk))
+			return -EAFNOSUPPORT;
 		err = udp_connect(sk, uaddr, addr_len);
 		goto ipv4_connected;
 	}
@@ -250,6 +288,9 @@ int udpv6_connect(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 
 	if (addr_type == IPV6_ADDR_MAPPED) {
 		struct sockaddr_in sin;
+
+		if (__ipv6_only_sock(sk))
+			return -ENETUNREACH;
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = daddr->s6_addr32[3];
@@ -806,8 +847,11 @@ static int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, int ulen)
 	fl.fl6_flowlabel = 0;
 
 	if (sin6) {
-		if (sin6->sin6_family == AF_INET)
+		if (sin6->sin6_family == AF_INET) {
+			if (__ipv6_only_sock(sk))
+				return -ENETUNREACH;
 			return udp_sendmsg(sk, msg, ulen);
+		}
 
 		if (addr_len < sizeof(*sin6))
 			return(-EINVAL);
@@ -853,6 +897,9 @@ static int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, int ulen)
 
 	if (addr_type == IPV6_ADDR_MAPPED) {
 		struct sockaddr_in sin;
+
+		if (__ipv6_only_sock(sk))
+			return -ENETUNREACH;
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = daddr->s6_addr32[3];

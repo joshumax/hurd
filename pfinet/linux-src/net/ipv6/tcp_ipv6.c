@@ -4,6 +4,9 @@
  *
  *	Authors:
  *	Pedro Roque		<roque@di.fc.ul.pt>	
+ *	YOSHIFUJI Hideaki @USAGI and:	Support IPV6_V6ONLY socket option, which
+ *	Alexey Kuznetsov		allow both IPv4 and IPv6 sockets to bind
+ *					a single port at the same time.
  *
  *	$Id: tcp_ipv6.c,v 1.3 2007/10/13 01:43:00 stesie Exp $
  *
@@ -79,6 +82,43 @@ static __inline__ int tcp_v6_sk_hashfn(struct sock *sk)
 	return tcp_v6_hashfn(laddr, lport, faddr, fport);
 }
 
+static inline int ipv6_rcv_saddr_equal(struct sock *sk, struct sock *sk2)
+{
+	struct ipv6_pinfo *np = &sk->net_pinfo.af_inet6;
+	int addr_type = ipv6_addr_type(&np->rcv_saddr);
+
+	if (!sk2->rcv_saddr && !ipv6_only_sock(sk))
+		return 1;
+
+	if (sk2->family == AF_INET6 &&
+	    ipv6_addr_any(&sk2->rcv_saddr) &&
+	    !(ipv6_only_sock(sk2) && addr_type == IPV6_ADDR_MAPPED))
+		return 1;
+
+	if (addr_type == IPV6_ADDR_ANY &&
+	    (!ipv6_only_sock(sk) ||
+	     !(sk2->family == AF_INET6 ?
+	       ipv6_addr_type(&sk2->rcv_saddr) == IPV6_ADDR_MAPPED : 1)))
+		return 1;
+
+	if (sk2->family == AF_INET6 &&
+	    !ipv6_addr_cmp(&np->rcv_saddr,
+			   (sk2->state != TCP_TIME_WAIT ?
+			    &sk2->rcv_saddr :
+			    &((struct tcp_tw_bucket *)sk)->v6_rcv_saddr)))
+		return 1;
+
+	if (addr_type == IPV6_ADDR_MAPPED &&
+	    !ipv6_only_sock(sk2) &&
+	    (!sk2->rcv_saddr ||
+	     !sk->rcv_saddr ||
+	     sk->rcv_saddr == sk2->rcv_saddr))
+		return 1;
+
+	return 0;
+}
+
+
 /* Grrr, addr_type already calculated by caller, but I don't want
  * to add some silly "cookie" argument to this method just for that.
  * But it doesn't matter, the recalculation is in the rarest path
@@ -134,18 +174,11 @@ static int tcp_v6_get_port(struct sock *sk, unsigned short snum)
 
 			for( ; sk2 != NULL; sk2 = sk2->bind_next) {
 				if (sk->bound_dev_if == sk2->bound_dev_if) {
-					if (!sk_reuse	||
+					if ((!sk_reuse	||
 					    !sk2->reuse	||
-					    sk2->state == TCP_LISTEN) {
-						/* NOTE: IPv6 tw bucket have different format */
-						if (!sk2->rcv_saddr	||
-						    addr_type == IPV6_ADDR_ANY ||
-						    !ipv6_addr_cmp(&sk->net_pinfo.af_inet6.rcv_saddr,
-								   sk2->state != TCP_TIME_WAIT ?
-								   &sk2->net_pinfo.af_inet6.rcv_saddr :
-								   &((struct tcp_tw_bucket*)sk)->v6_rcv_saddr))
-							break;
-					}
+					    sk2->state == TCP_LISTEN) &&
+					  ipv6_rcv_saddr_equal(sk, sk2))
+						break;
 				}
 			}
 			/* If we found a conflict, fail. */
@@ -459,6 +492,9 @@ static int tcp_v6_connect(struct sock *sk, struct sockaddr *uaddr,
 		struct sockaddr_in sin;
 
 		SOCK_DEBUG(sk, "connect: ipv4 mapped\n");
+
+		if (__ipv6_only_sock(sk))
+			return -ENETUNREACH;
 
 		sin.sin_family = AF_INET;
 		sin.sin_port = usin->sin6_port;

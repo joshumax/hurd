@@ -170,7 +170,8 @@ struct ipv6_pinfo {
 	__u8			mc_loop:1,
 	                        recverr:1,
 	                        sndflow:1,
-	                        pmtudisc:2;
+	                        pmtudisc:2,
+	                        ipv6only:1;
 
 	struct ipv6_mc_socklist	*ipv6_mc_list;
 	struct ipv6_fl_socklist *ipv6_fl_list;

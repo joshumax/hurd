@@ -84,6 +84,8 @@ extern void ipv6_sysctl_register(void);
 extern void ipv6_sysctl_unregister(void);
 #endif
 
+int sysctl_ipv6_bindv6only;
+
 static int inet6_create(struct socket *sock, int protocol)
 {
 	struct sock *sk;
@@ -136,6 +138,8 @@ static int inet6_create(struct socket *sock, int protocol)
 	sk->net_pinfo.af_inet6.mcast_hops = -1;
 	sk->net_pinfo.af_inet6.mc_loop	  = 1;
 	sk->net_pinfo.af_inet6.pmtudisc	  = IPV6_PMTUDISC_WANT;
+
+	sk->net_pinfo.af_inet6.ipv6only	  = sysctl_ipv6_bindv6only;
 
 	/* Init the ipv4 part of the socket since we can have sockets
 	 * using v6 API for ipv4.
