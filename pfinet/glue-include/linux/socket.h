@@ -20,10 +20,16 @@
 #define SOPRI_NORMAL 1
 #define SOPRI_BACKGROUND 2
 
+#ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
+#endif
 #define SOL_TCP IPPROTO_TCP
+#ifndef SOL_IPV6
 #define SOL_IPV6 IPPROTO_IPV6
+#endif
+#ifndef SOL_ICMPV6
 #define SOL_ICMPV6 IPPROTO_ICMPV6
+#endif
 #define SOL_RAW IPPROTO_RAW
 
 /* IP options */
