@@ -28,7 +28,9 @@
 #include <version.h>
 
 #include <mach.h>
+#include <mach/gnumach.h>
 #include <mach/vm_statistics.h>
+#include <mach/vm_cache_statistics.h>
 #include <mach/default_pager.h>
 #include <hurd.h>
 #include <hurd/paths.h>
@@ -185,6 +187,9 @@ struct vm_state
   /* General vm statistics.  */
   struct vm_statistics vmstats;
 
+  /* Page cache statistics.  */
+  struct vm_cache_statistics cache_stats;
+
   /* default pager port (must be privileged to fetch this).  */
   mach_port_t def_pager;
   struct default_pager_info def_pager_info;
@@ -194,6 +199,11 @@ static error_t
 vm_state_refresh (struct vm_state *state)
 {
   error_t err = vm_statistics (mach_task_self (), &state->vmstats);
+
+  if (err)
+    return err;
+
+  err = vm_cache_statistics (mach_task_self (), &state->cache_stats);
 
   if (err)
     return err;
@@ -303,8 +313,8 @@ SWAP_FIELD (get_swap_page_size, state->def_pager_info.dpi_page_size)
 SWAP_FIELD (get_swap_active, (state->def_pager_info.dpi_total_space
 			      - state->def_pager_info.dpi_free_space))
 
-/* Returns the byte offset of the field FIELD in a vm_statistics structure. */
-#define _F(field_name)  offsetof (struct vm_statistics, field_name)
+/* Returns the byte offset of the field FIELD in a vm_state structure. */
+#define _F(field_name)  offsetof (struct vm_state, field_name)
 
 #define K 1024
 #define M (1024*K)
@@ -314,35 +324,39 @@ SWAP_FIELD (get_swap_active, (state->def_pager_info.dpi_total_space
 static const struct field fields[] =
 {
   {"pagesize",	   "pgsz", "System pagesize",
-   CONST, PAGESZ, 16*K,		1, _F (pagesize) },
+   CONST, PAGESZ, 16*K,		1, _F (vmstats.pagesize) },
   {"size",	   "size", "Usable physical memory",
    CONST, SIZE,   VAL_MAX_MEM,	1, 0, get_size },
   {"free",	   "free", "Unused physical memory",
-   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (free_count) },
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (vmstats.free_count) },
   {"active",	   "actv", "Physical memory in active use",
-   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (active_count) },
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (vmstats.active_count) },
   {"inactive", 	   "inact", "Physical memory in the inactive queue",
-   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (inactive_count) },
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (vmstats.inactive_count) },
   {"wired",    	   "wired", "Unpageable physical memory",
-   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (wire_count) },
+   VARY,  SIZE,   VAL_MAX_MEM,	1, _F (vmstats.wire_count) },
   {"zero filled",  "zeroed","Cumulative zero-filled pages",
-   CUMUL, SIZE,   90*G,		1, _F (zero_fill_count) },
+   CUMUL, SIZE,   90*G,		1, _F (vmstats.zero_fill_count) },
   {"reactivated",  "react", "Cumulative reactivated inactive pages",
-   CUMUL, SIZE,   900*M,	1, _F (reactivations) },
+   CUMUL, SIZE,   900*M,	1, _F (vmstats.reactivations) },
   {"pageins",	   "pgins", "Cumulative pages paged in",
-   CUMUL, SIZE,   90*G,		1, _F (pageins) },
+   CUMUL, SIZE,   90*G,		1, _F (vmstats.pageins) },
   {"pageouts",	   "pgouts","Cumulative pages paged out",
-   CUMUL, SIZE,   90*G,		1, _F (pageouts) },
+   CUMUL, SIZE,   90*G,		1, _F (vmstats.pageouts) },
   {"page faults",  "pfaults","Cumulative page faults",
-   CUMUL, COUNT,  99999999,	1, _F (faults) },
+   CUMUL, COUNT,  99999999,	1, _F (vmstats.faults) },
   {"cow faults",   "cowpfs", "Cumulative copy-on-write page faults",
-   CUMUL, COUNT,  9999999,	1, _F (cow_faults) },
+   CUMUL, COUNT,  9999999,	1, _F (vmstats.cow_faults) },
   {"memobj lookups","lkups","Memory-object lookups",
-   CUMUL, COUNT,  999999,	0, _F (lookups) },
+   CUMUL, COUNT,  999999,	0, _F (vmstats.lookups) },
   {"memobj hits",   "hits", "Memory-object lookups with active pagers",
-   CUMUL, COUNT,  999999,	0, _F (hits) },
+   CUMUL, COUNT,  999999,	0, _F (vmstats.hits) },
   {"memobj hit ratio","hrat","Percentage of memory-object lookups with active pagers",
    VARY, PCENT,   99,		1, -1, get_memobj_hit_ratio },
+  {"cached memobjs", "caobj", "Number of memory-objects retained in the page cache",
+   VARY,  COUNT,  99999999,     1, _F (cache_stats.cache_object_count) },
+  {"cache",        "cache", "Physical memory used by the page cache",
+   VARY,  SIZE,   VAL_MAX_MEM,  1, _F (cache_stats.cache_count) },
   {"swap size",	   "swsize", "Size of the default-pager swap area",
    CONST, SIZE,   VAL_MAX_SWAP,	1, 0 ,get_swap_size },
   {"swap active",  "swactv", "Default-pager swap area in use",
