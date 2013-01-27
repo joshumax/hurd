@@ -283,7 +283,7 @@ lookup_addrinfo (struct hostmux *mux, const char *host, struct addrinfo *he,
     return ENOMEM;
 
   nm->name = strdup (host);
-  if (strcmp (host, he->ai_canonname) == 0)
+  if (!he || strcmp (host, he->ai_canonname) == 0)
     nm->canon = nm->name;
   else
     nm->canon = strdup (he->ai_canonname);
@@ -340,12 +340,17 @@ lookup_host (struct hostmux *mux, const char *host, struct node **node)
   if (was_cached)
     return 0;
 
-  h_err = getaddrinfo (host, NULL, &hints, &ai);
-  if (! h_err)
+  if (mux->canonicalize)
     {
-      h_err = lookup_addrinfo (mux, host, ai, node);
-      freeaddrinfo (ai);
+      h_err = getaddrinfo (host, NULL, &hints, &ai);
+      if (! h_err)
+	{
+	  h_err = lookup_addrinfo (mux, host, ai, node);
+	  freeaddrinfo (ai);
+	}
     }
+  else
+    h_err = lookup_addrinfo (mux, host, NULL, node);
 
   return h_err;
 }

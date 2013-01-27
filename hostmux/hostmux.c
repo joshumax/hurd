@@ -45,6 +45,9 @@ static const struct argp_option options[] =
     "The string to replace in the translator specification with the hostname;"
     " if empty, or doesn't occur, the hostname is appended as additional"
     " argument instead (default `" DEFAULT_HOST_PAT "')" },
+  { "canonicalize", 'C', 0, 0,
+    "Canonicalize hostname before passing it to TRANSLATOR, aliases will"
+    " show up as symbolic links to the canonicalized entry" },
   { 0 }
 };
 static const char args_doc[] = "TRANSLATOR [ARG...]";
@@ -97,6 +100,8 @@ main (int argc, char **argv)
 	{
 	case 'H':
 	  mux.host_pat = arg; break;
+	case 'C':
+	  mux.canonicalize = 1; break;
 	case ARGP_KEY_NO_ARGS:
 	  argp_usage (state);
 	case ARGP_KEY_ARGS:
