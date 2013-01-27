@@ -77,7 +77,7 @@ out:
   if (self != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), self);
 
-  if (err)
+  if (err && err != EPERM)
     {
       errno = err;
       perror ("unable to adjust libports thread priority");
