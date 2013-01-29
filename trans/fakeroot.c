@@ -874,6 +874,8 @@ netfs_demuxer (mach_msg_header_t *inp,
 			  MACH_PORT_NULL);
 	  assert_perror (err);	/* XXX should synthesize reply */
 	  ports_port_deref (cred);
+	  /* We already sent the message, so the server loop shouldn't do it again.  */
+	  ((mig_reply_header_t *) outp)->RetCode = MIG_NO_REPLY;
 	  return 1;
 	}
     }
