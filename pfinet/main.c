@@ -174,6 +174,7 @@ error_t
 find_device (char *name, struct device **device)
 {
   struct device *dev = dev_base;
+  char *base_name;
 
   /* Skip loopback interface. */
   assert (dev);
@@ -202,9 +203,15 @@ find_device (char *name, struct device **device)
 	return 0;
       }
 
-  if (strncmp(name, "tun", 3) == 0)
+  base_name = strrchr(name, '/');
+  if (base_name)
+    base_name++;
+  else
+    base_name = name;
+
+  if (strncmp(base_name, "tun", 3) == 0)
     setup_tunnel_device (name, device);
-  else if (strncmp(name, "dummy", 5) == 0)
+  else if (strncmp(base_name, "dummy", 5) == 0)
     setup_dummy_device (name, device);
   else
     setup_ethernet_device (name, device);
