@@ -63,11 +63,11 @@ fetch_thread_regset (thread_t thread, prgregset_t *gregs)
   (void) thread_get_state (thread, i386_THREAD_STATE,
 			   (thread_state_t) &u->state, &count);
 
-  u->gregs[REG_EIP] = u->state.eip;
-  u->gregs[REG_CS] = u->state.cs;
-  u->gregs[REG_EFL] = u->state.efl;
-  u->gregs[REG_UESP] = u->state.uesp;
   u->gregs[REG_SS] = u->state.ss;
+  u->gregs[REG_UESP] = u->state.uesp;
+  u->gregs[REG_EFL] = u->state.efl;
+  u->gregs[REG_CS] = u->state.cs;
+  u->gregs[REG_EIP] = u->state.eip;
 
   /* These are the extra words that don't exist in prgregset_t.  */
   u->gregs[REG_ERR] = u->gregs[REG_TRAPNO] = 0;
