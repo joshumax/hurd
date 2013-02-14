@@ -109,6 +109,14 @@ simpleroutine io_duplicate_reply (
 	RETURN_CODE_ARG;
 	newport: mach_port_send_t);
 
+simpleroutine io_server_version_reply (
+	reply: reply_port_t;
+	RETURN_CODE_ARG;
+	server_name: string_t;
+	server_major_version: int;
+	server_minor_version: int;
+	server_edit_level: int);
+
 simpleroutine io_map_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG;
@@ -149,5 +157,21 @@ simpleroutine io_readsleep_reply (
 	RETURN_CODE_ARG);
 
 simpleroutine io_sigio_reply (
+	reply: reply_port_t;
+	RETURN_CODE_ARG);
+
+simpleroutine io_pathconf_reply (
+	reply: reply_port_t;
+	RETURN_CODE_ARG;
+	value: int);
+
+simpleroutine io_identity_reply (
+	reply: reply_port_t;
+	RETURN_CODE_ARG;
+	idport: mach_port_send_t;
+	fsidport: mach_port_send_t;
+	fileno: ino64_t);
+
+simpleroutine io_revoke_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG);

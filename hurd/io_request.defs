@@ -92,9 +92,8 @@ simpleroutine io_get_icky_async_id_request (
 
 simpleroutine io_select_request (
 		io_object: io_t;
-		reply: reply_port_t;
-		select_type: int;
-		id_tag: int);
+		ureplyport reply: mach_port_make_send_t;
+		select_type: int);
 
 simpleroutine io_stat_request (
 		stat_object: io_t;
@@ -158,5 +157,18 @@ simpleroutine io_readsleep_request (
 		reply: reply_port_t);
 
 simpleroutine io_sigio_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_pathconf_request (
+		io_object: io_t;
+		reply: reply_port_t;
+		name: int);
+
+simpleroutine io_identity_request (
+		io_object: io_t;
+		reply: reply_port_t);
+
+simpleroutine io_revoke_request (
 		io_object: io_t;
 		reply: reply_port_t);
