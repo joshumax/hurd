@@ -83,15 +83,15 @@ static short ether_filter[] =
 };
 static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
 
-/* The BPF instruction allows IP and ARP packets */
 static struct bpf_insn bpf_ether_filter[] =
 {
-    {NETF_IN|NETF_BPF, /* Header. */ 0, 0, 0},
-    {40, 0, 0, 12},
-    {21, 1, 0, 2054},
-    {21, 0, 1, 2048},
-    {6, 0, 0, 1500},
-    {6, 0, 0, 0},
+    {NETF_IN|NETF_BPF, 0, 0, 0},		/* Header. */
+    {BPF_LD|BPF_H|BPF_ABS, 0, 0, 12},		/* Load Ethernet type */
+    {BPF_JMP|BPF_JEQ|BPF_K, 2, 0, 0x0806},	/* Accept ARP */
+    {BPF_JMP|BPF_JEQ|BPF_K, 1, 0, 0x0800},	/* Accept IPv4 */
+    {BPF_JMP|BPF_JEQ|BPF_K, 0, 1, 0x86DD},	/* Accept IPv6 */
+    {BPF_RET|BPF_K, 0, 0, 1500},		/* And return 1500 bytes */
+    {BPF_RET|BPF_K, 0, 0, 0},			/* Or discard it all */
 };
 static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
 
