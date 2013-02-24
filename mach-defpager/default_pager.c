@@ -1762,10 +1762,6 @@ is_range_extendable (struct block *base, struct block *new,
  * parameters. All common parameters are supplied directly to function
  * ACITON_FOR_RANGE.
  *
- * XXX
- * If size that is used by this structure does matter it can be converted
- * to union. But be attentive to set parameters properly before calling
- * function APPLY_TO_RANGES!
  */
 struct send_range_parameters {
 	mach_port_t	reply_to;
@@ -1786,17 +1782,6 @@ upload_range (vm_offset_t addr, struct block *map, vm_offset_t start_page,
 	vm_size_t rsize = size;
 
 	do {
-		/*
-		 * XXX Here should be used variable size instead of
-		 * vm_page_size, but following function is backed by RPC
-		 * device_read. And I doubt that there is big chance that
-		 * server, that will handle this request supports multipage
-		 * requests. So, it is should be kept in mind that size
-		 * parameter should be updated some day.
-		 *
-		 * XXX Seems "some day" came, I changed size, but didn't
-		 * notice that. Have to look more attentively.
-		 */
 		int rc = page_read_file_direct(base->part->file, offset,
 					       size, &raddr, &rsize);
 
