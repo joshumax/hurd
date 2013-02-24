@@ -308,6 +308,11 @@ setup_ethernet_device (char *name, struct device **device)
   dev->addr_len = ETH_ALEN;
   memset (dev->broadcast, 0xff, ETH_ALEN);
   dev->flags = IFF_BROADCAST | IFF_MULTICAST;
+
+  /* FIXME: Receive all multicast to fix IPv6, until we implement
+     ethernet_set_multi.  */
+  dev->flags |= IFF_ALLMULTI;
+
   dev_init_buffers (dev);
 
   ethernet_open (dev);
