@@ -188,11 +188,7 @@ S_iioctl_siocsifflags (io_t port,
   else if (!dev)
     err = ENODEV;
   else
-    {
-      err = dev_change_flags (dev, flags);
-      if (!err)
-        err = ethernet_change_flags (dev, flags);
-    }
+    err = dev_change_flags (dev, flags);
 
   pthread_mutex_unlock (&global_lock);
   end_using_socket_port (user);
