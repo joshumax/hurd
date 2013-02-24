@@ -1721,7 +1721,7 @@ ok:
 
 struct block {
 	int state;
-	vm_size_t offset;
+	vm_offset_t offset;
 	partition_t part;
 };
 
