@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <hurd/io.h>
 #include <hurd/auth.h>
+#include <mach.h>
 #include "nfsd.h"
 
 

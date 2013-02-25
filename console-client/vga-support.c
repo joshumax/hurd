@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "vga-hw.h"
 #include "vga-support.h"

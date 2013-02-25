@@ -18,6 +18,7 @@
 #include "iohelp.h"
 #include <hurd/auth.h>
 #include <sys/mman.h>
+#include <stdlib.h>
 
 /* Conduct a reauthentication transaction, returning a new iouser.
    AUTHSERVER is the I/O servers auth port.  The rendezvous port
