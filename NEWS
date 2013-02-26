@@ -7,6 +7,10 @@ consumption problems and race conditions.  The system can compile
 itself as well as most external applications.  The amount of stress
 the system can tolerate has increased a lot.
 
+The new remap translator can be used to create an environment in which
+some paths are redirected, for instance the TCP/IP stack, or /bin/sh,
+etc.
+
 The new ftpfs translator can be used to transparently access FTP
 servers through the filesystem.  Together with the new hostmux
 translator, which can invoke host-specific translators like ftpfs,
