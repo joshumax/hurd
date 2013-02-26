@@ -230,6 +230,8 @@ type rusage_t = struct[18] of int; /* XXX */
 
 type flock_t = struct[5] of int;
 
+type timespec_t = struct[2] of int;
+
 #define _SYS_UTSNAME_H		/* Inhibit warning from <bits/utsname.h>.  */
 #include <bits/utsname.h>
 type utsname_t = struct[5 * _UTSNAME_LENGTH] of char;

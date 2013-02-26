@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #ifndef _HURD_TYPES_H
 #define _HURD_TYPES_H
 
+#include <time.h>		/* For struct timespec.  */
 #include <mach/std_types.h>	/* For mach_port_t et al. */
 #include <mach/message.h>	/* For mach_msg_id_t et al. */
 #include <sys/types.h>		/* For pid_t and uid_t.  */
@@ -69,6 +70,7 @@ typedef struct statfs fsys_statfsbuf_t;
 typedef struct stat64 io_statbuf_t;
 typedef struct statfs64 fsys_statfsbuf_t;
 #endif
+typedef struct timespec timespec_t;
 
 
 /*   Parameters and flags in RPC calls   */
