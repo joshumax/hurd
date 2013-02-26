@@ -141,16 +141,19 @@ connq_destroy (struct connq *cq)
 /* ---------------------------------------------------------------- */
 
 /* Return a connection request on CQ.  If SOCK is NULL, the request is
-   left in the queue.  If NOBLOCK is true, EWOULDBLOCK is returned
-   when there are no immediate connections available.  */
+   left in the queue.  If TIMEOUT denotes a value of 0, EWOULDBLOCK is
+   returned when there are no immediate connections available.
+   Otherwise this value is used to limit the wait duration.  If TIMEOUT
+   is NULL, the wait duration isn't bounded.  */
 error_t
-connq_listen (struct connq *cq, int noblock, struct sock **sock)
+connq_listen (struct connq *cq, struct timespec *tsp, struct sock **sock)
 {
   error_t err = 0;
 
   pthread_mutex_lock (&cq->lock);
 
-  if (noblock && cq->count == 0 && cq->num_connectors == 0)
+  if (tsp && tsp->tv_sec == 0 && tsp->tv_nsec == 0 && cq->count == 0
+      && cq->num_connectors == 0)
     {
       pthread_mutex_unlock (&cq->lock);
       return EWOULDBLOCK;
@@ -176,12 +179,14 @@ connq_listen (struct connq *cq, int noblock, struct sock **sock)
 	pthread_cond_signal (&cq->connectors);
 
       do
-	if (pthread_hurd_cond_wait_np (&cq->listeners, &cq->lock))
+	{
+	  err = pthread_hurd_cond_timedwait_np (&cq->listeners, &cq->lock, tsp);
+	  if (err)
 	  {
 	    cq->num_listeners--;
-	    err = EINTR;
 	    goto out;
 	  }
+	}
       while (cq->count == 0);
     }
 

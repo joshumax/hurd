@@ -178,9 +178,11 @@ S_socket_accept (struct sock_user *user,
   err = ensure_connq (sock);
   if (!err)
     {
+      struct timespec noblock = {0, 0};
       struct sock *peer_sock;
 
-      err = connq_listen (sock->listen_queue, sock->flags & SOCK_NONBLOCK,
+      err = connq_listen (sock->listen_queue,
+			  (sock->flags & SOCK_NONBLOCK) ? &noblock : NULL,
 			  &peer_sock);
       if (!err)
 	{

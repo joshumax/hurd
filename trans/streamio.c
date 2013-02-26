@@ -538,12 +538,14 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
     return ESPIPE;
 }
 
-error_t
-trivfs_S_io_select (struct trivfs_protid *cred,
-		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int *type)
+static error_t
+io_select_common (struct trivfs_protid *cred,
+		  mach_port_t reply, mach_msg_type_name_t reply_type,
+		  struct timespec *tsp,
+		  int *type)
 {
   int available;
+  error_t err;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -583,13 +585,35 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
-      if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
+      err = pthread_hurd_cond_timedwait_np (&select_alert, &global_lock, tsp);
+      if (err)
 	{
 	  *type = 0;
 	  pthread_mutex_unlock (&global_lock);
-	  return EINTR;
+
+	  if (err == ETIMEDOUT)
+	    err = 0;
+
+	  return err;
 	}
     }
+}
+
+error_t
+trivfs_S_io_select (struct trivfs_protid *cred,
+		    mach_port_t reply, mach_msg_type_name_t reply_type,
+		    int *type)
+{
+  return io_select_common (cred, reply, reply_type, NULL, type);
+}
+
+error_t
+trivfs_S_io_select_timeout (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t reply_type,
+			    struct timespec ts,
+			    int *type)
+{
+  return io_select_common (cred, reply, reply_type, &ts, type);
 }
 
 error_t

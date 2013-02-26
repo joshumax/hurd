@@ -405,10 +405,10 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
    return the types that are then available.  ID_TAG is returned as passed; it
    is just for the convenience of the user in matching up reply messages with
    specific requests sent.  */
-error_t
-trivfs_S_io_select (struct trivfs_protid *cred,
-		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int *select_type)
+static error_t
+io_select_common (struct trivfs_protid *cred,
+		  mach_port_t reply, mach_msg_type_name_t reply_type,
+		  struct timespec *tsp, int *select_type)
 {
   struct pipe *pipe;
   error_t err = 0;
@@ -466,10 +466,27 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     /* Wait for something to change.  */
     {
       ports_interrupt_self_on_port_death (cred, reply);
-      err = pipe_pair_select (pipe, pipe, select_type, 1);
+      err = pipe_pair_select (pipe, pipe, tsp, select_type, 1);
     }
 
   return err;
+}
+
+error_t
+trivfs_S_io_select (struct trivfs_protid *cred,
+		    mach_port_t reply, mach_msg_type_name_t reply_type,
+		    int *select_type)
+{
+  return io_select_common (cred, reply, reply_type, NULL, select_type);
+}
+
+error_t
+trivfs_S_io_select_timeout (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t reply_type,
+			    struct timespec ts,
+			    int *select_type)
+{
+  return io_select_common (cred, reply, reply_type, &ts, select_type);
 }
 
 /* ---------------------------------------------------------------- */

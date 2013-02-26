@@ -2002,17 +2002,17 @@ trivfs_S_io_async (struct trivfs_protid *cred,
   return 0;
 }
 
-error_t
-trivfs_S_io_select (struct trivfs_protid *cred,
-		    mach_port_t reply,
-		    mach_msg_type_name_t reply_type,
-		    int *type)
+static error_t
+io_select_common (struct trivfs_protid *cred,
+		  mach_port_t reply,
+		  mach_msg_type_name_t reply_type,
+		  struct timespec *tsp, int *type)
 {
   if (!cred)
     return EOPNOTSUPP;
 
   if (cred->pi.class == pty_class)
-    return pty_io_select (cred, reply, type);
+    return pty_io_select (cred, reply, tsp, type);
 
   if ((cred->po->openmodes & O_READ) == 0)
     *type &= ~SELECT_READ;
@@ -2024,6 +2024,8 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   while (1)
     {
       int available = 0;
+      error_t err = 0;
+
       if ((*type & SELECT_READ) && qsize (inputq))
 	available |= SELECT_READ;
       if ((*type & SELECT_WRITE) && qavail (outputq))
@@ -2032,14 +2034,39 @@ trivfs_S_io_select (struct trivfs_protid *cred,
       if (available == 0)
 	{
 	  ports_interrupt_self_on_port_death (cred, reply);
-	  if (pthread_hurd_cond_wait_np (&select_alert, &global_lock) == 0)
+	  err = pthread_hurd_cond_timedwait_np (&select_alert, &global_lock,
+						tsp);
+	  if (!err)
 	    continue;
 	}
 
       *type = available;
       pthread_mutex_unlock (&global_lock);
-      return available ? 0 : EINTR;
+
+      if (err == ETIMEDOUT)
+	err = 0;
+
+      return err;
     }
+}
+
+error_t
+trivfs_S_io_select (struct trivfs_protid *cred,
+		    mach_port_t reply,
+		    mach_msg_type_name_t reply_type,
+		    int *type)
+{
+  return io_select_common (cred, reply, reply_type, NULL, type);
+}
+
+error_t
+trivfs_S_io_select_timeout (struct trivfs_protid *cred,
+			    mach_port_t reply,
+			    mach_msg_type_name_t reply_type,
+			    struct timespec ts,
+			    int *type)
+{
+  return io_select_common (cred, reply, reply_type, &ts, type);
 }
 
 kern_return_t

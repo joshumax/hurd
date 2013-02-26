@@ -126,11 +126,12 @@ extern int pipe_is_readable (struct pipe *pipe, int data_only);
 
 extern error_t pipe_wait_readable (struct pipe *pipe, int noblock, int data_only);
 
-extern error_t pipe_select_readable (struct pipe *pipe, int data_only);
+extern error_t pipe_select_readable (struct pipe *pipe, struct timespec *tsp,
+				     int data_only);
 
 extern error_t pipe_wait_writable (struct pipe *pipe, int noblock);
 
-extern error_t pipe_select_writable (struct pipe *pipe);
+extern error_t pipe_select_writable (struct pipe *pipe, struct timespec *tsp);
 
 #if defined(__USE_EXTERN_INLINES) || defined(PIPE_DEFINE_EI)
 
@@ -188,12 +189,17 @@ pipe_wait_readable (struct pipe *pipe, int noblock, int data_only)
    given a chance to read, and if there is still data available thereafter.
    If DATA_ONLY is true, then `control' packets are ignored.  */
 PIPE_EI error_t
-pipe_select_readable (struct pipe *pipe, int data_only)
+pipe_select_readable (struct pipe *pipe, struct timespec *tsp, int data_only)
 {
+  error_t err = 0;
   while (! pipe_is_readable (pipe, data_only) && ! (pipe->flags & PIPE_BROKEN))
-    if (pthread_hurd_cond_wait_np (&pipe->pending_read_selects, &pipe->lock))
-      return EINTR;
-  return 0;
+    {
+      err = pthread_hurd_cond_timedwait_np (&pipe->pending_read_selects,
+					    &pipe->lock, tsp);
+      if (err)
+	break;
+    }
+  return err;
 }
 
 /* Block until data can be written to PIPE.  If NOBLOCK is true, then
@@ -221,13 +227,18 @@ pipe_wait_writable (struct pipe *pipe, int noblock)
    threads waiting using pipe_wait_writable have been woken and given a
    chance to write, and if there is still space available thereafter.  */
 PIPE_EI error_t
-pipe_select_writable (struct pipe *pipe)
+pipe_select_writable (struct pipe *pipe, struct timespec *tsp)
 {
   size_t limit = pipe->write_limit;
+  error_t err = 0;
   while (! (pipe->flags & PIPE_BROKEN) && pipe_readable (pipe, 1) >= limit)
-    if (pthread_hurd_cond_wait_np (&pipe->pending_writes, &pipe->lock))
-      return EINTR;
-  return 0;
+    {
+      err = pthread_hurd_cond_timedwait_np (&pipe->pending_writes,
+					    &pipe->lock, tsp);
+      if (err)
+	break;
+    }
+  return err;
 }
 
 #endif /* Use extern inlines.  */
@@ -419,7 +430,8 @@ extern pthread_mutex_t pipe_multiple_lock;
    waited for on RPIPE.  Neither RPIPE or WPIPE should be locked when calling
    this function (unlike most pipe functions).  */
 error_t pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
-			  int *select_type, int data_only);
+			  struct timespec *tsp, int *select_type,
+			  int data_only);
 
 /* ---------------------------------------------------------------- */
 /* User-provided functions.  */

@@ -110,8 +110,11 @@ repeat_event (kd_event *evt)
 
 static error_t
 repeater_select (struct protid *cred, mach_port_t reply,
-		 mach_msg_type_name_t replytype, int *type)
+		 mach_msg_type_name_t replytype,
+		 struct timespec *tsp, int *type)
 {
+  error_t err;
+
   if (!cred)
     return EOPNOTSUPP;
 
@@ -133,12 +136,16 @@ repeater_select (struct protid *cred, mach_port_t reply,
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
-      if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
+      err = pthread_hurd_cond_timedwait_np (&select_alert, &global_lock, tsp);
+      if (err)
 	{
 	  *type = 0;
 	  pthread_mutex_unlock (&global_lock);
 
-	  return EINTR;
+	  if (err == ETIMEDOUT)
+	    err = 0;
+
+	  return err;
 	}
     }
 }

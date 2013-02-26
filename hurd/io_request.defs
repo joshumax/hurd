@@ -172,3 +172,9 @@ simpleroutine io_identity_request (
 simpleroutine io_revoke_request (
 		io_object: io_t;
 		reply: reply_port_t);
+
+simpleroutine io_select_timeout_request (
+		io_object: io_t;
+		ureplyport reply: mach_port_make_send_t;
+		timeout: timespec_t;
+		select_type: int);

@@ -332,9 +332,10 @@ netfs_S_io_seek (struct protid *user, off_t offset,
 }
 
 
-error_t
-netfs_S_io_select (struct protid *user, mach_port_t reply,
-		   mach_msg_type_name_t replytype, int *type)
+static error_t
+io_select_common (struct protid *user, mach_port_t reply,
+		  mach_msg_type_name_t replytype,
+		  struct timespec *tsp, int *type)
 {
   struct node *np;
   
@@ -344,8 +345,25 @@ netfs_S_io_select (struct protid *user, mach_port_t reply,
   np = user->po->np;
   
   if (np->nn->node && np->nn->node->select)
-    return np->nn->node->select (user, reply, replytype, type);
+    return np->nn->node->select (user, reply, replytype, tsp, type);
   return EOPNOTSUPP;
+}
+
+
+error_t
+netfs_S_io_select (struct protid *user, mach_port_t reply,
+		   mach_msg_type_name_t replytype, int *type)
+{
+  return io_select_common (user, reply, replytype, NULL, type);
+}
+
+
+error_t
+netfs_S_io_select_timeout (struct protid *user, mach_port_t reply,
+			   mach_msg_type_name_t replytype,
+			   struct timespec ts, int *type)
+{
+  return io_select_common (user, reply, replytype, &ts, type);
 }
 
 

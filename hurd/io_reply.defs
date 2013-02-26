@@ -175,3 +175,8 @@ simpleroutine io_identity_reply (
 simpleroutine io_revoke_reply (
 	reply: reply_port_t;
 	RETURN_CODE_ARG);
+
+simpleroutine io_select_timeout_reply (
+	reply: reply_port_t;
+	RETURN_CODE_ARG;
+	select_result: int);

@@ -34,3 +34,13 @@ netfs_S_io_select (struct protid *user,
   *type &= ~SELECT_URG;
   return 0;
 }
+
+error_t
+netfs_S_io_select_timeout (struct protid *user,
+			   mach_port_t reply,
+			   mach_msg_type_name_t replytype,
+			   struct timespec ts,
+			   int *type)
+{
+  return netfs_S_io_select (user, reply, replytype, type);
+}

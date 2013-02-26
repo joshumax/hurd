@@ -161,6 +161,15 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   return 0;
 }
 
+error_t
+trivfs_S_io_select_timeout (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t reply_type,
+			    struct timespec ts,
+			    int *type)
+{
+  return trivfs_S_io_select (cred, reply, reply_type, type);
+}
+
 /* Truncate file.  */
 error_t
 trivfs_S_file_set_size (struct trivfs_protid *cred,

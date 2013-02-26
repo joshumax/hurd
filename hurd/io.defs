@@ -320,3 +320,14 @@ routine io_identity (
    on the specified object.  */
 routine io_revoke (
 	io_object: io_t RPTLAST);
+
+/* INTR */
+routine io_select_timeout (
+	io_object: io_t;
+#if defined (REPLY_PORTS) || defined (IO_SELECT_REPLY_PORT)
+	replyport reply: sreply_port_t;
+#else
+	ureplyport reply: mach_port_make_send_t;
+#endif
+	timeout: timespec_t;
+	inout select_type: int);

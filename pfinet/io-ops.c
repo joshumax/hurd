@@ -251,14 +251,14 @@ S_io_clear_some_openmodes (struct sock_user *user,
   return 0;
 }
 
-error_t
-S_io_select (struct sock_user *user,
-	     mach_port_t reply,
-	     mach_msg_type_name_t reply_type,
-	     int *select_type)
+static error_t
+io_select_common (struct sock_user *user,
+		  mach_port_t reply,
+		  mach_msg_type_name_t reply_type,
+		  struct timespec *tsp, int *select_type)
 {
   const int want = *select_type | POLLERR;
-  int avail;
+  int avail, timedout;
   int ret = 0;
 
   if (!user)
@@ -281,9 +281,16 @@ S_io_select (struct sock_user *user,
 
       do
 	{
-	  /* Block until we are woken or cancelled.  */
-	  interruptible_sleep_on (user->sock->sk->sleep);
-	  if (signal_pending (current)) /* This means we were cancelled.  */
+	  /* Block until we time out, are woken or cancelled.  */
+	  timedout = interruptible_sleep_on_timeout (user->sock->sk->sleep,
+						     tsp);
+	  if (timedout)
+	    {
+	      __mutex_unlock (&global_lock);
+	      *select_type = 0;
+	      return 0;
+	    }
+	  else if (signal_pending (current)) /* This means we were cancelled.  */
 	    {
 	      pthread_mutex_unlock (&global_lock);
 	      return EINTR;
@@ -304,6 +311,25 @@ S_io_select (struct sock_user *user,
   pthread_mutex_unlock (&global_lock);
 
   return ret;
+}
+
+error_t
+S_io_select (struct sock_user *user,
+	     mach_port_t reply,
+	     mach_msg_type_name_t reply_type,
+	     int *select_type)
+{
+  return io_select_common (user, reply, reply_type, NULL, select_type);
+}
+
+error_t
+S_io_select_timeout (struct sock_user *user,
+		     mach_port_t reply,
+		     mach_msg_type_name_t reply_type,
+		     struct timespec ts,
+		     int *select_type)
+{
+  return io_select_common (user, reply, reply_type, &ts, select_type);
 }
 
 error_t

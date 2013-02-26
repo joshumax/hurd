@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <assert.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include "mapped-time.h"
 
@@ -92,12 +93,13 @@ capable(int cap)
 
 extern pthread_mutex_t global_lock;
 
-static inline void
-interruptible_sleep_on (struct wait_queue **p)
+static inline int
+interruptible_sleep_on_timeout (struct wait_queue **p, struct timespec *tsp)
 {
   pthread_cond_t **condp = (void *) p, *c;
   int isroot;
   struct wait_queue **next_wait;
+  error_t err;
 
   c = *condp;
   if (c == 0)
@@ -111,12 +113,13 @@ interruptible_sleep_on (struct wait_queue **p)
   isroot = current->isroot;	/* This is our context that needs switched.  */
   next_wait = current->next_wait; /* This too, for multiple schedule calls.  */
   current->next_wait = 0;
-  if (pthread_hurd_cond_wait_np (c, &global_lock))
+  err = pthread_hurd_cond_timedwait_np(c, &global_lock, tsp);
+  if (err == EINTR)
     current->signal = 1;	/* We got cancelled, mark it for later.  */
   current->isroot = isroot;	/* Switch back to our context.  */
   current->next_wait = next_wait;
+  return (err == ETIMEDOUT);
 }
-#define sleep_on	interruptible_sleep_on
 
 static inline void
 wake_up_interruptible (struct wait_queue **p)
@@ -146,7 +149,7 @@ static inline void
 schedule (void)
 {
   assert (current->next_wait);
-  interruptible_sleep_on (current->next_wait);
+  interruptible_sleep_on_timeout (current->next_wait, NULL);
 }
 
 static inline void
@@ -171,7 +174,7 @@ schedule_timeout (long timeout)
   timer.function = process_schedule_timeout;
   add_timer (&timer);
 
-  interruptible_sleep_on (&sleep);
+  interruptible_sleep_on_timeout (&sleep, NULL);
   if (signal_pending (current))
     {
       /* We were canceled.  */

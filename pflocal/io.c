@@ -172,10 +172,10 @@ S_io_duplicate (struct sock_user *user,
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
    Block until one of the indicated types of i/o can be done "quickly", and
    return the types that are then available.  */
-error_t
-S_io_select (struct sock_user *user,
-	     mach_port_t reply, mach_msg_type_name_t reply_type,
-	     int *select_type)
+static error_t
+io_select_common (struct sock_user *user,
+		  mach_port_t reply, mach_msg_type_name_t reply_type,
+		  struct timespec *tsp, int *select_type)
 {
   error_t err = 0;
   struct sock *sock;
@@ -199,16 +199,24 @@ S_io_select (struct sock_user *user,
 
       if (*select_type & SELECT_READ)
 	{
+	  struct timespec noblock = {0, 0};
+
 	  /* Wait for a connect.  Passing in NULL for SOCK means that
 	     the request won't be dequeued.  */
-	  if (connq_listen (sock->listen_queue, 1, NULL) == 0)
+	  if (connq_listen (sock->listen_queue, &noblock, NULL) == 0)
 	    /* We can satisfy this request immediately. */
 	    return 0;
 	  else
 	    /* Gotta wait...  */
 	    {
 	      ports_interrupt_self_on_port_death (user, reply);
-	      return connq_listen (sock->listen_queue, 0, NULL);
+	      err = connq_listen (sock->listen_queue, tsp, NULL);
+	      if (err == ETIMEDOUT)
+		{
+		  *select_type = 0;
+		  err = 0;
+		}
+	      return err;
 	    }
 	}
     }
@@ -261,7 +269,7 @@ S_io_select (struct sock_user *user,
 	/* Wait for something to change.  */
 	{
 	  ports_interrupt_self_on_port_death (user, reply);
-	  err = pipe_pair_select (read_pipe, write_pipe, select_type, 1);
+	  err = pipe_pair_select (read_pipe, write_pipe, tsp, select_type, 1);
 	}
 
       if (valid & SELECT_READ)
@@ -271,6 +279,23 @@ S_io_select (struct sock_user *user,
     }
 
   return err;
+}
+
+error_t
+S_io_select (struct sock_user *user,
+	     mach_port_t reply, mach_msg_type_name_t reply_type,
+	     int *select_type)
+{
+  return io_select_common (user, reply, reply_type, NULL, select_type);
+}
+
+error_t
+S_io_select_timeout (struct sock_user *user,
+		     mach_port_t reply, mach_msg_type_name_t reply_type,
+		     struct timespec ts,
+		     int *select_type)
+{
+  return io_select_common (user, reply, reply_type, &ts, select_type);
 }
 
 /* Return the current status of the object.  Not all the fields of the

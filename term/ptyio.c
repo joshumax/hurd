@@ -459,9 +459,10 @@ pty_io_readable (size_t *amt)
 /* Validation has already been done by trivfs_S_io_select. */
 error_t
 pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
-	       int *type)
+	       struct timespec *tsp, int *type)
 {
   int avail = 0;
+  error_t err;
 
   if (*type == 0)
     return 0;
@@ -488,13 +489,18 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
 	}
 
       ports_interrupt_self_on_port_death (cred, reply);
-
       pty_read_blocked = 1;
-      if (pthread_hurd_cond_wait_np (&pty_select_wakeup, &global_lock))
+      err = pthread_hurd_cond_timedwait_np (&pty_select_wakeup, &global_lock,
+					    tsp);
+      if (err)
 	{
 	  *type = 0;
 	  pthread_mutex_unlock (&global_lock);
-	  return EINTR;
+
+	  if (err == ETIMEDOUT)
+	    err = 0;
+
+	  return err;
 	}
     }
 }

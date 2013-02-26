@@ -203,6 +203,15 @@ trivfs_S_io_select (struct trivfs_protid *cred,
     *type &= ~SELECT_URG;
   return 0;
 }
+
+kern_return_t
+trivfs_S_io_select_timeout (struct trivfs_protid *cred,
+			    mach_port_t reply, mach_msg_type_name_t replytype,
+			    struct timespec ts,
+			    int *type)
+{
+  return trivfs_S_io_select (cred, reply, replytype, type);
+}
 
 /* Write data to an IO object.  If offset is -1, write at the object
    maintained file pointer.  If the object is not seekable, offset is

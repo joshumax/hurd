@@ -30,3 +30,11 @@ diskfs_S_io_select (struct protid *cred,
   *type &= ~SELECT_URG;
   return 0;
 }
+
+kern_return_t
+diskfs_S_io_select_timeout (struct protid *cred,
+			    struct timespec ts,
+			    int *type)
+{
+  return diskfs_S_io_select (cred, type);
+}

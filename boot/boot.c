@@ -1588,12 +1588,13 @@ S_io_get_icky_async_id (mach_port_t object,
   return EOPNOTSUPP;
 }
 
-kern_return_t
-S_io_select (mach_port_t object,
-	     mach_port_t reply_port,
-	     mach_msg_type_name_t reply_type,
-	     int *type)
+static kern_return_t
+io_select_common (mach_port_t object,
+		  mach_port_t reply_port,
+		  mach_msg_type_name_t reply_type,
+		  struct timespec *tsp, int *type)
 {
+  struct timeval tv, *tvp;
   fd_set r, w, x;
   int n;
 
@@ -1607,11 +1608,20 @@ S_io_select (mach_port_t object,
   FD_SET (0, &w);
   FD_SET (0, &x);
 
+  if (tsp == NULL)
+    tvp = NULL;
+  else
+    {
+      tv.tv_sec = tsp->tv_sec;
+      tv.tv_usec = tsp->tv_nsec / 1000;
+      tvp = &tv;
+    }
+
   n = select (1,
 	      (*type & SELECT_READ) ? &r : 0,
 	      (*type & SELECT_WRITE) ? &w : 0,
 	      (*type & SELECT_URG) ? &x : 0,
-	      0);
+	      tvp);
   if (n < 0)
     return errno;
 
@@ -1623,6 +1633,25 @@ S_io_select (mach_port_t object,
     *type &= ~SELECT_URG;
 
   return 0;
+}
+
+kern_return_t
+S_io_select (mach_port_t object,
+	     mach_port_t reply_port,
+	     mach_msg_type_name_t reply_type,
+	     int *type)
+{
+  return io_select_common (object, reply_port, reply_type, NULL, type);
+}
+
+kern_return_t
+S_io_select_timeout (mach_port_t object,
+		     mach_port_t reply_port,
+		     mach_msg_type_name_t reply_type,
+		     struct timespec ts,
+		     int *type)
+{
+  return io_select_common (object, reply_port, reply_type, &ts, type);
 }
 
 kern_return_t

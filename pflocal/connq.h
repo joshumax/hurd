@@ -36,9 +36,12 @@ error_t connq_create (struct connq **cq);
 void connq_destroy (struct connq *cq);
 
 /* Return a connection request on CQ.  If SOCK is NULL, the request is
-   left in the queue.  If NOBLOCK is true, EWOULDBLOCK is returned
-   when there are no immediate connections available.  */
-error_t connq_listen (struct connq *cq, int noblock, struct sock **sock);
+   left in the queue.  If TIMEOUT denotes a value of 0, EWOULDBLOCK is
+   returned when there are no immediate connections available.
+   Otherwise this value is used to limit the wait duration.  If TIMEOUT
+   is NULL, the wait duration isn't bounded.  */
+error_t connq_listen (struct connq *cq, struct timespec *tsp,
+		      struct sock **sock);
 
 /* Try to connect SOCK with the socket listening on CQ.  If NOBLOCK is
    true, then return EWOULDBLOCK if there are no connections

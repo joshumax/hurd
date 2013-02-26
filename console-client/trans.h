@@ -41,9 +41,10 @@ struct consnode
 		    mach_msg_type_number_t datalen, off_t offset,
 		    mach_msg_type_number_t *amount);
 
-  /* This is exactly the same as io_select does.  */
+  /* This is exactly the same as io_select{,_timeout} do.  */
   error_t (*select) (struct protid *user, mach_port_t reply,
-		     mach_msg_type_name_t replytype, int *type);
+		     mach_msg_type_name_t replytype,
+		     struct timespec *tsp, int *type);
 
   /* Called when the node is opened.  */
   void (*open) (void);

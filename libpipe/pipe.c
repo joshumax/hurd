@@ -209,7 +209,7 @@ void _pipe_no_writers (struct pipe *pipe)
    this function (unlike most pipe functions).  */
 error_t
 pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
-		  int *select_type, int data_only)
+		  struct timespec *tsp, int *select_type, int data_only)
 {
   error_t err = 0;
 
@@ -218,13 +218,13 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
   if (*select_type == SELECT_READ)
     {
       pthread_mutex_lock (&rpipe->lock);
-      err = pipe_select_readable (rpipe, data_only);
+      err = pipe_select_readable (rpipe, tsp, data_only);
       pthread_mutex_unlock (&rpipe->lock);
     }
   else if (*select_type == SELECT_WRITE)
     {
       pthread_mutex_lock (&wpipe->lock);
-      err = pipe_select_writable (wpipe);
+      err = pipe_select_writable (wpipe, tsp);
       pthread_mutex_unlock (&wpipe->lock);
     }
   else
@@ -260,8 +260,8 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 	      pthread_mutex_unlock (&rpipe->lock);
 	      pthread_mutex_unlock (&wpipe->lock);
 	    }
-	  if (pthread_hurd_cond_wait_np (&pending_select.cond, lock))
-	    err = EINTR;
+	  err = pthread_hurd_cond_timedwait_np (&pending_select.cond, lock,
+						tsp);
 	  if (rpipe != wpipe)
 	    {
 	      pthread_mutex_lock (&rpipe->lock);
@@ -293,6 +293,12 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
 	  pthread_mutex_unlock (&wpipe->lock);
 	}
       pthread_mutex_unlock (lock);
+    }
+
+  if (err == ETIMEDOUT)
+    {
+      err = 0;
+      *select_type = 0;
     }
 
   return err;
