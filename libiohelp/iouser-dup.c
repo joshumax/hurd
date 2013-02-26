@@ -17,6 +17,8 @@
 
 #include "iohelp.h"
 
+#include <stdlib.h>
+
 error_t
 iohelp_dup_iouser (struct iouser **clone, struct iouser *iouser)
 {

@@ -17,6 +17,8 @@
 
 #include "iohelp.h"
 
+#include <stdlib.h>
+
 void
 iohelp_free_iouser (struct iouser *iouser)
 {

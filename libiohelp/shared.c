@@ -18,6 +18,8 @@
 
 #include "iohelp.h"
 
+#include <stdlib.h>
+
 /* These definitions exist to satisfy the linker. */
 
 void __attribute__ ((weak))
