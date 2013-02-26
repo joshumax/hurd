@@ -173,7 +173,7 @@ $(addsuffix .d,$(subdirs)): %.d: $(top_srcdir)/%/Makefile
 AUTOCONF = autoconf
 AUTOCONF_FLAGS = -I $(top_srcdir)
 
-$(top_srcdir)/configure: $(top_srcdir)/configure.in $(top_srcdir)/aclocal.m4
+$(top_srcdir)/configure: $(top_srcdir)/configure.ac $(top_srcdir)/aclocal.m4
 	$(AUTOCONF) $(AUTOCONF_FLAGS) $< > $@
 	chmod +x $@
 
