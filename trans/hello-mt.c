@@ -111,7 +111,7 @@ close_hook (struct trivfs_peropen *peropen)
 {
   struct open *op = peropen->hook;
 
-  pthread_mutex_init (&op->lock, NULL);
+  pthread_mutex_destroy (&op->lock);
   free (op);
 }
 
