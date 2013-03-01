@@ -39,6 +39,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <argz.h>
+#include <envz.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 
@@ -59,6 +60,9 @@ static const struct argp_option options[] =
    "Add the directory DIR to the list of directories to be searched for files "
    "containing message ID numbers."},
   {0, 's', "SIZE", 0, "Specify the maximum string size to print (the default is 80)."},
+  {0, 'E', "var[=value]", 0,
+   "Set/change (var=value) or remove (var) an environment variable among the "
+   "ones inherited by the executed process."},
   {0}
 };
 
@@ -1718,6 +1722,9 @@ main (int argc, char **argv, char **envp)
   char **cmd_argv = 0;
   pthread_t thread;
   error_t err;
+  char **cmd_envp = NULL;
+  char *envz = NULL;
+  size_t envz_len = 0;
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -1745,6 +1752,34 @@ main (int argc, char **argv, char **envp)
 
 	case 's':
 	  strsize = atoi (arg);
+	  break;
+
+	case 'E':
+	  if (envz == NULL)
+	    {
+	      if (argz_create (envp, &envz, &envz_len))
+		error (1, errno, "argz_create");
+	    }
+	  if (envz != NULL)
+	    {
+	      char *equal = strchr (arg, '=');
+	      char *name;
+	      char *newval;
+	      if (equal != NULL)
+		{
+		  name = strndupa (arg, equal - arg);
+		  if (name == NULL)
+		    error (1, errno, "strndupa");
+		  newval = equal + 1;
+		}
+	      else
+		{
+		  name = arg;
+		  newval = NULL;
+		}
+	      if (envz_add (&envz, &envz_len, name, newval))
+		error (1, errno, "envz_add");
+	    }
 	  break;
 
 	case ARGP_KEY_NO_ARGS:
@@ -1819,12 +1854,24 @@ main (int argc, char **argv, char **envp)
       perror ("pthread_create");
     }
 
+  if (envz != NULL)
+    {
+      envz_strip (&envz, &envz_len);
+      cmd_envp = alloca ((argz_count (envz, envz_len) + 1) * sizeof (char *));
+      if (cmd_envp == NULL)
+	error (1, errno, "alloca");
+      else
+	argz_extract (envz, envz_len, cmd_envp);
+    }
+  if (cmd_envp == NULL)
+    cmd_envp = envp;
+
   /* Run the program on the command line and wait for it to die.
      The other thread does all the tracing and interposing.  */
   {
     pid_t child, pid;
     int status;
-    child = traced_spawn (cmd_argv, envp);
+    child = traced_spawn (cmd_argv, cmd_envp);
     pid = waitpid (child, &status, 0);
     sleep (1);			/* XXX gives other thread time to print */
     if (pid != child)
@@ -1837,6 +1884,7 @@ main (int argc, char **argv, char **envp)
   }
   
   ports_destroy_right (notify_pi);
+  free (envz);
 
   return 0;
 }
