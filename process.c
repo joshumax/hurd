@@ -382,14 +382,6 @@ process_lookup_pid (struct ps_context *pc, pid_t pid, struct node **np)
       return EIO;
     }
 
-  /* FIXME: have a separate proc_desc structure for each file, so this can be
-     accessed in a more robust and straightforward way. */
-  ((struct process_file_desc *) entries[2].hook)->mode = opt_stat_mode;
-
-  /* FIXME: have a separate proc_desc structure for each file, so this can be
-     accessed in a more robust and straightforward way. */
-  ((struct process_file_desc *) entries[2].hook)->mode = opt_stat_mode;
-
   *np = procfs_dir_make_node (&dir_ops, ps);
   if (! *np)
     return ENOMEM;
