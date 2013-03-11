@@ -286,7 +286,7 @@ io_select_common (struct sock_user *user,
 						     tsp);
 	  if (timedout)
 	    {
-	      __mutex_unlock (&global_lock);
+	      pthread_mutex_unlock (&global_lock);
 	      *select_type = 0;
 	      return 0;
 	    }
