@@ -68,9 +68,9 @@ thread_state (thread_basic_info_t bi)
       break;
     }
 
-  if (bi->base_priority < 12)
+  if (bi->base_priority < 25)
     state |= PSTAT_STATE_T_NASTY;
-  else if (bi->base_priority > 12)
+  else if (bi->base_priority > 25)
     state |= PSTAT_STATE_T_NICE;
 
   return state;
