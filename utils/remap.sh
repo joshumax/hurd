@@ -23,7 +23,9 @@
 USAGE="Usage: $0 [OPTION...] [FROM1 TO1 [FROM2 TO2 [...]] -- [COMMAND...]"
 DOC="Execute COMMAND in an environment where some paths are remapped."
 
-while :; do
+REMAPPED=""
+
+while [ "$#" -gt 0 ]; do
   case "$1" in
     --help|"-?")
       echo "$USAGE"
@@ -47,7 +49,7 @@ while :; do
       exit 1;;
     *)
       MAPPED="$MAPPED $1"
-      break;;
+      shift;;
   esac
 done
 
