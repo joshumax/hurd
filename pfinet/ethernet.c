@@ -250,7 +250,7 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 }
 
 /* Set device flags (e.g. promiscuous) */
-int
+static int
 ethernet_change_flags (struct device *dev, short flags)
 {
   error_t err = 0;
@@ -312,6 +312,8 @@ setup_ethernet_device (char *name, struct device **device)
   /* FIXME: Receive all multicast to fix IPv6, until we implement
      ethernet_set_multi.  */
   dev->flags |= IFF_ALLMULTI;
+
+  dev->change_flags = ethernet_change_flags;
 
   dev_init_buffers (dev);
 

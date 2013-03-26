@@ -317,6 +317,8 @@ struct device
 	/* Semi-private data. Keep it at the end of device struct. */
 	struct dst_entry	*fastpath[NETDEV_FASTROUTE_HMASK+1];
 #endif
+
+	int			(*change_flags)(struct device *dev, short flags);
 };
 
 
