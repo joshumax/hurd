@@ -51,7 +51,7 @@ timer_function (void *this_is_a_pointless_variable_with_a_rather_long_name)
 
       if (!timers)
 	wait = -1;
-      else if (timers->expires < jiff)
+      else if (timers->expires <= jiff)
 	wait = 0;
       else
 	wait = ((timers->expires - jiff) * 1000) / HZ;
@@ -64,7 +64,7 @@ timer_function (void *this_is_a_pointless_variable_with_a_rather_long_name)
 
       pthread_mutex_lock (&global_lock);
 
-      while (timers->expires < jiffies)
+      while (timers->expires <= jiffies)
 	{
 	  struct timer_list *tp;
 
