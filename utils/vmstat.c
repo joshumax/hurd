@@ -27,8 +27,8 @@
 #include <fcntl.h>
 #include <version.h>
 
+#include "gnumach_U.h"
 #include <mach.h>
-#include <mach/gnumach.h>
 #include <mach/vm_statistics.h>
 #include <mach/vm_cache_statistics.h>
 #include <mach/default_pager.h>
