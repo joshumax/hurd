@@ -104,7 +104,7 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
 
   if (result && zero)
     {
-      char *bh = bptr (result);
+      char *bh = disk_cache_block_ref (result);
       bzero (bh, block_size);
       record_indir_poke (node, bh);
     }
@@ -121,6 +121,8 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 #ifdef EXT2FS_DEBUG
   block_t hint;
 #endif
+
+  assert (0 <= nr && nr < EXT2_N_BLOCKS);
 
   *result = node->dn->info.i_data[nr];
   if (*result)
@@ -180,14 +182,20 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 {
   int i;
   block_t goal = 0;
-  block_t *bh = (block_t *)bptr (block);
+  block_t *bh = (block_t *)disk_cache_block_ref (block);
 
   *result = bh[nr];
   if (*result)
-    return 0;
+    {
+      disk_cache_block_deref (bh);
+      return 0;
+    }
 
   if (!create)
-    return EINVAL;
+    {
+      disk_cache_block_deref (bh);
+      return EINVAL;
+    }
 
   if (node->dn->info.i_next_alloc_block == new_block)
     goal = node->dn->info.i_next_alloc_goal;
@@ -207,7 +215,10 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 
   *result = ext2_alloc_block (node, goal, zero);
   if (!*result)
-    return ENOSPC;
+    {
+      disk_cache_block_deref (bh);
+      return ENOSPC;
+    }
 
   bh[nr] = *result;
 

@@ -23,7 +23,9 @@
 #include <hurd/pager.h>
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
+#include <hurd/store.h>
 #include <hurd/diskfs.h>
+#include <hurd/ihash.h>
 #include <assert.h>
 #include <pthread.h>
 #include <sys/mman.h>
@@ -195,6 +197,8 @@ struct user_pager_info
 /* ---------------------------------------------------------------- */
 /* pager.c */
 
+#define DISK_CACHE_BLOCKS	65536
+
 #include <hurd/diskfs-pager.h>
 
 /* Set up the disk pager.  */
@@ -218,10 +222,54 @@ extern struct store *store;
 /* What the user specified.  */
 extern struct store_parsed *store_parsed;
 
-/* Mapped image of the disk.  */
-extern void *disk_image;
+/* Mapped image of cached blocks of the disk.  */
+extern void *disk_cache;
+extern store_offset_t disk_cache_size;
+extern int disk_cache_blocks;
 
-/* Our in-core copy of the super-block (pointer into the disk_image).  */
+#define DC_INCORE	0x01	/* Not in core.  */
+#define DC_UNTOUCHED	0x02	/* Not touched by disk_pager_read_paged
+				   or disk_cache_block_ref.  */
+#define DC_FIXED	0x04	/* Must not be re-associated.  */
+
+/* Flags that forbid re-association of page.  DC_UNTOUCHED is included
+   because this flag is used only when page is already to be
+   re-associated, so it's not good candidate for another
+   remapping.  */
+#define DC_DONT_REUSE	(DC_INCORE | DC_UNTOUCHED | DC_FIXED)
+
+#define DC_NO_BLOCK	((block_t) -1L)
+
+#ifndef NDEBUG
+#define DISK_CACHE_LAST_READ_XOR	0xDEADBEEF
+#endif
+
+/* Disk cache blocks' meta info.  */
+struct disk_cache_info
+{
+  block_t block;
+  uint16_t flags;
+  uint16_t ref_count;
+#ifndef NDEBUG
+  block_t last_read, last_read_xor;
+#endif
+};
+
+/* block num --> pointer to in-memory block */
+extern hurd_ihash_t disk_cache_bptr;
+/* Metadata about cached block. */
+extern struct disk_cache_info *disk_cache_info;
+/* Lock for these mappings */
+extern pthread_mutex_t disk_cache_lock;
+/* Fired when a re-association is done.  */
+extern pthread_cond_t disk_cache_reassociation;
+
+void *disk_cache_block_ref (block_t block);
+void disk_cache_block_ref_ptr (void *ptr);
+void disk_cache_block_deref (void *ptr);
+int disk_cache_block_is_ref (block_t block);
+
+/* Our in-core copy of the super-block (pointer into the disk_cache).  */
 struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
 int sblock_dirty;
@@ -251,6 +299,9 @@ vm_address_t zeroblock;
 
 /* Get the superblock from the disk, & setup various global info from it.  */
 void get_hypermetadata ();
+
+/* Map `sblock' and `group_desc_image' pointers to disk cache.  */
+void map_hypermetadata ();
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -274,21 +325,51 @@ pthread_spinlock_t generation_lock;
 unsigned long next_generation;
 
 /* ---------------------------------------------------------------- */
-/* Functions for looking inside disk_image */
+/* Functions for looking inside disk_cache */
 
-#define trunc_block(offs) (((offs) >> log2_block_size) << log2_block_size)
+#define trunc_block(offs) \
+  ((off_t) ((offs) >> log2_block_size) << log2_block_size)
 #define round_block(offs) \
-  ((((offs) + block_size - 1) >> log2_block_size) << log2_block_size)
+  ((off_t) (((offs) + block_size - 1) >> log2_block_size) << log2_block_size)
 
 /* block num --> byte offset on disk */
-#define boffs(block) ((block) << log2_block_size)
+#define boffs(block) ((off_t) (block) << log2_block_size)
 /* byte offset on disk --> block num */
 #define boffs_block(offs) ((offs) >> log2_block_size)
 
+/* pointer to in-memory block -> index in disk_cache_info */
+#define bptr_index(ptr) (((char *)ptr - (char *)disk_cache) >> log2_block_size)
+
 /* byte offset on disk --> pointer to in-memory block */
-#define boffs_ptr(offs) (((char *)disk_image) + (offs))
+EXT2FS_EI char *
+boffs_ptr (off_t offset)
+{
+  block_t block = boffs_block (offset);
+  pthread_mutex_lock (&disk_cache_lock);
+  char *ptr = hurd_ihash_find (disk_cache_bptr, block);
+  pthread_mutex_unlock (&disk_cache_lock);
+  assert (ptr);
+  ptr += offset % block_size;
+  ext2_debug ("(%lld) = %p", offset, ptr);
+  return ptr;
+}
+
 /* pointer to in-memory block --> byte offset on disk */
-#define bptr_offs(ptr) ((char *)(ptr) - ((char *)disk_image))
+EXT2FS_EI off_t
+bptr_offs (void *ptr)
+{
+  vm_offset_t mem_offset = (char *)ptr - (char *)disk_cache;
+  off_t offset;
+  assert (mem_offset < disk_cache_size);
+  pthread_mutex_lock (&disk_cache_lock);
+  offset = (off_t) disk_cache_info[boffs_block (mem_offset)].block
+    << log2_block_size;
+  assert (offset || mem_offset < block_size);
+  offset += mem_offset % block_size;
+  pthread_mutex_unlock (&disk_cache_lock);
+  ext2_debug ("(%p) = %lld", ptr, offset);
+  return offset;
+}
 
 /* block num --> pointer to in-memory block */
 #define bptr(block) boffs_ptr(boffs(block))
@@ -308,14 +389,24 @@ extern struct ext2_inode *dino (ino_t inum);
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
 EXT2FS_EI struct ext2_inode *
-dino (ino_t inum)
+dino_ref (ino_t inum)
 {
   unsigned long inodes_per_group = sblock->s_inodes_per_group;
   unsigned long bg_num = (inum - 1) / inodes_per_group;
   unsigned long group_inum = (inum - 1) % inodes_per_group;
-  struct ext2_group_desc *bg = group_desc(bg_num);
+  struct ext2_group_desc *bg = group_desc (bg_num);
   block_t block = bg->bg_inode_table + (group_inum / inodes_per_block);
-  return ((struct ext2_inode *)bptr(block)) + group_inum % inodes_per_block;
+  struct ext2_inode *inode = disk_cache_block_ref (block);
+  inode += group_inum % inodes_per_block;
+  ext2_debug ("(%llu) = %p", inum, inode);
+  return inode;
+}
+
+EXT2FS_EI void
+dino_deref (struct ext2_inode *inode)
+{
+  ext2_debug ("(%p)", inode);
+  disk_cache_block_deref (inode);
 }
 #endif /* Use extern inlines.  */
 
@@ -377,27 +468,38 @@ global_block_modified (block_t block)
 EXT2FS_EI void
 record_global_poke (void *ptr)
 {
-  int boffs = trunc_block (bptr_offs (ptr));
-  global_block_modified (boffs_block (boffs));
-  pokel_add (&global_pokel, boffs_ptr(boffs), block_size);
+  block_t block = boffs_block (bptr_offs (ptr));
+  void *block_ptr = bptr (block);
+  ext2_debug ("(%p = %p)", ptr, block_ptr);
+  assert (disk_cache_block_is_ref (block));
+  global_block_modified (block);
+  pokel_add (&global_pokel, block_ptr, block_size);
 }
 
 /* This syncs a modification to a non-file block.  */
 EXT2FS_EI void
 sync_global_ptr (void *bptr, int wait)
 {
-  vm_offset_t boffs = trunc_block (bptr_offs (bptr));
-  global_block_modified (boffs_block (boffs));
-  pager_sync_some (diskfs_disk_pager, trunc_page (boffs), vm_page_size, wait);
+  block_t block = boffs_block (bptr_offs (bptr));
+  void *block_ptr = bptr (block);
+  ext2_debug ("(%p -> %u)", bptr, block);
+  global_block_modified (block);
+  disk_cache_block_deref (block_ptr);
+  pager_sync_some (diskfs_disk_pager,
+		   block_ptr - disk_cache, block_size, wait);
+
 }
 
 /* This records a modification to one of a file's indirect blocks.  */
 EXT2FS_EI void
 record_indir_poke (struct node *node, void *ptr)
 {
-  int boffs = trunc_block (bptr_offs (ptr));
-  global_block_modified (boffs_block (boffs));
-  pokel_add (&node->dn->indir_pokel, boffs_ptr(boffs), block_size);
+  block_t block = boffs_block (bptr_offs (ptr));
+  void *block_ptr = bptr (block);
+  ext2_debug ("(%llu, %p)", node->cache_id, ptr);
+  assert (disk_cache_block_is_ref (block));
+  global_block_modified (block);
+  pokel_add (&node->dn->indir_pokel, block_ptr, block_size);
 }
 
 /* ---------------------------------------------------------------- */
@@ -405,6 +507,7 @@ record_indir_poke (struct node *node, void *ptr)
 EXT2FS_EI void
 sync_global (int wait)
 {
+  ext2_debug ("%d", wait);
   pokel_sync (&global_pokel, wait);
 }
 

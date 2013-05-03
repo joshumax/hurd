@@ -124,7 +124,7 @@ trunc_indirect (struct node *node, block_t end,
     {
       unsigned index;
       int modified = 0, all_freed = 1;
-      block_t *ind_bh = (block_t *)bptr (*p);
+      block_t *ind_bh = (block_t *) disk_cache_block_ref (*p);
       unsigned first = end < offset ? 0 : end - offset;
 
       for (index = first; index < addr_per_block; index++)
@@ -139,11 +139,16 @@ trunc_indirect (struct node *node, block_t end,
 
       if (first == 0 && all_freed)
 	{
-	  pager_flush_some (diskfs_disk_pager, boffs (*p), block_size, 1);
+	  pager_flush_some (diskfs_disk_pager,
+			    bptr_index (ind_bh) << log2_block_size,
+			    block_size, 1);
 	  free_block_run_free_ptr (fbr, p);
+	  disk_cache_block_deref (ind_bh);
 	}
       else if (modified)
 	record_indir_poke (node, ind_bh);
+      else
+	disk_cache_block_deref (ind_bh);
     }
 }
 

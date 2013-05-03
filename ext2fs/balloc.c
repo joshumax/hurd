@@ -92,7 +92,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 		      block, count);
 	}
       gdp = group_desc (block_group);
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       if (in_range (gdp->bg_block_bitmap, block, gcount) ||
 	  in_range (gdp->bg_inode_bitmap, block, gcount) ||
@@ -114,6 +114,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 	}
 
       record_global_poke (bh);
+      disk_cache_block_ref_ptr (gdp);
       record_global_poke (gdp);
 
       block += gcount;
@@ -139,7 +140,7 @@ ext2_new_block (block_t goal,
 		block_t prealloc_goal,
 		block_t *prealloc_count, block_t *prealloc_block)
 {
-  char *bh;
+  char *bh = NULL;
   char *p, *r;
   int i, j, k, tmp;
   unsigned long lmap;
@@ -165,6 +166,7 @@ ext2_new_block (block_t goal,
   ext2_debug ("goal=%u", goal);
 
 repeat:
+  assert (bh == NULL);
   /*
      * First, test whether the goal block is free.
    */
@@ -179,7 +181,7 @@ repeat:
       if (j)
 	goal_attempts++;
 #endif
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       ext2_debug ("goal is at %d:%d", i, j);
 
@@ -245,6 +247,9 @@ repeat:
 	  j = k;
 	  goto got_block;
 	}
+
+      disk_cache_block_deref (bh);
+      bh = NULL;
     }
 
   ext2_debug ("bit not found in block group %d", i);
@@ -267,7 +272,8 @@ repeat:
       pthread_spin_unlock (&global_lock);
       return 0;
     }
-  bh = bptr (gdp->bg_block_bitmap);
+  assert (bh == NULL);
+  bh = disk_cache_block_ref (gdp->bg_block_bitmap);
   r = memscan (bh, 0, sblock->s_blocks_per_group >> 3);
   j = (r - bh) << 3;
   if (j < sblock->s_blocks_per_group)
@@ -277,12 +283,15 @@ repeat:
 			     sblock->s_blocks_per_group);
   if (j >= sblock->s_blocks_per_group)
     {
+      disk_cache_block_deref (bh);
+      bh = NULL;
       ext2_error ("free blocks count corrupted for block group %d", i);
       pthread_spin_unlock (&global_lock);
       return 0;
     }
 
 search_back:
+  assert (bh != NULL);
   /*
      * We have succeeded in finding a free byte in the block
      * bitmap.  Now search backwards up to 7 bits to find the
@@ -291,6 +300,7 @@ search_back:
   for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh); k++, j--);
 
 got_block:
+  assert (bh != NULL);
 
   ext2_debug ("using block group %d (%d)", i, gdp->bg_free_blocks_count);
 
@@ -304,6 +314,8 @@ got_block:
   if (set_bit (j, bh))
     {
       ext2_warning ("bit already set for block %d", j);
+      disk_cache_block_deref (bh);
+      bh = NULL;
       goto repeat;
     }
 
@@ -351,6 +363,7 @@ got_block:
   j = tmp;
 
   record_global_poke (bh);
+  bh = NULL;
 
   if (j >= sblock->s_blocks_count)
     {
@@ -363,12 +376,14 @@ got_block:
 	      j, goal_hits, goal_attempts);
 
   gdp->bg_free_blocks_count--;
+  disk_cache_block_ref_ptr (gdp);
   record_global_poke (gdp);
 
   sblock->s_free_blocks_count--;
   sblock_dirty = 1;
 
  sync_out:
+  assert (bh == NULL);
   pthread_spin_unlock (&global_lock);
   alloc_sync (0);
 
@@ -390,9 +405,12 @@ ext2_count_free_blocks ()
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
+      void *bh;
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      x = count_free (bptr (gdp->bg_block_bitmap), block_size);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
+      x = count_free (bh, block_size);
+      disk_cache_block_deref (bh);
       printf ("group %d: stored = %d, counted = %lu",
 	      i, gdp->bg_free_blocks_count, x);
       bitmap_count += x;
@@ -453,7 +471,7 @@ ext2_check_blocks_bitmap ()
 
       gdp = group_desc (i);
       desc_count += gdp->bg_free_blocks_count;
-      bh = bptr (gdp->bg_block_bitmap);
+      bh = disk_cache_block_ref (gdp->bg_block_bitmap);
 
       if (!EXT2_HAS_RO_COMPAT_FEATURE (sblock,
 				       EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER)
@@ -479,6 +497,7 @@ ext2_check_blocks_bitmap ()
 	  ext2_error ("block #%d of the inode table in group %d is marked free", j, i);
 
       x = count_free (bh, block_size);
+      disk_cache_block_deref (bh);
       if (gdp->bg_free_blocks_count != x)
 	ext2_error ("wrong free blocks count for group %d,"
 		    " stored = %d, counted = %lu",

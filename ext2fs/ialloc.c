@@ -75,22 +75,25 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bit = (inum - 1) % sblock->s_inodes_per_group;
 
   gdp = group_desc (block_group);
-  bh = bptr (gdp->bg_inode_bitmap);
+  bh = disk_cache_block_ref (gdp->bg_inode_bitmap);
 
   if (!clear_bit (bit, bh))
     ext2_warning ("bit already cleared for inode %Ld", inum);
   else
     {
+      disk_cache_block_ref_ptr (bh);
       record_global_poke (bh);
 
       gdp->bg_free_inodes_count++;
       if (S_ISDIR (old_mode))
 	gdp->bg_used_dirs_count--;
+      disk_cache_block_ref_ptr (gdp);
       record_global_poke (gdp);
 
       sblock->s_free_inodes_count++;
     }
 
+  disk_cache_block_deref (bh);
   sblock_dirty = 1;
   pthread_spin_unlock (&global_lock);
   alloc_sync(0);
@@ -111,7 +114,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 ino_t
 ext2_alloc_inode (ino_t dir_inum, mode_t mode)
 {
-  char *bh;
+  char *bh = NULL;
   int i, j, inum, avefreei;
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
@@ -119,6 +122,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   pthread_spin_lock (&global_lock);
 
 repeat:
+  assert (bh == NULL);
   gdp = NULL;
   i = 0;
 
@@ -213,7 +217,7 @@ repeat:
       return 0;
     }
 
-  bh = bptr (gdp->bg_inode_bitmap);
+  bh = disk_cache_block_ref (gdp->bg_inode_bitmap);
   if ((inum =
        find_first_zero_bit ((unsigned long *) bh, sblock->s_inodes_per_group))
       < sblock->s_inodes_per_group)
@@ -221,12 +225,17 @@ repeat:
       if (set_bit (inum, bh))
 	{
 	  ext2_warning ("bit already set for inode %d", inum);
+	  disk_cache_block_deref (bh);
+	  bh = NULL;
 	  goto repeat;
 	}
       record_global_poke (bh);
+      bh = NULL;
     }
   else
     {
+      disk_cache_block_deref (bh);
+      bh = NULL;
       if (gdp->bg_free_inodes_count != 0)
 	{
 	  ext2_error ("free inodes count corrupted in group %d", i);
@@ -248,14 +257,24 @@ repeat:
   gdp->bg_free_inodes_count--;
   if (S_ISDIR (mode))
     gdp->bg_used_dirs_count++;
+  disk_cache_block_ref_ptr (gdp);
   record_global_poke (gdp);
 
   sblock->s_free_inodes_count--;
   sblock_dirty = 1;
 
  sync_out:
+  assert (bh == NULL);
   pthread_spin_unlock (&global_lock);
   alloc_sync (0);
+
+  /* Make sure the coming read_node won't complain about bad
+     fields.  */
+  {
+    struct ext2_inode *di = dino_ref (inum);
+    memset (di, 0, sizeof *di);
+    dino_deref (di);
+  }
 
   return inum;
 }
@@ -353,10 +372,12 @@ ext2_count_free_inodes ()
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
+      void *bh;
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = count_free (bptr (gdp->bg_inode_bitmap),
-		      sblock->s_inodes_per_group / 8);
+      bh = disk_cache_block_ref (gdp->bg_inode_bitmap);
+      x = count_free (bh, sblock->s_inodes_per_group / 8);
+      disk_cache_block_deref (bh);
       ext2_debug ("group %d: stored = %d, counted = %lu",
 		  i, gdp->bg_free_inodes_count, x);
       bitmap_count += x;
@@ -386,10 +407,12 @@ ext2_check_inodes_bitmap ()
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
+      void *bh;
       gdp = group_desc (i);
       desc_count += gdp->bg_free_inodes_count;
-      x = count_free (bptr (gdp->bg_inode_bitmap),
-		      sblock->s_inodes_per_group / 8);
+      bh = disk_cache_block_ref (gdp->bg_inode_bitmap);
+      x = count_free (bh, sblock->s_inodes_per_group / 8);
+      disk_cache_block_deref (bh);
       if (gdp->bg_free_inodes_count != x)
 	ext2_error ("wrong free inodes count in group %d, "
 		    "stored = %d, counted = %lu",

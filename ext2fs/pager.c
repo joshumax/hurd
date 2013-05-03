@@ -18,16 +18,17 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <hurd/store.h>
 #include "ext2fs.h"
 
+/* XXX */
+#include "../libpager/priv.h"
+
 /* A ports bucket to hold pager ports.  */
 struct port_bucket *pager_bucket;
-
-/* Mapped image of the disk.  */
-void *disk_image;
 
 pthread_spinlock_t node_to_page_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
@@ -165,6 +166,9 @@ file_pager_read_page (struct node *node, vm_offset_t page,
   block_t pending_blocks = 0;
   int num_pending_blocks = 0;
 
+  ext2_debug ("reading inode %llu page %lu[%u]",
+	      node->cache_id, page, vm_page_size);
+
   /* Read the NUM_PENDING_BLOCKS blocks in PENDING_BLOCKS, into the buffer
      pointed to by BUF (allocating it if necessary) at offset OFFS.  OFFS in
      adjusted by the amount read, and NUM_PENDING_BLOCKS is zeroed.  Any read
@@ -173,7 +177,8 @@ file_pager_read_page (struct node *node, vm_offset_t page,
     {
       if (num_pending_blocks > 0)
 	{
-	  block_t dev_block = pending_blocks << log2_dev_blocks_per_fs_block;
+	  store_offset_t dev_block = (store_offset_t) pending_blocks
+	    << log2_dev_blocks_per_fs_block;
 	  size_t amount = num_pending_blocks << log2_block_size;
 	  /* The buffer we try to read into; on the first read, we pass in a
 	     size of zero, so that the read is guaranteed to allocate a new
@@ -297,7 +302,8 @@ pending_blocks_write (struct pending_blocks *pb)
   if (pb->num > 0)
     {
       error_t err;
-      block_t dev_block = pb->block << log2_dev_blocks_per_fs_block;
+      store_offset_t dev_block = (store_offset_t) pb->block
+	<< log2_dev_blocks_per_fs_block;
       size_t length = pb->num << log2_block_size, amount;
 
       ext2_debug ("writing block %u[%ld]", pb->block, pb->num);
@@ -359,7 +365,7 @@ pending_blocks_add (struct pending_blocks *pb, block_t block)
   return 0;
 }
 
-/* Write one page for the pager backing NODE, at offset PAGE, into BUF.  This
+/* Write one page for the pager backing NODE, at OFFSET, into BUF.  This
    may need to write several filesystem blocks to satisfy one page, and tries
    to consolidate the i/o if possible.  */
 static error_t
@@ -411,12 +417,28 @@ disk_pager_read_page (vm_offset_t page, void **buf, int *writelock)
 {
   error_t err;
   size_t length = vm_page_size, read = 0;
-  vm_size_t dev_end = store->size;
+  store_offset_t offset = page, dev_end = store->size;
+  int index = offset >> log2_block_size;
 
-  if (page + vm_page_size > dev_end)
-    length = dev_end - page;
+  pthread_mutex_lock (&disk_cache_lock);
+  offset = ((store_offset_t) disk_cache_info[index].block << log2_block_size)
+    + offset % block_size;
+  disk_cache_info[index].flags |= DC_INCORE;
+  disk_cache_info[index].flags &=~ DC_UNTOUCHED;
+#ifndef NDEBUG
+  disk_cache_info[index].last_read = disk_cache_info[index].block;
+  disk_cache_info[index].last_read_xor
+    = disk_cache_info[index].block ^ DISK_CACHE_LAST_READ_XOR;
+#endif
+  pthread_mutex_unlock (&disk_cache_lock);
 
-  err = store_read (store, page >> store->log2_block_size, length, buf, &read);
+  ext2_debug ("(%lld)", offset >> log2_block_size);
+
+  if (offset + vm_page_size > dev_end)
+    length = dev_end - offset;
+
+  err = store_read (store, offset >> store->log2_block_size, length,
+		    buf, &read);
   if (read != length)
     return EIO;
   if (!err && length != vm_page_size)
@@ -432,26 +454,38 @@ disk_pager_write_page (vm_offset_t page, void *buf)
 {
   error_t err = 0;
   size_t length = vm_page_size, amount;
-  vm_size_t dev_end = store->size;
+  store_offset_t offset = page, dev_end = store->size;
+  int index = offset >> log2_block_size;
 
-  if (page + vm_page_size > dev_end)
-    length = dev_end - page;
+  pthread_mutex_lock (&disk_cache_lock);
+  assert (disk_cache_info[index].block != DC_NO_BLOCK);
+  offset = ((store_offset_t) disk_cache_info[index].block << log2_block_size)
+    + offset % block_size;
+#ifndef NDEBUG			/* Not strictly needed.  */
+  assert ((disk_cache_info[index].last_read ^ DISK_CACHE_LAST_READ_XOR)
+	  == disk_cache_info[index].last_read_xor);
+  assert (disk_cache_info[index].last_read
+	  == disk_cache_info[index].block);
+#endif
+  pthread_mutex_unlock (&disk_cache_lock);
 
-  ext2_debug ("writing disk page %d[%d]", page, length);
+  if (offset + vm_page_size > dev_end)
+    length = dev_end - offset;
+
+  ext2_debug ("writing disk page %lld[%zu]", offset, length);
 
   STAT_INC (disk_pageouts);
 
   if (modified_global_blocks)
     /* Be picky about which blocks in a page that we write.  */
     {
-      vm_offset_t offs = page;
       struct pending_blocks pb;
 
       pending_blocks_init (&pb, buf);
 
       while (length > 0 && !err)
 	{
-	  block_t block = boffs_block (offs);
+	  block_t block = boffs_block (offset);
 
 	  /* We don't clear the block modified bit here because this paging
 	     write request may not be the same one that actually set the bit,
@@ -469,7 +503,7 @@ disk_pager_write_page (vm_offset_t page, void *buf)
 	    /* Otherwise just skip it.  */
 	    err = pending_blocks_skip (&pb);
 
-	  offs += block_size;
+	  offset += block_size;
 	  length -= block_size;
 	}
 
@@ -478,13 +512,25 @@ disk_pager_write_page (vm_offset_t page, void *buf)
     }
   else
     {
-      err = store_write (store, page >> store->log2_block_size,
+      err = store_write (store, offset >> store->log2_block_size,
 			 buf, length, &amount);
       if (!err && length != amount)
 	err = EIO;
     }
 
   return err;
+}
+
+static void
+disk_pager_notify_evict (vm_offset_t page)
+{
+  unsigned long index = page >> log2_block_size;
+
+  ext2_debug ("(block %lu)", index);
+
+  pthread_mutex_lock (&disk_cache_lock);
+  disk_cache_info[index].flags &= ~DC_INCORE;
+  pthread_mutex_unlock (&disk_cache_lock);
 }
 
 /* Satisfy a pager read request for either the disk pager or file pager
@@ -515,7 +561,8 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
 void
 pager_notify_evict (struct user_pager_info *pager, vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  if (pager->type == DISK)
+    disk_pager_notify_evict (page);
 }
 
 
@@ -774,6 +821,373 @@ pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
 {
 }
 
+/* Cached blocks from disk.  */
+void *disk_cache;
+
+/* DISK_CACHE size in bytes and blocks.  */
+store_offset_t disk_cache_size;
+int disk_cache_blocks;
+
+/* block num --> pointer to in-memory block */
+hurd_ihash_t disk_cache_bptr;
+/* Cached blocks' info.  */
+struct disk_cache_info *disk_cache_info;
+/* Hint index for which cache block to reuse next.  */
+int disk_cache_hint;
+/* Lock for these structures.  */
+pthread_mutex_t disk_cache_lock;
+/* Fired when a re-association is done.  */
+pthread_cond_t disk_cache_reassociation;
+
+/* Finish mapping initialization. */
+static void
+disk_cache_init (void)
+{
+  if (block_size != vm_page_size)
+    ext2_panic ("Block size %u != vm_page_size %u",
+		block_size, vm_page_size);
+
+  pthread_mutex_init (&disk_cache_lock, NULL);
+  pthread_cond_init (&disk_cache_reassociation, NULL);
+
+  /* Allocate space for block num -> in-memory pointer mapping.  */
+  if (hurd_ihash_create (&disk_cache_bptr, HURD_IHASH_NO_LOCP))
+    ext2_panic ("Can't allocate memory for disk_pager_bptr");
+
+  /* Allocate space for disk cache blocks' info.  */
+  disk_cache_info = malloc ((sizeof *disk_cache_info) * disk_cache_blocks);
+  if (!disk_cache_info)
+    ext2_panic ("Cannot allocate space for disk cache info");
+
+  /* Initialize disk_cache_info.  */
+  for (int i = 0; i < disk_cache_blocks; i++)
+    {
+      disk_cache_info[i].block = DC_NO_BLOCK;
+      disk_cache_info[i].flags = 0;
+      disk_cache_info[i].ref_count = 0;
+#ifndef NDEBUG
+      disk_cache_info[i].last_read = DC_NO_BLOCK;
+      disk_cache_info[i].last_read_xor
+	= DC_NO_BLOCK ^ DISK_CACHE_LAST_READ_XOR;
+#endif
+    }
+  disk_cache_hint = 0;
+
+  /* Map the superblock and the block group descriptors.  */
+  block_t fixed_first = boffs_block (SBLOCK_OFFS);
+  block_t fixed_last = fixed_first
+    + (round_block ((sizeof *group_desc_image) * groups_count)
+       >> log2_block_size);
+  ext2_debug ("%u-%u\n", fixed_first, fixed_last);
+  assert (fixed_last - fixed_first + 1 <= (block_t)disk_cache_blocks + 3);
+  for (block_t i = fixed_first; i <= fixed_last; i++)
+    {
+      disk_cache_block_ref (i);
+      assert (disk_cache_info[i-fixed_first].block == i);
+      disk_cache_info[i-fixed_first].flags |= DC_FIXED;
+    }
+}
+
+static void
+disk_cache_return_unused (void)
+{
+  int index;
+
+  /* XXX: Touch all pages.  It seems that sometimes GNU Mach "forgets"
+     to notify us about evicted pages.  Disk cache must be
+     unlocked.  */
+  for (vm_offset_t i = 0; i < disk_cache_size; i += vm_page_size)
+    *(volatile char *)(disk_cache + i);
+
+  /* Release some references to cached blocks.  */
+  pokel_sync (&global_pokel, 1);
+
+  /* Return unused pages that are in core.  */
+  int pending_begin = -1, pending_end = -1;
+  pthread_mutex_lock (&disk_cache_lock);
+  for (index = 0; index < disk_cache_blocks; index++)
+    if (! (disk_cache_info[index].flags & (DC_DONT_REUSE & ~DC_INCORE))
+	&& ! disk_cache_info[index].ref_count)
+      {
+	ext2_debug ("return %u -> %d",
+		    disk_cache_info[index].block, index);
+	if (index != pending_end)
+	  {
+	    /* Return previous region, if there is such, ... */
+	    if (pending_end >= 0)
+	      {
+		pthread_mutex_unlock (&disk_cache_lock);
+		pager_return_some (diskfs_disk_pager,
+				   pending_begin * vm_page_size,
+				   (pending_end - pending_begin)
+				   * vm_page_size, 1);
+		pthread_mutex_lock (&disk_cache_lock);
+	      }
+	    /* ... and start new region.  */
+	    pending_begin = index;
+	  }
+	pending_end = index + 1;
+      }
+
+  pthread_mutex_unlock (&disk_cache_lock);
+
+  /* Return last region, if there is such.   */
+  if (pending_end >= 0)
+    pager_return_some (diskfs_disk_pager,
+		       pending_begin * vm_page_size,
+		       (pending_end - pending_begin) * vm_page_size,
+		       1);
+  else
+    {
+      printf ("ext2fs: disk cache is starving\n");
+
+      /* Give it some time.  This should happen rarely.  */
+      sleep (1);
+    }
+}
+
+/* Map block and return pointer to it.  */
+void *
+disk_cache_block_ref (block_t block)
+{
+  int index;
+  void *bptr;
+
+  assert (0 <= block && block < store->size >> log2_block_size);
+
+  ext2_debug ("(%u)", block);
+
+retry_ref:
+  pthread_mutex_lock (&disk_cache_lock);
+
+  bptr = hurd_ihash_find (disk_cache_bptr, block);
+  if (bptr)
+    /* Already mapped.  */
+    {
+      index = bptr_index (bptr);
+
+      /* In process of re-associating?  */
+      if (disk_cache_info[index].flags & DC_UNTOUCHED)
+	{
+	  /* Wait re-association to finish.  */
+	  pthread_cond_wait (&disk_cache_reassociation, &disk_cache_lock);
+	  pthread_mutex_unlock (&disk_cache_lock);
+
+#if 0
+	  printf ("Re-association -- wait finished.\n");
+#endif
+
+	  goto retry_ref;
+	}
+
+      /* Just increment reference and return.  */
+      assert (disk_cache_info[index].ref_count + 1
+	      > disk_cache_info[index].ref_count);
+      disk_cache_info[index].ref_count++;
+
+      ext2_debug ("cached %u -> %d (ref_count = %hu, flags = %#hx, ptr = %p)",
+		  disk_cache_info[index].block, index,
+		  disk_cache_info[index].ref_count,
+		  disk_cache_info[index].flags, bptr);
+
+      pthread_mutex_unlock (&disk_cache_lock);
+
+      return bptr;
+    }
+
+  /* Search for a block that is not in core and is not referenced.  */
+  index = disk_cache_hint;
+  while ((disk_cache_info[index].flags & DC_DONT_REUSE)
+	 || (disk_cache_info[index].ref_count))
+    {
+      ext2_debug ("reject %u -> %d (ref_count = %hu, flags = %#hx)",
+		  disk_cache_info[index].block, index,
+		  disk_cache_info[index].ref_count,
+		  disk_cache_info[index].flags);
+
+      /* Just move to next block.  */
+      index++;
+      if (index >= disk_cache_blocks)
+	index -= disk_cache_blocks;
+
+      /* If we return to where we started, than there is no suitable
+	 block. */
+      if (index == disk_cache_hint)
+	break;
+    }
+
+  /* The next place in the disk cache becomes the current hint.  */
+  disk_cache_hint = index + 1;
+  if (disk_cache_hint >= disk_cache_blocks)
+    disk_cache_hint -= disk_cache_blocks;
+
+  /* Is suitable place found?  */
+  if ((disk_cache_info[index].flags & DC_DONT_REUSE)
+      || disk_cache_info[index].ref_count)
+    /* No place is found.  Try to release some blocks and try
+       again.  */
+    {
+      ext2_debug ("flush %u -> %d", disk_cache_info[index].block, index);
+
+      pthread_mutex_unlock (&disk_cache_lock);
+
+      disk_cache_return_unused ();
+
+      goto retry_ref;
+    }
+
+  /* Suitable place is found.  */
+
+  /* Calculate pointer to data.  */
+  bptr = (char *)disk_cache + (index << log2_block_size);
+  ext2_debug ("map %u -> %d (%p)", block, index, bptr);
+
+  /* This pager_return_some is used only to set PM_FORCEREAD for the
+     page.  DC_UNTOUCHED is set so that we catch if someone has
+     referenced the block while we didn't hold disk_cache_lock.  */
+  disk_cache_info[index].flags |= DC_UNTOUCHED;
+
+#if 0 /* XXX: Let's see if this is needed at all.  */
+
+  pthread_mutex_unlock (&disk_cache_lock);
+  pager_return_some (diskfs_disk_pager, bptr - disk_cache, vm_page_size, 1);
+  pthread_mutex_lock (&disk_cache_lock);
+
+  /* Has someone used our bptr?  Has someone mapped requested block
+     while we have unlocked disk_cache_lock?  If so, environment has
+     changed and we have to restart operation.  */
+  if ((! (disk_cache_info[index].flags & DC_UNTOUCHED))
+      || hurd_ihash_find (disk_cache_bptr, block))
+    {
+      pthread_mutex_unlock (&disk_cache_lock);
+      goto retry_ref;
+    }
+
+#elif 0
+
+  /* XXX: Use libpager internals.  */
+
+  pthread_mutex_lock (&diskfs_disk_pager->interlock);
+  int page = (bptr - disk_cache) / vm_page_size;
+  assert (page >= 0);
+  int is_incore = (page < diskfs_disk_pager->pagemapsize
+		   && (diskfs_disk_pager->pagemap[page] & PM_INCORE));
+  pthread_mutex_unlock (&diskfs_disk_pager->interlock);
+  if (is_incore)
+    {
+      pthread_mutex_unlock (&disk_cache_lock);
+      printf ("INCORE\n");
+      goto retry_ref;
+    }
+
+#endif
+
+  /* Re-associate.  */
+  if (disk_cache_info[index].block != DC_NO_BLOCK)
+    /* Remove old association.  */
+    hurd_ihash_remove (disk_cache_bptr, disk_cache_info[index].block);
+  /* New association.  */
+  if (hurd_ihash_add (disk_cache_bptr, block, bptr))
+    ext2_panic ("Couldn't hurd_ihash_add new disk block");
+  assert (! (disk_cache_info[index].flags & DC_DONT_REUSE & ~DC_UNTOUCHED));
+  disk_cache_info[index].block = block;
+  assert (! disk_cache_info[index].ref_count);
+  disk_cache_info[index].ref_count = 1;
+
+  /* All data structures are set up.  */
+  pthread_mutex_unlock (&disk_cache_lock);
+
+  /* Try to read page.  */
+  *(volatile char *) bptr;
+
+  /* Check if it's actually read.  */
+  pthread_mutex_lock (&disk_cache_lock);
+  if (disk_cache_info[index].flags & DC_UNTOUCHED)
+    /* It's not read.  */
+    {
+      /* Remove newly created association.  */
+      hurd_ihash_remove (disk_cache_bptr, block);
+      disk_cache_info[index].block = DC_NO_BLOCK;
+      disk_cache_info[index].flags &=~ DC_UNTOUCHED;
+      disk_cache_info[index].ref_count = 0;
+      pthread_mutex_unlock (&disk_cache_lock);
+
+      /* Prepare next time association of this page to succeed.  */
+      pager_flush_some (diskfs_disk_pager, bptr - disk_cache,
+			vm_page_size, 0);
+
+#if 0
+      printf ("Re-association failed.\n");
+#endif
+
+      goto retry_ref;
+    }
+
+  /* Re-association was successful.  */
+  pthread_cond_broadcast (&disk_cache_reassociation);
+
+  pthread_mutex_unlock (&disk_cache_lock);
+
+  ext2_debug ("(%u) = %p", block, bptr);
+  return bptr;
+}
+
+void
+disk_cache_block_ref_ptr (void *ptr)
+{
+  int index;
+
+  pthread_mutex_lock (&disk_cache_lock);
+  index = bptr_index (ptr);
+  assert (disk_cache_info[index].ref_count >= 1);
+  assert (disk_cache_info[index].ref_count + 1
+	  > disk_cache_info[index].ref_count);
+  disk_cache_info[index].ref_count++;
+  assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
+  ext2_debug ("(%p) (ref_count = %hu, flags = %#hx)",
+	      ptr,
+	      disk_cache_info[index].ref_count,
+	      disk_cache_info[index].flags);
+  pthread_mutex_unlock (&disk_cache_lock);
+}
+
+void
+disk_cache_block_deref (void *ptr)
+{
+  int index;
+
+  assert (disk_cache <= ptr && ptr <= disk_cache + disk_cache_size);
+
+  pthread_mutex_lock (&disk_cache_lock);
+  index = bptr_index (ptr);
+  ext2_debug ("(%p) (ref_count = %hu, flags = %#hx)",
+	      ptr,
+	      disk_cache_info[index].ref_count - 1,
+	      disk_cache_info[index].flags);
+  assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
+  assert (disk_cache_info[index].ref_count >= 1);
+  disk_cache_info[index].ref_count--;
+  pthread_mutex_unlock (&disk_cache_lock);
+}
+
+/* Not used.  */
+int
+disk_cache_block_is_ref (block_t block)
+{
+  int ref;
+  void *ptr;
+
+  pthread_mutex_lock (&disk_cache_lock);
+  ptr = hurd_ihash_find (disk_cache_bptr, block);
+  if (ptr == NULL)
+    ref = 0;
+  else				/* XXX: Should check for DC_UNTOUCHED too.  */
+    ref = disk_cache_info[bptr_index (ptr)].ref_count;
+  pthread_mutex_unlock (&disk_cache_lock);
+
+  return ref;
+}
+
 /* Create the DISK pager.  */
 void
 create_disk_pager (void)
@@ -783,9 +1197,12 @@ create_disk_pager (void)
     ext2_panic ("can't create disk pager: %s", strerror (errno));
   upi->type = DISK;
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, 0,
-			   store->size, &disk_image);
-
+  get_hypermetadata ();
+  disk_cache_blocks = DISK_CACHE_BLOCKS;
+  disk_cache_size = disk_cache_blocks << log2_block_size;
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, 1,
+			   disk_cache_size, &disk_cache);
+  disk_cache_init ();
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
