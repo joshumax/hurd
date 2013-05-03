@@ -49,7 +49,8 @@ service_paging_requests (void *arg)
 
 void
 diskfs_start_disk_pager (struct user_pager_info *upi,
-			 struct port_bucket *pager_bucket, int may_cache,
+			 struct port_bucket *pager_bucket,
+			 int may_cache, int notify_on_evict,
 			 size_t size, void **image)
 {
   pthread_t thread;
@@ -68,7 +69,8 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
 
   /* Create the pager.  */
   diskfs_disk_pager = pager_create (upi, pager_bucket,
-				    may_cache, MEMORY_OBJECT_COPY_NONE);
+				    may_cache, MEMORY_OBJECT_COPY_NONE,
+				    notify_on_evict);
   assert (diskfs_disk_pager);
 
   /* Get a port to the disk pager.  */

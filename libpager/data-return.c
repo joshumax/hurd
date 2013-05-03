@@ -39,6 +39,7 @@ _pager_do_write_request (mach_port_t object,
   struct pager *p;
   short *pm_entries;
   int npages, i;
+  char *notified;
   error_t *pagerrs;
   struct lock_request *lr;
   struct lock_list {struct lock_request *lr;
@@ -71,9 +72,6 @@ _pager_do_write_request (mach_port_t object,
       goto release_out;
     }
 
-  if (! dirty)
-    goto release_out;
-
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for write\n");
@@ -83,12 +81,35 @@ _pager_do_write_request (mach_port_t object,
   npages = length / __vm_page_size;
   pagerrs = alloca (npages * sizeof (error_t));
 
+  notified = alloca (npages * (sizeof *notified));
+#ifndef NDEBUG
+  memset (notified, -1, npages * (sizeof *notified));
+#endif
+
   _pager_block_termination (p);	/* until we are done with the pagemap
 				   when the write completes. */
 
   _pager_pagemap_resize (p, offset + length);
 
   pm_entries = &p->pagemap[offset / __vm_page_size];
+
+  if (! dirty)
+    {
+      munmap ((void *) data, length);
+      if (!kcopy) {
+        /* Prepare notified array.  */
+        for (i = 0; i < npages; i++)
+          notified[i] = (p->notify_on_evict
+                         && ! (pm_entries[i] & PM_PAGEINWAIT));
+
+        _pager_release_seqno (p, seqno);
+        goto notify;
+      }
+      else {
+        _pager_allow_termination (p);
+        goto release_out;
+      }
+    }
 
   /* Make sure there are no other in-progress writes for any of these
      pages before we begin.  This imposes a little more serialization
@@ -119,10 +140,6 @@ _pager_do_write_request (mach_port_t object,
   else
     for (i = 0; i < npages; i++)
       pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
-
-  if (!kcopy)
-    for (i = 0; i < npages; i++)
-      pm_entries[i] &= ~PM_INCORE;
 
   /* If this write occurs while a lock is pending, record
      it.  We have to keep this list because a lock request
@@ -163,7 +180,10 @@ _pager_do_write_request (mach_port_t object,
   for (i = 0; i < npages; i++)
     {
       if (omitdata & (1 << i))
-	continue;
+	{
+	  notified[i] = 0;
+	  continue;
+	}
 
       if (pm_entries[i] & PM_WRITEWAIT)
 	wakeup = 1;
@@ -179,14 +199,22 @@ _pager_do_write_request (mach_port_t object,
 	pm_entries[i] |= PM_INVALID;
 
       if (pm_entries[i] & PM_PAGEINWAIT)
-	memory_object_data_supply (p->memobjcntl,
-				   offset + (vm_page_size * i),
-				   data + (vm_page_size * i),
-				   vm_page_size, 1,
-				   VM_PROT_NONE, 0, MACH_PORT_NULL);
+	{
+	  memory_object_data_supply (p->memobjcntl,
+				     offset + (vm_page_size * i),
+				     data + (vm_page_size * i),
+				     vm_page_size, 1,
+				     VM_PROT_NONE, 0, MACH_PORT_NULL);
+	  notified[i] = 0;
+	}
       else
-	munmap ((caddr_t) (data + (vm_page_size * i)),
-		vm_page_size);
+	{
+	  munmap ((void *) (data + (vm_page_size * i)),
+		  vm_page_size);
+	  notified[i] = (! kcopy && p->notify_on_evict);
+	  if (! kcopy)
+	    pm_entries[i] &= ~PM_INCORE;
+	}
 
       pm_entries[i] &= ~(PM_PAGINGOUT | PM_PAGEINWAIT | PM_WRITEWAIT);
     }
@@ -198,9 +226,28 @@ _pager_do_write_request (mach_port_t object,
   if (wakeup)
     pthread_cond_broadcast (&p->wakeup);
 
+ notify:
   _pager_allow_termination (p);
-
   pthread_mutex_unlock (&p->interlock);
+
+  for (i = 0; i < npages; i++)
+    {
+      assert (notified[i] == 0 || notified[i] == 1);
+      if (notified[i])
+	{
+	  short *pm_entry = &pm_entries[i];
+
+	  /* Do notify user.  */
+	  pager_notify_evict (p->upi, offset + (i * vm_page_size));
+
+	  /* Clear any error that is left.  Notification on eviction
+	     is used only to change association of page, so any
+	     error may no longer be valid.  */
+	  pthread_mutex_lock (&p->interlock);
+	  *pm_entry = SET_PM_ERROR (SET_PM_NEXTERROR (*pm_entry, 0), 0);
+	  pthread_mutex_unlock (&p->interlock);
+	}
+    }
 
   ports_port_deref (p);
   return 0;

@@ -36,14 +36,17 @@ int pager_demuxer (mach_msg_header_t *inp,
    to receive requests.  U_PAGER will be provided to later calls to
    pager_find_address.  The pager will have one user reference
    created.  MAY_CACHE and COPY_STRATEGY are the original values of
-   those attributes as for memory_object_ready.  Users may create
-   references to pagers by use of the relevant ports library
-   functions.  On errors, return null and set errno.  */
+   those attributes as for memory_object_ready.  If NOTIFY_ON_EVICT is
+   non-zero, pager_notify_evict user callback will be called when page
+   is evicted.  Users may create references to pagers by use of the
+   relevant ports library functions.  On errors, return null and set
+   errno.  */
 struct pager *
 pager_create (struct user_pager_info *u_pager,
 	      struct port_bucket *bucket,
 	      boolean_t may_cache,
-	      memory_object_copy_strategy_t copy_strategy);
+	      memory_object_copy_strategy_t copy_strategy,
+	      boolean_t notify_on_evict);
 
 /* Return the user_pager_info struct associated with a pager. */
 struct user_pager_info *
@@ -171,6 +174,18 @@ pager_write_page (struct user_pager_info *pager,
 error_t
 pager_unlock_page (struct user_pager_info *pager,
 		   vm_offset_t address);
+
+/* The user must define this function.  It is used when you want be
+   able to change association of pages to backing store.  To use it,
+   pass non-zero value in NOTIFY_ON_EVICT when pager is created with
+   pager_create.  You can change association of page only when
+   pager_notify_evict has been called and you haven't touched page
+   content after that.  Note there is a possibility that a page is
+   evicted, but user is not notified about that.  The user should be
+   able to handle this case.  */
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page);
 
 /* The user must define this function.  It should report back (in
    *OFFSET and *SIZE the minimum valid address the pager will accept

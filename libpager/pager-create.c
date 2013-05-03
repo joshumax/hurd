@@ -22,7 +22,8 @@ struct pager *
 pager_create (struct user_pager_info *upi,
 	      struct port_bucket *bucket,
 	      boolean_t may_cache,
-	      memory_object_copy_strategy_t copy_strategy)
+	      memory_object_copy_strategy_t copy_strategy,
+	      boolean_t notify_on_evict)
 {
   struct pager *p;
 
@@ -38,6 +39,7 @@ pager_create (struct user_pager_info *upi,
   p->attribute_requests = 0;
   p->may_cache = may_cache;
   p->copy_strategy = copy_strategy;
+  p->notify_on_evict = notify_on_evict;
   p->memobjcntl = MACH_PORT_NULL;
   p->memobjname = MACH_PORT_NULL;
   p->seqno = -1;

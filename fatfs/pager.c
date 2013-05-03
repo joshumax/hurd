@@ -596,6 +596,13 @@ pager_unlock_page (struct user_pager_info *pager,
   return 0;
 }
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
 /* Grow the disk allocated to locked node NODE to be at least SIZE
    bytes, and set NODE->allocsize to the actual allocated size.  (If
    the allocated size is already SIZE bytes, do nothing.)  CRED
@@ -752,7 +759,7 @@ create_fat_pager (void)
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
   upi->type = FAT;
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE,
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, 0,
 			   bytes_per_sector * sectors_per_fat,
 			   &fat_image);
 }
@@ -794,7 +801,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
           diskfs_nref_light (node);
           node->dn->pager =
             pager_create (upi, pager_bucket, MAY_CACHE,
-                          MEMORY_OBJECT_COPY_DELAY);
+                          MEMORY_OBJECT_COPY_DELAY, 0);
           if (node->dn->pager == 0)
             {
               diskfs_nrele_light (node);

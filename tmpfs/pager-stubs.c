@@ -57,6 +57,14 @@ pager_unlock_page (struct user_pager_info *pager,
   return EIEIO;
 }
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  abort();
+}
+
+
 /* The user must define this function.  It should report back (in
    *OFFSET and *SIZE the minimum valid address the pager will accept
    and the size of the object.   */

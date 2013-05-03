@@ -35,7 +35,8 @@ extern __thread struct disk_image_user *diskfs_exception_diu;
    mapped is returned in IMAGE.  INFO, PAGER_BUCKET, & MAY_CACHE are passed
    to `pager_create'.  */
 extern void diskfs_start_disk_pager (struct user_pager_info *info,
-				     struct port_bucket *pager_bucket, int may_cache,
+				     struct port_bucket *pager_bucket,
+				     int may_cache, int notify_on_evict,
 				     size_t size, void **image);
 
 extern struct pager *diskfs_disk_pager;

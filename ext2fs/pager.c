@@ -511,6 +511,13 @@ pager_write_page (struct user_pager_info *pager, vm_offset_t page,
   else
     return file_pager_write_page (pager->node, page, (void *)buf);
 }
+
+void
+pager_notify_evict (struct user_pager_info *pager, vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
 
 /* Make page PAGE writable, at least up to ALLOCSIZE.  This function and
    diskfs_grow are the only places that blocks are actually added to the
@@ -776,8 +783,9 @@ create_disk_pager (void)
     ext2_panic ("can't create disk pager: %s", strerror (errno));
   upi->type = DISK;
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,
-			   &disk_image);
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, 0,
+			   store->size, &disk_image);
+
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.
@@ -817,7 +825,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	  diskfs_nref_light (node);
 	  node->dn->pager =
 	    pager_create (upi, pager_bucket, MAY_CACHE,
-			  MEMORY_OBJECT_COPY_DELAY);
+			  MEMORY_OBJECT_COPY_DELAY, 0);
 	  if (node->dn->pager == 0)
 	    {
 	      diskfs_nrele_light (node);

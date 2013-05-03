@@ -450,6 +450,13 @@ pager_unlock_page (struct user_pager_info *pager,
   return err;
 }
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
 /* Implement the pager_report_extent callback from the pager library.  See
    <hurd/pager.h> for the interface description. */
 inline error_t
@@ -502,7 +509,7 @@ create_disk_pager (void)
   upi->type = DISK;
   upi->np = 0;
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, store->size,
+  diskfs_start_disk_pager (upi, pager_bucket, MAY_CACHE, 0, store->size,
 			   &disk_image);
   upi->p = diskfs_disk_pager;
 }
@@ -595,7 +602,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	upi->unlocked_pagein_length = 0;
 	diskfs_nref_light (np);
 	upi->p = pager_create (upi, pager_bucket,
-			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY);
+			       MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
 	if (upi->p == 0)
 	  {
 	    diskfs_nrele_light (np);

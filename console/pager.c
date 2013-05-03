@@ -95,6 +95,14 @@ pager_unlock_page (struct user_pager_info *pager,
 }
 
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
+
 /* Tell how big the file is. */
 error_t
 pager_report_extent (struct user_pager_info *upi,
@@ -170,7 +178,7 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
 
   /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
   user_pager->pager = pager_create (upi, pager_bucket,
-				    1, MEMORY_OBJECT_COPY_DELAY);
+				    1, MEMORY_OBJECT_COPY_DELAY, 0);
   if (!user_pager->pager)
     {
       free (upi);

@@ -119,7 +119,8 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
     goto error_read;
 
   memory_object_data_supply (p->memobjcntl, offset, page, length, 1,
-			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE, 0,
+			     write_lock ? VM_PROT_WRITE : VM_PROT_NONE,
+			     p->notify_on_evict ? 1 : 0,
 			     MACH_PORT_NULL);
   pthread_mutex_lock (&p->interlock);
   _pager_mark_object_error (p, offset, length, 0);

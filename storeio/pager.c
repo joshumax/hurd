@@ -110,6 +110,13 @@ pager_unlock_page (struct user_pager_info *upi, vm_offset_t address)
     return 0;
 }
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
 /* The user must define this function.  It should report back (in
    *OFFSET and *SIZE the minimum valid address the pager will accept
    and the size of the object.   */
@@ -246,7 +253,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 	{
 	  dev->pager =
 	    pager_create ((struct user_pager_info *)dev, pager_port_bucket,
-			  1, MEMORY_OBJECT_COPY_DELAY);
+			  1, MEMORY_OBJECT_COPY_DELAY, 0);
 	  if (dev->pager == NULL)
 	    {
 	      pthread_mutex_unlock (&dev->pager_lock);

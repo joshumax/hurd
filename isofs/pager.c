@@ -94,6 +94,13 @@ pager_unlock_page (struct user_pager_info *pager,
   return EROFS;
 }
 
+void
+pager_notify_evict (struct user_pager_info *pager,
+		    vm_offset_t page)
+{
+  assert (!"unrequested notification on eviction");
+}
+
 /* Tell how big the file is. */
 error_t
 pager_report_extent (struct user_pager_info *pager,
@@ -137,7 +144,7 @@ create_disk_pager (void)
   upi->type = DISK;
   upi->np = 0;
   pager_bucket = ports_create_bucket ();
-  diskfs_start_disk_pager (upi, pager_bucket, 1, store->size, &disk_image);
+  diskfs_start_disk_pager (upi, pager_bucket, 1, 0, store->size, &disk_image);
   upi->p = diskfs_disk_pager;
 }
 
@@ -168,7 +175,8 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	upi->type = FILE_DATA;
 	upi->np = np;
 	diskfs_nref_light (np);
-	upi->p = pager_create (upi, pager_bucket, 1, MEMORY_OBJECT_COPY_DELAY);
+	upi->p = pager_create (upi, pager_bucket, 1,
+			       MEMORY_OBJECT_COPY_DELAY, 0);
 	if (upi->p == 0)
 	  {
 	    diskfs_nrele_light (np);
