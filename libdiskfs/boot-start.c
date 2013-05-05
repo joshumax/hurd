@@ -237,7 +237,8 @@ diskfs_start_bootstrap ()
     }
   else if (retry == FS_RETRY_MAGICAL && pathbuf[0] == '/')
     {
-      assert (init_lookups < SYMLOOP_MAX);
+      assert (sysconf (_SC_SYMLOOP_MAX) < 0 ||
+	      init_lookups < sysconf (_SC_SYMLOOP_MAX));
 
       /* INITNAME is a symlink with an absolute target, so try again.  */
       initname = strdupa (pathbuf);
