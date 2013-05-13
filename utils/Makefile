@@ -61,8 +61,6 @@ ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-vmstat: gnumachUser.o
-
 rpctrace: ../libports/libports.a ../libihash/libihash.a
 rpctrace-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
