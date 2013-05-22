@@ -127,7 +127,7 @@ into another language, under the above conditions for modified versions.
 @end quotation
 @end copying
 
-@setchapternewpage none
+@setchapternewpage off
 @settitle Hurd Reference Manual
 
 @titlepage
@@ -512,9 +512,6 @@ mentions that the FSF started developing the Hurd in 1990.  As of
 [Gnusletter, Nov. 1991], the Hurd (running on Mach) is GNU's official
 kernel.
 
-
-@node Copying
-@section GNU General Public License
 
 @include gpl.texinfo
 
@@ -1461,7 +1458,7 @@ dropped by the kernel.  If the page is currently in core, the kernel
 might ignore this call.
 @end deftypefun
 
-attributes@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
+@deftypefun void pager_change_attributes (@w{struct pager *@var{pager}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}}, @w{int @var{wait}})
 Change the attributes of the memory object underlying pager @var{pager}.
 The @var{may_cache} and @var{copy_strategy} arguments are as for
 @code{memory_object_change_}.  Wait for the kernel to report

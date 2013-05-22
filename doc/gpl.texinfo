@@ -1,6 +1,5 @@
-@setfilename gpl.info
-
-@unnumbered GNU GENERAL PUBLIC LICENSE
+@node Copying
+@section GNU GENERAL PUBLIC LICENSE
 @center Version 2, June 1991
 
 @display
