@@ -51,7 +51,7 @@ static void free_hook (void *ptr, const void *caller);
 void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = init_hook;
 
 
-#define	DEBUG
+/* #define	DEBUG */
 
 /*
  *	All allocations of size less than kalloc_max are rounded to the
