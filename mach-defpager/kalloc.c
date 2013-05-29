@@ -92,8 +92,6 @@ boolean_t		kalloc_initialized = FALSE;
 
 void kalloc_init(void)
 {
-	vm_offset_t min, max;
-	vm_size_t size;
 	register int i;
 
 	/*
