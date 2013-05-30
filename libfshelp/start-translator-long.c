@@ -226,6 +226,14 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose;
 
+  /* XXX 25 is BASEPRI_USER, which isn't exported by the kernel.  Ideally,
+     nice values should be used, perhaps with a simple wrapper to convert
+     them to Mach priorities.  */
+  err = task_priority(task, 25, FALSE);
+
+  if (err)
+    goto lose;
+
   /* Designate TASK as our child and set it's owner accordingly. */
   proc = getproc ();
   proc_child (proc, task);
