@@ -47,7 +47,8 @@ cons_vcons_move_mouse (vcons_t vcons, mouse_event_t ev)
     case CONS_VCONS_MOUSE_MOVE_ABS_PERCENT:
       mousepos_x = vcons->state.screen.width * ev->x / 100;
       mousepos_y = vcons->state.screen.height * ev->y / 100;
-      
+      break;
+
     case CONS_VCONS_MOUSE_MOVE_ABS:
       mousepos_x = ev->x;
       mousepos_y = ev->y;
