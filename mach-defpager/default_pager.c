@@ -3760,8 +3760,6 @@ S_default_pager_object_set_size (mach_port_t pager,
     }
   else
     {
-      union dp_map block;
-
       if (ds->dpager.limit != rounded_limit)
         {
           kr = memory_object_lock_request(ds->pager_request, rounded_limit,
