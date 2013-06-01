@@ -586,8 +586,7 @@ read_composefile (char *composefn)
     return errno;
   
   err = parse_composefile (cf);
-  if (err)
-    fclose (cf);
+  fclose (cf);
   
   return err;
 }
