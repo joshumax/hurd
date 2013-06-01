@@ -341,7 +341,6 @@ void
 cthread_wire(void)
 {
 	register cproc_t p = cproc_self();
-	kern_return_t r;
 
 	/* In GNU, we wire all threads on creation (in cproc_alloc).  */
 	assert (p->wired != MACH_PORT_NULL);
@@ -628,7 +627,6 @@ cproc_block(void)
 {
   extern unsigned int __hurd_threadvar_max; /* GNU */
 	register cproc_t waiter, new, p = cproc_self();
-	register int extra;
 
 	if (p->wired != MACH_PORT_NULL) {
 		mach_msg_header_t msg;
@@ -864,8 +862,6 @@ cond_broadcast(condition_t c)
 
 	spin_lock(&c->lock);
 	for (;;) {
-		register int	old_state;
-
 		cthread_queue_deq(&c->queue, cproc_t, p);
 		if (p == NO_CPROC)
 			break;
