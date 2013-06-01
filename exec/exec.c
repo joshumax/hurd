@@ -86,7 +86,6 @@ static void
 check_section (bfd *bfd, asection *sec, void *userdata)
 {
   struct execdata *u = userdata;
-  vm_address_t addr;
   static const union
     {
       char string[8];
@@ -104,8 +103,6 @@ check_section (bfd *bfd, asection *sec, void *userdata)
       (sec->flags & SEC_NEVER_LOAD))
     /* Nothing to do for this section.  */
     return;
-
-  addr = (vm_address_t) sec->vma;
 
   if (sec->flags & SEC_LOAD)
     {
