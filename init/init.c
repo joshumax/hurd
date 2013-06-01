@@ -1068,14 +1068,13 @@ start_child (const char *prog, char **progargs)
 		   NULL, 0, NULL, 0);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), file);
-  free (args);
   if (err)
     {
       error (0, err, "Cannot execute %s", args);
       free (args);
       return -1;
     }
-
+  free (args);
   return 0;
 }
 
