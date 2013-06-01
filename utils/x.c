@@ -168,7 +168,6 @@ void verify_passwd (const char *name, const char *password,
 void
 main(int argc, char *argv[])
 {
-  int i;
   error_t err = 0;
   struct auth add, remove;
 
