@@ -24,6 +24,7 @@
 #include <error.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <hurd/fsys.h>
 #include <hurd/fshelp.h>
 #include <hurd/paths.h>
@@ -34,6 +35,7 @@
 static char *fstype = DEFAULT_FSTYPE;
 static char *device, *mountpoint;
 static int verbose;
+static int fake;
 static char *options;
 static size_t options_len;
 static mach_msg_timeout_t timeout;
@@ -55,6 +57,7 @@ static const struct argp_option argp_opts[] =
   {"remount", 0, 0, OPTION_ALIAS},
   {"verbose", 'v', 0, 0, "Give more detailed information"},
   {"no-mtab", 'n', 0, 0, "Do not update /etc/mtab"},
+  {"fake", 'f', 0, 0, "Do not actually mount, just pretend"},
   {0, 0}
 };
 
@@ -113,6 +116,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'n':
       /* do nothing */
+      break;
+
+    case 'f':
+      fake = 1;
       break;
 
     case ARGP_KEY_ARG:
@@ -312,7 +319,10 @@ do_mount (struct fs *fs, int remount)
 	  return 0;
 	}
 
-      if (mounted != MACH_PORT_NULL)
+      /* Do not fail if there is an active translator if --fake is
+         given. This mimics Linux mount utility more closely which
+         just looks into the mtab file. */
+      if (mounted != MACH_PORT_NULL && !fake)
 	{
 	  error (0, 0, "%s already mounted", fs->mntent.mnt_fsname);
 	  return EBUSY;
@@ -341,6 +351,23 @@ do_mount (struct fs *fs, int remount)
 	error (3, ENOMEM, "collecting mount options");
 
       /* Now we have a translator command line argz in FSOPTS.  */
+
+      if (fake) {
+        /* Fake the translator startup. */
+        mach_port_t underlying;
+        mach_msg_type_name_t underlying_type;
+        err = open_node (O_READ, &underlying, &underlying_type, 0, NULL);
+        if (err)
+          error (1, errno, "cannot mount on %s", fs->mntent.mnt_dir);
+
+        mach_port_deallocate (mach_task_self (), underlying);
+
+        /* See if the translator is at least executable. */
+        if (access(type->program, X_OK) == -1)
+          error (1, errno, "can not execute %s", type->program);
+
+        return 0;
+      }
 
       explain ("settrans -a");
       err = fshelp_start_translator (open_node, NULL, fsopts,
