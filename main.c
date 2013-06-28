@@ -128,45 +128,82 @@ argp_parser (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
+struct argp_option common_options[] = {
+  { "clk-tck", 'h', "HZ", 0,
+      "Unit used for the values expressed in system clock ticks "
+      "(default: sysconf(_SC_CLK_TCK))" },
+  { "stat-mode", 's', "MODE", 0,
+      "The [pid]/stat file publishes information which on Hurd is only "
+      "available to the process owner.  "
+      "You can use this option to override its mode to be more permissive "
+      "for compatibility purposes.  "
+      "(default: 0400)" },
+  { "fake-self", 'S', "PID", OPTION_ARG_OPTIONAL,
+      "Provide a fake \"self\" symlink to the given PID, for compatibility "
+      "purposes.  If PID is omitted, \"self\" will point to init.  "
+      "(default: no self link)" },
+  { "kernel-process", 'k', "PID", 0,
+      "Process identifier for the kernel, used to retreive its command "
+      "line, as well as the global up and idle times. "
+      "(default: 2)" },
+  { "compatible", 'c', NULL, 0,
+      "Try to be compatible with the Linux procps utilities.  "
+      "Currently equivalent to -h 100 -s 0444 -S 1." },
+  { "anonymous-owner", 'a', "USER", 0,
+      "Make USER the owner of files related to processes without one.  "
+      "Be aware that USER will be granted access to the environment and "
+      "other sensitive information about the processes in question.  "
+      "(default: use uid 0)" },
+  { "nodev", NODEV_KEY, NULL, 0,
+      "Ignored for compatibility with Linux' procfs." },
+  { "noexec", NOEXEC_KEY, NULL, 0,
+      "Ignored for compatibility with Linux' procfs." },
+  { "nosuid", NOSUID_KEY, NULL, 0,
+      "Ignored for compatibility with Linux' procfs." },
+  {}
+};
+
 struct argp argp = {
-  .options = (struct argp_option []) {
-    { "clk-tck", 'h', "HZ", 0,
-	"Unit used for the values expressed in system clock ticks "
-	"(default: sysconf(_SC_CLK_TCK))" },
-    { "stat-mode", 's', "MODE", 0,
-	"The [pid]/stat file publishes information which on Hurd is only "
-	"available to the process owner.  "
-	"You can use this option to override its mode to be more permissive "
-	"for compatibility purposes.  "
-	"(default: 0400)" },
-    { "fake-self", 'S', "PID", OPTION_ARG_OPTIONAL,
-	"Provide a fake \"self\" symlink to the given PID, for compatibility "
-	"purposes.  If PID is omitted, \"self\" will point to init.  "
-	"(default: no self link)" },
-    { "kernel-process", 'k', "PID", 0,
-	"Process identifier for the kernel, used to retreive its command "
-	"line, as well as the global up and idle times. "
-	"(default: 2)" },
-    { "compatible", 'c', NULL, 0,
-	"Try to be compatible with the Linux procps utilities.  "
-	"Currently equivalent to -h 100 -s 0444 -S 1." },
-    { "anonymous-owner", 'a', "USER", 0,
-	"Make USER the owner of files related to processes without one.  "
-	"Be aware that USER will be granted access to the environment and "
-	"other sensitive information about the processes in question.  "
-	"(default: use uid 0)" },
-    { "nodev", NODEV_KEY, NULL, 0,
-	"Ignored for compatibility with Linux' procfs." },
-    { "noexec", NOEXEC_KEY, NULL, 0,
-	"Ignored for compatibility with Linux' procfs." },
-    { "nosuid", NOSUID_KEY, NULL, 0,
-	"Ignored for compatibility with Linux' procfs." },
-    {}
-  },
+  .options = common_options,
   .parser = argp_parser,
   .doc = "A virtual filesystem emulating the Linux procfs.",
   .children = (struct argp_child []) {
     { &netfs_std_startup_argp, },
+    {}
+  },
+};
+
+static error_t
+runtime_argp_parser (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+  {
+    case 'u':
+      /* do nothing */
+      break;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
+  }
+
+  return 0;
+}
+
+struct argp runtime_argp = {
+  .options = (struct argp_option []) {
+    { "update", 'u', NULL, 0, "remount; for procfs this does nothing" },
+    {},
+  },
+  .parser = runtime_argp_parser,
+};
+
+struct argp netfs_runtime_argp_ = {
+  .options = common_options,
+  .parser = argp_parser,
+  .doc = "A virtual filesystem emulating the Linux procfs.",
+  .children = (struct argp_child []) {
+    { &runtime_argp, },
+    { &netfs_std_runtime_argp, },
     {}
   },
 };
