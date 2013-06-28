@@ -37,6 +37,13 @@ pid_t opt_fake_self;
 pid_t opt_kernel_pid;
 uid_t opt_anon_owner;
 
+/* Default values */
+#define OPT_CLK_TCK    sysconf(_SC_CLK_TCK)
+#define OPT_STAT_MODE  0400
+#define OPT_FAKE_SELF  -1
+#define OPT_KERNEL_PID 2
+#define OPT_ANON_OWNER 0
+
 #define NODEV_KEY  -1 /* <= 0, so no short option. */
 #define NOEXEC_KEY -2 /* Likewise. */
 #define NOSUID_KEY -3 /* Likewise. */
@@ -236,11 +243,11 @@ int main (int argc, char **argv)
   mach_port_t bootstrap;
   error_t err;
 
-  opt_clk_tck = sysconf(_SC_CLK_TCK);
-  opt_stat_mode = 0400;
-  opt_fake_self = -1;
-  opt_kernel_pid = 2;
-  opt_anon_owner = 0;
+  opt_clk_tck = OPT_CLK_TCK;
+  opt_stat_mode = OPT_STAT_MODE;
+  opt_fake_self = OPT_FAKE_SELF;
+  opt_kernel_pid = OPT_KERNEL_PID;
+  opt_anon_owner = OPT_ANON_OWNER;
   err = argp_parse (&argp, argc, argv, 0, 0, 0);
   if (err)
     error (1, err, "Could not parse command line");
