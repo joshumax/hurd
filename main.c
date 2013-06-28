@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <argp.h>
+#include <argz.h>
 #include <hurd/netfs.h>
 #include <ps.h>
 #include "procfs.h"
@@ -217,6 +218,47 @@ struct argp netfs_runtime_argp_ = {
 
 /* Used by netfs_set_options to handle runtime option parsing.  */
 struct argp *netfs_runtime_argp = &argp;
+
+/* Return an argz string describing the current options.  Fill *ARGZ
+   with a pointer to newly malloced storage holding the list and *LEN
+   to the length of that storage.  */
+error_t
+netfs_append_args (char **argz, size_t *argz_len)
+{
+  char buf[80];
+  error_t err = 0;
+
+#define FOPT(opt, default, fmt, args...)             \
+  do { \
+    if (! err && opt != default) \
+      { \
+	snprintf (buf, sizeof buf, fmt, ## args); \
+	err = argz_add (argz, argz_len, buf); \
+      } \
+  } while (0)
+
+  FOPT (opt_clk_tck, OPT_CLK_TCK,
+        "--clk-tck=%d", opt_clk_tck);
+
+  FOPT (opt_stat_mode, OPT_STAT_MODE,
+        "--stat-mode=%o", opt_stat_mode);
+
+  FOPT (opt_fake_self, OPT_FAKE_SELF,
+        "--fake-self=%d", opt_fake_self);
+
+  FOPT (opt_anon_owner, OPT_ANON_OWNER,
+        "--anonymous-owner=%d", opt_anon_owner);
+
+  FOPT (opt_kernel_pid, OPT_KERNEL_PID,
+        "--kernel-process=%d", opt_kernel_pid);
+
+#undef FOPT
+
+  if (! err)
+    err = netfs_append_std_options (argz, argz_len);
+
+  return err;
+}
 
 error_t
 root_make_node (struct ps_context *pc, struct node **np)
