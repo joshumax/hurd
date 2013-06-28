@@ -526,6 +526,12 @@ main (int argc, char **argv)
 
   fstab = fstab_argp_create (&fstab_params, SEARCH_FMTS, sizeof SEARCH_FMTS);
 
+  /* This is a convenient way of checking for any `remount' options.  */
+  remount = 0;
+  err = argz_replace (&options, &options_len, "remount", "update", &remount);
+  if (err)
+    error (3, ENOMEM, "collecting mount options");
+
   if (device)			/* two-argument form */
     {
       struct mntent m =
@@ -548,6 +554,23 @@ main (int argc, char **argv)
       if (err)
 	error (2, err, "%s", mountpoint);
     }
+  else if (mountpoint && remount)	/* one-argument remount */
+    {
+      struct mntent m =
+      {
+	mnt_fsname: mountpoint, /* since we cannot know the device,
+				   using mountpoint here leads to more
+				   helpful error messages */
+	mnt_dir: mountpoint,
+	mnt_type: fstype,
+	mnt_opts: 0,
+	mnt_freq: 0, mnt_passno: 0
+      };
+
+      err = fstab_add_mntent (fstab, &m, &fs);
+      if (err)
+	error (2, err, "%s", mountpoint);
+    }
   else if (mountpoint)		/* one-argument form */
     {
       fs = fstab_find (fstab, mountpoint);
@@ -556,12 +579,6 @@ main (int argc, char **argv)
     }
   else
     fs = 0;
-
-  /* This is a convenient way of checking for any `remount' options.  */
-  remount = 0;
-  err = argz_replace (&options, &options_len, "remount", "update", &remount);
-  if (err)
-    error (3, ENOMEM, "collecting mount options");
 
   if (fs != 0)
     err = do_mount (fs, remount);
