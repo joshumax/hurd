@@ -54,6 +54,7 @@ static const struct argp_option argp_opts[] =
   {"update", 'u', 0, 0, "Flush any meta-data cached in core"},
   {"remount", 0, 0, OPTION_ALIAS},
   {"verbose", 'v', 0, 0, "Give more detailed information"},
+  {"no-mtab", 'n', 0, 0, "Do not update /etc/mtab"},
   {0, 0}
 };
 
@@ -108,6 +109,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	  argp_error (state, "invalid argument to --format");
 	  return EINVAL;
 	}
+      break;
+
+    case 'n':
+      /* do nothing */
       break;
 
     case ARGP_KEY_ARG:
