@@ -327,7 +327,7 @@ m or M for megabytes, g or G for gigabytes.",
 /* Similarly at runtime.  */
 static const struct argp_child runtime_children[] =
   {{&diskfs_std_runtime_argp}, {0}};
-static struct argp runtime_argp = {0, parse_opt, 0, 0, runtime_children};
+static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_children};
 
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
