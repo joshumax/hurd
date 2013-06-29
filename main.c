@@ -42,36 +42,45 @@ argp_parser (int key, char *arg, struct argp_state *state)
 {
   struct passwd *pw;
   char *endp;
+  long int v;
 
   switch (key)
   {
     case 'h':
-      opt_clk_tck = strtol (arg, &endp, 0);
-      if (*endp || ! *arg || opt_clk_tck <= 0)
+      v = strtol (arg, &endp, 0);
+      if (*endp || ! *arg || v <= 0)
 	argp_error (state, "--clk-tck: HZ should be a positive integer");
+      else
+	opt_clk_tck = v;
       break;
 
     case 's':
-      opt_stat_mode = strtol (arg, &endp, 8);
-      if (*endp || ! *arg || opt_stat_mode & ~07777)
+      v = strtol (arg, &endp, 8);
+      if (*endp || ! *arg || (mode_t) v & ~07777)
 	argp_error (state, "--stat-mode: MODE should be an octal mode");
+      else
+	opt_stat_mode = v;
       break;
 
     case 'S':
       if (arg)
         {
-	  opt_fake_self = strtol (arg, &endp, 0);
+	  v = strtol (arg, &endp, 0);
 	  if (*endp || ! *arg)
 	    argp_error (state, "--fake-self: PID must be an integer");
+	  else
+	    opt_fake_self = v;
 	}
       else
 	opt_fake_self = 1;
       break;
 
     case 'k':
-      opt_kernel_pid = strtol (arg, &endp, 0);
+      v = strtol (arg, &endp, 0);
       if (*endp || ! *arg || (signed) opt_kernel_pid < 0)
 	argp_error (state, "--kernel-process: PID must be a positive integer");
+      else
+	opt_kernel_pid = v;
       break;
 
     case 'c':
@@ -88,10 +97,12 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	  break;
 	}
 
-      opt_anon_owner = strtol (arg, &endp, 0);
-      if (*endp || ! *arg || (signed) opt_anon_owner < 0)
+      v = strtol (arg, &endp, 0);
+      if (*endp || ! *arg || v < 0)
 	argp_error (state, "--anonymous-owner: USER should be "
 		    "a user name or a numeric UID.");
+      else
+	opt_anon_owner = v;
       break;
   }
 
