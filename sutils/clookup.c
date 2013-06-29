@@ -83,43 +83,29 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 	   is), we have to simulate the above lookup being done without
 	   O_NOTRANS.  Do this being careful not to start any translators.  */
 	{
-	  char _ptrans[1024], *ptrans = _ptrans;
-	  size_t ptrans_len = sizeof _ptrans;
+	  /* See if there's an active translator.  */
+	  fsys_t fsys;	/* Active translator control port.  */
 
-	  err = file_get_translator (*node, &ptrans, &ptrans_len);
+	  err = file_get_translator_cntl (*node, &fsys);
 	  if (! err)
-	    /* Has a passive translator, see if there's an active one too.  */
+	    /* There is!  Get its root node to use as the actual file.  */
 	    {
-	      fsys_t fsys;	/* Active translator control port.  */
-
-	      if (ptrans != _ptrans)
-		/* Deallocate out-of-line memory from file_get_translator.  */
-		munmap (ptrans, ptrans_len);
-
-	      err = file_get_translator_cntl (*node, &fsys);
+	      file_t unauth_dir; /* DIR unauthenticated.  */
+	      err = io_restrict_auth (dir, &unauth_dir, 0, 0, 0, 0);
 	      if (! err)
-		/* There is!  Get its root node to use as the actual file.  */
-		{
-		  file_t unauth_dir; /* DIR unauthenticated.  */
-		  err = io_restrict_auth (dir, &unauth_dir, 0, 0, 0, 0);
-		  if (! err)
-		    {
-		      file_t old_node = *node;
-		      err = fsys_getroot (fsys,
-					  unauth_dir, MACH_MSG_TYPE_COPY_SEND,
-					  uids, num_uids, gids, num_gids,
-					  flags & ~O_NOTRANS, retry,
-					  retry_name, node);
-		      mach_port_deallocate (mach_task_self (), unauth_dir);
-		      if (! err)
-			mach_port_deallocate (mach_task_self (), old_node);
-		    }
-		  mach_port_deallocate (mach_task_self (), fsys);
-		}
+	        {
+	          file_t old_node = *node;
+	          err = fsys_getroot (fsys,
+	    			  unauth_dir, MACH_MSG_TYPE_COPY_SEND,
+	    			  uids, num_uids, gids, num_gids,
+	    			  flags & ~O_NOTRANS, retry,
+	    			  retry_name, node);
+	          mach_port_deallocate (mach_task_self (), unauth_dir);
+	          if (! err)
+	    	mach_port_deallocate (mach_task_self (), old_node);
+	        }
+	      mach_port_deallocate (mach_task_self (), fsys);
 	    }
-	  else if (err == EINVAL)
-	    /* No passive translator.  */
-	    err = 0;
 
 	  if (!err && tail)
 	    /* Append TAIL to RETRY_NAME.  */
