@@ -146,6 +146,9 @@ struct argp argp = {
   },
 };
 
+/* Used by netfs_set_options to handle runtime option parsing.  */
+struct argp *netfs_runtime_argp = &argp;
+
 error_t
 root_make_node (struct ps_context *pc, struct node **np)
 {
