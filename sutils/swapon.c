@@ -42,12 +42,14 @@ const char *argp_program_version = STANDARD_HURD_VERSION (swapoff);
 const char *argp_program_version = STANDARD_HURD_VERSION (swapon);
 #endif
 
-static int ignore_signature, require_signature, quiet;
+static int ignore_signature, require_signature, quiet, ifexists;
 
 static struct argp_option options[] =
 {
   {"standard",	  'a', 0, 0,
     "Use all devices marked as `swap' in " _PATH_MNTTAB},
+  {"ifexists",    'e', 0, 0,
+   "Silently skip devices that do not exist"},
   {"no-signature",'n', 0, 0,
    "Do not check for a Linux swap signature page"},
   {"require-signature", 's', 0, 0,
@@ -319,7 +321,7 @@ check_signature (const char *name, struct store **storep, int no_remap,
 /* Process a single argument file.  */
 
 static int
-swaponoff (const char *file, int add)
+swaponoff (const char *file, int add, int skipnotexisting)
 {
   error_t err;
   struct store *store;
@@ -332,6 +334,10 @@ swaponoff (const char *file, int add)
   err = store_open (file, 0, 0, &store);
   if (err)
     {
+      /* If the device does not exist but we were told to ignore such error,
+         return cleanly.  */
+      if (err == ENOENT && skipnotexisting)
+	return 0;
       error (0, err, "%s", file);
       return err;
     }
@@ -467,6 +473,10 @@ main (int argc, char *argv[])
 	  do_all = 1;
 	  break;
 
+	case 'e':
+	  ifexists = 1;
+	  break;
+
 	case 'n':
 	  ignore_signature = 1;
 	  break;
@@ -486,7 +496,7 @@ main (int argc, char *argv[])
 #else
 #define ONOFF 1
 #endif
-	  swaponoff (arg, ONOFF);
+	  swaponoff (arg, ONOFF, 0);
 	  break;
 
 	default:
@@ -523,7 +533,7 @@ main (int argc, char *argv[])
 	      {
 		done = 1;
 
-		err |= swaponoff (me->mnt_fsname, ONOFF);
+		err |= swaponoff (me->mnt_fsname, ONOFF, ifexists);
 	      }
 	  if (done == 0)
 	    error (2, 0, "No swap partitions found in %s", _PATH_MNTTAB);
