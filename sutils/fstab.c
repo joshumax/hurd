@@ -498,7 +498,7 @@ inline struct fs *
 fstab_find (const struct fstab *fstab, const char *name)
 {
   struct fs *ret;
-  const char *real_name;
+  char *real_name;
 
   ret = fstab_find_device (fstab, name);
   if (ret)
