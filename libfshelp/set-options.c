@@ -23,6 +23,7 @@
 #include <mach.h>
 #include <argp.h>
 #include <argz.h>
+#include <alloca.h>
 
 #include "fshelp.h"
 
