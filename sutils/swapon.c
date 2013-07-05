@@ -56,6 +56,7 @@ static struct argp_option options[] =
    "Require a Linux swap signature page"},
   {"silent",     'q', 0,      0, "Print only diagnostic messages"},
   {"quiet",      'q', 0,      OPTION_ALIAS | OPTION_HIDDEN },
+  {"verbose",    'v', 0,      0, "Be verbose"},
   {0, 0}
 };
 static char *args_doc = "DEVICE...";
@@ -488,6 +489,10 @@ main (int argc, char *argv[])
 
 	case 'q':
 	  quiet = 1;
+	  break;
+
+	case 'v':
+	  quiet = 0;
 	  break;
 
 	case ARGP_KEY_ARG:
