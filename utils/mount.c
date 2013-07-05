@@ -631,6 +631,15 @@ main (int argc, char **argv)
 
               if (! match_options (&fs->mntent))
                 continue;
+
+              fsys_t mounted;
+              err = fs_fsys (fs, &mounted);
+              if (err)
+                  error (0, err, "cannot determine if %s is already mounted",
+                         fs->mntent.mnt_fsname);
+
+              if (mounted != MACH_PORT_NULL)
+                continue;
             }
 	    err |= do_mount (fs, remount);
 	  }
