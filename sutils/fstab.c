@@ -457,11 +457,19 @@ fs_remount (struct fs *fs)
   return err;
 }
 
-/* Returns the FS entry in FSTAB with the device field NAME (there can only
-   be one such entry).  */
+/* Returns the FS entry in FSTAB with the device field NAME.
+
+   In general there can only be one such entry. This holds not true
+   for virtual file systems that use "none" as device name.
+
+   If name is "none", NULL is returned. This also makes it possible to
+   add more than one entry for the device "none". */
 inline struct fs *
 fstab_find_device (const struct fstab *fstab, const char *name)
 {
+  if (strcmp (name, "none") == 0)
+    return NULL;
+
   struct fs *fs;
   for (fs = fstab->entries; fs; fs = fs->next)
     if (strcmp (fs->mntent.mnt_fsname, name) == 0)
