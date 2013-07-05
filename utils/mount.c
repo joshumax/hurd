@@ -29,6 +29,8 @@
 #include <hurd/fshelp.h>
 #include <hurd/paths.h>
 
+#include "match-options.h"
+
 #define SEARCH_FMTS	_HURD "%sfs\0" _HURD "%s"
 #define DEFAULT_FSTYPE	"ext2"
 
@@ -57,6 +59,8 @@ static const struct argp_option argp_opts[] =
   {"remount", 0, 0, OPTION_ALIAS},
   {"verbose", 'v', 0, 0, "Give more detailed information"},
   {"no-mtab", 'n', 0, 0, "Do not update /etc/mtab"},
+  {"test-opts", 'O', "OPTIONS", 0,
+   "Only mount fstab entries matching the given set of options"},
   {"fake", 'f', 0, 0, "Do not actually mount, just pretend"},
   {0, 0}
 };
@@ -120,6 +124,12 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'f':
       fake = 1;
+      break;
+
+    case 'O':
+      err = argz_create_sep (arg, ',', &test_opts, &test_opts_len);
+      if (err)
+	argp_failure (state, 100, ENOMEM, "%s", arg);
       break;
 
     case ARGP_KEY_ARG:
@@ -615,8 +625,13 @@ main (int argc, char **argv)
       case mount:
 	for (fs = fstab->entries; fs; fs = fs->next)
 	  {
-	    if (fstab_params.do_all && hasmntopt (&fs->mntent, MNTOPT_NOAUTO))
-	      continue;
+	    if (fstab_params.do_all) {
+              if (hasmntopt (&fs->mntent, MNTOPT_NOAUTO))
+                continue;
+
+              if (! match_options (&fs->mntent))
+                continue;
+            }
 	    err |= do_mount (fs, remount);
 	  }
 	break;

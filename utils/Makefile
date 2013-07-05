@@ -28,7 +28,8 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
-	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh remap.sh
+	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh remap.sh \
+	match-options.c
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
@@ -72,7 +73,7 @@ fakeauth-CPPFLAGS = -I$(srcdir)/../auth
 authServer-CPPFLAGS = -I$(srcdir)/../auth
 auth_requestUser-CPPFLAGS = -I$(srcdir)/../auth
 
-mount: ../sutils/fstab.o ../sutils/clookup.o \
+mount: ../sutils/fstab.o ../sutils/clookup.o match-options.o \
        $(foreach L,fshelp ports,../lib$L/lib$L.a)
 ../sutils/fstab.o ../sutils/clookup.o: FORCE
 	$(MAKE) -C $(@D) $(@F)
