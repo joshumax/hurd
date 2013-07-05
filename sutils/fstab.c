@@ -888,90 +888,41 @@ fstab_argp_create (struct fstab_argp_params *params,
 	check = fstab;
       else
 	{
-	  struct fs *fs;
-	  const char *tn;
-	  unsigned int nonexclude_types;
-
 	  err = fstab_create (types, &check);
 	  if (err)
 	    error (105, err, "fstab_create");
 
-	  /* For each excluded type (i.e. `-t notype'), clobber the
-	     fstype entry's program with an empty string to mark it.  */
-	  nonexclude_types = 0;
-	  for (tn = params->types; tn;
-	       tn = argz_next (params->types, params->types_len, tn))
-	    {
-	      if (!strncasecmp (tn, "no", 2))
-		{
-		  struct fstype *type;
-		  err = fstypes_get (types, &tn[2], &type);
-		  if (err)
-		    error (106, err, "fstypes_get");
-		  free (type->program);
-		  type->program = strdup ("");
-		}
-	      else
-		++nonexclude_types;
-	    }
+          int blacklist = strncasecmp (params->types, "no", 2) == 0;
+          if (blacklist)
+            params->types += 2; /* Skip no. */
 
-	  if (nonexclude_types != 0)
-	    {
-	      const char *tn;
-	      struct fstypes *wanttypes;
-
-	      /* We will copy the types we want to include into a fresh
-		 list in WANTTYPES.  Since we specify no search formats,
-		 `fstypes_get' applied to WANTTYPES can only create
-		 elements with a null `program' field.  */
-	      err = fstypes_create (0, 0, &wanttypes);
-	      if (err)
-		error (102, err, "fstypes_create");
-
-	      for (tn = params->types; tn;
-		   tn = argz_next (params->types, params->types_len, tn))
-		if (strncasecmp (tn, "no", 2))
-		  {
-		    struct fstype *type;
-		    err = fstypes_get (types, tn, &type);
-		    if (err)
-		      error (106, err, "fstypes_get");
-		    if (type->program == 0)
-		      error (0, 0,
-			     "requested filesystem type `%s' unknown", tn);
-		    else
-		      {
-			struct fstype *newtype = malloc (sizeof *newtype);
-			newtype->name = strdup (type->name);
-			newtype->program = strdup (type->program);
-			newtype->next = wanttypes->entries;
-			wanttypes->entries = newtype;
-		      }
-		  }
-
-	      /* fstypes_free (types); */
-	      types = wanttypes;
-	    }
-
+	  struct fs *fs;
 	  for (fs = fstab->entries; fs; fs = fs->next)
 	    {
+              if (strcmp (fs->mntent.mnt_type, MNTTYPE_SWAP) == 0)
+                continue; /* Ignore swap entries. */
+
+              const char *tn;
+              int matched = 0;
+              for (tn = params->types; tn;
+                   tn = argz_next (params->types, params->types_len, tn))
+                {
+                  const char *type = fs->mntent.mnt_type;
+                  if (strcmp (type, tn) == 0
+                      /* Skip no for compatibility. */
+                      || ((strncasecmp (type, "no", 2) == 0)
+                          && strcmp (type, tn) == 0))
+                    {
+                      matched = 1;
+                      break;
+                    }
+                }
+
+              if (matched == blacklist)
+                continue; /* Either matched and types is a blacklist
+                             or not matched and types is a whitelist */
+
 	      const char *ptn;
-	      struct fstype *type;
-
-	      err = fs_type (fs, &type);
-	      if (err || nonexclude_types)
-		{
-		  err = fstypes_get (types, fs->mntent.mnt_type, &type);
-		  if (err)
-		    error (106, err, "fstypes_get");
-		  if (params->types != 0)
-		    continue;
-		}
-	      if (nonexclude_types && type->program == 0)
-		continue;	/* Freshly created, was not in WANTTYPES.  */
-	      if (type->program != 0 && type->program[0] == '\0')
-		continue;	/* This type is marked as excluded.  */
-
 	      for (ptn = params->exclude; ptn;
 		   ptn = argz_next (params->exclude, params->exclude_len, ptn))
 		if (fnmatch (ptn, fs->mntent.mnt_dir, 0) == 0)
