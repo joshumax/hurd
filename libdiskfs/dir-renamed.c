@@ -50,7 +50,7 @@ checkpath(struct node *source,
 	  return EINVAL;
 	}
 
-      if (np == diskfs_root_node)
+      if (np == diskfs_root_node || np == cred->po->shadow_root)
 	{
 	  diskfs_nput (np);
 	  return 0;
