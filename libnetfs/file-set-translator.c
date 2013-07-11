@@ -39,7 +39,7 @@ netfs_S_file_set_translator (struct protid *user,
   if (!(passive_flags & FS_TRANS_SET) && !(active_flags & FS_TRANS_SET))
     return 0;
 
-  if (passive && passive[passivelen - 1])
+  if (passivelen && passive[passivelen - 1])
     return EINVAL;
 
   np = user->po->np;
