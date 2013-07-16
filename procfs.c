@@ -205,3 +205,15 @@ void procfs_cleanup (struct node *np)
 
   free (np->nn);
 }
+
+error_t procfs_get_translator (struct node *np,
+                               char **argz,
+                               size_t *argz_len)
+{
+  if (np->nn->ops->get_translator)
+    return np->nn->ops->get_translator (np->nn->hook, argz, argz_len);
+
+  *argz = NULL;
+  *argz_len = 0;
+  return 0;
+}

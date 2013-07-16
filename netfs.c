@@ -230,6 +230,17 @@ void netfs_node_norefs (struct node *np)
   pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
+/* The user may define this function (but should define it together
+   with netfs_set_translator).  For locked node NODE with S_IPTRANS
+   set in its mode, look up the name of its translator.  Store the
+   name into newly malloced storage, and return it in *ARGZ; set
+   *ARGZ_LEN to the total length.  */
+error_t netfs_get_translator (struct node *np, char **argz,
+			      size_t *argz_len)
+{
+  return procfs_get_translator (np, argz, argz_len);
+}
+
 
 /* Libnetfs callbacks managed with libfshelp. */
 
