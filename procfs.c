@@ -93,7 +93,7 @@ void procfs_node_chown (struct node *np, uid_t owner)
 
 void procfs_node_chmod (struct node *np, mode_t mode)
 {
-  np->nn_stat.st_mode = (np->nn_stat.st_mode & S_IFMT) | mode;
+  np->nn_stat.st_mode = (np->nn_stat.st_mode & ~ALLPERMS) | mode;
   np->nn_translated = np->nn_stat.st_mode;
 }
 
