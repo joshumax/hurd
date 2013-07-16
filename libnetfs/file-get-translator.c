@@ -109,6 +109,20 @@ netfs_S_file_get_translator (struct protid *user,
       *translen = len;
       err = 0;
     }
+  else if (np->nn_translated & S_IPTRANS)
+    {
+      char *string = NULL;
+      size_t len = 0;
+      err = netfs_get_translator (np, &string, &len);
+      if (!err)
+	{
+	  if (len > *translen)
+	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  memmove (*trans, string, len);
+	  *translen = len;
+	  free (string);
+	}
+    }
   else
     err = EINVAL;
 
