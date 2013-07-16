@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <mach.h>
 #include <hurd/netfs.h>
@@ -75,6 +76,9 @@ struct node *procfs_make_node (const struct procfs_node_ops *ops, void *hook)
     np->nn_stat.st_mode = S_IFDIR | 0555;
   else
     np->nn_stat.st_mode = S_IFREG | 0444;
+
+  np->nn_stat.st_uid = getuid ();
+  np->nn_stat.st_gid = getgid ();
 
   return np;
 
