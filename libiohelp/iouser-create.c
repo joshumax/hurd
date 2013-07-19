@@ -33,8 +33,9 @@ iohelp_create_iouser (struct iouser **user, struct idvec *uids,
   return 0;
 }
 
-#define E(err)				\
+#define E(err_)				\
 	do {				\
+	  error_t err = err_;		\
 	  if (err)			\
 	    {				\
 	      *user = 0;		\
