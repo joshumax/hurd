@@ -332,7 +332,7 @@ static void ipmr_cache_delete(struct mfc_cache *cache)
 			kfree_skb(skb);
 		}
 	}
-	kfree_s(cache,sizeof(cache));
+	kfree_s(cache,sizeof(*cache));
 }
 
 /*
