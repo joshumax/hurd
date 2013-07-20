@@ -37,6 +37,10 @@ pid_t opt_fake_self;
 pid_t opt_kernel_pid;
 uid_t opt_anon_owner;
 
+#define NODEV_KEY  -1 /* <= 0, so no short option. */
+#define NOEXEC_KEY -2 /* Likewise. */
+#define NOSUID_KEY -3 /* Likewise. */
+
 static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
 {
@@ -104,6 +108,18 @@ argp_parser (int key, char *arg, struct argp_state *state)
       else
 	opt_anon_owner = v;
       break;
+
+    case NODEV_KEY:
+      /* Ignored for compatibility with Linux' procfs. */
+      ;;
+
+    case NOEXEC_KEY:
+      /* Ignored for compatibility with Linux' procfs. */
+      ;;
+
+    case NOSUID_KEY:
+      /* Ignored for compatibility with Linux' procfs. */
+      ;;
   }
 
   return 0;
@@ -136,6 +152,12 @@ struct argp argp = {
 	"Be aware that USER will be granted access to the environment and "
 	"other sensitive information about the processes in question.  "
 	"(default: use uid 0)" },
+    { "nodev", NODEV_KEY, NULL, 0,
+	"Ignored for compatibility with Linux' procfs." },
+    { "noexec", NOEXEC_KEY, NULL, 0,
+	"Ignored for compatibility with Linux' procfs." },
+    { "nosuid", NOSUID_KEY, NULL, 0,
+	"Ignored for compatibility with Linux' procfs." },
     {}
   },
   .parser = argp_parser,
