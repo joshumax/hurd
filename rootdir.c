@@ -1,5 +1,5 @@
 /* Hurd /proc filesystem, permanent files of the root directory.
-   Copyright (C) 2010 Free Software Foundation, Inc.
+   Copyright (C) 2010,13 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -404,6 +404,31 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
   return 0;
 }
 
+/* The mtab translator to use by default for the "mounts" node.  */
+#define MTAB_TRANSLATOR	"/hurd/mtab"
+
+static error_t
+rootdir_mounts_get_translator (void *hook, char **argz, size_t *argz_len)
+{
+  static const char const mtab_argz[] = MTAB_TRANSLATOR "\0/";
+
+  *argz = malloc (sizeof mtab_argz);
+  if (! *argz)
+    return ENOMEM;
+
+  memcpy (*argz, mtab_argz, sizeof mtab_argz);
+  *argz_len = sizeof mtab_argz;
+  return 0;
+}
+
+static int
+rootdir_mounts_exists (void *dir_hook, const void *entry_hook)
+{
+  static int translator_exists = -1;
+  if (translator_exists == -1)
+    translator_exists = access (MTAB_TRANSLATOR, F_OK|X_OK) == 0;
+  return translator_exists;
+}
 
 /* Glue logic and entries table */
 
@@ -423,6 +448,18 @@ rootdir_symlink_make_node (void *dir_hook, const void *entry_hook)
   struct node *np = procfs_make_node (entry_hook, dir_hook);
   if (np)
     procfs_node_chtype (np, S_IFLNK);
+  return np;
+}
+
+static struct node *
+rootdir_translator_make_node (void *dir_hook, const void *entry_hook)
+{
+  struct node *np = procfs_make_node (entry_hook, dir_hook);
+  if (np)
+    {
+      procfs_node_chtype (np, S_IFREG | S_IPTRANS);
+      procfs_node_chmod (np, 0444);
+    }
   return np;
 }
 
@@ -486,6 +523,16 @@ static const struct procfs_dir_entry rootdir_entries[] = {
       .get_contents = rootdir_gc_cmdline,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
+  },
+  {
+    .name = "mounts",
+    .hook = & (struct procfs_node_ops) {
+      .get_translator = rootdir_mounts_get_translator,
+    },
+    .ops = {
+      .make_node = rootdir_translator_make_node,
+      .exists = rootdir_mounts_exists,
+    }
   },
 #ifdef PROFILE
   /* In order to get a usable gmon.out file, we must apparently use exit(). */
