@@ -392,7 +392,7 @@ out:
 }
 
 static int
-rootdir_fakeself_exists ()
+rootdir_fakeself_exists (void *dir_hook, const void *entry_hook)
 {
   return opt_fake_self >= 0;
 }
