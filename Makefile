@@ -12,7 +12,7 @@ ifdef PROFILE
 CFLAGS= -g -pg
 CPPFLAGS= -DPROFILE
 LDFLAGS= -static
-LIBS= -lnetfs -lfshelp -liohelp -lps -lports -lthreads -lihash -lshouldbeinlibc
+LIBS= -lnetfs -lfshelp -liohelp -lps -lports -lpthread -lihash -lshouldbeinlibc
 endif
 
 CPPFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
