@@ -300,7 +300,7 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       ,
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
-      0,
+      0UL,
       (long unsigned) cache_stats.cache_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
