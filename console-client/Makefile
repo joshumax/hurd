@@ -37,11 +37,11 @@ SRCS = $(CONSOLE_SRCS) \
 VPATH += $(srcdir)/xkb
 OBJS = $(addsuffix .o,$(basename $(notdir $(SRCS)))) kdioctlServer.o
 HURDLIBS = cons ports netfs fshelp iohelp ihash shouldbeinlibc
-LDLIBS = -ldl -lpthread
+LDLIBS = -ldl -lpthread $(libdaemon_LIBS)
 module-dir = $(libdir)/hurd/console
 console-LDFLAGS = -Wl,-E
 
-CPPFLAGS += -I$(CURDIR)/xkb -I$(srcdir)/xkb
+CPPFLAGS += -I$(CURDIR)/xkb -I$(srcdir)/xkb $(libdaemon_CFLAGS)
 LFLAGS = -i
 YFLAGS = -by
 XKB_DATA_FILES = keymap/hurd types/hurd symbols/hurd

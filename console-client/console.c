@@ -26,6 +26,9 @@
 #include <assert.h>
 
 #include <pthread.h>
+#if HAVE_DAEMON
+#include <libdaemon/daemon.h>
+#endif
 
 #include <hurd/console.h>
 #include <hurd/cons.h>
@@ -61,6 +64,8 @@ static cons_t saved_cons;
    set.  */
 static char *console_node;
 
+/* If set, the client will daemonize.  */
+static int daemonize;
 
 /* Callbacks for input source drivers.  */
 
@@ -516,6 +521,8 @@ cons_vcons_set_mousecursor_status (vcons_t vcons, int status)
 }
 
 
+#define DAEMONIZE_KEY 0x80 /* !isascii (DAEMONIZE_KEY), so no short option.  */
+
 /* Console-specific options.  */
 static const struct argp_option
 options[] =
@@ -524,6 +531,9 @@ options[] =
     {"driver", 'd', "NAME", 0, "Add driver NAME to the console" },
     {"console-node", 'c', "FILE", OPTION_ARG_OPTIONAL,
      "Set a translator on the node FILE (default: " DEFAULT_CONSOLE_NODE ")" },
+#if HAVE_DAEMON
+    {"daemonize", DAEMONIZE_KEY, NULL, 0, "daemonize the console client"},
+#endif
     {0}
   };
 
@@ -577,7 +587,11 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (!console_node)
 	return ENOMEM;
       break;
-      
+
+    case DAEMONIZE_KEY:
+      daemonize = 1;
+      break;
+
     case ARGP_KEY_SUCCESS:
       if (!devcount)
 	{
@@ -597,6 +611,31 @@ static const struct argp_child startup_children[] =
   { { &cons_startup_argp }, { 0 } };
 static struct argp startup_argp = {options, parse_opt, 0,
 				   0, startup_children};
+#if HAVE_DAEMON
+#define daemon_error(status, errnum, format, args...)			\
+  do									\
+    {									\
+      if (daemonize)							\
+	{								\
+	  if (errnum)							\
+	    daemon_log (LOG_ERR, format ": %s", ##args,			\
+			strerror(errnum));				\
+	  else								\
+	    daemon_log (LOG_ERR, format, ##args);			\
+	  if (status)							\
+	    {								\
+	      /* Signal parent.	 */					\
+	      daemon_retval_send (status);				\
+	      return 0;							\
+	    }								\
+	}								\
+      else								\
+	error (status, errnum, format, ##args);				\
+    }									\
+  while (0);
+#else
+#define daemon_error	error
+#endif
 
 int
 main (int argc, char *argv[])
@@ -609,9 +648,69 @@ main (int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, 0, 0);
 
+#if HAVE_DAEMON
+  if (daemonize)
+    {
+      /* Reset signal handlers.	 */
+      if (daemon_reset_sigs (-1) < 0)
+	error (1, errno, "Failed to reset all signal handlers");
+
+      /* Unblock signals.  */
+      if (daemon_unblock_sigs (-1) < 0)
+	error (1, errno, "Failed to unblock all signals");
+
+      /* Set indetification string for the daemon for both syslog and
+	 PID file.  */
+      daemon_pid_file_ident = daemon_log_ident = \
+	daemon_ident_from_argv0 (argv[0]);
+
+      /* Check that the daemon is not run twice at the same time.  */
+      pid_t pid;
+      if ((pid = daemon_pid_file_is_running ()) >= 0)
+	error (1, errno, "Daemon already running on PID file %u", pid);
+
+      /* Prepare for return value passing from the initialization
+	 procedure of the daemon process.  */
+      if (daemon_retval_init () < 0)
+	error (1, errno, "Failed to create pipe.");
+
+      /* Do the fork.  */
+      if ((pid = daemon_fork ()) < 0)
+	{
+	  /* Exit on error.  */
+	  daemon_retval_done ();
+	  error (1, errno, "Failed to fork");
+	}
+      else if (pid)
+	{
+	  /* The parent.  */
+	  int ret;
+
+	  /* Wait for 20 seconds for the return value passed from the
+	     daemon process. .	*/
+	  if ((ret = daemon_retval_wait (20)) < 0)
+	    error (1, errno,
+		   "Could not receive return value from daemon process");
+
+	  return ret;
+	}
+      else
+	{
+	  /* The daemon.  */
+	  /* Close FDs.	 */
+	  if (daemon_close_all (-1) < 0)
+	    daemon_error (1, errno, "Failed to close all file descriptors");
+
+	  /* Create the PID file.  */
+	  if (daemon_pid_file_create () < 0)
+	    daemon_error (2, errno, "Could not create PID file");
+	}
+    }
+#endif /* HAVE_DAEMON */
+
   err = driver_start (&errname);
   if (err)
-    error (1, err, "Starting driver %s failed", errname);
+    daemon_error (1, err, "Starting driver %s failed", errname);
     
   pthread_mutex_init (&global_lock, NULL);
 
@@ -619,19 +718,25 @@ main (int argc, char *argv[])
   if (err)
     {
       driver_fini ();
-      error (1, err, "Console library initialization failed");
+      daemon_error (1, err, "Console library initialization failed");
     }
 
   err = timer_init ();
   if (err)
     {
       driver_fini ();
-      error (1, err, "Timer thread initialization failed");
+      daemon_error (1, err, "Timer thread initialization failed");
     }
 
   if (console_node)
     console_setup_node (console_node);
-  
+
+#if HAVE_DAEMON
+  if (daemonize)
+    /* Signal parent that all went well.  */
+    daemon_retval_send(0);
+#endif
+
   cons_server_loop ();
 
   /* Never reached.  */
