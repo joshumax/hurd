@@ -80,6 +80,11 @@ X11_LIBS = @X11_LIBS@
 XKB_BASE = @XKB_BASE@
 X11_KEYSYMDEF_H = @X11_KEYSYMDEF_H@
 
+# How to compile and link against libdaemon.
+HAVE_DAEMON = @HAVE_DAEMON@
+libdaemon_CFLAGS = @libdaemon_CFLAGS@
+libdaemon_LIBS = @libdaemon_LIBS@
+
 # Whether Sun RPC support is available.
 HAVE_SUN_RPC = @HAVE_SUN_RPC@
 

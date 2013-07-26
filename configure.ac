@@ -297,6 +297,12 @@ else
 			    echo ${file}:build.mk.in; done`"
 fi
 
+PKG_CHECK_MODULES([libdaemon], [libdaemon],
+  [AC_DEFINE([HAVE_DAEMON], [1], [Use libdaemon])],
+  [true])
+AC_SUBST([libdaemon_LIBS])
+AC_SUBST([libdaemon_CFLAGS])
+
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT
 
