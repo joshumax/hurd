@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <error.h>
 #include <hurd/fsys.h>
 #include <hurd/startup.h>
+#include <pids.h>
 
 char *_diskfs_chroot_directory;
 
@@ -190,7 +191,7 @@ _diskfs_init_completed ()
   if (err)
     goto errout;
 
-  err = proc_getmsgport (proc, 1, &init);
+  err = proc_getmsgport (proc, HURD_PID_STARTUP, &init);
   mach_port_deallocate (mach_task_self (), proc);
   if (err)
     goto errout;

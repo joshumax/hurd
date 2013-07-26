@@ -32,6 +32,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <sys/resource.h>
 #include <hurd/auth.h>
 #include <assert.h>
+#include <pids.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -582,7 +583,7 @@ create_startup_proc (void)
   p = allocate_proc (MACH_PORT_NULL);
   assert (p);
 
-  p->p_pid = 1;
+  p->p_pid = HURD_PID_STARTUP;
 
   p->p_parent = p;
   p->p_sib = 0;

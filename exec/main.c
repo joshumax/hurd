@@ -25,6 +25,7 @@
 #include <hurd/startup.h>
 #include <argp.h>
 #include <version.h>
+#include <pids.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (exec);
 
@@ -246,7 +247,7 @@ S_exec_init (struct trivfs_protid *protid,
 
   proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
 
-  err = proc_getmsgport (procserver, 1, &startup);
+  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
   assert_perror (err);
   mach_port_deallocate (mach_task_self (), procserver);
 

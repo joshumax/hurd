@@ -33,6 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <argz.h>
 #include <error.h>
+#include <pids.h>
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 
@@ -606,7 +607,7 @@ diskfs_S_fsys_init (mach_port_t port,
   proc_register_version (procserver, host, diskfs_server_name, "",
 			 diskfs_server_version);
 
-  err = proc_getmsgport (procserver, 1, &startup);
+  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
   if (!err)
     {
       startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,

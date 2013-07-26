@@ -28,6 +28,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <version.h>
+#include <pids.h>
 
 /* Include Hurd's errno.h file, but don't include glue-include/hurd/errno.h,
    since it #undef's the errno macro. */
@@ -153,7 +154,7 @@ arrange_shutdown_notification ()
   if (!procserver)
     return;
 
-  err = proc_getmsgport (procserver, 1, &initport);
+  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &initport);
   mach_port_deallocate (mach_task_self (), procserver);
   if (err)
     return;

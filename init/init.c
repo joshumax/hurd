@@ -49,6 +49,7 @@
 #include <maptime.h>
 #include <version.h>
 #include <argp.h>
+#include <pids.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
@@ -770,7 +771,7 @@ frob_kernel_process (void)
   task_t task;
   process_t proc, kbs;
 
-  err = proc_pid2task (procserver, 2, &task);
+  err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
   if (err)
     {
       error (0, err, "cannot get kernel task port");

@@ -28,6 +28,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <argp.h>
 #include <error.h>
 #include <version.h>
+#include <pids.h>
 
 #include "proc.h"
 
@@ -87,7 +88,7 @@ main (int argc, char **argv, char **envp)
   self_proc = allocate_proc (mach_task_self ());
   assert (self_proc);
 
-  complete_proc (self_proc, 0);
+  complete_proc (self_proc, HURD_PID_PROC);
 
   startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
