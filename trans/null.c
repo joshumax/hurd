@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <argp.h>
+#include <nullauth.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (null);
 
@@ -77,6 +78,10 @@ main (int argc, char **argv)
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error(3, err, "Contacting parent");
+
+  err = setnullauth ();
+  if (err)
+    error(4, err, "Dropping privileges");
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, trivfs_demuxer,
