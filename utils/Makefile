@@ -22,7 +22,7 @@ targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
 	storeread msgport rpctrace mount gcore fakeauth fakeroot remap \
-	umount
+	umount nullauth
 
 special-targets = loginpr sush uptime fakeroot remap
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
@@ -31,7 +31,7 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh remap.sh \
-	match-options.c umount.c
+	nullauth.c
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
@@ -59,7 +59,7 @@ ftpcp ftpdir: ../libftpconn/libftpconn.a
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
-  storecat msgport mount umount: \
+  storecat msgport mount umount nullauth: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
