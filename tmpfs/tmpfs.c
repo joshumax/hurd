@@ -29,6 +29,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <hurd.h>
 #include <hurd/paths.h>
+#include <nullauth.h>
 
 char *diskfs_server_name = "tmpfs";
 char *diskfs_server_version = HURD_VERSION;
@@ -436,6 +437,11 @@ main (int argc, char **argv)
 
   /* We must keep the REALNODE send right to remain the active
      translator for the underlying node.  */
+
+  /* Drop all privileges.  */
+  err = setnullauth();
+  if (err)
+    error (1, err, "Could not drop privileges");
 
   pthread_mutex_unlock (&diskfs_root_node->lock);
 
