@@ -1,6 +1,6 @@
 /* Reply half of fsys
 
-   Copyright (C) 1991, 1993, 1994, 1995, 2001, 2007
+   Copyright (C) 1991, 1993, 1994, 1995, 2001, 2007, 2013
      Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -76,3 +76,8 @@ simpleroutine fsys_get_options_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	options: data_t);
+
+simpleroutine fsys_get_children (
+	server: fsys_t;
+	RETURN_CODE_ARG;
+	children: data_t);

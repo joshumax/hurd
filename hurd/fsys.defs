@@ -1,5 +1,5 @@
 /* Definitions for the filesystem control interface
-   Copyright (C) 1992,93,94,95,96,97, 2002 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97, 2002,13 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -127,3 +127,11 @@ routine fsys_get_options (
 	server: fsys_t;
 	RPT
 	out options: data_t, dealloc);
+
+/* Return any active translators bound to nodes of the receiving
+   filesystem.  CHILDREN is an argz vector containing file names
+   relative to the root of the receiving translator.  */
+routine fsys_get_children (
+	server: fsys_t;
+	RPT
+	out children: data_t);
