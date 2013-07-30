@@ -1,5 +1,6 @@
 /* libdiskfs implementation of fs.defs: file_set_translator
-   Copyright (C) 1992,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2001,02,13
+     Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -206,5 +207,21 @@ diskfs_S_file_set_translator (struct protid *cred,
     }
 
   pthread_mutex_unlock (&np->lock);
+
+  if (! error && cred->po->path)
+    error = fshelp_set_active_translator (cred->po->path, active);
+
+  if (! error && active != MACH_PORT_NULL)
+    {
+      mach_port_t old;
+      error = mach_port_request_notification (mach_task_self (), active,
+					      MACH_NOTIFY_DEAD_NAME, 0,
+					      cred->pi.port_right,
+					      MACH_MSG_TYPE_MAKE_SEND_ONCE,
+					      &old);
+      if (old != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), old);
+    }
+
   return error;
 }
