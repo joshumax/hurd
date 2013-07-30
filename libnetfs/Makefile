@@ -34,7 +34,7 @@ FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-get-translator.c file-getcontrol.c file-getlinknode.c \
 	file-lock-stat.c file-lock.c file-set-size.c \
 	file-set-translator.c file-statfs.c file-sync.c file-syncfs.c \
-	file-utimes.c file-reparent.c fsstubs.c
+	file-utimes.c file-reparent.c fsstubs.c	file-get-transcntl.c
 
 IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c     \

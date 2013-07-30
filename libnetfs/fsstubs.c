@@ -30,14 +30,6 @@ netfs_S_file_notice_changes (struct protid *user,
 }
 
 error_t
-netfs_S_file_get_translator_cntl (struct protid *user,
-				  mach_port_t *trans,
-				  mach_msg_type_name_t *transtype)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
 netfs_S_file_getfh (struct protid *user,
 		    char **data, mach_msg_type_number_t *ndata)
 {
