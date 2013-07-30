@@ -81,3 +81,8 @@ simpleroutine fsys_get_children (
 	server: fsys_t;
 	RETURN_CODE_ARG;
 	children: data_t);
+
+simpleroutine fsys_get_source (
+	server: fsys_t;
+	RETURN_CODE_ARG;
+	source: string_t);
