@@ -1,5 +1,6 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,98,99,2000,01,02,13
+     Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -30,6 +31,36 @@
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
+
+
+/* Keeping track of active translators */
+/* These routines keep a list of active translators.  They are
+   self-contained and do not require multi threading or the ports
+   library.  */
+
+/* Record an active translator being bound to the given file name
+   NAME.  ACTIVE is the control port of the translator.  */
+error_t
+fshelp_set_active_translator (const char *name, mach_port_t active);
+
+/* Remove the active translator specified by its control port ACTIVE.
+   If there is no active translator with the given control port, this
+   does nothing.  */
+error_t
+fshelp_remove_active_translator (mach_port_t active);
+
+/* This kind of function is used by fshelp_get_active_translators to
+   filter the list of translators to return.  If a filter returns an
+   error for a given PATH, the translator bound to the PATH is not
+   included in the list.  */
+typedef error_t (*fshelp_filter) (const char *path);
+
+/* Records the list of active translators into the argz vector
+   specified by TRANSLATORS filtered by FILTER.  */
+error_t
+fshelp_get_active_translators (char **translators,
+			       size_t *translators_len,
+			       fshelp_filter filter);
 
 
 /* Passive translator linkage */

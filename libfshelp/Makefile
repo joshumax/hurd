@@ -20,6 +20,7 @@ makemode := library
 
 libname = libfshelp
 SRCS =	lock-acquire.c lock-init.c \
+	translator-list.c \
 	start-translator-long.c start-translator.c \
 	fetch-root.c transbox-init.c set-active.c fetch-control.c \
 	drop-transbox.c translated.c \
@@ -32,7 +33,7 @@ SRCS =	lock-acquire.c lock-init.c \
 	touch.c
 installhdrs = fshelp.h
 
-HURDLIBS = shouldbeinlibc iohelp ports
+HURDLIBS = shouldbeinlibc iohelp ports ihash
 LDLIBS += -lpthread
 OBJS = $(subst .c,.o,$(SRCS))
 
