@@ -242,3 +242,10 @@ S_fsys_get_children (mach_port_t server,
 {
   return EOPNOTSUPP;
 }
+
+error_t
+S_fsys_get_source (mach_port_t server,
+		   char *source)
+{
+  return EOPNOTSUPP;
+}
