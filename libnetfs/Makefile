@@ -44,7 +44,7 @@ IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-version.c
 
 FSYSSRCS= fsys-syncfs.c fsys-getroot.c fsys-get-options.c fsys-set-options.c \
-	fsys-goaway.c fsysstubs.c
+	fsys-goaway.c fsysstubs.c fsys-get-children.c
 
 IFSOCKSRCS=
 OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
