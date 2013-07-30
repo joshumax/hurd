@@ -234,3 +234,11 @@ S_fsys_forward (mach_port_t server, mach_port_t requestor,
 {
   return EOPNOTSUPP;
 }
+
+error_t
+S_fsys_get_children (mach_port_t server,
+		     char **children,
+		     mach_msg_type_number_t *children_len)
+{
+  return EOPNOTSUPP;
+}
