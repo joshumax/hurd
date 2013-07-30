@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,97,99,2002 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,99,2002,13 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -233,6 +233,12 @@ error_t trivfs_set_options (struct trivfs_control *fsys,
    routine simply calls diskfs_append_std_options.  */
 error_t trivfs_append_args (struct trivfs_control *fsys,
 			    char **argz, size_t *argz_len);
+
+/* The user may define this function.  The function must set source to
+   the source device of the filesystem. The function may return an
+   EOPNOTSUPP to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP. */
+error_t trivfs_get_source (char *source);
 
 /* Add the port class *CLASS to the list of control port classes recognized
    by trivfs; if *CLASS is 0, an attempt is made to allocate a new port
