@@ -1,7 +1,7 @@
 /* Definitions for fileserver helper functions
 
    Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007, 2008,
-   2009 Free Software Foundation, Inc.
+   2009, 2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -567,6 +567,12 @@ error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
    isn't set, then the normal method (reading from the file data) is
    used.  If it returns any other error, it is returned to the user. */
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
+
+/* The user may define this function.  The function must set source to
+   the source device of the filesystem. The function may return an
+   EOPNOTSUPP to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP. */
+error_t diskfs_get_source (char *source);
 
 /* The library exports the following functions for general use */
 

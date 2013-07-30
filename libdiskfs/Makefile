@@ -35,7 +35,7 @@ IOSRCS= io-async-icky.c io-async.c io-duplicate.c io-get-conch.c io-revoke.c \
 	io-select.c io-stat.c io-stubs.c io-write.c io-version.c io-sigio.c
 FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-startup.c fsys-getfile.c \
 	fsys-options.c fsys-syncfs.c fsys-forward.c \
-	fsys-get-children.c
+	fsys-get-children.c fsys-get-source.c
 IFSOCKSRCS=ifsock.c
 OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	extern-inline.c \
@@ -52,7 +52,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	remount.c console.c disk-pager.c \
 	name-cache.c direnter.c dirrewrite.c dirremove.c lookup.c dead-name.c \
 	validate-mode.c validate-group.c validate-author.c validate-flags.c \
-	validate-rdev.c validate-owner.c extra-version.c
+	validate-rdev.c validate-owner.c extra-version.c get-source.c
 SRCS = $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 installhdrs = diskfs.h diskfs-pager.h
 
