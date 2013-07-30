@@ -1,6 +1,6 @@
 /*
 
-   Copyright (C) 1994,95,96,97,99,2000,02 Free Software Foundation, Inc.
+   Copyright (C) 1994,95,96,97,99,2000,02,13 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -313,6 +313,12 @@ error_t netfs_file_get_storage_info (struct iouser *cred,
 				     mach_msg_type_number_t *num_offsets,
 				     char **data,
 				     mach_msg_type_number_t *data_len);
+
+/* The user may define this function.  The function must set source to
+   the source device of the filesystem. The function may return an
+   EOPNOTSUPP to indicate that the concept of a source device is not
+   applicable. The default function always returns EOPNOTSUPP. */
+error_t netfs_get_source (char *source);
 
 /* Option parsing */
 
