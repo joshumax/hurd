@@ -20,14 +20,15 @@ dir := trans
 makemode := servers
 
 targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
-	  password hello hello-mt streamio fakeroot proxy-defpager remap
+	  password hello hello-mt streamio fakeroot proxy-defpager remap \
+	  mtab
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c \
-	fakeroot.c proxy-defpager.c remap.c
+	fakeroot.c proxy-defpager.c remap.c mtab.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
-	device_replyServer.o elfcore.o
+	device_replyServer.o elfcore.o fsysUser.o
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
 password-LDLIBS = $(LIBCRYPT)
@@ -51,6 +52,7 @@ magic: ../libiohelp/libiohelp.a
 hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libports/libports.a ../libihash/libihash.a
 remap: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
+mtab: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a fsysUser.o
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(targets): %: %.o
