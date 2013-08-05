@@ -116,6 +116,26 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
   const char *fn = args_filename (proc_stat_args (ps));
 
+  vm_address_t start_code = 1; /* 0 would make killall5.c consider it
+				  a kernel process, thus use 1 as
+				  default.  */
+  vm_address_t end_code = 1;
+  process_t p;
+  error_t err = proc_pid2proc (ps->context->server, ps->pid, &p);
+  if (! err)
+    {
+      boolean_t essential = 0;
+      proc_is_important (p, &essential);
+      if (essential)
+	start_code = end_code = 0; /* To make killall5.c consider it a
+				      kernel process that is to be
+				      left alone.  */
+      else
+	proc_get_code (p, &start_code, &end_code);
+
+      mach_port_deallocate (mach_task_self (), p);
+    }
+
   /* See proc(5) for more information about the contents of each field for the
      Linux procfs.  */
   return asprintf (contents,
@@ -152,7 +172,9 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       timeval_jiffies (thbi->creation_time), /* FIXME: ... since boot */
       (long unsigned) tbi->virtual_size,
       (long unsigned) tbi->resident_size / PAGE_SIZE, 0L,
-      0L, 0L, 0L, 0L, 0L,
+      start_code,
+      end_code,
+      0L, 0L, 0L,
       0L, 0L, 0L, 0L,
       (long unsigned) proc_stat_thread_rpc (ps), /* close enough */
       0L, 0L,
