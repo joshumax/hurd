@@ -1,5 +1,5 @@
 /* Reply half of wait
-   Copyright (C) 1991,93,94,96,2001 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,96,2001,13 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -178,3 +178,10 @@ simpleroutine proc_getnports (
 /*** Routines related to early server bootstrapping ***/
 
 skip;  /* Reserved for proc_set_init_task */
+skip; /* proc_mark_important */
+
+simpleroutine proc_is_important (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	essential: boolean_t);
+

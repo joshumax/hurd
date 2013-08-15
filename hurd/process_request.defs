@@ -1,6 +1,6 @@
 /* Definitions for process server interface (request-only version)
 
-   Copyright (C) 1992, 93, 94, 95, 96, 98 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 98, 2013 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -375,3 +375,13 @@ simpleroutine proc_getnports_request (
 /*** Routines related to early server bootstrapping ***/
 
 skip;  /* Reserved for proc_set_init_task */
+
+/* Inform the process server that the process is important.  */
+simpleroutine proc_mark_important_request (
+	process: process_t;
+	ureplyport reply: reply_port_t);
+
+/* Query whether the process is important.  */
+simpleroutine proc_is_important_request (
+	process: process_t;
+	ureplyport reply: reply_port_t);
