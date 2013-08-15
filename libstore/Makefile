@@ -60,10 +60,6 @@ OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
 
 include ../Makeconf
 
-# Look for zip stuff
-vpath %.c $(srcdir)/../exec
-CPPFLAGS += -I$(srcdir)/../exec
-
 module-CPPFLAGS = -D'STORE_SONAME_SUFFIX=".so.$(hurd-version)"'
 module-DEPS = $(..)config.make
 
