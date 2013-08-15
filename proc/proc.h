@@ -64,6 +64,8 @@ struct proc
 
   /* Miscellaneous information */
   vm_address_t p_argv, p_envp;
+  vm_address_t start_code;	/* all executable segments are in this range */
+  vm_address_t end_code;
   int p_status;			/* to return via wait */
   int p_sigcode;
   struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */

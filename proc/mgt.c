@@ -210,6 +210,15 @@ S_proc_child (struct proc *parentp,
 			    childp->p_parent->p_pid, childp->p_pgrp->pg_pgid,
 			    !childp->p_pgrp->pg_orphcnt);
   childp->p_parentset = 1;
+
+  /* If these are not set in the child, it was probably fork(2)ed.  If
+     so, it inherits the values of its parent.  */
+  if (! childp->start_code && ! childp->end_code)
+    {
+      childp->start_code = parentp->start_code;
+      childp->end_code = parentp->end_code;
+    }
+
   return 0;
 }
 
@@ -900,6 +909,36 @@ S_proc_is_important (struct proc *callerp,
     return EOPNOTSUPP;
 
   *essential = callerp->p_important;
+
+  return 0;
+}
+
+/* Implement proc_set_code as described in <hurd/process.defs>.  */
+error_t
+S_proc_set_code (struct proc *callerp,
+		 vm_address_t start_code,
+		 vm_address_t end_code)
+{
+  if (!callerp)
+    return EOPNOTSUPP;
+
+  callerp->start_code = start_code;
+  callerp->end_code = end_code;
+
+  return 0;
+}
+
+/* Implement proc_get_code as described in <hurd/process.defs>.  */
+error_t
+S_proc_get_code (struct proc *callerp,
+		 vm_address_t *start_code,
+		 vm_address_t *end_code)
+{
+  if (!callerp)
+    return EOPNOTSUPP;
+
+  *start_code = callerp->start_code;
+  *end_code = callerp->end_code;
 
   return 0;
 }
