@@ -191,6 +191,13 @@ _diskfs_init_completed ()
   if (err)
     goto errout;
 
+  /* Mark us as important.  */
+  err = proc_mark_important (proc);
+  /* This might fail due to permissions or because the old proc server
+     is still running, ignore any such errors.  */
+  if (err && err != EPERM && err != EMIG_BAD_ID)
+    goto errout;
+
   err = proc_getmsgport (proc, HURD_PID_STARTUP, &init);
   mach_port_deallocate (mach_task_self (), proc);
   if (err)
