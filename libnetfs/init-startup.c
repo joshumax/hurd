@@ -48,5 +48,19 @@ netfs_startup (mach_port_t bootstrap, int flags)
 
   mach_port_deallocate (mach_task_self (), bootstrap);
 
+  /* Mark us as important.  */
+  mach_port_t proc = getproc ();
+  if (proc == MACH_PORT_NULL)
+    error (12, err, "Translator startup failure: getproc");
+
+  err = proc_mark_important (proc);
+
+  /* This might fail due to permissions or because the old proc server
+     is still running, ignore any such errors.  */
+  if (err && err != EPERM && err != EMIG_BAD_ID)
+    error (13, err, "Translator startup failure: proc_mark_important");
+
+  mach_port_deallocate (mach_task_self (), proc);
+
   return realnode;
 }
