@@ -21,7 +21,9 @@ makemode := utilities
 targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
-	storeread msgport rpctrace mount gcore fakeauth fakeroot remap
+	storeread msgport rpctrace mount gcore fakeauth fakeroot remap \
+	umount
+
 special-targets = loginpr sush uptime fakeroot remap
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
@@ -29,7 +31,7 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh remap.sh \
-	match-options.c
+	match-options.c umount.c
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
@@ -57,7 +59,7 @@ ftpcp ftpdir: ../libftpconn/libftpconn.a
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
-  storecat msgport mount: \
+  storecat msgport mount umount: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
@@ -73,7 +75,7 @@ fakeauth-CPPFLAGS = -I$(srcdir)/../auth
 authServer-CPPFLAGS = -I$(srcdir)/../auth
 auth_requestUser-CPPFLAGS = -I$(srcdir)/../auth
 
-mount: ../sutils/fstab.o ../sutils/clookup.o match-options.o \
+mount umount: ../sutils/fstab.o ../sutils/clookup.o match-options.o \
        $(foreach L,fshelp ports,../lib$L/lib$L.a)
 ../sutils/fstab.o ../sutils/clookup.o: FORCE
 	$(MAKE) -C $(@D) $(@F)
