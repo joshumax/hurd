@@ -37,7 +37,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get
    its task port &c).  If PROC2 has an owner, then PROC1 must have that uid;
    otherwise, both must be in the same login collection.  */
-static inline int
+int
 check_owner (struct proc *proc1, struct proc *proc2)
 {
   return

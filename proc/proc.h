@@ -157,6 +157,7 @@ process_drop (struct proc *p)
 /* Forward declarations */
 void complete_wait (struct proc *, int);
 int check_uid (struct proc *, uid_t);
+int check_owner (struct proc *, struct proc *);
 void addalltasks (void);
 void prociterate (void (*)(struct proc *, void *), void *);
 void count_up (void *);
