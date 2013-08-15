@@ -98,6 +98,19 @@ main (int argc, char **argv)
   io_restrict_auth (realnode, &realnodenoauth, 0, 0, 0, 0);
   mach_port_deallocate (mach_task_self (), realnode);
 
+  /* Mark us as important.  */
+  mach_port_t proc = getproc ();
+  if (proc == MACH_PORT_NULL)
+    error (2, err, "cannot get a handle to our process");
+
+  err = proc_mark_important (proc);
+  /* This might fail due to permissions or because the old proc server
+     is still running, ignore any such errors.  */
+  if (err && err != EPERM && err != EMIG_BAD_ID)
+    error (2, err, "Cannot mark us as important");
+
+  mach_port_deallocate (mach_task_self (), proc);
+
   /* Launch */
   while (1)
     {
