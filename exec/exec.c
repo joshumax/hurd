@@ -7,10 +7,6 @@
    #ifdef GZIP
    Can gunzip executables into core on the fly.
    #endif
-   #ifdef BFD
-   Can exec any executable format the BFD library understands
-   to be for this flavor of machine.
-   #endif
    #ifdef BZIP2
    Can bunzip2 executables into core on the fly.
    #endif
@@ -50,26 +46,7 @@ size_t std_nports, std_nints;
 pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 
-#ifdef	BFD
-/* Return a Hurd error code corresponding to the most recent BFD error.  */
-static error_t
-b2he (error_t deflt)
-{
-  switch (bfd_get_error ())
-    {
-    case bfd_error_system_call:
-      return errno;
-
-    case bfd_error_no_memory:
-      return ENOMEM;
-
-    default:
-      return deflt;
-    }
-}
-#else
 #define	b2he()	a2he (errno)
-#endif
 
 #ifdef GZIP
 static void check_gzip (struct execdata *);
@@ -78,41 +55,6 @@ static void check_gzip (struct execdata *);
 #ifdef BZIP2
 static void check_bzip2 (struct execdata *);
 #endif
-
-#ifdef	BFD
-
-/* Check a section, updating the `locations' vector [BFD].  */
-static void
-check_section (bfd *bfd, asection *sec, void *userdata)
-{
-  struct execdata *u = userdata;
-  static const union
-    {
-      char string[8];
-      unsigned int quadword __attribute__ ((mode (DI)));
-    } interp = { string: ".interp" };
-
-  if (u->error)
-    return;
-
-  /* Fast strcmp for this 8-byte constant string.  */
-  if (*(const __typeof (interp.quadword) *) sec->name == interp.quadword)
-    u->interp.section = sec;
-
-  if (!(sec->flags & (SEC_ALLOC|SEC_LOAD)) ||
-      (sec->flags & SEC_NEVER_LOAD))
-    /* Nothing to do for this section.  */
-    return;
-
-  if (sec->flags & SEC_LOAD)
-    {
-      u->info.bfd_locations[sec->index] = sec->filepos;
-      if ((off_t) sec->filepos < 0 || (off_t) sec->filepos > u->file_size)
-	u->error = ENOEXEC;
-    }
-}
-#endif
-
 
 /* Zero the specified region but don't crash the server if it faults.  */
 
@@ -135,69 +77,45 @@ load_section (void *section, struct execdata *u)
   vm_prot_t vm_prot;
   int anywhere;
   vm_address_t mask = 0;
-#ifdef BFD
-  asection *const sec = section;
-#endif
   const ElfW(Phdr) *const ph = section;
 
   if (u->error)
     return;
 
-#ifdef BFD
-  if (u->bfd && sec->flags & SEC_NEVER_LOAD)
-    /* Nothing to do for this section.  */
-    return;
-#endif
-
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
-#ifdef	BFD
-  if (u->bfd)
-    {
-      addr = (vm_address_t) sec->vma;
-      filepos = u->info.bfd_locations[sec->index];
-      memsz = sec->_raw_size;
-      filesz = (sec->flags & SEC_LOAD) ? memsz : 0;
-      if (sec->flags & (SEC_READONLY|SEC_ROM))
-	vm_prot &= ~VM_PROT_WRITE;
-      anywhere = 0;
-    }
+  addr = ph->p_vaddr & ~(ph->p_align - 1);
+  memsz = ph->p_vaddr + ph->p_memsz - addr;
+  filepos = ph->p_offset & ~(ph->p_align - 1);
+  filesz = ph->p_offset + ph->p_filesz - filepos;
+  if ((ph->p_flags & PF_R) == 0)
+    vm_prot &= ~VM_PROT_READ;
+  if ((ph->p_flags & PF_W) == 0)
+    vm_prot &= ~VM_PROT_WRITE;
+  if ((ph->p_flags & PF_X) == 0)
+    vm_prot &= ~VM_PROT_EXECUTE;
+  anywhere = u->info.elf.anywhere;
+  if (! anywhere)
+    addr += u->info.elf.loadbase;
   else
-#endif
-    {
-      addr = ph->p_vaddr & ~(ph->p_align - 1);
-      memsz = ph->p_vaddr + ph->p_memsz - addr;
-      filepos = ph->p_offset & ~(ph->p_align - 1);
-      filesz = ph->p_offset + ph->p_filesz - filepos;
-      if ((ph->p_flags & PF_R) == 0)
-	vm_prot &= ~VM_PROT_READ;
-      if ((ph->p_flags & PF_W) == 0)
-	vm_prot &= ~VM_PROT_WRITE;
-      if ((ph->p_flags & PF_X) == 0)
-	vm_prot &= ~VM_PROT_EXECUTE;
-      anywhere = u->info.elf.anywhere;
-      if (! anywhere)
-	addr += u->info.elf.loadbase;
-      else
 #if 0
-	switch (elf_machine)
-	  {
-	  case EM_386:
-	  case EM_486:
-	    /* On the i386, programs normally load at 0x08000000, and
-	       expect their data segment to be able to grow dynamically
-	       upward from its start near that address.  We need to make
-	       sure that the dynamic linker is not mapped in a conflicting
-	       address.  */
-	    /* mask = 0xf8000000UL; */ /* XXX */
-	    break;
-	  default:
-	    break;
-	  }
+    switch (elf_machine)
+      {
+      case EM_386:
+      case EM_486:
+	/* On the i386, programs normally load at 0x08000000, and
+	   expect their data segment to be able to grow dynamically
+	   upward from its start near that address.  We need to make
+	   sure that the dynamic linker is not mapped in a conflicting
+	   address.  */
+	/* mask = 0xf8000000UL; */ /* XXX */
+	break;
+      default:
+	break;
+      }
 #endif
-      if (anywhere && addr < vm_page_size)
-	addr = vm_page_size;
-    }
+  if (anywhere && addr < vm_page_size)
+    addr = vm_page_size;
 
   if (memsz == 0)
     /* This section is empty; ignore it.  */
@@ -502,16 +420,6 @@ map (struct execdata *e, off_t posn, size_t len)
   return map_buffer (e) + offset;
 }
 
-
-/* Initialize E's stdio stream.  */
-static void prepare_stream (struct execdata *e);
-
-/* Point the stream at the buffer of file data in E->file_data.  */
-static void prepare_in_memory (struct execdata *e);
-
-
-#ifndef EXECDATA_STREAM
-
 /* We don't have a stdio stream, but we have a mapping window
    we need to initialize.  */
 static void
@@ -521,199 +429,7 @@ prepare_stream (struct execdata *e)
   e->map_vsize = e->map_fsize = 0;
   e->map_filepos = 0;
 }
-
-static void prepare_in_memory (struct execdata *e)
-{
-  prepare_stream(e);
-}
-
-#else
-
-#ifdef _STDIO_USES_IOSTREAM
-
-# error implement me for libio!
-
-#else  /* old GNU stdio */
-
-#if 0
-void *
-map (struct execdata *e, off_t posn, size_t len)
-{
-  FILE *f = &e->stream;
-  const size_t size = e->file_size;
-  size_t offset;
-
-  if ((f->__offset & ~(f->__bufsize - 1)) == (posn & ~(f->__bufsize - 1)) &&
-      f->__buffer + (posn + len - f->__offset) < f->__get_limit)
-    /* The current mapping window covers it.  */
-    offset = posn & (f->__bufsize - 1);
-  else if (e->file_data != NULL)
-    {
-      /* The current "mapping window" is in fact the whole file contents.
-	 So if it's not in there, it's not in there.  */
-      f->__eof = 1;
-      return NULL;
-    }
-  else if (e->filemap == MACH_PORT_NULL)
-    {
-      /* No mapping for the file.  Read the data by RPC.  */
-      char *buffer = f->__buffer;
-      mach_msg_type_number_t nread = f->__bufsize;
-      /* Read as much as we can get into the buffer right now.  */
-      e->error = io_read (e->file, &buffer, &nread, posn, round_page (len));
-      if (e->error)
-	{
-	  errno = e->error;
-	  f->__error = 1;
-	  return NULL;
-	}
-      if (buffer != f->__buffer)
-	{
-	  /* The data was returned out of line.  Discard the old buffer.  */
-	  if (f->__bufsize != 0)
-	    munmap (f->__buffer, f->__bufsize);
-	  f->__buffer = buffer;
-	  f->__bufsize = round_page (nread);
-	}
-
-      f->__offset = posn;
-      f->__get_limit = f->__buffer + nread;
-      offset = 0;
-    }
-  else
-    {
-      /* Deallocate the old mapping area.  */
-      if (f->__buffer != NULL)
-	munmap (f->__buffer, f->__bufsize);
-      f->__buffer = NULL;
-
-      /* Make sure our mapping is page-aligned in the file.  */
-      offset = posn & (vm_page_size - 1);
-      f->__offset = trunc_page (posn);
-      f->__bufsize = round_page (posn + len) - f->__offset;
-
-      /* Map the data from the file.  */
-      if (vm_map (mach_task_self (),
-		  (vm_address_t *) &f->__buffer, f->__bufsize, 0, 1,
-		  e->filemap, f->__offset, 1, VM_PROT_READ, VM_PROT_READ,
-		  VM_INHERIT_NONE))
-	{
-	  errno = e->error = EIO;
-	  f->__error = 1;
-	  return NULL;
-	}
-
-      if (e->cntl)
-	e->cntl->accessed = 1;
-
-      if (f->__offset + f->__bufsize > size)
-	f->__get_limit = f->__buffer + (size - f->__offset);
-      else
-	f->__get_limit = f->__buffer + f->__bufsize;
-    }
-
-  f->__target = f->__offset;
-  f->__bufp = f->__buffer + offset;
-
-  if (f->__bufp + len > f->__get_limit)
-    {
-      f->__eof = 1;
-      return NULL;
-    }
-
-  return f->__bufp;
-}
-#endif
-
-/* stdio input-room function.
-   XXX/fault in the stdio case (or libio replacement), i.e. for bfd
-   (if ever revived), need to check all the mapping fault issues  */
-static int
-input_room (FILE *f)
-{
-  struct execdata *e = f->__cookie;
-  char *p = map (e, f->__target, 1);
-  if (p == NULL)
-    {
-      (e->error ? f->__error : f->__eof) = 1;
-      return EOF;
-    }
-
-  f->__target = f->__offset;
-  f->__bufp = p;
-
-  return (unsigned char) *f->__bufp++;
-}
-
-static int
-close_exec_stream (void *cookie)
-{
-  struct execdata *e = cookie;
-
-  if (e->stream.__buffer != NULL)
-    munmap (e->stream.__buffer, e->stream.__bufsize);
-
-  return 0;
-}
-
-/* stdio seek function. */
-static int
-fake_seek (void *cookie, fpos_t *pos, int whence)
-{
-  struct execdata *e = cookie;
-
-  /* Set __target to match the specifed seek location */
-  switch (whence)
-    {
-    case SEEK_END:
-      e->stream.__target = e->file_size + *pos;
-      break;
-
-    case SEEK_CUR:
-      e->stream.__target += *pos;
-      break;
-
-    case SEEK_SET:
-      e->stream.__target = *pos;
-      break;
-    }
-  *pos = e->stream.__target;
-  return 0;
-}
-
-/* Initialize E's stdio stream.  */
-static void
-prepare_stream (struct execdata *e)
-{
-  memset (&e->stream, 0, sizeof (e->stream));
-  e->stream.__magic = _IOMAGIC;
-  e->stream.__mode.__read = 1;
-  e->stream.__userbuf = 1;
-  e->stream.__room_funcs.__input = input_room;
-  e->stream.__io_funcs.seek = fake_seek;
-  e->stream.__io_funcs.close = close_exec_stream;
-  e->stream.__cookie = e;
-  e->stream.__seen = 1;
-}
-
-/* Point the stream at the buffer of file data.  */
-static void
-prepare_in_memory (struct execdata *e)
-{
-  memset (&e->stream, 0, sizeof (e->stream));
-  e->stream.__magic = _IOMAGIC;
-  e->stream.__mode.__read = 1;
-  e->stream.__buffer = e->file_data;
-  e->stream.__bufsize = e->file_size;
-  e->stream.__get_limit = e->stream.__buffer + e->stream.__bufsize;
-  e->stream.__bufp = e->stream.__buffer;
-  e->stream.__seen = 1;
-}
-#endif
-
-#endif
 
-
 /* Prepare to check and load FILE.  */
 static void
 prepare (file_t file, struct execdata *e)
@@ -722,9 +438,6 @@ prepare (file_t file, struct execdata *e)
 
   e->file = file;
 
-#ifdef	BFD
-  e->bfd = NULL;
-#endif
   e->file_data = NULL;
   e->cntl = NULL;
   e->filemap = MACH_PORT_NULL;
@@ -801,42 +514,6 @@ prepare (file_t file, struct execdata *e)
     }
 }
 
-/* Check the magic number, etc. of the file.
-   On successful return, the caller must allocate the
-   E->locations vector, and map check_section over the BFD.  */
-
-#ifdef BFD
-static void
-check_bfd (struct execdata *e)
-{
-  bfd_set_error (bfd_error_no_error);
-
-  e->bfd = bfd_openstreamr (NULL, NULL, &e->stream);
-  if (e->bfd == NULL)
-    {
-      e->error = b2he (ENOEXEC);
-      return;
-    }
-
-  if (!bfd_check_format (e->bfd, bfd_object))
-    {
-      e->error = b2he (ENOEXEC);
-      return;
-    }
-  else if (/* !(e->bfd->flags & EXEC_P) || XXX */
-	   (host_bfd.arch_info->compatible = e->bfd->arch_info->compatible,
-	    bfd_arch_get_compatible (&host_bfd, e->bfd)) != host_bfd.arch_info)
-    {
-      /* This file is of a recognized binary file format, but it is not
-	 executable on this machine.  */
-      e->error = b2he (ENOEXEC);
-      return;
-    }
-
-  e->entry = e->bfd->start_address;
-}
-#endif
-
 #include <endian.h>
 #if BYTE_ORDER == BIG_ENDIAN
 #define host_ELFDATA ELFDATA2MSB
@@ -955,13 +632,6 @@ static void
 check (struct execdata *e)
 {
   check_elf (e);		/* XXX/fault */
-#ifdef BFD
-  if (e->error == ENOEXEC)
-    {
-      e->error = 0;
-      check_bfd (e);
-    }
-#endif
 }
 
 
@@ -1004,18 +674,7 @@ void
 finish (struct execdata *e, int dealloc_file)
 {
   finish_mapping (e);
-#ifdef	BFD
-  if (e->bfd != NULL)
     {
-      bfd_close (e->bfd);
-      e->bfd = NULL;
-    }
-  else
-#endif
-    {
-#ifdef EXECDATA_STREAM
-      fclose (&e->stream);
-#else
       if (e->file_data != NULL) {
 	free (e->file_data);
 	e->file_data = NULL;
@@ -1023,7 +682,6 @@ finish (struct execdata *e, int dealloc_file)
 	munmap (map_buffer (e), map_vsize (e));
 	map_buffer (e) = NULL;
       }
-#endif
     }
   if (dealloc_file && e->file != MACH_PORT_NULL)
     {
@@ -1041,81 +699,18 @@ load (task_t usertask, struct execdata *e)
 
   if (! e->error)
     {
-#ifdef	BFD
-      if (e->bfd)
-	{
-	  void load_bfd_section (bfd *bfd, asection *sec, void *userdata)
-	    {
-	      load_section (sec, userdata);
-	    }
-	  bfd_map_over_sections (e->bfd, &load_bfd_section, e);
-	}
-      else
-#endif
-	{
-	  ElfW(Word) i;
-	  for (i = 0; i < e->info.elf.phnum; ++i)
-	    if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	      load_section (&e->info.elf.phdr[i], e);
+      ElfW(Word) i;
+      for (i = 0; i < e->info.elf.phnum; ++i)
+	if (e->info.elf.phdr[i].p_type == PT_LOAD)
+	  load_section (&e->info.elf.phdr[i], e);
 
-	  /* The entry point address is relative to wherever we loaded the
-	     program text.  */
-	  e->entry += e->info.elf.loadbase;
-	}
+      /* The entry point address is relative to wherever we loaded the
+	 program text.  */
+      e->entry += e->info.elf.loadbase;
     }
 
   /* Release the conch for the file.  */
   finish_mapping (e);
-
-  if (! e->error)
-    {
-      /* Do post-loading processing on the task.  */
-
-#ifdef	BFD
-      if (e->bfd)
-	{
-	  /* Do post-loading processing for a section.  This consists of
-	     peeking the pages of non-demand-paged executables.  */
-
-	  void postload_section (bfd *bfd, asection *sec, void *userdata)
-	    {
-	      struct execdata *u = userdata;
-	      vm_address_t addr = 0;
-	      vm_size_t secsize = 0;
-
-	      addr = (vm_address_t) sec->vma;
-	      secsize = sec->_raw_size;
-
-	      if ((sec->flags & SEC_LOAD) && !(bfd->flags & D_PAGED))
-		{
-		  /* Pre-load the section by peeking every mapped page.  */
-		  vm_address_t myaddr, a;
-		  vm_size_t mysize;
-		  myaddr = 0;
-
-		  /* We have already mapped the file into the task in
-		     load_section.  Now read from the task's memory into our
-		     own address space so we can peek each page and cause it to
-		     be paged in.  */
-		  u->error = vm_read (u->task, trunc_page (addr),
-				      round_page (secsize), &myaddr, &mysize);
-		  if (u->error)
-		    return;
-
-		  /* Peek at the first word of each page.  */
-		  for (a = ((myaddr + mysize) & ~(vm_page_size - 1));
-		       a >= myaddr; a -= vm_page_size)
-		    /* Force it to be paged in.  */
-		    (void) *(volatile int *) a;
-
-		  munmap ((caddr_t) myaddr, mysize);
-		}
-	    }
-
-	  bfd_map_over_sections (e->bfd, postload_section, e);
-	}
-#endif
-    }
 }
 
 #ifdef GZIP
@@ -1466,20 +1061,9 @@ do_exec (file_t file,
     /* The file is not a valid executable.  */
     goto out;
 
-#ifdef	BFD
-  if (e.bfd)
-    {
-      e.info.bfd_locations = alloca (e.bfd->section_count *
-				     sizeof (vm_offset_t));
-      bfd_map_over_sections (e.bfd, check_section, &e);
-    }
-  else
-#endif
-    {
-      const ElfW(Phdr) *phdr = e.info.elf.phdr;
-      e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (ElfW(Phdr)));
-      check_elf_phdr (&e, phdr);
-    }
+  const ElfW(Phdr) *phdr = e.info.elf.phdr;
+  e.info.elf.phdr = alloca (e.info.elf.phnum * sizeof (ElfW(Phdr)));
+  check_elf_phdr (&e, phdr);
 
   if (oldtask == MACH_PORT_NULL)
     flags |= EXEC_NEWTASK;
@@ -1685,33 +1269,11 @@ do_exec (file_t file,
 	 along with this executable.  Find the name of the file and open
 	 it.  */
 
-#ifdef BFD
-      char namebuf[e.bfd ? e.interp.section->_raw_size : 0];
-#endif
-      char *name;
-
-#ifdef BFD
-      if (e.bfd)
-	{
-	  if (! bfd_get_section_contents (e.bfd, e.interp.section,
-					  namebuf, 0,
-					  e.interp.section->_raw_size))
-	    {
-	      e.error = b2he (errno);
-	      name = NULL;
-	    }
-	  else
-	    name = namebuf;
-	}
-      else
-#endif
-	{
-	  name = map (&e, (e.interp.phdr->p_offset
-			   & ~(e.interp.phdr->p_align - 1)),
-		      e.interp.phdr->p_filesz);
-	  if (! name && ! e.error)
-	    e.error = ENOEXEC;
-	}
+      char *name = map (&e, (e.interp.phdr->p_offset
+			     & ~(e.interp.phdr->p_align - 1)),
+			e.interp.phdr->p_filesz);
+      if (! name && ! e.error)
+	e.error = ENOEXEC;
 
       if (! name)
 	e.interp.section = NULL;
@@ -1749,21 +1311,10 @@ do_exec (file_t file,
       prepare_and_check (interp.file, &interp);
       if (! interp.error)
 	{
-#ifdef	BFD
-	  if (interp.bfd)
-	    {
-	      interp.info.bfd_locations = alloca (interp.bfd->section_count *
-						  sizeof (vm_offset_t));
-	      bfd_map_over_sections (interp.bfd, check_section, &e);
-	    }
-	  else
-#endif
-	    {
-	      const ElfW(Phdr) *phdr = interp.info.elf.phdr;
-	      interp.info.elf.phdr = alloca (interp.info.elf.phnum *
-					     sizeof (ElfW(Phdr)));
-	      check_elf_phdr (&interp, phdr);
-	    }
+	  const ElfW(Phdr) *phdr = interp.info.elf.phdr;
+	  interp.info.elf.phdr = alloca (interp.info.elf.phnum *
+					 sizeof (ElfW(Phdr)));
+	  check_elf_phdr (&interp, phdr);
 	}
       e.error = interp.error;
     }
@@ -1842,10 +1393,7 @@ do_exec (file_t file,
      the image so that a load-anywhere image gets the adjusted addresses.  */
     if (e.info.elf.phdr_addr != 0)
       {
-#ifdef BFD
-	if (!e.bfd)
-#endif
-	  e.info.elf.phdr_addr += e.info.elf.loadbase;
+	e.info.elf.phdr_addr += e.info.elf.loadbase;
 	boot->phdr_addr = e.info.elf.phdr_addr;
 	boot->phdr_size = e.info.elf.phnum * sizeof (ElfW(Phdr));
       }
@@ -1864,17 +1412,12 @@ do_exec (file_t file,
 			       &boot->stack_base, &boot->stack_size);
   if (e.error)
     goto out;
-#ifdef BFD
-  if (!e.bfd)
-#endif
-    {
-      /* It would probably be better to change mach_setup_thread so
-	 it does a vm_map with the right permissions to start with.  */
-      if (!e.info.elf.execstack)
-	e.error = vm_protect (newtask, boot->stack_base, boot->stack_size,
-			      0, VM_PROT_READ | VM_PROT_WRITE);
-    }
 
+  /* It would probably be better to change mach_setup_thread so
+     it does a vm_map with the right permissions to start with.  */
+  if (!e.info.elf.execstack)
+    e.error = vm_protect (newtask, boot->stack_base, boot->stack_size,
+			  0, VM_PROT_READ | VM_PROT_WRITE);
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
     {

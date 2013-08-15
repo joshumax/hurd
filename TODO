@@ -173,10 +173,6 @@ See `tasks', the exported task list.
      3: when a session leader exits, the association has to be torn
         down; bsd does SIGHUP + drain + revoke.)
 
-** exec:
-*** either resurrect or excise BFD exec server
-    (needs stdio magic converted to use libio when libc converts)
-
 ** proc:
 *** Add a version of proc_wait usable by non-parent processes, and use it in
     gdb; maybe just a flag WNOREAP to proc_wait that doesn't reap and allows

@@ -28,10 +28,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/lookup.h>
 #include <pthread.h>
 
-#ifdef BFD
-#include <bfd.h>
-#endif
-
 #include <elf.h>
 #include <link.h>		/* This gives us the ElfW macro.  */
 #include <fcntl.h>
@@ -40,12 +36,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #ifndef exec_priv_h
 #define exec_priv_h
-
-#ifdef BFD
-/* A BFD whose architecture and machine type are those of the host system.  */
-extern bfd_arch_info_type host_bfd_arch_info;
-extern bfd host_bfd;
-#endif
 
 /* Information kept around to be given to a new task
    in response to a message on the task's bootstrap port.  */
@@ -70,12 +60,7 @@ struct port_class *execboot_portclass;
 
 extern mach_port_t procserver;	/* Our proc port.  */
 
-#ifdef BFD
-#define EXECDATA_STREAM		/* BFD uses stdio to access the executable.  */
-#else
 typedef void asection;
-#endif
-
 
 /* Data shared between check, check_section,
    load, load_section, and finish.  */
@@ -88,8 +73,6 @@ struct execdata
     vm_address_t entry;
     file_t file;
 
-#ifndef EXECDATA_STREAM
-
     /* Note that if `file_data' (below) is set, then these just point
        into that and should not be deallocated (file_data is malloc'd).  */
     char *map_buffer;		/* Our mapping window or read buffer.  */
@@ -101,26 +84,6 @@ struct execdata
 #define map_vsize(e)	((e)->map_vsize)
 #define map_filepos(e)	((e)->map_filepos)
 #define map_set_fsize(e, fsize) ((e)->map_fsize = (fsize))
-
-#else
-
-#ifdef _STDIO_USES_IOSTREAM
-# error implement me for libio!
-#else
-    FILE stream;
-#define map_buffer(e)	((e)->stream.__buffer)
-#define map_fsize(e)	((e)->stream.__get_limit - (e)->stream.__buffer)
-#define map_vsize(e)	((e)->stream.__bufsize)
-#define map_filepos(e)	((e)->stream.__offset)
-#define map_set_fsize(e, fsize)	\
-  ((e)->stream.__get_limit = (e)->stream.__buffer + (fsize))
-#endif
-
-#endif
-
-#ifdef BFD
-    bfd *bfd;
-#endif
 
     union			/* Interpreter section giving name of file.  */
       {
@@ -138,10 +101,6 @@ struct execdata
 
     union
       {
-	/* Vector indexed by section index,
-	   information passed from check_section to load_section.
-	   Set by caller of check_section and load.  */
-	vm_offset_t *bfd_locations;
 	struct
 	  {
 	    /* Program header table read from the executable.
