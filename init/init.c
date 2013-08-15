@@ -1,7 +1,7 @@
 /* Start and maintain hurd core servers and system run state
 
    Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
-     2005, 2008 Free Software Foundation, Inc.
+     2005, 2008, 2013 Free Software Foundation, Inc.
    This file is part of the GNU Hurd.
 
    The GNU Hurd is free software; you can redistribute it and/or modify
@@ -643,6 +643,8 @@ launch_core_servers (void)
       device_master = 0;
     }
 
+  /* Mark us as important.  */
+  proc_mark_important (procserver);
   proc_mark_exec (procserver);
 
   /* Declare that the filesystem and auth are our children. */
@@ -650,6 +652,7 @@ launch_core_servers (void)
   proc_child (procserver, authtask);
 
   proc_task2proc (procserver, authtask, &authproc);
+  proc_mark_important (authproc);
   proc_mark_exec (authproc);
   startup_authinit_reply (authreply, authreplytype, 0, authproc,
 			  MACH_MSG_TYPE_COPY_SEND);
@@ -672,6 +675,7 @@ launch_core_servers (void)
   err = proc_task2proc (procserver, proctask, &procproc);
   if (!err)
     {
+      proc_mark_important (procproc);
       proc_mark_exec (procproc);
       mach_port_deallocate (mach_task_self (), procproc);
     }
@@ -681,6 +685,7 @@ launch_core_servers (void)
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */
   proc_task2proc (procserver, fstask, &fsproc);
+  proc_mark_important (fsproc);
   proc_mark_exec (fsproc);
 
 #if 0
@@ -785,8 +790,10 @@ frob_kernel_process (void)
       return;
     }
 
-  /* Mark the kernel task as an essential task so that we never
-     want to task_terminate it.  */
+  /* Mark the kernel task as an essential task so that we or the proc server
+     never want to task_terminate it.  */
+  proc_mark_important (proc);
+
   err = record_essential_task ("kernel", task);
   assert_perror (err);
 
@@ -1067,6 +1074,7 @@ start_child (const char *prog, char **progargs)
 		   default_ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
 		   default_ints, INIT_INT_MAX,
 		   NULL, 0, NULL, 0);
+  proc_mark_important (default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), default_ports[INIT_PORT_PROC]);
   mach_port_deallocate (mach_task_self (), file);
   if (err)
@@ -1207,7 +1215,12 @@ S_startup_essential_task (mach_port_t server,
       if (!strcmp (name, "auth"))
 	authinit = 1;
       else if (!strcmp (name, "exec"))
-	execinit = 1;
+        {
+          execinit = 1;
+          mach_port_t execproc;
+          proc_task2proc (procserver, task, &execproc);
+          proc_mark_important (execproc);
+        }
       else if (!strcmp (name, "proc"))
 	procinit = 1;
 
