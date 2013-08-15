@@ -185,3 +185,10 @@ simpleroutine proc_is_important (
 	RETURN_CODE_ARG;
 	essential: boolean_t);
 
+skip; /* proc_set_code */
+
+simpleroutine proc_get_code (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	start_code: vm_address_t;
+	end_code: vm_address_t);

@@ -383,3 +383,20 @@ routine proc_mark_important (
 routine proc_is_important (
 	process: process_t;
 	out essential: boolean_t);
+
+/* Set the processes start_code and end_code locations.  Any
+   executable segments loaded from the ELF binary are in this
+   range.  */
+routine proc_set_code (
+	process: process_t;
+	start_code: vm_address_t;
+	end_code: vm_address_t);
+
+/* Get the processes start_code and end_code locations.  Any
+   executable segments loaded from the ELF binary are in this range.
+   If zero is returned for these values, the requested information has
+   never been set.  */
+routine proc_get_code (
+	process: process_t;
+	out start_code: vm_address_t;
+	out end_code: vm_address_t);
