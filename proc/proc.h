@@ -84,6 +84,7 @@ struct proc
   unsigned int p_noowner:1;	/* has no owner known */
   unsigned int p_loginleader:1;	/* leader of login collection */
   unsigned int p_dead:1;	/* process is dead */
+  unsigned int p_important:1;	/* has called proc_mark_important */
 };
 
 typedef struct proc *pstruct_t;

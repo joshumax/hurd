@@ -1,5 +1,5 @@
 /* Session and process group manipulation
-   Copyright (C) 1992,93,94,95,96,99,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2001,02,13 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -265,7 +265,7 @@ S_proc_getpgrppids (struct proc *callerp,
 
   count = 0;
   for (p = pg->pg_plist; p; p = p->p_gnext)
-    if (++count <= npids)
+    if (!p->p_important && ++count <= npids)
       *pp++ = p->p_pid;
 
   if (count > npids)
@@ -278,7 +278,8 @@ S_proc_getpgrppids (struct proc *callerp,
 
       pp = *pids;
       for (p = pg->pg_plist; p; p = p->p_gnext)
-	*pp++ = p->p_pid;
+	if (!p->p_important)
+	  *pp++ = p->p_pid;
       /* Dealloc ? XXX */
     }
   *npidsp = count;

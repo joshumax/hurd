@@ -593,6 +593,8 @@ create_startup_proc (void)
 
   p->p_deadmsg = 1;		/* Force initial "re-"fetch of msgport.  */
 
+  p->p_important = 1;
+
   p->p_noowner = 0;
   p->p_id = make_ids (&zero, 1);
   assert (p->p_id);
@@ -867,4 +869,37 @@ genpid ()
     }
 
   return nextpid++;
+}
+
+/* Implement proc_mark_important as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_mark_important (struct proc *p)
+{
+  if (!p)
+    return EOPNOTSUPP;
+
+  /* Only root may use this interface.  Any children of startup_proc
+     exempt from this restriction, as startup_proc calls this on their
+     behalf.  The kernel process is a notable example of an process
+     that needs this exemption.  That is not an problem however, since
+     all children of /hurd/init are important and we mark them as such
+     anyway.  */
+  if (! check_uid (p, 0) && ! check_owner (startup_proc, p))
+    return EPERM;
+
+  p->p_important = 1;
+  return 0;
+}
+
+/* Implement proc_is_important as described in <hurd/process.defs>.  */
+error_t
+S_proc_is_important (struct proc *callerp,
+		     boolean_t *essential)
+{
+  if (!callerp)
+    return EOPNOTSUPP;
+
+  *essential = callerp->p_important;
+
+  return 0;
 }
