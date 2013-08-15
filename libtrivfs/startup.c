@@ -65,5 +65,24 @@ trivfs_startup(mach_port_t bootstrap, int flags,
   if (!err && control)
     *control = fsys;
 
+  /* Mark us as important.  */
+  if (! err)
+    {
+      mach_port_t proc = getproc ();
+      if (proc == MACH_PORT_NULL)
+	/* /hurd/exec uses libtrivfs.  We have no handle to the proc
+	   server in /hurd/exec when it does its handshake with the
+	   root filesystem, so fail graciously here.  */
+	return 0;
+
+      err = proc_mark_important (proc);
+      /* This might fail due to permissions or because the old proc
+	 server is still running, ignore any such errors.  */
+      if (err == EPERM || err == EMIG_BAD_ID)
+	err = 0;
+
+      mach_port_deallocate (mach_task_self (), proc);
+    }
+
   return err;
 }
