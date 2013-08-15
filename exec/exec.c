@@ -207,6 +207,17 @@ load_section (void *section, struct execdata *u)
 	    }
 	}
 
+      /* If this segment is executable, adjust start_code and end_code
+	 so that this mapping is within that range.  */
+      if (vm_prot & VM_PROT_EXECUTE)
+	{
+	  if (u->start_code == 0 || u->start_code > addr)
+	    u->start_code = addr;
+
+	  if (u->end_code < addr + memsz)
+	    u->end_code = addr + memsz;
+	}
+
       if (mapstart > addr)
 	{
 	  /* We must read and copy in the space in the section before the
@@ -444,6 +455,9 @@ prepare (file_t file, struct execdata *e)
   e->cntlmap = MACH_PORT_NULL;
 
   e->interp.section = NULL;
+
+  e->start_code = 0;
+  e->end_code = 0;
 
   /* Initialize E's stdio stream.  */
   prepare_stream (e);
@@ -1398,6 +1412,15 @@ do_exec (file_t file,
 	boot->phdr_size = e.info.elf.phnum * sizeof (ElfW(Phdr));
       }
   boot->user_entry = e.entry;	/* already adjusted in `load' */
+
+  /* Set the start_code and end_code values for this process.
+     /hurd/exec is used to start /hurd/proc, so at this point there is
+     no proc server, so we need to be careful here.  */
+  if (boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
+    e.error = proc_set_code (boot->portarray[INIT_PORT_PROC],
+			     e.start_code, e.end_code);
+  if (e.error)
+    goto out;
 
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);

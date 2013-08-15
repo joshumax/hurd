@@ -73,6 +73,10 @@ struct execdata
     vm_address_t entry;
     file_t file;
 
+    /* Set by load_section.  */
+    vm_address_t start_code;
+    vm_address_t end_code;
+
     /* Note that if `file_data' (below) is set, then these just point
        into that and should not be deallocated (file_data is malloc'd).  */
     char *map_buffer;		/* Our mapping window or read buffer.  */
