@@ -60,3 +60,117 @@ simpleroutine proc_wait_reply (
 	in sigcode: int;
 	in rusage: rusage_t;
 	in pid_status: pid_t);
+
+skip; /* proc_dostop */
+skip; /* proc_handle_exceptions */
+skip; /* proc_mark_stop */
+skip; /* proc_mark_cont */
+skip; /* proc_mark_exit */
+skip; /* proc_mark_exec */
+skip; /* proc_mark_traced */
+skip; /* proc_mod_stopchild */
+
+simpleroutine proc_pid2task (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	task: task_t);
+
+simpleroutine proc_task2pid (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pid: pid_t);
+
+simpleroutine proc_task2proc (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	proc: mach_port_make_send_t);
+
+simpleroutine proc_proc2task (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	task: task_t);
+
+simpleroutine proc_pid2proc (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	proc: mach_port_make_send_t);
+
+simpleroutine proc_getprocinfo (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	flags: int;
+	procinfo: procinfo_t, dealloc;
+	threadwaits: data_t, dealloc);
+
+simpleroutine proc_getprocargs (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	procargs: data_t, dealloc);
+
+simpleroutine proc_getprocenv (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	procenv: data_t, dealloc);
+
+skip; /* proc_make_login_coll */
+
+simpleroutine proc_getloginid (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	login_id: pid_t);
+
+simpleroutine proc_getloginpids (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pids: pidarray_t, dealloc);
+
+skip; /* proc_setlogin */
+
+simpleroutine proc_getlogin (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	logname: string_t);
+
+skip; /* proc_setsid */
+
+simpleroutine proc_getsid (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	sid: pid_t);
+
+simpleroutine proc_getsessionpgids (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pgidset: pidarray_t, dealloc);
+
+simpleroutine proc_getsessionpids (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pidset: pidarray_t, dealloc);
+
+simpleroutine proc_getsidport (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	sessport: mach_port_send_t);
+
+skip; /* proc_setpgrp */
+
+simpleroutine proc_getpgrp (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pgrp: pid_t);
+
+simpleroutine proc_getpgrppids (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	pidset: pidarray_t, dealloc);
+
+simpleroutine proc_get_tty (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	tty: mach_port_send_t);
+
+simpleroutine proc_getnports (
+	reply_port: reply_port_t;
+	RETURN_CODE_ARG;
+	nports: mach_msg_type_number_t);
