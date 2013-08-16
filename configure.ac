@@ -246,8 +246,9 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
     AS_IF([test $pkg_failed = no],
       [XKB_BASE="$pkg_cv_XKB_BASE"
        AC_MSG_RESULT([$XKB_BASE])],
-      [XKB_BASE="$datadir/share/X11/xkb"
+      [XKB_BASE="$datadir/X11/xkb"
        AC_MSG_RESULT([(default) $XKB_BASE])])
+    pkg_failed=no
     AC_MSG_CHECKING([for X11 prefix])
     _PKG_CONFIG([X11_PREFIX], [variable=prefix], [x11])
     AS_IF([test $pkg_failed = no],

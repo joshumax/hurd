@@ -30,6 +30,7 @@ sysconfdir = @sysconfdir@
 localstatedir = @localstatedir@
 sharedstatedir = @sharedstatedir@
 datadir = @datadir@
+datarootdir = @datarootdir@
 
 # All of those directories together:
 installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \
@@ -48,6 +49,8 @@ MIG = @MIG@
 MIGCOM = $(MIG) -cc cat - /dev/null
 AWK = @AWK@
 SED = @SED@
+LEX = @LEX@
+YACC = @YACC@
 
 # Compilation flags.  Append these to the definitions already made by
 # the specific Makefile.
