@@ -479,13 +479,22 @@ io_select_common (struct trivfs_protid *cred,
 
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
-  /* We only deal with SELECT_READ here.  */
-  *type &= SELECT_READ;
+  /* We only deal with SELECT_READ and SELECT_WRITE here.  */
+  *type &= SELECT_READ | SELECT_WRITE;
 
   if (*type == 0)
     return 0;
 
   pthread_mutex_lock (&tdev->lock);
+
+  if (*type & SELECT_WRITE)
+    {
+      /* We are always writable.  */
+      if (skb_queue_len (&tdev->xq) == 0)
+	*type &= ~SELECT_READ;
+      pthread_mutex_unlock (&tdev->lock);
+      return 0;
+    }
 
   while (1)
     {
