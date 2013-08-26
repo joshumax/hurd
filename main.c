@@ -120,6 +120,9 @@ argp_parser (int key, char *arg, struct argp_state *state)
     case NOSUID_KEY:
       /* Ignored for compatibility with Linux' procfs. */
       ;;
+
+    default:
+      return ARGP_ERR_UNKNOWN;
   }
 
   return 0;
