@@ -16,10 +16,8 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
-#include "../sutils/fstab.h"
 #include <argp.h>
 #include <argz.h>
 #include <blkid/blkid.h>
@@ -33,6 +31,7 @@
 #include <unistd.h>
 
 #include "match-options.h"
+#include "../sutils/fstab.h"
 
 /* XXX fix libc */
 #undef _PATH_MOUNTED
@@ -45,14 +44,16 @@ static int verbose;
 static int passive_flags = FS_TRANS_SET;
 static int active_flags = FS_TRANS_SET;
 static int goaway_flags;
+static int source_goaway;
 static int fake;
 
 static struct fstab_argp_params fstab_params;
 
-#define FAKE_KEY 0x80 /* !isascii (FAKE_KEY), so no short option. */
+#define FAKE_KEY 0x80 /* !isascii (FAKE_KEY), so no short option.  */
 
 static const struct argp_option argp_opts[] =
 {
+  {NULL, 'd', 0, 0, "Also ask the source translator to go away"},
   {"fake", FAKE_KEY, 0, 0, "Do not actually umount, just pretend"},
   {"force", 'f', 0, 0, "Force umount by killing the translator"},
   {"no-mtab", 'n', 0, 0, "Do not update /etc/mtab"},
@@ -73,6 +74,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
     {
     case ARGP_KEY_INIT:
       state->child_inputs[0] = params; /* pass down to fstab_argp parser */
+      break;
+
+    case 'd':
+      source_goaway = 1;
       break;
 
     case FAKE_KEY:
@@ -115,8 +120,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (! params->do_all)
 	{
 	  argp_error (state,
-                      "filesystem argument required if --all is not given");
-          return EINVAL;
+		      "filesystem argument required if --all is not given");
+	  return EINVAL;
 	}
       break;
 
@@ -138,7 +143,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 static const char doc[] = "Stop active and remove passive translators";
 static const char args_doc[] = "DEVICE|DIRECTORY [DEVICE|DIRECTORY ...]";
 
-static struct argp fstab_argp_mtab; /* Slightly modified version. */
+static struct argp fstab_argp_mtab; /* Slightly modified version.  */
 
 static const struct argp_child argp_kids[] =
 {
@@ -157,7 +162,7 @@ static struct argp argp =
 
 /* This is a trimmed and slightly modified version of
    fstab_argp.options which uses _PATH_MOUNTED instead of _PATH_MNTTAB
-   in the doc strings. */
+   in the doc strings.	*/
 static const struct argp_option fstab_argp_mtab_opts[] =
 {
   {"all",	 'a', 0,      0, "Do all filesystems in " _PATH_MOUNTED},
@@ -182,50 +187,82 @@ static struct argp fstab_argp_mtab =
   parser: fstab_argp_mtab_parse_opt,
 };
 
-/* Unmount one filesystem. */
+/* Unmount one filesystem.  */
 static error_t
 do_umount (struct fs *fs)
 {
   error_t err = 0;
 
-  file_t node = file_name_lookup(fs->mntent.mnt_dir, O_NOTRANS, 0666);
+  file_t node = file_name_lookup (fs->mntent.mnt_dir, O_NOTRANS, 0666);
   if (node == MACH_PORT_NULL)
     {
-      error(0, errno, "%s", fs->mntent.mnt_dir);
+      error (0, errno, "%s", fs->mntent.mnt_dir);
       return errno;
     }
 
   if (verbose)
-    printf ("settrans -pg%s%s %s\n",
-            goaway_flags & FSYS_GOAWAY_NOSYNC? "S": "",
-            goaway_flags & FSYS_GOAWAY_FORCE? "f": "",
-            fs->mntent.mnt_dir);
+    printf ("settrans -apg%s%s %s\n",
+	    goaway_flags & FSYS_GOAWAY_NOSYNC? "S": "",
+	    goaway_flags & FSYS_GOAWAY_FORCE? "f": "",
+	    fs->mntent.mnt_dir);
 
   if (! fake)
     {
       err = file_set_translator (node,
-                                 passive_flags, active_flags, goaway_flags,
-                                 NULL, 0,
-                                 MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
-      if (err)
-        {
-          error (0, err, "%s", fs->mntent.mnt_dir);
+				 passive_flags, active_flags, goaway_flags,
+				 NULL, 0,
+				 MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
+      if (! err)
+	{
+	  if (strcmp (fs->mntent.mnt_fsname, "") != 0 &&
+	      strcmp (fs->mntent.mnt_fsname, "none") != 0)
+	    {
+	      if (verbose)
+		printf ("settrans -ag%s%s %s\n",
+			goaway_flags & FSYS_GOAWAY_NOSYNC? "S": "",
+			goaway_flags & FSYS_GOAWAY_FORCE? "f": "",
+			fs->mntent.mnt_fsname);
 
-          /* Try remounting readonly instead if requested. */
-          if (readonly)
-            {
-              if (verbose)
-                printf ("fsysopts %s --readonly\n", fs->mntent.mnt_dir);
+	      file_t source = file_name_lookup (fs->mntent.mnt_fsname,
+						O_NOTRANS,
+						0666);
+	      if (source == MACH_PORT_NULL)
+		{
+		  error (0, errno, "%s", fs->mntent.mnt_fsname);
+		  return errno;
+		}
 
-              error_t e = fs_set_readonly (fs, TRUE);
-              if (e)
-                error (0, e, "%s", fs->mntent.mnt_dir);
-            }
-        }
+	      err = file_set_translator (source,
+					 0, active_flags, goaway_flags,
+					 NULL, 0,
+					 MACH_PORT_NULL,
+					 MACH_MSG_TYPE_COPY_SEND);
+	      if (err)
+		error (0, err, "%s", fs->mntent.mnt_fsname);
+
+	      mach_port_deallocate (mach_task_self (), source);
+
+	    }
+	}
+      else
+	{
+	  error (0, err, "%s", fs->mntent.mnt_dir);
+
+	  /* Try remounting readonly instead if requested.  */
+	  if (readonly)
+	    {
+	      if (verbose)
+		printf ("fsysopts %s --readonly\n", fs->mntent.mnt_dir);
+
+	      error_t e = fs_set_readonly (fs, TRUE);
+	      if (e)
+		error (0, e, "%s", fs->mntent.mnt_dir);
+	    }
+	}
     }
 
   /* Deallocate the reference so that unmounting nested translators
-     works properly. */
+     works properly.  */
   mach_port_deallocate (mach_task_self (), node);
   return err;
 }
@@ -239,7 +276,7 @@ main (int argc, char **argv)
   if (err)
     error (3, err, "parsing arguments");
 
-  /* Read the mtab file by default. */
+  /* Read the mtab file by default.  */
   if (! fstab_params.fstab_path)
     fstab_params.fstab_path = _PATH_MOUNTED;
 
@@ -250,69 +287,71 @@ main (int argc, char **argv)
   if (targets)
     for (char *t = targets; t; t = argz_next (targets, targets_len, t))
       {
-        /* Figure out if t is the device or the mountpoint. */
-        struct fs *fs = fstab_find_mount (fstab, t);
-        if (! fs)
-          {
-            fs = fstab_find_device (fstab, t);
-            if (! fs)
-              {
-                error (0, 0, "could not find entry for: %s", t);
+	/* Figure out if t is the device or the mountpoint.  */
+	struct fs *fs = fstab_find_mount (fstab, t);
+	if (! fs)
+	  {
+	    fs = fstab_find_device (fstab, t);
+	    if (! fs)
+	      {
+		error (0, 0, "could not find entry for: %s", t);
 
-                /* As last resort, just assume it is the mountpoint. */
-                struct mntent m =
-                  {
-                    mnt_fsname: "",
-                    mnt_dir: t,
-                    mnt_type: "",
-                    mnt_opts: 0,
-                    mnt_freq: 0,
-                    mnt_passno: 0,
-                  };
+		/* As last resort, just assume it is the mountpoint.  */
+		struct mntent m =
+		  {
+		    mnt_fsname: "",
+		    mnt_dir: t,
+		    mnt_type: "",
+		    mnt_opts: 0,
+		    mnt_freq: 0,
+		    mnt_passno: 0,
+		  };
 
-                err = fstab_add_mntent (fstab, &m, &fs);
-                if (err)
-                  error (2, err, "%s", t);
-              }
-          }
+		err = fstab_add_mntent (fstab, &m, &fs);
+		if (err)
+		  error (2, err, "%s", t);
+	      }
+	  }
 
-        if (fs)
-          err |= do_umount (fs);
+	if (fs)
+	  err |= do_umount (fs);
       }
   else
     {
-      /* Sort entries. */
+      /* Sort entries in reverse lexicographical order so that the
+	 longest mount points are unmounted first.  This makes sure
+	 that nested mounts are handled properly.  */
       size_t count = 0;
       for (struct fs *fs = fstab->entries; fs; fs = fs->next)
-        count += 1;
+	count += 1;
 
       char **entries = malloc (count * sizeof (char *));
       if (! entries)
-        error (3, ENOMEM, "allocating entries array");
+	error (3, ENOMEM, "allocating entries array");
 
       char **p = entries;
       for (struct fs *fs = fstab->entries; fs; fs = fs->next)
-        *p++ = fs->mntent.mnt_dir;
+	*p++ = fs->mntent.mnt_dir;
 
-      /* Reverse lexicographical order. */
+      /* Reverse lexicographical order.	 */
       int compare_entries (const void *a, const void *b)
-        {
-          return -strcmp ((char *) a, (char *) b);
-        }
+	{
+	  return -strcmp ((char *) a, (char *) b);
+	}
 
       qsort (entries, count, sizeof (char *), compare_entries);
 
       for (int i = 0; i < count; i++)
-        {
-          struct fs *fs = fstab_find_mount (fstab, entries[i]);
-          if (! fs)
-            error (4, 0, "could not find entry for: %s", entries[i]);
+	{
+	  struct fs *fs = fstab_find_mount (fstab, entries[i]);
+	  if (! fs)
+	    error (4, 0, "could not find entry for: %s", entries[i]);
 
-          if (! match_options (&fs->mntent))
-            continue;
+	  if (! match_options (&fs->mntent))
+	    continue;
 
-          err |= do_umount (fs);
-        }
+	  err |= do_umount (fs);
+	}
     }
 
   return err? EXIT_FAILURE: EXIT_SUCCESS;
