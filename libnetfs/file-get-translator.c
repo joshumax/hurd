@@ -118,7 +118,7 @@ netfs_S_file_get_translator (struct protid *user,
 	{
 	  if (len > *translen)
 	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-	  memmove (*trans, string, len);
+	  memcpy (*trans, string, len);
 	  *translen = len;
 	  free (string);
 	}
