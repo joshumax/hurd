@@ -20,11 +20,11 @@
 dir := exec
 makemode := server
 
-SRCS = exec.c main.c hashexec.c hostarch.c \
-       $(gzip-sources) $(bzip2-sources)
+SRCS = exec.c main.c hashexec.c hostarch.c
+#       $(gzip-sources) $(bzip2-sources)
 OBJS = main.o hostarch.o exec.o hashexec.o \
-       execServer.o exec_startupServer.o \
-       $(gzip-objects) $(bzip2-objects)
+       execServer.o exec_startupServer.o
+#       $(gzip-objects) $(bzip2-objects)
 gzip-sources = unzip.c util.c inflate.c
 gzip-objects = $(gzip-sources:%.c=%.o)
 bzip2-sources = do-bunzip2.c
