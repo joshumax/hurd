@@ -370,3 +370,7 @@ routine proc_getnports (
 	process: process_t;
 	which: pid_t;
 	out nports: mach_msg_type_number_t);
+
+/*** Routines related to early server bootstrapping ***/
+
+skip;  /* Reserved for proc_set_init_task */

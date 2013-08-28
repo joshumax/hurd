@@ -371,3 +371,7 @@ simpleroutine proc_getnports_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
 	which: pid_t);
+
+/*** Routines related to early server bootstrapping ***/
+
+skip;  /* Reserved for proc_set_init_task */

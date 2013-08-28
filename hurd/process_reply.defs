@@ -174,3 +174,7 @@ simpleroutine proc_getnports (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	nports: mach_msg_type_number_t);
+
+/*** Routines related to early server bootstrapping ***/
+
+skip;  /* Reserved for proc_set_init_task */
