@@ -40,6 +40,6 @@ exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
 include ../Makeconf
 
-CPPFLAGS += -DGZIP -DBZIP2 # -DBFD
+CPPFLAGS += # -DGZIP -DBZIP2 -DBFD
 
 exec.static exec: $(OBJS) $(library_deps)
