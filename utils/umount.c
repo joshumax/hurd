@@ -20,7 +20,6 @@
 
 #include <argp.h>
 #include <argz.h>
-#include <blkid/blkid.h>
 #include <error.h>
 #include <fcntl.h>
 #include <hurd/fshelp.h>
