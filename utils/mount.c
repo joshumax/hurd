@@ -28,11 +28,14 @@
 #include <hurd/fsys.h>
 #include <hurd/fshelp.h>
 #include <hurd/paths.h>
+#ifdef HAVE_BLKID
+#include <blkid/blkid.h>
+#endif
 
 #include "match-options.h"
 
 #define SEARCH_FMTS	_HURD "%sfs\0" _HURD "%s"
-#define DEFAULT_FSTYPE	"ext2"
+#define DEFAULT_FSTYPE	"auto"
 
 static char *fstype = DEFAULT_FSTYPE;
 static char *device, *mountpoint;
@@ -338,6 +341,29 @@ do_mount (struct fs *fs, int remount)
 	  return EBUSY;
 	}
 
+      if (strcmp (fs->mntent.mnt_type, "auto") == 0)
+        {
+#if HAVE_BLKID
+          char *type =
+            blkid_get_tag_value (NULL, "TYPE", fs->mntent.mnt_fsname);
+          if (! type)
+            {
+              error (0, 0, "failed to detect file system type");
+              return EFTYPE;
+            }
+          else
+            {
+              fs->mntent.mnt_type = strdup (type);
+              if (! fs->mntent.mnt_type)
+                error (3, ENOMEM, "failed to allocate memory");
+            }
+#else
+	  fs->mntent.mnt_type = strdup ("ext2");
+	  if (! fs->mntent.mnt_type)
+	    error (3, ENOMEM, "failed to allocate memory");
+#endif
+        }
+
       err = fs_type (fs, &type);
       if (err)
 	{
@@ -579,13 +605,6 @@ main (int argc, char **argv)
 	mnt_opts: 0,
 	mnt_freq: 0, mnt_passno: 0
       };
-      struct fstype *fst;
-
-      err = fstypes_get (fstab->types, fstype, &fst);
-      if (err)
-	error (106, err, "cannot initialize type %s", fstype);
-      if (fst->program == 0)
-	error (2, 0, "filesystem type %s not recognized", fstype);
 
       err = fstab_add_mntent (fstab, &m, &fs);
       if (err)

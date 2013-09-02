@@ -85,6 +85,11 @@ HAVE_DAEMON = @HAVE_DAEMON@
 libdaemon_CFLAGS = @libdaemon_CFLAGS@
 libdaemon_LIBS = @libdaemon_LIBS@
 
+# How to compile and link against libblkid.
+HAVE_BLKID = @HAVE_BLKID@
+libblkid_CFLAGS = @libblkid_CFLAGS@
+libblkid_LIBS = @libblkid_LIBS@
+
 # Whether Sun RPC support is available.
 HAVE_SUN_RPC = @HAVE_SUN_RPC@
 

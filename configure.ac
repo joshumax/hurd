@@ -303,6 +303,12 @@ PKG_CHECK_MODULES([libdaemon], [libdaemon],
 AC_SUBST([libdaemon_LIBS])
 AC_SUBST([libdaemon_CFLAGS])
 
+PKG_CHECK_MODULES([libblkid], [blkid],
+  [AC_DEFINE([HAVE_BLKID], [1], [Use libblkid])],
+  [true])
+AC_SUBST([libblkid_LIBS])
+AC_SUBST([libblkid_CFLAGS])
+
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT
 
