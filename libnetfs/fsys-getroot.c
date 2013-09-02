@@ -43,7 +43,11 @@ netfs_S_fsys_getroot (mach_port_t cntl,
   error_t err;
   struct protid *newpi;
   mode_t type;
-  struct peropen peropen_context = { root_parent: dotdot };
+  struct peropen peropen_context =
+    {
+      root_parent: dotdot,
+      path: NULL,
+    };
 
   if (!pt)
     return EOPNOTSUPP;

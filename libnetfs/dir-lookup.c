@@ -1,5 +1,6 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,99,2000,01,02,13
+     Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -46,6 +47,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   int nsymlinks = 0;
   struct node *dnp, *np;
   char *nextname;
+  char *relpath;
   error_t error;
   struct protid *newpi;
   struct iouser *user;
@@ -59,6 +61,11 @@ netfs_S_dir_lookup (struct protid *diruser,
   /* Skip leading slashes */
   while (*filename == '/')
     filename++;
+
+  /* Preserve the path relative to diruser->po->path.  */
+  relpath = strdup (filename);
+  if (! relpath)
+    return ENOMEM;
 
   *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
   *do_retry = FS_RETRY_NORMAL;
@@ -390,6 +397,22 @@ netfs_S_dir_lookup (struct protid *diruser,
       goto out;
     }
 
+  free (newpi->po->path);
+  if (diruser->po->path == NULL)
+    {
+      /* diruser is the root directory.  */
+      newpi->po->path = relpath;
+      relpath = NULL; /* Do not free relpath.  */
+    }
+  else
+    {
+      newpi->po->path = NULL;
+      asprintf (&newpi->po->path, "%s/%s", diruser->po->path, relpath);
+    }
+
+  if (! newpi->po->path)
+    error = errno;
+
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
 
@@ -398,5 +421,6 @@ netfs_S_dir_lookup (struct protid *diruser,
     netfs_nput (np);
   if (dnp)
     netfs_nrele (dnp);
+  free (relpath);
   return error;
 }

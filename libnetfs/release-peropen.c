@@ -41,6 +41,7 @@ netfs_release_peropen (struct peropen *po)
 
       netfs_nput (po->np);
 
+      free (po->path);
       free (po);
     }
 }
