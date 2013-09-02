@@ -1,6 +1,6 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
    Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-     2002, 2008 Free Software Foundation, Inc.
+     2002, 2008, 2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -41,6 +41,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   struct node *np;
   int nsymlink = 0;
   char *nextname;
+  char *relpath;
   int nextnamelen;
   error_t error = 0;
   char *pathbuf = 0;
@@ -67,6 +68,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
   /* Skip leading slashes */
   while (path[0] == '/')
     path++;
+
+  /* Preserve the path relative to diruser->po->path.  */
+  relpath = strdup (path);
+  if (! relpath)
+    return ENOMEM;
 
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
   *retry = FS_RETRY_NORMAL;
@@ -479,6 +485,22 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   if (! error)
     {
+      free (newpi->po->path);
+      if (dircred->po->path == NULL)
+	{
+	  /* dircred is the root directory.  */
+	  newpi->po->path = relpath;
+	  relpath = NULL; /* Do not free relpath.  */
+	}
+      else
+	{
+	  newpi->po->path = NULL;
+	  asprintf (&newpi->po->path, "%s/%s", dircred->po->path, relpath);
+	}
+
+      if (! newpi->po->path)
+	error = errno;
+
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);
       newpi = 0;
@@ -499,6 +521,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
     ports_port_deref (newpi);
   if (newpo)
     diskfs_release_peropen (newpo);
+
+  free (relpath);
 
   return error;
 }

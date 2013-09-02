@@ -45,5 +45,6 @@ diskfs_release_peropen (struct peropen *po)
 
   diskfs_nput (po->np);
 
+  free (po->path);
   free (po);
 }

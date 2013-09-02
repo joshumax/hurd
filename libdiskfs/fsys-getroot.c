@@ -51,7 +51,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   {
     root_parent: dotdot,
     shadow_root_parent: MACH_PORT_NULL,
-    shadow_root: _diskfs_chroot_directory ? diskfs_root_node : NULL /* XXX */
+    shadow_root: _diskfs_chroot_directory ? diskfs_root_node : NULL, /* XXX */
+    path: NULL,
   };
 
   if (!pt)

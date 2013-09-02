@@ -69,6 +69,9 @@ struct peropen
   mach_port_t shadow_root_parent;
   /* If in a shadow tree, its root node in this translator.  */
   struct node *shadow_root;
+
+  /* Path relative to the root of the translator. */
+  char *path;
 };
 
 /* A unique one of these exists for each node currently in use (and

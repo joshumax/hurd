@@ -34,6 +34,7 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
   po->refcnt = 0;
   po->openstat = flags;
   po->np = np;
+  po->path = NULL;
 
   if (context)
     {
@@ -50,6 +51,13 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
       if (po->shadow_root_parent != MACH_PORT_NULL)
 	mach_port_mod_refs (mach_task_self (), po->shadow_root_parent, 
 			    MACH_PORT_RIGHT_SEND, 1);
+
+      if (context->path)
+	{
+	  po->path = strdup (context->path);
+	  if (! po->path)
+	    return ENOMEM;
+	}
     }
   else
     {
