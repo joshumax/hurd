@@ -132,8 +132,6 @@ struct exc
   natural_t thread_state[0];
 };
 
-struct zombie *zombie_list;
-
 mach_port_t authserver;
 struct proc *self_proc;		/* process 0 (us) */
 struct proc *startup_proc;	/* process 1 (init) */
