@@ -218,6 +218,23 @@ hurd_ihash_value_t hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key);
 	 (((_hurd_ihash_item_t) _hurd_ihash_valuep) + 1))		\
     if (val != _HURD_IHASH_EMPTY && val != _HURD_IHASH_DELETED)
 
+/* Iterate over all elements in the hash table making both the key and
+   the value available.  You use this macro with a block, for example
+   like this:
+
+     HURD_IHASH_ITERATE_ITEMS (ht, item)
+       foo (item->key, item->value);
+
+   The block will be run for every element in the hash table HT.  The
+   key and value of the current element is available as ITEM->key and
+   ITEM->value.  */
+#define HURD_IHASH_ITERATE_ITEMS(ht, item)                              \
+  for (_hurd_ihash_item_t item = (ht)->size? &(ht)->items[0]: 0;	\
+       (ht)->size && item - &(ht)->items[0] < (ht)->size;               \
+       item++)                                                          \
+    if (item->value != _HURD_IHASH_EMPTY &&                             \
+        item->value != _HURD_IHASH_DELETED)
+
 /* Remove the entry with the key KEY from the hash table HT.  If such
    an entry was found and removed, 1 is returned, otherwise 0.  */
 int hurd_ihash_remove (hurd_ihash_t ht, hurd_ihash_key_t key);
