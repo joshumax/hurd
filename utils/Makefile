@@ -39,8 +39,8 @@ LDLIBS += -lpthread
 login-LDLIBS = -lutil $(LIBCRYPT)
 addauth-LDLIBS = $(LIBCRYPT)
 setauth-LDLIBS = $(LIBCRYPT)
-mount-LDLIBS = $(libblkid-LIBS)
-mount-CPPFLAGS = $(libblkid-CFLAGS)
+mount-LDLIBS = $(libblkid_LIBS)
+mount-CPPFLAGS = $(libblkid_CFLAGS)
 
 INSTALL-login-ops = -o root -m 4755
 INSTALL-ids-ops = -o root -m 4755
