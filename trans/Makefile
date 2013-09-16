@@ -28,7 +28,7 @@ SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
-	device_replyServer.o elfcore.o fsysUser.o
+	device_replyServer.o elfcore.o
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
 password-LDLIBS = $(LIBCRYPT)
