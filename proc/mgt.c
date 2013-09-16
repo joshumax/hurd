@@ -862,7 +862,7 @@ genpid ()
 {
 #define WRAP_AROUND 30000
 #define START_OVER 100
-  static int nextpid = 0;
+  static int nextpid = 1;
   static int wrap = WRAP_AROUND;
 
   while (nextpid < wrap && !pidfree (nextpid))
