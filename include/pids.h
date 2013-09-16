@@ -22,8 +22,8 @@
 #ifndef _HURD_PROCESSES_H
 #define _HURD_PROCESSES_H
 
-#define HURD_PID_PROC		0
 #define HURD_PID_STARTUP	1
 #define HURD_PID_KERNEL		2
+#define HURD_PID_PROC		3
 
 #endif  /* _HURD_PROCESSES_H */
