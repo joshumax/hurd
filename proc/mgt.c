@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000,01,02,13
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02,13,14
      Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -979,5 +979,38 @@ S_proc_get_code (struct proc *callerp,
   *start_code = callerp->start_code;
   *end_code = callerp->end_code;
 
+  return 0;
+}
+
+/* Handle new task notifications from the kernel.  */
+error_t
+S_mach_notify_new_task (mach_port_t notify,
+			mach_port_t task,
+			mach_port_t parent)
+{
+  struct proc *parentp, *childp;
+
+  if (notify != generic_port)
+    return EOPNOTSUPP;
+
+  parentp = task_find_nocreate (parent);
+  if (! parentp)
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      mach_port_deallocate (mach_task_self (), parent);
+      return ESRCH;
+    }
+
+  childp = task_find_nocreate (task);
+  if (! childp)
+    {
+      mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
+      childp = new_proc (task);
+    }
+
+  /* XXX do something interesting */
+
+  mach_port_deallocate (mach_task_self (), task);
+  mach_port_deallocate (mach_task_self (), parent);
   return 0;
 }

@@ -31,6 +31,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <pids.h>
 
 #include "proc.h"
+#include "gnumach_U.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 
@@ -38,6 +39,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 #include "notify_S.h"
 #include "../libports/interrupt_S.h"
 #include "proc_exc_S.h"
+#include "task_notify_S.h"
 
 int
 message_demuxer (mach_msg_header_t *inp,
@@ -47,7 +49,8 @@ message_demuxer (mach_msg_header_t *inp,
   if ((routine = process_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||
       (routine = ports_interrupt_server_routine (inp)) ||
-      (routine = proc_exc_server_routine (inp)))
+      (routine = proc_exc_server_routine (inp)) ||
+      (routine = task_notify_server_routine (inp)))
     {
       pthread_mutex_lock (&global_lock);
       (*routine) (inp, outp);
@@ -151,6 +154,12 @@ main (int argc, char **argv, char **envp)
   err = increase_priority ();
   if (err)
     error (0, err, "Increasing priority failed");
+
+  err = register_new_task_notification (_hurd_host_priv,
+					generic_port,
+					MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (0, err, "Registering task notifications failed");
 
   {
     /* Get our stderr set up to print on the console, in case we have
