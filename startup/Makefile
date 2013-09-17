@@ -15,14 +15,14 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-dir := init
+dir := startup
 makemode := server
 
-SRCS = init.c stubs.c
+SRCS = startup.c stubs.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
        startup_notifyUser.o
-target = init
+target = startup
 HURDLIBS = shouldbeinlibc
 
 include ../Makeconf

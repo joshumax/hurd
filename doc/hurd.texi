@@ -563,10 +563,10 @@ bootstrapped by starting the GNU Mach microkernel and two programs:
 the root filesystem and the exec server.
 
 The @option{--multiboot-command-line} option tells the file system server that
-it is a root filesystem, which triggers it to run @command{/hurd/init} as PID
-2.  @command{/hurd/init} starts the @command{/hurd/proc} and
+it is a root filesystem, which triggers it to run @command{/hurd/startup} as PID
+2.  @command{/hurd/startup} starts the @command{/hurd/proc} and
 @command{/hurd/auth} servers.  After the servers are launched
-@command{/hurd/init} starts the @command{/libexec/runsystem.sh} script to
+@command{/hurd/startup} starts the @command{/libexec/runsystem.sh} script to
 finish booting.
 
 After the Hurd has been booted, other sets of core Hurd servers can be

@@ -39,7 +39,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    the canonical pathname being /hurd/foo.  */
 
 #define	_HURD		"/hurd/"
-#define	_HURD_INIT	_HURD "init"
+#define	_HURD_STARTUP	_HURD "startup"
 #define _HURD_PROC	_HURD "proc"
 #define _HURD_AUTH	_HURD "auth"
 

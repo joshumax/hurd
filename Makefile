@@ -31,7 +31,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 	      libnetfs libpipe libstore libhurdbugaddr libftpconn libcons
 
 # Hurd programs
-prog-subdirs = auth proc exec init term \
+prog-subdirs = auth proc exec term \
 	       ext2fs isofs tmpfs fatfs \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons boot console \
@@ -40,6 +40,7 @@ prog-subdirs = auth proc exec init term \
 	       benchmarks fstests \
 	       random \
 	       procfs \
+	       startup \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

@@ -46,7 +46,7 @@ static task_t parent_task = MACH_PORT_NULL;
 static pthread_mutex_t execstartlock;
 static pthread_cond_t execstarted;
 
-const char *diskfs_boot_init_program = _HURD_INIT;
+const char *diskfs_boot_init_program = _HURD_STARTUP;
 
 static void start_execserver ();
 

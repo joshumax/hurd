@@ -59,7 +59,7 @@ startup_options[] =
    "Required for bootstrap filesystem, the multiboot kernel command line"},
   {"bootflags", 0, 0, OPTION_ALIAS|OPTION_HIDDEN},
   {"boot-init-program",  OPT_BOOT_INIT_PROGRAM,  "FILE", 0,
-   "For bootstrap filesystem, init program to run (default " _HURD_INIT ")"},
+   "For bootstrap filesystem, init program to run (default " _HURD_STARTUP ")"},
   {"boot-debug-pause",  OPT_BOOT_PAUSE,	         0, 0,
    "Pause for keystroke before starting bootstrap programs"},
   {"boot-command",	 OPT_BOOT_COMMAND,	 0, 0,

@@ -63,7 +63,7 @@ static int crash_flags = RB_AUTOBOOT;
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
 
 
-const char *argp_program_version = STANDARD_HURD_VERSION (init);
+const char *argp_program_version = STANDARD_HURD_VERSION (startup);
 
 static struct argp_option
 options[] =
