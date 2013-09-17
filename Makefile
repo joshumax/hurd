@@ -32,11 +32,11 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports libthreads \
 
 # Hurd programs
 prog-subdirs = auth proc exec init term \
-	       ufs ext2fs isofs tmpfs fatfs \
+	       ext2fs isofs tmpfs fatfs \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons boot console \
 	       hostmux usermux ftpfs trans \
-	       console-client utils sutils ufs-fsck ufs-utils \
+	       console-client utils sutils \
 	       benchmarks fstests
 
 ifeq ($(HAVE_SUN_RPC),yes)

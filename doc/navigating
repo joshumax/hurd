@@ -27,9 +27,9 @@ Most trivfs filesystems don't even do any filesystem stuff at all.
 See, for example, the null translator (trans/null.c) for a simple
 example of using trivfs.  
 
-diskfs is used for disk-based filesystems, with two in existence now:
-ext2fs and ufs.  If you write another diskfs-based filesystem, you
-should DEFINITELY imitate the algorithms found in ext2fs and ufs; this
+diskfs is used for disk-based filesystems, with one in existence now:
+ext2fs.  If you write another diskfs-based filesystem, you
+should DEFINITELY imitate the algorithms found in ext2fs; this
 is crucial to getting locking right.
 
 netfs is used for nfs and other such things: with directories, and all

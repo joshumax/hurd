@@ -1912,7 +1912,7 @@ existing translators:
 
 @itemize @bullet
 @item
-Disk-based filesystem formats, such as @code{ext2fs}, @code{ufs}, and
+Disk-based filesystem formats, such as @code{ext2fs} and
 @code{iso9660fs} (@pxref{Stored Filesystems}).
 
 @item
@@ -3568,13 +3568,6 @@ FIXME: finish
 @node Linux Extended 2 FS
 @section Linux Extended 2 FS
 @pindex ext2fs
-
-FIXME: finish
-
-
-@node BSD Unix FS
-@section BSD Unix FS
-@scindex ufs
 
 FIXME: finish
 

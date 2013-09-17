@@ -226,28 +226,16 @@ on an ext2fs filesystem.
 Bugs in term and libtrivfs have been fixed, allowing emacs shell mode
 to work cleanly.  Other minor bugs have also been fixed.
 
-ufs and ext2fs now do directory search rotoring to speed repeated and
+ext2fs now does directory search rotoring to speed repeated and
 sequential directory lookups.
-
-ufs now notes correctly if a disk cannot be written to and turns on
-the readonly flag automatically in this case.  (Useful for floppies.)
-
-ufs statfs information (printed by df) should now be correct.
-
-A serious bug in ufs fsck when dealing with large directories has been
-fixed.
 
 A new program `vminfo' prints the virtual memory map of task.
 
-All disk filesystems (ufs and ext2fs) now do directory name caching of
+All disk filesystems (ext2fs) now do directory name caching of
 `..' which was not previously done.  In addition, you can now set the
 cache size to be large, and then do experiments and see what the cache
 hit rate would have been for various smaller sizes.  This should help
 in optimizing the size of the cache.
-
-A port leak in the pager library has been fixed; previously ufs leaked
-two ports per file used until the kernel's limit (about 30,000) was
-reached.
 
 
 6 August 1996

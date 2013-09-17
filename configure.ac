@@ -59,7 +59,7 @@ AC_ARG_ENABLE(profile,
 [  --disable-profile	  do not build profiled libraries and programs])
 AC_SUBST(enable_profile)
 
-define([default_static],['ext2fs,ufs'])dnl
+define([default_static],['ext2fs'])dnl
 AC_ARG_ENABLE(static-progs,
 [  --enable-static-progs=PROGRAMS...
                           build statically-linked PROGRAM.static versions

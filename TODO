@@ -121,13 +121,12 @@ See `tasks', the exported task list.
 *** Implement async I/O. !
 *** Think of a way to have when-to-sync-nodes be more flexible so it can
     be done right for each format.
-*** Check when-to-sync-nodes carefully against BSD 4.4 ufs implementation. !
 *** Provide for MNT_NODEV, etc. !
 *** Implement io_restrict_auth correctly. !
 *** Use off_t correctly. !!
 *** Add a consistent message printing facility for filesystems to use
     (syslog, but takes special care when the root file system?). !!
-*** Some of diskfs_readonly_changed in ufs/ext2fs should be in generic
+*** Some of diskfs_readonly_changed in ext2fs should be in generic
     routines. !
 
 ** libfshelp
@@ -204,20 +203,6 @@ See `tasks', the exported task list.
 *** Make a server (/servers/storeio?) to share multiple storeio nodes
 *** Serverify, ala new-fifo.
 *** implement io_revoke !
-
-** ufs:
-*** Implement clustering, a la 4.4-lite sys/kern/vfs_cluster.c.
-*** Make file_get_storage_info work for files with indirect blocks. !!
-*** Optimizations:
-    pager.c/inode.c/libdiskfs count pager refs separately and then
-      save mappings in _diskfs_rdwr_internal and dir.c !
-*** Problems with DT_* hack: !
-****   Fix multiple-links DT_* bug.
-****   Deal with change of type which should update directory.
-****   Type is also wrong for translated nodes...
-*** Roland sez: ENOSPC detection flaky in ufs.  Try write of >page,
-    non-page-multiple, when free space allows write size but not
-    round_page (write size).
 
 ** ext2fs
 *** Try to write directories with 512-byte record boundaries. !!
