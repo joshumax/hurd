@@ -964,9 +964,9 @@ dynafont_set_cursor (dynafont_t df, int standout)
   if (df == active_dynafont)
     {
       if (standout)
-	vga_set_cursor_size (1, -1);
+	vga_set_cursor_size (1, height - 1);
       else
-	vga_set_cursor_size ((height >= 2) ? height - 2 : 0, -1);
+	vga_set_cursor_size ((height >= 2) ? height - 2 : 0, height - 1);
     }
 }
 
