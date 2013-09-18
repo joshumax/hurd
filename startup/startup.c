@@ -217,7 +217,7 @@ notify_shutdown (const char *msg)
 void
 reboot_system (int flags)
 {
-  notify_shutdown ("shutdown");
+  notify_shutdown (BOOT (flags));
 
   if (fakeboot)
     {
