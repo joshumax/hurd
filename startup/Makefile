@@ -18,7 +18,7 @@
 dir := startup
 makemode := server
 
-SRCS = startup.c stubs.c
+SRCS = startup.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
        startup_notifyUser.o

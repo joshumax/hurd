@@ -904,9 +904,6 @@ frob_kernel_process (void)
 static pid_t child_pid;		/* PID of the child we run */
 static task_t child_task;		/* and its (original) task port */
 
-error_t send_signal (mach_port_t msgport, int signal, mach_port_t refport,
-		     mach_msg_timeout_t);
-
 static void launch_something (const char *why);
 
 
@@ -962,52 +959,6 @@ process_signal (int signo)
 
 	      launch_something (desc);
               free (desc);
-	    }
-	}
-    }
-  else
-    {
-      /* Pass the signal on to the child.  */
-      task_t task;
-      error_t err;
-
-      err = proc_pid2task (procserver, child_pid, &task);
-      if (err)
-	{
-	  error (0, err, "proc_pid2task on %d", child_pid);
-	  task = child_task;
-	}
-      else
-	{
-	  mach_port_deallocate (mach_task_self (), child_task);
-	  child_task = task;
-	}
-
-      if (signo == SIGKILL)
-	{
-	  err = task_terminate (task);
-	  if (err != MACH_SEND_INVALID_DEST)
-	    error (0, err, "task_terminate");
-	}
-      else
-	{
-	  mach_port_t msgport;
-	  err = proc_getmsgport (procserver, child_pid, &msgport);
-	  if (err)
-	    error (0, err, "proc_getmsgport");
-	  else
-	    {
-	      err = send_signal (msgport, signo, task,
-				 500); /* Block only half a second.  */
-	      mach_port_deallocate (mach_task_self (), msgport);
-	      if (err)
-		{
-		  error (0, err, "cannot send %s to child %d",
-			 strsignal (signo), child_pid);
-		  err = task_terminate (task);
-		  if (err != MACH_SEND_INVALID_DEST)
-		    error (0, err, "task_terminate");
-		}
 	    }
 	}
     }
