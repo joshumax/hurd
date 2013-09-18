@@ -41,6 +41,7 @@ prog-subdirs = auth proc exec term \
 	       random \
 	       procfs \
 	       startup \
+	       init \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

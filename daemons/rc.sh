@@ -2,9 +2,6 @@
 
 PATH=/bin:/sbin
 
-# Start the default pager.  It will bail if there is already one running.
-/hurd/mach-defpager
-
 # Set up swap space.  This will complain if no default pager is functioning.
 swapon -a
 

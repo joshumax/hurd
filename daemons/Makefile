@@ -22,7 +22,9 @@ makemode := utilities
 
 targets = rc getty mail.local console-run runttys runsystem
 special-targets = rc runsystem
-SRCS = rc.sh runsystem.sh getty.c lmail.c console-run.c runttys.c
+SRCS = rc.sh runsystem.sh getty.c lmail.c console-run.c runttys.c \
+	runsystem.hurd \
+
 installationdir = $(libexecdir)
 
 HURDLIBS = fshelp ports shouldbeinlibc
