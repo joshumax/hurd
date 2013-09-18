@@ -177,7 +177,7 @@ simpleroutine proc_getnports_reply (
 
 /*** Routines related to early server bootstrapping ***/
 
-skip;  /* Reserved for proc_set_init_task */
+skip; /* proc_set_init_task */
 skip; /* proc_mark_important */
 
 simpleroutine proc_is_important_reply (

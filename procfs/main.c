@@ -25,6 +25,7 @@
 #include <argz.h>
 #include <hurd/netfs.h>
 #include <ps.h>
+#include <pids.h>
 #include "procfs.h"
 #include "proclist.h"
 #include "rootdir.h"
@@ -42,7 +43,7 @@ uid_t opt_anon_owner;
 #define OPT_CLK_TCK    sysconf(_SC_CLK_TCK)
 #define OPT_STAT_MODE  0400
 #define OPT_FAKE_SELF  -1
-#define OPT_KERNEL_PID 2
+#define OPT_KERNEL_PID HURD_PID_KERNEL
 #define OPT_ANON_OWNER 0
 
 #define NODEV_KEY  -1 /* <= 0, so no short option. */
@@ -137,6 +138,8 @@ argp_parser (int key, char *arg, struct argp_state *state)
 }
 
 struct argp_option common_options[] = {
+#define STR(X)	XSTR (X)
+#define XSTR(X)	#X
   { "clk-tck", 'h', "HZ", 0,
       "Unit used for the values expressed in system clock ticks "
       "(default: sysconf(_SC_CLK_TCK))" },
@@ -153,7 +156,7 @@ struct argp_option common_options[] = {
   { "kernel-process", 'k', "PID", 0,
       "Process identifier for the kernel, used to retreive its command "
       "line, as well as the global up and idle times. "
-      "(default: 2)" },
+      "(default: " STR (OPT_KERNEL_PID) ")" },
   { "compatible", 'c', NULL, 0,
       "Try to be compatible with the Linux procps utilities.  "
       "Currently equivalent to -h 100 -s 0444 -S 1." },
@@ -169,6 +172,8 @@ struct argp_option common_options[] = {
   { "nosuid", NOSUID_KEY, NULL, 0,
       "Ignored for compatibility with Linux' procfs." },
   {}
+#undef XSTR
+#undef STR
 };
 
 struct argp argp = {

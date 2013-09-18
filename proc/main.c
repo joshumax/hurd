@@ -1,5 +1,5 @@
 /* Initialization of the proc server
-   Copyright (C) 1993,94,95,96,97,99,2000,01 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,97,99,2000,01,13 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -88,7 +88,12 @@ main (int argc, char **argv, char **envp)
   generic_port = ports_get_right (genport);
 
   /* Create the initial proc object for init (PID 1).  */
-  startup_proc = create_startup_proc ();
+  init_proc = create_init_proc ();
+
+  /* Create the startup proc object for /hurd/init (PID 2).  */
+  startup_proc = allocate_proc (MACH_PORT_NULL);
+  startup_proc->p_deadmsg = 1;
+  complete_proc (startup_proc, HURD_PID_STARTUP);
 
   /* Create our own proc object.  */
   self_proc = allocate_proc (mach_task_self ());

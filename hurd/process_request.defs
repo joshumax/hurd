@@ -374,7 +374,12 @@ simpleroutine proc_getnports_request (
 
 /*** Routines related to early server bootstrapping ***/
 
-skip;  /* Reserved for proc_set_init_task */
+/* Set the task of process HURD_PID_INIT. Only the startup process
+   HURD_PID_STARTUP may use this interface.  */
+simpleroutine proc_set_init_task_request (
+	process: process_t;
+	ureplyport reply: reply_port_t;
+	task: task_t);
 
 /* Inform the process server that the process is important.  */
 simpleroutine proc_mark_important_request (

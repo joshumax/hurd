@@ -1058,7 +1058,7 @@ start_child (const char *prog, char **progargs)
 	       NULL, 0,	/* OSF Mach */
 #endif
 	       0, &child_task);
-  proc_child (procserver, child_task);
+  proc_set_init_task (procserver, child_task);
   proc_task2pid (procserver, child_task, &child_pid);
   proc_task2proc (procserver, child_task, &default_ports[INIT_PORT_PROC]);
 

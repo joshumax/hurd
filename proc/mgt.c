@@ -1,5 +1,6 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02,13
+     Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -184,7 +185,7 @@ S_proc_child (struct proc *parentp,
   /* Process hierarchy.  Remove from our current location
      and place us under our new parent.  Sanity check to make sure
      parent is currently init. */
-  assert (childp->p_parent == startup_proc);
+  assert (childp->p_parent == init_proc);
   if (childp->p_sib)
     childp->p_sib->p_prevsib = childp->p_prevsib;
   *childp->p_prevsib = childp->p_sib;
@@ -586,7 +587,7 @@ allocate_proc (task_t task)
 /* Allocate and initialize the proc structure for init (PID 1),
    the original parent of all other procs.  */
 struct proc *
-create_startup_proc (void)
+create_init_proc (void)
 {
   static const uid_t zero;
   struct proc *p;
@@ -595,7 +596,7 @@ create_startup_proc (void)
   p = allocate_proc (MACH_PORT_NULL);
   assert (p);
 
-  p->p_pid = HURD_PID_STARTUP;
+  p->p_pid = HURD_PID_INIT;
 
   p->p_parent = p;
   p->p_sib = 0;
@@ -643,7 +644,7 @@ proc_death_notify (struct proc *p)
 }
 
 /* Complete a new process that has been allocated but not entirely initialized.
-   This gets called for every process except startup_proc (PID 1).  */
+   This gets called for every process except init_proc (PID 1).  */
 void
 complete_proc (struct proc *p, pid_t pid)
 {
@@ -662,30 +663,47 @@ complete_proc (struct proc *p, pid_t pid)
 
   p->p_pid = pid;
 
-  ids_ref (&nullids);
-  p->p_id = &nullids;
+  if (pid == HURD_PID_STARTUP)
+    {
+      /* Equip HURD_PID_STARTUP with the same credentials as
+         HURD_PID_INIT.  */
+      static const uid_t zero;
+      p->p_id = make_ids (&zero, 1);
+      assert (p->p_id);
+    }
+  else
+    {
+      ids_ref (&nullids);
+      p->p_id = &nullids;
+    }
 
   p->p_login = nulllogin;
   p->p_login->l_refcnt++;
 
   /* Our parent is init for now.  */
-  p->p_parent = startup_proc;
+  p->p_parent = init_proc;
 
-  p->p_sib = startup_proc->p_ochild;
-  p->p_prevsib = &startup_proc->p_ochild;
+  p->p_sib = init_proc->p_ochild;
+  p->p_prevsib = &init_proc->p_ochild;
   if (p->p_sib)
     p->p_sib->p_prevsib = &p->p_sib;
-  startup_proc->p_ochild = p;
+  init_proc->p_ochild = p;
   p->p_loginleader = 0;
   p->p_ochild = 0;
   p->p_parentset = 0;
 
   p->p_noowner = 1;
 
-  p->p_pgrp = startup_proc->p_pgrp;
+  p->p_pgrp = init_proc->p_pgrp;
 
-  proc_death_notify (p);
-  add_proc_to_hash (p);
+  /* At this point, we do not know the task of the startup process,
+     defer registering death notifications and adding it to the hash
+     tables.  */
+  if (pid != HURD_PID_STARTUP)
+    {
+      proc_death_notify (p);
+      add_proc_to_hash (p);
+    }
   join_pgrp (p);
 }
 
@@ -747,7 +765,7 @@ process_has_exited (struct proc *p)
 	    nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
 				    1, tp->p_pgrp->pg_pgid,
 				    !tp->p_pgrp->pg_orphcnt);
-	  tp->p_parent = startup_proc;
+	  tp->p_parent = init_proc;
 	  if (tp->p_dead)
 	    isdead = 1;
 	}
@@ -755,17 +773,17 @@ process_has_exited (struct proc *p)
 	nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
 				1, tp->p_pgrp->pg_pgid,
 				!tp->p_pgrp->pg_orphcnt);
-      tp->p_parent = startup_proc;
+      tp->p_parent = init_proc;
 
       /* And now append the lists. */
-      tp->p_sib = startup_proc->p_ochild;
+      tp->p_sib = init_proc->p_ochild;
       if (tp->p_sib)
 	tp->p_sib->p_prevsib = &tp->p_sib;
-      startup_proc->p_ochild = p->p_ochild;
-      p->p_ochild->p_prevsib = &startup_proc->p_ochild;
+      init_proc->p_ochild = p->p_ochild;
+      p->p_ochild->p_prevsib = &init_proc->p_ochild;
 
       if (isdead)
-	alert_parent (startup_proc);
+	alert_parent (init_proc);
     }
 
   /* If an operation is in progress for this process, cause it
@@ -881,6 +899,24 @@ genpid ()
     }
 
   return nextpid++;
+}
+
+/* Implement proc_set_init_task as described in <hurd/process.defs>.  */
+error_t
+S_proc_set_init_task(struct proc *callerp,
+		     task_t task)
+{
+  if (! callerp)
+    return EOPNOTSUPP;
+
+  if (callerp != startup_proc)
+    return EPERM;
+
+  init_proc->p_task = task;
+  proc_death_notify (init_proc);
+  add_proc_to_hash (init_proc);
+
+  return 0;
 }
 
 /* Implement proc_mark_important as described in <hurd/process.defs>. */

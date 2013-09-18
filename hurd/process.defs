@@ -373,7 +373,11 @@ routine proc_getnports (
 
 /*** Routines related to early server bootstrapping ***/
 
-skip;  /* Reserved for proc_set_init_task */
+/* Set the task of process HURD_PID_INIT. Only the startup process
+   HURD_PID_STARTUP may use this interface.  */
+routine proc_set_init_task (
+	process: process_t;
+	task: task_t);
 
 /* Inform the process server that the process is important.  */
 routine proc_mark_important (
