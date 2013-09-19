@@ -55,10 +55,17 @@ function singleuser ()
 }
 
 
-# See whether pflocal is setup already, and do so if not (install case)
-
-if ! test -e /servers/socket/1 && which settrans >/dev/null ; then
-  settrans -c /servers/socket/1 /hurd/pflocal
+# See whether pflocal is set up already, and do so if not (install case)
+#
+# Normally this should be the case, but we better make sure since
+# without the pflocal server, pipe(2) does not work.
+if ! test -e /servers/socket/1 ; then
+  # The root filesystem should be read-only at this point.
+  if fsysopts / --update --writable ; then
+    settrans -c /servers/socket/1 /hurd/pflocal
+  else
+    singleuser "Failed to create /servers/socket/1."
+  fi
 fi
 
 # We expect to be started by console-run, which gives us no arguments and
