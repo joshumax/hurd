@@ -331,8 +331,15 @@ S_exec_init (struct trivfs_protid *protid,
 
   proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
 
-  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
-  assert_perror (err);
+  startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (startup == MACH_PORT_NULL)
+    {
+      error (0, errno, "%s", _SERVERS_STARTUP);
+
+      /* Fall back to abusing the message port lookup.  */
+      err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
+      assert_perror (err);
+    }
   mach_port_deallocate (mach_task_self (), procserver);
 
   /* Call startup_essential task last; init assumes we are ready to

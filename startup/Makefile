@@ -21,7 +21,7 @@ makemode := server
 SRCS = startup.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
-       startup_notifyUser.o
+       startup_notifyUser.o fsysServer.o
 target = startup
 HURDLIBS = shouldbeinlibc
 

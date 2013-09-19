@@ -25,8 +25,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <fcntl.h>
 #include <error.h>
 #include <hurd/fsys.h>
+#include <hurd/paths.h>
 #include <hurd/startup.h>
-#include <pids.h>
 
 #include "startup_S.h"
 
@@ -195,15 +195,18 @@ _diskfs_init_completed ()
 
   /* Mark us as important.  */
   err = proc_mark_important (proc);
+  mach_port_deallocate (mach_task_self (), proc);
   /* This might fail due to permissions or because the old proc server
      is still running, ignore any such errors.  */
   if (err && err != EPERM && err != EMIG_BAD_ID)
     goto errout;
 
-  err = proc_getmsgport (proc, HURD_PID_STARTUP, &init);
-  mach_port_deallocate (mach_task_self (), proc);
-  if (err)
-    goto errout;
+  init = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (init == MACH_PORT_NULL)
+    {
+      err = errno;
+      goto errout;
+    }
 
   notify = ports_get_send_right (pi);
   ports_port_deref (pi);

@@ -504,9 +504,11 @@ demuxer (mach_msg_header_t *inp,
   extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int startup_server (mach_msg_header_t *, mach_msg_header_t *);
   extern int msg_server (mach_msg_header_t *, mach_msg_header_t *);
+  extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
 
   return (notify_server (inp, outp) ||
 	  msg_server (inp, outp) ||
+	  fsys_server (inp, outp) ||
 	  startup_server (inp, outp));
 }
 
@@ -582,6 +584,18 @@ main (int argc, char **argv, char **envp)
 
   /* Crash if the boot filesystem task dies.  */
   request_dead_name (fstask);
+
+  file_t node = file_name_lookup (_SERVERS_STARTUP, O_NOTRANS, 0);
+  if (node == MACH_PORT_NULL)
+    error (0, errno, "%s", _SERVERS_STARTUP);
+  else
+    {
+      file_set_translator (node,
+			   0, FS_TRANS_SET, 0,
+			   NULL, 0,
+			   startup, MACH_MSG_TYPE_COPY_SEND);
+      mach_port_deallocate (mach_task_self (), node);
+    }
 
   /* Set up the set of ports we will pass to the programs we exec.  */
   for (i = 0; i < INIT_PORT_MAX; i++)
@@ -1543,4 +1557,109 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
   *desc = 0;
   *rpc = 0;
   return 0;
+}
+
+/* fsys */
+error_t
+S_fsys_getroot (mach_port_t fsys_t,
+		mach_port_t dotdotnode,
+		uid_t *uids, size_t nuids,
+		uid_t *gids, size_t ngids,
+		int flags,
+		retry_type *do_retry,
+		char *retry_name,
+		mach_port_t *ret,
+		mach_msg_type_name_t *rettype)
+{
+  int is_root = 0;
+  size_t i;
+
+  for (i = 0; i < nuids; i++)
+    if (uids[i] == 0)
+      {
+        is_root = 1;
+        break;
+      }
+
+  if (! is_root)
+    return EPERM;
+
+  *do_retry = FS_RETRY_NORMAL;
+  *retry_name = '\0';
+  *ret = startup;
+  *rettype = MACH_MSG_TYPE_COPY_SEND;
+  return 0;
+}
+
+error_t
+S_fsys_goaway (mach_port_t control, int flags)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_startup (mach_port_t bootstrap, int flags, mach_port_t control,
+		mach_port_t *real, mach_msg_type_name_t *realtype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_syncfs (mach_port_t control,
+	       int wait,
+	       int recurse)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_set_options (mach_port_t control,
+		    char *data, mach_msg_type_number_t len,
+		    int do_children)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_get_options (mach_port_t control,
+		    char **data, mach_msg_type_number_t *len)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_getfile (mach_port_t control,
+		uid_t *uids, size_t nuids,
+		uid_t *gids, size_t ngids,
+		char *handle, size_t handllen,
+		mach_port_t *pt,
+		mach_msg_type_name_t *pttype)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_getpriv (mach_port_t control,
+		mach_port_t *host_priv, mach_msg_type_name_t *host_priv_type,
+		mach_port_t *dev_master, mach_msg_type_name_t *dev_master_type,
+		task_t *fs_task, mach_msg_type_name_t *fs_task_type)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_init (mach_port_t control,
+	   mach_port_t reply,
+	   mach_msg_type_name_t replytype,
+	   mach_port_t proc,
+	   auth_t auth)
+{
+  return EOPNOTSUPP;
+}
+
+error_t
+S_fsys_forward (mach_port_t server, mach_port_t requestor,
+		char *argz, size_t argz_len)
+{
+  return EOPNOTSUPP;
 }

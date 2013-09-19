@@ -26,6 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define	_SERVERS		"/servers/"
 #define	_SERVERS_CRASH		_SERVERS "crash"
 #define	_SERVERS_EXEC		_SERVERS "exec"
+#define _SERVERS_STARTUP	_SERVERS "startup"
 #define _SERVERS_PROC		_SERVERS "proc"
 #define _SERVERS_PASSWORD	_SERVERS "password"
 #define _SERVERS_DEFPAGER	_SERVERS "default-pager"

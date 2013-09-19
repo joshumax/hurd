@@ -33,7 +33,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <string.h>
 #include <argz.h>
 #include <error.h>
-#include <pids.h>
 #include "exec_S.h"
 #include "exec_startup_S.h"
 #include "fsys_S.h"
@@ -602,9 +601,12 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 
   proc_register_version (procserver, host, diskfs_server_name, "",
 			 diskfs_server_version);
+  mach_port_deallocate (mach_task_self (), procserver);
 
-  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
-  if (!err)
+  startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (startup == MACH_PORT_NULL)
+    error (0, errno, "%s", _SERVERS_STARTUP);
+  else
     {
       startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
 			      diskfs_server_name, host);
@@ -612,7 +614,6 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
     }
 
   mach_port_deallocate (mach_task_self (), host);
-  mach_port_deallocate (mach_task_self (), procserver);
 
   _diskfs_init_completed ();
 

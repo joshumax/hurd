@@ -24,11 +24,11 @@
 #include <arpa/inet.h>
 #include <error.h>
 #include <argp.h>
+#include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <string.h>
 #include <fcntl.h>
 #include <version.h>
-#include <pids.h>
 
 /* Include Hurd's errno.h file, but don't include glue-include/linux/errno.h,
    since it #undef's the errno macro. */
@@ -154,7 +154,6 @@ arrange_shutdown_notification ()
 {
   error_t err;
   mach_port_t initport, notify;
-  process_t procserver;
   struct port_info *pi;
 
   shutdown_notify_class = ports_create_class (0, 0);
@@ -169,13 +168,8 @@ arrange_shutdown_notification ()
   if (err)
     return;
 
-  procserver = getproc ();
-  if (!procserver)
-    return;
-
-  err = proc_getmsgport (procserver, HURD_PID_STARTUP, &initport);
-  mach_port_deallocate (mach_task_self (), procserver);
-  if (err)
+  initport = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (initport == MACH_PORT_NULL)
     return;
 
   notify = ports_get_send_right (pi);
