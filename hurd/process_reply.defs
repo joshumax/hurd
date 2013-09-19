@@ -70,107 +70,107 @@ skip; /* proc_mark_exec */
 skip; /* proc_mark_traced */
 skip; /* proc_mod_stopchild */
 
-simpleroutine proc_pid2task (
+simpleroutine proc_pid2task_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	task: task_t);
 
-simpleroutine proc_task2pid (
+simpleroutine proc_task2pid_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pid: pid_t);
 
-simpleroutine proc_task2proc (
+simpleroutine proc_task2proc_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	proc: mach_port_make_send_t);
 
-simpleroutine proc_proc2task (
+simpleroutine proc_proc2task_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	task: task_t);
 
-simpleroutine proc_pid2proc (
+simpleroutine proc_pid2proc_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	proc: mach_port_make_send_t);
 
-simpleroutine proc_getprocinfo (
+simpleroutine proc_getprocinfo_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	flags: int;
 	procinfo: procinfo_t, dealloc;
 	threadwaits: data_t, dealloc);
 
-simpleroutine proc_getprocargs (
+simpleroutine proc_getprocargs_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	procargs: data_t, dealloc);
 
-simpleroutine proc_getprocenv (
+simpleroutine proc_getprocenv_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	procenv: data_t, dealloc);
 
 skip; /* proc_make_login_coll */
 
-simpleroutine proc_getloginid (
+simpleroutine proc_getloginid_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	login_id: pid_t);
 
-simpleroutine proc_getloginpids (
+simpleroutine proc_getloginpids_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pids: pidarray_t, dealloc);
 
 skip; /* proc_setlogin */
 
-simpleroutine proc_getlogin (
+simpleroutine proc_getlogin_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	logname: string_t);
 
 skip; /* proc_setsid */
 
-simpleroutine proc_getsid (
+simpleroutine proc_getsid_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	sid: pid_t);
 
-simpleroutine proc_getsessionpgids (
+simpleroutine proc_getsessionpgids_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pgidset: pidarray_t, dealloc);
 
-simpleroutine proc_getsessionpids (
+simpleroutine proc_getsessionpids_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pidset: pidarray_t, dealloc);
 
-simpleroutine proc_getsidport (
+simpleroutine proc_getsidport_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	sessport: mach_port_send_t);
 
 skip; /* proc_setpgrp */
 
-simpleroutine proc_getpgrp (
+simpleroutine proc_getpgrp_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pgrp: pid_t);
 
-simpleroutine proc_getpgrppids (
+simpleroutine proc_getpgrppids_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	pidset: pidarray_t, dealloc);
 
-simpleroutine proc_get_tty (
+simpleroutine proc_get_tty_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	tty: mach_port_send_t);
 
-simpleroutine proc_getnports (
+simpleroutine proc_getnports_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	nports: mach_msg_type_number_t);
@@ -180,14 +180,14 @@ simpleroutine proc_getnports (
 skip;  /* Reserved for proc_set_init_task */
 skip; /* proc_mark_important */
 
-simpleroutine proc_is_important (
+simpleroutine proc_is_important_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	essential: boolean_t);
 
 skip; /* proc_set_code */
 
-simpleroutine proc_get_code (
+simpleroutine proc_get_code_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
 	start_code: vm_address_t;
