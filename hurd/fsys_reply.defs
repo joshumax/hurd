@@ -77,12 +77,12 @@ simpleroutine fsys_get_options_reply (
 	RETURN_CODE_ARG;
 	options: data_t);
 
-simpleroutine fsys_get_children (
+simpleroutine fsys_get_children_reply (
 	server: fsys_t;
 	RETURN_CODE_ARG;
 	children: data_t);
 
-simpleroutine fsys_get_source (
+simpleroutine fsys_get_source_reply (
 	server: fsys_t;
 	RETURN_CODE_ARG;
 	source: string_t);
