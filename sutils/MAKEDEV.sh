@@ -116,7 +116,7 @@ mkdev() {
       full)
 	st $I root 666 /hurd/null --full;;
       zero)
-	st $I root 666 /hurd/storeio -Tzero;;
+	st $I root 666 /bin/nullauth -- /hurd/storeio -Tzero;;
       tty)
 	st $I root 666 /hurd/magic tty;;
       fd)
