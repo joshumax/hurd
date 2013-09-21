@@ -1269,7 +1269,7 @@ S_tioctl_tiocsetd (io_t port,
     err = 0;
 
   ports_port_deref (cred);
-  return 0;
+  return err;
 }
 
 /* TIOCDRAIN -- Wait for output to drain */
