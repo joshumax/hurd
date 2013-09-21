@@ -37,6 +37,7 @@ unsigned int doit (int keysym)
       return find_ucs (keysym, middle+1, last);
     else if (middle->keysym > keysym)
       return find_ucs (keysym, first, middle-1);
+    return 0;
   }
 
   #define NUM_KEYSYMS (sizeof kstoucs_map / sizeof(struct ksmap))
