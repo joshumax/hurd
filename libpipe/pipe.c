@@ -20,6 +20,7 @@
 
 #include <string.h>		/* For bzero() */
 #include <assert.h>
+#include <stdlib.h>
 
 #include <mach/time_value.h>
 #include <mach/mach_host.h>
