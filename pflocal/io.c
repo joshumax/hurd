@@ -308,7 +308,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
   struct sock *sock;
   struct pipe *rpipe, *wpipe;
 
-  void copy_time (time_value_t *from, time_t *to_sec, unsigned long *to_nsec)
+  void copy_time (time_value_t *from, time_t *to_sec, long *to_nsec)
     {
       *to_sec = from->seconds;
       *to_nsec = from->microseconds * 1000;
