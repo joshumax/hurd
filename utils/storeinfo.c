@@ -251,7 +251,6 @@ main (int argc, char *argv[])
 	    {
 	      file_t file = file_name_lookup (arg, deref ? 0 : O_NOLINK, 0);
 	      info (file, arg, errno);
-	      mach_port_deallocate (mach_task_self (), file);
 	    }
 	  break;
 
