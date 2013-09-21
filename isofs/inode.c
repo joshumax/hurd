@@ -430,7 +430,7 @@ read_disknode (struct node *np, struct dirrect *dr,
 	  != (TF_CREATION|TF_ACCESS|TF_MODIFY)))
     {
       struct timespec ts;
-      isodate_915 (dr->date, &ts);
+      isodate_915 ((char *) dr->date, &ts);
       st->st_ctim = st->st_mtim = st->st_atim = ts;
     }
 
