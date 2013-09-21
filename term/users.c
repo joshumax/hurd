@@ -679,7 +679,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   while (!qsize (inputq))
     {
-      if ((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL) || !amount)
+      if (((termflags & NO_CARRIER) && !(termstate.c_cflag & CLOCAL)) || !amount)
 	{
 	  /* Return EOF, Posix.1 7.1.1.10. */
 	  pthread_mutex_unlock (&global_lock);
