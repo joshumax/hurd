@@ -68,6 +68,9 @@ pager_read_page (struct user_pager_info *upi,
     }
 
   err = store_read (store, addr, vm_page_size, (void **) buf, &read);
+  if (err)
+    return err;
+
   if (read != vm_page_size)
     return EIO;
 
