@@ -52,7 +52,7 @@ flush (const char **beg, const char *new, FILE *s)
 /* Write T to S, up to MAX characters (unless MAX == 0), making sure not to
    write any unprintable characters.  */ 
 error_t
-noise_write (const unsigned char *t, ssize_t max, FILE *s)
+noise_write (const char *t, ssize_t max, FILE *s)
 {
   int ch;
   const char *ok = t;
