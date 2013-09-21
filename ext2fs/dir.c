@@ -465,8 +465,8 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
     }
 
   if (consider_compress
-      && (ds->type == LOOKUP
-	  || (ds->type == COMPRESS && ds->nbytes > nbytes)))
+      && (ds->stat == LOOKING
+	  || (ds->stat == COMPRESS && ds->nbytes > nbytes)))
     {
       ds->type = CREATE;
       ds->stat = COMPRESS;
