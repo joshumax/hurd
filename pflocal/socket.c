@@ -109,8 +109,8 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	  if (sock->connect_queue)
 	    /* SOCK is already doing a connect.  */
 	    err = EALREADY;
-	  else if (sock->flags & SOCK_CONNECTED)
-	    /* SOCK_CONNECTED is only set for connection-oriented sockets,
+	  else if (sock->flags & PFLOCAL_SOCK_CONNECTED)
+	    /* PFLOCAL_SOCK_CONNECTED is only set for connection-oriented sockets,
 	       which can only ever connect once.  [If we didn't do this test
 	       here, it would eventually fail when the listening socket
 	       tried to accept our connection request.]  */
@@ -124,7 +124,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 	      pthread_mutex_unlock (&sock->lock);
 
 	      err = connq_connect (peer->listen_queue,
-				   sock->flags & SOCK_NONBLOCK);
+				   sock->flags & PFLOCAL_SOCK_NONBLOCK);
 	      if (!err)
 		{
 		  struct sock *server;
@@ -182,7 +182,7 @@ S_socket_accept (struct sock_user *user,
       struct sock *peer_sock;
 
       err = connq_listen (sock->listen_queue,
-			  (sock->flags & SOCK_NONBLOCK) ? &noblock : NULL,
+			  (sock->flags & PFLOCAL_SOCK_NONBLOCK) ? &noblock : NULL,
 			  &peer_sock);
       if (!err)
 	{
@@ -229,8 +229,8 @@ S_socket_shutdown (struct sock_user *user, int what)
   if (! user)
     return EOPNOTSUPP;
   sock_shutdown (user->sock,
-		   (what != 1 ? SOCK_SHUTDOWN_READ : 0)
-		 | (what != 0 ? SOCK_SHUTDOWN_WRITE : 0));
+		   (what != 1 ? PFLOCAL_SOCK_SHUTDOWN_READ : 0)
+		 | (what != 0 ? PFLOCAL_SOCK_SHUTDOWN_WRITE : 0));
   return 0;
 }
 
@@ -325,7 +325,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	
       if (!err)
 	{
-	  err = pipe_send (pipe, sock->flags & SOCK_NONBLOCK,
+	  err = pipe_send (pipe, sock->flags & PFLOCAL_SOCK_NONBLOCK,
 			   source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
@@ -391,7 +391,7 @@ S_socket_recv (struct sock_user *user,
   else if (!err)
     {
       err =
-	pipe_recv (pipe, user->sock->flags & SOCK_NONBLOCK, &flags,
+	pipe_recv (pipe, user->sock->flags & PFLOCAL_SOCK_NONBLOCK, &flags,
 		   &source_addr, data, data_len, amount,
 		   control, control_len, ports, num_ports);
       pipe_release_reader (pipe);

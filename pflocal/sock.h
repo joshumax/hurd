@@ -85,10 +85,10 @@ struct sock
 };
 
 /* Socket flags */
-#define SOCK_CONNECTED		0x1 /* A connected connection-oriented sock. */
-#define SOCK_NONBLOCK		0x2 /* Don't block on I/O.  */
-#define SOCK_SHUTDOWN_READ	0x4 /* The read-half has been shutdown.  */
-#define SOCK_SHUTDOWN_WRITE	0x8 /* The write-half has been shutdown.  */
+#define PFLOCAL_SOCK_CONNECTED		0x1 /* A connected connection-oriented sock. */
+#define PFLOCAL_SOCK_NONBLOCK		0x2 /* Don't block on I/O.  */
+#define PFLOCAL_SOCK_SHUTDOWN_READ	0x4 /* The read-half has been shutdown.  */
+#define PFLOCAL_SOCK_SHUTDOWN_WRITE	0x8 /* The write-half has been shutdown.  */
 
 /* Returns the pipe that SOCK is reading from in PIPE, locked and with an
    additional reference, or an error saying why it's not possible.  NULL may
@@ -143,7 +143,7 @@ error_t sock_get_addr (struct sock *sock, struct addr **addr);
 error_t sock_get_write_addr_port (struct sock *sock, mach_port_t *addr_port);
 
 /* Shutdown either the read or write halves of SOCK, depending on whether the
-   SOCK_SHUTDOWN_READ or SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
+   PFLOCAL_SOCK_SHUTDOWN_READ or PFLOCAL_SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
 void sock_shutdown (struct sock *sock, unsigned flags);
 
 /* Return a new address, not connected to any socket yet, ADDR.  */

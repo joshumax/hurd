@@ -45,11 +45,11 @@ sock_acquire_read_pipe (struct sock *sock, struct pipe **pipe)
     /* SOCK may have a read pipe even before it's connected, so make
        sure it really is.  */
     if (   !(sock->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS)
-	&& !(sock->flags & SOCK_CONNECTED))
+	&& !(sock->flags & PFLOCAL_SOCK_CONNECTED))
       err = ENOTCONN;
     else
       pipe_acquire_reader (*pipe);
-  else if (sock->flags & SOCK_SHUTDOWN_READ)
+  else if (sock->flags & PFLOCAL_SOCK_SHUTDOWN_READ)
     /* Reading on a socket with the read-half shutdown always acts as if the
        pipe were at eof, even if the socket isn't connected yet [at least in
        netbsd].  */
@@ -74,7 +74,7 @@ sock_acquire_write_pipe (struct sock *sock, struct pipe **pipe)
   *pipe = sock->write_pipe;
   if (*pipe != NULL)
     pipe_acquire_writer (*pipe); /* Do this before unlocking the sock!  */
-  else if (sock->flags & SOCK_SHUTDOWN_WRITE)
+  else if (sock->flags & PFLOCAL_SOCK_SHUTDOWN_WRITE)
     /* Writing on a socket with the write-half shutdown always acts as if the
        pipe were broken, even if the socket isn't connected yet [at least in
        netbsd].  */
@@ -133,7 +133,7 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
 void
 sock_free (struct sock *sock)
 {
-  sock_shutdown (sock, SOCK_SHUTDOWN_READ | SOCK_SHUTDOWN_WRITE);
+  sock_shutdown (sock, PFLOCAL_SOCK_SHUTDOWN_READ | PFLOCAL_SOCK_SHUTDOWN_WRITE);
   if (sock->id != MACH_PORT_NULL)
     mach_port_destroy (mach_task_self (), sock->id);
   if (sock->listen_queue)
@@ -164,7 +164,7 @@ sock_clone (struct sock *template, struct sock **sock)
     return err;
 
   /* Copy some properties from TEMPLATE.  */
-  (*sock)->flags = template->flags & ~SOCK_CONNECTED;
+  (*sock)->flags = template->flags & ~PFLOCAL_SOCK_CONNECTED;
 
   return 0;
 }
@@ -382,11 +382,11 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 
   void connect (struct sock *wr, struct sock *rd)
     {
-      if (!(   (wr->flags & SOCK_SHUTDOWN_WRITE)
-	    || (rd->flags & SOCK_SHUTDOWN_READ)))
+      if (!(   (wr->flags & PFLOCAL_SOCK_SHUTDOWN_WRITE)
+	    || (rd->flags & PFLOCAL_SOCK_SHUTDOWN_READ)))
 	{
 	  struct pipe *pipe = rd->read_pipe;
-	  assert (pipe);	/* Since SOCK_SHUTDOWN_READ isn't set.  */
+	  assert (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
 	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
 	}
@@ -402,7 +402,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
     /* If SOCK1 == SOCK2, then we get a fifo!  */
     pthread_mutex_lock (&sock2->lock);
 
-  if ((sock1->flags & SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
+  if ((sock1->flags & PFLOCAL_SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
     /* An already-connected socket.  */
     err = EISCONN;
   else
@@ -416,11 +416,11 @@ sock_connect (struct sock *sock1, struct sock *sock2)
       /* Only make the reverse for connection-oriented protocols.  */
       if (! (sock1->pipe_class->flags & PIPE_CLASS_CONNECTIONLESS))
 	{
-	  sock1->flags |= SOCK_CONNECTED;
+	  sock1->flags |= PFLOCAL_SOCK_CONNECTED;
 	  if (sock1 != sock2)
 	    {
 	      connect (sock2, sock1);
-	      sock2->flags |= SOCK_CONNECTED;
+	      sock2->flags |= PFLOCAL_SOCK_CONNECTED;
 	    }
 	}
     }
@@ -442,7 +442,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 /* ---------------------------------------------------------------- */
 
 /* Shutdown either the read or write halves of SOCK, depending on whether the
-   SOCK_SHUTDOWN_READ or SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
+   PFLOCAL_SOCK_SHUTDOWN_READ or PFLOCAL_SOCK_SHUTDOWN_WRITE flags are set in FLAGS.  */
 void
 sock_shutdown (struct sock *sock, unsigned flags)
 {
@@ -455,13 +455,13 @@ sock_shutdown (struct sock *sock, unsigned flags)
   old_flags = sock->flags;
   sock->flags |= flags;
 
-  if (flags & SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
+  if (flags & PFLOCAL_SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
     {
       /* Shutdown the read half.  */
       read_pipe = sock->read_pipe;
       sock->read_pipe = NULL;
     }
-  if (flags & SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
+  if (flags & PFLOCAL_SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
     {
       /* Shutdown the write half.  */
       write_pipe = sock->write_pipe;
