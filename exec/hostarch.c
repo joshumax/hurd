@@ -39,7 +39,7 @@ elf_machine_matches_host (ElfW(Half) e_machine)
       mach_msg_type_number_t hostinfocnt = HOST_BASIC_INFO_COUNT;
 
       err = host_info (mach_host_self (), HOST_BASIC_INFO,
-		       (natural_t *) &hostinfo, &hostinfocnt);
+		       (host_info_t) &hostinfo, &hostinfocnt);
       if (err)
 	return err;
       assert (hostinfocnt == HOST_BASIC_INFO_COUNT);
