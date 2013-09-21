@@ -438,7 +438,7 @@ S_term_open_ctty (mach_port_t arg,
 
   pthread_mutex_lock (&global_lock);
 
-  if (!cred->po->openmodes & (O_READ|O_WRITE))
+  if (!(cred->po->openmodes & (O_READ|O_WRITE)))
     {
       pthread_mutex_unlock (&global_lock);
       err = EBADF;
