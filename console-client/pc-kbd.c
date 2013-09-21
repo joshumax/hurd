@@ -591,8 +591,10 @@ static enum scancode
 gnumach_v1_input_next ()
 {
   kd_event data_buf;
+#ifndef XKB_SUPPORT
   int up;
   enum scancode sc;
+#endif /* not XKB_SUPPORT */
 
   do
     {
