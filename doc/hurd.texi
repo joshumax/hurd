@@ -2619,7 +2619,7 @@ an RPC.  If @var{len} is greater than zero, @var{buf} is freed,
 regardless of whether an error is returned or not.
 @end deftypefun
 
-@deftypefun error_t fshelp_set_options (@w{struct argp *@var{argp}}, @w{int @var{flags}}, @w{char *@var{argz}}, @w{size_t @var{argz_len}}, @w{void *@var{input}})
+@deftypefun error_t fshelp_set_options (@w{const struct argp *@var{argp}}, @w{int @var{flags}}, @w{char *@var{argz}}, @w{size_t @var{argz_len}}, @w{void *@var{input}})
 Invoke @code{argp_parse} in the standard way, with data from @var{argz}
 and @var{argz_len}.
 @end deftypefun
