@@ -598,7 +598,7 @@ hurdio_mdmctl (int how, int bits)
       else
 	newbits = bits;
 
-      err = tioctl_tiocmods (ioport, oldbits);
+      err = tioctl_tiocmods (ioport, newbits);
       if (err && (err == EMIG_BAD_ID || err == EOPNOTSUPP))
 	tioc_caps &= ~TIOC_CAP_MODS;
       else if (err)
