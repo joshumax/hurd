@@ -184,7 +184,7 @@ dirscanblock (void *blkaddr, const char *name, size_t namelen,
 	break;
 
       /* Check to see if the name matches the directory entry. */
-      if (isonamematch (entry->name, entry_namelen, name, namelen))
+      if (isonamematch ((const char *) entry->name, entry_namelen, name, namelen))
 	matchnormal = 1;
       else
 	matchnormal = 0;
