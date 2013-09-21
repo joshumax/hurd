@@ -24,7 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */
 static inline int
-listmember (int *list, int query, int n)
+listmember (const uid_t *list, uid_t query, int n)
 {
   int i;
   for (i = 0; i < n; i++)
@@ -42,7 +42,7 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   uid_t *uids, size_t nuids,
 			   uid_t *gids, size_t ngids)
 {
-  int i;
+  unsigned int i;
   error_t err;
   struct trivfs_protid *newcred;
   struct idvec *uvec, *gvec;
