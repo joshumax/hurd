@@ -291,6 +291,8 @@ input_loop (void *unused)
       console_move_mouse (&evt);
       vm_deallocate (mach_task_self(), buf, buf_size);
     }
+
+  return NULL;
 }
 
 
