@@ -297,9 +297,16 @@ else
 			    echo ${file}:build.mk.in; done`"
 fi
 
-PKG_CHECK_MODULES([libdaemon], [libdaemon],
-  [AC_DEFINE([HAVE_DAEMON], [1], [Use libdaemon])],
-  [true])
+AC_ARG_WITH([libdaemon],
+  [AS_HELP_STRING([--without-libdaemon], [disable libdaemon use in console client])],
+  [],
+  [with_libdaemon=yes])
+
+AS_IF([test "x$with_libdaemon" != xno], [
+  PKG_CHECK_MODULES([libdaemon], [libdaemon],
+    [AC_DEFINE([HAVE_DAEMON], [1], [Use libdaemon])],
+    [true])
+])
 AC_SUBST([libdaemon_LIBS])
 AC_SUBST([libdaemon_CFLAGS])
 
