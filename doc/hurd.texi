@@ -289,7 +289,6 @@ Stored Filesystems
 
 * Repairing Filesystems::       Recovering from minor filesystem crashes.
 * Linux Extended 2 FS::         The popular Linux filesystem format.
-* BSD Unix FS::                 The BSD Unix 4.x Fast File System.
 * ISO-9660 CD-ROM FS::          Standard CD-ROM format.
 * Diskfs Library::              Implementing new filesystem servers.
 
@@ -3552,7 +3551,6 @@ workstations, as well.
 @menu
 * Repairing Filesystems::       Recovering from minor filesystem crashes.
 * Linux Extended 2 FS::         The popular Linux filesystem format.
-* BSD Unix FS::                 The BSD Unix 4.x Fast File System.
 * ISO-9660 CD-ROM FS::          Standard CD-ROM format.
 * Diskfs Library::              Implementing new filesystem servers.
 @end menu
