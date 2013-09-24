@@ -402,7 +402,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
     /* If SOCK1 == SOCK2, then we get a fifo!  */
     pthread_mutex_lock (&sock2->lock);
 
-  if ((sock1->flags & PFLOCAL_SOCK_CONNECTED) || (sock2->flags & SOCK_CONNECTED))
+  if ((sock1->flags & PFLOCAL_SOCK_CONNECTED) || (sock2->flags & PFLOCAL_SOCK_CONNECTED))
     /* An already-connected socket.  */
     err = EISCONN;
   else
@@ -455,13 +455,13 @@ sock_shutdown (struct sock *sock, unsigned flags)
   old_flags = sock->flags;
   sock->flags |= flags;
 
-  if (flags & PFLOCAL_SOCK_SHUTDOWN_READ && !(old_flags & SOCK_SHUTDOWN_READ))
+  if (flags & PFLOCAL_SOCK_SHUTDOWN_READ && !(old_flags & PFLOCAL_SOCK_SHUTDOWN_READ))
     {
       /* Shutdown the read half.  */
       read_pipe = sock->read_pipe;
       sock->read_pipe = NULL;
     }
-  if (flags & PFLOCAL_SOCK_SHUTDOWN_WRITE && !(old_flags & SOCK_SHUTDOWN_WRITE))
+  if (flags & PFLOCAL_SOCK_SHUTDOWN_WRITE && !(old_flags & PFLOCAL_SOCK_SHUTDOWN_WRITE))
     {
       /* Shutdown the write half.  */
       write_pipe = sock->write_pipe;
