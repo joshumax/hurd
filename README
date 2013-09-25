@@ -25,12 +25,12 @@ not-yet-working code.  By default, the makefiles build only the
 working code.
 
 Bug reports for the GNU Hurd should be sent to the mailing list
-`bug-hurd@prep.ai.mit.edu'.  Please do not send requests for
+`bug-hurd@gnu.org'.  Please do not send requests for
 assistance in installing or using the software to that address.
 Instead, send requests for assistance to the mailing list
-`help-hurd@prep.ai.mit.edu'.  You can join these lists by sending a
-request to `bug-hurd-request@prep.ai.mit.edu' or
-`help-hurd-request@prep.ai.mit.edu' respectively.
+`help-hurd@gnu.org'.  You can join these lists by sending a
+request to `bug-hurd-request@gnu.org' or
+`help-hurd-request@gnu.org' respectively.
 
 The GNU Hurd is free software.  All of it, including the libraries in
 this distribution, is covered by the GNU General Public License, found
