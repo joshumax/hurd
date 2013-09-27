@@ -1,6 +1,6 @@
 #
 #   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006, 2009, 2011, 2012 Free Software Foundation, Inc.
+#   2006, 2009, 2011, 2012, 2013 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -86,11 +86,86 @@ HEAD.tar: FORCE
 		false; }
 	(cd $(top_srcdir)/ && git archive --prefix=$(dist-version)/ HEAD) > $@
 
-$(dist-version).tar: HEAD.tar $(addsuffix /dist-hook,hurd/.. $(subdirs))
+ChangeLog.tar: gen-ChangeLog
+	tar -c -f $@ --owner=0 --group=0 \
+	  --transform='s%^%$(dist-version)/%' $(ChangeLog_files)
+
+gen_start_commit = 2772f5c6a6a51cf946fd95bf6ffe254273157a21
+ChangeLog_files = \
+  ChangeLog \
+  auth/ChangeLog \
+  benchmarks/ChangeLog \
+  boot/ChangeLog \
+  config/ChangeLog \
+  console-client/ChangeLog \
+  console/ChangeLog \
+  daemons/ChangeLog \
+  defpager/ChangeLog \
+  doc/ChangeLog \
+  exec/ChangeLog \
+  ext2fs/ChangeLog \
+  fatfs/ChangeLog \
+  fstests/ChangeLog \
+  ftpfs/ChangeLog \
+  hostmux/ChangeLog \
+  hurd/ChangeLog \
+  include/ChangeLog \
+  init/ChangeLog \
+  isofs/ChangeLog \
+  libcons/ChangeLog \
+  libdirmgt/ChangeLog \
+  libdiskfs/ChangeLog \
+  libfshelp/ChangeLog \
+  libftpconn/ChangeLog \
+  libhurdbugaddr/ChangeLog \
+  libihash/ChangeLog \
+  libiohelp/ChangeLog \
+  libnetfs/ChangeLog \
+  libpager/ChangeLog \
+  libpipe/ChangeLog \
+  libports/ChangeLog \
+  libps/ChangeLog \
+  libshouldbeinlibc/ChangeLog \
+  libstore/ChangeLog \
+  libthreads/ChangeLog \
+  libtrivfs/ChangeLog \
+  login/ChangeLog \
+  mach-defpager/ChangeLog \
+  nfs/ChangeLog \
+  nfsd/ChangeLog \
+  pfinet/ChangeLog \
+  pflocal/ChangeLog \
+  proc/ChangeLog \
+  release/ChangeLog \
+  storeio/ChangeLog \
+  sutils/ChangeLog \
+  term/ChangeLog \
+  tmpfs/ChangeLog \
+  trans/ChangeLog \
+  usermux/ChangeLog \
+  utils/ChangeLog
+distdir = .
+.PHONY: gen-ChangeLog
+gen-ChangeLog:
+	$(AM_V_GEN)if test -d $(top_srcdir)/.git; then			\
+	  (cd $(top_srcdir)/ &&						\
+	  ./gitlog-to-changelog	--strip-tab				\
+	    $(gen_start_commit).. &&					\
+	  echo) >> $(distdir)/cl-t &&					\
+	  for f in $(ChangeLog_files); do				\
+	    (cd $(top_srcdir)/ &&					\
+	    git show $(gen_start_commit):$$f) >> $(distdir)/cl-t &&	\
+	    rm -f $(distdir)/$$f &&					\
+	    mv $(distdir)/cl-t $(distdir)/$$f				\
+	    || exit $$?;						\
+	  done;								\
+	fi
+
+$(dist-version).tar: HEAD.tar $(addsuffix /dist-hook,hurd/.. $(subdirs)) ChangeLog.tar
 	tar -c -f $@ --files-from=/dev/null
-# Concatenate HEAD.tar and all subdirs' dist.tar that have been created.  Have
+# Concatenate the tar files.  Have
 # to do it one by one: <http://savannah.gnu.org/patch/?7757>.
-	for f in HEAD.tar dist.tar */dist.tar; do \
+	for f in HEAD.tar dist.tar */dist.tar ChangeLog.tar; do \
 	  tar -v --concatenate -f $@ "$$f"; \
 	done
 
@@ -145,7 +220,7 @@ FORCE:
 
 .PHONY: clean-misc distclean
 clean-misc:
-	rm -f HEAD.tar
+	rm -f HEAD.tar ChangeLog.tar $(ChangeLog_files)
 
 distclean: clean
 	rm -f config.make config.log config.status config.cache
