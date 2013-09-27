@@ -1,5 +1,7 @@
 /* Proc server host management calls
-   Copyright (C) 1992,93,94,96,97,2001,02 Free Software Foundation, Inc.
+
+   Copyright (C) 1992, 1993, 1994, 1996, 1997, 2001, 2002, 2013 Free Software
+   Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -231,8 +233,7 @@ check_dead_execdata_notify (mach_port_t port)
 
 /* Version information handling.
 
-   A server registers its name and version with
-   startup_register_version.
+   A server registers its name and version with proc_register_version.
 
    The uname release is the most popular version number.
 

@@ -1,7 +1,9 @@
 # @configure_input@
 
-# What version of the Hurd is this?
-hurd-version := @PACKAGE_VERSION@
+package-version := @PACKAGE_VERSION@
+# What version of the Hurd is this?  For compatibility (libraries' SONAMEs),
+# hard-code this to 0.3 instead of coupling with PACKAGE_VERSION.
+hurd-version := 0.3
 
 # Machine architecture.
 machine = @host_cpu@

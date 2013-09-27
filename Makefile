@@ -262,7 +262,7 @@ config.make: config.status $(top_srcdir)/config.make.in
 
 version.h: stamp-version; @:
 stamp-version: version.h.in config.make
-	sed -e 's/MASTER_HURD_VERSION/\"$(hurd-version)\"/' \
+	sed -e 's/MASTER_HURD_VERSION/\"$(package-version)\"/' \
 	  < $< > version.h.new
 	$(move-if-change) version.h.new version.h
 	touch $@

@@ -1,4 +1,4 @@
-#   Copyright (C) 1994, 1998, 1999, 2003, 2012 Free Software Foundation
+#   Copyright (C) 1994, 1998, 1999, 2003, 2012, 2013 Free Software Foundation
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -50,6 +50,6 @@ include ../Makeconf
 
 version.texi: stamp-version; @:
 stamp-version: $(..)config.make
-	echo '@set VERSION $(hurd-version)' > version.texi.new
+	echo '@set VERSION $(package-version)' > version.texi.new
 	$(move-if-change) version.texi.new version.texi
 	touch $@
