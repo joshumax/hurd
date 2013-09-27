@@ -49,7 +49,6 @@ Use this to examine the change log for earlier changes:
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:pflocal/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:proc/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:release/ChangeLog
-    $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:serverboot/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:storeio/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:sutils/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:term/ChangeLog
