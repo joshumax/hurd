@@ -7,7 +7,6 @@ Use this to examine the change log for earlier changes:
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:auth/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:benchmarks/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:boot/ChangeLog
-    $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:bsdfsck/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:config/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:console-client/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:console/ChangeLog
@@ -54,8 +53,5 @@ Use this to examine the change log for earlier changes:
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:term/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:tmpfs/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:trans/ChangeLog
-    $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:ufs-fsck/ChangeLog
-    $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:ufs-utils/ChangeLog
-    $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:ufs/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:usermux/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:utils/ChangeLog
