@@ -1,11 +1,25 @@
--*- Text -*-
-GNU Hurd version 0.2.
+This is the GNU Hurd, <http://www.gnu.org/software/hurd/>.  Welcome.
 
+GNU Hurd runs on 32-bit x86 machines.  A version running on 64-bit x86
+(x86_64) machines is in progress.  Volunteers interested in ports to
+other architectures are sought; please contact us (see below) if you'd
+like to help.
 
-This is the Hurd.  Welcome.
+To compile the Hurd, you need a toolchain configured to target i?86-gnu;
+you cannot use a toolchain targeting GNU/Linux.  Also note that you
+cannot run the Hurd "in isolation": you'll need to add further components
+such as the GNU C Library (glibc), to turn it into a runnable system.
 
-This version of the GNU Hurd runs on various ix86 machines, including
-i386, i486, i586 (pentium), i686 (hexium [pentium pro]).  
+Recent versions of Mach, MIG, glibc, and GCC are required.  Optionally, a Sun
+RPC implementation is needed to build the NFS translator and daemon:
+
+glibc   Configured with --enable-obsolete-rpc.
+TI-RPC  Currently fails to build on GNU, see
+        <http://lists.debian.org/debian-hurd/2010/12/msg00007.html>.
+
+Obviously, you also need somewhat recent versions of binutils, make,
+bash and some other tools.  No hard requirements are currently known
+for these, though.
 
 For instructions on compiling and installing the GNU Hurd from an
 already running Hurd system, see the file `INSTALL'.
@@ -24,16 +38,15 @@ Please note that this directory also contains a fair amount of
 not-yet-working code.  By default, the makefiles build only the
 working code.
 
-Bug reports for the GNU Hurd should be sent to the mailing list
-`bug-hurd@gnu.org'.  Please do not send requests for
-assistance in installing or using the software to that address.
-Instead, send requests for assistance to the mailing list
-`help-hurd@gnu.org'.  You can join these lists by sending a
-request to `bug-hurd-request@gnu.org' or
-`help-hurd-request@gnu.org' respectively.
 
 The GNU Hurd is free software.  All of it, including the libraries in
 this distribution, is covered by the GNU General Public License, found
 in the file COPYING.
 
 
+Please read the FAQ at <http://www.gnu.org/software/hurd/faq.html>.
+Bug reports should be sent to <bug-hurd@gnu.org> or filed on
+<http://savannah.gnu.org/bugs/?group=hurd>.  Requests for assistance
+should be sent to <help-hurd@gnu.org> or filed on
+<http://savannah.gnu.org/support/?group=hurd>.  You can also find us on
+the Freenode IRC network in the #hurd channel.

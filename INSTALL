@@ -1,7 +1,6 @@
--*- Text -*-
-GNU Hurd 0.2
+This is the GNU Hurd, <http://www.gnu.org/software/hurd/>.  Welcome.
 
-This is the Hurd.  Welcome.
+The following text has not been updated in a long time.  Beware.
 
 This file contains instructions for compiling and installing the Hurd
 from your existing Hurd system.
@@ -208,4 +207,3 @@ operates.
      script, and exit.
 
 `configure' also accepts some other, not widely useful, options.
-
