@@ -294,8 +294,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  if (error != ENOENT)
 	    {
-	      diskfs_nrele (dnp);
-	      diskfs_nput (np);
 	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	      if (!lastcomp && !error)
 		{
@@ -303,7 +301,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  *end++ = '/';
 		  strcpy (end, nextname);
 		}
-	      return error;
+	      goto out;
 	    }
 
 	  /* ENOENT means there was a hiccup, and the translator
