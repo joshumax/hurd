@@ -220,6 +220,8 @@ treefs_S_file_set_size (struct treefs_protid *cred, off_t size)
 {
   if (!cred)
     return EOPNOTSUPP;
+  else if (size < 0)
+    return EINVAL;
   return treefs_s_file_set_size (cred, size);
 }
 

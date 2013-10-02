@@ -625,6 +625,8 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
     return EOPNOTSUPP;
   else if (!(cred->po->openmodes & O_WRITE))
     return EBADF;
+  else if (size < 0)
+    return EINVAL;
   else
     return 0;
 }

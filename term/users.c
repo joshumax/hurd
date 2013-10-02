@@ -1808,6 +1808,8 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
+  else if (size < 0)
+    return EINVAL;
   pthread_mutex_lock (&global_lock);
   if ((cred->po->openmodes & O_WRITE) == 0)
     {

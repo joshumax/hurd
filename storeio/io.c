@@ -178,6 +178,8 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 {
   if (! cred)
     return EOPNOTSUPP;
+  else if (size < 0)
+    return EINVAL;
   else
     return 0;
 }

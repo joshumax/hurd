@@ -29,6 +29,8 @@ netfs_S_file_set_size (struct protid *user,
   
   if (!user)
     return EOPNOTSUPP;
+  else if (size < 0)
+    return EINVAL;
   
   pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_set_size (user->user, user->po->np, size);

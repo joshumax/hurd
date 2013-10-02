@@ -245,6 +245,8 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
 			mach_port_t reply, mach_msg_type_name_t replytype,
 			loff_t size)
 {
+  if (size < 0)
+    return EINVAL;
   return 0;
 }
 

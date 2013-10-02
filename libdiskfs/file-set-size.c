@@ -26,7 +26,7 @@ diskfs_S_file_set_size (struct protid *cred,
 {
   CHANGE_NODE_FIELD (cred,
 		     ({
-		       if (!(cred->po->openstat & O_WRITE))
+		       if (!(cred->po->openstat & O_WRITE) || (size < 0))
 			 err = EINVAL;
 		       else if (size < np->dn_stat.st_size)
 			 {
