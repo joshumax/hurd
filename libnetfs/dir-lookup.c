@@ -277,15 +277,13 @@ netfs_S_dir_lookup (struct protid *diruser,
 
 	  if (error != ENOENT)
 	    {
-	      netfs_nrele (dnp);
-	      netfs_nput (np);
 	      *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
 	      if (!lastcomp && !error)
 		{
 		  strcat (retry_name, "/");
 		  strcat (retry_name, nextname);
 		}
-	      return error;
+	      goto out;
 	    }
 
 	  /* ENOENT means there was a hiccup, and the translator vanished
