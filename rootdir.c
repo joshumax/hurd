@@ -407,6 +407,47 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 /* The mtab translator to use by default for the "mounts" node.  */
 #define MTAB_TRANSLATOR	"/hurd/mtab"
 
+static struct node *rootdir_mounts_node;
+static pthread_spinlock_t rootdir_mounts_node_lock =
+  PTHREAD_SPINLOCK_INITIALIZER;
+
+static struct node *
+rootdir_mounts_make_node (void *dir_hook, const void *entry_hook)
+{
+  struct node *np, *prev;
+
+  pthread_spin_lock (&rootdir_mounts_node_lock);
+  np = rootdir_mounts_node;
+  pthread_spin_unlock (&rootdir_mounts_node_lock);
+
+  if (np != NULL)
+    {
+      netfs_nref (np);
+      return np;
+    }
+
+  np = procfs_make_node (entry_hook, dir_hook);
+  if (np == NULL)
+    return NULL;
+
+  procfs_node_chtype (np, S_IFREG | S_IPTRANS);
+  procfs_node_chmod (np, 0444);
+
+  pthread_spin_lock (&rootdir_mounts_node_lock);
+  prev = rootdir_mounts_node;
+  if (rootdir_mounts_node == NULL)
+    rootdir_mounts_node = np;
+  pthread_spin_unlock (&rootdir_mounts_node_lock);
+
+  if (prev != NULL)
+    {
+      procfs_cleanup (np);
+      np = prev;
+    }
+
+  return np;
+}
+
 static error_t
 rootdir_mounts_get_translator (void *hook, char **argz, size_t *argz_len)
 {
@@ -448,18 +489,6 @@ rootdir_symlink_make_node (void *dir_hook, const void *entry_hook)
   struct node *np = procfs_make_node (entry_hook, dir_hook);
   if (np)
     procfs_node_chtype (np, S_IFLNK);
-  return np;
-}
-
-static struct node *
-rootdir_translator_make_node (void *dir_hook, const void *entry_hook)
-{
-  struct node *np = procfs_make_node (entry_hook, dir_hook);
-  if (np)
-    {
-      procfs_node_chtype (np, S_IFREG | S_IPTRANS);
-      procfs_node_chmod (np, 0444);
-    }
   return np;
 }
 
@@ -530,7 +559,7 @@ static const struct procfs_dir_entry rootdir_entries[] = {
       .get_translator = rootdir_mounts_get_translator,
     },
     .ops = {
-      .make_node = rootdir_translator_make_node,
+      .make_node = rootdir_mounts_make_node,
       .exists = rootdir_mounts_exists,
     }
   },
