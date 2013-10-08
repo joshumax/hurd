@@ -37,7 +37,7 @@
 
 #include "fsys_U.h"
 
-static char *path = NULL;
+static char *target_path = NULL;
 static int insecure = 0;
 
 /* Our control port.  */
@@ -71,8 +71,8 @@ error_t parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_ARG:
-      path = realpath (arg, NULL);
-      if (! path)
+      target_path = realpath (arg, NULL);
+      if (! target_path)
 	argp_error (state, "Error while canonicalizing path");
       break;
 
@@ -105,12 +105,12 @@ trivfs_append_args (struct trivfs_control *fsys,
 
   if (insecure)
     {
-      err = argz_add (argz, argz_len, path);
+      err = argz_add (argz, argz_len, target_path);
       if (err)
 	return err;
     }
 
-  err = argz_add (argz, argz_len, path);
+  err = argz_add (argz, argz_len, target_path);
   return err;
 }
 
@@ -241,9 +241,9 @@ main (int argc, char *argv[])
     {
       /* One-shot mode.	 */
       struct mtab mtab = { NULL, 0, 0 };
-      err = mtab_populate (&mtab, path, insecure);
+      err = mtab_populate (&mtab, target_path, insecure);
       if (err)
-	error (5, err, "%s", path);
+	error (5, err, "%s", target_path);
 
       if (mtab.contents)
 	printf ("%s", mtab.contents);
@@ -594,7 +594,7 @@ open_hook (struct trivfs_peropen *peropen)
   mtab->contents = NULL;
   mtab->contents_len = 0;
 
-  return mtab_populate (mtab, path, insecure);
+  return mtab_populate (mtab, target_path, insecure);
 }
 
 static void
