@@ -426,6 +426,7 @@ check_hashbang (struct execdata *e,
 			deallocnames, ndeallocnames,
 			destroynames, ndestroynames);
   mach_port_deallocate (mach_task_self (), interp_file);
+  munmap (new_argv, new_argvlen);
 
   if (! e->error)
     {
