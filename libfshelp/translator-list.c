@@ -47,9 +47,12 @@ static pthread_mutex_t translator_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 static void
 translator_ihash_cleanup (void *element, void *arg)
 {
+  struct translator *translator = element;
+
   /* No need to deallocate port, we only keep the name of the
      port, not a reference.  */
-  free (element);
+  free (translator->name);
+  free (translator);
 }
 
 /* Record an active translator being bound to the given file name
