@@ -1,6 +1,6 @@
 /* libdiskfs implementation of fs.defs:dir_lookup
    Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
-     2002, 2008, 2013 Free Software Foundation, Inc.
+     2002, 2008, 2013, 2014 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -73,6 +73,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
   relpath = strdup (path);
   if (! relpath)
     return ENOMEM;
+
+  /* Keep a pointer to the start of the path for length
+     calculations.  */
+  char *path_start = path;
 
   *returned_port_poly = MACH_MSG_TYPE_MAKE_SEND;
   *retry = FS_RETRY_NORMAL;
@@ -274,10 +278,15 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    goto out;
 
 	  dirport = ports_get_send_right (newpi);
-	  ports_port_deref (newpi);
-	  newpi = 0;
 	  if (np != dnp)
 	    pthread_mutex_unlock (&dnp->lock);
+
+	  /* Check if an active translator is currently running.  If
+	     not, fshelp_fetch_root will start one.  In that case, we
+	     need to register it in the list of active
+	     translators.  */
+	  boolean_t register_translator =
+	    np->transbox.active == MACH_PORT_NULL;
 
 	  error = fshelp_fetch_root (&np->transbox, dircred->po,
 				     dirport, dircred->user,
@@ -301,8 +310,34 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  *end++ = '/';
 		  strcpy (end, nextname);
 		}
+
+	      if (register_translator)
+		{
+		  char *translator_path = strdupa (relpath);
+		  if (nextname != NULL)
+		    {
+		      /* This was not the last path component.
+			 NEXTNAME points to the next component, locate
+			 the end of the current component and use it
+			 to trim TRANSLATOR_PATH.  */
+		      char *end = nextname;
+		      while (*end != 0)
+			end--;
+		      translator_path[end - path_start] = '\0';
+		    }
+
+		  error = fshelp_set_active_translator (&newpi->pi,
+							translator_path,
+							np->transbox.active);
+		  if (error)
+		    goto out;
+		}
+
 	      goto out;
 	    }
+
+	  ports_port_deref (newpi);
+	  newpi = NULL;
 
 	  /* ENOENT means there was a hiccup, and the translator
 	     vanished while NP was unlocked inside fshelp_fetch_root.
