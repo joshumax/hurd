@@ -740,7 +740,7 @@ main (int argc, char *argv[])
 #if HAVE_DAEMON
   if (daemonize)
     /* Signal parent that all went well.  */
-    daemon_retval_send(0);
+    daemon_retval_send (0);
 #endif
 
   cons_server_loop ();
