@@ -275,6 +275,10 @@ void
 console_exit (void)
 {
   driver_fini ();
+#if HAVE_DAEMON
+  if (daemonize)
+    daemon_pid_file_remove ();
+#endif /* HAVE_DAEMON */
   exit (0);
 }
 
@@ -626,6 +630,7 @@ static struct argp startup_argp = {options, parse_opt, 0,
 	    {								\
 	      /* Signal parent.	 */					\
 	      daemon_retval_send (status);				\
+	      daemon_pid_file_remove ();				\
 	      return 0;							\
 	    }								\
 	}								\
