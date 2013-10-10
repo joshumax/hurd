@@ -746,6 +746,5 @@ main (int argc, char *argv[])
   cons_server_loop ();
 
   /* Never reached.  */
-  driver_fini ();
-  return 0;
+  console_exit ();
 }
