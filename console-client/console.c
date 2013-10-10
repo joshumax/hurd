@@ -181,6 +181,7 @@ console_move_mouse (mouse_event_t ev)
     {
       err = cons_vcons_move_mouse (vcons, ev);
       ports_port_deref (vcons);
+      return err;
     }
 
   return 0;
