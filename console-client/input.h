@@ -66,7 +66,7 @@ error_t console_switch (int id, int delta);
 void console_error (const wchar_t *const err_msg);
 
 /* Exit the console client.  Does not return.  */
-void console_exit (void);
+void console_exit (void) __attribute__ ((noreturn));
 
 /* Switch away from the console an external use of the console like
    XFree.  */
