@@ -331,6 +331,12 @@ pty_io_read (struct trivfs_protid *cred,
 	}
     }
 
+  if (!(termflags & TTY_OPEN))
+    {
+      pthread_mutex_unlock (&global_lock);
+      return EIO;
+    }
+
   if (control_byte)
     {
       size = 1;
