@@ -56,6 +56,12 @@ diskfs_nput (struct node *np)
 	  np->references++;
 	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
+	  if (np->sockaddr != MACH_PORT_NULL)
+	    {
+	      mach_port_deallocate (mach_task_self (), np->sockaddr);
+	      np->sockaddr = MACH_PORT_NULL;
+	    }
+
 	  diskfs_try_dropping_softrefs (np);
 
 	  /* But there's no value in looping forever in this
