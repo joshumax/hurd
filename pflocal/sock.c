@@ -294,12 +294,16 @@ sock_bind (struct sock *sock, struct addr *addr)
     {
       sock->addr = addr;
       if (addr)
-	sock->refs++;
+	{
+	  sock->refs++;
+	  ports_port_ref_weak (addr);
+	}
       if (old_addr)
 	{
 	  /* Note that we don't have to worry about SOCK's ref count going to
 	     zero because whoever's calling us should be holding a ref.  */
 	  sock->refs--;
+	  ports_port_deref_weak (addr);
 	  assert (sock->refs > 0);	/* But make sure... */
 	}
     }
