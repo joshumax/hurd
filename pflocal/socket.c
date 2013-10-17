@@ -411,8 +411,7 @@ S_socket_recv (struct sock_user *user,
 	*addr = MACH_PORT_NULL;
     }
 
-  /* Fill in OUT_FLAGS from from any corresponding ones in FLAGS.  */
-  out_flags = 0;
+  *out_flags = 0;
 
   return err;
 }
