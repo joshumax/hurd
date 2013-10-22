@@ -7,10 +7,6 @@ hurd|The GNU Hurd console server,
 # Hard reset.
 	rs1=\EM,
 
-# Note about compatibility to vt100: We don't specify <xenl>, as we
-# don't have the eat_newline_glitch.  We don't support setting or
-# removing tab stops (hts/tbc).
-
 # Cursor related capabilities.
 
 # Moving the cursor.
@@ -18,6 +14,8 @@ hurd|The GNU Hurd console server,
 	am,
 # We wrap around the left edge.
 	bw,
+# We ignore \n at end of line
+	xenl,
 # Carriage return and newline.
 	cr=^M, nel=^M^J,
 # Move cursor to home position (to position P1, P2).
