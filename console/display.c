@@ -1186,8 +1186,9 @@ handle_esc_bracket (display_t display, char op)
     case 'B':		/* ECMA-48 <CUD>.  */
     case 'e':		/* ECMA-48 <VPR>.  */
       /* Cursor down: <cud1>, <cud>.  */
-      user->cursor.row += (parse->params[0] ?: 1);
-      limit_cursor (display);
+      /* Most implementations scroll the screen.  */
+      for (i = 0; i < (parse->params[0] ?: 1); i++)
+	linefeed (display);
       break;
     case 'C':		/* ECMA-48 <CUF>.  */
       /* Cursor right: <cuf1>, <cuf>.  */
