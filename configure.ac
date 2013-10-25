@@ -259,7 +259,7 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
     have_keysymdef_h=no
     AC_CHECK_HEADER([X11/keysymdef.h],
       [AC_MSG_CHECKING([for X11/keysymdef.h absolute location])
-       AC_PREPROC_IFELSE([#include <X11/keysymdef.h>],
+       AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <X11/keysymdef.h>]])],
          [[X11_KEYSYMDEF_H=`$SED -n 's%^[^"]*"\([^"]*X11/keysymdef.h\)".*$%\1%p' conftest.i`]
           # did the sed magic above work?
           AS_IF([test -f "$X11_KEYSYMDEF_H"],
