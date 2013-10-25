@@ -26,14 +26,11 @@ OBJS = main.o hostarch.o exec.o hashexec.o \
 
 target = exec
 #targets = exec exec.static
-#OTHERLIBS = -lbfd -liberty
 HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
 OTHERLIBS = -lpthread
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
 include ../Makeconf
-
-CPPFLAGS += # -DBFD
 
 exec.static exec: $(OBJS) $(library_deps)

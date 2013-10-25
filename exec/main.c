@@ -29,15 +29,6 @@
 
 const char *argp_program_version = STANDARD_HURD_VERSION (exec);
 
-#ifdef BFD
-bfd_arch_info_type host_bfd_arch_info;
-bfd host_bfd = { arch_info: &host_bfd_arch_info };
-extern error_t bfd_mach_host_arch_mach (host_t host,
-					enum bfd_architecture *bfd_arch,
-					long int *bfd_machine,
-					ElfW(Half) *elf_machine);
-#endif
-
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
@@ -114,16 +105,6 @@ main (int argc, char **argv)
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   save_argv = argv;
-
-#ifdef BFD
-  /* Put the Mach kernel's idea of what flavor of machine this is into the
-     fake BFD against which architecture compatibility checks are made.  */
-  err = bfd_mach_host_arch_mach (mach_host_self (),
-				 &host_bfd.arch_info->arch,
-				 &host_bfd.arch_info->mach);
-  if (err)
-    error (1, err, "Getting host architecture from Mach");
-#endif
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
