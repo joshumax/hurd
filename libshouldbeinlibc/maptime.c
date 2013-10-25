@@ -47,6 +47,8 @@ maptime_map (int use_mach_dev, char *dev_name,
 	{
 	  err = device_open (device_master, 0, dev_name ?: "time", &device);
 	  mach_port_deallocate (mach_task_self (), device_master);
+	  if (err)
+	    return err;
 	}
 
       err = device_map (device, VM_PROT_READ, 0, sizeof *mtime, &memobj, 0);
