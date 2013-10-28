@@ -34,7 +34,7 @@ then
 		/sbin/reboot
 		;;
 	# Fsck couldn't fix it.
-	4 | 8)
+	4 | 5 | 8 | 9)
 		echo "Automatic boot failed... help!"
 		exit 1
 		;;
