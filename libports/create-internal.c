@@ -109,10 +109,11 @@ _ports_create_port_internal (struct port_class *class,
   err = EINTR;
  lose:
   pthread_mutex_unlock (&_ports_lock);
- lose_unlocked:
-  err = mach_port_mod_refs (mach_task_self (), port,
-			    MACH_PORT_RIGHT_RECEIVE, -1);
-  assert_perror (err);
+ lose_unlocked:;
+  error_t e;
+  e = mach_port_mod_refs (mach_task_self (), port,
+			  MACH_PORT_RIGHT_RECEIVE, -1);
+  assert_perror (e);
   free (pi);
 
   return err;
