@@ -341,8 +341,14 @@ S_proc_setpgrp (struct proc *callerp,
 
   if (p->p_pgrp != pg)
     {
+      /* If we have to create a new pgrp, we have to do this before
+	 leaving the current one.  p->p_pgrp is deallocated if p is
+	 the last process in that group.  Likewise, if p->p_pgrp was
+	 the last group in p->p_pgrp->pg_session, the session is
+	 deallocated.  */
+      struct pgrp *new = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
       leave_pgrp (p);
-      p->p_pgrp = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
+      p->p_pgrp = new;
       join_pgrp (p);
     }
   else
