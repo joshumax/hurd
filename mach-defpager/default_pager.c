@@ -1061,6 +1061,29 @@ pager_extend(pager, new_size)
 	pthread_mutex_unlock(&pager->lock);
 }
 
+/* This deallocates the pages necessary to truncate a direct map
+   previously of size NEW_SIZE to the smaller size OLD_SIZE.  */
+static void
+dealloc_direct (dp_map_t mapptr,
+		vm_size_t old_size, vm_size_t new_size)
+{
+  vm_size_t i;
+
+  if (!mapptr)
+    return;
+
+  for (i = new_size; i < old_size; ++i)
+    {
+      const union dp_map entry = mapptr[i];
+      if (!no_block(entry))
+	{
+	  pager_dealloc_page(entry.block.p_index, entry.block.p_offset,
+			     TRUE);
+	  invalidate_block(mapptr[i]);
+	}
+    }
+}
+
 /* Truncate a memory object.  First, any pages between the new size
    and the (larger) old size are deallocated.  Then, the size of
    the pagemap may be reduced, an indirect map may be turned into
@@ -1074,28 +1097,6 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
   dp_map_t old_mapptr;
   int i;
   vm_size_t old_size;
-
-  /* This deallocates the pages necessary to truncate a direct map
-     previously of size NEW_SIZE to the smaller size OLD_SIZE.  */
-  inline void dealloc_direct (dp_map_t mapptr,
-			      vm_size_t old_size, vm_size_t new_size)
-    {
-      vm_size_t i;
-
-      if (!mapptr)
-        return;
-
-      for (i = new_size; i < old_size; ++i)
-	{
-	  const union dp_map entry = mapptr[i];
-	  if (!no_block(entry))
-	    {
-	      pager_dealloc_page(entry.block.p_index, entry.block.p_offset,
-				 TRUE);
-	      invalidate_block(mapptr[i]);
-	    }
-	}
-    }
 
   pthread_mutex_lock(&pager->lock);	/* XXX lock_write */
 
