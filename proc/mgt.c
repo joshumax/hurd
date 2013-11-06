@@ -516,6 +516,20 @@ S_proc_exception_raise (mach_port_t excport,
 
 }
 
+/* This function is used as callback in S_proc_getallpids.  */
+static void
+count_up (struct proc *p, void *counter)
+{
+  ++*(int *)counter;
+}
+
+/* This function is used as callback in S_proc_getallpids.  */
+static void
+store_pid (struct proc *p, void *loc)
+{
+  *(*(pid_t **)loc)++ = p->p_pid;
+}
+
 /* Implement proc_getallpids as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getallpids (struct proc *p,
@@ -524,15 +538,6 @@ S_proc_getallpids (struct proc *p,
 {
   int nprocs;
   pid_t *loc;
-
-  void count_up (struct proc *p, void *counter)
-    {
-      ++*(int *)counter;
-    }
-  void store_pid (struct proc *p, void *loc)
-    {
-      *(*(pid_t **)loc)++ = p->p_pid;
-    }
 
   /* No need to check P here; we don't use it. */
 
