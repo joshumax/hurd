@@ -161,8 +161,6 @@ int check_uid (struct proc *, uid_t);
 int check_owner (struct proc *, struct proc *);
 void addalltasks (void);
 void prociterate (void (*)(struct proc *, void *), void *);
-void count_up (void *);
-void store_pid (void *);
 void free_process (struct proc *);
 void panic (char *);
 int valid_task (task_t);
