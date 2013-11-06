@@ -2507,7 +2507,6 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	mach_port_t	pager_name;
 {
 	register default_pager_t	ds;
-	mach_port_urefs_t		request_refs, name_refs;
 	kern_return_t			kr;
 	static char			here[] = "%sterminate";
 
@@ -2546,11 +2545,9 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 	if (ds->external)
 		pager_request = ds->pager_request;
 	ds->pager_request = MACH_PORT_NULL;
-	request_refs = ds->request_refs;
 	ds->request_refs = 0;
 	assert(ds->pager_name == pager_name);
 	ds->pager_name = MACH_PORT_NULL;
-	name_refs = ds->name_refs;
 	ds->name_refs = 0;
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
 	&kr, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
