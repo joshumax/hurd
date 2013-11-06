@@ -585,10 +585,15 @@ hurdio_mdmctl (int how, int bits)
 	    {
 	      error_t err = tioctl_tiocmodg (ioport, &oldbits);
 	      if (err && (err == EMIG_BAD_ID || err == EOPNOTSUPP))
-		tioc_caps &= ~TIOC_CAP_MODG;
+		{
+		  tioc_caps &= ~TIOC_CAP_MODG;
+		  return EOPNOTSUPP;
+		}
 	      else if (err)
 		return err;
 	    }
+	  else
+	    return EOPNOTSUPP;
 	}
 
       if (how == MDMCTL_BIS)
