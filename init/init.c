@@ -961,6 +961,7 @@ process_signal (int signo)
 	      }
 
 	      launch_something (desc);
+              free (desc);
 	    }
 	}
     }
