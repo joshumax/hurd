@@ -1,5 +1,6 @@
 /*
-   Copyright (C) 1996, 1997, 1999, 2001, 2013 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1999, 2001, 2013, 2014
+     Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -175,20 +176,8 @@ netfs_S_file_set_translator (struct protid *user,
 	}
     }
 
-  if (! err && user->po->path)
-    err = fshelp_set_active_translator (user->po->path, active);
-
-  if (! err && active != MACH_PORT_NULL)
-    {
-      mach_port_t old;
-      err = mach_port_request_notification (mach_task_self (), active,
-					    MACH_NOTIFY_DEAD_NAME, 0,
-					    user->pi.port_right,
-					    MACH_MSG_TYPE_MAKE_SEND_ONCE,
-					    &old);
-      if (old != MACH_PORT_NULL)
-	mach_port_deallocate (mach_task_self (), old);
-    }
+  if (! err && user->po->path && active_flags & FS_TRANS_SET)
+    err = fshelp_set_active_translator (&user->pi, user->po->path, active);
 
  out:
   pthread_mutex_unlock (&np->lock);

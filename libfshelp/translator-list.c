@@ -1,6 +1,6 @@
 /* A list of active translators.
 
-   Copyright (C) 2013 Free Software Foundation, Inc.
+   Copyright (C) 2013,14 Free Software Foundation, Inc.
 
    Written by Justus Winter <4winter@informatik.uni-hamburg.de>
 
@@ -22,6 +22,7 @@
 #include <argz.h>
 #include <hurd/fsys.h>
 #include <hurd/ihash.h>
+#include <hurd/ports.h>
 #include <mach.h>
 #include <mach/notify.h>
 #include <pthread.h>
@@ -33,6 +34,7 @@
 
 struct translator
 {
+  struct port_info *pi;
   char *name;
   mach_port_t active;
 };
@@ -49,8 +51,10 @@ translator_ihash_cleanup (void *element, void *arg)
 {
   struct translator *translator = element;
 
-  /* No need to deallocate port, we only keep the name of the
-     port, not a reference.  */
+  if (translator->pi)
+    ports_port_deref (translator->pi);
+  /* No need to deallocate translator->active, we only keep the name of
+     the port, not a reference.  */
   free (translator->name);
   free (translator);
 }
@@ -58,7 +62,9 @@ translator_ihash_cleanup (void *element, void *arg)
 /* Record an active translator being bound to the given file name
    NAME.  ACTIVE is the control port of the translator.  */
 error_t
-fshelp_set_active_translator (const char *name, mach_port_t active)
+fshelp_set_active_translator (struct port_info *pi,
+			      const char *name,
+			      mach_port_t active)
 {
   error_t err = 0;
   pthread_mutex_lock (&translator_ihash_lock);
@@ -79,6 +85,7 @@ fshelp_set_active_translator (const char *name, mach_port_t active)
     return ENOMEM;
 
   t->active = MACH_PORT_NULL;
+  t->pi = NULL;
   t->name = strdup (name);
   if (! t->name)
     {
@@ -93,9 +100,31 @@ fshelp_set_active_translator (const char *name, mach_port_t active)
 
  update:
   if (active)
-    /* No need to increment the reference count, we only keep the
-       name, not a reference.  */
-    t->active = active;
+    {
+      if (t->pi != pi)
+	{
+	  mach_port_t old;
+	  err = mach_port_request_notification (mach_task_self (), active,
+						MACH_NOTIFY_DEAD_NAME, 0,
+						pi->port_right,
+						MACH_MSG_TYPE_MAKE_SEND_ONCE,
+						&old);
+	  if (err)
+	    return err;
+	  if (old != MACH_PORT_NULL)
+	    mach_port_deallocate (mach_task_self (), old);
+
+	  if (t->pi)
+	    ports_port_deref (t->pi);
+
+	  ports_port_ref (pi);
+	  t->pi = pi;
+	}
+
+      /* No need to increment the reference count, we only keep the
+	 name, not a reference.  */
+      t->active = active;
+    }
   else
     hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t);
 

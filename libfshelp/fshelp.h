@@ -1,5 +1,5 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02,13
+   Copyright (C) 1994,95,96,97,98,99,2000,01,02,13,14
      Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
@@ -34,14 +34,20 @@
 
 
 /* Keeping track of active translators */
-/* These routines keep a list of active translators.  They are
-   self-contained and do not require multi threading or the ports
-   library.  */
+/* These routines keep a list of active translators.  They do not
+   require multi threading but depend on the ports library.  */
+
+struct port_info;
 
 /* Record an active translator being bound to the given file name
-   NAME.  ACTIVE is the control port of the translator.  */
+   NAME.  ACTIVE is the control port of the translator.  PI references
+   a receive port that is used to request dead name notifications,
+   typically the port for the underlying node passed to the
+   translator.  */
 error_t
-fshelp_set_active_translator (const char *name, mach_port_t active);
+fshelp_set_active_translator (struct port_info *pi,
+                              const char *name,
+                              mach_port_t active);
 
 /* Remove the active translator specified by its control port ACTIVE.
    If there is no active translator with the given control port, this
