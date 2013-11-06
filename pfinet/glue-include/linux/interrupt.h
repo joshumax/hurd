@@ -21,6 +21,7 @@ extern pthread_mutex_t net_bh_lock;
 
 /* See sched.c::net_bh_worker comments.  */
 extern pthread_cond_t net_bh_wakeup;
+extern int net_bh_raised;
 
 #define NET_BH	0xb00bee51
 
@@ -30,6 +31,7 @@ static inline void
 mark_bh (int bh)
 {
   assert (bh == NET_BH);
+  net_bh_raised = 1;
   pthread_cond_broadcast (&net_bh_wakeup);
 }
 

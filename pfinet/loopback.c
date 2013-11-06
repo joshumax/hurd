@@ -71,6 +71,13 @@ static int loopback_xmit(struct sk_buff *skb, struct device *dev)
 #ifndef LOOPBACK_MUST_CHECKSUM
 	skb->ip_summed = CHECKSUM_UNNECESSARY;
 #endif
+
+	/*
+	 *	Calling netif_rx() requires locking net_bh_lock, which
+	 *	has already been done since this function is called by
+	 *	the net_bh worker thread.
+	 */
+
 	netif_rx(skb);
 
 	stats->rx_bytes+=skb->len;

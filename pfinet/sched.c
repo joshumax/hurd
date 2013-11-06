@@ -26,6 +26,7 @@
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t net_bh_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t net_bh_wakeup = PTHREAD_COND_INITIALIZER;
+int net_bh_raised = 0;
 
 struct task_struct current_contents; /* zeros are right default values */
 
@@ -61,7 +62,11 @@ net_bh_worker (void *arg)
   pthread_mutex_lock (&net_bh_lock);
   while (1)
     {
-      pthread_cond_wait (&net_bh_wakeup, &net_bh_lock);
+      while (!net_bh_raised)
+        pthread_cond_wait (&net_bh_wakeup, &net_bh_lock);
+
+      net_bh_raised = 0;
+
       pthread_mutex_lock (&global_lock);
       net_bh ();
       pthread_mutex_unlock (&global_lock);
