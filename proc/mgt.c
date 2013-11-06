@@ -458,6 +458,8 @@ S_proc_exception_raise (mach_port_t excport,
       ports_port_deref (e);
       mach_port_deallocate (mach_task_self (), thread);
       mach_port_deallocate (mach_task_self (), task);
+      if (err)
+	return err;
       return MIG_NO_REPLY;
 
     default:
