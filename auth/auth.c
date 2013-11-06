@@ -381,7 +381,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 {
   struct pending_user *u;
   struct authhandle *user;
-  error_t err;
+  error_t err = 0;
 
   if (! serverauth)
     return EOPNOTSUPP;
