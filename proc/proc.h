@@ -164,7 +164,7 @@ void prociterate (void (*)(struct proc *, void *), void *);
 void free_process (struct proc *);
 void panic (char *);
 int valid_task (task_t);
-int genpid ();
+int genpid (void);
 void abort_getmsgport (struct proc *);
 int zombie_check_pid (pid_t);
 void check_message_dying (struct proc *, struct proc *);
