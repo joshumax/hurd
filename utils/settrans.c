@@ -1,6 +1,6 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995,96,97,98,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001,02,13 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -49,6 +49,8 @@ static struct argp_option options[] =
   {"passive",     'p', 0, 0, "Change NODE's passive translator record (default)" },
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist" },
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
+  {"pid-file",    'F', "FILENAME", 0, "When starting an active translator,"
+     " write its pid to this file"},
   {"pause",       'P', 0, 0, "When starting an active translator, prompt and"
      " wait for a newline on stdin before completing the startup handshake"},
   {"timeout",     't',"SEC",0, "Timeout for translator startup, in seconds"
@@ -104,6 +106,7 @@ main(int argc, char *argv[])
   /* Various option flags.  */
   int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0,
       orphan = 0;
+  char *pid_file = NULL;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
   char **chroot_command = 0;
@@ -136,6 +139,12 @@ main(int argc, char *argv[])
 	case 'g': kill_active = 1; break;
 	case 'x': excl = 1; break;
 	case 'P': pause = 1; break;
+	case 'F':
+	  pid_file = strdup (arg);
+	  if (pid_file == NULL)
+	    error(3, ENOMEM, "Failed to duplicate argument");
+	  break;
+
 	case 'o': orphan = 1; break;
 
 	case 'C':
@@ -219,6 +228,17 @@ main(int argc, char *argv[])
 	      fprintf (stderr, "Translator pid: %d\nPausing...",
 	               task2pid (task));
 	      getchar ();
+	    }
+
+	  if (pid_file != NULL)
+	    {
+	      FILE *h;
+	      h = fopen (pid_file, "w");
+	      if (h == NULL)
+		error (4, errno, "Failed to open pid file");
+
+	      fprintf (h, "%i\n", task2pid (task));
+	      fclose (h);
 	    }
 
 	  node = file_name_lookup (node_name, flags | lookup_flags, 0666);
