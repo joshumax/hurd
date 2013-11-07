@@ -54,6 +54,7 @@ login addauth setauth: nonsugid.o
 addauth rmauth setauth unsu: frobauth.o
 rmauth setauth unsu: frobauth-mod.o
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
+portinfo: ../libps/libps.a
 
 storeinfo storecat storeread: ../libstore/libstore.a
 ftpcp ftpdir: ../libftpconn/libftpconn.a

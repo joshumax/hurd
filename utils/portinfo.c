@@ -1,6 +1,6 @@
 /* Print information about a task's ports
 
-   Copyright (C) 1996,97,98,99, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1996,97,98,99, 2000,13 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -31,6 +31,8 @@
 
 #include <hurd.h>
 #include <hurd/process.h>
+#include <ps.h>
+#include <sys/mman.h>
 
 #include <portinfo.h>
 #include <portxlate.h>
@@ -63,8 +65,8 @@ static const struct argp_option options[] = {
 #endif
   {"no-translation-errors", 'E', 0, 0,
      "Don't display an error if a specified port can't be translated" },
-#if 0
   {"search",    'a', 0, 0,  "Search all processes for the given ports"},
+#if 0
   {"target-receive",  'R', 0, 0,
      "Only show ports that translate into receive rights"},
   {"target-send",     'S', 0, 0,
@@ -107,6 +109,122 @@ parse_task (char *arg)
     error (11, 0, "%s: Process %d is dead and has no task", arg, (int) pid);
 
   return task;
+}
+
+/* Functions searching for local ports in all processes.  */
+
+/* Locates the port NAME from TASK in any other process and prints the
+   mappings.  */
+error_t
+search_for_port (task_t task, mach_port_t name, unsigned show)
+{
+  error_t err;
+
+  /* These resources are freed in the function epilogue.  */
+  struct ps_context *context = NULL;
+  struct proc_stat_list *procset = NULL;
+
+  /* Print infos about this port.  */
+  err = print_port_info (name, 0, task, show, stdout);
+  if (err)
+    goto out;
+
+  static process_t proc = MACH_PORT_NULL;
+  if (proc == MACH_PORT_NULL)
+    proc = getproc ();
+
+  pid_t pid;
+  err = proc_task2pid (proc, task, &pid);
+  if (err)
+    goto out;
+
+  /* Get a list of all processes.  */
+  err = ps_context_create (getproc (), &context);
+  if (err)
+    goto out;
+
+  err = proc_stat_list_create (context, &procset);
+  if (err)
+    goto out;
+
+  err = proc_stat_list_add_all (procset, 0, 0);
+  if (err)
+    goto out;
+
+  for (unsigned i = 0; i < procset->num_procs; i++)
+    {
+      /* Ignore the target process.  */
+      if (procset->proc_stats[i]->pid == pid)
+	continue;
+
+      task_t xlate_task = MACH_PORT_NULL;
+      err = proc_pid2task (proc, procset->proc_stats[i]->pid, &xlate_task);
+      if (err || xlate_task == MACH_PORT_NULL)
+	continue;
+
+      struct port_name_xlator *xlator = NULL;
+      err = port_name_xlator_create (task, xlate_task, &xlator);
+      if (err)
+	goto loop_cleanup;
+
+      mach_port_t translated_port;
+      mach_msg_type_name_t translated_type;
+      err = port_name_xlator_xlate (xlator,
+				    name, 0,
+				    &translated_port, &translated_type);
+      if (err)
+	goto loop_cleanup;
+
+      /* The port translation was successful, print more infos.  */
+      printf ("% 5i -> % 5i: ", pid, procset->proc_stats[i]->pid);
+
+      err = print_xlated_port_info (name, 0, xlator, show, stdout);
+      if (err)
+	goto loop_cleanup;
+
+    loop_cleanup:
+      if (xlate_task)
+	mach_port_deallocate (mach_task_self (), xlate_task);
+
+      if (xlator)
+	port_name_xlator_free (xlator);
+    }
+
+  err = 0;
+
+ out:
+  if (procset != NULL)
+    proc_stat_list_free (procset);
+
+  if (context != NULL)
+    ps_context_free (context);
+
+  return err;
+}
+
+/* Locates all ports from TASK in any other process and prints the
+   mappings.  */
+error_t
+search_for_ports (task_t task, mach_port_type_t only, unsigned show)
+{
+  error_t err;
+
+  mach_port_t *names = NULL;
+  mach_port_type_t *types = NULL;
+  mach_msg_type_number_t names_len = 0;
+  mach_msg_type_number_t types_len = 0;
+  err = mach_port_names (task, &names, &names_len, &types, &types_len);
+  if (err)
+    return err;
+
+  for (mach_msg_type_number_t i = 0; i < names_len; i++)
+    if (types[i] & only)
+      search_for_port (task, names[i], show);
+
+  munmap ((caddr_t) names, names_len * sizeof *names);
+  munmap ((caddr_t) types, types_len * sizeof *types);
+
+  return 0;
 }
 
 static volatile int hold = 0;
@@ -183,6 +301,8 @@ main (int argc, char **argv)
 		  if (xlator)
 		    err = print_xlated_task_ports_info (xlator, only,
 							show, stdout);
+		  else if (search)
+		    err = search_for_ports (task, only, show);
 		  else
 		    err = print_task_ports_info (task, only, show, stdout);
 		  if (err)
@@ -206,6 +326,8 @@ main (int argc, char **argv)
 		    if (err && no_translation_errors)
 		      break;
 		  }
+		else if (search)
+		    err = search_for_port (task, name, show);
 		else
 		  err = print_port_info (name, 0, task, show, stdout);
 		if (err)
