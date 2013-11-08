@@ -140,9 +140,13 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	    pthread_detach (pthread_id);
 	  else
 	    {
-	      /* XXX The number of threads should be adjusted but the code
-		 and design of the Hurd servers just don't handle thread
-		 creation failure.  */
+	      pthread_spin_lock (&lock);
+	      totalthreads--;
+	      nreqthreads--;
+	      pthread_spin_unlock (&lock);
+	      /* There is not much we can do at this point.  The code
+		 and design of the Hurd servers just don't handle
+		 thread creation failure.  */
 	      errno = err;
 	      perror ("pthread_create");
 	    }
