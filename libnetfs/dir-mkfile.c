@@ -61,4 +61,3 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
 
   return err;
 }
-

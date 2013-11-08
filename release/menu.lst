@@ -47,4 +47,3 @@ install= (fd0)+1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
 # Entry 5:
 title=  Reinstall grub from hard disk to itself
 install= (hd0)/boot/grub/stage1 (hd0) (hd0,a)/boot/grub/stage2 0x8000 p
-

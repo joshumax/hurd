@@ -15,5 +15,3 @@ unsigned int csum_partial_copy( const char *src, char *dst, int len, int sum)
 
 	return sum;
 }
-
-

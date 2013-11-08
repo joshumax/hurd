@@ -66,5 +66,3 @@ diskfs_create_protid (struct peropen *po, struct iouser *user,
     diskfs_finish_protid (*cred, user);
   return err;
 }
-
-

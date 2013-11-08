@@ -49,4 +49,3 @@ _ports_complete_deallocate (struct port_info *pi)
   
   free (pi);
 }
-

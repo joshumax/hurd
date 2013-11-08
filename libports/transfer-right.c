@@ -95,6 +95,3 @@ ports_transfer_right (void *tostruct,
     ports_port_deref (topi);
   return 0;
 }
-
-
-  

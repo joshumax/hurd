@@ -347,4 +347,3 @@
 #define UNICODE_REPLACEMENT_CHARACTER			     ((wchar_t) 0xfffd)
 
 #endif	/* _UNICODE_H_ */
-

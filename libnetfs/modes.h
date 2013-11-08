@@ -20,4 +20,3 @@
 
 #include <fcntl.h>
 #define HONORED_STATE_MODES (O_APPEND|O_ASYNC|O_FSYNC|O_NONBLOCK|O_NOATIME)
-

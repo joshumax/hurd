@@ -53,4 +53,3 @@ unsigned short csum_fold(unsigned int sum)
                 : "+d" (sum) : : "cc", "2", "3");
         return ((unsigned short) ~sum);
 }
-

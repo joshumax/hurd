@@ -101,4 +101,3 @@ typedef struct sfm			/* SDLA firmware file structire */
 } sfm_t;
 
 #endif	/* _SDLASFM_H */
-

@@ -37,4 +37,3 @@ netfs_S_file_set_size (struct protid *user,
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
-

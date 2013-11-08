@@ -768,4 +768,3 @@ u8 *ipv6_skip_exthdr(struct ipv6_opt_hdr *hdr, u8 *nexthdrp, int len)
 	*nexthdrp = nexthdr;
 	return (u8*)hdr;
 }
-

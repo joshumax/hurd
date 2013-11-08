@@ -209,4 +209,3 @@ recache_handle (int *p, struct node *np)
   pthread_spin_unlock (&netfs_node_refcnt_lock);
   return p + len / sizeof (int);
 }
-

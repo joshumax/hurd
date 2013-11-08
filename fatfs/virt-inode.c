@@ -227,9 +227,3 @@ vi_key_t vi_free(inode_t v_inode)
   pthread_spin_unlock (&inode_table_lock);
   return key;
 }
-
-
-
-
-
-

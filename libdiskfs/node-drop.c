@@ -96,5 +96,3 @@ diskfs_drop_node (struct node *np)
   diskfs_node_norefs (np);
   pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }
-
-      

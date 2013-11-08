@@ -9,5 +9,3 @@ into the root of binary distributions.
 
 Use `make install-tools tool-root=FOO' to install the tools that are
 used to build binary distributions.
-
-

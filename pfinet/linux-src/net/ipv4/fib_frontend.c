@@ -625,4 +625,3 @@ __initfunc(void ip_fib_init(void))
 	register_netdevice_notifier(&fib_netdev_notifier);
 	register_inetaddr_notifier(&fib_inetaddr_notifier);
 }
-

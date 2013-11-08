@@ -27,4 +27,3 @@ timertest: timertest.o
 fstests: fstests.o
 opendisk: opendisk.o
 fdtests: fdtests.o
-

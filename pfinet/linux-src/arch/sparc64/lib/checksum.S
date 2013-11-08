@@ -275,4 +275,3 @@ cpc_handler:
 	.section __ex_table
 	.align  4
 	.word  cpc_start, 0, cpc_end, cpc_handler
-

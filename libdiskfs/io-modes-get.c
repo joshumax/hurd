@@ -31,4 +31,3 @@ diskfs_S_io_get_openmodes (struct protid *cred,
   pthread_mutex_unlock (&cred->po->np->lock);
   return 0;
 }
-

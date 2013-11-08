@@ -114,4 +114,3 @@ _ports_remove_notified_rpc (struct rpc_info *rpc)
       _ports_free_rpc_notifies = req;
     }
 }
-

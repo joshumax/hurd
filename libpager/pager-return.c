@@ -41,4 +41,3 @@ pager_return_some (struct pager *p, vm_address_t offset,
   _pager_lock_object (p, offset, size, MEMORY_OBJECT_RETURN_ALL, 1,
 		      VM_PROT_NO_CHANGE, wait);
 }
-

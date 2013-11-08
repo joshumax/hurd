@@ -35,4 +35,3 @@ netfs_nput (struct node *np)
       pthread_mutex_unlock (&np->lock);
     }
 }
-

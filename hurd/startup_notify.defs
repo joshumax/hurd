@@ -33,5 +33,3 @@ STARTUP_NOTIFY_IMPORTS
 routine startup_dosync (
 	notify_port: mach_port_t;
 	waittime timeout: natural_t);
- 
-

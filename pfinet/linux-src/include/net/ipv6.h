@@ -323,6 +323,3 @@ extern void			ipv6_local_error(struct sock *sk, int err, struct flowi *fl, u32 i
 
 #endif /* __KERNEL__ */
 #endif /* _NET_IPV6_H */
-
-
-

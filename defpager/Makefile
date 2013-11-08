@@ -31,4 +31,3 @@ comma=,
 LDFLAGS=-Wl,$(subst :,$(comma),$(strip $(subst-functions)))
 
 include ../Makeconf
-

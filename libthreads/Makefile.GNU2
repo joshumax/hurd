@@ -31,4 +31,3 @@ libthreads.a: $(OBJS)
 	$(CPP) $(CPPFLAGS) $< > $*.as
 	$(AS) -o $@ $*.as
 	rm -f $*.as
-

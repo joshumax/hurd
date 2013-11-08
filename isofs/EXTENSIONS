@@ -13,4 +13,3 @@ MD: A full 32 bit hurd mode; if not present, the mode is the one found
 in the PX record.
 
 FL: 32 bits of flags; if not present, the flags are zero.
-

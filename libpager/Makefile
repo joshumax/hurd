@@ -35,4 +35,3 @@ MIGSFLAGS = -DSEQNOS
 MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf
-

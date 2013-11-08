@@ -93,4 +93,3 @@ extern int nubus_hwreg_present(volatile void *ptr);
 extern void nubus_init_via(void);
 extern int nubus_free_irq(int slot);
 extern int nubus_request_irq(int slot, void *dev_id, void (*handler)(int,void *,struct pt_regs *));
-

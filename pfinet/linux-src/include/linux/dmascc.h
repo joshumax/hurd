@@ -40,4 +40,3 @@ struct scc_param {
   int persist;  /* 0 ... 255 */
   int dma;      /* 1, 3 */
 };
-

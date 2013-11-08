@@ -32,4 +32,3 @@ fshelp_transbox_init (struct transbox *transbox,
   pthread_cond_init (&transbox->wakeup, NULL);
   transbox->cookie = cookie;
 }
-

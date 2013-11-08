@@ -9,4 +9,3 @@ extern int rarp_get_info(char *buffer,
 			 int length,
 			 int dummy);
 #endif	/* _RARP_H */
-

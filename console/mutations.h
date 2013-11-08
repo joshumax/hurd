@@ -24,4 +24,3 @@
 #define IO_DESTRUCTOR end_using_protid_port (protid_t)
 
 #define TIOCTL_IMPORTS import "priv.h";
-

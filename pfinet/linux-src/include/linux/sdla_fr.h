@@ -635,4 +635,3 @@ typedef struct {
 #  pragma	pack()
 #endif
 #endif	/* _SDLA_FR_H */
-

@@ -217,4 +217,3 @@ timer_change (struct timer_list *timer, long long expires)
   timer->expires = expires;
   timer_add (timer);
 }
-

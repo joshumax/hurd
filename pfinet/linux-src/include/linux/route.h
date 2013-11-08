@@ -67,4 +67,3 @@ struct rtentry
 
 
 #endif	/* _LINUX_ROUTE_H */
-

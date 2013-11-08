@@ -30,6 +30,3 @@ ports_create_port_noinstall (struct port_class *class,
 {
   return _ports_create_port_internal (class, bucket, size, result, 0);
 }
-
-
-

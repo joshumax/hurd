@@ -51,4 +51,3 @@ netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
 
   return err;
 }
-

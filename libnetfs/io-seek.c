@@ -65,4 +65,3 @@ netfs_S_io_seek (struct protid *user,
 
   return err;
 }
-

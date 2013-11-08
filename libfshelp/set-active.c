@@ -60,4 +60,3 @@ fshelp_set_active (struct transbox *box,
   box->active = active;
   return 0;
 }
-

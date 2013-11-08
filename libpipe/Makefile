@@ -29,4 +29,3 @@ HURDLIBS= ports
 LDLIBS += -lpthread
 
 include ../Makeconf
-

@@ -50,4 +50,3 @@ ports_claim_right (void *portstruct)
 
   return ret;
 }
-

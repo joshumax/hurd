@@ -51,4 +51,3 @@ diskfs_S_fsys_goaway (fsys_t controlport,
   ports_port_deref (pt);
   return ret;
 }
-

@@ -220,4 +220,3 @@ struct driver_ops driver_current_vcs_ops =
     current_vcs_start,
     current_vcs_fini
   };
-

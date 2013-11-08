@@ -60,4 +60,3 @@ diskfs_S_io_readnotify (struct protid *cred)
 {
   return cred ? 0 : EOPNOTSUPP;
 }
-     

@@ -30,4 +30,3 @@ pager_shutdown (struct pager *p)
   ports_destroy_right (p);
   pthread_mutex_unlock (&p->interlock);
 }
-

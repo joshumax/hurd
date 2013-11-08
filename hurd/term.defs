@@ -120,4 +120,3 @@ routine termctty_open_terminal (
 routine term_get_peername (
 	terminal: io_t;
 	out name: string_t);
-

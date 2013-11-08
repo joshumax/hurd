@@ -34,5 +34,3 @@ diskfs_S_file_lock (struct protid *cred, int flags)
   pthread_mutex_unlock (&cred->po->np->lock);
   return err;
 }
-
-    

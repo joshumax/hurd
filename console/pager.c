@@ -237,4 +237,3 @@ user_pager_get_filemap (struct user_pager *user_pager, vm_prot_t prot)
 
   return user_pager->memobj;
 }
-

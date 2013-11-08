@@ -167,4 +167,3 @@ struct board_info
 	void ( * assertmemoff )	(struct channel *) ;
 	unchar poller_inhibited ;
 };
-

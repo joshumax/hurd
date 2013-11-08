@@ -27,4 +27,3 @@ cons_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 
   return (cons_fs_notify_server (inp, outp));
 }
-

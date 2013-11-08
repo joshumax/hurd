@@ -49,5 +49,3 @@ dirmgt_readdir (struct directory *dir, char **data, u_int *datacnt,
    with the reported error. */
 error_t
 (*dirmgt_find_entry)(struct directory *dir, char *name);
-
-

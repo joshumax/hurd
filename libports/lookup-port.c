@@ -50,5 +50,3 @@ ports_lookup_port (struct port_bucket *bucket,
   
   return pi;
 }
-
-  

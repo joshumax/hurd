@@ -30,4 +30,3 @@ OTHERLIBS = -lpthread
 include ../Makeconf
 
 CPPFLAGS += -DLOCALSTATEDIR=\"$(localstatedir)\"
-

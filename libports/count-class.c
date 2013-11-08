@@ -31,6 +31,3 @@ ports_count_class (struct port_class *class)
   pthread_mutex_unlock (&_ports_lock);
   return ret;
 }
-
-  
-

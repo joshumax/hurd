@@ -132,4 +132,3 @@ void		llc_test_request(llcptr lp, int data_len, char *pdu_data);
 int		register_cl2llc_client(llcptr llc, const char *device, void (*ops)(llcptr), u8 *rmac, u8 ssap, u8 dsap);
 void		unregister_cl2llc_client(llcptr lp);
 int 		llc_mac_data_indicate(llcptr lp, struct sk_buff *skb );
-

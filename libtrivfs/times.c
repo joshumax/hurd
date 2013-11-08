@@ -46,7 +46,3 @@ trivfs_set_mtime (struct trivfs_control *cntl)
   file_utimes (cntl->underlying, atime, mtime);
   return 0;
 }
-
-
-
-  

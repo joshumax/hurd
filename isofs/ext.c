@@ -56,5 +56,3 @@ struct susp_ext extensions[] =
   { 0, 0, 0, 0, susp_extensions },
   { 0, 0, 0, 0, 0 },
 }
-
-

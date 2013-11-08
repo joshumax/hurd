@@ -37,6 +37,3 @@ ports_resume_port_rpcs (void *portstruct)
     }
   pthread_mutex_unlock (&_ports_lock);
 }
-
-
-  

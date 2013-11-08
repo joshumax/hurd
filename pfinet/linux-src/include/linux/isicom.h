@@ -307,4 +307,3 @@ extern inline void kill_queue(struct isi_port * port, short queue)
 #endif	/*	__KERNEL__	*/
 
 #endif	/*	ISICOM_H	*/
-

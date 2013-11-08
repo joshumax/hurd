@@ -50,6 +50,3 @@ trivfs_clean_protid (void *arg)
   if (cred->realnode != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), cred->realnode);
 }
-
-  
-

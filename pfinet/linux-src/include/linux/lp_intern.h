@@ -19,4 +19,3 @@
 int lp_internal_init(void);
 
 #endif
-

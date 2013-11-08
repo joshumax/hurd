@@ -369,4 +369,3 @@ int wpft1_init (sdla_t* card, wandev_conf_t* conf);     /* FT1 Config support */
 
 #endif	/* __KERNEL__ */
 #endif	/* _WANPIPE_H */
-

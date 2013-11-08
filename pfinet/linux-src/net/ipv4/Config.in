@@ -82,4 +82,3 @@ bool 'IP: Allow large windows (not recommended if <16Mb of memory)' CONFIG_SKB_L
 #if [ "$CONFIG_EXPERIMENTAL" = "y" ]; then 
 #bool 'IP: support experimental checksum copy to user for UDP'  CONFIG_UDP_DELAY_CSUM
 #fi
-

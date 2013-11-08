@@ -40,4 +40,3 @@ netfs_S_dir_rename (struct protid *fromdiruser, char *fromname,
     mach_port_deallocate (mach_task_self (), todiruser->pi.port_right);
   return err;
 }
-

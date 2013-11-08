@@ -184,5 +184,3 @@ ip_compute_csum(unsigned char * buff, int len)
 }
 
 #endif /* _S390_CHECKSUM_H */
-
-

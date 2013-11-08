@@ -119,4 +119,3 @@ struct sysv_sb_info {
 #define sv_nzones				u.sysv_sb.s_nzones
 
 #endif
-

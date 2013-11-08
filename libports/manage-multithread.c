@@ -247,8 +247,3 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   totalthreads = 1;
   thread_function ((void *) 1);
 }
-
-
-
-
-

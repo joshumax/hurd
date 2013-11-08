@@ -21,4 +21,3 @@ void vmfree_area_pages(unsigned long address, unsigned long size);
 int vmalloc_area_pages(unsigned long address, unsigned long size);
 
 #endif
-

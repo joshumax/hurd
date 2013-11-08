@@ -69,4 +69,3 @@ iohelp_fetch_shared_data (void *arg)
   if (diskfs_synchronous && mod)
     diskfs_node_update (cred->po->np, 1);
 }
-

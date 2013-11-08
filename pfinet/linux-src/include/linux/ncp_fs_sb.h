@@ -93,4 +93,3 @@ static inline void ncp_invalidate_conn(struct ncp_server *server)
 #endif				/* __KERNEL__ */
 
 #endif
- 

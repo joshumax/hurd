@@ -101,4 +101,3 @@ struct mouse_status {
 /* Function Prototypes */
 
 #endif
-

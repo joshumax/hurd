@@ -114,7 +114,3 @@ struct irda_ias_set {
 };
 
 #endif /* KERNEL_IRDA_H */
-
-
-
-

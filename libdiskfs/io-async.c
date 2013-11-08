@@ -28,4 +28,3 @@ diskfs_S_io_async (struct protid *cred __attribute__ ((unused)),
 {
   return EOPNOTSUPP;
 }
-

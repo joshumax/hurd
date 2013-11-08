@@ -27,4 +27,3 @@ iohelp_initialize_conch (struct conch *c, pthread_mutex_t *m)
   c->holder = 0;
   c->holder_shared_page = 0;
 }
-

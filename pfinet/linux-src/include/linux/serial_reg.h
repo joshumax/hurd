@@ -141,4 +141,3 @@
  */
 
 #endif /* _LINUX_SERIAL_REG_H */
-

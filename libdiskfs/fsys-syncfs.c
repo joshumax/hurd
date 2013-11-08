@@ -72,4 +72,3 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 
   return 0;
 }
-

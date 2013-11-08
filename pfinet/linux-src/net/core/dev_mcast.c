@@ -249,4 +249,3 @@ __initfunc(void dev_mcast_init(void))
 	ent->read_proc = dev_mc_read_proc;
 #endif
 }
-

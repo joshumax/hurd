@@ -34,4 +34,3 @@ ports_port_deref_weak (void *portstruct)
   else
     pthread_mutex_unlock (&_ports_lock);
 }
-

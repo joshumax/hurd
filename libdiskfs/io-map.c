@@ -70,4 +70,3 @@ error:
   pthread_mutex_unlock (&node->lock);
   return errno;
 }
-

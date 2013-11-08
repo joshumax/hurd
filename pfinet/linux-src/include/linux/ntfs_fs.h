@@ -4,4 +4,3 @@
 int init_ntfs_fs(void);
 
 #endif
-

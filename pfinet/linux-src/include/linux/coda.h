@@ -796,5 +796,4 @@ struct PioctlData {
 #define	IS_CTL_FID(fidp)	((fidp)->Volume == CTL_VOL &&\
 				 (fidp)->Vnode == CTL_VNO &&\
 				 (fidp)->Unique == CTL_UNI)
-#endif 
-
+#endif

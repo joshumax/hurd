@@ -34,4 +34,3 @@ ports_resume_class_rpcs (struct port_class *class)
     }
   pthread_mutex_unlock (&_ports_lock);
 }
-

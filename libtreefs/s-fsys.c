@@ -74,4 +74,3 @@ treefs_S_fsys_syncfs (fsys_t fsys_port, int wait, int recurse)
 {
   CALL_FSYS_HOOK(treefs_s_fsys_syncfs, fsys_port, wait, recurse);
 }
-

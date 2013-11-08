@@ -41,5 +41,3 @@ extern int			inet_fcntl(struct socket *sock,
 extern int			inet_listen(struct socket *sock, int backlog);
 
 #endif
-
-

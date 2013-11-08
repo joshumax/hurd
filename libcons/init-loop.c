@@ -29,4 +29,3 @@ cons_server_loop (void)
 					   cons_demuxer, 0);
   /* Not reached.  */
 }
-

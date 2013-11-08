@@ -58,8 +58,3 @@ ports_reallocate_port (void *portstruct)
   if (dropref)
     ports_port_deref (pi);
 }
-
-  
-
-		      
-    

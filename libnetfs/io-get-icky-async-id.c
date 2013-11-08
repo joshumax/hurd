@@ -27,4 +27,3 @@ netfs_S_io_get_icky_async_id (struct protid *user, mach_port_t *pt,
 {
   return EOPNOTSUPP;
 }
-

@@ -45,5 +45,3 @@ struct ipc_perm
 #endif /* __KERNEL__ */
 
 #endif /* _LINUX_IPC_H */
-
-

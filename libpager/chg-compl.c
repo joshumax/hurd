@@ -53,5 +53,3 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   ports_port_deref (p);
   return 0;
 }
-
-

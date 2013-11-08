@@ -81,4 +81,3 @@ LEAF(spin_unlock,1)
 	RET
 
 	END(spin_unlock)
-

@@ -39,4 +39,3 @@ struct efs_dir {
 #define EFS_REALOFF(offset) ((offset << 1))
 
 #endif /* __EFS_DIR_H__ */
-

@@ -36,4 +36,3 @@ netfs_demuxer (mach_msg_header_t *inp,
           || ports_interrupt_server (inp, outp)
           || netfs_ifsock_server (inp, outp));
 }
-

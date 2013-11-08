@@ -124,4 +124,3 @@ void net_timer (unsigned long data)
 			break;
 	}
 }
-

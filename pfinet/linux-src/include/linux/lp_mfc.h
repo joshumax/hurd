@@ -11,4 +11,3 @@
 int lp_mfc_init(void);
 
 #endif
-

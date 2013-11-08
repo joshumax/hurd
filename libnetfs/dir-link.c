@@ -40,5 +40,3 @@ netfs_S_dir_link (struct protid *diruser, struct protid *fileuser, char *name,
     mach_port_deallocate (mach_task_self (), fileuser->pi.port_right);
   return err;
 }
-
-  

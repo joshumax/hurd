@@ -36,4 +36,3 @@ MIGCOMSFLAGS = -prefix treefs_
 notify-MIGSFLAGS = -DSEQNOS
 
 include ../Makeconf
-

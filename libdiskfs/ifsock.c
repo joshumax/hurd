@@ -129,4 +129,3 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
   pthread_mutex_unlock (&np->lock);
   return 0;
 }
-      

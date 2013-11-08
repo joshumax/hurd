@@ -161,4 +161,3 @@ cons_vcons_scrollback (vcons_t vcons, cons_scroll_t type, float value)
   pthread_mutex_unlock (&vcons->lock);
   return ret;
 }
-

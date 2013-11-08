@@ -43,6 +43,3 @@ routine proc_exception_raise (
 	exception: integer_t;
 	code: integer_t;
 	subcode: integer_t);
-
-
-

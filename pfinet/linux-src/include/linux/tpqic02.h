@@ -736,4 +736,3 @@ extern int qic02_tape_init(void);			  /* for mem.c */
 #endif /* CONFIG_QIC02_TAPE */
 
 #endif /* _LINUX_TPQIC02_H */
-

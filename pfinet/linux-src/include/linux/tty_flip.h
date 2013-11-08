@@ -26,10 +26,3 @@ _INLINE_ void tty_schedule_flip(struct tty_struct *tty)
 
 
 #endif /* _LINUX_TTY_FLIP_H */
-
-
-
-
-
-
-

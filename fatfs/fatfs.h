@@ -125,4 +125,3 @@ void fat_to_unix_filename (const char *, char *);
 error_t diskfs_cached_lookup_in_dirbuf (int cache_id, struct node **npp,
 					vm_address_t buf);
 void refresh_node_stats (void);
-

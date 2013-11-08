@@ -128,4 +128,3 @@ return_backing_pages (off_t *map, int maplen)
     }
   pthread_mutex_unlock (&bmap_lock);
 }
-

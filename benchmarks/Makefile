@@ -23,4 +23,3 @@ OBJS = forks.o
 target = forks
 
 include ../Makeconf
-

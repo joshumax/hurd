@@ -15,4 +15,3 @@ default xkb_types "hurd" {
       level_name[Level4] = "Hurd console3";
     };
 };
-

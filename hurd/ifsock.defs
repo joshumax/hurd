@@ -32,4 +32,3 @@ routine
 ifsock_getsockaddr (
 	file: file_t;
 	out sockaddr: mach_port_copy_send_t);
-

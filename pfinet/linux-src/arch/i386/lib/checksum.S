@@ -444,4 +444,4 @@ DST(	movb %dl, (%edi)         )
 #undef ROUND
 #undef ROUND1		
 		
-#endif	/* CPU==i686 */ 
+#endif	/* CPU==i686 */

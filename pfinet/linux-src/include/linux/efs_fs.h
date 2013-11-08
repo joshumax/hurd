@@ -64,4 +64,3 @@ extern int efs_bmap(struct inode *, int);
 extern int init_efs_fs(void);
 
 #endif /* __EFS_FS_H__ */
-

@@ -129,6 +129,3 @@ fshelp_acquire_lock (struct lock_box *box, int *user, pthread_mutex_t *mut,
     }
   return 0;
 }
-
-	      
-	  

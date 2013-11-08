@@ -118,4 +118,3 @@ _ports_create_port_internal (struct port_class *class,
 
   return err;
 }
-

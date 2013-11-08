@@ -35,5 +35,3 @@ trivfs_demuxer (mach_msg_header_t *inp,
 	  || trivfs_fsys_server (inp, outp)
 	  || ports_interrupt_server (inp, outp));
 }
-
-  

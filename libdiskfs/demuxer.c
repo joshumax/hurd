@@ -38,5 +38,3 @@ diskfs_demuxer (mach_msg_header_t *inp,
 	  || (diskfs_shortcut_ifsock ? diskfs_ifsock_server (inp, outp) : 0)
 	  || diskfs_startup_notify_server (inp, outp));
 }
-
-  

@@ -24,4 +24,3 @@
 #define FS_NOTIFY_DESTRUCTOR end_using_notify_port (cons_notify_t)
 
 #define FS_NOTIFY_IMPORTS import "priv.h";
-

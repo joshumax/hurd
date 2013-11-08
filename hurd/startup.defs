@@ -78,4 +78,3 @@ routine startup_authinit (
 	sreplyport reply_port: sreply_port_t;
 	auth: mach_port_send_t;
 	out proc: mach_port_send_t);
-

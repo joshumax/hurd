@@ -132,7 +132,3 @@ setup_dummy_device (char *name, struct device **device)
   err = - register_netdevice (dev);
   assert_perror (err);
 }
-
-
-
-

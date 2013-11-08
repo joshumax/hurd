@@ -65,4 +65,3 @@
 #define MAX_S514_CARDS		8
 
 #endif	/* _SDLAPCI_H */
-

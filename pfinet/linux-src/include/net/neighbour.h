@@ -268,5 +268,3 @@ extern __inline__ void neigh_table_unlock(struct neigh_table *tbl)
 
 #endif
 #endif
-
-

@@ -235,4 +235,3 @@ ftp_conn_get_names (struct ftp_conn *conn, const char *name,
 
   return err;
 }
-

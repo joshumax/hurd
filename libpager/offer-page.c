@@ -49,4 +49,3 @@ pager_offer_page (struct pager *p,
 
   pthread_mutex_unlock (&p->interlock);
 }
-

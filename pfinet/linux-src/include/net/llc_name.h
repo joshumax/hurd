@@ -4,4 +4,3 @@ char *frame_names[] =
     "UA_RSP","DM_RSP","FRMR_RSP","BAD_FRAME","UI_CMD",
     "XID_CMD","TEST_CMD","XID_RSP","TEST_RSP"
 };
- 

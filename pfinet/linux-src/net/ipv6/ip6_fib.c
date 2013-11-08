@@ -1201,5 +1201,3 @@ void fib6_gc_cleanup(void)
 	del_timer(&ip6_fib_timer);
 }
 #endif
-
-

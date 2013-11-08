@@ -31,5 +31,3 @@ ports_port_ref (void *portstruct)
   pi->refcnt++;
   pthread_mutex_unlock (&_ports_lock);
 }
-
-  

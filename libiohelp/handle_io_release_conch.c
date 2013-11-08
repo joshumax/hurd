@@ -41,4 +41,3 @@ iohelp_handle_io_release_conch (struct conch *c, void *user)
 
   pthread_cond_broadcast (&c->wait);
 }
-

@@ -156,4 +156,3 @@ struct shared_io
 /* Look at this value to determine the byte order the server is using,
    and then use it.  */
 #define SHARED_PAGE_MAGIC 0xaabbccdd
-

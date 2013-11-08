@@ -30,6 +30,3 @@ ports_create_port (struct port_class *class, struct port_bucket *bucket,
 {
   return _ports_create_port_internal (class, bucket, size, result, 1);
 }
-
-
-

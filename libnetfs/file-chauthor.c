@@ -35,4 +35,3 @@ netfs_S_file_chauthor (struct protid *user,
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
-

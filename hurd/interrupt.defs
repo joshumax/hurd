@@ -30,4 +30,3 @@ routine
 interrupt_operation (object: mach_port_t;
 		     waittime timeout: natural_t;
 		     msgseqno seqno: mach_port_seqno_t);
-

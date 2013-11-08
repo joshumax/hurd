@@ -36,5 +36,3 @@ netfs_S_file_getlinknode (struct protid *user,
   *porttype = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
-
-      

@@ -106,5 +106,3 @@ ports_begin_rpc (void *portstruct, mach_msg_id_t msg_id, struct rpc_info *info)
 
   return 0;
 }
-
-  

@@ -422,4 +422,3 @@ main (int argc, char **argv)
   for (;;)
     netfs_server_loop ();
 }
-

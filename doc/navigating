@@ -50,5 +50,4 @@ exploring the implementation of various things in the hurd C library.
 
 You should take a look at all the libraries in the Hurd; spend time
 reading the code.  Feel free to ask questions to help understand what
-you read.  
-
+you read.

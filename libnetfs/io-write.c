@@ -66,5 +66,3 @@ netfs_S_io_write (struct protid *user,
   
   return err;
 }
-
-

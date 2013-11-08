@@ -26,5 +26,3 @@ iohelp_free_iouser (struct iouser *iouser)
   idvec_free (iouser->gids);
   free (iouser);
 }
-
-	   

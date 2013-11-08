@@ -33,5 +33,3 @@ diskfs_protid_rele (void *arg)
     munmap (cred->mapped, vm_page_size);
   diskfs_release_peropen (cred->po);
 }
-
-  

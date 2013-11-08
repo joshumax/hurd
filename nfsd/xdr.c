@@ -215,4 +215,4 @@ nfs_error_trans (error_t err, int version)
 	  return NFSERR_IO;
 	}
     }
-}      
+}

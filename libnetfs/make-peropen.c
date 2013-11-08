@@ -66,4 +66,3 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
 
   return po;
 }
-

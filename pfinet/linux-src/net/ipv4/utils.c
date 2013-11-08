@@ -88,4 +88,3 @@ __u32 in_aton(const char *str)
 	}
 	return(htonl(l));
 }
-

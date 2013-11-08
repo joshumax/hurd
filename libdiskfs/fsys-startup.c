@@ -34,4 +34,3 @@ diskfs_S_fsys_startup (mach_port_t port,
 {
   return diskfs_execboot_fsys_startup (port, flags, ctl, real, realpoly);
 }
-
