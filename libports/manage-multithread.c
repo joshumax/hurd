@@ -91,9 +91,12 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  int global_timeout,
 					  void (*hook)())
 {
-  volatile unsigned int nreqthreads;
-  volatile unsigned int totalthreads;
-  pthread_spinlock_t lock = PTHREAD_SPINLOCK_INITIALIZER;
+  /* totalthreads is the number of total threads created.  nreqthreads
+     is the number of threads not currently servicing any client.  The
+     initial values account for the main thread.  */
+  unsigned int totalthreads = 1;
+  unsigned int nreqthreads = 1;
+
   pthread_attr_t attr;
 
   auto void * thread_function (void *);
@@ -120,30 +123,22 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 		/* msgt_unused = */		0
 	};
 
-      pthread_spin_lock (&lock);
-      assert (nreqthreads);
-      nreqthreads--;
-      if (nreqthreads != 0)
-	pthread_spin_unlock (&lock);
-      else
+      if (__atomic_sub_fetch (&nreqthreads, 1, __ATOMIC_RELAXED) == 0)
 	/* No thread would be listening for requests, spawn one. */
 	{
 	  pthread_t pthread_id;
 	  error_t err;
 
-	  totalthreads++;
-	  nreqthreads++;
-	  pthread_spin_unlock (&lock);
+	  __atomic_add_fetch (&totalthreads, 1, __ATOMIC_RELAXED);
+	  __atomic_add_fetch (&nreqthreads, 1, __ATOMIC_RELAXED);
 
 	  err = pthread_create (&pthread_id, &attr, thread_function, NULL);
 	  if (!err)
 	    pthread_detach (pthread_id);
 	  else
 	    {
-	      pthread_spin_lock (&lock);
-	      totalthreads--;
-	      nreqthreads--;
-	      pthread_spin_unlock (&lock);
+	      __atomic_sub_fetch (&totalthreads, 1, __ATOMIC_RELAXED);
+	      __atomic_sub_fetch (&nreqthreads, 1, __ATOMIC_RELAXED);
 	      /* There is not much we can do at this point.  The code
 		 and design of the Hurd servers just don't handle
 		 thread creation failure.  */
@@ -189,9 +184,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	  status = 1;
 	}
 
-      pthread_spin_lock (&lock);
-      nreqthreads++;
-      pthread_spin_unlock (&lock);
+      __atomic_add_fetch (&nreqthreads, 1, __ATOMIC_RELAXED);
 
       return status;
     }
@@ -203,8 +196,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       int timeout;
       error_t err;
 
-      /* No need to lock as an approximation is sufficient. */
-      adjust_priority (totalthreads);
+      adjust_priority (__atomic_load_n (&totalthreads, __ATOMIC_RELAXED));
 
       if (hook)
 	(*hook) ();
@@ -224,30 +216,21 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 
       if (master)
 	{
-	  pthread_spin_lock (&lock);
-	  if (totalthreads != 1)
-	    {
-	      pthread_spin_unlock (&lock);
-	      goto startover;
-	    }
+	  if (__atomic_load_n (&totalthreads, __ATOMIC_RELAXED) != 1)
+	    goto startover;
 	}
       else
 	{
-	  pthread_spin_lock (&lock);
-	  if (nreqthreads == 1)
+	  if (__atomic_sub_fetch (&nreqthreads, 1, __ATOMIC_RELAXED) == 0)
 	    {
 	      /* No other thread is listening for requests, continue. */
-	      pthread_spin_unlock (&lock);
+	      __atomic_add_fetch (&nreqthreads, 1, __ATOMIC_RELAXED);
 	      goto startover;
 	    }
-	  nreqthreads--;
-	  totalthreads--;
-	  pthread_spin_unlock (&lock);
+	  __atomic_sub_fetch (&totalthreads, 1, __ATOMIC_RELAXED);
 	}
       return NULL;
     }
 
-  nreqthreads = 1;
-  totalthreads = 1;
   thread_function ((void *) 1);
 }
