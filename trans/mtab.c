@@ -235,9 +235,13 @@ main (int argc, char *argv[])
 	error (4, err, "trivfs_startup");
 
       /* Launch.  */
-      ports_manage_port_operations_one_thread (control->pi.bucket,
-					       trivfs_demuxer,
-					       0);
+      ports_manage_port_operations_multithread (control->pi.bucket,
+                                                trivfs_demuxer,
+                                                /* idle thread timeout */
+                                                30 * 1000,
+                                                /* idle server timeout */
+                                                0,
+                                                NULL);
     }
   else
     {
