@@ -1,6 +1,6 @@
 /* This is an mtab translator.
 
-   Copyright (C) 2013 Free Software Foundation, Inc.
+   Copyright (C) 2013,14 Free Software Foundation, Inc.
 
    Written by Justus Winter <4winter@informatik.uni-hamburg.de>
 
@@ -594,7 +594,30 @@ open_hook (struct trivfs_peropen *peropen)
   mtab->contents = NULL;
   mtab->contents_len = 0;
 
-  return mtab_populate (mtab, target_path, insecure);
+  /* The mtab object is initialized, but not yet populated.  We delay
+     that until that data is really needed.  This avoids the following
+     problems:
+
+     Suppose you have
+
+     settrans -ac /foo /hurd/mtab /
+
+     If you now access /foo, the mtab translator will walk the tree of
+     all active translators starting from /.  If it visits /foo, it
+     will talk to itself.  Previously the translator migitated this by
+     comparing the control port of the translator with its own.  This
+     does not work if you got two mtab translators like this:
+
+     settrans -ac /foo /hurd/mtab /
+     settrans -ac /bar /hurd/mtab /
+
+     With a single-threaded mtab server this results in a dead-lock,
+     with a multi-threaded server this will create more and more
+     threads.
+
+     Delaying the data generation until it is really needed cleanly
+     avoids these kind of problems.  */
+  return 0;
 }
 
 static void
@@ -624,6 +647,14 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   /* Get the offset.  */
   op = cred->po->hook;
+
+  if (op->contents == NULL)
+    {
+      error_t err = mtab_populate (op, target_path, insecure);
+      if (err)
+        return err;
+    }
+
   if (offs == -1)
     offs = op->offs;
 
@@ -665,6 +696,13 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   struct mtab *op = cred->po->hook;
+
+  if (op->contents == NULL)
+    {
+      error_t err = mtab_populate (op, target_path, insecure);
+      if (err)
+        return err;
+    }
 
   switch (whence)
     {
@@ -710,6 +748,13 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
     return EINVAL;
 
   struct mtab *op = cred->po->hook;
+
+  if (op->contents == NULL)
+    {
+      error_t err = mtab_populate (op, target_path, insecure);
+      if (err)
+        return err;
+    }
 
   *amount = op->contents_len - op->offs;
   return 0;
