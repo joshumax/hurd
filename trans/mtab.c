@@ -282,7 +282,6 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 
   /* These resources are freed in the epilogue.	 */
   file_t node = MACH_PORT_NULL;
-  fsys_t fsys = MACH_PORT_NULL;
   char *argz = NULL;
   size_t argz_len = 0;
   char **argv = NULL;
@@ -295,16 +294,16 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   char *children = NULL;
   size_t children_len = 0;
 
-  /* Get the underlying node.  */
-  node = file_name_lookup (path, O_NOTRANS, 0666);
-  if (node == MACH_PORT_NULL)
-    {
-      err = errno;
-      goto errout;
-    }
-
   if (! insecure)
     {
+      /* Get the underlying node.  */
+      node = file_name_lookup (path, O_NOTRANS, 0666);
+      if (node == MACH_PORT_NULL)
+        {
+          err = errno;
+          goto errout;
+        }
+
       /* Check who owns the node the translator is bound to.  */
       io_statbuf_t st;
       err = io_stat (node, &st);
@@ -316,28 +315,11 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 	  err = EPERM;
 	  goto errout;
 	}
+
+      mach_port_deallocate (mach_task_self (), node);
     }
 
-  err = file_get_translator_cntl (node, &fsys);
-  if (err == EPERM)
-    /* If we do not have permission to do that, it cannot be a node
-       bound to our control port, so ignore this error.	 */
-    err = 0;
-
-  if (err == ENXIO && strcmp (path, "/") == 0)
-    /* The root translator fails differently, but this can't be bound
-       to our control port either, so ignore this error.  */
-    err = 0;
-
-  if (err)
-    return err;
-
-  if (control && control->pi.port_right == fsys)
-    /* This node is bound to our control port, ignore it.  */
-    goto errout;
-
-  /* Re-do the lookup without O_NOTRANS to get the root node.  */
-  mach_port_deallocate (mach_task_self (), node);
+  /* (Re-)do the lookup without O_NOTRANS to get the root node.  */
   node = file_name_lookup (path, 0, 0666);
   if (node == MACH_PORT_NULL)
     {
@@ -460,9 +442,6 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
  errout:
   if (node != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), node);
-
-  if (fsys != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), fsys);
 
   if (argz)
     vm_deallocate (mach_task_self (), (vm_address_t) argz, argz_len);
