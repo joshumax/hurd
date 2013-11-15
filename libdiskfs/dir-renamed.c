@@ -132,7 +132,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       if (tdp->dn_stat.st_nlink == diskfs_link_max - 1)
 	{
 	  err = EMLINK;
-	  return EMLINK;
+	  goto out;
 	}
       tdp->dn_stat.st_nlink++;
       tdp->dn_set_ctime = 1;
