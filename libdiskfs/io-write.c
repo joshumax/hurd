@@ -56,7 +56,6 @@ diskfs_S_io_write (struct protid *cred,
       goto out;
     }
 
-  err = 0;
   while (off + (off_t) datalen > np->allocsize)
     {
       err = diskfs_grow (np, off + datalen, cred);
