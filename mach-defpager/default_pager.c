@@ -879,12 +879,13 @@ pager_pages(pager, pages, numpages)
 			offset += vm_page_size;
 		}
 	} else {
-		for (emap = &map[size]; map < emap; map++)
+		for (emap = &map[size]; map < emap; map++) {
 			if ( ! no_block(*map) ) {
 				if (actual++ < numpages)
 					pages++->dpp_offset = offset;
 			}
-		offset += vm_page_size;
+			offset += vm_page_size;
+		}
 	}
 	return actual;
 }
