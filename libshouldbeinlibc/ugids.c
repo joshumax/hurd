@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "idvec.h"
 #include "ugids.h"
 
 /* Return a new ugids structure, or 0 if an allocation error occurs.  */

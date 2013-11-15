@@ -20,12 +20,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <hurd.h>
 #include <ctype.h>
-#include <unistd.h>
 #include <argp.h>
 #include <pwd.h>
 #include <grp.h>
+#include <errno.h>
 
 #include "ugids.h"
 

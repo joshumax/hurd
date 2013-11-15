@@ -18,15 +18,10 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <stdlib.h>
-#include <string.h>
 #include <hurd.h>
-#include <ctype.h>
-#include <unistd.h>
 #include <argp.h>
-#include <pwd.h>
-#include <grp.h>
 
+#include "idvec.h"
 #include "ugids.h"
 
 /* Verify that we have the right to the ids in UGIDS, given that we already

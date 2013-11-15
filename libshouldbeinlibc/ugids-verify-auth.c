@@ -19,17 +19,12 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <stdlib.h>
-#include <string.h>
 #include <hurd.h>
-#include <ctype.h>
-#include <unistd.h>
-#include <argp.h>
-#include <pwd.h>
-#include <grp.h>
 
 #include <hurd/paths.h>
 #include <hurd/password.h>
 
+#include "idvec.h"
 #include "ugids.h"
 
 /* Accumulated information from authentication various passwords.  */

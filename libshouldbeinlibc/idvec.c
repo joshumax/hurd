@@ -20,7 +20,8 @@
 
 #include <malloc.h>
 #include <string.h>
-#include <idvec.h>
+
+#include "idvec.h"
 
 /* Return a new, empty, idvec, or NULL if there wasn't enough memory.  */
 struct idvec *

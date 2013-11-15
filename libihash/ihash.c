@@ -26,13 +26,11 @@
 #endif
 
 #include <errno.h>
-#include <string.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <stdint.h>
 #include <assert.h>
 
-#include <hurd/ihash.h>
+#include "ihash.h"
 
 
 /* The prime numbers of the form 4 * i + 3 for some i, all greater

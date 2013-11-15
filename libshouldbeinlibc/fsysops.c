@@ -25,6 +25,7 @@
 #include <mach.h>
 #include <sys/mman.h>
 #include <hurd/fsys.h>
+#include <string.h>
 
 /* Make FSYS readonly or writable.  */
 error_t

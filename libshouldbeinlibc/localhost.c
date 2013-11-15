@@ -19,9 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <unistd.h>
-#include <malloc.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 
 /* Return the name of the localhost.  This is just a wrapper for gethostname,
    which takes care of allocating a big enough buffer, and caches the result
