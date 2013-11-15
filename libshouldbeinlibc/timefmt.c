@@ -338,8 +338,8 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
 
 	      end = stpcpy (end, *dfmt);
 	      end = stpcpy (end, *sep);
-	      end = stpcpy (end, *fmt);
-	      
+	      stpcpy (end, *fmt);
+
 	      used = strftime (buf, width + 1, whole_fmt, &tm);
 	    }
 
