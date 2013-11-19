@@ -314,7 +314,11 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      pthread_mutex_unlock (&idport_ihash_lock);
 	    }
 	  else
-	    err = new_node (file, idport, 1, flags, &np);
+	    {
+	      err = new_node (file, idport, 1, flags, &np);
+	      if (!err)
+		err = netfs_validate_stat (np, diruser->user);
+	    }
 	}
     }
   if (err)
