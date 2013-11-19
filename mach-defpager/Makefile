@@ -35,6 +35,3 @@ LDFLAGS += -static
 include ../Makeconf
 
 MIGSFLAGS = -DSEQNOS
-
-# Don't even bother.
-CFLAGS := $(filter-out -Wall,$(CFLAGS))

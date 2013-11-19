@@ -18,10 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <unistd.h>
-#include <malloc.h>
 #include <string.h>
-#include <errno.h>
 
 /* Returns a pointer into HOST1 that is the part of the domain shared with
    HOST2.  If the two do not share anything, the return value will point to

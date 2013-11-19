@@ -20,7 +20,6 @@
 
 #include <fcntl.h>
 #include <hurd.h>
-#include <mach.h>
 #include <device/device.h>
 
 #include "maptime.h"

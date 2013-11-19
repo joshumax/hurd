@@ -21,9 +21,9 @@
 
 #include <link.h>
 #include <dlfcn.h>
-#include <mach.h>
 #include <hurd.h>
 #include <error.h>
+#include <elf.h>
 
 #pragma weak _DYNAMIC
 #pragma weak dlopen

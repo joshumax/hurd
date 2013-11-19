@@ -22,7 +22,6 @@
 
 #include <sys/types.h>
 #include <hurd/hurd_types.h>
-#include <errno.h>
 #include <string.h>
 #include <features.h>
 

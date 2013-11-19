@@ -22,6 +22,7 @@
 #include <mach.h>
 #include <sys/mman.h>
 #include <hurd/auth.h>
+#include <errno.h>
 
 #include "idvec.h"
 

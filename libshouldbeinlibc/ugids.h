@@ -24,6 +24,8 @@
 #include <stdlib.h>		/* For inline function stuff.  */
 #include <idvec.h>
 #include <features.h>
+#include <errno.h>
+#include <sys/types.h>
 
 #ifdef UGIDS_DEFINE_EI
 #define UGIDS_EI
