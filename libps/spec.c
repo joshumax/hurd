@@ -416,7 +416,7 @@ sprint_frac_value (char *buf,
 
   if (value >= 1000)            /* the integer part */
     value_len = 4;              /* values 1000-1023 */
-  if (value >= 100)		
+  else if (value >= 100)
     value_len = 3;
   else if (value >= 10)
     value_len = 2;
