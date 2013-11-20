@@ -398,7 +398,7 @@ op_remove (struct cache_handle *c,
   err = dir_unlink (c->port, name);
   free (name);
 
-  return 0;
+  return err;
 }
 
 static error_t
