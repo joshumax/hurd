@@ -209,7 +209,7 @@ ea_parse_opt (int key, char *arg, struct argp_state *state)
 static error_t
 posix_parse_opt (int key, char *arg, struct argp_state *state)
 {
-  struct frobauth_argp_state *fs = state->hook;
+  struct frobauth_argp_state *fs;
 
   switch (key)
     {
@@ -233,7 +233,7 @@ posix_parse_opt (int key, char *arg, struct argp_state *state)
 static error_t
 no_ugids_parse_opt (int key, char *arg, struct argp_state *state)
 {
-  struct frobauth_argp_state *fs = state->hook;
+  struct frobauth_argp_state *fs;
 
   switch (key)
     {
