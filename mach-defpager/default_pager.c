@@ -164,7 +164,7 @@ void set_partition_of(x, p)
 unsigned int
 part_id(const char *name)
 {
-	register unsigned int id, xorid;
+	unsigned int id, xorid;
 	size_t len;
 
 	len = strlen(name);
@@ -187,8 +187,8 @@ static partition_t
 new_partition (const char *name, struct file_direct *fdp,
 	       int check_linux_signature)
 {
-	register partition_t	part;
-	register vm_size_t	size, bmsize;
+	partition_t	part;
+	vm_size_t	size, bmsize;
 	vm_offset_t raddr;
 	mach_msg_type_number_t rsize;
 	int rc;
@@ -437,7 +437,7 @@ create_paging_partition(const char *name,
 			struct file_direct *fdp, int isa_file,
 			int linux_signature)
 {
-	register partition_t	part;
+	partition_t	part;
 
 	part = new_partition (name, fdp, linux_signature);
 	if (!part)
@@ -445,14 +445,14 @@ create_paging_partition(const char *name,
 
 	pthread_mutex_lock(&all_partitions.lock);
 	{
-		register int i;
+		int i;
 
 		for (i = 0; i < all_partitions.n_partitions; i++)
 			if (partition_of(i) == 0) break;
 
 		if (i == all_partitions.n_partitions) {
-			register partition_t	*new_list, *old_list;
-			register int		n;
+			partition_t	*new_list, *old_list;
+			int		n;
 
 			n = i ? (i<<1) : 2;
 			new_list = (partition_t *)
@@ -487,11 +487,11 @@ create_paging_partition(const char *name,
 p_index_t
 choose_partition(size, cur_part)
 	unsigned int		size;
-	register p_index_t	cur_part;
+	p_index_t	cur_part;
 {
-	register partition_t	part;
-	register boolean_t	found = FALSE;
-	register int		i;
+	partition_t	part;
+	boolean_t	found = FALSE;
+	int		i;
 
 	pthread_mutex_lock(&all_partitions.lock);
 	for (i = 0; i < all_partitions.n_partitions; i++) {
@@ -535,10 +535,10 @@ pager_alloc_page(pindex, lock_it)
 	p_index_t	pindex;
 	boolean_t	lock_it;
 {
-	register int	bm_e;
-	register int	bit;
-	register int	limit;
-	register bm_entry_t	*bm;
+	int	bm_e;
+	int	bit;
+	int	limit;
+	bm_entry_t	*bm;
 	partition_t	part;
 	static char	here[] = "%spager_alloc_page";
 
@@ -573,7 +573,7 @@ ddprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 	 * Find and set the proper bit
 	 */
 	{
-	    register bm_entry_t	b = *bm;
+	    bm_entry_t	b = *bm;
 
 	    for (bit = 0; bit < NB_BM; bit++)
 		if ((b & (1<<bit)) == 0)
@@ -597,11 +597,11 @@ ddprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 void
 pager_dealloc_page(pindex, page, lock_it)
 	p_index_t		pindex;
-	register vm_offset_t	page;
+	vm_offset_t	page;
 	boolean_t		lock_it;
 {
-	register partition_t	part;
-	register int	bit, bm_e;
+	partition_t	part;
+	int	bit, bm_e;
 
 	/* be paranoid */
 	if (no_partition(pindex))
@@ -714,10 +714,10 @@ vm_size_t	max_doubled_size = 4 * 1024 * 1024;	/* 4 meg */
  * If there is no such map, than allocate it.
  */
 dp_map_t pager_get_direct_map(pager)
-	register dpager_t	pager;
+	dpager_t	pager;
 {
-	register dp_map_t	mapptr, emapptr;
-	register vm_size_t	size = pager->size;
+	dp_map_t	mapptr, emapptr;
+	vm_size_t	size = pager->size;
 
 	if (pager->map)
 	    return pager->map;
@@ -725,7 +725,7 @@ dp_map_t pager_get_direct_map(pager)
 	 * Allocate and initialize the block map
 	 */
 	{
-	    register vm_size_t	alloc_size;
+	    vm_size_t	alloc_size;
 	    dp_map_t		init_value;
 
 	    if (INDIRECT_PAGEMAP(size)) {
@@ -751,12 +751,12 @@ dp_map_t pager_get_direct_map(pager)
  */
 void
 pager_alloc(pager, part, size)
-	register dpager_t	pager;
+	dpager_t	pager;
 	p_index_t		part;
-	register vm_size_t	size;	/* in BYTES */
+	vm_size_t	size;	/* in BYTES */
 {
-	register int    i;
-	register dp_map_t mapptr, emapptr;
+	int    i;
+	dp_map_t mapptr, emapptr;
 
 	pthread_mutex_init(&pager->lock, NULL);
 #if	DEBUG_READER_CONFLICTS
@@ -804,10 +804,10 @@ pager_alloc(pager, part, size)
 
 vm_size_t
 pager_allocated(pager)
-	register dpager_t	pager;
+	dpager_t	pager;
 {
 	vm_size_t       size;
-	register dp_map_t map, emap;
+	dp_map_t map, emap;
 	vm_size_t       asize;
 
 	size = pager->size;	/* in pages */
@@ -818,7 +818,7 @@ pager_allocated(pager)
 		for (emap = &map[INDIRECT_PAGEMAP_ENTRIES(size)];
 		     map < emap; map++) {
 
-			register dp_map_t	map2, emap2;
+			dp_map_t	map2, emap2;
 
 			if ((map2 = map->indirect) == 0)
 				continue;
@@ -847,7 +847,7 @@ pager_allocated(pager)
 unsigned int
 pager_pages(pager, pages, numpages)
 	dpager_t			pager;
-	register default_pager_page_t	*pages;
+	default_pager_page_t	*pages;
 	unsigned int			numpages;
 {
 	vm_size_t       size;
@@ -864,7 +864,7 @@ pager_pages(pager, pages, numpages)
 		for (emap = &map[INDIRECT_PAGEMAP_ENTRIES(size)];
 		     map < emap; map++) {
 
-			register dp_map_t	map2, emap2;
+			dp_map_t	map2, emap2;
 
 			if ((map2 = map->indirect) == 0) {
 				offset += vm_page_size * PAGEMAP_ENTRIES;
@@ -900,13 +900,13 @@ pager_pages(pager, pages, numpages)
  */
 void
 pager_extend(pager, new_size)
-	register dpager_t	pager;
-	register vm_size_t	new_size;	/* in pages */
+	dpager_t	pager;
+	vm_size_t	new_size;	/* in pages */
 {
-	register dp_map_t	new_mapptr;
-	register dp_map_t	old_mapptr;
-	register int		i;
-	register vm_size_t	old_size;
+	dp_map_t	new_mapptr;
+	dp_map_t	old_mapptr;
+	int		i;
+	vm_size_t	old_size;
 
 	pthread_mutex_lock(&pager->lock);	/* XXX lock_write */
 #if	DEBUG_READER_CONFLICTS
@@ -1176,10 +1176,10 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
  */
 union dp_map
 pager_read_offset(pager, offset)
-	register dpager_t	pager;
+	dpager_t	pager;
 	vm_offset_t		offset;
 {
-	register vm_offset_t	f_page;
+	vm_offset_t	f_page;
 	union dp_map		pager_offset;
 
 	f_page = atop(offset);
@@ -1206,7 +1206,7 @@ pager_read_offset(pager, offset)
 
 	invalidate_block(pager_offset);
 	if (INDIRECT_PAGEMAP(pager->size)) {
-	    register dp_map_t	mapptr;
+	    dp_map_t	mapptr;
 
 	    if (pager->map) {
 		mapptr = pager->map[f_page/PAGEMAP_ENTRIES].indirect;
@@ -1231,10 +1231,10 @@ pager_read_offset(pager, offset)
  * Release a single disk block.
  */
 void pager_release_offset(pager, offset)
-	register dpager_t	pager;
+	dpager_t	pager;
 	vm_offset_t		offset;
 {
-	register union dp_map	entry;
+	union dp_map	entry;
 
 	offset = atop(offset);
 
@@ -1242,7 +1242,7 @@ void pager_release_offset(pager, offset)
 
 	assert (pager->map);
 	if (INDIRECT_PAGEMAP(pager->size)) {
-		register dp_map_t	mapptr;
+		dp_map_t	mapptr;
 
 		mapptr = pager->map[offset / PAGEMAP_ENTRIES].indirect;
 		entry = mapptr[offset % PAGEMAP_ENTRIES];
@@ -1330,10 +1330,10 @@ ddprintf ("pager_move_page(%x,%d,%d)\n",block.block.p_offset,old_pindex,new_pind
  */
 int
 pager_get_checksum(pager, offset)
-	register dpager_t	pager;
+	dpager_t	pager;
 	vm_offset_t		offset;
 {
-	register vm_offset_t	f_page;
+	vm_offset_t	f_page;
 	int checksum;
 
 	f_page = atop(offset);
@@ -1343,7 +1343,7 @@ pager_get_checksum(pager, offset)
 	    panic("%spager_get_checksum",my_name);
 
 	if (INDIRECT_PAGEMAP(pager->size)) {
-	    register vm_offset_t *mapptr;
+	    vm_offset_t *mapptr;
 
 	    mapptr = (vm_offset_t *)pager->checksum[f_page/PAGEMAP_ENTRIES];
 	    if (mapptr == 0)
@@ -1364,11 +1364,11 @@ pager_get_checksum(pager, offset)
  */
 int
 pager_put_checksum(pager, offset, checksum)
-	register dpager_t	pager;
+	dpager_t	pager;
 	vm_offset_t		offset;
 	int			checksum;
 {
-	register vm_offset_t	f_page;
+	vm_offset_t	f_page;
 	static char		here[] = "%spager_put_checksum";
 
 	f_page = atop(offset);
@@ -1378,7 +1378,7 @@ pager_put_checksum(pager, offset, checksum)
 	    panic(here,my_name);
 
 	if (INDIRECT_PAGEMAP(pager->size)) {
-	    register vm_offset_t *mapptr;
+	    vm_offset_t *mapptr;
 
 	    mapptr = (vm_offset_t *)pager->checksum[f_page/PAGEMAP_ENTRIES];
 	    if (mapptr == 0)
@@ -1400,9 +1400,9 @@ compute_checksum(addr, size)
 	vm_offset_t	addr;
 	vm_size_t	size;
 {
-	register int	checksum = NO_CHECKSUM;
-	register int	*ptr;
-	register int	count;
+	int	checksum = NO_CHECKSUM;
+	int	*ptr;
+	int	count;
 
 	ptr = (int *)addr;
 	count = size / sizeof(int);
@@ -1424,12 +1424,12 @@ compute_checksum(addr, size)
  */
 union dp_map
 pager_write_offset(pager, offset)
-	register dpager_t	pager;
+	dpager_t	pager;
 	vm_offset_t		offset;
 {
-	register vm_offset_t	f_page;
-	register dp_map_t	mapptr;
-	register union dp_map	block;
+	vm_offset_t	f_page;
+	dp_map_t	mapptr;
+	union dp_map	block;
 
 	invalidate_block(block);
 
@@ -1494,7 +1494,7 @@ pager_write_offset(pager, offset)
 		/*
 		 * Allocate the indirect block
 		 */
-		register int i;
+		int i;
 		ddprintf ("pager_write_offset: allocating indirect\n");
 
 		mapptr = (dp_map_t) kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
@@ -1508,8 +1508,8 @@ pager_write_offset(pager, offset)
 		    invalidate_block(mapptr[i]);
 #ifdef	CHECKSUM
 		{
-		    register vm_offset_t *cksumptr;
-		    register int j;
+		    vm_offset_t *cksumptr;
+		    int j;
 
 		    cksumptr = (vm_offset_t *)
 				kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
@@ -1592,11 +1592,11 @@ out:
  */
 void
 pager_dealloc(pager)
-	register dpager_t	pager;
+	dpager_t	pager;
 {
-	register int i, j;
-	register dp_map_t	mapptr;
-	register union dp_map	block;
+	int i, j;
+	dp_map_t	mapptr;
+	union dp_map	block;
 
 	if (!pager->map)
 	    return;
@@ -1653,10 +1653,10 @@ pager_dealloc(pager)
  */
 boolean_t
 pager_realloc(pager, pindex)
-	register dpager_t	pager;
+	dpager_t	pager;
 	p_index_t		pindex;
 {
-	register dp_map_t	map, emap;
+	dp_map_t	map, emap;
 	vm_size_t		size;
 	union dp_map		block;
 
@@ -1670,7 +1670,7 @@ pager_realloc(pager, pindex)
 		for (emap = &map[INDIRECT_PAGEMAP_ENTRIES(size)];
 		     map < emap; map++) {
 
-			register dp_map_t	map2, emap2;
+			dp_map_t	map2, emap2;
 
 			if ((map2 = map->indirect) == 0)
 				continue;
@@ -1722,21 +1722,21 @@ ok:
  */
 int
 default_read(ds, addr, size, offset, out_addr, deallocate, external)
-	register dpager_t	ds;
+	dpager_t	ds;
 	vm_offset_t		addr;	/* pointer to block to fill */
-	register vm_size_t	size;
-	register vm_offset_t	offset;
+	vm_size_t	size;
+	vm_offset_t	offset;
 	vm_offset_t		*out_addr;
 				/* returns pointer to data */
 	boolean_t		deallocate;
 	boolean_t		external;
 {
-	register union dp_map	block;
+	union dp_map	block;
 	vm_offset_t	raddr;
 	vm_size_t	rsize;
-	register int	rc;
+	int	rc;
 	boolean_t	first_time;
-	register partition_t	part;
+	partition_t	part;
 #ifdef	CHECKSUM
 	vm_size_t	original_size = size;
 #endif	 /* CHECKSUM */
@@ -1820,15 +1820,15 @@ ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 
 int
 default_write(ds, addr, size, offset)
-	register dpager_t	ds;
-	register vm_offset_t	addr;
-	register vm_size_t	size;
-	register vm_offset_t	offset;
+	dpager_t	ds;
+	vm_offset_t	addr;
+	vm_size_t	size;
+	vm_offset_t	offset;
 {
-	register union dp_map	block;
+	union dp_map	block;
 	partition_t		part;
 	vm_size_t		wsize;
-	register int		rc;
+	int		rc;
 
 	ddprintf ("default_write: pager offset %x\n", offset);
 
@@ -1993,8 +1993,8 @@ destroy_paging_partition(name, pp_private)
 	char		*name;
 	void **pp_private;
 {
-	register unsigned int	id = part_id(name);
-	register partition_t	part;
+	unsigned int	id = part_id(name);
+	partition_t	part;
 	boolean_t		all_ok = TRUE;
 	default_pager_t		entry;
 	int			pindex;
@@ -2400,7 +2400,7 @@ seqnos_memory_object_create(old_pager, seqno, new_pager, new_size,
 	mach_port_t	new_pager_name;
 	vm_size_t	new_page_size;
 {
-	register default_pager_t	ds;
+	default_pager_t	ds;
 	kern_return_t			kr;
 
 	assert(old_pager == default_pager_default_port);
@@ -2462,7 +2462,7 @@ seqnos_memory_object_init(pager, seqno, pager_request, pager_name,
 	mach_port_t	pager_name;
 	vm_size_t	pager_page_size;
 {
-	register default_pager_t ds;
+	default_pager_t ds;
 	kern_return_t		 kr;
 	static char		 here[] = "%sinit";
 
@@ -2508,7 +2508,7 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	mach_port_t	pager_request;
 	mach_port_t	pager_name;
 {
-	register default_pager_t	ds;
+	default_pager_t	ds;
 	kern_return_t			kr;
 	static char			here[] = "%sterminate";
 
@@ -2570,7 +2570,7 @@ void default_pager_no_senders(pager, seqno, mscount)
 	mach_port_seqno_t seqno;
 	mach_port_mscount_t mscount;
 {
-	register default_pager_t ds;
+	default_pager_t ds;
 	kern_return_t		 kr;
 	static char		 here[] = "%sno_senders";
 
@@ -2866,7 +2866,7 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	     amount_sent < data_cnt;
 	     amount_sent += vm_page_size) {
 
-	    register int result;
+	    int result;
 
 	    result = default_write(&ds->dpager,
 			      addr + amount_sent,
@@ -2987,7 +2987,7 @@ seqnos_memory_object_change_completed(pager, seqno, may_cache, copy_strategy)
 boolean_t default_pager_notify_server(in, out)
 	mach_msg_header_t *in, *out;
 {
-	register mach_no_senders_notification_t *n =
+	mach_no_senders_notification_t *n =
 			(mach_no_senders_notification_t *) in;
 
 	/*
@@ -3603,7 +3603,7 @@ not_this_one:
     nomemory:
 
 	{
-		register int	i;
+		int	i;
 		for (i = 0; i < num_pagers; i++)
 		    (void) mach_port_deallocate(default_pager_self, ports[i]);
 	}
@@ -3902,9 +3902,9 @@ void overcommitted(got_more_space, space)
 void paging_space_info(totp, freep)
 	vm_size_t	*totp, *freep;
 {
-	register vm_size_t	total, free;
-	register partition_t	part;
-	register int		i;
+	vm_size_t	total, free;
+	partition_t	part;
+	int		i;
 
 	total = free = 0;
 	for (i = 0; i < all_partitions.n_partitions; i++) {

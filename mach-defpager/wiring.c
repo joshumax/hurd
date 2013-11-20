@@ -79,7 +79,7 @@ wire_thread()
 void
 wire_all_memory()
 {
-	register kern_return_t kr;
+	kern_return_t kr;
 	vm_offset_t	address;
 	vm_size_t	size;
 	vm_prot_t	protection;

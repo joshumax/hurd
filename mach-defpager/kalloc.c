@@ -92,7 +92,7 @@ boolean_t		kalloc_initialized = FALSE;
 
 void kalloc_init(void)
 {
-	register int i;
+	int i;
 
 	/*
 	 * Support free lists for items up to vm_page_size or
@@ -185,9 +185,9 @@ vm_offset_t kget_space(vm_offset_t size)
 
 void *kalloc(vm_size_t size)
 {
-	register vm_size_t allocsize;
+	vm_size_t allocsize;
 	vm_offset_t addr;
-	register struct free_list *fl;
+	struct free_list *fl;
 
 	if (!kalloc_initialized) {
 	    kalloc_init();
@@ -237,8 +237,8 @@ void
 kfree(	void *data,
 	vm_size_t size)
 {
-	register vm_size_t freesize;
-	register struct free_list *fl;
+	vm_size_t freesize;
+	struct free_list *fl;
 
 	freesize = size;
 	if (size < kalloc_max) {

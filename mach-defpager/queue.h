@@ -161,7 +161,7 @@ typedef	struct queue_entry	*queue_entry_t;
  */
 #define queue_enter(head, elt, type, field)			\
 { 								\
-	register queue_entry_t prev;				\
+	queue_entry_t prev;				\
 								\
 	prev = (head)->prev;					\
 	if ((head) == prev) {					\
@@ -188,7 +188,7 @@ typedef	struct queue_entry	*queue_entry_t;
  */
 #define queue_enter_first(head, elt, type, field)		\
 { 								\
-	register queue_entry_t next;				\
+	queue_entry_t next;				\
 								\
 	next = (head)->next;					\
 	if ((head) == next) {					\
@@ -221,7 +221,7 @@ typedef	struct queue_entry	*queue_entry_t;
  */
 #define	queue_remove(head, elt, type, field)			\
 {								\
-	register queue_entry_t	next, prev;			\
+	queue_entry_t	next, prev;			\
 								\
 	next = (elt)->field.next;				\
 	prev = (elt)->field.prev;				\
@@ -248,7 +248,7 @@ typedef	struct queue_entry	*queue_entry_t;
  */
 #define	queue_remove_first(head, entry, type, field)		\
 {								\
-	register queue_entry_t	next;				\
+	queue_entry_t	next;				\
 								\
 	(entry) = (type) ((head)->next);			\
 	next = (entry)->field.next;				\
@@ -271,7 +271,7 @@ typedef	struct queue_entry	*queue_entry_t;
  */
 #define	queue_remove_last(head, entry, type, field)		\
 {								\
-	register queue_entry_t	prev;				\
+	queue_entry_t	prev;				\
 								\
 	(entry) = (type) ((head)->prev);			\
 	prev = (entry)->field.prev;				\
