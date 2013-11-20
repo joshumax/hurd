@@ -865,6 +865,8 @@ diskfs_get_directs (struct node *dp,
   err = vm_map (mach_task_self (),
                 &buf, buflen, 0, 1, memobj, 0, 0, prot, prot, 0);
   mach_port_deallocate (mach_task_self (), memobj);
+  if (err)
+    return err;
 
   bufp = buf;
   for (i = 0; i < entry; i ++)
