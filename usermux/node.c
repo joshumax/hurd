@@ -90,7 +90,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
       else
 	flags |= TOUCH_ATIME;
 
-      fshelp_touch (&node->nn_stat, TOUCH_CTIME, usermux_maptime);
+      fshelp_touch (&node->nn_stat, flags, usermux_maptime);
     }
   return err;
 }
