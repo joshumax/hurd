@@ -93,7 +93,11 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
   bucket->count++;
   class->count++;
   pthread_mutex_unlock (&_ports_lock);
-  
+
+  /* This is an optimization.  It may fail.  */
+  mach_port_set_protected_payload (mach_task_self (), port,
+				   (unsigned long) pi);
+
   mach_port_move_member (mach_task_self (), port, bucket->portset);
 
   if (stat.mps_srights)

@@ -99,7 +99,11 @@ _ports_create_port_internal (struct port_class *class,
   bucket->count++;
   class->count++;
   pthread_mutex_unlock (&_ports_lock);
-  
+
+  /* This is an optimization.  It may fail.  */
+  mach_port_set_protected_payload (mach_task_self (), port,
+				   (unsigned long) pi);
+
   if (install)
     {
       err = mach_port_move_member (mach_task_self (), pi->port_right,

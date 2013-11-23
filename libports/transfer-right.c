@@ -91,6 +91,9 @@ ports_transfer_right (void *tostruct,
       err = hurd_ihash_add (&topi->bucket->htable, port, topi);
       pthread_rwlock_unlock (&_ports_htable_lock);
       assert_perror (err);
+      /* This is an optimization.  It may fail.  */
+      mach_port_set_protected_payload (mach_task_self (), port,
+				       (unsigned long) topi);
       if (topi->bucket != frompi->bucket)
         {
 	  err = mach_port_move_member (mach_task_self (), port,

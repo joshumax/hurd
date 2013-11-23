@@ -71,6 +71,10 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   pthread_mutex_unlock (&_ports_lock);
   assert_perror (err);
 
+  /* This is an optimization.  It may fail.  */
+  mach_port_set_protected_payload (mach_task_self (), pi->port_right,
+				   (unsigned long) pi);
+
   mach_port_move_member (mach_task_self (), receive, pi->bucket->portset);
   
   if (stat.mps_srights)

@@ -167,7 +167,21 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       outp->RetCodeType = RetCodeType;
       outp->RetCode = MIG_BAD_ID;
 
-      pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
+      if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) ==
+	  MACH_MSG_TYPE_PROTECTED_PAYLOAD)
+	pi = ports_lookup_payload (bucket, inp->msgh_protected_payload, NULL);
+      else
+	{
+	  pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
+	  if (pi)
+	    {
+	      inp->msgh_bits = MACH_MSGH_BITS (
+		MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
+		MACH_MSG_TYPE_PROTECTED_PAYLOAD);
+	      inp->msgh_protected_payload = (unsigned long) pi;
+	    }
+	}
+
       if (pi)
 	{
 	  error_t err = ports_begin_rpc (pi, inp->msgh_id, &link);
@@ -203,9 +217,18 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   void *
   thread_function (void *arg)
     {
+      struct ports_thread thread;
       int master = (int) arg;
       int timeout;
       error_t err;
+
+      int synchronized_demuxer (mach_msg_header_t *inp,
+				mach_msg_header_t *outheadp)
+      {
+	int r = internal_demuxer (inp, outheadp);
+	_ports_thread_quiescent (&bucket->threadpool, &thread);
+	return r;
+      }
 
       adjust_priority (__atomic_load_n (&totalthreads, __ATOMIC_RELAXED));
 
@@ -217,10 +240,13 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       else
 	timeout = thread_timeout;
 
+      _ports_thread_online (&bucket->threadpool, &thread);
+
     startover:
 
       do
-	err = mach_msg_server_timeout (internal_demuxer, 0, bucket->portset,
+	err = mach_msg_server_timeout (synchronized_demuxer,
+				       0, bucket->portset,
 				       timeout ? MACH_RCV_TIMEOUT : 0,
 				       timeout);
       while (err != MACH_RCV_TIMED_OUT);
@@ -240,6 +266,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	    }
 	  __atomic_sub_fetch (&totalthreads, 1, __ATOMIC_RELAXED);
 	}
+      _ports_thread_offline (&bucket->threadpool, &thread);
       return NULL;
     }
 
