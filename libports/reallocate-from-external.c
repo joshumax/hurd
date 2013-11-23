@@ -60,7 +60,8 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   pi->cancel_threshold = 0;
   pi->mscount = stat.mps_mscount;
   
-  hurd_ihash_add (&pi->bucket->htable, receive, pi);
+  err = hurd_ihash_add (&pi->bucket->htable, receive, pi);
+  assert_perror (err);
   pthread_mutex_unlock (&_ports_lock);
   
   mach_port_move_member (mach_task_self (), receive, pi->bucket->portset);
