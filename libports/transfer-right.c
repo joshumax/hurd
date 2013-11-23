@@ -77,7 +77,8 @@ ports_transfer_right (void *tostruct,
   
   if (port)
     {
-      hurd_ihash_add (&topi->bucket->htable, port, topi);
+      err = hurd_ihash_add (&topi->bucket->htable, port, topi);
+      assert_perror (err);
       if (topi->bucket != frompi->bucket)
         {
 	  err = mach_port_move_member (mach_task_self (), port,
