@@ -48,7 +48,8 @@ ports_reallocate_port (void *portstruct)
     }
   pi->cancel_threshold = 0;
   pi->mscount = 0;
-  hurd_ihash_add (&pi->bucket->htable, pi->port_right, pi);
+  err = hurd_ihash_add (&pi->bucket->htable, pi->port_right, pi);
+  assert_perror (err);
   pthread_mutex_unlock (&_ports_lock);
 
   err = mach_port_move_member (mach_task_self (), pi->port_right, 
