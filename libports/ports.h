@@ -29,6 +29,12 @@
 #include <pthread.h>
 #include <refcount.h>
 
+#ifdef PORTS_DEFINE_EI
+#define PORTS_EI
+#else
+#define PORTS_EI __extern_inline
+#endif
+
 /* These are global values for common flags used in the various structures.
    Not all of these are meaningful in all flag fields.  */
 #define PORTS_INHIBITED		0x0100 /* block RPC's */
@@ -233,6 +239,53 @@ mach_port_t ports_get_send_right (void *port);
    is not in CLASS. */
 void *ports_lookup_port (struct port_bucket *bucket,
 			 mach_port_t port, struct port_class *class);
+
+/* Like ports_lookup_port, but uses PAYLOAD to look up the object.  If
+   this function is used, PAYLOAD must be a pointer to the port
+   structure.  */
+extern void *ports_lookup_payload (struct port_bucket *bucket,
+				   unsigned long payload,
+				   struct port_class *class);
+
+/* This returns the ports name.  This function can be used as
+   intranpayload function turning payloads back into port names.  If
+   this function is used, PAYLOAD must be a pointer to the port
+   structure.  */
+extern mach_port_t ports_payload_get_name (unsigned int payload);
+
+#if defined(__USE_EXTERN_INLINES) || defined(PORTS_DEFINE_EI)
+
+PORTS_EI void *
+ports_lookup_payload (struct port_bucket *bucket,
+		      unsigned long payload,
+		      struct port_class *class)
+{
+  struct port_info *pi = (struct port_info *) payload;
+
+  if (pi && bucket && pi->bucket != bucket)
+    pi = NULL;
+
+  if (pi && class && pi->class != class)
+    pi = NULL;
+
+  if (pi)
+    refcounts_unsafe_ref (&pi->refcounts, NULL);
+
+  return pi;
+}
+
+PORTS_EI mach_port_t
+ports_payload_get_name (unsigned int payload)
+{
+  struct port_info *pi = (struct port_info *) payload;
+
+  if (pi)
+    return pi->port_right;
+
+  return MACH_PORT_NULL;
+}
+
+#endif /* Use extern inlines.  */
 
 /* Allocate another reference to PORT. */
 void ports_port_ref (void *port);
