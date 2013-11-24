@@ -133,7 +133,7 @@ struct exc
 };
 
 mach_port_t authserver;
-struct proc *self_proc;		/* process 0 (us) */
+struct proc *self_proc;		/* process HURD_PID_PROC (us) */
 struct proc *startup_proc;	/* process 1 (init) */
 
 struct port_bucket *proc_bucket;

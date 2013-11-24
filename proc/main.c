@@ -84,7 +84,7 @@ main (int argc, char **argv, char **envp)
   /* Create the initial proc object for init (PID 1).  */
   startup_proc = create_startup_proc ();
 
-  /* Create our own proc object (we are PID 0).  */
+  /* Create our own proc object.  */
   self_proc = allocate_proc (mach_task_self ());
   assert (self_proc);
 
