@@ -52,7 +52,7 @@ adjust_priority (unsigned int totalthreads)
   t = 10 + (((totalthreads - 1) / 100) + 1) * 10;
   thread_switch (MACH_PORT_NULL, SWITCH_OPTION_DEPRESS, t);
 
-  self = MACH_PORT_NULL;
+  self = pset = pset_priv = MACH_PORT_NULL;
 
   err = get_privileged_ports (&host_priv, NULL);
   if (err)
@@ -76,6 +76,10 @@ adjust_priority (unsigned int totalthreads)
 out:
   if (self != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), self);
+  if (pset != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), pset);
+  if (pset_priv != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), pset_priv);
 
   if (err && err != EPERM)
     {
