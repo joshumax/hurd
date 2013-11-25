@@ -71,7 +71,8 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
   diskfs_disk_pager = pager_create (upi, pager_bucket,
 				    may_cache, MEMORY_OBJECT_COPY_NONE,
 				    notify_on_evict);
-  assert (diskfs_disk_pager);
+  if (diskfs_disk_pager == NULL)
+    error (2, errno, "creating diskfs_disk_pager failed");
 
   /* Get a port to the disk pager.  */
   disk_pager_port = pager_get_port (diskfs_disk_pager);
