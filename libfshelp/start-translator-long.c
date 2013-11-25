@@ -285,10 +285,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   ports[INIT_PORT_BOOTSTRAP] = saveport;
 
   if (err)
-    {
-      task_terminate (task);
-      goto lose;
-    }
+    goto lose_task;
 
   /* Ask to be told if TASK dies.  */
   err =
@@ -297,12 +294,16 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 				   bootstrap, MACH_MSG_TYPE_MAKE_SEND_ONCE,
 				   &prev_notify);
   if (err)
-    return err;
+    goto lose_task;
 
   /* Ok, cool, we've got a running(?) program, now rendezvous with it if
      possible using the startup protocol on the bootstrap port... */
   err = service_fsys_startup(underlying_open_fn, cookie, bootstrap,
 			     timeout, control, task);
+
+ lose_task:
+  if (err)
+    task_terminate (task);
 
  lose:
   if (!ports_moved)
