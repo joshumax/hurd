@@ -1202,14 +1202,16 @@ S_startup_essential_task (mach_port_t server,
   static int authinit, procinit, execinit;
   int fail;
 
+  /* Always deallocate the extra reference this message carries.  */
+  if (MACH_PORT_VALID (credential))
+    mach_port_deallocate (mach_task_self (), credential);
+
   if (credential != host_priv)
     return EPERM;
 
   fail = record_essential_task (name, task);
   if (fail)
     return fail;
-
-  mach_port_deallocate (mach_task_self (), credential);
 
   if (!booted)
     {
