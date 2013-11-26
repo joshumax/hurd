@@ -70,7 +70,7 @@ S_proc_getprivports (struct proc *p,
   if (! check_uid (p, 0))
     return EPERM;
 
-  *hostpriv = master_host_port;
+  *hostpriv = _hurd_host_priv;
   *devpriv = master_device_port;
   return 0;
 }
@@ -419,7 +419,7 @@ S_proc_register_version (pstruct_t server,
 
   /* No need to check SERVER here; we don't use it. */
 
-  if (credential != master_host_port)
+  if (credential != _hurd_host_priv)
     /* Must be privileged to register for uname. */
     return EPERM;
 

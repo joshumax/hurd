@@ -92,7 +92,7 @@ main (int argc, char **argv, char **envp)
 
   startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
-			  &authserver, &master_host_port, &master_device_port);
+			  &authserver, &_hurd_host_priv, &master_device_port);
   assert_perror (err);
   mach_port_deallocate (mach_task_self (), startup_port);
 
@@ -111,7 +111,7 @@ main (int argc, char **argv, char **envp)
      important. */
   err = thread_get_assignment (mach_thread_self (), &pset);
   assert_perror (err);
-  err = host_processor_set_priv (master_host_port, pset, &psetcntl);
+  err = host_processor_set_priv (_hurd_host_priv, pset, &psetcntl);
   assert_perror (err);
   thread_max_priority (mach_thread_self (), psetcntl, 0);
   assert_perror (err);

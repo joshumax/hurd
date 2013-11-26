@@ -141,7 +141,6 @@ struct port_class *proc_class;
 struct port_class *generic_port_class;
 struct port_class *exc_class;
 
-mach_port_t master_host_port;
 mach_port_t master_device_port;
 
 mach_port_t generic_port;	/* messages not related to a specific proc */

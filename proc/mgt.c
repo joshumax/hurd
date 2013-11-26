@@ -828,7 +828,7 @@ add_tasks (task_t task)
 
       if (!foundp)
 	{
-	  host_processor_set_priv (master_host_port, psets[i], &psetpriv);
+	  host_processor_set_priv (_hurd_host_priv, psets[i], &psetpriv);
 	  processor_set_tasks (psetpriv, &tasks, &ntasks);
 	  for (j = 0; j < ntasks; j++)
 	    {

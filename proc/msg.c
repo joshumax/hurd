@@ -40,7 +40,7 @@ static void *
 tickle_init (void *initport)
 {
   startup_essential_task ((mach_port_t) initport, mach_task_self (),
-			  MACH_PORT_NULL, "proc", master_host_port);
+			  MACH_PORT_NULL, "proc", _hurd_host_priv);
   return NULL;
 }
 
