@@ -20,6 +20,7 @@
 
 #include "ports.h"
 #include <assert.h>
+#include <error.h>
 #include <stdio.h>
 #include <mach/message.h>
 #include <mach/thread_info.h>
@@ -82,10 +83,7 @@ out:
     mach_port_deallocate (mach_task_self (), pset_priv);
 
   if (err && err != EPERM)
-    {
-      errno = err;
-      perror ("unable to adjust libports thread priority");
-    }
+    error (0, err, "unable to adjust libports thread priority");
 }
 
 void
