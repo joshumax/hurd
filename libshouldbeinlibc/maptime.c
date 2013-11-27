@@ -51,6 +51,10 @@ maptime_map (int use_mach_dev, char *dev_name,
 	return err;
 
       err = device_map (device, VM_PROT_READ, 0, sizeof *mtime, &memobj, 0);
+
+      /* Deallocate the device port.  The mapping is independent of
+	 this port.  */
+      mach_port_deallocate (mach_task_self (), device);
     }
   else
     {
