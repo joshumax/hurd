@@ -92,7 +92,7 @@ main (int argc, char **argv, char **envp)
 
   startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
-			  &authserver, &_hurd_host_priv, &master_device_port);
+			  &authserver, &_hurd_host_priv, &_hurd_device_master);
   assert_perror (err);
   mach_port_deallocate (mach_task_self (), startup_port);
 
@@ -126,7 +126,7 @@ main (int argc, char **argv, char **envp)
        to panic or something.  */
     mach_port_t cons;
     error_t err;
-    err = device_open (master_device_port, D_READ|D_WRITE, "console", &cons);
+    err = device_open (_hurd_device_master, D_READ|D_WRITE, "console", &cons);
     assert_perror (err);
     stdin = mach_open_devstream (cons, "r");
     stdout = stderr = mach_open_devstream (cons, "w");

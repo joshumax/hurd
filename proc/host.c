@@ -71,7 +71,7 @@ S_proc_getprivports (struct proc *p,
     return EPERM;
 
   *hostpriv = _hurd_host_priv;
-  *devpriv = master_device_port;
+  *devpriv = _hurd_device_master;
   return 0;
 }
 
