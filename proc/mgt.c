@@ -417,7 +417,7 @@ S_proc_handle_exceptions (struct proc *p,
    the thread_set_state requested by proc_handle_exceptions and then
    send an exception_raise message as requested. */
 kern_return_t
-S_proc_exception_raise (mach_port_t excport,
+S_proc_exception_raise (struct exc *e,
 			mach_port_t reply,
 			mach_msg_type_name_t reply_type,
 			mach_port_t thread,
@@ -428,8 +428,7 @@ S_proc_exception_raise (mach_port_t excport,
 {
   error_t err;
   struct proc *p;
-  struct exc *e = ports_lookup_port (proc_bucket, excport, exc_class);
-  if (!e)
+  if (!e || e->pi.bucket != proc_bucket || e->pi.class != exc_class)
     return EOPNOTSUPP;
 
   p = task_find (task);
@@ -455,7 +454,6 @@ S_proc_exception_raise (mach_port_t excport,
 	 the faulting thread's state to run its recovery code, which should
 	 dequeue that message.  */
       err = thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
-      ports_port_deref (e);
       mach_port_deallocate (mach_task_self (), thread);
       mach_port_deallocate (mach_task_self (), task);
       if (err)
@@ -484,7 +482,6 @@ S_proc_exception_raise (mach_port_t excport,
       /* Nuke the task; we will get a notification message and report that
 	 it died with SIGNO.  */
       task_terminate (task);
-      ports_port_deref (e);
 
       /* In the MACH_SEND_NOTIFY_IN_PROGRESS case, the kernel did a
 	 pseudo-receive of the RPC request message that may have added user
