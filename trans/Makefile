@@ -47,6 +47,10 @@ ifsock-MIGSFLAGS=\
 # device_replyServer is used by the streamio translator.
 device_reply-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 
+# fsysServer is only used by the symlink translator which does not use
+# libports.  Disable the default payload to port conversion.
+fsys-MIGSFLAGS = "-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+
 include ../Makeconf
 
 vpath elfcore.c $(top_srcdir)/exec
