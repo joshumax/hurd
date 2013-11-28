@@ -1195,6 +1195,16 @@ wrap_new_task (mach_msg_header_t *inp, struct req_info *req)
   ports_port_deref (task_wrapper1);
 }
 
+/* Returns true if the given message is a Mach notification.  */
+static inline int
+is_notification (const mach_msg_header_t *InHeadP)
+{
+  int msgh_id = InHeadP->msgh_id - 64;
+  if ((msgh_id > 8) || (msgh_id < 0))
+    return 0;
+  return 1;
+}
+
 int
 trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
@@ -1219,7 +1229,24 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
   /* Look up our record for the receiving port.  There is no need to check
      the class, because our port bucket only ever contains one class of
      ports (traced_class).  */
-  info = ports_lookup_port (traced_bucket, inp->msgh_local_port, 0);
+
+  if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == MACH_MSG_TYPE_PROTECTED_PAYLOAD)
+    {
+      info = ports_lookup_payload (traced_bucket, inp->msgh_protected_payload,
+				   NULL);
+      if (info)
+	{
+	  /* Undo the protected payload optimization.  */
+	  inp->msgh_bits = MACH_MSGH_BITS (
+	    MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
+	    is_notification (inp)? MACH_MSG_TYPE_MOVE_SEND_ONCE: info->type)
+	    | MACH_MSGH_BITS_OTHER (inp->msgh_bits);
+	  inp->msgh_local_port = ports_payload_get_name (info);
+	}
+    }
+  else
+    info = ports_lookup_port (traced_bucket, inp->msgh_local_port, NULL);
+
   assert (info);
 
   /* A notification message from the kernel appears to have been sent
