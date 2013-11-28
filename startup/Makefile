@@ -25,6 +25,10 @@ OBJS = $(SRCS:.c=.o) \
 target = startup
 HURDLIBS = shouldbeinlibc
 
+# startup does not use libports.  Disable the default payload to port
+# conversion.
+MIGSFLAGS="-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+
 include ../Makeconf
 
 mung_msg_S.h: msg_S.h
