@@ -1,5 +1,5 @@
 /* Hurd standard password server.
-   Copyright (C) 1999 Free Software Foundation
+   Copyright (C) 1999, 2013 Free Software Foundation
    Written by Mark Kettenis.
 
    The GNU Hurd is free software; you can redistribute it and/or
@@ -135,10 +135,9 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 
 /* Implement password_check_user as described in <hurd/password.defs>.  */
 kern_return_t
-S_password_check_user (io_t server, uid_t user, char *pw,
+S_password_check_user (struct trivfs_protid *cred, uid_t user, char *pw,
 		       mach_port_t *port, mach_msg_type_name_t *port_type)
 {
-  struct trivfs_protid *cred;
   struct ugids ugids = UGIDS_INIT;
   auth_t auth;
   error_t err;
@@ -150,9 +149,15 @@ S_password_check_user (io_t server, uid_t user, char *pw,
       return strdup (pw);
     }
 
-  cred = ports_lookup_port (port_bucket, server, trivfs_protid_portclasses[0]);
   if (! cred)
     return EOPNOTSUPP;
+
+  if (cred->pi.bucket != port_bucket ||
+      cred->pi.class != trivfs_protid_portclasses[0])
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
 
   /* Verify password.  */
   err = ugids_add_user (&ugids, user, 1);
@@ -173,17 +178,14 @@ S_password_check_user (io_t server, uid_t user, char *pw,
     }
 
   ugids_fini (&ugids);
-
-  ports_port_deref (cred);
   return err;
 }
 
 /* Implement password_check_group as described in <hurd/password.defs>.  */
 kern_return_t
-S_password_check_group (io_t server, uid_t group, char *pw,
+S_password_check_group (struct trivfs_protid *cred, uid_t group, char *pw,
 			mach_port_t *port, mach_msg_type_name_t *port_type)
 {
-  struct trivfs_protid *cred;
   struct ugids ugids = UGIDS_INIT;
   auth_t auth;
   error_t err;
@@ -195,10 +197,16 @@ S_password_check_group (io_t server, uid_t group, char *pw,
       return strdup (pw);
     }
 
-  cred = ports_lookup_port (port_bucket, server, trivfs_protid_portclasses[0]);
   if (! cred)
     return EOPNOTSUPP;
-  
+
+  if (cred->pi.bucket != port_bucket ||
+      cred->pi.class != trivfs_protid_portclasses[0])
+    {
+      ports_port_deref (cred);
+      return EOPNOTSUPP;
+    }
+
   /* Verify password.  */
   err = ugids_add_gid (&ugids, group, 1);
   if (!err)
@@ -218,7 +226,5 @@ S_password_check_group (io_t server, uid_t group, char *pw,
     }
 
   ugids_fini (&ugids);
-
-  ports_port_deref (cred);
   return err;
 }

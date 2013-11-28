@@ -1,6 +1,6 @@
 #
 #   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2000, 2001, 2002, 2006, 2007,
-#   2008 Free Software Foundation, Inc.
+#   2008, 2013 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -32,6 +32,10 @@ OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
 password-LDLIBS = $(LIBCRYPT)
+password-MIGSFLAGS=\
+    "-DIO_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
+    "-DIO_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
+    "-DPASSWORD_IMPORTS=import <hurd/trivfs.h>;"
 
 include ../Makeconf
 
