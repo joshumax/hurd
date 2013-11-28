@@ -33,6 +33,9 @@ type ctty_t = mach_port_copy_send_t
 #ifdef CTTY_INTRAN
 intran: CTTY_INTRAN
 #endif
+#ifdef CTTY_INTRAN_PAYLOAD
+intranpayload: CTTY_INTRAN_PAYLOAD
+#endif
 #ifdef CTTY_OUTTRAN
 outtran: CTTY_OUTTRAN
 #endif

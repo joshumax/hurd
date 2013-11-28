@@ -29,6 +29,7 @@
 
 subsystem default_pager 2275;
 
+#include <hurd/hurd_types.defs>	/* For `MACH_PAYLOAD_TO_PORT'.  */
 #include <mach/std_types.defs>
 #include <mach/mach_types.defs>
 #include <mach/default_pager_types.defs>

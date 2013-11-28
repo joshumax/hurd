@@ -18,13 +18,67 @@ along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
+/* The Hurd uses protected payloads to quickly look up the object
+   receiving a message.  Looking up objects is optimized at the cost
+   of having to translate payloads back to port names if the server
+   function expect a port name rather than an object.
+
+   Support for this is implemented in libports.  Almost all of Hurd's
+   servers use libports.  For servers using libports, the optimized
+   lookup is completely transparent.
+
+   Servers not using libports are not using protected payloads
+   automatically.  Define HURD_DEFAULT_PAYLOAD_TO_PORT to 1 (1 like
+   the identity function) for programs not using libports to avoid
+   injecting the default payload-to-port translation function which is
+   in libports.  If you want to use protected payloads without
+   libports, you can use HURD_DEFAULT_PAYLOAD_TO_PORT to inject a
+   custom translation function.  */
+
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+#if HURD_DEFAULT_PAYLOAD_TO_PORT
+/* Any non-numeric value will fail this test.  If 1 (or any number) is
+   given, do not inject the default translator function.  */
+#undef HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#else
+   import <hurd/ports.h>;
+#define HURD_DEFAULT_PAYLOAD_TO_PORT ports_payload_get_name
+#endif
+
+/* Override the mach_port_t.  Use the default payload to port
+   translation function to convert payloads back to port names for
+   this type.  */
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+#define MACH_PAYLOAD_TO_PORT	HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+
 #include <mach/std_types.defs>
 #include <mach/mach_types.defs>
 #include <device/device_types.defs>
+
+/* The Hurd types.  You can inject translation functions for type X
+   using the X_INTRAN, X_INTRAN_PAYLOAD, X_OUTTRAN, and X_DESTRUCTOR.
+
+   If you define X_INTRAN and your server is using libports, you also
+   have to define X_INTRAN_PAYLOAD.
+
+   If you do not use libports, and do not want to use the protected
+   payload mechanism, but you do want to use X_INTRAN, you must
+   provide a X_INTRAN_PAYLOAD that either ignores the message by
+   returning NULL, or indicates an error condition in some appropriate
+   way.  If you do want to use the protected payload mechanism, make
+   sure you also define an appropriate HURD_DEFAULT_PAYLOAD_TO_PORT
+   translation function.  */
 
 type file_t = mach_port_copy_send_t
 #ifdef FILE_INTRAN
 intran: FILE_INTRAN
+intranpayload: FILE_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: file_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef FILE_OUTTRAN
 outtran: FILE_OUTTRAN
@@ -37,6 +91,11 @@ destructor: FILE_DESTRUCTOR
 type fsys_t = mach_port_copy_send_t
 #ifdef FSYS_INTRAN
 intran: FSYS_INTRAN
+intranpayload: FSYS_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: fsys_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef FSYS_OUTTRAN
 outtran: FSYS_OUTTRAN
@@ -50,6 +109,11 @@ destructor: FSYS_DESTRUCTOR
 type io_t = mach_port_copy_send_t
 #ifdef IO_INTRAN
 intran: IO_INTRAN
+intranpayload: IO_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: io_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef IO_OUTTRAN
 outtran: IO_OUTTRAN
@@ -62,6 +126,11 @@ destructor: IO_DESTRUCTOR
 type process_t = mach_port_copy_send_t
 #ifdef PROCESS_INTRAN
 intran: PROCESS_INTRAN
+intranpayload: PROCESS_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: process_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef PROCESS_OUTTRAN
 outtran: PROCESS_OUTTRAN
@@ -74,6 +143,11 @@ destructor: PROCESS_DESTRUCTOR
 type auth_t = mach_port_copy_send_t
 #ifdef AUTH_INTRAN
 intran: AUTH_INTRAN
+intranpayload: AUTH_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: auth_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef AUTH_OUTTRAN
 outtran: AUTH_OUTTRAN
@@ -86,6 +160,11 @@ destructor: AUTH_DESTRUCTOR
 type socket_t = mach_port_copy_send_t
 #ifdef SOCKET_INTRAN
 intran: SOCKET_INTRAN
+intranpayload: SOCKET_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: socket_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef SOCKET_OUTTRAN
 outtran: SOCKET_OUTTRAN
@@ -99,6 +178,11 @@ destructor: SOCKET_DESTRUCTOR
 type pf_t = mach_port_copy_send_t
 #ifdef PF_INTRAN
 intran: PF_INTRAN
+intranpayload: PF_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: pf_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef PF_OUTTRAN
 outtran: PF_OUTTRAN
@@ -111,6 +195,11 @@ destructor: PF_DESTRUCTOR
 type addr_port_t = mach_port_copy_send_t
 #ifdef ADDRPORT_INTRAN
 intran: ADDRPORT_INTRAN
+intranpayload: ADDRPORT_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: addr_port_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef ADDRPORT_OUTTRAN
 outtran: ADDRPORT_OUTTRAN
@@ -123,6 +212,11 @@ destructor: ADDRPORT_DESTRUCTOR
 type term_t = mach_port_copy_send_t
 #ifdef TERM_INTRAN
 intran: TERM_INTRAN
+intranpayload: TERM_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: term_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef TERM_OUTTRAN
 outtran: TERM_OUTTRAN
@@ -135,6 +229,11 @@ destructor: TERM_DESTRUCTOR
 type startup_t = mach_port_copy_send_t
 #ifdef STARTUP_INTRAN
 intran: STARTUP_INTRAN
+intranpayload: STARTUP_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: startup_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef STARTUP_OUTTRAN
 outtran: STARTUP_OUTTRAN
@@ -147,6 +246,11 @@ destructor: STARTUP_DESTRUCTOR
 type fs_notify_t = mach_port_copy_send_t
 #ifdef FS_NOTIFY_INTRAN
 intran: FS_NOTIFY_INTRAN
+intranpayload: FS_NOTIFY_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: fs_notify_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef FS_NOTIFY_OUTTRAN
 outtran: FS_NOTIFY_OUTTRAN
@@ -159,6 +263,11 @@ destructor: FS_NOTIFY_DESTRUCTOR
 type exec_startup_t = mach_port_copy_send_t
 #ifdef EXEC_STARTUP_INTRAN
 intran: EXEC_STARTUP_INTRAN
+intranpayload: EXEC_STARTUP_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: exec_startup_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef EXEC_STARTUP_OUTTRAN
 outtran: EXEC_STARTUP_OUTTRAN
@@ -171,6 +280,11 @@ destructor: EXEC_STARTUP_DESTRUCTOR
 type interrupt_t = mach_port_copy_send_t
 #ifdef INTERRUPT_INTRAN
 intran: INTERRUPT_INTRAN
+intranpayload: INTERRUPT_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: exec_startup_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
 #endif
 #ifdef INTERRUPT_OUTTRAN
 outtran: INTERRUPT_OUTTRAN
@@ -184,7 +298,11 @@ destructor: INTERRUPT_DESTRUCTOR
 type proccoll_t = mach_port_copy_send_t;
 
 type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
-	ctype: mach_port_t;
+	ctype: mach_port_t
+#ifdef	MACH_PAYLOAD_TO_PORT
+intranpayload: mach_port_t MACH_PAYLOAD_TO_PORT
+#endif	/* MACH_PAYLOAD_TO_PORT */
+;
 
 /* These macros are used in some .defs files so that every routine has a
    server reply port argument #ifdef REPLY_PORTS.  */
