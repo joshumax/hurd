@@ -38,6 +38,7 @@ import "mig-decls.h";
 type exception_t = mach_port_copy_send_t
 	cusertype: mach_port_t
 	intran: exc_t begin_using_exc_port (exception_t)
+	intranpayload: exc_t begin_using_exc_payload
 	destructor: end_using_exc (exc_t);
 
 routine proc_exception_raise (
