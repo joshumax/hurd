@@ -80,6 +80,12 @@ begin_using_notify_port (fs_notify_t port)
   return ports_lookup_port (cons_port_bucket, port, cons_port_class);
 }
 
+static inline cons_notify_t
+begin_using_notify_payload (unsigned long payload)
+{
+  return ports_lookup_payload (cons_port_bucket, payload, cons_port_class);
+}
+
 /* Called by MiG after server routines have been run; this balances
    begin_using_notify_port, and is arranged for the fs_notify
    interfaces by mutations.h. */
