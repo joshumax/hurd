@@ -44,6 +44,12 @@ begin_using_control_port (fsys_t port)
   return ports_lookup_port (netfs_port_bucket, port, netfs_control_class);
 }
 
+static inline struct netfs_control * __attribute__ ((unused))
+begin_using_control_payload (unsigned long payload)
+{
+  return ports_lookup_payload (netfs_port_bucket, payload, netfs_control_class);
+}
+
 static inline void __attribute__ ((unused))
 end_using_control_port (struct netfs_control *cred)
 {
