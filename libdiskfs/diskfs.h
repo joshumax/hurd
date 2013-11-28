@@ -833,8 +833,14 @@ error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 extern struct protid * diskfs_begin_using_protid_port (file_t port);
+extern struct protid *
+diskfs_begin_using_protid_payload (unsigned long payload);
 extern struct diskfs_control * diskfs_begin_using_control_port (fsys_t port);
+extern struct diskfs_control *
+diskfs_begin_using_control_port_payload (unsigned long payload);
 extern struct bootinfo *diskfs_begin_using_bootinfo_port (exec_startup_t port);
+struct bootinfo *
+diskfs_begin_using_bootinfo_payload (unsigned long payload);
 
 extern void diskfs_end_using_protid_port (struct protid *cred);
 extern void diskfs_end_using_control_port (struct diskfs_control *cred);
@@ -851,11 +857,27 @@ diskfs_begin_using_protid_port (file_t port)
   return ports_lookup_port (diskfs_port_bucket, port, diskfs_protid_class);
 }
 
+DISKFS_EXTERN_INLINE struct protid *
+diskfs_begin_using_protid_payload (unsigned long payload)
+{
+  return ports_lookup_payload (diskfs_port_bucket,
+			       payload,
+			       diskfs_protid_class);
+}
+
 /* And for the fsys interface. */
 DISKFS_EXTERN_INLINE struct diskfs_control *
 diskfs_begin_using_control_port (fsys_t port)
 {
   return ports_lookup_port (diskfs_port_bucket, port, NULL);
+}
+
+DISKFS_EXTERN_INLINE struct diskfs_control *
+diskfs_begin_using_control_port_payload (unsigned long payload)
+{
+  return ports_lookup_payload (diskfs_port_bucket,
+			       payload,
+			       NULL);
 }
 
 /* And for the exec_startup interface. */
@@ -865,6 +887,13 @@ diskfs_begin_using_bootinfo_port (exec_startup_t port)
   return ports_lookup_port (diskfs_port_bucket, port, diskfs_execboot_class);
 }
 
+DISKFS_EXTERN_INLINE struct bootinfo *
+diskfs_begin_using_bootinfo_payload (unsigned long payload)
+{
+  return ports_lookup_payload (diskfs_port_bucket,
+			       payload,
+			       diskfs_execboot_class);
+}
 
 /* Called by MiG after server routines have been run; this
    balances begin_using_protid_port, and is arranged for the io
