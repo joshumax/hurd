@@ -7,4 +7,12 @@
   import "priv.h";					\
   import "../libtrivfs/mig-decls.h";			\
 
+#define EXEC_STARTUP_INTRAN                             \
+  bootinfo_t begin_using_bootinfo_port (exec_startup_t)
+#define EXEC_STARTUP_DESTRUCTOR                         \
+  end_using_bootinfo (bootinfo_t)
+#define EXEC_STARTUP_IMPORTS                            \
+  import "priv.h";                                      \
+  import "mig-decls.h";
+
 #define SERVERCOPY 1

@@ -1457,7 +1457,7 @@ S_exec_setexecdata (struct trivfs_protid *protid,
 /* RPC sent on the bootstrap port.  */
 
 kern_return_t
-S_exec_startup_get_info (mach_port_t port,
+S_exec_startup_get_info (struct bootinfo *boot,
 			 vm_address_t *user_entry,
 			 vm_address_t *phdr_data, vm_size_t *phdr_size,
 			 vm_address_t *stack_base, vm_size_t *stack_size,
@@ -1472,11 +1472,8 @@ S_exec_startup_get_info (mach_port_t port,
 			 mach_msg_type_number_t *nports,
 			 int **intarray, mach_msg_type_number_t *nints)
 {
-  struct bootinfo *boot = ports_lookup_port (port_bucket, port,
-					     execboot_portclass);
   if (! boot)
     return EOPNOTSUPP;
-  ports_port_deref (boot);
 
   /* Pass back all the information we are storing.  */
 

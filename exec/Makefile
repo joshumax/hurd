@@ -30,6 +30,7 @@ HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
 OTHERLIBS = -lpthread
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
+exec_startup-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 
 include ../Makeconf
 

@@ -52,6 +52,7 @@ struct bootinfo
     vm_address_t phdr_addr, user_entry;
     vm_size_t phdr_size;
   };
+typedef struct bootinfo *bootinfo_t;
 
 
 /* Where to put the service ports. */
@@ -150,6 +151,5 @@ extern mach_port_t *std_ports;
 extern int *std_ints;
 extern size_t std_nports, std_nints;
 extern pthread_rwlock_t std_lock;
-
 
 #endif /* exec_priv_h */
