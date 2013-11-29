@@ -1,5 +1,5 @@
 /* Demultiplexer for diskfs library
-   Copyright (C) 1994, 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1995, 1996, 2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,20 +21,29 @@ int
 diskfs_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
-  int diskfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_exec_startup_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
-  int diskfs_startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  
-  
-  return (diskfs_io_server (inp, outp)
-	  || diskfs_fs_server (inp, outp)
-	  || ports_notify_server (inp, outp)
-	  || diskfs_fsys_server (inp, outp)
-	  || diskfs_exec_startup_server (inp, outp)
-	  || ports_interrupt_server (inp, outp)
-	  || (diskfs_shortcut_ifsock ? diskfs_ifsock_server (inp, outp) : 0)
-	  || diskfs_startup_notify_server (inp, outp));
+  mig_routine_t diskfs_io_server_routine (mach_msg_header_t *);
+  mig_routine_t diskfs_fs_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
+  mig_routine_t diskfs_fsys_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
+  mig_routine_t diskfs_ifsock_server_routine (mach_msg_header_t *);
+  mig_routine_t diskfs_exec_startup_server_routine (mach_msg_header_t *);
+  mig_routine_t diskfs_startup_notify_server_routine (mach_msg_header_t *);
+
+  mig_routine_t routine;
+  if ((routine = diskfs_io_server_routine (inp)) ||
+      (routine = diskfs_fs_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)) ||
+      (routine = diskfs_fsys_server_routine (inp)) ||
+      (routine = ports_interrupt_server_routine (inp)) ||
+      (diskfs_shortcut_ifsock ?
+       (routine = diskfs_ifsock_server_routine (inp)) : 0) ||
+      (routine = diskfs_startup_notify_server_routine (inp)) ||
+      (routine = diskfs_exec_startup_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
