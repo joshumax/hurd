@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server, main program and server mechanics.
 
-   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01,02
+   Copyright (C) 1992,93,94,95,96,97,98,99,2000,01,02,13
    	Free Software Foundation, Inc.
    Written by Roland McGrath.
    This file is part of the GNU Hurd.
@@ -49,11 +49,20 @@ char **save_argv;
 static int
 exec_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  extern int exec_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
-  extern int exec_startup_server (mach_msg_header_t *, mach_msg_header_t *);
-  return (exec_startup_server (inp, outp) ||
-	  exec_server (inp, outp) ||
-	  trivfs_demuxer (inp, outp));
+  mig_routine_t exec_server_routine (mach_msg_header_t *);
+  mig_routine_t exec_startup_server_routine (mach_msg_header_t *);
+
+  mig_routine_t routine;
+  if ((routine = exec_server_routine (inp)) ||
+      (routine = NULL, trivfs_demuxer (inp, outp)) ||
+      (routine = exec_startup_server_routine (inp)))
+    {
+      if (routine)
+        (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 
