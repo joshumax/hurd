@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1993, 1994 Free Software Foundation
+   Copyright (C) 1993, 1994, 2013 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -25,13 +25,23 @@ int
 trivfs_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
-  int trivfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int trivfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int trivfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  
-  return (trivfs_io_server (inp, outp)
-	  || trivfs_fs_server (inp, outp)
-	  || ports_notify_server (inp, outp)
-	  || trivfs_fsys_server (inp, outp)
-	  || ports_interrupt_server (inp, outp));
+  mig_routine_t trivfs_io_server_routine (mach_msg_header_t *);
+  mig_routine_t trivfs_fs_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
+  mig_routine_t trivfs_fsys_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
+  mig_routine_t trivfs_ifsock_server_routine (mach_msg_header_t *);
+
+  mig_routine_t routine;
+  if ((routine = trivfs_io_server_routine (inp)) ||
+      (routine = trivfs_fs_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)) ||
+      (routine = trivfs_fsys_server_routine (inp)) ||
+      (routine = ports_interrupt_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
