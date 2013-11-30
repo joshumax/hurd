@@ -38,18 +38,24 @@ int
 message_demuxer (mach_msg_header_t *inp,
 		 mach_msg_header_t *outp)
 {
-  extern int process_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int proc_exc_server (mach_msg_header_t *, mach_msg_header_t *);
-  int status;
+  mig_routine_t process_server_routine (mach_msg_header_t *);
+  mig_routine_t notify_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
+  mig_routine_t proc_exc_server_routine (mach_msg_header_t *);
 
-  pthread_mutex_lock (&global_lock);
-  status = (process_server (inp, outp)
-	    || notify_server (inp, outp)
-	    || ports_interrupt_server (inp, outp)
-	    || proc_exc_server (inp, outp));
-  pthread_mutex_unlock (&global_lock);
-  return status;
+  mig_routine_t routine;
+  if ((routine = process_server_routine (inp)) ||
+      (routine = notify_server_routine (inp)) ||
+      (routine = ports_interrupt_server_routine (inp)) ||
+      (routine = proc_exc_server_routine (inp)))
+    {
+      pthread_mutex_lock (&global_lock);
+      (*routine) (inp, outp);
+      pthread_mutex_unlock (&global_lock);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
