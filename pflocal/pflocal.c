@@ -51,8 +51,18 @@ int trivfs_cntl_nportclasses = 1;
 static int
 pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  extern int socket_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
-  return socket_server (inp, outp) || trivfs_demuxer (inp, outp);
+  mig_routine_t socket_server_routine (mach_msg_header_t *);
+
+  mig_routine_t routine;
+  if ((routine = socket_server_routine (inp)) ||
+      (routine = NULL, trivfs_demuxer (inp, outp)))
+    {
+      if (routine)
+        (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 
