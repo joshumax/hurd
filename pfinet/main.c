@@ -77,11 +77,11 @@ pfinet_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
   struct port_info *pi;
-  extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int socket_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int startup_notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int pfinet_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int iioctl_server (mach_msg_header_t *, mach_msg_header_t *);
+  mig_routine_t io_server_routine (mach_msg_header_t *);
+  mig_routine_t socket_server_routine (mach_msg_header_t *);
+  mig_routine_t pfinet_server_routine (mach_msg_header_t *);
+  mig_routine_t iioctl_server_routine (mach_msg_header_t *);
+  mig_routine_t startup_notify_server_routine (mach_msg_header_t *);
 
   /* We have several classes in one bucket, which need to be demuxed
      differently.  */
@@ -90,20 +90,38 @@ pfinet_demuxer (mach_msg_header_t *inp,
   if (pi)
     {
       ports_port_deref (pi);
-      
-      return (io_server (inp, outp)
-	      || socket_server (inp, outp)
-	      || pfinet_server (inp, outp)
-	      || iioctl_server (inp, outp)
-	      || trivfs_demuxer (inp, outp)
-	      || startup_notify_server (inp, outp));
+
+      mig_routine_t routine;
+      if ((routine = io_server_routine (inp)) ||
+          (routine = socket_server_routine (inp)) ||
+          (routine = pfinet_server_routine (inp)) ||
+          (routine = iioctl_server_routine (inp)) ||
+          (routine = NULL, trivfs_demuxer (inp, outp)) ||
+          (routine = startup_notify_server_routine (inp)))
+        {
+          if (routine)
+            (*routine) (inp, outp);
+          return TRUE;
+        }
+      else
+        return FALSE;
     }
   else
-    return (socket_server (inp, outp)
-	    || pfinet_server (inp, outp)
-	    || iioctl_server (inp, outp)
-	    || trivfs_demuxer (inp, outp)
-	    || startup_notify_server (inp, outp));
+    {
+      mig_routine_t routine;
+      if ((routine = socket_server_routine (inp)) ||
+          (routine = pfinet_server_routine (inp)) ||
+          (routine = iioctl_server_routine (inp)) ||
+          (routine = NULL, trivfs_demuxer (inp, outp)) ||
+          (routine = startup_notify_server_routine (inp)))
+        {
+          if (routine)
+            (*routine) (inp, outp);
+          return TRUE;
+        }
+      else
+        return FALSE;
+    }
 }
 
 /* The system is going down; destroy all the extant port rights.  That
