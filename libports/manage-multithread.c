@@ -53,36 +53,43 @@ adjust_priority (unsigned int totalthreads)
   t = 10 + (((totalthreads - 1) / 100) + 1) * 10;
   thread_switch (MACH_PORT_NULL, SWITCH_OPTION_DEPRESS, t);
 
-  self = pset = pset_priv = MACH_PORT_NULL;
-
   err = get_privileged_ports (&host_priv, NULL);
   if (err)
-    goto out;
+    goto error_host_priv;
 
   self = mach_thread_self ();
   err = thread_get_assignment (self, &pset);
   if (err)
-    goto out;
+    goto error_pset;
 
   err = host_processor_set_priv (host_priv, pset, &pset_priv);
   if (err)
-    goto out;
+    goto error_pset_priv;
 
   err = thread_max_priority (self, pset_priv, 0);
   if (err)
-    goto out;
+    goto error_max_priority;
 
   err = thread_priority (self, THREAD_PRI, 0);
+  if (err)
+    goto error_priority;
 
-out:
-  if (self != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), self);
-  if (pset != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), pset);
-  if (pset_priv != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), pset_priv);
+  mach_port_deallocate (mach_task_self (), pset_priv);
+  mach_port_deallocate (mach_task_self (), pset);
+  mach_port_deallocate (mach_task_self (), self);
+  mach_port_deallocate (mach_task_self (), host_priv);
+  return;
 
-  if (err && err != EPERM)
+error_priority:
+error_max_priority:
+  mach_port_deallocate (mach_task_self (), pset_priv);
+error_pset_priv:
+  mach_port_deallocate (mach_task_self (), pset);
+error_pset:
+  mach_port_deallocate (mach_task_self (), self);
+  mach_port_deallocate (mach_task_self (), host_priv);
+error_host_priv:
+  if (err != EPERM)
     error (0, err, "unable to adjust libports thread priority");
 }
 
