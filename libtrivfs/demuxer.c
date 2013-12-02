@@ -21,17 +21,16 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
 
+#include "trivfs_io_S.h"
+#include "trivfs_fs_S.h"
+#include "../libports/notify_S.h"
+#include "trivfs_fsys_S.h"
+#include "../libports/interrupt_S.h"
+
 int
 trivfs_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
-  mig_routine_t trivfs_io_server_routine (mach_msg_header_t *);
-  mig_routine_t trivfs_fs_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
-  mig_routine_t trivfs_fsys_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
-  mig_routine_t trivfs_ifsock_server_routine (mach_msg_header_t *);
-
   mig_routine_t routine;
   if ((routine = trivfs_io_server_routine (inp)) ||
       (routine = trivfs_fs_server_routine (inp)) ||
