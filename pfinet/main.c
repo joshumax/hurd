@@ -72,16 +72,17 @@ const char *argp_program_version = STANDARD_HURD_VERSION (pfinet);
 /* Option parser.  */
 extern struct argp pfinet_argp;
 
+#include "io_S.h"
+#include "socket_S.h"
+#include "pfinet_S.h"
+#include "iioctl_S.h"
+#include "startup_notify_S.h"
+
 int
 pfinet_demuxer (mach_msg_header_t *inp,
 		mach_msg_header_t *outp)
 {
   struct port_info *pi;
-  mig_routine_t io_server_routine (mach_msg_header_t *);
-  mig_routine_t socket_server_routine (mach_msg_header_t *);
-  mig_routine_t pfinet_server_routine (mach_msg_header_t *);
-  mig_routine_t iioctl_server_routine (mach_msg_header_t *);
-  mig_routine_t startup_notify_server_routine (mach_msg_header_t *);
 
   /* We have several classes in one bucket, which need to be demuxed
      differently.  */
