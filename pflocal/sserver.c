@@ -32,15 +32,15 @@ struct port_bucket *sock_port_bucket;
 static int sock_server_active = 0;
 static pthread_spinlock_t sock_server_active_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
+#include "io_S.h"
+#include "socket_S.h"
+#include "../libports/interrupt_S.h"
+#include "../libports/notify_S.h"
+
 /* A demuxer for socket operations.  */
 static int
 sock_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  mig_routine_t io_server_routine (mach_msg_header_t *);
-  mig_routine_t socket_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
-
   mig_routine_t routine;
   if ((routine = io_server_routine (inp)) ||
       (routine = socket_server_routine (inp)) ||

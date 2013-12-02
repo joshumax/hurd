@@ -46,13 +46,12 @@ int trivfs_protid_nportclasses = 1;
 int trivfs_cntl_nportclasses = 1;
 
 /* ---------------------------------------------------------------- */
+#include "socket_S.h"
 
 /* A demuxer to separate out pf-level operations on our node.  */
 static int
 pf_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  mig_routine_t socket_server_routine (mach_msg_header_t *);
-
   mig_routine_t routine;
   if ((routine = socket_server_routine (inp)) ||
       (routine = NULL, trivfs_demuxer (inp, outp)))
