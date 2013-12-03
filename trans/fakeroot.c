@@ -841,7 +841,6 @@ netfs_demuxer (mach_msg_header_t *inp,
   int netfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
   int netfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
   int netfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_ifsock_server (mach_msg_header_t *, mach_msg_header_t *);
 
   if (netfs_io_server (inp, outp)
       || netfs_fs_server (inp, outp)
