@@ -307,6 +307,10 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      /* We already know about this node.  */
 	      mach_port_deallocate (mach_task_self (), idport);
 	      pthread_mutex_lock (&np->lock);
+	      if (retry_name[0] != '\0')
+		/* This was not the last component, remove O_WRITE to
+		   avoid opening directories with it.  */
+		flags &= ~O_WRITE;
 	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
 	      if (!err)
 		netfs_nref (np);
