@@ -838,20 +838,26 @@ int
 netfs_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
 {
-  int netfs_fs_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_io_server (mach_msg_header_t *, mach_msg_header_t *);
-  int netfs_fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  mig_routine_t netfs_io_server_routine (mach_msg_header_t *);
+  mig_routine_t netfs_fs_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
+  mig_routine_t netfs_fsys_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
 
-  if (netfs_io_server (inp, outp)
-      || netfs_fs_server (inp, outp)
-      || ports_notify_server (inp, outp)
-      || netfs_fsys_server (inp, outp)
+  mig_routine_t routine;
+  if ((routine = netfs_io_server_routine (inp)) ||
+      (routine = netfs_fs_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)) ||
+      (routine = netfs_fsys_server_routine (inp)) ||
       /* XXX we should intercept interrupt_operation and do
 	 the ports_S_interrupt_operation work as well as
 	 sending an interrupt_operation to the underlying file.
        */
-      || ports_interrupt_server (inp, outp))
-    return 1;
+      (routine = ports_interrupt_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
   else
     {
       /* We didn't recognize the message ID, so pass the message through
