@@ -21,6 +21,8 @@
 
 #include <fshelp.h>
 #include <hurd/ports.h>
+#include <hurd/ihash.h>
+#include <stddef.h>
 #include <assert.h>
 
 static struct port_class *idclass = 0;
@@ -29,14 +31,26 @@ static pthread_mutex_t idlock = PTHREAD_MUTEX_INITIALIZER;
 struct idspec
 {
   struct port_info pi;
-  ino_t fileno;
+  hurd_ihash_locp_t id_hashloc;
 };
+
+static struct hurd_ihash idhash
+  = HURD_IHASH_INITIALIZER (offsetof (struct idspec, id_hashloc));
+
+static void
+id_clean (void *cookie)
+{
+  struct idspec *i = cookie;
+  pthread_mutex_lock (&idlock);
+  hurd_ihash_locp_remove (&idhash, i->id_hashloc);
+  pthread_mutex_unlock (&idlock);
+}
 
 static void
 id_initialize ()
 {
   assert (!idclass);
-  idclass = ports_create_class (0, 0);
+  idclass = ports_create_class (id_clean, NULL);
 }
 
 error_t
@@ -47,42 +61,32 @@ fshelp_get_identity (struct port_bucket *bucket,
   struct idspec *i;
   error_t err = 0;
 
-  error_t check_port (void *arg)
-    {
-      struct idspec *i = arg;
-      if (i->fileno == fileno)
-	{
-	  *pt = ports_get_right (i);
-	  return 1;
-	}
-      else
-	return 0;
-    }
-
   pthread_mutex_lock (&idlock);
   if (!idclass)
     id_initialize ();
 
-  *pt = MACH_PORT_NULL;
-
-  ports_class_iterate (idclass, check_port);
-
-  if (*pt != MACH_PORT_NULL)
+  i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) fileno);
+  if (i == NULL)
     {
-      pthread_mutex_unlock (&idlock);
-      return 0;
-    }
+      err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
+      if (err)
+        goto lose;
+      err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) fileno, i);
+      if (err)
+        goto lose_port;
 
-  err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
-  if (err)
-    {
-      pthread_mutex_unlock (&idlock);
-      return err;
+      *pt = ports_get_right (i);
+      ports_port_deref (i);
     }
-  i->fileno = fileno;
+  else
+    *pt = ports_get_right (i);
 
-  *pt = ports_get_right (i);
-  ports_port_deref (i);
+  /* Success!  */
+  goto lose;
+
+ lose_port:
+  ports_destroy_right (i);
+ lose:
   pthread_mutex_unlock (&idlock);
-  return 0;
+  return err;
 }
