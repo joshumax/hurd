@@ -302,11 +302,20 @@ S_interrupt_operation (mach_port_t port, mach_port_seqno_t seqno)
 static int
 auth_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  extern int auth_server (mach_msg_header_t *inp, mach_msg_header_t *outp);
-  extern int interrupt_server (mach_msg_header_t *inp, mach_msg_header_t *);
-  return (auth_server (inp, outp) ||
-	  interrupt_server (inp, outp) ||
-	  ports_notify_server (inp, outp));
+  mig_routine_t auth_server_routine (mach_msg_header_t *);
+  mig_routine_t interrupt_server_routine (mach_msg_header_t *);
+  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
+
+  mig_routine_t routine;
+  if ((routine = auth_server_routine (inp)) ||
+      (routine = interrupt_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 
