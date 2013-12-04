@@ -290,16 +290,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	{
 	  /* Talking to ourselves!  We just looked up one of our
 	     own nodes.  Find the node and return it.  */
-	  struct protid *cred
-	    = ports_lookup_port (netfs_port_bucket, file,
-				 netfs_protid_class);
-	  mach_port_deallocate (mach_task_self (), idport);
-	  mach_port_deallocate (mach_task_self (), file);
-	  if (cred == 0)
-	    return EGRATUITOUS;
-	  np = cred->po->np;
-	  netfs_nref (np);
-	  ports_port_deref (cred);
+	  assert (! "reached");
 	}
       else
 	{
@@ -784,6 +775,27 @@ netfs_S_io_map_cntl (struct protid *user,
 
   pthread_mutex_lock (&user->po->np->lock);
   err = io_map_cntl (user->po->np->nn->file, obj);
+  pthread_mutex_unlock (&user->po->np->lock);
+  return err;
+}
+
+error_t
+netfs_S_io_identity (struct protid *user,
+		     mach_port_t *id,
+		     mach_msg_type_name_t *idtype,
+		     mach_port_t *fsys,
+		     mach_msg_type_name_t *fsystype,
+		     ino_t *fileno)
+{
+  error_t err;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  *idtype = *fsystype = MACH_MSG_TYPE_MOVE_SEND;
+
+  pthread_mutex_lock (&user->po->np->lock);
+  err = io_identity (user->po->np->nn->file, id, fsys, fileno);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
