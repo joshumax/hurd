@@ -235,7 +235,10 @@ netfs_S_dir_lookup (struct protid *diruser,
     return EOPNOTSUPP;
 
   dnp = diruser->po->np;
-  err = dir_lookup (dnp->nn->file, filename,
+
+  mach_port_t dir = dnp->nn->file;
+ redo_lookup:
+  err = dir_lookup (dir, filename,
 		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    mode, do_retry, retry_name, &file);
   if (err)
@@ -252,14 +255,14 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    mach_port_deallocate (mach_task_self (), file);
 	    err = auth_user_authenticate (fakeroot_auth_port, ref,
 					  MACH_MSG_TYPE_MAKE_SEND,
-					  retry_port);
+					  &dir);
 	  }
 	mach_port_destroy (mach_task_self (), ref);
 	if (err)
 	  return err;
       }
-      *do_retry = FS_RETRY_NORMAL;
-      /*FALLTHROUGH*/
+      filename = retry_name;
+      goto redo_lookup;
 
     case FS_RETRY_NORMAL:
     case FS_RETRY_MAGICAL:
