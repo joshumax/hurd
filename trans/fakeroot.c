@@ -128,6 +128,31 @@ void
 netfs_node_norefs (struct node *np)
 {
   assert (np->nn->np == np);
+  mach_port_deallocate (mach_task_self (), np->nn->file);
+  mach_port_deallocate (mach_task_self (), np->nn->idport);
+  free (np->nn);
+  free (np);
+}
+
+/* This is the cleanup function we install in netfs_protid_class.  If
+   the associated nodes reference count would also drop to zero, and
+   the node has no faked attributes, we destroy it as well.  */
+static void
+fakeroot_netfs_release_protid (void *cookie)
+{
+  struct node *np = ((struct protid *) cookie)->po->np;
+  assert (np->nn->np == np);
+
+  pthread_mutex_lock (&idport_ihash_lock);
+  pthread_mutex_lock (&np->lock);
+
+  assert ((np->nn->faked & FAKE_REFERENCE) == 0);
+
+  /* Check if someone else reacquired a reference to the node besides
+     ours that is about to be dropped.  */
+  if (np->references > 1)
+    goto out;
+
   if (np->nn->faked != 0
       && netfs_validate_stat (np, 0) == 0 && np->nn_stat.st_nlink > 0)
     {
@@ -139,30 +164,24 @@ netfs_node_norefs (struct node *np)
 	 until this fakeroot filesystem dies.  One easy solution
 	 would be to scan nodes with references=1 for st_nlink=0
 	 at some convenient time, periodically or in syncfs.  */
-      if ((np->nn->faked & FAKE_REFERENCE) == 0)
-	{
-	  np->nn->faked |= FAKE_REFERENCE;
-	  ++np->references;
-	}
-      pthread_mutex_unlock (&np->lock);
-      return;
+
+      /* Keep a fake reference.  */
+      netfs_nref (np);
+
+      /* Set the FAKE_REFERENCE flag so that we can properly
+	 account for that fake reference.  */
+      np->nn->faked |= FAKE_REFERENCE;
+
+      /* We keep our node.  */
+      goto out;
     }
 
-  pthread_spin_unlock (&netfs_node_refcnt_lock); /* Avoid deadlock.  */
-  pthread_mutex_lock (&idport_ihash_lock);
-  pthread_spin_lock (&netfs_node_refcnt_lock);
-  /* Previous holder of this lock might have just got a reference.  */
-  if (np->references > 0)
-    {
-      pthread_mutex_unlock (&idport_ihash_lock);
-      return;
-    }
   hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
+
+ out:
+  pthread_mutex_unlock (&np->lock);
+  netfs_release_protid (cookie);
   pthread_mutex_unlock (&idport_ihash_lock);
-  mach_port_deallocate (mach_task_self (), np->nn->file);
-  mach_port_deallocate (mach_task_self (), np->nn->idport);
-  free (np->nn);
-  free (np);
 }
 
 /* Given an existing node, make sure it has NEWMODES in its openmodes.
@@ -326,7 +345,14 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      pthread_mutex_lock (&np->lock);
 	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
 	      if (!err)
-		netfs_nref (np);
+		{
+		  /* If the looked-up file carries a fake reference, we
+		     use that and clear the FAKE_REFERENCE flag.  */
+		  if (np->nn->faked & FAKE_REFERENCE)
+		    np->nn->faked &= ~FAKE_REFERENCE;
+		  else
+		    netfs_nref (np);
+		}
 	      pthread_mutex_unlock (&np->lock);
 	      pthread_mutex_unlock (&idport_ihash_lock);
 	    }
@@ -956,6 +982,9 @@ any user to open nodes regardless of permissions as is done for root." };
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   netfs_init ();
+
+  /* Install our own clean routine.  */
+  netfs_protid_class->clean_routine = fakeroot_netfs_release_protid;
 
   /* Get our underlying node (we presume it's a directory) and use
      that to make the root node of the filesystem.  */
