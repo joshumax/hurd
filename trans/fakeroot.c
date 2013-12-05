@@ -95,28 +95,31 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  return err;
 	}
     }
+
+  if (!locked)
+    pthread_mutex_lock (&idport_ihash_lock);
+  err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
+  if (err)
+    goto lose;
+
   *np = nn->np = netfs_make_node (nn);
   if (*np == 0)
     {
-      if (locked)
-	pthread_mutex_unlock (&idport_ihash_lock);
       err = ENOMEM;
+      goto lose_hash;
     }
-  else
-    {
-      if (!locked)
-	pthread_mutex_lock (&idport_ihash_lock);
-      err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
-      if (!err)
-	pthread_mutex_lock (&(*np)->lock);
-      pthread_mutex_unlock (&idport_ihash_lock);
-    }
-  if (err)
-    {
-      mach_port_deallocate (mach_task_self (), nn->idport);
-      mach_port_deallocate (mach_task_self (), file);
-      free (nn);
-    }
+
+  pthread_mutex_lock (&(*np)->lock);
+  pthread_mutex_unlock (&idport_ihash_lock);
+  return 0;
+
+ lose_hash:
+  hurd_ihash_locp_remove (&idport_ihash, nn->idport_locp);
+ lose:
+  pthread_mutex_unlock (&idport_ihash_lock);
+  mach_port_deallocate (mach_task_self (), nn->idport);
+  mach_port_deallocate (mach_task_self (), file);
+  free (nn);
   return err;
 }
 
