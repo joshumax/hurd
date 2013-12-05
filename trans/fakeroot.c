@@ -108,10 +108,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	pthread_mutex_lock (&idport_ihash_lock);
       err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
       if (!err)
-	{
-	  pthread_mutex_lock (&(*np)->lock);
-	  netfs_nref (*np);	/* Return a reference to the caller.  */
-	}
+	pthread_mutex_lock (&(*np)->lock);
       pthread_mutex_unlock (&idport_ihash_lock);
     }
   if (err)
