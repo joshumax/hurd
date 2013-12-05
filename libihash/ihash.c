@@ -372,9 +372,6 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
 
   if (ht->items == NULL)
     {
-      if (ht->items)
-	free(ht->items);
-
       *ht = old_ht;
       return ENOMEM;
     }
