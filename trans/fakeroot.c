@@ -41,6 +41,7 @@ static auth_t fakeroot_auth_port;
 
 struct netnode
 {
+  struct node *np;		/* our node */
   hurd_ihash_locp_t idport_locp;/* easy removal pointer in idport ihash */
   mach_port_t idport;		/* port from io_identity */
   int openmodes;		/* O_READ | O_WRITE | O_EXEC */
@@ -93,7 +94,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  return err;
 	}
     }
-  *np = netfs_make_node (nn);
+  *np = nn->np = netfs_make_node (nn);
   if (*np == 0)
     {
       if (locked)
@@ -104,7 +105,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     {
       if (!locked)
 	pthread_mutex_lock (&idport_ihash_lock);
-      err = hurd_ihash_add (&idport_ihash, nn->idport, *np);
+      err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
       if (!err)
 	netfs_nref (*np);	/* Return a reference to the caller.  */
       pthread_mutex_unlock (&idport_ihash_lock);
@@ -122,6 +123,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 void
 netfs_node_norefs (struct node *np)
 {
+  assert (np->nn->np == np);
   if (np->nn->faked != 0
       && netfs_validate_stat (np, 0) == 0 && np->nn_stat.st_nlink > 0)
     {
@@ -295,9 +297,11 @@ netfs_S_dir_lookup (struct protid *diruser,
       else
 	{
 	  pthread_mutex_lock (&idport_ihash_lock);
-	  np = hurd_ihash_find (&idport_ihash, idport);
-	  if (np != 0)
+	  struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
+	  if (nn != NULL)
 	    {
+	      assert (nn->np->nn == nn);
+	      np = nn->np;
 	      /* We already know about this node.  */
 	      mach_port_deallocate (mach_task_self (), idport);
 	      pthread_mutex_lock (&np->lock);
