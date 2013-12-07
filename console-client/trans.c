@@ -482,7 +482,6 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 
   *np = netfs_make_node (nn);
   pthread_mutex_lock (&(*np)->lock);
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   return 0;
 }
@@ -624,7 +623,6 @@ void netfs_node_norefs (struct node *np)
   if (np->nn->symlink_path)
     free (np->nn->symlink_path);
 
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
   free (np->nn);
   free (np);
 }
