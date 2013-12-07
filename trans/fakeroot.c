@@ -172,6 +172,9 @@ fakeroot_netfs_release_protid (void *cookie)
 	 account for that fake reference.  */
       np->nn->faked |= FAKE_REFERENCE;
 
+      /* Clear the lock box as if the file was closed.  */
+      fshelp_lock_init (&np->userlock);
+
       /* We keep our node.  */
       goto out;
     }
