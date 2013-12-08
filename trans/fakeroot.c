@@ -61,7 +61,8 @@ struct hurd_ihash idport_ihash
   = HURD_IHASH_INITIALIZER (offsetof (struct netnode, idport_locp));
 
 
-/* Make a new virtual node.  Always consumes the ports.  */
+/* Make a new virtual node.  Always consumes the ports.  If
+   successful, NP will be locked.  */
 static error_t
 new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  struct node **np)
@@ -107,7 +108,10 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	pthread_mutex_lock (&idport_ihash_lock);
       err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
       if (!err)
-	netfs_nref (*np);	/* Return a reference to the caller.  */
+	{
+	  pthread_mutex_lock (&(*np)->lock);
+	  netfs_nref (*np);	/* Return a reference to the caller.  */
+	}
       pthread_mutex_unlock (&idport_ihash_lock);
     }
   if (err)
@@ -330,7 +334,10 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    {
 	      err = new_node (file, idport, 1, flags, &np);
 	      if (!err)
-		err = netfs_validate_stat (np, diruser->user);
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  err = netfs_validate_stat (np, diruser->user);
+		}
 	    }
 	}
     }
@@ -616,6 +623,8 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 			    real_from_fake_mode (mode), &newfile);
   if (err == 0)
     err = new_node (newfile, MACH_PORT_NULL, 0, O_RDWR|O_EXEC, np);
+  if (err == 0)
+    pthread_mutex_unlock (&(*np)->lock);
   pthread_mutex_unlock (&dir->lock);
   return err;
 }
@@ -962,6 +971,7 @@ any user to open nodes regardless of permissions as is done for root." };
   netfs_root_node->nn_stat.st_mode &= ~(S_IPTRANS | S_IATRANS);
   netfs_root_node->nn_stat.st_mode |= S_IROOT;
   netfs_root_node->nn->faked |= FAKE_MODE;
+  pthread_mutex_unlock (&netfs_root_node->lock);
 
   netfs_server_loop ();		/* Never returns.  */
 
