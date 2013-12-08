@@ -614,9 +614,9 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
   file_t newfile;
   error_t err = dir_mkfile (dir->nn->file, O_RDWR|O_EXEC,
 			    real_from_fake_mode (mode), &newfile);
-  pthread_mutex_unlock (&dir->lock);
   if (err == 0)
     err = new_node (newfile, MACH_PORT_NULL, 0, O_RDWR|O_EXEC, np);
+  pthread_mutex_unlock (&dir->lock);
   return err;
 }
 
