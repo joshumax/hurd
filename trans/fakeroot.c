@@ -276,14 +276,21 @@ netfs_S_dir_lookup (struct protid *diruser,
       break;
 
     case FS_RETRY_MAGICAL:
-    default:
       if (file == MACH_PORT_NULL)
 	{
 	  *retry_port = MACH_PORT_NULL;
 	  *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
 	  return 0;
 	}
-      break;
+      /* Fallthrough.  */
+
+    default:
+      /* Invalid response to our dir_lookup request.  */
+      if (file != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), file);
+      *retry_port = MACH_PORT_NULL;
+      *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+      return EOPNOTSUPP;
     }
 
   /* We have a new port to an underlying node.
