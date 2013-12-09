@@ -322,7 +322,10 @@ netfs_S_dir_lookup (struct protid *diruser,
   np = 0;
   err = io_identity (file, &idport, &fsidport, &fileno);
   if (err)
-    mach_port_deallocate (mach_task_self (), file);
+    {
+      mach_port_deallocate (mach_task_self (), file);
+      return err;
+    }
   else
     {
       mach_port_deallocate (mach_task_self (), fsidport);
@@ -335,6 +338,7 @@ netfs_S_dir_lookup (struct protid *diruser,
       else
 	{
 	  pthread_mutex_lock (&idport_ihash_lock);
+	  pthread_mutex_lock (&dnp->lock);
 	  struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
 	  if (nn != NULL)
 	    {
@@ -342,33 +346,38 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      np = nn->np;
 	      /* We already know about this node.  */
 	      mach_port_deallocate (mach_task_self (), idport);
-	      pthread_mutex_lock (&np->lock);
-	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
-	      if (!err)
+
+	      if (np == dnp)
 		{
-		  /* If the looked-up file carries a fake reference, we
-		     use that and clear the FAKE_REFERENCE flag.  */
-		  if (np->nn->faked & FAKE_REFERENCE)
-		    np->nn->faked &= ~FAKE_REFERENCE;
-		  else
-		    netfs_nref (np);
+		  /* dnp is already locked.  */
 		}
-	      pthread_mutex_unlock (&np->lock);
+	      else
+		{
+		  pthread_mutex_lock (&np->lock);
+		  pthread_mutex_unlock (&dnp->lock);
+		}
+
+	      /* If the looked-up file carries a fake reference, we
+		 use that and clear the FAKE_REFERENCE flag.  */
+	      if (np->nn->faked & FAKE_REFERENCE)
+		np->nn->faked &= ~FAKE_REFERENCE;
+	      else
+		netfs_nref (np);
+
+	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
 	      pthread_mutex_unlock (&idport_ihash_lock);
 	    }
 	  else
 	    {
 	      err = new_node (file, idport, 1, flags, &np);
+	      pthread_mutex_unlock (&dnp->lock);
 	      if (!err)
-		{
-		  pthread_mutex_unlock (&np->lock);
-		  err = netfs_validate_stat (np, diruser->user);
-		}
+		err = netfs_validate_stat (np, diruser->user);
 	    }
 	}
     }
   if (err)
-    return err;
+    goto lose;
 
   if (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL)
     flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
@@ -393,7 +402,9 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
     }
 
-  netfs_nrele (np);
+ lose:
+  if (np != NULL)
+    netfs_nput (np);
   return err;
 }
 
