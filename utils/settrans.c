@@ -25,6 +25,7 @@
 #include <error.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include <error.h>
 #include <argz.h>
@@ -279,33 +280,51 @@ main(int argc, char *argv[])
 
   if (chroot_command)
     {
-      /* We will act as the parent filesystem would for a lookup
-	 of the active translator's root node, then use this port
-	 as our root directory while we exec the command.  */
+      pid_t pid;
+      switch ((pid = fork ()))
+	{
+	case -1:
+	  error (6, errno, "fork");
 
-      char retry_name[1024];	/* XXX */
-      retry_type do_retry;
-      mach_port_t root;
-      err = fsys_getroot (active_control,
-			  MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
-			  NULL, 0, NULL, 0, 0, &do_retry, retry_name, &root);
-      mach_port_deallocate (mach_task_self (), active_control);
-      if (err)
-	error (6, err, "fsys_getroot");
-      err = hurd_file_name_lookup_retry (&_hurd_ports_use, &getdport, 0,
-					 do_retry, retry_name, 0, 0,
-					 &root);
-      if (err)
-	error (6, err, "cannot resolve root port");
+	case 0:; /* Child.  */
+	  /* We will act as the parent filesystem would for a lookup
+	     of the active translator's root node, then use this port
+	     as our root directory while we exec the command.  */
 
-      if (setcrdir (root))
-	error (7, errno, "cannot install root port");
-      mach_port_deallocate (mach_task_self (), root);
-      if (chdir ("/"))
-	error (8, errno, "cannot chdir to new root");
+	  char retry_name[1024];	/* XXX */
+	  retry_type do_retry;
+	  mach_port_t root;
+	  err = fsys_getroot (active_control,
+			      MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
+			      NULL, 0, NULL, 0, 0,
+			      &do_retry, retry_name, &root);
+	  mach_port_deallocate (mach_task_self (), active_control);
+	  if (err)
+	    error (6, err, "fsys_getroot");
+	  err = hurd_file_name_lookup_retry (&_hurd_ports_use, &getdport, 0,
+					     do_retry, retry_name, 0, 0,
+					     &root);
+	  if (err)
+	    error (6, err, "cannot resolve root port");
 
-      execvp (chroot_command[0], chroot_command);
-      error (8, errno, "cannot execute %s", chroot_command[0]);
+	  if (setcrdir (root))
+	    error (7, errno, "cannot install root port");
+	  mach_port_deallocate (mach_task_self (), root);
+	  if (chdir ("/"))
+	    error (8, errno, "cannot chdir to new root");
+
+	  execvp (chroot_command[0], chroot_command);
+	  error (8, errno, "cannot execute %s", chroot_command[0]);
+	  break;
+
+	default: /* Parent.  */
+	  if (waitpid (pid, NULL, 0) == -1)
+	    error (8, errno, "waitpid");
+
+	  err = fsys_goaway (active_control, goaway_flags);
+	  if (err && err != EBUSY)
+	    error (9, err, "fsys_goaway");
+	}
     }
 
   return 0;
