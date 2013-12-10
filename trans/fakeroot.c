@@ -371,10 +371,8 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (err)
     goto lose;
 
-  if (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL)
-    flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
-  else
-    flags = 0;
+  assert (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL);
+  flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
 
   err = iohelp_dup_iouser (&user, diruser->user);
   if (!err)
