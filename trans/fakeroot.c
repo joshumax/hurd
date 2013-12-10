@@ -399,6 +399,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
       else
 	{
+	  err = netfs_attempt_chown (user, np, 0, 0);
+	  assert_perror (err); /* Our netfs_attempt_chown cannot fail.  */
 	  *retry_port = ports_get_right (newpi);
 	  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
 	  ports_port_deref (newpi);
