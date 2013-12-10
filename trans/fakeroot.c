@@ -329,54 +329,52 @@ netfs_S_dir_lookup (struct protid *diruser,
       mach_port_deallocate (mach_task_self (), file);
       return err;
     }
+
+  mach_port_deallocate (mach_task_self (), fsidport);
+  if (fsidport == netfs_fsys_identity)
+    {
+      /* Talking to ourselves!  We just looked up one of our
+	 own nodes.  Find the node and return it.  */
+      assert (! "reached");
+    }
   else
     {
-      mach_port_deallocate (mach_task_self (), fsidport);
-      if (fsidport == netfs_fsys_identity)
+      pthread_mutex_lock (&idport_ihash_lock);
+      pthread_mutex_lock (&dnp->lock);
+      struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
+      if (nn != NULL)
 	{
-	  /* Talking to ourselves!  We just looked up one of our
-	     own nodes.  Find the node and return it.  */
-	  assert (! "reached");
-	}
-      else
-	{
-	  pthread_mutex_lock (&idport_ihash_lock);
-	  pthread_mutex_lock (&dnp->lock);
-	  struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
-	  if (nn != NULL)
+	  assert (nn->np->nn == nn);
+	  np = nn->np;
+	  /* We already know about this node.  */
+	  mach_port_deallocate (mach_task_self (), idport);
+
+	  if (np == dnp)
 	    {
-	      assert (nn->np->nn == nn);
-	      np = nn->np;
-	      /* We already know about this node.  */
-	      mach_port_deallocate (mach_task_self (), idport);
-
-	      if (np == dnp)
-		{
-		  /* dnp is already locked.  */
-		}
-	      else
-		{
-		  pthread_mutex_lock (&np->lock);
-		  pthread_mutex_unlock (&dnp->lock);
-		}
-
-	      /* If the looked-up file carries a fake reference, we
-		 use that and clear the FAKE_REFERENCE flag.  */
-	      if (np->nn->faked & FAKE_REFERENCE)
-		np->nn->faked &= ~FAKE_REFERENCE;
-	      else
-		netfs_nref (np);
-
-	      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
-	      pthread_mutex_unlock (&idport_ihash_lock);
+	      /* dnp is already locked.  */
 	    }
 	  else
 	    {
-	      err = new_node (file, idport, 1, flags, &np);
+	      pthread_mutex_lock (&np->lock);
 	      pthread_mutex_unlock (&dnp->lock);
-	      if (!err)
-		err = netfs_validate_stat (np, diruser->user);
 	    }
+
+	  /* If the looked-up file carries a fake reference, we
+	     use that and clear the FAKE_REFERENCE flag.  */
+	  if (np->nn->faked & FAKE_REFERENCE)
+	    np->nn->faked &= ~FAKE_REFERENCE;
+	  else
+	    netfs_nref (np);
+
+	  err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
+	  pthread_mutex_unlock (&idport_ihash_lock);
+	}
+      else
+	{
+	  err = new_node (file, idport, 1, flags, &np);
+	  pthread_mutex_unlock (&dnp->lock);
+	  if (!err)
+	    err = netfs_validate_stat (np, diruser->user);
 	}
     }
   if (err)
