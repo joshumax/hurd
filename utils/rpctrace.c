@@ -1284,24 +1284,30 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	/* The reply port might be dead, e.g., the traced task has died. */
 	&& MACH_PORT_VALID (inp->msgh_local_port))
       {
-	struct send_once_info *info;
-	// TODO is the reply port always a send once right?
-	assert (reply_type == MACH_MSG_TYPE_PORT_SEND_ONCE);
-	info = new_send_once_wrapper (inp->msgh_local_port,
-				      &inp->msgh_local_port);
-	reply_type = MACH_MSG_TYPE_MAKE_SEND_ONCE;
-	assert (inp->msgh_local_port);
-
-	if (TRACED_INFO (info)->name == 0)
+	switch (reply_type)
 	  {
-	    if (msgid == 0)
-	      asprintf (&TRACED_INFO (info)->name, "reply(%u:%u)",
-			(unsigned int) TRACED_INFO (info)->pi.port_right,
-			(unsigned int) inp->msgh_id);
-	    else
-	      asprintf (&TRACED_INFO (info)->name, "reply(%u:%s)",
-			(unsigned int) TRACED_INFO (info)->pi.port_right,
-			msgid->name);
+	  case MACH_MSG_TYPE_PORT_SEND_ONCE:;
+	    struct send_once_info *info;
+	    info = new_send_once_wrapper (inp->msgh_local_port,
+					  &inp->msgh_local_port);
+	    reply_type = MACH_MSG_TYPE_MAKE_SEND_ONCE;
+	    assert (inp->msgh_local_port);
+
+	    if (TRACED_INFO (info)->name == 0)
+	      {
+		if (msgid == 0)
+		  asprintf (&TRACED_INFO (info)->name, "reply(%u:%u)",
+			    (unsigned int) TRACED_INFO (info)->pi.port_right,
+			    (unsigned int) inp->msgh_id);
+		else
+		  asprintf (&TRACED_INFO (info)->name, "reply(%u:%s)",
+			    (unsigned int) TRACED_INFO (info)->pi.port_right,
+			    msgid->name);
+	      }
+	    break;
+
+	  default:
+	    error (1, 0, "Reply type %i not handled", reply_type);
 	  }
       }
 
