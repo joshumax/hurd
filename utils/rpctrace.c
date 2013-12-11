@@ -727,8 +727,6 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
        * has the receive right, we move the send right of the traced port to
        * the destination; otherwise, we move the one of the send wrapper.
        */
-      assert (req);
-
       /* See if this is already one of our own wrapper ports.  */
       send_wrapper = ports_lookup_port (traced_bucket, *right, 0);
       if (send_wrapper)
@@ -760,7 +758,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	  return TRACED_INFO (send_wrapper)->name;
 	}
 
-      if (req->req_id == 3216)	    /* mach_port_extract_right */
+      if (req && req->req_id == 3216)	    /* mach_port_extract_right */
 	receiver_info = discover_receive_right (*right, dest);
       else
 	receiver_info = discover_receive_right (*right, source);
