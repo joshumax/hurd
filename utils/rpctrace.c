@@ -1286,6 +1286,10 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
       {
 	switch (reply_type)
 	  {
+	  case MACH_MSG_TYPE_PORT_SEND:
+	    rewrite_right (&inp->msgh_local_port, &reply_type, NULL);
+	    break;
+
 	  case MACH_MSG_TYPE_PORT_SEND_ONCE:;
 	    struct send_once_info *info;
 	    info = new_send_once_wrapper (inp->msgh_local_port,
