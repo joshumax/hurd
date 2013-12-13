@@ -1,6 +1,6 @@
 /* Roughly Unix/Linux-compatible `mount' frontend for Hurd translators.
 
-   Copyright (C) 1999, 2004 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2004, 2013 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -353,7 +353,10 @@ do_mount (struct fs *fs, int remount)
             }
           else
             {
-              fs->mntent.mnt_type = strdup (type);
+	      if (strcmp (type, "vfat") == 0)
+		fs->mntent.mnt_type = strdup ("fat");
+	      else
+		fs->mntent.mnt_type = strdup (type);
               if (! fs->mntent.mnt_type)
                 error (3, ENOMEM, "failed to allocate memory");
             }
