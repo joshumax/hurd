@@ -1528,6 +1528,20 @@ print_reply_header (struct send_once_info *info, mig_reply_header_t *reply,
     }
 }
 
+static char escape_sequences[0x100] =
+  {
+    ['\0'] = '0',
+    ['\a'] = 'a',
+    ['\b'] = 'b',
+    ['\f'] = 'f',
+    ['\n'] = 'n',
+    ['\r'] = 'r',
+    ['\t'] = 't',
+    ['\v'] = 'v',
+    ['\\'] = '\\',
+    ['\''] = '\'',
+    ['"'] = '"',
+  };
 
 static void
 print_data (mach_msg_type_name_t type,
@@ -1555,8 +1569,38 @@ print_data (mach_msg_type_name_t type,
     case MACH_MSG_TYPE_CHAR:
       if (nelt > strsize)
 	nelt = strsize;
-      fprintf (ostream, "\"%.*s\"",
-	       (int) (nelt * eltsize), (const char *) data);
+      fprintf (ostream, "\"");
+      /* Scan data for non-printable characters.  p always points to
+	 the first character that has not yet been printed.  */
+      const char *p, *q;
+      p = q = (const char *) data;
+      while (*q && q - (const char *) data < (int) (nelt * eltsize))
+	{
+	  if (isgraph (*q) || *q == ' ')
+	    {
+	      q += 1;
+	      continue;
+	    }
+
+	  /* We encountered a non-printable character.  Print anything
+	     that has not been printed so far.  */
+	  if (p < q)
+	    fprintf (ostream, "%.*s", q - p, p);
+
+	  char c = escape_sequences[*((const unsigned char *) q)];
+	  if (c)
+	    fprintf (ostream, "\\%c", c);
+	  else
+	    fprintf (ostream, "\\x%02x", *((const unsigned char *) q));
+
+	  q += 1;
+	  p = q;
+	}
+
+      /* Print anything that has not been printed so far.  */
+      if (p < q)
+	fprintf (ostream, "%.*s", q - p, p);
+      fprintf (ostream, "\"");
       return;
 
 #if 0
