@@ -1,7 +1,7 @@
 /* Trace RPCs sent to selected ports
 
-   Copyright (C) 1998, 1999, 2001, 2002, 2003, 2005, 2006, 2009, 2011
-   Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2001, 2002, 2003, 2005, 2006, 2009, 2011,
+   2013 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -1486,10 +1486,27 @@ static const char *const msg_types[] =
 };
 #endif
 
+/* We keep track of the last reply port used in a request we print to
+   ostream.  This way we can end incomplete requests with an ellipsis
+   and the name of the reply port.  When the reply finally arrives, we
+   start a new line with that port name and an ellipsis, making it
+   easy to match it to the associated request.  */
+static mach_port_t last_reply_port;
+
+/* Print an ellipsis if necessary.  */
+static void
+print_ellipsis (void)
+{
+  if (MACH_PORT_VALID (last_reply_port))
+    fprintf (ostream, " ...%u\n", (unsigned int) last_reply_port);
+}
+
 static void
 print_request_header (struct sender_info *receiver, mach_msg_header_t *msg)
 {
   const char *msgname = msgid_name (msg->msgh_id);
+  print_ellipsis ();
+  last_reply_port = msg->msgh_local_port;
 
   if (TRACED_INFO (receiver)->name != 0)
     fprintf (ostream, "%4s->", TRACED_INFO (receiver)->name);
@@ -1507,6 +1524,13 @@ static void
 print_reply_header (struct send_once_info *info, mig_reply_header_t *reply,
 		    struct req_info *req)
 {
+  if (last_reply_port != info->pi.pi.port_right)
+    {
+      print_ellipsis ();
+      fprintf (ostream, "%u...", (unsigned int) info->pi.pi.port_right);
+    }
+  last_reply_port = MACH_PORT_NULL;
+
   /* We have printed a partial line for the request message,
      and now we have the corresponding reply.  */
   if (reply->Head.msgh_id == req->req_id + 100)
