@@ -1,5 +1,5 @@
 /* fakeroot -- a translator for faking actions that aren't really permitted
-   Copyright (C) 2002, 2003, 2008 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2003, 2008, 2013 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -184,6 +184,24 @@ fakeroot_netfs_release_protid (void *cookie)
  out:
   pthread_mutex_unlock (&np->lock);
   netfs_release_protid (cookie);
+
+  int cports = ports_count_class (netfs_control_class);
+  int nports = ports_count_class (netfs_protid_class);
+  ports_enable_class (netfs_control_class);
+  ports_enable_class (netfs_protid_class);
+  if (cports == 0 && nports == 0)
+    {
+      /* The last client is gone.  Our job is done.  */
+      error_t err = netfs_shutdown (0);
+      if (! err)
+        exit (EXIT_SUCCESS);
+
+      /* If netfs_shutdown returns EBUSY, we lost a race against
+         fsys_goaway.  Hence we ignore this error.  */
+      if (err != EBUSY)
+        error (1, err, "netfs_shutdown");
+    }
+
   pthread_mutex_unlock (&idport_ihash_lock);
 }
 
