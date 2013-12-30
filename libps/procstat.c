@@ -352,6 +352,7 @@ summarize_thread_basic_info (struct procinfo *pi)
 {
   int i;
   unsigned num_threads = 0, num_run_threads = 0;
+  task_basic_info_t taskinfo = &pi->taskinfo;
   thread_basic_info_t tbi = malloc (sizeof (struct thread_basic_info));
   int run_base_priority = 0, run_cur_priority = 0;
   int total_base_priority = 0, total_cur_priority = 0;
@@ -425,6 +426,12 @@ summarize_thread_basic_info (struct procinfo *pi)
 	  tbi->cur_priority = total_cur_priority / num_threads;
 	}
     }
+
+  /* Include the run time of terminated threads.  */
+  tbi->user_time.seconds += taskinfo->user_time.seconds;
+  tbi->user_time.microseconds += taskinfo->user_time.microseconds;
+  tbi->system_time.seconds += taskinfo->system_time.seconds;
+  tbi->system_time.microseconds += taskinfo->system_time.microseconds;
 
   tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
   tbi->user_time.microseconds %= 1000000;
