@@ -40,6 +40,7 @@
 
 static char *target_path = NULL;
 static int insecure = 0;
+static int all_translators = 0;
 
 /* Our control port.  */
 struct trivfs_control *control;
@@ -60,6 +61,9 @@ static const struct argp_option options[] =
 {
   {"insecure", 'I', 0, 0,
    "Follow translators not bound to nodes owned by you or root"},
+  {"all-translators", 'A', 0, 0,
+   "List all translators, even those that are probably not "
+   "filesystem translators"},
   {}
 };
 
@@ -70,6 +74,10 @@ error_t parse_opt (int key, char *arg, struct argp_state *state)
     {
     case 'I':
       insecure = 1;
+      break;
+
+    case 'A':
+      all_translators = 1;
       break;
 
     case ARGP_KEY_ARG:
@@ -277,6 +285,32 @@ mtab_add_entry (struct mtab *mtab, const char *entry, size_t length)
   return 0;
 }
 
+/* Check whether the given NODE is a directory on a filesystem
+   translator.  */
+static boolean_t
+is_filesystem_translator (file_t node)
+{
+  error_t err;
+  char *data = NULL;
+  size_t datacnt = 0;
+  int amount;
+  err = dir_readdir (node, &data, &datacnt, 0, 1, 0, &amount);
+  if (data != NULL && datacnt > 0)
+    vm_deallocate (mach_task_self (), (vm_address_t) data, datacnt);
+
+  /* Filesystem translators return either no error, or, if NODE has
+     not been looked up with O_READ, EBADF to dir_readdir
+     requests.  */
+  switch (err)
+    {
+    case 0:
+    case EBADF:
+      return TRUE;
+    default:
+      return FALSE;
+    }
+}
+
 /* Populates the given MTAB object with the information for PATH.  If
    INSECURE is given, also follow translators bound to nodes not owned
    by root or the current user.  */
@@ -330,6 +364,12 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   if (node == MACH_PORT_NULL)
     {
       err = errno;
+      goto errout;
+    }
+
+  if (! (all_translators || is_filesystem_translator (node)))
+    {
+      err = 0;
       goto errout;
     }
 
