@@ -27,6 +27,7 @@
 #include <hurd/trivfs.h>
 #include <inttypes.h>
 #include <mntent.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,6 +48,7 @@ struct trivfs_control *control;
    They keep track of the content and file position of the client.  */
 struct mtab
 {
+  pthread_mutex_t lock;
   char *contents;
   size_t contents_len;
   off_t offs;
@@ -569,6 +571,7 @@ open_hook (struct trivfs_peropen *peropen)
   peropen->hook = mtab;
 
   /* Initialize the fields.  */
+  pthread_mutex_init (&mtab->lock, NULL);
   mtab->offs = 0;
   mtab->contents = NULL;
   mtab->contents_len = 0;
@@ -602,8 +605,10 @@ open_hook (struct trivfs_peropen *peropen)
 static void
 close_hook (struct trivfs_peropen *peropen)
 {
-  free (((struct mtab *) peropen->hook)->contents);
-  free (peropen->hook);
+  struct mtab *op = peropen->hook;
+  pthread_mutex_destroy (&op->lock);
+  free (op->contents);
+  free (op);
 }
 
 /* Read data from an IO object.	 If offset is -1, read from the object
@@ -615,6 +620,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  char **data, mach_msg_type_number_t *data_len,
 		  loff_t offs, mach_msg_type_number_t amount)
 {
+  error_t err = 0;
   struct mtab *op;
 
   /* Deny access if they have bad credentials.	*/
@@ -626,12 +632,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   /* Get the offset.  */
   op = cred->po->hook;
+  pthread_mutex_lock (&op->lock);
 
   if (op->contents == NULL)
     {
-      error_t err = mtab_populate (op, target_path, insecure);
+      err = mtab_populate (op, target_path, insecure);
       if (err)
-        return err;
+	goto out;
     }
 
   if (offs == -1)
@@ -650,7 +657,10 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	{
 	  *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	  if (*data == MAP_FAILED)
-	    return ENOMEM;
+	    {
+	      err = ENOMEM;
+	      goto out;
+	    }
 	}
 
       /* Copy the constant data into the buffer.  */
@@ -661,7 +671,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     }
 
   *data_len = amount;
-  return 0;
+ out:
+  pthread_mutex_unlock (&op->lock);
+  return err;
 }
 
 
@@ -671,16 +683,18 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  off_t offs, int whence, off_t *new_offs)
 {
+  error_t err = 0;
   if (! cred)
     return EOPNOTSUPP;
 
   struct mtab *op = cred->po->hook;
+  pthread_mutex_lock (&op->lock);
 
   if (op->contents == NULL)
     {
-      error_t err = mtab_populate (op, target_path, insecure);
+      err = mtab_populate (op, target_path, insecure);
       if (err)
-        return err;
+	goto out;
     }
 
   switch (whence)
@@ -698,10 +712,12 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 	  break;
 	}
     default:
-      return EINVAL;
+      err = EINVAL;
     }
 
-  return 0;
+ out:
+  pthread_mutex_unlock (&op->lock);
+  return err;
 }
 
 /* If this variable is set, it is called every time a new peropen
@@ -720,6 +736,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t replytype,
 		      mach_msg_type_number_t *amount)
 {
+  error_t err = 0;
   if (!cred)
     return EOPNOTSUPP;
 
@@ -727,16 +744,19 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
     return EINVAL;
 
   struct mtab *op = cred->po->hook;
+  pthread_mutex_lock (&op->lock);
 
   if (op->contents == NULL)
     {
       error_t err = mtab_populate (op, target_path, insecure);
       if (err)
-        return err;
+	goto out;
     }
 
   *amount = op->contents_len - op->offs;
-  return 0;
+ out:
+  pthread_mutex_unlock (&op->lock);
+  return err;
 }
 
 /* SELECT_TYPE is the bitwise OR of SELECT_READ, SELECT_WRITE, and SELECT_URG.
