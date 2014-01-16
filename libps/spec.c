@@ -196,7 +196,7 @@ ps_get_usr_time (struct proc_stat *ps, struct timeval *tv)
   tv->tv_usec = tvt.microseconds;
 }
 const struct ps_getter ps_usr_time_getter =
-{"usr_time", PSTAT_THREAD_BASIC, ps_get_usr_time};
+{"usr_time", PSTAT_TIMES, ps_get_usr_time};
 
 static void
 ps_get_sys_time (struct proc_stat *ps, struct timeval *tv)
@@ -206,7 +206,7 @@ ps_get_sys_time (struct proc_stat *ps, struct timeval *tv)
   tv->tv_usec = tvt.microseconds;
 }
 const struct ps_getter ps_sys_time_getter =
-{"sys_time", PSTAT_THREAD_BASIC, ps_get_sys_time};
+{"sys_time", PSTAT_TIMES, ps_get_sys_time};
 
 static void
 ps_get_tot_time (struct proc_stat *ps, struct timeval *tv)
@@ -217,7 +217,7 @@ ps_get_tot_time (struct proc_stat *ps, struct timeval *tv)
   tv->tv_usec = tvt.microseconds;
 }
 const struct ps_getter ps_tot_time_getter =
-{"tot_time", PSTAT_THREAD_BASIC, ps_get_tot_time};
+{"tot_time", PSTAT_TIMES, ps_get_tot_time};
 
 static void
 ps_get_start_time (struct proc_stat *ps, struct timeval *tv)

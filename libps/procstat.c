@@ -294,6 +294,8 @@ add_preconditions (ps_flags_t flags, struct ps_context *context)
     /* We just request the resources require for both the thread and task
        versions, as the extraneous info won't be possible to acquire anyway. */
     flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
+  if (flags & PSTAT_TIMES)
+    flags |= PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC;
   if (flags & (PSTAT_CTTYID | PSTAT_CWDIR | PSTAT_AUTH | PSTAT_UMASK)
       && !(flags & PSTAT_NO_MSGPORT))
     {
@@ -348,11 +350,10 @@ should_suppress_msgport (struct proc_stat *ps)
    thread take precedence over waiting ones, and if there are any other
    incompatible states, simply using a bogus value of -1.  */
 static struct thread_basic_info *
-summarize_thread_basic_info (struct procinfo *pi)
+summarize_thread_basic_info (struct procinfo *pi, ps_flags_t have)
 {
   int i;
   unsigned num_threads = 0, num_run_threads = 0;
-  task_basic_info_t taskinfo = &pi->taskinfo;
   thread_basic_info_t tbi = malloc (sizeof (struct thread_basic_info));
   int run_base_priority = 0, run_cur_priority = 0;
   int total_base_priority = 0, total_cur_priority = 0;
@@ -427,11 +428,14 @@ summarize_thread_basic_info (struct procinfo *pi)
 	}
     }
 
-  /* Include the run time of terminated threads.  */
-  tbi->user_time.seconds += taskinfo->user_time.seconds;
-  tbi->user_time.microseconds += taskinfo->user_time.microseconds;
-  tbi->system_time.seconds += taskinfo->system_time.seconds;
-  tbi->system_time.microseconds += taskinfo->system_time.microseconds;
+  /* For tasks, include the run time of terminated threads.  */
+  if (have & PSTAT_TASK_BASIC)
+    {
+      tbi->user_time.seconds += pi->taskinfo.user_time.seconds;
+      tbi->user_time.microseconds += pi->taskinfo.user_time.microseconds;
+      tbi->system_time.seconds += pi->taskinfo.system_time.seconds;
+      tbi->system_time.microseconds += pi->taskinfo.system_time.microseconds;
+    }
 
   tbi->user_time.seconds += tbi->user_time.microseconds / 1000000;
   tbi->user_time.microseconds %= 1000000;
@@ -655,7 +659,7 @@ set_procinfo_flags (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
       if (had & PSTAT_THREAD_BASIC)
 	free (ps->thread_basic_info);
       if (have & PSTAT_THREAD_BASIC)
-	ps->thread_basic_info = summarize_thread_basic_info (pi);
+	ps->thread_basic_info = summarize_thread_basic_info (pi, have);
       if (had & PSTAT_THREAD_SCHED)
 	free (ps->thread_sched_info);
       if (have & PSTAT_THREAD_SCHED)
@@ -1006,6 +1010,10 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   /* The number of Mach ports in the task. */
   MGET (PSTAT_NUM_PORTS, PSTAT_PID,
         proc_getnports (server, ps->pid, &ps->num_ports));
+
+  /* User and system times.  */
+  if ((need & PSTAT_TIMES) && (have & (PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC)))
+    have |= PSTAT_TIMES;
 
   /* Update PS's flag state.  We haven't tried user flags yet, so don't mark
      them as having failed.  We do this before checking user bits so that the
