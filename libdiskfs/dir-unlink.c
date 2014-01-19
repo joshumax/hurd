@@ -27,7 +27,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
   struct node *dnp;
   struct node *np;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
-  error_t error;
+  error_t err;
   mach_port_t control = MACH_PORT_NULL;
 
   if (!dircred)
@@ -39,14 +39,14 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   pthread_mutex_lock (&dnp->lock);
 
-  error = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
-  if (error == EAGAIN)
-    error = EPERM;	/* 1003.1-1996 5.5.1.4 */
-  if (error)
+  err = diskfs_lookup (dnp, name, REMOVE, &np, ds, dircred);
+  if (err == EAGAIN)
+    err = EPERM;	/* 1003.1-1996 5.5.1.4 */
+  if (err)
     {
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&dnp->lock);
-      return error;
+      return err;
     }
 
   /* This isn't the BSD behavior, but it is Posix compliant and saves
@@ -62,14 +62,14 @@ diskfs_S_dir_unlink (struct protid *dircred,
       return EPERM;		/* 1003.1-1996 5.5.1.4 */
     }
 
-  error = diskfs_dirremove (dnp, np, name, ds);
+  err = diskfs_dirremove (dnp, np, name, ds);
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
-  if (error)
+  if (err)
     {
       diskfs_nput (np);
       pthread_mutex_unlock (&dnp->lock);
-      return error;
+      return err;
     }
 
   np->dn_stat.st_nlink--;
@@ -94,5 +94,5 @@ diskfs_S_dir_unlink (struct protid *dircred,
       mach_port_deallocate (mach_task_self (), control);
     }
 
-  return error;
+  return err;
 }
