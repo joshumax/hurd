@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#include <sys/file.h>
 #include "netfs.h"
 
 void
@@ -38,6 +39,10 @@ netfs_release_peropen (struct peropen *po)
 	}
       if (po->shadow_root_parent)
 	mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
+
+      if (po->lock_status != LOCK_UN)
+	fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
+			     &po->np->lock, LOCK_UN);
 
       netfs_nput (po->np);
 
