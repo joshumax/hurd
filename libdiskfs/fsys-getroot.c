@@ -42,7 +42,7 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 {
   struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
 					    diskfs_control_class);
-  error_t error = 0;
+  error_t err = 0;
   mode_t type;
   struct protid *newpi;
   struct peropen *newpo;
@@ -79,23 +79,23 @@ diskfs_S_fsys_getroot (fsys_t controlport,
        || fshelp_translated (&diskfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
-      error = fshelp_fetch_root (&diskfs_root_node->transbox,
+      err = fshelp_fetch_root (&diskfs_root_node->transbox,
 				 &peropen_context, dotdot, &user, flags,
 				 _diskfs_translator_callback1,
 				 _diskfs_translator_callback2,
 				 retry, retryname, returned_port);
-      if (error != ENOENT)
+      if (err != ENOENT)
 	{
 	  pthread_mutex_unlock (&diskfs_root_node->lock);
 	  pthread_rwlock_unlock (&diskfs_fsys_lock);
 	  drop_idvec ();
-	  if (!error)
+	  if (!err)
 	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-	  return error;
+	  return err;
 	}
 
       /* ENOENT means the translator was removed in the interim. */
-      error = 0;
+      err = 0;
     }
 
   if (type == S_IFLNK && !(flags & (O_NOLINK | O_NOTRANS)))
@@ -105,19 +105,19 @@ diskfs_S_fsys_getroot (fsys_t controlport,
       size_t amt;
 
       if (diskfs_read_symlink_hook)
-	error = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
-      if (!diskfs_read_symlink_hook || error == EINVAL)
-	error = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
+	err = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
+      if (!diskfs_read_symlink_hook || err == EINVAL)
+	err = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
 				  diskfs_root_node->dn_stat.st_size, 0,
 				  0, &amt);
       pathbuf[amt] = '\0';
 
       pthread_mutex_unlock (&diskfs_root_node->lock);
       pthread_rwlock_unlock (&diskfs_fsys_lock);
-      if (error)
+      if (err)
 	{
 	  drop_idvec ();
-	  return error;
+	  return err;
 	}
 
       if (pathbuf[0] == '/')
@@ -144,31 +144,31 @@ diskfs_S_fsys_getroot (fsys_t controlport,
   if ((type == S_IFSOCK || type == S_IFBLK
        || type == S_IFCHR || type == S_IFIFO)
       && (flags & (O_READ|O_WRITE|O_EXEC)))
-    error = EOPNOTSUPP;
+    err = EOPNOTSUPP;
 
-  if (!error && (flags & O_READ))
-    error = fshelp_access (&diskfs_root_node->dn_stat, S_IREAD, &user);
+  if (!err && (flags & O_READ))
+    err = fshelp_access (&diskfs_root_node->dn_stat, S_IREAD, &user);
 
-  if (!error && (flags & O_EXEC))
-    error = fshelp_access (&diskfs_root_node->dn_stat, S_IEXEC, &user);
+  if (!err && (flags & O_EXEC))
+    err = fshelp_access (&diskfs_root_node->dn_stat, S_IEXEC, &user);
 
-  if (!error && (flags & (O_WRITE)))
+  if (!err && (flags & (O_WRITE)))
     {
       if (type == S_IFDIR)
-	error = EISDIR;
+	err = EISDIR;
       else if (diskfs_check_readonly ())
-	error = EROFS;
+	err = EROFS;
       else
-	error = fshelp_access (&diskfs_root_node->dn_stat,
+	err = fshelp_access (&diskfs_root_node->dn_stat,
 			       S_IWRITE, &user);
     }
 
-  if (error)
+  if (err)
     {
       pthread_mutex_unlock (&diskfs_root_node->lock);
       pthread_rwlock_unlock (&diskfs_fsys_lock);
       drop_idvec ();
-      return error;
+      return err;
     }
 
   if ((flags & O_NOATIME)
@@ -178,16 +178,16 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  error = diskfs_make_peropen (diskfs_root_node, flags,
+  err = diskfs_make_peropen (diskfs_root_node, flags,
 			       &peropen_context, &newpo);
-  if (! error)
+  if (! err)
     {
-      error = diskfs_create_protid (newpo, &user, &newpi);
-      if (error)
+      err = diskfs_create_protid (newpo, &user, &newpi);
+      if (err)
 	diskfs_release_peropen (newpo);
     }
 
-  if (! error)
+  if (! err)
     {
       mach_port_deallocate (mach_task_self (), dotdot);
       *retry = FS_RETRY_NORMAL;
@@ -204,5 +204,5 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   drop_idvec ();
 
-  return error;
+  return err;
 }

@@ -464,18 +464,16 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 }
 
 
+#include "../libports/notify_S.h"
+#include "../libports/interrupt_S.h"
 
 static int
 auth_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  mig_routine_t auth_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_notify_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
-
   mig_routine_t routine;
   if ((routine = auth_server_routine (inp)) ||
-      (routine = ports_notify_server_routine (inp)) ||
-      (routine = ports_interrupt_server_routine (inp)))
+      (routine = ports_interrupt_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)))
     {
       (*routine) (inp, outp);
       return TRUE;

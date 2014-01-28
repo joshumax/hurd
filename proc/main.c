@@ -34,15 +34,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 
+#include "process_S.h"
+#include "notify_S.h"
+#include "../libports/interrupt_S.h"
+#include "proc_exc_S.h"
+
 int
 message_demuxer (mach_msg_header_t *inp,
 		 mach_msg_header_t *outp)
 {
-  mig_routine_t process_server_routine (mach_msg_header_t *);
-  mig_routine_t notify_server_routine (mach_msg_header_t *);
-  mig_routine_t ports_interrupt_server_routine (mach_msg_header_t *);
-  mig_routine_t proc_exc_server_routine (mach_msg_header_t *);
-
   mig_routine_t routine;
   if ((routine = process_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||

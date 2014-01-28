@@ -29,7 +29,7 @@ diskfs_S_dir_link (struct protid *dircred,
   struct node *tnp;		/* node being deleted implicitly */
   struct node *dnp;		/* directory of new entry */
   struct dirstat *ds = alloca (diskfs_dirstat_size);
-  error_t error;
+  error_t err;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -53,19 +53,19 @@ diskfs_S_dir_link (struct protid *dircred,
   pthread_mutex_lock (&dnp->lock);
 
   /* Lookup new location */
-  error = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
-  if (!error && excl)
+  err = diskfs_lookup (dnp, name, RENAME, &tnp, ds, dircred);
+  if (!err && excl)
     {
-      error = EEXIST;
+      err = EEXIST;
       diskfs_nput (tnp);
     }
-  if (error && error != ENOENT)
+  if (err && err != ENOENT)
     {
-      if (error == EAGAIN)
-	error = EINVAL;
+      if (err == EAGAIN)
+	err = EINVAL;
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&dnp->lock);
-      return error;
+      return err;
     }
 
   if (np == tnp)
@@ -107,8 +107,8 @@ diskfs_S_dir_link (struct protid *dircred,
   if (tnp)
     {
       assert (!excl);
-      error = diskfs_dirrewrite (dnp, tnp, np, name, ds);
-      if (!error)
+      err = diskfs_dirrewrite (dnp, tnp, np, name, ds);
+      if (!err)
 	{
 	  /* Deallocate link on TNP */
 	  tnp->dn_stat.st_nlink--;
@@ -119,15 +119,15 @@ diskfs_S_dir_link (struct protid *dircred,
       diskfs_nput (tnp);
     }
   else
-    error = diskfs_direnter (dnp, name, np, ds, dircred);
+    err = diskfs_direnter (dnp, name, np, ds, dircred);
 
   if (diskfs_synchronous)
     diskfs_node_update (dnp, 1);
 
   pthread_mutex_unlock (&dnp->lock);
   pthread_mutex_unlock (&np->lock);
-  if (!error)
+  if (!err)
     /* MiG won't do this for us, which it ought to. */
     mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
-  return error;
+  return err;
 }

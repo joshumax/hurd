@@ -139,10 +139,10 @@ wire_segment (vm_address_t start,
 	      vm_size_t len)
 {
   mach_port_t host, device;
-  error_t error;
+  error_t err;
 
-  error = get_privileged_ports (&host, &device);
-  if (!error)
+  err = get_privileged_ports (&host, &device);
+  if (!err)
     {
       wire_segment_internal (start, len, host);
       mach_port_deallocate (mach_task_self (), host);
@@ -158,11 +158,11 @@ wire_task_self ()
 {
   struct link_map *map;
   mach_port_t host, device;
-  error_t error;
+  error_t err;
   extern char _edata, _etext, __data_start;
 
-  error = get_privileged_ports (&host, &device);
-  if (error)
+  err = get_privileged_ports (&host, &device);
+  if (err)
     return;
 
   map = loaded ();

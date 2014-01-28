@@ -33,9 +33,15 @@ subsystem proc_exc 2400;
 #include <mach/std_types.defs>
 
 ServerPrefix S_;
+import "mig-decls.h";
+
+type exception_t = mach_port_copy_send_t
+	cusertype: mach_port_t
+	intran: exc_t begin_using_exc_port (exception_t)
+	destructor: end_using_exc (exc_t);
 
 routine proc_exception_raise (
-	exception_port: mach_port_t;
+	exception_port: exception_t;
 	replyport reply: mach_port_poly_t;
 	msgoption flags: integer_t;
 	thread: mach_port_t;

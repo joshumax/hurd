@@ -25,7 +25,7 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
 				   mach_msg_type_name_t *ctltype)
 {
   struct node *np;
-  error_t error;
+  error_t err;
   
   if (!cred)
     return EOPNOTSUPP;
@@ -34,15 +34,15 @@ diskfs_S_file_get_translator_cntl (struct protid *cred,
 
   pthread_mutex_lock (&np->lock);
 
-  error = fshelp_isowner (&np->dn_stat, cred->user);
-  if (!error)
-    error = fshelp_fetch_control (&np->transbox, ctl);
-  if (!error && *ctl == MACH_PORT_NULL)
-    error = ENXIO;
-  if (!error)
+  err = fshelp_isowner (&np->dn_stat, cred->user);
+  if (!err)
+    err = fshelp_fetch_control (&np->transbox, ctl);
+  if (!err && *ctl == MACH_PORT_NULL)
+    err = ENXIO;
+  if (!err)
     *ctltype = MACH_MSG_TYPE_MOVE_SEND;
 
   pthread_mutex_unlock (&np->lock);
 
-  return error;
+  return err;
 }

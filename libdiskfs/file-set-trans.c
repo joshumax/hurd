@@ -32,7 +32,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      fsys_t active)
 {
   struct node *np;
-  error_t error;
+  error_t err;
   mach_port_t control = MACH_PORT_NULL;
 
   if (!cred)
@@ -51,32 +51,32 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   pthread_mutex_lock (&np->lock);
 
-  error = fshelp_isowner (&np->dn_stat, cred->user);
-  if (error)
+  err = fshelp_isowner (&np->dn_stat, cred->user);
+  if (err)
     {
       pthread_mutex_unlock (&np->lock);
-      return error;
+      return err;
     }
 
   if ((active_flags & FS_TRANS_SET)
       && ! (active_flags & FS_TRANS_ORPHAN))
     {
-      error = fshelp_fetch_control (&np->transbox, &control);
-      if (error)
+      err = fshelp_fetch_control (&np->transbox, &control);
+      if (err)
 	{
 	  pthread_mutex_unlock (&np->lock);
-	  return error;
+	  return err;
 	}
 
       if ((control != MACH_PORT_NULL) && ((active_flags & FS_TRANS_EXCL) == 0))
 	{
 	  pthread_mutex_unlock (&np->lock);
-	  error = fsys_goaway (control, killtrans_flags);
+	  err = fsys_goaway (control, killtrans_flags);
 	  mach_port_deallocate (mach_task_self (), control);
-	  if (error && (error != MIG_SERVER_DIED)
-	      && (error != MACH_SEND_INVALID_DEST))
-	    return error;
-	  error = 0;
+	  if (err && (err != MIG_SERVER_DIED)
+	      && (err != MACH_SEND_INVALID_DEST))
+	    return err;
+	  err = 0;
 	  pthread_mutex_lock (&np->lock);
 	}
       else if (control != MACH_PORT_NULL)
@@ -94,12 +94,12 @@ diskfs_S_file_set_translator (struct protid *cred,
 
   if (active_flags & FS_TRANS_SET)
     {
-      error = fshelp_set_active (&np->transbox, active,
+      err = fshelp_set_active (&np->transbox, active,
 				 active_flags & FS_TRANS_EXCL);
-      if (error)
+      if (err)
 	{
 	  pthread_mutex_unlock (&np->lock);
-	  return error;
+	  return err;
 	}
     }
 
@@ -158,12 +158,12 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 		  minor = strtol (arg, 0, 0);
 
-		  error = diskfs_validate_rdev_change (np,
+		  err = diskfs_validate_rdev_change (np,
 						       makedev (major, minor));
-		  if (error)
+		  if (err)
 		    {
 		      pthread_mutex_unlock (&np->lock);
-		      return error;
+		      return err;
 		    }
 		  np->dn_stat.st_rdev = makedev (major, minor);
 		}
@@ -180,36 +180,36 @@ diskfs_S_file_set_translator (struct protid *cred,
 		    }
 
 		  if (diskfs_create_symlink_hook)
-		    error = (*diskfs_create_symlink_hook)(np, arg);
-		  if (!diskfs_create_symlink_hook || error == EINVAL)
+		    err = (*diskfs_create_symlink_hook)(np, arg);
+		  if (!diskfs_create_symlink_hook || err == EINVAL)
 		    /* Store the argument in the file as the
 		       target of the link */
-		    error = diskfs_node_rdwr (np, arg, 0, strlen (arg),
+		    err = diskfs_node_rdwr (np, arg, 0, strlen (arg),
 					      1, cred, 0);
-		  if (error)
+		  if (err)
 		    {
 		      pthread_mutex_unlock (&np->lock);
-		      return error;
+		      return err;
 		    }
 		}
 	      newmode = (np->dn_stat.st_mode & ~S_IFMT) | newmode;
-	      error = diskfs_validate_mode_change (np, newmode);
-	      if (!error)
+	      err = diskfs_validate_mode_change (np, newmode);
+	      if (!err)
 		{
 		  np->dn_stat.st_mode = newmode;
 		  diskfs_node_update (np, diskfs_synchronous);
 		}
 	      pthread_mutex_unlock (&np->lock);
-	      return error;
+	      return err;
 	    }
 	}
-      error = diskfs_set_translator (np, passive, passivelen, cred);
+      err = diskfs_set_translator (np, passive, passivelen, cred);
     }
 
   pthread_mutex_unlock (&np->lock);
 
-  if (! error && cred->po->path && active_flags & FS_TRANS_SET)
-    error = fshelp_set_active_translator (&cred->pi, cred->po->path, active);
+  if (! err && cred->po->path && active_flags & FS_TRANS_SET)
+    err = fshelp_set_active_translator (&cred->pi, cred->po->path, active);
 
-  return error;
+  return err;
 }
