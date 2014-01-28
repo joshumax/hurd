@@ -233,6 +233,18 @@ ethernet_open (struct device *dev)
   return 0;
 }
 
+int
+ethernet_close (struct device *dev)
+{
+  struct ether_device *edev = (struct ether_device *) dev->priv;
+
+  mach_port_deallocate (mach_task_self (), edev->readptname);
+  edev->readptname = MACH_PORT_NULL;
+  ports_destroy_right (edev->readpt);
+  edev->readpt = NULL;
+  device_close (edev->ether_port);
+  edev->ether_port = MACH_PORT_NULL;
+}
 
 /* Transmit an ethernet frame */
 int
@@ -241,10 +253,31 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
   error_t err;
   struct ether_device *edev = (struct ether_device *) dev->priv;
   u_int count;
+  u_int tried = 0;
 
-  err = device_write (edev->ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
-  assert_perror (err);
-  assert (count == skb->len);
+  do
+    {
+      tried++;
+      err = device_write (edev->ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
+      if (err == EMACH_SEND_INVALID_DEST)
+	{
+	  /* Device probably just died, try to reopen it.  */
+
+	  if (tried == 2)
+	    /* Too many tries, abort */
+	    break;
+
+	  ethernet_close (dev);
+	  ethernet_open (dev);
+	}
+      else
+	{
+	  assert_perror (err);
+	  assert (count == skb->len);
+	}
+    }
+  while (err);
+
   dev_kfree_skb (skb);
   return 0;
 }
