@@ -243,6 +243,7 @@ ethernet_close (struct device *dev)
   ports_destroy_right (edev->readpt);
   edev->readpt = NULL;
   device_close (edev->ether_port);
+  mach_port_deallocate (mach_task_self (), edev->ether_port);
   edev->ether_port = MACH_PORT_NULL;
 }
 
