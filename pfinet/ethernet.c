@@ -259,7 +259,7 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
     {
       tried++;
       err = device_write (edev->ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
-      if (err == EMACH_SEND_INVALID_DEST)
+      if (err == EMACH_SEND_INVALID_DEST || err == EMIG_SERVER_DIED)
 	{
 	  /* Device probably just died, try to reopen it.  */
 
