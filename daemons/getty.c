@@ -1,6 +1,7 @@
 /* Stubby version of getty for Hurd
 
-   Copyright (C) 1996, 1998, 1999, 2007 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1998, 1999, 2007, 2014
+     Free Software Foundation, Inc.
 
    Written by Michael I. Bushnell, p/BSG.
 
@@ -39,6 +40,7 @@
 extern char *localhost ();
 
 #define _PATH_LOGIN "/bin/login"
+#define _PATH_ISSUE "/etc/issue"
 
 /* Parse the terminal speed.  */
 static void
@@ -59,22 +61,92 @@ set_speed (int tty, char *speedstr)
     tcsetattr (tty, TCSAFLUSH, &ttystat);
 }
 
+/* Load a banner from _PATH_ISSUE.  If that fails, a built-in version
+   is provided.  */
+static char *
+load_banner (void)
+{
+  char *buf = NULL, *p;
+  struct stat st;
+  int fd;
+  ssize_t remaining, count;
+
+  fd = open (_PATH_ISSUE, O_RDONLY);
+  if (fd == -1)
+    goto out;
+
+  if (fstat (fd, &st) == -1)
+    goto out;
+
+  buf = malloc (st.st_size + 1);
+  if (buf == NULL)
+    goto out;
+
+  remaining = st.st_size;
+  p = buf;
+  while (remaining > 0)
+    {
+      count = read (fd, p, remaining);
+      if (count == -1)
+        {
+          close (fd);
+          goto out;
+        }
+      p += count;
+      remaining -= count;
+    }
+
+  buf[st.st_size] = '\0';
+  close (fd);
+  return buf;
+
+ out:
+  free (buf);
+  return "\r\n\n\\s \\r (\\n) (\\l)\r\n\n";
+}
 
 /* Print a suitable welcome banner */
 static void
 print_banner (int fd, char *ttyname)
 {
-  int cc;
-  char *s;
+  char *s, *t, *expansion;
   struct utsname u;
-  char *hostname = localhost ();
 
   if (uname (&u))
     u.sysname[0] = u.release[0] = '\0';
 
-  cc = asprintf (&s, "\r\n\n%s %s (%s) (%s)\r\n\n",
-		 u.sysname, u.release, hostname ?: "?", basename (ttyname));
-  write (fd, s, cc);
+  for (s = load_banner (); *s; s++)
+    {
+      for (t = s; *t && *t != '\\'; t++) /* nomnomnom */;
+
+      write (fd, s, t - s);
+      if (! *t)
+        return;
+
+      switch (*(t + 1))
+        {
+        case '\\':
+          expansion = "\\";
+          break;
+        case 's':
+          expansion = u.sysname;
+          break;
+        case 'r':
+          expansion = u.release;
+          break;
+        case 'n':
+          expansion = localhost () ?: "?";
+          break;
+        case 'l':
+          expansion = basename (ttyname);
+          break;
+        default:
+          expansion = "?";
+        }
+      write (fd, expansion, strlen (expansion));
+
+      s = t + 1;
+    }
 }
 
 int
