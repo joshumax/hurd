@@ -25,16 +25,15 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Implement fsys_goaway as described in <hurd/fsys.defs>. */
 error_t
-diskfs_S_fsys_goaway (fsys_t controlport,
+diskfs_S_fsys_goaway (struct diskfs_control *pt,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      int flags)
 {
-  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
-					    diskfs_control_class);
   error_t ret;
   
-  if (!pt)
+  if (!pt
+      || pt->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
   
   /* XXX FSYS_GOAWAY_NOWAIT not implemented. */
@@ -48,6 +47,5 @@ diskfs_S_fsys_goaway (fsys_t controlport,
       exit (0);
     }
 
-  ports_port_deref (pt);
   return ret;
 }

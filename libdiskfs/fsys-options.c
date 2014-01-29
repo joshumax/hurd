@@ -28,15 +28,13 @@
 
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_set_options (fsys_t fsys,
+diskfs_S_fsys_set_options (struct diskfs_control *pt,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,
 			   char *data, mach_msg_type_number_t len,
 			   int do_children)
 {
   error_t err = 0;
-  struct port_info *pt =
-    ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
 
   error_t
     helper (struct node *np)
@@ -60,7 +58,8 @@ diskfs_S_fsys_set_options (fsys_t fsys,
 	return error;
       }
 
-  if (!pt)
+  if (!pt
+      || pt->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
 
   if (do_children)
@@ -77,13 +76,12 @@ diskfs_S_fsys_set_options (fsys_t fsys,
       pthread_rwlock_unlock (&diskfs_fsys_lock);
     }
 
-  ports_port_deref (pt);
   return err;
 }
 
 /* Implement fsys_get_options as described in <hurd/fsys.defs>. */
 error_t
-diskfs_S_fsys_get_options (fsys_t fsys,
+diskfs_S_fsys_get_options (struct diskfs_control *port,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,
 			   char **data, mach_msg_type_number_t *data_len)
@@ -91,10 +89,9 @@ diskfs_S_fsys_get_options (fsys_t fsys,
   char *argz = 0;
   size_t argz_len = 0;
   error_t err;
-  struct port_info *port =
-    ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
 
-  if (!port)
+  if (!port
+      || port->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
 
   err = argz_add (&argz, &argz_len, program_invocation_name);
@@ -111,6 +108,5 @@ diskfs_S_fsys_get_options (fsys_t fsys,
   else
     free (argz);
 
-  ports_port_deref (port);
   return err;
 }

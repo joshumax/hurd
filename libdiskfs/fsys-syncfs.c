@@ -24,14 +24,12 @@
 
 /* Implement fsys_syncfs as described in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_syncfs (fsys_t controlport,
+diskfs_S_fsys_syncfs (struct diskfs_control *pi,
 		      mach_port_t reply,
 		      mach_msg_type_name_t replytype,
 		      int wait,
 		      int children)
 {
-  struct port_info *pi = ports_lookup_port (diskfs_port_bucket, controlport,
-					    diskfs_control_class);
   error_t 
     helper (struct node *np)
       {
@@ -49,7 +47,8 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
 	return 0;
       }
   
-  if (!pi)
+  if (!pi
+      || pi->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
   
   pthread_rwlock_rdlock (&diskfs_fsys_lock);
@@ -67,8 +66,5 @@ diskfs_S_fsys_syncfs (fsys_t controlport,
     }
 
   pthread_rwlock_unlock (&diskfs_fsys_lock);
-
-  ports_port_deref (pi);
-
   return 0;
 }

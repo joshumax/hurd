@@ -26,7 +26,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 /* Implement fsys_getroot as described in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_getroot (fsys_t controlport,
+diskfs_S_fsys_getroot (struct diskfs_control *pt,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t dotdot,
@@ -40,8 +40,6 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 		       file_t *returned_port,
 		       mach_msg_type_name_t *returned_port_poly)
 {
-  struct port_info *pt = ports_lookup_port (diskfs_port_bucket, controlport,
-					    diskfs_control_class);
   error_t err = 0;
   mode_t type;
   struct protid *newpi;
@@ -55,7 +53,8 @@ diskfs_S_fsys_getroot (fsys_t controlport,
     path: NULL,
   };
 
-  if (!pt)
+  if (!pt
+      || pt->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
 
   flags &= O_HURD;
@@ -199,8 +198,6 @@ diskfs_S_fsys_getroot (fsys_t controlport,
 
   pthread_mutex_unlock (&diskfs_root_node->lock);
   pthread_rwlock_unlock (&diskfs_fsys_lock);
-
-  ports_port_deref (pt);
 
   drop_idvec ();
 

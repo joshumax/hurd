@@ -426,17 +426,16 @@ diskfs_execboot_fsys_startup (mach_port_t port, int flags,
 /* Called by init to get the privileged ports as described
    in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_getpriv (mach_port_t port,
+diskfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
 		       mach_port_t reply, mach_msg_type_name_t reply_type,
 		       mach_port_t *host_priv, mach_msg_type_name_t *hp_type,
 		       mach_port_t *dev_master, mach_msg_type_name_t *dm_type,
 		       mach_port_t *fstask, mach_msg_type_name_t *task_type)
 {
   error_t err;
-  struct port_info *init_bootstrap_port =
-    ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
 
-  if (!init_bootstrap_port)
+  if (!init_bootstrap_port
+      || init_bootstrap_port->pi.class != diskfs_initboot_class)
     return EOPNOTSUPP;
 
   err = get_privileged_ports (host_priv, dev_master);
@@ -447,20 +446,17 @@ diskfs_S_fsys_getpriv (mach_port_t port,
       *task_type = MACH_MSG_TYPE_COPY_SEND;
     }
 
-  ports_port_deref (init_bootstrap_port);
-
   return err;
 }
 
 /* Called by init to give us ports to the procserver and authserver as
    described in <hurd/fsys.defs>. */
 kern_return_t
-diskfs_S_fsys_init (mach_port_t port,
+diskfs_S_fsys_init (struct diskfs_control *pt,
 		    mach_port_t reply, mach_msg_type_name_t replytype,
 		    mach_port_t procserver,
 		    mach_port_t authhandle)
 {
-  struct port_info *pt;
   static int initdone = 0;
   mach_port_t host, startup;
   error_t err;
@@ -468,10 +464,10 @@ diskfs_S_fsys_init (mach_port_t port,
   struct protid *rootpi;
   struct peropen *rootpo;
 
-  pt = ports_lookup_port (diskfs_port_bucket, port, diskfs_initboot_class);
-  if (!pt)
+  if (!pt
+      || pt->pi.class != diskfs_initboot_class)
     return EOPNOTSUPP;
-  ports_port_deref (pt);
+  
   if (initdone)
     return EOPNOTSUPP;
   initdone = 1;

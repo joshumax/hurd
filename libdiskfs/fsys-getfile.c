@@ -27,7 +27,7 @@
 /* Return in FILE & FILE_TYPE the file in FSYS corresponding to the NFS file
    handle HANDLE & HANDLE_LEN.  */
 error_t
-diskfs_S_fsys_getfile (mach_port_t fsys,
+diskfs_S_fsys_getfile (struct diskfs_control *pt,
 		       mach_port_t reply, mach_msg_type_name_t reply_type,
 		       uid_t *uids, mach_msg_type_number_t nuids,
 		       gid_t *gids, mach_msg_type_number_t ngids,
@@ -41,15 +41,13 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   struct protid *new_cred;
   struct peropen *new_po;
   struct iouser *user;
-  struct port_info *pt =
-    ports_lookup_port (diskfs_port_bucket, fsys, diskfs_control_class);
 
-  if (!pt)
+  if (!pt
+      || pt->pi.class != diskfs_control_class)
     return EOPNOTSUPP;
 
   if (handle_len != sizeof *f)
     {
-      ports_port_deref (pt);
       return EINVAL;
     }
 
@@ -58,14 +56,12 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   err = diskfs_cached_lookup (f->data.cache_id, &node);
   if (err)
     {
-      ports_port_deref (pt);
       return err;
     }
 
   if (node->dn_stat.st_gen != f->data.gen)
     {
       diskfs_nput (node);
-      ports_port_deref (pt);
       return ESTALE;
     }
 
@@ -73,7 +69,6 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   if (err)
     {
       diskfs_nput (node);
-      ports_port_deref (pt);
       return err;
     }
 
@@ -98,7 +93,6 @@ diskfs_S_fsys_getfile (mach_port_t fsys,
   iohelp_free_iouser (user);
 
   diskfs_nput (node);
-  ports_port_deref (pt);
 
   if (! err)
     {
