@@ -128,21 +128,5 @@ routine fsys_get_options (
 	RPT
 	out options: data_t, dealloc);
 
-/* Return any active translators bound to nodes of the receiving
-   filesystem.  CHILDREN is an argz vector containing file names
-   relative to the root of the receiving translator.  */
-routine fsys_get_children (
-	server: fsys_t;
-	RPT
-	out children: data_t);
-
-/* Return information about the source of the receiving filesystem.
-   If the concept of a source is applicable, SOURCE should refer to
-   the source of the receiving translator and should be a description
-   considered appropriate in the context of the translator.  For
-   example for the case of block device based filesystems, SOURCE
-   should be the file name of the underlying block device.  */
-routine fsys_get_source (
-	server: fsys_t;
-	RPT
-	out source: string_t);
+skip;	/* Was fsys_get_children */
+skip;	/* Was fsys_get_source */

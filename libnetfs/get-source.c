@@ -22,7 +22,7 @@
 #include "priv.h"
 
 error_t
-netfs_get_source (char *source)
+netfs_get_source (struct protid *cred, char *source, size_t source_len)
 {
   return EOPNOTSUPP;
 }

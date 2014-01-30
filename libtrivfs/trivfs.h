@@ -235,10 +235,11 @@ error_t trivfs_append_args (struct trivfs_control *fsys,
 			    char **argz, size_t *argz_len);
 
 /* The user may define this function.  The function must set source to
-   the source device of the filesystem. The function may return an
-   EOPNOTSUPP to indicate that the concept of a source device is not
-   applicable. The default function always returns EOPNOTSUPP. */
-error_t trivfs_get_source (char *source);
+   the source device of CRED. The function may return an EOPNOTSUPP to
+   indicate that the concept of a source device is not applicable. The
+   default function always returns EOPNOTSUPP. */
+error_t trivfs_get_source (struct trivfs_protid *cred,
+                           char *source, size_t source_len);
 
 /* Add the port class *CLASS to the list of control port classes recognized
    by trivfs; if *CLASS is 0, an attempt is made to allocate a new port

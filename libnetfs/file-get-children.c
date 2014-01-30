@@ -1,4 +1,4 @@
-/* fsys_get_children
+/* file_get_children
 
    Copyright (C) 2013 Free Software Foundation, Inc.
 
@@ -27,18 +27,14 @@
    filesystem.  CHILDREN is an argz vector containing file names
    relative to the root of the receiving translator.  */
 error_t
-netfs_S_fsys_get_children (fsys_t server,
-			   mach_port_t reply,
-			   mach_msg_type_name_t replyPoly,
+netfs_S_file_get_children (struct protid *cred,
 			   char **children,
 			   mach_msg_type_number_t *children_len)
 {
   error_t err;
-
-  struct protid *cred = ports_lookup_port (netfs_port_bucket,
-					   server,
-					   netfs_protid_class);
-  if (! cred)
+  if (! cred
+      || cred->pi.bucket != netfs_port_bucket
+      || cred->pi.class != netfs_protid_class)
     return EOPNOTSUPP;
 
   /* check_access performs the same permission check as is normally

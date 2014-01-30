@@ -315,10 +315,11 @@ error_t netfs_file_get_storage_info (struct iouser *cred,
 				     mach_msg_type_number_t *data_len);
 
 /* The user may define this function.  The function must set source to
-   the source device of the filesystem. The function may return an
-   EOPNOTSUPP to indicate that the concept of a source device is not
-   applicable. The default function always returns EOPNOTSUPP. */
-error_t netfs_get_source (char *source);
+   the source of CRED. The function may return an EOPNOTSUPP to
+   indicate that the concept of a source device is not applicable. The
+   default function always returns EOPNOTSUPP. */
+error_t netfs_get_source (struct protid *cred,
+                          char *source, size_t source_len);
 
 /* Option parsing */
 

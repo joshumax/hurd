@@ -22,7 +22,12 @@
 #include "priv.h"
 
 error_t
-diskfs_get_source (char *source)
+diskfs_get_source (struct protid *cred, char *source, size_t source_len)
 {
-  return EOPNOTSUPP;
+  if (diskfs_disk_name == NULL)
+    return EOPNOTSUPP;
+
+  strncpy (source, diskfs_disk_name, source_len - 1);
+  source[source_len - 1] = '\0';
+  return 0;
 }

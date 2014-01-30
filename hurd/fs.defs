@@ -352,3 +352,22 @@ routine file_reparent (
 	RPT
 	parent: mach_port_t;
 	out new_file: mach_port_send_t);
+
+/* Return any active translators bound to nodes below FILE.  CHILDREN
+   is an argz vector containing file names relative to the root of the
+   receiving translator.  */
+routine file_get_children (
+	file: file_t;
+	RPT
+	out children: data_t);
+
+/* Return information about the source of FILE.  If the concept of a
+   source is applicable, SOURCE should refer to the source of FILE and
+   should be a description considered appropriate in the context of
+   the translator.  For example, if FILE refers to a node on a
+   filesystems, SOURCE should be the file name of the underlying block
+   device.  */
+routine file_get_source (
+	file: file_t;
+	RPT
+	out source: string_t);

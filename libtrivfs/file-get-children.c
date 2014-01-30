@@ -1,4 +1,4 @@
-/* fsys_get_source
+/* file_get_children
 
    Copyright (C) 2013 Free Software Foundation, Inc.
 
@@ -20,15 +20,16 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
-#include "fsys_S.h"
 
-/* Return information about the source of the receiving
-   filesystem.  */
+/* Return any active translators bound to nodes of the receiving
+   filesystem.  CHILDREN is an argz vector containing file names
+   relative to the root of the receiving translator.  */
 error_t
-netfs_S_fsys_get_source (fsys_t server,
-			 mach_port_t reply,
-			 mach_msg_type_name_t replyPoly,
-			 char *source)
+trivfs_S_file_get_children (struct trivfs_protid *cred,
+			    mach_port_t reply,
+			    mach_msg_type_name_t replyPoly,
+			    char **children,
+			    mach_msg_type_number_t *children_len)
 {
-  return netfs_get_source (source);
+  return EOPNOTSUPP;
 }

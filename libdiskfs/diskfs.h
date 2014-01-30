@@ -569,10 +569,11 @@ error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The user may define this function.  The function must set source to
-   the source device of the filesystem. The function may return an
-   EOPNOTSUPP to indicate that the concept of a source device is not
-   applicable. The default function always returns EOPNOTSUPP. */
-error_t diskfs_get_source (char *source);
+   the source of CRED. The function may return an EOPNOTSUPP to
+   indicate that the concept of a source device is not applicable. The
+   default function always returns EOPNOTSUPP. */
+error_t diskfs_get_source (struct protid *cred,
+                           char *source, size_t source_len);
 
 /* The library exports the following functions for general use */
 

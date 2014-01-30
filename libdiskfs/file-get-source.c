@@ -1,4 +1,4 @@
-/* fsys_get_source
+/* file_get_source
 
    Copyright (C) 2013 Free Software Foundation, Inc.
 
@@ -20,14 +20,18 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include "fs_S.h"
 
 /* Return information about the source of the receiving
    filesystem.	*/
 error_t
-trivfs_S_fsys_get_source (trivfs_control_t server,
-			  mach_port_t reply,
-			  mach_msg_type_name_t replyPoly,
+diskfs_S_file_get_source (struct protid *cred,
 			  char *source)
 {
-  return trivfs_get_source (source);
+  if (! cred
+      || cred->pi.bucket != diskfs_port_bucket
+      || cred->pi.class != diskfs_protid_class)
+    return EOPNOTSUPP;
+
+  return diskfs_get_source (cred, source, 1024 /* XXX */);
 }
