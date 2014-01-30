@@ -56,7 +56,7 @@ magic: ../libiohelp/libiohelp.a
 hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
 fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libports/libports.a ../libihash/libihash.a
 remap: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
-mtab: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a fsysUser.o
+mtab: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a fsUser.o
 $(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(targets): %: %.o
