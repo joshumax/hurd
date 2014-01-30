@@ -540,16 +540,15 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 
       if (idev)
 	{
-	  struct inet6_ifaddr *ifa = idev->addr_list;
+	  struct inet6_ifaddr *ifa;
 	  static char addr_buf[INET6_ADDRSTRLEN];
 
 	  /* Push all IPv6 addresses assigned to the interface. */
-	  do 
+	  for (ifa = idev->addr_list; ifa; ifa = ifa->if_next)
 	    {
 	      inet_ntop (AF_INET6, &ifa->addr, addr_buf, INET6_ADDRSTRLEN);
 	      ADD_OPT ("--address6=%s/%d", addr_buf, ifa->prefix_len);
 	    }
-	  while ((ifa = ifa->if_next));
 
 	  /* Last not least push --gateway6 option. */
 	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
