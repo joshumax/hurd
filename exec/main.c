@@ -200,7 +200,7 @@ kern_return_t
 S_exec_init (struct trivfs_protid *protid,
 	     auth_t auth, process_t proc)
 {
-  mach_port_t host_priv, startup;
+  mach_port_t host_priv, device_master, startup;
   error_t err;
 
   if (! protid || ! protid->isroot)
@@ -232,8 +232,21 @@ S_exec_init (struct trivfs_protid *protid,
     mach_port_deallocate (mach_task_self (), right);
   }
 
-  err = get_privileged_ports (&host_priv, NULL);
+  err = get_privileged_ports (&host_priv, &device_master);
   assert_perror (err);
+
+  {
+    /* Get our stderr set up to print on the console, in case we have
+       to panic or something.  */
+    mach_port_t cons;
+    error_t err;
+    err = device_open (device_master, D_READ|D_WRITE, "console", &cons);
+    assert_perror (err);
+    mach_port_deallocate (mach_task_self (), device_master);
+    stdin = mach_open_devstream (cons, "r");
+    stdout = stderr = mach_open_devstream (cons, "w");
+    mach_port_deallocate (mach_task_self (), cons);
+  }
 
   proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
 
