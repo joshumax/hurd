@@ -102,7 +102,7 @@ load_banner (void)
 
  out:
   free (buf);
-  return "\r\n\n\\s \\r (\\n) (\\l)\r\n\n";
+  return "\n\\s \\r (\\n) (\\l)\r\n\n";
 }
 
 /* Print a suitable welcome banner */
@@ -115,6 +115,7 @@ print_banner (int fd, char *ttyname)
   if (uname (&u))
     u.sysname[0] = u.release[0] = '\0';
 
+  write (fd, "\r\n", 2);
   for (s = load_banner (); *s; s++)
     {
       for (t = s; *t && *t != '\\'; t++) /* nomnomnom */;
