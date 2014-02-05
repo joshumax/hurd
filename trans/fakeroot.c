@@ -511,16 +511,10 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
     mode |= np->nn_stat.st_mode & S_IFMT;
   if ((mode & S_IFMT) != (np->nn_stat.st_mode & S_IFMT))
     return EOPNOTSUPP;
-  if (((mode | (mode << 3) | (mode << 6))
-       ^ (np->nn_stat.st_mode | (np->nn_stat.st_mode << 3)
-	  | (np->nn_stat.st_mode << 6)))
-      & S_IEXEC)
-    {
-      /* We are changing the executable bit, so this is not all fake.  We
-	 don't bother with error checking since the fake mode change should
-	 always succeed--worst case a later open will get EACCES.  */
-      (void) file_chmod (np->nn->file, real_from_fake_mode (mode));
-    }
+
+  /* We don't bother with error checking since the fake mode change should
+     always succeed--worst case a later open will get EACCES.  */
+  (void) file_chmod (np->nn->file, mode);
   np->nn->faked |= FAKE_MODE;
   np->nn_stat.st_mode = mode;
   return 0;
