@@ -54,7 +54,7 @@ struct netnode
 #define FAKE_GID	(1 << 1)
 #define FAKE_AUTHOR	(1 << 2)
 #define FAKE_MODE	(1 << 3)
-#define FAKE_REFERENCE	(1 << 4) /* got node_norefs with st_nlink > 0 */
+#define FAKE_DEFAULT	(1 << 4)
 
 pthread_mutex_t idport_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 struct hurd_ihash idport_ihash
@@ -123,15 +123,53 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
   return err;
 }
 
+static void
+set_default_attributes (struct node *np)
+{
+  np->nn->faked = FAKE_UID | FAKE_GID | FAKE_DEFAULT;
+  np->nn_stat.st_uid = 0;
+  np->nn_stat.st_gid = 0;
+}
+
+static void
+set_faked_attribute (struct node *np, unsigned int faked)
+{
+  np->nn->faked |= faked;
+
+  if (np->nn->faked & FAKE_DEFAULT)
+    {
+      /* Now that the node has non-default faked attributes, they have to be
+	 retained for future accesses.  Account for the hash table reference.
+
+	 XXX This means such nodes are currently leaked.  Hopefully, there
+	 won't be too many of them until the translator is shut down, and
+	 the data structures should make implementing garbage collection
+	 easy enough if it's ever needed, although scalability could be
+	 improved.  */
+      netfs_nref (np);
+      np->nn->faked &= ~FAKE_DEFAULT;
+    }
+}
+
 /* Node NP has no more references; free all its associated storage. */
 void
 netfs_node_norefs (struct node *np)
 {
   assert (np->nn->np == np);
+
+  pthread_mutex_unlock (&np->lock);
+  pthread_spin_unlock (&netfs_node_refcnt_lock);
+
+  pthread_mutex_lock (&idport_ihash_lock);
+  hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
+  pthread_mutex_unlock (&idport_ihash_lock);
+
   mach_port_deallocate (mach_task_self (), np->nn->file);
   mach_port_deallocate (mach_task_self (), np->nn->idport);
   free (np->nn);
   free (np);
+
+  pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
 /* This is the cleanup function we install in netfs_protid_class.  If
@@ -140,49 +178,6 @@ netfs_node_norefs (struct node *np)
 static void
 fakeroot_netfs_release_protid (void *cookie)
 {
-  struct node *np = ((struct protid *) cookie)->po->np;
-  assert (np->nn->np == np);
-
-  pthread_mutex_lock (&idport_ihash_lock);
-  pthread_mutex_lock (&np->lock);
-
-  assert ((np->nn->faked & FAKE_REFERENCE) == 0);
-
-  /* Check if someone else reacquired a reference to the node besides
-     ours that is about to be dropped.  */
-  if (np->references > 1)
-    goto out;
-
-  if (np->nn->faked != 0
-      && netfs_validate_stat (np, 0) == 0 && np->nn_stat.st_nlink > 0)
-    {
-      /* The real node still exists and we have faked some attributes.
-	 We must keep our node alive in core to retain those values.
-	 XXX
-	 For now, we will leak the node if it gets deleted later.
-	 That will keep the underlying file alive with st_nlink=0
-	 until this fakeroot filesystem dies.  One easy solution
-	 would be to scan nodes with references=1 for st_nlink=0
-	 at some convenient time, periodically or in syncfs.  */
-
-      /* Keep a fake reference.  */
-      netfs_nref (np);
-
-      /* Set the FAKE_REFERENCE flag so that we can properly
-	 account for that fake reference.  */
-      np->nn->faked |= FAKE_REFERENCE;
-
-      /* Clear the lock box as if the file was closed.  */
-      fshelp_lock_init (&np->userlock);
-
-      /* We keep our node.  */
-      goto out;
-    }
-
-  hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
-
- out:
-  pthread_mutex_unlock (&np->lock);
   netfs_release_protid (cookie);
 
   int cports = ports_count_class (netfs_control_class);
@@ -201,8 +196,6 @@ fakeroot_netfs_release_protid (void *cookie)
       if (err != EBUSY)
         error (1, err, "netfs_shutdown");
     }
-
-  pthread_mutex_unlock (&idport_ihash_lock);
 }
 
 /* Given an existing node, make sure it has NEWMODES in its openmodes.
@@ -351,14 +344,27 @@ netfs_S_dir_lookup (struct protid *diruser,
     }
 
   mach_port_deallocate (mach_task_self (), fsidport);
+
+ redo_hash_lookup:
   pthread_mutex_lock (&idport_ihash_lock);
   pthread_mutex_lock (&dnp->lock);
   struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
   if (nn != NULL)
     {
       assert (nn->np->nn == nn);
-      np = nn->np;
       /* We already know about this node.  */
+
+      if (np->references == 0)
+	{
+	  /* But it might be in the process of being released.  If so,
+	     unlock the hash table to give the node a chance to actually
+	     be removed and retry.  */
+	  pthread_mutex_unlock (&dnp->lock);
+	  pthread_mutex_unlock (&idport_ihash_lock);
+	  goto redo_hash_lookup;
+	}
+
+      np = nn->np;
       mach_port_deallocate (mach_task_self (), idport);
 
       if (np == dnp)
@@ -371,13 +377,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  pthread_mutex_unlock (&dnp->lock);
 	}
 
-      /* If the looked-up file carries a fake reference, we
-	 use that and clear the FAKE_REFERENCE flag.  */
-      if (np->nn->faked & FAKE_REFERENCE)
-	np->nn->faked &= ~FAKE_REFERENCE;
-      else
-	netfs_nref (np);
-
+      netfs_nref (np);
       err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
       pthread_mutex_unlock (&idport_ihash_lock);
     }
@@ -386,7 +386,10 @@ netfs_S_dir_lookup (struct protid *diruser,
       err = new_node (file, idport, 1, flags, &np);
       pthread_mutex_unlock (&dnp->lock);
       if (!err)
-	err = netfs_validate_stat (np, diruser->user);
+	{
+	  set_default_attributes (np);
+	  err = netfs_validate_stat (np, diruser->user);
+	}
     }
   if (err)
     goto lose;
@@ -406,8 +409,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
       else
 	{
-	  err = netfs_attempt_chown (user, np, 0, 0);
-	  assert_perror (err); /* Our netfs_attempt_chown cannot fail.  */
 	  *retry_port = ports_get_right (newpi);
 	  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
 	  ports_port_deref (newpi);
@@ -469,12 +470,12 @@ netfs_attempt_chown (struct iouser *cred, struct node *np,
 {
   if (uid != -1)
     {
-      np->nn->faked |= FAKE_UID;
+      set_faked_attribute (np, FAKE_UID);
       np->nn_stat.st_uid = uid;
     }
   if (gid != -1)
     {
-      np->nn->faked |= FAKE_GID;
+      set_faked_attribute (np, FAKE_GID);
       np->nn_stat.st_gid = gid;
     }
   return 0;
@@ -483,7 +484,7 @@ netfs_attempt_chown (struct iouser *cred, struct node *np,
 error_t
 netfs_attempt_chauthor (struct iouser *cred, struct node *np, uid_t author)
 {
-  np->nn->faked |= FAKE_AUTHOR;
+  set_faked_attribute (np, FAKE_AUTHOR);
   np->nn_stat.st_author = author;
   return 0;
 }
@@ -515,7 +516,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
   /* We don't bother with error checking since the fake mode change should
      always succeed--worst case a later open will get EACCES.  */
   (void) file_chmod (np->nn->file, mode);
-  np->nn->faked |= FAKE_MODE;
+  set_faked_attribute (np, FAKE_MODE);
   np->nn_stat.st_mode = mode;
   return 0;
 }
@@ -1016,7 +1017,7 @@ any user to open nodes regardless of permissions as is done for root." };
 
   netfs_root_node->nn_stat.st_mode &= ~(S_IPTRANS | S_IATRANS);
   netfs_root_node->nn_stat.st_mode |= S_IROOT;
-  netfs_root_node->nn->faked |= FAKE_MODE;
+  set_faked_attribute (netfs_root_node, FAKE_MODE);
   pthread_mutex_unlock (&netfs_root_node->lock);
 
   netfs_server_loop ();		/* Never returns.  */
