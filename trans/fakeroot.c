@@ -287,6 +287,8 @@ netfs_S_dir_lookup (struct protid *diruser,
   err = dir_lookup (dir, filename,
 		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    mode, do_retry, retry_name, &file);
+  if (dir != dnp->nn->file)
+    mach_port_deallocate (mach_task_self (), dir);
   if (err)
     return err;
 
