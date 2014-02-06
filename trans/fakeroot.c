@@ -354,7 +354,7 @@ netfs_S_dir_lookup (struct protid *diruser,
       assert (nn->np->nn == nn);
       /* We already know about this node.  */
 
-      if (np->references == 0)
+      if (nn->np->references == 0)
 	{
 	  /* But it might be in the process of being released.  If so,
 	     unlock the hash table to give the node a chance to actually
