@@ -348,6 +348,10 @@ netfs_S_dir_lookup (struct protid *diruser,
  redo_hash_lookup:
   pthread_mutex_lock (&idport_ihash_lock);
   pthread_mutex_lock (&dnp->lock);
+  /* The hashtable may not hold a true reference on the node.  Acquire the
+     refcount lock so that, if a node is found, its reference counter cannot
+     drop to 0 before we get our own reference.  */
+  pthread_spin_lock (&netfs_node_refcnt_lock);
   struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
   if (nn != NULL)
     {
@@ -359,12 +363,17 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  /* But it might be in the process of being released.  If so,
 	     unlock the hash table to give the node a chance to actually
 	     be removed and retry.  */
+	  pthread_spin_unlock (&netfs_node_refcnt_lock);
 	  pthread_mutex_unlock (&dnp->lock);
 	  pthread_mutex_unlock (&idport_ihash_lock);
 	  goto redo_hash_lookup;
 	}
 
+      /* Otherwise, reference it right away.  */
       np = nn->np;
+      np->references++;
+      pthread_spin_unlock (&netfs_node_refcnt_lock);
+
       mach_port_deallocate (mach_task_self (), idport);
 
       if (np == dnp)
@@ -377,12 +386,12 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  pthread_mutex_unlock (&dnp->lock);
 	}
 
-      netfs_nref (np);
       err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
       pthread_mutex_unlock (&idport_ihash_lock);
     }
   else
     {
+      pthread_spin_unlock (&netfs_node_refcnt_lock);
       err = new_node (file, idport, 1, flags, &np);
       pthread_mutex_unlock (&dnp->lock);
       if (!err)
