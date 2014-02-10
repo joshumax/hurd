@@ -269,6 +269,20 @@ netfs_append_args (char **argz, size_t *argz_len)
   return err;
 }
 
+/* The user may define this function.  The function must set source to
+   the source of CRED. The function may return an EOPNOTSUPP to
+   indicate that the concept of a source device is not applicable. The
+   default function always returns EOPNOTSUPP. */
+error_t
+netfs_get_source (struct protid *cred, char *source, size_t source_len)
+{
+  if (! cred)
+    return EOPNOTSUPP;
+
+  snprintf (source, source_len, "%s:%s", host, remote_fs);
+  return 0;
+}
+
 /* Extract the host and remote filesystem names from SPEC, which should use
    either HOST:FS or FS@HOST notation.  Returns the malloced storage into
    which both REMOTE_FS and HOST point, or 0 if SPEC is invalid.  */
