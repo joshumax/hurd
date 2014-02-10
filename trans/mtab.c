@@ -423,19 +423,12 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   string_t source;
   err = file_get_source (node, source);
   if (err)
-    {
-      if (err == EOPNOTSUPP)
-	{
-	  /* Guess based on the last argument.	*/
-	  err = map_device_to_path (argv[count - 1], &src);
-	  if (err)
-	    goto errout;
-	}
-      else
-	goto errout;
-    }
-  else
-    src = source;
+    goto errout;
+
+  /* Guess based on the last argument.	*/
+  err = map_device_to_path (source, &src);
+  if (err)
+    goto errout;
 
   entry_len = asprintf (&entry, "%s %s %s %s 0 0\n", src, path, type,
 			options? options: MNTOPT_DEFAULTS);
