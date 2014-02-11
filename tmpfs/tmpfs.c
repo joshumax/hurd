@@ -33,7 +33,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 char *diskfs_server_name = "tmpfs";
 char *diskfs_server_version = HURD_VERSION;
 char *diskfs_extra_version = "GNU Hurd";
-char *diskfs_disk_name = "swap";
+char *diskfs_disk_name = "none";
 
 /* We ain't got to show you no stinkin' sync'ing.  */
 int diskfs_default_sync_interval = 0;
