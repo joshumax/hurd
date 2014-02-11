@@ -564,7 +564,7 @@ map_device_to_path (const char *device, char **path)
   else if (looks_like_block_device (device))
     asprintf (path, "/dev/%s", device);
   else
-    *path = strdup ("none");
+    *path = strdup (device);
 
   if (! *path)
     return ENOMEM;
