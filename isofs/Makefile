@@ -22,7 +22,7 @@ SRCS = inode.c main.c lookup.c pager.c rr.c
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs iohelp fshelp store pager ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread
+OTHERLIBS = -lpthread -lbz2
 
 include ../Makeconf
 
