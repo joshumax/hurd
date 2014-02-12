@@ -31,7 +31,7 @@
 
 /* Implement fsys_get_options as described in <hurd/fsys.defs>. */
 error_t
-netfs_S_fsys_get_options (fsys_t fsys,
+netfs_S_fsys_get_options (struct netfs_control *port,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,
 			  char **data, mach_msg_type_number_t *data_len)
@@ -39,8 +39,6 @@ netfs_S_fsys_get_options (fsys_t fsys,
   error_t err;
   char *argz = 0;
   size_t argz_len = 0;
-  struct port_info *port =
-    ports_lookup_port (netfs_port_bucket, fsys, netfs_control_class);
 
   if (!port)
     return EOPNOTSUPP;
@@ -62,8 +60,6 @@ netfs_S_fsys_get_options (fsys_t fsys,
     err = iohelp_return_malloced_buffer (argz, argz_len, data, data_len);
   else
     free (argz);
-
-  ports_port_deref (port);
 
   return err;
 }

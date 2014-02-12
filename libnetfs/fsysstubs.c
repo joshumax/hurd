@@ -23,7 +23,7 @@
 #include "fsys_S.h"
 
 error_t
-netfs_S_fsys_getfile (fsys_t cntl,
+netfs_S_fsys_getfile (struct netfs_control *cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      uid_t *uids, mach_msg_type_number_t nuids,
@@ -35,7 +35,7 @@ netfs_S_fsys_getfile (fsys_t cntl,
 }
 
 error_t
-netfs_S_fsys_getpriv (fsys_t cntl,
+netfs_S_fsys_getpriv (struct netfs_control *cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      mach_port_t *host, mach_msg_type_name_t *hosttp,
@@ -46,7 +46,7 @@ netfs_S_fsys_getpriv (fsys_t cntl,
 }
 
 error_t
-netfs_S_fsys_init (fsys_t cntl,
+netfs_S_fsys_init (struct netfs_control *cntl,
 		   mach_port_t reply,
 		   mach_msg_type_name_t reply_type,
 		   mach_port_t proc, auth_t auth)
@@ -55,7 +55,7 @@ netfs_S_fsys_init (fsys_t cntl,
 }
 
 error_t
-netfs_S_fsys_forward (fsys_t cntl,
+netfs_S_fsys_forward (mach_port_t cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      mach_port_t request,

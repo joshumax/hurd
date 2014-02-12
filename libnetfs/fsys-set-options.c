@@ -31,15 +31,15 @@
 
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 error_t
-netfs_S_fsys_set_options (fsys_t fsys,
+netfs_S_fsys_set_options (struct netfs_control *pt,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,
 			  char *data, mach_msg_type_number_t data_len,
 			  int do_children)
 {
   error_t err = 0;
-  struct port_info *pt =
-    ports_lookup_port (netfs_port_bucket, fsys, netfs_control_class);
+  if (!pt)
+    return EOPNOTSUPP;
 
   error_t
     helper (struct node *np)
@@ -64,9 +64,6 @@ netfs_S_fsys_set_options (fsys_t fsys,
 	return error;
       }
 
-  if (!pt)
-    return EOPNOTSUPP;
-
 #if NOT_YET
   if (do_children)
     {
@@ -86,8 +83,6 @@ netfs_S_fsys_set_options (fsys_t fsys,
       pthread_rwlock_unlock (&netfs_fsys_lock);
 #endif
     }
-
-  ports_port_deref (pt);
 
   return err;
 }

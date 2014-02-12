@@ -25,7 +25,7 @@
 #include <fcntl.h>
 
 error_t
-netfs_S_fsys_getroot (mach_port_t cntl,
+netfs_S_fsys_getroot (struct netfs_control *pt,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      mach_port_t dotdot,
@@ -37,8 +37,6 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 		      mach_port_t *retry_port,
 		      mach_msg_type_name_t *retry_port_type)
 {
-  struct port_info *pt = ports_lookup_port (netfs_port_bucket, cntl,
-					    netfs_control_class);
   struct iouser *cred;
   error_t err;
   struct protid *newpi;
@@ -51,7 +49,6 @@ netfs_S_fsys_getroot (mach_port_t cntl,
 
   if (!pt)
     return EOPNOTSUPP;
-  ports_port_deref (pt);
 
   err = iohelp_create_complex_iouser (&cred, uids, nuids, gids, ngids);
   if (err)

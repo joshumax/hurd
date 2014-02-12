@@ -22,7 +22,7 @@
 #include "fsys_S.h"
 
 error_t
-netfs_S_fsys_syncfs (mach_port_t cntl,
+netfs_S_fsys_syncfs (struct netfs_control *cntl,
 		     mach_port_t reply,
 		     mach_msg_type_name_t reply_type,
 		     int wait,

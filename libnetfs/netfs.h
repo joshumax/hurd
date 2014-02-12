@@ -100,6 +100,11 @@ struct node
   struct dirmod *dirmod_reqs;
 };
 
+struct netfs_control
+{
+  struct port_info pi;
+};
+
 /* The user must define this variable.  Set this to the name of the
    filesystem server. */
 extern char *netfs_server_name;
@@ -437,6 +442,7 @@ extern auth_t netfs_auth_server_port;
 
 /* Mig gook. */
 typedef struct protid *protid_t;
+typedef struct netfs_control *control_t;
 
 
 #endif /* _HURD_NETFS_H_ */

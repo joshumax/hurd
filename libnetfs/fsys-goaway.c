@@ -26,17 +26,15 @@
 #include <hurd/ports.h>
 
 error_t
-netfs_S_fsys_goaway (fsys_t control,
+netfs_S_fsys_goaway (struct netfs_control *pt,
 		     mach_port_t reply,
 		     mach_msg_type_name_t reply_type,
 		     int flags)
 {
   error_t err;
-  struct port_info *pt;
 
-  pt = ports_lookup_port (netfs_port_bucket, control,
-			  netfs_control_class);
-  if (! pt)
+  
+  if (!pt)
     return EOPNOTSUPP;
 
   err = netfs_shutdown (flags);
@@ -45,8 +43,6 @@ netfs_S_fsys_goaway (fsys_t control,
       fsys_goaway_reply (reply, reply_type, 0);
       exit (0);
     }
-
-  ports_port_deref (pt);
 
   return err;
 }

@@ -37,4 +37,18 @@ end_using_protid_port (struct protid *cred)
   if (cred)
     ports_port_deref (cred);
 }
+
+static inline struct netfs_control * __attribute__ ((unused))
+begin_using_control_port (fsys_t port)
+{
+  return ports_lookup_port (netfs_port_bucket, port, netfs_control_class);
+}
+
+static inline void __attribute__ ((unused))
+end_using_control_port (struct netfs_control *cred)
+{
+  if (cred)
+    ports_port_deref (cred);
+}
+
 #endif
