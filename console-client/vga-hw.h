@@ -132,6 +132,11 @@
 #define VGA_ATTR_ADDR_DATA_REG	0x3c0
 #define VGA_ATTR_DATA_READ_REG	0x3c1
 
+/* The Attribute Mode Control subregister.  */
+#define VGA_ATTR_MODE_ADDR	0x10
+#define VGA_ATTR_MODE_LGE	0x04
+
+#define VGA_ATTR_ENABLE_ADDR	0x20
 
 /* Other junk.  */
 #define VGA_INPUT_STATUS_1_REG	0x3da

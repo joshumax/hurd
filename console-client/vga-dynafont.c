@@ -87,6 +87,9 @@ struct dynafont
   /* The size of the VGA font (256 or 512).  Must be a power of 2!  */
   int size;
 
+  /* The width of the VGA font (8 or 9).  */
+  int width;
+
   /* A hash containing a pointer to a struct mapped_character for each
      UCS-4 character we map to a VGA font index.  */
   struct hurd_ihash charmap;
@@ -467,7 +470,8 @@ add_gnu_head (bdf_font_t font)
    Code Page 437).  */
 error_t
 dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
-	      bdf_font_t font_bold_italic, int size, dynafont_t *dynafont)
+	      bdf_font_t font_bold_italic, int size, int width,
+	      dynafont_t *dynafont)
 {
   dynafont_t df;
   struct bdf_glyph *glyph = NULL;
@@ -490,6 +494,9 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
   df->font_bold = font_bold;
   df->font_bold_italic = font_bold_italic;
   df->size = size;
+  if (!width)
+    width = df->font->bbox.width;
+  df->width = width;
   df->cursor_standout = 0;
 
   df->charmap_data = calloc (size, sizeof (struct mapped_character));
@@ -509,7 +516,7 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
 
   hurd_ihash_init (&df->charmap, offsetof (struct mapped_character, locp));
 
-  if (df->font->bbox.width == 9)
+  if (width == 9)
     {
       /* 32 from 256 font slots are for horizontal line graphic
 	 characters.  */
@@ -985,7 +992,7 @@ dynafont_activate (dynafont_t df)
      display problems for the user if we don't also program the video
      mode timings.  The standard font height for 80x25 is 16.  */
   vga_set_font_height (height);
-  vga_set_font_width (df->font->bbox.width % 8 ? 9 : 8);
+  vga_set_font_width (df->width);
 
   active_dynafont = df;
   dynafont_set_cursor (df, df->cursor_standout);

@@ -65,6 +65,9 @@ static char *vga_display_font_bold_italic;
 /* If false use all colors, else use double font slots.  */
 static int vga_display_max_glyphs;
 
+/* width of glyphs.  */
+static int vga_display_font_width;
+
 /* The timer used for flashing the screen.  */
 static struct timer_list vga_display_timer;
 
@@ -107,6 +110,7 @@ struct vga_display
   /* The VGA font for this display.  */
   dynafont_t df;
   int df_size;
+  int df_width;
 
   /* The color palette.  */
   dynacolor_t dc;
@@ -209,6 +213,7 @@ static const struct argp_option options[] =
      "Prefer a lot of colors above a lot of glyphs"},
     {"max-glyphs",	'g', 0     , 0,
      "Prefer a lot of glyphs above a lot of colors"},
+    {"font-width",	'w', "NUM" , 0, "Force using NUM pixel-wide glyphs"},
     { 0 }
     };
 
@@ -249,6 +254,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case 'g':
       vga_display_max_glyphs = 1;
+      break;
+
+    case 'w':
+      vga_display_font_width = atoi (arg);
       break;
 
     case ARGP_KEY_END:
@@ -292,6 +301,7 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
     return ENOMEM;
 
   disp->df_size = vga_display_max_glyphs ? 512 : 256;
+  disp->df_width = vga_display_font_width;
   disp->width = VGA_DISP_WIDTH;
   disp->height = VGA_DISP_HEIGHT;
 
@@ -338,7 +348,7 @@ vga_display_start (void *handle)
   LOAD_FONT (font_bold_italic, FONT_BOLD_ITALIC);
 
   err = dynafont_new (font, font_italic, font_bold, font_bold_italic,
-		      disp->df_size, &disp->df);
+		      disp->df_size, disp->df_width, &disp->df);
   if (err)
     {
       free (disp);

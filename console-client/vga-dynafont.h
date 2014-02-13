@@ -45,7 +45,7 @@ typedef struct dynafont *dynafont_t;
    the font is changed with dynafont_change_font.  */
 error_t dynafont_new (bdf_font_t font, bdf_font_t font_italic,
 		      bdf_font_t font_bold, bdf_font_t font_bold_italic,
-		      int size, dynafont_t *dynafont);
+		      int size, int width, dynafont_t *dynafont);
 
 /* Release a dynafont object and its associated resources.  */ 
 void dynafont_free (dynafont_t df);

@@ -53,6 +53,8 @@ struct vga_state
   unsigned char crt_cursor_high;
   unsigned char crt_cursor_low;
 
+  unsigned char attr_mode;
+
   char videomem[2 * 80 * 25];
   unsigned char fontmem[2 * VGA_FONT_SIZE * VGA_FONT_HEIGHT];
 };
@@ -124,6 +126,18 @@ vga_init (void)
   outb (VGA_CRT_CURSOR_LOW, VGA_CRT_ADDR_REG);
   vga_state->crt_cursor_low = inb (VGA_CRT_DATA_REG);
 
+  /* Side effect of reading the input status #1 register is to
+     reset the attribute mixed address/data register so that the
+     next write it expects is the address, not the data.  */
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_MODE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  vga_state->attr_mode = inb (VGA_ATTR_DATA_READ_REG);
+
+  /* Re-enable the screen.  */
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_ENABLE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  outb (0x00, VGA_ATTR_ADDR_DATA_REG);
+
   /* Read/write in interleaved mode.  */
   outb (VGA_GFX_MISC_ADDR, VGA_GFX_ADDR_REG);
   outb (VGA_GFX_MISC_CHAINOE | VGA_GFX_MISC_B8TOBF, VGA_GFX_DATA_REG);
@@ -179,6 +193,15 @@ vga_fini (void)
   outb (vga_state->crt_cursor_high, VGA_CRT_DATA_REG);
   outb (VGA_CRT_CURSOR_LOW, VGA_CRT_ADDR_REG);
   outb (vga_state->crt_cursor_low, VGA_CRT_DATA_REG);
+
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_MODE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  outb (vga_state->attr_mode, VGA_ATTR_DATA_READ_REG);
+
+  /* Re-enable the screen.  */
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_ENABLE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  outb (0x00, VGA_ATTR_ADDR_DATA_REG);
 
   ioperm (VGA_MIN_REG, VGA_MAX_REG - VGA_MIN_REG + 1, 0);
   munmap (vga_videomem, VGA_VIDEO_MEM_LENGTH);
@@ -308,6 +331,20 @@ vga_set_font_width (int width)
   else
     saved &= ~VGA_SEQ_CLOCK_MODE_8;
   outb (saved, VGA_SEQ_DATA_REG);
+
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_MODE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  saved = inb (VGA_ATTR_DATA_READ_REG);
+  if (width == 8)
+    saved |= ~VGA_ATTR_MODE_LGE;
+  else
+    saved &= VGA_ATTR_MODE_LGE;
+  outb (saved, VGA_ATTR_ADDR_DATA_REG);
+
+  /* Re-enable the screen.  */
+  inb (VGA_INPUT_STATUS_1_REG);
+  outb (VGA_ATTR_ENABLE_ADDR, VGA_ATTR_ADDR_DATA_REG);
+  outb (0x00, VGA_ATTR_ADDR_DATA_REG);
 }
 
 
@@ -423,12 +460,8 @@ vga_exchange_palette_attributes (unsigned char index,
     {
       unsigned char attr;
 
-      /* Side effect of reading the input status #1 register is to
-	 reset the attribute mixed address/data register so that the
-	 next write it expects is the address, not the data.  */
-      inb (VGA_INPUT_STATUS_1_REG);
-
       /* Set the address.  */
+      inb (VGA_INPUT_STATUS_1_REG);
       outb (index++, VGA_ATTR_ADDR_DATA_REG);
       attr = inb (VGA_ATTR_DATA_READ_REG);
       outb ((attr & ~077) | (*palette_attr & 077), VGA_ATTR_ADDR_DATA_REG);
@@ -438,6 +471,6 @@ vga_exchange_palette_attributes (unsigned char index,
   /* Re-enable the screen, which was blanked during the palette
      operation.  */
   inb (VGA_INPUT_STATUS_1_REG);
-  outb (0x20, VGA_ATTR_ADDR_DATA_REG);
+  outb (VGA_ATTR_ENABLE_ADDR, VGA_ATTR_ADDR_DATA_REG);
   outb (0x00, VGA_ATTR_ADDR_DATA_REG);
 }
