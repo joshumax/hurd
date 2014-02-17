@@ -316,6 +316,7 @@ AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
 
 AC_CHECK_LIB(bz2, BZ2_bzCompress, , AC_MSG_ERROR([libbz2 is required.]))
+AC_CHECK_LIB(z, deflate, , AC_MSG_ERROR([libz is required.]))
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT

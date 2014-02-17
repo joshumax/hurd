@@ -18,35 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <stdio.h>
-#include <string.h>
-#include <setjmp.h>
-#include <sys/mman.h>
+#include <errno.h>
 
-#include "store.h"
-
-/* gzip.h makes several annoying defines & decls, which we have to work
-   around. */
-#define file_t gzip_file_t
-#include "gzip.h"
-#undef file_t
-#undef head
+extern void do_gunzip (void);	/* Entry point to gunzip engine.  */
 
 static error_t
 DO_UNZIP (void)
 {
-  /* Entry points to unzip engine.  */
-  int get_method (int);
-  extern long int bytes_out;
-
-  if (get_method (0) != 0)
-    /* Not a happy gzip file.  */
-    return EINVAL;
-
-  /* Matched gzip magic number.  Ready to unzip.
-     Set up the output stream and let 'er rip.  */
-  bytes_out = 0;
-  unzip (17, 23);		/* Arguments ignored.  */
+  do_gunzip ();
   return 0;
 }
 
