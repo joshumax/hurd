@@ -31,8 +31,8 @@ extern void (*unzip_error) (const char *msg);
 #define INBUFSIZ	0x1000
 #define OUTBUFSIZ	0x1000
 
-static unsigned char inbuf[INBUFSIZ];
-static unsigned char outbuf[OUTBUFSIZ];
+static char inbuf[INBUFSIZ];
+static char outbuf[OUTBUFSIZ];
 
 #ifdef SMALL_BZIP2
 #define SMALL_MODE 1
