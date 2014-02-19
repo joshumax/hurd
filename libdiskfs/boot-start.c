@@ -460,7 +460,7 @@ diskfs_S_fsys_init (mach_port_t port,
 		    mach_port_t procserver,
 		    mach_port_t authhandle)
 {
-  struct port_infe *pt;
+  struct port_info *pt;
   static int initdone = 0;
   mach_port_t host, startup;
   error_t err;
