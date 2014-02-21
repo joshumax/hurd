@@ -1151,14 +1151,29 @@ do_exec (file_t file,
       }
   boot->user_entry = e.entry;	/* already adjusted in `load' */
 
-  /* Set the start_code and end_code values for this process.
-     /hurd/exec is used to start /hurd/proc, so at this point there is
+  /* /hurd/exec is used to start /hurd/proc, so at this point there is
      no proc server, so we need to be careful here.  */
   if (boot->portarray[INIT_PORT_PROC] != MACH_PORT_NULL)
-    e.error = proc_set_code (boot->portarray[INIT_PORT_PROC],
-			     e.start_code, e.end_code);
-  if (e.error)
-    goto out;
+    {
+      /* Set the start_code and end_code values for this process.  */
+      e.error = proc_set_code (boot->portarray[INIT_PORT_PROC],
+			       e.start_code, e.end_code);
+      if (e.error)
+	goto out;
+
+      pid_t pid;
+      e.error = proc_task2pid (boot->portarray[INIT_PORT_PROC],
+			       newtask, &pid);
+      if (e.error)
+	goto out;
+
+      char *name;
+      if (asprintf (&name, "%s(%d)", argv, pid) > 0)
+	{
+	  task_set_name (newtask, name);
+	  free (name);
+	}
+    }
 
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);
