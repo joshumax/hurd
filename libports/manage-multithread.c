@@ -236,5 +236,11 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       return NULL;
     }
 
+  /* XXX It is currently unsafe for most servers to terminate based on
+     inactivity because a request may arrive after a server has started
+     shutting down, causing the client to receive an error.  Prevent the
+     master thread from going away.  */
+  global_timeout = 0;
+
   thread_function ((void *) 1);
 }
