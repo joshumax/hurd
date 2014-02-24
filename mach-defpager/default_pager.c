@@ -2921,13 +2921,13 @@ seqnos_memory_object_lock_completed (memory_object_t pager,
 
 kern_return_t
 seqnos_memory_object_data_unlock(pager, seqno, pager_request,
-				 offset, addr, data_cnt)
+				 offset, length, protection_required)
 	memory_object_t	pager;
 	mach_port_seqno_t seqno;
 	mach_port_t	pager_request;
 	vm_offset_t	offset;
-	pointer_t	addr;
-	vm_size_t	data_cnt;
+	vm_size_t	length;
+	vm_prot_t	protection_required;
 {
 	panic("%sdata_unlock",my_name);
 	return(KERN_FAILURE);
