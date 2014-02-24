@@ -54,7 +54,10 @@
 
 #include <file_io.h>
 
+#include "memory_object_S.h"
+#include "memory_object_default_S.h"
 #include "default_pager_S.h"
+#include "exc_S.h"
 
 #define debug 0
 
@@ -3019,7 +3022,6 @@ boolean_t default_pager_notify_server(in, out)
 	return TRUE;
 }
 
-extern boolean_t seqnos_memory_object_server();
 extern boolean_t seqnos_memory_object_default_server();
 extern boolean_t default_pager_server();
 extern boolean_t exc_server();
@@ -3069,15 +3071,23 @@ default_pager_demux_object(in, out)
 	 *	the memory_object_default interface.
 	 */
 
-int rval;
-ddprintf ("DPAGER DEMUX OBJECT <%p>: %d\n", in, in->msgh_id);
-rval =
- (seqnos_memory_object_server(in, out) ||
-		seqnos_memory_object_default_server(in, out) ||
-		default_pager_notify_server(in, out) ||
-                default_pager_server(in, out));
-ddprintf ("DPAGER DEMUX OBJECT DONE <%p>: %d\n", in, in->msgh_id);
-return rval;
+  int rval = FALSE;
+  ddprintf ("DPAGER DEMUX OBJECT <%p>: %d\n", in, in->msgh_id);
+  mig_reply_setup (in, out);
+
+  mig_routine_t routine;
+  if ((routine = seqnos_memory_object_server_routine (in)) ||
+      (routine = seqnos_memory_object_default_server_routine (in)) ||
+      (routine = NULL, default_pager_notify_server (in, out)) ||
+      (routine = default_pager_server_routine (in)))
+    {
+      if (routine)
+	(*routine) (in, out);
+      rval = TRUE;
+    }
+
+  ddprintf ("DPAGER DEMUX OBJECT DONE <%p>: %d\n", in, in->msgh_id);
+  return rval;
 }
 
 mach_msg_size_t default_pager_msg_size_default = 8 * 1024;
