@@ -40,7 +40,7 @@ static char *targets;
 static size_t targets_len;
 static int readonly;
 static int verbose;
-static int passive_flags = FS_TRANS_SET;
+static int passive_flags;
 static int active_flags = FS_TRANS_SET;
 static int goaway_flags;
 static int source_goaway;
@@ -139,7 +139,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
-static const char doc[] = "Stop active and remove passive translators";
+static const char doc[] = "Stop active filesystem translators";
 static const char args_doc[] = "DEVICE|DIRECTORY [DEVICE|DIRECTORY ...]";
 
 static struct argp fstab_argp_mtab; /* Slightly modified version.  */
