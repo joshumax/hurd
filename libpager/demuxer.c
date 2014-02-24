@@ -25,16 +25,16 @@ int
 pager_demuxer (mach_msg_header_t *inp,
 	       mach_msg_header_t *outp)
 {
-  extern int _pager_seqnos_memory_object_server (mach_msg_header_t *inp,
-					  mach_msg_header_t *outp);
-  extern int _pager_seqnos_notify_server (mach_msg_header_t *inp,
-					  mach_msg_header_t *outp);
+  mig_routine_t routine;
+  if ((routine = _pager_seqnos_memory_object_server_routine (inp)) ||
+      (routine = _pager_seqnos_notify_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
 
-  int result = _pager_seqnos_memory_object_server (inp, outp)
-    || _pager_seqnos_notify_server (inp, outp);
-  if (!result)
-    /* Synchronize our bookkeeping of the port's seqno with the one consumed by
-       this bogus message.  */
-    _pager_update_seqno (inp->msgh_local_port, inp->msgh_seqno);
-  return result;
+  /* Synchronize our bookkeeping of the port's seqno with the one
+     consumed by this bogus message.  */
+  _pager_update_seqno (inp->msgh_local_port, inp->msgh_seqno);
+  return FALSE;
 }
