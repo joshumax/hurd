@@ -139,9 +139,9 @@ asm/checksum.h: ../config.status
 	     '#include "../linux-src/include/asm-$(asm_syntax)/checksum.h"'
 	mv -f $@.new $@
 
-io-MIGSFLAGS = -imacros $(srcdir)/mutations.h
-socket-MIGSFLAGS = -imacros $(srcdir)/mutations.h
+io-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+socket-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
-io_S.h ioServer.c socket_S.h socketServer.c: mutations.h
+io_S.h ioServer.c socket_S.h socketServer.c: mig-mutate.h
 $(OBJS): config.h

@@ -62,32 +62,6 @@ make_sockaddr_port (struct socket *sock,
   return 0;
 }
 
-struct sock_user *
-begin_using_socket_port (mach_port_t port)
-{
-  return ports_lookup_port (pfinet_bucket, port, socketport_class);
-}
-
-void
-end_using_socket_port (struct sock_user *user)
-{
-  if (user)
-    ports_port_deref (user);
-}
-
-struct sock_addr *
-begin_using_sockaddr_port (mach_port_t port)
-{
-  return ports_lookup_port (pfinet_bucket, port, addrport_class);
-}
-
-void
-end_using_sockaddr_port (struct sock_addr *addr)
-{
-  if (addr)
-    ports_port_deref (addr);
-}
-
 /* Nothing need be done here. */
 void
 clean_addrport (void *arg)

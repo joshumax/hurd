@@ -36,6 +36,8 @@
 #include <net/if.h>
 #include <net/sock.h>
 
+#include "mig-decls.h"
+
 extern struct notifier_block *netdev_chain;
 
 /* devinet.c */
