@@ -38,7 +38,7 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c \
 	file-get-children.c file-get-source.c
 
 OTHERSRCS=demuxer.c protid-clean.c protid-dup.c cntl-create.c \
-	cntl-clean.c migsupport.c times.c startup.c open.c \
+	cntl-clean.c times.c startup.c open.c \
 	runtime-argp.c set-options.c append-args.c dyn-classes.c \
 	protid-classes.c cntl-classes.c
 
@@ -49,7 +49,7 @@ MIGSTUBS=fsServer.o ioServer.o fsysServer.o fsys_replyUser.o
 libname = libtrivfs
 HURDLIBS = fshelp iohelp ports shouldbeinlibc
 OBJS= $(sort $(subst .c,.o,$(SRCS)) $(MIGSTUBS))
-MIGSFLAGS=-imacros $(srcdir)/fsmutations.h
+MIGSFLAGS=-imacros $(srcdir)/mig-mutate.h
 MIGCOMSFLAGS = -prefix trivfs_
 installhdrs := trivfs.h
 mig-sheader-prefix = trivfs_
@@ -59,4 +59,4 @@ endif
 
 include ../Makeconf
 
-$(MIGSTUBS:%Server.o=%.sdefsi): $(srcdir)/fsmutations.h
+$(MIGSTUBS:%Server.o=%.sdefsi): $(srcdir)/mig-mutate.h

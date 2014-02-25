@@ -37,11 +37,6 @@ struct trivfs_protid
   struct trivfs_peropen *po;
 };
 
-/* These can be used as `intran' and `destructor' functions for
-   a MiG port type, to have the stubs called with the protid pointer.  */
-struct trivfs_protid *trivfs_begin_using_protid (mach_port_t);
-void trivfs_end_using_protid (struct trivfs_protid *);
-
 struct trivfs_peropen
 {
   void *hook;			/* for user use */
@@ -61,11 +56,6 @@ struct trivfs_control
   mach_port_t underlying;
   void *hook;			/* for user use */
 };
-
-/* These can be used as `intran' and `destructor' functions for
-   a MiG port type, to have the stubs called with the control pointer.  */
-struct trivfs_control *trivfs_begin_using_control (mach_port_t);
-void trivfs_end_using_control (struct trivfs_control *);
 
 
 /* The user must define these variables. */
@@ -267,41 +257,9 @@ error_t trivfs_add_port_bucket (struct port_bucket **bucket);
 /* Remove the previously added dynamic port bucket BUCKET, freeing it
    if it was allocated by trivfs_add_port_bucket.  */
 void trivfs_remove_port_bucket (struct port_bucket *bucket);
-
 
-/* This stuff is for the sake of MiG stubs and could be in a private
-   header.  But it might be handy for users that override parts of the
-   library.  Moreover, since the stub headers will use all the imports we
-   need for the stubs, we couldn't make the stub headers public without
-   making this public too.  */
-
+/* Type-aliases for mig.  */
 typedef struct trivfs_protid *trivfs_protid_t;
 typedef struct trivfs_control *trivfs_control_t;
-
-struct trivfs_protid *_trivfs_begin_using_protid (mach_port_t);
-void _trivfs_end_using_protid (struct trivfs_protid *);
-struct trivfs_control *_trivfs_begin_using_control (mach_port_t);
-void _trivfs_end_using_control (struct trivfs_control *);
-
-/* Vectors of dynamically allocated port classes/buckets.  */
-
-/* Protid port classes.  */
-extern struct port_class **trivfs_dynamic_protid_port_classes;
-extern size_t trivfs_num_dynamic_protid_port_classes;
-
-/* Control port classes.  */
-extern struct port_class **trivfs_dynamic_control_port_classes;
-extern size_t trivfs_num_dynamic_control_port_classes;
-
-/* Port buckets.  */
-extern struct port_bucket **trivfs_dynamic_port_buckets;
-extern size_t trivfs_num_dynamic_port_buckets;
-
-/* These are the MiG-generated headers that declare prototypes
-   for the server functions.  */
-#include <hurd/trivfs_fs_S.h>
-#include <hurd/trivfs_io_S.h>
-#include <hurd/trivfs_fsys_S.h>
-
 
 #endif /* __TRIVFS_H__ */

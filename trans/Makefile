@@ -35,7 +35,7 @@ password-LDLIBS = $(LIBCRYPT)
 password-MIGSFLAGS=\
     "-DIO_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
     "-DIO_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
-    "-DPASSWORD_IMPORTS=import <hurd/trivfs.h>;"
+    "-DPASSWORD_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
 
 include ../Makeconf
 

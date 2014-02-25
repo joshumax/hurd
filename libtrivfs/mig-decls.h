@@ -15,9 +15,26 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef __TRIVFS_MIG_DECLS_H__
+#define __TRIVFS_MIG_DECLS_H__
+
 #include "priv.h"
 
-struct trivfs_protid *
+/* Vectors of dynamically allocated port classes/buckets.  */
+
+/* Protid port classes.  */
+extern struct port_class **trivfs_dynamic_protid_port_classes;
+extern size_t trivfs_num_dynamic_protid_port_classes;
+
+/* Control port classes.  */
+extern struct port_class **trivfs_dynamic_control_port_classes;
+extern size_t trivfs_num_dynamic_control_port_classes;
+
+/* Port buckets.  */
+extern struct port_bucket **trivfs_dynamic_port_buckets;
+extern size_t trivfs_num_dynamic_port_buckets;
+
+static inline struct trivfs_protid * __attribute__ ((unused))
 trivfs_begin_using_protid (mach_port_t port)
 {
   if (trivfs_protid_nportclasses + trivfs_num_dynamic_protid_port_classes > 1)
@@ -35,7 +52,7 @@ trivfs_begin_using_protid (mach_port_t port)
 	      return (struct trivfs_protid *) pi;
 	  ports_port_deref (pi);
 	}
-      
+
       return 0;
     }
   else if (trivfs_protid_nportclasses == 1)
@@ -44,14 +61,14 @@ trivfs_begin_using_protid (mach_port_t port)
     return ports_lookup_port (0, port, trivfs_dynamic_protid_port_classes[0]);
 }
 
-void 
+static inline void __attribute__ ((unused))
 trivfs_end_using_protid (struct trivfs_protid *cred)
 {
   if (cred)
     ports_port_deref (cred);
 }
 
-struct trivfs_control *
+static inline struct trivfs_control * __attribute__ ((unused))
 trivfs_begin_using_control (mach_port_t port)
 {
   if (trivfs_cntl_nportclasses + trivfs_num_dynamic_control_port_classes > 1)
@@ -69,7 +86,7 @@ trivfs_begin_using_control (mach_port_t port)
 	      return (struct trivfs_control *) pi;
 	  ports_port_deref (pi);
 	}
-      
+
       return 0;
     }
   else if (trivfs_cntl_nportclasses == 1)
@@ -78,9 +95,11 @@ trivfs_begin_using_control (mach_port_t port)
     return ports_lookup_port (0, port, trivfs_dynamic_control_port_classes[0]);
 }
 
-void 
+static inline void __attribute__ ((unused))
 trivfs_end_using_control (struct trivfs_control *cred)
 {
   if (cred)
     ports_port_deref (cred);
 }
+
+#endif /* __TRIVFS_MIG_DECLS_H__ */
