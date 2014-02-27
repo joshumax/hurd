@@ -25,6 +25,7 @@
 #define IO_INTRAN sock_user_t begin_using_socket_port (io_t)
 #define IO_DESTRUCTOR end_using_socket_port (sock_user_t)
 #define IO_IMPORTS import "mig-decls.h";
+#define IIOCTL_IMPORTS import "mig-decls.h";
 
 #define SOCKET_INTRAN sock_user_t begin_using_socket_port (socket_t)
 #define SOCKET_DESTRUCTOR end_using_socket_port (sock_user_t)

@@ -36,8 +36,6 @@
 #include <net/if.h>
 #include <net/sock.h>
 
-#include "mig-decls.h"
-
 extern struct notifier_block *netdev_chain;
 
 /* devinet.c */
@@ -76,21 +74,20 @@ enum siocgif_type
 
 #define SIOCGIF(name, type)						\
   kern_return_t								\
-  S_iioctl_siocgif##name (io_t port,					\
+  S_iioctl_siocgif##name (struct sock_user *user,                       \
 			  ifname_t ifnam,				\
 			  sockaddr_t *addr)				\
   {									\
-    return siocgifXaddr (port, ifnam, addr, type);			\
+    return siocgifXaddr (user, ifnam, addr, type);			\
   }
 
 /* Get some sockaddr type of info.  */
 static kern_return_t
-siocgifXaddr (io_t port,
+siocgifXaddr (struct sock_user *user,
 	      ifname_t ifnam,
 	      sockaddr_t *addr,
 	      enum siocgif_type type)
 {
-  struct sock_user *user = begin_using_socket_port (port);
   error_t err = 0;
   struct device *dev;
   struct sockaddr_in *sin = (struct sockaddr_in *) addr;
@@ -113,27 +110,25 @@ siocgifXaddr (io_t port,
     }
 
   pthread_mutex_unlock (&global_lock);
-  end_using_socket_port (user);
   return err;
 }
 
 #define SIOCSIF(name, type)						\
   kern_return_t								\
-  S_iioctl_siocsif##name (io_t port,					\
+  S_iioctl_siocsif##name (struct sock_user *user,                       \
 			  ifname_t ifnam,				\
 			  sockaddr_t addr)				\
   {									\
-    return siocsifXaddr (port, ifnam, &addr, type);			\
+    return siocsifXaddr (user, ifnam, &addr, type);			\
   }
 
 /* Set some sockaddr type of info.  */
 static kern_return_t
-siocsifXaddr (io_t port,
+siocsifXaddr (struct sock_user *user,
 	      ifname_t ifnam,
 	      sockaddr_t *addr,
 	      enum siocgif_type type)
 {
-  struct sock_user *user = begin_using_socket_port(port);
   error_t err = 0;
   struct device *dev;
   struct sockaddr_in *sin = (struct sockaddr_in *) addr;
@@ -160,7 +155,6 @@ siocsifXaddr (io_t port,
     }
 
   pthread_mutex_unlock (&global_lock);
-  end_using_socket_port (user);
   return err;
 }
 
@@ -172,11 +166,10 @@ SIOCSIF (dstaddr, DSTADDR);
 
 /* 16 SIOCSIFFLAGS -- Set flags of a network interface.  */
 kern_return_t
-S_iioctl_siocsifflags (io_t port,
+S_iioctl_siocsifflags (struct sock_user *user,
 		       ifname_t ifnam,
 		       short flags)
 {
-  struct sock_user *user = begin_using_socket_port (port);
   error_t err = 0;
   struct device *dev;
 
@@ -193,13 +186,12 @@ S_iioctl_siocsifflags (io_t port,
     err = dev_change_flags (dev, flags);
 
   pthread_mutex_unlock (&global_lock);
-  end_using_socket_port (user);
   return err;
 }
 
 /* 17 SIOCGIFFLAGS -- Get flags of a network interface.  */
 kern_return_t
-S_iioctl_siocgifflags (io_t port,
+S_iioctl_siocgifflags (struct sock_user *user,
 		       char *name,
 		       short *flags)
 {
@@ -225,7 +217,7 @@ SIOCSIF (netmask, NETMASK);
 
 /* 23 SIOCGIFMETRIC -- Get metric of a network interface.  */
 kern_return_t
-S_iioctl_siocgifmetric (io_t port,
+S_iioctl_siocgifmetric (struct sock_user *user,
 		        ifname_t ifnam,
 			int *metric)
 {
@@ -245,7 +237,7 @@ S_iioctl_siocgifmetric (io_t port,
 
 /* 24 SIOCSIFMETRIC -- Set metric of a network interface.  */
 kern_return_t
-S_iioctl_siocsifmetric (io_t port,
+S_iioctl_siocsifmetric (struct sock_user *user,
 			ifname_t ifnam,
 			int metric)
 {
@@ -254,7 +246,7 @@ S_iioctl_siocsifmetric (io_t port,
 
 /* 25 SIOCDIFADDR -- Delete interface address.  */
 kern_return_t
-S_iioctl_siocdifaddr (io_t port,
+S_iioctl_siocdifaddr (struct sock_user *user,
 		      ifname_t ifnam,
 		      sockaddr_t addr)
 {
@@ -275,14 +267,14 @@ SIOCGIF (netmask, NETMASK);
 
 /* 39 SIOCGIFHWADDR -- Get the hardware address of a network interface.  */
 error_t
-S_iioctl_siocgifhwaddr (io_t port,
+S_iioctl_siocgifhwaddr (struct sock_user *user,
 			ifname_t ifname,
 			sockaddr_t *addr)
 {
   error_t err = 0;
   struct device *dev;
 
-  if (!port)
+  if (!user)
     return EOPNOTSUPP;
 
   dev = get_dev (ifname);
@@ -300,7 +292,7 @@ S_iioctl_siocgifhwaddr (io_t port,
 
 /* 51 SIOCGIFMTU -- Get mtu of a network interface.  */
 error_t
-S_iioctl_siocgifmtu (io_t port,
+S_iioctl_siocgifmtu (struct sock_user *user,
 		     ifname_t ifnam,
 		     int *mtu)
 {
@@ -320,11 +312,10 @@ S_iioctl_siocgifmtu (io_t port,
 
 /* 51 SIOCSIFMTU -- Set mtu of a network interface.  */
 error_t
-S_iioctl_siocsifmtu (io_t port,
+S_iioctl_siocsifmtu (struct sock_user *user,
 		     ifname_t ifnam,
 		     int mtu)
 {
-  struct sock_user *user = begin_using_socket_port (port);
   error_t err = 0;
   struct device *dev;
 
@@ -350,13 +341,12 @@ S_iioctl_siocsifmtu (io_t port,
     }
 
   pthread_mutex_unlock (&global_lock);
-  end_using_socket_port (user);
   return err;
 }
 
 /* 100 SIOCGIFINDEX -- Get index number of a network interface.  */
 error_t
-S_iioctl_siocgifindex (io_t port,
+S_iioctl_siocgifindex (struct sock_user *user,
 		       ifname_t ifnam,
 		       int *index)
 {
@@ -376,7 +366,7 @@ S_iioctl_siocgifindex (io_t port,
 
 /* 101 SIOCGIFNAME -- Get name of a network interface from index number.  */
 error_t
-S_iioctl_siocgifname (io_t port,
+S_iioctl_siocgifname (struct sock_user *user,
 		      ifname_t ifnam,
 		      int *index)
 {

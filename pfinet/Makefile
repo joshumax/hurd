@@ -141,6 +141,7 @@ asm/checksum.h: ../config.status
 
 io-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 socket-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+iioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 io_S.h ioServer.c socket_S.h socketServer.c: mig-mutate.h
