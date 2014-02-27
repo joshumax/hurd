@@ -20,6 +20,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <hurd/hurd_types.defs>
 
+#ifdef IIOCTL_IMPORTS
+IIOCTL_IMPORTS
+#endif
+
 INTR_INTERFACE
 
 /* Ioctl class `i'; the subsystem is derived from calculations in
