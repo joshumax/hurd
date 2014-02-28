@@ -352,15 +352,15 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 
 /* Implement term_getctty as described in <hurd/term.defs>.  */
 kern_return_t
-S_term_getctty (mach_port_t arg,
+S_term_getctty (struct trivfs_protid *cred,
 		mach_port_t *id,
 		mach_msg_type_name_t *idtype)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  arg, tty_class);
   error_t err;
 
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -373,7 +373,6 @@ S_term_getctty (mach_port_t arg,
       *idtype = MACH_MSG_TYPE_MAKE_SEND;
       err = 0;
     }
-  ports_port_deref (cred);
   pthread_mutex_unlock (&global_lock);
   return err;
 }
@@ -390,7 +389,6 @@ S_termctty_open_terminal (mach_port_t arg,
   struct iouser *user;
   struct trivfs_protid *newcred;
   struct port_info *pi = ports_lookup_port (term_bucket, arg, cttyid_class);
-
   if (!pi)
     return EOPNOTSUPP;
 
@@ -417,7 +415,7 @@ S_termctty_open_terminal (mach_port_t arg,
 
 /* Implement term_become_ctty as described in <hurd/term.defs>.  */
 kern_return_t
-S_term_open_ctty (mach_port_t arg,
+S_term_open_ctty (struct trivfs_protid *cred,
 		  pid_t pid,
 		  pid_t pgrp,
 		  mach_port_t *newpt,
@@ -425,14 +423,14 @@ S_term_open_ctty (mach_port_t arg,
 {
   error_t err;
   struct trivfs_protid *newcred;
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, tty_class);
 
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
 
   if (pid <= 0 || pgrp <= 0)
     {
-      ports_port_deref (cred);
       return EINVAL;
     }
 
@@ -468,8 +466,6 @@ S_term_open_ctty (mach_port_t arg,
 	  ports_port_deref (newcred);
 	}
     }
-
-  ports_port_deref (cred);
 
   return err;
 }
@@ -2132,61 +2128,61 @@ report_carrier_error (error_t err)
 }
 
 kern_return_t
-S_term_get_nodename (io_t arg,
+S_term_get_nodename (struct trivfs_protid *cred,
 		     char *name)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
-						  tty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
 
   if (!cred->po->cntl->hook)
     {
-      ports_port_deref (cred);
       return ENOENT;
     }
 
   strcpy (name, (char *)cred->po->cntl->hook);
 
-  ports_port_deref (cred);
   return 0;
 }
 
 kern_return_t
-S_term_set_nodename (io_t arg,
+S_term_set_nodename (struct trivfs_protid *cred,
 		     char *name)
 {
   error_t err = 0;
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, tty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
 
   if (strcmp (name, (char *)cred->po->cntl->hook) != 0)
     err = EINVAL;
 
-  ports_port_deref (cred);
   return err;
 }
 
 kern_return_t
-S_term_set_filenode (io_t arg,
+S_term_set_filenode (struct trivfs_protid *cred,
 		     file_t filenode)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
-						  tty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
-  ports_port_deref (cred);
 
   return EINVAL;
 }
 
 kern_return_t
-S_term_get_peername (io_t arg,
+S_term_get_peername (struct trivfs_protid *cred,
 		     char *name)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg, 0);
   struct trivfs_control *peer;
+
+  if (!cred
+      || cred->pi.bucket != term_bucket)
+    return EOPNOTSUPP;
 
   if (!cred || (cred->pi.class != tty_class && cred->pi.class != pty_class))
     {
@@ -2204,47 +2200,45 @@ S_term_get_peername (io_t arg,
     }
 
   strcpy (name, (char *) peer->hook);
-  ports_port_deref (cred);
 
   return 0;
 }
 
 kern_return_t
-S_term_get_bottom_type (io_t arg,
+S_term_get_bottom_type (struct trivfs_protid *cred,
 			int *ttype)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  arg, tty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
 
-  ports_port_deref (cred);
   *ttype = bottom->type;
   return 0;
 }
 
 kern_return_t
-S_term_on_machdev (io_t arg,
+S_term_on_machdev (struct trivfs_protid *cred,
 		   device_t machdev)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket, arg,
-						  tty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != tty_class)
     return EOPNOTSUPP;
-  ports_port_deref (cred);
+
   return EINVAL;
 }
 
 kern_return_t
-S_term_on_hurddev (io_t arg,
-		   io_t hurddev)
+S_term_on_hurddev (struct trivfs_protid *cred,
+		   struct trivfs_protid *hurddev)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_term_on_pty (io_t arg,
-	       mach_port_t *master)
+S_term_on_pty (struct trivfs_protid *cred,
+	       struct trivfs_protid **master)
 {
   return EOPNOTSUPP;
 }
