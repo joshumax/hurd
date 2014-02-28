@@ -32,3 +32,5 @@ OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o o
 include ../Makeconf
 
 device_replyServer-CPPFLAGS = -DTypeCheck=0 -Wno-unused # XXX
+
+tioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h

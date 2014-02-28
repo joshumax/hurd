@@ -512,12 +512,12 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
 }
 
 error_t
-S_tioctl_tiocsig (io_t port,
+S_tioctl_tiocsig (struct trivfs_protid *cred,
 		  int sig)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, pty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != pty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -529,20 +529,18 @@ S_tioctl_tiocsig (io_t port,
   send_signal (sig);
 
   pthread_mutex_unlock (&global_lock);
-  ports_port_deref (cred);
 
   return 0;
 }
 
 error_t
-S_tioctl_tiocpkt (io_t port,
+S_tioctl_tiocpkt (struct trivfs_protid *cred,
 		  int mode)
 {
   error_t err;
-
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, pty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != pty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -559,20 +557,18 @@ S_tioctl_tiocpkt (io_t port,
     }
 
   pthread_mutex_unlock (&global_lock);
-  ports_port_deref (cred);
 
   return err;
 }
 
 error_t
-S_tioctl_tiocucntl (io_t port,
+S_tioctl_tiocucntl (struct trivfs_protid *cred,
 		    int mode)
 {
   error_t err;
-
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, pty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != pty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -589,19 +585,17 @@ S_tioctl_tiocucntl (io_t port,
     }
 
   pthread_mutex_unlock (&global_lock);
-  ports_port_deref (cred);
 
   return err;
 }
 
 error_t
-S_tioctl_tiocremote (io_t port,
+S_tioctl_tiocremote (struct trivfs_protid *cred,
 		     int how)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, pty_class);
-
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != pty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -611,17 +605,16 @@ S_tioctl_tiocremote (io_t port,
   clear_queue (rawq);
   ptyio_notice_input_flushed ();
   pthread_mutex_unlock (&global_lock);
-  ports_port_deref (cred);
   return 0;
 }
 
 error_t
-S_tioctl_tiocext (io_t port,
+S_tioctl_tiocext (struct trivfs_protid *cred,
 		  int mode)
 {
-  struct trivfs_protid *cred = ports_lookup_port (term_bucket,
-						  port, pty_class);
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != term_bucket
+      || cred->pi.class != pty_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&global_lock);
@@ -646,6 +639,5 @@ S_tioctl_tiocext (io_t port,
       termstate.c_lflag &= ~EXTPROC;
     }
   pthread_mutex_unlock (&global_lock);
-  ports_port_deref (cred);
   return 0;
 }
