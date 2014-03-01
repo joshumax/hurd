@@ -131,15 +131,15 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 }
 
 error_t
-S_ifsock_getsockaddr (file_t sockfile,
+S_ifsock_getsockaddr (struct trivfs_protid *cred,
 		      mach_port_t *address)
 {
-  struct trivfs_protid *cred = ports_lookup_port (port_bucket, sockfile,
-						  node_class);
   int perms;
   error_t err;
 
-  if (!cred)
+  if (!cred
+      || cred->pi.bucket != port_bucket
+      || cred->pi.class != node_class)
     return EOPNOTSUPP;
 
   err = file_check_access (cred->realnode, &perms);
@@ -148,6 +148,5 @@ S_ifsock_getsockaddr (file_t sockfile,
 
   if (!err)
     *address = address_port;
-  ports_port_deref (cred);
   return err;
 }

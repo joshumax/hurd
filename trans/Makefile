@@ -37,6 +37,11 @@ password-MIGSFLAGS=\
     "-DIO_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
     "-DPASSWORD_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
 
+ifsock-MIGSFLAGS=\
+    "-DFILE_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
+    "-DFILE_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
+    "-DIFSOCK_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
+
 include ../Makeconf
 
 vpath elfcore.c $(top_srcdir)/exec
