@@ -30,6 +30,8 @@
 #include "auth_request_U.h"
 #include "interrupt_S.h"
 
+#include "../auth/auth.h"
+
 /* Auth handles are server ports with sets of ids.  */
 struct authhandle
   {
@@ -62,14 +64,6 @@ destroy_authhandle (void *p)
   idvec_free_contents (&h->egids);
   idvec_free_contents (&h->auids);
   idvec_free_contents (&h->agids);
-}
-
-/* Called by server stub functions.  */
-
-authhandle_t
-auth_port_to_handle (auth_t auth)
-{
-  return ports_lookup_port (auth_bucket, auth, authhandle_portclass);
 }
 
 /* id management.  */

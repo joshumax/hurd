@@ -25,6 +25,6 @@ target = auth
 HURDLIBS = ports ihash shouldbeinlibc
 OTHERLIBS = -lpthread
 
-MIGSFLAGS = -imacros $(srcdir)/authmutations.h
+MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 include ../Makeconf

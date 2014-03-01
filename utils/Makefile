@@ -73,7 +73,7 @@ rpctrace-CPPFLAGS = -DDATADIR=\"${datadir}\"
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
 	  ../libports/libports.a ../libihash/libihash.a \
 	  ../libshouldbeinlibc/libshouldbeinlibc.a
-auth-MIGSFLAGS = -imacros $(srcdir)/../auth/authmutations.h
+auth-MIGSFLAGS = -imacros $(srcdir)/../auth/mig-mutate.h
 fakeauth-CPPFLAGS = -I$(srcdir)/../auth
 authServer-CPPFLAGS = -I$(srcdir)/../auth
 auth_requestUser-CPPFLAGS = -I$(srcdir)/../auth
