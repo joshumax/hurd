@@ -22,15 +22,13 @@
 /* Implement the object termination call from the kernel as described
    in <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_terminate (mach_port_t object, 
+_pager_seqnos_memory_object_terminate (struct pager *p,
 				       mach_port_seqno_t seqno,
 				       mach_port_t control,
 				       mach_port_t name)
 {
-  struct pager *p;
-  
-  p = ports_lookup_port (0, object, _pager_class);
-  if (!p)
+  if (!p
+      || p->port.class != _pager_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&p->interlock);
@@ -79,7 +77,6 @@ _pager_seqnos_memory_object_terminate (mach_port_t object,
  out:
   _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
 
   return 0;
 }

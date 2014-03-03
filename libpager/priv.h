@@ -139,6 +139,7 @@ struct port_class *_pager_class;
 void _pager_wait_for_seqno (struct pager *, mach_port_seqno_t);
 void _pager_release_seqno (struct pager *, mach_port_seqno_t);
 void _pager_update_seqno (mach_port_t, mach_port_seqno_t);
+void _pager_update_seqno_p (struct pager *, mach_port_seqno_t);
 void _pager_block_termination (struct pager *);
 void _pager_allow_termination (struct pager *);
 error_t _pager_pagemap_resize (struct pager *, vm_address_t);

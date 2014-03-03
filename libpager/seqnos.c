@@ -57,13 +57,23 @@ _pager_update_seqno (mach_port_t object,
   struct pager *p;
 
   p = ports_lookup_port (0, object, _pager_class);
+  _pager_update_seqno_p (p, seqno);
   if (p)
+    ports_port_deref (p);
+}
+
+
+/* Just update the seqno, pointer version.  */
+void
+_pager_update_seqno_p (struct pager *p,
+                       mach_port_seqno_t seqno)
+{
+  if (p
+      && p->port.class == _pager_class)
     {
       pthread_mutex_lock (&p->interlock);
       _pager_wait_for_seqno (p, seqno);
       _pager_release_seqno (p, seqno);
       pthread_mutex_unlock (&p->interlock);
-
-      ports_port_deref (p);
     }
 }

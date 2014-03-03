@@ -22,22 +22,21 @@
 
 /* Implement pagein callback as described in <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_request (mach_port_t object,
+_pager_seqnos_memory_object_data_request (struct pager *p,
 					  mach_port_seqno_t seqno,
 					  mach_port_t control,
 					  vm_offset_t offset,
 					  vm_size_t length,
 					  vm_prot_t access)
 {
-  struct pager *p;
   short *pm_entry;
   int doread, doerror;
   error_t err;
   vm_address_t page;
   int write_lock;
 
-  p = ports_lookup_port (0, object, _pager_class);
-  if (!p)
+  if (!p
+      || p->port.class != _pager_class)
     return EOPNOTSUPP;
 
   /* Acquire the right to meddle with the pagemap */
@@ -126,7 +125,6 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   _pager_mark_object_error (p, offset, length, 0);
   _pager_allow_termination (p);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
   return 0;
 
  error_read:
@@ -136,7 +134,6 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
   pthread_mutex_lock (&p->interlock);
   _pager_allow_termination (p);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
   return 0;
 
  allow_release_out:
@@ -144,6 +141,5 @@ _pager_seqnos_memory_object_data_request (mach_port_t object,
  release_out:
   _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
   return 0;
 }
