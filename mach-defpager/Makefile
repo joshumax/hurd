@@ -34,4 +34,4 @@ LDFLAGS += -static
 
 include ../Makeconf
 
-MIGSFLAGS = -DSEQNOS
+MIGSFLAGS = -DSEQNOS -imacros $(srcdir)/mig-mutate.h
