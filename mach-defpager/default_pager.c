@@ -753,7 +753,9 @@ pager_alloc(pager, part, size)
 	vm_size_t	size;	/* in BYTES */
 {
 	int    i;
+#ifdef	CHECKSUM
 	dp_map_t mapptr, emapptr;
+#endif
 
 	pthread_mutex_init(&pager->lock, NULL);
 #if	DEBUG_READER_CONFLICTS
@@ -1092,8 +1094,6 @@ dealloc_direct (dp_map_t mapptr,
 static void
 pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 {
-  dp_map_t new_mapptr;
-  dp_map_t old_mapptr;
   int i;
   vm_size_t old_size;
 
@@ -2499,7 +2499,6 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	mach_port_t	pager_name;
 {
 	default_pager_t	ds;
-	kern_return_t			kr;
 	static char			here[] = "%sterminate";
 
 	/*
@@ -2511,7 +2510,7 @@ seqnos_memory_object_terminate(pager, seqno, pager_request, pager_name)
 	if (ds == DEFAULT_PAGER_NULL)
 		panic(here, my_name);
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&kr, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2542,7 +2541,7 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 	ds->pager_name = MACH_PORT_NULL;
 	ds->name_refs = 0;
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&kr, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
 	pager_port_unlock(ds);
 
 	/*
@@ -2840,7 +2839,6 @@ seqnos_memory_object_data_write(pager, seqno, pager_request,
 	    vm_size_t tail_size = round_page(limit) - limit;
 	    memset((void *) tail, 0, tail_size);
 
-	    unsigned *arr = (unsigned *)addr;
 	    memory_object_data_supply(pager_request, trunc_page(limit), addr,
 				      vm_page_size, TRUE, VM_PROT_NONE,
 				      TRUE, MACH_PORT_NULL);
