@@ -209,8 +209,6 @@ new_partition (const char *name, struct file_direct *fdp,
 	      part = partition_of(i);
 	      if (part && part->id == id)
 		{
-		  printf ("(default pager): Already paging to partition %s!\n",
-			  name);
 		  pthread_mutex_unlock(&all_partitions.lock);
 		  return 0;
 		}
