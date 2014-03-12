@@ -98,10 +98,7 @@ static pthread_mutex_t printf_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #define	ptoa(p)	((p)*vm_page_size)
 #define	atop(a)	((a)/vm_page_size)
-
-/*
 
- */
 /*
  * Bitmap allocation.
  */
@@ -627,10 +624,7 @@ ddprintf ("pager_dealloc_page(%d,%x,%d)\n",pindex,page,lock_it);
 	if (lock_it)
 	    pthread_mutex_unlock(&part->p_lock);
 }
-
-/*
 
- */
 /*
  * Allocation info for each paging object.
  *
@@ -1706,11 +1700,7 @@ ok:
 	pager->cur_partition = choose_partition(0, P_INDEX_INVALID);
 	return TRUE;
 }
-
-/*
 
- */
-
 /*
  * Read/write routines.
  */
@@ -1888,10 +1878,7 @@ default_has_page(ds, offset)
 {
 	return ( ! no_block(pager_read_offset(ds, offset)) );
 }
-/*
 
- */
-
 /*
  * Mapping between pager port and paging object.
  */
