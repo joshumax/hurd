@@ -3423,13 +3423,13 @@ S_default_pager_objects (mach_port_t pager,
 			 mach_port_array_t *portsp,
 			 natural_t *pcountp)
 {
-	vm_offset_t			oaddr;	/* memory for objects */
-	vm_size_t			osize;	/* current size */
+	vm_offset_t			oaddr = 0; /* memory for objects */
+	vm_size_t			osize = 0; /* current size */
 	default_pager_object_t		*objects;
 	natural_t			opotential;
 
-	vm_offset_t			paddr;	/* memory for ports */
-	vm_size_t			psize;	/* current size */
+	vm_offset_t			paddr = 0; /* memory for ports */
+	vm_size_t			psize = 0; /* current size */
 	mach_port_t			*ports;
 	natural_t			ppotential;
 
@@ -3657,8 +3657,8 @@ S_default_pager_object_pages (mach_port_t pager,
 			      default_pager_page_array_t *pagesp,
 			      natural_t *countp)
 {
-	vm_offset_t			addr;	/* memory for page offsets */
-	vm_size_t			size;	/* current memory size */
+	vm_offset_t			addr = 0; /* memory for page offsets */
+	vm_size_t			size = 0; /* current memory size */
 	default_pager_page_t		*pages;
 	natural_t 			potential, actual;
 	kern_return_t			kr;

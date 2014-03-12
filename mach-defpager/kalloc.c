@@ -122,7 +122,7 @@ void kalloc_init(void)
  */
 vm_offset_t kget_space(vm_offset_t size)
 {
-	vm_size_t	space_to_add;
+	vm_size_t	space_to_add = 0;
 	vm_offset_t	new_space = 0;
 	vm_offset_t	addr;
 
