@@ -3761,7 +3761,7 @@ S_default_pager_object_set_size (mach_port_t pager,
 				 mach_port_seqno_t seqno,
 				 vm_size_t limit)
 {
-  kern_return_t kr;
+  kern_return_t kr = KERN_SUCCESS;
   default_pager_t ds;
 
   ds = pager_port_lookup(pager);
