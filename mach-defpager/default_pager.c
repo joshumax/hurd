@@ -253,7 +253,8 @@ new_partition (const char *name, struct file_direct *fdp,
 	  {
 	    /* Filesystem block size is smaller than page size,
 	       so we must do several reads to get the whole page.  */
-	    vm_address_t baddr, bsize;
+	    vm_address_t baddr;
+	    vm_size_t bsize;
 	    rc = page_read_file_direct(part->file,
 				       rsize, LINUX_PAGE_SIZE-rsize,
 				       &baddr,
