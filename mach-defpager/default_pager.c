@@ -1991,7 +1991,7 @@ destroy_paging_partition(name, pp_private)
 	void **pp_private;
 {
 	unsigned int	id = part_id(name);
-	partition_t	part;
+	partition_t	part = NULL;
 	boolean_t		all_ok = TRUE;
 	default_pager_t		entry;
 	int			pindex;
@@ -2006,7 +2006,7 @@ destroy_paging_partition(name, pp_private)
 		part = partition_of(pindex);
 		if (part && (part->id == id)) break;
 	}
-	if (pindex == all_partitions.n_partitions) {
+	if (! part) {
 		pthread_mutex_unlock(&all_partitions.lock);
 		return KERN_INVALID_ARGUMENT;
 	}
