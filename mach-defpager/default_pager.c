@@ -51,6 +51,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <file_io.h>
 
@@ -63,24 +64,30 @@
 
 static char my_name[] = "(default pager):";
 
-static pthread_mutex_t printf_lock = PTHREAD_MUTEX_INITIALIZER;
+static void __attribute__ ((format (printf, 1, 2), unused))
+synchronized_printf (const char *fmt, ...)
+{
+	static pthread_mutex_t printf_lock = PTHREAD_MUTEX_INITIALIZER;
+	va_list	ap;
+
+	va_start (ap, fmt);
+	pthread_mutex_lock (&printf_lock);
+
+	vprintf (fmt, ap);
+	fflush (stdout);
+
+	pthread_mutex_unlock (&printf_lock);
+	va_end (ap);
+}
 
 #if 0
-#define dprintf(f, x...)			\
-  ({ pthread_mutex_lock (&printf_lock);		\
-     printf (f , ##x);				\
-     fflush (stdout);				\
-     pthread_mutex_unlock (&printf_lock); })
+#define dprintf(f, x...)	synchronized_printf (f, ##x)
 #else
 #define dprintf(f, x...)
 #endif
 
 #if 0
-#define ddprintf(f, x...)			\
-  ({ pthread_mutex_lock (&printf_lock);		\
-     printf (f , ##x);				\
-     fflush (stdout);				\
-     pthread_mutex_unlock (&printf_lock); })
+#define ddprintf(f, x...)	synchronized_printf (f, ##x)
 #else
 #define ddprintf(f, x...)
 #endif
