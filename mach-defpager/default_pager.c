@@ -1803,6 +1803,12 @@ void pager_port_list_insert(port, ds)
 			(hurd_ihash_key_t) port,
 			(hurd_ihash_value_t) ds);
 	pthread_mutex_unlock(&all_pagers.lock);
+
+	/* Try to set a protected payload.  This is an optimization,
+	   if it fails we degrade gracefully.  */
+	mach_port_set_protected_payload (mach_task_self (),
+					 port,
+					 (unsigned long) ds);
 }
 
 void pager_port_list_delete(ds)
@@ -1812,6 +1818,9 @@ void pager_port_list_delete(ds)
 	hurd_ihash_locp_remove (&all_pagers.htable,
 				ds->htable_locp);
 	pthread_mutex_unlock(&all_pagers.lock);
+
+	mach_port_clear_protected_payload (mach_task_self (),
+					   ds->pager);
 }
 
 /*

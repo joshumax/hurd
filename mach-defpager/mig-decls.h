@@ -31,4 +31,10 @@ begin_using_default_pager (mach_port_t port)
                                             (hurd_ihash_key_t) port);
 }
 
+static inline struct dstruct * __attribute__ ((unused))
+begin_using_default_pager_payload (unsigned long payload)
+{
+  return (default_pager_t) payload;
+}
+
 #endif /* __MACH_DEFPAGER_MIG_DECLS_H__ */
