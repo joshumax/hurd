@@ -43,7 +43,7 @@
 #include <hurd/fd.h>
 /* XXX */
 
-#include <default_pager.h>
+#include "default_pager.h"
 
 mach_port_t	bootstrap_master_device_port;	/* local name */
 mach_port_t	bootstrap_master_host_port;	/* local name */

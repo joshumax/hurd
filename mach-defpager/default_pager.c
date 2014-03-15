@@ -42,10 +42,10 @@
 #include <device/device_types.h>
 #include <device/device.h>
 
-#include <queue.h>
-#include <wiring.h>
-#include <kalloc.h>
-#include <default_pager.h>
+#include "queue.h"
+#include "wiring.h"
+#include "kalloc.h"
+#include "default_pager.h"
 
 #include <assert.h>
 #include <errno.h>

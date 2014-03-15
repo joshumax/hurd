@@ -25,8 +25,8 @@
 #include <string.h>
 #include <strings.h>
 
-#include <default_pager.h>
-#include <kalloc.h>
+#include "default_pager.h"
+#include "kalloc.h"
 
 #include "file_io.h"
 #include "default_pager_S.h"
