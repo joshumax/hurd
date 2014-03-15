@@ -38,9 +38,12 @@
 #include <mach/default_pager_types.h>
 
 #include <pthread.h>
+#include <stddef.h>
 
 #include <device/device_types.h>
 #include <device/device.h>
+
+#include <hurd/ihash.h>
 
 #include "queue.h"
 #include "wiring.h"
@@ -1781,25 +1784,14 @@ default_has_page(ds, offset)
 #define	dstruct_unlock(ds)
 #endif	/* PARALLEL */
 
-/*
- * List of all pagers.  A specific pager is
- * found directly via its port, this list is
- * only used for monitoring purposes by the
- * default_pager_object* calls
- */
-struct pager_port {
-	queue_head_t	queue;
-	pthread_mutex_t	lock;
-	int		count;	/* saves code */
-	queue_head_t	leak_queue;
-} all_pagers;
+struct pager_port all_pagers;
 
 #define pager_port_list_init()					\
 {								\
 	pthread_mutex_init(&all_pagers.lock, NULL);		\
-	queue_init(&all_pagers.queue);				\
+	hurd_ihash_init (&all_pagers.htable,			\
+			 offsetof (struct dstruct, htable_locp)); \
 	queue_init(&all_pagers.leak_queue);			\
-	all_pagers.count = 0;					\
 }
 
 void pager_port_list_insert(port, ds)
@@ -1807,8 +1799,9 @@ void pager_port_list_insert(port, ds)
 	default_pager_t	ds;
 {
 	pthread_mutex_lock(&all_pagers.lock);
-	queue_enter(&all_pagers.queue, ds, default_pager_t, links);
-	all_pagers.count++;
+	hurd_ihash_add (&all_pagers.htable,
+			(hurd_ihash_key_t) port,
+			(hurd_ihash_value_t) ds);
 	pthread_mutex_unlock(&all_pagers.lock);
 }
 
@@ -1816,8 +1809,8 @@ void pager_port_list_delete(ds)
 	default_pager_t ds;
 {
 	pthread_mutex_lock(&all_pagers.lock);
-	queue_remove(&all_pagers.queue, ds, default_pager_t, links);
-	all_pagers.count--;
+	hurd_ihash_locp_remove (&all_pagers.htable,
+				ds->htable_locp);
 	pthread_mutex_unlock(&all_pagers.lock);
 }
 
@@ -1864,7 +1857,8 @@ dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 	pthread_mutex_lock(&part->p_lock);
 
 	pthread_mutex_lock(&all_pagers.lock);
-	queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
+	HURD_IHASH_ITERATE (&all_pagers.htable, val) {
+		entry = (default_pager_t) val;
 
 		dstruct_lock(entry);
 
@@ -2238,7 +2232,6 @@ seqnos_memory_object_create(old_pager, seqno, new_pager, new_size,
 	vm_size_t	new_page_size;
 {
 	default_pager_t	ds;
-	kern_return_t			kr;
 
 	assert(old_pager == default_pager_default_port);
 	assert(MACH_PORT_VALID(new_pager_request));
@@ -2246,24 +2239,6 @@ seqnos_memory_object_create(old_pager, seqno, new_pager, new_size,
 	assert(new_page_size == vm_page_size);
 
 	ds = pager_port_alloc(new_size);
-rename_it:
-	kr = mach_port_rename(	default_pager_self,
-				new_pager, (mach_port_t)pnameof(ds));
-	if (kr != KERN_SUCCESS) {
-		default_pager_t	ds1;
-
-		if (kr != KERN_NAME_EXISTS)
-			panic("%s m_o_create", my_name);
-		ds1 = (default_pager_t) kalloc(sizeof *ds1);
-		*ds1 = *ds;
-		pthread_mutex_lock(&all_pagers.lock);
-		queue_enter(&all_pagers.leak_queue, ds, default_pager_t, links);
-		pthread_mutex_unlock(&all_pagers.lock);
-		ds = ds1;
-		goto rename_it;
-	}
-
-	new_pager = (mach_port_t) pnameof(ds);
 
 	/*
 	 *	Set up associations between these ports
@@ -3195,23 +3170,14 @@ S_default_pager_object_create (mach_port_t pager,
 		return KERN_INVALID_ARGUMENT;
 
 	ds = pager_port_alloc(size);
-rename_it:
-	port = (mach_port_t) pnameof(ds);
-	result = mach_port_allocate_name(default_pager_self,
-				    MACH_PORT_RIGHT_RECEIVE, port);
-	if (result != KERN_SUCCESS) {
-		default_pager_t	ds1;
-
-		if (result != KERN_NAME_EXISTS) return (result);
-
-		ds1 = (default_pager_t) kalloc(sizeof *ds1);
-		*ds1 = *ds;
-		pthread_mutex_lock(&all_pagers.lock);
-		queue_enter(&all_pagers.leak_queue, ds, default_pager_t, links);
-		pthread_mutex_unlock(&all_pagers.lock);
-		ds = ds1;
-		goto rename_it;
-	}
+	result = mach_port_allocate (default_pager_self,
+				     MACH_PORT_RIGHT_RECEIVE,
+				     &port);
+	if (result != KERN_SUCCESS)
+	  {
+	    kfree ((char *) ds, sizeof *ds);
+	    return result;
+	  }
 
 	/*
 	 *	Set up associations between these ports
@@ -3285,7 +3251,7 @@ S_default_pager_objects (mach_port_t pager,
 	/*
 	 * We will send no more than this many
 	 */
-	actual = all_pagers.count;
+	actual = all_pagers.htable.nr_items;
 	pthread_mutex_unlock(&all_pagers.lock);
 
 	if (opotential < actual) {
@@ -3327,7 +3293,8 @@ S_default_pager_objects (mach_port_t pager,
 	pthread_mutex_lock(&all_pagers.lock);
 
 	num_pagers = 0;
-	queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
+	HURD_IHASH_ITERATE (&all_pagers.htable, val) {
+		entry = (default_pager_t) val;
 
 		mach_port_t		port;
 		vm_size_t		size;
@@ -3505,7 +3472,8 @@ S_default_pager_object_pages (mach_port_t pager,
 		default_pager_t		entry;
 
 		pthread_mutex_lock(&all_pagers.lock);
-		queue_iterate(&all_pagers.queue, entry, default_pager_t, links) {
+		HURD_IHASH_ITERATE (&all_pagers.htable, val) {
+			entry = (default_pager_t) val;
 			dstruct_lock(entry);
 			if (entry->pager_name == object) {
 				pthread_mutex_unlock(&all_pagers.lock);
