@@ -269,7 +269,20 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       {
 	if (cn->node == NULL)
 	  {
-	    struct netnode *nn = calloc (1, sizeof *nn);
+	    struct netnode *nn;
+	    ssize_t size = 0;
+
+	    if (cn->readlink)
+	      {
+		size = cn->readlink (user, NULL, NULL);
+		if (size < 0)
+		  {
+		    err = -size;
+		    goto out;
+		  }
+	      }
+
+	    nn = calloc (1, sizeof *nn);
 	    if (nn == NULL)
 	      {
 		err = ENOMEM;
@@ -283,15 +296,10 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	    (*node)->nn_stat.st_mode = (netfs_root_node->nn_stat.st_mode & ~S_IFMT & ~S_ITRANS);
 	    (*node)->nn_stat.st_ino = 5;
 	    if (cn->readlink)
-	      {
 		(*node)->nn_stat.st_mode |= S_IFLNK;
-		(*node)->nn_stat.st_size = cn->readlink (user, NULL, NULL);
-	      }
 	    else
-	      {
 		(*node)->nn_stat.st_mode |= S_IFCHR;
-		(*node)->nn_stat.st_size = 0;
-	      }
+	    (*node)->nn_stat.st_size = size;
 	    cn->node = *node;
 	    goto out;
 	  }
@@ -508,7 +516,13 @@ netfs_attempt_readlink (struct iouser *user, struct node *np,
 			char *buf)
 {
   if (np->nn->node && np->nn->node->readlink)
-    return np->nn->node->readlink (user, np, buf);
+  {
+    error_t err = np->nn->node->readlink (user, np, buf);
+    if (err < 0)
+      return -err;
+    else
+      return 0;
+  }
   return EOPNOTSUPP;
 }
 
