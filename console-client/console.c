@@ -226,10 +226,17 @@ console_switch_away (void)
     if (driver->ops->save_status)
       driver->ops->save_status (driver->handle);
 
-  saved_id = active_vcons->id;
-  saved_cons = active_vcons->cons;
-  cons_vcons_close (active_vcons);
-  active_vcons = NULL;
+  if (active_vcons)
+    {
+      saved_id = active_vcons->id;
+      saved_cons = active_vcons->cons;
+      cons_vcons_close (active_vcons);
+      active_vcons = NULL;
+    }
+  else
+    {
+      saved_cons = NULL;
+    }
   pthread_mutex_unlock (&global_lock);
 }
 
