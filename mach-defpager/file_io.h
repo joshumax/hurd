@@ -57,13 +57,13 @@ struct file_direct
 int page_read_file_direct (struct file_direct *fdp,
 			   vm_offset_t offset,
 			   vm_size_t size,
-			   vm_offset_t *addr,			/* out */
-			   mach_msg_type_number_t *size_read);	/* out */
+			   vm_offset_t *addr,		/* out */
+			   vm_size_t *size_read);	/* out */
 int page_write_file_direct(struct file_direct *fdp,
 			   vm_offset_t offset,
 			   vm_offset_t addr,
 			   vm_size_t size,
-			   vm_offset_t *size_written); /* out */
+			   vm_size_t *size_written);	/* out */
 
 
 #endif /* file_io.h */

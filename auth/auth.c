@@ -35,6 +35,8 @@
 #include "auth_S.h"
 #include "auth_reply_U.h"
 
+#include "auth.h"
+
 const char *argp_program_version = STANDARD_HURD_VERSION(auth);
 
 
@@ -71,14 +73,6 @@ destroy_authhandle (void *p)
   idvec_free_contents (&h->egids);
   idvec_free_contents (&h->auids);
   idvec_free_contents (&h->agids);
-}
-
-/* Called by server stub functions.  */
-
-authhandle_t
-auth_port_to_handle (auth_t auth)
-{
-  return ports_lookup_port (auth_bucket, auth, authhandle_portclass);
 }
 
 /* id management.  */
