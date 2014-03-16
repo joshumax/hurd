@@ -59,6 +59,8 @@ vcs_readlink (struct iouser *user, struct node *np, char *buf)
       if (ret < 0)
 	ret = -errno;
     }
+  else
+    ret = -ret;
   return ret;
 }
 
