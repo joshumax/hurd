@@ -111,9 +111,9 @@ pager_offer_page (struct pager *pager,
 		  vm_address_t buf);  
 
 /* Change the attributes of the memory object underlying pager PAGER.
-   Args MAY_CACHE and COPY_STRATEGY are as for
-   memory_object_change_atributes.  Wait for the kernel to report completion
-   off WAIT is set.*/
+   Arguments MAY_CACHE and COPY_STRATEGY are as for
+   memory_object_change_atributes.  Wait for the kernel to report
+   completion if WAIT is set.  */
 void
 pager_change_attributes (struct pager *pager,
 			 boolean_t may_cache,
