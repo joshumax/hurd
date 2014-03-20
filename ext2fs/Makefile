@@ -24,7 +24,7 @@ SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
        inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs pager iohelp fshelp store ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread -lbz2 -lz
+OTHERLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
 
 include ../Makeconf
 

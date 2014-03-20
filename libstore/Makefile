@@ -28,35 +28,37 @@ SRCS = create.c derive.c make.c rdwr.c set.c \
        open.c xinl.c typed.c map.c url.c unknown.c \
        stripe.c $(filter-out ileave.c concat.c,$(store-types:=.c))
 
-# This has to be evaluated after config.make has been included;
-# as a consequence, using 'ifneq' or similar is not an option.
-maybe_part = $(and $(PARTED_LIBS),part)
-
 store-types = \
-	      bunzip2 \
 	      concat \
 	      copy \
 	      device \
 	      file \
-	      gunzip \
 	      ileave \
 	      memobj \
 	      module \
 	      mvol \
 	      nbd \
-	      $(maybe_part) \
 	      remap \
 	      task \
 	      zero
+
+# This has to be evaluated after config.make has been included;
+# as a consequence, using 'ifneq' or similar is not an option.
+store-types += \
+	      $(and $(PARTED_LIBS),part) \
+	      $(and $(HAVE_LIBBZ2),bunzip2) \
+	      $(and $(HAVE_LIBZ),gunzip) \
 
 libstore.so-LDLIBS += $(PARTED_LIBS) -ldl
 installhdrs=store.h
 
 HURDLIBS = shouldbeinlibc
-LDLIBS += -lpthread -lbz2 -lz
+LDLIBS += -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
 GUNZIP_OBJS = do-gunzip.o util.o
 BUNZIP2_OBJS = do-bunzip2.o
-OBJS = $(SRCS:.c=.o) $(GUNZIP_OBJS) $(BUNZIP2_OBJS)
+OBJS = $(SRCS:.c=.o) \
+	      $(and $(HAVE_LIBZ),$(GUNZIP_OBJS)) \
+	      $(and $(HAVE_LIBBZ2),$(BUNZIP2_OBJS))
 
 include ../Makeconf
 

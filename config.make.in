@@ -87,6 +87,12 @@ HAVE_DAEMON = @HAVE_DAEMON@
 libdaemon_CFLAGS = @libdaemon_CFLAGS@
 libdaemon_LIBS = @libdaemon_LIBS@
 
+# How to compile and link against libbz2.
+HAVE_LIBBZ2 = @HAVE_LIBBZ2@
+
+# How to compile and link against libz.
+HAVE_LIBZ = @HAVE_LIBZ@
+
 # How to compile and link against libblkid.
 HAVE_BLKID = @HAVE_BLKID@
 libblkid_CFLAGS = @libblkid_CFLAGS@

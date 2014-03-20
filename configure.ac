@@ -211,13 +211,31 @@ AS_IF([test "x$with_parted" != xno], [
 ])
 AC_SUBST([PARTED_LIBS])
 
+AC_ARG_WITH([libbz2],
+  [AS_HELP_STRING([--without-libbz2], [disable libbz2])], , [with_libbz2=yes])
+
+AS_IF([test "x$with_libbz2" != xno], [
+  AC_CHECK_LIB(bz2, BZ2_bzCompress, [HAVE_LIBBZ2=1], [true])
+])
+AC_SUBST([HAVE_LIBBZ2])
+
+AC_ARG_WITH([libz],
+  [AS_HELP_STRING([--without-libz], [disable libz])], , [with_libz=yes])
+
+AS_IF([test "x$with_libz" != xno], [
+  AC_CHECK_LIB(z, deflate, [HAVE_LIBZ=1], [true])
+])
+AC_SUBST([HAVE_LIBZ])
+
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
 			  list of store types included in statically
 			  linked filesystems used for booting])dnl
 if test -z "$enable_boot_store_types"; then
-  boot_store_types='device remap gunzip bunzip2'
+  boot_store_types='device remap'
   test -z "$PARTED_LIBS" || boot_store_types="$boot_store_types part"
+  test -z "$HAVE_LIBBZ2" || boot_store_types="$boot_store_types bunzip2"
+  test -z "$HAVE_LIBZ"   || boot_store_types="$boot_store_types gunzip"
 elif test "x$enable_boot_store_types" = xno; then
   AC_MSG_WARN([you probably wanted --disable-static-progs])
 else
@@ -314,9 +332,6 @@ PKG_CHECK_MODULES([libblkid], [blkid],
   [true])
 AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
-
-AC_CHECK_LIB(bz2, BZ2_bzCompress, , AC_MSG_ERROR([libbz2 is required.]))
-AC_CHECK_LIB(z, deflate, , AC_MSG_ERROR([libz is required.]))
 
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT
