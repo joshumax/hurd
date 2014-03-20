@@ -492,7 +492,7 @@ read_disknode (struct node *np, struct dirrect *dr,
 static error_t
 read_symlink_hook (struct node *np, char *buf)
 {
-  bcopy (np->dn->link_target, buf, np->dn_stat.st_size);
+  memcpy (buf, np->dn->link_target, np->dn_stat.st_size + 1);
   return 0;
 }
 error_t (*diskfs_read_symlink_hook) (struct node *, char *)
