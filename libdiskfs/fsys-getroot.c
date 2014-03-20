@@ -101,15 +101,17 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
     {
       /* Handle symlink interpretation */
       char pathbuf[diskfs_root_node->dn_stat.st_size + 1];
-      size_t amt;
 
       if (diskfs_read_symlink_hook)
 	err = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
       if (!diskfs_read_symlink_hook || err == EINVAL)
-	err = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
+	{
+	  size_t amt = 0;
+	  err = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
 				  diskfs_root_node->dn_stat.st_size, 0,
 				  0, &amt);
-      pathbuf[amt] = '\0';
+	  pathbuf[amt] = '\0';
+	}
 
       pthread_mutex_unlock (&diskfs_root_node->lock);
       pthread_rwlock_unlock (&diskfs_fsys_lock);
