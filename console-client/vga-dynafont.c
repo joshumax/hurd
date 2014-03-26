@@ -480,6 +480,12 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
     font = create_system_font ();
   if (!font || !font->bbox.height)
     return errno;
+  if (!width)
+    width = font->bbox.width;
+  if ((width % 8) == 0)
+    width = 8;
+  if (width != 8 && width != 9)
+    return EINVAL;
 
   df = malloc (sizeof *df);
   if (!df)
@@ -494,8 +500,6 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
   df->font_bold = font_bold;
   df->font_bold_italic = font_bold_italic;
   df->size = size;
-  if (!width)
-    width = df->font->bbox.width;
   df->width = width;
   df->cursor_standout = 0;
 
