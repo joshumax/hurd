@@ -339,9 +339,9 @@ vga_set_font_width (int width)
   outb (VGA_ATTR_MODE_ADDR, VGA_ATTR_ADDR_DATA_REG);
   saved = inb (VGA_ATTR_DATA_READ_REG);
   if (width == 8)
-    saved |= ~VGA_ATTR_MODE_LGE;
+    saved &= ~VGA_ATTR_MODE_LGE;
   else
-    saved &= VGA_ATTR_MODE_LGE;
+    saved |= VGA_ATTR_MODE_LGE;
   outb (saved, VGA_ATTR_ADDR_DATA_REG);
 
   /* Re-enable the screen.  */
