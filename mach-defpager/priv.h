@@ -29,6 +29,7 @@
 
 #include <mach.h>
 #include <queue.h>
+#include <hurd/ihash.h>
 
 /*
  * Bitmap allocation.
@@ -150,6 +151,7 @@ typedef struct dpager	*dpager_t;
  * Mapping between pager port and paging object.
  */
 struct dstruct {
+	hurd_ihash_locp_t htable_locp;	/* for the ihash table */
 	queue_chain_t	links;		/* Link in pager-port list */
 
 	pthread_mutex_t	lock;		/* Lock for the structure */
@@ -180,9 +182,19 @@ struct dstruct {
 typedef struct dstruct *	default_pager_t;
 #define	DEFAULT_PAGER_NULL	((default_pager_t)0)
 
-/* given a data structure return a good port-name to associate it to */
-#define	pnameof(_x_)	(((vm_offset_t) (_x_)) + 1)
-/* reverse, assumes no-odd-pointers */
-#define	dnameof(_x_)	(((vm_offset_t) (_x_)) & ~1)
+/*
+ * List of all pagers.  A specific pager is
+ * found directly via its port, this list is
+ * only used for monitoring purposes by the
+ * default_pager_object* calls
+ */
+struct pager_port {
+	struct hurd_ihash	htable;
+	pthread_mutex_t	lock;
+	queue_head_t	leak_queue;
+};
+
+/* The list of pagers.  */
+extern struct pager_port all_pagers;
 
 #endif /* __MACH_DEFPAGER_PRIV_H__ */

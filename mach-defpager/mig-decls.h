@@ -27,11 +27,8 @@
 static inline struct dstruct * __attribute__ ((unused))
 begin_using_default_pager (mach_port_t port)
 {
-  if (! MACH_PORT_VALID(port)
-      || ((default_pager_t) dnameof(port))->pager != (port))
-    return DEFAULT_PAGER_NULL;
-
-  return (default_pager_t) dnameof(port);
+  return (default_pager_t) hurd_ihash_find (&all_pagers.htable,
+                                            (hurd_ihash_key_t) port);
 }
 
 #endif /* __MACH_DEFPAGER_MIG_DECLS_H__ */
