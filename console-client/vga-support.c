@@ -55,8 +55,11 @@ struct vga_state
 
   unsigned char attr_mode;
 
-  char videomem[2 * 80 * 25];
-  unsigned char fontmem[2 * VGA_FONT_SIZE * VGA_FONT_HEIGHT];
+  /* Alignment is required by some "hardware", and optimizes transfers.  */
+  char videomem[2 * 80 * 25]
+    __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
+  unsigned char fontmem[2 * VGA_FONT_SIZE * VGA_FONT_HEIGHT]
+    __attribute__ ((aligned (__BIGGEST_ALIGNMENT__)));
 };
 
 static struct vga_state *vga_state;
