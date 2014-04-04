@@ -32,6 +32,12 @@ begin_using_pager (mach_port_t port)
   return ports_lookup_port (0, port, _pager_class);
 }
 
+static inline struct pager * __attribute__ ((unused))
+begin_using_pager_payload (unsigned long payload)
+{
+  return ports_lookup_payload (0, payload, _pager_class);
+}
+
 static inline void __attribute__ ((unused))
 end_using_pager (struct pager *p)
 {
