@@ -30,3 +30,10 @@
 #define IO_IMPORTS import "priv.h";
 #define FSYS_IMPORTS import "priv.h";
 #define IFSOCK_IMPORTS import "priv.h";
+
+#define EXEC_STARTUP_INTRAN                             \
+  bootinfo_t diskfs_begin_using_bootinfo_port (exec_startup_t)
+#define EXEC_STARTUP_DESTRUCTOR                         \
+  diskfs_end_using_bootinfo (bootinfo_t)
+#define EXEC_STARTUP_IMPORTS                            \
+  import "priv.h";

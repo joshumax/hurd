@@ -68,6 +68,7 @@ fsys-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h -DREPLY_PORTS
 fs-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 io-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 ifsock-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
+exec_startup-MIGSFLAGS = -imacros $(srcdir)/fsmutations.h
 MIGCOMSFLAGS = -prefix diskfs_
 
 include ../Makeconf

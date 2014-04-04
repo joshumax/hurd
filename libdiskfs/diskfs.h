@@ -126,6 +126,11 @@ struct diskfs_control
   struct port_info pi;
 };
 
+struct bootinfo
+{
+  struct port_info pi;
+};
+
 /* Possibly lookup types for diskfs_lookup call */
 enum lookup_type
 {
@@ -801,9 +806,11 @@ void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 extern struct protid * diskfs_begin_using_protid_port (file_t port);
 extern struct diskfs_control * diskfs_begin_using_control_port (fsys_t port);
+extern struct bootinfo *diskfs_begin_using_bootinfo_port (exec_startup_t port);
 
 extern void diskfs_end_using_protid_port (struct protid *cred);
 extern void diskfs_end_using_control_port (struct diskfs_control *cred);
+extern void diskfs_end_using_bootinfo (struct bootinfo *upt);
 
 #if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
 
@@ -823,6 +830,14 @@ diskfs_begin_using_control_port (fsys_t port)
   return ports_lookup_port (diskfs_port_bucket, port, NULL);
 }
 
+/* And for the exec_startup interface. */
+DISKFS_EXTERN_INLINE struct bootinfo *
+diskfs_begin_using_bootinfo_port (exec_startup_t port)
+{
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_execboot_class);
+}
+
+
 /* Called by MiG after server routines have been run; this
    balances begin_using_protid_port, and is arranged for the io
    and fs interfaces by fsmutations.h. */
@@ -839,6 +854,14 @@ diskfs_end_using_control_port (struct diskfs_control *cred)
 {
   if (cred)
     ports_port_deref (cred);
+}
+
+/* And for the exec_startup interface. */
+DISKFS_EXTERN_INLINE void
+diskfs_end_using_bootinfo (struct bootinfo *b)
+{
+  if (b)
+    ports_port_deref (b);
 }
 
 #endif /* Use extern inlines.  */

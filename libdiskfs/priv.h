@@ -74,6 +74,7 @@ extern int _diskfs_diskdirty;
 /* Needed for MiG. */
 typedef struct protid *protid_t;
 typedef struct diskfs_control *control_t;
+typedef struct bootinfo *bootinfo_t;
 
 /* Actually read or write a file.  The file size must already permit
    the requested access.  NP is the file to read/write.  DATA is a buffer
