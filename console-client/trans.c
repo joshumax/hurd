@@ -63,8 +63,16 @@ console_demuxer (mach_msg_header_t *inp,
   ret = netfs_demuxer (inp, outp);
   if (ret)
     return ret;
-  
-  user = ports_lookup_port (netfs_port_bucket, inop->msgh_local_port, netfs_protid_class);
+
+  if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) ==
+      MACH_MSG_TYPE_PROTECTED_PAYLOAD)
+    user = ports_lookup_payload (netfs_port_bucket,
+				 inop->msgh_protected_payload,
+				 netfs_protid_class);
+  else
+    user = ports_lookup_port (netfs_port_bucket,
+			      inop->msgh_local_port,
+			      netfs_protid_class);
   if (!user)
     return ret;
   
