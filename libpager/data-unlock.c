@@ -22,18 +22,17 @@
 /* Implement kernel requests for access as described in
    <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_unlock (mach_port_t object,
+_pager_seqnos_memory_object_data_unlock (struct pager *p,
 					 mach_port_seqno_t seqno,
 					 mach_port_t control,
 					 vm_offset_t offset,
 					 vm_size_t length,
 					 vm_prot_t access)
 {
-  struct pager *p;
   volatile int err;
 
-  p = ports_lookup_port (0, object, _pager_class);
-  if (!p)
+  if (!p
+      || p->port.class != _pager_class)
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&p->interlock);
@@ -84,6 +83,5 @@ _pager_seqnos_memory_object_data_unlock (mach_port_t object,
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
-  ports_port_deref (p);
   return 0;
 }

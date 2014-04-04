@@ -22,16 +22,15 @@
    when a memory_object_change_attributes call has completed.  Read this
    in combination with pager-attr.c.  */
 kern_return_t
-_pager_seqnos_memory_object_change_completed (mach_port_t obj,
+_pager_seqnos_memory_object_change_completed (struct pager *p,
 				       mach_port_seqno_t seq,
 				       boolean_t maycache,
 				       memory_object_copy_strategy_t strat)
 {
-  struct pager *p;
   struct attribute_request *ar;
-  
-  p = ports_lookup_port (0, obj, _pager_class);
-  if (!p)
+
+  if (!p
+      || p->port.class != _pager_class)
     {
       printf ("Bad change completed\n");
       return EOPNOTSUPP;
@@ -50,6 +49,5 @@ _pager_seqnos_memory_object_change_completed (mach_port_t obj,
   
   _pager_release_seqno (p, seq);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
   return 0;
 }

@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 kern_return_t
-_pager_seqnos_memory_object_copy (mach_port_t obj,
+_pager_seqnos_memory_object_copy (struct pager *p,
 			   mach_port_seqno_t seq,
 			   memory_object_control_t obj_ctl,
 			   vm_offset_t off,
@@ -30,13 +30,13 @@ _pager_seqnos_memory_object_copy (mach_port_t obj,
 {
   printf ("m_o_copy called\n");
 
-  _pager_update_seqno (obj, seq);
+  _pager_update_seqno_p (p, seq);
 
   return EOPNOTSUPP;
 }
 
 kern_return_t
-_pager_seqnos_memory_object_data_write (mach_port_t obj,
+_pager_seqnos_memory_object_data_write (struct pager *p,
 				 mach_port_seqno_t seq,
 				 mach_port_t ctl,
 				 vm_offset_t off,
@@ -45,13 +45,13 @@ _pager_seqnos_memory_object_data_write (mach_port_t obj,
 {
   printf ("m_o_data_write called\n");
 
-  _pager_update_seqno (obj, seq);
+  _pager_update_seqno_p (p, seq);
 
   return EOPNOTSUPP;
 }
 
 kern_return_t
-_pager_seqnos_memory_object_supply_completed (mach_port_t obj,
+_pager_seqnos_memory_object_supply_completed (struct pager *p,
 				       mach_port_seqno_t seq,
 				       mach_port_t ctl,
 				       vm_offset_t off,
@@ -61,7 +61,7 @@ _pager_seqnos_memory_object_supply_completed (mach_port_t obj,
 {
   printf ("m_o_supply_completed called\n");
 
-  _pager_update_seqno (obj, seq);
+  _pager_update_seqno_p (p, seq);
 
   return EOPNOTSUPP;
 }

@@ -26,7 +26,7 @@
    as for _pager_seqnos_memory_object_data_return; the additional
    INITIALIZING arg identifies which function is calling us. */
 kern_return_t
-_pager_do_write_request (mach_port_t object,
+_pager_do_write_request (struct pager *p,
 			 mach_port_seqno_t seqno,
 			 mach_port_t control,
 			 vm_offset_t offset,
@@ -36,7 +36,6 @@ _pager_do_write_request (mach_port_t object,
 			 int kcopy,
 			 int initializing)
 {
-  struct pager *p;
   short *pm_entries;
   int npages, i;
   char *notified;
@@ -47,8 +46,8 @@ _pager_do_write_request (mach_port_t object,
   int wakeup;
   int omitdata = 0;
 
-  p = ports_lookup_port (0, object, _pager_class);
-  if (!p)
+  if (!p
+      || p->port.class != _pager_class)
     return EOPNOTSUPP;
 
   /* Acquire the right to meddle with the pagemap */
@@ -249,19 +248,17 @@ _pager_do_write_request (mach_port_t object,
 	}
     }
 
-  ports_port_deref (p);
   return 0;
 
  release_out:
   _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
-  ports_port_deref (p);
   return 0;
 }
 
 /* Implement pageout call back as described by <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_return (mach_port_t object,
+_pager_seqnos_memory_object_data_return (struct pager *p,
 					 mach_port_seqno_t seqno,
 					 mach_port_t control,
 					 vm_offset_t offset,
@@ -270,6 +267,6 @@ _pager_seqnos_memory_object_data_return (mach_port_t object,
 					 int dirty,
 					 int kcopy)
 {
-  return _pager_do_write_request (object, seqno, control, offset, data,
+  return _pager_do_write_request (p, seqno, control, offset, data,
 				  length, dirty, kcopy, 0);
 }
