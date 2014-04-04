@@ -46,6 +46,7 @@ typedef mach_port_t pf_t;	/* Protocol family */
 typedef mach_port_t addr_port_t;
 typedef mach_port_t startup_t;
 typedef mach_port_t fs_notify_t;
+typedef mach_port_t exec_startup_t;
 typedef mach_port_t proccoll_t;
 
 #include <errno.h>		/* Defines `error_t'.  */

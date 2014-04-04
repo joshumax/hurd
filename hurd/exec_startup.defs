@@ -23,11 +23,15 @@ subsystem exec_startup 30500;
 
 #include <hurd/hurd_types.defs>
 
+#ifdef	EXEC_STARTUP_IMPORTS
+EXEC_STARTUP_IMPORTS
+#endif
+
 /* This call is made by a new task to its bootstrap port to get its
    startup ports and information.  */
 
 routine exec_startup_get_info (
-	bootstrap: mach_port_t;
+	bootstrap: exec_startup_t;
 	/* These describe the entry point and program header data
 	   of the user program loaded into the task.  */
 	out user_entry: vm_address_t;
