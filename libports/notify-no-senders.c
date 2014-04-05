@@ -22,12 +22,11 @@
 #include "notify_S.h"
 
 error_t
-ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
+ports_do_mach_notify_no_senders (struct port_info *pi,
+				 mach_port_mscount_t count)
 {
-  void *pi = ports_lookup_port (0, port, 0);
   if (!pi)
     return EOPNOTSUPP;
   ports_no_senders (pi, count);
-  ports_port_deref (pi);
   return 0;
 }

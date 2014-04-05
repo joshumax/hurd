@@ -22,7 +22,7 @@
 #include "notify_S.h"
 
 error_t
-ports_do_mach_notify_send_once (mach_port_t notify)
+ports_do_mach_notify_send_once (struct port_info *pi)
 {
   return 0;
 }

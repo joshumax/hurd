@@ -24,9 +24,7 @@ target = proc
 SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
        cpu-types.c stubs.c
 
-MIGSFLAGS="-DPROCESS_INTRAN=pstruct_t reqport_find (process_t)" \
-	"-DPROCESS_DESTRUCTOR=process_drop (pstruct_t)" \
-	"-DPROCESS_IMPORTS=import \"proc.h\";"
+MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 MIGSTUBS = processServer.o notifyServer.o \
 	ourmsgUser.o proc_excUser.o proc_excServer.o

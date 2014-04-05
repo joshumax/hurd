@@ -22,7 +22,8 @@
 #include "notify_S.h"
 
 error_t
-ports_do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name)
+ports_do_mach_notify_port_deleted (struct port_info *pi,
+				   mach_port_t name)
 {
   return 0;
 }

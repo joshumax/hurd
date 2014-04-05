@@ -731,18 +731,18 @@ device_write_reply (mach_port_t replyport,
 }
 
 error_t
-ports_do_mach_notify_send_once (mach_port_t notify)
+ports_do_mach_notify_send_once (struct port_info *pi)
 {
   error_t err;
 
   pthread_mutex_lock (&global_lock);
 
-  if (notify == phys_reply_writes)
+  if (pi->port_right == phys_reply_writes)
     {
       err = 0;
       devio_start_output ();
     }
-  else if (notify == phys_reply)
+  else if (pi->port_right == phys_reply)
     {
       if (input_pending)
 	{

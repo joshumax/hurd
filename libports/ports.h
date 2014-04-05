@@ -50,6 +50,8 @@ struct port_info
   hurd_ihash_locp_t hentry;
   struct port_info *next, **prevp; /* links on port_class list */
 };
+typedef struct port_info *port_info_t;
+
 /* FLAGS above are the following: */
 #define PORT_HAS_SENDRIGHTS	0x0001 /* send rights extant */
 #define PORT_INHIBITED		PORTS_INHIBITED
@@ -383,13 +385,19 @@ void ports_interrupt_notified_rpcs (void *object, mach_port_t port,
 int ports_notify_server (mach_msg_header_t *, mach_msg_header_t *);
 
 /* Notification server routines called by ports_notify_server.  */
-extern kern_return_t ports_do_mach_notify_dead_name (mach_port_t notify, mach_port_t deadport);
-extern kern_return_t ports_do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t name);
-extern kern_return_t ports_do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count);
-extern kern_return_t ports_do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name);
-extern kern_return_t ports_do_mach_notify_port_destroyed (mach_port_t notify, mach_port_t name);
 extern kern_return_t
- ports_do_mach_notify_send_once (mach_port_t notify);
+ ports_do_mach_notify_dead_name (struct port_info *pi, mach_port_t deadport);
+extern kern_return_t
+ ports_do_mach_notify_msg_accepted (struct port_info *pi, mach_port_t name);
+extern kern_return_t
+ ports_do_mach_notify_no_senders (struct port_info *pi,
+				  mach_port_mscount_t count);
+extern kern_return_t
+ ports_do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name);
+extern kern_return_t
+ ports_do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t name);
+extern kern_return_t
+ ports_do_mach_notify_send_once (struct port_info *pi);
 
 /* A default interrupt server */
 int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);

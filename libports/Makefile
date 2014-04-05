@@ -45,5 +45,6 @@ LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) notifyServer.o interruptServer.o
 
 MIGCOMSFLAGS = -prefix ports_
+MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 include ../Makeconf
