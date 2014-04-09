@@ -23,10 +23,14 @@ subsystem interrupt 33000;
 
 #include <hurd/hurd_types.defs>
 
+#ifdef INTERRUPT_IMPORTS
+INTERRUPT_IMPORTS
+#endif
+
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
 
 routine
-interrupt_operation (object: mach_port_t;
+interrupt_operation (object: interrupt_t;
 		     waittime timeout: natural_t;
 		     msgseqno seqno: mach_port_seqno_t);

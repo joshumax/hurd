@@ -168,6 +168,18 @@ destructor: EXEC_STARTUP_DESTRUCTOR
 #endif
 ;
 
+type interrupt_t = mach_port_copy_send_t
+#ifdef INTERRUPT_INTRAN
+intran: INTERRUPT_INTRAN
+#endif
+#ifdef INTERRUPT_OUTTRAN
+outtran: INTERRUPT_OUTTRAN
+#endif
+#ifdef INTERRUPT_DESTRUCTOR
+destructor: INTERRUPT_DESTRUCTOR
+#endif
+;
+
 
 type proccoll_t = mach_port_copy_send_t;
 
