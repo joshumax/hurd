@@ -24,10 +24,9 @@
 /* Cause a pending request on this object to immediately return.  The
    exact semantics are dependent on the specific object.  */
 kern_return_t
-ports_S_interrupt_operation (mach_port_t port,
+ports_S_interrupt_operation (struct port_info *pi,
 			     mach_port_seqno_t seqno)
 {
-  struct port_info *pi = ports_lookup_port (0, port, 0);
   if (!pi)
     return EOPNOTSUPP;
   pthread_mutex_lock (&_ports_lock);
@@ -35,6 +34,5 @@ ports_S_interrupt_operation (mach_port_t port,
     pi->cancel_threshold = seqno;
   pthread_mutex_unlock (&_ports_lock);
   ports_interrupt_rpcs (pi);
-  ports_port_deref (pi);
   return 0;
 }

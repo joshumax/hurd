@@ -23,3 +23,10 @@
   end_using_port_info (port_info_t)
 #define NOTIFY_IMPORTS						\
   import "libports/mig-decls.h";
+
+#define INTERRUPT_INTRAN					\
+  port_info_t begin_using_port_info_port (mach_port_t)
+#define INTERRUPT_DESTRUCTOR					\
+  end_using_port_info (port_info_t)
+#define INTERRUPT_IMPORTS					\
+  import "libports/mig-decls.h";

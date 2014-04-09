@@ -398,11 +398,6 @@ extern kern_return_t
  ports_do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t name);
 extern kern_return_t
  ports_do_mach_notify_send_once (struct port_info *pi);
-
-/* A default interrupt server */
-int ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
-extern kern_return_t ports_S_interrupt_operation (mach_port_t,
-						  mach_port_seqno_t);
 
 /* Private data */
 extern pthread_mutex_t _ports_lock;
