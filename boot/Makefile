@@ -20,7 +20,7 @@ makemode := utility
 
 SRCS = mach-crt0.c boot.c ux.c sigvec.S syscall.S \
        boot_script.c userland-boot.c
-COMMON-OBJS = notifyServer.o ourdeviceServer.o \
+COMMON-OBJS = notifyServer.o deviceServer.o \
        ioServer.o io_replyUser.o device_replyUser.o \
        termServer.o bootstrapServer.o boot_script.o userland-boot.o
 OBJS = boot.o $(COMMON-OBJS)
@@ -38,10 +38,6 @@ include ../Makeconf
 #	cp $< $@
 
 all: boot # uxboot
-
-ourdevice.defs: device.defs
-	$(CPP) $(CPPFLAGS) -x c $< | sed -e '/out[ 	]*device[ 	]*:[ 	]*device_t/s/device_t/mach_port_send_t/' > $@
-
 
 uxboot.o: boot.c
 	$(COMPILE.c) -DUX $< -o $@

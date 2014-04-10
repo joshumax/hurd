@@ -42,7 +42,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <version.h>
 
 #include "notify_S.h"
-#include "ourdevice_S.h"
+#include "device_S.h"
 #include "io_S.h"
 #include "device_reply_U.h"
 #include "io_reply_U.h"
