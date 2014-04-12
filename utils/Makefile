@@ -1,4 +1,4 @@
-#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,12 Free Software Foundation,
+#   Copyright (C) 1994,95,96,97,98,99,2000,01,02,12,14 Free Software Foundation,
 #   Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -36,9 +36,9 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
 LDLIBS += -lpthread
-login-LDLIBS = -lutil $(LIBCRYPT)
-addauth-LDLIBS = $(LIBCRYPT)
-setauth-LDLIBS = $(LIBCRYPT)
+login-LDLIBS = -lutil -lcrypt
+addauth-LDLIBS = -lcrypt
+setauth-LDLIBS = -lcrypt
 mount-LDLIBS = $(libblkid_LIBS)
 mount-CPPFLAGS = $(libblkid_CFLAGS)
 

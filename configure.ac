@@ -106,10 +106,6 @@ fi
 dnl Let these propagate from the environment.
 AC_SUBST(CFLAGS) AC_SUBST(CPPFLAGS) AC_SUBST(LDFLAGS)
 
-# See if there's a separate libcrypt (many systems put crypt there).
-AC_CHECK_LIB(crypt, crypt, LIBCRYPT=-lcrypt)
-AC_SUBST(LIBCRYPT)
-
 hurd_MIG_RETCODE
 
 # See if --version-script is available.
