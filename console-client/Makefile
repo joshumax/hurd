@@ -49,10 +49,6 @@ XKB_DATA_FILES = keymap/hurd types/hurd symbols/hurd
 # In seeking, thou shalt find it!
 CPPFLAGS += -DQUAERENDO_INVENIETIS
 
-DIST_FILES = xkb/HACKING xkb/MISSING-FEATURES xkb/README xkb/TODO \
-             xkb/kstoucs_map.sh \
-             $(addprefix xkb/xkb-data/, $(XKB_DATA_FILES))
-
 include ../Makeconf
 
 driver-CPPFLAGS = -D'CONSOLE_DEFPATH="$(module-dir)\0"' \
