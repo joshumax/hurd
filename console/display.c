@@ -42,6 +42,7 @@
 #include "display.h"
 #include "pager.h"
 
+#include "notify_S.h"
 
 struct changes
 {
@@ -318,7 +319,7 @@ free_modreqs (struct modreq *mr)
 /* A port deleted notification is generated when we deallocate the
    user's notify port before it is dead.  */
 error_t
-do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name)
+do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name)
 {
   /* As we cancel the dead-name notification before deallocating the
      port, this should not happen.  */
@@ -327,15 +328,16 @@ do_mach_notify_port_deleted (mach_port_t notify, mach_port_t name)
 
 /* We request dead name notifications for the user ports.  */
 error_t
-do_mach_notify_dead_name (mach_port_t notify, mach_port_t dead_name)
+do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
 {
-  struct notify *notify_port = ports_lookup_port (notify_bucket,
-						  notify, notify_class);
+  struct notify *notify_port = (struct notify *) pi;
   struct display *display;
   struct modreq **preq;
   struct modreq *req;
 
-  if (!notify_port)
+  if (!notify_port
+      || notify_port->pi.bucket != notify_bucket
+      || notify_port->pi.class != notify_class)
     return EOPNOTSUPP;
 
   display = notify_port->display;
@@ -369,30 +371,35 @@ do_mach_notify_dead_name (mach_port_t notify, mach_port_t dead_name)
   return 0;
 }
 
-void do_mach_notify_port_destroyed (void) { assert (0); }
+error_t
+do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t rights)
+{
+  assert (0);
+}
 
 error_t
-do_mach_notify_no_senders (mach_port_t port, mach_port_mscount_t count)
+do_mach_notify_no_senders (struct port_info *pi, mach_port_mscount_t count)
 {
-  return ports_do_mach_notify_no_senders (port, count);
+  return ports_do_mach_notify_no_senders (pi, count);
 }
 
 kern_return_t
-do_mach_notify_send_once (mach_port_t notify)
+do_mach_notify_send_once (struct port_info *pi)
 {
   return 0;
 }
 
 kern_return_t
-do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
+do_mach_notify_msg_accepted (struct port_info *pi, mach_port_t send)
 {
-  struct notify *notify_port = ports_lookup_port (notify_bucket,
-						  notify, notify_class);
+  struct notify *notify_port = (struct notify *) pi;
   struct display *display;
   struct modreq **preq;
   struct modreq *req;
 
-  if (!notify_port)
+  if (!notify_port
+      || notify_port->pi.bucket != notify_bucket
+      || notify_port->pi.class != notify_class)
     return EOPNOTSUPP;
 
   /* If we deallocated the send right in display_destroy before the
@@ -401,7 +408,6 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
   if (!send)
     {
       assert(0);
-      ports_port_deref (notify_port);
       return 0;
     }
 
@@ -418,7 +424,6 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
     {
       assert(0);
       pthread_mutex_unlock (&display->lock);
-      ports_port_deref (notify_port);
       return 0;
     }
   req = *preq;
@@ -430,7 +435,7 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
 	 and stay in pending queue.  */
       req->pending = 0;
       err = nowait_file_changed (req->port, 0, FILE_CHANGED_WRITE, -1, -1,
-				 notify);
+				 notify_port->pi.port_right);
       if (err && err != MACH_SEND_WILL_NOTIFY)
 	{
 	  mach_port_t old;
@@ -446,7 +451,6 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
 
 	  mach_port_deallocate (mach_task_self (), req->port);
 	  free (req);
-	  ports_port_deref (notify_port);
 	  return err;
 	}
       if (err == MACH_SEND_WILL_NOTIFY)
@@ -462,7 +466,6 @@ do_mach_notify_msg_accepted (mach_port_t notify, mach_port_t send)
   req->next = display->filemod_reqs;
   display->filemod_reqs = req;
   pthread_mutex_unlock (&display->lock);
-  ports_port_deref (notify_port);
   return 0;
 }
 
