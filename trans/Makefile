@@ -39,6 +39,7 @@ password-MIGSFLAGS=\
 
 ifsock-MIGSFLAGS=\
     "-DFILE_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
+    "-DFILE_INTRAN_PAYLOAD=trivfs_protid_t trivfs_begin_using_protid_payload" \
     "-DFILE_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
     "-DIFSOCK_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
 
