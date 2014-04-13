@@ -86,8 +86,16 @@ pfinet_demuxer (mach_msg_header_t *inp,
 
   /* We have several classes in one bucket, which need to be demuxed
      differently.  */
-  pi = ports_lookup_port(pfinet_bucket, inp->msgh_local_port, socketport_class);
-  
+  if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) ==
+      MACH_MSG_TYPE_PROTECTED_PAYLOAD)
+    pi = ports_lookup_payload (pfinet_bucket,
+			       inp->msgh_protected_payload,
+			       socketport_class);
+  else
+    pi = ports_lookup_port (pfinet_bucket,
+			    inp->msgh_local_port,
+			    socketport_class);
+
   if (pi)
     {
       ports_port_deref (pi);

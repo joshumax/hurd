@@ -116,12 +116,30 @@ ethernet_demuxer (mach_msg_header_t *inp,
   int datalen;
   struct ether_device *edev;
   struct device *dev = 0;
+  mach_port_t local_port;
 
   if (inp->msgh_id != NET_RCV_MSG_ID)
     return 0;
 
+  if (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) ==
+      MACH_MSG_TYPE_PROTECTED_PAYLOAD)
+    {
+      struct port_info *pi = ports_lookup_payload (NULL,
+						   inp->msgh_protected_payload,
+						   NULL);
+      if (pi)
+	{
+	  local_port = pi->port_right;
+	  ports_port_deref (pi);
+	}
+      else
+	local_port = MACH_PORT_NULL;
+    }
+  else
+    local_port = inp->msgh_local_port;
+
   for (edev = ether_dev; edev; edev = edev->next)
-    if (inp->msgh_local_port == edev->readptname)
+    if (local_port == edev->readptname)
       dev = &edev->dev;
 
   if (! dev)
