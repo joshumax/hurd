@@ -23,54 +23,54 @@
 #include <errno.h>
 
 error_t
-_pager_do_seqnos_mach_notify_port_deleted (mach_port_t notify,
+_pager_do_seqnos_mach_notify_port_deleted (struct port_info *pi,
 					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					   __attribute__ ((unused)))
 {
-  _pager_update_seqno (notify, seqno);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_msg_accepted (mach_port_t notify,
+_pager_do_seqnos_mach_notify_msg_accepted (struct port_info *pi,
 					   mach_port_seqno_t seqno,
 					   mach_port_t name
 					     __attribute__ ((unused)))
 {
-  _pager_update_seqno (notify, seqno);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_port_destroyed (mach_port_t notify,
+_pager_do_seqnos_mach_notify_port_destroyed (struct port_info *pi,
 					     mach_port_seqno_t seqno,
 					     mach_port_t name
 					       __attribute__ ((unused)))
 {
-  _pager_update_seqno (notify, seqno);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_send_once (mach_port_t notify,
+_pager_do_seqnos_mach_notify_send_once (struct port_info *pi,
 					mach_port_seqno_t seqno)
 {
-  _pager_update_seqno (notify, seqno);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
 
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_dead_name (mach_port_t notify,
+_pager_do_seqnos_mach_notify_dead_name (struct port_info *pi,
 					mach_port_seqno_t seqno,
 					mach_port_t name
 					  __attribute__ ((unused)))
 {
-  _pager_update_seqno (notify, seqno);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
 
   return 0;
 }
