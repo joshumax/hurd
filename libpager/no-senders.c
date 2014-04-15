@@ -18,24 +18,19 @@
 
 #include "priv.h"
 #include <mach/notify.h>
+#include "notify_S.h"
 
 error_t
-_pager_do_seqnos_mach_notify_no_senders (mach_port_t notify,
+_pager_do_seqnos_mach_notify_no_senders (struct port_info *pi,
 					 mach_port_seqno_t seqno,
 					 mach_port_mscount_t mscount)
 {
-  struct pager *p = ports_lookup_port (0, notify, _pager_class);
-  
-  if (!p)
+  if (!pi ||
+      pi->class != _pager_class)
     return EOPNOTSUPP;
-  
-  pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
-  _pager_release_seqno (p, seqno);
-  pthread_mutex_unlock (&p->interlock);
-  
-  ports_no_senders (p, mscount);
 
-  ports_port_deref (p);
+  _pager_update_seqno_p ((struct pager *) pi, seqno);
+  ports_no_senders (pi, mscount);
+
   return 0;
 }
