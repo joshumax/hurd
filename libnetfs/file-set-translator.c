@@ -20,6 +20,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "netfs.h"
+#include "fs_S.h"
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 

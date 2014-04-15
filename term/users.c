@@ -43,6 +43,8 @@
 
 #include "term_S.h"
 #include "tioctl_S.h"
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
 #include <sys/ioctl.h>
 
 #define TTYDEFCHARS

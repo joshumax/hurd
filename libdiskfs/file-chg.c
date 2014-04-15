@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include "fs_S.h"
+#include "fs_notify_S.h"
 #include "fs_notify_U.h"
 
 kern_return_t

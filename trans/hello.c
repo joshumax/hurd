@@ -29,6 +29,8 @@
 
 #include <version.h>
 
+#include "libtrivfs/trivfs_io_S.h"
+
 const char *argp_program_version = STANDARD_HURD_VERSION (hello);
 
 /* The message we return when we are read.  */

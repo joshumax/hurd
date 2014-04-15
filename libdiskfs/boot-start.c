@@ -34,6 +34,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <argz.h>
 #include <error.h>
 #include <pids.h>
+#include "exec_S.h"
+#include "exec_startup_S.h"
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 

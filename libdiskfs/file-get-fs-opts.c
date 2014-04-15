@@ -23,6 +23,7 @@
 #include <string.h>
 #include <argz.h>
 #include "priv.h"
+#include "fs_S.h"
 
 error_t
 diskfs_S_file_get_fs_options (struct protid *cred,

@@ -21,6 +21,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
+#include "trivfs_fsys_S.h"
 
 /* Ask SERVER to provide fsys translation service for us.  REQUESTOR is
    the bootstrap port supplied to the original translator, and ARGV are

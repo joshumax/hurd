@@ -20,6 +20,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include "trivfs_fs_S.h"
 
 /* Return information about the source of the receiving
    filesystem.	*/

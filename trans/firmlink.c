@@ -32,6 +32,8 @@
 
 #include <version.h>
 
+#include "libtrivfs/trivfs_io_S.h"
+
 const char *argp_program_version = STANDARD_HURD_VERSION (firmlink);
 
 static const struct argp_option options[] =

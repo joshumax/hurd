@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <version.h>
 
+#include "libtrivfs/trivfs_io_S.h"
 #include "fs_U.h"
 
 static char *target_path = NULL;

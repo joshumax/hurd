@@ -22,6 +22,7 @@
 #include <hurd/store.h>
 
 #include "ext2fs.h"
+#include "libdiskfs/fs_S.h"
 
 error_t
 diskfs_S_file_get_storage_info (struct protid *cred,

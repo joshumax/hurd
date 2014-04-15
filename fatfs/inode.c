@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include "fatfs.h"
+#include "libdiskfs/fs_S.h"
 
 /* These flags aren't actually defined by a header file yet, so
    temporarily disable them if necessary.  */

@@ -20,6 +20,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include "trivfs_fs_S.h"
 
 /* Return any active translators bound to nodes of the receiving
    filesystem.  CHILDREN is an argz vector containing file names

@@ -24,6 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/hurd_types.h>
 #include <hurd/store.h>
 #include "default_pager_U.h"
+#include "libdiskfs/fs_S.h"
 
 unsigned int num_files;
 static unsigned int gen;

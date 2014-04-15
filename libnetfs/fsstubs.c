@@ -21,6 +21,7 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include "ifsock_S.h"
 
 error_t
 netfs_S_file_notice_changes (struct protid *user,

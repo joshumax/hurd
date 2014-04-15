@@ -17,6 +17,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "trivfs_io_S.h"
 
 /* Implement io_revoke as described in <hurd/io.defs>. */
 kern_return_t

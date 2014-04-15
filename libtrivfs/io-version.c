@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "trivfs_io_S.h"
 
 kern_return_t
 trivfs_S_io_server_version (trivfs_protid_t obj,

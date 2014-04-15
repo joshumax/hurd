@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include "trans.h"
+#include "libnetfs/io_S.h"
 
 
 char *netfs_server_name = "console";

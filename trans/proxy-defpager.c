@@ -24,6 +24,7 @@
 #include <version.h>
 #include <hurd/paths.h>
 
+#include "libtrivfs/trivfs_io_S.h"
 #include "default_pager_S.h"
 #include "default_pager_U.h"
 

@@ -23,6 +23,8 @@
 
 #include "open.h"
 #include "dev.h"
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
 
 /* Return objects mapping the data underlying this memory object.  If
    the object can be read then memobjrd will be provided; if the

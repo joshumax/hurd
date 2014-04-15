@@ -36,6 +36,9 @@
 #include <linux/ppp_defs.h>
 #include <linux/if_ppp.h>
 
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
+
 struct port_class *tunnel_cntlclass;
 struct port_class *tunnel_class;
 

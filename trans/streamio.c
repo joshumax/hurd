@@ -34,6 +34,9 @@
 #include <hurd/trivfs.h>
 #include <version.h>
 
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
+
 /* The global lock */
 pthread_mutex_t global_lock;
 
