@@ -85,7 +85,14 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 
       return status;
     }
-  
+
+  /* XXX It is currently unsafe for most servers to terminate based on
+     inactivity because a request may arrive after a server has
+     started shutting down, causing the client to receive an error.
+     Prevent the service loop from terminating by setting TIMEOUT to
+     zero.  */
+  timeout = 0;
+
   do
     err = mach_msg_server_timeout (internal_demuxer, 0, bucket->portset, 
 				   timeout ? MACH_RCV_TIMEOUT : 0, timeout);
