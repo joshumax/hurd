@@ -119,22 +119,6 @@ void
 pager_dropweak (struct user_pager_info *upi)
 {
 }
-
-
-/* A top-level function for the paging thread that just services paging
-   requests.  */
-static void *
-service_paging_requests (void *arg)
-{
-  struct port_bucket *pager_bucket = arg;
-  for (;;)
-    ports_manage_port_operations_multithread (pager_bucket,
-                                              pager_demuxer,
-                                              1000 * 60 * 2,
-                                              1000 * 60 * 10, 0);
-  return NULL;
-}    
-
 
 /* Initialize the pager for the display component.  */
 void
@@ -148,15 +132,10 @@ user_pager_init (void)
   if (! pager_bucket)
     error (5, errno, "Cannot create pager bucket");
 
-  /* Make a thread to service paging requests.  */
-  err = pthread_create (&thread, NULL, service_paging_requests, pager_bucket);
-  if (!err)
-    pthread_detach (thread);
-  else
-    {
-      errno = err;
-      perror ("pthread_create");
-    }
+  /* Start libpagers worker threads.  */
+  err = pager_start_workers (pager_bucket);
+  if (err)
+    error (5, err, "Cannot start pager worker threads");
 }
 
 

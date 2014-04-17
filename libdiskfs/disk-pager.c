@@ -33,39 +33,19 @@ static struct hurd_signal_preemptor preemptor =
   handler: (sighandler_t) &fault_handler,
   };
 
-/* A top-level function for the paging thread that just services paging
-   requests.  */
-static void *
-service_paging_requests (void *arg)
-{
-  struct port_bucket *pager_bucket = arg;
-  for (;;)
-    ports_manage_port_operations_multithread (pager_bucket,
-					      pager_demuxer,
-					      1000 * 60 * 2,
-					      1000 * 60 * 10, 0);
-  return NULL;
-}
-
 void
 diskfs_start_disk_pager (struct user_pager_info *upi,
 			 struct port_bucket *pager_bucket,
 			 int may_cache, int notify_on_evict,
 			 size_t size, void **image)
 {
-  pthread_t thread;
   error_t err;
   mach_port_t disk_pager_port;
 
-  /* Make a thread to service paging requests.  */
-  err = pthread_create (&thread, NULL, service_paging_requests, pager_bucket);
-  if (!err)
-    pthread_detach (thread);
-  else
-    {
-      errno = err;
-      perror ("pthread_create");
-    }
+  /* Start libpagers worker threads.  */
+  err = pager_start_workers (pager_bucket);
+  if (err)
+    error (2, err, "creating pager worker threads failed");
 
   /* Create the pager.  */
   diskfs_disk_pager = pager_create (upi, pager_bucket,

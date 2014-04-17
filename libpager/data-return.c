@@ -52,7 +52,6 @@ _pager_do_write_request (struct pager *p,
 
   /* Acquire the right to meddle with the pagemap */
   pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
 
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
@@ -101,7 +100,6 @@ _pager_do_write_request (struct pager *p,
           notified[i] = (p->notify_on_evict
                          && ! (pm_entries[i] & PM_PAGEINWAIT));
 
-        _pager_release_seqno (p, seqno);
         goto notify;
       }
       else {
@@ -158,7 +156,6 @@ _pager_do_write_request (struct pager *p,
       }
 
   /* Let someone else in. */
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
 
   /* This is inefficient; we should send all the pages to the device at once
@@ -251,7 +248,6 @@ _pager_do_write_request (struct pager *p,
   return 0;
 
  release_out:
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
   return 0;
 }

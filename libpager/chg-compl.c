@@ -37,7 +37,6 @@ _pager_seqnos_memory_object_change_completed (struct pager *p,
     }
   
   pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seq);
 
   for (ar = p->attribute_requests; ar; ar = ar->next)
     if (ar->may_cache == maycache && ar->copy_strategy == strat)
@@ -46,8 +45,7 @@ _pager_seqnos_memory_object_change_completed (struct pager *p,
 	  pthread_cond_broadcast (&p->wakeup);
 	break;
       }
-  
-  _pager_release_seqno (p, seq);
+
   pthread_mutex_unlock (&p->interlock);
   return 0;
 }

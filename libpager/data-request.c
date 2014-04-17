@@ -41,7 +41,6 @@ _pager_seqnos_memory_object_data_request (struct pager *p,
 
   /* Acquire the right to meddle with the pagemap */
   pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
 
   /* sanity checks -- we don't do multi-page requests yet.  */
   if (control != p->memobjcntl)
@@ -105,7 +104,6 @@ _pager_seqnos_memory_object_data_request (struct pager *p,
     }
 
   /* Let someone else in.  */
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
 
   if (!doread)
@@ -139,7 +137,6 @@ _pager_seqnos_memory_object_data_request (struct pager *p,
  allow_release_out:
   _pager_allow_termination (p);
  release_out:
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
   return 0;
 }

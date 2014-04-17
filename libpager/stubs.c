@@ -29,9 +29,6 @@ _pager_seqnos_memory_object_copy (struct pager *p,
 			   mach_port_t new)
 {
   printf ("m_o_copy called\n");
-
-  _pager_update_seqno_p (p, seq);
-
   return EOPNOTSUPP;
 }
 
@@ -44,9 +41,6 @@ _pager_seqnos_memory_object_data_write (struct pager *p,
 				 vm_size_t data_cnt)
 {
   printf ("m_o_data_write called\n");
-
-  _pager_update_seqno_p (p, seq);
-
   return EOPNOTSUPP;
 }
 
@@ -60,8 +54,5 @@ _pager_seqnos_memory_object_supply_completed (struct pager *p,
 				       vm_offset_t err_off)
 {
   printf ("m_o_supply_completed called\n");
-
-  _pager_update_seqno_p (p, seq);
-
   return EOPNOTSUPP;
 }

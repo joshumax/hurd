@@ -29,7 +29,6 @@ _pager_do_seqnos_mach_notify_no_senders (struct port_info *pi,
       pi->class != _pager_class)
     return EOPNOTSUPP;
 
-  _pager_update_seqno_p ((struct pager *) pi, seqno);
   ports_no_senders (pi, mscount);
 
   return 0;

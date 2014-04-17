@@ -1192,21 +1192,6 @@ disk_cache_block_is_ref (block_t block)
   return ref;
 }
 
-/* A top-level function for the paging thread that just services paging
-   requests.  */
-static void *
-service_paging_requests (void *arg)
-{
-  struct port_bucket *pager_bucket = arg;
-  ports_manage_port_operations_multithread (pager_bucket,
-					    pager_demuxer,
-					    1000,
-					    0,
-					    NULL);
-  /* Not reached.  */
-  return NULL;
-}
-
 /* Create the disk pager, and the file pager.  */
 void
 create_disk_pager (void)
@@ -1231,17 +1216,10 @@ create_disk_pager (void)
   /* The file pager.  */
   file_pager_bucket = ports_create_bucket ();
 
-#define STACK_SIZE (64 * 1024)
-  pthread_attr_init (&attr);
-  pthread_attr_setstacksize (&attr, STACK_SIZE);
-#undef STACK_SIZE
-
-  /* Make a thread to service file paging requests.  */
-  err = pthread_create (&thread, &attr,
-			service_paging_requests, file_pager_bucket);
+  /* Start libpagers worker threads.  */
+  err = pager_start_workers (file_pager_bucket);
   if (err)
-    error (2, err, "pthread_create");
-  pthread_detach (thread);
+    ext2_panic ("can't create libpager worker threads: %s", strerror (err));
 }
 
 /* Call this to create a FILE_DATA pager and return a send right.

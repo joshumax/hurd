@@ -35,11 +35,6 @@ _pager_seqnos_memory_object_data_unlock (struct pager *p,
       || p->port.class != _pager_class)
     return EOPNOTSUPP;
 
-  pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
-  _pager_release_seqno (p, seqno);
-  pthread_mutex_unlock (&p->interlock);
-
   if (p->pager_state != NORMAL)
     {
       printf ("pager in wrong state for unlock\n");

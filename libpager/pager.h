@@ -25,11 +25,8 @@
    scope.  */
 struct user_pager_info;
 
-/* This de-muxer function is for use within libports_demuxer. */
-/* INP is a message we've received; OUTP will be filled in with
-   a reply message.  */
-int pager_demuxer (mach_msg_header_t *inp,
-		   mach_msg_header_t *outp);
+/* Start the worker threads libpager uses to service requests.  */
+error_t pager_start_workers (struct port_bucket *pager_bucket);
 
 /* Create a new pager.  The pager will have a port created for it
    (using libports, in BUCKET) and will be immediately ready

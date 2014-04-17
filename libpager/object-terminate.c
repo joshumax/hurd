@@ -32,8 +32,7 @@ _pager_seqnos_memory_object_terminate (struct pager *p,
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
-  
+
   if (control != p->memobjcntl)
     {
       printf ("incg terminate: wrong control port\n");
@@ -75,7 +74,6 @@ _pager_seqnos_memory_object_terminate (struct pager *p,
 #endif
 
  out:
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
 
   return 0;

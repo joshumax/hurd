@@ -33,7 +33,6 @@ _pager_seqnos_memory_object_init (struct pager *p,
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&p->interlock);
-  _pager_wait_for_seqno (p, seqno);
 
   if (pagesize != __vm_page_size)
     {
@@ -69,7 +68,6 @@ _pager_seqnos_memory_object_init (struct pager *p,
   p->pager_state = NORMAL;
 
  out:
-  _pager_release_seqno (p, seqno);
   pthread_mutex_unlock (&p->interlock);
 
   return 0;
