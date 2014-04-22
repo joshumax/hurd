@@ -48,6 +48,9 @@
 #include "input.h"
 
 #include "fs_notify_U.h"
+#include "libnetfs/fs_S.h"
+#include "libnetfs/io_S.h"
+#include "tioctl_S.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (console);
 
@@ -1815,98 +1818,101 @@ S_tioctl_tiocgpgrp (struct protid *cred, int *pgrp)
 }
 
 kern_return_t
-S_tioctl_tiocmodg (io_t port, int *state)
+S_tioctl_tiocmodg (struct protid *cred, int *state)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocmods (io_t port, int state)
+S_tioctl_tiocmods (struct protid *cred, int state)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocexcl (io_t port)
+S_tioctl_tiocexcl (struct protid *cred)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocnxcl (io_t port)
+S_tioctl_tiocnxcl (struct protid *cred)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocgeta (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+S_tioctl_tiocgeta (struct protid *cred, tcflag_t *modes, cc_t *ccs,
+		   speed_t *speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocseta (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+S_tioctl_tiocseta (struct protid *cred, tcflag_t *modes, cc_t *ccs,
+		   speed_t *speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsetaw (io_t port, tcflag_t *modes, cc_t *ccs, speed_t *speeds)
+S_tioctl_tiocsetaw (struct protid *cred, tcflag_t *modes, cc_t *ccs,
+		    speed_t *speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsetaf (io_t port, tcflag_t *modes, cc_t *ccs,
-				  speed_t *speeds)
+S_tioctl_tiocsetaf (struct protid *cred, tcflag_t *modes, cc_t *ccs,
+		    speed_t *speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocgetd (io_t port, int *disc)
+S_tioctl_tiocgetd (struct protid *cred, int *disc)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsetd (io_t port, int disc)
+S_tioctl_tiocsetd (struct protid *cred, int disc)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocdrain (io_t port)
+S_tioctl_tiocdrain (struct protid *cred)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocmget (io_t port, int *bits)
+S_tioctl_tiocmget (struct protid *cred, int *bits)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocmset (io_t port, int bits)
+S_tioctl_tiocmset (struct protid *cred, int bits)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsig (io_t port, int sig)
+S_tioctl_tiocsig (struct protid *cred, int sig)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocext (io_t port, int mode)
+S_tioctl_tiocext (struct protid *cred, int mode)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocucntl (io_t port, int mode)
+S_tioctl_tiocucntl (struct protid *cred, int mode)
 
 {
   return EOPNOTSUPP;

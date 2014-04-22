@@ -20,6 +20,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include "fs_S.h"
 
 #include <argz.h>
 

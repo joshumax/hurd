@@ -31,6 +31,7 @@
 
 #include "open.h"
 #include "dev.h"
+#include "libtrivfs/trivfs_fsys_S.h"
 
 static struct argp_option options[] =
 {

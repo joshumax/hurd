@@ -38,6 +38,10 @@
 
 #include <version.h>
 
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_fsys_S.h"
+#include "libtrivfs/trivfs_io_S.h"
+
 #define DEFAULT_SERVER _SERVERS "fifo";
 
 const char *argp_program_version = STANDARD_HURD_VERSION (new-fifo);

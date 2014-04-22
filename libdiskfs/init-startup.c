@@ -28,6 +28,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <hurd/startup.h>
 #include <pids.h>
 
+#include "startup_S.h"
+
 char *_diskfs_chroot_directory;
 
 mach_port_t

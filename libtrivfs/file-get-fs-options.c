@@ -22,6 +22,7 @@
 #include <hurd/fshelp.h>
 
 #include "priv.h"
+#include "trivfs_fs_S.h"
 
 error_t
 trivfs_S_file_get_fs_options (struct trivfs_protid *cred,

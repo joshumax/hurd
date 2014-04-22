@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "priv.h"
+#include "trivfs_io_S.h"
 
 error_t
 trivfs_S_io_identity (struct trivfs_protid *cred,

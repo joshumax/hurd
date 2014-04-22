@@ -20,6 +20,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Written by Michael I. Bushnell.  */
 
 #include "priv.h"
+#include "trivfs_fsys_S.h"
 
 kern_return_t
 trivfs_S_fsys_startup (mach_port_t bootport,

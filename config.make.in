@@ -65,9 +65,6 @@ gnu89-inline-CFLAGS = @libc_cv_gnu89_inline@
 # `yes' or `no' to indicate if ld --version-script is available.
 VERSIONING = @VERSIONING@
 
-# If a separate libcrypt is available, use it.
-LIBCRYPT = @LIBCRYPT@
-
 # How to link against Parted libraries, if at all.
 PARTED_LIBS = @PARTED_LIBS@
 

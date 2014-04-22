@@ -35,6 +35,8 @@
 #include <argp.h>
 #include <argz.h>
 #include <assert.h>
+
+#include "fsys_S.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (magic);
 

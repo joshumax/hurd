@@ -32,6 +32,9 @@
 #include <limits.h>
 #include <argp.h>
 #include <nullauth.h>
+
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (null);
 

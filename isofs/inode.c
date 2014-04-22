@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "isofs.h"
+#include "libdiskfs/fs_S.h"
 
 
 /* There is no such thing as an inode in this format, all such

@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "trivfs_fsys_S.h"
 
 kern_return_t
 trivfs_S_fsys_syncfs (struct trivfs_control *cntl,

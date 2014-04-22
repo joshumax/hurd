@@ -31,7 +31,7 @@
 #define FSYS_INTRAN control_t begin_using_control_port (fsys_t)
 #define FSYS_DESTRUCTOR end_using_control_port (control_t)
 
-#define FILE_IMPORTS import "netfs.h"; import "priv.h";
-#define IO_IMPORTS import "netfs.h"; import "priv.h";
-#define FSYS_IMPORTS import "netfs.h"; import "priv.h";
-#define IFSOCK_IMPORTS import "netfs.h"; import "priv.h";
+#define FILE_IMPORTS import "libnetfs/netfs.h"; import "libnetfs/priv.h";
+#define IO_IMPORTS import "libnetfs/netfs.h"; import "libnetfs/priv.h";
+#define FSYS_IMPORTS import "libnetfs/netfs.h"; import "libnetfs/priv.h";
+#define IFSOCK_IMPORTS import "libnetfs/netfs.h"; import "libnetfs/priv.h";

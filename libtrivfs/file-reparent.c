@@ -19,6 +19,8 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include "priv.h"
+#include "trivfs_fs_S.h"
+#include "trivfs_io_S.h"
 
 error_t
 trivfs_S_file_reparent (struct trivfs_protid *cred,

@@ -26,14 +26,14 @@
 #define FSYS_INTRAN control_t diskfs_begin_using_control_port (fsys_t)
 #define FSYS_DESTRUCTOR diskfs_end_using_control_port (control_t)
 
-#define FILE_IMPORTS import "priv.h";
-#define IO_IMPORTS import "priv.h";
-#define FSYS_IMPORTS import "priv.h";
-#define IFSOCK_IMPORTS import "priv.h";
+#define FILE_IMPORTS import "libdiskfs/priv.h";
+#define IO_IMPORTS import "libdiskfs/priv.h";
+#define FSYS_IMPORTS import "libdiskfs/priv.h";
+#define IFSOCK_IMPORTS import "libdiskfs/priv.h";
 
 #define EXEC_STARTUP_INTRAN                             \
   bootinfo_t diskfs_begin_using_bootinfo_port (exec_startup_t)
 #define EXEC_STARTUP_DESTRUCTOR                         \
   diskfs_end_using_bootinfo (bootinfo_t)
 #define EXEC_STARTUP_IMPORTS                            \
-  import "priv.h";
+  import "libdiskfs/priv.h";

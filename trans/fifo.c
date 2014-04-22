@@ -35,6 +35,9 @@
 
 #include <version.h>
 
+#include "libtrivfs/trivfs_fs_S.h"
+#include "libtrivfs/trivfs_io_S.h"
+
 /* Global options.  These defaults are the standard ones, I think...   */
 int wait_for_reader = 1, wait_for_writer = 1;
 int one_reader = 1;

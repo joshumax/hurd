@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "trivfs_fs_S.h"
 
 error_t
 trivfs_S_file_get_storage_info (struct trivfs_protid *cred,

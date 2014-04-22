@@ -22,6 +22,7 @@
 #include <hurd/fshelp.h>
 
 #include "priv.h"
+#include "trivfs_fsys_S.h"
 
 error_t
 trivfs_S_fsys_get_options (struct trivfs_control *fsys,
