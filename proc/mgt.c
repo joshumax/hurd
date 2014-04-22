@@ -435,7 +435,6 @@ S_proc_exception_raise (struct exc *e,
   if (! p)
     {
       /* Bogus RPC.  */
-      ports_port_deref (e);
       return EINVAL;
     }
 
