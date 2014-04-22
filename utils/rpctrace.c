@@ -768,6 +768,8 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	   * We ignore it. */
 	  if (source != unknown_task)
 	    {
+	      /* TODO: this happens on fork() when the new process does not
+	         have the send right yet (it is about to get inserted).  */
 	      error (0, 0, "get an unknown send right from process %d",
 		     task2pid (source));
 	      return dummy_wrapper.name;
