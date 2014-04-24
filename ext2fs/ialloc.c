@@ -115,7 +115,8 @@ ino_t
 ext2_alloc_inode (ino_t dir_inum, mode_t mode)
 {
   char *bh = NULL;
-  int i, j, inum, avefreei;
+  int i, j, avefreei;
+  ino_t inum;
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
 
