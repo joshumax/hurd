@@ -297,10 +297,14 @@ unsigned log2_stat_blocks_per_fs_block;
 /* A handy page of page-aligned zeros.  */
 vm_address_t zeroblock;
 
-/* Get the superblock from the disk, & setup various global info from it.  */
+/* Get the superblock from the disk, point `sblock' to it, and setup
+   various global info from it.  */
 void get_hypermetadata ();
 
-/* Map `sblock' and `group_desc_image' pointers to disk cache.  */
+/* Map `group_desc_image' pointers to disk cache.  Also, establish a
+   non-exported mapping to the superblock that will be used by
+   diskfs_set_hypermetadata to update the superblock from the cache
+   `sblock' points to.  */
 void map_hypermetadata ();
 
 /* ---------------------------------------------------------------- */

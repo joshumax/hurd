@@ -61,7 +61,9 @@ get_hypermetadata (void)
   error_t err;
   size_t read = 0;
 
-  assert (! sblock);
+  if (sblock != NULL)
+    munmap (sblock, SBLOCK_SIZE);
+
   err = store_read (store, SBLOCK_OFFS >> store->log2_block_size,
 		    SBLOCK_SIZE, (void **)&sblock, &read);
   if (err || read != SBLOCK_SIZE)
@@ -161,19 +163,19 @@ get_hypermetadata (void)
       zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ, MAP_ANON, 0, 0);
       assert (zeroblock != (vm_address_t) MAP_FAILED);
     }
-
-  munmap (sblock, SBLOCK_SIZE);
-  sblock = NULL;
 }
+
+static struct ext2_super_block *mapped_sblock;
 
 void
 map_hypermetadata (void)
 {
-  sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
+  mapped_sblock = (struct ext2_super_block *) boffs_ptr (SBLOCK_OFFS);
 
   /* Cache a convenient pointer to the block group descriptors for allocation.
      These are stored in the filesystem blocks following the superblock.  */
-  group_desc_image = (struct ext2_group_desc *) bptr (bptr_block (sblock) + 1);
+  group_desc_image =
+    (struct ext2_group_desc *) bptr (bptr_block (mapped_sblock) + 1);
 }
 
 error_t
@@ -196,8 +198,9 @@ diskfs_set_hypermetadata (int wait, int clean)
  if (sblock_dirty)
    {
      sblock_dirty = 0;
-     disk_cache_block_ref_ptr (sblock);
-     record_global_poke (sblock);
+     memcpy (mapped_sblock, sblock, SBLOCK_SIZE);
+     disk_cache_block_ref_ptr (mapped_sblock);
+     record_global_poke (mapped_sblock);
    }
 
   sync_global (wait);
