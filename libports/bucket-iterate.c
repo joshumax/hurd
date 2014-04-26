@@ -31,40 +31,54 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 {
   /* This is obscenely ineffecient.  ihash and ports need to cooperate
      more closely to do it efficiently. */
-  struct item
-    {
-      struct item *next;
-      void *p;
-    } *list = 0;
-  struct item *i, *nxt;
+  void **p;
+  size_t i, n, nr_items;
   error_t err;
 
   pthread_mutex_lock (&_ports_lock);
+
+  if (bucket->htable.nr_items == 0)
+    {
+      pthread_mutex_unlock (&_ports_lock);
+      return 0;
+    }
+
+  nr_items = bucket->htable.nr_items;
+  p = malloc (nr_items * sizeof *p);
+  if (p == NULL)
+    return ENOMEM;
+
+  n = 0;
   HURD_IHASH_ITERATE (&bucket->htable, arg)
     {
       struct port_info *const pi = arg;
-      struct item *j;
 
       if (class == 0 || pi->class == class)
 	{
-	  j = malloc (sizeof (struct item));
-	  j->next = list;
-	  j->p = pi;
-	  list = j;
 	  pi->refcnt++;
+	  p[n] = pi;
+	  n++;
 	}
     }
   pthread_mutex_unlock (&_ports_lock);
 
+  if (n != nr_items)
+    {
+      /* We allocated too much.  Release unused memory.  */
+      void **new = realloc (p, n * sizeof *p);
+      if (new)
+        p = new;
+    }
+
   err = 0;
-  for (i = list; i; i = nxt)
+  for (i = 0; i < n; i++)
     {
       if (!err)
-	err = (*fun)(i->p);
-      ports_port_deref (i->p);
-      nxt = i->next;
-      free (i);
+	err = (*fun)(p[i]);
+      ports_port_deref (p[i]);
     }
+
+  free (p);
   return err;
 }
 
