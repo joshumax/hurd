@@ -1168,9 +1168,20 @@ do_exec (file_t file,
 	goto out;
 
       char *name;
-      if (asprintf (&name, "%s(%d)", argv, pid) > 0)
+      int size = asprintf (&name, "%s(%d)", argv, pid);
+      if (size > 0)
 	{
-	  task_set_name (newtask, name);
+/* This is an internal implementational detail of the gnumach kernel.  */
+#define TASK_NAME_SIZE	32
+	  if (size < TASK_NAME_SIZE)
+	    task_set_name (newtask, name);
+	  else
+	    {
+	      char *abbr = name + size - TASK_NAME_SIZE + 1;
+	      abbr[0] = abbr[1] = abbr[2] = '.';
+	      task_set_name (newtask, abbr);
+	    }
+#undef TASK_NAME_SIZE
 	  free (name);
 	}
     }
