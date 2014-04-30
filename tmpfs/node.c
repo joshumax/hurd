@@ -30,6 +30,7 @@ unsigned int num_files;
 static unsigned int gen;
 
 struct node *all_nodes;
+static size_t all_nodes_nr_items;
 
 error_t
 diskfs_alloc_node (struct node *dp, mode_t mode, struct node **npp)
@@ -77,6 +78,7 @@ diskfs_free_node (struct node *np, mode_t mode)
   *np->dn->hprevp = np->dn->hnext;
   if (np->dn->hnext != 0)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
+  all_nodes_nr_items -= 1;
   free (np->dn);
   np->dn = 0;
 
@@ -120,6 +122,7 @@ diskfs_node_norefs (struct node *np)
       *np->dn->hprevp = np->dn->hnext;
       if (np->dn->hnext != 0)
 	np->dn->hnext->dn->hprevp = np->dn->hprevp;
+      all_nodes_nr_items -= 1;
       np->dn->hnext = 0;
       np->dn->hprevp = 0;
     }
@@ -186,6 +189,7 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
 	dn->hnext->dn->hprevp = &dn->hnext;
       dn->hprevp = &all_nodes;
       all_nodes = np;
+      all_nodes_nr_items += 1;
       pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
       st = &np->dn_stat;
@@ -222,7 +226,7 @@ error_t
 diskfs_node_iterate (error_t (*fun) (struct node *))
 {
   error_t err = 0;
-  unsigned int num_nodes = 0;
+  size_t num_nodes;
   struct node *node, **node_list, **p;
 
   pthread_spin_lock (&diskfs_node_refcnt_lock);
@@ -233,8 +237,7 @@ diskfs_node_iterate (error_t (*fun) (struct node *))
      diskfs_node_refcnt_lock, but we can't hold this while locking the
      individual node locks).  */
 
-  for (node = all_nodes; node != 0; node = node->dn->hnext)
-    num_nodes++;
+  num_nodes = all_nodes_nr_items;
 
   p = node_list = alloca (num_nodes * sizeof (struct node *));
   for (node = all_nodes; node != 0; node = node->dn->hnext)
