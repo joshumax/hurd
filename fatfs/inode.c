@@ -45,6 +45,7 @@
 #endif
 
 static struct node *nodehash[INOHSZ];
+static size_t nodehash_nr_items;
 
 static error_t read_node (struct node *np, vm_address_t buf);
 
@@ -106,6 +107,7 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
     dn->hnext->dn->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
+  nodehash_nr_items += 1;
 
   pthread_spin_unlock (&diskfs_node_refcnt_lock);
   
@@ -171,6 +173,7 @@ diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
     dn->hnext->dn->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
+  nodehash_nr_items += 1;
 
   pthread_spin_unlock (&diskfs_node_refcnt_lock);
   
@@ -216,7 +219,8 @@ diskfs_node_norefs (struct node *np)
   *np->dn->hprevp = np->dn->hnext;
   if (np->dn->hnext)
     np->dn->hnext->dn->hprevp = np->dn->hprevp;
-  
+  nodehash_nr_items -= 1;
+
   while (last)
     {
       struct cluster_chain *next = last->next;
@@ -546,7 +550,8 @@ error_t
 diskfs_node_iterate (error_t (*fun)(struct node *))
 {
   error_t err = 0;
-  int n, num_nodes = 0;
+  int n;
+  size_t num_nodes;
   struct node *node, **node_list, **p;
 
   pthread_spin_lock (&diskfs_node_refcnt_lock);
@@ -557,9 +562,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
      diskfs_node_refcnt_lock, but we can't hold this while locking the
      individual node locks).  */
 
-  for (n = 0; n < INOHSZ; n++)
-    for (node = nodehash[n]; node; node = node->dn->hnext)
-      num_nodes++;
+  num_nodes = nodehash_nr_items;
 
   node_list = alloca (num_nodes * sizeof (struct node *));
   p = node_list;
