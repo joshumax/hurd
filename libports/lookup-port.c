@@ -28,7 +28,6 @@ ports_lookup_port (struct port_bucket *bucket,
 {
   struct port_info *pi;
 
-  pthread_mutex_lock (&_ports_lock);
   pthread_rwlock_rdlock (&_ports_htable_lock);
 
   pi = hurd_ihash_find (&_ports_htable, port);
@@ -38,10 +37,9 @@ ports_lookup_port (struct port_bucket *bucket,
     pi = 0;
 
   if (pi)
-    pi->refcnt++;
+    refcounts_unsafe_ref (&pi->refcounts, NULL);
 
   pthread_rwlock_unlock (&_ports_htable_lock);
-  pthread_mutex_unlock (&_ports_lock);
 
   return pi;
 }

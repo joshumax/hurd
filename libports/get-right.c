@@ -41,7 +41,7 @@ ports_get_right (void *port)
   if ((pi->flags & PORT_HAS_SENDRIGHTS) == 0)
     {
       pi->flags |= PORT_HAS_SENDRIGHTS;
-      pi->refcnt++;
+      refcounts_ref (&pi->refcounts, NULL);
       err = mach_port_request_notification (mach_task_self (),
 					    pi->port_right,
 					    MACH_NOTIFY_NO_SENDERS,

@@ -72,7 +72,7 @@ ports_transfer_right (void *tostruct,
       else if (((topi->flags & PORT_HAS_SENDRIGHTS) == 0) && hassendrights)
 	{
 	  topi->flags |= PORT_HAS_SENDRIGHTS;
-	  topi->refcnt++;
+	  refcounts_ref (&topi->refcounts, NULL);
 	}
     }
   

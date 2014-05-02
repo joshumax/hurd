@@ -48,8 +48,7 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
     return ENOMEM;
   
   pi->class = class;
-  pi->refcnt = 1 + !!stat.mps_srights;
-  pi->weakrefcnt = 0;
+  refcounts_init (&pi->refcounts, 1 + !!stat.mps_srights, 0);
   pi->cancel_threshold = 0;
   pi->mscount = stat.mps_mscount;
   pi->flags = stat.mps_srights ? PORT_HAS_SENDRIGHTS : 0;

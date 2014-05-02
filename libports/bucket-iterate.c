@@ -35,13 +35,11 @@ _ports_bucket_class_iterate (struct hurd_ihash *ht,
   size_t i, n, nr_items;
   error_t err;
 
-  pthread_mutex_lock (&_ports_lock);
   pthread_rwlock_rdlock (&_ports_htable_lock);
 
   if (ht->nr_items == 0)
     {
       pthread_rwlock_unlock (&_ports_htable_lock);
-      pthread_mutex_unlock (&_ports_lock);
       return 0;
     }
 
@@ -50,7 +48,6 @@ _ports_bucket_class_iterate (struct hurd_ihash *ht,
   if (p == NULL)
     {
       pthread_rwlock_unlock (&_ports_htable_lock);
-      pthread_mutex_unlock (&_ports_lock);
       return ENOMEM;
     }
 
@@ -61,13 +58,12 @@ _ports_bucket_class_iterate (struct hurd_ihash *ht,
 
       if (class == 0 || pi->class == class)
 	{
-	  pi->refcnt++;
+	  refcounts_ref (&pi->refcounts, NULL);
 	  p[n] = pi;
 	  n++;
 	}
     }
   pthread_rwlock_unlock (&_ports_htable_lock);
-  pthread_mutex_unlock (&_ports_lock);
 
   if (n != 0 && n != nr_items)
     {

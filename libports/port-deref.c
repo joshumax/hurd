@@ -25,26 +25,24 @@ void
 ports_port_deref (void *portstruct)
 {
   struct port_info *pi = portstruct;
-  int trieddroppingweakrefs = 0;
+  struct references result;
 
- retry:
-  
-  pthread_mutex_lock (&_ports_lock);
-  
-  if (pi->refcnt == 1 && pi->weakrefcnt
-      && pi->class->dropweak_routine && !trieddroppingweakrefs)
+  if (pi->class->dropweak_routine)
     {
-      pthread_mutex_unlock (&_ports_lock);
-      (*pi->class->dropweak_routine) (pi);
-      trieddroppingweakrefs = 1;
-      goto retry;
-    }
-  
-  assert (pi->refcnt);
+      /* If we need to call the dropweak routine, we need to hold one
+         reference while doing so.  We use a weak reference for this
+         purpose, which we acquire by demoting our hard reference to a
+         weak one.  */
+      refcounts_demote (&pi->refcounts, &result);
 
-  pi->refcnt--;
-  if (pi->refcnt == 0 && pi->weakrefcnt == 0)
-    _ports_complete_deallocate (pi);
+      if (result.hard == 0 && result.weak > 1)
+        (*pi->class->dropweak_routine) (pi);
+
+      refcounts_deref_weak (&pi->refcounts, &result);
+    }
   else
-    pthread_mutex_unlock (&_ports_lock);
+    refcounts_deref (&pi->refcounts, &result);
+
+  if (result.hard == 0 && result.weak == 0)
+    _ports_complete_deallocate (pi);
 }

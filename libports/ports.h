@@ -27,6 +27,7 @@
 #include <hurd/ihash.h>
 #include <mach/notify.h>
 #include <pthread.h>
+#include <refcount.h>
 
 /* These are global values for common flags used in the various structures.
    Not all of these are meaningful in all flag fields.  */
@@ -39,8 +40,7 @@
 struct port_info
 {
   struct port_class *class;
-  int refcnt;
-  int weakrefcnt;
+  refcounts_t refcounts;
   mach_port_mscount_t mscount;
   mach_msg_seqno_t cancel_threshold;
   int flags;

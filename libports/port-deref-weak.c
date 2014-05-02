@@ -25,12 +25,8 @@ void
 ports_port_deref_weak (void *portstruct)
 {
   struct port_info *pi = portstruct;
-  
-  pthread_mutex_lock (&_ports_lock);
-  assert (pi->weakrefcnt);
-  pi->weakrefcnt--;
-  if (pi->refcnt == 0 && pi->weakrefcnt == 0)
+  struct references result;
+  refcounts_deref_weak (&pi->refcounts, &result);
+  if (result.hard == 0 && result.weak == 0)
     _ports_complete_deallocate (pi);
-  else
-    pthread_mutex_unlock (&_ports_lock);
 }

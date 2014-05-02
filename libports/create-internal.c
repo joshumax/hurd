@@ -54,8 +54,7 @@ _ports_create_port_internal (struct port_class *class,
     }
 
   pi->class = class;
-  pi->refcnt = 1;
-  pi->weakrefcnt = 0;
+  refcounts_init (&pi->refcounts, 1, 0);
   pi->cancel_threshold = 0;
   pi->mscount = 0;
   pi->flags = 0;

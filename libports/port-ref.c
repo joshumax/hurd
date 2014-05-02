@@ -25,9 +25,5 @@ void
 ports_port_ref (void *portstruct)
 {
   struct port_info *pi = portstruct;
-  
-  pthread_mutex_lock (&_ports_lock);
-  assert (pi->refcnt || pi->weakrefcnt);
-  pi->refcnt++;
-  pthread_mutex_unlock (&_ports_lock);
+  refcounts_ref (&pi->refcounts, NULL);
 }

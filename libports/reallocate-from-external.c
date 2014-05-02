@@ -56,7 +56,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   else if (((pi->flags & PORT_HAS_SENDRIGHTS) == 0) && stat.mps_srights)
     {
       pi->flags |= PORT_HAS_SENDRIGHTS;
-      pi->refcnt++;
+      refcounts_ref (&pi->refcounts, NULL);
     }
   
   pi->port_right = receive;

@@ -431,7 +431,9 @@ destroy_receiver_info (struct receiver_info *info)
   while (send_wrapper)
     {
       struct sender_info *next = send_wrapper->next;
-      assert (TRACED_INFO (send_wrapper)->pi.refcnt == 1);
+      assert (
+	refcounts_hard_references (&TRACED_INFO (send_wrapper)->pi.refcounts)
+	== 1);
       /* Reset the receive_right of the send wrapper in advance to avoid
        * destroy_receiver_info is called when the port info is destroyed. */
       send_wrapper->receive_right = NULL;
@@ -848,7 +850,11 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	    hurd_ihash_locp_remove (&traced_names, receiver_info->locp);
 
 	    send_wrapper2 = get_send_wrapper (receiver_info, dest, &rr);
-	    assert (TRACED_INFO (send_wrapper2)->pi.refcnt == 1);
+	    assert (
+	      refcounts_hard_references (
+		&TRACED_INFO (send_wrapper2)->pi.refcounts)
+	      == 1);
+
 	    name = TRACED_INFO (send_wrapper2)->name;
 	    TRACED_INFO (send_wrapper2)->name = NULL;
 	    /* send_wrapper2 isn't destroyed normally, so we need to unlink
