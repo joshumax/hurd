@@ -36,7 +36,10 @@ ports_reallocate_port (void *portstruct)
 			    MACH_PORT_RIGHT_RECEIVE, -1);
   assert_perror (err);
 
+  pthread_rwlock_wrlock (&_ports_htable_lock);
+  hurd_ihash_locp_remove (&_ports_htable, pi->ports_htable_entry);
   hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
+  pthread_rwlock_unlock (&_ports_htable_lock);
 
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 			    &pi->port_right);
@@ -48,9 +51,13 @@ ports_reallocate_port (void *portstruct)
     }
   pi->cancel_threshold = 0;
   pi->mscount = 0;
-  err = hurd_ihash_add (&pi->bucket->htable, pi->port_right, pi);
+  pthread_rwlock_wrlock (&_ports_htable_lock);
+  err = hurd_ihash_add (&_ports_htable, pi->port_right, pi);
   assert_perror (err);
+  err = hurd_ihash_add (&pi->bucket->htable, pi->port_right, pi);
+  pthread_rwlock_unlock (&_ports_htable_lock);
   pthread_mutex_unlock (&_ports_lock);
+  assert_perror (err);
 
   err = mach_port_move_member (mach_task_self (), pi->port_right, 
 			       pi->bucket->portset);

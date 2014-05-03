@@ -48,7 +48,7 @@ struct port_info
   struct rpc_info *current_rpcs;
   struct port_bucket *bucket;
   hurd_ihash_locp_t hentry;
-  struct port_info *next, **prevp; /* links on port_class list */
+  hurd_ihash_locp_t ports_htable_entry;
 };
 typedef struct port_info *port_info_t;
 
@@ -61,11 +61,12 @@ typedef struct port_info *port_info_t;
 struct port_bucket
 {
   mach_port_t portset;
+  /* Per-bucket hash table used for fast iteration.  Access must be
+     serialized using _ports_htable_lock.  */
   struct hurd_ihash htable;
   int rpcs;
   int flags;
   int count;
-  struct port_bucket *next;
 };
 /* FLAGS above are the following: */
 #define PORT_BUCKET_INHIBITED	PORTS_INHIBITED
@@ -78,7 +79,6 @@ struct port_class
 {
   int flags;
   int rpcs;
-  struct port_info *ports;
   int count;
   void (*clean_routine) (void *);
   void (*dropweak_routine) (void *);
@@ -277,7 +277,7 @@ error_t ports_class_iterate (struct port_class *class,
 			     error_t (*fun)(void *port));
 
 /* Internal entrypoint for above two.  */
-error_t _ports_bucket_class_iterate (struct port_bucket *bucket,
+error_t _ports_bucket_class_iterate (struct hurd_ihash *ht,
 				     struct port_class *class,
 				     error_t (*fun)(void *port));
 
@@ -402,7 +402,19 @@ extern kern_return_t
 /* Private data */
 extern pthread_mutex_t _ports_lock;
 extern pthread_cond_t _ports_block;
-extern struct port_bucket *_ports_all_buckets;
+
+/* A global hash table mapping port names to port_info objects.  This
+   table is used for port lookups and to iterate over classes.
+
+   A port in this hash table carries an implicit light reference.
+   When the reference counts reach zero, we call
+   _ports_complete_deallocate.  There we reacquire our lock
+   momentarily to check whether someone else reacquired a reference
+   through the hash table.  */
+extern struct hurd_ihash _ports_htable;
+/* Access to all hash tables is protected by this lock.  */
+extern pthread_rwlock_t _ports_htable_lock;
+
 extern int _ports_total_rpcs;
 extern int _ports_flags;
 #define _PORTS_INHIBITED	PORTS_INHIBITED

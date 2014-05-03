@@ -29,15 +29,14 @@ _ports_complete_deallocate (struct port_info *pi)
 
   if (pi->port_right)
     {
+      pthread_rwlock_wrlock (&_ports_htable_lock);
+      hurd_ihash_locp_remove (&_ports_htable, pi->ports_htable_entry);
       hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
+      pthread_rwlock_unlock (&_ports_htable_lock);
       mach_port_mod_refs (mach_task_self (), pi->port_right,
 			  MACH_PORT_RIGHT_RECEIVE, -1);
       pi->port_right = MACH_PORT_NULL;
     }
-
-  *pi->prevp = pi->next;
-  if (pi->next)
-    pi->next->prevp = pi->prevp;
 
   pi->bucket->count--;
   pi->class->count--;

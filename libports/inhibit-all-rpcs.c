@@ -36,24 +36,23 @@ ports_inhibit_all_rpcs ()
       struct port_bucket *bucket;
       int this_one = 0;
 
-      for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
+      pthread_rwlock_rdlock (&_ports_htable_lock);
+      HURD_IHASH_ITERATE (&_ports_htable, portstruct)
 	{
-	  HURD_IHASH_ITERATE (&bucket->htable, portstruct)
+	  struct rpc_info *rpc;
+	  struct port_info *pi = portstruct;
+
+	  for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
 	    {
-	      struct rpc_info *rpc;
-	      struct port_info *pi = portstruct;
-	  
-	      for (rpc = pi->current_rpcs; rpc; rpc = rpc->next)
-		{
-		  /* Avoid cancelling the calling thread if it's currently
-		     handling a RPC.  */
-		  if (rpc->thread == hurd_thread_self ())
-		    this_one = 1;
-		  else
-		    hurd_thread_cancel (rpc->thread);
-		}
+	      /* Avoid cancelling the calling thread if it's currently
+		 handling a RPC.  */
+	      if (rpc->thread == hurd_thread_self ())
+		this_one = 1;
+	      else
+		hurd_thread_cancel (rpc->thread);
 	    }
 	}
+      pthread_rwlock_unlock (&_ports_htable_lock);
 
       while (_ports_total_rpcs > this_one)
 	{

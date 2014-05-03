@@ -48,11 +48,5 @@ ports_create_bucket ()
 
   hurd_ihash_init (&ret->htable, offsetof (struct port_info, hentry));
   ret->rpcs = ret->flags = ret->count = 0;
-
-  pthread_mutex_lock (&_ports_lock);
-  ret->next = _ports_all_buckets;
-  _ports_all_buckets = ret;
-  pthread_mutex_unlock (&_ports_lock);
-
   return ret;
 }

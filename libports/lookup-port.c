@@ -26,27 +26,22 @@ ports_lookup_port (struct port_bucket *bucket,
 		   mach_port_t port,
 		   struct port_class *class)
 {
-  struct port_info *pi = 0;
-  
-  pthread_mutex_lock (&_ports_lock);
+  struct port_info *pi;
 
-  if (bucket)
-    pi = hurd_ihash_find (&bucket->htable, port);
-  else
-    for (bucket = _ports_all_buckets; bucket; bucket = bucket->next)
-      {
-	pi = hurd_ihash_find (&bucket->htable, port);
-	if (pi)
-	  break;
-      }
-  
-  if (pi && class && pi->class != class)
+  pthread_mutex_lock (&_ports_lock);
+  pthread_rwlock_rdlock (&_ports_htable_lock);
+
+  pi = hurd_ihash_find (&_ports_htable, port);
+  if (pi
+      && ((class && pi->class != class)
+          || (bucket && pi->bucket != bucket)))
     pi = 0;
 
   if (pi)
     pi->refcnt++;
 
+  pthread_rwlock_unlock (&_ports_htable_lock);
   pthread_mutex_unlock (&_ports_lock);
-  
+
   return pi;
 }

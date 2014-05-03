@@ -35,6 +35,7 @@ ports_inhibit_bucket_rpcs (struct port_bucket *bucket)
     {
       int this_one = 0;
 
+      pthread_rwlock_rdlock (&_ports_htable_lock);
       HURD_IHASH_ITERATE (&bucket->htable, portstruct)
 	{
 	  struct rpc_info *rpc;
@@ -49,7 +50,7 @@ ports_inhibit_bucket_rpcs (struct port_bucket *bucket)
 		hurd_thread_cancel (rpc->thread);
 	    }
 	}
-
+      pthread_rwlock_unlock (&_ports_htable_lock);
 
       while (bucket->rpcs > this_one)
 	{

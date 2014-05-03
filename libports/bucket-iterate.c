@@ -25,7 +25,7 @@
 /* Internal entrypoint for both ports_bucket_iterate and ports_class_iterate.
    If CLASS is non-null, call FUN only for ports in that class.  */
 error_t
-_ports_bucket_class_iterate (struct port_bucket *bucket,
+_ports_bucket_class_iterate (struct hurd_ihash *ht,
 			     struct port_class *class,
 			     error_t (*fun)(void *))
 {
@@ -36,23 +36,26 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
   error_t err;
 
   pthread_mutex_lock (&_ports_lock);
+  pthread_rwlock_rdlock (&_ports_htable_lock);
 
-  if (bucket->htable.nr_items == 0)
+  if (ht->nr_items == 0)
     {
+      pthread_rwlock_unlock (&_ports_htable_lock);
       pthread_mutex_unlock (&_ports_lock);
       return 0;
     }
 
-  nr_items = bucket->htable.nr_items;
+  nr_items = ht->nr_items;
   p = malloc (nr_items * sizeof *p);
   if (p == NULL)
     {
+      pthread_rwlock_unlock (&_ports_htable_lock);
       pthread_mutex_unlock (&_ports_lock);
       return ENOMEM;
     }
 
   n = 0;
-  HURD_IHASH_ITERATE (&bucket->htable, arg)
+  HURD_IHASH_ITERATE (ht, arg)
     {
       struct port_info *const pi = arg;
 
@@ -63,6 +66,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
 	  n++;
 	}
     }
+  pthread_rwlock_unlock (&_ports_htable_lock);
   pthread_mutex_unlock (&_ports_lock);
 
   if (n != 0 && n != nr_items)
@@ -89,5 +93,5 @@ error_t
 ports_bucket_iterate (struct port_bucket *bucket,
 		      error_t (*fun)(void *))
 {
-  return _ports_bucket_class_iterate (bucket, 0, fun);
+  return _ports_bucket_class_iterate (&bucket->htable, NULL, fun);
 }

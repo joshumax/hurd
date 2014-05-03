@@ -81,15 +81,22 @@ _ports_create_port_internal (struct port_class *class,
       goto loop;
     }
 
+  pthread_rwlock_wrlock (&_ports_htable_lock);
+  err = hurd_ihash_add (&_ports_htable, port, pi);
+  if (err)
+    {
+      pthread_rwlock_unlock (&_ports_htable_lock);
+      goto lose;
+    }
   err = hurd_ihash_add (&bucket->htable, port, pi);
   if (err)
-    goto lose;
+    {
+      hurd_ihash_locp_remove (&_ports_htable, pi->ports_htable_entry);
+      pthread_rwlock_unlock (&_ports_htable_lock);
+      goto lose;
+    }
+  pthread_rwlock_unlock (&_ports_htable_lock);
 
-  pi->next = class->ports;
-  pi->prevp = &class->ports;
-  if (class->ports)
-    class->ports->prevp = &pi->next;
-  class->ports = pi;
   bucket->count++;
   class->count++;
   pthread_mutex_unlock (&_ports_lock);
