@@ -46,7 +46,10 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
   nr_items = bucket->htable.nr_items;
   p = malloc (nr_items * sizeof *p);
   if (p == NULL)
-    return ENOMEM;
+    {
+      pthread_mutex_unlock (&_ports_lock);
+      return ENOMEM;
+    }
 
   n = 0;
   HURD_IHASH_ITERATE (&bucket->htable, arg)
