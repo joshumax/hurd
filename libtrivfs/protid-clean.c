@@ -31,19 +31,26 @@ trivfs_clean_protid (void *arg)
     (*trivfs_protid_destroy_hook) (cred);
 
   /* If we hold the only reference to the peropen, try to get rid of it. */
-  pthread_mutex_lock (&cntl->lock);
-  if (cred->po->refcnt == 1 && trivfs_peropen_destroy_hook)
+  if (trivfs_peropen_destroy_hook)
     {
-      pthread_mutex_unlock (&cntl->lock);
-      (*trivfs_peropen_destroy_hook) (cred->po);
-      pthread_mutex_lock (&cntl->lock);
+      if (refcount_deref (&cred->po->refcnt) == 0)
+        {
+          /* Reaquire a reference while we call the hook.  */
+          refcount_ref (&cred->po->refcnt);
+          (*trivfs_peropen_destroy_hook) (cred->po);
+          if (refcount_deref (&cred->po->refcnt) == 0)
+            {
+              ports_port_deref (cntl);
+              free (cred->po);
+            }
+        }
     }
-  if (--cred->po->refcnt == 0)
-    {
-      ports_port_deref (cntl);
-      free (cred->po);
-    }
-  pthread_mutex_unlock (&cntl->lock);
+  else
+    if (refcount_deref (&cred->po->refcnt) == 0)
+      {
+        ports_port_deref (cntl);
+        free (cred->po);
+      }
 
   iohelp_free_iouser (cred->user);
 

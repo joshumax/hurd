@@ -24,6 +24,7 @@
 #include <mach/mach.h>
 #include <hurd/ports.h>
 #include <hurd/iohelp.h>
+#include <refcount.h>
 
 struct trivfs_protid
 {
@@ -41,14 +42,13 @@ struct trivfs_peropen
 {
   void *hook;			/* for user use */
   int openmodes;
-  int refcnt;
+  refcount_t refcnt;
   struct trivfs_control *cntl;
 };
 
 struct trivfs_control
 {
   struct port_info pi;
-  pthread_mutex_t lock;
   struct port_class *protid_class;
   struct port_bucket *protid_bucket;
   mach_port_t filesys_id;

@@ -35,11 +35,8 @@ trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 
   if (! err)
     {
-      pthread_mutex_lock (&cred->po->cntl->lock);
       new->po = cred->po;
-      new->po->refcnt++;
-      pthread_mutex_unlock (&cred->po->cntl->lock);
-
+      refcount_ref (&new->po->refcnt);
       new->isroot = cred->isroot;
 
       err = iohelp_dup_iouser (&new->user, cred->user);

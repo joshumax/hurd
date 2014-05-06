@@ -62,11 +62,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
     newcred->isroot = 1;
 
   newcred->hook = cred->hook;
-
-  pthread_mutex_lock (&cred->po->cntl->lock);
   newcred->po = cred->po;
-  newcred->po->refcnt++;
-  pthread_mutex_unlock (&cred->po->cntl->lock);
+  refcount_ref (&newcred->po->refcnt);
 
   do
     err = io_restrict_auth (newcred->po->cntl->underlying, &newcred->realnode,

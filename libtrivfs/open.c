@@ -40,7 +40,7 @@ trivfs_open (struct trivfs_control *cntl,
 
   ports_port_ref (cntl);
 
-  po->refcnt = 1;
+  refcount_init (&po->refcnt, 1);
   po->cntl = cntl;
   po->openmodes = flags;
   po->hook = 0;
