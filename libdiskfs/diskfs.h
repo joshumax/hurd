@@ -28,6 +28,7 @@
 #include <hurd/iohelp.h>
 #include <idvec.h>
 #include <features.h>
+#include <refcount.h>
 
 #ifdef DISKFS_DEFINE_EXTERN_INLINE
 #define DISKFS_EXTERN_INLINE
@@ -57,7 +58,7 @@ struct peropen
 {
   int filepointer;
   int lock_status;
-  int refcnt;
+  refcount_t refcnt;
   int openstat;
 
   struct node *np;
@@ -792,12 +793,12 @@ diskfs_create_node (struct node *dir, const char *name, mode_t mode,
 		    struct dirstat *ds);
 
 /* Create and return a protid for an existing peropen PO in CRED,
-   referring to user USER.  The node PO->np must be locked. */
+   referring to user USER.  */
 error_t diskfs_create_protid (struct peropen *po, struct iouser *user,
 			      struct protid **cred);
 
 /* Build and return in CRED a protid which has no user identification, for
-   peropen PO.  The node PO->np must be locked.  */
+   peropen PO.  */
 error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 
 /* Finish building protid CRED started with diskfs_start_protid;

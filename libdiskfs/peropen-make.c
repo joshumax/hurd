@@ -31,7 +31,7 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 
   po->filepointer = 0;
   po->lock_status = LOCK_UN;
-  po->refcnt = 0;
+  refcount_init (&po->refcnt, 0);
   po->openstat = flags;
   po->np = np;
   po->path = NULL;
