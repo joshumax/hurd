@@ -93,6 +93,10 @@ typedef struct hurd_ihash *hurd_ihash_t;
 
 /* Construction and destruction of hash tables.  */
 
+/* The size of the initial allocation in number of items.  This must
+   be a power of two.  */
+#define HURD_IHASH_MIN_SIZE	32
+
 /* The default value for the maximum load factor in percent.  */
 #define HURD_IHASH_MAX_LOAD_DEFAULT 75
 
