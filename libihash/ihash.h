@@ -94,7 +94,7 @@ typedef struct hurd_ihash *hurd_ihash_t;
 /* Construction and destruction of hash tables.  */
 
 /* The default value for the maximum load factor in percent.  */
-#define HURD_IHASH_MAX_LOAD_DEFAULT 80
+#define HURD_IHASH_MAX_LOAD_DEFAULT 75
 
 /* The LOCP_OFFS to use if no location pointer is available.  */
 #define HURD_IHASH_NO_LOCP	INTPTR_MIN
