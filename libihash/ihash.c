@@ -81,6 +81,19 @@ static const unsigned int ihash_nsizes = (sizeof ihash_sizes
 					  / sizeof ihash_sizes[0]);
 
 
+/* This is the integer finalizer from MurmurHash3.  */
+static inline uint32_t
+murmur3_mix32 (uint32_t h, unsigned int bits)
+{
+  h ^= h >> 16;
+  h *= 0x85ebca6b;
+  h ^= h >> 13;
+  h *= 0xc2b2ae35;
+  h ^= h >> 16;
+
+  return h >> (32 - bits);
+}
+
 /* Return 1 if the slot with the index IDX in the hash table HT is
    empty, and 0 otherwise.  */
 static inline int
@@ -111,7 +124,7 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
   unsigned int up_idx;
   unsigned int down_idx;
 
-  idx = key % ht->size;
+  idx = murmur3_mix32 (key, 32) % ht->size;
 
   if (ht->items[idx].value == _HURD_IHASH_EMPTY || ht->items[idx].key == key)
     return idx;
@@ -264,7 +277,7 @@ add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
   unsigned int idx;
   unsigned int first_free;
 
-  idx = key % ht->size;
+  idx = murmur3_mix32 (key, 32) % ht->size;
   first_free = idx;
 
   if (ht->items[idx].value != _HURD_IHASH_EMPTY && ht->items[idx].key != key)
