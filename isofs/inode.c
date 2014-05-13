@@ -48,35 +48,53 @@ struct node_cache
   struct node *np;		/* if live */
 };
 
+/* The node_cache is a cache of nodes.
+
+   Access to node_cache, node_cache_size, and node_cache_alloced is
+   protected by nodecache_lock.
+
+   Every node in the node_cache carries a light reference.  When we
+   are asked to give up that light reference, we reacquire our lock
+   momentarily to check whether someone else reacquired a reference
+   through the node_cache.  */
 static int node_cache_size = 0;
 static int node_cache_alloced = 0;
 struct node_cache *node_cache = 0;
+/* nodecache_lock must be acquired before diskfs_node_refcnt_lock.  */
+static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /* Forward */
 static error_t read_disknode (struct node *,
 			      struct dirrect *, struct rrip_lookup *);
 
 
+/* Lookup node with id ID.  Returns NULL if the node is not found in
+   the node cache.  */
+static struct node *
+lookup (off_t id)
+{
+  int i;
+  for (i = 0; i < node_cache_size; i++)
+    if (node_cache[i].id == id
+	&& node_cache[i].np)
+      return node_cache[i].np;
+  return NULL;
+}
+
 /* See if node with identifier ID is in the cache.  If so, return it,
-   with one additional reference. diskfs_node_refcnt_lock must be held
+   with one additional reference. nodecache_lock must be held
    on entry to the call, and will be released iff the node was found
    in the cache. */
 void
 inode_cache_find (off_t id, struct node **npp)
 {
-  int i;
-
-  for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].id == id
-	&& node_cache[i].np)
-      {
-	*npp = node_cache[i].np;
-	(*npp)->references++;
-	pthread_spin_unlock (&diskfs_node_refcnt_lock);
-	pthread_mutex_lock (&(*npp)->lock);
-	return;
-      }
-  *npp = 0;
+  *npp = lookup (id);
+  if (*npp)
+    {
+      diskfs_nref (*npp);
+      pthread_rwlock_unlock (&nodecache_lock);
+      pthread_mutex_lock (&(*npp)->lock);
+    }
 }
 
 
@@ -92,7 +110,7 @@ use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
 }
 
 /* Enter NP into the cache.  The directory entry we used is DR, the
-   cached Rock-Ridge info RR. diskfs_node_refcnt_lock must be held. */
+   cached Rock-Ridge info RR. nodecache_lock must be held. */
 void
 cache_inode (struct node *np, struct dirrect *record,
 	    struct rrip_lookup *rr)
@@ -137,6 +155,7 @@ cache_inode (struct node *np, struct dirrect *record,
   c->id = id;
   c->dr = record;
   c->file_start = np->dn->file_start;
+  diskfs_nref_light (np);
   c->np = np;
 
   /* PLUS 1 so that we don't store zero cache ID's (not allowed by diskfs) */
@@ -155,7 +174,7 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
      to avoid presenting zero cache ID's. */
   id--;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
+  pthread_rwlock_rdlock (&nodecache_lock);
   assert (id < node_cache_size);
 
   np = node_cache[id].np;
@@ -166,6 +185,8 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       struct rrip_lookup rr;
       struct disknode *dn;
 
+      pthread_rwlock_unlock (&nodecache_lock);
+
       rrip_lookup (node_cache[id].dr, &rr, 1);
 
       /* We should never cache the wrong directory entry */
@@ -174,7 +195,7 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       dn = malloc (sizeof (struct disknode));
       if (!dn)
 	{
-	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_rwlock_unlock (&nodecache_lock);
 	  release_rrip (&rr);
 	  return ENOMEM;
 	}
@@ -185,16 +206,26 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       if (!np)
 	{
 	  free (dn);
-	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+	  pthread_rwlock_unlock (&nodecache_lock);
 	  release_rrip (&rr);
 	  return ENOMEM;
 	}
       np->cache_id = id + 1;	/* see above for rationale for increment */
       pthread_mutex_lock (&np->lock);
-      c->np = np;
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
 
-      err = read_disknode (np, node_cache[id].dr, &rr);
+      pthread_rwlock_wrlock (&nodecache_lock);
+      if (c->np != NULL)
+        {
+          /* We lost a race.  */
+          diskfs_nput (np);
+          np = c->np;
+          goto gotit;
+        }
+      c->np = np;
+      diskfs_nref_light (np);
+      pthread_rwlock_unlock (&nodecache_lock);
+
+      err = read_disknode (np, dn->dr, &rr);
       if (!err)
 	*npp = np;
 
@@ -203,9 +234,9 @@ diskfs_cached_lookup (ino_t id, struct node **npp)
       return err;
     }
 
-
-  np->references++;
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+ gotit:
+  diskfs_nref (np);
+  pthread_rwlock_unlock (&nodecache_lock);
   pthread_mutex_lock (&np->lock);
   *npp = np;
   return 0;
@@ -307,7 +338,8 @@ load_inode (struct node **npp, struct dirrect *record,
   error_t err;
   off_t file_start;
   struct disknode *dn;
-  struct node *np;
+  struct node *np, *tmp;
+  off_t id;
 
   err = calculate_file_start (record, &file_start, rr);
   if (err)
@@ -315,27 +347,23 @@ load_inode (struct node **npp, struct dirrect *record,
   if (rr->valid & VALID_CL)
     record = rr->realdirent;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-
   /* First check the cache */
   if (use_file_start_id (record, rr))
-    inode_cache_find (file_start << store->log2_block_size, npp);
+    id = file_start << store->log2_block_size;
   else
-    inode_cache_find ((off_t) ((void *) record - (void *) disk_image), npp);
+    id = (off_t) ((void *) record - (void *) disk_image);
 
+  pthread_rwlock_rdlock (&nodecache_lock);
+  inode_cache_find (id, npp);
+  pthread_rwlock_unlock (&nodecache_lock);
   if (*npp)
-    {
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
-      return 0;
-    }
+    return 0;
 
   /* Create a new node */
   dn = malloc (sizeof (struct disknode));
   if (!dn)
-    {
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
-      return ENOMEM;
-    }
+    return ENOMEM;
+
   dn->fileinfo = 0;
   dn->dr = record;
   dn->file_start = file_start;
@@ -344,14 +372,25 @@ load_inode (struct node **npp, struct dirrect *record,
   if (!np)
     {
       free (dn);
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
       return ENOMEM;
     }
 
   pthread_mutex_lock (&np->lock);
 
+  pthread_rwlock_wrlock (&nodecache_lock);
+  tmp = lookup (id);
+  if (tmp)
+    {
+      /* We lost a race.  */
+      diskfs_nput (np);
+      diskfs_nref (tmp);
+      *npp = tmp;
+      pthread_rwlock_unlock (&nodecache_lock);
+      return 0;
+    }
+
   cache_inode (np, record, rr);
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_rwlock_unlock (&nodecache_lock);
 
   err = read_disknode (np, record, rr);
   *npp = np;
@@ -505,9 +544,6 @@ error_t (*diskfs_read_symlink_hook) (struct node *, char *)
 void
 diskfs_node_norefs (struct node *np)
 {
-  assert (node_cache[np->cache_id - 1].np == np);
-  node_cache[np->cache_id - 1].np = 0;
-
   if (np->dn->translator)
     free (np->dn->translator);
 
@@ -521,6 +557,34 @@ diskfs_node_norefs (struct node *np)
 void
 diskfs_try_dropping_softrefs (struct node *np)
 {
+  pthread_rwlock_wrlock (&nodecache_lock);
+  if (np->cache_id != 0)
+    {
+      assert (node_cache[np->cache_id - 1].np == np);
+
+      /* Check if someone reacquired a reference through the
+	 node_cache.  */
+      unsigned int references;
+      pthread_spin_lock (&diskfs_node_refcnt_lock);
+      references = np->references;
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+
+      /* An additional reference is acquired by libdiskfs across calls
+	 to diskfs_try_dropping_softrefs.  */
+      if (references > 1)
+	{
+	  /* A reference was reacquired through a hash table lookup.
+	     It's fine, we didn't touch anything yet. */
+	  pthread_rwlock_unlock (&nodecache_lock);
+	  return;
+	}
+
+      node_cache[np->cache_id - 1].np = 0;
+      np->cache_id = 0;
+      diskfs_nrele_light (np);
+    }
+  pthread_rwlock_unlock (&nodecache_lock);
+
   drop_pager_softrefs (np);
 }
 
