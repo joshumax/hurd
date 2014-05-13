@@ -80,7 +80,7 @@ struct hurd_ihash
   intptr_t locp_offset;
 
   /* The maximum load factor in percent.  */
-  int max_load;
+  unsigned int max_load;
 
   /* When freeing or overwriting an element, this function is called
      with the value as the first argument, and CLEANUP_DATA as the
