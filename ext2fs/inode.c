@@ -46,8 +46,19 @@
 #define	INOHASH(ino)	(((unsigned)(ino))%INOHSZ)
 #endif
 
+/* The nodehash is a cache of nodes.
+
+   Access to nodehash and nodehash_nr_items is protected by
+   nodecache_lock.
+
+   Every node in the nodehash carries a light reference.  When we are
+   asked to give up that light reference, we reacquire our lock
+   momentarily to check whether someone else reacquired a reference
+   through the nodehash.  */
 static struct node *nodehash[INOHSZ];
 static size_t nodehash_nr_items;
+/* nodecache_lock must be acquired before diskfs_node_refcnt_lock.  */
+static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static error_t read_node (struct node *np);
 
@@ -62,33 +73,37 @@ inode_init ()
     nodehash[n] = 0;
 }
 
+/* Lookup node with inode number INUM.  Returns NULL if the node is
+   not found in the node cache.  */
+static struct node *
+lookup (ino_t inum)
+{
+  struct node *np;
+  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
+    if (np->cache_id == inum)
+      return np;
+  return NULL;
+}
+
 /* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
 error_t
 diskfs_cached_lookup (ino_t inum, struct node **npp)
 {
   error_t err;
-  struct node *np;
+  struct node *np, *tmp;
   struct disknode *dn;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    if (np->cache_id == inum)
-      {
-	np->references++;
-	pthread_spin_unlock (&diskfs_node_refcnt_lock);
-	pthread_mutex_lock (&np->lock);
-	*npp = np;
-	return 0;
-      }
+  pthread_rwlock_rdlock (&nodecache_lock);
+  np = lookup (inum);
+  if (np)
+    goto gotit;
+  pthread_rwlock_unlock (&nodecache_lock);
 
   /* Format specific data for the new node.  */
   dn = malloc (sizeof (struct disknode));
   if (! dn)
-    {
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
-      return ENOMEM;
-    }
+    return ENOMEM;
   dn->dirents = 0;
   dn->dir_idx = 0;
   dn->pager = 0;
@@ -102,14 +117,24 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   pthread_mutex_lock (&np->lock);
 
   /* Put NP in NODEHASH.  */
+  pthread_rwlock_wrlock (&nodecache_lock);
+  tmp = lookup (inum);
+  if (tmp)
+    {
+      /* We lost a race.  */
+      diskfs_nput (np);
+      np = tmp;
+      goto gotit;
+    }
+
   dn->hnext = nodehash[INOHASH(inum)];
   if (dn->hnext)
     dn->hnext->dn->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
+  diskfs_nref_light (np);
   nodehash_nr_items += 1;
-
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_rwlock_unlock (&nodecache_lock);
 
   /* Get the contents of NP off disk.  */
   err = read_node (np);
@@ -131,6 +156,13 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
       *npp = np;
       return 0;
     }
+
+ gotit:
+  diskfs_nref (np);
+  pthread_rwlock_unlock (&nodecache_lock);
+  pthread_mutex_lock (&np->lock);
+  *npp = np;
+  return 0;
 }
 
 /* Lookup node INUM (which must have a reference already) and return it
@@ -140,17 +172,12 @@ ifind (ino_t inum)
 {
   struct node *np;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    {
-      if (np->cache_id != inum)
-	continue;
+  pthread_rwlock_rdlock (&nodecache_lock);
+  np = lookup (inum);
+  pthread_rwlock_unlock (&nodecache_lock);
 
-      assert (np->references);
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
-      return np;
-    }
-  assert (0);
+  assert (np);
+  return np;
 }
 
 /* The last reference to a node has gone away; drop
@@ -158,11 +185,6 @@ ifind (ino_t inum)
 void
 diskfs_node_norefs (struct node *np)
 {
-  *np->dn->hprevp = np->dn->hnext;
-  if (np->dn->hnext)
-    np->dn->hnext->dn->hprevp = np->dn->hprevp;
-  nodehash_nr_items -= 1;
-
   if (np->dn->dirents)
     free (np->dn->dirents);
   assert (!np->dn->pager);
@@ -180,6 +202,36 @@ diskfs_node_norefs (struct node *np)
 void
 diskfs_try_dropping_softrefs (struct node *np)
 {
+  pthread_rwlock_wrlock (&nodecache_lock);
+  if (np->dn->hprevp != NULL)
+    {
+      /* Check if someone reacquired a reference through the
+	 nodehash.  */
+      unsigned int references;
+      pthread_spin_lock (&diskfs_node_refcnt_lock);
+      references = np->references;
+      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+
+      /* An additional reference is acquired by libdiskfs across calls
+	 to diskfs_try_dropping_softrefs.  */
+      if (references > 1)
+	{
+	  /* A reference was reacquired through a hash table lookup.
+	     It's fine, we didn't touch anything yet. */
+	  pthread_rwlock_unlock (&nodecache_lock);
+	  return;
+	}
+
+      *np->dn->hprevp = np->dn->hnext;
+      if (np->dn->hnext)
+	np->dn->hnext->dn->hprevp = np->dn->hprevp;
+      np->dn->hnext = NULL;
+      np->dn->hprevp = NULL;
+      nodehash_nr_items -= 1;
+      diskfs_nrele_light (np);
+    }
+  pthread_rwlock_unlock (&nodecache_lock);
+
   drop_pager_softrefs (np);
 }
 
@@ -556,12 +608,12 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   size_t num_nodes;
   struct node *node, **node_list, **p;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
+  pthread_rwlock_rdlock (&nodecache_lock);
 
   /* We must copy everything from the hash table into another data structure
      to avoid running into any problems with the hash-table being modified
      during processing (normally we delegate access to hash-table with
-     diskfs_node_refcnt_lock, but we can't hold this while locking the
+     nodecache_lock, but we can't hold this while locking the
      individual node locks).  */
   num_nodes = nodehash_nr_items;
 
@@ -570,7 +622,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   node_list = malloc (num_nodes * sizeof (struct node *));
   if (node_list == NULL)
     {
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      pthread_rwlock_unlock (&nodecache_lock);
       ext2_debug ("unable to allocate temporary node table");
       return ENOMEM;
     }
@@ -580,10 +632,14 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
     for (node = nodehash[n]; node; node = node->dn->hnext)
       {
 	*p++ = node;
+
+	/* We acquire a hard reference for node, but without using
+	   diskfs_nref.	 We do this so that diskfs_new_hardrefs will not
+	   get called.	*/
 	node->references++;
       }
 
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  pthread_rwlock_unlock (&nodecache_lock);
 
   p = node_list;
   while (num_nodes-- > 0)
