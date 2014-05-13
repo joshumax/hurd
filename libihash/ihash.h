@@ -79,7 +79,7 @@ struct hurd_ihash
   /* The offset of the location pointer from the hash value.  */
   intptr_t locp_offset;
 
-  /* The maximum load factor in percent.  */
+  /* The maximum load factor in binary percent.  */
   unsigned int max_load;
 
   /* When freeing or overwriting an element, this function is called
@@ -97,8 +97,9 @@ typedef struct hurd_ihash *hurd_ihash_t;
    be a power of two.  */
 #define HURD_IHASH_MIN_SIZE	32
 
-/* The default value for the maximum load factor in percent.  */
-#define HURD_IHASH_MAX_LOAD_DEFAULT 75
+/* The default value for the maximum load factor in binary percent.
+   96b% is equivalent to 75%, 128b% to 100%.  */
+#define HURD_IHASH_MAX_LOAD_DEFAULT 96
 
 /* The LOCP_OFFS to use if no location pointer is available.  */
 #define HURD_IHASH_NO_LOCP	INTPTR_MIN
@@ -143,14 +144,15 @@ void hurd_ihash_free (hurd_ihash_t ht);
 void hurd_ihash_set_cleanup (hurd_ihash_t ht, hurd_ihash_cleanup_t cleanup,
 			     void *cleanup_data);
 
-/* Set the maximum load factor in percent to MAX_LOAD, which should be
-   between 50 and 100.  The default is HURD_IHASH_MAX_LOAD_DEFAULT.
-   New elements are only added to the hash table while the number of
-   hashed elements is that much percent of the total size of the hash
-   table.  If more elements are added, the hash table is first
-   expanded and reorganized.  A MAX_LOAD of 100 will always fill the
-   whole table before enlarging it, but note that this will increase
-   the cost of operations significantly when the table is almost full.
+/* Set the maximum load factor in binary percent to MAX_LOAD, which
+   should be between 64 and 128.  The default is
+   HURD_IHASH_MAX_LOAD_DEFAULT.  New elements are only added to the
+   hash table while the number of hashed elements is that much binary
+   percent of the total size of the hash table.  If more elements are
+   added, the hash table is first expanded and reorganized.  A
+   MAX_LOAD of 128 will always fill the whole table before enlarging
+   it, but note that this will increase the cost of operations
+   significantly when the table is almost full.
 
    If the value is set to a smaller value than the current load
    factor, the next reorganization will happen when a new item is
