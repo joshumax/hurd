@@ -69,17 +69,25 @@ struct tmpfs_dirent
   char name[0];
 };
 
-extern unsigned int num_files;
-extern off_t tmpfs_page_limit, tmpfs_space_used;
-
+extern off_t tmpfs_page_limit;
 extern mach_port_t default_pager;
 
+/* These two must be accessed using atomic operations.  */
+extern unsigned int num_files;
+extern off_t tmpfs_space_used;
+
+/* Convenience function to adjust tmpfs_space_used.  */
 static inline void
 adjust_used (off_t change)
 {
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  tmpfs_space_used += change;
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  __atomic_add_fetch (&num_files, change, __ATOMIC_RELAXED);
+}
+
+/* Convenience function to get tmpfs_space_used.  */
+static inline off_t
+get_used (void)
+{
+  return __atomic_load_n (&num_files, __ATOMIC_RELAXED);
 }
 
 #endif

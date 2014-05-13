@@ -67,10 +67,8 @@ diskfs_set_statfs (struct statfs *st)
   st->f_bsize = vm_page_size;
   st->f_blocks = tmpfs_page_limit;
 
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  st->f_files = num_files;
-  pages = round_page (tmpfs_space_used) / vm_page_size;
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  st->f_files = __atomic_load_n (&num_files, __ATOMIC_RELAXED);
+  pages = round_page (get_used ()) / vm_page_size;
 
   st->f_bfree = pages < tmpfs_page_limit ? tmpfs_page_limit - pages : 0;
   st->f_bavail = st->f_bfree;
