@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <limits.h>
 #include <stdint.h>
+#include <stddef.h>
 
 
 /* The type of the values corresponding to the keys.  Must be a
@@ -198,9 +199,60 @@ hurd_ihash_get_load (hurd_ihash_t ht)
 error_t hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key,
 			hurd_ihash_value_t item);
 
+/* Add VALUE to the hash table HT under the key KEY at LOCP.  If there
+   already is an item under this key, call the cleanup function (if
+   any) for it before overriding the value.  This function is faster
+   than hurd_ihash_add.
+
+   If LOCP is NULL, fall back to hurd_ihash_add.  Otherwise, LOCP must
+   be valid and may either be obtained from hurd_ihash_locp_find, or
+   from an item that is currently in the hash table.  If an item is
+   replaced, KEY must match the key of the previous item.
+
+   If a memory allocation error occurs, ENOMEM is returned, otherwise
+   0.  */
+error_t hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
+                             hurd_ihash_key_t key, hurd_ihash_value_t value);
+
 /* Find and return the item in the hash table HT with key KEY, or NULL
    if it doesn't exist.  */
 hurd_ihash_value_t hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key);
+
+/* Find the item in the hash table HT with key KEY.  If it is found,
+   return the location of its slot in the hash table.  If it is not
+   found, this function may still return a location.
+
+   This location pointer can always be safely accessed using
+   hurd_ihash_locp_value.  If the lookup is successful,
+   hurd_ihash_locp_value will return the value related to KEY.
+
+   If the lookup is successful, the returned location can be used with
+   hurd_ihash_locp_add to update the item, and with
+   hurd_ihash_locp_remove to remove it.
+
+   If the lookup is not successful, the returned location can be used
+   with hurd_ihash_locp_add to add the item.
+
+   Note that returned location is only valid until the next insertion
+   or deletion.  */
+hurd_ihash_locp_t hurd_ihash_locp_find (hurd_ihash_t ht,
+                                        hurd_ihash_key_t key);
+
+/* Given an hash table bucket location LOCP, return the value stored
+   there, or NULL if it is empty or LOCP is NULL.  */
+static inline void *
+hurd_ihash_locp_value (hurd_ihash_locp_t locp)
+{
+  struct _hurd_ihash_item *item = (struct _hurd_ihash_item *) locp;
+
+  if (item == NULL)
+    return NULL;
+
+  if (hurd_ihash_value_valid (item->value))
+    return item->value;
+
+  return NULL;
+}
 
 /* Iterate over all elements in the hash table.  You use this macro
    with a block, for example like this:

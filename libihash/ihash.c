@@ -244,7 +244,54 @@ add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
   return 0;
 }
 
-  
+
+/* Add VALUE to the hash table HT under the key KEY at LOCP.  If there
+   already is an item under this key, call the cleanup function (if
+   any) for it before overriding the value.  This function is faster
+   than hurd_ihash_add.
+
+   If LOCP is NULL, fall back to hurd_ihash_add.  Otherwise, LOCP must
+   be valid and may either be obtained from hurd_ihash_locp_find, or
+   from an item that is currently in the hash table.  If an item is
+   replaced, KEY must match the key of the previous item.
+
+   If a memory allocation error occurs, ENOMEM is returned, otherwise
+   0.  */
+error_t
+hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
+                     hurd_ihash_key_t key, hurd_ihash_value_t value)
+{
+  struct _hurd_ihash_item *item = (struct _hurd_ihash_item *) locp;
+
+  /* In case of complications, fall back to hurd_ihash_add.  */
+  if (ht->size == 0
+      || item == NULL
+      || item->value == _HURD_IHASH_DELETED
+      || hurd_ihash_get_load (ht) > ht->max_load)
+    return hurd_ihash_add (ht, key, value);
+
+  if (item->value == _HURD_IHASH_EMPTY)
+    {
+      item->key = key;
+      ht->nr_items += 1;
+    }
+  else
+    {
+      assert (item->key == key);
+      if (ht->cleanup)
+        (*ht->cleanup) (locp, ht->cleanup_data);
+    }
+
+  item->value = value;
+
+  if (ht->locp_offset != HURD_IHASH_NO_LOCP)
+    *((hurd_ihash_locp_t *) (((char *) value) + ht->locp_offset))
+      = locp;
+
+  return 0;
+}
+
+
 /* Add ITEM to the hash table HT under the key KEY.  If there already
    is an item under this key, call the cleanup function (if any) for
    it before overriding the value.  If a memory allocation error
@@ -311,6 +358,35 @@ hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key)
       int idx = find_index (ht, key);
       return index_valid (ht, idx, key) ? ht->items[idx].value : NULL;
     }
+}
+
+/* Find the item in the hash table HT with key KEY.  If it is found,
+   return the location of its slot in the hash table.  If it is not
+   found, this function may still return a location.
+
+   This location pointer can always be safely accessed using
+   hurd_ihash_locp_value.  If the lookup is successful,
+   hurd_ihash_locp_value will return the value related to KEY.
+
+   If the lookup is successful, the returned location can be used with
+   hurd_ihash_locp_add to update the item, and with
+   hurd_ihash_locp_remove to remove it.
+
+   If the lookup is not successful, the returned location can be used
+   with hurd_ihash_locp_add to add the item.
+
+   Note that returned location is only valid until the next insertion
+   or deletion.  */
+hurd_ihash_locp_t
+hurd_ihash_locp_find (hurd_ihash_t ht, hurd_ihash_key_t key)
+{
+  int idx;
+
+  if (ht->size == 0)
+    return NULL;
+
+  idx = find_index (ht, key);
+  return &ht->items[idx].value;
 }
 
 
