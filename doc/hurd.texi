@@ -3780,10 +3780,6 @@ new thread and (eventually) get rid of the old one; the old thread won't
 do any more syncs, regardless.
 @end deftypefun
 
-@deftypevar spin_lock_t diskfs_node_refcnt_lock
-Pager reference count lock.
-@end deftypevar
-
 @deftypevar int diskfs_readonly
 Set to zero if the filesystem is currently writable.
 @end deftypevar
@@ -3818,9 +3814,7 @@ Every file or directory is a diskfs @dfn{node}.  The following functions
 help your diskfs callbacks manage nodes and their references:
 
 @deftypefun void diskfs_drop_node (@w{struct node *@var{np}})
-Node @var{np} now has no more references; clean all state.  The
-@var{diskfs_node_refcnt_lock} must be held, and will be released upon
-return.  @var{np} must be locked.
+Node @var{np} now has no more references; clean all state.
 @end deftypefun
 
 @deftypefun void diskfs_node_update (@w{struct node *@var{np}}, @w{int @var{wait}})
@@ -4236,14 +4230,13 @@ without real users.
 @deftypefun void diskfs_try_dropping_softrefs (@w{struct node *@var{np}})
 Node @var{np} has some light references, but has just lost its last hard
 references.  Take steps so that if any light references can be freed,
-they are.  Both @var{diskfs_node_refcnt_lock} and @var{np} are locked.
+they are.  @var{np} is locked.
 This function will be called after @code{diskfs_lost_hardrefs}.
 @end deftypefun
 
 @deftypefun void diskfs_node_norefs (@w{struct node *@var{np}})
 Node @var{np} has no more references; free local state, including
 @code{*@var{np}} if it shouldn't be retained.
-@var{diskfs_node_refcnt_lock} is held.
 @end deftypefun
 
 @deftypefun error_t diskfs_set_hypermetadata (@w{int @var{wait}}, @w{int @var{clean}})

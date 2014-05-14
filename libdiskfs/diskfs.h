@@ -96,8 +96,7 @@ struct node
 
   pthread_mutex_t lock;
 
-  int references;		/* hard references */
-  int light_references;		/* light references */
+  refcounts_t refcounts;
 
   mach_port_t sockaddr;		/* address for S_IFSOCK shortcut */
 
@@ -197,8 +196,6 @@ extern volatile struct mapped_time_value *diskfs_mtime;
    information permanently in sync if this is set; the rest will
    be done by format independent code. */
 extern int diskfs_synchronous;
-
-extern pthread_spinlock_t diskfs_node_refcnt_lock;
 
 extern int pager_port_type;
 
@@ -448,14 +445,15 @@ error_t diskfs_alloc_node (struct node *dp, mode_t mode, struct node **np);
 void diskfs_free_node (struct node *np, mode_t mode);
 
 /* Node NP has no more references; free local state, including *NP
-   if it isn't to be retained.  diskfs_node_refcnt_lock is held. */
+   if it isn't to be retained.  */
 void diskfs_node_norefs (struct node *np);
 
 /* The user must define this function.  Node NP has some light
    references, but has just lost its last hard references.  Take steps
    so that if any light references can be freed, they are.  NP is locked
    as is the pager refcount lock.  This function will be called after
-   diskfs_lost_hardrefs.  */
+   diskfs_lost_hardrefs.  An additional light reference is acquired by
+   libdiskfs across calls to this function.  */
 void diskfs_try_dropping_softrefs (struct node *np);
 
 /* The user must define this funcction.  Node NP has some light
@@ -611,9 +609,8 @@ void diskfs_spawn_first_thread (ports_demuxer_type demuxer);
    diskfs_init_completed once it has a valid proc and auth port. */
 void diskfs_start_bootstrap ();
 
-/* Node NP now has no more references; clean all state.  The
-   _diskfs_node_refcnt_lock must be held, and will be released
-   upon return.  NP must be locked.  */
+/* Node NP now has no more references; clean all state.  NP must be
+   locked.  */
 void diskfs_drop_node (struct node *np);
 
 /* Set on disk fields from NP->dn_stat; update ctime, atime, and mtime

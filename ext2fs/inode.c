@@ -57,7 +57,6 @@
    through the nodehash.  */
 static struct node *nodehash[INOHSZ];
 static size_t nodehash_nr_items;
-/* nodecache_lock must be acquired before diskfs_node_refcnt_lock.  */
 static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 static error_t read_node (struct node *np);
@@ -207,14 +206,10 @@ diskfs_try_dropping_softrefs (struct node *np)
     {
       /* Check if someone reacquired a reference through the
 	 nodehash.  */
-      unsigned int references;
-      pthread_spin_lock (&diskfs_node_refcnt_lock);
-      references = np->references;
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      struct references result;
+      refcounts_references (&np->refcounts, &result);
 
-      /* An additional reference is acquired by libdiskfs across calls
-	 to diskfs_try_dropping_softrefs.  */
-      if (references > 1)
+      if (result.hard > 0)
 	{
 	  /* A reference was reacquired through a hash table lookup.
 	     It's fine, we didn't touch anything yet. */
@@ -636,7 +631,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 	/* We acquire a hard reference for node, but without using
 	   diskfs_nref.	 We do this so that diskfs_new_hardrefs will not
 	   get called.	*/
-	node->references++;
+	refcounts_ref (&node->refcounts, NULL);
       }
 
   pthread_rwlock_unlock (&nodecache_lock);

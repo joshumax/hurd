@@ -60,7 +60,6 @@ struct node_cache
 static int node_cache_size = 0;
 static int node_cache_alloced = 0;
 struct node_cache *node_cache = 0;
-/* nodecache_lock must be acquired before diskfs_node_refcnt_lock.  */
 static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /* Forward */
@@ -564,14 +563,10 @@ diskfs_try_dropping_softrefs (struct node *np)
 
       /* Check if someone reacquired a reference through the
 	 node_cache.  */
-      unsigned int references;
-      pthread_spin_lock (&diskfs_node_refcnt_lock);
-      references = np->references;
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      struct references result;
+      refcounts_references (&np->refcounts, &result);
 
-      /* An additional reference is acquired by libdiskfs across calls
-	 to diskfs_try_dropping_softrefs.  */
-      if (references > 1)
+      if (result.hard > 0)
 	{
 	  /* A reference was reacquired through a hash table lookup.
 	     It's fine, we didn't touch anything yet. */

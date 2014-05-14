@@ -31,9 +31,8 @@ free_modreqs (struct modreq *mr)
 }
 
 
-/* Node NP now has no more references; clean all state.  The
-   diskfs_node_refcnt_lock must be held, and will be released
-   upon return.  NP must be locked.  */
+/* Node NP now has no more references; clean all state.  NP must be
+   locked.  */
 void
 diskfs_drop_node (struct node *np)
 {
@@ -60,8 +59,7 @@ diskfs_drop_node (struct node *np)
 	     and an nput.  The next time through, this routine
 	     will notice that the size is zero, and not have to
 	     do anything. */
-	  np->references++;
-	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+	  refcounts_unsafe_ref (&np->refcounts, NULL);
 	  diskfs_truncate (np, 0);
 	  
 	  /* Force allocsize to zero; if truncate consistently fails this
@@ -93,6 +91,7 @@ diskfs_drop_node (struct node *np)
 
   assert (!np->sockaddr);
 
+  pthread_mutex_unlock(&np->lock);
+  pthread_mutex_destroy(&np->lock);
   diskfs_node_norefs (np);
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }

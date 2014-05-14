@@ -40,7 +40,6 @@ static unsigned int gen;
    reference.  */
 struct node *all_nodes;
 static size_t all_nodes_nr_items;
-/* all_nodes_lock must be acquired before diskfs_node_refcnt_lock.  */
 pthread_rwlock_t all_nodes_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 error_t
@@ -267,7 +266,7 @@ diskfs_node_iterate (error_t (*fun) (struct node *))
       /* We acquire a hard reference for node, but without using
 	 diskfs_nref.  We do this so that diskfs_new_hardrefs will not
 	 get called.  */
-      node->references++;
+      refcounts_ref (&node->refcounts, NULL);
     }
 
   pthread_rwlock_unlock (&all_nodes_lock);
@@ -300,14 +299,10 @@ diskfs_try_dropping_softrefs (struct node *np)
   if (np->cache_id != 0)
     {
       /* Check if someone reacquired a reference.  */
-      unsigned int references;
-      pthread_spin_lock (&diskfs_node_refcnt_lock);
-      references = np->references;
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
+      struct references result;
+      refcounts_references (&np->refcounts, &result);
 
-      /* An additional reference is acquired by libdiskfs across calls
-	 to diskfs_try_dropping_softrefs.  */
-      if (references > 1)
+      if (result.hard > 0)
 	{
 	  /* A reference was reacquired.  It's fine, we didn't touch
 	     anything yet. */

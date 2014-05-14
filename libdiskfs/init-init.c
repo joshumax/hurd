@@ -41,8 +41,6 @@ int _diskfs_noatime;
 
 struct hurd_port _diskfs_exec_portcell;
 
-pthread_spinlock_t diskfs_node_refcnt_lock = PTHREAD_SPINLOCK_INITIALIZER;
-
 pthread_spinlock_t _diskfs_control_lock = PTHREAD_SPINLOCK_INITIALIZER;
 int _diskfs_ncontrol_ports;
 

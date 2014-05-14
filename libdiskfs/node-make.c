@@ -29,8 +29,7 @@ init_node (struct node *np, struct disknode *dn)
   np->dn_stat_dirty = 0;
 
   pthread_mutex_init (&np->lock, NULL);
-  np->references = 1;
-  np->light_references = 0;
+  refcounts_init (&np->refcounts, 1, 0);
   np->owner = 0;
   np->sockaddr = MACH_PORT_NULL;
 

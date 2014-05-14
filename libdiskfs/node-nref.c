@@ -26,12 +26,9 @@
 void
 diskfs_nref (struct node *np)
 {
-  int new_hardref;
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  np->references++;
-  new_hardref = (np->references == 1);
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
-  if (new_hardref)
+  struct references result;
+  refcounts_ref (&np->refcounts, &result);
+  if (result.hard == 1)
     {
       pthread_mutex_lock (&np->lock);
       diskfs_new_hardrefs (np);

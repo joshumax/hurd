@@ -24,7 +24,5 @@
 void
 diskfs_nref_light (struct node *np)
 {
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  np->light_references++;
-  pthread_spin_unlock (&diskfs_node_refcnt_lock);
+  refcounts_ref_weak (&np->refcounts, NULL);
 }

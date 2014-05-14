@@ -28,38 +28,36 @@
 void
 diskfs_nrele (struct node *np)
 {
-  int tried_drop_softrefs = 0;
+  struct references result;
 
- loop:
-  pthread_spin_lock (&diskfs_node_refcnt_lock);
-  assert (np->references);
-  np->references--;
-  if (np->references + np->light_references == 0)
+  /* While we call the diskfs_try_dropping_softrefs, we need to hold
+     one reference.  We use a weak reference for this purpose, which
+     we acquire by demoting our hard reference to a weak one.  */
+  refcounts_demote (&np->refcounts, &result);
+
+  if (result.hard == 0)
+    {
+      pthread_mutex_lock (&np->lock);
+      diskfs_lost_hardrefs (np);
+      if (!np->dn_stat.st_nlink)
+	{
+	  /* There are no links.  If there are soft references that
+	     can be dropped, we can't let them postpone deallocation.
+	     So attempt to drop them.  But that's a user-supplied
+	     routine, which might result in further recursive calls to
+	     the ref-counting system.  This is not a problem, as we
+	     hold a weak reference ourselves. */
+	  diskfs_try_dropping_softrefs (np);
+	}
+      pthread_mutex_unlock (&np->lock);
+    }
+
+  /* Finally get rid of our reference.  */
+  refcounts_deref_weak (&np->refcounts, &result);
+
+  if (result.hard == 0 && result.weak == 0)
     {
       pthread_mutex_lock (&np->lock);
       diskfs_drop_node (np);
     }
-  else if (np->references == 0)
-    {
-      pthread_mutex_lock (&np->lock);
-      pthread_spin_unlock (&diskfs_node_refcnt_lock);
-      diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink && !tried_drop_softrefs)
-	{
-	  /* Same issue here as in nput; see that for explanation */
-	  pthread_spin_lock (&diskfs_node_refcnt_lock);
-	  np->references++;
-	  pthread_spin_unlock (&diskfs_node_refcnt_lock);
-
-	  diskfs_try_dropping_softrefs (np);
-	  tried_drop_softrefs = 1;
-
-	  /* Now we can drop the reference back... */
-	  pthread_mutex_unlock (&np->lock);
-	  goto loop;
-	}
-      pthread_mutex_unlock (&np->lock);
-    }
-  else
-    pthread_spin_unlock (&diskfs_node_refcnt_lock);
 }
