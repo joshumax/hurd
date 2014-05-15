@@ -160,6 +160,30 @@ void hurd_ihash_set_cleanup (hurd_ihash_t ht, hurd_ihash_cleanup_t cleanup,
 void hurd_ihash_set_max_load (hurd_ihash_t ht, unsigned int max_load);
 
 
+/* Get the current load factor of HT in binary percent, where 128b%
+   corresponds to 100%.  The reason we do this is that it is so
+   efficient to compute:
+
+   As the size is always a power of two, and 128 is also, the quotient
+   of both is also a power of two.  Therefore, we can use bit shifts
+   to scale the number of items.
+
+   load = nr_items * 128 / size
+        = nr_items * 2^{log2 (128) - log2 (size)}
+        = nr_items >> (log2 (size) - log2 (128))
+                                -- if size >= 128
+        = nr_items << (log2 (128) - log2 (size))
+                                -- otherwise
+
+   If you want to convert this to percent, just divide by 1.28.  */
+static inline unsigned int
+hurd_ihash_get_load (hurd_ihash_t ht)
+{
+  int d = __builtin_ctzl (ht->size) - 7;
+  return d >= 0 ? ht->nr_items >> d : ht->nr_items << -d;
+}
+
+
 /* Add ITEM to the hash table HT under the key KEY.  If there already
    is an item under this key, call the cleanup function (if any) for
    it before overriding the value.  If a memory allocation error

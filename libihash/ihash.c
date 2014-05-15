@@ -273,24 +273,8 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
 
   if (ht->size)
     {
-      /* Only fill the hash table up to its maximum load factor given
-         as "binary percent", where 128b% corresponds to 100%.  As the
-         size is always a power of two, and 128 is also, the quotient
-         of both is also a power of two.  Therefore, we can use bit
-         shifts to scale the number of items.
-
-         load = nr_items * 128 / size
-              = nr_items * 2^{log2 (128) - log2 (size)}
-              = nr_items >> (log2 (size) - log2 (128))
-                                -- if size >= 128
-              = nr_items << (log2 (128) - log2 (size))
-                                -- otherwise
-      */
-      int d = __builtin_ctzl (ht->size) - 7;
-      unsigned int load = d >= 0
-        ? ht->nr_items >> d
-        : ht->nr_items << -d;
-      if (load <= ht->max_load)
+      /* Only fill the hash table up to its maximum load factor.  */
+      if (hurd_ihash_get_load (ht) <= ht->max_load)
 	if (add_one (ht, key, item))
 	  return 0;
     }
