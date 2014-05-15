@@ -302,7 +302,7 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
   else
       ht->size <<= 1;
 
-  /* calloc() will initialize all values to _HURD_IHASH_EMPTY implicitely.  */
+  /* calloc() will initialize all values to _HURD_IHASH_EMPTY implicitly.  */
   ht->items = calloc (ht->size, sizeof (struct _hurd_ihash_item));
 
   if (ht->items == NULL)
