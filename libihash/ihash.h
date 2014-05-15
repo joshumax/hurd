@@ -41,6 +41,13 @@ typedef void *hurd_ihash_value_t;
 #define _HURD_IHASH_EMPTY	((hurd_ihash_value_t) 0)
 #define _HURD_IHASH_DELETED	((hurd_ihash_value_t) -1)
 
+/* Test if VALUE is valid.  */
+static inline int
+hurd_ihash_value_valid (hurd_ihash_value_t value)
+{
+  return value != _HURD_IHASH_EMPTY && value != _HURD_IHASH_DELETED;
+}
+
 /* The type of integer we want to use for the keys.  */
 typedef uintptr_t hurd_ihash_key_t;
 

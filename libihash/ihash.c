@@ -37,8 +37,7 @@
 static inline int
 index_empty (hurd_ihash_t ht, unsigned int idx)
 {
-  return ht->items[idx].value == _HURD_IHASH_EMPTY
-    || ht->items[idx].value == _HURD_IHASH_DELETED;
+  return ! hurd_ihash_value_valid (ht->items[idx].value);
 }
 
 
