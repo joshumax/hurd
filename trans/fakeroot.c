@@ -993,7 +993,7 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap;
 
-  struct argp argp = { NULL, NULL, NULL, "\
+  struct argp argp = { .doc = "\
 A translator for faking privileged access to an underlying filesystem.\v\
 This translator appears to give transparent access to the underlying \
 directory node.  However, all accesses are made using the credentials \
