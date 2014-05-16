@@ -25,6 +25,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <stdio.h>
 #include <maptime.h>
 
+/* For safe inlining of diskfs_node_disknode and
+   diskfs_disknode_node.  */
+size_t const _diskfs_sizeof_struct_node = sizeof (struct node);
+
 mach_port_t diskfs_default_pager;
 mach_port_t diskfs_auth_server_port;
 volatile struct mapped_time_value *diskfs_mtime;

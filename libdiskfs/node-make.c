@@ -19,16 +19,9 @@
 #include <fcntl.h>
 
 
-/* Create a and return new node structure with DN as its physical disknode.
-   The node will have one hard reference and no light references.  */
-struct node *
-diskfs_make_node (struct disknode *dn)
+static struct node *
+init_node (struct node *np, struct disknode *dn)
 {
-  struct node *np = malloc (sizeof (struct node));
-
-  if (np == 0)
-    return 0;
-
   np->dn = dn;
   np->dn_set_ctime = 0;
   np->dn_set_atime = 0;
@@ -51,4 +44,32 @@ diskfs_make_node (struct disknode *dn)
   fshelp_lock_init (&np->userlock);
 
   return np;
+}
+
+/* Create a and return new node structure with DN as its physical disknode.
+   The node will have one hard reference and no light references.  */
+struct node *
+diskfs_make_node (struct disknode *dn)
+{
+  struct node *np = malloc (sizeof (struct node));
+
+  if (np == 0)
+    return 0;
+
+  return init_node (np, dn);
+}
+
+/* Create a new node structure.  Also allocate SIZE bytes for the
+   disknode.  The address of the disknode can be obtained using
+   diskfs_node_disknode.  The new node will have one hard reference
+   and no light references.  */
+struct node *
+diskfs_make_node_alloc (size_t size)
+{
+  struct node *np = malloc (sizeof (struct node) + size);
+
+  if (np == NULL)
+    return NULL;
+
+  return init_node (np, diskfs_node_disknode (np));
 }
