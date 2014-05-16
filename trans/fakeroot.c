@@ -222,7 +222,7 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
 	  mach_port_deallocate (mach_task_self (), file);
 	  file = MACH_PORT_NULL;
 	}
-      if (file == MACH_PORT_NULL);
+      if (file == MACH_PORT_NULL)
 	{
 	  enum retry_type bad_retry;
 	  char bad_retryname[1024];	/* XXX */
