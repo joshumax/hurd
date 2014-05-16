@@ -483,12 +483,12 @@ error_t
 netfs_attempt_chown (struct iouser *cred, struct node *np,
 		     uid_t uid, uid_t gid)
 {
-  if (uid != -1)
+  if (uid != ~0U)
     {
       set_faked_attribute (np, FAKE_UID);
       np->nn_stat.st_uid = uid;
     }
-  if (gid != -1)
+  if (gid != ~0U)
     {
       set_faked_attribute (np, FAKE_GID);
       np->nn_stat.st_gid = gid;
