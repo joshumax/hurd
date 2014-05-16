@@ -19,11 +19,11 @@
 
 
 #define PROCESS_INTRAN						\
-  pstruct_t reqport_find (process_t)
+  pstruct_t begin_using_proc_port (process_t)
 #define PROCESS_DESTRUCTOR					\
-  process_drop (pstruct_t)
+  end_using_proc (pstruct_t)
 #define PROCESS_IMPORTS						\
-  import "proc.h";
+  import "mig-decls.h";
 
 #define NOTIFY_INTRAN						\
   port_info_t begin_using_port_info_port (mach_port_t)

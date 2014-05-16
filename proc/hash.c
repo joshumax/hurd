@@ -76,17 +76,6 @@ task_find_nocreate (task_t task)
   return (!p || p->p_dead) ? 0 : p;
 }
 
-/* Find the process corresponding to a given request port. */
-struct proc *
-reqport_find (mach_port_t reqport)
-{
-  struct proc *p;
-  p = ports_lookup_port (proc_bucket, reqport, proc_class);
-  if (p && p->p_dead)
-    ports_port_deref (p);
-  return (!p || p->p_dead) ? 0 : p;
-}
-
 /* Find the process group corresponding to a given pgid. */
 struct pgrp *
 pgrp_find (pid_t pgid)

@@ -145,13 +145,6 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 pthread_mutex_t global_lock;
 
-static inline void __attribute__ ((unused))
-process_drop (struct proc *p)
-{
-  if (p)
-    ports_port_deref (p);
-}
-
 /* Forward declarations */
 void complete_wait (struct proc *, int);
 int check_uid (struct proc *, uid_t);
