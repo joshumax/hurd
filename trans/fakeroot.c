@@ -125,7 +125,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 static void
 set_default_attributes (struct node *np)
 {
-  np->nn->faked = FAKE_UID | FAKE_GID | FAKE_DEFAULT;
+  netfs_node_netnode (np)->faked = FAKE_UID | FAKE_GID | FAKE_DEFAULT;
   np->nn_stat.st_uid = 0;
   np->nn_stat.st_gid = 0;
 }
@@ -133,9 +133,9 @@ set_default_attributes (struct node *np)
 static void
 set_faked_attribute (struct node *np, unsigned int faked)
 {
-  np->nn->faked |= faked;
+  netfs_node_netnode (np)->faked |= faked;
 
-  if (np->nn->faked & FAKE_DEFAULT)
+  if (netfs_node_netnode (np)->faked & FAKE_DEFAULT)
     {
       /* Now that the node has non-default faked attributes, they have to be
 	 retained for future accesses.  Account for the hash table reference.
@@ -146,7 +146,7 @@ set_faked_attribute (struct node *np, unsigned int faked)
 	 easy enough if it's ever needed, although scalability could be
 	 improved.  */
       netfs_nref (np);
-      np->nn->faked &= ~FAKE_DEFAULT;
+      netfs_node_netnode (np)->faked &= ~FAKE_DEFAULT;
     }
 }
 
@@ -158,11 +158,11 @@ netfs_node_norefs (struct node *np)
   pthread_spin_unlock (&netfs_node_refcnt_lock);
 
   pthread_mutex_lock (&idport_ihash_lock);
-  hurd_ihash_locp_remove (&idport_ihash, np->nn->idport_locp);
+  hurd_ihash_locp_remove (&idport_ihash, netfs_node_netnode (np)->idport_locp);
   pthread_mutex_unlock (&idport_ihash_lock);
 
-  mach_port_deallocate (mach_task_self (), np->nn->file);
-  mach_port_deallocate (mach_task_self (), np->nn->idport);
+  mach_port_deallocate (mach_task_self (), netfs_node_netnode (np)->file);
+  mach_port_deallocate (mach_task_self (), netfs_node_netnode (np)->idport);
   free (np);
 
   pthread_spin_lock (&netfs_node_refcnt_lock);
@@ -245,7 +245,8 @@ error_t
 netfs_check_open_permissions (struct iouser *user, struct node *np,
 			      int flags, int newnode)
 {
-  return check_openmodes (np->nn, flags & (O_RDWR|O_EXEC), MACH_PORT_NULL);
+  return check_openmodes (netfs_node_netnode (np),
+			  flags & (O_RDWR|O_EXEC), MACH_PORT_NULL);
 }
 
 error_t
@@ -271,12 +272,12 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   dnp = diruser->po->np;
 
-  mach_port_t dir = dnp->nn->file;
+  mach_port_t dir = netfs_node_netnode (dnp)->file;
  redo_lookup:
   err = dir_lookup (dir, filename,
 		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    mode, do_retry, retry_name, &file);
-  if (dir != dnp->nn->file)
+  if (dir != netfs_node_netnode (dnp)->file)
     mach_port_deallocate (mach_task_self (), dir);
   if (err)
     return err;
@@ -380,7 +381,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  pthread_mutex_unlock (&dnp->lock);
 	}
 
-      err = check_openmodes (np->nn, (flags & (O_RDWR|O_EXEC)), file);
+      err = check_openmodes (netfs_node_netnode (np),
+			     (flags & (O_RDWR|O_EXEC)), file);
       pthread_mutex_unlock (&idport_ihash_lock);
     }
   else
@@ -448,17 +450,17 @@ error_t
 netfs_validate_stat (struct node *np, struct iouser *cred)
 {
   struct stat st;
-  error_t err = io_stat (np->nn->file, &st);
+  error_t err = io_stat (netfs_node_netnode (np)->file, &st);
   if (err)
     return err;
 
-  if (np->nn->faked & FAKE_UID)
+  if (netfs_node_netnode (np)->faked & FAKE_UID)
     st.st_uid = np->nn_stat.st_uid;
-  if (np->nn->faked & FAKE_GID)
+  if (netfs_node_netnode (np)->faked & FAKE_GID)
     st.st_gid = np->nn_stat.st_gid;
-  if (np->nn->faked & FAKE_AUTHOR)
+  if (netfs_node_netnode (np)->faked & FAKE_AUTHOR)
     st.st_author = np->nn_stat.st_author;
-  if (np->nn->faked & FAKE_MODE)
+  if (netfs_node_netnode (np)->faked & FAKE_MODE)
     st.st_mode = np->nn_stat.st_mode;
 
   np->nn_stat = st;
@@ -528,7 +530,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 
   /* We don't bother with error checking since the fake mode change should
      always succeed--worst case a later open will get EACCES.  */
-  (void) file_chmod (np->nn->file, mode);
+  (void) file_chmod (netfs_node_netnode (np)->file, mode);
   set_faked_attribute (np, FAKE_MODE);
   np->nn_stat.st_mode = mode;
   return 0;
@@ -543,7 +545,7 @@ netfs_attempt_mksymlink (struct iouser *cred, struct node *np, char *name)
   char trans[sizeof _HURD_SYMLINK + namelen];
   memcpy (trans, _HURD_SYMLINK, sizeof _HURD_SYMLINK);
   memcpy (&trans[sizeof _HURD_SYMLINK], name, namelen);
-  return file_set_translator (np->nn->file,
+  return file_set_translator (netfs_node_netnode (np)->file,
 			      FS_TRANS_EXCL|FS_TRANS_SET,
 			      FS_TRANS_EXCL|FS_TRANS_SET, 0,
 			      trans, sizeof trans,
@@ -562,7 +564,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
     return ENOMEM;
   else
     {
-      error_t err = file_set_translator (np->nn->file,
+      error_t err = file_set_translator (netfs_node_netnode (np)->file,
 					 FS_TRANS_EXCL|FS_TRANS_SET,
 					 FS_TRANS_EXCL|FS_TRANS_SET, 0,
 					 trans, translen + 1,
@@ -576,7 +578,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
 error_t
 netfs_attempt_chflags (struct iouser *cred, struct node *np, int flags)
 {
-  return file_chflags (np->nn->file, flags);
+  return file_chflags (netfs_node_netnode (np)->file, flags);
 }
 
 error_t
@@ -602,25 +604,25 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   else
     m.tv.tv_sec = m.tv.tv_usec = -1;
 
-  return file_utimes (np->nn->file, a.tvt, m.tvt);
+  return file_utimes (netfs_node_netnode (np)->file, a.tvt, m.tvt);
 }
 
 error_t
 netfs_attempt_set_size (struct iouser *cred, struct node *np, off_t size)
 {
-  return file_set_size (np->nn->file, size);
+  return file_set_size (netfs_node_netnode (np)->file, size);
 }
 
 error_t
 netfs_attempt_statfs (struct iouser *cred, struct node *np, struct statfs *st)
 {
-  return file_statfs (np->nn->file, st);
+  return file_statfs (netfs_node_netnode (np)->file, st);
 }
 
 error_t
 netfs_attempt_sync (struct iouser *cred, struct node *np, int wait)
 {
-  return file_sync (np->nn->file, wait, 0);
+  return file_sync (netfs_node_netnode (np)->file, wait, 0);
 }
 
 error_t
@@ -633,7 +635,7 @@ error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 		     char *name, mode_t mode)
 {
-  return dir_mkdir (dir->nn->file, name, mode | S_IRWXU);
+  return dir_mkdir (netfs_node_netnode (dir)->file, name, mode | S_IRWXU);
 }
 
 
@@ -645,7 +647,7 @@ netfs_attempt_mkdir (struct iouser *user, struct node *dir,
 error_t
 netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name)
 {
-  return dir_unlink (dir->nn->file, name);
+  return dir_unlink (netfs_node_netnode (dir)->file, name);
 }
 
 error_t
@@ -653,22 +655,22 @@ netfs_attempt_rename (struct iouser *user, struct node *fromdir,
 		      char *fromname, struct node *todir,
 		      char *toname, int excl)
 {
-  return dir_rename (fromdir->nn->file, fromname,
-		     todir->nn->file, toname, excl);
+  return dir_rename (netfs_node_netnode (fromdir)->file, fromname,
+		     netfs_node_netnode (todir)->file, toname, excl);
 }
 
 error_t
 netfs_attempt_rmdir (struct iouser *user,
 		     struct node *dir, char *name)
 {
-  return dir_rmdir (dir->nn->file, name);
+  return dir_rmdir (netfs_node_netnode (dir)->file, name);
 }
 
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
 		    struct node *file, char *name, int excl)
 {
-  return dir_link (dir->nn->file, file->nn->file, name, excl);
+  return dir_link (netfs_node_netnode (dir)->file, netfs_node_netnode (file)->file, name, excl);
 }
 
 error_t
@@ -676,7 +678,7 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 		      mode_t mode, struct node **np)
 {
   file_t newfile;
-  error_t err = dir_mkfile (dir->nn->file, O_RDWR|O_EXEC,
+  error_t err = dir_mkfile (netfs_node_netnode (dir)->file, O_RDWR|O_EXEC,
 			    real_from_fake_mode (mode), &newfile);
   pthread_mutex_unlock (&dir->lock);
   if (err == 0)
@@ -692,7 +694,8 @@ netfs_attempt_readlink (struct iouser *user, struct node *np, char *buf)
   char transbuf[sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1];
   char *trans = transbuf;
   size_t translen = sizeof transbuf;
-  error_t err = file_get_translator (np->nn->file, &trans, &translen);
+  error_t err = file_get_translator (netfs_node_netnode (np)->file,
+				     &trans, &translen);
   if (err == 0)
     {
       if (translen < sizeof _HURD_SYMLINK
@@ -715,7 +718,8 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 		    off_t offset, size_t *len, void *data)
 {
   char *buf = data;
-  error_t err = io_read (np->nn->file, &buf, len, offset, *len);
+  error_t err = io_read (netfs_node_netnode (np)->file,
+			 &buf, len, offset, *len);
   if (err == 0 && buf != data)
     {
       memcpy (data, buf, *len);
@@ -728,7 +732,7 @@ error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
 		     off_t offset, size_t *len, void *data)
 {
-  return io_write (np->nn->file, data, *len, offset, len);
+  return io_write (netfs_node_netnode (np)->file, data, *len, offset, len);
 }
 
 error_t
@@ -744,7 +748,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 		   mach_msg_type_number_t *datacnt,
 		   vm_size_t bufsize, int *amt)
 {
-  return dir_readdir (dir->nn->file, data, datacnt,
+  return dir_readdir (netfs_node_netnode (dir)->file, data, datacnt,
 		      entry, nentries, bufsize, amt);
 }
 
@@ -762,7 +766,7 @@ netfs_file_get_storage_info (struct iouser *cred,
 			     mach_msg_type_number_t *data_len)
 {
   *ports_type = MACH_MSG_TYPE_MOVE_SEND;
-  return file_get_storage_info (np->nn->file,
+  return file_get_storage_info (netfs_node_netnode (np)->file,
 				ports, num_ports,
 				ints, num_ints,
 				offsets, num_offsets,
@@ -795,8 +799,9 @@ netfs_S_file_exec (struct protid *user,
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = check_openmodes (user->po->np->nn, O_EXEC, MACH_PORT_NULL);
-  file = user->po->np->nn->file;
+  err = check_openmodes (netfs_node_netnode (user->po->np),
+			 O_EXEC, MACH_PORT_NULL);
+  file = netfs_node_netnode (user->po->np)->file;
   if (!err)
     err = mach_port_mod_refs (mach_task_self (),
 			      file, MACH_PORT_RIGHT_SEND, 1);
@@ -806,7 +811,8 @@ netfs_S_file_exec (struct protid *user,
     {
       /* We cannot use MACH_MSG_TYPE_MOVE_SEND because we might need to
 	 retry an interrupted call that would have consumed the rights.  */
-      err = file_exec (user->po->np->nn->file, task, flags, argv, argvlen,
+      err = file_exec (netfs_node_netnode (user->po->np)->file,
+		       task, flags, argv, argvlen,
 		       envp, envplen, fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
 		       portarray, MACH_MSG_TYPE_COPY_SEND, portarraylen,
 		       intarray, intarraylen, deallocnames, deallocnameslen,
@@ -838,7 +844,7 @@ netfs_S_io_map (struct protid *user,
   *rdobjtype = *wrobjtype = MACH_MSG_TYPE_MOVE_SEND;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = io_map (user->po->np->nn->file, rdobj, wrobj);
+  err = io_map (netfs_node_netnode (user->po->np)->file, rdobj, wrobj);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -855,7 +861,7 @@ netfs_S_io_map_cntl (struct protid *user,
   *objtype = MACH_MSG_TYPE_MOVE_SEND;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = io_map_cntl (user->po->np->nn->file, obj);
+  err = io_map_cntl (netfs_node_netnode (user->po->np)->file, obj);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -876,7 +882,8 @@ netfs_S_io_identity (struct protid *user,
   *idtype = *fsystype = MACH_MSG_TYPE_MOVE_SEND;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = io_identity (user->po->np->nn->file, id, fsys, fileno);
+  err = io_identity (netfs_node_netnode (user->po->np)->file,
+		     id, fsys, fileno);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -891,7 +898,7 @@ netfs_S_##name (struct protid *user)		\
     return EOPNOTSUPP;				\
 						\
   pthread_mutex_lock (&user->po->np->lock);	\
-  err = name (user->po->np->nn->file);		\
+  err = name (netfs_node_netnode (user->po->np)->file);		\
   pthread_mutex_unlock (&user->po->np->lock);	\
   return err;					\
 }
@@ -913,7 +920,7 @@ netfs_S_io_prenotify (struct protid *user,
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = io_prenotify (user->po->np->nn->file, start, stop);
+  err = io_prenotify (netfs_node_netnode (user->po->np)->file, start, stop);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -928,7 +935,7 @@ netfs_S_io_postnotify (struct protid *user,
     return EOPNOTSUPP;
 
   pthread_mutex_lock (&user->po->np->lock);
-  err = io_postnotify (user->po->np->nn->file, start, stop);
+  err = io_postnotify (netfs_node_netnode (user->po->np)->file, start, stop);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }
@@ -971,7 +978,7 @@ netfs_demuxer (mach_msg_header_t *inp,
 	    | MACH_MSGH_BITS (MACH_MSG_TYPE_COPY_SEND,
 			      MACH_MSGH_BITS_REMOTE (inp->msgh_bits));
 	  inp->msgh_local_port = inp->msgh_remote_port;	/* reply port */
-	  inp->msgh_remote_port = cred->po->np->nn->file;
+	  inp->msgh_remote_port = netfs_node_netnode (cred->po->np)->file;
 	  err = mach_msg (inp, MACH_SEND_MSG, inp->msgh_size, 0,
 			  MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE,
 			  MACH_PORT_NULL);
