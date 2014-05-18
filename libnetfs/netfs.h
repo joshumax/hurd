@@ -372,6 +372,33 @@ extern int netfs_maxsymlinks;
    If an error occurs, NULL is returned.  */
 struct node *netfs_make_node (struct netnode *);
 
+/* Create a new node structure.  Also allocate SIZE bytes for the
+   netnode.  The address of the netnode can be obtained using
+   netfs_node_netnode.  The new node will have one hard reference and
+   no light references.  If an error occurs, NULL is returned.  */
+struct node *netfs_make_node_alloc (size_t size);
+
+/* To avoid breaking the ABI whenever sizeof (struct node) changes, we
+   explicitly provide the size.  The following two functions will use
+   this value for offset calculations.  */
+extern const size_t _netfs_sizeof_struct_node;
+
+/* Return the address of the netnode for NODE.  NODE must have been
+   allocated using netfs_make_node_alloc.  */
+static inline struct netnode *
+netfs_node_netnode (struct node *node)
+{
+  return (struct netnode *) ((char *) node + _netfs_sizeof_struct_node);
+}
+
+/* Return the address of the node for NETNODE.  NETNODE must have been
+   allocated using netfs_make_node_alloc.  */
+static inline struct node *
+netfs_netnode_node (struct netnode *netnode)
+{
+  return (struct node *) ((char *) netnode - _netfs_sizeof_struct_node);
+}
+
 /* Whenever node->references is to be touched, this lock must be
    held.  Cf. netfs_nrele, netfs_nput, netfs_nref and netfs_drop_node.  */
 extern pthread_spinlock_t netfs_node_refcnt_lock;
