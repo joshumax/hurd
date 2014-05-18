@@ -47,7 +47,6 @@ static auth_t fakeroot_auth_port;
 
 struct netnode
 {
-  struct node *np;		/* our node */
   hurd_ihash_locp_t idport_locp;/* easy removal pointer in idport ihash */
   mach_port_t idport;		/* port from io_identity */
   int openmodes;		/* O_READ | O_WRITE | O_EXEC */
@@ -64,7 +63,8 @@ struct netnode
 
 pthread_mutex_t idport_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 struct hurd_ihash idport_ihash
-  = HURD_IHASH_INITIALIZER (offsetof (struct netnode, idport_locp));
+= HURD_IHASH_INITIALIZER (sizeof (struct node)
+			  + offsetof (struct netnode, idport_locp));
 
 
 /* Make a new virtual node.  Always consumes the ports.  If
@@ -74,8 +74,9 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  struct node **np)
 {
   error_t err;
-  struct netnode *nn = calloc (1, sizeof *nn);
-  if (nn == 0)
+  struct netnode *nn;
+  *np = netfs_make_node_alloc (sizeof *nn);
+  if (*np == 0)
     {
       mach_port_deallocate (mach_task_self (), file);
       if (idport != MACH_PORT_NULL)
@@ -84,6 +85,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	pthread_mutex_unlock (&idport_ihash_lock);
       return ENOMEM;
     }
+  nn = netfs_node_netnode (*np);
   nn->file = file;
   nn->openmodes = openmodes;
   if (idport != MACH_PORT_NULL)
@@ -97,35 +99,26 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
       if (err)
 	{
 	  mach_port_deallocate (mach_task_self (), file);
-	  free (nn);
+	  free (*np);
 	  return err;
 	}
     }
 
   if (!locked)
     pthread_mutex_lock (&idport_ihash_lock);
-  err = hurd_ihash_add (&idport_ihash, nn->idport, nn);
+  err = hurd_ihash_add (&idport_ihash, nn->idport, *np);
   if (err)
     goto lose;
-
-  *np = nn->np = netfs_make_node (nn);
-  if (*np == 0)
-    {
-      err = ENOMEM;
-      goto lose_hash;
-    }
 
   pthread_mutex_lock (&(*np)->lock);
   pthread_mutex_unlock (&idport_ihash_lock);
   return 0;
 
- lose_hash:
-  hurd_ihash_locp_remove (&idport_ihash, nn->idport_locp);
  lose:
   pthread_mutex_unlock (&idport_ihash_lock);
   mach_port_deallocate (mach_task_self (), nn->idport);
   mach_port_deallocate (mach_task_self (), file);
-  free (nn);
+  free (*np);
   return err;
 }
 
@@ -161,8 +154,6 @@ set_faked_attribute (struct node *np, unsigned int faked)
 void
 netfs_node_norefs (struct node *np)
 {
-  assert (np->nn->np == np);
-
   pthread_mutex_unlock (&np->lock);
   pthread_spin_unlock (&netfs_node_refcnt_lock);
 
@@ -172,7 +163,6 @@ netfs_node_norefs (struct node *np)
 
   mach_port_deallocate (mach_task_self (), np->nn->file);
   mach_port_deallocate (mach_task_self (), np->nn->idport);
-  free (np->nn);
   free (np);
 
   pthread_spin_lock (&netfs_node_refcnt_lock);
@@ -358,13 +348,12 @@ netfs_S_dir_lookup (struct protid *diruser,
      refcount lock so that, if a node is found, its reference counter cannot
      drop to 0 before we get our own reference.  */
   pthread_spin_lock (&netfs_node_refcnt_lock);
-  struct netnode *nn = hurd_ihash_find (&idport_ihash, idport);
-  if (nn != NULL)
+  np = hurd_ihash_find (&idport_ihash, idport);
+  if (np != NULL)
     {
-      assert (nn->np->nn == nn);
       /* We already know about this node.  */
 
-      if (nn->np->references == 0)
+      if (np->references == 0)
 	{
 	  /* But it might be in the process of being released.  If so,
 	     unlock the hash table to give the node a chance to actually
@@ -376,7 +365,6 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
 
       /* Otherwise, reference it right away.  */
-      np = nn->np;
       np->references++;
       pthread_spin_unlock (&netfs_node_refcnt_lock);
 
