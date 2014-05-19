@@ -479,6 +479,16 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
   return 0;
 }
 
+/* Various netfs functions will call fshelp_isowner to check whether
+   USER is allowed to do some operation.  As fakeroot is not running
+   within the fakeauth'ed environment, USER contains the real
+   user.  Hence, we override this check.  */
+error_t
+fshelp_isowner (struct stat *st, struct iouser *user)
+{
+  return 0;
+}
+
 error_t
 netfs_attempt_chown (struct iouser *cred, struct node *np,
 		     uid_t uid, uid_t gid)
