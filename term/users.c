@@ -259,9 +259,7 @@ pi_destroy_hook (struct trivfs_protid *cred)
     {
       assert (((struct protid_hook *)cred->hook)->refcnt > 0);
       if (--((struct protid_hook *)cred->hook)->refcnt == 0)
-	/* XXX don't free for now, so we can try and catch a multiple-freeing
-	   bug.  */
-	/* free (cred->hook) */;
+	free (cred->hook);
     }
   pthread_mutex_unlock (&global_lock);
 }
