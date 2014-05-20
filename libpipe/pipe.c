@@ -352,7 +352,9 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	  if (!err)
 	    err = packet_set_ports (control_packet, ports, num_ports);
 	  if (err)
-	    /* Trash CONTROL_PACKET somehow XXX */;
+	    {
+	      /* Trash CONTROL_PACKET somehow XXX */
+	    }
 	}
     }
 

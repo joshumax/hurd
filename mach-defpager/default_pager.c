@@ -88,13 +88,13 @@ synchronized_printf (const char *fmt, ...)
 #if 0
 #define dprintf(f, x...)	synchronized_printf (f, ##x)
 #else
-#define dprintf(f, x...)
+#define dprintf(f, x...)	(void) 0
 #endif
 
 #if 0
 #define ddprintf(f, x...)	synchronized_printf (f, ##x)
 #else
-#define ddprintf(f, x...)
+#define ddprintf(f, x...)	(void) 0
 #endif
 
 /*

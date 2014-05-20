@@ -198,7 +198,9 @@ S_socket_accept (struct sock_user *user,
 	      ports_port_deref (peer_addr);
 	    }
 	  else
-	    /* TEAR DOWN THE CONNECTION XXX */;
+	    {
+	      /* TEAR DOWN THE CONNECTION XXX */
+	    }
 	}
     }
 

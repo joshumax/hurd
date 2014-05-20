@@ -606,10 +606,11 @@ clearcontrols (keypress_t key, boolctrls ctrls, int flags)
 static void
 lockcontrols (keypress_t key, boolctrls ctrls, int flags)
 {
+  /* XXX this needs a closer look.  */
   if (!key.rel)
     {
       //setcontrols (key, boolctrls, flags);
-      if (!(flags & noLock));
+      //if (!(flags & noLock))
       //	lboolctrls |= boolctrls;
     }
   else

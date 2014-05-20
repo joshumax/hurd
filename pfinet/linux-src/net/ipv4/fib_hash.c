@@ -406,7 +406,7 @@ static void rtmsg_fib(int, struct fib_node*, int, int,
 		      struct nlmsghdr *n,
 		      struct netlink_skb_parms *);
 #else
-#define rtmsg_fib(a, b, c, d, e, f)
+#define rtmsg_fib(a, b, c, d, e, f)	(void) 0
 #endif
 
 

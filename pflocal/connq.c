@@ -212,7 +212,7 @@ connq_listen (struct connq *cq, struct timespec *tsp, struct sock **sock)
        request and another listener (should) eventually come along.
        (In fact it is very probably as the caller has likely done a
        select and will now follow up with an accept.)  */
-    ;
+    { /* Do nothing.  */ }
 
  out:
   pthread_mutex_unlock (&cq->lock);
