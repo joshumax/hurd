@@ -21,6 +21,7 @@
 
 #include "priv.h"
 #include <error.h>
+#include <device/device.h>
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <argp.h>

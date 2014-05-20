@@ -24,6 +24,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
 #include "priv.h"
+#include <mach/gnumach.h>
 #include <hurd.h>
 #include <hurd/exec.h>
 #include <sys/stat.h>
