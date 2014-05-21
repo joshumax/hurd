@@ -26,6 +26,17 @@
 
 #include <parted/parted.h>
 /*#include <parted/device_gnu.h>*/
+
+/* XXX Until the Hurd specific header is available, provide the
+   declaration of ped_device_new_from_store here.  */
+#warning "Using local declaration of ped_device_new_from_store."
+
+/* Initialize a PedDevice using SOURCE.  The SOURCE will NOT be destroyed;
+   the caller created it, it is the caller's responsilbility to free it
+   after it calls ped_device_destory.  SOURCE is not registered in Parted's
+   list of devices.  */
+PedDevice* ped_device_new_from_store (struct store *source);
+
 #include <string.h>
 #include <error.h>
 
