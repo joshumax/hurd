@@ -1,6 +1,8 @@
 #ifndef _ADDRCONF_H
 #define _ADDRCONF_H
 
+#include "ipv6.h"
+
 #define RETRANS_TIMER	HZ
 
 #define MAX_RTR_SOLICITATIONS		3
