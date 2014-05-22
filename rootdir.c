@@ -22,6 +22,7 @@
 #include <mach/vm_statistics.h>
 #include <mach/vm_cache_statistics.h>
 #include <mach/default_pager.h>
+#include <mach_debug/mach_debug_types.h>
 #include <hurd/paths.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -34,6 +35,8 @@
 #include "procfs.h"
 #include "procfs_dir.h"
 #include "main.h"
+
+#include "mach_debug_U.h"
 
 /* This implements a directory node with the static files in /proc.
    NB: the libps functions for host information return static storage;
@@ -470,6 +473,69 @@ rootdir_mounts_exists (void *dir_hook, const void *entry_hook)
     translator_exists = access (MTAB_TRANSLATOR, F_OK|X_OK) == 0;
   return translator_exists;
 }
+
+static error_t
+rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
+{
+  error_t err;
+  FILE *m;
+  const char header[] =
+    "cache                          obj slab  bufs   objs   bufs"
+    "    total reclaimable\n"
+    "name                  flags   size size /slab  usage  count"
+    "   memory      memory\n";
+  cache_info_array_t cache_info;
+  size_t mem_usage, mem_reclaimable, mem_total, mem_total_reclaimable;
+  mach_msg_type_number_t cache_info_count;
+  int i;
+
+  cache_info = NULL;
+  cache_info_count = 0;
+
+  err = host_slab_info (mach_host_self(), &cache_info, &cache_info_count);
+  if (err)
+    return err;
+
+  m = open_memstream (contents, contents_len);
+  if (m == NULL)
+    {
+      err = ENOMEM;
+      goto out;
+    }
+
+  fprintf (m, "%s", header);
+
+  mem_total = 0;
+  mem_total_reclaimable = 0;
+
+  for (i = 0; i < cache_info_count; i++)
+    {
+      mem_usage = (cache_info[i].nr_slabs * cache_info[i].slab_size)
+	>> 10;
+      mem_total += mem_usage;
+      mem_reclaimable = (cache_info[i].flags & CACHE_FLAGS_NO_RECLAIM)
+	? 0 : (cache_info[i].nr_free_slabs
+	       * cache_info[i].slab_size) >> 10;
+      mem_total_reclaimable += mem_reclaimable;
+      fprintf (m,
+               "%-21s %04x %7zu %3zuk  %4lu %6lu %6lu %7zuk %10zuk\n",
+               cache_info[i].name, cache_info[i].flags,
+               cache_info[i].obj_size, cache_info[i].slab_size >> 10,
+               cache_info[i].bufs_per_slab, cache_info[i].nr_objs,
+               cache_info[i].nr_bufs, mem_usage, mem_reclaimable);
+    }
+
+  fprintf (m, "total: %zuk, reclaimable: %zuk\n",
+           mem_total, mem_total_reclaimable);
+
+  fclose (m);
+  *contents_len += 1;	/* For the terminating 0.  */
+
+ out:
+  vm_deallocate (mach_task_self (),
+                 cache_info, cache_info_count * sizeof *cache_info);
+  return err;
+}
 
 /* Glue logic and entries table */
 
@@ -562,6 +628,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
       .make_node = rootdir_mounts_make_node,
       .exists = rootdir_mounts_exists,
     }
+  },
+  {
+    .name = "slabinfo",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_slabinfo,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
   },
 #ifdef PROFILE
   /* In order to get a usable gmon.out file, we must apparently use exit(). */
