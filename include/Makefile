@@ -22,7 +22,7 @@
 dir := include
 makemode := misc
 
-installhdrs := sys/procfs.h
+installhdrs := sys/procfs.h refcount.h
 
 include ../Makeconf
 
