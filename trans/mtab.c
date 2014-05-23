@@ -255,7 +255,7 @@ main (int argc, char *argv[])
   else
     {
       /* One-shot mode.	 */
-      struct mtab mtab = { NULL, 0, 0 };
+      struct mtab mtab = { .lock = PTHREAD_MUTEX_INITIALIZER };
       err = mtab_populate (&mtab, target_path, insecure);
       if (err)
 	error (5, err, "%s", target_path);
