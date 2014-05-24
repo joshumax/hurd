@@ -249,6 +249,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 		{
 		  /* Lose */
 		  pthread_mutex_unlock (&np->lock);
+		  diskfs_nrele (np);
 		  return 0;
 		}
 	    }
