@@ -163,9 +163,6 @@ else
 fi
 AC_SUBST(VERSIONING)
 
-# Check if libc contains getgrouplist and/or uselocale.
-AC_CHECK_FUNCS(getgrouplist uselocale)
-
 
 # From glibc HEAD, 2007-11-07.
 AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl

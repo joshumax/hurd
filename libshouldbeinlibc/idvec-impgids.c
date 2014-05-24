@@ -1,6 +1,6 @@
 /* Add gids implied by a user
 
-   Copyright (C) 1997, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1997, 2001, 2014 Free Software Foundation, Inc.
 
    Written by Miles Bader <miles@gnu.ai.mit.edu>
 
@@ -56,7 +56,6 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
     else
       {
 	struct idvec *cache = make_idvec ();
-#ifdef HAVE_GETGROUPLIST
 	gid_t _gids[NUM_STATIC_GIDS], *gids = _gids;
 	int maxgids = NUM_STATIC_GIDS;
 	int ngids = getgrouplist (pw->pw_name, pw->pw_gid, gids, &maxgids);
@@ -79,17 +78,6 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 	    if (gids != _gids)
 	      free (gids);
 	  }
-#else
-#warning "getgrouplist() not available; supplementary group IDs unsupported."
-	if (! cache)
-	  err = ENOMEM;
-	else
-	  {
-	    err = idvec_add_new (cache, pw->pw_gid);
-	    if (err)
-	      idvec_free (cache);
-	  }
-#endif
 
 	if (! err)
 	  {

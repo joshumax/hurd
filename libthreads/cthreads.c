@@ -150,10 +150,7 @@
 #include <cthreads.h>
 #include <mach/mig_support.h>
 #include "cthread_internals.h"
-
-#ifdef HAVE_USELOCALE
-# include <locale.h>
-#endif
+#include <locale.h>
 
 /*
  * Thread status bits.
@@ -292,11 +289,11 @@ cthread_body(cproc_t self)
 				/*
 				 * Execute the fork request.
 				 */
-#ifdef HAVE_USELOCALE
+
 			        /* A fresh thread needs to be bound to the
 				   global locale.  */
 			  	uselocale (LC_GLOBAL_LOCALE);
-#endif
+
 				t->result = (*(t->func))(t->arg);
 			}
 			/*
