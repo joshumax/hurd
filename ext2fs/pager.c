@@ -1449,7 +1449,7 @@ diskfs_pager_users ()
 {
   int npagers = ports_count_bucket (file_pager_bucket);
 
-  if (npagers <= 1)
+  if (npagers == 0)
     return 0;
 
   if (MAY_CACHE)
