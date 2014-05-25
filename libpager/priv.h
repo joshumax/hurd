@@ -59,8 +59,6 @@ struct pager
 
   int noterm;			/* number of threads blocking termination */
 
-  struct pager *next, **pprev;
-
   int termwaiting:1;
   int waitingforseqno:1;
 
