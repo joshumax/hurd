@@ -32,19 +32,6 @@
 
 #include "ihash.h"
 
-/* This is the integer finalizer from MurmurHash3.  */
-static inline uint32_t
-murmur3_mix32 (uint32_t h, unsigned int bits)
-{
-  h ^= h >> 16;
-  h *= 0x85ebca6b;
-  h ^= h >> 13;
-  h *= 0xc2b2ae35;
-  h ^= h >> 16;
-
-  return h >> (32 - bits);
-}
-
 /* Return 1 if the slot with the index IDX in the hash table HT is
    empty, and 0 otherwise.  */
 static inline int
@@ -74,7 +61,7 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
   unsigned int up_idx;
   unsigned int mask = ht->size - 1;
 
-  idx = murmur3_mix32 (key, __builtin_ctzl (ht->size));
+  idx = key & mask;
 
   if (ht->items[idx].value == _HURD_IHASH_EMPTY || ht->items[idx].key == key)
     return idx;
@@ -205,20 +192,19 @@ hurd_ihash_set_max_load (hurd_ihash_t ht, unsigned int max_load)
    found.  The arguments are identical to hurd_ihash_add.
 
    We are using open address hashing.  As the hash function we use the
-   division method with quadratic probe.  This is guaranteed to try
-   all slots in the hash table if the prime number is 3 mod 4.  */
+   division method with linear probe.  */
 static inline int
 add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
 {
   unsigned int idx;
   unsigned int first_free;
+  unsigned int mask = ht->size - 1;
 
-  idx = murmur3_mix32 (key, __builtin_ctzl (ht->size));
+  idx = key & mask;
   first_free = idx;
 
   if (ht->items[idx].value != _HURD_IHASH_EMPTY && ht->items[idx].key != key)
     {
-      unsigned int mask = ht->size - 1;
       unsigned int up_idx = idx;
 
       do
