@@ -64,6 +64,8 @@ static const struct argp_option argp_opts[] =
   {"no-mtab", 'n', 0, 0, "Do not update /etc/mtab"},
   {"test-opts", 'O', "OPTIONS", 0,
    "Only mount fstab entries matching the given set of options"},
+  {"bind", 'B', 0, 0, "Bind mount, firmlink"},
+  {"firmlink", 0, 0, OPTION_ALIAS},
   {"fake", 'f', 0, 0, "Do not actually mount, just pretend"},
   {0, 0}
 };
@@ -87,6 +89,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'r': ARGZ (add (&options, &options_len, "ro"));
     case 'w': ARGZ (add (&options, &options_len, "rw"));
     case 'u': ARGZ (add (&options, &options_len, "update"));
+    case 'B': ARGZ (add (&options, &options_len, "bind"));
     case 'o': ARGZ (add_sep (&options, &options_len, arg, ','));
     case 'v': ++verbose; break;
 #undef ARGZ
@@ -250,12 +253,20 @@ do_mount (struct fs *fs, int remount)
       /* Append the fstab options to any specified on the command line.  */
       ARGZ (create_sep (fs->mntent.mnt_opts, ',', &mntopts, &mntopts_len));
 
-      /* Remove the `noauto' option, since it's for us not the filesystem.  */
+      /* Remove the `noauto' and `bind' options, since they're for us not the
+         filesystem.  */
       for (o = mntopts; o; o = argz_next (mntopts, mntopts_len, o))
-	if (!strcmp (o, MNTOPT_NOAUTO))
-	  break;
-      if (o)
-	argz_delete (&mntopts, &mntopts_len, o);
+        {
+          if (strcmp (o, MNTOPT_NOAUTO) == 0)
+            argz_delete (&mntopts, &mntopts_len, o);
+          if (strcmp (o, "bind") == 0)
+            {
+              fs->mntent.mnt_type = strdup ("firmlink");
+              if (!fs->mntent.mnt_type)
+                error (3, ENOMEM, "failed to allocate memory");
+              argz_delete (&mntopts, &mntopts_len, o);
+            }
+        }
 
       ARGZ (append (&mntopts, &mntopts_len, options, options_len));
     }
@@ -273,7 +284,7 @@ do_mount (struct fs *fs, int remount)
       {
 	ARGZ (add (&fsopts, &fsopts_len, o));
       }
-    else if (strcmp (o, "defaults") != 0)
+    else if ((strcmp (o, "defaults") != 0) && (strlen (o) != 0))
       {
 	/* Prepend `--' to the option to make a long option switch,
 	   e.g. `--ro' or `--rsize=1024'.  */
@@ -572,7 +583,7 @@ do_query (struct fs *fs)
 int
 main (int argc, char **argv)
 {
-  unsigned int remount;
+  unsigned int remount, firmlink;
   struct fstab *fstab;
   struct fs *fs;
   error_t err;
@@ -598,6 +609,16 @@ main (int argc, char **argv)
   if (err)
     error (3, ENOMEM, "collecting mount options");
 
+  /* Do not pass `bind' option to firmlink translator */
+  char *opt = NULL;
+  firmlink = 0;
+  while ((opt = argz_next (options, options_len, opt)))
+    if (strcmp (opt, "bind") == 0)
+      {
+        firmlink = 1;
+        argz_delete(&options, &options_len, opt);
+      }
+
   if (device)			/* two-argument form */
     {
       struct mntent m =
@@ -608,6 +629,8 @@ main (int argc, char **argv)
 	mnt_opts: 0,
 	mnt_freq: 0, mnt_passno: 0
       };
+      if (firmlink)
+        m.mnt_type = strdup ("firmlink");
 
       err = fstab_add_mntent (fstab, &m, &fs);
       if (err)
@@ -625,6 +648,8 @@ main (int argc, char **argv)
 	mnt_opts: 0,
 	mnt_freq: 0, mnt_passno: 0
       };
+      if (firmlink)
+        m.mnt_type = strdup ("firmlink");
 
       err = fstab_add_mntent (fstab, &m, &fs);
       if (err)
