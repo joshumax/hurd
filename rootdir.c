@@ -529,7 +529,6 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
            mem_total, mem_total_reclaimable);
 
   fclose (m);
-  *contents_len += 1;	/* For the terminating 0.  */
 
  out:
   vm_deallocate (mach_task_self (),
