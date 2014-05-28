@@ -296,13 +296,14 @@ diskfs_append_args (char **argz, size_t *argz_len)
 static void *
 diskfs_thread_function (void *demuxer)
 {
+  static int thread_timeout = 1000 * 60 * 2; /* two minutes */
   error_t err;
 
   do
     {
       ports_manage_port_operations_multithread (diskfs_port_bucket,
 						(ports_demuxer_type) demuxer,
-						0,
+						thread_timeout,
 						0,
 						0);
       err = diskfs_shutdown (0);
