@@ -45,29 +45,12 @@ struct lookup_cache
 
   /* Strlen of NAME.  If this is zero, it's an unused entry. */
   size_t name_len;
-
-  /* XXX */
-  int stati;
 };
 
 /* The contents of the cache in no particular order */
 static struct cacheq lookup_cache = { sizeof (struct lookup_cache) };
 
 static pthread_spinlock_t cache_lock = PTHREAD_SPINLOCK_INITIALIZER;
-
-/* Buffer to hold statistics */
-static struct stats
-{
-  long pos_hits;
-  long neg_hits;
-  long miss;
-  long fetch_errors;
-} statistics;
-
-#define PARTIAL_THRESH 100
-#define NPARTIALS MAXCACHE / PARTIAL_THRESH
-struct stats partial_stats [NPARTIALS];
-
 
 /* If there's an entry for NAME, of length NAME_LEN, in directory DIR in the
    cache, return its entry, otherwise 0.  CACHE_LOCK must be held.  */
@@ -85,10 +68,7 @@ find_cache (struct node *dir, const char *name, size_t name_len)
     if (c->name_len == name_len
 	&& c->dir_cache_id == dir->cache_id
 	&& c->name[0] == name[0] && strcmp (c->name, name) == 0)
-      {
-	c->stati = i / 100;
-	return c;
-      }
+      return c;
 
   return 0;
 }
@@ -152,46 +132,6 @@ diskfs_purge_lookup_cache (struct node *dp, struct node *np)
   pthread_spin_unlock (&cache_lock);
 }
 
-/* Register a negative hit for an entry in the Nth stat class */
-void
-register_neg_hit (int n)
-{
-  int i;
-
-  statistics.neg_hits++;
-
-  for (i = 0; i < n; i++)
-    partial_stats[i].miss++;
-  for (; i < NPARTIALS; i++)
-    partial_stats[i].neg_hits++;
-}
-
-/* Register a positive hit for an entry in the Nth stat class */
-void
-register_pos_hit (int n)
-{
-  int i;
-
-  statistics.pos_hits++;
-
-  for (i = 0; i < n; i++)
-    partial_stats[i].miss++;
-  for (; i < NPARTIALS; i++)
-    partial_stats[i].pos_hits++;
-}
-
-/* Register a miss */
-void
-register_miss ()
-{
-  int i;
-
-  statistics.miss++;
-  for (i = 0; i < NPARTIALS; i++)
-    partial_stats[i].miss++;
-}
-
-
 
 /* Scan the cache looking for NAME inside DIR.  If we don't know
    anything entry at all, then return 0.  If the entry is confirmed to
@@ -214,14 +154,12 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
       if (id == 0)
 	/* A negative cache entry.  */
 	{
-	  register_neg_hit (c->stati);
 	  pthread_spin_unlock (&cache_lock);
 	  return (struct node *)-1;
 	}
       else if (id == dir->cache_id)
 	/* The cached node is the same as DIR.  */
 	{
-	  register_pos_hit (c->stati);
 	  pthread_spin_unlock (&cache_lock);
 	  diskfs_nref (dir);
 	  return dir;
@@ -232,7 +170,6 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	  struct node *np;
 	  error_t err;
 
-	  register_pos_hit (c->stati);
 	  pthread_spin_unlock (&cache_lock);
 
 	  if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
@@ -259,7 +196,6 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	}
     }
 
-  register_miss ();
   pthread_spin_unlock (&cache_lock);
 
   return 0;
