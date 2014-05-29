@@ -1,6 +1,6 @@
 /* Directory name lookup caching
 
-   Copyright (C) 1996, 1997, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 1998, 2014 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG, & Miles Bader.
 
    This file is part of the GNU Hurd.
@@ -20,57 +20,248 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "priv.h"
+#include <assert.h>
 #include <string.h>
-#include <cacheq.h>
 
-/* Maximum number of names to cache at once */
-#define MAXCACHE 200
+/* The name cache is implemented using a hash table.
 
-/* Maximum length of file name we bother caching */
-#define CACHE_NAME_LEN 100
+   We use buckets of a fixed size.  We approximate the
+   least-frequently used cache algorithm by counting the number of
+   lookups using saturating arithmetic in the two lowest bits of the
+   pointer to the name.  Using this strategy we achieve a constant
+   worst-case lookup and insertion time.  */
 
-/* Cache entry */
-struct lookup_cache
+/* Number of buckets.  Must be a power of two. */
+#define CACHE_SIZE	256
+
+/* Entries per bucket.  */
+#define BUCKET_SIZE	4
+
+/* A mask for fast binary modulo.  */
+#define CACHE_MASK	(CACHE_SIZE - 1)
+
+/* Cache bucket with BUCKET_SIZE entries.
+
+   The layout of the bucket is chosen so that it will be straight
+   forward to use vector operations in the future.  */
+struct cache_bucket
 {
-  struct cacheq_hdr hdr;
+  /* Name of the node NODE_CACHE_ID in the directory DIR_CACHE_ID.  If
+     NULL, the entry is unused.  */
+  unsigned long name[BUCKET_SIZE];
 
-  /* Used to indentify nodes to the fs dependent code.  0 for NODE_CACHE_ID
-     means a `negative' entry -- recording that there's definitely no node with
-     this name.  */
-  ino64_t dir_cache_id, node_cache_id;
+  /* The key.  */
+  unsigned long key[BUCKET_SIZE];
 
-  /* Name of the node NODE_CACHE_ID in the directory DIR_CACHE_ID.  Entries
-     with names too long to fit in this buffer aren't cached at all.  */
-  char name[CACHE_NAME_LEN];
+  /* Used to indentify nodes to the fs dependent code.  */
+  ino64_t dir_cache_id[BUCKET_SIZE];
 
-  /* Strlen of NAME.  If this is zero, it's an unused entry. */
-  size_t name_len;
+  /* 0 for NODE_CACHE_ID means a `negative' entry -- recording that
+     there's definitely no node with this name.  */
+  ino64_t node_cache_id[BUCKET_SIZE];
 };
 
-/* The contents of the cache in no particular order */
-static struct cacheq lookup_cache = { sizeof (struct lookup_cache) };
+/* The cache.  */
+static struct cache_bucket name_cache[CACHE_SIZE];
 
-static pthread_spinlock_t cache_lock = PTHREAD_SPINLOCK_INITIALIZER;
+/* Protected by this lock.  */
+static pthread_mutex_t cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* If there's an entry for NAME, of length NAME_LEN, in directory DIR in the
-   cache, return its entry, otherwise 0.  CACHE_LOCK must be held.  */
-static struct lookup_cache *
-find_cache (struct node *dir, const char *name, size_t name_len)
+/* Given VALUE, return the char pointer.  */
+static inline char *
+charp (unsigned long value)
 {
-  struct lookup_cache *c;
+  return (char *) (value & ~3L);
+}
+
+/* Given VALUE, return the approximation of use frequency.  */
+static inline unsigned long
+frequ (unsigned long value)
+{
+  return value & 3;
+}
+
+/* Add an entry in the Ith slot of the given bucket.  If there is a
+   value there, remove it first.  */
+static inline void
+add_entry (struct cache_bucket *b, int i,
+	   const char *name, unsigned long key,
+	   ino64_t dir_cache_id, ino64_t node_cache_id)
+{
+  if (b->name[i])
+    free (charp (b->name[i]));
+
+  b->name[i] = (unsigned long) strdup (name);
+  assert ((b->name[i] & 3) == 0);
+  if (b->name[i] == 0)
+    return;
+
+  b->key[i] = key;
+  b->dir_cache_id[i] = dir_cache_id;
+  b->node_cache_id[i] = node_cache_id;
+}
+
+/* Remove the entry in the Ith slot of the given bucket.  */
+static inline void
+remove_entry (struct cache_bucket *b, int i)
+{
+  if (b->name[i])
+    free (charp (b->name[i]));
+  b->name[i] = 0;
+}
+
+/* Check if the entry in the Ith slot of the given bucket is
+   valid.  */
+static inline int
+valid_entry (struct cache_bucket *b, int i)
+{
+  return b->name[i] != 0;
+}
+
+/* This is the Murmur3 hash algorithm.  */
+
+#define FORCE_INLINE inline __attribute__((always_inline))
+
+inline uint32_t rotl32 ( uint32_t x, int8_t r )
+{
+  return (x << r) | (x >> (32 - r));
+}
+
+#define ROTL32(x,y)     rotl32(x,y)
+
+/* Block read - if your platform needs to do endian-swapping or can
+   only handle aligned reads, do the conversion here.  */
+
+FORCE_INLINE uint32_t getblock32 ( const uint32_t * p, int i )
+{
+  return p[i];
+}
+
+/* Finalization mix - force all bits of a hash block to avalanche.  */
+
+FORCE_INLINE uint32_t fmix32 ( uint32_t h )
+{
+  h ^= h >> 16;
+  h *= 0x85ebca6b;
+  h ^= h >> 13;
+  h *= 0xc2b2ae35;
+  h ^= h >> 16;
+
+  return h;
+}
+
+/* The Murmur3 hash function.  */
+void MurmurHash3_x86_32 ( const void * key, int len,
+                          uint32_t seed, void * out )
+{
+  const uint8_t * data = (const uint8_t*)key;
+  const int nblocks = len / 4;
+
+  uint32_t h1 = seed;
+
+  const uint32_t c1 = 0xcc9e2d51;
+  const uint32_t c2 = 0x1b873593;
+
+  /* body */
+
+  const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
+
+  for(int i = -nblocks; i; i++)
+  {
+    uint32_t k1 = getblock32(blocks,i);
+
+    k1 *= c1;
+    k1 = ROTL32(k1,15);
+    k1 *= c2;
+
+    h1 ^= k1;
+    h1 = ROTL32(h1,13);
+    h1 = h1*5+0xe6546b64;
+  }
+
+  /* tail */
+
+  const uint8_t * tail = (const uint8_t*)(data + nblocks*4);
+
+  uint32_t k1 = 0;
+
+  switch(len & 3)
+  {
+  case 3: k1 ^= tail[2] << 16;
+  case 2: k1 ^= tail[1] << 8;
+  case 1: k1 ^= tail[0];
+          k1 *= c1; k1 = ROTL32(k1,15); k1 *= c2; h1 ^= k1;
+  };
+
+  /* finalization */
+
+  h1 ^= len;
+
+  h1 = fmix32(h1);
+
+  *(uint32_t*)out = h1;
+}
+
+/* If there is no best candidate to replace, pick any.  We approximate
+   any by picking the slot depicted by REPLACE, and increment REPLACE
+   then.  */
+static int replace;
+
+/* Lookup (DIR_CACHE_ID, NAME, KEY) in the cache.  If it is found,
+   return 1 and set BUCKET and INDEX to the item.  Otherwise, return 0
+   and set BUCKET and INDEX to the slot where the item should be
+   inserted.  */
+static inline int
+lookup (ino64_t dir_cache_id, const char *name, unsigned long key,
+	struct cache_bucket **bucket, int *index)
+{
+  struct cache_bucket *b = *bucket = &name_cache[key & CACHE_MASK];
+  unsigned long best = 3;
   int i;
 
-  /* Search the list.  All unused entries are contiguous at the end of the
-     list, so we can stop searching when we see the first one.  */
-  for (i = 0, c = lookup_cache.mru;
-       c && c->name_len;
-       c = c->hdr.next, i++)
-    if (c->name_len == name_len
-	&& c->dir_cache_id == dir->cache_id
-	&& c->name[0] == name[0] && strcmp (c->name, name) == 0)
-      return c;
+  for (i = 0; i < BUCKET_SIZE; i++)
+    {
+      unsigned long f = frequ (b->name[i]);
+
+      if (valid_entry (b, i)
+	  && b->key[i] == key
+	  && b->dir_cache_id[i] == dir_cache_id
+	  && strcmp (charp (b->name[i]), name) == 0)
+	{
+	  if (f < 3)
+	    b->name[i] += 1;
+
+	  *index = i;
+	  return 1;
+	}
+
+      /* Keep track of the replacement candidate.  */
+      if (f < best)
+	{
+	  best = f;
+	  *index = i;
+	}
+    }
+
+  /* If there was no entry with a lower use frequency, just replace
+     any entry.  */
+  if (best == 3)
+    {
+      *index = replace;
+      replace = (replace + 1) & (BUCKET_SIZE - 1);
+    }
 
   return 0;
+}
+
+/* Hash the directory cache_id and the name.  */
+static inline unsigned long
+hash (ino64_t dir_cache_id, const char *name)
+{
+  unsigned long h;
+  MurmurHash3_x86_32 (&dir_cache_id, sizeof dir_cache_id, 0, &h);
+  MurmurHash3_x86_32 (name, strlen (name), h, &h);
+  return h;
 }
 
 /* Node NP has just been found in DIR with NAME.  If NP is null, that
@@ -78,33 +269,20 @@ find_cache (struct node *dir, const char *name, size_t name_len)
 void
 diskfs_enter_lookup_cache (struct node *dir, struct node *np, const char *name)
 {
-  struct lookup_cache *c;
-  size_t name_len = strlen (name);
+  unsigned long key = hash (dir->cache_id, name);
+  ino64_t value = np ? np->cache_id : 0;
+  struct cache_bucket *bucket;
+  int i = 0, found;
 
-  if (name_len > CACHE_NAME_LEN - 1)
-    return;
+  pthread_mutex_lock (&cache_lock);
+  found = lookup (dir->cache_id, name, key, &bucket, &i);
+  if (! found)
+    add_entry (bucket, i, name, key, dir->cache_id, value);
+  else
+    if (bucket->node_cache_id[i] != value)
+      bucket->node_cache_id[i] = value;
 
-  pthread_spin_lock (&cache_lock);
-
-  if (lookup_cache.length == 0)
-    /* There should always be an lru_cache; this being zero means that the
-       cache hasn't been initialized yet.  Do so.  */
-    cacheq_set_length (&lookup_cache, MAXCACHE);
-
-  /* See if there's an old entry for NAME in DIR.  If not, replace the least
-     recently used entry.  */
-  c = find_cache (dir, name, name_len) ?: lookup_cache.lru;
-
-  /* Fill C with the new entry.  */
-  c->dir_cache_id = dir->cache_id;
-  c->node_cache_id = np ? np->cache_id : 0;
-  strcpy (c->name, name);
-  c->name_len = name_len;
-
-  /* Now C becomes the MRU entry!  */
-  cacheq_make_mru (&lookup_cache, c);
-
-  pthread_spin_unlock (&cache_lock);
+  pthread_mutex_unlock (&cache_lock);
 }
 
 /* Purge all references in the cache to NP as a node inside
@@ -112,26 +290,20 @@ diskfs_enter_lookup_cache (struct node *dir, struct node *np, const char *name)
 void
 diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 {
-  struct lookup_cache *c, *next;
+  int i;
+  struct cache_bucket *b;
 
-  pthread_spin_lock (&cache_lock);
-  for (c = lookup_cache.mru; c; c = next)
-    {
-      /* Save C->hdr.next, since we may move C from this position. */
-      next = c->hdr.next;
+  pthread_mutex_lock (&cache_lock);
 
-      if (c->name_len
-	  && c->dir_cache_id == dp->cache_id
-	  && c->node_cache_id == np->cache_id)
-	{
-	  c->name_len = 0;
-	  cacheq_make_lru (&lookup_cache, c); /* Use C as the next free
-						 entry. */
-	}
-    }
-  pthread_spin_unlock (&cache_lock);
+  for (b = &name_cache[0]; b < &name_cache[CACHE_SIZE]; b++)
+    for (i = 0; i < BUCKET_SIZE; i++)
+      if (valid_entry (b, i)
+	  && b->dir_cache_id[i] == dp->cache_id
+	  && b->node_cache_id[i] == np->cache_id)
+	remove_entry (b, i);
+
+  pthread_mutex_unlock (&cache_lock);
 }
-
 
 /* Scan the cache looking for NAME inside DIR.  If we don't know
    anything entry at all, then return 0.  If the entry is confirmed to
@@ -140,27 +312,28 @@ diskfs_purge_lookup_cache (struct node *dp, struct node *np)
 struct node *
 diskfs_check_lookup_cache (struct node *dir, const char *name)
 {
-  struct lookup_cache *c;
+  unsigned long key = hash (dir->cache_id, name);
+  int lookup_parent = name[0] == '.' && name[1] == '.' && name[2] == '\0';
+  struct cache_bucket *bucket;
+  int i, found;
 
-  pthread_spin_lock (&cache_lock);
+  if (lookup_parent && dir == diskfs_root_node)
+    /* This is outside our file system, return cache miss.  */
+    return NULL;
 
-  c = find_cache (dir, name, strlen (name));
-  if (c)
+  pthread_mutex_lock (&cache_lock);
+  found = lookup (dir->cache_id, name, key, &bucket, &i);
+  if (found)
     {
-      int id = c->node_cache_id;
-
-      cacheq_make_mru (&lookup_cache, c); /* Record C as recently used.  */
+      ino64_t id = bucket->node_cache_id[i];
+      pthread_mutex_unlock (&cache_lock);
 
       if (id == 0)
 	/* A negative cache entry.  */
-	{
-	  pthread_spin_unlock (&cache_lock);
-	  return (struct node *)-1;
-	}
+	return (struct node *) -1;
       else if (id == dir->cache_id)
 	/* The cached node is the same as DIR.  */
 	{
-	  pthread_spin_unlock (&cache_lock);
 	  diskfs_nref (dir);
 	  return dir;
 	}
@@ -170,9 +343,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	  struct node *np;
 	  error_t err;
 
-	  pthread_spin_unlock (&cache_lock);
-
-	  if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
+	  if (lookup_parent)
 	    {
 	      pthread_mutex_unlock (&dir->lock);
 	      err = diskfs_cached_lookup (id, &np);
@@ -181,14 +352,18 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	      /* In the window where DP was unlocked, we might
 		 have lost.  So check the cache again, and see
 		 if it's still there; if so, then we win. */
-	      c = find_cache (dir, "..", 2);
-	      if (!c || c->node_cache_id != id)
+	      pthread_mutex_lock (&cache_lock);
+	      found = lookup (dir->cache_id, name, key, &bucket, &i);
+	      if (! found
+		  || ! bucket->node_cache_id[i] != id)
 		{
+		  pthread_mutex_unlock (&cache_lock);
+
 		  /* Lose */
-		  pthread_mutex_unlock (&np->lock);
-		  diskfs_nrele (np);
+		  diskfs_nput (np);
 		  return 0;
 		}
+	      pthread_mutex_unlock (&cache_lock);
 	    }
 	  else
 	    err = diskfs_cached_lookup (id, &np);
@@ -196,7 +371,6 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	}
     }
 
-  pthread_spin_unlock (&cache_lock);
-
+  pthread_mutex_unlock (&cache_lock);
   return 0;
 }
