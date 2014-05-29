@@ -21,13 +21,9 @@
 #include "netfs.h"
 #include <hurd/fshelp.h>
 
-struct node *
-netfs_make_node (struct netnode *nn)
+static struct node *
+init_node (struct node *np, struct netnode *nn)
 {
-  struct node *np = malloc (sizeof (struct node));
-  if (! np)
-    return NULL;
-  
   np->nn = nn;
 
   pthread_mutex_init (&np->lock, NULL);
@@ -39,4 +35,25 @@ netfs_make_node (struct netnode *nn)
   fshelp_lock_init (&np->userlock);
   
   return np;
+}
+
+struct node *
+netfs_make_node (struct netnode *nn)
+{
+  struct node *np = malloc (sizeof (struct node));
+  if (! np)
+    return NULL;
+
+  return init_node (np, nn);
+}
+
+struct node *
+netfs_make_node_alloc (size_t size)
+{
+  struct node *np = malloc (sizeof (struct node) + size);
+
+  if (np == NULL)
+    return NULL;
+
+  return init_node (np, netfs_node_netnode (np));
 }

@@ -686,6 +686,33 @@ diskfs_notice_filechange (struct node *np, enum file_changed_type type,
    The new node will have one hard reference and no light references.  */
 struct node *diskfs_make_node (struct disknode *dn);
 
+/* Create a new node structure.  Also allocate SIZE bytes for the
+   disknode.  The address of the disknode can be obtained using
+   diskfs_node_disknode.  The new node will have one hard reference
+   and no light references.  */
+struct node *diskfs_make_node_alloc (size_t size);
+
+/* To avoid breaking the ABI whenever sizeof (struct node) changes, we
+   explicitly provide the size.  The following two functions will use
+   this value for offset calculations.  */
+extern const size_t _diskfs_sizeof_struct_node;
+
+/* Return the address of the disknode for NODE.  NODE must have been
+   allocated using diskfs_make_node_alloc.  */
+static inline struct disknode *
+diskfs_node_disknode (struct node *node)
+{
+  return (struct disknode *) ((char *) node + _diskfs_sizeof_struct_node);
+}
+
+/* Return the address of the node for DISKNODE.  DISKNODE must have
+   been allocated using diskfs_make_node_alloc.  */
+static inline struct node *
+diskfs_disknode_node (struct disknode *disknode)
+{
+  return (struct node *) ((char *) disknode - _diskfs_sizeof_struct_node);
+}
+
 
 /* The library also exports the following functions; they are not generally
    useful unless you are redefining other functions the library provides. */
