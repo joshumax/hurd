@@ -83,6 +83,13 @@ AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PROG_SED
 
+if test "x$cross_compiling" = "xyes"; then
+   # It may be that we don't have a working libc yet, for instance
+   # because we're bootstrapping the cross-compilation tool chain.
+   # Thus, use this undocumented Autoconf macro designed for this.
+   AC_NO_EXECUTABLES
+   AC_MSG_WARN("cross-compiling, disabling linking")
+fi
 AC_PROG_CC
 # Require GCC.
 if test x$GCC != xyes; then
