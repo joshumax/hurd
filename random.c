@@ -152,6 +152,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   if (amount > 0)
     {
+      mach_msg_type_number_t new_amount;
       while (readable_pool (amount, level) == 0)
 	{
 	  if (cred->po->openmodes & O_NONBLOCK)
@@ -170,10 +171,22 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
       /* Possibly allocate a new buffer. */
       if (*data_len < amount)
-	*data = mmap (0, amount, PROT_READ|PROT_WRITE,
-				     MAP_ANON, 0, 0);
-	  
-      amount = read_pool ((byte *) *data, amount, level);
+	{
+	  *data = mmap (0, amount, PROT_READ|PROT_WRITE,
+				       MAP_ANON, 0, 0);
+	  if (*data == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&global_lock);
+	      return errno;
+	    }
+	}
+
+      new_amount = read_pool ((byte *) *data, amount, level);
+
+      if (new_amount < amount)
+	munmap (*data + round_page (new_amount),
+	        round_page(amount) - round_page (new_amount));
+      amount = new_amount;
     }
   *data_len = amount;
 
