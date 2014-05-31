@@ -74,7 +74,10 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
       return 0;
     }
   else
-    return errno;
+    {
+      iohelp_free_iouser (user);
+      return errno;
+    }
 }
 
 fshelp_fetch_root_callback1_t _netfs_translator_callback1 =
