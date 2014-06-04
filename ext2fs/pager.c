@@ -957,7 +957,7 @@ disk_cache_block_ref (block_t block)
   int index;
   void *bptr;
 
-  assert (0 <= block && block < store->size >> log2_block_size);
+  assert (block < store->size >> log2_block_size);
 
   ext2_debug ("(%u)", block);
 
