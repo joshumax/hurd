@@ -823,7 +823,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
    write the answer down in its dirents array.  As a side affect
    fill BUF with the block.  */
 static error_t
-count_dirents (struct node *dp, int nb, char *buf)
+count_dirents (struct node *dp, block_t nb, char *buf)
 {
   size_t amt;
   char *offinblk;
@@ -868,8 +868,8 @@ diskfs_get_directs (struct node *dp,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
-  int blkno;
-  int nblks;
+  block_t blkno;
+  block_t nblks;
   int curentry;
   char buf[DIRBLKSIZ];
   char *bufp;
