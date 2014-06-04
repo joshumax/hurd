@@ -66,7 +66,7 @@ struct shared_io
   int use_read_size;		/* read_size is meaningful */
   off_t read_size;
 
-  size_t optimal_transfer_size;	/* users should try to have the
+  blksize_t optimal_transfer_size; /* users should try to have the
 				   arguments to io_prenotify, etc. be
 				   multiples of this value if it is
 				   nonzero. */ 
