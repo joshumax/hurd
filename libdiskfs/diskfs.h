@@ -56,7 +56,7 @@ struct protid
 /* One of these is created for each node opened by dir_lookup. */
 struct peropen
 {
-  int filepointer;
+  off_t filepointer;
   int lock_status;
   refcount_t refcnt;
   int openstat;
