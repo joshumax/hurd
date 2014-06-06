@@ -217,8 +217,9 @@ diskfs_start_bootstrap ()
       while (*initname == '/')
 	initname++;
 
-      exec_argvlen = asprintf (&exec_argv, "/%s%c", initname, '\0');
-      assert (exec_argvlen != -1);
+      int len = asprintf (&exec_argv, "/%s%c", initname, '\0');
+      assert (len != -1);
+      exec_argvlen = (size_t) len;
       err = argz_add_sep (&exec_argv, &exec_argvlen,
 			  diskfs_boot_command_line, ' ');
       assert_perror (err);
