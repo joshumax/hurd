@@ -140,7 +140,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   size_t namelen;
   int spec_dotdot;
   struct node *np = 0;
-  int retry_dotdot = 0;
+  ino_t retry_dotdot = 0;
   vm_prot_t prot =
     (type == LOOKUP) ? VM_PROT_READ : (VM_PROT_READ | VM_PROT_WRITE);
   memory_object_t memobj;
