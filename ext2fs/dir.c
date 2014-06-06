@@ -146,7 +146,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   memory_object_t memobj;
   vm_address_t buf = 0;
   vm_size_t buflen = 0;
-  int blockaddr;
+  vm_address_t blockaddr;
   int idx, lastidx;
   int looped;
 
