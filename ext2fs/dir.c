@@ -99,7 +99,7 @@ diskfs_null_dirstat (struct dirstat *ds)
 
 static error_t
 dirscanblock (vm_address_t blockoff, struct node *dp, int idx,
-	      const char *name, int namelen, enum lookup_type type,
+	      const char *name, size_t namelen, enum lookup_type type,
 	      struct dirstat *ds, ino_t *inum);
 
 
@@ -137,7 +137,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 {
   error_t err;
   ino_t inum;
-  int namelen;
+  size_t namelen;
   int spec_dotdot;
   struct node *np = 0;
   int retry_dotdot = 0;
@@ -379,11 +379,11 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
    return ENOENT.  */
 static error_t
 dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
-	      const char *name, int namelen, enum lookup_type type,
+	      const char *name, size_t namelen, enum lookup_type type,
 	      struct dirstat *ds, ino_t *inum)
 {
-  int nfree = 0;
-  int needed = 0;
+  size_t nfree = 0;
+  size_t needed = 0;
   vm_address_t currentoff, prevoff;
   struct ext2_dir_entry_2 *entry = 0;
   int nentries = 0;
@@ -421,7 +421,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 
       if (looking || countcopies)
 	{
-	  int thisfree;
+	  size_t thisfree;
 
 	  /* Count how much free space this entry has in it. */
 	  if (entry->inode == 0)
@@ -527,11 +527,11 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 		      struct dirstat *ds, struct protid *cred)
 {
   struct ext2_dir_entry_2 *new;
-  int namelen = strlen (name);
-  int needed = EXT2_DIR_REC_LEN (namelen);
-  int oldneeded;
+  size_t namelen = strlen (name);
+  size_t needed = EXT2_DIR_REC_LEN (namelen);
+  size_t oldneeded;
   vm_address_t fromoff, tooff;
-  int totfreed;
+  size_t totfreed;
   error_t err;
   size_t oldsize = 0;
 
@@ -577,7 +577,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	{
 	  struct ext2_dir_entry_2 *from = (struct ext2_dir_entry_2 *)fromoff;
 	  struct ext2_dir_entry_2 *to = (struct ext2_dir_entry_2 *) tooff;
-	  int fromreclen = from->rec_len;
+	  size_t fromreclen = from->rec_len;
 
 	  if (from->inode != 0)
 	    {
