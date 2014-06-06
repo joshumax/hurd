@@ -160,7 +160,7 @@ refcounts_promote (refcounts_t *ref, struct references *result)
      So we just add a hard reference.  In combination, this is the
      desired operation.  */
   const union _references op =
-    { .references = { .weak = ~0, .hard = 1} };
+    { .references = { .weak = ~0U, .hard = 1} };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert (r.references.hard != UINT32_MAX || !"refcount overflowed!");
@@ -188,7 +188,7 @@ refcounts_demote (refcounts_t *ref, struct references *result)
      significant bits.  When we add ~0 to the hard references, it will
      overflow into the weak references.  This is the desired
      operation.  */
-  const union _references op = { .references = { .hard = ~0 } };
+  const union _references op = { .references = { .hard = ~0U } };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert (r.references.hard != UINT32_MAX || !"refcount underflowed!");
