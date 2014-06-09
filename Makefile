@@ -37,7 +37,8 @@ prog-subdirs = auth proc exec init term \
 	       login daemons boot console \
 	       hostmux usermux ftpfs trans \
 	       console-client utils sutils \
-	       benchmarks fstests
+	       benchmarks fstests \
+	       random \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd
