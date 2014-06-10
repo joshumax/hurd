@@ -32,6 +32,10 @@
 
 #include <version.h>
 
+#include "term_S.h"
+#include "tioctl_S.h"
+#include "device_reply_S.h"
+
 const char *argp_program_version = STANDARD_HURD_VERSION (term);
 
 int trivfs_fstype = FSTYPE_TERM;
@@ -61,14 +65,18 @@ dev_t rdev;
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
-  extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int device_reply_server (mach_msg_header_t *, mach_msg_header_t *);
-
-  return (trivfs_demuxer (inp, outp)
-	  || term_server (inp, outp)
-	  || tioctl_server (inp, outp)
-	  || device_reply_server (inp, outp));
+  mig_routine_t routine;
+  if ((routine = NULL, trivfs_demuxer (inp, outp)) ||
+      (routine = term_server_routine (inp)) ||
+      (routine = tioctl_server_routine (inp)) ||
+      (routine = device_reply_server_routine (inp)))
+    {
+      if (routine)
+        (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 static struct argp_option options[] =
