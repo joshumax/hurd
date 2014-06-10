@@ -379,7 +379,7 @@ S_term_getctty (struct trivfs_protid *cred,
 
 /* Implement termctty_open_terminal as described in <hurd/term.defs>.  */
 kern_return_t
-S_termctty_open_terminal (mach_port_t arg,
+S_termctty_open_terminal (struct port_info *pi,
 			  int flags,
 			  mach_port_t *result,
 			  mach_msg_type_name_t *resulttype)
@@ -388,7 +388,6 @@ S_termctty_open_terminal (mach_port_t arg,
   mach_port_t new_realnode;
   struct iouser *user;
   struct trivfs_protid *newcred;
-  struct port_info *pi = ports_lookup_port (term_bucket, arg, cttyid_class);
   if (!pi)
     return EOPNOTSUPP;
 
@@ -409,7 +408,6 @@ S_termctty_open_terminal (mach_port_t arg,
 	}
     }
 
-  ports_port_deref (pi);
   return err;
 }
 

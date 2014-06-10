@@ -29,6 +29,18 @@ TERM_IMPORTS
 
 INTR_INTERFACE
 
+type ctty_t = mach_port_copy_send_t
+#ifdef CTTY_INTRAN
+intran: CTTY_INTRAN
+#endif
+#ifdef CTTY_OUTTRAN
+outtran: CTTY_OUTTRAN
+#endif
+#ifdef CTTY_DESTRUCTOR
+destructor: CTTY_DESTRUCTOR
+#endif
+;
+
 /* Find out what the controlling terminal ID port is.  */
 routine term_getctty (
 	terminal: io_t;
@@ -109,7 +121,7 @@ routine term_on_pty (
    not be made to terminal I/O ports.  Return an unauthenticated I/O
    port for the terminal opened as with flags FLAGS. */
 routine termctty_open_terminal (
-	ctty: mach_port_t;
+	ctty: ctty_t;
 	flags: int;
 	out terminal: mach_port_send_t);
 

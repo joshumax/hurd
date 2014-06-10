@@ -18,6 +18,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
+#ifndef __HURD_TERM_H__
+#define __HURD_TERM_H__
+
 #include <pthread.h>
 #include <assert.h>
 #include <errno.h>
@@ -391,3 +394,5 @@ error_t pty_io_select (struct trivfs_protid *, mach_port_t,
 error_t pty_open_hook (struct trivfs_control *, struct iouser *, int);
 error_t pty_po_create_hook (struct trivfs_peropen *);
 error_t pty_po_destroy_hook (struct trivfs_peropen *);
+
+#endif	/* __HURD_TERM_H__ */

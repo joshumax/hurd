@@ -17,17 +17,26 @@
    You should have received a copy of the GNU General Public License
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
-/* Only CPP macro definitions should go in this file. */
+#ifndef __TERM_MIG_DECLS_H__
+#define __TERM_MIG_DECLS_H__
 
-#define IO_INTRAN trivfs_protid_t trivfs_begin_using_protid (io_t)
-#define IO_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
+#include <hurd/ports.h>
 
-#define CTTY_INTRAN					\
-  port_info_t begin_using_ctty_port (mach_port_t)
-#define CTTY_DESTRUCTOR					\
-  end_using_ctty (port_info_t)
+#include "term.h"
 
-#define TIOCTL_IMPORTS import "../libtrivfs/mig-decls.h";
-#define TERM_IMPORTS					\
-  import "../libtrivfs/mig-decls.h";			\
-  import "mig-decls.h";
+/* Called by server stub functions.  */
+
+static inline struct port_info * __attribute__ ((unused))
+begin_using_ctty_port (mach_port_t port)
+{
+  return ports_lookup_port (term_bucket, port, cttyid_class);
+}
+
+static inline void __attribute__ ((unused))
+end_using_ctty (struct port_info *p)
+{
+  if (p)
+    ports_port_deref (p);
+}
+
+#endif /* __TERM_MIG_DECLS_H__ */

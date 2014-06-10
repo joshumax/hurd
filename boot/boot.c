@@ -1876,7 +1876,7 @@ S_io_revoke (mach_port_t obj,
    support on the console device.  */
 
 kern_return_t
-S_termctty_open_terminal (mach_port_t object,
+S_termctty_open_terminal (ctty_t object,
 			  int flags,
 			  mach_port_t *result,
 			  mach_msg_type_name_t *restype)
