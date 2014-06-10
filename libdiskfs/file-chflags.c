@@ -23,8 +23,15 @@ kern_return_t
 diskfs_S_file_chflags (struct protid *cred,
 		      int flags)
 {
+#define HI(X)	((X) & 0xffff0000u)
   CHANGE_NODE_FIELD (cred,
 		   ({
+                     /* Only root is allowed to change the high 16
+                        bits.  */
+                     if ((HI (flags) != HI (np->dn_stat.st_flags))
+                         && ! idvec_contains (cred->user->uids, 0))
+                       return EPERM;
+
 		     err = fshelp_isowner (&np->dn_stat, cred->user);
 		     if (!err)
 		       err = diskfs_validate_flags_change (np, flags);
@@ -37,4 +44,5 @@ diskfs_S_file_chflags (struct protid *cred,
 		       diskfs_notice_filechange(np, FILE_CHANGED_META, 
 						0, 0);
 		   }));
+#undef HI
 }

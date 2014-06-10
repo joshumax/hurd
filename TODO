@@ -108,8 +108,6 @@ See `tasks', the exported task list.
    Rename the rest to libhurdutil or somesuch.
 
 ** libdiskfs
-*** file_chflags does not do proper permission checking (non-root isn't
-    supposed to be able to change the low bits)
 *** Add the short-circuited-but-not-builtin translator startup code from
     dir-lookup to fsys_getroot.  Compare and match carefully these two
     routines and then share common code.
