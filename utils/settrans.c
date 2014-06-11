@@ -1,6 +1,7 @@
 /* Set a file's translator.
 
-   Copyright (C) 1995,96,97,98,2001,02,13 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,98,2001,02,13,14
+     Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -47,6 +48,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 static struct argp_option options[] =
 {
   {"active",      'a', 0, 0, "Start TRANSLATOR and set it as NODE's active translator" },
+  {"start",       's', 0, 0, "Start the translator specified by the NODE's passive translator record and set it as NODE's active translator" },
   {"passive",     'p', 0, 0, "Change NODE's passive translator record (default)" },
   {"create",      'c', 0, 0, "Create NODE if it doesn't exist" },
   {"dereference", 'L', 0, 0, "If a translator exists, put the new one on top"},
@@ -107,6 +109,7 @@ main(int argc, char *argv[])
   /* Various option flags.  */
   int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0,
       orphan = 0;
+  int start = 0;
   char *pid_file = NULL;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
@@ -122,6 +125,9 @@ main(int argc, char *argv[])
 	    node_name = arg;
 	  else			/* command */
 	    {
+	      if (start)
+		argp_error (state, "both --start and TRANSLATOR given");
+
 	      error_t err =
 		argz_create (state->argv + state->next - 1, &argz, &argz_len);
 	      if (err)
@@ -135,6 +141,10 @@ main(int argc, char *argv[])
 	  return EINVAL;
 
 	case 'a': active = 1; break;
+	case 's':
+	  start = 1;
+	  active = 1;	/* start implies active */
+	  break;
 	case 'p': passive = 1; break;
 	case 'k': keep_active = 1; break;
 	case 'g': kill_active = 1; break;
@@ -210,6 +220,26 @@ main(int argc, char *argv[])
       else if (! keep_active)
 	/* Ensure that there isn't one.  */
 	active_flags = FS_TRANS_SET | FS_TRANS_EXCL;
+    }
+
+  if (start)
+    {
+      /* Retrieve the passive translator record in argz.  */
+      mach_port_t node = file_name_lookup (node_name, lookup_flags, 0);
+      if (node == MACH_PORT_NULL)
+	error (4, errno, "%s", node_name);
+
+      char buf[1024];
+      argz = buf;
+      argz_len = sizeof (buf);
+
+      err = file_get_translator (node, &argz, &argz_len);
+      if (err == EINVAL)
+	error (4, 0, "%s: no passive translator record found", node_name);
+      if (err)
+	error (4, err, "%s", node_name);
+
+      mach_port_deallocate (mach_task_self (), node);
     }
 
   if ((active || chroot_command) && argz_len > 0)
