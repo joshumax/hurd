@@ -39,6 +39,7 @@ prog-subdirs = auth proc exec init term \
 	       console-client utils sutils \
 	       benchmarks fstests \
 	       random \
+	       procfs \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd
