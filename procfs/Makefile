@@ -28,7 +28,4 @@ OBJS = $(SRCS:.c=.o)
 HURDLIBS = netfs fshelp iohelp ps ports ihash shouldbeinlibc
 OTHERLIBS = -lpthread
 
-# Where to find .defs files.
-vpath %.defs /usr/include/mach_debug
-
 include ../Makeconf
