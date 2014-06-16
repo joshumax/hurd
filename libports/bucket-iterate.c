@@ -65,7 +65,7 @@ _ports_bucket_class_iterate (struct port_bucket *bucket,
     }
   pthread_mutex_unlock (&_ports_lock);
 
-  if (n != nr_items)
+  if (n != 0 && n != nr_items)
     {
       /* We allocated too much.  Release unused memory.  */
       void **new = realloc (p, n * sizeof *p);
