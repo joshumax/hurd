@@ -119,6 +119,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
   mach_port_deallocate (mach_task_self (), nn->idport);
   mach_port_deallocate (mach_task_self (), file);
   free (*np);
+  *np = NULL;
   return err;
 }
 
