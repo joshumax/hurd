@@ -20,7 +20,7 @@
 #include <assert.h>
 
 /* Build and return in CRED a protid which has no user identification, for
-   peropen PO.  */
+   peropen PO.  On success, consume a reference to PO.  */
 error_t
 diskfs_start_protid (struct peropen *po, struct protid **cred)
 {
@@ -29,7 +29,7 @@ diskfs_start_protid (struct peropen *po, struct protid **cred)
 				 sizeof (struct protid), cred);
   if (! err)
     {
-      refcount_ref (&po->refcnt);
+      /* Consume a reference to po.  */
       (*cred)->po = po;
       (*cred)->shared_object = MACH_PORT_NULL;
       (*cred)->mapped = 0;
@@ -56,7 +56,7 @@ diskfs_finish_protid (struct protid *cred, struct iouser *user)
 }
 
 /* Create and return a protid for an existing peropen PO in CRED for
-   USER.  */
+   USER.  On success, consume a reference to PO.  */
 error_t
 diskfs_create_protid (struct peropen *po, struct iouser *user,
 		      struct protid **cred)

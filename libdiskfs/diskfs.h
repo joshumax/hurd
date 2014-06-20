@@ -820,12 +820,12 @@ diskfs_create_node (struct node *dir, const char *name, mode_t mode,
 		    struct dirstat *ds);
 
 /* Create and return a protid for an existing peropen PO in CRED,
-   referring to user USER.  */
+   referring to user USER.  On success, consume a reference to PO.  */
 error_t diskfs_create_protid (struct peropen *po, struct iouser *user,
 			      struct protid **cred);
 
 /* Build and return in CRED a protid which has no user identification, for
-   peropen PO.  */
+   peropen PO.  On success, consume a reference to PO.  */
 error_t diskfs_start_protid (struct peropen *po, struct protid **cred);
 
 /* Finish building protid CRED started with diskfs_start_protid;

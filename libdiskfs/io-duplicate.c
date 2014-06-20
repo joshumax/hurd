@@ -32,6 +32,7 @@ diskfs_S_io_duplicate (struct protid *cred,
   
   pthread_mutex_lock (&cred->po->np->lock);
 
+  refcount_ref (&cred->po->refcnt);
   err = diskfs_create_protid (cred->po, cred->user, &newpi);
   if (! err)
     {
@@ -39,6 +40,8 @@ diskfs_S_io_duplicate (struct protid *cred,
       *portpoly = MACH_MSG_TYPE_MAKE_SEND;
       ports_port_deref (newpi);
     }
+  else
+    refcount_deref (&cred->po->refcnt);
 
   pthread_mutex_unlock (&cred->po->np->lock);
 

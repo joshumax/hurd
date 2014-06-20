@@ -4431,13 +4431,13 @@ provides.
 @deftypefun error_t diskfs_create_protid (@w{struct peropen *@var{po}}, @w{struct iouser *@var{user}}, @w{struct protid **@var{cred}})
 Create and return a protid for an existing peropen @var{po} in
 @var{cred}, referring to user @var{user}.  The node @code{@var{po}->np}
-must be locked.
+must be locked.  On success, a reference to @var{po} is consumed.
 @end deftypefun
 
 @deftypefun error_t diskfs_start_protid (@w{struct peropen *@var{po}}, @w{struct protid **@var{cred}})
 Build and return in @var{cred} a protid which has no user
 identification, for peropen @var{po}.  The node @code{@var{po}->np} must
-be locked.
+be locked.  On success, a reference to @var{po} is consumed.
 @end deftypefun
 
 @deftypefun void diskfs_finish_protid (@w{struct protid *@var{cred}}, @w{struct iouser *@var{user}})
