@@ -29,10 +29,12 @@ SRCS = termsize.c timefmt.c exec-reauth.c maptime-funcs.c \
        ugids-auth.c ugids-xinl.c ugids-merge.c ugids-imply.c ugids-posix.c \
        ugids-verify-auth.c nullauth.c \
        refcount.c \
+       assert-backtrace.c \
 
 installhdrs = idvec.h timefmt.h maptime.h \
 	      wire.h portinfo.h portxlate.h cacheq.h ugids.h nullauth.h \
 	      refcount.h \
+	      assert-backtrace.h \
 
 installhdrsubdir = .
 
