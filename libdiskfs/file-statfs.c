@@ -41,6 +41,8 @@ diskfs_S_file_statfs (struct protid *file,
     statbuf->f_flag |= ST_NOEXEC;
   if (diskfs_synchronous)
     statbuf->f_flag |= ST_SYNCHRONOUS;
+  if (_diskfs_noatime)
+    statbuf->f_flag |= ST_NOATIME;
 
   diskfs_set_statfs (statbuf);
 
