@@ -358,7 +358,7 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	}
     }
 
-  if (!err)
+  if (!err && data_len > 0)
     err = (*pipe->class->write)(pipe->queue, source, data, data_len, amount);
 
   if (!err)
