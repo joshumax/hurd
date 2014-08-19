@@ -310,8 +310,9 @@ main(int argc, char *argv[])
 
   if (chroot_command)
     {
-      pid_t pid;
-      switch ((pid = fork ()))
+      pid_t child;
+      int status;
+      switch ((child = fork ()))
 	{
 	case -1:
 	  error (6, errno, "fork");
@@ -348,12 +349,19 @@ main(int argc, char *argv[])
 	  break;
 
 	default: /* Parent.  */
-	  if (waitpid (pid, NULL, 0) == -1)
-	    error (8, errno, "waitpid");
+	  if (waitpid (child, &status, 0) != child)
+	    error (8, errno, "waitpid on %d", child);
 
 	  err = fsys_goaway (active_control, goaway_flags);
 	  if (err && err != EBUSY)
 	    error (9, err, "fsys_goaway");
+
+	  if (WIFSIGNALED (status))
+	    error (WTERMSIG (status) + 128, 0,
+		   "%s for child %d", strsignal (WTERMSIG (status)), child);
+	  if (WEXITSTATUS (status) != 0)
+	    error (WEXITSTATUS (status), 0,
+		   "Error %d for child %d", WEXITSTATUS (status), child);
 	}
     }
 
