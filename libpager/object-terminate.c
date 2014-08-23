@@ -36,12 +36,12 @@ _pager_seqnos_memory_object_terminate (struct pager *p,
   
   if (control != p->memobjcntl)
     {
-      printf ("incg terminate: wrong control port");
+      printf ("incg terminate: wrong control port\n");
       goto out;
     }
   if (name != p->memobjname)
     {
-      printf ("incg terminate: wrong name port");
+      printf ("incg terminate: wrong name port\n");
       goto out;
     }
 
