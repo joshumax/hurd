@@ -100,7 +100,7 @@ mkdev() {
 	;;
 
       std)
-	mkdev console tty null zero full fd time mem klog shm
+	mkdev console tty urandom null zero full fd time mem klog shm
 	;;
       console|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -111,6 +111,8 @@ mkdev() {
 	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
       lpr[0-9])
         st $I root 660 /hurd/streamio "$I";;
+      urandom)
+	st $I root 644 /hurd/random --fast --seed-file /var/lib/random-seed;;
       null)
 	st $I root 666 /hurd/null;;
       full)
