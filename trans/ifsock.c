@@ -143,7 +143,7 @@ S_ifsock_getsockaddr (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   err = file_check_access (cred->realnode, &perms);
-  if (!err && !(perms & O_READ))
+  if (!err && !(perms & O_WRITE))
     err = EACCES;
 
   if (!err)
