@@ -354,8 +354,8 @@ routine file_reparent (
 	out new_file: mach_port_send_t);
 
 /* Return any active translators bound to nodes below FILE.  CHILDREN
-   is an argz vector containing file names relative to the root of the
-   receiving translator.  */
+   is an argz vector containing file names relative to the path of
+   FILE.  */
 routine file_get_children (
 	file: file_t;
 	RPT

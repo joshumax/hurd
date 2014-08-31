@@ -61,12 +61,15 @@ fshelp_remove_active_translator (mach_port_t active);
    included in the list.  */
 typedef error_t (*fshelp_filter) (const char *path);
 
-/* Records the list of active translators into the argz vector
-   specified by TRANSLATORS filtered by FILTER.  */
+/* Records the list of active translators below PREFIX into the argz
+   vector specified by TRANSLATORS filtered by FILTER.  If PREFIX is
+   NULL, entries with any prefix are considered.  If FILTER is NULL,
+   no filter is applied.  */
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter);
+			       fshelp_filter filter,
+			       const char *prefix);
 
 
 /* Passive translator linkage */

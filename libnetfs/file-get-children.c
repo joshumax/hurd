@@ -24,9 +24,9 @@
 
 #include <argz.h>
 
-/* Return any active translators bound to nodes of the receiving
-   filesystem.  CHILDREN is an argz vector containing file names
-   relative to the root of the receiving translator.  */
+/* Return any active translators bound to nodes below CRED.  CHILDREN
+   is an argz vector containing file names relative to the path of
+   CRED.  */
 error_t
 netfs_S_file_get_children (struct protid *cred,
 			   char **children,
@@ -93,7 +93,8 @@ netfs_S_file_get_children (struct protid *cred,
   char *c = NULL;
   size_t c_len = 0;
 
-  err = fshelp_get_active_translators (&c, &c_len, check_access);
+  err = fshelp_get_active_translators (&c, &c_len, check_access,
+				       cred->po->path);
   if (err)
     goto errout;
 

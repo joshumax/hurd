@@ -160,19 +160,32 @@ fshelp_remove_active_translator (mach_port_t active)
   return err;
 }
 
-/* Records the list of active translators into the argz vector
-   specified by TRANSLATORS filtered by FILTER.  */
+/* Records the list of active translators below PREFIX into the argz
+   vector specified by TRANSLATORS filtered by FILTER.  If PREFIX is
+   NULL, entries with any prefix are considered.  If FILTER is NULL,
+   no filter is applied.  */
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter)
+			       fshelp_filter filter,
+			       const char *prefix)
 {
   error_t err = 0;
   pthread_mutex_lock (&translator_ihash_lock);
 
+  if (prefix && strlen (prefix) == 0)
+    prefix = NULL;
+
   HURD_IHASH_ITERATE (&translator_ihash, value)
     {
       struct translator *t = value;
+
+      if (prefix != NULL
+	  && (strncmp (t->name, prefix, strlen (prefix)) != 0
+	      || t->name[strlen (prefix)] != '/'))
+	/* Skip this entry, as it is not below PREFIX.  */
+	continue;
+
       if (filter)
 	{
 	  char *dir = strdup (t->name);
@@ -192,7 +205,7 @@ fshelp_get_active_translators (char **translators,
 	}
 
       err = argz_add (translators, translators_len,
-		      t->name);
+		      &t->name[prefix? strlen (prefix) + 1: 0]);
       if (err)
 	break;
     }
