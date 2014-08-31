@@ -27,6 +27,7 @@
 #include <hurd/trivfs.h>
 #include <inttypes.h>
 #include <mntent.h>
+#include <nullauth.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -221,19 +222,7 @@ main (int argc, char *argv[])
   if (bootstrap != MACH_PORT_NULL)
     {
       /* Started as a translator.  */
-
-      auth_t nullauth;
-      err = auth_makeauth (getauth (),
-			   NULL, MACH_MSG_TYPE_COPY_SEND, 0,
-			   NULL, 0,
-			   NULL, 0,
-			   NULL, 0,
-			   NULL, 0,
-			   &nullauth);
-      if (err)
-        error (3, err, "dropping credentials");
-
-      err = setauth (nullauth);
+      err = setnullauth ();
       if (err)
         error (3, err, "dropping credentials");
 
