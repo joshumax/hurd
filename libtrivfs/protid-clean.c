@@ -35,7 +35,7 @@ trivfs_clean_protid (void *arg)
     {
       if (refcount_deref (&cred->po->refcnt) == 0)
         {
-          /* Reaquire a reference while we call the hook.  */
+          /* Reacquire a reference while we call the hook.  */
           refcount_ref (&cred->po->refcnt);
           (*trivfs_peropen_destroy_hook) (cred->po);
           if (refcount_deref (&cred->po->refcnt) == 0)
