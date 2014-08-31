@@ -241,7 +241,8 @@ hurd_ihash_value_t hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key);
   for (hurd_ihash_value_t val,						\
          *_hurd_ihash_valuep = (ht)->size ? &(ht)->items[0].value : 0;	\
        (ht)->size							\
-         && ((_hurd_ihash_item_t) _hurd_ihash_valuep) - &(ht)->items[0]	\
+	 && (size_t) ((_hurd_ihash_item_t) _hurd_ihash_valuep		\
+		      - &(ht)->items[0])				\
             < (ht)->size						\
          && (val = *_hurd_ihash_valuep, 1);				\
        _hurd_ihash_valuep = (hurd_ihash_value_t *)			\
