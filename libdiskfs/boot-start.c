@@ -178,7 +178,7 @@ diskfs_start_bootstrap ()
       /* Attempt to set the active translator for the exec server so that
 	 filesystems other than the bootstrap can find it.  */
       err = dir_lookup (root_pt, _SERVERS_EXEC, O_NOTRANS, 0,
-			&retry, pathbuf, &execnode);
+			&retry, retry_name, &execnode);
       if (err)
 	{
 	  error (0, err, "cannot set translator on %s", _SERVERS_EXEC);
