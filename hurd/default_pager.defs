@@ -43,7 +43,7 @@ DEFAULT_PAGER_IMPORTS
 routine	default_pager_object_create(
 		default_pager		: mach_port_t;
 	out	memory_object		: memory_object_t =
-			MACH_MSG_TYPE_MAKE_SEND;
+			MACH_MSG_TYPE_PORT_SEND;
 		object_size		: vm_size_t);
 
 routine default_pager_info(

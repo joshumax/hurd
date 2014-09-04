@@ -45,8 +45,10 @@ allowed (mach_port_t port, int mode)
 kern_return_t
 S_default_pager_object_create (mach_port_t default_pager,
 			       memory_object_t *memory_object,
+			       mach_msg_type_name_t *memory_object_type,
 			       vm_size_t object_size)
 {
+  *memory_object_type = MACH_MSG_TYPE_COPY_SEND;
   return allowed (default_pager, O_EXEC)
     ?: default_pager_object_create (real_defpager, memory_object, object_size);
 }

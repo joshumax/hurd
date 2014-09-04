@@ -3160,6 +3160,7 @@ default_pager()
 kern_return_t
 S_default_pager_object_create (mach_port_t pager,
 			       mach_port_t *mem_obj,
+			       mach_msg_type_name_t *mem_obj_type,
 			       vm_size_t size)
 {
 	default_pager_t ds;
@@ -3190,6 +3191,7 @@ S_default_pager_object_create (mach_port_t pager,
 	default_pager_add(ds, FALSE);
 
 	*mem_obj = port;
+	*mem_obj_type = MACH_MSG_TYPE_MAKE_SEND;
 	return (KERN_SUCCESS);
 }
 
