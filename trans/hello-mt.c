@@ -273,16 +273,32 @@ trivfs_append_args (struct trivfs_control *fsys,
 {
   error_t err;
   char *opt;
+  size_t opt_len;
+  FILE *s;
+  char *c;
+
+  s = open_memstream (&opt, &opt_len);
+  fprintf (s, "--contents='");
 
   pthread_rwlock_rdlock (&contents_lock);
-  err = asprintf (&opt, "--contents=%s", contents) < 0 ? ENOMEM : 0;
+  for (c = contents; *c; c++)
+    switch (*c)
+      {
+      case 0x27: /* Single quote.  */
+	fprintf (s, "'\"'\"'");
+	break;
+
+      default:
+	fprintf (s, "%c", *c);
+      }
   pthread_rwlock_unlock (&contents_lock);
 
-  if (!err)
-    {
-      err = argz_add (argz, argz_len, opt);
-      free (opt);
-    }
+  fprintf (s, "'");
+  fclose (s);
+
+  err = argz_add (argz, argz_len, opt);
+
+  free (opt);
 
   return err;
 }

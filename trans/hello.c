@@ -246,9 +246,26 @@ trivfs_append_args (struct trivfs_control *fsys,
 {
   error_t err;
   char *opt;
+  size_t opt_len;
+  FILE *s;
+  char *c;
 
-  if (asprintf (&opt, "--contents=%s", contents) < 0)
-    return ENOMEM;
+  s = open_memstream (&opt, &opt_len);
+  fprintf (s, "--contents='");
+
+  for (c = contents; *c; c++)
+    switch (*c)
+      {
+      case 0x27: /* Single quote.  */
+	fprintf (s, "'\"'\"'");
+	break;
+
+      default:
+	fprintf (s, "%c", *c);
+      }
+
+  fprintf (s, "'");
+  fclose (s);
 
   err = argz_add (argz, argz_len, opt);
 
