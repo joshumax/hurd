@@ -142,13 +142,13 @@ struct argp_option common_options[] = {
 #define XSTR(X)	#X
   { "clk-tck", 'h', "HZ", 0,
       "Unit used for the values expressed in system clock ticks "
-      "(default: sysconf(_SC_CLK_TCK))" },
+      "(default: " STR (OPT_CLK_TCK) ")" },
   { "stat-mode", 's', "MODE", 0,
       "The [pid]/stat file publishes information which on Hurd is only "
       "available to the process owner.  "
       "You can use this option to override its mode to be more permissive "
       "for compatibility purposes.  "
-      "(default: 0400)" },
+      "(default: " STR (OPT_STAT_MODE) ")" },
   { "fake-self", 'S', "PID", OPTION_ARG_OPTIONAL,
       "Provide a fake \"self\" symlink to the given PID, for compatibility "
       "purposes.  If PID is omitted, \"self\" will point to init.  "
@@ -164,7 +164,7 @@ struct argp_option common_options[] = {
       "Make USER the owner of files related to processes without one.  "
       "Be aware that USER will be granted access to the environment and "
       "other sensitive information about the processes in question.  "
-      "(default: use uid 0)" },
+      "(default: use uid " STR (OPT_ANON_OWNER) ")" },
   { "nodev", NODEV_KEY, NULL, 0,
       "Ignored for compatibility with Linux' procfs." },
   { "noexec", NOEXEC_KEY, NULL, 0,
