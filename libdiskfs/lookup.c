@@ -21,17 +21,6 @@
 #include "priv.h"
 #include <string.h>
 
-static struct
-{
-  int present;
-  int absent;
-  int errors;
-  int dot;
-  int dotdot;
-} cache_misses;
-static pthread_spinlock_t cm_lock = PTHREAD_SPINLOCK_INITIALIZER;
-
-
 /* Lookup in directory DP (which is locked) the name NAME.  TYPE will
    either be LOOKUP, CREATE, RENAME, or REMOVE.  CRED identifies the
    user making the call.
@@ -175,26 +164,6 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
   else
     {
       err = diskfs_lookup_hard (dp, name, type, np, ds, cred);
-
-      pthread_spin_lock (&cm_lock);
-      if (type == LOOKUP)
-	{
-	  if (err == ENOENT)
-	    cache_misses.absent++;
-	  else if (err)
-	    cache_misses.errors++;
-	  else
-	    cache_misses.present++;
-	  if (name[0] == '.')
-	    {
-	      if (name[1] == '\0')
-		cache_misses.dot++;
-	      else if (name[1] == '.' && name[2] == '\0')
-		cache_misses.dotdot++;
-	    }
-	}
-      pthread_spin_unlock (&cm_lock);
-
       if (err && err != ENOENT)
 	return err;
 
