@@ -1,5 +1,5 @@
 /* Hurd /proc filesystem, implementation of process directories.
-   Copyright (C) 2010 Free Software Foundation, Inc.
+   Copyright (C) 2010,14 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -106,6 +106,100 @@ process_file_gc_environ (struct proc_stat *ps, char **contents)
 {
   *contents = proc_stat_env(ps);
   return proc_stat_env_len(ps);
+}
+
+static ssize_t
+process_file_gc_maps (struct proc_stat *ps, char **contents)
+{
+  error_t err;
+  FILE *s;
+  size_t contents_len;
+  vm_offset_t addr = 0;
+  vm_size_t size;
+  vm_prot_t prot, max_prot;
+  mach_port_t obj;
+  vm_offset_t offs;
+  vm_inherit_t inh;
+  int shared;
+
+  /* Unfortunately we cannot resolve memory objects to their backing
+     file (yet), so we use the port name as identifier.  To avoid the
+     same name from being used again and again, we defer the
+     deallocation until the end of the function.  We use a simple
+     linked list for this purpose.  */
+  struct mem_obj
+    {
+      mach_port_t port;
+      struct mem_obj *next;
+    };
+  struct mem_obj *objects = NULL;
+
+  s = open_memstream (contents, &contents_len);
+  if (s == NULL)
+    {
+      *contents = NULL;
+      return 0;
+    }
+
+  while (1)
+    {
+      err =
+	vm_region (ps->task, &addr, &size, &prot, &max_prot, &inh,
+		   &shared, &obj, &offs);
+      if (err)
+	break;
+
+      fprintf (s, "%0*x-%0*x %c%c%c%c %0*x %s %d ",
+	       /* Address range.  */
+	       2*sizeof s, addr,
+	       2*sizeof s, addr + size,
+	       /* Permissions.	*/
+	       prot & VM_PROT_READ? 'r': '-',
+	       prot & VM_PROT_WRITE? 'w': '-',
+	       prot & VM_PROT_EXECUTE? 'x': '-',
+	       shared? 's': 'p',
+	       /* Offset.  */
+	       2*sizeof s, offs,
+	       /* Device.  */
+	       "00:00",
+	       /* Inode.  */
+	       0);
+
+      /* Pathname.  */
+      if (MACH_PORT_VALID (obj))
+	{
+	  struct mem_obj *o = malloc (sizeof *o);
+	  if (o)
+	    {
+	      o->port = obj;
+	      o->next = objects;
+	      objects = o;
+	    }
+	  else
+	    mach_port_deallocate (mach_task_self (), obj);
+
+	  fprintf (s, "[mem_obj=%d]\n", obj);
+	}
+      else
+	fprintf (s, "\n");
+
+      addr += size;
+    }
+
+  while (objects)
+    {
+      struct mem_obj *o = objects;
+      mach_port_deallocate (mach_task_self (), o->port);
+      objects = o->next;
+      free (o);
+    }
+
+  /* This is a bit awkward, fortunately vm_region should not fail.  */
+  if (err != KERN_NO_SPACE)
+    fprintf (s, "%s\n", strerror (err));
+
+  fclose (s);
+  return contents_len;
 }
 
 static ssize_t
@@ -344,6 +438,14 @@ static struct procfs_dir_entry entries[] = {
       .get_contents = process_file_gc_environ,
       .needs = PSTAT_ENV,
       .no_cleanup = 1,
+      .mode = 0400,
+    },
+  },
+  {
+    .name = "maps",
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_maps,
+      .needs = PSTAT_TASK,
       .mode = 0400,
     },
   },
