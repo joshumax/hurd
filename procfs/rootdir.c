@@ -1,5 +1,5 @@
 /* Hurd /proc filesystem, permanent files of the root directory.
-   Copyright (C) 2010,13 Free Software Foundation, Inc.
+   Copyright (C) 2010,13,14 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <argz.h>
 #include <ps.h>
+#include <glob.h>
 #include "procfs.h"
 #include "procfs_dir.h"
 #include "main.h"
@@ -532,6 +533,57 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
                  cache_info, cache_info_count * sizeof *cache_info);
   return err;
 }
+
+static error_t
+rootdir_gc_filesystems (void *hook, char **contents, ssize_t *contents_len)
+{
+  error_t err = 0;
+  size_t i;
+  int glob_ret;
+  glob_t matches;
+  FILE *m;
+
+  m = open_memstream (contents, contents_len);
+  if (m == NULL)
+    return errno;
+
+  glob_ret = glob (_HURD "*fs", 0, NULL, &matches);
+  switch (glob_ret)
+    {
+    case 0:
+      for (i = 0; i < matches.gl_pathc; i++)
+	{
+	  /* Get ith entry, shave off the prefix.  */
+	  char *name = &matches.gl_pathv[i][sizeof _HURD - 1];
+
+	  /* Linux naming convention is a bit inconsistent.  */
+	  if (strncmp (name, "ext", 3) == 0
+	      || strcmp (name, "procfs") == 0)
+	    /* Drop the fs suffix.  */
+	    name[strlen (name) - 2] = 0;
+
+	  fprintf (m, "\t%s\n", name);
+	}
+
+      globfree (&matches);
+      break;
+
+    case GLOB_NOMATCH:
+      /* Poor fellow.  */
+      break;
+
+    case GLOB_NOSPACE:
+      err = ENOMEM;
+      break;
+
+    default:
+      /* This should not happen.  */
+      err = EGRATUITOUS;
+    }
+
+  fclose (m);
+  return err;
+}
 
 /* Glue logic and entries table */
 
@@ -629,6 +681,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "slabinfo",
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_slabinfo,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "filesystems",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_filesystems,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },
