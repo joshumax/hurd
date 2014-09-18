@@ -316,7 +316,7 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   return np;
 }
 
-/* Stat needs its own constructor in oreder to set its mode according to
+/* Stat needs its own constructor in order to set its mode according to
    the --stat-mode command-line option.  */
 static struct node *
 process_stat_make_node (void *dir_hook, const void *entry_hook)
