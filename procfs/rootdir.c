@@ -409,17 +409,29 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 }
 
 static struct node *rootdir_mounts_node;
-static pthread_spinlock_t rootdir_mounts_node_lock =
+
+/* Translator linkage.  */
+static pthread_spinlock_t rootdir_translated_node_lock =
   PTHREAD_SPINLOCK_INITIALIZER;
 
-static struct node *
-rootdir_mounts_make_node (void *dir_hook, const void *entry_hook)
+struct procfs_translated_node_ops
 {
+  struct procfs_node_ops node_ops;
+
+  struct node **npp;
+  char *argz;
+  size_t argz_len;
+};
+
+static struct node *
+rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
+{
+  const struct procfs_translated_node_ops *ops = entry_hook;
   struct node *np, *prev;
 
-  pthread_spin_lock (&rootdir_mounts_node_lock);
-  np = rootdir_mounts_node;
-  pthread_spin_unlock (&rootdir_mounts_node_lock);
+  pthread_spin_lock (&rootdir_translated_node_lock);
+  np = *ops->npp;
+  pthread_spin_unlock (&rootdir_translated_node_lock);
 
   if (np != NULL)
     {
@@ -427,18 +439,18 @@ rootdir_mounts_make_node (void *dir_hook, const void *entry_hook)
       return np;
     }
 
-  np = procfs_make_node (entry_hook, dir_hook);
+  np = procfs_make_node (entry_hook, entry_hook);
   if (np == NULL)
     return NULL;
 
   procfs_node_chtype (np, S_IFREG | S_IPTRANS);
   procfs_node_chmod (np, 0444);
 
-  pthread_spin_lock (&rootdir_mounts_node_lock);
-  prev = rootdir_mounts_node;
-  if (rootdir_mounts_node == NULL)
-    rootdir_mounts_node = np;
-  pthread_spin_unlock (&rootdir_mounts_node_lock);
+  pthread_spin_lock (&rootdir_translated_node_lock);
+  prev = *ops->npp;
+  if (*ops->npp == NULL)
+    *ops->npp = np;
+  pthread_spin_unlock (&rootdir_translated_node_lock);
 
   if (prev != NULL)
     {
@@ -450,19 +462,30 @@ rootdir_mounts_make_node (void *dir_hook, const void *entry_hook)
 }
 
 static error_t
-rootdir_mounts_get_translator (void *hook, char **argz, size_t *argz_len)
+rootdir_translated_node_get_translator (void *hook, char **argz,
+					size_t *argz_len)
 {
-  static const char const mtab_argz[] = _HURD_MTAB "\0/";
+  const struct procfs_translated_node_ops *ops = hook;
 
-  *argz = malloc (sizeof mtab_argz);
+  *argz = malloc (ops->argz_len);
   if (! *argz)
     return ENOMEM;
 
-  memcpy (*argz, mtab_argz, sizeof mtab_argz);
-  *argz_len = sizeof mtab_argz;
+  memcpy (*argz, ops->argz, ops->argz_len);
+  *argz_len = ops->argz_len;
   return 0;
 }
 
+#define ROOTDIR_DEFINE_TRANSLATED_NODE(NPP, ARGZ)		  \
+  &(struct procfs_translated_node_ops) {			  \
+    .node_ops = {						  \
+      .get_translator = rootdir_translated_node_get_translator,	  \
+    },								  \
+    .npp = NPP,							  \
+    .argz = (ARGZ),						  \
+    .argz_len = sizeof (ARGZ),					  \
+  }
+
 static error_t
 rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -660,11 +683,10 @@ static const struct procfs_dir_entry rootdir_entries[] = {
   },
   {
     .name = "mounts",
-    .hook = & (struct procfs_node_ops) {
-      .get_translator = rootdir_mounts_get_translator,
-    },
+    .hook = ROOTDIR_DEFINE_TRANSLATED_NODE (&rootdir_mounts_node,
+					    _HURD_MTAB "\0/"),
     .ops = {
-      .make_node = rootdir_mounts_make_node,
+      .make_node = rootdir_make_translated_node,
     }
   },
   {
