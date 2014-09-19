@@ -52,5 +52,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define	_HURD_FIFO	_HURD "fifo" /* S_IFIFO */
 #define	_HURD_IFSOCK	_HURD "ifsock" /* S_IFSOCK */
 
+/* Symbolic names for all non-essential translators.  */
+#define _HURD_MTAB	_HURD "mtab"
 
 #endif	/* hurd/paths.h */

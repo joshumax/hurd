@@ -407,9 +407,6 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
   return 0;
 }
 
-/* The mtab translator to use by default for the "mounts" node.  */
-#define MTAB_TRANSLATOR	"/hurd/mtab"
-
 static struct node *rootdir_mounts_node;
 static pthread_spinlock_t rootdir_mounts_node_lock =
   PTHREAD_SPINLOCK_INITIALIZER;
@@ -454,7 +451,7 @@ rootdir_mounts_make_node (void *dir_hook, const void *entry_hook)
 static error_t
 rootdir_mounts_get_translator (void *hook, char **argz, size_t *argz_len)
 {
-  static const char const mtab_argz[] = MTAB_TRANSLATOR "\0/";
+  static const char const mtab_argz[] = _HURD_MTAB "\0/";
 
   *argz = malloc (sizeof mtab_argz);
   if (! *argz)
@@ -470,7 +467,7 @@ rootdir_mounts_exists (void *dir_hook, const void *entry_hook)
 {
   static int translator_exists = -1;
   if (translator_exists == -1)
-    translator_exists = access (MTAB_TRANSLATOR, F_OK|X_OK) == 0;
+    translator_exists = access (_HURD_MTAB, F_OK|X_OK) == 0;
   return translator_exists;
 }
 
