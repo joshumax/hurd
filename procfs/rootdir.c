@@ -463,15 +463,6 @@ rootdir_mounts_get_translator (void *hook, char **argz, size_t *argz_len)
   return 0;
 }
 
-static int
-rootdir_mounts_exists (void *dir_hook, const void *entry_hook)
-{
-  static int translator_exists = -1;
-  if (translator_exists == -1)
-    translator_exists = access (_HURD_MTAB, F_OK|X_OK) == 0;
-  return translator_exists;
-}
-
 static error_t
 rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -674,7 +665,6 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     },
     .ops = {
       .make_node = rootdir_mounts_make_node,
-      .exists = rootdir_mounts_exists,
     }
   },
   {
