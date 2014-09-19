@@ -409,83 +409,7 @@ rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
 }
 
 static struct node *rootdir_mounts_node;
-
-/* Translator linkage.  */
-static pthread_spinlock_t rootdir_translated_node_lock =
-  PTHREAD_SPINLOCK_INITIALIZER;
 
-struct procfs_translated_node_ops
-{
-  struct procfs_node_ops node_ops;
-
-  struct node **npp;
-  char *argz;
-  size_t argz_len;
-};
-
-static struct node *
-rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
-{
-  const struct procfs_translated_node_ops *ops = entry_hook;
-  struct node *np, *prev;
-
-  pthread_spin_lock (&rootdir_translated_node_lock);
-  np = *ops->npp;
-  pthread_spin_unlock (&rootdir_translated_node_lock);
-
-  if (np != NULL)
-    {
-      netfs_nref (np);
-      return np;
-    }
-
-  np = procfs_make_node (entry_hook, entry_hook);
-  if (np == NULL)
-    return NULL;
-
-  procfs_node_chtype (np, S_IFREG | S_IPTRANS);
-  procfs_node_chmod (np, 0444);
-
-  pthread_spin_lock (&rootdir_translated_node_lock);
-  prev = *ops->npp;
-  if (*ops->npp == NULL)
-    *ops->npp = np;
-  pthread_spin_unlock (&rootdir_translated_node_lock);
-
-  if (prev != NULL)
-    {
-      procfs_cleanup (np);
-      np = prev;
-    }
-
-  return np;
-}
-
-static error_t
-rootdir_translated_node_get_translator (void *hook, char **argz,
-					size_t *argz_len)
-{
-  const struct procfs_translated_node_ops *ops = hook;
-
-  *argz = malloc (ops->argz_len);
-  if (! *argz)
-    return ENOMEM;
-
-  memcpy (*argz, ops->argz, ops->argz_len);
-  *argz_len = ops->argz_len;
-  return 0;
-}
-
-#define ROOTDIR_DEFINE_TRANSLATED_NODE(NPP, ARGZ)		  \
-  &(struct procfs_translated_node_ops) {			  \
-    .node_ops = {						  \
-      .get_translator = rootdir_translated_node_get_translator,	  \
-    },								  \
-    .npp = NPP,							  \
-    .argz = (ARGZ),						  \
-    .argz_len = sizeof (ARGZ),					  \
-  }
-
 static error_t
 rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
 {
@@ -619,7 +543,84 @@ rootdir_symlink_make_node (void *dir_hook, const void *entry_hook)
     procfs_node_chtype (np, S_IFLNK);
   return np;
 }
+
+/* Translator linkage.  */
 
+static pthread_spinlock_t rootdir_translated_node_lock =
+  PTHREAD_SPINLOCK_INITIALIZER;
+
+struct procfs_translated_node_ops
+{
+  struct procfs_node_ops node_ops;
+
+  struct node **npp;
+  char *argz;
+  size_t argz_len;
+};
+
+static struct node *
+rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
+{
+  const struct procfs_translated_node_ops *ops = entry_hook;
+  struct node *np, *prev;
+
+  pthread_spin_lock (&rootdir_translated_node_lock);
+  np = *ops->npp;
+  pthread_spin_unlock (&rootdir_translated_node_lock);
+
+  if (np != NULL)
+    {
+      netfs_nref (np);
+      return np;
+    }
+
+  np = procfs_make_node (entry_hook, entry_hook);
+  if (np == NULL)
+    return NULL;
+
+  procfs_node_chtype (np, S_IFREG | S_IPTRANS);
+  procfs_node_chmod (np, 0444);
+
+  pthread_spin_lock (&rootdir_translated_node_lock);
+  prev = *ops->npp;
+  if (*ops->npp == NULL)
+    *ops->npp = np;
+  pthread_spin_unlock (&rootdir_translated_node_lock);
+
+  if (prev != NULL)
+    {
+      procfs_cleanup (np);
+      np = prev;
+    }
+
+  return np;
+}
+
+static error_t
+rootdir_translated_node_get_translator (void *hook, char **argz,
+					size_t *argz_len)
+{
+  const struct procfs_translated_node_ops *ops = hook;
+
+  *argz = malloc (ops->argz_len);
+  if (! *argz)
+    return ENOMEM;
+
+  memcpy (*argz, ops->argz, ops->argz_len);
+  *argz_len = ops->argz_len;
+  return 0;
+}
+
+#define ROOTDIR_DEFINE_TRANSLATED_NODE(NPP, ARGZ)		  \
+  &(struct procfs_translated_node_ops) {			  \
+    .node_ops = {						  \
+      .get_translator = rootdir_translated_node_get_translator,	  \
+    },								  \
+    .npp = NPP,							  \
+    .argz = (ARGZ),						  \
+    .argz_len = sizeof (ARGZ),					  \
+  }
+
 static const struct procfs_dir_entry rootdir_entries[] = {
   {
     .name = "self",
