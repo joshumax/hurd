@@ -45,6 +45,7 @@ int trivfs_cntl_nportclasses = 1;
 struct trivfs_control *fsys;
 
 char **save_argv;
+mach_port_t opt_device_master;
 
 
 #include "exec_S.h"
@@ -104,15 +105,103 @@ deadboot (void *p)
   ports_enable_class (trivfs_cntl_portclasses[0]);
 }
 
+#define OPT_DEVICE_MASTER_PORT	(-1)
+
+static const struct argp_option options[] =
+{
+  {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT", 0,
+   "If specified, a boot-time exec server can print "
+   "diagnostic messages earlier.", 0},
+  {0}
+};
+
+static error_t
+parse_opt (int opt, char *arg, struct argp_state *state)
+{
+  switch (opt)
+    {
+    default:
+      return ARGP_ERR_UNKNOWN;
+    case ARGP_KEY_INIT:
+    case ARGP_KEY_SUCCESS:
+    case ARGP_KEY_ERROR:
+      break;
+
+    case OPT_DEVICE_MASTER_PORT:
+      opt_device_master = atoi (arg);
+      break;
+    }
+  return 0;
+}
+
+/* This will be called from libtrivfs to help construct the answer
+   to an fsys_get_options RPC.  */
+error_t
+trivfs_append_args (struct trivfs_control *fsys,
+		    char **argz, size_t *argz_len)
+{
+  error_t err = 0;
+  char *opt;
+
+  if (MACH_PORT_VALID (opt_device_master))
+    {
+      asprintf (&opt, "--device-master-port=%d", opt_device_master);
+
+      if (opt)
+	{
+	  err = argz_add (argz, argz_len, opt);
+	  free (opt);
+	}
+    }
+
+  return err;
+}
+
+static struct argp argp =
+{ options, parse_opt, 0, "Hurd standard exec server." };
+
+/* Setting this variable makes libtrivfs use our argp to
+   parse options passed in an fsys_set_options RPC.  */
+struct argp *trivfs_runtime_argp = &argp;
+
+/* Get our stderr set up to print on the console, in case we have to
+   panic or something.  */
+error_t
+open_console (mach_port_t device_master)
+{
+  static int got_console = 0;
+  mach_port_t cons;
+  error_t err;
+
+  if (got_console)
+    return 0;
+
+  err = device_open (device_master, D_READ|D_WRITE, "console", &cons);
+  if (err)
+    return err;
+
+  stdin = mach_open_devstream (cons, "r");
+  stdout = stderr = mach_open_devstream (cons, "w");
+
+  got_console = 1;
+  mach_port_deallocate (mach_task_self (), cons);
+  return 0;
+}
 
 int
 main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
-  struct argp argp = { 0, 0, 0, "Hurd standard exec server." };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
+
+  if (MACH_PORT_VALID (opt_device_master))
+    {
+      err = open_console (opt_device_master);
+      assert_perror (err);
+      mach_port_deallocate (mach_task_self (), opt_device_master);
+    }
 
   save_argv = argv;
 
@@ -236,18 +325,9 @@ S_exec_init (struct trivfs_protid *protid,
   err = get_privileged_ports (&host_priv, &device_master);
   assert_perror (err);
 
-  {
-    /* Get our stderr set up to print on the console, in case we have
-       to panic or something.  */
-    mach_port_t cons;
-    error_t err;
-    err = device_open (device_master, D_READ|D_WRITE, "console", &cons);
-    assert_perror (err);
-    mach_port_deallocate (mach_task_self (), device_master);
-    stdin = mach_open_devstream (cons, "r");
-    stdout = stderr = mach_open_devstream (cons, "w");
-    mach_port_deallocate (mach_task_self (), cons);
-  }
+  err = open_console (device_master);
+  assert_perror (err);
+  mach_port_deallocate (mach_task_self (), device_master);
 
   proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
 
