@@ -1,3 +1,25 @@
+2013-XX-XX
+Version 0.6
+
+Numerous cleanups and stylistic fixes of the code base.  Several
+problems have been identified using static analysis and exercising
+tools, and have subsequently been fixed.
+
+The message dispatching code in the Hurd servers has been improved.
+
+The embedded gz and bz2 decompressor code has been removed, libz and
+libbz2 is used instead.
+
+The native fakeroot tool has been greatly improved and is now able to
+build many packages.  The portinfo and rpctrace tools now offer a
+better debugging experience.
+
+The performance of the integer hashing library has been improved.
+
+The procfs translator has been merged.
+
+The random translator has been merged.
+
 2013-09-27
 Version 0.5
 
