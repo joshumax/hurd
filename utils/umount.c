@@ -40,7 +40,6 @@ static char *targets;
 static size_t targets_len;
 static int readonly;
 static int verbose;
-static int passive_flags;
 static int active_flags = FS_TRANS_SET;
 static int goaway_flags;
 static int source_goaway;
@@ -200,7 +199,7 @@ do_umount (struct fs *fs)
     }
 
   if (verbose)
-    printf ("settrans -apg%s%s %s\n",
+    printf ("settrans -ag%s%s %s\n",
 	    goaway_flags & FSYS_GOAWAY_NOSYNC? "S": "",
 	    goaway_flags & FSYS_GOAWAY_FORCE? "f": "",
 	    fs->mntent.mnt_dir);
@@ -208,7 +207,7 @@ do_umount (struct fs *fs)
   if (! fake)
     {
       err = file_set_translator (node,
-				 passive_flags, active_flags, goaway_flags,
+				 0, active_flags, goaway_flags,
 				 NULL, 0,
 				 MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
       if (! err)
