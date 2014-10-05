@@ -24,6 +24,7 @@
 #include <error.h>
 #include <fcntl.h>
 #include <hurd.h>
+#include <hurd/ihash.h>
 #include <hurd/trivfs.h>
 #include <inttypes.h>
 #include <mntent.h>
@@ -55,6 +56,7 @@ struct mtab
   char *contents;
   size_t contents_len;
   off_t offs;
+  struct hurd_ihash ports_seen;
 };
 
 const char *argp_program_version = STANDARD_HURD_VERSION (mtab);
@@ -244,7 +246,11 @@ main (int argc, char *argv[])
   else
     {
       /* One-shot mode.	 */
-      struct mtab mtab = { .lock = PTHREAD_MUTEX_INITIALIZER };
+      struct mtab mtab =
+        {
+          .lock = PTHREAD_MUTEX_INITIALIZER,
+          .ports_seen = HURD_IHASH_INITIALIZER (HURD_IHASH_NO_LOCP),
+        };
       err = mtab_populate (&mtab, target_path, insecure);
       if (err)
 	error (5, err, "%s", target_path);
@@ -299,6 +305,33 @@ is_filesystem_translator (file_t node)
     default:
       return FALSE;
     }
+}
+
+/* Records NODE's idport in ports_seen, returns true if we have
+   already seen this node or there was an error getting the id
+   port.  */
+boolean_t
+mtab_mark_as_seen (struct mtab *mtab, mach_port_t node)
+{
+  error_t err;
+  mach_port_t idport, fsidport;
+  ino_t fileno;
+
+  err = io_identity (node, &idport, &fsidport, &fileno);
+  if (err)
+    return TRUE;
+
+  mach_port_deallocate (mach_task_self (), fsidport);
+
+  if (hurd_ihash_find (&mtab->ports_seen, idport))
+    {
+      /* Already seen.  Get rid of the extra reference.  */
+      mach_port_deallocate (mach_task_self (), idport);
+      return TRUE;
+    }
+
+  hurd_ihash_add (&mtab->ports_seen, idport, idport);
+  return FALSE;
 }
 
 /* Populates the given MTAB object with the information for PATH.  If
@@ -358,6 +391,13 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
     }
 
   if (! (all_translators || is_filesystem_translator (node)))
+    {
+      err = 0;
+      goto errout;
+    }
+
+  /* Avoid running in circles.  */
+  if (mtab_mark_as_seen (mtab, node))
     {
       err = 0;
       goto errout;
@@ -602,6 +642,7 @@ open_hook (struct trivfs_peropen *peropen)
   mtab->offs = 0;
   mtab->contents = NULL;
   mtab->contents_len = 0;
+  hurd_ihash_init (&mtab->ports_seen, HURD_IHASH_NO_LOCP);
 
   /* The mtab object is initialized, but not yet populated.  We delay
      that until that data is really needed.  This avoids the following
@@ -635,6 +676,9 @@ close_hook (struct trivfs_peropen *peropen)
   struct mtab *op = peropen->hook;
   pthread_mutex_destroy (&op->lock);
   free (op->contents);
+  HURD_IHASH_ITERATE (&op->ports_seen, p)
+    mach_port_deallocate (mach_task_self (), (mach_port_t) p);
+  hurd_ihash_destroy (&op->ports_seen);
   free (op);
 }
 
