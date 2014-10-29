@@ -30,7 +30,7 @@
 #include <version.h>
 #include <pids.h>
 
-/* Include Hurd's errno.h file, but don't include glue-include/hurd/errno.h,
+/* Include Hurd's errno.h file, but don't include glue-include/linux/errno.h,
    since it #undef's the errno macro. */
 #define _HACK_ERRNO_H
 #include <errno.h>
