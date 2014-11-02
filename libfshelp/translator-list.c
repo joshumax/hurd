@@ -82,7 +82,10 @@ fshelp_set_active_translator (struct port_info *pi,
 
   t = malloc (sizeof (struct translator));
   if (! t)
-    return ENOMEM;
+    {
+      err = errno;
+      goto out;
+    }
 
   t->active = MACH_PORT_NULL;
   t->pi = NULL;
@@ -110,7 +113,7 @@ fshelp_set_active_translator (struct port_info *pi,
 						MACH_MSG_TYPE_MAKE_SEND_ONCE,
 						&old);
 	  if (err)
-	    return err;
+	    goto out;
 	  if (old != MACH_PORT_NULL)
 	    mach_port_deallocate (mach_task_self (), old);
 
