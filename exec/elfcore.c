@@ -334,7 +334,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
     mach_msg_type_number_t num_waits = 0;
     char pibuf[offsetof (struct procinfo, threadinfos[2])];
     struct procinfo *pi = (void *) &pibuf;
-    mach_msg_type_number_t pi_size = sizeof pibuf / sizeof(*(procinfo_t*)0);
+    mach_msg_type_number_t pi_size = sizeof pibuf / sizeof (*(procinfo_t*)0);
 
     memset (&pstatus.data, 0, sizeof pstatus.data);
     memset (&psinfo.data, 0, sizeof psinfo.data);
@@ -395,7 +395,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	psinfo.data.pr_wstat = pi->exitstatus;
 
 	if ((void *) pi != &pibuf)
-	  munmap (pi, pi_size);
+	  munmap (pi, pi_size * sizeof (*(procinfo_t*) 0));
       }
     if (err == 0)
       {

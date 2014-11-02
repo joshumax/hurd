@@ -263,7 +263,7 @@ check_owned (process_t proc_server, pid_t pid, int *owned)
   char *waits = 0;
   mach_msg_type_number_t num_waits = 0;
   struct procinfo _pi, *pi = &_pi;
-  mach_msg_type_number_t pi_size = sizeof _pi / sizeof(*(procinfo_t)0);
+  mach_msg_type_number_t pi_size = sizeof _pi / sizeof (*(procinfo_t)0);
   error_t err =
     proc_getprocinfo (proc_server, pid, &flags, (procinfo_t *)&pi, &pi_size,
 		      &waits, &num_waits);
@@ -272,7 +272,7 @@ check_owned (process_t proc_server, pid_t pid, int *owned)
     {
       *owned = !(pi->state & PI_NOTOWNED);
       if (pi != &_pi)
-	munmap (pi, pi_size);
+	munmap (pi, pi_size * sizeof (*(procinfo_t)0));
     }
 
   return err;
