@@ -192,7 +192,7 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	return ENOMEM;
     }
   new_pi = ps->proc_info;
-  new_pi_size = ps->proc_info_size;
+  new_pi_size = ps->proc_info_size / sizeof(*(procinfo_t)0);
 
   if (really_need & PSTAT_THREAD_WAITS)
     /* We're going to get thread waits info, so make some storage for it too.*/
@@ -240,7 +240,7 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
       else
 	free (ps->proc_info);
       ps->proc_info = new_pi;
-      ps->proc_info_size = new_pi_size;
+      ps->proc_info_size = new_pi_size * sizeof(*(procinfo_t)0);
       ps->proc_info_vm_alloced = 1;
     }
 
