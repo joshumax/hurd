@@ -23,7 +23,7 @@
 #include <sys/mman.h>
 
 
-error_t
+error_t __attribute__ ((weak))
 netfs_file_get_storage_info (struct iouser *cred,
     			     struct node *np,
 			     mach_port_t **ports,

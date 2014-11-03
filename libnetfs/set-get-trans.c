@@ -28,7 +28,7 @@
 /* The user may define this function.  Attempt to set the passive
    translator record for FILE to ARGZ (of length ARGZLEN) for user
    CRED. */
-error_t
+error_t __attribute__ ((weak))
 netfs_set_translator (struct iouser *cred, struct node *np,
 		      char *argz, size_t argzlen)
 {
@@ -40,7 +40,7 @@ netfs_set_translator (struct iouser *cred, struct node *np,
    mode, look up the name of its translator.  Store the name into newly
    malloced storage, and return it in *ARGZ; set *ARGZ_LEN to the total
    length.  */
-error_t
+error_t __attribute__ ((weak))
 netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
 {
   return EOPNOTSUPP;

@@ -24,7 +24,7 @@
 
 /* The virtual console entry VCONS_ENTRY was just added.  CONS is
    locked.  */
-void
+void __attribute__ ((weak))
 cons_vcons_add (cons_t cons, vcons_list_t vcons_entry)
 {
 }

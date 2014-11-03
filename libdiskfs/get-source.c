@@ -21,7 +21,7 @@
 
 #include "priv.h"
 
-error_t
+error_t __attribute__ ((weak))
 diskfs_get_source (struct protid *cred, char *source, size_t source_len)
 {
   if (diskfs_disk_name == NULL)

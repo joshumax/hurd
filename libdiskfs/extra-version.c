@@ -21,4 +21,4 @@
 
 #include "priv.h"
 
-char *diskfs_extra_version = "";
+char *diskfs_extra_version __attribute__ ((weak)) = "";

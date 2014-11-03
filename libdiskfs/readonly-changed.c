@@ -24,7 +24,7 @@
    changed from read-only to read-write mode or vice-versa.  READONLY is the
    new state (which is also reflected in DISKFS_READONLY).  This function is
    also called during initial startup if the filesystem is to be writable.  */
-void
+void __attribute__ ((weak))
 diskfs_readonly_changed (int readonly)
 {
   /* By default do nothing at all.  */

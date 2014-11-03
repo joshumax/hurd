@@ -24,7 +24,7 @@
 
 /* The virtual console VCONS_ENTRY is going to be removed.
    VCONS_ENTRY->cons is locked.  */
-void
+void __attribute__ ((weak))
 cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry)
 {
   assert (!vcons_entry->vcons);
