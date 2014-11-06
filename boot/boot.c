@@ -179,21 +179,7 @@ request_server (mach_msg_header_t *inp,
   extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
 /*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
   extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern void bootstrap_compat ();
 
-#if 0
-  if (inp->msgh_local_port == bootport && boot_like_cmudef)
-    {
-      if (inp->msgh_id == 999999)
-	{
-	  bootstrap_compat (inp, outp);
-	  return 1;
-	}
-      else
-	return bootstrap_server (inp, outp);
-    }
-  else
-#endif
    return (io_server (inp, outp)
 	   || device_server (inp, outp)
 	   || notify_server (inp, outp)
@@ -914,8 +900,6 @@ unlock_readlock ()
 /*
  *	Handle bootstrap requests.
  */
-/* These two functions from .../mk/bootstrap/default_pager.c. */
-
 kern_return_t
 do_bootstrap_privileged_ports(bootstrap, hostp, devicep)
 	mach_port_t bootstrap;
@@ -924,68 +908,6 @@ do_bootstrap_privileged_ports(bootstrap, hostp, devicep)
 	*hostp = privileged_host_port;
 	*devicep = pseudo_master_device_port;
 	return KERN_SUCCESS;
-}
-
-void
-bootstrap_compat(in, out)
-	mach_msg_header_t *in, *out;
-{
-	mig_reply_header_t *reply = (mig_reply_header_t *) out;
-	mach_msg_return_t mr;
-
-	struct imsg {
-		mach_msg_header_t	hdr;
-		mach_msg_type_t		port_desc_1;
-		mach_port_t		port_1;
-		mach_msg_type_t		port_desc_2;
-		mach_port_t		port_2;
-	} imsg;
-
-	/*
-	 * Send back the host and device ports.
-	 */
-
-	imsg.hdr.msgh_bits = MACH_MSGH_BITS_COMPLEX |
-		MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(in->msgh_bits), 0);
-	/* msgh_size doesn't need to be initialized */
-	imsg.hdr.msgh_remote_port = in->msgh_remote_port;
-	imsg.hdr.msgh_local_port = MACH_PORT_NULL;
-	/* msgh_seqno doesn't need to be initialized */
-	imsg.hdr.msgh_id = in->msgh_id + 100;	/* this is a reply msg */
-
-	imsg.port_desc_1.msgt_name = MACH_MSG_TYPE_COPY_SEND;
-	imsg.port_desc_1.msgt_size = (sizeof(mach_port_t) * 8);
-	imsg.port_desc_1.msgt_number = 1;
-	imsg.port_desc_1.msgt_inline = TRUE;
-	imsg.port_desc_1.msgt_longform = FALSE;
-	imsg.port_desc_1.msgt_deallocate = FALSE;
-	imsg.port_desc_1.msgt_unused = 0;
-
-	imsg.port_1 = privileged_host_port;
-
-	imsg.port_desc_2 = imsg.port_desc_1;
-
-	imsg.port_desc_2.msgt_name = MACH_MSG_TYPE_MAKE_SEND;
-	imsg.port_2 = pseudo_master_device_port;
-
-	/*
-	 * Send the reply message.
-	 * (mach_msg_server can not do this, because the reply
-	 * is not in standard format.)
-	 */
-
-	mr = mach_msg(&imsg.hdr, MACH_SEND_MSG,
-		      sizeof imsg, 0, MACH_PORT_NULL,
-		      MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-	if (mr != MACH_MSG_SUCCESS)
-		(void) mach_port_deallocate(mach_task_self (),
-					    imsg.hdr.msgh_remote_port);
-
-	/*
-	 * Tell mach_msg_server to do nothing.
-	 */
-
-	reply->RetCode = MIG_NO_REPLY;
 }
 
 /* Implementation of device interface */
