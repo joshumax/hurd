@@ -112,7 +112,7 @@ typedef struct stat host_stat_t;
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
-mach_port_t pseudo_console, pseudo_root;
+mach_port_t pseudo_console, pseudo_root, pseudo_time;
 auth_t authserver;
 
 struct store *root_store;
@@ -534,6 +534,15 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_time);
+  mach_port_move_member (mach_task_self (), pseudo_time, receive_set);
+  mach_port_request_notification (mach_task_self (), pseudo_time,
+				  MACH_NOTIFY_NO_SENDERS, 1, pseudo_time,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
+  if (foo != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), foo);
+
   if (kernel_command_line == 0)
     asprintf (&kernel_command_line, "%s %s root=%s",
 	      argv[0], bootstrap_args, bootdevice);
@@ -894,6 +903,12 @@ ds_device_open (mach_port_t master_port,
       *devicetype = MACH_MSG_TYPE_MAKE_SEND;
       return 0;
     }
+  else if (!strcmp (name, "time"))
+    {
+      *device = pseudo_time;
+      *devicetype = MACH_MSG_TYPE_MAKE_SEND;
+      return 0;
+    }
   else if (strcmp (name, "pseudo-root") == 0)
     /* Magic root device.  */
     {
@@ -1125,9 +1140,26 @@ ds_device_map (device_t device,
 	       memory_object_t *pager,
 	       int unmap)
 {
-  if (device != pseudo_console && device != pseudo_root)
+  if (device == pseudo_console || device == pseudo_root)
+    return D_INVALID_OPERATION;
+  else if (device == pseudo_time)
+    {
+      error_t err;
+      mach_port_t wr_memobj;
+      file_t node = file_name_lookup ("/dev/time", O_RDONLY, 0);
+
+      if (node == MACH_PORT_NULL)
+	return D_IO_ERROR;
+
+      err = io_map (node, pager, &wr_memobj);
+      if (!err && MACH_PORT_VALID (wr_memobj))
+	mach_port_deallocate (mach_task_self (), wr_memobj);
+
+      mach_port_deallocate (mach_task_self (), node);
+      return D_SUCCESS;
+    }
+  else
     return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
 }
 
 kern_return_t
