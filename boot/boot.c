@@ -1118,40 +1118,6 @@ ds_device_read_inband (device_t device,
 }
 
 kern_return_t
-ds_xxx_device_set_status (device_t device,
-			  dev_flavor_t flavor,
-			  dev_status_t status,
-			  size_t statu_cnt)
-{
-  if (device != pseudo_console)
-    return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
-}
-
-kern_return_t
-ds_xxx_device_get_status (device_t device,
-			  dev_flavor_t flavor,
-			  dev_status_t status,
-			  size_t *statuscnt)
-{
-  if (device != pseudo_console && device != pseudo_root)
-    return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
-}
-
-kern_return_t
-ds_xxx_device_set_filter (device_t device,
-			  mach_port_t rec,
-			  int pri,
-			  filter_array_t filt,
-			  size_t len)
-{
-  if (device != pseudo_console && device != pseudo_root)
-    return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
-}
-
-kern_return_t
 ds_device_map (device_t device,
 	       vm_prot_t prot,
 	       vm_offset_t offset,
