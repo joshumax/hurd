@@ -69,10 +69,6 @@ int boot_script_exec_cmd (void *hook,
 			  task_t task, char *path, int argc,
 			  char **argv, char *strings, int stringlen);
 
-/* The user must define this function.  Load the contents of FILE
-   into a fresh anonymous memory object and return the memory object port.  */
-mach_port_t boot_script_read_file (const char *file);
-
 /* The user must define this functions to perform the corresponding
    Mach task manipulations.  */
 int boot_script_task_create (struct cmd *); /* task_create + task_suspend */

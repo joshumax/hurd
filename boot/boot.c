@@ -109,7 +109,7 @@ typedef struct stat host_stat_t;
 
 #endif /* UX */
 
-mach_port_t privileged_host_port, master_device_port, defpager;
+mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
 mach_port_t pseudo_console, pseudo_root;
@@ -281,47 +281,6 @@ void read_reply ();
 void * msg_thread (void *);
 
 /* Callbacks for boot_script.c; see boot_script.h.  */
-
-mach_port_t
-boot_script_read_file (const char *filename)
-{
-  static const char msg[] = ": cannot open\n";
-  int fd = useropen (filename, O_RDONLY, 0);
-  host_stat_t st;
-  error_t err;
-  mach_port_t memobj;
-  vm_address_t region;
-
-  write (2, filename, strlen (filename));
-  if (fd < 0)
-    {
-      write (2, msg, sizeof msg - 1);
-      host_exit (1);
-    }
-  else
-    write (2, msg + sizeof msg - 2, 1);
-
-  host_fstat (fd, &st);
-
-  err = default_pager_object_create (defpager, &memobj,
-				     round_page (st.st_size));
-  if (err)
-    {
-      static const char msg[] = "cannot create default-pager object\n";
-      write (2, msg, sizeof msg - 1);
-      host_exit (1);
-    }
-
-  region = 0;
-  vm_map (mach_task_self (), &region, round_page (st.st_size),
-	  0, 1, memobj, 0, 0, VM_PROT_ALL, VM_PROT_ALL, VM_INHERIT_NONE);
-  read (fd, (char *) region, st.st_size);
-  munmap ((caddr_t) region, round_page (st.st_size));
-
-  close (fd);
-  return memobj;
-}
-
 int
 boot_script_exec_cmd (void *hook,
 		      mach_port_t task, char *path, int argc,
@@ -531,9 +490,6 @@ main (int argc, char **argv, char **envp)
     error (4, err, "%s", root_store_name);
 
   get_privileged_ports (&privileged_host_port, &master_device_port);
-
-  defpager = MACH_PORT_NULL;
-  vm_set_default_memory_manager (privileged_host_port, &defpager);
 
   strcat (bootstrap_args, "f");
 
