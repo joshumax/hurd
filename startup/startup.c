@@ -557,7 +557,7 @@ main (int argc, char **argv, char **envp)
      master device ports, and the console.  */
   if (task_get_bootstrap_port (mach_task_self (), &bootport)
       || fsys_getpriv (bootport, &host_priv, &device_master, &fstask)
-      || device_open (device_master, D_WRITE, "console", &consdev))
+      || device_open (device_master, D_READ|D_WRITE, "console", &consdev))
     crash_mach ();
 
   wire_task_self ();
