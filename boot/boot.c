@@ -169,22 +169,55 @@ useropen (const char *name, int flags, int mode)
   return open (name, flags, mode);
 }
 
-int
-request_server (mach_msg_header_t *inp,
-		mach_msg_header_t *outp)
+/* XXX: glibc should provide mig_reply_setup but does not.  */
+/* Fill in default response.  */
+void
+mig_reply_setup (
+	const mach_msg_header_t	*in,
+	mach_msg_header_t	*out)
 {
-  extern int io_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int device_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int term_server (mach_msg_header_t *, mach_msg_header_t *);
-/*  extern int tioctl_server (mach_msg_header_t *, mach_msg_header_t *); */
-  extern int bootstrap_server (mach_msg_header_t *, mach_msg_header_t *);
+      static const mach_msg_type_t RetCodeType = {
+		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
+		/* msgt_size = */		32,
+		/* msgt_number = */		1,
+		/* msgt_inline = */		TRUE,
+		/* msgt_longform = */		FALSE,
+		/* msgt_deallocate = */		FALSE,
+		/* msgt_unused = */		0
+	};
 
-   return (io_server (inp, outp)
-	   || device_server (inp, outp)
-	   || notify_server (inp, outp)
-	   || term_server (inp, outp)
-	   /*	    || tioctl_server (inp, outp) */);
+#define	InP	(in)
+#define	OutP	((mig_reply_header_t *) out)
+      OutP->Head.msgh_bits =
+	MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(InP->msgh_bits), 0);
+      OutP->Head.msgh_size = sizeof *OutP;
+      OutP->Head.msgh_remote_port = InP->msgh_remote_port;
+      OutP->Head.msgh_local_port = MACH_PORT_NULL;
+      OutP->Head.msgh_seqno = 0;
+      OutP->Head.msgh_id = InP->msgh_id + 100;
+      OutP->RetCodeType = RetCodeType;
+      OutP->RetCode = MIG_BAD_ID;
+#undef InP
+#undef OutP
+}
+
+int
+boot_demuxer (mach_msg_header_t *inp,
+	      mach_msg_header_t *outp)
+{
+  mig_routine_t routine;
+  mig_reply_setup (inp, outp);
+  if ((routine = io_server_routine (inp)) ||
+      (routine = device_server_routine (inp)) ||
+      (routine = notify_server_routine (inp)) ||
+      (routine = term_server_routine (inp))
+      /* (routine = tioctl_server_routine (inp)) */)
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 vm_address_t
@@ -710,15 +743,13 @@ main (int argc, char **argv, char **envp)
       else /* We hosed */
 	error (5, errno, "select");
     }
-
-/*  mach_msg_server (request_server, __vm_page_size * 2, receive_set); */
 }
 
 void *
 msg_thread (void *arg)
 {
   while (1)
-    mach_msg_server (request_server, 0, receive_set);
+    mach_msg_server (boot_demuxer, 0, receive_set);
 }
 
 
