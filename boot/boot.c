@@ -1150,18 +1150,27 @@ ds_device_get_status (device_t device,
   if (device == pseudo_console)
     return D_INVALID_OPERATION;
   else if (device == pseudo_root)
-    if (flavor == DEV_GET_SIZE)
-      if (*statuslen < DEV_GET_SIZE_COUNT)
-	return D_INVALID_SIZE;
-      else
-	{
-	  status[DEV_GET_SIZE_DEVICE_SIZE] = root_store->size;
-	  status[DEV_GET_SIZE_RECORD_SIZE] = root_store->block_size;
-	  *statuslen = DEV_GET_SIZE_COUNT;
-	  return D_SUCCESS;
-	}
-    else
-      return D_INVALID_OPERATION;
+    switch (flavor)
+      {
+      case DEV_GET_SIZE:
+        if (*statuslen < DEV_GET_SIZE_COUNT)
+          return D_INVALID_SIZE;
+        status[DEV_GET_SIZE_DEVICE_SIZE] = root_store->size;
+        status[DEV_GET_SIZE_RECORD_SIZE] = root_store->block_size;
+        *statuslen = DEV_GET_SIZE_COUNT;
+        return D_SUCCESS;
+
+      case DEV_GET_RECORDS:
+        if (*statuslen < DEV_GET_RECORDS_COUNT)
+          return D_INVALID_SIZE;
+        status[DEV_GET_RECORDS_DEVICE_RECORDS] = root_store->blocks;
+        status[DEV_GET_RECORDS_RECORD_SIZE] = root_store->block_size;
+        *statuslen = DEV_GET_RECORDS_COUNT;
+        return D_SUCCESS;
+
+      default:
+        return D_INVALID_OPERATION;
+      }
   else
     return D_NO_SUCH_DEVICE;
 }
