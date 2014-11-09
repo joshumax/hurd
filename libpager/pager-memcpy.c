@@ -45,7 +45,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 
 #define VMCOPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
 #define MEMCPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
-  vm_address_t window = 0;
+  vm_address_t window;
   vm_size_t window_size;
 
   error_t do_vm_copy (void)
@@ -64,6 +64,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	  assert (window_size >= VMCOPY_BETTER_THAN_MEMCPY);
 	  assert ((window_size & (vm_page_size - 1)) == 0);
 	  
+	  window = 0;
 	  err = vm_map (mach_task_self (), &window, window_size, 0, 1,
 			memobj, offset, 0, prot, prot, VM_INHERIT_NONE);
 	  if (err)
@@ -110,6 +111,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 		  window_size = round_page (pageoff + to_copy);
 		}
 
+	      window = 0;
 	      err = vm_map (mach_task_self (), &window, window_size, 0, 1,
 			    memobj, offset - pageoff, 0,
 			    prot, prot, VM_INHERIT_NONE);
