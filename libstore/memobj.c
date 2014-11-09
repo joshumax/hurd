@@ -133,6 +133,7 @@ memobj_read (struct store *store,
   if (((size_t) addr & (vm_page_size - 1)) == 0)
     {
       *len = amount;
+      *buf = 0;
       return vm_map (mach_task_self (), (vm_address_t *) buf, amount,
 		     0, 1, store->port, addr << store->log2_block_size, 0,
 		     VM_PROT_READ, VM_PROT_ALL, VM_INHERIT_NONE);
