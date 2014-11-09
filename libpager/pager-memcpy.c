@@ -45,7 +45,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 
 #define VMCOPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
 #define MEMCPY_WINDOW_DEFAULT_SIZE (32 * vm_page_size)
-  vm_address_t window;
+  vm_address_t window = 0;
   vm_size_t window_size;
 
   error_t do_vm_copy (void)

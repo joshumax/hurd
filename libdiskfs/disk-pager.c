@@ -60,6 +60,7 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
   /* Now map the disk image.  */
+  *image = 0;
   err = vm_map (mach_task_self (), (vm_address_t *)image, size,
 		0, 1, disk_pager_port, 0, 0,
 		VM_PROT_READ | (diskfs_readonly ? 0 : VM_PROT_WRITE),

@@ -169,6 +169,7 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
   mach_port_insert_right (mach_task_self (), user_pager->memobj,
 			  user_pager->memobj, MACH_MSG_TYPE_MAKE_SEND);
 
+  *user = 0;
   err = vm_map (mach_task_self (),
 		(vm_address_t *) user,
 		(vm_size_t) npages * vm_page_size,
