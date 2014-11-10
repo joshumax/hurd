@@ -58,7 +58,7 @@ void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = init_hook;
  *	next highest power of 2.
  */
 vm_size_t	kalloc_max;		/* max before we use vm_allocate */
-#define		MINSIZE	4		/* minimum allocation size */
+#define		MINSIZE	sizeof(vm_offset_t)		/* minimum allocation size */
 
 struct free_list {
 	pthread_spinlock_t	lock;
@@ -99,8 +99,8 @@ void kalloc_init(void)
 	 * 16Kbytes, whichever is less.
 	 */
 
-	if (vm_page_size > 16*1024)
-		kalloc_max = 16*1024;
+	if (vm_page_size > (MINSIZE << (KLIST_MAX-1)))
+		kalloc_max = (MINSIZE << (KLIST_MAX-1));
 	else
 		kalloc_max = vm_page_size;
 
@@ -197,7 +197,7 @@ void *kalloc(vm_size_t size)
 	/* compute the size of the block that we will actually allocate */
 
 	allocsize = size;
-	if (size < kalloc_max) {
+	if (size <= kalloc_max) {
 	    allocsize = MINSIZE;
 	    fl = kfree_list;
 	    while (allocsize < size) {
@@ -211,7 +211,7 @@ void *kalloc(vm_size_t size)
 	 * and allocate.
 	 */
 
-	if (allocsize < kalloc_max) {
+	if (allocsize <= kalloc_max) {
 	    pthread_spin_lock(&fl->lock);
 	    if ((addr = fl->head) != 0) {
 		fl->head = *(vm_offset_t *)addr;
@@ -241,7 +241,7 @@ kfree(	void *data,
 	struct free_list *fl;
 
 	freesize = size;
-	if (size < kalloc_max) {
+	if (size <= kalloc_max) {
 	    freesize = MINSIZE;
 	    fl = kfree_list;
 	    while (freesize < size) {
@@ -250,7 +250,7 @@ kfree(	void *data,
 	    }
 	}
 
-	if (freesize < kalloc_max) {
+	if (freesize <= kalloc_max) {
 	    pthread_spin_lock(&fl->lock);
 	    *(vm_offset_t *)data = fl->head;
 	    fl->head = (vm_offset_t) data;
