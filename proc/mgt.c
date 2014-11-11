@@ -220,6 +220,13 @@ S_proc_child (struct proc *parentp,
       childp->end_code = parentp->end_code;
     }
 
+  if (MACH_PORT_VALID (parentp->p_task_namespace))
+    {
+      mach_port_mod_refs (mach_task_self (), parentp->p_task_namespace,
+			  MACH_PORT_RIGHT_SEND, +1);
+      childp->p_task_namespace = parentp->p_task_namespace;
+    }
+
   return 0;
 }
 
@@ -577,6 +584,7 @@ allocate_proc (task_t task)
 
   memset (&p->p_pi + 1, 0, sizeof *p - sizeof p->p_pi);
   p->p_task = task;
+  p->p_task_namespace = MACH_PORT_NULL;
   p->p_msgport = MACH_PORT_NULL;
 
   pthread_cond_init (&p->p_wakeup, NULL);
@@ -721,6 +729,16 @@ new_proc (task_t task)
   return p;
 }
 
+/* Used with prociterate to terminate all tasks in a task
+   namespace.  */
+static void
+namespace_terminate (struct proc *p, void *cookie)
+{
+  mach_port_t *namespacep = cookie;
+  if (p->p_task_namespace == *namespacep)
+    task_terminate (p->p_task);
+}
+
 /* The task associated with process P has died.  Drop most state,
    and then record us as dead.  Our parent will eventually complete the
    deallocation. */
@@ -751,12 +769,38 @@ process_has_exited (struct proc *p)
 
   ids_rele (p->p_id);
 
-  /* Reparent our children to init by attaching the head and tail
-     of our list onto init's.  */
+  /* Reparent our children to init by attaching the head and tail of
+     our list onto init's.  If the process is part of a task
+     namespace, reparent to the process that created the namespace
+     instead.  */
   if (p->p_ochild)
     {
+      struct proc *reparent_to = init_proc;
       struct proc *tp;		/* will point to the last one.  */
       int isdead = 0;
+
+      if (MACH_PORT_VALID (p->p_task_namespace))
+	{
+	  for (tp = p;
+	       MACH_PORT_VALID (tp->p_parent->p_task_namespace);
+	       tp = tp->p_parent)
+	    {
+	      /* Walk up the process hierarchy until we find the
+		 creator of the task namespace.	 */
+	    }
+
+	  if (p == tp)
+	    {
+	      /* The creator of the task namespace died.  Terminate
+		 all tasks.  */
+	      prociterate (namespace_terminate, &p->p_task_namespace);
+
+	      mach_port_deallocate (mach_task_self (), p->p_task_namespace);
+	      p->p_task_namespace = MACH_PORT_NULL;
+	    }
+	  else
+	    reparent_to = tp;
+	}
 
       /* first tell them their parent is changing */
       for (tp = p->p_ochild; tp->p_sib; tp = tp->p_sib)
@@ -765,7 +809,7 @@ process_has_exited (struct proc *p)
 	    nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
 				    1, tp->p_pgrp->pg_pgid,
 				    !tp->p_pgrp->pg_orphcnt);
-	  tp->p_parent = init_proc;
+	  tp->p_parent = reparent_to;
 	  if (tp->p_dead)
 	    isdead = 1;
 	}
@@ -773,17 +817,17 @@ process_has_exited (struct proc *p)
 	nowait_msg_proc_newids (tp->p_msgport, tp->p_task,
 				1, tp->p_pgrp->pg_pgid,
 				!tp->p_pgrp->pg_orphcnt);
-      tp->p_parent = init_proc;
+      tp->p_parent = reparent_to;
 
       /* And now append the lists. */
-      tp->p_sib = init_proc->p_ochild;
+      tp->p_sib = reparent_to->p_ochild;
       if (tp->p_sib)
 	tp->p_sib->p_prevsib = &tp->p_sib;
-      init_proc->p_ochild = p->p_ochild;
-      p->p_ochild->p_prevsib = &init_proc->p_ochild;
+      reparent_to->p_ochild = p->p_ochild;
+      p->p_ochild->p_prevsib = &reparent_to->p_ochild;
 
       if (isdead)
-	alert_parent (init_proc);
+	alert_parent (reparent_to);
     }
 
   /* If an operation is in progress for this process, cause it
@@ -795,6 +839,23 @@ process_has_exited (struct proc *p)
 
   /* Cancel any outstanding RPCs done on behalf of the dying process.  */
   ports_interrupt_rpcs (p);
+
+  /* No one is going to wait for processes in a task namespace.  */
+  if (MACH_PORT_VALID (p->p_task_namespace))
+    {
+      mach_port_t task;
+      mach_port_deallocate (mach_task_self (), p->p_task_namespace);
+      p->p_waited = 1;
+
+      /* XXX: `complete_exit' will destroy p->p_task if it is valid.
+	 Prevent this so that `do_mach_notify_dead_name' can
+	 deallocate the right.	The proper fix is not to use
+	 mach_port_destroy in the first place.	*/
+      task = p->p_task;
+      p->p_task = MACH_PORT_NULL;
+      complete_exit (p);
+      mach_port_deallocate (mach_task_self (), task);
+    }
 }
 
 void
@@ -1008,9 +1069,42 @@ S_mach_notify_new_task (mach_port_t notify,
       childp = new_proc (task);
     }
 
-  /* XXX do something interesting */
+  if (MACH_PORT_VALID (parentp->p_task_namespace))
+    {
+      error_t err;
+      /* Tasks in a task namespace are not expected to call
+	 proc_child, so we do it on their behalf.  */
+      mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
+      err = S_proc_child (parentp, task);
+      if (! err)
+	/* Relay the notification.  This consumes TASK and PARENT.  */
+	return mach_notify_new_task (childp->p_task_namespace, task, parent);
+    }
 
   mach_port_deallocate (mach_task_self (), task);
   mach_port_deallocate (mach_task_self (), parent);
+  return 0;
+}
+
+/* Implement proc_make_task_namespace as described in
+   <hurd/process.defs>.  */
+error_t
+S_proc_make_task_namespace (struct proc *callerp,
+			    mach_port_t notify)
+{
+  if (! callerp)
+    return EOPNOTSUPP;
+
+  if (! MACH_PORT_VALID (notify))
+    return EINVAL;
+
+  if (MACH_PORT_VALID (callerp->p_task_namespace))
+    {
+      mach_port_deallocate (mach_task_self (), notify);
+      return EBUSY;
+    }
+
+  callerp->p_task_namespace = notify;
+
   return 0;
 }

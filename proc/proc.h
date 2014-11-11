@@ -58,6 +58,10 @@ struct proc
   /* Process group structure */
   struct pgrp *p_pgrp;
 
+  /* Processes may live in a task namespace identified by the
+     notification port registered by proc_make_task_namespace.  */
+  mach_port_t p_task_namespace;	/* send right */
+
   /* Communication */
   mach_port_t p_msgport;	/* send right */
 
