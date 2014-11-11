@@ -259,6 +259,18 @@ netfs_append_args (char **argz, size_t *argz_len)
 
   return err;
 }
+
+/* The user may define this function.  The function must set source to
+   the source of CRED. The function may return an EOPNOTSUPP to
+   indicate that the concept of a source device is not applicable. The
+   default function always returns EOPNOTSUPP. */
+error_t netfs_get_source (struct protid *cred, char *source, size_t source_len)
+{
+  if (! cred)
+    return EOPNOTSUPP;
+  snprintf(source, source_len, "proc");
+  return 0;
+}
 
 error_t
 root_make_node (struct ps_context *pc, struct node **np)
