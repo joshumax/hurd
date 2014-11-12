@@ -1,5 +1,5 @@
 /* Definitions for process server interface
-   Copyright (C) 1992,93,94,95,96,97,2001,2013 Free Software Foundation
+   Copyright (C) 1992,93,94,95,96,97,2001,13,14 Free Software Foundation
 
 This file is part of the GNU Hurd.
 
@@ -404,3 +404,12 @@ routine proc_get_code (
 	process: process_t;
 	out start_code: vm_address_t;
 	out end_code: vm_address_t);
+
+/* Create a new task namespace.  PROCESS claims the responsibility to
+   manage all tasks in this namespace.  Any task created in this
+   namespace will automatically be declared a child of PROCESS, and a
+   `mach_notify_new_task' message is sent to NOTIFY.  If PROCESS dies,
+   the proc server will terminate all tasks in the namespace.  */
+routine proc_make_task_namespace (
+	process: process_t;
+	notify: mach_port_send_t);
