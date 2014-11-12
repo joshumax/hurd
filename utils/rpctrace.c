@@ -1606,7 +1606,7 @@ print_data (mach_msg_type_name_t type,
 	 the first character that has not yet been printed.  */
       const char *p, *q;
       p = q = (const char *) data;
-      while (*q && q - (const char *) data < (int) (nelt * eltsize))
+      while (q && *q && q - (const char *) data < (int) (nelt * eltsize))
 	{
 	  if (isgraph (*q) || *q == ' ')
 	    {
