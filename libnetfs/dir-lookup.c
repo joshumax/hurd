@@ -297,6 +297,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      if (register_translator)
 		{
 		  char *translator_path = strdupa (relpath);
+		  char *complete_path;
 		  if (nextname != NULL)
 		    {
 		      /* This was not the last path component.
@@ -309,9 +310,17 @@ netfs_S_dir_lookup (struct protid *diruser,
 		      translator_path[end - filename_start] = '\0';
 		    }
 
+		  if (diruser->po->path == NULL)
+		      /* diruser is the root directory.  */
+		      complete_path = translator_path;
+		  else
+		      asprintf (&complete_path, "%s/%s", diruser->po->path, translator_path);
+
 		  error = fshelp_set_active_translator (&newpi->pi,
-							translator_path,
+							complete_path,
 							np->transbox.active);
+		  if (complete_path != translator_path)
+		    free(complete_path);
 		  if (error)
 		    {
 		      ports_port_deref (newpi);
