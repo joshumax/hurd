@@ -240,16 +240,32 @@ fstypes_find_program (struct fstypes *types, const char *program,
 
 /* Copy MNTENT into FS, copying component strings as well.  */
 error_t
-fs_set_mntent (struct fs *fs, const struct mntent *mntent)
+fs_set_mntent (struct fs *fs, const struct mntent *provided_mntent)
 {
   char *end;
   size_t needed = 0;
+  struct mntent mntent = *provided_mntent;
+  char *real_fsname = NULL;
+  char *real_dir = NULL;
 
   if (fs->storage)
     free (fs->storage);
 
+  if (mntent.mnt_fsname)
+    {
+      real_fsname = realpath (mntent.mnt_fsname, NULL);
+      if (real_fsname)
+	mntent.mnt_fsname = real_fsname;
+    }
+  if (mntent.mnt_dir)
+    {
+      real_dir = realpath (mntent.mnt_dir, NULL);
+      if (real_dir)
+	mntent.mnt_dir = real_dir;
+    }
+
   /* Allocate space for all string mntent fields in FS.  */
-#define COUNT(field) if (mntent->field) needed += strlen (mntent->field) + 1;
+#define COUNT(field) if (mntent.field) needed += strlen (mntent.field) + 1;
   COUNT (mnt_fsname);
   COUNT (mnt_dir);
   COUNT (mnt_type);
@@ -258,10 +274,14 @@ fs_set_mntent (struct fs *fs, const struct mntent *mntent)
 
   fs->storage = malloc (needed);
   if (! fs->storage)
-    return ENOMEM;
+    {
+      free (real_fsname);
+      free (real_dir);
+      return ENOMEM;
+    }
 
-  if (!fs->mntent.mnt_dir || !mntent->mnt_dir
-      || strcmp (fs->mntent.mnt_dir, mntent->mnt_dir) != 0)
+  if (!fs->mntent.mnt_dir || !mntent.mnt_dir
+      || strcmp (fs->mntent.mnt_dir, mntent.mnt_dir) != 0)
     {
       fs->mounted = fs->readonly = -1;
       if (fs->fsys != MACH_PORT_NULL)
@@ -270,15 +290,15 @@ fs_set_mntent (struct fs *fs, const struct mntent *mntent)
     }
 
   /* Copy MNTENT into FS; string-valued fields will be fixed up next.  */
-  fs->mntent = *mntent;
+  fs->mntent = mntent;
 
   /* Copy each mntent field from MNTENT into FS's version.  */
   end = fs->storage;
 #define STORE(field) \
-  if (mntent->field)				\
+  if (mntent.field)				\
     {						\
       fs->mntent.field = end;			\
-      end = stpcpy (end, mntent->field) + 1;	\
+      end = stpcpy (end, mntent.field) + 1;	\
     }						\
   else						\
     fs->mntent.field = 0;
@@ -289,9 +309,12 @@ fs_set_mntent (struct fs *fs, const struct mntent *mntent)
 #undef STORE
 
   if (fs->type
-      && (!mntent->mnt_type
-	  || strcasecmp (fs->type->name, mntent->mnt_type) != 0))
+      && (!mntent.mnt_type
+	  || strcasecmp (fs->type->name, mntent.mnt_type) != 0))
     fs->type = 0;		/* Type is different.  */
+
+  free (real_fsname);
+  free (real_dir);
 
   return 0;
 }
@@ -470,11 +493,21 @@ fstab_find_device (const struct fstab *fstab, const char *name)
   if (strcmp (name, "none") == 0)
     return NULL;
 
+  char *real_name = realpath (name, NULL);
+  const char *lookup_name;
+
+  if (real_name)
+    lookup_name = real_name;
+  else
+    lookup_name = name;
+
   struct fs *fs;
   for (fs = fstab->entries; fs; fs = fs->next)
-    if (strcmp (fs->mntent.mnt_fsname, name) == 0)
-      return fs;
-  return 0;
+    if (strcmp (fs->mntent.mnt_fsname, lookup_name) == 0)
+      break;
+
+  free (real_name);
+  return fs;
 }
 
 /* Returns the FS entry in FSTAB with the mount point NAME (there can only
@@ -482,8 +515,6 @@ fstab_find_device (const struct fstab *fstab, const char *name)
 inline struct fs *
 fstab_find_mount (const struct fstab *fstab, const char *name)
 {
-  struct fs *fs;
-
   /* Don't count "none" or "-" as matching any other mount point.
      It is canonical to use "none" for swap partitions, and multiple
      such do not in fact conflict with each other.  Likewise, the
@@ -494,10 +525,21 @@ fstab_find_mount (const struct fstab *fstab, const char *name)
       || !strcmp (name, "ignore"))
     return 0;
 
+  char *real_name = realpath (name, NULL);
+  const char *lookup_name;
+
+  if (real_name)
+    lookup_name = real_name;
+  else
+    lookup_name = name;
+
+  struct fs *fs;
   for (fs = fstab->entries; fs; fs = fs->next)
-    if (strcmp (fs->mntent.mnt_dir, name) == 0)
-      return fs;
-  return 0;
+    if (strcmp (fs->mntent.mnt_dir, lookup_name) == 0)
+      break;
+
+  free (real_name);
+  return fs;
 }
 
 /* Returns the FS entry in FSTAB with the device or mount point NAME (there
@@ -505,29 +547,7 @@ fstab_find_mount (const struct fstab *fstab, const char *name)
 inline struct fs *
 fstab_find (const struct fstab *fstab, const char *name)
 {
-  struct fs *ret;
-  char *real_name;
-
-  ret = fstab_find_device (fstab, name);
-  if (ret)
-    return ret;
-
-  ret = fstab_find_mount (fstab, name);
-  if (ret)
-    return ret;
-
-  real_name = realpath (name, NULL);
-
-  ret = fstab_find_device (fstab, real_name);
-  if (ret) {
-    free (real_name);
-    return ret;
-  }
-
-  ret = fstab_find_mount (fstab, real_name);
-  free (real_name);
-
-  return ret;
+  return fstab_find_device (fstab, name) ?: fstab_find_mount (fstab, name);
 }
 
 /* Cons FS onto the beginning of FSTAB's entry list.  */
@@ -690,6 +710,7 @@ fstab_read (struct fstab *fstab, const char *name)
     {
       while (!err && !feof (stream))
 	{
+	  errno = 0;
 	  struct mntent *mntent = getmntent (stream);
 
 	  if (! mntent)

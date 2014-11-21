@@ -292,8 +292,6 @@ main (int argc, char **argv)
 	    fs = fstab_find_device (fstab, t);
 	    if (! fs)
 	      {
-		error (0, 0, "could not find entry for: %s", t);
-
 		/* As last resort, just assume it is the mountpoint.  */
 		struct mntent m =
 		  {
@@ -307,7 +305,7 @@ main (int argc, char **argv)
 
 		err = fstab_add_mntent (fstab, &m, &fs);
 		if (err)
-		  error (2, err, "%s", t);
+		  error (2, err, "could not find entry for: %s", t);
 	      }
 	  }
 
