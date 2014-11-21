@@ -331,7 +331,7 @@ pty_io_read (struct trivfs_protid *cred,
 	}
     }
 
-  if (!(termflags & TTY_OPEN))
+  if (!(termflags & TTY_OPEN) && !qsize (outputq))
     {
       pthread_mutex_unlock (&global_lock);
       return EIO;
