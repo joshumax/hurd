@@ -44,6 +44,9 @@ ifsock-MIGSFLAGS=\
     "-DFILE_DESTRUCTOR=trivfs_end_using_protid (trivfs_protid_t)" \
     "-DIFSOCK_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
 
+# device_replyServer is used by the streamio translator.
+device_reply-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
+
 include ../Makeconf
 
 vpath elfcore.c $(top_srcdir)/exec
