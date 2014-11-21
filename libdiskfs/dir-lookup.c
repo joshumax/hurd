@@ -314,6 +314,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (register_translator)
 		{
 		  char *translator_path = strdupa (relpath);
+		  char *complete_path;
 		  if (nextname != NULL)
 		    {
 		      /* This was not the last path component.
@@ -326,9 +327,17 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		      translator_path[end - path_start] = '\0';
 		    }
 
+		  if (dircred->po->path == NULL)
+		      /* dircred is the root directory.  */
+		      complete_path = translator_path;
+		  else
+		      asprintf (&complete_path, "%s/%s", dircred->po->path, translator_path);
+
 		  error = fshelp_set_active_translator (&newpi->pi,
-							translator_path,
+							complete_path,
 							np->transbox.active);
+		  if (complete_path != translator_path)
+		    free(complete_path);
 		  if (error)
 		    goto out;
 		}
