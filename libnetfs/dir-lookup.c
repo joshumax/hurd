@@ -260,7 +260,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 		}
 	    }
 
-	  boolean_t register_translator;
+	  boolean_t register_translator = 0;
 	  if (! error)
 	    {
 	      dirport = ports_get_send_right (newpi);
