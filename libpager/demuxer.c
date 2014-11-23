@@ -47,9 +47,15 @@ struct request
 {
   struct item item;
   mig_routine_t routine;
-  mach_msg_header_t *inp;
-  mach_msg_header_t *outp;
 };
+
+/* A struct request object is immediately followed by the received
+   message.  */
+static inline mach_msg_header_t *
+request_inp (const struct request *r)
+{
+  return (mach_msg_header_t *) ((char *) r + sizeof *r);
+}
 
 /* A worker.  */
 struct worker
@@ -81,10 +87,6 @@ pager_demuxer (struct requests *requests,
 {
   error_t err = MIG_NO_REPLY;
 
-  /* The maximum size of the reply is 2048 bytes.  See the MIG source
-     for details.  */
-  const mach_msg_size_t max_size = 2048;
-
   mig_routine_t routine;
   if (! ((routine = _pager_seqnos_memory_object_server_routine (inp)) ||
 	 (routine = _pager_seqnos_notify_server_routine (inp))))
@@ -94,7 +96,7 @@ pager_demuxer (struct requests *requests,
   mach_msg_size_t padded_size = (inp->msgh_size + MASK) & ~MASK;
 #undef MASK
 
-  struct request *r = malloc (sizeof *r + padded_size + max_size);
+  struct request *r = malloc (sizeof *r + padded_size);
   if (r == NULL)
     {
       err = ENOMEM;
@@ -102,11 +104,7 @@ pager_demuxer (struct requests *requests,
     }
 
   r->routine = routine;
-  r->inp = (mach_msg_header_t *) ((char *) r + sizeof *r);
-  memcpy (r->inp, inp, inp->msgh_size);
-
-  r->outp = (mach_msg_header_t *) ((char *) r + sizeof *r + padded_size);
-  memcpy (r->outp, outp, sizeof *outp);
+  memcpy (request_inp (r), inp, inp->msgh_size);
 
   pthread_mutex_lock (&requests->lock);
 
@@ -126,6 +124,37 @@ pager_demuxer (struct requests *requests,
   return TRUE;
 }
 
+/* XXX: The libc should provide this function.  */
+static void
+mig_reply_setup (
+	const mach_msg_header_t	*in,
+	mach_msg_header_t	*out)
+{
+      static const mach_msg_type_t RetCodeType = {
+		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
+		/* msgt_size = */		32,
+		/* msgt_number = */		1,
+		/* msgt_inline = */		TRUE,
+		/* msgt_longform = */		FALSE,
+		/* msgt_deallocate = */		FALSE,
+		/* msgt_unused = */		0
+	};
+
+#define	InP	(in)
+#define	OutP	((mig_reply_header_t *) out)
+      OutP->Head.msgh_bits =
+	MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(InP->msgh_bits), 0);
+      OutP->Head.msgh_size = sizeof *OutP;
+      OutP->Head.msgh_remote_port = InP->msgh_remote_port;
+      OutP->Head.msgh_local_port = MACH_PORT_NULL;
+      OutP->Head.msgh_seqno = 0;
+      OutP->Head.msgh_id = InP->msgh_id + 100;
+      OutP->RetCodeType = RetCodeType;
+      OutP->RetCode = MIG_BAD_ID;
+#undef InP
+#undef OutP
+}
+
 /* Consumes requests from the queue.  */
 static void *
 worker_func (void *arg)
@@ -133,6 +162,7 @@ worker_func (void *arg)
   struct worker *self = (struct worker *) arg;
   struct requests *requests = self->requests;
   struct request *r = NULL;
+  mig_reply_header_t reply_msg;
 
   while (1)
     {
@@ -165,7 +195,7 @@ worker_func (void *arg)
 
       for (i = 0; i < WORKER_COUNT; i++)
 	if (requests->workers[i].tag
-	    == (unsigned long) r->inp->msgh_local_port)
+	    == (unsigned long) request_inp (r)->msgh_local_port)
 	  {
 	    /* Some other thread is working on that object.  Delegate
 	       the request to that worker.  */
@@ -174,18 +204,20 @@ worker_func (void *arg)
 	  }
 
       /* Claim responsibility for this object by setting our tag.  */
-      self->tag = (unsigned long) r->inp->msgh_local_port;
+      self->tag = (unsigned long) request_inp (r)->msgh_local_port;
 
     got_one:
       pthread_mutex_unlock (&requests->lock);
 
+      mig_reply_setup (request_inp (r), (mach_msg_header_t *) &reply_msg);
+
       /* Call the server routine.  */
-      (*r->routine) (r->inp, r->outp);
+      (*r->routine) (request_inp (r), (mach_msg_header_t *) &reply_msg);
 
       /* What follows is basically the second part of
 	 mach_msg_server_timeout.  */
-      mig_reply_header_t *request = (mig_reply_header_t *) r->inp;
-      mig_reply_header_t *reply = (mig_reply_header_t *) r->outp;
+      mig_reply_header_t *request = (mig_reply_header_t *) request_inp (r);
+      mig_reply_header_t *reply = &reply_msg;
 
       switch (reply->RetCode)
 	{
