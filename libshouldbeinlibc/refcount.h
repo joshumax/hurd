@@ -22,6 +22,12 @@
 #ifndef _HURD_REFCOUNT_H_
 #define _HURD_REFCOUNT_H_
 
+#ifdef REFCOUNT_DEFINE_EI
+#define REFCOUNT_EI
+#else
+#define REFCOUNT_EI __extern_inline
+#endif
+
 #include <assert.h>
 #include <limits.h>
 #include <stdint.h>
@@ -32,7 +38,7 @@
 typedef unsigned int refcount_t;
 
 /* Initialize REF with REFERENCES.  REFERENCES must not be zero.  */
-static inline void
+REFCOUNT_EI void
 refcount_init (refcount_t *ref, unsigned int references)
 {
   assert (references > 0 || !"references must not be zero!");
@@ -46,7 +52,7 @@ refcount_init (refcount_t *ref, unsigned int references)
    This is the unsafe version of refcount_ref.  refcount_ref also
    checks for use-after-free errors.  When in doubt, use that one
    instead.  */
-static inline unsigned int
+REFCOUNT_EI unsigned int
 refcount_unsafe_ref (refcount_t *ref)
 {
   unsigned int r;
@@ -58,7 +64,7 @@ refcount_unsafe_ref (refcount_t *ref)
 /* Increment REF.  Return the result of the operation.  This function
    uses atomic operations.  It is not required to serialize calls to
    this function.  */
-static inline unsigned int
+REFCOUNT_EI unsigned int
 refcount_ref (refcount_t *ref)
 {
   unsigned int r;
@@ -70,7 +76,7 @@ refcount_ref (refcount_t *ref)
 /* Decrement REF.  Return the result of the operation.  This function
    uses atomic operations.  It is not required to serialize calls to
    this function.  */
-static inline unsigned int
+REFCOUNT_EI unsigned int
 refcount_deref (refcount_t *ref)
 {
   unsigned int r;
@@ -81,7 +87,7 @@ refcount_deref (refcount_t *ref)
 
 /* Return REF.  This function uses atomic operations.  It is not
    required to serialize calls to this function.  */
-static inline unsigned int
+REFCOUNT_EI unsigned int
 refcount_references (refcount_t *ref)
 {
   return __atomic_load_n (ref, __ATOMIC_RELAXED);
@@ -120,7 +126,7 @@ union _references {
 
 /* Initialize REF with HARD and WEAK references.  HARD and WEAK must
    not both be zero.  */
-static inline void
+REFCOUNT_EI void
 refcounts_init (refcounts_t *ref, uint32_t hard, uint32_t weak)
 {
   assert ((hard != 0 || weak != 0) || !"references must not both be zero!");
@@ -135,7 +141,7 @@ refcounts_init (refcounts_t *ref, uint32_t hard, uint32_t weak)
    This is the unsafe version of refcounts_ref.  refcounts_ref also
    checks for use-after-free errors.  When in doubt, use that one
    instead.  */
-static inline void
+REFCOUNT_EI void
 refcounts_unsafe_ref (refcounts_t *ref, struct references *result)
 {
   const union _references op = { .references = { .hard = 1 } };
@@ -150,7 +156,7 @@ refcounts_unsafe_ref (refcounts_t *ref, struct references *result)
    the result of the operation is written there.  This function uses
    atomic operations.  It is not required to serialize calls to this
    function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_ref (refcounts_t *ref, struct references *result)
 {
   struct references r;
@@ -165,7 +171,7 @@ refcounts_ref (refcounts_t *ref, struct references *result)
    the result of the operation is written there.  This function uses
    atomic operations.  It is not required to serialize calls to this
    function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_deref (refcounts_t *ref, struct references *result)
 {
   const union _references op = { .references = { .hard = 1 } };
@@ -180,7 +186,7 @@ refcounts_deref (refcounts_t *ref, struct references *result)
    NULL, the result of the operation is written there.  This function
    uses atomic operations.  It is not required to serialize calls to
    this function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_promote (refcounts_t *ref, struct references *result)
 {
   /* To promote a weak reference, we need to atomically subtract 1
@@ -211,7 +217,7 @@ refcounts_promote (refcounts_t *ref, struct references *result)
    NULL, the result of the operation is written there.  This function
    uses atomic operations.  It is not required to serialize calls to
    this function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_demote (refcounts_t *ref, struct references *result)
 {
   /* To demote a hard reference, we need to atomically subtract 1 from
@@ -243,7 +249,7 @@ refcounts_demote (refcounts_t *ref, struct references *result)
    This is the unsafe version of refcounts_ref_weak.
    refcounts_ref_weak also checks for use-after-free errors.  When in
    doubt, use that one instead.  */
-static inline void
+REFCOUNT_EI void
 refcounts_unsafe_ref_weak (refcounts_t *ref, struct references *result)
 {
   const union _references op = { .references = { .weak = 1 } };
@@ -258,7 +264,7 @@ refcounts_unsafe_ref_weak (refcounts_t *ref, struct references *result)
    the result of the operation is written there.  This function uses
    atomic operations.  It is not required to serialize calls to this
    function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_ref_weak (refcounts_t *ref, struct references *result)
 {
   struct references r;
@@ -273,7 +279,7 @@ refcounts_ref_weak (refcounts_t *ref, struct references *result)
    the result of the operation is written there.  This function uses
    atomic operations.  It is not required to serialize calls to this
    function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_deref_weak (refcounts_t *ref, struct references *result)
 {
   const union _references op = { .references = { .weak = 1 } };
@@ -287,7 +293,7 @@ refcounts_deref_weak (refcounts_t *ref, struct references *result)
 /* Store the current reference counts of REF in RESULT.  This function
    uses atomic operations.  It is not required to serialize calls to
    this function.  */
-static inline void
+REFCOUNT_EI void
 refcounts_references (refcounts_t *ref, struct references *result)
 {
   union _references r;
@@ -298,7 +304,7 @@ refcounts_references (refcounts_t *ref, struct references *result)
 /* Return the hard reference count of REF.  This function uses atomic
    operations.  It is not required to serialize calls to this
    function.  */
-static inline uint32_t
+REFCOUNT_EI uint32_t
 refcounts_hard_references (refcounts_t *ref)
 {
   struct references result;
@@ -309,7 +315,7 @@ refcounts_hard_references (refcounts_t *ref)
 /* Return the weak reference count of REF.  This function uses atomic
    operations.  It is not required to serialize calls to this
    function.  */
-static inline uint32_t
+REFCOUNT_EI uint32_t
 refcounts_weak_references (refcounts_t *ref)
 {
   struct references result;
