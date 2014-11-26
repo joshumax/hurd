@@ -537,8 +537,11 @@ struct port_class *shutdown_notify_class;
 /* The system is going down; destroy all the extant port rights.  That
    will cause net channels and such to close promptly.  */
 error_t
-S_startup_dosync (struct port_info *inpi)
+S_startup_dosync (mach_port_t handle)
 {
+  struct port_info *inpi = ports_lookup_port (fsys->pi.bucket, handle,
+					      shutdown_notify_class);
+
   if (!inpi)
     return EOPNOTSUPP;
 
