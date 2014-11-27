@@ -41,6 +41,9 @@ do_mach_notify_dead_name (struct port_info *pi,
 {
   struct proc *p;
 
+  if (!pi)
+    return EOPNOTSUPP;
+
   if (pi->port_right == generic_port)
     {
       check_dead_execdata_notify (deadport);
@@ -50,8 +53,7 @@ do_mach_notify_dead_name (struct port_info *pi,
 
   p = (struct proc *) pi;
 
-  if (!p
-      || p->p_pi.bucket != proc_bucket
+  if (p->p_pi.bucket != proc_bucket
       || p->p_pi.class != proc_class)
     return EOPNOTSUPP;
 
