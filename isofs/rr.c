@@ -282,7 +282,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    nmbuf = realloc (nmbuf, (nmbufsize += nmlen) + 1);
 	  assert (nmbuf);
 
-	  bcopy (nm->name, nmbuf + nmbufsize - nmlen, nmlen);
+	  memcpy (nmbuf + nmbufsize - nmlen, nm->name, nmlen);
 
 	  if (nm->flags & NAME_CONTINUE)
 	    goto next_field;
@@ -375,7 +375,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 		rr->target = realloc (rr->target, targalloced *= 2);
 	      assert (rr->target);
 
-	      bcopy (cname, rr->target + targused, cnamelen);
+	      memcpy (rr->target + targused, cname, cnamelen);
 	      targused += cnamelen;
 	    }
 
@@ -391,7 +391,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	    slbuf = realloc (slbuf, slbufsize += crlen);
 	  assert (slbuf);
 
-	  bcopy (sl->data, slbuf + slbufsize - crlen, crlen);
+	  memcpy (slbuf + slbufsize - crlen, sl->data, crlen);
 
 	  if (sl->flags & 1)
 	    /* We'll finish later. */

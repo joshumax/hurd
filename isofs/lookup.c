@@ -338,7 +338,7 @@ diskfs_get_directs (struct node *dp,
 			   (ouralloc
 			    ? (allocsize *= 2)
 			    : (allocsize = vm_page_size * 2)), 1);
-	      bcopy ((void *) *data, (void *)newdata, datap - *data);
+	      memcpy ((void *) newdata, (void *) *data, datap - *data);
 
 	      if (ouralloc)
 		munmap (*data, allocsize / 2);
@@ -374,7 +374,7 @@ diskfs_get_directs (struct node *dp,
 	  userp->d_type = DT_UNKNOWN;
 	  userp->d_reclen = reclen;
 	  userp->d_namlen = namlen;
-	  bcopy (name, userp->d_name, namlen);
+	  memcpy (userp->d_name, name, namlen);
 	  userp->d_name[namlen] = '\0';
 
 	  /* And move along */

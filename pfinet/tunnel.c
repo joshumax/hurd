@@ -395,7 +395,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   skb->len = datalen;
   skb->dev = &tdev->dev;
 
-  bcopy (data, skb->data, datalen);
+  memcpy (skb->data, data, datalen);
 
   /* Drop it on the queue. */
   skb->mac.raw = skb->data;

@@ -431,7 +431,7 @@ create_paging_partition(const char *name,
 			memset (new_list, 0, n * sizeof(partition_t));
 			if (i) {
 			    old_list = all_partitions.partition_list;
-			    bcopy(old_list, new_list, i*sizeof(partition_t));
+			    memcpy (new_list, old_list, i*sizeof(partition_t));
 			}
 			all_partitions.partition_list = new_list;
 			all_partitions.n_partitions = n;
@@ -1678,7 +1678,7 @@ ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 	     * the next piece.
 	     */
 	    first_time = FALSE;
-	    bcopy((char *)raddr, (char *)addr, rsize);
+	    memcpy ((char *)addr, (char *)raddr, rsize);
 	    addr += rsize;
 	    offset += rsize;
 	    size -= rsize;

@@ -158,10 +158,10 @@ ethernet_demuxer (mach_msg_header_t *inp,
   skb->dev = dev;
 
   /* Copy the two parts of the frame into the buffer. */
-  bcopy (msg->header, skb->data, ETH_HLEN);
-  bcopy (msg->packet + sizeof (struct packet_header),
-	 skb->data + ETH_HLEN,
-	 datalen - ETH_HLEN);
+  memcpy (skb->data, msg->header, ETH_HLEN);
+  memcpy (skb->data + ETH_HLEN,
+	  msg->packet + sizeof (struct packet_header),
+	  datalen - ETH_HLEN);
 
   /* Drop it on the queue. */
   skb->protocol = eth_type_trans (skb, dev);
@@ -389,7 +389,7 @@ setup_ethernet_device (char *name, struct device **device)
     error (2, err, "%s: Cannot get hardware Ethernet address", name);
   net_address[0] = ntohl (net_address[0]);
   net_address[1] = ntohl (net_address[1]);
-  bcopy (net_address, dev->dev_addr, ETH_ALEN);
+  memcpy (dev->dev_addr, net_address, ETH_ALEN);
 
   /* That should be enough.  */
 

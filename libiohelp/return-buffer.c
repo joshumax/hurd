@@ -44,7 +44,7 @@ iohelp_return_malloced_buffer (char *buf, size_t len,
   if (! err)
     {
       if (len)
-	bcopy (buf, *rbuf, len);
+	memcpy (*rbuf, buf, len);
       *rlen = len;
     }
 

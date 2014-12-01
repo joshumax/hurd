@@ -249,10 +249,10 @@ packet_realloc (struct packet *packet, size_t new_len)
 	/* If there was an operation like vm_move, we could use that in the
 	   case where both the old and the new buffers were vm_alloced (on
 	   the assumption that creating COW pages is somewhat more costly).
-	   But there's not, and bcopy will do vm_copy where it can.  Will we
+	   But there's not, and memcpy may do vm_copy where it can.  Will we
 	   still takes faults on the new copy, even though we've deallocated
 	   the old one???  XXX */
-	bcopy (start, new_buf, end - start);
+	memcpy (new_buf, start, end - start);
 
       /* And get rid of the old buffer.  */
       if (old_len > 0)
@@ -305,7 +305,7 @@ packet_set_ports (struct packet *packet,
       packet->ports = new_ports;
       packet->ports_alloced = num_ports;
     }
-  bcopy (ports, packet->ports, sizeof (mach_port_t) * num_ports);
+  memcpy (packet->ports, ports, sizeof (mach_port_t) * num_ports);
   packet->num_ports = num_ports;
   return 0;
 }
@@ -324,7 +324,7 @@ packet_read_ports (struct packet *packet,
 	return errno;
     }
   *num_ports = packet->num_ports;
-  bcopy (packet->ports, *ports, length);
+  memcpy (*ports, packet->ports, length);
   packet->num_ports = 0;
   return 0;
 }
@@ -341,7 +341,7 @@ packet_write (struct packet *packet,
     return err;
 
   /* Add the new data.  */
-  bcopy (data, packet->buf_end, data_len);
+  memcpy (packet->buf_end, data, data_len);
   packet->buf_end += data_len;
   if (amount != NULL)
     *amount = data_len;
@@ -411,7 +411,7 @@ packet_fetch (struct packet *packet,
 	  if (*data_len < amount)
 	    *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 
-	  bcopy (start, *data, amount);
+	  memcpy (*data, start, amount);
 	  start += amount;
 
 	  if (remove && start - buf > 2 * PACKET_SIZE_LARGE)

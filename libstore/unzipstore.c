@@ -81,7 +81,7 @@ unzip_store (struct store *from, void **buf, size_t *buf_len)
 	    {
 	      if (left > maxread)
 		left = maxread;
-	      bcopy (in_buf + in_buf_offs, buf, left);
+	      memcpy (buf, in_buf + in_buf_offs, left);
 	      in_buf_offs += left;
 	      buf += left;
 	      maxread -= left;
@@ -150,7 +150,7 @@ unzip_store (struct store *from, void **buf, size_t *buf_len)
 
 	      if (out_buf_offs > 0)
 		/* Copy the old buffer into the start of the new & free it. */
-		bcopy (old_buf, new_buf, out_buf_offs);
+		memcpy (new_buf, old_buf, out_buf_offs);
 
 	      munmap (old_buf, old_buf_len);
 
@@ -160,7 +160,7 @@ unzip_store (struct store *from, void **buf, size_t *buf_len)
 	  *buf_len = new_buf_len;
 	}
 
-      bcopy (wbuf, *buf + out_buf_offs, nwrite);
+      memcpy (*buf + out_buf_offs, wbuf, nwrite);
       out_buf_offs += nwrite;
     }
 

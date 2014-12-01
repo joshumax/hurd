@@ -45,7 +45,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       assert (diskfs_shortcut_symlink);
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      bcopy (_HURD_SYMLINK, *trans, sizeof _HURD_SYMLINK);
+      memcpy (*trans, _HURD_SYMLINK, sizeof _HURD_SYMLINK);
 
       if (diskfs_read_symlink_hook)
 	err = (*diskfs_read_symlink_hook) (np,
@@ -85,7 +85,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
       if (buflen > *translen)
 	*trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      bcopy (buf, *trans, buflen);
+      memcpy (*trans, buf, buflen);
       free (buf);
       *translen = buflen;
       err = 0;
@@ -97,7 +97,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       len = sizeof _HURD_FIFO;
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      bcopy (_HURD_FIFO, *trans, sizeof _HURD_FIFO);
+      memcpy (*trans, _HURD_FIFO, sizeof _HURD_FIFO);
       *translen = len;
       err = 0;
     }
@@ -108,7 +108,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      bcopy (_HURD_IFSOCK, *trans, sizeof _HURD_IFSOCK);
+      memcpy (*trans, _HURD_IFSOCK, sizeof _HURD_IFSOCK);
       *translen = len;
       err = 0;
     }
@@ -125,7 +125,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	    {
 	      if (len > *translen)
 		*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-	      bcopy (string, *trans, len);
+	      memcpy (*trans, string, len);
 	      *translen = len;
 	      free (string);
 	    }

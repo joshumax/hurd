@@ -176,7 +176,7 @@ packet_fit (struct packet *packet, size_t amount)
 	   than 25% of the buffer size, then move the data instead of growing
 	   the buffer. */
 	{
-	  bcopy (start, buf, cur_len);
+	  memmove (buf, start, cur_len);
 	  packet->buf_start = buf;
 	  packet->buf_end = buf + cur_len;
 	}

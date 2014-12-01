@@ -336,7 +336,7 @@ dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
 {
   error_t buf_write (size_t buf_offs, size_t io_offs, size_t len)
     {
-      bcopy (buf + io_offs, dev->buf + buf_offs, len);
+      memcpy (dev->buf + buf_offs, buf + io_offs, len);
       dev->buf_dirty = 1;
       return 0;
     }
@@ -398,7 +398,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
     {
       error_t err = ensure_buf ();
       if (! err)
-	bcopy (dev->buf + buf_offs, *buf + io_offs, len);
+	memcpy (*buf + io_offs, dev->buf + buf_offs, len);
       return err;
     }
   error_t raw_read (off_t offs, size_t io_offs, size_t len, size_t *amount)
@@ -424,7 +424,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 		  if (req_buf != _req_buf)
 		    /* Copy from wherever the read put it. */
 		    {
-		      bcopy (req_buf, _req_buf, req_len);
+		      memcpy (_req_buf, req_buf, req_len);
 		      munmap (req_buf, req_len);
 		    }
 		  *amount = req_len;
