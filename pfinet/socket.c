@@ -50,7 +50,7 @@ sock_alloc (void)
     return 0;
   c = (void *) &sock[1];
   pthread_cond_init (c, NULL);
-  bzero (sock, sizeof *sock);
+  memset (sock, 0, sizeof *sock);
   sock->state = SS_UNCONNECTED;
   sock->identity = MACH_PORT_NULL;
   sock->refcnt = 1;

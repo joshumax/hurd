@@ -106,7 +106,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       if (values == 0)
 	return ENOMEM;
       state->hook = values;
-      bzero (values, sizeof *values);
+      memset (values, 0, sizeof *values);
       values->sb_block = SBLOCK_BLOCK;
       break;
 

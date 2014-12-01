@@ -265,7 +265,7 @@ file_pager_read_page (struct node *node, vm_offset_t page,
 		break;
 	      STAT_INC (file_pagein_alloced_bufs);
 	    }
-	  bzero (*buf + offs, block_size);
+	  memset (*buf + offs, 0, block_size);
 	  offs += block_size;
 	}
       else
@@ -446,7 +446,7 @@ disk_pager_read_page (vm_offset_t page, void **buf, int *writelock)
   if (read != length)
     return EIO;
   if (!err && length != vm_page_size)
-    bzero ((void *)(*buf + length), vm_page_size - length);
+    memset ((void *)(*buf + length), 0, vm_page_size - length);
 
   *writelock = 0;
 

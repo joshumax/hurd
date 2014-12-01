@@ -742,8 +742,8 @@ init_stdarrays ()
   std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
   std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
 
-  bzero (std_port_array, sizeof (mach_port_t) * INIT_PORT_MAX);
-  bzero (std_int_array, sizeof (int) * INIT_INT_MAX);
+  memset (std_port_array, 0, sizeof(mach_port_t) * INIT_PORT_MAX);
+  memset (std_int_array, 0, sizeof(int) * INIT_INT_MAX);
 
   __USEPORT (AUTH, auth_makeauth (port, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 				  0, 0, 0, 0, 0, 0, 0, 0, &nullauth));

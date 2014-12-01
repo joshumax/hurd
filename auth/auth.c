@@ -59,7 +59,7 @@ create_authhandle (struct authhandle **new)
   error_t err = ports_create_port (authhandle_portclass, auth_bucket,
 				   sizeof **new, new);
   if (! err)
-    bzero (&(*new)->euids, (void *) &(*new)[1] - (void *) &(*new)->euids);
+    memset (&(*new)->euids, 0, (void *)&(*new)[1] - (void *)&(*new)->euids);
   return err;
 }
 

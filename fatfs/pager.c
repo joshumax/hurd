@@ -152,7 +152,7 @@ root_dir_pager_read_page (vm_offset_t page, void **buf, int *writelock)
   pthread_rwlock_unlock (&diskfs_root_node->dn->alloc_lock);
 
   if (overrun)
-    bzero ((void *) *buf + vm_page_size - overrun, overrun);
+    memset ((void *)*buf + vm_page_size - overrun, 0, overrun);
 
   return err;
 }

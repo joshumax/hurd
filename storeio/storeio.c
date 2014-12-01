@@ -99,7 +99,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case ARGP_KEY_INIT:
       /* Now store_argp's parser will get to initialize its state.
 	 The default_type member is our input parameter to it.  */
-      bzero (&params->store_params, sizeof params->store_params);
+      memset (&params->store_params, 0, sizeof params->store_params);
       params->store_params.default_type = "device";
       params->store_params.store_optional = 1;
       state->child_inputs[0] = &params->store_params;
@@ -128,7 +128,7 @@ main (int argc, char *argv[])
   struct dev device;
   struct storeio_argp_params params;
 
-  bzero (&device, sizeof device);
+  memset (&device, 0, sizeof device);
   pthread_mutex_init (&device.lock, NULL);
 
   params.dev = &device;

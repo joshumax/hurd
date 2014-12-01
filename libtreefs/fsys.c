@@ -81,7 +81,7 @@ treefs_create_fsys (struct port_bucket *port_bucket,
   (*fsys)->root = NULL;
 
   (*fsys)->underlying_port = MACH_PORT_NULL;
-  bzero (&(*fsys)->underlying_stat, sizeof (struct stat));
+  memset (&(*fsys)->underlying_stat, 0, sizeof(struct stat));
 
   (*fsys)->flags = treefs_default_flags;
   (*fsys)->max_symlinks = treefs_default_max_symlinks;
@@ -109,7 +109,7 @@ void ACKACKACK()
     goto barf;
 
   /* Remember stat info for the node we're mounted on.  */
-  bzero (&(*fsys)->underlying_stat, sizeof (struct stat));
+  memset (&(*fsys)->underlying_stat, 0, sizeof (struct stat));
   file_stat (realnode, &(*fsys)->underlying_stat);
 
   /* Note that it points to *FSYS, but *FSYS's root doesn't point to it...

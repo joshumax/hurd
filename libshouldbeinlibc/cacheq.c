@@ -97,7 +97,7 @@ cacheq_set_length (struct cacheq *cq, int length)
 	  if (fh && th)
 	    bcopy (fh, th, esz); /* Copy the bits in a moved entry.  */
 	  else if (th)
-	    bzero (th, esz);	/* Zero the bits in a new entry.  */
+	    memset (th, 0, esz);	/* Zero the bits in a new entry.  */
 
 	  if (th)
 	    /* Fixup headers.  */

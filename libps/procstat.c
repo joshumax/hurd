@@ -361,7 +361,7 @@ summarize_thread_basic_info (struct procinfo *pi, ps_flags_t have)
   if (!tbi)
     return 0;
 
-  bzero (tbi, sizeof *tbi);
+  memset (tbi, 0, sizeof *tbi);
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died
@@ -458,7 +458,7 @@ summarize_thread_sched_info (struct procinfo *pi)
   if (!tsi)
     return 0;
 
-  bzero (tsi, sizeof *tsi);
+  memset (tsi, 0, sizeof *tsi);
 
   for (i = 0; i < pi->nthreads; i++)
     if (! pi->threadinfos[i].died

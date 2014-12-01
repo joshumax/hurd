@@ -228,8 +228,8 @@ main(int argc, char *argv[])
     }
   struct argp argp = {options, parse_opt, args_doc, doc};
 
-  bzero (add, sizeof add);
-  bzero (remove, sizeof remove);
+  memset (add, 0, sizeof add);
+  memset (remove, 0, sizeof remove);
 
 
   err =

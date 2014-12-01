@@ -123,7 +123,7 @@ common_parse_opt (int key, char *arg, struct argp_state *state)
       break;
 
     case ARGP_KEY_INIT:
-      bzero (fs, sizeof *fs);
+      memset (fs, 0, sizeof *fs);
       fs->frobauth = frobauth;
       fs->pids_argp_params.pids = &frobauth->pids;
       fs->pids_argp_params.num_pids = &frobauth->num_pids;

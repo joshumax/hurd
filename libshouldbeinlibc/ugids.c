@@ -30,7 +30,7 @@ make_ugids ()
 {
   struct ugids *u = malloc (sizeof (struct ugids));
   if (u)
-    bzero (u, sizeof *u);
+    memset (u, 0, sizeof *u);
   return u;
 }
 

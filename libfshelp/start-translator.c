@@ -38,7 +38,7 @@ fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
     ports[i] = MACH_PORT_NULL;
   for (i = 0; i < STDERR_FILENO + 1; i++)
     fds[i] = MACH_PORT_NULL;
-  bzero (ints, INIT_INT_MAX * sizeof (int));
+  memset (ints, 0, INIT_INT_MAX * sizeof(int));
 
   ports[INIT_PORT_CWDIR] = getcwdir ();
   ports[INIT_PORT_CRDIR] = getcrdir ();

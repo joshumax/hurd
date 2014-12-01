@@ -43,7 +43,7 @@ struct __large_struct { unsigned long buf[100]; };
 
 #define copy_to_user(to,from,n)		(memcpy ((to), (from), (n)), 0)
 #define copy_from_user(to,from,n)	(memcpy ((to), (from), (n)), 0)
-#define	clear_user(mem, len)		(bzero ((mem), (len)), 0)
+#define	clear_user(mem, len)		(memset ((mem), 0, (len)), 0)
 
 #define copy_to_user_ret(to,from,n,retval) ({ if (copy_to_user(to,from,n)) return retval; })
 

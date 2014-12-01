@@ -158,7 +158,7 @@ add_utmp_entry (char *args, unsigned args_len, int inherit_host)
   char const *host = 0;
   long addr = 0;
 
-  bzero (&utmp, sizeof (utmp));
+  memset (&utmp, 0, sizeof(utmp));
 
   gettimeofday (&utmp.ut_tv, 0);
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
@@ -683,7 +683,7 @@ main(int argc, char *argv[])
     proc_setowner (proc_server, 0, 1); /* Clear the owner.  */
 
   /* Now start constructing the exec arguments.  */
-  bzero (ints, sizeof (*ints) * INIT_INT_MAX);
+  memset (ints, 0, sizeof (*ints) * INIT_INT_MAX);
   arg = envz_get (args, args_len, "UMASK");
   ints[INIT_UMASK] = arg && *arg ? strtoul (arg, 0, 8) : umask (0);
 

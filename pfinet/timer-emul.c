@@ -152,7 +152,7 @@ mod_timer (struct timer_list *timer, unsigned long expires)
 void
 init_timer (struct timer_list *timer)
 {
-  bzero (timer, sizeof (struct timer_list));
+  memset (timer, 0, sizeof(struct timer_list));
 }
 
 void

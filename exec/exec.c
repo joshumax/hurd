@@ -47,13 +47,6 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #include <hurd/sigpreempt.h>
 
-static error_t
-safe_bzero (void *ptr, size_t size)
-{
-  return hurd_safe_memset (ptr, 0, size);
-}
-
-
 /* Load or allocate a section.  */
 static void
 load_section (void *section, struct execdata *u)
@@ -328,7 +321,9 @@ load_section (void *section, struct execdata *u)
 	      vm_deallocate (u->task, mapstart, memsz);
 	      return;
 	    }
-	  u->error = safe_bzero ((void *) (ourpage + (addr - overlap_page)),
+	  u->error = hurd_safe_memset (
+				 (void *) (ourpage + (addr - overlap_page)),
+				 0,
 				 size - (addr - overlap_page));
 	  if (! u->error && !(vm_prot & VM_PROT_WRITE))
 	    u->error = vm_protect (u->task, overlap_page, size,
@@ -887,7 +882,7 @@ do_exec (file_t file,
 	pthread_rwlock_unlock (&std_lock);
 	goto out;
       }
-    bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
+    memset (&boot->pi + 1, 0, (char *) &boot[1] - (char *) (&boot->pi + 1));
 
     /* These flags say the information we pass through to the new program
        may need to be modified.  */
@@ -960,7 +955,7 @@ do_exec (file_t file,
     /* Keep track of which ports in BOOT->portarray come from the original
        PORTARRAY, and which we replace.  */
     ports_replaced = alloca (boot->nports * sizeof *ports_replaced);
-    bzero (ports_replaced, boot->nports * sizeof *ports_replaced);
+    memset (ports_replaced, 0, boot->nports * sizeof *ports_replaced);
 
     if (portarray[INIT_PORT_BOOTSTRAP] == MACH_PORT_NULL &&
 	oldtask != MACH_PORT_NULL)
@@ -1326,7 +1321,8 @@ do_exec (file_t file,
 	/* Kill the pointers to the argument information so the cleanup
 	   of BOOT doesn't deallocate it.  It will be deallocated my MiG
 	   when we return the error.  */
-	bzero (&boot->pi + 1, (char *) &boot[1] - (char *) (&boot->pi + 1));
+	memset (&boot->pi + 1, 0,
+		(char *) &boot[1] - (char *) (&boot->pi + 1));
       else
 	/* Do this before we release the last reference.  */
 	if (boot->nports > INIT_PORT_PROC)

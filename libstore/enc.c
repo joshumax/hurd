@@ -33,7 +33,7 @@ store_enc_init (struct store_enc *enc,
 		off_t *offsets, mach_msg_type_number_t num_offsets,
 		char *data, mach_msg_type_number_t data_len)
 {
-  bzero (enc, sizeof (*enc));
+  memset (enc, 0, sizeof(*enc));
 
   enc->ports = enc->init_ports = ports;
   enc->num_ports = num_ports;
@@ -75,7 +75,7 @@ store_enc_dealloc (struct store_enc *enc)
     munmap (enc->data, enc->data_len);
 
   /* For good measure...  */
-  bzero (enc, sizeof (*enc));
+  memset (enc, 0, sizeof(*enc));
 }
 
 /* Copy out the parameters from ENC into the given variables suitably for

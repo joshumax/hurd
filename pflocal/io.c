@@ -19,7 +19,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <string.h>		/* For bzero() */
+#include <string.h>		/* For memset() */
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
@@ -319,7 +319,7 @@ S_io_stat (struct sock_user *user, struct stat *st)
 
   sock = user->sock;
 
-  bzero (st, sizeof (struct stat));
+  memset (st, 0, sizeof (struct stat));
 
   st->st_fstype = FSTYPE_SOCKET;
   st->st_mode = sock->mode;

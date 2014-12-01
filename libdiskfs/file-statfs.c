@@ -31,7 +31,7 @@ diskfs_S_file_statfs (struct protid *file,
 
   /* Start will all zeros, so the fs can skip fields for which
      it has no information to contribute.  */
-  bzero (statbuf, sizeof *statbuf);
+  memset (statbuf, 0, sizeof *statbuf);
 
   if (diskfs_readonly)
     statbuf->f_flag |= ST_RDONLY;

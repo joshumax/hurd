@@ -339,7 +339,7 @@ S_io_stat (struct sock_user *user,
   if (!user)
     return EOPNOTSUPP;
 
-  bzero (st, sizeof (struct stat));
+  memset (st, 0, sizeof(struct stat));
 
   st->st_fstype = FSTYPE_SOCKET;
   st->st_fsid = getpid ();

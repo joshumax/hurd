@@ -50,7 +50,7 @@ diskfs_S_file_getfh (struct protid *cred, char **fh, size_t *fh_len)
 
   f = (union diskfs_fhandle *) *fh;
 
-  bzero (f, sizeof *f);
+  memset (f, 0, sizeof *f);
   f->data.cache_id = node->cache_id;
   f->data.gen = node->dn_stat.st_gen;
 

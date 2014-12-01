@@ -385,7 +385,7 @@ error_t
 netfs_attempt_statfs (struct iouser *cred, struct node *node,
 		      struct statfs *st)
 {
-  bzero (st, sizeof *st);
+  memset (st, 0, sizeof *st);
   st->f_type = FSTYPE_FTP;
   st->f_fsid = getpid ();
   return 0;

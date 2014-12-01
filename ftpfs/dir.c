@@ -64,7 +64,7 @@ rehash (struct ftpfs_dir *dir, size_t new_len)
   if (! new_htable)
     return ENOMEM;
 
-  bzero (new_htable, new_len * sizeof (struct ftpfs_dir_entry *));
+  memset (new_htable, 0, new_len * sizeof(struct ftpfs_dir_entry *));
 
   for (i = 0; i < old_len; i++)
     while (old_htable[i])
@@ -124,7 +124,7 @@ lookup (struct ftpfs_dir *dir, const char *name, int add)
 	  e->node = 0;
 	  e->dir = dir;
 	  e->stat_timestamp = 0;
-	  bzero (&e->stat, sizeof e->stat);
+	  memset (&e->stat, 0, sizeof e->stat);
 	  e->symlink_target = 0;
 	  e->noent = 0;
 	  e->valid = 0;

@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <string.h>		/* For bzero() */
+#include <string.h>		/* For memset() */
 #include <assert.h>
 #include <stdlib.h>
 
@@ -58,8 +58,8 @@ pipe_create (struct pipe_class *class, struct pipe **pipe)
   new->write_limit = 16*1024;
   new->write_atomic = 16*1024;
 
-  bzero (&new->read_time, sizeof (new->read_time));
-  bzero (&new->write_time, sizeof (new->write_time));
+  memset (&new->read_time, 0, sizeof(new->read_time));
+  memset (&new->write_time, 0, sizeof(new->write_time));
 
   pthread_cond_init (&new->pending_reads, NULL);
   pthread_cond_init (&new->pending_read_selects, NULL);

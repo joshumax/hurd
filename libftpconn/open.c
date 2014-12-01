@@ -189,7 +189,7 @@ ftp_conn_open (struct ftp_conn *conn)
       close (conn->control);
       conn->control = -1;
     }
-  bzero (&conn->syshooks, sizeof conn->syshooks);
+  memset (&conn->syshooks, 0, sizeof conn->syshooks);
 
   csock = socket (PF_INET, SOCK_STREAM, 0);
   if (csock < 0)

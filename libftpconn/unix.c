@@ -305,7 +305,7 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
   if (strncasecmp (p, "total ", 6) == 0)
     return EAGAIN;
 
-  bzero (stat, sizeof *stat);
+  memset (stat, 0, sizeof *stat);
 
 #ifdef FSTYPE_FTP
   stat->st_fstype = FSTYPE_FTP;
@@ -471,7 +471,7 @@ drwxrwxrwt   7 34       archive       512 May  1 14:28 /tmp
   /* Date.  Ick.  */
   /* Formats:  MONTH DAY HH:MM and MONTH DAY  YEAR  */
 
-  bzero (&tm, sizeof tm);
+  memset (&tm, 0, sizeof tm);
 
   SKIP_WS ();
   e = p + strcspn (p, " \t\n");

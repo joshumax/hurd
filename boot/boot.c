@@ -359,7 +359,7 @@ boot_script_exec_cmd (void *hook,
   *(char **) p = 0;
   p = (void *) p + sizeof (char *);
   memcpy (p, strings, stringlen);
-  bzero (args, (vm_offset_t) arg_pos & (vm_page_size - 1));
+  memset (args, 0, (vm_offset_t)arg_pos & (vm_page_size - 1));
   vm_write (task, trunc_page ((vm_offset_t) arg_pos), (vm_address_t) args,
 	    stack_end - trunc_page ((vm_offset_t) arg_pos));
   munmap ((caddr_t) args,
@@ -1579,7 +1579,7 @@ S_io_stat (mach_port_t object,
   if (object != pseudo_console)
     return EOPNOTSUPP;
 
-  bzero (st, sizeof (struct stat));
+  memset (st, 0, sizeof(struct stat));
   st->st_blksize = 1024;
   return 0;
 }

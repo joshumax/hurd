@@ -82,7 +82,7 @@ cproc_setup(
 	 * Set up ALPHA call frame and registers.
 	 */
 	ts = &state;
-	bzero((char *) ts, sizeof(struct alpha_thread_state));
+	memset ((char *)ts, 0, sizeof(struct alpha_thread_state));
 
 	top = (integer_t *) (child->stack_base + child->stack_size);
 

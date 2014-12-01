@@ -84,10 +84,11 @@ main (int argc, char **argv)
 	case OPT_USER_PAT: mux.user_pat = arg; break;
 	case OPT_HOME_PAT: mux.home_pat = arg; break;
 	case OPT_UID_PAT: mux.uid_pat = arg; break;
-	case 'C': bzero (&mux, sizeof mux); break;
+	case 'C': memset (&mux, 0, sizeof mux); break;
 
 	case ARGP_KEY_NO_ARGS:
-	  bzero (&mux, sizeof mux); /* Default doesn't use them; be careful. */
+	  memset (&mux, 0, sizeof mux); /* Default doesn't use them;
+					   be careful. */
 	  return argz_create_sep (_HURD_SYMLINK, 0,
 				  &mux.trans_template, &mux.trans_template_len);
 	case ARGP_KEY_ARGS:

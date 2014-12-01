@@ -600,7 +600,7 @@ fstab_add_mntent (struct fstab *const fstab, const struct mntent *mntent,
       fs = malloc (sizeof (struct fs));
       if (fs)
 	{
-	  bzero (fs, sizeof (struct fs));
+	  memset (fs, 0, sizeof(struct fs));
 	  fs->mounted = fs->readonly = -1;
 	  fs->fsys = MACH_PORT_NULL;
 	  new = 1;
@@ -783,7 +783,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       /* Initialize our parsing state.  */
       if (! params)
 	return EINVAL;	/* Need at least a way to return a result.  */
-      bzero (params, sizeof *params);
+      memset (params, 0, sizeof *params);
       break;
 
     case 'A':

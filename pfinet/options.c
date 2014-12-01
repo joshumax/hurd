@@ -418,8 +418,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	req.nlh.nlmsg_seq = 0;
 	req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
 
-	bzero (&req.rtm, sizeof req.rtm);
-	bzero (&rta, sizeof rta);
+	memset (&req.rtm, 0, sizeof req.rtm);
+	memset (&rta, 0, sizeof rta);
 	req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
 	req.rtm.rtm_type = RTN_UNICAST;
 	req.rtm.rtm_protocol = RTPROT_STATIC;

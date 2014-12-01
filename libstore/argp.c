@@ -350,7 +350,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	parsed = state->hook = malloc (sizeof (struct store_parsed));
 	if (! parsed)
 	  return ENOMEM;
-	bzero (parsed, sizeof (struct store_parsed));
+	memset (parsed, 0, sizeof(struct store_parsed));
 	parsed->classes = params->classes;
 	parsed->default_type =
 	  find_class (params->default_type ?: DEFAULT_STORE_CLASS.name,

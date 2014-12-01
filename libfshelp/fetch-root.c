@@ -121,9 +121,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	    goto return_error;
 	}
 
-      bzero (ports, INIT_PORT_MAX * sizeof (mach_port_t));
-      bzero (fds, (STDERR_FILENO + 1) * sizeof (mach_port_t));
-      bzero (ints, INIT_INT_MAX * sizeof (int));
+      memset (ports, 0, INIT_PORT_MAX * sizeof (mach_port_t));
+      memset (fds, 0, (STDERR_FILENO + 1) * sizeof (mach_port_t));
+      memset (ints, 0, INIT_INT_MAX * sizeof (int));
 
       ports[INIT_PORT_CWDIR] = dotdot;
       ports[INIT_PORT_CRDIR] = reauth (getcrdir ());

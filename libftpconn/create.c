@@ -54,7 +54,7 @@ ftp_conn_create (const struct ftp_conn_params *params,
   new->actv_data_addr = 0;
   new->cwd = 0;
   new->type = 0;
-  bzero (&new->syshooks, sizeof new->syshooks);
+  memset (&new->syshooks, 0, sizeof new->syshooks);
 
   if (new->hooks && new->hooks->init)
     err = (*new->hooks->init) (new);

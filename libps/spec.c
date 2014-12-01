@@ -1036,7 +1036,7 @@ specs_add_alias (struct ps_fmt_specs *specs,
   exp->nominal_fn = alias->nominal_fn ?: src->nominal_fn;
 
   /* Now add the list-end marker.  */
-  bzero (exp + 1, sizeof (*exp));
+  memset (exp + 1, 0, sizeof(*exp));
 
   return exp;
 }

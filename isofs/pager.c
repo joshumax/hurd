@@ -75,7 +75,7 @@ pager_read_page (struct user_pager_info *upi,
     return EIO;
 
   if (overrun)
-    bzero ((void *) *buf + vm_page_size - overrun, overrun);
+    memset ((void *)*buf + vm_page_size - overrun, 0, overrun);
     
   return 0;
 }

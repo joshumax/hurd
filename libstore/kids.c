@@ -206,7 +206,7 @@ store_open_children (const char *name, int flags,
       if (! *stores)
 	return ENOMEM;
 
-      bzero (*stores, count * sizeof (struct store *));
+      memset (*stores, 0, count * sizeof(struct store *));
 
       /* Open each child store.  */
       for (p = name, k = 0; !err && p && p[1]; p = end, k++)

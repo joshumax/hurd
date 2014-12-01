@@ -115,7 +115,7 @@ idvec_insert (struct idvec *idvec, unsigned pos, uid_t id)
       if (pos < num)
 	bcopy (ids + pos, ids + pos + 1, (num - pos) * sizeof (uid_t));
       else if (pos > num)
-	bzero (ids + num, (pos - num) * sizeof (uid_t));
+	memset (ids + num, 0, (pos - num) * sizeof(uid_t));
       ids[pos] = id;
       idvec->num = new_num;
     }

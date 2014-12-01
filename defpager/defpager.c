@@ -45,8 +45,7 @@ expand_map (struct user_pager_info *p, vm_offset_t addr)
       newsize = page + vm_page_size;
       newmap = realloc (pager->map, size / vm_page_size * sizeof (off_t));
 
-      bzero (pager->map + pager->size / vm_page_size * sizeof (off_t),
-	     (newsize - pager->size) / vm_page_size * sizeof (off_t));
+      memset (pager->map + pager->size / vm_page_size * sizeof(off_t), 0, (newsize - pager->size) / vm_page_size * sizeof(off_t));
       pager->size = newsize;
       pager->map = newmap;
     }
