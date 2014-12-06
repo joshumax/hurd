@@ -273,7 +273,7 @@ error_t netfs_get_source (struct protid *cred, char *source, size_t source_len)
 {
   if (! cred)
     return EOPNOTSUPP;
-  snprintf(source, source_len, "proc");
+  snprintf (source, source_len, "proc");
   return 0;
 }
 
