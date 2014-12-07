@@ -88,8 +88,8 @@ pager_demuxer (struct requests *requests,
   error_t err = MIG_NO_REPLY;
 
   mig_routine_t routine;
-  if (! ((routine = _pager_seqnos_memory_object_server_routine (inp)) ||
-	 (routine = _pager_seqnos_notify_server_routine (inp))))
+  if (! ((routine = _pager_memory_object_server_routine (inp)) ||
+	 (routine = _pager_notify_server_routine (inp))))
     return FALSE;
 
 #define MASK	(8u - 1u)

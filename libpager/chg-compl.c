@@ -22,8 +22,7 @@
    when a memory_object_change_attributes call has completed.  Read this
    in combination with pager-attr.c.  */
 kern_return_t
-_pager_seqnos_memory_object_change_completed (struct pager *p,
-				       mach_port_seqno_t seq,
+_pager_S_memory_object_change_completed (struct pager *p,
 				       boolean_t maycache,
 				       memory_object_copy_strategy_t strat)
 {

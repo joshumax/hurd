@@ -31,7 +31,7 @@ HURDLIBS= ports
 LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) memory_objectServer.o notifyServer.o
 
-MIGSFLAGS = -DSEQNOS -imacros $(srcdir)/mig-mutate.h
+MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 MIGCOMSFLAGS = -prefix _pager_
 
 include ../Makeconf

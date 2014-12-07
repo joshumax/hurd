@@ -22,8 +22,7 @@
 /* Implement the object termination call from the kernel as described
    in <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_terminate (struct pager *p,
-				       mach_port_seqno_t seqno,
+_pager_S_memory_object_terminate (struct pager *p,
 				       mach_port_t control,
 				       mach_port_t name)
 {

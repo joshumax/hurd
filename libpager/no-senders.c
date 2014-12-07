@@ -21,8 +21,7 @@
 #include "notify_S.h"
 
 error_t
-_pager_do_seqnos_mach_notify_no_senders (struct port_info *pi,
-					 mach_port_seqno_t seqno,
+_pager_do_mach_notify_no_senders (struct port_info *pi,
 					 mach_port_mscount_t mscount)
 {
   if (!pi ||

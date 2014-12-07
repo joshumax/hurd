@@ -23,8 +23,7 @@
 #include <errno.h>
 
 error_t
-_pager_do_seqnos_mach_notify_port_deleted (struct port_info *pi,
-					   mach_port_seqno_t seqno,
+_pager_do_mach_notify_port_deleted (struct port_info *pi,
 					   mach_port_t name
 					   __attribute__ ((unused)))
 {
@@ -32,8 +31,7 @@ _pager_do_seqnos_mach_notify_port_deleted (struct port_info *pi,
 }
 
 error_t
-_pager_do_seqnos_mach_notify_msg_accepted (struct port_info *pi,
-					   mach_port_seqno_t seqno,
+_pager_do_mach_notify_msg_accepted (struct port_info *pi,
 					   mach_port_t name
 					     __attribute__ ((unused)))
 {
@@ -41,8 +39,7 @@ _pager_do_seqnos_mach_notify_msg_accepted (struct port_info *pi,
 }
 
 error_t
-_pager_do_seqnos_mach_notify_port_destroyed (struct port_info *pi,
-					     mach_port_seqno_t seqno,
+_pager_do_mach_notify_port_destroyed (struct port_info *pi,
 					     mach_port_t name
 					       __attribute__ ((unused)))
 {
@@ -50,15 +47,13 @@ _pager_do_seqnos_mach_notify_port_destroyed (struct port_info *pi,
 }
 
 error_t
-_pager_do_seqnos_mach_notify_send_once (struct port_info *pi,
-					mach_port_seqno_t seqno)
+_pager_do_mach_notify_send_once (struct port_info *pi)
 {
   return 0;
 }
 
 error_t
-_pager_do_seqnos_mach_notify_dead_name (struct port_info *pi,
-					mach_port_seqno_t seqno,
+_pager_do_mach_notify_dead_name (struct port_info *pi,
 					mach_port_t name
 					  __attribute__ ((unused)))
 {

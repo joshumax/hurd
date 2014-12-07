@@ -21,13 +21,12 @@
 #include <string.h>
 #include <assert.h>
 
-/* Worker function used by _pager_seqnos_memory_object_data_return
-   and _pager_seqnos_memory_object_data_initialize.  All args are
-   as for _pager_seqnos_memory_object_data_return; the additional
+/* Worker function used by _pager_S_memory_object_data_return
+   and _pager_S_memory_object_data_initialize.  All args are
+   as for _pager_S_memory_object_data_return; the additional
    INITIALIZING arg identifies which function is calling us. */
 kern_return_t
 _pager_do_write_request (struct pager *p,
-			 mach_port_seqno_t seqno,
 			 mach_port_t control,
 			 vm_offset_t offset,
 			 pointer_t data,
@@ -113,6 +112,7 @@ _pager_do_write_request (struct pager *p,
      than we really have to require (because *all* future writes on
      this object are going to wait for seqno while we wait for the
      previous write), but the case is relatively infrequent.  */
+  /* XXX: Is this still needed?  */
  retry:
   for (i = 0; i < npages; i++)
     if (pm_entries[i] & PM_PAGINGOUT)
@@ -254,8 +254,7 @@ _pager_do_write_request (struct pager *p,
 
 /* Implement pageout call back as described by <mach/memory_object.defs>. */
 kern_return_t
-_pager_seqnos_memory_object_data_return (struct pager *p,
-					 mach_port_seqno_t seqno,
+_pager_S_memory_object_data_return (struct pager *p,
 					 mach_port_t control,
 					 vm_offset_t offset,
 					 pointer_t data,
@@ -263,6 +262,6 @@ _pager_seqnos_memory_object_data_return (struct pager *p,
 					 int dirty,
 					 int kcopy)
 {
-  return _pager_do_write_request (p, seqno, control, offset, data,
+  return _pager_do_write_request (p, control, offset, data,
 				  length, dirty, kcopy, 0);
 }

@@ -21,8 +21,7 @@
 #include <stdio.h>
 
 kern_return_t
-_pager_seqnos_memory_object_copy (struct pager *p,
-			   mach_port_seqno_t seq,
+_pager_S_memory_object_copy (struct pager *p,
 			   memory_object_control_t obj_ctl,
 			   vm_offset_t off,
 			   vm_size_t len,
@@ -33,8 +32,7 @@ _pager_seqnos_memory_object_copy (struct pager *p,
 }
 
 kern_return_t
-_pager_seqnos_memory_object_data_write (struct pager *p,
-				 mach_port_seqno_t seq,
+_pager_S_memory_object_data_write (struct pager *p,
 				 mach_port_t ctl,
 				 vm_offset_t off,
 				 pointer_t data,
@@ -45,8 +43,7 @@ _pager_seqnos_memory_object_data_write (struct pager *p,
 }
 
 kern_return_t
-_pager_seqnos_memory_object_supply_completed (struct pager *p,
-				       mach_port_seqno_t seq,
+_pager_S_memory_object_supply_completed (struct pager *p,
 				       mach_port_t ctl,
 				       vm_offset_t off,
 				       vm_size_t len,

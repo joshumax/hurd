@@ -23,8 +23,7 @@
    when a memory_object_lock_request call has completed.  Read this
    in combination with lock-object.c.  */
 kern_return_t
-_pager_seqnos_memory_object_lock_completed (struct pager *p,
-					    mach_port_seqno_t seqno,
+_pager_S_memory_object_lock_completed (struct pager *p,
 					    mach_port_t control,
 					    vm_offset_t offset,
 					    vm_size_t length)
