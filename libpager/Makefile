@@ -20,16 +20,16 @@ makemode := library
 libname = libpager
 SRCS = data-request.c data-return.c data-unlock.c pager-port.c \
 	inhibit-term.c lock-completed.c lock-object.c mark-error.c \
-	no-senders.c object-init.c object-terminate.c pagemap.c \
+	object-init.c object-terminate.c pagemap.c \
 	pager-create.c pager-flush.c pager-shutdown.c pager-sync.c \
 	stubs.c demuxer.c chg-compl.c pager-attr.c clean.c \
-	dropweak.c notify-stubs.c get-upi.c pager-memcpy.c pager-return.c \
+	dropweak.c get-upi.c pager-memcpy.c pager-return.c \
 	offer-page.c
 installhdrs = pager.h
 
 HURDLIBS= ports
 LDLIBS += -lpthread
-OBJS = $(SRCS:.c=.o) memory_objectServer.o notifyServer.o
+OBJS = $(SRCS:.c=.o) memory_objectServer.o
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 MIGCOMSFLAGS = -prefix _pager_
