@@ -39,7 +39,7 @@
 #define UF_IMMUTABLE 0
 #endif
 
-#define	INOHSZ	512
+#define	INOHSZ	8192
 #if	((INOHSZ&(INOHSZ-1)) == 0)
 #define	INOHASH(ino)	((ino)&(INOHSZ-1))
 #else
