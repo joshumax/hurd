@@ -103,6 +103,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  return err;
 	}
     }
+  nn->faked = 0;
 
   if (!locked)
     pthread_mutex_lock (&idport_ihash_lock);
@@ -679,13 +680,22 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 		      mode_t mode, struct node **np)
 {
   file_t newfile;
+  mode_t real_mode = real_from_fake_mode (mode);
   error_t err = dir_mkfile (netfs_node_netnode (dir)->file, O_RDWR|O_EXEC,
-			    real_from_fake_mode (mode), &newfile);
+			    real_mode, &newfile);
   pthread_mutex_unlock (&dir->lock);
   if (err == 0)
     err = new_node (newfile, MACH_PORT_NULL, 0, O_RDWR|O_EXEC, np);
   if (err == 0)
-    pthread_mutex_unlock (&(*np)->lock);
+    {
+      pthread_mutex_unlock (&(*np)->lock);
+      set_default_attributes (*np);
+      if (real_mode != mode)
+	{
+	  set_faked_attribute (*np, FAKE_MODE);
+	  (*np)->nn_stat.st_mode = mode;
+	}
+    }
   return err;
 }
 
