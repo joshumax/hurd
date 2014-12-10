@@ -103,7 +103,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 	  return err;
 	}
     }
-  nn->faked = 0;
+  nn->faked = FAKE_DEFAULT;
 
   if (!locked)
     pthread_mutex_lock (&idport_ihash_lock);
