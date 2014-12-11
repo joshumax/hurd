@@ -35,4 +35,4 @@ LDFLAGS += -static
 
 include ../Makeconf
 
-MIGSFLAGS = -DSEQNOS -imacros $(srcdir)/mig-mutate.h
+MIGSFLAGS = -DSEQNOS -imacros $(srcdir)/mig-mutate.h -DHURD_DEFAULT_PAYLOAD_TO_PORT=1

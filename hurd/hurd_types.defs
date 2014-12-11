@@ -42,7 +42,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #undef HURD_DEFAULT_PAYLOAD_TO_PORT
 #endif
 #else
-   import <hurd/ports.h>;
+/* Ideally we would include this here, to make sure ports_payload_get_name gets
+   declared, but this leads to an inclusion loop via hurd/signal.h
+  import <hurd/ports.h>;
+ */
 #define HURD_DEFAULT_PAYLOAD_TO_PORT ports_payload_get_name
 #endif
 

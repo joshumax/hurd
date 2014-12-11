@@ -37,6 +37,8 @@ include ../Makeconf
 #/usr/local/bin/uxboot: uxboot
 #	cp $< $@
 
+MIGSFLAGS = -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+
 all: boot # uxboot
 
 uxboot.o: boot.c
