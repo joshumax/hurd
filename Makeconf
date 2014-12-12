@@ -546,6 +546,7 @@ MIGCOMFLAGS := -subrprefix __
 
 %.sdefsi %.sdefs.d: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ \
+	  -DHURD_SERVER=1 \
 	  -MD -MF $*.sdefs.d.new \
 	  $< -o $*.sdefsi
 	sed -e 's/[^:]*:/$*Server.c $(mig-sheader-prefix)$*_S.h:/' \
