@@ -48,7 +48,7 @@ struct port_info
   struct port_class *class;
   refcounts_t refcounts;
   mach_port_mscount_t mscount;
-  mach_msg_seqno_t cancel_threshold;
+  mach_msg_seqno_t cancel_threshold;	/* needs atomic operations */
   int flags;
   mach_port_t port_right;
   struct rpc_info *current_rpcs;

@@ -178,10 +178,12 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	    }
 	  else
 	    {
-	      pthread_mutex_lock (&_ports_lock);
-	      if (inp->msgh_seqno < pi->cancel_threshold)
+	      mach_port_seqno_t cancel_threshold =
+		__atomic_load_n (&pi->cancel_threshold, __ATOMIC_SEQ_CST);
+
+	      if (inp->msgh_seqno < cancel_threshold)
 		hurd_thread_cancel (link.thread);
-	      pthread_mutex_unlock (&_ports_lock);
+
 	      status = demuxer (inp, outheadp);
 	      ports_end_rpc (pi, &link);
 	    }
