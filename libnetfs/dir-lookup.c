@@ -310,7 +310,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 		      translator_path[end - filename_start] = '\0';
 		    }
 
-		  if (diruser->po->path == NULL)
+		  if (diruser->po->path == NULL || !strcmp (diruser->po->path,"."))
 		      /* diruser is the root directory.  */
 		      complete_path = translator_path;
 		  else
@@ -444,7 +444,7 @@ netfs_S_dir_lookup (struct protid *diruser,
     }
 
   free (newpi->po->path);
-  if (diruser->po->path == NULL)
+  if (diruser->po->path == NULL || !strcmp (diruser->po->path,"."))
     {
       /* diruser is the root directory.  */
       newpi->po->path = relpath;

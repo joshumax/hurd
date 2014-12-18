@@ -327,7 +327,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		      translator_path[end - path_start] = '\0';
 		    }
 
-		  if (dircred->po->path == NULL)
+		  if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
 		      /* dircred is the root directory.  */
 		      complete_path = translator_path;
 		  else
@@ -528,7 +528,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (! error)
     {
       free (newpi->po->path);
-      if (dircred->po->path == NULL)
+      if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
 	{
 	  /* dircred is the root directory.  */
 	  newpi->po->path = relpath;
