@@ -161,8 +161,6 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
 			   vm_size_t bufsize, int *amt)
 {
   char *contents;
-  char *first_content; // Keep pointer to the dir content's buffer to free it
-                       // at the end of the procedure
   ssize_t contents_len;
   error_t err;
 
@@ -172,7 +170,6 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
   err = procfs_get_contents (dir, &contents, &contents_len);
   if (err)
     return err;
-  first_content = contents;
 
   /* We depend on the fact that CONTENTS is terminated. */
   assert (contents_len == 0 || contents[contents_len - 1] == '\0');
@@ -191,10 +188,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
     {
       char *n = mmap (0, *datacnt, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, 0, 0);
       if (n == MAP_FAILED)
-        {
-	  free (first_content);
-	  return ENOMEM;
-	}
+	return ENOMEM;
 
       *data = n;
     }
@@ -202,7 +196,6 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
   /* Do the actual conversion. */
   *amt = putentries (contents, contents_len, nentries, *data, datacnt);
 
-  free (first_content);
   return 0;
 }
 
