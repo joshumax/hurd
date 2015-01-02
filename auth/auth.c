@@ -299,7 +299,7 @@ S_auth_user_authenticate (struct authhandle *userauth,
   if (! userauth)
     return EOPNOTSUPP;
 
-  if (rendezvous == MACH_PORT_NULL || rendezvous == MACH_PORT_DEAD)
+  if (! MACH_PORT_VALID (rendezvous))
     return EINVAL;
 
   u.user = userauth;
@@ -380,7 +380,7 @@ S_auth_server_authenticate (struct authhandle *serverauth,
   if (! serverauth)
     return EOPNOTSUPP;
 
-  if (rendezvous == MACH_PORT_NULL || rendezvous == MACH_PORT_DEAD)
+  if (! MACH_PORT_VALID (rendezvous))
     return EINVAL;
 
   pthread_mutex_lock (&pending_lock);
