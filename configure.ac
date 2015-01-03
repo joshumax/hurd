@@ -72,8 +72,8 @@ esac
 enable_static_progs=`echo "$enable_static_progs" | sed 's/[[, ]][[, ]]*/ /g'`
 AC_SUBST(enable_static_progs)
 
-[# Don't needlessly overwrite files that whose contents haven't changed.  This
-# helps for avoinding unneccessary recompilation cycles when keeping
+[# Don't needlessly overwrite files whose contents haven't changed.
+# This helps avoiding unnecessary recompilation cycles when keeping
 # cross-compilation toolchains up-to-date.  Thus, unconditionally use the
 # supplied `install-sh', as the GNU Coreutils one doesn't provide this
 # functionality yet (TODO: change that).  TODO: $ac_abs_top_builddir et al. are
