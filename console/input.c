@@ -82,7 +82,7 @@ void input_destroy (input_t input)
 
 /* Enter DATALEN characters from the buffer DATA into the input queue
    INPUT.  The DATA must be supplied in UTF-8 encoding (XXX UCS-4
-   would be nice, too, but it requires knowledge of endianess).  The
+   would be nice, too, but it requires knowledge of endianness).  The
    function returns the amount of bytes written (might be smaller than
    DATALEN) or -1 and the error number in errno.  If NONBLOCK is not
    zero, return with -1 and set errno to EWOULDBLOCK if operation
