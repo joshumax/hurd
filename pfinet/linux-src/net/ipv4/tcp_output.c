@@ -922,6 +922,7 @@ void tcp_connect(struct sock *sk, struct sk_buff *buff, int mtu)
 	tp->rcv_nxt = 0;
 
 	sk->err = 0;
+	sk->done = 0;
 	
 	/* We'll fix this up when we get a response from the other end.
 	 * See tcp_input.c:tcp_rcv_state_process case TCP_SYN_SENT.

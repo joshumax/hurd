@@ -1129,6 +1129,9 @@ static void tcp_fin(struct sk_buff *skb, struct sock *sk, struct tcphdr *th)
 
 	tcp_send_ack(sk);
 
+	sk->shutdown |= RCV_SHUTDOWN;
+	sk->done = 1;
+
 	if (!sk->dead) {
 		sk->state_change(sk);
 		sock_wake_async(sk->socket, 1);

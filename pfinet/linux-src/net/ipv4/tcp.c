@@ -1059,13 +1059,11 @@ static int tcp_recv_urg(struct sock * sk, int nonblock,
 	if (sk->err)
 		return sock_error(sk);
 
-	if (sk->done)
+	if (sk->state == TCP_CLOSE && !sk->done)
 		return -ENOTCONN;
 
-	if (sk->state == TCP_CLOSE || (sk->shutdown & RCV_SHUTDOWN)) {
-		sk->done = 1;
+	if (sk->state == TCP_CLOSE || (sk->shutdown & RCV_SHUTDOWN))
 		return 0;
-	}
 
 	lock_sock(sk);
 	if (tp->urg_data & URG_VALID) {
@@ -1177,9 +1175,6 @@ int tcp_recvmsg(struct sock *sk, struct msghdr *msg,
 	int err = 0;
 	int target = 1;		/* Read at least this many bytes */
 
-	if (sk->err)
-		return sock_error(sk);
-
 	if (sk->state == TCP_LISTEN)
 		return -ENOTCONN;
 
@@ -1261,36 +1256,36 @@ int tcp_recvmsg(struct sock *sk, struct msghdr *msg,
 		if (copied >= target)
 			break;
 
-		/*
-		   These three lines and clause if (sk->state == TCP_CLOSE)
-		   are unlikely to be correct, if target > 1.
-		   I DO NOT FIX IT, because I have no idea, what
-		   POSIX prescribes to make here. Probably, it really
-		   wants to lose data 8), if not all target is received.
-		                                                 --ANK
-		 */
-		if (sk->err && !(flags&MSG_PEEK)) {
-			copied = sock_error(sk);
-			break;
-		}
+		if (copied) {
+			if (sk->err ||
+			    sk->state == TCP_CLOSE ||
+			    (sk->shutdown & RCV_SHUTDOWN) ||
+			    nonblock)
+				break;
+		} else {
+			if (sk->done)
+				break;
 
-		if (sk->shutdown & RCV_SHUTDOWN) {
-			sk->done = 1;
-			break;
-		}
-
-		if (sk->state == TCP_CLOSE) {
-			if (!sk->done) {
-				sk->done = 1;
+			if (sk->err) {
+				copied = sock_error(sk);
 				break;
 			}
-			copied = -ENOTCONN;
-			break;
-		}
 
-		if (nonblock) {
-			copied = -EAGAIN;
-			break;
+			if (sk->shutdown & RCV_SHUTDOWN)
+				break;
+
+			if (sk->state == TCP_CLOSE) {
+				if (!sk->done) {
+					copied = -ENOTCONN;
+					break;
+				}
+				break;
+			}
+
+			if (nonblock) {
+				copied = -EAGAIN;
+				break;
+			}
 		}
 
 		cleanup_rbuf(sk, copied);
