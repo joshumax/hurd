@@ -214,7 +214,7 @@ xkb_input_key (int key)
     }
   else
     {
-      /* Immediatly report the keypress.  */
+      /* Immediately report the keypress.  */
       xkb_handle_key (keyc);
 
       /* Check if this repeat is allowed for this keycode.  */

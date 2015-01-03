@@ -413,7 +413,7 @@ error_t ksrm_add (symbol ks, int rmod);
 void ksrm_apply (void);
 
 /* Set the current rmod for the key with keyname KEYNAME.  */
-/* XXX: It shouldn't be applied immediatly because the key can be
+/* XXX: It shouldn't be applied immediately because the key can be
    replaced.  */
 void set_rmod_keycode (char *keyname, int rmod);
 

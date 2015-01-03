@@ -154,7 +154,7 @@ SwitchScreen (screen += 1) --> Switch to the console right of the
 
 --
 More functions will be added. One to send keysyms to other VCs (can be
-usefull to control a mixer, ogg vorbis player, etc.). It should also
+useful to control a mixer, ogg vorbis player, etc.). It should also
 be capable of inserting often used strings like "apfelkorn" :).
 
 A function to call the configuration dialog should be added.

@@ -306,7 +306,7 @@ types:
 | flags "xkb_types" STR '{' typessect '}' ';'
 ;
 
-/* A list of virtual modifier declarations (see vmods_def), seperated 
+/* A list of virtual modifier declarations (see vmods_def), separated
    by commas.  */
 vmodslist:
   IDENTIFIER { vmod_add ($1); }
@@ -340,7 +340,7 @@ rmod:
 | "mod5"	{ $$ = RMOD_MOD5; }
 ;
 
-/* One of more modifiers, seperated by '+'. A modmap_t will return all real
+/* One of more modifiers, separated by '+'. A modmap_t will return all real
    and virtual modifiers specified.  */
 mods:
   mods '+' rmod { $$.rmods = $1.rmods | $3; }
@@ -1317,7 +1317,7 @@ include_section (char *incl, int sectionsymbol, char *dirname,
   return 0;
 }
 
-/* Include multiple file sections, seperated by '+'. INCL is the
+/* Include multiple file sections, separated by '+'. INCL is the
    include string. SECTIONSYMBOL is the token that marks the beginning
    of the section. DIRNAME is the name of the directory from where the
    includefiles must be loaded. NEW_MM is the mergemode that should be

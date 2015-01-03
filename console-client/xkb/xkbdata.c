@@ -14,8 +14,8 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.  */
 
-/* Generate a key for the string S.  XXX: The are many more effecient
-   algoritms, this one should be replaced by one of those.  */
+/* Generate a key for the string S.  XXX: There are many more efficient
+   algorithms, this one should be replaced by one of those.  */
 
 #include <stdlib.h>
 #include <string.h>
@@ -442,7 +442,7 @@ ksrm_apply (void)
 /* Keycode to realmodifier mapping.  */
 
 /* Set the current rmod for the key with keyname KEYNAME.  */
-/* XXX: It shouldn't be applied immediatly because the key can be
+/* XXX: It shouldn't be applied immediately because the key can be
    replaced.  */
 void
 set_rmod_keycode (char *keyname, int rmod)

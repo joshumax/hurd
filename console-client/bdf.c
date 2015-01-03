@@ -781,7 +781,7 @@ expand_glyphs (bdf_font_t font, int count)
 }
 
 
-/* Add a new glyph with the specified paramters to the font FONT.  If
+/* Add a new glyph with the specified parameters to the font FONT.  If
    encoding is -1, internal_encoding specifies the internal
    encoding.  All other parameters are mandatory.  */
 bdf_error_t
