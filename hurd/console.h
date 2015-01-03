@@ -90,7 +90,7 @@ struct cons_display
 {
 #define CONS_MAGIC 0x48555244	/* Hex for "HURD".  */
   uint32_t magic;		/* CONS_MAGIC, use to detect
-				   endianess.  */
+				   endianness.  */
 #define CONS_VERSION_MAJ 0x0
 #define CONS_VERSION_MAJ_SHIFT 16
 #define CONS_VERSION_AGE 0x0

@@ -32,7 +32,7 @@
    Reserved
 
      The reserved region consists of the boot sector, and with it the
-     BIOS Paramter Block, which contains all necessary data about the
+     BIOS Parameter Block, which contains all necessary data about the
      filesystem like sector size, number of clusters etc. It also
      holds the filesystem info block.
 

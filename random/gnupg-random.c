@@ -592,7 +592,7 @@ read_pool( byte *buffer, size_t length, int level )
 	mix_pool(rndpool); rndstats.mixrnd++;
 	mix_pool(keypool); rndstats.mixkey++;
 	/* read the required data
-	 * we use a readpoiter to read from a different postion each
+	 * we use a readpoiter to read from a different position each
 	 * time */
 #ifdef __HURD__
 	if (level == 2 && length > pool_balance)
@@ -722,7 +722,7 @@ fast_random_poll()
     }
     #endif
   #endif
-    /* time and clock are availabe on all systems - so
+    /* time and clock are available on all systems - so
      * we better do it just in case one of the above functions
      * didn't work */
     {	time_t x = time(NULL);

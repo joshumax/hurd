@@ -354,7 +354,7 @@ deliver (int msg, char *msg_name, char *rcpt, int flags, struct params *params)
 	  fd = open (mbox, O_WRONLY|O_APPEND|O_CREAT|O_EXCL|O_NOLINK|O_EXLOCK,
 		     S_IRUSR|S_IWUSR);
 	  if (fd >= 0)
-	    /* Made a new mailbox!  Set the owner and group appropiately.  */
+	    /* Made a new mailbox!  Set the owner and group appropriately.  */
 	    {
 	      if (fchown (fd, pw->pw_uid, pw->pw_gid) < 0)
 		{

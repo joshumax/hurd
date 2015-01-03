@@ -92,7 +92,7 @@ wire_all_memory()
 	if (priv_host_port == MACH_PORT_NULL)
 	    return;
 
-	/* iterate thru all regions, wiring */
+	/* iterate through all regions, wiring */
 	address = 0;
 	while (
 	    (kr = vm_region(this_task, &address,

@@ -259,7 +259,7 @@ routine io_eofnotify (
 	io_object: io_t RPTLAST);
 
 /* If the user wants to write past the prenotify size, a call needs to
-   be made to io_prenotify giving the paramters of the write.  Upon
+   be made to io_prenotify giving the parameters of the write.  Upon
    return from io_prenotify, there is no guarantee that the prenotify
    size will now permit the write, so it should be re-checked.  The
    routine should be called while the user has the conch.  The user
