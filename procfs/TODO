@@ -12,7 +12,7 @@ Improvements and new features
   keeps the inner interface simple and preserves the read/readdir semantics
   (performance is probably not critical for a proc filesystem.)
   One way would be to add an (optional) "needed_length" field to
-  procfs_node_ops, and arrange to pass a sufficent buffer in (*contents,
+  procfs_node_ops, and arrange to pass a sufficient buffer in (*contents,
   *contents_len) when get_contents is called. Then the user-provided buffer
   might be used directly under some circumstances.
 

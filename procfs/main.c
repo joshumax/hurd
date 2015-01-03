@@ -154,7 +154,7 @@ struct argp_option common_options[] = {
       "purposes.  If PID is omitted, \"self\" will point to init.  "
       "(default: no self link)" },
   { "kernel-process", 'k', "PID", 0,
-      "Process identifier for the kernel, used to retreive its command "
+      "Process identifier for the kernel, used to retrieve its command "
       "line, as well as the global up and idle times. "
       "(default: " STR (OPT_KERNEL_PID) ")" },
   { "compatible", 'c', NULL, 0,

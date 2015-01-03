@@ -81,7 +81,7 @@ void procfs_node_chtype (struct node *np, mode_t type);
 /* Interface for the libnetfs side. */
 
 /* Get the inode number which will be given to a child of NP named FILENAME.
-   This allows us to retreive them for readdir() without creating the
+   This allows us to retrieve them for readdir() without creating the
    corresponding child nodes.  */
 ino64_t procfs_make_ino (struct node *np, const char *filename);
 

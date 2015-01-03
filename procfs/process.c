@@ -33,7 +33,7 @@
    contain.  A libps proc_stat structure is created for each process
    node, and is used by the individual file content generators as a
    source of information.  Each possible file (cmdline, environ, ...) is
-   decribed in a process_file_desc structure, which specifies which bits
+   described in a process_file_desc structure, which specifies which bits
    of information (ie. libps flags) it needs, and what function should
    be used to generate the file's contents.
 
@@ -235,7 +235,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   return asprintf (contents,
       "%d (%.*s) %c "		/* pid, command, state */
       "%d %d %d "		/* ppid, pgid, session */
-      "%d %d "			/* controling tty stuff */
+      "%d %d "			/* controlling tty stuff */
       "%u "			/* flags, as defined by <linux/sched.h> */
       "%lu %lu %lu %lu "	/* page fault counts */
       "%lu %lu %ld %ld "	/* user/sys times, in sysconf(_SC_CLK_TCK) */
