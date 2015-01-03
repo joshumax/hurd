@@ -50,6 +50,11 @@ adjust_priority (unsigned int totalthreads)
   thread_switch (MACH_PORT_NULL, SWITCH_OPTION_DEPRESS, t);
 
   err = get_privileged_ports (&host_priv, NULL);
+  if (err == MACH_SEND_INVALID_DEST)
+    /* This is returned if we neither have the privileged host control
+       port cached nor have a proc server to talk to.  Give up.  */
+    return;
+
   if (err)
     goto error_host_priv;
 
