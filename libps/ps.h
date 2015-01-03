@@ -824,7 +824,7 @@ void ps_fmt_free (struct ps_fmt *fmt);
 error_t ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy);
 
 /* Write an appropriate header line for FMT, containing the titles of all its
-   fields appropiately aligned with where the values would be printed, to
+   fields appropriately aligned with where the values would be printed, to
    STREAM (without a trailing newline).  If count is non-NULL, the total
    number number of characters output is added to the integer it points to.
    If any fatal error occurs, the error code is returned, otherwise 0.  */

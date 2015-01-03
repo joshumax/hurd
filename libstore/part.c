@@ -33,7 +33,7 @@
 
 /* Initialize a PedDevice using SOURCE.  The SOURCE will NOT be destroyed;
    the caller created it, it is the caller's responsilbility to free it
-   after it calls ped_device_destory.  SOURCE is not registered in Parted's
+   after it calls ped_device_destroy.  SOURCE is not registered in Parted's
    list of devices.  */
 PedDevice* ped_device_new_from_store (struct store *source);
 

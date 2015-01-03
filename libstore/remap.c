@@ -320,7 +320,7 @@ store_remap (struct store *source,
     /* Use the class-specific remaping function.  */
     return (* source->class->remap) (source, runs, num_runs, store);
   else
-    /* Just replace SOURCE's runs-list by an appropiately translated RUNS. */
+    /* Just replace SOURCE's runs-list by an appropriately translated RUNS. */
     {
       struct store_run *xruns = 0;
       size_t num_xruns = 0;

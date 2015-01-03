@@ -58,7 +58,7 @@ ugids_add_gid (struct ugids *ugids, gid_t gid, int avail)
 }
 
 /* Add UID to UGIDS, plus any gids to which that user belongs.  If AVAIL is
-   true, the are added to the avail gids instead of the effective ones.  */
+   true, they are added to the avail gids instead of the effective ones.  */
 error_t
 ugids_add_user (struct ugids *ugids, uid_t uid, int avail)
 {

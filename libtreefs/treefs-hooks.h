@@ -264,7 +264,7 @@ DNH(dir_init, error_t)
 /* If NODE is a symlink, copies the contents into BUF, which should have at
    least *LEN bytes available, and returns 0; if the symlink is too big,
    E2BIG is returned.  Either way, the actual length of the symlink is
-   returned in *LEN (so if it's too big, you can allocate an appropiately
+   returned in *LEN (so if it's too big, you can allocate an appropriately
    sized buffer and try again).  If NODE is not a symlink, EINVAL is
    returned.  */
 DNH(node_get_symlink, error_t, char *buf, int *len)
@@ -275,7 +275,7 @@ DNH(node_get_symlink, error_t, char *buf, int *len)
    should have at least *LEN bytes available, and returns 0; if the string is
    too big, E2BIG is returned.  Either way, the actual length of the
    translator string is returned in *LEN (so if it's too big, you can
-   allocate an appropiately sized buffer and try again).  If NODE has no
+   allocate an appropriately sized buffer and try again).  If NODE has no
    passive translator, EINVAL is returned.  */
 DNH(node_get_passive_trans, error_t, char *buf, int *len)
 #define treefs_node_get_passive_trans(node, args...)			      \
