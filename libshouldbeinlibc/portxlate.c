@@ -113,7 +113,7 @@ port_name_xlator_xlate (struct port_name_xlator *x,
   error_t err;
   mach_port_t port;
   mach_msg_type_number_t i;
-  mach_msg_type_name_t aquired_type;
+  mach_msg_type_name_t acquired_type;
   mach_msg_type_name_t valid_to_types;
 
   if (from_type == 0)
@@ -137,7 +137,7 @@ port_name_xlator_xlate (struct port_name_xlator *x,
 			      ? MACH_MSG_TYPE_MAKE_SEND
 			      : MACH_MSG_TYPE_COPY_SEND),
 			     &port,
-			     &aquired_type);
+			     &acquired_type);
 
   if (err)
     return err;
@@ -155,7 +155,7 @@ port_name_xlator_xlate (struct port_name_xlator *x,
 				      ? MACH_MSG_TYPE_MAKE_SEND
 				      : MACH_MSG_TYPE_COPY_SEND),
 				     &x->ports[i],
-				     &aquired_type);
+				     &acquired_type);
 	  if (err)
 	    x->to_types[i] = 0;	/* Don't try to fetch this port again.  */
 	}
