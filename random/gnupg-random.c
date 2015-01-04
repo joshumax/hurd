@@ -592,7 +592,7 @@ read_pool( byte *buffer, size_t length, int level )
 	mix_pool(rndpool); rndstats.mixrnd++;
 	mix_pool(keypool); rndstats.mixkey++;
 	/* read the required data
-	 * we use a readpoiter to read from a different position each
+	 * we use a readpointer to read from a different position each
 	 * time */
 #ifdef __HURD__
 	if (level == 2 && length > pool_balance)
