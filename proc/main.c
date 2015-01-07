@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <hurd.h>
+#include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <device/device.h>
 #include <assert.h>
@@ -62,6 +63,7 @@ message_demuxer (mach_msg_header_t *inp,
 }
 
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
+int startup_fallback;
 
 error_t
 increase_priority (void)
@@ -99,6 +101,7 @@ main (int argc, char **argv, char **envp)
   error_t err;
   void *genport;
   process_t startup_port;
+  mach_port_t startup;
   struct argp argp = { 0, 0, 0, "Hurd process server" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
@@ -172,6 +175,26 @@ main (int argc, char **argv, char **envp)
     stdout = stderr = mach_open_devstream (cons, "w");
     mach_port_deallocate (mach_task_self (), cons);
   }
+
+  startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (MACH_PORT_VALID (startup))
+    {
+      err = startup_essential_task (startup, mach_task_self (),
+				    MACH_PORT_NULL, "proc", _hurd_host_priv);
+      if (err)
+	/* Due to the single-threaded nature of /hurd/startup, it can
+	   only handle requests once the core server bootstrap has
+	   completed.  Therefore, it does not bind itself to
+	   /servers/startup until it is ready.	*/
+	/* Fall back to abusing the message port lookup.  */
+	startup_fallback = 1;
+
+      err = mach_port_deallocate (mach_task_self (), startup);
+      assert_perror (err);
+    }
+  else
+    /* Fall back to abusing the message port lookup.	*/
+    startup_fallback = 1;
 
   while (1)
     ports_manage_port_operations_multithread (proc_bucket,

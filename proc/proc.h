@@ -151,6 +151,8 @@ mach_port_t generic_port;	/* messages not related to a specific proc */
 
 pthread_mutex_t global_lock;
 
+extern int startup_fallback;	/* (ab)use /hurd/startup's message port */
+
 /* Forward declarations */
 void complete_wait (struct proc *, int);
 int check_uid (struct proc *, uid_t);

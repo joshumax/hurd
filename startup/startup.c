@@ -514,6 +514,32 @@ demuxer (mach_msg_header_t *inp,
 	  startup_server (inp, outp));
 }
 
+error_t
+install_as_translator (void)
+{
+  error_t err;
+  file_t node;
+
+  node = file_name_lookup (_SERVERS_STARTUP, O_NOTRANS, 0);
+  if (! MACH_PORT_VALID (node))
+    {
+      if (errno == ENOENT)
+	{
+	  /* Degrade gracefully if the node does not exist.  */
+	  error (0, errno, "%s", _SERVERS_STARTUP);
+	  return 0;
+	}
+      return errno;
+    }
+
+  err = file_set_translator (node,
+			     0, FS_TRANS_SET, 0,
+			     NULL, 0,
+			     startup, MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), node);
+  return err;
+}
+
 static int
 parse_opt (int key, char *arg, struct argp_state *state)
 {
@@ -586,18 +612,6 @@ main (int argc, char **argv, char **envp)
 
   /* Crash if the boot filesystem task dies.  */
   request_dead_name (fstask);
-
-  file_t node = file_name_lookup (_SERVERS_STARTUP, O_NOTRANS, 0);
-  if (node == MACH_PORT_NULL)
-    error (0, errno, "%s", _SERVERS_STARTUP);
-  else
-    {
-      file_set_translator (node,
-			   0, FS_TRANS_SET, 0,
-			   NULL, 0,
-			   startup, MACH_MSG_TYPE_COPY_SEND);
-      mach_port_deallocate (mach_task_self (), node);
-    }
 
   /* Set up the set of ports we will pass to the programs we exec.  */
   for (i = 0; i < INIT_PORT_MAX; i++)
@@ -672,6 +686,12 @@ launch_core_servers (void)
   proc_task2proc (procserver, authtask, &authproc);
   proc_mark_important (authproc);
   proc_mark_exec (authproc);
+
+  err = install_as_translator ();
+  if (err)
+    /* Good luck.  Who knows, maybe it's an old installation.  */
+    error (0, err, "Failed to bind to " _SERVERS_STARTUP);
+
   startup_authinit_reply (authreply, authreplytype, 0, authproc,
 			  MACH_MSG_TYPE_COPY_SEND);
   mach_port_deallocate (mach_task_self (), authproc);
