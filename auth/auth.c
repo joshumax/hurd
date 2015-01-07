@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <hurd.h>
 #include <hurd/startup.h>
+#include <hurd/paths.h>
 #include <hurd/ports.h>
 #include <hurd/ihash.h>
 #include <idvec.h>
@@ -482,6 +483,7 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t boot;
+  mach_port_t startup;
   process_t proc;
   mach_port_t hostpriv, masterdev;
   struct authhandle *firstauth;
@@ -518,10 +520,21 @@ main (int argc, char **argv)
   _hurd_port_set (&_hurd_ports[INIT_PORT_PROC], proc);
   _hurd_proc_init (argv, NULL, 0);
 
+  startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (! MACH_PORT_VALID (startup))
+    {
+      error (0, errno, "%s", _SERVERS_STARTUP);
+      /* Fall back to using the bootstrap port as before.  */
+      startup = boot;
+    }
+
   /* Init knows intimately that we will be ready for messages
      as soon as this returns. */
-  startup_essential_task (boot, mach_task_self (), MACH_PORT_NULL, "auth",
+  startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL, "auth",
 			  hostpriv);
+
+  if (startup != boot)
+    mach_port_deallocate (mach_task_self (), startup);
   mach_port_deallocate (mach_task_self (), boot);
   mach_port_deallocate (mach_task_self (), hostpriv);
 
