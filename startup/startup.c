@@ -33,6 +33,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <string.h>
+#include <mach/gnumach.h>
 #include <mach/notify.h>
 #include <stdlib.h>
 #include <hurd/msg.h>
@@ -376,6 +377,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	      printf ("Pausing for %s\n", prog);
 	      getchar ();
 	    }
+          task_set_name (*task, (char *) prog);
 	  err = file_exec (file, *task, 0,
 			   (char *)prog, strlen (prog) + 1, /* Args.  */
 			   startup_envz, startup_envz_len,
