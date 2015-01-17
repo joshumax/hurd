@@ -232,7 +232,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   err = task_priority(task, 25, FALSE);
 
   if (err)
-    goto lose;
+    goto lose_task;
 
   /* Designate TASK as our child and set it's owner accordingly. */
   proc = getproc ();
@@ -240,11 +240,11 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   err = proc_task2proc (proc, task, &childproc);
   mach_port_deallocate (mach_task_self (), proc);
   if (err)
-    goto lose;
+    goto lose_task;
   err = proc_setowner (childproc, owner_uid, owner_uid == (uid_t) -1);
   mach_port_deallocate (mach_task_self (), childproc);
   if (err)
-    goto lose;
+    goto lose_task;
 
   assert (ports_len > INIT_PORT_BOOTSTRAP);
   switch (ports_type)
