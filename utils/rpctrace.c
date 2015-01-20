@@ -404,7 +404,8 @@ new_receiver_info (mach_port_t right, mach_port_t owner)
 					MACH_MSG_TYPE_MAKE_SEND_ONCE, &foo);
   if (err)
     error (2, err, "mach_port_request_notification");
-  mach_port_deallocate (mach_task_self (), foo);
+  if (MACH_PORT_VALID (foo))
+    mach_port_deallocate (mach_task_self (), foo);
 
   err = hurd_ihash_add (&traced_names, info->forward, info);
   if (err)
