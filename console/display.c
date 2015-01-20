@@ -298,16 +298,18 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
 static void
 free_modreqs (struct modreq *mr)
 {
+  error_t err;
   struct modreq *tmp;
   for (; mr; mr = tmp)
     {
       mach_port_t old;
       /* Cancel the dead-name notification.  */
-      mach_port_request_notification (mach_task_self (), mr->port,
-				      MACH_NOTIFY_DEAD_NAME, 0,
-				      MACH_PORT_NULL,
-				      MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
-      mach_port_deallocate (mach_task_self (), old);
+      err = mach_port_request_notification (mach_task_self (), mr->port,
+					    MACH_NOTIFY_DEAD_NAME, 0,
+					    MACH_PORT_NULL,
+					    MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+      if (! err && MACH_PORT_VALID (old))
+	mach_port_deallocate (mach_task_self(), old);
 
       /* Deallocate the user's port.  */
       mach_port_deallocate (mach_task_self (), mr->port);
@@ -438,16 +440,19 @@ do_mach_notify_msg_accepted (struct port_info *pi, mach_port_t send)
 				 notify_port->pi.port_right);
       if (err && err != MACH_SEND_WILL_NOTIFY)
 	{
+	  error_t e;
 	  mach_port_t old;
 	  *preq = req->next;
 	  pthread_mutex_unlock (&display->lock);
 
-	  /* Cancel the dead-name notification.  */
-	  mach_port_request_notification (mach_task_self (), req->port,
-					  MACH_NOTIFY_DEAD_NAME, 0,
-					  MACH_PORT_NULL,
-					  MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
-	  mach_port_deallocate (mach_task_self (), old);
+	  /* Cancel the dead-name notification.	 */
+	  e = mach_port_request_notification (mach_task_self (), req->port,
+					      MACH_NOTIFY_DEAD_NAME, 0,
+					      MACH_PORT_NULL,
+					      MACH_MSG_TYPE_MAKE_SEND_ONCE,
+					      &old);
+	  if (! e && MACH_PORT_VALID (old))
+	    mach_port_deallocate (mach_task_self(), old);
 
 	  mach_port_deallocate (mach_task_self (), req->port);
 	  free (req);
@@ -564,13 +569,15 @@ display_notice_filechange (display_t display)
 	    }
 	  else
 	    {
+	      error_t e;
 	      mach_port_t old;
 
 	      /* Cancel the dead-name notification.  */
-	      mach_port_request_notification (mach_task_self (), req->port,
-					      MACH_NOTIFY_DEAD_NAME, 0,
-					      MACH_PORT_NULL, 0, &old);
-	      mach_port_deallocate (mach_task_self (), old);
+	      e = mach_port_request_notification (mach_task_self (), req->port,
+						  MACH_NOTIFY_DEAD_NAME, 0,
+						  MACH_PORT_NULL, 0, &old);
+	      if (! e && MACH_PORT_VALID (old))
+		mach_port_deallocate (mach_task_self(), old);
 	      mach_port_deallocate (mach_task_self (), req->port);
 	      free (req);
 	    }
