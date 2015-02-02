@@ -76,7 +76,6 @@ static const struct argp_option options[] =
   {"address6",  'A', "ADDR/LEN",0, "Set the global IPv6 address"},
   {"gateway6",  'G', "ADDRESS", 0, "Set the IPv6 default gateway"},
 #endif
-  {"shutdown",  's', 0,         0, "Shut it down"},
   {0}
 };
 
