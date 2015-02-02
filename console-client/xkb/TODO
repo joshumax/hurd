@@ -1,6 +1,4 @@
-For release:
-
-Use rules instead of keymaps
+Use layout/variant rules instead of keymaps
 Indicators.
 Use libihash.
 Better memory handling.
