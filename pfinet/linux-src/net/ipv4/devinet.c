@@ -214,10 +214,12 @@ inet_insert_ifa(struct in_device *in_dev, struct in_ifaddr *ifa)
 {
 	struct in_ifaddr *ifa1, **ifap, **last_primary;
 
+#ifndef _HURD_
 	if (ifa->ifa_local == 0) {
 		inet_free_ifa(ifa);
 		return 0;
 	}
+#endif
 
 	ifa->ifa_flags &= ~IFA_F_SECONDARY;
 	last_primary = &in_dev->ifa_list;
