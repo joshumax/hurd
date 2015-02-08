@@ -665,10 +665,11 @@ launch_core_servers (void)
   error_t err;
 
   /* Reply to the proc and auth servers.   */
-  startup_procinit_reply (procreply, procreplytype, 0,
-			  mach_task_self (), authserver,
-			  host_priv, MACH_MSG_TYPE_COPY_SEND,
-			  device_master, MACH_MSG_TYPE_COPY_SEND);
+  err = startup_procinit_reply (procreply, procreplytype, 0,
+				mach_task_self (), authserver,
+				host_priv, MACH_MSG_TYPE_COPY_SEND,
+				device_master, MACH_MSG_TYPE_COPY_SEND);
+  assert_perror (err);
   if (!fakeboot)
     {
       mach_port_deallocate (mach_task_self (), device_master);
@@ -676,25 +677,34 @@ launch_core_servers (void)
     }
 
   /* Mark us as important.  */
-  proc_mark_important (procserver);
-  proc_mark_exec (procserver);
+  err = proc_mark_important (procserver);
+  assert_perror (err);
+  err = proc_mark_exec (procserver);
+  assert_perror (err);
 
   /* Declare that the filesystem and auth are our children. */
-  proc_child (procserver, fstask);
-  proc_child (procserver, authtask);
+  err = proc_child (procserver, fstask);
+  assert_perror (err);
+  err = proc_child (procserver, authtask);
+  assert_perror (err);
 
-  proc_task2proc (procserver, authtask, &authproc);
-  proc_mark_important (authproc);
-  proc_mark_exec (authproc);
+  err = proc_task2proc (procserver, authtask, &authproc);
+  assert_perror (err);
+  err = proc_mark_important (authproc);
+  assert_perror (err);
+  err = proc_mark_exec (authproc);
+  assert_perror (err);
 
   err = install_as_translator ();
   if (err)
     /* Good luck.  Who knows, maybe it's an old installation.  */
     error (0, err, "Failed to bind to " _SERVERS_STARTUP);
 
-  startup_authinit_reply (authreply, authreplytype, 0, authproc,
-			  MACH_MSG_TYPE_COPY_SEND);
-  mach_port_deallocate (mach_task_self (), authproc);
+  err = startup_authinit_reply (authreply, authreplytype, 0, authproc,
+				MACH_MSG_TYPE_COPY_SEND);
+  assert_perror (err);
+  err = mach_port_deallocate (mach_task_self (), authproc);
+  assert_perror (err);
 
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -703,13 +713,16 @@ launch_core_servers (void)
   /* Do NOT run _hurd_proc_init!  That will start signals, which we do not
      want.  We listen to our own message port.  Tell the proc server where
      our args and environment are.  */
-  proc_set_arg_locations (procserver,
-			  (vm_address_t) global_argv, (vm_address_t) environ);
+  err = proc_set_arg_locations (procserver,
+				(vm_address_t) global_argv,
+				(vm_address_t) environ);
+  assert_perror (err);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
   /* Declare that the proc server is our child.  */
-  proc_child (procserver, proctask);
+  err = proc_child (procserver, proctask);
+  assert_perror (err);
   err = proc_task2proc (procserver, proctask, &procproc);
   if (!err)
     {
@@ -718,13 +731,18 @@ launch_core_servers (void)
       mach_port_deallocate (mach_task_self (), procproc);
     }
 
-  proc_register_version (procserver, host_priv, "init", "", HURD_VERSION);
+  err = proc_register_version (procserver, host_priv,
+			       "init", "", HURD_VERSION);
+  assert_perror (err);
 
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */
-  proc_task2proc (procserver, fstask, &fsproc);
-  proc_mark_important (fsproc);
-  proc_mark_exec (fsproc);
+  err = proc_task2proc (procserver, fstask, &fsproc);
+  assert_perror (err);
+  err = proc_mark_important (fsproc);
+  assert_perror (err);
+  err = proc_mark_exec (fsproc);
+  assert_perror (err);
 
 #if 0
   printf ("Init has completed.\n");
@@ -739,7 +757,8 @@ launch_core_servers (void)
      before accepting more RPC requests!  However, we must do this before
      calling fsys_init, because fsys_init blocks on exec_init, and
      exec_init will block waiting on our message port.  */
-  proc_setmsgport (procserver, startup, &old);
+  err = proc_setmsgport (procserver, startup, &old);
+  assert_perror (err);
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
 
