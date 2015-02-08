@@ -90,7 +90,13 @@ restore_termstate ()
 
 #define host_fstat fstat
 typedef struct stat host_stat_t;
-#define host_exit exit
+
+void __attribute__ ((__noreturn__))
+host_exit (int status)
+{
+  restore_termstate ();
+  exit (status);
+}
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
