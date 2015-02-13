@@ -98,8 +98,6 @@ See `tasks', the exported task list.
 ** libpager:
 *** Put user-defined fns into a callback struct passed to pager_create. !
 *** Make libpager paging interface able to read/write multiple pages at once.
-*** Remove pagers from portset if there are too many incoming requests to
-    avoid forking too many threads. !
 *** flush functions don't actually force pending delayed copies. (and in
     fact, they seem to block if a delayed copy is wired down) !
 
