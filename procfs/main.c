@@ -222,7 +222,7 @@ struct argp netfs_runtime_argp_ = {
 };
 
 /* Used by netfs_set_options to handle runtime option parsing.  */
-struct argp *netfs_runtime_argp = &argp;
+struct argp *netfs_runtime_argp = &netfs_runtime_argp_;
 
 /* Return an argz string describing the current options.  Fill *ARGZ
    with a pointer to newly malloced storage holding the list and *LEN
