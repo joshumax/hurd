@@ -18,6 +18,10 @@ better debugging experience.
 
 The performance of the integer hashing library has been improved.
 
+The init server has been split into the startup server (handling early
+system bootstrap and shutdown), and a SysV-style init program (aptly
+named `init').
+
 The procfs translator has been merged.
 
 The random translator has been merged.
