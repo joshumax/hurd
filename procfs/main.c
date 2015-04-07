@@ -120,15 +120,15 @@ argp_parser (int key, char *arg, struct argp_state *state)
 
     case NODEV_KEY:
       /* Ignored for compatibility with Linux' procfs. */
-      ;;
+      break;
 
     case NOEXEC_KEY:
       /* Ignored for compatibility with Linux' procfs. */
-      ;;
+      break;
 
     case NOSUID_KEY:
       /* Ignored for compatibility with Linux' procfs. */
-      ;;
+      break;
 
     default:
       return ARGP_ERR_UNKNOWN;
