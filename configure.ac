@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
-AC_INIT([GNU Hurd], [0.5], [bug-hurd@gnu.org])
+AC_INIT([GNU Hurd], [0.6], [bug-hurd@gnu.org])
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
 
 AC_PREFIX_DEFAULT()		dnl Default to empty prefix, not /usr/local.

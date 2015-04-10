@@ -1,5 +1,4 @@
-2013-XX-XX
-Version 0.6
+Version 0.6 (2015-04-10)
 
 Numerous cleanups and stylistic fixes of the code base.  Several
 problems have been identified using static analysis and exercising
@@ -22,12 +21,9 @@ The init server has been split into the startup server (handling early
 system bootstrap and shutdown), and a SysV-style init program (aptly
 named `init').
 
-The procfs translator has been merged.
-
-The random translator has been merged.
+The procfs and random translators have been merged.
 
-2013-09-27
-Version 0.5
+Version 0.5 (2013-09-27)
 
 Really too many changes have been applied to list them individually.  Some
 highlights include:
@@ -166,8 +162,7 @@ The Hurd interfaces have been changed to support large files.
 The new proxy-defpager translator grants unprivileged users access to
 the default pager.
 
-1997-06-09
-Version 0.2
+Version 0.2 (1997-06-09)
 
 Summary of important externally visible changes since version 0.1:
 
@@ -240,8 +235,7 @@ already using this library for some local system administration tasks,
 and are making it the basis of the (as yet unfinished) ftpfs
 filesystem for the Hurd.
 
-1996-09-06
-Version 0.1.
+Version 0.1 (1996-09-06)
 
 Summary of important externally visible changes since version 0.0:
 
@@ -292,7 +286,6 @@ cache size to be large, and then do experiments and see what the cache
 hit rate would have been for various smaller sizes.  This should help
 in optimizing the size of the cache.
 
-1996-08-06
-Version 0.0
+Version 0.0 (1996-08-06)
 
 Initial release.
