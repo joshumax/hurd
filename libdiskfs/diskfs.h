@@ -86,13 +86,20 @@ struct node
 
   io_statbuf_t dn_stat;
 
+  /* Flags.  */
+  unsigned int
+
   /* Stat has been modified if one of the following four fields
      is nonzero.  Also, if one of the dn_set_?time fields is nonzero,
      the appropriate dn_stat.st_?tim field needs to be updated. */
-  int dn_set_ctime;
-  int dn_set_atime;
-  int dn_set_mtime;
-  int dn_stat_dirty;
+    dn_set_ctime:1,
+    dn_set_atime:1,
+    dn_set_mtime:1,
+    dn_stat_dirty:1,
+
+  /* Indicate whether the author is tracking the uid because the
+     on-disk file format does not encode a separate author.  */
+    author_tracks_uid:1;
 
   pthread_mutex_t lock;
 
@@ -117,8 +124,6 @@ struct node
   loff_t allocsize;
 
   ino64_t cache_id;
-
-  int author_tracks_uid;
 };
 
 struct diskfs_control
