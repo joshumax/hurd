@@ -80,8 +80,6 @@ struct peropen
    filesystem.  */
 struct node
 {
-  struct node *next, **prevp;
-
   struct disknode *dn;
 
   io_statbuf_t dn_stat;
