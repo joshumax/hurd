@@ -202,8 +202,8 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 
   diskfs_set_node_atime (dp);
 
-  /* Start the lookup at DP->dn->dir_idx.  */
-  idx = dp->dn->dir_idx;
+  /* Start the lookup at diskfs_node_disknode (DP)->dir_idx.  */
+  idx = diskfs_node_disknode (dp)->dir_idx;
   if (idx * DIRBLKSIZ > dp->dn_stat.st_size)
     idx = 0;			/* just in case */
   blockaddr = buf + idx * DIRBLKSIZ;
@@ -217,7 +217,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
       err = dirscanblock (blockaddr, dp, idx, name, namelen, type, ds, &inum);
       if (!err)
 	{
-	  dp->dn->dir_idx = idx;
+	  diskfs_node_disknode (dp)->dir_idx = idx;
 	  break;
 	}
       if (err != ENOENT)
@@ -484,17 +484,17 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 
       /* Because we scanned the entire block, we should write
 	 down how many entries there were. */
-      if (!dp->dn->dirents)
+      if (!diskfs_node_disknode (dp)->dirents)
 	{
-	  dp->dn->dirents = malloc ((dp->dn_stat.st_size / DIRBLKSIZ)
-				    * sizeof (int));
+	  diskfs_node_disknode (dp)->dirents =
+	    malloc ((dp->dn_stat.st_size / DIRBLKSIZ) * sizeof (int));
 	  for (i = 0; i < dp->dn_stat.st_size/DIRBLKSIZ; i++)
-	    dp->dn->dirents[i] = -1;
+	    diskfs_node_disknode (dp)->dirents[i] = -1;
 	}
       /* Make sure the count is correct if there is one now. */
-      assert (dp->dn->dirents[idx] == -1
-	      || dp->dn->dirents[idx] == nentries);
-      dp->dn->dirents[idx] = nentries;
+      assert (diskfs_node_disknode (dp)->dirents[idx] == -1
+	      || diskfs_node_disknode (dp)->dirents[idx] == nentries);
+      diskfs_node_disknode (dp)->dirents[idx] = nentries;
 
       return ENOENT;
     }
@@ -653,7 +653,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   memcpy (new->name, name, namelen);
 
   /* Mark the directory inode has having been written.  */
-  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
+  diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
   dp->dn_set_mtime = 1;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
@@ -662,33 +662,34 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     {
       /* If we are keeping count of this block, then keep the count up
 	 to date. */
-      if (dp->dn->dirents && dp->dn->dirents[ds->idx] != -1)
-	dp->dn->dirents[ds->idx]++;
+      if (diskfs_node_disknode (dp)->dirents
+	  && diskfs_node_disknode (dp)->dirents[ds->idx] != -1)
+	diskfs_node_disknode (dp)->dirents[ds->idx]++;
     }
   else
     {
       int i;
       /* It's cheap, so start a count here even if we aren't counting
 	 anything at all. */
-      if (dp->dn->dirents)
+      if (diskfs_node_disknode (dp)->dirents)
 	{
-	  dp->dn->dirents = realloc (dp->dn->dirents,
-				     (dp->dn_stat.st_size / DIRBLKSIZ
-				      * sizeof (int)));
+	  diskfs_node_disknode (dp)->dirents =
+	    realloc (diskfs_node_disknode (dp)->dirents,
+		     (dp->dn_stat.st_size / DIRBLKSIZ * sizeof (int)));
 	  for (i = oldsize / DIRBLKSIZ;
 	       i < dp->dn_stat.st_size / DIRBLKSIZ;
 	       i++)
-	    dp->dn->dirents[i] = -1;
+	    diskfs_node_disknode (dp)->dirents[i] = -1;
 
-	  dp->dn->dirents[ds->idx] = 1;
+	  diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
 	}
       else
 	{
-	  dp->dn->dirents = malloc (dp->dn_stat.st_size / DIRBLKSIZ
-				    * sizeof (int));
+	  diskfs_node_disknode (dp)->dirents =
+	    malloc (dp->dn_stat.st_size / DIRBLKSIZ * sizeof (int));
 	  for (i = 0; i < dp->dn_stat.st_size / DIRBLKSIZ; i++)
-	    dp->dn->dirents[i] = -1;
-	  dp->dn->dirents[ds->idx] = 1;
+	    diskfs_node_disknode (dp)->dirents[i] = -1;
+	  diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
 	}
     }
 
@@ -720,14 +721,15 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
     }
 
   dp->dn_set_mtime = 1;
-  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
+  diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
   /* If we are keeping count of this block, then keep the count up
      to date. */
-  if (dp->dn->dirents && dp->dn->dirents[ds->idx] != -1)
-    dp->dn->dirents[ds->idx]--;
+  if (diskfs_node_disknode (dp)->dirents
+      && diskfs_node_disknode (dp)->dirents[ds->idx] != -1)
+    diskfs_node_disknode (dp)->dirents[ds->idx]--;
 
   diskfs_file_update (dp, diskfs_synchronous);
 
@@ -751,7 +753,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 
   ds->entry->inode = np->cache_id;
   dp->dn_set_mtime = 1;
-  dp->dn->info.i_flags &= ~EXT2_BTREE_FL;
+  diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
 
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
 
@@ -831,7 +833,7 @@ count_dirents (struct node *dp, block_t nb, char *buf)
   int count = 0;
   error_t err;
 
-  assert (dp->dn->dirents);
+  assert (diskfs_node_disknode (dp)->dirents);
   assert ((nb + 1) * DIRBLKSIZ <= dp->dn_stat.st_size);
 
   err = diskfs_node_rdwr (dp, buf, nb * DIRBLKSIZ, DIRBLKSIZ, 0, 0, &amt);
@@ -848,8 +850,9 @@ count_dirents (struct node *dp, block_t nb, char *buf)
 	count++;
     }
 
-  assert (dp->dn->dirents[nb] == -1 || dp->dn->dirents[nb] == count);
-  dp->dn->dirents[nb] = count;
+  assert (diskfs_node_disknode (dp)->dirents[nb] == -1
+	  || diskfs_node_disknode (dp)->dirents[nb] == count);
+  diskfs_node_disknode (dp)->dirents[nb] = count;
   return 0;
 }
 
@@ -884,11 +887,11 @@ diskfs_get_directs (struct node *dp,
 
   nblks = dp->dn_stat.st_size/DIRBLKSIZ;
 
-  if (!dp->dn->dirents)
+  if (!diskfs_node_disknode (dp)->dirents)
     {
-      dp->dn->dirents = malloc (nblks * sizeof (int));
+      diskfs_node_disknode (dp)->dirents = malloc (nblks * sizeof (int));
       for (i = 0; i < nblks; i++)
-	dp->dn->dirents[i] = -1;
+	diskfs_node_disknode (dp)->dirents[i] = -1;
     }
 
   /* Scan through the entries to find ENTRY.  If we encounter
@@ -898,7 +901,7 @@ diskfs_get_directs (struct node *dp,
   bufvalid = 0;
   for (blkno = 0; blkno < nblks; blkno++)
     {
-      if (dp->dn->dirents[blkno] == -1)
+      if (diskfs_node_disknode (dp)->dirents[blkno] == -1)
 	{
 	  err = count_dirents (dp, blkno, buf);
 	  if (err)
@@ -906,11 +909,11 @@ diskfs_get_directs (struct node *dp,
 	  bufvalid = 1;
 	}
 
-      if (curentry + dp->dn->dirents[blkno] > entry)
+      if (curentry + diskfs_node_disknode (dp)->dirents[blkno] > entry)
 	/* ENTRY starts in this block. */
 	break;
 
-      curentry += dp->dn->dirents[blkno];
+      curentry += diskfs_node_disknode (dp)->dirents[blkno];
 
       bufvalid = 0;
     }

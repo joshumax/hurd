@@ -49,13 +49,13 @@ void
 ext2_discard_prealloc (struct node *node)
 {
 #ifdef EXT2_PREALLOCATE
-  if (node->dn->info.i_prealloc_count)
+  if (diskfs_node_disknode (node)->info.i_prealloc_count)
     {
-      int i = node->dn->info.i_prealloc_count;
+      int i = diskfs_node_disknode (node)->info.i_prealloc_count;
       ext2_debug ("discarding %d prealloced blocks for inode %d",
 		  i, node->cache_id);
-      node->dn->info.i_prealloc_count = 0;
-      ext2_free_blocks (node->dn->info.i_prealloc_block, i);
+      diskfs_node_disknode (node)->info.i_prealloc_count = 0;
+      ext2_free_blocks (diskfs_node_disknode (node)->info.i_prealloc_block, i);
     }
 #endif
 }
@@ -72,12 +72,12 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
   block_t result;
 
 #ifdef EXT2_PREALLOCATE
-  if (node->dn->info.i_prealloc_count &&
-      (goal == node->dn->info.i_prealloc_block ||
-       goal + 1 == node->dn->info.i_prealloc_block))
+  if (diskfs_node_disknode (node)->info.i_prealloc_count &&
+      (goal == diskfs_node_disknode (node)->info.i_prealloc_block ||
+       goal + 1 == diskfs_node_disknode (node)->info.i_prealloc_block))
     {
-      result = node->dn->info.i_prealloc_block++;
-      node->dn->info.i_prealloc_count--;
+      result = diskfs_node_disknode (node)->info.i_prealloc_block++;
+      diskfs_node_disknode (node)->info.i_prealloc_count--;
       ext2_debug ("preallocation hit (%lu/%lu) => %u",
 		  ++alloc_hits, ++alloc_attempts, result);
     }
@@ -95,8 +95,8 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
 				       EXT2_FEATURE_COMPAT_DIR_PREALLOC))
 	 ? sblock->s_prealloc_dir_blocks
 	 : 0,
-	 &node->dn->info.i_prealloc_count,
-	 &node->dn->info.i_prealloc_block);
+	 &diskfs_node_disknode (node)->info.i_prealloc_count,
+	 &diskfs_node_disknode (node)->info.i_prealloc_block);
     }
 #else
   result = ext2_new_block (goal, 0, 0);
@@ -124,15 +124,15 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 
   assert (0 <= nr && nr < EXT2_N_BLOCKS);
 
-  *result = node->dn->info.i_data[nr];
+  *result = diskfs_node_disknode (node)->info.i_data[nr];
   if (*result)
     return 0;
 
   if (!create)
     return EINVAL;
 
-  if (node->dn->info.i_next_alloc_block == new_block)
-    goal = node->dn->info.i_next_alloc_goal;
+  if (diskfs_node_disknode (node)->info.i_next_alloc_block == new_block)
+    goal = diskfs_node_disknode (node)->info.i_next_alloc_goal;
 
 #ifdef EXT2FS_DEBUG
   hint = goal;
@@ -142,15 +142,16 @@ inode_getblk (struct node *node, int nr, int create, int zero,
     {
       for (i = nr - 1; i >= 0; i--)
 	{
-	  if (node->dn->info.i_data[i])
+	  if (diskfs_node_disknode (node)->info.i_data[i])
 	    {
-	      goal = node->dn->info.i_data[i];
+	      goal = diskfs_node_disknode (node)->info.i_data[i];
 	      break;
 	    }
 	}
       if (!goal)
 	goal =
-	  (node->dn->info.i_block_group * EXT2_BLOCKS_PER_GROUP (sblock))
+	  (diskfs_node_disknode (node)->info.i_block_group
+           * EXT2_BLOCKS_PER_GROUP (sblock))
 	  + sblock->s_first_data_block;
     }
 
@@ -162,15 +163,15 @@ inode_getblk (struct node *node, int nr, int create, int zero,
   if (!*result)
     return ENOSPC;
 
-  node->dn->info.i_data[nr] = *result;
+  diskfs_node_disknode (node)->info.i_data[nr] = *result;
 
-  node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = *result;
+  diskfs_node_disknode (node)->info.i_next_alloc_block = new_block;
+  diskfs_node_disknode (node)->info.i_next_alloc_goal = *result;
   node->dn_set_ctime = node->dn_set_mtime = 1;
   node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
-  if (diskfs_synchronous || node->dn->info.i_osync)
+  if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
     diskfs_node_update (node, 1);
 
   return 0;
@@ -197,8 +198,8 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
       return EINVAL;
     }
 
-  if (node->dn->info.i_next_alloc_block == new_block)
-    goal = node->dn->info.i_next_alloc_goal;
+  if (diskfs_node_disknode (node)->info.i_next_alloc_block == new_block)
+    goal = diskfs_node_disknode (node)->info.i_next_alloc_goal;
   if (!goal)
     {
       for (i = nr - 1; i >= 0; i--)
@@ -222,13 +223,13 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 
   bh[nr] = *result;
 
-  if (diskfs_synchronous || node->dn->info.i_osync)
+  if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
     sync_global_ptr (bh, 1);
   else
     record_indir_poke (node, bh);
 
-  node->dn->info.i_next_alloc_block = new_block;
-  node->dn->info.i_next_alloc_goal = *result;
+  diskfs_node_disknode (node)->info.i_next_alloc_block = new_block;
+  diskfs_node_disknode (node)->info.i_next_alloc_goal = *result;
   node->dn_set_ctime = node->dn_set_mtime = 1;
   node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
@@ -260,13 +261,13 @@ ext2_getblk (struct node *node, block_t block, int create, block_t *disk_block)
    */
 
   ext2_debug ("block = %u, next = %u, goal = %u", block,
-	      node->dn->info.i_next_alloc_block,
-	      node->dn->info.i_next_alloc_goal);
+	      diskfs_node_disknode (node)->info.i_next_alloc_block,
+	      diskfs_node_disknode (node)->info.i_next_alloc_goal);
 
-  if (block == node->dn->info.i_next_alloc_block + 1)
+  if (block == diskfs_node_disknode (node)->info.i_next_alloc_block + 1)
     {
-      node->dn->info.i_next_alloc_block++;
-      node->dn->info.i_next_alloc_goal++;
+      diskfs_node_disknode (node)->info.i_next_alloc_block++;
+      diskfs_node_disknode (node)->info.i_next_alloc_goal++;
     }
 
   b = block;

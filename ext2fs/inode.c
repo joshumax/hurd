@@ -78,7 +78,7 @@ static struct node *
 lookup (ino_t inum)
 {
   struct node *np;
-  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
+  for (np = nodehash[INOHASH(inum)]; np; np = diskfs_node_disknode (np)->hnext)
     if (np->cache_id == inum)
       return np;
   return NULL;
@@ -99,19 +99,17 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
     goto gotit;
   pthread_rwlock_unlock (&nodecache_lock);
 
+  /* Create the new node.  */
+  np = diskfs_make_node_alloc (sizeof *dn);
+  dn = diskfs_node_disknode (np);
+  np->cache_id = inum;
+
   /* Format specific data for the new node.  */
-  dn = malloc (sizeof (struct disknode));
-  if (! dn)
-    return ENOMEM;
   dn->dirents = 0;
   dn->dir_idx = 0;
   dn->pager = 0;
   pthread_rwlock_init (&dn->alloc_lock, NULL);
   pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_cache);
-
-  /* Create the new node.  */
-  np = diskfs_make_node (dn);
-  np->cache_id = inum;
 
   pthread_mutex_lock (&np->lock);
 
@@ -128,7 +126,7 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
 
   dn->hnext = nodehash[INOHASH(inum)];
   if (dn->hnext)
-    dn->hnext->dn->hprevp = &dn->hnext;
+    diskfs_node_disknode (dn->hnext)->hprevp = &dn->hnext;
   dn->hprevp = &nodehash[INOHASH(inum)];
   nodehash[INOHASH(inum)] = np;
   diskfs_nref_light (np);
@@ -184,15 +182,14 @@ ifind (ino_t inum)
 void
 diskfs_node_norefs (struct node *np)
 {
-  if (np->dn->dirents)
-    free (np->dn->dirents);
-  assert (!np->dn->pager);
+  if (diskfs_node_disknode (np)->dirents)
+    free (diskfs_node_disknode (np)->dirents);
+  assert (!diskfs_node_disknode (np)->pager);
 
   /* Move any pending writes of indirect blocks.  */
-  pokel_inherit (&global_pokel, &np->dn->indir_pokel);
-  pokel_finalize (&np->dn->indir_pokel);
+  pokel_inherit (&global_pokel, &diskfs_node_disknode (np)->indir_pokel);
+  pokel_finalize (&diskfs_node_disknode (np)->indir_pokel);
 
-  free (np->dn);
   free (np);
 }
 
@@ -202,7 +199,7 @@ void
 diskfs_try_dropping_softrefs (struct node *np)
 {
   pthread_rwlock_wrlock (&nodecache_lock);
-  if (np->dn->hprevp != NULL)
+  if (diskfs_node_disknode (np)->hprevp != NULL)
     {
       /* Check if someone reacquired a reference through the
 	 nodehash.  */
@@ -217,11 +214,12 @@ diskfs_try_dropping_softrefs (struct node *np)
 	  return;
 	}
 
-      *np->dn->hprevp = np->dn->hnext;
-      if (np->dn->hnext)
-	np->dn->hnext->dn->hprevp = np->dn->hprevp;
-      np->dn->hnext = NULL;
-      np->dn->hprevp = NULL;
+      *diskfs_node_disknode (np)->hprevp = diskfs_node_disknode (np)->hnext;
+      if (diskfs_node_disknode (np)->hnext)
+	diskfs_node_disknode (diskfs_node_disknode (np)->hnext)->hprevp =
+          diskfs_node_disknode (np)->hprevp;
+      diskfs_node_disknode (np)->hnext = NULL;
+      diskfs_node_disknode (np)->hprevp = NULL;
       nodehash_nr_items -= 1;
       diskfs_nrele_light (np);
     }
@@ -250,7 +248,7 @@ read_node (struct node *np)
 {
   error_t err;
   struct stat *st = &np->dn_stat;
-  struct disknode *dn = np->dn;
+  struct disknode *dn = diskfs_node_disknode (np);
   struct ext2_inode *di;
   struct ext2_inode_info *info = &dn->info;
 
@@ -403,7 +401,7 @@ check_high_bits (struct node *np, long l)
      kernels".  Note that our check refuses to change the values, while
      Linux 2.3.42 just silently clears the high bits in an inode it updates,
      even if it was updating it for an unrelated reason.  */
-  if (np->dn->info.i_dtime != 0)
+  if (diskfs_node_disknode (np)->info.i_dtime != 0)
     return 0;
 
   return ((l & ~0xFFFF) == 0) ? 0 : EINVAL;
@@ -469,12 +467,12 @@ write_node (struct node *np)
 
   ext2_debug ("(%llu)", np->cache_id);
 
-  if (np->dn->info.i_prealloc_count)
+  if (diskfs_node_disknode (np)->info.i_prealloc_count)
     ext2_discard_prealloc (np);
 
   if (np->dn_stat_dirty)
     {
-      struct ext2_inode_info *info = &np->dn->info;
+      struct ext2_inode_info *info = &diskfs_node_disknode (np)->info;
 
       assert (!diskfs_readonly);
 
@@ -560,7 +558,7 @@ write_node (struct node *np)
       if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
 	di->i_block[0] = st->st_rdev;
       else
-	memcpy (di->i_block, np->dn->info.i_data,
+	memcpy (di->i_block, diskfs_node_disknode (np)->info.i_data,
 		EXT2_N_BLOCKS * sizeof di->i_block[0]);
 
       diskfs_end_catch_exception ();
@@ -578,7 +576,7 @@ write_node (struct node *np)
 error_t
 diskfs_node_reload (struct node *node)
 {
-  struct disknode *dn = node->dn;
+  struct disknode *dn = diskfs_node_disknode (node);
 
   if (dn->dirents)
     {
@@ -624,7 +622,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 
   p = node_list;
   for (n = 0; n < INOHSZ; n++)
-    for (node = nodehash[n]; node; node = node->dn->hnext)
+    for (node = nodehash[n]; node; node = diskfs_node_disknode (node)->hnext)
       {
 	*p++ = node;
 
@@ -663,7 +661,7 @@ write_all_disknodes ()
 
       /* Sync the indirect blocks here; they'll all be done before any
 	 inodes.  Waiting for them shouldn't be too bad.  */
-      pokel_sync (&node->dn->indir_pokel, 1);
+      pokel_sync (&diskfs_node_disknode (node)->indir_pokel, 1);
 
       diskfs_set_node_times (node);
 
@@ -745,7 +743,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
     {
       /* Allocate block for translator */
       blkno =
-	ext2_new_block ((np->dn->info.i_block_group
+	ext2_new_block ((diskfs_node_disknode (np)->info.i_block_group
 			 * EXT2_BLOCKS_PER_GROUP (sblock))
 			+ sblock->s_first_data_block,
 			0, 0, 0);
@@ -757,7 +755,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 	}
 
       di->i_translator = blkno;
-      np->dn->info_i_translator = blkno;
+      diskfs_node_disknode (np)->info_i_translator = blkno;
       record_global_poke (di);
 
       np->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
@@ -767,7 +765,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
     {
       /* Clear block for translator going away. */
       di->i_translator = 0;
-      np->dn->info_i_translator = 0;
+      diskfs_node_disknode (np)->info_i_translator = 0;
       record_global_poke (di);
       ext2_free_blocks (blkno, 1);
 
@@ -856,7 +854,7 @@ write_symlink (struct node *node, const char *target)
 
   assert (node->dn_stat.st_blocks == 0);
 
-  memcpy (node->dn->info.i_data, target, len);
+  memcpy (diskfs_node_disknode (node)->info.i_data, target, len);
   node->dn_stat.st_size = len - 1;
   node->dn_set_ctime = 1;
   node->dn_set_mtime = 1;
@@ -873,7 +871,8 @@ read_symlink (struct node *node, char *target)
 
   assert (node->dn_stat.st_size < MAX_INODE_SYMLINK);
 
-  memcpy (target, node->dn->info.i_data, node->dn_stat.st_size);
+  memcpy (target, diskfs_node_disknode (node)->info.i_data,
+          node->dn_stat.st_size);
   return 0;
 }
 

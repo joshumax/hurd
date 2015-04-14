@@ -100,7 +100,7 @@ free_block_run_finish (struct free_block_run *fbr)
 static void
 trunc_direct (struct node *node, block_t end, struct free_block_run *fbr)
 {
-  block_t *blocks = node->dn->info.i_data;
+  block_t *blocks = diskfs_node_disknode (node)->info.i_data;
 
   ext2_debug ("truncating direct blocks from %d", end);
 
@@ -230,7 +230,7 @@ force_delayed_copies (struct node *node, off_t length)
   struct pager *pager;
 
   pthread_spin_lock (&node_to_page_lock);
-  pager = node->dn->pager;
+  pager = diskfs_node_disknode (node)->pager;
   if (pager)
     ports_port_ref (pager);
   pthread_spin_unlock (&node_to_page_lock);
@@ -260,7 +260,7 @@ enable_delayed_copies (struct node *node)
   struct pager *pager;
 
   pthread_spin_lock (&node_to_page_lock);
-  pager = node->dn->pager;
+  pager = diskfs_node_disknode (node)->pager;
   if (pager)
     ports_port_ref (pager);
   pthread_spin_unlock (&node_to_page_lock);
@@ -322,7 +322,7 @@ diskfs_truncate (struct node *node, off_t length)
 
   force_delayed_copies (node, length);
 
-  pthread_rwlock_wrlock (&node->dn->alloc_lock);
+  pthread_rwlock_wrlock (&diskfs_node_disknode (node)->alloc_lock);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
@@ -335,7 +335,7 @@ diskfs_truncate (struct node *node, off_t length)
   if (!err)
     {
       block_t end = boffs_block (round_block (length)), offs;
-      block_t *bptrs = node->dn->info.i_data;
+      block_t *bptrs = diskfs_node_disknode (node)->info.i_data;
       struct free_block_run fbr;
 
       free_block_run_init (&fbr, node);
@@ -355,8 +355,8 @@ diskfs_truncate (struct node *node, off_t length)
 
       /* Set our last_page_partially_writable to a pessimistic state -- it
 	 won't hurt if is wrong.  */
-      node->dn->last_page_partially_writable =
-	trunc_page (node->allocsize) != node->allocsize;
+      diskfs_node_disknode (node)->last_page_partially_writable =
+		trunc_page (node->allocsize) != node->allocsize;
 
       diskfs_end_catch_exception ();
     }
@@ -368,7 +368,7 @@ diskfs_truncate (struct node *node, off_t length)
   /* Now we can permit delayed copies again. */
   enable_delayed_copies (node);
 
-  pthread_rwlock_unlock (&node->dn->alloc_lock);
+  pthread_rwlock_unlock (&diskfs_node_disknode (node)->alloc_lock);
 
   return err;
 }
