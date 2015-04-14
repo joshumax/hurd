@@ -27,6 +27,7 @@ init_node (struct node *np, struct disknode *dn)
   np->dn_set_atime = 0;
   np->dn_set_mtime = 0;
   np->dn_stat_dirty = 0;
+  np->author_tracks_uid = 0;
 
   pthread_mutex_init (&np->lock, NULL);
   refcounts_init (&np->refcounts, 1, 0);
