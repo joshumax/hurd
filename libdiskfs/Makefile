@@ -41,7 +41,7 @@ OTHERSRCS = conch-fetch.c conch-set.c dir-clear.c dir-init.c dir-renamed.c \
 	extern-inline.c \
 	node-create.c node-drop.c node-make.c node-rdwr.c node-update.c \
 	node-nref.c node-nput.c node-nrele.c node-nrefl.c node-nputl.c \
-	node-nrelel.c \
+	node-nrelel.c node-cache.c \
 	peropen-make.c peropen-rele.c protid-make.c protid-rele.c \
 	init-init.c init-startup.c init-first.c init-main.c \
 	rdwr-internal.c boot-start.c demuxer.c node-times.c shutdown.c \

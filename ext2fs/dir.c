@@ -306,7 +306,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 
       /* Here below are the spec dotdot cases. */
       else if (type == RENAME || type == REMOVE)
-	np = ifind (inum);
+	np = diskfs_cached_ifind (inum);
 
       else if (type == LOOKUP)
 	{
@@ -359,7 +359,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 		diskfs_nput (np);
 	    }
 	  else if (type == RENAME || type == REMOVE)
-	    /* We just did ifind to get np; that allocates
+	    /* We just did diskfs_cached_ifind to get np; that allocates
 	       no new references, so we don't have anything to do */
 	    ;
 	  else if (type == LOOKUP)

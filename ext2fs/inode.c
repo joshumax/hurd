@@ -39,142 +39,31 @@
 #define UF_IMMUTABLE 0
 #endif
 
-#define	INOHSZ	8192
-#if	((INOHSZ&(INOHSZ-1)) == 0)
-#define	INOHASH(ino)	((ino)&(INOHSZ-1))
-#else
-#define	INOHASH(ino)	(((unsigned)(ino))%INOHSZ)
-#endif
-
-/* The nodehash is a cache of nodes.
-
-   Access to nodehash and nodehash_nr_items is protected by
-   nodecache_lock.
-
-   Every node in the nodehash carries a light reference.  When we are
-   asked to give up that light reference, we reacquire our lock
-   momentarily to check whether someone else reacquired a reference
-   through the nodehash.  */
-static struct node *nodehash[INOHSZ];
-static size_t nodehash_nr_items;
-static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
-
-static error_t read_node (struct node *np);
-
 pthread_spinlock_t generation_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
-/* Initialize the inode hash table. */
-void
-inode_init ()
-{
-  int n;
-  for (n = 0; n < INOHSZ; n++)
-    nodehash[n] = 0;
-}
-
-/* Lookup node with inode number INUM.  Returns NULL if the node is
-   not found in the node cache.  */
-static struct node *
-lookup (ino_t inum)
+/* The user must define this function if she wants to use the node
+   cache.  Create and initialize a node.  */
+error_t
+diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 {
   struct node *np;
-  for (np = nodehash[INOHASH(inum)]; np; np = diskfs_node_disknode (np)->hnext)
-    if (np->cache_id == inum)
-      return np;
-  return NULL;
-}
-
-/* Fetch inode INUM, set *NPP to the node structure;
-   gain one user reference and lock the node.  */
-error_t
-diskfs_cached_lookup (ino_t inum, struct node **npp)
-{
-  error_t err;
-  struct node *np, *tmp;
   struct disknode *dn;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
-  if (np)
-    goto gotit;
-  pthread_rwlock_unlock (&nodecache_lock);
 
   /* Create the new node.  */
   np = diskfs_make_node_alloc (sizeof *dn);
-  dn = diskfs_node_disknode (np);
-  np->cache_id = inum;
+  if (np == NULL)
+    return ENOMEM;
 
   /* Format specific data for the new node.  */
+  dn = diskfs_node_disknode (np);
   dn->dirents = 0;
   dn->dir_idx = 0;
   dn->pager = 0;
   pthread_rwlock_init (&dn->alloc_lock, NULL);
   pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_cache);
 
-  pthread_mutex_lock (&np->lock);
-
-  /* Put NP in NODEHASH.  */
-  pthread_rwlock_wrlock (&nodecache_lock);
-  tmp = lookup (inum);
-  if (tmp)
-    {
-      /* We lost a race.  */
-      diskfs_nput (np);
-      np = tmp;
-      goto gotit;
-    }
-
-  dn->hnext = nodehash[INOHASH(inum)];
-  if (dn->hnext)
-    diskfs_node_disknode (dn->hnext)->hprevp = &dn->hnext;
-  dn->hprevp = &nodehash[INOHASH(inum)];
-  nodehash[INOHASH(inum)] = np;
-  diskfs_nref_light (np);
-  nodehash_nr_items += 1;
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  /* Get the contents of NP off disk.  */
-  err = read_node (np);
-
-  if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
-    {
-      pthread_spin_lock (&generation_lock);
-      if (++next_generation < diskfs_mtime->seconds)
-	next_generation = diskfs_mtime->seconds;
-      np->dn_stat.st_gen = next_generation;
-      pthread_spin_unlock (&generation_lock);
-      np->dn_set_ctime = 1;
-    }
-
-  if (err)
-    return err;
-  else
-    {
-      *npp = np;
-      return 0;
-    }
-
- gotit:
-  diskfs_nref (np);
-  pthread_rwlock_unlock (&nodecache_lock);
-  pthread_mutex_lock (&np->lock);
   *npp = np;
   return 0;
-}
-
-/* Lookup node INUM (which must have a reference already) and return it
-   without allocating any new references. */
-struct node *
-ifind (ino_t inum)
-{
-  struct node *np;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  assert (np);
-  return np;
 }
 
 /* The last reference to a node has gone away; drop
@@ -193,38 +82,12 @@ diskfs_node_norefs (struct node *np)
   free (np);
 }
 
-/* The last hard reference to a node has gone away; arrange to have
-   all the weak references dropped that can be. */
+/* The user must define this function if she wants to use the node
+   cache.  The last hard reference to a node has gone away; arrange to
+   have all the weak references dropped that can be.  */
 void
-diskfs_try_dropping_softrefs (struct node *np)
+diskfs_user_try_dropping_softrefs (struct node *np)
 {
-  pthread_rwlock_wrlock (&nodecache_lock);
-  if (diskfs_node_disknode (np)->hprevp != NULL)
-    {
-      /* Check if someone reacquired a reference through the
-	 nodehash.  */
-      struct references result;
-      refcounts_references (&np->refcounts, &result);
-
-      if (result.hard > 0)
-	{
-	  /* A reference was reacquired through a hash table lookup.
-	     It's fine, we didn't touch anything yet. */
-	  pthread_rwlock_unlock (&nodecache_lock);
-	  return;
-	}
-
-      *diskfs_node_disknode (np)->hprevp = diskfs_node_disknode (np)->hnext;
-      if (diskfs_node_disknode (np)->hnext)
-	diskfs_node_disknode (diskfs_node_disknode (np)->hnext)->hprevp =
-          diskfs_node_disknode (np)->hprevp;
-      diskfs_node_disknode (np)->hnext = NULL;
-      diskfs_node_disknode (np)->hprevp = NULL;
-      nodehash_nr_items -= 1;
-      diskfs_nrele_light (np);
-    }
-  pthread_rwlock_unlock (&nodecache_lock);
-
   drop_pager_softrefs (np);
 }
 
@@ -242,9 +105,10 @@ diskfs_new_hardrefs (struct node *np)
   allow_pager_softrefs (np);
 }
 
-/* Read stat information out of the ext2_inode. */
-static error_t
-read_node (struct node *np)
+/* The user must define this function if she wants to use the node
+   cache.  Read stat information out of the on-disk node.  */
+error_t
+diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 {
   error_t err;
   struct stat *st = &np->dn_stat;
@@ -383,6 +247,16 @@ read_node (struct node *np)
        where st_blocks=0 and st_size>0 include fast symlinks, and, under
        linux, some devices).  */
     np->allocsize = 0;
+
+  if (!diskfs_check_readonly () && !np->dn_stat.st_gen)
+    {
+      pthread_spin_lock (&generation_lock);
+      if (++next_generation < diskfs_mtime->seconds)
+	next_generation = diskfs_mtime->seconds;
+      np->dn_stat.st_gen = next_generation;
+      pthread_spin_unlock (&generation_lock);
+      np->dn_set_ctime = 1;
+    }
 
   return 0;
 }
@@ -585,70 +459,9 @@ diskfs_node_reload (struct node *node)
     }
   pokel_flush (&dn->indir_pokel);
   flush_node_pager (node);
-  read_node (node);
+  diskfs_user_read_node (node, NULL);
 
   return 0;
-}
-
-/* For each active node, call FUN.  The node is to be locked around the call
-   to FUN.  If FUN returns non-zero for any node, then immediately stop, and
-   return that value.  */
-error_t
-diskfs_node_iterate (error_t (*fun)(struct node *))
-{
-  error_t err = 0;
-  int n;
-  size_t num_nodes;
-  struct node *node, **node_list, **p;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-
-  /* We must copy everything from the hash table into another data structure
-     to avoid running into any problems with the hash-table being modified
-     during processing (normally we delegate access to hash-table with
-     nodecache_lock, but we can't hold this while locking the
-     individual node locks).  */
-  num_nodes = nodehash_nr_items;
-
-  /* TODO This method doesn't scale beyond a few dozen nodes and should be
-     replaced.  */
-  node_list = malloc (num_nodes * sizeof (struct node *));
-  if (node_list == NULL)
-    {
-      pthread_rwlock_unlock (&nodecache_lock);
-      ext2_debug ("unable to allocate temporary node table");
-      return ENOMEM;
-    }
-
-  p = node_list;
-  for (n = 0; n < INOHSZ; n++)
-    for (node = nodehash[n]; node; node = diskfs_node_disknode (node)->hnext)
-      {
-	*p++ = node;
-
-	/* We acquire a hard reference for node, but without using
-	   diskfs_nref.	 We do this so that diskfs_new_hardrefs will not
-	   get called.	*/
-	refcounts_ref (&node->refcounts, NULL);
-      }
-
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  p = node_list;
-  while (num_nodes-- > 0)
-    {
-      node = *p++;
-      if (!err)
-	{
-	  pthread_mutex_lock (&node->lock);
-	  err = (*fun)(node);
-	  pthread_mutex_unlock (&node->lock);
-	}
-      diskfs_nrele (node);
-    }
-
-  free (node_list);
-  return err;
 }
 
 /* Write all active disknodes into the ext2_inode pager. */

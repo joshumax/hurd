@@ -80,6 +80,9 @@ struct peropen
    filesystem.  */
 struct node
 {
+  /* Links on hash list. */
+  struct node *hnext, **hprevp;
+
   struct disknode *dn;
 
   io_statbuf_t dn_stat;
@@ -451,7 +454,8 @@ void diskfs_free_node (struct node *np, mode_t mode);
    if it isn't to be retained.  */
 void diskfs_node_norefs (struct node *np);
 
-/* The user must define this function.  Node NP has some light
+/* The user must define this function unless she wants to use the node
+   cache.  See the section `Node cache' below.  Node NP has some light
    references, but has just lost its last hard references.  Take steps
    so that if any light references can be freed, they are.  NP is locked
    as is the pager refcount lock.  This function will be called after
@@ -515,7 +519,8 @@ void diskfs_write_disknode (struct node *np, int wait);
    then return only after the physical media has been completely updated.  */
 void diskfs_file_update (struct node *np, int wait);
 
-/* The user must define this function.  For each active node, call
+/* The user must define this function unless she wants to use the node
+   cache.  See the section `Node cache' below.  For each active node, call
    FUN.  The node is to be locked around the call to FUN.  If FUN
    returns non-zero for any node, then immediately stop, and return
    that value. */
@@ -586,6 +591,36 @@ error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
    default function always returns EOPNOTSUPP. */
 error_t diskfs_get_source (struct protid *cred,
                            char *source, size_t source_len);
+
+/* Libdiskfs contains a node cache.
+
+   Using it relieves the user of implementing diskfs_cached_lookup,
+   diskfs_node_iterate, and diskfs_try_dropping_softrefs.
+
+   In order to use it, she must implement the following functions with
+   the prefix `diskfs_user_'.  */
+
+/* This can be used to provide additional context to
+   diskfs_user_make_node and diskfs_user_read_node in case of cache
+   misses.  */
+struct lookup_context;
+
+/* The user must define this function if she wants to use the node
+   cache.  Create and initialize a node.  */
+error_t diskfs_user_make_node (struct node **npp, struct lookup_context *ctx);
+
+/* The user must define this function if she wants to use the node
+   cache.  Read stat information out of the on-disk node.  */
+error_t diskfs_user_read_node (struct node *np, struct lookup_context *ctx);
+
+/* The user must define this function if she wants to use the node
+   cache.  The last hard reference to a node has gone away; arrange to
+   have all the weak references dropped that can be.  */
+void diskfs_user_try_dropping_softrefs (struct node *np);
+
+/* Lookup node INUM (which must have a reference already) and return it
+   without allocating any new references. */
+struct node *diskfs_cached_ifind (ino_t inum);
 
 /* The library exports the following functions for general use */
 
@@ -808,8 +843,17 @@ error_t diskfs_dirrewrite (struct node *dp, struct node *oldnp,
 error_t diskfs_dirremove (struct node *dp, struct node *np,
 			  const char *name, struct dirstat *ds);
 
-/* Return the node corresponding to CACHE_ID in *NPP. */
+/* The user must define this function unless she wants to use the node
+   cache.  See the section `Node cache' above.  Return the node
+   corresponding to CACHE_ID in *NPP. */
 error_t diskfs_cached_lookup (ino64_t cache_id, struct node **npp);
+
+/* Return the node corresponding to CACHE_ID in *NPP.  In case of a
+   cache miss, use CTX to create it and load it from the disk.  See
+   the section `Node cache' above.  */
+error_t diskfs_cached_lookup_context (ino_t inum, struct node **npp,
+				      struct lookup_context *ctx);
+
 
 /* Create a new node. Give it MODE; if that includes IFDIR, also
    initialize `.' and `..' in the new directory.  Return the node in NPP.

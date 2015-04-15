@@ -185,8 +185,6 @@ main (int argc, char **argv)
 
   map_hypermetadata ();
 
-  inode_init ();
-
   /* Set diskfs_root_node to the root inode. */
   err = diskfs_cached_lookup (EXT2_ROOT_INO, &diskfs_root_node);
   if (err)

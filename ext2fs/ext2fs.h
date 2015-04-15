@@ -159,9 +159,6 @@ struct disknode
      each DIRBLKSIZE piece of the directory. */
   int *dirents;
 
-  /* Links on hash list. */
-  struct node *hnext, **hprevp;
-
   /* Lock to lock while fiddling with this inode's block allocation info.  */
   pthread_rwlock_t alloc_lock;
 
@@ -419,12 +416,6 @@ dino_deref (struct ext2_inode *inode)
 
 /* Write all active disknodes into the inode pager. */
 void write_all_disknodes ();
-
-/* Lookup node INUM (which must have a reference already) and return it
-   without allocating any new references. */
-struct node *ifind (ino_t inum);
-
-void inode_init (void);
 
 /* ---------------------------------------------------------------- */
 
