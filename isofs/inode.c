@@ -31,72 +31,6 @@
    record for symlinks and zero length files, and file_start otherwise.
    Only for hard links to zero length files we get extra inodes.  */
 
-#define	INOHSZ	512
-#if	((INOHSZ&(INOHSZ-1)) == 0)
-#define	INOHASH(ino)	((ino>>8)&(INOHSZ-1))
-#else
-#define	INOHASH(ino)	(((unsigned)(ino>>8))%INOHSZ)
-#endif
-
-struct node_cache
-{
-  struct dirrect *dr;		/* somewhere in disk_image */
-  off_t file_start;		/* start of file */
-
-  off_t id;			/* UNIQUE identifier.  */
-
-  struct node *np;		/* if live */
-};
-
-/* The node_cache is a cache of nodes.
-
-   Access to node_cache, node_cache_size, and node_cache_alloced is
-   protected by nodecache_lock.
-
-   Every node in the node_cache carries a light reference.  When we
-   are asked to give up that light reference, we reacquire our lock
-   momentarily to check whether someone else reacquired a reference
-   through the node_cache.  */
-static int node_cache_size = 0;
-static int node_cache_alloced = 0;
-struct node_cache *node_cache = 0;
-static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
-
-/* Forward */
-static error_t read_disknode (struct node *,
-			      struct dirrect *, struct rrip_lookup *);
-
-
-/* Lookup node with id ID.  Returns NULL if the node is not found in
-   the node cache.  */
-static struct node *
-lookup (off_t id)
-{
-  int i;
-  for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].id == id
-	&& node_cache[i].np)
-      return node_cache[i].np;
-  return NULL;
-}
-
-/* See if node with identifier ID is in the cache.  If so, return it,
-   with one additional reference. nodecache_lock must be held
-   on entry to the call, and will be released iff the node was found
-   in the cache. */
-void
-inode_cache_find (off_t id, struct node **npp)
-{
-  *npp = lookup (id);
-  if (*npp)
-    {
-      diskfs_nref (*npp);
-      pthread_rwlock_unlock (&nodecache_lock);
-      pthread_mutex_lock (&(*npp)->lock);
-    }
-}
-
-
 /* Determine if we use file_start or struct dirrect * as node id.  */
 int
 use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
@@ -108,139 +42,34 @@ use_file_start_id (struct dirrect *record, struct rrip_lookup *rr)
   return 1;
 }
 
-/* Enter NP into the cache.  The directory entry we used is DR, the
-   cached Rock-Ridge info RR. nodecache_lock must be held. */
-void
-cache_inode (struct node *np, struct dirrect *record,
-	    struct rrip_lookup *rr)
-{
-  int i;
-  struct node_cache *c = 0;
-  off_t id;
-
-  if (use_file_start_id (record, rr))
-    id = np->dn->file_start << store->log2_block_size;
-  else
-    id = (off_t) ((void *) record - (void *) disk_image);
-
-  /* First see if there's already an entry. */
-  for (i = 0; i < node_cache_size; i++)
-    if (node_cache[i].id == id)
-      break;
-
-  if (i == node_cache_size)
-    {
-      if (node_cache_size >= node_cache_alloced)
-	{
-	  if (!node_cache_alloced)
-	    {
-	      /* Initialize */
-	      node_cache_alloced = 10;
-	      node_cache = malloc (sizeof (struct node_cache) * 10);
-	    }
-	  else
-	    {
-	      node_cache_alloced *= 2;
-	      node_cache = realloc (node_cache,
-				    sizeof (struct node_cache)
-				    * node_cache_alloced);
-	    }
-	  assert (node_cache);
-	}
-      node_cache_size++;
-    }
-
-  c = &node_cache[i];
-  c->id = id;
-  c->dr = record;
-  c->file_start = np->dn->file_start;
-  diskfs_nref_light (np);
-  c->np = np;
-
-  /* PLUS 1 so that we don't store zero cache ID's (not allowed by diskfs) */
-  np->cache_id = i + 1;
-}
-
-/* Fetch inode with cache id ID; set *NPP to the node structure;
-   gain one user reference and lock the node. */
+/* The user must define this function if she wants to use the node
+   cache.  Create and initialize a node.  */
 error_t
-diskfs_cached_lookup (ino_t id, struct node **npp)
+diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 {
-  struct node *np;
   error_t err;
+  struct node *np;
+  struct disknode *dn;
 
-  /* Cache ID's are incremented when presented to diskfs
-     to avoid presenting zero cache ID's. */
-  id--;
+  /* Create the new node.  */
+  np = diskfs_make_node_alloc (sizeof *dn);
+  if (np == NULL)
+    return ENOMEM;
 
-  pthread_rwlock_rdlock (&nodecache_lock);
-  assert (id < node_cache_size);
-
-  np = node_cache[id].np;
-
-  if (!np)
+  /* Format specific data for the new node.  */
+  dn = diskfs_node_disknode (np);
+  dn->fileinfo = 0;
+  dn->dr = ctx->dr;
+  err = calculate_file_start (ctx->dr, &dn->file_start, &ctx->rr);
+  if (err)
     {
-      struct node_cache *c = &node_cache[id];
-      struct rrip_lookup rr;
-      struct disknode *dn;
-
-      pthread_rwlock_unlock (&nodecache_lock);
-
-      rrip_lookup (node_cache[id].dr, &rr, 1);
-
-      /* We should never cache the wrong directory entry */
-      assert (!(rr.valid & VALID_CL));
-
-      dn = malloc (sizeof (struct disknode));
-      if (!dn)
-	{
-	  pthread_rwlock_unlock (&nodecache_lock);
-	  release_rrip (&rr);
-	  return ENOMEM;
-	}
-      dn->fileinfo = 0;
-      dn->dr = c->dr;
-      dn->file_start = c->file_start;
-      np = diskfs_make_node (dn);
-      if (!np)
-	{
-	  free (dn);
-	  pthread_rwlock_unlock (&nodecache_lock);
-	  release_rrip (&rr);
-	  return ENOMEM;
-	}
-      np->cache_id = id + 1;	/* see above for rationale for increment */
-      pthread_mutex_lock (&np->lock);
-
-      pthread_rwlock_wrlock (&nodecache_lock);
-      if (c->np != NULL)
-        {
-          /* We lost a race.  */
-          diskfs_nput (np);
-          np = c->np;
-          goto gotit;
-        }
-      c->np = np;
-      diskfs_nref_light (np);
-      pthread_rwlock_unlock (&nodecache_lock);
-
-      err = read_disknode (np, dn->dr, &rr);
-      if (!err)
-	*npp = np;
-
-      release_rrip (&rr);
-
+      diskfs_nrele (np);
       return err;
     }
 
- gotit:
-  diskfs_nref (np);
-  pthread_rwlock_unlock (&nodecache_lock);
-  pthread_mutex_lock (&np->lock);
   *npp = np;
   return 0;
 }
-
 
 /* Return Epoch-based time from a seven byte according to 9.1.5 */
 char *
@@ -315,6 +144,9 @@ calculate_file_start (struct dirrect *record, off_t *file_start,
     *file_start = rr->realfilestart;
   else
     {
+      if (record == NULL)
+        return ENOENT;
+
       err = diskfs_catch_exception ();
       if (err)
 	return err;
@@ -327,90 +159,40 @@ calculate_file_start (struct dirrect *record, off_t *file_start,
   return 0;
 }
 
-
-/* Load the inode with directory entry RECORD and cached Rock-Ridge
-   info RR into NP.  The directory entry is at OFFSET in BLOCK.  */
+/* Given RECORD and RR, calculate the cache id.  */
 error_t
-load_inode (struct node **npp, struct dirrect *record,
-	    struct rrip_lookup *rr)
+cache_id (struct dirrect *record, struct rrip_lookup *rr, ino_t *idp)
 {
   error_t err;
   off_t file_start;
-  struct disknode *dn;
-  struct node *np, *tmp;
-  off_t id;
-
   err = calculate_file_start (record, &file_start, rr);
   if (err)
     return err;
+
   if (rr->valid & VALID_CL)
     record = rr->realdirent;
 
-  /* First check the cache */
   if (use_file_start_id (record, rr))
-    id = file_start << store->log2_block_size;
+    *idp = file_start << store->log2_block_size;
   else
-    id = (off_t) ((void *) record - (void *) disk_image);
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-  inode_cache_find (id, npp);
-  pthread_rwlock_unlock (&nodecache_lock);
-  if (*npp)
-    return 0;
-
-  /* Create a new node */
-  dn = malloc (sizeof (struct disknode));
-  if (!dn)
-    return ENOMEM;
-
-  dn->fileinfo = 0;
-  dn->dr = record;
-  dn->file_start = file_start;
-
-  np = diskfs_make_node (dn);
-  if (!np)
-    {
-      free (dn);
-      return ENOMEM;
-    }
-
-  pthread_mutex_lock (&np->lock);
-
-  pthread_rwlock_wrlock (&nodecache_lock);
-  tmp = lookup (id);
-  if (tmp)
-    {
-      /* We lost a race.  */
-      diskfs_nput (np);
-      diskfs_nref (tmp);
-      *npp = tmp;
-      pthread_rwlock_unlock (&nodecache_lock);
-      return 0;
-    }
-
-  cache_inode (np, record, rr);
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  err = read_disknode (np, record, rr);
-  *npp = np;
-  return err;
+    *idp = (off_t) ((void *) record - (void *) disk_image);
+  return 0;
 }
 
-
-/* Read stat information from the directory entry at DR and the
-   contents of RL. */
-static error_t
-read_disknode (struct node *np, struct dirrect *dr,
-	       struct rrip_lookup *rl)
+/* The user must define this function if she wants to use the node
+   cache.  Read stat information out of the on-disk node.  */
+error_t
+diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 {
   error_t err;
   struct stat *st = &np->dn_stat;
+  /* Read stat information from the directory entry at DR and the
+     contents of RL. */
+  struct dirrect *dr = ctx->dr;
+  struct rrip_lookup *rl = &ctx->rr;
   st->st_fstype = FSTYPE_ISO9660;
   st->st_fsid = getpid ();
-  if (use_file_start_id (dr, rl))
-    st->st_ino = (ino_t) np->dn->file_start << store->log2_block_size;
-  else
-    st->st_ino = (ino_t) ((void *) dr - (void *) disk_image);
+  st->st_ino = np->cache_id;
   st->st_gen = 0;
   st->st_rdev = 0;
 
@@ -547,39 +329,15 @@ diskfs_node_norefs (struct node *np)
     free (np->dn->translator);
 
   assert (!np->dn->fileinfo);
-  free (np->dn);
   free (np);
 }
 
-/* The last hard reference to a node has gone away; arrange to have
-   all the weak references dropped that can be.  */
+/* The user must define this function if she wants to use the node
+   cache.  The last hard reference to a node has gone away; arrange to
+   have all the weak references dropped that can be.  */
 void
-diskfs_try_dropping_softrefs (struct node *np)
+diskfs_user_try_dropping_softrefs (struct node *np)
 {
-  pthread_rwlock_wrlock (&nodecache_lock);
-  if (np->cache_id != 0)
-    {
-      assert (node_cache[np->cache_id - 1].np == np);
-
-      /* Check if someone reacquired a reference through the
-	 node_cache.  */
-      struct references result;
-      refcounts_references (&np->refcounts, &result);
-
-      if (result.hard > 0)
-	{
-	  /* A reference was reacquired through a hash table lookup.
-	     It's fine, we didn't touch anything yet. */
-	  pthread_rwlock_unlock (&nodecache_lock);
-	  return;
-	}
-
-      node_cache[np->cache_id - 1].np = 0;
-      np->cache_id = 0;
-      diskfs_nrele_light (np);
-    }
-  pthread_rwlock_unlock (&nodecache_lock);
-
   drop_pager_softrefs (np);
 }
 
@@ -638,14 +396,6 @@ error_t
 diskfs_validate_author_change (struct node *np, uid_t author)
 {
   return EROFS;
-}
-
-error_t
-diskfs_node_iterate (error_t (*fun)(struct node *))
-{
-  /* We never actually have to do anything, because this function
-     is only used for things that have to do with read-write media. */
-  return 0;
 }
 
 void

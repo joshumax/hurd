@@ -70,12 +70,12 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 		    struct node **npp, struct dirstat *ds, struct protid *cred)
 {
   error_t err = 0;
-  struct dirrect *record;
+  struct lookup_context ctx;
   int namelen;
   int spec_dotdot;
   void *buf;
   void *blockaddr;
-  struct rrip_lookup rr;
+  ino_t id;
 
   if ((type == REMOVE) || (type == RENAME))
     assert (npp);
@@ -99,7 +99,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
        blockaddr < buf + dp->dn_stat.st_size;
        blockaddr += logical_sector_size)
     {
-      err = dirscanblock (blockaddr, name, namelen, &record, &rr);
+      err = dirscanblock (blockaddr, name, namelen, &ctx.dr, &ctx.rr);
 
       if (!err)
 	break;
@@ -115,6 +115,10 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   if (err)
     return err;
 
+  err = cache_id (ctx.dr, &ctx.rr, &id);
+  if (err)
+    return err;
+
   /* Load the inode */
   if (namelen == 2 && name[0] == '.' && name[1] == '.')
     {
@@ -125,7 +129,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 	  /* renames and removes can't get this far. */
 	  assert (type == LOOKUP);
 	  diskfs_nput (dp);
-	  err = load_inode (npp, record, &rr);
+	  err = diskfs_cached_lookup_context (id, npp, &ctx);
 	}
       else
 	{
@@ -133,7 +137,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 	     we are permanently read-only, so things are necessarily
 	     quiescent.  Just be careful to honor the locking order. */
 	  pthread_mutex_unlock (&dp->lock);
-	  err = load_inode (npp, record, &rr);
+	  err = diskfs_cached_lookup_context (id, npp, &ctx);
 	  pthread_mutex_lock (&dp->lock);
 	}
     }
@@ -143,9 +147,9 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
       diskfs_nref (dp);
     }
   else
-    err = load_inode (npp, record, &rr);
+    err = diskfs_cached_lookup_context (id, npp, &ctx);
 
-  release_rrip (&rr);
+  release_rrip (&ctx.rr);
   return err;
 }
 

@@ -56,6 +56,15 @@ struct user_pager_info
     struct pager *p;
 };
 
+struct lookup_context
+{
+  /* The directory record.  Points somewhere into the disk_image.  */
+  struct dirrect *dr;
+
+  /* The results of an rrip_scan_lookup call for this node.  */
+  struct rrip_lookup rr;
+};
+
 /* The physical media */
 extern struct store *store;
 
@@ -87,7 +96,9 @@ void drop_pager_softrefs (struct node *);
 void allow_pager_softrefs (struct node *);
 void create_disk_pager (void);
 
-error_t load_inode (struct node **, struct dirrect *, struct rrip_lookup *);
+/* Given RECORD and RR, calculate the cache id.  */
+error_t cache_id (struct dirrect *record, struct rrip_lookup *rr, ino_t *idp);
+
 error_t calculate_file_start (struct dirrect *, off_t *, struct rrip_lookup *);
 
 char *isodate_915 (char *, struct timespec *);
