@@ -36,9 +36,6 @@ struct disknode
 {
   cluster_t start_cluster;
 
-  /* Links on hash list.  */
-  struct node *hnext, **hprevp;
-
   /* The inode as returned by virtual inode management routines.  */
   inode_t inode;
 
@@ -69,6 +66,18 @@ struct disknode
 
   /* Index to start a directory lookup at.  */
   int dir_idx;
+};
+
+struct lookup_context
+{
+  /* The inode as returned by virtual inode management routines.  */
+  inode_t inode;
+
+  /* Use BUF as the directory file map.  */
+  vm_address_t buf;
+
+  /* Directory this node was allocated in (used by diskfs_alloc_node).  */
+  struct node *dir;
 };
 
 struct user_pager_info
@@ -116,8 +125,6 @@ void create_fat_pager (void);
 void flush_node_pager (struct node *node);
 
 void write_all_disknodes ();
-
-struct node *ifind (ino_t inum);
 
 error_t fat_get_next_cluster (cluster_t cluster, cluster_t *next_cluster);
 void fat_to_unix_filename (const char *, char *);

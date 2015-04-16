@@ -37,69 +37,21 @@
 #define UF_IMMUTABLE 0
 #endif
 
-#define INOHSZ  512
-#if     ((INOHSZ&(INOHSZ-1)) == 0)
-#define INOHASH(ino)    ((ino)&(INOHSZ-1))
-#else
-#define INOHASH(ino)    (((unsigned)(ino))%INOHSZ)
-#endif
-
-/* The nodehash is a cache of nodes.
-
-   Access to nodehash and nodehash_nr_items is protected by
-   nodecache_lock.
-
-   Every node in the nodehash carries a light reference.  When we are
-   asked to give up that light reference, we reacquire our lock
-   momentarily to check whether someone else reacquired a reference
-   through the nodehash.  */
-static struct node *nodehash[INOHSZ];
-static size_t nodehash_nr_items;
-static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
-
-static error_t read_node (struct node *np, vm_address_t buf);
-
-/* Initialize the inode hash table.  */
-void
-inode_init ()
-{
-  int n;
-  for (n = 0; n < INOHSZ; n++)
-    nodehash[n] = 0;
-}
-
-/* Lookup node with inode number INUM.  Returns NULL if the node is
-   not found in the node cache.  */
-static struct node *
-lookup (ino_t inum)
+/* The user must define this function if she wants to use the node
+   cache.  Create and initialize a node.  */
+error_t
+diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 {
   struct node *np;
-  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    if (np->cache_id == inum)
-      return np;
-  return NULL;
-}
-
-/* Fetch inode INUM, set *NPP to the node structure; gain one user
-   reference and lock the node.  */
-error_t
-diskfs_cached_lookup (ino64_t inum, struct node **npp)
-{
-  error_t err;
-  struct node *np, *tmp;
   struct disknode *dn;
 
-  pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
-  if (np)
-    goto gotit;
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  /* Format specific data for the new node.  */
-  dn = malloc (sizeof (struct disknode));
-  if (! dn)
+  /* Create the new node.  */
+  np = diskfs_make_node_alloc (sizeof *dn);
+  if (np == NULL)
     return ENOMEM;
 
+  /* Format specific data for the new node.  */
+  dn = np->dn;
   dn->pager = 0;
   dn->first = 0;
   dn->last = 0;
@@ -108,49 +60,9 @@ diskfs_cached_lookup (ino64_t inum, struct node **npp)
   dn->chain_extension_lock = PTHREAD_SPINLOCK_INITIALIZER;
   pthread_rwlock_init (&dn->alloc_lock, NULL);
   pthread_rwlock_init (&dn->dirent_lock, NULL);
-  
-  /* Create the new node.  */
-  np = diskfs_make_node (dn);
-  np->cache_id = inum;
-  np->dn->inode = vi_lookup(inum);
 
-  pthread_mutex_lock (&np->lock);
-  
-  /* Put NP in NODEHASH.  */
-  pthread_rwlock_wrlock (&nodecache_lock);
-  tmp = lookup (inum);
-  if (tmp)
-    {
-      /* We lost a race.  */
-      diskfs_nput (np);
-      np = tmp;
-      goto gotit;
-    }
-
-  dn->hnext = nodehash[INOHASH(inum)];
-  if (dn->hnext)
-    dn->hnext->dn->hprevp = &dn->hnext;
-  dn->hprevp = &nodehash[INOHASH(inum)];
-  nodehash[INOHASH(inum)] = np;
-  diskfs_nref_light (np);
-  nodehash_nr_items += 1;
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  /* Get the contents of NP off disk.  */
-  err = read_node (np, 0);
-
-  if (err)
-    return err;
-  else
-    {
-      *npp = np;
-      return 0;
-    }
-
- gotit:
-  diskfs_nref (np);
-  pthread_rwlock_unlock (&nodecache_lock);
-  pthread_mutex_lock (&np->lock);
+  dn->inode = ctx->inode;
+  dn->dirnode = ctx->dir;
   *npp = np;
   return 0;
 }
@@ -162,78 +74,8 @@ error_t
 diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
 {
   error_t err;
-  struct node *np;
-  struct disknode *dn;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-  for (np = nodehash[INOHASH(inum)]; np; np = np->dn->hnext)
-    if (np->cache_id == inum)
-      {
-        diskfs_nref (np);
-        pthread_rwlock_unlock (&nodecache_lock);
-        pthread_mutex_lock (&np->lock);
-        *npp = np;
-        return 0;
-      }
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  /* Format specific data for the new node.  */
-  dn = malloc (sizeof (struct disknode));
-  if (! dn)
-    return ENOMEM;
-
-  dn->pager = 0;
-  dn->first = 0;
-  dn->last = 0;
-  dn->length_of_chain = 0;
-  dn->chain_complete = 0;
-  dn->chain_extension_lock = PTHREAD_SPINLOCK_INITIALIZER;
-  pthread_rwlock_init (&dn->alloc_lock, NULL);
-  pthread_rwlock_init (&dn->dirent_lock, NULL);
-  
-  /* Create the new node.  */
-  np = diskfs_make_node (dn);
-  np->cache_id = inum;
-  np->dn->inode = vi_lookup(inum);
-
-  pthread_mutex_lock (&np->lock);
-  
-  /* Put NP in NODEHASH.  */
-  pthread_rwlock_wrlock (&nodecache_lock);
-  dn->hnext = nodehash[INOHASH(inum)];
-  if (dn->hnext)
-    dn->hnext->dn->hprevp = &dn->hnext;
-  dn->hprevp = &nodehash[INOHASH(inum)];
-  nodehash[INOHASH(inum)] = np;
-  diskfs_nref_light (np);
-  nodehash_nr_items += 1;
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  /* Get the contents of NP off disk.  */
-  err = read_node (np, buf);
-
-  if (err)
-    return err;
-  else
-    {
-      *npp = np;
-      return 0;
-    }
-}
-
-/* Lookup node INUM (which must have a reference already) and return
-   it without allocating any new references.  */
-struct node *
-ifind (ino_t inum)
-{
-  struct node *np;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  assert (np);
-  return np;
+  struct lookup_context ctx = { buf: buf, inode: vi_lookup (inum) };
+  return diskfs_cached_lookup_context (inum, npp, &ctx);
 }
 
 /* The last reference to a node has gone away; drop it from the hash
@@ -258,41 +100,15 @@ diskfs_node_norefs (struct node *np)
 
   assert (!np->dn->pager);
 
-  free (np->dn);
   free (np);
 }
 
-/* The last hard reference to a node has gone away; arrange to have
-   all the weak references dropped that can be.  */
+/* The user must define this function if she wants to use the node
+   cache.  The last hard reference to a node has gone away; arrange to
+   have all the weak references dropped that can be.  */
 void
-diskfs_try_dropping_softrefs (struct node *np)
+diskfs_user_try_dropping_softrefs (struct node *np)
 {
-  pthread_rwlock_wrlock (&nodecache_lock);
-  if (np->dn->hprevp != NULL)
-    {
-      /* Check if someone reacquired a reference through the
-	 nodehash.  */
-      struct references result;
-      refcounts_references (&np->refcounts, &result);
-
-      if (result.hard > 0)
-	{
-	  /* A reference was reacquired through a hash table lookup.
-	     It's fine, we didn't touch anything yet. */
-	  pthread_rwlock_unlock (&nodecache_lock);
-	  return;
-	}
-
-      *np->dn->hprevp = np->dn->hnext;
-      if (np->dn->hnext)
-	np->dn->hnext->dn->hprevp = np->dn->hprevp;
-      np->dn->hnext = NULL;
-      np->dn->hprevp = NULL;
-      nodehash_nr_items -= 1;
-      diskfs_nrele_light (np);
-    }
-  pthread_rwlock_unlock (&nodecache_lock);
-
   drop_pager_softrefs (np);
 }
 
@@ -310,9 +126,10 @@ diskfs_new_hardrefs (struct node *np)
   allow_pager_softrefs (np);
 }
 
-/* Read stat information out of the directory entry. */
-static error_t
-read_node (struct node *np, vm_address_t buf)
+/* The user must define this function if she wants to use the node
+   cache.  Read stat information out of the on-disk node.  */
+error_t
+diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 {
   /* XXX This needs careful investigation.  */
   error_t err;
@@ -323,6 +140,7 @@ read_node (struct node *np, vm_address_t buf)
   struct vi_key vk = vi_key(np->dn->inode);
   vm_prot_t prot = VM_PROT_READ;
   memory_object_t memobj;
+  vm_address_t buf = ctx->buf;
   vm_size_t buflen = 0;
   int our_buf = 0;
 
@@ -359,7 +177,7 @@ read_node (struct node *np, vm_address_t buf)
 	  /* FIXME: We know intimately that the parent dir is locked
 	     by libdiskfs.  The only case it is not locked is for NFS
 	     (fsys_getfile) and we disabled that.  */
-	  dp = ifind (vk.dir_inode);
+	  dp = diskfs_cached_ifind (vk.dir_inode);
 	  assert (dp);
       
 	  /* Map in the directory contents. */
@@ -572,7 +390,7 @@ error_t
 diskfs_node_reload (struct node *node)
 {
   struct cluster_chain *last = node->dn->first;
-
+  static struct lookup_context ctx = { buf: 0 };
   while (last)
     {
       struct cluster_chain *next = last->next;
@@ -580,61 +398,8 @@ diskfs_node_reload (struct node *node)
       last = next;
     }
   flush_node_pager (node);
-  read_node (node, 0);
 
-  return 0;
-}
-
-/* For each active node, call FUN.  The node is to be locked around the call
-   to FUN.  If FUN returns non-zero for any node, then immediately stop, and
-   return that value.  */
-error_t
-diskfs_node_iterate (error_t (*fun)(struct node *))
-{
-  error_t err = 0;
-  int n;
-  size_t num_nodes;
-  struct node *node, **node_list, **p;
-
-  pthread_rwlock_rdlock (&nodecache_lock);
-
-  /* We must copy everything from the hash table into another data structure
-     to avoid running into any problems with the hash-table being modified
-     during processing (normally we delegate access to hash-table with
-     nodecache_lock, but we can't hold this while locking the
-     individual node locks).  */
-
-  num_nodes = nodehash_nr_items;
-
-  node_list = alloca (num_nodes * sizeof (struct node *));
-  p = node_list;
-  for (n = 0; n < INOHSZ; n++)
-    for (node = nodehash[n]; node; node = node->dn->hnext)
-      {
-        *p++ = node;
-
-	/* We acquire a hard reference for node, but without using
-	   diskfs_nref.	 We do this so that diskfs_new_hardrefs will not
-	   get called.	*/
-	refcounts_ref (&node->refcounts, NULL);
-      }
-
-  pthread_rwlock_unlock (&nodecache_lock);
-
-  p = node_list;
-  while (num_nodes-- > 0)
-    {
-      node = *p++;
-      if (!err)
-        {
-          pthread_mutex_lock (&node->lock);
-          err = (*fun)(node);
-          pthread_mutex_unlock (&node->lock);
-        }
-      diskfs_nrele (node);
-    }
-
-  return err;
+  return diskfs_user_read_node (node, &ctx);
 }
 
 /* Write all active disknodes into the ext2_inode pager. */
@@ -812,7 +577,8 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   ino_t inum;
   inode_t inode;
   struct node *np;
-  
+  struct lookup_context ctx = { dir: dir };
+
   assert (!diskfs_readonly);
 
   /* FIXME: We use a magic key here that signals read_node that we are
@@ -821,12 +587,10 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   if (err)
     return err;
 
-  err = diskfs_cached_lookup (inum, &np);
+  err = diskfs_cached_lookup_context (inum, &np, &ctx);
   if (err)
     return err;
 
-  /* FIXME: We know that readnode couldn't put this in.  */
-  np->dn->dirnode = dir;
   refcounts_ref (&dir->refcounts, NULL);
 
   *node = np;

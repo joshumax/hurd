@@ -143,7 +143,7 @@ fetch_root ()
 {
   error_t err;
   ino_t inum;
-  inode_t inode;
+  struct lookup_context ctx;
 
   memset (&dr_root_node, 0, sizeof(struct dirrect));
 
@@ -196,13 +196,13 @@ fetch_root ()
      from the vi_zero_key (in the dir_offset value) as well as all
      normal virtual inode keys (in the dir_inode value).  Enter the
      disknode into the inode table.  */
-  err = vi_new ((struct vi_key) {0, 1}, &inum, &inode);
+  err = vi_new ((struct vi_key) {0, 1}, &inum, &ctx.inode);
   assert_perror (err);
 
   /* Allocate a node for the root directory disknode in
      diskfs_root_node.  */
   if (!err)
-    err = diskfs_cached_lookup (inum, &diskfs_root_node);
+    err = diskfs_cached_lookup_context (inum, &diskfs_root_node, &ctx);
 
   assert_perror (err);
 
