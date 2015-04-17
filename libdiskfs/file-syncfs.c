@@ -28,12 +28,12 @@ diskfs_S_file_syncfs (struct protid *cred,
   error_t 
     helper (struct node *np)
       {
-	error_t error;
+	error_t err;
 	mach_port_t control;
 	
-	error = fshelp_fetch_control (&np->transbox, &control);
+	err = fshelp_fetch_control (&np->transbox, &control);
 	pthread_mutex_unlock (&np->lock);
-	if (!error && (control != MACH_PORT_NULL))
+	if (!err && (control != MACH_PORT_NULL))
 	  {
 	    fsys_syncfs (control, wait, 1);
 	    mach_port_deallocate (mach_task_self (), control);

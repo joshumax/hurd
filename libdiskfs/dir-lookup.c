@@ -43,7 +43,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   char *nextname;
   char *relpath;
   int nextnamelen;
-  error_t error = 0;
+  error_t err = 0;
   char *pathbuf = 0;
   int pathbuflen = 0;
   int newnamelen;
@@ -132,16 +132,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  if (!ds)
 	    ds = alloca (diskfs_dirstat_size);
-	  error = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
+	  err = diskfs_lookup (dnp, path, CREATE, &np, ds, dircred);
 	}
       else
-	error = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
+	err = diskfs_lookup (dnp, path, LOOKUP, &np, 0, dircred);
 
-      if (lastcomp && create && excl && (!error || error == EAGAIN))
-	error = EEXIST;
+      if (lastcomp && create && excl && (!err || err == EAGAIN))
+	err = EEXIST;
 
       /* If we get an error we're done */
-      if (error == EAGAIN)
+      if (err == EAGAIN)
 	{
 	  if (dnp == dircred->po->shadow_root)
 	    /* We're at the root of a shadow tree.  */
@@ -151,7 +151,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  /* This is a shadow root with no parent, meaning
 		     we should treat it as a virtual root disconnected
 		  from its real .. directory.  */
-		  error = 0;
+		  err = 0;
 		  np = dnp;
 		  diskfs_nref (np);
 		}
@@ -163,7 +163,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 		  if (! lastcomp)
 		    strcpy (retryname, nextname);
-		  error = 0;
+		  err = 0;
 		  goto out;
 		}
 	    }
@@ -177,13 +177,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
 	      if (!lastcomp)
 		strcpy (retryname, nextname);
-	      error = 0;
+	      err = 0;
 	      goto out;
 	    }
 	  else
 	    /* We're at a REAL root, as in there's no way up from here.  */
 	    {
-	      error = 0;
+	      err = 0;
 	      np = dnp;
 	      diskfs_nref (np);
 	    }
@@ -192,11 +192,11 @@ diskfs_S_dir_lookup (struct protid *dircred,
       /* Create the new node if necessary */
       if (lastcomp && create)
 	{
-	  if (error == ENOENT)
+	  if (err == ENOENT)
 	    {
 	      mode &= ~(S_IFMT | S_ISPARE | S_ISVTX | S_ITRANS);
 	      mode |= S_IFREG;
-	      error = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
+	      err = diskfs_create_node (dnp, path, mode, &np, dircred, ds);
 	      if (diskfs_synchronous)
 		{
 		  diskfs_file_update (dnp, 1);
@@ -208,7 +208,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    diskfs_drop_dirstat (dnp, ds);
 	}
 
-      if (error)
+      if (err)
 	goto out;
 
       /* If this is translated, start the translator (if necessary)
@@ -260,21 +260,21 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  error = iohelp_create_empty_iouser (&user);
-	  if (! error)
+	  err = iohelp_create_empty_iouser (&user);
+	  if (! err)
 	    {
-	      error = diskfs_make_peropen (dnp, 0, dircred->po, &newpo);
-	      if (! error)
+	      err = diskfs_make_peropen (dnp, 0, dircred->po, &newpo);
+	      if (! err)
 		{
-		  error = diskfs_create_protid (newpo, user, &newpi);
-		  if (! error)
+		  err = diskfs_create_protid (newpo, user, &newpi);
+		  if (! err)
 		    newpo = 0;
 		}
 
 	      iohelp_free_iouser (user);
 	    }
 
-	  if (error)
+	  if (err)
 	    goto out;
 
 	  dirport = ports_get_send_right (newpi);
@@ -288,7 +288,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  boolean_t register_translator =
 	    np->transbox.active == MACH_PORT_NULL;
 
-	  error = fshelp_fetch_root (&np->transbox, dircred->po,
+	  err = fshelp_fetch_root (&np->transbox, dircred->po,
 				     dirport, dircred->user,
 				     lastcomp ? flags : 0,
 				     ((np->dn_stat.st_mode & S_IPTRANS)
@@ -301,10 +301,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	     deallocate our send right.  */
 	  mach_port_deallocate (mach_task_self (), dirport);
 
-	  if (error != ENOENT)
+	  if (err != ENOENT)
 	    {
 	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-	      if (!lastcomp && !error)
+	      if (!lastcomp && !err)
 		{
 		  char *end = strchr (retryname, '\0');
 		  *end++ = '/';
@@ -333,12 +333,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  else
 		      asprintf (&complete_path, "%s/%s", dircred->po->path, translator_path);
 
-		  error = fshelp_set_active_translator (&newpi->pi,
+		  err = fshelp_set_active_translator (&newpi->pi,
 							complete_path,
 							np->transbox.active);
 		  if (complete_path != translator_path)
 		    free(complete_path);
-		  if (error)
+		  if (err)
 		    goto out;
 		}
 
@@ -351,7 +351,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  /* ENOENT means there was a hiccup, and the translator
 	     vanished while NP was unlocked inside fshelp_fetch_root.
 	     Reacquire the locks, and continue as normal. */
-	  error = 0;
+	  err = 0;
 	  if (np != dnp)
 	    {
 	      if (!strcmp (path, ".."))
@@ -377,7 +377,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  if (nsymlink++ > diskfs_maxsymlinks)
 	    {
-	      error = ELOOP;
+	      err = ELOOP;
 	      goto out;
 	    }
 
@@ -390,16 +390,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    }
 
 	  if (diskfs_read_symlink_hook)
-	    error = (*diskfs_read_symlink_hook)(np, pathbuf);
-	  if (!diskfs_read_symlink_hook || error == EINVAL)
+	    err = (*diskfs_read_symlink_hook)(np, pathbuf);
+	  if (!diskfs_read_symlink_hook || err == EINVAL)
 	    {
-	      error = diskfs_node_rdwr (np, pathbuf,
+	      err = diskfs_node_rdwr (np, pathbuf,
 					0, np->dn_stat.st_size, 0,
 					dircred, &amt);
-	      if (!error)
+	      if (!err)
 		assert (amt == np->dn_stat.st_size);
 	    }
-	  if (error)
+	  if (err)
 	    goto out;
 
 	  if (np->dn_stat.st_size == 0)	/* symlink to "" */
@@ -471,7 +471,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   if (mustbedir && type != S_IFDIR)
     {
-      error = ENOTDIR;
+      err = ENOTDIR;
       goto out;
     }
 
@@ -482,25 +482,25 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    type == S_IFIFO)
 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
 	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
-	error = EACCES;
+	err = EACCES;
 
-      if (!error && (flags & O_READ))
-	error = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
+      if (!err && (flags & O_READ))
+	err = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
 
-      if (!error && (flags & O_EXEC))
-	error = fshelp_access (&np->dn_stat, S_IEXEC, dircred->user);
+      if (!err && (flags & O_EXEC))
+	err = fshelp_access (&np->dn_stat, S_IEXEC, dircred->user);
 
-      if (!error && (flags & O_WRITE))
+      if (!err && (flags & O_WRITE))
 	{
 	  if (type == S_IFDIR)
-	    error = EISDIR;
+	    err = EISDIR;
 	  else if (diskfs_check_readonly ())
-	    error = EROFS;
+	    err = EROFS;
 	  else
-	    error = fshelp_access (&np->dn_stat, S_IWRITE, dircred->user);
+	    err = fshelp_access (&np->dn_stat, S_IWRITE, dircred->user);
 	}
 
-      if (error)
+      if (err)
 	goto out;
     }
 
@@ -508,24 +508,24 @@ diskfs_S_dir_lookup (struct protid *dircred,
       && (fshelp_isowner (&np->dn_stat, dircred->user) == EPERM))
     flags &= ~O_NOATIME;
 
-  error = diskfs_make_peropen (np, (flags &~OPENONLY_STATE_MODES),
+  err = diskfs_make_peropen (np, (flags &~OPENONLY_STATE_MODES),
 			       dircred->po, &newpo);
 
-  if (! error)
-    error = diskfs_create_protid (newpo, dircred->user, &newpi);
+  if (! err)
+    err = diskfs_create_protid (newpo, dircred->user, &newpi);
 
-  if (! error)
+  if (! err)
     {
       newpo = 0;
       if (flags & O_EXLOCK)
-	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
+	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_EX);
       else if (flags & O_SHLOCK)
-	error = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
+	err = fshelp_acquire_lock (&np->userlock, &newpi->po->lock_status,
 				     &np->lock, LOCK_SH);
     }
 
-  if (! error)
+  if (! err)
     {
       free (newpi->po->path);
       if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
@@ -541,7 +541,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	}
 
       if (! newpi->po->path)
-	error = errno;
+	err = errno;
 
       *returned_port = ports_get_right (newpi);
       ports_port_deref (newpi);
@@ -566,5 +566,5 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   free (relpath);
 
-  return error;
+  return err;
 }
