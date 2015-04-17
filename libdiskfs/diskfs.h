@@ -697,9 +697,11 @@ struct node *diskfs_make_node_alloc (size_t size);
    this value for offset calculations.  */
 extern const size_t _diskfs_sizeof_struct_node;
 
+#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+
 /* Return the address of the disknode for NODE.  NODE must have been
    allocated using diskfs_make_node_alloc.  */
-static inline struct disknode *
+DISKFS_EXTERN_INLINE struct disknode *
 diskfs_node_disknode (struct node *node)
 {
   return (struct disknode *) ((char *) node + _diskfs_sizeof_struct_node);
@@ -707,11 +709,13 @@ diskfs_node_disknode (struct node *node)
 
 /* Return the address of the node for DISKNODE.  DISKNODE must have
    been allocated using diskfs_make_node_alloc.  */
-static inline struct node *
+DISKFS_EXTERN_INLINE struct node *
 diskfs_disknode_node (struct disknode *disknode)
 {
   return (struct node *) ((char *) disknode - _diskfs_sizeof_struct_node);
 }
+
+#endif /* Use extern inlines.  */
 
 
 /* The library also exports the following functions; they are not generally
