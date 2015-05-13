@@ -428,6 +428,20 @@ netfs_S_dir_lookup (struct protid *diruser,
   return err;
 }
 
+/* The user may define this function.  Attempt to set the passive
+   translator record for FILE to ARGZ (of length ARGZLEN) for user
+   CRED. */
+error_t
+netfs_set_translator (struct iouser *cred, struct node *np,
+		      char *argz, size_t argzlen)
+{
+  return file_set_translator (netfs_node_netnode (np)->file,
+			      FS_TRANS_EXCL|FS_TRANS_SET,
+			      FS_TRANS_EXCL|FS_TRANS_SET, 0,
+			      argz, argzlen,
+			      MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
+}
+
 /* These callbacks are used only by the standard netfs_S_dir_lookup,
    which we do not use.  But the shared library requires us to define them.  */
 error_t
