@@ -728,9 +728,10 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   entry_key.dir_inode = dp->cache_id;
   entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
   err = vi_rlookup (entry_key, &inode, &vinode, 0);
-  
   assert (err != EINVAL);
-  
+  if (err)
+    return err;
+
   /*  Lookup the node, we already have a reference.  */
   oldnp = diskfs_cached_ifind (inode);
 
