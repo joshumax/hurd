@@ -94,6 +94,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   ds = buf;
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   assert (err != EAGAIN);	/* <-> assert (TONAME != "..") */
+  if (err && err != ENOENT)
+    goto out;
 
   if (tnp == fnp)
     {
