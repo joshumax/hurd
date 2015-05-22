@@ -214,8 +214,8 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
 
       if (file != MACH_PORT_NULL && (nn->openmodes & ~newmodes))
 	{
-	  /* Intersecting sets.
-	     We need yet another new peropen on this node.  */
+	  /* Intersecting sets with no inclusion. `file' doesn't fit either,
+	     we need yet another new peropen on this node.  */
 	  mach_port_deallocate (mach_task_self (), file);
 	  file = MACH_PORT_NULL;
 	}
