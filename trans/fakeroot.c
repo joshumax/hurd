@@ -544,14 +544,28 @@ real_from_fake_mode (mode_t mode)
 error_t
 netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 {
+  struct netnode *nn;
+  mode_t real_mode;
+
   if ((mode & S_IFMT) == 0)
     mode |= np->nn_stat.st_mode & S_IFMT;
   if ((mode & S_IFMT) != (np->nn_stat.st_mode & S_IFMT))
     return EOPNOTSUPP;
 
+  /* Make sure that `check_openmodes' will still always be able to reopen
+     it.  */
+  real_mode = mode;
+  nn = netfs_node_netnode (np);
+  if (nn->openmodes & O_READ)
+    real_mode |= S_IRUSR;
+  if (nn->openmodes & O_WRITE)
+    real_mode |= S_IWUSR;
+  if (nn->openmodes & O_EXEC)
+    real_mode |= S_IXUSR;
+
   /* We don't bother with error checking since the fake mode change should
      always succeed--worst case a later open will get EACCES.  */
-  (void) file_chmod (netfs_node_netnode (np)->file, mode);
+  (void) file_chmod (nn->file, real_mode);
   set_faked_attribute (np, FAKE_MODE);
   np->nn_stat.st_mode = mode;
   return 0;
