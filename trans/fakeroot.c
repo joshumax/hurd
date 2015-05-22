@@ -75,6 +75,9 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
 {
   error_t err;
   struct netnode *nn;
+
+  assert ((openmodes & ~(O_RDWR|O_EXEC)) == 0);
+
   *np = netfs_make_node_alloc (sizeof *nn);
   if (*np == 0)
     {
@@ -202,6 +205,8 @@ static error_t
 check_openmodes (struct netnode *nn, int newmodes, file_t file)
 {
   error_t err = 0;
+
+  assert ((newmodes & ~(O_RDWR|O_EXEC)) == 0);
 
   if (newmodes &~ nn->openmodes)
     {
@@ -390,7 +395,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   else
     {
       pthread_spin_unlock (&netfs_node_refcnt_lock);
-      err = new_node (file, idport, 1, flags, &np);
+      err = new_node (file, idport, 1, flags & (O_RDWR|O_EXEC), &np);
       pthread_mutex_unlock (&dnp->lock);
       if (!err)
 	{
