@@ -242,7 +242,8 @@ vm_state_get_field (struct vm_state *state, const struct field *field)
 static val_t
 get_memobj_hit_ratio (struct vm_state *state, const struct field *field)
 {
-  return state->vmstats.hits * 100 / state->vmstats.lookups;
+  return (val_t)
+    ((float) state->vmstats.hits * 100. / (float) state->vmstats.lookups);
 }
 
 /* Makes sure STATE contains a default pager port and associated info, and
