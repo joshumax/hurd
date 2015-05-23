@@ -13,8 +13,10 @@ find_ucs (int keysym, struct ksmap *first, struct ksmap *last)
 
   if (middle->keysym == keysym)
     return middle->ucs; /* base case: needle found. */
-  else if (middle == first && middle == last)
-    return 0; /* base case: empty search space. */
+  else if (first == last		/* empty search space */
+           || keysym < first->keysym	/* lookup failure */
+           || keysym > last->keysym)	/* lookup failure */
+    return 0;
   /* recursive cases: halve search space. */
   else if (middle->keysym < keysym)
     return find_ucs (keysym, middle+1, last);
