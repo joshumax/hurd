@@ -54,7 +54,7 @@ int timer_remove (struct timer_list *timer);
 /* Change the expiration time of the timer TIMER to EXPIRES.  */
 void timer_change (struct timer_list *timer, long long expires);
 
-extern inline long long
+static inline long long
 fetch_jiffies ()
 {
   extern volatile struct mapped_time_value *timer_mapped_time;
