@@ -62,7 +62,7 @@ ftpcp ftpdir: ../libftpconn/libftpconn.a
 settrans: ../libfshelp/libfshelp.a ../libports/libports.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
-  storecat msgport mount umount nullauth: \
+  storecat msgport mount umount nullauth rpctrace: \
 	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(filter-out $(special-targets), $(targets)): %: %.o
