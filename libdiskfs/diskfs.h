@@ -732,6 +732,14 @@ struct node *diskfs_make_node_alloc (size_t size);
    this value for offset calculations.  */
 extern const size_t _diskfs_sizeof_struct_node;
 
+/* Return the address of the disknode for NODE.  NODE must have been
+   allocated using diskfs_make_node_alloc.  */
+struct disknode *diskfs_node_disknode (struct node *node);
+
+/* Return the address of the node for DISKNODE.  DISKNODE must have
+   been allocated using diskfs_make_node_alloc.  */
+struct node *diskfs_disknode_node (struct disknode *disknode);
+
 #if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
 
 /* Return the address of the disknode for NODE.  NODE must have been
