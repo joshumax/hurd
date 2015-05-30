@@ -31,7 +31,7 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
 	rpctrace.c mount.c gcore.c fakeauth.c fakeroot.sh remap.sh \
-	nullauth.c match-options.c
+	nullauth.c match-options.c msgids.c
 
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
@@ -67,8 +67,10 @@ ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
 
 $(filter-out $(special-targets), $(targets)): %: %.o
 
-rpctrace: ../libports/libports.a ../libihash/libihash.a
-rpctrace-CPPFLAGS = -DDATADIR=\"${datadir}\"
+rpctrace: ../libports/libports.a
+rpctrace: msgids.o \
+	  ../libihash/libihash.a
+msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
 	  ../libports/libports.a ../libihash/libihash.a \
