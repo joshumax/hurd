@@ -199,7 +199,6 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
   if (node_list == NULL)
     {
       pthread_rwlock_unlock (&nodecache_lock);
-      error (0, 0, "unable to allocate temporary node table");
       return ENOMEM;
     }
 
