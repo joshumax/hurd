@@ -68,6 +68,8 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   src = new_fmt->src;
   while (*src != '\0')
     {
+      char *start = src;
+
       if (field - fields == fields_alloced)
 	/* Time to grow FIELDS to make room for more.  */
 	{
@@ -172,6 +174,19 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	    /* This field spec doesn't have a name, so use its flags fields
 	       to set the global ones, and skip it.  */
 	    {
+	      /* if we didn't use any chars, don't loop indefinitely */
+	      if (src == start)
+		{
+		  if (err_string)
+		    asprintf (err_string, "%s: Unknown format spec", src);
+
+		  FREE (new_fmt->src);
+		  FREE (new_fmt);
+		  FREE (fields);
+
+		  return EINVAL;
+		}
+
 	      global_clr_flags = clr_flags;
 	      global_inv_flags = inv_flags;
 	      continue;
