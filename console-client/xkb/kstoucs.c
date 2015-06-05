@@ -17,15 +17,15 @@ find_ucs (int keysym, struct ksmap *first, struct ksmap *last)
 
   if (middle->keysym == keysym)
     return middle->ucs; /* base case: needle found. */
-  else if (first == last		/* empty search space */
-           || keysym < first->keysym	/* lookup failure */
-           || keysym > last->keysym)	/* lookup failure */
+  else if (first == last) /* empty search space */
     return 0;
   /* recursive cases: halve search space. */
   else if (middle->keysym < keysym)
     return find_ucs (keysym, middle+1, last);
   else if (middle->keysym > keysym)
-    return find_ucs (keysym, first, middle-1);
+    /* don't remove middle from the range to compensate
+       for rounding down in it's calculation */
+    return find_ucs (keysym, first, middle);
   return 0;
 }
 
