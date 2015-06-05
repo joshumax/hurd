@@ -1,3 +1,5 @@
+#include <assert.h>
+
 struct ksmap {
   int keysym;
   unsigned int ucs;
@@ -10,6 +12,8 @@ static unsigned int
 find_ucs (int keysym, struct ksmap *first, struct ksmap *last)
 {
   struct ksmap *middle = first + (last - first) / 2;
+
+  assert (first <= last);
 
   if (middle->keysym == keysym)
     return middle->ucs; /* base case: needle found. */
