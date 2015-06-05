@@ -292,6 +292,14 @@ PKG_CHECK_MODULES([X11], [x11 xproto],
        have_x11=no])
   ], [have_x11=no])
 ])
+
+AS_IF([test "$have_x11" = "yes"],
+  [AC_MSG_CHECKING([whether AWK is usable])
+   AS_IF([test "$AWK" != ":" && $AWK 'BEGIN { strtonum("1"); }' 2>/dev/null],
+     [AC_MSG_RESULT([yes])],
+     [AC_MSG_RESULT([no])
+      AC_MSG_ERROR([$AWK does not provide required strtonum function])])])
+
 AC_SUBST([have_x11])
 AC_SUBST([XKB_BASE])
 AC_DEFINE_UNQUOTED([X11_PREFIX], "$X11_PREFIX")
