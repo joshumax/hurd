@@ -301,12 +301,14 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
 {
   struct hurd_ihash old_ht = *ht;
   int was_added;
+  int fatal = 0;	/* bail out on allocation errors */
   unsigned int i;
 
   if (ht->size)
     {
       /* Only fill the hash table up to its maximum load factor.  */
       if (hurd_ihash_get_load (ht) <= ht->max_load)
+      add_one:
 	if (add_one (ht, key, item))
 	  return 0;
     }
@@ -324,7 +326,15 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
   if (ht->items == NULL)
     {
       *ht = old_ht;
-      return ENOMEM;
+      if (fatal || ht->size == 0)
+        return ENOMEM;
+
+      /* We prefer performance degradation over failure.  Therefore,
+	 we add the item even though we are above the load factor.  If
+	 the table is full, this will fail.  We set the fatal flag to
+	 avoid looping.	 */
+      fatal = 1;
+      goto add_one;
     }
 
   /* We have to rehash the old entries.  */
