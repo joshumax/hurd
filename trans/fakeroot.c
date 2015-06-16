@@ -554,13 +554,11 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 
   /* Make sure that `check_openmodes' will still always be able to reopen
      it.  */
-  real_mode = mode;
   nn = netfs_node_netnode (np);
-  if (nn->openmodes & O_READ)
-    real_mode |= S_IRUSR;
-  if (nn->openmodes & O_WRITE)
-    real_mode |= S_IWUSR;
-  if (nn->openmodes & O_EXEC)
+  real_mode = mode;
+  real_mode |= S_IRUSR;
+  real_mode |= S_IWUSR;
+  if (S_ISDIR (mode) || (nn->openmodes & O_EXEC))
     real_mode |= S_IXUSR;
 
   /* We don't bother with error checking since the fake mode change should
