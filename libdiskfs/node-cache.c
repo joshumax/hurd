@@ -17,45 +17,48 @@
    You should have received a copy of the GNU General Public License
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
+#include <hurd/ihash.h>
+
 #include "priv.h"
 
-#define	INOHSZ	8192
-#if	((INOHSZ&(INOHSZ-1)) == 0)
-#define	INOHASH(ino)	((ino)&(INOHSZ-1))
-#else
-#define	INOHASH(ino)	(((unsigned)(ino))%INOHSZ)
-#endif
+/* The node cache is implemented using a hash table.  Access to the
+   cache is protected by nodecache_lock.
 
-/* The nodehash is a cache of nodes.
-
-   Access to nodehash and nodehash_nr_items is protected by
-   nodecache_lock.
-
-   Every node in the nodehash carries a light reference.  When we are
+   Every node in the cache carries a light reference.  When we are
    asked to give up that light reference, we reacquire our lock
    momentarily to check whether someone else reacquired a reference
-   through the nodehash.  */
-static struct node *nodehash[INOHSZ];
-static size_t nodehash_nr_items;
+   through the cache.  */
+
+/* The size of ino_t is larger than hurd_ihash_key_t on 32 bit
+   platforms.  We therefore have to use libihashs generalized key
+   interface.  */
+
+/* This is the mix function of fasthash, see
+   https://code.google.com/p/fast-hash/ for reference.  */
+#define mix_fasthash(h) ({              \
+        (h) ^= (h) >> 23;               \
+        (h) *= 0x2127599bf4325c37ULL;   \
+        (h) ^= (h) >> 47; })
+
+static hurd_ihash_key_t
+hash (const void *key)
+{
+  ino_t i;
+  i = *(ino_t *) key;
+  mix_fasthash (i);
+  return (hurd_ihash_key_t) i;
+}
+
+static int
+compare (const void *a, const void *b)
+{
+  return *(ino_t *) a == *(ino_t *) b;
+}
+
+static struct hurd_ihash nodecache =
+  HURD_IHASH_INITIALIZER_GKI (offsetof (struct node, slot), NULL, NULL,
+                              hash, compare);
 static pthread_rwlock_t nodecache_lock = PTHREAD_RWLOCK_INITIALIZER;
-
-/* Initialize the inode hash table. */
-static void __attribute__ ((constructor))
-nodecache_init ()
-{
-}
-
-/* Lookup node with inode number INUM.  Returns NULL if the node is
-   not found in the node cache.  */
-static struct node *
-lookup (ino_t inum)
-{
-  struct node *np;
-  for (np = nodehash[INOHASH(inum)]; np; np = np->hnext)
-    if (np->cache_id == inum)
-      return np;
-  return NULL;
-}
 
 /* Fetch inode INUM, set *NPP to the node structure;
    gain one user reference and lock the node.  */
@@ -73,9 +76,10 @@ diskfs_cached_lookup_context (ino_t inum, struct node **npp,
 {
   error_t err;
   struct node *np, *tmp;
+  hurd_ihash_locp_t slot;
 
   pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
+  np = hurd_ihash_locp_find (&nodecache, (hurd_ihash_key_t) &inum, &slot);
   if (np)
     goto gotit;
   pthread_rwlock_unlock (&nodecache_lock);
@@ -89,7 +93,8 @@ diskfs_cached_lookup_context (ino_t inum, struct node **npp,
 
   /* Put NP in NODEHASH.  */
   pthread_rwlock_wrlock (&nodecache_lock);
-  tmp = lookup (inum);
+  tmp = hurd_ihash_locp_find (&nodecache, (hurd_ihash_key_t) &np->cache_id,
+			      &slot);
   if (tmp)
     {
       /* We lost a race.  */
@@ -98,13 +103,10 @@ diskfs_cached_lookup_context (ino_t inum, struct node **npp,
       goto gotit;
     }
 
-  np->hnext = nodehash[INOHASH(inum)];
-  if (np->hnext)
-    np->hnext->hprevp = &np->hnext;
-  np->hprevp = &nodehash[INOHASH(inum)];
-  nodehash[INOHASH(inum)] = np;
+  err = hurd_ihash_locp_add (&nodecache, slot,
+			     (hurd_ihash_key_t) &np->cache_id, np);
+  assert_perror (err);
   diskfs_nref_light (np);
-  nodehash_nr_items += 1;
   pthread_rwlock_unlock (&nodecache_lock);
 
   /* Get the contents of NP off disk.  */
@@ -133,7 +135,7 @@ diskfs_cached_ifind (ino_t inum)
   struct node *np;
 
   pthread_rwlock_rdlock (&nodecache_lock);
-  np = lookup (inum);
+  np = hurd_ihash_find (&nodecache, (hurd_ihash_key_t) &inum);
   pthread_rwlock_unlock (&nodecache_lock);
 
   assert (np);
@@ -144,7 +146,7 @@ void __attribute__ ((weak))
 diskfs_try_dropping_softrefs (struct node *np)
 {
   pthread_rwlock_wrlock (&nodecache_lock);
-  if (np->hprevp != NULL)
+  if (np->slot != NULL)
     {
       /* Check if someone reacquired a reference through the
 	 nodehash.  */
@@ -159,12 +161,8 @@ diskfs_try_dropping_softrefs (struct node *np)
 	  return;
 	}
 
-      *np->hprevp = np->hnext;
-      if (np->hnext)
-	np->hnext->hprevp = np->hprevp;
-      np->hnext = NULL;
-      np->hprevp = NULL;
-      nodehash_nr_items -= 1;
+      hurd_ihash_locp_remove (&nodecache, np->slot);
+      np->slot = NULL;
       diskfs_nrele_light (np);
     }
   pthread_rwlock_unlock (&nodecache_lock);
@@ -179,7 +177,6 @@ error_t __attribute__ ((weak))
 diskfs_node_iterate (error_t (*fun)(struct node *))
 {
   error_t err = 0;
-  int n;
   size_t num_nodes;
   struct node *node, **node_list, **p;
 
@@ -191,7 +188,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
      nodecache_lock, but we can't hold this while locking the
      individual node locks).  */
   /* XXX: Can we?  */
-  num_nodes = nodehash_nr_items;
+  num_nodes = nodecache.nr_items;
 
   /* TODO This method doesn't scale beyond a few dozen nodes and should be
      replaced.  */
@@ -203,17 +200,15 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
     }
 
   p = node_list;
-  for (n = 0; n < INOHSZ; n++)
-    for (node = nodehash[n]; node; node = node->hnext)
-      {
-	*p++ = node;
+  HURD_IHASH_ITERATE (&nodecache, i)
+    {
+      *p++ = node = i;
 
-	/* We acquire a hard reference for node, but without using
-	   diskfs_nref.	 We do this so that diskfs_new_hardrefs will not
-	   get called.	*/
-	refcounts_ref (&node->refcounts, NULL);
-      }
-
+      /* We acquire a hard reference for node, but without using
+	 diskfs_nref.  We do this so that diskfs_new_hardrefs will not
+	 get called.  */
+      refcounts_ref (&node->refcounts, NULL);
+    }
   pthread_rwlock_unlock (&nodecache_lock);
 
   p = node_list;

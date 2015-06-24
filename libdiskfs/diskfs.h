@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <hurd/ports.h>
 #include <hurd/fshelp.h>
+#include <hurd/ihash.h>
 #include <hurd/iohelp.h>
 #include <idvec.h>
 #include <features.h>
@@ -80,8 +81,8 @@ struct peropen
    filesystem.  */
 struct node
 {
-  /* Links on hash list. */
-  struct node *hnext, **hprevp;
+  /* The slot we occupy in the node cache.  */
+  hurd_ihash_locp_t slot;
 
   struct disknode *dn;
 
