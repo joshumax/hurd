@@ -297,7 +297,7 @@ int diskfs_shortcut_ifsock;
 
 /* The user may define this variable, otherwise it has a default value of 30.
    diskfs_set_sync_interval is called with this value when the first diskfs
-   thread is started up (in diskfs_spawn_first_threa).   */
+   thread is started up (in diskfs_spawn_first_thread).   */
 extern int diskfs_default_sync_interval;
 
 /* The user must define this variable, which should be a string that somehow
