@@ -37,8 +37,11 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   newright = ports_get_send_right (newpi);
   assert (newright != MACH_PORT_NULL);
 
+  /* Release the node lock while blocking on the auth server and client.  */
+  pthread_mutex_unlock (&user->po->np->lock);
   err = iohelp_reauth (&newpi->user, netfs_auth_server_port, rend_port,
 		       newright, 1);
+  pthread_mutex_lock (&user->po->np->lock);
 
   mach_port_deallocate (mach_task_self (), rend_port);
   mach_port_deallocate (mach_task_self (), newright);
