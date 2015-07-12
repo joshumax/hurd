@@ -686,6 +686,36 @@ finish (struct execdata *e, int dealloc_file)
     }
 }
 
+/* Set the name of the new task so that the kernel can use it in error
+   messages.  If PID is not zero, it will be included the name.  */
+static void
+set_name (task_t task, const char *exec_name, pid_t pid)
+{
+  char *name;
+  int size;
+
+  if (pid)
+    size = asprintf (&name, "%s(%d)", exec_name, pid);
+  else
+    size = asprintf (&name, "%s", exec_name);
+
+  if (size == 0)
+    return;
+
+  /* This is an internal implementational detail of the GNU Mach kernel.  */
+#define TASK_NAME_SIZE	32
+  if (size < TASK_NAME_SIZE)
+    task_set_name (task, name);
+  else
+    {
+      char *abbr = name + size - TASK_NAME_SIZE + 1;
+      abbr[0] = abbr[1] = abbr[2] = '.';
+      task_set_name (task, abbr);
+    }
+#undef TASK_NAME_SIZE
+
+  free (name);
+}
 
 /* Load the file.  */
 static void
@@ -1173,24 +1203,10 @@ do_exec (file_t file,
       if (e.error)
 	goto out;
 
-      char *name;
-      int size = asprintf (&name, "%s(%d)", argv, pid);
-      if (size > 0)
-	{
-/* This is an internal implementational detail of the gnumach kernel.  */
-#define TASK_NAME_SIZE	32
-	  if (size < TASK_NAME_SIZE)
-	    task_set_name (newtask, name);
-	  else
-	    {
-	      char *abbr = name + size - TASK_NAME_SIZE + 1;
-	      abbr[0] = abbr[1] = abbr[2] = '.';
-	      task_set_name (newtask, abbr);
-	    }
-#undef TASK_NAME_SIZE
-	  free (name);
-	}
+      set_name (newtask, argv, pid);
     }
+  else
+    set_name (newtask, argv, 0);
 
   /* Create the initial thread.  */
   e.error = thread_create (newtask, &thread);
