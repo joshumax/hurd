@@ -146,7 +146,7 @@ main (int argc, char **argv)
       error (1, errno, "failed to fork");
     case 0:
       execv (args[0], args);
-      error (2, errno, "failed to execv child");
+      error (2, errno, "failed to execv child %s", args[0]);
     }
 
   select (0, NULL, NULL, NULL, NULL);
