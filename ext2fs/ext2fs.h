@@ -50,9 +50,10 @@ typedef int8_t    __s8;
 #undef ext2_debug
 
 #ifdef EXT2FS_DEBUG
+#include <stdio.h>
 extern int ext2_debug_flag;
 #define ext2_debug(f, a...) \
- do { if (ext2_debug_flag) printf ("ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a); } while (0)
+ do { if (ext2_debug_flag) fprintf (stderr, "ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a); } while (0)
 #else
 #define ext2_debug(f, a...)	(void)0
 #endif
@@ -64,8 +65,6 @@ extern int ext2_debug_flag;
    of paging requests, which may be helpful in catching bugs. */
 
 #undef DONT_CACHE_MEMORY_OBJECTS
-
-int printf (const char *fmt, ...);
 
 /* A block number.  */
 typedef __u32 block_t;
