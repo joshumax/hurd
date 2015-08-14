@@ -175,6 +175,11 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	  pi = ports_lookup_port (bucket, inp->msgh_local_port, 0);
 	  if (pi)
 	    {
+	      /* Store the objects address as the payload and set the
+		 message type accordingly.  This prevents us from
+		 having to do another hash table lookup in the intran
+		 functions if protected payloads are not supported by
+		 the kernel.  */
 	      inp->msgh_bits = MACH_MSGH_BITS (
 		MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
 		MACH_MSG_TYPE_PROTECTED_PAYLOAD);
