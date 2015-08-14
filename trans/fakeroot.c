@@ -482,7 +482,7 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
   if (netfs_node_netnode (np)->faked & FAKE_AUTHOR)
     st.st_author = np->nn_stat.st_author;
   if (netfs_node_netnode (np)->faked & FAKE_MODE)
-    st.st_mode = np->nn_stat.st_mode;
+    st.st_mode = (st.st_mode & S_IFMT) | (np->nn_stat.st_mode & ~S_IFMT);
 
   np->nn_stat = st;
   np->nn_translated = S_ISLNK (st.st_mode) ? S_IFLNK : 0;
