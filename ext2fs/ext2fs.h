@@ -52,8 +52,10 @@ typedef int8_t    __s8;
 #ifdef EXT2FS_DEBUG
 #include <stdio.h>
 extern int ext2_debug_flag;
+#define ext2_debug_(f, a...) \
+ fprintf (stderr, "ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a)
 #define ext2_debug(f, a...) \
- do { if (ext2_debug_flag) fprintf (stderr, "ext2fs: (debug) %s: " f "\n", __FUNCTION__ , ## a); } while (0)
+ do { if (ext2_debug_flag) ext2_debug_(f, ## a); } while (0)
 #else
 #define ext2_debug(f, a...)	(void)0
 #endif
