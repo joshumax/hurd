@@ -780,7 +780,11 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 error_t
 netfs_report_access (struct iouser *cred, struct node *np, int *types)
 {
-  *types = O_RDWR|O_EXEC;
+  struct netnode *nn = netfs_node_netnode (np);
+  if (!(nn->faked & FAKE_MODE))
+    return file_check_access (nn->file, types);
+  else
+    *types = O_RDWR|O_EXEC;
   return 0;
 }
 
