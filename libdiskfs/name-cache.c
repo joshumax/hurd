@@ -355,7 +355,7 @@ diskfs_check_lookup_cache (struct node *dir, const char *name)
 	      pthread_mutex_lock (&cache_lock);
 	      found = lookup (dir->cache_id, name, key, &bucket, &i);
 	      if (! found
-		  || ! bucket->node_cache_id[i] != id)
+		  || bucket->node_cache_id[i] != id)
 		{
 		  pthread_mutex_unlock (&cache_lock);
 
