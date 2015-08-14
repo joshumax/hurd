@@ -58,7 +58,7 @@ begin_using_addr_port(mach_port_t port)
 static inline addr_t __attribute__ ((unused))
 begin_using_addr_payload (unsigned long payload)
 {
-  return ports_lookup_port (NULL, payload, addr_port_class);
+  return ports_lookup_payload (NULL, payload, addr_port_class);
 }
 
 static inline void __attribute__ ((unused))
