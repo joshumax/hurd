@@ -22,7 +22,7 @@ targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
 	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
 	storeread msgport rpctrace mount gcore fakeauth fakeroot remap \
-	umount nullauth rpcscan
+	umount nullauth rpcscan vmallocate
 
 special-targets = loginpr sush uptime fakeroot remap
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
