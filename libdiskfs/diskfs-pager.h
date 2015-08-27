@@ -40,6 +40,7 @@ extern void diskfs_start_disk_pager (struct user_pager_info *info,
 				     size_t size, void **image);
 
 extern struct pager *diskfs_disk_pager;
+extern struct pager_requests *diskfs_disk_pager_requests;
 
 struct disk_image_user
   {

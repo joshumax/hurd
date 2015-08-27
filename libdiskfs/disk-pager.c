@@ -24,6 +24,7 @@
 __thread struct disk_image_user *diskfs_exception_diu;
 
 struct pager *diskfs_disk_pager;
+struct pager_requests *diskfs_disk_pager_requests;
 
 static void fault_handler (int sig, long int sigcode, struct sigcontext *scp);
 static struct hurd_signal_preemptor preemptor =
@@ -43,7 +44,7 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
   mach_port_t disk_pager_port;
 
   /* Start libpagers worker threads.  */
-  err = pager_start_workers (pager_bucket);
+  err = pager_start_workers (pager_bucket, &diskfs_disk_pager_requests);
   if (err)
     error (2, err, "creating pager worker threads failed");
 

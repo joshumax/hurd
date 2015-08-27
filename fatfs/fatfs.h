@@ -121,6 +121,8 @@ extern struct dirrect dr_root_node;
 void drop_pager_softrefs (struct node *);
 void allow_pager_softrefs (struct node *);
 void create_fat_pager (void);
+error_t inhibit_fat_pager (void);
+void resume_fat_pager (void);
 
 void flush_node_pager (struct node *node);
 

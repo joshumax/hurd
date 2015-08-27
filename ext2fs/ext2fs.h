@@ -202,6 +202,12 @@ struct user_pager_info
 /* Set up the disk pager.  */
 void create_disk_pager (void);
 
+/* Inhibit the disk pager.  */
+error_t inhibit_ext2_pager (void);
+
+/* Resume the disk pager.  */
+void resume_ext2_pager (void);
+
 /* Call this when we should turn off caching so that unused memory object
    ports get freed.  */
 void drop_pager_softrefs (struct node *node);

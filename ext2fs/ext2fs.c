@@ -207,10 +207,20 @@ main (int argc, char **argv)
 error_t
 diskfs_reload_global_state ()
 {
+  error_t err;
+
   pokel_flush (&global_pokel);
   pager_flush (diskfs_disk_pager, 1);
-  sblock = NULL;
+
+  /* libdiskfs is not responsible for inhibiting paging.  */
+  err = inhibit_ext2_pager ();
+  if (err)
+    return err;
+
   get_hypermetadata ();
   map_hypermetadata ();
+
+  resume_ext2_pager ();
+
   return 0;
 }

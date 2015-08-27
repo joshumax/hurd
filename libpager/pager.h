@@ -25,8 +25,32 @@
    scope.  */
 struct user_pager_info;
 
-/* Start the worker threads libpager uses to service requests.  */
-error_t pager_start_workers (struct port_bucket *pager_bucket);
+struct pager_requests;
+
+/* Start the worker threads libpager uses to service requests. If no
+   error is returned, *requests will be a valid pointer, else it will be
+   set to NULL.  */
+error_t
+pager_start_workers (struct port_bucket *pager_bucket,
+		     struct pager_requests **requests);
+
+/* Inhibit the worker threads libpager uses to service requests,
+   blocking until all requests sent before this function is called have
+   finished.
+   Note that RPCs will not be inhibited, so new requests will
+   queue up, but will not be handled until the workers are resumed. If
+   RPCs should be inhibited as well, call ports_inhibit_bucket_rpcs with
+   the bucket used to create the workers before calling this. However,
+   inhibiting RPCs and not calling this is generally insufficient, as
+   libports is unaware of our internal worker pool, and will return once
+   all the RPCs have been queued, before they have been handled by a
+   worker thread.  */
+error_t
+pager_inhibit_workers (struct pager_requests *requests);
+
+/* Resume the worker threads libpager uses to service requests.  */
+void
+pager_resume_workers (struct pager_requests *requests);
 
 /* Create a new pager.  The pager will have a port created for it
    (using libports, in BUCKET) and will be immediately ready

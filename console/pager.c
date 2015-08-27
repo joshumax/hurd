@@ -42,6 +42,7 @@ struct user_pager_info
 
 /* We need a separate bucket for the pager ports.  */
 static struct port_bucket *pager_bucket;
+static struct pager_requests *pager_requests;
 
 
 /* Implement the pager_clear_user_data callback from the pager library. */
@@ -133,7 +134,7 @@ user_pager_init (void)
     error (5, errno, "Cannot create pager bucket");
 
   /* Start libpagers worker threads.  */
-  err = pager_start_workers (pager_bucket);
+  err = pager_start_workers (pager_bucket, &pager_requests);
   if (err)
     error (5, err, "Cannot start pager worker threads");
 }
