@@ -169,7 +169,7 @@ open_hook (struct trivfs_peropen *po)
 		 make us block because we've ensured that there's a reader
 		 for it.  */
 
-	      if (wait_for_writer)
+	      if (wait_for_writer && (!(flags & O_WRITE)))
 		/* Wait until there's a writer.  */
 		{
 		  WAIT (active_fifo->writers, 0);
