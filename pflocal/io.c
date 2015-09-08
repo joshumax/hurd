@@ -298,6 +298,13 @@ S_io_select_timeout (struct sock_user *user,
   return io_select_common (user, reply, reply_type, &ts, select_type);
 }
 
+static inline void
+copy_time (time_value_t *from, time_t *to_sec, long *to_nsec)
+{
+  *to_sec = from->seconds;
+  *to_nsec = from->microseconds * 1000;
+}
+
 /* Return the current status of the object.  Not all the fields of the
    io_statuf_t are meaningful for all objects; however, the access and
    modify times, the optimal IO size, and the fs type are meaningful
@@ -307,12 +314,6 @@ S_io_stat (struct sock_user *user, struct stat *st)
 {
   struct sock *sock;
   struct pipe *rpipe, *wpipe;
-
-  void copy_time (time_value_t *from, time_t *to_sec, long *to_nsec)
-    {
-      *to_sec = from->seconds;
-      *to_nsec = from->microseconds * 1000;
-    }
 
   if (!user)
     return EOPNOTSUPP;
