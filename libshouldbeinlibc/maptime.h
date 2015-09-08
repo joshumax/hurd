@@ -51,7 +51,9 @@ maptime_read (volatile struct mapped_time_value *mtime, struct timeval *tv)
   do
     {
       tv->tv_sec = mtime->seconds;
+      __sync_synchronize ();
       tv->tv_usec = mtime->microseconds;
+      __sync_synchronize ();
     }
   while (tv->tv_sec != mtime->check_seconds);
 }
