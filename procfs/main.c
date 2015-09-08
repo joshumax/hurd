@@ -130,6 +130,12 @@ argp_parser (int key, char *arg, struct argp_state *state)
       /* Ignored for compatibility with Linux' procfs. */
       break;
 
+    case ARGP_KEY_ARG:
+      if (!strcmp (arg, "none") || !strcmp (arg,"proc"))
+        /* Ignored for compatibility with Linux' procfs. */
+        break;
+      return ARGP_ERR_UNKNOWN;
+
     default:
       return ARGP_ERR_UNKNOWN;
   }
