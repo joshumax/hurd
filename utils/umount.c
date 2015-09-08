@@ -235,6 +235,8 @@ do_umount (struct fs *fs)
 					 NULL, 0,
 					 MACH_PORT_NULL,
 					 MACH_MSG_TYPE_COPY_SEND);
+	      if (!(goaway_flags & FSYS_GOAWAY_FORCE))
+		err = 0;
 	      if (err)
 		error (0, err, "%s", fs->mntent.mnt_fsname);
 
