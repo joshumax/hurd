@@ -53,9 +53,6 @@ MIGSFLAGS=-imacros $(srcdir)/mig-mutate.h
 MIGCOMSFLAGS = -prefix trivfs_
 installhdrs := trivfs.h
 mig-sheader-prefix = trivfs_
-ifndef no_deps
-installhdrs += $(patsubst %,trivfs_%_S.h,fs io fsys)
-endif
 
 include ../Makeconf
 
