@@ -277,11 +277,14 @@ sock_bind (struct sock *sock, struct addr *addr)
   error_t err = 0;
   struct addr *old_addr;
 
-  pthread_mutex_lock (&addr->lock);
+  if (addr)
+    pthread_mutex_lock (&addr->lock);
   pthread_mutex_lock (&sock->lock);
 
   old_addr = sock->addr;
   if (addr && old_addr)
+    err = EINVAL;		/* SOCK already bound.  */
+  else if (!addr && !old_addr)
     err = EINVAL;		/* SOCK already bound.  */
   else if (addr && addr->sock)
     err = EADDRINUSE;		/* Something else already bound ADDR.  */
@@ -303,13 +306,14 @@ sock_bind (struct sock *sock, struct addr *addr)
 	  /* Note that we don't have to worry about SOCK's ref count going to
 	     zero because whoever's calling us should be holding a ref.  */
 	  sock->refs--;
-	  ports_port_deref_weak (addr);
+	  ports_port_deref_weak (old_addr);
 	  assert (sock->refs > 0);	/* But make sure... */
 	}
     }
 
   pthread_mutex_unlock (&sock->lock);
-  pthread_mutex_unlock (&addr->lock);
+  if (addr)
+    pthread_mutex_unlock (&addr->lock);
 
   return err;
 }
