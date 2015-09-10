@@ -38,7 +38,7 @@ SRCS = create-bucket.c create-class.c \
  claim-right.c transfer-right.c create-port-noinstall.c create-internal.c \
  interrupted.c extern-inline.c port-deref-deferred.c
 
-installhdrs = ports.h
+installhdrs = ports.h port-deref-deferred.h
 
 HURDLIBS= ihash
 LDLIBS += -lpthread
