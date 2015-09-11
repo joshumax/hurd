@@ -1210,6 +1210,18 @@ handle_esc_bracket (display_t display, char op)
       user->cursor.col -= (parse->params[0] ?: 1);
       limit_cursor (display);
       break;
+    case 's':		/* ANSI.SYS: Save cursor and attributes.  */
+      /* Save cursor position: <scp>.  */
+      display->cursor.saved_x = user->cursor.col;
+      display->cursor.saved_y = user->cursor.row;
+      break;
+    case 'u':		/* ANSI.SYS: Restore cursor and attributes.  */
+      /* Restore cursor position: <rcp>.  */
+      user->cursor.col = display->cursor.saved_x;
+      user->cursor.row = display->cursor.saved_y;
+      /* In case the screen was larger before:  */
+      limit_cursor (display);
+      break;
     case 'l':
       /* Reset mode.  */
       for (i = 0; i < parse->nparams; i++)
