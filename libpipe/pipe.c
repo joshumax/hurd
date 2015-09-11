@@ -164,16 +164,15 @@ void _pipe_no_readers (struct pipe *pipe)
     pipe_free (pipe);
   else
     {
-      if (! pipe_is_connless (pipe))
+      /* When there is no reader, we have to break pipe even for
+         connection-less pipes.  */
+      pipe->flags |= PIPE_BROKEN;
+      if (pipe->writers)
+	/* Wake up writers for the bad news... */
 	{
-	  pipe->flags |= PIPE_BROKEN;
-	  if (pipe->writers)
-	    /* Wake up writers for the bad news... */
-	    {
-	      pthread_cond_broadcast (&pipe->pending_writes);
-	      pthread_cond_broadcast (&pipe->pending_write_selects);
-	      pipe_select_cond_broadcast (pipe);
-	    }
+	  pthread_cond_broadcast (&pipe->pending_writes);
+	  pthread_cond_broadcast (&pipe->pending_write_selects);
+	  pipe_select_cond_broadcast (pipe);
 	}
       pthread_mutex_unlock (&pipe->lock);
     }
