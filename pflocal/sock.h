@@ -118,9 +118,32 @@ void _sock_norefs (struct sock *sock);
 static inline void __attribute__ ((unused))
 sock_deref (struct sock *sock)
 {
+  error_t err;
   pthread_mutex_lock (&sock->lock);
-  if (--sock->refs == 0)
+
+  sock->refs--;
+
+  if (sock->refs == 0)
     _sock_norefs (sock);
+  else if (sock->refs == 1 && sock->addr)
+    {
+      /* Last ref is the address, there won't be any more port for this socket,
+         unbind SOCK from its addr, and they will all die.  */
+
+      /* Keep another ref while unbinding.  */
+      sock->refs++;
+      pthread_mutex_unlock (&sock->lock);
+
+      /* Unbind */
+      err = sock_bind (sock, NULL);
+      assert (!err);
+
+      /* And release the ref, and thus kill SOCK.  */
+      pthread_mutex_lock (&sock->lock);
+      sock->refs--;
+      assert(sock->refs == 0);
+      _sock_norefs (sock);
+    }
   else
     pthread_mutex_unlock (&sock->lock);
 }
