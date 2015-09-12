@@ -114,6 +114,9 @@ void sock_free (struct sock *sock);
 /* Free a sock derefed too far.  */
 void _sock_norefs (struct sock *sock);
 
+/* Bind SOCK to ADDR.  */
+error_t sock_bind (struct sock *sock, struct addr *addr);
+
 /* Remove a reference from SOCK, possibly freeing it.  */
 static inline void __attribute__ ((unused))
 sock_deref (struct sock *sock)
@@ -153,9 +156,6 @@ error_t sock_clone (struct sock *template, struct sock **sock);
 
 /* Return a new user port on SOCK in PORT.  */
 error_t sock_create_port (struct sock *sock, mach_port_t *port);
-
-/* Bind SOCK to ADDR.  */
-error_t sock_bind (struct sock *sock, struct addr *addr);
 
 /* Returns SOCK's address in ADDR, with an additional reference added.  If
    SOCK doesn't currently have an address, one is fabricated first.  */
