@@ -92,7 +92,10 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
     return EOPNOTSUPP;
 
   err = addr_get_sock (addr, &peer);
-  if (!err)
+  if (err == EADDRNOTAVAIL)
+    /* The server went away.  */
+    err = ECONNREFUSED;
+  else if (!err)
     {
       struct sock *sock = user->sock;
       struct connq *cq = peer->listen_queue;
@@ -295,6 +298,9 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
   if (dest_addr)
     {
       err = addr_get_sock (dest_addr, &dest_sock);
+      if (err == EADDRNOTAVAIL)
+	/* The server went away.  */
+	err = ECONNREFUSED;
       if (err)
 	return err;
       if (sock->pipe_class != dest_sock->pipe_class)
