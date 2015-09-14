@@ -32,8 +32,6 @@ ports_inhibit_class_rpcs (struct port_class *class)
     err = EBUSY;
   else
     {
-      struct port_info *pi;
-      struct rpc_info *rpc;
       int this_one = 0;
 
       pthread_rwlock_rdlock (&_ports_htable_lock);
