@@ -25,6 +25,7 @@
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <argp.h>
+#include <argz.h>
 #include <version.h>
 #include <pids.h>
 
