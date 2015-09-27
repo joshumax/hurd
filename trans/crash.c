@@ -44,6 +44,10 @@ process_t procserver;		/* Our proc port, for easy access.  */
 /* Port bucket we service requests on.  */
 struct port_bucket *port_bucket;
 
+/* Our port classes.  */
+struct port_class *trivfs_control_class;
+struct port_class *trivfs_protid_class;
+
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
@@ -51,11 +55,6 @@ int trivfs_support_read = 0;
 int trivfs_support_write = 0;
 int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ|O_WRITE|O_EXEC;
-
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
 
 struct trivfs_control *fsys;
 
@@ -156,7 +155,7 @@ S_crash_dump_task (mach_port_t port,
   mach_port_t user_proc = MACH_PORT_NULL;
   enum crash_action how;
 
-  cred = ports_lookup_port (port_bucket, port, trivfs_protid_portclasses[0]);
+  cred = ports_lookup_port (port_bucket, port, trivfs_protid_class);
   if (! cred)
     return EOPNOTSUPP;
 
@@ -415,11 +414,11 @@ dead_crasher (void *ptr)
   /* The port data structures are cleaned up when we return.  */
 
   /* See if we are going away and this was the last thing keeping us up.  */
-  if (ports_count_class (trivfs_cntl_portclasses[0]) == 0)
+  if (ports_count_class (trivfs_control_class) == 0)
     {
       /* We have no fsys control port, so we are detached from the
 	 parent filesystem.  Maybe we have no users left either.  */
-      if (ports_count_class (trivfs_protid_portclasses[0]) == 0)
+      if (ports_count_class (trivfs_protid_class) == 0)
 	{
 	  /* We have no user ports left.  Maybe we have no crashers still
 	     around either.  */
@@ -428,9 +427,9 @@ dead_crasher (void *ptr)
 	    exit (0);
 	  ports_enable_class (crasher_portclass);
 	}
-      ports_enable_class (trivfs_protid_portclasses[0]);
+      ports_enable_class (trivfs_protid_class);
     }
-  ports_enable_class (trivfs_cntl_portclasses[0]);
+  ports_enable_class (trivfs_control_class);
 }
 
 
@@ -563,19 +562,26 @@ main (int argc, char **argv)
   /* Fetch our proc server port for easy use.  */
   procserver = getproc ();
 
-  port_bucket = ports_create_bucket ();
-  trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
-  trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
   crasher_portclass = ports_create_class (dead_crasher, 0);
+
+  err = trivfs_add_control_port_class (&trivfs_control_class);
+  if (err)
+    error (1, 0, "error creating control port class");
+
+  err = trivfs_add_protid_port_class (&trivfs_protid_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
 
   /* Reply to our parent.  */
   err = trivfs_startup (bootstrap, 0,
-			trivfs_cntl_portclasses[0], port_bucket,
-			trivfs_protid_portclasses[0], port_bucket,
-			&fsys);
+                        trivfs_control_class, NULL,
+                        trivfs_protid_class, NULL, &fsys);
+
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (3, err, "Contacting parent");
+
+  port_bucket = fsys->pi.bucket;
 
   /* Launch.  */
   do
@@ -602,11 +608,11 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   int count;
 
   /* Stop new requests.  */
-  ports_inhibit_class_rpcs (trivfs_cntl_portclasses[0]);
-  ports_inhibit_class_rpcs (trivfs_protid_portclasses[0]);
+  ports_inhibit_class_rpcs (trivfs_control_class);
+  ports_inhibit_class_rpcs (trivfs_protid_class);
 
   /* Are there any extant user ports for the /servers/crash file?  */
-  count = ports_count_class (trivfs_protid_portclasses[0]);
+  count = ports_count_class (trivfs_protid_class);
   if (count == 0 || (flags & FSYS_GOAWAY_FORCE))
     {
       /* No users.  Disconnect from the filesystem.  */
@@ -629,9 +635,9 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   else
     {
       /* We won't go away, so start things going again...  */
-      ports_enable_class (trivfs_protid_portclasses[0]);
-      ports_resume_class_rpcs (trivfs_cntl_portclasses[0]);
-      ports_resume_class_rpcs (trivfs_protid_portclasses[0]);
+      ports_enable_class (trivfs_protid_class);
+      ports_resume_class_rpcs (trivfs_control_class);
+      ports_resume_class_rpcs (trivfs_protid_class);
 
       return EBUSY;
     }
