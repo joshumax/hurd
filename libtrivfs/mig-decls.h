@@ -37,57 +37,41 @@ extern size_t trivfs_num_dynamic_port_buckets;
 static inline struct trivfs_protid * __attribute__ ((unused))
 trivfs_begin_using_protid (mach_port_t port)
 {
-  if (trivfs_protid_nportclasses + trivfs_num_dynamic_protid_port_classes > 1)
+  struct port_info *pi = ports_lookup_port (0, port, 0);
+
+  if (pi)
     {
-      struct port_info *pi = ports_lookup_port (0, port, 0);
-      int i;
-
-      if (pi)
-	{
-	  for (i = 0; i < trivfs_protid_nportclasses; i++)
-	    if (pi->class == trivfs_protid_portclasses[i])
-	      return (struct trivfs_protid *) pi;
-	  for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
-	    if (pi->class == trivfs_dynamic_protid_port_classes[i])
-	      return (struct trivfs_protid *) pi;
-	  ports_port_deref (pi);
-	}
-
-      return 0;
+      size_t i;
+      for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
+	if (pi->class == trivfs_dynamic_protid_port_classes[i])
+	  return (struct trivfs_protid *) pi;
+      for (i = 0; i < trivfs_protid_nportclasses; i++)
+	if (pi->class == trivfs_protid_portclasses[i])
+	  return (struct trivfs_protid *) pi;
+      ports_port_deref (pi);
     }
-  else if (trivfs_protid_nportclasses == 1)
-    return ports_lookup_port (0, port, trivfs_protid_portclasses[0]);
-  else
-    return ports_lookup_port (0, port, trivfs_dynamic_protid_port_classes[0]);
+
+  return NULL;
 }
 
 static inline struct trivfs_protid * __attribute__ ((unused))
 trivfs_begin_using_protid_payload (unsigned long payload)
 {
-  if (trivfs_protid_nportclasses + trivfs_num_dynamic_protid_port_classes > 1)
+  struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
+
+  if (pi)
     {
-      struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
-      int i;
-
-      if (pi)
-	{
-	  for (i = 0; i < trivfs_protid_nportclasses; i++)
-	    if (pi->class == trivfs_protid_portclasses[i])
-	      return (struct trivfs_protid *) pi;
-	  for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
-	    if (pi->class == trivfs_dynamic_protid_port_classes[i])
-	      return (struct trivfs_protid *) pi;
-	  ports_port_deref (pi);
-	}
-
-      return NULL;
+      size_t i;
+      for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
+	if (pi->class == trivfs_dynamic_protid_port_classes[i])
+	  return (struct trivfs_protid *) pi;
+      for (i = 0; i < trivfs_protid_nportclasses; i++)
+	if (pi->class == trivfs_protid_portclasses[i])
+	  return (struct trivfs_protid *) pi;
+      ports_port_deref (pi);
     }
-  else if (trivfs_protid_nportclasses == 1)
-    return ports_lookup_payload (NULL, payload,
-				 trivfs_protid_portclasses[0]);
-  else
-    return ports_lookup_payload (NULL, payload,
-				 trivfs_dynamic_protid_port_classes[0]);
+
+  return NULL;
 }
 
 static inline void __attribute__ ((unused))
@@ -100,57 +84,41 @@ trivfs_end_using_protid (struct trivfs_protid *cred)
 static inline struct trivfs_control * __attribute__ ((unused))
 trivfs_begin_using_control (mach_port_t port)
 {
-  if (trivfs_cntl_nportclasses + trivfs_num_dynamic_control_port_classes > 1)
+  struct port_info *pi = ports_lookup_port (0, port, 0);
+
+  if (pi)
     {
-      struct port_info *pi = ports_lookup_port (0, port, 0);
-      int i;
-
-      if (pi)
-	{
-	  for (i = 0; i < trivfs_cntl_nportclasses; i++)
-	    if (pi->class == trivfs_cntl_portclasses[i])
-	      return (struct trivfs_control *) pi;
-	  for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
-	    if (pi->class == trivfs_dynamic_control_port_classes[i])
-	      return (struct trivfs_control *) pi;
-	  ports_port_deref (pi);
-	}
-
-      return 0;
+      size_t i;
+      for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
+	if (pi->class == trivfs_dynamic_control_port_classes[i])
+	  return (struct trivfs_control *) pi;
+      for (i = 0; i < trivfs_cntl_nportclasses; i++)
+	if (pi->class == trivfs_cntl_portclasses[i])
+	  return (struct trivfs_control *) pi;
+      ports_port_deref (pi);
     }
-  else if (trivfs_cntl_nportclasses == 1)
-    return ports_lookup_port (0, port, trivfs_cntl_portclasses[0]);
-  else
-    return ports_lookup_port (0, port, trivfs_dynamic_control_port_classes[0]);
+
+  return NULL;
 }
 
 static inline struct trivfs_control * __attribute__ ((unused))
 trivfs_begin_using_control_payload (unsigned long payload)
 {
-  if (trivfs_cntl_nportclasses + trivfs_num_dynamic_control_port_classes > 1)
+  struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
+
+  if (pi)
     {
-      struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
-      int i;
-
-      if (pi)
-	{
-	  for (i = 0; i < trivfs_cntl_nportclasses; i++)
-	    if (pi->class == trivfs_cntl_portclasses[i])
-	      return (struct trivfs_control *) pi;
-	  for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
-	    if (pi->class == trivfs_dynamic_control_port_classes[i])
-	      return (struct trivfs_control *) pi;
-	  ports_port_deref (pi);
-	}
-
-      return NULL;
+      size_t i;
+      for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
+	if (pi->class == trivfs_dynamic_control_port_classes[i])
+	  return (struct trivfs_control *) pi;
+      for (i = 0; i < trivfs_cntl_nportclasses; i++)
+	if (pi->class == trivfs_cntl_portclasses[i])
+	  return (struct trivfs_control *) pi;
+      ports_port_deref (pi);
     }
-  else if (trivfs_cntl_nportclasses == 1)
-    return ports_lookup_payload (NULL, payload,
-				 trivfs_cntl_portclasses[0]);
-  else
-    return ports_lookup_payload (NULL, payload,
-				 trivfs_dynamic_control_port_classes[0]);
+
+  return NULL;
 }
 
 static inline void __attribute__ ((unused))
