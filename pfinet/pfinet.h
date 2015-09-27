@@ -92,11 +92,8 @@ enum {
   PORTCLASS_INET6,
 };
 
-extern struct port_class *trivfs_protid_portclasses[];
-extern int trivfs_protid_nportclasses;
-
-extern struct port_class *trivfs_cntl_portclasses[2];
-extern int trivfs_cntl_nportclasses;
+extern struct port_class *pfinet_protid_portclasses[2];
+extern struct port_class *pfinet_cntl_portclasses[2];
 
 /* Which portclass to install on the bootstrap port. */
 extern int pfinet_bootstrap_portclass;

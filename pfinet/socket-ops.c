@@ -82,7 +82,7 @@ S_socket_create (struct trivfs_protid *master,
 	isroot = 1;
     }
 
-  if (master->pi.class == trivfs_protid_portclasses[PORTCLASS_INET])
+  if (master->pi.class == pfinet_protid_portclasses[PORTCLASS_INET])
     err = - (*net_families[PF_INET]->create) (sock, protocol);
   else
     err = - (*net_families[PF_INET6]->create) (sock, protocol);

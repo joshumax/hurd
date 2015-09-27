@@ -133,7 +133,7 @@ parse_interface_copy_device(struct device *src,
       && FIB_RES_GW(res) != INADDR_ANY)
     dst->gateway = FIB_RES_GW (res);
 #ifdef CONFIG_IPV6
-  if (trivfs_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
+  if (pfinet_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
     idev = ipv6_find_idev(src);
 
   if (idev)
@@ -452,7 +452,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	{
 #ifdef CONFIG_IPV6
 	  struct inet6_dev *idev = NULL;
-	  if (trivfs_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL
+	  if (pfinet_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL
 	      && in->device)
 	    idev = ipv6_find_idev(in->device);
 #endif
@@ -570,7 +570,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
       /* Set IPv6 default router. */
 #ifdef CONFIG_IPV6
-      if (trivfs_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
+      if (pfinet_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
 	{
 	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
 
@@ -710,7 +710,7 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 #ifdef CONFIG_IPV6
       struct inet6_dev *idev = NULL;
 
-      if (trivfs_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
+      if (pfinet_protid_portclasses[PORTCLASS_INET6] != MACH_PORT_NULL)
 	idev = ipv6_find_idev(dev);
 
       if (idev)
