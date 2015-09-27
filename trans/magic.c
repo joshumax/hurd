@@ -74,6 +74,9 @@ static struct trivfs_control *all_fsys;
 
 /* Trivfs hooks  */
 
+/* Our port class.  */
+struct port_class *trivfs_protid_class;
+
 int trivfs_fstype = FSTYPE_DEV;
 int trivfs_fsid = 0;
 
@@ -480,8 +483,12 @@ main (int argc, char **argv)
   if (m->directory)
     trivfs_peropen_destroy_hook = &magic_peropen_destroy;
 
+  err = trivfs_add_protid_port_class (&trivfs_protid_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
+
   /* Reply to our parent */
-  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
+  err = trivfs_startup (bootstrap, 0, 0, 0, trivfs_protid_class, 0, &fsys);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (3, err, "Contacting parent");
@@ -521,8 +528,7 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       char *argz, size_t argz_len)
 {
   struct trivfs_protid *cred
-    = ports_lookup_port (all_fsys->pi.bucket, server,
-			 trivfs_protid_portclasses[0]);
+    = ports_lookup_port (all_fsys->pi.bucket, server, trivfs_protid_class);
   if (!cred)
     return EOPNOTSUPP;
   ports_port_deref (cred);
@@ -547,8 +553,8 @@ trivfs_S_fsys_forward (mach_port_t server,
   /* Now we are ready to start up the filesystem.  Contact the parent.  */
   struct trivfs_control *fsys;
   err = trivfs_startup (requestor, 0,
-			trivfs_cntl_portclasses[0], all_fsys->pi.bucket,
-			trivfs_protid_portclasses[0], all_fsys->pi.bucket,
+			NULL, all_fsys->pi.bucket,
+			NULL, all_fsys->pi.bucket,
 			&fsys);
   if (err)
     {
