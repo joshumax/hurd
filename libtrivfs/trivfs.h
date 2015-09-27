@@ -79,10 +79,13 @@ extern int trivfs_allow_open;
    pointers for passing to rpcs, in addition to those passed to or created by
    trivfs_create_control (or trivfs_startup) will automatically be
    recognized.  */
-extern struct port_class *trivfs_protid_portclasses[];
-extern int trivfs_protid_nportclasses;
-extern struct port_class *trivfs_cntl_portclasses[];
-extern int trivfs_cntl_nportclasses;
+/* Deprecation notice: The use of these vectors is deprecated.  Please
+   use the dynamic class support.  These vectors will be removed in
+   Hurd 0.8.  */
+extern struct port_class *trivfs_protid_portclasses[] __attribute__ ((deprecated));
+extern int trivfs_protid_nportclasses __attribute__ ((deprecated));
+extern struct port_class *trivfs_cntl_portclasses[] __attribute__ ((deprecated));
+extern int trivfs_cntl_nportclasses __attribute__ ((deprecated));
 
 /* The user must define this function.  This should modify a struct
    stat (as returned from the underlying node) for presentation to
