@@ -176,13 +176,6 @@ fifo_trans_parse_args (struct fifo_trans *trans, int argc, char **argv,
   return argp_parse (&argp, argc, argv, print_errs ? 0 : ARGP_SILENT, 0, 0);
 }
 
-/* ---------------------------------------------------------------- */
-
-struct port_class *trivfs_protid_portclasses[2];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 2;
-int trivfs_cntl_nportclasses = 1;
-
 int
 main (int argc, char **argv)
 {
@@ -215,14 +208,21 @@ main (int argc, char **argv)
 	exit (0);
     }
 
-  port_bucket = ports_create_bucket ();
-  fifo_port_class =  ports_create_class (trivfs_clean_protid, 0);
-  server_port_class =  ports_create_class (trivfs_clean_protid, 0);
-  fsys_port_class = ports_create_class (clean_fsys, 0);
+  err = trivfs_add_port_bucket (&port_bucket);
+  if (err)
+    error (1, 0, "error creating port bucket");
 
-  trivfs_protid_portclasses[0] = fifo_port_class;
-  trivfs_protid_portclasses[1] = server_port_class;
-  trivfs_cntl_portclasses[0] = fsys_port_class;
+  err = trivfs_add_control_port_class (&fsys_port_class);
+  if (err)
+    error (1, 0, "error creating control port class");
+
+  err = trivfs_add_protid_port_class (&fifo_port_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
+
+    err = trivfs_add_protid_port_class (&server_port_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
 
   /* Reply to our parent */
   fifo_trans_start (trans, bootstrap);
