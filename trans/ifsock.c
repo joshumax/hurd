@@ -59,11 +59,6 @@ int trivfs_support_exec = 0;
 
 int trivfs_allow_open = 0;
 
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
-
 int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
@@ -85,8 +80,6 @@ main (int argc, char **argv)
   control_class = ports_create_class (trivfs_clean_cntl, 0);
   node_class = ports_create_class (trivfs_clean_protid, 0);
   port_bucket = ports_create_bucket ();
-  trivfs_protid_portclasses[0] = node_class;
-  trivfs_cntl_portclasses[0] = control_class;
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
