@@ -637,15 +637,18 @@ start_execserver (void)
   assert_perror (err);
   right = ports_get_send_right (execboot_info);
   ports_port_deref (execboot_info);
-  task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
-  mach_port_deallocate (mach_task_self (), right);
+  err = task_set_special_port (diskfs_exec_server_task, TASK_BOOTSTRAP_PORT, right);
+  assert_perror (err);
+  err = mach_port_deallocate (mach_task_self (), right);
+  assert_perror (err);
 
   if (_diskfs_boot_pause)
     {
       printf ("pausing for exec\n");
       getc (stdin);
     }
-  task_resume (diskfs_exec_server_task);
+  err = task_resume (diskfs_exec_server_task);
+  assert_perror (err);
 
   printf (" exec");
   fflush (stdout);
