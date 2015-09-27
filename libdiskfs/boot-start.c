@@ -645,6 +645,7 @@ start_execserver (void)
   if (_diskfs_boot_pause)
     {
       printf ("pausing for exec\n");
+      fflush (stdout);
       getc (stdin);
     }
   err = task_resume (diskfs_exec_server_task);
