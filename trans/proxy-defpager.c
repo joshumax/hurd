@@ -30,11 +30,14 @@
 
 static mach_port_t real_defpager, dev_master;
 
+/* Our port class.  */
+struct port_class *trivfs_protid_class;
+
 static error_t
 allowed (mach_port_t port, int mode)
 {
-  struct trivfs_protid *cred = ports_lookup_port
-    (0, port, trivfs_protid_portclasses[0]);
+  struct trivfs_protid *cred
+    = ports_lookup_port (0, port, trivfs_protid_class);
   if (!cred)
     return MIG_BAD_ID;
   error_t result = (cred->po->openmodes & mode) ? 0 : EACCES;
@@ -266,8 +269,12 @@ main (int argc, char **argv)
 
   trivfs_fsid = getpid ();
 
+  err = trivfs_add_protid_port_class (&trivfs_protid_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
+
   /* Reply to our parent.  */
-  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &fsys);
+  err = trivfs_startup (bootstrap, 0, 0, 0, trivfs_protid_class, 0, &fsys);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (4, err, "Contacting parent");
