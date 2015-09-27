@@ -39,6 +39,10 @@ const char *argp_program_version = STANDARD_HURD_VERSION (password);
 /* Port bucket we service requests on.  */
 struct port_bucket *port_bucket;
 
+/* Our port classes.  */
+struct port_class *trivfs_control_class;
+struct port_class *trivfs_protid_class;
+
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;
@@ -46,12 +50,6 @@ int trivfs_support_read = 0;
 int trivfs_support_write = 0;
 int trivfs_support_exec = 0;
 int trivfs_allow_open = 0;
-
-struct port_class *trivfs_protid_portclasses[1];
-struct port_class *trivfs_cntl_portclasses[1];
-int trivfs_protid_nportclasses = 1;
-int trivfs_cntl_nportclasses = 1;
-
 
 static int
 password_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
@@ -75,15 +73,23 @@ main (int argc, char *argv[])
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "must be started as a translator");
 
-  port_bucket = ports_create_bucket ();
-  trivfs_cntl_portclasses[0] = ports_create_class (trivfs_clean_cntl, 0);
-  trivfs_protid_portclasses[0] = ports_create_class (trivfs_clean_protid, 0);
-  
+  err = trivfs_add_port_bucket (&port_bucket);
+  if (err)
+    error (1, 0, "error creating port bucket");
+
+  err = trivfs_add_control_port_class (&trivfs_control_class);
+  if (err)
+    error (1, 0, "error creating control port class");
+
+  err = trivfs_add_protid_port_class (&trivfs_protid_class);
+  if (err)
+    error (1, 0, "error creating protid port class");
+
   /* Reply to our parent.  */
   err = trivfs_startup (bootstrap, 0,
-			trivfs_cntl_portclasses[0], port_bucket,
-			trivfs_protid_portclasses[0], port_bucket,
-			&fsys);
+                        trivfs_control_class, port_bucket,
+                        trivfs_protid_class, port_bucket,
+                        &fsys);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (3, err, "Contacting parent");
@@ -114,17 +120,17 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   int count;
   
   /* Stop new requests.  */
-  ports_inhibit_class_rpcs (trivfs_cntl_portclasses[0]);
-  ports_inhibit_class_rpcs (trivfs_protid_portclasses[0]);
+  ports_inhibit_class_rpcs (trivfs_control_class);
+  ports_inhibit_class_rpcs (trivfs_protid_class);
 
   /* Are there any extant user ports for the /servers/password file?  */
-  count = ports_count_class (trivfs_protid_portclasses[0]);
+  count = ports_count_class (trivfs_protid_class);
   if (count > 0 && !(flags & FSYS_GOAWAY_FORCE))
     {
       /* We won't go away, so start things going again...  */
-      ports_enable_class (trivfs_protid_portclasses[0]);
-      ports_resume_class_rpcs (trivfs_cntl_portclasses[0]);
-      ports_resume_class_rpcs (trivfs_protid_portclasses[0]);
+      ports_enable_class (trivfs_protid_class);
+      ports_resume_class_rpcs (trivfs_control_class);
+      ports_resume_class_rpcs (trivfs_protid_class);
 
       return EBUSY;
     }
@@ -153,7 +159,7 @@ S_password_check_user (struct trivfs_protid *cred, uid_t user, char *pw,
     return EOPNOTSUPP;
 
   if (cred->pi.bucket != port_bucket ||
-      cred->pi.class != trivfs_protid_portclasses[0])
+      cred->pi.class != trivfs_protid_class)
     {
       ports_port_deref (cred);
       return EOPNOTSUPP;
@@ -201,7 +207,7 @@ S_password_check_group (struct trivfs_protid *cred, uid_t group, char *pw,
     return EOPNOTSUPP;
 
   if (cred->pi.bucket != port_bucket ||
-      cred->pi.class != trivfs_protid_portclasses[0])
+      cred->pi.class != trivfs_protid_class)
     {
       ports_port_deref (cred);
       return EOPNOTSUPP;
