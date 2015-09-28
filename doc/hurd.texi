@@ -386,7 +386,7 @@ libraries they use.  At that point, you should be able to study the
 source code of existing Hurd servers and understand how they use the
 Hurd libraries.
 
-The final level of mastery is learning the about the RPC interfaces
+The final level of mastery is learning about the RPC interfaces
 which the Hurd libraries implement.  The last section of each chapter
 describes any Hurd interfaces used in that subsystem.  Those sections
 assume that you are perusing the referenced interface definitions as you
@@ -670,18 +670,19 @@ $ @kbd{boot -d -D /mnt -I /mnt/boot/servers.boot /dev/hd2s1}
 See @pxref{Invoking boot} for help with boot.
 @end enumerate
 
-Note that it is impossible to share microkernel devices between the two
-running Hurds, so don't get any funny ideas.  When you're finished
-testing your new Hurd, then you can run the @command{halt} or @command{reboot}
-programs to return control to the parent Hurd.
+If you do not know what you are doing, sharing microkernel devices
+between two running hurds could cause serious harm.  For example, two
+hurds with two filesystems writing to the same partition will wreak
+havoc.  In the same way, two hurds reading from the same terminal
+device will not share nicely.
 
-@c FIXME: the `don't get any funny ideas' comment is confusing.  Am
-@c I genuinely in some sort of danger if I contemplate sharing
-@c microkernel devices between two running Hurds?
-@c  tb: not if you know what you are doing.  But there is no clever
-@c  device mediation going on.  Two hurds, with two filesystems writing
-@c  the same partition, will wreak havoc.  Two hurds reading from the
-@c  same terminal device will not share nicely.
+However, sharing is possible for network devices. The different pfinet
+instances will just pick the packets applying to them, based on
+IP. There is also a proper user-space multiplexer for network devices
+now, called eth-multiplexer. This is only needed though if you also
+want to allow network traffic between the Hurd instances uning the
+device in question, rather than just each of them communicating with
+other machines.
 
 If you're satisfied with your new Hurd, you can arrange for your
 bootloader to start it, and reboot your machine.  Then, you'll be in a
@@ -770,8 +771,10 @@ If neither @option{--interleave} or @option{--layer} is specified, multiple
 @scindex halt
 @scindex reboot
 
-FIXME: finish
+You can shut down your GNU/Hurd machine by typing
 
+$ @kbd{su}
+# @kbd{halt}
 
 @node Foundations
 @chapter Foundations
@@ -820,11 +823,8 @@ the microkernel and the underlying hardware.  The Hurd threads library,
 @code{libthreads}, contains the default Hurd thread implementation, which
 is declared in @code{<cthreads.h>}.
 
-Currently (April 1998), the Hurd uses cthreads, which have already been
-documented thoroughly by CMU.  Eventually, it will be migrated to use
-POSIX pthreads, which are documented in a lot of places.
+The Hurd uses POSIX pthreads, which are documented in a lot of places.
 @c Thomas, 26-03-1998
-
 @c FIXME: it would be nice if we referred specifically to some of
 @c the places in which POSIX pthreads are documented.
 @c  tb: yes, but alas we are only allowed to refer to free

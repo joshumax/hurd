@@ -13,3 +13,15 @@ autom4te.cache/
 /config.status
 /configure
 /version.h
+/doc/hurd.aux
+/doc/hurd.cp
+/doc/hurd.cps
+/doc/hurd.fn
+/doc/hurd.ky
+/doc/hurd.log
+/doc/hurd.pdf
+/doc/hurd.pg
+/doc/hurd.sc
+/doc/hurd.toc
+/doc/hurd.tp
+/doc/hurd.vr
