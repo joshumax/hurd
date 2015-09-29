@@ -107,7 +107,8 @@ verify_passwd (const char *password,
 	  return pw->pw_passwd;
 	}
 
-      if (getpwuid_r (wheel_uid, &_pw, lookup_buf, sizeof lookup_buf, &pw))
+      if (getpwuid_r (wheel_uid, &_pw, lookup_buf, sizeof lookup_buf, &pw)
+	  || ! pw)
 	return errno ?: EINVAL;
 
       sys_encrypted = check_shadow (pw);
@@ -266,7 +267,7 @@ verify_id (uid_t id, int is_group, int multiple,
 	  {
 	    struct group _gr, *gr;
 	    if (getgrgid_r (id, &_gr, id_lookup_buf, sizeof id_lookup_buf, &gr)
-		== 0)
+		== 0 && gr)
 	      {
 		if (!gr->gr_passwd || !*gr->gr_passwd)
 		  return (*verify_fn) ("", id, 1, gr, verify_hook);
@@ -278,7 +279,7 @@ verify_id (uid_t id, int is_group, int multiple,
 	  {
 	    struct passwd _pw, *pw;
 	    if (getpwuid_r (id, &_pw, id_lookup_buf, sizeof id_lookup_buf, &pw)
-		== 0)
+		== 0 && pw)
 	      {
 		if (strcmp (pw->pw_passwd, SHADOW_PASSWORD_STRING) == 0)
 		  {

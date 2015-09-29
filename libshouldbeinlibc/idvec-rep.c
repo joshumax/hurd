@@ -129,7 +129,7 @@ lookup_uid (uid_t uid)
 {
   char buf[1024];
   struct passwd _pw, *pw;
-  if (getpwuid_r (uid, &_pw, buf, sizeof buf, &pw) == 0)
+  if (getpwuid_r (uid, &_pw, buf, sizeof buf, &pw) == 0 && pw)
     return strdup (pw->pw_name);
   else
     return 0;
@@ -141,7 +141,7 @@ lookup_gid (gid_t gid)
 {
   char buf[1024];
   struct group _gr, *gr;
-  if (getgrgid_r (gid, &_gr, buf, sizeof buf, &gr) == 0)
+  if (getgrgid_r (gid, &_gr, buf, sizeof buf, &gr) == 0 && gr)
     return strdup (gr->gr_name);
   else
     return 0;
