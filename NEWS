@@ -1,3 +1,21 @@
+Version 0.7 (2015-10-XX)
+
+The node cache in ext2fs has been improved, generalized, and moved to
+libdiskfs.  It is now also used by isofs and fatfs.
+
+The native fakeroot tool has been greatly improved.  It now handles
+named sockets, and multiple corner cases related to permissions were
+identified and fixed.
+
+A new utility `rpcscan' has been introduced.  It scans Mach servers
+and displays the RPCs handled by the associated demuxer.
+
+A long-standing synchronization issue involving the filesystem
+translators, libdiskfs, and libpager has been identified and fixed.
+
+The code has been updated to work with newer versions of the compiler
+and libc, and numerous bugs have been fixed throughout the code.
+
 Version 0.6 (2015-04-10)
 
 Numerous cleanups and stylistic fixes of the code base.  Several
