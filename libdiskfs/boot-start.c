@@ -279,6 +279,7 @@ diskfs_start_bootstrap ()
   if (_diskfs_boot_pause)
     {
       printf ("pausing for %s...\n", exec_argv);
+      fflush (stdout);
       getc (stdin);
     }
   printf (" %s", basename (exec_argv));
