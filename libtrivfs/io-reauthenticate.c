@@ -52,7 +52,8 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
   assert (newright != MACH_PORT_NULL);
 
   err = iohelp_reauth (&newcred->user, auth, rendport, newright, 1);
-  mach_port_deallocate (mach_task_self (), rendport);
+  if (!err)
+    mach_port_deallocate (mach_task_self (), rendport);
   mach_port_deallocate (mach_task_self (), auth);
   if (err)
     return err;
