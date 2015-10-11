@@ -31,8 +31,18 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   if (!user)
     return EOPNOTSUPP;
 
+  /* This routine must carefully ignore EINTR because we
+     are a simpleroutine, so callers won't know to restart. */
+
   pthread_mutex_lock (&user->po->np->lock);
-  newpi = netfs_make_protid (user->po, 0);
+  do
+    newpi = netfs_make_protid (user->po, 0);
+  while (! newpi && errno == EINTR);
+  if (! newpi)
+    {
+      pthread_mutex_unlock (&user->po->np->lock);
+      return errno;
+    }
 
   newright = ports_get_send_right (newpi);
   assert (newright != MACH_PORT_NULL);
