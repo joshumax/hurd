@@ -247,6 +247,17 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
   return err;
 }
 
+/* Return the mode that the real underlying file should have if the
+   fake mode is being set to MODE.  We always give ourselves read and
+   write permission so that we can open the file as root would be able
+   to.  We give ourselves execute permission iff any execute bit is
+   set in the fake mode.  */
+static inline mode_t
+real_from_fake_mode (mode_t mode)
+{
+  return mode | S_IREAD | S_IWRITE | (((mode << 3) | (mode << 6)) & S_IEXEC);
+}
+
 /* This is called by netfs_S_fsys_getroot.  */
 error_t
 netfs_check_open_permissions (struct iouser *user, struct node *np,
@@ -283,7 +294,7 @@ netfs_S_dir_lookup (struct protid *diruser,
  redo_lookup:
   err = dir_lookup (dir, filename,
 		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
-		    mode, do_retry, retry_name, &file);
+		    real_from_fake_mode (mode), do_retry, retry_name, &file);
   if (dir != netfs_node_netnode (dnp)->file)
     mach_port_deallocate (mach_task_self (), dir);
   if (err)
@@ -523,17 +534,6 @@ netfs_attempt_chauthor (struct iouser *cred, struct node *np, uid_t author)
   set_faked_attribute (np, FAKE_AUTHOR);
   np->nn_stat.st_author = author;
   return 0;
-}
-
-/* Return the mode that the real underlying file should have if the
-   fake mode is being set to MODE.  We always give ourselves read and
-   write permission so that we can open the file as root would be able
-   to.  We give ourselves execute permission iff any execute bit is
-   set in the fake mode.  */
-static inline mode_t
-real_from_fake_mode (mode_t mode)
-{
-  return mode | S_IREAD | S_IWRITE | (((mode << 3) | (mode << 6)) & S_IEXEC);
 }
 
 /* This should attempt a chmod call for the user specified by CRED on
