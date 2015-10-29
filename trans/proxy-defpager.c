@@ -236,10 +236,16 @@ int
 proxy_defpager_demuxer (mach_msg_header_t *inp,
 			mach_msg_header_t *outp)
 {
-  extern int default_pager_server (mach_msg_header_t *, mach_msg_header_t *);
-
-  return default_pager_server (inp, outp)
-    || trivfs_demuxer (inp, outp);
+  mig_routine_t routine;
+  if ((routine = default_pager_server_routine (inp)) ||
+      (routine = NULL, trivfs_demuxer (inp, outp)))
+    {
+      if (routine)
+        (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 int
