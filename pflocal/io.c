@@ -37,7 +37,6 @@
 #include "sserver.h"
 
 #include "io_S.h"
-#include "interrupt_S.h"
 
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
