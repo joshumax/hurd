@@ -285,7 +285,7 @@ intran: INTERRUPT_INTRAN
 intranpayload: INTERRUPT_INTRAN_PAYLOAD
 #else
 #ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
-intranpayload: exec_startup_t HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: interrupt_t HURD_DEFAULT_PAYLOAD_TO_PORT
 #endif
 #endif
 #ifdef INTERRUPT_OUTTRAN
