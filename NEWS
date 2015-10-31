@@ -1,4 +1,4 @@
-Version 0.7 (2015-10-XX)
+Version 0.7 (2015-10-31)
 
 The node cache in ext2fs has been improved, generalized, and moved to
 libdiskfs.  It is now also used by isofs and fatfs.
@@ -15,7 +15,7 @@ translators, libdiskfs, and libpager has been identified and fixed.
 
 The code has been updated to work with newer versions of the compiler
 and libc, and numerous bugs have been fixed throughout the code.
-
+
 Version 0.6 (2015-04-10)
 
 Numerous cleanups and stylistic fixes of the code base.  Several
@@ -39,7 +39,7 @@ The init server has been split into the startup server (handling early
 system bootstrap and shutdown), and a SysV-style init program (aptly
 named `init').
 
-The procfs and random translators have been merged.
+The procfs and random translators have been merged into this repository.
 
 Version 0.5 (2013-09-27)
 
