@@ -2318,17 +2318,6 @@ The functions and variables described in this subsection already have
 default definitions in @code{libtrivfs}, so you are not forced to define
 them; rather, they may be redefined on a case-by-case basis.
 
-@deftypevar {extern struct port_class *} trivfs_protid_portclasses []
-@deftypevarx {extern int} trivfs_protid_nportclasses
-@deftypevarx {extern struct port_class *} trivfs_cntl_portclasses []
-@deftypevarx {extern int} trivfs_cntl_nportclasses
-If you define these, they should be vectors (and the associated sizes)
-of port classes that will be translated into control and protid pointers
-for passing to RPCs, in addition to those passed to or created by
-@code{trivfs_create_control} (or @code{trivfs_startup}), which will
-automatically be recognized.
-@end deftypevar
-
 @deftypefn {Variable} error_t {(*trivfs_check_open_hook)} (@w{struct trivfs_control *@var{cntl}}, @w{struct iouser *@var{user}}, @w{int @var{flags}})
 If this variable is non-zero, it will be called every time an open happens.
 @var{user} and @var{flags} are from the open; @var{cntl} identifies the

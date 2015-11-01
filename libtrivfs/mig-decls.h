@@ -45,9 +45,6 @@ trivfs_begin_using_protid (mach_port_t port)
       for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
 	if (pi->class == trivfs_dynamic_protid_port_classes[i])
 	  return (struct trivfs_protid *) pi;
-      for (i = 0; i < trivfs_protid_nportclasses; i++)
-	if (pi->class == trivfs_protid_portclasses[i])
-	  return (struct trivfs_protid *) pi;
       ports_port_deref (pi);
     }
 
@@ -64,9 +61,6 @@ trivfs_begin_using_protid_payload (unsigned long payload)
       size_t i;
       for (i = 0; i < trivfs_num_dynamic_protid_port_classes; i++)
 	if (pi->class == trivfs_dynamic_protid_port_classes[i])
-	  return (struct trivfs_protid *) pi;
-      for (i = 0; i < trivfs_protid_nportclasses; i++)
-	if (pi->class == trivfs_protid_portclasses[i])
 	  return (struct trivfs_protid *) pi;
       ports_port_deref (pi);
     }
@@ -92,9 +86,6 @@ trivfs_begin_using_control (mach_port_t port)
       for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
 	if (pi->class == trivfs_dynamic_control_port_classes[i])
 	  return (struct trivfs_control *) pi;
-      for (i = 0; i < trivfs_cntl_nportclasses; i++)
-	if (pi->class == trivfs_cntl_portclasses[i])
-	  return (struct trivfs_control *) pi;
       ports_port_deref (pi);
     }
 
@@ -111,9 +102,6 @@ trivfs_begin_using_control_payload (unsigned long payload)
       size_t i;
       for (i = 0; i < trivfs_num_dynamic_control_port_classes; i++)
 	if (pi->class == trivfs_dynamic_control_port_classes[i])
-	  return (struct trivfs_control *) pi;
-      for (i = 0; i < trivfs_cntl_nportclasses; i++)
-	if (pi->class == trivfs_cntl_portclasses[i])
 	  return (struct trivfs_control *) pi;
       ports_port_deref (pi);
     }

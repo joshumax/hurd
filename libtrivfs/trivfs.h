@@ -74,19 +74,6 @@ extern int trivfs_support_exec;
    operations.)  */
 extern int trivfs_allow_open;
 
-/* If the user defines these, they should be vectors (and the associated
-   sizes) of port classes that will be translated into control & protid
-   pointers for passing to rpcs, in addition to those passed to or created by
-   trivfs_create_control (or trivfs_startup) will automatically be
-   recognized.  */
-/* Deprecation notice: The use of these vectors is deprecated.  Please
-   use the dynamic class support.  These vectors will be removed in
-   Hurd 0.8.  */
-extern struct port_class *trivfs_protid_portclasses[] __attribute__ ((deprecated));
-extern int trivfs_protid_nportclasses __attribute__ ((deprecated));
-extern struct port_class *trivfs_cntl_portclasses[] __attribute__ ((deprecated));
-extern int trivfs_cntl_nportclasses __attribute__ ((deprecated));
-
 /* The user must define this function.  This should modify a struct
    stat (as returned from the underlying node) for presentation to
    callers of io_stat.  It is permissible for this function to do
