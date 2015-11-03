@@ -269,6 +269,8 @@ extern void sk_init (void), skb_init (void);
 extern int net_dev_init (void);
 extern void inet6_proto_init (struct net_proto *pro);
 
+#define ARRAY_SIZE(x)       (sizeof(x) / sizeof((x)[0]))
+
 int
 main (int argc,
       char **argv)
@@ -374,11 +376,11 @@ main (int argc,
     int i;
     /* Check that at least one portclass has been bound, 
        error out otherwise. */
-    for (i = 0; i < trivfs_protid_nportclasses; i ++)
+    for (i = 0; i < ARRAY_SIZE (pfinet_protid_portclasses); i++)
       if (pfinet_protid_portclasses[i] != MACH_PORT_NULL)
 	break;
 
-    if (i == trivfs_protid_nportclasses)
+    if (i == ARRAY_SIZE (pfinet_protid_portclasses))
       error (1, 0, "should be started as a translator.\n");
   }
 
