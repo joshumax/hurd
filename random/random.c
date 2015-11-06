@@ -486,25 +486,20 @@ trivfs_append_args (struct trivfs_control *fsys,
 {
   error_t err = 0;
   char *opt;
-  
+
   pthread_mutex_lock (&global_lock);
   switch (level)
     {
     case 0:
-      {
 	opt = "--weak";
 	break;
-      }
+
     case 1:
-      {
 	opt = "--fast";
 	break;
-      }
+
     default:
-      {
 	opt = "--secure";
-	break;
-      }
     }
   if (level != DEFAULT_LEVEL)
     err = argz_add (argz, argz_len, opt);
