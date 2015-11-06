@@ -143,6 +143,11 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  data_t *data, mach_msg_type_number_t *data_len,
 		  loff_t offs, mach_msg_type_number_t amount)
 {
+  error_t err;
+  mach_msg_type_number_t read_amount = 0;
+  void *buf = NULL;
+  size_t length;
+
   /* Deny access if they have bad credentials. */
   if (! cred)
     return EOPNOTSUPP;
@@ -151,21 +156,27 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   pthread_mutex_lock (&global_lock);
 
-  if (amount > 0)
+  while (amount > 0)
     {
       mach_msg_type_number_t new_amount;
+      /* XXX: It would be nice to fix readable_pool to work for sizes
+	 greater than the POOLSIZE.  Otherwise we risk detecting too
+	 late that we run out of entropy and all that entropy is
+	 wasted.  */
       while (readable_pool (amount, level) == 0)
 	{
 	  if (cred->po->openmodes & O_NONBLOCK)
 	    {
 	      pthread_mutex_unlock (&global_lock);
-	      return EWOULDBLOCK;
+	      err = EWOULDBLOCK;
+	      goto errout;
 	    }
 	  read_blocked = 1;
 	  if (pthread_hurd_cond_wait_np (&wait, &global_lock))
 	    {
 	      pthread_mutex_unlock (&global_lock);
-	      return EINTR;
+	      err = EINTR;
+	      goto errout;
 	    }
 	  /* See term/users.c for possible race?  */
 	}
@@ -175,27 +186,35 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	{
 	  *data = mmap (0, amount, PROT_READ|PROT_WRITE,
 				       MAP_ANON, 0, 0);
+
 	  if (*data == MAP_FAILED)
 	    {
 	      pthread_mutex_unlock (&global_lock);
 	      return errno;
 	    }
+
+	  /* Keep track of our map in case of errors.  */
+	  buf = *data, length = amount;
+
+	  /* Update DATA_LEN to reflect the new buffers size.  */
+	  *data_len = amount;
 	}
 
-      new_amount = read_pool ((byte *) *data, amount, level);
-
-      if (new_amount < amount)
-	munmap (*data + round_page (new_amount),
-	        round_page(amount) - round_page (new_amount));
-      amount = new_amount;
+      new_amount = read_pool (((byte *) *data) + read_amount, amount, level);
+      read_amount += new_amount;
+      amount -= new_amount;
     }
-  *data_len = amount;
 
   /* Set atime, see term/users.c */
 
   pthread_mutex_unlock (&global_lock);
-
+  *data_len = read_amount;
   return 0;
+
+ errout:
+  if (buf)
+    munmap (buf, length);
+  return err;
 }
 
 /* Write data to an IO object.  If offset is -1, write at the object
