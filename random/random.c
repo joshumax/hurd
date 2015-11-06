@@ -552,7 +552,7 @@ sigterm_handler (int signo)
   raise (SIGTERM);
 }
 
-void
+static error_t
 arrange_shutdown_notification ()
 {
   error_t err;
@@ -570,24 +570,26 @@ arrange_shutdown_notification ()
   err = ports_create_port (shutdown_notify_class, fsys->pi.bucket,
 			   sizeof (struct port_info), &pi);
   if (err)
-    return;
+    return err;
 
   procserver = getproc ();
-  if (!procserver)
-    return;
+  if (! MACH_PORT_VALID (procserver))
+    return EMIG_SERVER_DIED;
 
   err = proc_getmsgport (procserver, 1, &initport);
   mach_port_deallocate (mach_task_self (), procserver);
   if (err)
-    return;
+    return err;
 
   notify = ports_get_send_right (pi);
   ports_port_deref (pi);
-  startup_request_notification (initport, notify,
-				MACH_MSG_TYPE_MAKE_SEND,
-				program_invocation_short_name);
+  err = startup_request_notification (initport, notify,
+				      MACH_MSG_TYPE_MAKE_SEND,
+				      program_invocation_short_name);
+
   mach_port_deallocate (mach_task_self (), notify);
   mach_port_deallocate (mach_task_self (), initport);
+  return err;
 }
 
 
@@ -621,7 +623,9 @@ main (int argc, char **argv)
   if (err)
     error (3, err, "trivfs_startup");
 
-  arrange_shutdown_notification ();
+  err = arrange_shutdown_notification ();
+  if (err)
+    error (0, err, "Cannot request shutdown notification");
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, random_demuxer,
