@@ -17,6 +17,7 @@
 
 #define _GNU_SOURCE 1
 
+#include <hurd/paths.h>
 #include <hurd/trivfs.h>
 #include <hurd/startup.h>
 #include <stdio.h>
@@ -557,7 +558,6 @@ arrange_shutdown_notification ()
 {
   error_t err;
   mach_port_t initport, notify;
-  process_t procserver;
   struct port_info *pi;
 
   shutdown_notify_class = ports_create_class (0, 0);
@@ -572,14 +572,9 @@ arrange_shutdown_notification ()
   if (err)
     return err;
 
-  procserver = getproc ();
-  if (! MACH_PORT_VALID (procserver))
-    return EMIG_SERVER_DIED;
-
-  err = proc_getmsgport (procserver, 1, &initport);
-  mach_port_deallocate (mach_task_self (), procserver);
-  if (err)
-    return err;
+  initport = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (! MACH_PORT_VALID (initport))
+    return errno;
 
   notify = ports_get_send_right (pi);
   ports_port_deref (pi);
