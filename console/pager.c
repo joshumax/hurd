@@ -125,7 +125,6 @@ pager_dropweak (struct user_pager_info *upi)
 void
 user_pager_init (void)
 {
-  pthread_t thread;
   error_t err;
 
   /* Create the pager bucket, and start to serve paging requests.  */

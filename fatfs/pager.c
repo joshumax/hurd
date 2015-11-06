@@ -764,8 +764,6 @@ pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
 void
 create_fat_pager (void)
 {
-  pthread_t thread;
-  pthread_attr_t attr;
   error_t err;
 
   /* The disk pager.  */

@@ -1200,8 +1200,6 @@ disk_cache_block_is_ref (block_t block)
 void
 create_disk_pager (void)
 {
-  pthread_t thread;
-  pthread_attr_t attr;
   error_t err;
 
   /* The disk pager.  */

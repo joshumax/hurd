@@ -155,7 +155,6 @@ init_dev_paging ()
       pthread_mutex_lock (&pager_global_lock);
       if (pager_port_bucket == NULL)
 	{
-	  pthread_t thread;
 	  error_t err;
 
 	  pager_port_bucket = ports_create_bucket ();
