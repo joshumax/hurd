@@ -433,7 +433,7 @@ disk_pager_read_page (vm_offset_t page, void **buf, int *writelock)
     + offset % block_size;
   disk_cache_info[index].flags |= DC_INCORE;
   disk_cache_info[index].flags &=~ DC_UNTOUCHED;
-#ifndef NDEBUG
+#ifdef DEBUG_DISK_CACHE
   disk_cache_info[index].last_read = disk_cache_info[index].block;
   disk_cache_info[index].last_read_xor
     = disk_cache_info[index].block ^ DISK_CACHE_LAST_READ_XOR;
@@ -469,7 +469,7 @@ disk_pager_write_page (vm_offset_t page, void *buf)
   assert (disk_cache_info[index].block != DC_NO_BLOCK);
   offset = ((store_offset_t) disk_cache_info[index].block << log2_block_size)
     + offset % block_size;
-#ifndef NDEBUG			/* Not strictly needed.  */
+#ifdef DEBUG_DISK_CACHE			/* Not strictly needed.  */
   assert ((disk_cache_info[index].last_read ^ DISK_CACHE_LAST_READ_XOR)
 	  == disk_cache_info[index].last_read_xor);
   assert (disk_cache_info[index].last_read
@@ -873,7 +873,7 @@ disk_cache_init (void)
       disk_cache_info[i].block = DC_NO_BLOCK;
       disk_cache_info[i].flags = 0;
       disk_cache_info[i].ref_count = 0;
-#ifndef NDEBUG
+#ifdef DEBUG_DISK_CACHE
       disk_cache_info[i].last_read = DC_NO_BLOCK;
       disk_cache_info[i].last_read_xor
 	= DC_NO_BLOCK ^ DISK_CACHE_LAST_READ_XOR;

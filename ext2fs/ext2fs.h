@@ -244,7 +244,7 @@ extern int disk_cache_blocks;
 
 #define DC_NO_BLOCK	((block_t) -1L)
 
-#ifndef NDEBUG
+#ifdef DEBUG_DISK_CACHE
 #define DISK_CACHE_LAST_READ_XOR	0xDEADBEEF
 #endif
 
@@ -254,7 +254,7 @@ struct disk_cache_info
   block_t block;
   uint16_t flags;
   uint16_t ref_count;
-#ifndef NDEBUG
+#ifdef DEBUG_DISK_CACHE
   block_t last_read, last_read_xor;
 #endif
 };
