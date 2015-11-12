@@ -960,6 +960,7 @@ disk_cache_block_ref (block_t block)
 {
   int index;
   void *bptr;
+  hurd_ihash_locp_t slot;
 
   assert (block < store->size >> log2_block_size);
 
@@ -968,7 +969,7 @@ disk_cache_block_ref (block_t block)
 retry_ref:
   pthread_mutex_lock (&disk_cache_lock);
 
-  bptr = hurd_ihash_find (disk_cache_bptr, block);
+  bptr = hurd_ihash_locp_find (disk_cache_bptr, block, &slot);
   if (bptr)
     /* Already mapped.  */
     {
@@ -1091,12 +1092,13 @@ retry_ref:
 #endif
 
   /* Re-associate.  */
+
+  /* New association.  */
+  if (hurd_ihash_locp_add (disk_cache_bptr, slot, block, bptr))
+    ext2_panic ("Couldn't hurd_ihash_locp_add new disk block");
   if (disk_cache_info[index].block != DC_NO_BLOCK)
     /* Remove old association.  */
     hurd_ihash_remove (disk_cache_bptr, disk_cache_info[index].block);
-  /* New association.  */
-  if (hurd_ihash_add (disk_cache_bptr, block, bptr))
-    ext2_panic ("Couldn't hurd_ihash_add new disk block");
   assert (! (disk_cache_info[index].flags & DC_DONT_REUSE & ~DC_UNTOUCHED));
   disk_cache_info[index].block = block;
   assert (! disk_cache_info[index].ref_count);
