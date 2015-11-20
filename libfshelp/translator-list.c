@@ -53,8 +53,7 @@ translator_ihash_cleanup (void *element, void *arg)
 
   if (translator->pi)
     ports_port_deref (translator->pi);
-  /* No need to deallocate translator->active, we only keep the name of
-     the port, not a reference.  */
+  mach_port_deallocate (mach_task_self (), translator->active);
   free (translator->name);
   free (translator);
 }
@@ -124,8 +123,10 @@ fshelp_set_active_translator (struct port_info *pi,
 	  t->pi = pi;
 	}
 
-      /* No need to increment the reference count, we only keep the
-	 name, not a reference.  */
+      if (MACH_PORT_VALID (t->active))
+	mach_port_deallocate (mach_task_self (), t->active);
+      mach_port_mod_refs (mach_task_self (), active,
+			  MACH_PORT_RIGHT_SEND, +1);
       t->active = active;
     }
   else
