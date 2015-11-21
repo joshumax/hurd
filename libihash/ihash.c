@@ -370,13 +370,9 @@ hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key)
     }
 }
 
-/* Find the item in the hash table HT with key KEY.  If it is found,
-   return the location of its slot in the hash table.  If it is not
-   found, this function may still return a location.
-
-   This location pointer can always be safely accessed using
-   hurd_ihash_locp_value.  If the lookup is successful,
-   hurd_ihash_locp_value will return the value related to KEY.
+/* Find and return the item in the hash table HT with key KEY, or NULL
+   if it doesn't exist.  If it is not found, this function may still
+   return a location in SLOT.
 
    If the lookup is successful, the returned location can be used with
    hurd_ihash_locp_add to update the item, and with
@@ -387,8 +383,10 @@ hurd_ihash_find (hurd_ihash_t ht, hurd_ihash_key_t key)
 
    Note that returned location is only valid until the next insertion
    or deletion.  */
-hurd_ihash_locp_t
-hurd_ihash_locp_find (hurd_ihash_t ht, hurd_ihash_key_t key)
+hurd_ihash_value_t
+hurd_ihash_locp_find (hurd_ihash_t ht,
+		      hurd_ihash_key_t key,
+		      hurd_ihash_locp_t *slot)
 {
   int idx;
 
@@ -396,7 +394,8 @@ hurd_ihash_locp_find (hurd_ihash_t ht, hurd_ihash_key_t key)
     return NULL;
 
   idx = find_index (ht, key);
-  return &ht->items[idx].value;
+  *slot = &ht->items[idx].value;
+  return index_valid (ht, idx, key) ? ht->items[idx].value : NULL;
 }
 
 
