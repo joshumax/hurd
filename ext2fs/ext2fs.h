@@ -254,6 +254,7 @@ struct disk_cache_info
   block_t block;
   uint16_t flags;
   uint16_t ref_count;
+  struct disk_cache_info *next;	/* List of reusable entries.  */
 #ifdef DEBUG_DISK_CACHE
   block_t last_read, last_read_xor;
 #endif

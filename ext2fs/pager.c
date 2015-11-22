@@ -840,12 +840,49 @@ int disk_cache_blocks;
 hurd_ihash_t disk_cache_bptr;
 /* Cached blocks' info.  */
 struct disk_cache_info *disk_cache_info;
-/* Hint index for which cache block to reuse next.  */
-int disk_cache_hint;
 /* Lock for these structures.  */
 pthread_mutex_t disk_cache_lock;
 /* Fired when a re-association is done.  */
 pthread_cond_t disk_cache_reassociation;
+
+/* Linked list of potentially unused blocks. */
+static struct disk_cache_info *disk_cache_info_free;
+static pthread_mutex_t disk_cache_info_free_lock;
+
+/* Get a reusable entry.  Must be called with disk_cache_lock
+   held.  */
+static struct disk_cache_info *
+disk_cache_info_free_pop (void)
+{
+  struct disk_cache_info *p;
+
+  do
+    {
+      pthread_mutex_lock (&disk_cache_info_free_lock);
+      p = disk_cache_info_free;
+      if (p)
+	{
+	  disk_cache_info_free = p->next;
+	  p->next = NULL;
+	}
+      pthread_mutex_unlock (&disk_cache_info_free_lock);
+    }
+  while (p && (p->flags & DC_DONT_REUSE || p->ref_count > 0));
+  return p;
+}
+
+/* Add P to the list of potentially re-usable entries.  */
+static void
+disk_cache_info_free_push (struct disk_cache_info *p)
+{
+  pthread_mutex_lock (&disk_cache_info_free_lock);
+  if (! p->next)
+    {
+      p->next = disk_cache_info_free;
+      disk_cache_info_free = p;
+    }
+  pthread_mutex_unlock (&disk_cache_info_free_lock);
+}
 
 /* Finish mapping initialization. */
 static void
@@ -857,6 +894,7 @@ disk_cache_init (void)
 
   pthread_mutex_init (&disk_cache_lock, NULL);
   pthread_cond_init (&disk_cache_reassociation, NULL);
+  pthread_mutex_init (&disk_cache_info_free_lock, NULL);
 
   /* Allocate space for block num -> in-memory pointer mapping.  */
   if (hurd_ihash_create (&disk_cache_bptr, HURD_IHASH_NO_LOCP))
@@ -867,19 +905,22 @@ disk_cache_init (void)
   if (!disk_cache_info)
     ext2_panic ("Cannot allocate space for disk cache info");
 
-  /* Initialize disk_cache_info.  */
-  for (int i = 0; i < disk_cache_blocks; i++)
+  /* Initialize disk_cache_info.  Start with the last entry so that
+     the first ends up at the front of the free list.  This keeps the
+     assertions at the end of this function happy.  */
+  for (int i = disk_cache_blocks; i >= 0; i--)
     {
       disk_cache_info[i].block = DC_NO_BLOCK;
       disk_cache_info[i].flags = 0;
       disk_cache_info[i].ref_count = 0;
+      disk_cache_info[i].next = NULL;
+      disk_cache_info_free_push (&disk_cache_info[i]);
 #ifdef DEBUG_DISK_CACHE
       disk_cache_info[i].last_read = DC_NO_BLOCK;
       disk_cache_info[i].last_read_xor
 	= DC_NO_BLOCK ^ DISK_CACHE_LAST_READ_XOR;
 #endif
     }
-  disk_cache_hint = 0;
 
   /* Map the superblock and the block group descriptors.  */
   block_t fixed_first = boffs_block (SBLOCK_OFFS);
@@ -958,6 +999,7 @@ disk_cache_return_unused (void)
 void *
 disk_cache_block_ref (block_t block)
 {
+  struct disk_cache_info *info;
   int index;
   void *bptr;
   hurd_ihash_locp_t slot;
@@ -1005,34 +1047,10 @@ retry_ref:
     }
 
   /* Search for a block that is not in core and is not referenced.  */
-  index = disk_cache_hint;
-  while ((disk_cache_info[index].flags & DC_DONT_REUSE)
-	 || (disk_cache_info[index].ref_count))
-    {
-      ext2_debug ("reject %u -> %d (ref_count = %hu, flags = %#hx)",
-		  disk_cache_info[index].block, index,
-		  disk_cache_info[index].ref_count,
-		  disk_cache_info[index].flags);
-
-      /* Just move to next block.  */
-      index++;
-      if (index >= disk_cache_blocks)
-	index -= disk_cache_blocks;
-
-      /* If we return to where we started, than there is no suitable
-	 block. */
-      if (index == disk_cache_hint)
-	break;
-    }
-
-  /* The next place in the disk cache becomes the current hint.  */
-  disk_cache_hint = index + 1;
-  if (disk_cache_hint >= disk_cache_blocks)
-    disk_cache_hint -= disk_cache_blocks;
+  info = disk_cache_info_free_pop ();
 
   /* Is suitable place found?  */
-  if ((disk_cache_info[index].flags & DC_DONT_REUSE)
-      || disk_cache_info[index].ref_count)
+  if (info == NULL)
     /* No place is found.  Try to release some blocks and try
        again.  */
     {
@@ -1046,6 +1064,7 @@ retry_ref:
     }
 
   /* Suitable place is found.  */
+  index = info - disk_cache_info;
 
   /* Calculate pointer to data.  */
   bptr = (char *)disk_cache + (index << log2_block_size);
@@ -1177,6 +1196,8 @@ disk_cache_block_deref (void *ptr)
   assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
   assert (disk_cache_info[index].ref_count >= 1);
   disk_cache_info[index].ref_count--;
+  if (disk_cache_info[index].ref_count == 0)
+    disk_cache_info_free_push (&disk_cache_info[index]);
   pthread_mutex_unlock (&disk_cache_lock);
 }
 
