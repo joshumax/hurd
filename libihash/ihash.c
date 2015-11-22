@@ -75,6 +75,8 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
 {
   unsigned int idx;
   unsigned int up_idx;
+  unsigned int first_deleted = 0;
+  int first_deleted_set = 0;
   unsigned int mask = ht->size - 1;
 
   idx = hash (ht, key) & mask;
@@ -88,15 +90,21 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
   do
     {
       up_idx = (up_idx + 1) & mask;
-      if (ht->items[up_idx].value == _HURD_IHASH_EMPTY
-	  || compare (ht, ht->items[up_idx].key, key))
+      if (ht->items[up_idx].value == _HURD_IHASH_EMPTY)
+        return first_deleted_set ? first_deleted : up_idx;
+      if (compare (ht, ht->items[up_idx].key, key))
 	return up_idx;
+      if (! first_deleted_set
+          && ht->items[up_idx].value == _HURD_IHASH_DELETED)
+        first_deleted = up_idx, first_deleted_set = 1;
     }
   while (up_idx != idx);
 
-  /* If we end up here, the item could not be found.  Return any
-     invalid index.  */
-  return idx;
+  /* If we end up here, the item could not be found.  Return the index
+     of the first deleted item, as this is the position where we can
+     insert an item with the given key once we established that it is
+     not in the table.  */
+  return first_deleted;
 }
 
 
@@ -233,48 +241,22 @@ static inline int
 add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
 {
   unsigned int idx;
-  unsigned int first_free;
-  unsigned int mask = ht->size - 1;
 
-  idx = hash (ht, key) & mask;
-  first_free = idx;
-
-  if (ht->items[idx].value != _HURD_IHASH_EMPTY
-      && ! compare (ht, ht->items[idx].key, key))
-    {
-      unsigned int up_idx = idx;
-
-      do
-	{
-        up_idx = (up_idx + 1) & mask;
-	  if (ht->items[up_idx].value == _HURD_IHASH_EMPTY
-	      || compare (ht, ht->items[up_idx].key, key))
-	    {
-	      idx = up_idx;
-	      break;
-	    }
-	}
-      while (up_idx != idx);
-    }
+  idx = find_index (ht, key);
 
   /* Remove the old entry for this key if necessary.  */
   if (index_valid (ht, idx, key))
     locp_remove (ht, &ht->items[idx].value);
 
-  /* If we have not found an empty slot, maybe the last one we
-     looked at was empty (or just got deleted).  */
-  if (!index_empty (ht, first_free))
-    first_free = idx;
- 
-  if (index_empty (ht, first_free))
+  if (index_empty (ht, idx))
     {
       ht->nr_items++;
-      ht->items[first_free].value = value;
-      ht->items[first_free].key = key;
+      ht->items[idx].value = value;
+      ht->items[idx].key = key;
 
       if (ht->locp_offset != HURD_IHASH_NO_LOCP)
 	*((hurd_ihash_locp_t *) (((char *) value) + ht->locp_offset))
-	  = &ht->items[first_free].value;
+	  = &ht->items[idx].value;
 
       return 1;
     }
