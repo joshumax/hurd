@@ -267,6 +267,7 @@ hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
   if (ht->size == 0
       || item == NULL
       || item->value == _HURD_IHASH_DELETED
+      || ! compare (ht, item->key, key)
       || hurd_ihash_get_load (ht) > ht->max_load)
     return hurd_ihash_add (ht, key, value);
 
