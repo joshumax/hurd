@@ -1,6 +1,6 @@
 /* A list of active translators.
 
-   Copyright (C) 2013,14 Free Software Foundation, Inc.
+   Copyright (C) 2013,14,15 Free Software Foundation, Inc.
 
    Written by Justus Winter <4winter@informatik.uni-hamburg.de>
 
@@ -39,17 +39,11 @@ struct translator
   mach_port_t active;
 };
 
-/* The list of active translators.  */
-static struct hurd_ihash translator_ihash
-  = HURD_IHASH_INITIALIZER (HURD_IHASH_NO_LOCP);
-
-/* The lock protecting the translator_ihash.  */
-static pthread_mutex_t translator_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
-
+/* The hash table requires some callback functions.  */
 static void
-translator_ihash_cleanup (void *element, void *arg)
+cleanup (void *value, void *arg)
 {
-  struct translator *translator = element;
+  struct translator *translator = value;
 
   if (translator->pi)
     ports_port_deref (translator->pi);
@@ -57,6 +51,26 @@ translator_ihash_cleanup (void *element, void *arg)
   free (translator->name);
   free (translator);
 }
+
+static hurd_ihash_key_t
+hash (const void *key)
+{
+  return (hurd_ihash_key_t) hurd_ihash_hash32 (key, strlen (key), 0);
+}
+
+static int
+compare (const void *a, const void *b)
+{
+  return strcmp ((const char *) a, (const char *) b) == 0;
+}
+
+/* The list of active translators.  */
+static struct hurd_ihash translator_ihash
+  = HURD_IHASH_INITIALIZER_GKI (HURD_IHASH_NO_LOCP, cleanup, NULL,
+				hash, compare);
+
+/* The lock protecting the translator_ihash.  */
+static pthread_mutex_t translator_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Record an active translator being bound to the given file name
    NAME.  ACTIVE is the control port of the translator.  */
@@ -66,20 +80,16 @@ fshelp_set_active_translator (struct port_info *pi,
 			      mach_port_t active)
 {
   error_t err = 0;
+  struct translator *t;
+  hurd_ihash_locp_t slot;
+
   pthread_mutex_lock (&translator_ihash_lock);
+  t = hurd_ihash_locp_find (&translator_ihash, (hurd_ihash_key_t) name,
+			    &slot);
+  if (t)
+    goto update; /* Entry exists.  */
 
-  if (! translator_ihash.cleanup)
-    hurd_ihash_set_cleanup (&translator_ihash, translator_ihash_cleanup, NULL);
-
-  struct translator *t = NULL;
-  HURD_IHASH_ITERATE (&translator_ihash, value)
-    {
-      t = value;
-      if (strcmp (name, t->name) == 0)
-	goto update; /* Entry exists.  */
-    }
-
-  t = malloc (sizeof (struct translator));
+  t = malloc (sizeof *t);
   if (! t)
     {
       err = errno;
@@ -96,7 +106,8 @@ fshelp_set_active_translator (struct port_info *pi,
       goto out;
     }
 
-  err = hurd_ihash_add (&translator_ihash, (hurd_ihash_key_t) t, t);
+  err = hurd_ihash_locp_add (&translator_ihash, slot,
+			     (hurd_ihash_key_t) t->name, t);
   if (err)
     goto out;
 
@@ -158,7 +169,7 @@ fshelp_remove_active_translator (mach_port_t active)
     }
 
   if (t)
-    hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t);
+    hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
 
   pthread_mutex_unlock (&translator_ihash_lock);
   return err;
