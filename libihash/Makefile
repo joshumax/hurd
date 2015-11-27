@@ -20,7 +20,7 @@ dir := libihash
 makemode := library
 
 libname := libihash
-SRCS = ihash.c
+SRCS = ihash.c murmur3.c
 installhdrs = ihash.h
 
 OBJS = $(SRCS:.c=.o)

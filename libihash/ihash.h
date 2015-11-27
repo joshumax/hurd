@@ -349,5 +349,10 @@ int hurd_ihash_remove (hurd_ihash_t ht, hurd_ihash_key_t key);
    was provided to hurd_ihash_add().  This call is faster than
    hurd_ihash_remove().  */
 void hurd_ihash_locp_remove (hurd_ihash_t ht, hurd_ihash_locp_t locp);
+
+/* We provide a general purpose hash function.  This function can be
+   used with the generalized key interface to use arbitrary data as
+   keys using this library.  */
+uint32_t hurd_ihash_hash32 (const void *buf, size_t len, uint32_t seed);
 
 #endif	/* _HURD_IHASH_H */
