@@ -324,7 +324,7 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 
 # Direct the linker where to find shared objects specified in the
 # dependencies of other shared objects it encounters.
-rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
+lpath := -L. $(patsubst %,-L%,$(dir $(wildcard ../lib*/lib*.so)))
 
 # Main rule to link executables
 #
@@ -333,7 +333,7 @@ rpath := -Wl,-rpath-link=.:$(subst $. ,:,$(dir $(wildcard ../lib*/lib*.so)))
 ifeq ($(prof-depend),)
 
 define link-executable
-$(CC) $(rpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
+$(CC) $(lpath) $(CFLAGS) $($*-CFLAGS) $(LDFLAGS) $($*-LDFLAGS) \
       $(BUGADDR_REF) \
       -o $@
 endef
@@ -382,7 +382,7 @@ $(libname)_pic.a: $(patsubst %.o,%_pic.o,$(OBJS))
 # we make that a symlink.
 $(libname).so.$(hurd-version): $(patsubst %.o,%_pic.o,$(OBJS)) $(library_deps)
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
-	      $(rpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) \
+	      $(lpath) $(CFLAGS) $(LDFLAGS) $($(libname).so-LDFLAGS) \
 	      '-Wl,-(' $(filter-out %.map,$^) \
 		       $($(libname).so-LDLIBS) $(LDLIBS) \
 	      '-Wl,-)' $(filter %.map,$^)
