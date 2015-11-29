@@ -42,6 +42,7 @@ prog-subdirs = auth proc exec term \
 	       procfs \
 	       startup \
 	       init \
+	       devnode \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

@@ -1,0 +1,25 @@
+[Introduction]
+
+devnode is a translator that creates the device file for the kernel device. It provides another way for other programs to open the kernel device.
+The device file should be created in /dev with the device name as its file name, so clients can find the device file easily.
+Clients need to get the port to the devnode translator by calling file_name_lookup() and uses this port as a master device port to open the device by calling device_open(). The device name used in device_open() is specified by '-n' option of devnode.
+
+
+[Usage]
+
+Usage: devnode [OPTION...] device
+Hurd devnode translator.
+
+  -n, --name=DEVICENAME      Accept open from clients only with DEVICENAME
+  -M, --master_device=FILE   Get a pseudo master device port
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version
+
+The '-n' option specifies the device name used by clients in device_open(). It can be optional. If it's specified, clients must use the name to open the device. Otherwise, every device name used by clients in device_open() is acceptable. 
+The '-M' option specifies the file where devnode can get the master device port. This option can be useful to open the virtual interface created by eth-multiplexer, for example.
+
+
+[Internal]
+
+devnode is very simple. It implements the server side functions in device.defs, so it can receive the request of opening a device from clients. Only ds_device_open is actually implemented, which opens the device and returns the port to the device. Normally, devnode shouldn't get other requests.
