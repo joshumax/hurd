@@ -314,6 +314,9 @@ File Transfer Protocol
 
 Networking
 
+* pfinet::			TCP/IP stack.
+* pflocal::
+* libpipe::
 * Socket Interface::            Network communication I/O protocol.
 
 Authentication
@@ -2914,10 +2917,54 @@ storeio server (FIXME xref).
 
 FIXME: finish
 
+@node fifo
 @section fifo
+
+@node ifsock
 @section ifsock
+
+@node magic
 @section magic
+
+@node null
 @section null
+
+@node devnode
+@section devnode
+
+@dfn{devnode} is a translator that creates the device file for the device,
+which provides another way for other programs to open the device.
+
+Clients need to get the port to the @dfn{devnode} translator by calling
+@dfn{file_name_lookup}() and uses this port as a master device port to open
+the device by calling @dfn{device_open}(). The device name used in
+@dfn{device_open}() is specified by @option{--name} of @dfn{devnode}.
+
+@node Invoking devnode
+@subsection Invoking devnode
+
+Usage: devnode [@var{option}@dots{}]
+
+@table @code
+@item --name=@var{devicename}
+@itemx -n
+Define the device name used by clients in device_open().
+
+@item --master-device=@var{devicefile}
+@itemx -M
+Get a pseudo master device port
+
+@end table
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+If @option{--name} is specified, the client must use the device name in
+@dfn{device_open}. Otherwise, any device name is acceptable.
+
+@option{--master-device} can be useful to open the virtual interface
+created by some other programs, for example by @dfn{eth-multiplexer}
+(@pxref{eth-multiplexer}).
 
 
 FIXME: a chapter on libtreefs and libdirmgt will probably go here
@@ -4539,12 +4586,19 @@ FIXME: finish
 FIXME: this subsystem is in flux @c Thomas, 26-03-1998
 
 @menu
+* pfinet::			TCP/IP stack.
+* pflocal::
+* libpipe::
 * Socket Interface::            Network communication I/O protocol.
 @end menu
 
-
+@node pfinet
 @section pfinet
+
+@node pflocal
 @section pflocal
+
+@node libpipe
 @section libpipe
 
 @node Socket Interface
