@@ -2963,8 +2963,7 @@ If @option{--name} is specified, the client must use the device name in
 @dfn{device_open}. Otherwise, any device name is acceptable.
 
 @option{--master-device} can be useful to open the virtual interface
-created by some other programs, for example by @dfn{eth-multiplexer}
-(@pxref{eth-multiplexer}).
+created by some other programs, for example by eth-multiplexer.
 
 
 FIXME: a chapter on libtreefs and libdirmgt will probably go here
