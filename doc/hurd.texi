@@ -2899,6 +2899,14 @@ FIXME: finish
 @node Special Files
 @chapter Special Files
 
+@menu
+* fifo::
+* ifsock::
+* magic::
+* null::
+* devnode::
+@end menu
+
 In Unix, any file that does not act as a general-purpose unit of storage
 is called a @dfn{special file}.  These are FIFOs, Unix-domain sockets,
 and device nodes.  In the Hurd, there is no need for the ``special
@@ -2931,6 +2939,10 @@ FIXME: finish
 
 @node devnode
 @section devnode
+
+@menu
+* Invoking devnode::
+@end menu
 
 @dfn{devnode} is a translator that creates the device file for the device,
 which provides another way for other programs to open the device.
