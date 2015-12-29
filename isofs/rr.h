@@ -99,9 +99,9 @@ struct su_header
 /* The body of a CE (Continuation Area) field */
 struct su_ce
 {
-  char continuation[8];
-  char offset[8];
-  char size[8];
+  unsigned char continuation[8];
+  unsigned char offset[8];
+  unsigned char size[8];
 };
 
 /* The body of a SP (Sharing Protocol Indicator) field */
@@ -142,17 +142,17 @@ struct su_er
 /* The body of a PX (Posix Attributes) field. */
 struct rr_px
 {
-  char mode[8];
-  char nlink[8];
-  char uid[8];
-  char gid[8];
+  unsigned char mode[8];
+  unsigned char nlink[8];
+  unsigned char uid[8];
+  unsigned char gid[8];
 };
 
 /* The body of a PN (Posix Device Node) field. */
 struct rr_pn
 {
-  char high[8];
-  char low[8];
+  unsigned char high[8];
+  unsigned char low[8];
 };
 
 /* The body of a SL (Symbolic Link) field. */
@@ -188,13 +188,13 @@ struct rr_nm
 /* The body of a CL (Child Directory Location) field. */
 struct rr_cl
 {
-  char loc[8];
+  unsigned char loc[8];
 };
 
 /* The body of a PL (Parent Directory Location) field. */
 struct rr_pl
 {
-  char loc[8];
+  unsigned char loc[8];
 };
 
 /* The body of a TF (Time Stamp) field. */
@@ -234,7 +234,7 @@ struct rr_sf
 /* AU -- author (version 1) */
 struct gn_au
 {
-  char author[8];
+  unsigned char author[8];
 };
 
 /* TR -- translator (version 1) */
@@ -247,13 +247,13 @@ struct gn_tr
 /* MD -- full mode (version 1) */
 struct gn_md
 {
-  char mode[8];
+  unsigned char mode[8];
 };
 
 /* FL -- flags (version 1) */
 struct gn_fl
 {
-  char flags[8];
+  unsigned char flags[8];
 };
 
 

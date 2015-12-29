@@ -84,7 +84,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
     {
       struct dirrect *p;
       off_t filestart;
-      char *c;
+      unsigned char *c;
       error_t err;
 
       /* Look at the first directory entry in root. */
