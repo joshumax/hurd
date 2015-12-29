@@ -49,7 +49,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   char *nextname;
   char *relpath;
   error_t error;
-  struct protid *newpi;
+  struct protid *newpi = NULL;
   struct iouser *user;
 
   if (!diruser)
