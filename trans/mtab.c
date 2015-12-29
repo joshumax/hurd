@@ -330,7 +330,7 @@ mtab_mark_as_seen (struct mtab *mtab, mach_port_t node)
       return TRUE;
     }
 
-  hurd_ihash_add (&mtab->ports_seen, idport, idport);
+  hurd_ihash_add (&mtab->ports_seen, idport, (hurd_ihash_value_t) idport);
   return FALSE;
 }
 

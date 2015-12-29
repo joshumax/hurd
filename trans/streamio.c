@@ -808,7 +808,7 @@ dev_open (const char *name, dev_mode_t mode)
 			      phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
     }
 
-  err = device_open_request (device_master, phys_reply, mode, name);
+  err = device_open_request (device_master, phys_reply, mode, (char *) name);
   if (err)
     {
       mach_port_deallocate (mach_task_self (), phys_reply);
