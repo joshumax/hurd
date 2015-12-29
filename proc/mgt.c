@@ -21,6 +21,7 @@
 /* Written by Michael I. Bushnell.  */
 
 #include <mach.h>
+#include <mach/task_notify.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <errno.h>
