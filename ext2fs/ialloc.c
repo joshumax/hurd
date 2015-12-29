@@ -52,7 +52,7 @@
 void
 diskfs_free_node (struct node *np, mode_t old_mode)
 {
-  char *bh;
+  unsigned char *bh;
   unsigned long block_group;
   unsigned long bit;
   struct ext2_group_desc *gdp;
@@ -114,7 +114,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 ino_t
 ext2_alloc_inode (ino_t dir_inum, mode_t mode)
 {
-  char *bh = NULL;
+  unsigned char *bh = NULL;
   int i, j, avefreei;
   ino_t inum;
   struct ext2_group_desc *gdp;
@@ -225,7 +225,7 @@ repeat:
     {
       if (set_bit (inum, bh))
 	{
-	  ext2_warning ("bit already set for inode %d", inum);
+	  ext2_warning ("bit already set for inode %llu", inum);
 	  disk_cache_block_deref (bh);
 	  bh = NULL;
 	  goto repeat;
@@ -250,7 +250,7 @@ repeat:
   if (inum < EXT2_FIRST_INO (sblock) || inum > sblock->s_inodes_count)
     {
       ext2_error ("reserved inode or inode > inodes count - "
-		  "block_group = %d,inode=%d", i, inum);
+		  "block_group = %d,inode=%llu", i, inum);
       inum = 0;
       goto sync_out;
     }

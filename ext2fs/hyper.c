@@ -24,7 +24,7 @@
 #include "ext2fs.h"
 
 vm_address_t zeroblock;
-char *modified_global_blocks;
+unsigned char *modified_global_blocks;
 
 static void
 allocate_mod_map (void)

@@ -413,7 +413,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  ext2_warning ("bad directory entry: inode: %Ld offset: %zd",
+	  ext2_warning ("bad directory entry: inode: %Ld offset: %lu",
 			dp->cache_id,
 			currentoff - blockaddr + idx * DIRBLKSIZ);
 	  return ENOENT;

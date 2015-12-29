@@ -636,7 +636,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space, and will now crash.  Bye!");
       else if (err)
-	ext2_warning ("inode=%Ld, page=0x%zx: %s",
+	ext2_warning ("inode=%Ld, page=0x%lx: %s",
 		      node->cache_id, page, strerror (err));
 
       return err;
@@ -988,7 +988,7 @@ disk_cache_return_unused (void)
 		       1);
   else
     {
-      printf ("ext2fs: disk cache is starving\n");
+      ext2_debug ("ext2fs: disk cache is starving\n");
 
       /* Give it some time.  This should happen rarely.  */
       sleep (1);

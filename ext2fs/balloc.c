@@ -57,7 +57,7 @@ memscan (void *buf, unsigned char ch, size_t len)
 void
 ext2_free_blocks (block_t block, unsigned long count)
 {
-  char *bh;
+  unsigned char *bh;
   unsigned long block_group;
   unsigned long bit;
   unsigned long i;
@@ -140,8 +140,8 @@ ext2_new_block (block_t goal,
 		block_t prealloc_goal,
 		block_t *prealloc_count, block_t *prealloc_block)
 {
-  char *bh = NULL;
-  char *p, *r;
+  unsigned char *bh = NULL;
+  unsigned char *p, *r;
   int i, j, k, tmp;
   unsigned long lmap;
   struct ext2_group_desc *gdp;
@@ -231,9 +231,9 @@ repeat:
        * Search first in the remainder of the current group; then,
        * cyclicly search through the rest of the groups.
        */
-      p = ((char *) bh) + (j >> 3);
+      p = bh + (j >> 3);
       r = memscan (p, 0, (sblock->s_blocks_per_group - j + 7) >> 3);
-      k = (r - ((char *) bh)) << 3;
+      k = (r - bh) << 3;
       if (k < sblock->s_blocks_per_group)
 	{
 	  j = k;
@@ -434,7 +434,7 @@ block_in_use (block_t block, unsigned char *map)
 void
 ext2_check_blocks_bitmap ()
 {
-  char *bh;
+  unsigned char *bh;
   unsigned long desc_count, bitmap_count, x;
   unsigned long desc_blocks;
   struct ext2_group_desc *gdp;
