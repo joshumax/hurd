@@ -181,10 +181,10 @@ op_lookup (struct cache_handle *c,
   if (err)
     return err;
 
-  newc = create_cached_handle (*(int *)c->handle, c, newport);
+  newc = create_cached_handle (c->handle.fs, c, newport);
   if (!newc)
     return ESTALE;
-  *reply = encode_fhandle (*reply, newc->handle);
+  *reply = encode_fhandle (*reply, newc->handle.array);
   *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
@@ -375,11 +375,11 @@ op_create (struct cache_handle *c,
     }
   free (name);
 
-  newc = create_cached_handle (*(int *)c->handle, c, newport);
+  newc = create_cached_handle (c->handle.fs, c, newport);
   if (!newc)
     return ESTALE;
 
-  *reply = encode_fhandle (*reply, newc->handle);
+  *reply = encode_fhandle (*reply, newc->handle.array);
   *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
@@ -533,10 +533,10 @@ op_mkdir (struct cache_handle *c,
   if (err)
     return err;
 
-  newc = create_cached_handle (*(int *)c->handle, c, newport);
+  newc = create_cached_handle (c->handle.fs, c, newport);
   if (!newc)
     return ESTALE;
-  *reply = encode_fhandle (*reply, newc->handle);
+  *reply = encode_fhandle (*reply, newc->handle.array);
   *reply = encode_fattr (*reply, &st, version);
   return 0;
 }
@@ -666,7 +666,7 @@ op_mnt (struct cache_handle *c,
   free (name);
   if (!newc)
     return ESTALE;
-  *reply = encode_fhandle (*reply, newc->handle);
+  *reply = encode_fhandle (*reply, newc->handle.array);
   return 0;
 }
 

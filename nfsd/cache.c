@@ -279,7 +279,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
   hash = fh_hash ((char *)p, i);
   pthread_mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
-    if (c->ids == i && ! bcmp (c->handle, p, NFS2_FHSIZE))
+    if (c->ids == i && ! bcmp (c->handle.array, p, NFS2_FHSIZE))
       {
 	if (c->references == 0)
 	  nfreefh--;
@@ -303,7 +303,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
     }
 
   c = malloc (sizeof (struct cache_handle));
-  memcpy (c->handle, p, NFS2_FHSIZE);
+  memcpy (c->handle.array, p, NFS2_FHSIZE);
   cred_ref (i);
   c->ids = i;
   c->port = port;
@@ -381,11 +381,11 @@ scan_fhs ()
 struct cache_handle *
 create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 {
-  char fhandle[NFS2_FHSIZE];
+  union cache_handle_array fhandle;
   error_t err;
   struct cache_handle *c;
   int hash;
-  char *bp = fhandle + sizeof (int);
+  char *bp = fhandle.array + sizeof (int);
   size_t handlelen = NFS2_FHSIZE - sizeof (int);
   mach_port_t newport, ref;
 
@@ -405,22 +405,23 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   mach_port_destroy (mach_task_self (), ref);
 
   /* Fetch the file handle.  */
-  *(int *)fhandle = fs;
+  fhandle.fs = fs;
   err = file_getfh (newport, &bp, &handlelen);
   mach_port_deallocate (mach_task_self (), newport);
   if (err || handlelen != NFS2_FHSIZE - sizeof (int))
     return 0;
-  if (bp != fhandle + sizeof (int))
+  if (bp != fhandle.array + sizeof (int))
     {
-      memcpy (fhandle + sizeof (int), bp, NFS2_FHSIZE - sizeof (int));
+      memcpy (fhandle.array + sizeof (int), bp, NFS2_FHSIZE - sizeof (int));
       munmap (bp, handlelen);
     }
 
   /* Cache it.  */
-  hash = fh_hash (fhandle, credc->ids);
+  hash = fh_hash (fhandle.array, credc->ids);
   pthread_mutex_lock (&fhhashlock);
   for (c = fhhashtable[hash]; c; c = c->next)
-    if (c->ids == credc->ids && ! bcmp (fhandle, c->handle, NFS2_FHSIZE))
+    if (c->ids == credc->ids &&
+        ! bcmp (fhandle.array, c->handle.array, NFS2_FHSIZE))
       {
 	/* Return this one.  */
 	if (c->references == 0)
@@ -436,7 +437,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   err = fsys_getfile (lookup_filesystem (fs),
 		      credc->ids->uids, credc->ids->nuids,
 		      credc->ids->gids, credc->ids->ngids,
-		      fhandle + sizeof (int), NFS2_FHSIZE - sizeof (int),
+		      fhandle.array + sizeof (int), NFS2_FHSIZE - sizeof (int),
 		      &newport);
   if (err)
     {
@@ -446,7 +447,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
   /* Create it anew.  */
   c = malloc (sizeof (struct cache_handle));
-  memcpy (c->handle, fhandle, NFS2_FHSIZE);
+  memcpy (c->handle.array, fhandle.array, NFS2_FHSIZE);
   cred_ref (credc->ids);
   c->ids = credc->ids;
   c->port = newport;
