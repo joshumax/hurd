@@ -72,7 +72,7 @@ init_filesystems (void)
 
   for (line = 1; ; line++)
     {
-      nitems = fscanf (index_file, "%d %as\n", &index, &name);
+      nitems = fscanf (index_file, "%d %ms\n", &index, &name);
       if (nitems == EOF)
 	{
 	  fclose (index_file);
