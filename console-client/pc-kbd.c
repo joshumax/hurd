@@ -656,7 +656,7 @@ update_leds (void)
   else
     {
       char leds[2];
-      mach_msg_type_number_t data_cnt = 2;
+      int data_cnt = 2;
 
       leds[0] = '\xed';
       leds[1] = (led_state.scroll_lock ? 1 : 0)
