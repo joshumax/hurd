@@ -35,7 +35,7 @@ store_std_leaf_decode (struct store_enc *enc,
 {
   char *misc, *name;
   error_t err;
-  int type, flags;
+  int flags;
   mach_port_t port;
   size_t block_size, num_runs, name_len, misc_len;
   /* Call CREATE appriately from within store_with_decoded_runs.  */
@@ -49,7 +49,7 @@ store_std_leaf_decode (struct store_enc *enc,
     return EINVAL;
 
   /* Read encoded ints.  */
-  type = enc->ints[enc->cur_int++];
+  enc->cur_int++; /* Ignore type.  */
   flags = enc->ints[enc->cur_int++];
   block_size = enc->ints[enc->cur_int++];
   num_runs = enc->ints[enc->cur_int++];

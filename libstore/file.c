@@ -65,7 +65,7 @@ file_write (struct store *store,
 	    size_t *amount)
 {
   size_t bsize = store->block_size;
-  return io_write (store->port, buf, len, addr * bsize, amount);
+  return io_write (store->port, (void *) buf, len, addr * bsize, amount);
 }
 
 static error_t
@@ -235,7 +235,7 @@ file_byte_write (struct store *store,
 		 const void *buf, size_t len,
 		 size_t *amount)
 {
-  return io_write (store->port, buf, len, addr, amount);
+  return io_write (store->port, (void *) buf, len, addr, amount);
 }
 
 struct store_class

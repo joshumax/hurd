@@ -103,13 +103,14 @@ zero_decode (struct store_enc *enc, const struct store_class *const *classes,
 	     struct store **store)
 {
   store_offset_t size;
-  int type, flags;
+  int flags;
 
   if (enc->cur_int + 2 > enc->num_ints
       || enc->cur_offset + 1 > enc->num_offsets)
     return EINVAL;
 
-  type = enc->ints[enc->cur_int++];
+  /* Ignore type.  */
+  enc->cur_int++;
   flags = enc->ints[enc->cur_int++];
   size = enc->offsets[enc->cur_offset++];
 
