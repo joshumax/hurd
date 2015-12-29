@@ -510,7 +510,7 @@ main (int argc, char **argv)
   else
     /* Multiple recipients.  */
     {
-      int cached;		/* Temporary processed input file.  */
+      int cached = 0;		/* Temporary processed input file.  */
 
       ex = cache (in, file ?: "-", &params, &cached);
       if (! ex)
