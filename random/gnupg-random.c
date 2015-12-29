@@ -98,8 +98,8 @@
 
 static int is_initialized;
 #define MASK_LEVEL(a) do {if( a > 2 ) a = 2; else if( a < 0 ) a = 0; } while(0)
-static char *rndpool;	/* allocated size is POOLSIZE+BLOCKLEN */
-static char *keypool;	/* allocated size is POOLSIZE+BLOCKLEN */
+static byte *rndpool;	/* allocated size is POOLSIZE+BLOCKLEN */
+static byte *keypool;	/* allocated size is POOLSIZE+BLOCKLEN */
 static size_t pool_readpos;
 static size_t pool_writepos;
 static int pool_filled;
@@ -209,7 +209,7 @@ quick_random_gen( int onoff )
 void
 randomize_buffer( byte *buffer, size_t length, int level )
 {
-    char *p = get_random_bits( length*8, level, 1 );
+    byte *p = get_random_bits( length*8, level, 1 );
     memcpy( buffer, p, length );
     m_free(p);
 }
@@ -267,8 +267,8 @@ get_random_bits( size_t nbits, int level, int secure )
 static void
 mix_pool(byte *pool)
 {
-    char *hashbuf = pool + POOLSIZE;
-    char *p, *pend;
+    byte *hashbuf = pool + POOLSIZE;
+    byte *p, *pend;
     int i, n;
     RMD160_CONTEXT md;
 
@@ -291,7 +291,7 @@ mix_pool(byte *pool)
 	if( p+DIGESTLEN+BLOCKLEN < pend )
 	    memcpy(hashbuf+DIGESTLEN, p+DIGESTLEN, BLOCKLEN-DIGESTLEN);
 	else {
-	    char *pp = p+DIGESTLEN;
+	    byte *pp = p+DIGESTLEN;
 	    for(i=DIGESTLEN; i < BLOCKLEN; i++ ) {
 		if( pp >= pend )
 		    pp = pool;
@@ -323,7 +323,7 @@ read_seed_file()
 {
     int fd;
     struct stat sb;
-    unsigned char buffer[POOLSIZE];
+    byte buffer[POOLSIZE];
     int n;
 
     if( !seed_file_name )
