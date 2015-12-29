@@ -258,7 +258,6 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
   io_t tty_node;
   error_t err;
   pid_t pid;
-  int pos;
   struct proc_stat *ps;
 
   switch (u->ut_type)
@@ -300,7 +299,7 @@ add_utmp_procs (struct proc_stat_list *procs, struct utmp *u)
     }
 
   /* The new process will get added at the end, so look for it there. */
-  pos = proc_stat_list_num_procs (procs);
+  (void) proc_stat_list_num_procs (procs);
   if (pid >= 0)
     err = proc_stat_list_add_pid (procs, pid, &ps);
   else

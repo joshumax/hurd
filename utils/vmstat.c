@@ -477,10 +477,6 @@ main (int argc, char **argv)
    ? size_units								      \
    : ((field)->type == PAGESZ ? 0 : state.vmstats.pagesize))
 
-    /* Prints SEP if the variable FIRST is 0, otherwise, prints START (if
-       it's non-zero), and sets first to 0.  */
-#define PSEP(sep, start) \
-    (first ? (first = 0, (start && fputs (start, stdout))) : fputs (sep, stdout))
 #define PVAL(val, field, width, sign) \
     print_val (val, (field)->type, SIZE_UNITS (field), width, sign)
     /* Intuit the likely maximum field width of FIELD.  */
@@ -539,7 +535,13 @@ main (int argc, char **argv)
 		      const_fields &= ~(1 << (field - fields));
 		    else
 		      {
-			PSEP (", ", "(");
+                        if (first)
+                          {
+                            first = 0;
+                            fputs("(", stdout);
+                          }
+                        else
+                          fputs(",", stdout);
 			printf ("%s: ", field->name);
 			PVAL (val, field, 0, 0);
 		      }
@@ -570,7 +572,10 @@ main (int argc, char **argv)
 	      for (field = fields, num = 0, first = 1; field->name; field++, num++)
 		if (output_fields & (1 << (field - fields)))
 		  {
-		    PSEP (" ", 0);
+                    if (first)
+                      first = 0;
+                    else
+                      fputs (" ", stdout);
 		    fprintf (stdout, "%*s", fwidths[num], field->hdr);
 		  }
 	      putchar ('\n');
@@ -601,7 +606,10 @@ main (int argc, char **argv)
 			    val -= vm_state_get_field (&prev_state, field);
 			  }
 
-			PSEP (" ", 0);
+                        if (first)
+                          first = 0;
+                        else
+                          fputs (" ", stdout);
 			PVAL (val, field, fwidths[num], sign);
 		      }
 		  }

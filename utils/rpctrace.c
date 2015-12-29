@@ -353,7 +353,7 @@ new_send_wrapper (struct receiver_info *receive, task_t task,
   assert_perror (err);
 
   TRACED_INFO (info)->name = 0;
-  asprintf (&TRACED_INFO (info)->name, "  %d<--%d(pid%d)", 
+  asprintf (&TRACED_INFO (info)->name, "  %lu<--%lu(pid%d)", 
 	    receive->forward, TRACED_INFO (info)->pi.port_right, task2pid (task));
   TRACED_INFO (info)->type = MACH_MSG_TYPE_MOVE_SEND;
   info->task = task;
@@ -979,7 +979,7 @@ wrap_all_threads (task_t task)
 						  task, &new_thread_port);
 	  free (TRACED_INFO (thread_send_wrapper)->name);
 	  asprintf (&TRACED_INFO (thread_send_wrapper)->name,
-		    "thread%d(pid%d)", threads[i], task2pid (task));
+		    "thread%lu(pid%d)", threads[i], task2pid (task));
 
 	  err = mach_port_insert_right (mach_task_self (),
 					new_thread_port, new_thread_port,
@@ -994,7 +994,8 @@ wrap_all_threads (task_t task)
 	  mach_port_deallocate (mach_task_self (), new_thread_port);
 	}
     }
-  vm_deallocate (mach_task_self (), threads, nthreads * sizeof (thread_t));
+  vm_deallocate (mach_task_self (), (vm_address_t) threads,
+                 nthreads * sizeof (thread_t));
 }
 
 /* Wrap the new thread port that is in the message. */
@@ -1030,7 +1031,7 @@ wrap_new_thread (mach_msg_header_t *inp, struct req_info *req)
   mach_port_deallocate (mach_task_self (), reply->child_thread);
 
   free (TRACED_INFO (send_wrapper)->name);
-  asprintf (&TRACED_INFO (send_wrapper)->name, "thread%d(pid%d)",
+  asprintf (&TRACED_INFO (send_wrapper)->name, "thread%lu(pid%d)",
 	    thread_port, task2pid (req->from));
   ports_port_deref (send_wrapper);
 }
@@ -1077,10 +1078,10 @@ wrap_new_task (mach_msg_header_t *inp, struct req_info *req)
 
   pid = task2pid (task_port);
   free (TRACED_INFO (task_wrapper1)->name);
-  asprintf (&TRACED_INFO (task_wrapper1)->name, "task%d(pid%d)",
+  asprintf (&TRACED_INFO (task_wrapper1)->name, "task%lu(pid%d)",
 	    task_port, task2pid (req->from));
   free (TRACED_INFO (task_wrapper2)->name);
-  asprintf (&TRACED_INFO (task_wrapper2)->name, "task%d(pid%d)",
+  asprintf (&TRACED_INFO (task_wrapper2)->name, "task%lu(pid%d)",
 	    task_port, pid);
   ports_port_deref (task_wrapper1);
 }
@@ -1131,7 +1132,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	    MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
 	    is_notification (inp)? MACH_MSG_TYPE_MOVE_SEND_ONCE: info->type)
 	    | MACH_MSGH_BITS_OTHER (inp->msgh_bits);
-	  inp->msgh_local_port = ports_payload_get_name (info);
+	  inp->msgh_local_port = ports_payload_get_name ((unsigned int) info);
 	}
     }
   else
@@ -1276,8 +1277,8 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  && inp->msgh_size >= sizeof (mig_reply_header_t)
 	  /* The notification message is considered as a request. */
 	  && (inp->msgh_id > 72 || inp->msgh_id < 64)
-	  && (*(int *) &((mig_reply_header_t *) inp)->RetCodeType
-	      == *(int *)&RetCodeType))
+          && !memcmp(&((mig_reply_header_t *) inp)->RetCodeType,
+                     &RetCodeType, sizeof (RetCodeType)))
 	{
 	  struct req_info *req = remove_request (inp->msgh_id - 100,
 						 inp->msgh_remote_port);
@@ -1645,7 +1646,7 @@ traced_spawn (char **argv, char **envp)
   ti = new_send_wrapper (receive_ti, traced_task, &task_wrapper);
   ti->task = traced_task;
   free (TRACED_INFO (ti)->name);
-  asprintf (&TRACED_INFO (ti)->name, "task%d(pid%d)", traced_task, pid);
+  asprintf (&TRACED_INFO (ti)->name, "task%lu(pid%d)", traced_task, pid);
 
   /* Replace the task's kernel port with the wrapper.  When this task calls
      `mach_task_self ()', it will get our wrapper send right instead of its
@@ -1741,7 +1742,7 @@ main (int argc, char **argv, char **envp)
       { .argp=&msgid_argp, },
       { 0 }
     };
-  const struct argp argp = { options, parse_opt, args_doc, doc, &children };
+  const struct argp argp = { options, parse_opt, args_doc, doc, children };
 
   /* Parse our arguments.  */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);

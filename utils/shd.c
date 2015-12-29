@@ -106,7 +106,8 @@ run (char **argv, int fd0, int fd1)
 	}
       else
 	{
-	  int save0, save1;
+	  int save0 = -1;
+	  int save1;
 
 	  inline int movefd (int from, int to, int *save)
 	    {

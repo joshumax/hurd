@@ -201,7 +201,6 @@ error_t
 setup_extract_target (void)
 {
   error_t err;
-  char *name = (char *) setup_argument;
   mach_port_t request;
   mach_msg_type_name_t requestType;
 
@@ -337,7 +336,7 @@ const struct argp_child children[] =
     { 0 }
   };
 
-const struct argp argp = { options, parse_opt, args_doc, doc, &children };
+const struct argp argp = { options, parse_opt, args_doc, doc, children };
 
 void
 format_msgid (char *buf, size_t len, mach_msg_id_t id)

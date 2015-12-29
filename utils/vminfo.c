@@ -182,29 +182,29 @@ main (int argc, char **argv)
 	  if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
 	    {
 	      if (hex)
-		printf ("          [%#zx] (hole)\n", addr - hole_addr);
+		printf ("          [%#lx] (hole)\n", addr - hole_addr);
 	      else
-		printf ("          [%zd] (hole)\n", addr - hole_addr);
+		printf ("          [%lu] (hole)\n", addr - hole_addr);
 	    }
 	  else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
 	    {
 	      if (hex)
-		printf ("%#10zx (hole)\n", addr - hole_addr);
+		printf ("%#10lx (hole)\n", addr - hole_addr);
 	      else
-		printf ("%10zu (hole)\n", addr - hole_addr);
+		printf ("%10lu (hole)\n", addr - hole_addr);
 	    }
 	}
 
       if ((what & (W_ADDRS|W_SIZES)) == (W_ADDRS|W_SIZES))
 	if (hex)
-	  printf ("%#10zx[%#zx]", addr, size);
+	  printf ("%#10lx[%#zx]", addr, size);
 	else
-	  printf ("%10zu[%zd]", addr, size);
+	  printf ("%10lu[%zd]", addr, size);
       else if ((what & (W_ADDRS|W_SIZES)) == W_ADDRS)
 	if (hex)
-	  printf ("%#10zx", addr);
+	  printf ("%#10lx", addr);
 	else
-	  printf ("%10zu", addr);
+	  printf ("%10lu", addr);
       else if ((what & (W_ADDRS|W_SIZES)) == W_SIZES)
 	{
 	  if (hex)
@@ -222,13 +222,13 @@ main (int argc, char **argv)
 	  if (shared)
 	    printf (", shared");
 	  if (obj != MACH_PORT_NULL)
-	    printf (", mem_obj=%d", obj);
+	    printf (", mem_obj=%lu", obj);
 	  if (offs != 0)
 	    {
 	      if (hex)
-		printf (", offs=%#zx", offs);
+		printf (", offs=%#lx", offs);
 	      else
-		printf (", offs=%zd", offs);
+		printf (", offs=%lu", offs);
 	    }
 	  putchar (')');
 	}
