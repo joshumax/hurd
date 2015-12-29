@@ -318,8 +318,8 @@ struct cluster_chain
 
 /* Prototyping.  */
 void fat_read_sblock (void);
-void fat_to_epoch (char *, char *, struct timespec *);
-void fat_from_epoch (char *, char *, time_t *);
+void fat_to_epoch (unsigned char *, unsigned char *, struct timespec *);
+void fat_from_epoch (unsigned char *, unsigned char *, time_t *);
 error_t fat_getcluster (struct node *, cluster_t, int, cluster_t *);
 void fat_truncate_node (struct node *, cluster_t);
 error_t fat_extend_chain (struct node *, cluster_t, int);

@@ -22,6 +22,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <string.h>
+#include <error.h>
 #include "fatfs.h"
 #include "libdiskfs/fs_S.h"
 
@@ -73,7 +74,6 @@ diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 error_t
 diskfs_cached_lookup_in_dirbuf (int inum, struct node **npp, vm_address_t buf)
 {
-  error_t err;
   struct lookup_context ctx = { buf: buf, inode: vi_lookup (inum) };
   return diskfs_cached_lookup_context (inum, npp, &ctx);
 }
@@ -165,7 +165,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
      allocated node that has no directory entry yet, only set a
      minimal amount of data until the dirent is created (and we get
      called a second time?).  */
-  if (vk.dir_inode == 0 && vk.dir_offset == (void *) 2)
+  if (vk.dir_inode == 0 && vk.dir_offset == 2)
     return 0;
 
   if (vk.dir_inode == 0)
@@ -363,6 +363,11 @@ write_node (struct node *np)
       err = vm_map (mach_task_self (),
 		    &buf, buflen, 0, 1, memobj, 0, 0, prot, prot, 0);
       mach_port_deallocate (mach_task_self (), memobj);
+      if (err)
+        {
+          pthread_mutex_unlock (&dp->lock);
+          error (1, err, "Could not map memory");
+        }
 
       dr = (struct dirrect *) (buf + vk.dir_offset);
 

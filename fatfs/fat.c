@@ -69,7 +69,7 @@ void
 fat_read_sblock (void)
 {
   error_t err;
-  int read;
+  size_t read;
 
   sblock = malloc (sizeof (struct boot_sector));
   err = store_read (store, 0, sizeof (struct boot_sector),
@@ -706,7 +706,7 @@ fat_from_unix_filename(char *fn, const char *un, int ul)
 
 /* Return Epoch-based time from a MSDOS time/date pair.  */
 void
-fat_to_epoch (char *date, char *time, struct timespec *ts)
+fat_to_epoch (unsigned char *date, unsigned char *time, struct timespec *ts)
 {
   struct tm tm;
 
@@ -735,7 +735,7 @@ fat_to_epoch (char *date, char *time, struct timespec *ts)
 
 /* Return MSDOS time/date pair from Epoch-based time.  */
 void
-fat_from_epoch (char *date, char *time, time_t *tp)
+fat_from_epoch (unsigned char *date, unsigned char *time, time_t *tp)
 {
   struct tm *tm;
 

@@ -497,13 +497,14 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	       component.  */
 	    continue;
 	  
-	  if (fatnamematch (entry->name, name, namelen))
+	  if (fatnamematch ((const char *) entry->name, name, namelen))
 	    break;
 	}
 
       if (consider_compress
-	  && (ds->type == LOOKING
-	      || (ds->type == COMPRESS && ds->nbytes > nbytes)))
+	  && ((enum slot_status) ds->type == LOOKING
+	      || ((enum slot_status) ds->type == COMPRESS &&
+                  ds->nbytes > nbytes)))
 	{
 	  ds->type = CREATE;
 	  ds->stat = COMPRESS;
@@ -934,7 +935,7 @@ diskfs_get_directs (struct node *dp,
 
       /* See if there's room to hold this one.  */
       
-      fat_to_unix_filename(ep->name, name);
+      fat_to_unix_filename ((const char *) ep->name, name);
       namlen = strlen(name);
 
       /* Perhaps downcase it?  */
