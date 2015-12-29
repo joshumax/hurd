@@ -408,8 +408,8 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	if (err == 0)
 	  {
 	    err = proc_get_arg_locations (proc,
-					  &psinfo.data.pr_argv,
-					  &psinfo.data.pr_envp);
+					  (vm_address_t *) &psinfo.data.pr_argv,
+					  (vm_address_t *) &psinfo.data.pr_envp);
 	    mach_port_deallocate (mach_task_self (), proc);
 	  }
 	{

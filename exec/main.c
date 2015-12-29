@@ -145,7 +145,7 @@ trivfs_append_args (struct trivfs_control *fsys,
 
   if (MACH_PORT_VALID (opt_device_master))
     {
-      asprintf (&opt, "--device-master-port=%d", opt_device_master);
+      asprintf (&opt, "--device-master-port=%lu", opt_device_master);
 
       if (opt)
 	{
