@@ -228,8 +228,8 @@ diskfs_start_bootstrap ()
     }
 
  lookup_init:
-  err = dir_lookup (root_pt, initname, O_READ, 0,
-		    &retry, pathbuf, &startup_pt);
+  err = dir_lookup (root_pt, (char *) initname, O_READ, 0, &retry, pathbuf,
+                    &startup_pt);
   init_lookups++;
   if (err)
     {

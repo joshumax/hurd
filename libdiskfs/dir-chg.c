@@ -68,7 +68,7 @@ diskfs_notice_dirchange (struct node *dp, enum dir_changed_type type,
   while (*preq)
     {
       struct modreq *req = *preq;
-      err = dir_changed (req->port, dp->dirmod_tick, type, name);
+      err = dir_changed (req->port, dp->dirmod_tick, type, (char *) name);
       if (err && err != MACH_SEND_TIMED_OUT)
 	{
 	  /* Remove notify port.  */
