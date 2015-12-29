@@ -1329,7 +1329,7 @@ do_mach_notify_dead_name (mach_port_t notify,
 		   boots[i].name);
 	    crash_mach ();
 	  }
-      error (0, 0, "BUG!  Unexpected dead-name notification (name %#zx)",
+      error (0, 0, "BUG!  Unexpected dead-name notification (name %#lx)",
 	     name);
       crash_mach ();
     }
