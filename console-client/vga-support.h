@@ -44,12 +44,12 @@ void vga_fini (void);
 /* Write DATALEN bytes from DATA to the font buffer BUFFER, starting
    from glyph index.  */
 void vga_write_font_buffer (int buffer, int index,
-			    char *data, size_t datalen);
+			    unsigned char *data, size_t datalen);
 
 /* Read DATALEN bytes into DATA from the font buffer BUFFER, starting
    from glyph INDEX.  */
 void vga_read_font_buffer (int buffer, int index,
-			   char *data, size_t datalen);
+			   unsigned char *data, size_t datalen);
 
 /* Set FONT_BUFFER_SUPP to FONT_BUFFER if the font is small.  */
 void vga_select_font_buffer (int font_buffer, int font_buffer_supp);

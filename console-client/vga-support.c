@@ -216,7 +216,7 @@ vga_fini (void)
    DATALEN bytes from DATA (if WRITE is not 0).  */
 static void
 vga_read_write_font_buffer (int write, int buffer, int index,
-			    char *data, size_t datalen)
+			    unsigned char *data, size_t datalen)
 {
   char saved_seq_map;
   char saved_seq_mode;
@@ -271,7 +271,8 @@ vga_read_write_font_buffer (int write, int buffer, int index,
 /* Write DATALEN bytes from DATA to the font buffer BUFFER, starting
    from glyph INDEX.  */
 void
-vga_write_font_buffer (int buffer, int index, char *data, size_t datalen)
+vga_write_font_buffer (int buffer, int index, unsigned char *data,
+                       size_t datalen)
 {
   vga_read_write_font_buffer (1, buffer, index, data, datalen);
 }
@@ -279,7 +280,8 @@ vga_write_font_buffer (int buffer, int index, char *data, size_t datalen)
 /* Read DATALEN bytes into DATA from the font buffer BUFFER, starting
    from glyph INDEX.  */
 void
-vga_read_font_buffer (int buffer, int index, char *data, size_t datalen)
+vga_read_font_buffer (int buffer, int index, unsigned char *data,
+                      size_t datalen)
 {
   vga_read_write_font_buffer (0, buffer, index, data, datalen);
 }

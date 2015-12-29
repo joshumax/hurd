@@ -77,11 +77,17 @@ signed char dynacolor_allocate (dynacolor_t *dc, unsigned char col);
 
 /* Add a reference to palette entry P in the dynamic font DC.  */
 #define dynacolor_add_ref(dc,p)						\
-  ((dc).ref[0] >= 0 && (dc).ref[p]++)
+  do {                                                                  \
+      if ((dc).ref[0] >= 0)                                             \
+        (dc).ref[p]++;                                                  \
+  } while (0)
 
 /* Deallocate a reference for palette entry P in the dynamic font DC.  */
 #define dynacolor_release(dc,p)						\
-  ((dc).ref[0] >= 0 && (dc).ref[p]--)
+  do {                                                                  \
+      if ((dc).ref[0] >= 0)                                             \
+        (dc).ref[p]--;                                                  \
+  } while (0)
 
 /* This is a convenience function that looks up a replacement color
    pair if the original colors are not available.  The function always

@@ -46,7 +46,7 @@ static dynafont_t active_dynafont;
 /* One glyph in a VGA font is 8 pixels wide and 32 pixels high.  Only
    the first N lines are visible, and N depends on the VGA register
    settings.  */
-typedef char vga_font_glyph[VGA_FONT_HEIGHT];
+typedef unsigned char vga_font_glyph[VGA_FONT_HEIGHT];
 
 
 /* For each glyph in the VGA font, one instance of this structure is
@@ -329,7 +329,7 @@ create_system_font (void)
       else
 	{
 	  int i;
-	  char glyph_bitmap[32];
+	  unsigned char glyph_bitmap[32];
 	  
 	  for (i = 0; i < 16; i++)
 	    {
@@ -591,7 +591,7 @@ dynafont_new (bdf_font_t font, bdf_font_t font_italic, bdf_font_t font_bold,
     else
       {
 	int i;
-	char *gl = df->vga_font[FONT_INDEX_UNKNOWN];
+	unsigned char *gl = df->vga_font[FONT_INDEX_UNKNOWN];
 	/* XXX Take font height into account.  */
 	gl[0] = 0x7E;	/*  ******  */
 	gl[1] = 0xC3;	/* **    ** */
@@ -988,7 +988,7 @@ dynafont_activate (dynafont_t df)
 {
   int height = (df->font->bbox.height > 32) ? 32 : df->font->bbox.height;
 
-  vga_write_font_buffer (0, 0, (char *) df->vga_font,
+  vga_write_font_buffer (0, 0, (unsigned char *) df->vga_font,
 			 df->size * VGA_FONT_HEIGHT);
   vga_select_font_buffer (0, (df->size == 512) ? 1 : 0);
 

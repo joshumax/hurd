@@ -128,7 +128,7 @@ parse_hexbyte (char *line, unsigned char *byte)
    COMMENT lines, and removes whitespace at the beginning and end of a
    line.  */
 static int
-next_line (char **line, int *size, FILE *file, int *count)
+next_line (char **line, size_t *size, FILE *file, int *count)
 {
   int len;
 
@@ -184,7 +184,7 @@ bdf_read (FILE *filep, bdf_font_t *font, int *linecount)
 {
   bdf_error_t err = 0;
   char *line = 0;
-  int line_size = 0;
+  size_t line_size = 0;
   int len;
   int done = 0;
   bdf_font_t bdf;

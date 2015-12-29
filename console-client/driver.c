@@ -130,7 +130,7 @@ error_t driver_add (const char *const name, const char *const driver,
       shobj = dlopen (filename, RTLD_LAZY);
       if (!shobj)
 	{
-	  const char *errstring = dlerror (); /* Must always call or it leaks! */
+	  (void) dlerror (); /* Must always call or it leaks! */
 	  if (errno != ENOENT)
 	    {
 	      free (filename);

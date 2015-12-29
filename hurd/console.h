@@ -20,6 +20,7 @@
 #define _HURD_CONSOLE_H
 
 #include <stdint.h>
+#include <string.h>
 #include <wchar.h>
 
 typedef enum
@@ -50,6 +51,12 @@ typedef struct
   uint32_t italic : 1;
   uint32_t bold : 1;
 } conchar_attr_t; 
+
+static inline int
+conchar_attr_equal (conchar_attr_t *c1, conchar_attr_t *c2)
+{
+  return !memcmp (c1, c2, sizeof (conchar_attr_t));
+}
 
 /* We support double-width characters by using an extra bit to identify the
    continuation in the character matrix.  The constants below document our

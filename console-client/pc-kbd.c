@@ -1100,10 +1100,11 @@ input_loop (void *unused)
 	}
       else if (state.extended == 1)
 	{
+	  const enum scancode_x1 scx1 = (enum scancode_x1) sc;
 	  state.extended = 0;
-	  if (sc == SC_X1_RIGHT_CTRL)
+	  if (scx1 == SC_X1_RIGHT_CTRL)
 	    state.right_ctrl = down;
-	  else if (sc == SC_X1_RIGHT_ALT)
+	  else if (scx1 == SC_X1_RIGHT_ALT)
 	    {
 	      state.right_alt = down;
 	      
@@ -1139,23 +1140,23 @@ input_loop (void *unused)
 		    }
 		}
 	    }
-	  else if (state.right_alt && down && sc == SC_X1_PAD_SLASH) /* XXX */
+	  else if (state.right_alt && down && scx1 == SC_X1_PAD_SLASH) /* XXX */
 	    state.direct = (state.direct << 4) | 0xb;
-	  else if (state.right_alt && down && sc == SC_X1_PAD_ENTER) /* XXX */
+	  else if (state.right_alt && down && scx1 == SC_X1_PAD_ENTER) /* XXX */
 	    state.direct = (state.direct << 4) | 0xf;
-	  else if (state.left_alt && down && sc == SC_X1_RIGHT) /* XXX */
+	  else if (state.left_alt && down && scx1 == SC_X1_RIGHT) /* XXX */
 	    console_switch (0, 1);
-	  else if (state.left_alt && down && sc == SC_X1_LEFT) /* XXX */
+	  else if (state.left_alt && down && scx1 == SC_X1_LEFT) /* XXX */
 	    console_switch (0, -1);
-	  else if (state.left_alt && down && sc == SC_X1_UP) /* XXX */
+	  else if (state.left_alt && down && scx1 == SC_X1_UP) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_LINES, 1);
-	  else if (state.left_alt && down && sc == SC_X1_DOWN) /* XXX */
+	  else if (state.left_alt && down && scx1 == SC_X1_DOWN) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_LINES, -1);
 	  else if ((state.right_shift || state.left_shift)
-		   && down && sc == SC_X1_PGUP) /* XXX */
+		   && down && scx1 == SC_X1_PGUP) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_SCREENS, 0.5);
 	  else if ((state.right_shift || state.left_shift)
-		   && down && sc == SC_X1_PGDN) /* XXX */
+		   && down && scx1 == SC_X1_PGDN) /* XXX */
 	    console_scrollback (CONS_SCROLL_DELTA_SCREENS, -0.5);
 	  else if (down && sc < sizeof (sc_x1_to_kc)/sizeof (sc_x1_to_kc[0]))
 	    {
