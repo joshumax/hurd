@@ -151,8 +151,8 @@ ftp_conn_get_raw_reply (struct ftp_conn *conn, int *reply,
 
   do
     {
-      const char *l;
-      size_t len;
+      const char *l = NULL;
+      size_t len = 0;
       error_t err = ftp_conn_getline (conn, &l, &len);
 
       if (err)

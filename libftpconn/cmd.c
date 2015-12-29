@@ -156,9 +156,8 @@ ftp_conn_abort (struct ftp_conn *conn)
 	  && write (conn->control, abor, sizeof abor) == sizeof abor)
 	{
 	  int reply;
-	  error_t err;
 	  do
-	    err = ftp_conn_get_raw_reply (conn, &reply, 0);
+	    ftp_conn_get_raw_reply (conn, &reply, 0);
 	  while (reply == REPLY_ABORTED);
 	  if (reply != REPLY_TRANS_OK && reply != REPLY_ABORT_OK)
 	    ftp_conn_close (conn);
