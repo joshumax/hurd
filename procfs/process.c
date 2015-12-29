@@ -149,7 +149,7 @@ process_file_gc_maps (struct proc_stat *ps, char **contents)
       if (err)
 	break;
 
-      fprintf (s, "%0*x-%0*x %c%c%c%c %0*x %s %d ",
+      fprintf (s, "%0*lx-%0*lx %c%c%c%c %0*lx %s %d ",
 	       /* Address range.  */
 	       2*sizeof s, addr,
 	       2*sizeof s, addr + size,
@@ -178,7 +178,7 @@ process_file_gc_maps (struct proc_stat *ps, char **contents)
 	  else
 	    mach_port_deallocate (mach_task_self (), obj);
 
-	  fprintf (s, "[mem_obj=%d]\n", obj);
+	  fprintf (s, "[mem_obj=%lu]\n", obj);
 	}
       else
 	fprintf (s, "\n");

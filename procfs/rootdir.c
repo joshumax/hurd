@@ -432,7 +432,7 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
-  m = open_memstream (contents, contents_len);
+  m = open_memstream (contents, (size_t *) contents_len);
   if (m == NULL)
     {
       err = ENOMEM;
@@ -467,8 +467,8 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
   fclose (m);
 
  out:
-  vm_deallocate (mach_task_self (),
-                 cache_info, cache_info_count * sizeof *cache_info);
+  vm_deallocate (mach_task_self (), (vm_address_t) cache_info,
+                 cache_info_count * sizeof *cache_info);
   return err;
 }
 
@@ -481,7 +481,7 @@ rootdir_gc_filesystems (void *hook, char **contents, ssize_t *contents_len)
   glob_t matches;
   FILE *m;
 
-  m = open_memstream (contents, contents_len);
+  m = open_memstream (contents, (size_t *) contents_len);
   if (m == NULL)
     return errno;
 
@@ -574,7 +574,7 @@ rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
       return np;
     }
 
-  np = procfs_make_node (entry_hook, entry_hook);
+  np = procfs_make_node (entry_hook, (void *) entry_hook);
   if (np == NULL)
     return NULL;
 

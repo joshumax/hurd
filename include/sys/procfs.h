@@ -63,8 +63,8 @@ struct elf_psinfo
   char pr_psargs[ELF_PRARGSZ];	/* Initial part of argument list.  */
   int pr_wstat;			/* Zombie exit status (not really used).  */
   int pr_argc;			/* The argument count at startup.  */
-  uintptr_t pr_argv;		/* Original argument vector address.  */
-  uintptr_t pr_envp;		/* Original environment vector address.  */
+  vm_address_t pr_argv;		/* Original argument vector address.  */
+  vm_address_t pr_envp;		/* Original environment vector address.  */
 };
 typedef struct elf_psinfo psinfo_t;
 
