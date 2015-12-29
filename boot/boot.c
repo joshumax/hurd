@@ -243,7 +243,9 @@ load_image (task_t t,
     }
 
   read (fd, &hdr, sizeof hdr);
-  if (*(Elf32_Word *) hdr.e.e_ident == *(Elf32_Word *) "\177ELF")
+  /* File must have magic ELF number.  */
+  if (hdr.e.e_ident[0] == 0177 && hdr.e.e_ident[1] == 'E' &&
+      hdr.e.e_ident[2] == 'L' && hdr.e.e_ident[3] == 'F')
     {
       Elf32_Phdr phdrs[hdr.e.e_phnum], *ph;
       lseek (fd, hdr.e.e_phoff, SEEK_SET);
