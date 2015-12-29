@@ -114,7 +114,7 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
 static inline void
 locp_remove (hurd_ihash_t ht, hurd_ihash_locp_t locp)
 {
-  struct _hurd_ihash_item *item = locp;
+  struct _hurd_ihash_item *item = (struct _hurd_ihash_item *) locp;
   if (ht->cleanup)
     (*ht->cleanup) (item->value, ht->cleanup_data);
   item->value = _HURD_IHASH_DELETED;
