@@ -55,22 +55,21 @@ include ../Makeconf
 
 vpath elfcore.c $(top_srcdir)/exec
 
-symlink: fsysServer.o
-ifsock: ifsockServer.o
 crash: crashServer.o crash_replyUser.o msgServer.o elfcore.o
+ifsock: ifsockServer.o
+mtab: fsUser.o
 password: passwordServer.o
-streamio: device_replyServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
+streamio: device_replyServer.o
+symlink: fsysServer.o
 
-proxy-defpager crash password streamio: ../libports/libports.a ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a
+fakeroot: ../libnetfs/libnetfs.a
 fifo new-fifo: ../libpipe/libpipe.a
-fwd: ../libfshelp/libfshelp.a ../libports/libports.a
-hello-mt magic null ifsock fifo new-fifo firmlink: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
-magic: ../libiohelp/libiohelp.a
-hello: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
-fakeroot: ../libnetfs/libnetfs.a ../libfshelp/libfshelp.a ../libiohelp/libiohelp.a ../libports/libports.a ../libihash/libihash.a
-remap: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a
-mtab: ../libtrivfs/libtrivfs.a ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a fsUser.o
-$(targets): ../libshouldbeinlibc/libshouldbeinlibc.a
+crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio: ../libtrivfs/libtrivfs.a
+$(targets): ../libfshelp/libfshelp.a \
+	../libihash/libihash.a \
+	../libiohelp/libiohelp.a \
+	../libports/libports.a \
+	../libshouldbeinlibc/libshouldbeinlibc.a
 
 $(targets): %: %.o

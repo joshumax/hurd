@@ -38,7 +38,8 @@ include ../Makeconf
 rc: rc.sh
 getty: getty.o ../libshouldbeinlibc/libshouldbeinlibc.a
 mail.local: lmail.o ../libshouldbeinlibc/libshouldbeinlibc.a
-console-run: console-run.o ../libfshelp/libfshelp.a ../libports/libports.a
+console-run: console-run.o ../libfshelp/libfshelp.a ../libports/libports.a \
+	../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 runttys: runttys.o
 runttys-LDLIBS = -lutil

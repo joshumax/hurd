@@ -24,7 +24,7 @@ target = random
 SRCS = random.c gnupg-random.c gnupg-rmd160.c
 OBJS = $(SRCS:.c=.o) startup_notifyServer.o
 LCLHDRS = gnupg-random.h gnupg-rmd.h gnupg-bithelp.h random.h
-HURDLIBS = trivfs ports fshelp ihash shouldbeinlibc
+HURDLIBS = trivfs ports fshelp ihash iohelp shouldbeinlibc
 OTHERLIBS = -lpthread
 
 include ../Makeconf

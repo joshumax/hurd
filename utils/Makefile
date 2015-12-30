@@ -54,12 +54,13 @@ login addauth setauth: nonsugid.o
 addauth rmauth setauth unsu: frobauth.o
 rmauth setauth unsu: frobauth-mod.o
 ps w: psout.o ../libps/libps.a ../libihash/libihash.a
-portinfo: ../libps/libps.a
+portinfo: ../libihash/libihash.a ../libps/libps.a
 
 storeinfo storecat storeread: ../libstore/libstore.a
 ftpcp ftpdir: ../libftpconn/libftpconn.a
-
-settrans: ../libfshelp/libfshelp.a ../libports/libports.a
+mount umount: ../libihash/libihash.a
+settrans: ../libfshelp/libfshelp.a ../libihash/libihash.a \
+	../libports/libports.a
 ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
   devprobe vminfo addauth rmauth setauth unsu ftpcp ftpdir storeread \
   storecat msgport mount umount nullauth rpctrace: \
