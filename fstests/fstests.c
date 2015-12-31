@@ -42,8 +42,8 @@ int check_refs (mach_port_t port) /* To call from gdb */
 int
 main ()
 {
-  mach_port_t root;
 #if HURDISH_TESTS
+  mach_port_t root;
   extern file_t *_hurd_init_dtable;
   char string[] = "Did this get into the file?\n";
   file_t filetowrite;
@@ -53,7 +53,11 @@ main ()
   error_t err;
 #endif
 
+#ifdef HURDISH_TESTS
   root = getcrdir ();
+#else
+  (void) getcrdir ();
+#endif
 
   printf ("fstests running...\n");
 
