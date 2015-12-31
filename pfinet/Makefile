@@ -115,7 +115,7 @@ ASMHEADERS = atomic.h bitops.h byteorder.h delay.h errno.h hardirq.h init.h \
 	segment.h spinlock.h system.h types.h uaccess.h
 
 HURDLIBS=trivfs fshelp ports ihash shouldbeinlibc iohelp
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 target = pfinet
 

@@ -25,6 +25,6 @@ SRCS = ftpfs.c fs.c host.c netfs.c dir.c conn.c ccache.c node.c ncache.c
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = netfs fshelp iohelp ports ihash ftpconn shouldbeinlibc
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 include ../Makeconf

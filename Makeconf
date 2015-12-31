@@ -36,7 +36,6 @@
 
 # Types `server' and `utility' should define
 #   target (the name of the program built)
-#   OTHERLIBS (all libraries used)
 
 # Types `servers' and `utilities' should define
 #   targets (the names of all the programs built)
@@ -309,7 +308,7 @@ $(installationdirlist): %:
 ifneq ($(makemode),misc)
 
 ifeq ($(doinst),one)
-$(linktarg): $(OBJS) $(OTHERLIBS) $(library_deps)
+$(linktarg): $(OBJS) $(library_deps)
 endif
 
 # Determine which sort of library we should link against from whether -static

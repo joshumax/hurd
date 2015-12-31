@@ -31,8 +31,7 @@ MIGSTUBS = processServer.o notifyServer.o \
 	task_notifyServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 HURDLIBS = ihash ports shouldbeinlibc
-
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 include ../Makeconf
 

@@ -27,7 +27,7 @@ OBJS = main.o hostarch.o exec.o hashexec.o \
 target = exec
 #targets = exec exec.static
 HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 exec-MIGSFLAGS = -imacros $(srcdir)/execmutations.h
 exec_startup-MIGSFLAGS = -imacros $(srcdir)/execmutations.h

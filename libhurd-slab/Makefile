@@ -26,7 +26,7 @@ installhdrs = slab.h
 MIGSTUBS = 
 OBJS = $(sort $(SRCS:.c=.o) $(MIGSTUBS))
 
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 MIGCOMSFLAGS =
 

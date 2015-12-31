@@ -26,6 +26,6 @@ LCLHDRS = dircat.h main.h process.h procfs.h procfs_dir.h proclist.h rootdir.h
 
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = netfs fshelp iohelp ps ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 include ../Makeconf

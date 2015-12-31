@@ -23,7 +23,7 @@ SRCS = auth.c
 OBJS = auth.o authServer.o auth_replyUser.o
 target = auth
 HURDLIBS = ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 

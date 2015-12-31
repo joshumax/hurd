@@ -26,7 +26,7 @@ target = term
 SRCS = devio.c munge.c users.c main.c ptyio.c hurdio.c xinl.c
 
 HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
-OTHERLIBS = -lpthread
+LDLIBS = -lpthread
 OBJS = $(subst .c,.o,$(SRCS)) termServer.o device_replyServer.o tioctlServer.o ourmsgUser.o
 
 include ../Makeconf
