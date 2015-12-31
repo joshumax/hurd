@@ -75,6 +75,12 @@ trivfs_end_using_protid (struct trivfs_protid *cred)
     ports_port_deref (cred);
 }
 
+static inline mach_port_t __attribute__ ((unused))
+trivfs_convert_to_port(struct trivfs_protid *protid)
+{
+  return protid->pi.port_right;
+}
+
 static inline struct trivfs_control * __attribute__ ((unused))
 trivfs_begin_using_control (mach_port_t port)
 {
