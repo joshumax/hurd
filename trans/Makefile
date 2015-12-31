@@ -45,7 +45,9 @@ ifsock-MIGSFLAGS=\
     "-DIFSOCK_IMPORTS=import \"../libtrivfs/mig-decls.h\";"
 
 # device_replyServer is used by the streamio translator.
-device_reply-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
+device_reply-MIGSFLAGS=\
+    "-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name" \
+    "-DDEVICE_IMPORTS=import \"$(srcdir)/../libports/ports.h\";"
 
 # fsysServer is only used by the symlink translator which does not use
 # libports.  Disable the default payload to port conversion.
