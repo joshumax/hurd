@@ -63,7 +63,7 @@ struct tcf_proto_ops
    specific classifiers.
  */
 
-extern __inline__ int tc_classify(struct sk_buff *skb, struct tcf_proto *tp, struct tcf_result *res)
+static __inline__ int tc_classify(struct sk_buff *skb, struct tcf_proto *tp, struct tcf_result *res)
 {
 	int err = 0;
 	u32 protocol = skb->protocol;
@@ -77,7 +77,7 @@ extern __inline__ int tc_classify(struct sk_buff *skb, struct tcf_proto *tp, str
 	return -1;
 }
 
-extern __inline__ unsigned long cls_set_class(unsigned long *clp, unsigned long cl)
+static __inline__ unsigned long cls_set_class(unsigned long *clp, unsigned long cl)
 {
 	unsigned long old_cl; 
 

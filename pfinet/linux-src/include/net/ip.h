@@ -137,7 +137,7 @@ extern struct linux_mib	net_statistics;
 
 extern int sysctl_local_port_range[2];
 
-extern __inline__ int ip_finish_output(struct sk_buff *skb)
+static __inline__ int ip_finish_output(struct sk_buff *skb)
 {
 	struct dst_entry *dst = skb->dst;
 	struct device *dev = dst->dev;
@@ -159,7 +159,7 @@ extern __inline__ int ip_finish_output(struct sk_buff *skb)
 	return -EINVAL;
 }
 
-extern __inline__ void ip_send(struct sk_buff *skb)
+static __inline__ void ip_send(struct sk_buff *skb)
 {
 	if (skb->len > skb->dst->pmtu)
 		ip_fragment(skb, __ip_finish_output);
@@ -167,7 +167,7 @@ extern __inline__ void ip_send(struct sk_buff *skb)
 		ip_finish_output(skb);
 }
 
-extern __inline__
+static __inline__
 int ip_decrease_ttl(struct iphdr *iph)
 {
 	u16 check = iph->check;
@@ -178,7 +178,7 @@ int ip_decrease_ttl(struct iphdr *iph)
 	return --iph->ttl;
 }
 
-extern __inline__
+static __inline__
 int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
 {
 	return (sk->ip_pmtudisc == IP_PMTUDISC_DO ||
@@ -190,7 +190,7 @@ int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
  *	Map a multicast IP onto multicast MAC for type ethernet.
  */
 
-extern __inline__ void ip_eth_mc_map(u32 addr, char *buf)
+static __inline__ void ip_eth_mc_map(u32 addr, char *buf)
 {
 	addr=ntohl(addr);
 	buf[0]=0x01;
@@ -210,7 +210,7 @@ extern __inline__ void ip_eth_mc_map(u32 addr, char *buf)
  *      multicast packets.
  */
 
-extern __inline__ void ip_tr_mc_map(u32 addr, char *buf)
+static __inline__ void ip_tr_mc_map(u32 addr, char *buf)
 {
 	buf[0]=0xC0;
 	buf[1]=0x00;

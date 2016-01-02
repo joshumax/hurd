@@ -95,7 +95,7 @@ struct fib6_walker_t
 
 extern struct fib6_walker_t fib6_walker_list;
 
-extern __inline__ void fib6_walker_link(struct fib6_walker_t *w)
+static __inline__ void fib6_walker_link(struct fib6_walker_t *w)
 {
 	w->next = fib6_walker_list.next;
 	w->prev = &fib6_walker_list;
@@ -103,7 +103,7 @@ extern __inline__ void fib6_walker_link(struct fib6_walker_t *w)
 	w->prev->next = w;
 }
 
-extern __inline__ void fib6_walker_unlink(struct fib6_walker_t *w)
+static __inline__ void fib6_walker_unlink(struct fib6_walker_t *w)
 {
 	w->next->prev = w->prev;
 	w->prev->next = w->next;

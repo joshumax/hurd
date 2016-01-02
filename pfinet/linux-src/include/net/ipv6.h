@@ -159,7 +159,7 @@ extern int			ipv6_flowlabel_opt(struct sock *sk, char *optval, int optlen);
 extern void			ip6_flowlabel_init(void);
 extern void			ip6_flowlabel_cleanup(void);
 
-extern __inline__ void fl6_sock_release(struct ip6_flowlabel *fl)
+static __inline__ void fl6_sock_release(struct ip6_flowlabel *fl)
 {
 	if (fl)
 		atomic_dec(&fl->users);
@@ -193,23 +193,23 @@ typedef int		(*inet_getfrag_t) (const void *data,
 
 extern int		ipv6_addr_type(struct in6_addr *addr);
 
-extern __inline__ int ipv6_addr_scope(struct in6_addr *addr)
+static __inline__ int ipv6_addr_scope(struct in6_addr *addr)
 {
 	return ipv6_addr_type(addr) & IPV6_ADDR_SCOPE_MASK;
 }
 
-extern __inline__ int ipv6_addr_cmp(struct in6_addr *a1, struct in6_addr *a2)
+static __inline__ int ipv6_addr_cmp(struct in6_addr *a1, struct in6_addr *a2)
 {
 	return memcmp((void *) a1, (void *) a2, sizeof(struct in6_addr));
 }
 
-extern __inline__ void ipv6_addr_copy(struct in6_addr *a1, struct in6_addr *a2)
+static __inline__ void ipv6_addr_copy(struct in6_addr *a1, struct in6_addr *a2)
 {
 	memcpy((void *) a1, (void *) a2, sizeof(struct in6_addr));
 }
 
 #ifndef __HAVE_ARCH_ADDR_SET
-extern __inline__ void ipv6_addr_set(struct in6_addr *addr, 
+static __inline__ void ipv6_addr_set(struct in6_addr *addr, 
 				     __u32 w1, __u32 w2,
 				     __u32 w3, __u32 w4)
 {
@@ -220,7 +220,7 @@ extern __inline__ void ipv6_addr_set(struct in6_addr *addr,
 }
 #endif
 
-extern __inline__ int ipv6_addr_any(struct in6_addr *a)
+static __inline__ int ipv6_addr_any(struct in6_addr *a)
 {
 	return ((a->s6_addr32[0] | a->s6_addr32[1] | 
 		 a->s6_addr32[2] | a->s6_addr32[3] ) == 0); 

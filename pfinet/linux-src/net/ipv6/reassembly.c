@@ -88,19 +88,19 @@ static struct frag_queue ipv6_frag_queue = {
 };
 
 /* Memory Tracking Functions. */
-extern __inline__ void frag_kfree_skb(struct sk_buff *skb)
+static __inline__ void frag_kfree_skb(struct sk_buff *skb)
 {
 	atomic_sub(skb->truesize, &ip6_frag_mem);
 	kfree_skb(skb);
 }
 
-extern __inline__ void frag_kfree_s(void *ptr, int len)
+static __inline__ void frag_kfree_s(void *ptr, int len)
 {
 	atomic_sub(len, &ip6_frag_mem);
 	kfree(ptr);
 }
  
-extern __inline__ void *frag_kmalloc(int size, int pri)
+static __inline__ void *frag_kmalloc(int size, int pri)
 {
 	void *vp = kmalloc(size, pri);
 

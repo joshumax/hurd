@@ -101,7 +101,7 @@ struct ip_mc_list
 	char			loaded;
 };
 
-extern __inline__ int ip_check_mc(struct device *dev, u32 mc_addr)
+static __inline__ int ip_check_mc(struct device *dev, u32 mc_addr)
 {
 	struct in_device *in_dev = dev->ip_ptr;
 	struct ip_mc_list *im;

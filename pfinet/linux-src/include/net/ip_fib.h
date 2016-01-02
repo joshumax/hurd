@@ -138,19 +138,19 @@ struct fib_table
 extern struct fib_table *local_table;
 extern struct fib_table *main_table;
 
-extern __inline__ struct fib_table *fib_get_table(int id)
+static __inline__ struct fib_table *fib_get_table(int id)
 {
 	if (id != RT_TABLE_LOCAL)
 		return main_table;
 	return local_table;
 }
 
-extern __inline__ struct fib_table *fib_new_table(int id)
+static __inline__ struct fib_table *fib_new_table(int id)
 {
 	return fib_get_table(id);
 }
 
-extern __inline__ int fib_lookup(const struct rt_key *key, struct fib_result *res)
+static __inline__ int fib_lookup(const struct rt_key *key, struct fib_result *res)
 {
 	if (local_table->tb_lookup(local_table, key, res) &&
 	    main_table->tb_lookup(main_table, key, res))
@@ -158,7 +158,7 @@ extern __inline__ int fib_lookup(const struct rt_key *key, struct fib_result *re
 	return 0;
 }
 
-extern __inline__ void fib_select_default(const struct rt_key *key, struct fib_result *res)
+static __inline__ void fib_select_default(const struct rt_key *key, struct fib_result *res)
 {
 	if (FIB_RES_GW(*res) && FIB_RES_NH(*res).nh_scope == RT_SCOPE_LINK)
 		main_table->tb_select_default(main_table, key, res);
@@ -172,7 +172,7 @@ extern struct fib_table * fib_tables[RT_TABLE_MAX+1];
 extern int fib_lookup(const struct rt_key *key, struct fib_result *res);
 extern struct fib_table *__fib_new_table(int id);
 
-extern __inline__ struct fib_table *fib_get_table(int id)
+static __inline__ struct fib_table *fib_get_table(int id)
 {
 	if (id == 0)
 		id = RT_TABLE_MAIN;
@@ -180,7 +180,7 @@ extern __inline__ struct fib_table *fib_get_table(int id)
 	return fib_tables[id];
 }
 
-extern __inline__ struct fib_table *fib_new_table(int id)
+static __inline__ struct fib_table *fib_new_table(int id)
 {
 	if (id == 0)
 		id = RT_TABLE_MAIN;
@@ -238,7 +238,7 @@ extern u32 fib_rules_policy(u32 saddr, struct fib_result *res, unsigned *flags);
 extern void fib_rules_init(void);
 #endif
 
-extern __inline__ void fib_combine_itag(u32 *itag, struct fib_result *res)
+static __inline__ void fib_combine_itag(u32 *itag, struct fib_result *res)
 {
 #ifdef CONFIG_NET_CLS_ROUTE
 #ifdef CONFIG_IP_MULTIPLE_TABLES

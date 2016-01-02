@@ -80,7 +80,7 @@ extern u32		inet_select_addr(struct device *dev, u32 dst, int scope);
 extern struct in_ifaddr *inet_ifa_byprefix(struct in_device *in_dev, u32 prefix, u32 mask);
 extern void		inet_forward_change(void);
 
-extern __inline__ int inet_ifa_match(u32 addr, struct in_ifaddr *ifa)
+static __inline__ int inet_ifa_match(u32 addr, struct in_ifaddr *ifa)
 {
 	return !((addr^ifa->ifa_address)&ifa->ifa_mask);
 }
@@ -89,7 +89,7 @@ extern __inline__ int inet_ifa_match(u32 addr, struct in_ifaddr *ifa)
  *	Check if a mask is acceptable.
  */
  
-extern __inline__ int bad_mask(u32 mask, u32 addr)
+static __inline__ int bad_mask(u32 mask, u32 addr)
 {
 	if (addr & (mask = ~mask))
 		return 1;
@@ -110,14 +110,14 @@ extern __inline__ int bad_mask(u32 mask, u32 addr)
 
 #endif /* __KERNEL__ */
 
-extern __inline__ __u32 inet_make_mask(int logmask)
+static __inline__ __u32 inet_make_mask(int logmask)
 {
 	if (logmask)
 		return htonl(~((1<<(32-logmask))-1));
 	return 0;
 }
 
-extern __inline__ int inet_mask_len(__u32 mask)
+static __inline__ int inet_mask_len(__u32 mask)
 {
 	if (!(mask = ntohl(mask)))
 		return 0;

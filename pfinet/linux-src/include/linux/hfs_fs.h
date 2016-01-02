@@ -319,12 +319,12 @@ extern void hfs_tolower(unsigned char *, int);
 #define	HFS_I(X)	(&((X)->u.hfs_i))
 #define	HFS_SB(X)	(&((X)->u.hfs_sb))
 
-extern __inline__ void hfs_nameout(struct inode *dir, struct hfs_name *out,
+static __inline__ void hfs_nameout(struct inode *dir, struct hfs_name *out,
 				   const char *in, int len) {
 	HFS_SB(dir->i_sb)->s_nameout(out, in, len);
 }
 
-extern __inline__ int hfs_namein(struct inode *dir, char *out,
+static __inline__ int hfs_namein(struct inode *dir, char *out,
 				 const struct hfs_name *in) {
 	int len = HFS_SB(dir->i_sb)->s_namein(out, in);
 	if (HFS_SB(dir->i_sb)->s_lowercase) {

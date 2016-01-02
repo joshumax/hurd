@@ -8,7 +8,7 @@
  * differs in spirit from the above ffz (man ffs).
  */
 
-extern __inline__ int generic_ffs(int x)
+static __inline__ int generic_ffs(int x)
 {
 	int r = 1;
 
@@ -42,7 +42,7 @@ extern __inline__ int generic_ffs(int x)
  * of bits set) of a N-bit word
  */
 
-extern __inline__ unsigned int generic_hweight32(unsigned int w)
+static __inline__ unsigned int generic_hweight32(unsigned int w)
 {
         unsigned int res = (w & 0x55555555) + ((w >> 1) & 0x55555555);
         res = (res & 0x33333333) + ((res >> 2) & 0x33333333);
@@ -51,7 +51,7 @@ extern __inline__ unsigned int generic_hweight32(unsigned int w)
         return (res & 0x0000FFFF) + ((res >> 16) & 0x0000FFFF);
 }
 
-extern __inline__ unsigned int generic_hweight16(unsigned int w)
+static __inline__ unsigned int generic_hweight16(unsigned int w)
 {
         unsigned int res = (w & 0x5555) + ((w >> 1) & 0x5555);
         res = (res & 0x3333) + ((res >> 2) & 0x3333);
@@ -59,7 +59,7 @@ extern __inline__ unsigned int generic_hweight16(unsigned int w)
         return (res & 0x00FF) + ((res >> 8) & 0x00FF);
 }
 
-extern __inline__ unsigned int generic_hweight8(unsigned int w)
+static __inline__ unsigned int generic_hweight8(unsigned int w)
 {
         unsigned int res = (w & 0x55) + ((w >> 1) & 0x55);
         res = (res & 0x33) + ((res >> 2) & 0x33);

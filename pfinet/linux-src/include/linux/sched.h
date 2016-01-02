@@ -410,7 +410,7 @@ extern struct task_struct *task[NR_TASKS];
 extern struct task_struct **tarray_freelist;
 extern spinlock_t taskslot_lock;
 
-extern __inline__ void add_free_taskslot(struct task_struct **t)
+static __inline__ void add_free_taskslot(struct task_struct **t)
 {
 	spin_lock(&taskslot_lock);
 	*t = (struct task_struct *) tarray_freelist;
@@ -418,7 +418,7 @@ extern __inline__ void add_free_taskslot(struct task_struct **t)
 	spin_unlock(&taskslot_lock);
 }
 
-extern __inline__ struct task_struct **get_free_taskslot(void)
+static __inline__ struct task_struct **get_free_taskslot(void)
 {
 	struct task_struct **tslot;
 
@@ -436,7 +436,7 @@ extern struct task_struct *pidhash[PIDHASH_SZ];
 
 #define pid_hashfn(x)	((((x) >> 8) ^ (x)) & (PIDHASH_SZ - 1))
 
-extern __inline__ void hash_pid(struct task_struct *p)
+static __inline__ void hash_pid(struct task_struct *p)
 {
 	struct task_struct **htable = &pidhash[pid_hashfn(p->pid)];
 
@@ -446,14 +446,14 @@ extern __inline__ void hash_pid(struct task_struct *p)
 	p->pidhash_pprev = htable;
 }
 
-extern __inline__ void unhash_pid(struct task_struct *p)
+static __inline__ void unhash_pid(struct task_struct *p)
 {
 	if(p->pidhash_next)
 		p->pidhash_next->pidhash_pprev = p->pidhash_pprev;
 	*p->pidhash_pprev = p->pidhash_next;
 }
 
-extern __inline__ struct task_struct *find_task_by_pid(int pid)
+static __inline__ struct task_struct *find_task_by_pid(int pid)
 {
 	struct task_struct *p, **htable = &pidhash[pid_hashfn(pid)];
 

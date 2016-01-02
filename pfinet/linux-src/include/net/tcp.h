@@ -428,19 +428,19 @@ struct tcp_func {
  * and worry about wraparound (automatic with unsigned arithmetic).
  */
 
-extern __inline int before(__u32 seq1, __u32 seq2)
+static __inline int before(__u32 seq1, __u32 seq2)
 {
         return (__s32)(seq1-seq2) < 0;
 }
 
-extern __inline int after(__u32 seq1, __u32 seq2)
+static __inline int after(__u32 seq1, __u32 seq2)
 {
 	return (__s32)(seq2-seq1) < 0;
 }
 
 
 /* is s2<=s1<=s3 ? */
-extern __inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
+static __inline int between(__u32 seq1, __u32 seq2, __u32 seq3)
 {
 	return seq3 - seq2 >= seq1 - seq2;
 }
@@ -659,7 +659,7 @@ extern u32	__tcp_select_window(struct sock *sk);
  * value can be stuffed directly into th->window for an outgoing
  * frame.
  */
-extern __inline__ u16 tcp_select_window(struct sock *sk)
+static __inline__ u16 tcp_select_window(struct sock *sk)
 {
 	struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
 	u32 cur_win = tcp_receive_window(tp);
@@ -686,7 +686,7 @@ extern __inline__ u16 tcp_select_window(struct sock *sk)
  * can increase our advertisement.  If it becomes more than
  * twice what we are talking about right now, return true.
  */
-extern __inline__ int tcp_raise_window(struct sock *sk)
+static __inline__ int tcp_raise_window(struct sock *sk)
 {
 	struct tcp_opt *tp = &(sk->tp_pinfo.af_tcp);
 	u32 cur_win = tcp_receive_window(tp);
@@ -704,7 +704,7 @@ extern __inline__ int tcp_raise_window(struct sock *sk)
  * as well, however we keep track of that using different
  * units so a conversion is necessary.  -DaveM
  */
-extern __inline__ __u32 tcp_recalc_ssthresh(struct tcp_opt *tp)
+static __inline__ __u32 tcp_recalc_ssthresh(struct tcp_opt *tp)
 {
 	__u32 snd_wnd_packets = tp->snd_wnd / max(tp->mss_cache, 1);
 
@@ -847,7 +847,7 @@ static __inline__ void tcp_push_pending_frames(struct sock *sk, struct tcp_opt *
  * problem. Thanks to Stephen A. Wood <saw@cebaf.gov>  -FvK
  */
 
-extern __inline const int tcp_connected(const int state)
+static __inline const int tcp_connected(const int state)
 {
 	return ((1 << state) &
 	       	(TCPF_ESTABLISHED|TCPF_CLOSE_WAIT|TCPF_FIN_WAIT1|
@@ -934,7 +934,7 @@ static __inline__ void tcp_build_and_update_options(__u32 *ptr, struct tcp_opt *
  * MAX_SYN_SIZE to match the new maximum number of options that you
  * can generate.
  */
-extern __inline__ void tcp_syn_build_options(__u32 *ptr, int mss, int ts, int sack,
+static __inline__ void tcp_syn_build_options(__u32 *ptr, int mss, int ts, int sack,
 					     int offer_wscale, int wscale, __u32 tstamp, __u32 ts_recent)
 {
 	/* We always get an MSS option.
@@ -974,7 +974,7 @@ extern __inline__ void tcp_syn_build_options(__u32 *ptr, int mss, int ts, int sa
  * be a multiple of mss if possible. We assume here that mss >= 1.
  * This MUST be enforced by all callers.
  */
-extern __inline__ void tcp_select_initial_window(__u32 space, __u16 mss,
+static __inline__ void tcp_select_initial_window(__u32 space, __u16 mss,
 	__u32 *rcv_wnd,
 	__u32 *window_clamp,
 	int wscale_ok,
@@ -1008,28 +1008,28 @@ extern __inline__ void tcp_select_initial_window(__u32 space, __u16 mss,
 	(*window_clamp) = min(65535<<(*rcv_wscale),*window_clamp);
 }
 
-extern __inline__ void tcp_synq_unlink(struct tcp_opt *tp, struct open_request *req, struct open_request *prev)
+static __inline__ void tcp_synq_unlink(struct tcp_opt *tp, struct open_request *req, struct open_request *prev)
 {
 	if(!req->dl_next)
 		tp->syn_wait_last = (struct open_request **)prev;
 	prev->dl_next = req->dl_next;
 }
 
-extern __inline__ void tcp_synq_queue(struct tcp_opt *tp, struct open_request *req)
+static __inline__ void tcp_synq_queue(struct tcp_opt *tp, struct open_request *req)
 { 
 	req->dl_next = NULL;
 	*tp->syn_wait_last = req; 
 	tp->syn_wait_last = &req->dl_next;
 }
 
-extern __inline__ void tcp_synq_init(struct tcp_opt *tp)
+static __inline__ void tcp_synq_init(struct tcp_opt *tp)
 {
 	tp->syn_wait_queue = NULL;
 	tp->syn_wait_last = &tp->syn_wait_queue;
 }
 
 extern void __tcp_inc_slow_timer(struct tcp_sl_timer *slt);
-extern __inline__ void tcp_inc_slow_timer(int timer)
+static __inline__ void tcp_inc_slow_timer(int timer)
 {
 	struct tcp_sl_timer *slt = &tcp_slt_array[timer];
 	
@@ -1041,7 +1041,7 @@ extern __inline__ void tcp_inc_slow_timer(int timer)
 	atomic_inc(&slt->count);
 }
 
-extern __inline__ void tcp_dec_slow_timer(int timer)
+static __inline__ void tcp_dec_slow_timer(int timer)
 {
 	struct tcp_sl_timer *slt = &tcp_slt_array[timer];
 

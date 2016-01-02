@@ -92,7 +92,7 @@ extern void rt6_mtu_change(struct device *dev, unsigned mtu);
  *	For UDP/RAW sockets this is done on udp_connect.
  */
 
-extern __inline__ void ip6_dst_store(struct sock *sk, struct dst_entry *dst,
+static __inline__ void ip6_dst_store(struct sock *sk, struct dst_entry *dst,
 				     struct in6_addr *daddr)
 {
 	struct ipv6_pinfo *np;

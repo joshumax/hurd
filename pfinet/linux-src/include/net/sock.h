@@ -724,7 +724,6 @@ extern struct sk_buff		*sock_rmalloc(struct sock *sk,
 extern void			sock_wfree(struct sk_buff *skb);
 extern void			sock_rfree(struct sk_buff *skb);
 extern unsigned long		sock_rspace(struct sock *sk);
-extern unsigned long		sock_wspace(struct sock *sk);
 
 extern int			sock_setsockopt(struct socket *sock, int level,
 						int op, char *optval,
@@ -800,7 +799,7 @@ extern void sklist_destroy_socket(struct sock **list, struct sock *sk);
  * sk_run_filter. If pkt_len is 0 we toss packet. If skb->len is smaller
  * than pkt_len we keep whole skb->data.
  */
-extern __inline__ int sk_filter(struct sk_buff *skb, struct sk_filter *filter)
+static __inline__ int sk_filter(struct sk_buff *skb, struct sk_filter *filter)
 {
 	int pkt_len;
 
@@ -813,7 +812,7 @@ extern __inline__ int sk_filter(struct sk_buff *skb, struct sk_filter *filter)
 	return 0;
 }
 
-extern __inline__ void sk_filter_release(struct sock *sk, struct sk_filter *fp)
+static __inline__ void sk_filter_release(struct sock *sk, struct sk_filter *fp)
 {
 	unsigned int size = sk_filter_len(fp);
 
@@ -823,7 +822,7 @@ extern __inline__ void sk_filter_release(struct sock *sk, struct sk_filter *fp)
 		kfree_s(fp, size);
 }
 
-extern __inline__ void sk_filter_charge(struct sock *sk, struct sk_filter *fp)
+static __inline__ void sk_filter_charge(struct sock *sk, struct sk_filter *fp)
 {
 	atomic_inc(&fp->refcnt);
 	atomic_add(sk_filter_len(fp), &sk->omem_alloc);
@@ -840,14 +839,14 @@ extern __inline__ void sk_filter_charge(struct sock *sk, struct sk_filter *fp)
  *	packet ever received.
  */
 
-extern __inline__ void skb_set_owner_w(struct sk_buff *skb, struct sock *sk)
+static __inline__ void skb_set_owner_w(struct sk_buff *skb, struct sock *sk)
 {
 	skb->sk = sk;
 	skb->destructor = sock_wfree;
 	atomic_add(skb->truesize, &sk->wmem_alloc);
 }
 
-extern __inline__ void skb_set_owner_r(struct sk_buff *skb, struct sock *sk)
+static __inline__ void skb_set_owner_r(struct sk_buff *skb, struct sock *sk)
 {
 	skb->sk = sk;
 	skb->destructor = sock_rfree;
@@ -855,7 +854,7 @@ extern __inline__ void skb_set_owner_r(struct sk_buff *skb, struct sock *sk)
 }
 
 
-extern __inline__ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+static __inline__ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 {
 #ifdef CONFIG_FILTER
 	struct sk_filter *filter;
@@ -878,7 +877,7 @@ extern __inline__ int sock_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 	return 0;
 }
 
-extern __inline__ int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
+static __inline__ int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
 {
 	/* Cast skb->rcvbuf to unsigned... It's pointless, but reduces
 	   number of warnings when compiling with -W --ANK
@@ -896,13 +895,13 @@ extern __inline__ int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
  *	Recover an error report and clear atomically
  */
  
-extern __inline__ int sock_error(struct sock *sk)
+static __inline__ int sock_error(struct sock *sk)
 {
 	int err=xchg(&sk->err,0);
 	return -err;
 }
 
-extern __inline__ unsigned long sock_wspace(struct sock *sk)
+static __inline__ unsigned long sock_wspace(struct sock *sk)
 {
 	int amt = 0;
 
@@ -918,7 +917,7 @@ extern __inline__ unsigned long sock_wspace(struct sock *sk)
  *	Default write policy as shown to user space via poll/select/SIGIO
  *	Kernel internally doesn't use the MIN_WRITE_SPACE threshold.
  */
-extern __inline__ int sock_writeable(struct sock *sk) 
+static __inline__ int sock_writeable(struct sock *sk) 
 {
 	return sock_wspace(sk) >= MIN_WRITE_SPACE;
 }
@@ -933,7 +932,7 @@ extern void net_delete_timer (struct sock *);
 extern void net_reset_timer (struct sock *, int, unsigned long);
 extern void net_timer (unsigned long);
 
-extern __inline__ int gfp_any(void)
+static __inline__ int gfp_any(void)
 {
 	return in_interrupt() ? GFP_ATOMIC : GFP_KERNEL;
 }

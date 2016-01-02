@@ -119,7 +119,7 @@ static __inline__ int ipv6_devindex_hash(int ifindex)
  *	compute link-local solicited-node multicast address
  */
 
-extern __inline__ void addrconf_addr_solict_mult_old(struct in6_addr *addr,
+static __inline__ void addrconf_addr_solict_mult_old(struct in6_addr *addr,
 						     struct in6_addr *solicited)
 {
 	ipv6_addr_set(solicited,
@@ -127,7 +127,7 @@ extern __inline__ void addrconf_addr_solict_mult_old(struct in6_addr *addr,
 		      __constant_htonl(0x1), addr->s6_addr32[3]);
 }
 
-extern __inline__ void addrconf_addr_solict_mult_new(struct in6_addr *addr,
+static __inline__ void addrconf_addr_solict_mult_new(struct in6_addr *addr,
 						     struct in6_addr *solicited)
 {
 	ipv6_addr_set(solicited,
@@ -137,21 +137,21 @@ extern __inline__ void addrconf_addr_solict_mult_new(struct in6_addr *addr,
 }
 
 
-extern __inline__ void ipv6_addr_all_nodes(struct in6_addr *addr)
+static __inline__ void ipv6_addr_all_nodes(struct in6_addr *addr)
 {
 	ipv6_addr_set(addr,
 		      __constant_htonl(0xFF020000), 0, 0,
 		      __constant_htonl(0x1));
 }
 
-extern __inline__ void ipv6_addr_all_routers(struct in6_addr *addr)
+static __inline__ void ipv6_addr_all_routers(struct in6_addr *addr)
 {
 	ipv6_addr_set(addr,
 		      __constant_htonl(0xFF020000), 0, 0,
 		      __constant_htonl(0x2));
 }
 
-extern __inline__ int ipv6_addr_is_multicast(struct in6_addr *addr)
+static __inline__ int ipv6_addr_is_multicast(struct in6_addr *addr)
 {
 	return (addr->s6_addr32[0] & __constant_htonl(0xFF000000)) == __constant_htonl(0xFF000000);
 }

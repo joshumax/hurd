@@ -210,7 +210,7 @@ static __inline__ void tcp_bound_rto(struct tcp_opt *tp)
 }
 
 /* WARNING: this must not be called if tp->saw_timestamp was false. */
-extern __inline__ void tcp_replace_ts_recent(struct sock *sk, struct tcp_opt *tp,
+static __inline__ void tcp_replace_ts_recent(struct sock *sk, struct tcp_opt *tp,
 					     __u32 start_seq, __u32 end_seq)
 {
 	/* It is start_seq <= last_ack_seq combined
@@ -236,7 +236,7 @@ extern __inline__ void tcp_replace_ts_recent(struct sock *sk, struct tcp_opt *tp
 
 #define PAWS_24DAYS	(HZ * 60 * 60 * 24 * 24)
 
-extern __inline__ int tcp_paws_discard(struct tcp_opt *tp, struct tcphdr *th, unsigned len)
+static __inline__ int tcp_paws_discard(struct tcp_opt *tp, struct tcphdr *th, unsigned len)
 {
 	return ((s32)(tp->rcv_tsval - tp->ts_recent) < 0 &&
 		(s32)(tcp_time_stamp - tp->ts_recent_stamp) < PAWS_24DAYS &&
@@ -259,7 +259,7 @@ static int __tcp_sequence(struct tcp_opt *tp, u32 seq, u32 end_seq)
 }
 
 /* This functions checks to see if the tcp header is actually acceptable. */
-extern __inline__ int tcp_sequence(struct tcp_opt *tp, u32 seq, u32 end_seq)
+static __inline__ int tcp_sequence(struct tcp_opt *tp, u32 seq, u32 end_seq)
 {
 	if (seq == tp->rcv_nxt)
 		return (tp->rcv_wnd || (end_seq == seq));

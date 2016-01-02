@@ -354,7 +354,7 @@ extern struct tcf_police * tcf_police_locate(struct rtattr *rta, struct rtattr *
 extern int tcf_police_dump(struct sk_buff *skb, struct tcf_police *p);
 extern int tcf_police(struct sk_buff *skb, struct tcf_police *p);
 
-extern __inline__ void tcf_police_release(struct tcf_police *p)
+static __inline__ void tcf_police_release(struct tcf_police *p)
 {
 	if (p && --p->refcnt == 0)
 		tcf_police_destroy(p);
@@ -387,7 +387,7 @@ int pktsched_init(void);
 void qdisc_run_queues(void);
 int qdisc_restart(struct device *dev);
 
-extern __inline__ void qdisc_wakeup(struct device *dev)
+static __inline__ void qdisc_wakeup(struct device *dev)
 {
 	if (!dev->tbusy) {
 		struct Qdisc *q = dev->qdisc;
@@ -398,7 +398,7 @@ extern __inline__ void qdisc_wakeup(struct device *dev)
 	}
 }
 
-extern __inline__ unsigned psched_mtu(struct device *dev)
+static __inline__ unsigned psched_mtu(struct device *dev)
 {
 	unsigned mtu = dev->mtu;
 	return dev->hard_header ? mtu + dev->hard_header_len : mtu;

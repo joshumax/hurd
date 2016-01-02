@@ -41,17 +41,17 @@ extern int call_fw_firewall(int pf, struct device *dev, void *phdr, void *arg, s
 extern int call_in_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **pskb);
 extern int call_out_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **pskb);
 #else
-extern __inline__ int call_fw_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
+static __inline__ int call_fw_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
 {
 	return FW_ACCEPT;
 }
 
-extern __inline__ int call_in_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
+static __inline__ int call_in_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
 {
 	return FW_ACCEPT;
 }
 
-extern __inline__ int call_out_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
+static __inline__ int call_out_firewall(int pf, struct device *dev, void *phdr, void *arg, struct sk_buff **skb)
 {
 	return FW_ACCEPT;
 }

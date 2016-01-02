@@ -362,7 +362,7 @@ extern int		dev_restart(struct device *dev);
 
 typedef int gifconf_func_t(struct device * dev, char * bufptr, int len);
 extern int		register_gifconf(unsigned int family, gifconf_func_t * gifconf);
-extern __inline__ int unregister_gifconf(unsigned int family)
+static __inline__ int unregister_gifconf(unsigned int family)
 {
 	return register_gifconf(family, 0);
 }
@@ -388,12 +388,12 @@ extern atomic_t		dev_lockct;
  *	but they may do soon. Do it properly anyway.
  */
 
-extern __inline__ void  dev_lock_list(void)
+static __inline__ void  dev_lock_list(void)
 {
 	atomic_inc(&dev_lockct);
 }
 
-extern __inline__ void  dev_unlock_list(void)
+static __inline__ void  dev_unlock_list(void)
 {
 	atomic_dec(&dev_lockct);
 }
@@ -409,7 +409,7 @@ extern __inline__ void  dev_unlock_list(void)
  *		is not atomic.
  */
 
-extern __inline__ void dev_lock_wait(void)
+static __inline__ void dev_lock_wait(void)
 {
 	while (atomic_read(&dev_lockct)) {
 		current->policy |= SCHED_YIELD;
@@ -417,7 +417,7 @@ extern __inline__ void dev_lock_wait(void)
 	}
 }
 
-extern __inline__ void dev_init_buffers(struct device *dev)
+static __inline__ void dev_init_buffers(struct device *dev)
 {
 	/* DO NOTHING */
 }

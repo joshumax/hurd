@@ -277,7 +277,7 @@ extern void parport_release(struct pardevice *dev);
 /* parport_yield relinquishes the port if it would be helpful to other
  * drivers.  The return value is the same as for parport_claim.
  */
-extern __inline__ int parport_yield(struct pardevice *dev)
+static __inline__ int parport_yield(struct pardevice *dev)
 {
 	unsigned long int timeslip = (jiffies - dev->time);
 	if ((dev->port->waithead == NULL) || (timeslip < dev->timeslice))
@@ -289,7 +289,7 @@ extern __inline__ int parport_yield(struct pardevice *dev)
 /* parport_yield_blocking is the same but uses parport_claim_or_block
  * instead of parport_claim.
  */
-extern __inline__ int parport_yield_blocking(struct pardevice *dev)
+static __inline__ int parport_yield_blocking(struct pardevice *dev)
 {
 	unsigned long int timeslip = (jiffies - dev->time);
 	if ((dev->port->waithead == NULL) || (timeslip < dev->timeslice))
@@ -301,7 +301,7 @@ extern __inline__ int parport_yield_blocking(struct pardevice *dev)
 /*
  * Lowlevel drivers _can_ call this support function to handle irqs.
  */
-extern __inline__ void parport_generic_irq(int irq, struct parport *port,
+static __inline__ void parport_generic_irq(int irq, struct parport *port,
 					   struct pt_regs *regs)
 {
 	read_lock(&port->cad_lock);

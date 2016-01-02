@@ -28,14 +28,14 @@ extern void net_profile_irq_adjust(struct timeval *entered, struct timeval* leav
 #if CPU == 586 || CPU == 686
 
 
-extern __inline__ void  net_profile_stamp(struct timeval *pstamp)
+static __inline__ void  net_profile_stamp(struct timeval *pstamp)
 {
 	__asm__ __volatile__ (".byte 0x0f,0x31"
 		:"=a" (pstamp->tv_usec),
 		"=d" (pstamp->tv_sec));
 }
 
-extern __inline__ void  net_profile_accumulate(struct timeval *entered,
+static __inline__ void  net_profile_accumulate(struct timeval *entered,
 					       struct timeval *leaved,
 					       struct timeval *acc)
 {
@@ -51,7 +51,7 @@ extern __inline__ void  net_profile_accumulate(struct timeval *entered,
 			      "0" (acc->tv_usec), "1" (acc->tv_sec));
 }
 
-extern __inline__ void  net_profile_sub(struct timeval *sub,
+static __inline__ void  net_profile_sub(struct timeval *sub,
 					struct timeval *acc)
 {
 	__asm__ __volatile__ ("subl %2,%0\n\t" 
@@ -61,7 +61,7 @@ extern __inline__ void  net_profile_sub(struct timeval *sub,
 			      "0" (acc->tv_usec), "1" (acc->tv_sec));
 }
 
-extern __inline__ void  net_profile_add(struct timeval *add,
+static __inline__ void  net_profile_add(struct timeval *add,
 					struct timeval *acc)
 {
 	__asm__ __volatile__ ("addl %2,%0\n\t" 
@@ -79,7 +79,7 @@ extern long alpha_hi;
 
 /* On alpha cycle counter has only 32 bits :-( :-( */
 
-extern __inline__ void  net_profile_stamp(struct timeval *pstamp)
+static __inline__ void  net_profile_stamp(struct timeval *pstamp)
 {
 	__u32 result;
 	__asm__ __volatile__ ("rpcc %0" : "r="(result));
@@ -90,7 +90,7 @@ extern __inline__ void  net_profile_stamp(struct timeval *pstamp)
 	pstamp->tv_usec = alpha_lo;
 }
 
-extern __inline__ void  net_profile_accumulate(struct timeval *entered,
+static __inline__ void  net_profile_accumulate(struct timeval *entered,
 					       struct timeval *leaved,
 					       struct timeval *acc)
 {
@@ -112,7 +112,7 @@ extern __inline__ void  net_profile_accumulate(struct timeval *entered,
 	acc->tv_usec = usecs;
 }
 
-extern __inline__ void  net_profile_sub(struct timeval *entered,
+static __inline__ void  net_profile_sub(struct timeval *entered,
 					struct timeval *leaved)
 {
 	time_t usecs = leaved->tv_usec - entered->tv_usec;
@@ -126,7 +126,7 @@ extern __inline__ void  net_profile_sub(struct timeval *entered,
 	leaved->tv_usec = usecs;
 }
 
-extern __inline__ void  net_profile_add(struct timeval *entered, struct timeval *leaved)
+static __inline__ void  net_profile_add(struct timeval *entered, struct timeval *leaved)
 {
 	time_t usecs = leaved->tv_usec + entered->tv_usec;
 	time_t secs = leaved->tv_sec + entered->tv_sec;
@@ -142,7 +142,7 @@ extern __inline__ void  net_profile_add(struct timeval *entered, struct timeval 
 
 #else
 
-extern __inline__ void  net_profile_stamp(struct timeval *pstamp)
+static __inline__ void  net_profile_stamp(struct timeval *pstamp)
 {
 	/* Not "fast" counterpart! On architectures without
 	   cpu clock "fast" routine is absolutely useless in this
@@ -153,7 +153,7 @@ extern __inline__ void  net_profile_stamp(struct timeval *pstamp)
 	do_gettimeofday(pstamp);
 }
 
-extern __inline__ void  net_profile_accumulate(struct timeval *entered,
+static __inline__ void  net_profile_accumulate(struct timeval *entered,
 					       struct timeval *leaved,
 					       struct timeval *acc)
 {
@@ -175,7 +175,7 @@ extern __inline__ void  net_profile_accumulate(struct timeval *entered,
 	acc->tv_usec = usecs;
 }
 
-extern __inline__ void  net_profile_sub(struct timeval *entered,
+static __inline__ void  net_profile_sub(struct timeval *entered,
 					struct timeval *leaved)
 {
 	time_t usecs = leaved->tv_usec - entered->tv_usec;
@@ -189,7 +189,7 @@ extern __inline__ void  net_profile_sub(struct timeval *entered,
 	leaved->tv_usec = usecs;
 }
 
-extern __inline__ void  net_profile_add(struct timeval *entered, struct timeval *leaved)
+static __inline__ void  net_profile_add(struct timeval *entered, struct timeval *leaved)
 {
 	time_t usecs = leaved->tv_usec + entered->tv_usec;
 	time_t secs = leaved->tv_sec + entered->tv_sec;
@@ -206,7 +206,7 @@ extern __inline__ void  net_profile_add(struct timeval *entered, struct timeval 
 
 #endif
 
-extern __inline__ void net_profile_enter(struct net_profile_slot *s)
+static __inline__ void net_profile_enter(struct net_profile_slot *s)
 {
 	unsigned long flags;
 
@@ -219,7 +219,7 @@ extern __inline__ void net_profile_enter(struct net_profile_slot *s)
 	restore_flags(flags);
 }
 
-extern __inline__ void net_profile_leave_irq(struct net_profile_slot *s)
+static __inline__ void net_profile_leave_irq(struct net_profile_slot *s)
 {
 	unsigned long flags;
 
@@ -240,7 +240,7 @@ extern __inline__ void net_profile_leave_irq(struct net_profile_slot *s)
 	restore_flags(flags);
 }
 
-extern __inline__ void net_profile_leave(struct net_profile_slot *s)
+static __inline__ void net_profile_leave(struct net_profile_slot *s)
 {
 	unsigned long flags;
 	save_flags(flags);
