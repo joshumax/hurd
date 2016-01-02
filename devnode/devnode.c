@@ -153,12 +153,20 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 
   if (master_file != NULL)
     {
-      if (master_device != MACH_PORT_NULL)
+      mach_port_t md;
+      if (MACH_PORT_VALID (master_device))
         mach_port_deallocate (mach_task_self (), master_device);
-
-      master_device = file_name_lookup (master_file, 0, 0);
-      if (master_device == MACH_PORT_NULL)
-        error (1, errno, "file_name_lookup");
+      md = file_name_lookup (master_file, 0, 0);
+      if (MACH_PORT_VALID (md))
+        master_device = md;
+      else
+        {
+          error (0, 0, "%s: %s.\nFalling back to kernel driver.",
+                 master_file, strerror (errno));
+          err = get_privileged_ports (0, &master_device);
+          if (err)
+            return err;
+        }
     }
 
   err = device_open (master_device, mode, device_name, device); 
@@ -298,7 +306,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       master_file = arg;
       master_device = file_name_lookup (arg, 0, 0);
       if (master_device == MACH_PORT_NULL)
-	error (1, errno, "file_name_lookup");
+	error (0, 0, "%s: %s.\nFalling back to kernel driver.",
+               arg, strerror (errno));
       break;
     case 'n':
       user_device_name = arg;
