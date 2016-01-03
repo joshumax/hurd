@@ -185,6 +185,9 @@ schedule_timeout (long timeout)
       else
 	return 0;
     }
+  /* It may happen that we get woken without a signal. Noticed notably during
+     rsyslog testsuite.  Make sure we don't leave our timer in.  */
+  del_timer(&timer);
   return 0;
 }
 
