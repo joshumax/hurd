@@ -31,8 +31,8 @@
 long long root_jiffies;
 volatile struct mapped_time_value *mapped_time;
 
-struct timer_list *timers;
-thread_t timer_thread = 0;
+static struct timer_list *timers;
+static thread_t timer_thread = 0;
 
 static void *
 timer_function (void *this_is_a_pointless_variable_with_a_rather_long_name)
