@@ -441,7 +441,11 @@ S_socket_getopt (struct sock_user *user,
       switch (opt)
 	{
 	case SO_TYPE:
-	  assert (*value_len >= sizeof (int));
+	  if (*value_len < sizeof (int))
+	    {
+	      ret = EINVAL;
+	      break;
+	    }
 	  *(int *)*value = user->sock->pipe_class->sock_type;
 	  *value_len = sizeof (int);
 	  break;
