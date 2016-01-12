@@ -161,7 +161,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  *retry = FS_RETRY_REAUTH;
 		  *returned_port = dircred->po->shadow_root_parent;
 		  *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-		  if (! lastcomp)
+		  if (lastcomp && mustbedir) /* Trailing slash.  */
+		    strcpy (retryname, "/");
+		  else if (!lastcomp)
 		    strcpy (retryname, nextname);
 		  err = 0;
 		  goto out;
@@ -175,7 +177,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      *retry = FS_RETRY_REAUTH;
 	      *returned_port = dircred->po->root_parent;
 	      *returned_port_poly = MACH_MSG_TYPE_COPY_SEND;
-	      if (!lastcomp)
+	      if (lastcomp && mustbedir) /* Trailing slash.  */
+		strcpy (retryname, "/");
+	      else if (!lastcomp)
 		strcpy (retryname, nextname);
 	      err = 0;
 	      goto out;
@@ -213,7 +217,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
       /* If this is translated, start the translator (if necessary)
 	 and return.  */
-      if ((((flags & O_NOTRANS) == 0) || !lastcomp)
+      if ((((flags & O_NOTRANS) == 0) || !lastcomp || mustbedir)
 	  && ((np->dn_stat.st_mode & S_IPTRANS)
 	      || S_ISFIFO (np->dn_stat.st_mode)
 	      || S_ISCHR (np->dn_stat.st_mode)
@@ -304,11 +308,16 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (err != ENOENT)
 	    {
 	      *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
-	      if (!lastcomp && !err)
+	      if (!err)
 		{
 		  char *end = strchr (retryname, '\0');
-		  *end++ = '/';
-		  strcpy (end, nextname);
+		  if (mustbedir)
+		    *end++ = '/'; /* Trailing slash.  */
+		  else if (!lastcomp) {
+		    if (end != retryname)
+		      *end++ = '/';
+		    strcpy (end, nextname);
+		  }
 		}
 
 	      if (register_translator)
