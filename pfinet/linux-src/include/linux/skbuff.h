@@ -475,7 +475,7 @@ here: 		;
 	return skb->data;
 }
 
-static __inline__ char *__skb_pull(struct sk_buff *skb, unsigned int len)
+static __inline__ unsigned char *__skb_pull(struct sk_buff *skb, unsigned int len)
 {
 	skb->len-=len;
 	return 	skb->data+=len;
