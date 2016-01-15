@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <assert.h>
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,8 @@ const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 #define _STRINGIFY(arg) #arg
 #define STRINGIFY(arg) _STRINGIFY (arg)
 
+#define OPT_CHROOT_CHDIR	-1
+
 static struct argp_option options[] =
 {
   {"active",      'a', 0, 0, "Start TRANSLATOR and set it as NODE's active translator" },
@@ -65,6 +68,9 @@ static struct argp_option options[] =
   {"chroot",      'C', 0, 0,
    "Instead of setting the node's translator, take following arguments up to"
    " `--' and run that command chroot'd to the translated node."},
+  {"chroot-chdir",      OPT_CHROOT_CHDIR, "DIR", 0,
+   "Change to DIR before running the chrooted command.  "
+   "DIR must be an absolute path."},
 
   {0,0,0,0, "When setting the passive translator, if there's an active translator:"},
   {"goaway",      'g', 0, 0, "Ask the active translator to go away"},
@@ -114,6 +120,7 @@ main(int argc, char *argv[])
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
   char **chroot_command = 0;
+  char *chroot_chdir = "/";
 
   /* Parse our options...  */
   error_t parse_opt (int key, char *arg, struct argp_state *state)
@@ -182,6 +189,12 @@ main(int argc, char *argv[])
 	    }
 	  argp_error (state, "--chroot command must be terminated with `--'");
 	  return EINVAL;
+
+	case OPT_CHROOT_CHDIR:
+	  if (arg[0] != '/')
+	    argp_error (state, "--chroot-chdir must be absolute");
+	  chroot_chdir = arg;
+	  break;
 
 	case 'c': lookup_flags |= O_CREAT; break;
 	case 'L': lookup_flags &= ~O_NOTRANS; break;
@@ -325,6 +338,8 @@ main(int argc, char *argv[])
 	  char retry_name[1024];	/* XXX */
 	  retry_type do_retry;
 	  mach_port_t root;
+	  file_t executable;
+	  char *prefixed_name;
 	  err = fsys_getroot (active_control,
 			      MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
 			      NULL, 0, NULL, 0, 0,
@@ -341,8 +356,21 @@ main(int argc, char *argv[])
 	  if (setcrdir (root))
 	    error (7, errno, "cannot install root port");
 	  mach_port_deallocate (mach_task_self (), root);
-	  if (chdir ("/"))
-	    error (8, errno, "cannot chdir to new root");
+	  if (chdir (chroot_chdir))
+	    error (8, errno, "%s", chroot_chdir);
+
+	  /* Lookup executable in PATH.  */
+	  executable = file_name_path_lookup (chroot_command[0],
+					      getenv ("PATH"),
+					      O_EXEC, 0,
+					      &prefixed_name);
+	  if (MACH_PORT_VALID (executable))
+	    {
+	      err = mach_port_deallocate (mach_task_self (), executable);
+	      assert_perror (err);
+	      if (prefixed_name)
+		chroot_command[0] = prefixed_name;
+	    }
 
 	  execvp (chroot_command[0], chroot_command);
 	  error (8, errno, "cannot execute %s", chroot_command[0]);

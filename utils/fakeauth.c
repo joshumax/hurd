@@ -402,9 +402,13 @@ believe it has restricted them to different identities or no identity at all.\
   {
     task_t newtask;
     process_t proc;
-    file_t execfile = file_name_lookup (argv[argi], O_EXEC, 0);
+    char *prefixed_name;
+    file_t execfile = file_name_path_lookup (argv[argi], getenv ("PATH"),
+					     O_EXEC, 0, &prefixed_name);
     if (execfile == MACH_PORT_NULL)
       error (3, errno, "%s", argv[argi]);
+    if (prefixed_name)
+      argv[0] = prefixed_name;
 
     err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
