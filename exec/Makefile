@@ -24,7 +24,7 @@ SRCS = exec.c main.c hashexec.c hostarch.c
 OBJS = main.o hostarch.o exec.o hashexec.o \
        execServer.o exec_startupServer.o
 
-targets = exec exec.static
+target = exec exec.static
 HURDLIBS = trivfs fshelp iohelp ports ihash shouldbeinlibc
 LDLIBS = -lpthread
 
