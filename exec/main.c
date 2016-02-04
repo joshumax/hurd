@@ -230,11 +230,6 @@ main (int argc, char **argv)
 
   /* Reply to our parent.  */
   err = trivfs_startup (bootstrap, 0,
-                        trivfs_control_class, port_bucket,
-                        trivfs_protid_class, port_bucket, &fsys);
-
-  /* Reply to our parent.  */
-  err = trivfs_startup (bootstrap, 0,
 			trivfs_control_class, port_bucket,
 			trivfs_protid_class, port_bucket,
 			&fsys);
