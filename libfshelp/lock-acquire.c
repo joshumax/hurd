@@ -19,7 +19,10 @@
 
 /* Written by Michael I. Bushnell.  */
 
-#include "locks.h"
+#include <assert.h>
+#include <sys/file.h>
+
+#include "fshelp.h"
 
 #define EWOULDBLOCK EAGAIN /* XXX */
 

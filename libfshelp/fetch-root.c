@@ -18,11 +18,14 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include "trans.h"
-#include <unistd.h>
 #include <assert.h>
-#include <string.h>
 #include <hurd/fsys.h>
+#include <hurd/ports.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "fshelp.h"
 
 error_t
 fshelp_fetch_root (struct transbox *box, void *cookie,
