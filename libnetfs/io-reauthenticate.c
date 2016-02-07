@@ -34,12 +34,14 @@ netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
   /* This routine must carefully ignore EINTR because we
      are a simpleroutine, so callers won't know to restart. */
 
+  refcount_ref (&user->po->refcnt);
   pthread_mutex_lock (&user->po->np->lock);
   do
     newpi = netfs_make_protid (user->po, 0);
   while (! newpi && errno == EINTR);
   if (! newpi)
     {
+      refcount_deref (&user->po->refcnt);
       pthread_mutex_unlock (&user->po->np->lock);
       return errno;
     }

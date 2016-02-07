@@ -51,7 +51,7 @@ struct peropen
 {
   loff_t filepointer;
   int lock_status;
-  int refcnt;
+  refcount_t refcnt;
   int openstat;
 
   struct node *np;

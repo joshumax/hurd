@@ -24,29 +24,27 @@
 void
 netfs_release_peropen (struct peropen *po)
 {
+  if (refcount_deref (&po->refcnt) > 0)
+    return;
+
   pthread_mutex_lock (&po->np->lock);
-  if (--po->refcnt)
-    pthread_mutex_unlock (&po->np->lock);
-  else
+  if (po->root_parent)
+    mach_port_deallocate (mach_task_self (), po->root_parent);
+
+  if (po->shadow_root && po->shadow_root != po->np)
     {
-      if (po->root_parent)
-	mach_port_deallocate (mach_task_self (), po->root_parent);
-
-      if (po->shadow_root && po->shadow_root != po->np)
-	{
-	  pthread_mutex_lock (&po->shadow_root->lock);
-	  netfs_nput (po->shadow_root);
-	}
-      if (po->shadow_root_parent)
-	mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
-
-      if (po->lock_status != LOCK_UN)
-	fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
-			     &po->np->lock, LOCK_UN);
-
-      netfs_nput (po->np);
-
-      free (po->path);
-      free (po);
+      pthread_mutex_lock (&po->shadow_root->lock);
+      netfs_nput (po->shadow_root);
     }
+  if (po->shadow_root_parent)
+    mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
+
+  if (po->lock_status != LOCK_UN)
+    fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
+			 &po->np->lock, LOCK_UN);
+
+  netfs_nput (po->np);
+
+  free (po->path);
+  free (po);
 }

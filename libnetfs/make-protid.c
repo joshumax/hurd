@@ -36,7 +36,6 @@ netfs_make_protid (struct peropen *po, struct iouser *cred)
   if (errno)
     return 0;
 
-  po->refcnt++;
   pi->po = po;
   pi->user = cred;
   pi->shared_object = MACH_PORT_NULL;

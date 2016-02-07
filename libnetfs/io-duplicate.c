@@ -34,6 +34,7 @@ netfs_S_io_duplicate (struct protid *user,
   if (err)
     return err;
   
+  refcount_ref (&user->po->refcnt);
   pthread_mutex_lock (&user->po->np->lock);
   newpi = netfs_make_protid (user->po, clone);
   *newport = ports_get_right (newpi);
