@@ -67,7 +67,11 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
 
   po = netfs_make_peropen (node, flags, cookie2);
   if (! po)
-    return errno;
+    {
+      err = errno;
+      iohelp_free_iouser (user);
+      return err;
+    }
 
   cred = netfs_make_protid (po, user);
   if (cred)
@@ -79,8 +83,10 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
     }
   else
     {
+      err = errno;
+      netfs_release_peropen (po);
       iohelp_free_iouser (user);
-      return errno;
+      return err;
     }
 }
 
