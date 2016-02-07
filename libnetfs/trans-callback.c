@@ -58,14 +58,18 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
   struct protid *cred;
   struct node *node = cookie1;
   struct iouser *user;
+  struct peropen *po;
 
   err = iohelp_create_simple_iouser (&user, node->nn_stat.st_uid,
 				   node->nn_stat.st_gid);
   if (err)
     return err;
 
-  cred = netfs_make_protid (netfs_make_peropen (node, flags, cookie2),
-			    user);
+  po = netfs_make_peropen (node, flags, cookie2);
+  if (! po)
+    return errno;
+
+  cred = netfs_make_protid (po, user);
   if (cred)
     {
       *underlying = ports_get_right (cred);
