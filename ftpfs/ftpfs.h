@@ -35,7 +35,6 @@ struct ftpfs_conn;
 struct ftpfs_dir_entry
 {
   char *name;			/* Name of this entry */
-  size_t hv;			/* Hash value of NAME (before mod'ing) */
 
   /* The active node referred to by this name (may be 0).
      NETFS_NODE_REFCNT_LOCK should be held while frobbing this.  */
@@ -48,11 +47,6 @@ struct ftpfs_dir_entry
   /* The directory to which this entry belongs.  */
   struct ftpfs_dir *dir;
 
-  /* Link to next entry in hash bucket, and address of previous entry's (or
-     hash table's) pointer to this entry.  If the SELF_P field is 0, then
-     this is a deleted entry, awaiting final disposal.  */
-  struct ftpfs_dir_entry *next, **self_p;
-
   /* Next entry in `directory order', or 0 if none known.  */
   struct ftpfs_dir_entry *ordered_next, **ordered_self_p;
 
@@ -61,23 +55,22 @@ struct ftpfs_dir_entry
 
   hurd_ihash_locp_t inode_locp;	/* Used for removing this entry */
 
+  hurd_ihash_locp_t dir_locp; /* Position in the directory table.  */
+
   int noent : 1;		/* A negative lookup result.  */
   int valid : 1;		/* Marker for GC'ing.  */
+  int deleted : 1;              /* Indicates a deleted entry.  */
 };
 
 /* A directory.  */
 struct ftpfs_dir
 {
-  /* Number of entries in HTABLE.  */
-  size_t num_entries;
+  /* Hash table mapping names to children nodes.  */
+  struct hurd_ihash htable;
 
   /* The number of entries that have nodes attached.  We keep an additional
      reference to our node if there are any, to prevent it from going away.  */
   size_t num_live_entries;
-
-  /* Hash table of entries.  */
-  struct ftpfs_dir_entry **htable;
-  size_t htable_len;		/* # of elements in HTABLE (not bytes).  */
 
   /* List of dir entries in `directory order', in a linked list using the
      ORDERED_NEXT and ORDERED_SELF_P fields in each entry.  Not all entries
