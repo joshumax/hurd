@@ -1601,13 +1601,17 @@ S_io_reauthenticate (mach_port_t object,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror (err);
 
-  if (! auth_server_authenticate (authserver,
+  do
+    err = auth_server_authenticate (authserver,
 				  rend, MACH_MSG_TYPE_COPY_SEND,
 				  object, MACH_MSG_TYPE_COPY_SEND,
 				  &gu, &gulen,
 				  &au, &aulen,
 				  &gg, &gglen,
-				  &ag, &aglen))
+				  &ag, &aglen);
+  while (err == EINTR);
+
+  if (!err)
     {
       mig_deallocate ((vm_address_t) gu, gulen * sizeof *gu);
       mig_deallocate ((vm_address_t) au, aulen * sizeof *gu);
