@@ -75,10 +75,10 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	  /* MAKE_SEND is safe here because we destroy REND ourselves. */
 	  err = io_reauthenticate (port, rend,
 				   MACH_MSG_TYPE_MAKE_SEND);
-	  mach_port_deallocate (mach_task_self (), port);
 	  if (! err)
 	    err = auth_user_authenticate (newauth, rend,
 					  MACH_MSG_TYPE_MAKE_SEND, &ret);
+	  mach_port_deallocate (mach_task_self (), port);
 	  if (err)
 	    ret = MACH_PORT_NULL;
 

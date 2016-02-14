@@ -308,10 +308,10 @@ netfs_S_dir_lookup (struct protid *diruser,
 	err = io_reauthenticate (file, ref, MACH_MSG_TYPE_MAKE_SEND);
 	if (! err)
 	  {
-	    mach_port_deallocate (mach_task_self (), file);
 	    err = auth_user_authenticate (fakeroot_auth_port, ref,
 					  MACH_MSG_TYPE_MAKE_SEND,
 					  &dir);
+	    mach_port_deallocate (mach_task_self (), file);
 	  }
 	mach_port_destroy (mach_task_self (), ref);
 	if (err)
