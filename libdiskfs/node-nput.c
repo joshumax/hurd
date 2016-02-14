@@ -56,7 +56,6 @@ diskfs_nput (struct node *np)
 	     hold a weak reference ourselves. */
 	  diskfs_try_dropping_softrefs (np);
 	}
-      pthread_mutex_unlock (&np->lock);
     }
 
   /* Finally get rid of our reference.  */

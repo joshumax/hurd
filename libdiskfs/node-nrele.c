@@ -28,6 +28,7 @@
 void
 diskfs_nrele (struct node *np)
 {
+  int locked = FALSE;
   struct references result;
 
   /* While we call the diskfs_try_dropping_softrefs, we need to hold
@@ -37,6 +38,7 @@ diskfs_nrele (struct node *np)
 
   if (result.hard == 0)
     {
+      locked = TRUE;
       pthread_mutex_lock (&np->lock);
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink)
@@ -49,7 +51,6 @@ diskfs_nrele (struct node *np)
 	     hold a weak reference ourselves. */
 	  diskfs_try_dropping_softrefs (np);
 	}
-      pthread_mutex_unlock (&np->lock);
     }
 
   /* Finally get rid of our reference.  */
@@ -57,7 +58,10 @@ diskfs_nrele (struct node *np)
 
   if (result.hard == 0 && result.weak == 0)
     {
-      pthread_mutex_lock (&np->lock);
+      if (! locked)
+        pthread_mutex_lock (&np->lock);
       diskfs_drop_node (np);
     }
+  else if (locked)
+    pthread_mutex_unlock (&np->lock);
 }
