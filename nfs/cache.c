@@ -24,49 +24,46 @@
 #include <stdio.h>
 #include <netinet/in.h>
 
-/* Hash table containing all the nodes currently active.  XXX Was 512,
-   however, a prime is much nicer for the hash function.  509 is nice
-   as not only is it prime, it also keeps the array within a page or
-   two.  */
-#define CACHESIZE 509
-static struct node *nodehash [CACHESIZE];
-
-/* Compute and return a hash key for NFS file handle DATA of LEN
-   bytes.  */
-static inline int
-hash (int *data, size_t len)
+/* Compute and return a hash key for NFS file handle.  */
+static hurd_ihash_key_t
+ihash_hash (const void *data)
 {
-  unsigned int h = 0;
-  char *cp = (char *)data;
-  int i;
-  
-  for (i = 0; i < len; i++)
-    h += cp[i];
-  
-  return h % CACHESIZE;
+  const struct fhandle *handle = (struct fhandle *) data;
+  return (hurd_ihash_key_t) hurd_ihash_hash32 (handle->data, handle->size, 0);
 }
 
-/* Lookup the file handle P (length LEN) in the hash table.  If it is
+/* Compare two handles which are used as keys.  */
+static int
+ihash_compare (const void *key1, const void *key2)
+{
+  const struct fhandle *handle1 = (struct fhandle *) key1;
+  const struct fhandle *handle2 = (struct fhandle *) key2;
+
+  return handle1->size == handle2->size &&
+    memcmp (handle1->data, handle2->data, handle1->size) == 0;
+}
+
+/* Hash table containing all the nodes currently active.  */
+static struct hurd_ihash nodehash =
+  HURD_IHASH_INITIALIZER_GKI (sizeof (struct node)
+                              + offsetof (struct netnode, slot), NULL, NULL,
+                              ihash_hash, ihash_compare);
+
+/* Lookup the file handle HANDLE in the hash table.  If it is
    not present, initialize a new node structure and insert it into the
    hash table.  Whichever course, a new reference is generated and the
    node is returned in *NPP; the lock on the node, (*NPP)->LOCK, is
    held.  */
 void
-lookup_fhandle (void *p, size_t len, struct node **npp)
+lookup_fhandle (struct fhandle *handle, struct node **npp)
 {
   struct node *np;
   struct netnode *nn;
-  int h;
-
-  h = hash (p, len);
 
   pthread_spin_lock (&netfs_node_refcnt_lock);
-  for (np = nodehash[h]; np; np = np->nn->hnext)
+  np = hurd_ihash_find (&nodehash, (hurd_ihash_key_t) handle);
+  if (np)
     {
-      if (np->nn->handle.size != len
-	  || memcmp (np->nn->handle.data, p, len) != 0)
-	continue;
-      
       np->references++;
       pthread_spin_unlock (&netfs_node_refcnt_lock);
       pthread_mutex_lock (&np->lock);
@@ -75,23 +72,19 @@ lookup_fhandle (void *p, size_t len, struct node **npp)
     }
   
   /* Could not find it */
-  nn = malloc (sizeof (struct netnode));
-  assert (nn);
+  np = netfs_make_node_alloc (sizeof (struct netnode));
+  assert (np);
+  nn = netfs_node_netnode (np);
 
-  nn->handle.size = len;
-  memcpy (nn->handle.data, p, len);
+  nn->handle.size = handle->size;
+  memcpy (nn->handle.data, handle->data, handle->size);
   nn->stat_updated = 0;
   nn->dtrans = NOT_POSSIBLE;
   nn->dead_dir = 0;
   nn->dead_name = 0;
   
-  np = netfs_make_node (nn);
+  hurd_ihash_add (&nodehash, (hurd_ihash_key_t) &nn->handle, np);
   pthread_mutex_lock (&np->lock);
-  nn->hnext = nodehash[h];
-  if (nn->hnext)
-    nn->hnext->nn->hprevp = &nn->hnext;
-  nn->hprevp = &nodehash[h];
-  nodehash[h] = np;
 
   pthread_spin_unlock (&netfs_node_refcnt_lock);
   
@@ -162,9 +155,7 @@ netfs_node_norefs (struct node *np)
     }
   else
     {
-      *np->nn->hprevp = np->nn->hnext;
-      if (np->nn->hnext)
-	np->nn->hnext->nn->hprevp = np->nn->hprevp;
+      hurd_ihash_locp_remove (&nodehash, np->nn->slot);
       if (np->nn->dtrans == SYMLINK)
 	free (np->nn->transarg.name);
       free (np->nn);
@@ -178,7 +169,6 @@ netfs_node_norefs (struct node *np)
 int *
 recache_handle (int *p, struct node *np)
 {
-  int h;
   size_t len;
 
   if (protocol_version == 2)
@@ -191,20 +181,14 @@ recache_handle (int *p, struct node *np)
   
   /* Unlink it */
   pthread_spin_lock (&netfs_node_refcnt_lock);
-  *np->nn->hprevp = np->nn->hnext;
-  if (np->nn->hnext)
-    np->nn->hnext->nn->hprevp = np->nn->hprevp;
+  hurd_ihash_locp_remove (&nodehash, np->nn->slot);
 
   /* Change the name */
   np->nn->handle.size = len;
   memcpy (np->nn->handle.data, p, len);
   
   /* Reinsert it */
-  h = hash (p, len);
-  np->nn->hnext = nodehash[h];
-  if (np->nn->hnext)
-    np->nn->hnext->nn->hprevp = &np->nn->hnext;
-  np->nn->hprevp = &nodehash[h];
+  hurd_ihash_add (&nodehash, (hurd_ihash_key_t) &np->nn->handle, np);
   
   pthread_spin_unlock (&netfs_node_refcnt_lock);
   return p + len / sizeof (int);
