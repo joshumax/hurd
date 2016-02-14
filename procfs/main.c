@@ -50,7 +50,7 @@ uid_t opt_anon_owner;
 #define NOEXEC_KEY -2 /* Likewise. */
 #define NOSUID_KEY -3 /* Likewise. */
 
-static void set_default_options (void)
+static void set_compatibility_options (void)
 {
   opt_clk_tck = 100;
   opt_stat_mode = 0444;
@@ -104,7 +104,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
       break;
 
     case 'c':
-      set_default_options();
+      set_compatibility_options();
       break;
 
     case 'a':
