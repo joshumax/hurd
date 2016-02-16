@@ -158,7 +158,6 @@ netfs_node_norefs (struct node *np)
       hurd_ihash_locp_remove (&nodehash, np->nn->slot);
       if (np->nn->dtrans == SYMLINK)
 	free (np->nn->transarg.name);
-      free (np->nn);
       free (np);
     }
 }
