@@ -186,7 +186,7 @@ S_crash_dump_task (mach_port_t port,
       if (err)
 	break;
 
-      if (user_proc != MACH_PORT_NULL)
+      if (! MACH_PORT_VALID (user_proc))
 	err = proc_task2proc (procserver, task, &user_proc);
       if (! err)
 	{
