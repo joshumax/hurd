@@ -420,9 +420,36 @@ do_mount (struct fs *fs, int remount)
       }
 
       explain ("settrans -a");
-      err = fshelp_start_translator (open_node, NULL, fsopts,
-				     fsopts, fsopts_len, timeout,
-				     &active_control);
+      {
+	mach_port_t ports[INIT_PORT_MAX];
+	mach_port_t fds[STDERR_FILENO + 1];
+	int ints[INIT_INT_MAX];
+	int i;
+
+	for (i = 0; i < INIT_PORT_MAX; i++)
+	  ports[i] = MACH_PORT_NULL;
+	for (i = 0; i < STDERR_FILENO + 1; i++)
+	  fds[i] = MACH_PORT_NULL;
+	memset (ints, 0, INIT_INT_MAX * sizeof(int));
+
+	ports[INIT_PORT_CWDIR] = getcwdir ();
+	ports[INIT_PORT_CRDIR] = getcrdir ();
+	ports[INIT_PORT_AUTH] = getauth ();
+
+	err = fshelp_start_translator_long (open_node, NULL,
+					    fsopts, fsopts, fsopts_len,
+					    fds, MACH_MSG_TYPE_COPY_SEND,
+					    STDERR_FILENO + 1,
+					    ports, MACH_MSG_TYPE_COPY_SEND,
+					    INIT_PORT_MAX,
+					    ints, INIT_INT_MAX,
+					    geteuid (),
+					    timeout, &active_control);
+	for (i = 0; i < INIT_PORT_MAX; i++)
+	  mach_port_deallocate (mach_task_self (), ports[i]);
+	for (i = 0; i <= STDERR_FILENO; i++)
+	  mach_port_deallocate (mach_task_self (), fds[i]);
+      }
       /* If ERR is due to a problem opening the translated node, we print
 	 that name, otherwise, the name of the translator.  */
       if (open_err)
