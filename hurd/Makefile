@@ -58,7 +58,7 @@ hurd.msgids: $(patsubst %.defs,%.msgids,$(filter %.defs,$(INSTHDRS)))
 %.symc.o: %.symc
 	$(CC) -S $(CPPFLAGS) $(CFLAGS) $(CPPFLAGS-$@) -x c -o $@ $<
 %.h: %.symc.o
-	sed <$< -e 's/^[^*].*$$//' | \
+	sed <$< -e 's/^[[:space:]]*//' -e 's/^[^*].*$$//' | \
 	    sed -e 's/^[*]/#define/' -e 's/mAgIc[^-0-9]*//' -e '/^ *$$/d' >$@
 
 %-ioctls.sym: tmpl-ioctls.sym
@@ -69,7 +69,7 @@ cpp = $(CC) $(CPPFLAGS) $(CFLAGS) $(CPPFLAGS-$@) -E -x c
 %ioctl-requests.list: %ioctl-headers.h
 	$(cpp) $< | sed -n 's/^#.*"\([^"]*\)".*$$/\1/p' | sort | uniq | \
 	while read f; do \
-	  sed -n 's/^[ 	]*#[ 	]*define[ 	]*\([A-Z0-9_]*\)[^A-Z0-9_][^A-Z0-9_]*_IO.*'\'$*\'.*$$'/\1/p' $$f; \
+	  sed -n 's/^[ 	]*#[ 	]*define[ 	]*\([A-Z0-9_]*\)[^A-Z0-9_][^A-Z0-9_]*_IO.*'\'$*\''.*$$/\1/p' $$f; \
 	done | sort | uniq > $@
 
 %ioctl.defs: %ioctl.sym
