@@ -71,9 +71,10 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
 		 having to do another hash table lookup in the intran
 		 functions if protected payloads are not supported by
 		 the kernel.  */
-	      inp->msgh_bits = MACH_MSGH_BITS (
-		MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
-		MACH_MSG_TYPE_PROTECTED_PAYLOAD);
+	      inp->msgh_bits =
+		MACH_MSGH_BITS_OTHER (inp->msgh_bits)
+		| MACH_MSGH_BITS (MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
+				  MACH_MSG_TYPE_PROTECTED_PAYLOAD);
 	      inp->msgh_protected_payload = (unsigned long) pi;
 	    }
 	}
