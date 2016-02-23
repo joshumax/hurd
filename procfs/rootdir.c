@@ -446,12 +446,11 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
 
   for (i = 0; i < cache_info_count; i++)
     {
-      mem_usage = (cache_info[i].nr_slabs * cache_info[i].slab_size)
-	>> 10;
+      mem_usage =
+	(cache_info[i].nr_slabs * cache_info[i].slab_size) >> 10;
       mem_total += mem_usage;
-      mem_reclaimable = (cache_info[i].flags & CACHE_FLAGS_NO_RECLAIM)
-	? 0 : (cache_info[i].nr_free_slabs
-	       * cache_info[i].slab_size) >> 10;
+      mem_reclaimable =
+	(cache_info[i].nr_free_slabs * cache_info[i].slab_size) >> 10;
       mem_total_reclaimable += mem_reclaimable;
       fprintf (m,
                "%-21s %04x %7zu %3zuk  %4lu %6lu %6lu %7zuk %10zuk\n",
