@@ -80,8 +80,8 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 
 	  if (fields == NULL)
 	    {
-	      FREE (new_fmt);
 	      FREE (new_fmt->src);
+	      FREE (new_fmt);
 	      return ENOMEM;
 	    }
 
