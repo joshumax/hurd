@@ -36,8 +36,8 @@ fsck: fstab.o clookup.o
 swapon swapoff: ../libstore/libstore.a default_pagerUser.o
 $(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
-install: $(prefix)/dev $(prefix)/dev/MAKEDEV
-$(prefix)/dev/MAKEDEV:
+install: $(prefix)/dev/MAKEDEV
+$(prefix)/dev/MAKEDEV: $(prefix)/dev
 	ln -s ../sbin/MAKEDEV $@
 $(prefix)/dev:
 	@$(MKINSTALLDIRS) $@
