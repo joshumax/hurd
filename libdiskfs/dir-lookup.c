@@ -421,24 +421,25 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  memcpy (pathbuf + np->dn_stat.st_size + 1,
 			  nextname, nextnamelen - 1);
 		}
-	      pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
+	      if (mustbedir)
+		{
+		  pathbuf[nextnamelen + np->dn_stat.st_size] = '/';
+		  pathbuf[nextnamelen + np->dn_stat.st_size + 1] = '\0';
+		}
+	      else
+		pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
 
 	      if (pathbuf[0] == '/')
 		{
 		  /* Punt to the caller.  */
 		  *retry = FS_RETRY_MAGICAL;
 		  *returned_port = MACH_PORT_NULL;
-		  memcpy (retryname, pathbuf,
-			  nextnamelen + np->dn_stat.st_size + 1);
-		  if (mustbedir)
-		    {
-		      retryname[nextnamelen + np->dn_stat.st_size] = '/';
-		      retryname[nextnamelen + np->dn_stat.st_size + 1] = '\0';
-		    }
+		  strcpy (retryname, pathbuf);
 		  goto out;
 		}
 
 	      path = pathbuf;
+	      mustbedir = 0;
 	    }
 
 	  if (lastcomp)

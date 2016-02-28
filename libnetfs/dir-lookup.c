@@ -367,7 +367,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  linklen = np->nn_stat.st_size;
 
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
-	  newnamelen = nextnamelen + linklen + 1;
+	  newnamelen = nextnamelen + linklen + 1 + 1;
 	  linkbuf = alloca (newnamelen);
 
 	  error = netfs_attempt_readlink (diruser->user, np, linkbuf);
@@ -380,7 +380,13 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      memcpy (linkbuf + linklen + 1, nextname,
 		     nextnamelen - 1);
 	    }
-	  linkbuf[nextnamelen + linklen] = '\0';
+	  if (mustbedir)
+	    {
+	      linkbuf[nextnamelen + linklen] = '/';
+	      linkbuf[nextnamelen + linklen + 1] = '\0';
+	    }
+	  else
+	    linkbuf[nextnamelen + linklen] = '\0';
 
 	  if (linkbuf[0] == '/')
 	    {
@@ -392,6 +398,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    }
 
 	  filename = linkbuf;
+	  mustbedir = 0;
 	  if (lastcomp)
 	    {
 	      lastcomp = 0;

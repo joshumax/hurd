@@ -229,7 +229,7 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	    /* Symlink contents + extra path won't fit in our buffer, so
 	       reallocate it and try again.  */
 	    {
-	      path_buf_len = sym_len + nextname_len + 1;
+	      path_buf_len = sym_len + nextname_len + 1 + 1;
 	      path_buf = alloca (path_buf_len);
 	      err = treefs_node_get_symlink (node, path_buf, &sym_len);
 	    }
@@ -241,7 +241,13 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	      path_buf[sym_len] = '/';
 	      bcopy (nextname, path_buf + sym_len + 1, nextname_len - 1);
 	    }
-	  path_buf[nextname_len + sym_len] = '\0';
+	  if (mustbedir)
+	    {
+	      path_buf[nextnamelen + sym_len] = '/';
+	      path_buf[nextnamelen + sym_len + 1] = '\0';
+	    }
+	  else
+	    path_buf[nextname_len + sym_len] = '\0';
 
 	  if (path_buf[0] == '/')
 	    {
@@ -253,6 +259,7 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
 	    }
 	  
 	  path = path_buf;
+	  mustbedir = 0;
 	  if (lastcomp)
 	    {
 	      lastcomp = 0;
