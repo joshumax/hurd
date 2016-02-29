@@ -96,10 +96,10 @@ $(module-dir)/%: %
 		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
 
 lex.c: lex.l parser.tab.h
-parser.tab.h: parser.y
+%.tab.h %.c: %.y
 	if $(YACC) $(YFLAGS) -d $<; then \
-	    mv y.tab.h $@; \
-	    rm y.tab.c; \
+	    mv y.tab.h $*.tab.h; \
+	    mv y.tab.c $*.c; \
 	fi
 
 XKB_SRCS = xkb/compose.c xkb/kstoucs.c xkb/parser.y xkb/lex.l \

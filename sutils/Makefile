@@ -27,7 +27,7 @@ special-targets = $(scripts)
 installationdir = $(sbindir)
 SRCS = $(progs:=.c) clookup.c fstab.c update.c $(scripts:=.sh)
 
-OBJS = $(progs:=.c)
+OBJS = $(progs:=.o)
 HURDLIBS = store shouldbeinlibc
 
 include ../Makeconf
