@@ -408,7 +408,7 @@ believe it has restricted them to different identities or no identity at all.\
     if (execfile == MACH_PORT_NULL)
       error (3, errno, "%s", argv[argi]);
     if (prefixed_name)
-      argv[0] = prefixed_name;
+      argv[argi] = prefixed_name;
 
     err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
