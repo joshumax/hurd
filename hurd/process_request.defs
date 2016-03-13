@@ -407,3 +407,13 @@ simpleroutine proc_set_code_request (
 simpleroutine proc_get_code_request (
 	process: process_t;
 	ureplyport reply: reply_port_t);
+
+/* Create a new task namespace.  PROCESS claims the responsibility to
+   manage all tasks in this namespace.  Any task created in this
+   namespace will automatically be declared a child of PROCESS, and a
+   `mach_notify_new_task' message is sent to NOTIFY.  If PROCESS dies,
+   the proc server will terminate all tasks in the namespace.  */
+simpleroutine proc_make_task_namespace_request (
+	process: process_t;
+	ureplyport reply: reply_port_t;
+	notify: mach_port_send_t);

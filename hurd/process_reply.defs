@@ -192,3 +192,5 @@ simpleroutine proc_get_code_reply (
 	RETURN_CODE_ARG;
 	start_code: vm_address_t;
 	end_code: vm_address_t);
+
+skip; /* proc_make_task_namespace  */
