@@ -79,6 +79,9 @@ do { pthread_spin_lock (&ext2s_pager_stats.lock);			      \
 #else /* !STATS */
 #define STAT_INC(field) /* nop */0
 #endif /* STATS */
+
+static void
+disk_cache_info_free_push (struct disk_cache_info *p);
 
 #define FREE_PAGE_BUFS 24
 
@@ -538,6 +541,9 @@ disk_pager_notify_evict (vm_offset_t page)
 
   pthread_mutex_lock (&disk_cache_lock);
   disk_cache_info[index].flags &= ~DC_INCORE;
+  if (disk_cache_info[index].ref_count == 0 &&
+      !(disk_cache_info[index].flags & DC_DONT_REUSE))
+    disk_cache_info_free_push (&disk_cache_info[index]);
   pthread_mutex_unlock (&disk_cache_lock);
 }
 
@@ -1196,7 +1202,8 @@ disk_cache_block_deref (void *ptr)
   assert (! (disk_cache_info[index].flags & DC_UNTOUCHED));
   assert (disk_cache_info[index].ref_count >= 1);
   disk_cache_info[index].ref_count--;
-  if (disk_cache_info[index].ref_count == 0)
+  if (disk_cache_info[index].ref_count == 0 &&
+      !(disk_cache_info[index].flags & DC_DONT_REUSE))
     disk_cache_info_free_push (&disk_cache_info[index]);
   pthread_mutex_unlock (&disk_cache_lock);
 }
