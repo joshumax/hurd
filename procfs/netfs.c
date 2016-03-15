@@ -222,12 +222,8 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
    free all its associated storage. */
 void netfs_node_norefs (struct node *np)
 {
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
-
   procfs_cleanup (np);
   free (np);
-
-  pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
 /* The user may define this function (but should define it together

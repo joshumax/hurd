@@ -298,10 +298,8 @@ lookup_cached (struct usermux *mux, const char *user, int purge,
 
       if (strcasecmp (user, nm->name) == 0)
 	{
-	  pthread_spin_lock (&netfs_node_refcnt_lock);
-	  if (nm->node)
-	    nm->node->references++;
-	  pthread_spin_unlock (&netfs_node_refcnt_lock);
+          if (nm->node)
+            netfs_nref (nm->node);
 
 	  if (nm->node)
 	    {

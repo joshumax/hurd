@@ -240,10 +240,8 @@ lookup_cached (struct hostmux *mux, const char *host, int purge,
 
       if (strcasecmp (host, nm->name) == 0)
 	{
-	  pthread_spin_lock (&netfs_node_refcnt_lock);
-	  if (nm->node)
-	    nm->node->references++;
-	  pthread_spin_unlock (&netfs_node_refcnt_lock);
+          if (nm->node)
+            netfs_nref (nm->node);
 
 	  if (nm->node)
 	    {

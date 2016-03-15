@@ -108,6 +108,9 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     }
   nn->faked = FAKE_DEFAULT;
 
+  /* The light reference allows us to safely keep the node in the
+     hash table.  */
+  netfs_nref_light (*np);
   if (!locked)
     pthread_mutex_lock (&idport_ihash_lock);
   err = hurd_ihash_add (&idport_ihash, nn->idport, *np);
@@ -155,22 +158,31 @@ set_faked_attribute (struct node *np, unsigned int faked)
     }
 }
 
+void
+netfs_try_dropping_softrefs (struct node *np)
+{
+  /* We have to drop our light reference by removing the node from the
+     idport_ihash hash table.  */
+  pthread_mutex_lock (&idport_ihash_lock);
+
+  hurd_ihash_locp_remove (&idport_ihash, netfs_node_netnode (np)->idport_locp);
+  pthread_mutex_unlock (&idport_ihash_lock);
+
+  netfs_nrele_light (np);
+}
+
 /* Node NP has no more references; free all its associated storage. */
 void
 netfs_node_norefs (struct node *np)
 {
   pthread_mutex_unlock (&np->lock);
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
 
-  pthread_mutex_lock (&idport_ihash_lock);
-  hurd_ihash_locp_remove (&idport_ihash, netfs_node_netnode (np)->idport_locp);
-  pthread_mutex_unlock (&idport_ihash_lock);
+  /* NP was already removed from idport_ihash through
+     netfs_try_dropping_softrefs.  */
 
   mach_port_deallocate (mach_task_self (), netfs_node_netnode (np)->file);
   mach_port_deallocate (mach_task_self (), netfs_node_netnode (np)->idport);
   free (np);
-
-  pthread_spin_lock (&netfs_node_refcnt_lock);
 }
 
 /* This is the cleanup function we install in netfs_protid_class.  If
@@ -363,29 +375,27 @@ netfs_S_dir_lookup (struct protid *diruser,
  redo_hash_lookup:
   pthread_mutex_lock (&idport_ihash_lock);
   pthread_mutex_lock (&dnp->lock);
-  /* The hashtable may not hold a true reference on the node.  Acquire the
-     refcount lock so that, if a node is found, its reference counter cannot
-     drop to 0 before we get our own reference.  */
-  pthread_spin_lock (&netfs_node_refcnt_lock);
   np = hurd_ihash_find (&idport_ihash, idport);
   if (np != NULL)
     {
-      /* We already know about this node.  */
+      /* We quickly check that NP has hard references. If the node is being
+         removed, netfs_try_dropping_softrefs is attempting to drop the light
+         reference on this.  */
+      struct references result;
 
-      if (np->references == 0)
+      refcounts_references (&np->refcounts, &result);
+
+      if (result.hard == 0)
 	{
-	  /* But it might be in the process of being released.  If so,
-	     unlock the hash table to give the node a chance to actually
+	  /* If so, unlock the hash table to give the node a chance to actually
 	     be removed and retry.  */
-	  pthread_spin_unlock (&netfs_node_refcnt_lock);
 	  pthread_mutex_unlock (&dnp->lock);
 	  pthread_mutex_unlock (&idport_ihash_lock);
 	  goto redo_hash_lookup;
 	}
 
       /* Otherwise, reference it right away.  */
-      np->references++;
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
+      netfs_nref (np);
 
       mach_port_deallocate (mach_task_self (), idport);
 
@@ -405,7 +415,6 @@ netfs_S_dir_lookup (struct protid *diruser,
     }
   else
     {
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
       err = new_node (file, idport, 1, flags & (O_RDWR|O_EXEC), &np);
       pthread_mutex_unlock (&dnp->lock);
       if (!err)

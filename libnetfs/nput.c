@@ -23,15 +23,24 @@
 void
 netfs_nput (struct node *np)
 {
-  pthread_spin_lock (&netfs_node_refcnt_lock);
-  assert (np->references);
-  np->references--;
-  if (np->references == 0)
+  struct references result;
+
+  refcounts_demote (&np->refcounts, &result);
+
+  if (result.hard == 0)
+    netfs_try_dropping_softrefs (np);
+
+  refcounts_deref_weak (&np->refcounts, &result);
+
+  if (result.hard == 0 && result.weak == 0)
     netfs_drop_node (np);
-    /* netfs_drop_node drops netfs_node_refcnt_lock for us.  */
   else
-    {
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
-      pthread_mutex_unlock (&np->lock);
-    }
+    pthread_mutex_unlock (&np->lock);
+}
+
+/* The last hard reference to NP has gone away; the user must define
+   this function in order to drop all the soft references.  */
+void __attribute__ ((weak))
+netfs_try_dropping_softrefs (struct node *np)
+{
 }

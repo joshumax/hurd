@@ -84,10 +84,7 @@ netfs_node_norefs (struct node *node)
 {
   struct netnode *nn = node->nn;
 
-  /* Ftpfs_detach_node does ref count frobbing (of other nodes), so we have
-     to unlock NETFS_NODE_REFCNT_LOCK during it.  */
-  node->references++;
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
+  netfs_nref (node);
 
   /* Remove NODE from any entry it is attached to.  */
   ftpfs_detach_node (node);
@@ -108,7 +105,4 @@ netfs_node_norefs (struct node *node)
 
   free (nn);
   free (node);
-
-  /* Caller expects us to leave this locked... */
-  pthread_spin_lock (&netfs_node_refcnt_lock);
 }

@@ -24,8 +24,6 @@
 /* For safe inlining of netfs_node_netnode and netfs_netnode_node.  */
 size_t const _netfs_sizeof_struct_node = sizeof (struct node);
 
-pthread_spinlock_t netfs_node_refcnt_lock = PTHREAD_SPINLOCK_INITIALIZER;
-
 struct node *netfs_root_node = 0;
 struct port_bucket *netfs_port_bucket = 0;
 struct port_class *netfs_protid_class = 0;

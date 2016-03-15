@@ -49,6 +49,8 @@ static struct hurd_ihash nodehash =
                               + offsetof (struct netnode, slot), NULL, NULL,
                               ihash_hash, ihash_compare);
 
+pthread_mutex_t nodehash_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
+
 /* Lookup the file handle HANDLE in the hash table.  If it is
    not present, initialize a new node structure and insert it into the
    hash table.  Whichever course, a new reference is generated and the
@@ -60,12 +62,12 @@ lookup_fhandle (struct fhandle *handle, struct node **npp)
   struct node *np;
   struct netnode *nn;
 
-  pthread_spin_lock (&netfs_node_refcnt_lock);
+  pthread_mutex_lock (&nodehash_ihash_lock);
   np = hurd_ihash_find (&nodehash, (hurd_ihash_key_t) handle);
   if (np)
     {
-      np->references++;
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
+      netfs_nref (np);
+      pthread_mutex_unlock (&nodehash_ihash_lock);
       pthread_mutex_lock (&np->lock);
       *npp = np;
       return;
@@ -84,9 +86,9 @@ lookup_fhandle (struct fhandle *handle, struct node **npp)
   nn->dead_name = 0;
   
   hurd_ihash_add (&nodehash, (hurd_ihash_key_t) &nn->handle, np);
+  netfs_nref_light (np);
+  pthread_mutex_unlock (&nodehash_ihash_lock);
   pthread_mutex_lock (&np->lock);
-
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
   
   *npp = np;
 }
@@ -114,9 +116,7 @@ forked_node_delete (void *arg)
 };
 
 /* Called by libnetfs when node NP has no more references.  (See
-   <hurd/libnetfs.h> for details.  Just clear its local state and
-   remove it from the hash table.  Called and expected to leave with
-   NETFS_NODE_REFCNT_LOCK held.  */
+   <hurd/libnetfs.h> for details.  */
 void
 netfs_node_norefs (struct node *np)
 {
@@ -129,8 +129,7 @@ netfs_node_norefs (struct node *np)
       args = malloc (sizeof (struct fnd));
       assert (args);
 
-      np->references++;
-      pthread_spin_unlock (&netfs_node_refcnt_lock);
+      netfs_nref (np);
 
       args->dir = np->nn->dead_dir;
       args->name = np->nn->dead_name;
@@ -149,17 +148,24 @@ netfs_node_norefs (struct node *np)
 	  errno = err;
 	  perror ("pthread_create");
 	}
-
-      /* Caller expects us to leave this locked... */
-      pthread_spin_lock (&netfs_node_refcnt_lock);
     }
   else
     {
-      hurd_ihash_locp_remove (&nodehash, np->nn->slot);
       if (np->nn->dtrans == SYMLINK)
-	free (np->nn->transarg.name);
+        free (np->nn->transarg.name);
       free (np);
     }
+}
+
+/* When dropping soft refs, we simply remove the node from the
+   node cache.  */
+void
+netfs_try_dropping_softrefs (struct node *np)
+{
+  pthread_mutex_lock (&nodehash_ihash_lock);
+  hurd_ihash_locp_remove (&nodehash, np->nn->slot);
+  netfs_nrele_light (np);
+  pthread_mutex_unlock (&nodehash_ihash_lock);
 }
 
 /* Change the file handle used for node NP to be the handle at P.
@@ -179,7 +185,7 @@ recache_handle (int *p, struct node *np)
     }
   
   /* Unlink it */
-  pthread_spin_lock (&netfs_node_refcnt_lock);
+  pthread_mutex_lock (&nodehash_ihash_lock);
   hurd_ihash_locp_remove (&nodehash, np->nn->slot);
 
   /* Change the name */
@@ -189,6 +195,6 @@ recache_handle (int *p, struct node *np)
   /* Reinsert it */
   hurd_ihash_add (&nodehash, (hurd_ihash_key_t) &np->nn->handle, np);
   
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
+  pthread_mutex_unlock (&nodehash_ihash_lock);
   return p + len / sizeof (int);
 }

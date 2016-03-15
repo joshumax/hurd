@@ -1267,7 +1267,10 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
      one we just got; if so, we must give this file another link
      so that when we delete the one we are asked for it doesn't go
      away entirely. */
-  if (np->references > 1)
+  struct references result;
+  refcounts_references (&np->refcounts, &result);
+
+  if (result.hard > 1)
     {
       char *newname = 0;
       int n = 0;

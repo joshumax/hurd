@@ -415,47 +415,51 @@ new_node (struct node **np, vcons_t vcons, vcons_node_type type)
 
 /* Node management.  */
 
+/* We need to drop the soft references on NP.  */
+void
+netfs_try_dropping_softrefs (struct node *np)
+{
+  vcons_t vcons = np->nn->vcons;
+  int release = FALSE;
+
+  pthread_mutex_lock (&vcons->lock);
+  if (np == vcons->dir_node)
+    {
+      release = TRUE;
+      vcons->dir_node = 0;
+    }
+  else if (np == vcons->cons_node)
+    {
+      release = TRUE;
+      vcons->cons_node = 0;
+    }
+  else if (np == vcons->disp_node)
+    {
+      release = TRUE;
+      vcons->disp_node = 0;
+    }
+  else if (np == vcons->inpt_node)
+    {
+      release = TRUE;
+      vcons->inpt_node = 0;
+    }
+  if (release)
+    netfs_nrele_light (np);
+  pthread_mutex_unlock (&vcons->lock);
+
+  /* Release our reference.  */
+  if (release)
+    vcons_release (vcons);
+
+}
+
 /* Node NP has no more references; free all its associated
    storage.  */
 void
 netfs_node_norefs (struct node *np)
 {
-  vcons_t vcons = np->nn->vcons;
-
   /* The root node does never go away.  */
   assert (!np->nn->cons && np->nn->vcons);
-
-  /* Avoid deadlock.  */
-  pthread_spin_unlock (&netfs_node_refcnt_lock);
-
-  /* Find the back reference to ourself in the virtual console
-     structure, and delete it.  */
-  pthread_mutex_lock (&vcons->lock);
-  pthread_spin_lock (&netfs_node_refcnt_lock);
-  if (np->references)
-    {
-      /* Someone else got a reference while we were attempting to go
-	 away.  This can happen in netfs_attempt_lookup.  In this
-	 case, just unlock the node and do nothing else.  */
-      pthread_mutex_unlock (&vcons->lock);
-      pthread_mutex_unlock (&np->lock);
-      return;
-    }
-  if (np == vcons->dir_node)
-    vcons->dir_node = 0;
-  else if (np == vcons->cons_node)
-    vcons->cons_node = 0;
-  else if (np == vcons->disp_node)
-    vcons->disp_node = 0;
-  else
-    {
-      assert (np == vcons->inpt_node);
-      vcons->inpt_node = 0;
-    }
-  pthread_mutex_unlock (&vcons->lock);
-
-  /* Release our reference.  */
-  vcons_release (vcons);
 
   free (np->nn);
   free (np);
@@ -634,7 +638,10 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	     the virtual console.  */
 	  err = new_node (node, vcons, VCONS_NODE_DIR);
 	  if (!err)
-	    vcons->dir_node = *node;
+            {
+              vcons->dir_node = *node;
+              netfs_nref_light (*node);
+            }
 	  else
 	    release_vcons = 1;
 	}
@@ -663,6 +670,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->cons_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
@@ -682,6 +690,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->disp_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
@@ -701,6 +710,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	      if (!err)
 		{
 		  vcons->inpt_node = *node;
+                  netfs_nref_light (*node);
 		  ref_vcons = 1;
 		}
 	    }
