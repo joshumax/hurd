@@ -349,16 +349,16 @@ serverprefix SERVERPREFIX;
 type data_t = array[] of char;
 type string_t = c_string[1024]; /* XXX */
 type io_statbuf_t = struct[32] of int;
-type uid_t = unsigned32;
-type gid_t = unsigned32;
-type mode_t = unsigned32;
-type retry_type = unsigned32;
-type pid_t = int32;
-type wait_status_t = int32;
-type loff_t = int64;
-type ino64_t = int64;
-type file_changed_type_t = unsigned32;
-type dir_changed_type_t = unsigned32;
+type uid_t = uint32_t;
+type gid_t = uint32_t;
+type mode_t = uint32_t;
+type retry_type = uint32_t;
+type pid_t = int32_t;
+type wait_status_t = int32_t;
+type loff_t = int64_t;
+type ino64_t = int64_t;
+type file_changed_type_t = uint32_t;
+type dir_changed_type_t = uint32_t;
 
 type portarray_t = array[] of mach_port_send_t;
 type intarray_t = array[] of int;

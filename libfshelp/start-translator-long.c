@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <string.h>
 #include <assert.h>
 #include "fshelp.h"
@@ -107,7 +108,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
     {
       union
       {
-	unsigned32_t word;
+        uint32_t word;
 	mach_msg_type_t type;
       } t, c;
       t.type = *type;
