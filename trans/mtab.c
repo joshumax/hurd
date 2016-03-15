@@ -344,7 +344,7 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   error_t err = 0;
 
   /* These resources are freed in the epilogue.	 */
-  file_t node = MACH_PORT_NULL;
+  file_t node = MACH_PORT_NULL, underlying_node = MACH_PORT_NULL;
   char *argz = NULL;
   size_t argz_len = 0;
   char **argv = NULL;
@@ -357,19 +357,19 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   char *children = NULL;
   size_t children_len = 0;
 
+  /* Get the underlying node.  */
+  underlying_node = file_name_lookup (path, O_NOTRANS, 0666);
+  if (underlying_node == MACH_PORT_NULL)
+    {
+      err = errno;
+      goto errout;
+    }
+
   if (! insecure)
     {
-      /* Get the underlying node.  */
-      node = file_name_lookup (path, O_NOTRANS, 0666);
-      if (node == MACH_PORT_NULL)
-        {
-          err = errno;
-          goto errout;
-        }
-
       /* Check who owns the node the translator is bound to.  */
       io_statbuf_t st;
-      err = io_stat (node, &st);
+      err = io_stat (underlying_node, &st);
       if (err)
 	goto errout;
 
@@ -378,8 +378,6 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 	  err = EPERM;
 	  goto errout;
 	}
-
-      mach_port_deallocate (mach_task_self (), node);
     }
 
   /* (Re-)do the lookup without O_NOTRANS to get the root node.  */
@@ -397,7 +395,7 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
     }
 
   /* Avoid running in circles.  */
-  if (mtab_mark_as_seen (mtab, node))
+  if (mtab_mark_as_seen (mtab, underlying_node))
     {
       err = 0;
       goto errout;
@@ -509,6 +507,8 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
       }
 
  errout:
+  if (underlying_node != MACH_PORT_NULL)
+    mach_port_deallocate (mach_task_self (), underlying_node);
   if (node != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), node);
 
