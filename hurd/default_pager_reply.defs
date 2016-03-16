@@ -15,3 +15,5 @@ skip;				/* default_pager_paging_storage */
 simpleroutine default_pager_object_set_size_reply(
 		reply_port: mach_port_send_once_t;
 		RETURN_CODE_ARG);
+
+skip;				/* default_pager_storage_info */

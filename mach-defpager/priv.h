@@ -51,6 +51,7 @@ typedef unsigned int	bm_entry_t;
  */
 struct part {
 	pthread_mutex_t	p_lock;		/* for bitmap/free */
+	char		*name;		/* name */
 	vm_size_t	total_size;	/* total number of blocks */
 	vm_size_t	free;		/* number of blocks free */
 	unsigned int	id;		/* named lookup */

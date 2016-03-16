@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <argp.h>
+#include <argz.h>
 #include <error.h>
 #include <assert.h>
 #include <sys/mman.h>
@@ -42,7 +43,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (swapoff);
 const char *argp_program_version = STANDARD_HURD_VERSION (swapon);
 #endif
 
-static int ignore_signature, require_signature, quiet, ifexists;
+static int ignore_signature, require_signature, show, quiet, ifexists;
 
 static struct argp_option options[] =
 {
@@ -54,6 +55,8 @@ static struct argp_option options[] =
    "Do not check for a Linux swap signature page"},
   {"require-signature", 's', 0, 0,
    "Require a Linux swap signature page"},
+  {"show", 'S', 0, 0,
+   "Show devices currently in use"},
   {"silent",     'q', 0,      0, "Print only diagnostic messages"},
   {"quiet",      'q', 0,      OPTION_ALIAS | OPTION_HIDDEN },
   {"verbose",    'v', 0,      0, "Be verbose"},
@@ -81,6 +84,39 @@ static char *doc =
      verbose ("%s: Linux 2.2 swap signature v1, %zuk swap-space" fmt, \
 	      name, freepages * (LINUX_PAGE_SIZE / 1024) ,##arg)
 
+
+static mach_port_t def_pager = MACH_PORT_NULL;
+static mach_port_t dev_master = MACH_PORT_NULL;
+
+static void get_def_pager(void)
+{
+  int err;
+  mach_port_t host;
+
+  if (def_pager != MACH_PORT_NULL)
+    return;
+
+  err = get_privileged_ports (&host, &dev_master);
+  if (err == EPERM)
+    {
+      /* We are not root, so try opening the /servers node.  */
+      def_pager = file_name_lookup (_SERVERS_DEFPAGER, O_WRITE, 0);
+      if (def_pager == MACH_PORT_NULL)
+	  error (11, errno, _SERVERS_DEFPAGER);
+    }
+  else
+    {
+      if (err)
+	error (12, err, "Cannot get privileged ports");
+
+      err = vm_set_default_memory_manager (host, &def_pager);
+      mach_port_deallocate (mach_task_self (), host);
+      if (err)
+	error (13, err, "Cannot get default pager port");
+      if (def_pager == MACH_PORT_NULL)
+	error (14, 0, "No default pager (memory manager) is running!");
+    }
+}
 
 /* Examine the store in *STOREP to see if it has a Linux-compatible
    swap signature page as created by the Linux `mkswap' utility.  If
@@ -326,8 +362,6 @@ swaponoff (const char *file, int add, int skipnotexisting)
 {
   error_t err;
   struct store *store;
-  static mach_port_t def_pager = MACH_PORT_NULL;
-  static mach_port_t dev_master = MACH_PORT_NULL;
   static int old_protocol;
   int quiet_now = 0;
 
@@ -384,34 +418,7 @@ swaponoff (const char *file, int add, int skipnotexisting)
       return EINVAL;
     }
 
-  if (def_pager == MACH_PORT_NULL)
-    {
-      mach_port_t host;
-
-      err = get_privileged_ports (&host, &dev_master);
-      if (err == EPERM)
-	{
-	  /* We are not root, so try opening the /servers node.  */
-	  def_pager = file_name_lookup (_SERVERS_DEFPAGER, O_WRITE, 0);
-	  if (def_pager == MACH_PORT_NULL)
-	    {
-	      error (11, errno, _SERVERS_DEFPAGER);
-	      return 0;
-	    }
-	}
-      else
-	{
-	  if (err)
-	    error (12, err, "Cannot get privileged ports");
-
-	  err = vm_set_default_memory_manager (host, &def_pager);
-	  mach_port_deallocate (mach_task_self (), host);
-	  if (err)
-	    error (13, err, "Cannot get default pager port");
-	  if (def_pager == MACH_PORT_NULL)
-	    error (14, 0, "No default pager (memory manager) is running!");
-	}
-    }
+  get_def_pager();
 
   if (old_protocol)
     {
@@ -487,6 +494,10 @@ main (int argc, char *argv[])
 	  ignore_signature = 0;
 	  break;
 
+	case 'S':
+	  show = 1;
+	  break;
+
 	case 'q':
 	  quiet = 1;
 	  break;
@@ -545,6 +556,40 @@ main (int argc, char *argv[])
 	  else if (err)
 	    return 1;
 	}
+    }
+
+  if (show)
+    {
+      vm_size_t *free = NULL;
+      size_t nfree = 0;
+      vm_size_t *size = NULL;
+      size_t nsize = 0;
+      char *names = NULL, *name;
+      size_t names_len = 0;
+      size_t i;
+      int err;
+
+      get_def_pager();
+
+      err = default_pager_storage_info (def_pager, &free, &nfree, &size, &nsize,
+					&names, &names_len);
+      if (err)
+	error (3, 0, "Can not get default pager storage information");
+
+      printf("Filename\tType\t\tSize\tUsed\tPriority\n");
+      name = names;
+      for (i = 0; i < nfree; i++)
+	{
+	  printf ("/dev/%s\tpartition\t%zuM\t%zuM\t-1\n",
+	  	  name, size[i] >> 20, (size[i] - free[i]) >> 20);
+	  name = argz_next (names, names_len, name);
+	}
+
+      vm_deallocate (mach_task_self(), (vm_offset_t) free,
+		     nfree * sizeof(*free));
+      vm_deallocate (mach_task_self(), (vm_offset_t) size,
+		     nsize * sizeof(*size));
+      vm_deallocate (mach_task_self(), (vm_offset_t) names, names_len);
     }
 
   return 0;

@@ -164,6 +164,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	mach_msg_type_number_t rsize;
 	int rc;
 	unsigned int id = part_id(name);
+	unsigned int n = strlen(name);
 
 	pthread_mutex_lock(&all_partitions.lock);
 	{
@@ -185,6 +186,8 @@ new_partition (const char *name, struct file_direct *fdp,
 
 	part = (partition_t) kalloc(sizeof(struct part));
 	pthread_mutex_init(&part->p_lock, NULL);
+	part->name	= (char*) kalloc(n + 1);
+	strcpy(part->name, name);
 	part->total_size = size;
 	part->free	= size;
 	part->id	= id;
@@ -333,6 +336,7 @@ new_partition (const char *name, struct file_direct *fdp,
 			    name);
 		    vm_deallocate(mach_task_self(), raddr, rsize);
 		    kfree(part->bitmap, bmsize);
+		    kfree(part->name, strlen(part->name) + 1);
 		    kfree(part, sizeof *part);
 		    return 0;
 		  }
@@ -384,6 +388,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		    "SKIPPING %s (%uk partition)!",
 		    name, part->total_size * (vm_page_size / 1024));
 	    kfree(part->bitmap, bmsize);
+	    kfree(part->name, strlen(part->name) + 1);
 	    kfree(part, sizeof *part);
 	    part = 0;
 	  }
@@ -1905,6 +1910,7 @@ dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 		set_partition_of(pindex, 0);
 		*pp_private = part->file;
 		kfree(part->bitmap, howmany(part->total_size, NB_BM) * sizeof(bm_entry_t));
+		kfree(part->name, strlen(part->name) + 1);
 		kfree(part, sizeof(struct part));
 		dprintf("%s Removed paging partition %s\n", my_name, name);
 		return KERN_SUCCESS;
@@ -3221,6 +3227,100 @@ S_default_pager_info (mach_port_t pager,
 	infop->dpi_free_space = ptoa(free);
 	infop->dpi_page_size = vm_page_size;
 	return KERN_SUCCESS;
+}
+
+kern_return_t
+S_default_pager_storage_info (mach_port_t pager,
+			      vm_size_array_t *size,
+			      mach_msg_type_number_t *sizeCnt,
+			      vm_size_array_t *free,
+			      mach_msg_type_number_t *freeCnt,
+			      data_t *name,
+			      mach_msg_type_number_t *nameCnt)
+{
+	int		i, n, m;
+	int		len = 0;
+	char		*names;
+	kern_return_t	kr;
+	vm_offset_t	addr;
+	vm_size_array_t	osize = *size;
+	vm_size_array_t	ofree = *free;
+	data_t		oname = *name;
+
+	if (pager != default_pager_default_port)
+		return KERN_INVALID_ARGUMENT;
+
+	pthread_mutex_lock(&all_partitions.lock);
+
+	n = all_partitions.n_partitions;
+
+	len = 0;
+	m = 0;
+	for (i = 0; i < n; i++) {
+		partition_t part = partition_of(i);
+		if (part == 0)
+			continue;
+		m++;
+		len += strlen(part->name) + 1;
+	}
+
+	if (*sizeCnt < m)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(m * sizeof(*size)), TRUE);
+		if (kr != KERN_SUCCESS);
+			goto nomemory;
+		*size = (vm_size_array_t) addr;
+	}
+	*sizeCnt = m;
+
+	if (*freeCnt < m)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(m * sizeof(*free)), TRUE);
+		if (kr != KERN_SUCCESS);
+			goto nomemory;
+		*free = (vm_size_array_t) addr;
+	}
+	*freeCnt = m;
+
+	if (*nameCnt < len)
+	{
+		kr = vm_allocate(default_pager_self, &addr,
+				 round_page(len), TRUE);
+		if (kr != KERN_SUCCESS);
+			goto nomemory;
+		*name = (data_t) addr;
+	}
+	*nameCnt = len;
+
+	names = *name;
+	for (i = 0; i < n; i++) {
+		partition_t part = partition_of(i);
+		if (part == 0)
+			continue;
+
+		(*size)[i] = ptoa(part->total_size);
+		(*free)[i] = ptoa(part->free);
+		names = stpcpy(names, part->name) + 1;
+	}
+
+	pthread_mutex_unlock(&all_partitions.lock);
+
+	return KERN_SUCCESS;
+
+nomemory:
+	pthread_mutex_unlock(&all_partitions.lock);
+	if (*size != osize)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *size,
+				     round_page(m * sizeof(*size)));
+	if (*free != ofree)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *free,
+				     round_page(m * sizeof(*free)));
+	if (*name != oname)
+		(void) vm_deallocate(default_pager_self, (vm_offset_t) *name,
+				     len);
+	return KERN_RESOURCE_SHORTAGE;
 }
 
 kern_return_t

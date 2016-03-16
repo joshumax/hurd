@@ -98,3 +98,12 @@ routine default_pager_object_set_size(
 		memory_object		: memory_object_t;
        msgseqno seqno			: mach_port_seqno_t;
 		object_size_limit	: vm_size_t);
+
+routine default_pager_storage_info(
+		default_pager		: mach_port_t;
+	out	size			: vm_size_array_t =
+			array[] of vm_size_t, dealloc;
+	out	free			: vm_size_array_t =
+			array[] of vm_size_t, dealloc;
+	out	name			: data_t);
+

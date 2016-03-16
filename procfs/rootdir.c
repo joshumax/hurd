@@ -21,6 +21,7 @@
 #include <mach/vm_param.h>
 #include <mach/vm_statistics.h>
 #include <mach/vm_cache_statistics.h>
+#include "default_pager_U.h"
 #include <mach/default_pager.h>
 #include <mach_debug/mach_debug_types.h>
 #include <hurd/paths.h>
@@ -521,6 +522,56 @@ rootdir_gc_filesystems (void *hook, char **contents, ssize_t *contents_len)
   fclose (m);
   return err;
 }
+
+static error_t
+rootdir_gc_swaps (void *hook, char **contents, ssize_t *contents_len)
+{
+  mach_port_t defpager;
+  error_t err = 0;
+  FILE *m;
+  vm_size_t *free = NULL;
+  size_t nfree = 0;
+  vm_size_t *size = NULL;
+  size_t nsize = 0;
+  char *names = NULL, *name;
+  size_t names_len = 0;
+  size_t i;
+
+  m = open_memstream (contents, (size_t *) contents_len);
+  if (m == NULL)
+    return errno;
+
+  defpager = file_name_lookup (_SERVERS_DEFPAGER, O_READ, 0);
+  if (defpager == MACH_PORT_NULL)
+    {
+      err = errno;
+      goto out_fclose;
+    }
+
+  err = default_pager_storage_info (defpager, &free, &nfree, &size, &nsize,
+				    &names, &names_len);
+  if (err)
+    goto out;
+
+  fprintf(m, "Filename\tType\t\tSize\tUsed\tPriority\n");
+  name = names;
+  for (i = 0; i < nfree; i++)
+    {
+      fprintf (m, "/dev/%s\tpartition\t%zu\t%zu\t-1\n",
+	       name, size[i] >> 10, (size[i] - free[i]) >> 10);
+      name = argz_next (names, names_len, name);
+    }
+
+  vm_deallocate (mach_task_self(), (vm_offset_t) free, nfree * sizeof(*free));
+  vm_deallocate (mach_task_self(), (vm_offset_t) size, nsize * sizeof(*size));
+  vm_deallocate (mach_task_self(), (vm_offset_t) names, names_len);
+
+out:
+  mach_port_deallocate (mach_task_self (), defpager);
+out_fclose:
+  fclose (m);
+  return err;
+}
 
 /* Glue logic and entries table */
 
@@ -700,6 +751,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "filesystems",
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_filesystems,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "swaps",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_swaps,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },

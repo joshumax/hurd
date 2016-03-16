@@ -21,8 +21,10 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #define _DEFAULT_PAGER_TYPES_H
 
 #include <mach/std_types.h>		/* For mach_port_t et al. */
+#include <mach/machine/vm_types.h>	/* For vm_size_t.  */
 #include <device/device_types.h>	/* For recnum_t.  */
 
 typedef recnum_t *recnum_array_t;
+typedef vm_size_t *vm_size_array_t;
 
 #endif
