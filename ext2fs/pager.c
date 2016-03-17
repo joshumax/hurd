@@ -914,7 +914,7 @@ disk_cache_init (void)
   /* Initialize disk_cache_info.  Start with the last entry so that
      the first ends up at the front of the free list.  This keeps the
      assertions at the end of this function happy.  */
-  for (int i = disk_cache_blocks; i >= 0; i--)
+  for (int i = disk_cache_blocks - 1; i >= 0; i--)
     {
       disk_cache_info[i].block = DC_NO_BLOCK;
       disk_cache_info[i].flags = 0;
