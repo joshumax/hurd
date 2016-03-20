@@ -21,9 +21,9 @@ makemode := server
 
 target = pflocal
 
-SRCS = connq.c io.c pflocal.c socket.c pf.c sock.c sserver.c
+SRCS = connq.c io.c fs.c pflocal.c socket.c pf.c sock.c sserver.c
 
-MIGSTUBS = ioServer.o socketServer.o
+MIGSTUBS = ioServer.o fsServer.o socketServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 HURDLIBS = pipe trivfs iohelp fshelp ports ihash shouldbeinlibc
 LDLIBS = -lpthread

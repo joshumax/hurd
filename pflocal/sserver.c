@@ -33,6 +33,7 @@ static int sock_server_active = 0;
 static pthread_spinlock_t sock_server_active_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 #include "io_S.h"
+#include "fs_S.h"
 #include "socket_S.h"
 #include "../libports/interrupt_S.h"
 #include "../libports/notify_S.h"
@@ -43,6 +44,7 @@ sock_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   mig_routine_t routine;
   if ((routine = io_server_routine (inp)) ||
+      (routine = fs_server_routine (inp)) ||
       (routine = socket_server_routine (inp)) ||
       (routine = ports_interrupt_server_routine (inp)) ||
       (routine = ports_notify_server_routine (inp)))
