@@ -64,6 +64,8 @@ static struct argp_option options[] =
   {"exclusive",   'x', 0, 0, "Only set the translator if there is not one already"},
   {"orphan",      'o', 0, 0, "Disconnect old translator from the filesystem "
 			     "(do not ask it to go away)"},
+  {"underlying",  'U', "NODE", 0, "Open NODE and hand it to the translator "
+				  "as the underlying node"},
 
   {"chroot",      'C', 0, 0,
    "Instead of setting the node's translator, take following arguments up to"
@@ -157,6 +159,7 @@ main(int argc, char *argv[])
   char *pid_file = NULL;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
+  char *underlying_node_name = NULL;
   char **chroot_command = 0;
   char *chroot_chdir = "/";
 
@@ -202,6 +205,11 @@ main(int argc, char *argv[])
 	  break;
 
 	case 'o': orphan = 1; break;
+	case 'U':
+	  underlying_node_name = strdup (arg);
+	  if (underlying_node_name == NULL)
+	    error(3, ENOMEM, "Failed to duplicate argument");
+	  break;
 
 	case 'C':
 	  if (chroot_command)
@@ -330,7 +338,20 @@ main(int argc, char *argv[])
 	      return open_err;
 	    }
 
-	  *underlying = node;
+	  if (underlying_node_name)
+	    {
+	      *underlying = file_name_lookup (underlying_node_name,
+					      flags | lookup_flags, 0666);
+	      if (! MACH_PORT_VALID (*underlying))
+		{
+		  /* For the error message.  */
+		  node_name = underlying_node_name;
+		  open_err = errno;
+		  return open_err;
+		}
+	    }
+	  else
+	    *underlying = node;
 	  *underlying_type = MACH_MSG_TYPE_COPY_SEND;
 
 	  return 0;
