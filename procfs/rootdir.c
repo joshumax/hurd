@@ -557,7 +557,7 @@ rootdir_gc_swaps (void *hook, char **contents, ssize_t *contents_len)
   name = names;
   for (i = 0; i < nfree; i++)
     {
-      fprintf (m, "/dev/%s\tpartition\t%zu\t%zu\t-1\n",
+      fprintf (m, "%s\tpartition\t%zu\t%zu\t-1\n",
 	       name, size[i] >> 10, (size[i] - free[i]) >> 10);
       name = argz_next (names, names_len, name);
     }
