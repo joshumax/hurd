@@ -571,7 +571,7 @@ main (int argc, char *argv[])
 
       get_def_pager();
 
-      err = default_pager_storage_info (def_pager, &free, &nfree, &size, &nsize,
+      err = default_pager_storage_info (def_pager, &size, &nsize, &free, &nfree,
 					&names, &names_len);
       if (err)
 	error (3, 0, "Can not get default pager storage information");

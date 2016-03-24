@@ -548,7 +548,7 @@ rootdir_gc_swaps (void *hook, char **contents, ssize_t *contents_len)
       goto out_fclose;
     }
 
-  err = default_pager_storage_info (defpager, &free, &nfree, &size, &nsize,
+  err = default_pager_storage_info (defpager, &size, &nsize, &free, &nfree,
 				    &names, &names_len);
   if (err)
     goto out;
