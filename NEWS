@@ -1,3 +1,22 @@
+Version 0.8 (2016-04-XX)
+
+The netfs library is using the lockless reference-counting primitives
+for both peropen and node objects now, and the global reference
+counting lock has been removed.
+
+The integer hashing library gained a new interface to use non-integer
+keys.  It is now used in libdiskfs' and nfs' node cache, and the ftpfs
+translator.
+
+Several bugs in our native fakeroot tool have been fixed improving
+stability and correctness of the translation.
+
+The devnode translator and the 'hurd-slab' library have been merged.
+
+The code has been cleaned up, and we fixed numerous bugs, most notably
+a crash in pfinet, a locking bug in libdiskfs, and an out-of-bounds
+access in ext2fs' block cache.
+
 Version 0.7 (2015-10-31)
 
 The node cache in ext2fs has been improved, generalized, and moved to
