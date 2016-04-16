@@ -88,6 +88,44 @@ static char *args_doc = "NODE [TRANSLATOR ARG...]";
 static char *doc = "Set the passive/active translator on NODE."
 "\vBy default the passive translator is set.";
 
+/* Authentication of the current process.  */
+uid_t *uids;
+gid_t *gids;
+size_t uids_len, gids_len;
+
+/* Initialize and populate the uids and gids vectors.  */
+error_t
+get_credentials (void)
+{
+  /* Fetch uids...  */
+  uids_len = geteuids (0, 0);
+  if (uids_len < 0)
+    return errno;
+
+  uids = malloc (uids_len * sizeof (uid_t));
+  if (! uids)
+    return ENOMEM;
+
+  uids_len = geteuids (uids_len, uids);
+  if (uids_len < 0)
+    return errno;
+
+  /* ... and gids.  */
+  gids_len = getgroups (0, 0);
+  if (gids_len < 0)
+    return errno;
+
+  gids = malloc (gids_len * sizeof (gid_t));
+  if (! uids)
+    return ENOMEM;
+
+  gids_len = getgroups (gids_len, gids);
+  if (gids_len < 0)
+    return errno;
+
+  return 0;
+}
+
 /* ---------------------------------------------------------------- */
 
 int
@@ -340,9 +378,14 @@ main(int argc, char *argv[])
 	  mach_port_t root;
 	  file_t executable;
 	  char *prefixed_name;
+
+	  err = get_credentials ();
+	  if (err)
+	    error (6, err, "getting credentials");
+
 	  err = fsys_getroot (active_control,
 			      MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
-			      NULL, 0, NULL, 0, 0,
+			      uids, uids_len, gids, gids_len, 0,
 			      &do_retry, retry_name, &root);
 	  mach_port_deallocate (mach_task_self (), active_control);
 	  if (err)
