@@ -28,6 +28,7 @@ struct port_bucket *pager_bucket;
 
 /* Mapped image of the disk */
 void *disk_image;
+size_t disk_image_len;
 
 
 /* Implement the pager_read_page callback from the pager library.  See
@@ -148,6 +149,7 @@ create_disk_pager (void)
   upi->np = 0;
   pager_bucket = ports_create_bucket ();
   diskfs_start_disk_pager (upi, pager_bucket, 1, 0, store->size, &disk_image);
+  disk_image_len = store->size;
   upi->p = diskfs_disk_pager;
 }
 

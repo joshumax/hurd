@@ -75,6 +75,7 @@ char *mounted_on;
 
 /* Mapped image of disk */
 void *disk_image;
+size_t disk_image_len;
 
 /* Processed sblock info */
 

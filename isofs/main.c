@@ -72,17 +72,13 @@ static void
 read_sblock ()
 {
   struct voldesc *vd;
-  error_t err;
   struct sblock * volatile sb = 0;
-
-  err = diskfs_catch_exception ();
-  if (err)
-    error (4, err, "reading superblock");
 
   /* Start at logical sector 16 and keep going until
      we find a matching superblock */
   for (vd = disk_image + (logical_sector_size * 16);
-       (void *) vd < disk_image + (logical_sector_size * 500); /* for sanity */
+       (void *) vd < disk_image + (logical_sector_size * 500) /* for sanity */
+         && (void *) vd + logical_sector_size < disk_image + disk_image_len;
        vd = (void *) vd + logical_sector_size)
     {
       if (vd->type == VOLDESC_END)
@@ -105,7 +101,6 @@ read_sblock ()
   if (!sblock)
     error (1, errno, "Could not allocate memory for superblock");
   memcpy (sblock, sb, sizeof (struct sblock));
-  diskfs_end_catch_exception ();
 
   /* Parse some important bits of this */
   logical_block_size = isonum_723 (sblock->blksize);
