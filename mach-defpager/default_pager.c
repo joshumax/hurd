@@ -3268,7 +3268,7 @@ S_default_pager_storage_info (mach_port_t pager,
 	{
 		kr = vm_allocate(default_pager_self, &addr,
 				 round_page(m * sizeof(*size)), TRUE);
-		if (kr != KERN_SUCCESS);
+		if (kr != KERN_SUCCESS)
 			goto nomemory;
 		*size = (vm_size_array_t) addr;
 	}
@@ -3278,7 +3278,7 @@ S_default_pager_storage_info (mach_port_t pager,
 	{
 		kr = vm_allocate(default_pager_self, &addr,
 				 round_page(m * sizeof(*free)), TRUE);
-		if (kr != KERN_SUCCESS);
+		if (kr != KERN_SUCCESS)
 			goto nomemory;
 		*free = (vm_size_array_t) addr;
 	}
@@ -3288,7 +3288,7 @@ S_default_pager_storage_info (mach_port_t pager,
 	{
 		kr = vm_allocate(default_pager_self, &addr,
 				 round_page(len), TRUE);
-		if (kr != KERN_SUCCESS);
+		if (kr != KERN_SUCCESS)
 			goto nomemory;
 		*name = (data_t) addr;
 	}
