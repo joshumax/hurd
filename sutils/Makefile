@@ -38,6 +38,6 @@ $(progs): %: %.o ../libshouldbeinlibc/libshouldbeinlibc.a
 
 install: $(prefix)/dev/MAKEDEV
 $(prefix)/dev/MAKEDEV: $(prefix)/dev
-	ln -s ../sbin/MAKEDEV $@
+	ln -sf ../sbin/MAKEDEV $@
 $(prefix)/dev:
 	@$(MKINSTALLDIRS) $@
