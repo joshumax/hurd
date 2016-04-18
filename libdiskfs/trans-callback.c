@@ -20,6 +20,7 @@
 
 #include "priv.h"
 #include <fcntl.h>
+#include <hurd/fshelp.h>
 
 /* Callback function needed for calls to fshelp_fetch_root.  See
    <hurd/fshelp.h> for the interface description.  */
@@ -56,6 +57,7 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
 				 mach_msg_type_name_t *underlying_type)
 {
   struct node *np = cookie1;
+  struct fshelp_stat_cookie2 *statc = cookie2;
   struct protid *cred;
   struct peropen *po;
   error_t err;
@@ -66,7 +68,7 @@ _diskfs_translator_callback2_fn (void *cookie1, void *cookie2,
   if (err)
     return err;
 
-  err = diskfs_make_peropen (np, flags, cookie2, &po);
+  err = diskfs_make_peropen (np, flags, statc->next, &po);
   if (! err)
     {
       err = diskfs_create_protid (po, user, &cred);

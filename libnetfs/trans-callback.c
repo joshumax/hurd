@@ -20,6 +20,7 @@
 
 #include "priv.h"
 #include <fcntl.h>
+#include <hurd/fshelp.h>
 
 /* Callback function needed for calls to fshelp_fetch_root.  See
    <hurd/fshelp.h> for the interface description.  */
@@ -57,6 +58,7 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
   error_t err;
   struct protid *cred;
   struct node *node = cookie1;
+  struct fshelp_stat_cookie2 *statc = cookie2;
   struct iouser *user;
   struct peropen *po;
 
@@ -65,7 +67,7 @@ _netfs_translator_callback2_fn (void *cookie1, void *cookie2, int flags,
   if (err)
     return err;
 
-  po = netfs_make_peropen (node, flags, cookie2);
+  po = netfs_make_peropen (node, flags, statc->next);
   if (! po)
     {
       err = errno;

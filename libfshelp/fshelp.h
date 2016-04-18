@@ -148,6 +148,22 @@ typedef error_t (*fshelp_fetch_root_callback1_t) (void *cookie1, void *cookie2,
 						  uid_t *uid, gid_t *gid,
 						  char **argz, size_t *argz_len);
 
+/* A cookie for fshelp_short_circuited_callback1.  Such a structure
+   must be passed to the call to fshelp_fetch_root.  */
+struct fshelp_stat_cookie2
+{
+  io_statbuf_t *statp;
+  mode_t *modep;
+  void *next;
+};
+
+/* A callback function for short-circuited translators.  S_ISLNK and
+   S_IFSOCK must be handled elsewhere.  */
+error_t fshelp_short_circuited_callback1 (void *cookie1, void *cookie2,
+					  uid_t *uid, gid_t *gid,
+					  char **argz, size_t *argz_len);
+
+
 /* This routine is called by fshelp_fetch_root to fetch more information.
    Return an unauthenticated node for the file itself in *UNDERLYING and
    *UNDERLYING_TYPE (opened with FLAGS).  COOKIE1 is the cookie passed in

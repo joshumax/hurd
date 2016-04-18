@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/file.h>
+#include <hurd/fshelp.h>
 #include <hurd/fsys.h>
 #include <hurd/paths.h>
 
@@ -225,43 +226,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  mach_port_t dirport;
 	  struct iouser *user;
 
-	  /* A callback function for short-circuited translators.
-	     S_ISLNK and S_IFSOCK are handled elsewhere.  */
-	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
-					     uid_t *uid, gid_t *gid,
-					     char **argz, size_t *argz_len)
-	    {
-	      struct node *node = cookie1;
-
-	      switch (node->dn_stat.st_mode & S_IFMT)
-		{
-		case S_IFCHR:
-		case S_IFBLK:
-		  if (asprintf (argz, "%s%c%d%c%d",
-				(S_ISCHR (node->dn_stat.st_mode)
-				 ? _HURD_CHRDEV : _HURD_BLKDEV),
-				0, major (node->dn_stat.st_rdev),
-				0, minor (node->dn_stat.st_rdev)) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  break;
-		case S_IFIFO:
-		  if (asprintf (argz, "%s", _HURD_FIFO) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  break;
-		default:
-		  return ENOENT;
-		}
-
-	      *uid = node->dn_stat.st_uid;
-	      *gid = node->dn_stat.st_gid;
-
-	      return 0;
-	    }
-
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  err = iohelp_create_empty_iouser (&user);
@@ -292,14 +256,21 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  boolean_t register_translator =
 	    np->transbox.active == MACH_PORT_NULL;
 
-	  err = fshelp_fetch_root (&np->transbox, dircred->po,
-				     dirport, dircred->user,
-				     lastcomp ? flags : 0,
-				     ((np->dn_stat.st_mode & S_IPTRANS)
-				      ? _diskfs_translator_callback1
-				      : short_circuited_callback1),
-				     _diskfs_translator_callback2,
-				     do_retry, retry_name, retry_port);
+	  struct fshelp_stat_cookie2 cookie = {
+	    .statp = &np->dn_stat,
+	    .modep = &np->dn_stat.st_mode,
+	    .next = dircred->po,
+	  };
+	  err = fshelp_fetch_root (&np->transbox,
+				   &cookie,
+				   dirport,
+				   dircred->user,
+				   lastcomp ? flags : 0,
+				   ((np->dn_stat.st_mode & S_IPTRANS)
+				    ? _diskfs_translator_callback1
+				    : fshelp_short_circuited_callback1),
+				   _diskfs_translator_callback2,
+				   do_retry, retry_name, retry_port);
 
 	  /* fetch_root copies DIRPORT for success, so we always should
 	     deallocate our send right.  */

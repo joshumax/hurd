@@ -207,48 +207,6 @@ netfs_S_dir_lookup (struct protid *dircred,
 	{
 	  mach_port_t dirport;
 
-	  /* A callback function for short-circuited translators.
-	     S_ISLNK and S_IFSOCK are handled elsewhere. */
-	  error_t short_circuited_callback1 (void *cookie1, void *cookie2,
-					     uid_t *uid, gid_t *gid,
-					     char **argz, size_t *argz_len)
-	    {
-	      struct node *np = cookie1;
-	      error_t err;
-
-	      err = netfs_validate_stat (np, dircred->user);
-	      if (err)
-		return err;
-
-	      switch (np->nn_translated & S_IFMT)
-		{
-		case S_IFCHR:
-		case S_IFBLK:
-		  if (asprintf (argz, "%s%c%d%c%d",
-				(S_ISCHR (np->nn_translated)
-				 ? _HURD_CHRDEV : _HURD_BLKDEV),
-				0, major (np->nn_stat.st_rdev),
-				0, minor (np->nn_stat.st_rdev)) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  *argz_len += strlen (*argz + *argz_len) + 1;
-		  break;
-		case S_IFIFO:
-		  if (asprintf (argz, "%s", _HURD_FIFO) < 0)
-		    return ENOMEM;
-		  *argz_len = strlen (*argz) + 1;
-		  break;
-		default:
-		  return ENOENT;
-		}
-
-	      *uid = np->nn_stat.st_uid;
-	      *gid = np->nn_stat.st_gid;
-
-	      return 0;
-	    }
-
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
 	  err = iohelp_create_empty_iouser (&user);
@@ -267,6 +225,12 @@ netfs_S_dir_lookup (struct protid *dircred,
 	  boolean_t register_translator = 0;
 	  if (! err)
 	    {
+	      struct fshelp_stat_cookie2 cookie = {
+		.statp = &np->nn_stat,
+		.modep = &np->nn_translated,
+		.next = dircred->po,
+	      };
+
 	      dirport = ports_get_send_right (newpi);
 
 	      /* Check if an active translator is currently running.  If
@@ -275,13 +239,14 @@ netfs_S_dir_lookup (struct protid *dircred,
 		 translators.  */
 	      register_translator = np->transbox.active == MACH_PORT_NULL;
 
-	      err = fshelp_fetch_root (&np->transbox, dircred->po,
+	      err = fshelp_fetch_root (&np->transbox,
+				       &cookie,
 				       dirport,
 				       dircred->user,
 				       lastcomp ? flags : 0,
 				       ((np->nn_translated & S_IPTRANS)
 					? _netfs_translator_callback1
-					: short_circuited_callback1),
+					: fshelp_short_circuited_callback1),
 				       _netfs_translator_callback2,
 				       do_retry, retry_name, retry_port);
 	      /* fetch_root copies DIRPORT for success, so we always should

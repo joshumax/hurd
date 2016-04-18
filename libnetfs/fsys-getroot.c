@@ -23,6 +23,7 @@
 #include "misc.h"
 #include "callbacks.h"
 #include <fcntl.h>
+#include <hurd/fshelp.h>
 
 error_t
 netfs_S_fsys_getroot (struct netfs_control *pt,
@@ -67,8 +68,12 @@ netfs_S_fsys_getroot (struct netfs_control *pt,
        || fshelp_translated (&netfs_root_node->transbox))
       && !(flags & O_NOTRANS))
     {
+      struct fshelp_stat_cookie2 cookie = {
+	.next = &peropen_context,
+      };
+
       err = fshelp_fetch_root (&netfs_root_node->transbox,
-			       &peropen_context, dotdot, cred, flags,
+			       &cookie, dotdot, cred, flags,
 			       _netfs_translator_callback1,
 			       _netfs_translator_callback2,
 			       do_retry, retry_name, retry_port);
