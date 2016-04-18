@@ -48,7 +48,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   struct node *dnp, *np;
   char *nextname;
   char *relpath;
-  error_t error;
+  error_t err;
   struct protid *newpi = NULL;
   struct iouser *user;
 
@@ -132,7 +132,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      strcpy (retry_name, "/");
 	    else if (!lastcomp)
 	      strcpy (retry_name, nextname);
-	    error = 0;
+	    err = 0;
 	    pthread_mutex_unlock (&dnp->lock);
 	    goto out;
 	  }
@@ -148,40 +148,40 @@ netfs_S_dir_lookup (struct protid *diruser,
 	      strcpy (retry_name, "/");
 	    else if (!lastcomp)
 	      strcpy (retry_name, nextname);
-	    error = 0;
+	    err = 0;
 	    pthread_mutex_unlock (&dnp->lock);
 	    goto out;
 	  }
 	else
 	  /* We are global root */
 	  {
-	    error = 0;
+	    err = 0;
 	    np = dnp;
 	    netfs_nref (np);
 	  }
       else
 	/* Attempt a lookup on the next pathname component. */
-	error = netfs_attempt_lookup (diruser->user, dnp, filename, &np);
+	err = netfs_attempt_lookup (diruser->user, dnp, filename, &np);
 
       /* At this point, DNP is unlocked */
 
       /* Implement O_EXCL flag here */
-      if (lastcomp && create && excl && !error)
-	error = EEXIST;
+      if (lastcomp && create && excl && !err)
+	err = EEXIST;
 
       /* Create the new node if necessary */
-      if (lastcomp && create && error == ENOENT)
+      if (lastcomp && create && err == ENOENT)
 	{
 	  mode &= ~(S_IFMT | S_ISPARE | S_ISVTX);
 	  mode |= S_IFREG;
 	  pthread_mutex_lock (&dnp->lock);
-	  error = netfs_attempt_create_file (diruser->user, dnp,
-					     filename, mode, &np);
+	  err = netfs_attempt_create_file (diruser->user, dnp,
+					   filename, mode, &np);
 
 	  /* If someone has already created the file (between our lookup
 	     and this create) then we just got EEXIST.  If we are
 	     EXCL, that's fine; otherwise, we have to retry the lookup. */
-	  if (error == EEXIST && !excl)
+	  if (err == EEXIST && !excl)
 	    {
 	      pthread_mutex_lock (&dnp->lock);
 	      goto retry_lookup;
@@ -191,11 +191,11 @@ netfs_S_dir_lookup (struct protid *diruser,
 	}
 
       /* All remaining errors get returned to the user */
-      if (error)
+      if (err)
 	goto out;
 
-      error = netfs_validate_stat (np, diruser->user);
-      if (error)
+      err = netfs_validate_stat (np, diruser->user);
+      if (err)
 	goto out;
 
       if ((((flags & O_NOTRANS) == 0) || !lastcomp || mustbedir)
@@ -251,21 +251,21 @@ netfs_S_dir_lookup (struct protid *diruser,
 
 	  /* Create an unauthenticated port for DNP, and then
 	     unlock it. */
-	  error = iohelp_create_empty_iouser (&user);
-	  if (! error)
+	  err = iohelp_create_empty_iouser (&user);
+	  if (! err)
 	    {
 	      newpi = netfs_make_protid (netfs_make_peropen (dnp, 0,
 							     diruser->po),
 					 user);
 	      if (! newpi)
 	        {
-		  error = errno;
+		  err = errno;
 		  iohelp_free_iouser (user);
 		}
 	    }
 
 	  boolean_t register_translator = 0;
-	  if (! error)
+	  if (! err)
 	    {
 	      dirport = ports_get_send_right (newpi);
 
@@ -275,24 +275,24 @@ netfs_S_dir_lookup (struct protid *diruser,
 		 translators.  */
 	      register_translator = np->transbox.active == MACH_PORT_NULL;
 
-	      error = fshelp_fetch_root (&np->transbox, diruser->po,
-					 dirport,
-					 diruser->user,
-					 lastcomp ? flags : 0,
-					 ((np->nn_translated & S_IPTRANS)
-					 ? _netfs_translator_callback1
-					   : short_circuited_callback1),
-					 _netfs_translator_callback2,
-					 do_retry, retry_name, retry_port);
+	      err = fshelp_fetch_root (&np->transbox, diruser->po,
+				       dirport,
+				       diruser->user,
+				       lastcomp ? flags : 0,
+				       ((np->nn_translated & S_IPTRANS)
+					? _netfs_translator_callback1
+					: short_circuited_callback1),
+				       _netfs_translator_callback2,
+				       do_retry, retry_name, retry_port);
 	      /* fetch_root copies DIRPORT for success, so we always should
 		 deallocate our send right.  */
 	      mach_port_deallocate (mach_task_self (), dirport);
 	    }
 
-	  if (error != ENOENT)
+	  if (err != ENOENT)
 	    {
 	      *retry_port_type = MACH_MSG_TYPE_MOVE_SEND;
-	      if (!error)
+	      if (!err)
 		{
 		  char *end = strchr (retry_name, '\0');
 		  if (mustbedir)
@@ -326,12 +326,12 @@ netfs_S_dir_lookup (struct protid *diruser,
 		  else
 		      asprintf (&complete_path, "%s/%s", diruser->po->path, translator_path);
 
-		  error = fshelp_set_active_translator (&newpi->pi,
-							complete_path,
-							np->transbox.active);
+		  err = fshelp_set_active_translator (&newpi->pi,
+						      complete_path,
+						      np->transbox.active);
 		  if (complete_path != translator_path)
 		    free(complete_path);
-		  if (error)
+		  if (err)
 		    {
 		      ports_port_deref (newpi);
 		      goto out;
@@ -346,7 +346,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 
 	  /* ENOENT means there was a hiccup, and the translator vanished
 	     while NP was unlocked inside fshelp_fetch_root; continue as normal. */
-	  error = 0;
+	  err = 0;
 	}
 
       if (S_ISLNK (np->nn_translated)
@@ -360,7 +360,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  /* Handle symlink interpretation */
 	  if (nsymlinks++ > netfs_maxsymlinks)
 	    {
-	      error = ELOOP;
+	      err = ELOOP;
 	      goto out;
 	    }
 
@@ -370,8 +370,8 @@ netfs_S_dir_lookup (struct protid *diruser,
 	  newnamelen = nextnamelen + linklen + 1 + 1;
 	  linkbuf = alloca (newnamelen);
 
-	  error = netfs_attempt_readlink (diruser->user, np, linkbuf);
-	  if (error)
+	  err = netfs_attempt_readlink (diruser->user, np, linkbuf);
+	  if (err)
 	    goto out;
 
 	  if (nextname)
@@ -436,19 +436,19 @@ netfs_S_dir_lookup (struct protid *diruser,
       netfs_validate_stat (np, diruser->user);
       if (!S_ISDIR (np->nn_stat.st_mode))
 	{
-	  error = ENOTDIR;
+	  err = ENOTDIR;
 	  goto out;
 	}
     }
-  error = netfs_check_open_permissions (diruser->user, np,
-					flags, newnode);
-  if (error)
+  err = netfs_check_open_permissions (diruser->user, np,
+				      flags, newnode);
+  if (err)
     goto out;
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  error = iohelp_dup_iouser (&user, diruser->user);
-  if (error)
+  err = iohelp_dup_iouser (&user, diruser->user);
+  if (err)
     goto out;
 
   newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
@@ -456,7 +456,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (! newpi)
     {
       iohelp_free_iouser (user);
-      error = errno;
+      err = errno;
       goto out;
     }
 
@@ -474,7 +474,7 @@ netfs_S_dir_lookup (struct protid *diruser,
     }
 
   if (! newpi->po->path)
-    error = errno;
+    err = errno;
 
   *retry_port = ports_get_right (newpi);
   ports_port_deref (newpi);
@@ -485,5 +485,5 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (dnp)
     netfs_nrele (dnp);
   free (relpath);
-  return error;
+  return err;
 }
