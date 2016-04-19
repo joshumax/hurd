@@ -291,12 +291,13 @@ diskfs_start_bootstrap ()
 		   /* Supply no intarray, since we have no info for it.
 		      With none supplied, it will use the defaults.  */
 		   NULL, 0, 0, 0, 0, 0);
+  if (err)
+    error (1, err, "Executing '%s'", exec_argv);
   free (exec_argv);
   free (exec_env);
   mach_port_deallocate (mach_task_self (), root_pt);
   mach_port_deallocate (mach_task_self (), startup_pt);
   mach_port_deallocate (mach_task_self (), bootpt);
-  assert_perror (err);
 }
 
 /* We look like an execserver to the execserver itself; it makes this
