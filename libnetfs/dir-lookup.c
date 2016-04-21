@@ -125,16 +125,29 @@ netfs_S_dir_lookup (struct protid *dircred,
 	if (dnp == dircred->po->shadow_root)
 	  /* We're at the root of a shadow tree.  */
 	  {
-	    *do_retry = FS_RETRY_REAUTH;
-	    *retry_port = dircred->po->shadow_root_parent;
-	    *retry_port_type = MACH_MSG_TYPE_COPY_SEND;
-	    if (lastcomp && mustbedir) /* Trailing slash.  */
-	      strcpy (retry_name, "/");
-	    else if (!lastcomp)
-	      strcpy (retry_name, nextname);
-	    err = 0;
-	    pthread_mutex_unlock (&dnp->lock);
-	    goto out;
+	    if (dircred->po->shadow_root_parent == MACH_PORT_NULL)
+	      {
+		/* This is a shadow root with no parent, meaning
+		   we should treat it as a virtual root disconnected
+		   from its real .. directory.	*/
+		err = 0;
+		np = dnp;
+		netfs_nref (np);
+	      }
+	    else
+	      {
+		/* Punt the client up to the shadow root parent.  */
+		*do_retry = FS_RETRY_REAUTH;
+		*retry_port = dircred->po->shadow_root_parent;
+		*retry_port_type = MACH_MSG_TYPE_COPY_SEND;
+		if (lastcomp && mustbedir) /* Trailing slash.  */
+		  strcpy (retry_name, "/");
+		else if (!lastcomp)
+		  strcpy (retry_name, nextname);
+		err = 0;
+		pthread_mutex_unlock (&dnp->lock);
+		goto out;
+	      }
 	  }
 	else if (dircred->po->root_parent != MACH_PORT_NULL)
 	  /* We're at a real translator root; even if DIRCRED->po has a
