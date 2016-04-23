@@ -51,12 +51,16 @@
 #include <version.h>
 #include <argp.h>
 #include <pids.h>
+#include <idvec.h>
 
 #include "startup_notify_U.h"
 #include "startup_reply_U.h"
 #include "startup_S.h"
 #include "notify_S.h"
 #include "mung_msg_S.h"
+#include "fsys_S.h"
+#include "fs_S.h"
+#include "io_S.h"
 
 /* host_reboot flags for when we crash.  */
 static int crash_flags = RB_AUTOBOOT;
@@ -498,19 +502,57 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
 
 /** Main program and setup **/
 
+/* XXX: The libc should provide this function.  */
+static void
+mig_reply_setup (
+	const mach_msg_header_t	*in,
+	mach_msg_header_t	*out)
+{
+      static const mach_msg_type_t RetCodeType = {
+		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
+		/* msgt_size = */		32,
+		/* msgt_number = */		1,
+		/* msgt_inline = */		TRUE,
+		/* msgt_longform = */		FALSE,
+		/* msgt_deallocate = */		FALSE,
+		/* msgt_unused = */		0
+	};
+
+#define	InP	(in)
+#define	OutP	((mig_reply_header_t *) out)
+      OutP->Head.msgh_bits =
+	MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(InP->msgh_bits), 0);
+      OutP->Head.msgh_size = sizeof *OutP;
+      OutP->Head.msgh_remote_port = InP->msgh_remote_port;
+      OutP->Head.msgh_local_port = MACH_PORT_NULL;
+      OutP->Head.msgh_seqno = 0;
+      OutP->Head.msgh_id = InP->msgh_id + 100;
+      OutP->RetCodeType = RetCodeType;
+      OutP->RetCode = MIG_BAD_ID;
+#undef InP
+#undef OutP
+}
+
 static int
 demuxer (mach_msg_header_t *inp,
 	 mach_msg_header_t *outp)
 {
-  extern int notify_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int startup_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int msg_server (mach_msg_header_t *, mach_msg_header_t *);
-  extern int fsys_server (mach_msg_header_t *, mach_msg_header_t *);
+  mig_routine_t routine;
 
-  return (notify_server (inp, outp) ||
-	  msg_server (inp, outp) ||
-	  fsys_server (inp, outp) ||
-	  startup_server (inp, outp));
+  mig_reply_setup (inp, outp);
+
+  if ((routine = notify_server_routine (inp)) ||
+      (routine = msg_server_routine (inp)) ||
+      (routine = fsys_server_routine (inp)) ||
+      (routine = fs_server_routine (inp)) ||
+      (routine = io_server_routine (inp)) ||
+      (routine = startup_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 error_t
@@ -1702,4 +1744,50 @@ S_fsys_forward (mach_port_t server, mach_port_t requestor,
 		char *argz, size_t argz_len)
 {
   return EOPNOTSUPP;
+}
+
+error_t
+S_file_check_access (mach_port_t server,
+                     int *allowed)
+{
+  if (server != startup)
+    return EOPNOTSUPP;
+  *allowed = 0;
+  return 0;
+}
+
+error_t
+S_io_stat (mach_port_t server,
+           struct stat *st)
+{
+  if (server != startup)
+    return EOPNOTSUPP;
+
+  memset (st, 0, sizeof *st);
+
+  st->st_fstype = FSTYPE_MISC;
+  st->st_fsid = getpid ();
+  st->st_mode = S_IFCHR | S_IROOT;
+
+  return 0;
+}
+
+error_t
+S_io_restrict_auth (mach_port_t server,
+                    mach_port_t *newport,
+                    mach_msg_type_name_t *newporttype,
+                    uid_t *uids, size_t nuids,
+                    uid_t *gids, size_t ngids)
+{
+  struct idvec user = { uids, (unsigned) nuids, (unsigned) nuids };
+
+  if (server != startup)
+    return EOPNOTSUPP;
+
+  if (! idvec_contains (&user, 0))
+    return EPERM;
+
+  *newport = server;
+  *newporttype = MACH_MSG_TYPE_COPY_SEND;
+  return 0;
 }

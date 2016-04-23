@@ -21,15 +21,17 @@ makemode := server
 SRCS = startup.c
 OBJS = $(SRCS:.c=.o) \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
-       startup_notifyUser.o fsysServer.o
+       startup_notifyUser.o fsysServer.o fsServer.o ioServer.o
 target = startup
 HURDLIBS = shouldbeinlibc
 
 # startup does not use libports.  Disable the default payload to port
 # conversion.
 MIGSFLAGS="-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+fsServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
+ioServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 
 include ../Makeconf
 
 mung_msg_S.h: msg_S.h
-	sed 's/msg_server/mung_msg_server/' < $< > $@
+	sed 's/_msg_server/_mung_msg_server/' < $< > $@
