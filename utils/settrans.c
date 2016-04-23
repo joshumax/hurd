@@ -47,6 +47,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (settrans);
 #define STRINGIFY(arg) _STRINGIFY (arg)
 
 #define OPT_CHROOT_CHDIR	-1
+#define OPT_STACK		-2
 
 static struct argp_option options[] =
 {
@@ -66,6 +67,8 @@ static struct argp_option options[] =
 			     "(do not ask it to go away)"},
   {"underlying",  'U', "NODE", 0, "Open NODE and hand it to the translator "
 				  "as the underlying node"},
+  {"stack", OPT_STACK, 0, 0, "Replace an existing translator, but keep it "
+			     "running, and put the new one on top"},
 
   {"chroot",      'C', 0, 0,
    "Instead of setting the node's translator, take following arguments up to"
@@ -156,10 +159,12 @@ main(int argc, char *argv[])
   int passive = 0, active = 0, keep_active = 0, pause = 0, kill_active = 0,
       orphan = 0;
   int start = 0;
+  int stack = 0;
   char *pid_file = NULL;
   int excl = 0;
   int timeout = DEFAULT_TIMEOUT * 1000; /* ms */
   char *underlying_node_name = NULL;
+  int underlying_lookup_flags;
   char **chroot_command = 0;
   char *chroot_chdir = "/";
 
@@ -192,6 +197,11 @@ main(int argc, char *argv[])
 	case 's':
 	  start = 1;
 	  active = 1;	/* start implies active */
+	  break;
+	case OPT_STACK:
+	  stack = 1;
+	  active = 1;	/* stack implies active */
+	  orphan = 1;	/* stack implies orphan */
 	  break;
 	case 'p': passive = 1; break;
 	case 'k': keep_active = 1; break;
@@ -260,6 +270,14 @@ main(int argc, char *argv[])
   struct argp argp = {options, parse_opt, args_doc, doc};
 
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
+
+  if (stack)
+    {
+      underlying_node_name = node_name;
+      underlying_lookup_flags = lookup_flags && ~O_NOTRANS;
+    }
+  else
+    underlying_lookup_flags = lookup_flags;
 
   if (!active && !passive && !chroot_command)
     passive = 1;		/* By default, set the passive translator.  */
@@ -341,7 +359,8 @@ main(int argc, char *argv[])
 	  if (underlying_node_name)
 	    {
 	      *underlying = file_name_lookup (underlying_node_name,
-					      flags | lookup_flags, 0666);
+					      flags | underlying_lookup_flags,
+					      0666);
 	      if (! MACH_PORT_VALID (*underlying))
 		{
 		  /* For the error message.  */
