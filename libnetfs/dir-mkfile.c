@@ -37,7 +37,7 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
   if (!err)
     {
       /* the dir is now unlocked and NP is locked */
-      flags &= OPENONLY_STATE_MODES;
+      flags &= ~OPENONLY_STATE_MODES;
       err = iohelp_dup_iouser (&user, diruser->user);
       if (! err)
         {
