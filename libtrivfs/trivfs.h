@@ -30,7 +30,8 @@ struct trivfs_protid
 {
   struct port_info pi;
   struct iouser *user;
-  int isroot;
+  int isroot;			/* Opened by a privileged user, either
+				   root or our own user.  */
   /* REALNODE will be null if this protid wasn't fully created (currently
      only in the case where trivfs_protid_create_hook returns an error).  */
   mach_port_t realnode;		/* restricted permissions */

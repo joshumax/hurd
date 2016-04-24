@@ -21,6 +21,15 @@
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
+#include <idvec.h>
+#include <unistd.h>
 #include "trivfs.h"
+
+/* Returns true if UIDS contains either 0 or our user id.  */
+static inline int
+_is_privileged (struct idvec *uids)
+{
+  return idvec_contains (uids, 0) || idvec_contains (uids, getuid ());
+}
 
 #endif

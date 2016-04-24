@@ -59,8 +59,7 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
     return err;
 
   mach_port_deallocate (mach_task_self (), newright);
-  if (idvec_contains (newcred->user->uids, 0))
-    newcred->isroot = 1;
+  newcred->isroot = _is_privileged (newcred->user->uids);
 
   newcred->hook = cred->hook;
   newcred->po = cred->po;

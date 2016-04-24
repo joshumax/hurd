@@ -56,7 +56,7 @@ trivfs_open (struct trivfs_control *cntl,
       if (! err)
 	{
 	  new->user = user;
-	  new->isroot = idvec_contains (user->uids, 0);
+	  new->isroot = _is_privileged (user->uids);
 
 	  new->po = po;
 	  new->hook = 0;

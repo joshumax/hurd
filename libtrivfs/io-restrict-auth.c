@@ -109,11 +109,9 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
       return err;
     }
 
-  newcred->isroot = 0;
   newcred->po = cred->po;
   refcount_ref (&newcred->po->refcnt);
-  if (cred->isroot && idvec_contains (user->uids, 0))
-    newcred->isroot = 1;
+  newcred->isroot = cred->isroot && _is_privileged (user->uids);
   newcred->user = user;
   newcred->hook = cred->hook;
 
