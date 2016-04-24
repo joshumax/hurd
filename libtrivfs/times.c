@@ -20,29 +20,37 @@
 error_t
 trivfs_set_atime (struct trivfs_control *cntl)
 {
+  error_t err;
   struct stat st;
   time_value_t atime;
   time_value_t mtime;
-  
-  io_stat (cntl->underlying, &st);
+
+  err = io_stat (cntl->underlying, &st);
+  if (err)
+    return err;
+
   mtime.seconds = st.st_mtim.tv_sec;
   mtime.microseconds = st.st_mtim.tv_nsec / 1000;
   atime.microseconds = -1;
-  file_utimes (cntl->underlying, atime, mtime);
-  return 0;
+
+  return file_utimes (cntl->underlying, atime, mtime);
 }
 
 error_t
 trivfs_set_mtime (struct trivfs_control *cntl)
 {
+  error_t err;
   struct stat st;
   time_value_t atime;
   time_value_t mtime;
 
-  io_stat (cntl->underlying, &st);
+  err = io_stat (cntl->underlying, &st);
+  if (err)
+    return err;
+
   atime.seconds = st.st_atim.tv_sec;
   atime.microseconds = st.st_atim.tv_nsec / 1000;
   mtime.microseconds = -1;
-  file_utimes (cntl->underlying, atime, mtime);
-  return 0;
+
+  return file_utimes (cntl->underlying, atime, mtime);
 }
