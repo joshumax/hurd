@@ -134,7 +134,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
       fds[STDERR_FILENO] = reauth (getdport (STDERR_FILENO));
 
-      err = fshelp_start_translator_long (fetch_underlying, NULL,
+      err = fshelp_start_translator_long (fetch_underlying, cookie,
 					  argz, argz, argz_len,
 					  fds, MACH_MSG_TYPE_COPY_SEND,
 					  STDERR_FILENO + 1,
