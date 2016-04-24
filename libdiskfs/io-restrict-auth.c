@@ -40,7 +40,6 @@ diskfs_S_io_restrict_auth (struct protid *cred,
   if (err)
     return err;
 
-  pthread_mutex_lock (&cred->po->np->lock);
   refcount_ref (&cred->po->refcnt);
   err = diskfs_create_protid (cred->po, user, &newpi);
   if (! err)
@@ -51,7 +50,6 @@ diskfs_S_io_restrict_auth (struct protid *cred,
     }
   else
     refcount_deref (&cred->po->refcnt);
-  pthread_mutex_unlock (&cred->po->np->lock);
 
   iohelp_free_iouser (user);
   return err;
