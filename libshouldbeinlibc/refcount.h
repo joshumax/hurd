@@ -28,7 +28,7 @@
 #define REFCOUNT_EI __extern_inline
 #endif
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <limits.h>
 #include <stdint.h>
 
@@ -41,7 +41,7 @@ typedef unsigned int refcount_t;
 REFCOUNT_EI void
 refcount_init (refcount_t *ref, unsigned int references)
 {
-  assert (references > 0 || !"references must not be zero!");
+  assert_backtrace (references > 0 || !"references must not be zero!");
   *ref = references;
 }
 
@@ -57,7 +57,7 @@ refcount_unsafe_ref (refcount_t *ref)
 {
   unsigned int r;
   r = __atomic_add_fetch (ref, 1, __ATOMIC_RELAXED);
-  assert (r != UINT_MAX || !"refcount overflowed!");
+  assert_backtrace (r != UINT_MAX || !"refcount overflowed!");
   return r;
 }
 
@@ -69,7 +69,7 @@ refcount_ref (refcount_t *ref)
 {
   unsigned int r;
   r = refcount_unsafe_ref (ref);
-  assert (r != 1 || !"refcount detected use-after-free!");
+  assert_backtrace (r != 1 || !"refcount detected use-after-free!");
   return r;
 }
 
@@ -81,7 +81,7 @@ refcount_deref (refcount_t *ref)
 {
   unsigned int r;
   r = __atomic_sub_fetch (ref, 1, __ATOMIC_RELAXED);
-  assert (r != UINT_MAX || !"refcount underflowed!");
+  assert_backtrace (r != UINT_MAX || !"refcount underflowed!");
   return r;
 }
 
@@ -129,7 +129,8 @@ union _references {
 REFCOUNT_EI void
 refcounts_init (refcounts_t *ref, uint32_t hard, uint32_t weak)
 {
-  assert ((hard != 0 || weak != 0) || !"references must not both be zero!");
+  assert_backtrace ((hard != 0 || weak != 0)
+                    || !"references must not both be zero!");
   ref->references = (struct references) { .hard = hard, .weak = weak };
 }
 
@@ -147,7 +148,8 @@ refcounts_unsafe_ref (refcounts_t *ref, struct references *result)
   const union _references op = { .references = { .hard = 1 } };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.hard != UINT32_MAX || !"refcount overflowed!");
+  assert_backtrace (r.references.hard != UINT32_MAX
+                    || !"refcount overflowed!");
   if (result)
     *result = r.references;
 }
@@ -161,7 +163,7 @@ refcounts_ref (refcounts_t *ref, struct references *result)
 {
   struct references r;
   refcounts_unsafe_ref (ref, &r);
-  assert (! (r.hard == 1 && r.weak == 0)
+  assert_backtrace (! (r.hard == 1 && r.weak == 0)
           || !"refcount detected use-after-free!");
   if (result)
     *result = r;
@@ -177,7 +179,8 @@ refcounts_deref (refcounts_t *ref, struct references *result)
   const union _references op = { .references = { .hard = 1 } };
   union _references r;
   r.value = __atomic_sub_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.hard != UINT32_MAX || !"refcount underflowed!");
+  assert_backtrace (r.references.hard != UINT32_MAX
+                    || !"refcount underflowed!");
   if (result)
     *result = r.references;
 }
@@ -207,8 +210,10 @@ refcounts_promote (refcounts_t *ref, struct references *result)
     { .references = { .weak = ~0U, .hard = 1} };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.hard != UINT32_MAX || !"refcount overflowed!");
-  assert (r.references.weak != UINT32_MAX || !"refcount underflowed!");
+  assert_backtrace (r.references.hard != UINT32_MAX
+                    || !"refcount overflowed!");
+  assert_backtrace (r.references.weak != UINT32_MAX
+                    || !"refcount underflowed!");
   if (result)
     *result = r.references;
 }
@@ -235,8 +240,10 @@ refcounts_demote (refcounts_t *ref, struct references *result)
   const union _references op = { .references = { .hard = ~0U } };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.hard != UINT32_MAX || !"refcount underflowed!");
-  assert (r.references.weak != UINT32_MAX || !"refcount overflowed!");
+  assert_backtrace (r.references.hard != UINT32_MAX
+                    || !"refcount underflowed!");
+  assert_backtrace (r.references.weak != UINT32_MAX
+                    || !"refcount overflowed!");
   if (result)
     *result = r.references;
 }
@@ -255,7 +262,8 @@ refcounts_unsafe_ref_weak (refcounts_t *ref, struct references *result)
   const union _references op = { .references = { .weak = 1 } };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.weak != UINT32_MAX || !"refcount overflowed!");
+  assert_backtrace (r.references.weak != UINT32_MAX
+                    || !"refcount overflowed!");
   if (result)
     *result = r.references;
 }
@@ -269,7 +277,7 @@ refcounts_ref_weak (refcounts_t *ref, struct references *result)
 {
   struct references r;
   refcounts_unsafe_ref_weak (ref, &r);
-  assert (! (r.hard == 0 && r.weak == 1)
+  assert_backtrace (! (r.hard == 0 && r.weak == 1)
           || !"refcount detected use-after-free!");
   if (result)
     *result = r;
@@ -285,7 +293,8 @@ refcounts_deref_weak (refcounts_t *ref, struct references *result)
   const union _references op = { .references = { .weak = 1 } };
   union _references r;
   r.value = __atomic_sub_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
-  assert (r.references.weak != UINT32_MAX || !"refcount underflowed!");
+  assert_backtrace (r.references.weak != UINT32_MAX
+                    || !"refcount underflowed!");
   if (result)
     *result = r.references;
 }
