@@ -51,7 +51,7 @@ struct port_class *node_class;
 struct port_bucket *port_bucket;
 
 int trivfs_fstype = FSTYPE_IFSOCK;
-int trivfs_fsid = 0; /* ??? */
+int trivfs_fsid = 0;
 
 int trivfs_support_read = 0;
 int trivfs_support_write = 0;

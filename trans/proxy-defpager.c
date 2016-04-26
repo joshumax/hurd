@@ -286,8 +286,6 @@ main (int argc, char **argv)
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "Must be started as a translator");
 
-  trivfs_fsid = getpid ();
-
   err = trivfs_add_protid_port_class (&trivfs_protid_class);
   if (err)
     error (1, 0, "error creating protid port class");

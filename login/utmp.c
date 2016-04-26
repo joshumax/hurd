@@ -364,7 +364,7 @@ S_login_get_login_collection(file_t utmp, int *pid)
 #define PT_PROC 2		/* Our process handle. */
 
 int trivfs_fstype = FSTYPE_MISC;
-int trivfs_fsid = 0; /* ??? */
+int trivfs_fsid = 0;
 
 int trivfs_support_read = 0;
 int trivfs_support_write = 0;

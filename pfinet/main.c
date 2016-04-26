@@ -283,7 +283,6 @@ main (int argc,
   pfinet_bucket = ports_create_bucket ();
   addrport_class = ports_create_class (clean_addrport, 0);
   socketport_class = ports_create_class (clean_socketport, 0);
-  trivfs_fsid = getpid ();
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 		      &fsys_identity);
 

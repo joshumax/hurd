@@ -2284,7 +2284,9 @@ and functions:
 @deftypevarx {extern int} trivfs_fsid
 These variables are returned in the @var{st_fstype} and @var{st_fsid}
 fields of @code{struct stat}.  @var{trivfs_fstype} should be chosen
-from the @code{FSTYPE_*} constants found in @code{<hurd/hurd_types.h>}.
+from the @code{FSTYPE_*} constants found in
+@code{<hurd/hurd_types.h>}.  If @code{trivfs_fsid} is zero, trivfs
+will use the pid of the translator instead.
 @end deftypevar
 
 @deftypevar {extern int} trivfs_allow_open
