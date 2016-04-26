@@ -28,6 +28,9 @@ HURDLIBS = shouldbeinlibc
 # startup does not use libports.  Disable the default payload to port
 # conversion.
 MIGSFLAGS="-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+notify-MIGSFLAGS="-DNOTIFY_IMPORTS=import <hurd.h>;"
+notifyServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
+fsysServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 fsServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 ioServer-CFLAGS="-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 
