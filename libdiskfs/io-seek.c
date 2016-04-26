@@ -46,6 +46,14 @@ diskfs_S_io_seek (struct protid *cred,
       offset += np->dn_stat.st_size;
     case SEEK_SET:
     check:
+      /* pager_memcpy inherently uses vm_offset_t, which may be smaller than
+         off_t.  */
+      if (sizeof(off_t) > sizeof(vm_offset_t) &&
+	  offset > ((off_t) 1) << (sizeof(vm_offset_t) * 8))
+	{
+	  err = EFBIG;
+	  break;
+	}
       if (offset >= 0)
 	{
 	  *newoffset = cred->po->filepointer = offset;

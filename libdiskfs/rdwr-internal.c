@@ -58,7 +58,12 @@ _diskfs_rdwr_internal (struct node *np,
   if (memobj == MACH_PORT_NULL)
     return errno;
 
-  err = pager_memcpy (diskfs_get_filemap_pager_struct (np), memobj,
+  /* pager_memcpy inherently uses vm_offset_t, which may be smaller than off_t.  */
+  if (sizeof(off_t) > sizeof(vm_offset_t) &&
+      offset + *amt > ((off_t) 1) << (sizeof(vm_offset_t) * 8))
+    err = EFBIG;
+  else
+    err = pager_memcpy (diskfs_get_filemap_pager_struct (np), memobj,
 		      offset, data, amt, prot);
 
   if (!diskfs_check_readonly () && !notime)
