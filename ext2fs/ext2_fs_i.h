@@ -35,7 +35,6 @@ struct ext2_inode_info {
 	__u32	i_next_alloc_goal;
 	__u32	i_prealloc_block;
 	__u32	i_prealloc_count;
-	__u32	i_high_size;
 	int	i_new_inode:1;	/* Is a freshly allocated inode */
 };
 

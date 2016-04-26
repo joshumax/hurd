@@ -198,13 +198,18 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
   else
     {
       info->i_dir_acl = 0;
-      info->i_high_size = di->i_size_high;
-      if (info->i_high_size)	/* XXX */
+      if (sizeof (off_t) >= 8)
+	/* 64bit file size */
+	st->st_size += ((off_t) di->i_size_high) << 32;
+      else
 	{
-	  dino_deref (di);
-	  ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
-	  diskfs_end_catch_exception ();
-	  return EFBIG;
+	  if (di->i_size_high)	/* XXX */
+	    {
+	      dino_deref (di);
+	      ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
+	      diskfs_end_catch_exception ();
+	      return EFBIG;
+	    }
 	}
     }
   info->i_block_group = inode_group_num (np->cache_id);
@@ -426,6 +431,9 @@ write_node (struct node *np)
 	{
 	  di->i_dtime = 0;
 	  di->i_size = st->st_size;
+	  if (sizeof (off_t) >= 8 && !S_ISDIR (st->st_mode))
+	    /* 64bit file size */
+	    di->i_size_high = st->st_size >> 32;
 	  di->i_blocks = st->st_blocks;
 	}
 
