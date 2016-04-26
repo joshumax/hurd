@@ -65,6 +65,8 @@
 /* host_reboot flags for when we crash.  */
 static int crash_flags = RB_AUTOBOOT;
 
+static int verbose = 0;
+
 #define BOOT(flags)	((flags & RB_HALT) ? "halt" : "reboot")
 
 
@@ -79,6 +81,7 @@ options[] =
   {"crash-debug",  'H', 0, 0, "On system crash, go to kernel debugger"},
   {"debug",       'd', 0, 0 },
   {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
+  {"verbose",     'v', 0, 0, "be verbose"},
   {0,             'x', 0, OPTION_HIDDEN},
   {0}
 };
@@ -401,10 +404,8 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	crash_system ();
     }
 
-#if 0
-  printf ("started %s\n", prog);
-  fflush (stdout);
-#endif
+  if (verbose)
+    fprintf (stderr, "started %s\n", prog);
 
   /* Dead-name notification on the task port will tell us when it dies,
      so we can crash if we don't make it to a fully bootstrapped Hurd.  */
@@ -539,6 +540,9 @@ demuxer (mach_msg_header_t *inp,
 {
   mig_routine_t routine;
 
+  if (verbose > 1)
+    error (0, 0, "%d", inp->msgh_id);
+
   mig_reply_setup (inp, outp);
 
   if ((routine = notify_server_routine (inp)) ||
@@ -549,6 +553,9 @@ demuxer (mach_msg_header_t *inp,
       (routine = startup_server_routine (inp)))
     {
       (*routine) (inp, outp);
+
+      if (verbose > 1)
+        error (0, ((mig_reply_header_t *) outp)->RetCode, "%d", inp->msgh_id);
       return TRUE;
     }
   else
@@ -592,6 +599,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'n': bootstrap_args |= RB_INITNAME; break;
     case 'f': fakeboot = 1; break;
     case 'H': crash_flags = RB_DEBUGGER; break;
+    case 'v': verbose++; break;
     case 'x': /* NOP */ break;
     default: return ARGP_ERR_UNKNOWN;
     }
@@ -705,6 +713,9 @@ launch_core_servers (void)
   mach_port_t authproc, fsproc, procproc;
   error_t err;
 
+  if (verbose)
+    fprintf (stderr, "Launching core servers\n");
+
   /* Reply to the proc and auth servers.   */
   err = startup_procinit_reply (procreply, procreplytype, 0,
 				mach_task_self (), authserver,
@@ -716,6 +727,9 @@ launch_core_servers (void)
       mach_port_deallocate (mach_task_self (), device_master);
       device_master = 0;
     }
+
+  if (verbose)
+    fprintf (stderr, "proc launched\n");
 
   /* Mark us as important.  */
   err = proc_mark_important (procserver);
@@ -741,11 +755,17 @@ launch_core_servers (void)
     /* Good luck.  Who knows, maybe it's an old installation.  */
     error (0, err, "Failed to bind to " _SERVERS_STARTUP);
 
+  if (verbose)
+    fprintf (stderr, "Installed on /servers/startup\n");
+
   err = startup_authinit_reply (authreply, authreplytype, 0, authproc,
 				MACH_MSG_TYPE_COPY_SEND);
   assert_perror (err);
   err = mach_port_deallocate (mach_task_self (), authproc);
   assert_perror (err);
+
+  if (verbose)
+    fprintf (stderr, "auth launched\n");
 
   /* Give the library our auth and proc server ports.  */
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
@@ -785,10 +805,6 @@ launch_core_servers (void)
   err = proc_mark_exec (fsproc);
   assert_perror (err);
 
-#if 0
-  printf ("Init has completed.\n");
-  fflush (stdout);
-#endif
   printf (".\n");
   fflush (stdout);
 
@@ -803,11 +819,17 @@ launch_core_servers (void)
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
 
+  if (verbose)
+    fprintf (stderr, "Message port registered\n");
+
   /* Give the bootstrap FS its proc and auth ports.  */
   err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
   mach_port_deallocate (mach_task_self (), fsproc);
   if (err)
     error (0, err, "fsys_init"); /* Not necessarily fatal.  */
+
+  if (verbose)
+    fprintf (stderr, "Fixed up bootstrap filesystem\n");
 }
 
 /* Set up the initial value of the standard exec data. */
@@ -873,6 +895,9 @@ frob_kernel_process (void)
   vm_address_t mine, his;
   task_t task;
   process_t proc, kbs;
+
+  if (verbose)
+    fprintf (stderr, "Frobbing kernel process\n");
 
   err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
   if (err)
@@ -1094,6 +1119,9 @@ start_child (const char *prog, char **progargs)
     }
   assert_perror (err);
 
+  if (verbose)
+    fprintf (stderr, "Going to execute '%s'\n", args);
+
   file = file_name_lookup (args, O_EXEC, 0);
   if (file == MACH_PORT_NULL)
     {
@@ -1180,6 +1208,9 @@ void
 launch_system (void)
 {
   launch_something (0);
+
+  if (verbose)
+    fprintf (stderr, "Init has completed\n");
 }
 
 /** RPC servers **/
@@ -1199,6 +1230,9 @@ S_startup_procinit (startup_t server,
   if (procserver)
     /* Only one proc server.  */
     return EPERM;
+
+  if (verbose)
+    fprintf (stderr, "Received startup message from proc\n");
 
   procserver = proc;
 
@@ -1225,6 +1259,9 @@ S_startup_authinit (startup_t server,
   if (authserver)
     /* Only one auth server.  */
     return EPERM;
+
+  if (verbose)
+    fprintf (stderr, "Received startup message from auth\n");
 
   authserver = auth;
 
@@ -1258,6 +1295,10 @@ S_startup_essential_task (mach_port_t server,
   if (credential != host_priv)
     return EPERM;
 
+  if (verbose)
+    fprintf (stderr, "Received startup essential message from '%s'\n",
+             name);
+
   fail = record_essential_task (name, task);
   if (fail)
     return fail;
@@ -1276,8 +1317,13 @@ S_startup_essential_task (mach_port_t server,
       else if (!strcmp (name, "proc"))
 	procinit = 1;
 
+      if (verbose)
+        fprintf (stderr, "  still waiting for:");
+
       if (authinit && execinit && procinit)
 	{
+          if (verbose)
+            fprintf (stderr, " none!\n");
 	  /* Reply to this RPC, after that everything
 	     is ready for real startup to begin. */
 	  startup_essential_task_reply (reply, replytype, 0);
@@ -1291,6 +1337,17 @@ S_startup_essential_task (mach_port_t server,
 
 	  return MIG_NO_REPLY;
 	}
+
+      if (verbose)
+        {
+          if (! authinit)
+            fprintf (stderr, " auth");
+          if (! execinit)
+            fprintf (stderr, " exec");
+          if (! procinit)
+            fprintf (stderr, " proc");
+          fprintf (stderr, "\n");
+        }
     }
 
   return 0;
