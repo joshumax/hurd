@@ -173,17 +173,15 @@ reboot_mach (int flags)
 {
   if (fakeboot)
     {
-      printf ("%s: Would %s Mach with flags %#x\n",
-	      program_invocation_short_name, BOOT (flags), flags);
-      fflush (stdout);
+      fprintf (stderr, "%s: Would %s Mach with flags %#x\n",
+               program_invocation_short_name, BOOT (flags), flags);
       exit (1);
     }
   else
     {
       error_t err;
-      printf ("%s: %sing Mach (flags %#x)...\n",
-	      program_invocation_short_name, BOOT (flags), flags);
-      fflush (stdout);
+      fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
+               program_invocation_short_name, BOOT (flags), flags);
       sleep (5);
       while ((err = host_reboot (host_priv, flags)))
 	error (0, err, "reboot");
@@ -207,17 +205,16 @@ notify_shutdown (const char *msg)
   for (n = ntfy_tasks; n != NULL; n = n->next)
     {
       error_t err;
-      printf ("%s: notifying %s of %s...",
-	      program_invocation_short_name, n->name, msg);
-      fflush (stdout);
+      fprintf (stderr, "%s: notifying %s of %s...",
+               program_invocation_short_name, n->name, msg);
+
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err == MACH_SEND_INVALID_DEST)
-	puts ("(no longer present)");
+	fprintf (stderr, "(no longer present)\n");
       else if (err)
-	puts (strerror (err));
+	fprintf (stderr, "%s\n", strerror (err));
       else
-	puts ("done");
-      fflush (stdout);
+	fprintf (stderr, "done\n");
     }
 }
 
@@ -276,20 +273,18 @@ reboot_system (int flags)
 		}
 	      if (!(pi->state & PI_NOPARENT))
 		{
-		  printf ("%s: Killing pid %d\n",
-			  program_invocation_short_name, pp[ind]);
-		  fflush (stdout);
+		  fprintf (stderr, "%s: Killing pid %d\n",
+                           program_invocation_short_name, pp[ind]);
 		  task_terminate (task);
 		}
 	      if (noise_len > 0)
 		munmap (noise, noise_len);
 	    }
 	}
-      printf ("%s: Killing proc server\n", program_invocation_short_name);
-      fflush (stdout);
+      fprintf (stderr, "%s: Killing proc server\n",
+               program_invocation_short_name);
       task_terminate (proctask);
-      printf ("%s: Exiting", program_invocation_short_name);
-      fflush (stdout);
+      fprintf (stderr, "%s: Exiting", program_invocation_short_name);
     }
   reboot_mach (flags);
 }
@@ -359,7 +354,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
 
   if (bootstrap_args & RB_INITNAME)
     {
-      printf ("Server file name (default %s): ", server);
+      fprintf (stderr, "Server file name (default %s): ", server);
       if (getstring (buf, sizeof (buf)))
 	prog = buf;
     }
@@ -381,7 +376,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
 		       0, task);
 	  if (bootstrap_args & RB_KDB)
 	    {
-	      printf ("Pausing for %s\n", prog);
+	      fprintf (stderr, "Pausing for %s\n", prog);
 	      getchar ();
 	    }
 	  err = file_exec (file, *task, 0,
@@ -397,7 +392,8 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	  error (0, err, "%s", prog);
 	}
 
-      printf ("File name for server %s (or nothing to reboot): ", server);
+      fprintf (stderr, "File name for server %s (or nothing to reboot): ",
+               server);
       if (getstring (buf, sizeof (buf)))
 	prog = buf;
       else
@@ -405,7 +401,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
     }
 
   if (verbose)
-    fprintf (stderr, "started %s\n", prog);
+    fprintf (stderr, stderr, "started %s\n", prog);
 
   /* Dead-name notification on the task port will tell us when it dies,
      so we can crash if we don't make it to a fully bootstrapped Hurd.  */
@@ -431,7 +427,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
   char buf[512];
   do
     {
-      printf ("File name [%s]: ", filename);
+      fprintf (stderr, "File name [%s]: ", filename);
       if (getstring (buf, sizeof (buf)) && *buf)
 	filename = buf;
       file = file_name_lookup (filename, O_EXEC, 0);
@@ -467,7 +463,7 @@ run_for_real (char *filename, char *args, int arglen, mach_port_t ctty,
     }
   if (bootstrap_args & RB_KDB)
     {
-      printf ("Pausing for %s\n", filename);
+      fprintf (stderr, "Pausing for %s\n", filename);
       getchar ();
     }
   progname = strrchr (filename, '/');
@@ -690,11 +686,11 @@ main (int argc, char **argv, char **envp)
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask);
-  printf (" proc");
-  fflush (stdout);
+  if (! verbose)
+    fprintf (stderr, " proc");
   run ("/hurd/auth", default_ports, &authtask);
-  printf (" auth");
-  fflush (stdout);
+  if (! verbose)
+    fprintf (stderr, " auth");
   default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
 
   /* Wait for messages.  When both auth and proc have started, we
@@ -805,8 +801,7 @@ launch_core_servers (void)
   err = proc_mark_exec (fsproc);
   assert_perror (err);
 
-  printf (".\n");
-  fflush (stdout);
+  fprintf (stderr, ".\n");
 
   /* Tell the proc server our msgport.  Be sure to do this after we are all
      done making requests of proc.  Once we have done this RPC, proc
@@ -1141,7 +1136,7 @@ start_child (const char *prog, char **progargs)
 
   if (bootstrap_args & RB_KDB)
     {
-      printf ("Pausing for %s\n", args);
+      fprintf (stderr, "Pausing for %s\n", args);
       getchar ();
     }
 
