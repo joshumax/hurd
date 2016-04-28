@@ -289,7 +289,7 @@ hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
       || item == NULL
       || item->value == _HURD_IHASH_DELETED
       || ! compare (ht, item->key, key)
-      || hurd_ihash_get_load (ht) > ht->max_load)
+      || hurd_ihash_get_effective_load (ht) > ht->max_load)
     return hurd_ihash_add (ht, key, value);
 
   if (item->value == _HURD_IHASH_EMPTY)
@@ -331,17 +331,19 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
   if (ht->size)
     {
       /* Only fill the hash table up to its maximum load factor.  */
-      if (hurd_ihash_get_load (ht) <= ht->max_load)
+      if (hurd_ihash_get_effective_load (ht) <= ht->max_load)
       add_one:
 	if (add_one (ht, key, item))
 	  return 0;
     }
 
-  /* The hash table is too small, and we have to increase it.  */
+  /* If the load exceeds the configured maximal load, then the hash
+     table is too small, and we have to increase it.  Otherwise we
+     merely rehash the table to get rid of the tombstones.  */
   ht->nr_items = 0;
   if (ht->size == 0)
       ht->size = HURD_IHASH_MIN_SIZE;
-  else
+  else if (hurd_ihash_get_load (&old_ht) > ht->max_load)
       ht->size <<= 1;
   ht->nr_free = ht->size;
 
