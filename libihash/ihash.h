@@ -113,6 +113,9 @@ struct hurd_ihash
   /* User-supplied functions for the generalized key interface.  */
   hurd_ihash_fct_hash_t fct_hash;
   hurd_ihash_fct_cmp_t fct_cmp;
+
+  /* Number of free slots.  */
+  size_t nr_free;
 };
 typedef struct hurd_ihash *hurd_ihash_t;
 
@@ -225,6 +228,14 @@ hurd_ihash_get_load (hurd_ihash_t ht)
   return d >= 0 ? ht->nr_items >> d : ht->nr_items << -d;
 }
 
+/* Similar, but counts tombstones as well.  */
+static inline unsigned int
+hurd_ihash_get_effective_load (hurd_ihash_t ht)
+{
+  int d = __builtin_ctzl (ht->size) - 7;
+  return
+    d >= 0 ? (ht->size - ht->nr_free) >> d : (ht->size - ht->nr_free) << -d;
+}
 
 /* Add ITEM to the hash table HT under the key KEY.  If there already
    is an item under this key, call the cleanup function (if any) for

@@ -131,6 +131,7 @@ hurd_ihash_init (hurd_ihash_t ht, intptr_t locp_offs)
   ht->cleanup = 0;
   ht->fct_hash = NULL;
   ht->fct_cmp = NULL;
+  ht->nr_free = 0;
 }
 
 
@@ -246,6 +247,11 @@ add_one (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t value)
   if (index_empty (ht, idx))
     {
       ht->nr_items++;
+      if (ht->items[idx].value == _HURD_IHASH_EMPTY)
+        {
+          assert (ht->nr_free > 0);
+          ht->nr_free--;
+        }
       ht->items[idx].value = value;
       ht->items[idx].key = key;
 
@@ -290,6 +296,8 @@ hurd_ihash_locp_add (hurd_ihash_t ht, hurd_ihash_locp_t locp,
     {
       item->key = key;
       ht->nr_items += 1;
+      assert (ht->nr_free > 0);
+      ht->nr_free -= 1;
     }
   else
     {
@@ -335,6 +343,7 @@ hurd_ihash_add (hurd_ihash_t ht, hurd_ihash_key_t key, hurd_ihash_value_t item)
       ht->size = HURD_IHASH_MIN_SIZE;
   else
       ht->size <<= 1;
+  ht->nr_free = ht->size;
 
   /* calloc() will initialize all values to _HURD_IHASH_EMPTY implicitly.  */
   ht->items = calloc (ht->size, sizeof (struct _hurd_ihash_item));
