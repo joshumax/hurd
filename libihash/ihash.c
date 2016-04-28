@@ -81,15 +81,9 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
 
   idx = hash (ht, key) & mask;
 
-  if (ht->items[idx].value == _HURD_IHASH_EMPTY
-      || compare (ht, ht->items[idx].key, key))
-    return idx;
-
   up_idx = idx;
-
   do
     {
-      up_idx = (up_idx + 1) & mask;
       if (ht->items[up_idx].value == _HURD_IHASH_EMPTY)
         return first_deleted_set ? first_deleted : up_idx;
       if (compare (ht, ht->items[up_idx].key, key))
@@ -97,6 +91,7 @@ find_index (hurd_ihash_t ht, hurd_ihash_key_t key)
       if (! first_deleted_set
           && ht->items[up_idx].value == _HURD_IHASH_DELETED)
         first_deleted = up_idx, first_deleted_set = 1;
+      up_idx = (up_idx + 1) & mask;
     }
   while (up_idx != idx);
 
