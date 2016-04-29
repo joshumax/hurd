@@ -418,7 +418,10 @@ hurd_ihash_locp_find (hurd_ihash_t ht,
   int idx;
 
   if (ht->size == 0)
-    return NULL;
+    {
+      *slot = NULL;
+      return NULL;
+    }
 
   idx = find_index (ht, key);
   *slot = &ht->items[idx].value;
