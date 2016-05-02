@@ -29,6 +29,7 @@
 #include <argp.h>
 #include <argz.h>
 #include <sys/mman.h>
+#include <assert.h>
 
 #include <version.h>
 
