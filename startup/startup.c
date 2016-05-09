@@ -401,7 +401,7 @@ run (const char *server, mach_port_t *ports, task_t *task)
     }
 
   if (verbose)
-    fprintf (stderr, stderr, "started %s\n", prog);
+    fprintf (stderr, "started %s\n", prog);
 
   /* Dead-name notification on the task port will tell us when it dies,
      so we can crash if we don't make it to a fully bootstrapped Hurd.  */
