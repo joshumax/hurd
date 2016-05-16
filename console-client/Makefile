@@ -1,6 +1,7 @@
 #
 #   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2004,
-#   2005, 2008, 2010 Free Software Foundation, Inc.
+#   2005, 2008, 2010, 2011, 2012, 2013, 2014, 2015, 2016 Free Software
+#   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -91,7 +92,7 @@ $(module-dir)/%: %
 # You can use this rule to make a dynamically-loadable version of any
 # of the modules.
 %.so.$(hurd-version): 
-	$(CC) -shared -Wl,-soname=$@ -o $@ $(rpath) \
+	$(CC) -shared -Wl,-soname=$@ -o $@ $(lpath) \
 		$(CFLAGS) $($*-CFLAGS) $(LDFLAGS) \
 		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
 

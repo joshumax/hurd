@@ -1,6 +1,7 @@
 # Makefile for libstore
 #
-#   Copyright (C) 1995,96,97,2001,02 Free Software Foundation, Inc.
+#   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2002, 2010, 2012, 2013, 2014,
+#   2016 Free Software Foundation, Inc.
 #   Written by Miles Bader <miles@gnu.org>
 #
 #   This file is part of the GNU Hurd.
@@ -73,7 +74,7 @@ libstore_bunzip2.so.$(hurd-version): $(BUNZIP2_OBJS:.o=_pic.o)
 # just include all the standard store types in libstore.so itself.
 libstore_%.so.$(hurd-version): %_pic.o libstore.so
 	$(CC) -shared -Wl,-soname=$@ -o $@ \
-	      $(rpath) $(CFLAGS) $(LDFLAGS) $(libstore_$*.so-LDFLAGS) $^
+	      $(lpath) $(CFLAGS) $(LDFLAGS) $(libstore_$*.so-LDFLAGS) $^
 
 # Each libstore_TYPE.a is in fact an object file script so that `-lstore_TYPE'
 # just has the same effect as `-u store_TYPE_class'.
