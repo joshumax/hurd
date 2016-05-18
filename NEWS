@@ -1,4 +1,4 @@
-Version 0.8 (2016-04-XX)
+Version 0.8 (2016-05-18)
 
 The netfs library is using the lockless reference-counting primitives
 for both peropen and node objects now, and the global reference
@@ -11,7 +11,8 @@ translator.
 Several bugs in our native fakeroot tool have been fixed improving
 stability and correctness of the translation.
 
-The devnode translator and the 'hurd-slab' library have been merged.
+The devnode translator and the hurd-slab library have been merged into this
+repository.
 
 The code has been cleaned up, and we fixed numerous bugs, most notably
 a crash in pfinet, a locking bug in libdiskfs, and an out-of-bounds
