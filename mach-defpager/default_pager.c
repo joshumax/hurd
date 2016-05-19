@@ -3007,7 +3007,7 @@ default_pager_thread(void *arg)
 		kr = mach_msg_server(default_pager_demux_object,
 				     default_pager_msg_size_object,
 				     pset);
-		panic(my_name, kr);
+		panic("%s%s", my_name, strerror (kr));
 	}
 }
 
