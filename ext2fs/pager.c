@@ -817,8 +817,7 @@ pager_clear_user_data (struct user_pager_info *upi)
 
       pthread_spin_lock (&node_to_page_lock);
       pager = diskfs_node_disknode (upi->node)->pager;
-      if (pager && pager_get_upi (pager) == upi)
-	diskfs_node_disknode (upi->node)->pager = 0;
+      assert (!pager || pager_get_upi (pager) != upi);
       pthread_spin_unlock (&node_to_page_lock);
 
       diskfs_nrele_light (upi->node);
@@ -831,8 +830,21 @@ pager_clear_user_data (struct user_pager_info *upi)
    The pager library creates no weak references itself.  If the user doesn't
    either, then it's OK for this function to do nothing.  */
 void
-pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
+pager_dropweak (struct user_pager_info *upi)
 {
+  if (upi->type == FILE_DATA)
+    {
+      struct pager *pager;
+
+      pthread_spin_lock (&node_to_page_lock);
+      pager = diskfs_node_disknode (upi->node)->pager;
+      if (pager && pager_get_upi (pager) == upi)
+	{
+	  diskfs_node_disknode (upi->node)->pager = NULL;
+	  ports_port_deref_weak (pager);
+	}
+      pthread_spin_unlock (&node_to_page_lock);
+    }
 }
 
 /* Cached blocks from disk.  */
@@ -1298,15 +1310,9 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
       struct pager *pager = diskfs_node_disknode (node)->pager;
       if (pager)
 	{
-	  /* Because PAGER is not a real reference,
-	     this might be nearly deallocated.  If that's so, then
-	     the port right will be null.  In that case, clear here
-	     and loop.  The deallocation will complete separately. */
 	  right = pager_get_port (pager);
-	  if (right == MACH_PORT_NULL)
-	    diskfs_node_disknode (node)->pager = 0;
-  	  else
-  	    pager_get_upi (pager)->max_prot |= prot;
+	  assert (MACH_PORT_VALID (right));
+	  pager_get_upi (pager)->max_prot |= prot;
 	}
       else
 	{
@@ -1326,6 +1332,9 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	      pthread_spin_unlock (&node_to_page_lock);
 	      return MACH_PORT_NULL;
 	    }
+
+	  /* A weak reference for being part of the node.  */
+	  ports_port_ref_weak (diskfs_node_disknode (node)->pager);
 
 	  right = pager_get_port (diskfs_node_disknode (node)->pager);
 	  ports_port_deref (diskfs_node_disknode (node)->pager);
