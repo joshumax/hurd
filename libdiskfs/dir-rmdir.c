@@ -25,7 +25,7 @@ diskfs_S_dir_rmdir (struct protid *dircred,
 		    char *name)
 {
   struct node *dnp;
-  struct node *np;
+  struct node *np = NULL;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t error;
 
