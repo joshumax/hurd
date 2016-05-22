@@ -128,7 +128,6 @@ pager_clear_user_data (struct user_pager_info *upi)
       pthread_spin_unlock (&node2pagelock);
       diskfs_nrele_light (upi->np);
     }
-  free (upi);
 }
 
 void
@@ -176,19 +175,20 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   do
     if (!np->dn->fileinfo)
       {
-	upi = malloc (sizeof (struct user_pager_info));
-	upi->type = FILE_DATA;
-	upi->np = np;
-	diskfs_nref_light (np);
-	upi->p = pager_create (upi, pager_bucket, 1,
-			       MEMORY_OBJECT_COPY_DELAY, 0);
-	if (upi->p == 0)
+        struct pager *p;
+        p = pager_create_alloc (sizeof *upi, pager_bucket, 1,
+                                MEMORY_OBJECT_COPY_DELAY, 0);
+	if (p == NULL)
 	  {
 	    diskfs_nrele_light (np);
-	    free (upi);
 	    pthread_spin_unlock (&node2pagelock);
 	    return MACH_PORT_NULL;
 	  }
+	upi = pager_get_upi (p);
+	upi->type = FILE_DATA;
+	upi->np = np;
+	diskfs_nref_light (np);
+	upi->p = p;
 	np->dn->fileinfo = upi;
 	right = pager_get_port (np->dn->fileinfo->p);
 	ports_port_deref (np->dn->fileinfo->p);

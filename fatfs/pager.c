@@ -747,8 +747,6 @@ pager_clear_user_data (struct user_pager_info *upi)
       
       diskfs_nrele_light (upi->node);
     }
-  
-  free (upi);
 }
 
 /* This will be called when the ports library wants to drop weak
@@ -839,22 +837,21 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
         }
       else
         {
-          struct user_pager_info *upi =
-            malloc (sizeof (struct user_pager_info));
+          struct user_pager_info *upi;
+          node->dn->pager =
+            pager_create_alloc (sizeof *upi, file_pager_bucket, MAY_CACHE,
+                                MEMORY_OBJECT_COPY_DELAY, 0);
+          if (node->dn->pager == NULL)
+            {
+              diskfs_nrele_light (node);
+              pthread_spin_unlock (&node_to_page_lock);
+              return MACH_PORT_NULL;
+            }
+          upi = pager_get_upi (node->dn->pager);
           upi->type = FILE_DATA;
           upi->node = node;
           upi->max_prot = prot;
           diskfs_nref_light (node);
-          node->dn->pager =
-            pager_create (upi, file_pager_bucket, MAY_CACHE,
-                          MEMORY_OBJECT_COPY_DELAY, 0);
-          if (node->dn->pager == 0)
-            {
-              diskfs_nrele_light (node);
-              free (upi);
-              pthread_spin_unlock (&node_to_page_lock);
-              return MACH_PORT_NULL;
-            }
 
           right = pager_get_port (node->dn->pager);
           ports_port_deref (node->dn->pager);

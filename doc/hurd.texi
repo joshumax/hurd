@@ -1410,6 +1410,11 @@ create references to pagers by use of the relevant ports library
 functions.  On errors, return null and set @code{errno}.
 @end deftypefun
 
+@deftypefun {struct pager *} pager_create_alloc (@w{size_t @var{u_pager_size}}, @w{struct port_bucket *@var{bucket}}, @w{boolean_t @var{may_cache}}, @w{memory_object_copy_strategy_t @var{copy_strategy}})
+Likewise, but allocate space for the user hook adjacent to the pager
+data.
+@end deftypefun
+
 Once you are ready to turn over control to the pager library, you should
 call @code{ports_manage_port_operations_multithread} on the
 @var{bucket}, using @code{pager_demuxer} as the ports @var{demuxer}.

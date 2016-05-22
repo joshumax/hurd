@@ -69,6 +69,14 @@ pager_create (struct user_pager_info *u_pager,
 	      memory_object_copy_strategy_t copy_strategy,
 	      boolean_t notify_on_evict);
 
+/* Likewise, but also allocate space for the user hook.  */
+struct pager *
+pager_create_alloc (size_t u_pager_size,
+		    struct port_bucket *bucket,
+		    boolean_t may_cache,
+		    memory_object_copy_strategy_t copy_strategy,
+		    boolean_t notify_on_evict);
+
 /* Return the user_pager_info struct associated with a pager. */
 struct user_pager_info *
 pager_get_upi (struct pager *p);

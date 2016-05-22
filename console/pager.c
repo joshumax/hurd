@@ -49,12 +49,11 @@ static struct pager_requests *pager_requests;
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  int idx;
+  size_t idx;
 
   for (idx = 0; idx < upi->memobj_npages; idx++)
     if (upi->memobj_pages[idx])
       vm_deallocate (mach_task_self (), upi->memobj_pages[idx], vm_page_size);
-  free (upi);
 }
 
 
@@ -148,21 +147,17 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
   error_t err;
   struct user_pager_info *upi;
 
-  upi = calloc (1, sizeof (struct user_pager_info)
-		+ sizeof (vm_address_t) * npages);
-  if (!upi)
+  /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
+  user_pager->pager = \
+    pager_create_alloc (sizeof *upi + sizeof (vm_address_t) * npages,
+                        pager_bucket, 1, MEMORY_OBJECT_COPY_DELAY, 0);
+  if (!user_pager->pager)
     return errno;
 
+  upi = pager_get_upi (user_pager->pager);
   upi->memobj_npages = npages;
+  memset (upi->memobj_pages, 0, sizeof (vm_address_t) * npages);
 
-  /* XXX Are the values 1 and MEMORY_OBJECT_COPY_DELAY correct? */
-  user_pager->pager = pager_create (upi, pager_bucket,
-				    1, MEMORY_OBJECT_COPY_DELAY, 0);
-  if (!user_pager->pager)
-    {
-      free (upi);
-      return errno;
-    }
   user_pager->memobj = pager_get_port (user_pager->pager);
   ports_port_deref (user_pager->pager);
 
@@ -182,7 +177,6 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
                 VM_INHERIT_NONE);
   if (err)
     {
-      /* UPI will be cleaned up by libpager.  */
       mach_port_deallocate (mach_task_self (), user_pager->memobj);
       return err;
     }
