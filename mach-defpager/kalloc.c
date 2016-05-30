@@ -34,8 +34,22 @@
 
 #include <mach.h>
 #include <pthread.h>		/* for spin locks */
+#include <malloc.h> 		/* for malloc_hook/free_hook */
 
 #include "wiring.h"
+
+static void init_hook (void);
+static void *malloc_hook (size_t size, const void *caller);
+static void free_hook (void *ptr, const void *caller);
+
+/* GNU libc 2.14 defines this macro to declare hook variables as volatile.
+   Define it as empty for older libc versions.  */
+#ifndef __MALLOC_HOOK_VOLATILE
+# define __MALLOC_HOOK_VOLATILE
+#endif
+
+void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook) (void) = init_hook;
+
 
 /* #define	DEBUG */
 
@@ -250,14 +264,21 @@ kfree(	void *data,
 	}
 }
 
-void *
-malloc (size_t size)
+static void
+init_hook (void)
+{
+  __malloc_hook = malloc_hook;
+  __free_hook = free_hook;
+}
+
+static void *
+malloc_hook (size_t size, const void *caller)
 {
   return (void *) kalloc ((vm_size_t) size);
 }
 
-void
-free (void *ptr)
+static void
+free_hook (void *ptr, const void *caller)
 {
   /* Just ignore harmless attempts at cleanliness.  */
   /*	panic("free not implemented"); */
