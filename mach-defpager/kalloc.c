@@ -40,6 +40,8 @@
 
 static void init_hook (void);
 static void *malloc_hook (size_t size, const void *caller);
+static void *realloc_hook (void *ptr, size_t size, const void *caller);
+static void *memalign_hook (size_t alignment, size_t size, const void *caller);
 static void free_hook (void *ptr, const void *caller);
 
 /* GNU libc 2.14 defines this macro to declare hook variables as volatile.
@@ -268,6 +270,8 @@ static void
 init_hook (void)
 {
   __malloc_hook = malloc_hook;
+  __realloc_hook = realloc_hook;
+  __memalign_hook = memalign_hook;
   __free_hook = free_hook;
 }
 
@@ -275,6 +279,20 @@ static void *
 malloc_hook (size_t size, const void *caller)
 {
   return (void *) kalloc ((vm_size_t) size);
+}
+
+static void *
+realloc_hook (void *ptr, size_t size, const void *caller)
+{
+  panic("realloc_hook not implemented");
+}
+
+static void *
+memalign_hook (size_t alignment, size_t size, const void *caller)
+{
+  if (alignment > vm_page_size)
+    panic("memalign_hook not implemented");
+  return malloc_hook(size, caller);
 }
 
 static void
