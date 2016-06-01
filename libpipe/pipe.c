@@ -319,7 +319,10 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 
   /* Nothing to do.  */
   if (data_len == 0 && control_len == 0 && num_ports == 0)
-    return 0;
+    {
+      *amount = 0;
+      return 0;
+    }
 
   err = pipe_wait_writable (pipe, noblock);
   if (err)
