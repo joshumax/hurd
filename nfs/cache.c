@@ -129,13 +129,10 @@ netfs_node_norefs (struct node *np)
       args = malloc (sizeof (struct fnd));
       assert (args);
 
-      netfs_nref (np);
-
       args->dir = np->nn->dead_dir;
       args->name = np->nn->dead_name;
       np->nn->dead_dir = 0;
       np->nn->dead_name = 0;
-      netfs_nput (np);
 
       /* Do this in a separate thread so that we don't wait for it; it
 	 acquires a lock on the dir, which we are not allowed to
