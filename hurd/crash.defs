@@ -25,8 +25,10 @@ subsystem crash 32000;
 
 /* Handle a crashing task, whose task control port is TASK.
 
-   FILE is a file port open for writing.  The caller will link it to "core"
-   (or whatever name) if the RPC returns success.
+   FILE is a file port open for writing.  The caller will link it to
+   "core" (or whatever name) if the RPC returns success.  If EEXIST is
+   returned, the core file has been written to a different file,
+   therefore FILE can be discarded.
 
    SIGNO, SIGCODE, and SIGERROR indicate the signal that killed the
    process.  EXC is zero for a software signal; otherwise EXC, CODE, and
