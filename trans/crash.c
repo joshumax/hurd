@@ -217,7 +217,9 @@ S_crash_dump_task (mach_port_t port,
 	      proc_mark_stop (user_proc, signo, sigcode);
 
 	      c->task = task;
+	      task = MACH_PORT_NULL;
 	      c->core_file = core_file;
+	      core_file = MACH_PORT_NULL;
 	      c->core_limit = (off_t) -1; /* XXX should core limit in RPC */
 	      c->signo = signo;
 	      c->sigcode = sigcode;
@@ -251,17 +253,20 @@ S_crash_dump_task (mach_port_t port,
 	if (!err)
 	  err = proc_mark_exit (user_proc, W_EXITCODE (0, signo), sigcode);
 	err = task_terminate (task);
-	if (!err)
-	  {
-	    mach_port_deallocate (mach_task_self (), task);
-	    mach_port_deallocate (mach_task_self (), core_file);
-	    mach_port_deallocate (mach_task_self (), ctty_id);
-	  }
       }
     }
 
   if (user_proc != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), user_proc);
+  if (err == 0 || err = MIG_NO_REPLY)
+    {
+      if (MACH_PORT_VALID (task))
+	mach_port_deallocate (mach_task_self (), task);
+      if (MACH_PORT_VALID (core_file))
+	mach_port_deallocate (mach_task_self (), core_file);
+      if (MACH_PORT_VALID (ctty_id))
+	mach_port_deallocate (mach_task_self (), ctty_id);
+    }
 
   ports_port_deref (cred);
   return err;
