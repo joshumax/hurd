@@ -94,8 +94,11 @@ repeater_select (struct protid *cred, mach_port_t reply,
   if (!cred)
     return EOPNOTSUPP;
 
+  *type &= ~SELECT_URG;
+
   if (*type & ~SELECT_READ)
-    return EINVAL;
+    /* Error immediately available...  */
+    return 0;
 
   if (*type == 0)
     return 0;

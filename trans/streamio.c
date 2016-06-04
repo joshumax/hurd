@@ -560,9 +560,6 @@ io_select_common (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  if (!(cred->po->openmodes & O_WRITE) && (*type & SELECT_WRITE))
-    return EBADF;
-
   *type &= SELECT_READ | SELECT_WRITE;
 
   if (*type == 0)
@@ -575,11 +572,10 @@ io_select_common (struct trivfs_protid *cred,
       pthread_mutex_lock (&global_lock);
       if ((*type & SELECT_READ) && buffer_readable (input_buffer))
 	available |= SELECT_READ;
-      if (output_buffer)
-	{
-	  if ((*type & SELECT_WRITE) && buffer_writable (output_buffer))
-	    available |= SELECT_WRITE;
-	}
+      if ((*type & SELECT_WRITE) &&
+	  (!(cred->po->openmodes & O_WRITE) ||
+	    (buffer_writable && buffer_writable (output_buffer))))
+	available |= SELECT_WRITE;
 
       if (available)
 	{

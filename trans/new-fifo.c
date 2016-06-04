@@ -623,7 +623,6 @@ io_select_common (struct trivfs_protid *cred,
 	}
       else
 	{
-	  err = EBADF;
 	  ready |= SELECT_READ;	/* Error immediately available...  */
 	}
       if (err)
@@ -645,7 +644,6 @@ io_select_common (struct trivfs_protid *cred,
 	}
       else
 	{
-	  err = EBADF;
 	  ready |= SELECT_WRITE;	/* Error immediately available...  */
 	}
     }

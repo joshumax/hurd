@@ -204,11 +204,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  else if (((*type & SELECT_READ) && !(cred->po->openmodes & O_READ))
-	   || ((*type & SELECT_WRITE) && !(cred->po->openmodes & O_WRITE)))
-    return EBADF;
-  else
-    *type &= ~SELECT_URG;
+  *type &= ~SELECT_URG;
   return 0;
 }
 
