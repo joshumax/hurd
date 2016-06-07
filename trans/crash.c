@@ -258,7 +258,7 @@ S_crash_dump_task (mach_port_t port,
 
   if (user_proc != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), user_proc);
-  if (err == 0 || err = MIG_NO_REPLY)
+  if (err == 0 || err == MIG_NO_REPLY)
     {
       if (MACH_PORT_VALID (task))
 	mach_port_deallocate (mach_task_self (), task);
