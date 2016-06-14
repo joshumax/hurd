@@ -521,7 +521,11 @@ S_socket_recv (struct sock_user *user,
   pthread_mutex_unlock (&global_lock);
 
   if (err < 0)
-    err = -err;
+    {
+      err = -err;
+      if (alloced)
+	munmap (*data, amount);
+    }
   else
     {
       *datalen = err;
