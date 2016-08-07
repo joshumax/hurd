@@ -140,7 +140,7 @@ struct exc
 mach_port_t authserver;
 struct proc *self_proc;		/* process HURD_PID_PROC (us) */
 struct proc *init_proc;		/* process 1 (sysvinit) */
-struct proc *startup_proc;	/* process 2 (hurd/init) */
+struct proc *startup_proc;	/* process 2 (hurd/startup) */
 
 struct port_bucket *proc_bucket;
 struct port_class *proc_class;

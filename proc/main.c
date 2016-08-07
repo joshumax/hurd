@@ -111,7 +111,7 @@ main (int argc, char **argv, char **envp)
   err = task_get_bootstrap_port (mach_task_self (), &boot);
   assert_perror (err);
   if (boot == MACH_PORT_NULL)
-    error (2, 0, "proc server can only be run by init during boot");
+    error (2, 0, "proc server can only be run by startup during boot");
 
   proc_bucket = ports_create_bucket ();
   proc_class = ports_create_class (0, 0);
@@ -124,7 +124,7 @@ main (int argc, char **argv, char **envp)
   /* Create the initial proc object for init (PID 1).  */
   init_proc = create_init_proc ();
 
-  /* Create the startup proc object for /hurd/init (PID 2).  */
+  /* Create the startup proc object for /hurd/startup (PID 2).  */
   startup_proc = allocate_proc (MACH_PORT_NULL);
   startup_proc->p_deadmsg = 1;
   complete_proc (startup_proc, HURD_PID_STARTUP);
@@ -168,7 +168,6 @@ main (int argc, char **argv, char **envp)
     /* Get our stderr set up to print on the console, in case we have
        to panic or something.  */
     mach_port_t cons;
-    error_t err;
     err = device_open (_hurd_device_master, D_READ|D_WRITE, "console", &cons);
     assert_perror (err);
     stdin = mach_open_devstream (cons, "r");

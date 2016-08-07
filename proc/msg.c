@@ -35,11 +35,11 @@ check_message_return (struct proc *p, void *availpaddr)
     }
 }
 
-/* Register ourselves with init. */
+/* Register ourselves with statup. */
 static void *
-tickle_init (void *initport)
+tickle_statup (void *statupport)
 {
-  startup_essential_task ((mach_port_t) initport, mach_task_self (),
+  startup_essential_task ((mach_port_t) statupport, mach_task_self (),
 			  MACH_PORT_NULL, "proc", _hurd_host_priv);
   return NULL;
 }
@@ -65,11 +65,11 @@ S_proc_setmsgport (struct proc *p,
 
   if (p == startup_proc && startup_fallback)
     {
-    /* Init is single threaded, so we can't delay our reply for
+    /* Statup is single threaded, so we can't delay our reply for
        the essential task RPC; spawn a thread to do it. */
       pthread_t thread;
       error_t err;
-      err = pthread_create (&thread, NULL, tickle_init,
+      err = pthread_create (&thread, NULL, tickle_statup,
 			    (void*) (uintptr_t) msgport);
       if (!err)
 	pthread_detach (thread);
