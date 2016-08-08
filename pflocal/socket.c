@@ -282,6 +282,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	       size_t *amount)
 {
   error_t err = 0;
+  int noblock;
   struct pipe *pipe;
   struct sock *sock, *dest_sock;
   struct addr *source_addr;
@@ -333,8 +334,9 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
 	
       if (!err)
 	{
-	  err = pipe_send (pipe, sock->flags & PFLOCAL_SOCK_NONBLOCK,
-			   source_addr, data, data_len,
+	  noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)
+		    || (flags & MSG_DONTWAIT);
+	  err = pipe_send (pipe, noblock, source_addr, data, data_len,
 			   control, control_len, ports, num_ports,
 			   amount);
 	  if (dest_sock)
@@ -373,6 +375,7 @@ S_socket_recv (struct sock_user *user,
 {
   error_t err;
   unsigned flags;
+  int noblock;
   struct pipe *pipe;
   void *source_addr = NULL;
 
@@ -398,10 +401,11 @@ S_socket_recv (struct sock_user *user,
     }
   else if (!err)
     {
+      noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)
+		|| (in_flags & MSG_DONTWAIT);
       err =
-	pipe_recv (pipe, user->sock->flags & PFLOCAL_SOCK_NONBLOCK, &flags,
-		   &source_addr, data, data_len, amount,
-		   control, control_len, ports, num_ports);
+	pipe_recv (pipe, noblock, &flags, &source_addr, data, data_len,
+		   amount, control, control_len, ports, num_ports);
       pipe_release_reader (pipe);
     }
 
