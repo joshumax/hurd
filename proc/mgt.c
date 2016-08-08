@@ -996,7 +996,7 @@ S_proc_mark_important (struct proc *p)
      that needs this exemption.  That is not an problem however, since
      all children of /hurd/startup are important and we mark them as
      such anyway.  */
-  if (! check_uid (p, 0) && ! check_owner (startup_proc, p))
+  if (! check_uid (p, 0) && p->p_parent != startup_proc)
     return EPERM;
 
   p->p_important = 1;
