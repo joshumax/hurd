@@ -900,6 +900,12 @@ frob_kernel_process (void)
       error (0, err, "cannot get kernel task port");
       return;
     }
+
+  /* Make the kernel our child.  */
+  err = proc_child (procserver, task);
+  if (err)
+    error (0, err, "cannot make the kernel our child");
+
   err = proc_task2proc (procserver, task, &proc);
   if (err)
     {
@@ -910,7 +916,9 @@ frob_kernel_process (void)
 
   /* Mark the kernel task as an essential task so that we or the proc server
      never want to task_terminate it.  */
-  proc_mark_important (proc);
+  err = proc_mark_important (proc);
+  if (err)
+    error (0, err, "cannot mark the kernel as important");
 
   err = record_essential_task ("kernel", task);
   assert_perror (err);
