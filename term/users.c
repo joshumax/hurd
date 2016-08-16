@@ -183,9 +183,6 @@ open_hook (struct trivfs_control *cntl,
 
   open_count++;			/* XXX debugging */
 
-  /* XXX debugging */
-  assert (! (termstate.c_oflag & OTILDE));
-
   /* Assert DTR if necessary. */
   if (termflags & NO_CARRIER)
     {

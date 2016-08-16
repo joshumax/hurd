@@ -87,11 +87,6 @@ output_character (int c)
 	}
       else if ((oflag & ONOEOT) && c == CHAR_EOT)
 	;
-      else if ((oflag & OTILDE) && c == '~')
-	{
-	  poutput ('\\');
-	  poutput ('`');
-	}
       else if ((oflag & OLCASE) && isalpha (c))
 	{
 	  if (isupper (c))
@@ -125,8 +120,6 @@ output_width (int c, int loc)
 
   if (oflag & OPOST)
     {
-      if ((oflag & OTILDE) && c == '~')
-	return 2;
       if ((oflag & OLCASE) && isalpha (c) && isupper (c))
 	return 2;
     }

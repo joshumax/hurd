@@ -65,7 +65,6 @@
 #else
 #define OLCASE (1 << 9)
 #endif
-#define OTILDE (1 << 10)
 
 /* used in mdmctl device call */
 #define MDMCTL_BIS 0
