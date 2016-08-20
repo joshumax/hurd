@@ -581,7 +581,7 @@ pager_dealloc_page(pindex, page, lock_it)
 	/* be paranoid */
 	if (no_partition(pindex))
 	    panic("%sdealloc_page",my_name);
-ddprintf ("pager_dealloc_page(%d,%x,%d)\n",pindex,page,lock_it);
+ddprintf ("pager_dealloc_page(%d,%lx,%d)\n",pindex,page,lock_it);
 	part = partition_of(pindex);
 
 	if (page >= part->total_size)
@@ -1092,7 +1092,7 @@ pager_read_offset(pager, offset)
 #endif
 	if (f_page >= pager->size)
 	  {
-	    ddprintf ("%spager_read_offset pager %x: bad page %d >= size %d",
+	    ddprintf ("%spager_read_offset pager %p: bad page %ld >= size %d",
 		    my_name, pager, f_page, pager->size);
 	    pthread_mutex_unlock(&pager->lock);
 	    return (union dp_map) (union dp_map *) NO_BLOCK;
@@ -1360,7 +1360,7 @@ pager_write_offset(pager, offset)
 	}
 
 	while (f_page >= pager->size) {
-	  ddprintf ("pager_write_offset: extending: %x %x\n", f_page, pager->size);
+	  ddprintf ("pager_write_offset: extending: %lx %x\n", f_page, pager->size);
 
 	    /*
 	     * Paging object must be extended.
@@ -1380,7 +1380,7 @@ pager_write_offset(pager, offset)
 #if	DEBUG_READER_CONFLICTS
 	    pager->readers++;
 #endif
-	    ddprintf ("pager_write_offset: done extending: %x %x\n", f_page, pager->size);
+	    ddprintf ("pager_write_offset: done extending: %lx %x\n", f_page, pager->size);
 	}
 
 	if (INDIRECT_PAGEMAP(pager->size)) {
@@ -1429,7 +1429,7 @@ pager_write_offset(pager, offset)
 	}
 
 	block = mapptr[f_page];
-	ddprintf ("pager_write_offset: block starts as %x[%x] %x\n", mapptr, f_page, block);
+	ddprintf ("pager_write_offset: block starts as %p[%lx] %p\n", mapptr, f_page, block.indirect);
 	if (no_block(block)) {
 	    vm_offset_t	off;
 
@@ -1656,7 +1656,7 @@ default_read(ds, addr, size, offset, out_addr, deallocate, external)
 	 * Read it, trying for the entire page.
 	 */
 	offset = ptoa(block.block.p_offset);
-ddprintf ("default_read(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
+ddprintf ("default_read(%lx,%x,%lx,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 	first_time = TRUE;
 	*out_addr = addr;
@@ -1723,7 +1723,7 @@ default_write(ds, addr, size, offset)
 	vm_size_t		wsize;
 	int		rc;
 
-	ddprintf ("default_write: pager offset %x\n", offset);
+	ddprintf ("default_write: pager offset %lx\n", offset);
 
 	/*
 	 * Find block in paging partition
@@ -1744,7 +1744,7 @@ default_write(ds, addr, size, offset)
 	}
 #endif	 /* CHECKSUM */
 	offset = ptoa(block.block.p_offset);
-ddprintf ("default_write(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
+ddprintf ("default_write(%lx,%x,%lx,%d)\n",addr,size,offset,block.block.p_index);
 	part   = partition_of(block.block.p_index);
 
 	/*
@@ -1760,7 +1760,7 @@ ddprintf ("default_write(%x,%x,%x,%d)\n",addr,size,offset,block.block.p_index);
 					&wsize);
 	    if (rc != 0) {
 		dprintf("*** PAGER ERROR: default_write: ");
-		dprintf("ds=0x%x addr=0x%x size=0x%x offset=0x%x resid=0x%x\n",
+		dprintf("ds=0x%p addr=0x%lx size=0x%x offset=0x%lx resid=0x%x\n",
 			ds, addr, size, offset, wsize);
 		return (PAGER_ERROR);
 	    }
@@ -1865,7 +1865,7 @@ destroy_paging_partition(name, pp_private)
 	 */
 all_over_again:
 #if debug
-dprintf("Partition x%x (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
+dprintf("Partition x%p (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 #endif
 	all_ok = TRUE;
 	pthread_mutex_lock(&part->p_lock);
@@ -2343,7 +2343,7 @@ seqnos_memory_object_terminate(ds, seqno, pager_request, pager_name)
 	if (ds == DEFAULT_PAGER_NULL)
 		panic(here, my_name);
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2374,7 +2374,7 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 	ds->pager_name = MACH_PORT_NULL;
 	ds->name_refs = 0;
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	/*
@@ -2486,7 +2486,7 @@ seqnos_memory_object_data_request(ds, seqno, reply_to, offset,
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
 ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, reply_to);
 	pager_port_wait_for_writers(ds);
@@ -2498,7 +2498,7 @@ ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_lock: <%p>[s:%d,r:
 	errors = ds->errors;
 
 ddprintf ("seqnos_memory_object_data_request <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	if (errors) {
@@ -2588,12 +2588,12 @@ seqnos_memory_object_data_initialize(ds, seqno, pager_request,
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here,my_name);
 ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_lock: <%p>[s:%d,r:%d,w:%d,l:%d], %d\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held, seqno);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held, seqno);
 	pager_port_lock(ds, seqno);
 	pager_port_check_request(ds, pager_request);
 	pager_port_start_write(ds);
 ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
-	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.held);
+	&ds, ds, ds->seqno, ds->readers, ds->writers, ds->lock.__held);
 	pager_port_unlock(ds);
 
 	for (amount_sent = 0;
