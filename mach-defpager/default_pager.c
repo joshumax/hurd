@@ -1920,6 +1920,7 @@ dprintf("Partition x%p (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 	 * Put partition back in.
 	 */
 	part->going_away = FALSE;
+	pthread_mutex_unlock(&part->p_lock);
 
 	return KERN_FAILURE;
 }
