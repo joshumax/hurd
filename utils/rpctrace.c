@@ -1620,8 +1620,9 @@ traced_spawn (char **argv, char **envp)
   task_t traced_task;
   struct sender_info *ti;
   struct receiver_info *receive_ti;
+  char *prefixed_name;
   file_t file = file_name_path_lookup (argv[0], getenv ("PATH"),
-				       O_EXEC, 0, 0);
+				       O_EXEC, 0, &prefixed_name);
 
   if (file == MACH_PORT_NULL)
     error (1, errno, "command not found: %s", argv[0]);
@@ -1662,7 +1663,8 @@ traced_spawn (char **argv, char **envp)
      the actual task, so the RPCs to map in the program itself do not get
      traced.  Could have an option to use TASK_WRAPPER here instead.  */
 #ifdef HAVE__HURD_EXEC_PATHS
-  err = _hurd_exec_paths (traced_task, file, *argv, *argv, argv, envp);
+  err = _hurd_exec_paths (traced_task, file, prefixed_name ?: *argv,
+			  prefixed_name ?: *argv, argv, envp);
 #else
   err = _hurd_exec (traced_task, file, argv, envp);
 #endif
@@ -1673,6 +1675,7 @@ traced_spawn (char **argv, char **envp)
      cannot die and hence our TRACED_TASK ref cannot have been released.  */
   mach_port_deallocate (mach_task_self (), task_wrapper);
 
+  free (prefixed_name);
   return pid;
 }
 
