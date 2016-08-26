@@ -47,11 +47,12 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #include <hurd/sigpreempt.h>
 
-/* Load or allocate a section.  */
-static void
+/* Load or allocate a section.
+   Returns the address of the end of the section.  */
+static vm_address_t
 load_section (void *section, struct execdata *u)
 {
-  vm_address_t addr = 0;
+  vm_address_t addr = 0, end = 0;
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
@@ -60,7 +61,7 @@ load_section (void *section, struct execdata *u)
   const ElfW(Phdr) *const ph = section;
 
   if (u->error)
-    return;
+    return 0;
 
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
@@ -97,9 +98,11 @@ load_section (void *section, struct execdata *u)
   if (anywhere && addr < vm_page_size)
     addr = vm_page_size;
 
+  end = addr + memsz;
+
   if (memsz == 0)
     /* This section is empty; ignore it.  */
-    return;
+    return 0;
 
   if (filesz != 0)
     {
@@ -173,7 +176,7 @@ load_section (void *section, struct execdata *u)
 		write_to_task (mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
-	    return;
+	    return 0;
 
 	  if (anywhere)
 	    {
@@ -230,7 +233,7 @@ load_section (void *section, struct execdata *u)
 		{
 		maplose:
 		  vm_deallocate (u->task, mapstart, filesz);
-		  return;
+		  return 0;
 		}
 	    }
 
@@ -294,7 +297,7 @@ load_section (void *section, struct execdata *u)
 			     mask, anywhere, MACH_PORT_NULL, 0, 1,
 			     vm_prot, VM_PROT_ALL, VM_INHERIT_COPY);
 	  if (u->error)
-	    return;
+	    return 0;
 	}
 
       if (anywhere)
@@ -319,7 +322,7 @@ load_section (void *section, struct execdata *u)
 	  if (u->error)
 	    {
 	      vm_deallocate (u->task, mapstart, memsz);
-	      return;
+	      return 0;
 	    }
 	  u->error = hurd_safe_memset (
 				 (void *) (ourpage + (addr - overlap_page)),
@@ -335,6 +338,7 @@ load_section (void *section, struct execdata *u)
 	  munmap ((caddr_t) ourpage, size);
 	}
     }
+  return end;
 }
 
 /* XXX all accesses of the mapped data need to use fault handling
@@ -717,18 +721,37 @@ set_name (task_t task, const char *exec_name, pid_t pid)
   free (name);
 }
 
-/* Load the file.  */
-static void
-load (task_t usertask, struct execdata *e)
+/* Load the file.  Returns the address of the end of the load.  */
+static vm_offset_t
+load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start)
 {
+  int anywhere = e->info.elf.anywhere;
+  vm_offset_t end;
   e->task = usertask;
 
   if (! e->error)
     {
       ElfW(Word) i;
+
+      if (anywhere && anywhere_start)
+	{
+	  /* Make sure this anywhere-load will go at the end of the previous
+	     anywhere-load.  */
+	  /* TODO: Rather compute how much contiguous room is needed, allocate
+	     the area from the kernel, and then map memory sections.  */
+	  /* TODO: Possibly implement Adresse Space Layout Randomization.  */
+	  e->info.elf.loadbase = anywhere_start;
+	  e->info.elf.anywhere = 0;
+	}
+
       for (i = 0; i < e->info.elf.phnum; ++i)
 	if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	  load_section (&e->info.elf.phdr[i], e);
+	  {
+	    end = load_section (&e->info.elf.phdr[i], e);
+	    if (anywhere && end > anywhere_start)
+	      /* This section pushes the next anywhere-load further */
+	      anywhere_start = end;
+	  }
 
       /* The entry point address is relative to wherever we loaded the
 	 program text.  */
@@ -737,6 +760,9 @@ load (task_t usertask, struct execdata *e)
 
   /* Release the conch for the file.  */
   finish_mapping (e);
+
+  /* Return potentially-new start for anywhere-loads.  */
+  return round_page (anywhere_start);
 }
 
 
@@ -783,6 +809,7 @@ do_exec (file_t file,
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
   int oldtask_trashed = 0;	/* Have we trashed the old task?  */
+  vm_address_t anywhere_start = 0;
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1156,7 +1183,7 @@ do_exec (file_t file,
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
-      load (newtask, &interp);
+      anywhere_start = load (newtask, &interp, anywhere_start);
       if (interp.error)
 	{
 	  e.error = interp.error;
@@ -1167,7 +1194,7 @@ do_exec (file_t file,
 
 
   /* Load the file into the task.  */
-  load (newtask, &e);
+  anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
     goto out;
 
