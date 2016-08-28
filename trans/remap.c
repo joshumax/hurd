@@ -70,6 +70,7 @@ trivfs_S_dir_lookup (struct trivfs_protid *diruser,
     return EOPNOTSUPP;
 
   for (remap = remaps; remap; remap = remap->next)
+    /* FIXME: should match just prefix of filename too */
     if (!strcmp (remap->from, filename))
       {
 #ifdef DEBUG
@@ -96,6 +97,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
   {
     case ARGP_KEY_ARG:
+      if (arg[0] != '/')
+	error(1, 0, "remap only works with absolute paths\n");
 
       /* Skip heading slashes */
       while (arg[0] == '/')
