@@ -97,22 +97,24 @@ check_hashbang (struct execdata *e,
       mach_port_t port = ((which < nports &&
 			   portarray[which] != MACH_PORT_NULL)
 			  ? portarray[which] :
-			  (flags & EXEC_DEFAULTS) ? std_ports[which]
-			  : MACH_PORT_NULL);
+			  (flags & EXEC_DEFAULTS && which < std_nports)
+				? std_ports[which]
+				: MACH_PORT_NULL);
 
       /* Reauthenticate dir ports if they are the defaults.  */
       switch (which)
 	{
 	case INIT_PORT_CRDIR:
 	  /* If secure, always use the default root.  */
-	  if ((flags & EXEC_SECURE) ||
-	      port == std_ports[which])
+	  if ((which < std_nports && flags & EXEC_SECURE) ||
+	      (which < std_nports && port == std_ports[which]))
 	    return (reauthenticate (std_ports[which], &user_crdir) ?:
 		    (*operate) (user_crdir));
 	  break;
 	case INIT_PORT_CWDIR:
 	  /* If secure, reauthenticate cwd whether default or given.  */
-	  if ((flags & EXEC_SECURE) || port == std_ports[which])
+	  if ((flags & EXEC_SECURE) ||
+	      (which < std_nports && port == std_ports[which]))
 	    return (reauthenticate (port, &user_cwdir) ?:
 		    (*operate) (user_cwdir));
 	  break;
