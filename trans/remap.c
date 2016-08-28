@@ -98,7 +98,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
   {
     case ARGP_KEY_ARG:
       if (arg[0] != '/')
-	error(1, 0, "remap only works with absolute paths\n");
+	error (1, 0, "remap only works with absolute paths\n");
 
       /* Skip heading slashes */
       while (arg[0] == '/')
