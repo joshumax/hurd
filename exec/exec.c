@@ -109,19 +109,20 @@ load_section (void *section, struct execdata *u)
       vm_address_t mapstart = round_page (addr);
 
       /* Allocate space in the task and write CONTENTS into it.  */
-      void write_to_task (vm_address_t mapstart, vm_size_t size,
+      void write_to_task (vm_address_t * mapstart, vm_size_t size,
 			  vm_prot_t vm_prot, vm_address_t contents)
 	{
 	  vm_size_t off = size % vm_page_size;
 	  /* Allocate with vm_map to set max protections.  */
 	  u->error = vm_map (u->task,
-			     &mapstart, size, mask, anywhere,
+			     mapstart, size, mask, anywhere,
 			     MACH_PORT_NULL, 0, 1,
 			     vm_prot|VM_PROT_WRITE,
 			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
 			     VM_INHERIT_COPY);
+	  /* vm_write only works on integral multiples of vm_page_size */
 	  if (! u->error && size >= vm_page_size)
-	    u->error = vm_write (u->task, mapstart, contents, size - off);
+	    u->error = vm_write (u->task, *mapstart, contents, size - off);
 	  if (! u->error && off != 0)
 	    {
 	      vm_address_t page = 0;
@@ -135,14 +136,14 @@ load_section (void *section, struct execdata *u)
 			  (void *) (contents + (size - off)),
 			  off);
 		  if (! u->error)
-		    u->error = vm_write (u->task, mapstart + (size - off),
+		    u->error = vm_write (u->task, *mapstart + (size - off),
 				         page, vm_page_size);
 		  munmap ((caddr_t) page, vm_page_size);
 		}
 	    }
 	  /* Reset the current protections to the desired state.  */
 	  if (! u->error && (vm_prot & VM_PROT_WRITE) == 0)
-	    u->error = vm_protect (u->task, mapstart, size, 0, vm_prot);
+	    u->error = vm_protect (u->task, *mapstart, size, 0, vm_prot);
 	}
 
       if (mapstart - addr < filesz)
@@ -154,7 +155,7 @@ load_section (void *section, struct execdata *u)
 #define SECTION_CONTENTS	(u->file_data + filepos)
 	  if (SECTION_IN_MEMORY_P)
 	    /* Data is already in memory; write it into the task.  */
-	    write_to_task (mapstart, filesz - (mapstart - addr), vm_prot,
+	    write_to_task (&mapstart, filesz - (mapstart - addr), vm_prot,
 			   (vm_address_t) SECTION_CONTENTS
 			   + (mapstart - addr));
 	  else if (u->filemap != MACH_PORT_NULL)
@@ -173,7 +174,7 @@ load_section (void *section, struct execdata *u)
 	      const vm_size_t size = filesz - (mapstart - addr);
 	      void *buf = map (u, filepos + (mapstart - addr), size);
 	      if (buf)
-		write_to_task (mapstart, size, vm_prot, (vm_address_t) buf);
+		write_to_task (&mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
 	    return 0;
