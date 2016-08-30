@@ -223,5 +223,5 @@ _diskfs_init_completed ()
   return;
 
  errout:
-  error (0, err, "Cannot request shutdown notification");
+  error (0, err, "Warning: cannot request shutdown notification");
 }

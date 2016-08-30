@@ -639,7 +639,7 @@ main (int argc, char **argv)
 
   err = arrange_shutdown_notification ();
   if (err)
-    error (0, err, "Cannot request shutdown notification");
+    error (0, err, "Warning: cannot request shutdown notification");
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, random_demuxer,
