@@ -1199,9 +1199,10 @@ launch_something (const char *why)
       if (something != MACH_PORT_NULL)
 	{
 	  mach_port_deallocate (mach_task_self (), something);
-	  if (start_child (tries[try++], NULL) == 0)
+	  if (start_child (tries[try], NULL) == 0)
 	    return;
 	}
+      try++;
     }
 
   crash_system ();
