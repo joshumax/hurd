@@ -138,7 +138,7 @@ main (int argc, char **argv)
   sa.sa_flags |= SA_RESTART;
   sigaction (SIGCHLD, &sa, NULL);
 
-  char *args[] = { "/etc/hurd/runsystem.hurd", NULL };
+  char *args[] = { "/libexec/runsystem.hurd", NULL };
 
   switch (child_pid = fork ())
     {
