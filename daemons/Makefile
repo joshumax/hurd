@@ -20,10 +20,10 @@
 dir := daemons
 makemode := utilities
 
-targets = rc getty mail.local console-run runttys runsystem
-special-targets = rc runsystem
+targets = rc getty mail.local console-run runttys runsystem runsystem.hurd
+special-targets = rc runsystem runsystem.hurd
 SRCS = rc.sh runsystem.sh getty.c lmail.c console-run.c runttys.c \
-	runsystem.hurd \
+	runsystem.hurd.sh \
 
 installationdir = $(libexecdir)
 
@@ -45,3 +45,4 @@ runttys: runttys.o
 runttys-LDLIBS = -lutil
 
 runsystem: runsystem.sh
+runsystem.hurd: runsystem.hurd.sh
