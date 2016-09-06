@@ -276,23 +276,21 @@ mix_pool(byte *pool)
  #if DIGESTLEN != 20
     #error must have a digest length of 20 for ripe-md-160
  #endif
-    /* loop over the pool */
+    /* pool -> pool' */
     pend = pool + POOLSIZE;
     memcpy(hashbuf, pend - DIGESTLEN, DIGESTLEN );
     memcpy(hashbuf+DIGESTLEN, pool, BLOCKLEN-DIGESTLEN);
     rmd160_mixblock( &md, hashbuf);
-    memcpy(pool, hashbuf, 20 );
+    memcpy(pool, hashbuf, DIGESTLEN);
 
+    /* Loop for the remaining iterations.  */
     p = pool;
     for( n=1; n < POOLBLOCKS; n++ ) {
-	memcpy(hashbuf, p, DIGESTLEN );
-
-	p += DIGESTLEN;
-	if( p+DIGESTLEN+BLOCKLEN < pend )
-	    memcpy(hashbuf+DIGESTLEN, p+DIGESTLEN, BLOCKLEN-DIGESTLEN);
+	if( p + BLOCKLEN < pend )
+	    memcpy(hashbuf, p, BLOCKLEN);
 	else {
-	    byte *pp = p+DIGESTLEN;
-	    for(i=DIGESTLEN; i < BLOCKLEN; i++ ) {
+	    byte *pp = p;
+	    for(i=0; i < BLOCKLEN; i++ ) {
 		if( pp >= pend )
 		    pp = pool;
 		hashbuf[i] = *pp++;
@@ -300,7 +298,8 @@ mix_pool(byte *pool)
 	}
 
 	rmd160_mixblock( &md, hashbuf);
-	memcpy(p, hashbuf, 20 );
+	p += DIGESTLEN;
+	memcpy(p, hashbuf, DIGESTLEN);
     }
     burn_stack (200); /* for the rmd160_mixblock() */
 }
