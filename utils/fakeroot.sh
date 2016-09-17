@@ -54,6 +54,9 @@ if [ $# -eq 0 ]; then
   set -- ${SHELL:-/bin/sh}
 fi
 
+FAKED_MODE="unknown-is-root"
+export FAKED_MODE
+
 # We exec settrans, which execs the "fakeauth" command in the chroot
 # context provided by /hurd/fakeroot.
 exec /bin/settrans \
