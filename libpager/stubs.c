@@ -32,17 +32,6 @@ _pager_S_memory_object_copy (struct pager *p,
 }
 
 kern_return_t __attribute__((weak))
-_pager_S_memory_object_data_write (struct pager *p,
-				 mach_port_t ctl,
-				 vm_offset_t off,
-				 pointer_t data,
-				 vm_size_t data_cnt)
-{
-  printf ("m_o_data_write called\n");
-  return EOPNOTSUPP;
-}
-
-kern_return_t __attribute__((weak))
 _pager_S_memory_object_supply_completed (struct pager *p,
 				       mach_port_t ctl,
 				       vm_offset_t off,

@@ -2623,26 +2623,30 @@ ddprintf ("seqnos_memory_object_data_initialize <%p>: pager_port_unlock: <%p>[s:
 }
 
 /*
- * memory_object_data_write: split up the stuff coming in from
+ * memory_object_data_return: split up the stuff coming in from
  * a memory_object_data_write call
  * into individual pages and pass them off to default_write.
  */
 kern_return_t
-seqnos_memory_object_data_write(ds, seqno, pager_request,
-				offset, addr, data_cnt)
+seqnos_memory_object_data_return(ds, seqno, pager_request,
+				 offset, addr, data_cnt,
+				 dirty, kernel_copy)
 	default_pager_t	ds;
 	mach_port_seqno_t seqno;
 	mach_port_t	pager_request;
-	register
 	vm_offset_t	offset;
-	register
 	pointer_t	addr;
 	vm_size_t	data_cnt;
+	boolean_t	dirty;
+	boolean_t	kernel_copy;
 {
 	register
 	vm_size_t	amount_sent;
-	static char	here[] = "%sdata_write";
+	static char	here[] = "%sdata_return";
 	int err;
+
+	(void) dirty;
+	(void) kernel_copy;
 
 #ifdef	lint
 	pager_request++;
@@ -2763,29 +2767,6 @@ seqnos_memory_object_supply_completed(ds, seqno, pager_request,
 {
 	panic("%ssupply_completed",my_name);
 	return(KERN_FAILURE);
-}
-
-/*
- * memory_object_data_return: split up the stuff coming in from
- * a memory_object_data_write call
- * into individual pages and pass them off to default_write.
- */
-kern_return_t
-seqnos_memory_object_data_return(ds, seqno, pager_request,
-				 offset, addr, data_cnt,
-				 dirty, kernel_copy)
-	default_pager_t	ds;
-	mach_port_seqno_t seqno;
-	mach_port_t	pager_request;
-	vm_offset_t	offset;
-	pointer_t	addr;
-	vm_size_t	data_cnt;
-	boolean_t	dirty;
-	boolean_t	kernel_copy;
-{
-
-	return seqnos_memory_object_data_write (ds, seqno, pager_request,
-						offset, addr, data_cnt);
 }
 
 kern_return_t
