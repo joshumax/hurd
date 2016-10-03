@@ -156,11 +156,11 @@ xattr_entry_rehash (struct ext2_xattr_header *header,
  * length is not enough for name, ERANGE is returned.
  */
 static error_t
-xattr_entry_list (struct ext2_xattr_entry *entry, char *buffer, int *len)
+xattr_entry_list (struct ext2_xattr_entry *entry, char *buffer, size_t *len)
 {
 
   int i;
-  int size;
+  size_t size;
 
   for (i = 0; xattr_prefixes[i].prefix != NULL; i++)
     {
@@ -209,7 +209,7 @@ xattr_entry_list (struct ext2_xattr_entry *entry, char *buffer, int *len)
  */
 static error_t
 xattr_entry_get (char *block, struct ext2_xattr_entry *entry,
-		 const char *full_name, char *value, int *len, int *cmp)
+		 const char *full_name, char *value, size_t *len, int *cmp)
 {
 
   int i;
@@ -261,15 +261,15 @@ xattr_entry_create (struct ext2_xattr_header *header,
 		    struct ext2_xattr_entry *last,
 		    struct ext2_xattr_entry *position,
 		    const char *full_name, const char *value,
-		    int len, int rest)
+		    size_t len, size_t rest)
 {
 
   int i;
-  int name_len;
+  size_t name_len;
   off_t start;
   off_t end;
-  int entry_size;
-  int value_size;
+  size_t entry_size;
+  size_t value_size;
   int index;
   const char *name;
 
@@ -316,7 +316,7 @@ xattr_entry_create (struct ext2_xattr_header *header,
 static error_t
 xattr_entry_remove (struct ext2_xattr_header *header,
 		    struct ext2_xattr_entry *last,
-		    struct ext2_xattr_entry *position, int rest)
+		    struct ext2_xattr_entry *position, size_t rest)
 {
 
   size_t size;
@@ -366,11 +366,11 @@ static error_t
 xattr_entry_replace (struct ext2_xattr_header *header,
 		     struct ext2_xattr_entry *last,
 		     struct ext2_xattr_entry *position,
-		     const char *value, int len, int rest)
+		     const char *value, size_t len, size_t rest)
 {
 
-  ssize_t old_size;
-  ssize_t new_size;
+  size_t old_size;
+  size_t new_size;
 
   old_size = EXT2_XATTR_ALIGN (position->e_value_size);
   new_size = EXT2_XATTR_ALIGN (len);
@@ -500,7 +500,7 @@ cleanup:
  * xattr block is invalid (has no valid h_magic number).
  */
 error_t
-ext2_list_xattr (struct node *np, char *buffer, int *len)
+ext2_list_xattr (struct node *np, char *buffer, size_t *len)
 {
 
   error_t err;
@@ -519,7 +519,7 @@ ext2_list_xattr (struct node *np, char *buffer, int *len)
   if (!len)
     return EINVAL;
 
-  int size = *len;
+  size_t size = *len;
 
   ei = dino_ref (np->cache_id);
   blkno = ei->i_file_acl;
@@ -575,10 +575,10 @@ cleanup:
  * in the block matching the name.
  */
 error_t
-ext2_get_xattr (struct node *np, const char *name, char *value, int *len)
+ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
 {
 
-  int size;
+  size_t size;
   int err;
   void *block;
   struct ext2_inode *ei;
@@ -657,12 +657,12 @@ cleanup:
  * the specified entry, free the xattr block.
  */
 error_t
-ext2_set_xattr (struct node *np, const char *name, const char *value, int len,
-		int flags)
+ext2_set_xattr (struct node *np, const char *name, const char *value,
+		size_t len, int flags)
 {
 
   int found;
-  int rest;
+  size_t rest;
   error_t err;
   block_t blkno;
   void *block;
@@ -732,7 +732,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value, int len,
 
   while (!EXT2_XATTR_ENTRY_LAST (entry))
     {
-      int size;
+      size_t size;
       int cmp;
 
       err = xattr_entry_get (NULL, entry, name, NULL, &size, &cmp);
