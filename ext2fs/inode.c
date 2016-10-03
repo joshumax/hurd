@@ -719,7 +719,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
     {
       /* If xattr is no supported by this filesystem, don't report a warning */
       if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
-	ext2_warning ("This is a old translotor record, please update it");
+	ext2_warning ("This is an old translator record, please update it");
 
       transloc = disk_cache_block_ref (blkno);
       datalen =
