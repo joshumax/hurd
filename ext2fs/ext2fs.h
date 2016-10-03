@@ -587,4 +587,14 @@ error_t ext2_get_xattr (struct node *np, const char *name, char *value, size_t *
 error_t ext2_set_xattr (struct node *np, const char *name, const char *value, size_t len, int flags);
 error_t ext2_free_xattr_block (struct node *np);
 
+/* Use extended attribute-based translator records.
+ *
+ * This flag allows users to opt-in to the use of extended attributes
+ * for storing translator records.  We will make this the default once
+ * we feel confident that the implementation is fine.
+ *
+ * XXX: Remove this in Hurd 1.0 (or 0.10, or whatever follows 0.9).
+ */
+int use_xattr_translator_records;
+
 #endif
