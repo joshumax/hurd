@@ -187,11 +187,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
     }
   else
     {
-      size_t datalen;
       st->st_mode = di->i_mode & ~S_ITRANS;
-      err = ext2_get_xattr (np, "gnu.translator", NULL, &datalen);
-      if (! err && datalen > 0)
-	st->st_mode |= S_IPTRANS;
       st->st_uid = di->i_uid;
       st->st_gid = di->i_gid;
       st->st_author = st->st_uid;
