@@ -686,6 +686,14 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
   ei = dino_ref (np->cache_id);
   blkno = ei->i_file_acl;
 
+  /* Avoid allocating a block if this is a request to delete data.  */
+  if (blkno == 0 && value == NULL)
+    {
+      block = NULL;
+      err = ENODATA;
+      goto cleanup;
+    }
+
   if (blkno == 0)
     {
       /* Allocate and initialize new block */
