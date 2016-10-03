@@ -168,7 +168,20 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  np->dn_stat.st_rdev = makedev (major, minor);
 		}
 
-	      diskfs_truncate (np, 0);
+	      err = diskfs_truncate (np, 0);
+	      if (err)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return err;
+		}
+
+	      err = diskfs_set_translator (np, NULL, 0, cred);
+	      if (err)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return err;
+		}
+
 	      if (newmode == S_IFLNK)
 		{
 		  char *arg = passive + strlen (passive) + 1;
