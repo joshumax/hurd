@@ -69,8 +69,11 @@ options[] =
    " (not compiled in)"
 #endif
   },
+#ifdef ALTERNATE_SBLOCK
+  /* XXX This is not implemented.  */
   {"sblock", 'S', "BLOCKNO", 0,
    "Use alternate superblock location (1kb blocks)"},
+#endif
   {0}
 };
 
@@ -83,7 +86,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
   struct
   {
     int debug_flag;
+#ifdef ALTERNATE_SBLOCK
     unsigned int sb_block;
+#endif
   } *values = state->hook;
 
   switch (key)
@@ -91,6 +96,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'D':
       values->debug_flag = 1;
       break;
+#ifdef ALTERNATE_SBLOCK
     case 'S':
       values->sb_block = strtoul (arg, &arg, 0);
       if (!arg || *arg != '\0')
@@ -99,6 +105,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	  return EINVAL;
 	}
       break;
+#endif
 
     case ARGP_KEY_INIT:
       state->child_inputs[0] = state->input;
@@ -107,7 +114,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	return ENOMEM;
       state->hook = values;
       memset (values, 0, sizeof *values);
+#ifdef ALTERNATE_SBLOCK
       values->sb_block = SBLOCK_BLOCK;
+#endif
       break;
 
     case ARGP_KEY_SUCCESS:
