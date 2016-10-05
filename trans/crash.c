@@ -645,7 +645,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    return EINVAL;
 	  }
       }
-      corefile_template = arg;
+      if (strlen (arg) == 0)
+	corefile_template = NULL;
+      else
+	corefile_template = arg;
       break;
 
     case ARGP_KEY_SUCCESS:
