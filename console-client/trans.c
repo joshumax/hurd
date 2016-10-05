@@ -865,7 +865,6 @@ console_unregister_consnode (consnode_t cn)
 error_t
 console_setup_node (char *path)
 {
-  mach_port_t bootstrap;
   error_t err;
   struct stat ul_stat;
   file_t node;
@@ -876,8 +875,7 @@ console_setup_node (char *path)
   node = file_name_lookup (path, O_CREAT|O_NOTRANS, 0664);
   if (node == MACH_PORT_NULL)
     return errno;
-  
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
+
   netfs_init ();
   
   /* Create the root node (some attributes initialized below).  */
