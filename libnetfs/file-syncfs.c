@@ -20,6 +20,21 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <hurd/fsys.h>
+
+struct args
+{
+  int wait;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  (void) name;
+  fsys_syncfs (control, args->wait, 1);
+  return 0;
+}
 
 error_t
 netfs_S_file_syncfs (struct protid *user,
@@ -27,11 +42,13 @@ netfs_S_file_syncfs (struct protid *user,
 		     int dochildren)
 {
   error_t err;
-  
+  struct args args = { wait };
+
   if (!user)
     return EOPNOTSUPP;
-  
-  /* Translators not yet supported by netfs. XXX */
+
+  if (dochildren)
+    fshelp_map_active_translators (helper, &args);
 
   pthread_mutex_lock (&user->po->np->lock);
   err = netfs_attempt_syncfs (user->user, wait);

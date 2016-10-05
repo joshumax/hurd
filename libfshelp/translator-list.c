@@ -229,3 +229,29 @@ fshelp_get_active_translators (char **translators,
   pthread_mutex_unlock (&translator_ihash_lock);
   return err;
 }
+
+/* Call FUN for each active translator.  If FUN returns non-zero, the
+   iteration immediately stops, and returns that value.  FUN is called
+   with COOKIE, the name of the translator, and the translators
+   control port.  */
+error_t
+fshelp_map_active_translators (error_t (*fun)(void *cookie,
+					      const char *name,
+					      mach_port_t control),
+			       void *cookie)
+{
+  error_t err = 0;
+  pthread_mutex_lock (&translator_ihash_lock);
+
+  HURD_IHASH_ITERATE (&translator_ihash, value)
+    {
+      struct translator *t = value;
+
+      err = fun (cookie, t->name, t->active);
+      if (err)
+	break;
+    }
+
+  pthread_mutex_unlock (&translator_ihash_lock);
+  return err;
+}

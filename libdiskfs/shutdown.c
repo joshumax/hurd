@@ -22,35 +22,30 @@
 #include "priv.h"
 #include <hurd/fsys.h>
 
+struct args
+{
+  int flags;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  error_t err;
+  (void) name;
+  err = fsys_goaway (control, args->flags);
+  if (err == MIG_SERVER_DIED || err == MACH_SEND_INVALID_DEST)
+    err = 0;
+  return err;
+}
+
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t
 diskfs_shutdown (int flags)
 {
   int nports = -1;
-  int err;
-
-  error_t
-    helper (struct node *np)
-      {
-	error_t error;
-	mach_port_t control;
-
-	error = fshelp_fetch_control (&np->transbox, &control);
-	pthread_mutex_unlock (&np->lock);
-	if (!error && (control != MACH_PORT_NULL))
-	  {
-	    error = fsys_goaway (control, flags);
-	    mach_port_deallocate (mach_task_self (), control);
-	  }
-	else
-	  error = 0;
-	pthread_mutex_lock (&np->lock);
-
-	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
-	  error = 0;
-
-	return error;
-      }
+  error_t err;
+  struct args args = { flags };
 
   if ((flags & FSYS_GOAWAY_UNLINK)
        && S_ISDIR (diskfs_root_node->dn_stat.st_mode))
@@ -58,7 +53,7 @@ diskfs_shutdown (int flags)
 
   if (flags & FSYS_GOAWAY_RECURSE)
     {
-      err = diskfs_node_iterate (helper);
+      err = fshelp_map_active_translators (helper, &args);
       if (err)
 	return err;
     }

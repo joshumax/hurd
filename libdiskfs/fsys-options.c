@@ -26,6 +26,25 @@
 #include "priv.h"
 #include "fsys_S.h"
 
+struct args
+{
+  char *data;
+  mach_msg_type_number_t len;
+  int do_children;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  error_t err;
+  (void) name;
+  err = fsys_set_options (control, args->data, args->len, args->do_children);
+  if (err == MIG_SERVER_DIED || err == MACH_SEND_INVALID_DEST)
+    err = 0;
+  return err;
+}
+
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_set_options (struct diskfs_control *pt,
@@ -35,28 +54,7 @@ diskfs_S_fsys_set_options (struct diskfs_control *pt,
 			   int do_children)
 {
   error_t err = 0;
-
-  error_t
-    helper (struct node *np)
-      {
-	error_t error;
-	mach_port_t control;
-
-	error = fshelp_fetch_control (&np->transbox, &control);
-	pthread_mutex_unlock (&np->lock);
-	if (!error && (control != MACH_PORT_NULL))
-	  {
-	    error = fsys_set_options (control, data, len, do_children);
-	    mach_port_deallocate (mach_task_self (), control);
-	  }
-	else
-	  error = 0;
-	pthread_mutex_lock (&np->lock);
-
-	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
-	  error = 0;
-	return error;
-      }
+  struct args args = { data, len, do_children };
 
   if (!pt)
     return EOPNOTSUPP;
@@ -64,7 +62,7 @@ diskfs_S_fsys_set_options (struct diskfs_control *pt,
   if (do_children)
     {
       pthread_rwlock_wrlock (&diskfs_fsys_lock);
-      err = diskfs_node_iterate (helper);
+      err = fshelp_map_active_translators (helper, &args);
       pthread_rwlock_unlock (&diskfs_fsys_lock);
     }
 

@@ -71,6 +71,16 @@ fshelp_get_active_translators (char **translators,
 			       fshelp_filter filter,
 			       const char *prefix);
 
+/* Call FUN for each active translator.  If FUN returns non-zero, the
+   iteration immediately stops, and returns that value.  FUN is called
+   with COOKIE, the name of the translator, and the translators
+   control port.  */
+error_t
+fshelp_map_active_translators (error_t (*fun)(void *cookie,
+					      const char *name,
+					      mach_port_t control),
+			       void *cookie);
+
 
 /* Passive translator linkage */
 /* These routines are self-contained and start passive translators,

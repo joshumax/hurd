@@ -19,34 +19,33 @@
 #include "fs_S.h"
 #include <hurd/fsys.h>
 
+struct args
+{
+  int wait;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  (void) name;
+  fsys_syncfs (control, args->wait, 1);
+  return 0;
+}
+
 /* Implement file_syncfs as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_syncfs (struct protid *cred,
 		      int wait,
 		      int dochildren)
 {
-  error_t 
-    helper (struct node *np)
-      {
-	error_t err;
-	mach_port_t control;
-	
-	err = fshelp_fetch_control (&np->transbox, &control);
-	pthread_mutex_unlock (&np->lock);
-	if (!err && (control != MACH_PORT_NULL))
-	  {
-	    fsys_syncfs (control, wait, 1);
-	    mach_port_deallocate (mach_task_self (), control);
-	  }
-	pthread_mutex_lock (&np->lock);
-	return 0;
-      }
-  
+  struct args args = { wait };
+
   if (!cred)
     return EOPNOTSUPP;
 
   if (dochildren)
-    diskfs_node_iterate (helper);
+    fshelp_map_active_translators (helper, &args);
 
   if (diskfs_synchronous)
     wait = 1;

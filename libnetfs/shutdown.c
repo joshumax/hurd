@@ -26,33 +26,28 @@
 #include <hurd/fshelp.h>
 #include <pthread.h>
 
+struct args
+{
+  int flags;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  error_t err;
+  (void) name;
+  err = fsys_goaway (control, args->flags);
+  if (err == MIG_SERVER_DIED || err == MACH_SEND_INVALID_DEST)
+    err = 0;
+  return err;
+}
+
 /* Shutdown the filesystem; flags are as for fsys_goaway. */
 error_t
 netfs_shutdown (int flags)
 {
-  error_t
-  helper (struct node *node)
-    {
-      error_t err;
-      mach_port_t control;
-
-      err = fshelp_fetch_control (&node->transbox, &control);
-      if (!err && (control != MACH_PORT_NULL))
-        {
-          pthread_mutex_unlock (&node->lock);
-          err = fsys_goaway (control, flags);
-          mach_port_deallocate (mach_task_self (), control);
-          pthread_mutex_lock (&node->lock);
-        }
-      else
-        err = 0;
-
-      if ((err == MIG_SERVER_DIED) || (err == MACH_SEND_INVALID_DEST))
-        err = 0;
-
-      return err;
-    }
-
+  struct args args = { flags };
   int nports;
   int err;
 
@@ -60,14 +55,12 @@ netfs_shutdown (int flags)
       && S_ISDIR (netfs_root_node->nn_stat.st_mode))
     return EBUSY;
 
-#ifdef NOTYET
   if (flags & FSYS_GOAWAY_RECURSE)
     {
-      err = netfs_node_iterate (helper);
+      err = fshelp_map_active_translators (helper, &args);
       if (err)
 	return err;
     }
-#endif
 
 #ifdef NOTYET
   pthread_rwlock_wrlock (&netfs_fsys_lock);

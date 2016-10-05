@@ -26,8 +26,24 @@
 #include "netfs.h"
 #include "fsys_S.h"
 
-/* This code is originally from libdiskfs; things surrounded by `#if NOT_YET'
-   are pending libnetfs being fleshed out some more.  */
+struct args
+{
+  char *data;
+  mach_msg_type_number_t len;
+  int do_children;
+};
+
+static error_t
+helper (void *cookie, const char *name, mach_port_t control)
+{
+  struct args *args = cookie;
+  error_t err;
+  (void) name;
+  err = fsys_set_options (control, args->data, args->len, args->do_children);
+  if (err == MIG_SERVER_DIED || err == MACH_SEND_INVALID_DEST)
+    err = 0;
+  return err;
+}
 
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
 error_t
@@ -38,40 +54,21 @@ netfs_S_fsys_set_options (struct netfs_control *pt,
 			  int do_children)
 {
   error_t err = 0;
+  struct args args = { data, data_len, do_children };
+
   if (!pt)
     return EOPNOTSUPP;
 
-  error_t
-    helper (struct node *np)
-      {
-	error_t error;
-	mach_port_t control;
-
-	error = fshelp_fetch_control (&np->transbox, &control);
-	pthread_mutex_unlock (&np->lock);
-	if (!error && (control != MACH_PORT_NULL))
-	  {
-	    error = fsys_set_options (control, data, data_len, do_children);
-	    mach_port_deallocate (mach_task_self (), control);
-	  }
-	else
-	  error = 0;
-	pthread_mutex_lock (&np->lock);
-
-	if ((error == MIG_SERVER_DIED) || (error == MACH_SEND_INVALID_DEST))
-	  error = 0;
-
-	return error;
-      }
-
-#if NOT_YET
   if (do_children)
     {
+#if NOT_YET
       pthread_rwlock_wrlock (&netfs_fsys_lock);
-      err = netfs_node_iterate (helper);
-      pthread_rwlock_unlock (&netfs_fsys_lock);
-    }
 #endif
+      err = fshelp_map_active_translators (helper, &args);
+#if NOT_YET
+      pthread_rwlock_unlock (&netfs_fsys_lock);
+#endif
+    }
 
   if (!err)
     {
