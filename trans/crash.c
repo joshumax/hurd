@@ -30,6 +30,7 @@
 #include <argz.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include <version.h>
 
@@ -71,6 +72,7 @@ enum crash_action
 
 static enum crash_action crash_how, crash_orphans_how;
 static char *corefile_template;
+pthread_mutex_t corefile_template_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 
@@ -336,12 +338,15 @@ S_crash_dump_task (mach_port_t port,
       if (!err)
 	{
 	  file_t sink = core_file;
+	  pthread_mutex_lock (&corefile_template_lock);
 	  if (corefile_template)
 	    {
 	      char *file_name;
 
 	      file_name = template_make_file_name (corefile_template,
 						   task, signo);
+	      pthread_mutex_unlock (&corefile_template_lock);
+
 	      if (file_name == NULL)
 		error (0, errno, "template_make_file_name");
 	      else
@@ -356,6 +361,8 @@ S_crash_dump_task (mach_port_t port,
 		  free (file_name);
 		}
 	    }
+	  else
+	    pthread_mutex_unlock (&corefile_template_lock);
 
 	  err = dump_core (task, sink,
 			   (off_t) -1,	/* XXX should get core limit in RPC */
@@ -645,10 +652,21 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    return EINVAL;
 	  }
       }
+      pthread_mutex_lock (&corefile_template_lock);
+      free (corefile_template);
       if (strlen (arg) == 0)
 	corefile_template = NULL;
       else
-	corefile_template = arg;
+	{
+	  corefile_template = strdup (arg);
+	  if (corefile_template == NULL)
+	    {
+	      pthread_mutex_unlock (&corefile_template_lock);
+	      argp_failure (state, 1, errno, "strdup");
+	      return errno;
+	    }
+	}
+      pthread_mutex_unlock (&corefile_template_lock);
       break;
 
     case ARGP_KEY_SUCCESS:
@@ -692,6 +710,7 @@ trivfs_append_args (struct trivfs_control *fsys,
       err = argz_add (argz, argz_len, opt);
     }
 
+  pthread_mutex_lock (&corefile_template_lock);
   if (!err && corefile_template)
     {
       char *template;
@@ -703,6 +722,7 @@ trivfs_append_args (struct trivfs_control *fsys,
 	  free (template);
 	}
     }
+  pthread_mutex_unlock (&corefile_template_lock);
 
   return err;
 }
