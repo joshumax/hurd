@@ -89,6 +89,10 @@ fshelp_set_active_translator (struct port_info *pi,
   if (t)
     goto update; /* Entry exists.  */
 
+  if (! MACH_PORT_VALID (active))
+    /* Avoid allocating an entry just to delete it.  */
+    goto out;
+
   t = malloc (sizeof *t);
   if (! t)
     {
