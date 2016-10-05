@@ -640,7 +640,10 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       {
 	char *errp;
 	if (! template_valid (arg, &errp))
-	  error (1, 0, "Invalid template: ...'%s'", errp);
+	  {
+	    argp_error (state, "Invalid template: ...'%s'", errp);
+	    return EINVAL;
+	  }
       }
       corefile_template = arg;
       break;

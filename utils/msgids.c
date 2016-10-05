@@ -200,7 +200,10 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
     case 'i':
       if (argz_add (&msgids_files_argz, &msgids_files_argz_len,
 		    arg) != 0)
-	error (1, errno, "argz_add");
+	{
+	  argp_failure (state, 1, errno, "argz_add");
+	  return errno;
+	}
       break;
 
     case 'I':
