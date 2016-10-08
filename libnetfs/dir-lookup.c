@@ -277,6 +277,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 
 	      {
 		char *translator_path = strdupa (relpath);
+		char *end;
 		char *complete_path;
 		if (nextname != NULL)
 		  {
@@ -284,11 +285,16 @@ netfs_S_dir_lookup (struct protid *dircred,
 		       NEXTNAME points to the next component, locate
 		       the end of the current component and use it
 		       to trim TRANSLATOR_PATH.  */
-		    char *end = nextname;
+		    end = nextname;
 		    while (*end != 0)
 		      end--;
 		    translator_path[end - filename_start] = '\0';
 		  }
+
+		/* Trim trailing slashes.  */
+		end = &translator_path[strlen (translator_path) - 1];
+		while (*end == '/' && end >= translator_path)
+		  *end = '\0', end--;
 
 		if (dircred->po->path == NULL
 		    || !strcmp (dircred->po->path,"."))
