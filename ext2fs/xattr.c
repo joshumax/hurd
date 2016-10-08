@@ -867,6 +867,10 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 cleanup:
   if (block)
     disk_cache_block_deref (block);
+  if (ei->i_file_acl == 0 && blkno != 0)
+    /* We allocated a block, but for some reason we did not register
+       it.  */
+    ext2_free_blocks (blkno, 1);
   dino_deref (ei);
 
   return err;
