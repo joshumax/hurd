@@ -704,7 +704,6 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
       goal = sblock->s_first_data_block + np->dn->info.i_block_group *
 	EXT2_BLOCKS_PER_GROUP (sblock);
       blkno = ext2_new_block (goal, 0, 0, 0);
-      block = disk_cache_block_ref (blkno);
 
       if (blkno == 0)
 	{
@@ -712,6 +711,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	  goto cleanup;
 	}
 
+      block = disk_cache_block_ref (blkno);
       memset (block, 0, block_size);
 
       header = EXT2_XATTR_HEADER (block);
