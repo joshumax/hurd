@@ -481,11 +481,11 @@ record_global_poke (void *ptr)
 
 /* This syncs a modification to a non-file block.  */
 EXT2FS_EI void
-sync_global_ptr (void *bptr, int wait)
+sync_global_ptr (void *ptr, int wait)
 {
-  block_t block = boffs_block (bptr_offs (bptr));
+  block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  ext2_debug ("(%p -> %u)", bptr, block);
+  ext2_debug ("(%p -> %u)", ptr, block);
   global_block_modified (block);
   disk_cache_block_deref (block_ptr);
   pager_sync_some (diskfs_disk_pager,
