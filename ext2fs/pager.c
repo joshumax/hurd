@@ -1197,7 +1197,7 @@ disk_cache_block_ref_ptr (void *ptr)
 }
 
 void
-disk_cache_block_deref (void *ptr)
+_disk_cache_block_deref (void *ptr)
 {
   int index;
 

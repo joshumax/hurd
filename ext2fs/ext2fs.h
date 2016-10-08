@@ -271,7 +271,9 @@ extern pthread_cond_t disk_cache_reassociation;
 
 void *disk_cache_block_ref (block_t block);
 void disk_cache_block_ref_ptr (void *ptr);
-void disk_cache_block_deref (void *ptr);
+void _disk_cache_block_deref (void *ptr);
+#define disk_cache_block_deref(PTR)                             \
+  do { _disk_cache_block_deref (PTR); PTR = NULL; } while (0)
 int disk_cache_block_is_ref (block_t block);
 
 /* Our in-core copy of the super-block (pointer into the disk_cache).  */
@@ -412,12 +414,14 @@ dino_ref (ino_t inum)
 }
 
 EXT2FS_EI void
-dino_deref (struct ext2_inode *inode)
+_dino_deref (struct ext2_inode *inode)
 {
   ext2_debug ("(%p)", inode);
   disk_cache_block_deref (inode);
 }
 #endif /* Use extern inlines.  */
+#define dino_deref(INODE)                               \
+  do { _dino_deref (INODE); INODE = NULL; } while (0)
 
 /* ---------------------------------------------------------------- */
 /* inode.c */
