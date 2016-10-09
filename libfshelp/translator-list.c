@@ -20,6 +20,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <argz.h>
+#include <assert-backtrace.h>
 #include <hurd/fsys.h>
 #include <hurd/ihash.h>
 #include <hurd/ports.h>
@@ -113,7 +114,11 @@ fshelp_set_active_translator (struct port_info *pi,
   err = hurd_ihash_locp_add (&translator_ihash, slot,
 			     (hurd_ihash_key_t) t->name, t);
   if (err)
-    goto out;
+    {
+      free (t->name);
+      free (t);
+      goto out;
+    }
 
  update:
   if (MACH_PORT_VALID (active))
@@ -142,7 +147,11 @@ fshelp_set_active_translator (struct port_info *pi,
       t->active = active;
     }
   else
-    hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t);
+    {
+      int ok;
+      ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
+      assert_backtrace (ok);
+    }
 
  out:
   pthread_mutex_unlock (&translator_ihash_lock);
@@ -170,7 +179,11 @@ fshelp_remove_active_translator (mach_port_t active)
     }
 
   if (t)
-    hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
+    {
+      int ok;
+      ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
+      assert_backtrace (ok);
+    }
 
   pthread_mutex_unlock (&translator_ihash_lock);
   return err;
