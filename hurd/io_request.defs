@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-subsystem io 21000;
+subsystem io_request 21000;
 
 /* These functions are user-side stubs for the functions in io.defs;
    all the comments there apply exactly to here. */
