@@ -41,6 +41,7 @@
 #include "mutated_ourmsg_U.h"
 #include "proc_exc_S.h"
 #include "proc_exc_U.h"
+#include "task_notify_S.h"
 #include <hurd/signal.h>
 
 /* Create a new id structure with the given genuine uids and gids. */
@@ -1048,13 +1049,13 @@ S_proc_get_code (struct proc *callerp,
 
 /* Handle new task notifications from the kernel.  */
 error_t
-S_mach_notify_new_task (mach_port_t notify,
+S_mach_notify_new_task (struct port_info *notify,
 			mach_port_t task,
 			mach_port_t parent)
 {
   struct proc *parentp, *childp;
 
-  if (notify != generic_port)
+  if (! notify || notify->class != generic_port_class)
     return EOPNOTSUPP;
 
   parentp = task_find_nocreate (parent);
@@ -1079,9 +1080,10 @@ S_mach_notify_new_task (mach_port_t notify,
 	 proc_child, so we do it on their behalf.  */
       mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
       err = S_proc_child (parentp, task);
-      if (! err)
-	/* Relay the notification.  This consumes TASK and PARENT.  */
-	return mach_notify_new_task (childp->p_task_namespace, task, parent);
+      assert_perror (err);
+
+      /* Relay the notification.  */
+      mach_notify_new_task (childp->p_task_namespace, task, parent);
     }
 
   mach_port_deallocate (mach_task_self (), task);
