@@ -272,27 +272,37 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   struct vm_statistics vmstats;
   struct vm_cache_statistics cache_stats;
   default_pager_info_t swap;
+  FILE *m;
   error_t err;
+
+  m = open_memstream (contents, (size_t *) contents_len);
+  if (m == NULL)
+    {
+      err = ENOMEM;
+      goto out;
+    }
 
   err = vm_statistics (mach_task_self (), &vmstats);
   if (err)
-    return EIO;
+    {
+      err = EIO;
+      goto out;
+    }
 
   err = vm_cache_statistics (mach_task_self (), &cache_stats);
   if (err)
-    return EIO;
+    {
+      err = EIO;
+      goto out;
+    }
 
   cnt = HOST_BASIC_INFO_COUNT;
   err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
   if (err)
-    return err;
-
-  err = get_swapinfo (&swap);
-  if (err)
-    return err;
+    goto out;
 
   assert (cnt == HOST_BASIC_INFO_COUNT);
-  *contents_len = asprintf (contents,
+  fprintf (m,
       "MemTotal: %14lu kB\n"
       "MemFree:  %14lu kB\n"
       "Buffers:  %14lu kB\n"
@@ -300,8 +310,6 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       "Active:   %14lu kB\n"
       "Inactive: %14lu kB\n"
       "Mlocked:  %14lu kB\n"
-      "SwapTotal:%14lu kB\n"
-      "SwapFree: %14lu kB\n"
       ,
       (long unsigned) hbi.memory_size / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
@@ -309,11 +317,23 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       (long unsigned) cache_stats.cache_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.active_count * PAGE_SIZE / 1024,
       (long unsigned) vmstats.inactive_count * PAGE_SIZE / 1024,
-      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024,
+      (long unsigned) vmstats.wire_count * PAGE_SIZE / 1024);
+
+  err = get_swapinfo (&swap);
+  if (err)
+    /* This is not fatal, we just omit the information.  */
+    err = 0;
+  else
+    fprintf (m,
+      "SwapTotal:%14lu kB\n"
+      "SwapFree: %14lu kB\n"
+      ,
       (long unsigned) swap.dpi_total_space / 1024,
       (long unsigned) swap.dpi_free_space / 1024);
 
-  return 0;
+ out:
+  fclose (m);
+  return err;
 }
 
 static error_t
