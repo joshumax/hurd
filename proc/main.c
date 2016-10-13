@@ -80,6 +80,11 @@ increase_priority (void)
     goto out;
 
   err = thread_max_priority (mach_thread_self (), psetcntl, 0);
+  /* If we are running in an unprivileged subhurd, we got a faked
+     privileged processor set port.  This is indeed a kind of
+     permission problem, and we treat it as such.  */
+  if (err == KERN_INVALID_ARGUMENT)
+    err = EPERM;
   if (err)
     goto out;
 
@@ -155,7 +160,7 @@ main (int argc, char **argv, char **envp)
   /* Give ourselves good scheduling performance, because we are so
      important. */
   err = increase_priority ();
-  if (err)
+  if (err && err != EPERM)
     error (0, err, "Increasing priority failed");
 
   err = register_new_task_notification (_hurd_host_priv,
