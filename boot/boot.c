@@ -742,7 +742,8 @@ main (int argc, char **argv, char **envp)
       FD_SET (0, &rmask);
       if (select (1, &rmask, 0, 0, 0) == 1)
 	read_reply ();
-      else /* We hosed */
+      else if (errno != EINTR)
+        /* We hosed */
 	error (5, errno, "select");
     }
 }
