@@ -1,6 +1,6 @@
 /* Load a task using the single server, and then run it
    as if we were the kernel.
-   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,2006
+   Copyright (C) 1993,94,95,96,97,98,99,2000,01,02,2006,14,16
      Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
@@ -26,6 +26,7 @@
 #include <device/device.h>
 #include <mach/message.h>
 #include <mach/mig_errors.h>
+#include <mach/task_notify.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -35,6 +36,8 @@
 #include <mach/default_pager.h>
 #include <argp.h>
 #include <hurd/store.h>
+#include <hurd/ihash.h>
+#include <sys/reboot.h>
 #include <sys/mman.h>
 #include <version.h>
 
@@ -46,6 +49,10 @@
 #include "term_S.h"
 #include "bootstrap_S.h"
 /* #include "tioctl_S.h" */
+#include "mach_S.h"
+#include "mach_host_S.h"
+#include "gnumach_S.h"
+#include "task_notify_S.h"
 
 #include "boot_script.h"
 
@@ -60,6 +67,14 @@
 #include <error.h>
 #include <hurd.h>
 #include <assert.h>
+
+/* We support two modes of operation.  Traditionally, Subhurds were
+   privileged, i.e. they had the privileged kernel ports.  This has a
+   few drawbacks.  Privileged subhurds can manipulate all tasks on the
+   system and halt the system.  Nowadays we allow an unprivileged
+   mode.  */
+static int privileged;
+static int want_privileged;
 
 static struct termios orig_tty_state;
 static int isig;
@@ -99,9 +114,14 @@ host_exit (int status)
 }
 
 mach_port_t privileged_host_port, master_device_port;
+mach_port_t pseudo_privileged_host_port;
 mach_port_t pseudo_master_device_port;
 mach_port_t receive_set;
 mach_port_t pseudo_console, pseudo_root, pseudo_time;
+mach_port_t pseudo_pset;
+task_t pseudo_kernel;
+mach_port_t task_notification_port;
+mach_port_t dead_task_notification_port;
 auth_t authserver;
 
 struct store *root_store;
@@ -177,7 +197,11 @@ boot_demuxer (mach_msg_header_t *inp,
   if ((routine = io_server_routine (inp)) ||
       (routine = device_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||
-      (routine = term_server_routine (inp))
+      (routine = term_server_routine (inp)) ||
+      (routine = mach_server_routine (inp)) ||
+      (routine = mach_host_server_routine (inp)) ||
+      (routine = gnumach_server_routine (inp)) ||
+      (routine = task_notify_server_routine (inp))
       /* (routine = tioctl_server_routine (inp)) */)
     {
       (*routine) (inp, outp);
@@ -191,6 +215,8 @@ void read_reply ();
 void * msg_thread (void *);
 
 const char *argp_program_version = STANDARD_HURD_VERSION (boot);
+
+#define OPT_PRIVILEGED	-1
 
 static struct argp_option options[] =
 {
@@ -206,6 +232,8 @@ static struct argp_option options[] =
     "Do not disable terminal signals, so you can suspend and interrupt boot."},
   { "device",	   'f', "device_name=device_file", 0,
     "Specify a device file used by subhurd and its virtual name."},
+  { "privileged", OPT_PRIVILEGED, NULL, 0,
+    "Allow the subhurd to access privileged kernel ports"},
   { 0 }
 };
 static char args_doc[] = "BOOT-SCRIPT";
@@ -277,6 +305,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
       add_dev_map (arg, dev_file+1);
       break;
 
+    case OPT_PRIVILEGED:
+      want_privileged = 1;
+      break;
+
     case ARGP_KEY_ARG:
       if (state->arg_num == 0)
 	bootscript = arg;
@@ -292,6 +324,55 @@ parse_opt (int key, char *arg, struct argp_state *state)
     }
   return 0;
 }
+
+static error_t
+allocate_pseudo_ports (void)
+{
+  mach_port_t old;
+
+  /* Allocate a port that we hand out as the privileged host port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_privileged_host_port);
+  mach_port_insert_right (mach_task_self (),
+			  pseudo_privileged_host_port,
+			  pseudo_privileged_host_port,
+			  MACH_MSG_TYPE_MAKE_SEND);
+  mach_port_move_member (mach_task_self (), pseudo_privileged_host_port,
+			 receive_set);
+  mach_port_request_notification (mach_task_self (),
+                                  pseudo_privileged_host_port,
+				  MACH_NOTIFY_NO_SENDERS, 1,
+				  pseudo_privileged_host_port,
+				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+  assert (old == MACH_PORT_NULL);
+
+  /* Allocate a port that we hand out as the privileged processor set
+     port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &pseudo_pset);
+  mach_port_move_member (mach_task_self (), pseudo_pset,
+			 receive_set);
+  /* Make one send right that we copy when handing it out.  */
+  mach_port_insert_right (mach_task_self (),
+			  pseudo_pset,
+			  pseudo_pset,
+			  MACH_MSG_TYPE_MAKE_SEND);
+
+  /* We will receive new task notifications on this port.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &task_notification_port);
+  mach_port_move_member (mach_task_self (), task_notification_port,
+			 receive_set);
+
+  /* And information about dying tasks here.  */
+  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+		      &dead_task_notification_port);
+  mach_port_move_member (mach_task_self (), dead_task_notification_port,
+			 receive_set);
+
+  return 0;
+}
+
 
 int
 main (int argc, char **argv, char **envp)
@@ -315,16 +396,26 @@ main (int argc, char **argv, char **envp)
   if (err)
     error (4, err, "%s", root_store_name);
 
-  get_privileged_ports (&privileged_host_port, &master_device_port);
+  if (want_privileged)
+    {
+      get_privileged_ports (&privileged_host_port, &master_device_port);
+      privileged = MACH_PORT_VALID (master_device_port);
 
-  strcat (bootstrap_args, "f");
+      if (! privileged)
+        error (1, 0, "Must be run as root for privileged subhurds");
+    }
+
+  if (privileged)
+    strcat (bootstrap_args, "f");
 
   mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET,
 		      &receive_set);
 
   if (root_store->class == &store_device_class && root_store->name
       && (root_store->flags & STORE_ENFORCED)
-      && root_store->num_runs == 1 && root_store->runs[0].start == 0)
+      && root_store->num_runs == 1
+      && root_store->runs[0].start == 0
+      && privileged)
     /* Let known device nodes pass through directly.  */
     bootdevice = root_store->name;
   else
@@ -369,13 +460,33 @@ main (int argc, char **argv, char **envp)
   if (foo != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), foo);
 
+  if (! privileged)
+    {
+      err = allocate_pseudo_ports ();
+      if (err)
+        error (1, err, "Allocating pseudo ports");
+
+      /* Create a new task namespace for us.  */
+      err = proc_make_task_namespace (getproc (), task_notification_port,
+                                      MACH_MSG_TYPE_MAKE_SEND);
+      if (err)
+        error (1, err, "proc_make_task_namespace");
+
+      /* Create an empty task that the subhurds can freely frobnicate.  */
+      err = task_create (mach_task_self (), 0, &pseudo_kernel);
+      if (err)
+        error (1, err, "task_create");
+    }
+
   if (kernel_command_line == 0)
     asprintf (&kernel_command_line, "%s %s root=%s",
 	      argv[0], bootstrap_args, bootdevice);
 
   /* Initialize boot script variables.  */
   if (boot_script_set_variable ("host-port", VAL_PORT,
-				(int) privileged_host_port)
+                                privileged
+                                ? (int) privileged_host_port
+				: (int) pseudo_privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
 				   (integer_t) pseudo_master_device_port)
       || boot_script_set_variable ("kernel-command-line", VAL_STR,
@@ -1115,6 +1226,8 @@ do_mach_notify_send_once (mach_port_t notify)
   return EOPNOTSUPP;
 }
 
+static void task_died (mach_port_t name);
+
 kern_return_t
 do_mach_notify_dead_name (mach_port_t notify,
 			  mach_port_t name)
@@ -1123,7 +1236,11 @@ do_mach_notify_dead_name (mach_port_t notify,
   if (name == child_task && notify == bootport)
     host_exit (0);
 #endif
-  return EOPNOTSUPP;
+  if (notify != dead_task_notification_port)
+    return EOPNOTSUPP;
+  task_died (name);
+  mach_port_deallocate (mach_task_self (), name);
+  return 0;
 }
 
 
@@ -1388,6 +1505,8 @@ S_io_reauthenticate (mach_port_t object,
   gid_t *gg, *ag;
   size_t gulen = 0, aulen = 0, gglen = 0, aglen = 0;
   error_t err;
+
+  /* XXX: This cannot possibly work, authserver is 0.  */
 
   err = mach_port_insert_right (mach_task_self (), object, object,
 				MACH_MSG_TYPE_MAKE_SEND);
@@ -1681,3 +1800,152 @@ kern_return_t S_term_on_pty
 	io_t *ptymaster
 )
 { return EOPNOTSUPP; }
+
+/* Mach host emulation.  */
+
+kern_return_t
+S_vm_set_default_memory_manager (mach_port_t host_priv,
+                                 mach_port_t *default_manager)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  if (*default_manager != MACH_PORT_NULL)
+    return KERN_INVALID_ARGUMENT;
+
+  *default_manager = MACH_PORT_NULL;
+  return KERN_SUCCESS;
+}
+
+kern_return_t
+S_host_reboot (mach_port_t host_priv,
+               int flags)
+{
+  fprintf (stderr, "Would %s the system.  Bye.\n",
+           flags & RB_HALT? "halt": "reboot");
+  host_exit (0);
+}
+
+
+kern_return_t
+S_host_processor_set_priv (mach_port_t host_priv,
+			   mach_port_t set_name,
+			   mach_port_t *set)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  *set = pseudo_pset;
+  return KERN_SUCCESS;
+}
+
+mach_port_t new_task_notification;
+
+kern_return_t
+S_register_new_task_notification (mach_port_t host_priv,
+				  mach_port_t notification)
+{
+  if (host_priv != pseudo_privileged_host_port)
+    return KERN_INVALID_HOST;
+
+  if (! MACH_PORT_VALID (notification))
+    return KERN_INVALID_ARGUMENT;
+
+  if (MACH_PORT_VALID (new_task_notification))
+    return KERN_NO_ACCESS;
+
+  new_task_notification = notification;
+  return KERN_SUCCESS;
+}
+
+
+/* Managing tasks.  */
+
+static void
+task_ihash_cleanup (hurd_ihash_value_t value, void *cookie)
+{
+  (void) cookie;
+  mach_port_deallocate (mach_task_self (), (mach_port_t) value);
+}
+
+static struct hurd_ihash task_ihash =
+  HURD_IHASH_INITIALIZER_GKI (HURD_IHASH_NO_LOCP, task_ihash_cleanup, NULL,
+                              NULL, NULL);
+
+static void
+task_died (mach_port_t name)
+{
+  hurd_ihash_remove (&task_ihash, (hurd_ihash_key_t) name);
+}
+
+/* Handle new task notifications from proc.  */
+error_t
+S_mach_notify_new_task (mach_port_t notify,
+			mach_port_t task,
+			mach_port_t parent)
+{
+  error_t err;
+  mach_port_t previous;
+
+  if (notify != task_notification_port)
+    return EOPNOTSUPP;
+
+  err = mach_port_request_notification (mach_task_self (), task,
+                                        MACH_NOTIFY_DEAD_NAME, 0,
+                                        dead_task_notification_port,
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE,
+                                        &previous);
+  if (err)
+    goto fail;
+  assert (! MACH_PORT_VALID (previous));
+
+  err = hurd_ihash_add (&task_ihash,
+                        (hurd_ihash_key_t) task, (hurd_ihash_value_t) task);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      goto fail;
+    }
+
+  if (MACH_PORT_VALID (new_task_notification))
+    /* Relay the notification.  */
+    mach_notify_new_task (new_task_notification, task, parent);
+
+  mach_port_deallocate (mach_task_self (), parent);
+  return 0;
+
+ fail:
+  task_terminate (task);
+  return err;
+}
+
+kern_return_t
+S_processor_set_tasks(mach_port_t processor_set,
+		      task_array_t *task_list,
+		      mach_msg_type_number_t *task_listCnt)
+{
+  error_t err;
+  size_t i;
+
+  err = vm_allocate (mach_task_self (), (vm_address_t *) task_list,
+		     task_ihash.nr_items * sizeof **task_list, 1);
+  if (err)
+    return err;
+
+  /* The first task has to be the kernel.  */
+  (*task_list)[0] = pseudo_kernel;
+
+  i = 1;
+  HURD_IHASH_ITERATE (&task_ihash, value)
+    {
+      task_t task = (task_t) value;
+      if (task == pseudo_kernel)
+        continue;
+
+      (*task_list)[i] = task;
+      i += 1;
+    }
+
+  *task_listCnt = task_ihash.nr_items;
+  return 0;
+}

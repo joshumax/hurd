@@ -23,12 +23,12 @@ SRCS = mach-crt0.c boot.c ux.c sigvec.S syscall.S \
 COMMON-OBJS = notifyServer.o deviceServer.o \
        ioServer.o io_replyUser.o device_replyUser.o \
        termServer.o boot_script.o userland-boot.o
-OBJS = boot.o $(COMMON-OBJS)
+MIGSTUBS = machServer.o mach_hostServer.o gnumachServer.o task_notifyServer.o
+OBJS = boot.o $(COMMON-OBJS) $(MIGSTUBS)
 target = boot
-io-MIGSFLAGS=-DREPLY_PORTS
-HURDLIBS = store shouldbeinlibc
+MIGSFLAGS=-imacros $(srcdir)/mig-mutate.h -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+io-MIGSFLAGS=-DREPLY_PORTS -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+HURDLIBS = store shouldbeinlibc ihash
 LDLIBS += -lpthread
 
 include ../Makeconf
-
-MIGSFLAGS = -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
