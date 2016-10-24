@@ -54,18 +54,6 @@
 
 #include <hurd/auth.h>
 
-#ifdef UX
-#undef STORE			/* We can't use libstore when under UX.  */
-#else
-#define STORE
-#endif
-
-#ifdef UX
-
-#include "ux.h"
-
-#else  /* !UX */
-
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -106,8 +94,6 @@ restore_termstate ()
 #define host_fstat fstat
 typedef struct stat host_stat_t;
 #define host_exit exit
-
-#endif /* UX */
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_master_device_port;
