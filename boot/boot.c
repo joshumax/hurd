@@ -217,9 +217,12 @@ void * msg_thread (void *);
 const char *argp_program_version = STANDARD_HURD_VERSION (boot);
 
 #define OPT_PRIVILEGED	-1
+#define OPT_BOOT_SCRIPT	-2
 
 static struct argp_option options[] =
 {
+  { "boot-script", OPT_BOOT_SCRIPT, "BOOT-SCRIPT", 0,
+    "boot script to execute" },
   { "boot-root",   'D', "DIR", 0,
     "Root of a directory tree in which to find files specified in BOOT-SCRIPT" },
   { "single-user", 's', 0, 0,
@@ -236,7 +239,7 @@ static struct argp_option options[] =
     "Allow the subhurd to access privileged kernel ports"},
   { 0 }
 };
-static char args_doc[] = "BOOT-SCRIPT";
+static char args_doc[] = "";
 static char doc[] = "Boot a second hurd";
 
 struct dev_map 
@@ -309,12 +312,12 @@ parse_opt (int key, char *arg, struct argp_state *state)
       want_privileged = 1;
       break;
 
-    case ARGP_KEY_ARG:
-      if (state->arg_num == 0)
-	bootscript = arg;
-      else
-	return ARGP_ERR_UNKNOWN;
+    case OPT_BOOT_SCRIPT:
+      bootscript = arg;
       break;
+
+    case ARGP_KEY_ARG:
+      return ARGP_ERR_UNKNOWN;
 
     case ARGP_KEY_INIT:
       state->child_inputs[0] = state->input; break;
@@ -373,6 +376,82 @@ allocate_pseudo_ports (void)
   return 0;
 }
 
+void
+read_boot_script (char **buffer, size_t *length)
+{
+  char *p, *buf;
+  static const char filemsg[] = "Can't open boot script\n";
+  static const char memmsg[] = "Not enough memory\n";
+  int i, fd;
+  size_t amt, len;
+
+  fd = open (bootscript, O_RDONLY, 0);
+  if (fd < 0)
+    {
+      write (2, filemsg, sizeof (filemsg));
+      host_exit (1);
+    }
+  p = buf = malloc (500);
+  if (!buf)
+    {
+      write (2, memmsg, sizeof (memmsg));
+      host_exit (1);
+    }
+  len = 500;
+  amt = 0;
+  while (1)
+    {
+      i = read (fd, p, len - (p - buf));
+      if (i <= 0)
+        break;
+      p += i;
+      amt += i;
+      if (p == buf + len)
+        {
+          char *newbuf;
+
+          len += 500;
+          newbuf = realloc (buf, len);
+          if (!newbuf)
+            {
+              write (2, memmsg, sizeof (memmsg));
+              host_exit (1);
+            }
+          p = newbuf + (p - buf);
+          buf = newbuf;
+        }
+    }
+
+  close (fd);
+  *buffer = buf;
+  *length = amt;
+}
+
+
+/* Boot script file for booting contemporary GNU Hurd systems.  Each
+   line specifies a file to be loaded by the boot loader (the first
+   word), and actions to be done with it.  */
+const char *default_boot_script =
+  /* First, the bootstrap filesystem.  It needs several ports as
+     arguments, as well as the user flags from the boot loader.  */
+  "/hurd/ext2fs.static"
+  " --readonly"
+  " --multiboot-command-line=${kernel-command-line}"
+  " --host-priv-port=${host-port}"
+  " --device-master-port=${device-port}"
+  " --exec-server-task=${exec-task}"
+  " -T device ${root-device} $(task-create) $(task-resume)"
+  "\n"
+
+  /* Now the exec server; to load the dynamically-linked exec server
+     program, we have the boot loader in fact load and run ld.so,
+     which in turn loads and runs /hurd/exec.  This task is created,
+     and its task port saved in ${exec-task} to be passed to the fs
+     above, but it is left suspended; the fs will resume the exec task
+     once it is ready.  */
+  "/lib/ld.so /hurd/exec $(exec-task=task-create)"
+  "\n";
+
 
 int
 main (int argc, char **argv, char **envp)
@@ -380,7 +459,6 @@ main (int argc, char **argv, char **envp)
   error_t err;
   mach_port_t foo;
   char *buf = 0;
-  int i, len;
   pthread_t pthread_id;
   char *root_store_name;
   const struct argp_child kids[] = { { &store_argp }, { 0 }};
@@ -532,46 +610,12 @@ main (int argc, char **argv, char **envp)
   /* Parse the boot script.  */
   {
     char *p, *line;
-    static const char filemsg[] = "Can't open boot script\n";
-    static const char memmsg[] = "Not enough memory\n";
-    int amt, fd, err;
+    size_t amt;
+    if (bootscript)
+      read_boot_script (&buf, &amt);
+    else
+      buf = strdup (default_boot_script), amt = strlen (default_boot_script);
 
-    fd = open (bootscript, O_RDONLY, 0);
-    if (fd < 0)
-      {
-	write (2, filemsg, sizeof (filemsg));
-	host_exit (1);
-      }
-    p = buf = malloc (500);
-    if (!buf)
-      {
-	write (2, memmsg, sizeof (memmsg));
-	host_exit (1);
-      }
-    len = 500;
-    amt = 0;
-    while (1)
-      {
-	i = read (fd, p, len - (p - buf));
-	if (i <= 0)
-	  break;
-	p += i;
-	amt += i;
-	if (p == buf + len)
-	  {
-	    char *newbuf;
-
-	    len += 500;
-	    newbuf = realloc (buf, len);
-	    if (!newbuf)
-	      {
-		write (2, memmsg, sizeof (memmsg));
-		host_exit (1);
-	      }
-	    p = newbuf + (p - buf);
-	    buf = newbuf;
-	  }
-      }
     line = p = buf;
     while (1)
       {
@@ -611,8 +655,6 @@ main (int argc, char **argv, char **envp)
   /* The boot script has now been parsed into internal data structures.
      Now execute its directives.  */
   {
-    int err;
-
     err = boot_script_exec ();
     if (err)
       {
