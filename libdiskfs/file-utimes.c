@@ -28,6 +28,9 @@ diskfs_S_file_utimes (struct protid *cred,
 		   ({
 		     if (!(err = fshelp_isowner (&np->dn_stat, cred->user)))
 		       {
+			 /* Flush pending updates first.  */
+			 diskfs_set_node_times (np);
+
 			 if (atime.microseconds == -1)
 			   np->dn_set_atime = 1;
 			 else
