@@ -40,6 +40,10 @@ diskfs_nrele (struct node *np)
     {
       locked = TRUE;
       pthread_mutex_lock (&np->lock);
+      /* This is our cue that something akin to "last process closes file"
+	 in the POSIX.1 sense happened, so make sure any pending node time
+	 updates now happen in a timely fashion.  */
+      diskfs_set_node_times (np);
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink)
 	{
