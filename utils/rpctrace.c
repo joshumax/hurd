@@ -1307,7 +1307,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 
 	  /* Print something about the message header.  */
 	  print_request_header ((struct sender_info *) info, inp);
-	  /* It's a nofication message. */
+	  /* It's a notification message. */
 	  if (inp->msgh_id <= 72 && inp->msgh_id >= 64)
 	    {
 	      assert (info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE);
