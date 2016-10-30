@@ -814,6 +814,21 @@ user_create (display_t display, uint32_t width, uint32_t height,
   user->cursor.status = CONS_CURSOR_NORMAL;
   conchar_memset (user->_matrix, chr, attr,
 		  user->screen.width * user->screen.lines);
+
+  /* FIXME: it seems we don't properly handle getting paged out.
+   * For now, just wire the pages to work around the issue.  */
+  {
+    mach_port_t host;
+
+    error_t err = get_privileged_ports (&host, NULL);
+    if (err)
+      host = mach_host_self ();
+
+    vm_wire (host, mach_task_self (), (vm_offset_t) user,
+	     (vm_size_t) npages * vm_page_size, VM_PROT_READ);
+    if (host != mach_host_self ())
+	mach_port_deallocate (mach_task_self (), host);
+  }
   return 0;
 }
 
