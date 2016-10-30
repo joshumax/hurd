@@ -22,7 +22,7 @@
 #include "priv.h"
 #include "trivfs_fsys_S.h"
 
-kern_return_t
+kern_return_t __attribute__((weak))
 trivfs_S_fsys_startup (mach_port_t bootport,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
@@ -34,7 +34,7 @@ trivfs_S_fsys_startup (mach_port_t bootport,
   return EOPNOTSUPP;
 }
 
-kern_return_t
+kern_return_t __attribute__((weak))
 trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
@@ -45,7 +45,7 @@ trivfs_S_fsys_getpriv (struct trivfs_control *cntl,
   return EOPNOTSUPP;
 }
 
-kern_return_t
+kern_return_t __attribute__((weak))
 trivfs_S_fsys_init (struct trivfs_control *control,
 		    mach_port_t reply,
 		    mach_msg_type_name_t replytype,
@@ -55,7 +55,7 @@ trivfs_S_fsys_init (struct trivfs_control *control,
   return EOPNOTSUPP;
 }
 
-kern_return_t
+kern_return_t __attribute__((weak))
 trivfs_S_fsys_getfile (struct trivfs_control *cntl,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
