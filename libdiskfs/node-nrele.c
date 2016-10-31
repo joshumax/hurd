@@ -47,6 +47,12 @@ diskfs_nrele (struct node *np)
       diskfs_lost_hardrefs (np);
       if (!np->dn_stat.st_nlink)
 	{
+	  if (np->sockaddr != MACH_PORT_NULL)
+	    {
+	      mach_port_deallocate (mach_task_self (), np->sockaddr);
+	      np->sockaddr = MACH_PORT_NULL;
+	    }
+
 	  /* There are no links.  If there are soft references that
 	     can be dropped, we can't let them postpone deallocation.
 	     So attempt to drop them.  But that's a user-supplied
