@@ -40,27 +40,7 @@ diskfs_nrele (struct node *np)
     {
       locked = TRUE;
       pthread_mutex_lock (&np->lock);
-      /* This is our cue that something akin to "last process closes file"
-	 in the POSIX.1 sense happened, so make sure any pending node time
-	 updates now happen in a timely fashion.  */
-      diskfs_set_node_times (np);
-      diskfs_lost_hardrefs (np);
-      if (!np->dn_stat.st_nlink)
-	{
-	  if (np->sockaddr != MACH_PORT_NULL)
-	    {
-	      mach_port_deallocate (mach_task_self (), np->sockaddr);
-	      np->sockaddr = MACH_PORT_NULL;
-	    }
-
-	  /* There are no links.  If there are soft references that
-	     can be dropped, we can't let them postpone deallocation.
-	     So attempt to drop them.  But that's a user-supplied
-	     routine, which might result in further recursive calls to
-	     the ref-counting system.  This is not a problem, as we
-	     hold a weak reference ourselves. */
-	  diskfs_try_dropping_softrefs (np);
-	}
+      _diskfs_lastref (np);
     }
 
   /* Finally get rid of our reference.  */
