@@ -433,7 +433,7 @@ void write_all_disknodes ();
 
 /* What to lock if changing global data data (e.g., the superblock or block
    group descriptors or bitmaps).  */
-pthread_spinlock_t global_lock;
+extern pthread_spinlock_t global_lock;
 
 /* Where to record such changes.  */
 struct pokel global_pokel;
@@ -442,7 +442,7 @@ struct pokel global_pokel;
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
 unsigned char *modified_global_blocks;
-pthread_spinlock_t modified_global_blocks_lock;
+extern pthread_spinlock_t modified_global_blocks_lock;
 
 extern int global_block_modified (block_t block);
 extern void record_global_poke (void *ptr);

@@ -55,6 +55,9 @@ struct store *store;
 struct store_parsed *store_parsed;
 
 char *diskfs_disk_name;
+
+pthread_spinlock_t global_lock = PTHREAD_SPINLOCK_INITIALIZER;
+pthread_spinlock_t modified_global_blocks_lock = PTHREAD_SPINLOCK_INITIALIZER;
 
 #ifdef EXT2FS_DEBUG
 int ext2_debug_flag;
