@@ -880,6 +880,23 @@ init_stdarrays ()
    so the kernel command line can be read as for a normal Hurd process.  */
 
 void
+dump_processes (void)
+{
+  pid_t pid;
+  for (pid = 1; pid < 100; pid++)
+    {
+      char args[256], *buffer = args;
+      size_t len = sizeof args;
+      if (proc_getprocargs (procserver, pid, &buffer, &len) == 0)
+        {
+          fprintf (stderr, "pid%d\t%s\n", (int) pid, buffer);
+          if (buffer != args)
+            vm_deallocate (mach_task_self (), (vm_offset_t) buffer, len);
+        }
+    }
+}
+
+void
 frob_kernel_process (void)
 {
   error_t err;
@@ -904,7 +921,10 @@ frob_kernel_process (void)
   /* Make the kernel our child.  */
   err = proc_child (procserver, task);
   if (err)
-    error (0, err, "cannot make the kernel our child");
+    {
+      error (0, err, "cannot make the kernel our child");
+      dump_processes ();
+    }
 
   err = proc_task2proc (procserver, task, &proc);
   if (err)
