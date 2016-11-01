@@ -104,9 +104,11 @@ main (int argc, char **argv)
 	 exitting, and the child sends that signal after it is set up.  */
       sigset_t set;
       signal (SIGUSR1, nohandler);
+      signal (SIGCHLD, nohandler);
       sigemptyset (&set);
       sigaddset (&set, SIGUSR1);
-      sigprocmask (SIG_BLOCK, &set, 0);
+      sigaddset (&set, SIGCHLD);
+      sigprocmask (SIG_SETMASK, &set, NULL);
       switch (fork ())
 	{
 	case -1:
