@@ -318,8 +318,13 @@ boot_script_exec_cmd (void *hook,
   write (2, path, strlen (path));
   for (i = 1; i < argc; ++i)
     {
+      int quote = !! index (argv[i], ' ') || !! index (argv[i], '\t');
       write (2, " ", 1);
+      if (quote)
+        write (2, "\"", 1);
       write (2, argv[i], strlen (argv[i]));
+      if (quote)
+        write (2, "\"", 1);
     }
   write (2, "\r\n", 2);
 
