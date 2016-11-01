@@ -90,14 +90,23 @@ boot_script_free_task (task_t task, int aborting)
 int
 boot_script_insert_right (struct cmd *cmd, mach_port_t port, mach_port_t *name)
 {
-  error_t err = mach_port_insert_right (cmd->task,
-					port, port, MACH_MSG_TYPE_COPY_SEND);
+  error_t err;
+
+  *name = MACH_PORT_NULL;
+  do
+    {
+      *name += 1;
+      err = mach_port_insert_right (cmd->task,
+                                    *name, port, MACH_MSG_TYPE_COPY_SEND);
+    }
+  while (err == KERN_NAME_EXISTS);
+
   if (err)
     {
       error (0, err, "%s: mach_port_insert_right", cmd->path);
       return BOOT_SCRIPT_MACH_ERROR;
     }
-  *name = port;
+
   return 0;
 }
 
