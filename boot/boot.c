@@ -221,6 +221,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (boot);
 
 static struct argp_option options[] =
 {
+  { NULL, 0, NULL, 0, "Boot options:" },
   { "boot-script", OPT_BOOT_SCRIPT, "BOOT-SCRIPT", 0,
     "boot script to execute" },
   { "boot-root",   'D', "DIR", 0,
@@ -232,14 +233,13 @@ static struct argp_option options[] =
   { "pause" ,      'd', 0, 0,
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
-    "Do not disable terminal signals, so you can suspend and interrupt boot."},
+    "Do not disable terminal signals, so you can suspend and interrupt boot"},
   { "device",	   'f', "device_name=device_file", 0,
-    "Specify a device file used by subhurd and its virtual name."},
+    "Specify a device file used by subhurd and its virtual name"},
   { "privileged", OPT_PRIVILEGED, NULL, 0,
     "Allow the subhurd to access privileged kernel ports"},
   { 0 }
 };
-static char args_doc[] = "";
 static char doc[] = "Boot a second hurd";
 
 struct dev_map 
@@ -461,8 +461,9 @@ main (int argc, char **argv, char **envp)
   char *buf = 0;
   pthread_t pthread_id;
   char *root_store_name;
-  const struct argp_child kids[] = { { &store_argp }, { 0 }};
-  struct argp argp = { options, parse_opt, args_doc, doc, kids };
+  const struct argp_child kids[] = { { &store_argp, 0, "Store options:", -2 },
+                                     { 0 }};
+  struct argp argp = { options, parse_opt, NULL, doc, kids };
   struct store_argp_params store_argp_params = { 0 };
 
   argp_parse (&argp, argc, argv, 0, 0, &store_argp_params);
