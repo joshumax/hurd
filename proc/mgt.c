@@ -1082,8 +1082,8 @@ S_mach_notify_new_task (struct port_info *notify,
       err = S_proc_child (parentp, task);
       assert_perror (err);
 
-      /* Relay the notification.  */
-      mach_notify_new_task (childp->p_task_namespace, task, parent);
+      /* Relay the notification.  This consumes task and parent.  */
+      return mach_notify_new_task (childp->p_task_namespace, task, parent);
     }
 
   mach_port_deallocate (mach_task_self (), task);

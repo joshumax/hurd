@@ -1942,6 +1942,7 @@ S_mach_notify_new_task (mach_port_t notify,
     goto fail;
   assert (! MACH_PORT_VALID (previous));
 
+  mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
   err = hurd_ihash_add (&task_ihash,
                         (hurd_ihash_key_t) task, (hurd_ihash_value_t) task);
   if (err)
@@ -1951,9 +1952,10 @@ S_mach_notify_new_task (mach_port_t notify,
     }
 
   if (MACH_PORT_VALID (new_task_notification))
-    /* Relay the notification.  */
-    mach_notify_new_task (new_task_notification, task, parent);
+    /* Relay the notification.  This consumes task and parent.  */
+    return mach_notify_new_task (new_task_notification, task, parent);
 
+  mach_port_deallocate (mach_task_self (), task);
   mach_port_deallocate (mach_task_self (), parent);
   return 0;
 
