@@ -45,6 +45,7 @@ prog-subdirs = auth proc exec term \
 	       startup \
 	       init \
 	       devnode \
+	       eth-multiplexer \
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

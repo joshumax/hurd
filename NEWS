@@ -3,8 +3,8 @@ Version 0.9 (2016-11-XX)
 The 'boot' program can now be run as unprivileged user, allowing any
 user to create unprivileged Subhurds.
 
-The Berkeley Packet Filter library has been merged into this
-repository.
+The Berkeley Packet Filter library and the ethernet multiplexer have
+been merged into this repository.
 
 Version 0.8 (2016-05-18)
 

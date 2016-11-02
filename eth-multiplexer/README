@@ -1,0 +1,27 @@
+[Introduction]
+
+eth-multiplexer is a network multiplexer. It creates virtual ethernet interface and dispatches the packet to the right user program that opens its virtual interface. It also works as a bridge to connect the real ethernet interface and the virtual ones.
+
+
+[Usage]
+
+Usage: eth-multiplexer [OPTION...]
+Hurd multiplexer server.
+
+  -i, --interface=DEVICE     Network interface to use
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+
+The '-i' option specifies the network interface the translator sits on. eth-multiplexer can only connect to one network interface and the '-i' option should be only used once. DEVICE is a device file that is created by the devnode translator.
+
+
+[Internal]
+
+eth-multiplexer implements the server side functions in device.defs, so other programs can access the virtual device as other devices. All information about the virtual interface is kept in the vether_device structure.
+When eth-multiplexer gets a packet from a virtual interface (which happens in ds_device_write) or from the real interface (which happens in ethernet_demuxer), it sends the packet to all other interfaces. eth-multipexer has BPF filters for each client. The BPF filter decides whether to deliver the packet. The packet delivery is done by deliver_pack(). There is no filter for the real network interface in eth-multiplexer, so every packet from the virtual interface will be sent to the real interface whose filter will decide the destination of the packet.
+eth-multiplexer sets the real interface into the promiscuous mode, so eth-multiplexer can receive the packet with the virtual interface's hardware address from the real interface.

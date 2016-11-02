@@ -1,0 +1,341 @@
+2009-04-18  Zheng Da  <zhengda1936@gmail.com>
+
+	* device_impl.c (ds_device_open): Create a virtual device if it
+					  doesn't exist.
+
+	* netfs_impl.c (new_node): Test if the lnode structure exists
+				   before setting its field.
+	(lookup): Copy the device name and don't create the virtual device.
+	(netfs_validate_stat): Set the status with the one of the underlying
+			       node if the node has no lnode structure.
+	(netfs_attempt_chmod): chmod isn't supported if the node has no lnode
+			       structure.
+	(netfs_node_norefs): Free the name in netnode.
+
+	* netfs_impl.h (net_node): Add a new field 'name'.
+
+2009-04-18  Zheng Da  <zhengda1936@gmail.com>
+
+	* device_impl.c (ds_device_open): Check the mode for opening the file.
+
+	* multiplexer.c
+	(underlying_node_stat): New variable.
+	(main): Get the mapped time from Mach and set the time of the underlying
+		node of the translator.
+
+	* netfs_impl.c (lookup): Set the new created node with the same permission
+				 as the underlying node of the translator and its time.
+	(netfs_check_open_permissions): Check the open permission of a node
+					in the same way.
+	(netfs_attempt_unlink): Change the return value.
+	(netfs_attempt_rename): Likewise.
+	(netfs_attempt_mkdir): Likewise.
+	(netfs_attempt_rmdir): Likewise.
+	(netfs_attempt_chown): Likewise.
+	(netfs_attempt_chauthor): Likewise.
+	(netfs_attempt_mksymlink): Likewise.
+	(netfs_attempt_mkdev): Likewise.
+	(netfs_set_translator): Likewise.
+	(netfs_attempt_chflags): Likewise.
+	(netfs_attempt_set_size): Likewise.
+	(netfs_attempt_link): Likewise.
+	(netfs_attempt_mkfile): Likewise.
+	(netfs_attempt_write): Likewise.
+	(netfs_attempt_chmod): Write the code to support the change of the mode.
+
+	* netfs_impl.h (multiplexer_maptime): Add the declaration.
+
+2009-01-03  Zheng Da  <zhengda1936@gmail.com>
+
+	* device_impl.c (ds_device_write): Deallocate the out-of-line data.
+
+2008-12-12  Zheng Da  <zhengda1936@gmail.com>
+
+	* multiplexer.c (main): Initialize the file status of the root node.
+
+	* netfs_impl.c (netfs_validate_stat): Set the file status of the node
+					      with the one in the light node.
+
+	* vdev.h (dev_act_func): Define a new type.
+	(foreach_dev_do): Declare the function.
+
+2008-11-18  Zheng Da  <zhengda1936@gmail.com>
+
+	* netfs_impl.c (netfs_get_dirents): Use foreach_dev_do.
+
+	* vdev.c (dev_head, dev_num): Hide in the file.
+	(dev_list_lock): New variable.
+	(get_dev_num): New function.
+	(lookup_dev_by_name): Use lock.
+	(foreach_dev_do): New function.
+	(remove_dead_port_from_dev): Use lock.
+	(broadcast_pack, broadcast_msg): Use foreach_dev_do.
+
+	* vdev.h (dev_num): Remove declaration.
+	(get_dev_num): Add declaration.
+
+2008-11-13  Zheng Da  <zhengda1936@gmail.com>
+
+	* device_impl.c (ds_device_open): Use dev_port, dereference pi.
+
+	* util.h (print_backtrace): New macro.
+
+	* vdev.c (add_vdev): Set dev_port.
+
+	* vdev.h (vether_device): Add dev_port.
+
+2008-11-12  Zheng Da  <zhengda1936@gmail.com>
+
+	* Makefile (SRCS): Updated.
+
+	* demuxer.c: New file.
+
+	* device_impl.c (ds_device_open): Use netfs_port_bucket.
+
+	* make-protid.c: Deleted.
+
+2008-11-02  Zheng Da  <zhengda1936@gmail.com>
+
+	* Makefile (CFLAGS): Add a macro.
+	(SRCS): Add new C files.
+	(LCLHDRS): Add new H files.
+	(HURDLIBS): Change libraries.
+
+	* demuxer.c: New file.
+
+	* device_impl.c: New file.
+
+	* make-protid.c: New file.
+
+	* netfs_impl.c: New file.
+
+	* netfs_impl.h: New file.
+
+	* notify_impl.c: New file.
+
+	* multiplexer.c: Remove the trivfs variables. Move the implementation of
+	notify interface. Move the implementation of device interface.
+	(multiplexer_thread): New functions.
+	(main): Run the libnetfs translator.
+
+	* util.h (debug): Update.
+
+	* vdev.c (lookup_dev_by_name): Use strncmp.
+	(add_vdev): Change its interface.
+
+2008-10-27  Zheng Da  <zhengda1936@gmail.com>
+
+	* README: Update.
+
+	* bpf_impl.c (destroy_filters): New function.
+
+	* multiplexer.c (nb_dev): Deleted.
+	(options): Remove the option '-v'.
+	(do_mach_notify_no_senders): Remove all port_info in the same way.
+	(ds_device_open): Create new devices if they don't exist, and decrease
+			  their reference counts.
+	(ds_device_set_filter): Fix a bug.
+	(trivfs_goaway): Use has_vdev() to test.
+	(parse_opt): Remove the code of handling '-v'.
+	(main): Remove the code of creating virtual devices.
+
+	* util.h (ETH_P_IP): New macro.
+
+	* vdev.c (all_dev_close): Deleted.
+	(add_vdev): Link virtual device.
+	(destroy_vdev): New function.
+
+	* vdev.h (vether_device): Changed.
+
+
+2008-10-03  Zheng Da  <zhengda1936@gmail.com>
+
+	* Makefile (CFLAGS): Remove the include paths from pfinet.
+
+	* util.h: Remove the line of including linux/if_ether.h.
+	(ETH_ALEN): New macro.
+	(ethhdr): New structure.
+
+	* vdev.c (ETH_HLEN): New macro.
+
+	* vdev.h: Remove the line of including linux/etherdevice.h and include util.h
+
+2008-10-03  Zheng Da  <zhengda1936@gmail.com>
+
+	* multiplexer.c (parse_opt): Don't create the virtual devices in case 'v'.
+	(main): Create the virtual devices.
+
+	* README: Update.
+
+2008-10-03  Zheng Da  <zhengda1936@gmail.com>
+
+	* multiplexer.c (ds_device_write): Don't call device_write when ether_port is NULL.
+	(ds_device_get_status): Call dev_getstat when ether_port is NULL.
+	(main): If device_file isn't specified, don't open the underlying device.
+
+2008-09-26  Zheng Da  <zhengda1936@gmail.com>
+
+	* vdev.c (deliver_msg): Use non-block send.
+
+2008-09-21  Zheng Da  <zhengda1936@gmail.com>
+
+	* README: Update.
+
+2008-09-02  Zheng Da  <zhengda1936@gmail.com>
+
+	* ethernet.c (ether_filter): Use the original NPF filter.
+
+2008-9-01  Zheng Da  <zhengda1936@gmail.com>
+
+	* multiplexer.c (ds_device_write): Reverse the calling of functions.
+	(ds_device_get_status): Call device_get_status.
+
+	* vdev.c (broadcast_pack): Change its function prototype. Broadcast to
+	all other interface.
+	(deliver_pack): Don't set the message header.
+	(broadcast_msg): Save the original message header and restore it.
+	(deliver_msg): Deallocate the port if mach_msg fails.
+
+	* vdev.h (broadcast_pack): Change its function prototype.
+
+2008-8-29  Zheng Da <zhengda1936@gmail.com>
+
+	* ethernet.c (ethernet_open): Use error instead of assert_perror.
+
+	* multiplexer.c (ds_device_set_filter): Return the error.
+
+2008-8-28 Zheng Da <zhengda1936@gmail.com>
+
+	* ethernet.c (NET_FLAGS): New macro.
+
+2008-8-22 Zheng Da <zhengda1936@gmail.com>
+
+	* README: Update.
+
+	* Makefile: Remove list.h.
+
+	* multiplexer.c (do_mach_notify_no_senders): Get vether_device object
+	with ports_lookup_port().
+	(ds_xxx_device_set_status): Likewise.
+	(ds_xxx_device_get_status): Likewise.
+	(ds_xxx_device_set_filter): Likewise.
+	(ds_device_write): Likewise.
+	(ds_device_write_inband): Likewise.
+	(ds_device_read): Likewise.
+	(ds_device_read_inband): Likewise.
+	(ds_device_map): Likewise.
+	(ds_device_set_status): Likewise.
+	(ds_device_get_status): Likewise.
+	(ds_device_set_filter): Likewise.
+	(do_mach_notify_dead_name): Deallocate the port.
+	(ds_device_open): Get the name directly from the vether_device object.
+	(ds_device_close): Return 0 immediately.
+
+	* vdev.c (dev_head): Point to the head of the device list.
+	(print_eth_addr): Removed.
+	(lookup_dev_by_devport): Likewise.
+	(lookup_dev_by_name): Use the for loop to replace list_for_each_entry.
+	(remove_dead_port_from_dev): Likewise.
+	(all_dev_close): Likewise.
+	(broadcast_pack): Likewise.
+	(broadcast_msg): Likewise.
+	(add_vdev): Create the vether_device object with ports_create_port.
+	(has_vdev): Test if the device list is empty.
+
+	* vdev.h: Don't include list.h.
+	(vether_device): Include the port_info object instead of its pointer.
+	(next): Replace dev_list.
+
+	* list.h: Removed.
+
+2008-8-20 Zheng Da <zhengda1936@gmail.com>
+
+	* README: Update.
+
+	* multiplexer.c (options): Update.
+
+2008-8-20 Zheng Da <zhengda1936@gmail.com>
+
+	* multiplexer.c (main): Test device_file before using it.
+
+2008-8-20 Zheng Da <zhengda1936@gmail.com>
+
+	* multiplexer.c (device_file): Rename a variable.
+	(main): Use device_file directly.
+
+2008-8-19 Zheng Da <zhengda1936@gmail.com>
+
+	* multiplexer.c (main): Generate the device file name, and use it
+	to open the device.
+
+2008-8-18 Zheng Da <zhengda1936@gmail.com>
+
+	* README: New file.
+
+	* multiplexer.c (options): Change the meaning of '-v' option.
+	(parse_opt): Change the way of handling '-v' option.
+
+	* vdev.c (has_vdev): New function.
+
+	* vdev.h (has_vdev): New declaration.
+
+2008-8-17 Zheng Da <zhengda1936@gmail.com>
+
+	* ethernet.c (ethernet_open): Use a hard coded string for the device name.
+
+	* multiplexer.c: Remove the option '-M'.
+	(parse_opt): Remove the code of handling '-M' option.
+	(main): Get the master device port from the device file.
+
+2008-8-14 Zheng Da <zhengda1936@gmail.com>
+
+	* ChangeLog: New file.
+
+	* multiplexer.c (vdev_portclass, other_portclass):
+	New variables.
+	(do_mach_notify_no_senders): Mark the device unused when there are no
+	senders for the device.
+	(do_mach_notify_dead_name): Return 0.
+	(ds_device_open): Mark the device used.
+	(ds_device_close): Remove the code of decreasing the count of the device.
+	(trivfs_goaway): Only test if all devices aren't used, and delete the code
+	of closing the device.
+	(parse_opt): Use vdev_portclass to create the virtual device.
+	(main): Create vdev_portclass and other_portclass, open the ethernet
+	device with other_portclass and create notify_pi with other_portclass.
+
+	* vdev.c (all_dev_close): Change the way of testing if all devices are
+	closed.
+
+	* vdev.h (vether_device): Replace count field with used.
+
+2008-8-13 Zheng Da <zhengda1936@gmail.com>
+
+	* bpf_impl.c: New file.
+
+	* bpf_impl.h: New file.
+
+	* dev_stat.c: New file.
+
+	* ethernet.c: New file.
+
+	* ethernet.h: New file.
+
+	* list.h: New file.
+
+	* Makefile: New file.
+
+	* multiplexer.c: New file.
+
+	* queue.c: New file.
+
+	* queue.h: New file.
+
+	* test.c: New file.
+
+	* util.h: New file.
+
+	* vdev.c: New file.
+
+	* vdev.h: New file.
+
