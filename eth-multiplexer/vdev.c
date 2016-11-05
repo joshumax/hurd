@@ -28,10 +28,12 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <error.h>
+#include <hurd/ihash.h>
 
 #include <pthread.h>
 
 #include "vdev.h"
+#include "ethernet.h"
 #include "queue.h"
 #include "bpf_impl.h"
 #include "util.h"
@@ -127,6 +129,7 @@ add_vdev (char *name, int size,
 	  struct port_class *class, struct port_bucket *bucket)
 {
   error_t err;
+  uint32_t hash;
   struct vether_device *vdev;
 
   if (size < sizeof (*vdev))
@@ -143,9 +146,13 @@ add_vdev (char *name, int size,
   vdev->if_header_format = HDR_ETHERNET;
   vdev->if_address_size = ETH_ALEN;
   vdev->if_flags = 0;
+
+  /* Compute a pseudo-random but stable ethernet address.  */
   vdev->if_address[0] = 0x52;
   vdev->if_address[1] = 0x54;
-  *(int *)(vdev->if_address + 2) = random ();
+  hash = hurd_ihash_hash32 (ether_address, ETH_ALEN, 0);
+  hash = hurd_ihash_hash32 (name, strlen (name), hash);
+  memcpy (&vdev->if_address[2], &hash, 4);
 
   queue_init (&vdev->port_list.if_rcv_port_list);
   queue_init (&vdev->port_list.if_snd_port_list);

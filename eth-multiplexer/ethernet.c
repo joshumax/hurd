@@ -42,6 +42,10 @@ static struct port_info *readpt;
 
 /* Port for writing message to the real network interface. */
 mach_port_t ether_port;
+
+/* The ethernet address of the real network interface.  */
+char ether_address[ETH_ALEN];
+
 /* Port for receiving messages from the interface. */
 static mach_port_t readptname;
 
@@ -102,6 +106,24 @@ int set_promisc (char *dev_name, mach_port_t ether_port, int is_promisc)
   return 0;
 }
 
+static error_t
+get_ethernet_address (mach_port_t port, char *address)
+{
+  error_t err;
+  int net_address[2];
+  size_t count = 2;
+  assert (count * sizeof (int) >= ETH_ALEN);
+
+  err = device_get_status (port, NET_ADDRESS, net_address, &count);
+  if (err)
+    return err;
+
+  net_address[0] = ntohl (net_address[0]);
+  net_address[1] = ntohl (net_address[1]);
+  memcpy (address, net_address, ETH_ALEN);
+  return 0;
+}
+
 int ethernet_open (char *dev_name, device_t master_device,
 		   struct port_bucket *etherport_bucket,
 		   struct port_class *etherreadclass)
@@ -132,6 +154,11 @@ int ethernet_open (char *dev_name, device_t master_device,
     error (2, err, "device_set_filter: %s", dev_name);
 
   set_promisc (dev_name, ether_port, 1);
+
+  err = get_ethernet_address (ether_port, ether_address);
+  if (err)
+    error (2, err, "%s: Cannot get hardware Ethernet address", dev_name);
+
   return 0;
 }
 
