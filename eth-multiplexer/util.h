@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <net/if_ether.h>
 #include <netinet/ip.h>
 
 #include <mach.h>
@@ -55,15 +56,6 @@
   debug ("the depth of the stack: %d", size);		\
   backtrace_symbols_fd(array, size, fileno (stderr));	\
 } while (0)
-
-#define ETH_ALEN 6		/* Octets in one ethernet addr	 */
-
-struct ethhdr
-{
-  unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
-  unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
-  unsigned short h_proto;		/* packet type ID field	*/
-};
 
 static inline void
 print_pack (char *packet, int len)

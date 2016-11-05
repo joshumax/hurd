@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <net/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -35,7 +36,6 @@
 #include "bpf_impl.h"
 #include "util.h"
 
-#define ETH_HLEN sizeof (struct ethhdr)
 
 static struct vether_device *dev_head;
 static int dev_num;
