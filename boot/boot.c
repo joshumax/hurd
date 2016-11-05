@@ -234,32 +234,45 @@ static struct argp_option options[] =
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
     "Do not disable terminal signals, so you can suspend and interrupt boot"},
-  { "device",	   'f', "device_name=device_file", 0,
-    "Specify a device file used by subhurd and its virtual name"},
+  { "device",	   'f', "SUBHURD_NAME=DEVICE_FILE", 0,
+    "Pass the given DEVICE_FILE to the Subhurd as device SUBHURD_NAME"},
   { "privileged", OPT_PRIVILEGED, NULL, 0,
     "Allow the subhurd to access privileged kernel ports"},
   { 0 }
 };
 static char doc[] = "Boot a second hurd";
 
-struct dev_map 
+
+
+/* Device pass through.  */
+
+struct dev_map
 {
-  char *name;
-  mach_port_t port;
+  char *device_name;	/* The name of the device in the Subhurd.  */
+  char *file_name;	/* The filename outside the Subhurd.  */
   struct dev_map *next;
 };
 
 static struct dev_map *dev_map_head;
 
-static struct dev_map *add_dev_map (char *dev_name, char *dev_file)
+static struct dev_map *
+add_dev_map (const char *dev_name, const char *dev_file)
 {
-  struct dev_map *map = malloc (sizeof (*map));
+  file_t node;
+  struct dev_map *map;
 
-  assert (map);
-  map->name = dev_name;
-  map->port = file_name_lookup (dev_file, 0, 0);
-  if (map->port == MACH_PORT_NULL)
-    error (1, errno, "file_name_lookup: %s", dev_file);
+  /* See if we can open the file.  */
+  node = file_name_lookup (dev_file, 0, 0);
+  if (! MACH_PORT_VALID (node))
+    error (1, errno, "%s", dev_file);
+  mach_port_deallocate (mach_task_self (), node);
+
+  map = malloc (sizeof *map);
+  if (map == NULL)
+    return NULL;
+
+  map->device_name = strdup (dev_name);
+  map->file_name = strdup (dev_file);
   map->next = dev_map_head;
   dev_map_head = map;
   return map;
@@ -271,7 +284,7 @@ static struct dev_map *lookup_dev (char *dev_name)
 
   for (map = dev_map_head; map; map = map->next)
     {
-      if (strcmp (map->name, dev_name) == 0)
+      if (strcmp (map->device_name, dev_name) == 0)
 	return map;
     }
   return NULL;
@@ -899,8 +912,17 @@ ds_device_open (mach_port_t master_port,
   map = lookup_dev (name);
   if (map)
     {
+      error_t err;
+      file_t node;
+
+      node = file_name_lookup (map->file_name, 0, 0);
+      if (! MACH_PORT_VALID (node))
+        return D_NO_SUCH_DEVICE;
+
       *devicetype = MACH_MSG_TYPE_MOVE_SEND;
-      return device_open (map->port, mode, "", device);
+      err = device_open (node, mode, "", device);
+      mach_port_deallocate (mach_task_self (), node);
+      return err;
     }
 
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
