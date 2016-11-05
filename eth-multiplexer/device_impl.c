@@ -178,16 +178,10 @@ kern_return_t
 ds_device_get_status (struct vether_device *vdev, dev_flavor_t flavor,
 		      dev_status_t status, size_t *statuslen)
 {
-  extern io_return_t dev_getstat (struct vether_device *, dev_flavor_t,
-				  dev_status_t, natural_t *);
-  kern_return_t ret = 0;
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
-  if(ether_port != MACH_PORT_NULL)
-    ret = device_get_status (ether_port, flavor, status, statuslen);
-  else
-    ret = dev_getstat (vdev, flavor, status, statuslen);
-  return ret;
+
+  return dev_getstat (vdev, flavor, status, statuslen);
 }
 
 kern_return_t

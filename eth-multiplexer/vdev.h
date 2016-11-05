@@ -76,4 +76,9 @@ int broadcast_msg (struct net_rcv_msg *msg);
 int get_dev_num ();
 int foreach_dev_do (dev_act_func func);
 
+/* dev_stat.c */
+io_return_t dev_getstat (struct vether_device *, dev_flavor_t,
+                         dev_status_t, natural_t *);
+
+
 #endif
