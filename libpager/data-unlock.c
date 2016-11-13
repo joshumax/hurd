@@ -73,7 +73,7 @@ _pager_S_memory_object_data_unlock (struct pager *p,
       /* Flush the page, and set a bit so that m_o_data_request knows
 	 to issue an error.  */
       _pager_lock_object (p, offset, length, MEMORY_OBJECT_RETURN_NONE, 1,
-			  VM_PROT_WRITE, 1);
+			  VM_PROT_WRITE, 0);
       _pager_mark_next_request_error (p, offset, length, err);
     }
  out:
