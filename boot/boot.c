@@ -1994,6 +1994,10 @@ S_processor_set_tasks(mach_port_t processor_set,
   error_t err;
   size_t i;
 
+  if (!task_ihash.nr_items)
+    *task_listCnt = 0;
+  return 0;
+
   err = vm_allocate (mach_task_self (), (vm_address_t *) task_list,
 		     task_ihash.nr_items * sizeof **task_list, 1);
   if (err)
