@@ -625,6 +625,8 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       err = hurd_safe_memset (new, 0, DIRBLKSIZ);
       if (err)
        {
+	 if (err == EKERN_MEMORY_ERROR)
+	   err = ENOSPC;
          munmap ((caddr_t) ds->mapbuf, ds->mapextent);
          return err;
        }
