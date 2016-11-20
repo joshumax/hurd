@@ -83,6 +83,7 @@ memobj_memcpy (memory_object_t memobj,
 	  /* Realign the fault preemptor for the new mapping window.  */
 	  preemptor->first = window;
 	  preemptor->last = window + windowsize;
+	  __sync_synchronize();
 
 	  if (prot == VM_PROT_READ)
 	    memcpy (other, (const void *) window + pageoff,
@@ -103,7 +104,7 @@ memobj_memcpy (memory_object_t memobj,
       assert (scp->sc_error == EKERN_MEMORY_ERROR);
       err = EIO;
       to_copy -= sigcode - window;
-      longjmp (buf, 1);
+      siglongjmp (buf, 1);
     }
 
   if (to_copy == 0)
@@ -111,7 +112,7 @@ memobj_memcpy (memory_object_t memobj,
        ERR would not be initialized by the copy loop in this case.  */
     return 0;
 
-  if (setjmp (buf) == 0)
+  if (sigsetjmp (buf) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
 		       window, window + windowsize,
 		       &copy, (sighandler_t) &fault);

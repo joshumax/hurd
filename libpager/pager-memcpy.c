@@ -121,6 +121,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	      /* Realign the fault preemptor for the new mapping window.  */
 	      preemptor->first = window;
 	      preemptor->last = window + window_size;
+	      __sync_synchronize();
 
 	      if (prot == VM_PROT_READ)
 		memcpy (other, (const void *) window + pageoff, copy_count);
@@ -176,7 +177,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
       err = pager_get_error (pager, sigcode - window + offset);
       n -= sigcode - window;
       vm_deallocate (mach_task_self (), window, window_size);
-      longjmp (buf, 1);
+      siglongjmp (buf, 1);
     }
 
   if (n == 0)
@@ -206,7 +207,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   window = 0;
   window_size = 0;
 
-  if (setjmp (buf) == 0)
+  if (sigsetjmp (buf) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
 		       window, window + window_size,
 		       &do_copy, (sighandler_t) &fault);
