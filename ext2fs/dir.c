@@ -26,6 +26,8 @@
 #include <dirent.h>
 #include <stddef.h>
 
+#include <hurd/sigpreempt.h>
+
 /* This isn't quite right because a file system block may straddle several
    device blocks, and so a write failure between writing two device blocks
    may scramble things up a bit.  But the linux doesn't do this.  We could
@@ -620,6 +622,12 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	}
 
       new = (struct ext2_dir_entry_2 *) (ds->mapbuf + oldsize);
+      err = hurd_safe_memset (new, 0, DIRBLKSIZ);
+      if (err)
+       {
+         munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+         return err;
+       }
 
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
