@@ -207,7 +207,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   window = 0;
   window_size = 0;
 
-  if (sigsetjmp (buf) == 0)
+  if (sigsetjmp (buf, 1) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
 		       window, window + window_size,
 		       &do_copy, (sighandler_t) &fault);

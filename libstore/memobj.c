@@ -112,7 +112,7 @@ memobj_memcpy (memory_object_t memobj,
        ERR would not be initialized by the copy loop in this case.  */
     return 0;
 
-  if (sigsetjmp (buf) == 0)
+  if (sigsetjmp (buf, 1) == 0)
     hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
 		       window, window + windowsize,
 		       &copy, (sighandler_t) &fault);
