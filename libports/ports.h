@@ -47,7 +47,11 @@
 
 struct port_info
 {
+#ifdef __cplusplus
+  struct port_class *port_class;
+#else
   struct port_class *class;
+#endif
   refcounts_t refcounts;
   mach_port_mscount_t mscount;
   mach_msg_seqno_t cancel_threshold;	/* needs atomic operations */
@@ -172,7 +176,7 @@ struct port_class *ports_create_class (void (*clean_routine)(void *),
 /* Create and return in RESULT a new port in CLASS and BUCKET; SIZE bytes
    will be allocated to hold the port structure and whatever private data the
    user desires.  */
-error_t ports_create_port (struct port_class *class,
+error_t ports_create_port (struct port_class *port_class,
 			   struct port_bucket *bucket,
 			   size_t size,
 			   void *result);
@@ -184,14 +188,14 @@ error_t ports_create_port (struct port_class *class,
    service will occur on the port until you have finished initializing
    it and installed it into the portset yourself. */
 error_t
-ports_create_port_noinstall (struct port_class *class,
+ports_create_port_noinstall (struct port_class *port_class,
 			     struct port_bucket *bucket,
 			     size_t size,
 			     void *result);
 
 /* For an existing RECEIVE right, create and return in RESULT a new port
    structure; BUCKET, SIZE, and CLASS args are as for ports_create_port. */
-error_t ports_import_port (struct port_class *class,
+error_t ports_import_port (struct port_class *port_class,
 			   struct port_bucket *bucket,
 			   mach_port_t port, size_t size,
 			   void *result);
@@ -241,14 +245,14 @@ mach_port_t ports_get_send_right (void *port);
    searched.  If CLASS is nonzero, then the lookup will fail if PORT
    is not in CLASS. */
 void *ports_lookup_port (struct port_bucket *bucket,
-			 mach_port_t port, struct port_class *class);
+			 mach_port_t port, struct port_class *port_class);
 
 /* Like ports_lookup_port, but uses PAYLOAD to look up the object.  If
    this function is used, PAYLOAD must be a pointer to the port
    structure.  */
 extern void *ports_lookup_payload (struct port_bucket *bucket,
 				   unsigned long payload,
-				   struct port_class *class);
+				   struct port_class *port_class);
 
 /* This returns the ports name.  This function can be used as
    intranpayload function turning payloads back into port names.  If
@@ -256,7 +260,7 @@ extern void *ports_lookup_payload (struct port_bucket *bucket,
    structure.  */
 extern mach_port_t ports_payload_get_name (unsigned int payload);
 
-#if defined(__USE_EXTERN_INLINES) || defined(PORTS_DEFINE_EI)
+#if (defined(__USE_EXTERN_INLINES) || defined(PORTS_DEFINE_EI)) && !defined(__cplusplus)
 
 PORTS_EI void *
 ports_lookup_payload (struct port_bucket *bucket,
@@ -313,7 +317,7 @@ void ports_dead_name (void *notify, mach_port_t dead_name);
 
 /* Block port creation of new ports in CLASS.  Return the number
    of ports currently in CLASS. */
-int ports_count_class (struct port_class *class);
+int ports_count_class (struct port_class *port_class);
 
 /* Block port creation of new ports in BUCKET.  Return the number
    of ports currently in BUCKET. */
@@ -321,7 +325,7 @@ int ports_count_bucket (struct port_bucket *bucket);
 
 /* Permit suspended port creation (blocked by ports_count_class)
    to continue. */
-void ports_enable_class (struct port_class *class);
+void ports_enable_class (struct port_class *port_class);
 
 /* Permit suspend port creation (blocked by ports_count_bucket)
    to continue. */
@@ -332,12 +336,12 @@ error_t ports_bucket_iterate (struct port_bucket *bucket,
 			      error_t (*fun)(void *port));
 
 /* Call FUN once for each port in CLASS. */
-error_t ports_class_iterate (struct port_class *class,
+error_t ports_class_iterate (struct port_class *port_class,
 			     error_t (*fun)(void *port));
 
 /* Internal entrypoint for above two.  */
 error_t _ports_bucket_class_iterate (struct hurd_ihash *ht,
-				     struct port_class *class,
+				     struct port_class *port_class,
 				     error_t (*fun)(void *port));
 
 /* RPC management */
@@ -385,7 +389,7 @@ void ports_manage_port_operations_multithread (struct port_bucket *bucket,
 error_t ports_inhibit_port_rpcs (void *port);
 
 /* Similar to ports_inhibit_port_rpcs, but affects all ports in CLASS. */
-error_t ports_inhibit_class_rpcs (struct port_class *class);
+error_t ports_inhibit_class_rpcs (struct port_class *port_class);
 
 /* Similar to ports_inhibit_port_rpcs, but affects all ports in BUCKET. */
 error_t ports_inhibit_bucket_rpcs (struct port_bucket *bucket);
@@ -398,7 +402,7 @@ error_t ports_inhibit_all_rpcs (void);
 void ports_resume_port_rpcs (void *port);
 
 /* Reverse the effect of a previous ports_inhibit_class_rpcs for CLASS. */
-void ports_resume_class_rpcs (struct port_class *class);
+void ports_resume_class_rpcs (struct port_class *port_class);
 
 /* Reverse the effect of a previous ports_inhibit_bucket_rpcs for BUCKET. */
 void ports_resume_bucket_rpcs (struct port_bucket *bucket);
