@@ -107,9 +107,13 @@ struct references {
      and demotion of references.  See refcounts_promote and
      refcounts_demote for details.  */
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define REFCOUNT_REFERENCES(_hard, _weak) \
+    (struct references) { .hard = (_hard), .weak = (_weak) }
   uint32_t hard;
   uint32_t weak;
 #else
+#define REFCOUNT_REFERENCES(_hard, _weak) \
+    (struct references) { .weak = (_weak), .hard = (_hard) }
   uint32_t weak;
   uint32_t hard;
 #endif
@@ -131,7 +135,7 @@ refcounts_init (refcounts_t *ref, uint32_t hard, uint32_t weak)
 {
   assert_backtrace ((hard != 0 || weak != 0)
                     || !"references must not both be zero!");
-  ref->references = (struct references) { .hard = hard, .weak = weak };
+  ref->references = REFCOUNT_REFERENCES (hard, weak);
 }
 
 /* Increment the hard reference count of REF.  If RESULT is not NULL,
@@ -145,7 +149,7 @@ refcounts_init (refcounts_t *ref, uint32_t hard, uint32_t weak)
 REFCOUNT_EI void
 refcounts_unsafe_ref (refcounts_t *ref, struct references *result)
 {
-  const union _references op = { .references = { .hard = 1 } };
+  const union _references op = { .references = REFCOUNT_REFERENCES (1, 0) };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.hard != UINT32_MAX
@@ -176,7 +180,7 @@ refcounts_ref (refcounts_t *ref, struct references *result)
 REFCOUNT_EI void
 refcounts_deref (refcounts_t *ref, struct references *result)
 {
-  const union _references op = { .references = { .hard = 1 } };
+  const union _references op = { .references = REFCOUNT_REFERENCES (1, 0) };
   union _references r;
   r.value = __atomic_sub_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.hard != UINT32_MAX
@@ -207,7 +211,7 @@ refcounts_promote (refcounts_t *ref, struct references *result)
      So we just add a hard reference.  In combination, this is the
      desired operation.  */
   const union _references op =
-    { .references = { .weak = ~0U, .hard = 1} };
+    { .references = REFCOUNT_REFERENCES (1, ~0U) };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.hard != UINT32_MAX
@@ -237,7 +241,7 @@ refcounts_demote (refcounts_t *ref, struct references *result)
      significant bits.  When we add ~0 to the hard references, it will
      overflow into the weak references.  This is the desired
      operation.  */
-  const union _references op = { .references = { .hard = ~0U } };
+  const union _references op = { .references = REFCOUNT_REFERENCES (~0U, 0) };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.hard != UINT32_MAX
@@ -259,7 +263,7 @@ refcounts_demote (refcounts_t *ref, struct references *result)
 REFCOUNT_EI void
 refcounts_unsafe_ref_weak (refcounts_t *ref, struct references *result)
 {
-  const union _references op = { .references = { .weak = 1 } };
+  const union _references op = { .references = REFCOUNT_REFERENCES (0, 1) };
   union _references r;
   r.value = __atomic_add_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.weak != UINT32_MAX
@@ -290,7 +294,7 @@ refcounts_ref_weak (refcounts_t *ref, struct references *result)
 REFCOUNT_EI void
 refcounts_deref_weak (refcounts_t *ref, struct references *result)
 {
-  const union _references op = { .references = { .weak = 1 } };
+  const union _references op = { .references = REFCOUNT_REFERENCES (0, 1) };
   union _references r;
   r.value = __atomic_sub_fetch (&ref->value, op.value, __ATOMIC_RELAXED);
   assert_backtrace (r.references.weak != UINT32_MAX
