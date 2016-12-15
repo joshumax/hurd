@@ -98,73 +98,92 @@ ChangeLog.tar: gen-ChangeLog
 	tar -c -f $@ --owner=0 --group=0 \
 	  --transform='s%^%$(dist-version)/%' $(ChangeLog_files)
 
-gen_start_commit = 2772f5c6a6a51cf946fd95bf6ffe254273157a21
+# See the ChangeLog file.
+gitlog-to-changelog_rev = \
+  2772f5c6a6a51cf946fd95bf6ffe254273157a21..
 ChangeLog_files = \
-  ChangeLog \
-  auth/ChangeLog \
-  benchmarks/ChangeLog \
-  boot/ChangeLog \
-  config/ChangeLog \
-  console-client/ChangeLog \
-  console/ChangeLog \
-  daemons/ChangeLog \
-  defpager/ChangeLog \
-  doc/ChangeLog \
-  exec/ChangeLog \
-  ext2fs/ChangeLog \
-  fatfs/ChangeLog \
-  fstests/ChangeLog \
-  ftpfs/ChangeLog \
-  hostmux/ChangeLog \
-  hurd/ChangeLog \
-  include/ChangeLog \
-  init/ChangeLog \
-  isofs/ChangeLog \
-  libcons/ChangeLog \
-  libdirmgt/ChangeLog \
-  libdiskfs/ChangeLog \
-  libfshelp/ChangeLog \
-  libftpconn/ChangeLog \
-  libhurdbugaddr/ChangeLog \
-  libihash/ChangeLog \
-  libiohelp/ChangeLog \
-  libnetfs/ChangeLog \
-  libpager/ChangeLog \
-  libpipe/ChangeLog \
-  libports/ChangeLog \
-  libps/ChangeLog \
-  libshouldbeinlibc/ChangeLog \
-  libstore/ChangeLog \
-  libthreads/ChangeLog \
-  libtrivfs/ChangeLog \
-  login/ChangeLog \
-  mach-defpager/ChangeLog \
-  nfs/ChangeLog \
-  nfsd/ChangeLog \
-  pfinet/ChangeLog \
-  pflocal/ChangeLog \
-  proc/ChangeLog \
-  release/ChangeLog \
-  storeio/ChangeLog \
-  sutils/ChangeLog \
-  term/ChangeLog \
-  tmpfs/ChangeLog \
-  trans/ChangeLog \
-  usermux/ChangeLog \
-  utils/ChangeLog
+  $(filter-out :%,$(subst :, :,$(ChangeLog_specs)))
+ChangeLog_specs = \
+  ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  auth/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  benchmarks/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  boot/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  config/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  console-client/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  console/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  daemons/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  defpager/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  doc/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  exec/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  ext2fs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  fatfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  fstests/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  ftpfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  hostmux/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  hurd/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  include/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  init/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  isofs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libcons/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libdirmgt/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libdiskfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libfshelp/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libftpconn/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libhurdbugaddr/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libihash/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libiohelp/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libnetfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libpager/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libpipe/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libports/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libps/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libshouldbeinlibc/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libstore/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libthreads/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  libtrivfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  login/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  mach-defpager/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  nfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  nfsd/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  pfinet/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  pflocal/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  proc/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  release/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  storeio/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  sutils/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  term/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  tmpfs/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  trans/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  usermux/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21 \
+  utils/ChangeLog:2772f5c6a6a51cf946fd95bf6ffe254273157a21
+# procfs
+gitlog-to-changelog_rev += \
+  ^aac4aaf42372f61c78061711916c81a9d5bcb42d~1
+ChangeLog_specs += \
+  procfs/ChangeLog:edb4593c38d421b5d538b221a991b50c36fdba15:ChangeLog
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d $(top_srcdir)/.git; then			\
 	  rm -f $(ChangeLog_files) &&					\
 	  (cd $(top_srcdir)/ &&						\
 	  ./gitlog-to-changelog	--strip-tab				\
-	    $(gen_start_commit).. &&					\
+	    $(gitlog-to-changelog_rev) &&				\
 	  echo) >> ChangeLog &&						\
-	  for f in $(ChangeLog_files); do				\
+	  (cd $(top_srcdir)/ &&						\
+	  ./gitlog-to-changelog --strip-tab				\
+	    edb4593c38d421b5d538b221a991b50c36fdba15..aac4aaf42372f61c78061711916c81a9d5bcb42d~1 && \
+	  echo) >> procfs/ChangeLog &&					\
+	  for cs in $(ChangeLog_specs); do				\
+	    f=$${cs%%:*} &&						\
+	    s=$${cs#$$f:} && s_f=$$s:$$f && s=$${s_f/*:*:*/$$s} &&	\
 	    (cd $(top_srcdir)/ &&					\
-	    git show $(gen_start_commit):$$f) >> $$f			\
+	    git show $$s) >> $$f					\
 	    || exit $$?;						\
-	  done;								\
+	  done &&							\
+	  sed								\
+	    -e 's%\* [ ]*%* procfs/%'					\
+	    -e s%procfs/procfs/%procfs/%				\
+	    -i procfs/ChangeLog;					\
 	fi
 
 $(dist-version).tar: HEAD.tar $(addsuffix /dist-hook,hurd/.. $(subdirs)) ChangeLog.tar
