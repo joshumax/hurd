@@ -152,19 +152,18 @@ ChangeLog_files = \
   trans/ChangeLog \
   usermux/ChangeLog \
   utils/ChangeLog
-distdir = .
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d $(top_srcdir)/.git; then			\
 	  (cd $(top_srcdir)/ &&						\
 	  ./gitlog-to-changelog	--strip-tab				\
 	    $(gen_start_commit).. &&					\
-	  echo) >> $(distdir)/cl-t &&					\
+	  echo) >> cl-t &&						\
 	  for f in $(ChangeLog_files); do				\
 	    (cd $(top_srcdir)/ &&					\
-	    git show $(gen_start_commit):$$f) >> $(distdir)/cl-t &&	\
-	    rm -f $(distdir)/$$f &&					\
-	    mv $(distdir)/cl-t $(distdir)/$$f				\
+	    git show $(gen_start_commit):$$f) >> cl-t &&		\
+	    rm -f $$f &&						\
+	    mv cl-t $$f							\
 	    || exit $$?;						\
 	  done;								\
 	fi
