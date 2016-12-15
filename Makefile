@@ -155,15 +155,14 @@ ChangeLog_files = \
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d $(top_srcdir)/.git; then			\
+	  rm -f $(ChangeLog_files) &&					\
 	  (cd $(top_srcdir)/ &&						\
 	  ./gitlog-to-changelog	--strip-tab				\
 	    $(gen_start_commit).. &&					\
-	  echo) >> cl-t &&						\
+	  echo) >> ChangeLog &&						\
 	  for f in $(ChangeLog_files); do				\
 	    (cd $(top_srcdir)/ &&					\
-	    git show $(gen_start_commit):$$f) >> cl-t &&		\
-	    rm -f $$f &&						\
-	    mv cl-t $$f							\
+	    git show $(gen_start_commit):$$f) >> $$f			\
 	    || exit $$?;						\
 	  done;								\
 	fi
