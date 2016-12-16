@@ -1,4 +1,4 @@
-For all but procfs (see below),
+For all but procfs and random (see below),
 2772f5c6a6a51cf946fd95bf6ffe254273157a21 is the last commit imported from CVS.
 All commits after that one have valid author and committer information.
 
@@ -56,6 +56,22 @@ Use this to examine the change log for earlier changes:
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:trans/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:usermux/ChangeLog
     $ git show 2772f5c6a6a51cf946fd95bf6ffe254273157a21:utils/ChangeLog
+
+random:
+
+random has been merged in 707f6cc4dbad734325881c5b275138522188754c.  Before
+1ba2ed95690396bf081d0af043d878b26b8563c2, it lived in the top-level directory.
+
+Use this to examine the change log, rewriting paths to where they live now:
+
+    $ ./gitlog-to-changelog --strip-tab ac38884dc9ad32a11d09f55ba9fe399cd0a48e2f..1ba2ed95690396bf081d0af043d878b26b8563c2~1 | sed -e 's%\* [ ]*%* random/%'
+
+ac38884dc9ad32a11d09f55ba9fe399cd0a48e2f is the commit where it was imported.
+All commits after that one have valid author and committer information.
+
+Use this to examine the change log for earlier changes:
+
+    $ git ls-tree --name-only ac38884dc9ad32a11d09f55ba9fe399cd0a48e2f | perl -e 'print "2011-08-18  Gaël Le Mignot  <kilobug\@freesurf.fr>\n\n"; while(<>){s%^%\t* random/%;s%$%: New file.%;print;}'
 
 procfs:
 

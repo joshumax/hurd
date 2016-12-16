@@ -161,6 +161,12 @@ gitlog-to-changelog_rev += \
   ^aac4aaf42372f61c78061711916c81a9d5bcb42d~1
 ChangeLog_specs += \
   procfs/ChangeLog:edb4593c38d421b5d538b221a991b50c36fdba15:ChangeLog
+# random
+gitlog-to-changelog_rev += \
+  ^1ba2ed95690396bf081d0af043d878b26b8563c2~1
+# Specify dummy ChangeLog file, will get overwritten.
+ChangeLog_specs += \
+  random/ChangeLog:HEAD:ChangeLog
 .PHONY: gen-ChangeLog
 gen-ChangeLog:
 	$(AM_V_GEN)if test -d $(top_srcdir)/.git; then			\
@@ -173,6 +179,11 @@ gen-ChangeLog:
 	  ./gitlog-to-changelog --strip-tab				\
 	    edb4593c38d421b5d538b221a991b50c36fdba15..aac4aaf42372f61c78061711916c81a9d5bcb42d~1 && \
 	  echo) >> procfs/ChangeLog &&					\
+	  rm -f random/ChangeLog-1 &&					\
+	  (cd $(top_srcdir)/ &&						\
+	  ./gitlog-to-changelog --strip-tab				\
+	    ac38884dc9ad32a11d09f55ba9fe399cd0a48e2f..1ba2ed95690396bf081d0af043d878b26b8563c2~1 && \
+	  echo) >> random/ChangeLog-1 &&				\
 	  for cs in $(ChangeLog_specs); do				\
 	    f=$${cs%%:*} &&						\
 	    s=$${cs#$$f:} && s_f=$$s:$$f && s=$${s_f/*:*:*/$$s} &&	\
@@ -180,10 +191,23 @@ gen-ChangeLog:
 	    git show $$s) >> $$f					\
 	    || exit $$?;						\
 	  done &&							\
+	  rm -f random/ChangeLog_ &&					\
+	  (cd $(top_srcdir)/ &&						\
+	  git ls-tree --name-only					\
+	    ac38884dc9ad32a11d09f55ba9fe399cd0a48e2f) >> random/ChangeLog_ && \
+	  rm -f random/ChangeLog-2 &&					\
+	  perl \
+	    -e 'print "2011-08-18  Gaël Le Mignot  <kilobug\@freesurf.fr>\n\n"; while(<>){s%^%\t* %;s%$$%: New file.%;print;}' \
+	    < random/ChangeLog_ > random/ChangeLog-2 &&			\
+	  cat random/ChangeLog-* > random/ChangeLog &&			\
+	  rm random/ChangeLog?* &&					\
 	  sed								\
 	    -e 's%\* [ ]*%* procfs/%'					\
 	    -e s%procfs/procfs/%procfs/%				\
-	    -i procfs/ChangeLog;					\
+	    -i procfs/ChangeLog &&					\
+	  sed								\
+	    -e 's%\* [ ]*%* random/%'					\
+	    -i random/ChangeLog;					\
 	fi
 
 $(dist-version).tar: HEAD.tar $(addsuffix /dist-hook,hurd/.. $(subdirs)) ChangeLog.tar
