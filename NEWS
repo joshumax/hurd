@@ -1,15 +1,20 @@
-Version 0.9 (2016-12-XX)
+Version 0.9 (2016-12-18)
 
 The 'boot' program can now be run as unprivileged user, allowing any
 user to create unprivileged Subhurds.
 
-The Berkeley Packet Filter library and the ethernet multiplexer have
-been merged into this repository.  The ethernet multiplexer now
+An ethernet multiplexer (eth-multiplexer translator) has been merged
+into this repository.  This is a network multiplexer that makes
+available virtual interfaces, and routes traffic between these and a
+real ethernet interface.  It uses the Berkeley Packet Filter library
+(libbpf), which has also been merged.  The ethernet multiplexer now
 generates and uses stable pseudo-random ethernet addresses for the
 virtual interfaces.
 
-Countless bugs have been fixed throughout the code, notably in
+As usual, bugs have been fixed throughout the code, notably in
 libpager and ext2fs which now gracefully handles running out of space.
+Further compatibility fixes have been applied (for compliance to
+standards such as POSIX).
 
 Version 0.8 (2016-05-18)
 
