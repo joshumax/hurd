@@ -880,7 +880,7 @@ ps_cmp_times (struct proc_stat *ps1, struct proc_stat *ps2,
     tv1.tv_sec > tv2.tv_sec ? 1
       : tv1.tv_sec < tv2.tv_sec ? -1
 	: tv1.tv_usec > tv2.tv_usec ? 1
-	  : tv2.tv_usec < tv2.tv_usec ? -1
+	  : tv1.tv_usec < tv2.tv_usec ? -1
 	    : 0;
 }
 
