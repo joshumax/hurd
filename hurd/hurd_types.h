@@ -114,6 +114,9 @@ enum retry_type
 		    as for FS_RETRY_NORMAL.
 
      "/..." means retry "...", but starting from the users root directory.
+
+     "pid/..." means replace `pid' with the PID of the current process in %u
+               format and then retry as for FS_RETRY_NORMAL.
      */
 };
 typedef enum retry_type retry_type;

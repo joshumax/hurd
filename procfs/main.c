@@ -35,14 +35,12 @@
 /* Command-line options */
 int opt_clk_tck;
 mode_t opt_stat_mode;
-pid_t opt_fake_self;
 pid_t opt_kernel_pid;
 uid_t opt_anon_owner;
 
 /* Default values */
 #define OPT_CLK_TCK    sysconf(_SC_CLK_TCK)
 #define OPT_STAT_MODE  0400
-#define OPT_FAKE_SELF  -1
 #define OPT_KERNEL_PID HURD_PID_KERNEL
 #define OPT_ANON_OWNER 0
 
@@ -54,7 +52,6 @@ static void set_compatibility_options (void)
 {
   opt_clk_tck = 100;
   opt_stat_mode = 0444;
-  opt_fake_self = 1;
 }
 
 static error_t
@@ -80,19 +77,6 @@ argp_parser (int key, char *arg, struct argp_state *state)
 	argp_error (state, "--stat-mode: MODE should be an octal mode");
       else
 	opt_stat_mode = v;
-      break;
-
-    case 'S':
-      if (arg)
-        {
-	  v = strtol (arg, &endp, 0);
-	  if (*endp || ! *arg)
-	    argp_error (state, "--fake-self: PID must be an integer");
-	  else
-	    opt_fake_self = v;
-	}
-      else
-	opt_fake_self = 1;
       break;
 
     case 'k':
@@ -160,10 +144,6 @@ struct argp_option common_options[] = {
       "You can use this option to override its mode to be more permissive "
       "for compatibility purposes.  "
       "(default: " STR (OPT_STAT_MODE) ")" },
-  { "fake-self", 'S', "PID", OPTION_ARG_OPTIONAL,
-      "Provide a fake \"self\" symlink to the given PID, for compatibility "
-      "purposes.  If PID is omitted, \"self\" will point to init.  "
-      "(default: no self link)" },
   { "kernel-process", 'k', "PID", 0,
       "Process identifier for the kernel, used to retrieve its command "
       "line, as well as the global up and idle times. "
@@ -259,9 +239,6 @@ netfs_append_args (char **argz, size_t *argz_len)
   FOPT (opt_stat_mode, OPT_STAT_MODE,
         "--stat-mode=%o", opt_stat_mode);
 
-  FOPT (opt_fake_self, OPT_FAKE_SELF,
-        "--fake-self=%d", opt_fake_self);
-
   FOPT (opt_anon_owner, OPT_ANON_OWNER,
         "--anonymous-owner=%d", opt_anon_owner);
 
@@ -315,7 +292,6 @@ int main (int argc, char **argv)
 
   opt_clk_tck = OPT_CLK_TCK;
   opt_stat_mode = OPT_STAT_MODE;
-  opt_fake_self = OPT_FAKE_SELF;
   opt_kernel_pid = OPT_KERNEL_PID;
   opt_anon_owner = OPT_ANON_OWNER;
   err = argp_parse (&argp, argc, argv, 0, 0, 0);

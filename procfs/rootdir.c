@@ -416,19 +416,7 @@ out:
   return err;
 }
 
-static int
-rootdir_fakeself_exists (void *dir_hook, const void *entry_hook)
-{
-  return opt_fake_self >= 0;
-}
-
-static error_t
-rootdir_gc_fakeself (void *hook, char **contents, ssize_t *contents_len)
-{
-  *contents_len = asprintf (contents, "%d", opt_fake_self);
-  return 0;
-}
-
+static struct node *rootdir_self_node;
 static struct node *rootdir_mounts_node;
 
 static error_t
@@ -694,13 +682,10 @@ rootdir_translated_node_get_translator (void *hook, char **argz,
 static const struct procfs_dir_entry rootdir_entries[] = {
   {
     .name = "self",
-    .hook = & (struct procfs_node_ops) {
-      .get_contents = rootdir_gc_fakeself,
-      .cleanup_contents = procfs_cleanup_contents_with_free,
-    },
+    .hook = ROOTDIR_DEFINE_TRANSLATED_NODE (&rootdir_self_node,
+					    _HURD_MAGIC "\0pid"),
     .ops = {
-      .make_node = rootdir_symlink_make_node,
-      .exists = rootdir_fakeself_exists,
+      .make_node = rootdir_make_translated_node,
     }
   },
   {
