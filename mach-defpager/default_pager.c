@@ -3011,8 +3011,6 @@ start_default_pager_thread(internal)
 			 vm_page_size, TRUE);
 	if (kr != KERN_SUCCESS)
 		panic(my_name);
-	wire_memory(ndpt->dpt_buffer, vm_page_size,
-		    VM_PROT_READ|VM_PROT_WRITE);
 
 	err = pthread_create(&ndpt->dpt_thread, NULL, default_pager_thread,
 			     ndpt);

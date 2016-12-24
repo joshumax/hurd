@@ -150,8 +150,6 @@ vm_offset_t kget_space(vm_offset_t size)
 			   VM_PROT_DEFAULT, VM_PROT_ALL, VM_INHERIT_DEFAULT)
 			!= KERN_SUCCESS)
 		    return 0;
-		wire_memory(new_space, space_to_add,
-			    VM_PROT_READ|VM_PROT_WRITE);
 		pthread_spin_lock(&kget_space_lock);
 		continue;
 	    }

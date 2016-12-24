@@ -28,6 +28,7 @@
  */
 #include <mach.h>
 #include <mach_init.h>
+#include <mach/gnumach.h>
 #include <mach/machine/vm_param.h>
 #include "default_pager.h"
 
@@ -41,24 +42,6 @@ wire_setup(host_priv)
 {
 	priv_host_port = host_priv;
 	this_task = mach_task_self();
-}
-
-void
-wire_memory(start, size, prot)
-	vm_address_t	start;
-	vm_size_t	size;
-	vm_prot_t	prot;
-{
-	kern_return_t	kr;
-
-	if (priv_host_port == MACH_PORT_NULL)
-	    return;
-
-	kr = vm_wire(priv_host_port,
-		     this_task,
-		     start, size, prot);
-	if (kr != KERN_SUCCESS)
-	    panic("mem_wire: %d", kr);
 }
 
 void
@@ -125,7 +108,10 @@ wire_all_memory()
 		     page += vm_page_size)
 		  *(volatile int *) page = *(int *) page;
 
-		wire_memory(address, size, protection);
+		kr = vm_wire(priv_host_port, this_task,
+			     address, size, protection);
+		if (kr != KERN_SUCCESS)
+			panic("vm_wire: %d", kr);
 
 		if (!(protection & VM_PROT_WRITE))
 		  {
@@ -135,42 +121,15 @@ wire_all_memory()
 	      }
 	    address += size;
 	}
-}
 
-/*
- * Alias for vm_allocate to return wired memory.
- */
-kern_return_t
-vm_allocate(task, address, size, anywhere)
-	task_t		task;
-	vm_address_t	*address;
-	vm_size_t	size;
-	boolean_t	anywhere;
-{
-	kern_return_t	kr;
+	/*
+	 * Automatically wire down future mappings, including those
+	 * that are currently PROT_NONE but become accessible.
+	 */
 
-	if (anywhere)
-	    *address = VM_MIN_ADDRESS;
-	kr = vm_map(task,
-		address, size, (vm_offset_t) 0, anywhere,
-		MEMORY_OBJECT_NULL, (vm_offset_t)0, FALSE,
-		VM_PROT_DEFAULT, VM_PROT_ALL, VM_INHERIT_DEFAULT);
-	if (kr != KERN_SUCCESS)
-	    return kr;
+	kr = vm_wire_all(priv_host_port, this_task, VM_WIRE_ALL);
 
-	if (task == this_task)
-	    (void) vm_wire(priv_host_port, task, *address, size,
-			VM_PROT_DEFAULT);
-	return KERN_SUCCESS;
-}
-
-/* Other versions of this function in libc... */
-kern_return_t
-__vm_allocate (task, address, size, anywhere)
-	task_t		task;
-	vm_address_t	*address;
-	vm_size_t	size;
-	boolean_t	anywhere;
-{
-  return vm_allocate (task, address, size, anywhere);
+	if (kr != KERN_SUCCESS) {
+	    panic("wire_all_memory: %d", kr);
+	}
 }
