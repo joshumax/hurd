@@ -2388,12 +2388,11 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%
 	return (KERN_SUCCESS);
 }
 
-void default_pager_no_senders(pager, seqno, mscount)
-	memory_object_t pager;
+void default_pager_no_senders(ds, seqno, mscount)
+	default_pager_t ds;
 	mach_port_seqno_t seqno;
 	mach_port_mscount_t mscount;
 {
-	default_pager_t ds;
 	kern_return_t		 kr;
 	static char		 here[] = "%sno_senders";
 
@@ -2406,9 +2405,6 @@ void default_pager_no_senders(pager, seqno, mscount)
 	 */
 
 
-	ds = begin_using_default_pager(pager);
-	if (ds == DEFAULT_PAGER_NULL)
-		panic(here,my_name);
 	pager_port_lock(ds, seqno);
 
 	/*
@@ -2435,7 +2431,7 @@ void default_pager_no_senders(pager, seqno, mscount)
 	pager_port_list_delete(ds);
 	pager_dealloc(&ds->dpager);
 
-	kr = mach_port_mod_refs(default_pager_self, pager,
+	kr = mach_port_mod_refs(default_pager_self, ds->pager,
 				MACH_PORT_RIGHT_RECEIVE, -1);
 	if (kr != KERN_SUCCESS)
 		panic(here,my_name);
@@ -2784,6 +2780,8 @@ seqnos_memory_object_change_completed(ds, seqno, may_cache, copy_strategy)
 boolean_t default_pager_notify_server(in, out)
 	mach_msg_header_t *in, *out;
 {
+	default_pager_t ds;
+
 	mach_no_senders_notification_t *n =
 			(mach_no_senders_notification_t *) in;
 
@@ -2795,10 +2793,21 @@ boolean_t default_pager_notify_server(in, out)
 	 *	a genuine no-senders notification from the kernel.
 	 */
 
-	if ((n->not_header.msgh_bits !=
-			MACH_MSGH_BITS(0, MACH_MSG_TYPE_PORT_SEND_ONCE)) ||
-	    (n->not_header.msgh_id != MACH_NOTIFY_NO_SENDERS))
+	if (n->not_header.msgh_id != MACH_NOTIFY_NO_SENDERS) {
 		return FALSE;
+	}
+
+	if (n->not_header.msgh_bits
+	    == MACH_MSGH_BITS(0, MACH_MSG_TYPE_PROTECTED_PAYLOAD)) {
+		ds = begin_using_default_pager_payload(n->not_header.msgh_protected_payload);
+	} else if (n->not_header.msgh_bits
+		   == MACH_MSGH_BITS(0, MACH_MSG_TYPE_PORT_SEND_ONCE)) {
+		ds = begin_using_default_pager(n->not_header.msgh_local_port);
+	} else {
+		return FALSE;
+	}
+
+	assert(ds != DEFAULT_PAGER_NULL);
 
 	assert(n->not_header.msgh_size == sizeof *n);
 	assert(n->not_header.msgh_remote_port == MACH_PORT_NULL);
@@ -2809,8 +2818,7 @@ boolean_t default_pager_notify_server(in, out)
 	assert(n->not_type.msgt_inline);
 	assert(! n->not_type.msgt_longform);
 
-	default_pager_no_senders(n->not_header.msgh_local_port,
-				 n->not_header.msgh_seqno, n->not_count);
+	default_pager_no_senders(ds, n->not_header.msgh_seqno, n->not_count);
 
 	out->msgh_remote_port = MACH_PORT_NULL;
 	return TRUE;
