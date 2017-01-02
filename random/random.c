@@ -309,30 +309,30 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (*type == 0)
     return 0;
 
-    pthread_mutex_lock (&global_lock);
+  pthread_mutex_lock (&global_lock);
 
-    while (1)
-      {
-	/* XXX Before initialization, readable_pool depends on length.  */
-	int avail = readable_pool (POOLSIZE/2, level);
+  while (1)
+    {
+      /* XXX Before initialization, readable_pool depends on length.  */
+      int avail = readable_pool (POOLSIZE/2, level);
 
-	if (avail != 0 || *type & SELECT_WRITE)
-	  {
-	    *type = (avail ? SELECT_READ : 0) | (*type & SELECT_WRITE);
-	    pthread_mutex_unlock (&global_lock);
-	    return 0;
-	  }
+      if (avail != 0 || *type & SELECT_WRITE)
+	{
+	  *type = (avail ? SELECT_READ : 0) | (*type & SELECT_WRITE);
+	  pthread_mutex_unlock (&global_lock);
+	  return 0;
+	}
 
-	ports_interrupt_self_on_port_death (cred, reply);
-	read_blocked = 1;
+      ports_interrupt_self_on_port_death (cred, reply);
+      read_blocked = 1;
 
-	if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
-	  {
-	    *type = 0;
-	    pthread_mutex_unlock (&global_lock);
-	    return EINTR;
-	  }
-      }
+      if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
+	{
+	  *type = 0;
+	  pthread_mutex_unlock (&global_lock);
+	  return EINTR;
+	}
+    }
 }
 
 
