@@ -70,6 +70,8 @@ struct peropen
 /* A unique one of these exists for each node currently in use. */
 struct node
 {
+  struct node *next, **prevp;
+
   /* Protocol specific stuff; defined by user.  */
   struct netnode *nn;
 
