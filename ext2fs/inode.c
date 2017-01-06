@@ -172,7 +172,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 	st->st_mode |= S_IPTRANS;
       else
 	{
-	  size_t datalen;
+	  size_t datalen = 0;
 	  err = ext2_get_xattr (np, "gnu.translator", NULL, &datalen);
 	  if (! err && datalen > 0)
 	    st->st_mode |= S_IPTRANS;
@@ -619,7 +619,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
     }
   else
     {
-      /* Use legacy translator record when xattr is no supported */
+      /* Use legacy translator record when xattr is not supported */
       daddr_t blkno;
       struct ext2_inode *di;
       char buf[block_size];
@@ -696,7 +696,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
 {
   error_t err = 0;
   daddr_t blkno;
-  int datalen;
+  size_t datalen;
   void *transloc;
   struct ext2_inode *di;
 

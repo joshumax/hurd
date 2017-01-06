@@ -208,7 +208,7 @@ xattr_entry_list (struct ext2_xattr_entry *entry, char *buffer, size_t *len)
  * more than 0 otherwise.
  */
 static error_t
-xattr_entry_get (char *block, struct ext2_xattr_entry *entry,
+xattr_entry_get (void *block, struct ext2_xattr_entry *entry,
 		 const char *full_name, char *value, size_t *len, int *cmp)
 {
 
@@ -282,7 +282,7 @@ xattr_entry_create (struct ext2_xattr_header *header,
   entry_size = EXT2_XATTR_ENTRY_SIZE (name_len);
   value_size = EXT2_XATTR_ALIGN (len);
 
-  if (entry_size + value_size > rest - 4)
+  if (rest < 4 || entry_size + value_size > rest - 4)
     {
       return ERANGE;
     }
@@ -375,7 +375,7 @@ xattr_entry_replace (struct ext2_xattr_header *header,
   old_size = EXT2_XATTR_ALIGN (position->e_value_size);
   new_size = EXT2_XATTR_ALIGN (len);
 
-  if (new_size - old_size > rest - 4)
+  if (rest < 4 || new_size - old_size > rest - 4)
     return ERANGE;
 
   if (new_size != old_size)
@@ -750,7 +750,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	}
       else if (err == ENODATA)
 	{
-	  /* The xattr entry are sorted by attribute name */
+	  /* The xattr entries are sorted by attribute name */
 	  if (cmp < 0 && !found)
 	    {
 	      location = entry;
