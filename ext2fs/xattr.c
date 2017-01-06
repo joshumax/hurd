@@ -597,8 +597,6 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
   if (strlen(name) > 255)
     return ERANGE;
 
-  size = *len;
-
   ei = dino_ref (np->cache_id);
 
   if (ei->i_file_acl == 0)
@@ -623,6 +621,7 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
 
   while (!EXT2_XATTR_ENTRY_LAST (entry))
     {
+      size = *len;
       err = xattr_entry_get (block, entry, name, value, &size, NULL);
       if (err!= ENODATA)
 	break;
