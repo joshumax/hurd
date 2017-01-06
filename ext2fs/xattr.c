@@ -582,7 +582,6 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
   int err;
   void *block;
   struct ext2_inode *ei;
-  block_t blkno;
   struct ext2_xattr_header *header;
   struct ext2_xattr_entry *entry;
 
@@ -601,15 +600,15 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
   size = *len;
 
   ei = dino_ref (np->cache_id);
-  blkno = ei->i_file_acl;
-  dino_deref (ei);
 
-  if (blkno == 0)
+  if (ei->i_file_acl == 0)
     {
+      dino_deref (ei);
       return ENODATA;
     }
 
-  block = disk_cache_block_ref (blkno);
+  block = disk_cache_block_ref (ei->i_file_acl);
+  dino_deref (ei);
 
   header = EXT2_XATTR_HEADER (block);
   if (header->h_magic != EXT2_XATTR_BLOCK_MAGIC || header->h_blocks != 1)
