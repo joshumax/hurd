@@ -79,7 +79,7 @@ CPPFLAGS += $(INCLUDES) \
 	     -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
 CFLAGS += -std=gnu99 $(gnu89-inline-CFLAGS) -Wall -g -O3 \
-	    $($*-CFLAGS)
+	    -fno-strict-aliasing $($*-CFLAGS)
 
 # Include the configure-generated file of parameters.
 # This sets up variables for build tools and installation directories.
