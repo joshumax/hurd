@@ -574,7 +574,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
       /* If a legacy translator record found, clear it */
       if (blkno)
 	{
-	  ext2_warning ("Old translator record found, clear it");
+	  ext2_debug ("Old translator record found, clear it");
 
 	  /* Clear block for translator going away. */
 	  di->i_translator = 0;
@@ -717,7 +717,7 @@ diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
       /* If xattr is no supported by this filesystem, don't report a warning */
       if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR)
 	  && use_xattr_translator_records)
-	ext2_warning ("This is an old translator record, please update it");
+	ext2_debug ("This is an old translator record, please update it");
 
       transloc = disk_cache_block_ref (blkno);
       datalen =
