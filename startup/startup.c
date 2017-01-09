@@ -994,6 +994,8 @@ frob_kernel_process (void)
 
   err = argz_create (&global_argv[1], &argz, &argzlen);
   assert_perror (err);
+  err = argz_insert (&argz, &argzlen, argz, "gnumach");
+  assert_perror (err);
   argc = argz_count (argz, argzlen);
 
   windowsz = round_page (((argc + 1) * sizeof (char *)) + argzlen);
