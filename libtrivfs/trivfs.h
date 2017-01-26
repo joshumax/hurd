@@ -174,6 +174,17 @@ error_t trivfs_startup (mach_port_t bootstrap, int flags,
 			struct port_bucket *protid_bucket,
 			struct trivfs_control **control);
 
+/* Start in debug mode, no need to be called by settrans. Common options are
+   the same as in trivfs_startup. FILE_NAME is the path of the node where the
+   translator is set*/
+error_t
+trivfs_startup_debug(const char *file_name,
+                    struct port_class *control_class,
+                    struct port_bucket *control_bucket,
+                    struct port_class *protid_class,
+                    struct port_bucket *protid_bucket,
+                    struct trivfs_control **control);
+
 /* Create a new trivfs control port, with underlying node UNDERLYING, and
    return it in CONTROL.  CONTROL_CLASS & CONTROL_BUCKET are passed to
    the ports library to create the control port, and PROTID_CLASS &

@@ -24,6 +24,7 @@
 #include <argp.h>
 #include <argz.h>
 #include <sys/sysmacros.h>
+#include <stdbool.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -42,6 +43,8 @@ static struct argp_option options[] =
   {"no-file-io", 'F', 0,  0,"Never perform io via plain file io RPCs"},
   {"no-fileio",  0,   0, OPTION_ALIAS | OPTION_HIDDEN},
   {"enforced",  'e', 0,	  0,"Never reveal underlying devices, even to root"},
+  {"debug",	'd', "PATH",	0,
+   "Launch a standalone translator, for debug purposes"},
   {"rdev",     'n', "ID", 0,
    "The stat rdev number for this node; may be either a"
    " single integer, or of the form MAJOR,MINOR"},
@@ -50,7 +53,10 @@ static struct argp_option options[] =
 static const char doc[] = "Translator for devices and other stores";
 
 const char *argp_program_version = STANDARD_HURD_VERSION (storeio);
-
+
+static bool debug=false;
+static char *debug_fname=NULL;
+
 /* Desired store parameters specified by the user.  */
 struct storeio_argp_params
 {
@@ -97,6 +103,16 @@ parse_opt (int key, char *arg, struct argp_state *state)
       }
       break;
 
+    case 'd':
+      {
+	debug=true;
+	char *new = strdup (arg);
+	if (new == NULL)
+	  return ENOMEM;
+	debug_fname = new;
+      }
+      break;
+
     case ARGP_KEY_INIT:
       /* Now store_argp's parser will get to initialize its state.
 	 The default_type member is our input parameter to it.  */
@@ -135,14 +151,26 @@ main (int argc, char *argv[])
   params.dev = &device;
   argp_parse (&argp, argc, argv, 0, 0, &params);
 
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    error (2, 0, "Must be started as a translator");
+  if (debug)
+    {
+      if (debug_fname)
+	err = trivfs_startup_debug (debug_fname, 0, 0, 0, 0, &storeio_fsys);
+      else
+	error (3, err, "missing translated node");
+      if (err)
+	error (3, err, "trivfs_startup_debug failed");
+    }
+  else
+    {
+      task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      if (bootstrap == MACH_PORT_NULL)
+	error (2, 0, "Must be started as a translator");
 
-  /* Reply to our parent */
-  err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &storeio_fsys);
-  if (err)
-    error (3, err, "trivfs_startup");
+      /* Reply to our parent */
+      err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &storeio_fsys);
+      if (err)
+	error (3, err, "trivfs_startup");
+    }
 
   storeio_fsys->hook = &device;
 
