@@ -21,7 +21,8 @@ makemode := server
 
 target = ext2fs
 SRCS = balloc.c dir.c ext2fs.c getblk.c hyper.c ialloc.c \
-       inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c
+       inode.c pager.c pokel.c truncate.c storeinfo.c msg.c xinl.c \
+       xattr.c
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = diskfs pager iohelp fshelp store ports ihash shouldbeinlibc
 LDLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)

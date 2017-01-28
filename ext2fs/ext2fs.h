@@ -17,6 +17,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#ifndef _EXT2FS_H
+#define _EXT2FS_H
+
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -575,3 +578,23 @@ extern void _ext2_panic (const char *, const char *, ...)
 
 extern void ext2_warning (const char *, ...)
      __attribute__ ((format (printf, 1, 2)));
+
+/* ---------------------------------------------------------------- */
+/* xattr.c */
+
+error_t ext2_list_xattr (struct node *np, char *buffer, size_t *len);
+error_t ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len);
+error_t ext2_set_xattr (struct node *np, const char *name, const char *value, size_t len, int flags);
+error_t ext2_free_xattr_block (struct node *np);
+
+/* Use extended attribute-based translator records.
+ *
+ * This flag allows users to opt-in to the use of extended attributes
+ * for storing translator records.  We will make this the default once
+ * we feel confident that the implementation is fine.
+ *
+ * XXX: Remove this in Hurd 1.0 (or 0.10, or whatever follows 0.9).
+ */
+int use_xattr_translator_records;
+
+#endif
