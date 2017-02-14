@@ -105,9 +105,9 @@ AC_CHECK_TOOL(MIG, mig)
 if test x${MIG} = x; then
   AC_MSG_ERROR([
 *** You need GNU MiG to compile the GNU Hurd, please see
-*** http://www.gnu.org/software/hurd/mig.html for further details, or
-*** download it directly from the main GNU server (ftp.gnu.org) or any
-*** GNU mirror.])
+*** http://www.gnu.org/software/hurd/microkernel/mach/mig/gnu_mig.html
+*** for further details, or download it directly from the main GNU server
+*** (ftp.gnu.org) or any GNU mirror.])
 fi
 
 dnl Let these propagate from the environment.
