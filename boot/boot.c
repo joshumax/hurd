@@ -68,6 +68,8 @@
 #include <hurd.h>
 #include <assert.h>
 
+#include "private.h"
+
 /* We support two modes of operation.  Traditionally, Subhurds were
    privileged, i.e. they had the privileged kernel ports.  This has a
    few drawbacks.  Privileged subhurds can manipulate all tasks on the
@@ -112,6 +114,8 @@ host_exit (int status)
   restore_termstate ();
   exit (status);
 }
+
+int verbose;
 
 mach_port_t privileged_host_port, master_device_port;
 mach_port_t pseudo_privileged_host_port;
@@ -230,6 +234,8 @@ static struct argp_option options[] =
     "Boot in single user mode" },
   { "kernel-command-line", 'c', "COMMAND LINE", 0,
     "Simulated multiboot command line to supply" },
+  { "verbose",     'v', 0, 0,
+    "Be verbose" },
   { "pause" ,      'd', 0, 0,
     "Pause for user confirmation at various times during booting" },
   { "isig",      'I', 0, 0,
@@ -304,6 +310,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'D':  useropen_dir = arg; break;
 
     case 'I':  isig = 1; break;
+
+    case 'v':
+      verbose += 1;
+      break;
 
     case 's': case 'd':
       len = strlen (bootstrap_args);
@@ -882,6 +892,9 @@ ds_device_open (mach_port_t master_port,
 
   if (master_port != pseudo_master_device_port)
     return D_INVALID_OPERATION;
+
+  if (verbose > 1)
+    fprintf (stderr, "Device '%s' being opened.\r\n", name);
 
   if (!strcmp (name, "console"))
     {
@@ -1940,6 +1953,9 @@ static struct hurd_ihash task_ihash =
 static void
 task_died (mach_port_t name)
 {
+  if (verbose > 1)
+    fprintf (stderr, "Task '%u' died.\r\n", name);
+
   hurd_ihash_remove (&task_ihash, (hurd_ihash_key_t) name);
 }
 
@@ -1954,6 +1970,9 @@ S_mach_notify_new_task (mach_port_t notify,
 
   if (notify != task_notification_port)
     return EOPNOTSUPP;
+
+  if (verbose > 1)
+    fprintf (stderr, "Task '%u' created by task '%u'.\r\n", task, parent);
 
   err = mach_port_request_notification (mach_task_self (), task,
                                         MACH_NOTIFY_DEAD_NAME, 0,

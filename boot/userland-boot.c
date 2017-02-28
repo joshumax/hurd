@@ -31,6 +31,7 @@
 #include <error.h>
 
 #include "boot_script.h"
+#include "private.h"
 
 void *
 boot_script_malloc (unsigned int size)
@@ -48,7 +49,12 @@ boot_script_free (void *ptr, unsigned int size)
 int
 boot_script_task_create (struct cmd *cmd)
 {
-  error_t err = task_create (mach_task_self (), 0, &cmd->task);
+  error_t err;
+
+  if (verbose)
+    fprintf (stderr, "Creating task '%s'.\r\n", cmd->path);
+
+  err = task_create (mach_task_self (), 0, &cmd->task);
   if (err)
     {
       error (0, err, "%s: task_create", cmd->path);
@@ -66,7 +72,12 @@ boot_script_task_create (struct cmd *cmd)
 int
 boot_script_task_resume (struct cmd *cmd)
 {
-  error_t err = task_resume (cmd->task);
+  error_t err;
+
+  if (verbose)
+    fprintf (stderr, "Resuming task '%s'.\r\n", cmd->path);
+
+  err = task_resume (cmd->task);
   if (err)
     {
       error (0, err, "%s: task_resume", cmd->path);
