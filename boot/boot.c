@@ -938,6 +938,9 @@ ds_device_open (mach_port_t master_port,
       return err;
     }
 
+  if (! privileged)
+    return D_NO_SUCH_DEVICE;
+
   *devicetype = MACH_MSG_TYPE_MOVE_SEND;
   return device_open (master_device_port, mode, name, device);
 }
