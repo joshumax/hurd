@@ -1902,7 +1902,7 @@ kern_return_t
 S_host_reboot (mach_port_t host_priv,
                int flags)
 {
-  fprintf (stderr, "Would %s the system.  Bye.\n",
+  fprintf (stderr, "Would %s the system.  Bye.\r\n",
            flags & RB_HALT? "halt": "reboot");
   host_exit (0);
 }
