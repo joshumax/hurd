@@ -99,6 +99,30 @@ increase_priority (void)
   return err;
 }
 
+/* Get our stderr set up to print on the console, in case we have to
+   panic or something.  */
+error_t
+open_console (mach_port_t device_master)
+{
+  static int got_console = 0;
+  mach_port_t cons;
+  error_t err;
+
+  if (got_console)
+    return 0;
+
+  err = device_open (device_master, D_READ|D_WRITE, "console", &cons);
+  if (err)
+    return err;
+
+  stdin = mach_open_devstream (cons, "r");
+  stdout = stderr = mach_open_devstream (cons, "w");
+
+  got_console = 1;
+  mach_port_deallocate (mach_task_self (), cons);
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -146,6 +170,10 @@ main (int argc, char **argv, char **envp)
   assert_perror (err);
   mach_port_deallocate (mach_task_self (), startup_port);
 
+  /* Get our stderr set up to print on the console, in case we have
+     to panic or something.  */
+  open_console (_hurd_device_master);
+
   mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
@@ -168,17 +196,6 @@ main (int argc, char **argv, char **envp)
 					MACH_MSG_TYPE_MAKE_SEND);
   if (err)
     error (0, err, "Registering task notifications failed");
-
-  {
-    /* Get our stderr set up to print on the console, in case we have
-       to panic or something.  */
-    mach_port_t cons;
-    err = device_open (_hurd_device_master, D_READ|D_WRITE, "console", &cons);
-    assert_perror (err);
-    stdin = mach_open_devstream (cons, "r");
-    stdout = stderr = mach_open_devstream (cons, "w");
-    mach_port_deallocate (mach_task_self (), cons);
-  }
 
   startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
   if (MACH_PORT_VALID (startup))
