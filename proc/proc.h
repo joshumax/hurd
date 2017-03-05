@@ -148,6 +148,7 @@ struct port_class *generic_port_class;
 struct port_class *exc_class;
 
 mach_port_t generic_port;	/* messages not related to a specific proc */
+struct proc *kernel_proc;
 
 pthread_mutex_t global_lock;
 

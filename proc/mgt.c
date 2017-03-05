@@ -1055,7 +1055,9 @@ S_mach_notify_new_task (struct port_info *notify,
 {
   struct proc *parentp, *childp;
 
-  if (! notify || notify->class != generic_port_class)
+  if (! notify
+      || (kernel_proc == NULL && notify->class != generic_port_class)
+      || (kernel_proc != NULL && notify != (struct port_info *) kernel_proc))
     return EOPNOTSUPP;
 
   parentp = task_find_nocreate (parent);

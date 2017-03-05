@@ -191,8 +191,17 @@ main (int argc, char **argv, char **envp)
   if (err && err != EPERM)
     error (0, err, "Increasing priority failed");
 
+  /* Get a list of all tasks to find the kernel.  */
+  /* XXX: I't be nice if GNU Mach would hand us the task port.  */
+  add_tasks (MACH_PORT_NULL);
+  kernel_proc = pid_find (HURD_PID_KERNEL);
+
+  /* Register for new task notifications using the kernel's process as
+     the port.  */
   err = register_new_task_notification (_hurd_host_priv,
-					generic_port,
+					kernel_proc
+                                        ? ports_get_right (kernel_proc)
+                                        : generic_port,
 					MACH_MSG_TYPE_MAKE_SEND);
   if (err)
     error (0, err, "Registering task notifications failed");
