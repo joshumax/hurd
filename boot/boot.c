@@ -128,6 +128,10 @@ mach_port_t task_notification_port;
 mach_port_t dead_task_notification_port;
 auth_t authserver;
 
+/* The proc server registers for new task notifications which we will
+   send to this port.  */
+mach_port_t new_task_notification;
+
 struct store *root_store;
 
 pthread_spinlock_t queuelock = PTHREAD_SPINLOCK_INITIALIZER;
@@ -1919,8 +1923,6 @@ S_host_processor_set_priv (mach_port_t host_priv,
   *set = pseudo_pset;
   return KERN_SUCCESS;
 }
-
-mach_port_t new_task_notification;
 
 kern_return_t
 S_register_new_task_notification (mach_port_t host_priv,
