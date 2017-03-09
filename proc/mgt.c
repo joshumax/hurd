@@ -733,6 +733,22 @@ new_proc (task_t task)
   return p;
 }
 
+/* Find the creator of the task namespace that P is in.  */
+struct proc *
+namespace_find_root (struct proc *p)
+{
+  for (;
+       MACH_PORT_VALID (p->p_parent->p_task_namespace);
+       p = p->p_parent)
+    {
+      /* Walk up the process hierarchy until we find the creator of
+         the task namespace.  The last process we encounter that has a
+         valid task_namespace must be the creator.  */
+    }
+
+  return p;
+}
+
 /* Used with prociterate to terminate all tasks in a task
    namespace.  */
 static void
@@ -785,14 +801,7 @@ process_has_exited (struct proc *p)
 
       if (MACH_PORT_VALID (p->p_task_namespace))
 	{
-	  for (tp = p;
-	       MACH_PORT_VALID (tp->p_parent->p_task_namespace);
-	       tp = tp->p_parent)
-	    {
-	      /* Walk up the process hierarchy until we find the
-		 creator of the task namespace.	 */
-	    }
-
+          tp = namespace_find_root (p);
 	  if (p == tp)
 	    {
 	      /* The creator of the task namespace died.  Terminate

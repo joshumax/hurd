@@ -201,6 +201,7 @@ void leave_pgrp (struct proc *);
 void join_pgrp (struct proc *);
 void boot_setsid (struct proc *);
 
+struct proc *namespace_find_root (struct proc *);
 void process_has_exited (struct proc *);
 void alert_parent (struct proc *);
 void reparent_zombies (struct proc *);
