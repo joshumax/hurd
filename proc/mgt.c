@@ -966,16 +966,45 @@ genpid ()
   return nextpid++;
 }
 
+
+
+/* Support for making sysvinit PID 1.  */
+
+/* We reserve PID 1 for sysvinit.  However, proc may pick up the task
+   when it is created and reserve an entry in the process table for
+   it.  When startup tells us the task that it created for sysvinit,
+   we need to locate this preliminary entry and remove it.  Otherwise,
+   we end up with two entries for sysvinit with the same task.  */
+
+/* XXX: This is a mess.  It would be nicer if startup gave us the
+   ports (e.g. sysvinit's task, the kernel task...) before starting
+   us, communicating the names using command line options.  */
+
 /* Implement proc_set_init_task as described in <hurd/process.defs>.  */
 error_t
 S_proc_set_init_task(struct proc *callerp,
 		     task_t task)
 {
+  struct proc *shadow;
+
   if (! callerp)
     return EOPNOTSUPP;
 
   if (callerp != startup_proc)
     return EPERM;
+
+  /* Check if TASK already made it into the process table, and if so
+     remove it.  */
+  shadow = task_find_nocreate (task);
+  if (shadow)
+    {
+      /* Cheat a little so we can use complete_exit.  */
+      shadow->p_dead = 1;
+      shadow->p_waited = 1;
+      mach_port_deallocate (mach_task_self (), shadow->p_task);
+      shadow->p_task = MACH_PORT_NULL;
+      complete_exit (shadow);
+    }
 
   init_proc->p_task = task;
   proc_death_notify (init_proc);
@@ -983,6 +1012,8 @@ S_proc_set_init_task(struct proc *callerp,
 
   return 0;
 }
+
+
 
 /* Implement proc_mark_important as described in <hurd/process.defs>. */
 kern_return_t
