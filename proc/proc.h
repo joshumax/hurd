@@ -201,6 +201,8 @@ void leave_pgrp (struct proc *);
 void join_pgrp (struct proc *);
 void boot_setsid (struct proc *);
 
+int namespace_is_subprocess (struct proc *p);
+error_t namespace_translate_pids (mach_port_t namespace, pid_t *pids, size_t pids_len);
 struct proc *namespace_find_root (struct proc *);
 void process_has_exited (struct proc *);
 void alert_parent (struct proc *);

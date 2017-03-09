@@ -196,12 +196,66 @@ mig_reply_setup (
 #undef OutP
 }
 
+error_t
+mach_msg_forward (mach_msg_header_t *inp,
+                  mach_port_t destination, mach_msg_type_name_t destination_type)
+{
+  /* Put the reply port back at the correct position, insert new
+     destination.  */
+  inp->msgh_local_port = inp->msgh_remote_port;
+  inp->msgh_remote_port = destination;
+  inp->msgh_bits =
+    MACH_MSGH_BITS (destination_type, MACH_MSGH_BITS_REMOTE (inp->msgh_bits))
+    | MACH_MSGH_BITS_OTHER (inp->msgh_bits);
+
+  /* A word about resources carried in complex messages.
+
+     "In a received message, msgt_deallocate is TRUE in type
+     descriptors for out-of-line memory".  Therefore, "[the
+     out-of-line memory] is implicitly deallocated from the sender
+     [when we resend the message], as if by vm_deallocate".
+
+     Similarly, rights in messages will be either
+     MACH_MSG_TYPE_PORT_SEND, MACH_MSG_TYPE_PORT_SEND_ONCE, or
+     MACH_MSG_TYPE_PORT_RECEIVE.  These types are aliases for,
+     respectively, MACH_MSG_TYPE_MOVE_SEND,
+     MACH_MSG_TYPE_MOVE_SEND_ONCE, and MACH_MSG_TYPE_MOVE_RECEIVE.
+     Therefore, the rights are moved when we resend the message.  */
+
+  return mach_msg (inp, MACH_SEND_MSG, inp->msgh_size,
+                   0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+}
+
 int
 boot_demuxer (mach_msg_header_t *inp,
 	      mach_msg_header_t *outp)
 {
+  error_t err;
   mig_routine_t routine;
   mig_reply_setup (inp, outp);
+
+  if (inp->msgh_local_port == task_notification_port
+      && MACH_PORT_VALID (new_task_notification)
+      && 24000 <= inp->msgh_id && inp->msgh_id < 24100)
+    {
+      /* This is a message of the Process subsystem.  We relay this to
+         allow the "outer" proc servers to communicate with the "inner"
+         one.  */
+      mig_reply_header_t *reply = (mig_reply_header_t *) outp;
+
+      if (MACH_PORT_VALID (new_task_notification))
+        err = mach_msg_forward (inp, new_task_notification, MACH_MSG_TYPE_COPY_SEND);
+      else
+        err = EOPNOTSUPP;
+
+      if (err)
+        reply->RetCode = err;
+      else
+        reply->RetCode = MIG_NO_REPLY;
+
+      return TRUE;
+    }
+
   if ((routine = io_server_routine (inp)) ||
       (routine = device_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||

@@ -732,7 +732,61 @@ new_proc (task_t task)
     complete_proc (p, genpid ());
   return p;
 }
+
 
+
+/* Task namespace support.  */
+
+/* Check if a given process is part of a task namespace but is not the
+   root.  The root is managed by us, while all other tasks are managed
+   by the root itself.  */
+int
+namespace_is_subprocess (struct proc *p)
+{
+  return (p
+          && MACH_PORT_VALID (p->p_task_namespace)
+          && p->p_parent
+          && MACH_PORT_VALID (p->p_parent->p_task_namespace));
+}
+
+/* Translate PIDs valid in NAMESPACE into PIDs valid in our own
+   process space.
+
+   Conditions: global_lock is unlocked before calling, and is locked
+   afterwards.  */
+error_t
+namespace_translate_pids (mach_port_t namespace, pid_t *pids, size_t pids_len)
+{
+  size_t i;
+  task_t *tasks;
+
+  tasks = calloc (pids_len, sizeof *tasks);
+  if (tasks == NULL)
+    {
+      pthread_mutex_lock (&global_lock);
+      return ENOMEM;
+    }
+
+  for (i = 0; i < pids_len; i++)
+    /* We handle errors by checking each returned task.  */
+    proc_pid2task (namespace, pids[i], &tasks[i]);
+
+  pthread_mutex_lock (&global_lock);
+
+  for (i = 0; i < pids_len; i++)
+    if (MACH_PORT_VALID (tasks[i]))
+      {
+        struct proc *p = task_find_nocreate (tasks[i]);
+        mach_port_deallocate (mach_task_self (), tasks[i]);
+        pids[i] = p ? p->p_pid : (pid_t) -1;
+      }
+    else
+      pids[i] = (pid_t) -1;
+
+  free (tasks);
+  return 0;
+}
+
 /* Find the creator of the task namespace that P is in.  */
 struct proc *
 namespace_find_root (struct proc *p)
@@ -758,6 +812,8 @@ namespace_terminate (struct proc *p, void *cookie)
   if (p->p_task_namespace == *namespacep)
     task_terminate (p->p_task);
 }
+
+
 
 /* The task associated with process P has died.  Drop most state,
    and then record us as dead.  Our parent will eventually complete the

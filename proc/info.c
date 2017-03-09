@@ -109,6 +109,28 @@ S_proc_task2proc (struct proc *callerp,
   if (!p)
     return ESRCH;
 
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2proc (p->p_task_namespace, t, outproc);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	{
+	  *outproc_type = MACH_MSG_TYPE_MOVE_SEND;
+	  mach_port_deallocate (mach_task_self (), t);
+	  return 0;
+	}
+
+      /* Fallback.  */
+    }
+
   *outproc = ports_get_right (p);
   *outproc_type = MACH_MSG_TYPE_MAKE_SEND;
   mach_port_deallocate (mach_task_self (), t);
@@ -150,6 +172,27 @@ S_proc_pid2proc (struct proc *callerp,
 
   if (! check_owner (callerp, p))
     return EPERM;
+
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2proc (p->p_task_namespace, p->p_task, outproc);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	{
+	  *outproc_type = MACH_MSG_TYPE_MOVE_SEND;
+	  return 0;
+	}
+
+      /* Fallback.  */
+    }
 
   *outproc = ports_get_right (p);
   *outproc_type = MACH_MSG_TYPE_MAKE_SEND;
@@ -345,6 +388,27 @@ S_proc_getprocargs (struct proc *callerp,
   if (!p)
     return ESRCH;
 
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+	err = proc_getprocargs (p->p_task_namespace, pid_sub, buf, buflen);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
+
   return get_string_array (p->p_task, p->p_argv, (vm_address_t *) buf, buflen);
 }
 
@@ -361,6 +425,27 @@ S_proc_getprocenv (struct proc *callerp,
 
   if (!p)
     return ESRCH;
+
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+	err = proc_getprocenv (p->p_task_namespace, pid_sub, buf, buflen);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   return get_string_array (p->p_task, p->p_envp, (vm_address_t *)buf, buflen);
 }
@@ -397,6 +482,82 @@ S_proc_getprocinfo (struct proc *callerp,
 
   if (!p)
     return ESRCH;
+
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+	err = proc_getprocinfo (p->p_task_namespace, pid_sub, flags,
+				piarray, piarraylen, waits, waits_len);
+
+      if (! err && *piarray && *piarraylen * sizeof (int) >= sizeof *pi)
+	{
+	  /* Fixup the PIDs to refer to this Hurd's processes.  */
+	  task_t t_ppid = MACH_PORT_NULL;
+	  task_t t_pgrp = MACH_PORT_NULL;
+	  task_t t_session = MACH_PORT_NULL;
+	  task_t t_logincollection = MACH_PORT_NULL;
+
+	  pi = (struct procinfo *) *piarray;
+
+	  /* We handle errors by checking each returned task.  */
+	  if (pi->ppid != pid_sub)
+	    proc_pid2task (p->p_task_namespace, pi->ppid, &t_ppid);
+	  proc_pid2task (p->p_task_namespace, pi->pgrp, &t_pgrp);
+	  proc_pid2task (p->p_task_namespace, pi->session, &t_session);
+	  proc_pid2task (p->p_task_namespace, pi->logincollection,
+			 &t_logincollection);
+
+	  /* Reacquire the global lock for the hash table lookups.  */
+	  pthread_mutex_lock (&global_lock);
+
+	  if (MACH_PORT_VALID (t_ppid))
+	    {
+	      struct proc *q = task_find (t_ppid);
+	      pi->ppid = q ? q->p_pid : (pid_t) -1;
+	      mach_port_deallocate (mach_task_self (), t_ppid);
+	    }
+	  else
+	    {
+	      /* Either the pid2task lookup failed, or this process is
+		 a root of a process hierarchy in the Subhurd.  Either
+		 way, we attach it to the creator of the task
+		 namespace.  */
+	      pi->ppid = namespace_find_root (p)->p_pid;
+	    }
+	  if (MACH_PORT_VALID (t_pgrp))
+	    {
+	      struct proc *q = task_find (t_pgrp);
+	      pi->pgrp = q ? q->p_pid : (pid_t) -1;
+	      mach_port_deallocate (mach_task_self (), t_pgrp);
+	    }
+	  if (MACH_PORT_VALID (t_session))
+	    {
+	      struct proc *q = task_find (t_session);
+	      pi->session = q ? q->p_pid : (pid_t) -1;
+	      mach_port_deallocate (mach_task_self (), t_session);
+	    }
+	  if (MACH_PORT_VALID (t_logincollection))
+	    {
+	      struct proc *q = task_find (t_logincollection);
+	      pi->logincollection = q ? q->p_pid : (pid_t) -1;
+	      mach_port_deallocate (mach_task_self (), t_logincollection);
+	    }
+
+	  return 0;
+	}
+
+      pthread_mutex_lock (&global_lock);
+      err = 0;
+      /* Fallback.  */
+    }
 
   task = p->p_task;
 
@@ -644,12 +805,36 @@ S_proc_getloginid (struct proc *callerp,
 		   pid_t *leader)
 {
   struct proc *proc = pid_find (pid);
-  struct proc *p;
+  struct proc *p = proc;
 
   /* No need to check CALLERP here; we don't use it. */
 
   if (!proc)
     return ESRCH;
+
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+	err = proc_getloginid (p->p_task_namespace, pid_sub, leader);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (p->p_task_namespace, leader, 1);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   for (p = proc; !p->p_loginleader; p = p->p_parent)
     assert (p);
@@ -673,6 +858,35 @@ S_proc_getloginpids (struct proc *callerp,
   int i;
 
   /* No need to check CALLERP here; we don't use it. */
+
+  if (!l)
+    return ESRCH;
+
+  if (namespace_is_subprocess (l))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+      pid_t leader_sub;
+      task_t leader_task;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (l->p_task_namespace, l->p_task, &pid_sub);
+      if (! err)
+	err = proc_getloginpids (l->p_task_namespace, pid_sub, pids, npids);
+      if (! err)
+	/* Acquires global_lock.  */
+	err = namespace_translate_pids (l->p_task_namespace, *pids, *npids);
+      else
+	pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	return 0;
+
+      /* Fallback.  */
+    }
 
   if (!l || !l->p_loginleader)
     return ESRCH;

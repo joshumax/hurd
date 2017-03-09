@@ -137,7 +137,31 @@ S_proc_getmsgport (struct proc *callerp,
 
   p = pid_find_allow_zombie (pid);
 
-restart:  
+  if (namespace_is_subprocess (p))
+    {
+      /* Relay it to the Subhurd's proc server (if any).  */
+      error_t err;
+      pid_t pid_sub;
+
+      /* Release global lock while talking to the other proc server.  */
+      pthread_mutex_unlock (&global_lock);
+
+      err = proc_task2pid (p->p_task_namespace, p->p_task, &pid_sub);
+      if (! err)
+        err = proc_getmsgport (p->p_task_namespace, pid_sub, msgport);
+
+      pthread_mutex_lock (&global_lock);
+
+      if (! err)
+	{
+	  *msgport_type = MACH_MSG_TYPE_MOVE_SEND;
+	  return 0;
+	}
+
+      /* Fallback.  */
+    }
+
+ restart:
   while (p && p->p_deadmsg && !p->p_dead)
     {
       callerp->p_msgportwait = 1;
