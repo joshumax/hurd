@@ -99,7 +99,8 @@ S_proc_task2pid (struct proc *callerp,
 kern_return_t
 S_proc_task2proc (struct proc *callerp,
 		  task_t t,
-		  mach_port_t *outproc)
+		  mach_port_t *outproc,
+		  mach_msg_type_name_t *outproc_type)
 {
   struct proc *p = task_find (t);
 
@@ -109,6 +110,7 @@ S_proc_task2proc (struct proc *callerp,
     return ESRCH;
 
   *outproc = ports_get_right (p);
+  *outproc_type = MACH_MSG_TYPE_MAKE_SEND;
   mach_port_deallocate (mach_task_self (), t);
   return 0;
 }
@@ -128,7 +130,8 @@ S_proc_proc2task (struct proc *p,
 kern_return_t
 S_proc_pid2proc (struct proc *callerp,
 	         pid_t pid,
-	         mach_port_t *outproc)
+	         mach_port_t *outproc,
+		 mach_msg_type_name_t *outproc_type)
 {
   struct proc *p;
 
@@ -149,6 +152,7 @@ S_proc_pid2proc (struct proc *callerp,
     return EPERM;
 
   *outproc = ports_get_right (p);
+  *outproc_type = MACH_MSG_TYPE_MAKE_SEND;
   return 0;
 }
 

@@ -51,7 +51,7 @@ skip; /* get_arg_locations */
 simpleroutine proc_getmsgport_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
-	in msgports: mach_port_t);
+	in msgports: mach_port_poly_t);
 
 simpleroutine proc_wait_reply (
 	reply_port: reply_port_t;
@@ -83,7 +83,7 @@ simpleroutine proc_task2pid_reply (
 simpleroutine proc_task2proc_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
-	proc: mach_port_make_send_t);
+	proc: mach_port_poly_t);
 
 simpleroutine proc_proc2task_reply (
 	reply_port: reply_port_t;
@@ -93,7 +93,7 @@ simpleroutine proc_proc2task_reply (
 simpleroutine proc_pid2proc_reply (
 	reply_port: reply_port_t;
 	RETURN_CODE_ARG;
-	proc: mach_port_make_send_t);
+	proc: mach_port_poly_t);
 
 simpleroutine proc_getprocinfo_reply (
 	reply_port: reply_port_t;

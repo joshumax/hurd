@@ -156,7 +156,7 @@ routine proc_getmsgport (
 	process: process_t;
 	sreplyport reply_port: sreply_port_t;
 	pid: pid_t;
-	out msgport: mach_port_t);
+	out msgport: mach_port_poly_t);
 
 /* Wait for a child process to exit.  If pid is zero, it waits for any
    child in the same pgrp as the parent.  If pid is -1, it waits for
@@ -246,7 +246,7 @@ routine proc_task2pid (
 routine proc_task2proc (
 	process: process_t;
 	task: task_t;
-	out proc: mach_port_make_send_t);
+	out proc: mach_port_poly_t);
 
 routine proc_proc2task (
 	process: process_t;
@@ -255,7 +255,7 @@ routine proc_proc2task (
 routine proc_pid2proc (
 	process: process_t;
 	pid: pid_t;
-	out proc: mach_port_make_send_t);
+	out proc: mach_port_poly_t);
 
 routine proc_getprocinfo (
 	process: process_t;

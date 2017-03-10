@@ -126,7 +126,8 @@ S_proc_getmsgport (struct proc *callerp,
 		   mach_port_t reply_port,
 		   mach_msg_type_name_t reply_port_type,
 		   pid_t pid,
-		   mach_port_t *msgport)
+		   mach_port_t *msgport,
+                   mach_msg_type_name_t *msgport_type)
 {
   int cancel;
   struct proc *p;
@@ -156,7 +157,8 @@ restart:
 
   if (check_msgport_death (p))
     goto restart;
-  
+
+  *msgport_type = MACH_MSG_TYPE_COPY_SEND;
   *msgport = p->p_msgport;
 
   return 0;
