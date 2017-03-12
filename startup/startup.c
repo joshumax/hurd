@@ -72,6 +72,8 @@ static int verbose = 0;
 
 const char *argp_program_version = STANDARD_HURD_VERSION (startup);
 
+#define OPT_KERNEL_TASK	-1
+
 static struct argp_option
 options[] =
 {
@@ -83,6 +85,7 @@ options[] =
   {"fake-boot",   'f', 0, 0, "This hurd hasn't been booted on the raw machine"},
   {"verbose",     'v', 0, 0, "be verbose"},
   {0,             'x', 0, OPTION_HIDDEN},
+  {"kernel-task", OPT_KERNEL_TASK, "PORT"},
   {0}
 };
 
@@ -136,6 +139,7 @@ static int fakeboot;
 
 /* The tasks of auth and proc and the bootstrap filesystem. */
 static task_t authtask, proctask, fstask;
+static task_t kernel_task;
 
 static mach_port_t default_ports[INIT_PORT_MAX];
 static mach_port_t default_dtable[3];
@@ -344,10 +348,13 @@ record_essential_task (const char *name, task_t task)
 
 /** Starting programs **/
 
+typedef error_t (*insert_ports_fnc_t) (char **argv, size_t *argv_len, task_t task);
+
 /* Run SERVER, giving it INIT_PORT_MAX initial ports from PORTS.
    Set TASK to be the task port of the new image. */
 void
-run (const char *server, mach_port_t *ports, task_t *task)
+run (const char *server, mach_port_t *ports, task_t *task,
+     insert_ports_fnc_t insert_ports)
 {
   char buf[BUFSIZ];
   const char *prog = server;
@@ -369,18 +376,31 @@ run (const char *server, mach_port_t *ports, task_t *task)
 	error (0, errno, "%s", prog);
       else
 	{
-	  task_create (mach_task_self (),
+          char *argz = NULL;
+          size_t argz_len = 0;
+          err = argz_create_sep (prog, ' ', &argz, &argz_len);
+          assert_perror (err);
+
+          err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
-		       NULL, 0,	/* OSF Mach */
+                             NULL, 0,	/* OSF Mach */
 #endif
-		       0, task);
+                             0, task);
+          assert_perror (err);
+
+          if (insert_ports)
+            {
+              err = insert_ports (&argz, &argz_len, *task);
+              assert_perror (err);
+            }
+
 	  if (bootstrap_args & RB_KDB)
 	    {
 	      fprintf (stderr, "Pausing for %s\n", prog);
 	      getchar ();
 	    }
 	  err = file_exec (file, *task, 0,
-			   (char *)prog, strlen (prog) + 1, /* Args.  */
+			   argz, argz_len, /* Args.  */
 			   startup_envz, startup_envz_len,
 			   default_dtable, MACH_MSG_TYPE_COPY_SEND, 3,
 			   ports, MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
@@ -406,6 +426,50 @@ run (const char *server, mach_port_t *ports, task_t *task)
   /* Dead-name notification on the task port will tell us when it dies,
      so we can crash if we don't make it to a fully bootstrapped Hurd.  */
   request_dead_name (*task);
+}
+
+/* Insert PORT of type PORT_TYPE into TASK, adding '--ARGUMENT=<name>'
+   to ARGZ (with <name> being the name valid in TASK).  */
+error_t
+argz_task_insert_right (char **argz, size_t *argz_len, task_t task,
+                        const char *argument,
+                        mach_port_t port, mach_msg_type_name_t port_type)
+{
+  error_t err;
+  mach_port_t name;
+  char *arg;
+
+  name = MACH_PORT_NULL;
+  do
+    {
+      name += 1;
+      err = mach_port_insert_right (task, name, port, port_type);
+    }
+  while (err == KERN_NAME_EXISTS);
+
+  if (asprintf (&arg, "--%s=%d", argument, name) < 0)
+    return errno;
+
+  err = argz_add (argz, argz_len, arg);
+  free (arg);
+  return err;
+}
+
+error_t
+proc_insert_ports (char **argz, size_t *argz_len, task_t task)
+{
+  error_t err;
+
+  if (MACH_PORT_VALID (kernel_task))
+    {
+      err = argz_task_insert_right (argz, argz_len, task,
+                                    "kernel-task",
+                                    kernel_task, MACH_MSG_TYPE_COPY_SEND);
+      if (err)
+        return err;
+    }
+
+  return 0;
 }
 
 /* Run FILENAME as root with ARGS as its argv (length ARGLEN).  Return
@@ -597,6 +661,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'H': crash_flags = RB_DEBUGGER; break;
     case 'v': verbose++; break;
     case 'x': /* NOP */ break;
+    case OPT_KERNEL_TASK:
+      kernel_task = atoi (arg);
+      break;
     default: return ARGP_ERR_UNKNOWN;
     }
   return 0;
@@ -685,10 +752,10 @@ main (int argc, char **argv, char **envp)
 			       | sigmask (SIGTTOU));
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
-  run ("/hurd/proc", default_ports, &proctask);
+  run ("/hurd/proc", default_ports, &proctask, proc_insert_ports);
   if (! verbose)
     fprintf (stderr, " proc");
-  run ("/hurd/auth", default_ports, &authtask);
+  run ("/hurd/auth", default_ports, &authtask, NULL);
   if (! verbose)
     fprintf (stderr, " auth");
   default_ports[INIT_PORT_BOOTSTRAP] = MACH_PORT_NULL;
@@ -905,11 +972,19 @@ frob_kernel_process (void)
   if (verbose)
     fprintf (stderr, "Frobbing kernel process\n");
 
-  err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
-  if (err)
+  if (MACH_PORT_VALID (kernel_task))
     {
-      error (0, err, "cannot get kernel task port");
-      return;
+      task = kernel_task;
+      kernel_task = MACH_PORT_NULL;
+    }
+  else
+    {
+      err = proc_pid2task (procserver, HURD_PID_KERNEL, &task);
+      if (err)
+        {
+          error (0, err, "cannot get kernel task port");
+          return;
+        }
     }
 
   /* Make the kernel our child.  */

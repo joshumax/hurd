@@ -35,6 +35,7 @@ int _diskfs_boot_pause;
 extern char **diskfs_argv;
 
 mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
+mach_port_t diskfs_kernel_task = MACH_PORT_NULL;
 
 /* ---------------------------------------------------------------- */
 
@@ -45,6 +46,7 @@ mach_port_t diskfs_exec_server_task = MACH_PORT_NULL;
 #define OPT_BOOT_COMMAND	(-5)
 #define OPT_BOOT_INIT_PROGRAM	(-6)
 #define OPT_BOOT_PAUSE		(-7)
+#define OPT_KERNEL_TASK		(-8)
 
 static const struct argp_option
 startup_options[] =
@@ -68,6 +70,7 @@ startup_options[] =
   {"host-priv-port",     OPT_HOST_PRIV_PORT,     "PORT"},
   {"device-master-port", OPT_DEVICE_MASTER_PORT, "PORT"},
   {"exec-server-task",   OPT_EXEC_SERVER_TASK,   "PORT"},
+  {"kernel-task",        OPT_KERNEL_TASK,        "PORT"},
 
   {0}
 };
@@ -106,6 +109,8 @@ parse_startup_opt (int opt, char *arg, struct argp_state *state)
       _hurd_host_priv = atoi (arg); break;
     case OPT_EXEC_SERVER_TASK:
       diskfs_exec_server_task = atoi (arg); break;
+    case OPT_KERNEL_TASK:
+      diskfs_kernel_task = atoi (arg); break;
     case OPT_BOOT_CMDLINE:
       diskfs_boot_command_line = arg; break;
     case OPT_BOOT_INIT_PROGRAM:

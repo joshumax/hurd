@@ -123,6 +123,32 @@ open_console (mach_port_t device_master)
   return 0;
 }
 
+
+
+static task_t kernel_task;
+
+#define OPT_KERNEL_TASK	-1
+
+static struct argp_option
+options[] =
+{
+  {"kernel-task", OPT_KERNEL_TASK, "PORT"},
+  {0}
+};
+
+static int
+parse_opt (int key, char *arg, struct argp_state *state)
+{
+  switch (key)
+    {
+    case OPT_KERNEL_TASK:
+      kernel_task = atoi (arg);
+      break;
+    default: return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
+}
+
 int
 main (int argc, char **argv, char **envp)
 {
@@ -131,7 +157,8 @@ main (int argc, char **argv, char **envp)
   void *genport;
   process_t startup_port;
   mach_port_t startup;
-  struct argp argp = { 0, 0, 0, "Hurd process server" };
+  char **original_argv;
+  struct argp argp = { options, parse_opt, 0, "Hurd process server" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
@@ -191,10 +218,15 @@ main (int argc, char **argv, char **envp)
   if (err && err != EPERM)
     error (0, err, "Increasing priority failed");
 
-  /* Get a list of all tasks to find the kernel.  */
-  /* XXX: I't be nice if GNU Mach would hand us the task port.  */
-  add_tasks (MACH_PORT_NULL);
-  kernel_proc = pid_find (HURD_PID_KERNEL);
+  /* Find the kernel.  */
+  if (MACH_PORT_VALID (kernel_task))
+    kernel_proc = task_find (kernel_task);
+  else
+    {
+      /* Get a list of all tasks to find the kernel.  */
+      add_tasks (MACH_PORT_NULL);
+      kernel_proc = pid_find (HURD_PID_KERNEL);
+    }
 
   /* Register for new task notifications using the kernel's process as
      the port.  */

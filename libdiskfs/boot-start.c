@@ -40,6 +40,7 @@
 
 static mach_port_t diskfs_exec_ctl;
 extern task_t diskfs_exec_server_task;
+extern task_t diskfs_kernel_task;
 static task_t parent_task = MACH_PORT_NULL;
 
 static pthread_mutex_t execstartlock;
@@ -206,9 +207,6 @@ diskfs_start_bootstrap ()
       /* We have a boot command line to run instead of init.  */
       err = argz_create (_diskfs_boot_command, &exec_argv, &exec_argvlen);
       assert_perror (err);
-      initname = exec_argv;
-      while (*initname == '/')
-	initname++;
     }
   else
     {
@@ -223,9 +221,41 @@ diskfs_start_bootstrap ()
       err = argz_add_sep (&exec_argv, &exec_argvlen,
 			  diskfs_boot_command_line, ' ');
       assert_perror (err);
-
-      initname = exec_argv + 1;
     }
+
+  err = task_create (mach_task_self (),
+#ifdef KERN_INVALID_LEDGER
+		     NULL, 0,	/* OSF Mach */
+#endif
+		     0, &newt);
+  assert_perror (err);
+
+  if (MACH_PORT_VALID (diskfs_kernel_task))
+    {
+      mach_port_t kernel_task_name = MACH_PORT_NULL;
+      char buf[20];
+      int len;
+
+      do
+        {
+          kernel_task_name += 1;
+          err = mach_port_insert_right (newt, kernel_task_name,
+                                        diskfs_kernel_task, MACH_MSG_TYPE_MOVE_SEND);
+        }
+      while (err == KERN_NAME_EXISTS);
+      diskfs_kernel_task = MACH_PORT_NULL;
+
+      len = snprintf (buf, sizeof buf, "--kernel-task=%d", kernel_task_name);
+      assert (len < sizeof buf);
+      /* Insert as second argument.  */
+      err = argz_insert (&exec_argv, &exec_argvlen,
+                         argz_next (exec_argv, exec_argvlen, exec_argv), buf);
+      assert_perror (err);
+    }
+
+  initname = exec_argv;
+  while (*initname == '/')
+    initname++;
 
  lookup_init:
   err = dir_lookup (root_pt, (char *) initname, O_READ, 0, &retry, pathbuf,
@@ -270,12 +300,6 @@ diskfs_start_bootstrap ()
   err = argz_create (environ, &exec_env, &exec_envlen);
   assert_perror (err);
 
-  err = task_create (mach_task_self (),
-#ifdef KERN_INVALID_LEDGER
-		     NULL, 0,	/* OSF Mach */
-#endif
-		     0, &newt);
-  assert_perror (err);
   if (_diskfs_boot_pause)
     {
       printf ("pausing for %s...\n", exec_argv);

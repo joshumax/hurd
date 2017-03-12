@@ -3,7 +3,7 @@
 
 # First, the bootstrap filesystem.  It needs several ports as arguments,
 # as well as the user flags from the boot loader.
-/hurd/ext2fs.static --multiboot-command-line=${kernel-command-line} --host-priv-port=${host-port} --device-master-port=${device-port} --exec-server-task=${exec-task} -T typed ${root} $(task-create) $(task-resume)
+/hurd/ext2fs.static --multiboot-command-line=${kernel-command-line} --host-priv-port=${host-port} --device-master-port=${device-port} --exec-server-task=${exec-task} --kernel-task=${kernel-task} -T typed ${root} $(task-create) $(task-resume)
 
 
 # Now the exec server; to load the dynamically-linked exec server program,

@@ -520,6 +520,7 @@ const char *default_boot_script =
   " --multiboot-command-line=${kernel-command-line}"
   " --host-priv-port=${host-port}"
   " --device-master-port=${device-port}"
+  " --kernel-task=${kernel-task}"
   " --exec-server-task=${exec-task}"
   " -T device ${root-device} $(task-create) $(task-resume)"
   "\n"
@@ -649,6 +650,8 @@ main (int argc, char **argv, char **envp)
 				: (int) pseudo_privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
 				   (integer_t) pseudo_master_device_port)
+      || boot_script_set_variable ("kernel-task", VAL_PORT,
+				   (integer_t) pseudo_kernel)
       || boot_script_set_variable ("kernel-command-line", VAL_STR,
 				   (integer_t) kernel_command_line)
       || boot_script_set_variable ("root-device",
