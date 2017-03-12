@@ -755,9 +755,7 @@ launch_core_servers (void)
     fprintf (stderr, "Installed on /servers/startup\n");
 
   err = startup_authinit_reply (authreply, authreplytype, 0, authproc,
-				MACH_MSG_TYPE_COPY_SEND);
-  assert_perror (err);
-  err = mach_port_deallocate (mach_task_self (), authproc);
+				MACH_MSG_TYPE_MOVE_SEND);
   assert_perror (err);
 
   if (verbose)
@@ -818,8 +816,7 @@ launch_core_servers (void)
     fprintf (stderr, "Message port registered\n");
 
   /* Give the bootstrap FS its proc and auth ports.  */
-  err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_COPY_SEND, authserver);
-  mach_port_deallocate (mach_task_self (), fsproc);
+  err = fsys_init (bootport, fsproc, MACH_MSG_TYPE_MOVE_SEND, authserver);
   if (err)
     error (0, err, "fsys_init"); /* Not necessarily fatal.  */
 
@@ -836,7 +833,6 @@ init_stdarrays ()
   mach_port_t ref;
   mach_port_t *std_port_array;
   int *std_int_array;
-  int i;
 
   std_port_array = alloca (sizeof (mach_port_t) * INIT_PORT_MAX);
   std_int_array = alloca (sizeof (int) * INIT_INT_MAX);
@@ -870,10 +866,8 @@ init_stdarrays ()
   std_int_array[INIT_UMASK] = CMASK;
 
   __USEPORT (PROC, proc_setexecdata (port, std_port_array,
-				     MACH_MSG_TYPE_COPY_SEND, INIT_PORT_MAX,
+				     MACH_MSG_TYPE_MOVE_SEND, INIT_PORT_MAX,
 				     std_int_array, INIT_INT_MAX));
-  for (i = 0; i < INIT_PORT_MAX; i++)
-    mach_port_deallocate (mach_task_self (), std_port_array[i]);
 }
 
 /* Frobnicate the kernel task and the proc server's idea of it (PID 2),
