@@ -1,5 +1,5 @@
 /* Hurd /proc filesystem, permanent files of the root directory.
-   Copyright (C) 2010,13,14 Free Software Foundation, Inc.
+   Copyright (C) 2010,13,14,17 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -473,6 +473,57 @@ rootdir_gc_slabinfo (void *hook, char **contents, ssize_t *contents_len)
 }
 
 static error_t
+rootdir_gc_hostinfo (void *hook, char **contents, ssize_t *contents_len)
+{
+  error_t err;
+  FILE *m;
+  host_basic_info_t basic;
+  host_sched_info_t sched;
+  host_load_info_t load;
+
+  m = open_memstream (contents, (size_t *) contents_len);
+  if (m == NULL)
+    return ENOMEM;
+
+  err = ps_host_basic_info (&basic);
+  if (! err)
+    fprintf (m, "Basic info:\n"
+             "max_cpus	= %10u	/* max number of cpus possible */\n"
+             "avail_cpus	= %10u	/* number of cpus now available */\n"
+             "memory_size	= %10u	/* size of memory in bytes */\n"
+             "cpu_type	= %10u	/* cpu type */\n"
+             "cpu_subtype	= %10u	/* cpu subtype */\n",
+             basic->max_cpus,
+             basic->avail_cpus,
+             basic->memory_size,
+             basic->cpu_type,
+             basic->cpu_subtype);
+
+  err = ps_host_sched_info (&sched);
+  if (! err)
+    fprintf (m, "\nScheduling info:\n"
+             "min_timeout	= %10u	/* minimum timeout in milliseconds */\n"
+             "min_quantum	= %10u	/* minimum quantum in milliseconds */\n",
+             sched->min_timeout,
+             sched->min_quantum);
+
+  err = ps_host_load_info (&load);
+  if (! err)
+    fprintf (m, "\nLoad info:\n"
+             "avenrun[3]	= { %.2f, %.2f, %.2f }\n"
+             "mach_factor[3]	= { %.2f, %.2f, %.2f }\n",
+             load->avenrun[0] / (double) LOAD_SCALE,
+             load->avenrun[1] / (double) LOAD_SCALE,
+             load->avenrun[2] / (double) LOAD_SCALE,
+             load->mach_factor[0] / (double) LOAD_SCALE,
+             load->mach_factor[1] / (double) LOAD_SCALE,
+             load->mach_factor[2] / (double) LOAD_SCALE);
+
+  fclose (m);
+  return 0;
+}
+
+static error_t
 rootdir_gc_filesystems (void *hook, char **contents, ssize_t *contents_len)
 {
   error_t err = 0;
@@ -741,6 +792,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "slabinfo",
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_slabinfo,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "hostinfo",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_hostinfo,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },
