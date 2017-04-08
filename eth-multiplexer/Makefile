@@ -26,7 +26,7 @@ MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 LCLHDRS = ethernet.h util.h vdev.h netfs_impl.h
-HURDLIBS = ports ihash fshelp shouldbeinlibc netfs bpf
+HURDLIBS = ports ihash iohelp fshelp shouldbeinlibc netfs bpf
 LDLIBS = -lpthread
 
 CFLAGS += -I$(top_srcdir)/libbpf
