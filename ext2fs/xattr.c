@@ -512,7 +512,7 @@ ext2_list_xattr (struct node *np, char *buffer, size_t *len)
 
   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
     {
-      ext2_warning ("Filesystem has no support for extended attributes.");
+      ext2_debug ("Filesystem has no support for extended attributes.");
       return EOPNOTSUPP;
     }
 
@@ -587,7 +587,7 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
 
   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
     {
-      ext2_warning ("Filesystem has no support for extended attributes.");
+      ext2_debug ("Filesystem has no support for extended attributes.");
       return EOPNOTSUPP;
     }
 
