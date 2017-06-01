@@ -100,7 +100,7 @@ mkdev() {
 	;;
 
       std)
-	mkdev console tty urandom null zero full fd time mem klog shm
+	mkdev console tty random urandom null zero full fd time mem klog shm
 	;;
       console|com[0-9])
 	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
@@ -111,8 +111,12 @@ mkdev() {
 	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
       lpr[0-9])
         st $I root 660 /hurd/streamio "$I";;
+      random)
+	st $I root 644 /hurd/random --seed-file /var/lib/random-seed;;
       urandom)
-	st $I root 644 /hurd/random --fast --seed-file /var/lib/random-seed;;
+	# Our /dev/random is both secure and non-blocking.  Create a
+	# link for compatibility with Linux.
+	cmd ln -f -s random $I;;
       null)
 	st $I root 666 /hurd/null;;
       full)

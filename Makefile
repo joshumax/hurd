@@ -40,7 +40,6 @@ prog-subdirs = auth proc exec term \
 	       hostmux usermux ftpfs trans \
 	       console-client utils sutils \
 	       benchmarks fstests \
-	       random \
 	       procfs \
 	       startup \
 	       init \

@@ -21,14 +21,14 @@ makemode := servers
 
 targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
 	  password hello hello-mt streamio fakeroot proxy-defpager remap \
-	  mtab
+	  mtab random
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c \
 	fakeroot.c proxy-defpager.c remap.c mtab.c
 OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	crashServer.o crash_replyUser.o msgServer.o \
 	default_pagerServer.o default_pagerUser.o \
-	device_replyServer.o elfcore.o
+	device_replyServer.o elfcore.o startup_notifyServer.o
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
 password-LDLIBS = -lcrypt
@@ -53,6 +53,8 @@ device_reply-MIGSFLAGS=\
 # libports.  Disable the default payload to port conversion.
 fsys-MIGSFLAGS = "-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
 
+random-LDLIBS = -lgcrypt
+
 include ../Makeconf
 
 vpath elfcore.c $(top_srcdir)/exec
@@ -64,10 +66,11 @@ password: passwordServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
 streamio: device_replyServer.o
 symlink: fsysServer.o
+random:  startup_notifyServer.o mach_debugUser.o
 
 fakeroot: ../libnetfs/libnetfs.a
 fifo new-fifo: ../libpipe/libpipe.a
-crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio: ../libtrivfs/libtrivfs.a
+crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio random: ../libtrivfs/libtrivfs.a
 $(targets): ../libfshelp/libfshelp.a \
 	../libihash/libihash.a \
 	../libiohelp/libiohelp.a \

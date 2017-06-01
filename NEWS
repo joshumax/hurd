@@ -4,6 +4,10 @@ Subhurd's processes are now properly embedded in the Motherhurds
 process hierarchy.  They can be inspected and debugged just like any
 other process.
 
+The random translator has been reimplemented using the SHAKE128
+algorithm from the SHA-3 family as the underlying cryptographic
+primitive.
+
 Version 0.9 (2016-12-18)
 
 The 'boot' program can now be run as unprivileged user, allowing any

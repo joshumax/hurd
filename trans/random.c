@@ -1,5 +1,5 @@
 /* random.c - A single-file translator providing random data
-   Copyright (C) 1998, 1999, 2001 Free Software Foundation, Inc.
+   Copyright (C) 1998, 1999, 2001, 2017 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -15,98 +15,266 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#define _GNU_SOURCE 1
-
-#include <hurd/paths.h>
-#include <hurd/trivfs.h>
-#include <hurd/startup.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <argp.h>
 #include <argz.h>
-#include <error.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <pthread.h>
 #include <assert.h>
-
+#include <error.h>
+#include <fcntl.h>
+#include <gcrypt.h>
+#include <hurd/paths.h>
+#include <hurd/startup.h>
+#include <hurd/trivfs.h>
+#include <mach/gnumach.h>
+#include <mach/vm_cache_statistics.h>
+#include <mach/vm_param.h>
+#include <mach/vm_statistics.h>
+#include <mach_debug/mach_debug_types.h>
+#include <maptime.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <version.h>
 
-#include "random.h"
-#include "gnupg-random.h"
-
-/* Our control port.  */
-struct trivfs_control *fsys;
-
-int read_blocked;		/* For read and select.  */
-pthread_cond_t wait;		/* For read and select.  */
-pthread_cond_t select_alert;	/* For read and select.  */
+#include "mach_debug_U.h"
 
 
-/* The quality of randomness we provide.
-   0: Very weak randomness based on time() and getrusage().
-   No external random data is used.
-   1: Pseudo random numbers based on all available real random
-   numbers.
-   2: Strong random numbers with a somewhat guaranteed entropy.
-*/
-#define DEFAULT_LEVEL 2
-static int level = DEFAULT_LEVEL;
+
+/* Entropy pool.  We use one of the SHAKE algorithms from the Keccak
+   family.  Being a sponge construction, it allows the extraction of
+   arbitrary amounts of pseudorandom data.  */
+static gcry_md_hd_t pool;
+enum gcry_md_algos hash_algo = GCRY_MD_SHAKE128;
+
+/* Protected by this lock.  */
+static pthread_mutex_t pool_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* A map of the Mach time device.  Used for quick stirring.  */
+volatile struct mapped_time_value *mtime;
+
+static void
+pool_initialize (void)
+{
+  error_t err;
+  gcry_error_t cerr;
+
+  if (! gcry_check_version (GCRYPT_VERSION))
+    error (1, 0, "libgcrypt version mismatch\n");
+
+  cerr = gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
+  if (cerr)
+    error (1, 0, "Finalizing gcrypt failed: %s",
+	   gcry_strerror (cerr));
+
+  cerr = gcry_md_open (&pool, hash_algo, GCRY_MD_FLAG_SECURE);
+  if (cerr)
+    error (1, 0, "Initializing hash failed: %s",
+	   gcry_strerror (cerr));
+
+  err = maptime_map (0, NULL, &mtime);
+  if (err)
+    err = maptime_map (1, NULL, &mtime);
+  if (err)
+    error (1, err, "Failed to map time device");
+}
+
+/* Mix data into the pool.  */
+static void
+pool_add_entropy (const void *buffer, size_t length)
+{
+  pthread_mutex_lock (&pool_lock);
+  gcry_md_write (pool, buffer, length);
+  pthread_mutex_unlock (&pool_lock);
+}
+
+/* Extract data from the pool.  */
+static error_t
+pool_randomize (void *buffer, size_t length)
+{
+  gcry_error_t cerr;
+  pthread_mutex_lock (&pool_lock);
+
+  /* Quickly stir the the time device into the pool.  Do not even
+     bother with synchronization.  */
+  gcry_md_write (pool, (void *) mtime, sizeof *mtime);
+
+  cerr = gcry_md_extract (pool, hash_algo, buffer, length);
+  pthread_mutex_unlock (&pool_lock);
+  return cerr ? EIO : 0;
+}
+
+
 
 /* Name of file to use as seed.  */
 static char *seed_file;
 
-/* The random bytes we collected.  */
-char gatherbuf[GATHERBUFSIZE];
+/* Size of the seed file.  */
+size_t seed_size = 600;
 
-/* The current positions in gatherbuf[].  */
-int gatherrpos;
-int gatherwpos;
-
-/* XXX Yuk Yuk.  */
-#define POOLSIZE 600
-
-/* Take up to length bytes from gather_random if available.  If
-   nothing is available, sleep until something becomes available.
-   Must be called with global_lock held.  */
-int
-gather_random( void (*add)(const void*, size_t, int), int requester,
-               size_t length, int level )
+static error_t
+update_random_seed_file (void)
 {
-  int avail = (gatherwpos - gatherrpos + GATHERBUFSIZE) % GATHERBUFSIZE;
-  int first = GATHERBUFSIZE - gatherrpos;
-  int second = length - first;
+  error_t err;
+  int fd;
+  void *map;
 
-  /* If level is zero, we should not block and not add anything
-     to the pool.  */
-  if( !level )
+  if (seed_file == NULL)
     return 0;
 
-  /* io_read() should guarantee that there is always data available.  */
-  if (level == 2)
-    assert (avail);
+  fd = open (seed_file, O_RDWR|O_CREAT, 0600);
+  if (fd < 0)
+    return errno;
 
-  if (length > avail)
-    length = avail;
-
-  if (first > length)
-    first = length;
-  (*add) (&gatherbuf[gatherrpos], first, requester);
-  gatherrpos = (gatherrpos + first) % GATHERBUFSIZE;
-  if (second > 0)
+  if (ftruncate (fd, seed_size))
     {
-      (*add) (&gatherbuf[gatherrpos], second, requester);
-      gatherrpos += second;
+      err = errno;
+      goto out;
     }
-  return length;
+
+  map = mmap (NULL, seed_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  if (map == MAP_FAILED)
+    {
+      err = errno;
+      goto out;
+    }
+
+  err = pool_randomize (map, seed_size);
+  munmap (map, seed_size);
+
+ out:
+  close (fd);
+  return err;
+}
+
+static error_t
+read_random_seed_file (void)
+{
+  error_t err;
+  int fd;
+  struct stat s;
+  void *map;
+
+  if (seed_file == NULL)
+    return 0;
+
+  fd = open (seed_file, O_RDWR);
+  if (fd < 0)
+    return errno;
+
+  if (fstat (fd, &s))
+    {
+      err = errno;
+      goto out;
+    }
+
+  /* XXX should check file permissions.  */
+
+  map = mmap (NULL, s.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  if (map == MAP_FAILED)
+    {
+      err = errno;
+      goto out;
+    }
+
+  pool_add_entropy (map, s.st_size);
+  /* Immediately update it, to minimize the chance that the same state
+     is read twice.  */
+  pool_randomize (map, s.st_size);
+  munmap (map, s.st_size);
+
+ out:
+  close (fd);
+  return err;
 }
 
 
+
+static void
+gather_slab_info (void)
+{
+  error_t err;
+  cache_info_array_t cache_info;
+  mach_msg_type_number_t cache_info_count;
+
+  cache_info = NULL;
+  cache_info_count = 0;
+
+  err = host_slab_info (mach_host_self(), &cache_info, &cache_info_count);
+  if (err)
+    return;
+
+  pool_add_entropy (cache_info, cache_info_count * sizeof *cache_info);
+
+  vm_deallocate (mach_task_self (),
+		 (vm_address_t) cache_info,
+		 cache_info_count * sizeof *cache_info);
+}
+
+static void
+gather_vm_statistics (void)
+{
+  error_t err;
+  struct vm_statistics vmstats;
+
+  err = vm_statistics (mach_task_self (), &vmstats);
+  if (err)
+    return;
+
+  pool_add_entropy (&vmstats, sizeof vmstats);
+}
+
+static void
+gather_vm_cache_statistics (void)
+{
+  error_t err;
+  struct vm_cache_statistics cache_stats;
+
+  err = vm_cache_statistics (mach_task_self (), &cache_stats);
+  if (err)
+    return;
+
+  pool_add_entropy (&cache_stats, sizeof cache_stats);
+}
+
+static void *
+gather_thread (void *args)
+{
+  while (1)
+    {
+      gather_slab_info ();
+      gather_vm_statistics ();
+      gather_vm_cache_statistics ();
+      usleep (
+        (useconds_t) (1000000. * (1.
+                                  + (float) random () / (float) RAND_MAX)));
+    }
+
+  assert (! "reached");
+}
+
+error_t
+start_gather_thread (void)
+{
+  error_t err;
+  pthread_t thread;
+
+  err = pthread_create (&thread, NULL, gather_thread, NULL);
+  if (err)
+    return err;
+
+  err = pthread_detach (thread);
+  return err;
+}
+
+
+
 const char *argp_program_version = STANDARD_HURD_VERSION (random);
 
-/* This lock protects the GnuPG code.  */
-static pthread_mutex_t global_lock;
+/* Our control port.  */
+struct trivfs_control *fsys;
 
 /* Trivfs hooks. */
 int trivfs_fstype = FSTYPE_MISC;
@@ -122,7 +290,7 @@ void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 {
   /* Mark the node as a read-only plain file. */
-  st->st_mode &= ~S_IFMT;
+  st->st_mode &= ~((unsigned) S_IFMT);
   st->st_mode |= (S_IFCHR);
   st->st_size = 0;
 }
@@ -130,7 +298,10 @@ trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)
 error_t
 trivfs_goaway (struct trivfs_control *cntl, int flags)
 {
-  update_random_seed_file ();
+  error_t err;
+  err = update_random_seed_file ();
+  if (err)
+    error (0, err, "Warning: Failed to save random seed to %s", seed_file);
   exit (0);
 }
 
@@ -144,53 +315,24 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  loff_t offs, mach_msg_type_number_t amount)
 {
   error_t err;
-  mach_msg_type_number_t read_amount = 0;
   void *buf = NULL;
-  size_t length;
+  size_t length = 0;
 
-  /* Deny access if they have bad credentials. */
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
 
-  pthread_mutex_lock (&global_lock);
-
-  while (amount > 0)
+  if (amount > 0)
     {
-      mach_msg_type_number_t new_amount;
-      /* XXX: It would be nice to fix readable_pool to work for sizes
-	 greater than the POOLSIZE.  Otherwise we risk detecting too
-	 late that we run out of entropy and all that entropy is
-	 wasted.  */
-      while (readable_pool (amount, level) == 0)
-	{
-	  if (cred->po->openmodes & O_NONBLOCK)
-	    {
-	      pthread_mutex_unlock (&global_lock);
-	      err = EWOULDBLOCK;
-	      goto errout;
-	    }
-	  read_blocked = 1;
-	  if (pthread_hurd_cond_wait_np (&wait, &global_lock))
-	    {
-	      pthread_mutex_unlock (&global_lock);
-	      err = EINTR;
-	      goto errout;
-	    }
-	  /* See term/users.c for possible race?  */
-	}
-
       /* Possibly allocate a new buffer. */
       if (*data_len < amount)
 	{
-	  *data = mmap (0, amount, PROT_READ|PROT_WRITE,
-				       MAP_ANON, 0, 0);
-
+	  *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	  if (*data == MAP_FAILED)
 	    {
-	      pthread_mutex_unlock (&global_lock);
-	      return errno;
+              err = errno;
+              goto errout;
 	    }
 
 	  /* Keep track of our map in case of errors.  */
@@ -200,15 +342,14 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	  *data_len = amount;
 	}
 
-      new_amount = read_pool (((byte *) *data) + read_amount, amount, level);
-      read_amount += new_amount;
-      amount -= new_amount;
+      err = pool_randomize (*data, amount);
+      if (err)
+        goto errout;
+
     }
 
-  /* Set atime, see term/users.c */
-
-  pthread_mutex_unlock (&global_lock);
-  *data_len = read_amount;
+  *data_len = amount;
+  trivfs_set_atime (fsys);
   return 0;
 
  errout:
@@ -233,33 +374,15 @@ trivfs_S_io_write (struct trivfs_protid *cred,
                    loff_t offset,
                    mach_msg_type_number_t *amount)
 {
-  int i = 0;
   /* Deny access if they have bad credentials. */
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & O_WRITE))
     return EBADF;
 
-  pthread_mutex_lock (&global_lock);
-
-  while (i < datalen)
-    {
-      gatherbuf[gatherwpos] = data[i++];
-      gatherwpos = (gatherwpos + 1) % GATHERBUFSIZE;
-      if (gatherrpos == gatherwpos)
-	/* Overrun.  */
-	gatherrpos = (gatherrpos + 1) % GATHERBUFSIZE;
-    }
+  pool_add_entropy (data, datalen);
   *amount = datalen;
-
-  if (datalen > 0 && read_blocked)
-    {
-      read_blocked = 0;
-      pthread_cond_broadcast (&wait);
-      pthread_cond_broadcast (&select_alert);
-    }
-
-  pthread_mutex_unlock (&global_lock);
+  trivfs_set_mtime (fsys);
   return 0;
 }
 
@@ -277,14 +400,9 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
 
-  pthread_mutex_lock (&global_lock);
-
-  /* XXX: Before initialization, the amount depends on the amount we
-     want to read.  Assume some medium value.  */
-  *amount = readable_pool (POOLSIZE/2, level);
-
-  pthread_mutex_unlock (&global_lock);
-
+  /* We allow an infinite amount of data to be extracted.  We need to
+     return something here, so just go with the page size.  */
+  *amount = PAGE_SIZE;
   return 0;
 }
 
@@ -306,33 +424,9 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (*type & ~(SELECT_READ | SELECT_WRITE))
     return EINVAL;
 
-  if (*type == 0)
-    return 0;
-
-  pthread_mutex_lock (&global_lock);
-
-  while (1)
-    {
-      /* XXX Before initialization, readable_pool depends on length.  */
-      int avail = readable_pool (POOLSIZE/2, level);
-
-      if (avail != 0 || *type & SELECT_WRITE)
-	{
-	  *type = (avail ? SELECT_READ : 0) | (*type & SELECT_WRITE);
-	  pthread_mutex_unlock (&global_lock);
-	  return 0;
-	}
-
-      ports_interrupt_self_on_port_death (cred, reply);
-      read_blocked = 1;
-
-      if (pthread_hurd_cond_wait_np (&select_alert, &global_lock))
-	{
-	  *type = 0;
-	  pthread_mutex_unlock (&global_lock);
-	  return EINTR;
-	}
-    }
+  /* We allow an infinite amount of data to be extracted and stored.
+     Just return success.  */
+  return 0;
 }
 
 
@@ -455,9 +549,8 @@ random_demuxer (mach_msg_header_t *inp,
 
 static const struct argp_option options[] =
 {
-  {"weak",      'w', 0, 0, "Output weak pseudo random data"},
-  {"fast",	'f', 0,	0, "Output cheap random data fast"},
-  {"secure",    's', 0, 0, "Output cryptographically secure random"},
+  {"fast",	'f', 0,	0, "(ignored)"},
+  {"secure",    's', 0, 0, "(ignored)"},
   {"seed-file", 'S', "FILE", 0, "Use FILE to remember the seed"},
   {0}
 };
@@ -474,26 +567,14 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_ERROR:
       break;
 
-    case 'w':
-      {
-	level = 0;
-	break;
-      }
     case 'f':
-      {
-	level = 1;
-	break;
-      }
     case 's':
-      {
-	level = 2;
-	break;
-      }
+      /* Ignored.  */
+      break;
+
     case 'S':
-      {
-	seed_file = strdup (arg);
-	set_random_seed_file (arg);
-      }
+      seed_file = strdup (arg);
+      break;
     }
   return 0;
 }
@@ -507,24 +588,7 @@ trivfs_append_args (struct trivfs_control *fsys,
   error_t err = 0;
   char *opt;
 
-  pthread_mutex_lock (&global_lock);
-  switch (level)
-    {
-    case 0:
-	opt = "--weak";
-	break;
-
-    case 1:
-	opt = "--fast";
-	break;
-
-    default:
-	opt = "--secure";
-    }
-  if (level != DEFAULT_LEVEL)
-    err = argz_add (argz, argz_len, opt);
-
-  if (!err && seed_file)
+  if (seed_file)
     {
       if (asprintf (&opt, "--seed-file=%s", seed_file) < 0)
 	err = ENOMEM;
@@ -534,7 +598,6 @@ trivfs_append_args (struct trivfs_control *fsys,
 	  free (opt);
 	}
     }
-  pthread_mutex_unlock (&global_lock);
 
   return err;
 }
@@ -554,20 +617,26 @@ struct port_class *shutdown_notify_class;
 error_t
 S_startup_dosync (mach_port_t handle)
 {
+  error_t err;
   struct port_info *inpi = ports_lookup_port (fsys->pi.bucket, handle,
 					      shutdown_notify_class);
 
   if (!inpi)
     return EOPNOTSUPP;
 
-  update_random_seed_file ();
+  err = update_random_seed_file ();
+  if (err)
+    error (0, err, "Warning: Failed to save random seed to %s", seed_file);
   return 0;
 }
 
 void
 sigterm_handler (int signo)
 {
-  update_random_seed_file ();
+  error_t err;
+  err = update_random_seed_file ();
+  if (err)
+    error (0, err, "Warning: Failed to save random seed to %s", seed_file);
   signal (SIGTERM, SIG_DFL);
   raise (SIGTERM);
 }
@@ -581,7 +650,8 @@ arrange_shutdown_notification ()
 
   shutdown_notify_class = ports_create_class (0, 0);
 
-  signal (SIGTERM, sigterm_handler);
+  if (signal (SIGTERM, sigterm_handler) == SIG_ERR)
+    return errno;
 
   /* Arrange to get notified when the system goes down,
      but if we fail for some reason, just silently give up.  No big deal. */
@@ -606,26 +676,26 @@ arrange_shutdown_notification ()
   return err;
 }
 
-
 int
 main (int argc, char **argv)
 {
   error_t err;
+  unsigned int seed;
   mach_port_t bootstrap;
-
-  /* Initialize the lock that will protect everything.
-     We must do this before argp_parse, because parse_opt (above) will
-     use the lock.  */
-  pthread_mutex_init (&global_lock, NULL);
-
-  /* The conditions are used to implement proper read/select
-     behaviour.  */
-  pthread_cond_init (&wait, NULL);
-  pthread_cond_init (&select_alert, NULL);
 
   /* We use the same argp for options available at startup
      as for options we'll accept in an fsys_set_options RPC.  */
   argp_parse (&random_argp, argc, argv, 0, 0, 0);
+
+  pool_initialize ();
+
+  err = read_random_seed_file ();
+  if (err)
+    error (0, err, "Warning: Failed to read random seed file %s", seed_file);
+
+  /* Initialize the libcs PRNG.  */
+  pool_randomize (&seed, sizeof seed);
+  srandom (seed);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
@@ -639,7 +709,11 @@ main (int argc, char **argv)
 
   err = arrange_shutdown_notification ();
   if (err)
-    error (0, err, "Warning: cannot request shutdown notification");
+    error (0, err, "Warning: Cannot request shutdown notification");
+
+  err = start_gather_thread ();
+  if (err)
+    error (1, err, "Starting gather thread failed");
 
   /* Launch. */
   ports_manage_port_operations_multithread (fsys->pi.bucket, random_demuxer,
