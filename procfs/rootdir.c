@@ -339,8 +339,6 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
 static error_t
 rootdir_gc_vmstat (void *hook, char **contents, ssize_t *contents_len)
 {
-  host_basic_info_data_t hbi;
-  mach_msg_type_number_t cnt;
   struct vm_statistics vmstats;
   error_t err;
 
@@ -348,12 +346,6 @@ rootdir_gc_vmstat (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return EIO;
 
-  cnt = HOST_BASIC_INFO_COUNT;
-  err = host_info (mach_host_self (), HOST_BASIC_INFO, (host_info_t) &hbi, &cnt);
-  if (err)
-    return err;
-
-  assert (cnt == HOST_BASIC_INFO_COUNT);
   *contents_len = asprintf (contents,
       "nr_free_pages %lu\n"
       "nr_inactive_anon %lu\n"
