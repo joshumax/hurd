@@ -341,6 +341,9 @@ PKG_CHECK_MODULES([libblkid], [blkid],
 AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
 
+AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
+AC_SUBST([HAVE_LIBGCRYPT])
+
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT
 

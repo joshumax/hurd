@@ -239,3 +239,7 @@ else
 	$3
 fi[]dnl
 ])# PKG_CHECK_MODULES
+
+
+# Include files from m4/.
+m4_include([m4/libgcrypt.m4])

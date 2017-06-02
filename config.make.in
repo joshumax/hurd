@@ -98,6 +98,9 @@ libblkid_LIBS = @libblkid_LIBS@
 # Whether Sun RPC support is available.
 HAVE_SUN_RPC = @HAVE_SUN_RPC@
 
+# Whether we found libgcrypt.
+HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@

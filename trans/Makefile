@@ -21,7 +21,7 @@ makemode := servers
 
 targets = symlink firmlink ifsock magic null fifo new-fifo fwd crash \
 	  password hello hello-mt streamio fakeroot proxy-defpager remap \
-	  mtab random
+	  mtab
 SRCS = ifsock.c symlink.c magic.c null.c fifo.c new-fifo.c fwd.c \
 	crash.c firmlink.c password.c hello.c hello-mt.c streamio.c \
 	fakeroot.c proxy-defpager.c remap.c mtab.c
@@ -53,7 +53,17 @@ device_reply-MIGSFLAGS=\
 # libports.  Disable the default payload to port conversion.
 fsys-MIGSFLAGS = "-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
 
-random-LDLIBS = -lgcrypt
+# If we have a configured tree, include the configuration so that we
+# can conditionally build translators.
+ifneq (,$(wildcard ../config.make))
+ include ../config.make
+endif
+
+ifeq ($(HAVE_LIBGCRYPT),yes)
+ targets += random
+ random-LDLIBS = -lgcrypt
+ random: startup_notifyServer.o mach_debugUser.o ../libtrivfs/libtrivfs.a
+endif
 
 include ../Makeconf
 
@@ -66,11 +76,10 @@ password: passwordServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
 streamio: device_replyServer.o
 symlink: fsysServer.o
-random:  startup_notifyServer.o mach_debugUser.o
 
 fakeroot: ../libnetfs/libnetfs.a
 fifo new-fifo: ../libpipe/libpipe.a
-crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio random: ../libtrivfs/libtrivfs.a
+crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio: ../libtrivfs/libtrivfs.a
 $(targets): ../libfshelp/libfshelp.a \
 	../libihash/libihash.a \
 	../libiohelp/libiohelp.a \
