@@ -60,6 +60,7 @@ ifneq (,$(wildcard ../config.make))
 endif
 
 ifeq ($(HAVE_LIBGCRYPT),yes)
+ SRCS += random.c
  targets += random
  random-LDLIBS = -lgcrypt
  random: startup_notifyServer.o mach_debugUser.o ../libtrivfs/libtrivfs.a
