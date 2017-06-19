@@ -302,15 +302,73 @@ netfs_S_dir_lookup (struct protid *diruser,
 
   dnp = diruser->po->np;
 
+  /* See glibc's lookup-retry.c about O_NOFOLLOW.  */
+  if (flags & O_NOFOLLOW)
+    flags |= O_NOTRANS;
+
   mach_port_t dir = netfs_node_netnode (dnp)->file;
  redo_lookup:
   err = dir_lookup (dir, filename,
-		    flags & (O_NOLINK|O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
+		    flags & (O_NOFOLLOW|O_NOTRANS|O_NOLINK
+			     |O_RDWR|O_EXEC|O_CREAT|O_EXCL|O_NONBLOCK),
 		    real_from_fake_mode (mode), do_retry, retry_name, &file);
   if (dir != netfs_node_netnode (dnp)->file)
     mach_port_deallocate (mach_task_self (), dir);
   if (err)
     return err;
+
+  /* See glibc's lookup-retry.c about O_NOFOLLOW.  */
+  if (flags & O_NOFOLLOW
+      && (*do_retry == FS_RETRY_NORMAL && *retry_name == 0))
+    {
+      /* In Linux, O_NOFOLLOW means to reject symlinks.  If we
+	 did an O_NOLINK lookup above and io_stat here to check
+	 for S_IFLNK, a translator like firmlink could easily
+	 spoof this check by not showing S_IFLNK, but in fact
+	 redirecting the lookup to some other name
+	 (i.e. opening the very same holes a symlink would).
+
+	 Instead we do an O_NOTRANS lookup above, and stat the
+	 underlying node: if it has a translator set, and its
+	 owner is not root (st_uid 0) then we reject it.
+	 Since the motivation for this feature is security, and
+	 that security presumes we trust the containing
+	 directory, this check approximates the security of
+	 refusing symlinks while accepting mount points.
+	 Note that we actually permit something Linux doesn't:
+	 we follow root-owned symlinks; if that is deemed
+	 undesireable, we can add a final check for that
+	 one exception to our general translator-based rule.  */
+      struct stat st;
+      err = io_stat (file, &st);
+      if (!err
+	  && (st.st_mode & (S_IPTRANS|S_IATRANS)))
+	{
+	  if (st.st_uid != 0)
+	    err = ENOENT;
+	  else if (st.st_mode & S_IPTRANS)
+	    {
+	      char buf[1024];	/* XXX */
+	      char *trans = buf;
+	      size_t translen = sizeof buf;
+	      err = file_get_translator (file,
+					 &trans, &translen);
+	      if (!err
+		  && translen > sizeof _HURD_SYMLINK
+		  && !memcmp (trans,
+			      _HURD_SYMLINK, sizeof _HURD_SYMLINK))
+		  err = ENOENT;
+
+	      if (trans != buf)
+		vm_deallocate (mach_task_self (), (vm_address_t) trans, translen);
+	    }
+	}
+      if (err)
+	{
+	  mach_port_deallocate (mach_task_self (), file);
+	  return err;
+	}
+    }
 
   switch (*do_retry)
     {
