@@ -39,7 +39,7 @@ _diskfs_rdwr_internal (struct node *np,
   error_t err = 0;
 
   if (dir)
-    assert (!diskfs_readonly);
+    assert_backtrace (!diskfs_readonly);
 
   if (*amt == 0)
     /* Zero-length writes do not update mtime or anything else, by POSIX.  */

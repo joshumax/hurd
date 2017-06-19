@@ -56,9 +56,9 @@ diskfs_startup_diskfs (mach_port_t bootstrap, int flags)
       /* Create a protid we can use in diskfs_lookup.  */
       err = diskfs_make_peropen (diskfs_root_node, O_READ|O_EXEC,
 				 0, &rootpo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = diskfs_create_protid (rootpo, 0, &rootpi);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Look up the directory name.  */
       err = diskfs_lookup (diskfs_root_node, _diskfs_chroot_directory,
@@ -185,7 +185,7 @@ _diskfs_init_completed ()
      If we get an error, print an informational message. */
 
   proc = getproc ();
-  assert (proc);
+  assert_backtrace (proc);
 
   err = ports_create_port (diskfs_shutdown_notification_class,
 			   diskfs_port_bucket, sizeof (struct port_info),

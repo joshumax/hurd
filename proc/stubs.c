@@ -20,7 +20,7 @@
 #include <hurd/hurd_types.h>
 #include <mach/message.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdio.h>
 
 #include "proc.h"
@@ -61,7 +61,7 @@ blocking_message_send (void *arg)
     case MACH_SEND_INVALID_NOTIFY:
     case MACH_SEND_NO_NOTIFY:
     case MACH_SEND_NOTIFY_IN_PROGRESS:
-      assert_perror (err);
+      assert_perror_backtrace (err);
       break;
 
     default:			/* Other errors are safe to ignore.  */
@@ -169,7 +169,7 @@ send_signal (mach_port_t msgport,
     case MACH_SEND_INVALID_NOTIFY:
     case MACH_SEND_NO_NOTIFY:
     case MACH_SEND_NOTIFY_IN_PROGRESS:
-      assert_perror (err);
+      assert_perror_backtrace (err);
       break;
 
     default:			/* Other errors are safe to ignore.  */

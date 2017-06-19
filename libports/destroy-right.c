@@ -20,7 +20,7 @@
 
 #include "ports.h"
 #include <hurd/ihash.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <pthread.h>
 #include <error.h>
@@ -73,7 +73,7 @@ ports_destroy_right (void *portstruct)
     {
       err = mach_port_mod_refs (mach_task_self (), port_right,
                                 MACH_PORT_RIGHT_RECEIVE, -1);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 
   if (defer)

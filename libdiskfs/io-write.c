@@ -40,7 +40,7 @@ diskfs_S_io_write (struct protid *cred,
 
   pthread_mutex_lock (&np->lock);
 
-  assert (!S_ISDIR(np->dn_stat.st_mode));
+  assert_backtrace (!S_ISDIR(np->dn_stat.st_mode));
 
   iohelp_get_conch (&np->conch);
 

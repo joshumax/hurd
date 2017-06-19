@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "fshelp.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 error_t
 fshelp_fetch_control (struct transbox *box,
@@ -34,7 +34,7 @@ fshelp_fetch_control (struct transbox *box,
   if (err == KERN_INVALID_RIGHT)
     {
       err = mach_port_deallocate (mach_task_self (), *control);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       *control = box->active = MACH_PORT_NULL;
     }
 

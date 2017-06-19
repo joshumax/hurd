@@ -24,7 +24,7 @@
 #include <setjmp.h>
 #include <pthread.h>
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 
 extern __thread struct disk_image_user *diskfs_exception_diu;

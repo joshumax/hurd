@@ -19,7 +19,7 @@
 #include "memory_object_S.h"
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /* Worker function used by _pager_S_memory_object_data_return
    and _pager_S_memory_object_data_initialize.  All args are
@@ -125,7 +125,7 @@ _pager_do_write_request (struct pager *p,
   /* Mark these pages as being paged out.  */
   if (initializing)
     {
-      assert (npages <= 32);
+      assert_backtrace (npages <= 32);
       for (i = 0; i < npages; i++)
 	{
 	  if (pm_entries[i] & PM_INIT)
@@ -228,7 +228,7 @@ _pager_do_write_request (struct pager *p,
 
   for (i = 0; i < npages; i++)
     {
-      assert (notified[i] == 0 || notified[i] == 1);
+      assert_backtrace (notified[i] == 0 || notified[i] == 1);
       if (notified[i])
 	{
 	  short *pm_entry = &pm_entries[i];

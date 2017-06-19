@@ -30,7 +30,7 @@ extern int net_bh_raised;
 static inline void
 mark_bh (int bh)
 {
-  assert (bh == NET_BH);
+  assert_backtrace (bh == NET_BH);
   net_bh_raised = 1;
   pthread_cond_broadcast (&net_bh_wakeup);
 }
@@ -39,8 +39,8 @@ void net_bh (void);
 static inline void
 init_bh (int bh, void (*fn) (void))
 {
-  assert (bh == NET_BH);
-  assert (fn == &net_bh);
+  assert_backtrace (bh == NET_BH);
+  assert_backtrace (fn == &net_bh);
 }
 
 #endif

@@ -43,7 +43,7 @@
 #undef EXTA
 #undef EXTB
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <string.h>
@@ -459,15 +459,15 @@ initial_open ()
 {
   error_t err;
 
-  assert (open_pending != FAKE);
+  assert_backtrace (open_pending != FAKE);
 
   /* Nothing to do */
   if (open_pending == INITIAL)
     return 0;
 
-  assert (phys_device == MACH_PORT_NULL);
-  assert (phys_reply == MACH_PORT_NULL);
-  assert (phys_reply_pi == 0);
+  assert_backtrace (phys_device == MACH_PORT_NULL);
+  assert_backtrace (phys_reply == MACH_PORT_NULL);
+  assert_backtrace (phys_reply_pi == 0);
 
   err = ports_create_port (phys_reply_class, term_bucket,
 			   sizeof (struct port_info), &phys_reply_pi);
@@ -516,7 +516,7 @@ devio_assert_dtr ()
 
   /* Schedule a fake open to wait for DTR, unless one is already
      happening. */
-  assert (open_pending != INITIAL);
+  assert_backtrace (open_pending != INITIAL);
   if (open_pending == FAKE)
     return 0;
 
@@ -544,7 +544,7 @@ device_open_reply (mach_port_t replyport,
 
   pthread_mutex_lock (&global_lock);
 
-  assert (open_pending != NOTPENDING);
+  assert_backtrace (open_pending != NOTPENDING);
 
   if (returncode != 0)
     {
@@ -564,9 +564,9 @@ device_open_reply (mach_port_t replyport,
     {
       /* Special handling for the first open */
 
-      assert (phys_device == MACH_PORT_NULL);
-      assert (phys_reply_writes == MACH_PORT_NULL);
-      assert (phys_reply_writes_pi == 0);
+      assert_backtrace (phys_device == MACH_PORT_NULL);
+      assert_backtrace (phys_reply_writes == MACH_PORT_NULL);
+      assert_backtrace (phys_reply_writes_pi == 0);
       phys_device = device;
       err = ports_create_port (phys_reply_class, term_bucket,
 			       sizeof (struct port_info),

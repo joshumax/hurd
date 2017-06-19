@@ -22,7 +22,7 @@
 #include <error.h>
 #include <limits.h>
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <ctype.h>
 #include <time.h>
 
@@ -214,7 +214,7 @@ fat_write_next_cluster(cluster_t cluster, cluster_t next_cluster)
   cluster_t data;
 
   /* First data cluster is cluster 2.  */
-  assert (cluster >= 2 && cluster < nr_of_clusters + 2); 
+  assert_backtrace (cluster >= 2 && cluster < nr_of_clusters + 2); 
 
   switch (fat_type)
     {
@@ -267,7 +267,7 @@ fat_get_next_cluster(cluster_t cluster, cluster_t *next_cluster)
   loff_t fat_entry_offset;
 
   /* First data cluster is cluster 2.  */
-  assert (cluster >= 2 && cluster < nr_of_clusters + 2); 
+  assert_backtrace (cluster >= 2 && cluster < nr_of_clusters + 2); 
 
   switch (fat_type)
     {
@@ -321,7 +321,7 @@ fat_allocate_cluster (cluster_t content, cluster_t *cluster)
   int wrapped = 0;
   cluster_t found_cluster = FAT_FREE_CLUSTER;
 
-  assert (content != FAT_FREE_CLUSTER);
+  assert_backtrace (content != FAT_FREE_CLUSTER);
 
   pthread_spin_lock (&allocate_free_cluster_lock);
   old_next_free_cluster = next_free_cluster;
@@ -483,17 +483,17 @@ fat_getcluster (struct node *node, cluster_t cluster, int create,
 	return err;
       if (cluster >= node->dn->length_of_chain)
 	{
-	  assert (!create);
+	  assert_backtrace (!create);
 	  return EINVAL;
 	}
     }
   chain = node->dn->first;
   while (chains_to_go--)
     {
-      assert (chain);
+      assert_backtrace (chain);
       chain = chain->next;
     }
-  assert (chain);
+  assert_backtrace (chain);
   *disk_cluster = chain->cluster[offs];
   return 0;
 }
@@ -508,14 +508,14 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
 
   /* The root dir of a FAT12/16 fs is of fixed size, while the root
      dir of a FAT32 fs must never decease to exist.  */
-  assert (! (((fat_type == FAT12 || fat_type == FAT16) && node == diskfs_root_node)
+  assert_backtrace (! (((fat_type == FAT12 || fat_type == FAT16) && node == diskfs_root_node)
 	     || (fat_type == FAT32 && node == diskfs_root_node && clusters_to_keep == 0)));
 
   /* Expand the cluster chain, because we have to know the complete tail.  */
   fat_extend_chain (node, FAT_EOC, 0);
   if (clusters_to_keep == node->dn->length_of_chain)
     return;
-  assert (clusters_to_keep < node->dn->length_of_chain);
+  assert_backtrace (clusters_to_keep < node->dn->length_of_chain);
 
   /* Truncation happens here.  */
   next = node->dn->first;
@@ -532,7 +532,7 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
       offs = (clusters_to_keep - 1) & (CLUSTERS_PER_TABLE - 1);
       while (count-- > 0)
 	{
-	  assert (next);
+	  assert_backtrace (next);
 
 	  /* This cluster is now the last cluster in the chain.  */
 	  if (count == 0)
@@ -540,7 +540,7 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
 
 	  next = next->next;
 	}
-      assert (next);
+      assert_backtrace (next);
       fat_write_next_cluster (next->cluster[offs++], FAT_EOC);
       pos = clusters_to_keep;
     }
@@ -553,7 +553,7 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
 	{
 	  offs = 0;
 	  next = next->next;
-	  assert(next);
+	  assert_backtrace (next);
 	}
       fat_write_next_cluster(next->cluster[offs++], 0);
       pos++;
@@ -567,10 +567,10 @@ fat_truncate_node (struct node *node, cluster_t clusters_to_keep)
       offs = (clusters_to_keep - 1) & (CLUSTERS_PER_TABLE - 1);
       while (count-- > 0)
 	{
-	  assert (next);
+	  assert_backtrace (next);
 	  next = next->next;
 	}
-      assert (next);
+      assert_backtrace (next);
       next = next->next;
     }
   while (next)

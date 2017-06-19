@@ -18,7 +18,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <argp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <hurd.h>
 #include <mach.h>
@@ -90,7 +90,7 @@ main (int argc, char **argv)
     error (1, err, "Could not mark process as important");
 
   err = mach_port_deallocate (mach_task_self (), proc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return EXIT_SUCCESS;
 }

@@ -21,7 +21,7 @@
 #ifndef __SOCK_H__
 #define __SOCK_H__
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>		/* For mutexes */
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -139,12 +139,12 @@ sock_deref (struct sock *sock)
 
       /* Unbind */
       err = sock_bind (sock, NULL);
-      assert (!err);
+      assert_backtrace (!err);
 
       /* And release the ref, and thus kill SOCK.  */
       pthread_mutex_lock (&sock->lock);
       sock->refs--;
-      assert(sock->refs == 0);
+      assert_backtrace (sock->refs == 0);
       _sock_norefs (sock);
     }
   else

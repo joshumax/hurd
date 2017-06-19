@@ -25,7 +25,7 @@
 #include <sys/errno.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "proc.h"
 #include "process_S.h"
@@ -130,7 +130,7 @@ boot_setsid (struct proc *p)
 
   sess = new_session (p);
   p->p_pgrp = new_pgrp (p->p_pid, sess);
-  assert (p->p_pgrp);
+  assert_backtrace (p->p_pgrp);
   join_pgrp (p);
   return;
 }

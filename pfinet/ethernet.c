@@ -197,11 +197,11 @@ ethernet_open (struct device *dev)
   device_t master_device;
   struct ether_device *edev = (struct ether_device *) dev->priv;
 
-  assert (edev->ether_port == MACH_PORT_NULL);
+  assert_backtrace (edev->ether_port == MACH_PORT_NULL);
 
   err = ports_create_port (etherreadclass, etherport_bucket,
 			   sizeof (struct port_info), &edev->readpt);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   edev->readptname = ports_get_right (edev->readpt);
   mach_port_insert_right (mach_task_self (), edev->readptname, edev->readptname,
 			  MACH_MSG_TYPE_MAKE_SEND);
@@ -291,8 +291,8 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 	}
       else
 	{
-	  assert_perror (err);
-	  assert (count == skb->len);
+	  assert_perror_backtrace (err);
+	  assert_backtrace (count == skb->len);
 	}
     }
   while (err);
@@ -378,12 +378,12 @@ setup_ethernet_device (char *name, struct device **device)
   if (err)
     error (2, err, "%s: Cannot get device status", name);
   dev->mtu = netstat.max_packet_size - dev->hard_header_len;
-  assert (netstat.header_format == HDR_ETHERNET);
-  assert (netstat.header_size == ETH_HLEN);
-  assert (netstat.address_size == ETH_ALEN);
+  assert_backtrace (netstat.header_format == HDR_ETHERNET);
+  assert_backtrace (netstat.header_size == ETH_HLEN);
+  assert_backtrace (netstat.address_size == ETH_ALEN);
 
   count = 2;
-  assert (count * sizeof (int) >= ETH_ALEN);
+  assert_backtrace (count * sizeof (int) >= ETH_ALEN);
   err = device_get_status (edev->ether_port, NET_ADDRESS, net_address, &count);
   if (err)
     error (2, err, "%s: Cannot get hardware Ethernet address", name);
@@ -397,5 +397,5 @@ setup_ethernet_device (char *name, struct device **device)
      initializes its `ifindex' member (which matters!),
      and tells the protocol stacks about the device.  */
   err = - register_netdevice (dev);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 }

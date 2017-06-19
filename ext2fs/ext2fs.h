@@ -29,7 +29,7 @@
 #include <hurd/store.h>
 #include <hurd/diskfs.h>
 #include <hurd/ihash.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 #include <sys/mman.h>
 
@@ -362,7 +362,7 @@ boffs_ptr (off_t offset)
   pthread_mutex_lock (&disk_cache_lock);
   char *ptr = hurd_ihash_find (disk_cache_bptr, block);
   pthread_mutex_unlock (&disk_cache_lock);
-  assert (ptr);
+  assert_backtrace (ptr);
   ptr += offset % block_size;
   ext2_debug ("(%lld) = %p", offset, ptr);
   return ptr;
@@ -374,11 +374,11 @@ bptr_offs (void *ptr)
 {
   vm_offset_t mem_offset = (char *)ptr - (char *)disk_cache;
   off_t offset;
-  assert (mem_offset < disk_cache_size);
+  assert_backtrace (mem_offset < disk_cache_size);
   pthread_mutex_lock (&disk_cache_lock);
   offset = (off_t) disk_cache_info[boffs_block (mem_offset)].block
     << log2_block_size;
-  assert (offset || mem_offset < block_size);
+  assert_backtrace (offset || mem_offset < block_size);
   offset += mem_offset % block_size;
   pthread_mutex_unlock (&disk_cache_lock);
   ext2_debug ("(%p) = %lld", ptr, offset);
@@ -481,7 +481,7 @@ record_global_poke (void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&global_pokel, block_ptr, block_size);
 }
@@ -507,7 +507,7 @@ record_indir_poke (struct node *node, void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
-  assert (disk_cache_block_is_ref (block));
+  assert_backtrace (disk_cache_block_is_ref (block));
   global_block_modified (block);
   pokel_add (&diskfs_node_disknode (node)->indir_pokel, block_ptr, block_size);
 }

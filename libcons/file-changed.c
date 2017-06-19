@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 
 #include <mach.h>
@@ -198,7 +198,7 @@ cons_S_file_changed (cons_notify_t notify, natural_t tickno,
 		  vcons->state.screen.scr_lines
 		    = vcons->display->screen.scr_lines;
 		  if (vcons->state.screen.scr_lines < vcons->scrolling)
-		    assert (!"Implement shrinking scrollback buffer! XXX");
+		    assert_backtrace (!"Implement shrinking scrollback buffer! XXX");
 		}
 	      if (change.what.bell_audible)
 		{

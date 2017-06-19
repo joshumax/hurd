@@ -93,7 +93,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   /* 1: Lookup target; if it exists, make sure it's an empty directory. */
   ds = buf;
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
-  assert (err != EAGAIN);	/* <-> assert (TONAME != "..") */
+  assert_backtrace (err != EAGAIN);	/* <-> assert_backtrace (TONAME != "..") */
   if (err && err != ENOENT)
     goto out;
 
@@ -110,7 +110,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   /* Check permissions to remove FROMNAME and lock FNP.  */
   tmpds = alloca (diskfs_dirstat_size);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, tmpds, fromcred);
-  assert (!tmpnp || tmpnp == fnp);
+  assert_backtrace (!tmpnp || tmpnp == fnp);
   if (tmpnp)
     diskfs_nrele (tmpnp);
   diskfs_drop_dirstat (fdp, tmpds);
@@ -144,13 +144,13 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       tmpds = alloca (diskfs_dirstat_size);
       err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT,
 			   &tmpnp, tmpds, fromcred);
-      assert (err != ENOENT);
+      assert_backtrace (err != ENOENT);
       if (err)
 	{
 	  diskfs_drop_dirstat (fnp, tmpds);
 	  goto out;
 	}
-      assert (tmpnp == fdp);
+      assert_backtrace (tmpnp == fdp);
 
       err = diskfs_dirrewrite (fnp, fdp, tdp, "..", tmpds);
       if (diskfs_synchronous)
@@ -207,12 +207,12 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   ds = buf;
   pthread_mutex_unlock (&fnp->lock);
   err = diskfs_lookup (fdp, fromname, REMOVE, &tmpnp, ds, fromcred);
-  assert (!tmpnp || tmpnp == fnp);
+  assert_backtrace (!tmpnp || tmpnp == fnp);
   if (tmpnp)
     diskfs_nrele (tmpnp);
   if (err)
     {
-      assert (!tmpnp);
+      assert_backtrace (!tmpnp);
       /* diskfs_lookup has not locked fnp then, do not unlock it. */
       fnp = NULL;
       goto out;

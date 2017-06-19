@@ -20,7 +20,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include "priv.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 #include <string.h>
 
@@ -93,7 +93,7 @@ add_entry (struct cache_bucket *b, int i,
     free (charp (b->name[i]));
 
   b->name[i] = (unsigned long) strdup (name);
-  assert ((b->name[i] & 3) == 0);
+  assert_backtrace ((b->name[i] & 3) == 0);
   if (b->name[i] == 0)
     return;
 

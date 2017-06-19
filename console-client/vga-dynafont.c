@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <stddef.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <malloc.h>
 #include <wchar.h>
 #include <stdlib.h>
@@ -848,7 +848,7 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
 	}
       while (pos != start_pos);
 
-      assert (found);
+      assert_backtrace (found);
       df->vga_font_free_indices_lgc--;
       df->vga_font_last_free_index_lgc = pos;
     }
@@ -872,7 +872,7 @@ dynafont_lookup_internal (dynafont_t df, bdf_font_t font,
 	}
       while (pos != start_pos);
 
-      assert (found);
+      assert_backtrace (found);
       df->vga_font_free_indices--;
       df->vga_font_last_free_index = pos;
     }

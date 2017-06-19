@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <pthread.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 
 #include "connq.h"
@@ -66,7 +66,7 @@ connq_request_init (struct connq_request *req, struct sock *sock)
 static void
 connq_request_enqueue (struct connq *cq, struct connq_request *req)
 {
-  assert (pthread_mutex_trylock (&cq->lock));
+  assert_backtrace (pthread_mutex_trylock (&cq->lock));
 
   req->next = NULL;
   *cq->tail = req;
@@ -82,8 +82,8 @@ connq_request_dequeue (struct connq *cq)
 {
   struct connq_request *req;
 
-  assert (pthread_mutex_trylock (&cq->lock));
-  assert (cq->head);
+  assert_backtrace (pthread_mutex_trylock (&cq->lock));
+  assert_backtrace (cq->head);
 
   req = cq->head;
   cq->head = req->next;
@@ -132,8 +132,8 @@ connq_destroy (struct connq *cq)
 {
   /* Everybody in the queue should hold a reference to the socket
      containing the queue.  */
-  assert (! cq->head);
-  assert (cq->count == 0);
+  assert_backtrace (! cq->head);
+  assert_backtrace (cq->count == 0);
 
   free (cq);
 }
@@ -171,7 +171,7 @@ connq_listen (struct connq *cq, struct timespec *tsp, struct sock **sock)
   if (cq->count == 0)
     /* The request queue is empty.  */
     {
-      assert (! cq->head);
+      assert_backtrace (! cq->head);
 
       if (cq->num_connectors > 0)
 	/* Someone is waiting for an acceptor.  Signal that we can
@@ -190,7 +190,7 @@ connq_listen (struct connq *cq, struct timespec *tsp, struct sock **sock)
       while (cq->count == 0);
     }
 
-  assert (cq->head);
+  assert_backtrace (cq->head);
 
   if (sock)
     /* Dequeue the next request, if desired.  */
@@ -271,7 +271,7 @@ connq_connect_complete (struct connq *cq, struct sock *sock)
 
   pthread_mutex_lock (&cq->lock);
 
-  assert (cq->num_connectors > 0);
+  assert_backtrace (cq->num_connectors > 0);
   cq->num_connectors --;
 
   connq_request_enqueue (cq, req);
@@ -294,7 +294,7 @@ connq_connect_cancel (struct connq *cq)
 {
   pthread_mutex_lock (&cq->lock);
 
-  assert (cq->num_connectors > 0);
+  assert_backtrace (cq->num_connectors > 0);
   cq->num_connectors --;
 
   if (cq->count + cq->num_connectors >= cq->max + cq->num_listeners)

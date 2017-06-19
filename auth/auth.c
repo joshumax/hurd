@@ -29,7 +29,7 @@
 #include <hurd/ports.h>
 #include <hurd/ihash.h>
 #include <idvec.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 #include <error.h>
 #include <version.h>
@@ -496,7 +496,7 @@ main (int argc, char **argv)
 
   /* Create the initial root auth handle.  */
   err = create_authhandle (&firstauth);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   idvec_add (&firstauth->euids, 0);
   idvec_add (&firstauth->auids, 0);
   idvec_add (&firstauth->auids, 0);
@@ -505,7 +505,7 @@ main (int argc, char **argv)
 
   /* Fetch our bootstrap port and contact the bootstrap filesystem.  */
   err = task_get_bootstrap_port (mach_task_self (), &boot);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (boot == MACH_PORT_NULL)
     error (2, 0, "auth server can only be run by init during boot");
   err = startup_authinit (boot, ports_get_right (firstauth),

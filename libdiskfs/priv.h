@@ -27,7 +27,7 @@
 #include <hurd/fshelp.h>
 #include <hurd/iohelp.h>
 #include <hurd/port.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 
 #include "diskfs.h"

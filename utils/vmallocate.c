@@ -18,7 +18,7 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <argp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <hurd.h>
 #include <inttypes.h>
@@ -161,7 +161,7 @@ main (int argc, char **argv)
   process_t proc = getproc ();
 
   /* We must make sure that chunk_size fits into vm_size_t.  */
-  assert (chunk_size <= 1U << (sizeof (vm_size_t) * 8 - 1));
+  assert_backtrace (chunk_size <= 1U << (sizeof (vm_size_t) * 8 - 1));
 
   /* Parse our arguments.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);

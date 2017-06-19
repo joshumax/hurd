@@ -191,7 +191,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   int looped;
 
   if ((type == REMOVE) || (type == RENAME))
-    assert (npp);
+    assert_backtrace (npp);
 
   if (npp)
     *npp = 0;
@@ -352,7 +352,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
             goto out;
         }
       else
-        assert (0);
+        assert_backtrace (0);
     }
 
   if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
@@ -383,7 +383,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 
   if (np)
     {
-      assert (npp);
+      assert_backtrace (npp);
       if (err)
         {
           if (!spec_dotdot)
@@ -590,9 +590,9 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   error_t err;
   loff_t oldsize = 0;
 
-  assert (ds->type == CREATE);
+  assert_backtrace (ds->type == CREATE);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
 
@@ -604,7 +604,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     {
     case TAKE:
       /* We are supposed to consume this slot.  */
-      assert ((char)ds->entry->name[0] == FAT_DIR_NAME_LAST
+      assert_backtrace ((char)ds->entry->name[0] == FAT_DIR_NAME_LAST
 	      || (char)ds->entry->name[0] == FAT_DIR_NAME_DELETED);
 
       new = ds->entry;
@@ -612,7 +612,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
     case EXTEND:
       /* Extend the file.  */
-      assert (needed <= bytes_per_cluster);
+      assert_backtrace (needed <= bytes_per_cluster);
 
       oldsize = dp->dn_stat.st_size;
       while (oldsize + bytes_per_cluster > dp->allocsize)
@@ -636,7 +636,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     case SHRINK:
     case COMPRESS:
     default:
-      assert(0);
+      assert_backtrace (0);
 
       /* COMPRESS will be used later, with long filenames, but shrink
 	 does not make sense on fat, as all entries have fixed
@@ -689,10 +689,10 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 error_t
 diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
-  assert (ds->type == REMOVE);
-  assert (ds->stat == HERE_TIS);
+  assert_backtrace (ds->type == REMOVE);
+  assert_backtrace (ds->stat == HERE_TIS);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
 
@@ -729,22 +729,22 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   entry_key.dir_inode = dp->cache_id;
   entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
   err = vi_rlookup (entry_key, &inode, &vinode, 0);
-  assert (err != EINVAL);
+  assert_backtrace (err != EINVAL);
   if (err)
     return err;
 
   /*  Lookup the node, we already have a reference.  */
   oldnp = diskfs_cached_ifind (inode);
 
-  assert (ds->type == RENAME);
-  assert (ds->stat == HERE_TIS);
+  assert_backtrace (ds->type == RENAME);
+  assert_backtrace (ds->stat == HERE_TIS);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   /*  The link count must be 0 so the file will be removed and
       the node will be dropped.  */
   oldnp->dn_stat.st_nlink--;
-  assert (!oldnp->dn_stat.st_nlink);
+  assert_backtrace (!oldnp->dn_stat.st_nlink);
   
   /* Close the file, free the referenced held by clients.  */
   fshelp_fetch_control (&oldnp->transbox, &control);
@@ -784,7 +784,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
                 1, memobj, 0, 0, VM_PROT_READ, VM_PROT_READ, 0);
   mach_port_deallocate (mach_task_self (), memobj);
-  assert (!err);
+  assert_backtrace (!err);
 
   diskfs_set_node_atime (dp);
 
@@ -817,7 +817,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 {
   if (ds->type != LOOKUP)
     {
-      assert (ds->mapbuf);
+      assert_backtrace (ds->mapbuf);
       munmap ((caddr_t) ds->mapbuf, ds->mapextent);
       ds->type = LOOKUP;
     }

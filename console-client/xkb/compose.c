@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <locale.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /* Tokens that can be recognised by the scanner.  */
 enum tokentype
@@ -427,8 +427,8 @@ map_iterate(const char *map_path, map_callback action, void *context)
   size_t buffer_size = 0;
   size_t line_length = 0;
 
-  assert (map_path != NULL);
-  assert (action != NULL);
+  assert_backtrace (map_path != NULL);
+  assert_backtrace (action != NULL);
 
   map = fopen (map_path, "r");
 

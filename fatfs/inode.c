@@ -98,7 +98,7 @@ diskfs_node_norefs (struct node *np)
   if (np->dn->dirnode)
     diskfs_nrele (np->dn->dirnode);
 
-  assert (!np->dn->pager);
+  assert_backtrace (!np->dn->pager);
 
   free (np);
 }
@@ -178,7 +178,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 	     by libdiskfs.  The only case it is not locked is for NFS
 	     (fsys_getfile) and we disabled that.  */
 	  dp = diskfs_cached_ifind (vk.dir_inode);
-	  assert (dp);
+	  assert_backtrace (dp);
       
 	  /* Map in the directory contents. */
 	  memobj = diskfs_get_filemap (dp, prot);
@@ -339,13 +339,13 @@ write_node (struct node *np)
   if (vk.dir_inode == 0 || np == diskfs_root_node)
     return;
 
-  assert (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
+  assert_backtrace (!np->dn_set_ctime && !np->dn_set_atime && !np->dn_set_mtime);
   if (np->dn_stat_dirty)
     {
-      assert (!diskfs_readonly);
+      assert_backtrace (!diskfs_readonly);
 
       dp = np->dn->dirnode;
-      assert (dp);
+      assert_backtrace (dp);
 
       pthread_mutex_lock (&dp->lock);
 
@@ -474,14 +474,14 @@ diskfs_set_translator (struct node *node,
 		       const char *name, u_int namelen,
 		       struct protid *cred)
 {
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
   return EOPNOTSUPP;
 }
 
 error_t
 diskfs_get_translator (struct node *node, char **namep, u_int *namelen)
 {
-  assert(0);
+  assert_backtrace (0);
 }
 
 void
@@ -503,7 +503,7 @@ diskfs_truncate (struct node *node, loff_t length)
   loff_t offset;
 
   diskfs_check_readonly ();
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   if (length >= node->dn_stat.st_size)
     return 0;
@@ -565,7 +565,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 void
 diskfs_free_node (struct node *np, mode_t old_mode)
 {
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   vi_free(np->dn->inode);
 }
@@ -584,7 +584,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   struct node *np;
   struct lookup_context ctx = { dir: dir };
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   /* FIXME: We use a magic key here that signals read_node that we are
      not entered in any directory yet.  */

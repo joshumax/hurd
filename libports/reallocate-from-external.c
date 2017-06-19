@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 #include <mach/notify.h>
 
@@ -33,15 +33,15 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
   error_t err;
 
   err = mach_port_get_receive_status (mach_task_self (), receive, &stat);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   
   pthread_mutex_lock (&_ports_lock);
   
-  assert (pi->port_right);
+  assert_backtrace (pi->port_right);
   
   err = mach_port_mod_refs (mach_task_self (), pi->port_right,
 			    MACH_PORT_RIGHT_RECEIVE, -1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   pthread_rwlock_wrlock (&_ports_htable_lock);
   hurd_ihash_locp_remove (&_ports_htable, pi->ports_htable_entry);
@@ -65,11 +65,11 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
 
   pthread_rwlock_wrlock (&_ports_htable_lock);
   err = hurd_ihash_add (&_ports_htable, receive, pi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = hurd_ihash_add (&pi->bucket->htable, receive, pi);
   pthread_rwlock_unlock (&_ports_htable_lock);
   pthread_mutex_unlock (&_ports_lock);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* This is an optimization.  It may fail.  */
   mach_port_set_protected_payload (mach_task_self (), pi->port_right,
@@ -84,7 +84,7 @@ ports_reallocate_from_external (void *portstruct, mach_port_t receive)
 					    stat.mps_mscount, receive,
 					    MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					    &foo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       if (foo != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), foo);
     }

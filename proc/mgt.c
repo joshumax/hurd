@@ -33,7 +33,7 @@
 #include <mach/mig_errors.h>
 #include <sys/resource.h>
 #include <hurd/auth.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pids.h>
 
 #include "proc.h"
@@ -189,7 +189,7 @@ S_proc_child (struct proc *parentp,
   /* Process hierarchy.  Remove from our current location
      and place us under our new parent.  Sanity check to make sure
      parent is currently init. */
-  assert (childp->p_parent == init_proc);
+  assert_backtrace (childp->p_parent == init_proc);
   if (childp->p_sib)
     childp->p_sib->p_prevsib = childp->p_prevsib;
   *childp->p_prevsib = childp->p_sib;
@@ -606,7 +606,7 @@ create_init_proc (void)
   const char *rootsname = "root";
 
   p = allocate_proc (MACH_PORT_NULL);
-  assert (p);
+  assert_backtrace (p);
 
   p->p_pid = HURD_PID_INIT;
 
@@ -622,11 +622,11 @@ create_init_proc (void)
 
   p->p_noowner = 0;
   p->p_id = make_ids (&zero, 1);
-  assert (p->p_id);
+  assert_backtrace (p->p_id);
 
   p->p_loginleader = 1;
   p->p_login = malloc (sizeof (struct login) + strlen (rootsname) + 1);
-  assert (p->p_login);
+  assert_backtrace (p->p_login);
 
   p->p_login->l_refcnt = 1;
   strcpy (p->p_login->l_name, rootsname);
@@ -649,7 +649,7 @@ proc_death_notify (struct proc *p)
 					p->p_pi.port_right,
 					MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					&old);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
@@ -681,7 +681,7 @@ complete_proc (struct proc *p, pid_t pid)
          HURD_PID_INIT.  */
       static const uid_t zero;
       p->p_id = make_ids (&zero, 1);
-      assert (p->p_id);
+      assert_backtrace (p->p_id);
     }
   else
     {
@@ -930,8 +930,8 @@ process_has_exited (struct proc *p)
 void
 complete_exit (struct proc *p)
 {
-  assert (p->p_dead);
-  assert (p->p_waited);
+  assert_backtrace (p->p_dead);
+  assert_backtrace (p->p_waited);
 
   remove_proc_from_hash (p);
   if (p->p_task != MACH_PORT_NULL)
@@ -1178,7 +1178,7 @@ S_mach_notify_new_task (struct port_info *notify,
 	 proc_child, so we do it on their behalf.  */
       mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
       err = S_proc_child (parentp, task);
-      assert_perror (err);
+      assert_perror_backtrace (err);
 
       /* Relay the notification.  This consumes task and parent.  */
       return mach_notify_new_task (childp->p_task_namespace, task, parent);

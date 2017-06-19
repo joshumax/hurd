@@ -21,7 +21,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 #include <mach/notify.h>
 
@@ -107,7 +107,7 @@ ports_import_port (struct port_class *class, struct port_bucket *bucket,
 					    stat.mps_mscount, 
 					    port, MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					    &foo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       if (foo != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), foo);
     }

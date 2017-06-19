@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <hurd/console.h>
 
@@ -290,18 +290,18 @@ dynacolor_replace_colors (dynacolor_t *dc,
 	    }
 	}
 
-      assert (res_bgcol >= 0);
+      assert_backtrace (res_bgcol >= 0);
       new_bgcol = pref[bgcol][i];
     }
 
   if (fgcol == bgcol)
     {
-      assert (res_fgcol == -1);
+      assert_backtrace (res_fgcol == -1);
       /* Acquire another reference.  */
       res_fgcol = dynacolor_lookup (*dc, new_bgcol);
     }
   else
-    assert (res_fgcol != res_bgcol);
+    assert_backtrace (res_fgcol != res_bgcol);
       
   if (res_fgcol == -1)
     {
@@ -315,7 +315,7 @@ dynacolor_replace_colors (dynacolor_t *dc,
 		break;
 	    }
 	}
-      assert (res_fgcol >= 0);
+      assert_backtrace (res_fgcol >= 0);
     }
   *r_fgcol = res_fgcol;
   *r_bgcol = res_bgcol;

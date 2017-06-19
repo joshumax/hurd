@@ -30,7 +30,7 @@
 error_t
 netfs_attempt_readlink (struct iouser *user, struct node *node, char *buf)
 {
-  assert (node->nn->name);
+  assert_backtrace (node->nn->name);
   /* For symlink nodes, the translator spec just contains the link target. */
   memcpy (buf, node->nn->trans, node->nn->trans_len);
   fshelp_touch (&node->nn_stat, TOUCH_ATIME, usermux_maptime);

@@ -22,7 +22,7 @@
 #define __HURD_TERM_H__
 
 #include <pthread.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <hurd/trivfs.h>
 #include <sys/types.h>
@@ -246,7 +246,7 @@ dequeue_quote (struct queue *q)
 {
   int beep = 0;
 
-  assert (qsize (q));
+  assert_backtrace (qsize (q));
   if (q->susp && (qsize (q) < q->lowat))
     {
       q->susp = 0;
@@ -340,7 +340,7 @@ queue_erase (struct queue *q)
   short answer;
   int beep = 0;
 
-  assert (qsize (q));
+  assert_backtrace (qsize (q));
   answer = *--q->ce;
   if (q->susp && (qsize (q) < q->lowat))
     {

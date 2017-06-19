@@ -20,7 +20,7 @@
 
 #include <hurd.h>
 #include <hurd/pager.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <strings.h>
 #include <unistd.h>
 #include <errno.h>
@@ -115,7 +115,7 @@ void
 pager_notify_evict (struct user_pager_info *pager,
 		    vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  assert_backtrace (!"unrequested notification on eviction");
 }
 
 /* The user must define this function.  It should report back (in

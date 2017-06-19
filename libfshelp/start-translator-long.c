@@ -26,7 +26,7 @@
 #include <fcntl.h>
 #include <stdint.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include "fshelp.h"
 
 
@@ -247,7 +247,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose_task;
 
-  assert (ports_len > INIT_PORT_BOOTSTRAP);
+  assert_backtrace (ports_len > INIT_PORT_BOOTSTRAP);
   switch (ports_type)
     {
     case MACH_MSG_TYPE_MAKE_SEND:

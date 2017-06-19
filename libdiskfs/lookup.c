@@ -78,7 +78,7 @@ diskfs_lookup (struct node *dp, const char *name, enum lookup_type type,
   struct node *cached;
 
   if (type == REMOVE || type == RENAME)
-    assert (np);
+    assert_backtrace (np);
 
   if (!S_ISDIR (dp->dn_stat.st_mode))
     {

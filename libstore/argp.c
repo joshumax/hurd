@@ -19,7 +19,7 @@
    59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd.h>
 #include <argp.h>
 #include <argz.h>
@@ -217,7 +217,7 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
 	      store_ileave_create (stores, num, parsed->interleave,
 				   flags, store);
 	  else if (parsed->layer)
-	    assert (! parsed->layer);
+	    assert_backtrace (! parsed->layer);
 	  else
 	    err = store_concat_create (stores, num, flags, store);
 	}

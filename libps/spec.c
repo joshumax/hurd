@@ -21,7 +21,8 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
+#define assert	assert_backtrace
 #include <pwd.h>
 #include <hurd/resource.h>
 #include <unistd.h>

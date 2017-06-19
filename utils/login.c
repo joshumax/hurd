@@ -30,7 +30,7 @@
 #include <grp.h>
 #include <netdb.h>
 #include <time.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <version.h>
 #include <sys/mman.h>
 
@@ -314,7 +314,7 @@ check_login (process_t proc_server, int lid)
   if (err == ESRCH)
     exit (42);			/* Nothing left to watch. */
   else
-    assert_perror (err);
+    assert_perror_backtrace (err);
 
   if (owned)
     exit (0);			/* Our task is done.  */
@@ -648,7 +648,7 @@ main(int argc, char *argv[])
   }
 
   err = proc_getsid (proc_server, pid, &sid);
-  assert_perror (err);		/* This should never fail.  */
+  assert_perror_backtrace (err);		/* This should never fail.  */
 
   if (!no_login
       && (parent_uids.num != 0

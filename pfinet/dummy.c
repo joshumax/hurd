@@ -130,5 +130,5 @@ setup_dummy_device (char *name, struct device **device)
      initializes its `ifindex' member (which matters!),
      and tells the protocol stacks about the device.  */
   err = - register_netdevice (dev);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 }

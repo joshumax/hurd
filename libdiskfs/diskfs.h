@@ -20,7 +20,7 @@
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <hurd/ports.h>

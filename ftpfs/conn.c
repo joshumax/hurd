@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdint.h>
 
 #include "ftpfs.h"
@@ -101,6 +101,6 @@ ftpfs_release_ftp_conn (struct ftpfs *fs, struct ftp_conn *conn)
 	fs->free_conns = fsc;
 	break;
       }
-  assert (fsc);
+  assert_backtrace (fsc);
   pthread_spin_unlock (&fs->conn_lock);
 }

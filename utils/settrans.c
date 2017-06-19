@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -450,7 +450,7 @@ main(int argc, char *argv[])
 	  if (MACH_PORT_VALID (executable))
 	    {
 	      err = mach_port_deallocate (mach_task_self (), executable);
-	      assert_perror (err);
+	      assert_perror_backtrace (err);
 	      if (prefixed_name)
 		chroot_command[0] = prefixed_name;
 	    }

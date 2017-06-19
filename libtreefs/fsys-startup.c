@@ -28,7 +28,7 @@ treefs_S_fsys_startup (mach_port_t child_boot_port, mach_port_t control_port,
   struct port_info *child_boot =
     ports_check_port_type (child_boot_port, PT_TRANSBOOT);
 
-  assert (child_boot);			/* XXX deal with exec server boot */
+  assert_backtrace (child_boot);			/* XXX deal with exec server boot */
   err = fshelp_handle_fsys_startup (child_boot, control_port, real, real_type);
   ports_done_with_port (child_boot);
 

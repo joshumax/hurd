@@ -50,7 +50,7 @@
 #include <error.h>
 #include <argp.h>
 #include <argz.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <version.h>
 
 #include "fstab.h"
@@ -137,8 +137,8 @@ fs_start_fsck (struct fs *fs, int flags)
   struct fstype *type;
   error_t err = fs_type (fs, &type);
 
-  assert_perror (err);		/* Should already have been checked for. */
-  assert (type->program);
+  assert_perror_backtrace (err);		/* Should already have been checked for. */
+  assert_backtrace (type->program);
 
   *argp++ = type->program;
 

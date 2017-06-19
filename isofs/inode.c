@@ -328,7 +328,7 @@ diskfs_node_norefs (struct node *np)
   if (np->dn->translator)
     free (np->dn->translator);
 
-  assert (!np->dn->fileinfo);
+  assert_backtrace (!np->dn->fileinfo);
   free (np);
 }
 

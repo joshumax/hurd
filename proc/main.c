@@ -25,7 +25,7 @@
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <device/device.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 #include <error.h>
 #include <version.h>
@@ -165,7 +165,7 @@ main (int argc, char **argv, char **envp)
   initialize_version_info ();
 
   err = task_get_bootstrap_port (mach_task_self (), &boot);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (boot == MACH_PORT_NULL)
     error (2, 0, "proc server can only be run by startup during boot");
 
@@ -187,14 +187,14 @@ main (int argc, char **argv, char **envp)
 
   /* Create our own proc object.  */
   self_proc = allocate_proc (mach_task_self ());
-  assert (self_proc);
+  assert_backtrace (self_proc);
 
   complete_proc (self_proc, HURD_PID_PROC);
 
   startup_port = ports_get_send_right (startup_proc);
   err = startup_procinit (boot, startup_port, &startup_proc->p_task,
 			  &authserver, &_hurd_host_priv, &_hurd_device_master);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   mach_port_deallocate (mach_task_self (), startup_port);
 
   /* Get our stderr set up to print on the console, in case we have
@@ -252,7 +252,7 @@ main (int argc, char **argv, char **envp)
 	startup_fallback = 1;
 
       err = mach_port_deallocate (mach_task_self (), startup);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
   else
     /* Fall back to abusing the message port lookup.	*/

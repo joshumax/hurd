@@ -21,7 +21,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>

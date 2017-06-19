@@ -21,7 +21,7 @@
 #include "store.h"
 #include <stdlib.h>
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 
 #include <parted/parted.h>
@@ -99,7 +99,7 @@ store_part_create (struct store *source, int index, int flags,
       goto out;
     }
 
-  assert (ped_device_open (dev) != 0);
+  assert_backtrace (ped_device_open (dev) != 0);
 
   disk = ped_disk_new (dev);
   if (! disk)
@@ -116,7 +116,7 @@ store_part_create (struct store *source, int index, int flags,
 	  && part->type != 0 /* PED_PARTITION_PRIMARY */)
 	continue;
 
-      assert (part->num);
+      assert_backtrace (part->num);
       if (part->num == index)
         break;
     }
@@ -155,7 +155,7 @@ store_part_create (struct store *source, int index, int flags,
     }
 
 out_with_disk:
-  assert (ped_device_close (dev) != 0);
+  assert_backtrace (ped_device_close (dev) != 0);
   ped_disk_destroy (disk);
 out_with_dev:
   ped_device_destroy (dev);

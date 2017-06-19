@@ -20,7 +20,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <fcntl.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <stdio.h>
 #include <hurd/paths.h>
@@ -92,7 +92,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 
   do
     {
-      assert (!lastcomp);
+      assert_backtrace (!lastcomp);
 
       /* Find the name of the next pathname component */
       nextname = index (filename, '/');

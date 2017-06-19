@@ -41,7 +41,7 @@ diskfs_drop_node (struct node *np)
   if (np->dn_stat.st_nlink == 0)
     {
       diskfs_check_readonly ();
-      assert (!diskfs_readonly);
+      assert_backtrace (!diskfs_readonly);
 
       if (np->dn_stat.st_mode & S_IPTRANS)
 	diskfs_set_translator (np, 0, 0, 0);
@@ -70,7 +70,7 @@ diskfs_drop_node (struct node *np)
 	  return;
 	}
 
-      assert (np->dn_stat.st_size == 0);
+      assert_backtrace (np->dn_stat.st_size == 0);
 
       savemode = np->dn_stat.st_mode;
       np->dn_stat.st_mode = 0;
@@ -89,7 +89,7 @@ diskfs_drop_node (struct node *np)
   if (np->filemod_reqs)
     free_modreqs (np->filemod_reqs);
 
-  assert (!np->sockaddr);
+  assert_backtrace (!np->sockaddr);
 
   pthread_mutex_unlock(&np->lock);
   pthread_mutex_destroy(&np->lock);

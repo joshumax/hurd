@@ -24,7 +24,7 @@
 
 #include <string.h>
 #include <error.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 
@@ -112,7 +112,7 @@ get_ethernet_address (mach_port_t port, char *address)
   error_t err;
   int net_address[2];
   size_t count = 2;
-  assert (count * sizeof (int) >= ETH_ALEN);
+  assert_backtrace (count * sizeof (int) >= ETH_ALEN);
 
   err = device_get_status (port, NET_ADDRESS, net_address, &count);
   if (err)
@@ -130,7 +130,7 @@ int ethernet_open (char *dev_name, device_t master_device,
 {
   error_t err;
 
-  assert (ether_port == MACH_PORT_NULL);
+  assert_backtrace (ether_port == MACH_PORT_NULL);
 
   err = ports_create_port (etherreadclass, etherport_bucket,
 			   sizeof (struct port_info), &readpt);

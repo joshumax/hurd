@@ -166,7 +166,7 @@ ext2_new_block (block_t goal,
   ext2_debug ("goal=%u", goal);
 
 repeat:
-  assert (bh == NULL);
+  assert_backtrace (bh == NULL);
   /*
      * First, test whether the goal block is free.
    */
@@ -272,7 +272,7 @@ repeat:
       pthread_spin_unlock (&global_lock);
       return 0;
     }
-  assert (bh == NULL);
+  assert_backtrace (bh == NULL);
   bh = disk_cache_block_ref (gdp->bg_block_bitmap);
   r = memscan (bh, 0, sblock->s_blocks_per_group >> 3);
   j = (r - bh) << 3;
@@ -291,7 +291,7 @@ repeat:
     }
 
 search_back:
-  assert (bh != NULL);
+  assert_backtrace (bh != NULL);
   /*
      * We have succeeded in finding a free byte in the block
      * bitmap.  Now search backwards up to 7 bits to find the
@@ -300,7 +300,7 @@ search_back:
   for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh); k++, j--);
 
 got_block:
-  assert (bh != NULL);
+  assert_backtrace (bh != NULL);
 
   ext2_debug ("using block group %d (%d)", i, gdp->bg_free_blocks_count);
 
@@ -383,7 +383,7 @@ got_block:
   sblock_dirty = 1;
 
  sync_out:
-  assert (bh == NULL);
+  assert_backtrace (bh == NULL);
   pthread_spin_unlock (&global_lock);
   alloc_sync (0);
 

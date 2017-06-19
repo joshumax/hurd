@@ -314,6 +314,6 @@ int main (int argc, char **argv)
   netfs_startup (bootstrap, 0);
   netfs_server_loop ();
 
-  assert (0 /* netfs_server_loop returned after all */);
+  assert_backtrace (0 /* netfs_server_loop returned after all */);
 }
 

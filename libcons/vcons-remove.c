@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "cons.h"
 
@@ -27,5 +27,5 @@
 void __attribute__ ((weak))
 cons_vcons_remove (cons_t cons, vcons_list_t vcons_entry)
 {
-  assert (!vcons_entry->vcons);
+  assert_backtrace (!vcons_entry->vcons);
 }

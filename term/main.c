@@ -232,7 +232,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      bottom = &hurdio_bottom;
 	      break;
 	    default:
-	      assert (! "impossible type");
+	      assert_backtrace (! "impossible type");
 	      break;
 	    }
 	  free (tty_arg);

@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 #include "ports.h"
 
@@ -49,7 +49,7 @@ _ports_create_port_internal (struct port_class *class,
     {
       err = mach_port_mod_refs (mach_task_self (), port,
 				MACH_PORT_RIGHT_RECEIVE, -1);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       return ENOMEM;
     }
 
@@ -123,7 +123,7 @@ _ports_create_port_internal (struct port_class *class,
   error_t e;
   e = mach_port_mod_refs (mach_task_self (), port,
 			  MACH_PORT_RIGHT_RECEIVE, -1);
-  assert_perror (e);
+  assert_perror_backtrace (e);
   free (pi);
 
   return err;

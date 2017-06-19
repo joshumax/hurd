@@ -24,7 +24,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <mach/mach.h>
 #include <device/device.h>
@@ -60,10 +60,10 @@ diskfs_console_stdio ()
       if (diskfs_boot_filesystem ())
 	_diskfs_boot_privports ();
       err = get_privileged_ports (NULL, &dev);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = device_open (dev, D_READ|D_WRITE, "console", &cons);
       mach_port_deallocate (mach_task_self (), dev);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       stdin = mach_open_devstream (cons, "r");
       stdout = stderr = mach_open_devstream (cons, "w");
       mach_port_deallocate (mach_task_self (), cons);

@@ -172,7 +172,7 @@ open_hook (struct trivfs_control *cntl,
     }
   else
     {
-      assert (open_count > 0);	/* XXX debugging */
+      assert_backtrace (open_count > 0);	/* XXX debugging */
 
       if (termflags & EXCL_USE)
 	{
@@ -254,7 +254,7 @@ pi_destroy_hook (struct trivfs_protid *cred)
   pthread_mutex_lock (&global_lock);
   if (cred->hook)
     {
-      assert (((struct protid_hook *)cred->hook)->refcnt > 0);
+      assert_backtrace (((struct protid_hook *)cred->hook)->refcnt > 0);
       if (--((struct protid_hook *)cred->hook)->refcnt == 0)
 	free (cred->hook);
     }
@@ -388,7 +388,7 @@ S_termctty_open_terminal (struct port_info *pi,
   if (!pi)
     return EOPNOTSUPP;
 
-  assert (pi == cttyid);
+  assert_backtrace (pi == cttyid);
 
   err = io_restrict_auth (termctl->underlying, &new_realnode, 0, 0, 0, 0);
 

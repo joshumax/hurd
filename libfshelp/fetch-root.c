@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/fsys.h>
 #include <hurd/paths.h>
 #include <hurd/ports.h>
@@ -47,7 +47,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
  start_over:
 
   if (box->active != MACH_PORT_NULL)
-    assert ((box->flags & TRANSBOX_STARTING) == 0);
+    assert_backtrace ((box->flags & TRANSBOX_STARTING) == 0);
   else
     {
       uid_t uid, gid;

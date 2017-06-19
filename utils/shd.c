@@ -19,7 +19,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <device/device.h>
 #include <unistd.h>
 #include <errno.h>
@@ -230,7 +230,7 @@ main (int argc, char *argv[])
   size_t linebufsize = 0;
 
   proc = getproc ();
-  assert (proc);
+  assert_backtrace (proc);
 
 #if 0
   {
@@ -238,10 +238,10 @@ main (int argc, char *argv[])
     mach_port_t outp;
     mach_port_t hostp, masterd;
     err = proc_getprivports (proc, &hostp, &masterd);
-    assert (!err);
+    assert_backtrace (!err);
 
     err = device_open (masterd, D_WRITE|D_READ, "console", &outp);
-    assert (!err);
+    assert_backtrace (!err);
 
     stdin = mach_open_devstream (outp, "r");
     stdout = stderr = mach_open_devstream (outp, "w+");

@@ -29,7 +29,7 @@
 #include <argp.h>
 #include <argz.h>
 #include <error.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <sys/mman.h>
 #include <hurd/store.h>
 #include <hurd/paths.h>

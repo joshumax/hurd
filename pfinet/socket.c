@@ -17,7 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include "pfinet.h"
 
 #include <linux/socket.h>
@@ -32,7 +32,7 @@ struct net_proto_family *net_families[NPROTO];
 int
 sock_register (struct net_proto_family *fam)
 {
-  assert (fam->family < NPROTO);
+  assert_backtrace (fam->family < NPROTO);
   net_families[fam->family] = fam;
   return 0;
 }
@@ -72,7 +72,7 @@ make_sock_user (struct socket *sock, int isroot, int noinstall, int consume)
   error_t err;
   struct sock_user *user;
 
-  assert (sock->refcnt != 0);
+  assert_backtrace (sock->refcnt != 0);
 
   if (noinstall)
     err = ports_create_port_noinstall (socketport_class, pfinet_bucket,

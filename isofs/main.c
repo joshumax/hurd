@@ -57,11 +57,11 @@ fetch_root ()
   rrip_lookup (ctx.dr, &ctx.rr, 1);
 
   err = cache_id (ctx.dr, &ctx.rr, &id);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* And fetch the node. */
   err = diskfs_cached_lookup_context (id, &diskfs_root_node, &ctx);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   pthread_mutex_unlock (&diskfs_root_node->lock);
 }

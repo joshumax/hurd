@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <iconv.h>
 #include <sys/mman.h>
@@ -1084,12 +1084,12 @@ input_loop (void *unused)
 		      if (!sc_to_kc[sc][modifier][0])
 			{
 			  /* Special meaning, emit NUL.  */
-			  assert (size < 100);
+			  assert_backtrace (size < 100);
 			  buf[size++] = '\0';
 			}
 		      else
 			{
-			  assert (size
+			  assert_backtrace (size
 				  < 101 - strlen(sc_to_kc[sc][modifier]));
 			  strcpy (&buf[size], sc_to_kc[sc][modifier]);
 			  size += strlen (sc_to_kc[sc][modifier]);
@@ -1162,7 +1162,7 @@ input_loop (void *unused)
 	    {
 	      if (modifier >= 0 && sc_x1_to_kc[sc][modifier])
 		{
-		  assert (size < 101 - strlen(sc_x1_to_kc[sc][modifier]));
+		  assert_backtrace (size < 101 - strlen(sc_x1_to_kc[sc][modifier]));
 		  strcpy (&buf[size], sc_x1_to_kc[sc][modifier]);
 		  size += strlen (sc_x1_to_kc[sc][modifier]);
 		}

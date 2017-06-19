@@ -50,7 +50,7 @@
 #include "kalloc.h"
 #include "default_pager.h"
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -1137,7 +1137,7 @@ void pager_release_offset(pager, offset)
 
 	pthread_mutex_lock(&pager->lock);	/* XXX lock_read */
 
-	assert (pager->map);
+	assert_backtrace (pager->map);
 	if (INDIRECT_PAGEMAP(pager->size)) {
 		dp_map_t	mapptr;
 
@@ -2164,7 +2164,7 @@ void pager_port_check_request(ds, pager_request)
 	mach_port_delta_t delta;
 	kern_return_t kr;
 
-	assert(ds->pager_request == pager_request);
+	assert_backtrace (ds->pager_request == pager_request);
 
 	if (++ds->request_refs > default_pager_max_urefs) {
 		delta = 1 - ds->request_refs;
@@ -2249,10 +2249,10 @@ seqnos_memory_object_create(old_pager, seqno, new_pager, new_size,
 {
 	default_pager_t	ds;
 
-	assert(old_pager == default_pager_default_port);
-	assert(MACH_PORT_VALID(new_pager_request));
-	assert(MACH_PORT_VALID(new_pager_name));
-	assert(new_page_size == vm_page_size);
+	assert_backtrace (old_pager == default_pager_default_port);
+	assert_backtrace (MACH_PORT_VALID(new_pager_request));
+	assert_backtrace (MACH_PORT_VALID(new_pager_name));
+	assert_backtrace (new_page_size == vm_page_size);
 
 	ds = pager_port_alloc(new_size);
 
@@ -2293,9 +2293,9 @@ seqnos_memory_object_init(ds, seqno, pager_request, pager_name,
 	kern_return_t		 kr;
 	static char		 here[] = "%sinit";
 
-	assert(MACH_PORT_VALID(pager_request));
-	assert(MACH_PORT_VALID(pager_name));
-	assert(pager_page_size == vm_page_size);
+	assert_backtrace (MACH_PORT_VALID(pager_request));
+	assert_backtrace (MACH_PORT_VALID(pager_name));
+	assert_backtrace (pager_page_size == vm_page_size);
 
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic(here, my_name);
@@ -2371,7 +2371,7 @@ ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_lock: <%p>[s:%d,r:%d,
 		pager_request = ds->pager_request;
 	ds->pager_request = MACH_PORT_NULL;
 	ds->request_refs = 0;
-	assert(ds->pager_name == pager_name);
+	assert_backtrace (ds->pager_name == pager_name);
 	ds->pager_name = MACH_PORT_NULL;
 	ds->name_refs = 0;
 ddprintf ("seqnos_memory_object_terminate <%p>: pager_port_unlock: <%p>[s:%d,r:%d,w:%d,l:%d]\n",
@@ -2660,8 +2660,8 @@ seqnos_memory_object_data_return(ds, seqno, pager_request,
 	vm_size_t limit = ds->dpager.byte_limit;
 	pager_port_unlock(ds);
 	if ((limit != round_page(limit)) && (trunc_page(limit) == offset)) {
-	    assert(trunc_page(limit) == offset);
-	    assert(data_cnt == vm_page_size);
+	    assert_backtrace (trunc_page(limit) == offset);
+	    assert_backtrace (data_cnt == vm_page_size);
 
 	    vm_offset_t tail = addr + limit - trunc_page(limit);
 	    vm_size_t tail_size = round_page(limit) - limit;
@@ -2807,16 +2807,16 @@ boolean_t default_pager_notify_server(in, out)
 		return FALSE;
 	}
 
-	assert(ds != DEFAULT_PAGER_NULL);
+	assert_backtrace (ds != DEFAULT_PAGER_NULL);
 
-	assert(n->not_header.msgh_size == sizeof *n);
-	assert(n->not_header.msgh_remote_port == MACH_PORT_NULL);
+	assert_backtrace (n->not_header.msgh_size == sizeof *n);
+	assert_backtrace (n->not_header.msgh_remote_port == MACH_PORT_NULL);
 
-	assert(n->not_type.msgt_name == MACH_MSG_TYPE_INTEGER_32);
-	assert(n->not_type.msgt_size == 32);
-	assert(n->not_type.msgt_number == 1);
-	assert(n->not_type.msgt_inline);
-	assert(! n->not_type.msgt_longform);
+	assert_backtrace (n->not_type.msgt_name == MACH_MSG_TYPE_INTEGER_32);
+	assert_backtrace (n->not_type.msgt_size == 32);
+	assert_backtrace (n->not_type.msgt_number == 1);
+	assert_backtrace (n->not_type.msgt_inline);
+	assert_backtrace (! n->not_type.msgt_longform);
 
 	default_pager_no_senders(ds, n->not_header.msgh_seqno, n->not_count);
 

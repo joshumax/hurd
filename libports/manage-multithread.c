@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <stdio.h>
 #include <mach/message.h>

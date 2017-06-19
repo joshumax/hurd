@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -35,7 +35,7 @@ cons_vcons_close (vcons_t vcons)
 
   pthread_mutex_lock (&cons->lock);
   /* The same virtual console should never be opened twice.  */
-  assert (vcons_entry->vcons == vcons);
+  assert_backtrace (vcons_entry->vcons == vcons);
   vcons_entry->vcons = NULL;
   pthread_mutex_unlock (&cons->lock);
 

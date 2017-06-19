@@ -22,7 +22,7 @@
 #include "priv.h"
 #include "fsys_reply_U.h"
 #include "trivfs_fsys_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <string.h>
 

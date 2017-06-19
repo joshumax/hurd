@@ -100,7 +100,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   do
     {
-      assert (!lastcomp);
+      assert_backtrace (!lastcomp);
 
       /* Find the name of the next pathname component */
       nextname = index (filename, '/');
@@ -377,7 +377,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 					0, np->dn_stat.st_size, 0,
 					dircred, &amt);
 	      if (!err)
-		assert (amt == np->dn_stat.st_size);
+		assert_backtrace (amt == np->dn_stat.st_size);
 	    }
 	  if (err)
 	    goto out;

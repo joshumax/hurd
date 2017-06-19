@@ -122,7 +122,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  /* Find the device number from the arguments
 	     of the translator. */
 	  arg = passive + strlen (passive) + 1;
-	  assert (arg <= passive + passivelen);
+	  assert_backtrace (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);
@@ -131,7 +131,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  major = strtol (arg, 0, 0);
 
 	  arg = arg + strlen (arg) + 1;
-	  assert (arg < passive + passivelen);
+	  assert_backtrace (arg < passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);
@@ -147,7 +147,7 @@ netfs_S_file_set_translator (struct protid *user,
 
 	case S_IFLNK:
 	  arg = passive + strlen (passive) + 1;
-	  assert (arg <= passive + passivelen);
+	  assert_backtrace (arg <= passive + passivelen);
 	  if (arg == passive + passivelen)
 	    {
 	      pthread_mutex_unlock (&np->lock);

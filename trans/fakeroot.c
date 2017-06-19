@@ -76,7 +76,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
   error_t err;
   struct netnode *nn;
 
-  assert ((openmodes & ~(O_RDWR|O_EXEC)) == 0);
+  assert_backtrace ((openmodes & ~(O_RDWR|O_EXEC)) == 0);
 
   *np = netfs_make_node_alloc (sizeof *nn);
   if (*np == 0)
@@ -97,7 +97,7 @@ new_node (file_t file, mach_port_t idport, int locked, int openmodes,
     {
       ino_t fileno;
       mach_port_t fsidport;
-      assert (!locked);
+      assert_backtrace (!locked);
       err = io_identity (file, &nn->idport, &fsidport, &fileno);
       if (err)
 	{
@@ -218,7 +218,7 @@ check_openmodes (struct netnode *nn, int newmodes, file_t file)
 {
   error_t err = 0;
 
-  assert ((newmodes & ~(O_RDWR|O_EXEC)) == 0);
+  assert_backtrace ((newmodes & ~(O_RDWR|O_EXEC)) == 0);
 
   if (newmodes &~ nn->openmodes)
     {
@@ -484,7 +484,7 @@ netfs_S_dir_lookup (struct protid *diruser,
   if (err)
     goto lose;
 
-  assert (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL);
+  assert_backtrace (retry_name[0] == '\0' && *do_retry == FS_RETRY_NORMAL);
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
 
   err = iohelp_dup_iouser (&user, diruser->user);
@@ -531,7 +531,7 @@ error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		      char *name, struct node **np)
 {
-  assert (! "should not be here");
+  assert_backtrace (! "should not be here");
   return EIEIO;
 }
 
@@ -539,7 +539,7 @@ error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
 			   char *name, mode_t mode, struct node **np)
 {
-  assert (! "should not be here");
+  assert_backtrace (! "should not be here");
   return EIEIO;
 }
 
@@ -812,7 +812,7 @@ netfs_attempt_readlink (struct iouser *user, struct node *np, char *buf)
 	err = EINVAL;
       else
 	{
-	  assert (translen <= sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1);
+	  assert_backtrace (translen <= sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1);
 	  memcpy (buf, &trans[sizeof _HURD_SYMLINK],
 		  translen - sizeof _HURD_SYMLINK);
 	}
@@ -1087,7 +1087,7 @@ netfs_demuxer (mach_msg_header_t *inp,
       else
 	{
 	  error_t err;
-	  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
+	  assert_backtrace (MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
 		  == MACH_MSG_TYPE_MOVE_SEND
 		  || MACH_MSGH_BITS_LOCAL (inp->msgh_bits)
 		  == MACH_MSG_TYPE_PROTECTED_PAYLOAD);

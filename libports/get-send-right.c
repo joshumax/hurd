@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 mach_port_t
 ports_get_send_right (void *port)
@@ -32,7 +32,7 @@ ports_get_send_right (void *port)
 
   err = mach_port_insert_right (mach_task_self (),
 				right, right, MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return right;
 }

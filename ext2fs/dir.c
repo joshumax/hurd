@@ -153,7 +153,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   int looped;
 
   if ((type == REMOVE) || (type == RENAME))
-    assert (npp);
+    assert_backtrace (npp);
 
   if (npp)
     *npp = 0;
@@ -318,7 +318,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 	    goto out;
 	}
       else
-	assert (0);
+	assert_backtrace (0);
     }
 
   if ((type == CREATE || type == RENAME) && !inum && ds && ds->stat == LOOKING)
@@ -349,7 +349,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
 
   if (np)
     {
-      assert (npp);
+      assert_backtrace (npp);
       if (err)
 	{
 	  if (!spec_dotdot)
@@ -494,7 +494,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	    diskfs_node_disknode (dp)->dirents[i] = -1;
 	}
       /* Make sure the count is correct if there is one now. */
-      assert (diskfs_node_disknode (dp)->dirents[idx] == -1
+      assert_backtrace (diskfs_node_disknode (dp)->dirents[idx] == -1
 	      || diskfs_node_disknode (dp)->dirents[idx] == nentries);
       diskfs_node_disknode (dp)->dirents[idx] = nentries;
 
@@ -537,9 +537,9 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   error_t err;
   size_t oldsize = 0;
 
-  assert (ds->type == CREATE);
+  assert_backtrace (ds->type == CREATE);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
 
@@ -551,7 +551,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     {
     case TAKE:
       /* We are supposed to consume this slot. */
-      assert (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
+      assert_backtrace (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
 
       new = ds->entry;
       break;
@@ -560,7 +560,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       /* We are supposed to take the extra space at the end
 	 of this slot. */
       oldneeded = EXT2_DIR_REC_LEN (ds->entry->name_len);
-      assert (ds->entry->rec_len - oldneeded >= needed);
+      assert_backtrace (ds->entry->rec_len - oldneeded >= needed);
 
       new = (struct ext2_dir_entry_2 *) ((vm_address_t) ds->entry + oldneeded);
 
@@ -583,7 +583,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
 	  if (from->inode != 0)
 	    {
-	      assert (fromoff >= tooff);
+	      assert_backtrace (fromoff >= tooff);
 
 	      memmove (to, from, fromreclen);
 	      to->rec_len = EXT2_DIR_REC_LEN (to->name_len);
@@ -594,7 +594,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	}
 
       totfreed = (vm_address_t) ds->entry + DIRBLKSIZ - tooff;
-      assert (totfreed >= needed);
+      assert_backtrace (totfreed >= needed);
 
       new = (struct ext2_dir_entry_2 *) tooff;
       new->rec_len = totfreed;
@@ -602,7 +602,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
     case EXTEND:
       /* Extend the file. */
-      assert (needed <= DIRBLKSIZ);
+      assert_backtrace (needed <= DIRBLKSIZ);
 
       oldsize = dp->dn_stat.st_size;
       if ((off_t)(oldsize + DIRBLKSIZ) != (dp->dn_stat.st_size + DIRBLKSIZ))
@@ -639,7 +639,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 
     default:
       new = 0;
-      assert (! "impossible: bogus status field in dirstat");
+      assert_backtrace (! "impossible: bogus status field in dirstat");
     }
 
   /* NEW points to the directory entry being written, and its
@@ -716,16 +716,16 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 error_t
 diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
-  assert (ds->type == REMOVE);
-  assert (ds->stat == HERE_TIS);
+  assert_backtrace (ds->type == REMOVE);
+  assert_backtrace (ds->stat == HERE_TIS);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   if (ds->preventry == 0)
     ds->entry->inode = 0;
   else
     {
-      assert ((vm_address_t) ds->entry - (vm_address_t) ds->preventry
+      assert_backtrace ((vm_address_t) ds->entry - (vm_address_t) ds->preventry
 	      == ds->preventry->rec_len);
       ds->preventry->rec_len += ds->entry->rec_len;
     }
@@ -756,10 +756,10 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 error_t
 diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 {
-  assert (ds->type == RENAME);
-  assert (ds->stat == HERE_TIS);
+  assert_backtrace (ds->type == RENAME);
+  assert_backtrace (ds->stat == HERE_TIS);
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   ds->entry->inode = np->cache_id;
   dp->dn_set_mtime = 1;
@@ -790,7 +790,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
   err = vm_map (mach_task_self (), &buf, dp->dn_stat.st_size, 0,
 		1, memobj, 0, 0, VM_PROT_READ, VM_PROT_READ, 0);
   mach_port_deallocate (mach_task_self (), memobj);
-  assert (!err);
+  assert_backtrace (!err);
 
   diskfs_set_node_atime (dp);
 
@@ -823,7 +823,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 {
   if (ds->type != LOOKUP)
     {
-      assert (ds->mapbuf);
+      assert_backtrace (ds->mapbuf);
       munmap ((caddr_t) ds->mapbuf, ds->mapextent);
       ds->type = LOOKUP;
     }
@@ -843,13 +843,13 @@ count_dirents (struct node *dp, block_t nb, char *buf)
   int count = 0;
   error_t err;
 
-  assert (diskfs_node_disknode (dp)->dirents);
-  assert ((nb + 1) * DIRBLKSIZ <= dp->dn_stat.st_size);
+  assert_backtrace (diskfs_node_disknode (dp)->dirents);
+  assert_backtrace ((nb + 1) * DIRBLKSIZ <= dp->dn_stat.st_size);
 
   err = diskfs_node_rdwr (dp, buf, nb * DIRBLKSIZ, DIRBLKSIZ, 0, 0, &amt);
   if (err)
     return err;
-  assert (amt == DIRBLKSIZ);
+  assert_backtrace (amt == DIRBLKSIZ);
 
   for (offinblk = buf;
        offinblk < buf + DIRBLKSIZ;
@@ -860,7 +860,7 @@ count_dirents (struct node *dp, block_t nb, char *buf)
 	count++;
     }
 
-  assert (diskfs_node_disknode (dp)->dirents[nb] == -1
+  assert_backtrace (diskfs_node_disknode (dp)->dirents[nb] == -1
 	  || diskfs_node_disknode (dp)->dirents[nb] == count);
   diskfs_node_disknode (dp)->dirents[nb] = count;
   return 0;
@@ -977,7 +977,7 @@ diskfs_get_directs (struct node *dp,
 				  0, 0, &checklen);
 	  if (err)
 	    return err;
-	  assert (checklen == DIRBLKSIZ);
+	  assert_backtrace (checklen == DIRBLKSIZ);
 	  bufvalid = 1;
 	}
       for (i = 0, bufp = buf;
@@ -985,7 +985,7 @@ diskfs_get_directs (struct node *dp,
 	   bufp += ((struct ext2_dir_entry_2 *)bufp)->rec_len, i++)
 	;
       /* Make sure we didn't run off the end. */
-      assert (bufp - buf < DIRBLKSIZ);
+      assert_backtrace (bufp - buf < DIRBLKSIZ);
     }
 
   i = 0;
@@ -1002,7 +1002,7 @@ diskfs_get_directs (struct node *dp,
 				  0, 0, &checklen);
 	  if (err)
 	    return err;
-	  assert (checklen == DIRBLKSIZ);
+	  assert_backtrace (checklen == DIRBLKSIZ);
 	  bufvalid = 1;
 	  bufp = buf;
 	}
@@ -1027,7 +1027,7 @@ diskfs_get_directs (struct node *dp,
 	  /* See if this record would run over the end of the return buffer. */
 	  if (bufsiz == 0)
 	    /* It shouldn't ever, as we calculated the worst case size.  */
-	    assert (datap + rec_len <= *data + allocsize);
+	    assert_backtrace (datap + rec_len <= *data + allocsize);
 	  else
 	    /* It's ok if it does, just leave off returning this entry.  */
 	    if (datap + rec_len > *data + allocsize)

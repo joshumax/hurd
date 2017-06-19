@@ -25,7 +25,7 @@
    up-to-date. When a table page can be freed, do so.  */
 
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <pthread.h>
 #include "virt-inode.h"
@@ -117,7 +117,7 @@ vi_new(vi_key_t key, ino_t *inode, inode_t *v_inode)
 {
   error_t err;
 
-  assert (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
+  assert_backtrace (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
 
   pthread_spin_lock (&inode_table_lock);
   err = _vi_new(key, inode, v_inode);
@@ -171,7 +171,7 @@ vi_rlookup(vi_key_t key, ino_t *inode, inode_t *v_inode, int create)
   int page = 0;
   int offset = 0;
 
-  assert (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
+  assert_backtrace (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
 
   pthread_spin_lock (&inode_table_lock);
 
@@ -211,7 +211,7 @@ vi_key_t vi_change(inode_t v_inode, vi_key_t key)
 {
   vi_key_t okey = v_inode->key;
 
-  assert (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
+  assert_backtrace (memcmp(&vi_zero_key, &key, sizeof (vi_key_t)));
   v_inode->key = key;
   return okey;
 }

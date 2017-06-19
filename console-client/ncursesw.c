@@ -16,7 +16,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
@@ -324,7 +324,7 @@ input_loop (void *unused)
 		      console_exit ();
 		      break;
 		    case 23:	/* ^W */
-		      assert (size < 100);
+		      assert_backtrace (size < 100);
 		      buf[size++] = ret;
 		      break;
 		    case '1':
@@ -397,7 +397,7 @@ input_loop (void *unused)
 			  {	
 			    if (keycodes[i].cons)
 			      {
-				assert (size 
+				assert_backtrace (size 
 					< 101 - strlen (keycodes[i].cons));
 				strcpy (&buf[size], keycodes[i].cons);
 				size += strlen (keycodes[i].cons);
@@ -408,7 +408,7 @@ input_loop (void *unused)
 		      }
 		    if (!found)
 		      {
-			assert (size < 100);
+			assert_backtrace (size < 100);
 			buf[size++] = ret;
 		      }
 		    break;
@@ -472,7 +472,7 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 	    {
 	      printf ("setcchar failed: %s\n", strerror (errno));
 	      printf ("[%lc]\n", wch[0]);
-	      assert (!"Do something if setcchar fails.");
+	      assert_backtrace (!"Do something if setcchar fails.");
 	    }
 #endif
 	  ret = wadd_wch (conspad, &chr);
@@ -481,7 +481,7 @@ mvwputsn (conchar_t *str, size_t len, off_t x, off_t y)
 	    {
 	      printf ("add_wch failed: %i, %s\n", ret, strerror (errno));
 	      printf ("[%lc]\n", wch[0]);
-	      assert (!"Do something if add_wchr fails.");
+	      assert_backtrace (!"Do something if add_wchr fails.");
 	    }
 #endif
 	}
@@ -505,7 +505,7 @@ static error_t
 ncursesw_set_cursor_pos (void *handle, uint32_t col, uint32_t row)
 {
   pthread_mutex_lock (&ncurses_lock);
-  assert (current_width && current_height);
+  assert_backtrace (current_width && current_height);
   if (autoscroll)
     {
       /* Autoscroll to the right.  */
@@ -569,7 +569,7 @@ static error_t
 ncursesw_scroll (void *handle, int delta)
 {
   /* XXX We don't support scrollback for now.  */
-  assert (delta >= 0);
+  assert_backtrace (delta >= 0);
 
   pthread_mutex_lock (&ncurses_lock);
   idlok (conspad, TRUE);

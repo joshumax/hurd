@@ -28,7 +28,7 @@ diskfs_S_io_map_cntl (struct protid *cred,
   if (!cred)
     return EOPNOTSUPP;
 
-  assert (__vm_page_size >= sizeof (struct shared_io));
+  assert_backtrace (__vm_page_size >= sizeof (struct shared_io));
   pthread_mutex_lock (&cred->po->np->lock);
   if (!cred->mapped)
     {

@@ -17,7 +17,7 @@
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 #include <argz.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <fcntl.h>
@@ -239,8 +239,8 @@ static int
 startup_terminal (struct terminal *t)
 {
   pid_t pid;
-  assert (t->on);
-  assert (t->getty_argv);
+  assert_backtrace (t->on);
+  assert_backtrace (t->getty_argv);
 
   if (t->window_argv)
     {
@@ -494,7 +494,7 @@ main ()
 	  error (1, waiterr, "waitpid");
 	}
 
-      assert (pid > 0);
+      assert_backtrace (pid > 0);
 
       /* We have reaped a dead child.  Restart that tty line.  */
       restart_terminal (pid);

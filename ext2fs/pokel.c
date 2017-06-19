@@ -102,7 +102,7 @@ pokel_add (struct pokel *pokel, void *loc, vm_size_t length)
       if (pl == NULL)
 	{
 	  pl = malloc (sizeof (struct poke));
-	  assert (pl);
+	  assert_backtrace (pl);
 	}
       else
 	pokel->free_pokes = pl->next;
@@ -173,8 +173,8 @@ pokel_inherit (struct pokel *pokel, struct pokel *from)
 {
   struct poke *pokes, *last;
   
-  assert (pokel->pager == from->pager);
-  assert (pokel->image == from->image);
+  assert_backtrace (pokel->pager == from->pager);
+  assert_backtrace (pokel->image == from->image);
 
   /* Take all pokes from FROM...  */
   pthread_spin_lock (&from->lock);

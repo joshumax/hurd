@@ -17,7 +17,7 @@
 
 #include <argp.h>
 #include <argz.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <fcntl.h>
 #include <gcrypt.h>
@@ -252,7 +252,7 @@ gather_thread (void *args)
                                   + (float) random () / (float) RAND_MAX)));
     }
 
-  assert (! "reached");
+  assert_backtrace (! "reached");
 }
 
 error_t

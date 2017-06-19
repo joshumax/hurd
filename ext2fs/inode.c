@@ -74,7 +74,7 @@ diskfs_node_norefs (struct node *np)
 {
   if (diskfs_node_disknode (np)->dirents)
     free (diskfs_node_disknode (np)->dirents);
-  assert (!diskfs_node_disknode (np)->pager);
+  assert_backtrace (!diskfs_node_disknode (np)->pager);
 
   /* Move any pending writes of indirect blocks.  */
   pokel_inherit (&global_pokel, &diskfs_node_disknode (np)->indir_pokel);
@@ -362,7 +362,7 @@ write_node (struct node *np)
     {
       struct ext2_inode_info *info = &diskfs_node_disknode (np)->info;
 
-      assert (!diskfs_readonly);
+      assert_backtrace (!diskfs_readonly);
 
       ext2_debug ("writing inode %d to disk", np->cache_id);
 
@@ -395,10 +395,10 @@ write_node (struct node *np)
       else
 	/* No hurd extensions should be turned on.  */
 	{
-	  assert ((st->st_uid & ~0xFFFF) == 0);
-	  assert ((st->st_gid & ~0xFFFF) == 0);
-	  assert ((st->st_mode & ~0xFFFF) == 0);
-	  assert (np->author_tracks_uid && st->st_author == st->st_uid);
+	  assert_backtrace ((st->st_uid & ~0xFFFF) == 0);
+	  assert_backtrace ((st->st_gid & ~0xFFFF) == 0);
+	  assert_backtrace ((st->st_mode & ~0xFFFF) == 0);
+	  assert_backtrace (np->author_tracks_uid && st->st_author == st->st_uid);
 	}
 
       di->i_links_count = st->st_nlink;
@@ -551,7 +551,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 {
   error_t err;
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   if (sblock->s_creator_os != EXT2_OS_HURD)
     return EOPNOTSUPP;
@@ -769,7 +769,7 @@ write_symlink (struct node *node, const char *target)
   if (len > MAX_INODE_SYMLINK)
     return EINVAL;
 
-  assert (node->dn_stat.st_blocks == 0);
+  assert_backtrace (node->dn_stat.st_blocks == 0);
 
   memcpy (diskfs_node_disknode (node)->info.i_data, target, len);
   node->dn_stat.st_size = len - 1;
@@ -786,7 +786,7 @@ read_symlink (struct node *node, char *target)
   if (node->dn_stat.st_blocks)
     return EINVAL;
 
-  assert (node->dn_stat.st_size < MAX_INODE_SYMLINK);
+  assert_backtrace (node->dn_stat.st_size < MAX_INODE_SYMLINK);
 
   memcpy (target, diskfs_node_disknode (node)->info.i_data,
           node->dn_stat.st_size);

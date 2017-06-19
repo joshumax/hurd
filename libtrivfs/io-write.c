@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "trivfs_io_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 
 kern_return_t
@@ -32,6 +32,6 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   if (!(trivfs_allow_open & O_WRITE))
     return EBADF;
 
-  assert (!trivfs_support_write);
+  assert_backtrace (!trivfs_support_write);
   return EOPNOTSUPP;
 }

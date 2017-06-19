@@ -442,7 +442,7 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   auth_server = getauth ();
   err = mach_port_insert_right (mach_task_self (), new_user_port,
 				new_user_port, MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   do
     err =
       auth_server_authenticate (auth_server,

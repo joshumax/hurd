@@ -459,7 +459,7 @@ void
 netfs_node_norefs (struct node *np)
 {
   /* The root node does never go away.  */
-  assert (!np->nn->cons && np->nn->vcons);
+  assert_backtrace (!np->nn->cons && np->nn->vcons);
 
   free (np->nn);
   free (np);
@@ -654,7 +654,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       /* This is a virtual console directory node.  */
       vcons_t vcons = dir->nn->vcons;
       int ref_vcons = 0;
-      assert (dir == vcons->dir_node);
+      assert_backtrace (dir == vcons->dir_node);
 
       if (!strcmp (name, "console"))
 	{
@@ -1057,7 +1057,7 @@ netfs_attempt_set_size (struct iouser *cred, struct node *np, off_t size)
       || np == vcons->disp_node)
     return EOPNOTSUPP;
 
-  assert (np == vcons->cons_node || np == vcons->inpt_node);
+  assert_backtrace (np == vcons->cons_node || np == vcons->inpt_node);
   return 0;
 }
 
@@ -1140,7 +1140,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
     {
       /* Pass display content to caller.  */
       ssize_t amt = *len;
-      assert (np == vcons->disp_node);
+      assert_backtrace (np == vcons->disp_node);
 
       if (offset + amt > np->nn_stat.st_size)
 	amt = np->nn_stat.st_size - offset;
@@ -1187,7 +1187,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
       int amt;
       /* The input driver is writing to the input device.  Feed the
 	 data into the input queue.  */
-      assert (np == vcons->inpt_node);
+      assert_backtrace (np == vcons->inpt_node);
 
       amt = input_enqueue (vcons->input,
 			   /* cred->po->openstat & O_NONBLOCK */ 1,

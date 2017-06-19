@@ -16,7 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <string.h>
 

@@ -341,7 +341,7 @@ main (int argc, char **argv)
   struct stat st;
 
   err = argp_parse (&startup_argp, argc, argv, ARGP_IN_ORDER, NULL, NULL);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)

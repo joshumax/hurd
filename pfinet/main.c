@@ -197,7 +197,7 @@ find_device (char *name, struct device **device)
   char *base_name;
 
   /* Skip loopback interface. */
-  assert (dev);
+  assert_backtrace (dev);
   dev = dev->next;
 
   if (!name)
@@ -252,7 +252,7 @@ enumerate_devices (error_t (*fun) (struct device *dev))
   struct device *dev = dev_base;
 
   /* Skip loopback device.  */
-  assert (dev);
+  assert_backtrace (dev);
   dev = dev->next;
 
   for (; dev; dev = dev->next)

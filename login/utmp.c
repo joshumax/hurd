@@ -32,7 +32,7 @@
 #include <hurd/fsys.h>
 #include <mach/notify.h>
 #include <stdio.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <getopt.h>
 

@@ -21,7 +21,7 @@
 
 #include "priv.h"
 #include "trivfs_io_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
@@ -32,9 +32,9 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   if (!cred)
     return EOPNOTSUPP;
   if (*seltype & (SELECT_READ|SELECT_URG))
-    assert (!trivfs_support_read);
+    assert_backtrace (!trivfs_support_read);
   if (*seltype & (SELECT_WRITE|SELECT_URG))
-    assert (!trivfs_support_write);
+    assert_backtrace (!trivfs_support_write);
   return EOPNOTSUPP;
 }
 

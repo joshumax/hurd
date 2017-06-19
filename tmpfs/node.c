@@ -78,7 +78,7 @@ diskfs_free_node (struct node *np, mode_t mode)
       }	
       break;
     case DT_DIR:
-      assert (np->dn->u.dir.entries == 0);
+      assert_backtrace (np->dn->u.dir.entries == 0);
       break;
     case DT_LNK:
       free (np->dn->u.lnk);
@@ -122,7 +122,7 @@ diskfs_node_norefs (struct node *np)
       switch (np->dn->type)
 	{
 	case DT_REG:
-	  assert (np->allocsize % vm_page_size == 0);
+	  assert_backtrace (np->allocsize % vm_page_size == 0);
 	  np->dn->u.reg.allocpages = np->allocsize / vm_page_size;
 	  break;
 	case DT_CHR:
@@ -170,7 +170,7 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
   struct disknode *dn = (void *) (uintptr_t) inum;
   struct node *np;
 
-  assert (npp);
+  assert_backtrace (npp);
 
   pthread_rwlock_rdlock (&all_nodes_lock);
   if (dn->hprevp != 0)		/* There is already a node.  */
@@ -232,8 +232,8 @@ diskfs_cached_lookup (ino_t inum, struct node **npp)
 
  gotit:
   np = *dn->hprevp;
-  assert (np->dn == dn);
-  assert (*dn->hprevp == np);
+  assert_backtrace (np->dn == dn);
+  assert_backtrace (*dn->hprevp == np);
   diskfs_nref (np);
   pthread_rwlock_unlock (&all_nodes_lock);
   pthread_mutex_lock (&np->lock);
@@ -379,7 +379,7 @@ diskfs_set_translator (struct node *np,
 static error_t
 create_symlink_hook (struct node *np, const char *target)
 {
-  assert (np->dn->u.lnk == 0);
+  assert_backtrace (np->dn->u.lnk == 0);
   np->dn_stat.st_size = strlen (target);
   if (np->dn_stat.st_size > 0)
     {
@@ -444,7 +444,7 @@ diskfs_truncate (struct node *np, off_t size)
   if (np->allocsize <= size)
     return 0;
 
-  assert (np->dn->type == DT_REG);
+  assert_backtrace (np->dn->type == DT_REG);
 
   if (default_pager == MACH_PORT_NULL)
     return EIO;
@@ -484,7 +484,7 @@ diskfs_truncate (struct node *np, off_t size)
 error_t
 diskfs_grow (struct node *np, off_t size, struct protid *cred)
 {
-  assert (np->dn->type == DT_REG);
+  assert_backtrace (np->dn->type == DT_REG);
 
   if (np->allocsize >= size)
     return 0;
@@ -548,7 +548,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 	  errno = err;
 	  return MACH_PORT_NULL;
 	}
-      assert (np->dn->u.reg.memobj != MACH_PORT_NULL);
+      assert_backtrace (np->dn->u.reg.memobj != MACH_PORT_NULL);
       
       /* XXX we need to keep a reference to the object, or GNU Mach
 	 will terminate it when we release the map. */
@@ -556,7 +556,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       vm_map (mach_task_self (), &np->dn->u.reg.memref, 4096, 0, 1,
 	      np->dn->u.reg.memobj, 0, 0, VM_PROT_NONE, VM_PROT_NONE,
 	      VM_INHERIT_NONE);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 
   /* XXX always writable */
@@ -564,7 +564,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   /* Add a reference for each call, the caller will deallocate it.  */
   err = mach_port_mod_refs (mach_task_self (), np->dn->u.reg.memobj,
 			    MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return np->dn->u.reg.memobj;
 }
@@ -613,18 +613,18 @@ diskfs_S_file_get_storage_info (struct protid *cred,
   if (memobj == MACH_PORT_NULL)
     return errno;
 
-  assert (*num_ports >= 1);	/* mig always gives us some */
+  assert_backtrace (*num_ports >= 1);	/* mig always gives us some */
   *num_ports = 1;
   *ports_type = MACH_MSG_TYPE_MOVE_SEND;
   (*ports)[0]
     = (cred->po->openstat & O_RDWR) == O_RDWR ? memobj : MACH_PORT_NULL;
 
-  assert (*num_offsets >= 2);	/* mig always gives us some */
+  assert_backtrace (*num_offsets >= 2);	/* mig always gives us some */
   *num_offsets = 2;
   (*offsets)[0] = 0;
   (*offsets)[1] = cred->po->np->dn_stat.st_size;
 
-  assert (*num_ints >= 6);	/* mig always gives us some */
+  assert_backtrace (*num_ints >= 6);	/* mig always gives us some */
   *num_ints = 6;
   (*ints)[0] = STORAGE_MEMORY;
   (*ints)[1] = (cred->po->openstat & O_WRITE) ? 0 : STORE_READONLY;

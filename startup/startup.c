@@ -27,7 +27,7 @@
 #include <hurd/fsys.h>
 #include <device/device.h>
 #include <stdio.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/paths.h>
 #include <sys/reboot.h>
 #include <sys/file.h>
@@ -379,19 +379,19 @@ run (const char *server, mach_port_t *ports, task_t *task,
           char *argz = NULL;
           size_t argz_len = 0;
           err = argz_create_sep (prog, ' ', &argz, &argz_len);
-          assert_perror (err);
+          assert_perror_backtrace (err);
 
           err = task_create (mach_task_self (),
 #ifdef KERN_INVALID_LEDGER
                              NULL, 0,	/* OSF Mach */
 #endif
                              0, task);
-          assert_perror (err);
+          assert_perror_backtrace (err);
 
           if (insert_ports)
             {
               err = insert_ports (&argz, &argz_len, *task);
-              assert_perror (err);
+              assert_perror_backtrace (err);
             }
 
 	  if (bootstrap_args & RB_KDB)
@@ -712,15 +712,15 @@ main (int argc, char **argv, char **envp)
   setbuf (stdout, NULL);
 
   err = argz_create (envp, &startup_envz, &startup_envz_len);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* At this point we can use assert to check for errors.  */
   err = mach_port_allocate (mach_task_self (),
 			    MACH_PORT_RIGHT_RECEIVE, &startup);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = mach_port_insert_right (mach_task_self (), startup, startup,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Crash if the boot filesystem task dies.  */
   request_dead_name (fstask);
@@ -765,7 +765,7 @@ main (int argc, char **argv, char **envp)
   while (1)
     {
       err = mach_msg_server (demuxer, 0, startup);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
 }
 
@@ -784,7 +784,7 @@ launch_core_servers (void)
 				mach_task_self (), authserver,
 				host_priv, MACH_MSG_TYPE_COPY_SEND,
 				device_master, MACH_MSG_TYPE_COPY_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (!fakeboot)
     {
       mach_port_deallocate (mach_task_self (), device_master);
@@ -796,22 +796,22 @@ launch_core_servers (void)
 
   /* Mark us as important.  */
   err = proc_mark_important (procserver);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (procserver);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Declare that the filesystem and auth are our children. */
   err = proc_child (procserver, fstask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_child (procserver, authtask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = proc_task2proc (procserver, authtask, &authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_important (authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (authproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = install_as_translator ();
   if (err)
@@ -823,7 +823,7 @@ launch_core_servers (void)
 
   err = startup_authinit_reply (authreply, authreplytype, 0, authproc,
 				MACH_MSG_TYPE_MOVE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (verbose)
     fprintf (stderr, "auth launched\n");
@@ -838,13 +838,13 @@ launch_core_servers (void)
   err = proc_set_arg_locations (procserver,
 				(vm_address_t) global_argv,
 				(vm_address_t) environ);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   default_ports[INIT_PORT_AUTH] = authserver;
 
   /* Declare that the proc server is our child.  */
   err = proc_child (procserver, proctask);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_task2proc (procserver, proctask, &procproc);
   if (!err)
     {
@@ -855,16 +855,16 @@ launch_core_servers (void)
 
   err = proc_register_version (procserver, host_priv,
 			       "init", "", HURD_VERSION);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Get the bootstrap filesystem's proc server port.
      We must do this before calling proc_setmsgport below.  */
   err = proc_task2proc (procserver, fstask, &fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_important (fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = proc_mark_exec (fsproc);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   fprintf (stderr, ".\n");
 
@@ -875,7 +875,7 @@ launch_core_servers (void)
      calling fsys_init, because fsys_init blocks on exec_init, and
      exec_init will block waiting on our message port.  */
   err = proc_setmsgport (procserver, startup, &old);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (old != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), old);
 
@@ -1010,10 +1010,10 @@ frob_kernel_process (void)
     error (0, err, "cannot mark the kernel as important");
 
   err = record_essential_task ("kernel", task);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = task_get_bootstrap_port (task, &kbs);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   if (kbs == MACH_PORT_NULL)
     {
       /* The kernel task has no bootstrap port set, so we are presumably
@@ -1062,16 +1062,16 @@ frob_kernel_process (void)
      canonical argv array and argz of those words.  */
 
   err = argz_create (&global_argv[1], &argz, &argzlen);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = argz_insert (&argz, &argzlen, argz, "gnumach");
-  assert_perror (err);
+  assert_perror_backtrace (err);
   argc = argz_count (argz, argzlen);
 
   windowsz = round_page (((argc + 1) * sizeof (char *)) + argzlen);
 
   mine = (vm_address_t) mmap (0, windowsz, PROT_READ|PROT_WRITE,
 			      MAP_ANON, 0, 0);
-  assert (mine != -1);
+  assert_backtrace (mine != -1);
   err = vm_allocate (task, &his, windowsz, 1);
   if (err)
     {
@@ -1211,7 +1211,7 @@ start_child (const char *prog, char **progargs)
 	err = argz_create ((char **) argv, &args, &arglen);
       }
     }
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (verbose)
     fprintf (stderr, "Going to execute '%s'\n", args);
@@ -1477,7 +1477,7 @@ do_mach_notify_dead_name (mach_port_t notify,
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
 
-  assert (notify == startup);
+  assert_backtrace (notify == startup);
 
   /* Deallocate the extra reference the notification carries. */
   mach_port_deallocate (mach_task_self (), name);

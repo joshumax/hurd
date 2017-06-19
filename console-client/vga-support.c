@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/io.h>
@@ -225,7 +225,7 @@ vga_read_write_font_buffer (int write, int buffer, int index,
   char saved_gfx_misc;
 
   int offset = buffer * VGA_FONT_SIZE + index * VGA_FONT_HEIGHT;
-  assert (offset >= 0 && offset + datalen <= VGA_VIDEO_MEM_LENGTH);
+  assert_backtrace (offset >= 0 && offset + datalen <= VGA_VIDEO_MEM_LENGTH);
 
   /* Select plane 2 for sequential writing.  You might think it is not
      necessary for reading, but it is.  Likewise for read settings

@@ -92,7 +92,7 @@ allocate_backing_page ()
   
   /* Find which bit */
   bit = ffs (*bmap_rotor);
-  assert (bit);
+  assert_backtrace (bit);
   bit--;
   
   /* Mark it */
@@ -123,7 +123,7 @@ return_backing_pages (off_t *map, int maplen)
       b = bmap + pfn & ~7;
       bit = pfn & 7;
       
-      assert ((*b & (1 << bit)) == 0);
+      assert_backtrace ((*b & (1 << bit)) == 0);
       *b |= 1 << bit;
     }
   pthread_mutex_unlock (&bmap_lock);

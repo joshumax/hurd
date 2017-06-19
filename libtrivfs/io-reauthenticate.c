@@ -21,7 +21,7 @@
 
 #include "priv.h"
 #include "trivfs_io_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 
 kern_return_t
@@ -49,7 +49,7 @@ trivfs_S_io_reauthenticate (struct trivfs_protid *cred,
 
   auth = getauth ();
   newright = ports_get_send_right (newcred);
-  assert (newright != MACH_PORT_NULL);
+  assert_backtrace (newright != MACH_PORT_NULL);
 
   err = iohelp_reauth (&newcred->user, auth, rendport, newright, 1);
   if (!err)

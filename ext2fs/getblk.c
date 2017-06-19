@@ -122,7 +122,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
   block_t hint;
 #endif
 
-  assert (0 <= nr && nr < EXT2_N_BLOCKS);
+  assert_backtrace (0 <= nr && nr < EXT2_N_BLOCKS);
 
   *result = diskfs_node_disknode (node)->info.i_data[nr];
   if (*result)

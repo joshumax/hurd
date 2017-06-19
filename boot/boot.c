@@ -66,7 +66,7 @@
 #include <termios.h>
 #include <error.h>
 #include <hurd.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "private.h"
 
@@ -428,7 +428,7 @@ allocate_pseudo_ports (void)
 				  MACH_NOTIFY_NO_SENDERS, 1,
 				  pseudo_privileged_host_port,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
-  assert (old == MACH_PORT_NULL);
+  assert_backtrace (old == MACH_PORT_NULL);
 
   /* Allocate a port that we hand out as the privileged processor set
      port.  */
@@ -684,7 +684,7 @@ main (int argc, char **argv, char **envp)
            char *msg;
            asprintf (&msg, "cannot set boot-script variable %s: %s\n",
                      word, boot_script_error_string (err));
-           assert (msg);
+           assert_backtrace (msg);
            write (2, msg, strlen (msg));
            free (msg);
            host_exit (1);
@@ -1652,7 +1652,7 @@ S_io_reauthenticate (mach_port_t object,
 
   err = mach_port_insert_right (mach_task_self (), object, object,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   do
     err = auth_server_authenticate (authserver,
@@ -2043,7 +2043,7 @@ S_mach_notify_new_task (mach_port_t notify,
                                         &previous);
   if (err)
     goto fail;
-  assert (! MACH_PORT_VALID (previous));
+  assert_backtrace (! MACH_PORT_VALID (previous));
 
   mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
   err = hurd_ihash_add (&task_ihash,

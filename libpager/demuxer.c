@@ -15,7 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <mach/mig_errors.h>
 #include <pthread.h>
@@ -315,7 +315,7 @@ pager_start_workers (struct port_bucket *pager_bucket,
   pthread_t t;
   struct pager_requests *requests;
 
-  assert (out_requests != NULL);
+  assert_backtrace (out_requests != NULL);
 
   requests = malloc (sizeof *requests);
   if (requests == NULL)
@@ -376,7 +376,7 @@ pager_inhibit_workers (struct pager_requests *requests)
   pthread_mutex_lock (&requests->lock);
 
   /* Check the workers are not already inhibited.  */
-  assert (requests->queue_out == requests->queue_in);
+  assert_backtrace (requests->queue_out == requests->queue_in);
 
   /* Any new paging requests will go into a new queue.  */
   struct queue *new_queue = malloc (sizeof *new_queue);
@@ -409,9 +409,9 @@ pager_resume_workers (struct pager_requests *requests)
   pthread_mutex_lock (&requests->lock);
 
   /* Check the workers are inhibited.  */
-  assert (requests->queue_out != requests->queue_in);
-  assert (requests->asleep == WORKER_COUNT);
-  assert (queue_empty(requests->queue_out));
+  assert_backtrace (requests->queue_out != requests->queue_in);
+  assert_backtrace (requests->asleep == WORKER_COUNT);
+  assert_backtrace (queue_empty(requests->queue_out));
 
   /* The queue has been drained and will no longer be used.  */
   free (requests->queue_out);

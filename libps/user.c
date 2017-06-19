@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "ps.h"
 #include "common.h"

@@ -37,7 +37,7 @@ diskfs_S_file_getfh (struct protid *cred, char **fh, size_t *fh_len)
   if (! idvec_contains (cred->user->uids, 0))
     return EPERM;
 
-  assert (sizeof *f == sizeof f->bytes);
+  assert_backtrace (sizeof *f == sizeof f->bytes);
 
   node = cred->po->np;
 

@@ -608,7 +608,7 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
   /* Don't use the lookup cache for this; we want a full sync to
      get as close to real exclusive create behavior as possible. */
 
-  assert (protocol_version == 2);
+  assert_backtrace (protocol_version == 2);
 
   p = nfs_initialize_rpc (NFSPROC_LOOKUP (protocol_version),
 			  cred, 0, &rpcbuf, dir, -1);
@@ -1134,8 +1134,8 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
       return err;
     }
 
-  assert (!(*newnp)->nn->dead_dir);
-  assert (!(*newnp)->nn->dead_name);
+  assert_backtrace (!(*newnp)->nn->dead_dir);
+  assert_backtrace (!(*newnp)->nn->dead_name);
   netfs_nref (dir);
   (*newnp)->nn->dead_dir = dir;
   (*newnp)->nn->dead_name = name;
@@ -1668,7 +1668,7 @@ netfs_report_access (struct iouser *cred,
   err = netfs_attempt_read (cred, np, 0, &len, &byte);
   if (err)
     return;
-  assert (len == 1 || len == 0);
+  assert_backtrace (len == 1 || len == 0);
 
   *types |= O_READ | O_EXEC;
 
@@ -1777,7 +1777,7 @@ fetch_directory (struct iouser *cred, struct node *dir,
 	      char *newbuf;
 
 	      newbuf = realloc (buf, bufmalloced *= 2);
-	      assert (newbuf);
+	      assert_backtrace (newbuf);
 	      if (newbuf != buf)
 		bp = newbuf + (bp - buf);
 	      buf = newbuf;

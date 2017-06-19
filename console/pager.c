@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <error.h>
 #include <stdio.h>
 
@@ -80,7 +80,7 @@ error_t
 pager_write_page (struct user_pager_info *upi, vm_offset_t page,
                   vm_address_t buf)
 {
-  assert (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
+  assert_backtrace (upi->memobj_pages[page / vm_page_size] == (vm_address_t) NULL);
   upi->memobj_pages[page / vm_page_size] = buf;
   return 0;
 }
@@ -90,7 +90,7 @@ error_t
 pager_unlock_page (struct user_pager_info *pager,
                    vm_offset_t address)
 {
-  assert (!"unlocking requested on unlocked page");
+  assert_backtrace (!"unlocking requested on unlocked page");
   return 0;
 }
 
@@ -99,7 +99,7 @@ void
 pager_notify_evict (struct user_pager_info *pager,
 		    vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  assert_backtrace (!"unrequested notification on eviction");
 }
 
 
@@ -207,7 +207,7 @@ user_pager_get_filemap (struct user_pager *user_pager, vm_prot_t prot)
   /* Add a reference for each call, the caller will deallocate it.  */
   err = mach_port_mod_refs (mach_task_self (), user_pager->memobj,
                             MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return user_pager->memobj;
 }

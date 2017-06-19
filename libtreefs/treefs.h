@@ -25,7 +25,7 @@
 
 #include <errno.h>
 #include <pthread.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <features.h>
 
 #include <sys/stat.h>
@@ -281,7 +281,7 @@ treefs_node_release (struct treefs_node *node)
 
  loop:
   pthread_spin_lock (&treefs_node_refcnt_lock);
-  assert (node->refs);
+  assert_backtrace (node->refs);
   node->refs--;
   if (node->refs + node->weak_refs == 0)
     treefs_node_drop (node);
@@ -328,7 +328,7 @@ treefs_node_unref (struct treefs_node *node)
 
  loop:
   pthread_spin_lock (&treefs_node_refcnt_lock);
-  assert (node->refs);
+  assert_backtrace (node->refs);
   node->refs--;
   if (node->refs + node->weak_refs == 0)
     {
@@ -374,7 +374,7 @@ TREEFS_EI void
 treefs_node_release_weak (struct treefs_node *node)
 {
   pthread_spin_lock (&treefs_node_refcnt_lock);
-  assert (node->weak_refs);
+  assert_backtrace (node->weak_refs);
   node->weak_refs--;
   if (node->refs + node->weak_refs == 0)
     treefs_node_drop (node);
@@ -392,7 +392,7 @@ TREEFS_EI void
 treefs_node_unref_weak (struct treefs_node *node)
 {
   pthread_spin_lock (&treefs_node_refcnt_lock);
-  assert (node->weak_refs);
+  assert_backtrace (node->weak_refs);
   node->weak_refs--;
   if (node->refs + node->weak_refs == 0)
     {

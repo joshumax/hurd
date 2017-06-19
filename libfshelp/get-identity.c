@@ -23,7 +23,7 @@
 #include <hurd/ports.h>
 #include <hurd/ihash.h>
 #include <stddef.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 static struct port_class *idclass = 0;
 static pthread_mutex_t idlock = PTHREAD_MUTEX_INITIALIZER;
@@ -49,7 +49,7 @@ id_clean (void *cookie)
 static void
 id_initialize ()
 {
-  assert (!idclass);
+  assert_backtrace (!idclass);
   idclass = ports_create_class (id_clean, NULL);
 }
 

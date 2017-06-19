@@ -27,7 +27,7 @@
 error_t
 netfs_attempt_readlink (struct iouser *user, struct node *node, char *buf)
 {
-  assert (node->nn->name);
+  assert_backtrace (node->nn->name);
   memcpy (buf, node->nn->name->canon, node->nn_stat.st_size);
   fshelp_touch (&node->nn_stat, TOUCH_ATIME, hostmux_maptime);
   return 0;

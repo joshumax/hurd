@@ -20,7 +20,7 @@
 #define _RWLOCK_H 1
 
 #include <cthreads.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <features.h>
 
 #ifdef RWLOCK_DEFINE_EI
@@ -89,7 +89,7 @@ RWLOCK_EI void
 rwlock_reader_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
-  assert (lock->readers);
+  assert_backtrace (lock->readers);
   lock->readers--;
   if (lock->readers_waiting || lock->writers_waiting)
     condition_broadcast (&lock->wakeup);
@@ -101,7 +101,7 @@ RWLOCK_EI void
 rwlock_writer_unlock (struct rwlock *lock)
 {
   mutex_lock (&lock->master);
-  assert (lock->readers == -1);
+  assert_backtrace (lock->readers == -1);
   lock->readers = 0;
   if (lock->readers_waiting || lock->writers_waiting)
     condition_broadcast (&lock->wakeup);

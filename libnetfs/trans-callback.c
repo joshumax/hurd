@@ -38,7 +38,7 @@ _netfs_translator_callback1_fn (void *cookie1, void *cookie2,
   err = netfs_get_translator (np, argz, argz_len);
   if (err)
     {
-      assert (err != EOPNOTSUPP);
+      assert_backtrace (err != EOPNOTSUPP);
       return err;
     }
 

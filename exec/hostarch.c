@@ -42,7 +42,7 @@ elf_machine_matches_host (ElfW(Half) e_machine)
 		       (host_info_t) &hostinfo, &hostinfocnt);
       if (err)
 	return err;
-      assert (hostinfocnt == HOST_BASIC_INFO_COUNT);
+      assert_backtrace (hostinfocnt == HOST_BASIC_INFO_COUNT);
     }
 
 #define CACHE(test) ({ __label__ here; host_type = &&here; \

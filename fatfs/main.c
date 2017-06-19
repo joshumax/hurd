@@ -189,7 +189,7 @@ fetch_root ()
       break;
 
     default:
-      assert(!"don't know how to set size of root dir");
+      assert_backtrace (!"don't know how to set size of root dir");
     };
 
   /* The magic vi_key {0, 1} for the root directory is distinguished
@@ -197,14 +197,14 @@ fetch_root ()
      normal virtual inode keys (in the dir_inode value).  Enter the
      disknode into the inode table.  */
   err = vi_new ((struct vi_key) {0, 1}, &inum, &ctx.inode);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Allocate a node for the root directory disknode in
      diskfs_root_node.  */
   if (!err)
     err = diskfs_cached_lookup_context (inum, &diskfs_root_node, &ctx);
 
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   pthread_mutex_unlock (&diskfs_root_node->lock);
 }

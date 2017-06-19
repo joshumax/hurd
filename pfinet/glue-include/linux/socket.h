@@ -111,14 +111,14 @@ extern inline int		/* Does not modify IOV.  */
 memcpy_fromiovecend (unsigned char *kdata, struct iovec *iov,
 		     int offset, int len)
 {
-  assert (offset + len <= iov->iov_len);
+  assert_backtrace (offset + len <= iov->iov_len);
   memcpy (kdata, iov->iov_base + offset, len);
   return 0;
 }
 extern inline int		/* Modifies IOV to consume LEN bytes.  */
 memcpy_fromiovec (unsigned char *kdata, struct iovec *iov, int len)
 {
-  assert (len <= iov->iov_len);
+  assert_backtrace (len <= iov->iov_len);
   memcpy (kdata, iov->iov_base, len);
   iov->iov_base += len;
   iov->iov_len -= len;
@@ -127,7 +127,7 @@ memcpy_fromiovec (unsigned char *kdata, struct iovec *iov, int len)
 extern inline void		/* Modifies IOV to consume LEN bytes.  */
 memcpy_tokerneliovec (struct iovec *iov, unsigned char *kdata, int len)
 {
-  assert (len <= iov->iov_len);
+  assert_backtrace (len <= iov->iov_len);
   memcpy (iov->iov_base, kdata, len);
   iov->iov_base += len;
   iov->iov_len -= len;

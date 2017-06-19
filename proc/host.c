@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <hurd/exec.h>
 #include <unistd.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <version.h>
 #include <sys/mman.h>
 
@@ -359,7 +359,7 @@ initialize_version_info (void)
 
   err = host_info (mach_host_self (), HOST_BASIC_INFO,
 		   (host_info_t) &info, &n);
-  assert (! err);
+  assert_backtrace (! err);
   snprintf (uname_info.machine, sizeof uname_info.machine, "%s-%s",
 	    mach_cpu_types[info.cpu_type],
 	    mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
@@ -367,11 +367,11 @@ initialize_version_info (void)
   /* Notice Mach's and our own version and initialize server version
      variables. */
   server_versions = malloc (sizeof (struct server_version) * 10);
-  assert (server_versions);
+  assert_backtrace (server_versions);
   server_versions_nalloc = 10;
 
   err = host_kernel_version (mach_host_self (), kv);
-  assert (! err);
+  assert_backtrace (! err);
   /* Make sure the result is null-terminated, as the kernel doesn't
      guarantee it.  */
   kv[sizeof (kv) - 1] = '\0';
@@ -382,14 +382,14 @@ initialize_version_info (void)
   if (p)
     *p = '\0';
   kernel_name = strdup (p ? kv : "mach");
-  assert (kernel_name);
+  assert_backtrace (kernel_name);
   kernel_version = strdup (p ? p + 1 : kv);
-  assert (kernel_version);
+  assert_backtrace (kernel_version);
 
   server_versions[0].name = strdup ("proc");
-  assert (server_versions[0].name);
+  assert_backtrace (server_versions[0].name);
   server_versions[0].version = strdup (HURD_VERSION);
-  assert (server_versions[0].version);
+  assert_backtrace (server_versions[0].version);
 
   nserver_versions = 1;
 

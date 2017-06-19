@@ -20,7 +20,7 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <mach.h>
 #include <string.h>
 #include <strings.h>
@@ -115,12 +115,12 @@ page_read_file_direct (struct file_direct *fdp,
   char *page;
   mach_msg_type_number_t nread;
 
-  assert (page_aligned (offset));
-  assert (size == vm_page_size);
+  assert_backtrace (page_aligned (offset));
+  assert_backtrace (size == vm_page_size);
 
   offset >>= fdp->bshift;
 
-  assert (offset + (size >> fdp->bshift) <= fdp->fd_size);
+  assert_backtrace (offset + (size >> fdp->bshift) <= fdp->fd_size);
 
   /* Find the run containing the beginning of the page.  */
   for (r = fdp->runs; offset > r->length; ++r)
@@ -179,12 +179,12 @@ page_write_file_direct(struct file_direct *fdp,
   error_t err;
   int wrote;
 
-  assert (page_aligned (offset));
-  assert (size == vm_page_size);
+  assert_backtrace (page_aligned (offset));
+  assert_backtrace (size == vm_page_size);
 
   offset >>= fdp->bshift;
 
-  assert (offset + (size >> fdp->bshift) <= fdp->fd_size);
+  assert_backtrace (offset + (size >> fdp->bshift) <= fdp->fd_size);
 
   /* Find the run containing the beginning of the page.  */
   for (r = fdp->runs; offset > r->length; ++r)
@@ -251,7 +251,7 @@ add_paging_file(master_device_port, file_name, linux_signature)
   natural_t count;
   char *devname = file_name;
 
-  assert (linux_signature == 0);
+  assert_backtrace (linux_signature == 0);
 
   if (!strncmp (file_name, "/dev/", 5))
     devname += 5;

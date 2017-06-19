@@ -147,7 +147,7 @@ _sock_norefs (struct sock *sock)
 {
   /* A sock should never have an address when it has 0 refs, as the
      address should hold a reference to the sock!  */
-  assert (sock->addr == NULL);
+  assert_backtrace (sock->addr == NULL);
   pthread_mutex_unlock (&sock->lock);	/* Unlock so sock_free can do stuff.  */
   sock_free (sock);
 }
@@ -249,7 +249,7 @@ addr_clean (void *vaddr)
   /* ADDR should never have a socket bound to it at this point, as it should
      have been removed by addr_unbind dropping the socket's weak reference
      it.  */
-  assert (addr->sock == NULL);
+  assert_backtrace (addr->sock == NULL);
 }
 
 /* Return a new address, not connected to any socket yet, ADDR.  */
@@ -307,7 +307,7 @@ sock_bind (struct sock *sock, struct addr *addr)
 	     zero because whoever's calling us should be holding a ref.  */
 	  sock->refs--;
 	  ports_port_deref_weak (old_addr);
-	  assert (sock->refs > 0);	/* But make sure... */
+	  assert_backtrace (sock->refs > 0);	/* But make sure... */
 	}
     }
 
@@ -394,7 +394,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	    || (rd->flags & PFLOCAL_SOCK_SHUTDOWN_READ)))
 	{
 	  struct pipe *pipe = rd->read_pipe;
-	  assert (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
+	  assert_backtrace (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
 	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
 	}

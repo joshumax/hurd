@@ -58,7 +58,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   struct ext2_group_desc *gdp;
   ino_t inum = np->cache_id;
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   ext2_debug ("freeing inode %u", inum);
 
@@ -125,7 +125,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   pthread_spin_lock (&global_lock);
 
 repeat:
-  assert (bh == NULL);
+  assert_backtrace (bh == NULL);
   gdp = NULL;
   i = 0;
 
@@ -267,7 +267,7 @@ repeat:
   sblock_dirty = 1;
 
  sync_out:
-  assert (bh == NULL);
+  assert_backtrace (bh == NULL);
   pthread_spin_unlock (&global_lock);
   alloc_sync (0);
 
@@ -298,7 +298,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   struct stat *st;
   ino_t inum;
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   inum = ext2_alloc_inode (dir->cache_id, mode);
 

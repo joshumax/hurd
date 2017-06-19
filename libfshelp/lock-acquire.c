@@ -19,7 +19,7 @@
 
 /* Written by Michael I. Bushnell.  */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <sys/file.h>
 
 #include "fshelp.h"
@@ -60,9 +60,9 @@ fshelp_acquire_lock (struct lock_box *box, int *user, pthread_mutex_t *mut,
       if (*user & LOCK_UN)
 	return 0;
 
-      assert (*user == box->type ||
+      assert_backtrace (*user == box->type ||
 	      (*user == LOCK_SH && box->type == (LOCK_SH | LOCK_EX)));
-      assert (*user == LOCK_SH || *user == LOCK_EX ||
+      assert_backtrace (*user == LOCK_SH || *user == LOCK_EX ||
 	      *user == (LOCK_SH | LOCK_EX));
 
       if (*user == LOCK_SH)
@@ -153,10 +153,10 @@ fshelp_acquire_lock (struct lock_box *box, int *user, pthread_mutex_t *mut,
 	    return EINTR;
 	}
 
-      assert ((flags & LOCK_SH) || (flags & LOCK_EX));
+      assert_backtrace ((flags & LOCK_SH) || (flags & LOCK_EX));
       if (flags & LOCK_SH)
 	{
-	  assert (!(box->type & LOCK_EX));
+	  assert_backtrace (!(box->type & LOCK_EX));
 	  *user = LOCK_SH;
 	  box->type = LOCK_SH;
 	  box->shcount++;
@@ -182,7 +182,7 @@ fshelp_acquire_lock (struct lock_box *box, int *user, pthread_mutex_t *mut,
 	    }
 	  if (*user == LOCK_SH)
 	    {
-	      assert (box->shcount == 1);
+	      assert_backtrace (box->shcount == 1);
 	      box->shcount = 0;
 	    }
 	  box->type = LOCK_EX;

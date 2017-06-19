@@ -91,7 +91,7 @@ netfs_node_norefs (struct node *node)
 
   if (nn->dir)
     {
-      assert (nn->dir->num_live_entries == 0);
+      assert_backtrace (nn->dir->num_live_entries == 0);
       ftpfs_dir_free (nn->dir);
     }
 

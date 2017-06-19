@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/mman.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -107,7 +107,7 @@ deallocate_buffer (struct hurd_slab_space *space, void *buffer, size_t size)
 static void
 insert_slab (struct hurd_slab_space *space, struct hurd_slab *slab)
 {
-  assert (slab->refcount == 0);
+  assert_backtrace (slab->refcount == 0);
   if (space->slab_first == 0)
     space->slab_first = space->slab_last = slab;
   else
@@ -214,7 +214,7 @@ init_space (hurd_slab_space_t space)
   /* If SIZE is so big that one object can not fit into a page
      something gotta be really wrong.  */ 
   size = (size + alignment - 1) & ~(alignment - 1);
-  assert (size <= (space->slab_size 
+  assert_backtrace (size <= (space->slab_size 
 		   - sizeof (struct hurd_slab) 
 		   - sizeof (union hurd_bufctl)));
 
@@ -488,7 +488,7 @@ put_on_slab_list (struct hurd_slab *slab, union hurd_bufctl *bufctl)
   bufctl->next = slab->free_list;
   slab->free_list = bufctl;
   slab->refcount--;
-  assert (slab->refcount >= 0);
+  assert_backtrace (slab->refcount >= 0);
 }
 
 
@@ -499,7 +499,7 @@ hurd_slab_dealloc (hurd_slab_space_t space, void *buffer)
   struct hurd_slab *slab;
   union hurd_bufctl *bufctl;
 
-  assert (space->initialized);
+  assert_backtrace (space->initialized);
 
   pthread_mutex_lock (&space->lock);
 

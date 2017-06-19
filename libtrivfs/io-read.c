@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include "trivfs_io_S.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
@@ -28,6 +28,6 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  off_t off,
 		  mach_msg_type_number_t amt)
 {
-  assert (!trivfs_support_read);
+  assert_backtrace (!trivfs_support_read);
   return EOPNOTSUPP;
 }

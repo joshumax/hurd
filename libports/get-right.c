@@ -20,7 +20,7 @@
 
 #include "ports.h"
 #include <mach/notify.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 mach_port_t
 ports_get_right (void *port)
@@ -49,7 +49,7 @@ ports_get_right (void *port)
 					    pi->port_right,
 					    MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					    &foo);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       if (foo != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), foo);
     }

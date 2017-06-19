@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <argp.h>
 #include <error.h>
 #include "auth_S.h"
@@ -359,7 +359,7 @@ believe it has restricted them to different identities or no identity at all.\
 
   /* Create the initial root auth handle.  */
   err = create_authhandle (&firstauth);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   idvec_add (&firstauth->euids, 0);
   idvec_add (&firstauth->auids, 0);
   idvec_add (&firstauth->auids, 0);
@@ -370,7 +370,7 @@ believe it has restricted them to different identities or no identity at all.\
   authport = ports_get_right (firstauth);
   err = mach_port_insert_right (mach_task_self (), authport, authport,
 				MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   ports_port_deref (firstauth);
 
   /* Stash our original auth port for later use.  */

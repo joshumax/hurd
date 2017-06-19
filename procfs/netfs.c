@@ -110,7 +110,7 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
   if (err)
     return err;
 
-  assert (contents_len == np->nn_stat.st_size);
+  assert_backtrace (contents_len == np->nn_stat.st_size);
   memcpy (buf, contents, contents_len);
   return 0;
 }
@@ -172,7 +172,7 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
     return err;
 
   /* We depend on the fact that CONTENTS is terminated. */
-  assert (contents_len == 0 || contents[contents_len - 1] == '\0');
+  assert_backtrace (contents_len == 0 || contents[contents_len - 1] == '\0');
 
   /* Skip to the first requested entry. */
   while (contents_len && entry--)

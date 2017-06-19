@@ -49,7 +49,7 @@ proclist_get_contents (void *hook, char **contents, ssize_t *contents_len)
       for (i=0; i < num_pids; i++)
 	{
 	  int n = sprintf (*contents + *contents_len, "%d", pids[i]);
-	  assert (n >= 0);
+	  assert_backtrace (n >= 0);
 	  *contents_len += (n + 1);
 	}
     }
@@ -68,7 +68,7 @@ proclist_lookup (void *hook, const char *name, struct node **np)
   pid_t pid;
 
   /* Self-lookups should not end up here. */
-  assert (name[0]);
+  assert_backtrace (name[0]);
 
   /* No leading zeros allowed */
   if (name[0] == '0' && name[1])

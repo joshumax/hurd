@@ -65,7 +65,7 @@ netfs_file_get_storage_info (struct iouser *cred,
       if (*data == MAP_FAILED)
 	return errno;
       *data_len = fmt (name_len) + 1;
-      assert (*data_len == name_len);
+      assert_backtrace (*data_len == name_len);
     }
 
   /* Now fill in the file handle data in hexadecimal.  */
@@ -86,12 +86,12 @@ netfs_file_get_storage_info (struct iouser *cred,
   *num_ports = 0;
   *ports_type = MACH_MSG_TYPE_COPY_SEND;
 
-  assert (*num_offsets >= 2);	/* mig always gives us some */
+  assert_backtrace (*num_offsets >= 2);	/* mig always gives us some */
   *num_offsets = 2;
   (*offsets)[0] = 0;
   (*offsets)[1] = np->nn_stat.st_size;
 
-  assert (*num_ints >= 6);	/* mig always gives us some */
+  assert_backtrace (*num_ints >= 6);	/* mig always gives us some */
   *num_ints = 1;
   (*ints)[0] = STORAGE_NETWORK;
   (*ints)[1] = 0;		/* XXX readonly if we supported it */

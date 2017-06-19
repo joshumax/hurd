@@ -45,7 +45,7 @@ allocate_mod_map (void)
       mod_map_size = sblock->s_blocks_count >> 3;
       modified_global_blocks = mmap (0, mod_map_size, PROT_READ|PROT_WRITE,
 				     MAP_ANON, 0, 0);
-      assert (modified_global_blocks != (void *) -1);
+      assert_backtrace (modified_global_blocks != (void *) -1);
     }
   else
     modified_global_blocks = 0;
@@ -161,7 +161,7 @@ get_hypermetadata (void)
   if (zeroblock == 0)
     {
       zeroblock = (vm_address_t) mmap (0, block_size, PROT_READ, MAP_ANON, 0, 0);
-      assert (zeroblock != (vm_address_t) MAP_FAILED);
+      assert_backtrace (zeroblock != (vm_address_t) MAP_FAILED);
     }
 }
 

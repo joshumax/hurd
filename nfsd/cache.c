@@ -22,7 +22,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <hurd/fsys.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 #include <pthread.h>
 #include <hurd/io.h>
@@ -59,7 +59,7 @@ idspec_compare (struct idspec *i, int nuids, int ngids,
       || i->ngids != ngids)
     return 0;
 
-  assert (sizeof (int) == sizeof (uid_t));
+  assert_backtrace (sizeof (int) == sizeof (uid_t));
 
   if (bcmp (i->uids, uids, nuids * sizeof (uid_t))
       || bcmp (i->gids, gids, ngids * sizeof (gid_t)))
@@ -103,7 +103,7 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
 	return i;
       }
 
-  assert (sizeof (uid_t) == sizeof (int));
+  assert_backtrace (sizeof (uid_t) == sizeof (int));
   i = malloc (sizeof (struct idspec));
   i->nuids = nuids;
   i->ngids = ngids;
@@ -202,7 +202,7 @@ void
 cred_ref (struct idspec *i)
 {
   pthread_spin_lock (&idhashlock);
-  assert (i->references);
+  assert_backtrace (i->references);
   i->references++;
   pthread_spin_unlock (&idhashlock);
 }

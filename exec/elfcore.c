@@ -40,7 +40,7 @@
 #endif
 
 #include <mach/thread_status.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #ifdef i386_THREAD_STATE
 # define ELF_MACHINE		EM_386
@@ -56,9 +56,9 @@ fetch_thread_regset (thread_t thread, prgregset_t *gregs)
     prgregset_t gregs;
   } *u = (void *) gregs;
   mach_msg_type_number_t count = i386_THREAD_STATE_COUNT;
-  assert (sizeof (struct i386_thread_state) < sizeof (prgregset_t));
-  assert (offsetof (struct i386_thread_state, gs) == REG_GS * 4);
-  assert (offsetof (struct i386_thread_state, eax) == REG_EAX * 4);
+  assert_backtrace (sizeof (struct i386_thread_state) < sizeof (prgregset_t));
+  assert_backtrace (offsetof (struct i386_thread_state, gs) == REG_GS * 4);
+  assert_backtrace (offsetof (struct i386_thread_state, eax) == REG_EAX * 4);
 
   (void) thread_get_state (thread, i386_THREAD_STATE,
 			   (thread_state_t) &u->state, &count);
@@ -82,7 +82,7 @@ fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 				  (thread_state_t) &st, &count);
   if (err == 0 && st.initialized)
     {
-      assert (sizeof *fpregs >= sizeof st.hw_state);
+      assert_backtrace (sizeof *fpregs >= sizeof st.hw_state);
       memcpy (fpregs, st.hw_state, sizeof st.hw_state);
     }
 }
@@ -96,7 +96,7 @@ static inline void
 fetch_thread_regset (thread_t thread, prgregset_t *gregs)
 {
   mach_msg_type_number_t count = ALPHA_THREAD_STATE_COUNT;
-  assert (sizeof (struct alpha_thread_state) <= sizeof (prgregset_t));
+  assert_backtrace (sizeof (struct alpha_thread_state) <= sizeof (prgregset_t));
   (void) thread_get_state (thread, ALPHA_THREAD_STATE,
 			   (thread_state_t) gregs, &count);
   /* XXX
@@ -110,7 +110,7 @@ static inline void
 fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 {
   mach_msg_type_number_t count = ALPHA_FLOAT_STATE_COUNT;
-  assert (sizeof (struct alpha_float_state) == sizeof *fpregs);
+  assert_backtrace (sizeof (struct alpha_float_state) == sizeof *fpregs);
   (void) thread_get_state (thread, ALPHA_FLOAT_STATE,
 			   (thread_state_t) fpregs, &count);
 }

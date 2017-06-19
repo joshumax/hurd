@@ -29,7 +29,7 @@
 #include <argp.h>
 #include <argz.h>
 #include <sys/mman.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 
 #include <version.h>
@@ -152,7 +152,7 @@ template_make_file_name (const char *template,
 	      break;
 
 	    default:
-	      assert (!"reached!");
+	      assert_backtrace (!"reached!");
 	    }
 	  specifier = 0;
 	}
@@ -162,7 +162,7 @@ template_make_file_name (const char *template,
 	fprintf (stream, "%c", *t);
     }
 
-  assert (! specifier);
+  assert_backtrace (! specifier);
 
   fprintf (stream, "%c", 0);
   fclose (stream);

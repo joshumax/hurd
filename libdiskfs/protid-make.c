@@ -17,7 +17,7 @@
 
 #include "priv.h"
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /* Build and return in CRED a protid which has no user identification, for
    peropen PO.  On success, consume a reference to PO.  */
@@ -48,11 +48,11 @@ diskfs_finish_protid (struct protid *cred, struct iouser *user)
     err = iohelp_create_simple_iouser (&cred->user, 0, 0);
   else
     err = iohelp_dup_iouser (&cred->user, user);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = mach_port_move_member (mach_task_self (), cred->pi.port_right, 
 			       diskfs_port_bucket->portset);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 }
 
 /* Create and return a protid for an existing peropen PO in CRED for

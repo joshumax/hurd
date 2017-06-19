@@ -73,7 +73,7 @@ _treefs_s_dir_lookup (struct treefs_handle *h,
     {
       char *nextname;
 
-      assert (!lastcomp);
+      assert_backtrace (!lastcomp);
       
       /* Find the name of the next pathname component */
       nextname = index (path, '/');

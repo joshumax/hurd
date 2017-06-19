@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,7 +146,7 @@ enforced (struct store *store)
 
       if (!err)
 	{
-	  assert (sizes_len == DEV_GET_RECORDS_COUNT);
+	  assert_backtrace (sizes_len == DEV_GET_RECORDS_COUNT);
 
 	  if (sizes[DEV_GET_RECORDS_RECORD_SIZE] != store->block_size
 	      || (store->runs[0].length !=
@@ -165,7 +165,7 @@ enforced (struct store *store)
 	  if (err)
 	    return EINVAL;
 
-	  assert (sizes_len == DEV_GET_SIZE_COUNT);
+	  assert_backtrace (sizes_len == DEV_GET_SIZE_COUNT);
 
 	  if (sizes[DEV_GET_SIZE_RECORD_SIZE] != store->block_size
 	      || (store->runs[0].length !=

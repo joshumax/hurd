@@ -20,7 +20,7 @@
 
 #include <errno.h>
 #include <dirent.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <mach.h>
 #include <pthread.h>
 
@@ -88,14 +88,14 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
 	  }
 	while (dent && !err);
 	if (err)
-	  assert ("Unexpected error");	/* XXX */
+	  assert_backtrace ("Unexpected error");	/* XXX */
       }
       break;
     case DIR_CHANGED_NEW:
       {
 	err = add_one (cons, name);
 	if (err)
-	  assert ("Unexpected error");	/* XXX */
+	  assert_backtrace ("Unexpected error");	/* XXX */
       }
       break;
     case DIR_CHANGED_UNLINK:
@@ -120,7 +120,7 @@ cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
       break;
     case DIR_CHANGED_RENUMBER:
     default:
-      assert ("Unexpected dir-changed type.");
+      assert_backtrace ("Unexpected dir-changed type.");
       pthread_mutex_unlock (&cons->lock);
       return EINVAL;
     }

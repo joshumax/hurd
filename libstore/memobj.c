@@ -22,7 +22,7 @@
 #include <hurd/sigpreempt.h>
 #include <sys/mman.h>
 #include <string.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 
 /* Return a new store in STORE referring to the memory object MEMOBJ.
@@ -101,7 +101,7 @@ memobj_memcpy (memory_object_t memobj,
   jmp_buf buf;
   void fault (int signo, long int sigcode, struct sigcontext *scp)
     {
-      assert (scp->sc_error == EKERN_MEMORY_ERROR);
+      assert_backtrace (scp->sc_error == EKERN_MEMORY_ERROR);
       err = EIO;
       to_copy -= sigcode - window;
       siglongjmp (buf, 1);

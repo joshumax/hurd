@@ -31,10 +31,10 @@ diskfs_clear_directory (struct node *dp,
 
   /* Find and remove the `.' entry. */
   err = diskfs_lookup (dp, ".", REMOVE, &np, ds, cred);
-  assert (err != ENOENT);
+  assert_backtrace (err != ENOENT);
   if (!err)
     {
-      assert (np == dp);
+      assert_backtrace (np == dp);
       err = diskfs_dirremove (dp, np, ".", ds);
       diskfs_nrele (np);
     }
@@ -49,10 +49,10 @@ diskfs_clear_directory (struct node *dp,
 
   /* Find and remove the `..' entry. */
   err = diskfs_lookup (dp, "..", REMOVE | SPEC_DOTDOT, &np, ds, cred);
-  assert (err != ENOENT);
+  assert_backtrace (err != ENOENT);
   if (!err)
     {
-      assert (np == pdp);
+      assert_backtrace (np == pdp);
       err = diskfs_dirremove (dp, np, "..", ds);
     }
   else

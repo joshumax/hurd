@@ -47,7 +47,7 @@ diskfs_S_io_reauthenticate (struct protid *cred,
     }
 
   newright = ports_get_send_right (newcred);
-  assert (newright != MACH_PORT_NULL);
+  assert_backtrace (newright != MACH_PORT_NULL);
 
   /* Release the node lock while blocking on the auth server and client.  */
   pthread_mutex_unlock (&cred->po->np->lock);

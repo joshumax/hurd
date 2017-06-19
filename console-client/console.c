@@ -23,7 +23,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <error.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include <pthread.h>
 #if HAVE_DAEMON

@@ -22,7 +22,7 @@
 
 #include <termios.h>
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <string.h>

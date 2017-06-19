@@ -608,7 +608,7 @@ void
 pager_notify_evict (struct user_pager_info *pager,
 		    vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  assert_backtrace (!"unrequested notification on eviction");
 }
 
 /* Grow the disk allocated to locked node NODE to be at least SIZE
@@ -621,7 +621,7 @@ error_t
 diskfs_grow (struct node *node, loff_t size, struct protid *cred)
 {
   diskfs_check_readonly ();
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
   
   if (size > node->allocsize)
     {
@@ -718,7 +718,7 @@ inline error_t
 pager_report_extent (struct user_pager_info *pager,
                      vm_address_t *offset, vm_size_t *size)
 {
-  assert (pager->type == FAT || pager->type == FILE_DATA);
+  assert_backtrace (pager->type == FAT || pager->type == FILE_DATA);
 
   *offset = 0;
 
@@ -815,7 +815,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   mach_port_t right;
   
-  assert (S_ISDIR (node->dn_stat.st_mode)
+  assert_backtrace (S_ISDIR (node->dn_stat.st_mode)
 	  || S_ISREG (node->dn_stat.st_mode)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
   

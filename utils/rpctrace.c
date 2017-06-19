@@ -24,7 +24,7 @@
 #include <hurd/ports.h>
 #include <hurd/ihash.h>
 #include <mach/message.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -321,7 +321,7 @@ destroy_receiver_info (struct receiver_info *info)
   while (send_wrapper)
     {
       struct sender_info *next = send_wrapper->next;
-      assert (
+      assert_backtrace (
 	refcounts_hard_references (&TRACED_INFO (send_wrapper)->pi.refcounts)
 	== 1);
       /* Reset the receive_right of the send wrapper in advance to avoid
@@ -350,7 +350,7 @@ new_send_wrapper (struct receiver_info *receive, task_t task,
   /* Create a new wrapper port that forwards to *RIGHT.  */
   err = ports_create_port (traced_class, traced_bucket,
 			   sizeof *info, &info);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   TRACED_INFO (info)->name = 0;
   asprintf (&TRACED_INFO (info)->name, "  %lu<--%lu(pid%d)", 
@@ -385,7 +385,7 @@ new_send_once_wrapper (mach_port_t right, mach_port_t *wrapper_right)
       /* Create a new wrapper port that forwards to *RIGHT.  */
       err = ports_create_port (traced_class, traced_bucket,
 			       sizeof *info, &info);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       TRACED_INFO (info)->name = 0;
     }
 
@@ -422,7 +422,7 @@ unlink_sender_info (void *pi)
       prev = &info->receive_right->next;
       while (*prev != info && *prev)
 	prev = &((*prev)->next);
-      assert (*prev);
+      assert_backtrace (*prev);
       *prev = info->next;
 
       info->next = NULL;
@@ -437,7 +437,7 @@ traced_clean (void *pi)
 {
   struct sender_info *info = pi;
 
-  assert (TRACED_INFO (info)->type == MACH_MSG_TYPE_MOVE_SEND);
+  assert_backtrace (TRACED_INFO (info)->type == MACH_MSG_TYPE_MOVE_SEND);
   free (TRACED_INFO (info)->name);
 
   if (info->receive_right)
@@ -629,7 +629,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	  /* If the send right is moved to the task with the receive right,
 	   * copy the send right in 'forward' of receiver info to the destination.
 	   * Otherwise, copy the send right to the send wrapper. */
-	  assert (send_wrapper->receive_right);
+	  assert_backtrace (send_wrapper->receive_right);
 	  if (dest == send_wrapper->receive_right->task)
 	    {
 	      *right = send_wrapper->receive_right->forward;
@@ -678,7 +678,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	return receiver_info->name;
       else
 	{
-	  assert (*right == receiver_info->forward);
+	  assert_backtrace (*right == receiver_info->forward);
 	  mach_port_deallocate (mach_task_self (), *right);
 	  send_wrapper = get_send_wrapper (receiver_info, dest, right);
 	  *type = MACH_MSG_TYPE_MAKE_SEND;
@@ -703,7 +703,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
        * We wrap the receive right A in the send wrapper and move the receive
        * right B to the destination task.  */
       {
-	assert (req);
+	assert_backtrace (req);
 	receiver_info = hurd_ihash_find (&traced_names, *right);
 	if (receiver_info)
 	  {
@@ -740,7 +740,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	    hurd_ihash_locp_remove (&traced_names, receiver_info->locp);
 
 	    send_wrapper2 = get_send_wrapper (receiver_info, dest, &rr);
-	    assert (
+	    assert_backtrace (
 	      refcounts_hard_references (
 		&TRACED_INFO (send_wrapper2)->pi.refcounts)
 	      == 1);
@@ -793,7 +793,7 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
       }
 
     default:
-      assert (!"??? bogus port type from kernel!");
+      assert_backtrace (!"??? bogus port type from kernel!");
     }
   return 0;
 }
@@ -860,8 +860,8 @@ print_contents (mach_msg_header_t *inp,
 	  mach_msg_type_name_t newtypes[nelt];
 	  int poly;
 
-	  assert (inp->msgh_bits & MACH_MSGH_BITS_COMPLEX);
-	  assert (eltsize == sizeof (mach_port_t));
+	  assert_backtrace (inp->msgh_bits & MACH_MSGH_BITS_COMPLEX);
+	  assert_backtrace (eltsize == sizeof (mach_port_t));
 
 	  poly = 0;
 	  for (i = 0; i < nelt; ++i)
@@ -904,10 +904,10 @@ print_contents (mach_msg_header_t *inp,
 						      portnames[i],
 						      portnames[i],
 						      newtypes[i]);
-			assert_perror (err);
+			assert_perror_backtrace (err);
 		      }
 		    else
-		      assert (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND_ONCE);
+		      assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND_ONCE);
 		}
 	      else
 		{
@@ -918,17 +918,17 @@ print_contents (mach_msg_header_t *inp,
 			err = mach_port_mod_refs (mach_task_self (),
 						  portnames[i],
 						  MACH_PORT_RIGHT_SEND, +1);
-			assert_perror (err);
+			assert_perror_backtrace (err);
 			break;
 		      case MACH_MSG_TYPE_MAKE_SEND:
 			err = mach_port_insert_right (mach_task_self (),
 						      portnames[i],
 						      portnames[i],
 						      newtypes[i]);
-			assert_perror (err);
+			assert_perror_backtrace (err);
 			break;
 		      default:
-			assert (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND);
+			assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND);
 			break;
 		      }
 
@@ -1017,8 +1017,8 @@ wrap_new_thread (mach_msg_header_t *inp, struct req_info *req)
   struct sender_info *send_wrapper = ports_lookup_port (traced_bucket,
 							reply->child_thread, 0);
 
-  assert (send_wrapper);
-  assert (send_wrapper->receive_right);
+  assert_backtrace (send_wrapper);
+  assert_backtrace (send_wrapper->receive_right);
   thread_port = send_wrapper->receive_right->forward;
 
   err = mach_port_insert_right (mach_task_self (), reply->child_thread,
@@ -1058,8 +1058,8 @@ wrap_new_task (mach_msg_header_t *inp, struct req_info *req)
   /* The send wrapper for the new task itself. */
   struct sender_info *task_wrapper2;
 
-  assert (task_wrapper1);
-  assert (task_wrapper1->receive_right);
+  assert_backtrace (task_wrapper1);
+  assert_backtrace (task_wrapper1->receive_right);
 
   task_port = task_wrapper1->receive_right->forward;
   add_task (task_port);
@@ -1138,7 +1138,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
   else
     info = ports_lookup_port (traced_bucket, inp->msgh_local_port, NULL);
 
-  assert (info);
+  assert_backtrace (info);
 
   /* A notification message from the kernel appears to have been sent
      with a send-once right, even if there have never really been any.  */
@@ -1156,7 +1156,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	   * If not, we destroy it here. */
 	  if (receiver_info)
 	    {
-	      assert (n->not_port == receiver_info->forward);
+	      assert_backtrace (n->not_port == receiver_info->forward);
 	      destroy_receiver_info (receiver_info);
 	    }
 
@@ -1190,8 +1190,8 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	}
     }
 
-  assert (info != (void *) notify_pi);
-  assert (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == info->type);
+  assert_backtrace (info != (void *) notify_pi);
+  assert_backtrace (MACH_MSGH_BITS_LOCAL (inp->msgh_bits) == info->type);
 
   complex = inp->msgh_bits & MACH_MSGH_BITS_COMPLEX;
 
@@ -1221,7 +1221,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	    info = new_send_once_wrapper (inp->msgh_local_port,
 					  &inp->msgh_local_port);
 	    reply_type = MACH_MSG_TYPE_MAKE_SEND_ONCE;
-	    assert (inp->msgh_local_port);
+	    assert_backtrace (inp->msgh_local_port);
 
 	    if (TRACED_INFO (info)->name == 0)
 	      {
@@ -1245,7 +1245,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
       inp->msgh_remote_port = SEND_ONCE_INFO (info)->forward;
     else
       {
-	assert (SEND_INFO (info)->receive_right);
+	assert_backtrace (SEND_INFO (info)->receive_right);
 	inp->msgh_remote_port = SEND_INFO (info)->receive_right->forward;
       }
     if (this_type == MACH_MSG_TYPE_MOVE_SEND_ONCE)
@@ -1282,7 +1282,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	{
 	  struct req_info *req = remove_request (inp->msgh_id - 100,
 						 inp->msgh_remote_port);
-	  assert (req);
+	  assert_backtrace (req);
 	  req->is_req = FALSE;
 	  /* This sure looks like an RPC reply message.  */
 	  mig_reply_header_t *rh = (void *) inp;
@@ -1310,10 +1310,10 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	  /* It's a notification message. */
 	  if (inp->msgh_id <= 72 && inp->msgh_id >= 64)
 	    {
-	      assert (info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE);
+	      assert_backtrace (info->type == MACH_MSG_TYPE_MOVE_SEND_ONCE);
 	      /* mach_notify_port_destroyed message has a port,
 	       * TODO how do I handle it? */
-	      assert (inp->msgh_id != 69);
+	      assert_backtrace (inp->msgh_id != 69);
 	    }
 
 	  /* If it's mach_port RPC,
@@ -1364,7 +1364,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
       mach_msg_destroy (inp);
     }
   else
-    assert_perror (err);
+    assert_perror_backtrace (err);
 
   ports_port_deref (info);
 
@@ -1502,7 +1502,7 @@ print_data (mach_msg_type_name_t type,
   switch (type)
     {
     case MACH_MSG_TYPE_PORT_NAME:
-      assert (eltsize == sizeof (mach_port_t));
+      assert_backtrace (eltsize == sizeof (mach_port_t));
       {
 	mach_msg_type_number_t i;
 	fprintf (ostream, "pn{");
@@ -1631,7 +1631,7 @@ traced_spawn (char **argv, char **envp)
 		     NULL, 0,	/* OSF Mach */
 #endif
 		     0, &traced_task);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   add_task (traced_task);
   /* Declare the new task to be our child.  This is what a fork does.  */
@@ -1654,9 +1654,9 @@ traced_spawn (char **argv, char **envp)
      own real task port.  */
   err = mach_port_insert_right (mach_task_self (), task_wrapper,
 				task_wrapper, MACH_MSG_TYPE_MAKE_SEND);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = task_set_special_port (traced_task, TASK_KERNEL_PORT, task_wrapper);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Now actually run the command they told us to trace.  We do the exec on
      the actual task, so the RPCs to map in the program itself do not get
@@ -1750,7 +1750,7 @@ main (int argc, char **argv, char **envp)
 
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_DEAD_NAME,
 			    &unknown_task);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   if (outfile)
     {
@@ -1767,7 +1767,7 @@ main (int argc, char **argv, char **envp)
   other_class = ports_create_class (0, 0);
   err = ports_create_port (other_class, traced_bucket,
 			   sizeof (*notify_pi), &notify_pi);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   /* Spawn a single thread that will receive intercepted messages, print
      them, and interpose on the ports they carry.  The access to the

@@ -22,7 +22,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+#include "assert-backtrace.h"
 #include <idvec.h>
 #include <grp.h>
 #include <pwd.h>
@@ -258,7 +258,7 @@ verify_id (uid_t id, int is_group, int multiple,
   char sp_lookup_buf[1024];
 
   /* VERIFY_FN should have been defaulted in idvec_verify if necessary.  */
-  assert (verify_fn);
+  assert_backtrace (verify_fn);
 
   if (id != (uid_t) -1)
     do

@@ -29,7 +29,8 @@
 #include <sys/wait.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
+#define assert	assert_backtrace
 
 #include "process_S.h"
 #include <mach/mig_errors.h>

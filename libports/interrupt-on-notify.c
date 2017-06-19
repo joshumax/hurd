@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /* Arrange for hurd_cancel to be called on RPC's thread if OBJECT gets notified
    that any of the things in COND have happened to PORT.  RPC should be an
@@ -176,7 +176,7 @@ ports_interrupt_self_on_notification (void *object,
       break;
   pthread_mutex_unlock (&_ports_lock);
 
-  assert (rpc);
+  assert_backtrace (rpc);
 
   /* We don't have to worry about RPC going away after we dropped the lock
      because we're that thread, and we're still here.  */

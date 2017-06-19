@@ -64,7 +64,7 @@ pager_read_page (struct user_pager_info *upi,
     }
   else
     {
-      assert (upi->type == DISK);
+      assert_backtrace (upi->type == DISK);
       addr = page >> store->log2_block_size;
     }
 
@@ -87,7 +87,7 @@ pager_write_page (struct user_pager_info *pager,
 		  vm_offset_t page,
 		  vm_address_t buf)
 {
-  assert (0);
+  assert_backtrace (0);
 }
 
 /* Never permit unlocks to succeed. */
@@ -102,7 +102,7 @@ void
 pager_notify_evict (struct user_pager_info *pager,
 		    vm_offset_t page)
 {
-  assert (!"unrequested notification on eviction");
+  assert_backtrace (!"unrequested notification on eviction");
 }
 
 /* Tell how big the file is. */
@@ -166,7 +166,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   struct user_pager_info *upi;
   mach_port_t right;
   
-  assert (S_ISDIR (np->dn_stat.st_mode)
+  assert_backtrace (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)
 	  || S_ISLNK (np->dn_stat.st_mode));
   

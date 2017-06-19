@@ -19,13 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 
 void
 _ports_complete_deallocate (struct port_info *pi)
 {
-  assert ((pi->flags & PORT_HAS_SENDRIGHTS) == 0);
+  assert_backtrace ((pi->flags & PORT_HAS_SENDRIGHTS) == 0);
 
   if (MACH_PORT_VALID (pi->port_right))
     {
@@ -38,7 +38,7 @@ _ports_complete_deallocate (struct port_info *pi)
           /* A reference was reacquired through a hash table lookup.
              It's fine, we didn't touch anything yet. */
           /* XXX: This really shouldn't happen.  */
-          assert (! "reacquired reference w/o send rights");
+          assert_backtrace (! "reacquired reference w/o send rights");
           pthread_rwlock_unlock (&_ports_htable_lock);
           return;
         }

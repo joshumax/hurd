@@ -17,7 +17,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <argp.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <stdlib.h>
@@ -151,7 +151,7 @@ S_password_check_user (struct trivfs_protid *cred, uid_t user, char *pw,
   char *getpass (const char *prompt, uid_t id, int is_group,
 		 void *pwd_or_group, void *hook)
     {
-      assert (! is_group && id == user);
+      assert_backtrace (! is_group && id == user);
       return strdup (pw);
     }
 
@@ -199,7 +199,7 @@ S_password_check_group (struct trivfs_protid *cred, uid_t group, char *pw,
   char *getpass (const char *prompt, uid_t id, int is_group,
 		 void *pwd_or_group, void *hook)
     {
-      assert (is_group && id == group);
+      assert_backtrace (is_group && id == group);
       return strdup (pw);
     }
 

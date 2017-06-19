@@ -445,7 +445,7 @@ ext2_free_xattr_block (struct node *np)
       goto cleanup;
     }
 
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   block = disk_cache_block_ref (blkno);
   header = EXT2_XATTR_HEADER (block);
@@ -697,7 +697,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
       /* Allocate and initialize new block */
       block_t goal;
 
-      assert (!diskfs_readonly);
+      assert_backtrace (!diskfs_readonly);
 
       goal = sblock->s_first_data_block + np->dn->info.i_block_group *
 	EXT2_BLOCKS_PER_GROUP (sblock);

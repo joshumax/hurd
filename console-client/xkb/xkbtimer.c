@@ -19,7 +19,7 @@
 
 #include <mach.h>
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "xkb.h"
 #include <timer.h>
@@ -123,7 +123,7 @@ key_timing (void *handle)
   switch (per_key_timers[current_key].enable_status)
     {
     case timer_stopped:
-      assert ("Stopped timer triggered timer event\n");
+      assert_backtrace ("Stopped timer triggered timer event\n");
       break;
     case timer_slowkeys:
       per_key_timers[current_key].enable_timer.expires

@@ -20,7 +20,7 @@
 #include <hurd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 
 #include "ps.h"

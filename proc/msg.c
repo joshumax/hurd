@@ -19,7 +19,7 @@
 #include <hurd.h>
 #include "proc.h"
 #include <hurd/startup.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <stdlib.h>
 #include <stdio.h>
 

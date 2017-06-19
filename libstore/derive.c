@@ -18,7 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <sys/types.h>
 #include <mach.h>
 
@@ -78,10 +78,10 @@ _store_derive (struct store *store)
     {
       while ((1 << store->log2_block_size) < bsize)
 	store->log2_block_size++;
-      assert ((1 << store->log2_block_size) == bsize);
+      assert_backtrace ((1 << store->log2_block_size) == bsize);
 
       while ((bsize << store->log2_blocks_per_page) < vm_page_size)
 	store->log2_blocks_per_page++;
-      assert ((bsize << store->log2_blocks_per_page) == vm_page_size);
+      assert_backtrace ((bsize << store->log2_blocks_per_page) == vm_page_size);
     }
 }

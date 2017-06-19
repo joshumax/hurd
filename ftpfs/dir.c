@@ -30,7 +30,7 @@
 void
 free_entry (struct ftpfs_dir_entry *e)
 {
-  assert (e->deleted);
+  assert_backtrace (e->deleted);
   free (e->name);
   if (e->symlink_target)
     free (e->symlink_target);

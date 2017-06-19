@@ -106,7 +106,7 @@ diskfs_S_dir_link (struct protid *dircred,
   /* Attach it */
   if (tnp)
     {
-      assert (!excl);
+      assert_backtrace (!excl);
       err = diskfs_dirrewrite (dnp, tnp, np, name, ds);
       if (!err)
 	{

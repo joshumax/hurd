@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <assert-backtrace.h>
 
 struct ksmap {
   int keysym;
@@ -13,7 +13,7 @@ find_ucs (int keysym, struct ksmap *first, struct ksmap *last)
 {
   struct ksmap *middle = first + (last - first) / 2;
 
-  assert (first <= last);
+  assert_backtrace (first <= last);
 
   if (middle->keysym == keysym)
     return middle->ucs; /* base case: needle found. */

@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <error.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <fcntl.h>
 #include <argp.h>
 #include <argz.h>

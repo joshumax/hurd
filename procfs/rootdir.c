@@ -254,7 +254,7 @@ rootdir_gc_loadavg (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
-  assert (cnt == HOST_LOAD_INFO_COUNT);
+  assert_backtrace (cnt == HOST_LOAD_INFO_COUNT);
   *contents_len = asprintf (contents,
       "%.2f %.2f %.2f 1/0 0\n",
       hli.avenrun[0] / (double) LOAD_SCALE,
@@ -301,7 +301,7 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     goto out;
 
-  assert (cnt == HOST_BASIC_INFO_COUNT);
+  assert_backtrace (cnt == HOST_BASIC_INFO_COUNT);
   fprintf (m,
       "MemTotal: %14lu kB\n"
       "MemFree:  %14lu kB\n"

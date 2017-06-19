@@ -20,7 +20,7 @@
 
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <hurd/ihash.h>
 
@@ -39,7 +39,7 @@ ports_claim_right (void *portstruct)
   hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
   pthread_rwlock_unlock (&_ports_htable_lock);
   err = mach_port_move_member (mach_task_self (), ret, MACH_PORT_NULL);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   pthread_mutex_lock (&_ports_lock);
   pi->port_right = MACH_PORT_NULL;
   if (pi->flags & PORT_HAS_SENDRIGHTS)

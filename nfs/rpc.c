@@ -31,7 +31,7 @@
 #undef malloc			/* Get rid of the sun block.  */
 
 #include <netinet/in.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <errno.h>
 #include <error.h>
 #include <unistd.h>
@@ -107,7 +107,7 @@ initialize_rpc (int program, int version, int rpc_proc,
   *(p++) = htonl (version);
   *(p++) = htonl (rpc_proc);
   
-  assert ((uid == -1) == (gid == -1));
+  assert_backtrace ((uid == -1) == (gid == -1));
 
   if (uid == -1)
     {
@@ -214,7 +214,7 @@ conduct_rpc (void **rpcbuf, int **pp)
 	  return errno;
 	}
       else 
-	assert (cc == nc);
+	assert_backtrace (cc == nc);
       
       /* Wait for reply.  */
       cancel = 0;
@@ -254,7 +254,7 @@ conduct_rpc (void **rpcbuf, int **pp)
   
   /* If the transmition id does not match that in the message,
      something strange happened in rpc_receive_thread.  */
-  assert (*p == xid);
+  assert_backtrace (*p == xid);
   p++;
   
   switch (ntohl (*p))
@@ -376,7 +376,7 @@ rpc_receive_thread (void *arg)
 
   /* Allocate a receive buffer.  */
   buf = malloc (1024 + read_size);
-  assert (buf);
+  assert_backtrace (buf);
 
   while (1)
     {
@@ -416,7 +416,7 @@ rpc_receive_thread (void *arg)
 	  if (r)
 	    {
               buf = malloc (1024 + read_size);
-              assert (buf);
+              assert_backtrace (buf);
 	    }
         }
     }

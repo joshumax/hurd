@@ -41,7 +41,7 @@ mail.local: lmail.o ../libshouldbeinlibc/libshouldbeinlibc.a
 console-run: console-run.o ../libfshelp/libfshelp.a ../libports/libports.a \
 	../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
-runttys: runttys.o
+runttys: runttys.o ../libshouldbeinlibc/libshouldbeinlibc.a
 runttys-LDLIBS = -lutil
 
 runsystem: runsystem.sh

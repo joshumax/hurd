@@ -6,7 +6,7 @@
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <limits.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 #include <errno.h>
 
@@ -105,7 +105,7 @@ interruptible_sleep_on_timeout (struct wait_queue **p, struct timespec *tsp)
   if (c == 0)
     {
       c = malloc (sizeof **condp);
-      assert (c);
+      assert_backtrace (c);
       pthread_cond_init (c, NULL);
       *condp = c;
     }
@@ -134,21 +134,21 @@ wake_up_interruptible (struct wait_queue **p)
 static inline void
 add_wait_queue(struct wait_queue ** p, struct wait_queue * wait)
 {
-  assert (current->next_wait == 0);
+  assert_backtrace (current->next_wait == 0);
   current->next_wait = p;
 }
 
 static inline void
 remove_wait_queue(struct wait_queue ** p, struct wait_queue * wait)
 {
-  assert (current->next_wait == p);
+  assert_backtrace (current->next_wait == p);
   current->next_wait = 0;
 }
 
 static inline void
 schedule (void)
 {
-  assert (current->next_wait);
+  assert_backtrace (current->next_wait);
   interruptible_sleep_on_timeout (current->next_wait, NULL);
 }
 
@@ -201,8 +201,8 @@ schedule_timeout (long timeout)
 static inline int
 send_sig (u_long signo, struct task_struct *task, int priv)
 {
-  assert (signo == SIGPIPE);
-  assert (task == current);
+  assert_backtrace (signo == SIGPIPE);
+  assert_backtrace (task == current);
   return 0;
 }
 

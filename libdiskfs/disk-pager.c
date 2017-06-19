@@ -93,10 +93,10 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
 	     sig, sigcode,
 	     preemptor.first, preemptor.last,
 	     scp->sc_pc, scp->sc_error);
-      assert (scp->sc_error == EKERN_MEMORY_ERROR);
+      assert_backtrace (scp->sc_error == EKERN_MEMORY_ERROR);
       err = pager_get_error (diskfs_disk_pager, sigcode);
-      assert (err);
-      assert_perror (err);
+      assert_backtrace (err);
+      assert_perror_backtrace (err);
     }
 #endif
 
@@ -104,9 +104,9 @@ fault_handler (int sig, long int sigcode, struct sigcontext *scp)
   diskfs_exception_diu = NULL;
 
   /* Fetch the error code from the pager.  */
-  assert (scp->sc_error == EKERN_MEMORY_ERROR);
+  assert_backtrace (scp->sc_error == EKERN_MEMORY_ERROR);
   err = pager_get_error (diskfs_disk_pager, sigcode);
-  assert (err);
+  assert_backtrace (err);
 
   /* Make `diskfault_catch' return the error code.  */
   longjmp (diskfs_exception_diu->env, err);

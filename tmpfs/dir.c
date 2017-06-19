@@ -44,8 +44,8 @@ diskfs_clear_directory (struct node *dp, struct node *pdp,
 {
   if (dp->dn->u.dir.entries != 0)
     return ENOTEMPTY;
-  assert (dp->dn_stat.st_size == 0);
-  assert (dp->dn->u.dir.dotdot == pdp->dn);
+  assert_backtrace (dp->dn_stat.st_size == 0);
+  assert_backtrace (dp->dn->u.dir.dotdot == pdp->dn);
 
   /* Decrease hardlink count for parent directory */
   pdp->dn_stat.st_nlink--;
@@ -97,7 +97,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
     {
       if (dp->dn->u.dir.dotdot == 0)
 	{
-	  assert (dp == diskfs_root_node);
+	  assert_backtrace (dp == diskfs_root_node);
 	  /* Use something not zero and not an st_ino value for any node in
 	     this filesystem.  Since we use pointer values, 2 will never
 	     be a valid number.  */
@@ -120,7 +120,7 @@ diskfs_get_directs (struct node *dp, int entry, int n,
 
   if (i < entry)
     {
-      assert (d == 0);
+      assert_backtrace (d == 0);
       *datacnt = 0;
       *amt = 0;
       return 0;
@@ -177,7 +177,7 @@ diskfs_lookup_hard (struct node *dp,
   struct tmpfs_dirent *d, **prevp;
 
   if (type == REMOVE || type == RENAME)
-    assert (np);
+    assert_backtrace (np);
 
   if (ds)
     ds->dotdot = type & SPEC_DOTDOT;
@@ -196,16 +196,16 @@ diskfs_lookup_hard (struct node *dp,
       struct disknode *dddn = dp->dn->u.dir.dotdot;
       error_t err;
 
-      assert (np != 0);
+      assert_backtrace (np != 0);
       if (dddn == 0)		/* root directory */
 	return EAGAIN;
 
       if (type == (REMOVE|SPEC_DOTDOT) || type == (RENAME|SPEC_DOTDOT))
         {
 	  *np = *dddn->hprevp;
-	  assert (*np);
-	  assert ((*np)->dn == dddn);
-	  assert (*dddn->hprevp == *np);
+	  assert_backtrace (*np);
+	  assert_backtrace ((*np)->dn == dddn);
+	  assert_backtrace (*dddn->hprevp == *np);
 	  return 0;
 	}
       else

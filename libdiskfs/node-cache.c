@@ -105,7 +105,7 @@ diskfs_cached_lookup_context (ino_t inum, struct node **npp,
 
   err = hurd_ihash_locp_add (&nodecache, slot,
 			     (hurd_ihash_key_t) &np->cache_id, np);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   diskfs_nref_light (np);
   pthread_rwlock_unlock (&nodecache_lock);
 
@@ -138,7 +138,7 @@ diskfs_cached_ifind (ino_t inum)
   np = hurd_ihash_find (&nodecache, (hurd_ihash_key_t) &inum);
   pthread_rwlock_unlock (&nodecache_lock);
 
-  assert (np);
+  assert_backtrace (np);
   return np;
 }
 
@@ -233,7 +233,7 @@ diskfs_node_iterate (error_t (*fun)(struct node *))
 error_t __attribute__ ((weak))
 diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 {
-  assert (! "diskfs_user_make_node not implemented");
+  assert_backtrace (! "diskfs_user_make_node not implemented");
 }
 
 /* The user must define this function if she wants to use the node
@@ -241,7 +241,7 @@ diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 error_t __attribute__ ((weak))
 diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 {
-  assert (! "diskfs_user_read_node not implemented");
+  assert_backtrace (! "diskfs_user_read_node not implemented");
 }
 
 /* The user must define this function if she wants to use the node
@@ -250,5 +250,5 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 void __attribute__ ((weak))
 diskfs_user_try_dropping_softrefs (struct node *np)
 {
-  assert (! "diskfs_user_try_dropping_softrefs not implemented");
+  assert_backtrace (! "diskfs_user_try_dropping_softrefs not implemented");
 }

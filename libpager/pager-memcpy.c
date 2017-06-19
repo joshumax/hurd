@@ -20,7 +20,7 @@
 #include "pager.h"
 #include <sys/mman.h>
 #include <hurd/sigpreempt.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 
 /* Start using vm_copy over memcpy when we have that many page. This is
@@ -50,9 +50,9 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 
   error_t do_vm_copy (void)
     {
-      assert ((offset & (vm_page_size - 1)) == 0);
-      assert (((vm_address_t) other & (vm_page_size - 1)) == 0);
-      assert (n >= vm_page_size);
+      assert_backtrace ((offset & (vm_page_size - 1)) == 0);
+      assert_backtrace (((vm_address_t) other & (vm_page_size - 1)) == 0);
+      assert_backtrace (n >= vm_page_size);
 
       do
 	{
@@ -61,8 +61,8 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	    ? (n - (n & (vm_page_size - 1)))
 	    : VMCOPY_WINDOW_DEFAULT_SIZE;
 
-	  assert (window_size >= VMCOPY_BETTER_THAN_MEMCPY);
-	  assert ((window_size & (vm_page_size - 1)) == 0);
+	  assert_backtrace (window_size >= VMCOPY_BETTER_THAN_MEMCPY);
+	  assert_backtrace ((window_size & (vm_page_size - 1)) == 0);
 	  
 	  window = 0;
 	  err = vm_map (mach_task_self (), &window, window_size, 0, 1,
@@ -135,8 +135,8 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	      to_copy -= copy_count;
 	      n -= copy_count;
 
-	      assert (n >= 0);
-	      assert (to_copy >= 0);
+	      assert_backtrace (n >= 0);
+	      assert_backtrace (to_copy >= 0);
 	    }
 	  while (to_copy > 0);
 	  
@@ -157,14 +157,14 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	  if (err)
 	    return err;
    
-	  assert (n >= VMCOPY_BETTER_THAN_MEMCPY);
+	  assert_backtrace (n >= VMCOPY_BETTER_THAN_MEMCPY);
 
 	  err = do_vm_copy ();
 	  if (err || n == 0)
 	    /* We failed or we finished.  */
 	    return err;
 
-	  assert (n < VMCOPY_BETTER_THAN_MEMCPY);
+	  assert_backtrace (n < VMCOPY_BETTER_THAN_MEMCPY);
 	}
 
       return do_memcpy (n);
@@ -173,7 +173,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   jmp_buf buf;
   void fault (int signo, long int sigcode, struct sigcontext *scp)
     {
-      assert (scp->sc_error == EKERN_MEMORY_ERROR);
+      assert_backtrace (scp->sc_error == EKERN_MEMORY_ERROR);
       err = pager_get_error (pager, sigcode - window + offset);
       n -= sigcode - window;
       vm_deallocate (mach_task_self (), window, window_size);
@@ -199,7 +199,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	  return err;
 	}
 
-      assert (n < VMCOPY_BETTER_THAN_MEMCPY);
+      assert_backtrace (n < VMCOPY_BETTER_THAN_MEMCPY);
     }
 
   /* Need to do it the hard way.  */
@@ -213,7 +213,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 		       &do_copy, (sighandler_t) &fault);
 
   if (! err)
-    assert (n == 0);
+    assert_backtrace (n == 0);
 
   *size -= n;
 

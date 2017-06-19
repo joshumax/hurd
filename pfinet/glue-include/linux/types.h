@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <stdint.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <string.h>
 
 #define	__u8	uint8_t

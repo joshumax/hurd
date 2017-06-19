@@ -27,7 +27,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/resource.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/msg.h>
 
 #include "proc.h"
@@ -71,7 +71,7 @@ S_proc_pid2task (struct proc *callerp,
   if (! check_owner (callerp, p))
     return EPERM;
 
-  assert (MACH_PORT_VALID (p->p_task));
+  assert_backtrace (MACH_PORT_VALID (p->p_task));
   *t = p->p_task;
 
   return 0;
@@ -618,7 +618,7 @@ S_proc_getprocinfo (struct proc *callerp,
   pi->pgrp = p->p_pgrp->pg_pgid;
   pi->session = p->p_pgrp->pg_session->s_sid;
   for (tp = p; !tp->p_loginleader; tp = tp->p_parent)
-    assert (tp);
+    assert_backtrace (tp);
   pi->logincollection = tp->p_pid;
   if (p->p_dead || p->p_stopped)
     {
@@ -837,7 +837,7 @@ S_proc_getloginid (struct proc *callerp,
     }
 
   for (p = proc; !p->p_loginleader; p = p->p_parent)
-    assert (p);
+    assert_backtrace (p);
 
   *leader = p->p_pid;
   return 0;

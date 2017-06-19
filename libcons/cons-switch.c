@@ -19,7 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 #include <errno.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 
 #include "cons.h"
@@ -56,7 +56,7 @@ cons_switch (vcons_t vcons, int id, int delta, vcons_t *r_vcons)
     }
   else
     {
-      assert (delta < 0);
+      assert_backtrace (delta < 0);
       vcons_entry = vcons->vcons_entry;
       while (delta++ < 0)
         {

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU General Public License
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <pthread.h>
 #include "ports.h"
 
@@ -40,7 +40,7 @@ valid_color (unsigned int c)
 static inline unsigned int
 flip_color (unsigned int c)
 {
-  assert (valid_color (c));
+  assert_backtrace (valid_color (c));
   return ! c;
 }
 
@@ -60,7 +60,7 @@ _ports_threadpool_init (struct ports_threadpool *pool)
 static inline void
 flip_generations (struct ports_threadpool *pool)
 {
-  assert (pool->old_threads == 0);
+  assert_backtrace (pool->old_threads == 0);
   pool->old_threads = pool->young_threads;
   pool->old_objects = pool->young_objects;
   pool->young_threads = 0;
@@ -91,7 +91,7 @@ _ports_thread_quiescent (struct ports_threadpool *pool,
 			 struct ports_thread *thread)
 {
   struct pi_list *free_list = NULL, *p;
-  assert (valid_color (thread->color));
+  assert_backtrace (valid_color (thread->color));
 
   pthread_spin_lock (&pool->lock);
   if (thread->color == pool->color)
@@ -123,7 +123,7 @@ void
 _ports_thread_offline (struct ports_threadpool *pool,
 		       struct ports_thread *thread)
 {
-  assert (valid_color (thread->color));
+  assert_backtrace (valid_color (thread->color));
 
  retry:
   pthread_spin_lock (&pool->lock);
@@ -154,7 +154,7 @@ _ports_port_deref_deferred (struct port_info *pi)
   pool->young_objects = pl;
   if (pool->old_threads == 0)
     {
-      assert (pool->old_objects == NULL);
+      assert_backtrace (pool->old_objects == NULL);
       flip_generations (pool);
     }
   pthread_spin_unlock (&pool->lock);

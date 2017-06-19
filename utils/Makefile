@@ -86,3 +86,5 @@ mount umount: ../sutils/fstab.o ../sutils/clookup.o match-options.o \
 ../sutils/fstab.o ../sutils/clookup.o: FORCE
 	$(MAKE) -C $(@D) $(@F)
 FORCE:
+
+shd vmallocate: ../libshouldbeinlibc/libshouldbeinlibc.a

@@ -68,7 +68,7 @@ tunnel_get_stats (struct device *dev)
 {
   struct tunnel_device *tdev = (struct tunnel_device *) dev->priv;
 
-  assert (tdev);
+  assert_backtrace (tdev);
 
   return &tdev->stats;
 }
@@ -79,7 +79,7 @@ tunnel_stop (struct device *dev)
   struct tunnel_device *tdev = (struct tunnel_device *) dev->priv;
   struct sk_buff *skb;
 
-  assert (tdev);
+  assert_backtrace (tdev);
 
   while ((skb = skb_dequeue (&tdev->xq)) != 0)
     dev_kfree_skb(skb);
@@ -105,7 +105,7 @@ tunnel_open (struct device *dev)
 {
   struct tunnel_device *tdev = (struct tunnel_device *) dev->priv;
 
-  assert (tdev);
+  assert_backtrace (tdev);
 
   skb_queue_head_init(&tdev->xq);
 
@@ -118,7 +118,7 @@ tunnel_xmit (struct sk_buff *skb, struct device *dev)
 {
   struct tunnel_device *tdev = (struct tunnel_device *) dev->priv;
 
-  assert (tdev);
+  assert_backtrace (tdev);
 
   pthread_mutex_lock (&tdev->lock);
 
@@ -232,7 +232,7 @@ setup_tunnel_device (char *name, struct device **device)
      initializes its `ifindex' member (which matters!),
      and tells the protocol stacks about the device.  */
   err = - register_netdevice (dev);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 }
 
 /* If a new open with read and/or write permissions is requested,
@@ -327,7 +327,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     }
 
   skb = skb_dequeue (&tdev->xq);
-  assert(skb);
+  assert_backtrace (skb);
 
   if (skb->len < amount)
     amount = skb->len;

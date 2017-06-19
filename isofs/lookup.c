@@ -78,7 +78,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
   ino_t id;
 
   if ((type == REMOVE) || (type == RENAME))
-    assert (npp);
+    assert_backtrace (npp);
 
   if (npp)
     *npp = 0;
@@ -127,7 +127,7 @@ diskfs_lookup_hard (struct node *dp, const char *name, enum lookup_type type,
       else if (spec_dotdot)
 	{
 	  /* renames and removes can't get this far. */
-	  assert (type == LOOKUP);
+	  assert_backtrace (type == LOOKUP);
 	  diskfs_nput (dp);
 	  err = diskfs_cached_lookup_context (id, npp, &ctx);
 	}

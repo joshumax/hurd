@@ -34,7 +34,7 @@
 #include <limits.h>
 #include <argp.h>
 #include <argz.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "fsys_S.h"
 
@@ -167,7 +167,7 @@ magic_getroot (struct trivfs_control *cntl,
   *node_type = MACH_MSG_TYPE_COPY_SEND;
 
   err = mach_port_deallocate (mach_task_self (), dotdot);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   return 0;
 }
@@ -313,10 +313,10 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
     }
   err = mach_port_mod_refs (mach_task_self (), dotdot,
 			    MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   err = mach_port_mod_refs (mach_task_self (), cred->realnode,
 			    MACH_PORT_RIGHT_SEND, +1);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   *retry_type = FS_RETRY_NORMAL;
   *retry_name = '\0';

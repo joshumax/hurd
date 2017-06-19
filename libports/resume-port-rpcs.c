@@ -19,7 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 void
 ports_resume_port_rpcs (void *portstruct)
@@ -28,7 +28,7 @@ ports_resume_port_rpcs (void *portstruct)
   
   pthread_mutex_lock (&_ports_lock);
   
-  assert (pi->flags & PORT_INHIBITED);
+  assert_backtrace (pi->flags & PORT_INHIBITED);
   pi->flags &= ~PORT_INHIBITED;
   if (pi->flags & PORT_BLOCKED)
     {

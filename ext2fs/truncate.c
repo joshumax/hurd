@@ -286,7 +286,7 @@ diskfs_truncate (struct node *node, off_t length)
   off_t offset;
 
   diskfs_check_readonly ();
-  assert (!diskfs_readonly);
+  assert_backtrace (!diskfs_readonly);
 
   if (length >= node->dn_stat.st_size)
     return 0;

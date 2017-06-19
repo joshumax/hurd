@@ -20,7 +20,7 @@
 #include <hurd/signal.h>
 #include <cthreads.h>
 #include "cthread_internals.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /* Just like condition_wait, but cancellable.  Returns true if cancelled.  */
 int
@@ -37,7 +37,7 @@ hurd_condition_wait (condition_t c, mutex_t m)
   cproc_t p = cproc_self ();
   int cancel;
 
-  assert (ss->intr_port == MACH_PORT_NULL); /* Sanity check for signal bugs. */
+  assert_backtrace (ss->intr_port == MACH_PORT_NULL); /* Sanity check for signal bugs. */
 
   p->state = CPROC_CONDWAIT | CPROC_SWITCHING;
 

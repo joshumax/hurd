@@ -42,7 +42,7 @@ diskfs_S_file_get_translator (struct protid *cred,
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
       size_t amt;
-      assert (diskfs_shortcut_symlink);
+      assert_backtrace (diskfs_shortcut_symlink);
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       memcpy (*trans, _HURD_SYMLINK, sizeof _HURD_SYMLINK);
@@ -55,7 +55,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  err = diskfs_node_rdwr (np, *trans + sizeof _HURD_SYMLINK,
 				    0, np->dn_stat.st_size, 0, cred, &amt);
 	  if (!err)
-	    assert (amt == np->dn_stat.st_size);
+	    assert_backtrace (amt == np->dn_stat.st_size);
 	}
       if (!err)
 	{
@@ -71,9 +71,9 @@ diskfs_S_file_get_translator (struct protid *cred,
       unsigned int buflen;
 
       if (S_ISCHR (np->dn_stat.st_mode))
-	assert (diskfs_shortcut_chrdev);
+	assert_backtrace (diskfs_shortcut_chrdev);
       else
-	assert (diskfs_shortcut_blkdev);
+	assert_backtrace (diskfs_shortcut_blkdev);
 
       buflen = asprintf (&buf, "%s%c%d%c%d",
 			 (S_ISCHR (np->dn_stat.st_mode)

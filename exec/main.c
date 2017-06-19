@@ -199,7 +199,7 @@ main (int argc, char **argv)
   if (MACH_PORT_VALID (opt_device_master))
     {
       err = open_console (opt_device_master);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       mach_port_deallocate (mach_task_self (), opt_device_master);
     }
 
@@ -322,9 +322,9 @@ S_exec_init (struct trivfs_protid *protid,
     mach_port_t right;
 
     err = iohelp_create_empty_iouser (&user);
-    assert_perror (err);
+    assert_perror_backtrace (err);
     err = trivfs_open (fsys, user, 0, MACH_PORT_NULL, &cred);
-    assert_perror (err);
+    assert_perror_backtrace (err);
 
     right = ports_get_send_right (cred);
     proc_execdata_notify (procserver, right, MACH_MSG_TYPE_COPY_SEND);
@@ -332,10 +332,10 @@ S_exec_init (struct trivfs_protid *protid,
   }
 
   err = get_privileged_ports (&host_priv, &device_master);
-  assert_perror (err);
+  assert_perror_backtrace (err);
 
   err = open_console (device_master);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   mach_port_deallocate (mach_task_self (), device_master);
 
   proc_register_version (procserver, host_priv, "exec", "", HURD_VERSION);
@@ -347,7 +347,7 @@ S_exec_init (struct trivfs_protid *protid,
 
       /* Fall back to abusing the message port lookup.  */
       err = proc_getmsgport (procserver, HURD_PID_STARTUP, &startup);
-      assert_perror (err);
+      assert_perror_backtrace (err);
     }
   mach_port_deallocate (mach_task_self (), procserver);
 
@@ -355,7 +355,7 @@ S_exec_init (struct trivfs_protid *protid,
      run once we call it. */
   err = startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
 				"exec", host_priv);
-  assert_perror (err);
+  assert_perror_backtrace (err);
   mach_port_deallocate (mach_task_self (), startup);
 
   mach_port_deallocate (mach_task_self (), host_priv);

@@ -20,7 +20,7 @@
 
 
 #include "ports.h"
-#include <assert.h>
+#include <assert-backtrace.h>
 #include <hurd/ihash.h>
 
 error_t
@@ -63,7 +63,7 @@ ports_transfer_right (void *tostruct,
       pthread_rwlock_unlock (&_ports_htable_lock);
       err = mach_port_mod_refs (mach_task_self (), topi->port_right,
 				MACH_PORT_RIGHT_RECEIVE, -1);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       if ((topi->flags & PORT_HAS_SENDRIGHTS) && !hassendrights)
 	{
 	  dereftopi = 1;
@@ -87,10 +87,10 @@ ports_transfer_right (void *tostruct,
     {
       pthread_rwlock_wrlock (&_ports_htable_lock);
       err = hurd_ihash_add (&_ports_htable, port, topi);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       err = hurd_ihash_add (&topi->bucket->htable, port, topi);
       pthread_rwlock_unlock (&_ports_htable_lock);
-      assert_perror (err);
+      assert_perror_backtrace (err);
       /* This is an optimization.  It may fail.  */
       mach_port_set_protected_payload (mach_task_self (), port,
 				       (unsigned long) topi);
@@ -98,7 +98,7 @@ ports_transfer_right (void *tostruct,
         {
 	  err = mach_port_move_member (mach_task_self (), port,
 				       topi->bucket->portset);
-	  assert_perror (err);
+	  assert_perror_backtrace (err);
 	}
     }
 

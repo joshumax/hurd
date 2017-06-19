@@ -233,7 +233,7 @@
 #include "cthread_internals.h"
 #include <mach/message.h>
 #include <hurd/threadvar.h>	/* GNU */
-#include <assert.h>
+#include <assert-backtrace.h>
 
 /*
  * Port_entry's are used by cthread_mach_msg to store information
@@ -343,7 +343,7 @@ cthread_wire(void)
 	register cproc_t p = cproc_self();
 
 	/* In GNU, we wire all threads on creation (in cproc_alloc).  */
-	assert (p->wired != MACH_PORT_NULL);
+	assert_backtrace (p->wired != MACH_PORT_NULL);
 }
 
 /*

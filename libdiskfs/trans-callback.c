@@ -38,7 +38,7 @@ _diskfs_translator_callback1_fn (void *cookie1, void *cookie2,
   err = diskfs_get_translator (np, argz, (u_int *) argz_len);
   if (err)
     {
-      assert (err != EOPNOTSUPP);
+      assert_backtrace (err != EOPNOTSUPP);
       return err;
     }
 

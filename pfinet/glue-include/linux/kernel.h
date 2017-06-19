@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 
 /* These don't actually matter since our locking protocols are different.  */
@@ -24,7 +24,7 @@
 #define	KERN_INFO
 #define	KERN_DEBUG
 
-#define panic(str...)	(printk (str), assert (!"panic"))
+#define panic(str...)	(printk (str), assert_backtrace (!"panic"))
 
 /*
  *      Display an IP address in readable format.
@@ -63,14 +63,14 @@ putname (char *p)
 static inline int
 kill_proc (int pid, int signo, int priv)
 {
-  assert (signo == SIGURG);
+  assert_backtrace (signo == SIGURG);
   return 0;
 }
 
 static inline int
 kill_pg (int pgrp, int signo, int priv)
 {
-  assert (signo == SIGURG);
+  assert_backtrace (signo == SIGURG);
   return 0;
 }
 

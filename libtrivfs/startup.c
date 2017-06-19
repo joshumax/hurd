@@ -20,7 +20,7 @@
 
 #include <hurd.h>
 #include <hurd/fsys.h>
-#include <assert.h>
+#include <assert-backtrace.h>
 
 #include "priv.h"
 
