@@ -27,6 +27,8 @@
 
 #else /* NDEBUG */
 
+#include <sys/cdefs.h>
+
 /* This prints an "Assertion failed" message, prints a stack trace,
    and aborts.	*/
 void __assert_fail_backtrace (const char *assertion,
