@@ -274,7 +274,7 @@ check_hashbang (struct execdata *e,
 	      if (memchr (argv, '\0', argvlen) == NULL)
 		{
 		  name = alloca (argvlen + 1);
-		  bcopy (argv, name, argvlen);
+		  memcpy (name, argv, argvlen);
 		  name[argvlen] = '\0';
 		}
 	      else

@@ -296,7 +296,7 @@ fmt_past_time (struct timeval *tv, struct timeval *now,
   if (diff < 0)
     diff = -diff;		/* XXX */
 
-  bcopy (localtime ((time_t *) &tv->tv_sec), &tm, sizeof tm);
+  memcpy (&tm, localtime ((time_t *) &tv->tv_sec), sizeof tm);
 
   if (width <= 0 || width >= buf_len)
     width = buf_len - 1;

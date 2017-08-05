@@ -224,12 +224,12 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
   /* There was old information, try merging it. */
   if (have & PSTAT_TASK_BASIC)
     /* Task info.  */
-    bcopy (&old_pi_hdr.taskinfo, &new_pi->taskinfo,
-	   sizeof (struct task_basic_info));
+    memcpy (&new_pi->taskinfo, &old_pi_hdr.taskinfo,
+	    sizeof (struct task_basic_info));
   if (have & PSTAT_TASK_EVENTS)
     /* Event info. */
-    bcopy (&old_pi_hdr.taskevents, &new_pi->taskevents,
-	   sizeof (struct task_events_info));
+    memcpy (&new_pi->taskevents, &old_pi_hdr.taskevents,
+	    sizeof (struct task_events_info));
   /* That's it for now.  */
 
   if (new_pi != ps->proc_info)
@@ -604,7 +604,7 @@ clone (void *src, size_t size)
 {
   void *dst = malloc (size);
   if (dst)
-    bcopy (src, dst, size);
+    memcpy (dst, src, size);
   return dst;
 }
 

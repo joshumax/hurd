@@ -113,7 +113,7 @@ idvec_insert (struct idvec *idvec, unsigned pos, uid_t id)
     {
       uid_t *ids = idvec->ids;
       if (pos < num)
-	bcopy (ids + pos, ids + pos + 1, (num - pos) * sizeof (uid_t));
+	memmove (ids + pos + 1, ids + pos, (num - pos) * sizeof (uid_t));
       else if (pos > num)
 	memset (ids + num, 0, (pos - num) * sizeof(uid_t));
       ids[pos] = id;
@@ -163,7 +163,7 @@ idvec_set_ids (struct idvec *idvec, const uid_t *ids, unsigned num)
   err = idvec_ensure (idvec, num);
   if (!err)
     {
-      bcopy (ids, idvec->ids, num * sizeof (uid_t));
+      memcpy (idvec->ids, ids, num * sizeof (uid_t));
       idvec->num = num;
     }
   return err;
@@ -279,7 +279,7 @@ idvec_delete (struct idvec *idvec, unsigned pos)
       uid_t *ids = idvec->ids;
       idvec->num = --num;
       if (num > pos)
-	bcopy (ids + pos + 1, ids + pos, (num - pos) * sizeof (uid_t));
+	memmove (ids + pos, ids + pos + 1, (num - pos) * sizeof (uid_t));
     }
 }
 

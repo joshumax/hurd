@@ -1198,7 +1198,7 @@ ds_device_read_inband (device_t device,
 	{
 	  if (returned != data)
 	    {
-	      bcopy (returned, (void *)data, *datalen);
+	      memcpy ((void *)data, returned, *datalen);
 	      munmap ((caddr_t) returned, *datalen);
 	    }
 	  return D_SUCCESS;

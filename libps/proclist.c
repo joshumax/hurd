@@ -68,7 +68,7 @@ proc_stat_list_clone (struct proc_stat_list *pp, struct proc_stat_list **copy)
       return ENOMEM;
     }
 
-  bcopy (pp->proc_stats, procs, pp->num_procs);
+  memcpy (procs, pp->proc_stats, sizeof *procs * pp->num_procs);
 
   new->proc_stats = procs;
   new->num_procs = pp->num_procs;
