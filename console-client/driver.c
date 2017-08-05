@@ -117,8 +117,7 @@ error_t driver_add (const char *const name, const char *const driver,
 
   while (dir)
     {
-      if (filename)
-	free (filename);
+      free (filename);
       if (asprintf (&filename,
 		    "%s/%s%s", dir, driver, CONSOLE_SONAME_SUFFIX) < 0)
 	{
@@ -156,8 +155,7 @@ error_t driver_add (const char *const name, const char *const driver,
 
   if (!shobj)
     {
-      if (filename)
-	free (filename);
+      free (filename);
       pthread_mutex_unlock (&driver_list_lock);
       return ENOENT;
     }

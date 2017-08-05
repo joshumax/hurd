@@ -362,12 +362,9 @@ ps_fmt_clone (struct ps_fmt *fmt, struct ps_fmt **copy)
 
   if (!new || !fields || !src)
     {
-      if (new)
-	free (new);
-      if (fields)
-	free (fields);
-      if (src)
-	free (src);
+      free (new);
+      free (fields);
+      free (src);
       return ENOMEM;
     }
 

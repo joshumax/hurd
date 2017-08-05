@@ -563,8 +563,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	char *s;
 	char *d;
 
-	if (driver_path)
-	  free (driver_path);
+	free (driver_path);
 	driver_path = malloc (strlen (arg) + 2);
 	if (!driver_path)
 	  {

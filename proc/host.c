@@ -113,8 +113,7 @@ S_proc_setexecdata (struct proc *p,
 	mach_port_deallocate (mach_task_self (), std_port_array[i]);
       free (std_port_array);
     }
-  if (std_int_array)
-    free (std_int_array);
+  free (std_int_array);
 
   std_port_array = std_port_array_new;
   n_std_ports = nports;

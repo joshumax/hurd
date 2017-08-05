@@ -63,10 +63,8 @@ proc_stat_list_clone (struct proc_stat_list *pp, struct proc_stat_list **copy)
 
   if (!new || !procs)
     {
-      if (new)
-	free (new);
-      if (procs)
-	free (procs);
+      free (new);
+      free (procs);
       return ENOMEM;
     }
 

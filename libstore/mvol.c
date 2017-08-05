@@ -148,8 +148,7 @@ store_mvol_create (struct store *phys,
 
       if (err)
 	{
-	  if (mv)
-	    free (mv);
+	  free (mv);
 	  store_free (*store);
 	}
     }

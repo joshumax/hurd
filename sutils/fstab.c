@@ -617,7 +617,7 @@ fstab_add_mntent (struct fstab *const fstab, const struct mntent *mntent,
     {
       if (! err)
 	_fstab_add (fstab, fs);
-      else if (fs)
+      else
 	free (fs);
     }
 

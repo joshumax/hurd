@@ -705,8 +705,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
       pthread_mutex_unlock (&dir->node->lock);
     }
 
-  if (rmt_path)
-    free (rmt_path);
+  free (rmt_path);
 
   return err;
 }

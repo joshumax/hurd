@@ -252,14 +252,11 @@ ftp_conn_unix_start_get_stats (struct ftp_conn *conn,
 
  out:
 
-  if (req)
-    free (req);
+  free (req);
   if (err)
     {
-      if (s)
-	free (s);
-      if (searched_name)
-	free (searched_name);
+      free (s);
+      free (searched_name);
     }
   else
     {

@@ -385,14 +385,10 @@ vga_display_fini (void *handle, int force)
   free (disp);
   dynacolor_fini ();
   vga_fini ();
-  if (vga_display_font)
-    free (vga_display_font);
-  if (vga_display_font_italic)
-    free (vga_display_font_italic);
-  if (vga_display_font_bold)
-    free (vga_display_font_bold);
-  if (vga_display_font_bold_italic)
-    free (vga_display_font_bold_italic);
+  free (vga_display_font);
+  free (vga_display_font_italic);
+  free (vga_display_font_bold);
+  free (vga_display_font_bold_italic);
 
   return 0;
 }

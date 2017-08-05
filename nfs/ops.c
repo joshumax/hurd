@@ -251,8 +251,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np,
 	      np->nn->dtrans = SOCK;
 	      np->nn->stat_updated = 0;
 	    }
-	  if (f)
-	    free (f);
+	  free (f);
 	  return 0;
 	}
     }
