@@ -220,7 +220,7 @@ main (int argc, char **argv)
   if (err)
     error (1, 0, "error creating protid port class");
 
-    err = trivfs_add_protid_port_class (&server_port_class);
+  err = trivfs_add_protid_port_class (&server_port_class);
   if (err)
     error (1, 0, "error creating protid port class");
 

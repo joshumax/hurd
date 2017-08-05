@@ -493,8 +493,8 @@ discover_receive_right (mach_port_t send, task_t task)
       && !(info->task != unknown_task
 	  && info->portname == UNKNOWN_NAME))
     return info;
-  
-    {
+
+  {
       int j;
       mach_port_t *portnames = NULL;
       mach_msg_type_number_t nportnames = 0;
@@ -558,7 +558,7 @@ discover_receive_right (mach_port_t send, task_t task)
 
       if (receiver_info)
 	return receiver_info;
-    }
+  }
   return NULL;
 }
 
