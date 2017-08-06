@@ -548,7 +548,7 @@ MIGCOMFLAGS := -subrprefix __
 	  -DHURD_SERVER=1 \
 	  -MD -MF $*.sdefs.d.new \
 	  $< -o $*.sdefsi
-	sed -e 's/[^:]*:/$*Server.c $(mig-sheader-prefix)$*_S.h:/' \
+	sed -e 's#[^:]*:#$*Server.c $(mig-sheader-prefix)$*_S.h:#' \
 	  < $*.sdefs.d.new > $*.sdefs.d
 	rm $*.sdefs.d.new
 
@@ -561,7 +561,7 @@ $(mig-sheader-prefix)%_S.h %Server.c: %.sdefsi
 	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) \
 	  -MD -MF $*.udefs.d.new \
 	  $< -o $*.udefsi
-	sed -e 's/[^:]*:/$*User.c $*_U.h:/' \
+	sed -e 's#[^:]*:#$*User.c $*_U.h:#' \
 	  < $*.udefs.d.new > $*.udefs.d
 	rm $*.udefs.d.new
 
