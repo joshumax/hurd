@@ -69,14 +69,16 @@ diskfs_init_diskfs (void)
 	  diskfs_default_pager = MACH_PORT_NULL;
 	  err = vm_set_default_memory_manager (host, &diskfs_default_pager);
 	  mach_port_deallocate (mach_task_self (), host);
-
-	  if (!err)
-	    err = maptime_map (1, 0, &diskfs_mtime);
 	}
+      if (err)
+	return err;
     }
-  else
-    err = maptime_map (0, 0, &diskfs_mtime);
 
+  /* First try to use /dev/time...  */
+  err = maptime_map (0, NULL, &diskfs_mtime);
+  if (err)
+    /* ... and fall back to the Mach time device.  */
+    err = maptime_map (1, NULL, &diskfs_mtime);
   if (err)
     return err;
 
