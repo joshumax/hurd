@@ -663,7 +663,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
   size_t rest;
   error_t err;
   block_t blkno;
-  void *block;
+  void *block = NULL;
   struct ext2_inode *ei;
   struct ext2_xattr_header *header;
   struct ext2_xattr_entry *entry;
