@@ -20,7 +20,7 @@
 
 /* Wire down all the text and data (including from shared libraries)
    for the current program. */
-void wire_task_self (void);
+error_t wire_task_self (void);
 
 /* Wire down all memory currently allocated at START for LEN bytes. */
-void wire_segment (vm_address_t start, vm_size_t len);
+error_t wire_segment (vm_address_t start, vm_size_t len);

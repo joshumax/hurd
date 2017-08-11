@@ -24,6 +24,7 @@
 #include <hurd.h>
 #include <error.h>
 #include <elf.h>
+#include <mach/gnumach.h>
 
 #pragma weak _DYNAMIC
 #pragma weak dlopen
@@ -34,14 +35,17 @@
 #define RTLD_NOLOAD 0
 #endif
 
+static int
+statically_linked (void)
+{
+  return &_DYNAMIC == 0;	/* statically linked */
+}
+
 /* Find the list of shared objects */
 static struct link_map *
 loaded (void)
 {
   ElfW(Dyn) *d;
-
-  if (&_DYNAMIC == 0)		/* statically linked */
-    return 0;
 
   for (d = _DYNAMIC; d->d_tag != DT_NULL; ++d)
     if (d->d_tag == DT_DEBUG)
@@ -79,7 +83,7 @@ map_extent (struct link_map *map)
 
 /* Wire down all memory currently allocated at START for LEN bytes;
    host_priv is the privileged host port. */
-static void
+static error_t
 wire_segment_internal (vm_address_t start,
 		       vm_size_t len,
 		       host_priv_t host_priv)
@@ -101,40 +105,63 @@ wire_segment_internal (vm_address_t start,
       err = vm_region (mach_task_self (), &addr, &size, &protection,
 		       &max_protection, &inheritance, &shared, &object_name,
 		       &offset);
+      if (err == KERN_NO_SPACE)
+        return 0;	/* We're done.  */
       if (err)
-	return;
-
-      /* The current region begins at ADDR and is SIZE long.  If it
-      	 extends beyond the LEN, prune it. */
-      if (addr + size > start + len)
-	size = len - (addr - start);
-
-      /* Set protection to allow all access possible */
-      vm_protect (mach_task_self (), addr, size, 0, max_protection);
-
-      /* Generate write faults */
-      for (poke = (char *) addr;
-	   (vm_address_t) poke < addr + size;
-	   poke += vm_page_size)
-	*poke = *poke;
-
-      /* Wire pages */
-      vm_wire (host_priv, mach_task_self (), addr, size, max_protection);
-
-      /* Set protection back to what it was */
-      vm_protect (mach_task_self (), addr, size, 0, protection);
-
-
+	return err;
       mach_port_deallocate (mach_task_self (), object_name);
+
+      if (protection != VM_PROT_NONE)
+        {
+          /* The VM system cannot cope with a COW fault on another
+             unrelated virtual copy happening later when we have
+             wired down the original page.  So we must touch all our
+             pages before wiring to make sure that only we will ever
+             use them.  */
+
+          /* The current region begins at ADDR and is SIZE long.  If it
+             extends beyond the LEN, prune it. */
+          if (addr + size > start + len)
+            size = len - (addr - start);
+
+          /* Set protection to allow all access possible */
+          if (!(protection & VM_PROT_WRITE))
+            {
+              err = vm_protect (mach_task_self (), addr, size, 0, max_protection);
+              if (err)
+                return err;
+            }
+
+          /* Generate write faults */
+          for (poke = (char *) addr;
+               (vm_address_t) poke < addr + size;
+               poke += vm_page_size)
+            *poke = *poke;
+
+          /* Wire pages */
+          err = vm_wire (host_priv, mach_task_self (), addr, size, protection);
+          if (err)
+            return err;
+
+          /* Set protection back to what it was */
+          if (!(protection & VM_PROT_WRITE))
+            {
+              err = vm_protect (mach_task_self (), addr, size, 0, protection);
+              if (err)
+                return err;
+            }
+        }
 
       len -= (addr - start) + size;
       start = addr + size;
     }
   while (len);
+
+  return err;
 }
 
 /* Wire down all memory currently allocated at START for LEN bytes. */
-void
+error_t
 wire_segment (vm_address_t start,
 	      vm_size_t len)
 {
@@ -142,45 +169,64 @@ wire_segment (vm_address_t start,
   error_t err;
 
   err = get_privileged_ports (&host, &device);
-  if (!err)
-    {
-      wire_segment_internal (start, len, host);
-      mach_port_deallocate (mach_task_self (), host);
-      mach_port_deallocate (mach_task_self (), device);
-    }
-}
+  if (err)
+    return err;
 
+  err = wire_segment_internal (start, len, host);
+  mach_port_deallocate (mach_task_self (), host);
+  mach_port_deallocate (mach_task_self (), device);
+  return err;
+}
 
 /* Wire down all the text and data (including from shared libraries)
    for the current program. */
-void
+error_t
 wire_task_self ()
 {
-  struct link_map *map;
   mach_port_t host, device;
   error_t err;
-  extern char _edata, _etext, __data_start;
 
   err = get_privileged_ports (&host, &device);
   if (err)
-    return;
+    return err;
 
-  map = loaded ();
-  if (!map)
+  if (statically_linked ())
     {
       extern void _start ();
+      extern char _edata, _etext, __data_start;
       vm_address_t text_start = (vm_address_t) &_start;
-      wire_segment_internal (text_start,
-			     (vm_size_t) (&_etext - text_start),
-			     host);
-      wire_segment_internal ((vm_address_t) &__data_start,
-			     (vm_size_t) (&_edata - &__data_start),
-			     host);
+      err = wire_segment_internal (text_start,
+                                   (vm_size_t) (&_etext - text_start),
+                                   host);
+      if (err)
+        goto out;
+
+      err = wire_segment_internal ((vm_address_t) &__data_start,
+                                   (vm_size_t) (&_edata - &__data_start),
+                                   host);
     }
   else
-    while (map)
-      wire_segment ((vm_address_t) map->l_addr, map_extent (map));
+    {
+      struct link_map *map;
 
+      map = loaded ();
+      if (map)
+        for (err = 0; ! err && map; map = map->l_next)
+          err = wire_segment_internal ((vm_address_t) map->l_addr,
+                                       map_extent (map), host);
+      else
+        err = wire_segment_internal (VM_MIN_ADDRESS, VM_MAX_ADDRESS, host);
+    }
+
+  if (err)
+    goto out;
+
+  /* Automatically wire down future mappings, including those that are
+     currently PROT_NONE but become accessible.  */
+  err = vm_wire_all (host, mach_task_self (), VM_WIRE_ALL);
+
+ out:
   mach_port_deallocate (mach_task_self (), host);
   mach_port_deallocate (mach_task_self (), device);
+  return err;
 }
