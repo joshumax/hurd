@@ -674,7 +674,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 int
 main (int argc, char **argv, char **envp)
 {
-  volatile int err;
+  error_t err;
   int i;
   int flags;
   mach_port_t consdev;
@@ -702,8 +702,6 @@ main (int argc, char **argv, char **envp)
       || device_open (device_master, D_READ|D_WRITE, "console", &consdev))
     crash_mach ();
 
-  wire_task_self ();
-
   /* Clear our bootstrap port so our children don't inherit it.  */
   task_set_bootstrap_port (mach_task_self (), MACH_PORT_NULL);
 
@@ -712,6 +710,10 @@ main (int argc, char **argv, char **envp)
   if (stdout == NULL || stdin == NULL)
     crash_mach ();
   setbuf (stdout, NULL);
+
+  err = wire_task_self ();
+  if (err)
+    error (0, err, "wire_task_self");
 
   err = argz_create (envp, &startup_envz, &startup_envz_len);
   assert_perror_backtrace (err);
