@@ -117,8 +117,10 @@ static struct ntfy_task *ntfy_tasks;
 /* Our receive right */
 static mach_port_t startup;
 
-/* Ports to the kernel */
-static mach_port_t host_priv, device_master;
+/* Ports to the kernel.  We use alias to the internal glibc locations
+   so that other code can get them using get_privileged_ports.  */
+#define host_priv	_hurd_host_priv
+#define device_master	_hurd_device_master
 
 /* Args to bootstrap, expressed as flags */
 static int bootstrap_args = 0;
