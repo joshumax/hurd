@@ -119,9 +119,13 @@ void pokel_inherit (struct pokel *pokel, struct pokel *from);
 
 #include <stdint.h>
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int test_bit (unsigned num, unsigned char *bitmap);
-
 extern int set_bit (unsigned num, unsigned char *bitmap);
+extern int clear_bit (unsigned num, unsigned char *bitmap);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Returns TRUE if bit NUM is set in BITMAP.  */
@@ -354,6 +358,15 @@ unsigned long next_generation;
 /* pointer to in-memory block -> index in disk_cache_info */
 #define bptr_index(ptr) (((char *)ptr - (char *)disk_cache) >> log2_block_size)
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern char *boffs_ptr (off_t offset);
+extern off_t bptr_offs (void *ptr);
+
+#if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
+
 /* byte offset on disk --> pointer to in-memory block */
 EXT2FS_EI char *
 boffs_ptr (off_t offset)
@@ -385,6 +398,8 @@ bptr_offs (void *ptr)
   return offset;
 }
 
+#endif /* Use extern inlines.  */
+
 /* block num --> pointer to in-memory block */
 #define bptr(block) boffs_ptr(boffs(block))
 /* pointer to in-memory block --> block num */
@@ -398,7 +413,12 @@ struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
-extern struct ext2_inode *dino (ino_t inum);
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
+extern struct ext2_inode * dino_ref (ino_t inum);
+extern void _dino_deref (struct ext2_inode *inode);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 /* Convert an inode number to the dinode on disk. */
@@ -447,6 +467,10 @@ struct pokel global_pokel;
 unsigned char *modified_global_blocks;
 extern pthread_spinlock_t modified_global_blocks_lock;
 
+/* Forward declarations for the following functions that are usually
+   inlined.  In case inlining is disabled, or inlining is not
+   applicable, or a reference is taken to one of these functions, an
+   implementation is provided in 'xinl.c'.  */
 extern int global_block_modified (block_t block);
 extern void record_global_poke (void *ptr);
 extern void sync_global_ptr (void *bptr, int wait);
