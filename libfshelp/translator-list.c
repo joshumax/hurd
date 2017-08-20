@@ -121,7 +121,7 @@ fshelp_set_active_translator (struct port_info *pi,
     }
 
  update:
-  if (MACH_PORT_VALID (active))
+  if (MACH_PORT_VALID (active) && active != t->active)
     {
       mach_port_t old;
       err = mach_port_request_notification (mach_task_self (), active,
@@ -146,7 +146,7 @@ fshelp_set_active_translator (struct port_info *pi,
 			  MACH_PORT_RIGHT_SEND, +1);
       t->active = active;
     }
-  else
+  else if (! MACH_PORT_VALID (active))
     {
       int ok;
       ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
