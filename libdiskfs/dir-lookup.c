@@ -315,7 +315,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 		err = fshelp_set_active_translator (&newpi->pi,
 						    complete_path,
-						    np->transbox.active);
+						    &np->transbox);
 		if (complete_path != translator_path)
 		  free(complete_path);
 		if (err)

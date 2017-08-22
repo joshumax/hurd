@@ -38,16 +38,16 @@
    require multi threading but depend on the ports library.  */
 
 struct port_info;
+struct transbox;
 
 /* Record an active translator being bound to the given file name
-   NAME.  ACTIVE is the control port of the translator.  PI references
-   a receive port that is used to request dead name notifications,
-   typically the port for the underlying node passed to the
-   translator.  */
+   NAME.  TRANSBOX is the nodes transbox.  PI references a receive
+   port that is used to request dead name notifications, typically the
+   port for the underlying node passed to the translator.  */
 error_t
 fshelp_set_active_translator (struct port_info *pi,
 			      const char *name,
-			      mach_port_t active);
+			      const struct transbox *transbox);
 
 /* Remove the active translator specified by its control port ACTIVE.
    If there is no active translator with the given control port, this

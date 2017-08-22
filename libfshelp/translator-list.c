@@ -35,9 +35,13 @@
 
 struct translator
 {
-  struct port_info *pi;
-  char *name;
-  mach_port_t active;
+  hurd_ihash_locp_t locp;	/* Slot in the hash table.  */
+  struct port_info *pi;		/* We get dead-name notifications
+				   here.  */
+  char *name;			/* The path to the node the translator
+				   is bound to, relative to the root.
+				   This is a best effort.  */
+  mach_port_t active;		/* Translator control port.  */
 };
 
 /* The hash table requires some callback functions.  */
@@ -56,41 +60,43 @@ cleanup (void *value, void *arg)
 static hurd_ihash_key_t
 hash (const void *key)
 {
-  return (hurd_ihash_key_t) hurd_ihash_hash32 (key, strlen (key), 0);
+  return (hurd_ihash_key_t) hurd_ihash_hash32 (key, sizeof (void *), 0);
 }
 
 static int
 compare (const void *a, const void *b)
 {
-  return strcmp ((const char *) a, (const char *) b) == 0;
+  return *(void **) a == *(void **) b;
 }
 
 /* The list of active translators.  */
 static struct hurd_ihash translator_ihash
-  = HURD_IHASH_INITIALIZER_GKI (HURD_IHASH_NO_LOCP, cleanup, NULL,
-				hash, compare);
+  = HURD_IHASH_INITIALIZER_GKI (offsetof (struct translator, locp),
+				cleanup, NULL, hash, compare);
 
 /* The lock protecting the translator_ihash.  */
 static pthread_mutex_t translator_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Record an active translator being bound to the given file name
-   NAME.  ACTIVE is the control port of the translator.  */
+   NAME.  TRANSBOX is the nodes transbox.  PI references a receive
+   port that is used to request dead name notifications, typically the
+   port for the underlying node passed to the translator.  */
 error_t
 fshelp_set_active_translator (struct port_info *pi,
 			      const char *name,
-			      mach_port_t active)
+			      const struct transbox *transbox)
 {
   error_t err = 0;
   struct translator *t;
   hurd_ihash_locp_t slot;
 
   pthread_mutex_lock (&translator_ihash_lock);
-  t = hurd_ihash_locp_find (&translator_ihash, (hurd_ihash_key_t) name,
+  t = hurd_ihash_locp_find (&translator_ihash, (hurd_ihash_key_t) transbox,
 			    &slot);
   if (t)
     goto update; /* Entry exists.  */
 
-  if (! MACH_PORT_VALID (active))
+  if (! MACH_PORT_VALID (transbox->active))
     /* Avoid allocating an entry just to delete it.  */
     goto out;
 
@@ -112,7 +118,7 @@ fshelp_set_active_translator (struct port_info *pi,
     }
 
   err = hurd_ihash_locp_add (&translator_ihash, slot,
-			     (hurd_ihash_key_t) t->name, t);
+			     (hurd_ihash_key_t) transbox, t);
   if (err)
     {
       free (t->name);
@@ -121,17 +127,17 @@ fshelp_set_active_translator (struct port_info *pi,
     }
 
  update:
-  if (MACH_PORT_VALID (active) && active != t->active)
+  if (MACH_PORT_VALID (transbox->active) && transbox->active != t->active)
     {
       mach_port_t old;
-      err = mach_port_request_notification (mach_task_self (), active,
+      err = mach_port_request_notification (mach_task_self (), transbox->active,
 					    MACH_NOTIFY_DEAD_NAME, 0,
 					    pi->port_right,
 					    MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					    &old);
       if (err)
 	goto out;
-      if (old != MACH_PORT_NULL)
+      if (MACH_PORT_VALID (old))
 	mach_port_deallocate (mach_task_self (), old);
 
       if (t->pi)
@@ -142,14 +148,14 @@ fshelp_set_active_translator (struct port_info *pi,
 
       if (MACH_PORT_VALID (t->active))
 	mach_port_deallocate (mach_task_self (), t->active);
-      mach_port_mod_refs (mach_task_self (), active,
+      mach_port_mod_refs (mach_task_self (), transbox->active,
 			  MACH_PORT_RIGHT_SEND, +1);
-      t->active = active;
+      t->active = transbox->active;
     }
-  else if (! MACH_PORT_VALID (active))
+  else if (! MACH_PORT_VALID (transbox->active))
     {
       int ok;
-      ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
+      ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) transbox);
       assert_backtrace (ok);
     }
 
@@ -179,11 +185,7 @@ fshelp_remove_active_translator (mach_port_t active)
     }
 
   if (t)
-    {
-      int ok;
-      ok = hurd_ihash_remove (&translator_ihash, (hurd_ihash_key_t) t->name);
-      assert_backtrace (ok);
-    }
+    hurd_ihash_locp_remove (&translator_ihash, t->locp);
 
   pthread_mutex_unlock (&translator_ihash_lock);
   return err;
