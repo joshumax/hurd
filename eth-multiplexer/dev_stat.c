@@ -47,6 +47,11 @@ dev_getstat(struct vether_device *ifp, dev_flavor_t flavor,
 		dev_status_t status, natural_t *count)
 {
 	switch (flavor) {
+		case NET_FLAGS:
+			if (*count != 1)
+				return D_INVALID_SIZE;
+			status[0] = ifp->if_flags;
+			break;
 		case NET_STATUS:
 			{
 				register struct net_status *ns = (struct net_status *)status;
