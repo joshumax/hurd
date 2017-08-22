@@ -169,7 +169,7 @@ ds_device_set_status (struct vether_device *vdev, dev_flavor_t flavor,
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
-  return D_INVALID_OPERATION;
+  return vdev_setstat (vdev, flavor, status, statuslen);
 }
 
 kern_return_t

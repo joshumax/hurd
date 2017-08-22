@@ -79,6 +79,8 @@ int foreach_dev_do (dev_act_func func);
 /* dev_stat.c */
 io_return_t dev_getstat (struct vether_device *, dev_flavor_t,
                          dev_status_t, natural_t *);
+io_return_t vdev_setstat (struct vether_device *, dev_flavor_t,
+                          dev_status_t, size_t);
 
 
 #endif
