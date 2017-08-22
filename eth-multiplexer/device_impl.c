@@ -106,10 +106,8 @@ ds_device_write (struct vether_device *vdev, mach_port_t reply_port,
 {
   kern_return_t ret = 0;
   if (vdev == NULL)
-    {
-      vm_deallocate (mach_task_self (), (vm_address_t) data, datalen);
-      return D_NO_SUCH_DEVICE;
-    }
+    return D_NO_SUCH_DEVICE;
+
   /* The packet is forwarded to all virtual interfaces and
    * the interface which the multiplexer connects to. */
   broadcast_pack (data, datalen, vdev);
