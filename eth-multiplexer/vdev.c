@@ -145,7 +145,12 @@ add_vdev (char *name, int size,
   vdev->if_mtu = ETH_MTU;
   vdev->if_header_format = HDR_ETHERNET;
   vdev->if_address_size = ETH_ALEN;
-  vdev->if_flags = 0;
+  vdev->if_flags = (/* The interface is 'UP' on creation.  */
+                    IFF_UP
+                    /* We have allocated resources for it.  */
+                    | IFF_RUNNING
+                    /* Advertise ethernet-style capabilities.  */
+                    | IFF_BROADCAST | IFF_MULTICAST);
 
   /* Compute a pseudo-random but stable ethernet address.  */
   vdev->if_address[0] = 0x52;
@@ -203,8 +208,12 @@ broadcast_pack (char *data, int datalen, struct vether_device *from_vdev)
 {
   int internal_deliver_pack (struct vether_device *vdev)
     {
+      /* Skip current interface.  */
       if (from_vdev == vdev)
 	return 0;
+      /* Skip interfaces that are down.  */
+      if ((vdev->if_flags & IFF_UP) == 0)
+        return 0;
       return deliver_pack (data, datalen, vdev);
     }
 
@@ -247,6 +256,9 @@ broadcast_msg (struct net_rcv_msg *msg)
 
   int internal_deliver_msg (struct vether_device *vdev)
     {
+      /* Skip interfaces that are down.  */
+      if ((vdev->if_flags & IFF_UP) == 0)
+        return 0;
       return deliver_msg (msg, vdev);
     }
 

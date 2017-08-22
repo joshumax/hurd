@@ -108,6 +108,9 @@ ds_device_write (struct vether_device *vdev, mach_port_t reply_port,
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
 
+  if ((vdev->if_flags & IFF_UP) == 0)
+    return D_DEVICE_DOWN;
+
   /* The packet is forwarded to all virtual interfaces and
    * the interface which the multiplexer connects to. */
   broadcast_pack (data, datalen, vdev);
