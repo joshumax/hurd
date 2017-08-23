@@ -36,6 +36,7 @@ int ethernet_open (char *dev_name, device_t master_device,
 int ethernet_close (char *dev_name);
 int ethernet_demuxer (mach_msg_header_t *inp,
 		      mach_msg_header_t *outp);
+error_t eth_set_clear_flags (int set_flags, int clear_flags);
 
 #endif
 

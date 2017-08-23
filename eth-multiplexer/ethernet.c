@@ -75,31 +75,32 @@ int ethernet_demuxer (mach_msg_header_t *inp,
   return 1;
 }
 
-int set_promisc (char *dev_name, mach_port_t ether_port, int is_promisc)
+error_t
+eth_set_clear_flags (int set_flags, int clear_flags)
 {
+  error_t err;
   int flags;
-  int ret;
   size_t count;
 
-  debug ("set_promisc is called, is_promisc: %d\n", is_promisc);
   count = 1;
-  ret = device_get_status (ether_port, NET_FLAGS, (dev_status_t) &flags,
+  err = device_get_status (ether_port, NET_FLAGS, (dev_status_t) &flags,
                            &count);
-  if (ret)
+  if (err)
     {
-      error (0, ret, "device_get_status");
-      return -1;
+      error (0, err, "device_get_status");
+      return err;
     }
-  if (is_promisc)
-    flags |= IFF_PROMISC;
-  else
-    flags &= ~IFF_PROMISC;
-  ret = device_set_status(ether_port, NET_FLAGS, (dev_status_t) &flags, 1);
-  if (ret)
+
+  flags |= set_flags;
+  flags &= ~clear_flags;
+
+  err = device_set_status(ether_port, NET_FLAGS, (dev_status_t) &flags, 1);
+  if (err)
     {
-      error (0, ret, "device_set_status");
-      return -1;
+      error (0, err, "device_set_status");
+      return err;
     }
+
   return 0;
 }
 
@@ -150,7 +151,9 @@ int ethernet_open (char *dev_name, device_t master_device,
   if (err)
     error (2, err, "device_set_filter: %s", dev_name);
 
-  set_promisc (dev_name, ether_port, 1);
+  err = eth_set_clear_flags (IFF_PROMISC, 0);
+  if (err)
+    error (2, err, "eth_set_clear_flags");
 
   err = get_ethernet_address (ether_port, ether_address);
   if (err)
@@ -161,7 +164,12 @@ int ethernet_open (char *dev_name, device_t master_device,
 
 int ethernet_close (char *dev_name)
 {
-  set_promisc (dev_name, ether_port, 0);
+  error_t err;
+
+  err = eth_set_clear_flags (0, IFF_PROMISC);
+  if (err)
+    error (2, err, "eth_set_clear_flags");
+
   return 0;
 }
 
