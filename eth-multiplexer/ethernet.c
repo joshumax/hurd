@@ -77,9 +77,6 @@ int ethernet_demuxer (mach_msg_header_t *inp,
 
 int set_promisc (char *dev_name, mach_port_t ether_port, int is_promisc)
 {
-#ifndef NET_FLAGS
-#define NET_FLAGS (('n'<<16) + 4)
-#endif
   int flags;
   int ret;
   size_t count;
