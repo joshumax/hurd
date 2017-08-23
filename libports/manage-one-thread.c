@@ -36,7 +36,7 @@ ports_manage_port_operations_one_thread (struct port_bucket *bucket,
       struct rpc_info link;
       int status;
       error_t err;
-      register mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
+      mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
       static const mach_msg_type_t RetCodeType = {
 		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
 		/* msgt_size = */		32,

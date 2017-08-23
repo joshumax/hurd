@@ -62,11 +62,11 @@ bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen,
 		char *header, unsigned int hlen, net_hash_entry_t **hash_headpp,
 		net_hash_entry_t *entpp)
 {
-	register bpf_insn_t pc, pc_end;
-	register unsigned int buflen;
+	bpf_insn_t pc, pc_end;
+	unsigned int buflen;
 
-	register unsigned long A, X;
-	register int k;
+	unsigned long A, X;
+	int k;
 	unsigned int mem[BPF_MEMWORDS];
 
 	/* Generic pointer to either HEADER or P according to the specified offset. */
@@ -350,8 +350,8 @@ load_byte:
 int
 bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 {
-	register int i, j, len;
-	register bpf_insn_t p;
+	int i, j, len;
+	bpf_insn_t p;
 
 	len = BPF_BYTES2LEN(bytes);
 
@@ -367,7 +367,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 		 */
 		p = &f[i];
 		if (BPF_CLASS(p->code) == BPF_JMP) {
-			register int from = i + 1;
+			int from = i + 1;
 
 			if (BPF_OP(p->code) == BPF_JA) {
 				if (from + p->k >= len)
@@ -421,7 +421,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 int
 bpf_eq (bpf_insn_t f1, bpf_insn_t f2, int bytes)
 {
-	register int count;
+	int count;
 
 	count = BPF_BYTES2LEN(bytes);
 	for (; count--; f1++, f2++) {
@@ -438,7 +438,7 @@ bpf_eq (bpf_insn_t f1, bpf_insn_t f2, int bytes)
 unsigned int
 bpf_hash (int n, unsigned int *keys)
 {
-	register unsigned int hval = 0;
+	unsigned int hval = 0;
 
 	while (n--) {
 		hval += *keys++;
@@ -451,8 +451,8 @@ int
 bpf_match (net_hash_header_t hash, int n_keys, unsigned int *keys,
 	net_hash_entry_t **hash_headpp, net_hash_entry_t *entpp)
 {
-	register net_hash_entry_t head, entp;
-	register int i;
+	net_hash_entry_t head, entp;
+	int i;
 
 	if (n_keys != hash->n_keys)
 		return FALSE;
@@ -527,7 +527,7 @@ hash_ent_remove (if_filter_list_t *ifp, net_hash_header_t hp, int used,
 void
 net_free_dead_infp (queue_entry_t dead_infp)
 {
-	register net_rcv_port_t infp, nextfp;
+	net_rcv_port_t infp, nextfp;
 
 	for (infp = (net_rcv_port_t) dead_infp; infp != 0; infp = nextfp) {
 		nextfp = (net_rcv_port_t) queue_next(&infp->input);
@@ -547,7 +547,7 @@ net_free_dead_infp (queue_entry_t dead_infp)
 void
 net_free_dead_entp (queue_entry_t dead_entp)
 {
-	register net_hash_entry_t entp, nextentp;
+	net_hash_entry_t entp, nextentp;
 
 	for (entp = (net_hash_entry_t)dead_entp; entp != 0; entp = nextentp) {
 		nextentp = (net_hash_entry_t) queue_next(&entp->chain);
@@ -570,10 +570,10 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 {
 	int               filter_bytes;
 	bpf_insn_t            match;
-	register net_rcv_port_t   infp, my_infp;
+	net_rcv_port_t   infp, my_infp;
 	net_rcv_port_t        nextfp;
 	net_hash_header_t     hhp;
-	register net_hash_entry_t entp, hash_entp=NULL;
+	net_hash_entry_t entp, hash_entp=NULL;
 	net_hash_entry_t      *head, nextentp;
 	queue_entry_t     dead_infp, dead_entp;
 	int               i;

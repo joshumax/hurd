@@ -126,7 +126,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       int status;
       struct port_info *pi;
       struct rpc_info link;
-      register mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
+      mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
       static const mach_msg_type_t RetCodeType = {
 		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
 		/* msgt_size = */		32,

@@ -35,8 +35,8 @@
  *	Insert element at head of queue.
  */
 void enqueue_head(
-	register queue_t	que,
-	register queue_entry_t	elt)
+	queue_t	que,
+	queue_entry_t	elt)
 {
 	elt->next = que->next;
 	elt->prev = que;
@@ -48,8 +48,8 @@ void enqueue_head(
  *	Insert element at tail of queue.
  */
 void enqueue_tail(
-	register queue_t	que,
-	register queue_entry_t	elt)
+	queue_t	que,
+	queue_entry_t	elt)
 {
 	elt->next = que;
 	elt->prev = que->prev;
@@ -61,9 +61,9 @@ void enqueue_tail(
  *	Remove and return element at head of queue.
  */
 queue_entry_t dequeue_head(
-	register queue_t	que)
+	queue_t	que)
 {
-	register queue_entry_t	elt;
+	queue_entry_t	elt;
 
 	if (que->next == que)
 		return((queue_entry_t)0);
@@ -78,9 +78,9 @@ queue_entry_t dequeue_head(
  *	Remove and return element at tail of queue.
  */
 queue_entry_t dequeue_tail(
-	register queue_t	que)
+	queue_t	que)
 {
-	register queue_entry_t	elt;
+	queue_entry_t	elt;
 
 	if (que->prev == que)
 		return((queue_entry_t)0);
@@ -100,7 +100,7 @@ queue_entry_t dequeue_tail(
 /*ARGSUSED*/
 void remqueue(
 	queue_t			que,
-	register queue_entry_t	elt)
+	queue_entry_t	elt)
 {
 	elt->next->prev = elt->prev;
 	elt->prev->next = elt->next;
@@ -111,8 +111,8 @@ void remqueue(
  *	package.
  */
 void insque(
-	register struct queue_entry *entry,
-	register struct queue_entry *pred)
+	struct queue_entry *entry,
+	struct queue_entry *pred)
 {
 	entry->next = pred->next;
 	entry->prev = pred;
@@ -122,7 +122,7 @@ void insque(
 
 struct queue_entry
 *remque(
-	register struct queue_entry *elt)
+	struct queue_entry *elt)
 {
 	(elt->next)->prev = elt->prev;
 	(elt->prev)->next = elt->next;

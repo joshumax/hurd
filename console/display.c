@@ -226,7 +226,7 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
   {
     Request In;
   } Mess;
-  register Request *InP = &Mess.In;
+  Request *InP = &Mess.In;
 
   static const mach_msg_type_t ticknoType = {
     /* msgt_name = */           2,

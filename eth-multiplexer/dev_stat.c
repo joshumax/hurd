@@ -55,7 +55,7 @@ dev_getstat(struct vether_device *ifp, dev_flavor_t flavor,
 			break;
 		case NET_STATUS:
 			{
-				register struct net_status *ns = (struct net_status *)status;
+				struct net_status *ns = (struct net_status *)status;
 
 				if (*count < NET_STATUS_COUNT)
 					return (D_INVALID_OPERATION);
@@ -73,9 +73,9 @@ dev_getstat(struct vether_device *ifp, dev_flavor_t flavor,
 			}
 		case NET_ADDRESS:
 			{
-				register int	addr_byte_count;
-				register int	addr_int_count;
-				register int	i;
+				int	addr_byte_count;
+				int	addr_int_count;
+				int	i;
 
 				addr_byte_count = ifp->if_address_size;
 				addr_int_count = (addr_byte_count + (sizeof(int)-1))
@@ -92,7 +92,7 @@ dev_getstat(struct vether_device *ifp, dev_flavor_t flavor,
 							 - addr_byte_count));
 
 				for (i = 0; i < addr_int_count; i++) {
-					register int word;
+					int word;
 
 					word = status[i];
 					status[i] = htonl(word);
