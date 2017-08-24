@@ -51,7 +51,8 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 	 	mach_msg_type_name_t *devicetype)
 {
   struct vether_device *dev;
-  struct protid *pi = ports_lookup_port (netfs_port_bucket, master_port, 0);
+  struct protid *pi = ports_lookup_port (netfs_port_bucket, master_port,
+                                         netfs_protid_class);
   if (pi == NULL)
     return D_NO_SUCH_DEVICE;
 
