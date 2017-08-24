@@ -38,6 +38,10 @@
 #include "fsys_S.h"
 #include "fsys_reply_U.h"
 
+/* We use this port to communicate with startup.  It is the only
+   object that fsys_getpriv and fsys_init may be invoked upon.  */
+static struct port_info *bootinfo;
+
 static mach_port_t diskfs_exec_ctl;
 extern task_t diskfs_exec_server_task;
 extern task_t diskfs_kernel_task;
@@ -104,7 +108,6 @@ diskfs_start_bootstrap ()
   char *exec_argv, *exec_env;
   const char *initname;
   size_t exec_argvlen, exec_envlen;
-  struct port_info *bootinfo;
   struct protid *rootpi;
   struct peropen *rootpo;
   mach_port_t diskfs_exec;
@@ -282,11 +285,10 @@ diskfs_start_bootstrap ()
   assert_backtrace (retry == FS_RETRY_NORMAL);
   assert_backtrace (pathbuf[0] == '\0');
 
-  err = ports_create_port (diskfs_initboot_class, diskfs_port_bucket,
+  err = ports_create_port (diskfs_control_class, diskfs_port_bucket,
 			   sizeof (struct port_info), &bootinfo);
   assert_perror_backtrace (err);
   bootpt = ports_get_send_right (bootinfo);
-  ports_port_deref (bootinfo);
 
   portarray[INIT_PORT_CRDIR] = root_pt;
   portarray[INIT_PORT_CWDIR] = root_pt;
@@ -461,7 +463,7 @@ diskfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
   error_t err;
 
   if (!init_bootstrap_port
-      || init_bootstrap_port->pi.class != diskfs_initboot_class)
+      || init_bootstrap_port != bootinfo)
     return EOPNOTSUPP;
 
   err = get_privileged_ports (host_priv, dev_master);
@@ -490,10 +492,9 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
   struct protid *rootpi;
   struct peropen *rootpo;
 
-  if (!pt
-      || pt->pi.class != diskfs_initboot_class)
+  if (!pt)
     return EOPNOTSUPP;
-  
+
   if (initdone)
     return EOPNOTSUPP;
   initdone = 1;
