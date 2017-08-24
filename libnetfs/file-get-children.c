@@ -33,9 +33,7 @@ netfs_S_file_get_children (struct protid *cred,
 			   mach_msg_type_number_t *children_len)
 {
   error_t err;
-  if (! cred
-      || cred->pi.bucket != netfs_port_bucket
-      || cred->pi.class != netfs_protid_class)
+  if (! cred)
     return EOPNOTSUPP;
 
   /* check_access performs the same permission check as is normally
