@@ -189,9 +189,10 @@ reboot_mach (int flags)
       fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
                program_invocation_short_name, BOOT (flags), flags);
       sleep (5);
-      while ((err = host_reboot (host_priv, flags)))
-	error (0, err, "reboot");
-      for (;;);
+      err = host_reboot (host_priv, flags);
+      if (err)
+	error (1, err, "reboot");
+      for (;;) sleep (1);
     }
 }
 
