@@ -52,6 +52,7 @@ device_reply-MIGSFLAGS=\
 # fsysServer is only used by the symlink translator which does not use
 # libports.  Disable the default payload to port conversion.
 fsys-MIGSFLAGS = "-DHURD_DEFAULT_PAYLOAD_TO_PORT=1"
+fsysServer-CFLAGS = "-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 
 # If we have a configured tree, include the configuration so that we
 # can conditionally build translators.

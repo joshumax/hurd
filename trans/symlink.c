@@ -163,13 +163,6 @@ S_fsys_getroot (mach_port_t fsys_t,
 }
 
 error_t
-S_fsys_startup (mach_port_t bootstrap, int flags, mach_port_t control,
-		mach_port_t *real, mach_msg_type_name_t *realtype)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
 S_fsys_goaway (mach_port_t control, int flags)
 {
   exit (0);
@@ -181,56 +174,4 @@ S_fsys_syncfs (mach_port_t control,
 	       int recurse)
 {
   return 0;
-}
-
-error_t
-S_fsys_set_options (mach_port_t control,
-		    char *data, mach_msg_type_number_t len,
-		    int do_children)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_get_options (mach_port_t control,
-		    char **data, mach_msg_type_number_t *len)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_getfile (mach_port_t control,
-		uid_t *uids, size_t nuids,
-		uid_t *gids, size_t ngids,
-		char *handle, size_t handllen,
-		mach_port_t *pt,
-		mach_msg_type_name_t *pttype)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_getpriv (mach_port_t control,
-		mach_port_t *host_priv, mach_msg_type_name_t *host_priv_type,
-		mach_port_t *dev_master, mach_msg_type_name_t *dev_master_type,
-		task_t *fs_task, mach_msg_type_name_t *fs_task_type)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_init (mach_port_t control,
-	   mach_port_t reply,
-	   mach_msg_type_name_t replytype,
-	   mach_port_t proc,
-	   auth_t auth)
-{
-  return EOPNOTSUPP;
-}
-
-error_t
-S_fsys_forward (mach_port_t server, mach_port_t requestor,
-		char *argz, size_t argz_len)
-{
-  return EOPNOTSUPP;
 }
