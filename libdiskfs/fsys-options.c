@@ -58,8 +58,7 @@ diskfs_S_fsys_set_options (struct diskfs_control *pt,
 	return error;
       }
 
-  if (!pt
-      || pt->pi.class != diskfs_control_class)
+  if (!pt)
     return EOPNOTSUPP;
 
   if (do_children)
@@ -90,8 +89,7 @@ diskfs_S_fsys_get_options (struct diskfs_control *port,
   size_t argz_len = 0;
   error_t err;
 
-  if (!port
-      || port->pi.class != diskfs_control_class)
+  if (!port)
     return EOPNOTSUPP;
 
   err = argz_add (&argz, &argz_len, program_invocation_name);

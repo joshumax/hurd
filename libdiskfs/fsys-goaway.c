@@ -31,13 +31,12 @@ diskfs_S_fsys_goaway (struct diskfs_control *pt,
 		      int flags)
 {
   error_t ret;
-  
-  if (!pt
-      || pt->pi.class != diskfs_control_class)
+
+  if (!pt)
     return EOPNOTSUPP;
-  
+
   /* XXX FSYS_GOAWAY_NOWAIT not implemented. */
-  
+
   ret = diskfs_shutdown (flags);
 
   if (ret == 0)

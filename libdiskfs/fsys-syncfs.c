@@ -46,11 +46,10 @@ diskfs_S_fsys_syncfs (struct diskfs_control *pi,
 	pthread_mutex_lock (&np->lock);
 	return 0;
       }
-  
-  if (!pi
-      || pi->pi.class != diskfs_control_class)
+
+  if (!pi)
     return EOPNOTSUPP;
-  
+
   pthread_rwlock_rdlock (&diskfs_fsys_lock);
 
   if (children)

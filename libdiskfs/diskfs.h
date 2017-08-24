@@ -925,7 +925,7 @@ diskfs_begin_using_protid_payload (unsigned long payload)
 DISKFS_EXTERN_INLINE struct diskfs_control *
 diskfs_begin_using_control_port (fsys_t port)
 {
-  return ports_lookup_port (diskfs_port_bucket, port, NULL);
+  return ports_lookup_port (diskfs_port_bucket, port, diskfs_control_class);
 }
 
 DISKFS_EXTERN_INLINE struct diskfs_control *
@@ -933,7 +933,7 @@ diskfs_begin_using_control_port_payload (unsigned long payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,
-			       NULL);
+			       diskfs_control_class);
 }
 
 /* And for the exec_startup interface. */

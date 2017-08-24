@@ -42,8 +42,7 @@ diskfs_S_fsys_getfile (struct diskfs_control *pt,
   struct peropen *new_po;
   struct iouser *user;
 
-  if (!pt
-      || pt->pi.class != diskfs_control_class)
+  if (!pt)
     return EOPNOTSUPP;
 
   if (handle_len != sizeof *f)

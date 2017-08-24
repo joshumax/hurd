@@ -54,8 +54,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
     path: NULL,
   };
 
-  if (!pt
-      || pt->pi.class != diskfs_control_class)
+  if (!pt)
     return EOPNOTSUPP;
 
   flags &= O_HURD;
