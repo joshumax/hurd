@@ -55,12 +55,6 @@ fshelp_set_active_translator (struct port_info *pi,
 error_t
 fshelp_remove_active_translator (mach_port_t active);
 
-/* This kind of function is used by fshelp_get_active_translators to
-   filter the list of translators to return.  If a filter returns an
-   error for a given PATH, the translator bound to the PATH is not
-   included in the list.  */
-typedef error_t (*fshelp_filter) (const char *path);
-
 /* Records the list of active translators below PREFIX into the argz
    vector specified by TRANSLATORS filtered by FILTER.  If PREFIX is
    NULL, entries with any prefix are considered.  If FILTER is NULL,
@@ -68,8 +62,8 @@ typedef error_t (*fshelp_filter) (const char *path);
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter,
-			       const char *prefix);
+			       mach_port_t **controls,
+                               size_t *controls_count);
 
 /* Call FUN for each active translator.  If FUN returns non-zero, the
    iteration immediately stops, and returns that value.  FUN is called

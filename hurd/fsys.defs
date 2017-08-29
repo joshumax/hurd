@@ -128,5 +128,26 @@ routine fsys_get_options (
 	RPT
 	out options: data_t, dealloc);
 
-skip;	/* Was fsys_get_children */
-skip;	/* Was fsys_get_source */
+/* Return any active child translators.  NAMES is an argz vector
+   containing file names relative to the root of the translator.
+   CONTROLS is an array containing the corresponding control ports.
+   Note that translators are bound to nodes, and nodes can have zero
+   or more links in the file system, therefore there is no guarantee
+   that a translators name refers to an existing link in the file
+   system.  */
+routine fsys_get_children (
+	server: fsys_t;
+	RPT
+	out names: data_t;
+	out controls: portarray_t);
+
+/* Return information about the source of the translator.  If the
+   concept of a source is applicable, SOURCE should refer to the
+   source of the translator and should be a description considered
+   appropriate in the context of the translator.  For example, if the
+   translator is a filesystem residing on a block device, then SOURCE
+   should be the file name of the underlying block device.  */
+routine fsys_get_source (
+	server: fsys_t;
+	RPT
+	out source: string_t);

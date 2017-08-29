@@ -73,7 +73,7 @@ vpath elfcore.c $(top_srcdir)/exec
 
 crash: crashServer.o crash_replyUser.o msgServer.o elfcore.o
 ifsock: ifsockServer.o
-mtab: fsUser.o
+mtab: fsysUser.o
 password: passwordServer.o
 proxy-defpager: default_pagerServer.o default_pagerUser.o
 streamio: device_replyServer.o

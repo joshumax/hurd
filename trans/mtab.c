@@ -26,6 +26,12 @@
 #include <hurd.h>
 #include <hurd/ihash.h>
 #include <hurd/trivfs.h>
+#if XXX_libc_has_included_our_new_rpc
+#include <hurd/fsys.h>
+... also remember to remove the client code from the Makefile...
+#else
+#include "fsys_U.h"
+#endif
 #include <inttypes.h>
 #include <mntent.h>
 #include <nullauth.h>
@@ -39,11 +45,13 @@
 #include <version.h>
 
 #include "libtrivfs/trivfs_io_S.h"
-#include "fs_U.h"
+
+/* The targets control port.  */
+static mach_port_t target_control;
 
 static char *target_path = NULL;
-static int insecure = 0;
-static int all_translators = 0;
+#define MAX_DEPTH	10
+static int max_depth = MAX_DEPTH;
 
 /* Our control port.  */
 struct trivfs_control *control;
@@ -63,25 +71,21 @@ const char *argp_program_version = STANDARD_HURD_VERSION (mtab);
 
 static const struct argp_option options[] =
 {
-  {"insecure", 'I', 0, 0,
-   "Follow translators not bound to nodes owned by you or root"},
-  {"all-translators", 'A', 0, 0,
-   "List all translators, even those that are probably not "
-   "filesystem translators"},
+  {"depth", 'd', "DEPTH", 0,
+   "Maximum depth to traverse"},
   {}
 };
 
 /* Parse a command line option.	 */
 error_t parse_opt (int key, char *arg, struct argp_state *state)
 {
+  char *end;
   switch (key)
     {
-    case 'I':
-      insecure = 1;
-      break;
-
-    case 'A':
-      all_translators = 1;
+    case 'd':
+      max_depth = strtoull (arg, &end, 10);
+      if (arg == end || end[0] != 0)
+        argp_error (state, "Could not parse depth '%s'.", arg);
       break;
 
     case ARGP_KEY_ARG:
@@ -117,9 +121,14 @@ trivfs_append_args (struct trivfs_control *fsys,
 {
   error_t err;
 
-  if (insecure)
+  if (max_depth != MAX_DEPTH)
     {
-      err = argz_add (argz, argz_len, target_path);
+      char *arg;
+      if (asprintf (&arg, "--depth=%d", max_depth) < 0)
+        return errno;
+
+      err = argz_add (argz, argz_len, arg);
+      free (arg);
       if (err)
 	return err;
     }
@@ -201,7 +210,8 @@ is_owner (io_statbuf_t *st)
 }
 
 error_t
-mtab_populate (struct mtab *mtab, const char *path, int insecure);
+mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
+               int depth);
 
 error_t
 argz_add_device (char **options, size_t *options_len, const char *device);
@@ -213,6 +223,7 @@ int
 main (int argc, char *argv[])
 {
   error_t err;
+  mach_port_t node;
 
   err = argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, 0);
   if (err)
@@ -222,14 +233,27 @@ main (int argc, char *argv[])
   if (err)
     error (2, err, "getting credentials");
 
+  /* Do the lookup without O_NOTRANS to get the root node.  */
+  node = file_name_lookup (target_path, 0, 0);
+  if (! MACH_PORT_VALID (node))
+    error (2, errno, "%s", target_path);
+
+  /* Get the control port.  */
+  err = file_getcontrol (node, &target_control);
+  if (err)
+    error (2, err, "file_getcontrol");
+
+  /* Now that we have the control port, we can drop our
+     privileges.  */
+  err = setnullauth ();
+  if (err)
+    error (3, err, "dropping credentials");
+
   mach_port_t bootstrap;
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap != MACH_PORT_NULL)
     {
       /* Started as a translator.  */
-      err = setnullauth ();
-      if (err)
-        error (3, err, "dropping credentials");
 
       /* Reply to our parent.  */
       err = trivfs_startup (bootstrap, 0, 0, 0, 0, 0, &control);
@@ -254,7 +278,7 @@ main (int argc, char *argv[])
           .lock = PTHREAD_MUTEX_INITIALIZER,
           .ports_seen = HURD_IHASH_INITIALIZER (HURD_IHASH_NO_LOCP),
         };
-      err = mtab_populate (&mtab, target_path, insecure);
+      err = mtab_populate (&mtab, target_path, target_control, max_depth);
       if (err)
 	error (5, err, "%s", target_path);
 
@@ -284,56 +308,23 @@ mtab_add_entry (struct mtab *mtab, const char *entry, size_t length)
   return 0;
 }
 
-/* Check whether the given NODE is a directory on a filesystem
-   translator.  */
-static boolean_t
-is_filesystem_translator (file_t node)
-{
-  error_t err;
-  char *data = NULL;
-  size_t datacnt = 0;
-  int amount;
-  err = dir_readdir (node, &data, &datacnt, 0, 1, 0, &amount);
-  if (data != NULL && datacnt > 0)
-    vm_deallocate (mach_task_self (), (vm_address_t) data, datacnt);
-
-  /* Filesystem translators return either no error, or, if NODE has
-     not been looked up with O_READ, EBADF to dir_readdir
-     requests.  */
-  switch (err)
-    {
-    case 0:
-    case EBADF:
-      return TRUE;
-    default:
-      return FALSE;
-    }
-}
-
-/* Records NODE's idport in ports_seen, returns true if we have
-   already seen this node or there was an error getting the id
-   port.  */
+/* Records CONTROL in ports_seen, returns true if we have already seen
+   this port.  */
 boolean_t
-mtab_mark_as_seen (struct mtab *mtab, mach_port_t node)
+mtab_mark_as_seen (struct mtab *mtab, mach_port_t control)
 {
   error_t err;
-  mach_port_t idport, fsidport;
-  ino_t fileno;
-
-  err = io_identity (node, &idport, &fsidport, &fileno);
-  if (err)
+  if (hurd_ihash_find (&mtab->ports_seen, (hurd_ihash_key_t) control))
     return TRUE;
 
-  mach_port_deallocate (mach_task_self (), fsidport);
+  err = mach_port_mod_refs (mach_task_self (), control,
+                            MACH_PORT_RIGHT_SEND, +1);
+  if (err)
+    /* Ewww.  */
+    return TRUE;
 
-  if (hurd_ihash_find (&mtab->ports_seen, idport))
-    {
-      /* Already seen.  Get rid of the extra reference.  */
-      mach_port_deallocate (mach_task_self (), idport);
-      return TRUE;
-    }
-
-  hurd_ihash_add (&mtab->ports_seen, idport, (hurd_ihash_value_t) idport);
+  hurd_ihash_add (&mtab->ports_seen,
+                  (hurd_ihash_key_t) control, (hurd_ihash_value_t) control);
   return FALSE;
 }
 
@@ -342,12 +333,13 @@ mtab_mark_as_seen (struct mtab *mtab, mach_port_t node)
    by root or the current user.  */
 /* XXX split up */
 error_t
-mtab_populate (struct mtab *mtab, const char *path, int insecure)
+mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
+               int depth)
 {
   error_t err = 0;
 
   /* These resources are freed in the epilogue.	 */
-  file_t node = MACH_PORT_NULL, underlying_node = MACH_PORT_NULL;
+  file_t node = MACH_PORT_NULL;
   char *argz = NULL;
   size_t argz_len = 0;
   char **argv = NULL;
@@ -359,53 +351,22 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   size_t entry_len = 0;
   char *children = NULL;
   size_t children_len = 0;
+  mach_port_t *controls = NULL;
+  size_t controls_count = 0;
+  size_t i;
 
-  /* Get the underlying node.  */
-  underlying_node = file_name_lookup (path, O_NOTRANS, 0666);
-  if (underlying_node == MACH_PORT_NULL)
-    {
-      err = errno;
-      goto errout;
-    }
-
-  if (! insecure)
-    {
-      /* Check who owns the node the translator is bound to.  */
-      io_statbuf_t st;
-      err = io_stat (underlying_node, &st);
-      if (err)
-	goto errout;
-
-      if (st.st_uid != 0 && st.st_gid != 0 && ! is_owner (&st))
-	{
-	  err = EPERM;
-	  goto errout;
-	}
-    }
-
-  /* (Re-)do the lookup without O_NOTRANS to get the root node.  */
-  node = file_name_lookup (path, 0, 0666);
-  if (node == MACH_PORT_NULL)
-    {
-      err = errno;
-      goto errout;
-    }
-
-  if (! (all_translators || is_filesystem_translator (node)))
-    {
-      err = 0;
-      goto errout;
-    }
+  if (depth < 0)
+    return 0;
 
   /* Avoid running in circles.  */
-  if (mtab_mark_as_seen (mtab, underlying_node))
+  if (mtab_mark_as_seen (mtab, control))
     {
       err = 0;
       goto errout;
     }
 
   /* Query its options.	 */
-  err = file_get_fs_options (node, &argz, &argz_len);
+  err = fsys_get_options (control, &argz, &argz_len);
   if (err)
     {
       if (err == EOPNOTSUPP)
@@ -452,7 +413,7 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   argz_stringify (options, options_len, ',');
 
   string_t source;
-  err = file_get_source (node, source);
+  err = fsys_get_source (control, source);
   if (err)
     goto errout;
 
@@ -473,8 +434,9 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   if (err)
     goto errout;
 
-  /* path has an active translator, query its children.	 */
-  err = file_get_children (node, &children, &children_len);
+  /* Recurse.  */
+  err = fsys_get_children (control, &children, &children_len,
+                           &controls, &controls_count);
   if (err == EOPNOTSUPP)
     {
       err = 0;
@@ -484,10 +446,16 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
   if (err)
     goto errout;
 
-  if (children_len)
-    for (char *c = children; c; c = argz_next (children, children_len, c))
+  char *c;
+  if (children_len && controls_count)
+    for (c = children, i = 0; c && i < controls_count;
+         c = argz_next (children, children_len, c), i++)
       {
 	char *p = NULL;
+
+        if (! MACH_PORT_VALID (controls[i]))
+          continue;
+
 	asprintf (&p, "%s%s%s",
 		  path,
 		  path[strlen (path) - 1] == '/'? "": "/",
@@ -498,7 +466,7 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 	    goto errout;
 	  }
 
-	err = mtab_populate (mtab, p, insecure);
+	err = mtab_populate (mtab, p, controls[i], depth - 1);
 	if (err)
 	  {
 	    /* There is really not much we can do about errors here.  */
@@ -507,11 +475,12 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 	  }
 
 	free (p);
+        err = mach_port_deallocate (mach_task_self (), controls[i]);
+        assert_perror_backtrace (err);
+        controls[i] = MACH_PORT_NULL;
       }
 
  errout:
-  if (underlying_node != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), underlying_node);
   if (node != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), node);
 
@@ -529,6 +498,9 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
 
   if (children)
     vm_deallocate (mach_task_self (), (vm_address_t) children, children_len);
+  if (controls)
+    vm_deallocate (mach_task_self (), (vm_address_t) controls,
+                   controls_count * sizeof *controls);
 
   return err;
 }
@@ -647,29 +619,6 @@ open_hook (struct trivfs_peropen *peropen)
   mtab->contents_len = 0;
   hurd_ihash_init (&mtab->ports_seen, HURD_IHASH_NO_LOCP);
 
-  /* The mtab object is initialized, but not yet populated.  We delay
-     that until that data is really needed.  This avoids the following
-     problems:
-
-     Suppose you have
-
-     settrans -ac /foo /hurd/mtab /
-
-     If you now access /foo, the mtab translator will walk the tree of
-     all active translators starting from /.  If it visits /foo, it
-     will talk to itself.  Previously the translator migitated this by
-     comparing the control port of the translator with its own.  This
-     does not work if you got two mtab translators like this:
-
-     settrans -ac /foo /hurd/mtab /
-     settrans -ac /bar /hurd/mtab /
-
-     With a single-threaded mtab server this results in a dead-lock,
-     with a multi-threaded server this will create more and more
-     threads.
-
-     Delaying the data generation until it is really needed cleanly
-     avoids these kind of problems.  */
   return 0;
 }
 
@@ -710,7 +659,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
   if (op->contents == NULL)
     {
-      err = mtab_populate (op, target_path, insecure);
+      err = mtab_populate (op, target_path, target_control, max_depth);
       if (err)
 	goto out;
     }
@@ -766,7 +715,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
 
   if (op->contents == NULL)
     {
-      err = mtab_populate (op, target_path, insecure);
+      err = mtab_populate (op, target_path, target_control, max_depth);
       if (err)
 	goto out;
     }
@@ -823,7 +772,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 
   if (op->contents == NULL)
     {
-      error_t err = mtab_populate (op, target_path, insecure);
+      error_t err = mtab_populate (op, target_path, target_control, max_depth);
       if (err)
 	goto out;
     }

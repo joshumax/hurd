@@ -1,8 +1,6 @@
-/* file_get_source
+/* fsys_get_source
 
-   Copyright (C) 2013 Free Software Foundation, Inc.
-
-   Written by Justus Winter <4winter@informatik.uni-hamburg.de>
+   Copyright (C) 2017 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -20,17 +18,21 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
-#include "fs_S.h"
+#include "fsys_S.h"
 
-/* Return information about the source of the receiving
-   filesystem.	*/
+/* Return information about the source of the translator.  If the
+   concept of a source is applicable, SOURCE should refer to the
+   source of the translator and should be a description considered
+   appropriate in the context of the translator.  For example, if the
+   translator is a filesystem residing on a block device, then SOURCE
+   should be the file name of the underlying block device.  */
 error_t
-diskfs_S_file_get_source (struct protid *cred,
+diskfs_S_fsys_get_source (struct diskfs_control *fsys,
+                          mach_port_t reply,
+                          mach_msg_type_name_t replytype,
 			  char *source)
 {
-  if (! cred
-      || cred->pi.bucket != diskfs_port_bucket
-      || cred->pi.class != diskfs_protid_class)
+  if (! fsys)
     return EOPNOTSUPP;
 
   return diskfs_get_source (source, 1024 /* XXX */);

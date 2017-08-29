@@ -1,8 +1,6 @@
-/* file_get_source
+/* fsys_get_source
 
-   Copyright (C) 2013 Free Software Foundation, Inc.
-
-   Written by Justus Winter <4winter@informatik.uni-hamburg.de>
+   Copyright (C) 2017 Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -20,15 +18,21 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
-#include "fs_S.h"
+#include "fsys_S.h"
 
-/* Return information about the source of the receiving
-   filesystem.  */
+/* Return information about the source of the translator.  If the
+   concept of a source is applicable, SOURCE should refer to the
+   source of the translator and should be a description considered
+   appropriate in the context of the translator.  For example, if the
+   translator is a filesystem residing on a block device, then SOURCE
+   should be the file name of the underlying block device.  */
 error_t
-netfs_S_file_get_source (struct protid *cred,
+netfs_S_fsys_get_source (struct netfs_control *fsys,
+                         mach_port_t reply,
+                         mach_msg_type_name_t reply_type,
 			 char *source)
 {
-  if (! cred)
+  if (! fsys)
     return EOPNOTSUPP;
 
   return netfs_get_source (source, 1024 /* XXX */);

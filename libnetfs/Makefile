@@ -34,8 +34,7 @@ FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-get-translator.c file-getcontrol.c file-getlinknode.c \
 	file-lock-stat.c file-lock.c file-set-size.c \
 	file-set-translator.c file-statfs.c file-sync.c file-syncfs.c \
-	file-utimes.c file-reparent.c fsstubs.c	file-get-transcntl.c \
-	get-source.c
+	file-utimes.c file-reparent.c fsstubs.c	file-get-transcntl.c
 
 IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c     \
@@ -45,7 +44,7 @@ IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-version.c
 
 FSYSSRCS= fsys-syncfs.c fsys-getroot.c fsys-get-options.c fsys-set-options.c \
-	fsys-goaway.c fsysstubs.c file-get-children.c file-get-source.c
+	fsys-goaway.c fsysstubs.c fsys-get-children.c fsys-get-source.c
 
 IFSOCKSRCS=
 OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
@@ -53,7 +52,8 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 	init-startup.c startup-argp.c set-options.c append-args.c	      \
 	runtime-argp.c std-runtime-argp.c std-startup-argp.c		      \
 	append-std-options.c trans-callback.c set-get-trans.c		      \
-	nref.c nrele.c nput.c file-get-storage-info-default.c dead-name.c
+	nref.c nrele.c nput.c file-get-storage-info-default.c dead-name.c     \
+	get-source.c
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 

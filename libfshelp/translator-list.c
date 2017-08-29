@@ -198,45 +198,32 @@ fshelp_remove_active_translator (mach_port_t active)
 error_t
 fshelp_get_active_translators (char **translators,
 			       size_t *translators_len,
-			       fshelp_filter filter,
-			       const char *prefix)
+			       mach_port_t **controls,
+                               size_t *controls_count)
 {
   error_t err = 0;
   pthread_mutex_lock (&translator_ihash_lock);
 
-  if (prefix && strlen (prefix) == 0)
-    prefix = NULL;
+  *controls = calloc (translator_ihash.nr_items, sizeof **controls);
+  if (*controls == NULL)
+    {
+      pthread_mutex_unlock (&translator_ihash_lock);
+      return ENOMEM;
+    }
+  *controls_count = 0;
 
   HURD_IHASH_ITERATE (&translator_ihash, value)
     {
       struct translator *t = value;
 
-      if (prefix != NULL
-	  && (strncmp (t->name, prefix, strlen (prefix)) != 0
-	      || t->name[strlen (prefix)] != '/'))
-	/* Skip this entry, as it is not below PREFIX.  */
+      err = mach_port_mod_refs (mach_task_self (), t->active,
+				MACH_PORT_RIGHT_SEND, +1);
+      if (err)
 	continue;
+      (*controls)[*controls_count] = t->active;
+      (*controls_count)++;
 
-      if (filter)
-	{
-	  char *dir = strdup (t->name);
-	  if (! dir)
-	    {
-	      err = ENOMEM;
-	      break;
-	    }
-
-	  err = filter (dirname (dir));
-	  free (dir);
-	  if (err)
-	    {
-	      err = 0;
-	      continue; /* Skip this entry.  */
-	    }
-	}
-
-      err = argz_add (translators, translators_len,
-		      &t->name[prefix? strlen (prefix) + 1: 0]);
+      err = argz_add (translators, translators_len, t->name);
       if (err)
 	break;
     }
