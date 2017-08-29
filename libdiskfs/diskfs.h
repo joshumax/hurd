@@ -586,11 +586,11 @@ error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The user may define this function.  The function must set source to
-   the source of CRED. The function may return an EOPNOTSUPP to
-   indicate that the concept of a source device is not applicable. The
-   default function always returns EOPNOTSUPP. */
-error_t diskfs_get_source (struct protid *cred,
-                           char *source, size_t source_len);
+   the source of the translator. The function may return an EOPNOTSUPP
+   to indicate that the concept of a source device is not
+   applicable. The default function always returns diskfs_disk_name,
+   or EOPNOTSUPP if it is NULL. */
+error_t diskfs_get_source (char *source, size_t source_len);
 
 /* Libdiskfs contains a node cache.
 

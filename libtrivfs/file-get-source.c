@@ -30,5 +30,5 @@ trivfs_S_file_get_source (struct trivfs_protid *cred,
 			  mach_msg_type_name_t replyPoly,
 			  char *source)
 {
-  return cred? trivfs_get_source (cred, source, 1024 /* XXX */): EOPNOTSUPP;
+  return cred ? trivfs_get_source (source, 1024 /* XXX */) : EOPNOTSUPP;
 }

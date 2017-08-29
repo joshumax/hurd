@@ -33,5 +33,5 @@ diskfs_S_file_get_source (struct protid *cred,
       || cred->pi.class != diskfs_protid_class)
     return EOPNOTSUPP;
 
-  return diskfs_get_source (cred, source, 1024 /* XXX */);
+  return diskfs_get_source (source, 1024 /* XXX */);
 }

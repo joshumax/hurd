@@ -31,5 +31,5 @@ netfs_S_file_get_source (struct protid *cred,
   if (! cred)
     return EOPNOTSUPP;
 
-  return netfs_get_source (cred, source, 1024 /* XXX */);
+  return netfs_get_source (source, 1024 /* XXX */);
 }

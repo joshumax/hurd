@@ -22,7 +22,7 @@
 #include "priv.h"
 
 error_t __attribute__ ((weak))
-netfs_get_source (struct protid *cred, char *source, size_t source_len)
+netfs_get_source (char *source, size_t source_len)
 {
   return EOPNOTSUPP;
 }
