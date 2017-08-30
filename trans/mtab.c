@@ -141,31 +141,34 @@ size_t uids_len, gids_len;
 error_t
 get_credentials (void)
 {
+  int len, len_;
   /* Fetch uids...  */
-  uids_len = geteuids (0, 0);
-  if (uids_len < 0)
+  len = geteuids (0, NULL);
+  if (len < 0)
     return errno;
 
-  uids = malloc (uids_len * sizeof (uid_t));
+  uids = malloc (len * sizeof (uid_t));
   if (! uids)
     return ENOMEM;
 
-  uids_len = geteuids (uids_len, uids);
-  if (uids_len < 0)
+  len_ = geteuids (len, uids);
+  if (len_ != len)
     return errno;
+  uids_len = (size_t) len;
 
   /* ... and gids.  */
-  gids_len = getgroups (0, 0);
-  if (gids_len < 0)
+  len = getgroups (0, NULL);
+  if (len < 0)
     return errno;
 
-  gids = malloc (gids_len * sizeof (gid_t));
-  if (! uids)
+  gids = malloc (len * sizeof (gid_t));
+  if (! gids)
     return ENOMEM;
 
-  gids_len = getgroups (gids_len, gids);
-  if (gids_len < 0)
+  len_ = getgroups (len, gids);
+  if (len_ != len)
     return errno;
+  gids_len = (size_t) len;
 
   return 0;
 }
@@ -428,7 +431,7 @@ mtab_populate (struct mtab *mtab, const char *path, int insecure)
       goto errout;
     }
 
-  for (int i = 1; i < count - 1; i++)
+  for (size_t i = 1; i < count - 1; i++)
     {
       char *v = argv[i];
 
@@ -775,13 +778,14 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
       goto check;
     case SEEK_END:
       offs += op->contents_len;
+      goto check;
     case SEEK_SET:
     check:
       if (offs >= 0)
-	{
-	  *new_offs = op->offs = offs;
-	  break;
-	}
+        *new_offs = op->offs = offs;
+      else
+        err = EINVAL;
+      break;
     default:
       err = EINVAL;
     }
