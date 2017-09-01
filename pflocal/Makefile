@@ -29,5 +29,7 @@ HURDLIBS = pipe trivfs iohelp fshelp ports ihash shouldbeinlibc
 LDLIBS = -lpthread
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+fsServer-CFLAGS = "-DMIG_EOPNOTSUPP=EOPNOTSUPP"
+ioServer-CFLAGS = "-DMIG_EOPNOTSUPP=EOPNOTSUPP"
 
 include ../Makeconf
