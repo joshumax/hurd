@@ -19,6 +19,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 
+#include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <hurd/fsys.h>
