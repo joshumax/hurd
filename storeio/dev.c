@@ -161,8 +161,11 @@ dev_open (struct dev *dev)
      to support this.  */
   store_set_flags (dev->store, STORE_INACTIVE);
 
-  dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
-		   MAP_ANON, 0, 0);
+  if (! dev->store->block_size)
+    dev->buf = NULL;
+  else
+    dev->buf = mmap (0, dev->store->block_size, PROT_READ|PROT_WRITE,
+		     MAP_ANON, 0, 0);
   if (dev->buf == MAP_FAILED)
     {
       store_free (dev->store);
