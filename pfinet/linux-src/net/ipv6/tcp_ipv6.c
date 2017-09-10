@@ -130,9 +130,9 @@ static int tcp_v6_get_port(struct sock *sk, unsigned short snum)
 
 	SOCKHASH_LOCK();
 	if (snum == 0) {
-		int rover = tcp_port_rover;
 		int low = sysctl_local_port_range[0];
 		int high = sysctl_local_port_range[1];
+		int rover = net_random() % (high - low) + low;
 		int remaining = (high - low) + 1;
 
 		do {	rover++;
@@ -148,7 +148,6 @@ static int tcp_v6_get_port(struct sock *sk, unsigned short snum)
 			(void) 0;
 
 		} while (--remaining > 0);
-		tcp_port_rover = rover;
 
 		/* Exhausted local port range during search? */
 		if (remaining <= 0)

@@ -123,7 +123,6 @@ int sysctl_local_port_range[2] = { 1024, 4999 };
 #else
 int sysctl_local_port_range[2] = { 32768, 61000 };
 #endif
-int tcp_port_rover = (1024 - 1);
 
 static __inline__ int tcp_hashfn(__u32 laddr, __u16 lport,
 				 __u32 faddr, __u16 fport)
@@ -223,9 +222,9 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 
 	SOCKHASH_LOCK();
 	if (snum == 0) {
-		int rover = tcp_port_rover;
 		int low = sysctl_local_port_range[0];
 		int high = sysctl_local_port_range[1];
+		int rover = net_random() % (high - low) + low;
 		int remaining = (high - low) + 1;
 
 		do {	rover++;
@@ -239,7 +238,6 @@ static int tcp_v4_get_port(struct sock *sk, unsigned short snum)
 		next:
 			; /* Do nothing.  */
 		} while (--remaining > 0);
-		tcp_port_rover = rover;
 
 		/* Exhausted local port range during search? */
 		if (remaining <= 0)

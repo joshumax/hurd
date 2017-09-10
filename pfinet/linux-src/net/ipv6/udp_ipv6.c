@@ -92,13 +92,12 @@ static int udp_v6_get_port(struct sock *sk, unsigned short snum)
 {
 	SOCKHASH_LOCK();
 	if (snum == 0) {
+		int low = sysctl_local_port_range[0];
+		int high = sysctl_local_port_range[1];
 		int best_size_so_far, best, result, i;
 
-		if (udp_port_rover > sysctl_local_port_range[1] ||
-		    udp_port_rover < sysctl_local_port_range[0])
-			udp_port_rover = sysctl_local_port_range[0];
 		best_size_so_far = 32767;
-		best = result = udp_port_rover;
+		best = result = net_random() % (high - low) + low;
 		for (i = 0; i < UDP_HTABLE_SIZE; i++, result++) {
 			struct sock *sk;
 			int size;
@@ -132,7 +131,7 @@ static int udp_v6_get_port(struct sock *sk, unsigned short snum)
 				break;
 		}
 gotit:
-		udp_port_rover = snum = result;
+		snum = result;
 	} else {
 		struct sock *sk2;
 		int addr_type = ipv6_addr_type(&sk->net_pinfo.af_inet6.rcv_saddr);
