@@ -36,9 +36,9 @@
 
 #define debug(format, ...) do				\
 {							\
-  char buf[1024];                                       \
-  snprintf (buf, 1024, "multiplexer: %s: %s\n", __func__, format);       \
-  fprintf (stderr , buf, ## __VA_ARGS__);		\
+  fprintf (stderr, "eth-multiplexer: %s: ", __func__);  \
+  fprintf (stderr, format, ## __VA_ARGS__);		\
+  fprintf (stderr, "\n");                               \
   fflush (stderr);					\
 } while (0)
 
