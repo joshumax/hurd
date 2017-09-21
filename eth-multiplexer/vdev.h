@@ -36,7 +36,6 @@
 struct port_bucket *port_bucket;
 struct port_class *vdev_portclass;
 
-#define MAX_SERVERS 10
 #define ETH_MTU 1500
 
 struct vether_device
