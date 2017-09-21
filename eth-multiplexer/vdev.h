@@ -67,7 +67,6 @@ struct vether_device *add_vdev (char *name, int size,
 				struct port_class *class,
 				struct port_bucket *bucket);
 void destroy_vdev (void *port);
-int has_vdev ();
 int deliver_msg (struct net_rcv_msg *msg, struct vether_device *vdev);
 int deliver_pack (char *data, int datalen, struct vether_device *vdev);
 boolean_t all_dev_close ();

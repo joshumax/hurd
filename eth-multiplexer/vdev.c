@@ -194,13 +194,6 @@ destroy_vdev (void *port)
   destroy_filters (&vdev->port_list);
 }
 
-/* Test if there are devices existing in the list */
-int
-has_vdev ()
-{
-  return dev_head != NULL;
-}
-
 /* Broadcast the packet to all virtual interfaces
  * except the one the packet is from */
 int
