@@ -33,9 +33,6 @@
 #include "netfs_impl.h"
 #include "util.h"
 
-extern struct port_bucket *port_bucket;
-extern struct port_class *vdev_portclass;
-extern struct port_class *other_portclass;
 extern struct port_info *notify_pi;
 
 /* Implementation of device interface */
@@ -60,15 +57,11 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
    * create it now. */
   if (pi->po->np->nn->ln == NULL)
     {
-      extern struct port_bucket *port_bucket;
-      extern struct port_class *vdev_portclass;
       extern struct stat underlying_node_stat;
       static int ino_count = 0;
       /* Create a new light node (virtual device). */
       struct lnode *ln = (struct lnode *) add_vdev (pi->po->np->nn->name,
-						    sizeof (*ln),
-						    vdev_portclass,
-						    port_bucket);
+						    sizeof (*ln));
       if (ln == NULL)
 	{
 	  ports_port_deref (pi);

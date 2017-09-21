@@ -33,6 +33,9 @@
 #include "queue.h"
 #include "util.h"
 
+struct port_bucket *port_bucket;
+struct port_class *vdev_portclass;
+
 #define MAX_SERVERS 10
 #define ETH_MTU 1500
 
@@ -63,9 +66,7 @@ int serv_connect (mach_port_t port);
 int serv_disconnect ();
 struct vether_device *lookup_dev_by_name (char *name);
 int remove_dead_port_from_dev (mach_port_t dead_port);
-struct vether_device *add_vdev (char *name, int size,
-				struct port_class *class,
-				struct port_bucket *bucket);
+struct vether_device *add_vdev (char *name, size_t size);
 void destroy_vdev (void *port);
 int deliver_msg (struct net_rcv_msg *msg, struct vether_device *vdev);
 int deliver_pack (char *data, int datalen, struct vether_device *vdev);

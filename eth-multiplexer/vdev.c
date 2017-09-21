@@ -125,8 +125,7 @@ remove_dead_port_from_dev (mach_port_t dead_port)
 
 /* Add a new virtual interface to the multiplexer. */
 struct vether_device *
-add_vdev (char *name, int size,
-	  struct port_class *class, struct port_bucket *bucket)
+add_vdev (char *name, size_t size)
 {
   error_t err;
   uint32_t hash;
@@ -134,7 +133,7 @@ add_vdev (char *name, int size,
 
   if (size < sizeof (*vdev))
     size = sizeof (*vdev);
-  err = ports_create_port (class, bucket, size, &vdev);
+  err = ports_create_port (vdev_portclass, port_bucket, size, &vdev);
   if (err)
     return NULL;
 
