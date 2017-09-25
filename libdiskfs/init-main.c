@@ -61,7 +61,7 @@ diskfs_init_main (struct argp *startup_argp,
   /* Initialize the diskfs library.  Must come before any other diskfs call. */
   err = diskfs_init_diskfs ();
   if (err)
-    error (4, err, "init");
+    error (4, err, "diskfs_init_diskfs");
 
   err = store_parsed_open (*store_parsed, diskfs_readonly ? STORE_READONLY : 0,
 			   &store);
