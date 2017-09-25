@@ -467,30 +467,15 @@ void udp_err(struct sk_buff *skb, unsigned char *dp, int len)
 	}
 
 	/*
-	 *	Various people wanted BSD UDP semantics. Well they've come
-	 *	back out because they slow down response to stuff like dead
-	 *	or unreachable name servers and they screw term users something
-	 *	chronic. Oh and it violates RFC1122. So basically fix your
-	 *	client code people.
-	 */
-
-	/*
 	 *      RFC1122: OK.  Passes ICMP errors back to application, as per
-	 *	4.1.3.3. After the comment above, that should be no surprise.
+	 *	4.1.3.3.
 	 */
-
-	if (!harderr && !sk->ip_recverr)
-		return;
-
-	/*
-	 *	4.x BSD compatibility item. Break RFC1122 to
-	 *	get BSD socket semantics.
-	 */
-	if(sk->bsdism && sk->state!=TCP_ESTABLISHED)
-		return;
-
-	if (sk->ip_recverr)
+	if (!sk->ip_recverr) {
+		if (!harderr || sk->state != TCP_ESTABLISHED)
+			return;
+	} else {
 		ip_icmp_error(sk, skb, err, uh->dest, info, (u8*)(uh+1));
+	}
 	sk->err = err;
 	sk->error_report(sk);
 }
