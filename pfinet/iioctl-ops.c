@@ -49,7 +49,7 @@ extern void inquire_device (struct device *dev, uint32_t *addr,
 /* Truncate name, take the global lock and find device with this name.  */
 struct device *get_dev (char *name)
 {
-  char ifname[16];
+  char ifname[IFNAMSIZ];
   struct device *dev;
 
   memcpy (ifname, name, IFNAMSIZ-1);
