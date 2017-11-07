@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <stdio.h>
+#include <fcntl.h>
 #include <argp.h>
 
 #include <hurd.h>
@@ -32,6 +33,7 @@ static const struct argp_option options[] = {
   {"silent", 's', 0, 0, "Don't print devices found"},
   {"quiet", 0, 0, OPTION_ALIAS},
   {"first", 'f', 0, 0, "Stop after the first device found"},
+  {"master-device", 'M', "FILE", 0, "Get a pseudo master device port"},
   {0}
 };
 static const char *args_doc = "DEVNAME...";
@@ -65,6 +67,17 @@ main (int argc, char **argv)
 
 	case 'f':
 	  all = 0; break;
+
+	case 'M':
+	  if (device_master != MACH_PORT_NULL)
+	    mach_port_deallocate (mach_task_self (), device_master);
+
+	  device_master = file_name_lookup (arg, O_READ | O_WRITE, 0);
+	  if (device_master == MACH_PORT_NULL)
+	    argp_failure (state, 3, errno, "Can't open device master port %s",
+			  arg);
+
+	  break;
 
 	case ARGP_KEY_ARG:
 	  if (device_master == MACH_PORT_NULL)
