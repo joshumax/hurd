@@ -99,6 +99,13 @@ HAVE_SUN_RPC = @HAVE_SUN_RPC@
 # Whether we found libgcrypt.
 HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
 
+# Whether we found liblwip.
+HAVE_LIBLWIP = @HAVE_LIBLWIP@
+
+# How to compile and link against liblwip.
+liblwip_CFLAGS = @liblwip_CFLAGS@
+liblwip_LIBS = @liblwip_LIBS@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@

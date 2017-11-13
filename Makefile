@@ -50,6 +50,10 @@ ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd
 endif
 
+ifeq ($(HAVE_LIBLWIP),yes)
+prog-subdirs += lwip
+endif
+
 # Other directories
 other-subdirs = hurd doc config release include
 
