@@ -1234,6 +1234,11 @@ do_exec (file_t file,
 	goto out;
 
       set_name (newtask, argv, pid);
+
+      e.error = proc_set_entry (boot->portarray[INIT_PORT_PROC],
+			        e.entry);
+      if (e.error)
+	goto out;
     }
   else
     set_name (newtask, argv, 0);

@@ -416,3 +416,13 @@ routine proc_make_task_namespace (
 
 skip; /* proc_set_exe */
 skip; /* proc_get_exe */
+
+/* Set the locations of the executable entry.  */
+routine proc_set_entry (
+	process: process_t;
+	entry: vm_address_t);
+
+/* Fetch the locations of the executable entry.  */
+routine proc_get_entry (
+	process: process_t;
+	out entry: vm_address_t);

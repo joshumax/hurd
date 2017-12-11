@@ -348,6 +348,24 @@ S_proc_get_arg_locations (struct proc *p,
   return 0;
 }
 
+/* Implement proc_set_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_set_entry (struct proc *p, vm_address_t entry)
+{
+  if (!p)
+    return EOPNOTSUPP;
+  p->p_entry = entry;
+  return 0;
+}
+
+/* Implement proc_get_entry as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_get_entry (struct proc *p, vm_address_t *entry)
+{
+  *entry = p->p_entry;
+  return 0;
+}
+
 /* Implement proc_dostop as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_dostop (struct proc *p,
