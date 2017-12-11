@@ -413,3 +413,6 @@ routine proc_get_code (
 routine proc_make_task_namespace (
 	process: process_t;
 	notify: mach_port_send_t);
+
+skip; /* proc_set_exe */
+skip; /* proc_get_exe */

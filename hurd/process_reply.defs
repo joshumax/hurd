@@ -194,3 +194,6 @@ simpleroutine proc_get_code_reply (
 	end_code: vm_address_t);
 
 skip; /* proc_make_task_namespace  */
+
+skip; /* proc_set_exe */
+skip; /* proc_get_exe */

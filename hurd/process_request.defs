@@ -417,3 +417,6 @@ simpleroutine proc_make_task_namespace_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
 	notify: mach_port_send_t);
+
+skip; /* proc_set_exe */
+skip; /* proc_get_exe */
