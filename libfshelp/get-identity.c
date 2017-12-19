@@ -42,7 +42,12 @@ id_clean (void *cookie)
 {
   struct idspec *i = cookie;
   pthread_mutex_lock (&idlock);
-  hurd_ihash_locp_remove (&idhash, i->id_hashloc);
+  if (refcounts_hard_references(&i->pi.refcounts) == 0)
+    {
+      /* Nobody got a send right in between, we can remove from the hash.  */
+      hurd_ihash_locp_remove (&idhash, i->id_hashloc);
+      ports_port_deref_weak (&i->pi);
+    }
   pthread_mutex_unlock (&idlock);
 }
 
@@ -50,7 +55,7 @@ static void
 id_initialize ()
 {
   assert_backtrace (!idclass);
-  idclass = ports_create_class (id_clean, NULL);
+  idclass = ports_create_class (NULL, id_clean);
 }
 
 error_t
@@ -74,6 +79,9 @@ fshelp_get_identity (struct port_bucket *bucket,
       err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) fileno, i);
       if (err)
         goto lose_port;
+
+      /* Weak reference for the hash entry.  */
+      ports_port_ref_weak(&i->pi);
 
       *pt = ports_get_right (i);
       ports_port_deref (i);
