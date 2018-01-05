@@ -70,6 +70,7 @@ fshelp_get_identity (struct port_bucket *bucket,
   if (!idclass)
     id_initialize ();
 
+  /* FIXME: ino_t is 64bit, hurd_ihash_key_t is 32bit.  */
   i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) fileno);
   if (i == NULL)
     {
