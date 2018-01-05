@@ -32,10 +32,38 @@ struct idspec
 {
   struct port_info pi;
   hurd_ihash_locp_t id_hashloc;
+  ino_t cache_id;
 };
 
+/* The size of ino_t is larger than hurd_ihash_key_t on 32 bit
+   platforms.  We therefore have to use libihashs generalized key
+   interface.  */
+
+/* This is the mix function of fasthash, see
+   https://code.google.com/p/fast-hash/ for reference.  */
+#define mix_fasthash(h) ({              \
+        (h) ^= (h) >> 23;               \
+        (h) *= 0x2127599bf4325c37ULL;   \
+        (h) ^= (h) >> 47; })
+
+static hurd_ihash_key_t
+hash (const void *key)
+{
+  ino_t i;
+  i = *(ino_t *) key;
+  mix_fasthash (i);
+  return (hurd_ihash_key_t) i;
+}
+
+static int
+compare (const void *a, const void *b)
+{
+  return *(ino_t *) a == *(ino_t *) b;
+}
+
 static struct hurd_ihash idhash
-  = HURD_IHASH_INITIALIZER (offsetof (struct idspec, id_hashloc));
+  = HURD_IHASH_INITIALIZER_GKI (offsetof (struct idspec, id_hashloc),
+                                NULL, NULL, hash, compare);
 
 static void
 id_clean (void *cookie)
@@ -70,14 +98,14 @@ fshelp_get_identity (struct port_bucket *bucket,
   if (!idclass)
     id_initialize ();
 
-  /* FIXME: ino_t is 64bit, hurd_ihash_key_t is 32bit.  */
-  i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) fileno);
+  i = hurd_ihash_find (&idhash, (hurd_ihash_key_t) &fileno);
   if (i == NULL)
     {
       err = ports_create_port (idclass, bucket, sizeof (struct idspec), &i);
       if (err)
         goto lose;
-      err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) fileno, i);
+      i->cache_id = fileno;
+      err = hurd_ihash_add (&idhash, (hurd_ihash_key_t) &i->cache_id, i);
       if (err)
         goto lose_port;
 
