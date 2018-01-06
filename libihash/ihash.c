@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <assert-backtrace.h>
 
 #include "ihash.h"
 
@@ -110,6 +111,7 @@ static inline void
 locp_remove (hurd_ihash_t ht, hurd_ihash_locp_t locp)
 {
   struct _hurd_ihash_item *item = (struct _hurd_ihash_item *) locp;
+  assert_backtrace (hurd_ihash_value_valid (item->value));
   if (ht->cleanup)
     (*ht->cleanup) (item->value, ht->cleanup_data);
   item->value = _HURD_IHASH_DELETED;

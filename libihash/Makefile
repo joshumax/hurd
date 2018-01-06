@@ -23,6 +23,7 @@ libname := libihash
 SRCS = ihash.c murmur3.c
 installhdrs = ihash.h
 
+HURDLIBS = shouldbeinlibc
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
