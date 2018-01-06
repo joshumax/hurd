@@ -69,10 +69,13 @@ static void
 id_clean (void *cookie)
 {
   struct idspec *i = cookie;
+  struct references result;
   pthread_mutex_lock (&idlock);
-  if (refcounts_hard_references(&i->pi.refcounts) == 0)
+  refcounts_references (&i->pi.refcounts, &result);
+  if (result.hard == 0 && result.weak == 2)
     {
-      /* Nobody got a send right in between, we can remove from the hash.  */
+      /* Nobody got a send right in between and we have the last weak reference
+         in addition to our caller's, so we can remove from the hash. */
       hurd_ihash_locp_remove (&idhash, i->id_hashloc);
       ports_port_deref_weak (&i->pi);
     }
