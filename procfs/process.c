@@ -95,6 +95,19 @@ static int args_filename_length (const char *name)
 /* Actual content generators */
 
 static ssize_t
+process_file_gc_exe (struct proc_stat *ps, char **contents)
+{
+  if (proc_stat_exe_len (ps) == 0)
+    {
+      *contents = "-";
+      return 1;
+    }
+
+  *contents = proc_stat_exe(ps);
+  return proc_stat_exe_len(ps);
+}
+
+static ssize_t
 process_file_gc_cmdline (struct proc_stat *ps, char **contents)
 {
   *contents = proc_stat_args(ps);
@@ -410,6 +423,14 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   return np;
 }
 
+static struct node *
+process_file_symlink_make_node (void *dir_hook, const void *entry_hook)
+{
+  struct node *np = process_file_make_node (dir_hook, entry_hook);
+  if (np) procfs_node_chtype (np, S_IFLNK);
+  return np;
+}
+
 /* Stat needs its own constructor in order to set its mode according to
    the --stat-mode command-line option.  */
 static struct node *
@@ -424,6 +445,17 @@ process_stat_make_node (void *dir_hook, const void *entry_hook)
 /* Implementation of the process directory per se.  */
 
 static struct procfs_dir_entry entries[] = {
+  {
+    .name = "exe",
+    .hook = & (struct process_file_desc) {
+      .get_contents = process_file_gc_exe,
+      .needs = PSTAT_EXE,
+      .no_cleanup = 1,
+    },
+    .ops = {
+      .make_node = process_file_symlink_make_node,
+    },
+  },
   {
     .name = "cmdline",
     .hook = & (struct process_file_desc) {

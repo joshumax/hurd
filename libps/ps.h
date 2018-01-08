@@ -272,6 +272,7 @@ struct proc_stat
   unsigned thread_waits_vm_alloced : 1;
   unsigned args_vm_alloced : 1;
   unsigned env_vm_alloced : 1;
+  unsigned exe_vm_alloced : 1;
 
   /* Various libc ports:  */
 
@@ -305,6 +306,11 @@ struct proc_stat
   size_t env_len;
 
   unsigned num_ports;
+
+  /* The path to process's binary executable.  */
+  char *exe;
+  /* The length of EXE.  */
+  size_t exe_len;
 };
 
 /* Proc_stat flag bits; each bit is set in the FLAGS field if that
@@ -344,12 +350,13 @@ struct proc_stat
 #define PSTAT_HOOK	      0x800000 /* Has a non-zero hook */
 #define PSTAT_NUM_PORTS      0x4000000 /* Number of Mach ports in the task */
 #define PSTAT_TIMES          0x8000000 /* Task/thread user and system times */
+#define PSTAT_EXE           0x10000000 /* Path to binary executable */
 
 /* Flag bits that don't correspond precisely to any field.  */
 #define PSTAT_NO_MSGPORT     0x1000000 /* Don't use the msgport at all */
 
 /* Bits from PSTAT_USER_BASE on up are available for user-use.  */
-#define PSTAT_USER_BASE      0x10000000
+#define PSTAT_USER_BASE      0x20000000
 #define PSTAT_USER_MASK      ~(PSTAT_USER_BASE - 1)
 
 /* If the PSTAT_STATE flag is set, then the proc_stats state field holds a
@@ -448,6 +455,8 @@ extern char *proc_stat_state_tags;
 #define proc_stat_tty(ps) ((ps)->tty)
 #define proc_stat_task_events_info(ps) ((ps)->task_events_info)
 #define proc_stat_num_ports(ps) ((ps)->num_ports)
+#define proc_stat_exe(ps) ((ps)->exe)
+#define proc_stat_exe_len(ps) ((ps)->exe_len)
 #define proc_stat_has(ps, needs) (((ps)->flags & needs) == needs)
 
 /* True if PS refers to a thread and not a process.  */

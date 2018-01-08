@@ -1314,6 +1314,9 @@ do_exec (file_t file,
       if (e.error)
 	goto out;
 
+      if (abspath)
+	proc_set_exe (boot->portarray[INIT_PORT_PROC], abspath);
+
       set_name (newtask, argv, pid);
 
       e.error = proc_set_entry (boot->portarray[INIT_PORT_PROC],

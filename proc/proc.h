@@ -68,6 +68,7 @@ struct proc
   pthread_cond_t p_wakeup;
 
   /* Miscellaneous information */
+  char *exe;			/* path to binary executable */
   vm_address_t p_argv, p_envp;
   vm_address_t start_code;	/* all executable segments are in this range */
   vm_address_t end_code;

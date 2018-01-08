@@ -358,6 +358,14 @@ ps_get_num_ports (struct proc_stat *ps)
 const struct ps_getter ps_num_ports_getter =
 {"num_ports", PSTAT_NUM_PORTS, (vf) ps_get_num_ports};
 
+static void
+ps_get_exe (struct proc_stat *ps, char **exe_p, int *exe_len_p)
+{
+  *exe_p = proc_stat_exe (ps);
+  *exe_len_p = proc_stat_exe_len (ps);
+}
+const struct ps_getter ps_exe_getter =
+{"exe", PSTAT_EXE, ps_get_exe};
 /* ---------------------------------------------------------------- */
 /* some printing functions */
 
@@ -1166,6 +1174,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_zero_fills_getter,  ps_emit_int,	    ps_cmp_ints,   ps_nominal_zint},
   {"Ports",	0,	-5, -1, 0,
    &ps_num_ports_getter,       ps_emit_int,	    ps_cmp_ints,   0},
+  {"Exe",	0,	 0, -1, 0,
+   &ps_exe_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
   {0}
 };
 

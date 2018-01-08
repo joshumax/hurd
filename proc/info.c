@@ -24,6 +24,7 @@
 #include <sys/mman.h>
 #include <hurd/hurd_types.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/resource.h>
@@ -1017,3 +1018,43 @@ S_proc_getnports (struct proc *callerp,
 
   return err;
 }
+
+/* Implement proc_set_path as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_set_exe (struct proc *p,
+	        char *path)
+{
+  char *copy;
+
+  if (!p)
+    return EOPNOTSUPP;
+
+  copy = strdup(path);
+  if (! copy)
+    return ENOMEM;
+
+  free(p->exe);
+  p->exe = copy;
+  return 0;
+}
+
+/* Implement proc_get_path as described in <hurd/process.defs>. */
+kern_return_t
+S_proc_get_exe (struct proc *callerp,
+		pid_t pid,
+		char *path)
+{
+  struct proc *p = pid_find (pid);
+
+  /* No need to check CALLERP here; we don't use it. */
+
+  if (!p)
+    return ESRCH;
+
+  if (p->exe)
+    snprintf (path, 1024 /* XXX */, "%s", p->exe);
+  else
+    path[0] = 0;
+  return 0;
+}
+

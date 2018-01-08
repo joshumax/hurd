@@ -956,6 +956,23 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 	}
     }
 
+  /* The process's path to binary executable */
+  if (NEED (PSTAT_EXE, PSTAT_PID))
+    {
+      ps->exe = malloc (sizeof(string_t));
+      if (ps->exe)
+	{
+	  if (proc_get_exe (server, ps->pid, ps->exe))
+	    free (ps->exe);
+	  else
+	    {
+	      ps->exe_len = strlen(ps->exe);
+	      have |= PSTAT_EXE;
+	      ps->exe_vm_alloced = 0;
+	    }
+	}
+    }
+
   /* The ctty id port; note that this is just a magic cookie;
      we use it to fetch a port to the actual terminal -- it's not useful for
      much else.  */

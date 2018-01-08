@@ -414,8 +414,16 @@ routine proc_make_task_namespace (
 	process: process_t;
 	notify: mach_port_send_t);
 
-skip; /* proc_set_exe */
-skip; /* proc_get_exe */
+/* Set the process binary executable path.  */
+routine proc_set_exe (
+	process: process_t;
+	path: string_t);
+
+/* Get the process binary executable path.  */
+routine proc_get_exe (
+	process: process_t;
+	which: pid_t;
+	out path: string_t);
 
 /* Set the locations of the executable entry.  */
 routine proc_set_entry (

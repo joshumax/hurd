@@ -832,6 +832,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (procserver);
   assert_perror_backtrace (err);
+  proc_set_exe (procserver, "/hurd/startup");
 
   /* Declare that the filesystem and auth are our children. */
   err = proc_child (procserver, fstask);
@@ -845,6 +846,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (authproc);
   assert_perror_backtrace (err);
+  proc_set_exe (authproc, "/hurd/auth");
 
   err = install_as_translator ();
   if (err)
@@ -883,6 +885,7 @@ launch_core_servers (void)
     {
       proc_mark_important (procproc);
       proc_mark_exec (procproc);
+      proc_set_exe (procproc, "/hurd/proc");
       mach_port_deallocate (mach_task_self (), procproc);
     }
 
@@ -898,6 +901,7 @@ launch_core_servers (void)
   assert_perror_backtrace (err);
   err = proc_mark_exec (fsproc);
   assert_perror_backtrace (err);
+  proc_set_exe (fsproc, "fs");
 
   fprintf (stderr, ".\n");
 
@@ -1044,6 +1048,8 @@ frob_kernel_process (void)
 
   err = record_essential_task ("kernel", task);
   assert_perror_backtrace (err);
+
+  proc_set_exe (proc, "kernel");
 
   err = task_get_bootstrap_port (task, &kbs);
   assert_perror_backtrace (err);
@@ -1455,6 +1461,7 @@ S_startup_essential_task (mach_port_t server,
           mach_port_t execproc;
           proc_task2proc (procserver, task, &execproc);
           proc_mark_important (execproc);
+          proc_set_exe (execproc, "/hurd/exec");
         }
       else if (!strcmp (name, "proc"))
 	procinit = 1;
