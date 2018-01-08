@@ -230,11 +230,12 @@ check_hashbang (struct execdata *e,
 	  else if (! (flags & EXEC_SECURE))
 	    {
 	      /* Try to figure out the file's name.  If FILE_NAME_EXEC
-		 is not NULL, then it's the file's name.  Otherwise we
-		 guess that if ARGV[0] contains a slash, it might be
-		 the name of the file; and that if it contains no slash,
-		 looking for files named by ARGV[0] in the `PATH'
-		 environment variable might find it.  */
+		 is not NULL and not the empty string, then it's the
+		 file's name.  Otherwise we guess that if ARGV[0]
+		 contains a slash, it might be the name of the file;
+		 and that if it contains no slash, looking for files
+		 named by ARGV[0] in the `PATH' environment variable
+		 might find it.  */
 
 	      error_t error;
 	      char *name;
@@ -270,51 +271,59 @@ check_hashbang (struct execdata *e,
 		  return err;
 		}
 
-	      error = io_identity (file, &fileid, &filefsid, &fileno);
-	      if (error)
-		goto out;
-	      mach_port_deallocate (mach_task_self (), filefsid);
-
-	      if (memchr (argv, '\0', argvlen) == NULL)
-		{
-		  name = alloca (argvlen + 1);
-		  memcpy (name, argv, argvlen);
-		  name[argvlen] = '\0';
-		}
-	      else
-		name = argv;
-
 	      if (file_name_exec && file_name_exec[0] != '\0')
-		error = lookup (name = file_name_exec, 0, &name_file);
-	      else if (strchr (name, '/') != NULL)
-		error = lookup (name, 0, &name_file);
-	      else if ((error = hurd_catch_signal
-			(sigmask (SIGBUS) | sigmask (SIGSEGV),
-			 (vm_address_t) envp, (vm_address_t) envp + envplen,
-			 &search_path, SIG_ERR)))
-		name_file = MACH_PORT_NULL;
-
-	      if (!error && name_file != MACH_PORT_NULL)
+		name = file_name_exec;
+	      else
 		{
-		  mach_port_t id, fsid;
-		  ino_t ino;
-		  error = io_identity (name_file, &id, &fsid, &ino);
-		  mach_port_deallocate (mach_task_self (), name_file);
-		  if (!error)
+		  /* Try to locate the file.  */
+		  error = io_identity (file, &fileid, &filefsid, &fileno);
+		  if (error)
+		    goto out;
+		  mach_port_deallocate (mach_task_self (), filefsid);
+
+		  if (memchr (argv, '\0', argvlen) == NULL)
 		    {
-		      mach_port_deallocate (mach_task_self (), fsid);
-		      mach_port_deallocate (mach_task_self (), id);
+		      name = alloca (argvlen + 1);
+		      memcpy (name, argv, argvlen);
+		      name[argvlen] = '\0';
 		    }
-		  if (!error && id == fileid)
+		  else
+		    name = argv;
+
+		  if (strchr (name, '/') != NULL)
+		    error = lookup (name, 0, &name_file);
+		  else if ((error = hurd_catch_signal
+			    (sigmask (SIGBUS) | sigmask (SIGSEGV),
+			     (vm_address_t) envp, (vm_address_t) envp + envplen,
+			     &search_path, SIG_ERR)))
+		    name_file = MACH_PORT_NULL;
+
+		  /* See whether we found the right file.  */
+		  if (!error && name_file != MACH_PORT_NULL)
 		    {
-		      file_name = name;
-		      free_file_name = free_name;
+		      mach_port_t id, fsid;
+		      ino_t ino;
+		      error = io_identity (name_file, &id, &fsid, &ino);
+		      mach_port_deallocate (mach_task_self (), name_file);
+		      if (!error)
+			{
+			  mach_port_deallocate (mach_task_self (), fsid);
+			  mach_port_deallocate (mach_task_self (), id);
+			  if (id != fileid)
+			    error = 1;
+			}
 		    }
-		  else if (free_name)
-		    free (name);
+
+		  mach_port_deallocate (mach_task_self (), fileid);
 		}
 
-	      mach_port_deallocate (mach_task_self (), fileid);
+	      if (!error)
+		{
+		  file_name = name;
+		  free_file_name = free_name;
+		}
+	      else if (free_name)
+		free (name);
 	    }
 
 	  if (file_name == NULL)
