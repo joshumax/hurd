@@ -951,7 +951,7 @@ do_exec (file_t file,
     secure = (flags & EXEC_SECURE);
     defaults = (flags & EXEC_DEFAULTS);
 
-    /* Now record the big blocks of data we shuffle around unchanged.
+    /* Now record the big blocks of data we shuffle around.
        Whatever arrived inline, we must allocate space for so it can
        survive after this RPC returns.  */
 
@@ -962,11 +962,90 @@ do_exec (file_t file,
       goto stdout;
     boot->argv = argv;
     boot->argvlen = argvlen;
-    envp = servercopy (envp, envplen, envp_copy, &e.error);
-    if (e.error)
-      goto stdout;
+
+    if (abspath && abspath[0] == '/')
+      {
+	/* Explicit absolute filename, put its dirname in the LD_ORIGIN_PATH
+	   environment variable for $ORIGIN rpath expansion. */
+	const char *end = strrchr (abspath, '/');
+	size_t pathlen;
+	const char ld_origin_s[] = "\0LD_ORIGIN_PATH=";
+	const char *existing;
+	size_t existing_len = 0;
+	size_t new_envplen;
+	char *new_envp;
+
+	/* Drop trailing slashes.  */
+	while (end > abspath && end[-1] == '/')
+	  end--;
+
+	if (end == abspath)
+	  /* Root, keep explicit heading/trailing slash.   */
+	  end++;
+
+	pathlen = end - abspath;
+
+	if (memcmp (envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2) == 0)
+	  /* Existing variable at the beginning of envp.  */
+	  existing = envp - 1;
+	else
+	  /* Look for the definition.  */
+	  existing = memmem (envp, envplen, ld_origin_s, sizeof (ld_origin_s) - 1);
+
+	if (existing)
+	  {
+	    /* Definition already exists, just replace the content.  */
+	    existing += sizeof (ld_origin_s) - 1;
+	    existing_len = strnlen (existing, envplen - (existing - envp));
+
+	    /* Allocate room for the new content.  */
+	    new_envplen = envplen - existing_len + pathlen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    if (new_envp == MAP_FAILED)
+	      {
+		e.error = errno;
+		goto stdout;
+	      }
+
+	    /* And copy.  */
+	    memcpy (new_envp, envp, existing - envp);
+	    memcpy (new_envp + (existing - envp), abspath, pathlen);
+	    memcpy (new_envp + (existing - envp) + pathlen,
+		    existing + existing_len,
+		    envplen - ((existing - envp) + existing_len));
+	  }
+	else
+	  {
+	    /* No existing definition, prepend one.  */
+	    new_envplen = sizeof (ld_origin_s) - 1 + pathlen + envplen;
+	    new_envp = mmap (0, new_envplen,
+			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+
+	    memcpy (new_envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2);
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2, abspath, pathlen);
+	    new_envp [sizeof (ld_origin_s) - 2 + pathlen] = 0;
+	    memcpy (new_envp + sizeof (ld_origin_s) - 2 + pathlen + 1, envp, envplen);
+	  }
+
+	if (! envp_copy)
+	  /* Deallocate original environment */
+	  munmap (envp, envplen);
+
+	envp = new_envp;
+	envplen = new_envplen;
+      }
+    else
+      {
+	/* No explicit abspath, just copy the existing environment */
+	envp = servercopy (envp, envplen, envp_copy, &e.error);
+	if (e.error)
+	  goto stdout;
+      }
+
     boot->envp = envp;
     boot->envplen = envplen;
+
     dtable = servercopy (dtable, dtablesize * sizeof (mach_port_t),
 			 dtable_copy, &e.error);
     if (e.error)
