@@ -36,6 +36,7 @@ tape		35000	Special control operations for magtapes
 login		36000	Database of logged-in users
 pfinet		37000   Internet configuration calls
 password	38000	Password checker
+pci		39000	PCI arbiter
 <ioctl space>  100000-	First subsystem of ioctl class 'f' (lowest class)
 tioctl	       156000	Ioctl class 't' (terminals)
 tioctl	       156200     (continued)

@@ -1,6 +1,6 @@
 /* C declarations for Hurd server interfaces
    Copyright (C) 1993, 1994, 1995, 1996, 1998, 1999, 2001, 2002,
-   2010 Free Software Foundation, Inc.
+   2010, 2017 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -51,6 +51,7 @@ typedef mach_port_t exec_startup_t;
 typedef mach_port_t interrupt_t;
 typedef mach_port_t proccoll_t;
 typedef mach_port_t ctty_t;
+typedef mach_port_t pci_t;
 
 #include <errno.h>		/* Defines `error_t'.  */
 
@@ -358,6 +359,7 @@ typedef const int *const_procinfo_t;
 #define FSTYPE_HTTP    0x00000018 /* Transparent HTTP */
 #define FSTYPE_MEMFS   0x00000019 /* In-core filesystem */
 #define FSTYPE_ISO9660 0x0000001a /* ISO9660 */
+#define FSTYPE_PCI     0x0000001b /* PCI filesystem */
 
 /* Standard port assignments for file_exec_paths and exec_* */
 enum
@@ -382,6 +384,26 @@ enum
     INIT_SIGPENDING,
     INIT_TRACEMASK,
     INIT_INT_MAX,
+  };
+
+/* PCI arbiter types*/
+#include <stdint.h>
+
+/* Memory region */
+struct pci_bar
+  {
+    uint64_t base_addr;
+    uint64_t size;
+    unsigned is_IO:1;
+    unsigned is_prefetchable:1;
+    unsigned is_64:1;
+  };
+
+/* Expansion ROM region */
+struct pci_xrom_bar
+  {
+    uint64_t base_addr;
+    uint64_t size;
   };
 
 #endif

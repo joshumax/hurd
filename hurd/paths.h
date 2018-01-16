@@ -36,6 +36,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    in simple decimal (e.g. "/servers/socket/23").  */
 #define	_SERVERS_SOCKET		_SERVERS "socket"
 
+/* Directory containing virtual filesystems for buses */
+#define	_SERVERS_BUS		_SERVERS "bus"
+
 /* Hurd servers are specified by symbols _HURD_FOO,
    the canonical pathname being /hurd/foo.  */
 

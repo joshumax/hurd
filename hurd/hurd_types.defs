@@ -1,5 +1,5 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993,94,95,96,98,2001,02 Free Software Foundation, Inc.
+   Copyright (C) 1993,94,95,96,98,2001,02,17 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -296,6 +296,23 @@ destructor: INTERRUPT_DESTRUCTOR
 #endif
 ;
 
+/* PCI arbiter */
+type pci_t = mach_port_copy_send_t
+#ifdef PCI_INTRAN
+intran: PCI_INTRAN
+intranpayload: PCI_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: pci_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#endif
+#ifdef PCI_OUTTRAN
+outtran: PCI_OUTTRAN
+#endif
+#ifdef PCI_DESTRUCTOR
+destructor: PCI_DESTRUCTOR
+#endif
+;
 
 type proccoll_t = mach_port_copy_send_t;
 

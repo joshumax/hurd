@@ -1,0 +1,73 @@
+/* Definitions for pci-specific calls
+   Copyright (C) 2017 Free Software Foundation, Inc.
+
+This file is part of the GNU Hurd.
+
+The GNU Hurd is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+The GNU Hurd is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with the GNU Hurd; see the file COPYING.  If not, write to
+the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+
+subsystem pci 39000;
+
+#include <hurd/hurd_types.defs>
+
+#ifdef PCI_IMPORTS
+PCI_IMPORTS
+INTR_INTERFACE
+#endif
+
+/*
+ * Read 'amount' bytes from offset 'reg' in the
+ *  configuration space and store it in 'data'
+ */
+routine pci_conf_read (
+	master: pci_t;
+	reg: int;
+	out data: data_t, dealloc;
+	amount: vm_size_t
+);
+
+/* Write 'amount' bytes from 'data' to offset 'reg' in the config space */
+routine pci_conf_write(
+	master: pci_t;
+	reg: int;
+	data: data_t;
+	out amount: vm_size_t
+);
+
+/*
+ * Calculate the number of devices that are allowed
+ * for the user and return it in 'numdevs'.
+ */
+routine pci_get_ndevs(
+	master: pci_t;
+	out ndevs: vm_size_t
+);
+
+/*
+ * Return the memory regions for a specified device.
+ * `data' is an array of 6 struct pci_bar
+ */
+routine pci_get_dev_regions(
+	master: pci_t;
+	out data: data_t, dealloc
+);
+
+/*
+ * Return the expansion ROM bar for a given device.
+ * `data' is a struct pci_xrom_bar
+ */
+routine pci_get_dev_rom(
+	master: pci_t;
+	out data: data_t, dealloc
+);
