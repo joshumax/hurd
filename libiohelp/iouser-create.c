@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "iohelp.h"
+#include <stdlib.h>
 
 error_t
 iohelp_create_iouser (struct iouser **user, struct idvec *uids,
