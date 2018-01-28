@@ -240,7 +240,9 @@ reprint_line ()
 {
   short *cp;
 
-  if (termstate.c_cc[VREPRINT] != _POSIX_VDISABLE)
+  if (termstate.c_cc[VREPRINT] != _POSIX_VDISABLE
+      /* XXX: Remove this -1 compatibility later */
+      && termstate.c_cc[VREPRINT] != (unsigned char) -1)
     echo_char (termstate.c_cc[VREPRINT], 0, 0);
   else
     echo_char (CHAR_DC2, 0, 0);
@@ -346,7 +348,9 @@ input_character (int c)
   /* Check to see if we should send IXOFF */
   if ((iflag & IXOFF)
       && !qavail (*qp)
-      && (cc[VSTOP] != _POSIX_VDISABLE))
+      && (cc[VSTOP] != _POSIX_VDISABLE)
+      /* XXX: Remove this -1 compatibility later */
+      && (cc[VSTOP] != (unsigned char) -1))
     {
       poutput (cc[VSTOP]);
       termflags |= SENT_VSTOP;
