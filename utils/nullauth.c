@@ -29,16 +29,16 @@
 
 static char **args;
 
-const char const *argp_program_version = STANDARD_HURD_VERSION (nullauth);
+const char *argp_program_version = STANDARD_HURD_VERSION (nullauth);
 
-static const struct argp_option const options[] =
+static const struct argp_option options[] =
 {
   { 0 }
 };
 
-static const char const doc[] =
+static const char doc[] =
   "Drop all authentication credentials and run the given program.";
-static const char const args_doc[] =
+static const char args_doc[] =
   "PROGRAM [ARGUMENTS...]\tThe program to run";
 
 error_t
