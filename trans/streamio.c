@@ -574,7 +574,7 @@ io_select_common (struct trivfs_protid *cred,
 	available |= SELECT_READ;
       if ((*type & SELECT_WRITE) &&
 	  (!(cred->po->openmodes & O_WRITE) ||
-	    (buffer_writable && buffer_writable (output_buffer))))
+	    (buffer_writable (output_buffer))))
 	available |= SELECT_WRITE;
 
       if (available)
