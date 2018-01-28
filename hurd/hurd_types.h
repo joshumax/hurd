@@ -57,13 +57,20 @@ typedef mach_port_t ctty_t;
 /* These names exist only because of MiG deficiencies.
    You should not use them in C source; use the normal C types instead.  */
 typedef char *data_t;
+typedef const char *const_data_t;
 typedef char string_t [1024];
 typedef int *intarray_t;
+typedef const int *const_intarray_t;
 typedef int *fd_mask_t;
+typedef const int *const_fd_mask_t;
 typedef mach_port_t *portarray_t;
+typedef const mach_port_t *const_portarray_t;
 typedef pid_t *pidarray_t;
+typedef const pid_t *const_pidarray_t;
 typedef uid_t *idarray_t;
+typedef const uid_t *const_idarray_t;
 typedef loff_t *off_array_t;
+typedef const loff_t *const_off_array_t;
 typedef struct rusage rusage_t;
 typedef struct flock flock_t;
 typedef struct utsname utsname_t;
@@ -303,6 +310,7 @@ struct procinfo
     } threadinfos[0];
 };
 typedef int *procinfo_t;
+typedef const int *const_procinfo_t;
 
 /* Bits in struct procinfo  state: */
 #define PI_STOPPED 0x00000001	/* Proc server thinks is stopped.  */

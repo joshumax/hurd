@@ -25,6 +25,8 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 #include <device/device_types.h>	/* For recnum_t.  */
 
 typedef recnum_t *recnum_array_t;
+typedef const recnum_t *const_recnum_array_t;
 typedef vm_size_t *vm_size_array_t;
+typedef const vm_size_t *const_vm_size_array_t;
 
 #endif
