@@ -70,7 +70,8 @@ $(filter-out $(special-targets), $(targets)): %: %.o
 
 rpctrace: ../libports/libports.a
 rpctrace rpcscan: msgids.o \
-	  ../libihash/libihash.a
+	  ../libihash/libihash.a \
+	  ../libshouldbeinlibc/libshouldbeinlibc.a
 msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 fakeauth: authServer.o auth_requestUser.o interruptServer.o \
