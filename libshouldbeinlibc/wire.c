@@ -25,6 +25,7 @@
 #include <error.h>
 #include <elf.h>
 #include <mach/gnumach.h>
+#include <mach/vm_param.h>
 
 #pragma weak _DYNAMIC
 #pragma weak dlopen
