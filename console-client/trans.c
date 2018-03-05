@@ -186,14 +186,10 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   if (! err)
     {
       if (mtime)
-	np->nn_stat.st_mtim = *mtime;
-      else
-        flags |= TOUCH_MTIME;
+        np->nn_stat.st_mtim = *mtime;
       
       if (atime)
-	np->nn_stat.st_atim = *atime;
-      else
-        flags |= TOUCH_ATIME;
+        np->nn_stat.st_atim = *atime;
       
       fshelp_touch (&np->nn_stat, flags, console_maptime);
     }

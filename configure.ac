@@ -165,6 +165,11 @@ AC_SUBST(VERSIONING)
 # Check if libc contains these functions.
 AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 
+# Compatibility with glibc < 2.28
+AC_CHECK_FUNCS(file_futimens)
+AC_DEFINE([UTIME_NOW],[-1])
+AC_DEFINE([UTIME_OMIT],[-2])
+
 
 # From glibc HEAD, 2007-11-07.
 AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl

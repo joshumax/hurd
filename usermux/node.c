@@ -81,14 +81,10 @@ netfs_attempt_utimes (struct iouser *cred, struct node *node,
   if (! err)
     {
       if (mtime)
-	node->nn_stat.st_mtim = *mtime;
-      else
-	flags |= TOUCH_MTIME;
+        node->nn_stat.st_mtim = *mtime;
 
       if (atime)
-	node->nn_stat.st_atim = *atime;
-      else
-	flags |= TOUCH_ATIME;
+        node->nn_stat.st_atim = *atime;
 
       fshelp_touch (&node->nn_stat, flags, usermux_maptime);
     }

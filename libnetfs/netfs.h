@@ -173,7 +173,7 @@ error_t netfs_attempt_chflags (struct iouser *cred, struct node *np,
 /* The user must define this function.  This should attempt a utimes
    call for the user specified by CRED on locked node NP, to change
    the atime to ATIME and the mtime to MTIME.  If ATIME or MTIME is
-   null, then set to the current time.  */
+   null, then do not change it.  */
 error_t netfs_attempt_utimes (struct iouser *cred, struct node *np,
 			      struct timespec *atime, struct timespec *mtime);
 

@@ -25,6 +25,8 @@
 
 #include "netfs.h"
 
+volatile struct mapped_time_value *netfs_mtime;
+
 static inline struct protid * __attribute__ ((unused))
 begin_using_protid_port (file_t port)
 {

@@ -24,6 +24,33 @@ diskfs_S_file_utimes (struct protid *cred,
 		      time_value_t atime,
 		      time_value_t mtime)
 {
+  struct timespec atim, mtim;
+
+  if (atime.microseconds == -1)
+    {
+      atim.tv_sec = 0;
+      atim.tv_nsec = UTIME_NOW;
+    }
+  else
+    TIME_VALUE_TO_TIMESPEC (&atime, &atim);
+
+  if (mtime.microseconds == -1)
+    {
+      mtim.tv_sec = 0;
+      mtim.tv_nsec = UTIME_NOW;
+    }
+  else
+    TIME_VALUE_TO_TIMESPEC (&mtime, &mtim);
+
+  return diskfs_S_file_utimens (cred, atim, mtim);
+}
+
+/* Implement file_utimens as described in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_file_utimens (struct protid *cred,
+		      struct timespec atime,
+		      struct timespec mtime)
+{
   CHANGE_NODE_FIELD (cred,
 		   ({
 		     if (!(err = fshelp_isowner (&np->dn_stat, cred->user)))
@@ -31,21 +58,23 @@ diskfs_S_file_utimes (struct protid *cred,
 			 /* Flush pending updates first.  */
 			 diskfs_set_node_times (np);
 
-			 if (atime.microseconds == -1)
+			 if (atime.tv_nsec == UTIME_NOW)
 			   np->dn_set_atime = 1;
+			 else if (atime.tv_nsec == UTIME_OMIT)
+			   ; /* do nothing */
 			 else
 			   {
-			     np->dn_stat.st_atim.tv_sec = atime.seconds;
-			     np->dn_stat.st_atim.tv_nsec = atime.microseconds * 1000;
+			     np->dn_stat.st_atim = atime;
 			     np->dn_set_atime = 0;
 			   }
 			 
-			 if (mtime.microseconds == -1)
+			 if (mtime.tv_nsec == UTIME_NOW)
 			   np->dn_set_mtime = 1;
+			 else if (mtime.tv_nsec == UTIME_OMIT)
+			   ; /* do nothing */
 			 else
 			   {
-			     np->dn_stat.st_mtim.tv_sec = mtime.seconds;
-			     np->dn_stat.st_mtim.tv_nsec = mtime.microseconds * 1000;
+			     np->dn_stat.st_mtim = mtime;
 			     np->dn_set_mtime = 0;
 			   }
 			 

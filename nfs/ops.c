@@ -297,17 +297,12 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
   int *p;
   void *rpcbuf;
   error_t err;
-  struct timeval tv;
-  struct timespec current;
+
+  if (!atime && !mtime)
+    return 0; /* nothing to update */
 
   /* XXX For version 3 we can actually do this right, but we don't
      just yet. */
-  if (!atime || !mtime)
-    {
-      maptime_read (mapped_time, &tv);
-      current.tv_sec = tv.tv_sec;
-      current.tv_nsec = tv.tv_usec * 1000;
-    }
 
   p = nfs_initialize_rpc (NFSPROC_SETATTR (protocol_version),
 			  cred, 0, &rpcbuf, np, -1);
@@ -315,9 +310,7 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
     return errno;
 
   p = xdr_encode_fhandle (p, &np->nn->handle);
-  p = xdr_encode_sattr_times (p,
-			      atime ?: &current,
-			      mtime ?: &current);
+  p = xdr_encode_sattr_times (p, atime, mtime);
   if (protocol_version == 3)
     *(p++) = 0;			/* guard check == 0 */
 

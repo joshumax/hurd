@@ -26,28 +26,52 @@ netfs_S_file_utimes (struct protid *user,
 		     time_value_t atimein,
 		     time_value_t mtimein)
 {
-  struct timespec atime, mtime;
-  error_t err;
+  struct timespec atim, mtim;
 
-  if (atimein.microseconds != -1)
+  if (atimein.microseconds == -1)
     {
-      atime.tv_sec = atimein.seconds;
-      atime.tv_nsec = atimein.microseconds * 1000;
+      atim.tv_sec = 0;
+      atim.tv_nsec = UTIME_NOW;
     }
-  
-  if (mtimein.microseconds != -1)
+  else
+    TIME_VALUE_TO_TIMESPEC (&atimein, &atim);
+
+  if (mtimein.microseconds == -1)
     {
-      mtime.tv_sec = mtimein.seconds;
-      mtime.tv_nsec = mtimein.microseconds * 1000;
+      mtim.tv_sec = 0;
+      mtim.tv_nsec = UTIME_NOW;
     }
-  
+  else
+    TIME_VALUE_TO_TIMESPEC (&mtimein, &mtim);
+
+  return netfs_S_file_utimens (user, atim, mtim);
+}
+
+error_t
+netfs_S_file_utimens (struct protid *user,
+		     struct timespec atimein,
+		     struct timespec mtimein)
+{
+  error_t err;
+  struct timeval t;
+
   if (!user)
     return EOPNOTSUPP;
-  
+
+  if (atimein.tv_nsec == UTIME_NOW || mtimein.tv_nsec == UTIME_NOW)
+    {
+      maptime_read (netfs_mtime, &t);
+
+      if (atimein.tv_nsec == UTIME_NOW)
+        TIMEVAL_TO_TIMESPEC (&t, &atimein);
+      if (mtimein.tv_nsec == UTIME_NOW)
+        TIMEVAL_TO_TIMESPEC (&t, &mtimein);
+    }
+
   pthread_mutex_lock (&user->po->np->lock);
-  err = netfs_attempt_utimes (user->user, user->po->np, 
-			      atimein.microseconds != -1 ? &atime : 0, 
-			      mtimein.microseconds != -1 ? &mtime : 0);
+  err = netfs_attempt_utimes (user->user, user->po->np,
+                  (atimein.tv_nsec == UTIME_OMIT) ? 0 : &atimein,
+                  (mtimein.tv_nsec == UTIME_OMIT) ? 0 : &mtimein);
   pthread_mutex_unlock (&user->po->np->lock);
   return err;
 }

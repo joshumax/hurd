@@ -63,7 +63,7 @@ complete_setattr (mach_port_t port,
 {
   uid_t uid, gid;
   off_t size;
-  time_value_t atime, mtime;
+  struct timespec atime, mtime;
   struct stat st;
   error_t err;
 
@@ -91,34 +91,48 @@ complete_setattr (mach_port_t port,
   if (err)
     return err;
 
-  atime.seconds = ntohl (*p);
+  atime.tv_sec = ntohl (*p);
   p++;
-  atime.microseconds = ntohl (*p);
+  atime.tv_nsec = ntohl (*p) * 1000;
   p++;
-  mtime.seconds = ntohl (*p);
+  mtime.tv_sec = ntohl (*p);
   p++;
-  mtime.microseconds = ntohl (*p);
+  mtime.tv_nsec = ntohl (*p) * 1000;
   p++;
 
-  if (atime.seconds != -1 && atime.microseconds == -1)
-    atime.microseconds = 0;
-  if (mtime.seconds != -1 && mtime.microseconds == -1)
-    mtime.microseconds = 0;
+  if (atime.tv_sec != -1 && atime.tv_nsec == -1)
+    atime.tv_nsec = 0;
+  if (mtime.tv_sec != -1 && mtime.tv_nsec == -1)
+    mtime.tv_nsec = 0;
 
-  if (atime.seconds == -1)
-    atime.seconds = st.st_atim.tv_sec;
-  if (atime.microseconds == -1)
-    atime.microseconds = st.st_atim.tv_nsec / 1000;
-  if (mtime.seconds == -1)
-    mtime.seconds = st.st_mtim.tv_sec;
-  if (mtime.microseconds == -1)
-    mtime.microseconds = st.st_mtim.tv_nsec / 1000;
+  if (atime.tv_nsec == -1)
+    atime.tv_sec = st.st_atim.tv_sec;
+  if (atime.tv_nsec == -1)
+    atime.tv_nsec = st.st_atim.tv_nsec;
+  if (mtime.tv_sec == -1)
+    mtime.tv_sec = st.st_mtim.tv_sec;
+  if (mtime.tv_nsec == -1)
+    mtime.tv_nsec = st.st_mtim.tv_nsec;
 
-  if (atime.seconds != st.st_atim.tv_sec
-      || atime.microseconds != st.st_atim.tv_nsec / 1000
-      || mtime.seconds != st.st_mtim.tv_sec
-      || mtime.microseconds != st.st_mtim.tv_nsec / 1000)
-    err = file_utimes (port, atime, mtime);
+  if (atime.tv_sec != st.st_atim.tv_sec
+      || atime.tv_nsec != st.st_atim.tv_nsec
+      || mtime.tv_sec != st.st_mtim.tv_sec
+      || mtime.tv_nsec != st.st_mtim.tv_nsec)
+    {
+#ifdef HAVE_FILE_UTIMENS
+      err = file_utimens (port, atime, mtime);
+
+      if (err == MIG_BAD_ID || err == EOPNOTSUPP)
+#endif
+        {
+          time_value_t atim, mtim;
+
+          TIMESPEC_TO_TIME_VALUE (&atim, &atime);
+          TIMESPEC_TO_TIME_VALUE (&mtim, &mtime);
+
+          err = file_utimes (port, atim, mtim);
+        }
+    }
 
   return err;
 }

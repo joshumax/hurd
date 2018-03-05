@@ -685,26 +685,47 @@ error_t
 netfs_attempt_utimes (struct iouser *cred, struct node *np,
 		      struct timespec *atime, struct timespec *mtime)
 {
-  union tv
-  {
-    struct timeval tv;
-    time_value_t tvt;
-  };
-  union tv a, m;
-  if (atime)
-    {
-      TIMESPEC_TO_TIMEVAL (&a.tv, atime);
-    }
-  else
-    a.tv.tv_sec = a.tv.tv_usec = -1;
-  if (mtime)
-    {
-      TIMESPEC_TO_TIMEVAL (&m.tv, mtime);
-    }
-  else
-    m.tv.tv_sec = m.tv.tv_usec = -1;
+  error_t err;
+#ifdef HAVE_FILE_UTIMENS
+  struct timespec tatime, tmtime;
 
-  return file_utimes (netfs_node_netnode (np)->file, a.tvt, m.tvt);
+  if (atime)
+    tatime = *atime;
+  else
+    {
+      tatime.tv_sec = 0;
+      tatime.tv_nsec = UTIME_OMIT;
+    }
+
+  if (mtime)
+    tmtime = *mtime;
+  else
+    {
+      tmtime.tv_sec = 0;
+      tmtime.tv_nsec = UTIME_OMIT;
+    }
+
+  err = file_utimens (netfs_node_netnode (np)->file, tatime, tmtime);
+
+  if(err == EMIG_BAD_ID || err == EOPNOTSUPP)
+#endif
+    {
+      time_value_t atim, mtim;
+
+      if(atime)
+        TIMESPEC_TO_TIME_VALUE (&atim, atime);
+      else
+        atim.seconds = atim.microseconds = -1;
+
+      if (mtime)
+        TIMESPEC_TO_TIME_VALUE (&mtim, mtime);
+      else
+        mtim.seconds = mtim.microseconds = -1;
+
+      err = file_utimes (netfs_node_netnode (np)->file, atim, mtim);
+    }
+
+  return err;
 }
 
 error_t

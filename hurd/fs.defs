@@ -376,3 +376,13 @@ routine file_exec_paths (
 	intarray: intarray_t SCP;
 	deallocnames: mach_port_name_array_t SCP;
 	destroynames: mach_port_name_array_t SCP);
+
+/* Change access and modify times with nanosecond precision */
+/* If the nanoseconds value is UTIME_NOW then the time should be
+   set to the current time and the remainder of the time_value_t ignored.
+   If the nanoseconds value is UTIME_OMIT then the time is ignored. */
+routine file_utimens (
+	utimes_file: file_t;
+	RPT
+	new_atime: timespec_t;
+	new_mtime: timespec_t);

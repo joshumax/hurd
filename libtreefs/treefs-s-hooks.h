@@ -53,9 +53,9 @@ DHH(s_file_chmod, error_t, mode_t)
 DHH(s_file_chflags, error_t, int)
 #define treefs_s_file_chflags(h, args...)				      \
   _TREEFS_CHH(h, S_FILE_CHFLAGS, s_file_chflags , ##args)
-DHH(s_file_utimes, error_t, time_value_t, time_value_t)
-#define treefs_s_file_utimes(h, args...)				      \
-  _TREEFS_CHH(h, S_FILE_UTIMES, s_file_utimes , ##args)
+DHH(s_file_utimens, error_t, struct timespec, struct timespec)
+#define treefs_s_file_utimens(h, args...)				      \
+  _TREEFS_CHH(h, S_FILE_UTIMENS, s_file_utimens , ##args)
 DHH(s_file_truncate, error_t, off_t)
 #define treefs_s_file_truncate(h, args...)				      \
   _TREEFS_CHH(h, S_FILE_TRUNCATE, s_file_truncate , ##args)

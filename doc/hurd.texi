@@ -2722,6 +2722,14 @@ the file.  Making this call must cause the @var{ctime} to be updated as
 well, even if no actual change to either the @var{mtime} or the
 @var{atime} occurs.
 
+@findex file_utimens
+The @code{file_utimens} RPC changes the @var{atime} and @var{mtime} of
+the file with nanosecond precision. Making this call must cause the
+@var{ctime} to be updated as well, even if no actual change to either the
+@var{mtime} or the @var{atime} occurs. The arguments @var{atime} and
+@var{mtime} follow the POSIX standard and may use the flags
+@code{UTIME_OMIT} and @code{UTIME_NOW}.
+
 @findex file_set_size
 The @code{file_set_size} RPC is special; not only does it change the
 status word specifying the size of the file, but it also changes the

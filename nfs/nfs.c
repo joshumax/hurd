@@ -273,10 +273,26 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
       *(p++) = -1;			/* uid */
       *(p++) = -1;			/* gid */
       *(p++) = -1;			/* size */
-      *(p++) = htonl (atime->tv_sec);
-      *(p++) = htonl (atime->tv_nsec / 1000);
-      *(p++) = htonl (mtime->tv_sec);
-      *(p++) = htonl (mtime->tv_nsec / 1000);
+      if (atime)
+       {
+        *(p++) = htonl (atime->tv_sec);
+        *(p++) = htonl (atime->tv_nsec / 1000);
+       }
+      else
+       {
+        *(p++) = -1; /* no atime */
+        *(p++) = -1;
+       }
+      if (mtime)
+       {
+        *(p++) = htonl (mtime->tv_sec);
+        *(p++) = htonl (mtime->tv_nsec / 1000);
+       }
+      else
+       {
+         *(p++) = -1; /* no mtime */
+         *(p++) = -1;
+       }
     }
   else
     {
@@ -284,12 +300,22 @@ xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
       *(p++) = 0;			/* no uid */
       *(p++) = 0;			/* no gid */
       *(p++) = 0;			/* no size */
-      *(p++) = htonl (SET_TO_CLIENT_TIME); /* atime */
-      *(p++) = htonl (atime->tv_sec);
-      *(p++) = htonl (atime->tv_nsec);
-      *(p++) = htonl (SET_TO_CLIENT_TIME); /* mtime */
-      *(p++) = htonl (mtime->tv_sec);
-      *(p++) = htonl (mtime->tv_nsec);
+      if (atime)
+        {
+          *(p++) = htonl (SET_TO_CLIENT_TIME); /* atime */
+          *(p++) = htonl (atime->tv_sec);
+          *(p++) = htonl (atime->tv_nsec);
+        }
+      else
+        *(p++) = DONT_CHANGE;	/* no atime */
+      if (mtime)
+        {
+          *(p++) = htonl (SET_TO_CLIENT_TIME); /* mtime */
+          *(p++) = htonl (mtime->tv_sec);
+          *(p++) = htonl (mtime->tv_nsec);
+        }
+      else
+        *(p++) = DONT_CHANGE;	/* no mtime */
     }
   return p;
 }

@@ -231,5 +231,33 @@ treefs_S_file_utimes (struct treefs_protid *cred,
 {
   if (!cred)
     return EOPNOTSUPP;
-  return treefs_s_file_utimes (cred, atime, mtime);
+
+  struct timespec atim, mtim;
+
+  if (atime.microseconds == -1)
+    {
+      atim.tv_sec = 0;
+      atim.tv_nsec = UTIME_NOW;
+    }
+  else
+    TIME_VALUE_TO_TIMESPEC (&atime, &atim);
+
+  if (mtime.microseconds == -1)
+    {
+      mtim.tv_sec = 0;
+      mtim.tv_nsec = UTIME_NOW;
+    }
+  else
+    TIME_VALUE_TO_TIMESPEC (&mtime, &mtim);
+
+  return treefs_s_file_utimens (cred, atim, mtim);
+}
+
+error_t
+treefs_S_file_utimens (struct treefs_protid *cred,
+		      struct timespec atime, struct timespec mtime)
+{
+  if (!cred)
+    return EOPNOTSUPP;
+  return treefs_s_file_utimens (cred, atime, mtime);
 }
