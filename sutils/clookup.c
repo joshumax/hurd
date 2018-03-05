@@ -51,12 +51,12 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
      sure the result node doesn't have a passive translator with no active
      translator started (but we make an exception for symlinks) -- if it
      does, we just return ENXIO.  */
-  error_t lookup (file_t dir, char *name, int flags, mode_t mode,
+  error_t lookup (file_t dir, const char *name, int flags, mode_t mode,
 		  retry_type *retry, string_t retry_name,
 		  mach_port_t *node)
     {
       error_t err;
-      char *head, *tail;
+      const char *head, *tail;
       char *slash = index (name, '/');
 
       if (slash)

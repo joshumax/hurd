@@ -24,6 +24,7 @@
 #include <hurd.h>
 #include <fcntl.h>
 #include <hurd/trivfs.h>
+#include <hurd/msg.h>
 #include <sys/wait.h>
 #include <error.h>
 #include <argp.h>

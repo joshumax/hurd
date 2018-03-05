@@ -20,6 +20,7 @@
 #include <argp.h>
 #include <assert-backtrace.h>
 #include <error.h>
+#include <stdlib.h>
 #include <hurd.h>
 #include <mach.h>
 #include <version.h>

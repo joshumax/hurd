@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <error.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int check_refs (mach_port_t port) /* To call from gdb */
 {

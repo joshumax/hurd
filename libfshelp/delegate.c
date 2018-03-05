@@ -19,6 +19,8 @@
 
 #include <errno.h>
 #include <string.h>
+#include <alloca.h>
+#include <stdlib.h>
 #include <argz.h>
 #include <hurd.h>
 #include <hurd/fsys.h>

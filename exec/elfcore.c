@@ -27,6 +27,7 @@
 #include <sys/utsname.h>
 #include <sys/procfs.h>
 #include <stddef.h>
+#include <alloca.h>
 
 #define ELF_CLASS	PASTE (ELFCLASS, __ELF_NATIVE_CLASS)
 #define PASTE(a, b)	PASTE_1 (a, b)
@@ -40,6 +41,7 @@
 #endif
 
 #include <mach/thread_status.h>
+#include <mach/vm_param.h>
 #include <assert-backtrace.h>
 
 #ifdef i386_THREAD_STATE

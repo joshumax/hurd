@@ -37,6 +37,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <signal.h>
 #include <version.h>
 
 #include "mach_debug_U.h"

@@ -465,7 +465,7 @@ argz_task_insert_right (char **argz, size_t *argz_len, task_t task,
     }
   while (err == KERN_NAME_EXISTS);
 
-  if (asprintf (&arg, "--%s=%d", argument, name) < 0)
+  if (asprintf (&arg, "--%s=%lu", argument, name) < 0)
     return errno;
 
   err = argz_add (argz, argz_len, arg);

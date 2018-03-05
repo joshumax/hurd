@@ -868,8 +868,6 @@ S_proc_getloginpids (struct proc *callerp,
       /* Relay it to the Subhurd's proc server (if any).  */
       error_t err;
       pid_t pid_sub;
-      pid_t leader_sub;
-      task_t leader_task;
 
       /* Release global lock while talking to the other proc server.  */
       pthread_mutex_unlock (&global_lock);

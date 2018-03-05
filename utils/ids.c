@@ -27,6 +27,7 @@
 #include <error.h>
 #include <ugids.h>
 #include <version.h>
+#include <hurd/msg.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (ids);
 

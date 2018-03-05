@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <version.h>
 
 const char *argp_program_version = STANDARD_HURD_VERSION (init);

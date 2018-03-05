@@ -2016,7 +2016,7 @@ static void
 task_died (mach_port_t name)
 {
   if (verbose > 1)
-    fprintf (stderr, "Task '%u' died.\r\n", name);
+    fprintf (stderr, "Task '%lu' died.\r\n", name);
 
   hurd_ihash_remove (&task_ihash, (hurd_ihash_key_t) name);
 }
@@ -2034,7 +2034,7 @@ S_mach_notify_new_task (mach_port_t notify,
     return EOPNOTSUPP;
 
   if (verbose > 1)
-    fprintf (stderr, "Task '%u' created by task '%u'.\r\n", task, parent);
+    fprintf (stderr, "Task '%lu' created by task '%lu'.\r\n", task, parent);
 
   err = mach_port_request_notification (mach_task_self (), task,
                                         MACH_NOTIFY_DEAD_NAME, 0,

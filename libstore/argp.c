@@ -19,6 +19,7 @@
    59 Temple Place - Suite 330, Boston, MA 02111, USA. */
 
 #include <string.h>
+#include <stdlib.h>
 #include <assert-backtrace.h>
 #include <hurd.h>
 #include <argp.h>

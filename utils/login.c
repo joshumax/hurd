@@ -34,6 +34,7 @@
 #include <assert-backtrace.h>
 #include <version.h>
 #include <sys/mman.h>
+#include <signal.h>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>

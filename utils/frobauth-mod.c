@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <hurd.h>
+#include <hurd/msg.h>
 #include <error.h>
 
 #include "frobauth.h"

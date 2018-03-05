@@ -157,7 +157,6 @@ main (int argc, char **argv, char **envp)
   void *genport;
   process_t startup_port;
   mach_port_t startup;
-  char **original_argv;
   struct argp argp = { options, parse_opt, 0, "Hurd process server" };
 
   argp_parse (&argp, argc, argv, 0, 0, 0);

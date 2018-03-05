@@ -21,6 +21,7 @@
 #include <argp.h>
 #include <error.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <hurd.h>
 #include <sys/fcntl.h>
 #include <sys/mman.h>

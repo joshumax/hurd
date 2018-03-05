@@ -27,6 +27,7 @@
 #include <ugids.h>
 #include <error.h>
 #include <hurd.h>
+#include <hurd/msg.h>
 #include <version.h>
 
 #include "frobauth.h"
