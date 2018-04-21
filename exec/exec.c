@@ -81,6 +81,11 @@ load_section (void *section, struct execdata *u)
     addr += u->info.elf.loadbase;
   else
 #if 0
+    /* XXX: gnumach currently does not support high bits set in mask to prevent
+     * loading at high addresses.
+     * Instead, in rtld we prevent mappings there through a huge mapping done by
+     * fmh().
+     */
     switch (elf_machine)
       {
       case EM_386:
