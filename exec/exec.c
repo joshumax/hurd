@@ -1285,6 +1285,9 @@ do_exec (file_t file,
     }
 
 
+  /* Leave room for mmaps etc. before PIE binaries.
+   * Could add address randomization here.  */
+  anywhere_start += 128 << 20;
   /* Load the file into the task.  */
   anywhere_start = load (newtask, &e, anywhere_start);
   if (e.error)
