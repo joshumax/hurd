@@ -26,7 +26,7 @@ installhdrs := sys/procfs.h
 
 include ../Makeconf
 
-install-headers install: $(installhdrs:%=$(includedir)/%)
-$(includedir)/%: $(srcdir)/%
+install-headers install: $(installhdrs:%=$(DESTDIR)$(includedir)/%)
+$(DESTDIR)$(includedir)/%: $(srcdir)/%
 	@$(MKINSTALLDIRS) $(@D)
 	$(INSTALL_DATA) $< $@

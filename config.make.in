@@ -20,19 +20,19 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 
 # Directories where things get installed.
-hurddir = $(DESTDIR)${exec_prefix}/hurd
-libdir = $(DESTDIR)@libdir@
-bindir = $(DESTDIR)@bindir@
-sbindir = $(DESTDIR)@sbindir@
-includedir = $(DESTDIR)@includedir@
-libexecdir = $(DESTDIR)@libexecdir@
-bootdir = $(DESTDIR)${exec_prefix}/boot
-infodir = $(DESTDIR)@infodir@
-sysconfdir = $(DESTDIR)@sysconfdir@
-localstatedir = $(DESTDIR)@localstatedir@
-sharedstatedir = $(DESTDIR)@sharedstatedir@
-datadir = $(DESTDIR)@datadir@
-datarootdir = $(DESTDIR)@datarootdir@
+hurddir = ${exec_prefix}/hurd
+libdir = @libdir@
+bindir = @bindir@
+sbindir = @sbindir@
+includedir = @includedir@
+libexecdir = @libexecdir@
+bootdir = ${exec_prefix}/boot
+infodir = @infodir@
+sysconfdir = @sysconfdir@
+localstatedir = @localstatedir@
+sharedstatedir = @sharedstatedir@
+datadir = @datadir@
+datarootdir = @datarootdir@
 
 # All of those directories together:
 installationdirlist = $(hurddir) $(libdir) $(bindir) $(sbindir) \

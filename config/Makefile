@@ -40,14 +40,14 @@ endif
 
 include ../Makeconf
 
-install: $(sysconfdir) $(sysconfdir)/login \
-	 $(installed_conf) $(installed_logins)
+install: $(DESTDIR)$(sysconfdir) $(DESTDIR)$(sysconfdir)/login \
+	 $(addprefix $(DESTDIR),$(installed_conf)) $(addprefix $(DESTDIR),$(installed_logins))
 
-$(sysconfdir)/login: %:
+$(DESTDIR)$(sysconfdir)/login: %:
 	mkdir -p $@
 
-$(installed_logins): $(sysconfdir)/login/%: login-%
-	$(INSTALL_DATA) $< $(sysconfdir)/login/$*
+$(addprefix $(DESTDIR),$(installed_logins)): $(DESTDIR)$(sysconfdir)/login/%: login-%
+	$(INSTALL_DATA) $< $(DESTDIR)$(sysconfdir)/login/$*
 
-$(installed_conf): $(sysconfdir)/%: %
-	$(INSTALL_DATA) $< $(sysconfdir)/$*
+$(addprefix $(DESTDIR),$(installed_conf)): $(DESTDIR)$(sysconfdir)/%: %
+	$(INSTALL_DATA) $< $(DESTDIR)$(sysconfdir)/$*

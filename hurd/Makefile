@@ -28,13 +28,13 @@ include ../Makeconf
 all: $(MSGIDS)
 
 install: install-msgids install-headers
-install-headers: $(includedir)/hurd \
-	$(addprefix $(includedir)/hurd/,$(INSTHDRS))
-install-msgids: $(MSGIDS) $(datadir)/msgids; $(INSTALL_DATA) $^
+install-headers: $(DESTDIR)$(includedir)/hurd \
+	$(addprefix $(DESTDIR)$(includedir)/hurd/,$(INSTHDRS))
+install-msgids: $(MSGIDS) $(DESTDIR)$(datadir)/msgids; $(INSTALL_DATA) $^
 
-$(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
+$(DESTDIR)$(includedir)/hurd/%: $(srcdir)/%; $(INSTALL_DATA) $< $@
 
-$(datadir)/msgids $(includedir)/hurd:;mkdir -p $@
+$(DESTDIR)$(datadir)/msgids $(DESTDIR)$(includedir)/hurd:;mkdir -p $@
 
 %.msgids: $(srcdir)/%.defs
 	if grep -q '^subsystem' $<; \

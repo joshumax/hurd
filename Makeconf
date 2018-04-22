@@ -238,8 +238,10 @@ ifneq ($(makemode),library)
 installable := $(sort $(linktarg) $(targets))
 install-targets := $(targets) $(filter $(build-static:=.static),$(linktarg))
 all: $(install-targets)
-install: $(installationdir) $(addprefix $(installationdir)/,$(install-targets))
-$(addprefix $(installationdir)/,$(installable)): $(installationdir)/%: %
+install: $(DESTDIR)$(installationdir) $(addprefix $(DESTDIR)$(installationdir)/,$(install-targets))
+$(DESTDIR)$(installationdir):
+	@$(MKINSTALLDIRS) $@
+$(addprefix $(DESTDIR)$(installationdir)/,$(installable)): $(DESTDIR)$(installationdir)/%: %
 	$(INSTALL_PROGRAM) $(INSTALL-$<-ops) $< $@
 else
 
@@ -248,11 +250,11 @@ else
 all: libs
 install libs: add-to-librecord
 add-to-librecord: $(targets)
-install: $(libdir) $(includedir)/$(installhdrsubdir) $(libdir)/$(libname).so.$(hurd-version) $(addprefix $(libdir)/,$(targets)) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install: $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/$(installhdrsubdir) $(DESTDIR)$(libdir)/$(libname).so.$(hurd-version) $(addprefix $(DESTDIR)$(libdir)/,$(targets)) $(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
-install-headers: $(includedir)/$(installhdrsubdir) $(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs))
+install-headers: $(DESTDIR)$(includedir)/$(installhdrsubdir) $(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs))
 
-$(includedir)/$(installhdrsubdir): $(includedir)
+$(DESTDIR)$(includedir)/$(installhdrsubdir): $(DESTDIR)$(includedir)
 	@$(MKINSTALLDIRS) $@
 
 # Arrange to have the headers installed locally anytime we build the library.
@@ -272,17 +274,17 @@ $(patsubst %.o,%.d,$(filter %.o,$(OBJS))): $(INSTALLED_LOCAL_HEADERS)
 # relative names with ../$(dir) and make won't notice that's us.
 ../$(dir)/%: % ;
 
-$(addprefix $(libdir)/$(libname),_p.a .a _pic.a): $(libdir)/%: %
+$(addprefix $(DESTDIR)$(libdir)/$(libname),_p.a .a _pic.a): $(DESTDIR)$(libdir)/%: %
 	$(INSTALL_DATA) $< $@
 	$(RANLIB) $@
 
-$(libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
+$(DESTDIR)$(libdir)/$(libname).so.$(hurd-version): $(libname).so.$(hurd-version)
 	$(INSTALL_DATA) $< $@
 
-$(libdir)/$(libname).so: $(libdir)/$(libname).so.$(hurd-version)
+$(DESTDIR)$(libdir)/$(libname).so: $(DESTDIR)$(libdir)/$(libname).so.$(hurd-version)
 	ln -f -s $(<F) $@
 
-$(addprefix $(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(includedir)/$(installhdrsubdir)/%: %
+$(addprefix $(DESTDIR)$(includedir)/$(installhdrsubdir)/,$(installhdrs)): $(DESTDIR)$(includedir)/$(installhdrsubdir)/%: %
 	$(INSTALL_DATA) $< $@
 
 # Arrange to have the shared libraries available locally in one single
@@ -301,7 +303,7 @@ install:
 install-headers:
 
 # Making installation directories
-$(installationdirlist): %:
+$(addprefix $(DESTDIR),$(installationdirlist)): %:
 	@$(MKINSTALLDIRS) $@
 
 # Building the target

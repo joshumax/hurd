@@ -85,6 +85,6 @@ cleantarg += $(store-types:%=libstore_%.a)
 
 all: $(store-types:%=libstore_%.a)
 
-install: $(store-types:%=$(libdir)/libstore_%.a)
-$(store-types:%=$(libdir)/libstore_%.a): $(libdir)/%: %
+install: $(addprefix $(DESTDIR),$(store-types:%=$(libdir)/libstore_%.a))
+$(addprefix $(DESTDIR),$(store-types:%=$(libdir)/libstore_%.a)): $(DESTDIR)$(libdir)/%: %
 	$(INSTALL_DATA) $< $@

@@ -81,12 +81,12 @@ all: $(addsuffix .so.$(hurd-version), $(modules))
 
 cleantarg += $(addsuffix .so.$(hurd-version), $(modules))
 
-install: $(module-dir) $(addprefix $(module-dir)/,$(addsuffix .so.$(hurd-version),$(modules)))
+install: $(DESTDIR)$(module-dir) $(addprefix $(DESTDIR)$(module-dir)/,$(addsuffix .so.$(hurd-version),$(modules)))
 
-$(module-dir):
+$(DESTDIR)$(module-dir):
 	@$(MKINSTALLDIRS) $@
 
-$(module-dir)/%: %
+$(DESTDIR)$(module-dir)/%: %
 	$(INSTALL_DATA) $< $@
 
 # You can use this rule to make a dynamically-loadable version of any
@@ -112,12 +112,12 @@ pc-kbd-CFLAGS = -DXKB_SUPPORT -DXKB_DATA_DIR=\"$(XKB_BASE)\" $(X11_CFLAGS)
 $(foreach XKB_UNIT, $(XKB_UNITS), $(eval $(XKB_UNIT)-CFLAGS = $(X11_CFLAGS)))
 compose-CFLAGS += -DDATADIR=\"$(datadir)\"
 pc_kbd-LDLIBS = $(X11_LIBS)
-install: $(XKB_BASE) $(addprefix $(XKB_BASE)/, $(XKB_DATA_FILES))
+install: $(DESTDIR)$(XKB_BASE) $(addprefix $(DESTDIR)$(XKB_BASE)/, $(XKB_DATA_FILES))
 
-$(XKB_BASE):
+$(DESTDIR)$(XKB_BASE):
 	@$(MKINSTALLDIRS) $@
 
-$(XKB_BASE)/%: xkb/xkb-data/%
+$(DESTDIR)$(XKB_BASE)/%: xkb/xkb-data/%
 	$(INSTALL_DATA) $< $@
 
 kstoucs.o: xkb/kstoucs_map.c
