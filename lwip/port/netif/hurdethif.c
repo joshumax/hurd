@@ -43,6 +43,8 @@
 #include <lwip/snmp.h>
 #include <lwip/ethip6.h>
 #include <lwip/etharp.h>
+#include <lwip/sockets.h>
+#include <lwip/inet.h>
 
 /* Get the MAC address from an array of int */
 #define GET_HWADDR_BYTE(x,n)  (((char*)x)[n])

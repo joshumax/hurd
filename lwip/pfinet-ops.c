@@ -26,6 +26,8 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <lwip/netif.h>
+#include <lwip/sockets.h>
+#include <lwip/inet.h>
 #include <sys/mman.h>
 
 #include <lwip-util.h>

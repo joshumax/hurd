@@ -23,6 +23,7 @@
 #include <lwip_iioctl_S.h>
 
 #include <lwip/sockets.h>
+#include <lwip/inet.h>
 #include <device/device.h>
 #include <device/net_status.h>
 
