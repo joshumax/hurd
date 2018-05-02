@@ -47,4 +47,3 @@ iioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 lwip_io_S.h ioServer.c lwip_socket_S.h socketServer.c: mig-mutate.h
-$(OBJS): config.h
