@@ -104,7 +104,10 @@ open_console (char **namep)
   else
     err = errno;
   if (err)
-    error (0, err, "%s", termname);
+    {
+      if (err != ENOENT)
+	error (0, err, "%s", termname);
+    }
   else if (st.st_fstype != FSTYPE_TERM)
     error (0, 0, "%s: Not a terminal", termname);
 
