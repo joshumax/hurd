@@ -140,7 +140,7 @@ netfs_S_file_set_translator (struct protid *user,
 	  minor = strtol (arg, 0, 0);
 
 	  err = netfs_attempt_mkdev (user->user, np,
-				     newmode, makedev (major, minor));
+				     newmode, gnu_dev_makedev (major, minor));
 	  if (err == EOPNOTSUPP)
 	    goto fallback;
 	  break;

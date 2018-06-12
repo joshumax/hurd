@@ -216,8 +216,8 @@ fshelp_short_circuited_callback1 (void *cookie1, void *cookie2,
       if (asprintf (argz, "%s%c%d%c%d",
 		    (S_ISCHR (*statc->modep)
 		     ? _HURD_CHRDEV : _HURD_BLKDEV),
-		    0, major (statc->statp->st_rdev),
-		    0, minor (statc->statp->st_rdev)) < 0)
+		    0, gnu_dev_major (statc->statp->st_rdev),
+		    0, gnu_dev_minor (statc->statp->st_rdev)) < 0)
 	return ENOMEM;
       *argz_len = strlen (*argz) + 1;
       *argz_len += strlen (*argz + *argz_len) + 1;

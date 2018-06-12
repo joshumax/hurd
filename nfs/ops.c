@@ -1037,8 +1037,8 @@ netfs_attempt_link (struct iouser *cred, struct node *dir,
 	  p = xdr_encode_sattr_stat (p, &np->nn_stat);
 	  if (np->nn->dtrans == BLKDEV || np->nn->dtrans == CHRDEV)
 	    {
-	      *(p++) = htonl (major (np->nn_stat.st_rdev));
-	      *(p++) = htonl (minor (np->nn_stat.st_rdev));
+	      *(p++) = htonl (gnu_dev_major (np->nn_stat.st_rdev));
+	      *(p++) = htonl (gnu_dev_minor (np->nn_stat.st_rdev));
 	    }
 	  pthread_mutex_unlock (&np->lock);
 

@@ -18,6 +18,7 @@
 #include <mach.h>
 #include <sys/mman.h>
 #include <stdint.h>
+#include <mach/vm_param.h>
 
 #define PAGE_SIZE	(1 << PAGE_SHIFT)
 

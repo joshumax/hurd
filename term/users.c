@@ -32,6 +32,7 @@
 #include <hurd/fshelp.h>
 #include <error.h>
 #include "ourmsg_U.h"
+#include <signal.h>
 
 
 #undef ECHO

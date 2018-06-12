@@ -347,7 +347,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 	  struct rr_pn *pn = body;
 
 	  rr->valid |= VALID_PN;
-	  rr->rdev = makedev (isonum_733 (pn->high), isonum_733 (pn->low));
+	  rr->rdev = gnu_dev_makedev (isonum_733 (pn->high), isonum_733 (pn->low));
 
 	  goto next_field;
 	}

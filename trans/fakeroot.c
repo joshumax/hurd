@@ -659,7 +659,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
   char *trans = 0;
   int translen = asprintf (&trans, "%s%c%d%c%d",
 			   S_ISCHR (type) ? _HURD_CHRDEV : _HURD_BLKDEV,
-			   '\0', major (indexes), '\0', minor (indexes));
+			   '\0', gnu_dev_major (indexes), '\0', gnu_dev_minor (indexes));
   if (trans == 0)
     return ENOMEM;
   else

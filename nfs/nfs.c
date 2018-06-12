@@ -466,7 +466,7 @@ xdr_decode_fattr (int *p, struct stat *st)
       p++;
       minor = ntohl (*p);
       p++;
-      st->st_rdev = makedev (major, minor);
+      st->st_rdev = gnu_dev_makedev (major, minor);
     }
   st->st_fsid = ntohl (*p);
   p++;

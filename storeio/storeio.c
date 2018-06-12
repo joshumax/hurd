@@ -83,7 +83,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	  /* MAJOR,MINOR form */
 	  {
 	    start = end + 1;
-	    rdev = makedev (rdev, strtoul (start, &end, 0));
+	    rdev = gnu_dev_makedev (rdev, strtoul (start, &end, 0));
 	  }
 
 	if (end == start || *end != '\0')
@@ -164,7 +164,7 @@ trivfs_append_args (struct trivfs_control *trivfs_control,
     {
       char buf[40];
       snprintf (buf, sizeof buf, "--rdev=%d,%d",
-		major (dev->rdev), minor (dev->rdev));
+		gnu_dev_major (dev->rdev), gnu_dev_minor (dev->rdev));
       err = argz_add (argz, argz_len, buf);
     }
 
