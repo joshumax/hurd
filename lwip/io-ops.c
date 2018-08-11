@@ -198,6 +198,8 @@ lwip_io_select_common (struct sock_user *user,
   int timeout;
   struct pollfd fdp;
   nfds_t nfds;
+  mach_port_type_t type;
+  error_t err;
 
   if (!user)
     return EOPNOTSUPP;
@@ -226,6 +228,12 @@ lwip_io_select_common (struct sock_user *user,
   nfds = 1;
   timeout = tv ? tv->tv_sec * 1000 + tv->tv_nsec / 1000000 : -1;
   ret = lwip_poll (&fdp, nfds, timeout);
+
+  err = mach_port_type (mach_task_self (), reply, &type);
+  if (err || (type & MACH_PORT_TYPE_DEAD_NAME))
+    /* The reply port is dead, we were cancelled */
+    return EINTR;
+
 
   if (ret > 0)
     {
