@@ -133,7 +133,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	}
       in = h->curint;
 
-      strncpy (in->dev_name, arg, DEV_NAME_LEN);
+      strncpy (in->dev_name, arg, sizeof(in->dev_name)-1);
       break;
 
     case 'a':

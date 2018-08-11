@@ -61,7 +61,7 @@ dev_ifconf (struct ifconf *ifc)
 	  memset (ifr, 0, sizeof (struct ifreq));
 
 	  strncpy (ifr->ifr_name, netif_get_state (netif)->devname,
-		   strlen (netif_get_state (netif)->devname) + 1);
+		   sizeof (ifr->ifr_name)-1);
 	  saddr->sin_len = sizeof (struct sockaddr_in);
 	  saddr->sin_family = AF_INET;
 	  saddr->sin_addr.s_addr = netif_ip4_addr (netif)->addr;
