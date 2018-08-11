@@ -99,6 +99,7 @@ int
 lwip_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
 {
   struct port_info *pi;
+  mig_routine_t routine = NULL;
 
   /* Clear errno to prevent raising previous errors again */
   errno = 0;
@@ -116,40 +117,19 @@ lwip_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
   if (pi)
     {
       ports_port_deref (pi);
+      routine = lwip_io_server_routine (inp);
+    }
 
-      mig_routine_t routine;
-      if ((routine = lwip_io_server_routine (inp)) ||
-	  (routine = lwip_socket_server_routine (inp)) ||
-	  (routine = lwip_pfinet_server_routine (inp)) ||
-	  (routine = lwip_iioctl_server_routine (inp)) ||
-	  (routine = NULL, trivfs_demuxer (inp, outp)) ||
-	  (routine = lwip_startup_notify_server_routine (inp)))
-	{
-	  if (routine)
-	    (*routine) (inp, outp);
-	  return TRUE;
-	}
-      else
-	return FALSE;
+  if (routine || (routine = lwip_socket_server_routine (inp)) ||
+      (routine = lwip_pfinet_server_routine (inp)) ||
+      (routine = lwip_iioctl_server_routine (inp)) ||
+      (routine = lwip_startup_notify_server_routine (inp)))
+    {
+      (*routine) (inp, outp);
+      return TRUE;
     }
   else
-    {
-      mig_routine_t routine;
-      if ((routine = lwip_socket_server_routine (inp)) ||
-	  (routine = lwip_pfinet_server_routine (inp)) ||
-	  (routine = lwip_iioctl_server_routine (inp)) ||
-	  (routine = NULL, trivfs_demuxer (inp, outp)) ||
-	  (routine = lwip_startup_notify_server_routine (inp)))
-	{
-	  if (routine)
-	    (*routine) (inp, outp);
-	  return TRUE;
-	}
-      else
-	return FALSE;
-    }
-
-  return 0;
+    return trivfs_demuxer (inp, outp);
 }
 
 void
