@@ -229,6 +229,9 @@ lwip_io_select_common (struct sock_user *user,
 
   if (ret > 0)
     {
+      if (fdp.revents & POLLERR)
+	return EIO;
+
       if (fdp.revents & POLLIN)
 	*select_type |= SELECT_READ;
 
