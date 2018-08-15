@@ -21,6 +21,7 @@
 #include <startup.h>
 
 #include <unistd.h>
+#include <signal.h>
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 
