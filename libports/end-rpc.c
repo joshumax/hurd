@@ -48,7 +48,7 @@ ports_end_rpc (void *port, struct rpc_info *info)
   ports_self_interrupted ();
 
   /* Clear the cancellation flag for this thread since the current 
-     RPC is now finished anwhow. */
+     RPC is now finished anyhow. */
   hurd_check_cancel ();
 
   pthread_mutex_unlock (&_ports_lock);
