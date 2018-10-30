@@ -1,0 +1,15 @@
+- add "--pci 00:1f.3" option to easily specify a PCI device instead of having to
+  use --bus, --dev, and --func.
+
+- memset + snprintf looks dubious
+
+- pci_get_ndevs should be deprecated, applications shouldn't be relying on this
+
+- we shouldn't duplicate pci_access.[ch] x86_pci.[ch] from libpciaccess, we
+  should get libpciaccess to expose pci_system_x86_create() to keep the
+  maintenance of x86 port knocking there.
+
+  At least one difference with libpciaccess is the refresh operation. Perhaps
+  we'd need to extend libpciaccess to fix that.
+
+  BTW we could also support libpci.
