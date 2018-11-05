@@ -73,6 +73,8 @@ diskfs_free_node (struct node *np, mode_t mode)
     {
     case DT_REG:
       if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
+	/* XXX GNU Mach will terminate the object, and thus existing mappings
+	 * will get SIGBUS.  */
 	vm_deallocate (mach_task_self (), np->dn->u.reg.memref, 4096);
 	mach_port_deallocate (mach_task_self (), np->dn->u.reg.memobj);
       }	
