@@ -83,7 +83,7 @@ dist-version := $(shell cd $(top_srcdir)/ && $(git_describe))
 
 .PHONY: dist
 ifdef configured
-dist: $(foreach Z,bz2 gz,$(dist-version).tar.$(Z))
+dist: $(foreach Z,xz gz,$(dist-version).tar.$(Z))
 else
 dist:
 	@echo >&2 'Cannot build a distribution from an unconfigured tree.'
@@ -238,8 +238,8 @@ install-headers: $(addsuffix -install-headers,$(lib-subdirs) \
 TAGS: $(addsuffix -TAGS,$(working-prog-subdirs) $(lib-subdirs))
 	etags -o $@ $(patsubst %-TAGS,-i %/TAGS,$^)
 
-%.bz2: %
-	bzip2 -9 < $< > $@
+%.xz: %
+	xz < $< > $@
 
 %.gz: %
 	gzip -9n < $< > $@
