@@ -62,7 +62,7 @@ pool_initialize (void)
   error_t err;
   gcry_error_t cerr;
 
-  if (! gcry_check_version (GCRYPT_VERSION))
+  if (! gcry_check_version ("1.8.0"))
     error (1, 0, "libgcrypt version mismatch\n");
 
   cerr = gcry_control (GCRYCTL_INITIALIZATION_FINISHED, 0);
