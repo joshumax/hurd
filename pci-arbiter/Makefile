@@ -26,7 +26,7 @@ SRCS		= main.c pci-ops.c pci_access.c x86_pci.c netfs_impl.c \
 MIGSRCS		= pciServer.c startup_notifyServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
 
-HURDLIBS= fshelp ports shouldbeinlibc netfs
+HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash
 LDLIBS = -lpthread
 
 target = pci-arbiter
