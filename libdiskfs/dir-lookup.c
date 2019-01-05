@@ -460,11 +460,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
   if (!newnode)
     /* Check permissions on existing nodes, but not new ones. */
     {
-      if (((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
+      if ((type == S_IFSOCK || type == S_IFBLK || type == S_IFCHR ||
 	    type == S_IFIFO)
 	   && (flags & (O_READ|O_WRITE|O_EXEC)))
-	  || (type == S_IFLNK && (flags & (O_WRITE|O_EXEC))))
 	err = EACCES;
+
+      if (!err && type == S_IFLNK && (flags & (O_WRITE|O_EXEC)))
+	err = ELOOP;
 
       if (!err && (flags & O_READ))
 	err = fshelp_access (&np->dn_stat, S_IREAD, dircred->user);
