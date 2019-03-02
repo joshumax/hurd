@@ -54,7 +54,7 @@ struct port_class *trivfs_protid_class;
 struct port_class *trivfs_control_class;
 
 kern_return_t
-S_shutdown(trivfs_protid_t server)
+S_shutdown_shutdown(trivfs_protid_t server)
 {
   disappear_via_acpi();
   return 0;

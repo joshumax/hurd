@@ -189,7 +189,7 @@ do_shutdown (void)
   if (! MACH_PORT_VALID (pc))
     return errno;
 
-  shutdown (pc);
+  shutdown_shutdown (pc);
   return 0;
 }
 

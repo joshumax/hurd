@@ -28,6 +28,6 @@ SHUTDOWN_IMPORTS
 /*
  * Shut down the computer
  */
-routine shutdown (
+routine shutdown_shutdown (
 	server : shutdown_t
 );
