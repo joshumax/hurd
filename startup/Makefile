@@ -20,6 +20,7 @@ makemode := server
 
 SRCS = startup.c
 OBJS = $(SRCS:.c=.o) \
+       shutdownUser.o \
        startupServer.o notifyServer.o startup_replyUser.o msgServer.o \
        startup_notifyUser.o fsysServer.o fsServer.o ioServer.o
 target = startup
