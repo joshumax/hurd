@@ -46,7 +46,8 @@ prog-subdirs = auth proc exec term \
 	       devnode \
 	       eth-multiplexer \
 	       pci-arbiter \
-	       acpi
+	       acpi \
+	       shutdown
 
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd

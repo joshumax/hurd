@@ -314,6 +314,24 @@ destructor: PCI_DESTRUCTOR
 #endif
 ;
 
+/* Shutdown */
+type shutdown_t = mach_port_copy_send_t
+#ifdef SHUTDOWN_INTRAN
+intran: SHUTDOWN_INTRAN
+intranpayload: SHUTDOWN_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: shutdown_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#endif
+#ifdef SHUTDOWN_OUTTRAN
+outtran: SHUTDOWN_OUTTRAN
+#endif
+#ifdef SHUTDOWN_DESTRUCTOR
+destructor: SHUTDOWN_DESTRUCTOR
+#endif
+;
+
 type proccoll_t = mach_port_copy_send_t;
 
 type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic
