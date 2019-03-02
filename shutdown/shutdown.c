@@ -56,7 +56,6 @@ struct port_class *trivfs_control_class;
 kern_return_t
 S_shutdown(trivfs_protid_t server)
 {
-  mach_print ("YAY RPC\n");
   disappear_via_acpi();
   return 0;
 }
@@ -138,8 +137,6 @@ main (int argc, char *argv[])
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
     error (3, err, "Contacting parent");
-
-  mach_print("Hello shutdown before ports loop\n");
 
   /* Launch.  */
   do

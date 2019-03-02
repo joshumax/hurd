@@ -37,8 +37,12 @@ void disappear_via_acpi(void)
   fclose(facp);
 
   /* Get I/O permissions */
-  if (ioperm(0, 0xffff, 1)) {
-    mach_print("EPERM on ioperm()\n");
+  if (ioperm(smi_cmd, 2, 1)) {
+    mach_print("EPERM on ioperm(smi_cmd)\n");
+    return;
+  }
+  if (ioperm(pm1a_ctl, 2, 1)) {
+    mach_print("EPERM on ioperm(pm1a_ctl)\n");
     return;
   }
 
