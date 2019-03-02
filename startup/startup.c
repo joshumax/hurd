@@ -206,16 +206,21 @@ reboot_mach (int flags)
   else
     {
       error_t err;
-      fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
-               program_invocation_short_name, BOOT (flags), flags);
       sleep (5);
       if (flags & RB_HALT) {
-        do_shutdown();
-      } else {
-        err = host_reboot (host_priv, flags);
-        if (err)
-          error (1, err, "reboot");
+	fprintf (stderr, "%s: %sing Hurd...\n",
+	         program_invocation_short_name, BOOT (flags));
+	err = do_shutdown ();
+	if (err)
+	  error (0, err, "shutdown");
+	sleep (2);
+	fprintf (stderr, "Didn't succeed\n");
       }
+      fprintf (stderr, "%s: %sing Mach (flags %#x)...\n",
+               program_invocation_short_name, BOOT (flags), flags);
+      err = host_reboot (host_priv, flags);
+      if (err)
+	error (1, err, "reboot");
       for (;;) sleep (1);
     }
 }
