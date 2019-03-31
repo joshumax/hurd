@@ -25,6 +25,7 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <string.h>
+#include <errno.h>
 
 #include <lwip-util.h>
 
@@ -72,10 +73,9 @@ hurdloopif_device_terminate (struct netif *netif)
 /*
  * Set up the LwIP loopback interface
  */
-error_t
-hurdloopif_device_init (struct netif * netif)
+err_t
+hurdloopif_device_init (struct netif *netif)
 {
-  error_t err = 0;
   hurdloopif *loopif;
 
   /*
@@ -108,5 +108,5 @@ hurdloopif_device_init (struct netif * netif)
   loopif->update_mtu = hurdloopif_device_update_mtu;
   loopif->change_flags = hurdloopif_device_set_flags;
 
-  return err;
+  return ERR_OK;
 }

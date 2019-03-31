@@ -263,7 +263,7 @@ hurdethif_device_close (struct netif *netif)
 /*
  * Called from lwip when outgoing data is ready
  */
-static error_t
+static err_t
 hurdethif_output (struct netif *netif, struct pbuf *p)
 {
   error_t err;
@@ -453,8 +453,8 @@ hurdethif_device_terminate (struct netif *netif)
  * 
  * The module must be initialized before calling this function.
  */
-error_t
-hurdethif_device_init (struct netif * netif)
+err_t
+hurdethif_device_init (struct netif *netif)
 {
   error_t err;
   size_t count = 2;
@@ -494,7 +494,7 @@ hurdethif_device_init (struct netif * netif)
   /* We need the device to be opened to configure it */
   err = hurdethif_device_open (netif);
   if (err)
-    return err;
+    return ERR_IF;
 
   /* Get the MAC address */
   ether_port = netif_get_state (netif)->ether_port;

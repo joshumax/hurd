@@ -27,6 +27,7 @@
 #include <net/if_arp.h>
 #include <error.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 #include <lwip-hurd.h>
 
@@ -117,11 +118,10 @@ hurdtunif_device_terminate (struct netif *netif)
  *
  * Just enqueue the data.
  */
-static error_t
+static err_t
 hurdtunif_output (struct netif *netif, struct pbuf *p,
 		  const ip4_addr_t * ipaddr)
 {
-  error_t err = 0;
   struct hurdtunif *tunif;
   struct pbuf *pcopy, *oldest;
 
@@ -161,14 +161,14 @@ hurdtunif_output (struct netif *netif, struct pbuf *p,
 
   pthread_mutex_unlock (&tunif->lock);
 
-  return err;
+  return ERR_OK;
 }
 
 /*
  * Set up the tunnel a new tunnel device
  */
-error_t
-hurdtunif_device_init (struct netif * netif)
+err_t
+hurdtunif_device_init (struct netif *netif)
 {
   error_t err = 0;
   struct hurdtunif *tunif;
@@ -229,7 +229,7 @@ hurdtunif_device_init (struct netif * netif)
   if (tunif->underlying == MACH_PORT_NULL)
     {
       error (0, 0, "%s", tunif->comm.devname);
-      return -1;
+      return ERR_IF;
     }
 
   err = trivfs_create_control (tunif->underlying, tunnel_cntlclass,
@@ -246,7 +246,10 @@ hurdtunif_device_init (struct netif * netif)
     }
 
   if (err)
-    error (0, err, "%s", tunif->comm.devname);
+    {
+      error (0, err, "%s", tunif->comm.devname);
+      return ERR_IF;
+    }
 
   /* We'll need to get the netif from trivfs operations */
   tunif->cntl->hook = netif;
@@ -260,7 +263,7 @@ hurdtunif_device_init (struct netif * netif)
   pthread_cond_init (&tunif->select, NULL);
   tunif->read_blocked = 0;
 
-  return err;
+  return ERR_OK;
 }
 
 /*

@@ -23,6 +23,7 @@
 #include <netif/ifcommon.h>
 
 #include <net/if.h>
+#include <errno.h>
 
 #include <lwip/netifapi.h>
 
@@ -70,8 +71,8 @@ if_close (struct netif *netif)
  * This function doesn't assume there's a device nor tries to open it.
  * If a device is present, it must be opened from the ifc->init() callback.
  */
-error_t
-if_init (struct netif * netif)
+err_t
+if_init (struct netif *netif)
 {
   struct ifcommon *ifc = netif_get_state (netif);
 

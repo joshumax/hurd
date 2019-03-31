@@ -25,6 +25,8 @@
 
 #define LOOP_DEV_NAME   "lo"
 
+#include <errno.h>
+
 #include <lwip/netif.h>
 
 void init_ifs (void *arg);

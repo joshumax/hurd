@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <device/device.h>
+#include <errno.h>
 
 #include <lwip/netif.h>
 
@@ -42,7 +43,7 @@ struct ifcommon
   uint16_t flags;
 
   /* Callbacks */
-    error_t (*init) (struct netif * netif);
+    err_t (*init) (struct netif * netif);
     error_t (*terminate) (struct netif * netif);
     error_t (*open) (struct netif * netif);
     error_t (*close) (struct netif * netif);
@@ -50,7 +51,7 @@ struct ifcommon
     error_t (*change_flags) (struct netif * netif, uint16_t flags);
 };
 
-error_t if_init (struct netif *netif);
+err_t if_init (struct netif *netif);
 error_t if_terminate (struct netif *netif);
 error_t if_change_flags (struct netif *netif, uint16_t flags);
 

@@ -57,7 +57,7 @@ struct port_class *tunnel_cntlclass;
 struct port_class *tunnel_class;
 
 /* Device initialization */
-error_t hurdtunif_device_init (struct netif *netif);
+err_t hurdtunif_device_init (struct netif *netif);
 
 /* Module initialization */
 error_t hurdtunif_module_init ();
