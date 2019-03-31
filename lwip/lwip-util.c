@@ -27,13 +27,24 @@
 
 #include <lwip/sockets.h>
 #include <lwip/inet.h>
-#include <lwip/netifapi.h>
+#include <lwip/tcpip.h>
 
 #include <lwip-hurd.h>
 #include <options.h>
 #include <netif/hurdethif.h>
 #include <netif/hurdtunif.h>
 #include <netif/hurdloopif.h>
+
+struct update_if_args {
+  struct netif *netif;
+  uint32_t addr;
+  uint32_t netmask;
+  uint32_t peer;
+  uint32_t broadcast;
+  uint32_t gateway;
+  uint32_t * addr6;
+  uint8_t * addr6_prefix_len;
+};
 
 /*
  * Detect the proper module for the given device name
@@ -128,7 +139,7 @@ remove_ifs ()
 	  continue;
 	}
       if_terminate (netif);
-      netifapi_netif_remove (netif);
+      netif_remove (netif);
       free (netif);
 
       netif = netif_list;
@@ -141,7 +152,6 @@ remove_ifs ()
 void
 init_ifs (void *arg)
 {
-  error_t err;
   struct parse_interface *in;
   struct parse_hook *ifs;
   struct netif *netif;
@@ -183,10 +193,8 @@ init_ifs (void *arg)
        *
        * Fifth parameter (ifc) is a hook.
        */
-      err = netifapi_netif_add
-	(netif, &in->address, &in->netmask, &in->gateway, &ifc, if_init,
-	 tcpip_input);
-      if (err)
+      if (!netif_add (netif, &in->address, &in->netmask, &in->gateway, &ifc,
+			if_init, tcpip_input))
 	{
 	  /* The interface failed to init */
 	  if (netif->state != &ifc)
@@ -220,12 +228,12 @@ init_ifs (void *arg)
 	}
 
       /* Up the inerface */
-      netifapi_netif_set_up (netif);
+      netif_set_up (netif);
 
       /* Set the first interface with valid gateway as default */
       if (in->gateway.addr != INADDR_NONE)
 	{
-	  netifapi_netif_set_default (netif);
+	  netif_set_default (netif);
 	}
     }
 
@@ -239,38 +247,37 @@ init_ifs (void *arg)
 /*
  * Change the IP configuration of an interface
  */
-static error_t
-update_if (struct netif *netif, uint32_t addr, uint32_t netmask,
-	   uint32_t peer, uint32_t broadcast, uint32_t gateway,
-	   uint32_t * addr6, uint8_t * addr6_prefix_len)
+static void
+update_if (void *arg)
 {
-  error_t err;
   int i;
 
-  err = 0;
+  struct update_if_args *args = (struct update_if_args*)arg;
 
-  netifapi_netif_set_addr (netif, (ip4_addr_t *) & addr,
-			   (ip4_addr_t *) & netmask,
-			   (ip4_addr_t *) & gateway);
+  netif_set_addr (args->netif, (ip4_addr_t *) & args->addr,
+			   (ip4_addr_t *) & args->netmask,
+			   (ip4_addr_t *) & args->gateway);
 
-  if (addr6)
+  if (args->addr6)
     for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
       {
-	ip6_addr_t *laddr6 = ((ip6_addr_t *) addr6 + i);
+	ip6_addr_t *laddr6 = ((ip6_addr_t *) args->addr6 + i);
 	if (!ip6_addr_isany (laddr6))
 	  {
-	    netif_ip6_addr_set (netif, i, laddr6);
+	    netif_ip6_addr_set (args->netif, i, laddr6);
 
 	    if (!ip6_addr_islinklocal (laddr6))
-	      netif_ip6_addr_set_state (netif, i, IP6_ADDR_TENTATIVE);
+	      netif_ip6_addr_set_state (args->netif, i, IP6_ADDR_TENTATIVE);
 	  }
       }
 
-  if (addr6_prefix_len)
+  if (args->addr6_prefix_len)
     for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
-      *(addr6_prefix_len + i) = 64;
+      *(args->addr6_prefix_len + i) = 64;
 
-  return err;
+  free(args);
+
+  return;
 }
 
 /* Get the IP configuration of an interface */
@@ -336,9 +343,19 @@ configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
 
   if (!ipv4config_is_valid (addr, netmask, gateway, broadcast))
     err = EINVAL;
-  else
-    err = update_if (netif, addr, netmask, peer, broadcast,
-		     gateway, addr6, addr6_prefix_len);
+  else {
+    /* Call update_if() inside the tcpip_thread */
+    struct update_if_args *arg = calloc (1, sizeof (struct update_if_args));
+    arg->netif = netif;
+    arg->addr = addr;
+    arg->netmask = netmask;
+    arg->peer = peer;
+    arg->broadcast = broadcast;
+    arg->gateway = gateway;
+    arg->addr6 = addr6;
+    arg->addr6_prefix_len = addr6_prefix_len;
+    err = tcpip_callback(update_if, arg);
+  }
 
   return err;
 }

@@ -25,8 +25,6 @@
 #include <net/if.h>
 #include <errno.h>
 
-#include <lwip/netifapi.h>
-
 /* Open the device and set the interface up */
 static error_t
 if_open (struct netif *netif)
@@ -40,7 +38,7 @@ if_open (struct netif *netif)
     {
       /* Up the inerface */
       ifc->flags |= IFF_UP | IFF_RUNNING;
-      netifapi_netif_set_up (netif);
+      netif_set_up (netif);
     }
 
   return err;
@@ -59,7 +57,7 @@ if_close (struct netif *netif)
     {
       /* Down the inerface */
       ifc->flags &= ~(IFF_UP | IFF_RUNNING);
-      netifapi_netif_set_down (netif);
+      netif_set_down (netif);
     }
 
   return err;

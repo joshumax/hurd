@@ -264,11 +264,15 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case ARGP_KEY_SUCCESS:
       /* If the interface list is not empty, a previous configuration exists */
       if (netif_list == 0)
-	/* Inititalize LwIP */
-	tcpip_init (init_ifs, h);
+	{
+	  /* Inititalize LwIP */
+	  tcpip_init (init_ifs, h);
+	}
       else
-	/* No need to initialize the stack again */
-	init_ifs (h);
+	{
+	  /* No need to initialize the stack again */
+	  tcpip_callback (init_ifs, h);
+	}
       break;
 
     case ARGP_KEY_ERROR:
