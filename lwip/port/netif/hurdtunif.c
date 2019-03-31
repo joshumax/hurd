@@ -23,6 +23,9 @@
 #include <netif/hurdtunif.h>
 
 #include <hurd/trivfs.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <error.h>
