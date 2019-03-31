@@ -75,7 +75,7 @@ if_init (struct netif * netif)
 {
   struct ifcommon *ifc = netif_get_state (netif);
 
-  if (netif == NULL)
+  if (ifc == NULL)
     /* The user provided no interface */
     return -1;
 
@@ -89,7 +89,7 @@ if_terminate (struct netif * netif)
   error_t err;
   struct ifcommon *ifc = netif_get_state (netif);
 
-  if (netif == NULL)
+  if (ifc == NULL)
     /* The user provided no interface */
     return -1;
 

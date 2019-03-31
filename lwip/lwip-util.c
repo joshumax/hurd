@@ -181,7 +181,7 @@ init_ifs (void *arg)
       /*
        * Create a new interface and configre IPv4.
        *
-       * Fifth parameter (in->name) is a hook.
+       * Fifth parameter (ifc) is a hook.
        */
       err = netifapi_netif_add
 	(netif, &in->address, &in->netmask, &in->gateway, &ifc, if_init,
@@ -189,7 +189,7 @@ init_ifs (void *arg)
       if (err)
 	{
 	  /* The interface failed to init */
-	  if (netif->state != in->dev_name)
+	  if (netif->state != &ifc)
 	    /* It failed after setting the control block, must free it */
 	    mem_free (netif->state);
 	  free (netif);
