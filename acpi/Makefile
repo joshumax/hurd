@@ -25,7 +25,7 @@ SRCS           = main.c netfs_impl.c acpi.c \
 MIGSRCS        =
 OBJS           = $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
 
-HURDLIBS= fshelp ports shouldbeinlibc netfs
+HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash
 LDLIBS = -lpthread
 
 target = acpi
