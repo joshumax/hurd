@@ -20,6 +20,7 @@ makemode := server
 
 SRCS = shutdown.c acpi_shutdown.c
 HURDLIBS = ports shouldbeinlibc trivfs iohelp ihash fshelp
+LDLIBS = -lpthread
 target = shutdown
 MIGSTUBS = shutdownServer.o
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
