@@ -80,7 +80,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
 	  goto try_again;
 	}
       err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
-			       tocred);
+			       tocred, excl);
       if (diskfs_synchronous)
 	{
 	  pthread_mutex_lock (&fdp->lock);

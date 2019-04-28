@@ -1017,14 +1017,15 @@ struct node *diskfs_check_lookup_cache (struct node *dir, const char *name);
    upon return.  This routine is serialized, so it doesn't have to be
    reentrant.  Directories will never be renamed except by this
    routine.  FROMCRED and TOCRED are the users responsible for
-   FDP/FNP and TDP respectively.  This routine assumes the usual
+   FDP/FNP and TDP respectively. If EXCL is set, then fail if TONAME
+   already exists inside directory TDP. This routine assumes the usual
    convention where `.' and `..' are represented by ordinary links;
    if that is not true for your format, you have to redefine this
    function.*/
 error_t
 diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 		   struct node *tdp, const char *toname,
-		   struct protid *fromcred, struct protid *tocred);
+		   struct protid *fromcred, struct protid *tocred, int excl);
 
 /* Clear the `.' and `..' entries from directory DP.  Its parent is
    PDP, and the user responsible for this is identified by CRED.  Both

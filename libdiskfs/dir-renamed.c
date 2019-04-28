@@ -64,11 +64,12 @@ checkpath(struct node *source,
    upon return.  This routine is serialized, so it doesn't have to be
    reentrant.  Directories will never be renamed except by this
    routine.  FROMCRED and TOCRED are the users responsible for
-   FDP/FNP and TDP respectively.  */
+   FDP/FNP and TDP respectively.  If EXCL is set, then fail if TONAME
+   already exists inside directory TDP. */
 error_t
 diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 		   struct node *tdp, const char *toname,
-		   struct protid *fromcred, struct protid *tocred)
+		   struct protid *fromcred, struct protid *tocred, int excl)
 {
   error_t err;
   struct node *tnp, *tmpnp;
@@ -96,6 +97,11 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   assert_backtrace (err != EAGAIN);	/* <-> assert_backtrace (TONAME != "..") */
   if (err && err != ENOENT)
     goto out;
+  if (tnp && excl)
+    {
+      err = EEXIST;
+      goto out;
+    }
 
   if (tnp == fnp)
     {

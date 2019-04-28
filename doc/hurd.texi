@@ -4442,14 +4442,16 @@ file data) is used.  If it returns any other error, it is returned to
 the user.
 @end deftypefn
 
-@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}})
+@deftypefun error_t diskfs_rename_dir (@w{struct node *@var{fdp}}, @w{struct node *@var{fnp}}, @w{char *@var{fromname}}, @w{struct node *@var{tdp}}, @w{char *@var{toname}}, @w{struct protid *@var{fromcred}}, @w{struct protid *@var{tocred}}, @w{int @var{excl}})
 Rename directory node @var{fnp} (whose parent is @var{fdp}, and which
 has name @var{fromname} in that directory) to have name @var{toname}
 inside directory @var{tdp}.  None of these nodes are locked, and none
 should be locked upon return.  This routine is serialized, so it doesn't
 have to be reentrant.  Directories will never be renamed except by this
 routine.  @var{fromcred} is the user responsible for @var{fdp} and
-@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.  This
+@var{fnp}.  @var{tocred} is the user responsible for @var{tdp}.
+If @var{excl} is set, then fail if @var{toname} already exists inside
+directory @var{tdp}. This
 routine assumes the usual convention where @file{.}  and @file{..} are
 represented by ordinary links; if that is not true for your format, you
 have to redefine this function.
