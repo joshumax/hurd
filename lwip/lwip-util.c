@@ -35,17 +35,6 @@
 #include <netif/hurdtunif.h>
 #include <netif/hurdloopif.h>
 
-struct update_if_args {
-  struct netif *netif;
-  uint32_t addr;
-  uint32_t netmask;
-  uint32_t peer;
-  uint32_t broadcast;
-  uint32_t gateway;
-  uint32_t * addr6;
-  uint8_t * addr6_prefix_len;
-};
-
 /*
  * Detect the proper module for the given device name
  * and returns its init callback
@@ -244,6 +233,19 @@ init_ifs (void *arg)
   return;
 }
 
+/* Args for update_if() */
+struct update_if_args
+{
+  struct netif *netif;
+  uint32_t addr;
+  uint32_t netmask;
+  uint32_t peer;
+  uint32_t broadcast;
+  uint32_t gateway;
+  uint32_t *addr6;
+  uint8_t *addr6_prefix_len;
+};
+
 /*
  * Change the IP configuration of an interface
  */
@@ -251,8 +253,7 @@ static void
 update_if (void *arg)
 {
   int i;
-
-  struct update_if_args *args = (struct update_if_args*)arg;
+  struct update_if_args *args = (struct update_if_args *) arg;
 
   netif_set_addr (args->netif, (ip4_addr_t *) & args->addr,
 			   (ip4_addr_t *) & args->netmask,
@@ -275,7 +276,7 @@ update_if (void *arg)
     for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
       *(args->addr6_prefix_len + i) = 64;
 
-  free(args);
+  free (args);
 
   return;
 }
@@ -343,19 +344,22 @@ configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
 
   if (!ipv4config_is_valid (addr, netmask, gateway, broadcast))
     err = EINVAL;
-  else {
-    /* Call update_if() inside the tcpip_thread */
-    struct update_if_args *arg = calloc (1, sizeof (struct update_if_args));
-    arg->netif = netif;
-    arg->addr = addr;
-    arg->netmask = netmask;
-    arg->peer = peer;
-    arg->broadcast = broadcast;
-    arg->gateway = gateway;
-    arg->addr6 = addr6;
-    arg->addr6_prefix_len = addr6_prefix_len;
-    err = tcpip_callback(update_if, arg);
-  }
+  else
+    {
+      /* Call update_if() inside the tcpip_thread */
+      struct update_if_args *arg = calloc (1, sizeof (struct update_if_args));
+      arg->netif = netif;
+      arg->addr = addr;
+      arg->netmask = netmask;
+      arg->peer = peer;
+      arg->broadcast = broadcast;
+      arg->gateway = gateway;
+      arg->addr6 = addr6;
+      arg->addr6_prefix_len = addr6_prefix_len;
+      err = tcpip_callback (update_if, arg);
+      if (err)
+	return err;
+    }
 
-  return err;
+  return errno;
 }
