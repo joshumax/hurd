@@ -347,11 +347,11 @@ lwip_S_socket_send (struct sock_user * user,
   int sent;
   int sockflags;
   struct iovec iov = { data, datalen };
-struct msghdr m = { msg_name:addr ? &addr->address : 0,
-  msg_namelen:addr ? addr->address.sa.sa_len : 0,
-  msg_flags:flags,
-  msg_controllen: 0, msg_iov: &iov, msg_iovlen:1
-  };
+  struct msghdr m = { msg_name:addr ? &addr->address : 0,
+    msg_namelen:addr ? addr->address.sa.sa_len : 0,
+    msg_flags:flags,
+    msg_controllen: 0, msg_iov: &iov, msg_iovlen:1
+    };
 
   if (!user)
     return EOPNOTSUPP;
@@ -361,8 +361,11 @@ struct msghdr m = { msg_name:addr ? &addr->address : 0,
     return EINVAL;
 
   sockflags = lwip_fcntl (user->sock->sockno, F_GETFL, 0);
+  /* XXX: missing !MSG_NOSIGNAL support, i.e. generate SIGPIPE */
+  flags &= ~MSG_NOSIGNAL;
   if (sockflags & O_NONBLOCK)
     flags |= MSG_DONTWAIT;
+
   sent = lwip_sendmsg (user->sock->sockno, &m, flags);
 
   /* MiG should do this for us, but it doesn't. */
