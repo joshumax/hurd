@@ -38,11 +38,11 @@ void disappear_via_acpi(void)
 
   /* Get I/O permissions */
   if (ioperm(smi_cmd, 2, 1)) {
-    mach_print("EPERM on ioperm(smi_cmd)\n");
+    fprintf(stderr, "EPERM on ioperm(smi_cmd)\n");
     return;
   }
   if (ioperm(pm1a_ctl, 2, 1)) {
-    mach_print("EPERM on ioperm(pm1a_ctl)\n");
+    fprintf(stderr, "EPERM on ioperm(pm1a_ctl)\n");
     return;
   }
 
