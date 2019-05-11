@@ -253,7 +253,7 @@ static void
 update_if (void *arg)
 {
   int i;
-  struct update_if_args *args = (struct update_if_args *) arg;
+  struct update_if_args *args = arg;
 
   netif_set_addr (args->netif, (ip4_addr_t *) & args->addr,
 			   (ip4_addr_t *) & args->netmask,
@@ -356,10 +356,8 @@ configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
       arg->gateway = gateway;
       arg->addr6 = addr6;
       arg->addr6_prefix_len = addr6_prefix_len;
-      err = tcpip_callback (update_if, arg);
-      if (err)
-	return err;
+      err = err_to_errno(tcpip_callback (update_if, arg));
     }
 
-  return errno;
+  return err;
 }
