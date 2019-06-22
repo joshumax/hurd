@@ -25,6 +25,8 @@
 #include <net/if.h>
 #include <errno.h>
 
+#include <lwip/tcpip.h>
+
 /* Open the device and set the interface up */
 static error_t
 if_open (struct netif *netif)
@@ -99,6 +101,46 @@ if_terminate (struct netif * netif)
   return ifc->terminate (netif);
 }
 
+/* Args for _if_change_flags() */
+struct if_change_flags_args
+{
+  struct netif *netif;
+  uint16_t flags;
+  error_t err;
+};
+
+/*
+ * Implementation of if_change_flags(), called inside a thread-safe context
+ */
+static void
+_if_change_flags (void *arg)
+{
+  error_t err;
+  struct ifcommon *ifc;
+  uint16_t oldflags;
+  struct if_change_flags_args *args = arg;
+
+  ifc = netif_get_state (args->netif);
+
+  if (ifc == NULL)
+    {
+      /* The user provided no interface */
+      errno = EINVAL;
+      return;
+    }
+
+  oldflags = ifc->flags;
+
+  err = ifc->change_flags (args->netif, args->flags);
+
+  if (!err && ((oldflags ^ args->flags) & IFF_UP))	/* Bit is different  ? */
+    err = ((oldflags & IFF_UP) ? if_close : if_open) (args->netif);
+
+  args->err = err;
+
+  return;
+}
+
 /*
  * Change device flags.
  *
@@ -108,13 +150,21 @@ error_t
 if_change_flags (struct netif * netif, uint16_t flags)
 {
   error_t err;
-  struct ifcommon *ifc = netif_get_state (netif);
-  uint16_t oldflags = ifc->flags;
 
-  err = ifc->change_flags (netif, flags);
+  /*
+   * Call _if_change_flags() inside the tcpip_thread and wait for it to finish.
+   */
+  struct if_change_flags_args *args =
+    calloc (1, sizeof (struct if_change_flags_args));
+  args->netif = netif;
+  args->flags = flags;
+  err = tcpip_callback_wait(_if_change_flags, args);
 
-  if ((oldflags ^ flags) & IFF_UP)	/* Bit is different  ? */
-    ((oldflags & IFF_UP) ? if_close : if_open) (netif);
+  if(!err)
+    /* Get the return value */
+    err = args->err;
+
+  free (args);
 
   return err;
 }
