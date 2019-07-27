@@ -252,4 +252,60 @@ void trivfs_remove_port_bucket (struct port_bucket *bucket);
 typedef struct trivfs_protid *trivfs_protid_t;
 typedef struct trivfs_control *trivfs_control_t;
 
+
+/* The following extracts from io_S.h and fs_S.h catch loff_t erroneously
+   written off_t and stat64 erroneously written stat,
+   or missing -D_FILE_OFFSET_BITS=64 build flag. */
+
+kern_return_t trivfs_S_io_write (trivfs_protid_t io_object,
+				 mach_port_t reply,
+				 mach_msg_type_name_t replyPoly,
+				 data_t data,
+				 mach_msg_type_number_t dataCnt,
+				 loff_t offset,
+				 vm_size_t *amount);
+
+kern_return_t trivfs_S_io_read (trivfs_protid_t io_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				data_t *data,
+				mach_msg_type_number_t *dataCnt,
+				loff_t offset,
+				vm_size_t amount);
+
+kern_return_t trivfs_S_io_seek (trivfs_protid_t io_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				loff_t offset,
+				int whence,
+				loff_t *newp);
+
+kern_return_t trivfs_S_io_stat (trivfs_protid_t stat_object,
+				mach_port_t reply,
+				mach_msg_type_name_t replyPoly,
+				io_statbuf_t *stat_info);
+
+kern_return_t trivfs_S_file_set_size (trivfs_protid_t trunc_file,
+				      mach_port_t reply,
+				      mach_msg_type_name_t replyPoly,
+				      loff_t new_size);
+
+kern_return_t trivfs_S_file_get_storage_info (trivfs_protid_t file,
+					      mach_port_t reply,
+					      mach_msg_type_name_t replyPoly,
+					      portarray_t *ports,
+					      mach_msg_type_name_t *portsPoly,
+					      mach_msg_type_number_t *portsCnt,
+					      intarray_t *ints,
+					      mach_msg_type_number_t *intsCnt,
+					      off_array_t *offsets,
+					      mach_msg_type_number_t *offsetsCnt,
+					      data_t *data,
+					      mach_msg_type_number_t *dataCnt);
+
+kern_return_t trivfs_S_file_statfs (trivfs_protid_t file,
+				    mach_port_t reply,
+				    mach_msg_type_name_t replyPoly,
+				    fsys_statfsbuf_t *info);
+
 #endif /* __TRIVFS_H__ */

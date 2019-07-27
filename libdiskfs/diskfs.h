@@ -1159,4 +1159,48 @@ struct store *diskfs_init_main (struct argp *startup_argp,
 /* Make errors go somewhere reasonable.  */
 void diskfs_console_stdio ();
 
+
+/* The following extracts from io_S.h and fs_S.h catch loff_t erroneously
+   written off_t and stat64 erroneously written stat,
+   or missing -D_FILE_OFFSET_BITS=64 build flag. */
+
+typedef struct protid *protid_t;
+
+kern_return_t diskfs_S_io_write (protid_t io_object,
+				 data_t data,
+				 mach_msg_type_number_t dataCnt,
+				 loff_t offset,
+				 vm_size_t *amount);
+
+kern_return_t diskfs_S_io_read (protid_t io_object,
+				data_t *data,
+				mach_msg_type_number_t *dataCnt,
+				loff_t offset,
+				vm_size_t amount);
+
+kern_return_t diskfs_S_io_seek (protid_t io_object,
+				loff_t offset,
+				int whence,
+				loff_t *newp);
+
+kern_return_t diskfs_S_io_stat (protid_t stat_object,
+				io_statbuf_t *stat_info);
+
+kern_return_t diskfs_S_file_set_size (protid_t trunc_file,
+				      loff_t new_size);
+
+kern_return_t diskfs_S_file_get_storage_info (protid_t file,
+					      portarray_t *ports,
+					      mach_msg_type_name_t *portsPoly,
+					      mach_msg_type_number_t *portsCnt,
+					      intarray_t *ints,
+					      mach_msg_type_number_t *intsCnt,
+					      off_array_t *offsets,
+					      mach_msg_type_number_t *offsetsCnt,
+					      data_t *data,
+					      mach_msg_type_number_t *dataCnt);
+
+kern_return_t diskfs_S_file_statfs (protid_t file,
+				    fsys_statfsbuf_t *info);
+
 #endif	/* hurd/diskfs.h */
