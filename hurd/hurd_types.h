@@ -199,7 +199,7 @@ enum term_bottom_type
 
    The vectors returned by file_get_storage_info encode each of the above
    (note that the first int is always the storage type).  There are four:
-   ports, ints, offsets (off_t), and data (char); each type of store uses the
+   ports, ints, offsets (loff_t), and data (char); each type of store uses the
    following entries in each vector:
 
     -type-  -ports-  -ints-	     	     -offsets-	       -data-    -kids-

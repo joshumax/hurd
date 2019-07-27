@@ -57,7 +57,7 @@ struct protid
 /* One of these is created for each node opened by dir_lookup. */
 struct peropen
 {
-  off_t filepointer;
+  loff_t filepointer;
   int lock_status;
   refcount_t refcnt;
   int openstat;
@@ -620,7 +620,7 @@ void diskfs_user_try_dropping_softrefs (struct node *np);
 
 /* Lookup node INUM (which must have a reference already) and return it
    without allocating any new references. */
-struct node *diskfs_cached_ifind (ino_t inum);
+struct node *diskfs_cached_ifind (ino64_t inum);
 
 /* The library exports the following functions for general use */
 
@@ -859,7 +859,7 @@ error_t diskfs_cached_lookup (ino64_t cache_id, struct node **npp);
 /* Return the node corresponding to CACHE_ID in *NPP.  In case of a
    cache miss, use CTX to create it and load it from the disk.  See
    the section `Node cache' above.  */
-error_t diskfs_cached_lookup_context (ino_t inum, struct node **npp,
+error_t diskfs_cached_lookup_context (ino64_t inum, struct node **npp,
 				      struct lookup_context *ctx);
 
 

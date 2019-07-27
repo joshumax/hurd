@@ -64,7 +64,7 @@ struct shared_io
   int use_file_size;		/* file_size is meaningful */
 
   int use_read_size;		/* read_size is meaningful */
-  off_t read_size;
+  loff_t read_size;
 
   blksize_t optimal_transfer_size; /* users should try to have the
 				   arguments to io_prenotify, etc. be
@@ -97,10 +97,10 @@ struct shared_io
   int use_postnotify_size;	/* postnotify_size is meaningful */
   int use_readnotify_size;	/* readnotify_size is meaningful */
 
-  off_t prenotify_size;
-  off_t postnotify_size;
-  off_t readnotify_size;
-    
+  loff_t prenotify_size;
+  loff_t postnotify_size;
+  loff_t readnotify_size;
+
 
   /* These are set by both the IO server and the user: */
 
@@ -110,11 +110,11 @@ struct shared_io
      rd_file_pointer for read and the wr_file_pointer for write.
      Normally in this case the seekable value will be false.  
      The unused file pointers will be set to -1 by the I/O server. */
-  off_t rd_file_pointer; 
-  off_t wr_file_pointer;
-  off_t xx_file_pointer;
+  loff_t rd_file_pointer;
+  loff_t wr_file_pointer;
+  loff_t xx_file_pointer;
 
-  off_t file_size;
+  loff_t file_size;
 
   /* These two indicate that the appropriate times need updated */
   int written;
