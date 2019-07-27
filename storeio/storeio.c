@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <argp.h>
 #include <argz.h>
+#include <sys/sysmacros.h>
 
 #include <hurd.h>
 #include <hurd/ports.h>

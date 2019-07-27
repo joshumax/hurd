@@ -21,6 +21,7 @@
 
 #include "netfs.h"
 #include "fs_S.h"
+#include <sys/sysmacros.h>
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 

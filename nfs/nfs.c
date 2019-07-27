@@ -26,6 +26,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <sys/sysmacros.h>
 
 /* Convert an NFS mode (TYPE and MODE) to a Hurd mode and return
    it.  */

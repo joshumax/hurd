@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <pthread.h>
+#include <sys/sysmacros.h>
 #include <hurd/ihash.h>
 #include <hurd/paths.h>
 

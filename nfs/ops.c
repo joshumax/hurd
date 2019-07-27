@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <maptime.h>
+#include <sys/sysmacros.h>
 
 /* We have fresh stat information for NP; the file attribute (fattr)
    structure is at P.  Update our entry.  Return the address of the next
