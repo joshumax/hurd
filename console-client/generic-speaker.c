@@ -414,7 +414,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	unsigned int i;
 	int found = 0;
 
-	for (i = 0; i < sizeof (*beep); i++)
+	for (i = 0; i < sizeof (beep) / sizeof (*beep); i++)
 	  {
 	    if (! strcasecmp (beep[i]->name, arg))
 	      {
