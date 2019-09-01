@@ -83,7 +83,7 @@ S_socket_create (mach_port_t pf,
 
 error_t
 S_socket_create_address (mach_port_t pf, int sockaddr_type,
-			 char *data, size_t data_len,
+			 data_t data, size_t data_len,
 			 mach_port_t *addr_port,
 			 mach_msg_type_name_t *addr_port_type)
 {
@@ -121,7 +121,7 @@ S_socket_fabricate_address (mach_port_t pf,
 error_t
 S_socket_whatis_address (struct addr *addr,
 			 int *sockaddr_type,
-			 char **sockaddr, size_t *sockaddr_len)
+			 data_t *sockaddr, size_t *sockaddr_len)
 {
   socklen_t addr_len = (offsetof (struct sockaddr, sa_data) + 1);
   

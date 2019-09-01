@@ -27,7 +27,7 @@
 error_t
 trivfs_S_fsys_get_options (struct trivfs_control *fsys,
 			   mach_port_t reply, mach_msg_type_name_t reply_type,
-			   char **data, mach_msg_type_number_t *len)
+			   data_t *data, mach_msg_type_number_t *len)
 {
   error_t err;
   char *argz = 0;

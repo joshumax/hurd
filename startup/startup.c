@@ -1875,7 +1875,7 @@ S_fsys_getroot (mach_port_t fsys_t,
 
 error_t
 S_fsys_get_options (mach_port_t control,
-		    char **data, mach_msg_type_number_t *len)
+		    data_t *data, mach_msg_type_number_t *len)
 {
   /* XXX Implement me.  */
   return EOPNOTSUPP;

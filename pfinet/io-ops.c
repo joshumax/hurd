@@ -36,7 +36,7 @@
 
 error_t
 S_io_write (struct sock_user *user,
-	    char *data,
+	    data_t data,
 	    size_t datalen,
 	    off_t offset,
 	    mach_msg_type_number_t *amount)
@@ -69,7 +69,7 @@ S_io_write (struct sock_user *user,
 
 error_t
 S_io_read (struct sock_user *user,
-	   char **data,
+	   data_t *data,
 	   size_t *datalen,
 	   off_t offset,
 	   mach_msg_type_number_t amount)

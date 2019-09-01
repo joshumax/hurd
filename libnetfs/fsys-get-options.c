@@ -34,7 +34,7 @@ error_t
 netfs_S_fsys_get_options (struct netfs_control *port,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,
-			  char **data, mach_msg_type_number_t *data_len)
+			  data_t *data, mach_msg_type_number_t *data_len)
 {
   error_t err;
   char *argz = 0;

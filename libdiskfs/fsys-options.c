@@ -50,7 +50,7 @@ kern_return_t
 diskfs_S_fsys_set_options (struct diskfs_control *pt,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,
-			   char *data, mach_msg_type_number_t len,
+			   data_t data, mach_msg_type_number_t len,
 			   int do_children)
 {
   error_t err = 0;
@@ -81,7 +81,7 @@ error_t
 diskfs_S_fsys_get_options (struct diskfs_control *port,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,
-			   char **data, mach_msg_type_number_t *data_len)
+			   data_t *data, mach_msg_type_number_t *data_len)
 {
   char *argz = 0;
   size_t argz_len = 0;

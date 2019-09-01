@@ -575,7 +575,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 
 error_t
 netfs_S_io_read (struct protid *user,
-		 char **data,
+		 data_t *data,
 		 mach_msg_type_number_t *datalen,
 		 off_t offset,
 		 mach_msg_type_number_t amount)
@@ -594,7 +594,7 @@ netfs_S_io_read (struct protid *user,
 
 error_t
 netfs_S_io_write (struct protid *user,
-		  char *data,
+		  data_t data,
 		  mach_msg_type_number_t datalen,
 		  off_t offset,
 		  mach_msg_type_number_t *amount)

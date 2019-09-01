@@ -31,7 +31,7 @@
 error_t
 diskfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply, mach_msg_type_name_t reply_type,
-		       mach_port_t requestor, char *argz, size_t argz_len)
+		       mach_port_t requestor, data_t argz, size_t argz_len)
 {
   return EOPNOTSUPP;
 }

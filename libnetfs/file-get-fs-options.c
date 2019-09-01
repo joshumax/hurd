@@ -31,7 +31,7 @@
 /* Implement file_get_fs_options as described in <hurd/fs.defs>. */
 error_t
 netfs_S_file_get_fs_options (struct protid *user,
-			     char **data, mach_msg_type_number_t *data_len)
+			     data_t *data, mach_msg_type_number_t *data_len)
 {
   error_t err;
   char *argz = 0;

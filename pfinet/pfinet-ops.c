@@ -42,7 +42,7 @@ extern int dev_ifconf(char *arg);
 error_t
 S_pfinet_siocgifconf (io_t port,
 		      vm_size_t amount,
-		      char **ifr,
+		      data_t *ifr,
 		      mach_msg_type_number_t *len)
 {
   error_t err = 0;

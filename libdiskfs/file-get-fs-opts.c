@@ -27,7 +27,7 @@
 
 error_t
 diskfs_S_file_get_fs_options (struct protid *cred,
-			      char **data, size_t *data_len)
+			      data_t *data, size_t *data_len)
 {
   error_t err;
   char *argz = 0;

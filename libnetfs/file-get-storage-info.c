@@ -29,7 +29,7 @@ netfs_S_file_get_storage_info (struct protid *user,
 			       int **ints, mach_msg_type_number_t *num_ints,
 			       off_t **offsets,
 			       mach_msg_type_number_t *num_offsets,
-			       char **data, mach_msg_type_number_t *data_len)
+			       data_t *data, mach_msg_type_number_t *data_len)
 {
   error_t err;
 

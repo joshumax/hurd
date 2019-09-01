@@ -83,7 +83,7 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  char **data, mach_msg_type_number_t *data_len,
+		  data_t *data, mach_msg_type_number_t *data_len,
 		  loff_t offs, mach_msg_type_number_t amount)
 {
   if (! cred)
@@ -125,7 +125,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   char *data, mach_msg_type_number_t data_len,
+		   data_t data, mach_msg_type_number_t data_len,
 		   loff_t offs, mach_msg_type_number_t *amount)
 {
   if (! cred)
@@ -314,7 +314,7 @@ trivfs_S_file_get_storage_info (struct trivfs_protid *cred,
 				int **ints, mach_msg_type_number_t *num_ints,
 				off_t **offsets,
 				mach_msg_type_number_t *num_offsets,
-				char **data, mach_msg_type_number_t *data_len)
+				data_t *data, mach_msg_type_number_t *data_len)
 {
   *ports_type = MACH_MSG_TYPE_COPY_SEND;
 

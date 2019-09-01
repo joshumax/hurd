@@ -24,7 +24,7 @@
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_get_translator (struct protid *cred,
-			      char **trans,
+			      data_t *trans,
 			      size_t *translen)
 {
   struct node *np;

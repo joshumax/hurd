@@ -43,7 +43,7 @@
    ignored.  The amount desired to be read is in amount.  */
 error_t
 S_io_read (struct sock_user *user,
-	   char **data, mach_msg_type_number_t *data_len,
+	   data_t *data, mach_msg_type_number_t *data_len,
 	   off_t offset, mach_msg_type_number_t amount)
 {
   error_t err;
@@ -79,7 +79,7 @@ S_io_read (struct sock_user *user,
    if they recevie more than one write when not prepared for it.  */
 error_t
 S_io_write (struct sock_user *user,
-	    char *data, mach_msg_type_number_t data_len,
+	    data_t data, mach_msg_type_number_t data_len,
 	    off_t offset, mach_msg_type_number_t *amount)
 {
   error_t err;

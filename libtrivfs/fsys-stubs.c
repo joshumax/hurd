@@ -63,7 +63,7 @@ trivfs_S_fsys_getfile (struct trivfs_control *cntl,
 		       size_t ngenuids,
 		       uid_t *gengids,
 		       size_t ngengids,
-		       char *handle,
+		       data_t handle,
 		       size_t handlesize,
 		       mach_port_t *file,
 		       mach_msg_type_name_t *filetype)

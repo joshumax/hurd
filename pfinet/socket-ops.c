@@ -292,7 +292,7 @@ S_socket_connect2 (struct sock_user *user1,
 error_t
 S_socket_create_address (mach_port_t server,
 			 int sockaddr_type,
-			 char *data,
+			 data_t data,
 			 mach_msg_type_number_t data_len,
 			 mach_port_t *addr_port,
 			 mach_msg_type_name_t *addr_port_type)
@@ -337,7 +337,7 @@ S_socket_fabricate_address (mach_port_t server,
 error_t
 S_socket_whatis_address (struct sock_addr *addr,
 			 int *type,
-			 char **data,
+			 data_t *data,
 			 mach_msg_type_number_t *datalen)
 {
   if (!addr)
@@ -374,7 +374,7 @@ error_t
 S_socket_getopt (struct sock_user *user,
 		 int level,
 		 int option,
-		 char **data,
+		 data_t *data,
 		 size_t *datalen)
 {
   error_t err;
@@ -403,7 +403,7 @@ error_t
 S_socket_setopt (struct sock_user *user,
 		 int level,
 		 int option,
-		 char *data,
+		 data_t data,
 		 size_t datalen)
 {
   error_t err;
@@ -430,11 +430,11 @@ error_t
 S_socket_send (struct sock_user *user,
 	       struct sock_addr *addr,
 	       int flags,
-	       char *data,
+	       data_t data,
 	       size_t datalen,
 	       mach_port_t *ports,
 	       size_t nports,
-	       char *control,
+	       data_t control,
 	       size_t controllen,
 	       mach_msg_type_number_t *amount)
 {
@@ -477,12 +477,12 @@ S_socket_recv (struct sock_user *user,
 	       mach_port_t *addrport,
 	       mach_msg_type_name_t *addrporttype,
 	       int flags,
-	       char **data,
+	       data_t *data,
 	       size_t *datalen,
 	       mach_port_t **ports,
 	       mach_msg_type_name_t *portstype,
 	       size_t *nports,
-	       char **control,
+	       data_t *control,
 	       size_t *controllen,
 	       int *outflags,
 	       mach_msg_type_number_t amount)

@@ -524,7 +524,7 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  char **data, size_t *data_len,
+		  data_t *data, size_t *data_len,
 		  off_t offs, size_t amount)
 {
   error_t err;
@@ -689,7 +689,7 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   char *data, size_t data_len,
+		   data_t data, size_t data_len,
 		   off_t offs, size_t *amount)
 {
   error_t err;
@@ -821,7 +821,7 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t requestor,
-		       char *argz, size_t argz_len)
+		       data_t argz, size_t argz_len)
 {
   error_t err;
   struct fifo_trans *server_trans, *trans;

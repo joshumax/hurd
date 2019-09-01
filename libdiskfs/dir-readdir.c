@@ -25,7 +25,7 @@
 
 kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
-		      char **data,
+		      data_t *data,
 		      size_t *datacnt,
 		      boolean_t *data_dealloc,
 		      int entry,

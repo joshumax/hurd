@@ -22,7 +22,7 @@
 /* Implement io_read as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_read (struct protid *cred,
-		  char **data,
+		  data_t *data,
 		  mach_msg_type_number_t *datalen,
 		  off_t offset,
 		  mach_msg_type_number_t maxread)

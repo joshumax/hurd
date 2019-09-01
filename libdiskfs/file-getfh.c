@@ -26,7 +26,7 @@
 
 /* Return an NFS file handle for CRED in FH & FN_LEN.  */
 error_t
-diskfs_S_file_getfh (struct protid *cred, char **fh, size_t *fh_len)
+diskfs_S_file_getfh (struct protid *cred, data_t *fh, size_t *fh_len)
 {
   struct node *node;
   union diskfs_fhandle *f;

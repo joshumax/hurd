@@ -32,7 +32,7 @@ netfs_S_file_notice_changes (struct protid *user,
 
 error_t __attribute__((weak))
 netfs_S_file_getfh (struct protid *user,
-		    char **data, mach_msg_type_number_t *ndata)
+		    data_t *data, mach_msg_type_number_t *ndata)
 {
   return EOPNOTSUPP;
 }

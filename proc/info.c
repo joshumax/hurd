@@ -379,7 +379,7 @@ get_string_array (task_t t,
 kern_return_t
 S_proc_getprocargs (struct proc *callerp,
 		  pid_t pid,
-		  char **buf,
+		  data_t *buf,
 		  size_t *buflen)
 {
   struct proc *p = pid_find (pid);
@@ -417,7 +417,7 @@ S_proc_getprocargs (struct proc *callerp,
 kern_return_t
 S_proc_getprocenv (struct proc *callerp,
 		 pid_t pid,
-		 char **buf,
+		 data_t *buf,
 		 size_t *buflen)
 {
   struct proc *p = pid_find (pid);
@@ -462,7 +462,7 @@ S_proc_getprocinfo (struct proc *callerp,
 		    int *flags,
 		    int **piarray,
 		    size_t *piarraylen,
-		    char **waits, mach_msg_type_number_t *waits_len)
+		    data_t *waits, mach_msg_type_number_t *waits_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;

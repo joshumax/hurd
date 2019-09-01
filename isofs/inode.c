@@ -425,7 +425,7 @@ diskfs_S_file_get_storage_info (struct protid *cred,
 				int **ints, mach_msg_type_number_t *num_ints,
 				off_t **offsets,
 				mach_msg_type_number_t *num_offsets,
-				char **data, mach_msg_type_number_t *data_len)
+				data_t *data, mach_msg_type_number_t *data_len)
 {
   /* XXX */
   return EOPNOTSUPP;

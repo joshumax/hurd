@@ -1393,7 +1393,7 @@ kern_return_t
 S_io_write (mach_port_t object,
 	    mach_port_t reply_port,
 	    mach_msg_type_name_t reply_type,
-	    char *data,
+	    data_t data,
 	    mach_msg_type_number_t datalen,
 	    off_t offset,
 	    mach_msg_type_number_t *amtwritten)
@@ -1418,7 +1418,7 @@ kern_return_t
 S_io_read (mach_port_t object,
 	   mach_port_t reply_port,
 	   mach_msg_type_name_t reply_type,
-	   char **data,
+	   data_t *data,
 	   mach_msg_type_number_t *datalen,
 	   off_t offset,
 	   mach_msg_type_number_t amount)

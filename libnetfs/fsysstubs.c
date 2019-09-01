@@ -28,7 +28,7 @@ netfs_S_fsys_getfile (struct netfs_control *cntl,
 		      mach_msg_type_name_t reply_type,
 		      uid_t *uids, mach_msg_type_number_t nuids,
 		      gid_t *gids, mach_msg_type_number_t ngids,
-		      char *handle, mach_msg_type_number_t handlelen,
+		      data_t handle, mach_msg_type_number_t handlelen,
 		      mach_port_t *file, mach_msg_type_name_t *filetype)
 {
   return EOPNOTSUPP;
@@ -59,7 +59,7 @@ netfs_S_fsys_forward (mach_port_t cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      mach_port_t request,
-		      char *argv, mach_msg_type_number_t argvlen)
+		      data_t argv, mach_msg_type_number_t argvlen)
 {
   return EOPNOTSUPP;
 }
