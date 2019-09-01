@@ -30,6 +30,12 @@
 #include <grp.h>
 #include <netdb.h>
 #include <time.h>
+#ifdef HAVE_LIBCRYPT
+#include <crypt.h>
+#else
+#warning "No crypt on this system!  Using plain-text passwords."
+#define crypt(password, encrypted) password
+#endif
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -136,7 +142,6 @@ count_parent_gids ()
 void verify_passwd (const char *name, const char *password,
 		    uid_t id, int is_group, structh auth *auth)
 {
-  extern char *crypt (const char salt[2], const char *string);
   char *prompt, *unencrypted, *encrypted;
 
   if (!password || !*password

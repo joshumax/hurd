@@ -27,11 +27,14 @@
 #include <grp.h>
 #include <pwd.h>
 #include <shadow.h>
+#ifdef HAVE_LIBCRYPT
 #include <crypt.h>
+#else
+#warning "No crypt on this system!  Using plain-text passwords."
+#define crypt(password, encrypted) password
+#endif
 
 #define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
-
-#pragma weak crypt
 
 static error_t verify_id (); /* FWD */
 
@@ -71,12 +74,8 @@ verify_passwd (const char *password,
   if (sys_encrypted[0] == '\0')
     return 0;			/* No password.  */
 
-  if (crypt)
-    /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
-    encrypted = crypt (password, sys_encrypted);
-  else
-    /* No crypt on this system!  Use plain-text passwords.  */
-    encrypted = password;
+  /* Encrypt the password entered by the user (SYS_ENCRYPTED is the salt). */
+  encrypted = crypt (password, sys_encrypted);
 
   if (! encrypted)
     /* Crypt failed.  */

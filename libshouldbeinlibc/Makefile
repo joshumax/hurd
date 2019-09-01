@@ -38,6 +38,8 @@ installhdrs = idvec.h timefmt.h maptime.h \
 
 installhdrsubdir = .
 
+LDLIBS += $(and $(HAVE_LIBCRYPT),-lcrypt)
+
 OBJS = $(SRCS:.c=.o)
 
 include ../Makeconf
