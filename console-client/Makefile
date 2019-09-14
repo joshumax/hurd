@@ -94,7 +94,7 @@ $(DESTDIR)$(module-dir)/%: %
 %.so.$(hurd-version): 
 	$(CC) -shared -Wl,-soname=$@ -o $@ $(lpath) \
 		$(CFLAGS) $($*-CFLAGS) $(LDFLAGS) \
-		'-Wl,-(' $($*-LDLIBS) '-Wl,-)' $^
+		$^ '-Wl,-(' $($*-LDLIBS) '-Wl,-)'
 
 lex.c: lex.l parser.tab.h
 %.tab.h %.c: %.y
