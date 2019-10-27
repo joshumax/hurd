@@ -276,7 +276,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		{
 		  char *end = strchr (retry_name, '\0');
 		  char *translator_path = strdupa (relpath);
-		  char *end;
 		  char *complete_path;
 
 		  if (mustbedir)
