@@ -1,0 +1,102 @@
+These programs are used to help test the algorithms in the libfshelp
+library.
+
+Record Locking
+==============
+
+Race
+----
+
+Race locks a file, reads an integer, increments it, writes the result to
+the file and then unlocks the file -- 10,000 times.  It is intended that
+multiple instances of this program be run at the same time.  Race takes
+three arguments:  the file to use, the start of the lock and the length.
+For obvious reasons, it is important that all instances of race have
+locks that overlap.  For example:
+
+	# rm -f foo && ( ./race foo 2 0 & ./race foo 2 3 & \
+	> ./race foo 0 3 )
+	Was blocked 5482 times
+	Was blocked 5485 times
+	Was blocked 5479 times
+	# cat foo
+	30000
+
+We see here that each process was blocked several thousand times and that
+the result in the file foo is 30000.  Perfect.
+
+Locks
+-----
+
+Locks is an interactive shell that has one ``file'' and ten open file
+descriptors.  Using some simple commands, one can test to see if locks
+are established, cleared, and enforced.  The principal command is
+`lock,' which takes four parameters.  The first is the file descriptor
+to lock, the second is the start of the lock, the third is the length of
+the lock (0 = until EOF) and the last is the type of lock to establish
+from the set {0: F_UNLCK, 1: F_RDLCK, 2: F_WRLCK}.  Help on the other
+commands can be gotten using the `help' command.
+
+A small run:
+
+	# ./locks
+	> lock 0 10 0 1
+	  0:    Start =   10; Length =    0; Type = F_RDLCK
+
+Lock from byte 10 through the EOF.
+
+	> lock 0 20 0 0
+	  0:    Start =   10; Length =   10; Type = F_RDLCK
+
+Unlock from byte 20 through the EOF.
+
+	> lock 0 11 8 2
+	  0:    Start =   10; Length =    1; Type = F_RDLCK
+	        Start =   11; Length =    8; Type = F_WRLCK
+	        Start =   19; Length =    1; Type = F_RDLCK
+
+Upgrade bytes 11 through 19 to a write lock.
+
+	> lock 0 9 10 1
+	  0:    Start =    9; Length =    2; Type = F_RDLCK
+	        Start =   11; Length =    8; Type = F_WRLCK
+	        Start =   19; Length =    1; Type = F_RDLCK
+
+Add a read lock to byte 9.
+
+	> lock 1 0 10 1
+	  1:    Start =    0; Length =   10; Type = F_RDLCK
+
+Read lock the first ten bytes of the file through file descriptor 1.
+
+	> lock 1 10 0 1
+	Resource temporarily unavailable
+
+Attempts to read lock the rest of the file.  This, however, fails as
+there are outstanding write locks held through file descriptor 1.
+
+	> lock 1 10 0 0
+	  1:    Start =    0; Length =   10; Type = F_RDLCK
+
+What happens when file descriptor tries to unlock the blocked range?
+
+	> lock 1 10 0 2
+	Resource temporarily unavailable
+
+Nothing.
+
+A bunch of tests live in locks-tests.  One can run them through the test
+program using: `./locks < ./locks-test 2>&1 | less'.  If it core dumps or
+triggers an assertion, that is a bug.  Report it.
+
+Fork
+----
+
+Tests to see if the a child inherits the locks across a fork.  According
+to POSIX, the child should not.
+
+	# ./fork foo
+	Parent has a write lock; Others have a write lock.
+	Child has a write lock; Others have a write lock.
+
+We are not POSIX compliant.

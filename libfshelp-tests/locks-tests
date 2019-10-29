@@ -1,0 +1,585 @@
+echo Legend:
+echo +   => Shared region
+echo x   => Exclusive region
+echo ' ' => Unlocked region
+echo .   => Clearing region
+echo []  => Start/End of a region
+echo After each lock command, the proposed region is shown followed
+echo by the result of applying it.
+echo * Established region wraps new region
+echo ** Both boundaries align
+echo [
+exec lock 0 1 10 1
+echo   [+++++++++++++]
+echo [ [+++++++++++++]
+exec lock 0 1 10 1
+echo   [+++++++++++++]
+echo [ [+++++++++++++]
+exec lock 0 1 10 2
+echo   [xxxxxxxxxxxxx]
+echo [ [xxxxxxxxxxxxx]
+exec lock 0 1 10 1
+echo   [+++++++++++++]
+echo [ [xxxxxxxxxxxxx]
+exec lock 0 1 10 2
+echo   [xxxxxxxxxxxxx]
+echo [ [xxxxxxxxxxxxx]
+exec lock 0 1 10 0
+echo   [.............]
+echo [
+exec lock 0 10 0 1
+echo         [++++++++
+echo [       [++++++++
+exec lock 0 10 0 1
+echo         [++++++++
+echo [       [++++++++
+exec lock 0 10 0 2
+echo         [xxxxxxxx
+echo [       [xxxxxxxx
+exec lock 0 10 0 2
+echo         [xxxxxxxx
+echo [       [xxxxxxxx
+exec lock 0 10 0 1
+echo         [++++++++
+echo [       [xxxxxxxx
+exec lock 0 10 0 0
+echo         [........
+echo [
+echo ** Left boundaries align
+exec lock 0 1 10 1
+echo   [+++++++++++]
+echo [ [+++++++++++]
+exec lock 0 1 5 1
+echo   [+++++]
+echo [ [+++++++++++]
+exec lock 0 1 5 2
+echo   [xxxxx]
+echo [ [xxxxx][++++]
+exec lock 0 1 3 1
+echo   [++]
+echo [ [xxxxx][++++]
+exec lock 0 1 10 0
+echo   [............
+echo [
+exec lock 0 1 10 1
+echo   [+++++++++++]
+echo [ [+++++++++++]
+exec lock 0 1 9 2
+echo   [xxxxxxxx]
+echo [ [xxxxxxxx][+]
+exec lock 0 1 5 0
+echo   [...]
+echo [      [***][+]
+exec lock 0 6 3 0
+echo        [.]
+echo [         [*][+]
+exec lock 0 9 1 0
+echo          [.]
+echo [           [+]
+exec lock 0 10 1 0
+echo             [.]
+echo [
+exec lock 0 1 0 1
+echo   [++++++++++++
+echo [ [++++++++++++
+exec lock 0 1 5 1
+echo   [++++]
+echo [ [++++++++++++
+exec lock 0 1 5 2
+echo   [xxxx]
+echo [ [xxxx][++++++
+exec lock 0 1 0 0
+echo   [............
+echo [
+exec lock 0 5 0 2
+echo     [xxxxxxxxxx
+echo [   [xxxxxxxxxx
+exec lock 0 5 5 1
+echo     [++++]
+echo [   [xxxxxxxxxx
+exec lock 0 5 0 1
+echo     [++++++++++
+echo [   [xxxxxxxxxx
+exec lock 0 0 0 0
+echo [..............
+echo [
+echo ** Common right side
+exec lock 0 5 5 1
+echo       [+++++]
+echo [     [+++++]
+exec lock 0 9 1 1
+echo           [+]
+echo [     [+++++]
+exec lock 0 9 1 2
+echo           [x]
+echo [     [++][x]
+exec lock 0 5 4 2
+echo       [xx]
+echo [     [xxxxx]
+exec lock 0 8 2 2
+echo           [x]
+echo [     [xxxxx]
+exec lock 0 9 1 0
+echo           [.]
+echo [     [xxx]
+exec lock 0 5 4 0
+echo       [...]
+echo [
+exec lock 0 5 0 1
+echo     [++++++++++
+echo [   [++++++++++
+exec lock 0 10 0 1
+echo          [+++++
+echo [   [++++++++++
+exec lock 0 10 0 2
+echo          [xxxxx
+echo [   [+++][xxxxx
+exec lock 0 5 0 0
+echo     [..........
+echo [
+echo ** Completely interior
+exec lock 0 5 10 1
+echo      [++++++++]
+echo [    [++++++++]
+exec lock 0 6 8 1
+echo       [++++++]
+echo [    [++++++++]
+exec lock 0 8 3 1
+echo         [+]
+echo [    [++++++++]
+exec lock 0 8 3 2
+echo         [x]
+echo [    [+][x][++]
+exec lock 0 12 1 2
+echo             x
+echo [    [++xxx+x+]
+exec lock 0 6 8 0
+echo       [......]
+echo [    [+]    [+]
+exec lock 0 0 0 0
+echo [..............
+echo [
+exec lock 0 5 0 1
+echo      [+++++++++
+echo [    [+++++++++
+exec lock 0 10 0 1
+echo           [++++
+echo [    [+++++++++
+exec lock 0 10 0 2
+echo           [xxxx
+echo [    [+++][xxxx
+exec lock 0 11 0 0
+echo             [..
+echo [    [+++][x]
+exec lock 0 6 0 0
+echo        [.......
+echo [    [+]
+exec lock 0 5 0 0
+echo      [.........
+echo [
+exec lock 0 10 0 1
+echo          [+++++
+echo [        [+++++
+exec lock 0 11 0 1
+echo           [+]
+echo [        [+++++
+exec lock 0 11 0 1
+echo           [+]
+echo [        [+++++
+exec lock 0 11 1 2
+echo           [x]
+echo [        [+x+++
+exec lock 0 13 0 1
+echo             [+]
+echo [        [+x+++
+exec lock 0 10 0 0
+echo          [.....
+echo [
+echo * We wrap the locked region
+echo ** Left boundaries align
+exec lock 0 1 10 1
+echo  [++++]
+echo [[++++]
+exec lock 0 1 15 1
+echo  [++++++++]
+echo [[++++++++]
+exec lock 0 1 16 1
+echo  [+++++++++]
+echo [[+++++++++]
+exec lock 0 1 20 2
+echo  [xxxxxxxxxxxxx]
+echo [[xxxxxxxxxxxxx]
+exec lock 0 1 30 1
+echo  [+++++++++++++++++++]
+echo [[xxxxxxxxxxxxx][++++]
+exec lock 0 22 11 2
+echo                   [xxx]
+echo [[xxxxxxxxxxxxx][+][xx]
+exec lock 0 1 40 0
+echo  [.........................]
+echo [
+exec lock 0 1 0 1
+echo  [++++++++++
+echo [[++++++++++
+exec lock 0 1 0 1
+echo  [++++++++++
+echo [[++++++++++
+exec lock 0 1 0 2
+echo  [xxxxxxxxxx
+echo [[xxxxxxxxxx
+exec lock 0 0 0 0
+echo [...........
+echo [
+exec lock 0 1 0 1
+echo  [++++++++++
+echo [[++++++++++
+exec lock 0 10 0 1
+echo       [+++++
+echo [[++++++++++
+exec lock 0 10 0 2
+echo       [xxxxx
+echo [[+++][xxxxx
+exec lock 0 0 0 0
+echo [...........
+echo [
+echo ** Right boundaries align
+exec lock 0 5 10 1
+echo     [++++++++]
+echo [   [++++++++]
+exec lock 0 4 11 1
+echo    [+++++++++]
+echo [  [+++++++++]
+exec lock 0 3 12 2
+echo   [xxxxxxxxxx]
+echo [ [xxxxxxxxxx]
+exec lock 0 0 15 2
+echo [xxxxxxxxxxxx]
+echo [xxxxxxxxxxxx]
+exec lock 0 0 0 0
+echo [.............
+echo [
+exec lock 0 5 0 1
+echo      [++++++++
+echo [    [++++++++
+exec lock 0 4 0 1
+echo     [+++++++++
+echo [   [+++++++++
+exec lock 0 3 0 2
+echo    [xxxxxxxxxx
+echo [  [xxxxxxxxxx
+exec lock 0 2 0 2
+echo   [xxxxxxxxxxx
+echo [ [xxxxxxxxxxx
+exec lock 0 0 0 2
+echo [xxxxxxxxxxxxx
+echo [xxxxxxxxxxxxx
+exec lock 0 0 0 0
+echo [.............
+echo [
+echo ** Consume locked region
+exec lock 0 5 10 1
+echo      [++++++++]
+echo [    [++++++++]
+exec lock 0 4 12 1
+echo     [++++++++++]
+echo [   [++++++++++]
+exec lock 0 2 16 1
+echo   [++++++++++++++]
+echo [ [++++++++++++++]
+exec lock 0 1 18 2
+echo  [xxxxxxxxxxxxxxxx]
+echo [[xxxxxxxxxxxxxxxx]
+exec lock 0 0 24 2
+echo [xxxxxxxxxxxxxxxxxxxxx]
+echo [xxxxxxxxxxxxxxxxxxxxx]
+exec lock 0 0 30 0
+echo [.........................]
+echo [
+exec lock 0 5 3 1
+echo      [++]
+echo [    [++]
+exec lock 0 10 5 1
+echo            [++++]
+echo [    [++]  [++++]
+exec lock 0 20 5 2
+echo                      [xxxx]
+echo [    [++]  [++++]    [xxxx]
+exec lock 0 4 30 2
+echo     [xxxxxxxxxxxxxxxxxxxxxxxxxx]
+echo [   [xxxxxxxxxxxxxxxxxxxxxxxxxx]
+exec lock 0 1 35 1
+echo   [++++++++++++++++++++++++++++++]
+echo [ [+[xxxxxxxxxxxxxxxxxxxxxxxxxx]+]
+exec lock 0 0 40 1
+echo [+++++++++++++++++++++++++++++++++++]
+echo [++][xxxxxxxxxxxxxxxxxxxxxxxxxx][+++]
+exec lock 0 0 0 0
+echo [....................................
+echo [
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [+++]
+exec lock 0 4 0 1
+echo     [++++++]
+echo [   [++++++]
+exec lock 0 4 0 0
+echo     [..........
+echo [
+exec lock 0 5 3 1
+echo      [++]
+echo [    [++]
+exec lock 0 10 5 1
+echo              [++++]
+echo [    [++]    [++++]
+exec lock 0 0 0 1
+echo [++++++++++++++++++++
+echo [++++++++++++++++++++
+exec lock 0 0 0 0
+echo [....................
+echo [
+exec lock 0 5 3 1
+echo      [++]
+echo [    [++]
+exec lock 0 10 3 1
+echo             [++]
+echo [    [++]   [++]
+exec lock 0 4 0 1
+echo     [++++++++++++++
+echo [   [++++++++++++++
+exec lock 0 10 3 2
+echo             [**]
+echo [   [++++++][**][++
+exec lock 0 0 0 2
+echo [xxxxxxxxxxxxxxxxxx
+echo [xxxxxxxxxxxxxxxxxx
+exec lock 0 0 0 0
+echo [..................
+echo [
+echo * Our start is within the locked region or one byte after and our
+echo   end is after the end of the locked region.
+echo ** The regions are the same type: Merge into a single large region
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [+++]
+exec lock 0 6 5 1
+echo       [+++]
+echo [    [++++]
+exec lock 0 8 8 1
+echo         [++++++]
+echo [    [+++++++++]
+exec lock 0 16 4 1
+echo                 [++]
+echo [    [+++++++++++++]
+exec lock 0 20 0 1
+echo                     [+++
+echo [    [++++++++++++++++++
+exec lock 0 5 16 0
+echo      [..............]
+echo [                    [+++
+exec lock 0 20 0 0
+echo                      [...
+echo [
+exec lock 0 6 6 2
+echo       [xxxx]
+echo [     [xxxx]
+exec lock 0 7 7 2
+echo        [xxxxx]
+echo [     [xxxxxx]
+exec lock 0 14 7 2
+echo               [xxxxx]
+echo [     [xxxxxxxxxxxxx]
+exec lock 0 21 0 2
+echo                      [xx
+echo [     [xxxxxxxxxxxxxxxxx
+exec lock 0 6 0 0
+echo       [.................
+echo [
+echo ** Different types just after the end of the locked region
+exec lock 0 1 3 1
+echo  [++]
+echo [[++]
+exec lock 0 4 3 2
+echo      [xx]
+echo [[++][xx]
+exec lock 0 7 3 1
+echo          [++]
+echo [[++][xx][++]
+exec lock 0 10 0 2
+echo              [xxx
+echo [[++][xx][++][xxx
+exec lock 0 5 0 0
+echo       [.........
+echo [[++]x
+exec lock 0 5 0 1
+echo       [+++
+echo [[++]x[+++
+exec lock 0 1 0 0
+echo  [...
+echo [
+echo ** New region consumes the intersection.
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [+++]
+exec lock 0 8 6 2
+echo          [xxx]
+echo [    [++][xxx]
+exec lock 0 6 0 2
+echo         [xxxxxx
+echo [    [+][xxxxxx
+exec lock 0 5 0 0
+echo      [.........
+echo [
+echo ** New region is dominated
+exec lock 0 5 5 2
+echo      [xxx]
+echo [    [xxx]
+exec lock 0 8 6 1
+echo         [++++]
+echo [    [xxx][++]
+exec lock 0 6 0 1
+echo        [++++++
+echo [    [xxx][+++
+exec lock 0 5 0 0
+echo      [........
+echo [
+echo * Our start falls before the locked region.  Our end falls just
+echo   before or with in the region (although we do not consume it)
+echo ** The regions are the same type: Merge into a single large region
+exec lock 0 10 5 1
+echo           [+++]
+echo [         [+++]
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [++++++++]
+exec lock 0 4 4 1
+echo     [++]
+echo [   [+++++++++]
+exec lock 0 0 10 1
+echo [+++++++++]
+echo [+++++++++++++]
+exec lock 0 0 15 0
+echo [...............]
+echo [
+exec lock 0 10 0 1
+echo           [++++
+echo [         [++++
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [+++++++++
+exec lock 0 4 1 1
+echo     +
+echo [   [++++++++++
+exec lock 0 0 0 1
+echo [++++++++++++++
+echo [++++++++++++++
+exec lock 0 0 0 0
+echo [....
+echo [
+exec lock 0 10 5 2
+echo           [xxx]
+echo [         [xxx]
+exec lock 0 5 5 2
+echo      [xxx]
+echo [    [xxxxxxxx]
+exec lock 0 4 4 2
+echo     [xx]
+echo [   [xxxxxxxxx]
+exec lock 0 0 10 2
+echo [xxxxxxxxx]
+echo [xxxxxxxxxxxxx]
+exec lock 0 0 15 0
+echo [...............]
+echo [
+exec lock 0 10 0 2
+echo           [xxxx
+echo [         [xxxx
+exec lock 0 5 5 2
+echo      [xxx]
+echo [    [xxxxxxxxx
+exec lock 0 4 1 2
+echo     x
+echo [   [xxxxxxxxxx
+exec lock 0 0 0 2
+echo [xxxxxxxxxxxxxx
+echo [xxxxxxxxxxxxxx
+exec lock 0 0 0 0
+echo [....
+echo [
+echo ** Different types just before the start of the locked region
+exec lock 0 5 5 1
+echo       [+++]
+echo [     [+++]
+exec lock 0 3 2 2
+echo    [x]
+echo [  [x][+++]
+exec lock 0 2 1 1
+echo   +
+echo [ +[x][+++]
+exec lock 0 1 0 2
+echo  [xxxx
+echo [[xxxx
+exec lock 0 0 1 1
+echo +
+echo +[xxxx
+exec lock 0 0 0 0
+echo [....
+echo [....
+exec lock 0 5 0 1
+echo      [++++
+echo [    [++++
+exec lock 0 0 5 2
+echo [xxxxxxxxx
+echo [xxxxxxxxx
+exec lock 0 0 0 0
+echo [....
+echo [
+echo ** New region consumes the intersection.
+exec lock 0 5 5 1
+echo      [+++]
+echo [    [+++]
+exec lock 0 4 3 2
+echo     [x]
+echo [   [x][+]
+exec lock 0 2 0 2
+echo    [xxxxxx
+echo [  [xxxxxx
+exec lock 0 0 0 0
+echo [....
+echo [
+exec lock 0 5 0 1
+echo      [++++++
+echo [    [++++++
+exec lock 0 4 5 2
+echo     [xxx]
+echo [   [xxx][++
+exec lock 0 4 0 0
+echo     [....
+echo [
+exec lock 0 5 0 1
+echo      [++++
+echo [    [++++
+exec lock 0 0 0 2
+echo [xxxxxxxxxx
+echo [xxxxxxxxxx
+exec lock 0 0 0 0
+echo [....
+echo [
+echo ** New region is dominated
+exec lock 0 5 5 2
+echo      [xxx]
+echo [    [xxx]
+exec lock 0 4 5 1
+echo     [+++]
+echo [   +[xxx]
+exec lock 0 0 0 0
+echo [...
+echo [
+exec lock 0 5 0 2
+echo     [xxxx
+echo [   [xxxx
+exec lock 0 0 0 1
+echo [++++++++
+echo [+++[xxxx
+exec lock 0 0 0 0
+echo [....
+echo [

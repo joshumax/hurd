@@ -1,0 +1,146 @@
+File: README.new_tests
+
+C-code:
+=======
+test-fcntl.c
+test-lockf.c
+test-flock.c
+
+Compile:
+========
+gcc -g -Wall -D_FILE_OFFSET_BITS=64 -o test-fcntl test-fcntl.c
+gcc -g -Wall -D_FILE_OFFSET_BITS=64 -o test-lockf test-lockf.c
+gcc -g -Wall -D_FILE_OFFSET_BITS=64 -o test-flock test-flock.c
+
+./test-fcntl
+./test-fcntl: Usage: ./test-fcntl file [flags] [cmd] [len] [sleep_time]
+    file          : file name/device name
+    flags         : r (O_RDONLY) | w (O_WRONLY) | rw (O_RDWR)      : [rw]
+    cmd           : g (F_GETLK), s (F_SETLK), sw (F_SETLKW)        : [s]
+    lock.l_type   : rl (F_RDLCK), wl (F_WRLCK), ul [F_UNLCK]       : [ul]
+    lock.l_whence : ss (SEEK_SET), sc (SEEK_CUR), se (SEEK_END)    : [ss]
+    lock.l_start  : b <number>                                     : [b 0]
+    lock.l_len    : l <number>                                     : [l 0]
+    sleep_time    : st <number>                                    : [st 10]
+
+./test-lockf
+./test-lockf: Usage: ./test-lockf file [flags] [cmd] [len] [sleep_time]
+    file          : file name/device name
+    flags         : r (O_RDONLY) | w (O_WRONLY) | rw (O_RDWR)      : [w]
+    cmd           : x (F_LOCK), xt (F_TLOCK), u (F_ULOCK),
+                    t (F_TEST)                                     : [x]
+    len           : l <number>                                     : [0]
+    sleep_time    : st <number>                                    : [st 10]
+
+./test-flock
+./test-flock: Usage: ./test-flock file [flags] [operation] [sleep_time]
+    file          : file name/device name
+    flags         : r (O_RDONLY) | w (O_WRONLY) | rw (O_RDWR)      : [w]
+    operation     : s (LOCK_SH), x (LOCK_EX), u (LOCK_UN),
+                    sn (LOCK_SH | LOCK_UN), xn (LOCK_EX | LOCK_UN) : [s]
+    sleep_time    : st <number>                                    : [st 10]
+
+Results:
+========
+New version of file_record_lock:
+libdiskfs/file-lock.c(diskfs_S_file_lock): Commented out
+libnetfs/file-lock.c(netfs_S_file_lock): Commented out
+libtrivfs/file-lock.c(trivfs_S_file_lock): TODO: Add+comment out
+libtrivfs/make-peropen.c(trivfs_S_file_lock): FIXME: po->openmodes = O_RDWR;
+if (openstat & (O_RDONLY|O_WRONLY|O_EXEC)) openstat |= O_RDONLY|O_WRONLY;
+
+libfshelp/rlock-tweak.c(fshelp_rlock_tweak): Removed
+if (lock->l_type == F_RDLCK && !(open_mode & O_READ))
+  return EACCES;
+if (lock->l_type == F_WRLCK && !(open_mode & O_WRITE))
+  return EACCES;
+Added:
+/* From POSIX-1003.1: A request for an exclusive lock shall fail if
+   the file descriptor was not opened with write access. */
+if ((cmd == F_SETLK64 || cmd == F_SETLKW64 )
+    && lock->l_type == F_WRLCK && !(open_mode & O_WRITE))
+  return EBADF;
+
+test-fcntl:
+===========
+libdiskfs:
+----------
+
+touch foo
+./test-fcntl foo {r,w} g {rl,wl}
+./test-fcntl foo r {s,sw} wl
+./test-fcntl: fcntl: Bad file descriptor
+./test-fcntl foo r {s,sw} {rl,ul}
+
+T1: T2:
+./test-fcntl foo {r,w} {s,sw} {rl,wl}
+./test-fcntl foo {r,w} {s,sw} {rl,wl}
+
+libnetfs:
+---------
+Not applicable on GNU/Linux?
+
+settrans -c ftp: /hurd/hostmux /hurd/ftpfs /
+Check:
+file ftp:
+ftp:: directory
+ls ftp://ftp.gnu.org/
+less ftp://ftp.gnu.org/README
+
+./test-fcntl ftp://ftp.gnu.org/README r g {rl,wl}
+./test-fcntl ftp://ftp.gnu.org/README w g {rl,wl}
+./test-fcntl: open: Permission denied
+
+./test-fcntl ftp://ftp.gnu.org/README r {s,sw} {rl,ul}
+./test-fcntl ftp://ftp.gnu.org/README r {s,sw} wl
+./test-fcntl: fcntl: Bad file descriptor
+
+settrans -fg ftp:
+rm ftp:
+
+libtrivs:
+---------
+BUG: ./test-fcntl /dev/null r s wl
+GNU/Linux:
+./test-fcntl: fcntl: Bad file descriptor
+
+test-lockf:
+===========
+libdiskfs:
+----------
+touch foo
+./test-lockf foo {r,w} {x,xt,u,t}
+T1, T2:
+./test-lockf foo {r,w} {x,xt,u,t}
+
+libnetfs:
+---------
+
+libtrivfs:
+----------
+
+test-flock:
+===========
+libdiskfs:
+----------
+touch foo
+./test-flock foo {r,w} {s,x,u,sn,xn}
+
+GNU/Linux:
+./test-flock foo r x
+
+GNU/Hurd:
+./test-flock foo r {x,xn}
+./test-flock: flock: Bad file descriptor
+
+T1: ./test-flock foo w s,x
+T2: ./test-flock foo w x (waits for the first lock)
+
+libnetfs:
+---------
+
+libtrivfs:
+----------
+GNU/Hurd
+T1: ./test-flock /dev/null w s,x
+BUG: T2: ./test-flock /dev/null w x (does not wait for the first lock)

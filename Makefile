@@ -1,6 +1,6 @@
 #
-#   Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2004,
-#   2006, 2009, 2011, 2012, 2013 Free Software Foundation, Inc.
+#   Copyright (C) 1993-1999, 2001, 2002, 2004, 2006, 2009,
+#   2011-2013, 2015-2019 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@ prog-subdirs = auth proc exec term \
 	       storeio pflocal pfinet defpager mach-defpager \
 	       login daemons boot console \
 	       hostmux usermux ftpfs trans \
-	       console-client utils sutils \
+	       console-client utils sutils libfshelp-tests \
 	       benchmarks fstests \
 	       procfs \
 	       startup \
