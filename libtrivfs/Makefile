@@ -1,4 +1,4 @@
-#   Copyright (C) 1994, 1995, 1996, 1997, 1999, 2001, 2002, 2003, 2008, 2012
+#   Copyright (C) 1994-1997, 1999, 2001-2003, 2008, 2012-2019
 #   Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
@@ -12,8 +12,7 @@
 #   General Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
 
 dir := libtrivfs
 makemode := library
@@ -22,7 +21,8 @@ FSSRCS= dir-link.c dir-mkdir.c dir-mkfile.c dir-lookup.c dir-readdir.c \
 	dir-rename.c dir-rmdir.c dir-unlink.c file-chauthor.c \
 	file-chflags.c file-chmod.c file-chown.c file-get-trans.c \
 	file-get-transcntl.c file-getcontrol.c file-getfh.c \
-	file-getlinknode.c file-lock.c file-set-trans.c file-statfs.c \
+	file-getlinknode.c file-lock.c file-lock-stat.c  file-record-lock.c \
+	file-set-trans.c file-statfs.c \
 	file-sync.c file-syncfs.c file-set-size.c file-utimes.c file-exec.c \
 	file-access.c dir-chg.c file-chg.c file-get-storage-info.c \
 	file-get-fs-options.c file-reparent.c \
@@ -38,7 +38,7 @@ FSYSSRCS=fsys-getroot.c fsys-goaway.c fsys-stubs.c fsys-syncfs.c \
 	fsys-get-children.c fsys-get-source.c \
 
 OTHERSRCS=demuxer.c protid-clean.c protid-dup.c cntl-create.c \
-	cntl-clean.c times.c startup.c open.c \
+	cntl-clean.c times.c startup.c make-node.c make-peropen.c open.c \
 	runtime-argp.c set-options.c append-args.c dyn-classes.c \
 	get-source.c
 

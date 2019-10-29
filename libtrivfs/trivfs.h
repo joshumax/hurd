@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,97,99,2002,13 Free Software Foundation, Inc.
+   Copyright (C) 1994-1999, 2002, 2013-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -12,8 +12,8 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef __TRIVFS_H__
 #define __TRIVFS_H__
@@ -24,6 +24,7 @@
 #include <mach/mach.h>
 #include <hurd/ports.h>
 #include <hurd/iohelp.h>
+#include <hurd/fshelp.h>
 #include <refcount.h>
 
 struct trivfs_protid
@@ -45,6 +46,21 @@ struct trivfs_peropen
   int openmodes;
   refcount_t refcnt;
   struct trivfs_control *cntl;
+
+  struct rlock_peropen lock_status;
+  struct trivfs_node *tp;
+};
+
+/* A unique one of these exists for each node currently in use. */
+struct trivfs_node
+{
+  pthread_mutex_t lock;
+
+  /* The number of references to this node.  */
+  int references;
+
+  struct transbox transbox;
+  struct rlock_box credlock;
 };
 
 struct trivfs_control
@@ -170,8 +186,12 @@ trivfs_create_control (mach_port_t underlying,
 void trivfs_clean_protid (void *);
 void trivfs_clean_cntl (void *);
 
-/* This demultiplees messages for trivfs ports. */
+/* This demultiplexes messages for trivfs ports. */
 int trivfs_demuxer (mach_msg_header_t *, mach_msg_header_t *);
+
+/* FIXME: Add descriptions */
+struct trivfs_node *trivfs_make_node (struct trivfs_peropen *po);
+struct trivfs_peropen *trivfs_make_peropen (struct trivfs_protid *cred);
 
 /* Return a new protid pointing to a new peropen in CRED, with REALNODE as
    the underlying node reference, with the given identity, and open flags in

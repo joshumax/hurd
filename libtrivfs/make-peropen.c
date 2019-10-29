@@ -1,12 +1,15 @@
 /*
-   Copyright (C) 1994, 2002, 2015-2019 Free Software Foundation, Inc.
+   Copyright (C) 2016-2019 Free Software Foundation, Inc.
+   Written by Svante Signell <svante.signell@gmail.com>
 
-   This program is free software; you can redistribute it and/or
+   This file is part of the GNU Hurd.
+
+   The GNU Hurd is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
    your option) any later version.
 
-   This program is distributed in the hope that it will be useful, but
+   The GNU Hurd is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    General Public License for more details.
@@ -16,15 +19,11 @@
 */
 
 #include "priv.h"
-#include "trivfs_fs_S.h"
-
+#include <errno.h>
 #include <fcntl.h>
-#include <sys/file.h>
 
-kern_return_t
-trivfs_S_file_lock (struct trivfs_protid *cred,
-		    mach_port_t reply, mach_msg_type_name_t reply_type,
-		    int flags)
+struct trivfs_peropen *
+trivfs_make_peropen (struct trivfs_protid *cred)
 {
-  return EOPNOTSUPP;
+  return NULL;
 }
