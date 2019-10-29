@@ -1,22 +1,22 @@
 /* MiG type declarations for Hurd interfaces		-*- C -*-
-   Copyright (C) 1993,94,95,96,98,2001,02,17 Free Software Foundation, Inc.
 
-This file is part of the GNU Hurd.
+   Copyright (C) 1993-1996, 1998, 2001, 2002, 2014-2019
+   Free Software Foundation, Inc.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifdef HURD_SERVER
 /* The Hurd uses protected payloads to quickly look up the object
@@ -407,7 +407,7 @@ type idarray_t = array[] of uid_t;
 
 type rusage_t = struct[18] of int; /* XXX */
 
-type flock_t = struct[5] of int;
+type flock_t = struct[7] of int; /* l_start and l_len are 64 bit */
 
 type timespec_t = struct[2] of int;
 
@@ -421,3 +421,5 @@ import <sys/statfs.h>;
 import <sys/resource.h>;
 import <sys/utsname.h>;
 import <hurd/hurd_types.h>;
+import <fcntl.h>;
+

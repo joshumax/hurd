@@ -1,22 +1,22 @@
 /* C declarations for Hurd server interfaces
-   Copyright (C) 1993, 1994, 1995, 1996, 1998, 1999, 2001, 2002,
-   2010, 2017 Free Software Foundation, Inc.
 
-This file is part of the GNU Hurd.
+   Copyright (C) 1993-1996, 1998, 1999, 2001, 2002, 2010, 2014-2019
+   Free Software Foundation, Inc.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_TYPES_H
 #define _HURD_TYPES_H
@@ -74,7 +74,7 @@ typedef const uid_t *const_idarray_t;
 typedef __loff_t *off_array_t;
 typedef const __loff_t *const_off_array_t;
 typedef struct rusage rusage_t;
-typedef struct flock flock_t;
+typedef struct flock64 flock_t;
 typedef struct utsname utsname_t;
 #if _FILE_OFFSET_BITS == 64
 typedef struct stat io_statbuf_t;

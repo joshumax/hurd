@@ -1,23 +1,22 @@
 /* Definitions for the filesystem interface.
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2002, 2010
+
+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2002, 2010, 2014-2019
    Free Software Foundation, Inc.
 
-This file is part of the GNU Hurd.
+   This file is part of the GNU Hurd.
 
-The GNU Hurd is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+   The GNU Hurd is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
 
-The GNU Hurd is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+   The GNU Hurd is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with the GNU Hurd; see the file COPYING.  If not, write to
-the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
+   You should have received a copy of the GNU General Public License
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* All these objects also implement the generic IO facilities. */
 
@@ -358,6 +357,7 @@ routine file_reparent (
 skip;	/* Was: file_get_children.  */
 skip;	/* Was: file_get_source.  */
 
+
 /* Overlay a task with a file.  Necessary initialization, including
    authentication changes associated with set[ug]id execution must be
    handled by the filesystem.  Filesystems normally implement this by
@@ -386,3 +386,14 @@ routine file_utimens (
 	RPT
 	new_atime: timespec_t;
 	new_mtime: timespec_t);
+
+/* Do fcntl type locking on FILE. CMD is from the set F_GETLK64,
+ F_SETLK64, F_SETLKW64. FLOCK64 is passed by the user and is as
+ defined by <fcntl.h>. RENDEZVOUS is MACH_PORT_NULL for per opened
+ file locking and !MACH_PORT_NULL for per process file locking */
+routine file_record_lock (
+       file: file_t;
+       RPT
+       cmd: int;
+       inout flock64: flock_t;
+       rendezvous: mach_port_send_t);
