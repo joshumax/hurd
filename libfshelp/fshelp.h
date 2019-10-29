@@ -1,6 +1,6 @@
 /* FS helper library definitions
-   Copyright (C) 1994,95,96,97,98,99,2000,01,02,13,14
-     Free Software Foundation, Inc.
+
+   Copyright (C) 1994-2002, 2013-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,11 +13,14 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>. */
 
 #ifndef _HURD_FSHELP_
 #define _HURD_FSHELP_
+
+#ifndef FSHELP_EXTERN_INLINE
+#define FSHELP_EXTERN_INLINE extern inline
+#endif
 
 /* This library implements various things that are generic to
    all or most implementors of the filesystem protocol.  It
@@ -25,12 +28,14 @@
    is divided into separate facilities which may be used independently.  */
 
 #include <errno.h>
+#include <stdlib.h>
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <pthread.h>
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
+#include <fcntl.h>
 
 
 /* Keeping track of active translators */
@@ -228,7 +233,11 @@ struct lock_box
   int shcount;
 };
 
-/* Call when a user makes a request to acquire an lock via file_lock.
+/* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
+   should be initialized with LOCK_UN.).  */
+void fshelp_lock_init (struct lock_box *box);
+
+/* Call when a user makes a request to acquire a lock via file_lock.
    There should be one lock box per object and one int per open; these
    are passed as arguments BOX and USER respectively.  FLAGS are as
    per file_lock.  MUT is a mutex which will be held whenever this
@@ -236,11 +245,77 @@ struct lock_box
 error_t fshelp_acquire_lock (struct lock_box *box, int *user,
 			     pthread_mutex_t *mut, int flags);
 
+
+/* Record locking.  */
 
-/* Initialize lock_box BOX.  (The user int passed to fshelp_acquire_lock
-   should be initialized with LOCK_UN.).  */
-void fshelp_lock_init (struct lock_box *box);
+/* Unique to a node; initialize with fshelp_rlock_init.  */
+struct rlock_box
+{
+  struct rlock_list *locks;	/* List of locks on the file.  */
+};
 
+/* Initialize the rlock_box BOX.  */
+FSHELP_EXTERN_INLINE
+error_t fshelp_rlock_init (struct rlock_box *box)
+{
+  box->locks = NULL;
+  return 0;
+}
+
+/* Unique to a peropen.  */
+struct rlock_peropen
+{
+  /* This is a pointer to a pointer to a rlock_lock (and not a pointer
+     to a rlock_list) as it really serves two functions:
+       o the list of locks owned by this peropen
+       o the unique peropen identifier that all locks on this peropen share.  */
+  struct rlock_list **locks;
+};
+
+FSHELP_EXTERN_INLINE
+error_t fshelp_rlock_po_init (struct rlock_peropen *po)
+{
+  po->locks = malloc (sizeof (struct rlock_list *));
+  if (! po->locks)
+    return ENOMEM;
+
+  *po->locks = NULL;
+  return 0;
+}
+
+/* Release all of the locks held by a given peropen.  */
+error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
+
+/* Call when a user makes a request to tweak a lock as via fcntl.  There
+   should be one rlock box per object.  BOX is the rlock box associated
+   with the object.  MUT is a mutex which should be held whenever this
+   routine is called; it should be unique on a pernode basis.  PO is the
+   peropen identifier.  OPEN_MODE is how the file was opened (from the O_*
+   set).  SIZE is the size of the object in question.  CURPOINTER is the
+   current position of the file pointer.  CMD is from the set F_GETLK64,
+   F_SETLK64, F_SETLKW64.  LOCK is passed by the user and is as defined by
+   <fcntl.h>.
+   RENDEZVOUS set to MACH_PORT_NULL indicates per opened file locking,
+   while !MACH_PORT_NULL indicates per process locking. l_pid is set
+   to -1 when a conflicting lock is taken by another process, like BSD
+   does. This and per process locking will be fixed by new proc RPCs
+   implementing proc_{server,user}_identify. */
+
+error_t fshelp_rlock_tweak (struct rlock_box *box,
+			    pthread_mutex_t *mutex,
+			    struct rlock_peropen *po, int open_mode,
+			    loff_t size, loff_t curpointer, int cmd,
+			    struct flock64 *lock, mach_port_t rendezvous);
+
+/* These functions allow for easy emulation of file_lock and
+   file_lock_stat.  */
+
+/* Returns the type (from the set LOCK_UN, LOCK_SH, LOCK_EX) of the most
+   restrictive lock held by the PEROPEN.  */
+int fshelp_rlock_peropen_status (struct rlock_peropen *po);
+
+/* Like fshelp_rlock_peropen_status except for all users of BOX.  */
+int fshelp_rlock_node_status (struct rlock_box *box);
 
 
 struct port_bucket;		/* shut up C compiler */

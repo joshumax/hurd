@@ -1,5 +1,5 @@
-#   Copyright (C) 1994, 95, 96, 98, 1999, 2006, 2012 Free Software Foundation,
-#   Inc.
+#   Copyright (C) 1994, 95, 96, 98, 1999, 2006, 2012, 2016-2019
+#   Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -12,8 +12,7 @@
 #   General Public License for more details.
 #
 #   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
 
 dir := libfshelp
 makemode := library
@@ -30,8 +29,11 @@ SRCS =	lock-acquire.c lock-init.c \
 	get-identity.c \
 	perms-isowner.c perms-iscontroller.c perms-access.c \
 	perms-checkdirmod.c \
-	touch.c
-installhdrs = fshelp.h
+	touch.c \
+	extern-inline.c \
+	rlock-drop-peropen.c rlock-tweak.c rlock-status.c
+
+installhdrs = fshelp.h rlock.h
 
 HURDLIBS = shouldbeinlibc iohelp ports ihash
 LDLIBS += -lpthread
