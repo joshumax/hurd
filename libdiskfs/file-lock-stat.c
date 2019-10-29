@@ -1,38 +1,42 @@
-/*
-   Copyright (C) 1994, 1995 Free Software Foundation
+/* Copyright (C) 1994-1995, 2001, 2014-2019 Free Software Foundation, Inc.
 
-   This file is part of the GNU Hurd.
+   Written by Neal H Walfield <neal@cs.uml.edu>
 
-   The GNU Hurd is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2, or (at your option)
-   any later version.
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
 
-   The GNU Hurd is distributed in the hope that it will be useful, 
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
+   This program is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with the GNU Hurd; see the file COPYING.  If not, write to
-   the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-/* Written by Michael I. Bushnell.  */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
 #include "fs_S.h"
+
+#include <fcntl.h>
+#include <sys/file.h>
 
 kern_return_t
 diskfs_S_file_lock_stat (struct protid *cred,
 			 int *mystatus,
 			 int *otherstatus)
 {
+  struct node *node;
+
   if (!cred)
     return EOPNOTSUPP;
-  
-  pthread_mutex_lock (&cred->po->np->lock);
-  *mystatus = cred->po->lock_status;
-  *otherstatus = cred->po->np->userlock.type;
-  pthread_mutex_unlock (&cred->po->np->lock);
+
+  node = cred->po->np;
+
+  pthread_mutex_lock (&node->lock);
+  *mystatus = fshelp_rlock_peropen_status (&cred->po->lock_status);
+  *otherstatus = fshelp_rlock_node_status (&node->userlock);
+  pthread_mutex_unlock (&node->lock);
+
   return 0;
 }

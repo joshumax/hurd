@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1994,97,99,2001,02 Free Software Foundation
+   Copyright (C) 1994,97,99,2001-2002,2014-2019 Free Software Foundation
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -12,11 +12,13 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include <errno.h>
+#include <stdlib.h>
 #include <sys/file.h>
+#include <hurd/fshelp.h>
 
 /* Create and return a new peropen structure on node NP with open
    flags FLAGS.  */
@@ -24,13 +26,17 @@ error_t
 diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 		     struct peropen **ppo)
 {
+  error_t err;
   struct peropen *po = *ppo = malloc (sizeof (struct peropen));
 
   if (! po)
     return ENOMEM;
 
+  err = fshelp_rlock_po_init (&po->lock_status);
+  if (err)
+    return err;
+
   po->filepointer = 0;
-  po->lock_status = LOCK_UN;
   refcount_init (&po->refcnt, 1);
   po->openstat = flags;
   po->np = np;

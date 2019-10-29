@@ -1,7 +1,7 @@
 /* Definitions for fileserver helper functions
 
-   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002, 2007, 2008,
-   2009, 2013 Free Software Foundation, Inc.
+   Copyright (C) 1994-1999, 2001, 2002, 2007-2009, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -14,8 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_DISKFS
 #define _HURD_DISKFS
@@ -58,7 +57,7 @@ struct protid
 struct peropen
 {
   loff_t filepointer;
-  int lock_status;
+  struct rlock_peropen lock_status;
   refcount_t refcnt;
   int openstat;
 
@@ -113,7 +112,7 @@ struct node
 
   struct transbox transbox;
 
-  struct lock_box userlock;
+  struct rlock_box userlock;
 
   struct conch conch;
 

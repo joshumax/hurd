@@ -1,4 +1,4 @@
-/* Copyright (C) 1993-1994, 2001, 2014-2019 Free Software Foundation, Inc.
+/* Copyright (C) 2001, 2014-2019 Free Software Foundation, Inc.
 
    Written by Neal H Walfield <neal@cs.uml.edu>
 
@@ -16,49 +16,30 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
+#include "diskfs.h"
 #include "fs_S.h"
 
-#include <fcntl.h>
-#include <sys/file.h>
+#include <errno.h>
+#include <hurd/fshelp.h>
 
-kern_return_t
-diskfs_S_file_lock (struct protid *cred, int flags)
+error_t
+diskfs_S_file_record_lock (struct protid *cred,
+			   int cmd,
+			   struct flock64 *lock,
+			   mach_port_t rendezvous)
 {
-  error_t err;
-  struct flock64 lock;
   struct node *node;
-  int openstat = cred->po->openstat;
-  mach_port_t rendezvous = MACH_PORT_NULL;
+  error_t err;
 
   if (! cred)
     return EOPNOTSUPP;
 
-  lock.l_whence = SEEK_SET;
-  lock.l_start = 0;
-  lock.l_len = 0;
-
-  if (flags & LOCK_UN)
-    lock.l_type = F_UNLCK;
-  else if (flags & LOCK_SH)
-    lock.l_type = F_RDLCK;
-  else if (flags & LOCK_EX)
-    lock.l_type = F_WRLCK;
-  else
-    return EINVAL;
-
-  /*
-    XXX: Fix for flock(2) calling fcntl(2)
-    From flock(2): A shared or exclusive lock can be placed on a file
-    regardless of the mode in which the file was opened.
-  */
-  if (openstat & (O_RDONLY|O_WRONLY|O_EXEC)) openstat |= O_RDONLY|O_WRONLY;
-
   node = cred->po->np;
   pthread_mutex_lock (&node->lock);
   err = fshelp_rlock_tweak (&node->userlock, &node->lock,
-			    &cred->po->lock_status, openstat,
-			    0, 0, flags & LOCK_NB ? F_SETLK64 : F_SETLKW64,
-			    &lock, rendezvous);
+			    &cred->po->lock_status, cred->po->openstat,
+			    node->dn_stat.st_size, cred->po->filepointer,
+			    cmd, lock, rendezvous);
   pthread_mutex_unlock (&node->lock);
   return err;
 }

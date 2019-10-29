@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1994,95,96,2002 Free Software Foundation, Inc.
+   Copyright (C) 1994-1996, 2002, 2014-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -12,8 +12,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "priv.h"
 #include <fcntl.h>
@@ -41,7 +40,7 @@ init_node (struct node *np, struct disknode *dn)
 
   fshelp_transbox_init (&np->transbox, &np->lock, np);
   iohelp_initialize_conch (&np->conch, &np->lock);
-  fshelp_lock_init (&np->userlock);
+  fshelp_rlock_init (&np->userlock);
 
   return np;
 }
