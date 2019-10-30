@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000, 2015-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -15,8 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "netfs.h"
 #include <hurd/fshelp.h>
@@ -32,7 +31,7 @@ init_node (struct node *np, struct netnode *nn)
   np->owner = 0;
 
   fshelp_transbox_init (&np->transbox, &np->lock, np);
-  fshelp_lock_init (&np->userlock);
+  fshelp_rlock_init (&np->userlock);
   
   return np;
 }

@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 1997, 2015-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -15,22 +15,26 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "netfs.h"
+#include <errno.h>
+#include <stdlib.h>
 #include <sys/file.h>
 
 struct peropen *
 netfs_make_peropen (struct node *np, int flags, struct peropen *context)
 {
+  error_t err;
   struct peropen *po = malloc (sizeof (struct peropen));
 
   if (!po)
     return NULL;
 
   po->filepointer = 0;
-  po->lock_status = LOCK_UN;
+  err = fshelp_rlock_po_init (&po->lock_status);
+  if (err)
+    return NULL;
   refcount_init (&po->refcnt, 1);
   po->openstat = flags;
   po->np = np;

@@ -1,5 +1,5 @@
-#   Copyright (C) 1995, 1996, 1997, 1999, 2001, 2002, 2008, 2012 Free Software
-#   Foundation
+#   Copyright (C) 1995-1997, 1999, 2001-2002, 2008, 2012, 2016-2019
+#   Free Software Foundation
 #
 #   Written by Michael I. Bushnell.
 #
@@ -14,10 +14,9 @@
 #   WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #   General Public License for more details.
-#
+
 #   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.
 
 dir := libnetfs
 makemode := library
@@ -34,7 +33,8 @@ FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-get-translator.c file-getcontrol.c file-getlinknode.c \
 	file-lock-stat.c file-lock.c file-set-size.c \
 	file-set-translator.c file-statfs.c file-sync.c file-syncfs.c \
-	file-utimes.c file-reparent.c fsstubs.c	file-get-transcntl.c
+	file-utimes.c file-record-lock.c file-reparent.c fsstubs.c \
+	file-get-transcntl.c
 
 IOSRCS=	io-read.c io-readable.c io-seek.c io-write.c io-stat.c io-async.c     \
 	io-set-all-openmodes.c io-get-openmodes.c io-set-some-openmodes.c     \

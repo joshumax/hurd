@@ -1,6 +1,6 @@
-/*
-   Copyright (C) 1995, 2015-2019 Free Software Foundation, Inc.
-   Written by Michael I. Bushnell, p/BSG.
+/* Copyright (C) 2001, 2014-2019 Free Software Foundation, Inc.
+
+   Written by Neal H Walfield <neal@cs.uml.edu>
 
    This file is part of the GNU Hurd.
 
@@ -18,27 +18,27 @@
    along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "netfs.h"
-#include "fs_S.h"
 
-#include <fcntl.h>
-#include <sys/file.h>
+#include <hurd/fshelp.h>
 
 error_t
-netfs_S_file_lock_stat (struct protid *user,
-			int *mystatus,
-			int *otherstatus)
+netfs_S_file_record_lock (struct protid *cred,
+			  int cmd,
+			  struct flock64 *lock,
+			  mach_port_t rendezvous)
 {
-
   struct node *node;
+  error_t err;
 
-  if (!user)
+  if (! cred)
     return EOPNOTSUPP;
 
-  node = user->po->np;
+  node = cred->po->np;
   pthread_mutex_lock (&node->lock);
-  *mystatus = fshelp_rlock_peropen_status (&user->po->lock_status);
-  *otherstatus = fshelp_rlock_node_status (&node->userlock);
+  err = fshelp_rlock_tweak (&node->userlock, &node->lock,
+			    &cred->po->lock_status, cred->po->openstat,
+			    node->nn_stat.st_size, cred->po->filepointer,
+			    cmd, lock, rendezvous);
   pthread_mutex_unlock (&node->lock);
-
-  return 0;
+  return err;
 }

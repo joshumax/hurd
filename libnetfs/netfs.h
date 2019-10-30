@@ -1,6 +1,6 @@
 /*
-
-   Copyright (C) 1994,95,96,97,99,2000,02,13 Free Software Foundation, Inc.
+   Copyright (C) 1994-1997, 1999, 2000, 2002, 2013-2019
+   Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -13,8 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #ifndef _HURD_NETFS_H_
 #define _HURD_NETFS_H_
@@ -24,6 +23,7 @@
 #include <hurd/iohelp.h>
 #include <assert-backtrace.h>
 #include <pthread.h>
+#include <refcount.h>
 
 /* This library supports client-side network file system
    implementations.  It is analogous to the diskfs library provided for
@@ -50,7 +50,7 @@ struct protid
 struct peropen
 {
   loff_t filepointer;
-  int lock_status;
+  struct rlock_peropen lock_status;
   refcount_t refcnt;
   int openstat;
 
@@ -93,7 +93,7 @@ struct node
 
   struct transbox transbox;
 
-  struct lock_box userlock;
+  struct rlock_box userlock;
 
   struct conch conch;
 

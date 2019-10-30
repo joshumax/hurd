@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 1996, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1996, 1997, 2015-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -15,8 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <sys/file.h>
 #include "netfs.h"
@@ -39,9 +38,7 @@ netfs_release_peropen (struct peropen *po)
   if (po->shadow_root_parent)
     mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
 
-  if (po->lock_status != LOCK_UN)
-    fshelp_acquire_lock (&po->np->userlock, &po->lock_status,
-			 &po->np->lock, LOCK_UN);
+  fshelp_rlock_drop_peropen (&po->lock_status);
 
   netfs_nput (po->np);
 

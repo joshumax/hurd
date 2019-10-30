@@ -1,6 +1,5 @@
 /*
-   Copyright (C) 1995,96,97,98,99,2000,01,02,13,14
-     Free Software Foundation, Inc.
+   Copyright (C) 1995-2002, 2013-2019 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
    This file is part of the GNU Hurd.
@@ -16,8 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+   along with the GNU Hurd.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
 #include <assert-backtrace.h>
@@ -438,24 +436,50 @@ netfs_S_dir_lookup (struct protid *dircred,
       goto out;
     }
 
-  free (newpi->po->path);
-  if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
+  mach_port_t rendezvous = MACH_PORT_NULL;
+  struct flock64 lock =
     {
-      /* dircred is the root directory.  */
-      newpi->po->path = relpath;
-      relpath = NULL; /* Do not free relpath.  */
+    l_start: 0,
+    l_len: 0,
+    l_whence: SEEK_SET
+    };
+
+  if (flags & O_EXLOCK)
+    {
+      lock.l_type = F_WRLCK;
+      err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				&newpi->po->lock_status, flags, 0, 0,
+				F_SETLK64, &lock, rendezvous);
     }
-  else
+  else if (flags & O_SHLOCK)
     {
-      newpi->po->path = NULL;
-      asprintf (&newpi->po->path, "%s/%s", dircred->po->path, relpath);
+      lock.l_type = F_RDLCK;
+      err = fshelp_rlock_tweak (&np->userlock, &np->lock,
+				&newpi->po->lock_status, flags, 0, 0,
+				F_SETLK64, &lock, rendezvous);
     }
 
-  if (! newpi->po->path)
-    err = errno;
+  if (! err)
+    {
+      free (newpi->po->path);
+      if (dircred->po->path == NULL || !strcmp (dircred->po->path,"."))
+	{
+	  /* dircred is the root directory.  */
+	  newpi->po->path = relpath;
+	  relpath = NULL; /* Do not free relpath.  */
+	}
+      else
+	{
+	  newpi->po->path = NULL;
+	  asprintf (&newpi->po->path, "%s/%s", dircred->po->path, relpath);
+	}
 
-  *retry_port = ports_get_right (newpi);
-  ports_port_deref (newpi);
+      if (! newpi->po->path)
+	err = errno;
+
+      *retry_port = ports_get_right (newpi);
+      ports_port_deref (newpi);
+    }
 
  out:
   if (np)
