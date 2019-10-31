@@ -497,7 +497,7 @@ static struct procfs_dir_entry entries[] = {
       .get_contents = process_file_gc_stat,
       .needs = PSTAT_PID | PSTAT_ARGS | PSTAT_STATE | PSTAT_PROC_INFO
 	| PSTAT_TASK | PSTAT_TASK_BASIC | PSTAT_THREAD_BASIC
-	| PSTAT_THREAD_WAIT,
+	| PSTAT_THREAD_SCHED | PSTAT_THREAD_WAIT,
     },
     .ops = {
       .make_node = process_stat_make_node,
