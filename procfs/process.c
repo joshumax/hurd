@@ -231,7 +231,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   process_t p;
   error_t err = proc_pid2proc (ps->context->server, ps->pid, &p);
 
-  long unsigned last_processor;
+  unsigned last_processor;
 
 #ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
   last_processor = thsi->last_processor;
