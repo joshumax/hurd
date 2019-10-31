@@ -718,7 +718,7 @@ S_proc_getprocinfo (struct proc *callerp,
 	  /* If the structure read doesn't include last_processor field, assume
 	     CPU 0.  */
 	  if (thcount < 8)
-	    thds[i]->last_processor = 0;
+	    pi->threadinfos[i].pis_si.last_processor = 0;
 #endif
 
 	}
