@@ -221,6 +221,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   struct procinfo *pi = proc_stat_proc_info (ps);
   task_basic_info_t tbi = proc_stat_task_basic_info (ps);
   thread_basic_info_t thbi = proc_stat_thread_basic_info (ps);
+  thread_sched_info_t thsi = proc_stat_thread_sched_info (ps);
   const char *fn = args_filename (proc_stat_args (ps));
 
   vm_address_t start_code = 1; /* 0 would make killall5.c consider it
@@ -229,6 +230,15 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
   vm_address_t end_code = 1;
   process_t p;
   error_t err = proc_pid2proc (ps->context->server, ps->pid, &p);
+
+  long unsigned last_processor;
+
+#ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
+  last_processor = thsi->last_processor;
+#else
+  last_processor = 0;
+#endif
+
   if (! err)
     {
       boolean_t essential = 0;
@@ -286,7 +296,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       (long unsigned) proc_stat_thread_rpc (ps), /* close enough */
       0L, 0L,
       0,
-      0,
+      last_processor,
       0, 0,
       0LL);
 }
