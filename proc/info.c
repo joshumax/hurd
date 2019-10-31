@@ -701,6 +701,15 @@ S_proc_getprocinfo (struct proc *callerp,
 	  err = thread_info (thds[i], THREAD_SCHED_INFO,
 			     (thread_info_t) &pi->threadinfos[i].pis_si,
 			     &thcount);
+
+#ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
+	  if (err == 0)
+	    /* If the structure read doesn't include last_processor field, assume
+	       CPU 0.  */
+	    if (thcount < 8)
+	      pi->threadinfos[i].pis_si.last_processor = 0;
+#endif
+
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      pi->threadinfos[i].died = 1;
@@ -713,13 +722,6 @@ S_proc_getprocinfo (struct proc *callerp,
 	      *flags &= ~PI_FETCH_THREAD_SCHED;
 	      err = 0;
 	    }
-
-#ifdef HAVE_STRUCT_THREAD_SCHED_INFO_LAST_PROCESSOR
-	  /* If the structure read doesn't include last_processor field, assume
-	     CPU 0.  */
-	  if (thcount < 8)
-	    pi->threadinfos[i].pis_si.last_processor = 0;
-#endif
 
 	}
 
