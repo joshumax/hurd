@@ -312,10 +312,8 @@ fshelp_rlock_tweak (struct rlock_box *box, pthread_mutex_t *mutex,
 	          return 0;
 		}
 	    }
-	  else if (l->start < start
-		   && (len == 0
-		       || (start <= l->start + l->len
-			   && start + len > l->start + l->len)))
+	  else if (l->start < start && start <= l->start + l->len
+		   && (len == 0 || start + len > l->start + l->len))
 	    /* Our start falls within the locked region or exactly one
 	       byte after it and our end falls beyond it.  We know that
 	       we cannot consume the entire region.  */
