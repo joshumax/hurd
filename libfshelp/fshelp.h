@@ -254,6 +254,8 @@ struct rlock_box
   struct rlock_list *locks;	/* List of locks on the file.  */
 };
 
+#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+
 /* Initialize the rlock_box BOX.  */
 FSHELP_EXTERN_INLINE
 error_t fshelp_rlock_init (struct rlock_box *box)
@@ -261,6 +263,8 @@ error_t fshelp_rlock_init (struct rlock_box *box)
   box->locks = NULL;
   return 0;
 }
+
+#endif /* Use extern inlines.  */
 
 /* Unique to a peropen.  */
 struct rlock_peropen
@@ -272,6 +276,8 @@ struct rlock_peropen
   struct rlock_list **locks;
 };
 
+#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+
 FSHELP_EXTERN_INLINE
 error_t fshelp_rlock_po_init (struct rlock_peropen *po)
 {
@@ -282,6 +288,8 @@ error_t fshelp_rlock_po_init (struct rlock_peropen *po)
   *po->locks = NULL;
   return 0;
 }
+
+#endif /* Use extern inlines.  */
 
 /* Release all of the locks held by a given peropen.  */
 error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
