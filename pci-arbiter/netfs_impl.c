@@ -539,7 +539,7 @@ netfs_attempt_write (struct iouser * cred, struct node * node,
     {
       err =
         io_config_file (node->nn->ln->device, offset, len, data,
-                       pci_device_cfg_write);
+                       (pci_io_op_t) pci_device_cfg_write);
       if (!err)
         {
           /* Update mtime and ctime */
