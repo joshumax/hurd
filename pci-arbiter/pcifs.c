@@ -45,7 +45,8 @@ create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
   entry->dev = dev;
   entry->func = func;
   entry->device_class = device_class;
-  strncpy (entry->name, name, NAME_SIZE);
+  strncpy (entry->name, name, NAME_SIZE - 1);
+  entry->name[NAME_SIZE - 1] = '\0';
   entry->parent = parent;
   entry->stat = stat;
   entry->dir = 0;
@@ -185,6 +186,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
     return ENOMEM;
 
   e = list + 1;
+  memset (e, 0, sizeof (struct pcifs_dirent));
   c_domain = c_bus = c_dev = -1;
   domain_parent = bus_parent = dev_parent = func_parent = 0;
   for (i = 0, device = pci_sys->devices; i < pci_sys->num_devices;
@@ -196,7 +198,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	  e_stat = list->stat;
 	  e_stat.st_mode &= ~S_IROOT;	/* Remove the root mode */
 	  memset (entry_name, 0, NAME_SIZE);
-	  snprintf (entry_name, NAME_SIZE, "%04x", device->domain);
+	  snprintf (entry_name, NAME_SIZE - 1, "%04x", device->domain);
 	  err =
 	    create_dir_entry (device->domain, -1, -1, -1, -1, entry_name,
 			      list, e_stat, 0, 0, e);
@@ -214,7 +216,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	{
 	  /* We've found a new bus. Add an entry for it */
 	  memset (entry_name, 0, NAME_SIZE);
-	  snprintf (entry_name, NAME_SIZE, "%02x", device->bus);
+	  snprintf (entry_name, NAME_SIZE - 1, "%02x", device->bus);
 	  err =
 	    create_dir_entry (device->domain, device->bus, -1, -1, -1,
 			      entry_name, domain_parent, domain_parent->stat,
@@ -232,7 +234,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	{
 	  /* We've found a new dev. Add an entry for it */
 	  memset (entry_name, 0, NAME_SIZE);
-	  snprintf (entry_name, NAME_SIZE, "%02x", device->dev);
+	  snprintf (entry_name, NAME_SIZE - 1, "%02x", device->dev);
 	  err =
 	    create_dir_entry (device->domain, device->bus, device->dev, -1,
 			      -1, entry_name, bus_parent, bus_parent->stat, 0,
@@ -251,7 +253,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 
       /* Add func entry */
       memset (entry_name, 0, NAME_SIZE);
-      snprintf (entry_name, NAME_SIZE, "%01u", device->func);
+      snprintf (entry_name, NAME_SIZE - 1, "%01u", device->func);
       err =
 	create_dir_entry (device->domain, device->bus, device->dev,
 			  device->func, device->device_class, entry_name,
@@ -269,7 +271,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       e_stat.st_size = device->config_size;
 
       /* Create config entry */
-      strncpy (entry_name, FILE_CONFIG_NAME, NAME_SIZE);
+      strncpy (entry_name, FILE_CONFIG_NAME, NAME_SIZE - 1);
       err =
 	create_dir_entry (device->domain, device->bus, device->dev,
 			  device->func, device->device_class, entry_name,
@@ -283,7 +285,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	  if (device->regions[j].size > 0)
 	    {
 	      e_stat.st_size = device->regions[j].size;
-	      snprintf (entry_name, NAME_SIZE, "%s%01u", FILE_REGION_NAME, j);
+	      snprintf (entry_name, NAME_SIZE - 1, "%s%01u", FILE_REGION_NAME, j);
 	      err =
 		create_dir_entry (device->domain, device->bus, device->dev,
 				  device->func, device->device_class,
@@ -300,7 +302,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	  /* Make rom is read only */
 	  e_stat.st_mode &= ~(S_IWUSR | S_IWGRP);
 	  e_stat.st_size = device->rom_size;
-	  strncpy (entry_name, FILE_ROM_NAME, NAME_SIZE);
+	  strncpy (entry_name, FILE_ROM_NAME, NAME_SIZE - 1);
 	  err =
 	    create_dir_entry (device->domain, device->bus, device->dev,
 			      device->func, device->device_class, entry_name,
