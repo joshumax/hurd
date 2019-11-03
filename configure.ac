@@ -365,6 +365,11 @@ AC_SUBST([HAVE_LIBLWIP])
 AC_SUBST([liblwip_CFLAGS])
 AC_SUBST([liblwip_LIBS])
 
+PKG_CHECK_MODULES([libpciaccess], [pciaccess], [HAVE_LIBPCIACCESS=yes], [HAVE_LIBPCIACCESS=no])
+AC_SUBST([HAVE_LIBPCIACCESS])
+AC_SUBST([libpciaccess_CFLAGS])
+AC_SUBST([libpciaccess_LIBS])
+
 AC_CONFIG_FILES([config.make ${makefiles}])
 AC_OUTPUT
 

@@ -45,7 +45,6 @@ prog-subdirs = auth proc exec term \
 	       init \
 	       devnode \
 	       eth-multiplexer \
-	       pci-arbiter \
 	       acpi \
 	       shutdown
 
@@ -55,6 +54,10 @@ endif
 
 ifeq ($(HAVE_LIBLWIP),yes)
 prog-subdirs += lwip
+endif
+
+ifeq ($(HAVE_LIBPCIACCESS),yes)
+prog-subdirs += pci-arbiter
 endif
 
 # Other directories

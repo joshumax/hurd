@@ -109,6 +109,13 @@ HAVE_LIBLWIP = @HAVE_LIBLWIP@
 liblwip_CFLAGS = @liblwip_CFLAGS@
 liblwip_LIBS = @liblwip_LIBS@
 
+# Whether we found libpciaccess.
+HAVE_LIBPCIACCESS = @HAVE_LIBPCIACCESS@
+
+# How to compile and link against libpciaccess.
+libpciaccess_CFLAGS = @libpciaccess_CFLAGS@
+libpciaccess_LIBS = @libpciaccess_LIBS@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
