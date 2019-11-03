@@ -5,11 +5,10 @@
 
 - pci_get_ndevs should be deprecated, applications shouldn't be relying on this
 
-- we shouldn't duplicate pci_access.[ch] x86_pci.[ch] from libpciaccess, we
-  should get libpciaccess to expose pci_system_x86_create() to keep the
-  maintenance of x86 port knocking there.
+- In pci-ops.c - config_block_op:
+  Update len with remaining allowed size once op() returns EIO
+  so that we get short reads/writes implemented by leaving it to pciaccess
 
-  At least one difference with libpciaccess is the refresh operation. Perhaps
-  we'd need to extend libpciaccess to fix that.
+- Upstream hurdish access method + x86 fixes to libpciaccess
 
   BTW we could also support libpci.

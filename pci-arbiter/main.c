@@ -34,7 +34,7 @@
 #include "libnetfs/fsys_S.h"
 #include "libports/interrupt_S.h"
 #include "libnetfs/ifsock_S.h"
-#include "pci_access.h"
+#include <pciaccess.h>
 #include "pcifs.h"
 #include "startup.h"
 
@@ -85,7 +85,7 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "mapping time");
 
-  /* Start the PCI system */
+  /* Start the PCI system: NB: pciaccess will choose x86 first and take lock */
   err = pci_system_init ();
   if (err)
     error (1, err, "Starting the PCI system");
@@ -96,7 +96,7 @@ main (int argc, char **argv)
     error (1, err, "Creating the PCI filesystem");
 
   /* Create the filesystem tree */
-  err = create_fs_tree (fs, pci_sys);
+  err = create_fs_tree (fs);
   if (err)
     error (1, err, "Creating the PCI filesystem tree");
 

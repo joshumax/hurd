@@ -25,7 +25,7 @@
 #include <hurd/netfs.h>
 #include <sys/mman.h>
 
-#include "pci_access.h"
+#include <pciaccess.h>
 #include "pcifs.h"
 #include "func_files.h"
 
@@ -112,7 +112,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
    * libnetfs which is multi-threaded. A lock is needed for arbitration.
    */
   pthread_mutex_lock (lock);
-  err = pci_sys->read (e->bus, e->dev, e->func, reg, *data, amount);
+  err = pci_device_cfg_read (e->device, *data, reg, amount, NULL);
   pthread_mutex_unlock (lock);
 
   if (!err)
@@ -149,7 +149,7 @@ S_pci_conf_write (struct protid * master, int reg, char *data, size_t datalen,
     return err;
 
   pthread_mutex_lock (lock);
-  err = pci_sys->write (e->bus, e->dev, e->func, reg, data, datalen);
+  err = pci_device_cfg_write (e->device, data, reg, datalen, NULL);
   pthread_mutex_unlock (lock);
 
   if (!err)
@@ -260,7 +260,7 @@ S_pci_get_dev_rom (struct protid * master, char **data, size_t * datalen)
     }
 
   /* Copy the regions info */
-  rom.base_addr = e->device->rom_base;
+  rom.base_addr = 0; // pci_device_private only
   rom.size = e->device->rom_size;
   memcpy (*data, &rom, size);
 

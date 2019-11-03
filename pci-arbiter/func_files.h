@@ -23,6 +23,10 @@
 #define FUNC_FILES_H
 
 #include "pcifs.h"
+#include <pciaccess.h>
+
+typedef int (*pci_io_op_t) (struct pci_device *dev, void *data,
+                 pciaddr_t reg, pciaddr_t width, pciaddr_t *bytes);
 
 /* Config */
 #define FILE_CONFIG_NAME  "config"

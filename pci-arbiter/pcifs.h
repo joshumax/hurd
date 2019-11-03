@@ -27,8 +27,11 @@
 #include <pthread.h>
 #include <maptime.h>
 
-#include "pci_access.h"
-#include "netfs_impl.h"
+#include <pciaccess.h>
+// FIXME: Hardcoded PCI config size
+#define PCI_CONFIG_SIZE 256
+
+#include <netfs_impl.h>
 
 /* Size of a directory entry name */
 #ifndef NAME_SIZE
@@ -200,9 +203,9 @@ volatile struct mapped_time_value *pcifs_maptime;
 /* FS manipulation functions */
 error_t alloc_file_system (struct pcifs **fs);
 error_t init_file_system (file_t underlying_node, struct pcifs *fs);
-error_t create_fs_tree (struct pcifs *fs, struct pci_system *pci_sys);
+error_t create_fs_tree (struct pcifs *fs);
 error_t fs_set_permissions (struct pcifs *fs);
 error_t entry_check_perms (struct iouser *user, struct pcifs_dirent *e,
-			   int flags);
+                          int flags);
 
 #endif /* PCIFS_H */

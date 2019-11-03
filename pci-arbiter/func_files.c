@@ -35,10 +35,11 @@ config_block_op (struct pci_device *dev, off_t offset, size_t * len,
 {
   error_t err;
   size_t pendent = *len;
+  pciaddr_t actual = 0;
 
   while (pendent >= 4)
     {
-      err = op (dev->bus, dev->dev, dev->func, offset, data, 4);
+      err = op (dev, data, offset, 4, &actual);
       if (err)
 	return err;
 
@@ -49,7 +50,7 @@ config_block_op (struct pci_device *dev, off_t offset, size_t * len,
 
   if (pendent >= 2)
     {
-      err = op (dev->bus, dev->dev, dev->func, offset, data, 2);
+      err = op (dev, data, offset, 2, &actual);
       if (err)
 	return err;
 
@@ -60,7 +61,7 @@ config_block_op (struct pci_device *dev, off_t offset, size_t * len,
 
   if (pendent)
     {
-      err = op (dev->bus, dev->dev, dev->func, offset, data, 1);
+      err = op (dev, data, offset, 1, &actual);
       if (err)
 	return err;
 
@@ -85,10 +86,10 @@ io_config_file (struct pci_device * dev, off_t offset, size_t * len,
   assert_backtrace (dev != 0);
 
   /* Don't exceed the config space size */
-  if (offset > dev->config_size)
+  if (offset > PCI_CONFIG_SIZE)
     return EINVAL;
-  if ((offset + *len) > dev->config_size)
-    *len = dev->config_size - offset;
+  if ((offset + *len) > PCI_CONFIG_SIZE)
+    *len = PCI_CONFIG_SIZE - offset;
 
   pthread_mutex_lock (&fs->pci_conf_lock);
   err = config_block_op (dev, offset, len, data, op);
@@ -102,15 +103,10 @@ error_t
 read_rom_file (struct pci_device * dev, off_t offset, size_t * len,
 	       void *data)
 {
-  error_t err;
+  void *fullrom;
 
   /* This should never happen */
   assert_backtrace (dev != 0);
-
-  /* Refresh the ROM */
-  err = pci_sys->device_refresh (dev, -1, 1);
-  if (err)
-    return err;
 
   /* Don't exceed the ROM size */
   if (offset > dev->rom_size)
@@ -118,8 +114,14 @@ read_rom_file (struct pci_device * dev, off_t offset, size_t * len,
   if ((offset + *len) > dev->rom_size)
     *len = dev->rom_size - offset;
 
-  memcpy (data, dev->rom_memory + offset, *len);
+  /* Grab the full rom first */
+  fullrom = calloc(1, dev->rom_size);
+  pci_device_read_rom(dev, fullrom);
 
+  /* Return the requested amount */
+  memcpy (data, fullrom + offset, *len);
+
+  free(fullrom);
   return 0;
 }
 
@@ -177,7 +179,6 @@ error_t
 io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
 		void *data, int read)
 {
-  error_t err;
   size_t reg_num;
   struct pci_mem_region *region;
 
@@ -187,11 +188,6 @@ io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
   /* Get the region */
   reg_num = strtol (&e->name[strlen (e->name) - 1], 0, 16);
   region = &e->device->regions[reg_num];
-
-  /* Refresh the region */
-  err = pci_sys->device_refresh (e->device, reg_num, -1);
-  if (err)
-    return err;
 
   /* Don't exceed the region size */
   if (offset > region->size)

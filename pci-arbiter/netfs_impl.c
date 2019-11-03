@@ -32,7 +32,7 @@
 
 #include "pcifs.h"
 #include "ncache.h"
-#include "pci_access.h"
+#include <pciaccess.h>
 #include "func_files.h"
 
 #define DIRENTS_CHUNK_SIZE      (8*1024)
@@ -499,11 +499,11 @@ netfs_attempt_read (struct iouser * cred, struct node * node,
   if (!strncmp (node->nn->ln->name, FILE_CONFIG_NAME, NAME_SIZE))
     {
       err =
-	io_config_file (node->nn->ln->device, offset, len, data,
-			pci_sys->read);
+        io_config_file (node->nn->ln->device, offset, len, data,
+                        pci_device_cfg_read);
       if (!err)
-	/* Update atime */
-	UPDATE_TIMES (node->nn->ln, TOUCH_ATIME);
+        /* Update atime */
+        UPDATE_TIMES (node->nn->ln, TOUCH_ATIME);
     }
   else if (!strncmp (node->nn->ln->name, FILE_ROM_NAME, NAME_SIZE))
     {
@@ -538,13 +538,13 @@ netfs_attempt_write (struct iouser * cred, struct node * node,
   if (!strncmp (node->nn->ln->name, FILE_CONFIG_NAME, NAME_SIZE))
     {
       err =
-	io_config_file (node->nn->ln->device, offset, len, data,
-			pci_sys->write);
+        io_config_file (node->nn->ln->device, offset, len, data,
+                       pci_device_cfg_write);
       if (!err)
-	{
-	  /* Update mtime and ctime */
-	  UPDATE_TIMES (node->nn->ln, TOUCH_MTIME | TOUCH_CTIME);
-	}
+        {
+          /* Update mtime and ctime */
+          UPDATE_TIMES (node->nn->ln, TOUCH_MTIME | TOUCH_CTIME);
+        }
     }
   else if (!strncmp
 	   (node->nn->ln->name, FILE_REGION_NAME, strlen (FILE_REGION_NAME)))

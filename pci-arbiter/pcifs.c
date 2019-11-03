@@ -134,7 +134,7 @@ init_file_system (file_t underlying_node, struct pcifs * fs)
 }
 
 error_t
-create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
+create_fs_tree (struct pcifs * fs)
 {
   error_t err = 0;
   int c_domain, c_bus, c_dev, i, j;
@@ -144,11 +144,17 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
     *func_parent, *list;
   struct stat e_stat;
   char entry_name[NAME_SIZE];
+  const struct pci_slot_match match =
+    { PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, 0 };
+  /*  domain         bus            device         func  */
+  struct pci_device_iterator *iter;
 
   nentries = 1;			/* Skip root entry */
   c_domain = c_bus = c_dev = -1;
-  for (i = 0, device = pci_sys->devices; i < pci_sys->num_devices;
-       i++, device++)
+  iter = pci_slot_match_iterator_create(&match);
+  device = pci_device_next(iter);
+
+  for (i = 0; device != NULL; i++, device = pci_device_next(iter) )
     {
       if (device->domain != c_domain)
 	{
@@ -181,6 +187,8 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	nentries++;		/* + rom */
     }
 
+  pci_iterator_destroy(iter);
+
   list = realloc (fs->entries, nentries * sizeof (struct pcifs_dirent));
   if (!list)
     return ENOMEM;
@@ -189,8 +197,10 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
   memset (e, 0, sizeof (struct pcifs_dirent));
   c_domain = c_bus = c_dev = -1;
   domain_parent = bus_parent = dev_parent = func_parent = 0;
-  for (i = 0, device = pci_sys->devices; i < pci_sys->num_devices;
-       i++, device++)
+  iter = pci_slot_match_iterator_create(&match);
+  device = pci_device_next(iter);
+
+  for (i = 0; device != NULL; i++, device = pci_device_next(iter))
     {
       if (device->domain != c_domain)
 	{
@@ -268,7 +278,7 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
       e_stat = func_parent->stat;
       e_stat.st_mode &= ~(S_IFDIR | S_IXUSR | S_IXGRP);
       e_stat.st_mode |= S_IFREG | S_IWUSR | S_IWGRP;
-      e_stat.st_size = device->config_size;
+      e_stat.st_size = PCI_CONFIG_SIZE; // FIXME: Hardcoded
 
       /* Create config entry */
       strncpy (entry_name, FILE_CONFIG_NAME, NAME_SIZE - 1);
@@ -311,6 +321,8 @@ create_fs_tree (struct pcifs * fs, struct pci_system * pci_sys)
 	    return err;
 	}
     }
+
+  pci_iterator_destroy(iter);
 
   /* The root node points to the first element of the entry list */
   fs->entries = list;
