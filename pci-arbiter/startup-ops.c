@@ -20,6 +20,7 @@
 
 #include <startup_notify_S.h>
 
+#include <pciaccess.h>
 #include <hurd/netfs.h>
 
 #include "startup.h"
@@ -33,6 +34,9 @@ S_startup_dosync (mach_port_t handle)
 
   if (!inpi)
     return EOPNOTSUPP;
+
+  // Free all libpciaccess resources
+  pci_system_cleanup ();
 
   ports_port_deref (inpi);
 
