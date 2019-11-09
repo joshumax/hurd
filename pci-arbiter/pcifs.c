@@ -207,7 +207,6 @@ create_fs_tree (struct pcifs * fs)
 	  /* We've found a new domain. Add an entry for it */
 	  e_stat = list->stat;
 	  e_stat.st_mode &= ~S_IROOT;	/* Remove the root mode */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%04x", device->domain);
 	  err =
 	    create_dir_entry (device->domain, -1, -1, -1, -1, entry_name,
@@ -225,7 +224,6 @@ create_fs_tree (struct pcifs * fs)
       if (device->bus != c_bus)
 	{
 	  /* We've found a new bus. Add an entry for it */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%02x", device->bus);
 	  err =
 	    create_dir_entry (device->domain, device->bus, -1, -1, -1,
@@ -243,7 +241,6 @@ create_fs_tree (struct pcifs * fs)
       if (device->dev != c_dev)
 	{
 	  /* We've found a new dev. Add an entry for it */
-	  memset (entry_name, 0, NAME_SIZE);
 	  snprintf (entry_name, NAME_SIZE, "%02x", device->dev);
 	  err =
 	    create_dir_entry (device->domain, device->bus, device->dev, -1,
@@ -262,7 +259,6 @@ create_fs_tree (struct pcifs * fs)
       e_stat.st_mode &= ~(S_IROTH | S_IWOTH | S_IXOTH);
 
       /* Add func entry */
-      memset (entry_name, 0, NAME_SIZE);
       snprintf (entry_name, NAME_SIZE, "%01u", device->func);
       err =
 	create_dir_entry (device->domain, device->bus, device->dev,
