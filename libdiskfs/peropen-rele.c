@@ -37,6 +37,7 @@ diskfs_release_peropen (struct peropen *po)
     diskfs_nput (po->np);
   else
     diskfs_nrele (po->np);
+  fshelp_rlock_po_fini (&po->lock_status);
 
   free (po->path);
   free (po);

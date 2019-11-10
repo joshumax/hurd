@@ -39,6 +39,7 @@ netfs_release_peropen (struct peropen *po)
     mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
 
   fshelp_rlock_drop_peropen (&po->lock_status);
+  fshelp_rlock_po_fini (&po->lock_status);
 
   netfs_nput (po->np);
 
