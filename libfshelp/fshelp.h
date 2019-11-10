@@ -254,6 +254,8 @@ struct rlock_box
   struct rlock_list *locks;	/* List of locks on the file.  */
 };
 
+error_t fshelp_rlock_init (struct rlock_box *box);
+
 #if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
 
 /* Initialize the rlock_box BOX.  */
@@ -275,6 +277,8 @@ struct rlock_peropen
        o the unique peropen identifier that all locks on this peropen share.  */
   struct rlock_list **locks;
 };
+
+error_t fshelp_rlock_po_init (struct rlock_peropen *po);
 
 #if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
 
