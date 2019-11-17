@@ -36,9 +36,9 @@ SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
 OBJS = $(filter-out %.sh,$(SRCS:.c=.o))
 HURDLIBS = ps ihash store fshelp ports ftpconn shouldbeinlibc
 LDLIBS += -lpthread
-login-LDLIBS = -lutil -lcrypt
-addauth-LDLIBS = -lcrypt
-setauth-LDLIBS = -lcrypt
+login-LDLIBS = -lutil $(and $(HAVE_LIBCRYPT),-lcrypt)
+addauth-LDLIBS = $(and $(HAVE_LIBCRYPT),-lcrypt)
+setauth-LDLIBS = $(and $(HAVE_LIBCRYPT),-lcrypt)
 mount-LDLIBS = $(libblkid_LIBS)
 mount-CPPFLAGS = $(libblkid_CFLAGS)
 

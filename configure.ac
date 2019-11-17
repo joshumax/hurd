@@ -170,11 +170,15 @@ AC_CHECK_FUNCS(file_futimens)
 AC_DEFINE([UTIME_NOW],[-1])
 AC_DEFINE([UTIME_OMIT],[-2])
 
-AC_CHECK_LIB([crypt], [crypt],
-	     [HAVE_LIBCRYPT=1
-	      AC_DEFINE([HAVE_LIBCRYPT], [1], [Use libcrypt])])
-AC_SUBST([HAVE_LIBCRYPT])
+AC_ARG_WITH([libcrypt],
+  [AS_HELP_STRING([--without-libcrypt], [disable libcrypt])], , [with_libcrypt=yes])
 
+AS_IF([test "x$with_libcrypt" != xno], [
+  AC_CHECK_LIB([crypt], [crypt],
+	       [HAVE_LIBCRYPT=1
+		AC_DEFINE([HAVE_LIBCRYPT], [1], [Use libcrypt])])
+])
+AC_SUBST([HAVE_LIBCRYPT])
 
 # From glibc HEAD, 2007-11-07.
 AC_CACHE_CHECK(for -fgnu89-inline, libc_cv_gnu89_inline, [dnl
