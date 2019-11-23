@@ -769,8 +769,6 @@ write_symlink (struct node *node, const char *target)
   if (len > MAX_INODE_SYMLINK)
     return EINVAL;
 
-  assert_backtrace (node->dn_stat.st_blocks == 0);
-
   memcpy (diskfs_node_disknode (node)->info.i_data, target, len);
   node->dn_stat.st_size = len - 1;
   node->dn_set_ctime = 1;
@@ -783,10 +781,8 @@ write_symlink (struct node *node, const char *target)
 static error_t
 read_symlink (struct node *node, char *target)
 {
-  if (node->dn_stat.st_blocks)
+  if (node->dn_stat.st_size >= MAX_INODE_SYMLINK)
     return EINVAL;
-
-  assert_backtrace (node->dn_stat.st_size < MAX_INODE_SYMLINK);
 
   memcpy (target, diskfs_node_disknode (node)->info.i_data,
           node->dn_stat.st_size);
