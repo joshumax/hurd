@@ -115,7 +115,6 @@ init_file_system (file_t underlying_node, struct pcifs * fs)
   fs->entries = calloc (1, sizeof (struct pcifs_dirent));
   if (!fs->entries)
     {
-      free (fs->entries);
       return ENOMEM;
     }
 
@@ -188,6 +187,12 @@ create_fs_tree (struct pcifs * fs)
     }
 
   pci_iterator_destroy(iter);
+
+  if (nentries == 1)
+    {
+      /* No devices found, no need to continue */
+      return 0;
+    }
 
   list = realloc (fs->entries, nentries * sizeof (struct pcifs_dirent));
   if (!list)
