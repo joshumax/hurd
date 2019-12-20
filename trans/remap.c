@@ -65,21 +65,30 @@ trivfs_S_dir_lookup (struct trivfs_protid *diruser,
 		     mach_msg_type_name_t *retry_port_type)
 {
   struct remap *remap;
+  string_t dest = { };
+  size_t prefix_size;
 
   if (!diruser)
     return EOPNOTSUPP;
 
   for (remap = remaps; remap; remap = remap->next)
-    /* FIXME: should match just prefix of filename too */
-    if (!strcmp (remap->from, filename))
-      {
+    {
+      prefix_size = strlen (remap->from);
+      if (!strncmp (remap->from, filename, prefix_size)
+	  && (filename[prefix_size] == '\0' || filename[prefix_size] == '/'))
+	{
+	  snprintf (dest, sizeof (dest), "%s%s", remap->to,
+		    filename + prefix_size);
+
 #ifdef DEBUG
-	fprintf (stderr,"replacing %s with %s\n", remap->from, remap->to);
-	fflush (stderr);
+	  fprintf (stderr, "replacing %s with %s\n", filename, dest);
+	  fflush (stderr);
 #endif
-	filename = remap->to;
-	break;
-      }
+
+	  filename = dest;
+	  break;
+	}
+    }
 
   *do_retry = FS_RETRY_REAUTH;
   *retry_port = getcrdir ();
