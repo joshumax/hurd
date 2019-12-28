@@ -219,7 +219,10 @@ fshelp_get_active_translators (char **translators,
       err = mach_port_mod_refs (mach_task_self (), t->active,
 				MACH_PORT_RIGHT_SEND, +1);
       if (err)
-	continue;
+	{
+	  err = 0;
+	  continue;
+	}
       (*controls)[*controls_count] = t->active;
       (*controls_count)++;
 
