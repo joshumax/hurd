@@ -31,7 +31,6 @@ OBJS = $(SRCS:.c=.o) fsysServer.o ifsockServer.o passwordServer.o \
 	device_replyServer.o elfcore.o startup_notifyServer.o
 HURDLIBS = ports netfs trivfs iohelp fshelp pipe ihash shouldbeinlibc
 LDLIBS += -lpthread
-password-LDLIBS = -lcrypt
 password-MIGSFLAGS=\
     "-DIO_INTRAN=trivfs_protid_t trivfs_begin_using_protid (io_t)" \
     "-DIO_INTRAN_PAYLOAD=trivfs_protid_t trivfs_begin_using_protid_payload" \
