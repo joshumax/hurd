@@ -27,7 +27,7 @@ SRCS = race.c locks.c fork.c test-flock.c test-lockf.c test-fcntl.c
 
 MIGSTUBS = fsUser.o ioUser.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
-HURDLIBS = fshelp ports
+HURDLIBS = fshelp ports ihash shouldbeinlibc
 LDLIBS += -lpthread
 
 race: race.o fsUser.o ioUser.o
@@ -37,6 +37,6 @@ test-flock: test-flock.o
 test-lockf: test-lockf.o
 test-fcntl: test-fcntl.o ../libfshelp/libfshelp.a
 
-race locks: ../libfshelp/libfshelp.a ../libports/libports.a ../libshouldbeinlibc/libshouldbeinlibc.a
+race locks: ../libfshelp/libfshelp.a ../libports/libports.a ../libihash/libihash.a ../libshouldbeinlibc/libshouldbeinlibc.a
 
 include ../Makeconf
