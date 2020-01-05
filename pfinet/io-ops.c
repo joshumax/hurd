@@ -380,7 +380,7 @@ S_io_reauthenticate (struct sock_user *user,
   if (!newuser)
     {
       pthread_mutex_unlock (&global_lock);
-      return 0;
+      return errno;
     }
 
   auth = getauth ();

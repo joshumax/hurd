@@ -321,7 +321,7 @@ lwip_S_io_reauthenticate (struct sock_user * user, mach_port_t rend)
     newuser = make_sock_user (user->sock, 0, 1, 0);
   while (!newuser && errno == EINTR);
   if (!newuser)
-    return 0;
+    return errno;
 
   auth = getauth ();
   newright = ports_get_send_right (newuser);
