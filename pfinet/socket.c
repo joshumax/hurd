@@ -81,7 +81,10 @@ make_sock_user (struct socket *sock, int isroot, int noinstall, int consume)
     err = ports_create_port (socketport_class, pfinet_bucket,
 			     sizeof (struct sock_user), &user);
   if (err)
-    return 0;
+    {
+      errno = err;
+      return 0;
+    }
 
   /* We maintain a reference count in `struct socket' (a member not
      in the original Linux structure), because there can be multiple

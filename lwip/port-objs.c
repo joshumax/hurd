@@ -118,7 +118,10 @@ make_sock_user (struct socket *sock, int isroot, int noinstall, int consume)
     err = ports_create_port (socketport_class, lwip_bucket,
 			     sizeof (struct sock_user), &user);
   if (err)
-    return 0;
+    {
+      errno = err;
+      return 0;
+    }
 
   if (!consume)
     refcount_ref (&sock->refcnt);

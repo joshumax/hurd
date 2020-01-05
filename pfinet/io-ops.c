@@ -374,7 +374,14 @@ S_io_reauthenticate (struct sock_user *user,
   aux_gids = agbuf;
 
   pthread_mutex_lock (&global_lock);
-  newuser = make_sock_user (user->sock, 0, 1, 0);
+  do
+    newuser = make_sock_user (user->sock, 0, 1, 0);
+  while (!newuser && errno == EINTR);
+  if (!newuser)
+    {
+      pthread_mutex_unlock (&global_lock);
+      return 0;
+    }
 
   auth = getauth ();
   newright = ports_get_send_right (newuser);
