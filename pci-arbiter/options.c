@@ -114,25 +114,21 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   switch (opt)
     {
     case 'C':
-      /* Init a new set if the current one already has a value for this option */
-      if (h->curset->d_class >= 0)
-	parse_hook_add_set (h);
-
       h->curset->d_class = strtol (arg, 0, 16);
       break;
-    case 's':
+    case 'c':
       h->curset->d_subclass = strtol (arg, 0, 16);
       break;
-    case 'D':
-      if (h->curset->domain >= 0)
-	parse_hook_add_set (h);
-
+    case 'd':
       h->curset->domain = strtol (arg, 0, 16);
       break;
     case 'b':
+      if (h->curset->domain < 0)
+	h->curset->domain = 0;
+
       h->curset->bus = strtol (arg, 0, 16);
       break;
-    case 'd':
+    case 's':
       h->curset->dev = strtol (arg, 0, 16);
       break;
     case 'f':
@@ -261,7 +257,7 @@ netfs_append_args (char **argz, size_t * argz_len)
       if (p->bus >= 0)
 	ADD_OPT ("--bus=0x%02x", p->bus);
       if (p->dev >= 0)
-	ADD_OPT ("--dev=0x%02x", p->dev);
+	ADD_OPT ("--slot=0x%02x", p->dev);
       if (p->func >= 0)
 	ADD_OPT ("--func=%01u", p->func);
       if (p->uid >= 0)

@@ -51,12 +51,12 @@ struct parse_hook
 static const struct argp_option options[] = {
   {0, 0, 0, 0, "Permission scope:", 1},
   {"class", 'C', "CLASS", 0, "Device class in hexadecimal"},
-  {"subclass", 's', "SUBCLASS", 0,
-   "Device subclass in hexadecimal, only valid with -c"},
-  {"domain", 'D', "DOMAIN", 0, "Device domain in hexadecimal"},
-  {"bus", 'b', "BUS", 0, "Device bus in hexadecimal, only valid with -D"},
-  {"dev", 'd', "DEV", 0, "Device dev in hexadecimal, only valid with -b"},
-  {"func", 'f', "FUNC", 0, "Device func in hexadecimal, only valid with -d"},
+  {"subclass", 'c', "SUBCLASS", 0,
+   "Device subclass in hexadecimal, requires -C"},
+  {"domain", 'd', "DOMAIN", 0, "Device domain in hexadecimal"},
+  {"bus", 'b', "BUS", 0, "Device bus in hexadecimal"},
+  {"slot", 's', "SLOT", 0, "Device slot in hexadecimal, requires -b"},
+  {"func", 'f', "FUNC", 0, "Device func in hexadecimal, requires -s"},
   {0, 0, 0, 0, "These apply to a given permission scope:", 2},
   {"uid", 'U', "UID", 0, "User ID to give permissions to"},
   {"gid", 'G', "GID", 0, "Group ID to give permissions to"},
@@ -67,8 +67,8 @@ static const struct argp_option options[] = {
 };
 
 static const char doc[] = "More than one permission scope may be specified. \
-Uppercase options create a new permission scope if the current one already \
-has a value for that option. If one node is covered by more than one \
-permission scope, only the first permission is applied to that node.";
+-G and -U options create a new permission scope if the current one already \
+has a value for that option. If one device is covered by more than one \
+permission scope, only the first permission is applied.";
 
 #endif // OPTIONS_H
