@@ -57,6 +57,8 @@ static const struct argp_option options[] = {
   {"bus", 'b', "BUS", 0, "Device bus in hexadecimal"},
   {"slot", 's', "SLOT", 0, "Device slot in hexadecimal, requires -b"},
   {"func", 'f', "FUNC", 0, "Device func in hexadecimal, requires -s"},
+  {"device", 'D', "DEVICE", 0,
+   "Device address in format [<domain>:]<bus>:<slot>.<func>"},
   {0, 0, 0, 0, "These apply to a given permission scope:", 2},
   {"uid", 'U', "UID", 0, "User ID to give permissions to"},
   {"gid", 'G', "GID", 0, "Group ID to give permissions to"},

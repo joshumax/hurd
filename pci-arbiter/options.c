@@ -27,8 +27,12 @@
 #include <argp.h>
 #include <argz.h>
 #include <error.h>
+#include <regex.h>
 
 #include "pcifs.h"
+
+#define PCI_SLOT_REGEX "^(([0-9a-fA-F]{4}):)?([0-9a-fA-F]{2}):([0-9a-fA-F]{2})\\.([0-7])$"
+#define PCI_SLOT_REGEX_GROUPS 6	// 2: Domain, 3: Bus, 4: Dev, 5: Func
 
 /* Fsysopts and command line option parsing */
 
@@ -91,6 +95,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 {
   error_t err = 0;
   struct parse_hook *h = state->hook;
+  regex_t slot_regex;
+  regmatch_t slot_regex_groups[PCI_SLOT_REGEX_GROUPS];
+  char regex_group_val[5];
 
   /* Return _ERR from this routine */
 #define RETURN(_err)                          \
@@ -110,6 +117,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       arg = state->argv[state->next];
       state->next++;
     }
+
+  /* Compile regular expression to check --slot option */
+  err = regcomp (&slot_regex, PCI_SLOT_REGEX, REG_EXTENDED);
+  if (err)
+    FAIL (err, 1, err, "option parsing");
 
   switch (opt)
     {
@@ -133,6 +145,48 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       break;
     case 'f':
       h->curset->func = strtol (arg, 0, 16);
+      break;
+    case 'D':
+      err =
+	regexec (&slot_regex, arg, PCI_SLOT_REGEX_GROUPS, slot_regex_groups,
+		 0);
+      if (!err)
+	{
+	  // Domain, 0000 by default
+	  if (slot_regex_groups[2].rm_so >= 0)
+	    {
+	      strncpy (regex_group_val, arg + slot_regex_groups[2].rm_so, 4);
+	      regex_group_val[4] = 0;
+	    }
+	  else
+	    {
+	      strncpy (regex_group_val, "0000", 5);
+	    }
+
+	  h->curset->domain = strtol (regex_group_val, 0, 16);
+
+	  // Bus
+	  strncpy (regex_group_val, arg + slot_regex_groups[3].rm_so, 2);
+	  regex_group_val[2] = 0;
+
+	  h->curset->bus = strtol (regex_group_val, 0, 16);
+
+	  // Dev
+	  strncpy (regex_group_val, arg + slot_regex_groups[4].rm_so, 2);
+	  regex_group_val[2] = 0;
+
+	  h->curset->dev = strtol (regex_group_val, 0, 16);
+
+	  // Func
+	  regex_group_val[0] = arg[slot_regex_groups[5].rm_so];
+	  regex_group_val[1] = 0;
+
+	  h->curset->func = strtol (regex_group_val, 0, 16);
+	}
+      else
+	{
+	  PERR (err, "Wrong PCI slot. Format: [<domain>:]<bus>:<dev>.<func>");
+	}
       break;
     case 'U':
       if (h->curset->uid >= 0)
@@ -226,6 +280,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     default:
       return ARGP_ERR_UNKNOWN;
     }
+
+  /* Free allocated regular expression for the --slot option */
+  regfree (&slot_regex);
 
   return err;
 }
