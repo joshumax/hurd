@@ -325,7 +325,8 @@ _libsubst=${libsubst$(patsubst %,-override,${libsubst-override})}
 
 # Direct the linker where to find shared objects specified in the
 # dependencies of other shared objects it encounters.
-lpath := -L. $(patsubst %,-L%,$(dir $(wildcard ../lib*/lib*.so)))
+lib_dirs := $(dir $(wildcard ../lib*/lib*.so))
+lpath := -L. $(lib_dirs:%=-L%) $(lib_dirs:%=-Wl,-rpath-link=%)
 
 # Main rule to link executables
 #
