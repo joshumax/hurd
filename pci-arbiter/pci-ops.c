@@ -85,6 +85,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
   error_t err;
   pthread_mutex_t *lock;
   struct pcifs_dirent *e;
+  size_t actual_len;
 
   if (!master)
     return EOPNOTSUPP;
@@ -112,12 +113,12 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
    * libnetfs which is multi-threaded. A lock is needed for arbitration.
    */
   pthread_mutex_lock (lock);
-  err = pci_device_cfg_read (e->device, *data, reg, amount, NULL);
+  err = pci_device_cfg_read (e->device, *data, reg, amount, &actual_len);
   pthread_mutex_unlock (lock);
 
   if (!err)
     {
-      *datalen = amount;
+      *datalen = actual_len;
       /* Update atime */
       UPDATE_TIMES (e, TOUCH_ATIME);
     }
@@ -133,6 +134,7 @@ S_pci_conf_write (struct protid * master, int reg, char *data, size_t datalen,
   error_t err;
   pthread_mutex_t *lock;
   struct pcifs_dirent *e;
+  size_t actual_len;
 
   if (!master)
     return EOPNOTSUPP;
@@ -149,12 +151,12 @@ S_pci_conf_write (struct protid * master, int reg, char *data, size_t datalen,
     return err;
 
   pthread_mutex_lock (lock);
-  err = pci_device_cfg_write (e->device, data, reg, datalen, NULL);
+  err = pci_device_cfg_write (e->device, data, reg, datalen, &actual_len);
   pthread_mutex_unlock (lock);
 
   if (!err)
     {
-      *amount = datalen;
+      *amount = actual_len;
       /* Update mtime and ctime */
       UPDATE_TIMES (e, TOUCH_MTIME | TOUCH_CTIME);
     }
