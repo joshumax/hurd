@@ -95,15 +95,22 @@ dopen (const char *name, device_t *device, int *mod_flags)
 {
   device_t dev_master;
   error_t err = ENODEV;
+  char *pos;
+  char *master;
+  char *rest;
 
-  if (name[0] == '/')
+  /* Parse @master:/dev/hello */
+  if ( (name[0] == '@') && (pos = strchr (name, ':')) )
     {
+      master = strndup (name+1, pos-(name+1));
+      rest = strdup (pos+1);
+
       if (*mod_flags & STORE_HARD_READONLY)
 	{
-	  dev_master = file_name_lookup (name, O_READ, 0);
+	  dev_master = file_name_lookup (master, O_READ, 0);
 	  if (dev_master != MACH_PORT_NULL)
 	    {
-	      err = device_open (dev_master, D_READ, "disk", device);
+	      err = device_open (dev_master, D_READ, rest, device);
 	      if (err)
 		err = ENODEV;
 
@@ -114,13 +121,13 @@ dopen (const char *name, device_t *device, int *mod_flags)
 	}
       else
 	{
-	  dev_master = file_name_lookup (name, O_READ | O_WRITE, 0);
+	  dev_master = file_name_lookup (master, O_READ | O_WRITE, 0);
 	  if (dev_master != MACH_PORT_NULL)
 	    {
-	      err = device_open (dev_master, D_READ | D_WRITE, "disk", device);
+	      err = device_open (dev_master, D_READ | D_WRITE, rest, device);
 	      if (err == ED_READ_ONLY)
 		{
-		  err = device_open (dev_master, D_READ, "disk", device);
+		  err = device_open (dev_master, D_READ, rest, device);
 		  if (! err)
 		    *mod_flags |= STORE_HARD_READONLY;
 		  else
