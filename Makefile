@@ -49,6 +49,10 @@ prog-subdirs = auth proc exec term \
 	       acpi \
 	       shutdown
 
+ifeq ($(HAVE_LIBRUMP),yes)
+prog-subdirs += rumpdisk
+endif
+
 ifeq ($(HAVE_SUN_RPC),yes)
 prog-subdirs += nfs nfsd
 endif

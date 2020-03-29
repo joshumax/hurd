@@ -243,6 +243,10 @@ AS_IF([test "x$with_libz" != xno], [
 ])
 AC_SUBST([HAVE_LIBZ])
 
+AC_CHECK_HEADER([rump/rump.h], [HAVE_LIBRUMP=yes], [HAVE_LIBRUMP=no])
+AC_CHECK_LIB(rump, rump_init, [HAVE_LIBRUMP=yes], [HAVE_LIBRUMP=no])
+AC_SUBST([HAVE_LIBRUMP])
+
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
 			  list of store types included in statically
