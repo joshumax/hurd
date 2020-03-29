@@ -27,6 +27,10 @@
 #define _MACHDEV_DEVICE_EMUL_H_
 
 #include <mach.h>
+#include <mach/notify.h>
+#include <device/device_types.h>
+#include <device/net_status.h>
+#include <errno.h>
 
 /* Each emulation layer provides these operations.  */
 struct machdev_device_emulation_ops

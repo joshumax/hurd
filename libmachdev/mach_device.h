@@ -18,23 +18,18 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* This file declares interfaces used by driver translators.  */
+#ifndef	_MACHDEV_MACH_DEVICE_H
+#define	_MACHDEV_MACH_DEVICE_H
 
-#ifndef __MACHDEV_H__
-#define __MACHDEV_H__
+/*
+ * Generic device header.  May be allocated with the device,
+ * or built when the device is opened.
+ */
+struct mach_device {
+	struct port_info port;
+	struct machdev_emul_device	dev;		/* the real device structure */
+};
+typedef	struct mach_device *mach_device_t;
+#define	MACH_DEVICE_NULL ((mach_device_t)0)
 
-#include <mach.h>
-#include "machdev-device_emul.h"
-#include "machdev-dev_hdr.h"
-
-void machdev_register (struct machdev_device_emulation_ops *ops);
-
-void machdev_device_init(void);
-void * machdev_server(void *);
-error_t machdev_create_device_port (size_t size, void *result);
-
-int machdev_trivfs_init(void);
-void machdev_trivfs_server(void);
-boolean_t machdev_is_master_device (mach_port_t port);
-
-#endif
+#endif	/* _MACHDEV_MACH_DEVICE_H */

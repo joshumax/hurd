@@ -70,6 +70,7 @@
 #include "notify_S.h"
 #include "machdev-dev_hdr.h"
 #include "machdev.h"
+#include "mach_device.h"
 
 struct port_bucket *machdev_device_bucket;
 struct port_class *machdev_device_class;

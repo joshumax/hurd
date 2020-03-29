@@ -64,25 +64,12 @@
 
 /* This structure is associated with each open device port.
  * The port representing the device points to this structure.  */
-struct emul_device
+struct machdev_emul_device
 {
     struct machdev_device_emulation_ops *emul_ops;
     void *emul_data;
 };
 
-typedef struct emul_device *emul_device_t;
-
-#define DEVICE_NULL     ((device_t) 0)
-
-/*
- * Generic device header.  May be allocated with the device,
- * or built when the device is opened.
- */
-struct mach_device {
-	struct port_info port;
-	struct emul_device	dev;		/* the real device structure */
-};
-typedef	struct mach_device *mach_device_t;
-#define	MACH_DEVICE_NULL ((mach_device_t)0)
+typedef struct machdev_emul_device *machdev_emul_device_t;
 
 #endif	/* _MACHDEV_DEVICE_DEV_HDR_H_ */

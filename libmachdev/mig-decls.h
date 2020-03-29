@@ -22,6 +22,7 @@
 
 #include <hurd/ports.h>
 #include "machdev-dev_hdr.h"
+#include "mach_device.h"
 
 extern struct port_bucket *machdev_device_bucket;
 extern struct port_class *machdev_device_class;

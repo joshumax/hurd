@@ -22,8 +22,8 @@ libname = libmachdev
 SRCS = deviceUser.c machUser.c ds_routines.c trivfs_server.c \
        device_replyUser.c deviceServer.c notifyServer.c
 
-LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h
-installhdrs = machdev.h machdev-device_emul.h
+LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h
+installhdrs = machdev.h machdev-device_emul.h machdev-dev_hdr.h
 HURDLIBS = ports trivfs
 LDLIBS += -lpthread
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
