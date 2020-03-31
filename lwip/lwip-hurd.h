@@ -30,21 +30,21 @@
 #include <hurd/trivfs.h>
 #include <refcount.h>
 
-struct port_bucket *lwip_bucket;
-struct port_class *socketport_class;
-struct port_class *addrport_class;
-struct port_class *shutdown_notify_class;
+extern struct port_bucket *lwip_bucket;
+extern struct port_class *socketport_class;
+extern struct port_class *addrport_class;
+extern struct port_class *shutdown_notify_class;
 
-struct port_class *lwip_protid_portclasses[2];
-struct port_class *lwip_cntl_portclasses[2];
+extern struct port_class *lwip_protid_portclasses[2];
+extern struct port_class *lwip_cntl_portclasses[2];
 
 /* Which portclass to install on the bootstrap port, default to IPv4. */
-int lwip_bootstrap_portclass;
+extern int lwip_bootstrap_portclass;
 
-mach_port_t fsys_identity;
+extern mach_port_t fsys_identity;
 
 /* Trivfs control structure for lwip.  */
-struct trivfs_control *lwipcntl;
+extern struct trivfs_control *lwipcntl;
 
 /* Address family port classes. */
 enum
@@ -80,10 +80,10 @@ struct sock_addr
 };
 
 /* Owner of the underlying node.  */
-uid_t lwip_owner;
+extern uid_t lwip_owner;
 
 /* Group of the underlying node.  */
-uid_t lwip_group;
+extern uid_t lwip_group;
 
 struct socket *sock_alloc (void);
 void sock_release (struct socket *);

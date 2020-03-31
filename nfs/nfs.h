@@ -79,13 +79,13 @@ struct netnode
 };
 
 /* Socket file descriptor for talking to RPC servers. */
-int main_udp_socket;
+extern int main_udp_socket;
 
 /* Our hostname */
-char *hostname;
+extern char *hostname;
 
 /* The current time */
-volatile struct mapped_time_value *mapped_time;
+extern volatile struct mapped_time_value *mapped_time;
 
 /* Some tunable parameters */
 

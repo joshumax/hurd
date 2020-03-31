@@ -128,7 +128,7 @@ extern int _pager_page_errors[];
 #define PM_NEXTERROR(byte) ((byte) & 0x3)
 #define SET_PM_NEXTERROR(byte,err) (((byte) & ~0x3) | (err))
 
-struct port_class *_pager_class;
+extern struct port_class *_pager_class;
 
 
 void _pager_block_termination (struct pager *);

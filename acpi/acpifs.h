@@ -104,10 +104,10 @@ struct acpifs
 };
 
 /* Main FS pointer */
-struct acpifs *fs;
+extern struct acpifs *fs;
 
 /* Global mapped time */
-volatile struct mapped_time_value *acpifs_maptime;
+extern volatile struct mapped_time_value *acpifs_maptime;
 
 /* Update entry and node times */
 #define UPDATE_TIMES(e, what) (\

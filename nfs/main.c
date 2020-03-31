@@ -35,6 +35,10 @@
 char *netfs_server_name = "nfs";
 char *netfs_server_version = HURD_VERSION;
 
+int main_udp_socket;
+char *hostname;
+volatile struct mapped_time_value *mapped_time;
+
 extern char *localhost ();
 
 /* Default number of times to retry RPCs when mounted soft. */

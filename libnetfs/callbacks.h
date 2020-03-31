@@ -21,5 +21,5 @@
 
 /* Translator callback function declarations. */
 
-fshelp_fetch_root_callback1_t _netfs_translator_callback1;
-fshelp_fetch_root_callback2_t _netfs_translator_callback2;
+extern fshelp_fetch_root_callback1_t _netfs_translator_callback1;
+extern fshelp_fetch_root_callback2_t _netfs_translator_callback2;

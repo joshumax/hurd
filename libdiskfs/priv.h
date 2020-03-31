@@ -52,8 +52,6 @@ extern char **_diskfs_boot_command;
 /* Port cell holding a cached port to the exec server.  */
 extern struct hurd_port _diskfs_exec_portcell;
 
-volatile struct mapped_time_value *_diskfs_mtime;
-
 extern const struct argp_option diskfs_common_options[];
 /* Option keys for long-only options in diskfs_common_options.  */
 #define OPT_SUID_OK	600	/* --suid-ok */

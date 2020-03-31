@@ -31,7 +31,7 @@ struct passwd;
 #define USERMUX_FILENO_UID_OFFSET	10
 
 /* Handy source of time.  */
-volatile struct mapped_time_value *usermux_maptime;
+extern volatile struct mapped_time_value *usermux_maptime;
 
 /* The state associated with a user multiplexer translator.  */
 struct usermux

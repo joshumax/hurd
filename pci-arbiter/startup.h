@@ -24,8 +24,8 @@
 /* Startup and shutdown notifications management */
 
 /* Port class for startup requests */
-struct port_class *pci_shutdown_notify_class;
+extern struct port_class *pci_shutdown_notify_class;
 
-void arrange_shutdown_notification ();
+void arrange_shutdown_notification (void);
 
 #endif /* STARTUP_H */

@@ -28,6 +28,6 @@
 void ensure_sock_server ();
 
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
-struct port_bucket *sock_port_bucket;
+extern struct port_bucket *sock_port_bucket;
 
 #endif /* __SSERVER_H__ */

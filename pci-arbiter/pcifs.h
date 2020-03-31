@@ -168,10 +168,10 @@ struct pcifs
 };
 
 /* Main FS pointer */
-struct pcifs *fs;
+extern struct pcifs *fs;
 
 /* Global mapped time */
-volatile struct mapped_time_value *pcifs_maptime;
+extern volatile struct mapped_time_value *pcifs_maptime;
 
 /* Update entry and node times */
 #define UPDATE_TIMES(e, what) (\

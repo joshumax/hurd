@@ -20,6 +20,6 @@
 #ifndef BOOT_PRIVATE_H
 #define BOOT_PRIVATE_H
 
-int verbose;
+extern int verbose;
 
 #endif /* BOOT_PRIVATE_H */

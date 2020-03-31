@@ -276,23 +276,23 @@ extern char *diskfs_extra_version;
    if the symlink hook functions return EINVAL or are not defined.
    The library knows that the dn_stat.st_size field is the length of
    the symlink, even if the hook functions are used. */
-int diskfs_shortcut_symlink;
+extern int diskfs_shortcut_symlink;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting chrdev translation.  */
-int diskfs_shortcut_chrdev;
+extern int diskfs_shortcut_chrdev;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting blkdev translation.  */
-int diskfs_shortcut_blkdev;
+extern int diskfs_shortcut_blkdev;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting fifo translation.  */
-int diskfs_shortcut_fifo;
+extern int diskfs_shortcut_fifo;
 
 /* The user may define this variable.  This should be nonzero iff the
    filesystem format supports shortcutting ifsock translation. */
-int diskfs_shortcut_ifsock;
+extern int diskfs_shortcut_ifsock;
 
 /* The user may define this variable, otherwise it has a default value of 30.
    diskfs_set_sync_interval is called with this value when the first diskfs
@@ -576,13 +576,13 @@ error_t diskfs_node_reload (struct node *node);
    is called to set a symlink.  If it returns EINVAL or isn't set,
    then the normal method (writing the contents into the file data) is
    used.  If it returns any other error, it is returned to the user.  */
-error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
+extern error_t (*diskfs_create_symlink_hook)(struct node *np, const char *target);
 
 /* If this function is nonzero (and diskfs_shortcut_symlink is set) it
    is called to read the contents of a symlink.  If it returns EINVAL or
    isn't set, then the normal method (reading from the file data) is
    used.  If it returns any other error, it is returned to the user. */
-error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
+extern error_t (*diskfs_read_symlink_hook)(struct node *np, char *target);
 
 /* The user may define this function.  The function must set source to
    the source of the translator. The function may return an EOPNOTSUPP

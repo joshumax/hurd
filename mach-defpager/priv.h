@@ -61,11 +61,12 @@ struct part {
 };
 typedef	struct part	*partition_t;
 
-struct {
+struct partitions {
 	pthread_mutex_t	lock;
 	int		n_partitions;
 	partition_t	*partition_list;/* array, for quick mapping */
-} all_partitions;			/* list of all such */
+};
+extern struct partitions all_partitions; /* list of all such */
 
 typedef unsigned char	p_index_t;
 

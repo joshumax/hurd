@@ -33,7 +33,7 @@
 #endif
 
 /* Handy source of time.  */
-volatile struct mapped_time_value *hostmux_maptime;
+extern volatile struct mapped_time_value *hostmux_maptime;
 
 /* The state associated with a host multiplexer translator.  */
 struct hostmux

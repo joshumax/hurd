@@ -27,10 +27,14 @@
 #include <pthread.h>
 #include <error.h>
 
+volatile struct mapped_time_value *mapped_time;
+
 int main_udp_socket, pmap_udp_socket;
 struct sockaddr_in main_address, pmap_address;
 static char index_file[] = LOCALSTATEDIR "/state/misc/nfsd.index";
 char *index_file_name = index_file;
+
+auth_t authserver;
 
 /* Launch a server loop thread */
 static void

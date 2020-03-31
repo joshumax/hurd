@@ -78,4 +78,6 @@ static const char doc[] = "Interface-specific options before the first \
 interface specification apply to the first following interface; otherwise \
 they apply to the previously specified interface.";
 
+extern struct argp lwip_argp;
+
 #endif // OPTIONS_H

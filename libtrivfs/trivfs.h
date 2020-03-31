@@ -101,10 +101,10 @@ void trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *);
    file permits to USER instead of checking the underlying node.
    REALNODE is the underlying node, and CNTL is the trivfs control
    object.  The access permissions are returned in ALLOWED.  */
-error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
-				     struct iouser *user,
-				     mach_port_t realnode,
-				     int *allowed);
+extern error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
+					    struct iouser *user,
+					    mach_port_t realnode,
+					    int *allowed);
 
 /* If this variable is set, it is called every time an open happens.
    USER and FLAGS are from the open; CNTL identifies the
@@ -112,45 +112,45 @@ error_t (*trivfs_check_access_hook) (struct trivfs_control *cntl,
    node.  This call can block as necessary, unless O_NONBLOCK is set
    in FLAGS.  Any desired error can be returned, which will be reflected
    to the user and prevent the open from succeeding.  */
-error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
-				   struct iouser *user, int flags);
+extern error_t (*trivfs_check_open_hook) (struct trivfs_control *cntl,
+					  struct iouser *user, int flags);
 
 /* If this variable is set, it is called in place of `trivfs_open' (below).  */
-error_t (*trivfs_open_hook) (struct trivfs_control *fsys,
-			     struct iouser *user,
-			     mach_port_t dotdot,
-			     int flags,
-			     mach_port_t realnode,
-			     struct trivfs_protid **cred);
+extern error_t (*trivfs_open_hook) (struct trivfs_control *fsys,
+				    struct iouser *user,
+				    mach_port_t dotdot,
+				    int flags,
+				    mach_port_t realnode,
+				    struct trivfs_protid **cred);
 
 /* If this variable is set, it is called every time a new protid
    structure is created and initialized. */
-error_t (*trivfs_protid_create_hook) (struct trivfs_protid *);
+extern error_t (*trivfs_protid_create_hook) (struct trivfs_protid *);
 
 /* If this variable is set, it is called every time a new peropen
    structure is created and initialized. */
-error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
+extern error_t (*trivfs_peropen_create_hook) (struct trivfs_peropen *);
 
 /* If this variable is set, it is called every time a protid structure
    is about to be destroyed. */
-void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
+extern void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
 
 /* If this variable is set, it is called every time a peropen structure
    is about to be destroyed. */
-void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
+extern void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
 
 /* If this variable is set, it is called by trivfs_S_fsys_getroot before any
    other processing takes place; if the return value is EAGAIN, normal trivfs
    getroot processing continues, otherwise the rpc returns with that return
    value.  */
-error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
-				mach_port_t reply_port,
-				mach_msg_type_name_t reply_port_type,
-				mach_port_t dotdot,
-				uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
-				int flags,
-				retry_type *do_retry, char *retry_name,
-				mach_port_t *node, mach_msg_type_name_t *node_type);
+extern error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
+				       mach_port_t reply_port,
+				       mach_msg_type_name_t reply_port_type,
+				       mach_port_t dotdot,
+				       uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				       int flags,
+				       retry_type *do_retry, char *retry_name,
+				       mach_port_t *node, mach_msg_type_name_t *node_type);
 
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
    fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports

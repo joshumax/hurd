@@ -35,7 +35,7 @@ char *netfs_server_name = "usermux";
 char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 25;
 
-volatile struct mapped_time_value *usermux_mapped_time;
+volatile struct mapped_time_value *usermux_maptime;
 
 #define OPT_USER_PAT	1
 #define OPT_HOME_PAT	2

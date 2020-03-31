@@ -17,6 +17,8 @@
 
 #include "priv.h"
 
+struct port_class *_pager_class;
+
 static struct pager *
 _pager_create (size_t size,
 	       struct port_bucket *bucket,

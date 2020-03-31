@@ -27,6 +27,8 @@
 #include <hurd/startup.h>
 #include <hurd/netfs.h>
 
+struct port_class *pci_shutdown_notify_class;
+
 void
 arrange_shutdown_notification ()
 {

@@ -34,6 +34,9 @@
 
 #include <lwip-hurd.h>
 
+struct port_class *tunnel_cntlclass;
+struct port_class *tunnel_class;
+
 /* Add to the end of the queue */
 static void
 enqueue (struct pbufqueue *q, struct pbuf *p)

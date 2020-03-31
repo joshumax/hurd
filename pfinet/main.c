@@ -63,7 +63,17 @@ struct port_class *pfinet_cntl_portclasses[2];
 /* Which portclass to install on the bootstrap port, default to IPv4. */
 int pfinet_bootstrap_portclass = PORTCLASS_INET;
 
+struct trivfs_control *pfinetctl;
+uid_t pfinet_owner;
+uid_t pfinet_group;
+
 struct port_class *shutdown_notify_class;
+
+struct port_bucket *pfinet_bucket;
+struct port_class *addrport_class;
+struct port_class *socketport_class;
+
+mach_port_t fsys_identity;
 
 const char *argp_program_version = STANDARD_HURD_VERSION (pfinet);
 

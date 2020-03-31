@@ -42,10 +42,15 @@ int trivfs_allow_open = 0;
 struct port_class *trivfs_protid_class;
 struct port_class *trivfs_control_class;
 
+/* Where to put the service ports. */
+struct port_bucket *port_bucket;
+struct port_class *execboot_portclass;
+
 struct trivfs_control *fsys;
 
 char **save_argv;
 mach_port_t opt_device_master;
+
 
 
 #include "exec_S.h"

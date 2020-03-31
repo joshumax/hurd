@@ -72,6 +72,7 @@ int netfs_maxsymlinks = 12;
 char *netfs_server_name = "multiplexer";
 char *netfs_server_version = HURD_VERSION;
 file_t root_file;
+volatile struct mapped_time_value *multiplexer_maptime;
 struct lnode root;
 struct stat underlying_node_stat;
 

@@ -84,7 +84,7 @@ struct proctable
   struct procedure procs[];
 };
 
-volatile struct mapped_time_value *mapped_time;
+extern volatile struct mapped_time_value *mapped_time;
 
 #define INTSIZE(n) (((n) + 3) >> 2)
 
@@ -97,7 +97,7 @@ extern struct sockaddr_in main_address, pmap_address;
 extern char *index_file_name;
 
 /* Our auth server */
-auth_t authserver;
+extern auth_t authserver;
 
 
 /* cache.c */

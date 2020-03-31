@@ -57,8 +57,8 @@ typedef struct bootinfo *bootinfo_t;
 
 
 /* Where to put the service ports. */
-struct port_bucket *port_bucket;
-struct port_class *execboot_portclass;
+extern struct port_bucket *port_bucket;
+extern struct port_class *execboot_portclass;
 
 extern mach_port_t procserver;	/* Our proc port.  */
 

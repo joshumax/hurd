@@ -58,6 +58,37 @@ char *diskfs_disk_name;
 
 pthread_spinlock_t global_lock = PTHREAD_SPINLOCK_INITIALIZER;
 pthread_spinlock_t modified_global_blocks_lock = PTHREAD_SPINLOCK_INITIALIZER;
+
+struct ext2_super_block *sblock;
+int sblock_dirty;
+
+unsigned int block_size;
+unsigned int log2_block_size;
+
+unsigned log2_dev_blocks_per_fs_block;
+
+unsigned log2_stat_blocks_per_fs_block;
+
+unsigned long frag_size;
+unsigned long frags_per_block;
+unsigned long inodes_per_block;
+
+unsigned long itb_per_group;
+unsigned long db_per_group;
+unsigned long desc_per_block;
+unsigned long addr_per_block;
+
+unsigned long groups_count;
+
+/* ---------------------------------------------------------------- */
+
+unsigned long next_generation;
+
+struct ext2_group_desc *group_desc_image;
+
+struct pokel global_pokel;
+
+int use_xattr_translator_records;
 
 #ifdef EXT2FS_DEBUG
 int ext2_debug_flag;

@@ -37,13 +37,27 @@
 
 #include <netif/hurdethif.h>
 #include <netif/hurdtunif.h>
-#include <startup.h>
+#include "startup.h"
+#include "options.h"
 
 /* Translator initialization */
 
-extern struct argp lwip_argp;
+struct port_bucket *lwip_bucket;
+struct port_class *socketport_class;
+struct port_class *addrport_class;
+struct port_class *shutdown_notify_class;
 
-extern struct netif *netif_list;
+struct port_class *lwip_protid_portclasses[2];
+struct port_class *lwip_cntl_portclasses[2];
+
+int lwip_bootstrap_portclass;
+
+uid_t lwip_owner;
+uid_t lwip_group;
+
+mach_port_t fsys_identity;
+
+struct trivfs_control *lwipcntl;
 
 int trivfs_fstype = FSTYPE_MISC;
 int trivfs_fsid = 0;

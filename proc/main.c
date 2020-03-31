@@ -42,6 +42,21 @@ const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 #include "proc_exc_S.h"
 #include "task_notify_S.h"
 
+mach_port_t authserver;
+struct proc *self_proc;
+struct proc *init_proc;
+struct proc *startup_proc;
+
+struct port_bucket *proc_bucket;
+struct port_class *proc_class;
+struct port_class *generic_port_class;
+struct port_class *exc_class;
+
+mach_port_t generic_port;
+struct proc *kernel_proc;
+
+pthread_mutex_t global_lock;
+
 int
 message_demuxer (mach_msg_header_t *inp,
 		 mach_msg_header_t *outp)

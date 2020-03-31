@@ -40,7 +40,7 @@ struct lnode
 };
 
 extern file_t root_file;
-volatile struct mapped_time_value *multiplexer_maptime;
+extern volatile struct mapped_time_value *multiplexer_maptime;
 
 error_t new_node (struct lnode *ln, struct node **np);
 

@@ -68,19 +68,19 @@ struct lookup_context
 /* The physical media */
 extern struct store *store;
 
-char *host_name;
+extern char *host_name;
 
 /* Name we are mounted on, with trailing slash */
-char *mounted_on;
+extern char *mounted_on;
 
 /* Mapped image of disk */
-void *disk_image;
-size_t disk_image_len;
+extern void *disk_image;
+extern size_t disk_image_len;
 
 /* Processed sblock info */
 
 /* Block size of pointers etc. on disk (6.2.2). */
-size_t logical_block_size;
+extern size_t logical_block_size;
 
 /* Size of "logical sectors" (6.1.2).  These are 2048 or the
    largest power of two that will fit in a physical sector, whichever is
@@ -89,7 +89,7 @@ size_t logical_block_size;
 #define logical_sector_size	2048
 
 /* Unprocessed superblock */
-struct sblock *sblock;
+extern struct sblock *sblock;
 
 
 

@@ -139,20 +139,20 @@ struct exc
   natural_t thread_state[0];
 };
 
-mach_port_t authserver;
-struct proc *self_proc;		/* process HURD_PID_PROC (us) */
-struct proc *init_proc;		/* process 1 (sysvinit) */
-struct proc *startup_proc;	/* process 2 (hurd/startup) */
+extern mach_port_t authserver;
+extern struct proc *self_proc;		/* process HURD_PID_PROC (us) */
+extern struct proc *init_proc;		/* process 1 (sysvinit) */
+extern struct proc *startup_proc;	/* process 2 (hurd/startup) */
 
-struct port_bucket *proc_bucket;
-struct port_class *proc_class;
-struct port_class *generic_port_class;
-struct port_class *exc_class;
+extern struct port_bucket *proc_bucket;
+extern struct port_class *proc_class;
+extern struct port_class *generic_port_class;
+extern struct port_class *exc_class;
 
-mach_port_t generic_port;	/* messages not related to a specific proc */
-struct proc *kernel_proc;
+extern mach_port_t generic_port;	/* messages not related to a specific proc */
+extern struct proc *kernel_proc;
 
-pthread_mutex_t global_lock;
+extern pthread_mutex_t global_lock;
 
 extern int startup_fallback;	/* (ab)use /hurd/startup's message port */
 

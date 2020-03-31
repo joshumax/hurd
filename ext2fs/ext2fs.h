@@ -284,9 +284,9 @@ void _disk_cache_block_deref (void *ptr);
 int disk_cache_block_is_ref (block_t block);
 
 /* Our in-core copy of the super-block (pointer into the disk_cache).  */
-struct ext2_super_block *sblock;
+extern struct ext2_super_block *sblock;
 /* True if sblock has been modified.  */
-int sblock_dirty;
+extern int sblock_dirty;
 
 /* Where the super-block is located on disk (at min-block 1).  */
 #define SBLOCK_BLOCK	1	/* Default location, second 1k block.  */
@@ -295,21 +295,21 @@ extern unsigned int sblock_block; /* Specified location (in 1k blocks).  */
 #define SBLOCK_OFFS	(sblock_block << 10) /* Byte offset of superblock.  */
 
 /* The filesystem block-size.  */
-unsigned int block_size;
+extern unsigned int block_size;
 /* The log base 2 of BLOCK_SIZE.  */
-unsigned int log2_block_size;
+extern unsigned int log2_block_size;
 
 /* The number of bits to scale min-blocks to get filesystem blocks.  */
 #define BLOCKSIZE_SCALE	(sblock->s_log_block_size)
 
 /* log2 of the number of device blocks in a filesystem block.  */
-unsigned log2_dev_blocks_per_fs_block;
+extern unsigned log2_dev_blocks_per_fs_block;
 
 /* log2 of the number of stat blocks (512 bytes) in a filesystem block.  */
-unsigned log2_stat_blocks_per_fs_block;
+extern unsigned log2_stat_blocks_per_fs_block;
 
 /* A handy page of page-aligned zeros.  */
-vm_address_t zeroblock;
+extern vm_address_t zeroblock;
 
 /* Get the superblock from the disk, point `sblock' to it, and setup
    various global info from it.  */
@@ -324,23 +324,23 @@ void map_hypermetadata ();
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
 
-unsigned long frag_size;	/* Size of a fragment in bytes */
-unsigned long frags_per_block;	/* Number of fragments per block */
-unsigned long inodes_per_block;	/* Number of inodes per block */
+extern unsigned long frag_size;	/* Size of a fragment in bytes */
+extern unsigned long frags_per_block;	/* Number of fragments per block */
+extern unsigned long inodes_per_block;	/* Number of inodes per block */
 
-unsigned long itb_per_group;	/* Number of inode table blocks per group */
-unsigned long db_per_group;	/* Number of descriptor blocks per group */
-unsigned long desc_per_block;	/* Number of group descriptors per block */
-unsigned long addr_per_block;	/* Number of disk addresses per block */
+extern unsigned long itb_per_group;	/* Number of inode table blocks per group */
+extern unsigned long db_per_group;	/* Number of descriptor blocks per group */
+extern unsigned long desc_per_block;	/* Number of group descriptors per block */
+extern unsigned long addr_per_block;	/* Number of disk addresses per block */
 
-unsigned long groups_count;	/* Number of groups in the fs */
+extern unsigned long groups_count;	/* Number of groups in the fs */
 
 /* ---------------------------------------------------------------- */
 
-pthread_spinlock_t node_to_page_lock;
+extern pthread_spinlock_t node_to_page_lock;
 
-pthread_spinlock_t generation_lock;
-unsigned long next_generation;
+extern pthread_spinlock_t generation_lock;
+extern unsigned long next_generation;
 
 /* ---------------------------------------------------------------- */
 /* Functions for looking inside disk_cache */
@@ -409,7 +409,7 @@ bptr_offs (void *ptr)
    stored starting in the filesystem block following the super block.
    We cache a pointer into the disk image for easy lookup.  */
 #define group_desc(num)	(&group_desc_image[num])
-struct ext2_group_desc *group_desc_image;
+extern struct ext2_group_desc *group_desc_image;
 
 #define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
 
@@ -459,12 +459,12 @@ void write_all_disknodes ();
 extern pthread_spinlock_t global_lock;
 
 /* Where to record such changes.  */
-struct pokel global_pokel;
+extern struct pokel global_pokel;
 
 /* If the block size is less than the page size, then this bitmap is used to
    record which disk blocks are actually modified, so we don't stomp on parts
    of the disk which are backed by file pagers.  */
-unsigned char *modified_global_blocks;
+extern unsigned char *modified_global_blocks;
 extern pthread_spinlock_t modified_global_blocks_lock;
 
 /* Forward declarations for the following functions that are usually
@@ -619,6 +619,6 @@ error_t ext2_free_xattr_block (struct node *np);
  *
  * XXX: Remove this in Hurd 1.0 (or 0.10, or whatever follows 0.9).
  */
-int use_xattr_translator_records;
+extern int use_xattr_translator_records;
 
 #endif

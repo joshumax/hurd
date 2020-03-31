@@ -1,4 +1,4 @@
-/* Default value for cons_extra_version
+/* Default values for weak variables
    Copyright (C) 2002 Free Software Foundation, Inc.
    Written by Marcus Brinkmann.
 

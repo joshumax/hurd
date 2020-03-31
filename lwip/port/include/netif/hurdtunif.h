@@ -53,8 +53,8 @@ struct hurdtunif
   uint8_t read_blocked;
 };
 
-struct port_class *tunnel_cntlclass;
-struct port_class *tunnel_class;
+extern struct port_class *tunnel_cntlclass;
+extern struct port_class *tunnel_class;
 
 /* Device initialization */
 err_t hurdtunif_device_init (struct netif *netif);

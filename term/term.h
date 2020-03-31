@@ -72,10 +72,10 @@
 #define MDMCTL_SET 2
 
 /* Directly user-visible state */
-struct termios termstate;
+extern struct termios termstate;
 
 /* Other state with the following bits: */
-long termflags;
+extern long termflags;
 
 #define USER_OUTPUT_SUSP  0x00000001 /* user has suspended output */
 #define TTY_OPEN	  0x00000002 /* someone has us open */
@@ -97,58 +97,58 @@ long termflags;
 #define QUEUE_HIWAT 8100
 
 /* Global lock */
-pthread_mutex_t global_lock;
+extern pthread_mutex_t global_lock;
 
 /* Wakeup when NO_CARRIER turns off */
-pthread_cond_t carrier_alert;
+extern pthread_cond_t carrier_alert;
 
 /* Wakeup for select */
-pthread_cond_t select_alert;
+extern pthread_cond_t select_alert;
 
 /* Wakeup for pty select, if not null */
-pthread_cond_t *pty_select_alert;
+extern pthread_cond_t *pty_select_alert;
 
 /* Bucket for all our ports. */
-struct port_bucket *term_bucket;
+extern struct port_bucket *term_bucket;
 
 /* Port class for tty control ports */
-struct port_class *tty_cntl_class;
+extern struct port_class *tty_cntl_class;
 
 /* Port class for tty I/O ports */
-struct port_class *tty_class;
+extern struct port_class *tty_class;
 
 /* Port class for ctty ID ports */
-struct port_class *cttyid_class;
+extern struct port_class *cttyid_class;
 
 /* Port class for pty master ports */
-struct port_class *pty_class;
+extern struct port_class *pty_class;
 
 /* Port class for pty control ports */
-struct port_class *pty_cntl_class;
+extern struct port_class *pty_cntl_class;
 
 /* Trivfs control structure for the tty */
-struct trivfs_control *termctl;
+extern struct trivfs_control *termctl;
 
 /* Trivfs control structure for the pty */
-struct trivfs_control *ptyctl;
+extern struct trivfs_control *ptyctl;
 
 /* The queues we use */
-struct queue *inputq, *rawq, *outputq;
+extern struct queue *inputq, *rawq, *outputq;
 
 /* Plain pass-through input */
-int remote_input_mode;
+extern int remote_input_mode;
 
 /* External processing mode */
-int external_processing;
+extern int external_processing;
 
 /* Terminal owner */
-uid_t term_owner;
+extern uid_t term_owner;
 
 /* Terminal group */
-uid_t term_group;
+extern uid_t term_group;
 
 /* Terminal mode */
-mode_t term_mode;
+extern mode_t term_mode;
 
 
 /* XXX Including <sys/ioctl.h> or <hurd/ioctl_types.h> leads to "ECHO
@@ -176,7 +176,7 @@ struct bottomhalf
   error_t (*mdmstate) (int *state);
 };
 
-const struct bottomhalf *bottom;
+extern const struct bottomhalf *bottom;
 extern const struct bottomhalf devio_bottom, hurdio_bottom, ptyio_bottom;
 
 

@@ -33,11 +33,11 @@
 extern pthread_mutex_t global_lock;
 extern pthread_mutex_t net_bh_lock;
 
-struct port_bucket *pfinet_bucket;
-struct port_class *addrport_class;
-struct port_class *socketport_class;
+extern struct port_bucket *pfinet_bucket;
+extern struct port_class *addrport_class;
+extern struct port_class *socketport_class;
 
-mach_port_t fsys_identity;
+extern mach_port_t fsys_identity;
 
 extern struct device *dev_base;
 extern struct device loopback_dev;
@@ -58,13 +58,13 @@ struct sock_addr
 };
 
 /* Trivfs control structure for pfinet.  */
-struct trivfs_control *pfinetctl;
+extern struct trivfs_control *pfinetctl;
 
 /* Owner of the underlying node.  */
-uid_t pfinet_owner;
+extern uid_t pfinet_owner;
 
 /* Group of the underlying node.  */
-uid_t pfinet_group;
+extern uid_t pfinet_group;
 
 void ethernet_initialize (void);
 int ethernet_demuxer (mach_msg_header_t *, mach_msg_header_t *);

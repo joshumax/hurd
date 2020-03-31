@@ -39,6 +39,10 @@ int netfs_maxsymlinks = 0;
 char *netfs_server_name = "acpi";
 char *netfs_server_version = HURD_VERSION;
 
+volatile struct mapped_time_value *acpifs_maptime;
+
+struct acpifs *fs;
+
 int
 netfs_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
 {

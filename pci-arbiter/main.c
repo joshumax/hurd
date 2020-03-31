@@ -38,6 +38,9 @@
 #include "pcifs.h"
 #include "startup.h"
 
+struct pcifs *fs;
+volatile struct mapped_time_value *pcifs_maptime;
+
 /* Libnetfs stuff */
 int netfs_maxsymlinks = 0;
 char *netfs_server_name = "pci-arbiter";

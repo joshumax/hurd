@@ -67,6 +67,8 @@
 
 #define debug 0
 
+struct partitions all_partitions;
+
 static char my_name[] = "(default pager):";
 
 static void __attribute__ ((format (printf, 1, 2), unused))

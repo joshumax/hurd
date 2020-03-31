@@ -34,7 +34,7 @@ char *netfs_server_name = "hostmux";
 char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 25;
 
-volatile struct mapped_time_value *hostmux_mapped_time;
+volatile struct mapped_time_value *hostmux_maptime;
 
 #define DEFAULT_HOST_PAT "${host}"
 

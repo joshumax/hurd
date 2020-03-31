@@ -19,7 +19,7 @@ dir := libcons
 makemode := library
 
 libname = libcons
-SRCS= demuxer.c init-init.c init-loop.c opts-version.c extra-version.c \
+SRCS= demuxer.c init-init.c init-loop.c opts-version.c priv.c \
       dir-changed.c file-changed.c opts-std-startup.c cons-lookup.c \
       cons-switch.c vcons-remove.c vcons-add.c vcons-open.c \
       vcons-close.c vcons-destroy.c vcons-refresh.c vcons-scrollback.c \

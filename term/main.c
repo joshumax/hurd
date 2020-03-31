@@ -55,6 +55,28 @@ static const char *const tty_type_names[] =
   [T_PTYSLAVE] = "pty-slave",
 };
 
+struct termios termstate;
+long termflags;
+pthread_mutex_t global_lock;
+pthread_cond_t carrier_alert;
+pthread_cond_t select_alert;
+pthread_cond_t *pty_select_alert;
+struct port_bucket *term_bucket;
+struct port_class *tty_cntl_class;
+struct port_class *tty_class;
+struct port_class *cttyid_class;
+struct port_class *pty_class;
+struct port_class *pty_cntl_class;
+struct trivfs_control *termctl;
+struct trivfs_control *ptyctl;
+struct queue *inputq, *outputq;
+int remote_input_mode;
+int external_processing;
+uid_t term_owner;
+uid_t term_group;
+mode_t term_mode;
+
+const struct bottomhalf *bottom;
 
 /* The argument line options.  */
 char *tty_name;

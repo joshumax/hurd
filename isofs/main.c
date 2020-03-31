@@ -39,6 +39,10 @@ int diskfs_link_max = INT_MAX;
 int diskfs_name_max = 255;	/* see iso9660.h: struct dirrect::namelen */
 int diskfs_maxsymlinks = 8;
 
+char *host_name;
+char *mounted_on;
+size_t logical_block_size;
+struct sblock *sblock;
 
 /* Fetch the root node */
 static void

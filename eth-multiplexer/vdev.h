@@ -33,8 +33,8 @@
 #include "queue.h"
 #include "util.h"
 
-struct port_bucket *port_bucket;
-struct port_class *vdev_portclass;
+extern struct port_bucket *port_bucket;
+extern struct port_class *vdev_portclass;
 
 #define ETH_MTU 1500
 
