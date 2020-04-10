@@ -85,7 +85,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
   error_t err;
   pthread_mutex_t *lock;
   struct pcifs_dirent *e;
-  size_t actual_len;
+  pciaddr_t actual_len;
 
   if (!master)
     return EOPNOTSUPP;
@@ -118,7 +118,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
 
   if (!err)
     {
-      *datalen = actual_len;
+      *datalen = (size_t)actual_len;
       /* Update atime */
       UPDATE_TIMES (e, TOUCH_ATIME);
     }
@@ -134,7 +134,7 @@ S_pci_conf_write (struct protid * master, int reg, char *data, size_t datalen,
   error_t err;
   pthread_mutex_t *lock;
   struct pcifs_dirent *e;
-  size_t actual_len;
+  pciaddr_t actual_len;
 
   if (!master)
     return EOPNOTSUPP;
@@ -156,7 +156,7 @@ S_pci_conf_write (struct protid * master, int reg, char *data, size_t datalen,
 
   if (!err)
     {
-      *amount = actual_len;
+      *amount = (size_t)actual_len;
       /* Update mtime and ctime */
       UPDATE_TIMES (e, TOUCH_MTIME | TOUCH_CTIME);
     }
