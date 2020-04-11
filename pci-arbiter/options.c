@@ -89,6 +89,24 @@ check_options_validity (struct parse_hook *h)
   return 0;
 }
 
+static long int
+parse_number (const char *s)
+{
+  long int val;
+  char *endptr;
+
+  errno = 0;
+  val = strtol (s, &endptr, 16);
+
+  if (*endptr != '\0' || errno)
+    {
+      val = -1;
+      errno = EINVAL;
+    }
+
+  return val;
+}
+
 /* Option parser */
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -126,25 +144,37 @@ parse_opt (int opt, char *arg, struct argp_state *state)
   switch (opt)
     {
     case 'C':
-      h->curset->d_class = strtol (arg, 0, 16);
+      h->curset->d_class = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid class");
       break;
     case 'c':
-      h->curset->d_subclass = strtol (arg, 0, 16);
+      h->curset->d_subclass = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid subclass");
       break;
     case 'd':
-      h->curset->domain = strtol (arg, 0, 16);
+      h->curset->domain = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid domain");
       break;
     case 'b':
       if (h->curset->domain < 0)
 	h->curset->domain = 0;
 
-      h->curset->bus = strtol (arg, 0, 16);
+      h->curset->bus = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid bus");
       break;
     case 's':
-      h->curset->dev = strtol (arg, 0, 16);
+      h->curset->dev = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid slot");
       break;
     case 'f':
-      h->curset->func = strtol (arg, 0, 16);
+      h->curset->func = parse_number (arg);
+      if (errno)
+	PERR (errno, "Invalid function");
       break;
     case 'D':
       err =
@@ -163,25 +193,33 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	      strncpy (regex_group_val, "0000", 5);
 	    }
 
-	  h->curset->domain = strtol (regex_group_val, 0, 16);
+	  h->curset->domain = parse_number (regex_group_val);
+	  if (errno)
+	    PERR (errno, "Invalid domain");
 
 	  // Bus
 	  strncpy (regex_group_val, arg + slot_regex_groups[3].rm_so, 2);
 	  regex_group_val[2] = 0;
 
-	  h->curset->bus = strtol (regex_group_val, 0, 16);
+	  h->curset->bus = parse_number (regex_group_val);
+	  if (errno)
+	    PERR (errno, "Invalid bus");
 
 	  // Dev
 	  strncpy (regex_group_val, arg + slot_regex_groups[4].rm_so, 2);
 	  regex_group_val[2] = 0;
 
-	  h->curset->dev = strtol (regex_group_val, 0, 16);
+	  h->curset->dev = parse_number (regex_group_val);
+	  if (errno)
+	    PERR (errno, "Invalid slot");
 
 	  // Func
 	  regex_group_val[0] = arg[slot_regex_groups[5].rm_so];
 	  regex_group_val[1] = 0;
 
-	  h->curset->func = strtol (regex_group_val, 0, 16);
+	  h->curset->func = parse_number (regex_group_val);
+	  if (errno)
+	    PERR (errno, "Invalid func");
 	}
       else
 	{
