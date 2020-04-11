@@ -87,7 +87,7 @@ search_bd (char *name)
 /* BSD name of whole disk device is /dev/wdXd
  * but we will receive /dev/wdX as the name */
 static void
-translate_name (char *name, char *output, int len)
+translate_name (char *output, int len, char *name)
 {
   snprintf (output, len, "%sd", name);
 }
@@ -145,7 +145,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   off_t media_size;
   uint32_t block_size;
 
-  translate_name (name, dev_name, DISK_NAME_LEN);
+  translate_name (dev_name, DISK_NAME_LEN, name);
 
   /* Find previous device or open if new */
   bd = search_bd (name);
