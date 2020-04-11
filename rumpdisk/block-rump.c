@@ -141,7 +141,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 {
   io_return_t err = D_SUCCESS;
   struct block_data *bd = NULL;
-  char dev_name[DISK_NAME_LEN + 1];
+  char dev_name[DISK_NAME_LEN];
   off_t media_size;
   uint32_t block_size;
 
