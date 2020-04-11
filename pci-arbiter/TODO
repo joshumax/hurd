@@ -9,6 +9,4 @@
   Update len with remaining allowed size once op() returns EIO
   so that we get short reads/writes implemented by leaving it to pciaccess
 
-- Upstream hurdish access method + x86 fixes to libpciaccess
-
   BTW we could also support libpci.
