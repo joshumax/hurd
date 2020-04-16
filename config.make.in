@@ -105,6 +105,9 @@ HAVE_LIBGCRYPT = @HAVE_LIBGCRYPT@
 # Whether we found liblwip.
 HAVE_LIBLWIP = @HAVE_LIBLWIP@
 
+# Whether we found librump.
+HAVE_LIBRUMP = @HAVE_LIBRUMP@
+
 # How to compile and link against liblwip.
 liblwip_CFLAGS = @liblwip_CFLAGS@
 liblwip_LIBS = @liblwip_LIBS@
