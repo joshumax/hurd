@@ -1,8 +1,3 @@
-- add "--pci 00:1f.3" option to easily specify a PCI device instead of having to
-  use --bus, --dev, and --func.
-
-- memset + snprintf looks dubious
-
 - pci_get_ndevs should be deprecated, applications shouldn't be relying on this
 
 - In pci-ops.c - config_block_op:
