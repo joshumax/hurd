@@ -40,6 +40,8 @@ create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
 {
   uint16_t parent_num_entries;
 
+  memset (entry, 0, sizeof (struct pcifs_dirent));
+
   entry->domain = domain;
   entry->bus = bus;
   entry->dev = dev;
@@ -199,7 +201,6 @@ create_fs_tree (struct pcifs * fs)
     return ENOMEM;
 
   e = list + 1;
-  memset (e, 0, sizeof (struct pcifs_dirent));
   c_domain = c_bus = c_dev = -1;
   domain_parent = bus_parent = dev_parent = func_parent = 0;
   iter = pci_slot_match_iterator_create(&match);
