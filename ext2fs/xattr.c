@@ -39,7 +39,7 @@ xattr_prefixes[] =
   {
   1, "user.", sizeof "user." - 1},
   {
-  7, "gnu.", sizeof "gnu." - 1},
+  10, "gnu.", sizeof "gnu." - 1},
   {
   0, NULL, 0}
 };
