@@ -40,6 +40,9 @@ netfs_S_io_pathconf (struct protid *user,
     case _PC_VDISABLE:
     case _PC_SOCK_MAXBUF:
     case _PC_PATH_MAX:
+    case _PC_REC_MAX_XFER_SIZE:
+    case _PC_REC_INCR_XFER_SIZE:
+    case _PC_SYMLINK_MAX:
       *value = -1;
       break;
       
@@ -49,6 +52,7 @@ netfs_S_io_pathconf (struct protid *user,
 
     case _PC_CHOWN_RESTRICTED:
     case _PC_NO_TRUNC:		/* look at string_t trunc behavior in MiG */
+    case _PC_2_SYMLINKS:
       *value = 1;
       break;
       
@@ -60,6 +64,12 @@ netfs_S_io_pathconf (struct protid *user,
 
     case _PC_FILESIZEBITS:
       *value = 32;
+      break;
+
+    case _PC_REC_MIN_XFER_SIZE:
+    case _PC_REC_XFER_ALIGN:
+    case _PC_ALLOC_SIZE_MIN:
+      *value = vm_page_size;
       break;
 
     default:
