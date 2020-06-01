@@ -295,7 +295,9 @@ error_t fshelp_rlock_po_init (struct rlock_peropen *po)
 
 #endif /* Use extern inlines.  */
 
-/* Release all of the locks held by a given peropen.  */
+/* Release all of the locks held by a given peropen.
+   The mutex held during fshelp_rlock_tweak calls should be also held
+   whenver this is called. */
 error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
 
 /* Drop the peropen identifier */

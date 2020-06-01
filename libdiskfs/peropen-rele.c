@@ -32,11 +32,10 @@ diskfs_release_peropen (struct peropen *po)
 
   if (po->shadow_root_parent)
     mach_port_deallocate (mach_task_self (), po->shadow_root_parent);
+
+  pthread_mutex_lock (&po->np->lock);
   fshelp_rlock_drop_peropen (&po->lock_status);
-  if (fshelp_rlock_peropen_status(&po->lock_status) != LOCK_UN)
-    diskfs_nput (po->np);
-  else
-    diskfs_nrele (po->np);
+  diskfs_nput (po->np);
   fshelp_rlock_po_fini (&po->lock_status);
 
   free (po->path);
