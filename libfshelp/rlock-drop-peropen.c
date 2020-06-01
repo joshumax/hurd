@@ -39,6 +39,7 @@ fshelp_rlock_drop_peropen (struct rlock_peropen *po)
 	}
 
       list_unlink (node, l);
+      pthread_cond_destroy(&l->wait);
 
       t = l->po.next;
       free (l);

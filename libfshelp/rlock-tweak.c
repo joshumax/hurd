@@ -70,6 +70,7 @@ fshelp_rlock_tweak (struct rlock_box *box, pthread_mutex_t *mutex,
       if (wake_waiters && l->waiting)
 	pthread_cond_broadcast (&l->wait);
 
+      pthread_cond_destroy(&l->wait);
       free (l);
     }
 
