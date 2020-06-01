@@ -37,7 +37,6 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   
   node = cred->po->np;
 
-  pthread_mutex_lock (&node->lock);
   err = diskfs_make_peropen (node, cred->po->openstat, cred->po, &new_po);
   if (! err)
     {
@@ -45,7 +44,6 @@ diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
       if (err)
 	diskfs_release_peropen (new_po);
     }
-  pthread_mutex_unlock (&node->lock);
 
   if (! err)
     {
