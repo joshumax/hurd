@@ -44,7 +44,6 @@ See `tasks', the exported task list.
 ** libc:
 *** !!!! Do these for libc 2.3 (ask Roland for details):
 **** nix hurdmalloc, use special arena with new _int_malloc
-**** TLS support
 **** avoid sbrk altogether in malloc (don't link it in at all for static)?
 **** maybe hack libio to use _hurd_fd_read et al directly as stdio used to
 *** (once vm_remap exists) implement mremap
@@ -60,7 +59,6 @@ See `tasks', the exported task list.
 ** items relocated from libc/hurd/STATUS:
 *** We are not sure about possible races between setpgrp (A, pgrp) from
     process B vs process A receiving proc_newids.
-*** does sigaltstack/sigstack really work? -- NO
 *** hurdmalloc kludge
 *** think more about environment variable use viz security
 *** SIGINFO handler?
@@ -240,7 +238,6 @@ See `tasks', the exported task list.
 *** Be even more vigilant about noticing new threads.  In particular:
 **** For mach-indep thread commands, before validating against
      internal thread list. !!!
-*** read core files !!
 *** Gdb doesn't work right if it doesn't have permission to frob the
     inferior process (for instance, if it's a set[ug]id program), but
     doesn't give a meaningful error message.  Try `break main' in /bin/login.
