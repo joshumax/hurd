@@ -263,6 +263,10 @@ void _pipe_no_readers (struct pipe *pipe);
    should be locked.  */
 void _pipe_no_writers (struct pipe *pipe);
 
+/* Take any actions necessary when PIPE's writer can proceed.
+   PIPE should be locked. */
+void _pipe_wake_writers (struct pipe *pipe);
+
 extern void pipe_acquire_reader (struct pipe *pipe);
 
 extern void pipe_acquire_writer (struct pipe *pipe);

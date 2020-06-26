@@ -525,18 +525,98 @@ S_socket_setopt (struct sock_user *user,
 		 int level, int opt, data_t value, size_t value_len)
 {
   int ret = 0;
+  struct pipe *pipe;
+  struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
 
-  pthread_mutex_lock (&user->sock->lock);
+  sock = user->sock;
+
+  pthread_mutex_lock (&sock->lock);
   switch (level)
     {
+    case SOL_SOCKET:
+      switch (opt)
+	{
+	case SO_RCVBUF:
+	  {
+	    int new, old;
+
+	    if (value_len < sizeof (int))
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    new = *(int *)value;
+	    if (new <= 0)
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
+	      new = PFLOCAL_WRITE_LIMIT_MAX;
+
+	    pipe = sock->read_pipe;
+	    if (!pipe)
+	      {
+		ret = EPIPE;
+		break;
+	      }
+
+	    pthread_mutex_lock (&pipe->lock);
+	    old = pipe->write_limit;
+	    pipe->write_limit = new;
+	    if (new > old)
+	      _pipe_wake_writers (pipe);
+	    pthread_mutex_unlock (&pipe->lock);
+	    break;
+	  }
+
+	case SO_SNDBUF:
+	  {
+	    int new, old;
+
+	    if (value_len < sizeof (int))
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    new = *(int *)value;
+	    if (new <= 0)
+	      {
+		ret = EINVAL;
+		break;
+	      }
+	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
+	      new = PFLOCAL_WRITE_LIMIT_MAX;
+
+	    pipe = sock->read_pipe;
+	    if (!pipe)
+	      {
+		ret = EPIPE;
+		break;
+	      }
+
+	    pthread_mutex_lock (&pipe->lock);
+	    old = pipe->write_limit;
+	    pipe->write_limit = new;
+	    if (new > old)
+	      _pipe_wake_writers (pipe);
+	    pthread_mutex_unlock (&pipe->lock);
+	    break;
+	  }
+
+	default:
+	  ret = ENOPROTOOPT;
+	  break;
+	}
+      break;
     default:
       ret = ENOPROTOOPT;
       break;
     }
-  pthread_mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return ret;
 }

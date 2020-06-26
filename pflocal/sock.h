@@ -187,4 +187,7 @@ error_t sock_global_shutdown ();
 extern struct port_class *sock_user_port_class;
 extern struct port_class *addr_port_class;
 
+/* Maximum allowed size for libpipe buffers */
+#define PFLOCAL_WRITE_LIMIT_MAX (1024*1024)
+
 #endif /* __SOCK_H__ */

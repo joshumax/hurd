@@ -200,6 +200,24 @@ void _pipe_no_writers (struct pipe *pipe)
       pthread_mutex_unlock (&pipe->lock);
     }
 }
+
+/* Take any actions necessary when PIPE's writer can proceed.
+   PIPE should be locked. */
+void _pipe_wake_writers (struct pipe *pipe)
+{
+  pthread_cond_broadcast (&pipe->pending_writes);
+  pthread_mutex_unlock (&pipe->lock);
+
+  pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
+  /* Only wakeup selects if there's still writing space available.  */
+  if (pipe_readable (pipe, 1) < pipe->write_limit)
+    {
+      pthread_cond_broadcast (&pipe->pending_write_selects);
+      pipe_select_cond_broadcast (pipe);
+      /* We leave PIPE locked here, assuming the caller will soon unlock
+	 it and allow others access.  */
+    }
+}
 
 /* Return when either RPIPE is available for reading (if SELECT_READ is set
    in *SELECT_TYPE), or WPIPE is available for writing (if select_write is
@@ -474,18 +492,7 @@ pipe_recv (struct pipe *pipe, int noblock, unsigned *flags, void **source,
       timestamp (&pipe->read_time);
 
       /* And wakeup anyone that might be interested in it.  */
-      pthread_cond_broadcast (&pipe->pending_writes);
-      pthread_mutex_unlock (&pipe->lock);
-
-      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      /* Only wakeup selects if there's still writing space available.  */
-      if (pipe_readable (pipe, 1) < pipe->write_limit)
-	{
-	  pthread_cond_broadcast (&pipe->pending_write_selects);
-	  pipe_select_cond_broadcast (pipe);
-	  /* We leave PIPE locked here, assuming the caller will soon unlock
-	     it and allow others access.  */
-	}
+      _pipe_wake_writers (pipe);
     }
 
   return err;
