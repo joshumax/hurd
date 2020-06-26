@@ -591,7 +591,7 @@ S_socket_setopt (struct sock_user *user,
 	    if (new > PFLOCAL_WRITE_LIMIT_MAX)
 	      new = PFLOCAL_WRITE_LIMIT_MAX;
 
-	    pipe = sock->read_pipe;
+	    pipe = sock->write_pipe;
 	    if (!pipe)
 	      {
 		ret = EPIPE;
