@@ -434,11 +434,13 @@ S_socket_getopt (struct sock_user *user,
 		 data_t *value, size_t *value_len)
 {
   int ret = 0;
+  struct pipe *pipe;
+  struct sock *sock = user->sock;
 
   if (!user)
     return EOPNOTSUPP;
 
-  pthread_mutex_lock (&user->sock->lock);
+  pthread_mutex_lock (&sock->lock);
   switch (level)
     {
     case SOL_SOCKET:
@@ -450,7 +452,37 @@ S_socket_getopt (struct sock_user *user,
 	      ret = EINVAL;
 	      break;
 	    }
-	  *(int *)*value = user->sock->pipe_class->sock_type;
+	  *(int *)*value = sock->pipe_class->sock_type;
+	  *value_len = sizeof (int);
+	  break;
+	case SO_RCVBUF:
+	  if (*value_len < sizeof (int))
+	    {
+	      ret = EINVAL;
+	      break;
+	    }
+	  pipe = sock->read_pipe;
+	  if (!pipe)
+	    {
+	      ret = EPIPE;
+	      break;
+	    }
+	  *(int *)*value = pipe->write_limit;
+	  *value_len = sizeof (int);
+	  break;
+	case SO_SNDBUF:
+	  if (*value_len < sizeof (int))
+	    {
+	      ret = EINVAL;
+	      break;
+	    }
+	  pipe = sock->write_pipe;
+	  if (!pipe)
+	    {
+	      ret = EPIPE;
+	      break;
+	    }
+	  *(int *)*value = pipe->write_limit;
 	  *value_len = sizeof (int);
 	  break;
 	case SO_ERROR:
@@ -481,7 +513,7 @@ S_socket_getopt (struct sock_user *user,
       ret = ENOPROTOOPT;
       break;
     }
-  pthread_mutex_unlock (&user->sock->lock);
+  pthread_mutex_unlock (&sock->lock);
 
   return ret;
 }
