@@ -435,10 +435,12 @@ S_socket_getopt (struct sock_user *user,
 {
   int ret = 0;
   struct pipe *pipe;
-  struct sock *sock = user->sock;
+  struct sock *sock;
 
   if (!user)
     return EOPNOTSUPP;
+
+  sock = user->sock;
 
   pthread_mutex_lock (&sock->lock);
   switch (level)
