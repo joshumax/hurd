@@ -80,6 +80,7 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 {
   error_t err;
   struct sock *peer;
+  int deref = 1;
 
   if (! addr)
     return ECONNREFUSED;
@@ -137,7 +138,12 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
 		    {
 		      err = sock_connect (sock, server);
 		      if (!err)
-			connq_connect_complete (peer->listen_queue, server);
+			{
+			  /* Keep the ref of on the peer for the connection
+			     request in the queue.  */
+			  deref = 0;
+			  connq_connect_complete (peer->listen_queue, server);
+			}
 		      else
 			sock_free (server);
 		    }
@@ -157,7 +163,8 @@ S_socket_connect (struct sock_user *user, struct addr *addr)
       else
 	err = ECONNREFUSED;
 
-      sock_deref (peer);
+      if (deref)
+	sock_deref (peer);
     }
 
   return err;
@@ -190,6 +197,10 @@ S_socket_accept (struct sock_user *user,
       if (!err)
 	{
 	  struct addr *peer_addr;
+
+	  /* Release the reference for the connection request in the queue */
+	  sock_deref (sock);
+
 	  *port_type = MACH_MSG_TYPE_MAKE_SEND;
 	  err = sock_create_port (peer_sock, port);
 	  if (!err)
