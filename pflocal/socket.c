@@ -479,12 +479,10 @@ S_socket_getopt (struct sock_user *user,
 	      break;
 	    }
 	  pipe = sock->write_pipe;
-	  if (!pipe)
-	    {
-	      ret = ENOTCONN;
-	      break;
-	    }
-	  *(int *)*value = pipe->write_limit;
+	  if (pipe)
+	    *(int *)*value = pipe->write_limit;
+	  else
+	    *(int *)*value = sock->req_write_limit;
 	  *value_len = sizeof (int);
 	  break;
 	case SO_ERROR:
@@ -594,7 +592,7 @@ S_socket_setopt (struct sock_user *user,
 	    pipe = sock->write_pipe;
 	    if (!pipe)
 	      {
-		ret = ENOTCONN;
+		sock->req_write_limit = new;
 		break;
 	      }
 

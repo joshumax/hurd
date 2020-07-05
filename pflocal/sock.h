@@ -52,6 +52,9 @@ struct sock
      another socket.  */
   struct pipe *read_pipe, *write_pipe;
 
+  /* The write limit that this side would like write_pipe to support.  */
+  size_t req_write_limit;
+
   /* FLAGS from SOCK_*, below.  */
   unsigned flags;
 

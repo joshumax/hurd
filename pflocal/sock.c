@@ -116,6 +116,7 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->refs = 0;
   new->flags = 0;
   new->write_pipe = NULL;
+  new->req_write_limit = 0;
   new->mode = mode;
   new->id = MACH_PORT_NULL;
   new->listen_queue = NULL;
@@ -397,6 +398,8 @@ sock_connect (struct sock *sock1, struct sock *sock2)
 	  assert_backtrace (pipe);	/* Since PFLOCAL_SOCK_SHUTDOWN_READ isn't set.  */
 	  pipe_add_writer (pipe);
 	  wr->write_pipe = pipe;
+	  if (pipe->write_limit < wr->req_write_limit)
+	    pipe->write_limit = wr->req_write_limit;
 	}
     }
 
@@ -474,6 +477,8 @@ sock_shutdown (struct sock *sock, unsigned flags)
       /* Shutdown the write half.  */
       write_pipe = sock->write_pipe;
       sock->write_pipe = NULL;
+      if (write_pipe)
+	sock->req_write_limit = write_pipe->write_limit;
     }
 
   /* Unlock SOCK here, as we may subsequently wake up other threads. */
