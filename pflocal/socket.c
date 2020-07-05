@@ -466,7 +466,7 @@ S_socket_getopt (struct sock_user *user,
 	  pipe = sock->read_pipe;
 	  if (!pipe)
 	    {
-	      ret = EPIPE;
+	      ret = ENOTCONN;
 	      break;
 	    }
 	  *(int *)*value = pipe->write_limit;
@@ -481,7 +481,7 @@ S_socket_getopt (struct sock_user *user,
 	  pipe = sock->write_pipe;
 	  if (!pipe)
 	    {
-	      ret = EPIPE;
+	      ret = ENOTCONN;
 	      break;
 	    }
 	  *(int *)*value = pipe->write_limit;
@@ -560,7 +560,7 @@ S_socket_setopt (struct sock_user *user,
 	    pipe = sock->read_pipe;
 	    if (!pipe)
 	      {
-		ret = EPIPE;
+		ret = ENOTCONN;
 		break;
 	      }
 
@@ -594,7 +594,7 @@ S_socket_setopt (struct sock_user *user,
 	    pipe = sock->write_pipe;
 	    if (!pipe)
 	      {
-		ret = EPIPE;
+		ret = ENOTCONN;
 		break;
 	      }
 
