@@ -274,6 +274,19 @@ ds_device_map (struct mach_device *device, vm_prot_t prot, vm_offset_t offset,
 
 }
 
+kern_return_t
+ds_device_intr_register (mach_device_t dev, int id, int flags,
+			 mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
+kern_return_t
+ds_device_intr_ack (mach_device_t dev, mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
 error_t
 machdev_create_device_port (size_t size, void *result)
 {
