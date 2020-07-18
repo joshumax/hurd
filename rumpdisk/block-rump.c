@@ -120,12 +120,9 @@ device_init (void)
 static io_return_t
 device_close (void *d)
 {
-  io_return_t err;
   struct block_data *bd = d;
 
-  err = rump_errno2host (rump_sys_close (bd->rump_fd));
-
-  return err;
+  return rump_errno2host (rump_sys_close (bd->rump_fd));
 }
 
 static void
