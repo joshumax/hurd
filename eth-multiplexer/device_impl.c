@@ -200,3 +200,16 @@ ds_device_set_filter (struct vether_device *vdev, mach_port_t receive_port,
 out:
   return err;
 }
+
+kern_return_t
+ds_device_intr_register (struct vether_device *vdev, int id, int flags,
+			 mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
+kern_return_t
+ds_device_intr_ack (struct vether_device *vdev, mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}

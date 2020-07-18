@@ -244,6 +244,19 @@ ds_device_set_filter (device_t device, mach_port_t receive_port,
   return D_INVALID_OPERATION;
 }
 
+kern_return_t
+ds_device_intr_register (device_t dev, int id, int flags,
+			 mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
+kern_return_t
+ds_device_intr_ack (device_t dev, mach_port_t receive_port)
+{
+  return D_INVALID_OPERATION;
+}
+
 error_t
 trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 {
