@@ -154,8 +154,6 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
       bd->mode = mode;
       bd->device.emul_data = bd;
       bd->device.emul_ops = &rump_block_emulation_ops;
-      bd->next = block_head;
-      block_head = bd;
 
       err = rump_sys_open (dev_name, dev_mode_to_rump_mode (bd->mode));
       if (err < 0)
@@ -199,6 +197,8 @@ out:
 
   if (bd)
     {
+      bd->next = block_head;
+      block_head = bd;
       *devp = ports_get_right (bd);
       *devicePoly = MACH_MSG_TYPE_MAKE_SEND;
     }
