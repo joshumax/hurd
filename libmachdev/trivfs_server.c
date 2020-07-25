@@ -98,27 +98,16 @@ machdev_is_master_device (mach_port_t port)
 					    trivfs_protid_class);
   struct port_info *pi1 = ports_lookup_port (port_bucket, port,
 					    trivfs_cntl_class);
-  if (pi0 == NULL)
-    {
-      if (pi1 == NULL)
-        {
-          return FALSE;
-        }
-      else
-        {
-          ports_port_deref (pi1);
-          return TRUE;
-        }
-    }
-  else
-    {
-      ports_port_deref (pi0);
+  boolean_t ret;
 
-      if (pi1 != NULL)
-        ports_port_deref (pi1);
+  ret = pi0 != NULL || pi1 != NULL;
 
-      return TRUE;
-    }
+  if (pi0 != NULL)
+    ports_port_deref (pi0);
+  if (pi1 != NULL)
+    ports_port_deref (pi1);
+
+  return ret;
 }
 
 error_t
