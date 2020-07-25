@@ -33,6 +33,7 @@
 #include "device_S.h"
 #include "notify_S.h"
 #include "fsys_S.h"
+#include "mach_i386_S.h"
 
 static struct port_bucket *port_bucket;
 
@@ -133,6 +134,64 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 
 #undef ADD_OPT
   return err;
+}
+
+
+kern_return_t
+S_i386_set_ldt (mach_port_t target_thread,
+                       int first_selector,
+                       descriptor_list_t desc_list,
+                       mach_msg_type_number_t desc_listCnt,
+                       boolean_t desc_listSCopy)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_i386_get_ldt (mach_port_t target_thread,
+                       int first_selector,
+                       int selector_count,
+                       descriptor_list_t *desc_list,
+                       mach_msg_type_number_t *desc_listCnt)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_i386_io_perm_modify (mach_port_t target_task,
+                              mach_port_t io_perm,
+                              boolean_t enable)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_i386_set_gdt (mach_port_t target_thread,
+                       int *selector,
+                       descriptor_t desc)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_i386_get_gdt (mach_port_t target_thread,
+                       int selector,
+                       descriptor_t *desc)
+{
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_i386_io_perm_create (mach_port_t master_port,
+                              io_port_t from,
+                              io_port_t to,
+                              io_perm_t *io_perm)
+{
+  /* Make sure we are the master device */
+  if (! machdev_is_master_device(master_port))
+    return EINVAL;
+
+  return i386_io_perm_create (_hurd_device_master, from, to, io_perm);
 }
 
 /* This is fraud */
@@ -267,6 +326,7 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   mig_routine_t routine;
   if ((routine = device_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||
+      (routine = mach_i386_server_routine (inp)) ||
       (routine = NULL, trivfs_demuxer (inp, outp)))
     {
       if (routine)

@@ -582,15 +582,19 @@ mach_defs_names = bootstrap exc mach mach4 \
 	gnumach \
 	task_notify \
 
+mach_i386_defs_names = mach_i386
 mach_debug_defs_names = mach_debug
 device_defs_names = dev_forward device device_reply device_request
 
 mach_defs = $(addsuffix .defs,$(mach_defs_names))
+mach_i386_defs = $(addsuffix .defs,$(mach_i386_defs_names))
 mach_debug_defs = $(addsuffix .defs,$(mach_debug_defs_names))
 device_defs = $(addsuffix .defs,$(device_defs_names))
 
 $(mach_defs): %.defs:
 	echo '#include <mach/$@>' > $@
+$(mach_i386_defs): %.defs:
+	echo '#include <mach/i386/$@>' > $@
 $(mach_debug_defs): %.defs:
 	echo '#include <mach_debug/$@>' > $@
 $(device_defs): %.defs:
