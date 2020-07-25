@@ -25,8 +25,6 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-#include "mach_U.h"
-
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
@@ -34,8 +32,6 @@
 #define MACH_INCLUDE
 
 #include "libmachdev/machdev.h"
-#include "device_reply_U.h"
-
 #include <rump/rump.h>
 #include <rump/rump_syscalls.h>
 #include <rump/rumperrno2host.h>
@@ -45,6 +41,7 @@
 #define DIOCGSECTORSIZE _IOR('d', 133, unsigned int)
 
 #define DISK_NAME_LEN 32
+#define MAX_DISK_DEV 2
 
 /* One of these is associated with each open instance of a device.  */
 struct block_data
@@ -89,7 +86,30 @@ search_bd (char *name)
 static void
 translate_name (char *output, int len, char *name)
 {
-  snprintf (output, len, "%sd", name);
+  snprintf (output, len - 1, "%sd", name);
+}
+
+static boolean_t
+is_disk_device (char *name, int len)
+{
+  char *dev;
+  const char *allowed_devs[MAX_DISK_DEV] = {
+    "/dev/wd",
+    "/dev/cd"
+  };
+  uint8_t i;
+
+  if (len < 8)
+    return FALSE;
+
+  for (i = 0; i < MAX_DISK_DEV; i++)
+    {
+      dev = (char *)allowed_devs[i];
+      /* /dev/XXN but we only care about /dev/XX prefix */
+      if (! strncmp (dev, name, 7))
+        return TRUE;
+    }
+  return FALSE;
 }
 
 static int
@@ -136,11 +156,14 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 	     dev_mode_t mode, char *name, device_t * devp,
 	     mach_msg_type_name_t * devicePoly)
 {
-  io_return_t err = D_SUCCESS;
+  io_return_t err = D_ALREADY_OPEN;
   struct block_data *bd = NULL;
   char dev_name[DISK_NAME_LEN];
   off_t media_size;
   uint32_t block_size;
+
+  if (! is_disk_device (name, 8))
+    return D_NO_SUCH_DEVICE;
 
   translate_name (dev_name, DISK_NAME_LEN, name);
 
@@ -167,7 +190,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
       if (err < 0)
 	{
 	  mach_print ("DIOCGMEDIASIZE ioctl fails\n");
-	  err = D_NO_SUCH_DEVICE;
+	  err = rump_errno2host (errno);
 	  goto out;
 	}
 
@@ -175,7 +198,7 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
       if (err < 0)
 	{
 	  mach_print ("DIOCGSECTORSIZE ioctl fails\n");
-	  err = D_NO_SUCH_DEVICE;
+	  err = rump_errno2host (errno);
 	  goto out;
 	}
       bd->media_size = media_size;
