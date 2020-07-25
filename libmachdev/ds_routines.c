@@ -65,6 +65,7 @@
 
 #include <hurd.h>
 #include <mach.h>
+#include <device/device.h> /* fallback to kernel device */
 
 #include "device_S.h"
 #include "notify_S.h"
@@ -94,7 +95,8 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
                 char *name, device_t *devp, mach_msg_type_name_t *devicePoly)
 {
   int i;
-  io_return_t err;
+  mach_port_t dev_master;
+  io_return_t err = D_NO_SUCH_DEVICE;
 
   /* Open must be called on the master device port.  */
   if (!machdev_is_master_device (open_port))
@@ -108,11 +110,18 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
   for (i = 0; i < num_emul; i++)
     {
       err = (*emulation_list[i]->open) (reply_port, reply_port_type,
-					mode, name, devp, devicePoly);
+                                        mode, name, devp, devicePoly);
       if (err != D_NO_SUCH_DEVICE)
-	break;
+        break;
     }
 
+  /* Fall back to opening kernel device master */
+  if (err)
+    {
+      get_privileged_ports(NULL, &dev_master);
+      err = device_open (dev_master, mode, name, devp);
+      *devicePoly = MACH_MSG_TYPE_MOVE_SEND;
+    }
   return err;
 }
 

@@ -27,9 +27,12 @@
 #include <hurd/ports.h>
 #include <hurd/trivfs.h>
 #include <hurd.h>
+#include <device/device.h> /* mach console */
 
+#include "libdiskfs/diskfs.h"
 #include "device_S.h"
 #include "notify_S.h"
+#include "fsys_S.h"
 
 static struct port_bucket *port_bucket;
 
@@ -90,13 +93,31 @@ do_mach_notify_dead_name (struct port_info *pi,
 boolean_t
 machdev_is_master_device (mach_port_t port)
 {
-  struct port_info *pi = ports_lookup_port (port_bucket, port,
+  struct port_info *pi0 = ports_lookup_port (port_bucket, port,
 					    trivfs_protid_class);
-  if (pi == NULL)
-    return FALSE;
+  struct port_info *pi1 = ports_lookup_port (port_bucket, port,
+					    trivfs_cntl_class);
+  if (pi0 == NULL)
+    {
+      if (pi1 == NULL)
+        {
+          return FALSE;
+        }
+      else
+        {
+          ports_port_deref (pi1);
+          return TRUE;
+        }
+    }
+  else
+    {
+      ports_port_deref (pi0);
 
-  ports_port_deref (pi);
-  return TRUE;
+      if (pi1 != NULL)
+        ports_port_deref (pi1);
+
+      return TRUE;
+    }
 }
 
 error_t
@@ -114,11 +135,106 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
   return err;
 }
 
-int machdev_trivfs_init()
+/* This is fraud */
+kern_return_t
+trivfs_S_fsys_startup (mach_port_t bootport,
+                       mach_port_t reply,
+                       mach_msg_type_name_t replytype,
+                       int flags,
+                       mach_port_t cntl,
+                       mach_port_t *realnode,
+                       mach_msg_type_name_t *realnodetype)
+{
+  *realnode = MACH_PORT_NULL;
+  *realnodetype = MACH_MSG_TYPE_MOVE_SEND;
+  return 0;
+}
+
+/* Override the privileged ports for booting the system */
+kern_return_t
+trivfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
+                       mach_port_t reply, mach_msg_type_name_t reply_type,
+                       mach_port_t *host_priv, mach_msg_type_name_t *hp_type,
+                       mach_port_t *dev_master, mach_msg_type_name_t *dm_type,
+                       mach_port_t *fstask, mach_msg_type_name_t *task_type)
+{
+  error_t err;
+  mach_port_t right;
+  struct port_info *server_info;
+
+  err = ports_create_port (trivfs_protid_class, port_bucket,
+                           sizeof (struct port_info), &server_info);
+  assert_perror_backtrace (err);
+  right = ports_get_send_right (server_info);
+  ports_port_deref (server_info);
+
+  err = get_privileged_ports (host_priv, NULL);
+  if (!err)
+    {
+      *dev_master = right;
+      *fstask = mach_task_self ();
+      *hp_type = *dm_type = MACH_MSG_TYPE_COPY_SEND;
+      *task_type = MACH_MSG_TYPE_COPY_SEND;
+    }
+  return err;
+}
+
+static void
+resume_bootstrap_server(mach_port_t server_task, const char *server_name)
+{
+  error_t err;
+  mach_port_t right;
+  mach_port_t dev, cons;
+  struct port_info *server_info;
+
+  assert_backtrace (server_task != MACH_PORT_NULL);
+
+  err = ports_create_port (trivfs_cntl_class, port_bucket,
+                           sizeof (struct port_info), &server_info);
+  assert_perror_backtrace (err);
+  right = ports_get_send_right (server_info);
+  ports_port_deref (server_info);
+  err = task_set_special_port (server_task, TASK_BOOTSTRAP_PORT, right);
+  assert_perror_backtrace (err);
+  err = mach_port_deallocate (mach_task_self (), right);
+  assert_perror_backtrace (err);
+
+  err = task_resume (server_task);
+  assert_perror_backtrace (err);
+
+  /* Make sure we have a console */
+  err = get_privileged_ports (NULL, &dev);
+  assert_perror_backtrace (err);
+  err = device_open (dev, D_READ|D_WRITE, "console", &cons);
+  mach_port_deallocate (mach_task_self (), dev);
+  assert_perror_backtrace (err);
+  stdin = mach_open_devstream (cons, "r");
+  stdout = stderr = mach_open_devstream (cons, "w");
+  mach_port_deallocate (mach_task_self (), cons);
+
+  printf (" %s", server_name);
+  fflush (stdout);
+}
+
+int
+machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_port_t *bootstrap)
 {
   port_bucket = ports_create_bucket ();
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
   trivfs_protid_class = ports_create_class (trivfs_clean_protid, 0);
+
+  if (bootstrap_resume_task != MACH_PORT_NULL)
+    {
+      resume_bootstrap_server(bootstrap_resume_task, name);
+      *bootstrap = MACH_PORT_NULL;
+    }
+  else
+    {
+      task_get_bootstrap_port (mach_task_self (), bootstrap);
+      if (*bootstrap == MACH_PORT_NULL)
+        error (1, 0, "must be started as a translator");
+    }
+
   return 0;
 }
 
@@ -166,23 +282,21 @@ trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *stat)
 {
 }
 
-void machdev_trivfs_server()
+void
+machdev_trivfs_server(mach_port_t bootstrap)
 {
-  mach_port_t bootstrap;
-  struct trivfs_control *fsys;
+  struct trivfs_control *fsys = NULL;
   int err;
 
-  task_get_bootstrap_port (mach_task_self (), &bootstrap);
-  if (bootstrap == MACH_PORT_NULL)
-    error (1, 0, "must be started as a translator");
-
-  /* Reply to our parent.  */
-  err = trivfs_startup (bootstrap, 0,
-			trivfs_cntl_class, port_bucket,
-			trivfs_protid_class, port_bucket, &fsys);
-  mach_port_deallocate (mach_task_self (), bootstrap);
-  if (err)
-    error (1, err, "Contacting parent");
+  if (bootstrap != MACH_PORT_NULL)
+    {
+      err = trivfs_startup (bootstrap, 0,
+                            trivfs_cntl_class, port_bucket,
+                            trivfs_protid_class, port_bucket, &fsys);
+      mach_port_deallocate (mach_task_self (), bootstrap);
+      if (err)
+        error (1, err, "Contacting parent");
+    }
 
   /* Launch.  */
   do
