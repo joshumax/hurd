@@ -499,8 +499,8 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
     return EOPNOTSUPP;
   initdone = 1;
 
-  /* init is single-threaded, so we must reply to its RPC before doing
-     anything which might attempt to send an RPC to init.  */
+  /* startup is single-threaded, so we must reply to its RPC before doing
+     anything which might attempt to send an RPC to startup.  */
   fsys_init_reply (reply, replytype, 0);
 
   /* Allocate our references here; _hurd_init will consume a reference

@@ -503,7 +503,7 @@ main (int argc, char **argv)
   idvec_merge (&firstauth->egids, &firstauth->euids);
   idvec_merge (&firstauth->agids, &firstauth->auids);
 
-  /* Fetch our bootstrap port and contact the bootstrap filesystem.  */
+  /* Fetch our bootstrap port and contact startup.  */
   err = task_get_bootstrap_port (mach_task_self (), &boot);
   assert_perror_backtrace (err);
   if (boot == MACH_PORT_NULL)

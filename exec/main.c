@@ -356,7 +356,7 @@ S_exec_init (struct trivfs_protid *protid,
     }
   mach_port_deallocate (mach_task_self (), procserver);
 
-  /* Call startup_essential task last; init assumes we are ready to
+  /* Call startup_essential task last; startup assumes we are ready to
      run once we call it. */
   err = startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
 				"exec", host_priv);
