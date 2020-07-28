@@ -194,7 +194,8 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 
   if (! err)
     {
-      mach_port_deallocate (mach_task_self (), dotdot);
+      if (dotdot != MACH_PORT_NULL)
+        mach_port_deallocate (mach_task_self (), dotdot);
       *retry = FS_RETRY_NORMAL;
       *retryname = '\0';
       *returned_port = ports_get_right (newpi);
