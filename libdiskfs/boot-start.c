@@ -518,7 +518,9 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 
   if (diskfs_exec_server_task != MACH_PORT_NULL)
     {
+      mach_port_t bootstrap;
       process_t execprocess;
+
       err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
       assert_perror_backtrace (err);
 
@@ -532,6 +534,17 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 		     exec_init (port, authhandle,
 				execprocess, MACH_MSG_TYPE_COPY_SEND));
       mach_port_deallocate (mach_task_self (), execprocess);
+
+      /* Give the real bootstrap filesystem an fsys_init RPC of its own */
+      err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+      assert_perror_backtrace (err);
+      if (bootstrap != MACH_PORT_NULL)
+        {
+          err = fsys_init (bootstrap, procserver, MACH_MSG_TYPE_COPY_SEND,
+                           authhandle);
+          mach_port_deallocate (mach_task_self (), bootstrap);
+          assert_perror_backtrace (err);
+        }
 
       /* We don't need this anymore. */
       mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
