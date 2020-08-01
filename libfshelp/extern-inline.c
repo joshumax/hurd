@@ -21,4 +21,5 @@
 #define FSHELP_EXTERN_INLINE
 
 #include "fshelp.h"
+#include "rlock.h"
 

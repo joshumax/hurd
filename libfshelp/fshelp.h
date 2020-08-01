@@ -19,7 +19,7 @@
 #define _HURD_FSHELP_
 
 #ifndef FSHELP_EXTERN_INLINE
-#define FSHELP_EXTERN_INLINE extern inline
+#define FSHELP_EXTERN_INLINE __extern_inline
 #endif
 
 /* This library implements various things that are generic to

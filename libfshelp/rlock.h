@@ -21,6 +21,10 @@
 #ifndef FSHELP_RLOCK_H
 #define FSHELP_RLOCK_H
 
+#ifndef FSHELP_EXTERN_INLINE
+#define FSHELP_EXTERN_INLINE __extern_inline
+#endif
+
 #include <pthread.h>
 #include <string.h>
 
@@ -45,7 +49,7 @@ struct rlock_list
   void *po_id;
 };
 
-extern inline error_t
+FSHELP_EXTERN_INLINE error_t
 rlock_list_init (struct rlock_peropen *po, struct rlock_list *l)
 {
   memset (l, 0, sizeof (struct rlock_list));
