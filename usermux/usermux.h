@@ -93,7 +93,7 @@ error_t create_user_node (struct usermux *mux, struct usermux_name *name,
 			  struct passwd *pw, struct node **node);
 
 #ifndef USERMUX_EI
-# define USERMUX_EI extern inline
+# define USERMUX_EI __extern_inline
 #endif
 
 #endif /* __USERMUX_H__ */
