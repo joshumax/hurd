@@ -256,7 +256,7 @@ struct rlock_box
 
 error_t fshelp_rlock_init (struct rlock_box *box);
 
-#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
 
 /* Initialize the rlock_box BOX.  */
 FSHELP_EXTERN_INLINE
@@ -280,7 +280,7 @@ struct rlock_peropen
 
 error_t fshelp_rlock_po_init (struct rlock_peropen *po);
 
-#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
 
 FSHELP_EXTERN_INLINE
 error_t fshelp_rlock_po_init (struct rlock_peropen *po)
@@ -303,7 +303,7 @@ error_t fshelp_rlock_drop_peropen (struct rlock_peropen *po);
 /* Drop the peropen identifier */
 error_t fshelp_rlock_po_fini (struct rlock_peropen *po);
 
-#if defined(__USE_EXTERN_INLINES) || defined(DISKFS_DEFINE_EXTERN_INLINE)
+#if defined(__USE_EXTERN_INLINES) || defined(FSHELP_DEFINE_EXTERN_INLINE)
 
 FSHELP_EXTERN_INLINE
 error_t fshelp_rlock_po_fini (struct rlock_peropen *po)
