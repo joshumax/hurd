@@ -317,6 +317,16 @@ void machdev_device_init()
     }
 }
 
+void machdev_device_shutdown()
+{
+  int i;
+  for (i = 0; i < num_emul; i++)
+    {
+      if (emulation_list[i]->shutdown)
+        emulation_list[i]->shutdown();
+    }
+}
+
 static int
 demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {

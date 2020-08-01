@@ -64,6 +64,7 @@ struct machdev_device_emulation_ops
 			     recnum_t, vm_offset_t, vm_size_t);
   io_return_t (*writev_trap) (void *, dev_mode_t,
 			      recnum_t, io_buf_vec_t *, vm_size_t);
+  void (*shutdown) (void);
 };
 
 #endif /* _MACHDEV_DEVICE_EMUL_H_ */

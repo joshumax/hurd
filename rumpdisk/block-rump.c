@@ -151,6 +151,19 @@ device_dealloc (void *d)
   rump_sys_reboot (0, NULL);
 }
 
+static void
+device_shutdown (void)
+{
+  struct block_data *bd = block_head;
+
+  while (bd)
+    {
+      device_close((void *)bd);
+      bd = bd->next;
+    }
+  rump_sys_reboot (0, NULL);
+}
+
 static io_return_t
 device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 	     dev_mode_t mode, char *name, device_t * devp,
@@ -360,7 +373,8 @@ static struct machdev_device_emulation_ops rump_block_emulation_ops = {
   NULL,
   NULL,
   NULL,
-  NULL
+  NULL,
+  device_shutdown
 };
 
 void

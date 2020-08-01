@@ -21,21 +21,30 @@
 /* This manages the master ports obtained when opening the libmachdev-based
    translator node. */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <error.h>
+#include <sys/mman.h>
 #include <hurd/ports.h>
 #include <hurd/trivfs.h>
+#include <hurd/fsys.h>
+#include <hurd/paths.h>
+#include <hurd/startup.h>
 #include <hurd.h>
 #include <device/device.h> /* mach console */
 
 #include "libdiskfs/diskfs.h"
+#include "startup_notify_S.h"
 #include "device_S.h"
 #include "notify_S.h"
 #include "fsys_S.h"
 #include "mach_i386_S.h"
 
-static struct port_bucket *port_bucket;
+#include "trivfs_server.h"
+#include "libmachdev/machdev.h"
+
+struct port_bucket *port_bucket;
 
 /* Trivfs hooks.  */
 int trivfs_fstype = FSTYPE_MISC;
@@ -48,6 +57,14 @@ int trivfs_allow_open = O_READ | O_WRITE;
 /* Our port classes.  */
 struct port_class *trivfs_protid_class;
 struct port_class *trivfs_cntl_class;
+
+/* Our control port */
+static mach_port_t machdev_ctl;
+
+/* Startup and shutdown notifications management */
+struct port_class *machdev_shutdown_notify_class;
+
+static void arrange_shutdown_notification (void);
 
 /* Implementation of notify interface */
 kern_return_t
@@ -183,7 +200,6 @@ S_i386_io_perm_create (mach_port_t master_port,
   return i386_io_perm_create (_hurd_device_master, from, to, io_perm);
 }
 
-/* This is fraud */
 kern_return_t
 trivfs_S_fsys_startup (mach_port_t bootport,
                        mach_port_t reply,
@@ -193,9 +209,86 @@ trivfs_S_fsys_startup (mach_port_t bootport,
                        mach_port_t *realnode,
                        mach_msg_type_name_t *realnodetype)
 {
+  machdev_ctl = cntl;
+
   *realnode = MACH_PORT_NULL;
   *realnodetype = MACH_MSG_TYPE_MOVE_SEND;
   return 0;
+}
+
+kern_return_t
+trivfs_S_fsys_init (struct trivfs_control *tc,
+                    mach_port_t reply, mach_msg_type_name_t replytype,
+                    mach_port_t procserver,
+                    mach_port_t authhandle)
+{
+  error_t err;
+  mach_port_t *portarray;
+  unsigned int i;
+  uid_t idlist[] = {0, 0, 0};
+  mach_port_t root;
+  retry_type retry;
+  string_t retry_name;
+
+  err = fsys_getroot (machdev_ctl, MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
+                          idlist, 3, idlist, 3, 0,
+                          &retry, retry_name, &root);
+  assert_perror_backtrace (err);
+  assert_backtrace (retry == FS_RETRY_NORMAL);
+  assert_backtrace (retry_name[0] == '\0');
+  assert_backtrace (root != MACH_PORT_NULL);
+
+  portarray = mmap (0, INIT_PORT_MAX * sizeof *portarray,
+                    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  for (i = 0; i < INIT_PORT_MAX; ++i)
+    portarray[i] = MACH_PORT_NULL;
+  portarray[INIT_PORT_PROC] = procserver;
+  portarray[INIT_PORT_AUTH] = authhandle;
+  portarray[INIT_PORT_CRDIR] = root;
+  portarray[INIT_PORT_CWDIR] = root;
+  _hurd_init (0, NULL, portarray, INIT_PORT_MAX, NULL, 0);
+
+  arrange_shutdown_notification ();
+  return 0;
+}
+
+static void
+arrange_shutdown_notification (void)
+{
+  error_t err;
+  mach_port_t initport, notify;
+  process_t proc;
+  struct port_info *pi;
+
+  proc = getproc ();
+  assert_backtrace (proc);
+
+  machdev_shutdown_notify_class = ports_create_class (0, 0);
+
+  /* Arrange to get notified when the system goes down */
+  err = ports_create_port (machdev_shutdown_notify_class, port_bucket,
+			   sizeof (struct port_info), &pi);
+  if (err)
+    return;
+
+  /* Mark us as important.  */
+  err = proc_mark_important (proc);
+  mach_port_deallocate (mach_task_self (), proc);
+
+  initport = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (initport == MACH_PORT_NULL)
+    {
+      mach_print ("WARNING: machdev not registered for shutdown\n");
+      return;
+    }
+
+  notify = ports_get_send_right (pi);
+  ports_port_deref (pi);
+  startup_request_notification (initport, notify,
+				MACH_MSG_TYPE_MAKE_SEND,
+				program_invocation_short_name);
+  mach_port_deallocate (mach_task_self (), notify);
+  mach_port_deallocate (mach_task_self (), initport);
 }
 
 /* Override the privileged ports for booting the system */
@@ -260,7 +353,7 @@ resume_bootstrap_server(mach_port_t server_task, const char *server_name)
   stdout = stderr = mach_open_devstream (cons, "w");
   mach_port_deallocate (mach_task_self (), cons);
 
-  printf (" %s", server_name);
+  printf ("Hurd bootstrap %s ", server_name);
   fflush (stdout);
 }
 
@@ -284,6 +377,24 @@ machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_po
     }
 
   return 0;
+}
+
+/* The system is going down. Sync data, then call trivfs_goaway() */
+error_t
+S_startup_dosync (mach_port_t handle)
+{
+  struct port_info *inpi = ports_lookup_port (port_bucket, handle,
+					      machdev_shutdown_notify_class);
+
+  if (!inpi)
+    return EOPNOTSUPP;
+
+  ports_port_deref (inpi);
+
+  /* Sync and close device(s) */
+  machdev_device_shutdown ();
+
+  return trivfs_goaway (NULL, FSYS_GOAWAY_FORCE);
 }
 
 error_t
@@ -316,6 +427,7 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
   if ((routine = device_server_routine (inp)) ||
       (routine = notify_server_routine (inp)) ||
       (routine = mach_i386_server_routine (inp)) ||
+      (routine = startup_notify_server_routine (inp)) ||
       (routine = NULL, trivfs_demuxer (inp, outp)))
     {
       if (routine)

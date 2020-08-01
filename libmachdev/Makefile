@@ -19,10 +19,10 @@ dir := libmachdev
 makemode := library
 libname = libmachdev
 
-SRCS = ds_routines.c trivfs_server.c \
+SRCS = ds_routines.c trivfs_server.c startup_notifyServer.c \
        deviceServer.c notifyServer.c mach_i386Server.c
 
-LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h
+LCLHDRS = machdev.h machdev-device_emul.h machdev-dev_hdr.h mach_device.h trivfs_server.h
 installhdrs = machdev.h machdev-device_emul.h machdev-dev_hdr.h
 HURDLIBS = ports trivfs
 LDLIBS += -lpthread -lmachuser
