@@ -334,6 +334,7 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	   size_t *amount)
 {
   error_t err;
+  size_t done;
 
   /* Nothing to do.  */
   if (data_len == 0 && control_len == 0 && num_ports == 0)
@@ -380,28 +381,56 @@ pipe_send (struct pipe *pipe, int noblock, void *source,
 	      /* Trash CONTROL_PACKET somehow XXX */
 	    }
 	}
+
+      if (err)
+	return err;
     }
 
-  if (!err)
-    err = (*pipe->class->write)(pipe->queue, source, data, data_len, amount);
-
-  if (!err)
+  done = 0;
+  do
     {
-      timestamp (&pipe->write_time);
+      size_t todo = data_len - done;
+      size_t left = pipe->write_limit - pipe_readable (pipe, 1);
+      size_t partial_amount;
 
-      /* And wakeup anyone that might be interested in it.  */
-      pthread_cond_broadcast (&pipe->pending_reads);
-      pthread_mutex_unlock (&pipe->lock);
+      if (todo > left)
+	todo = left;
 
-      pthread_mutex_lock (&pipe->lock);	/* Get back the lock on PIPE.  */
-      /* Only wakeup selects if there's still data available.  */
-      if (pipe_is_readable (pipe, 0))
+      err = (*pipe->class->write)(pipe->queue, source, data + done, todo,
+				  &partial_amount);
+
+      if (!err)
 	{
-	  pthread_cond_broadcast (&pipe->pending_read_selects);
-	  pipe_select_cond_broadcast (pipe);
-	  /* We leave PIPE locked here, assuming the caller will soon unlock
-	     it and allow others access.  */
+	  done += partial_amount;
+	  timestamp (&pipe->write_time);
+
+	  /* And wakeup anyone that might be interested in it.  */
+	  pthread_cond_broadcast (&pipe->pending_reads);
+	  pthread_mutex_unlock (&pipe->lock);
+
+	  pthread_mutex_lock (&pipe->lock); /* Get back the lock on PIPE.  */
+	  /* Only wakeup selects if there's still data available.  */
+	  if (pipe_is_readable (pipe, 0))
+	    {
+	      pthread_cond_broadcast (&pipe->pending_read_selects);
+	      pipe_select_cond_broadcast (pipe);
+	    }
+
+	  if (!noblock && done < data_len)
+	    /* And wait for them to consume.  */
+	    err = pipe_wait_writable (pipe, 0);
 	}
+    }
+  while (!noblock && !err && done < data_len);
+
+  if (done)
+    {
+      /* We have done some of it, we have to report it even in case of
+	 errors. */
+      /* We leave PIPE locked here, assuming the caller will soon unlock
+	 it and allow others access.  */
+      *amount = done;
+      return 0;
     }
 
   return err;
