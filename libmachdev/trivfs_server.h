@@ -27,7 +27,5 @@ extern struct port_class *trivfs_protid_class;
 extern struct port_class *trivfs_cntl_class;
 extern struct port_class *machdev_shutdown_notify_class;
 
-void arrange_shutdown_notification (void);
-
 #endif /* _MACHDEV_TRIVFS_SERVER_H */
 
