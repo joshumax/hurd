@@ -28,6 +28,8 @@
 #include <assert.h>
 #include <sys/io.h>
 
+#include <pciaccess.h>
+
 /* Read or write a block of data from/to the configuration space */
 static error_t
 config_block_op (struct pci_device *dev, off_t offset, size_t * len,
@@ -179,6 +181,7 @@ error_t
 io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
 		void *data, int read)
 {
+  error_t err = 0;
   size_t reg_num;
   struct pci_mem_region *region;
 
@@ -197,10 +200,23 @@ io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
 
   if (region->is_IO)
     region_block_ioport_op (region->base_addr, offset, len, data, read);
-  else if (read)
-    memcpy (data, region->memory + offset, *len);
   else
-    memcpy (region->memory + offset, data, *len);
+    {
+      /* First check whether the region is already mapped */
+      if (region->memory == 0)
+	{
+	  /* Not mapped, try to map it now */
+	  err =
+	    pci_device_map_range (e->device, region->base_addr, region->size,
+				  PCI_DEV_MAP_FLAG_WRITABLE, &region->memory);
+	  if (err)
+	    return err;
+	}
+      if (read)
+	memcpy (data, region->memory + offset, *len);
+      else
+	memcpy (region->memory + offset, data, *len);
+    }
 
-  return 0;
+  return err;
 }

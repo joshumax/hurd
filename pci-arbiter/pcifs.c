@@ -180,12 +180,17 @@ create_fs_tree (struct pcifs * fs)
 
       nentries += 2;		/* func dir + config */
 
-      for (j = 0; j < 6; j++)
-	if (device->regions[j].size > 0)
-	  nentries++;		/* + memory region */
+      /* Probe the device to find regions and rom */
+      err = pci_device_probe (device);
+      if (!err)
+	{
+	  for (j = 0; j < 6; j++)
+	    if (device->regions[j].size > 0)
+	      nentries++;	/* + memory region */
 
-      if (device->rom_size)
-	nentries++;		/* + rom */
+	  if (device->rom_size)
+	    nentries++;		/* + rom */
+	}
     }
 
   pci_iterator_destroy(iter);
