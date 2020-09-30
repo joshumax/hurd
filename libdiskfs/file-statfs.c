@@ -21,6 +21,10 @@
 #include "priv.h"
 #include "fs_S.h"
 
+#ifndef ST_RELATIME
+#  define ST_RELATIME 64
+#endif /* ST_RELATIME */
+
 /* Implement file_getcontrol as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_statfs (struct protid *file,
@@ -43,6 +47,8 @@ diskfs_S_file_statfs (struct protid *file,
     statbuf->f_flag |= ST_SYNCHRONOUS;
   if (_diskfs_noatime)
     statbuf->f_flag |= ST_NOATIME;
+  else if (_diskfs_relatime)
+    statbuf->f_flag |= ST_RELATIME;
 
   diskfs_set_statfs (statbuf);
 

@@ -1046,7 +1046,9 @@ error_t
 diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred);
 
 /* If disk is not readonly and the noatime option is not enabled, set
-   NP->dn_set_atime.  */
+   NP->dn_set_atime.  If relatime is enabled, only set NP->dn_set_atime
+   if the atime has not been updated today, or if ctime or mtime are
+   more recent than atime */
 void diskfs_set_node_atime (struct node *np);
 
 /* If NP->dn_set_ctime is set, then modify NP->dn_stat.st_ctim

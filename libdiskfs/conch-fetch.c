@@ -58,7 +58,7 @@ iohelp_fetch_shared_data (void *arg)
 	  cred->po->np->dn_set_mtime = 1;
 	  mod = 1;
 	}
-      if (cred->mapped->accessed && ! _diskfs_noatime)
+      if (cred->mapped->accessed && atime_should_update (cred->po->np))
 	{
 	  cred->po->np->dn_set_atime = 1;
 	  mod = 1;

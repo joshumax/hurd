@@ -24,12 +24,45 @@
 #include "priv.h"
 #include <maptime.h>
 
+/* If the disk is not readonly and noatime is not set, then check relatime
+   conditions: if either `np->dn_stat.st_mtim.tv_sec' or
+   `np->dn_stat.st_ctim.tv_sec' is greater than `np->dn_stat.st_atim.tv_sec',
+   or if the atime is greater than 24 hours old, return true.
+   */
+int
+atime_should_update (struct node *np)
+{
+  struct timeval t;
+
+  if (_diskfs_noatime)
+    return 0;
+
+  if (_diskfs_relatime)
+    {
+      /* Update atime if mtime is younger than atime. */
+      if (np->dn_stat.st_mtim.tv_sec > np->dn_stat.st_atim.tv_sec)
+        return 1;
+      /* Update atime if ctime is younger than atime. */
+      if (np->dn_stat.st_ctim.tv_sec > np->dn_stat.st_atim.tv_sec)
+        return 1;
+      /* Update atime if current atime is more than 24 hours old. */
+      maptime_read (diskfs_mtime, &t);
+      if ((long)(t.tv_sec - np->dn_stat.st_atim.tv_sec) >= 24 * 60 * 60)
+          return 1;
+      return 0;
+    }
+
+  return 1; /* strictatime */
+}
+
 /* If disk is not readonly and the noatime option is not enabled, set
-   NP->dn_set_atime.  */
+   NP->dn_set_atime.  If relatime is enabled, only set NP->dn_set_atime
+   if the atime has not been updated today, or if ctime or mtime are
+   more recent than atime */
 void
 diskfs_set_node_atime (struct node *np)
 {
-  if (!_diskfs_noatime && !diskfs_check_readonly ())
+  if (!diskfs_check_readonly () && atime_should_update (np))
     np->dn_set_atime = 1;
 }
 

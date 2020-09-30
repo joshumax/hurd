@@ -38,6 +38,10 @@ extern int _diskfs_nosuid, _diskfs_noexec;
 /* This relaxes the requirement to set `st_atim'.  */
 extern int _diskfs_noatime;
 
+/* Will set `st_atim' if it has not been updated in 24 hours or
+   if `st_ctim' or `st_mtim' are younger than `st_atim'.  */
+extern int _diskfs_relatime;
+
 /* This enables SysV style group behaviour.  New nodes inherit the GID
    of the user creating them unless the SGID bit is set of the parent
    directory.  */
@@ -97,6 +101,13 @@ void _diskfs_control_clean (void *);
 /* Called when the last hard reference is released.  If there are no
    links, then request soft references to be dropped.  */
 void _diskfs_lastref (struct node *np);
+
+/* If the disk is not readonly and noatime is not set, then check relatime
+   conditions: if either `np->dn_stat.st_mtim.tv_sec' or
+   `np->dn_stat.st_ctim.tv_sec' is greater than `np->dn_stat.st_atim.tv_sec',
+   or if the atime is greater than 24 hours old, return true.
+   */
+int atime_should_update (struct node *np);
 
 /* Number of outstanding PT_CTL ports. */
 extern int _diskfs_ncontrol_ports;

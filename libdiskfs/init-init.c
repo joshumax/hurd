@@ -38,6 +38,7 @@ mach_port_t diskfs_fsys_identity;
 
 int _diskfs_nosuid, _diskfs_noexec;
 int _diskfs_noatime;
+int _diskfs_relatime;
 
 struct hurd_port _diskfs_exec_portcell;
 

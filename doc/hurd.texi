@@ -3973,7 +3973,9 @@ disk allocation strategies.
 
 @deftypefun void diskfs_set_node_atime (@w{struct node *@var{np}})
 If disk is not readonly and the noatime option is not enabled, set
-@code{@var{np}->dn_set_atime}.
+@code{@var{np}->dn_set_atime}. If relatime is enabled, only set
+@code{@var{np}->dn_set_atime} if the atime has not been updated today,
+or if ctime or mtime are more recent than atime.
 @end deftypefun
 
 @deftypefun void diskfs_set_node_times (@w{struct node *@var{np}})
