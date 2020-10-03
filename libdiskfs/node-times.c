@@ -40,10 +40,10 @@ atime_should_update (struct node *np)
   if (_diskfs_relatime)
     {
       /* Update atime if mtime is younger than atime. */
-      if (np->dn_stat.st_mtim.tv_sec > np->dn_stat.st_atim.tv_sec)
+      if (np->dn_stat.st_mtim.tv_sec >= np->dn_stat.st_atim.tv_sec)
         return 1;
       /* Update atime if ctime is younger than atime. */
-      if (np->dn_stat.st_ctim.tv_sec > np->dn_stat.st_atim.tv_sec)
+      if (np->dn_stat.st_ctim.tv_sec >= np->dn_stat.st_atim.tv_sec)
         return 1;
       /* Update atime if current atime is more than 24 hours old. */
       maptime_read (diskfs_mtime, &t);
