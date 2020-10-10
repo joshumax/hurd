@@ -80,7 +80,7 @@ set_opts (struct parse_hook *h)
     _diskfs_noexec = h->noexec;
   if (h->noatime != -1)
     _diskfs_noatime = h->noatime;
-  else if (h->relatime != -1)
+  if (h->relatime != -1)
     _diskfs_relatime = h->relatime;
   if (h->noinheritdirgroup != -1)
     _diskfs_no_inherit_dir_group = h->noinheritdirgroup;
