@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <hurd/netfs.h>
+#include <hurd/paths.h>
+#include <mach/mach4.h>
 
 #include "pcifs.h"
 #include "ncache.h"
@@ -562,4 +564,80 @@ void
 netfs_node_norefs (struct node *node)
 {
   destroy_node (node);
+}
+
+mach_port_t
+netfs_get_filemap (struct node *node, vm_prot_t prot)
+{
+  error_t err;
+  mach_port_t host_priv;
+  memory_object_t default_pager, proxy;
+  vm_prot_t max_prot;
+  size_t reg_num, count;
+  struct pci_mem_region *region;
+  memory_object_t objects[1];
+  vm_offset_t offsets[1];
+  vm_offset_t starts[1];
+  vm_offset_t lens[1];
+
+  /* Only regions files can be mapped */
+  if (strncmp
+      (node->nn->ln->name, FILE_REGION_NAME, strlen (FILE_REGION_NAME)))
+    {
+      goto error;
+    }
+
+  /* Return the existing proxy if any */
+  if (node->nn->ln->memproxy != MACH_PORT_NULL)
+    {
+      return node->nn->ln->memproxy;
+    }
+
+  /* Get our port to the default pager */
+  err = get_privileged_ports (&host_priv, NULL);
+  if (err == EPERM)
+    {
+      default_pager = file_name_lookup (_SERVERS_DEFPAGER, O_EXEC, 0);
+      if (default_pager == MACH_PORT_NULL)
+	goto error;
+    }
+  else if (err)
+    goto error;
+  else
+    {
+      default_pager = MACH_PORT_NULL;
+      err = vm_set_default_memory_manager (host_priv, &default_pager);
+      mach_port_deallocate (mach_task_self (), host_priv);
+      if (err)
+	goto error;
+    }
+  if (default_pager == MACH_PORT_NULL)
+    goto error;
+
+  /* Get all params to create the proxy */
+  max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
+  reg_num =
+    strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
+  region = &node->nn->ln->device->regions[reg_num];
+  objects[0] = default_pager;
+  offsets[0] = 0;
+  starts[0] = region->base_addr;
+  lens[0] = region->size;
+  count = 1;
+
+  /* Create a new memory object proxy with the required protection */
+  err =
+    memory_object_create_proxy (mach_task_self (), max_prot, objects, count,
+				offsets, count, starts, count, lens, count,
+				&proxy);
+  if (err)
+    goto error;
+
+  node->nn->ln->memproxy = proxy;
+
+  return proxy;
+
+error:
+  errno = EOPNOTSUPP;
+  return MACH_PORT_NULL;
 }
