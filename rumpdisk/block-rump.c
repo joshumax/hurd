@@ -248,18 +248,12 @@ device_write (void *d, mach_port_t reply_port,
 	      int *bytes_written)
 {
   struct block_data *bd = d;
-  int64_t written = 0;
+  ssize_t written;
 
   if ((bd->mode & D_WRITE) == 0)
     return D_INVALID_OPERATION;
 
-  if (rump_sys_lseek (bd->rump_fd, (off_t) bn * bd->block_size, SEEK_SET) < 0)
-    {
-      *bytes_written = 0;
-      return EIO;
-    }
-
-  written = rump_sys_write (bd->rump_fd, data, count);
+  written = rump_sys_pwrite (bd->rump_fd, (const void *)data, (size_t)count, (off_t)bn * bd->block_size);
   if (written < 0)
     {
       *bytes_written = 0;
@@ -282,7 +276,7 @@ device_read (void *d, mach_port_t reply_port,
   char *buf;
   int pagesize = sysconf (_SC_PAGE_SIZE);
   int npages = (count + pagesize - 1) / pagesize;
-  io_return_t err = D_SUCCESS;
+  ssize_t err;
 
   if ((bd->mode & D_READ) == 0)
     return D_INVALID_OPERATION;
@@ -296,13 +290,7 @@ device_read (void *d, mach_port_t reply_port,
   if (buf == MAP_FAILED)
     return errno;
 
-  if (rump_sys_lseek (bd->rump_fd, (off_t) bn * bd->block_size, SEEK_SET) < 0)
-    {
-      *bytes_read = 0;
-      return EIO;
-    }
-
-  err = rump_sys_read (bd->rump_fd, buf, count);
+  err = rump_sys_pread (bd->rump_fd, (void *)buf, (size_t)count, (off_t)bn * bd->block_size);
   if (err < 0)
     {
       *bytes_read = 0;
@@ -346,7 +334,6 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 /* FIXME:
  * Short term strategy:
  *
- * Use rump_sys_pread/pwrite instead of rump_sys_lseek + rump_sys_read/write.
  * Make device_read/write multithreaded.
  *
  * Long term strategy:
