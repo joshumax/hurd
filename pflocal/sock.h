@@ -85,6 +85,10 @@ struct sock
   /* A connection queue we're attempting to connect through; a socket may
      only be attempting one connection at a time.  */
   struct connq *connect_queue;
+
+  /* Effective identity of the creator of the socket */
+  uid_t uid;
+  gid_t gid;
 };
 
 /* Socket flags */

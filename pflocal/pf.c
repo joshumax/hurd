@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <hurd/pipe.h>
+#include <hurd/trivfs.h>
 
 #include "sock.h"
 
@@ -29,7 +30,7 @@
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
 error_t
-S_socket_create (mach_port_t pf,
+S_socket_create (trivfs_protid_t pf,
 		 int sock_type, int protocol,
 		 mach_port_t *port, mach_msg_type_name_t *port_type)
 {
@@ -77,6 +78,11 @@ S_socket_create (mach_port_t pf,
       else
 	*port_type = MACH_MSG_TYPE_MAKE_SEND;
     }
+
+  if (pf->user->uids->num > 0)
+    sock->uid = pf->user->uids->ids[0];
+  if (pf->user->gids->num > 0)
+    sock->gid = pf->user->gids->ids[0];
   
   return err;
 }

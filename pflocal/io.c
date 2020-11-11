@@ -327,6 +327,8 @@ S_io_stat (struct sock_user *user, struct stat *st)
   st->st_ino = sock->id;
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
+  st->st_uid = sock->uid;
+  st->st_gid = sock->gid;
 
   pthread_mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 

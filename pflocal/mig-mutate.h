@@ -39,4 +39,10 @@
 #define ADDRPORT_INTRAN_PAYLOAD addr_t begin_using_addr_payload
 #define ADDRPORT_DESTRUCTOR end_using_addr_port (addr_t)
 
-#define SOCKET_IMPORTS import "mig-decls.h";
+#define SOCKET_IMPORTS \
+  import "mig-decls.h"; \
+  import "../libtrivfs/mig-decls.h"; \
+
+#define PF_INTRAN trivfs_protid_t trivfs_begin_using_protid (pf_t)
+#define PF_INTRAN_PAYLOAD trivfs_protid_t trivfs_begin_using_protid_payload
+#define PF_DESTRUCTOR trivfs_end_using_protid (trivfs_protid_t)
