@@ -123,8 +123,8 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->connect_queue = NULL;
   new->pipe_class = pipe_class;
   new->addr = NULL;
-  new->uid = 0;
-  new->gid = 0;
+  new->uid = getuid ();
+  new->gid = getgid ();
   memset (&new->change_time, 0, sizeof (new->change_time));
   pthread_mutex_init (&new->lock, NULL);
 
