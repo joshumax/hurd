@@ -48,7 +48,7 @@ rfloppy-files = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) \
 rfloppy-hurd = auth storeio null init proc term pfinet nfs ufs ext2fs
 rfloppy-progs = bash ls cat settrans
 rfloppy-sprogs = mkfs.ufs mkfs.ext2
-rfloppy-solib = libtrivfs libthreads libshouldbeinlibc libports	\
+rfloppy-solib = libtrivfs libshouldbeinlibc libports	\
 	       libpager libiohelp libstore libihash libfshelp libnetfs ld
 
 libc-satisfies = $(rfloppy-hurd:%=hurd/%) $(rfloppy-progs:%=bin/%) $(rfloppy-sprogs:%=sbin/%) $(rfloppy-solib:%=lib/%.so)

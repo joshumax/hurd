@@ -108,7 +108,6 @@ copy lib/libresolv.so.*
 objcopy lib/libresolv-*.so
 objcopy lib/libshouldbeinlibc.so
 objcopy lib/libstore.so
-objcopy lib/libthreads.so
 objcopy lib/libtrivfs.so
 copy lib/libutil.so
 copy lib/libutil.so.*

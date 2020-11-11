@@ -50,7 +50,7 @@ sparc*)
 esac
 AC_SUBST(asm_syntax)
 
-test -r "$srcdir/libthreads/$asm_syntax/cthreads.h" || {
+test -r "$srcdir/pfinet/linux-src/include/asm-$asm_syntax/checksum.h" || {
   AC_MSG_WARN([unsupported CPU type $host_cpu])
 }
 
