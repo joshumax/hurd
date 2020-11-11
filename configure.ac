@@ -151,17 +151,6 @@ AC_CACHE_CHECK([for libio],
     hurd_cv_libio=yes,
     hurd_cv_libio=no))
 
-# The versions of the symbols in libthreads have to match those in
-# libc.so.  Since the symbols in a libc that includes libio will be
-# versioned differently from the ones in a libc that uses stdio, this
-# isn't easy to accomplish.  Instead we leave things unversioned if
-# libio isn't found.
-if test $hurd_cv_libio = yes; then
-  VERSIONING=$hurd_cv_ld_version_script_option
-else
-  VERSIONING=no
-fi
-AC_SUBST(VERSIONING)
 # Check if libc contains these functions.
 AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 

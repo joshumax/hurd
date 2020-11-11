@@ -62,9 +62,6 @@ LDFLAGS += @LDFLAGS@
 
 gnu89-inline-CFLAGS = @libc_cv_gnu89_inline@
 
-# `yes' or `no' to indicate if ld --version-script is available.
-VERSIONING = @VERSIONING@
-
 # How to link against Parted libraries, if at all.
 PARTED_LIBS = @PARTED_LIBS@
 
