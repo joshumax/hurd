@@ -40,8 +40,7 @@ struct msg_sig_post_request
   mach_port_t refport;
 };
 
-/* Send the Mach message indicated by msg_spec.   call cthread_exit
-   when it has been delivered. */
+/* Send the Mach message indicated by msg_spec.  */
 static void *
 blocking_message_send (void *arg)
 {

@@ -824,7 +824,7 @@ the rest of the Hurd relies upon them quite heavily.
 @node Threads Library
 @section Threads Library
 @scindex libpthread
-@scindex cthreads.h
+@scindex pthread.h
 
 All Hurd servers and libraries are aggressively multithreaded in order
 to take full advantage of any multiprocessing capabilities provided by

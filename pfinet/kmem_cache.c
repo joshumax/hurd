@@ -18,7 +18,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
 /* Hack replacement for Linux's kmem_cache_t allocator, using plain malloc
-   and cthreads locking.  The locking here is probably unnecessary.  */
+   and pthread locking.  The locking here is probably unnecessary.  */
 
 #include <pthread.h>
 #include <linux/malloc.h>
