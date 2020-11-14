@@ -335,6 +335,9 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
  * Short term strategy:
  *
  * Make device_read/write multithreaded.
+ * Note: this would require an rwlock between device_open/close/read/write, to
+ * protect against e.g. concurrent open, unexpected close while read/write is
+ * called, etc.
  *
  * Long term strategy:
  *
