@@ -54,17 +54,46 @@ int trivfs_support_write = 0;
 int trivfs_support_exec = 0;
 int trivfs_allow_open = O_READ | O_WRITE;
 
-/* Our port classes.  */
-struct port_class *trivfs_protid_class;
+/* Our port classes */
 struct port_class *trivfs_cntl_class;
+struct port_class *trivfs_protid_class;
+
+/* Our control struct */
+struct trivfs_control *control;
+
+/* Are we providing bootstrap translator? */
+static boolean_t bootstrapped;
+
+/* Our underlying node for bootstrap */
+static mach_port_t underlying;
 
 /* Our control port */
-static mach_port_t machdev_ctl;
+static mach_port_t control_port;
+
+/* Our device path for injecting bootstrapped translator onto */
+static char *devnode;
 
 /* Startup and shutdown notifications management */
 struct port_class *machdev_shutdown_notify_class;
 
 static void arrange_shutdown_notification (void);
+
+static void
+install_as_translator (mach_port_t bootport)
+{
+  error_t err;
+
+  underlying = file_name_lookup (devnode, O_NOTRANS, 0);
+  if (! MACH_PORT_VALID (underlying))
+    return;
+
+  /* Install translator */
+  err = file_set_translator (underlying,
+                             0, FS_TRANS_SET, 0,
+                             NULL, 0,
+                             bootport, MACH_MSG_TYPE_COPY_SEND);
+  assert_perror_backtrace (err);
+}
 
 /* Implementation of notify interface */
 kern_return_t
@@ -209,15 +238,14 @@ trivfs_S_fsys_startup (mach_port_t bootport,
                        mach_port_t *realnode,
                        mach_msg_type_name_t *realnodetype)
 {
-  machdev_ctl = cntl;
-
+  control_port = cntl;
   *realnode = MACH_PORT_NULL;
   *realnodetype = MACH_MSG_TYPE_MOVE_SEND;
   return 0;
 }
 
 kern_return_t
-trivfs_S_fsys_init (struct trivfs_control *tc,
+trivfs_S_fsys_init (struct trivfs_control *fsys,
                     mach_port_t reply, mach_msg_type_name_t replytype,
                     mach_port_t procserver,
                     mach_port_t authhandle)
@@ -229,10 +257,11 @@ trivfs_S_fsys_init (struct trivfs_control *tc,
   mach_port_t root;
   retry_type retry;
   string_t retry_name;
+  mach_port_t right = MACH_PORT_NULL;
 
-  err = fsys_getroot (machdev_ctl, MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
-                          idlist, 3, idlist, 3, 0,
-                          &retry, retry_name, &root);
+  err = fsys_getroot (control_port, MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
+                      idlist, 3, idlist, 3, 0,
+                      &retry, retry_name, &root);
   assert_perror_backtrace (err);
   assert_backtrace (retry == FS_RETRY_NORMAL);
   assert_backtrace (retry_name[0] == '\0');
@@ -249,6 +278,15 @@ trivfs_S_fsys_init (struct trivfs_control *tc,
   _hurd_init (0, NULL, portarray, INIT_PORT_MAX, NULL, 0);
 
   arrange_shutdown_notification ();
+
+  /* Install the bootstrap port on /dev/something so users
+   * can still access the bootstrapped device */
+  if (bootstrapped)
+    {
+      right = ports_get_send_right (&control->pi);
+      install_as_translator (right);
+      control->underlying = underlying;
+    }
   return 0;
 }
 
@@ -301,14 +339,8 @@ trivfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
 {
   error_t err;
   mach_port_t right;
-  struct port_info *server_info;
 
-  err = ports_create_port (trivfs_protid_class, port_bucket,
-                           sizeof (struct port_info), &server_info);
-  assert_perror_backtrace (err);
-  right = ports_get_send_right (server_info);
-  ports_port_deref (server_info);
-
+  right = ports_get_send_right (&control->pi);
   err = get_privileged_ports (host_priv, NULL);
   if (!err)
     {
@@ -326,20 +358,14 @@ resume_bootstrap_server(mach_port_t server_task, const char *server_name)
   error_t err;
   mach_port_t right;
   mach_port_t dev, cons;
-  struct port_info *server_info;
 
   assert_backtrace (server_task != MACH_PORT_NULL);
 
-  err = ports_create_port (trivfs_cntl_class, port_bucket,
-                           sizeof (struct port_info), &server_info);
-  assert_perror_backtrace (err);
-  right = ports_get_send_right (server_info);
-  ports_port_deref (server_info);
+  right = ports_get_send_right (&control->pi);
   err = task_set_special_port (server_task, TASK_BOOTSTRAP_PORT, right);
   assert_perror_backtrace (err);
   err = mach_port_deallocate (mach_task_self (), right);
   assert_perror_backtrace (err);
-
   err = task_resume (server_task);
   assert_perror_backtrace (err);
 
@@ -363,17 +389,25 @@ machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_po
   port_bucket = ports_create_bucket ();
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
   trivfs_protid_class = ports_create_class (trivfs_clean_protid, 0);
+  trivfs_create_control (MACH_PORT_NULL, trivfs_cntl_class, port_bucket,
+                         trivfs_protid_class, 0, &control);
 
   if (bootstrap_resume_task != MACH_PORT_NULL)
     {
+      devnode = strdup(name);
       resume_bootstrap_server(bootstrap_resume_task, name);
       *bootstrap = MACH_PORT_NULL;
+      /* We need to install as a translator later */
+      bootstrapped = TRUE;
     }
   else
     {
       task_get_bootstrap_port (mach_task_self (), bootstrap);
       if (*bootstrap == MACH_PORT_NULL)
         error (1, 0, "must be started as a translator");
+
+      /* We do not need to install as a translator later */
+      bootstrapped = FALSE;
     }
 
   return 0;
@@ -451,12 +485,17 @@ machdev_trivfs_server(mach_port_t bootstrap)
 
   if (bootstrap != MACH_PORT_NULL)
     {
+      /* This path is executed when a parent exists */
       err = trivfs_startup (bootstrap, 0,
                             trivfs_cntl_class, port_bucket,
                             trivfs_protid_class, port_bucket, &fsys);
       mach_port_deallocate (mach_task_self (), bootstrap);
       if (err)
         error (1, err, "Contacting parent");
+    }
+  else
+    {
+      fsys = control;
     }
 
   /* Launch.  */

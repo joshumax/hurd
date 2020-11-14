@@ -118,7 +118,7 @@ main (int argc, char **argv)
 
   rump_register_block ();
   machdev_device_init ();
-  machdev_trivfs_init (bootstrap_resume_task, "fs", &bootstrap);
+  machdev_trivfs_init (bootstrap_resume_task, "/dev/rumpdisk", &bootstrap);
   err = pthread_create (&t, NULL, machdev_server, NULL);
   if (err)
     return err;
