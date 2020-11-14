@@ -53,7 +53,7 @@ struct block_data
   char name[DISK_NAME_LEN];	/* eg /dev/wd0 */
   off_t media_size;		/* total block device size */
   uint32_t block_size;		/* size in bytes of 1 sector */
-  bool taken;			/* simple refcount */
+  int taken;			/* refcount */
   struct block_data *next;
 };
 
@@ -141,8 +141,19 @@ static io_return_t
 device_close (void *d)
 {
   struct block_data *bd = d;
+  io_return_t err;
 
-  return rump_errno2host (rump_sys_close (bd->rump_fd));
+  bd->taken--;
+  if (bd->taken)
+    return D_SUCCESS;
+
+  err = rump_errno2host (rump_sys_close (bd->rump_fd));
+  if (err != D_SUCCESS)
+    return err;
+
+  ports_port_deref (bd);
+  ports_destroy_right (bd);
+  return D_SUCCESS;
 }
 
 static void
@@ -169,8 +180,9 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 	     dev_mode_t mode, char *name, device_t * devp,
 	     mach_msg_type_name_t * devicePoly)
 {
-  io_return_t err = D_ALREADY_OPEN;
-  struct block_data *bd = NULL;
+  io_return_t err;
+  int ret, fd;
+  struct block_data *bd;
   char dev_name[DISK_NAME_LEN];
   off_t media_size;
   uint32_t block_size;
@@ -178,67 +190,58 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   if (! is_disk_device (name, 8))
     return D_NO_SUCH_DEVICE;
 
-  translate_name (dev_name, DISK_NAME_LEN, name);
-
   /* Find previous device or open if new */
   bd = search_bd (name);
-  if (!bd)
-    {
-      err = machdev_create_device_port (sizeof (*bd), &bd);
-
-      snprintf (bd->name, DISK_NAME_LEN, "%s", name);
-      bd->mode = mode;
-      bd->device.emul_data = bd;
-      bd->device.emul_ops = &rump_block_emulation_ops;
-
-      err = rump_sys_open (dev_name, dev_mode_to_rump_mode (bd->mode));
-      if (err < 0)
-	{
-	  err = rump_errno2host (errno);
-	  goto out;
-	}
-      bd->rump_fd = err;
-
-      err = rump_sys_ioctl (bd->rump_fd, DIOCGMEDIASIZE, &media_size);
-      if (err < 0)
-	{
-	  mach_print ("DIOCGMEDIASIZE ioctl fails\n");
-	  err = rump_errno2host (errno);
-	  goto out;
-	}
-
-      err = rump_sys_ioctl (bd->rump_fd, DIOCGSECTORSIZE, &block_size);
-      if (err < 0)
-	{
-	  mach_print ("DIOCGSECTORSIZE ioctl fails\n");
-	  err = rump_errno2host (errno);
-	  goto out;
-	}
-      bd->media_size = media_size;
-      bd->block_size = block_size;
-
-      err = D_SUCCESS;
-    }
-
-out:
-  if (err)
-    {
-      if (bd)
-	{
-	  ports_port_deref (bd);
-	  ports_destroy_right (bd);
-	  bd = NULL;
-	}
-    }
-
   if (bd)
     {
-      bd->next = block_head;
-      block_head = bd;
+      bd->taken++;
       *devp = ports_get_right (bd);
       *devicePoly = MACH_MSG_TYPE_MAKE_SEND;
+      return D_SUCCESS;
     }
-  return err;
+
+  translate_name (dev_name, DISK_NAME_LEN, name);
+
+  fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
+  if (fd < 0)
+    return rump_errno2host (errno);
+
+  ret = rump_sys_ioctl (fd, DIOCGMEDIASIZE, &media_size);
+  if (ret < 0)
+    {
+      mach_print ("DIOCGMEDIASIZE ioctl fails\n");
+      return rump_errno2host (errno);
+    }
+
+  ret = rump_sys_ioctl (fd, DIOCGSECTORSIZE, &block_size);
+  if (ret < 0)
+    {
+      mach_print ("DIOCGSECTORSIZE ioctl fails\n");
+      return rump_errno2host (errno);
+    }
+
+  err = machdev_create_device_port (sizeof (*bd), &bd);
+  if (err != 0)
+    {
+      rump_sys_close (fd);
+      return err;
+    }
+
+  bd->taken = 1;
+  snprintf (bd->name, DISK_NAME_LEN, "%s", name);
+  bd->rump_fd = fd;
+  bd->mode = mode;
+  bd->device.emul_data = bd;
+  bd->device.emul_ops = &rump_block_emulation_ops;
+  bd->media_size = media_size;
+  bd->block_size = block_size;
+
+  bd->next = block_head;
+  block_head = bd;
+
+  *devp = ports_get_right (bd);
+  *devicePoly = MACH_MSG_TYPE_MAKE_SEND;
+  return D_SUCCESS;
 }
 
 static io_return_t
