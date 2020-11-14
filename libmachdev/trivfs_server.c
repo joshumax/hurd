@@ -281,7 +281,7 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
 
   /* Install the bootstrap port on /dev/something so users
    * can still access the bootstrapped device */
-  if (bootstrapped)
+  if (bootstrapped && devnode)
     {
       right = ports_get_send_right (&control->pi);
       install_as_translator (right);
@@ -384,7 +384,7 @@ resume_bootstrap_server(mach_port_t server_task, const char *server_name)
 }
 
 int
-machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_port_t *bootstrap)
+machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const char *path, mach_port_t *bootstrap)
 {
   port_bucket = ports_create_bucket ();
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
@@ -394,7 +394,8 @@ machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_po
 
   if (bootstrap_resume_task != MACH_PORT_NULL)
     {
-      devnode = strdup(name);
+      if (path)
+	devnode = strdup(path);
       resume_bootstrap_server(bootstrap_resume_task, name);
       *bootstrap = MACH_PORT_NULL;
       /* We need to install as a translator later */

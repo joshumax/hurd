@@ -33,7 +33,7 @@ void machdev_device_init(void);
 void machdev_device_shutdown(void);
 void * machdev_server(void *);
 error_t machdev_create_device_port (size_t size, void *result);
-int machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, mach_port_t *bootstrap);
+int machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const char *path, mach_port_t *bootstrap);
 void machdev_trivfs_server(mach_port_t bootstrap);
 boolean_t machdev_is_master_device (mach_port_t port);
 
