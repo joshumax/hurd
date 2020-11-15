@@ -165,6 +165,10 @@ mkdev() {
 	st $I root 640 /hurd/storeio $I
 	;;
 
+      rumpdisk)
+	st $I root 660 /hurd/rumpdisk
+	cmd ln -f -s rumpdisk disk
+	;;
       [hrscw]d*)
 	local sliceno=
         local n="${I#?d}"
@@ -217,9 +221,11 @@ mkdev() {
 	;;
 
       netdde)
-	st $I root 660 /hurd/netdde;;
+	st $I root 660 /hurd/netdde
+	cmd ln -f -s netdde net
+	;;
       eth*)
-	st $I root 660 /hurd/devnode -M /dev/netdde $I;;
+	st $I root 660 /hurd/devnode -M /dev/net $I;;
 
       # /dev/shm is used by the POSIX.1 shm_open call in libc.
       # We don't want the underlying node to be written by randoms,
