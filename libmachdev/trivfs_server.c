@@ -65,10 +65,10 @@ struct trivfs_control *control;
 /* Are we providing bootstrap translator? */
 static boolean_t bootstrapped;
 
-/* Our underlying node for bootstrap */
+/* Our underlying node in the FS for bootstrap */
 static mach_port_t underlying;
 
-/* Our control port */
+/* The FS control port */
 static mach_port_t control_port;
 
 /* Our device path for injecting bootstrapped translator onto */
