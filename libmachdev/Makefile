@@ -29,5 +29,6 @@ LDLIBS += -lpthread -lmachuser
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
+mach_i386-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 
 include ../Makeconf
