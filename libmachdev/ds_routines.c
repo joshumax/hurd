@@ -82,8 +82,6 @@ struct port_class *machdev_device_class;
 static struct machdev_device_emulation_ops *emulation_list[MAX_NUM_EMULATION];
 static int num_emul = 0;
 
-boolean_t machdev_is_master_device (mach_port_t port);
-
 /*
  * What follows is the interface for the native Mach devices.
  */
