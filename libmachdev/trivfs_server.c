@@ -347,7 +347,7 @@ trivfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
     {
       *dev_master = right;
       *fstask = mach_task_self ();
-      *hp_type = *dm_type = MACH_MSG_TYPE_COPY_SEND;
+      *hp_type = *dm_type = MACH_MSG_TYPE_MOVE_SEND;
       *task_type = MACH_MSG_TYPE_COPY_SEND;
     }
   return err;
