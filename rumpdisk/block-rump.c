@@ -28,6 +28,7 @@
 #include <mach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
+#include <device/device.h>
 
 #define MACH_INCLUDE
 
@@ -42,6 +43,8 @@
 
 #define DISK_NAME_LEN 32
 #define MAX_DISK_DEV 2
+
+static bool disabled;
 
 /* One of these is associated with each open instance of a device.  */
 struct block_data
@@ -59,7 +62,7 @@ struct block_data
 
 /* Return a send right associated with network device ND.  */
 static mach_port_t
-dev_to_port (void *nd)
+rumpdisk_dev_to_port (void *nd)
 {
   return (nd ? ports_get_send_right (nd) : MACH_PORT_NULL);
 }
@@ -132,13 +135,41 @@ dev_mode_to_rump_mode (const dev_mode_t mode)
 }
 
 static void
-device_init (void)
+rumpdisk_device_init (void)
 {
+  mach_port_t device_master;
+
+  if (! get_privileged_ports (0, &device_master))
+    {
+      device_t device;
+
+#if 0
+      if (! device_open (device_master, D_READ, "hd0", &device)
+       || ! device_open (device_master, D_READ, "hd1", &device)
+       || ! device_open (device_master, D_READ, "hd3", &device)
+       || ! device_open (device_master, D_READ, "hd2", &device))
+	{
+	  fprintf(stderr, "Kernel is already driving an IDE device, skipping probing disks\n");
+	  disabled = 1;
+	  return;
+	}
+#endif
+
+      if (! device_open (device_master, D_READ, "sd0", &device)
+       || ! device_open (device_master, D_READ, "sd1", &device)
+       || ! device_open (device_master, D_READ, "sd2", &device)
+       || ! device_open (device_master, D_READ, "sd3", &device))
+	{
+	  fprintf(stderr, "Kernel is already driving a SATA device, skipping probing disks\n");
+	  disabled = 1;
+	  return;
+	}
+    }
   rump_init ();
 }
 
 static io_return_t
-device_close (void *d)
+rumpdisk_device_close (void *d)
 {
   struct block_data *bd = d;
   io_return_t err;
@@ -157,28 +188,31 @@ device_close (void *d)
 }
 
 static void
-device_dealloc (void *d)
+rumpdisk_device_dealloc (void *d)
 {
   rump_sys_reboot (0, NULL);
 }
 
 static void
-device_shutdown (void)
+rumpdisk_device_shutdown (void)
 {
   struct block_data *bd = block_head;
 
+  if (disabled)
+    return;
+
   while (bd)
     {
-      device_close((void *)bd);
+      rumpdisk_device_close((void *)bd);
       bd = bd->next;
     }
   rump_sys_reboot (0, NULL);
 }
 
 static io_return_t
-device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
-	     dev_mode_t mode, char *name, device_t * devp,
-	     mach_msg_type_name_t * devicePoly)
+rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
+		      dev_mode_t mode, char *name, device_t * devp,
+		      mach_msg_type_name_t * devicePoly)
 {
   io_return_t err;
   int ret, fd;
@@ -186,6 +220,9 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   char dev_name[DISK_NAME_LEN];
   off_t media_size;
   uint32_t block_size;
+
+  if (disabled)
+    return D_NO_SUCH_DEVICE;
 
   if (! is_disk_device (name, 8))
     return D_NO_SUCH_DEVICE;
@@ -245,10 +282,10 @@ device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
 }
 
 static io_return_t
-device_write (void *d, mach_port_t reply_port,
-	      mach_msg_type_name_t reply_port_type, dev_mode_t mode,
-	      recnum_t bn, io_buf_ptr_t data, unsigned int count,
-	      int *bytes_written)
+rumpdisk_device_write (void *d, mach_port_t reply_port,
+		       mach_msg_type_name_t reply_port_type, dev_mode_t mode,
+		       recnum_t bn, io_buf_ptr_t data, unsigned int count,
+		       int *bytes_written)
 {
   struct block_data *bd = d;
   ssize_t written;
@@ -270,10 +307,10 @@ device_write (void *d, mach_port_t reply_port,
 }
 
 static io_return_t
-device_read (void *d, mach_port_t reply_port,
-	     mach_msg_type_name_t reply_port_type, dev_mode_t mode,
-	     recnum_t bn, int count, io_buf_ptr_t * data,
-	     unsigned *bytes_read)
+rumpdisk_device_read (void *d, mach_port_t reply_port,
+		      mach_msg_type_name_t reply_port_type, dev_mode_t mode,
+		      recnum_t bn, int count, io_buf_ptr_t * data,
+		      unsigned *bytes_read)
 {
   struct block_data *bd = d;
   char *buf;
@@ -309,8 +346,8 @@ device_read (void *d, mach_port_t reply_port,
 }
 
 static io_return_t
-device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
-		   mach_msg_type_number_t * count)
+rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
+			    mach_msg_type_number_t * count)
 {
   struct block_data *bd = d;
 
@@ -350,24 +387,24 @@ device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
  * memory instead of a whole thread structure.
  */
 static struct machdev_device_emulation_ops rump_block_emulation_ops = {
-  device_init,
+  rumpdisk_device_init,
   NULL,
-  device_dealloc,
-  dev_to_port,
-  device_open,
-  device_close,
-  device_write, /* FIXME: make multithreaded */
+  rumpdisk_device_dealloc,
+  rumpdisk_dev_to_port,
+  rumpdisk_device_open,
+  rumpdisk_device_close,
+  rumpdisk_device_write, /* FIXME: make multithreaded */
   NULL,
-  device_read, /* FIXME: make multithreaded */
-  NULL,
-  NULL,
-  device_get_status,
+  rumpdisk_device_read, /* FIXME: make multithreaded */
   NULL,
   NULL,
+  rumpdisk_device_get_status,
   NULL,
   NULL,
   NULL,
-  device_shutdown
+  NULL,
+  NULL,
+  rumpdisk_device_shutdown
 };
 
 void
