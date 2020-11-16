@@ -85,31 +85,28 @@ search_bd (char *name)
 }
 
 /* BSD name of whole disk device is /dev/wdXd
- * but we will receive /dev/wdX as the name */
+ * but we will receive wdX as the name */
 static void
 translate_name (char *output, int len, char *name)
 {
-  snprintf (output, len - 1, "%sd", name);
+  snprintf (output, len - 1, "/dev/%sd", name);
 }
 
 static boolean_t
-is_disk_device (char *name, int len)
+is_disk_device (char *name)
 {
-  char *dev;
+  const char *dev;
   const char *allowed_devs[MAX_DISK_DEV] = {
-    "/dev/wd",
-    "/dev/cd"
+    "wd",
+    "cd"
   };
   uint8_t i;
 
-  if (len < 8)
-    return FALSE;
-
   for (i = 0; i < MAX_DISK_DEV; i++)
     {
-      dev = (char *)allowed_devs[i];
+      dev = allowed_devs[i];
       /* /dev/XXN but we only care about /dev/XX prefix */
-      if (! strncmp (dev, name, 7))
+      if (! strncmp (dev, name, strlen(dev)))
         return TRUE;
     }
   return FALSE;
@@ -224,7 +221,7 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
   if (disabled)
     return D_NO_SUCH_DEVICE;
 
-  if (! is_disk_device (name, 8))
+  if (! is_disk_device (name))
     return D_NO_SUCH_DEVICE;
 
   /* Find previous device or open if new */
