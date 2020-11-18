@@ -698,8 +698,8 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   for (first_node = node_list, count = 2;
        first_node && first_entry > count;
-       first_node = first_node->next);
-  count++;
+       first_node = first_node->next)
+    count++;
 
   count = 0;
 
@@ -711,8 +711,14 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
   for (cn = first_node; cn; cn = cn->next)
     bump_size (cn->name);
-  
-  
+
+  if (size == 0)
+    {
+      *data_len = size;
+      *data_entries = count;
+      return 0;
+    }
+
   /* Allocate it.  */
   *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
   err = ((void *) *data == (void *) -1) ? errno : 0;
@@ -798,6 +804,9 @@ console_client_translator (void *unused)
 error_t
 console_create_consnode (const char *name, consnode_t *cn)
 {
+  /* inode number, 2 is reserved for the root */
+  static int cn_id = 3;
+
   *cn = malloc (sizeof (struct consnode));
   if (!*cn)
     return ENOMEM;
@@ -809,6 +818,7 @@ console_create_consnode (const char *name, consnode_t *cn)
       return ENOMEM;
     }
 
+  (*cn)->id = cn_id++;
   (*cn)->readlink = NULL;
   (*cn)->mksymlink = NULL;
 
