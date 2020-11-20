@@ -21,7 +21,9 @@
 #ifndef FSHELP_RLOCK_H
 #define FSHELP_RLOCK_H
 
-#ifndef FSHELP_EXTERN_INLINE
+#ifdef FSHELP_DEFINE_EXTERN_INLINE
+#define FSHELP_EXTERN_INLINE
+#else
 #define FSHELP_EXTERN_INLINE __extern_inline
 #endif
 
