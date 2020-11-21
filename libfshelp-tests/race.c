@@ -21,6 +21,7 @@
 #include <error.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "fs_U.h"
 #include <hurd.h>
 #include "io_U.h"
