@@ -149,7 +149,7 @@ template_make_file_name (const char *template,
 	      break;
 
 	    case 't':
-	      fprintf (stream, "%d", time (NULL));
+	      fprintf (stream, "%lld", (long long) time (NULL));
 	      break;
 
 	    default:
