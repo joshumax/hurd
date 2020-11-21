@@ -18,6 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <string.h>		/* For memset() */
+#include <unistd.h>
 
 #include <pthread.h>
 
