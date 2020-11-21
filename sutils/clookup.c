@@ -56,8 +56,8 @@ file_name_lookup_carefully (const char *name, int flags, mode_t mode)
 		  mach_port_t *node)
     {
       error_t err;
-      const char *head, *tail;
-      char *slash = index (name, '/');
+      const char *tail;
+      char *slash = index (name, '/'), *head;
 
       if (slash)
 	{
