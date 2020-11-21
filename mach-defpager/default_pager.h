@@ -38,6 +38,6 @@ void paging_space_info(vm_size_t *totp, vm_size_t *freep);
 void no_paging_space(boolean_t out_of_memory);
 void overcommitted(boolean_t got_more_space, vm_size_t space);
 
-void panic (const char *fmt, ...);
+void panic (const char *fmt, ...) __attribute__ ((noreturn));
 
 #endif /* _DEFAULT_PAGER_H_ */
