@@ -91,7 +91,7 @@ send_signal (mach_port_t msgport,
 			 MACH_MSG_TYPE_MAKE_SEND_ONCE)), /* msgh_bits */
       sizeof message,		/* msgh_size */
       msgport,			/* msgh_remote_port */
-      MACH_PORT_NULL,		/* msgh_local_port */
+      { MACH_PORT_NULL },	/* msgh_local_port */
       0,			/* msgh_seqno */
       RPCID_SIG_POST,		/* msgh_id */
     },
