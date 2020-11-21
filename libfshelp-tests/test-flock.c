@@ -114,7 +114,7 @@ int parse_args (int argc, char **argv, char **file_name,
 	      *sleep_time = tmp;
 	    }
 	  else
-	    error (1, EINVAL, "%s", str);
+	    error (1, EINVAL, "missing number");
 	  continue;
 	}
       error (1, EINVAL, "%s", str);
