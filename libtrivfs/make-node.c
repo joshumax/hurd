@@ -20,12 +20,6 @@
 
 #include "priv.h"
 
-static struct trivfs_node *
-init_node (struct trivfs_node *tp)
-{
-  return NULL;
-}
-
 struct trivfs_node *
 trivfs_make_node (struct trivfs_peropen *po)
 {
