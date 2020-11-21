@@ -168,7 +168,7 @@ int main (int argc, char **argv)
   if (fd < 0)
     error (1, errno, "open");
   printf ("Opening '%s', fd = %d, ", file_name, fd);
-  printf ("cmd = %s, len = %ld\n", cmdc, len);
+  printf ("cmd = %s, len = %lld\n", cmdc, (long long) len);
   printf ("Requesting lock\n");
   err = lockf (fd, cmd, len);
   if (err)
