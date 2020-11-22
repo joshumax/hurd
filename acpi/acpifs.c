@@ -39,7 +39,8 @@ create_dir_entry (char *name, struct acpi_table *t,
 {
   uint16_t parent_num_entries;
 
-  strncpy (entry->name, name, NAME_SIZE);
+  strncpy (entry->name, name, NAME_SIZE-1);
+  entry->name[NAME_SIZE-1] = '\0';
   entry->acpitable = t;
   entry->parent = parent;
   entry->stat = stat;
