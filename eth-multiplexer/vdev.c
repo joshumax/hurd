@@ -139,7 +139,8 @@ add_vdev (char *name, size_t size)
 
   vdev->dev_port = ports_get_right (vdev);
   ports_port_deref (vdev);
-  strncpy (vdev->name, name, IFNAMSIZ);
+  strncpy (vdev->name, name, IFNAMSIZ-1);
+  vdev->name[IFNAMSIZ-1] = '\0';
   vdev->if_header_size = ETH_HLEN;
   vdev->if_mtu = ETH_MTU;
   vdev->if_header_format = HDR_ETHERNET;
