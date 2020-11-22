@@ -47,8 +47,11 @@ __assert_fail_base_backtrace (const char *fmt,
 
   fprintf (stderr,
 	   fmt, program_invocation_name, file, line, function, assertion);
-  backtrace_symbols_fd (&buffer[skip], nptrs - skip, STDERR_FILENO);
-  fflush (stderr);
+  if (nptrs > skip)
+    {
+      backtrace_symbols_fd (&buffer[skip], nptrs - skip, STDERR_FILENO);
+      fflush (stderr);
+    }
 
   /* Die.  */
   abort ();
