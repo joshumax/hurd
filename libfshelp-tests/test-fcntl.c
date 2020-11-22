@@ -143,7 +143,7 @@ int parse_args (int argc, char **argv, char **file_name,
 	      lock->l_start = tmp;
 	    }
 	  else
-	    error (1, EINVAL, "%s", str);
+	    error (1, EINVAL, "missing number");
 	  continue;
 	}
       if (strncmp (str, "l", 2) == 0)
@@ -160,7 +160,7 @@ int parse_args (int argc, char **argv, char **file_name,
 	      lock->l_len = tmp;
 	    }
 	  else
-	    error (1, EINVAL, "%s", str);
+	    error (1, EINVAL, "missing number");
 	  continue;
 	}
       if (strncmp (str, "st", 2) == 0)
@@ -177,7 +177,7 @@ int parse_args (int argc, char **argv, char **file_name,
 	      *sleep_time = tmp;
 	    }
 	  else
-	    error (1, EINVAL, "%s", str);
+	    error (1, EINVAL, "missing number");
 	  continue;
 	}
       error (1, EINVAL, "%s", str);
