@@ -24,7 +24,7 @@ makemode := library
 
 libname = libps
 SRCS = context.c filters.c fmt.c host.c proclist.c procstat.c spec.c \
-	tty.c user.c write.c
+	tty.c user.c write.c ../utils/msgids.c
 installhdrs = ps.h
 installhdrsubdir = .
 
@@ -33,6 +33,7 @@ OBJS = $(SRCS:.c=.o) msgUser.o termUser.o
 
 msg-MIGUFLAGS = -D'MSG_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
 term-MIGUFLAGS = -D'TERM_IMPORTS=waittime 1000;' -DUSERPREFIX=ps_
+../utils/msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
 
 ps_%.h: %_U.h
 	sed 's/_$*_user_/_ps_$*_user_/g' $< > $@

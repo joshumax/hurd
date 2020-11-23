@@ -367,6 +367,8 @@ main(int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
+  msgids_scan_std ();
+
   err = proc_stat_list_create(context, &procset);
   if (err)
     error(1, err, "proc_stat_list_create");

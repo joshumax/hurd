@@ -32,10 +32,16 @@
 
 #include "ps.h"
 #include "common.h"
+#include "../utils/msgids.h"
 
 /* XXX */
 static char *get_syscall_name (int num) { return 0; }
-static char *get_rpc_name (mach_msg_id_t it) { return 0; }
+
+static char *get_rpc_name (mach_msg_id_t it)
+{
+  const struct msgid_info *info = msgid_info (it);
+  return info ? info->name : 0;
+}
 
 /* ---------------------------------------------------------------- */
 /* Getter definitions */
