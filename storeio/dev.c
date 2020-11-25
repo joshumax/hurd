@@ -87,6 +87,14 @@ dev_buf_fill (struct dev *dev, off_t offs)
   if (err)
     return err;
 
+  if (buf_len < store->block_size)
+    {
+      /* Short read, translate this to EIO */
+      if (buf != dev->buf)
+	munmap (buf, buf_len);
+      return EIO;
+    }
+
   if (buf != dev->buf)
     {
       munmap (dev->buf, store->block_size);
