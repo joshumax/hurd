@@ -41,6 +41,8 @@
 #define DIOCGMEDIASIZE  _IOR('d', 132, off_t)
 #define DIOCGSECTORSIZE _IOR('d', 133, unsigned int)
 
+#define BLKRRPART  _IO(0x12,95)     /* re-read partition table */
+
 #define DISK_NAME_LEN 32
 #define MAX_DISK_DEV 2
 
@@ -343,6 +345,21 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
 }
 
 static io_return_t
+rumpdisk_device_set_status (void *d, dev_flavor_t flavor, dev_status_t status,
+			    mach_msg_type_number_t status_count)
+{
+  switch (flavor)
+    {
+    case BLKRRPART:
+      /* Partitions are not implemented here, but in the parted-based
+       * translators.  */
+      return D_SUCCESS;
+    default:
+      return D_INVALID_OPERATION;
+    }
+}
+
+static io_return_t
 rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 			    mach_msg_type_number_t * count)
 {
@@ -363,7 +380,6 @@ rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
       break;
     default:
       return D_INVALID_OPERATION;
-      break;
     }
   return D_SUCCESS;
 }
@@ -394,7 +410,7 @@ static struct machdev_device_emulation_ops rump_block_emulation_ops = {
   NULL,
   rumpdisk_device_read, /* FIXME: make multithreaded */
   NULL,
-  NULL,
+  rumpdisk_device_set_status,
   rumpdisk_device_get_status,
   NULL,
   NULL,
