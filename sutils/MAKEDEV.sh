@@ -205,7 +205,7 @@ mkdev() {
 	  ;;
 	esac
 	case "$I" in
-	wd*)
+	wd*|cd*)
 	  USE_PARTSTORE=1
 	  MASTER=@/dev/disk:
 	  ;;
