@@ -46,7 +46,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int nextnamelen;
   error_t err = 0;
   char *pathbuf = 0;
-  int pathbuflen = 0;
   int newnamelen;
   int create, excl;
   int lastcomp = 0;
@@ -361,11 +360,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
 	  newnamelen = nextnamelen + np->dn_stat.st_size + 1 + 1;
-	  if (pathbuflen < newnamelen)
-	    {
-	      pathbuf = alloca (newnamelen);
-	      pathbuflen = newnamelen;
-	    }
+
+	  pathbuf = alloca (newnamelen);
 
 	  if (diskfs_read_symlink_hook)
 	    err = (*diskfs_read_symlink_hook)(np, pathbuf);
