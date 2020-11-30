@@ -38,6 +38,7 @@ _ports_complete_deallocate (struct port_info *pi)
           /* A reference was reacquired through a hash table lookup.
              It's fine, we didn't touch anything yet. */
           /* XXX: This really shouldn't happen.  */
+	  /* XXX: this did happen... */
           assert_backtrace (! "reacquired reference w/o send rights");
           pthread_rwlock_unlock (&_ports_htable_lock);
           return;

@@ -61,6 +61,7 @@ typedef mach_port_t shutdown_t;
 typedef char *data_t;
 typedef const char *const_data_t;
 typedef char string_t [1024];
+typedef const char *const_string_t;
 typedef int *intarray_t;
 typedef const int *const_intarray_t;
 typedef int *fd_mask_t;
