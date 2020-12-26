@@ -434,3 +434,20 @@ routine proc_set_entry (
 routine proc_get_entry (
 	process: process_t;
 	out entry: vm_address_t);
+
+/* Wait for a child process to exit.  If pid is zero, it waits for any
+   child in the same pgrp as the parent.  If pid is -1, it waits for
+   any child.  Otherwise, if pid is negative, it waits for any process
+   in the specified process group.  If pid is positive, it waits for
+   the specified process.  The exit status and resource usage of the
+   process are returned in status and rusage respectively.
+   options must specify at least one of WEXITED, WSTOPPED, or WCONTINUED.  */
+routine proc_waitid (
+	process: process_t;
+	sreplyport reply_port: sreply_port_t;
+	pid: pid_t;
+	options: int;
+	out status: int;
+	out sigcode: int;
+	out rusage: rusage_t;
+	out pid_status: pid_t);

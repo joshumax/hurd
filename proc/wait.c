@@ -35,6 +35,14 @@
 #include "process_S.h"
 #include <mach/mig_errors.h>
 
+#ifndef WCONTINUED
+#define WCONTINUED 4
+#endif
+
+#ifndef WEXITED
+#define WEXITED 16
+#endif
+
 static inline void
 rusage_add (struct rusage *acc, const struct rusage *b)
 {
@@ -161,24 +169,25 @@ alert_parent (struct proc *p)
 }
 
 kern_return_t
-S_proc_wait (struct proc *p,
-	     mach_port_t reply_port,
-	     mach_msg_type_name_t reply_port_type,
-	     pid_t pid,
-	     int options,
-	     int *status,
-	     int *sigcode,
-	     struct rusage *ru,
-	     pid_t *pid_status)
+S_proc_waitid (struct proc *p,
+	       mach_port_t reply_port,
+	       mach_msg_type_name_t reply_port_type,
+	       pid_t pid,
+	       int options,
+	       int *status,
+	       int *sigcode,
+	       struct rusage *ru,
+	       pid_t *pid_status)
 {
   int cancel;
 
   int reap (struct proc *child)
     {
       if (child->p_waited
-	  || (!child->p_dead
+	  || ((!child->p_dead || !(options & WEXITED))
 	      && (!child->p_stopped
-		  || !(child->p_traced || (options & WUNTRACED)))))
+		  || !(child->p_traced || (options & WUNTRACED)))
+	      && (!child->p_continued || !(options & WCONTINUED))))
 	return 0;
       child->p_waited = 1;
       *status = child->p_status;
@@ -237,6 +246,22 @@ S_proc_wait (struct proc *p,
   goto start_over;
 }
 
+kern_return_t
+S_proc_wait (struct proc *p,
+	     mach_port_t reply_port,
+	     mach_msg_type_name_t reply_port_type,
+	     pid_t pid,
+	     int options,
+	     int *status,
+	     int *sigcode,
+	     struct rusage *ru,
+	     pid_t *pid_status)
+{
+  return S_proc_waitid(p, reply_port, reply_port_type, pid,
+      options | WEXITED,
+      status, sigcode, ru, pid_status);
+}
+
 /* Implement proc_mark_stop as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_mark_stop (struct proc *p,
@@ -247,6 +272,7 @@ S_proc_mark_stop (struct proc *p,
     return EOPNOTSUPP;
 
   p->p_stopped = 1;
+  p->p_continued = 0;
   p->p_status = W_STOPCODE (signo);
   p->p_sigcode = sigcode;
   p->p_waited = 0;
@@ -294,6 +320,14 @@ S_proc_mark_cont (struct proc *p)
     return EOPNOTSUPP;
 
   p->p_stopped = 0;
+  p->p_continued = 1;
+  p->p_waited = 0;
+
+  if (p->p_parent->p_waiting)
+    {
+      pthread_cond_broadcast (&p->p_parent->p_wakeup);
+      p->p_parent->p_waiting = 0;
+    }
 
   if (!p->p_parent->p_nostopcld)
     send_signal (p->p_parent->p_msgport, SIGCHLD, CLD_CONTINUED, p->p_parent->p_task);

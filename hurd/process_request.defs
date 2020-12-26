@@ -423,3 +423,5 @@ skip; /* proc_get_exe */
 
 skip; /* proc_set_entry */
 skip; /* proc_get_entry */
+
+skip; /* proc_waitid */

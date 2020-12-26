@@ -94,6 +94,7 @@ struct proc
   unsigned int p_loginleader:1;	/* leader of login collection */
   unsigned int p_dead:1;	/* process is dead */
   unsigned int p_important:1;	/* has called proc_mark_important */
+  unsigned int p_continued:1;	/* has called proc_mark_cont */
 };
 
 typedef struct proc *pstruct_t;
