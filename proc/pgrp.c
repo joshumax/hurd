@@ -523,8 +523,8 @@ leave_pgrp (struct proc *p)
       if (dosignal)
 	for (ip = pg->pg_plist; ip; ip = ip->p_gnext)
 	  {
-	    send_signal (ip->p_msgport, SIGHUP, ip->p_task);
-	    send_signal (ip->p_msgport, SIGCONT, ip->p_task);
+	    send_signal (ip->p_msgport, SIGHUP, 0, ip->p_task);
+	    send_signal (ip->p_msgport, SIGCONT, 0, ip->p_task);
 	  }
     }
 }

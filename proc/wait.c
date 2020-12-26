@@ -145,7 +145,7 @@ alert_parent (struct proc *p)
   /* We accumulate the aggregate usage stats of all our dead children.  */
   rusage_add (&p->p_parent->p_child_rusage, &p->p_rusage);
 
-  send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
+  send_signal (p->p_parent->p_msgport, SIGCHLD, CLD_EXITED, p->p_parent->p_task);
 
   if (!p->p_exiting)
     {
@@ -258,7 +258,7 @@ S_proc_mark_stop (struct proc *p,
     }
 
   if (!p->p_parent->p_nostopcld)
-    send_signal (p->p_parent->p_msgport, SIGCHLD, p->p_parent->p_task);
+    send_signal (p->p_parent->p_msgport, SIGCHLD, CLD_STOPPED, p->p_parent->p_task);
 
   return 0;
 }
