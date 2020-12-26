@@ -292,7 +292,12 @@ S_proc_mark_cont (struct proc *p)
 {
   if (!p)
     return EOPNOTSUPP;
+
   p->p_stopped = 0;
+
+  if (!p->p_parent->p_nostopcld)
+    send_signal (p->p_parent->p_msgport, SIGCHLD, CLD_CONTINUED, p->p_parent->p_task);
+
   return 0;
 }
 
