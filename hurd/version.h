@@ -3,4 +3,4 @@
    and will only ever be increased.  This will be bumped whenever either
    the RPC interfaces or the library APIs change.  */
 
-#define HURD_INTERFACE_VERSION	20020609
+#define HURD_INTERFACE_VERSION	20201227
