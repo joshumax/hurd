@@ -327,6 +327,7 @@ S_proc_mark_cont (struct proc *p)
 
   p->p_stopped = 0;
   p->p_continued = 1;
+  p->p_status = __W_CONTINUED;
   p->p_waited = 0;
 
   if (p->p_parent->p_waiting)
