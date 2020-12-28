@@ -189,13 +189,19 @@ S_proc_waitid (struct proc *p,
 		  || !(child->p_traced || (options & WUNTRACED)))
 	      && (!child->p_continued || !(options & WCONTINUED))))
 	return 0;
-      child->p_waited = 1;
+
       *status = child->p_status;
       *sigcode = child->p_sigcode;
       *ru = child->p_rusage; /* all zeros if !p_dead */
       *pid_status = child->p_pid;
-      if (child->p_dead)
-	complete_exit (child);
+
+      if (!(options & WNOWAIT))
+      {
+	child->p_waited = 1;
+	if (child->p_dead)
+	  complete_exit (child);
+      }
+
       return 1;
     }
 
