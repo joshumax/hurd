@@ -39,6 +39,10 @@
 #define WCONTINUED 4
 #endif
 
+#ifndef WNOWAIT
+#define WNOWAIT 8
+#endif
+
 #ifndef WEXITED
 #define WEXITED 16
 #endif
