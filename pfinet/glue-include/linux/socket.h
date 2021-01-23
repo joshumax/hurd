@@ -8,7 +8,8 @@
 #include <sys/uio.h>
 #include <sys/ioctl.h>
 #include <limits.h>
-
+#include <string.h>
+#include <stdlib.h>
 
 /* #define IP_MAX_MEMBERSHIPS 10 */
 
