@@ -263,6 +263,8 @@ ethernet_close (struct device *dev)
   device_close (edev->ether_port);
   mach_port_deallocate (mach_task_self (), edev->ether_port);
   edev->ether_port = MACH_PORT_NULL;
+
+  return 0;
 }
 
 /* Transmit an ethernet frame */
