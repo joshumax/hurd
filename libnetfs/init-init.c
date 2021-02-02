@@ -40,6 +40,8 @@ netfs_init ()
   error_t err;
   err = maptime_map (0, 0, &netfs_mtime);
   if (err)
+    err = maptime_map (1, 0, &netfs_mtime);
+  if (err)
     error (2, err, "mapping time");
 
   netfs_protid_class = ports_create_class (netfs_release_protid, 0);
