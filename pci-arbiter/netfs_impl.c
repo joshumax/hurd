@@ -31,6 +31,7 @@
 #include <hurd/netfs.h>
 #include <hurd/paths.h>
 #include <mach/mach4.h>
+#include <device/device.h>
 
 #include "pcifs.h"
 #include "ncache.h"
@@ -570,9 +571,10 @@ mach_port_t
 netfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   error_t err;
-  mach_port_t host_priv;
+  mach_port_t master_device, devmem;
   memory_object_t default_pager, proxy;
-  vm_prot_t max_prot;
+  dev_mode_t mode;
+  vm_prot_t mprot, max_prot;
   size_t reg_num, count;
   struct pci_mem_region *region;
   memory_object_t objects[1];
@@ -593,8 +595,13 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
       return node->nn->ln->memproxy;
     }
 
+  /* Get region info */
+  reg_num =
+    strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
+  region = &node->nn->ln->device->regions[reg_num];
+
   /* Get our port to the default pager */
-  err = get_privileged_ports (&host_priv, NULL);
+  err = get_privileged_ports (NULL, &master_device);
   if (err == EPERM)
     {
       default_pager = file_name_lookup (_SERVERS_DEFPAGER, O_EXEC, 0);
@@ -605,9 +612,13 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
     goto error;
   else
     {
-      default_pager = MACH_PORT_NULL;
-      err = vm_set_default_memory_manager (host_priv, &default_pager);
-      mach_port_deallocate (mach_task_self (), host_priv);
+      mode = D_READ | D_WRITE;
+      mprot = VM_PROT_READ | VM_PROT_WRITE;
+      err = device_open (master_device, mode, "mem", &devmem);
+      if (err)
+	goto error;
+      err = device_map (devmem, mprot, 0x0, region->base_addr * region->size,
+			&default_pager, 0);
       if (err)
 	goto error;
     }
@@ -616,9 +627,6 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
 
   /* Get all params to create the proxy */
   max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
-  reg_num =
-    strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
-  region = &node->nn->ln->device->regions[reg_num];
   objects[0] = default_pager;
   offsets[0] = 0;
   starts[0] = region->base_addr;
