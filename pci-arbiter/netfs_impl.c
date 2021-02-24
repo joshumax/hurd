@@ -589,12 +589,6 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
       goto error;
     }
 
-  /* Return the existing proxy if any */
-  if (node->nn->ln->memproxy != MACH_PORT_NULL)
-    {
-      return node->nn->ln->memproxy;
-    }
-
   /* Get region info */
   reg_num =
     strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
@@ -640,8 +634,6 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
 				&proxy);
   if (err)
     goto error;
-
-  node->nn->ln->memproxy = proxy;
 
   return proxy;
 
