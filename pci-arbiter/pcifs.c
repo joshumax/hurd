@@ -54,7 +54,6 @@ create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
   entry->dir = 0;
   entry->node = node;
   entry->device = device;
-  entry->memproxy = MACH_PORT_NULL;
 
   /* Update parent's child list */
   if (entry->parent)

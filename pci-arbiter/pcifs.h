@@ -91,9 +91,6 @@ struct pcifs_dirent
    * Only for entries having a full B/D/F address.
    */
   struct pci_device *device;
-
-  /* Memory object proxy if any */
-  memory_object_t memproxy;
 };
 
 /*
