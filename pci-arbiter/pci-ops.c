@@ -261,7 +261,7 @@ S_pci_get_dev_rom (struct protid * master, char **data, size_t * datalen)
 	return ENOMEM;
     }
 
-  /* Copy the regions info */
+  /* Copy the rom info */
   rom.base_addr = 0; // pci_device_private only
   rom.size = e->device->rom_size;
   memcpy (*data, &rom, size);
