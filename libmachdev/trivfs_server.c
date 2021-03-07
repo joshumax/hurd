@@ -429,7 +429,7 @@ S_startup_dosync (mach_port_t handle)
   ports_port_deref (inpi);
 
   /* Sync and close device(s) */
-  machdev_device_shutdown ();
+  machdev_device_shutdown (handle);
 
   return trivfs_goaway (NULL, FSYS_GOAWAY_FORCE);
 }

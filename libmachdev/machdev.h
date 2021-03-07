@@ -30,7 +30,7 @@
 void machdev_register (struct machdev_device_emulation_ops *ops);
 
 void machdev_device_init(void);
-void machdev_device_shutdown(void);
+void machdev_device_shutdown(mach_port_t dosync_handle);
 void * machdev_server(void *);
 error_t machdev_create_device_port (size_t size, void *result);
 int machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const char *path, mach_port_t *bootstrap);

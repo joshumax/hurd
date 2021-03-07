@@ -315,13 +315,13 @@ void machdev_device_init()
     }
 }
 
-void machdev_device_shutdown()
+void machdev_device_shutdown(mach_port_t dosync_handle)
 {
   int i;
   for (i = 0; i < num_emul; i++)
     {
       if (emulation_list[i]->shutdown)
-        emulation_list[i]->shutdown();
+        emulation_list[i]->shutdown(dosync_handle);
     }
 }
 

@@ -193,7 +193,7 @@ rumpdisk_device_dealloc (void *d)
 }
 
 static void
-rumpdisk_device_shutdown (void)
+rumpdisk_device_shutdown (mach_port_t dosync_handle)
 {
   struct block_data *bd = block_head;
 
