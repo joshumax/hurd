@@ -39,12 +39,12 @@ check_permissions (struct protid *master, int flags)
   node = master->po->np;
   e = node->nn->ln;
 
-  /* Check wheter the user has permissions to access this node */
+  /* Check whether the user has permissions to access this node */
   err = entry_check_perms (master->user, e, flags);
   if (err)
     return err;
 
-  /* Check wheter the request has been sent to the proper node */
+  /* Check whether the request has been sent to the proper node */
   if (e->domain != 0		/* Only domain 0 can be accessed by I/O ports */
       || e->bus < 0 || e->dev < 0 || e->func < 0)
     err = EINVAL;
