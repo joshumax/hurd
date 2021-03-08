@@ -45,6 +45,11 @@ struct parse_hook
 
   /* Node cache length */
   size_t ncache_len;
+
+  /* Mach ports */
+  mach_port_t disk_server_task;
+  mach_port_t host_priv_port;
+  mach_port_t dev_master_port;
 };
 
 /* Lwip translator options.  Used for both startup and runtime.  */
@@ -65,6 +70,9 @@ static const struct argp_option options[] = {
   {0, 0, 0, 0, "Global configuration options:", 3},
   {"ncache", 'n', "LENGTH", 0,
    "Node cache length. " STR (NODE_CACHE_MAX) " by default"},
+  {"disk-server-task", 'T', "TASK", 0, "Task for bootstrapping disk server"},
+  {"host-priv-port", 'H', "PORT", 0, "Port for bootstrapping host"},
+  {"dev-master-port", 'P', "PORT", 0, "Port for bootstrapping device master"},
   {0}
 };
 

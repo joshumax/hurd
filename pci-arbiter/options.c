@@ -241,6 +241,15 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'n':
       h->ncache_len = atoi (arg);
       break;
+    case 'T':
+      h->disk_server_task = atoi (arg);
+      break;
+    case 'H':
+      h->host_priv_port = atoi (arg);
+      break;
+    case 'P':
+      h->dev_master_port = atoi (arg);
+      break;
     case ARGP_KEY_INIT:
       /* Initialize our parsing state.  */
       h = malloc (sizeof (struct parse_hook));
@@ -250,6 +259,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       h->permsets = 0;
       h->num_permsets = 0;
       h->ncache_len = NODE_CACHE_MAX;
+      h->disk_server_task = MACH_PORT_NULL;
+      h->host_priv_port = MACH_PORT_NULL;
+      h->dev_master_port = MACH_PORT_NULL;
       err = parse_hook_add_set (h);
       if (err)
 	FAIL (err, 1, err, "option parsing");
@@ -285,6 +297,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
       /* Set cache len */
       fs->params.node_cache_max = h->ncache_len;
+
+      /* Set bootstrap ports */
+      fs->params.disk_server_task = h->disk_server_task;
+      _hurd_host_priv = h->host_priv_port;
+      _hurd_device_master = h->dev_master_port;
 
       if (fs->root)
 	{
@@ -364,6 +381,8 @@ netfs_append_args (char **argz, size_t * argz_len)
   if (fs->params.node_cache_max != NODE_CACHE_MAX)
     ADD_OPT ("--ncache=%u", fs->params.node_cache_max);
 
+  if (fs->params.disk_server_task != MACH_PORT_NULL)
+    ADD_OPT ("--disk-server-task=%lu", fs->params.disk_server_task);
 #undef ADD_OPT
   return err;
 }
