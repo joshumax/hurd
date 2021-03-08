@@ -58,25 +58,22 @@ get_dirents (struct acpifs_dirent *dir,
   int i, count;
   size_t size;
   char *p;
+  int nentries = (int)dir->dir->num_entries;
 
-  if (first_entry >= dir->dir->num_entries)
+  if (first_entry >= nentries)
     {
       *data_len = 0;
       *data_entries = 0;
       return 0;
     }
 
-  if (max_entries < 0)
-    count = dir->dir->num_entries;
-  else
-    {
-      count = ((first_entry + max_entries) >= dir->dir->num_entries ?
-              dir->dir->num_entries : max_entries) - first_entry;
-    }
+  count = nentries - first_entry;
+  if (max_entries >= 0 && count > max_entries)
+    count = max_entries;
 
-  size =
-    (count * DIRENTS_CHUNK_SIZE) >
-    max_data_len ? max_data_len : count * DIRENTS_CHUNK_SIZE;
+  size = count * DIRENTS_CHUNK_SIZE;
+  if (max_data_len && size > max_data_len)
+    size = max_data_len;
 
   *data = mmap (0, size, PROT_READ | PROT_WRITE, MAP_ANON, 0, 0);
   err = ((void *) *data == (void *) -1) ? errno : 0;
