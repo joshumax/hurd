@@ -95,8 +95,10 @@ routine fsys_set_options (
         options: data_t;
 	do_children: int);
 
-/* The following two calls are only implemented by bootstrap filesystems. */
+/* The following two calls are only implemented by bootstrap filesystems.  */
 
+/* This is called by bootstrap translators to get the privileged host and device
+   master ports from the bootstrap filesystem.  */
 routine fsys_getpriv (
 	fsys: fsys_t;
 	RPT
@@ -104,6 +106,8 @@ routine fsys_getpriv (
 	out device_master: mach_port_send_t;
 	out fstask: mach_port_send_t);
 
+/* This is called by the startup translator to provide the bootstrap filesystem
+   with proc and auth ports.  */
 routine fsys_init (
 	fsys: fsys_t;
 	sreplyport reply_port: sreply_port_t;
