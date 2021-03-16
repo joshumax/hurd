@@ -21,7 +21,7 @@ makemode	= server
 PORTDIR = $(srcdir)/port
 
 SRCS		= main.c pci-ops.c netfs_impl.c \
-		  pcifs.c ncache.c options.c func_files.c startup.c \
+		  pcifs.c ncache.c options.c func_files.c \
 		  pciServer.c startup_notifyServer.c
 OBJS		= $(SRCS:.c=.o) $(MIGSTUBS)
 

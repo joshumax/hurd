@@ -31,11 +31,6 @@
 #include <pthread.h>
 #include <mach.h>
 
-/* TODO: Add api to pciaccess to allow selecting backend.
- * For now we pretend to be the arbiter and claim x86 method.
- */
-char *netfs_server_name = "pci-arbiter";
-
 mach_port_t bootstrap_resume_task = MACH_PORT_NULL;
 
 static const struct argp_option options[] = {
@@ -117,8 +112,8 @@ main (int argc, char **argv)
     }
 
   rump_register_block ();
-  machdev_device_init ();
   machdev_trivfs_init (bootstrap_resume_task, "rumpdisk", "/dev/rumpdisk", &bootstrap);
+  machdev_device_init ();
   err = pthread_create (&t, NULL, machdev_server, NULL);
   if (err)
     return err;

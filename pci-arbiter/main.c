@@ -43,7 +43,6 @@
 #include <pciaccess.h>
 #include <pthread.h>
 #include "pcifs.h"
-#include "startup.h"
 
 struct pcifs *fs;
 volatile struct mapped_time_value *pcifs_maptime;
@@ -106,16 +105,8 @@ pci_device_close (void *d)
 static void
 pci_device_shutdown (mach_port_t dosync_handle)
 {
-  struct port_info *inpi = ports_lookup_port (netfs_port_bucket, dosync_handle,
-					      pci_shutdown_notify_class);
-
-  if (!inpi)
-    return;
-
   // Free all libpciaccess resources
   pci_system_cleanup ();
-
-  ports_port_deref (inpi);
 
   ports_destroy_right (&pci_control_port);
 
@@ -192,15 +183,17 @@ pcifs_startup(mach_port_t bootstrap, int flags)
 
   err = ports_create_port (netfs_control_class, netfs_port_bucket,
 			     sizeof (struct port_info), &newpi);
-  if (!err)
+  if (err)
+    error (11, err, "Translator startup failure: pcifs_startup");
+
+  pci_control_port = ports_get_send_right (newpi);
+
+  if (bootstrap != MACH_PORT_NULL)
     {
-      pci_control_port = ports_get_send_right (newpi);
       err = fsys_startup (bootstrap, flags, pci_control_port, MACH_MSG_TYPE_COPY_SEND,
-			    &realnode);
+                          &realnode);
       assert_perror_backtrace (err);
     }
-  if (err)
-    error (11, err, "Translator startup failure: fsys_startup");
 
   return realnode;
 }
@@ -221,8 +214,8 @@ main (int argc, char **argv)
   if (disk_server_task != MACH_PORT_NULL)
     {
       machdev_register (&pci_arbiter_emulation_ops);
-      machdev_device_init ();
       machdev_trivfs_init (disk_server_task, "pci", "/servers/bus/pci", &bootstrap);
+      machdev_device_init ();
       err = pthread_create (&t, NULL, machdev_server, NULL);
       if (err)
         error (1, err, "Creating machdev thread");
@@ -277,12 +270,6 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "Creating netfs loop thread");
   pthread_detach (nt);
-
-  /*
-   * Ask init to tell us when the system is going down,
-   * so we can try to be friendly to our correspondents on the network.
-   */
-  arrange_shutdown_notification ();
 
   /* Let the other threads do their job */
   pthread_exit(NULL);
