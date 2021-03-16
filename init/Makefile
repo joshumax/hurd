@@ -21,4 +21,6 @@ SRCS = init.c
 OBJS = $(SRCS:.c=.o)
 target = init
 
+init-CPPFLAGS=-DLIBEXECDIR=\"${libexecdir}\"
+
 include ../Makeconf

@@ -1,0 +1,14 @@
+# Programs to be maintained on terminal lines.  init runs these programs,
+# and restartsthem when they die.  Note that in GNU, unlike in BSD, there
+# is no need to list pseudo-ttys here.
+
+# name	program				type		status	comments
+
+console	"@libexecdir@/getty 9600"		mach-gnu-color	on	secure trusted console
+tty1	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+tty2	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+tty3	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+tty4	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+tty5	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+tty6	"@libexecdir@/getty 38400"		hurd		on	secure trusted console
+#com0	"@libexecdir@/getty 9600"		dialup		on	secure

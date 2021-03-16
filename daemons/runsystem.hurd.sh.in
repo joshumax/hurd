@@ -23,10 +23,10 @@ fallback_shells='/bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
 SHELL=/bin/sh
 
 # Programs that do multi-user startup.
-prefix=
-exec_prefix=${prefix}
-RUNCOM=${exec_prefix}/libexec/rc
-RUNTTYS=${exec_prefix}/libexec/runttys
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+RUNCOM=@libexecdir@/rc
+RUNTTYS=@libexecdir@/runttys
 # Signals that we should pass down to runttys.
 runttys_sigs='TERM INT HUP TSTP'
 

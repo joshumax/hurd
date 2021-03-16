@@ -1261,7 +1261,7 @@ start_child (const char *prog, char **progargs)
 
   if (progargs == 0)
     {
-      const char *argv[] = { "/libexec/console-run", prog, 0 };
+      const char *argv[] = { LIBEXECDIR "/console-run", prog, 0 };
       err = argz_create ((char **) argv, &args, &arglen);
     }
   else
@@ -1271,7 +1271,7 @@ start_child (const char *prog, char **progargs)
 	++argc;
       {
 	const char *argv[2 + argc + 1];
-	argv[0] = "/libexec/console-run";
+	argv[0] = LIBEXECDIR "/console-run";
 	argv[1] = prog;
 	argv[2 + argc] = 0;
 	while (argc-- > 0)
@@ -1347,7 +1347,7 @@ launch_something (const char *why)
   static unsigned int try;
   static const char *const tries[] =
   {
-    "/libexec/runsystem",
+    LIBEXECDIR "/runsystem",
     _PATH_BSHELL,
     "/bin/shd",			/* XXX */
   };

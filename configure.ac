@@ -368,7 +368,7 @@ AC_SUBST([HAVE_LIBPCIACCESS])
 AC_SUBST([libpciaccess_CFLAGS])
 AC_SUBST([libpciaccess_LIBS])
 
-AC_CONFIG_FILES([config.make ${makefiles}])
+AC_CONFIG_FILES([config.make ${makefiles} daemons/runsystem.hurd.sh])
 AC_OUTPUT
 
 dnl Local Variables:

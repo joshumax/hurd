@@ -51,3 +51,7 @@ $(addprefix $(DESTDIR),$(installed_logins)): $(DESTDIR)$(sysconfdir)/login/%: lo
 
 $(addprefix $(DESTDIR),$(installed_conf)): $(DESTDIR)$(sysconfdir)/%: %
 	$(INSTALL_DATA) $< $(DESTDIR)$(sysconfdir)/$*
+
+cleantarg += ttys
+ttys: ttys.in
+	sed -e 's:@libexecdir@:'$(libexecdir)':g' < $< > $@
