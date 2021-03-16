@@ -503,6 +503,9 @@ endif
 
 # Tell make where to find other -l libraries that we use
 vpath libutil.% $(libdir)/
+vpath libpthread.% $(libdir)/
+vpath libbz2.% $(libdir)/
+vpath libz.% $(libdir)/
 
 # The libstore_%.a files fetch symbols from libstore.so
 ifneq ($(dir),libstore)
