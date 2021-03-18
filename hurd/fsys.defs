@@ -107,7 +107,7 @@ routine fsys_getpriv (
 	out fstask: mach_port_send_t);
 
 /* This is called by the startup translator to provide the bootstrap filesystem
-   with proc and auth ports.  */
+   with the process_t port for its own task, and an auth port.  */
 routine fsys_init (
 	fsys: fsys_t;
 	sreplyport reply_port: sreply_port_t;
