@@ -79,6 +79,9 @@ struct port_class *machdev_shutdown_notify_class;
 
 static void arrange_shutdown_notification (void);
 
+/* Our parent's task, if applicable */
+static task_t parent_task;
+
 static void
 install_as_translator (mach_port_t bootport)
 {
@@ -284,13 +287,16 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   retry_type retry;
   string_t retry_name;
   mach_port_t right = MACH_PORT_NULL;
-  process_t proc;
+  process_t proc, parent_proc;
 
   /* Traverse to the bootstrapping server first */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap)
     {
-      err = fsys_init (bootstrap, procserver, MACH_MSG_TYPE_COPY_SEND, authhandle);
+
+      err = proc_task2proc (procserver, parent_task, &parent_proc);
+      assert_perror_backtrace (err);
+      err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND, authhandle);
       assert_perror_backtrace (err);
     }
   err = fsys_getroot (control_port, MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
@@ -315,10 +321,12 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   proc = getproc ();
   assert_backtrace (proc);
   err = proc_mark_important (proc);
-  assert_perror_backtrace (err);
+  if (err && err != EPERM)
+    assert_perror_backtrace (err);
   err = proc_mark_exec (proc);
   assert_perror_backtrace (err);
-  proc_set_exe (proc, program_invocation_short_name);
+  err = proc_set_exe (proc, program_invocation_short_name);
+  assert_perror_backtrace (err);
   mach_port_deallocate (mach_task_self (), proc);
 
   if (bootstrapping)
@@ -430,7 +438,6 @@ machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const c
                     mach_port_t *bootstrap)
 {
   mach_port_t mybootstrap = MACH_PORT_NULL;
-  task_t parent_task;
   port_bucket = ports_create_bucket ();
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
   trivfs_protid_class = ports_create_class (trivfs_clean_protid, 0);
