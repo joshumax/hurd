@@ -324,13 +324,18 @@ S_io_stat (struct sock_user *user, struct stat *st)
   st->st_fstype = FSTYPE_SOCKET;
   st->st_mode = sock->mode;
   st->st_fsid = getpid ();
-  st->st_ino = sock->id;
+
   /* As we try to be clever with large transfers, ask for them. */
   st->st_blksize = vm_page_size * 16;
   st->st_uid = sock->uid;
   st->st_gid = sock->gid;
 
   pthread_mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
+
+  if (sock->id == MACH_PORT_NULL)
+    mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+				&sock->id);
+  st->st_ino = sock->id;
 
   rpipe = sock->read_pipe;
   wpipe = sock->write_pipe;
