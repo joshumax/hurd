@@ -205,6 +205,7 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   mach_port_t disk_server_task;
   pthread_t t, nt;
+  file_t underlying_node = MACH_PORT_NULL;
 
   /* Parse options */
   alloc_file_system (&fs);
@@ -245,12 +246,16 @@ main (int argc, char **argv)
     machdev_trivfs_server(bootstrap);
     /* Timer started, quickly do all these next, before we call rump_init */
 
+  if (disk_server_task == MACH_PORT_NULL)
+    underlying_node = netfs_startup (bootstrap, O_READ);
+
   /* Create the root node first */
-  err = init_root_node ();
+  err = init_root_node (underlying_node);
   if (err)
     error (1, err, "Creating the root node");
-  
-  pcifs_startup (bootstrap, O_READ);
+
+  if (disk_server_task != MACH_PORT_NULL)
+    pcifs_startup (bootstrap, O_READ);
 
   err = init_file_system (fs);
   if (err)

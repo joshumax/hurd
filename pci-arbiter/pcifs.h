@@ -205,7 +205,7 @@ extern volatile struct mapped_time_value *pcifs_maptime;
 
 /* FS manipulation functions */
 error_t alloc_file_system (struct pcifs **fs);
-error_t init_root_node (void);
+error_t init_root_node (file_t underlying_node);
 error_t init_file_system (struct pcifs *fs);
 error_t create_fs_tree (struct pcifs *fs);
 error_t fs_set_permissions (struct pcifs *fs);

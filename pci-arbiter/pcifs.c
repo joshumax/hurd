@@ -31,9 +31,6 @@
 #include "ncache.h"
 #include "func_files.h"
 
-/* Empty status for root node when bootstrapping */
-static io_statbuf_t underlying_stat;
-
 static error_t
 create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
 		  int16_t func, int32_t device_class, char *name,
@@ -92,15 +89,24 @@ alloc_file_system (struct pcifs ** fs)
 }
 
 error_t
-init_root_node (void)
+init_root_node (file_t underlying_node)
 {
+  error_t err;
   struct node *np;
-  io_statbuf_t *underlying_node_stat = &underlying_stat;
+  io_statbuf_t underlying_node_stat = { 0 };
+
+  if (underlying_node != MACH_PORT_NULL)
+    {
+      /* Initialize status from underlying node.  */
+      err = io_stat (underlying_node, &underlying_node_stat);
+      if (err)
+	return err;
+    }
 
   np = netfs_make_node_alloc (sizeof (struct netnode));
   if (!np)
     return ENOMEM;
-  np->nn_stat = *underlying_node_stat;
+  np->nn_stat = underlying_node_stat;
   np->nn_stat.st_fsid = getpid ();
   np->nn_stat.st_mode =
     S_IFDIR | S_IROOT | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH |
