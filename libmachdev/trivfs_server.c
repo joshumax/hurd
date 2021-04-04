@@ -76,11 +76,13 @@ static char *devnode;
 
 /* Startup and shutdown notifications management */
 struct port_class *machdev_shutdown_notify_class;
-
 static void arrange_shutdown_notification (void);
 
 /* Our parent's task, if applicable */
 static task_t parent_task;
+
+/* Our argument vector */
+static char **machdev_argv;
 
 static void
 install_as_translator (mach_port_t bootport)
@@ -315,7 +317,7 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   portarray[INIT_PORT_AUTH] = authhandle;
   portarray[INIT_PORT_CRDIR] = root;
   portarray[INIT_PORT_CWDIR] = root;
-  _hurd_init (0, NULL, portarray, INIT_PORT_MAX, NULL, 0);
+  _hurd_init (0, machdev_argv, portarray, INIT_PORT_MAX, NULL, 0);
 
   /* Mark us as important.  */
   proc = getproc ();
@@ -434,8 +436,8 @@ resume_bootstrap_server(mach_port_t server_task, const char *server_name)
 }
 
 int
-machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const char *path,
-                    mach_port_t *bootstrap)
+machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
+                    const char *name, const char *path, mach_port_t *bootstrap)
 {
   mach_port_t mybootstrap = MACH_PORT_NULL;
   port_bucket = ports_create_bucket ();
@@ -445,6 +447,7 @@ machdev_trivfs_init(mach_port_t bootstrap_resume_task, const char *name, const c
                          trivfs_protid_class, 0, &control);
 
   *bootstrap = MACH_PORT_NULL;
+  machdev_argv = argv;
 
   task_get_bootstrap_port (mach_task_self (), &mybootstrap);
   if (mybootstrap)
