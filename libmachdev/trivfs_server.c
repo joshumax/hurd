@@ -392,6 +392,8 @@ trivfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
   error_t err;
   mach_port_t right;
 
+  /* FIXME: check init_bootstrap_port */
+
   right = ports_get_send_right (&control->pi);
   err = get_privileged_ports (host_priv, NULL);
   if (!err)
@@ -453,7 +455,18 @@ machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
   if (mybootstrap)
     {
       *bootstrap = mybootstrap;
-      fsys_getpriv (*bootstrap, &_hurd_host_priv, &_hurd_device_master, &parent_task);
+
+      if (bootstrap_resume_task != MACH_PORT_NULL)
+	{
+	  mach_port_t host_priv;
+	  mach_port_t device_master;
+
+	  if (fsys_getpriv (*bootstrap, &host_priv, &device_master, &parent_task) == 0)
+	    {
+	      _hurd_host_priv = host_priv;
+	      _hurd_device_master = device_master;
+	    }
+	}
     }
 
   if (bootstrap_resume_task != MACH_PORT_NULL)
