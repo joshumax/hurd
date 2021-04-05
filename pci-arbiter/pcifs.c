@@ -30,6 +30,7 @@
 
 #include "ncache.h"
 #include "func_files.h"
+#include "device_map.h"
 
 static error_t
 create_dir_entry (int32_t domain, int16_t bus, int16_t dev,
@@ -325,6 +326,9 @@ create_fs_tree (struct pcifs * fs)
 		return err;
 	    }
 	}
+      /* Allocate some space so libpciaccess can store the pagers */
+      device->user_data =
+	(intptr_t) calloc (1, sizeof (struct pci_user_data));
 
       /* Create rom entry */
       if (device->rom_size)

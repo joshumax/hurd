@@ -22,7 +22,7 @@ PORTDIR = $(srcdir)/port
 
 SRCS		= main.c pci-ops.c netfs_impl.c \
 		  pcifs.c ncache.c options.c func_files.c \
-		  pciServer.c startup_notifyServer.c
+		  device_map.c pciServer.c startup_notifyServer.c
 OBJS		= $(SRCS:.c=.o) $(MIGSTUBS)
 
 HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash trivfs machdev
