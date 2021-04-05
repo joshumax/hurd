@@ -72,7 +72,7 @@ static const struct argp_option options[] = {
    "Node cache length. " STR (NODE_CACHE_MAX) " by default"},
   {"disk-server-task", 'T', "TASK", 0, "Task for bootstrapping disk server"},
   {"host-priv-port", 'H', "PORT", 0, "Port for bootstrapping host"},
-  {"dev-master-port", 'P', "PORT", 0, "Port for bootstrapping device master"},
+  {"device-master-port", 'P', "PORT", 0, "Port for bootstrapping device master"},
   {0}
 };
 
