@@ -166,10 +166,10 @@ create_fs_tree (struct pcifs * fs)
 
   nentries = 1;			/* Skip root entry */
   c_domain = c_bus = c_dev = -1;
-  iter = pci_slot_match_iterator_create(&match);
-  device = pci_device_next(iter);
+  iter = pci_slot_match_iterator_create (&match);
+  device = pci_device_next (iter);
 
-  for (i = 0; device != NULL; i++, device = pci_device_next(iter) )
+  for (i = 0; device != NULL; i++, device = pci_device_next (iter))
     {
       if (device->domain != c_domain)
 	{
@@ -207,7 +207,7 @@ create_fs_tree (struct pcifs * fs)
 	}
     }
 
-  pci_iterator_destroy(iter);
+  pci_iterator_destroy (iter);
 
   if (nentries == 1)
     {
@@ -222,10 +222,10 @@ create_fs_tree (struct pcifs * fs)
   e = list + 1;
   c_domain = c_bus = c_dev = -1;
   domain_parent = bus_parent = dev_parent = func_parent = 0;
-  iter = pci_slot_match_iterator_create(&match);
-  device = pci_device_next(iter);
+  iter = pci_slot_match_iterator_create (&match);
+  device = pci_device_next (iter);
 
-  for (i = 0; device != NULL; i++, device = pci_device_next(iter))
+  for (i = 0; device != NULL; i++, device = pci_device_next (iter))
     {
       if (device->domain != c_domain)
 	{
@@ -346,7 +346,7 @@ create_fs_tree (struct pcifs * fs)
 	}
     }
 
-  pci_iterator_destroy(iter);
+  pci_iterator_destroy (iter);
 
   /* The root node points to the first element of the entry list */
   fs->entries = list;
