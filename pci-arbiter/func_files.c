@@ -30,6 +30,8 @@
 
 #include <pciaccess.h>
 
+#include "device_map.h"
+
 /* Read or write a block of data from/to the configuration space */
 static error_t
 config_block_op (struct pci_device *dev, off_t offset, size_t * len,
@@ -202,16 +204,10 @@ io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
     region_block_ioport_op (region->base_addr, offset, len, data, read);
   else
     {
-      /* First check whether the region is already mapped */
-      if (region->memory == 0)
-	{
-	  /* Not mapped, try to map it now */
-	  err =
-	    pci_device_map_range (e->device, region->base_addr, region->size,
-				  PCI_DEV_MAP_FLAG_WRITABLE, &region->memory);
-	  if (err)
-	    return err;
-	}
+      /* Ensure the region is mapped */
+      err = device_map_region (e->device, region);
+      if (err)
+	return err;
       if (read)
 	memcpy (data, region->memory + offset, *len);
       else

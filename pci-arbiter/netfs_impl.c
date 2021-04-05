@@ -33,10 +33,12 @@
 #include <mach/mach4.h>
 #include <device/device.h>
 
+#include <pciaccess.h>
+
 #include "pcifs.h"
 #include "ncache.h"
-#include <pciaccess.h>
 #include "func_files.h"
+#include "device_map.h"
 
 #define DIRENTS_CHUNK_SIZE      (8*1024)
 /* Returned directory entries are aligned to blocks this many bytes long.
@@ -571,10 +573,8 @@ mach_port_t
 netfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   error_t err;
-  mach_port_t master_device, devmem;
-  memory_object_t default_pager, proxy;
-  dev_mode_t mode;
-  vm_prot_t mprot, max_prot;
+  memory_object_t pager, proxy;
+  vm_prot_t max_prot;
   size_t reg_num, count;
   struct pci_mem_region *region;
   memory_object_t objects[1];
@@ -594,34 +594,19 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
     strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
   region = &node->nn->ln->device->regions[reg_num];
 
-  /* Get our port to the default pager */
-  err = get_privileged_ports (NULL, &master_device);
-  if (err == EPERM)
-    {
-      default_pager = file_name_lookup (_SERVERS_DEFPAGER, O_EXEC, 0);
-      if (default_pager == MACH_PORT_NULL)
-	goto error;
-    }
-  else if (err)
-    goto error;
-  else
-    {
-      mode = D_READ | D_WRITE;
-      mprot = VM_PROT_READ | VM_PROT_WRITE;
-      err = device_open (master_device, mode, "mem", &devmem);
-      if (err)
-	goto error;
-      err = device_map (devmem, mprot, 0x0, region->base_addr * region->size,
-			&default_pager, 0);
-      if (err)
-	goto error;
-    }
-  if (default_pager == MACH_PORT_NULL)
-    goto error;
+  /* Ensure the region is mapped */
+  err = device_map_region (node->nn->ln->device, region);
+  if (err)
+    return err;
+
+  /* Get the pager which we are creating a proxy from */
+  pager =
+    ((struct pci_user_data *) node->nn->ln->device->user_data)->
+    pagers[reg_num];
 
   /* Get all params to create the proxy */
   max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
-  objects[0] = default_pager;
+  objects[0] = pager;
   offsets[0] = 0;
   starts[0] = region->base_addr;
   lens[0] = region->size;
