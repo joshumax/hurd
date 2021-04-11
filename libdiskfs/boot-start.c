@@ -634,6 +634,9 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
       portarray[INIT_PORT_CRDIR] = root_pt;
       portarray[INIT_PORT_CWDIR] = root_pt;
       _hurd_init (0, diskfs_argv, portarray, INIT_PORT_MAX, NULL, 0);
+#ifdef HAVE__HURD_LIBC_PROC_INIT
+      _hurd_libc_proc_init(diskfs_argv);
+#endif
     }
 
   err = get_privileged_ports (&host, 0);

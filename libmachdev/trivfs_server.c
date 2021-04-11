@@ -318,6 +318,9 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   portarray[INIT_PORT_CRDIR] = root;
   portarray[INIT_PORT_CWDIR] = root;
   _hurd_init (0, machdev_argv, portarray, INIT_PORT_MAX, NULL, 0);
+#ifdef HAVE__HURD_LIBC_PROC_INIT
+  _hurd_libc_proc_init(diskfs_argv);
+#endif
 
   /* Mark us as important.  */
   proc = getproc ();

@@ -153,6 +153,7 @@ AC_CACHE_CHECK([for libio],
 
 # Check if libc contains these functions.
 AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
+AC_CHECK_FUNCS(_hurd_libc_proc_init)
 
 # Compatibility with glibc < 2.28
 AC_CHECK_FUNCS(file_futimens)
