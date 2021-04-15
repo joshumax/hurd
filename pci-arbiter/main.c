@@ -243,8 +243,17 @@ main (int argc, char **argv)
     error (1, err, "Starting the PCI system");
 
   if (disk_server_task != MACH_PORT_NULL)
-    machdev_trivfs_server(bootstrap);
-    /* Timer started, quickly do all these next, before we call rump_init */
+    {
+      void *run_server(void *arg) {
+	machdev_trivfs_server(bootstrap);
+	return NULL;
+      }
+
+      pthread_t t;
+      pthread_create(&t, NULL, run_server, NULL);
+      pthread_detach(t);
+      /* Timer started, quickly do all these next, before we call rump_init */
+    }
 
   if (disk_server_task == MACH_PORT_NULL)
     underlying_node = netfs_startup (bootstrap, O_READ);

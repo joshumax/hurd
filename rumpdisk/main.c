@@ -119,7 +119,5 @@ main (int argc, char **argv)
     return err;
   pthread_detach (t);
   machdev_trivfs_server (bootstrap);
-  /* Let the other threads do their job */
-  pthread_exit (NULL);
   return 0;
 }

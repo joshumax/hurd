@@ -557,27 +557,11 @@ trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *stat)
 {
 }
 
-static void *
-machdev_trivfs_loop(void *arg)
-{
-  struct trivfs_control *fsys = (struct trivfs_control *)arg;
-
-  /* Launch.  */
-  do
-    {
-      ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
-    } while (trivfs_goaway (fsys, 0));
-
-  /* Never reached */
-  return 0;
-}
-
 void
 machdev_trivfs_server(mach_port_t bootstrap)
 {
   struct trivfs_control *fsys = NULL;
   int err;
-  pthread_t t;
 
   if (bootstrapping == FALSE)
     {
@@ -594,8 +578,11 @@ machdev_trivfs_server(mach_port_t bootstrap)
       fsys = control;
     }
 
-  err = pthread_create (&t, NULL, machdev_trivfs_loop, (void *)fsys);
-  if (err)
-    error (1, err, "Creating machdev server thread");
-  pthread_detach (t);
+  /* Launch.  */
+  do
+    {
+      ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
+    } while (trivfs_goaway (fsys, 0));
+
+  /* Never reached */
 }
