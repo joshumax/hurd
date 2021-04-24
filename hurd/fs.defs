@@ -224,7 +224,9 @@ routine dir_lookup (
 /* Read entries from the directory.  Each entry is identified
    by an index number starting at 0 and running through the file.  This
    call fetches NENTRIES (or any convenient number if NENTRIES is -1)
-   entries starting at ENTRY, returning an array of struct directs in DATA.
+   entries starting at ENTRY, returning a series of struct dirent in DATA.
+   Note that due to the variable-size D_NAME field, D_RECLEN has to be used to
+   jump from one struct dirent to the other.
    The number of entries successfully read is returned in AMOUNT.  If ENTRY
    is bigger than the index of the last entry, then 0 is returned in
    AMOUNT.  If BUFSIZE is nonzero, never return more than BUFSIZE bytes of
