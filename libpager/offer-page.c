@@ -34,13 +34,6 @@ pager_offer_page (struct pager *p,
     goto release_out;
 
   short *pm_entry = &p->pagemap[offset / vm_page_size];
-
-  while (*pm_entry & PM_INCORE)
-    {
-      pthread_mutex_unlock (&p->interlock);
-      pager_flush_some (p, offset, vm_page_size, 1);
-      pthread_mutex_lock (&p->interlock);
-    }
   *pm_entry |= PM_INCORE;
 
   memory_object_data_supply (p->memobjcntl, offset, buf, vm_page_size, 0,
