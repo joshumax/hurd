@@ -29,7 +29,7 @@ _pager_pagemap_resize (struct pager *p, vm_address_t off)
   if (p->pagemapsize < off)
     {
       void *newaddr;
-      int newsize = round_page (off);
+      vm_size_t newsize = round_page (off);
 
       newaddr = mmap (0, newsize * sizeof (*p->pagemap), 
 		      PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);

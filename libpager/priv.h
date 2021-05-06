@@ -66,7 +66,7 @@ struct pager
 #endif
 
   short *pagemap;
-  int pagemapsize;		/* number of elements in PAGEMAP */
+  vm_size_t pagemapsize;	/* number of elements in PAGEMAP */
 };
 
 struct lock_request
