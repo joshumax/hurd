@@ -16,33 +16,25 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include <stdlib.h>
 #include <string.h>
 
 /* Grow the pagemap of pager P as necessary to deal with address OFF */
 error_t
 _pager_pagemap_resize (struct pager *p, vm_address_t off)
 {
-  error_t err = 0;
-
   off /= __vm_page_size;
 
   if (p->pagemapsize < off)
     {
-      void *newaddr;
-      vm_size_t newsize = round_page (off * sizeof (*p->pagemap))
-                                          / sizeof (*p->pagemap);
+      void *newaddr = reallocarray (p->pagemap, off,
+                                    sizeof (*p->pagemap));
+      if (!newaddr)
+        return errno;
 
-      newaddr = mmap (0, newsize * sizeof (*p->pagemap),
-		      PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-      err = (newaddr == (void *) -1) ? errno : 0;
-      if (! err)
-	{
-	  memcpy (newaddr, p->pagemap, p->pagemapsize * sizeof (*p->pagemap));
-	  munmap (p->pagemap, p->pagemapsize * sizeof (*p->pagemap));
-	  p->pagemap = newaddr;
-	  p->pagemapsize = newsize;
-	}
+      p->pagemap = newaddr;
+      p->pagemapsize = off;
     }
 
-  return err;
+  return 0;
 }

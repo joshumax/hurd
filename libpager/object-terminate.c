@@ -17,6 +17,7 @@
 
 #include "priv.h"
 #include "memory_object_S.h"
+#include <stdlib.h>
 #include <stdio.h>
 
 /* Implement the object termination call from the kernel as described
@@ -118,10 +119,10 @@ _pager_free_structure (struct pager *p)
   /* Free the pagemap */
   if (p->pagemapsize)
     {
-      munmap (p->pagemap, p->pagemapsize * sizeof (* p->pagemap));
+      free (p->pagemap);
       p->pagemapsize = 0;
       p->pagemap = 0;
     }
-  
+
   p->pager_state = NOTINIT;
 }
