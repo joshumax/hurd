@@ -32,6 +32,8 @@ _pager_pagemap_resize (struct pager *p, vm_address_t off)
       if (!newaddr)
         return errno;
 
+      memset ((short *) newaddr + p->pagemapsize, 0,
+              (off - p->pagemapsize) * sizeof (*p->pagemap));
       p->pagemap = newaddr;
       p->pagemapsize = off;
     }
