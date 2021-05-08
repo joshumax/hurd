@@ -32,7 +32,11 @@ fshelp_fetch_control (struct transbox *box,
                               MACH_PORT_RIGHT_SEND, 1);
 
   if (err == KERN_INVALID_RIGHT)
-    *control = box->active = MACH_PORT_NULL;
+    {
+      err = mach_port_deallocate (mach_task_self (), *control);
+      assert_perror_backtrace (err);
+      *control = box->active = MACH_PORT_NULL;
+    }
 
   return err;
 }
