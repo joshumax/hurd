@@ -396,7 +396,11 @@ main(int argc, char *argv[])
 				 argz, argz_len,
 				 active_control, MACH_MSG_TYPE_COPY_SEND);
       if (err)
-	error (5, err, "%s", node_name);
+        {
+          if (active_control != MACH_PORT_NULL)
+            fsys_goaway (active_control, FSYS_GOAWAY_FORCE);
+          error (5, err, "%s", node_name);
+        }
     }
 
   if (chroot_command)
