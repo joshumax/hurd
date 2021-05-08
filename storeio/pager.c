@@ -66,9 +66,9 @@ pager_read_page (struct user_pager_info *upi,
     return 0;
 }
 
-/* For pager PAGER, synchronously write one page from BUF to offset PAGE.  In
-   addition, vm_deallocate (or equivalent) BUF.  The only permissible error
-   returns are EIO, EDQUOT, and ENOSPC. */
+/* For pager PAGER, synchronously write one page from BUF to offset PAGE.
+   Do not deallocate BUF, and do not keep any references to BUF.  The only
+   permissible error returns are EIO, EDQUOT, and ENOSPC. */
 error_t
 pager_write_page (struct user_pager_info *upi,
 		  vm_offset_t page, vm_address_t buf)
@@ -89,8 +89,6 @@ pager_write_page (struct user_pager_info *upi,
 	want = store->size - page;
 
       err = dev_write (dev, page, (char *)buf, want, &written);
-
-      munmap ((caddr_t) buf, vm_page_size);
 
       if (err || written < want)
 	return EIO;

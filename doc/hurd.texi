@@ -1536,9 +1536,9 @@ only permissible error returns are @code{EIO}, @code{EDQUOT}, and
 
 @deftypefun error_t pager_write_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{page}}, @w{vm_address_t @var{buf}})
 For pager @var{pager}, synchronously write one page from @var{buf} to
-offset @var{page}.  In addition, @code{vm_deallocate} (or equivalent)
-@var{buf}.  The only permissible error returns are @code{EIO},
-@code{EDQUOT}, and @code{ENOSPC}.
+offset @var{page}.  Do not deallocate @var{buf}, and do not keep any
+references to @var{buf}.  The only permissible error returns are
+@code{EIO}, @code{EDQUOT}, and @code{ENOSPC}.
 @end deftypefun
 
 @deftypefun error_t pager_unlock_page (@w{struct user_pager_info *@var{pager}}, @w{vm_offset_t @var{address}})
