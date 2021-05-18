@@ -367,6 +367,11 @@ main(int argc, char *argv[])
   /* Parse our command line.  This shouldn't ever return an error.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
+  /* If no output width limit has been set explicitly, and we're not printing
+     to a tty, do not limit output width.  */
+  if (output_width == -1 && !isatty (STDOUT_FILENO))
+    output_width = 0;
+
   msgids_scan_std ();
 
   err = proc_stat_list_create(context, &procset);
