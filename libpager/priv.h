@@ -55,6 +55,8 @@ struct pager
   memory_object_control_t memobjcntl;
   memory_object_name_t memobjname;
 
+  memory_object_t ro_proxy;
+
   int noterm;			/* number of threads blocking termination */
 
   int termwaiting:1;

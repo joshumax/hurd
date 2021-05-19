@@ -115,6 +115,11 @@ _pager_free_structure (struct pager *p)
       mach_port_deallocate (mach_task_self (), p->memobjname);
       p->memobjname = MACH_PORT_NULL;
     }
+  if (p->ro_proxy != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), p->ro_proxy);
+      p->ro_proxy = MACH_PORT_NULL;
+    }
 
   /* Free the pagemap */
   if (p->pagemapsize)
