@@ -832,7 +832,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
   pager = diskfs_node_disknode (node)->pager;
   if (pager)
     {
-      right = pager_get_port (pager);
+      ports_port_ref (pager);
       pager_get_upi (pager)->max_prot |= prot;
     }
   else
@@ -854,15 +854,22 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 
       /* A weak reference for being part of the node.  */
       ports_port_ref_weak (pager);
-
-      right = pager_get_port (pager);
-      ports_port_deref (pager);
     }
 
   pthread_spin_unlock (&node_to_page_lock);
 
-  mach_port_insert_right (mach_task_self (), right, right,
-                          MACH_MSG_TYPE_MAKE_SEND);
+  if (prot & VM_PROT_WRITE)
+    right = ports_get_send_right (pager);
+  else
+    {
+      right = pager_get_ro_port (pager);
+      mach_port_mod_refs (mach_task_self (), right,
+                          MACH_PORT_RIGHT_SEND, +1);
+    }
+
+  ports_port_deref (pager);
+
+  assert_backtrace (MACH_PORT_VALID (right));
 
   return right;
 }
