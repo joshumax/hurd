@@ -169,6 +169,9 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   assert_backtrace (S_ISDIR (np->dn_stat.st_mode)
 	  || S_ISREG (np->dn_stat.st_mode)
 	  || S_ISLNK (np->dn_stat.st_mode));
+
+  /* We only support read-only pagers.  */
+  assert_backtrace (prot == VM_PROT_READ);
   
   pthread_spin_lock (&node2pagelock);
   
