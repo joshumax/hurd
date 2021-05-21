@@ -736,17 +736,7 @@ void
 pager_clear_user_data (struct user_pager_info *upi)
 {
   if (upi->type == FILE_DATA)
-    {
-      struct pager *pager;
-      
-      pthread_spin_lock (&node_to_page_lock);
-      pager = upi->node->dn->pager;
-      if (pager && pager_get_upi (pager) == upi)
-	upi->node->dn->pager = 0;
-      pthread_spin_unlock (&node_to_page_lock);
-      
-      diskfs_nrele_light (upi->node);
-    }
+    diskfs_nrele_light (upi->node);
 }
 
 /* This will be called when the ports library wants to drop weak
@@ -754,8 +744,25 @@ pager_clear_user_data (struct user_pager_info *upi)
    If the user doesn't either, then it's OK for this function to do
    nothing.  */
 void
-pager_dropweak (struct user_pager_info *p __attribute__ ((unused)))
+pager_dropweak (struct user_pager_info *upi)
 {
+  struct pager *pager;
+
+  if (upi->type != FILE_DATA)
+    return;
+
+  pthread_spin_lock (&node_to_page_lock);
+
+  pager = diskfs_node_disknode (upi->node)->pager;
+
+  if (pager)
+    {
+      assert_backtrace (pager_get_upi (pager) == upi);
+      diskfs_node_disknode (upi->node)->pager = NULL;
+      ports_port_deref_weak (pager);
+    }
+
+  pthread_spin_unlock (&node_to_page_lock);
 }
 
 /* Create the disk pager.  */
@@ -813,51 +820,45 @@ resume_fat_pager (void)
 mach_port_t
 diskfs_get_filemap (struct node *node, vm_prot_t prot)
 {
+  struct pager *pager;
   mach_port_t right;
-  
+
   assert_backtrace (S_ISDIR (node->dn_stat.st_mode)
 	  || S_ISREG (node->dn_stat.st_mode)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
-  
-  pthread_spin_lock (&node_to_page_lock);
-  do
-    {
-      struct pager *pager = node->dn->pager;
-      if (pager)
-	{
-          /* Because PAGER is not a real reference, this might be
-             nearly deallocated.  If that's so, then the port right
-             will be null.  In that case, clear here and loop.  The
-             deallocation will complete separately. */
-          right = pager_get_port (pager);
-          if (right == MACH_PORT_NULL)
-            node->dn->pager = 0;
-          else
-            pager_get_upi (pager)->max_prot |= prot;
-        }
-      else
-        {
-          struct user_pager_info *upi;
-          node->dn->pager =
-            pager_create_alloc (sizeof *upi, file_pager_bucket, MAY_CACHE,
-                                MEMORY_OBJECT_COPY_DELAY, 0);
-          if (node->dn->pager == NULL)
-            {
-              diskfs_nrele_light (node);
-              pthread_spin_unlock (&node_to_page_lock);
-              return MACH_PORT_NULL;
-            }
-          upi = pager_get_upi (node->dn->pager);
-          upi->type = FILE_DATA;
-          upi->node = node;
-          upi->max_prot = prot;
-          diskfs_nref_light (node);
 
-          right = pager_get_port (node->dn->pager);
-          ports_port_deref (node->dn->pager);
-        }
+  pthread_spin_lock (&node_to_page_lock);
+
+  pager = diskfs_node_disknode (node)->pager;
+  if (pager)
+    {
+      right = pager_get_port (pager);
+      pager_get_upi (pager)->max_prot |= prot;
     }
-  while (right == MACH_PORT_NULL);
+  else
+    {
+      struct user_pager_info *upi;
+      pager = pager_create_alloc (sizeof *upi, file_pager_bucket,
+                                  MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
+      if (pager == NULL)
+        {
+          pthread_spin_unlock (&node_to_page_lock);
+          return MACH_PORT_NULL;
+        }
+      upi = pager_get_upi (pager);
+      upi->type = FILE_DATA;
+      upi->node = node;
+      upi->max_prot = prot;
+      diskfs_nref_light (node);
+      diskfs_node_disknode (node)->pager = pager;
+
+      /* A weak reference for being part of the node.  */
+      ports_port_ref_weak (pager);
+
+      right = pager_get_port (pager);
+      ports_port_deref (pager);
+    }
+
   pthread_spin_unlock (&node_to_page_lock);
 
   mach_port_insert_right (mach_task_self (), right, right,
