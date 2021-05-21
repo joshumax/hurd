@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <mach/mach4.h>
 #include <hurd/hurd_types.h>
 #include <hurd/store.h>
 #include "default_pager_U.h"
@@ -72,9 +73,11 @@ diskfs_free_node (struct node *np, mode_t mode)
   switch (np->dn->type)
     {
     case DT_REG:
+      /* XXX GNU Mach will terminate the object, and thus existing mappings
+       * will get SIGBUS.  */
+      if (np->dn->u.reg.ro_memobj != MACH_PORT_NULL)
+        mach_port_deallocate (mach_task_self (), np->dn->u.reg.ro_memobj);
       if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
-	/* XXX GNU Mach will terminate the object, and thus existing mappings
-	 * will get SIGBUS.  */
 	vm_deallocate (mach_task_self (), np->dn->u.reg.memref, 4096);
 	mach_port_deallocate (mach_task_self (), np->dn->u.reg.memobj);
       }	
@@ -520,6 +523,7 @@ mach_port_t
 diskfs_get_filemap (struct node *np, vm_prot_t prot)
 {
   error_t err;
+  mach_port_t right;
 
   if (np->dn->type != DT_REG)
     {
@@ -561,14 +565,35 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       assert_perror_backtrace (err);
     }
 
-  /* XXX always writable */
+  if (prot & VM_PROT_WRITE)
+    right = np->dn->u.reg.memobj;
+  else if (np->dn->u.reg.ro_memobj == MACH_PORT_NULL)
+    {
+      vm_offset_t offset = 0;
+      vm_offset_t start = 0;
+      vm_size_t len = ~0;
+      err = memory_object_create_proxy (mach_task_self (),
+                                        VM_PROT_READ | VM_PROT_EXECUTE,
+                                        &np->dn->u.reg.memobj, 1,
+                                        &offset, 1, &start, 1, &len, 1,
+                                        &np->dn->u.reg.ro_memobj);
+      if (err)
+        {
+          errno = err;
+          return MACH_PORT_NULL;
+        }
+
+      right = np->dn->u.reg.ro_memobj;
+    }
+  else
+      right = np->dn->u.reg.ro_memobj;
 
   /* Add a reference for each call, the caller will deallocate it.  */
-  err = mach_port_mod_refs (mach_task_self (), np->dn->u.reg.memobj,
-			    MACH_PORT_RIGHT_SEND, +1);
+  err = mach_port_mod_refs (mach_task_self (), right,
+                            MACH_PORT_RIGHT_SEND, +1);
   assert_perror_backtrace (err);
 
-  return np->dn->u.reg.memobj;
+  return right;
 }
 
 /* The user must define this function.  Return a `struct pager *' suitable

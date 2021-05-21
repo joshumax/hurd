@@ -46,7 +46,7 @@ struct disknode
     char *lnk;			/* malloc'd symlink target */
     struct
     {
-      mach_port_t memobj;
+      mach_port_t memobj, ro_memobj;
       vm_address_t memref;
       unsigned int allocpages;	/* largest size while memobj was live */
     } reg;
