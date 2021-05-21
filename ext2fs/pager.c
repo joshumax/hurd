@@ -1296,6 +1296,7 @@ resume_ext2_pager (void)
 mach_port_t
 diskfs_get_filemap (struct node *node, vm_prot_t prot)
 {
+  struct pager *pager;
   mach_port_t right;
 
   assert_backtrace (S_ISDIR (node->dn_stat.st_mode)
@@ -1303,45 +1304,49 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
 	  || (S_ISLNK (node->dn_stat.st_mode)));
 
   pthread_spin_lock (&node_to_page_lock);
-  do
+
+  pager = diskfs_node_disknode (node)->pager;
+  if (pager)
     {
-      struct pager *pager = diskfs_node_disknode (node)->pager;
-      if (pager)
-	{
-	  right = pager_get_port (pager);
-	  assert_backtrace (MACH_PORT_VALID (right));
-	  pager_get_upi (pager)->max_prot |= prot;
-	}
-      else
-	{
-	  struct user_pager_info *upi;
-	  pager = pager_create_alloc (sizeof *upi, file_pager_bucket,
-				      MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
-	  if (pager == NULL)
-	    {
-	      pthread_spin_unlock (&node_to_page_lock);
-	      return MACH_PORT_NULL;
-	    }
-
-	  upi = pager_get_upi (pager);
-	  upi->type = FILE_DATA;
-	  upi->node = node;
-	  upi->max_prot = prot;
-	  diskfs_nref_light (node);
-	  diskfs_node_disknode (node)->pager = pager;
-
-	  /* A weak reference for being part of the node.  */
-	  ports_port_ref_weak (diskfs_node_disknode (node)->pager);
-
-	  right = pager_get_port (diskfs_node_disknode (node)->pager);
-	  ports_port_deref (diskfs_node_disknode (node)->pager);
-	}
+      ports_port_ref (pager);
+      pager_get_upi (pager)->max_prot |= prot;
     }
-  while (right == MACH_PORT_NULL);
+  else
+    {
+      struct user_pager_info *upi;
+      pager = pager_create_alloc (sizeof *upi, file_pager_bucket,
+                                  MAY_CACHE, MEMORY_OBJECT_COPY_DELAY, 0);
+      if (pager == NULL)
+        {
+          pthread_spin_unlock (&node_to_page_lock);
+          return MACH_PORT_NULL;
+        }
+
+      upi = pager_get_upi (pager);
+      upi->type = FILE_DATA;
+      upi->node = node;
+      upi->max_prot = prot;
+      diskfs_nref_light (node);
+      diskfs_node_disknode (node)->pager = pager;
+
+      /* A weak reference for being part of the node.  */
+      ports_port_ref_weak (pager);
+    }
+
   pthread_spin_unlock (&node_to_page_lock);
 
-  mach_port_insert_right (mach_task_self (), right, right,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  if (prot & VM_PROT_WRITE)
+    right = ports_get_send_right (pager);
+  else
+    {
+      right = pager_get_ro_port (pager);
+      mach_port_mod_refs (mach_task_self (), right,
+                          MACH_PORT_RIGHT_SEND, +1);
+    }
+
+  ports_port_deref (pager);
+
+  assert_backtrace (MACH_PORT_VALID (right));
 
   return right;
 }
