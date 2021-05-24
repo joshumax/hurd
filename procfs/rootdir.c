@@ -667,13 +667,12 @@ rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
 
   pthread_spin_lock (&rootdir_translated_node_lock);
   np = *ops->npp;
+  if (np != NULL)
+    netfs_nref (np);
   pthread_spin_unlock (&rootdir_translated_node_lock);
 
   if (np != NULL)
-    {
-      netfs_nref (np);
-      return np;
-    }
+    return np;
 
   np = procfs_make_node (entry_hook, (void *) entry_hook);
   if (np == NULL)
@@ -686,11 +685,12 @@ rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
   prev = *ops->npp;
   if (*ops->npp == NULL)
     *ops->npp = np;
+  netfs_nref (*ops->npp);
   pthread_spin_unlock (&rootdir_translated_node_lock);
 
   if (prev != NULL)
     {
-      procfs_cleanup (np);
+      netfs_nrele (np);
       np = prev;
     }
 
