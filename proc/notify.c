@@ -1,5 +1,6 @@
 /* Handle notifications
-   Copyright (C) 1992, 1993, 1994, 1996, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1992, 1993, 1994, 1996, 1999, 2021
+   Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -17,7 +18,7 @@
    along with the GNU Hurd; see the file COPYING.  If not, write to
    the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-/* Written by Michael I. Bushnell.  */
+/* Written by Michael I. Bushnell and Sergey Bugaev.  */
 
 #include <mach.h>
 #include <sys/types.h>
@@ -33,40 +34,26 @@
 #include "notify_S.h"
 
 /* We ask for dead name notifications to detect when tasks and
-   message ports die.  Both notifications get sent to the process
-   port.   */
+   message ports die.  All notifications get sent to the notify
+   port.  */
 kern_return_t
 do_mach_notify_dead_name (struct port_info *pi,
-			  mach_port_t deadport)
+                          mach_port_t dead_name)
 {
   struct proc *p;
 
-  if (!pi)
+  if (!pi || !ports_port_is_notify (pi))
     return EOPNOTSUPP;
 
-  if (pi->port_right == generic_port)
-    {
-      check_dead_execdata_notify (deadport);
-      mach_port_deallocate (mach_task_self (), deadport);
-      return 0;
-    }
+  check_dead_execdata_notify (dead_name);
 
-  p = (struct proc *) pi;
+  p = task_find_nocreate (dead_name);
+  if (p)
+    process_has_exited (p);
 
-  if (p->p_pi.bucket != proc_bucket
-      || p->p_pi.class != proc_class)
-    return EOPNOTSUPP;
+  mach_port_deallocate (mach_task_self (), dead_name);
 
-  if (p->p_task == deadport)
-    {
-      process_has_exited (p);
-      mach_port_deallocate (mach_task_self (), deadport);
-      return 0;
-    }
-  else
-    {
-      return EINVAL;
-    }
+  return 0;
 }
 
 /* We get no-senders notifications on exception ports that we

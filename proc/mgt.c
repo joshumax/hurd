@@ -662,17 +662,9 @@ void
 proc_death_notify (struct proc *p)
 {
   error_t err;
-  mach_port_t old;
 
-  err = mach_port_request_notification (mach_task_self (), p->p_task,
-					MACH_NOTIFY_DEAD_NAME, 1,
-					p->p_pi.port_right,
-					MACH_MSG_TYPE_MAKE_SEND_ONCE,
-					&old);
+  err = ports_request_dead_name_notification (p, p->p_task, NULL);
   assert_perror_backtrace (err);
-
-  if (old != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), old);
 }
 
 /* Complete a new process that has been allocated but not entirely initialized.

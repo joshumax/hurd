@@ -184,9 +184,9 @@ S_proc_execdata_notify (struct proc *p,
 			mach_port_t notify)
 {
   struct execdata_notify *n;
-  mach_port_t foo;
 
-  /* No need to check P here; we don't use it. */
+  if (!p)
+    return EOPNOTSUPP;
 
   n = malloc (sizeof (struct execdata_notify));
   if (! n)
@@ -196,13 +196,7 @@ S_proc_execdata_notify (struct proc *p,
   n->next = execdata_notifys;
   execdata_notifys = n;
 
-  mach_port_request_notification (mach_task_self (), notify,
-				  MACH_NOTIFY_DEAD_NAME, 1,
-				  generic_port, MACH_MSG_TYPE_MAKE_SEND_ONCE,
-				  &foo);
-
-  if (foo)
-    mach_port_deallocate (mach_task_self (), foo);
+  ports_request_dead_name_notification (p, notify, NULL);
 
   if (std_port_array)
     exec_setexecdata (n->notify_port, std_port_array, MACH_MSG_TYPE_COPY_SEND,
