@@ -79,8 +79,7 @@ static pthread_mutex_t translator_ihash_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Record an active translator being bound to the given file name
    NAME.  TRANSBOX is the nodes transbox.  PI references a receive
-   port that is used to request dead name notifications, typically the
-   port for the underlying node passed to the translator.  */
+   port that is used to request dead name notifications.  */
 error_t
 fshelp_set_active_translator (struct port_info *pi,
 			      const char *name,

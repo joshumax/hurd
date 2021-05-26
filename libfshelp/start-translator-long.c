@@ -300,7 +300,10 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose_task;
 
-  /* Ask to be told if TASK dies.  */
+  /* Ask to be told if TASK dies.  It is OK to use the same port here, since we
+     never give it out to anyone but the translator itself (and the file system,
+     and the exec server).  If the translator wants us to believe it has died,
+     so be it.  */
   err =
     mach_port_request_notification(mach_task_self(),
 				   bootstrap, MACH_NOTIFY_NO_SENDERS, 0,
