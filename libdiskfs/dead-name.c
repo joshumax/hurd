@@ -23,10 +23,14 @@
 void
 ports_dead_name (void *notify, mach_port_t dead_name)
 {
+#if 0
+  /* FIXME: This makes no sense, the dead name could be np->sockaddr, but not
+     the protid; it's pointless to look it up this way.  It also leaks a
+     reference.  */
   struct protid *pi = ports_lookup_port (diskfs_port_bucket, dead_name,
 					 diskfs_protid_class);
   struct node *np;
-  
+
   if (pi)
     {
       np = pi->po->np;
@@ -40,6 +44,7 @@ ports_dead_name (void *notify, mach_port_t dead_name)
       else
 	pthread_mutex_unlock (&np->lock);
     }
+#endif
 
   fshelp_remove_active_translator (dead_name);
 
