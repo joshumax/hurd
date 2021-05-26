@@ -258,7 +258,7 @@ S_proc_reassign (struct proc *p,
   remove_proc_from_hash (p);
 
   task_terminate (p->p_task);
-  mach_port_destroy (mach_task_self (), p->p_task);
+  mach_port_deallocate (mach_task_self (), p->p_task);
   p->p_task = stubp->p_task;
 
   /* For security, we need to use the request port from STUBP */
@@ -934,18 +934,9 @@ process_has_exited (struct proc *p)
   /* No one is going to wait for processes in a task namespace.  */
   if (MACH_PORT_VALID (p->p_task_namespace))
     {
-      mach_port_t task;
       mach_port_deallocate (mach_task_self (), p->p_task_namespace);
       p->p_waited = 1;
-
-      /* XXX: `complete_exit' will destroy p->p_task if it is valid.
-	 Prevent this so that `do_mach_notify_dead_name' can
-	 deallocate the right.	The proper fix is not to use
-	 mach_port_destroy in the first place.	*/
-      task = p->p_task;
-      p->p_task = MACH_PORT_NULL;
       complete_exit (p);
-      mach_port_deallocate (mach_task_self (), task);
     }
 }
 
@@ -957,7 +948,10 @@ complete_exit (struct proc *p)
 
   remove_proc_from_hash (p);
   if (p->p_task != MACH_PORT_NULL)
-    mach_port_destroy (mach_task_self (), p->p_task);
+    {
+      mach_port_deallocate (mach_task_self (), p->p_task);
+      p->p_task = MACH_PORT_NULL;
+    }
 
   /* Remove us from our parent's list of children. */
   if (p->p_sib)
