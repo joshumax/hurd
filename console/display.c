@@ -318,7 +318,7 @@ do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name)
 {
   /* As we cancel the dead-name notification before deallocating the
      port, this should not happen.  */
-  assert_backtrace (0);
+  return EOPNOTSUPP;
 }
 
 /* We request dead name notifications for the user ports.  */
@@ -369,7 +369,7 @@ do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
 error_t
 do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t rights)
 {
-  assert_backtrace (0);
+  return EOPNOTSUPP;
 }
 
 error_t
@@ -381,7 +381,7 @@ do_mach_notify_no_senders (struct port_info *pi, mach_port_mscount_t count)
 kern_return_t
 do_mach_notify_send_once (struct port_info *pi)
 {
-  return 0;
+  return EOPNOTSUPP;
 }
 
 kern_return_t
