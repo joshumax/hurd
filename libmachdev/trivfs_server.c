@@ -101,48 +101,6 @@ install_as_translator (mach_port_t bootport)
   assert_perror_backtrace (err);
 }
 
-/* Implementation of notify interface */
-kern_return_t
-do_mach_notify_port_deleted (struct port_info *pi,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_msg_accepted (struct port_info *pi,
-			     mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_port_destroyed (struct port_info *pi,
-			       mach_port_t port)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_no_senders (struct port_info *pi,
-			   mach_port_mscount_t mscount)
-{
-  return ports_do_mach_notify_no_senders (pi, mscount);
-}
-
-kern_return_t
-do_mach_notify_send_once (struct port_info *pi)
-{
-  return EOPNOTSUPP;
-}
-
-kern_return_t
-do_mach_notify_dead_name (struct port_info *pi,
-			  mach_port_t name)
-{
-  return EOPNOTSUPP;
-}
-
 boolean_t
 machdev_is_master_device (mach_port_t port)
 {
@@ -536,7 +494,7 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   mig_routine_t routine;
   if ((routine = device_server_routine (inp)) ||
-      (routine = notify_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)) ||
       (routine = mach_i386_server_routine (inp)) ||
       (routine = startup_notify_server_routine (inp)) ||
       (routine = NULL, trivfs_demuxer (inp, outp)))
