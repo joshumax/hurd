@@ -189,7 +189,7 @@ ds_device_set_filter (struct vether_device *vdev, mach_port_t receive_port,
     return D_NO_SUCH_DEVICE;
   err = mach_port_request_notification (mach_task_self (), receive_port,
 					MACH_NOTIFY_DEAD_NAME, 0,
-					ports_get_right (notify_pi),
+					notify_pi->port_right,
 					MACH_MSG_TYPE_MAKE_SEND_ONCE, &tmp);
   if (err != KERN_SUCCESS)
     goto out;

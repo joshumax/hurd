@@ -513,7 +513,7 @@ display_notice_changes (display_t display, mach_port_t notify)
       return errno;
     }
 
-  notify_port = ports_get_right (display->notify_port);
+  notify_port = display->notify_port->pi.port_right;
 
   /* Request dead-name notification for the user's port.  */
   err = mach_port_request_notification (mach_task_self (), notify,
@@ -543,7 +543,7 @@ display_notice_filechange (display_t display)
   error_t err;
   struct modreq *req = display->filemod_reqs_pending;
   struct modreq **preq = &display->filemod_reqs;
-  mach_port_t notify_port = ports_get_right (display->notify_port);
+  mach_port_t notify_port = display->notify_port->pi.port_right;
 
   while (req)
     {
