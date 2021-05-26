@@ -1,8 +1,9 @@
 /* No sender notification
 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+   Copyright (C) 1995, 2021 Free Software Foundation, Inc.
 
-   Written by Miles Bader <miles@gnu.ai.mit.edu>
+   Written by Miles Bader <miles@gnu.ai.mit.edu>,
+   and Sergey Bugaev <bugaevc@gmail.com>.
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,10 +24,24 @@
 
 error_t
 ports_do_mach_notify_no_senders (struct port_info *pi,
-				 mach_port_mscount_t count)
+                                 mach_port_mscount_t count)
 {
+  error_t err;
+  mach_port_status_t stat;
+
   if (!pi)
     return EOPNOTSUPP;
-  ports_no_senders (pi, count);
+
+  /* Treat the notification as a hint, since it might not be coming from the
+     kernel.  We now check if there are indeed no more senders left.  */
+  err = mach_port_get_receive_status (mach_task_self (),
+                                      pi->port_right, &stat);
+  if (err)
+    return err;
+
+  if (stat.mps_srights)
+    return EAGAIN;
+
+  ports_no_senders (pi, stat.mps_mscount);
   return 0;
 }
