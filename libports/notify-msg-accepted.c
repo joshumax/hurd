@@ -25,5 +25,5 @@ error_t
 ports_do_mach_notify_msg_accepted (struct port_info *pi,
 				   mach_port_t name)
 {
-  return 0;
+  return EOPNOTSUPP;
 }

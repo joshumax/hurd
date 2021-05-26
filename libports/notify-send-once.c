@@ -24,5 +24,5 @@
 error_t
 ports_do_mach_notify_send_once (struct port_info *pi)
 {
-  return 0;
+  return EOPNOTSUPP;
 }
