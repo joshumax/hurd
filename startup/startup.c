@@ -118,8 +118,11 @@ static struct ess_task *ess_tasks;
 static struct ntfy_task *ntfy_tasks;
 
 
-/* Our receive right */
+/* Our receive rights.  */
 static mach_port_t startup;
+static mach_port_t notify;
+
+static mach_port_t port_set;
 
 /* Ports to the kernel.  We use alias to the internal glibc locations
    so that other code can get them using get_privileged_ports.  */
@@ -340,7 +343,7 @@ request_dead_name (mach_port_t name)
 {
   mach_port_t prev;
   mach_port_request_notification (mach_task_self (), name,
-				  MACH_NOTIFY_DEAD_NAME, 1, startup,
+				  MACH_NOTIFY_DEAD_NAME, 1, notify,
 				  MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev);
   if (prev != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), prev);
@@ -371,7 +374,7 @@ record_essential_task (const char *name, task_t task)
 #if 0
   /* Taking over the exception port will give us a better chance
      if the task tries to get wedged on a fault.  */
-  task_set_special_port (task, TASK_EXCEPTION_PORT, startup);
+  task_set_special_port (task, TASK_EXCEPTION_PORT, notify);
 #endif
 
   return 0;
@@ -783,6 +786,20 @@ main (int argc, char **argv, char **envp)
   err = mach_port_insert_right (mach_task_self (), startup, startup,
 				MACH_MSG_TYPE_MAKE_SEND);
   assert_perror_backtrace (err);
+  err = mach_port_allocate (mach_task_self (),
+                            MACH_PORT_RIGHT_RECEIVE,
+                            &notify);
+  assert_perror_backtrace (err);
+  err = mach_port_allocate (mach_task_self (),
+                            MACH_PORT_RIGHT_PORT_SET,
+                            &port_set);
+  assert_perror_backtrace (err);
+  err = mach_port_move_member (mach_task_self (),
+                               startup, port_set);
+  assert_perror_backtrace (err);
+  err = mach_port_move_member (mach_task_self (),
+                               notify, port_set);
+  assert_perror_backtrace (err);
 
   /* Crash if the boot filesystem task dies.  */
   request_dead_name (fstask);
@@ -826,7 +843,7 @@ main (int argc, char **argv, char **envp)
      run launch_system which does the rest of the boot.  */
   while (1)
     {
-      err = mach_msg_server (demuxer, 0, startup);
+      err = mach_msg_server (demuxer, 0, port_set);
       assert_perror_backtrace (err);
     }
 }
@@ -1565,13 +1582,14 @@ S_startup_request_notification (mach_port_t server,
 }
 
 kern_return_t
-do_mach_notify_dead_name (mach_port_t notify,
+do_mach_notify_dead_name (mach_port_t notify_port,
 			  mach_port_t name)
 {
   struct ntfy_task *nt, *pnt;
   struct ess_task *et;
 
-  assert_backtrace (notify == startup);
+  if (notify_port != notify)
+    return EOPNOTSUPP;
 
   /* Deallocate the extra reference the notification carries. */
   mach_port_deallocate (mach_task_self (), name);
