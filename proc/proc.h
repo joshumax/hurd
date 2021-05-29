@@ -44,7 +44,6 @@ struct proc
   task_t p_task;
   pid_t p_pid;
   struct login *p_login;
-  uid_t p_owner;
   struct ids *p_id;
 
   /* Process hierarchy */
@@ -90,7 +89,6 @@ struct proc
   unsigned int p_deadmsg:1;	/* hang on requests for a message port */
   unsigned int p_checkmsghangs:1; /* someone is currently hanging on us */
   unsigned int p_msgportwait:1;	/* blocked in getmsgport */
-  unsigned int p_noowner:1;	/* has no owner known */
   unsigned int p_loginleader:1;	/* leader of login collection */
   unsigned int p_dead:1;	/* process is dead */
   unsigned int p_important:1;	/* has called proc_mark_important */

@@ -43,7 +43,7 @@ simpleroutine proc_setmsgport_reply (
 	in oldmsgport: mach_port_t);
 
 skip; /* reassign */
-skip; /* setowner */
+skip; /* was setowner */
 skip; /* getpids */
 skip; /* set_arg_locations */
 skip; /* get_arg_locations */

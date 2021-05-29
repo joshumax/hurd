@@ -122,9 +122,7 @@ routine proc_reassign (
 	process: process_t;
 	newtask: task_t);
 
-/* Set the owner of the process.  The new owner must be within the
-   current authentication of the caller.  If CLEAR is set, then ignore
-   OWNER and restore the process to unowned status. */
+/* Deprecated; definition kept for compatibility. */
 routine proc_setowner (
 	process: process_t;
 	owner: uid_t;

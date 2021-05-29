@@ -131,9 +131,12 @@ fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
       /* Re-authenticate the exec parameters.  */
       exec_reauth (newauth, _secure, 0, ports, num_ports, fds, num_fds);
 
-      proc_setowner (ports[INIT_PORT_PROC],
-		     eff_uids->num > 0 ? eff_uids->ids[0] : 0,
-		     !eff_uids->num);
+      /* Try proc_setowner () for compatibility with older proc server.  */
+      err = proc_setowner (ports[INIT_PORT_PROC],
+                           eff_uids->num > 0 ? eff_uids->ids[0] : 0,
+                           !eff_uids->num);
+      if (err == EOPNOTSUPP)
+        err = 0;
 
     abandon_suid:
       if (eff_uids)

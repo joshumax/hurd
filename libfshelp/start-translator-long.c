@@ -267,9 +267,15 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   proc_child (proc, task);
   err = proc_task2proc (proc, task, &ports[INIT_PORT_PROC]);
   if (!err)
-    err = proc_setowner (ports[INIT_PORT_PROC],
-                         owner_uid,
-                         owner_uid == (uid_t) -1);
+    {
+      /* Try proc_setowner () for compatibility with
+         older proc server.  */
+      err = proc_setowner (ports[INIT_PORT_PROC],
+                           owner_uid,
+                           owner_uid == (uid_t) -1);
+      if (err == EOPNOTSUPP)
+        err = 0;
+    }
   if (deallocate_proc)
     mach_port_deallocate (mach_task_self (), proc);
   if (err)

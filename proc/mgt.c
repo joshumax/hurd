@@ -186,9 +186,6 @@ S_proc_child (struct proc *parentp,
   childp->p_login = parentp->p_login;
   childp->p_login->l_refcnt++;
 
-  childp->p_owner = parentp->p_owner;
-  childp->p_noowner = parentp->p_noowner;
-
   ids_rele (childp->p_id);
   ids_ref (parentp->p_id);
   childp->p_id = parentp->p_id;
@@ -432,27 +429,13 @@ S_proc_reauthenticate_reassign (struct proc *p,
   return err;
 }
 
-/* Implement proc_setowner as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,
-		 uid_t owner,
-		 int clear)
+                 uid_t owner,
+                 int clear)
 {
-  if (!p)
-    return EOPNOTSUPP;
-
-  if (clear)
-    p->p_noowner = 1;
-  else
-    {
-      if (! check_uid (p, owner))
-	return EPERM;
-
-      p->p_owner = owner;
-      p->p_noowner = 0;
-    }
-
-  return 0;
+  /* No longer does anything, kept for compatibility.  */
+  return EOPNOTSUPP;
 }
 
 /* Implement proc_getpids as described in <hurd/process.defs>. */
@@ -858,8 +841,6 @@ complete_proc (struct proc *p, pid_t pid)
   p->p_loginleader = 0;
   p->p_ochild = 0;
   p->p_parentset = 0;
-
-  p->p_noowner = 1;
 
   p->p_pgrp = init_proc->p_pgrp;
 

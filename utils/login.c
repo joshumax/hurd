@@ -682,6 +682,7 @@ main(int argc, char *argv[])
 	}
     }
 
+  /* Try proc_setowner () for compatibility with older proc server.  */
   if (ugids.eff_uids.num > 0)
     proc_setowner (proc_server, ugids.eff_uids.ids[0], 0);
   else
