@@ -1,5 +1,5 @@
 /* Process management
-   Copyright (C) 1992,93,94,95,96,99,2000,01,02,13,14
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02,13,14,21
      Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
@@ -44,20 +44,22 @@
 #include "task_notify_S.h"
 #include <hurd/signal.h>
 
-/* Create a new id structure with the given genuine uids and gids. */
+/* Create a new id structure with the given genuine uids. */
 static inline struct ids *
-make_ids (const uid_t *uids, size_t nuids)
+make_ids (const uid_t *eff_uids, size_t n_eff_uids,
+          const uid_t *avail_uids, size_t n_avail_uids)
 {
   struct ids *i;
 
-  i = malloc (sizeof (struct ids) + sizeof (uid_t) * nuids);;
+  i = malloc (sizeof (struct ids) + sizeof (uid_t) * (n_eff_uids + n_avail_uids));
   if (! i)
     return NULL;
 
-  i->i_nuids = nuids;
+  i->i_nuids = n_eff_uids + n_avail_uids;
   i->i_refcnt = 1;
 
-  memcpy (&i->i_uids, uids, sizeof (uid_t) * nuids);
+  memcpy (&i->i_uids[0], eff_uids, sizeof (uid_t) * n_eff_uids);
+  memcpy (&i->i_uids[n_eff_uids], avail_uids, sizeof (uid_t) * n_avail_uids);
   return i;
 }
 
@@ -132,7 +134,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   else
     {
       ids_rele (p->p_id);
-      p->p_id = make_ids (gen_uids, ngen_uids);
+      p->p_id = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
       if (! p->p_id)
 	err = ENOMEM;
     }
@@ -640,8 +642,7 @@ create_init_proc (void)
 
   p->p_important = 1;
 
-  p->p_noowner = 0;
-  p->p_id = make_ids (&zero, 1);
+  p->p_id = make_ids (&zero, 1, &zero, 0);
   assert_backtrace (p->p_id);
 
   p->p_loginleader = 1;
@@ -692,7 +693,7 @@ complete_proc (struct proc *p, pid_t pid)
       /* Equip HURD_PID_STARTUP with the same credentials as
          HURD_PID_INIT.  */
       static const uid_t zero;
-      p->p_id = make_ids (&zero, 1);
+      p->p_id = make_ids (&zero, 1, &zero, 0);
       assert_backtrace (p->p_id);
     }
   else
