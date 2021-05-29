@@ -295,6 +295,143 @@ S_proc_reassign (struct proc *p,
   return 0;
 }
 
+/* Implement proc_reauthenticate_reassign
+   as described in <hurd/process.defs>.  */
+kern_return_t
+S_proc_reauthenticate_reassign (struct proc *p,
+                                mach_port_t rendezvous,
+                                task_t new_task)
+{
+  error_t err;
+  mach_port_t new_proc_port;
+  struct proc *stubp;
+  struct ids *new_ids;
+  uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
+  uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
+  size_t ngen_uids, naux_uids, ngen_gids, naux_gids;
+
+  if (!p)
+    return EOPNOTSUPP;
+
+  if (!MACH_PORT_VALID (rendezvous))
+    return EINVAL;
+
+  stubp = task_find (new_task);
+  if (!stubp)
+    return ESRCH;
+  if (stubp == p)
+    return EINVAL;
+  ports_port_ref (stubp);
+
+  gen_uids = gubuf;
+  aux_uids = aubuf;
+  gen_gids = ggbuf;
+  aux_gids = agbuf;
+
+  ngen_uids = sizeof (gubuf) / sizeof (uid_t);
+  naux_uids = sizeof (aubuf) / sizeof (uid_t);
+  ngen_gids = sizeof (ggbuf) / sizeof (uid_t);
+  naux_gids = sizeof (agbuf) / sizeof (uid_t);
+
+  new_proc_port = mach_reply_port ();
+
+  /* Communicate with the auth server before doing
+     *any changes* to these two processes.  */
+
+  /* Release the lock while talking to the auth server.  */
+  pthread_mutex_unlock (&global_lock);
+  do
+    err = auth_server_authenticate (authserver,
+                                    rendezvous,
+                                    MACH_MSG_TYPE_COPY_SEND,
+                                    new_proc_port,
+                                    MACH_MSG_TYPE_MAKE_SEND,
+                                    &gen_uids, &ngen_uids,
+                                    &aux_uids, &naux_uids,
+                                    &gen_gids, &ngen_gids,
+                                    &aux_gids, &naux_gids);
+  while (err == EINTR && !p->p_dead && !stubp->p_dead);
+  pthread_mutex_lock (&global_lock);
+
+  if (err)
+    {
+      mach_port_mod_refs (mach_task_self (), new_proc_port,
+                          MACH_PORT_RIGHT_RECEIVE, -1);
+      ports_port_deref (stubp);
+      return err;
+    }
+
+  /* If any task has died, or the process referring to the new task
+     has itself been reassigned in the meantime, abort.  */
+  if (p->p_dead || stubp->p_dead || stubp->p_task != new_task)
+    {
+      err = EAGAIN;
+      goto out;
+    }
+
+  /* Copy in the new ids.  */
+  new_ids = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
+  if (!new_ids)
+    {
+      err = errno;
+      goto out;
+    }
+  ids_rele (p->p_id);
+  p->p_id = new_ids;
+
+  /* From here on, nothing can go wrong.  */
+
+  mach_port_deallocate (mach_task_self (), new_task);
+  mach_port_deallocate (mach_task_self (), rendezvous);
+
+  remove_proc_from_hash (p);
+
+  task_terminate (p->p_task);
+  mach_port_deallocate (mach_task_self (), p->p_task);
+
+  p->p_task = stubp->p_task;
+  stubp->p_task = MACH_PORT_NULL;
+  ports_destroy_right (stubp);
+  ports_reallocate_from_external (p, new_proc_port);
+
+  if (MACH_PORT_VALID (p->p_msgport))
+    {
+      mach_port_deallocate (mach_task_self (), p->p_msgport);
+      p->p_msgport = MACH_PORT_NULL;
+      p->p_deadmsg = 1;
+    }
+
+  /* These two are image dependent.  */
+  p->p_argv = stubp->p_argv;
+  p->p_envp = stubp->p_envp;
+
+  /* Destroy stubp.  */
+  process_has_exited (stubp);
+  stubp->p_waited = 1; /* fake out complete_exit */
+  complete_exit (stubp);
+
+  add_proc_to_hash (p);
+  err = 0;
+
+ out:
+  if (gen_uids != gubuf)
+    munmap (gen_uids, ngen_uids * sizeof (uid_t));
+  if (aux_uids != aubuf)
+    munmap (aux_uids, naux_uids * sizeof (uid_t));
+  if (gen_gids != ggbuf)
+    munmap (gen_gids, ngen_gids * sizeof (uid_t));
+  if (aux_gids != agbuf)
+    munmap (aux_gids, naux_gids * sizeof (uid_t));
+
+  if (err)
+    mach_port_mod_refs (mach_task_self (), new_proc_port,
+                        MACH_PORT_RIGHT_RECEIVE, -1);
+
+  ports_port_deref (stubp);
+
+  return err;
+}
+
 /* Implement proc_setowner as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setowner (struct proc *p,

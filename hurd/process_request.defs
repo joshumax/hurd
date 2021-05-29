@@ -1,6 +1,6 @@
 /* Definitions for process server interface (request-only version)
 
-   Copyright (C) 1992, 93, 94, 95, 96, 98, 2013 Free Software Foundation, Inc.
+   Copyright (C) 1992, 93, 94, 95, 96, 98, 2013, 21 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -425,3 +425,5 @@ skip; /* proc_set_entry */
 skip; /* proc_get_entry */
 
 skip; /* proc_waitid */
+
+skip; /* proc_reauthenticate_reassign */

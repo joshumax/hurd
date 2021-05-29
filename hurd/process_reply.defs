@@ -1,5 +1,5 @@
 /* Reply half of wait
-   Copyright (C) 1991,93,94,96,2001,13 Free Software Foundation, Inc.
+   Copyright (C) 1991,93,94,96,2001,13,21 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
 
@@ -202,3 +202,5 @@ skip; /* proc_set_entry */
 skip; /* proc_get_entry */
 
 skip; /* proc_waitid */
+
+skip; /* proc_reauthenticate_reassign */
