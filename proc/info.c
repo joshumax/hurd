@@ -1,5 +1,6 @@
 /* Process information queries
-   Copyright (C) 1992,93,94,95,96,99,2000,01,02 Free Software Foundation, Inc.
+   Copyright (C) 1992,93,94,95,96,99,2000,01,02,21
+   Free Software Foundation, Inc.
 
    This file is part of the GNU Hurd.
 
@@ -34,17 +35,38 @@
 #include "proc.h"
 #include "process_S.h"
 
-
-/* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get
-   its task port &c).  If PROC2 has an owner, then PROC1 must have that uid;
-   otherwise, both must be in the same login collection.  */
+/* Returns true if PROC1 has `owner' privileges over PROC2 (and can thus get its
+   task port &c).  In the usual case, this checks that PROC1 already has all
+   UID's that PROC2 has, meaning PROC1 would not gain access to any new UID's
+   this way.  The reason the check is performed using PROC1's both effective and
+   available UID's and not just its effective UID's is that POSIX requires
+   kill(2) to work when "the real or effective user ID of the sending process
+   shall match the real or saved set-user-ID of the receiving process".  */
 int
 check_owner (struct proc *proc1, struct proc *proc2)
 {
-  return
-    proc2->p_noowner
-      ? check_uid (proc1, 0) || proc1->p_login == proc2->p_login
-      : check_uid (proc1, proc2->p_owner);
+  /* Anyone can access themselves.  */
+  if (proc1 == proc2)
+    return 1;
+
+  /* If PROC1 is unowned, it cannot access anyone else.  */
+  if (!proc1->p_id || !proc1->p_id->i_nuids)
+    return 0;
+
+  /* Root can always access anyone.  */
+  if (check_uid (proc1, 0))
+    return 1;
+
+  /* Nobody (except root) can access an unowned process.  */
+  if (!proc2->p_id || !proc2->p_id->i_nuids)
+    return 0;
+
+  /* Verify that PROC1 has all UIDs that PROC2 has.  */
+  for (size_t i = 0; i < proc2->p_id->i_nuids; i++)
+    if (!check_uid (proc1, proc2->p_id->i_uids[i]))
+      return 0;
+
+  return 1;
 }
 
 
