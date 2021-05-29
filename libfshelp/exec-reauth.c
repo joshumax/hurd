@@ -33,12 +33,13 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 
 /* If SUID or SGID is true, adds UID and/or GID respectively to the
    authentication in PORTS[INIT_PORT_AUTH], and replaces it with the result.
-   All the other ports in PORTS and FDS are then reauthenticated, using any
-   privileges available through AUTH.  If GET_FILE_IDS is non-NULL, and the
-   auth port in PORTS[INIT_PORT_AUTH] is bogus, it is called to get a list of
-   uids and gids from the file to use as a replacement.  If SECURE is
-   non-NULL, whether not the added ids are new is returned in it.  If either
-   the uid or gid case fails, then the other may still be applied.  */
+   All the other ports in PORTS and FDS (except for PORTS[INIT_PORT_EXEC], if
+   SECURE ends up being true) are then reauthenticated, using any privileges
+   available through AUTH.  If GET_FILE_IDS is non-NULL, and the auth port in
+   PORTS[INIT_PORT_AUTH] is bogus, it is called to get a list of uids and gids
+   from the file to use as a replacement.  If SECURE is non-NULL, whether not
+   the added ids are new is returned in it.  If either the uid or gid case
+   fails, then the other may still be applied.  */
 error_t
 fshelp_exec_reauth (int suid, uid_t uid, int sgid, gid_t gid,
 		    auth_t auth,

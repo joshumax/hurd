@@ -93,7 +93,7 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
       else
 	err = reauth (&ports[INIT_PORT_CRDIR], 0);
     }
-  if (!err)
+  if (!err && !secure)
     err = reauth (&ports[INIT_PORT_PROC], 1);
   if (!err)
     err = reauth (&ports[INIT_PORT_CWDIR], 0);
