@@ -1,6 +1,6 @@
 /* GNU Hurd standard exec server.
    Copyright (C) 1992 ,1993, 1994, 1995, 1996, 1998, 1999, 2000, 2001,
-   2002, 2004, 2010 Free Software Foundation, Inc.
+   2002, 2004, 2010, 2021 Free Software Foundation, Inc.
    Written by Roland McGrath.
 
    Can exec ELF format directly.
@@ -1356,7 +1356,9 @@ do_exec (file_t file,
     {
       /* The program is on its way.  The old task can be nuked.  */
       process_t proc;
+      process_t newproc;
       process_t psrv;
+      mach_port_t rendezvous;
 
       /* Use the canonical proc server if secure, or there is none other.
 	 When not secure, it is nice to let processes associate with
@@ -1371,48 +1373,37 @@ do_exec (file_t file,
 
       /* XXX there is a race here for SIGKILLing the process. -roland
          I don't think it matters.  -mib */
-      if (! proc_task2proc (psrv, oldtask, &proc))
-	{
-	  proc_reassign (proc, newtask);
-	  mach_port_deallocate (mach_task_self (), proc);
-	}
-    }
+      e.error = proc_task2proc (psrv, oldtask, &proc);
+      if (e.error)
+        goto out;
+      rendezvous = mach_reply_port ();
+      e.error = proc_reauthenticate_reassign (proc,
+                                              rendezvous,
+                                              MACH_MSG_TYPE_MAKE_SEND,
+                                              newtask);
+      if (e.error)
+        {
+          mach_port_mod_refs (mach_task_self (), rendezvous,
+                              MACH_PORT_RIGHT_RECEIVE, -1);
+          mach_port_deallocate (mach_task_self (), proc);
+          goto out;
+        }
 
-  /* Make sure the proc server has the right idea of our identity. */
-  if (secure)
-    {
-      uid_t euidbuf[10], egidbuf[10], auidbuf[10], agidbuf[10];
-      uid_t *euids, *egids, *auids, *agids;
-      size_t neuids, negids, nauids, nagids;
-      error_t err;
+      e.error = auth_user_authenticate (boot->portarray[INIT_PORT_AUTH],
+                                        rendezvous, MACH_MSG_TYPE_MAKE_SEND,
+                                        &newproc);
 
-      /* Find out what our UID is from the auth server. */
-      neuids = negids = nauids = nagids = 10;
-      euids = euidbuf, egids = egidbuf;
-      auids = auidbuf, agids = agidbuf;
-      err = auth_getids (boot->portarray[INIT_PORT_AUTH],
-			     &euids, &neuids, &auids, &nauids,
-			     &egids, &negids, &agids, &nagids);
+      mach_port_mod_refs (mach_task_self (), rendezvous,
+                          MACH_PORT_RIGHT_RECEIVE, -1);
+      mach_port_deallocate (mach_task_self (), proc);
 
-      if (!err)
-	{
-	  /* Set the owner with the proc server */
-	  /* Not much we can do about errors here; caller is responsible
-	     for making sure that the provided proc port is correctly
-	     authenticated anyhow. */
-	  proc_setowner (boot->portarray[INIT_PORT_PROC],
-			 neuids ? euids[0] : 0, !neuids);
+      if (e.error)
+        goto out;
 
-	  /* Clean up */
-	  if (euids != euidbuf)
-	    munmap (euids, neuids * sizeof (uid_t));
-	  if (egids != egidbuf)
-	    munmap (egids, negids * sizeof (uid_t));
-	  if (auids != auidbuf)
-	    munmap (auids, nauids * sizeof (uid_t));
-	  if (agids != agidbuf)
-	    munmap (agids, nagids * sizeof (uid_t));
-	}
+      assert_backtrace (ports_replaced[INIT_PORT_PROC]);
+      mach_port_deallocate (mach_task_self (),
+                            boot->portarray[INIT_PORT_PROC]);
+      boot->portarray[INIT_PORT_PROC] = newproc;
     }
 
   {
