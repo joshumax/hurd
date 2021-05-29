@@ -216,13 +216,14 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 
   /* Find the translator itself.  Since argz has zero-separated elements, we
      can use it as a normal string representing the first element.  */
-  executable = file_name_lookup(name, O_EXEC, 0);
+  executable = file_name_lookup (name, O_EXEC, 0);
   if (executable == MACH_PORT_NULL)
     return errno;
 
   /* Create a bootstrap port for the translator.  */
-  err =
-    mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &bootstrap);
+  err = mach_port_allocate (mach_task_self (),
+                            MACH_PORT_RIGHT_RECEIVE,
+                            &bootstrap);
   if (err)
     goto lose;
 
@@ -244,7 +245,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   /* XXX 25 is BASEPRI_USER, which isn't exported by the kernel.  Ideally,
      nice values should be used, perhaps with a simple wrapper to convert
      them to Mach priorities.  */
-  err = task_priority(task, 25, FALSE);
+  err = task_priority (task, 25, FALSE);
 
   if (err)
     goto lose_task;
@@ -290,18 +291,21 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
      never give it out to anyone but the translator itself (and the file system,
      and the exec server).  If the translator wants us to believe it has died,
      so be it.  */
-  err =
-    mach_port_request_notification(mach_task_self(),
-				   bootstrap, MACH_NOTIFY_NO_SENDERS, 0,
-				   bootstrap, MACH_MSG_TYPE_MAKE_SEND_ONCE,
-				   &prev_notify);
+  err = mach_port_request_notification (mach_task_self (),
+                                        bootstrap,
+                                        MACH_NOTIFY_NO_SENDERS,
+                                        0,
+                                        bootstrap,
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE,
+                                        &prev_notify);
   if (err)
     goto lose_task;
 
   /* Ok, cool, we've got a running(?) program, now rendezvous with it if
      possible using the startup protocol on the bootstrap port... */
-  err = service_fsys_startup(underlying_open_fn, cookie, bootstrap,
-			     timeout, control, task);
+  err = service_fsys_startup (underlying_open_fn,
+                              cookie, bootstrap,
+                              timeout, control, task);
 
  lose_task:
   if (err)
@@ -309,11 +313,11 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 
  lose:
   if (bootstrap != MACH_PORT_NULL)
-    mach_port_destroy(mach_task_self(), bootstrap);
+    mach_port_destroy (mach_task_self (), bootstrap);
   if (executable != MACH_PORT_NULL)
-    mach_port_deallocate(mach_task_self(), executable);
+    mach_port_deallocate (mach_task_self (), executable);
   if (task != MACH_PORT_NULL)
-    mach_port_deallocate(mach_task_self(), task);
+    mach_port_deallocate (mach_task_self (), task);
 
   return err;
 }
