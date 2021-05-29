@@ -206,7 +206,13 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   mach_port_t bootstrap = MACH_PORT_NULL;
   mach_port_t task = MACH_PORT_NULL;
   mach_port_t prev_notify, proc, saveport, childproc;
-  int ports_moved = 0;
+
+  /* While from our function signature it appears that we support passing
+     incomplete port arrays of any type, this is what the implementation
+     actually requires.  */
+  assert_backtrace (ports_len > INIT_PORT_BOOTSTRAP);
+  assert_backtrace (ports_type == MACH_MSG_TYPE_COPY_SEND);
+  assert_backtrace (fds_type == MACH_MSG_TYPE_COPY_SEND);
 
   /* Find the translator itself.  Since argz has zero-separated elements, we
      can use it as a normal string representing the first element.  */
@@ -217,6 +223,12 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   /* Create a bootstrap port for the translator.  */
   err =
     mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &bootstrap);
+  if (err)
+    goto lose;
+
+  err = mach_port_insert_right (mach_task_self (),
+                                bootstrap, bootstrap,
+                                MACH_MSG_TYPE_MAKE_SEND);
   if (err)
     goto lose;
 
@@ -249,29 +261,6 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose_task;
 
-  assert_backtrace (ports_len > INIT_PORT_BOOTSTRAP);
-  switch (ports_type)
-    {
-    case MACH_MSG_TYPE_MAKE_SEND:
-    case MACH_MSG_TYPE_MAKE_SEND_ONCE:
-      break;
-
-    case MACH_MSG_TYPE_MOVE_SEND:
-      if (ports[INIT_PORT_BOOTSTRAP] != MACH_PORT_NULL)
-	mach_port_deallocate (mach_task_self (), ports[INIT_PORT_BOOTSTRAP]);
-      mach_port_insert_right (mach_task_self (), bootstrap, bootstrap,
-			      MACH_MSG_TYPE_MAKE_SEND);
-      break;
-
-    case MACH_MSG_TYPE_COPY_SEND:
-      mach_port_insert_right (mach_task_self (), bootstrap, bootstrap,
-			      MACH_MSG_TYPE_MAKE_SEND);
-      break;
-
-    default:
-      abort ();
-    }
-
   saveport = ports[INIT_PORT_BOOTSTRAP];
   ports[INIT_PORT_BOOTSTRAP] = bootstrap;
 
@@ -291,10 +280,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 		     ports, ports_type, ports_len,
 		     ints, ints_len, 0, 0, 0, 0);
 
-  ports_moved = 1;
-
-  if (ports_type == MACH_MSG_TYPE_COPY_SEND)
-    mach_port_deallocate (mach_task_self (), bootstrap);
+  mach_port_deallocate (mach_task_self (), bootstrap);
   ports[INIT_PORT_BOOTSTRAP] = saveport;
 
   if (err)
@@ -322,17 +308,6 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
     task_terminate (task);
 
  lose:
-  if (!ports_moved)
-    {
-      int i;
-
-      if (fds_type == MACH_MSG_TYPE_MOVE_SEND)
-	for (i = 0; i < fds_len; i++)
-	  mach_port_deallocate (mach_task_self (), fds[i]);
-      if (ports_type == MACH_MSG_TYPE_MOVE_SEND)
-	for (i = 0; i < ports_len; i++)
-	  mach_port_deallocate (mach_task_self (), ports[i]);
-    }
   if (bootstrap != MACH_PORT_NULL)
     mach_port_destroy(mach_task_self(), bootstrap);
   if (executable != MACH_PORT_NULL)
