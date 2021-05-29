@@ -205,7 +205,8 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   file_t executable;
   mach_port_t bootstrap = MACH_PORT_NULL;
   mach_port_t task = MACH_PORT_NULL;
-  mach_port_t prev_notify, proc, saveport, childproc;
+  mach_port_t prev_notify, proc, saveport;
+  int deallocate_proc;
 
   /* While from our function signature it appears that we support passing
      incomplete port arrays of any type, this is what the implementation
@@ -250,15 +251,51 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
   if (err)
     goto lose_task;
 
-  /* Designate TASK as our child and set it's owner accordingly. */
-  proc = getproc ();
+  /* Designate TASK as our child, fill in its proc port, and set its owner
+     accordingly.  */
+  if (ports[INIT_PORT_PROC] == MACH_PORT_NULL)
+    {
+      proc = getproc ();
+      deallocate_proc = 1;
+    }
+  else
+    {
+      proc = ports[INIT_PORT_PROC];
+      deallocate_proc = 0;
+    }
+
   proc_child (proc, task);
-  err = proc_task2proc (proc, task, &childproc);
-  mach_port_deallocate (mach_task_self (), proc);
+  err = proc_task2proc (proc, task, &ports[INIT_PORT_PROC]);
+  if (!err)
+    err = proc_setowner (ports[INIT_PORT_PROC],
+                         owner_uid,
+                         owner_uid == (uid_t) -1);
+  if (deallocate_proc)
+    mach_port_deallocate (mach_task_self (), proc);
   if (err)
     goto lose_task;
-  err = proc_setowner (childproc, owner_uid, owner_uid == (uid_t) -1);
-  mach_port_deallocate (mach_task_self (), childproc);
+
+  /* If we have been passed an auth port, and it's different from our own,
+     reauthenticate the child proc.  */
+  if (MACH_PORT_VALID (ports[INIT_PORT_AUTH])
+      && HURD_PORT_USE (&_hurd_ports[INIT_PORT_AUTH],
+                        port != ports[INIT_PORT_AUTH]))
+    {
+      mach_port_t rend, newport = MACH_PORT_NULL;
+
+      rend = mach_reply_port ();
+      err = proc_reauthenticate (ports[INIT_PORT_PROC],
+                                 rend, MACH_MSG_TYPE_MAKE_SEND);
+
+      if (!err)
+        err = auth_user_authenticate (ports[INIT_PORT_AUTH],
+                                      rend, MACH_MSG_TYPE_MAKE_SEND,
+                                      &newport);
+
+      mach_port_mod_refs (mach_task_self (), rend,
+                          MACH_PORT_RIGHT_RECEIVE, -1);
+    }
+
   if (err)
     goto lose_task;
 
@@ -318,6 +355,11 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
     mach_port_deallocate (mach_task_self (), executable);
   if (task != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), task);
+  if (ports[INIT_PORT_PROC] != MACH_PORT_NULL)
+    {
+      mach_port_deallocate (mach_task_self (), ports[INIT_PORT_PROC]);
+      ports[INIT_PORT_PROC] = MACH_PORT_NULL;
+    }
 
   return err;
 }
