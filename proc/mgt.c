@@ -94,6 +94,7 @@ kern_return_t
 S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 {
   error_t err;
+  struct ids *new_ids;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
   size_t ngen_uids, naux_uids, ngen_gids, naux_gids;
@@ -133,10 +134,14 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
     err = EAGAIN;
   else
     {
-      ids_rele (p->p_id);
-      p->p_id = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
-      if (! p->p_id)
-	err = ENOMEM;
+      new_ids = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
+      if (!new_ids)
+        err = errno;
+      else
+        {
+          ids_rele (p->p_id);
+          p->p_id = new_ids;
+        }
     }
 
   if (gen_uids != gubuf)
