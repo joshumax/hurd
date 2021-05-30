@@ -91,7 +91,7 @@ netfs_S_file_exec_paths (struct protid *cred,
   gid_t gid;
   mode_t mode;
   int suid, sgid;
-  mach_port_t right;
+  mach_port_t right, cred_right;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -169,6 +169,7 @@ netfs_S_file_exec_paths (struct protid *cred,
 	  if (newpi)
 	    {
 	      right = ports_get_send_right (newpi);
+	      cred_right = ports_get_send_right (cred);
 #ifdef HAVE_EXEC_EXEC_PATHS
 	      err = exec_exec_paths (_netfs_exec,
 				     right, MACH_MSG_TYPE_COPY_SEND,
@@ -195,6 +196,7 @@ netfs_S_file_exec_paths (struct protid *cred,
 				 destroynames, destroynameslen);
 
 	      mach_port_deallocate (mach_task_self (), right);
+	      mach_port_deallocate (mach_task_self (), cred_right);
 	      ports_port_deref (newpi);
 	    }
 	  else

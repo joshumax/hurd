@@ -94,7 +94,7 @@ diskfs_S_file_exec_paths (struct protid *cred,
   mach_port_t execserver;
   int cached_exec;
   struct hurd_userlink ulink;
-  mach_port_t right;
+  mach_port_t right, cred_right;
 
 #define RETURN(code) do { err = (code); goto out; } while (0)
 
@@ -195,6 +195,7 @@ diskfs_S_file_exec_paths (struct protid *cred,
       do
 	{
 	  right = ports_get_send_right (newpi);
+	  cred_right = ports_get_send_right (cred);
 #ifdef HAVE_EXEC_EXEC_PATHS
 	  err = exec_exec_paths (execserver,
 				 right, MACH_MSG_TYPE_COPY_SEND,
@@ -221,6 +222,7 @@ diskfs_S_file_exec_paths (struct protid *cred,
 
 
 	  mach_port_deallocate (mach_task_self (), right);
+	  mach_port_deallocate (mach_task_self (), cred_right);
 	  if (err == MACH_SEND_INVALID_DEST)
 	    {
 	      if (cached_exec)
