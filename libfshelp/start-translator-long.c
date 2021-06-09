@@ -300,10 +300,20 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
 
       mach_port_mod_refs (mach_task_self (), rend,
                           MACH_PORT_RIGHT_RECEIVE, -1);
-    }
 
-  if (err)
-    goto lose_task;
+      if (err)
+        goto lose_task;
+
+      err = proc_complete_reauthentication (newport);
+      if (err)
+        {
+          mach_port_deallocate (mach_task_self (), newport);
+          goto lose_task;
+        }
+
+      mach_port_deallocate (mach_task_self (), ports[INIT_PORT_PROC]);
+      ports[INIT_PORT_PROC] = newport;
+    }
 
   saveport = ports[INIT_PORT_BOOTSTRAP];
   ports[INIT_PORT_BOOTSTRAP] = bootstrap;

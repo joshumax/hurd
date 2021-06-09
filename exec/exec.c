@@ -1400,6 +1400,13 @@ do_exec (file_t file,
       if (e.error)
         goto out;
 
+      e.error = proc_complete_reauthentication (newproc);
+      if (e.error)
+        {
+          mach_port_deallocate (mach_task_self (), newproc);
+          goto out;
+        }
+
       assert_backtrace (ports_replaced[INIT_PORT_PROC]);
       mach_port_deallocate (mach_task_self (),
                             boot->portarray[INIT_PORT_PROC]);

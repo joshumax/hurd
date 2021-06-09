@@ -44,6 +44,9 @@
 #include "task_notify_S.h"
 #include <hurd/signal.h>
 
+extern mach_msg_return_t
+mach_msg_receive (mach_msg_header_t *msg);
+
 /* Create a new id structure with the given genuine uids. */
 static inline struct ids *
 make_ids (const uid_t *eff_uids, size_t n_eff_uids,
@@ -94,6 +97,8 @@ kern_return_t
 S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 {
   error_t err;
+  mach_port_t new_proc_port, prev;
+  mach_msg_header_t msg;
   struct ids *new_ids;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
@@ -112,38 +117,78 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   ngen_gids = sizeof (ggbuf) / sizeof (uid_t);
   naux_gids = sizeof (agbuf) / sizeof (uid_t);
 
+  new_proc_port = mach_reply_port ();
+  /* Ask to be told if the new port dies.  We receive the notification
+     on the same port, and as it's not a proc_complete_reauthentication ()
+     call, consider it an error.  */
+  err = mach_port_request_notification (mach_task_self (), new_proc_port,
+                                        MACH_NOTIFY_NO_SENDERS, 1,
+                                        new_proc_port,
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE,
+                                        &prev);
+  assert_perror_backtrace (err);
+  assert_backtrace (prev == MACH_PORT_NULL);
+
   /* Release the global lock while blocking on the auth server and client.  */
   pthread_mutex_unlock (&global_lock);
+
   do
     err = auth_server_authenticate (authserver,
-				    rendport, MACH_MSG_TYPE_COPY_SEND,
-				    MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
-				    &gen_uids, &ngen_uids,
-				    &aux_uids, &naux_uids,
-				    &gen_gids, &ngen_gids,
-				    &aux_gids, &naux_gids);
+                                    rendport, MACH_MSG_TYPE_COPY_SEND,
+                                    new_proc_port, MACH_MSG_TYPE_MAKE_SEND,
+                                    &gen_uids, &ngen_uids,
+                                    &aux_uids, &naux_uids,
+                                    &gen_gids, &ngen_gids,
+                                    &aux_gids, &naux_gids);
   while (err == EINTR);
+
+  /* Wait for a proc_complete_reauthentication () call
+     on the new port before proceeding.  */
+  if (!err)
+    {
+      msg.msgh_size = sizeof (mach_msg_header_t);
+      msg.msgh_local_port = new_proc_port;
+      err = mach_msg_receive (&msg);
+    }
+
   pthread_mutex_lock (&global_lock);
 
   if (err)
-    return err;
+    goto out;
+
+  /* Check if what we have received was indeed a
+     proc_complete_reauthentication () call.  */
+  if (msg.msgh_id != 24064)
+    err = EINVAL;
+  mach_msg_destroy (&msg);
+  if (err)
+    goto out;
 
   if (p->p_dead)
-    /* The process died while we had the lock released.
-       Its p_id field is no longer valid and we shouldn't touch it.  */
-    err = EAGAIN;
-  else
     {
-      new_ids = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
-      if (!new_ids)
-        err = errno;
-      else
-        {
-          ids_rele (p->p_id);
-          p->p_id = new_ids;
-        }
+      /* The process died while we had the lock released.
+         Its p_id field is no longer valid and we shouldn't touch it.  */
+      err = EAGAIN;
+      goto out;
     }
 
+  new_ids = make_ids (gen_uids, ngen_uids, aux_uids, naux_uids);
+  if (!new_ids)
+    {
+      err = errno;
+      goto out;
+    }
+
+  /* From here on, nothing can go wrong.  */
+
+  mach_port_deallocate (mach_task_self (), rendport);
+
+  ids_rele (p->p_id);
+  p->p_id = new_ids;
+
+  ports_reallocate_from_external (p, new_proc_port);
+
+ out:
   if (gen_uids != gubuf)
     munmap (gen_uids, ngen_uids * sizeof (uid_t));
   if (aux_uids != aubuf)
@@ -153,8 +198,9 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   if (aux_gids != agbuf)
     munmap (aux_gids, naux_gids * sizeof (uid_t));
 
-  if (!err)
-    mach_port_deallocate (mach_task_self (), rendport);
+  if (err)
+    mach_port_mod_refs (mach_task_self (), new_proc_port,
+                        MACH_PORT_RIGHT_RECEIVE, -1);
   return err;
 }
 
@@ -300,7 +346,8 @@ S_proc_reauthenticate_reassign (struct proc *p,
                                 task_t new_task)
 {
   error_t err;
-  mach_port_t new_proc_port;
+  mach_port_t new_proc_port, prev;
+  mach_msg_header_t msg;
   struct proc *stubp;
   struct ids *new_ids;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
@@ -331,12 +378,23 @@ S_proc_reauthenticate_reassign (struct proc *p,
   naux_gids = sizeof (agbuf) / sizeof (uid_t);
 
   new_proc_port = mach_reply_port ();
+  /* Ask to be told if the new port dies.  We receive the notification
+     on the same port, and as it's not a proc_complete_reauthentication ()
+     call, consider it an error.  */
+  err = mach_port_request_notification (mach_task_self (), new_proc_port,
+                                        MACH_NOTIFY_NO_SENDERS, 1,
+                                        new_proc_port,
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE,
+                                        &prev);
+  assert_perror_backtrace (err);
+  assert_backtrace (prev == MACH_PORT_NULL);
 
   /* Communicate with the auth server before doing
      *any changes* to these two processes.  */
 
   /* Release the lock while talking to the auth server.  */
   pthread_mutex_unlock (&global_lock);
+
   do
     err = auth_server_authenticate (authserver,
                                     rendezvous,
@@ -347,16 +405,29 @@ S_proc_reauthenticate_reassign (struct proc *p,
                                     &aux_uids, &naux_uids,
                                     &gen_gids, &ngen_gids,
                                     &aux_gids, &naux_gids);
-  while (err == EINTR && !p->p_dead && !stubp->p_dead);
+  while (err == EINTR);
+
+  /* Wait for a proc_complete_reauthentication () call
+     on the new port before proceeding.  */
+  if (!err)
+    {
+      msg.msgh_size = sizeof (mach_msg_header_t);
+      msg.msgh_local_port = new_proc_port;
+      err = mach_msg_receive (&msg);
+    }
+
   pthread_mutex_lock (&global_lock);
 
   if (err)
-    {
-      mach_port_mod_refs (mach_task_self (), new_proc_port,
-                          MACH_PORT_RIGHT_RECEIVE, -1);
-      ports_port_deref (stubp);
-      return err;
-    }
+    goto out;
+
+  /* Check if what we have received was indeed a
+     proc_complete_reauthentication () call.  */
+  if (msg.msgh_id != 24064)
+    err = EINVAL;
+  mach_msg_destroy (&msg);
+  if (err)
+    goto out;
 
   /* If any task has died, or the process referring to the new task
      has itself been reassigned in the meantime, abort.  */
@@ -435,6 +506,13 @@ S_proc_setowner (struct proc *p,
                  int clear)
 {
   /* No longer does anything, kept for compatibility.  */
+  return EOPNOTSUPP;
+}
+
+kern_return_t
+S_proc_complete_reauthentication (struct proc *p)
+{
+  /* Regular calls of this routine always fail.  */
   return EOPNOTSUPP;
 }
 

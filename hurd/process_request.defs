@@ -86,13 +86,14 @@ simpleroutine proc_register_version_request (
    a new process, just create a new task and use proc_task2proc. */
 
 /* Change the current authentication of the process.  The user should
-   follow this call with a call to auth_user_authenticate.  The
-   new_port passed back through the auth server will be
-   MACH_PORT_NULL.  */
+   follow this call with a call to auth_user_authenticate, and then a
+   call to proc_complete_reauthentication on the port passed back
+   through the auth server, which becomes the new port for this process.
+   The old process port is destroyed.  */
 simpleroutine proc_reauthenticate_request (
 	process: process_t;
 	ureplyport reply: reply_port_t;
-	rendezvous2: mach_port_send_t);
+	rendezvous: mach_port_send_t);
 
 /* Declare that a task is a child of the caller.  The task's state
    will then inherit from the caller.  This call can be made only once
@@ -421,3 +422,4 @@ skip; /* proc_get_entry */
 skip; /* proc_waitid */
 
 skip; /* proc_reauthenticate_reassign */
+skip; /* proc_complete_reauthentication */
