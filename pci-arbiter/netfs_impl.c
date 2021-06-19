@@ -574,6 +574,7 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   error_t err;
   memory_object_t pager, proxy;
+  boolean_t pager_is_proxy;
   vm_prot_t max_prot;
   size_t reg_num, count;
   struct pci_mem_region *region;
@@ -601,14 +602,17 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
 
   /* Get the pager which we are creating a proxy from */
   pager =
-    ((struct pci_user_data *) node->nn->ln->device->user_data)->
-    pagers[reg_num];
+    ((struct pci_user_data *) node->nn->ln->device->
+     user_data)->pagers[reg_num];
+
+  /* Find out whther pager is already a proxy */
+  memory_object_proxy_valid (pager, &pager_is_proxy);
 
   /* Get all params to create the proxy */
   max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
   objects[0] = pager;
   offsets[0] = 0;
-  starts[0] = region->base_addr;
+  starts[0] = pager_is_proxy ? 0 : region->base_addr;
   lens[0] = region->size;
   count = 1;
 
