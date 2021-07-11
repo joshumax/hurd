@@ -1462,7 +1462,7 @@ S_startup_essential_task (mach_port_t server,
 			  char *name,
 			  mach_port_t credential)
 {
-  static int authinit, procinit, execinit;
+  static int authinit, procinit, execinit, fsinit;
   int fail;
 
   /* Always deallocate the extra reference this message carries.  */
@@ -1494,11 +1494,21 @@ S_startup_essential_task (mach_port_t server,
         }
       else if (!strcmp (name, "proc"))
 	procinit = 1;
+      else if (!strcmp (name, "ext2fs"))
+        fsinit = 1;
+      else
+        {
+          mach_port_t otherproc;
+          proc_child (procserver, task);
+          proc_task2proc (procserver, task, &otherproc);
+          proc_mark_important (otherproc);
+          proc_set_exe (otherproc, name);
+        }
 
       if (verbose)
         fprintf (stderr, "  still waiting for:");
 
-      if (authinit && execinit && procinit)
+      if (authinit && execinit && procinit && fsinit)
 	{
           if (verbose)
             fprintf (stderr, " none!\n");
@@ -1524,6 +1534,8 @@ S_startup_essential_task (mach_port_t server,
             fprintf (stderr, " exec");
           if (! procinit)
             fprintf (stderr, " proc");
+          if (! fsinit)
+            fprintf (stderr, " fs");
           fprintf (stderr, "\n");
         }
     }

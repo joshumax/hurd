@@ -289,13 +289,12 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   retry_type retry;
   string_t retry_name;
   mach_port_t right = MACH_PORT_NULL;
-  process_t proc, parent_proc;
+  process_t parent_proc;
 
   /* Traverse to the bootstrapping server first */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap)
     {
-
       err = proc_task2proc (procserver, parent_task, &parent_proc);
       assert_perror_backtrace (err);
       err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND, authhandle);
@@ -321,18 +320,6 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
 #ifdef HAVE__HURD_LIBC_PROC_INIT
   _hurd_libc_proc_init(machdev_argv);
 #endif
-
-  /* Mark us as important.  */
-  proc = getproc ();
-  assert_backtrace (proc);
-  err = proc_mark_important (proc);
-  if (err && err != EPERM)
-    assert_perror_backtrace (err);
-  err = proc_mark_exec (proc);
-  assert_perror_backtrace (err);
-  err = proc_set_exe (proc, program_invocation_short_name);
-  assert_perror_backtrace (err);
-  mach_port_deallocate (mach_task_self (), proc);
 
   if (bootstrapping)
     {
