@@ -277,6 +277,8 @@ netfs_S_dir_lookup (struct protid *dircred,
 		char *translator_path = strdupa (relpath);
 		char *end;
 		char *complete_path;
+                struct port_info *notify_port;
+
 		if (nextname != NULL)
 		  {
 		    /* This was not the last path component.
@@ -302,7 +304,8 @@ netfs_S_dir_lookup (struct protid *dircred,
 		  asprintf (&complete_path, "%s/%s", dircred->po->path,
 			    translator_path);
 
-		err = fshelp_set_active_translator (&newpi->pi,
+                notify_port = newpi->pi.bucket->notify_port;
+                err = fshelp_set_active_translator (notify_port,
 						    complete_path,
 						    &np->transbox);
 		if (complete_path != translator_path)

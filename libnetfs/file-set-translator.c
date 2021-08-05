@@ -179,7 +179,8 @@ netfs_S_file_set_translator (struct protid *user,
     }
 
   if (! err && user->po->path && active_flags & FS_TRANS_SET)
-    err = fshelp_set_active_translator (&user->pi, user->po->path, &np->transbox);
+    err = fshelp_set_active_translator (user->pi.bucket->notify_port,
+                                        user->po->path, &np->transbox);
 
  out:
   pthread_mutex_unlock (&np->lock);
