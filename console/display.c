@@ -330,6 +330,10 @@ do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
   struct modreq **preq;
   struct modreq *req;
 
+  /* Forward any libports-requested notifications to them.  */
+  if (ports_port_is_notify (pi))
+    return ports_do_mach_notify_dead_name (pi, dead_name);
+
   if (!notify_port
       || notify_port->pi.bucket != notify_bucket
       || notify_port->pi.class != notify_class)
