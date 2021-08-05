@@ -21,14 +21,13 @@ dir := proc
 makemode := server
 
 target = proc
-SRCS = wait.c hash.c host.c info.c main.c mgt.c	notify.c pgrp.c msg.c \
-       cpu-types.c stubs.c
+SRCS = wait.c hash.c host.c info.c main.c mgt.c pgrp.c msg.c \
+       cpu-types.c stubs.c dead-name.c
 
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
-MIGSTUBS = processServer.o notifyServer.o \
-	ourmsgUser.o proc_excUser.o proc_excServer.o \
-	task_notifyServer.o
+MIGSTUBS = processServer.o task_notifyServer.o \
+	ourmsgUser.o proc_excUser.o proc_excServer.o
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 HURDLIBS = ihash ports shouldbeinlibc
 LDLIBS = -lpthread

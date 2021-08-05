@@ -20,30 +20,17 @@
 
 /* Written by Michael I. Bushnell and Sergey Bugaev.  */
 
-#include <mach.h>
-#include <sys/types.h>
-#include <hurd/hurd_types.h>
-#include <mach/notify.h>
-#include <stdio.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <errno.h>
-#include <stdlib.h>
 
+#include <hurd/ports.h>
 #include "proc.h"
-#include "notify_S.h"
 
 /* We ask for dead name notifications to detect when tasks and
    message ports die.  All notifications get sent to the notify
    port.  */
-kern_return_t
-do_mach_notify_dead_name (struct port_info *pi,
-                          mach_port_t dead_name)
+void
+ports_dead_name (void *notify, mach_port_t dead_name)
 {
   struct proc *p;
-
-  if (!pi || !ports_port_is_notify (pi))
-    return EOPNOTSUPP;
 
   check_dead_execdata_notify (dead_name);
 
@@ -51,43 +38,5 @@ do_mach_notify_dead_name (struct port_info *pi,
   if (p)
     process_has_exited (p);
 
-  mach_port_deallocate (mach_task_self (), dead_name);
-
-  return 0;
-}
-
-/* We get no-senders notifications on exception ports that we
-   handle through proc_handle_exceptions. */
-kern_return_t
-do_mach_notify_no_senders (struct port_info *pi,
-			   mach_port_mscount_t mscount)
-{
-  return ports_do_mach_notify_no_senders (pi, mscount);
-}
-
-kern_return_t
-do_mach_notify_port_deleted (struct port_info *pi,
-			     mach_port_t name)
-{
-  return 0;
-}
-
-kern_return_t
-do_mach_notify_msg_accepted (struct port_info *pi,
-			     mach_port_t name)
-{
-  return 0;
-}
-
-kern_return_t
-do_mach_notify_port_destroyed (struct port_info *pi,
-			       mach_port_t name)
-{
-  return 0;
-}
-
-kern_return_t
-do_mach_notify_send_once (struct port_info *pi)
-{
-  return 0;
+  ports_interrupt_notified_rpcs (notify, dead_name, MACH_NOTIFY_DEAD_NAME);
 }

@@ -37,8 +37,8 @@
 const char *argp_program_version = STANDARD_HURD_VERSION (proc);
 
 #include "process_S.h"
-#include "notify_S.h"
 #include "../libports/interrupt_S.h"
+#include "../libports/notify_S.h"
 #include "proc_exc_S.h"
 #include "task_notify_S.h"
 
@@ -63,7 +63,7 @@ message_demuxer (mach_msg_header_t *inp,
 {
   mig_routine_t routine;
   if ((routine = process_server_routine (inp)) ||
-      (routine = notify_server_routine (inp)) ||
+      (routine = ports_notify_server_routine (inp)) ||
       (routine = ports_interrupt_server_routine (inp)) ||
       (routine = proc_exc_server_routine (inp)) ||
       (routine = task_notify_server_routine (inp)))
