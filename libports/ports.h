@@ -80,6 +80,8 @@ struct port_bucket
   int flags;
   int count;
   struct ports_threadpool threadpool;
+  /* A port in this bucket used to receive Mach notifications.  */
+  struct port_info *notify_port;
 };
 /* FLAGS above are the following: */
 #define PORT_BUCKET_INHIBITED	PORTS_INHIBITED
@@ -308,6 +310,17 @@ void ports_port_deref (void *port);
 
 /* Drop a weak reference to PORT. */
 void ports_port_deref_weak (void *port);
+
+/* Use this port right to request notifications about PORT. */
+#define ports_port_notify_right(port) \
+  ((struct port_info *) (port))->bucket->notify_port->port_right
+
+/* Is PORT the notify port for its bucket? */
+#define ports_port_is_notify(port)                  \
+  ({                                                \
+    struct port_info *__pi = (port);                \
+    __pi ? (__pi->bucket->notify_port == __pi) : 0; \
+  })
 
 /* The user is responsible for listening for no senders notifications;
    when one arrives, call this routine for the PORT the message was

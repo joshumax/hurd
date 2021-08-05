@@ -1,5 +1,5 @@
-/* 
-   Copyright (C) 1995 Free Software Foundation, Inc.
+/*
+   Copyright (C) 1995, 2021 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -24,11 +24,12 @@ int
 ports_count_bucket (struct port_bucket *bucket)
 {
   int ret;
-  
+
   pthread_mutex_lock (&_ports_lock);
-  ret = bucket->count;
+  /* Account for the notify port.  */
+  ret = bucket->count - 1;
   bucket->flags |= PORT_BUCKET_NO_ALLOC;
   pthread_mutex_unlock (&_ports_lock);
-  
+
   return ret;
 }

@@ -1,5 +1,5 @@
 /* Iterate a function over the ports in a bucket.
-   Copyright (C) 1995, 1999 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1999, 2021 Free Software Foundation, Inc.
    Written by Michael I. Bushnell.
 
    This file is part of the GNU Hurd.
@@ -76,7 +76,8 @@ _ports_bucket_class_iterate (struct hurd_ihash *ht,
   err = 0;
   for (i = 0; i < n; i++)
     {
-      if (!err)
+      /* Never expose the notify port to the user function.  */
+      if (!err && !ports_port_is_notify (p[i]))
 	err = (*fun)(p[i]);
       ports_port_deref (p[i]);
     }
