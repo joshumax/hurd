@@ -32,7 +32,6 @@ ports_interrupt_rpc_on_notification (void *object,
   int req_notify;
   struct ports_notify *pn;
   struct rpc_notify *new_req, *req;
-  struct port_info *pi = object;
 
   pthread_mutex_lock (&_ports_lock);
 
@@ -144,9 +143,10 @@ ports_interrupt_rpc_on_notification (void *object,
     {
       mach_port_t old;
       error_t err =
-	mach_port_request_notification (mach_task_self (), port,
-					what, 1, pi->port_right,
-					MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
+        mach_port_request_notification (mach_task_self (), port,
+                                        what, 1,
+                                        ports_port_notify_right (object),
+                                        MACH_MSG_TYPE_MAKE_SEND_ONCE, &old);
 
       if (! err && old != MACH_PORT_NULL)
 	mach_port_deallocate (mach_task_self (), old);
