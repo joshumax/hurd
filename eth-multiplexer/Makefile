@@ -20,8 +20,8 @@ makemode := server
 target = eth-multiplexer
 
 #CFLAGS += -DDEBUG
-SRCS = ethernet.c vdev.c multiplexer.c dev_stat.c netfs_impl.c notify_impl.c device_impl.c demuxer.c
-MIGSTUBS = deviceServer.o notifyServer.o
+SRCS = ethernet.c vdev.c multiplexer.c dev_stat.c netfs_impl.c device_impl.c dead-name.c demuxer.c
+MIGSTUBS = deviceServer.o
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)

@@ -44,7 +44,7 @@
 #include "ethernet.h"
 #include "vdev.h"
 #include "device_S.h"
-#include "notify_S.h"
+#include "libports/notify_S.h"
 #include "bpf_impl.h"
 #include "netfs_impl.h"
 #include "util.h"
@@ -82,7 +82,7 @@ multiplexer_demuxer (mach_msg_header_t *inp,
   mig_routine_t routine;
   if ((routine = NULL, ethernet_demuxer (inp, outp)) ||
       (routine = device_server_routine (inp)) ||
-      (routine = notify_server_routine (inp)))
+      (routine = ports_notify_server_routine (inp)))
     {
       if (routine)
         (*routine) (inp, outp);
