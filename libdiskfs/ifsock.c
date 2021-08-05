@@ -56,7 +56,6 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
     {
       mach_port_t server;
       mach_port_t sockaddr;
-      mach_port_t old;
 
       pthread_mutex_unlock (&np->lock);
 
@@ -113,13 +112,8 @@ diskfs_S_ifsock_getsockaddr (struct protid *cred,
 	  /* The receive right of the sockaddr holds a reference;
 	     when we get a dead name on that right we drop our
 	     reference. */
-	  mach_port_request_notification (mach_task_self (), sockaddr,
-					  MACH_NOTIFY_DEAD_NAME, 1,
-					  cred->pi.port_right, 
-					  MACH_MSG_TYPE_MAKE_SEND_ONCE,
-					  &old);
-	  if (old != MACH_PORT_NULL)
-	    mach_port_deallocate (mach_task_self (), old);
+          ports_request_dead_name_notification (cred, sockaddr, NULL);
+
 	  np->sockaddr = sockaddr;
 	  diskfs_nref_light (np);
 	}

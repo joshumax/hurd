@@ -223,7 +223,8 @@ diskfs_S_file_set_translator (struct protid *cred,
   pthread_mutex_unlock (&np->lock);
 
   if (! err && cred->po->path && active_flags & FS_TRANS_SET)
-    err = fshelp_set_active_translator (&cred->pi, cred->po->path, &np->transbox);
+    err = fshelp_set_active_translator (cred->pi.bucket->notify_port,
+                                        cred->po->path, &np->transbox);
 
   return err;
 }
