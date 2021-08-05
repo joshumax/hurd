@@ -322,6 +322,14 @@ void ports_port_deref_weak (void *port);
     __pi ? (__pi->bucket->notify_port == __pi) : 0; \
   })
 
+/* Request a dead-name notification for NAME on behalf of OBJECT.
+   If PREVIOUS is null, deallocate any previously registered port,
+   otherwise return it.  If OBJECT is null, cancel the previously
+   registered notification.  */
+error_t ports_request_dead_name_notification (void *object,
+                                              mach_port_t name,
+                                              mach_port_t *previous);
+
 /* The user is responsible for listening for no senders notifications;
    when one arrives, call this routine for the PORT the message was
    sent to, providing the MSCOUNT from the notification. */
