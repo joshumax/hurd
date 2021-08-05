@@ -66,7 +66,6 @@ static const struct argp_option options[] =
 struct port_bucket *port_bucket;
 struct port_class *other_portclass;
 struct port_class *vdev_portclass;
-struct port_info *notify_pi;
 
 int netfs_maxsymlinks = 12;
 char *netfs_server_name = "multiplexer";
@@ -145,12 +144,6 @@ main (int argc, char *argv[])
       ethernet_open (device_file, master_device, port_bucket,
 		     other_portclass);
     }
-
-  /* Prepare for the notification. */
-  err = ports_create_port (other_portclass, port_bucket,
-			   sizeof (struct port_info), &notify_pi);
-  if (err)
-    error (1, err, "ports_create_port for notification");
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)

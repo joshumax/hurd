@@ -33,8 +33,6 @@
 #include "netfs_impl.h"
 #include "util.h"
 
-extern struct port_info *notify_pi;
-
 /* Implementation of device interface */
 
 /*
@@ -183,18 +181,15 @@ kern_return_t
 ds_device_set_filter (struct vether_device *vdev, mach_port_t receive_port,
 		      int priority, filter_array_t filter, size_t filterlen)
 {
-  mach_port_t tmp;
   kern_return_t err;
+
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
-  err = mach_port_request_notification (mach_task_self (), receive_port,
-					MACH_NOTIFY_DEAD_NAME, 0,
-					notify_pi->port_right,
-					MACH_MSG_TYPE_MAKE_SEND_ONCE, &tmp);
+
+  err = ports_request_dead_name_notification (vdev, receive_port, NULL);
   if (err != KERN_SUCCESS)
     goto out;
-  if (tmp != MACH_PORT_NULL)
-    mach_port_deallocate (mach_task_self (), tmp);
+
   err = net_set_filter (&vdev->port_list, receive_port,
 			priority, filter, filterlen);
 out:
