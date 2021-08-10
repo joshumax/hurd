@@ -240,7 +240,7 @@ force_delayed_copies (struct node *node, off_t length)
       mach_port_t obj;
 
       pager_change_attributes (pager, MAY_CACHE, MEMORY_OBJECT_COPY_NONE, 1);
-      obj = diskfs_get_filemap (node, VM_PROT_READ);
+      obj = diskfs_get_filemap (node, VM_PROT_READ | VM_PROT_WRITE);
       if (obj != MACH_PORT_NULL)
 	{
 	  /* XXX should cope with errors from diskfs_get_filemap */
