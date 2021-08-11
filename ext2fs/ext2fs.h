@@ -505,7 +505,9 @@ record_global_poke (void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
+#ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
+#endif
   global_block_modified (block);
   pokel_add (&global_pokel, block_ptr, block_size);
 }
@@ -531,7 +533,9 @@ record_indir_poke (struct node *node, void *ptr)
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
+#ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
+#endif
   global_block_modified (block);
   pokel_add (&diskfs_node_disknode (node)->indir_pokel, block_ptr, block_size);
 }
