@@ -149,6 +149,7 @@ rumpdisk_device_init (void)
        || ! device_open (device_master, D_READ, "hd2", &device))
 	{
 	  fprintf(stderr, "Kernel is already driving an IDE device, skipping probing disks\n");
+	  fflush(stderr);
 	  disabled = 1;
 	  return;
 	}
@@ -160,6 +161,7 @@ rumpdisk_device_init (void)
        || ! device_open (device_master, D_READ, "sd3", &device))
 	{
 	  fprintf(stderr, "Kernel is already driving a SATA device, skipping probing disks\n");
+	  fflush(stderr);
 	  disabled = 1;
 	  return;
 	}
