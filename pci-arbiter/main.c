@@ -215,7 +215,7 @@ main (int argc, char **argv)
   if (disk_server_task != MACH_PORT_NULL)
     {
       machdev_register (&pci_arbiter_emulation_ops);
-      machdev_trivfs_init (argc, argv, disk_server_task, "pci", _SERVERS_BUS "pci", &bootstrap);
+      machdev_trivfs_init (argc, argv, disk_server_task, "pci", NULL /* _SERVERS_BUS "pci" */, &bootstrap);
       machdev_device_init ();
       err = pthread_create (&t, NULL, machdev_server, NULL);
       if (err)
