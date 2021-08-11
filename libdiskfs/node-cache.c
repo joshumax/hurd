@@ -163,6 +163,10 @@ diskfs_try_dropping_softrefs (struct node *np)
 
       hurd_ihash_locp_remove (&nodecache, np->slot);
       np->slot = NULL;
+
+      /* Flush node if needed, before forgetting it */
+      diskfs_node_update (np, diskfs_synchronous);
+
       diskfs_nrele_light (np);
     }
   pthread_rwlock_unlock (&nodecache_lock);
