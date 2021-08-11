@@ -289,16 +289,26 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
   retry_type retry;
   string_t retry_name;
   mach_port_t right = MACH_PORT_NULL;
-  process_t parent_proc;
 
   /* Traverse to the bootstrapping server first */
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap)
     {
+      process_t parent_proc;
+
       err = proc_task2proc (procserver, parent_task, &parent_proc);
       assert_perror_backtrace (err);
+
+      /* We don't need this anymore. */
+      mach_port_deallocate (mach_task_self (), parent_task);
+      parent_task = MACH_PORT_NULL;
+
+      proc_mark_exec(parent_proc);
+
       err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND, authhandle);
       assert_perror_backtrace (err);
+
+      mach_port_deallocate (mach_task_self (), parent_proc);
     }
   err = fsys_getroot (control_port, MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND,
                       idlist, 3, idlist, 3, 0,

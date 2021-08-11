@@ -489,6 +489,7 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
   mach_port_t host, startup;
   error_t err;
   mach_port_t root_pt;
+  mach_port_t bootstrap;
   struct protid *rootpi;
   struct peropen *rootpo;
 
@@ -516,9 +517,11 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
     mach_port_deallocate (mach_task_self (), diskfs_auth_server_port);
   diskfs_auth_server_port = authhandle;
 
+  err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
+  assert_perror_backtrace (err);
+
   if (diskfs_exec_server_task != MACH_PORT_NULL)
     {
-      mach_port_t bootstrap;
       process_t execprocess;
 
       err = proc_task2proc (procserver, diskfs_exec_server_task, &execprocess);
@@ -535,28 +538,15 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 				execprocess, MACH_MSG_TYPE_COPY_SEND));
       mach_port_deallocate (mach_task_self (), execprocess);
 
-      /* Give the real bootstrap filesystem an fsys_init RPC of its own */
-      err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      assert_perror_backtrace (err);
-      if (bootstrap != MACH_PORT_NULL)
-        {
-          err = fsys_init (bootstrap, procserver, MACH_MSG_TYPE_COPY_SEND,
-                           authhandle);
-          mach_port_deallocate (mach_task_self (), bootstrap);
-          assert_perror_backtrace (err);
-        }
-
       /* We don't need this anymore. */
       mach_port_deallocate (mach_task_self (), diskfs_exec_server_task);
       diskfs_exec_server_task = MACH_PORT_NULL;
     }
   else
+    assert_backtrace (parent_task != MACH_PORT_NULL);
+
+  if (parent_task != MACH_PORT_NULL)
     {
-      mach_port_t bootstrap;
-      process_t parent_proc;
-
-      assert_backtrace (parent_task != MACH_PORT_NULL);
-
       /* Tell the proc server that our parent task is our child.  This
 	 makes the process hierarchy fail to represent the real order of
 	 who created whom, but it sets the owner and authentication ids to
@@ -568,6 +558,15 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 
       err = proc_child (procserver, parent_task);
       assert_perror_backtrace (err);
+    }
+
+  if (bootstrap != MACH_PORT_NULL)
+    {
+      /* Give our parent (the real bootstrap filesystem) an fsys_init
+	 RPC of its own, as init would have sent it.  */
+      process_t parent_proc;
+
+      assert_backtrace (parent_task != MACH_PORT_NULL);
 
       /* Get the parent's proc server port so we can send it in the fsys_init
 	 RPC just as init would.  */
@@ -580,15 +579,12 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
 
       proc_mark_exec (parent_proc);
 
-      /* Give our parent (the real bootstrap filesystem) an fsys_init
-	 RPC of its own, as init would have sent it.  */
-      err = task_get_bootstrap_port (mach_task_self (), &bootstrap);
-      assert_perror_backtrace (err);
       err = fsys_init (bootstrap, parent_proc, MACH_MSG_TYPE_COPY_SEND,
 		       authhandle);
+      assert_perror_backtrace (err);
+
       mach_port_deallocate (mach_task_self (), parent_proc);
       mach_port_deallocate (mach_task_self (), bootstrap);
-      assert_perror_backtrace (err);
     }
 
   /* Get a port to the root directory to put in the library's
