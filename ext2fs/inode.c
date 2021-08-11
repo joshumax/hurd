@@ -623,7 +623,6 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
       daddr_t blkno;
       struct ext2_inode *di;
       char buf[block_size];
-      mode_t newmode = 0;
 
       if (namelen + 2 > block_size)
 	return ENAMETOOLONG;
@@ -631,18 +630,20 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
       di = dino_ref (np->cache_id);
       blkno = di->i_translator;
 
-      if (S_ISLNK (np->dn_stat.st_mode))
-	{
-	  /* Avoid storing both a symlink and a translator,
-	   * e2fsck does not like it.  */
-	  newmode = (np->dn_stat.st_mode & ~S_IFMT) | S_IFREG;
-	  err = diskfs_validate_mode_change (np, newmode);
-	  if (err)
-	    return err;
-	}
-
       if (namelen && !blkno)
 	{
+	  mode_t newmode = 0;
+
+	  if (S_ISLNK (np->dn_stat.st_mode))
+	    {
+	      /* Avoid storing both a symlink and a translator,
+	       * e2fsck does not like it.  */
+	      newmode = (np->dn_stat.st_mode & ~S_IFMT) | S_IFREG;
+	      err = diskfs_validate_mode_change (np, newmode);
+	      if (err)
+		return err;
+	    }
+
 	  /* Allocate block for translator */
 	  blkno =
 	    ext2_new_block ((diskfs_node_disknode (np)->info.i_block_group
@@ -654,6 +655,13 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 	      dino_deref (di);
 	      diskfs_end_catch_exception ();
 	      return ENOSPC;
+	    }
+
+	  if (newmode)
+	    {
+	      /* Clear previous data */
+	      diskfs_truncate (np, 0);
+	      np->dn_stat.st_mode = newmode;
 	    }
 
 	  di->i_translator = blkno;
@@ -681,13 +689,6 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
       if (namelen)
 	{
 	  void *blkptr;
-
-	  if (newmode)
-	    {
-	      /* Clear previous data */
-	      diskfs_truncate (np, 0);
-	      np->dn_stat.st_mode = newmode;
-	    }
 
 	  buf[0] = namelen & 0xFF;
 	  buf[1] = (namelen >> 8) & 0xFF;
