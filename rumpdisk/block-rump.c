@@ -195,19 +195,12 @@ rumpdisk_device_dealloc (void *d)
 }
 
 static void
-rumpdisk_device_shutdown (mach_port_t dosync_handle)
+rumpdisk_device_sync (void)
 {
-  struct block_data *bd = block_head;
-
   if (disabled)
     return;
 
-  while (bd)
-    {
-      rumpdisk_device_close((void *)bd);
-      bd = bd->next;
-    }
-  rump_sys_reboot (0, NULL);
+  rump_sys_sync ();
 }
 
 static io_return_t
@@ -419,7 +412,7 @@ static struct machdev_device_emulation_ops rump_block_emulation_ops = {
   NULL,
   NULL,
   NULL,
-  rumpdisk_device_shutdown
+  rumpdisk_device_sync
 };
 
 void

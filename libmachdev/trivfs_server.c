@@ -490,7 +490,7 @@ machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
   return 0;
 }
 
-/* The system is going down. Sync data, then call trivfs_goaway() */
+/* The system is going down, sync data.  */
 error_t
 S_startup_dosync (mach_port_t handle)
 {
@@ -502,10 +502,10 @@ S_startup_dosync (mach_port_t handle)
 
   ports_port_deref (inpi);
 
-  /* Sync and close device(s) */
-  machdev_device_shutdown (handle);
+  /* Sync device(s) */
+  machdev_device_sync ();
 
-  return trivfs_goaway (NULL, FSYS_GOAWAY_FORCE);
+  return 0;
 }
 
 error_t

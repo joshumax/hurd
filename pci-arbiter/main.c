@@ -102,17 +102,6 @@ pci_device_close (void *d)
   return 0;
 }
 
-static void
-pci_device_shutdown (mach_port_t dosync_handle)
-{
-  // Free all libpciaccess resources
-  pci_system_cleanup ();
-
-  ports_destroy_right (&pci_control_port);
-
-  netfs_shutdown (FSYS_GOAWAY_FORCE);
-}
-
 static struct machdev_device_emulation_ops pci_arbiter_emulation_ops = {
   NULL,
   NULL,
@@ -131,7 +120,7 @@ static struct machdev_device_emulation_ops pci_arbiter_emulation_ops = {
   NULL,
   NULL,
   NULL,
-  pci_device_shutdown,
+  NULL,
 };
 
 int
