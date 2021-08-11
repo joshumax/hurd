@@ -296,6 +296,19 @@ diskfs_truncate (struct node *node, off_t length)
        is true for fast symlinks, and also apparently for some device nodes
        in linux.  */
     {
+      off_t froblen = node->dn_stat.st_size;
+      off_t frobmax = sizeof(diskfs_node_disknode (node)->info.i_data);
+
+      if (froblen > frobmax)
+	{
+	  ext2_warning ("inline data was %lld, more than max %lld",
+	      (long long) froblen, (long long) frobmax);
+	  froblen = frobmax;
+	}
+      froblen -= length;
+      memset (((char *) (diskfs_node_disknode (node)->info.i_data)) + length,
+	      0, froblen);
+
       node->dn_stat.st_size = length;
       node->dn_set_mtime = 1;
       node->dn_set_ctime = 1;
