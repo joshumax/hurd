@@ -135,14 +135,14 @@ struct pcifs_perm
   int32_t gid;
 };
 
-/* Various parameters that can be used to change the behavior of an ftpfs.  */
+/* Various parameters that can be used to change the behavior of a pcifs.  */
 struct pcifs_params
 {
   /* The size of the node cache.  */
   size_t node_cache_max;
 
-  /* Bootstrap disk server task */
-  mach_port_t disk_server_task;
+  /* Next bootstrap task */
+  mach_port_t next_task;
 
   /* FS permissions.  */
   struct pcifs_perm *perms;

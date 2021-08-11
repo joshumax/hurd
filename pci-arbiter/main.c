@@ -192,19 +192,19 @@ main (int argc, char **argv)
 {
   error_t err;
   mach_port_t bootstrap;
-  mach_port_t disk_server_task;
+  mach_port_t next_task;
   pthread_t t, nt;
   file_t underlying_node = MACH_PORT_NULL;
 
   /* Parse options */
   alloc_file_system (&fs);
   argp_parse (netfs_runtime_argp, argc, argv, 0, 0, 0);
-  disk_server_task = fs->params.disk_server_task;
+  next_task = fs->params.next_task;
 
-  if (disk_server_task != MACH_PORT_NULL)
+  if (next_task != MACH_PORT_NULL)
     {
       machdev_register (&pci_arbiter_emulation_ops);
-      machdev_trivfs_init (argc, argv, disk_server_task, "pci", NULL /* _SERVERS_BUS "pci" */, &bootstrap);
+      machdev_trivfs_init (argc, argv, next_task, "pci", NULL /* _SERVERS_BUS "pci" */, &bootstrap);
       machdev_device_init ();
       err = pthread_create (&t, NULL, machdev_server, NULL);
       if (err)
@@ -231,7 +231,7 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "Starting the PCI system");
 
-  if (disk_server_task != MACH_PORT_NULL)
+  if (next_task != MACH_PORT_NULL)
     {
       void *run_server(void *arg) {
 	machdev_trivfs_server(bootstrap);
@@ -244,7 +244,7 @@ main (int argc, char **argv)
       /* Timer started, quickly do all these next, before we call rump_init */
     }
 
-  if (disk_server_task == MACH_PORT_NULL)
+  if (next_task == MACH_PORT_NULL)
     underlying_node = netfs_startup (bootstrap, O_READ);
 
   /* Create the root node first */
@@ -252,7 +252,7 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "Creating the root node");
 
-  if (disk_server_task != MACH_PORT_NULL)
+  if (next_task != MACH_PORT_NULL)
     pcifs_startup (bootstrap, O_READ);
 
   err = init_file_system (fs);

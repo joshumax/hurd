@@ -36,7 +36,7 @@ mach_port_t bootstrap_resume_task = MACH_PORT_NULL;
 static const struct argp_option options[] = {
   {"host-priv-port",	'h', "PORT", 0, "Host private port PORT"},
   {"device-master-port",'d', "PORT", 0, "Device master port PORT"},
-  {"filesystem-task",	'f', "TASK", 0, "Filesystem task TASK"},
+  {"next-task",		'N', "TASK", 0, "Next bootstrap task TASK"},
   {0}
 };
 
@@ -51,7 +51,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
   {
     int host_priv;
     int dev_master;
-    int fs_task;
+    int next_task;
   } *values = state->hook;
 
   switch (key)
@@ -62,8 +62,8 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'd':
       values->dev_master = atoi(arg);
       break;
-    case 'f':
-      values->fs_task = atoi(arg);
+    case 'N':
+      values->next_task = atoi(arg);
       break;
 
     case ARGP_KEY_INIT:
@@ -79,7 +79,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       /* All options parsed successfully */
       _hurd_host_priv = values->host_priv;
       _hurd_device_master = values->dev_master;
-      bootstrap_resume_task = values->fs_task;
+      bootstrap_resume_task = values->next_task;
       break;
 
     default:
