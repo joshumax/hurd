@@ -52,7 +52,12 @@ dev_read (struct store *store,
 	  store_offset_t addr, size_t index, mach_msg_type_number_t amount,
 	  void **buf, mach_msg_type_number_t *len)
 {
-  return dev_error (device_read (store->port, 0, addr, amount,
+  recnum_t recnum = addr;
+
+  if (recnum != addr)
+    return EOVERFLOW;
+
+  return dev_error (device_read (store->port, 0, recnum, amount,
 				 (io_buf_ptr_t *)buf, len));
 }
 
@@ -62,10 +67,17 @@ dev_write (struct store *store,
 	   const void *buf, mach_msg_type_number_t len,
 	   mach_msg_type_number_t *amount)
 {
-  error_t err = dev_error (device_write (store->port, 0, addr,
+  recnum_t recnum = addr;
+  error_t err;
+  int amount_r;
+
+  if (recnum != addr)
+    return EOVERFLOW;
+
+  err = dev_error (device_write (store->port, 0, addr,
 					 (io_buf_ptr_t)buf, len,
-					 (int *) amount));
-  *amount = *(int *) amount;	/* stupid device.defs uses int */
+					 &amount_r));
+  *amount = amount_r;
   return err;
 }
 
