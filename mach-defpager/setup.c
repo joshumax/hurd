@@ -24,9 +24,9 @@
 #include <mach.h>
 #include <string.h>
 #include <strings.h>
+#include <stdlib.h>
 
 #include "default_pager.h"
-#include "kalloc.h"
 
 #include "file_io.h"
 #include "default_pager_S.h"
@@ -74,7 +74,7 @@ S_default_pager_paging_storage (mach_port_t pager,
     /* We can't write disk blocks larger than pages.  */
     return EINVAL;
 
-  fdp = kalloc (offsetof (struct file_direct, runs[nrun]));
+  fdp = malloc (offsetof (struct file_direct, runs[nrun]));
   if (fdp == 0)
     return ENOMEM;
 
@@ -89,7 +89,7 @@ S_default_pager_paging_storage (mach_port_t pager,
       fdp->runs[i].length = runs[i + 1];
       if (fdp->runs[i].start + fdp->runs[i].length > devsize)
 	{
-	  kfree (fdp, offsetof (struct file_direct, runs[nrun]));
+	  free (fdp);
 	  return EINVAL;
 	}
       fdp->fd_size += fdp->runs[i].length;
@@ -269,7 +269,7 @@ add_paging_file(master_device_port, file_name, linux_signature)
   else
     {
       struct file_direct *fdp;
-      fdp = kalloc (offsetof (struct file_direct, runs[1]));
+      fdp = malloc (offsetof (struct file_direct, runs[1]));
       if (fdp == 0)
 	return ENOMEM;
 
@@ -301,7 +301,7 @@ remove_paging_file (char *file_name)
   if (kr == KERN_SUCCESS && fdp != 0)
     {
       mach_port_deallocate (mach_task_self (), fdp->device);
-      kfree (fdp, (char *) &fdp->runs[fdp->nruns] - (char *) fdp);
+      free (fdp);
     }
   return kr;
 }

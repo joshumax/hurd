@@ -47,12 +47,12 @@
 
 #include "queue.h"
 #include "wiring.h"
-#include "kalloc.h"
 #include "default_pager.h"
 
 #include <assert-backtrace.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -186,14 +186,14 @@ new_partition (const char *name, struct file_direct *fdp,
 	size = atop(fdp->fd_size * fdp->fd_bsize);
 	bmsize = howmany(size, NB_BM) * sizeof(bm_entry_t);
 
-	part = (partition_t) kalloc(sizeof(struct part));
+	part = (partition_t) malloc(sizeof(struct part));
 	pthread_mutex_init(&part->p_lock, NULL);
-	part->name	= (char*) kalloc(n + 1);
+	part->name	= (char*) malloc(n + 1);
 	strcpy(part->name, name);
 	part->total_size = size;
 	part->free	= size;
 	part->id	= id;
-	part->bitmap	= (bm_entry_t *)kalloc(bmsize);
+	part->bitmap	= (bm_entry_t *)malloc(bmsize);
 	part->going_away= FALSE;
 	part->file = fdp;
 
@@ -337,9 +337,9 @@ new_partition (const char *name, struct file_direct *fdp,
 			    hdr->version,
 			    name);
 		    vm_deallocate(mach_task_self(), raddr, rsize);
-		    kfree(part->bitmap, bmsize);
-		    kfree(part->name, strlen(part->name) + 1);
-		    kfree(part, sizeof *part);
+		    free(part->bitmap);
+		    free(part->name);
+		    free(part);
 		    return 0;
 		  }
 		else
@@ -389,9 +389,9 @@ new_partition (const char *name, struct file_direct *fdp,
 		    "Cannot find Linux swap signature page!  "
 		    "SKIPPING %s (%uk partition)!",
 		    name, part->total_size * (vm_page_size / 1024));
-	    kfree(part->bitmap, bmsize);
-	    kfree(part->name, strlen(part->name) + 1);
-	    kfree(part, sizeof *part);
+	    free(part->bitmap);
+	    free(part->name);
+	    free(part);
 	    part = 0;
 	  }
 	else
@@ -433,7 +433,7 @@ create_paging_partition(const char *name,
 
 			n = i ? (i<<1) : 2;
 			new_list = (partition_t *)
-				kalloc( n * sizeof(partition_t) );
+				malloc( n * sizeof(partition_t) );
 			if (new_list == 0) no_paging_space(TRUE);
 			memset (new_list, 0, n * sizeof(partition_t));
 			if (i) {
@@ -442,7 +442,7 @@ create_paging_partition(const char *name,
 			}
 			all_partitions.partition_list = new_list;
 			all_partitions.n_partitions = n;
-			if (i) kfree(old_list, i*sizeof(partition_t));
+			if (i) free(old_list);
 		}
 		set_partition_of(i, part);
 	}
@@ -635,7 +635,7 @@ dp_map_t pager_get_direct_map(pager)
 		init_value = (dp_map_t)NO_BLOCK;
 	    }
 
-	    mapptr = (dp_map_t) kalloc(alloc_size);
+	    mapptr = (dp_map_t) malloc(alloc_size);
 	    for (emapptr = &mapptr[(alloc_size-1) / sizeof(vm_offset_t)];
 		 emapptr >= mapptr;
 		 emapptr--)
@@ -686,11 +686,11 @@ pager_alloc(pager, part, size)
 #ifdef	CHECKSUM
 	if (INDIRECT_PAGEMAP(size)) {
 		mapptr = (vm_offset_t *)
-			kalloc(INDIRECT_PAGEMAP_SIZE(size));
+			malloc(INDIRECT_PAGEMAP_SIZE(size));
 		for (i = INDIRECT_PAGEMAP_ENTRIES(size); --i >= 0;)
 			mapptr[i] = 0;
 	} else {
-		mapptr = (vm_offset_t *) kalloc(PAGEMAP_SIZE(size));
+		mapptr = (vm_offset_t *) malloc(PAGEMAP_SIZE(size));
 		for (i = 0; i < size; i++)
 			mapptr[i] = NO_CHECKSUM;
 	}
@@ -834,24 +834,24 @@ pager_extend(pager, new_size)
 	     * a larger indirect block.
 	     */
 	    new_mapptr = (dp_map_t)
-			kalloc(INDIRECT_PAGEMAP_SIZE(new_size));
+			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
 	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < INDIRECT_PAGEMAP_ENTRIES(old_size); i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i].indirect = (dp_map_t)0;
-	    kfree((char *)old_mapptr, INDIRECT_PAGEMAP_SIZE(old_size));
+	    free((char *)old_mapptr);
 	    pager->map = new_mapptr;
 	    pager->size = new_size;
 #ifdef	CHECKSUM
 	    new_mapptr = (vm_offset_t *)
-			kalloc(INDIRECT_PAGEMAP_SIZE(new_size));
+			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
 	    old_mapptr = pager->checksum;
 	    for (i = 0; i < INDIRECT_PAGEMAP_ENTRIES(old_size); i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i] = 0;
-	    kfree((char *)old_mapptr, INDIRECT_PAGEMAP_SIZE(old_size));
+	    free((char *)old_mapptr);
 	    pager->checksum = new_mapptr;
 #endif	 /* CHECKSUM */
 #if	DEBUG_READER_CONFLICTS
@@ -879,13 +879,13 @@ pager_extend(pager, new_size)
 	    /*
 	     * Allocate new second-level map first.
 	     */
-	    new_mapptr = (dp_map_t) kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	    new_mapptr = (dp_map_t) malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
 	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < old_size; i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < PAGEMAP_ENTRIES; i++)
 		invalidate_block(new_mapptr[i]);
-	    kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
+	    free((char *)old_mapptr);
 	    old_mapptr = new_mapptr;
 
 #if 0
@@ -900,7 +900,7 @@ pager_extend(pager, new_size)
 	     * Now allocate indirect map.
 	     */
 	    new_mapptr = (dp_map_t)
-			kalloc(INDIRECT_PAGEMAP_SIZE(new_size));
+			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
 	    new_mapptr[0].indirect = old_mapptr;
 	    for (i = 1; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i].indirect = 0;
@@ -910,20 +910,20 @@ pager_extend(pager, new_size)
 	    /*
 	     * Allocate new second-level map first.
 	     */
-	    new_mapptr = (vm_offset_t *)kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	    new_mapptr = (vm_offset_t *)malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
 	    old_mapptr = pager->checksum;
 	    for (i = 0; i < old_size; i++)
 		new_mapptr[i] = old_mapptr[i];
 	    for (; i < PAGEMAP_ENTRIES; i++)
 		new_mapptr[i] = NO_CHECKSUM;
-	    kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
+	    free((char *)old_mapptr);
 	    old_mapptr = new_mapptr;
 
 	    /*
 	     * Now allocate indirect map.
 	     */
 	    new_mapptr = (vm_offset_t *)
-			kalloc(INDIRECT_PAGEMAP_SIZE(new_size));
+			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
 	    new_mapptr[0] = (vm_offset_t) old_mapptr;
 	    for (i = 1; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i] = 0;
@@ -938,24 +938,24 @@ pager_extend(pager, new_size)
 	/*
 	 * Enlarging a direct block.
 	 */
-	new_mapptr = (dp_map_t)	kalloc(PAGEMAP_SIZE(new_size));
+	new_mapptr = (dp_map_t)	malloc(PAGEMAP_SIZE(new_size));
 	old_mapptr = pager_get_direct_map(pager);
 	for (i = 0; i < old_size; i++)
 	    new_mapptr[i] = old_mapptr[i];
 	for (; i < new_size; i++)
 	    invalidate_block(new_mapptr[i]);
-	kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
+	free((char *)old_mapptr);
 	pager->map = new_mapptr;
 	pager->size = new_size;
 #ifdef	CHECKSUM
 	new_mapptr = (vm_offset_t *)
-		kalloc(PAGEMAP_SIZE(new_size));
+		malloc(PAGEMAP_SIZE(new_size));
 	old_mapptr = pager->checksum;
 	for (i = 0; i < old_size; i++)
 	    new_mapptr[i] = old_mapptr[i];
 	for (; i < new_size; i++)
 	    new_mapptr[i] = NO_CHECKSUM;
-	kfree((char *)old_mapptr, PAGEMAP_SIZE(old_size));
+	free((char *)old_mapptr);
 	pager->checksum = new_mapptr;
 #endif	 /* CHECKSUM */
 #if	DEBUG_READER_CONFLICTS
@@ -1016,7 +1016,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	  const dp_map_t mapptr = pager->map[i].indirect;
 	  pager->map[i].indirect = (dp_map_t)0;
 	  dealloc_direct (mapptr, PAGEMAP_ENTRIES, 0);
-	  kfree ((char *)mapptr, PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	  free ((char *)mapptr);
 	}
 
       /* Now truncate what's now the final nonempty direct block.  */
@@ -1027,9 +1027,9 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
       if (INDIRECT_PAGEMAP (new_size))
 	{
 	  const dp_map_t old_mapptr = pager->map;
-	  pager->map = (dp_map_t) kalloc (INDIRECT_PAGEMAP_SIZE(new_size));
+	  pager->map = (dp_map_t) malloc (INDIRECT_PAGEMAP_SIZE(new_size));
 	  memcpy (pager->map, old_mapptr, INDIRECT_PAGEMAP_SIZE(new_size));
-	  kfree ((char *) old_mapptr, INDIRECT_PAGEMAP_SIZE (old_size));
+	  free ((char *) old_mapptr);
 	}
       else
 	{
@@ -1037,7 +1037,7 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	     a one-level map.  We already have that map, as the first and only
 	     nonempty element in our indirect map.  */
 	  const dp_map_t mapptr = pager->map[0].indirect;
-	  kfree((char *)pager->map, INDIRECT_PAGEMAP_SIZE(old_size));
+	  free((char *)pager->map);
 	  pager->map = mapptr;
 	}
     }
@@ -1046,16 +1046,11 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
     {
       /* First deallocate pages in the truncated region.  */
       dealloc_direct (pager->map, old_size, new_size);
-      /* Now reduce the size of the direct map itself.  We don't bother
-	 with kalloc/kfree if it's not shrinking enough that kalloc.c
-	 would actually use less.  */
-      if (PAGEMAP_SIZE (new_size) <= PAGEMAP_SIZE (old_size) / 2)
-	{
-	  const dp_map_t old_mapptr = pager->map;
-	  pager->map = (dp_map_t) kalloc (PAGEMAP_SIZE (new_size));
-	  memcpy (pager->map, old_mapptr, PAGEMAP_SIZE (new_size));
-	  kfree ((char *) old_mapptr, PAGEMAP_SIZE (old_size));
-	}
+      /* Now reduce the size of the direct map itself.  */
+      const dp_map_t old_mapptr = pager->map;
+      pager->map = (dp_map_t) malloc (PAGEMAP_SIZE (new_size));
+      memcpy (pager->map, old_mapptr, PAGEMAP_SIZE (new_size));
+      free ((char *) old_mapptr);
     }
 
  done:
@@ -1396,7 +1391,7 @@ pager_write_offset(pager, offset)
 		int i;
 		ddprintf ("pager_write_offset: allocating indirect\n");
 
-		mapptr = (dp_map_t) kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+		mapptr = (dp_map_t) malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
 		if (mapptr == 0) {
 		    /* out of space! */
 		    no_paging_space(TRUE);
@@ -1411,7 +1406,7 @@ pager_write_offset(pager, offset)
 		    int j;
 
 		    cksumptr = (vm_offset_t *)
-				kalloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+				malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
 		    if (cksumptr == 0) {
 			/* out of space! */
 			no_paging_space(TRUE);
@@ -1510,21 +1505,20 @@ pager_dealloc(pager)
 			    pager_dealloc_page(block.block.p_index,
 			    			block.block.p_offset, TRUE);
 		    }
-		    kfree((char *)mapptr, PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+		    free((char *)mapptr);
 		    pager->map[i].indirect = (dp_map_t) 0;
 		}
 	    }
-	    kfree((char *)pager->map, INDIRECT_PAGEMAP_SIZE(pager->size));
+	    free((char *)pager->map);
 	    pager->map = (dp_map_t) 0;
 #ifdef	CHECKSUM
 	    for (i = INDIRECT_PAGEMAP_ENTRIES(pager->size); --i >= 0; ) {
 		mapptr = (vm_offset_t *)pager->checksum[i];
 		if (mapptr) {
-		    kfree((char *)mapptr, PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+		    free((char *)mapptr);
 		}
 	    }
-	    kfree((char *)pager->checksum,
-		  INDIRECT_PAGEMAP_SIZE(pager->size));
+	    free((char *)pager->checksum);
 #endif	 /* CHECKSUM */
 	}
 	else {
@@ -1535,10 +1529,10 @@ pager_dealloc(pager)
 		    pager_dealloc_page(block.block.p_index,
 		    			block.block.p_offset, TRUE);
 	    }
-	    kfree((char *)pager->map, PAGEMAP_SIZE(pager->size));
+	    free((char *)pager->map);
 	    pager->map = (dp_map_t) 0;
 #ifdef	CHECKSUM
-	    kfree((char *)pager->checksum, PAGEMAP_SIZE(pager->size));
+	    free((char *)pager->checksum);
 #endif	 /* CHECKSUM */
 	}
 }
@@ -1911,9 +1905,9 @@ dprintf("Partition x%p (id x%x) for %s, all_ok %d\n", part, id, name, all_ok);
 
 		set_partition_of(pindex, 0);
 		*pp_private = part->file;
-		kfree(part->bitmap, howmany(part->total_size, NB_BM) * sizeof(bm_entry_t));
-		kfree(part->name, strlen(part->name) + 1);
-		kfree(part, sizeof(struct part));
+		free(part->bitmap);
+		free(part->name);
+		free(part);
 		dprintf("%s Removed paging partition %s\n", my_name, name);
 		return KERN_SUCCESS;
 	}
@@ -2124,7 +2118,7 @@ default_pager_t pager_port_alloc(size)
 	default_pager_t ds;
 	p_index_t	part;
 
-	ds = (default_pager_t) kalloc(sizeof *ds);
+	ds = (default_pager_t) malloc(sizeof *ds);
 	if (ds == DEFAULT_PAGER_NULL)
 	    panic("%spager_port_alloc",my_name);
 	memset ((char *)ds, 0, sizeof *ds);
@@ -2441,7 +2435,7 @@ void default_pager_no_senders(ds, seqno, mscount)
 	/*
 	 * Do this *after* deallocating the port name
 	 */
-	kfree((char *) ds, sizeof(*ds));
+	free((char *) ds);
 
 	/*
 	 * Recover memory that we might have wasted because
@@ -2453,7 +2447,7 @@ void default_pager_no_senders(ds, seqno, mscount)
 
 		ds = (default_pager_t) queue_first(&all_pagers.leak_queue);
 		queue_remove_first(&all_pagers.leak_queue, ds, default_pager_t, links);
-		kfree((char *) ds, sizeof(*ds));
+		free((char *) ds);
 	}
 
 	pthread_mutex_unlock(&all_pagers.lock);
@@ -3011,7 +3005,7 @@ start_default_pager_thread(internal)
 	kern_return_t kr;
 	error_t err;
 
-	ndpt = (default_pager_thread_t *) kalloc(sizeof *ndpt);
+	ndpt = (default_pager_thread_t *) malloc(sizeof *ndpt);
 	if (ndpt == 0)
 		panic(my_name);
 
@@ -3176,7 +3170,7 @@ S_default_pager_object_create (mach_port_t pager,
 				     &port);
 	if (result != KERN_SUCCESS)
 	  {
-	    kfree ((char *) ds, sizeof *ds);
+	    free ((char *) ds);
 	    return result;
 	  }
 

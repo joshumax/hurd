@@ -23,7 +23,7 @@ dir	:= mach-defpager
 makemode:= server
 target	:= mach-defpager
 
-SRCS	:= default_pager.c kalloc.c wiring.c main.c setup.c
+SRCS	:= default_pager.c wiring.c main.c setup.c
 OBJS 	:= $(SRCS:.c=.o) \
 	   $(addsuffix Server.o,\
 		       memory_object default_pager memory_object_default exc) \

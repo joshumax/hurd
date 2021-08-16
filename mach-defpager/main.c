@@ -32,6 +32,7 @@
 #include <error.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/mman.h>
 
 /* XXX */
 #include <fcntl.h>
@@ -88,6 +89,10 @@ main (int argc, char **argv)
 			      &bootstrap_master_device_port);
   if (err)
     error (1, err, "cannot get privileged ports");
+
+  err = mlockall(MCL_CURRENT | MCL_FUTURE);
+  if (err)
+    error (1, err, "cannot lock all memory");
 
   defpager = MACH_PORT_NULL;
   err = vm_set_default_memory_manager (bootstrap_master_host_port, &defpager);
