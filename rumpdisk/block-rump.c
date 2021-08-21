@@ -288,6 +288,8 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
     return D_INVALID_OPERATION;
 
   written = rump_sys_pwrite (bd->rump_fd, (const void *)data, (size_t)count, (off_t)bn * bd->block_size);
+  vm_deallocate (mach_task_self (), (vm_address_t) data, count);
+
   if (written < 0)
     {
       *bytes_written = 0;
