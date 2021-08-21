@@ -309,10 +309,11 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
 		      unsigned *bytes_read)
 {
   struct block_data *bd = d;
-  char *buf;
+  vm_address_t buf;
   int pagesize = sysconf (_SC_PAGE_SIZE);
   int npages = (count + pagesize - 1) / pagesize;
   ssize_t err;
+  kern_return_t ret;
 
   if ((bd->mode & D_READ) == 0)
     return D_INVALID_OPERATION;
@@ -321,22 +322,21 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
     return D_SUCCESS;
 
   *data = 0;
-  buf = mmap (NULL, npages * pagesize, PROT_READ | PROT_WRITE,
-	      MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-  if (buf == MAP_FAILED)
-    return errno;
+  ret = vm_allocate (mach_task_self (), &buf, npages * pagesize, TRUE);
+  if (ret != KERN_SUCCESS)
+    return ENOMEM;
 
   err = rump_sys_pread (bd->rump_fd, (void *)buf, (size_t)count, (off_t)bn * bd->block_size);
   if (err < 0)
     {
       *bytes_read = 0;
-      munmap (buf, npages * pagesize);
+      vm_deallocate (mach_task_self (), buf, npages * pagesize);
       return EIO;
     }
   else
     {
       *bytes_read = err;
-      *data = buf;
+      *data = (void*) buf;
       return D_SUCCESS;
     }
 }
