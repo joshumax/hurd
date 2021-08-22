@@ -20,6 +20,7 @@
 
 #define malloc a_byte_for_every_bozotic_sun_lossage_and_youd_need_a_lotta_ram
 #include <rpc/types.h>
+#include <rpc/xdr.h>
 #undef TRUE			/* Get rid of sun defs.  */
 #undef FALSE
 #undef malloc

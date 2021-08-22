@@ -23,14 +23,14 @@
 
 #include "nfsd.h"
 
-#include <rpc/pmap_prot.h>
 #include "../nfs/mount.h"
 
+#define malloc spoogie_woogie /* barf */
+#include <rpc/types.h>
+#include <rpc/xdr.h>
 #undef TRUE
 #undef FALSE
-#define malloc spoogie_woogie /* barf */
-#include <rpc/xdr.h>
-#include <rpc/types.h>
+#include <rpc/pmap_prot.h>
 #include <rpc/auth.h>
 #include <rpc/rpc_msg.h>
 #undef malloc

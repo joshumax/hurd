@@ -30,3 +30,6 @@ HURDLIBS = netfs fshelp iohelp ports ihash shouldbeinlibc
 LDLIBS = -lpthread
 
 include ../Makeconf
+
+CFLAGS += $(libtirpc_CFLAGS)
+LDLIBS += $(libtirpc_LIBS)

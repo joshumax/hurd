@@ -93,6 +93,10 @@ libblkid_LIBS = @libblkid_LIBS@
 # Whether Sun RPC support is available.
 HAVE_SUN_RPC = @HAVE_SUN_RPC@
 
+# How to compile and link against libtirpc.
+libtirpc_CFLAGS = @libtirpc_CFLAGS@
+libtirpc_LIBS = @libtirpc_LIBS@
+
 # Whether we found libcrypt.
 HAVE_LIBCRYPT = @HAVE_LIBCRYPT@
 

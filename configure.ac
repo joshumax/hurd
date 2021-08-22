@@ -317,9 +317,10 @@ AC_DEFINE_UNQUOTED([X11_PREFIX], "$X11_PREFIX")
 AC_SUBST([X11_KEYSYMDEF_H])
 
 # Check for Sun RPC headers and library.
-AC_CHECK_HEADER([rpc/types.h], [HAVE_SUN_RPC=yes], [HAVE_SUN_RPC=no])
-AC_SEARCH_LIBS([clnt_create], [], [:], [HAVE_SUN_RPC=no])
+PKG_CHECK_MODULES([libtirpc], [libtirpc], [HAVE_SUN_RPC=yes])
 AC_SUBST([HAVE_SUN_RPC])
+AC_SUBST([libtirpc_CFLAGS])
+AC_SUBST([libtirpc_LIBS])
 
 if test -f ./$ac_unique_file; then
   # Configuring in source directory; don't create any Makefiles.

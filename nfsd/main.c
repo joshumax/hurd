@@ -21,6 +21,7 @@
 #include "nfsd.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <rpc/xdr.h>
 #include <rpc/pmap_prot.h>
 #include <maptime.h>
 #include <hurd.h>

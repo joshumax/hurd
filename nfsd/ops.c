@@ -31,6 +31,7 @@
 
 #include "nfsd.h"
 #include "../nfs/mount.h" /* XXX */
+#include <rpc/xdr.h>
 #include <rpc/pmap_prot.h>
 
 static error_t

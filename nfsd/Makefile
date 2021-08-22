@@ -30,3 +30,6 @@ LDLIBS = -lpthread
 include ../Makeconf
 
 CPPFLAGS += -DLOCALSTATEDIR=\"$(localstatedir)\"
+
+CFLAGS += $(libtirpc_CFLAGS)
+LDLIBS += $(libtirpc_LIBS)

@@ -32,11 +32,11 @@
 #include "nfsd.h"
 
 
-#undef TRUE
-#undef FALSE
 #define malloc spoogie_woogie	/* ugh^2. */
 #include <rpc/types.h>
 #include <rpc/auth.h>
+#undef TRUE
+#undef FALSE
 #undef malloc
 
 #define IDHASH_TABLE_SIZE 1024
