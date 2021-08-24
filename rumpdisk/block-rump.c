@@ -86,12 +86,12 @@ search_bd (char *name)
   return NULL;
 }
 
-/* BSD name of whole disk device is /dev/wdXd
+/* BSD name of whole disk device is /dev/rwdXd
  * but we will receive wdX as the name */
 static void
 translate_name (char *output, int len, char *name)
 {
-  snprintf (output, len - 1, "/dev/%sd", name);
+  snprintf (output, len - 1, "/dev/r%sd", name);
 }
 
 static boolean_t
