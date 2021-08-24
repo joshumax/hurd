@@ -317,7 +317,7 @@ AC_DEFINE_UNQUOTED([X11_PREFIX], "$X11_PREFIX")
 AC_SUBST([X11_KEYSYMDEF_H])
 
 # Check for Sun RPC headers and library.
-PKG_CHECK_MODULES([libtirpc], [libtirpc], [HAVE_SUN_RPC=yes])
+PKG_CHECK_MODULES([libtirpc], [libtirpc], [HAVE_SUN_RPC=yes], [HAVE_SUN_RPC=no])
 AC_SUBST([HAVE_SUN_RPC])
 AC_SUBST([libtirpc_CFLAGS])
 AC_SUBST([libtirpc_LIBS])
