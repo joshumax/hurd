@@ -326,6 +326,9 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   if (ret != KERN_SUCCESS)
     return ENOMEM;
 
+  /* Ensure physical allocation.  */
+  memset (buf, 0, npages * pagesize);
+
   err = rump_sys_pread (bd->rump_fd, (void *)buf, (size_t)count, (off_t)bn * bd->block_size);
   if (err < 0)
     {
