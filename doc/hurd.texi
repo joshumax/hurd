@@ -2999,9 +2999,6 @@ If @option{--name} is specified, the client must use the device name in
 created by some other programs, for example by eth-multiplexer.
 
 
-FIXME: a chapter on libdirmgt will probably go here
-
-
 @node Stores
 @chapter Stores
 
