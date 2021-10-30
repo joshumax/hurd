@@ -404,7 +404,8 @@ void netfs_init (void);
 
 /* Starts the netfs server.  Called after netfs_init. BOOTSTRAP is
    the bootstrap port.  FLAGS indicate how to open the underlying node
-   (Cf. hurd/fsys.defs).  */
+   that's being translated (Cf. hurd/fsys.defs).  Returns a port to
+   such node.  */
 mach_port_t netfs_startup (mach_port_t bootstrap, int flags);
 
 /* Normally called as the last function in main.  The netfs server now
