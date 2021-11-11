@@ -750,7 +750,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 		   mach_msg_type_number_t *data_len,
 		   vm_size_t max_data_len, int *data_entries)
 {
-  error_t err;
+  error_t err = 0;
   int count = 0;
   size_t size = 0;		/* Total size of our return block.  */
   struct vcons *first_vcons = NULL;
@@ -813,11 +813,16 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 	bump_size ("input");
     }
 
-  /* Allocate it.  */
-  *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-  err = ((void *) *data == (void *) -1) ? errno : 0;
+  if (!size)
+    *data_len = *data_entries = 0;
+  else
+    {
+      /* Allocate it.  */
+      *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      err = ((void *) *data == (void *) -1) ? errno : 0;
+    }
 
-  if (! err)
+  if (size && !err)
     /* Copy out the result.  */
     {
       char *p = *data;
