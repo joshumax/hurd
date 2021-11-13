@@ -573,14 +573,10 @@ mach_port_t
 netfs_get_filemap (struct node *node, vm_prot_t prot)
 {
   error_t err;
-  memory_object_t pager, proxy;
+  memory_object_t proxy;
   vm_prot_t max_prot;
-  size_t reg_num, count;
+  size_t reg_num;
   struct pci_mem_region *region;
-  memory_object_t objects[1];
-  vm_offset_t offsets[1];
-  vm_offset_t starts[1];
-  vm_offset_t lens[1];
 
   /* Only regions files can be mapped */
   if (strncmp
@@ -599,24 +595,11 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
   if (err)
     return err;
 
-  /* Get the pager which we are creating a proxy from */
-  pager =
-    ((struct pci_user_data *) node->nn->ln->device->
-     user_data)->pagers[reg_num];
-
-  /* Get all params to create the proxy */
-  max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
-  objects[0] = pager;
-  offsets[0] = 0;
-  starts[0] = 0;
-  lens[0] = region->size;
-  count = 1;
-
   /* Create a new memory object proxy with the required protection */
+  max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
   err =
-    memory_object_create_proxy (mach_task_self (), max_prot, objects, count,
-				offsets, count, starts, count, lens, count,
-				&proxy);
+    vm_region_create_proxy(mach_task_self (), (vm_address_t)region->memory,
+			    max_prot, region->size, &proxy);
   if (err)
     goto error;
 
