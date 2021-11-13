@@ -326,9 +326,6 @@ create_fs_tree (struct pcifs * fs)
 		return err;
 	    }
 	}
-      /* Allocate some space so libpciaccess can store the pagers */
-      device->user_data =
-	(intptr_t) calloc (1, sizeof (struct pci_user_data));
 
       /* Create rom entry */
       if (device->rom_size)
