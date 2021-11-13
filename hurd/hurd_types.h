@@ -409,13 +409,4 @@ struct pci_xrom_bar
     uint64_t size;
   };
 
-/* Pper device user data*/
-struct pci_user_data {
-  /*
-   * One pager per memory region.
-   * Needed to create proxies on the arbiter
-   */
-  mach_port_t pagers[6];
-};
-
 #endif
