@@ -139,8 +139,6 @@ acpi_get_num_tables(size_t *num_tables)
         err = mmap_phys_acpi_header(acpi_ptr32, &next, &virt_addr2, fd_mem);
       }
 
-      char name[5] = { 0 };
-      snprintf(name, 5, "%s", &next->signature[0]);
       if (next->signature[0] == '\0' || next->length == 0) {
         munmap(virt_addr2, ESCD_SIZE);
         continue;
@@ -257,8 +255,6 @@ acpi_get_tables(struct acpi_table **tables)
         }
       }
 
-      char name[5] = { 0 };
-      snprintf(name, 5, "%s", &next->signature[0]);
       if (next->signature[0] == '\0' || next->length == 0) {
         munmap(virt_addr2, ESCD_SIZE);
         continue;
