@@ -138,6 +138,11 @@ acpi_get_num_tables(size_t *num_tables)
         err = mmap_phys_acpi_header(acpi_ptr32, &next, &virt_addr2, fd_mem);
       }
 
+      if (err) {
+        munmap(virt_addr, ESCD_SIZE);
+        return err;
+      }
+
       if (next->signature[0] == '\0' || next->length == 0) {
         munmap(virt_addr2, ESCD_SIZE);
         continue;
