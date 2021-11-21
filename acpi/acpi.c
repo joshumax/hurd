@@ -246,16 +246,13 @@ acpi_get_tables(struct acpi_table **tables)
       uintptr_t acpi_ptr64 = (uintptr_t)*((uint64_t *)(acpi_ptr + i*sz_ptr));
       if (is_64bit) {
         err = mmap_phys_acpi_header(acpi_ptr64, &next, &virt_addr2, fd_mem);
-        if (err) {
-          munmap(virt_addr, ESCD_SIZE);
-          return err;
-        }
       } else {
         err = mmap_phys_acpi_header(acpi_ptr32, &next, &virt_addr2, fd_mem);
-        if (err) {
-          munmap(virt_addr, ESCD_SIZE);
-          return err;
-        }
+      }
+
+      if (err) {
+        munmap(virt_addr, ESCD_SIZE);
+        return err;
       }
 
       if (next->signature[0] == '\0' || next->length == 0) {
