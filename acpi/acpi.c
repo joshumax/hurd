@@ -114,7 +114,6 @@ acpi_get_num_tables(size_t *num_tables)
 
   err = mmap_phys_acpi_header(sdt_base, &root_sdt, &virt_addr, fd_mem);
   if (err) {
-    munmap(virt_addr, ESCD_SIZE);
     return err;
   }
 
@@ -223,7 +222,6 @@ acpi_get_tables(struct acpi_table **tables)
 
   err = mmap_phys_acpi_header(sdt_base, &root_sdt, &virt_addr, fd_mem);
   if (err) {
-    munmap(virt_addr, ESCD_SIZE);
     return err;
   }
 
