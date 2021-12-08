@@ -372,6 +372,17 @@ ps_get_exe (struct proc_stat *ps, char **exe_p, int *exe_len_p)
 }
 const struct ps_getter ps_exe_getter =
 {"exe", PSTAT_EXE, ps_get_exe};
+
+static void
+ps_get_comm (struct proc_stat *ps, char **comm_p, int *comm_len_p)
+{
+  /* The GNU basename doesn't alter the string passed as arg */
+  *comm_p = basename (proc_stat_exe (ps));
+  *comm_len_p = strlen (*comm_p);
+}
+const struct ps_getter ps_comm_getter =
+{"comm", PSTAT_EXE, ps_get_comm};
+
 /* ---------------------------------------------------------------- */
 /* some printing functions */
 
@@ -1128,6 +1139,8 @@ static const struct ps_fmt_spec specs[] =
    &ps_args_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Arg0",	0,	0, -1, 0,
    &ps_args_getter,	   ps_emit_string,  ps_cmp_strings,ps_nominal_string},
+  {"Comm",      "COMMAND", 0, -1, 0,
+   &ps_comm_getter,       ps_emit_string,  ps_cmp_strings,ps_nominal_string},
   {"Env",	0,	 0, -1, 0,
    &ps_env_getter,	   ps_emit_args,    ps_cmp_strings,ps_nominal_string},
   {"Start",	0,	-7, 1, 0,
