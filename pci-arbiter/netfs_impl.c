@@ -29,11 +29,16 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <hurd/netfs.h>
+#include <hurd/paths.h>
+#include <mach/mach4.h>
+#include <device/device.h>
+
+#include <pciaccess.h>
 
 #include "pcifs.h"
 #include "ncache.h"
-#include <pciaccess.h>
 #include "func_files.h"
+#include "device_map.h"
 
 #define DIRENTS_CHUNK_SIZE      (8*1024)
 /* Returned directory entries are aligned to blocks this many bytes long.
@@ -562,4 +567,45 @@ void
 netfs_node_norefs (struct node *node)
 {
   destroy_node (node);
+}
+
+mach_port_t
+netfs_get_filemap (struct node *node, vm_prot_t prot)
+{
+  error_t err;
+  memory_object_t proxy;
+  vm_prot_t max_prot;
+  size_t reg_num;
+  struct pci_mem_region *region;
+
+  /* Only regions files can be mapped */
+  if (strncmp
+      (node->nn->ln->name, FILE_REGION_NAME, strlen (FILE_REGION_NAME)))
+    {
+      goto error;
+    }
+
+  /* Get region info */
+  reg_num =
+    strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
+  region = &node->nn->ln->device->regions[reg_num];
+
+  /* Ensure the region is mapped */
+  err = device_map_region (node->nn->ln->device, region);
+  if (err)
+    return err;
+
+  /* Create a new memory object proxy with the required protection */
+  max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
+  err =
+    vm_region_create_proxy(mach_task_self (), (vm_address_t)region->memory,
+			    max_prot, region->size, &proxy);
+  if (err)
+    goto error;
+
+  return proxy;
+
+error:
+  errno = EOPNOTSUPP;
+  return MACH_PORT_NULL;
 }
