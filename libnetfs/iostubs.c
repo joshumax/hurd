@@ -1,4 +1,4 @@
-/* 
+/*
    Copyright (C) 1995 Free Software Foundation, Inc.
    Written by Michael I. Bushnell, p/BSG.
 
@@ -23,11 +23,51 @@
 #include "io_S.h"
 
 error_t __attribute__((weak))
-netfs_S_io_map (struct protid *user, 
+netfs_S_io_map (struct protid *user,
 		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
 		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
 {
-  return EOPNOTSUPP;
+  int flags;
+  struct node *node;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  *wrobj = *rdobj = MACH_PORT_NULL;
+
+  node = user->po->np;
+  flags = user->po->openstat & (O_READ | O_WRITE);
+
+  pthread_mutex_lock (&node->lock);
+  switch (flags)
+    {
+    case O_READ | O_WRITE:
+      *wrobj = *rdobj = netfs_get_filemap (node, VM_PROT_READ |VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+	goto error;
+      mach_port_mod_refs (mach_task_self (), *rdobj, MACH_PORT_RIGHT_SEND, 1);
+      break;
+    case O_READ:
+      *rdobj = netfs_get_filemap (node, VM_PROT_READ);
+      if (*rdobj == MACH_PORT_NULL)
+	goto error;
+      break;
+    case O_WRITE:
+      *wrobj = netfs_get_filemap (node, VM_PROT_WRITE);
+      if (*wrobj == MACH_PORT_NULL)
+	goto error;
+      break;
+    }
+  pthread_mutex_unlock (&node->lock);
+
+  *rdobjtype = MACH_MSG_TYPE_MOVE_SEND;
+  *wrobjtype = MACH_MSG_TYPE_MOVE_SEND;
+
+  return 0;
+
+error:
+  pthread_mutex_unlock (&node->lock);
+  return errno;
 }
 
 error_t __attribute__((weak))
