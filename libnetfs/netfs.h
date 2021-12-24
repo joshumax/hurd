@@ -303,6 +303,11 @@ error_t netfs_get_dirents (struct iouser *cred, struct node *dir,
 			   mach_msg_type_number_t *datacnt,
 			   vm_size_t bufsize, int *amt);
 
+/* The user may define this function. Return a memory object proxy port (send
+   right) for the file contents of NP. PROT is the maximum allowable
+   access. On errors, return MACH_PORT_NULL and set errno.  */
+mach_port_t netfs_get_filemap (struct node *np, vm_prot_t prot);
+
 /* The user may define this function.  For a full description,
    see hurd/hurd_types.h.  The default response indicates a network
    store.  If the supplied buffers are not large enough, they should

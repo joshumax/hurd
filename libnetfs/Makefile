@@ -31,7 +31,7 @@ FSSRCS= dir-link.c dir-lookup.c dir-mkdir.c dir-mkfile.c \
 	file-check-access.c file-chflags.c file-chmod.c file-chown.c \
 	file-exec.c file-get-fs-options.c file-get-storage-info.c \
 	file-get-translator.c file-getcontrol.c file-getlinknode.c \
-	file-lock-stat.c file-lock.c file-set-size.c \
+	file-lock-stat.c file-lock.c file-map.c file-set-size.c \
 	file-set-translator.c file-statfs.c file-sync.c file-syncfs.c \
 	file-utimes.c file-record-lock.c file-reparent.c fsstubs.c \
 	file-get-transcntl.c
