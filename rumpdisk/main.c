@@ -25,6 +25,7 @@
 #include <error.h>
 #include <argp.h>
 #include <version.h>
+#include <sys/mman.h>
 
 #include "libmachdev/machdev.h"
 #include "block-rump.h"
@@ -113,6 +114,13 @@ main (int argc, char **argv)
 
   rump_register_block ();
   machdev_trivfs_init (argc, argv, bootstrap_resume_task, "rumpdisk", "/dev/rumpdisk", &bootstrap);
+
+  /* Make sure we will not swap out, in case we drive the disk used for
+     swapping.  */
+  err = mlockall(MCL_CURRENT | MCL_FUTURE);
+  if (err)
+    error (1, errno, "cannot lock all memory");
+
   machdev_device_init ();
   err = pthread_create (&t, NULL, machdev_server, NULL);
   if (err)

@@ -203,8 +203,17 @@ main (int argc, char **argv)
 
   if (next_task != MACH_PORT_NULL)
     {
+      /* We are a bootstrap process */
+
       machdev_register (&pci_arbiter_emulation_ops);
       machdev_trivfs_init (argc, argv, next_task, "pci", NULL /* _SERVERS_BUS "pci" */, &bootstrap);
+
+      /* Make sure we will not swap out, in case we are needed for swapping
+         back in.  */
+      err = mlockall(MCL_CURRENT | MCL_FUTURE);
+      if (err)
+        error (1, errno, "cannot lock all memory");
+
       machdev_device_init ();
       err = pthread_create (&t, NULL, machdev_server, NULL);
       if (err)
