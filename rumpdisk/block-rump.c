@@ -31,6 +31,7 @@
 #include <device/device.h>
 
 #define MACH_INCLUDE
+#define _STANDALONE
 
 #include "libmachdev/machdev.h"
 #include <rump/rump.h>
