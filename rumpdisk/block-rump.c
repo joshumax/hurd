@@ -284,9 +284,17 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
 {
   struct block_data *bd = d;
   ssize_t written;
+  volatile uint8_t dummy_read;
+  int pagesize = sysconf (_SC_PAGE_SIZE);
+  int npages = (count + pagesize - 1) / pagesize;
+  int i;
 
   if ((bd->mode & D_WRITE) == 0)
     return D_INVALID_OPERATION;
+
+  /* Fault-in the memory pages by reading a single byte of each */
+  for (i = 0; i < npages; i++)
+    dummy_read = ((volatile uint8_t *)data)[i * pagesize];
 
   written = rump_sys_pwrite (bd->rump_fd, (const void *)data, (size_t)count, (off_t)bn * bd->block_size);
   vm_deallocate (mach_task_self (), (vm_address_t) data, count);
@@ -313,6 +321,7 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   vm_address_t buf;
   int pagesize = sysconf (_SC_PAGE_SIZE);
   int npages = (count + pagesize - 1) / pagesize;
+  int i;
   ssize_t err;
   kern_return_t ret;
 
@@ -327,8 +336,9 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   if (ret != KERN_SUCCESS)
     return ENOMEM;
 
-  /* Ensure physical allocation.  */
-  memset (buf, 0, npages * pagesize);
+  /* Ensure physical allocation by writing a single byte of each */
+  for (i = 0; i < npages; i++)
+    ((uint8_t *)buf)[i * pagesize] = 0;
 
   err = rump_sys_pread (bd->rump_fd, (void *)buf, (size_t)count, (off_t)bn * bd->block_size);
   if (err < 0)
