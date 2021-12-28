@@ -19,6 +19,16 @@ RUMPPATH=/usr/lib
 RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata
 RUMPEXTRA=rumpdev_scsipi
 
+# If we have a configured tree, include the configuration so that we
+# can conditionally build translators.
+ifneq (,$(wildcard ../config.make))
+ include ../config.make
+endif
+
+ifeq ($(HAVE_LIBRUMP_VFSNOFIFO),yes)
+RUMPLIBS += rumpvfs_nofifofs
+endif
+
 dir := rumpdisk
 makemode := server
 

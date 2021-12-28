@@ -108,6 +108,7 @@ HAVE_LIBLWIP = @HAVE_LIBLWIP@
 
 # Whether we found librump.
 HAVE_LIBRUMP = @HAVE_LIBRUMP@
+HAVE_LIBRUMP_VFSNOFIFO = @HAVE_LIBRUMP_VFSNOFIFO@
 
 # How to compile and link against liblwip.
 liblwip_CFLAGS = @liblwip_CFLAGS@
