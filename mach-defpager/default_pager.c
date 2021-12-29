@@ -3091,6 +3091,7 @@ default_pager_initialize(host_port)
 void
 default_pager()
 {
+	error_t err;
 	kern_return_t kr;
 	int i;
 
@@ -3099,8 +3100,9 @@ default_pager()
 	/*
 	 * Wire down code, data, stack
 	 */
-	wire_all_memory();
-
+	err = wire_task_self();
+	if (err)
+		error (1, errno, "cannot lock all memory");
 
 	/*
 	 *	Initialize the list of all pagers.

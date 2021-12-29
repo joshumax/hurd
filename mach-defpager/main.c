@@ -90,10 +90,6 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "cannot get privileged ports");
 
-  err = mlockall(MCL_CURRENT | MCL_FUTURE);
-  if (err)
-    error (1, errno, "cannot lock all memory");
-
   defpager = MACH_PORT_NULL;
   err = vm_set_default_memory_manager (bootstrap_master_host_port, &defpager);
   if (err)

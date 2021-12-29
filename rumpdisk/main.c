@@ -25,7 +25,6 @@
 #include <error.h>
 #include <argp.h>
 #include <version.h>
-#include <sys/mman.h>
 
 #include "libmachdev/machdev.h"
 #include "block-rump.h"
@@ -117,7 +116,7 @@ main (int argc, char **argv)
 
   /* Make sure we will not swap out, in case we drive the disk used for
      swapping.  */
-  err = mlockall(MCL_CURRENT | MCL_FUTURE);
+  err = wire_task_self ();
   if (err)
     error (1, errno, "cannot lock all memory");
 

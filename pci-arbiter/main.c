@@ -210,7 +210,7 @@ main (int argc, char **argv)
 
       /* Make sure we will not swap out, in case we are needed for swapping
          back in.  */
-      err = mlockall(MCL_CURRENT | MCL_FUTURE);
+      err = wire_task_self ();
       if (err)
         error (1, errno, "cannot lock all memory");
 
