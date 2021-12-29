@@ -26,8 +26,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <mach/mach_traps.h>
 
 #include "assert-backtrace.h"
+
+static const size_t size = 128;
+static const size_t skip = 2;
 
 static void __attribute__ ((noreturn))
 __assert_fail_base_backtrace (const char *fmt,
@@ -36,8 +40,6 @@ __assert_fail_base_backtrace (const char *fmt,
 			      unsigned int line,
 			      const char *function)
 {
-  const size_t size = 128;
-  const size_t skip = 2;
   int nptrs;
   void *buffer[size];
 
@@ -77,6 +79,37 @@ __assert_perror_fail_backtrace (int errnum,
   __assert_fail_base_backtrace ("%s: %s:%u: %s: Unexpected error: %s.\n",
 				e, file, line, function);
 
+}
+
+void
+backtrace_stderr (void)
+{
+  int nptrs;
+  void *buffer[size];
+
+  nptrs = backtrace (buffer, size);
+  backtrace_symbols_fd (buffer, nptrs, STDERR_FILENO);
+  fflush (stderr);
+}
+
+void
+backtrace_mach (void)
+{
+  int nptrs;
+  void *buffer[size];
+  char **symbols;
+  int i;
+
+  nptrs = backtrace (buffer, size);
+  symbols = backtrace_symbols (buffer, nptrs);
+
+  for (i = 0; i < nptrs; i++)
+    {
+      mach_print(symbols[i]);
+      mach_print("\n");
+    }
+
+  free(symbols);
 }
 
 #endif /* ! defined NDEBUG */

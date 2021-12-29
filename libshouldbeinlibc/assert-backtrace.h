@@ -58,5 +58,11 @@ void __assert_perror_fail_backtrace (int errnum,
 				     __FILE__, __LINE__,		\
 				     __PRETTY_FUNCTION__))
 
+/* Print a stack trace on stderr.  */
+void backtrace_stderr (void);
+
+/* Print a stack trace on the mach console.  */
+void backtrace_mach (void);
+
 #endif /* NDEBUG */
 #endif /* __ASSERT_BACKTRACE__ */
