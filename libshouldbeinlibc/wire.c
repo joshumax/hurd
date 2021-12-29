@@ -27,61 +27,6 @@
 #include <mach/gnumach.h>
 #include <mach/vm_param.h>
 
-#pragma weak _DYNAMIC
-#pragma weak dlopen
-#pragma weak dlclose
-#pragma weak dlerror
-#pragma weak dlsym
-#ifndef RTLD_NOLOAD
-#define RTLD_NOLOAD 0
-#endif
-
-static int
-statically_linked (void)
-{
-  return &_DYNAMIC == 0;	/* statically linked */
-}
-
-/* Find the list of shared objects */
-static struct link_map *
-loaded (void)
-{
-  ElfW(Dyn) *d;
-
-  for (d = _DYNAMIC; d->d_tag != DT_NULL; ++d)
-    if (d->d_tag == DT_DEBUG)
-      {
-	struct r_debug *r = (void *) d->d_un.d_ptr;
-	return r->r_map;
-      }
-
-  return 0;			/* ld broken */
-}
-
-/* Compute the extent of a particular shared object. */
-static ElfW(Addr)
-map_extent (struct link_map *map)
-{
-  /* In fact, LIB == MAP, but doing it this way makes it entirely kosher.  */
-  void *lib = dlopen (map->l_name, RTLD_NOLOAD);
-  if (lib == 0)
-    {
-      error (2, 0, "cannot dlopen %s: %s", map->l_name, dlerror ());
-      /* NOTREACHED */
-      return 0;
-    }
-  else
-    {
-      /* Find the _end symbol's runtime address and subtract the load base.  */
-      void *end = dlsym (lib, "_end");
-      if (end == 0)
-	error (2, 0, "cannot wire library %s with no _end symbol: %s",
-	       map->l_name, dlerror ());
-      dlclose (lib);
-      return (ElfW(Addr)) end - map->l_addr;
-    }
-}
-
 /* Wire down all memory currently allocated at START for LEN bytes;
    host_priv is the privileged host port. */
 static error_t
@@ -191,34 +136,7 @@ wire_task_self ()
   if (err)
     return err;
 
-  if (statically_linked ())
-    {
-      extern void _start ();
-      extern char _edata, _etext, __data_start;
-      vm_address_t text_start = (vm_address_t) &_start;
-      err = wire_segment_internal (text_start,
-                                   (vm_size_t) (&_etext - text_start),
-                                   host);
-      if (err)
-        goto out;
-
-      err = wire_segment_internal ((vm_address_t) &__data_start,
-                                   (vm_size_t) (&_edata - &__data_start),
-                                   host);
-    }
-  else
-    {
-      struct link_map *map;
-
-      map = loaded ();
-      if (map)
-        for (err = 0; ! err && map; map = map->l_next)
-          err = wire_segment_internal ((vm_address_t) map->l_addr,
-                                       map_extent (map), host);
-      else
-        err = wire_segment_internal (VM_MIN_ADDRESS, VM_MAX_ADDRESS, host);
-    }
-
+  err = wire_segment_internal (VM_MIN_ADDRESS, VM_MAX_ADDRESS, host);
   if (err)
     goto out;
 
