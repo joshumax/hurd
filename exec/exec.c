@@ -51,7 +51,7 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 /* Load or allocate a section.
    Returns the address of the end of the section.  */
 static vm_address_t
-load_section (void *section, struct execdata *u)
+load_section (void *section, struct execdata *u, int interp)
 {
   vm_address_t addr = 0, end = 0;
   vm_offset_t filepos = 0;
@@ -79,7 +79,7 @@ load_section (void *section, struct execdata *u)
   anywhere = u->info.elf.anywhere;
   if (! anywhere)
     addr += u->info.elf.loadbase;
-  else
+  else if (interp)
     {
 #ifdef __i386__
       /* On the i386, programs normally load at 0x08000000, and
@@ -87,7 +87,7 @@ load_section (void *section, struct execdata *u)
 	 upward from its start near that address.  We need to make
 	 sure that the dynamic linker is not mapped in a conflicting
 	 address.  */
-      mask = 0xf0000000UL; /* XXX */
+      mask = 0xf8000000UL; /* XXX */
 #endif
     }
   if (anywhere && addr < vm_page_size)
@@ -719,7 +719,7 @@ set_name (task_t task, const char *exec_name, pid_t pid)
 
 /* Load the file.  Returns the address of the end of the load.  */
 static vm_offset_t
-load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start)
+load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start, int interp)
 {
   int anywhere = e->info.elf.anywhere;
   vm_offset_t end;
@@ -743,7 +743,7 @@ load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start)
       for (i = 0; i < e->info.elf.phnum; ++i)
 	if (e->info.elf.phdr[i].p_type == PT_LOAD)
 	  {
-	    end = load_section (&e->info.elf.phdr[i], e);
+	    end = load_section (&e->info.elf.phdr[i], e, interp);
 	    if (anywhere && end > anywhere_start)
 	      /* This section pushes the next anywhere-load further */
 	      anywhere_start = end;
@@ -1262,7 +1262,7 @@ do_exec (file_t file,
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
-      anywhere_start = load (newtask, &interp, anywhere_start);
+      anywhere_start = load (newtask, &interp, anywhere_start, 1);
       if (interp.error)
 	{
 	  e.error = interp.error;
@@ -1276,7 +1276,7 @@ do_exec (file_t file,
    * Could add address randomization here.  */
   anywhere_start += 128 << 20;
   /* Load the file into the task.  */
-  anywhere_start = load (newtask, &e, anywhere_start);
+  anywhere_start = load (newtask, &e, anywhere_start, 0);
   if (e.error)
     goto out;
 
