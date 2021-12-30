@@ -27,5 +27,13 @@ trivfs_S_io_server_version (trivfs_protid_t obj,
 			    int *min,
 			    int *edit)
 {
-  return EOPNOTSUPP;
+  if (!obj)
+    return EOPNOTSUPP;
+
+  if (!&trivfs_server_name || !&trivfs_server_version)
+    return EOPNOTSUPP;
+
+  snprintf (name, sizeof (string_t), "%s %s",
+	    trivfs_server_name, trivfs_server_version);
+  return 0;
 }

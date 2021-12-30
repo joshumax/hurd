@@ -74,6 +74,13 @@ struct trivfs_control
   void *hook;			/* for user use */
 };
 
+/* The user may define this variable.  Set this to the name of the
+   filesystem server. */
+extern char *trivfs_server_name __attribute__((weak));
+
+/* The user may define this variables.  Set this to be the server
+   version number.  */
+extern char *trivfs_server_version __attribute__((weak));
 
 /* The user must define these variables. */
 extern int trivfs_fstype;
