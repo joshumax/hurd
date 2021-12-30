@@ -20,13 +20,14 @@ makemode := utilities
 
 targets = shd ps settrans showtrans syncfs fsysopts \
 	storeinfo login w uptime ids loginpr sush vmstat portinfo \
-	devprobe vminfo addauth rmauth unsu setauth ftpcp ftpdir storecat \
+	devprobe vminfo addauth rmauth queryauth queryauth-setup \
+	unsu setauth ftpcp ftpdir storecat \
 	storeread msgport rpctrace mount gcore fakeauth fakeroot remap \
 	umount nullauth rpcscan vmallocate
 
-special-targets = loginpr sush uptime fakeroot remap
+special-targets = loginpr sush uptime fakeroot remap queryauth queryauth-setup
 SRCS = shd.c ps.c settrans.c syncfs.c showtrans.c addauth.c rmauth.c \
-	fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
+	queryauth.sh queryauth-setup.sh fsysopts.c storeinfo.c login.c loginpr.sh sush.sh w.c \
 	uptime.sh psout.c ids.c vmstat.c portinfo.c devprobe.c vminfo.c \
 	parse.c frobauth.c frobauth-mod.c setauth.c pids.c nonsugid.c \
 	unsu.c ftpcp.c ftpdir.c storeread.c storecat.c msgport.c \
