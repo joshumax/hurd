@@ -77,9 +77,9 @@ pool_initialize (void)
     error (1, 0, "Initializing hash failed: %s",
 	   gcry_strerror (cerr));
 
-  err = maptime_map (0, NULL, &mtime);
+  err = maptime_map (1, NULL, &mtime);
   if (err)
-    err = maptime_map (1, NULL, &mtime);
+    err = maptime_map (0, NULL, &mtime);
   if (err)
     error (1, err, "Failed to map time device");
 }
