@@ -37,7 +37,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 		       size_t ngids,
 		       int flags,
 		       retry_type *retry,
-		       char *retryname,
+		       string_t retryname,
 		       file_t *returned_port,
 		       mach_msg_type_name_t *returned_port_poly)
 {

@@ -492,7 +492,7 @@ lwip_S_io_get_icky_async_id (struct sock_user * user,
 
 error_t
 lwip_S_io_server_version (struct sock_user * user,
-			  char *name, int *major, int *minor, int *edit)
+			  string_t name, int *major, int *minor, int *edit)
 {
   return EOPNOTSUPP;
 }

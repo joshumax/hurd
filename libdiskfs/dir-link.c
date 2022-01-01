@@ -22,7 +22,7 @@
 kern_return_t
 diskfs_S_dir_link (struct protid *dircred,
 		   struct protid *filecred,
-		   char *name,
+		   string_t name,
 		   int excl)
 {
   struct node *np;		/* node being linked */

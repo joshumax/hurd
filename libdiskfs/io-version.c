@@ -26,7 +26,7 @@
 
 kern_return_t
 diskfs_S_io_server_version (struct protid *cred,
-			    char *server_name,
+			    string_t server_name,
 			    int *major,
 			    int *minor,
 			    int *edit)

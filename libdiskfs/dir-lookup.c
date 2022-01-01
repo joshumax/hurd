@@ -30,11 +30,11 @@
 /* Implement dir_lookup as described in <hurd/fs.defs>. */
 error_t
 diskfs_S_dir_lookup (struct protid *dircred,
-		     char *filename,
+		     string_t filename,
 		     int flags,
 		     mode_t mode,
 		     retry_type *do_retry,
-		     char *retry_name,
+		     string_t retry_name,
 		     mach_port_t *retry_port,
 		     mach_msg_type_name_t *retry_port_type)
 {

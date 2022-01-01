@@ -409,9 +409,9 @@ S_proc_uname (pstruct_t process,
 kern_return_t
 S_proc_register_version (pstruct_t server,
 			 mach_port_t credential,
-			 char *name,
-			 char *release,
-			 char *version)
+			 string_t name,
+			 string_t release,
+			 string_t version)
 {
   error_t err = 0;
   int i;

@@ -22,7 +22,7 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_dir_unlink (struct protid *user, char *name)
+netfs_S_dir_unlink (struct protid *user, string_t name)
 {
   error_t err;
   

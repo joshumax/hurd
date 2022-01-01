@@ -129,7 +129,7 @@ S_fsys_getroot (mach_port_t fsys_t,
 		uid_t *gids, size_t ngids,
 		int flags,
 		retry_type *do_retry,
-		char *retry_name,
+		string_t retry_name,
 		mach_port_t *ret,
 		mach_msg_type_name_t *rettype)
 {

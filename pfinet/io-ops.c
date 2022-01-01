@@ -567,7 +567,7 @@ S_io_get_icky_async_id (struct sock_user *user,
 
 error_t
 S_io_server_version (struct sock_user *user,
-		     char *name,
+		     string_t name,
 		     int *major,
 		     int *minor,
 		     int *edit)

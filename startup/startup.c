@@ -1459,7 +1459,7 @@ S_startup_essential_task (mach_port_t server,
 			  mach_msg_type_name_t replytype,
 			  task_t task,
 			  mach_port_t excpt,
-			  char *name,
+			  string_t name,
 			  mach_port_t credential)
 {
   static int authinit, procinit, execinit, fsinit;
@@ -1546,7 +1546,7 @@ S_startup_essential_task (mach_port_t server,
 kern_return_t
 S_startup_request_notification (mach_port_t server,
 				mach_port_t notify,
-				char *name)
+				string_t name)
 {
   struct ntfy_task *nt;
 
@@ -1861,7 +1861,7 @@ S_fsys_getroot (mach_port_t fsys_t,
 		uid_t *gids, size_t ngids,
 		int flags,
 		retry_type *do_retry,
-		char *retry_name,
+		string_t retry_name,
 		mach_port_t *ret,
 		mach_msg_type_name_t *rettype)
 {

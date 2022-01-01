@@ -35,6 +35,7 @@
 #include "psout.h"
 #include "parse.h"
 #include "pids.h"
+#include "msgids.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (ps);
 

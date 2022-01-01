@@ -35,7 +35,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
 		       uid_t *gids, size_t ngids,
 		       int flags,
 		       retry_type *do_retry,
-		       char *retry_name,
+		       string_t retry_name,
 		       mach_port_t *newpt,
 		       mach_msg_type_name_t *newpttype)
 {

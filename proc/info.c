@@ -954,7 +954,7 @@ S_proc_getloginpids (struct proc *callerp,
 /* Implement proc_setlogin as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setlogin (struct proc *p,
-	         char *login)
+	         string_t login)
 {
   struct login *l;
 
@@ -979,7 +979,7 @@ S_proc_setlogin (struct proc *p,
 /* Implement proc_getlogin as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getlogin (struct proc *p,
-	         char *login)
+	         string_t login)
 {
   if (!p)
     return EOPNOTSUPP;
@@ -1030,7 +1030,7 @@ S_proc_getnports (struct proc *callerp,
 /* Implement proc_set_path as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_set_exe (struct proc *p,
-	        char *path)
+	        string_t path)
 {
   char *copy;
 
@@ -1050,7 +1050,7 @@ S_proc_set_exe (struct proc *p,
 kern_return_t
 S_proc_get_exe (struct proc *callerp,
 		pid_t pid,
-		char *path)
+		string_t path)
 {
   struct proc *p = pid_find (pid);
 

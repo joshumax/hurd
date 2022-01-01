@@ -90,7 +90,8 @@ static int num_emul = 0;
 io_return_t
 ds_device_open (mach_port_t open_port, mach_port_t reply_port,
                 mach_msg_type_name_t reply_port_type, dev_mode_t mode,
-                char *name, device_t *devp, mach_msg_type_name_t *devicePoly)
+                dev_name_t name, device_t *devp,
+                mach_msg_type_name_t *devicePoly)
 {
   int i;
   mach_port_t dev_master;
@@ -201,7 +202,7 @@ ds_device_read (struct mach_device *device, mach_port_t reply_port,
 io_return_t
 ds_device_read_inband (struct mach_device *device, mach_port_t reply_port,
 		       mach_msg_type_name_t reply_port_type, dev_mode_t mode,
-		       recnum_t recnum, int count, char *data,
+		       recnum_t recnum, int count, io_buf_ptr_inband_t data,
 		       unsigned *bytes_read)
 {
   /* Refuse if device is dead or not completely open.  */

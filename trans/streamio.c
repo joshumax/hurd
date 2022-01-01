@@ -998,7 +998,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
 
 error_t
 device_read_reply_inband (mach_port_t reply, error_t errorcode,
-			  char *data, u_int datalen)
+			  io_buf_ptr_inband_t data, u_int datalen)
 {
   if (reply != phys_reply)
     return EOPNOTSUPP;

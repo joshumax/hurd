@@ -193,7 +193,7 @@ lwip_S_iioctl_siocsifflags (struct sock_user * user,
 
 /* 17 SIOCGIFFLAGS -- Get flags of a network interface.  */
 kern_return_t
-lwip_S_iioctl_siocgifflags (struct sock_user * user, char *name, short *flags)
+lwip_S_iioctl_siocgifflags (struct sock_user * user, ifname_t name, short *flags)
 {
   error_t err = 0;
   struct netif *netif;

@@ -30,7 +30,7 @@ error_t
 diskfs_S_fsys_get_source (struct diskfs_control *fsys,
                           mach_port_t reply,
                           mach_msg_type_name_t replytype,
-			  char *source)
+			  string_t source)
 {
   if (! fsys)
     return EOPNOTSUPP;

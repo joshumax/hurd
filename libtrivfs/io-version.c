@@ -15,6 +15,8 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <stdio.h>
+
 #include "priv.h"
 #include "trivfs_io_S.h"
 
@@ -22,7 +24,7 @@ kern_return_t
 trivfs_S_io_server_version (trivfs_protid_t obj,
 			    mach_port_t reply,
 			    mach_msg_type_name_t replytype,
-			    char *name,
+			    string_t name,
 			    int *maj,
 			    int *min,
 			    int *edit)

@@ -34,7 +34,7 @@ netfs_S_fsys_getroot (struct netfs_control *pt,
 		      uid_t *gids, mach_msg_type_number_t ngids,
 		      int flags,
 		      retry_type *do_retry,
-		      char *retry_name,
+		      string_t retry_name,
 		      mach_port_t *retry_port,
 		      mach_msg_type_name_t *retry_port_type)
 {

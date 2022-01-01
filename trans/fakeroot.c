@@ -282,11 +282,11 @@ netfs_check_open_permissions (struct iouser *user, struct node *np,
 
 error_t
 netfs_S_dir_lookup (struct protid *diruser,
-		    char *filename,
+		    string_t filename,
 		    int flags,
 		    mode_t mode,
 		    retry_type *do_retry,
-		    char *retry_name,
+		    string_t retry_name,
 		    mach_port_t *retry_port,
 		    mach_msg_type_name_t *retry_port_type)
 {
@@ -907,8 +907,8 @@ kern_return_t
 netfs_S_file_exec_paths (struct protid *user,
 			 task_t task,
 			 int flags,
-			 char *path,
-			 char *abspath,
+			 string_t path,
+			 string_t abspath,
 			 char *argv,
 			 size_t argvlen,
 			 char *envp,

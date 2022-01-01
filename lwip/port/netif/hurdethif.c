@@ -75,7 +75,7 @@ static struct bpf_insn bpf_ether_filter[] = {
   {BPF_RET | BPF_K, 0, 0, 0},	/* Or discard it all */
 };
 
-static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
+static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / (sizeof (short));
 
 /* Bucket and class for the incoming data */
 struct port_bucket *etherport_bucket;

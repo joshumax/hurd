@@ -22,7 +22,7 @@
 #include "fs_S.h"
 
 error_t
-netfs_S_dir_mkdir (struct protid *user, char *name, mode_t mode)
+netfs_S_dir_mkdir (struct protid *user, string_t name, mode_t mode)
 {
   error_t err;
 

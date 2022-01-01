@@ -1045,9 +1045,9 @@ S_tioctl_tiocflush (struct trivfs_protid *cred,
 /* TIOCGETA ioctl -- Get termios state */
 kern_return_t
 S_tioctl_tiocgeta (struct trivfs_protid *cred,
-		   tcflag_t *modes,
-		   cc_t *ccs,
-		   speed_t *speeds)
+		   modes_t modes,
+		   ccs_t ccs,
+		   speeds_t speeds)
 {
   if (!cred
       || cred->pi.bucket != term_bucket)
@@ -1166,9 +1166,9 @@ set_state (struct trivfs_protid *cred,
 /* TIOCSETA -- Set termios state */
 kern_return_t
 S_tioctl_tiocseta (struct trivfs_protid *cred,
-		   tcflag_t *modes,
-		   cc_t *ccs,
-		   speed_t *speeds)
+		   modes_t modes,
+		   ccs_t ccs,
+		   speeds_t speeds)
 {
   return set_state (cred, modes, ccs, speeds, 0, 0);
 }
@@ -1176,9 +1176,9 @@ S_tioctl_tiocseta (struct trivfs_protid *cred,
 /* Drain output, then set term state.  */
 kern_return_t
 S_tioctl_tiocsetaw (struct trivfs_protid *cred,
-		    tcflag_t *modes,
-		    cc_t *ccs,
-		    speed_t *speeds)
+		    modes_t modes,
+		    ccs_t ccs,
+		    speeds_t speeds)
 {
   return set_state (cred, modes, ccs, speeds, 1, 0);
 }
@@ -1186,9 +1186,9 @@ S_tioctl_tiocsetaw (struct trivfs_protid *cred,
 /* Flush input, drain output, then set term state.  */
 kern_return_t
 S_tioctl_tiocsetaf (struct trivfs_protid *cred,
-		    tcflag_t *modes,
-		    cc_t *ccs,
-		    speed_t *speeds)
+		    modes_t modes,
+		    ccs_t ccs,
+		    speeds_t speeds)
 
 {
   return set_state (cred, modes, ccs, speeds, 1, 1);
@@ -2125,7 +2125,7 @@ report_carrier_error (error_t err)
 
 kern_return_t
 S_term_get_nodename (struct trivfs_protid *cred,
-		     char *name)
+		     string_t name)
 {
   if (!cred
       || cred->pi.bucket != term_bucket
@@ -2144,7 +2144,7 @@ S_term_get_nodename (struct trivfs_protid *cred,
 
 kern_return_t
 S_term_set_nodename (struct trivfs_protid *cred,
-		     char *name)
+		     string_t name)
 {
   error_t err = 0;
   if (!cred
@@ -2172,7 +2172,7 @@ S_term_set_filenode (struct trivfs_protid *cred,
 
 kern_return_t
 S_term_get_peername (struct trivfs_protid *cred,
-		     char *name)
+		     string_t name)
 {
   struct trivfs_control *peer;
 

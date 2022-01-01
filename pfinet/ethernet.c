@@ -71,7 +71,7 @@ ethernet_set_multi (struct device *dev)
 {
 }
 
-static short ether_filter[] =
+static filter_t ether_filter[] =
 {
 #ifdef NETF_IN
   /* We have to tell the packet filtering code that we're interested in
@@ -93,7 +93,7 @@ static struct bpf_insn bpf_ether_filter[] =
     {BPF_RET|BPF_K, 0, 0, 1500},		/* And return 1500 bytes */
     {BPF_RET|BPF_K, 0, 0, 0},			/* Or discard it all */
 };
-static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / sizeof (short);
+static int bpf_ether_filter_len = sizeof (bpf_ether_filter) / (sizeof (short));
 
 static struct port_bucket *etherport_bucket;
 
@@ -219,7 +219,7 @@ ethernet_open (struct device *dev)
 
       err = device_set_filter (edev->ether_port, ports_get_right (edev->readpt),
 			       MACH_MSG_TYPE_MAKE_SEND, 0,
-			       bpf_ether_filter, bpf_ether_filter_len);
+			       (filter_array_t) bpf_ether_filter, bpf_ether_filter_len);
       if (err)
 	error (2, err, "device_set_filter on %s", dev->name);
     }
@@ -273,13 +273,13 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 {
   error_t err;
   struct ether_device *edev = (struct ether_device *) dev->priv;
-  u_int count;
+  int count;
   u_int tried = 0;
 
   do
     {
       tried++;
-      err = device_write (edev->ether_port, D_NOWAIT, 0, skb->data, skb->len, &count);
+      err = device_write (edev->ether_port, D_NOWAIT, 0, (io_buf_ptr_t) skb->data, skb->len, &count);
       if (err == EMACH_SEND_INVALID_DEST || err == EMIG_SERVER_DIED)
 	{
 	  /* Device probably just died, try to reopen it.  */

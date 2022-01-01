@@ -8,7 +8,7 @@
 static inline void *kmalloc (size_t sz, int ignored) { return malloc (sz); }
 static inline void kfree (void *ptr) { free (ptr); }
 static inline void kfree_s (void *ptr, size_t sz) { free (ptr); }
-#define free(x) kfree(x)	/* just don't ask */
+//#define free(x) kfree(x)	/* just don't ask */
 
 
 typedef struct kmem_cache_s kmem_cache_t;

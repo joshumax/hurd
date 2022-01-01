@@ -45,12 +45,15 @@
 
 #include <hurd/ihash.h>
 
+#include <libshouldbeinlibc/wire.h>
+
 #include "queue.h"
 #include "wiring.h"
 #include "default_pager.h"
 
 #include <assert-backtrace.h>
 #include <errno.h>
+#include <error.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

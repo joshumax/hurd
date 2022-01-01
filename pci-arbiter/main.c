@@ -40,6 +40,7 @@
 #include "libports/interrupt_S.h"
 #include "libnetfs/ifsock_S.h"
 #include "libmachdev/machdev.h"
+#include "libshouldbeinlibc/wire.h"
 #include <pciaccess.h>
 #include <pthread.h>
 #include "pcifs.h"

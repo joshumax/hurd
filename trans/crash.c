@@ -646,7 +646,7 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'c': crash_how = crash_corefile;	break;
     case 'C':
       {
-	char *errp;
+	const char *errp;
 	if (! template_valid (arg, &errp))
 	  {
 	    argp_error (state, "Invalid template: ...'%s'", errp);

@@ -27,6 +27,7 @@
 #include <version.h>
 
 #include "libmachdev/machdev.h"
+#include "libshouldbeinlibc/wire.h"
 #include "block-rump.h"
 #include <pthread.h>
 #include <mach.h>

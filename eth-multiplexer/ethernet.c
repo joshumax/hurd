@@ -59,7 +59,7 @@ static struct bpf_insn ether_filter[] =
     {6, 0, 0, 1500},
     {6, 0, 0, 0}
 };
-static int ether_filter_len = sizeof (ether_filter) / sizeof (short);
+static int ether_filter_len = sizeof (ether_filter) / (sizeof (short));
 
 int ethernet_demuxer (mach_msg_header_t *inp,
 		      mach_msg_header_t *outp)

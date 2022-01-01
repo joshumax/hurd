@@ -1731,7 +1731,7 @@ kern_return_t
 S_io_server_version (mach_port_t object,
 		     mach_port_t reply_port,
 		     mach_msg_type_name_t reply_type,
-		     char *name,
+		     string_t name,
 		     int *maj,
 		     int *min,
 		     int *edit)

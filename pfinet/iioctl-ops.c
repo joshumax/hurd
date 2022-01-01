@@ -192,7 +192,7 @@ S_iioctl_siocsifflags (struct sock_user *user,
 /* 17 SIOCGIFFLAGS -- Get flags of a network interface.  */
 kern_return_t
 S_iioctl_siocgifflags (struct sock_user *user,
-		       char *name,
+		       ifname_t name,
 		       short *flags)
 {
   error_t err = 0;

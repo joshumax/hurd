@@ -30,7 +30,7 @@ error_t
 netfs_S_fsys_get_source (struct netfs_control *fsys,
                          mach_port_t reply,
                          mach_msg_type_name_t reply_type,
-			 char *source)
+                         string_t source)
 {
   if (! fsys)
     return EOPNOTSUPP;

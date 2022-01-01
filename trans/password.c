@@ -141,7 +141,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 
 /* Implement password_check_user as described in <hurd/password.defs>.  */
 kern_return_t
-S_password_check_user (struct trivfs_protid *cred, uid_t user, char *pw,
+S_password_check_user (struct trivfs_protid *cred, uid_t user, string_t pw,
 		       mach_port_t *port, mach_msg_type_name_t *port_type)
 {
   struct ugids ugids = UGIDS_INIT;
@@ -189,7 +189,7 @@ S_password_check_user (struct trivfs_protid *cred, uid_t user, char *pw,
 
 /* Implement password_check_group as described in <hurd/password.defs>.  */
 kern_return_t
-S_password_check_group (struct trivfs_protid *cred, uid_t group, char *pw,
+S_password_check_group (struct trivfs_protid *cred, uid_t group, string_t pw,
 			mach_port_t *port, mach_msg_type_name_t *port_type)
 {
   struct ugids ugids = UGIDS_INIT;
