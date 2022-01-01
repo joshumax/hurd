@@ -86,13 +86,19 @@ struct in6_flowlabel_req
  *	IPV6 socket options
  */
 
-#define IPV6_ADDRFORM		1
+// Note: pfinet is providing the RFC2292 interface, not the RFC3542 interface
+//#define IPV6_ADDRFORM		1
+#undef IPV6_PKTINFO
 #define IPV6_PKTINFO		2
+#undef IPV6_HOPOPTS
 #define IPV6_HOPOPTS		3
+#undef IPV6_DSTOPTS
 #define IPV6_DSTOPTS		4
+#undef IPV6_RTHDR
 #define IPV6_RTHDR		5
 #define IPV6_PKTOPTIONS		6
-#define IPV6_CHECKSUM		7
+//#define IPV6_CHECKSUM		7
+#undef IPV6_HOPLIMIT
 #define IPV6_HOPLIMIT		8
 #define IPV6_NEXTHOP		9
 #define IPV6_AUTHHDR		10
