@@ -46,6 +46,9 @@
 
 char *trivfs_server_name = "random";
 
+/* Referred by glibc to avoid using /dev/random for malloc() initialization */
+char *__trivfs_server_name = "random";
+
 /* Entropy pool.  We use one of the SHAKE algorithms from the Keccak
    family.  Being a sponge construction, it allows the extraction of
    arbitrary amounts of pseudorandom data.  */

@@ -81,6 +81,7 @@ symlink: fsysServer.o
 fakeroot: ../libnetfs/libnetfs.a
 fifo new-fifo: ../libpipe/libpipe.a
 crash fifo firmlink hello hello-mt ifsock magic mtab new-fifo null password proxy-defpager remap streamio: ../libtrivfs/libtrivfs.a
+random-LDFLAGS = -Wl,--export-dynamic-symbol=__trivfs_server_name
 $(targets): ../libfshelp/libfshelp.a \
 	../libihash/libihash.a \
 	../libiohelp/libiohelp.a \
