@@ -153,6 +153,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	if (i != INIT_PORT_CWDIR)
 	  mach_port_deallocate (mach_task_self (), ports[i]);
 
+      if (ourauth != MACH_PORT_NULL)
+	mach_port_deallocate (mach_task_self (), ourauth);
+
       pthread_mutex_lock (box->lock);
 
       free (argz);

@@ -231,6 +231,7 @@ main (int argc, char *argv[])
 {
   char *linebuf = NULL;
   size_t linebufsize = 0;
+  auth_t ourauth;
 
   proc = getproc ();
   assert_backtrace (proc);
@@ -252,8 +253,10 @@ main (int argc, char *argv[])
 #endif
 
   /* Kludge to give boot a port to the auth server.  */
-  exec_init (getdport (0), getauth (),
+  ourauth = getauth ();
+  exec_init (getdport (0), ourauth,
 	     MACH_PORT_NULL, MACH_MSG_TYPE_COPY_SEND);
+  mach_port_deallocate (mach_task_self (), ourauth);
 
   if ((fcntl (0, F_GETFL) & O_READ) == 0)
     {

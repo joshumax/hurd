@@ -32,15 +32,14 @@ get_nonsugid_ids (struct idvec *uids, struct idvec *gids)
   if (uids->num == 0 && gids->num == 0)
     {
       error_t err = 0;
-      static auth_t auth = MACH_PORT_NULL;
+      auth_t auth;
       struct idvec *p_eff_uids = make_idvec ();
       struct idvec *p_eff_gids = make_idvec ();
 
       if (!p_eff_uids || !p_eff_gids)
 	err = ENOMEM;
 
-      if (auth == MACH_PORT_NULL)
-	auth = getauth ();
+      auth = getauth ();
 
       if (! err)
 	err = idvec_merge_auth (p_eff_uids, uids, p_eff_gids, gids, auth);
@@ -55,6 +54,7 @@ get_nonsugid_ids (struct idvec *uids, struct idvec *gids)
 	  if (! err)
 	    err = idvec_merge (gids, p_eff_gids);
 	}
+      mach_port_deallocate (mach_task_self (), auth);
 
       return err;
     }

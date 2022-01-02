@@ -237,13 +237,15 @@ main(int argc, char *argv[])
   memset (remove, 0, sizeof remove);
 
 
+  auth_t ourauth = getauth ();
   err =
-    auth_makeauth (getauth (), 0, MACH_MSG_TYPE_COPY_SEND, 0,
+    auth_makeauth (ourauth, 0, MACH_MSG_TYPE_COPY_SEND, 0,
 		   &auth.euids->ids, &auth.euids->num,
 		   &auth.auids->ids, &auth.auids->num,
 		   &auth.egids->ids, &auth.egids->num,
 		   &auth.agids->ids, &auth.agids->num,
 		   &auth);
+  mach_port_deallocate (mach_task_self (), ourauth);
   if (err)
     error (3, err, "Authentication failure", 0);
 
