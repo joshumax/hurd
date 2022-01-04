@@ -119,7 +119,10 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 	  mach_port_t msgport;
 	  pid_t pid;
 
-	  err = proc_task2pid (proc, task, &pid);
+	  if (port == MACH_PORT_DEAD)
+	    err = EIEIO;
+	  else
+	    err = proc_task2pid (proc, task, &pid);
 	  if (!err)
 	    err = proc_getmsgport (proc, pid, &msgport);
 	  if (!err)
