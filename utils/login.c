@@ -787,7 +787,10 @@ main(int argc, char *argv[])
 	  envz_add (&args, &args_len, "HOME", "/");
 	}
       else
-        ports[INIT_PORT_CWDIR] = cwd;
+	{
+	  mach_port_deallocate (ports[INIT_PORT_CWDIR]);
+	  ports[INIT_PORT_CWDIR] = cwd;
+	}
     }
 
   arg = envz_get (args, args_len, "ROOT");
@@ -878,7 +881,11 @@ main(int argc, char *argv[])
 
   /* Now that we don't need to use PORTS for lookups anymore, put the correct
      ROOT in.  */
-  ports[INIT_PORT_CRDIR] = root;
+  if (ports[INIT_PORT_CRDIR] != root)
+    {
+      mach_port_deallocate (mach_task_self (), ports[INIT_PORT_CRDIR]);
+      ports[INIT_PORT_CRDIR] = root;
+    }
 
   /* Get rid of any accumulated null entries in env.  */
   envz_strip (&env, &env_len);
