@@ -43,6 +43,7 @@
 #undef FLUSHO
 #undef PENDIN
 #undef NOFLSH
+#include <unistd.h>
 #include <termios.h>
 
 #define CHAR_EOT '\004'		/* C-d */
