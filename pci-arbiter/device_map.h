@@ -27,6 +27,6 @@
 #include <pciaccess.h>
 
 error_t device_map_region (struct pci_device *device,
-			   struct pci_mem_region *region);
+			   struct pci_mem_region *region, void **addr);
 
 #endif /* DEVICE_MAP_H */

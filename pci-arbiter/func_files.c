@@ -205,13 +205,13 @@ io_region_file (struct pcifs_dirent * e, off_t offset, size_t * len,
   else
     {
       /* Ensure the region is mapped */
-      err = device_map_region (e->device, region);
+      err = device_map_region (e->device, region, &e->region_maps[reg_num]);
       if (err)
 	return err;
       if (read)
-	memcpy (data, region->memory + offset, *len);
+	memcpy (data, e->region_maps[reg_num] + offset, *len);
       else
-	memcpy (region->memory + offset, data, *len);
+	memcpy (e->region_maps[reg_num] + offset, data, *len);
     }
 
   return err;

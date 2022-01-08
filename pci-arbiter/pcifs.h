@@ -91,6 +91,13 @@ struct pcifs_dirent
    * Only for entries having a full B/D/F address.
    */
   struct pci_device *device;
+
+  /*
+   * Array of addresses where regions are mapped
+   *
+   * Only when a device is present
+   */
+  void *region_maps[6];
 };
 
 /*

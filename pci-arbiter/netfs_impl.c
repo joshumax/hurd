@@ -591,15 +591,17 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
   region = &node->nn->ln->device->regions[reg_num];
 
   /* Ensure the region is mapped */
-  err = device_map_region (node->nn->ln->device, region);
+  err = device_map_region (node->nn->ln->device, region,
+			   &node->nn->ln->region_maps[reg_num]);
   if (err)
     return err;
 
   /* Create a new memory object proxy with the required protection */
   max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
   err =
-    vm_region_create_proxy(mach_task_self (), (vm_address_t)region->memory,
-			    max_prot, region->size, &proxy);
+    vm_region_create_proxy(mach_task_self (),
+			   (vm_address_t)node->nn->ln->region_maps[reg_num],
+			   max_prot, region->size, &proxy);
   if (err)
     goto error;
 

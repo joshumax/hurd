@@ -24,14 +24,25 @@
 #include "device_map.h"
 
 error_t
-device_map_region (struct pci_device *device, struct pci_mem_region *region)
+device_map_region (struct pci_device *device, struct pci_mem_region *region,
+		   void **addr)
 {
   error_t err = 0;
 
-  if (region->memory == 0)
+  if (*addr == 0)
     {
-      err = pci_device_map_range (device, region->base_addr, region->size,
-				  PCI_DEV_MAP_FLAG_WRITABLE, &region->memory);
+      /*
+       * We could use the non-legacy call for all ranges, but libpciaccess
+       * offers a call for ranges under 1Mb. We call it for those cases, even
+       * when there's no difference for us.
+       */
+      if (region->base_addr > 0x100000
+	  || region->base_addr + region->size > 0x100000)
+        err = pci_device_map_range (device, region->base_addr, region->size,
+				    PCI_DEV_MAP_FLAG_WRITABLE, addr);
+      else
+        err = pci_device_map_legacy (device, region->base_addr, region->size,
+				    PCI_DEV_MAP_FLAG_WRITABLE, addr);
     }
 
   return err;
