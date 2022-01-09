@@ -28,6 +28,7 @@
 #include <hurd/netfs.h>
 #include <hurd/ports.h>
 #include <hurd/fsys.h>
+#include <hurd/paths.h>
 #include <device/device.h>
 #include <sys/mman.h>
 
@@ -207,7 +208,7 @@ main (int argc, char **argv)
       /* We are a bootstrap process */
 
       machdev_register (&pci_arbiter_emulation_ops);
-      machdev_trivfs_init (argc, argv, next_task, "pci", NULL /* _SERVERS_BUS "pci" */, &bootstrap);
+      machdev_trivfs_init (argc, argv, next_task, "pci", NULL /* _SERVERS_BUS "/pci" */, &bootstrap);
 
       /* Make sure we will not swap out, in case we are needed for swapping
          back in.  */
