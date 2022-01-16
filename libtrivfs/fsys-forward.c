@@ -33,7 +33,7 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t requestor,
-		       data_t argz, size_t argz_len)
+		       const_data_t argz, size_t argz_len)
 {
   return EOPNOTSUPP;
 }

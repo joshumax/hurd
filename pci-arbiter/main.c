@@ -59,7 +59,7 @@ static mach_port_t pci_control_port;
 
 static io_return_t
 pci_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
-                 dev_mode_t mode, char *name, device_t * devp,
+                 dev_mode_t mode, const char *name, device_t * devp,
                  mach_msg_type_name_t * devicePoly)
 {
   io_return_t err = D_SUCCESS;

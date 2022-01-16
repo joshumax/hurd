@@ -29,7 +29,7 @@
 
 error_t
 netfs_S_dir_lookup (struct protid *dircred,
-		    string_t filename,
+		    const_string_t filename,
 		    int flags,
 		    mode_t mode,
 		    retry_type *do_retry,

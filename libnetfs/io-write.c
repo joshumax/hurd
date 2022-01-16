@@ -24,7 +24,7 @@
 
 error_t
 netfs_S_io_write (struct protid *user,
-		  data_t data,
+		  const_data_t data,
 		  mach_msg_type_number_t datalen,
 		  off_t offset,
 		  mach_msg_type_number_t *amount)

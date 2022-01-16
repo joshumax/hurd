@@ -954,7 +954,7 @@ S_proc_getloginpids (struct proc *callerp,
 /* Implement proc_setlogin as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setlogin (struct proc *p,
-	         string_t login)
+	         const_string_t login)
 {
   struct login *l;
 
@@ -1030,7 +1030,7 @@ S_proc_getnports (struct proc *callerp,
 /* Implement proc_set_path as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_set_exe (struct proc *p,
-	        string_t path)
+	        const_string_t path)
 {
   char *copy;
 

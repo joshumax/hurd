@@ -227,7 +227,7 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t replytype,
-		   data_t data, mach_msg_type_number_t datalen,
+		   const_data_t data, mach_msg_type_number_t datalen,
 		   loff_t offs, mach_msg_type_number_t *amt)
 {
   if (!cred)

@@ -26,9 +26,9 @@ error_t __attribute__((weak))
 netfs_S_fsys_getfile (struct netfs_control *cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
-		      uid_t *uids, mach_msg_type_number_t nuids,
-		      gid_t *gids, mach_msg_type_number_t ngids,
-		      data_t handle, mach_msg_type_number_t handlelen,
+		      const uid_t *uids, mach_msg_type_number_t nuids,
+		      const gid_t *gids, mach_msg_type_number_t ngids,
+		      const_data_t handle, mach_msg_type_number_t handlelen,
 		      mach_port_t *file, mach_msg_type_name_t *filetype)
 {
   return EOPNOTSUPP;
@@ -59,7 +59,7 @@ netfs_S_fsys_forward (mach_port_t cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
 		      mach_port_t request,
-		      data_t argv, mach_msg_type_number_t argvlen)
+		      const_data_t argv, mach_msg_type_number_t argvlen)
 {
   return EOPNOTSUPP;
 }

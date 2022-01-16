@@ -206,7 +206,7 @@ rumpdisk_device_sync (void)
 
 static io_return_t
 rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
-		      dev_mode_t mode, char *name, device_t * devp,
+		      dev_mode_t mode, const char *name, device_t * devp,
 		      mach_msg_type_name_t * devicePoly)
 {
   io_return_t err;

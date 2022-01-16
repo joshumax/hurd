@@ -22,7 +22,7 @@
 /* Implement dir_rmdir as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_dir_rmdir (struct protid *dircred,
-		    char *name)
+		    const_string_t name)
 {
   struct node *dnp;
   struct node *np = NULL;

@@ -79,7 +79,7 @@ S_io_read (struct sock_user *user,
    if they recevie more than one write when not prepared for it.  */
 error_t
 S_io_write (struct sock_user *user,
-	    data_t data, mach_msg_type_number_t data_len,
+	    const_data_t data, mach_msg_type_number_t data_len,
 	    off_t offset, mach_msg_type_number_t *amount)
 {
   error_t err;
@@ -479,8 +479,8 @@ error_t
 S_io_restrict_auth (struct sock_user *user,
 		    mach_port_t *new_port,
 		    mach_msg_type_name_t *new_port_type,
-		    uid_t *uids, size_t num_uids,
-		    uid_t *gids, size_t num_gids)
+		    const uid_t *uids, size_t num_uids,
+		    const uid_t *gids, size_t num_gids)
 {
   if (!user)
     return EOPNOTSUPP;

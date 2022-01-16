@@ -369,7 +369,7 @@ error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
                    mach_port_t reply,
                    mach_msg_type_name_t replytype,
-                   data_t data,
+                   const_data_t data,
                    mach_msg_type_number_t datalen,
                    off_t offset,
                    mach_msg_type_number_t *amount)

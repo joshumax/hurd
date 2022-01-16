@@ -21,7 +21,7 @@
 /* Implement dir_mkdir as found in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_dir_mkdir (struct protid *dircred,
-		    string_t name,
+		    const_string_t name,
 		    mode_t mode)
 {
   struct node *dnp;

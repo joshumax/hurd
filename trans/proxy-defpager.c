@@ -103,7 +103,7 @@ S_default_pager_object_pages (mach_port_t default_pager,
 kern_return_t
 S_default_pager_paging_file (mach_port_t default_pager,
 			     mach_port_t master_device_port,
-			     default_pager_filename_t filename,
+			     const_default_pager_filename_t filename,
 			     boolean_t add)
 {
   return allowed (default_pager, O_WRITE)
@@ -114,8 +114,8 @@ S_default_pager_paging_file (mach_port_t default_pager,
 kern_return_t
 S_default_pager_paging_storage (mach_port_t default_pager,
 				mach_port_t device,
-				recnum_t *runs, mach_msg_type_number_t nruns,
-				default_pager_filename_t name,
+				const recnum_t *runs, mach_msg_type_number_t nruns,
+				const_default_pager_filename_t name,
 				boolean_t add)
 {
   return allowed (default_pager, O_WRITE)
@@ -180,7 +180,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t replytype,
-		   data_t data, mach_msg_type_number_t datalen,
+		   const_data_t data, mach_msg_type_number_t datalen,
 		   loff_t offs, mach_msg_type_number_t *amt)
 {
   if (!cred)

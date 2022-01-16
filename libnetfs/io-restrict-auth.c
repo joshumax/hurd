@@ -25,9 +25,9 @@ error_t
 netfs_S_io_restrict_auth (struct protid *user,
 			  mach_port_t *newport,
 			  mach_msg_type_name_t *newporttype,
-			  uid_t *uids,
+			  const uid_t *uids,
 			  mach_msg_type_number_t nuids,
-			  gid_t *gids,
+			  const gid_t *gids,
 			  mach_msg_type_number_t ngids)
 {
   error_t err;

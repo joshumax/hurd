@@ -28,7 +28,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 			      int passive_flags,
 			      int active_flags,
 			      int killtrans_flags,
-			      data_t passive,
+			      const_data_t passive,
 			      size_t passivelen,
 			      fsys_t active)
 {
@@ -139,7 +139,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  /* Find the device number from the arguments
 		     of the translator. */
 		  int major, minor;
-		  char *arg;
+		  const char *arg;
 
 		  arg = passive + strlen (passive) + 1;
 		  assert_backtrace (arg <= passive + passivelen);
@@ -185,7 +185,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 
 	      if (newmode == S_IFLNK)
 		{
-		  char *arg = passive + strlen (passive) + 1;
+		  const char *arg = passive + strlen (passive) + 1;
 		  assert_backtrace (arg <= passive + passivelen);
 		  if (arg == passive + passivelen)
 		    {

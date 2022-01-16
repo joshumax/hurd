@@ -1459,7 +1459,7 @@ S_startup_essential_task (mach_port_t server,
 			  mach_msg_type_name_t replytype,
 			  task_t task,
 			  mach_port_t excpt,
-			  string_t name,
+			  const_string_t name,
 			  mach_port_t credential)
 {
   static int authinit, procinit, execinit, fsinit;
@@ -1546,7 +1546,7 @@ S_startup_essential_task (mach_port_t server,
 kern_return_t
 S_startup_request_notification (mach_port_t server,
 				mach_port_t notify,
-				string_t name)
+				const_string_t name)
 {
   struct ntfy_task *nt;
 
@@ -1694,9 +1694,9 @@ S_msg_add_auth (mach_port_t process,
 kern_return_t
 S_msg_del_auth (mach_port_t process,
 	mach_port_t task,
-	intarray_t uids,
+	const_intarray_t uids,
 	mach_msg_type_number_t uidsCnt,
-	intarray_t gids,
+	const_intarray_t gids,
 	mach_msg_type_number_t gidsCnt)
 { return _S_msg_del_auth (process, task, uids, uidsCnt, gids, gidsCnt); }
 
@@ -1730,7 +1730,7 @@ S_msg_get_init_ports (mach_port_t process,
 kern_return_t
 S_msg_set_init_ports (mach_port_t process,
 	mach_port_t refport,
-	portarray_t ports,
+	const_portarray_t ports,
 	mach_msg_type_number_t portsCnt)
 { return _S_msg_set_init_ports (process, refport, ports, portsCnt); }
 
@@ -1762,7 +1762,7 @@ S_msg_get_init_ints (mach_port_t process,
 kern_return_t
 S_msg_set_init_ints (mach_port_t process,
 	mach_port_t refport,
-	intarray_t values,
+	const_intarray_t values,
 	mach_msg_type_number_t valuesCnt)
 { return _S_msg_set_init_ints (process, refport, values, valuesCnt); }
 
@@ -1779,7 +1779,7 @@ S_msg_get_dtable (mach_port_t process,
 kern_return_t
 S_msg_set_dtable (mach_port_t process,
 	mach_port_t refport,
-	portarray_t dtable,
+	const_portarray_t dtable,
 	mach_msg_type_number_t dtableCnt)
 { return _S_msg_set_dtable (process, refport, dtable, dtableCnt); }
 
@@ -1811,14 +1811,14 @@ S_msg_get_environment (mach_port_t process,
 kern_return_t
 S_msg_set_environment (mach_port_t process,
 	mach_port_t refport,
-	data_t value,
+	const_data_t value,
 	mach_msg_type_number_t valueCnt)
 { return _S_msg_set_environment (process, refport, value, valueCnt); }
 
 
 kern_return_t
 S_msg_get_env_variable (mach_port_t process,
-	string_t variable,
+	const_string_t variable,
 	data_t *value,
 	mach_msg_type_number_t *valueCnt)
 { return _S_msg_get_env_variable (process, variable, value, valueCnt); }
@@ -1827,15 +1827,15 @@ S_msg_get_env_variable (mach_port_t process,
 kern_return_t
 S_msg_set_env_variable (mach_port_t process,
 	mach_port_t refport,
-	string_t variable,
-	string_t value,
+	const_string_t variable,
+	const_string_t value,
 	boolean_t replace)
 { return _S_msg_set_env_variable (process, refport, variable, value, replace); }
 
 error_t
 S_msg_describe_ports (mach_port_t process,
 		      mach_port_t refport,
-		      mach_port_array_t names,
+		      const_mach_port_array_t names,
 		      mach_msg_type_number_t namesCnt,
 		      data_t *descriptions,
 		      mach_msg_type_number_t *descriptionsCnt)
@@ -1857,8 +1857,8 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 error_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
-		uid_t *uids, size_t nuids,
-		uid_t *gids, size_t ngids,
+		const id_t *uids, size_t nuids,
+		const id_t *gids, size_t ngids,
 		int flags,
 		retry_type *do_retry,
 		string_t retry_name,
@@ -1923,8 +1923,8 @@ error_t
 S_io_restrict_auth (mach_port_t server,
                     mach_port_t *newport,
                     mach_msg_type_name_t *newporttype,
-                    uid_t *uids, size_t nuids,
-                    uid_t *gids, size_t ngids)
+                    const uid_t *uids, size_t nuids,
+                    const uid_t *gids, size_t ngids)
 {
   struct idvec user = { uids, (unsigned) nuids, (unsigned) nuids };
 

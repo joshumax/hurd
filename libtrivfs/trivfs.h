@@ -287,7 +287,7 @@ typedef struct trivfs_control *trivfs_control_t;
 kern_return_t trivfs_S_io_write (trivfs_protid_t io_object,
 				 mach_port_t reply,
 				 mach_msg_type_name_t replyPoly,
-				 data_t data,
+				 const_data_t data,
 				 mach_msg_type_number_t dataCnt,
 				 loff_t offset,
 				 vm_size_t *amount);

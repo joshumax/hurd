@@ -232,7 +232,7 @@ lwip_S_socket_connect2 (struct sock_user * user, struct sock_user * sock2)
 error_t
 lwip_S_socket_create_address (mach_port_t server,
 			      int sockaddr_type,
-			      char *data,
+			      const char *data,
 			      mach_msg_type_number_t data_len,
 			      mach_port_t * addr_port,
 			      mach_msg_type_name_t * addr_port_type)
@@ -323,7 +323,7 @@ lwip_S_socket_getopt (struct sock_user * user,
 
 error_t
 lwip_S_socket_setopt (struct sock_user * user,
-		      int level, int option, char *data, size_t datalen)
+		      int level, int option, const char *data, size_t datalen)
 {
   if (!user)
     return EOPNOTSUPP;
@@ -337,11 +337,11 @@ error_t
 lwip_S_socket_send (struct sock_user * user,
 		    struct sock_addr * addr,
 		    int flags,
-		    char *data,
+		    const char *data,
 		    size_t datalen,
-		    mach_port_t * ports,
+		    const mach_port_t * ports,
 		    size_t nports,
-		    char *control,
+		    const char *control,
 		    size_t controllen, mach_msg_type_number_t * amount)
 {
   int sent;

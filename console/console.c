@@ -1860,22 +1860,22 @@ S_tioctl_tiocgeta (struct protid *cred, modes_t modes, ccs_t ccs,
 }
 
 kern_return_t
-S_tioctl_tiocseta (struct protid *cred, modes_t modes, ccs_t ccs,
-		   speeds_t speeds)
+S_tioctl_tiocseta (struct protid *cred, const modes_t modes, const ccs_t ccs,
+		   const speeds_t speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsetaw (struct protid *cred, modes_t modes, ccs_t ccs,
-		    speeds_t speeds)
+S_tioctl_tiocsetaw (struct protid *cred, const modes_t modes, const ccs_t ccs,
+		    const speeds_t speeds)
 {
   return EOPNOTSUPP;
 }
 
 kern_return_t
-S_tioctl_tiocsetaf (struct protid *cred, modes_t modes, ccs_t ccs,
-		    speeds_t speeds)
+S_tioctl_tiocsetaf (struct protid *cred, const modes_t modes, const ccs_t ccs,
+		    const speeds_t speeds)
 {
   return EOPNOTSUPP;
 }

@@ -125,7 +125,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   data_t data, mach_msg_type_number_t data_len,
+		   const_data_t data, mach_msg_type_number_t data_len,
 		   loff_t offs, mach_msg_type_number_t *amount)
 {
   if (! cred)

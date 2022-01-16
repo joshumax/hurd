@@ -28,7 +28,7 @@
 
 struct args
 {
-  char *data;
+  const char *data;
   mach_msg_type_number_t len;
   int do_children;
 };
@@ -50,7 +50,7 @@ kern_return_t
 diskfs_S_fsys_set_options (struct diskfs_control *pt,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,
-			   data_t data, mach_msg_type_number_t len,
+			   const_data_t data, mach_msg_type_number_t len,
 			   int do_children)
 {
   error_t err = 0;

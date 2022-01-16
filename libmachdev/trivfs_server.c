@@ -181,7 +181,7 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 kern_return_t
 S_i386_set_ldt (mach_port_t target_thread,
                        int first_selector,
-                       descriptor_list_t desc_list,
+                       const_descriptor_list_t desc_list,
                        mach_msg_type_number_t desc_listCnt,
                        boolean_t desc_listSCopy)
 {

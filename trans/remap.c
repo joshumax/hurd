@@ -56,7 +56,7 @@ static struct remap *remaps;
 error_t
 trivfs_S_dir_lookup (struct trivfs_protid *diruser,
 		     mach_port_t reply, mach_msg_type_name_t reply_type,
-		     char *filename,
+		     const_string_t filename,
 		     int flags,
 		     mode_t mode,
 		     retry_type *do_retry,

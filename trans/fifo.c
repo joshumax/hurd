@@ -502,7 +502,7 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   data_t data, size_t data_len,
+		   const_data_t data, size_t data_len,
 		   off_t offs, size_t *amount)
 {
   error_t err;

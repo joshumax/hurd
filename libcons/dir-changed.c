@@ -60,7 +60,7 @@ lookup_one (cons_t cons, char *name, vcons_list_t *vcons_entry)
 
 kern_return_t
 cons_S_dir_changed (cons_notify_t notify, natural_t tickno,
-		    dir_changed_type_t change, string_t name)
+		    dir_changed_type_t change, const_string_t name)
 {
   error_t err;
   cons_t cons;

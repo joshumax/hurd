@@ -105,11 +105,11 @@ S_auth_getids (struct authhandle *auth,
 /* Implement auth_makeauth as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_makeauth (struct authhandle *auth,
-		 mach_port_t *authpts, size_t nauths,
-		 uid_t *euids, size_t neuids,
-		 uid_t *auids, size_t nauids,
-		 uid_t *egids, size_t negids,
-		 uid_t *agids, size_t nagids,
+		 const mach_port_t *authpts, size_t nauths,
+		 const uid_t *euids, size_t neuids,
+		 const uid_t *auids, size_t nauids,
+		 const uid_t *egids, size_t negids,
+		 const uid_t *agids, size_t nagids,
 		 mach_port_t *newhandle)
 {
   struct authhandle *newauth, *auths[1 + nauths];

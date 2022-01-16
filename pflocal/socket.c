@@ -287,9 +287,9 @@ S_socket_peername (struct sock_user *user,
 /* Send data over a socket, possibly including Mach ports.  */
 error_t
 S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
-	       data_t data, size_t data_len,
-	       mach_port_t *ports, size_t num_ports,
-	       data_t control, size_t control_len,
+	       const_data_t data, size_t data_len,
+	       const mach_port_t *ports, size_t num_ports,
+	       const_data_t control, size_t control_len,
 	       size_t *amount)
 {
   error_t err = 0;
@@ -531,7 +531,7 @@ S_socket_getopt (struct sock_user *user,
 
 error_t
 S_socket_setopt (struct sock_user *user,
-		 int level, int opt, data_t value, size_t value_len)
+		 int level, int opt, const_data_t value, size_t value_len)
 {
   int ret = 0;
   struct pipe *pipe;

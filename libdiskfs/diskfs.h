@@ -1168,7 +1168,7 @@ void diskfs_console_stdio ();
 typedef struct protid *protid_t;
 
 kern_return_t diskfs_S_io_write (protid_t io_object,
-				 data_t data,
+				 const_data_t data,
 				 mach_msg_type_number_t dataCnt,
 				 loff_t offset,
 				 vm_size_t *amount);

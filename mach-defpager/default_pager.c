@@ -3730,7 +3730,7 @@ kern_return_t
 S_default_pager_paging_file (pager, mdport, file_name, add)
 	mach_port_t			pager;
 	mach_port_t			mdport;
-	default_pager_filename_t	file_name;
+	const_default_pager_filename_t	file_name;
 	boolean_t			add;
 {
 	kern_return_t   kr;

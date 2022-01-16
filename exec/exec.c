@@ -1528,16 +1528,16 @@ S_exec_exec (struct trivfs_protid *protid,
 	     file_t file,
 	     task_t oldtask,
 	     int flags,
-	     data_t argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
-	     data_t envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
-	     mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+	     const_data_t argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+	     const_data_t envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+	     const mach_port_t *dtable, mach_msg_type_number_t dtablesize,
 	     boolean_t dtable_copy,
-	     mach_port_t *portarray, mach_msg_type_number_t nports,
+	     const mach_port_t *portarray, mach_msg_type_number_t nports,
 	     boolean_t portarray_copy,
-	     int *intarray, mach_msg_type_number_t nints,
+	     const int *intarray, mach_msg_type_number_t nints,
 	     boolean_t intarray_copy,
-	     mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
-	     mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
+	     const mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+	     const mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
   return S_exec_exec_paths (protid,
 				file,
@@ -1562,21 +1562,21 @@ S_exec_exec_paths (struct trivfs_protid *protid,
 		       file_t file,
 		       task_t oldtask,
 		       int flags,
-		       string_t path,
-		       string_t abspath,
-		       char *argv, mach_msg_type_number_t argvlen,
+		       const_string_t path,
+		       const_string_t abspath,
+		       const char *argv, mach_msg_type_number_t argvlen,
 		       boolean_t argv_copy,
-		       char *envp, mach_msg_type_number_t envplen,
+		       const char *envp, mach_msg_type_number_t envplen,
 		       boolean_t envp_copy,
-		       mach_port_t *dtable, mach_msg_type_number_t dtablesize,
+		       const mach_port_t *dtable, mach_msg_type_number_t dtablesize,
 		       boolean_t dtable_copy,
-		       mach_port_t *portarray, mach_msg_type_number_t nports,
+		       const mach_port_t *portarray, mach_msg_type_number_t nports,
 		       boolean_t portarray_copy,
-		       int *intarray, mach_msg_type_number_t nints,
+		       const int *intarray, mach_msg_type_number_t nints,
 		       boolean_t intarray_copy,
-		       mach_port_t *deallocnames,
+		       const mach_port_t *deallocnames,
 		       mach_msg_type_number_t ndeallocnames,
-		       mach_port_t *destroynames,
+		       const mach_port_t *destroynames,
 		       mach_msg_type_number_t ndestroynames)
 {
   if (! protid)
@@ -1597,8 +1597,8 @@ S_exec_exec_paths (struct trivfs_protid *protid,
 
 kern_return_t
 S_exec_setexecdata (struct trivfs_protid *protid,
-		    mach_port_t *ports, mach_msg_type_number_t nports, int ports_copy,
-		    int *ints, mach_msg_type_number_t nints, int ints_copy)
+		    const mach_port_t *ports, mach_msg_type_number_t nports, int ports_copy,
+		    const int *ints, mach_msg_type_number_t nints, int ints_copy)
 {
   error_t err;
 

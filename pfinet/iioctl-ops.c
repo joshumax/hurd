@@ -76,7 +76,7 @@ enum siocgif_type
   kern_return_t								\
   S_iioctl_siocgif##name (struct sock_user *user,                       \
 			  ifname_t ifnam,				\
-			  sockaddr_t *addr)				\
+			  sockaddr_t *addr)			\
   {									\
     return siocgifXaddr (user, ifnam, addr, type);			\
   }
@@ -116,7 +116,7 @@ siocgifXaddr (struct sock_user *user,
 #define SIOCSIF(name, type)						\
   kern_return_t								\
   S_iioctl_siocsif##name (struct sock_user *user,                       \
-			  ifname_t ifnam,				\
+			  const ifname_t ifnam,				\
 			  sockaddr_t addr)				\
   {									\
     return siocsifXaddr (user, ifnam, &addr, type);			\
@@ -125,7 +125,7 @@ siocgifXaddr (struct sock_user *user,
 /* Set some sockaddr type of info.  */
 static kern_return_t
 siocsifXaddr (struct sock_user *user,
-	      ifname_t ifnam,
+	      const ifname_t ifnam,
 	      sockaddr_t *addr,
 	      enum siocgif_type type)
 {
@@ -167,7 +167,7 @@ SIOCSIF (dstaddr, DSTADDR);
 /* 16 SIOCSIFFLAGS -- Set flags of a network interface.  */
 kern_return_t
 S_iioctl_siocsifflags (struct sock_user *user,
-		       ifname_t ifnam,
+		       const ifname_t ifnam,
 		       short flags)
 {
   error_t err = 0;
@@ -238,7 +238,7 @@ S_iioctl_siocgifmetric (struct sock_user *user,
 /* 24 SIOCSIFMETRIC -- Set metric of a network interface.  */
 kern_return_t
 S_iioctl_siocsifmetric (struct sock_user *user,
-			ifname_t ifnam,
+			const ifname_t ifnam,
 			int metric)
 {
   return EOPNOTSUPP;
@@ -247,7 +247,7 @@ S_iioctl_siocsifmetric (struct sock_user *user,
 /* 25 SIOCDIFADDR -- Delete interface address.  */
 kern_return_t
 S_iioctl_siocdifaddr (struct sock_user *user,
-		      ifname_t ifnam,
+		      const ifname_t ifnam,
 		      sockaddr_t addr)
 {
   return EOPNOTSUPP;
@@ -313,7 +313,7 @@ S_iioctl_siocgifmtu (struct sock_user *user,
 /* 51 SIOCSIFMTU -- Set mtu of a network interface.  */
 error_t
 S_iioctl_siocsifmtu (struct sock_user *user,
-		     ifname_t ifnam,
+		     const ifname_t ifnam,
 		     int mtu)
 {
   error_t err = 0;

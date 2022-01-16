@@ -40,8 +40,8 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   mach_msg_type_name_t replytype,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newporttype,
-			   uid_t *uids, size_t nuids,
-			   uid_t *gids, size_t ngids)
+			   const uid_t *uids, size_t nuids,
+			   const uid_t *gids, size_t ngids)
 {
   unsigned int i;
   error_t err;

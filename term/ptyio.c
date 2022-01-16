@@ -300,7 +300,7 @@ const struct bottomhalf ptyio_bottom =
 /* Validation has already been done by trivfs_S_io_read. */
 error_t
 pty_io_read (struct trivfs_protid *cred,
-	     char **data,
+	     data_t *data,
 	     mach_msg_type_number_t *datalen,
 	     mach_msg_type_number_t amount)
 {
@@ -384,7 +384,7 @@ pty_io_read (struct trivfs_protid *cred,
 /* Validation has already been done by trivfs_S_io_write. */
 error_t
 pty_io_write (struct trivfs_protid *cred,
-	      char *data,
+	      const_data_t data,
 	      mach_msg_type_number_t datalen,
 	      mach_msg_type_number_t *amount)
 {

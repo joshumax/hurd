@@ -856,9 +856,9 @@ S_msg_add_auth (mach_port_t process,
 kern_return_t
 S_msg_del_auth (mach_port_t process,
 		mach_port_t task,
-		intarray_t uids,
+		const_intarray_t uids,
 		mach_msg_type_number_t uidsCnt,
-		intarray_t gids,
+		const_intarray_t gids,
 		mach_msg_type_number_t gidsCnt)
 { return EBUSY; }
 
@@ -888,7 +888,7 @@ S_msg_get_init_ports (mach_port_t process,
 kern_return_t
 S_msg_set_init_ports (mach_port_t process,
 		      mach_port_t refport,
-		      portarray_t ports,
+		      const_portarray_t ports,
 		      mach_msg_type_number_t portsCnt)
 { return EBUSY; }
 
@@ -916,7 +916,7 @@ S_msg_get_init_ints (mach_port_t process,
 kern_return_t
 S_msg_set_init_ints (mach_port_t process,
 		     mach_port_t refport,
-		     intarray_t values,
+		     const_intarray_t values,
 		     mach_msg_type_number_t valuesCnt)
 { return EBUSY; }
 
@@ -931,7 +931,7 @@ S_msg_get_dtable (mach_port_t process,
 kern_return_t
 S_msg_set_dtable (mach_port_t process,
 		  mach_port_t refport,
-		  portarray_t dtable,
+		  const_portarray_t dtable,
 		  mach_msg_type_number_t dtableCnt)
 { return EBUSY; }
 
@@ -959,13 +959,13 @@ S_msg_get_environment (mach_port_t process,
 kern_return_t
 S_msg_set_environment (mach_port_t process,
 		       mach_port_t refport,
-		       data_t value,
+		       const_data_t value,
 		       mach_msg_type_number_t valueCnt)
 { return EBUSY; }
 
 kern_return_t
 S_msg_get_env_variable (mach_port_t process,
-			string_t variable,
+			const_string_t variable,
 			data_t *value,
 			mach_msg_type_number_t *valueCnt)
 { return EBUSY; }
@@ -973,8 +973,8 @@ S_msg_get_env_variable (mach_port_t process,
 kern_return_t
 S_msg_set_env_variable (mach_port_t process,
 			mach_port_t refport,
-			string_t variable,
-			string_t value,
+			const_string_t variable,
+			const_string_t value,
 			boolean_t replace)
 { return EBUSY; }
 kern_return_t
@@ -996,6 +996,6 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 { return EBUSY; }
 error_t
 S_msg_describe_ports (mach_port_t msgport, mach_port_t refport,
-		      mach_port_t *ports, mach_msg_type_number_t nports,
+		      const mach_port_t *ports, mach_msg_type_number_t nports,
 		      data_t *desc, mach_msg_type_number_t *desclen)
 { return EBUSY; }

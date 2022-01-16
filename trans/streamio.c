@@ -520,7 +520,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
-		   data_t data, mach_msg_type_number_t data_len,
+		   const_data_t data, mach_msg_type_number_t data_len,
 		   loff_t offs, mach_msg_type_number_t *amount)
 {
   error_t err;
@@ -998,7 +998,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
 
 error_t
 device_read_reply_inband (mach_port_t reply, error_t errorcode,
-			  io_buf_ptr_inband_t data, u_int datalen)
+			  const io_buf_ptr_inband_t data, u_int datalen)
 {
   if (reply != phys_reply)
     return EOPNOTSUPP;

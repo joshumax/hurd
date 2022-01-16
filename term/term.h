@@ -384,7 +384,7 @@ extern dev_t rdev;
 
 /* kludge--these are pty versions of trivfs_S_io_* functions called by
    the real functions in users.c to do work for ptys.  */
-error_t pty_io_write (struct trivfs_protid *, char *,
+error_t pty_io_write (struct trivfs_protid *, const char *,
 		      mach_msg_type_number_t, mach_msg_type_number_t *);
 error_t pty_io_read (struct trivfs_protid *, char **,
 		     mach_msg_type_number_t *, mach_msg_type_number_t);

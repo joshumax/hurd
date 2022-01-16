@@ -28,7 +28,7 @@
 error_t
 netfs_S_file_set_translator (struct protid *user,
 			     int passive_flags, int active_flags,
-			     int killtrans_flags, data_t passive,
+			     int killtrans_flags, const_data_t passive,
 			     mach_msg_type_number_t passivelen,
 			     mach_port_t active)
 {
@@ -116,7 +116,7 @@ netfs_S_file_set_translator (struct protid *user,
       switch (newmode)
 	{
 	  int major, minor;
-	  char *arg;
+	  const char *arg;
 
 	case S_IFBLK:
 	case S_IFCHR:

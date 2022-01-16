@@ -79,9 +79,9 @@ S_proc_getprivports (struct proc *p,
 /* Implement proc_setexecdata as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_setexecdata (struct proc *p,
-		    mach_port_t *ports,
+		    const mach_port_t *ports,
 		    size_t nports,
-		    int *ints,
+		    const int *ints,
 		    size_t nints)
 {
   int i;
@@ -409,9 +409,9 @@ S_proc_uname (pstruct_t process,
 kern_return_t
 S_proc_register_version (pstruct_t server,
 			 mach_port_t credential,
-			 string_t name,
-			 string_t release,
-			 string_t version)
+			 const_string_t name,
+			 const_string_t release,
+			 const_string_t version)
 {
   error_t err = 0;
   int i;

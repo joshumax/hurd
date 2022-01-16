@@ -22,7 +22,7 @@
 /* Implement dir_unlink as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_dir_unlink (struct protid *dircred,
-		     string_t name)
+		     const_string_t name)
 {
   struct node *dnp;
   struct node *np;

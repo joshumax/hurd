@@ -217,7 +217,7 @@ magic_protid_destroy (struct trivfs_protid *cred)
 error_t
 trivfs_S_dir_lookup (struct trivfs_protid *cred,
 		     mach_port_t reply, mach_msg_type_name_t reply_type,
-		     char *name,
+		     const_string_t name,
 		     int flags,
 		     mode_t mode,
 		     retry_type *retry_type,
@@ -525,7 +525,7 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t requestor,
-		       char *argz, size_t argz_len)
+		       const char *argz, size_t argz_len)
 {
   struct trivfs_protid *cred
     = ports_lookup_port (all_fsys->pi.bucket, server, trivfs_protid_class);

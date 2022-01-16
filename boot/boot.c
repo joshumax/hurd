@@ -945,7 +945,7 @@ ds_device_open (mach_port_t master_port,
 		mach_port_t reply_port,
 		mach_msg_type_name_t reply_type,
 		dev_mode_t mode,
-		dev_name_t name,
+		const_dev_name_t name,
 		mach_port_t *device,
 		mach_msg_type_name_t *devicetype)
 {
@@ -1057,7 +1057,7 @@ ds_device_write_inband (device_t device,
 			mach_msg_type_name_t reply_type,
 			dev_mode_t mode,
 			recnum_t recnum,
-			io_buf_ptr_inband_t data,
+			const_io_buf_ptr_inband_t data,
 			size_t datalen,
 			int *bytes_written)
 {
@@ -1409,7 +1409,7 @@ kern_return_t
 S_io_write (mach_port_t object,
 	    mach_port_t reply_port,
 	    mach_msg_type_name_t reply_type,
-	    data_t data,
+	    const_data_t data,
 	    mach_msg_type_number_t datalen,
 	    off_t offset,
 	    mach_msg_type_number_t *amtwritten)
@@ -1699,9 +1699,9 @@ S_io_restrict_auth (mach_port_t object,
 		    mach_msg_type_name_t reply_type,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobjtype,
-		    uid_t *uids,
+		    const uid_t *uids,
 		    size_t nuids,
-		    uid_t *gids,
+		    const uid_t *gids,
 		    size_t ngids)
 {
   if (object != pseudo_console)
@@ -1906,7 +1906,7 @@ kern_return_t S_term_open_ctty
 kern_return_t S_term_set_nodename
 (
 	io_t terminal,
-	string_t name
+	const_string_t name
 )
 { return EOPNOTSUPP; }
 

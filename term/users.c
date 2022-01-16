@@ -561,7 +561,7 @@ error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
-		   data_t data,
+		   const_data_t data,
 		   size_t datalen,
 		   loff_t offset,
 		   size_t *amt)
@@ -1075,9 +1075,9 @@ S_tioctl_tiocgeta (struct trivfs_protid *cred,
 /* Common code for the varios TIOCSET* commands. */
 static error_t
 set_state (struct trivfs_protid *cred,
-	   tcflag_t *modes,
-	   cc_t *ccs,
-	   speed_t *speeds,
+	   const modes_t modes,
+	   const ccs_t ccs,
+	   const speeds_t speeds,
 	   int draino,
 	   int flushi)
 {
@@ -1166,9 +1166,9 @@ set_state (struct trivfs_protid *cred,
 /* TIOCSETA -- Set termios state */
 kern_return_t
 S_tioctl_tiocseta (struct trivfs_protid *cred,
-		   modes_t modes,
-		   ccs_t ccs,
-		   speeds_t speeds)
+		   const modes_t modes,
+		   const ccs_t ccs,
+		   const speeds_t speeds)
 {
   return set_state (cred, modes, ccs, speeds, 0, 0);
 }
@@ -1176,9 +1176,9 @@ S_tioctl_tiocseta (struct trivfs_protid *cred,
 /* Drain output, then set term state.  */
 kern_return_t
 S_tioctl_tiocsetaw (struct trivfs_protid *cred,
-		    modes_t modes,
-		    ccs_t ccs,
-		    speeds_t speeds)
+		    const modes_t modes,
+		    const ccs_t ccs,
+		    const speeds_t speeds)
 {
   return set_state (cred, modes, ccs, speeds, 1, 0);
 }
@@ -1186,9 +1186,9 @@ S_tioctl_tiocsetaw (struct trivfs_protid *cred,
 /* Flush input, drain output, then set term state.  */
 kern_return_t
 S_tioctl_tiocsetaf (struct trivfs_protid *cred,
-		    modes_t modes,
-		    ccs_t ccs,
-		    speeds_t speeds)
+		    const modes_t modes,
+		    const ccs_t ccs,
+		    const speeds_t speeds)
 
 {
   return set_state (cred, modes, ccs, speeds, 1, 1);
@@ -2144,7 +2144,7 @@ S_term_get_nodename (struct trivfs_protid *cred,
 
 kern_return_t
 S_term_set_nodename (struct trivfs_protid *cred,
-		     string_t name)
+		     const_string_t name)
 {
   error_t err = 0;
   if (!cred

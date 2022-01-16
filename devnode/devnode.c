@@ -140,7 +140,7 @@ do_mach_notify_dead_name (struct port_info *pi,
 kern_return_t
 ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 		mach_msg_type_name_t reply_portPoly,
-		dev_mode_t mode, dev_name_t name, mach_port_t *device, 
+		dev_mode_t mode, const_dev_name_t name, mach_port_t *device, 
 		mach_msg_type_name_t *devicetype)
 {
   error_t err;
@@ -192,7 +192,7 @@ ds_device_write (device_t device, mach_port_t reply_port,
 kern_return_t
 ds_device_write_inband (device_t device, mach_port_t reply_port,
 			mach_msg_type_name_t reply_type, dev_mode_t mode,
-			recnum_t recnum, io_buf_ptr_inband_t data,
+			recnum_t recnum, const_io_buf_ptr_inband_t data,
 			size_t datalen, int *bytes_written)
 {
   return D_INVALID_OPERATION;

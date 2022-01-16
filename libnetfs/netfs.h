@@ -494,7 +494,7 @@ typedef struct netfs_control *control_t;
    or missing -D_FILE_OFFSET_BITS=64 build flag. */
 
 kern_return_t netfs_S_io_write (protid_t io_object,
-				data_t data,
+				const_data_t data,
 				mach_msg_type_number_t dataCnt,
 				loff_t offset,
 				vm_size_t *amount);

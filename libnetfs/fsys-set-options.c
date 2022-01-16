@@ -50,7 +50,7 @@ error_t
 netfs_S_fsys_set_options (struct netfs_control *pt,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,
-			  data_t data, mach_msg_type_number_t data_len,
+			  const_data_t data, mach_msg_type_number_t data_len,
 			  int do_children)
 {
   error_t err = 0;

@@ -87,7 +87,7 @@ main (int argc, char **argv)
 
 error_t
 S_fsys_getroot (mach_port_t fsys, mach_port_t parent,
-		uid_t *uids, unsigned num_uids, gid_t *gids, unsigned num_gids,
+		const id_t *uids, unsigned num_uids, const id_t *gids, unsigned num_gids,
 		int flags,
 		retry_type *do_retry, char *retry_name,
 		mach_port_t *result, mach_msg_type_name_t *result_type)
@@ -123,15 +123,15 @@ S_fsys_syncfs (mach_port_t fsys, int wait, int recurse)
 
 error_t
 S_fsys_set_options (mach_port_t fsys,
-		    char *data, mach_msg_type_number_t data_len, int recurse)
+		    const char *data, mach_msg_type_number_t data_len, int recurse)
 {
   return EOPNOTSUPP;
 }
 
 error_t
 S_fsys_getfile (mach_port_t fsys,
-		uid_t *uids, unsigned num_uids, gid_t *gids, unsigned num_gids,
-		char *handle, unsigned handle_len,
+		const uid_t *uids, unsigned num_uids, const gid_t *gids, unsigned num_gids,
+		const char *handle, unsigned handle_len,
 		mach_port_t *port, mach_msg_type_name_t *port_type)
 {
   return EOPNOTSUPP;
@@ -154,7 +154,7 @@ S_fsys_init (mach_port_t fsys,
 
 error_t
 S_fsys_forward (mach_port_t server, mach_port_t requestor,
-		char *argz, size_t argz_len)
+		const char *argz, size_t argz_len)
 {
   return EOPNOTSUPP;
 }

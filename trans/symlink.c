@@ -125,8 +125,8 @@ main (int argc, char **argv)
 error_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
-		uid_t *uids, size_t nuids,
-		uid_t *gids, size_t ngids,
+		const id_t *uids, size_t nuids,
+		const id_t *gids, size_t ngids,
 		int flags,
 		retry_type *do_retry,
 		string_t retry_name,
