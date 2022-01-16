@@ -22,7 +22,7 @@
 
 /* Attempt to turn NODE (user CRED) into a symlink with target NAME. */
 error_t
-netfs_attempt_mksymlink (struct iouser *cred, struct node *node, char *name)
+netfs_attempt_mksymlink (struct iouser *cred, struct node *node, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -40,7 +40,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *node,
    ARGZLEN) for user CRED. */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *node,
-		      char *argz, size_t argzlen)
+		      const char *argz, size_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -72,7 +72,7 @@ netfs_attempt_statfs (struct iouser *cred, struct node *node,
 
 /* Delete NAME in DIR for USER. */
 error_t
-netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name)
+netfs_attempt_unlink (struct iouser *user, struct node *dir, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -80,8 +80,8 @@ netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name)
 /* Note that in this one call, neither of the specific nodes are locked. */
 error_t
 netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-		      char *fromname, struct node *todir, 
-		      char *toname, int excl)
+		      const char *fromname, struct node *todir,
+		      const char *toname, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -90,15 +90,15 @@ netfs_attempt_rename (struct iouser *user, struct node *fromdir,
    MODE.  */
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   return EOPNOTSUPP;
 }
 
 /* Attempt to remove directory named NAME in DIR for USER. */
 error_t
-netfs_attempt_rmdir (struct iouser *user, 
-		     struct node *dir, char *name)
+netfs_attempt_rmdir (struct iouser *user,
+		     struct node *dir, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -108,7 +108,7 @@ netfs_attempt_rmdir (struct iouser *user,
    return EEXIST if NAME is already found in DIR.  */
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
-		    struct node *file, char *name, int excl)
+		    struct node *file, const char *name, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -139,7 +139,7 @@ netfs_attempt_read (struct iouser *cred, struct node *node,
    return. */
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *node,
-		     off_t offset, size_t *len, void *data)
+		     off_t offset, size_t *len, const void *data)
 {
   return EOPNOTSUPP;
 }

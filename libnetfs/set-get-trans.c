@@ -30,7 +30,7 @@
    CRED. */
 error_t __attribute__ ((weak))
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      char *argz, size_t argzlen)
+		      const char *argz, size_t argzlen)
 {
   return EOPNOTSUPP;
 }

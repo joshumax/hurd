@@ -162,14 +162,14 @@ extern int protocol_version;
 
 /* nfs.c */
 int hurd_mode_to_nfs_type (mode_t);
-int *xdr_encode_fhandle (int *, struct fhandle *);
-int *xdr_encode_data (int *, char *, size_t);
-int *xdr_encode_string (int *, char *);
+int *xdr_encode_fhandle (int *, const struct fhandle *);
+int *xdr_encode_data (int *, const char *, size_t);
+int *xdr_encode_string (int *, const char *);
 int *xdr_encode_sattr_mode (int *, mode_t);
 int *xdr_encode_sattr_ids (int *, u_int, u_int);
 int *xdr_encode_sattr_size (int *, off_t);
-int *xdr_encode_sattr_times (int *, struct timespec *, struct timespec *);
-int *xdr_encode_sattr_stat (int *, struct stat *);
+int *xdr_encode_sattr_times (int *, const struct timespec *, const struct timespec *);
+int *xdr_encode_sattr_stat (int *, const struct stat *);
 int *xdr_encode_create_state (int *, mode_t, uid_t);
 int *xdr_decode_fattr (int *, struct stat *);
 int *xdr_decode_string (int *, char *);
@@ -197,9 +197,9 @@ void lookup_fhandle (struct fhandle *, struct node **);
 int *recache_handle (int *, struct node *);
 
 /* name-cache.c */
-void enter_lookup_cache (char *, size_t, struct node *, char *);
-void purge_lookup_cache (struct node *, char *, size_t);
-struct node *check_lookup_cache (struct node *, char *);
+void enter_lookup_cache (char *, size_t, struct node *, const char *);
+void purge_lookup_cache (struct node *, const char *, size_t);
+struct node *check_lookup_cache (struct node *, const char *);
 void purge_lookup_cache_node (struct node *);
 
 #endif /* NFS_NFS_H */

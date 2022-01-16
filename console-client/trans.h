@@ -37,7 +37,7 @@ struct consnode
 
   /* Read data to a node.  This is exactly the same as io_write
      does.  */
-  error_t (*write) (struct protid *user, char *data,
+  error_t (*write) (struct protid *user, const char *data,
 		    mach_msg_type_number_t datalen, off_t offset,
 		    mach_msg_type_number_t *amount);
 
@@ -59,7 +59,7 @@ struct consnode
   error_t (*readlink) (struct iouser *user, struct node *np, char *buf);
 
   /* Called when the symlink is written */
-  error_t (*mksymlink) (struct iouser *cred, struct node *np, char *name);
+  error_t (*mksymlink) (struct iouser *cred, struct node *np, const char *name);
   
   struct consnode *next;
 };

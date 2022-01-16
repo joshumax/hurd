@@ -43,7 +43,7 @@ netfs_node_norefs (struct node *node)
    locked on success; no matter what, unlock DIR before returning.  */
 error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **node)
+			   const char *name, mode_t mode, struct node **node)
 {
   *node = 0;
   pthread_mutex_unlock (&dir->lock);

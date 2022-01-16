@@ -342,7 +342,7 @@ add_dev_map (const char *dev_name, const char *dev_file)
   return map;
 }
 
-static struct dev_map *lookup_dev (char *dev_name)
+static struct dev_map *lookup_dev (const char *dev_name)
 {
   struct dev_map *map;
 
@@ -1057,7 +1057,7 @@ ds_device_write_inband (device_t device,
 			mach_msg_type_name_t reply_type,
 			dev_mode_t mode,
 			recnum_t recnum,
-			const_io_buf_ptr_inband_t data,
+			const io_buf_ptr_inband_t data,
 			size_t datalen,
 			int *bytes_written)
 {

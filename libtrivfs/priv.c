@@ -54,7 +54,7 @@ error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
 				mach_port_t reply_port,
 				mach_msg_type_name_t reply_port_type,
 				mach_port_t dotdot,
-				uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				const uid_t *uids, u_int nuids, const uid_t *gids, u_int ngids,
 				int flags,
 				retry_type *do_retry, char *retry_name,
 				mach_port_t *node, mach_msg_type_name_t *node_type)

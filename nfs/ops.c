@@ -516,7 +516,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
-		     off_t offset, size_t *len, void *data)
+		     off_t offset, size_t *len, const void *data)
 {
   int *p;
   void *rpcbuf;
@@ -592,7 +592,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 /* See if NAME exists in DIR for CRED.  If so, return EEXIST.  */
 error_t
 verify_nonexistent (struct iouser *cred, struct node *dir,
-		    char *name)
+		    const char *name)
 {
   int *p;
   void *rpcbuf;
@@ -630,7 +630,7 @@ verify_nonexistent (struct iouser *cred, struct node *dir,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_lookup (struct iouser *cred, struct node *np,
-		      char *name, struct node **newnp)
+		      const char *name, struct node **newnp)
 {
   int *p;
   void *rpcbuf;
@@ -704,7 +704,7 @@ netfs_attempt_lookup (struct iouser *cred, struct node *np,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_mkdir (struct iouser *cred, struct node *np,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   int *p;
   void *rpcbuf;
@@ -762,7 +762,7 @@ netfs_attempt_mkdir (struct iouser *cred, struct node *np,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_rmdir (struct iouser *cred, struct node *np,
-		     char *name)
+		     const char *name)
 {
   int *p;
   void *rpcbuf;
@@ -797,7 +797,7 @@ netfs_attempt_rmdir (struct iouser *cred, struct node *np,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_link (struct iouser *cred, struct node *dir,
-		    struct node *np, char *name, int excl)
+		    struct node *np, const char *name, int excl)
 {
   int *p;
   void *rpcbuf;
@@ -1141,7 +1141,7 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_create_file (struct iouser *cred, struct node *np,
-			   char *name, mode_t mode, struct node **newnp)
+			   const char *name, mode_t mode, struct node **newnp)
 {
   int *p;
   void *rpcbuf;
@@ -1233,7 +1233,7 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_unlink (struct iouser *cred, struct node *dir,
-		      char *name)
+		      const char *name)
 {
   int *p;
   void *rpcbuf;
@@ -1339,7 +1339,7 @@ netfs_attempt_unlink (struct iouser *cred, struct node *dir,
    <hurd/netfs.h>.  */
 error_t
 netfs_attempt_rename (struct iouser *cred, struct node *fromdir,
-		      char *fromname, struct node *todir, char *toname,
+		      const char *fromname, struct node *todir, const char *toname,
 		      int excl)
 {
   int *p;
@@ -1882,7 +1882,7 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
 error_t
 netfs_attempt_mksymlink (struct iouser *cred,
 			 struct node *np,
-			 char *arg)
+			 const char *arg)
 {
   if (np->nn->dtrans == NOT_POSSIBLE)
     return EOPNOTSUPP;

@@ -24,7 +24,7 @@
 
 /* Set runtime options for FSYS to ARGZ & ARGZ_LEN.  */
 error_t
-trivfs_set_options (struct trivfs_control *fsys, char *argz, size_t argz_len)
+trivfs_set_options (struct trivfs_control *fsys, const char *argz, size_t argz_len)
 {
   if (trivfs_runtime_argp)
     return fshelp_set_options (trivfs_runtime_argp, 0, argz, argz_len, fsys);

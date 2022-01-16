@@ -121,7 +121,7 @@ ds_device_write (struct vether_device *vdev, mach_port_t reply_port,
 kern_return_t
 ds_device_write_inband (struct vether_device *vdev, mach_port_t reply_port,
 			mach_msg_type_name_t reply_type, dev_mode_t mode,
-			recnum_t recnum, const_io_buf_ptr_inband_t data,
+			recnum_t recnum, const io_buf_ptr_inband_t data,
 			size_t datalen, int *bytes_written)
 {
   if (vdev == NULL)

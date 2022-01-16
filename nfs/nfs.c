@@ -140,7 +140,7 @@ hurd_mode_to_nfs_type (mode_t mode)
 
 /* Encode an NFS file handle.  */
 int *
-xdr_encode_fhandle (int *p, struct fhandle *fhandle)
+xdr_encode_fhandle (int *p, const struct fhandle *fhandle)
 {
   if (protocol_version == 2)
     {
@@ -153,7 +153,7 @@ xdr_encode_fhandle (int *p, struct fhandle *fhandle)
 
 /* Encode uninterpreted bytes.  */
 int *
-xdr_encode_data (int *p, char *data, size_t len)
+xdr_encode_data (int *p, const char *data, size_t len)
 {
   int nints = INTSIZE (len);
 
@@ -174,7 +174,7 @@ xdr_encode_64bit (int *p, long long n)
 
 /* Encode a C string.  */
 int *
-xdr_encode_string (int *p, char *string)
+xdr_encode_string (int *p, const char *string)
 {
   return xdr_encode_data (p, string, strlen (string));
 }
@@ -266,7 +266,7 @@ xdr_encode_sattr_size (int *p, off_t size)
 
 /* Encode ATIME and MTIME into an otherwise empty sattr.  */
 int *
-xdr_encode_sattr_times (int *p, struct timespec *atime, struct timespec *mtime)
+xdr_encode_sattr_times (int *p, const struct timespec *atime, const struct timespec *mtime)
 {
   if (protocol_version == 2)
     {
@@ -357,7 +357,7 @@ xdr_encode_create_state (int *p,
 /* Encode ST into an sattr.  */
 int *
 xdr_encode_sattr_stat (int *p,
-		       struct stat *st)
+		       const struct stat *st)
 {
   if (protocol_version == 2)
     {

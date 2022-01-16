@@ -31,9 +31,9 @@ static inline int page_aligned (vm_offset_t num)
   return trunc_page (num) == num;
 }
 
-static error_t 
+static error_t
 stream_write (struct pq *pq, void *source,
-	      char *data, size_t data_len, size_t *amount)
+	      const char *data, size_t data_len, size_t *amount)
 {
   struct packet *packet = pq_tail (pq, PACKET_TYPE_DATA, source);
 

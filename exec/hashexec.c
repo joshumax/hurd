@@ -36,14 +36,14 @@ check_hashbang (struct execdata *e,
 		file_t file,
 		task_t oldtask,
 		int flags,
-		char *file_name_exec,
+		const char *file_name_exec,
 		char *argv, u_int argvlen, boolean_t argv_copy,
 		char *envp, u_int envplen, boolean_t envp_copy,
 		mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
 		mach_port_t *portarray, u_int nports, boolean_t portarray_copy,
 		int *intarray, u_int nints, boolean_t intarray_copy,
-		mach_port_t *deallocnames, u_int ndeallocnames,
-		mach_port_t *destroynames, u_int ndestroynames)
+		const mach_port_t *deallocnames, u_int ndeallocnames,
+		const mach_port_t *destroynames, u_int ndestroynames)
 {
   char *p;
   char *interp, *arg;		/* Interpreter file name, and first argument */

@@ -154,7 +154,7 @@ extern error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
 				       mach_port_t reply_port,
 				       mach_msg_type_name_t reply_port_type,
 				       mach_port_t dotdot,
-				       uid_t *uids, u_int nuids, uid_t *gids, u_int ngids,
+				       const uid_t *uids, u_int nuids, const uid_t *gids, u_int ngids,
 				       int flags,
 				       retry_type *do_retry, char *retry_name,
 				       mach_port_t *node, mach_msg_type_name_t *node_type);
@@ -234,7 +234,7 @@ extern struct argp *trivfs_runtime_argp;
    for this routine simply uses TRIVFS_RUNTIME_ARGP (supply FSYS as the argp
    input field).  */
 error_t trivfs_set_options (struct trivfs_control *fsys,
-			    char *argz, size_t argz_len);
+			    const char *argz, size_t argz_len);
 
 /* Append to the malloced string *ARGZ of length *ARGZ_LEN a NUL-separated
    list of the arguments to this translator.  The default definition of this

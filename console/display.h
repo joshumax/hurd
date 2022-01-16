@@ -59,7 +59,7 @@ error_t display_get_owner (display_t display, pid_t *pid);
    be smaller than DATALEN) or -1 and the error number in errno.  If
    NONBLOCK is not zero, return with -1 and set errno to EWOULDBLOCK
    if operation would block for a long time.  */
-ssize_t display_output (display_t display, int nonblock, char *data,
+ssize_t display_output (display_t display, int nonblock, const char *data,
 			size_t datalen);
 
 mach_port_t display_get_filemap (display_t display, vm_prot_t prot);

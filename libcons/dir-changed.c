@@ -29,7 +29,7 @@
 
 
 static error_t
-add_one (cons_t cons, char *name)
+add_one (cons_t cons, const char *name)
 {
   unsigned long int nr;
   char *tail;
@@ -45,7 +45,7 @@ add_one (cons_t cons, char *name)
 }
 
 static error_t
-lookup_one (cons_t cons, char *name, vcons_list_t *vcons_entry)
+lookup_one (cons_t cons, const char *name, vcons_list_t *vcons_entry)
 {
   unsigned long int nr;
   char *tail;

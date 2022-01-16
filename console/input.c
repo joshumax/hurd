@@ -87,7 +87,7 @@ void input_destroy (input_t input)
    DATALEN) or -1 and the error number in errno.  If NONBLOCK is not
    zero, return with -1 and set errno to EWOULDBLOCK if operation
    would block for a long time.  */
-ssize_t input_enqueue (input_t input, int nonblock, char *data,
+ssize_t input_enqueue (input_t input, int nonblock, const char *data,
 		       size_t datalen)
 {
   error_t err = 0;
@@ -154,7 +154,7 @@ ssize_t input_enqueue (input_t input, int nonblock, char *data,
 	}
       else
 	{
-	  buffer = data;
+	  buffer = (char*) data;
 	  buffer_size = datalen;
 	}
       /* Prepare output buffer for iconv.  */

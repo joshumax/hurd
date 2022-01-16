@@ -107,9 +107,10 @@ vcs_read (struct protid *user, char **data,
 /* Making a link to set current vcs.
    Relative values perform relative switches.  */
 static error_t
-vcs_mksymlink (struct iouser *user, struct node *np, char *name)
+vcs_mksymlink (struct iouser *user, struct node *np, const char *name)
 {
-  char *c, *d;
+  const char *c;
+  char *d;
   int vt, delta = 0;
 
   c = strrchr (name, '/');

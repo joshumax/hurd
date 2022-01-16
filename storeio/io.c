@@ -134,7 +134,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     return EBADF;
   else
     return open_write ((struct open *)cred->po->hook,
-		       offs, (void *)data, data_len, amount);
+		       offs, data, data_len, amount);
 }
 
 /* Change current read/write offset */

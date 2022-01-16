@@ -115,7 +115,7 @@ error_t dev_sync (struct dev *dev, int wait);
 /* Write LEN bytes from BUF to DEV, returning the amount actually written in
    AMOUNT.  If successful, 0 is returned, otherwise an error code is
    returned.  */
-error_t dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
+error_t dev_write (struct dev *dev, off_t offs, const void *buf, size_t len,
 		   size_t *amount);
 
 /* Read up to AMOUNT bytes from DEV, returned in BUF and LEN in the with the

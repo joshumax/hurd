@@ -328,9 +328,9 @@ pipe_pair_select (struct pipe *rpipe, struct pipe *wpipe,
    returned, nothing is done.  */
 error_t
 pipe_send (struct pipe *pipe, int noblock, void *source,
-	   char *data, size_t data_len,
-	   char *control, size_t control_len,
-	   mach_port_t *ports, size_t num_ports,
+	   const char *data, size_t data_len,
+	   const char *control, size_t control_len,
+	   const mach_port_t *ports, size_t num_ports,
 	   size_t *amount)
 {
   error_t err;

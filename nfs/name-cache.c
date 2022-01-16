@@ -107,7 +107,7 @@ find_cache (char *dir, size_t len, const char *name, size_t name_len)
    name has been confirmed as absent in the directory.  DIR is the
    fhandle of the directory and LEN is its length.  */
 void
-enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
+enter_lookup_cache (char *dir, size_t len, struct node *np, const char *name)
 {
   struct lookup_cache *c;
   size_t name_len = strlen (name);
@@ -146,7 +146,7 @@ enter_lookup_cache (char *dir, size_t len, struct node *np, char *name)
 
 /* Purge all references in the cache to NAME within directory DIR. */
 void
-purge_lookup_cache (struct node *dp, char *name, size_t namelen)
+purge_lookup_cache (struct node *dp, const char *name, size_t namelen)
 {
   struct lookup_cache *c, *next;
   
@@ -245,7 +245,7 @@ register_miss ()
    unlock DIR->LOCK before returning.  For positive hits, lock the
    returned node. */
 struct node *
-check_lookup_cache (struct node *dir, char *name)
+check_lookup_cache (struct node *dir, const char *name)
 {
   struct lookup_cache *c;
   

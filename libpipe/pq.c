@@ -292,7 +292,7 @@ packet_dealloc_ports (struct packet *packet)
    if a memory allocation error occurred, otherwise, 0.  */
 error_t
 packet_set_ports (struct packet *packet,
-		  mach_port_t *ports, size_t num_ports)
+		  const mach_port_t *ports, size_t num_ports)
 {
   if (packet->num_ports > 0)
     packet_dealloc_ports (packet);
@@ -333,7 +333,7 @@ packet_read_ports (struct packet *packet,
    and return the amount appended in AMOUNT if that's not the null pointer.  */
 error_t
 packet_write (struct packet *packet,
-	      char *data, size_t data_len, size_t *amount)
+	      const char *data, size_t data_len, size_t *amount)
 {
   error_t err = packet_ensure (packet, data_len);
 

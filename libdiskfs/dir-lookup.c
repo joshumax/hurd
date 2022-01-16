@@ -76,7 +76,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
   /* Keep a pointer to the start of the filename for length
      calculations.  */
-  char *filename_start = filename;
+  const char *filename_start = filename;
 
   *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
   *do_retry = FS_RETRY_NORMAL;

@@ -28,7 +28,7 @@
 
 struct args
 {
-  char *data;
+  const char *data;
   mach_msg_type_number_t len;
   int do_children;
 };

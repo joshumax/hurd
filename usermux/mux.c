@@ -55,7 +55,7 @@ static error_t lookup_user (struct usermux *mux, const char *user,
    what.) */
 error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
-		      char *name, struct node **node)
+		      const char *name, struct node **node)
 {
   error_t err;
 

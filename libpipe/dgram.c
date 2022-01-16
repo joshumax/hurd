@@ -25,9 +25,9 @@
 
 /* See the definition of struct pipe_class in "pipe.h" for documentation.  */
 
-static error_t 
+static error_t
 dgram_write (struct pq *pq, void *source,
-	     char *data, size_t data_len, size_t *amount)
+	     const char *data, size_t data_len, size_t *amount)
 {
   struct packet *packet = pq_queue (pq, PACKET_TYPE_DATA, source);
   if (!packet)

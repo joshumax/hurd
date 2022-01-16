@@ -51,7 +51,7 @@ struct pipe_class
 		  char **data, size_t *data_len, size_t amount);
   /* Write DATA &c into the packet queue PQ.  */
   error_t (*write)(struct pq *pq, void *source,
-		   char *data, size_t data_len, size_t *amount);
+		   const char *data, size_t data_len, size_t *amount);
 };
 
 /* pipe_class flags  */
@@ -377,9 +377,9 @@ pipe_drain (struct pipe *pipe)
    of the data, to be provided to any readers of it; if no reader ever reads
    it, it's deallocated by calling pipe_dealloc_addr.  */
 error_t pipe_send (struct pipe *pipe, int noblock, void *source,
-		   char *data, size_t data_len,
-		   char *control, size_t control_len,
-		   mach_port_t *ports, size_t num_ports,
+		   const char *data, size_t data_len,
+		   const char *control, size_t control_len,
+		   const mach_port_t *ports, size_t num_ports,
 		   size_t *amount);
 
 /* Writes up to LEN bytes of DATA, to PIPE, which should be locked, and

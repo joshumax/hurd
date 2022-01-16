@@ -33,7 +33,7 @@
 
 /* Get the interface from its name */
 static struct netif *
-get_if (char *name)
+get_if (const char *name)
 {
   char ifname[IFNAMSIZ];
   struct netif *netif;

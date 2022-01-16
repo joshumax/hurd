@@ -1833,7 +1833,7 @@ void pager_port_list_delete(ds)
  */
 kern_return_t
 destroy_paging_partition(name, pp_private)
-	char		*name;
+	const char	*name;
 	void **pp_private;
 {
 	unsigned int	id = part_id(name);

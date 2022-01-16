@@ -52,7 +52,7 @@ open_free (struct open *open)
    and returns the number of bytes written in AMOUNT.  If no error occurs,
    zero is returned, otherwise the error code is returned.  */
 error_t
-open_write (struct open *open, off_t offs, void *buf, size_t len,
+open_write (struct open *open, off_t offs, const void *buf, size_t len,
 	    vm_size_t *amount)
 {
   error_t err;

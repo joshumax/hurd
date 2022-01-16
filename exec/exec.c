@@ -788,8 +788,8 @@ static error_t
 do_exec (file_t file,
 	 task_t oldtask,
 	 int flags,
-	 char *path,
-	 char *abspath,
+	 const_string_t path,
+	 const_string_t abspath,
 	 char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
 	 char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
 	 mach_port_t *dtable, mach_msg_type_number_t dtablesize,
@@ -797,8 +797,8 @@ do_exec (file_t file,
 	 mach_port_t *portarray, mach_msg_type_number_t nports,
 	 boolean_t portarray_copy,
 	 int *intarray, mach_msg_type_number_t nints, boolean_t intarray_copy,
-	 mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
-	 mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
+	 const mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+	 const mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
   struct execdata e, interp;
   task_t newtask = MACH_PORT_NULL;
@@ -1585,12 +1585,14 @@ S_exec_exec_paths (struct trivfs_protid *protid,
   /* There were no user-specified exec servers,
      or none of them could be found.  */
 
+  /* For some of the arrays, we deallocate by hand, thus dropping const.  */
+
   return do_exec (file, oldtask, flags, path, abspath,
-		  argv, argvlen, argv_copy,
-		  envp, envplen, envp_copy,
-		  dtable, dtablesize, dtable_copy,
-		  portarray, nports, portarray_copy,
-		  intarray, nints, intarray_copy,
+		  (char*) argv, argvlen, argv_copy,
+		  (char*) envp, envplen, envp_copy,
+		  (mach_port_t*) dtable, dtablesize, dtable_copy,
+		  (mach_port_t*) portarray, nports, portarray_copy,
+		  (int*) intarray, nints, intarray_copy,
 		  deallocnames, ndeallocnames,
 		  destroynames, ndestroynames);
 }
@@ -1609,13 +1611,13 @@ S_exec_setexecdata (struct trivfs_protid *protid,
     return EINVAL;		/*  */
 
   err = 0;
-  ports = servercopy (ports, nports * sizeof (mach_port_t), ports_copy, &err);
+  ports = servercopy ((mach_port_t*) ports, nports * sizeof (mach_port_t), ports_copy, &err);
   if (err)
     return err;
-  ints = servercopy (ints, nints * sizeof (int), ints_copy, &err);
+  ints = servercopy ((int*) ints, nints * sizeof (int), ints_copy, &err);
   if (err)
     {
-      munmap (ports, nports * sizeof (mach_port_t));
+      munmap ((void*) ports, nports * sizeof (mach_port_t));
       return err;
     }
 
@@ -1629,13 +1631,13 @@ S_exec_setexecdata (struct trivfs_protid *protid,
       munmap (std_ports, std_nports * sizeof (mach_port_t));
     }
 
-  std_ports = ports;
+  std_ports = (mach_port_t*) ports;
   std_nports = nports;
 
   if (std_ints)
     munmap (std_ints, std_nints * sizeof (int));
 
-  std_ints = ints;
+  std_ints = (int*) ints;
   std_nints = nints;
 
   pthread_rwlock_unlock (&std_lock);

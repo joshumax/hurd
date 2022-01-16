@@ -2186,7 +2186,7 @@ Redefining this is the normal way to add option parsing to a trivfs
 program.
 @end deftypevar
 
-@deftypefun error_t trivfs_set_options (@w{struct trivfs_control *@var{fsys}}, @w{char *@var{argz}}, @w{size_t @var{argz_len}})
+@deftypefun error_t trivfs_set_options (@w{struct trivfs_control *@var{fsys}}, @w{const char *@var{argz}}, @w{size_t @var{argz_len}})
 Set runtime options for @var{fsys} to @var{argz} and @var{argz_len}.
 The default definition for this routine simply uses
 @var{trivfs_runtime_argp} (supplying @var{fsys} as the argp input
@@ -2356,7 +2356,7 @@ If these variables is non-zero, they will be called every time a protid or
 peropen structure is about to be destroyed.
 @end deftypefn
 
-@deftypefn {Variable} error_t (*trivfs_getroot_hook) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
+@deftypefn {Variable} error_t (*trivfs_getroot_hook) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{const uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{const uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
 If this variable is set, it will be called by @code{trivfs_S_fsys_getroot}
 before any other processing takes place.  If the return value is
 @code{EAGAIN}, normal trivfs getroot processing continues, otherwise the
@@ -3981,7 +3981,7 @@ If @code{@var{np}->dn_set_ctime} is set, then modify
 operations for @code{st_atim} and @code{st_mtim} as well.
 @end deftypefun
 
-@deftypefun {struct node *} diskfs_check_lookup_cache (@w{struct node *@var{dir}}, @w{char *@var{name}})
+@deftypefun {struct node *} diskfs_check_lookup_cache (@w{struct node *@var{dir}}, @w{const char *@var{name}})
 Scan the cache looking for @var{name} inside @var{dir}.  If we don't
 know any entries at all, then return zero.  If the entry is confirmed to
 not exist, then return -1.  Otherwise, return @var{np} for the entry,
@@ -3992,7 +3992,7 @@ with a newly-allocated reference.
 Return the node corresponding to @var{cache_id} in @code{*@var{npp}}.
 @end deftypefun
 
-@deftypefun void diskfs_enter_lookup_cache (@w{struct node *@var{dir}}, @w{struct node *@var{np}}, @w{char *@var{name}})
+@deftypefun void diskfs_enter_lookup_cache (@w{struct node *@var{dir}}, @w{struct node *@var{np}}, @w{const char *@var{name}})
 Node @var{np} has just been found in @var{dir} with @var{name}.  If
 @var{np} is null, that means that this name has been confirmed as absent
 in the directory.

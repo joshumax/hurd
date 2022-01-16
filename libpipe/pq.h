@@ -68,7 +68,7 @@ struct packet
 /* Sets PACKET's ports to be PORTS, of length NUM_PORTS.  ENOMEM is returned
    if a memory allocation error occurred, otherwise, 0.  */
 error_t packet_set_ports (struct packet *packet,
-			  mach_port_t *ports, size_t num_ports);
+			  const mach_port_t *ports, size_t num_ports);
 
 /* If PACKET has any ports, deallocates them.  */
 void packet_dealloc_ports (struct packet *packet);
@@ -89,7 +89,7 @@ packet_readable (struct packet *packet)
 /* Append the bytes in DATA, of length DATA_LEN, to what's already in PACKET,
    and return the amount appended in AMOUNT if that's not the null pointer.  */
 error_t packet_write (struct packet *packet,
-		      char *data, size_t data_len, size_t *amount);
+		      const char *data, size_t data_len, size_t *amount);
 
 /* Removes up to AMOUNT bytes from the beginning of the data in PACKET, and
    puts it into *DATA, and the amount read into DATA_LEN.  If more than the

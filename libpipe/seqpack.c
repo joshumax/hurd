@@ -28,9 +28,9 @@
 /* This type of pipe is the same as a SOCK_STREAM, but maintains record
    boundaries.  */
 
-static error_t 
+static error_t
 seqpack_write (struct pq *pq, void *source,
-	       char *data, size_t data_len, size_t *amount)
+	       const char *data, size_t data_len, size_t *amount)
 {
   struct packet *packet = pq_queue (pq, PACKET_TYPE_DATA, source);
   if (!packet)

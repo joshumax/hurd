@@ -2015,7 +2015,7 @@ display_get_owner (display_t display, pid_t *pid)
    NONBLOCK is not zero, return with -1 and set errno to EWOULDBLOCK
    if operation would block for a long time.  */
 ssize_t
-display_output (display_t display, int nonblock, char *data, size_t datalen)
+display_output (display_t display, int nonblock, const char *data, size_t datalen)
 {
   output_t output = &display->output;
   error_t err;
@@ -2075,7 +2075,7 @@ display_output (display_t display, int nonblock, char *data, size_t datalen)
     }
   else
     {
-      buffer = data;
+      buffer = (char*) data;
       buffer_size = datalen;
     }
   amount = buffer_size;

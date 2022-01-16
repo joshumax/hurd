@@ -63,7 +63,7 @@ typedef int (*dev_act_func) (struct vether_device *);
 
 int serv_connect (mach_port_t port);
 int serv_disconnect ();
-struct vether_device *lookup_dev_by_name (char *name);
+struct vether_device *lookup_dev_by_name (const char *name);
 int remove_dead_port_from_dev (mach_port_t dead_port);
 struct vether_device *add_vdev (char *name, size_t size);
 void destroy_vdev (void *port);

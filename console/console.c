@@ -471,7 +471,7 @@ netfs_node_norefs (struct node *np)
    before returning.  */
 error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **np)
+			   const char *name, mode_t mode, struct node **np)
 {
   /* We create virtual consoles dynamically on the fly, so there is no
      need for an explicit create operation.  */
@@ -563,7 +563,7 @@ netfs_attempt_sync (struct iouser *cred, struct node *np, int wait)
    should unlock DIR no matter what.) */
 error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
-		      char *name, struct node **node)
+		      const char *name, struct node **node)
 {
   error_t err;
 
@@ -1031,7 +1031,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *node, mode_t mode)
 /* The user must define this function.  Attempt to turn locked node NP
    (user CRED) into a symlink with target NAME.  */
 error_t
-netfs_attempt_mksymlink (struct iouser *cred, struct node *np, char *name)
+netfs_attempt_mksymlink (struct iouser *cred, struct node *np, const char *name)
 {
   return EOPNOTSUPP;
 }
@@ -1070,35 +1070,35 @@ netfs_attempt_statfs (struct iouser *cred, struct node *np, struct statfs *st)
 
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   return EOPNOTSUPP;
 }
 
 error_t
-netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name)
+netfs_attempt_unlink (struct iouser *user, struct node *dir, const char *name)
 {
   return EOPNOTSUPP;
 }
 
 error_t
 netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-		      char *fromname, struct node *todir,
-		      char *toname, int excl)
+		      const char *fromname, struct node *todir,
+		      const char *toname, int excl)
 {
   return EOPNOTSUPP;
 }
 
 error_t
 netfs_attempt_rmdir (struct iouser *user,
-		     struct node *dir, char *name)
+		     struct node *dir, const char *name)
 {
   return EOPNOTSUPP;
 }
 
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
-		    struct node *file, char *name, int excl)
+		    struct node *file, const char *name, int excl)
 {
   return EOPNOTSUPP;
 }
@@ -1162,7 +1162,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
-		     off_t offset, size_t *len, void *data)
+		     off_t offset, size_t *len, const void *data)
 {
   error_t err = 0;
   vcons_t vcons = np->nn->vcons;

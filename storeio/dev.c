@@ -342,7 +342,7 @@ dev_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
    AMOUNT.  If successful, 0 is returned, otherwise an error code is
    returned.  */
 error_t
-dev_write (struct dev *dev, off_t offs, void *buf, size_t len,
+dev_write (struct dev *dev, off_t offs, const void *buf, size_t len,
 	   size_t *amount)
 {
   error_t buf_write (size_t buf_offs, size_t io_offs, size_t len)

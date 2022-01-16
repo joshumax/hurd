@@ -517,7 +517,7 @@ netfs_S_dir_lookup (struct protid *diruser,
    CRED. */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      char *argz, size_t argzlen)
+		      const char *argz, size_t argzlen)
 {
   return file_set_translator (netfs_node_netnode (np)->file,
 			      FS_TRANS_EXCL|FS_TRANS_SET,
@@ -530,7 +530,7 @@ netfs_set_translator (struct iouser *cred, struct node *np,
    which we do not use.  But the shared library requires us to define them.  */
 error_t
 netfs_attempt_lookup (struct iouser *user, struct node *dir,
-		      char *name, struct node **np)
+		      const char *name, struct node **np)
 {
   assert_backtrace (! "should not be here");
   return EIEIO;
@@ -538,7 +538,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 
 error_t
 netfs_attempt_create_file (struct iouser *user, struct node *dir,
-			   char *name, mode_t mode, struct node **np)
+			   const char *name, mode_t mode, struct node **np)
 {
   assert_backtrace (! "should not be here");
   return EIEIO;
@@ -640,7 +640,7 @@ netfs_attempt_chmod (struct iouser *cred, struct node *np, mode_t mode)
 /* The user must define this function.  Attempt to turn locked node NP
    (user CRED) into a symlink with target NAME.  */
 error_t
-netfs_attempt_mksymlink (struct iouser *cred, struct node *np, char *name)
+netfs_attempt_mksymlink (struct iouser *cred, struct node *np, const char *name)
 {
   int namelen = strlen (name) + 1;
   char trans[sizeof _HURD_SYMLINK + namelen];
@@ -755,7 +755,7 @@ netfs_attempt_syncfs (struct iouser *cred, int wait)
 
 error_t
 netfs_attempt_mkdir (struct iouser *user, struct node *dir,
-		     char *name, mode_t mode)
+		     const char *name, mode_t mode)
 {
   return dir_mkdir (netfs_node_netnode (dir)->file, name, mode | S_IRWXU);
 }
@@ -767,15 +767,15 @@ netfs_attempt_mkdir (struct iouser *user, struct node *dir,
  */
 
 error_t
-netfs_attempt_unlink (struct iouser *user, struct node *dir, char *name)
+netfs_attempt_unlink (struct iouser *user, struct node *dir, const char *name)
 {
   return dir_unlink (netfs_node_netnode (dir)->file, name);
 }
 
 error_t
 netfs_attempt_rename (struct iouser *user, struct node *fromdir,
-		      char *fromname, struct node *todir,
-		      char *toname, int excl)
+		      const char *fromname, struct node *todir,
+		      const char *toname, int excl)
 {
   return dir_rename (netfs_node_netnode (fromdir)->file, fromname,
 		     netfs_node_netnode (todir)->file, toname, excl);
@@ -783,14 +783,14 @@ netfs_attempt_rename (struct iouser *user, struct node *fromdir,
 
 error_t
 netfs_attempt_rmdir (struct iouser *user,
-		     struct node *dir, char *name)
+		     struct node *dir, const char *name)
 {
   return dir_rmdir (netfs_node_netnode (dir)->file, name);
 }
 
 error_t
 netfs_attempt_link (struct iouser *user, struct node *dir,
-		    struct node *file, char *name, int excl)
+		    struct node *file, const char *name, int excl)
 {
   return dir_link (netfs_node_netnode (dir)->file, netfs_node_netnode (file)->file, name, excl);
 }
@@ -861,7 +861,7 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 
 error_t
 netfs_attempt_write (struct iouser *cred, struct node *np,
-		     off_t offset, size_t *len, void *data)
+		     off_t offset, size_t *len, const void *data)
 {
   return io_write (netfs_node_netnode (np)->file, data, *len, offset, len);
 }

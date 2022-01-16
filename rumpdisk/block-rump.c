@@ -74,7 +74,7 @@ static struct block_data *block_head;
 static struct machdev_device_emulation_ops rump_block_emulation_ops;
 
 static struct block_data *
-search_bd (char *name)
+search_bd (const char *name)
 {
   struct block_data *bd = block_head;
 
@@ -90,13 +90,13 @@ search_bd (char *name)
 /* BSD name of whole disk device is /dev/rwdXd
  * but we will receive wdX as the name */
 static void
-translate_name (char *output, int len, char *name)
+translate_name (char *output, int len, const char *name)
 {
   snprintf (output, len - 1, "/dev/r%sd", name);
 }
 
 static boolean_t
-is_disk_device (char *name)
+is_disk_device (const char *name)
 {
   const char *dev;
   const char *allowed_devs[MAX_DISK_DEV] = {

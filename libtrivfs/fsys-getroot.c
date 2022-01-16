@@ -70,7 +70,7 @@ trivfs_S_fsys_getroot (struct trivfs_control *cntl,
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS);
 
   struct idvec idvec = {
-    .ids = uids,
+    .ids = (id_t*) uids,
     .num = nuids,
     .alloced = nuids,
   };

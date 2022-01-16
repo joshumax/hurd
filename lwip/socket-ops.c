@@ -346,7 +346,7 @@ lwip_S_socket_send (struct sock_user * user,
 {
   int sent;
   int sockflags;
-  struct iovec iov = { data, datalen };
+  struct iovec iov = { (char*) data, datalen };
   struct msghdr m = { msg_name:addr ? &addr->address : 0,
     msg_namelen:addr ? addr->address.sa.sa_len : 0,
     msg_flags:flags,

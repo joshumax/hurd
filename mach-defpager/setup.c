@@ -242,14 +242,14 @@ page_write_file_direct(struct file_direct *fdp,
 kern_return_t
 add_paging_file(master_device_port, file_name, linux_signature)
 	mach_port_t		master_device_port;
-	char			*file_name;
+	const char		*file_name;
 	int			linux_signature;
 {
   error_t err;
   mach_port_t dev;
   int sizes[DEV_GET_SIZE_COUNT];
   natural_t count;
-  char *devname = file_name;
+  const char *devname = file_name;
 
   assert_backtrace (linux_signature == 0);
 
@@ -292,7 +292,7 @@ add_paging_file(master_device_port, file_name, linux_signature)
  * Destroy a paging_partition given a file name
  */
 kern_return_t
-remove_paging_file (char *file_name)
+remove_paging_file (const char *file_name)
 {
   struct file_direct *fdp = 0;
   kern_return_t kr;

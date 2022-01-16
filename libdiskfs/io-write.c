@@ -76,7 +76,7 @@ diskfs_S_io_write (struct protid *cred,
     }
 
   *amt = datalen;
-  err = _diskfs_rdwr_internal (np, data, off, amt, 1, 0);
+  err = _diskfs_rdwr_internal (np, (char*) data, off, amt, 1, 0);
 
   if (!err && offset == -1)
     cred->po->filepointer += *amt;

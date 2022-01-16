@@ -50,7 +50,7 @@ void open_free (struct open *open);
    (which may be ignored if the device doesn't support random access),
    and returns the number of bytes written in AMOUNT.  If no error occurs,
    zero is returned, otherwise the error code is returned.  */
-error_t open_write (struct open *open, off_t offs, void *buf, size_t len,
+error_t open_write (struct open *open, off_t offs, const void *buf, size_t len,
 		    size_t *amount);
 
 /* Reads up to AMOUNT bytes from the device into BUF and BUF_LEN using the

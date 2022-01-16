@@ -143,7 +143,7 @@ buffer_read (struct buffer *b, void *data, size_t len)
 
 /* Write LEN bytes from DATA to B, returning the amount actually written.  */
 static inline size_t
-buffer_write (struct buffer *b, void *data, size_t len)
+buffer_write (struct buffer *b, const void *data, size_t len)
 {
   size_t size = buffer_writable (b);
 
@@ -182,7 +182,7 @@ error_t dev_readable (size_t *amount);
    in AMOUNT. If NOWAIT is non-zero and the buffer is full, then returns
    EWOULDBLOCK. If an error occurs, the error code is returned,
    otherwise 0.  */
-error_t dev_write (void *buf, size_t len, size_t *amount, int nowait);
+error_t dev_write (const void *buf, size_t len, size_t *amount, int nowait);
 
 /* Try and write out any pending writes to the device. If WAIT is non-zero,
    will wait for any activity to cease.  */
@@ -532,7 +532,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
     return EBADF;
 
   pthread_mutex_lock (&global_lock);
-  err = dev_write ((void *)data, data_len, amount, cred->po->openmodes & O_NONBLOCK);
+  err = dev_write (data, data_len, amount, cred->po->openmodes & O_NONBLOCK);
   pthread_mutex_unlock (&global_lock);
   return err;
 }
@@ -1092,7 +1092,7 @@ start_output (int nowait)
    otherwise 0.  */
 /* Be careful that the global lock is already locked.  */
 error_t
-dev_write (void *buf, size_t len, size_t *amount, int nowait)
+dev_write (const void *buf, size_t len, size_t *amount, int nowait)
 {
   if (err)
     return err;

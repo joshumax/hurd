@@ -198,7 +198,7 @@ diskfs_S_file_set_translator (struct protid *cred,
 		  if (!diskfs_create_symlink_hook || err == EINVAL)
 		    /* Store the argument in the file as the
 		       target of the link */
-		    err = diskfs_node_rdwr (np, arg, 0, strlen (arg),
+		    err = diskfs_node_rdwr (np, (char*) arg, 0, strlen (arg),
 					      1, cred, 0);
 		  if (err)
 		    {

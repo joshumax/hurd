@@ -74,7 +74,7 @@ get_dev_num ()
 }
 
 struct vether_device *
-lookup_dev_by_name (char *name)
+lookup_dev_by_name (const char *name)
 {
   struct vether_device *vdev;
   pthread_mutex_lock (&dev_list_lock);
