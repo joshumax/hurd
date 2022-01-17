@@ -788,7 +788,7 @@ main(int argc, char *argv[])
 	}
       else
 	{
-	  mach_port_deallocate (ports[INIT_PORT_CWDIR]);
+	  mach_port_deallocate (mach_task_self (), ports[INIT_PORT_CWDIR]);
 	  ports[INIT_PORT_CWDIR] = cwd;
 	}
     }
