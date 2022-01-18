@@ -84,11 +84,11 @@ get_hypermetadata (void)
     ext2_panic ("block size %d is too big (max is %d bytes)",
 		block_size, EXT2_MAX_BLOCK_SIZE);
 
-  log2_dev_blocks_per_fs_block = log2_block_size - store->log2_block_size;
-  if (log2_dev_blocks_per_fs_block < 0)
+  if (log2_block_size < store->log2_block_size)
     ext2_panic ("block size %d isn't a power-of-two multiple of the device"
 		" block size (%zd)!",
 		block_size, store->block_size);
+  log2_dev_blocks_per_fs_block = log2_block_size - store->log2_block_size;
 
   log2_stat_blocks_per_fs_block = 0;
   while ((512 << log2_stat_blocks_per_fs_block) < block_size)
