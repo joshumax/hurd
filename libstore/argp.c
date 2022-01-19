@@ -198,7 +198,7 @@ store_parsed_open (const struct store_parsed *parsed, int flags,
     return open (0, store);
   else
     {
-      int i;
+      size_t i;
       char *name;
       error_t err = 0;
       struct store **stores = malloc (sizeof (struct store *) * num);
