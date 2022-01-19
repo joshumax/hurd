@@ -43,7 +43,7 @@ flush (const char **beg, const char *new, FILE *s)
     {
       size_t len = new - 1 - b;
       int ret = fwrite (b, 1, len, s);
-      if (ret < len)
+      if (ret < 0 || (size_t) ret < len)
 	return 1;
     }
   return 0;
@@ -58,7 +58,7 @@ noise_write (const char *t, ssize_t max, FILE *s)
   const char *ok = t;
   size_t len = 0;
 
-  while ((ch = *t++) && (max < 0 || len < max))
+  while ((ch = *t++) && (max < 0 || len < (size_t) max))
     if (isgraph (ch) || ch == ' ')
       len++;
     else
@@ -69,7 +69,7 @@ noise_write (const char *t, ssize_t max, FILE *s)
 	  return errno;
 
 	len += (is_cntl ? 2 : 4);
-	if (max >= 0 && len > max)
+	if (max >= 0 && len > (size_t) max)
 	  break;
 
 	if (is_cntl)
@@ -97,7 +97,7 @@ noise_len (const char *t, ssize_t max)
     else
       {
 	size_t rep_len = iscntl (ch) ? 2 : 4;
-	if (max >= 0 && rep_len + len > max)
+	if (max >= 0 && rep_len + len > (size_t) max)
 	  break;
 	len += rep_len;
       }

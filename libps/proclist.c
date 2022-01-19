@@ -120,7 +120,7 @@ proc_stat_list_add_pids (struct proc_stat_list *pp,
     return err;
   else
     {
-      int i;
+      unsigned i;
       struct proc_stat **end = pp->proc_stats + pp->num_procs;
 
       if (proc_stats)
