@@ -182,12 +182,12 @@ S_proc_getsessionpids (struct proc *callerp,
 		       pid_t **pids,
 		       size_t *npidsp)
 {
-  int count;
+  size_t count;
   struct pgrp *pg;
   struct proc *p;
   struct session *s;
   pid_t *pp = *pids;
-  u_int npids = *npidsp;
+  size_t npids = *npidsp;
 
   /* No need to check CALLERP; we don't use it. */
 
@@ -254,12 +254,12 @@ S_proc_getsessionpgids (struct proc *callerp,
 			pid_t **pgids,
 			size_t *npgidsp)
 {
-  int count;
+  size_t count;
   struct proc *p;
   struct pgrp *pg;
   struct session *s;
   pid_t *pp = *pgids;
-  int npgids = *npgidsp;
+  size_t npgids = *npgidsp;
 
   /* No need to check CALLERP; we don't use it. */
 
