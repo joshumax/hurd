@@ -130,13 +130,13 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	      
 	      vm_deallocate (mach_task_self (), window, window_size);
 
+	      assert_backtrace (n >= copy_count);
+	      assert_backtrace (to_copy >= copy_count);
+
 	      offset += copy_count;
 	      other += copy_count;
 	      to_copy -= copy_count;
 	      n -= copy_count;
-
-	      assert_backtrace (n >= 0);
-	      assert_backtrace (to_copy >= 0);
 	    }
 	  while (to_copy > 0);
 	  
