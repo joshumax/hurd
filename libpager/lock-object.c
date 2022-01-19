@@ -30,7 +30,7 @@ _pager_lock_object (struct pager *p,
 		    vm_prot_t lock_value,
 		    int sync)
 {
-  int i;
+  vm_size_t i;
   struct lock_request *lr = 0;
 
   pthread_mutex_lock (&p->interlock);
@@ -92,7 +92,7 @@ _pager_lock_object (struct pager *p,
 	  if (p->pagemapsize > pm_offs)
 	    {
 	      short *pm_entries = &p->pagemap[pm_offs];
-	      vm_offset_t bound = size / vm_page_size;
+	      vm_size_t bound = size / vm_page_size;
 
 	      if (bound > p->pagemapsize)
 		bound = p->pagemapsize;
