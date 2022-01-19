@@ -249,7 +249,8 @@ diskfs_start_bootstrap ()
       diskfs_kernel_task = MACH_PORT_NULL;
 
       len = snprintf (buf, sizeof buf, "--kernel-task=%lu", kernel_task_name);
-      assert_backtrace (len < sizeof buf);
+      assert_backtrace (len > 0);
+      assert_backtrace ((size_t) len < sizeof buf);
       /* Insert as second argument.  */
       err = argz_insert (&exec_argv, &exec_argvlen,
                          argz_next (exec_argv, exec_argvlen, exec_argv), buf);
