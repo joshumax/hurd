@@ -66,7 +66,7 @@ netfs_S_file_get_translator (struct protid *user,
   else if (S_ISCHR (np->nn_stat.st_mode) || S_ISBLK (np->nn_stat.st_mode))
     {
       char *buf;
-      unsigned int buflen;
+      int buflen;
 
       buflen = asprintf (&buf, "%s%c%d%c%d",
 			 (S_ISCHR (np->nn_stat.st_mode)
