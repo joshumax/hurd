@@ -91,17 +91,17 @@ xattr_entry_hash (struct ext2_xattr_header *header,
 
   if (entry->e_value_block == 0 && entry->e_value_size != 0)
     {
-      __u32 *value = (__u32 *) ((char *) header + entry->e_value_offs);
-      for (n = (entry->e_value_size + EXT2_XATTR_ROUND) >>
+      __u32 *value = (__u32 *) ((char *) header + le16toh (entry->e_value_offs));
+      for (n = (le32toh (entry->e_value_size) + EXT2_XATTR_ROUND) >>
 	      EXT2_XATTR_PAD_BITS; n; n--)
 	{
 	  hash = (hash << VALUE_HASH_SHIFT)
 	      ^ (hash >> (8 * sizeof (hash) - VALUE_HASH_SHIFT))
-	      ^ *value++;
+	  ^ le32toh(*value++);
 	}
     }
 
-  entry->e_hash = hash;
+  entry->e_hash = htole32 (hash);
 
 }
 
@@ -127,7 +127,7 @@ xattr_entry_rehash (struct ext2_xattr_header *header,
   position = EXT2_XATTR_ENTRY_FIRST (header);
   while (!EXT2_XATTR_ENTRY_LAST (position))
     {
-      if (position->e_hash == 0)
+      if (le32toh (position->e_hash) == 0)
 	{
 	  /* Block is not shared if an entry's hash value == 0 */
 	  hash = 0;
@@ -136,12 +136,12 @@ xattr_entry_rehash (struct ext2_xattr_header *header,
 
       hash = (hash << BLOCK_HASH_SHIFT)
 	  ^ (hash >> (8 * sizeof (hash) - BLOCK_HASH_SHIFT))
-	  ^ position->e_hash;
+	^ le32toh (position->e_hash);
 
       position = EXT2_XATTR_ENTRY_NEXT (position);
     }
 
-  header->h_hash = hash;
+  header->h_hash = htole32 (hash);
 
 }
 
@@ -237,14 +237,14 @@ xattr_entry_get (void *block, struct ext2_xattr_entry *entry,
 
   if (value)
     {
-      if (*len < entry->e_value_size)
+      if (*len < le32toh (entry->e_value_size))
 	{
 	  return ERANGE;
 	}
-      memcpy (value, block + entry->e_value_offs, entry->e_value_size);
+      memcpy (value, block + le16toh (entry->e_value_offs), le32toh (entry->e_value_size));
     }
 
-  *len = entry->e_value_size;
+  *len = le32toh (entry->e_value_size);
   return 0;
 
 }
@@ -295,13 +295,13 @@ xattr_entry_create (struct ext2_xattr_header *header,
 
   position->e_name_len = name_len;
   position->e_name_index = index;
-  position->e_value_offs = end + rest - value_size;
+  position->e_value_offs = htole16 (end + rest - value_size);
   position->e_value_block = 0;
-  position->e_value_size = len;
+  position->e_value_size = htole32 (len);
   strncpy (position->e_name, name, name_len);
 
-  memcpy ((char *) header + position->e_value_offs, value, len);
-  memset ((char *) header + position->e_value_offs + len, 0,
+  memcpy ((char *) header + le16toh (position->e_value_offs), value, len);
+  memset ((char *) header + le16toh (position->e_value_offs) + len, 0,
 	  value_size - len);
 
   return 0;
@@ -325,9 +325,9 @@ xattr_entry_remove (struct ext2_xattr_header *header,
   struct ext2_xattr_entry *entry;
 
   /* Remove the value */
-  size = EXT2_XATTR_ALIGN (position->e_value_size);
+  size = EXT2_XATTR_ALIGN (le32toh (position->e_value_size));
   start = EXT2_XATTR_ENTRY_OFFSET (header, last) + rest;
-  end = position->e_value_offs;
+  end = le16toh (position->e_value_offs);
 
   memmove ((char *) header + start + size, (char *) header + start,
 	   end - start);
@@ -337,8 +337,8 @@ xattr_entry_remove (struct ext2_xattr_header *header,
   entry = EXT2_XATTR_ENTRY_FIRST (header);
   while (!EXT2_XATTR_ENTRY_LAST (entry))
     {
-      if (entry->e_value_offs < end)
-	entry->e_value_offs += size;
+      if (le16toh (entry->e_value_offs) < end)
+	entry->e_value_offs = htole16 (le16toh (entry->e_value_offs) + size);
       entry = EXT2_XATTR_ENTRY_NEXT (entry);
     }
 
@@ -372,7 +372,7 @@ xattr_entry_replace (struct ext2_xattr_header *header,
   size_t old_size;
   size_t new_size;
 
-  old_size = EXT2_XATTR_ALIGN (position->e_value_size);
+  old_size = EXT2_XATTR_ALIGN (le32toh (position->e_value_size));
   new_size = EXT2_XATTR_ALIGN (len);
 
   if (rest < 4 || new_size - old_size > rest - 4)
@@ -385,7 +385,7 @@ xattr_entry_replace (struct ext2_xattr_header *header,
       struct ext2_xattr_entry *entry;
 
       start = EXT2_XATTR_ENTRY_OFFSET (header, last) + rest;
-      end = position->e_value_offs;
+      end = le16toh (position->e_value_offs);
 
       /* Remove the old value */
       memmove ((char *) header + start + old_size, (char *) header + start,
@@ -395,19 +395,19 @@ xattr_entry_replace (struct ext2_xattr_header *header,
       entry = EXT2_XATTR_ENTRY_FIRST (header);
       while (!EXT2_XATTR_ENTRY_LAST (entry))
 	{
-	  if (entry->e_value_offs < end)
-	    entry->e_value_offs += old_size;
+	  if (le16toh (entry->e_value_offs) < end)
+	    entry->e_value_offs = htole16 ( le16toh (entry->e_value_offs) + old_size);
 	  entry = EXT2_XATTR_ENTRY_NEXT (entry);
 	}
 
-      position->e_value_offs = start - (new_size - old_size);
+      position->e_value_offs = htole16 (start - (new_size - old_size));
     }
 
-  position->e_value_size = len;
+  position->e_value_size = htole32 (len);
 
   /* Write the new value */
-  memcpy ((char *) header + position->e_value_offs, value, len);
-  memset ((char *) header + position->e_value_offs + len, 0, new_size - len);
+  memcpy ((char *) header + le16toh (position->e_value_offs), value, len);
+  memset ((char *) header + le16toh (position->e_value_offs) + len, 0, new_size - len);
 
   return 0;
 
@@ -450,14 +450,15 @@ ext2_free_xattr_block (struct node *np)
   block = disk_cache_block_ref (blkno);
   header = EXT2_XATTR_HEADER (block);
 
-  if (header->h_magic != EXT2_XATTR_BLOCK_MAGIC || header->h_blocks != 1)
+  if (header->h_magic != htole32 (EXT2_XATTR_BLOCK_MAGIC)
+      || header->h_blocks != htole32 (1))
     {
       ext2_warning ("Invalid extended attribute block.");
       err = EIO;
       goto cleanup;
     }
 
-  if (header->h_refcount == 1)
+  if (le32toh (header->h_refcount) == 1)
     {
        ext2_debug("free block %d", blkno);
 
@@ -470,9 +471,9 @@ ext2_free_xattr_block (struct node *np)
     }
   else
     {
-       ext2_debug("h_refcount: %d", header->h_refcount);
+       ext2_debug("h_refcount: %d", le32toh (header->h_refcount));
 
-       header->h_refcount--;
+       header->h_refcount = htole32 (le32toh (header->h_refcount) - 1);
        record_global_poke (block);
     }
 
@@ -535,7 +536,8 @@ ext2_list_xattr (struct node *np, char *buffer, size_t *len)
   block = disk_cache_block_ref (blkno);
 
   header = EXT2_XATTR_HEADER (block);
-  if (header->h_magic != EXT2_XATTR_BLOCK_MAGIC || header->h_blocks != 1)
+  if (header->h_magic != htole32 (EXT2_XATTR_BLOCK_MAGIC)
+      || header->h_blocks != htole32 (1))
     {
       ext2_warning ("Invalid extended attribute block.");
       err = EIO;
@@ -609,7 +611,8 @@ ext2_get_xattr (struct node *np, const char *name, char *value, size_t *len)
   dino_deref (ei);
 
   header = EXT2_XATTR_HEADER (block);
-  if (header->h_magic != EXT2_XATTR_BLOCK_MAGIC || header->h_blocks != 1)
+  if (header->h_magic != htole32 (EXT2_XATTR_BLOCK_MAGIC)
+      || header->h_blocks != htole32 (1))
     {
       ext2_warning ("Invalid extended attribute block.");
       err = EIO;
@@ -699,7 +702,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 
       assert_backtrace (!diskfs_readonly);
 
-      goal = sblock->s_first_data_block + np->dn->info.i_block_group *
+      goal = le32toh (sblock->s_first_data_block) + np->dn->info.i_block_group *
 	EXT2_BLOCKS_PER_GROUP (sblock);
       blkno = ext2_new_block (goal, 0, 0, 0);
 
@@ -713,15 +716,16 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
       memset (block, 0, block_size);
 
       header = EXT2_XATTR_HEADER (block);
-      header->h_magic = EXT2_XATTR_BLOCK_MAGIC;
-      header->h_blocks = 1;
-      header->h_refcount = 1;
+      header->h_magic = htole32 (EXT2_XATTR_BLOCK_MAGIC);
+      header->h_blocks = htole32 (1);
+      header->h_refcount = htole32 (1);
     }
   else
     {
       block = disk_cache_block_ref (blkno);
       header = EXT2_XATTR_HEADER (block);
-      if (header->h_magic != EXT2_XATTR_BLOCK_MAGIC || header->h_blocks != 1)
+      if (header->h_magic != htole32 (EXT2_XATTR_BLOCK_MAGIC)
+	  || header->h_blocks != htole32 (1))
 	{
 	  ext2_warning ("Invalid extended attribute block.");
 	  err = EIO;
@@ -761,7 +765,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	  break;
 	}
 
-      rest -= EXT2_XATTR_ALIGN (entry->e_value_size);
+      rest -= EXT2_XATTR_ALIGN (le32toh (entry->e_value_size));
       entry = EXT2_XATTR_ENTRY_NEXT (entry);
     }
 

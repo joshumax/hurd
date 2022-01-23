@@ -152,7 +152,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 	goal =
 	  (diskfs_node_disknode (node)->info.i_block_group
            * EXT2_BLOCKS_PER_GROUP (sblock))
-	  + sblock->s_first_data_block;
+	  + le32toh (sblock->s_first_data_block);
     }
 
   *result = ext2_alloc_block (node, goal, zero);

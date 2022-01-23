@@ -404,15 +404,15 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 
   for (currentoff = blockaddr, prevoff = 0;
        currentoff < blockaddr + DIRBLKSIZ;
-       prevoff = currentoff, currentoff += entry->rec_len)
+       prevoff = currentoff, currentoff += le16toh (entry->rec_len))
     {
       entry = (struct ext2_dir_entry_2 *)currentoff;
 
-      if (!entry->rec_len
-	  || entry->rec_len % EXT2_DIR_PAD
+      if (!le16toh (entry->rec_len)
+	  || le16toh (entry->rec_len) % EXT2_DIR_PAD
 	  || entry->name_len > EXT2_NAME_LEN
-	  || currentoff + entry->rec_len > blockaddr + DIRBLKSIZ
-	  || EXT2_DIR_REC_LEN (entry->name_len) > entry->rec_len
+	  || currentoff + le16toh (entry->rec_len) > blockaddr + DIRBLKSIZ
+	  || EXT2_DIR_REC_LEN (entry->name_len) > le16toh (entry->rec_len)
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
 	  ext2_warning ("bad directory entry: inode: %Ld offset: %lu",
@@ -426,10 +426,10 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  size_t thisfree;
 
 	  /* Count how much free space this entry has in it. */
-	  if (entry->inode == 0)
-	    thisfree = entry->rec_len;
+	  if (le32toh (entry->inode) == 0)
+	    thisfree = le16toh (entry->rec_len);
 	  else
-	    thisfree = entry->rec_len - EXT2_DIR_REC_LEN (entry->name_len);
+	    thisfree = le16toh (entry->rec_len) - EXT2_DIR_REC_LEN (entry->name_len);
 
 	  /* If this isn't at the front of the block, then it will
 	     have to be copied if we do a compression; count the
@@ -445,7 +445,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  if (thisfree >= needed)
 	    {
 	      ds->type = CREATE;
-	      ds->stat = entry->inode == 0 ? TAKE : SHRINK;
+	      ds->stat = le32toh (entry->inode) == 0 ? TAKE : SHRINK;
 	      ds->entry = entry;
 	      ds->idx = idx;
 	      looking = countcopies = 0;
@@ -458,12 +458,12 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	    }
 	}
 
-      if (entry->inode)
+      if (le32toh (entry->inode))
 	nentries++;
 
       if (entry->name_len == namelen
 	  && entry->name[0] == name[0]
-	  && entry->inode
+	  && le32toh (entry->inode)
 	  && !bcmp (entry->name, name, namelen))
 	break;
     }
@@ -514,7 +514,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
       ds->preventry = (struct ext2_dir_entry_2 *) prevoff;
     }
 
-  *inum = entry->inode;
+  *inum = le32toh (entry->inode);
   return 0;
 }
 
@@ -551,7 +551,8 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
     {
     case TAKE:
       /* We are supposed to consume this slot. */
-      assert_backtrace (ds->entry->inode == 0 && ds->entry->rec_len >= needed);
+      assert_backtrace (le32toh (ds->entry->inode) == 0
+			&& le16toh (ds->entry->rec_len) >= needed);
 
       new = ds->entry;
       break;
@@ -560,12 +561,12 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       /* We are supposed to take the extra space at the end
 	 of this slot. */
       oldneeded = EXT2_DIR_REC_LEN (ds->entry->name_len);
-      assert_backtrace (ds->entry->rec_len - oldneeded >= needed);
+      assert_backtrace (le16toh (ds->entry->rec_len) - oldneeded >= needed);
 
       new = (struct ext2_dir_entry_2 *) ((vm_address_t) ds->entry + oldneeded);
 
-      new->rec_len = ds->entry->rec_len - oldneeded;
-      ds->entry->rec_len = oldneeded;
+      new->rec_len = htole16 (le16toh (ds->entry->rec_len) - oldneeded);
+      ds->entry->rec_len = htole16 (oldneeded);
       break;
 
     case COMPRESS:
@@ -579,16 +580,16 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	{
 	  struct ext2_dir_entry_2 *from = (struct ext2_dir_entry_2 *)fromoff;
 	  struct ext2_dir_entry_2 *to = (struct ext2_dir_entry_2 *) tooff;
-	  size_t fromreclen = from->rec_len;
+	  size_t fromreclen = le16toh (from->rec_len);
 
-	  if (from->inode != 0)
+	  if (le32toh (from->inode) != 0)
 	    {
 	      assert_backtrace (fromoff >= tooff);
 
 	      memmove (to, from, fromreclen);
-	      to->rec_len = EXT2_DIR_REC_LEN (to->name_len);
+	      to->rec_len = htole16 (EXT2_DIR_REC_LEN (to->name_len));
 
-	      tooff += to->rec_len;
+	      tooff += le16toh (to->rec_len);
 	    }
 	  fromoff += fromreclen;
 	}
@@ -597,7 +598,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       assert_backtrace (totfreed >= needed);
 
       new = (struct ext2_dir_entry_2 *) tooff;
-      new->rec_len = totfreed;
+      new->rec_len = htole16 (totfreed);
       break;
 
     case EXTEND:
@@ -634,7 +635,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
 
-      new->rec_len = DIRBLKSIZ;
+      new->rec_len = htole16 (DIRBLKSIZ);
       break;
 
     default:
@@ -645,7 +646,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   /* NEW points to the directory entry being written, and its
      rec_len field is already filled in.  Now fill in the rest.  */
 
-  new->inode = np->cache_id;
+  new->inode = htole32 (np->cache_id);
 #if 0
   /* XXX We cannot enable this code because file types can change
      (and conceivably quite often) with translator settings.
@@ -722,12 +723,12 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
   assert_backtrace (!diskfs_readonly);
 
   if (ds->preventry == 0)
-    ds->entry->inode = 0;
+    ds->entry->inode = htole32 (0);
   else
     {
       assert_backtrace ((vm_address_t) ds->entry - (vm_address_t) ds->preventry
-	      == ds->preventry->rec_len);
-      ds->preventry->rec_len += ds->entry->rec_len;
+			== le16toh (ds->preventry->rec_len));
+      ds->preventry->rec_len = htole16( le16toh (ds->preventry->rec_len) + ds->entry->rec_len);
     }
 
   dp->dn_set_mtime = 1;
@@ -761,7 +762,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 
   assert_backtrace (!diskfs_readonly);
 
-  ds->entry->inode = np->cache_id;
+  ds->entry->inode = htole32 (np->cache_id);
   dp->dn_set_mtime = 1;
   diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
 
@@ -796,11 +797,11 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 
   for (curoff = buf;
        !hit && curoff < buf + dp->dn_stat.st_size;
-       curoff += entry->rec_len)
+       curoff += le16toh (entry->rec_len))
     {
       entry = (struct ext2_dir_entry_2 *) curoff;
 
-      if (entry->inode != 0
+      if (le32toh (entry->inode) != 0
 	  && (entry->name_len > 2
 	      || entry->name[0] != '.'
 	      || (entry->name[1] != '.'
@@ -853,10 +854,10 @@ count_dirents (struct node *dp, block_t nb, char *buf)
 
   for (offinblk = buf;
        offinblk < buf + DIRBLKSIZ;
-       offinblk += entry->rec_len)
+       offinblk += le16toh (entry->rec_len))
     {
       entry = (struct ext2_dir_entry_2 *) offinblk;
-      if (entry->inode)
+      if (le32toh (entry->inode))
 	count++;
     }
 
@@ -982,7 +983,7 @@ diskfs_get_directs (struct node *dp,
 	}
       for (i = 0, bufp = buf;
 	   i < entry - curentry && bufp - buf < DIRBLKSIZ;
-	   bufp += ((struct ext2_dir_entry_2 *)bufp)->rec_len, i++)
+	  bufp += le16toh (((struct ext2_dir_entry_2 *)bufp)->rec_len), i++)
 	;
       /* Make sure we didn't run off the end. */
       assert_backtrace (bufp - buf < DIRBLKSIZ);
@@ -1009,7 +1010,7 @@ diskfs_get_directs (struct node *dp,
 
       entryp = (struct ext2_dir_entry_2 *)bufp;
 
-      if (entryp->inode)
+      if (le32toh (entryp->inode))
 	{
 	  int rec_len;
 	  int name_len = entryp->name_len;
@@ -1033,7 +1034,7 @@ diskfs_get_directs (struct node *dp,
 	    if (datap + rec_len > *data + allocsize)
 	      break;
 
-	  userp->d_fileno = entryp->inode;
+	  userp->d_fileno = le32toh (entryp->inode);
 	  userp->d_reclen = rec_len;
 	  userp->d_namlen = name_len;
 
@@ -1066,7 +1067,7 @@ diskfs_get_directs (struct node *dp,
 	  i++;
 	}
 
-      if (entryp->rec_len == 0)
+      if (le16toh (entryp->rec_len) == 0)
 	{
 	  ext2_warning ("zero length directory entry: inode: %Ld offset: %zd",
 			dp->cache_id,
@@ -1074,7 +1075,7 @@ diskfs_get_directs (struct node *dp,
 	  return EIO;
 	}
 
-      bufp += entryp->rec_len;
+      bufp += le16toh (entryp->rec_len);
       if (bufp - buf == DIRBLKSIZ)
 	{
 	  blkno++;
@@ -1084,7 +1085,7 @@ diskfs_get_directs (struct node *dp,
 	{
 	  ext2_warning ("directory entry too long: inode: %Ld offset: %zd",
 			dp->cache_id,
-			blkno * DIRBLKSIZ + bufp - buf - entryp->rec_len);
+	      blkno * DIRBLKSIZ + bufp - buf - le16toh (entryp->rec_len));
 	  return EIO;
 	}
     }

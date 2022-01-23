@@ -32,6 +32,7 @@
 #include <assert-backtrace.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <endian.h>
 
 /* Types used by the ext2 header files.  */
 typedef u_int32_t __u32;
@@ -293,7 +294,7 @@ extern unsigned int block_size;
 extern unsigned int log2_block_size;
 
 /* The number of bits to scale min-blocks to get filesystem blocks.  */
-#define BLOCKSIZE_SCALE	(sblock->s_log_block_size)
+#define BLOCKSIZE_SCALE	(le32toh (sblock->s_log_block_size))
 
 /* log2 of the number of device blocks in a filesystem block.  */
 extern unsigned log2_dev_blocks_per_fs_block;
@@ -404,7 +405,7 @@ bptr_offs (void *ptr)
 #define group_desc(num)	(&group_desc_image[num])
 extern struct ext2_group_desc *group_desc_image;
 
-#define inode_group_num(inum) (((inum) - 1) / sblock->s_inodes_per_group)
+#define inode_group_num(inum) (((inum) - 1) / le32toh (sblock->s_inodes_per_group))
 
 /* Forward declarations for the following functions that are usually
    inlined.  In case inlining is disabled, or inlining is not
@@ -418,11 +419,11 @@ extern void _dino_deref (struct ext2_inode *inode);
 EXT2FS_EI struct ext2_inode *
 dino_ref (ino_t inum)
 {
-  unsigned long inodes_per_group = sblock->s_inodes_per_group;
+  unsigned long inodes_per_group = le32toh (sblock->s_inodes_per_group);
   unsigned long bg_num = (inum - 1) / inodes_per_group;
   unsigned long group_inum = (inum - 1) % inodes_per_group;
   struct ext2_group_desc *bg = group_desc (bg_num);
-  block_t block = bg->bg_inode_table + (group_inum / inodes_per_block);
+  block_t block = le32toh (bg->bg_inode_table) + (group_inum / inodes_per_block);
   struct ext2_inode *inode = disk_cache_block_ref (block);
   inode += group_inum % inodes_per_block;
   ext2_debug ("(%llu) = %p", inum, inode);

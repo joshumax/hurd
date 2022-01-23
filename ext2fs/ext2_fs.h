@@ -83,12 +83,12 @@
 #define EXT2_ACLE_PER_BLOCK(s)         (EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_acl_entry))
 #define EXT2_ADDR_PER_BLOCK(s)          (EXT2_BLOCK_SIZE(s) / sizeof (__u32))
 #define EXT2_BLOCK_SIZE_BITS(s)       ((s)->s_log_block_size + 10)
-#define EXT2_INODE_SIZE(s)     (((s)->s_rev_level == EXT2_GOOD_OLD_REV) ? \
-                                EXT2_GOOD_OLD_INODE_SIZE : \
-                                (s)->s_inode_size)
-#define EXT2_FIRST_INO(s)      (((s)->s_rev_level == EXT2_GOOD_OLD_REV) ? \
-                                EXT2_GOOD_OLD_FIRST_INO : \
-                                (s)->s_first_ino)
+#define EXT2_INODE_SIZE(s)     (((s)->s_rev_level == htole32(EXT2_GOOD_OLD_REV)) ? \
+				EXT2_GOOD_OLD_INODE_SIZE : \
+				le16toh ((s)->s_inode_size))
+#define EXT2_FIRST_INO(s)      (((s)->s_rev_level == htole32(EXT2_GOOD_OLD_REV)) ? \
+				EXT2_GOOD_OLD_FIRST_INO : \
+				(le32toh ((s)->s_first_ino)))
 
 /*
  * Macro-instructions used to manage fragments
@@ -96,7 +96,7 @@
 #define EXT2_MIN_FRAG_SIZE		1024
 #define EXT2_MAX_FRAG_SIZE		4096
 #define EXT2_MIN_FRAG_LOG_SIZE		  10
-#define EXT2_FRAG_SIZE(s) 				(EXT2_MIN_FRAG_SIZE << (s)->s_log_frag_size)
+#define EXT2_FRAG_SIZE(s) 				(EXT2_MIN_FRAG_SIZE << le32toh((s)->s_log_frag_size))
 #define EXT2_FRAGS_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / EXT2_FRAG_SIZE(s))
 
 /*
@@ -139,9 +139,9 @@ struct ext2_group_desc
 /*
  * Macro-instructions used to manage group descriptors
  */
-#define EXT2_BLOCKS_PER_GROUP(s)			((s)->s_blocks_per_group)
+#define EXT2_BLOCKS_PER_GROUP(s)			(le32toh ((s)->s_blocks_per_group))
 #define EXT2_DESC_PER_BLOCK(s)				(EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_group))
-#define EXT2_INODES_PER_GROUP(s)			((s)->s_inodes_per_group)
+#define EXT2_INODES_PER_GROUP(s)			(le32toh ((s)->s_inodes_per_group))
 
 /*
  * Constants relative to the data blocks
@@ -435,23 +435,23 @@ struct ext2_super_block {
  */
 
 #define EXT2_HAS_COMPAT_FEATURE(sb,mask)			\
-	( (sb)->s_feature_compat & (mask) )
+	( (sb)->s_feature_compat & htole32 (mask) )
 #define EXT2_HAS_RO_COMPAT_FEATURE(sb,mask)			\
-	( (sb)->s_feature_ro_compat & (mask) )
+	( (sb)->s_feature_ro_compat & htole32 (mask) )
 #define EXT2_HAS_INCOMPAT_FEATURE(sb,mask)			\
-	( (sb)->s_feature_incompat & (mask) )
+	( (sb)->s_feature_incompat & htole32 (mask) )
 #define EXT2_SET_COMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_compat |= (mask)
+	(sb)->s_feature_compat |= htole32 (mask)
 #define EXT2_SET_RO_COMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_ro_compat |= (mask)
+	(sb)->s_feature_ro_compat |= htole32 (mask)
 #define EXT2_SET_INCOMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_incompat |= (mask)
+	(sb)->s_feature_incompat |= htole32 (mask)
 #define EXT2_CLEAR_COMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_compat &= ~(mask)
+	(sb)->s_feature_compat &= ~htole32 (mask)
 #define EXT2_CLEAR_RO_COMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_ro_compat &= ~(mask)
+	(sb)->s_feature_ro_compat &= ~htole32 (mask)
 #define EXT2_CLEAR_INCOMPAT_FEATURE(sb,mask)			\
-	(sb)->s_feature_incompat &= ~(mask)
+	(sb)->s_feature_incompat &= ~htole32 (mask)
 
 #define EXT2_FEATURE_COMPAT_DIR_PREALLOC	0x0001
 #define EXT2_FEATURE_COMPAT_IMAGIC_INODES	0x0002
