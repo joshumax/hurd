@@ -316,6 +316,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
       st->st_blocks = 0;
       np->dn_set_ctime = 1;
     }
+
   /* Zero out the block pointers in case there's some noise left on disk.  */
   for (block = 0; block < EXT2_N_BLOCKS; block++)
     if (diskfs_node_disknode (np)->info.i_data[block] != 0)
@@ -323,11 +324,13 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 	diskfs_node_disknode (np)->info.i_data[block] = 0;
 	np->dn_set_ctime = 1;
       }
+
   if (diskfs_node_disknode (np)->info_i_translator != 0)
     {
       diskfs_node_disknode (np)->info_i_translator = 0;
       np->dn_set_ctime = 1;
     }
+
   st->st_mode &= ~S_IPTRANS;
   if (np->allocsize)
     {

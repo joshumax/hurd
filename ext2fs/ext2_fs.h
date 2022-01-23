@@ -286,6 +286,7 @@ struct ext2_inode {
 #define i_uid_high	osd2.hurd2.h_i_uid_high
 #define i_gid_high	osd2.hurd2.h_i_gid_high
 #define i_author	osd2.hurd2.h_i_author
+#define i_mode_high	osd2.hurd2.h_i_mode_high
 
 /*
  * File system states

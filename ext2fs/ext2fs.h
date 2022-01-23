@@ -33,8 +33,6 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
-#define __hurd__		/* Enable some hurd-specific fields.  */
-
 /* Types used by the ext2 header files.  */
 typedef u_int32_t __u32;
 typedef int32_t   __s32;
@@ -44,8 +42,6 @@ typedef u_int8_t  __u8;
 typedef int8_t    __s8;
 
 #include "ext2_fs.h"
-
-#define i_mode_high	osd2.hurd2.h_i_mode_high /* missing from ext2_fs.h */
 
 
 /* If ext2_fs.h defined a debug routine, undef it and use our own.  */
@@ -61,8 +57,6 @@ extern int ext2_debug_flag;
 #else
 #define ext2_debug(f, a...)	(void)0
 #endif
-
-#undef __hurd__
 
 /* Define this if memory objects should not be cached by the kernel.
    Normally, don't define it, but defining it causes a much greater rate
