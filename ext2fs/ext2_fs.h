@@ -16,8 +16,6 @@
 #ifndef _LINUX_EXT2_FS_H
 #define _LINUX_EXT2_FS_H
 
-/* #include <linux/types.h> */
-
 /*
  * The second extended filesystem constants/structures
  */
@@ -198,6 +196,11 @@ struct ext2_group_desc
 #define EXT2_ECOMPR_FL			0x00000800 /* Compression error */
 /* End compression flags --- maybe not all used */
 #define EXT2_BTREE_FL			0x00001000 /* btree format dir */
+#define EXT2_IMAGIC_FL			0x00002000	/* AFS directory */
+#define EXT2_JOURNAL_DATA_FL		0x00004000 /* Reserved for ext3 */
+#define EXT2_NOTAIL_FL			0x00008000	/* file tail should not be merged */
+#define EXT2_DIRSYNC_FL			0x00010000	/* dirsync behaviour (directories only) */
+#define EXT2_TOPDIR_FL			0x00020000	/* Top of directory hierarchies*/
 #define EXT2_RESERVED_FL		0x80000000 /* reserved for ext2 lib */
 
 #define EXT2_FL_USER_VISIBLE		0x00001FFF /* User visible flags */
@@ -207,10 +210,11 @@ struct ext2_group_desc
 #define EXT2_FL_INHERITED (EXT2_SECRM_FL | EXT2_UNRM_FL | EXT2_COMPR_FL |\
 			   EXT2_SYNC_FL | EXT2_NODUMP_FL |\
 			   EXT2_NOATIME_FL | EXT2_COMPRBLK_FL |\
-			   EXT2_NOCOMP_FL)
+			   EXT2_NOCOMP_FL | EXT2_JOURNAL_DATA_FL |\
+			   EXT2_NOTAIL_FL | EXT2_DIRSYNC_FL)
 
 /* Flags that are appropriate for regular files (all but dir-specific ones). */
-#define EXT2_REG_FLMASK (~(0))
+#define EXT2_REG_FLMASK (~(EXT2_DIRSYNC_FL | EXT2_TOPDIR_FL))
 
 /* Flags that are appropriate for non-directories/regular files. */
 #define EXT2_OTHER_FLMASK (EXT2_NODUMP_FL | EXT2_NOATIME_FL)
@@ -233,6 +237,15 @@ static __inline__ __u32 ext2_mask_flags(mode_t mode, __u32 flags)
 #define	EXT2_IOC_SETFLAGS		_IOW('f', 2, long)
 #define	EXT2_IOC_GETVERSION		_IOR('v', 1, long)
 #define	EXT2_IOC_SETVERSION		_IOW('v', 2, long)
+#define	EXT2_IOC_GETRSVSZ		_IOR('f', 5, long)
+#define	EXT2_IOC_SETRSVSZ		_IOW('f', 6, long)
+
+
+/*
+ * ioctl commands in 32 bit emulation
+ */
+#define EXT2_IOC32_GETVERSION		_IOR('v', 1, int)
+#define EXT2_IOC32_SETVERSION		_IOW('v', 2, int)
 
 /*
  * Structure of an inode on the disk
@@ -329,17 +342,26 @@ struct ext2_inode {
 /*
  * Mount flags
  */
-#define EXT2_MOUNT_CHECK_NORMAL		0x0001	/* Do some more checks */
-#define EXT2_MOUNT_CHECK_STRICT		0x0002	/* Do again more checks */
+#define EXT2_MOUNT_CHECK_NORMAL		0x000001	/* Do some more checks */
+#define EXT2_MOUNT_CHECK_STRICT		0x000002	/* Do again more checks */
 #define EXT2_MOUNT_CHECK		(EXT2_MOUNT_CHECK_NORMAL | \
 					 EXT2_MOUNT_CHECK_STRICT)
-#define EXT2_MOUNT_GRPID		0x0004	/* Create files with directory's group */
-#define EXT2_MOUNT_DEBUG		0x0008	/* Some debugging messages */
-#define EXT2_MOUNT_ERRORS_CONT		0x0010	/* Continue on errors */
-#define EXT2_MOUNT_ERRORS_RO		0x0020	/* Remount fs ro on errors */
-#define EXT2_MOUNT_ERRORS_PANIC		0x0040	/* Panic on errors */
-#define EXT2_MOUNT_MINIX_DF		0x0080	/* Mimics the Minix statfs */
-#define EXT2_MOUNT_NO_UID32		0x0200  /* Disable 32-bit UIDs */
+#define EXT2_MOUNT_OLDALLOC		0x000002  /* Don't use the new Orlov allocator */
+#define EXT2_MOUNT_GRPID		0x000004	/* Create files with directory's group */
+#define EXT2_MOUNT_DEBUG		0x000008	/* Some debugging messages */
+#define EXT2_MOUNT_ERRORS_CONT		0x000010	/* Continue on errors */
+#define EXT2_MOUNT_ERRORS_RO		0x000020	/* Remount fs ro on errors */
+#define EXT2_MOUNT_ERRORS_PANIC		0x000040	/* Panic on errors */
+#define EXT2_MOUNT_MINIX_DF		0x000080	/* Mimics the Minix statfs */
+#define EXT2_MOUNT_NOBH			0x000100  /* No buffer_heads */
+#define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
+#define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
+#define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
+#define EXT2_MOUNT_XIP			0x010000  /* Obsolete, use DAX */
+#define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
+#define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
+#define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
+#define EXT2_MOUNT_DAX			0x100000  /* Direct Access */
 
 #define clear_opt(o, opt)		o &= ~EXT2_MOUNT_##opt
 #define set_opt(o, opt)			o |= EXT2_MOUNT_##opt
@@ -402,7 +424,7 @@ struct ext2_super_block {
 	 * things it doesn't understand...
 	 */
 	__u32	s_first_ino; 		/* First non-reserved inode */
-	__u16   s_inode_size; 		/* size of inode structure */
+	__u16	s_inode_size; 		/* size of inode structure */
 	__u16	s_block_group_nr; 	/* block group # of this superblock */
 	__u32	s_feature_compat; 	/* compatible feature set */
 	__u32	s_feature_incompat; 	/* incompatible feature set */
@@ -418,7 +440,20 @@ struct ext2_super_block {
 	__u8	s_prealloc_blocks;	/* Nr of blocks to try to preallocate*/
 	__u8	s_prealloc_dir_blocks;	/* Nr to preallocate for dirs */
 	__u16	s_padding1;
-	__u32	s_reserved[204];	/* Padding to the end of the block */
+  /*
+	 * Journaling support valid if EXT3_FEATURE_COMPAT_HAS_JOURNAL set.
+	 */
+	__u8	s_journal_uuid[16];	/* uuid of journal superblock */
+	__u32	s_journal_inum;		/* inode number of journal file */
+	__u32	s_journal_dev;		/* device number of journal file */
+	__u32	s_last_orphan;		/* start of list of inodes to delete */
+	__u32	s_hash_seed[4];		/* HTREE hash seed */
+	__u8	s_def_hash_version;	/* Default hash version to use */
+	__u8	s_reserved_char_pad;
+	__u16	s_reserved_word_pad;
+	__u32	s_default_mount_opts;
+	__u32	s_first_meta_bg; 	/* First metablock block group */
+	__u32	s_reserved[190];	/* Padding to the end of the block */
 };
 
 #ifdef __KERNEL__
@@ -460,28 +495,66 @@ struct ext2_super_block {
 	( EXT2_SB(sb)->s_feature_ro_compat & (mask) )
 #define EXT2_HAS_INCOMPAT_FEATURE(sb,mask)			\
 	( EXT2_SB(sb)->s_feature_incompat & (mask) )
+#define EXT2_SET_COMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_compat |= (mask)
+#define EXT2_SET_RO_COMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_ro_compat |= (mask)
+#define EXT2_SET_INCOMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_incompat |= (mask)
+#define EXT2_CLEAR_COMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_compat &= ~(mask)
+#define EXT2_CLEAR_RO_COMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_ro_compat &= ~(mask)
+#define EXT2_CLEAR_INCOMPAT_FEATURE(sb,mask)			\
+	EXT2_SB(sb)->s_es->s_feature_incompat &= ~(mask)
 
 #define EXT2_FEATURE_COMPAT_DIR_PREALLOC	0x0001
+#define EXT2_FEATURE_COMPAT_IMAGIC_INODES	0x0002
+#define EXT3_FEATURE_COMPAT_HAS_JOURNAL		0x0004
 #define EXT2_FEATURE_COMPAT_EXT_ATTR		0x0008
+#define EXT2_FEATURE_COMPAT_RESIZE_INO		0x0010
+#define EXT2_FEATURE_COMPAT_DIR_INDEX		0x0020
+#define EXT2_FEATURE_COMPAT_ANY			0xffffffff
 
 #define EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER	0x0001
 #define EXT2_FEATURE_RO_COMPAT_LARGE_FILE	0x0002
 #define EXT2_FEATURE_RO_COMPAT_BTREE_DIR	0x0004
+#define EXT2_FEATURE_RO_COMPAT_ANY		0xffffffff
 
 #define EXT2_FEATURE_INCOMPAT_COMPRESSION	0x0001
 #define EXT2_FEATURE_INCOMPAT_FILETYPE		0x0002
+#define EXT3_FEATURE_INCOMPAT_RECOVER		0x0004
+#define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
+#define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
+#define EXT2_FEATURE_INCOMPAT_ANY		0xffffffff
 
 #define EXT2_FEATURE_COMPAT_SUPP	EXT2_FEATURE_COMPAT_EXT_ATTR
 #define EXT2_FEATURE_INCOMPAT_SUPP	EXT2_FEATURE_INCOMPAT_FILETYPE
 #define EXT2_FEATURE_RO_COMPAT_SUPP	(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER| \
 					 EXT2_FEATURE_RO_COMPAT_LARGE_FILE| \
 					 EXT2_FEATURE_RO_COMPAT_BTREE_DIR)
+#define EXT2_FEATURE_RO_COMPAT_UNSUPPORTED	~EXT2_FEATURE_RO_COMPAT_SUPP
+#define EXT2_FEATURE_INCOMPAT_UNSUPPORTED	~EXT2_FEATURE_INCOMPAT_SUPP
 
 /*
  * Default values for user and/or group using reserved blocks
  */
 #define	EXT2_DEF_RESUID		0
 #define	EXT2_DEF_RESGID		0
+
+/*
+ * Default mount options
+ */
+#define EXT2_DEFM_DEBUG		0x0001
+#define EXT2_DEFM_BSDGROUPS	0x0002
+#define EXT2_DEFM_XATTR_USER	0x0004
+#define EXT2_DEFM_ACL		0x0008
+#define EXT2_DEFM_UID16		0x0010
+    /* Not used by ext2, but reserved for use by ext3 */
+#define EXT3_DEFM_JMODE		0x0060
+#define EXT3_DEFM_JMODE_DATA	0x0020
+#define EXT3_DEFM_JMODE_ORDERED	0x0040
+#define EXT3_DEFM_JMODE_WBACK	0x0060
 
 /*
  * Structure of a directory entry
@@ -533,6 +606,7 @@ struct ext2_dir_entry_2 {
 #define EXT2_DIR_ROUND 			(EXT2_DIR_PAD - 1)
 #define EXT2_DIR_REC_LEN(name_len)	(((name_len) + 8 + EXT2_DIR_ROUND) & \
 					 ~EXT2_DIR_ROUND)
+#define EXT2_MAX_REC_LEN		((1<<16)-1)
 
 /*
  * second extended file system inode data in memory
