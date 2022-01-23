@@ -789,7 +789,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
   /* 4 null bytes after xattr entry */
   if (rest < 4)
     {
-      err = EIO;
+      err = ENOSPC;
       goto cleanup;
     }
 
