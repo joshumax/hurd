@@ -199,6 +199,8 @@ diskfs_set_hypermetadata (int wait, int clean)
 
  if (sblock_dirty)
    {
+     /* Before writing, set the time of write */
+     sblock->s_wtime = htole32 (diskfs_mtime->seconds);
      sblock_dirty = 0;
      memcpy (mapped_sblock, sblock, SBLOCK_SIZE);
      disk_cache_block_ref_ptr (mapped_sblock);
