@@ -60,6 +60,7 @@ get_hypermetadata (void)
 {
   error_t err;
   size_t read = 0;
+  u_int32_t features;
 
   if (sblock != NULL)
     munmap (sblock, SBLOCK_SIZE);
@@ -112,22 +113,23 @@ get_hypermetadata (void)
   inodes_per_block = block_size / EXT2_INODE_SIZE (sblock);
 
   frag_size = EXT2_MIN_FRAG_SIZE << sblock->s_log_frag_size;
-  if (frag_size)
-    frags_per_block = block_size / frag_size;
-  else
+  if (frag_size == 0)
     ext2_panic ("frag size is zero!");
+  frags_per_block = block_size / frag_size;
 
   if (sblock->s_rev_level > EXT2_GOOD_OLD_REV)
     {
-      if (sblock->s_feature_incompat & ~EXT2_FEATURE_INCOMPAT_SUPP)
-	ext2_panic ("could not mount because of unsupported optional features"
-		    " (0x%x)",
-		    sblock->s_feature_incompat & ~EXT2_FEATURE_INCOMPAT_SUPP);
-      if (sblock->s_feature_ro_compat & ~EXT2_FEATURE_RO_COMPAT_SUPP)
+      features = EXT2_HAS_INCOMPAT_FEATURE(sblock, EXT2_FEATURE_INCOMPAT_UNSUPPORTED);
+      if (features)
+	ext2_panic ("could not mount because of unsupported optional features "
+		    "(0x%x)",
+		    features);
+      features = EXT2_HAS_RO_COMPAT_FEATURE(sblock, EXT2_FEATURE_RO_COMPAT_UNSUPPORTED);
+      if (features)
 	{
-	  ext2_warning ("mounted readonly because of"
-			" unsupported optional features (0x%x)",
-			sblock->s_feature_ro_compat & ~EXT2_FEATURE_RO_COMPAT_SUPP);
+	  ext2_warning ("mounted readonly because of "
+			"unsupported optional features (0x%x)",
+			features);
 	  diskfs_readonly = 1;
 	}
       if (sblock->s_inode_size != EXT2_GOOD_OLD_INODE_SIZE)
