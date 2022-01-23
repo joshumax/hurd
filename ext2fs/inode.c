@@ -541,7 +541,7 @@ diskfs_set_statfs (struct statfs *st)
   st->f_files = le32toh (sblock->s_inodes_count);
   st->f_ffree = le32toh (sblock->s_free_inodes_count);
   st->f_fsid = getpid ();
-  st->f_namelen = 0;
+  st->f_namelen = EXT2_NAME_LEN;
   st->f_favail = st->f_ffree;
   st->f_frsize = frag_size;
   return 0;
