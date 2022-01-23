@@ -25,7 +25,7 @@
 #  define ST_RELATIME 64
 #endif /* ST_RELATIME */
 
-/* Implement file_getcontrol as described in <hurd/fs.defs>. */
+/* Implement file_statfs as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_statfs (struct protid *file,
 		      fsys_statfsbuf_t *statbuf)
