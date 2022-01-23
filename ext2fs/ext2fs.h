@@ -44,7 +44,6 @@ typedef u_int8_t  __u8;
 typedef int8_t    __s8;
 
 #include "ext2_fs.h"
-#include "ext2_fs_i.h"
 
 #define i_mode_high	osd2.hurd2.h_i_mode_high /* missing from ext2_fs.h */
 
