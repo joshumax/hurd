@@ -134,6 +134,8 @@ get_hypermetadata (void)
 	}
       if (le16toh (sblock->s_inode_size) != EXT2_GOOD_OLD_INODE_SIZE)
 	ext2_panic ("inode size %d isn't supported", le16toh (sblock->s_inode_size));
+      if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+        ext2_warning ("mounting ext3 filesystem as ext2");
     }
 
   groups_count =
