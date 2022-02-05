@@ -161,6 +161,8 @@ rumpdisk_device_init (void)
        || ! device_open (device_master, D_READ, "sd2", &device)
        || ! device_open (device_master, D_READ, "sd3", &device))
 	{
+	  device_close (device);
+	  mach_port_deallocate (mach_task_self (), device);
 	  fprintf(stderr, "Kernel is already driving a SATA device, skipping probing disks\n");
 	  fflush(stderr);
 	  disabled = 1;
