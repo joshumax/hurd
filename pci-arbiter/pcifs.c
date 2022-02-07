@@ -224,6 +224,8 @@ create_fs_tree (struct pcifs * fs)
   iter = pci_slot_match_iterator_create(&match);
   device = pci_device_next(iter);
 
+  /* FIXME: set different st_ino values.  */
+
   for (i = 0; device != NULL; i++, device = pci_device_next(iter))
     {
       if (device->domain != c_domain)
