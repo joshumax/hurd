@@ -747,7 +747,7 @@ ports_do_mach_notify_send_once (struct port_info *pi)
       if (input_pending)
 	{
 	  /* xxx */
-	  char msg[] = "Term input check happened\r\n";
+	  io_buf_ptr_inband_t msg = "Term input check happened\r\n";
 	  int foo;
 	  device_write_inband (phys_device, 0, 0, msg, sizeof msg, &foo);
 	  /* end xxx */
