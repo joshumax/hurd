@@ -13,9 +13,9 @@ none) AC_MSG_ERROR([
 *** to configure; you will need to use the same host specification
 *** to configure other packages for the GNU/Hurd system.]) ;;
 *) AC_MSG_ERROR([this is the gnu os, host cannot be $host_os
-*** Host configuration must be \`MACHINE-gnu' or \`MACHINE-VENDOR-gnu'.
+*** Host configuration must be `MACHINE-gnu' or `MACHINE-VENDOR-gnu'.
 *** To cross-compile, you must specify both --host and --build;
-*** for example \`--build=$host --host=$host_cpu-gnu'.
+*** for example `--build=$host --host=$host_cpu-gnu'.
 *** Run $0 --help for more information.]) ;;
 esac
 
