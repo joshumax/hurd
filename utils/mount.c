@@ -404,7 +404,7 @@ do_mount (struct fs *fs, int remount)
 
       if (fake) {
         /* Fake the translator startup. */
-        mach_port_t underlying;
+        mach_port_t underlying = MACH_PORT_NULL;
         mach_msg_type_name_t underlying_type;
         err = open_node (O_READ, &underlying, &underlying_type, 0, NULL);
         if (err)
