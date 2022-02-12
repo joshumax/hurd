@@ -419,7 +419,7 @@ S_socket_setopt (struct sock_user *user,
 
   err = - (level == SOL_SOCKET ? sock_setsockopt
 	   : *user->sock->ops->setsockopt)
-    (user->sock, level, option, data, datalen);
+    (user->sock, level, option, (char*) data, datalen);
 
   pthread_mutex_unlock (&global_lock);
 
