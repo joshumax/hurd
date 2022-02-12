@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_PREREQ(2.54)			dnl Minimum Autoconf version required.
+AC_PREREQ([2.69])			dnl Minimum Autoconf version required.
 AC_INIT([GNU Hurd], [0.9], [bug-hurd@gnu.org])
 AC_CONFIG_SRCDIR([hurd/hurd_types.h])	dnl File to look for in srcdir.
 
@@ -144,12 +144,13 @@ rm -f conftest*])
 # See if libc was built with --enable-libio.
 AC_CACHE_CHECK([for libio],
   hurd_cv_libio,
-  AC_TRY_COMPILE([#include <stdio.h>
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
 #ifndef _STDIO_USES_IOSTREAM
 # error No libio found.
-#endif],,
-    hurd_cv_libio=yes,
-    hurd_cv_libio=no))
+#endif]],
+    [[]])],
+    [hurd_cv_libio=yes],
+    [hurd_cv_libio=no]))
 
 # Check if libc contains these functions.
 AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
