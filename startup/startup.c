@@ -1926,7 +1926,7 @@ S_io_restrict_auth (mach_port_t server,
                     const uid_t *uids, size_t nuids,
                     const uid_t *gids, size_t ngids)
 {
-  struct idvec user = { uids, (unsigned) nuids, (unsigned) nuids };
+  struct idvec user = { (uid_t*) uids, (unsigned) nuids, (unsigned) nuids };
 
   if (server != startup)
     return EOPNOTSUPP;
