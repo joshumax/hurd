@@ -401,7 +401,7 @@ error_t
 cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 {
   error_t err;
-  mode_t umask;
+  int umask;
   task_t task;
   process_t proc = getproc ();
 
