@@ -42,7 +42,7 @@ S_io_write (struct sock_user *user,
 	    mach_msg_type_number_t *amount)
 {
   error_t err;
-  struct iovec iov = { data, datalen };
+  struct iovec iov = { (void*) data, datalen };
   struct msghdr m = { msg_name: 0, msg_namelen: 0, msg_flags: 0,
 		      msg_controllen: 0, msg_iov: &iov, msg_iovlen: 1 };
 

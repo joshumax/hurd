@@ -439,7 +439,7 @@ S_socket_send (struct sock_user *user,
 	       mach_msg_type_number_t *amount)
 {
   int sent;
-  struct iovec iov = { data, datalen };
+  struct iovec iov = { (void*) data, datalen };
   struct msghdr m = { msg_name: addr ? &addr->address : 0,
 		      msg_namelen: addr ? addr->address.sa_len : 0,
 		      msg_flags: flags,
