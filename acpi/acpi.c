@@ -43,7 +43,7 @@ mmap_phys_acpi_header(uintptr_t base_addr, struct acpi_header **ptr_to_header,
 
   /* Map the ACPI table at the nearest page (rounded down) */
   *virt_addr = 0;
-  *virt_addr = mmap(NULL, ESCD_SIZE, PROT_READ, MAP_SHARED | MAP_FIXED,
+  *virt_addr = mmap(NULL, ESCD_SIZE, PROT_READ, MAP_SHARED,
                     fd, (off_t) pa_acpi);
 
   if (*virt_addr == MAP_FAILED)
@@ -73,7 +73,7 @@ acpi_get_num_tables(size_t *num_tables)
     return EPERM;
 
   virt_addr = mmap(NULL, ESCD_SIZE, PROT_READ,
-                   MAP_SHARED | MAP_FIXED, fd_mem, ESCD);
+                   MAP_SHARED, fd_mem, ESCD);
   if (virt_addr == MAP_FAILED)
     return errno;
 
@@ -184,7 +184,7 @@ acpi_get_tables(struct acpi_table **tables)
   if ((fd_mem = open("/dev/mem", O_RDWR)) < 0)
     return EPERM;
 
-  virt_addr = mmap(NULL, ESCD_SIZE, PROT_READ, MAP_SHARED | MAP_FIXED,
+  virt_addr = mmap(NULL, ESCD_SIZE, PROT_READ, MAP_SHARED,
                    fd_mem, (off_t) phys_addr);
 
   if (virt_addr == MAP_FAILED)
