@@ -26,6 +26,7 @@
 #include <sys/mman.h>
 
 #include <mach.h>
+#include <mach/gnumach.h>
 #include <hurd.h>
 #include <hurd/ports.h>
 #include <device/device.h>
@@ -48,6 +49,8 @@
 #define MAX_DISK_DEV 2
 
 static bool disabled;
+
+static mach_port_t master_host;
 
 /* One of these is associated with each open instance of a device.  */
 struct block_data
@@ -139,7 +142,7 @@ rumpdisk_device_init (void)
 {
   mach_port_t device_master;
 
-  if (! get_privileged_ports (0, &device_master))
+  if (! get_privileged_ports (&master_host, &device_master))
     {
       device_t device;
 
@@ -288,31 +291,74 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
 {
   struct block_data *bd = d;
   ssize_t written;
-  volatile uint8_t dummy_read;
   int pagesize = sysconf (_SC_PAGE_SIZE);
-  int npages = (count + pagesize - 1) / pagesize;
-  int i;
 
   if ((bd->mode & D_WRITE) == 0)
     return D_INVALID_OPERATION;
 
-  /* Fault-in the memory pages by reading a single byte of each */
-  for (i = 0; i < npages; i++)
-    dummy_read = ((volatile uint8_t *)data)[i * pagesize];
-
-  written = rump_sys_pwrite (bd->rump_fd, (const void *)data, (size_t)count, (off_t)bn * bd->block_size);
-  vm_deallocate (mach_task_self (), (vm_address_t) data, count);
-
-  if (written < 0)
+  if ((vm_offset_t) data % pagesize)
     {
-      *bytes_written = 0;
-      return EIO;
+      /* Not aligned, have to copy to aligned buffer.  */
+      vm_address_t buf;
+      rpc_phys_addr_t pap;
+      kern_return_t ret;
+      int err;
+
+      /* While at it, make it contiguous */
+      ret = vm_allocate_contiguous (master_host, mach_task_self (), &buf, &pap, count, 0, 0x100000000ULL, 0);
+      if (ret != KERN_SUCCESS)
+	return ENOMEM;
+
+      memcpy ((void*) buf, data, count);
+
+      written = rump_sys_pwrite (bd->rump_fd, (const void *)buf, (size_t)count, (off_t)bn * bd->block_size);
+      err = errno;
+
+      vm_deallocate (mach_task_self (), (vm_address_t) buf, count);
+
+      if (written < 0)
+	{
+	  *bytes_written = 0;
+	  return rump_errno2host (err);
+	}
     }
   else
     {
-      *bytes_written = (int)written;
-      return D_SUCCESS;
+      volatile uint8_t dummy_read;
+      int npages = (count + pagesize - 1) / pagesize;
+      int i;
+
+      /* Fault-in the memory pages by reading a single byte of each */
+      for (i = 0; i < npages; i++)
+	dummy_read = ((volatile uint8_t *)data)[i * pagesize];
+
+      /* XXX: _bus_dmamap_load_buffer seems not to call rumpcomp_pci_virt_to_mach
+       * for each page, so separate out pages ourselves :/ */
+      written = 0;
+      while (written < count)
+	{
+	  size_t todo = count - written;
+	  ssize_t done;
+
+	  if (todo > pagesize)
+	    todo = pagesize;
+
+	  done = rump_sys_pwrite (bd->rump_fd, (const void *)data + written, todo, (off_t)bn * bd->block_size + written);
+
+	  if (done < 0)
+	    {
+	      *bytes_written = 0;
+	      return rump_errno2host (errno);
+	    }
+
+	  written += done;
+	}
     }
+
+  vm_deallocate (mach_task_self (), (vm_address_t) data, count);
+
+  *bytes_written = (int)written;
+  return D_SUCCESS;
 }
 
 static io_return_t
@@ -326,7 +372,7 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   int pagesize = sysconf (_SC_PAGE_SIZE);
   int npages = (count + pagesize - 1) / pagesize;
   int i;
-  ssize_t err;
+  ssize_t done, err;
   kern_return_t ret;
 
   if ((bd->mode & D_READ) == 0)
@@ -335,6 +381,7 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   if (count == 0)
     return D_SUCCESS;
 
+  /* TODO: directly write at *data when it is aligned */
   *data = 0;
   ret = vm_allocate (mach_task_self (), &buf, npages * pagesize, TRUE);
   if (ret != KERN_SUCCESS)
@@ -344,19 +391,31 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   for (i = 0; i < npages; i++)
     ((uint8_t *)buf)[i * pagesize] = 0;
 
-  err = rump_sys_pread (bd->rump_fd, (void *)buf, (size_t)count, (off_t)bn * bd->block_size);
-  if (err < 0)
+  /* XXX: _bus_dmamap_load_buffer seems not to call rumpcomp_pci_virt_to_mach
+   * for each page, so separate out pages ourselves :/ */
+  done = 0;
+  while (done < count)
     {
-      *bytes_read = 0;
-      vm_deallocate (mach_task_self (), buf, npages * pagesize);
-      return EIO;
+      size_t todo = count - done;
+
+      if (todo > pagesize)
+	todo = pagesize;
+
+      err = rump_sys_pread (bd->rump_fd, (void *)buf + done, todo, (off_t)bn * bd->block_size + done);
+      if (err < 0)
+	{
+	  err = errno;
+	  *bytes_read = 0;
+	  vm_deallocate (mach_task_self (), buf, npages * pagesize);
+	  return rump_errno2host (err);
+	}
+
+      done += err;
     }
-  else
-    {
-      *bytes_read = err;
-      *data = (void*) buf;
-      return D_SUCCESS;
-    }
+
+  *bytes_read = done;
+  *data = (void*) buf;
+  return D_SUCCESS;
 }
 
 static io_return_t
