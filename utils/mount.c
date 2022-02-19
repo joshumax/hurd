@@ -255,17 +255,26 @@ do_mount (struct fs *fs, int remount)
 
       /* Remove the `noauto' and `bind' options, since they're for us not the
          filesystem.  */
-      for (o = mntopts; o; o = argz_next (mntopts, mntopts_len, o))
+      for (o = mntopts; o; )
         {
           if (strcmp (o, MNTOPT_NOAUTO) == 0)
-            argz_delete (&mntopts, &mntopts_len, o);
+	    {
+	      argz_delete (&mntopts, &mntopts_len, o);
+	      if (!mntopts || o >= mntopts + mntopts_len)
+		break;
+	      continue;
+	    }
           if (strcmp (o, "bind") == 0)
             {
               fs->mntent.mnt_type = strdup ("firmlink");
               if (!fs->mntent.mnt_type)
                 error (3, ENOMEM, "failed to allocate memory");
               argz_delete (&mntopts, &mntopts_len, o);
+	      if (!mntopts || o >= mntopts + mntopts_len)
+		break;
+	      continue;
             }
+	  o = argz_next (mntopts, mntopts_len, o);
         }
 
       ARGZ (append (&mntopts, &mntopts_len, options, options_len));
