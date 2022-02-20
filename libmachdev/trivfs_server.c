@@ -569,6 +569,8 @@ machdev_trivfs_server(mach_port_t bootstrap)
       mach_port_deallocate (mach_task_self (), bootstrap);
       if (err)
         error (1, err, "Contacting parent");
+
+      arrange_shutdown_notification ();
     }
   else
     {
