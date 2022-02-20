@@ -277,7 +277,8 @@ do_mount (struct fs *fs, int remount)
 	  o = argz_next (mntopts, mntopts_len, o);
         }
 
-      ARGZ (append (&mntopts, &mntopts_len, options, options_len));
+      if (options_len)
+        ARGZ (append (&mntopts, &mntopts_len, options, options_len));
     }
   else
     {
