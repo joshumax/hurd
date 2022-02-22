@@ -43,7 +43,7 @@
 #define DIOCGMEDIASIZE  _IOR('d', 132, off_t)
 #define DIOCGSECTORSIZE _IOR('d', 133, unsigned int)
 
-#define BLKRRPART  _IO(0x12,95)     /* re-read partition table */
+#define BLKRRPART  0x125F     /* re-read partition table */
 
 #define DISK_NAME_LEN 32
 #define MAX_DISK_DEV 2
