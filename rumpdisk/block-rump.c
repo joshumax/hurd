@@ -317,10 +317,7 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
       vm_deallocate (mach_task_self (), (vm_address_t) buf, count);
 
       if (written < 0)
-	{
-	  *bytes_written = 0;
-	  return rump_errno2host (err);
-	}
+	return rump_errno2host (err);
     }
   else
     {
@@ -346,10 +343,7 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
 	  done = rump_sys_pwrite (bd->rump_fd, (const void *)data + written, todo, (off_t)bn * bd->block_size + written);
 
 	  if (done < 0)
-	    {
-	      *bytes_written = 0;
-	      return rump_errno2host (errno);
-	    }
+	    return rump_errno2host (errno);
 
 	  written += done;
 	}
@@ -405,7 +399,6 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
       if (err < 0)
 	{
 	  err = errno;
-	  *bytes_read = 0;
 	  vm_deallocate (mach_task_self (), buf, npages * pagesize);
 	  return rump_errno2host (err);
 	}
