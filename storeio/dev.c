@@ -269,7 +269,7 @@ buffered_rw (struct dev *dev, off_t offs, size_t len, size_t *amount,
     {
       if (len >= block_size)
 	{
-	  size_t amount;
+	  size_t amount = 0;
 	  err = dev_buf_discard (dev);
 	  if (! err)
 	    err =

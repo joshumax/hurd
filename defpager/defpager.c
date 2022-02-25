@@ -58,7 +58,7 @@ pager_read_page (struct user_pager_info *pager,
 		 int *write_lock)
 {
   int pfn = page / vm_page_size;
-  size_t nread;
+  size_t nread = 0;
   
   /* We never request write locks. */
   *write_lock = 0;
