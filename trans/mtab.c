@@ -562,8 +562,24 @@ looks_like_block_device (const char *s)
 error_t
 map_device_to_path (const char *device, char **path)
 {
+  int part = -1;
+  if (strncmp (device, "part:", 5) == 0)
+    {
+      const char *next = strchr(device + 5, ':');
+
+      if (next)
+	{
+	  part = atoi(device + 5);
+	  device = next + 1;
+	}
+    }
   if (strncmp (device, "device:", 7) == 0)
-    asprintf (path, "/dev/%s", &device[7]);
+    {
+      if (part >= 0)
+	asprintf (path, "/dev/%ss%u", &device[7], part);
+      else
+	asprintf (path, "/dev/%s", &device[7]);
+    }
   else if (strncmp (device, "/dev/", 5) == 0)
     *path = strdup (device);
   else if (looks_like_block_device (device))
