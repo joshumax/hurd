@@ -324,7 +324,7 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
     }
   else
     {
-      volatile uint8_t dummy_read;
+      volatile uint8_t dummy_read __attribute__ ((unused));
       int npages = (count + pagesize - 1) / pagesize;
       int i;
 
