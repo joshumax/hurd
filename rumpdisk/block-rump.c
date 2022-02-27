@@ -52,6 +52,9 @@ static bool disabled;
 
 static mach_port_t master_host;
 
+/* rwlock to protect concurrent close while reading/writing */
+pthread_rwlock_t rumpdisk_rwlock = PTHREAD_RWLOCK_INITIALIZER;
+
 /* One of these is associated with each open instance of a device.  */
 struct block_data
 {
@@ -83,7 +86,8 @@ search_bd (const char *name)
 
   while (bd)
     {
-      if (!strcmp (bd->name, name))
+      /* Check name and refcount > 0 */
+      if (!strcmp (bd->name, name) && bd->taken)
 	return bd;
       bd = bd->next;
     }
@@ -183,16 +187,26 @@ rumpdisk_device_close (void *d)
   struct block_data *bd = d;
   io_return_t err;
 
+  pthread_rwlock_wrlock (&rumpdisk_rwlock);
+
   bd->taken--;
   if (bd->taken)
-    return D_SUCCESS;
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return D_SUCCESS;
+    }
 
   err = rump_errno2host (rump_sys_close (bd->rump_fd));
   if (err != D_SUCCESS)
-    return err;
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return err;
+    }
 
   ports_port_deref (bd);
   ports_destroy_right (bd);
+
+  pthread_rwlock_unlock (&rumpdisk_rwlock);
   return D_SUCCESS;
 }
 
@@ -229,6 +243,9 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
   if (! is_disk_device (name))
     return D_NO_SUCH_DEVICE;
 
+  /* Protect against concurrent open/close */
+  pthread_rwlock_wrlock (&rumpdisk_rwlock);
+
   /* Find previous device or open if new */
   bd = search_bd (name);
   if (bd)
@@ -236,6 +253,8 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
       bd->taken++;
       *devp = ports_get_right (bd);
       *devicePoly = MACH_MSG_TYPE_MAKE_SEND;
+
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
       return D_SUCCESS;
     }
 
@@ -243,12 +262,16 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
 
   fd = rump_sys_open (dev_name, dev_mode_to_rump_mode (mode));
   if (fd < 0)
-    return rump_errno2host (errno);
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return rump_errno2host (errno);
+    }
 
   ret = rump_sys_ioctl (fd, DIOCGMEDIASIZE, &media_size);
   if (ret < 0)
     {
       mach_print ("DIOCGMEDIASIZE ioctl fails\n");
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
       return rump_errno2host (errno);
     }
 
@@ -256,6 +279,7 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
   if (ret < 0)
     {
       mach_print ("DIOCGSECTORSIZE ioctl fails\n");
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
       return rump_errno2host (errno);
     }
 
@@ -263,6 +287,7 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
   if (err != 0)
     {
       rump_sys_close (fd);
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
       return err;
     }
 
@@ -280,6 +305,8 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
 
   *devp = ports_get_right (bd);
   *devicePoly = MACH_MSG_TYPE_MAKE_SEND;
+
+  pthread_rwlock_unlock (&rumpdisk_rwlock);
   return D_SUCCESS;
 }
 
@@ -296,6 +323,14 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
   if ((bd->mode & D_WRITE) == 0)
     return D_INVALID_OPERATION;
 
+  pthread_rwlock_rdlock (&rumpdisk_rwlock);
+  /* Ensure device is still open */
+  if (! bd->taken)
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return D_INVALID_OPERATION;
+    }
+
   if ((vm_offset_t) data % pagesize)
     {
       /* Not aligned, have to copy to aligned buffer.  */
@@ -307,7 +342,10 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
       /* While at it, make it contiguous */
       ret = vm_allocate_contiguous (master_host, mach_task_self (), &buf, &pap, count, 0, 0x100000000ULL, 0);
       if (ret != KERN_SUCCESS)
-	return ENOMEM;
+	{
+	  pthread_rwlock_unlock (&rumpdisk_rwlock);
+	  return ENOMEM;
+	}
 
       memcpy ((void*) buf, data, count);
 
@@ -317,7 +355,10 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
       vm_deallocate (mach_task_self (), (vm_address_t) buf, count);
 
       if (written < 0)
-	return rump_errno2host (err);
+	{
+	  pthread_rwlock_unlock (&rumpdisk_rwlock);
+	  return rump_errno2host (err);
+	}
     }
   else
     {
@@ -343,7 +384,10 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
 	  done = rump_sys_pwrite (bd->rump_fd, (const void *)data + written, todo, (off_t)bn * bd->block_size + written);
 
 	  if (done < 0)
-	    return rump_errno2host (errno);
+	    {
+	      pthread_rwlock_unlock (&rumpdisk_rwlock);
+	      return rump_errno2host (errno);
+	    }
 
 	  written += done;
 	}
@@ -352,6 +396,7 @@ rumpdisk_device_write (void *d, mach_port_t reply_port,
   vm_deallocate (mach_task_self (), (vm_address_t) data, count);
 
   *bytes_written = (int)written;
+  pthread_rwlock_unlock (&rumpdisk_rwlock);
   return D_SUCCESS;
 }
 
@@ -375,11 +420,22 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
   if (count == 0)
     return D_SUCCESS;
 
+  pthread_rwlock_rdlock (&rumpdisk_rwlock);
+  /* Ensure device is still open */
+  if (! bd->taken)
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return D_INVALID_OPERATION;
+    }
+
   /* TODO: directly write at *data when it is aligned */
   *data = 0;
   ret = vm_allocate (mach_task_self (), &buf, npages * pagesize, TRUE);
   if (ret != KERN_SUCCESS)
-    return ENOMEM;
+    {
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return ENOMEM;
+    }
 
   /* Ensure physical allocation by writing a single byte of each */
   for (i = 0; i < npages; i++)
@@ -400,6 +456,7 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
 	{
 	  err = errno;
 	  vm_deallocate (mach_task_self (), buf, npages * pagesize);
+	  pthread_rwlock_unlock (&rumpdisk_rwlock);
 	  return rump_errno2host (err);
 	}
 
@@ -408,6 +465,7 @@ rumpdisk_device_read (void *d, mach_port_t reply_port,
 
   *bytes_read = done;
   *data = (void*) buf;
+  pthread_rwlock_unlock (&rumpdisk_rwlock);
   return D_SUCCESS;
 }
 
@@ -455,9 +513,6 @@ rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
  * Short term strategy:
  *
  * Make device_read/write multithreaded.
- * Note: this would require an rwlock between device_open/close/read/write, to
- * protect against e.g. concurrent open, unexpected close while read/write is
- * called, etc.
  *
  * Long term strategy:
  *
