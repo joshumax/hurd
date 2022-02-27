@@ -328,8 +328,8 @@ machdev_device_sync()
     }
 }
 
-static int
-demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
+int
+machdev_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   mig_routine_t routine;
   if ((routine = device_server_routine (inp)) ||
@@ -355,7 +355,7 @@ machdev_server(void *arg)
   /* Launch.  */
   do
     {
-      ports_manage_port_operations_one_thread (machdev_device_bucket, demuxer, 0);
+      ports_manage_port_operations_one_thread (machdev_device_bucket, machdev_demuxer, 0);
     } while (1);
 
   return NULL;
