@@ -302,7 +302,8 @@ machdev_create_device_port (size_t size, void *result)
 			    size, result);
 }
 
-void machdev_device_init()
+void
+machdev_device_init()
 {
   int i;
 
@@ -316,7 +317,8 @@ void machdev_device_init()
     }
 }
 
-void machdev_device_sync()
+void
+machdev_device_sync()
 {
   int i;
   for (i = 0; i < num_emul; i++)
@@ -340,13 +342,15 @@ demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
     return FALSE;
 }
 
-void machdev_register (struct machdev_device_emulation_ops *ops)
+void
+machdev_register (struct machdev_device_emulation_ops *ops)
 {
   assert(num_emul < MAX_NUM_EMULATION-1);
   emulation_list[num_emul++] = ops;
 }
 
-void * machdev_server(void *arg)
+void *
+machdev_server(void *arg)
 {
   /* Launch.  */
   do
