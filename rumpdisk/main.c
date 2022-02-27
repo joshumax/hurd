@@ -93,6 +93,21 @@ static struct argp_child empty_argp_children[] = {{0}};
 static struct argp rumpdisk_argp = {options, parse_opt, 0, 0, empty_argp_children};
 static const struct argp *rumpdisk_argp_bootup = &rumpdisk_argp;
 
+static void *
+rumpdisk_multithread_server(void *arg)
+{
+  do
+    {
+      ports_manage_port_operations_multithread (machdev_device_bucket,
+						machdev_demuxer,
+						1000 * 60 * 2,  /* 2 minute thread */
+						1000 * 60 * 10, /* 10 minute server */
+						0);
+    } while (1);
+
+  return NULL;
+}
+
 int
 main (int argc, char **argv)
 {
@@ -122,7 +137,7 @@ main (int argc, char **argv)
     error (1, errno, "cannot lock all memory");
 
   machdev_device_init ();
-  err = pthread_create (&t, NULL, machdev_server, NULL);
+  err = pthread_create (&t, NULL, rumpdisk_multithread_server, NULL);
   if (err)
     return err;
   pthread_detach (t);
