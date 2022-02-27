@@ -97,20 +97,13 @@ pci_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_type,
   return D_SUCCESS;
 }
 
-static io_return_t
-pci_device_close (void *d)
-{
-  ports_port_deref (&pci_control_port);
-  return 0;
-}
-
 static struct machdev_device_emulation_ops pci_arbiter_emulation_ops = {
   NULL,
   NULL,
   NULL,
   NULL,
   pci_device_open,
-  pci_device_close,
+  NULL,
   NULL,
   NULL,
   NULL,
