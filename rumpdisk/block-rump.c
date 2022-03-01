@@ -510,10 +510,6 @@ rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
 }
 
 /* FIXME:
- * Short term strategy:
- *
- * Make device_read/write multithreaded.
- *
  * Long term strategy:
  *
  * Call rump_sys_aio_read/write and return MIG_NO_REPLY from
@@ -528,9 +524,9 @@ static struct machdev_device_emulation_ops rump_block_emulation_ops = {
   rumpdisk_dev_to_port,
   rumpdisk_device_open,
   rumpdisk_device_close,
-  rumpdisk_device_write, /* FIXME: make multithreaded */
+  rumpdisk_device_write,
   NULL,
-  rumpdisk_device_read, /* FIXME: make multithreaded */
+  rumpdisk_device_read,
   NULL,
   rumpdisk_device_set_status,
   rumpdisk_device_get_status,
