@@ -41,7 +41,7 @@
 
   At least one worker thread is necessary.
 */
-#define WORKER_COUNT 1
+#define WORKER_COUNT 10
 
 /* An request contains the message received from the port set.  */
 struct request
