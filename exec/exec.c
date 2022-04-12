@@ -556,6 +556,13 @@ check_elf (struct execdata *e)
   /* Extract all this information now, while EHDR is mapped.
      The `map' call below for the phdrs may reuse the mapping window.  */
   e->entry = ehdr->e_entry;
+#ifdef ELIBEXEC
+  if (e->entry == 0)
+    {
+      e->error = ELIBEXEC;
+      return;
+    }
+#endif
   e->info.elf.anywhere = (ehdr->e_type == ET_DYN ||
 			  ehdr->e_type == ET_REL);
   e->info.elf.loadbase = 0;
