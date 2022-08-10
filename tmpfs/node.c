@@ -572,7 +572,8 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
       vm_size_t len = ~0;
       err = memory_object_create_proxy (mach_task_self (),
                                         VM_PROT_READ | VM_PROT_EXECUTE,
-                                        &np->dn->u.reg.memobj, 1,
+                                        &np->dn->u.reg.memobj,
+                                        MACH_MSG_TYPE_COPY_SEND, 1,
                                         &offset, 1, &start, 1, &len, 1,
                                         &right);
       if (err)
