@@ -68,7 +68,7 @@
 #include <device/device.h> /* fallback to kernel device */
 
 #include "device_S.h"
-#include "notify_S.h"
+#include "libports/notify_S.h"
 #include "machdev-dev_hdr.h"
 #include "machdev.h"
 #include "mach_device.h"
@@ -333,7 +333,7 @@ machdev_demuxer (mach_msg_header_t *inp, mach_msg_header_t *outp)
 {
   mig_routine_t routine;
   if ((routine = device_server_routine (inp)) ||
-      (routine = notify_server_routine (inp)))
+      (routine = ports_notify_server_routine (inp)))
     {
       (*routine) (inp, outp);
       return TRUE;

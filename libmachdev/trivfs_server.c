@@ -38,7 +38,7 @@
 #include "libdiskfs/diskfs.h"
 #include "startup_notify_S.h"
 #include "device_S.h"
-#include "notify_S.h"
+#include "libports/notify_S.h"
 #include "fsys_S.h"
 #include "mach_i386_S.h"
 
