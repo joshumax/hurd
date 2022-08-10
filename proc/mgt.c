@@ -119,7 +119,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
 
   new_proc_port = mach_reply_port ();
   /* Ask to be told if the new port dies.  We receive the notification
-     on the same port, and as it's not a proc_complete_reauthentication ()
+     on the same port, and as it's not a proc_reauthenticate_complete ()
      call, consider it an error.  */
   err = mach_port_request_notification (mach_task_self (), new_proc_port,
                                         MACH_NOTIFY_NO_SENDERS, 1,
@@ -142,7 +142,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
                                     &aux_gids, &naux_gids);
   while (err == EINTR);
 
-  /* Wait for a proc_complete_reauthentication () call
+  /* Wait for a proc_reauthenticate_complete () call
      on the new port before proceeding.  */
   if (!err)
     {
@@ -157,7 +157,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
     goto out;
 
   /* Check if what we have received was indeed a
-     proc_complete_reauthentication () call.  */
+     proc_reauthenticate_complete () call.  */
   if (msg.msgh_id != 24064)
     err = EINVAL;
   mach_msg_destroy (&msg);
@@ -379,7 +379,7 @@ S_proc_reauthenticate_reassign (struct proc *p,
 
   new_proc_port = mach_reply_port ();
   /* Ask to be told if the new port dies.  We receive the notification
-     on the same port, and as it's not a proc_complete_reauthentication ()
+     on the same port, and as it's not a proc_reauthenticate_complete ()
      call, consider it an error.  */
   err = mach_port_request_notification (mach_task_self (), new_proc_port,
                                         MACH_NOTIFY_NO_SENDERS, 1,
@@ -407,7 +407,7 @@ S_proc_reauthenticate_reassign (struct proc *p,
                                     &aux_gids, &naux_gids);
   while (err == EINTR);
 
-  /* Wait for a proc_complete_reauthentication () call
+  /* Wait for a proc_reauthenticate_complete () call
      on the new port before proceeding.  */
   if (!err)
     {
@@ -422,7 +422,7 @@ S_proc_reauthenticate_reassign (struct proc *p,
     goto out;
 
   /* Check if what we have received was indeed a
-     proc_complete_reauthentication () call.  */
+     proc_reauthenticate_complete () call.  */
   if (msg.msgh_id != 24064)
     err = EINVAL;
   mach_msg_destroy (&msg);
@@ -510,7 +510,7 @@ S_proc_setowner (struct proc *p,
 }
 
 kern_return_t
-S_proc_complete_reauthentication (struct proc *p)
+S_proc_reauthenticate_complete (struct proc *p)
 {
   /* Regular calls of this routine always fail.  */
   return EOPNOTSUPP;

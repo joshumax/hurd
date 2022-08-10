@@ -1400,7 +1400,7 @@ do_exec (file_t file,
       if (e.error)
         goto out;
 
-      e.error = proc_complete_reauthentication (newproc);
+      e.error = proc_reauthenticate_complete (newproc);
       if (e.error)
         {
           mach_port_deallocate (mach_task_self (), newproc);

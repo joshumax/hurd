@@ -204,4 +204,4 @@ skip; /* proc_get_entry */
 skip; /* proc_waitid */
 
 skip; /* proc_reauthenticate_reassign */
-skip; /* proc_complete_reauthentication */
+skip; /* proc_reauthenticate_complete */

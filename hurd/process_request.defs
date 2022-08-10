@@ -87,7 +87,7 @@ simpleroutine proc_register_version_request (
 
 /* Change the current authentication of the process.  The user should
    follow this call with a call to auth_user_authenticate, and then a
-   call to proc_complete_reauthentication on the port passed back
+   call to proc_reauthenticate_complete on the port passed back
    through the auth server, which becomes the new port for this process.
    The old process port is destroyed.  */
 simpleroutine proc_reauthenticate_request (
@@ -427,4 +427,4 @@ skip; /* proc_get_entry */
 skip; /* proc_waitid */
 
 skip; /* proc_reauthenticate_reassign */
-skip; /* proc_complete_reauthentication */
+skip; /* proc_reauthenticate_complete */

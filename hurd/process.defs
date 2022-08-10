@@ -87,7 +87,7 @@ routine proc_register_version (
 
 /* Change the current authentication of the process.  The user should
    follow this call with a call to auth_user_authenticate, and then a
-   call to proc_complete_reauthentication on the port passed back
+   call to proc_reauthenticate_complete on the port passed back
    through the auth server, which becomes the new port for this process.
    The old process port is destroyed.  */
 simpleroutine proc_reauthenticate (
@@ -453,7 +453,7 @@ routine proc_waitid (
 
 /* Change the current authentication of the process and assign a different
    task to it, atomically.  The user should follow this call with a call to
-   auth_user_authenticate, and then a call to proc_complete_reauthentication
+   auth_user_authenticate, and then a call to proc_reauthenticate_complete
    on the port passed back through the auth server, which becomes the new
    port for this process.  The old process port is destroyed.  */
 simpleroutine proc_reauthenticate_reassign (
@@ -464,5 +464,5 @@ simpleroutine proc_reauthenticate_reassign (
 /* Complete reauthentication started with proc_reauthenticate or
    proc_reauthenticate_reassign.  The process port must be the port
    that the user has received from auth_user_authenticate call.  */
-simpleroutine proc_complete_reauthentication (
+simpleroutine proc_reauthenticate_complete (
 	process: process_t);

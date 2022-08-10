@@ -304,7 +304,7 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
       if (err)
         goto lose_task;
 
-      err = proc_complete_reauthentication (newport);
+      err = proc_reauthenticate_complete (newport);
       if (err)
         {
           mach_port_deallocate (mach_task_self (), newport);

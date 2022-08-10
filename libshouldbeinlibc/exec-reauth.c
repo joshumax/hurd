@@ -68,7 +68,7 @@ exec_reauth (auth_t auth, int secure, int must_reauth,
 
           if (isproc)
             {
-              err = proc_complete_reauthentication (newport);
+              err = proc_reauthenticate_complete (newport);
               if (err)
                 {
                   mach_port_deallocate (mach_task_self (), newport);
