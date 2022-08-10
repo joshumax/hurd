@@ -125,7 +125,12 @@ simpleroutine proc_reassign_request (
 	ureplyport reply: reply_port_t;
 	newtask: task_t);
 
-skip;  /* Was proc_setowner */
+/* Deprecated; definition kept for compatibility. */
+simpleroutine proc_setowner_request (
+	process: process_t;
+	ureplyport reply: reply_port_t;
+	owner: uid_t;
+	clear: int);
 
 /* Get the process ID and the parent process ID, also find out if we
    are orphaned.  */
