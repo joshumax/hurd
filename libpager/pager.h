@@ -155,8 +155,9 @@ pager_change_attributes (struct pager *pager,
 mach_port_t
 pager_get_port (struct pager *pager);
 
+/* Create a read-only proxy for requests to the pager.  */
 mach_port_t
-pager_get_ro_port (struct pager *pager);
+pager_create_ro_port (struct pager *pager);
 
 /* Force termination of a pager.  After this returns, no
    more paging requests on the pager will be honored, and the

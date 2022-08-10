@@ -42,7 +42,6 @@ _pager_create (size_t size,
   p->notify_on_evict = notify_on_evict;
   p->memobjcntl = MACH_PORT_NULL;
   p->memobjname = MACH_PORT_NULL;
-  p->ro_proxy = MACH_PORT_NULL;
   p->noterm = 0;
   p->termwaiting = 0;
   p->pagemap = 0;

@@ -41,6 +41,7 @@ diskfs_drop_node (struct node *np)
   if (np->dn_stat.st_nlink == 0)
     {
       diskfs_check_readonly ();
+      // Pb when remounted readonly :/
       assert_backtrace (!diskfs_readonly);
 
       if (np->dn_stat.st_mode & S_IPTRANS)

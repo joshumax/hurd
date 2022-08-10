@@ -73,11 +73,9 @@ diskfs_free_node (struct node *np, mode_t mode)
   switch (np->dn->type)
     {
     case DT_REG:
+      if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
       /* XXX GNU Mach will terminate the object, and thus existing mappings
        * will get SIGBUS.  */
-      if (np->dn->u.reg.ro_memobj != MACH_PORT_NULL)
-        mach_port_deallocate (mach_task_self (), np->dn->u.reg.ro_memobj);
-      if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
 	vm_deallocate (mach_task_self (), np->dn->u.reg.memref, 4096);
 	mach_port_deallocate (mach_task_self (), np->dn->u.reg.memobj);
       }	
@@ -567,7 +565,7 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
 
   if (prot & VM_PROT_WRITE)
     right = np->dn->u.reg.memobj;
-  else if (np->dn->u.reg.ro_memobj == MACH_PORT_NULL)
+  else
     {
       vm_offset_t offset = 0;
       vm_offset_t start = 0;
@@ -576,21 +574,17 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
                                         VM_PROT_READ | VM_PROT_EXECUTE,
                                         &np->dn->u.reg.memobj, 1,
                                         &offset, 1, &start, 1, &len, 1,
-                                        &np->dn->u.reg.ro_memobj);
+                                        &right);
       if (err)
         {
           errno = err;
           return MACH_PORT_NULL;
         }
-
-      right = np->dn->u.reg.ro_memobj;
     }
-  else
-      right = np->dn->u.reg.ro_memobj;
 
   /* Add a reference for each call, the caller will deallocate it.  */
-  err = mach_port_mod_refs (mach_task_self (), right,
-                            MACH_PORT_RIGHT_SEND, +1);
+  err = mach_port_mod_refs (mach_task_self (), np->dn->u.reg.memobj,
+			    MACH_PORT_RIGHT_SEND, +1);
   assert_perror_backtrace (err);
 
   return right;

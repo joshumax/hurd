@@ -861,11 +861,7 @@ diskfs_get_filemap (struct node *node, vm_prot_t prot)
   if (prot & VM_PROT_WRITE)
     right = ports_get_send_right (pager);
   else
-    {
-      right = pager_get_ro_port (pager);
-      mach_port_mod_refs (mach_task_self (), right,
-                          MACH_PORT_RIGHT_SEND, +1);
-    }
+    right = pager_create_ro_port (pager);
 
   ports_port_deref (pager);
 

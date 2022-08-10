@@ -20,7 +20,7 @@
 #include <mach/mach4.h>
 
 mach_port_t
-pager_get_ro_port (struct pager *p)
+pager_create_ro_port (struct pager *p)
 {
   error_t err = 0;;
   mach_port_t port = MACH_PORT_NULL;
@@ -29,33 +29,22 @@ pager_get_ro_port (struct pager *p)
   vm_offset_t start = 0;
   vm_size_t len = ~0;
 
-  pthread_mutex_lock (&p->interlock);
-
-  if (!MACH_PORT_VALID (p->ro_proxy))
+  rw_port = ports_get_send_right (p);
+  if (!MACH_PORT_VALID (rw_port))
     {
-      rw_port = ports_get_send_right (p);
-      if (!MACH_PORT_VALID (rw_port))
-        {
-          err = errno;
-          goto out;
-        }
-
-      err = memory_object_create_proxy (mach_task_self (),
-                                        VM_PROT_READ | VM_PROT_EXECUTE,
-                                        &rw_port, 1,
-                                        &offset, 1, &start, 1, &len, 1,
-                                        &p->ro_proxy);
-
-      mach_port_deallocate (mach_task_self (), rw_port);
-
-      if (err)
-        goto out;
+      err = errno;
+      goto out;
     }
 
-  port = p->ro_proxy;
+  err = memory_object_create_proxy (mach_task_self (),
+				    VM_PROT_READ | VM_PROT_EXECUTE,
+				    &rw_port, 1,
+				    &offset, 1, &start, 1, &len, 1,
+				    &port);
+
+  mach_port_deallocate (mach_task_self (), rw_port);
 
  out:
-  pthread_mutex_unlock (&p->interlock);
   errno = err;
   return port;
 }
