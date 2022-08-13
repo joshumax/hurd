@@ -12,13 +12,6 @@
 #define IP_DEFAULT_MULTICAST_TTL        1
 #define IP_DEFAULT_MULTICAST_LOOP       1
 
-struct ip_mreqn
-{
-	struct in_addr	imr_multiaddr;		/* IP multicast address of group */
-	struct in_addr	imr_address;		/* local IP address of interface */
-	int		imr_ifindex;		/* Interface index */
-};
-
 struct in_pktinfo
 {
 	int		ipi_ifindex;
