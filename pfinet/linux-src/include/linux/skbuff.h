@@ -118,8 +118,8 @@ struct sk_buff {
  * FIXME: Probably the config option should go away. -- erics
  */
 #ifdef CONFIG_SKB_LARGE
-#define SK_WMEM_MAX	65535
-#define SK_RMEM_MAX	65535
+#define SK_WMEM_MAX	(256*1024)
+#define SK_RMEM_MAX	(256*1024)
 #else
 #define SK_WMEM_MAX	32767
 #define SK_RMEM_MAX	32767
