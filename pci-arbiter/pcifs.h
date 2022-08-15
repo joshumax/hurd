@@ -98,6 +98,13 @@ struct pcifs_dirent
    * Only when a device is present
    */
   void *region_maps[6];
+
+  /*
+   * Address where the rom is mapped
+   *
+   * Only when a device is present
+   */
+  void *rom_map;
 };
 
 /*

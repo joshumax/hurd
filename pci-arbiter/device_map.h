@@ -28,5 +28,6 @@
 
 error_t device_map_region (struct pci_device *device,
 			   struct pci_mem_region *region, void **addr);
+error_t device_map_rom (struct pci_device *device, void **addr);
 
 #endif /* DEVICE_MAP_H */

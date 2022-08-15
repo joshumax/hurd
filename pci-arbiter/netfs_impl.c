@@ -509,7 +509,7 @@ netfs_attempt_read (struct iouser * cred, struct node * node,
     }
   else if (!strncmp (node->nn->ln->name, FILE_ROM_NAME, NAME_SIZE))
     {
-      err = read_rom_file (node->nn->ln->device, offset, len, data);
+      err = read_rom_file (node->nn->ln, offset, len, data);
       if (!err)
 	/* Update atime */
 	UPDATE_TIMES (node->nn->ln, TOUCH_ATIME);
@@ -569,21 +569,14 @@ netfs_node_norefs (struct node *node)
   destroy_node (node);
 }
 
-mach_port_t
-netfs_get_filemap (struct node *node, vm_prot_t prot)
+static mach_port_t
+get_filemap_region (struct node *node, vm_prot_t prot)
 {
   error_t err;
   memory_object_t proxy;
   vm_prot_t max_prot;
   size_t reg_num;
   struct pci_mem_region *region;
-
-  /* Only regions files can be mapped */
-  if (strncmp
-      (node->nn->ln->name, FILE_REGION_NAME, strlen (FILE_REGION_NAME)))
-    {
-      goto error;
-    }
 
   /* Get region info */
   reg_num =
@@ -594,20 +587,67 @@ netfs_get_filemap (struct node *node, vm_prot_t prot)
   err = device_map_region (node->nn->ln->device, region,
 			   &node->nn->ln->region_maps[reg_num]);
   if (err)
-    return err;
+    goto error;
 
   /* Create a new memory object proxy with the required protection */
   max_prot = (VM_PROT_READ | VM_PROT_WRITE) & prot;
   err =
-    vm_region_create_proxy(mach_task_self (),
-			   (vm_address_t)node->nn->ln->region_maps[reg_num],
-			   max_prot, region->size, &proxy);
+    vm_region_create_proxy (mach_task_self (),
+			    (vm_address_t) node->nn->ln->region_maps[reg_num],
+			    max_prot, region->size, &proxy);
   if (err)
     goto error;
 
   return proxy;
 
 error:
+  errno = EOPNOTSUPP;
+  return MACH_PORT_NULL;
+}
+
+static mach_port_t
+get_filemap_rom (struct node *node, vm_prot_t prot)
+{
+  error_t err;
+  memory_object_t proxy;
+  vm_prot_t max_prot;
+
+  /* Ensure the rom is mapped */
+  err = device_map_rom (node->nn->ln->device, &node->nn->ln->rom_map);
+  if (err)
+    goto error;
+
+  /* Create a new memory object proxy with the required protection */
+  max_prot = (VM_PROT_READ) & prot;
+  err =
+    vm_region_create_proxy (mach_task_self (),
+			    (vm_address_t) node->nn->ln->rom_map,
+			    max_prot, node->nn->ln->device->rom_size, &proxy);
+  if (err)
+    goto error;
+
+  return proxy;
+
+error:
+  errno = EOPNOTSUPP;
+  return MACH_PORT_NULL;
+}
+
+mach_port_t
+netfs_get_filemap (struct node *node, vm_prot_t prot)
+{
+  /* Only region and rom files can be mapped */
+  if (!strncmp
+      (node->nn->ln->name, FILE_REGION_NAME, strlen (FILE_REGION_NAME)))
+    {
+      return get_filemap_region (node, prot);
+    }
+
+  if (!strncmp (node->nn->ln->name, FILE_ROM_NAME, strlen (FILE_ROM_NAME)))
+    {
+      return get_filemap_rom (node, prot);
+    }
+
   errno = EOPNOTSUPP;
   return MACH_PORT_NULL;
 }

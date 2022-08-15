@@ -104,28 +104,28 @@ io_config_file (struct pci_device * dev, off_t offset, size_t * len,
 
 /* Read the mapped ROM */
 error_t
-read_rom_file (struct pci_device * dev, off_t offset, size_t * len,
+read_rom_file (struct pcifs_dirent * e, off_t offset, size_t * len,
 	       void *data)
 {
-  void *fullrom;
+  error_t err;
 
   /* This should never happen */
-  assert_backtrace (dev != 0);
+  assert_backtrace (e->device != 0);
 
   /* Don't exceed the ROM size */
-  if (offset > dev->rom_size)
+  if (offset > e->device->rom_size)
     return EINVAL;
-  if ((offset + *len) > dev->rom_size)
-    *len = dev->rom_size - offset;
+  if ((offset + *len) > e->device->rom_size)
+    *len = e->device->rom_size - offset;
 
-  /* Grab the full rom first */
-  fullrom = calloc(1, dev->rom_size);
-  pci_device_read_rom(dev, fullrom);
+  /* Ensure the rom is mapped */
+  err = device_map_rom (e->device, &e->rom_map);
+  if (err)
+    return err;
 
-  /* Return the requested amount */
-  memcpy (data, fullrom + offset, *len);
+  /* Return the requested tange */
+  memcpy (data, e->rom_map + offset, *len);
 
-  free(fullrom);
   return 0;
 }
 

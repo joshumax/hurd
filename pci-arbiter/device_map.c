@@ -47,3 +47,26 @@ device_map_region (struct pci_device *device, struct pci_mem_region *region,
 
   return err;
 }
+
+error_t
+device_map_rom (struct pci_device *device, void **addr)
+{
+  error_t err = 0;
+  vm_address_t fullrom;
+
+  if (*addr == 0)
+    {
+      err = vm_allocate (mach_task_self (), &fullrom, device->rom_size, 1);
+      if (err)
+	return ENOMEM;
+
+      err = pci_device_read_rom (device, (void *) fullrom);
+      if (err)
+	return err;
+
+      /* Return */
+      *addr = (void *) fullrom;
+    }
+
+  return err;
+}
