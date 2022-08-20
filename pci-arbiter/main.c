@@ -201,6 +201,8 @@ main (int argc, char **argv)
       /* We are a bootstrap process */
 
       machdev_register (&pci_arbiter_emulation_ops);
+      /* TODO: make libmachdev allow us to also run netfs on the translated path,
+       * so that we don't need a second pci-arbiter to serve /servers/bus/pci.  */
       machdev_trivfs_init (argc, argv, next_task, "pci", NULL /* _SERVERS_BUS "/pci" */, &bootstrap);
 
       /* Make sure we will not swap out, in case we are needed for swapping
