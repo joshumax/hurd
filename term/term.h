@@ -31,6 +31,8 @@
 #include <features.h>
 #include <hurd/hurd_types.h>
 
+extern int nperopens;
+
 #ifdef TERM_DEFINE_EI
 #define TERM_EI
 #else

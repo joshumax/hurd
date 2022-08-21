@@ -72,7 +72,7 @@ pty_open_hook (struct trivfs_control *cntl,
 
   pthread_mutex_lock (&global_lock);
 
-  if (ptyopen)
+  if (ptyopen || nperopens)
     {
       pthread_mutex_unlock (&global_lock);
       return EBUSY;
