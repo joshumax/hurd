@@ -153,10 +153,9 @@ main (int argc, char *argv[])
 
   if (debug)
     {
-      if (debug_fname)
-	err = trivfs_startup_debug (debug_fname, 0, 0, 0, 0, &storeio_fsys);
-      else
-	error (3, err, "missing translated node");
+      if (!debug_fname)
+	error (3, EINVAL, "missing translated node");
+      err = trivfs_startup_debug (debug_fname, 0, 0, 0, 0, &storeio_fsys);
       if (err)
 	error (3, err, "trivfs_startup_debug failed");
     }
