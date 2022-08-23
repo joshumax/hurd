@@ -939,6 +939,11 @@ netfs_S_file_exec_paths (struct protid *user,
 			      file, MACH_PORT_RIGHT_SEND, 1);
   pthread_mutex_unlock (&user->po->np->lock);
 
+  /* Add a gratuitous send right on the protid to avoid a no-sender, and thus
+     interrupt the exec, just because we are precisely replacing the calling
+     process!  */
+  mach_port_t gratuitous = ports_get_send_right (user);
+
   if (!err)
     {
 #ifdef HAVE_FILE_EXEC_PATHS
@@ -977,6 +982,9 @@ netfs_S_file_exec_paths (struct protid *user,
       for (i = 0; i < portarraylen; ++i)
 	mach_port_deallocate (mach_task_self (), portarray[i]);
     }
+
+  mach_port_deallocate (mach_task_self (), gratuitous);
+
   return err;
 }
 
