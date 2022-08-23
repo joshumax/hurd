@@ -169,6 +169,10 @@ netfs_S_file_exec_paths (struct protid *cred,
 	  if (newpi)
 	    {
 	      right = ports_get_send_right (newpi);
+
+	      /* Add a gratuitous send right on the protid to avoid a no-sender, and thus
+		 interrupt the exec, just because we are precisely replacing the calling
+		 process!  */
 	      cred_right = ports_get_send_right (cred);
 #ifdef HAVE_EXEC_EXEC_PATHS
 	      err = exec_exec_paths (_netfs_exec,
