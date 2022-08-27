@@ -21,6 +21,7 @@
 #include <hurd.h>
 #include <hurd/fsys.h>
 #include <assert-backtrace.h>
+#include <signal.h>
 
 #include "priv.h"
 
