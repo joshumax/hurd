@@ -120,7 +120,7 @@ store_write (struct store *store,
   else
     /* ARGH, we've got to split up the write ... */
     {
-      mach_msg_type_number_t try, written;
+      vm_size_t try, written;
 
       /* Write the initial bit in the first run.  Errors here are returned.  */
       try = (run->length - addr) << block_shift;
@@ -138,7 +138,7 @@ store_write (struct store *store,
 		 && run->start >= 0) /* Check for holes.  */
 	    /* Ok, we can write in this run, at least a bit.  */
 	    {
-	      mach_msg_type_number_t seg_written;
+	      vm_size_t seg_written;
 
 	      if ((len >> block_shift) <= run->length)
 		try = len;

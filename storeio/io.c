@@ -83,8 +83,8 @@ trivfs_S_io_map (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
-		  data_t *data, mach_msg_type_number_t *data_len,
-		  loff_t offs, mach_msg_type_number_t amount)
+		  data_t *data, mach_msg_type_name_t *data_len,
+		  off_t offs, vm_size_t amount)
 {
   if (! cred)
     return EOPNOTSUPP;
@@ -101,7 +101,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 error_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
-		      mach_msg_type_number_t *amount)
+		      vm_size_t *amount)
 {
   if (! cred)
     return EOPNOTSUPP;
@@ -126,7 +126,7 @@ error_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
 		   const_data_t data, mach_msg_type_number_t data_len,
-		   loff_t offs, mach_msg_type_number_t *amount)
+		   off_t offs, vm_size_t *amount)
 {
   if (! cred)
     return EOPNOTSUPP;

@@ -119,7 +119,7 @@ nbd_write (struct store *store,
     type: htonl (1),		/* WRITE */
   };
   error_t err;
-  mach_msg_type_number_t cc;
+  vm_size_t cc;
 
   addr <<= store->log2_block_size;
   *amount = 0;
@@ -178,7 +178,7 @@ nbd_read (struct store *store,
      requested can be found in CHUNK.  */
   inline error_t request_chunk (char **buf, size_t *len)
     {
-      mach_msg_type_number_t cc;
+      vm_size_t cc;
 
       chunk = (amount - ofs) < NBD_IO_MAX ? (amount - ofs) : NBD_IO_MAX;
 
@@ -435,7 +435,7 @@ nbdclose (struct store *store)
 	magic: NBD_REQUEST_MAGIC,
 	type: htonl (2),	/* disconnect */
       };
-      mach_msg_type_number_t cc;
+      vm_size_t cc;
       (void) io_write (store->port, (char *) &req, sizeof req, -1, &cc);
 
       /* Close the socket.  */

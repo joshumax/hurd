@@ -2572,7 +2572,7 @@ seqnos_memory_object_data_initialize(ds, seqno, pager_request,
 	vm_offset_t	offset;
 	register
 	pointer_t	addr;
-	vm_size_t	data_cnt;
+	mach_msg_type_number_t	data_cnt;
 {
 	vm_offset_t	amount_sent;
 	static char	here[] = "%sdata_initialize";
@@ -2631,7 +2631,7 @@ seqnos_memory_object_data_return(ds, seqno, pager_request,
 	mach_port_t	pager_request;
 	vm_offset_t	offset;
 	pointer_t	addr;
-	vm_size_t	data_cnt;
+	mach_msg_type_number_t	data_cnt;
 	boolean_t	dirty;
 	boolean_t	kernel_copy;
 {

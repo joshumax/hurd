@@ -562,9 +562,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
 		   const_data_t data,
-		   size_t datalen,
-		   loff_t offset,
-		   size_t *amt)
+		   mach_msg_type_name_t datalen,
+		   off_t offset,
+		   vm_size_t *amt)
 {
   int i;
   int cancel;
@@ -640,9 +640,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply,
 		  mach_msg_type_name_t replytype,
 		  data_t *data,
-		  size_t *datalen,
-		  loff_t offset,
-		  size_t amount)
+		  mach_msg_type_name_t *datalen,
+		  off_t offset,
+		  vm_size_t amount)
 {
   int cancel;
   int i, max;
@@ -820,7 +820,7 @@ error_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply,
 		      mach_msg_type_name_t replytype,
-		      size_t *amt)
+		      vm_size_t *amt)
 {
   if (!cred)
     return EOPNOTSUPP;

@@ -37,9 +37,9 @@
 error_t
 S_io_write (struct sock_user *user,
 	    const_data_t data,
-	    size_t datalen,
+	    mach_msg_type_number_t datalen,
 	    off_t offset,
-	    mach_msg_type_number_t *amount)
+	    vm_size_t *amount)
 {
   error_t err;
   struct iovec iov = { (void*) data, datalen };
@@ -70,9 +70,9 @@ S_io_write (struct sock_user *user,
 error_t
 S_io_read (struct sock_user *user,
 	   data_t *data,
-	   size_t *datalen,
+	   mach_msg_type_number_t *datalen,
 	   off_t offset,
-	   mach_msg_type_number_t amount)
+	   vm_size_t amount)
 {
   error_t err;
   int alloced = 0;
@@ -135,7 +135,7 @@ S_io_seek (struct sock_user *user,
 
 error_t
 S_io_readable (struct sock_user *user,
-	       mach_msg_type_number_t *amount)
+	       vm_size_t *amount)
 {
   struct sock *sk;
   error_t err;

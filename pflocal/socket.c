@@ -287,10 +287,10 @@ S_socket_peername (struct sock_user *user,
 /* Send data over a socket, possibly including Mach ports.  */
 error_t
 S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
-	       const_data_t data, size_t data_len,
-	       const mach_port_t *ports, size_t num_ports,
-	       const_data_t control, size_t control_len,
-	       size_t *amount)
+	       const_data_t data, mach_msg_type_number_t data_len,
+	       const mach_port_t *ports, mach_msg_type_number_t num_ports,
+	       const_data_t control, mach_msg_type_number_t control_len,
+	       vm_size_t *amount)
 {
   error_t err = 0;
   int noblock;
@@ -378,11 +378,11 @@ error_t
 S_socket_recv (struct sock_user *user,
 	       mach_port_t *addr, mach_msg_type_name_t *addr_type,
 	       int in_flags,
-	       data_t *data, size_t *data_len,
+	       data_t *data, mach_msg_type_name_t *data_len,
 	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
 	       size_t *num_ports,
-	       data_t *control, size_t *control_len,
-	       int *out_flags, size_t amount)
+	       data_t *control, mach_msg_type_name_t *control_len,
+	       int *out_flags, vm_size_t amount)
 {
   error_t err;
   unsigned flags;

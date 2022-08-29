@@ -26,7 +26,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  data_t *data,
 		  mach_msg_type_number_t *datalen,
 		  off_t off,
-		  mach_msg_type_number_t amt)
+		  vm_size_t amt)
 {
   assert_backtrace (!trivfs_support_read);
   return EOPNOTSUPP;

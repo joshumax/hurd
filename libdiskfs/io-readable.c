@@ -22,7 +22,7 @@
 /* Implement io_readable as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_readable (struct protid *cred,
-		      mach_msg_type_number_t *amount)
+		      vm_size_t *amount)
 {
   struct node *np;
 

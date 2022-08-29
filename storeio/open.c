@@ -74,8 +74,8 @@ open_write (struct open *open, off_t offs, const void *buf, size_t len,
    standard mach out-array convention.  If no error occurs, zero is returned,
    otherwise the error code is returned.  */
 error_t
-open_read (struct open *open, off_t offs, size_t amount,
-	   void **buf, vm_size_t *len)
+open_read (struct open *open, off_t offs, vm_size_t amount,
+	   void **buf, size_t *len)
 {
   error_t err;
   if (offs < 0)

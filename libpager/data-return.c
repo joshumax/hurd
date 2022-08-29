@@ -258,7 +258,7 @@ _pager_S_memory_object_data_return (struct pager *p,
 					 mach_port_t control,
 					 vm_offset_t offset,
 					 pointer_t data,
-					 vm_size_t length,
+					 mach_msg_type_number_t length,
 					 int dirty,
 					 int kcopy)
 {

@@ -25,7 +25,7 @@
 
 error_t
 netfs_S_io_readable (struct protid *user,
-		     mach_msg_type_number_t *amount)
+		     vm_size_t *amount)
 {
   error_t err;
   

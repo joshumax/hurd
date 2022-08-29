@@ -27,7 +27,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 		   const_data_t data,
 		   mach_msg_type_number_t datalen,
 		   off_t off,
-		   mach_msg_type_number_t *amt)
+		   vm_size_t *amt)
 {
   if (!(trivfs_allow_open & O_WRITE))
     return EBADF;

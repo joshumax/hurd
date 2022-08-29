@@ -302,7 +302,7 @@ error_t
 pty_io_read (struct trivfs_protid *cred,
 	     data_t *data,
 	     mach_msg_type_number_t *datalen,
-	     mach_msg_type_number_t amount)
+	     vm_size_t amount)
 {
   int size;
 
@@ -386,7 +386,7 @@ error_t
 pty_io_write (struct trivfs_protid *cred,
 	      const_data_t data,
 	      mach_msg_type_number_t datalen,
-	      mach_msg_type_number_t *amount)
+	      vm_size_t *amount)
 {
   int i, flush;
   int cancel = 0;

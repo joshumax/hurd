@@ -657,7 +657,7 @@ error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t *data_len,
-		  loff_t offs, mach_msg_type_number_t amount)
+		  off_t offs, vm_size_t amount)
 {
   error_t err = 0;
   struct mtab *op;
@@ -774,7 +774,7 @@ void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *) = close_hook;
 kern_return_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t replytype,
-		      mach_msg_type_number_t *amount)
+		      vm_size_t *amount)
 {
   error_t err = 0;
   if (!cred)

@@ -44,7 +44,7 @@
 error_t
 S_io_read (struct sock_user *user,
 	   data_t *data, mach_msg_type_number_t *data_len,
-	   off_t offset, mach_msg_type_number_t amount)
+	   off_t offset, vm_size_t amount)
 {
   error_t err;
   struct pipe *pipe;
@@ -80,7 +80,7 @@ S_io_read (struct sock_user *user,
 error_t
 S_io_write (struct sock_user *user,
 	    const_data_t data, mach_msg_type_number_t data_len,
-	    off_t offset, mach_msg_type_number_t *amount)
+	    off_t offset, vm_size_t *amount)
 {
   error_t err;
   struct pipe *pipe;
@@ -119,7 +119,7 @@ S_io_write (struct sock_user *user,
    a "long time" (this should be the same meaning of "long time" used
    by the nonblocking flag.  */
 error_t
-S_io_readable (struct sock_user *user, mach_msg_type_number_t *amount)
+S_io_readable (struct sock_user *user, vm_size_t *amount)
 {
   error_t err;
   struct pipe *pipe;

@@ -27,7 +27,7 @@ netfs_S_io_write (struct protid *user,
 		  const_data_t data,
 		  mach_msg_type_number_t datalen,
 		  off_t offset,
-		  mach_msg_type_number_t *amount)
+		  vm_size_t *amount)
 {
   error_t err;
   off_t off = offset;

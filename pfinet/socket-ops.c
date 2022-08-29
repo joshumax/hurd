@@ -431,12 +431,12 @@ S_socket_send (struct sock_user *user,
 	       struct sock_addr *addr,
 	       int flags,
 	       const_data_t data,
-	       size_t datalen,
+	       mach_msg_type_number_t datalen,
 	       const mach_port_t *ports,
-	       size_t nports,
+	       mach_msg_type_number_t nports,
 	       const_data_t control,
-	       size_t controllen,
-	       mach_msg_type_number_t *amount)
+	       mach_msg_type_number_t controllen,
+	       vm_size_t *amount)
 {
   int sent;
   struct iovec iov = { (void*) data, datalen };
@@ -478,14 +478,14 @@ S_socket_recv (struct sock_user *user,
 	       mach_msg_type_name_t *addrporttype,
 	       int flags,
 	       data_t *data,
-	       size_t *datalen,
+	       mach_msg_type_number_t *datalen,
 	       mach_port_t **ports,
 	       mach_msg_type_name_t *portstype,
-	       size_t *nports,
+	       mach_msg_type_number_t *nports,
 	       data_t *control,
-	       size_t *controllen,
+	       mach_msg_type_number_t *controllen,
 	       int *outflags,
-	       mach_msg_type_number_t amount)
+	       vm_size_t amount)
 {
   error_t err;
   union { struct sockaddr_storage storage; struct sockaddr sa; } addr;

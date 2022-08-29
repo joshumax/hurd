@@ -318,7 +318,7 @@ error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t *data_len,
-		  loff_t offs, mach_msg_type_number_t amount)
+		  off_t offs, vm_size_t amount)
 {
   error_t err;
   void *buf = NULL;
@@ -377,8 +377,8 @@ trivfs_S_io_write (struct trivfs_protid *cred,
                    mach_msg_type_name_t replytype,
                    const_data_t data,
                    mach_msg_type_number_t datalen,
-                   loff_t offset,
-                   mach_msg_type_number_t *amount)
+                   off_t offset,
+                   vm_size_t *amount)
 {
   /* Deny access if they have bad credentials. */
   if (! cred)
