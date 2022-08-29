@@ -68,4 +68,8 @@ diskfs_console_stdio ()
       stdout = stderr = mach_open_devstream (cons, "w");
       mach_port_deallocate (mach_task_self (), cons);
     }
+
+  /* And make sure we don't die just because we got some error there.  */
+  signal (SIGPIPE, SIG_IGN);
+  signal (SIGLOST, SIG_IGN);
 }
