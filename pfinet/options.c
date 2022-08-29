@@ -28,6 +28,7 @@
 #include <error.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <hurd/ioctl_types.h>
 
 #include "pfinet.h"
 
@@ -59,6 +60,10 @@ extern void inquire_device (struct device *dev, uint32_t *addr,
 extern struct inet6_dev *ipv6_find_idev (struct device *dev);
 extern int inet6_addr_add (int ifindex, struct in6_addr *pfx, int plen);
 extern int inet6_addr_del (int ifindex, struct in6_addr *pfx, int plen);
+
+/* iioctl.c */
+extern error_t add_route (struct device *dev, struct srtentry *r);
+extern error_t delete_route (struct device *dev, struct srtentry *r);
 
 #ifdef CONFIG_IPV6
 static struct rt6_info * ipv6_get_dflt_router (void);
@@ -504,62 +509,19 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 #endif /* CONFIG_IPV6 */
 	}
 
-      /* Set the default gateway.  This code is cobbled together from what
-	 the SIOCADDRT ioctl code does, and from the apparent functionality
-	 of the "netlink" layer from perusing a little.  */
+      /* Set the default gateway. */
+
       {
-	struct kern_rta rta;
-	struct
-	{
-	  struct nlmsghdr nlh;
-	  struct rtmsg rtm;
-	} req;
-	struct fib_table *tb;
+	struct srtentry route = {0};
+	route.rt_flags = RTF_GATEWAY;
+	route.rt_mask = INADDR_ANY;
+	route.rt_dest = INADDR_ANY;
+	route.rt_gateway = h->curint->gateway;
 
-	req.nlh.nlmsg_pid = 0;
-	req.nlh.nlmsg_seq = 0;
-	req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
-
-	memset (&req.rtm, 0, sizeof req.rtm);
-	memset (&rta, 0, sizeof rta);
-	req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
-	req.rtm.rtm_type = RTN_UNICAST;
-	req.rtm.rtm_protocol = RTPROT_STATIC;
-
-	if (!gw4_in)
+	if (gw4_in)
 	  {
-	    /* Delete any existing default route on configured devices  */
-	    for (in = h->interfaces; in < h->interfaces + h->num_interfaces;
-		 in++)
-	      {
-		req.nlh.nlmsg_type = RTM_DELROUTE;
-		req.nlh.nlmsg_flags = 0;
-		rta.rta_oif = &in->device->ifindex;
-		tb = fib_get_table (req.rtm.rtm_table);
-		if (tb)
-		  {
-		    err = - (*tb->tb_delete)
-		      (tb, &req.rtm, &rta, &req.nlh, 0);
-		    if (err && err != ESRCH)
-		      {
-			pthread_mutex_unlock (&global_lock);
-			FAIL (err, 17, 0,
-			      "cannot remove old default gateway");
-		      }
-		    err = 0;
-		  }
-	      }
-	  }
-	else
-	  {
-	    /* Add a default route, replacing any existing one.  */
-	    rta.rta_oif = &gw4_in->device->ifindex;
-	    rta.rta_gw = &gw4_in->gateway;
-	    req.nlh.nlmsg_type = RTM_NEWROUTE;
-	    req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_REPLACE;
-	    tb = fib_new_table (req.rtm.rtm_table);
-	    err = (!tb ? ENOBUFS
-		   : - (*tb->tb_insert) (tb, &req.rtm, &rta, &req.nlh, 0));
+	    /* Add a default route */
+	    err = add_route (gw4_in->device, &route);
 	    if (err)
 	      {
 		pthread_mutex_unlock (&global_lock);
@@ -592,55 +554,13 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       /* Setup the routing required for DHCP. */
       for (in = h->interfaces; in < h->interfaces + h->num_interfaces; in++)
 	{
-	  struct kern_rta rta;
-	  struct
-	  {
-	    struct nlmsghdr nlh;
-	    struct rtmsg rtm;
-	  } req;
-	  struct fib_table *tb;
-	  struct rtentry route;
-	  struct sockaddr_in *dst;
-	  struct device *dev;
-
 	  if (!in->device)
 	    continue;
+	  struct srtentry route = {0};
+	  route.rt_flags = 0;
+	  route.rt_dest = INADDR_ANY;
 
-	  dst = (struct sockaddr_in *) &route.rt_dst;
-	  if (!in->device->name)
-	    {
-	      pthread_mutex_unlock (&global_lock);
-	      FAIL (ENODEV, 17, 0, "unknown device");
-	    }
-	  dev = dev_get (in->device->name);
-	  if (!dev)
-	    {
-	      pthread_mutex_unlock (&global_lock);
-	      FAIL (ENODEV, 17, 0, "unknown device");
-	    }
-
-	  /* Simulate the SIOCADDRT behavior.  */
-	  memset (&route, 0, sizeof (struct rtentry));
-	  memset (&req.rtm, 0, sizeof req.rtm);
-	  memset (&rta, 0, sizeof rta);
-	  req.nlh.nlmsg_type = RTM_NEWROUTE;
-
-	  /* Append this routing for 0.0.0.0.  By this way we can send always
-	     dhcp messages (e.g dhcp renew). */
-	  req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE
-	    | NLM_F_APPEND;
-	  req.rtm.rtm_protocol = RTPROT_BOOT;
-	  req.rtm.rtm_scope = RT_SCOPE_LINK;
-	  req.rtm.rtm_type = RTN_UNICAST;
-	  rta.rta_dst = &dst->sin_addr.s_addr;
-	  rta.rta_oif = &dev->ifindex;
-
-	  tb = fib_new_table (req.rtm.rtm_table);
-	  if (tb)
-	    err = tb->tb_insert (tb, &req.rtm, &rta, &req.nlh, NULL);
-	  else
-	    err = ENOBUFS;
-
+	  err = add_route (in->device, &route);
 	  if (err)
 	    {
 	      pthread_mutex_unlock (&global_lock);

@@ -40,9 +40,24 @@ type ifname_t = array[16] of char;	/* IFNAMSIZ is 16.  */
    definition of _IOT_ifreq in <net/if.h>. */
 type sockaddr_t = struct[16] of char;	/* sizeof(struct sockaddr) is 16.  */
 
+/* This is the struct srtentry from <net/route.h>. */
+type srtentry_t = struct[40] of char;	/* sizeof(struct srtentry) is 40. */
+
 skip; skip; skip; skip; /* 0 1 2 3 unused */
 skip; skip; skip; skip; /* 4 5 6 7 unused */
-skip; skip; skip; skip; /* 8 9 10 11 unused */
+skip; skip; 		/* 8 9 unused */
+
+/* 10 SIOCADDRT */
+routine iioctl_siocaddrt (
+	reqport: io_t;
+	ifnam: ifname_t;
+	route: srtentry_t);
+
+/* 11 SIOCDELRT */
+routine iioctl_siocdelrt (
+	reqport: io_t;
+	ifnam: ifname_t;
+	route: srtentry_t);
 
 /* 12 SIOCSIFADDR */
 routine iioctl_siocsifaddr (

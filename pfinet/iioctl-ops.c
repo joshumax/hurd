@@ -22,9 +22,14 @@
 
 #include <linux/netdevice.h>
 #include <linux/notifier.h>
+#include <linux/inetdevice.h>
+#include <linux/ip.h>
+#include <linux/route.h>
+#include <linux/rtnetlink.h>
 
 #include "iioctl_S.h"
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
@@ -32,9 +37,14 @@
 #include <sys/mman.h>
 #include <hurd/fshelp.h>
 
+#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <net/sock.h>
+#include <hurd/ioctl_types.h>
+#include <net/route.h>
+#include <net/ip_fib.h>
+#include <net/addrconf.h>
 
 extern struct notifier_block *netdev_chain;
 
@@ -62,6 +72,212 @@ struct device *get_dev (const char *name)
       break;
 
   return dev;
+}
+
+/* This code is cobbled together from what
+ * the SIOCADDRT ioctl code does, and from the apparent functionality
+ * of the "netlink" layer from perusing a little.
+ */
+static error_t
+delete_gateway(struct device *dev, in_addr_t dst, in_addr_t mask, in_addr_t gw)
+{
+  error_t err;
+  struct kern_rta rta;
+  struct
+  {
+    struct nlmsghdr nlh;
+    struct rtmsg rtm;
+  } req;
+  struct fib_table *tb;
+
+  if (bad_mask (mask, dst))
+    return EINVAL;
+
+  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_seq = 0;
+  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
+
+  memset (&req.rtm, 0, sizeof req.rtm);
+  memset (&rta, 0, sizeof rta);
+  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+  req.rtm.rtm_type = RTN_UNICAST;
+  req.rtm.rtm_protocol = RTPROT_BOOT;
+  req.rtm.rtm_dst_len = inet_mask_len(mask);
+
+  /* Delete any existing default route on configured device  */
+  req.nlh.nlmsg_type = RTM_DELROUTE;
+  req.nlh.nlmsg_flags = 0;
+  rta.rta_oif = &dev->ifindex;
+  rta.rta_dst = &dst;
+  rta.rta_gw = &gw;
+  tb = fib_get_table (req.rtm.rtm_table);
+  if (tb)
+    {
+      err = - (*tb->tb_delete)
+        (tb, &req.rtm, &rta, &req.nlh, 0);
+      if (err && err != ESRCH)
+	return err;
+      err = 0;
+    }
+  return err;
+}
+
+static error_t
+add_gateway(struct device *dev, in_addr_t dst, in_addr_t mask, in_addr_t gw)
+{
+  error_t err;
+  struct kern_rta rta;
+  struct
+  {
+    struct nlmsghdr nlh;
+    struct rtmsg rtm;
+  } req = {0};
+  struct fib_table *tb;
+
+  if (bad_mask (mask, dst))
+    return EINVAL;
+
+  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_seq = 0;
+  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
+
+  memset (&req.rtm, 0, sizeof req.rtm);
+  memset (&rta, 0, sizeof rta);
+  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+  req.rtm.rtm_type = RTN_UNICAST;
+  req.rtm.rtm_protocol = RTPROT_BOOT;
+  req.rtm.rtm_dst_len = inet_mask_len(mask);
+
+  /* Add a gateway  */
+  req.nlh.nlmsg_type = RTM_NEWROUTE;
+  req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
+  rta.rta_oif = &dev->ifindex;
+  rta.rta_dst = &dst;
+  rta.rta_gw = &gw;
+  tb = fib_new_table (req.rtm.rtm_table);
+  err = (!tb ? ENOBUFS
+       : - (*tb->tb_insert) (tb, &req.rtm, &rta, &req.nlh, 0));
+  return err;
+}
+
+/* Setup a static route (required for e.g. DHCP) */
+static error_t
+add_static_route(struct device *dev, in_addr_t dst, in_addr_t mask)
+{
+  error_t err;
+  struct kern_rta rta;
+  struct
+  {
+    struct nlmsghdr nlh;
+    struct rtmsg rtm;
+  } req;
+  struct fib_table *tb;
+
+  if (bad_mask (mask, dst))
+    return EINVAL;
+
+  if (!dev->name)
+    return ENODEV;
+
+  /* Simulate the SIOCADDRT behavior.  */
+  memset (&req.rtm, 0, sizeof req.rtm);
+  memset (&rta, 0, sizeof rta);
+
+  /* Append this routing for addr.  By this way we can always send
+     dhcp messages (e.g dhcp renew). */
+  req.nlh.nlmsg_type = RTM_NEWROUTE;
+  req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_APPEND;
+
+  req.rtm.rtm_protocol = RTPROT_BOOT;
+  req.rtm.rtm_scope = RT_SCOPE_LINK;
+  req.rtm.rtm_type = RTN_UNICAST;
+  req.rtm.rtm_dst_len = inet_mask_len(mask);
+  rta.rta_dst = &dst;
+  rta.rta_oif = &dev->ifindex;
+
+  tb = fib_new_table (req.rtm.rtm_table);
+  if (tb)
+    err = tb->tb_insert (tb, &req.rtm, &rta, &req.nlh, NULL);
+  else
+    err = ENOBUFS;
+  return err;
+}
+
+static error_t
+delete_static_route(struct device *dev, in_addr_t dst, in_addr_t mask)
+{
+  error_t err;
+  struct kern_rta rta;
+  struct
+  {
+    struct nlmsghdr nlh;
+    struct rtmsg rtm;
+  } req;
+  struct fib_table *tb;
+
+  if (bad_mask (mask, dst))
+    return EINVAL;
+
+  req.nlh.nlmsg_pid = 0;
+  req.nlh.nlmsg_seq = 0;
+  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
+
+  memset (&req.rtm, 0, sizeof req.rtm);
+  memset (&rta, 0, sizeof rta);
+
+  /* Delete existing static route on configured device matching src/dst */
+  req.nlh.nlmsg_type = RTM_DELROUTE;
+  req.nlh.nlmsg_flags = 0;
+
+  req.rtm.rtm_protocol = RTPROT_BOOT;
+  req.rtm.rtm_scope = RT_SCOPE_LINK;
+  req.rtm.rtm_type = RTN_UNICAST;
+  req.rtm.rtm_dst_len = inet_mask_len(mask);
+  rta.rta_dst = &dst;
+  rta.rta_oif = &dev->ifindex;
+
+  tb = fib_get_table (req.rtm.rtm_table);
+  if (tb)
+    {
+      err = - (*tb->tb_delete)
+        (tb, &req.rtm, &rta, &req.nlh, 0);
+      if (err && err != ESRCH)
+	return err;
+      err = 0;
+    }
+  return err;
+}
+
+error_t
+add_route (struct device *dev, const struct srtentry *r)
+{
+  error_t err;
+
+  if (!r)
+    return EINVAL;
+
+  if (r->rt_flags & RTF_GATEWAY)
+    err = add_gateway(dev, r->rt_dest, r->rt_mask, r->rt_gateway);
+  else
+    err = add_static_route(dev, r->rt_dest, r->rt_mask);
+
+  return err;
+}
+
+error_t
+delete_route (struct device *dev, const struct srtentry *r)
+{
+  error_t err;
+
+  if (!r)
+    return EINVAL;
+
+  if (r->rt_flags & RTF_GATEWAY)
+    err = delete_gateway(dev, r->rt_dest, r->rt_mask, r->rt_gateway);
+  else
+    err = delete_static_route(dev, r->rt_dest, r->rt_mask);
+
+  return err;
 }
 
 enum siocgif_type
@@ -153,6 +369,56 @@ siocsifXaddr (struct sock_user *user,
       addrs[type] = sin->sin_addr.s_addr;
       err = configure_device (dev, addrs[0], addrs[1], addrs[2], addrs[3]);
     }
+
+  pthread_mutex_unlock (&global_lock);
+  return err;
+}
+
+/* 10 SIOCADDRT -- Add a network route */
+kern_return_t
+S_iioctl_siocaddrt (struct sock_user *user,
+		    const ifname_t ifnam,
+		    const struct srtentry route)
+{
+  error_t err = 0;
+  struct device *dev;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  dev = get_dev (ifnam);
+
+  if (!dev)
+    err = ENODEV;
+  else if (user->sock->sk->family != AF_INET)
+    err = EINVAL;
+  else
+    err = add_route (dev, &route);
+
+  pthread_mutex_unlock (&global_lock);
+  return err;
+}
+
+/* 11 SIOCDELRT -- Delete a network route */
+kern_return_t
+S_iioctl_siocdelrt (struct sock_user *user,
+		    const ifname_t ifnam,
+		    const struct srtentry route)
+{
+  error_t err = 0;
+  struct device *dev;
+
+  if (!user)
+    return EOPNOTSUPP;
+
+  dev = get_dev (ifnam);
+
+  if (!dev)
+    err = ENODEV;
+  else if (user->sock->sk->family != AF_INET)
+    err = EINVAL;
+  else
+    err = delete_route (dev, &route);
 
   pthread_mutex_unlock (&global_lock);
   return err;
