@@ -22,6 +22,7 @@
 #include <hurd/fsys.h>
 #include <assert-backtrace.h>
 #include <signal.h>
+#include <error.h>
 
 #include "priv.h"
 
