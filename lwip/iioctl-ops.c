@@ -161,6 +161,24 @@ siocsifXaddr (struct sock_user *user,
   return err;
 }
 
+/* 10 SIOCADDRT -- Add a network route */
+kern_return_t
+lwip_S_iioctl_siocaddrt (struct sock_user *user,
+			 const ifname_t ifnam,
+			 const struct srtentry route)
+{
+  return EOPNOTSUPP;
+}
+
+/* 11 SIOCDELRT -- Delete a network route */
+kern_return_t
+lwip_S_iioctl_siocdelrt (struct sock_user *user,
+			 const ifname_t ifnam,
+			 const struct srtentry route)
+{
+  return EOPNOTSUPP;
+}
+
 /* 12 SIOCSIFADDR -- Set address of a network interface.  */
 SIOCSIF (addr, ADDR);
 
