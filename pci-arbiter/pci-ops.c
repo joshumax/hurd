@@ -80,7 +80,7 @@ calculate_ndevs (struct iouser *user)
  */
 error_t
 S_pci_conf_read (struct protid * master, int reg, char **data,
-		 size_t * datalen, mach_msg_type_number_t amount)
+		 size_t * datalen, vm_size_t amount)
 {
   error_t err;
   pthread_mutex_t *lock;
@@ -129,7 +129,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
 /* Write `datalen' bytes from `data'. `amount' is updated. */
 error_t
 S_pci_conf_write (struct protid * master, int reg, const char *data, size_t datalen,
-		  mach_msg_type_number_t * amount)
+		  vm_size_t * amount)
 {
   error_t err;
   pthread_mutex_t *lock;

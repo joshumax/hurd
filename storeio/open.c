@@ -75,7 +75,7 @@ open_write (struct open *open, off_t offs, const void *buf, size_t len,
    otherwise the error code is returned.  */
 error_t
 open_read (struct open *open, off_t offs, vm_size_t amount,
-	   void **buf, size_t *len)
+	   void **buf, vm_size_t *len)
 {
   error_t err;
   if (offs < 0)

@@ -348,7 +348,7 @@ error_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t * data_len,
-		  loff_t offs, size_t amount)
+		  loff_t offs, vm_size_t amount)
 {
   struct hurdtunif *tunif;
   struct pbuf *p;
@@ -423,7 +423,7 @@ trivfs_S_io_write (struct trivfs_protid * cred,
 		   mach_msg_type_name_t replytype,
 		   const_data_t data,
 		   mach_msg_type_number_t datalen,
-		   off_t offset, mach_msg_type_number_t * amount)
+		   off_t offset, vm_size_t * amount)
 {
   struct netif *netif;
   struct pbuf *p, *q;
@@ -482,7 +482,7 @@ trivfs_S_io_write (struct trivfs_protid * cred,
 kern_return_t
 trivfs_S_io_readable (struct trivfs_protid * cred,
 		      mach_port_t reply, mach_msg_type_name_t replytype,
-		      mach_msg_type_number_t * amount)
+		      vm_size_t * amount)
 {
   struct hurdtunif *tunif;
 

@@ -36,7 +36,7 @@ error_t
 lwip_S_io_write (struct sock_user *user,
 		 const_data_t data,
 		 size_t datalen,
-		 off_t offset, mach_msg_type_number_t * amount)
+		 off_t offset, vm_size_t * amount)
 {
   int sent;
   int sockflags;
@@ -59,7 +59,7 @@ lwip_S_io_write (struct sock_user *user,
 error_t
 lwip_S_io_read (struct sock_user * user,
 		data_t *data,
-		size_t * datalen, off_t offset, mach_msg_type_number_t amount)
+		size_t * datalen, off_t offset, vm_size_t amount)
 {
   error_t err;
   int alloced = 0;
@@ -112,7 +112,7 @@ lwip_S_io_seek (struct sock_user * user,
 }
 
 error_t
-lwip_S_io_readable (struct sock_user * user, mach_msg_type_number_t * amount)
+lwip_S_io_readable (struct sock_user * user, vm_size_t * amount)
 {
   error_t err;
   if (!user)

@@ -342,7 +342,7 @@ lwip_S_socket_send (struct sock_user * user,
 		    const mach_port_t * ports,
 		    size_t nports,
 		    const char *control,
-		    size_t controllen, mach_msg_type_number_t * amount)
+		    size_t controllen, vm_size_t * amount)
 {
   int sent;
   int sockflags;
@@ -392,7 +392,7 @@ lwip_S_socket_recv (struct sock_user * user,
 		    size_t * nports,
 		    char **control,
 		    size_t * controllen,
-		    int *outflags, mach_msg_type_number_t amount)
+		    int *outflags, vm_size_t amount)
 {
   error_t err;
   union { struct sockaddr_storage storage; struct sockaddr sa; } addr;

@@ -51,7 +51,7 @@ routine pci_conf_write(
  */
 routine pci_get_ndevs(
 	master: pci_t;
-	out ndevs: vm_size_t
+	out ndevs: mach_msg_type_number_t
 );
 
 /*
