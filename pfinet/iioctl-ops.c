@@ -78,35 +78,54 @@ struct device *get_dev (const char *name)
  * the SIOCADDRT ioctl code does, and from the apparent functionality
  * of the "netlink" layer from perusing a little.
  */
+
+struct rt_req
+{
+  struct nlmsghdr nlh;
+  struct rtmsg rtm;
+};
+
+static error_t
+prepare_rt_req(struct rt_req *req, struct device *dev, in_addr_t dst, in_addr_t mask, in_addr_t gw)
+{
+  if (bad_mask (mask, dst))
+    return EINVAL;
+
+  if (!dev->name)
+    return ENODEV;
+
+  memset (req, 0, sizeof *req);
+
+  req->nlh.nlmsg_pid = 0;
+  req->nlh.nlmsg_seq = 0;
+  req->nlh.nlmsg_len = NLMSG_LENGTH (sizeof req->rtm);
+
+  req->rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+  req->rtm.rtm_type = RTN_UNICAST;
+  req->rtm.rtm_protocol = RTPROT_BOOT;
+  req->rtm.rtm_dst_len = inet_mask_len(mask);
+
+  return 0;
+}
+
 static error_t
 delete_gateway(struct device *dev, in_addr_t dst, in_addr_t mask, in_addr_t gw)
 {
   error_t err;
   struct kern_rta rta;
-  struct
-  {
-    struct nlmsghdr nlh;
-    struct rtmsg rtm;
-  } req;
+  struct rt_req req;
   struct fib_table *tb;
 
-  if (bad_mask (mask, dst))
-    return EINVAL;
-
-  req.nlh.nlmsg_pid = 0;
-  req.nlh.nlmsg_seq = 0;
-  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
-
-  memset (&req.rtm, 0, sizeof req.rtm);
-  memset (&rta, 0, sizeof rta);
-  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
-  req.rtm.rtm_type = RTN_UNICAST;
-  req.rtm.rtm_protocol = RTPROT_BOOT;
-  req.rtm.rtm_dst_len = inet_mask_len(mask);
+  err = prepare_rt_req(&req, dev, dst, mask, gw);
+  if (err)
+    return err;
 
   /* Delete any existing default route on configured device  */
   req.nlh.nlmsg_type = RTM_DELROUTE;
   req.nlh.nlmsg_flags = 0;
+  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+
+  memset (&rta, 0, sizeof rta);
   rta.rta_oif = &dev->ifindex;
   rta.rta_dst = &dst;
   rta.rta_gw = &gw;
@@ -127,30 +146,19 @@ add_gateway(struct device *dev, in_addr_t dst, in_addr_t mask, in_addr_t gw)
 {
   error_t err;
   struct kern_rta rta;
-  struct
-  {
-    struct nlmsghdr nlh;
-    struct rtmsg rtm;
-  } req = {0};
+  struct rt_req req;
   struct fib_table *tb;
 
-  if (bad_mask (mask, dst))
-    return EINVAL;
-
-  req.nlh.nlmsg_pid = 0;
-  req.nlh.nlmsg_seq = 0;
-  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
-
-  memset (&req.rtm, 0, sizeof req.rtm);
-  memset (&rta, 0, sizeof rta);
-  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
-  req.rtm.rtm_type = RTN_UNICAST;
-  req.rtm.rtm_protocol = RTPROT_BOOT;
-  req.rtm.rtm_dst_len = inet_mask_len(mask);
+  err = prepare_rt_req(&req, dev, dst, mask, gw);
+  if (err)
+    return err;
 
   /* Add a gateway  */
   req.nlh.nlmsg_type = RTM_NEWROUTE;
   req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE;
+  req.rtm.rtm_scope = RT_SCOPE_UNIVERSE;
+
+  memset (&rta, 0, sizeof rta);
   rta.rta_oif = &dev->ifindex;
   rta.rta_dst = &dst;
   rta.rta_gw = &gw;
@@ -166,32 +174,22 @@ add_static_route(struct device *dev, in_addr_t dst, in_addr_t mask)
 {
   error_t err;
   struct kern_rta rta;
-  struct
-  {
-    struct nlmsghdr nlh;
-    struct rtmsg rtm;
-  } req;
+  struct rt_req req;
   struct fib_table *tb;
 
-  if (bad_mask (mask, dst))
-    return EINVAL;
-
-  if (!dev->name)
-    return ENODEV;
-
   /* Simulate the SIOCADDRT behavior.  */
-  memset (&req.rtm, 0, sizeof req.rtm);
-  memset (&rta, 0, sizeof rta);
+
+  err = prepare_rt_req(&req, dev, dst, mask, INADDR_ANY);
+  if (err)
+    return err;
 
   /* Append this routing for addr.  By this way we can always send
      dhcp messages (e.g dhcp renew). */
   req.nlh.nlmsg_type = RTM_NEWROUTE;
   req.nlh.nlmsg_flags = NLM_F_REQUEST | NLM_F_CREATE | NLM_F_APPEND;
-
-  req.rtm.rtm_protocol = RTPROT_BOOT;
   req.rtm.rtm_scope = RT_SCOPE_LINK;
-  req.rtm.rtm_type = RTN_UNICAST;
-  req.rtm.rtm_dst_len = inet_mask_len(mask);
+
+  memset (&rta, 0, sizeof rta);
   rta.rta_dst = &dst;
   rta.rta_oif = &dev->ifindex;
 
@@ -208,31 +206,19 @@ delete_static_route(struct device *dev, in_addr_t dst, in_addr_t mask)
 {
   error_t err;
   struct kern_rta rta;
-  struct
-  {
-    struct nlmsghdr nlh;
-    struct rtmsg rtm;
-  } req;
+  struct rt_req req;
   struct fib_table *tb;
 
-  if (bad_mask (mask, dst))
-    return EINVAL;
-
-  req.nlh.nlmsg_pid = 0;
-  req.nlh.nlmsg_seq = 0;
-  req.nlh.nlmsg_len = NLMSG_LENGTH (sizeof req.rtm);
-
-  memset (&req.rtm, 0, sizeof req.rtm);
-  memset (&rta, 0, sizeof rta);
+  err = prepare_rt_req(&req, dev, dst, mask, INADDR_ANY);
+  if (err)
+    return err;
 
   /* Delete existing static route on configured device matching src/dst */
   req.nlh.nlmsg_type = RTM_DELROUTE;
   req.nlh.nlmsg_flags = 0;
-
-  req.rtm.rtm_protocol = RTPROT_BOOT;
   req.rtm.rtm_scope = RT_SCOPE_LINK;
-  req.rtm.rtm_type = RTN_UNICAST;
-  req.rtm.rtm_dst_len = inet_mask_len(mask);
+
+  memset (&rta, 0, sizeof rta);
   rta.rta_dst = &dst;
   rta.rta_oif = &dev->ifindex;
 
