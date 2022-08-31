@@ -41,7 +41,7 @@ type ifname_t = array[16] of char;	/* IFNAMSIZ is 16.  */
 type sockaddr_t = struct[16] of char;	/* sizeof(struct sockaddr) is 16.  */
 
 /* This is the struct srtentry from <net/route.h>. */
-type srtentry_t = struct[40] of char;	/* sizeof(struct srtentry) is 40. */
+type srtentry_t = struct[10] of int;	/* sizeof(struct srtentry) is 40. */
 
 skip; skip; skip; skip; /* 0 1 2 3 unused */
 skip; skip; skip; skip; /* 4 5 6 7 unused */
