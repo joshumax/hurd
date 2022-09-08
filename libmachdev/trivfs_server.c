@@ -84,6 +84,9 @@ static task_t parent_task;
 /* Our argument vector */
 static char **machdev_argv;
 
+/* Our trivfs control port to use in server loop */
+static struct trivfs_control *global_fsys;
+
 static void
 install_as_translator (mach_port_t bootport)
 {
@@ -513,9 +516,8 @@ trivfs_modify_stat (struct trivfs_protid *cred, io_statbuf_t *stat)
 }
 
 void
-machdev_trivfs_server(mach_port_t bootstrap)
+machdev_trivfs_server_startup(mach_port_t bootstrap)
 {
-  struct trivfs_control *fsys = NULL;
   int err;
 
   if (bootstrapping == FALSE)
@@ -523,7 +525,7 @@ machdev_trivfs_server(mach_port_t bootstrap)
       /* This path is executed when a parent exists */
       err = trivfs_startup (bootstrap, 0,
                             trivfs_cntl_class, port_bucket,
-                            trivfs_protid_class, port_bucket, &fsys);
+                            trivfs_protid_class, port_bucket, &global_fsys);
       mach_port_deallocate (mach_task_self (), bootstrap);
       if (err)
         error (1, err, "Contacting parent");
@@ -532,14 +534,18 @@ machdev_trivfs_server(mach_port_t bootstrap)
     }
   else
     {
-      fsys = control;
+      global_fsys = control;
     }
+}
 
+void *
+machdev_trivfs_server_loop(void *arg)
+{
   /* Launch.  */
   do
     {
       ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
-    } while (trivfs_goaway (fsys, 0));
+    } while (trivfs_goaway (global_fsys, 0));
 
-  /* Never reached */
+  return NULL;
 }

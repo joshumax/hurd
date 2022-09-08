@@ -141,6 +141,8 @@ main (int argc, char **argv)
   if (err)
     return err;
   pthread_detach (t);
-  machdev_trivfs_server (bootstrap);
+  machdev_trivfs_server_startup (bootstrap);
+  machdev_trivfs_server_loop (NULL);
+  /* Never reached */
   return 0;
 }

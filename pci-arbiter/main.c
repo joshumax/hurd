@@ -188,7 +188,7 @@ main (int argc, char **argv)
   error_t err;
   mach_port_t bootstrap;
   mach_port_t next_task;
-  pthread_t t, nt;
+  pthread_t t, mt;
   file_t underlying_node = MACH_PORT_NULL;
 
   /* Parse options */
@@ -214,7 +214,7 @@ main (int argc, char **argv)
       machdev_device_init ();
       err = pthread_create (&t, NULL, machdev_server, NULL);
       if (err)
-        error (1, err, "Creating machdev thread");
+        error (1, err, "Creating machdev_server thread");
       pthread_detach (t);
     }
   else
@@ -238,17 +238,7 @@ main (int argc, char **argv)
     error (1, err, "Starting the PCI system");
 
   if (next_task != MACH_PORT_NULL)
-    {
-      void *run_server(void *arg) {
-	machdev_trivfs_server(bootstrap);
-	return NULL;
-      }
-
-      pthread_t t;
-      pthread_create(&t, NULL, run_server, NULL);
-      pthread_detach(t);
-      /* Timer started, quickly do all these next, before we call rump_init */
-    }
+    machdev_trivfs_server_startup (bootstrap);
 
   if (next_task == MACH_PORT_NULL)
     underlying_node = netfs_startup (bootstrap, O_READ);
@@ -275,13 +265,16 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "Setting permissions");
 
-  err = pthread_create (&nt, NULL, netfs_server_func, NULL);
-  if (err)
-    error (1, err, "Creating netfs loop thread");
-  pthread_detach (nt);
+  if (next_task != MACH_PORT_NULL)
+    {
+      err = pthread_create(&mt, NULL, machdev_trivfs_server_loop, NULL);
+      if (err)
+	error(1, err, "Creating machdev_trivfs_server_loop thread");
+      pthread_detach(mt);
+    }
 
-  /* Let the other threads do their job */
-  pthread_exit(NULL);
+  netfs_server_func (NULL);
+
   /* Never reached */
   return 0;
 }
