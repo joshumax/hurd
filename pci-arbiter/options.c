@@ -382,7 +382,7 @@ netfs_append_args (char **argz, size_t * argz_len)
     ADD_OPT ("--ncache=%u", fs->params.node_cache_max);
 
   if (fs->params.next_task != MACH_PORT_NULL)
-    ADD_OPT ("--next-task=%lu", fs->params.next_task);
+    ADD_OPT ("--next-task=%u", fs->params.next_task);
 #undef ADD_OPT
   return err;
 }
