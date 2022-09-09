@@ -883,3 +883,83 @@ __initfunc(struct fib_table * fib_hash_init(int id))
 	memset(tb->tb_data, 0, sizeof(struct fn_hash));
 	return tb;
 }
+
+static void
+fib_node_get_route(int type, int dead, struct fib_info *fi, u32 prefix, u32 mask, ifrtreq_t *r)
+{
+	int len;
+	static unsigned type2flags[RTN_MAX+1] = {
+		[RTN_UNREACHABLE] = RTF_REJECT,
+		[RTN_PROHIBIT] = RTF_REJECT
+	};
+	unsigned flags;
+
+	flags = type2flags[type];
+
+	if (fi && fi->fib_nh->nh_gw)
+		flags |= RTF_GATEWAY;
+	if (mask == 0xFFFFFFFF)
+		flags |= RTF_HOST;
+	if (!dead)
+		flags |= RTF_UP;
+
+
+	if (fi && fi->fib_dev) {
+		snprintf (r->ifname, IFNAMSIZ, "%s", fi->fib_dev->name);
+	} else {
+		r->ifname[0] = '*';
+		r->ifname[1] = '\0';
+	}
+
+	r->rt_dest = prefix;
+	r->rt_flags = flags;
+	r->rt_mask = mask;
+
+	if (fi) {
+		r->rt_gateway = fi->fib_nh->nh_gw;
+		r->rt_metric = fi->fib_priority;
+		r->rt_mtu = fi->fib_mtu;
+		r->rt_window = fi->fib_window;
+		r->rt_irtt = fi->fib_rtt;
+	}
+}
+
+int
+fn_hash_get_routes(struct fib_table *tb, ifrtreq_t *routes, int first, int count)
+{
+	struct fn_hash *table = (struct fn_hash*)tb->tb_data;
+	struct fn_zone *fz;
+	int pos = 0;
+	int n = 0;
+
+	for (fz=table->fn_zone_list; fz; fz = fz->fz_next) {
+		int i;
+		struct fib_node *f;
+		int maxslot = fz->fz_divisor;
+		struct fib_node **fp = fz->fz_hash;
+
+		if (fz->fz_nent == 0)
+			continue;
+
+		if (pos + fz->fz_nent <= first) {
+			pos += fz->fz_nent;
+			continue;
+		}
+
+		for (i=0; i < maxslot; i++, fp++) {
+			for (f = *fp; f; f = f->fn_next) {
+				if (++pos <= first)
+					continue;
+				fib_node_get_route(f->fn_type,
+						   f->fn_state & FN_S_ZOMBIE,
+						   FIB_INFO(f),
+						   fz_prefix(f->fn_key, fz),
+						   FZ_MASK(fz), routes);
+				routes++;
+				if (++n >= count)
+					return n;
+			}
+		}
+	}
+	return n;
+}

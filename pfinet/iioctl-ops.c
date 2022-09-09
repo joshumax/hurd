@@ -104,6 +104,7 @@ prepare_rt_req(struct rt_req *req, struct device *dev, in_addr_t dst, in_addr_t 
   req->rtm.rtm_type = RTN_UNICAST;
   req->rtm.rtm_protocol = RTPROT_BOOT;
   req->rtm.rtm_dst_len = inet_mask_len(mask);
+  req->rtm.rtm_table = RT_TABLE_MAIN;
 
   return 0;
 }

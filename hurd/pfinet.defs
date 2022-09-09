@@ -37,3 +37,12 @@ routine pfinet_siocgifconf (
 	amount: vm_size_t;
 	out buf: data_t, dealloc
 );
+
+/* Return the routing table as a sequence of ifrtreq_t structs.
+   The maximum number of routes returned can be given in AMOUNT.
+   But if AMOUNT is -1, all routes will be returned up to MAX_ROUTES.  */
+routine pfinet_getroutes (
+	port: io_t;
+	amount: vm_size_t;
+	out routes: data_t, dealloc[]
+);

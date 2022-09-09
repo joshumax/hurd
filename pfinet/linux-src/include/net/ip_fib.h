@@ -17,6 +17,7 @@
 #define _NET_IP_FIB_H
 
 #include <linux/config.h>
+#include "route.h"
 
 struct kern_rta
 {
@@ -223,6 +224,7 @@ extern u32  __fib_res_prefsrc(struct fib_result *res);
 
 /* Exported by fib_hash.c */
 extern struct fib_table *fib_hash_init(int id);
+int fn_hash_get_routes(struct fib_table *tb, ifrtreq_t *routes, int first, int count);
 
 #ifdef CONFIG_IP_MULTIPLE_TABLES
 /* Exported by fib_rules.c */
