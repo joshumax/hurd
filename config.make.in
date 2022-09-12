@@ -121,6 +121,13 @@ HAVE_LIBPCIACCESS = @HAVE_LIBPCIACCESS@
 libpciaccess_CFLAGS = @libpciaccess_CFLAGS@
 libpciaccess_LIBS = @libpciaccess_LIBS@
 
+# Whether we found libacpica.
+HAVE_LIBACPICA = @HAVE_LIBACPICA@
+
+# How to compile and link against libacpica.
+libacpica_CFLAGS = @libacpica_CFLAGS@
+libacpica_LIBS = @libacpica_LIBS@
+
 # Installation tools.
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@

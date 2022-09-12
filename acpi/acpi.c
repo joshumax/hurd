@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "acpi.h"
+#include "myacpi.h"
 
 int
 mmap_phys_acpi_header(uintptr_t base_addr, struct acpi_header **ptr_to_header,

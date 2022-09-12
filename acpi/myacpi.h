@@ -14,13 +14,13 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with the GNU Hurd.  If not, see <<a rel="nofollow" href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>>.
+   along with the GNU Hurd.  If not, see http://www.gnu.org/licenses
 */
 
 /* ACPI tables basic structure */
 
-#ifndef ACPI_H
-#define ACPI_H
+#ifndef MYACPI_H
+#define MYACPI_H
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -71,4 +71,4 @@ struct acpi_table
 int acpi_get_num_tables(size_t *num_tables);
 int acpi_get_tables(struct acpi_table **tables);
 
-#endif /* ACPI_H */
+#endif /* MYACPI_H */

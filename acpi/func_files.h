@@ -23,7 +23,7 @@
 #define FUNC_FILES_H
 
 #include <acpifs.h>
-#include <acpi.h>
+#include "myacpi.h"
 
 typedef int (*acpi_read_op_t) (struct acpi_table *t, void *data,
                                off_t offset, size_t *len);

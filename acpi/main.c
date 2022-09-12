@@ -26,12 +26,14 @@
 #include <argp.h>
 #include <hurd/netfs.h>
 
+#include "acpi_S.h"
 #include "libnetfs/io_S.h"
 #include "libnetfs/fs_S.h"
 #include "libports/notify_S.h"
 #include "libnetfs/fsys_S.h"
 #include "libports/interrupt_S.h"
 #include "libnetfs/ifsock_S.h"
+#include <acpi/acpi_init.h>
 #include <acpifs.h>
 
 /* Libnetfs stuff */
@@ -53,7 +55,8 @@ netfs_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
       (routine = ports_notify_server_routine (inp)) ||
       (routine = netfs_fsys_server_routine (inp)) ||
       (routine = ports_interrupt_server_routine (inp)) ||
-      (routine = netfs_ifsock_server_routine (inp)))
+      (routine = netfs_ifsock_server_routine (inp)) ||
+      (routine = acpi_server_routine (inp)))
     {
       (*routine) (inp, outp);
       return TRUE;
@@ -76,10 +79,15 @@ main (int argc, char **argv)
   if (bootstrap == MACH_PORT_NULL)
     error (1, 0, "must be started as a translator");
 
+  /* Initialize ACPI */
+  acpi_init();
+
   /* Initialize netfs and start the translator. */
   netfs_init ();
 
   err = maptime_map (0, 0, &acpifs_maptime);
+  if (err)
+    err = maptime_map (1, 0, &acpifs_maptime);
   if (err)
     error (1, err, "mapping time");
 
@@ -98,7 +106,7 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "setting permissions");
 
-  netfs_server_loop ();                /* Never returns.  */
+  netfs_server_loop (); /* Never returns.  */
 
   return 0;
 }

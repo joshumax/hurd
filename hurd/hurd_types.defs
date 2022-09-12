@@ -332,6 +332,24 @@ destructor: SHUTDOWN_DESTRUCTOR
 #endif
 ;
 
+/* ACPI */
+type acpi_t = mach_port_copy_send_t
+#ifdef ACPI_INTRAN
+intran: ACPI_INTRAN
+intranpayload: ACPI_INTRAN_PAYLOAD
+#else
+#ifdef HURD_DEFAULT_PAYLOAD_TO_PORT
+intranpayload: acpi_t HURD_DEFAULT_PAYLOAD_TO_PORT
+#endif
+#endif
+#ifdef ACPI_OUTTRAN
+outtran: ACPI_OUTTRAN
+#endif
+#ifdef ACPI_DESTRUCTOR
+destructor: ACPI_DESTRUCTOR
+#endif
+;
+
 type proccoll_t = mach_port_copy_send_t;
 
 type sreply_port_t = MACH_MSG_TYPE_MAKE_SEND_ONCE | polymorphic

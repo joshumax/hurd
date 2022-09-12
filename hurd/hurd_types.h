@@ -53,6 +53,7 @@ typedef mach_port_t proccoll_t;
 typedef mach_port_t ctty_t;
 typedef mach_port_t pci_t;
 typedef mach_port_t shutdown_t;
+typedef mach_port_t acpi_t;
 
 #include <errno.h>		/* Defines `error_t'.  */
 

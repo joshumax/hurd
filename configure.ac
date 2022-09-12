@@ -394,6 +394,15 @@ AC_SUBST([HAVE_LIBPCIACCESS])
 AC_SUBST([libpciaccess_CFLAGS])
 AC_SUBST([libpciaccess_LIBS])
 
+AC_CHECK_LIB(acpica, acpi_init, [
+  HAVE_LIBACPICA=yes
+  libacpica_LIBS="-lacpica"
+  libacpica_CFLAGS=""],
+  [HAVE_LIBACPICA=no])
+AC_SUBST([HAVE_LIBACPICA])
+AC_SUBST([libacpica_CFLAGS])
+AC_SUBST([libacpica_LIBS])
+
 AC_CONFIG_FILES([config.make ${makefiles} daemons/runsystem.hurd.sh])
 AC_OUTPUT
 

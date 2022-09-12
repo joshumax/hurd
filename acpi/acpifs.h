@@ -27,7 +27,7 @@
 #include <maptime.h>
 
 #include <netfs_impl.h>
-#include <acpi.h>
+#include "myacpi.h"
 
 /* Size of a directory entry name */
 #ifndef NAME_SIZE

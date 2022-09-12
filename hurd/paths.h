@@ -39,6 +39,9 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Directory containing virtual filesystems for buses */
 #define	_SERVERS_BUS		_SERVERS "bus"
 
+/* Directory containing ACPI tables */
+#define _SERVERS_ACPI		_SERVERS "acpi"
+
 /* Hurd servers are specified by symbols _HURD_FOO,
    the canonical pathname being /hurd/foo.  */
 
