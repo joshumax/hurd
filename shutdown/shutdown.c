@@ -35,8 +35,10 @@
 #include <sys/file.h>
 #include <version.h>
 
-#include "acpi_shutdown.h"
 #include "shutdown_S.h"
+#include "acpi_U.h"
+
+#define SLEEP_STATE_S5	5
 
 /* Port bucket we service requests on.  */
 struct port_bucket *port_bucket;
@@ -56,8 +58,16 @@ struct port_class *trivfs_control_class;
 kern_return_t
 S_shutdown_shutdown(trivfs_protid_t server)
 {
-  disappear_via_acpi();
-  return 0;
+  kern_return_t err;
+  mach_port_t acpi;
+
+  acpi = file_name_lookup (_SERVERS_ACPI, O_RDWR, 0);
+  if (acpi == MACH_PORT_NULL)
+    return EIO;
+
+  err = acpi_sleep(acpi, SLEEP_STATE_S5);
+
+  return err;
 }
 
 static int

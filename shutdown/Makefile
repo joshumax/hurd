@@ -18,7 +18,7 @@
 dir := shutdown
 makemode := server
 
-SRCS = shutdown.c acpi_shutdown.c
+SRCS = shutdown.c acpiUser.c
 HURDLIBS = ports shouldbeinlibc trivfs iohelp ihash fshelp
 LDLIBS = -lpthread
 target = shutdown
