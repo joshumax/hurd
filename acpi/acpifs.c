@@ -81,16 +81,19 @@ alloc_file_system (struct acpifs **fs)
 }
 
 error_t
-init_file_system (file_t underlying_node, struct acpifs *fs)
+init_root_node (file_t underlying_node)
 {
   error_t err;
   struct node *np;
-  io_statbuf_t underlying_node_stat;
+  io_statbuf_t underlying_node_stat = { 0 };
 
-  /* Initialize status from underlying node.  */
-  err = io_stat (underlying_node, &underlying_node_stat);
-  if (err)
-    return err;
+  if (underlying_node != MACH_PORT_NULL)
+    {
+      /* Initialize status from underlying node.  */
+      err = io_stat (underlying_node, &underlying_node_stat);
+      if (err)
+	return err;
+    }
 
   np = netfs_make_node_alloc (sizeof (struct netnode));
   if (!np)
@@ -106,18 +109,30 @@ init_file_system (file_t underlying_node, struct acpifs *fs)
   fshelp_touch (&np->nn_stat, TOUCH_ATIME | TOUCH_MTIME | TOUCH_CTIME,
                acpifs_maptime);
 
+  netfs_root_node = np;
+  return 0;
+}
+
+error_t
+init_file_system (struct acpifs *fs)
+{
+  error_t err;
+  struct node *np = netfs_root_node;
+
   fs->entries = calloc (1, sizeof (struct acpifs_dirent));
   if (!fs->entries)
-    {
-      free (fs->entries);
-      return ENOMEM;
-    }
+    return ENOMEM;
 
   /* Create the root entry */
   err = create_dir_entry ("", 0, 0, np->nn_stat, np, fs->entries);
+  if (err)
+    {
+      free(fs->entries);
+      return err;
+    }
 
   fs->num_entries = 1;
-  fs->root = netfs_root_node = np;
+  fs->root = np;
   fs->root->nn->ln = fs->entries;
   pthread_mutex_init (&fs->node_cache_lock, 0);
 

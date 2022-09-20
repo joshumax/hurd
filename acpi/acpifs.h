@@ -97,6 +97,9 @@ struct acpifs
   size_t node_cache_max;
   pthread_mutex_t node_cache_lock;
 
+  /* Next bootstrap task */
+  mach_port_t next_task;
+
   struct acpifs_perm perm;
 
   struct acpifs_dirent *entries;
@@ -138,7 +141,8 @@ extern volatile struct mapped_time_value *acpifs_maptime;
 
 /* FS manipulation functions */
 error_t alloc_file_system (struct acpifs **fs);
-error_t init_file_system (file_t underlying_node, struct acpifs *fs);
+error_t init_file_system (struct acpifs *fs);
+error_t init_root_node (file_t underlying_node);
 error_t create_fs_tree (struct acpifs *fs);
 error_t fs_set_permissions (struct acpifs *fs);
 error_t entry_check_perms (struct iouser *user, struct acpifs_dirent *e,

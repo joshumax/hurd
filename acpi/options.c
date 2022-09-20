@@ -64,6 +64,15 @@ parse_opt (int opt, char *arg, struct argp_state *state)
     case 'G':
       h->perm.gid = atoi (arg);
       break;
+    case 'N':
+      h->next_task = atoi (arg);
+      break;
+    case 'H':
+      h->host_priv_port = atoi (arg);
+      break;
+    case 'P':
+      h->dev_master_port = atoi (arg);
+      break;
 
     case ARGP_KEY_INIT:
       /* Initialize our parsing state.  */
@@ -74,6 +83,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
       h->ncache_len = NODE_CACHE_MAX;
       h->perm.uid = 0;
       h->perm.gid = 0;
+      h->next_task = MACH_PORT_NULL;
+      h->host_priv_port = MACH_PORT_NULL;
+      h->dev_master_port = MACH_PORT_NULL;
       state->hook = h;
       break;
 
@@ -83,6 +95,11 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
       /* Set cache len */
       fs->node_cache_max = h->ncache_len;
+
+      /* Set bootstrap ports */
+      fs->next_task = h->next_task;
+      _hurd_host_priv = h->host_priv_port;
+      _hurd_device_master = h->dev_master_port;
 
       if (fs->root)
        {
@@ -139,6 +156,9 @@ netfs_append_args (char **argz, size_t * argz_len)
     ADD_OPT ("--uid=%u", p->uid);
   if (p->gid >= 0)
     ADD_OPT ("--gid=%u", p->gid);
+
+  if (fs->next_task != MACH_PORT_NULL)
+    ADD_OPT ("--next-task=%u", fs->next_task);
 
 #undef ADD_OPT
   return err;

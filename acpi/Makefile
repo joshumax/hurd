@@ -22,15 +22,15 @@ PORTDIR = $(srcdir)/port
 
 SRCS           = main.c netfs_impl.c acpi.c \
                  acpifs.c ncache.c options.c func_files.c acpi-ops.c \
-                 acpiServer.c
+                 acpiServer.c startup_notifyServer.c
 
 MIGSRCS        =
 OBJS           = $(patsubst %.S,%.o,$(patsubst %.c,%.o, $(SRCS) $(MIGSRCS)))
 
-HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash
+HURDLIBS= fshelp ports shouldbeinlibc netfs iohelp ihash machdev trivfs
 LDLIBS = -lpthread $(libacpica_LIBS)
 
-target = acpi
+target = acpi acpi.static
 
 include ../Makeconf
 
