@@ -25,6 +25,7 @@
 #include <mach/default_pager.h>
 #include <mach_debug/mach_debug_types.h>
 #include <hurd/paths.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -37,8 +38,12 @@
 #include "procfs.h"
 #include "procfs_dir.h"
 #include "main.h"
+#include <net/route.h>
 
 #include "mach_debug_U.h"
+#include "pfinet_U.h"
+
+#define ROUTE_STRLEN 180
 
 /* This implements a directory node with the static files in /proc.
    NB: the libps functions for host information return static storage;
@@ -405,6 +410,71 @@ rootdir_gc_cmdline (void *hook, char **contents, ssize_t *contents_len)
 
 out:
   _proc_stat_free (ps);
+  return err;
+}
+
+static error_t
+rootdir_gc_route (void *hook, char **contents, ssize_t *contents_len)
+{
+  error_t err;
+  mach_port_t pfinet;
+  unsigned int i, len, buflen = 0;
+  char *src, *dst;
+  ifrtreq_t *r;
+  char dest[INET_ADDRSTRLEN], gw[INET_ADDRSTRLEN], mask[INET_ADDRSTRLEN];
+  char socket_inet[20];
+
+  char *inet_to_str(in_addr_t addr)
+  {
+    struct in_addr sin;
+
+    sin.s_addr = addr;
+    return inet_ntoa(sin);
+  }
+
+  snprintf(socket_inet, sizeof(socket_inet), _SERVERS_SOCKET "/%d", AF_INET);
+  pfinet = file_name_lookup (socket_inet, O_RDONLY, 0);
+  if (pfinet == MACH_PORT_NULL)
+    {
+      *contents_len = 0;
+      return errno;
+    }
+
+  err = pfinet_getroutes (pfinet, -1, &src, &buflen);
+  if (err)
+    {
+      *contents_len = 0;
+      goto out;
+    }
+
+  r = (ifrtreq_t *)src;
+  *contents_len = (buflen / sizeof(ifrtreq_t) + 1) * ROUTE_STRLEN;
+  *contents = calloc (1, *contents_len);
+  if (! *contents)
+    {
+      err = ENOMEM;
+      goto out;
+    }
+
+  dst = *contents;
+  snprintf(dst, ROUTE_STRLEN, "%-*s\n", ROUTE_STRLEN - 2, "Iface\tDestination\tGateway\t Flags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT");
+  dst += ROUTE_STRLEN;
+
+  for (i = 0; i < buflen / sizeof(ifrtreq_t); i++)
+    {
+      snprintf(dest, INET_ADDRSTRLEN, "%-*s", INET_ADDRSTRLEN - 1, inet_to_str(r->rt_dest));
+      snprintf(gw,   INET_ADDRSTRLEN, "%-*s", INET_ADDRSTRLEN - 1, inet_to_str(r->rt_gateway));
+      snprintf(mask, INET_ADDRSTRLEN, "%-*s", INET_ADDRSTRLEN - 1, inet_to_str(r->rt_mask));
+
+      len = snprintf(dst, ROUTE_STRLEN, "%s\t%s\t%s\t%04X\t%d\t%u\t%d\t%s\t%d\t%u\t%u\n",
+		     r->ifname, dest, gw, r->rt_flags, 0, 0,
+		     r->rt_metric, mask, r->rt_mtu, r->rt_window, r->rt_irtt);
+      dst += len;
+      r++;
+    }
+
+out:
+  mach_port_deallocate (mach_task_self (), pfinet);
   return err;
 }
 
@@ -777,6 +847,13 @@ static const struct procfs_dir_entry rootdir_entries[] = {
     .name = "cmdline",
     .hook = & (struct procfs_node_ops) {
       .get_contents = rootdir_gc_cmdline,
+      .cleanup_contents = procfs_cleanup_contents_with_free,
+    },
+  },
+  {
+    .name = "route",
+    .hook = & (struct procfs_node_ops) {
+      .get_contents = rootdir_gc_route,
       .cleanup_contents = procfs_cleanup_contents_with_free,
     },
   },

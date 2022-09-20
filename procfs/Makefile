@@ -21,7 +21,7 @@ makemode := server
 
 target = procfs
 
-SRCS = procfs.c netfs.c procfs_dir.c process.c proclist.c rootdir.c dircat.c main.c mach_debugUser.c default_pagerUser.c
+SRCS = procfs.c netfs.c procfs_dir.c process.c proclist.c rootdir.c dircat.c main.c mach_debugUser.c default_pagerUser.c pfinetUser.c
 LCLHDRS = dircat.h main.h process.h procfs.h procfs_dir.h proclist.h rootdir.h
 
 OBJS = $(SRCS:.c=.o)
