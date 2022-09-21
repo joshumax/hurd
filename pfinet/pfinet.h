@@ -29,7 +29,12 @@
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <pthread.h>
-#include "route.h"
+
+/* Unfortunately the Linux source also uses <net/route.h>.
+ * Here we want the glibc-provided one only */
+#define _ROUTE_H
+#include <net/route.h>
+#undef _ROUTE_H
 
 extern pthread_mutex_t global_lock;
 extern pthread_mutex_t net_bh_lock;
