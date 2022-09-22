@@ -113,3 +113,13 @@ lwip_S_pfinet_siocgifconf (io_t port,
 
   return 0;
 }
+
+error_t
+lwip_S_pfinet_getroutes (io_t port,
+			 vm_size_t amount,
+			 data_t *routes,
+			 mach_msg_type_number_t *len,
+			 boolean_t *dealloc_data)
+{
+  return EOPNOTSUPP;
+}
