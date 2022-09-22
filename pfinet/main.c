@@ -346,8 +346,7 @@ main (int argc,
 
   if (bootstrap != MACH_PORT_NULL) {
     /* Create portclass to install on the bootstrap port. */
-    if(pfinet_protid_portclasses[pfinet_bootstrap_portclass]
-       != MACH_PORT_NULL)
+    if(pfinet_protid_portclasses[pfinet_bootstrap_portclass] != NULL)
       error(1, 0, "No portclass left to assign to bootstrap port");
 
 #ifdef CONFIG_IPV6
@@ -389,7 +388,7 @@ main (int argc,
     /* Check that at least one portclass has been bound, 
        error out otherwise. */
     for (i = 0; i < ARRAY_SIZE (pfinet_protid_portclasses); i++)
-      if (pfinet_protid_portclasses[i] != MACH_PORT_NULL)
+      if (pfinet_protid_portclasses[i] != NULL)
 	break;
 
     if (i == ARRAY_SIZE (pfinet_protid_portclasses))
@@ -442,7 +441,7 @@ pfinet_bind (int portclass, const char *name)
     err = errno;
 
   if (! err) {
-    if (pfinet_protid_portclasses[portclass] != MACH_PORT_NULL)
+    if (pfinet_protid_portclasses[portclass] != NULL)
       error (1, 0, "Cannot bind one protocol to multiple nodes.\n");
 
 #ifdef CONFIG_IPV6
