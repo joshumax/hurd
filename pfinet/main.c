@@ -84,6 +84,7 @@ extern struct argp pfinet_argp;
 #include "socket_S.h"
 #include "pfinet_S.h"
 #include "iioctl_S.h"
+#include "rioctl_S.h"
 #include "startup_notify_S.h"
 
 int
@@ -112,6 +113,7 @@ pfinet_demuxer (mach_msg_header_t *inp,
       if ((routine = io_server_routine (inp)) ||
           (routine = socket_server_routine (inp)) ||
           (routine = pfinet_server_routine (inp)) ||
+          (routine = rioctl_server_routine (inp)) ||
           (routine = iioctl_server_routine (inp)) ||
           (routine = NULL, trivfs_demuxer (inp, outp)) ||
           (routine = startup_notify_server_routine (inp)))
@@ -128,6 +130,7 @@ pfinet_demuxer (mach_msg_header_t *inp,
       mig_routine_t routine;
       if ((routine = socket_server_routine (inp)) ||
           (routine = pfinet_server_routine (inp)) ||
+          (routine = rioctl_server_routine (inp)) ||
           (routine = iioctl_server_routine (inp)) ||
           (routine = NULL, trivfs_demuxer (inp, outp)) ||
           (routine = startup_notify_server_routine (inp)))

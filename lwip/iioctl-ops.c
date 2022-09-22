@@ -21,6 +21,7 @@
 /* Ioctls for network device configuration */
 
 #include <lwip_iioctl_S.h>
+#include <lwip_rioctl_S.h>
 
 #include <lwip/sockets.h>
 #include <lwip/inet.h>
@@ -163,7 +164,7 @@ siocsifXaddr (struct sock_user *user,
 
 /* 10 SIOCADDRT -- Add a network route */
 kern_return_t
-lwip_S_iioctl_siocaddrt (struct sock_user *user,
+lwip_S_rioctl_siocaddrt (struct sock_user *user,
 			 const ifname_t ifnam,
 			 const struct srtentry route)
 {
@@ -172,7 +173,7 @@ lwip_S_iioctl_siocaddrt (struct sock_user *user,
 
 /* 11 SIOCDELRT -- Delete a network route */
 kern_return_t
-lwip_S_iioctl_siocdelrt (struct sock_user *user,
+lwip_S_rioctl_siocdelrt (struct sock_user *user,
 			 const ifname_t ifnam,
 			 const struct srtentry route)
 {

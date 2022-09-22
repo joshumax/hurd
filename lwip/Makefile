@@ -24,7 +24,7 @@ SRCS		= main.c io-ops.c socket-ops.c pfinet-ops.c iioctl-ops.c port-objs.c \
 		  startup-ops.c options.c lwip-util.c startup.c
 IFSRCS		= ifcommon.c hurdethif.c hurdloopif.c hurdtunif.c
 MIGSRCS		= ioServer.c socketServer.c pfinetServer.c iioctlServer.c \
-		  startup_notifyServer.c
+		  startup_notifyServer.c rioctlServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o,\
 		  $(SRCS) $(IFSRCS) $(MIGSRCS)))
 
@@ -44,6 +44,7 @@ mig-sheader-prefix = lwip_
 io-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 socket-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 iioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+rioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 lwip_io_S.h ioServer.c lwip_socket_S.h socketServer.c: mig-mutate.h

@@ -363,7 +363,7 @@ siocsifXaddr (struct sock_user *user,
 
 /* 10 SIOCADDRT -- Add a network route */
 kern_return_t
-S_iioctl_siocaddrt (struct sock_user *user,
+S_rioctl_siocaddrt (struct sock_user *user,
 		    const ifname_t ifnam,
 		    const struct srtentry route)
 {
@@ -388,7 +388,7 @@ S_iioctl_siocaddrt (struct sock_user *user,
 
 /* 11 SIOCDELRT -- Delete a network route */
 kern_return_t
-S_iioctl_siocdelrt (struct sock_user *user,
+S_rioctl_siocdelrt (struct sock_user *user,
 		    const ifname_t ifnam,
 		    const struct srtentry route)
 {

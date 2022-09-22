@@ -47,17 +47,9 @@ skip; skip; skip; skip; /* 0 1 2 3 unused */
 skip; skip; skip; skip; /* 4 5 6 7 unused */
 skip; skip; 		/* 8 9 unused */
 
-/* 10 SIOCADDRT */
-routine iioctl_siocaddrt (
-	reqport: io_t;
-	ifnam: ifname_t;
-	route: srtentry_t);
+skip; /* 10 SIOCADDRT (rioctl) */
 
-/* 11 SIOCDELRT */
-routine iioctl_siocdelrt (
-	reqport: io_t;
-	ifnam: ifname_t;
-	route: srtentry_t);
+skip; /* 11 SIOCDELRT (rioctl) */
 
 /* 12 SIOCSIFADDR */
 routine iioctl_siocsifaddr (

@@ -87,7 +87,7 @@ SRCS		= sched.c timer-emul.c socket.c main.c ethernet.c \
 		  kmem_cache.c stubs.c dummy.c tunnel.c pfinet-ops.c \
 		  iioctl-ops.c
 MIGSRCS		= ioServer.c socketServer.c startup_notifyServer.c \
-		  pfinetServer.c iioctlServer.c
+		  pfinetServer.c iioctlServer.c rioctlServer.c
 OBJS		= $(patsubst %.S,%.o,$(patsubst %.c,%.o,\
 			     $(LINUXSRCS) $(ARCHSRCS) $(SRCS) $(MIGSRCS)))
 LINUXHDRS	= bitops.h capability.h delay.h errqueue.h etherdevice.h \
@@ -142,6 +142,7 @@ asm/checksum.h: ../config.status
 io-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 socket-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 iioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
+rioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 io_S.h ioServer.c socket_S.h socketServer.c: mig-mutate.h

@@ -33,6 +33,7 @@
 #include <lwip_socket_S.h>
 #include <lwip_pfinet_S.h>
 #include <lwip_iioctl_S.h>
+#include <lwip_rioctl_S.h>
 #include <lwip_startup_notify_S.h>
 
 #include <netif/hurdethif.h>
@@ -136,6 +137,7 @@ lwip_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
 
   if (routine || (routine = lwip_socket_server_routine (inp)) ||
       (routine = lwip_pfinet_server_routine (inp)) ||
+      (routine = lwip_rioctl_server_routine (inp)) ||
       (routine = lwip_iioctl_server_routine (inp)) ||
       (routine = lwip_startup_notify_server_routine (inp)))
     {
