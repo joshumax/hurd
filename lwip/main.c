@@ -161,7 +161,7 @@ translator_bind (int portclass, const char *name)
 
   if (!err)
     {
-      if (lwip_protid_portclasses[portclass] != MACH_PORT_NULL)
+      if (lwip_protid_portclasses[portclass] != NULL)
 	error (1, 0, "Cannot bind one protocol to multiple nodes.\n");
 
       err =
@@ -221,7 +221,7 @@ main (int argc, char **argv)
     error (-1, 0, "Must be started as a translator");
 
   /* Create portclass to install on the bootstrap port. */
-  if (lwip_protid_portclasses[lwip_bootstrap_portclass] != MACH_PORT_NULL)
+  if (lwip_protid_portclasses[lwip_bootstrap_portclass] != NULL)
     error (1, 0, "No portclass left to assign to bootstrap port");
 
   err =
