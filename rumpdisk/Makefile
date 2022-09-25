@@ -16,7 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 RUMPPATH=/usr/lib
-RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata
+RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata rumpdev_piixide rumpdev_ata
 RUMPEXTRA=rumpdev_scsipi
 
 # If we have a configured tree, include the configuration so that we
