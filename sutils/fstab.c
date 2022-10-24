@@ -490,7 +490,8 @@ fs_remount (struct fs *fs)
 inline struct fs *
 fstab_find_device (const struct fstab *fstab, const char *name)
 {
-  if (strcmp (name, "none") == 0 || strcmp (name, "proc") == 0)
+  if (strcmp (name, "none") == 0 || strcmp (name, "proc") == 0
+      || strcmp (name, "procfs") == 0)
     return NULL;
 
   char *real_name = realpath (name, NULL);
