@@ -234,33 +234,38 @@ AS_IF([test "x$with_libz" != xno], [
 ])
 AC_SUBST([HAVE_LIBZ])
 
-# Save
-oldLIBS="$LIBS"
+AC_ARG_WITH([rump],
+  [AS_HELP_STRING([--without-rump], [disable rump])], , [with_rump=yes])
 
-LIBS="$oldLIBS -lrump"
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <hurd.h>
+AS_IF([test "x$with_rump" != xno], [
+  # Save
+  oldLIBS="$LIBS"
+
+  LIBS="$oldLIBS -lrump"
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <hurd.h>
 #define _STANDALONE
 #include <rump/rump.h>]],
-  [])],
-  [HAVE_LIBRUMP=yes],
-  [HAVE_LIBRUMP=no])
-AC_SUBST([HAVE_LIBRUMP])
+    [])],
+    [HAVE_LIBRUMP=yes],
+    [HAVE_LIBRUMP=no])
+  AC_SUBST([HAVE_LIBRUMP])
 
-LIBS="$oldLIBS -lrumpvfs_nofifofs_pic"
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM(
-    [[#include <hurd.h>
+  LIBS="$oldLIBS -lrumpvfs_nofifofs_pic"
+  AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM(
+      [[#include <hurd.h>
 #define _STANDALONE
 #include <rump/rump.h>]],
-  [])],
-  [HAVE_LIBRUMP_VFSNOFIFO=yes],
-  [HAVE_LIBRUMP_VFSNOFIFO=no])
-AC_SUBST([HAVE_LIBRUMP_VFSNOFIFO])
+    [])],
+    [HAVE_LIBRUMP_VFSNOFIFO=yes],
+    [HAVE_LIBRUMP_VFSNOFIFO=no])
+  AC_SUBST([HAVE_LIBRUMP_VFSNOFIFO])
 
-# Reset
-LIBS="$oldLIBS"
+  # Reset
+  LIBS="$oldLIBS"
+])
 
 AC_ARG_ENABLE(boot-store-types,
 [  --enable-boot-store-types=TYPES...
