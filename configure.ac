@@ -394,11 +394,15 @@ AC_SUBST([HAVE_LIBPCIACCESS])
 AC_SUBST([libpciaccess_CFLAGS])
 AC_SUBST([libpciaccess_LIBS])
 
-AC_CHECK_LIB(acpica, acpi_init, [
-  HAVE_LIBACPICA=yes
-  libacpica_LIBS="-lacpica"
-  libacpica_CFLAGS=""],
-  [HAVE_LIBACPICA=no])
+AC_ARG_WITH([acpica],
+  [AS_HELP_STRING([--without-acpica], [disable acpica])], , [with_acpica=yes])
+
+AS_IF([test "x$with_acpica" != xno], [
+  AC_CHECK_LIB(acpica, acpi_init, [
+    HAVE_LIBACPICA=yes
+    libacpica_LIBS="-lacpica"
+    libacpica_CFLAGS=""])
+])
 AC_SUBST([HAVE_LIBACPICA])
 AC_SUBST([libacpica_CFLAGS])
 AC_SUBST([libacpica_LIBS])
