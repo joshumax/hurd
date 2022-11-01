@@ -460,7 +460,7 @@ dist.tar: $(DISTFILES) FORCE
 clean:
 	rm -f dist.tar
 ifeq ($(clean),yes)
-	rm -f *.d *.o *Server.c *User.c *_S.h *_U.h *.[su]defsi \
+	rm -f *.d *.o *Server.c *User.c *_S.h *_U.h *.[su]defsi *.stamp \
 	      $(cleantarg)
 endif
 
@@ -549,7 +549,7 @@ MIGCOMFLAGS := -subrprefix __
 # But it's convenient to be able to explicitly make the intermediate
 # files when you want to deal with a problem in the MiG stub generator.
 
-%.sdefsi %.sdefs.d: %.defs
+%.sdefs.stamp: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGSFLAGS) $($*-MIGSFLAGS) -DSERVERPREFIX=S_ \
 	  -DHURD_SERVER=1 \
 	  -MD -MF $*.sdefs.d.new \
@@ -557,23 +557,35 @@ MIGCOMFLAGS := -subrprefix __
 	sed -e 's#[^:]*:#$*Server.c $(mig-sheader-prefix)$*_S.h:#' \
 	  < $*.sdefs.d.new > $*.sdefs.d
 	rm $*.sdefs.d.new
+	touch $@
+%.sdefsi %.sdefs.d: %.sdefs.stamp
+	:
 
-$(mig-sheader-prefix)%_S.h %Server.c: %.sdefsi
+%Server.stamp: %.sdefsi
 	$(MIGCOM) $(MIGCOMFLAGS) $(MIGCOMSFLAGS) $($*-MIGCOMSFLAGS) \
 		    -sheader $(mig-sheader-prefix)$*_S.h -server $*Server.c \
 		    -user /dev/null -header /dev/null < $<
+	touch $@
+$(mig-sheader-prefix)%_S.h %Server.c: %Server.stamp
+	:
 
-%.udefsi %.udefs.d: %.defs
+%.udefs.stamp: %.defs
 	$(CPP) $(CPPFLAGS) $(MIGUFLAGS) $($*-MIGUFLAGS) \
 	  -MD -MF $*.udefs.d.new \
 	  $< -o $*.udefsi
 	sed -e 's#[^:]*:#$*User.c $*_U.h:#' \
 	  < $*.udefs.d.new > $*.udefs.d
 	rm $*.udefs.d.new
+	touch $@
+%.udefsi %.udefs.d: %.udefs.stamp
+	:
 
-%_U.h %User.c: %.udefsi
+%User.stamp: %.udefsi
 	$(MIGCOM) $(MIGCOMFLAGS) $(MIGCOMUFLAGS) $($*-MIGCOMUFLAGS) < $< \
 		  -user $*User.c -server /dev/null -header $*_U.h
+	touch $@
+%_U.h %User.c: %User.stamp
+	:
 
 # Where to find .defs files.
 vpath %.defs $(top_srcdir)/hurd
