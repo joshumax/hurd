@@ -1097,6 +1097,7 @@ _proc_stat_free (ps)
 	    0, &ps->task_events_info_buf, char);
   MFREEMEM (PSTAT_THREAD_WAITS, thread_waits, ps->thread_waits_len,
 	    ps->thread_waits_vm_alloced, 0, char);
+  MFREEMEM (PSTAT_EXE, exe, sizeof(string_t), ps->exe_vm_alloced, 0, char);
 
   FREE (ps);
 }
