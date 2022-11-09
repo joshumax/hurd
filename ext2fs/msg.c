@@ -47,7 +47,7 @@ void _ext2_error (const char * function, const char * fmt, ...)
   pthread_mutex_lock (&printf_lock);
 
   va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
+  vsnprintf (error_buf, sizeof (error_buf), fmt, args);
   va_end (args);
 
   fprintf (stderr, "ext2fs: %s: %s: %s\n", diskfs_disk_name, function, error_buf);
@@ -62,7 +62,7 @@ void _ext2_panic (const char * function, const char * fmt, ...)
   pthread_mutex_lock (&printf_lock);
 
   va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
+  vsnprintf (error_buf, sizeof (error_buf), fmt, args);
   va_end (args);
 
   fprintf(stderr, "ext2fs: %s: panic: %s: %s\n",
@@ -80,7 +80,7 @@ void ext2_warning (const char * fmt, ...)
   pthread_mutex_lock (&printf_lock);
 
   va_start (args, fmt);
-  vsprintf (error_buf, fmt, args);
+  vsnprintf (error_buf, sizeof (error_buf), fmt, args);
   va_end (args);
 
   fprintf (stderr, "ext2fs: %s: warning: %s\n", diskfs_disk_name, error_buf);
