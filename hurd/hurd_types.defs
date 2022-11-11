@@ -425,7 +425,13 @@ type idarray_t = array[] of uid_t;
 
 type rusage_t = struct[18] of int; /* XXX */
 
-type flock_t = struct[7] of int; /* l_start and l_len are 64 bit */
+type flock_t = struct {
+   int l_type;
+   int l_whence;
+   loff_t l_start;
+   loff_t l_len;
+   pid_t l_pid;
+};
 
 type timespec_t = struct[2] of int;
 
