@@ -22,6 +22,7 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 subsystem iioctl 112000; /* XXX */
 
 #include <hurd/hurd_types.defs>
+#include <hurd/ioctl_types.defs>
 
 #ifdef IIOCTL_IMPORTS
 IIOCTL_IMPORTS
@@ -29,18 +30,9 @@ IIOCTL_IMPORTS
 
 INTR_INTERFACE
 
-import <hurd/ioctl_types.h>; /* XXX */
-
-/* This is the first arg for a struct ifreq_something as specified by the
-   definition of _IOT_ifreq_something in <net/if.h>.  */
-type ifname_t = array[16] of char;	/* IFNAMSIZ is 16.  */
-
 /* This is the second arg of struct ifreq as specified by the
    definition of _IOT_ifreq in <net/if.h>. */
 type sockaddr_t = struct[16] of char;	/* sizeof(struct sockaddr) is 16.  */
-
-/* This is the struct srtentry from <net/route.h>. */
-type srtentry_t = struct[10] of int;	/* sizeof(struct srtentry) is 40. */
 
 skip; skip; skip; skip; /* 0 1 2 3 unused */
 skip; skip; skip; skip; /* 4 5 6 7 unused */

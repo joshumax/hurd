@@ -1,4 +1,4 @@
-/* Definitions for route ioctls
+/* Definitions for interface ioctls
    Copyright (C) 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU Hurd.
@@ -17,32 +17,24 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-
-/* Ioctl class `r'; the subsystem is derived from calculations in
-   <ioctls.h>. */
-subsystem rioctl 148000; /* XXX */
-
 #include <hurd/hurd_types.defs>
-#include <hurd/ioctl_types.defs>
 
-#ifdef RIOCTL_IMPORTS
-RIOCTL_IMPORTS
-#endif
+import <hurd/ioctl_types.h>;
 
-INTR_INTERFACE
+/* Needs to be kept in sync with ioctl_types.h */
+type srtentry_t = struct {
+	uint32_t rt_dest;
+	uint32_t rt_mask;
+	uint32_t rt_gateway;
+	int rt_flags;
+	int rt_metric;
+	int rt_mtu;
+	int rt_window;
+	int rt_irtt;
+	int rt_tos;
+	int rt_class;
+};
 
-skip; skip; skip; skip; /* 0 1 2 3 unused */
-skip; skip; skip; skip; /* 4 5 6 7 unused */
-skip; skip; 		/* 8 9 unused */
-
-/* 10 SIOCADDRT */
-routine rioctl_siocaddrt (
-	reqport: io_t;
-	ifnam: ifname_t;
-	route: srtentry_t);
-
-/* 11 SIOCDELRT */
-routine rioctl_siocdelrt (
-	reqport: io_t;
-	ifnam: ifname_t;
-	route: srtentry_t);
+/* This is the first arg for a struct ifreq_something as specified by the
+   definition of _IOT_ifreq_something in <net/if.h>.  */
+type ifname_t = array[16] of char;	/* IFNAMSIZ is 16.  */
