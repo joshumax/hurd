@@ -17,6 +17,9 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+/* Ioctl class `i'; the subsystem is derived from calculations in
+   <ioctls.h>. */
+subsystem iioctl 112000; /* XXX */
 
 #include <hurd/hurd_types.defs>
 
@@ -25,10 +28,6 @@ IIOCTL_IMPORTS
 #endif
 
 INTR_INTERFACE
-
-/* Ioctl class `i'; the subsystem is derived from calculations in
-   <ioctls.h>. */
-subsystem iioctl 112000; /* XXX */
 
 import <hurd/ioctl_types.h>; /* XXX */
 

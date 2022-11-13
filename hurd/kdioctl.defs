@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
-#include <hurd/hurd_types.defs>
-
 /* Ioctl class `k'; the subsystem is derived from calculations in
    <ioctls.h>. */
 subsystem kdioctl 120000;
+
+#include <hurd/hurd_types.defs>
 
 import <hurd/ioctl_types.h>;
 
