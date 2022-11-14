@@ -21,7 +21,6 @@ the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
    <ioctls.h>. */
 subsystem iioctl 112000; /* XXX */
 
-#include <hurd/hurd_types.defs>
 #include <hurd/ioctl_types.defs>
 
 #ifdef IIOCTL_IMPORTS
