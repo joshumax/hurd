@@ -1493,6 +1493,8 @@ S_startup_essential_task (mach_port_t server,
   if (fail)
     return fail;
 
+  task_set_essential (task, TRUE);
+
   /* Always deallocate the extra reference this message carries.  */
   if (MACH_PORT_VALID (credential))
     mach_port_deallocate (mach_task_self (), credential);
