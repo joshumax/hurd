@@ -42,6 +42,7 @@
 #include <hurd.h>
 #include <hurd/port.h>
 #include <hurd/fd.h>
+#include <hurd/paths.h>
 /* XXX */
 
 #include "default_pager.h"
@@ -140,6 +141,18 @@ main (int argc, char **argv)
     error (3, err, "cannot mark us as important");
 
   mach_port_deallocate (mach_task_self (), proc);
+
+  /* Mark us as essential.  */
+  mach_port_t startup;
+  startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
+  if (startup == MACH_PORT_NULL)
+    error (0, errno, "WARNING: Cannot register as essential task\n");
+
+  startup_essential_task (startup, mach_task_self (), MACH_PORT_NULL,
+			  program_invocation_short_name,
+			  bootstrap_master_host_port);
+
+  mach_port_deallocate (mach_task_self (), startup);
 
   printf_init(bootstrap_master_device_port);
 
