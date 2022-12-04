@@ -43,6 +43,7 @@
 #include <hurd/port.h>
 #include <hurd/fd.h>
 #include <hurd/paths.h>
+#include <assert-backtrace.h>
 /* XXX */
 
 #include "default_pager.h"
@@ -197,5 +198,5 @@ panic (const char *fmt, ...)
   va_start (ap, fmt);
   vfprintf (stderr, fmt, ap);
   va_end (ap);
-  exit (3);
+  assert_backtrace (0);
 }
