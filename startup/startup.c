@@ -497,7 +497,7 @@ argz_task_insert_right (char **argz, size_t *argz_len, task_t task,
     }
   while (err == KERN_NAME_EXISTS);
 
-  if (asprintf (&arg, "--%s=%lu", argument, name) < 0)
+  if (asprintf (&arg, "--%s=%u", argument, name) < 0)
     return errno;
 
   err = argz_add (argz, argz_len, arg);
@@ -1638,7 +1638,7 @@ do_mach_notify_dead_name (mach_port_t notify_port,
 		   boots[i].name);
 	    crash_mach ();
 	  }
-      error (0, 0, "BUG!  Unexpected dead-name notification (name %#lx)",
+      error (0, 0, "BUG!  Unexpected dead-name notification (name %#x)",
 	     name);
       crash_mach ();
     }

@@ -35,7 +35,7 @@ print_xlated_port_info (mach_port_t name, mach_port_type_t type,
   error_t err = port_name_xlator_xlate (x, name, type, &name, &type);
   if (! err)
     {
-      fprintf (stream, (show & PORTINFO_HEX_NAMES) ? "%#6lx => " : "%6lu => ",
+      fprintf (stream, (show & PORTINFO_HEX_NAMES) ? "%#6x => " : "%6u => ",
 	       old_name);
       err = print_port_info (name, type, x->to_task, show, stream);
     }

@@ -232,7 +232,7 @@ main (int argc, char **argv)
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
     ext2_panic ("device too small for superblock (%Ld bytes)", store->size);
   if (store->log2_blocks_per_page < 0)
-    ext2_panic ("device block size (%zu) greater than page size (%zd)",
+    ext2_panic ("device block size (%zu) greater than page size (%lu)",
 		store->block_size, vm_page_size);
 
   /* Map the entire disk. */

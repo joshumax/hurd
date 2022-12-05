@@ -248,7 +248,7 @@ diskfs_start_bootstrap ()
       while (err == KERN_NAME_EXISTS);
       diskfs_kernel_task = MACH_PORT_NULL;
 
-      len = snprintf (buf, sizeof buf, "--kernel-task=%lu", kernel_task_name);
+      len = snprintf (buf, sizeof buf, "--kernel-task=%u", kernel_task_name);
       assert_backtrace (len > 0);
       assert_backtrace ((size_t) len < sizeof buf);
       /* Insert as second argument.  */

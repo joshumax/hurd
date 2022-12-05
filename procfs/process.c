@@ -191,7 +191,7 @@ process_file_gc_maps (struct proc_stat *ps, char **contents)
 	  else
 	    mach_port_deallocate (mach_task_self (), obj);
 
-	  fprintf (s, "[mem_obj=%lu]\n", obj);
+	  fprintf (s, "[mem_obj=%u]\n", obj);
 	}
       else
 	fprintf (s, "\n");

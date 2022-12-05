@@ -905,7 +905,7 @@ static void
 disk_cache_init (void)
 {
   if (block_size != vm_page_size)
-    ext2_panic ("Block size %u != vm_page_size %u",
+    ext2_panic ("Block size %u != vm_page_size %lu",
 		block_size, vm_page_size);
 
   pthread_mutex_init (&disk_cache_lock, NULL);

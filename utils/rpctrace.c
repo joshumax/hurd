@@ -353,7 +353,7 @@ new_send_wrapper (struct receiver_info *receive, task_t task,
   assert_perror_backtrace (err);
 
   TRACED_INFO (info)->name = 0;
-  asprintf (&TRACED_INFO (info)->name, "  %lu<--%lu(pid%d)", 
+  asprintf (&TRACED_INFO (info)->name, "  %u<--%u(pid%d)",
 	    receive->forward, TRACED_INFO (info)->pi.port_right, task2pid (task));
   TRACED_INFO (info)->type = MACH_MSG_TYPE_MOVE_SEND;
   info->task = task;
@@ -979,7 +979,7 @@ wrap_all_threads (task_t task)
 						  task, &new_thread_port);
 	  free (TRACED_INFO (thread_send_wrapper)->name);
 	  asprintf (&TRACED_INFO (thread_send_wrapper)->name,
-		    "thread%lu(pid%d)", threads[i], task2pid (task));
+		    "thread%u(pid%d)", threads[i], task2pid (task));
 
 	  err = mach_port_insert_right (mach_task_self (),
 					new_thread_port, new_thread_port,
@@ -1031,7 +1031,7 @@ wrap_new_thread (mach_msg_header_t *inp, struct req_info *req)
   mach_port_deallocate (mach_task_self (), reply->child_thread);
 
   free (TRACED_INFO (send_wrapper)->name);
-  asprintf (&TRACED_INFO (send_wrapper)->name, "thread%lu(pid%d)",
+  asprintf (&TRACED_INFO (send_wrapper)->name, "thread%u(pid%d)",
 	    thread_port, task2pid (req->from));
   ports_port_deref (send_wrapper);
 }
@@ -1078,10 +1078,10 @@ wrap_new_task (mach_msg_header_t *inp, struct req_info *req)
 
   pid = task2pid (task_port);
   free (TRACED_INFO (task_wrapper1)->name);
-  asprintf (&TRACED_INFO (task_wrapper1)->name, "task%lu(pid%d)",
+  asprintf (&TRACED_INFO (task_wrapper1)->name, "task%u(pid%d)",
 	    task_port, task2pid (req->from));
   free (TRACED_INFO (task_wrapper2)->name);
-  asprintf (&TRACED_INFO (task_wrapper2)->name, "task%lu(pid%d)",
+  asprintf (&TRACED_INFO (task_wrapper2)->name, "task%u(pid%d)",
 	    task_port, pid);
   ports_port_deref (task_wrapper1);
 }
@@ -1648,7 +1648,7 @@ traced_spawn (char **argv, char **envp)
   ti = new_send_wrapper (receive_ti, traced_task, &task_wrapper);
   ti->task = traced_task;
   free (TRACED_INFO (ti)->name);
-  asprintf (&TRACED_INFO (ti)->name, "task%lu(pid%d)", traced_task, pid);
+  asprintf (&TRACED_INFO (ti)->name, "task%u(pid%d)", traced_task, pid);
 
   /* Replace the task's kernel port with the wrapper.  When this task calls
      `mach_task_self ()', it will get our wrapper send right instead of its
