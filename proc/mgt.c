@@ -926,11 +926,10 @@ complete_proc (struct proc *p, pid_t pid)
      defer registering death notifications and adding it to the hash
      tables.  */
   if (pid != HURD_PID_STARTUP)
-    {
-      proc_death_notify (p);
-      add_proc_to_hash (p);
-    }
+    add_proc_to_hash (p);
   join_pgrp (p);
+  if (pid != HURD_PID_STARTUP)
+    proc_death_notify (p);
 }
 
 
@@ -1282,8 +1281,8 @@ S_proc_set_init_task(struct proc *callerp,
     }
 
   init_proc->p_task = task;
-  proc_death_notify (init_proc);
   add_proc_to_hash (init_proc);
+  proc_death_notify (init_proc);
 
   return 0;
 }

@@ -219,8 +219,8 @@ main (int argc, char **argv, char **envp)
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
 
-  proc_death_notify (startup_proc);
   add_proc_to_hash (startup_proc); /* Now that we have the task port.  */
+  proc_death_notify (startup_proc);
 
   /* Set our own argv and envp locations.  */
   self_proc->p_argv = (vm_address_t) argv;
