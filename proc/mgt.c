@@ -1365,6 +1365,9 @@ S_mach_notify_new_task (struct port_info *notify,
       || (kernel_proc != NULL && notify != (struct port_info *) kernel_proc))
     return EOPNOTSUPP;
 
+  if (task == MACH_PORT_DEAD)
+    return ESRCH;
+
   parentp = task_find_nocreate (parent);
   if (! parentp)
     return ESRCH;
