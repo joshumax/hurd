@@ -690,10 +690,10 @@ S_proc_exception_raise (struct exc *e,
 	 the faulting thread's state to run its recovery code, which should
 	 dequeue that message.  */
       err = thread_set_state (thread, e->flavor, e->thread_state, e->statecnt);
-      mach_port_deallocate (mach_task_self (), thread);
-      mach_port_deallocate (mach_task_self (), task);
       if (err)
 	return err;
+      mach_port_deallocate (mach_task_self (), thread);
+      mach_port_deallocate (mach_task_self (), task);
       return MIG_NO_REPLY;
 
     default:
@@ -1367,11 +1367,7 @@ S_mach_notify_new_task (struct port_info *notify,
 
   parentp = task_find_nocreate (parent);
   if (! parentp)
-    {
-      mach_port_deallocate (mach_task_self (), task);
-      mach_port_deallocate (mach_task_self (), parent);
-      return ESRCH;
-    }
+    return ESRCH;
 
   childp = task_find_nocreate (task);
   if (! childp)
@@ -1411,10 +1407,7 @@ S_proc_make_task_namespace (struct proc *callerp,
     return EINVAL;
 
   if (MACH_PORT_VALID (callerp->p_task_namespace))
-    {
-      mach_port_deallocate (mach_task_self (), notify);
-      return EBUSY;
-    }
+    return EBUSY;
 
   callerp->p_task_namespace = notify;
 
