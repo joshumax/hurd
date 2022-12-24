@@ -1198,7 +1198,8 @@ add_tasks (task_t task)
 		  if (!p)
 		    {
 		      p = new_proc (tasks[j]);
-		      set = 1;
+		      if (p)
+			set = 1;
 		    }
 		  if (!foundp && tasks[j] == task)
 		    foundp = p;
