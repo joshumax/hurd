@@ -32,6 +32,28 @@
 #include <hurd/ihash.h>
 
 /*
+ * Note: lock ordering:
+ *
+ * - all_partitions.lock
+ * - part->p_lock
+ *
+ * (from S_default_pager_objects)
+ * - all_pagers.lock
+ * - dstruct_lock
+ *
+ * (from S_default_pager_object_set_size that calls pager_truncate)
+ * - dstruct_lock
+ * - pager.lock
+ * - part->p_lock
+ *
+ * (from destroy_paging_partition)
+ * - all_partitions.lock
+ * - part->p_lock
+ * - all_pagers.lock
+ * - dstruct_lock
+ */
+
+/*
  * Bitmap allocation.
  */
 typedef unsigned int	bm_entry_t;
