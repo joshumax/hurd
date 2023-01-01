@@ -87,11 +87,11 @@ error_t netfs_attempt_read (struct iouser *cred, struct node *np,
 
   contents += offset;
   contents_len -= offset;
+  if (contents_len < 0)
+    contents_len = 0;
 
   if (*len > contents_len)
     *len = contents_len;
-  if (*len < 0)
-    *len = 0;
 
   memcpy (data, contents, *len);
   return 0;
