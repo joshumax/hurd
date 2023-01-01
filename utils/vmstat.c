@@ -228,8 +228,8 @@ static val_t
 get_size (struct vm_state *state, const struct field *field)
 {
   return
-    (state->vmstats.free_count + state->vmstats.active_count
-     + state->vmstats.inactive_count + state->vmstats.wire_count)
+    ((val_t) (state->vmstats.free_count + state->vmstats.active_count
+     + state->vmstats.inactive_count + state->vmstats.wire_count))
     * state->vmstats.pagesize;
 }
 
