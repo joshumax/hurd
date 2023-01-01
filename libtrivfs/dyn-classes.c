@@ -104,6 +104,8 @@ add_el (void *el, void (*free_el)(),
     {
       if (free_el)
 	(*free_el) (el);
+      free (new_vec);
+      free (new_aux_vec);
       /* One of the vectors might be the wrong size, but who cares.  */
       return ENOMEM;
     }
