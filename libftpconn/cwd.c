@@ -41,7 +41,10 @@ _cache_cwd (struct ftp_conn *conn, int reopen)
 	  if (! cwd)
 	    err = ENOMEM;
 	  else if (sscanf (txt, "\"%[^\"]\"", cwd) != 1)
-	    err = EGRATUITOUS;
+	    {
+	      free (cwd);
+	      err = EGRATUITOUS;
+	    }
 	  else
 	    {
 	      if (conn->cwd)
