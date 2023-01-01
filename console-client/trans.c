@@ -814,7 +814,7 @@ console_create_consnode (const char *name, consnode_t *cn)
   (*cn)->name = strdup (name);
   if (!(*cn)->name)
     {
-      free (cn);
+      free (*cn);
       return ENOMEM;
     }
 
