@@ -84,18 +84,16 @@ cons_vcons_move_mouse (vcons_t vcons, mouse_event_t ev)
 
 	case CONS_VCONS_MOUSE_BUTTON_PRESSED:
 	  /* Make an xterm like event string.  */
-	  CONS_MOUSE_EVENT (event, ev->button, (int) mousepos_x + 1, (int) mousepos_y + 1);
-
-	  _cons_vcons_input (vcons, event, CONS_MOUSE_EVENT_LENGTH);
-	  /* And send it to the server.  */
+	  if (CONS_MOUSE_EVENT (event, ev->button, (int) mousepos_x + 1, (int) mousepos_y + 1))
+	    /* And send it to the server.  */
+	    _cons_vcons_input (vcons, event, CONS_MOUSE_EVENT_LENGTH);
 	  break;
 
 	case CONS_VCONS_MOUSE_BUTTON_RELEASED:
 	  /* Make an xterm like event string.  */
-	  CONS_MOUSE_EVENT (event, CONS_MOUSE_RELEASE, (int) mousepos_x + 1, (int) mousepos_y + 1);
-
-	  /* And send it to the server.  */
-	  _cons_vcons_input (vcons,  event, CONS_MOUSE_EVENT_LENGTH);
+	  if (CONS_MOUSE_EVENT (event, CONS_MOUSE_RELEASE, (int) mousepos_x + 1, (int) mousepos_y + 1))
+	    /* And send it to the server.  */
+	    _cons_vcons_input (vcons,  event, CONS_MOUSE_EVENT_LENGTH);
 	  break;
 	}
     }
