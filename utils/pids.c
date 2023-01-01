@@ -57,7 +57,7 @@ add_fn_pids (pid_t **pids, size_t *num_pids, unsigned id,
       pid_t *new = realloc (*pids, new_sz * sizeof (pid_t));
       if (new)
 	{
-	  bcopy (new_pids, new + (*num_pids * sizeof (pid_t)),
+	  bcopy (new_pids, new + *num_pids,
 		 num_new_pids * sizeof (pid_t));
 	  *pids = new;
 	  *num_pids = new_sz;
