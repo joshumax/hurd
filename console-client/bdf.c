@@ -632,7 +632,7 @@ bdf_new (bdf_font_t *font, int version_maj, int version_min,
   bdf->version_maj = version_maj;
   bdf->version_min = version_min;
   bdf->name = strdup (name);
-  if (!name)
+  if (!bdf->name)
     {
       free (bdf);
       errno = ENOMEM;
