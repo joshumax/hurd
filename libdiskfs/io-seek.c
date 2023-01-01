@@ -44,6 +44,7 @@ diskfs_S_io_seek (struct protid *cred,
       goto check;
     case SEEK_END:
       offset += np->dn_stat.st_size;
+      /* fall through */
     case SEEK_SET:
     check:
       /* pager_memcpy inherently uses vm_offset_t, which may be smaller than
