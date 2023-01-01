@@ -93,6 +93,8 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 	    else
 	      idvec_free (cache);
 	  }
+	else if (cache)
+	  idvec_free (cache);
       }
 
     return err;
