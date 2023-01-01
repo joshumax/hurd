@@ -361,7 +361,10 @@ pager_start_workers (struct port_bucket *pager_bucket,
 
 done:
   if (err)
-    *out_requests = NULL;
+    {
+      free (requests);
+      *out_requests = NULL;
+    }
   else
     *out_requests = requests;
 
