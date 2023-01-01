@@ -337,7 +337,8 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       (long unsigned) swap.dpi_free_space / 1024);
 
  out:
-  fclose (m);
+  if (m)
+    fclose (m);
   return err;
 }
 
