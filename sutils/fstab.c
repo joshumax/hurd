@@ -163,6 +163,7 @@ fstypes_get (struct fstypes *types, const char *name, struct fstype **fstype)
   type->name = strdup (name);
   if (type->name == 0)
     {
+      free (program);
       free (type);
       return ENOMEM;
     }
