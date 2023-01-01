@@ -56,6 +56,11 @@ get_nonsugid_ids (struct idvec *uids, struct idvec *gids)
 	}
       mach_port_deallocate (mach_task_self (), auth);
 
+      if (p_eff_uids)
+	  idvec_free (p_eff_uids);
+      if (p_eff_gids)
+	  idvec_free (p_eff_gids);
+
       return err;
     }
   else
