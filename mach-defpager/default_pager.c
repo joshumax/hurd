@@ -3790,28 +3790,30 @@ void overcommitted(got_more_space, space)
 
 	static boolean_t user_warned = FALSE;
 	static vm_size_t pages_shortage = 0;
+	ssize_t		total_free;
 
 	paging_space_info(&pages_total, &pages_free);
 
 	/*
 	 * If user added more space, see if it is enough
 	 */
+	total_free = pages_free;
 	if (got_more_space) {
-		pages_free -= pages_shortage;
-		if (pages_free > 0) {
+		total_free -= pages_shortage;
+		if (total_free > 0) {
 			pages_shortage = 0;
 			if (user_warned)
 				dprintf("%s paging space ok now.\n", my_name);
 		} else
-			pages_shortage = pages_free;
+			pages_shortage = total_free;
 		user_warned = FALSE;
 		return;
 	}
 	/*
 	 * We ran out of gas, let user know.
 	 */
-	pages_free -= space;
-	pages_shortage = (pages_free > 0) ? 0 : -pages_free;
+	total_free -= space;
+	pages_shortage = (total_free > 0) ? 0 : -total_free;
 	if (!user_warned && pages_shortage) {
 		user_warned = TRUE;
 		dprintf("%s paging space over-committed.\n", my_name);
