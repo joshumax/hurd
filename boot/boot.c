@@ -559,9 +559,10 @@ main (int argc, char **argv, char **envp)
 
   if (want_privileged)
     {
-      get_privileged_ports (&privileged_host_port, &master_device_port);
-      privileged = MACH_PORT_VALID (master_device_port);
+      if (get_privileged_ports (&privileged_host_port, &master_device_port))
+        error (1, 0, "Must be run as root for privileged subhurds");
 
+      privileged = MACH_PORT_VALID (master_device_port);
       if (! privileged)
         error (1, 0, "Must be run as root for privileged subhurds");
     }

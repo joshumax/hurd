@@ -221,8 +221,14 @@ static void
 essential_task (void)
 {
   mach_port_t host, startup;
+  error_t err;
 
-  get_privileged_ports (&host, 0);
+  err = get_privileged_ports (&host, 0);
+  if (err)
+    {
+      mach_print ("WARNING: Cannot register as essential task\n");
+      return;
+    }
   startup = file_name_lookup (_SERVERS_STARTUP, 0, 0);
   if (startup == MACH_PORT_NULL)
     {

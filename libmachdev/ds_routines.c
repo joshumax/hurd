@@ -117,9 +117,11 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
   /* Fall back to opening kernel device master */
   if (err)
     {
-      get_privileged_ports(NULL, &dev_master);
-      err = device_open (dev_master, mode, name, devp);
-      *devicePoly = MACH_MSG_TYPE_MOVE_SEND;
+      err = get_privileged_ports(NULL, &dev_master);
+      if (!err)
+        err = device_open (dev_master, mode, name, devp);
+      if (!err)
+        *devicePoly = MACH_MSG_TYPE_MOVE_SEND;
     }
   return err;
 }
