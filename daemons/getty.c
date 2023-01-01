@@ -68,7 +68,7 @@ load_banner (void)
 {
   char *buf = NULL, *p;
   struct stat st;
-  int fd;
+  int fd = -1;
   ssize_t remaining, count;
 
   fd = open (_PATH_ISSUE, O_RDONLY);
@@ -101,6 +101,8 @@ load_banner (void)
   return buf;
 
  out:
+  if (fd != -1)
+    close (fd);
   free (buf);
   return "\n\\s \\r (\\n) (\\l)\r\n\n";
 }
