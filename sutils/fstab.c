@@ -79,7 +79,7 @@ fstypes_create (const char *search_fmts, size_t search_fmts_len,
       new->program_search_fmts_len = search_fmts_len;
       if (! new->program_search_fmts)
 	{
-	  free (types);
+	  free (new);
 	  return ENOMEM;
 	}
       bcopy (search_fmts, new->program_search_fmts, search_fmts_len);
