@@ -1458,10 +1458,11 @@ S_io_read (mach_port_t object,
   ioctl (0, FIONREAD, &avail);
   if (avail)
     {
+      data_t orig_data = *data;
       if (amount > *datalen)
 	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       *datalen = read (0, *data, amount);
-      if (*datalen == -1)
+      if (*datalen == -1 && *data != orig_data)
 	munmap (*data, amount);
       unlock_readlock ();
       return *datalen == -1 ? errno : 0;
