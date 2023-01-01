@@ -34,7 +34,10 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
   po->filepointer = 0;
   err = fshelp_rlock_po_init (&po->lock_status);
   if (err)
-    return NULL;
+    {
+      free (po);
+      return NULL;
+    }
   refcount_init (&po->refcnt, 1);
   po->openstat = flags;
   po->np = np;
@@ -46,7 +49,8 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
 	{
 	  po->path = strdup (context->path);
 	  if (! po->path) {
-	    free(po);
+	    fshelp_rlock_po_fini (&po->lock_status);
+	    free (po);
 	    return NULL;
 	  }
 	}

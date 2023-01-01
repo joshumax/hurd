@@ -34,7 +34,10 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 
   err = fshelp_rlock_po_init (&po->lock_status);
   if (err)
-    return err;
+    {
+      free (po);
+      return err;
+    }
 
   po->filepointer = 0;
   refcount_init (&po->refcnt, 1);
@@ -48,7 +51,11 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 	{
 	  po->path = strdup (context->path);
 	  if (! po->path)
-	    return ENOMEM;
+	    {
+	      fshelp_rlock_po_fini (&po->lock_status);
+	      free (po);
+	      return ENOMEM;
+	    }
 	}
 
       po->root_parent = context->root_parent;
