@@ -1896,7 +1896,8 @@ display_create (display_t *r_display, const char *encoding,
       ports_destroy_right (display->notify_port);
       free (display);
     }
-  *r_display = display;
+  else
+    *r_display = display;
   return err;
 }
 
