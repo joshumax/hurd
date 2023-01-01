@@ -1072,12 +1072,12 @@ void limit_cursor (display_t display)
 
   if (user->cursor.col >= user->screen.width)
     user->cursor.col = user->screen.width - 1;
-  else if (user->cursor.col < 0)
+  else if ((int32_t) user->cursor.col < 0)
     user->cursor.col = 0;
       
   if (user->cursor.row >= user->screen.height)
     user->cursor.row = user->screen.height - 1;
-  else if (user->cursor.row < 0)
+  else if ((int32_t) user->cursor.row < 0)
     user->cursor.row = 0;
   
   /* XXX Flag cursor change.  */
