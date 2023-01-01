@@ -160,10 +160,7 @@ S_password_check_user (struct trivfs_protid *cred, uid_t user, const_string_t pw
 
   if (cred->pi.bucket != port_bucket ||
       cred->pi.class != trivfs_protid_class)
-    {
-      ports_port_deref (cred);
-      return EOPNOTSUPP;
-    }
+    return EOPNOTSUPP;
 
   /* Verify password.  */
   err = ugids_add_user (&ugids, user, 1);
