@@ -356,7 +356,11 @@ addr_get_sock (struct addr *addr, struct sock **sock)
   pthread_mutex_lock (&addr->lock);
   *sock = addr->sock;
   if (*sock)
-    (*sock)->refs++;
+    {
+      pthread_mutex_lock (&(*sock)->lock);
+      (*sock)->refs++;
+      pthread_mutex_unlock (&(*sock)->lock);
+    }
   pthread_mutex_unlock (&addr->lock);
   return *sock ? 0 : EADDRNOTAVAIL;
 }
