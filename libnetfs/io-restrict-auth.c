@@ -48,6 +48,7 @@ netfs_S_io_restrict_auth (struct protid *user,
     {
       *newport = ports_get_right (newpi);
       *newporttype = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
     }
   else
     {
@@ -56,6 +57,5 @@ netfs_S_io_restrict_auth (struct protid *user,
       err = ENOMEM;
     }
 
-  ports_port_deref (newpi);
   return err;
 }
