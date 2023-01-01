@@ -128,7 +128,7 @@ S_pfinet_getroutes (io_t port,
   error_t err = 0;
   ifrtreq_t rs[MAX_ROUTES];
   int n;
-  ifrtreq_t *rtable;
+  ifrtreq_t *rtable = NULL;
 
   pthread_mutex_lock (&global_lock);
 
