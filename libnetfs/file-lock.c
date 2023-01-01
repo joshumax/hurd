@@ -30,7 +30,7 @@ netfs_S_file_lock (struct protid *user,
   error_t err;
   struct flock64 lock;
   struct node *node;
-  int openstat = user->po->openstat;
+  int openstat;
   mach_port_t rendezvous = MACH_PORT_NULL;
 
   if (!user)
@@ -54,6 +54,7 @@ netfs_S_file_lock (struct protid *user,
     From flock(2): A shared or exclusive lock can be placed on a file
     regardless of the mode in which the file was opened.
   */
+  openstat = user->po->openstat;
   if (openstat & (O_RDONLY|O_WRONLY|O_EXEC)) openstat |= O_RDONLY|O_WRONLY;
 
   node = user->po->np;
