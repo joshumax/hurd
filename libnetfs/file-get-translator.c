@@ -62,6 +62,9 @@ netfs_S_file_get_translator (struct protid *user,
 	  (*trans)[sizeof _HURD_SYMLINK + np->nn_stat.st_size] = '\0';
 	  *translen = len;
 	}
+      else
+	if (len > *translen)
+	  munmap (*trans, len);
     }
   else if (S_ISCHR (np->nn_stat.st_mode) || S_ISBLK (np->nn_stat.st_mode))
     {
