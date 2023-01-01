@@ -60,9 +60,9 @@ diskfs_S_fsys_get_children (struct diskfs_control *fsys,
 
   err = iohelp_return_malloced_buffer ((char *) c, c_count * sizeof *c,
                                        (char **) controls, controlsCnt);
+  c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
   if (err)
     goto errout;
-  c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
 
   *controlsPoly = MACH_MSG_TYPE_MOVE_SEND;
   *controlsCnt = c_count;

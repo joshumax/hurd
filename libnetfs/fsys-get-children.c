@@ -54,15 +54,15 @@ netfs_S_fsys_get_children (struct netfs_control *fsys,
     goto errout;
 
   err = iohelp_return_malloced_buffer (n, n_len, names, names_len);
+  n = NULL; /* n was freed by iohelp_return_malloced_buffer. */
   if (err)
     goto errout;
-  n = NULL; /* n was freed by iohelp_return_malloced_buffer. */
 
   err = iohelp_return_malloced_buffer ((char *) c, c_count * sizeof *c,
                                        (char **) controls, controlsCnt);
+  c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
   if (err)
     goto errout;
-  c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
 
   *controlsPoly = MACH_MSG_TYPE_MOVE_SEND;
   *controlsCnt = c_count;
