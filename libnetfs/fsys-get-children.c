@@ -63,7 +63,7 @@ netfs_S_fsys_get_children (struct netfs_control *fsys,
   c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
   if (err)
     {
-      if (*names != *orig_names)
+      if (*names != orig_names)
 	munmap (*names, n_len);
       goto errout;
     }
