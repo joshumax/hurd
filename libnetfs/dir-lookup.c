@@ -412,7 +412,9 @@ netfs_S_dir_lookup (struct protid *dircred,
 
   if (mustbedir)
     {
-      netfs_validate_stat (np, dircred->user);
+      err = netfs_validate_stat (np, dircred->user);
+      if (err)
+	goto out;
       if (!S_ISDIR (np->nn_stat.st_mode))
 	{
 	  err = ENOTDIR;
