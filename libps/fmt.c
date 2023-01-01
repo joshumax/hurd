@@ -49,7 +49,7 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
     return ENOMEM;
 
   new_fmt = NEW (struct ps_fmt);
-  if (fmt == NULL)
+  if (new_fmt == NULL)
     {
       FREE (fields);
       return ENOMEM;
