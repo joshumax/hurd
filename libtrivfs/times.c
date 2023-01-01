@@ -41,6 +41,7 @@ trivfs_set_atime (struct trivfs_control *cntl)
       io_stat (cntl->underlying, &st);
 
       TIMESPEC_TO_TIME_VALUE (&atim, &st.st_atim);
+      mtim.seconds = -1;
       mtim.microseconds = -1;
       err = file_utimes (cntl->underlying, atim, mtim);
     }
@@ -71,6 +72,7 @@ trivfs_set_mtime (struct trivfs_control *cntl)
 
       io_stat (cntl->underlying, &st);
 
+      atim.seconds = -1;
       atim.microseconds = -1;
       TIMESPEC_TO_TIME_VALUE (&mtim, &st.st_mtim);
       err = file_utimes (cntl->underlying, atim, mtim);
