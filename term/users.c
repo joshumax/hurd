@@ -2181,19 +2181,12 @@ S_term_get_peername (struct trivfs_protid *cred,
     return EOPNOTSUPP;
 
   if (!cred || (cred->pi.class != tty_class && cred->pi.class != pty_class))
-    {
-      if (cred)
-	ports_port_deref (cred);
-      return EOPNOTSUPP;
-    }
+    return EOPNOTSUPP;
 
   peer = (cred->pi.class == tty_class) ? ptyctl : termctl;
 
   if (bottom != &ptyio_bottom || !peer->hook)
-    {
-      ports_port_deref (cred);
-      return ENOENT;
-    }
+    return ENOENT;
 
   strcpy (name, (char *) peer->hook);
 
