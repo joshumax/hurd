@@ -79,10 +79,13 @@ S_socket_create (trivfs_protid_t pf,
 	*port_type = MACH_MSG_TYPE_MAKE_SEND;
     }
 
-  if (pf->user->uids->num > 0)
-    sock->uid = pf->user->uids->ids[0];
-  if (pf->user->gids->num > 0)
-    sock->gid = pf->user->gids->ids[0];
+  if (!err)
+    {
+      if (pf->user->uids->num > 0)
+	sock->uid = pf->user->uids->ids[0];
+      if (pf->user->gids->num > 0)
+	sock->gid = pf->user->gids->ids[0];
+    }
   
   return err;
 }
