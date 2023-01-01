@@ -96,7 +96,7 @@ static char *doc = "Set the passive/active translator on NODE."
 /* Authentication of the current process.  */
 uid_t *uids;
 gid_t *gids;
-size_t uids_len, gids_len;
+ssize_t uids_len, gids_len;
 
 /* Initialize and populate the uids and gids vectors.  */
 error_t
