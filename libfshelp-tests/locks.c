@@ -181,7 +181,7 @@ cmd_list (char *args)
 	  return 0;
 	}
 
-      if (p < 0 || p > PEROPENS)
+      if (p < 0 || p >= PEROPENS)
 	printf ("%3ld:\tOut of range.", p);
       else
 	dump (p);
@@ -236,7 +236,7 @@ cmd_seek (char *args)
 	    }
 	}
 
-      if (p < 0 || p > PEROPENS)
+      if (p < 0 || p >= PEROPENS)
 	printf ("%3d: unknown peropen\n", p);
       else
         {
