@@ -40,7 +40,7 @@ diskfs_S_fsys_get_children (struct diskfs_control *fsys,
 			    mach_msg_type_number_t *controlsCnt)
 {
   error_t err;
-  char *n = NULL;
+  char *n = NULL, *orig_names = *names;
   size_t n_len = 0;
   mach_port_t *c;
   size_t c_count;
@@ -62,7 +62,11 @@ diskfs_S_fsys_get_children (struct diskfs_control *fsys,
                                        (char **) controls, controlsCnt);
   c = NULL; /* c was freed by iohelp_return_malloced_buffer. */
   if (err)
-    goto errout;
+    {
+      if (*names != *orig_names)
+	munmap (*names, n_len);
+      goto errout;
+    }
 
   *controlsPoly = MACH_MSG_TYPE_MOVE_SEND;
   *controlsCnt = c_count;
