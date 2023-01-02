@@ -45,12 +45,18 @@ trivfs_S_file_utimens (struct trivfs_protid *cred,
       time_value_t atim, mtim;
 
       if (atime.tv_nsec == UTIME_NOW)
-        atim.microseconds = -1;
+        {
+          atim.seconds = -1;
+          atim.microseconds = -1;
+        }
       else
         TIMESPEC_TO_TIME_VALUE (&atim, &atime);
 
       if (mtime.tv_nsec == UTIME_NOW)
-        mtim.microseconds = -1;
+        {
+          mtim.seconds = -1;
+          mtim.microseconds = -1;
+        }
       else
         TIMESPEC_TO_TIME_VALUE (&mtim, &mtime);
 
