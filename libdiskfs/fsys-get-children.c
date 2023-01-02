@@ -54,9 +54,9 @@ diskfs_S_fsys_get_children (struct diskfs_control *fsys,
     goto errout;
 
   err = iohelp_return_malloced_buffer (n, n_len, names, names_len);
+  n = NULL; /* n was freed by iohelp_return_malloced_buffer. */
   if (err)
     goto errout;
-  n = NULL; /* n was freed by iohelp_return_malloced_buffer. */
 
   err = iohelp_return_malloced_buffer ((char *) c, c_count * sizeof *c,
                                        (char **) controls, controlsCnt);
