@@ -49,7 +49,7 @@ _pager_S_memory_object_data_request (struct pager *p,
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data request: bad length size %lu\n", length);
+      printf ("incg data request: bad length size %lu\n", (unsigned long)length);
       goto release_out;
     }
   if (offset % __vm_page_size)

@@ -58,7 +58,7 @@ _pager_S_memory_object_data_unlock (struct pager *p,
     }
   if (length != __vm_page_size)
     {
-      printf ("incg data unlock: bad length size %lu\n", length);
+      printf ("incg data unlock: bad length size %lu\n", (unsigned long)length);
       goto out;
     }
 

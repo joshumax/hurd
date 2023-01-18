@@ -643,7 +643,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
 	ext2_warning ("This filesystem is out of space.");
       else if (err)
 	ext2_warning ("inode=%Ld, page=0x%lx: %s",
-		      node->cache_id, page, strerror (err));
+		      node->cache_id, (unsigned long)page, strerror (err));
 
       return err;
     }
@@ -906,7 +906,7 @@ disk_cache_init (void)
 {
   if (block_size != vm_page_size)
     ext2_panic ("Block size %u != vm_page_size %lu",
-		block_size, vm_page_size);
+		block_size, (unsigned long)vm_page_size);
 
   pthread_mutex_init (&disk_cache_lock, NULL);
   pthread_cond_init (&disk_cache_reassociation, NULL);

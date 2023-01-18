@@ -233,7 +233,7 @@ main (int argc, char **argv)
     ext2_panic ("device too small for superblock (%Ld bytes)", store->size);
   if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%zu) greater than page size (%lu)",
-		store->block_size, vm_page_size);
+		store->block_size, (unsigned long)vm_page_size);
 
   /* Map the entire disk. */
   create_disk_pager ();

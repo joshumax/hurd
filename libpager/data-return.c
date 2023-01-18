@@ -60,7 +60,7 @@ _pager_do_write_request (struct pager *p,
     }
   if (length % __vm_page_size)
     {
-      printf ("incg data return: bad length size %lu\n", length);
+      printf ("incg data return: bad length size %lu\n", (unsigned long)length);
       goto release_out;
     }
   if (offset % __vm_page_size)
