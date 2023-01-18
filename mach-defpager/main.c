@@ -43,6 +43,7 @@
 #include <hurd/port.h>
 #include <hurd/fd.h>
 #include <hurd/paths.h>
+#include <hurd/startup.h>
 #include <assert-backtrace.h>
 /* XXX */
 
