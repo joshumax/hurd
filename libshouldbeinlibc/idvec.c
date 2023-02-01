@@ -163,7 +163,8 @@ idvec_set_ids (struct idvec *idvec, const uid_t *ids, unsigned num)
   err = idvec_ensure (idvec, num);
   if (!err)
     {
-      memcpy (idvec->ids, ids, num * sizeof (uid_t));
+      if (num)
+	memcpy (idvec->ids, ids, num * sizeof (uid_t));
       idvec->num = num;
     }
   return err;

@@ -83,7 +83,7 @@ idvec_copyout (struct idvec *idvec, uid_t **ids, size_t *nids)
 {
   if (idvec->num > *nids)
     *ids = idvec->ids;
-  else
+  else if (idvec->num)
     memcpy (*ids, idvec->ids, idvec->num * sizeof *ids);
   *nids = idvec->num;
 }
