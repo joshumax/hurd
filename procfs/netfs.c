@@ -123,6 +123,7 @@ error_t netfs_attempt_readlink (struct iouser *user, struct node *np,
 static int putentries (char *contents, size_t contents_len, int nentries,
 		       char *data, mach_msg_type_number_t *datacnt)
 {
+  int align = __alignof (struct dirent);
   int i;
 
   *datacnt = 0;
@@ -130,6 +131,8 @@ static int putentries (char *contents, size_t contents_len, int nentries,
     {
       int namlen = strlen (contents);
       int reclen = sizeof (struct dirent) + namlen;
+      int extra = reclen & (align - 1);
+      int pad = extra ? align - extra : 0;
 
       if (data)
         {
@@ -138,7 +141,9 @@ static int putentries (char *contents, size_t contents_len, int nentries,
 	  d->d_namlen = namlen;
 	  d->d_reclen = reclen;
 	  d->d_type = DT_UNKNOWN;
-	  strcpy (d->d_name, contents);
+	  memcpy (d->d_name, contents, namlen + 1);
+	  if (pad)
+	    memset(d->d_name + namlen + 1, 0, pad);
 	}
 
       *datacnt += reclen;
