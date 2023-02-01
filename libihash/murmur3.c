@@ -19,9 +19,9 @@ static inline uint32_t rotl32 ( uint32_t x, int8_t r )
 /* Block read - if your platform needs to do endian-swapping or can
    only handle aligned reads, do the conversion here.  */
 
-FORCE_INLINE uint32_t getblock32 ( const uint32_t * p, int i )
+FORCE_INLINE uint32_t getblock32 ( const uint8_t * p, int i )
 {
-  return p[i];
+  return p[i] + (p[i+1]<<8) + (p[i+2]<<16) + (((uint32_t) p[i+3])<<24);
 }
 
 /* Finalization mix - force all bits of a hash block to avalanche.  */
@@ -51,11 +51,11 @@ MurmurHash3_x86_32 (const void *key, size_t len, uint32_t seed)
 
   /* body */
 
-  const uint32_t * blocks = (const uint32_t *)(data + nblocks*4);
+  const uint8_t * tail = data + nblocks*4;
 
   for(int i = -nblocks; i; i++)
   {
-    uint32_t k1 = getblock32(blocks,i);
+    uint32_t k1 = getblock32(tail,i*4);
 
     k1 *= c1;
     k1 = ROTL32(k1,15);
@@ -67,8 +67,6 @@ MurmurHash3_x86_32 (const void *key, size_t len, uint32_t seed)
   }
 
   /* tail */
-
-  const uint8_t * tail = (const uint8_t*)(data + nblocks*4);
 
   uint32_t k1 = 0;
 

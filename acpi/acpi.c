@@ -95,17 +95,19 @@ acpi_get_num_tables(size_t *num_tables)
   ntables = (root_sdt->length - sizeof(*root_sdt)) / sz_ptr;
 
   /* Get pointer to first ACPI table */
-  uintptr_t acpi_ptr = (uintptr_t)root_sdt + sizeof(*root_sdt);
+  void *acpi_ptr = (void*)root_sdt + sizeof(*root_sdt);
 
   /* Get number of readable tables */
   *num_tables = 0;
   for (int i = 0; i < ntables; i++)
     {
-      uintptr_t acpi_ptr32 = (uintptr_t)*((uint32_t *)(acpi_ptr + i*sz_ptr));
-      uintptr_t acpi_ptr64 = (uintptr_t)*((uint64_t *)(acpi_ptr + i*sz_ptr));
       if (is_64bit) {
+        uint64_t acpi_ptr64;
+        memcpy(&acpi_ptr64, acpi_ptr + i*sz_ptr, sizeof(acpi_ptr64));
         next = acpi_os_map_memory(acpi_ptr64, ESCD_SIZE);
       } else {
+        uint32_t acpi_ptr32;
+        memcpy(&acpi_ptr32, acpi_ptr + i*sz_ptr, sizeof(acpi_ptr32));
         next = acpi_os_map_memory(acpi_ptr32, ESCD_SIZE);
       }
 
@@ -198,16 +200,18 @@ acpi_get_tables(struct acpi_table **tables)
   ntables = (root_sdt->length - sizeof(*root_sdt)) / sz_ptr;
 
   /* Get pointer to first ACPI table */
-  uintptr_t acpi_ptr = (uintptr_t)root_sdt + sizeof(*root_sdt);
+  void *acpi_ptr = (void*)root_sdt + sizeof(*root_sdt);
 
   /* Get all tables and data */
   for (int i = 0; i < ntables; i++)
     {
-      uintptr_t acpi_ptr32 = (uintptr_t)*((uint32_t *)(acpi_ptr + i*sz_ptr));
-      uintptr_t acpi_ptr64 = (uintptr_t)*((uint64_t *)(acpi_ptr + i*sz_ptr));
       if (is_64bit) {
+        uint64_t acpi_ptr64;
+        memcpy(&acpi_ptr64, acpi_ptr + i*sz_ptr, sizeof(acpi_ptr64));
         next = acpi_os_map_memory(acpi_ptr64, ESCD_SIZE);
       } else {
+        uint32_t acpi_ptr32;
+        memcpy(&acpi_ptr32, acpi_ptr + i*sz_ptr, sizeof(acpi_ptr32));
         next = acpi_os_map_memory(acpi_ptr32, ESCD_SIZE);
       }
 

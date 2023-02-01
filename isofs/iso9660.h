@@ -102,24 +102,12 @@ struct dirrect
 static inline unsigned int 
 isonum_733 (unsigned char *addr)
 {
-#if BYTE_ORDER == LITTLE_ENDIAN
-  return *(unsigned int *)addr;
-#elif BYTE_ORDER == BIG_ENDIAN
-  return *(unsigned int *)(addr + 4);
-#else
-  return
-    addr[0] | (addr[1] << 8) | (addr[2] << 16) | (addr[3] << 24);
-#endif
+  return addr[0] | (addr[1] << 8) | (addr[2] << 16) |
+    (((unsigned int) addr[3]) << 24);
 }
 
 static inline unsigned int
 isonum_723 (unsigned char *addr)
 {
-#if BYTE_ORDER == LITTLE_ENDIAN
-  return *(unsigned short *)addr;
-#elif BYTE_ORDER == BIG_ENDIAN
-  return *(unsigned short *)addr + 2;
-#else
   return addr[0] | (addr[1] << 8);
-#endif
 }

@@ -270,6 +270,7 @@ root_make_node (struct ps_context *pc, struct node **np)
     proclist_make_node (pc),
     rootdir_make_node (pc),
   };
+  uint32_t ino;
 
   *np = dircat_make_node (root_dirs, sizeof root_dirs / sizeof root_dirs[0]);
   if (! *np)
@@ -277,7 +278,8 @@ root_make_node (struct ps_context *pc, struct node **np)
 
   /* Since this one is not created through proc_lookup(), we have to affect an
      inode number to it.  */
-  (*np)->nn_stat.st_ino = * (uint32_t *) "PROC";
+  memcpy(&ino, "PROC", sizeof(ino));
+  (*np)->nn_stat.st_ino = ino;
 
   return 0;
 }
