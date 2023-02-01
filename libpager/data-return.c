@@ -43,7 +43,7 @@ _pager_do_write_request (struct pager *p,
   struct lock_list {struct lock_request *lr;
 		    struct lock_list *next;} *lock_list, *ll;
   int wakeup;
-  int omitdata = 0;
+  unsigned omitdata = 0;
 
   if (!p
       || p->port.class != _pager_class)
@@ -125,11 +125,11 @@ _pager_do_write_request (struct pager *p,
   /* Mark these pages as being paged out.  */
   if (initializing)
     {
-      assert_backtrace (npages <= 32);
+      assert_backtrace (npages < 32);
       for (i = 0; i < npages; i++)
 	{
 	  if (pm_entries[i] & PM_INIT)
-	    omitdata |= 1 << i;
+	    omitdata |= 1U << i;
 	  else
 	    pm_entries[i] |= PM_PAGINGOUT | PM_INIT;
 	}
@@ -162,7 +162,7 @@ _pager_do_write_request (struct pager *p,
      but until the pager library interface is changed, this will have to do. */
 
   for (i = 0; i < npages; i++)
-    if (!(omitdata & (1 << i)))
+    if (!(omitdata & (1U << i)))
       pagerrs[i] = pager_write_page (p->upi,
 				     offset + (vm_page_size * i),
 				     data + (vm_page_size * i));
@@ -175,7 +175,7 @@ _pager_do_write_request (struct pager *p,
   wakeup = 0;
   for (i = 0; i < npages; i++)
     {
-      if (omitdata & (1 << i))
+      if (omitdata & (1U << i))
 	{
 	  notified[i] = 0;
 	  continue;

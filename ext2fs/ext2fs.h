@@ -127,7 +127,7 @@ EXT2FS_EI int
 test_bit (unsigned num, unsigned char *bitmap)
 {
   const uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
-  const uint_fast32_t mask = 1 << (num & 31);
+  const uint_fast32_t mask = 1U << (num & 31);
   return *bw & mask;
 }
 
@@ -137,7 +137,7 @@ EXT2FS_EI int
 set_bit (unsigned num, unsigned char *bitmap)
 {
   uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
-  const uint_fast32_t mask = 1 << (num & 31);
+  const uint_fast32_t mask = 1U << (num & 31);
   return (*bw & mask) ?: (*bw |= mask, 0);
 }
 
@@ -147,7 +147,7 @@ EXT2FS_EI int
 clear_bit (unsigned num, unsigned char *bitmap)
 {
   uint32_t *const bw = (uint32_t *) bitmap + (num >> 5);
-  const uint_fast32_t mask = 1 << (num & 31);
+  const uint_fast32_t mask = 1U << (num & 31);
   return (*bw & mask) ? (*bw &= ~mask, mask) : 0;
 }
 #endif /* Use extern inlines.  */
