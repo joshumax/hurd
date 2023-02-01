@@ -869,7 +869,7 @@ count_dirents (struct node *dp, block_t nb, char *buf)
 
 /* Returned directory entries are aligned to blocks this many bytes long.
    Must be a power of two.  */
-#define DIRENT_ALIGN 4
+#define DIRENT_ALIGN __alignof (struct dirent)
 
 /* Implement the diskfs_get_directs callback as described in
    <hurd/diskfs.h>. */
