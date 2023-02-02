@@ -857,7 +857,7 @@ print_contents (mach_msg_header_t *inp,
 	  /* These are port rights.  Translate them into wrappers.  */
 	  mach_port_t *const portnames = data;
 	  mach_msg_type_number_t i;
-	  mach_msg_type_name_t newtypes[nelt];
+	  mach_msg_type_name_t newtypes[nelt ? : 1];
 	  int poly;
 
 	  assert_backtrace (inp->msgh_bits & MACH_MSGH_BITS_COMPLEX);
