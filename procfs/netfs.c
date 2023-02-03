@@ -134,6 +134,8 @@ static int putentries (char *contents, size_t contents_len, int nentries,
       int extra = reclen & (align - 1);
       int pad = extra ? align - extra : 0;
 
+      reclen += pad;
+
       if (data)
         {
 	  struct dirent *d = (struct dirent *) (data + *datacnt);
