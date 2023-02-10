@@ -151,7 +151,7 @@ zero_open (const char *name, int flags,
   else
     {
       store_offset_t max_offs = ~((store_offset_t)1
-				  << (CHAR_BIT * sizeof (store_offset_t) - 1));
+				  << (CHAR_BIT * sizeof (store_offset_t) - 2));
       return store_zero_create (max_offs, flags, store);
     }
 }
