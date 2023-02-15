@@ -401,7 +401,7 @@ xdr_decode_64bit (int *p, long long *n)
   p++;
   low = ntohl (*p);
   p++;
-  *n = ((high & 0xffffffff) << 32) | (low & 0xffffffff);
+  *n = (((uint64_t)(high & 0xffffffff)) << 32) | (low & 0xffffffff);
   return p;
 }
 
