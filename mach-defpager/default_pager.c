@@ -268,13 +268,13 @@ new_partition (const char *name, struct file_direct *fdp,
 		  continue;
 		/* There are some zero bits in this word.  */
 		for (j = 0; j < 32; ++j)
-		  if ((bm & (1 << j)) == 0)
+		  if ((bm & (1U << j)) == 0)
 		    {
 		      unsigned int p = i*32 + j;
 		      if (p >= part->total_size)
 			break;
 		      ++bad;
-		      part->bitmap[p / NB_BM] |= 1 << (p % NB_BM);
+		      part->bitmap[p / NB_BM] |= 1U << (p % NB_BM);
 		    }
 	      }
 	    part->free -= bad;
@@ -371,7 +371,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		  for (i = 0; i < hdr->nr_badpages; ++i)
 		    {
 		      const u_int32_t bad = hdr->badpages[i];
-		      part->bitmap[bad / NB_BM] |= 1 << (bad % NB_BM);
+		      part->bitmap[bad / NB_BM] |= 1U << (bad % NB_BM);
 		      part->free--;
 		    }
 		  printf ("%uk swap-space",
@@ -556,12 +556,12 @@ ddprintf ("pager_alloc_page(%d,%d)\n",pindex,lock_it);
 	    bm_entry_t	b = *bm;
 
 	    for (bit = 0; bit < NB_BM; bit++)
-		if ((b & (1<<bit)) == 0)
+		if ((b & (1U<<bit)) == 0)
 		    break;
 	    if (bit == NB_BM)
 		panic(here,my_name);
 
-	    *bm = b | (1<<bit);
+	    *bm = b | (1U<<bit);
 	    part->free--;
 
 	}
@@ -598,7 +598,7 @@ ddprintf ("pager_dealloc_page(%d,%lx,%d)\n",pindex,page,lock_it);
 	if (lock_it)
 	    pthread_mutex_lock(&part->p_lock);
 
-	part->bitmap[bm_e] &= ~(1<<bit);
+	part->bitmap[bm_e] &= ~(1U<<bit);
 	part->free++;
 
 	if (lock_it)

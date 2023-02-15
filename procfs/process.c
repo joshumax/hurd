@@ -47,8 +47,8 @@ static char state_char (struct proc_stat *ps)
 {
   int i;
 
-  for (i = 0; (1 << i) & (PSTAT_STATE_P_STATES | PSTAT_STATE_T_STATES); i++)
-    if (proc_stat_state (ps) & (1 << i))
+  for (i = 0; (1U << i) & (PSTAT_STATE_P_STATES | PSTAT_STATE_T_STATES); i++)
+    if (proc_stat_state (ps) & (1U << i))
       return proc_stat_state_tags[i];
 
   return '?';
@@ -69,7 +69,7 @@ static const char *state_string (struct proc_stat *ps)
   int i;
 
   for (i = 0; state_strings[i]; i++)
-    if (proc_stat_state (ps) & (1 << i))
+    if (proc_stat_state (ps) & (1U << i))
       return state_strings[i];
 
   return "? (unknown)";

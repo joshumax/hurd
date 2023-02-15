@@ -96,7 +96,7 @@ allocate_backing_page ()
   bit--;
   
   /* Mark it */
-  *bmap_rotor |= 1 << bit;
+  *bmap_rotor |= 1U << bit;
   
   /* Return the correct offset */
   pfn = (bmap_rotor - bmap) * 8 + bit;
@@ -123,7 +123,7 @@ return_backing_pages (off_t *map, int maplen)
       b = bmap + pfn & ~7;
       bit = pfn & 7;
       
-      assert_backtrace ((*b & (1 << bit)) == 0);
+      assert_backtrace ((*b & (1U << bit)) == 0);
       *b |= 1 << bit;
     }
   pthread_mutex_unlock (&bmap_lock);
