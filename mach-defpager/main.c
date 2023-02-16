@@ -49,6 +49,8 @@
 
 #include "default_pager.h"
 
+const char *defpager_server_name = "mach-defpager";
+
 mach_port_t	bootstrap_master_device_port;	/* local name */
 mach_port_t	bootstrap_master_host_port;	/* local name */
 
