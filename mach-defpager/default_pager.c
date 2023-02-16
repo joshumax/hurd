@@ -1964,8 +1964,8 @@ void pager_port_unlock(ds)
 	default_pager_t ds;
 {
 	ds->seqno++;
-	dstruct_unlock(ds);
 	pthread_cond_broadcast(&ds->waiting_seqno);
+	dstruct_unlock(ds);
 }
 
 /*
@@ -1997,8 +1997,8 @@ void pager_port_finish_read(ds)
 {
 	dstruct_lock(ds);
 	if (--ds->readers == 0) {
-		dstruct_unlock(ds);
 		pthread_cond_broadcast(&ds->waiting_read);
+		dstruct_unlock(ds);
 	}
 	else {
 		dstruct_unlock(ds);
@@ -2034,8 +2034,8 @@ void pager_port_finish_write(ds)
 {
 	dstruct_lock(ds);
 	if (--ds->writers == 0) {
-		dstruct_unlock(ds);
 		pthread_cond_broadcast(&ds->waiting_write);
+		dstruct_unlock(ds);
 	}
 	else {
 		dstruct_unlock(ds);
