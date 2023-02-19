@@ -391,7 +391,8 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   pthread_mutex_lock (&tdev->lock);
 
   pthread_mutex_lock (&net_bh_lock);
-  skb = alloc_skb (datalen, GFP_ATOMIC);
+  skb = alloc_skb (NET_IP_ALIGN + datalen, GFP_ATOMIC);
+  skb_reserve(skb, NET_IP_ALIGN);
   skb->len = datalen;
   skb->dev = &tdev->dev;
 

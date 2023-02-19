@@ -153,7 +153,8 @@ ethernet_demuxer (mach_msg_header_t *inp,
     + msg->packet_type.msgt_number - sizeof (struct packet_header);
 
   pthread_mutex_lock (&net_bh_lock);
-  skb = alloc_skb (datalen, GFP_ATOMIC);
+  skb = alloc_skb (NET_IP_ALIGN + datalen, GFP_ATOMIC);
+  skb_reserve(skb, NET_IP_ALIGN);
   skb_put (skb, datalen);
   skb->dev = dev;
 
