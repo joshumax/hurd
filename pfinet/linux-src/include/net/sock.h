@@ -203,7 +203,7 @@ struct tcp_sack_block {
 };
 
 struct tcp_opt {
-	int	tcp_header_len;	/* Bytes of tcp header to send		*/
+	unsigned int	tcp_header_len;	/* Bytes of tcp header to send		*/
 
 /*
  *	Header prediction flags

@@ -153,7 +153,7 @@ static __inline__ int addr_bit_set(void *token, int fn_bit)
 {
 	__u32 *addr = token;
 
-	return htonl(1 << ((~fn_bit)&0x1F)) & addr[fn_bit>>5];
+	return htonl(1U << ((~fn_bit)&0x1F)) & addr[fn_bit>>5];
 }
 
 /*

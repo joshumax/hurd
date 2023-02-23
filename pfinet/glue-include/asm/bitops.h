@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #define BITOPS_WORD(nr, addr)	(((uint32_t *) (addr))[(nr) / 32])
-#define BITOPS_MASK(nr)		(1 << ((nr) & 31))
+#define BITOPS_MASK(nr)		(1U << ((nr) & 31))
 
 static __inline__ void set_bit (int nr, void *addr)
 { BITOPS_WORD (nr, addr) |= BITOPS_MASK (nr); }
