@@ -363,7 +363,12 @@ initialize_version_info (void)
   assert_backtrace (server_versions);
   server_versions_nalloc = 10;
 
-  err = host_kernel_version (mach_host_self (), kv);
+  err = host_get_kernel_version (mach_host_self (), kv);
+  if (err == MIG_BAD_ID)
+    {
+      /* Delete after some time. */
+      err = host_kernel_version (mach_host_self (), kv);
+    }
   assert_backtrace (! err);
   /* Make sure the result is null-terminated, as the kernel doesn't
      guarantee it.  */
