@@ -374,13 +374,13 @@ overlay2		{ yylval.val = 2; return OVERLAY; }
 	}
 
 	int
-	scanner_get_current_location()
+	scanner_get_current_location(void)
 	{
 	  return lineno;
 	}
 
 	const char*
-	scanner_get_current_file()
+	scanner_get_current_file(void)
 	{
 	  return filename;
 	}

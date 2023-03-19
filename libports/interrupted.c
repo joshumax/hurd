@@ -28,7 +28,7 @@ static struct rpc_info *interrupted = 0;
 /* If the current thread's rpc has been interrupted with
    ports_interrupt_rpcs, return true (and clear the interrupted flag).  */
 int
-ports_self_interrupted ()
+ports_self_interrupted (void)
 {
   struct rpc_info **rpc_p, *rpc;
   thread_t self = hurd_thread_self ();

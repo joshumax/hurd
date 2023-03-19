@@ -50,13 +50,13 @@ _parse_strlist (char *arg,
       error_t err = 0;
       char *end = arg;
 
-      void mark_end()
+      void mark_end(void)
 	{
 	  *end++ = '\0';
 	  while (isspace(*end))
 	    end++;
 	}
-      error_t parse_element()
+      error_t parse_element(void)
 	{
 	  char *cur = arg;
 	  if (*cur == '\0')
@@ -119,7 +119,7 @@ parse_numlist (char *arg,
 	       int (*lookup_fn)(const char *str, struct argp_state *state),
 	       const char *type_name, struct argp_state *state)
 {
-  error_t default_num_add() { return (*add_fn)((*default_fn)(state), state); }
+  error_t default_num_add(void) { return (*add_fn)((*default_fn)(state), state); }
   error_t add_num_str(const char *str, struct argp_state *state)
     {
       const char *p;

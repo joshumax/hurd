@@ -379,7 +379,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 }
 
 void
-diskfs_shutdown_soft_ports ()
+diskfs_shutdown_soft_ports (void)
 {
     /* Should initiate termination of internally held pager ports
      (the only things that should be soft) XXX */

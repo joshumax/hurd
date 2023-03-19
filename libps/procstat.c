@@ -758,7 +758,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 
   /* Turn off use of the msg port if we decide somewhere along the way that
      it's hosed.  */
-  void suppress_msgport ()
+  void suppress_msgport (void)
     {
       /* Turn off those things that were only good given the msg port.  */
       need &= ~(flags & ~no_msgport_flags);
@@ -1057,8 +1057,7 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
 /* ---------------------------------------------------------------- */
 /* Discard PS and any resources it holds.  */
 void
-_proc_stat_free (ps)
-     struct proc_stat *ps;
+_proc_stat_free (struct proc_stat *ps)
 {
   if (ps->context->user_hooks && ps->context->user_hooks->cleanup)
     /* Free any user state.  */

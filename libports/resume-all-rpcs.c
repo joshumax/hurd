@@ -22,7 +22,7 @@
 #include <assert-backtrace.h>
 
 void
-ports_resume_all_rpcs ()
+ports_resume_all_rpcs (void)
 {
   pthread_mutex_lock (&_ports_lock);
   assert_backtrace (_ports_flags & _PORTS_INHIBITED);

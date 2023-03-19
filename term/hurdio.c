@@ -325,7 +325,7 @@ hurdio_writer_loop (void *arg)
 /* If there are characters on the output queue, then send them.  Is
    called with global lock held.  */
 static error_t
-hurdio_start_output ()
+hurdio_start_output (void)
 {
   /* If the output was suspended earlier and not anymore, we have to
      tell the underlying port to resume it.  */
@@ -346,7 +346,7 @@ hurdio_start_output ()
 
 /* Stop carrier on the line.  Is called with global lock held.  */
 static error_t
-hurdio_set_break ()
+hurdio_set_break (void)
 {
   if (tioc_caps & TIOC_CAP_SBRK)
     {
@@ -362,7 +362,7 @@ hurdio_set_break ()
 
 /* Reassert carrier on the line.  Is called with global lock held.  */
 static error_t
-hurdio_clear_break ()
+hurdio_clear_break (void)
 {
   if (tioc_caps & TIOC_CAP_CBRK)
     {
@@ -382,7 +382,7 @@ hurdio_clear_break ()
    called to flush whatever other such things may be going on.  Is
    called with global lock held.  */
 static error_t
-hurdio_abandon_physical_output ()
+hurdio_abandon_physical_output (void)
 {
   if (tioc_caps & TIOC_CAP_FLUSH)
     {
@@ -405,7 +405,7 @@ hurdio_abandon_physical_output ()
    output in the bottom handler as well.  Is called with the global
    lock held.  */
 static error_t
-hurdio_suspend_physical_output ()
+hurdio_suspend_physical_output (void)
 {
   if (!output_stopped)
     {
@@ -425,7 +425,7 @@ hurdio_suspend_physical_output ()
 /* This is called to notify the bottom half when an input flush has
    occurred.  It is necessary to support pty packet mode.  */
 static error_t
-hurdio_notice_input_flushed ()
+hurdio_notice_input_flushed (void)
 {
   if (tioc_caps & TIOC_CAP_FLUSH)
     {
@@ -441,7 +441,7 @@ hurdio_notice_input_flushed ()
 
 /* Determine the number of bytes of output pending.  */
 static int
-hurdio_pending_output_size ()
+hurdio_pending_output_size (void)
 {
   int queue_size = 0;
 
@@ -460,7 +460,7 @@ hurdio_pending_output_size ()
 
 /* Desert the DTR.  Is called with global lock held.  */
 static error_t
-hurdio_desert_dtr ()
+hurdio_desert_dtr (void)
 {
   if (writer_thread != MACH_PORT_NULL)
     hurd_thread_cancel (writer_thread);
@@ -481,7 +481,7 @@ hurdio_desert_dtr ()
 
 
 static error_t
-hurdio_assert_dtr ()
+hurdio_assert_dtr (void)
 {
   if (ioport == MACH_PORT_NULL)
     {
@@ -614,7 +614,7 @@ hurdio_mdmctl (int how, int bits)
 
 
 static int
-hurdio_mdmstate ()
+hurdio_mdmstate (void)
 {
   int oldbits;
 

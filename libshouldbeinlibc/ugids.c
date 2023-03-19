@@ -26,7 +26,7 @@
 
 /* Return a new ugids structure, or 0 if an allocation error occurs.  */
 struct ugids *
-make_ugids ()
+make_ugids (void)
 {
   struct ugids *u = malloc (sizeof (struct ugids));
   if (u)

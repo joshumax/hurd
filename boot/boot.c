@@ -83,7 +83,7 @@ static int isig;
 static char *kernel_command_line;
 
 static void
-init_termstate ()
+init_termstate (void)
 {
   struct termios tty_state;
 
@@ -100,7 +100,7 @@ init_termstate ()
 }
 
 static void
-restore_termstate ()
+restore_termstate (void)
 {
   tcsetattr (0, 0, &orig_tty_state);
 }
@@ -837,7 +837,7 @@ static int should_read = 0;
 
 /* Reply to a queued read. */
 void
-read_reply ()
+read_reply (void)
 {
   int avail;
   struct qr *qr;
@@ -919,7 +919,7 @@ read_reply ()
 /* Unlock READLOCK, and also service any new read requests that it was
    blocking.  */
 static void
-unlock_readlock ()
+unlock_readlock (void)
 {
   pthread_spin_unlock (&readlock);
   while (should_read)
@@ -930,9 +930,9 @@ unlock_readlock ()
  *	Handle bootstrap requests.
  */
 kern_return_t
-do_bootstrap_privileged_ports(bootstrap, hostp, devicep)
-	mach_port_t bootstrap;
-	mach_port_t *hostp, *devicep;
+do_bootstrap_privileged_ports(mach_port_t bootstrap,
+	mach_port_t *hostp,
+  mach_port_t *devicep)
 {
 	*hostp = privileged_host_port;
 	*devicep = pseudo_master_device_port;

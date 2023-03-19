@@ -46,7 +46,7 @@ struct sblock *sblock;
 
 /* Fetch the root node */
 static void
-fetch_root ()
+fetch_root (void)
 {
   struct lookup_context ctx;
   ino_t id;
@@ -73,7 +73,7 @@ fetch_root ()
 
 /* Find and read the superblock.  */
 static void
-read_sblock ()
+read_sblock (void)
 {
   struct voldesc *vd;
   struct sblock * volatile sb = 0;
@@ -153,7 +153,7 @@ main (int argc, char **argv)
 
 /* Nothing to do for read-only medium */
 error_t
-diskfs_reload_global_state ()
+diskfs_reload_global_state (void)
 {
   return 0;
 }

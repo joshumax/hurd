@@ -500,7 +500,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
 /* ---------------------------------------------------------------- */
 
 error_t
-sock_global_init ()
+sock_global_init (void)
 {
   sock_port_bucket = ports_create_bucket ();
   sock_user_port_class = ports_create_class (sock_user_clean, NULL);
@@ -510,7 +510,7 @@ sock_global_init ()
 
 /* Try to shutdown any active sockets, returning EBUSY if we can't.  */
 error_t
-sock_global_shutdown ()
+sock_global_shutdown (void)
 {
   int num_ports = ports_count_bucket (sock_port_bucket);
   ports_enable_bucket (sock_port_bucket);

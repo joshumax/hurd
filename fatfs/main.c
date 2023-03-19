@@ -139,7 +139,7 @@ diskfs_append_args (char **argz, unsigned *argz_len)
 
 /* Fetch the root node.  */
 static void
-fetch_root ()
+fetch_root (void)
 {
   error_t err;
   ino_t inum;
@@ -248,7 +248,7 @@ main (int argc, char **argv)
 
 /* Nothing to do for read-only medium.  */
 error_t
-diskfs_reload_global_state ()
+diskfs_reload_global_state (void)
 {
   return 0;
 }

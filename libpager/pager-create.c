@@ -89,7 +89,7 @@ pager_create_alloc (size_t u_pager_size,
 static void create_class (void) __attribute__ ((constructor));
 
 static void
-create_class ()
+create_class (void)
 {
   _pager_class = ports_create_class (_pager_clean, _pager_real_dropweak);
   (void) &create_class;		/* Avoid warning */

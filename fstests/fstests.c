@@ -41,7 +41,7 @@ int check_refs (mach_port_t port) /* To call from gdb */
 }
 
 int
-main ()
+main (void)
 {
 #if HURDISH_TESTS
   mach_port_t root;

@@ -28,7 +28,7 @@
    after the first call (so the result should be copied before modification).
    If something goes wrong, 0 is returned, and errno set.  */
 char *
-localhost ()
+localhost (void)
 {
   static char *buf = 0;
   static size_t buf_len = 0;

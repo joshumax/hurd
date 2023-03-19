@@ -1219,7 +1219,7 @@ add_tasks (task_t task)
 /* Allocate a new unused PID.
    (Unused means it is neither the pid nor pgrp of any relevant data.) */
 int
-genpid ()
+genpid (void)
 {
 #define WRAP_AROUND 30000
 #define START_OVER 100

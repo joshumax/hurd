@@ -86,7 +86,7 @@ struct protid_hook
 };
 
 void
-init_users ()
+init_users (void)
 {
   error_t err;
 
@@ -2019,13 +2019,13 @@ trivfs_S_io_map  (struct trivfs_protid *cred,
 }
 
 static void
-report_sig_start ()
+report_sig_start (void)
 {
   sigs_in_progress++;
 }
 
 static void
-report_sig_end ()
+report_sig_end (void)
 {
   sigs_in_progress--;
   if ((sigs_in_progress == 0) && input_sig_wakeup)
@@ -2099,7 +2099,7 @@ send_signal (int signo)
 }
 
 void
-report_carrier_off ()
+report_carrier_off (void)
 {
   clear_queue (inputq);
   (*bottom->notice_input_flushed) ();
@@ -2110,7 +2110,7 @@ report_carrier_off ()
 }
 
 void
-report_carrier_on ()
+report_carrier_on (void)
 {
   termflags &= ~NO_CARRIER;
   pthread_cond_broadcast (&carrier_alert);

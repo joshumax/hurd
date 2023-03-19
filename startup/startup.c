@@ -976,7 +976,7 @@ launch_core_servers (void)
 
 /* Set up the initial value of the standard exec data. */
 void
-init_stdarrays ()
+init_stdarrays (void)
 {
   auth_t nullauth;
   mach_port_t pt;

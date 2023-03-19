@@ -37,15 +37,14 @@ mach_port_t	priv_host_port = MACH_PORT_NULL;
 					/* the privileged host port */
 
 void
-wire_setup(host_priv)
-	mach_port_t	host_priv;
+wire_setup(mach_port_t	host_priv)
 {
 	priv_host_port = host_priv;
 	this_task = mach_task_self();
 }
 
 void
-wire_thread()
+wire_thread(void)
 {
 	kern_return_t	kr;
 

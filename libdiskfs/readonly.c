@@ -30,7 +30,7 @@ int diskfs_readonly = 0;
 int diskfs_hard_readonly = 0;
 
 int
-diskfs_check_readonly ()
+diskfs_check_readonly (void)
 {
   error_t err;
 

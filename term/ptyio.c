@@ -125,7 +125,7 @@ pty_po_destroy_hook (struct trivfs_peropen *po)
 }
 
 static inline void
-wake_reader ()
+wake_reader (void)
 {
   if (pty_read_blocked)
     {
@@ -139,7 +139,7 @@ wake_reader ()
 /* Lower half for tty node */
 
 static error_t
-ptyio_start_output ()
+ptyio_start_output (void)
 {
   if (packet_mode && output_stopped && (!(termflags & USER_OUTPUT_SUSP)))
     {
@@ -152,7 +152,7 @@ ptyio_start_output ()
 }
 
 static error_t
-ptyio_abandon_physical_output ()
+ptyio_abandon_physical_output (void)
 {
   if (packet_mode)
     {
@@ -163,7 +163,7 @@ ptyio_abandon_physical_output ()
 }
 
 static error_t
-ptyio_suspend_physical_output ()
+ptyio_suspend_physical_output (void)
 {
   if (packet_mode)
     {
@@ -176,14 +176,14 @@ ptyio_suspend_physical_output ()
 }
 
 static int
-ptyio_pending_output_size ()
+ptyio_pending_output_size (void)
 {
   /* We don't maintain any pending output buffer separate from the outputq. */
   return 0;
 }
 
 static error_t
-ptyio_notice_input_flushed ()
+ptyio_notice_input_flushed (void)
 {
   if (packet_mode)
     {
@@ -194,14 +194,14 @@ ptyio_notice_input_flushed ()
 }
 
 static error_t
-ptyio_assert_dtr ()
+ptyio_assert_dtr (void)
 {
   dtr_on = 1;
   return 0;
 }
 
 static error_t
-ptyio_desert_dtr ()
+ptyio_desert_dtr (void)
 {
   dtr_on = 0;
   wake_reader ();
@@ -248,13 +248,13 @@ ptyio_set_bits (struct termios *state)
 /* These do nothing.  In BSD the associated ioctls get errors, but
    I'd rather just ignore them. */
 static error_t
-ptyio_set_break ()
+ptyio_set_break (void)
 {
   return 0;
 }
 
 static error_t
-ptyio_clear_break ()
+ptyio_clear_break (void)
 {
   return 0;
 }

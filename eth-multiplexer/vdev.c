@@ -68,7 +68,7 @@ mach_msg_type_t packet_type =
 };
 
 int
-get_dev_num ()
+get_dev_num (void)
 {
   return dev_num;
 }

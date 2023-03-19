@@ -240,10 +240,9 @@ page_write_file_direct(struct file_direct *fdp,
 /* Compatibility entry points used by default_pager_paging_file RPC.  */
 
 kern_return_t
-add_paging_file(master_device_port, file_name, linux_signature)
-	mach_port_t		master_device_port;
-	const char		*file_name;
-	int			linux_signature;
+add_paging_file(mach_port_t		master_device_port,
+	const char		*file_name,
+	int			linux_signature)
 {
   error_t err;
   mach_port_t dev;

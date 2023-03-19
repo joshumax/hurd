@@ -83,7 +83,7 @@ handle_sock_requests (void *unused)
    port(s) which need server, as the server routine only operates while there
    are any ports.  */
 void
-ensure_sock_server ()
+ensure_sock_server (void)
 {
   pthread_t thread;
   error_t err;

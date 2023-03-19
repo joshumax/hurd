@@ -82,7 +82,7 @@ id_clean (void *cookie)
 }
 
 static void
-id_initialize ()
+id_initialize (void)
 {
   assert_backtrace (!idclass);
   idclass = ports_create_class (NULL, id_clean);

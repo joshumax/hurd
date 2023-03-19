@@ -28,7 +28,7 @@
 #include "store.h"
 
 static process_t
-proc_server ()
+proc_server (void)
 {
   static process_t proc = MACH_PORT_NULL;
   if (proc == MACH_PORT_NULL)

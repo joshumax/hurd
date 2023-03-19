@@ -209,7 +209,7 @@ cred_ref (struct idspec *i)
 }
 
 void
-scan_creds ()
+scan_creds (void)
 {
   int n;
   int newleast = mapped_time->seconds;
@@ -337,7 +337,7 @@ cache_handle_rele (struct cache_handle *c)
 }
 
 void
-scan_fhs ()
+scan_fhs (void)
 {
   int n;
   int newleast = mapped_time->seconds;
@@ -534,7 +534,7 @@ release_cached_reply (struct cached_reply *cr)
 }
 
 void
-scan_replies ()
+scan_replies (void)
 {
   int n;
   int newleast = mapped_time->seconds;

@@ -54,7 +54,7 @@ static int num_free_page_bufs = 0;
 
 /* Returns a single page page-aligned buffer.  */
 static void *
-get_page_buf ()
+get_page_buf (void)
 {
   void *buf;
 
@@ -221,7 +221,7 @@ file_pager_read_huge_page (struct node *node, vm_offset_t page,
      pointed to by BUF (allocating it if necessary) at offset OFFS.  OFFS in
      adjusted by the amount read, and NUM_PENDING_CLUSTERS is zeroed.  Any read
      error is returned.  */
-  error_t do_pending_reads ()
+  error_t do_pending_reads (void)
     {
       if (num_pending_clusters > 0)
         {
@@ -923,7 +923,7 @@ diskfs_get_filemap_pager_struct (struct node *node)
 
 /* Shutdown all the pagers (except the disk pager). */
 void
-diskfs_shutdown_pager ()
+diskfs_shutdown_pager (void)
 {
   error_t shutdown_one (void *v_p)
     {
@@ -959,7 +959,7 @@ diskfs_sync_everything (int wait)
 }
 
 static void
-disable_caching ()
+disable_caching (void)
 {
   error_t block_cache (void *arg)
     {
@@ -976,7 +976,7 @@ disable_caching ()
 }
 	  
 static void
-enable_caching ()
+enable_caching (void)
 {
   error_t enable_cache (void *arg)
     {
@@ -1007,7 +1007,7 @@ enable_caching ()
 /* Tell diskfs if there are pagers exported, and if none, then
    prevent any new ones from showing up.  */
 int
-diskfs_pager_users ()
+diskfs_pager_users (void)
 {
   int npagers = ports_count_bucket (file_pager_bucket);
 
@@ -1039,7 +1039,7 @@ diskfs_pager_users ()
 /* Return the bitwise or of the maximum prot parameter (the second arg
    to diskfs_get_filemap) for all active user pagers.  */
 vm_prot_t
-diskfs_max_user_pager_prot ()
+diskfs_max_user_pager_prot (void)
 {
   vm_prot_t max_prot = 0;
   int npagers = ports_count_bucket (file_pager_bucket);

@@ -262,7 +262,7 @@ main (int argc, char **argv)
 }
 
 error_t
-diskfs_reload_global_state ()
+diskfs_reload_global_state (void)
 {
   error_t err;
 

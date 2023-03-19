@@ -38,7 +38,7 @@
 
 /* Return the current host port.  */
 mach_port_t
-ps_get_host ()
+ps_get_host (void)
 {
   static mach_port_t host = MACH_PORT_NULL;
   if (host == MACH_PORT_NULL)

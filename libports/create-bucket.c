@@ -28,13 +28,13 @@ static struct port_class *notify_port_class;
 static pthread_once_t init_notify_port_class_once = PTHREAD_ONCE_INIT;
 
 static void
-init_notify_port_class ()
+init_notify_port_class (void)
 {
   notify_port_class = ports_create_class (NULL, NULL);
 }
 
 struct port_bucket *
-ports_create_bucket ()
+ports_create_bucket (void)
 {
   struct port_bucket *ret;
   error_t err;

@@ -604,19 +604,19 @@ diskfs_get_filemap_pager_struct (struct node *np)
 /* We have no pager of our own, so there is no need to worry about
    users of it, or to shut it down.  */
 int
-diskfs_pager_users ()
+diskfs_pager_users (void)
 {
   return 0;
 }
 void
-diskfs_shutdown_pager ()
+diskfs_shutdown_pager (void)
 {
 }
 
 /* The purpose of this is to decide that it's ok to make the fs read-only.
    Turning a temporary filesystem read-only seem pretty useless.  */
 vm_prot_t
-diskfs_max_user_pager_prot ()
+diskfs_max_user_pager_prot (void)
 {
   return VM_PROT_READ;		/* Probable lie that lets us go read-only.  */
 }

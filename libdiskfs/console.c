@@ -35,7 +35,7 @@
 
 /* Make sure errors go somewhere reasonable.  */
 void
-diskfs_console_stdio ()
+diskfs_console_stdio (void)
 {
   if (getpid () > 0)
     {

@@ -488,7 +488,7 @@ boot_script_parse_line (void *hook, char *cmdline)
 
 /* Execute commands previously parsed.  */
 int
-boot_script_exec ()
+boot_script_exec (void)
 {
   int cmd_index;
 

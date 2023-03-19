@@ -262,7 +262,7 @@ bogus_speed_to_real_speed (int bspeed)
 /* If there are characters on the output queue and no
    pending output requests, then send them. */
 static error_t
-devio_start_output ()
+devio_start_output (void)
 {
   char *cp;
   int size;
@@ -395,21 +395,21 @@ device_read_reply_inband (mach_port_t replypt,
 }
 
 static error_t
-devio_set_break ()
+devio_set_break (void)
 {
   device_set_status (phys_device, TTY_SET_BREAK, 0, 0);
   return 0;
 }
 
 static error_t
-devio_clear_break ()
+devio_clear_break (void)
 {
   device_set_status (phys_device, TTY_CLEAR_BREAK, 0, 0);
   return 0;
 }
 
 static error_t
-devio_abandon_physical_output ()
+devio_abandon_physical_output (void)
 {
   int val = D_WRITE;
 
@@ -429,7 +429,7 @@ devio_abandon_physical_output ()
 }
 
 static error_t
-devio_suspend_physical_output ()
+devio_suspend_physical_output (void)
 {
   if (!output_stopped)
     {
@@ -440,13 +440,13 @@ devio_suspend_physical_output ()
 }
 
 static error_t
-devio_notice_input_flushed ()
+devio_notice_input_flushed (void)
 {
   return 0;
 }
 
 static int
-devio_pending_output_size ()
+devio_pending_output_size (void)
 {
   /* Unfortunately, there's no way to get the amount back from Mach
      that has actually been written from this... */
@@ -455,7 +455,7 @@ devio_pending_output_size ()
 
 /* Do this the first time the device is to be opened */
 static error_t
-initial_open ()
+initial_open (void)
 {
   error_t err;
 
@@ -492,7 +492,7 @@ initial_open ()
 }
 
 static error_t
-devio_desert_dtr ()
+devio_desert_dtr (void)
 {
   int bits;
 
@@ -506,7 +506,7 @@ devio_desert_dtr ()
 }
 
 static error_t
-devio_assert_dtr ()
+devio_assert_dtr (void)
 {
   error_t err;
 

@@ -25,7 +25,7 @@
 
 /* Return a new, empty, idvec, or NULL if there wasn't enough memory.  */
 struct idvec *
-make_idvec ()
+make_idvec (void)
 {
   struct idvec *idvec = malloc (sizeof (struct idvec));
   if (idvec)

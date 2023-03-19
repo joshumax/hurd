@@ -542,7 +542,7 @@ static void ip6_link_failure(struct sk_buff *skb)
 	}
 }
 
-static int ip6_dst_gc()
+static int ip6_dst_gc(void)
 {
 	static unsigned expire = 30*HZ;
 	static unsigned long last_gc;

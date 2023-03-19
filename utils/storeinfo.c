@@ -81,7 +81,7 @@ print_store (struct store *store, int level, unsigned what)
   int i;
   int first = 1;
 
-  void psep ()
+  void psep (void)
     {
       if (first)
 	first = 0;

@@ -127,7 +127,7 @@ wire_segment (vm_address_t start,
 /* Wire down all the text and data (including from shared libraries)
    for the current program. */
 error_t
-wire_task_self ()
+wire_task_self (void)
 {
   mach_port_t host, device;
   error_t err;

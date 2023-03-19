@@ -487,7 +487,7 @@ diskfs_node_reload (struct node *node)
 
 /* Write all active disknodes into the ext2_inode pager. */
 void
-write_all_disknodes ()
+write_all_disknodes (void)
 {
   error_t write_one_disknode (struct node *node)
     {
@@ -828,7 +828,7 @@ error_t (*diskfs_read_symlink_hook)(struct node *np, char *target) =
 
 /* Called when all hard ports have gone away. */
 void
-diskfs_shutdown_soft_ports ()
+diskfs_shutdown_soft_ports (void)
 {
   /* Should initiate termination of internally held pager ports
      (the only things that should be soft) XXX */

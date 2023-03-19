@@ -43,7 +43,7 @@ static struct hurd_ihash kn_mapping;
 
 /* Initialize the keyname hashtable.  */
 static void
-keyname_init ()
+keyname_init (void)
 {
   hurd_ihash_init (&kn_mapping, HURD_IHASH_NO_LOCP);
   debug_printf ("Kn_mapping init");
@@ -143,7 +143,7 @@ struct keytype *kthash[KTHSZ];
 
 /* Initialize the keytypes hashtable.  */
 static void
-keytype_init ()
+keytype_init (void)
 {
   int n;
   for (n = 0; n < KTHSZ; n++)
@@ -394,7 +394,7 @@ static struct hurd_ihash ksrm_mapping;
 
 /* Initialize the list for keysyms to realmodifiers mappings.  */
 void
-ksrm_init ()
+ksrm_init (void)
 {
   hurd_ihash_init (&ksrm_mapping, HURD_IHASH_NO_LOCP);
   debug_printf ("KSRM MAP IHASH CREATED \n");

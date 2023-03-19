@@ -278,7 +278,7 @@ hurdtunif_device_init (struct netif *netif)
  * This function should be called once.
  */
 error_t
-hurdtunif_module_init ()
+hurdtunif_module_init (void)
 {
   error_t err = 0;
 

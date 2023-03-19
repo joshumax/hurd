@@ -43,14 +43,14 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 {
   int hex_names = (show & PORTINFO_HEX_NAMES);
   int first = 1, subfirst = 1;
-  void comma ()
+  void comma (void)
     {
       if (first)
 	first = 0;
       else
 	fprintf (stream, ", ");
     }
-  void subcomma ()
+  void subcomma (void)
     {
       if (subfirst)
 	subfirst = 0;

@@ -588,7 +588,7 @@ enum scancode sc_set1_to_set2_x1[] =
   };
 
 static enum scancode
-gnumach_v1_input_next ()
+gnumach_v1_input_next (void)
 {
   kd_event data_buf;
 #ifndef XKB_SUPPORT
@@ -671,7 +671,7 @@ update_leds (void)
 }
 
 static enum scancode
-input_next ()
+input_next (void)
 {
   enum scancode sc = 0;
   unsigned char next;

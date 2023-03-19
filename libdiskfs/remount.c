@@ -26,7 +26,7 @@
    DISKFS_READONLY is true.  DISKFS_FSYS_LOCK should be held while calling
    this routine.  */
 error_t
-diskfs_remount ()
+diskfs_remount (void)
 {
   error_t err;
 

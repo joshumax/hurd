@@ -35,7 +35,7 @@ volatile struct mapped_time_value *netfs_mtime;
 
 
 void
-netfs_init ()
+netfs_init (void)
 {
   error_t err;
   err = maptime_map (0, 0, &netfs_mtime);

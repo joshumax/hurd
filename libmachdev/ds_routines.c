@@ -305,7 +305,7 @@ machdev_create_device_port (size_t size, void *result)
 }
 
 void
-machdev_device_init()
+machdev_device_init(void)
 {
   int i;
 
@@ -320,7 +320,7 @@ machdev_device_init()
 }
 
 void
-machdev_device_sync()
+machdev_device_sync(void)
 {
   int i;
   for (i = 0; i < num_emul; i++)

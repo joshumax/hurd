@@ -556,7 +556,7 @@ hurdethif_input_thread (void *arg)
  * This function should be called once.
  */
 error_t
-hurdethif_module_init ()
+hurdethif_module_init (void)
 {
   error_t err;
   etherport_bucket = ports_create_bucket ();

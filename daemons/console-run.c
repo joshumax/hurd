@@ -28,7 +28,7 @@
 #include <device/device.h>
 
 static mach_port_t
-get_console ()
+get_console (void)
 {
   mach_port_t device_master, console;
   error_t err = get_privileged_ports (0, &device_master);

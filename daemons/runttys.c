@@ -428,7 +428,7 @@ reopen_console (int signo)
 #endif
 
 int
-main ()
+main (void)
 {
   int fail;
   struct sigaction sa;

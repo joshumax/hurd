@@ -190,7 +190,7 @@ diskfs_S_startup_dosync (mach_port_t handle)
 /* This is called when we have an ordinary environment, complete
    with proc and auth ports. */
 void
-_diskfs_init_completed ()
+_diskfs_init_completed (void)
 {
   startup_t init;
   process_t proc;

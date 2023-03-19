@@ -366,7 +366,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
 /* ---------------------------------------------------------------- */
 
 unsigned long
-ext2_count_free_inodes ()
+ext2_count_free_inodes (void)
 {
 #ifdef EXT2FS_DEBUG
   unsigned long desc_count, bitmap_count, x;
@@ -402,7 +402,7 @@ ext2_count_free_inodes ()
 /* ---------------------------------------------------------------- */
 
 void
-ext2_check_inodes_bitmap ()
+ext2_check_inodes_bitmap (void)
 {
   int i;
   struct ext2_group_desc *gdp;

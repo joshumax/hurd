@@ -99,12 +99,12 @@ static int _debug = 0;
 
 static int got_sigquit = 0, got_sigint = 0;
 
-static void sigquit ()
+static void sigquit (void)
 {
   got_sigquit = 1;
 }
 
-static void sigint ()
+static void sigint (void)
 {
   got_sigint = 1;
 }

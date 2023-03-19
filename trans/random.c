@@ -648,7 +648,7 @@ sigterm_handler (int signo)
 }
 
 static error_t
-arrange_shutdown_notification ()
+arrange_shutdown_notification (void)
 {
   error_t err;
   mach_port_t initport, notify;

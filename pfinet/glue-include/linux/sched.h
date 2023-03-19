@@ -79,7 +79,7 @@ struct semaphore { };
 
 
 static inline int
-suser ()
+suser (void)
 {
   return current->isroot;
 };

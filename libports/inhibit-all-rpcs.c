@@ -23,7 +23,7 @@
 #include <hurd/ihash.h>
 
 error_t
-ports_inhibit_all_rpcs ()
+ports_inhibit_all_rpcs (void)
 {
   error_t err = 0;
 

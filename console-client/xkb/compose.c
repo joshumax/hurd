@@ -518,7 +518,7 @@ match_right_set_left (void *context, struct map_entry *entry)
      - .XCompose at $HOME.
      - System wide compose file for the current locale. */
 static char *
-get_compose_file_for_locale()
+get_compose_file_for_locale(void)
 {
   struct matcher_context context = { NULL };
   char *xcomposefile;

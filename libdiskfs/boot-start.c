@@ -57,7 +57,7 @@ static void start_execserver ();
 char **diskfs_argv = 0;
 
 static mach_port_t
-get_console ()
+get_console (void)
 {
   mach_port_t device_master, console;
   error_t err = get_privileged_ports (0, &device_master);
@@ -95,7 +95,7 @@ _diskfs_boot_privports (void)
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  */
 void
-diskfs_start_bootstrap ()
+diskfs_start_bootstrap (void)
 {
   mach_port_t root_pt, startup_pt, bootpt;
   retry_type retry;

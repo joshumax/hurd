@@ -392,7 +392,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 {
   error_t err;
   int allocated_buf = 0;
-  error_t ensure_buf ()
+  error_t ensure_buf (void)
     {
       if (*len < whole_amount)
 	{

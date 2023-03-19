@@ -33,7 +33,7 @@ static process_t _proc_server = MACH_PORT_NULL;
 
 /* Return this process's proc server. */
 static inline process_t
-proc_server ()
+proc_server (void)
 {
   if (_proc_server == MACH_PORT_NULL)
     _proc_server = getproc ();

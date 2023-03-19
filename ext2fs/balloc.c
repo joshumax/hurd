@@ -406,7 +406,7 @@ got_block:
 }
 
 unsigned long
-ext2_count_free_blocks ()
+ext2_count_free_blocks (void)
 {
 #ifdef EXT2FS_DEBUG
   unsigned long desc_count, bitmap_count, x;
@@ -448,7 +448,7 @@ block_in_use (block_t block, unsigned char *map)
 }
 
 void
-ext2_check_blocks_bitmap ()
+ext2_check_blocks_bitmap (void)
 {
   unsigned char *bh;
   unsigned long desc_count, bitmap_count, x;

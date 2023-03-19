@@ -192,7 +192,7 @@ echo_double (char c, int quoted)
 
 /* Do a single C-h SPC C-h sequence */
 static inline void
-write_erase_sequence ()
+write_erase_sequence (void)
 {
   poutput ('\b');
   poutput (' ');
@@ -236,7 +236,7 @@ echo_char (char c, int hderase, int quoted)
 
 /* Re-echo the current rawq preceded by the VREPRINT char. */
 static inline void
-reprint_line ()
+reprint_line (void)
 {
   short *cp;
 
@@ -613,7 +613,7 @@ alldone:
 
 /* This is called by the lower half when a break is received. */
 void
-input_break ()
+input_break (void)
 {
   struct queue **qp = termstate.c_lflag & ICANON ? &rawq : &inputq;
 
@@ -663,7 +663,7 @@ input_framing_error (int c)
 
 /* Copy the characters in RAWQ to the end of INPUTQ and clear RAWQ. */
 void
-copy_rawq ()
+copy_rawq (void)
 {
   while (qsize (rawq))
     enqueue (&inputq, dequeue (rawq));
@@ -671,7 +671,7 @@ copy_rawq ()
 
 /* Process all the characters in INPUTQ as if they had just been read. */
 void
-rescan_inputq ()
+rescan_inputq (void)
 {
   short *buf;
   int i, n;
@@ -687,7 +687,7 @@ rescan_inputq ()
 
 
 error_t
-drop_output ()
+drop_output (void)
 {
   error_t err = (*bottom->abandon_physical_output) ();
   if (!err)
@@ -697,7 +697,7 @@ drop_output ()
 
 
 error_t
-drain_output ()
+drain_output (void)
 {
   int cancel = 0;
 

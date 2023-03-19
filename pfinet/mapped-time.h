@@ -9,13 +9,13 @@ extern volatile struct mapped_time_value *mapped_time;
 extern long long root_jiffies;
 
 static inline int
-read_mapped_secs ()
+read_mapped_secs (void)
 {
   return mapped_time->seconds;
 }
 
 static inline int
-fetch_jiffies ()
+fetch_jiffies (void)
 {
   struct timeval tv;
   long long j;

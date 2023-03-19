@@ -91,7 +91,7 @@ diskfs_sync_everything (int wait)
 }
 
 error_t
-diskfs_reload_global_state ()
+diskfs_reload_global_state (void)
 {
   return 0;
 }

@@ -258,7 +258,7 @@ allow_pager_softrefs (struct node *np)
 	
 	
 static void
-block_caching ()
+block_caching (void)
 {
   error_t block_cache (void *arg)
     {
@@ -274,7 +274,7 @@ block_caching ()
 }
 	  
 static void
-enable_caching ()
+enable_caching (void)
 {
   error_t enable_cache (void *arg)
     {
@@ -305,7 +305,7 @@ enable_caching ()
 /* Tell diskfs if there are pagers exported, and if none, then
    prevent any new ones from showing up.  */
 int
-diskfs_pager_users ()
+diskfs_pager_users (void)
 {
   int npagers = ports_count_bucket (pager_bucket);
 
@@ -334,7 +334,7 @@ diskfs_pager_users ()
 /* Return the bitwise or of the maximum prot parameter (the second arg to
    diskfs_get_filemap) for all active user pagers. */
 vm_prot_t
-diskfs_max_user_pager_prot ()
+diskfs_max_user_pager_prot (void)
 {
   /* We never allow writing, so there's no need to carefully check it. */
   return VM_PROT_READ | VM_PROT_EXECUTE;
@@ -354,7 +354,7 @@ diskfs_get_filemap_pager_struct (struct node *np)
 
 /* Shutdown all the pagers. */
 void
-diskfs_shutdown_pager ()
+diskfs_shutdown_pager (void)
 {
   /* Because there's no need to ever sync, we don't have to do anything
      here. */

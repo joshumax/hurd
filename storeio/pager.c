@@ -144,7 +144,7 @@ static struct pager_requests *pager_requests;
 
 /* Initialize paging for this device.  */
 static void
-init_dev_paging ()
+init_dev_paging (void)
 {
   if (! pager_port_bucket)
     {

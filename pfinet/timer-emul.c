@@ -156,7 +156,7 @@ init_timer (struct timer_list *timer)
 }
 
 void
-init_time ()
+init_time (void)
 {
   error_t err;
   struct timeval tp;

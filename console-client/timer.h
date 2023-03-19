@@ -55,7 +55,7 @@ int timer_remove (struct timer_list *timer);
 void timer_change (struct timer_list *timer, long long expires);
 
 static inline long long
-fetch_jiffies ()
+fetch_jiffies (void)
 {
   extern volatile struct mapped_time_value *timer_mapped_time;
   extern long long timer_root_jiffies;

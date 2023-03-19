@@ -58,7 +58,7 @@ static pthread_mutex_t outstanding_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* Generate and return a new transaction ID.  */
 static inline int
-generate_xid ()
+generate_xid (void)
 {
   static int nextxid;
   

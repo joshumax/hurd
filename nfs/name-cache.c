@@ -227,7 +227,7 @@ register_pos_hit (int n)
   
 /* Register a miss */
 void
-register_miss ()
+register_miss (void)
 {
   int i;
   

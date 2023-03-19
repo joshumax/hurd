@@ -24,7 +24,7 @@ static int thread_timeout = 1000 * 60 * 2; /* two minutes */
 static int server_timeout = 1000 * 60 * 10; /* ten minutes */
 
 void
-netfs_server_loop ()
+netfs_server_loop (void)
 {
   error_t err;
 

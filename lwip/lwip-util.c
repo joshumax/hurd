@@ -101,7 +101,7 @@ ipv4config_is_valid (uint32_t addr, uint32_t netmask,
 
 /* Configure the loopback interface */
 static void
-init_loopback ()
+init_loopback (void)
 {
   struct ifcommon ifc;
 
@@ -114,7 +114,7 @@ init_loopback ()
 
 /* Remove the existing interfaces, but the loopback one */
 void
-remove_ifs ()
+remove_ifs (void)
 {
   struct netif *netif;
 
