@@ -33,7 +33,6 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <mach/mig_support.h>
-#include <mach/default_pager.h>
 #include <argp.h>
 #include <hurd/store.h>
 #include <hurd/ihash.h>
@@ -41,6 +40,7 @@
 #include <sys/mman.h>
 #include <version.h>
 
+#include "default_pager_U.h"
 #include "notify_S.h"
 #include "device_S.h"
 #include "io_S.h"

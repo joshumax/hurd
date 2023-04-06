@@ -22,7 +22,6 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 
-#include <mach/default_pager.h>
 #include <hurd/fsys.h>
 #include <hurd/msg.h>
 #include <hurd/pci.h>
@@ -32,6 +31,7 @@
 #include <hurd/tioctl.h>
 #include <hurd.h>
 
+#include "default_pager_U.h"
 #include "portinfo.h"
 
 /* Prints info about NAME in TASK to STREAM, in a way described by the flags

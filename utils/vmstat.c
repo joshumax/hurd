@@ -31,9 +31,10 @@
 #include <mach/gnumach.h>
 #include <mach/vm_statistics.h>
 #include <mach/vm_cache_statistics.h>
-#include <mach/default_pager.h>
 #include <hurd.h>
 #include <hurd/paths.h>
+
+#include "default_pager_U.h"
 
 const char *argp_program_version = STANDARD_HURD_VERSION (vmstat);
 

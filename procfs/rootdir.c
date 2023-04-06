@@ -22,7 +22,6 @@
 #include <mach/vm_statistics.h>
 #include <mach/vm_cache_statistics.h>
 #include "default_pager_U.h"
-#include <mach/default_pager.h>
 #include <mach_debug/mach_debug_types.h>
 #include <hurd/paths.h>
 #include <arpa/inet.h>
