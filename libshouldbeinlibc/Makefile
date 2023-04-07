@@ -38,8 +38,9 @@ installhdrs = idvec.h timefmt.h maptime.h \
 
 installhdrsubdir = .
 
+MIGSTUBS = default_pagerUser.o
 LDLIBS += $(and $(HAVE_LIBCRYPT),-lcrypt)
 
-OBJS = $(SRCS:.c=.o)
+OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 include ../Makeconf
