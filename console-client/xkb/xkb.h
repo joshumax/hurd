@@ -404,7 +404,7 @@ int vmod_find (char *vmodname);
 error_t vmod_add (char *vmodname);
 
 /* Initialize the list for keysyms to realmodifiers mappings.  */
-void ksrm_init ();
+void ksrm_init (void);
 
 /* Add keysym to realmodifier mapping.  */
 error_t ksrm_add (symbol ks, int rmod);

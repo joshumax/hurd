@@ -21,6 +21,7 @@
 #include "fsys_S.h"
 
 #include <argz.h>
+#include <sys/mman.h>
 
 /* Return any active child translators.  NAMES is an argz vector
    containing file names relative to the root of the translator.

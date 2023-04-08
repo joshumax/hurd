@@ -23,7 +23,7 @@
 /* Auxiliary info for each vector element.  */
 struct aux
 {
-  void (*free_el)();
+  void (*free_el)(void *);
   unsigned refs;
 };
 
@@ -63,7 +63,7 @@ static pthread_mutex_t dyn_lock = PTHREAD_MUTEX_INITIALIZER;
    cases: (1) An error is encountered trying to grow one of the vectors, (2)
    when the element is eventually freed by drop_el.  */
 static error_t
-add_el (void *el, void (*free_el)(),
+add_el (void *el, void (*free_el)(void *),
 	void *vec_v, struct aux **aux_vec,
 	size_t *sz, size_t *num)
 {

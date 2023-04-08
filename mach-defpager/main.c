@@ -54,10 +54,6 @@ const char *defpager_server_name = "mach-defpager";
 mach_port_t	bootstrap_master_device_port;	/* local name */
 mach_port_t	bootstrap_master_host_port;	/* local name */
 
-extern void	default_pager();
-extern void	default_pager_initialize();
-extern void	default_pager_setup();
-
 /* initialized in default_pager_initialize */
 extern mach_port_t default_pager_exception_port;
 

@@ -83,7 +83,7 @@ send (mach_msg_id_t msgid)
   return Message.Reply.RetCode;
 }
 
-typedef error_t (*setup_function_t) ();
+typedef error_t (*setup_function_t) (void);
 setup_function_t setup_target;
 void *setup_argument;
 

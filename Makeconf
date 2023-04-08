@@ -79,6 +79,7 @@ CPPFLAGS += $(INCLUDES) \
 	     -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
 	    $($*-CPPFLAGS)
 CFLAGS += -std=gnu99 $(gnu89-inline-CFLAGS) -Wall -Werror=old-style-definition \
+					-Werror=implicit-function-declaration -Werror=strict-prototypes \
 					-g -O3 -fno-strict-aliasing $($*-CFLAGS)
 
 # Include the configure-generated file of parameters.

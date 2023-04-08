@@ -164,7 +164,7 @@ getroot (struct trivfs_control *cntl,
 /* Called by trivfs_S_fsys_getroot before any other processing takes place;
    if the return value is EAGAIN, normal trivfs getroot processing continues,
    otherwise the rpc returns with that return value.  */
-error_t (*trivfs_getroot_hook) () = getroot;
+trivfs_getroot_hook_fun trivfs_getroot_hook = getroot;
 
 void
 trivfs_modify_stat (struct trivfs_protid *cred, struct stat *st)

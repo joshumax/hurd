@@ -52,7 +52,7 @@ static pthread_cond_t execstarted;
 
 const char *diskfs_boot_init_program = _HURD_STARTUP;
 
-static void start_execserver ();
+static void start_execserver (void);
 
 char **diskfs_argv = 0;
 

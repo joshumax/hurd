@@ -146,9 +146,6 @@ int console_mscount;
 vm_address_t fs_stack_base;
 vm_size_t fs_stack_size;
 
-void init_termstate ();
-void restore_termstate ();
-
 char *fsname;
 
 char bootstrap_args[100] = "-";
@@ -272,8 +269,8 @@ boot_demuxer (mach_msg_header_t *inp,
     return FALSE;
 }
 
-void read_reply ();
-void * msg_thread (void *);
+static void read_reply (void);
+static void * msg_thread (void *);
 
 const char *argp_program_version = STANDARD_HURD_VERSION (boot);
 
@@ -835,7 +832,7 @@ queue_read (enum read_type type,
 static int should_read = 0;
 
 /* Reply to a queued read. */
-void
+static void
 read_reply (void)
 {
   int avail;

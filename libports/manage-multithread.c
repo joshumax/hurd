@@ -104,7 +104,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 					  ports_demuxer_type demuxer,
 					  int thread_timeout,
 					  int global_timeout,
-					  void (*hook)())
+					  void (*hook)(void))
 {
   /* totalthreads is the number of total threads created.  nreqthreads
      is the number of threads not currently servicing any client.  The

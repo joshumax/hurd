@@ -37,6 +37,7 @@
 #include <hurd/iohelp.h>
 #include <sys/stat.h>
 #include <maptime.h>
+#include <stdlib.h>
 #include <fcntl.h>
 
 

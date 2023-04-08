@@ -459,9 +459,7 @@ proc_stat_list_filter (struct proc_stat_list *pp,
 error_t
 proc_stat_list_sort1 (struct proc_stat_list *pp,
 		      const struct ps_getter *getter,
-		      int (*cmp_fn)(struct proc_stat *ps1,
-				    struct proc_stat *ps2,
-				    const struct ps_getter *getter),
+          proc_stat_cmp_fun cmp_fn,
 		      int reverse)
 {
   int needs = ps_getter_needs (getter);
@@ -521,7 +519,7 @@ error_t
 proc_stat_list_sort (struct proc_stat_list *pp,
 		     const struct ps_fmt_spec *key, int reverse)
 {
-  int (*cmp_fn)() = ps_fmt_spec_compare_fn (key);
+  proc_stat_cmp_fun cmp_fn = ps_fmt_spec_compare_fn (key);
   if (cmp_fn == NULL)
     return EINVAL;
   else

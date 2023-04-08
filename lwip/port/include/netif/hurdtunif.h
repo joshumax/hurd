@@ -60,6 +60,6 @@ extern struct port_class *tunnel_class;
 err_t hurdtunif_device_init (struct netif *netif);
 
 /* Module initialization */
-error_t hurdtunif_module_init ();
+error_t hurdtunif_module_init (void);
 
 #endif /* LWIP_HURDTUNIF_H */

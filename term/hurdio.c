@@ -82,7 +82,7 @@ static pthread_cond_t hurdio_assert_dtr_condition;
 
 
 /* Forward */
-static error_t hurdio_desert_dtr ();
+static error_t hurdio_desert_dtr (void);
 static void *hurdio_reader_loop (void *arg);
 static void *hurdio_writer_loop (void *arg);
 static error_t hurdio_set_bits (struct termios *state);

@@ -34,6 +34,6 @@ typedef struct ifcommon hurdethif;
 err_t hurdethif_device_init (struct netif *netif);
 
 /* Module initialization */
-error_t hurdethif_module_init ();
+error_t hurdethif_module_init (void);
 
 #endif /* LWIP_HURDETHIF_H */

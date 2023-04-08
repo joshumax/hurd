@@ -436,7 +436,7 @@ void ports_interrupt_rpcs (void *port);
 
 /* If the current thread's rpc has been interrupted with
    ports_interrupt_rpcs, return true (and clear the interrupted flag).  */
-int ports_self_interrupted ();
+int ports_self_interrupted (void);
 
 /* Add RPC to the list of rpcs that have been interrupted.  */
 void _ports_record_interruption (struct rpc_info *rpc);

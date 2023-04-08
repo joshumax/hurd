@@ -532,7 +532,7 @@ void diskfs_sync_everything (int wait);
 
 /* Shutdown all pagers; this is done when the filesystem is exiting and is
    irreversable.  */
-void diskfs_shutdown_pager ();
+void diskfs_shutdown_pager (void);
 
 /* The user must define this function.  Return a memory object port (send
    right) for the file contents of NP.  PROT is the maximum allowable
@@ -542,11 +542,11 @@ mach_port_t diskfs_get_filemap (struct node *np, vm_prot_t prot);
 /* The user must define this function.  Return true if there are pager
    ports exported that might be in use by users.  If this returns false, then
    further pager creation is also blocked.  */
-int diskfs_pager_users ();
+int diskfs_pager_users (void);
 
 /* Return the bitwise or of the maximum prot parameter (the second arg to
    diskfs_get_filemap) for all active user pagers. */
-vm_prot_t diskfs_max_user_pager_prot ();
+vm_prot_t diskfs_max_user_pager_prot (void);
 
 /* The user must define this function.  Return a `struct pager *' suitable
    for use as an argument to diskfs_register_memory_fault_area that
@@ -565,7 +565,7 @@ void diskfs_readonly_changed (int readonly);
    It is always called with DISKFS_READONLY true.  diskfs_node_reload is
    subsequently called on all active nodes, so this call needn't re-read any
    node-specific data.  */
-error_t diskfs_reload_global_state ();
+error_t diskfs_reload_global_state (void);
 
 /* The user must define this function.  It must re-read all data specific to
    NODE from disk, without writing anything.  It is always called with
@@ -644,7 +644,7 @@ void diskfs_spawn_first_thread (ports_demuxer_type demuxer);
 /* Once diskfs_root_node is set, call this if we are a bootstrap
    filesystem.  If you call this, then the library will call
    diskfs_init_completed once it has a valid proc and auth port. */
-void diskfs_start_bootstrap ();
+void diskfs_start_bootstrap (void);
 
 /* Node NP now has no more references; clean all state.  NP must be
    locked.  */
@@ -1067,7 +1067,7 @@ error_t diskfs_set_readonly (int readonly);
 /* Re-read all incore data structures from disk.  This will only work if
    DISKFS_READONLY is true.  DISKFS_FSYS_LOCK should be held while calling
    this routine.  */
-error_t diskfs_remount ();
+error_t diskfs_remount (void);
 
 /* Called by S_fsys_startup for execserver bootstrap.  The execserver
    is able to function without a real node, hence this fraud.  Arguments
@@ -1158,7 +1158,7 @@ struct store *diskfs_init_main (struct argp *startup_argp,
    underlying filesystem.  */
 
 /* Make errors go somewhere reasonable.  */
-void diskfs_console_stdio ();
+void diskfs_console_stdio (void);
 
 
 /* The following extracts from io_S.h and fs_S.h catch loff_t erroneously

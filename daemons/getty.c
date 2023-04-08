@@ -36,8 +36,8 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
-/* XXX */
-extern char *localhost ();
+/* XXX: should include directly from libshouldbeinlibc */
+extern char *localhost (void);
 
 #define _PATH_LOGIN "/bin/login"
 #define _PATH_ISSUE "/etc/issue"

@@ -62,15 +62,15 @@ struct vether_device
 typedef int (*dev_act_func) (struct vether_device *);
 
 int serv_connect (mach_port_t port);
-int serv_disconnect ();
+int serv_disconnect (void);
 struct vether_device *lookup_dev_by_name (const char *name);
 int remove_dead_port_from_dev (mach_port_t dead_port);
 struct vether_device *add_vdev (char *name, size_t size);
 void destroy_vdev (void *port);
-boolean_t all_dev_close ();
+boolean_t all_dev_close (void);
 int broadcast_pack (char *data, int datalen, struct vether_device *from_vdev);
 int broadcast_msg (struct net_rcv_msg *msg);
-int get_dev_num ();
+int get_dev_num (void);
 int foreach_dev_do (dev_act_func func);
 
 /* dev_stat.c */

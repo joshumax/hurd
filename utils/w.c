@@ -48,7 +48,7 @@
 
 extern char *canon_host (char *host);
 extern char *shared_domain (char *host1, char *host2);
-extern char *localhost ();
+extern char *localhost (void);
 
 const char *argp_program_version = STANDARD_HURD_VERSION (w);
 
@@ -218,7 +218,7 @@ w_get_user (struct proc_stat *ps)
   return hook->user;
 }
 const struct ps_getter w_user_getter =
-{"user", W_PSTAT_USER, (void (*)())w_get_user};
+{"user", W_PSTAT_USER, (void (*)(void))w_get_user};
 
 static void
 w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
@@ -230,10 +230,6 @@ w_get_host (struct proc_stat *ps, char **host, unsigned *host_len)
 const struct ps_getter w_host_getter =
 {"host", W_PSTAT_HOST, w_get_host};
 
-extern error_t ps_emit_past_time (), ps_emit_string (), ps_emit_minutes ();
-extern error_t ps_emit_user_name ();
-extern int ps_cmp_times (), ps_cmp_strings (), ps_cmp_unames ();
-extern int ps_nominal_string ();
 const struct ps_fmt_spec _w_specs[] =
 {
   {"User", 0, 8,   -1,0, &w_uname_getter,ps_emit_string, ps_cmp_strings},

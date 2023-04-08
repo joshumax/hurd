@@ -46,7 +46,7 @@ static char *get_rpc_name (mach_msg_id_t it)
 /* ---------------------------------------------------------------- */
 /* Getter definitions */
 
-typedef void (*vf)();
+typedef void (*vf)(struct proc_stat *);
 
 static int
 ps_get_pid (struct proc_stat *ps)
@@ -387,25 +387,29 @@ const struct ps_getter ps_comm_getter =
 /* some printing functions */
 
 /* G () is a helpful macro that just returns the getter G's access function
-   cast into a function pointer returning TYPE, as how the function should be
+   cast into a function pointer with type TYPE, as how the function should be
    called varies depending on the getter.  */
-#define G(getter,type) ((type (*)())((getter)->fn))
+#define G(getter,type) ((type)((getter)->fn))
+
+#define G_PROC_STAT(getter, type) G(getter, type (*)(struct proc_stat *))
 
 /* Similar to G, but takes a fmt field and uses its getter.  */
 #define FG(field,type) G(field->spec->getter, type)
+
+#define FG_PROC_STAT(field,type) FG(field, type (*)(struct proc_stat *))
 
 error_t
 ps_emit_int (struct proc_stat *ps, struct ps_fmt_field *field,
 	     struct ps_stream *stream)
 {
-  return ps_stream_write_int_field (stream, FG (field, int)(ps), field->width);
+  return ps_stream_write_int_field (stream, FG_PROC_STAT (field, int)(ps), field->width);
 }
 
 error_t
 ps_emit_nz_int (struct proc_stat *ps, struct ps_fmt_field *field,
 		struct ps_stream *stream)
 {
-  int value = FG (field, int)(ps);
+  int value = FG_PROC_STAT (field, int)(ps);
   if (value)
     return ps_stream_write_int_field  (stream, value, field->width);
   else
@@ -418,7 +422,7 @@ ps_emit_priority (struct proc_stat *ps, struct ps_fmt_field *field,
 {
   return
     ps_stream_write_int_field (stream,
-			       MACH_PRIORITY_TO_NICE (FG (field, int)(ps)),
+			       MACH_PRIORITY_TO_NICE (FG_PROC_STAT (field, int)(ps)),
 			       field->width);
 }
 
@@ -427,7 +431,7 @@ ps_emit_num_blocks (struct proc_stat *ps, struct ps_fmt_field *field,
 		    struct ps_stream *stream)
 {
   char buf[20];
-  sprintf(buf, "%d", FG (field, int)(ps) / 1024);
+  sprintf(buf, "%d", FG_PROC_STAT (field, int)(ps) / 1024);
   return ps_stream_write_field (stream, buf, field->width);
 }
 
@@ -471,7 +475,7 @@ ps_emit_percent (struct proc_stat *ps, struct ps_fmt_field *field,
 {
   char buf[20];
   int width = field->width;
-  float perc = FG (field, float)(ps) * 100;
+  float perc = FG_PROC_STAT (field, float)(ps) * 100;
 
   if (width == 0)
     sprintf (buf, "%g", perc);
@@ -489,7 +493,7 @@ ps_emit_nice_size_t (struct proc_stat *ps, struct ps_fmt_field *field,
 		     struct ps_stream *stream)
 {
   char buf[20];
-  size_t value = FG (field, size_t)(ps);
+  size_t value = FG_PROC_STAT (field, size_t)(ps);
   char *sfx = " KMG";
   size_t frac = 0;
 
@@ -515,7 +519,7 @@ ps_emit_seconds (struct proc_stat *ps, struct ps_fmt_field *field,
   struct timeval tv;
   int width = field->width, prec = field->precision;
 
-  FG (field, void)(ps, &tv);
+  FG (field, void (*)(struct proc_stat *, struct timeval *))(ps, &tv);
 
   if ((field->flags & PS_FMT_FIELD_COLON_MOD) && tv.tv_sec == 0)
     strcpy (buf, "-");
@@ -534,7 +538,7 @@ ps_emit_minutes (struct proc_stat *ps, struct ps_fmt_field *field,
   struct timeval tv;
   int width = field->width;
 
-  FG (field, void)(ps, &tv);
+  FG (field, void (*)(struct proc_stat *, struct timeval *))(ps, &tv);
 
   if ((field->flags & PS_FMT_FIELD_COLON_MOD) && tv.tv_sec < 60)
     strcpy (buf, "-");
@@ -554,7 +558,7 @@ ps_emit_past_time (struct proc_stat *ps, struct ps_fmt_field *field,
   struct timeval tv;
   int width = field->width;
 
-  FG (field, void)(ps, &tv);
+  FG (field, void (*)(struct proc_stat *, struct timeval *))(ps, &tv);
 
   if (now.tv_sec == 0 && gettimeofday (&now, 0) < 0)
     return errno;
@@ -568,7 +572,7 @@ error_t
 ps_emit_uid (struct proc_stat *ps, struct ps_fmt_field *field,
 	     struct ps_stream *stream)
 {
-  int uid = FG (field, int)(ps);
+  int uid = FG_PROC_STAT (field, int)(ps);
   if (uid < 0)
     return ps_stream_write_field (stream, "-", field->width);
   else
@@ -580,7 +584,7 @@ ps_emit_uname (struct proc_stat *ps, struct ps_fmt_field *field,
 	       struct ps_stream *stream)
 {
   int width = field->width;
-  struct ps_user *u = FG (field, struct ps_user *)(ps);
+  struct ps_user *u = FG_PROC_STAT (field, struct ps_user *)(ps);
   if (u)
     {
       struct passwd *pw = ps_user_passwd (u);
@@ -598,7 +602,7 @@ ps_emit_user_name (struct proc_stat *ps, struct ps_fmt_field *field,
 		   struct ps_stream *stream)
 {
   int width = field->width;
-  struct ps_user *u = FG (field, struct ps_user *)(ps);
+  struct ps_user *u = FG_PROC_STAT (field, struct ps_user *)(ps);
   if (u)
     {
       struct passwd *pw = ps_user_passwd (u);
@@ -627,7 +631,7 @@ ps_emit_args (struct proc_stat *ps, struct ps_fmt_field *field,
   char static_buf[200];
   char *buf = static_buf;
 
-  FG (field, void)(ps, &s0, &s0len);
+  FG (field, void (*)(struct proc_stat *, char **, int *))(ps, &s0, &s0len);
 
   if (!s0 || s0len == 0 )
     strcpy (buf, "-");
@@ -669,7 +673,7 @@ ps_emit_string (struct proc_stat *ps, struct ps_fmt_field *field,
   char *str;
   int len;
 
-  FG (field, void)(ps, &str, &len);
+  FG (field, void (*)(struct proc_stat *, char **, int *))(ps, &str, &len);
 
   if (!str || len == 0)
     str = "-";
@@ -682,7 +686,7 @@ ps_emit_tty_name (struct proc_stat *ps, struct ps_fmt_field *field,
 		  struct ps_stream *stream)
 {
   const char *name = "-";
-  struct ps_tty *tty = FG (field, struct ps_tty *)(ps);
+  struct ps_tty *tty = FG_PROC_STAT (field, struct ps_tty *)(ps);
 
   if (tty)
     {
@@ -727,7 +731,7 @@ ps_emit_state (struct proc_stat *ps, struct ps_fmt_field *field,
 	       struct ps_stream *stream)
 {
   char *tags;
-  int raw_state = FG (field, int)(ps);
+  int raw_state = FG (field, int (*)(struct proc_stat *))(ps);
   int state = raw_state;
   char buf[20], *p = buf;
   const struct state_shadow *shadow = state_shadows;
@@ -758,7 +762,7 @@ ps_emit_wait (struct proc_stat *ps, struct ps_fmt_field *field,
   char *wait;
   char buf[80];
 
-  FG (field, void)(ps, &wait, &rpc);
+  FG (field, void (*)(struct proc_stat *, char **, int *))(ps, &wait, &rpc);
 
   if (wait == 0)
     return ps_stream_write_field (stream, "?", field->width);
@@ -834,7 +838,7 @@ int
 ps_cmp_ints (struct proc_stat *ps1, struct proc_stat *ps2,
 	     const struct ps_getter *getter)
 {
-  int (*gf)() = G (getter, int);
+  int (*gf)(struct proc_stat *) = G_PROC_STAT (getter, int);
   int v1 = gf(ps1), v2 = gf (ps2);
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
 } 
@@ -843,7 +847,7 @@ int
 ps_cmp_floats (struct proc_stat *ps1, struct proc_stat *ps2,
 	       const struct ps_getter *getter)
 {
-  float (*gf)() = G (getter, float);
+  float (*gf)(struct proc_stat *) = G_PROC_STAT (getter, float);
   float v1 = gf(ps1), v2 = gf (ps2);
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
 } 
@@ -852,7 +856,7 @@ int
 ps_cmp_size_ts (struct proc_stat *ps1, struct proc_stat *ps2,
 		const struct ps_getter *getter)
 {
-  size_t (*gf)() = G (getter, size_t);
+  size_t (*gf)(struct proc_stat *) = G_PROC_STAT (getter, size_t);
   size_t v1 = gf(ps1), v2 = gf (ps2);
   return v1 == v2 ? 0 : v1 < v2 ? -1 : 1;
 } 
@@ -861,7 +865,7 @@ int
 ps_cmp_uids (struct proc_stat *ps1, struct proc_stat *ps2,
 	     const struct ps_getter *getter)
 {
-  struct ps_user *(*gf)() = G (getter, struct ps_user *);
+  struct ps_user *(*gf)(struct proc_stat *) = G_PROC_STAT (getter, struct ps_user *);
   struct ps_user *u1 = gf (ps1), *u2 = gf (ps2);
   return (u1 ? ps_user_uid (u1) : -1) - (u2 ? ps_user_uid (u2) : -1);
 }
@@ -870,7 +874,7 @@ int
 ps_cmp_unames (struct proc_stat *ps1, struct proc_stat *ps2,
 	       const struct ps_getter *getter)
 {
-  struct ps_user *(*gf)() = G (getter, struct ps_user *);
+  struct ps_user *(*gf)(struct proc_stat *) = G_PROC_STAT (getter, struct ps_user *);
   struct ps_user *u1 = gf (ps1), *u2 = gf (ps2);
   struct passwd *pw1 = u1 ? ps_user_passwd (u1) : 0;
   struct passwd *pw2 = u2 ? ps_user_passwd (u2) : 0;
@@ -881,7 +885,7 @@ int
 ps_cmp_strings (struct proc_stat *ps1, struct proc_stat *ps2,
 		const struct ps_getter *getter)
 {
-  void (*gf)() = G (getter, void);
+  void (*gf)(struct proc_stat *, char **, int *) = G (getter, void (*)(struct proc_stat *, char **, int *));
   char *s1, *s2;
   int s1len, s2len;
 
@@ -896,7 +900,7 @@ int
 ps_cmp_times (struct proc_stat *ps1, struct proc_stat *ps2,
 	      const struct ps_getter *getter)
 {
-  void (*g)() = G (getter, void);
+  void (*g)(struct proc_stat *, struct timeval *) = G (getter, void (*)(struct proc_stat *, struct timeval *));
   struct timeval tv1, tv2;
 
   g (ps1, &tv1);
@@ -917,7 +921,7 @@ ps_cmp_times (struct proc_stat *ps1, struct proc_stat *ps2,
 int
 ps_nominal_zint (struct proc_stat *ps, const struct ps_getter *getter)
 {
-  return G (getter, int)(ps) == 0;
+  return G_PROC_STAT (getter, int)(ps) == 0;
 }
 
 /* Neither is an empty string.  */
@@ -926,7 +930,7 @@ ps_nominal_string (struct proc_stat *ps, const struct ps_getter *getter)
 {
   char *str;
   size_t len;
-  G (getter, char *)(ps, &str, &len);
+  G (getter, char *(*)(struct proc_stat *, char **, size_t *))(ps, &str, &len);
   return !str || len == 0 || (len == 1 && *str == '-');
 }
 
@@ -935,7 +939,7 @@ ps_nominal_string (struct proc_stat *ps, const struct ps_getter *getter)
 int
 ps_nominal_pri (struct proc_stat *ps, const struct ps_getter *getter)
 {
-  return MACH_PRIORITY_TO_NICE(G (getter, int)(ps)) == 0;
+  return MACH_PRIORITY_TO_NICE(G_PROC_STAT (getter, int)(ps)) == 0;
 }
 
 /* Hurd processes usually have 2 threads;  XXX is there someplace we get get
@@ -943,7 +947,7 @@ ps_nominal_pri (struct proc_stat *ps, const struct ps_getter *getter)
 int
 ps_nominal_nth (struct proc_stat *ps, const struct ps_getter *getter)
 {
-  return G (getter, int)(ps) == 2;
+  return G_PROC_STAT (getter, int)(ps) == 2;
 }
 
 static int own_uid = -2;	/* -1 means no uid at all.  */
@@ -952,7 +956,7 @@ static int own_uid = -2;	/* -1 means no uid at all.  */
 int
 ps_nominal_user (struct proc_stat *ps, const struct ps_getter *getter)
 {
-  struct ps_user *u = G (getter, struct ps_user *)(ps);
+  struct ps_user *u = G_PROC_STAT (getter, struct ps_user *)(ps);
   if (own_uid == -2)
     own_uid = getuid ();
   return own_uid >= 0 && u && u->uid == own_uid;
@@ -962,7 +966,7 @@ ps_nominal_user (struct proc_stat *ps, const struct ps_getter *getter)
 int
 ps_nominal_uid (struct proc_stat *ps, const struct ps_getter *getter)
 {
-  uid_t uid = G (getter, uid_t)(ps);
+  uid_t uid = G_PROC_STAT (getter, uid_t)(ps);
   if (own_uid == -2)
     own_uid = getuid ();
   return own_uid >= 0 && uid == own_uid;

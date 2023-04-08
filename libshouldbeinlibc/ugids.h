@@ -50,7 +50,7 @@ struct ugids
 #define UGIDS_INIT { IDVEC_INIT, IDVEC_INIT, IDVEC_INIT, IDVEC_INIT, IDVEC_INIT, IDVEC_INIT }
 
 /* Return a new ugids structure, or 0 if an allocation error occurs.  */
-struct ugids *make_ugids ();
+struct ugids *make_ugids (void);
 
 extern void ugids_fini (struct ugids *ugids);
 

@@ -39,7 +39,7 @@ int main_udp_socket;
 char *hostname;
 volatile struct mapped_time_value *mapped_time;
 
-extern char *localhost ();
+extern char *localhost (void);
 
 /* Default number of times to retry RPCs when mounted soft. */
 #define DEFAULT_SOFT_RETRIES  3

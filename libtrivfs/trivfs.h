@@ -146,11 +146,7 @@ extern void (*trivfs_protid_destroy_hook) (struct trivfs_protid *);
    is about to be destroyed. */
 extern void (*trivfs_peropen_destroy_hook) (struct trivfs_peropen *);
 
-/* If this variable is set, it is called by trivfs_S_fsys_getroot before any
-   other processing takes place; if the return value is EAGAIN, normal trivfs
-   getroot processing continues, otherwise the rpc returns with that return
-   value.  */
-extern error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
+typedef error_t (*trivfs_getroot_hook_fun) (struct trivfs_control *cntl,
 				       mach_port_t reply_port,
 				       mach_msg_type_name_t reply_port_type,
 				       mach_port_t dotdot,
@@ -158,6 +154,12 @@ extern error_t (*trivfs_getroot_hook) (struct trivfs_control *cntl,
 				       int flags,
 				       retry_type *do_retry, char *retry_name,
 				       mach_port_t *node, mach_msg_type_name_t *node_type);
+
+/* If this variable is set, it is called by trivfs_S_fsys_getroot before any
+   other processing takes place; if the return value is EAGAIN, normal trivfs
+   getroot processing continues, otherwise the rpc returns with that return
+   value.  */
+extern trivfs_getroot_hook_fun trivfs_getroot_hook;
 
 /* Creates a control port for this filesystem and sends it to BOOTSTRAP with
    fsys_startup.  CONTROL_CLASS & CONTROL_BUCKET are passed to the ports

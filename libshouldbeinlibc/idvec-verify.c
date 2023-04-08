@@ -36,7 +36,17 @@
 
 #define SHADOW_PASSWORD_STRING	"x" /* pw_passwd contents for shadow passwd */
 
-static error_t verify_id (); /* FWD */
+/* Forward declaration */
+static error_t
+verify_id (uid_t id, int is_group, int multiple,
+	   char *(*getpass_fn) (const char *prompt,
+				uid_t id, int is_group,
+				void *pwd_or_grp, void *hook),
+	   void *getpass_hook,
+	   error_t (*verify_fn) (const char *password,
+				 uid_t id, int is_group,
+				 void *pwd_or_grp, void *hook),
+	   void *verify_hook);
 
 /* Get a password from the user, returning it in malloced storage.  */
 static char *

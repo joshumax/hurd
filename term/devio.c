@@ -98,7 +98,7 @@ static int output_stopped;
 static int char_size_mask_xxx = 0xff;
 
 /* Forward */
-static error_t devio_desert_dtr ();
+static error_t devio_desert_dtr (void);
 
 static error_t
 devio_init (void)

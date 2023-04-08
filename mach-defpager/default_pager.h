@@ -24,7 +24,10 @@
 
 #include <file_io.h>
 
-void partition_init();
+void default_pager(void);
+void default_pager_initialize(mach_port_t host_port);
+
+void partition_init(void);
 
 void create_paging_partition(const char *name, struct file_direct *fdp,
                              int isa_file, int linux_signature);

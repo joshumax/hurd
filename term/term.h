@@ -374,7 +374,7 @@ void report_carrier_error (error_t);
 /* Other decls */
 error_t drop_output (void);
 void send_signal (int);
-error_t drain_output ();
+error_t drain_output (void);
 void output_character (int);
 void copy_rawq (void);
 void rescan_inputq (void);

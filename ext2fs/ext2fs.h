@@ -307,13 +307,13 @@ extern vm_address_t zeroblock;
 
 /* Get the superblock from the disk, point `sblock' to it, and setup
    various global info from it.  */
-void get_hypermetadata ();
+void get_hypermetadata (void);
 
 /* Map `group_desc_image' pointers to disk cache.  Also, establish a
    non-exported mapping to the superblock that will be used by
    diskfs_set_hypermetadata to update the superblock from the cache
    `sblock' points to.  */
-void map_hypermetadata ();
+void map_hypermetadata (void);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -444,7 +444,7 @@ _dino_deref (struct ext2_inode *inode)
 /* inode.c */
 
 /* Write all active disknodes into the inode pager. */
-void write_all_disknodes ();
+void write_all_disknodes (void);
 
 /* ---------------------------------------------------------------- */
 

@@ -2762,11 +2762,12 @@ boolean_t default_pager_notify_server(mach_msg_header_t *in, mach_msg_header_t *
 	return TRUE;
 }
 
-extern boolean_t seqnos_memory_object_default_server();
-extern boolean_t default_pager_server();
-extern boolean_t exc_server();
-extern boolean_t bootstrap_server();
-extern void bootstrap_compat();
+extern boolean_t seqnos_memory_object_default_server(mach_msg_header_t	*in,
+	mach_msg_header_t	*out);
+extern boolean_t default_pager_server(mach_msg_header_t	*in,
+	mach_msg_header_t	*out);
+extern boolean_t exc_server(mach_msg_header_t	*in,
+	mach_msg_header_t	*out);
 
 mach_msg_size_t default_pager_msg_size_object = 128;
 

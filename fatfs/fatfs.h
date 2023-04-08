@@ -126,7 +126,7 @@ void resume_fat_pager (void);
 
 void flush_node_pager (struct node *node);
 
-void write_all_disknodes ();
+void write_all_disknodes (void);
 
 error_t fat_get_next_cluster (cluster_t cluster, cluster_t *next_cluster);
 void fat_to_unix_filename (const char *, char *);

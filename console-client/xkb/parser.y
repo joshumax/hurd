@@ -27,7 +27,7 @@ static error_t include_section (char *incl, int sectionsymbol, char *dirname,
 				mergemode);
 static error_t include_sections (char *incl, int sectionsymbol, char *dirname,
 				 mergemode);
-void close_include ();
+void close_include (void);
 static void skipsection (void);
 static error_t set_default_action (struct xkb_action *, struct xkb_action **);
 static void key_set_keysym (struct key *key, group_t group, int level,
@@ -1234,8 +1234,8 @@ include_section (char *incl, int sectionsymbol, char *dirname,
 		 mergemode new_mm)
 {
   void include_file (FILE *, mergemode, char *);
-  int scanner_get_current_location ();
-  const char* scanner_get_current_file ();
+  int scanner_get_current_location (void);
+  const char* scanner_get_current_file (void);
 
   char *filename;
   char *sectionname = NULL;

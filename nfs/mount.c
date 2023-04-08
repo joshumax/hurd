@@ -18,13 +18,11 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
 
-#define malloc a_byte_for_every_bozotic_sun_lossage_and_youd_need_a_lotta_ram
 #include <rpc/types.h>
 #include <rpc/xdr.h>
+#include <rpc/pmap_prot.h>
 #undef TRUE			/* Get rid of sun defs.  */
 #undef FALSE
-#undef malloc
-#include <rpc/pmap_prot.h>
 #include <errno.h>
 #include <error.h>
 #include <sys/socket.h>

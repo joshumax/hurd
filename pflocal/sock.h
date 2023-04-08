@@ -184,11 +184,11 @@ error_t addr_create (struct addr **addr);
 error_t addr_get_sock (struct addr *addr, struct sock **sock);
 
 /* Prepare for socket creation.  */
-error_t sock_global_init ();
+error_t sock_global_init (void);
 
 /* Try to shutdown any active sockets, returning EBUSY if we can't.  Assumes
    non-socket RPCS's have been disabled.  */
-error_t sock_global_shutdown ();
+error_t sock_global_shutdown (void);
 
 /* Mostly here for use by mig-decls.h.  */
 extern struct port_class *sock_user_port_class;

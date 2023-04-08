@@ -25,7 +25,7 @@
    a server if necessary.  This routine should be called *after* creating the
    port(s) which need server, as the server routine only operates while there
    are any ports.  */
-void ensure_sock_server ();
+void ensure_sock_server (void);
 
 /* A port bucket to handle SOCK_USERs and ADDRs.  */
 extern struct port_bucket *sock_port_bucket;
