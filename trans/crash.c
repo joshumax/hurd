@@ -249,7 +249,7 @@ S_crash_dump_task (mach_port_t port,
 		   mach_port_t reply_port, mach_msg_type_name_t reply_type,
 		   task_t task, file_t core_file,
 		   int signo, integer_t sigcode, int sigerror,
-		   natural_t exc, natural_t code, natural_t subcode,
+		   natural_t exc, natural_t code, long_natural_t subcode,
 		   mach_port_t ctty_id)
 {
   error_t err;

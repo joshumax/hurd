@@ -43,5 +43,5 @@ routine crash_dump_task (
 	task: task_t;
 	file: file_t;
 	signo: int; sigcode: integer_t; sigerror: int;
-	exc: natural_t; code: natural_t; subcode: natural_t;
+	exc: natural_t; code: natural_t; subcode: long_natural_t;
 	cttyid_port: mach_port_send_t);

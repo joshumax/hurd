@@ -3789,7 +3789,7 @@ void paging_space_info(vm_size_t *totp, vm_size_t *freep)
 kern_return_t
 catch_exception_raise(mach_port_t exception_port,
 		mach_port_t thread, mach_port_t task,
-		int exception, int code, int subcode)
+		int exception, int code, long_integer_t subcode)
 {
 	ddprintf ("(default_pager)catch_exception_raise(%d,%d,%d)\n",
 	       exception, code, subcode);

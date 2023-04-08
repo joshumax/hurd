@@ -661,7 +661,7 @@ S_proc_exception_raise (struct exc *e,
 			mach_port_t task,
 			integer_t exception,
 			integer_t code,
-			integer_t subcode)
+			long_integer_t subcode)
 {
   error_t err;
   struct proc *p;
