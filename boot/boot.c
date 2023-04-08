@@ -47,7 +47,6 @@
 #include "device_reply_U.h"
 #include "io_reply_U.h"
 #include "term_S.h"
-#include "bootstrap_S.h"
 /* #include "tioctl_S.h" */
 #include "mach_S.h"
 #include "mach_host_S.h"
@@ -926,18 +925,6 @@ unlock_readlock (void)
     read_reply ();
 }
 
-/*
- *	Handle bootstrap requests.
- */
-kern_return_t
-do_bootstrap_privileged_ports(mach_port_t bootstrap,
-	mach_port_t *hostp,
-  mach_port_t *devicep)
-{
-	*hostp = privileged_host_port;
-	*devicep = pseudo_master_device_port;
-	return KERN_SUCCESS;
-}
 
 /* Implementation of device interface */
 
