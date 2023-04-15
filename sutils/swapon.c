@@ -362,10 +362,8 @@ swaponoff (const char *file, int add, int skipnotexisting)
 {
   error_t err;
   struct store *store;
-  static int old_protocol;
   int quiet_now = 0;
 
- try_again:
   err = store_open (file, 0, 0, &store);
   if (err)
     {
@@ -377,23 +375,7 @@ swaponoff (const char *file, int add, int skipnotexisting)
       return err;
     }
 
-  /* Let's see what we've got.  */
-  if (old_protocol)
-    {
-      /* The default pager only lets us give a whole partition, and
-	 it will read the signature page (but not insist on it).  */
-      if (! (store->flags & STORE_ENFORCED))
-	{
-	  error (0, 0, "%s: Can only page to the entire device", file);
-	  return EINVAL;
-	}
-      /* If we want to require the signature, we can check that it is
-	 actually there even though we won't be the one interpreting it.  */
-      if (require_signature
-	  && check_signature (file, &store, 1, quiet_now) != 0)
-	return EINVAL;
-    }
-  else if (ignore_signature)
+  if (ignore_signature)
     verbose ("%s: %uk swap space",
 	     file, (unsigned int) (store->size / 1024));
   else
@@ -420,38 +402,15 @@ swaponoff (const char *file, int add, int skipnotexisting)
 
   get_def_pager();
 
-  if (old_protocol)
+  recnum_t runs[store->num_runs * 2];
+  size_t i, j;
+  for (i = j = 0; i < store->num_runs; ++i)
     {
-      /* The default pager does not support the new protocol.
-	 We tried it in a previous call (below) and got MIG_BAD_ID.  */
-      err = default_pager_paging_file (def_pager, dev_master, file, add);
+      runs[j++] = store->runs[i].start;
+      runs[j++] = store->runs[i].length;
     }
-  else
-    {
-      /* Try the new protocol, which will take our list of runs.  */
-      recnum_t runs[store->num_runs * 2];
-      size_t i, j;
-      for (i = j = 0; i < store->num_runs; ++i)
-	{
-	  runs[j++] = store->runs[i].start;
-	  runs[j++] = store->runs[i].length;
-	}
-      err = default_pager_paging_storage (def_pager, store->port,
-					  runs, j, file, add);
-      if (err == MIG_BAD_ID)
-	{
-	  /* The default pager does not support the new protocol.
-	     We'll do the whole thing over again, since we have
-	     different requirements now.  */
-	  old_protocol = 1;
-	  store_free (store);
-	  if (! ignore_signature)
-	    error (0, 0, "\
-default pager uses old protocol, does its own signature checking");
-	  quiet_now = 1;
-	  goto try_again;
-	}
-    }
+  err = default_pager_paging_storage (def_pager, store->port,
+				      runs, j, file, add);
 
   store_free (store);
 

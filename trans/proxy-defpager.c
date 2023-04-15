@@ -99,18 +99,6 @@ S_default_pager_object_pages (mach_port_t default_pager,
 				   pages, pagesCnt);
 }
 
-
-kern_return_t
-S_default_pager_paging_file (mach_port_t default_pager,
-			     mach_port_t master_device_port,
-			     const_default_pager_filename_t filename,
-			     boolean_t add)
-{
-  return allowed (default_pager, O_WRITE)
-    ?: default_pager_paging_file (real_defpager, dev_master, filename, add)
-    ?: mach_port_deallocate (mach_task_self (), master_device_port);
-}
-
 kern_return_t
 S_default_pager_paging_storage (mach_port_t default_pager,
 				mach_port_t device,

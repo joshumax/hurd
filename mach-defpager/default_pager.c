@@ -3663,34 +3663,6 @@ extern mach_port_t bootstrap_master_device_port;
 extern mach_port_t bootstrap_master_host_port;
 
 kern_return_t
-S_default_pager_paging_file (mach_port_t			pager,
-	mach_port_t			mdport,
-	const_default_pager_filename_t	file_name,
-	boolean_t			add)
-{
-	kern_return_t   kr;
-
-	if (pager != default_pager_default_port)
-		return KERN_INVALID_ARGUMENT;
-
-#if 0
-dprintf("bmd %x md %x\n", bootstrap_master_device_port, mdport);
-#endif
-	if (add) {
-		kr = add_paging_file(bootstrap_master_device_port,
-				     file_name, 0);
-	} else {
-		kr = remove_paging_file(file_name);
-	}
-
-	/* XXXX more code needed */
-	if (mdport != bootstrap_master_device_port)
-		mach_port_deallocate( mach_task_self(), mdport);
-
-	return kr;
-}
-
-kern_return_t
 default_pager_register_fileserver(mach_port_t			pager,
 	mach_port_t			fileserver)
 {

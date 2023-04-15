@@ -33,8 +33,6 @@ void create_paging_partition(const char *name, struct file_direct *fdp,
                              int isa_file, int linux_signature);
 kern_return_t destroy_paging_partition(const char *name, void **pp_private);
 
-kern_return_t add_paging_file(mach_port_t master_device_port,
-			      const char *file_name, int linux_signature);
 kern_return_t remove_paging_file (const char *file_name);
 
 void paging_space_info(vm_size_t *totp, vm_size_t *freep);

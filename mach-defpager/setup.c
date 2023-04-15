@@ -237,56 +237,6 @@ page_write_file_direct(struct file_direct *fdp,
 }
 
 
-/* Compatibility entry points used by default_pager_paging_file RPC.  */
-
-kern_return_t
-add_paging_file(mach_port_t		master_device_port,
-	const char		*file_name,
-	int			linux_signature)
-{
-  error_t err;
-  mach_port_t dev;
-  int sizes[DEV_GET_SIZE_COUNT];
-  natural_t count;
-  const char *devname = file_name;
-
-  assert_backtrace (linux_signature == 0);
-
-  if (!strncmp (file_name, "/dev/", 5))
-    devname += 5;
-
-  err = device_open (master_device_port, D_READ|D_WRITE, devname, &dev);
-  if (err)
-    return err;
-
-  count = DEV_GET_SIZE_COUNT;
-  err = device_get_status (dev, DEV_GET_SIZE, sizes, &count);
-  if (!err && count < DEV_GET_SIZE_COUNT)
-    err = EGRATUITOUS;
-  if (err)
-    mach_port_deallocate (mach_task_self (), dev);
-  else
-    {
-      struct file_direct *fdp;
-      fdp = malloc (offsetof (struct file_direct, runs[1]));
-      if (fdp == 0)
-	return ENOMEM;
-
-      fdp->device = dev;
-      fdp->fd_bsize = sizes[DEV_GET_SIZE_RECORD_SIZE];
-      fdp->bshift = ffs (sizes[DEV_GET_SIZE_RECORD_SIZE]) - 1;
-      fdp->fd_size = sizes[DEV_GET_SIZE_DEVICE_SIZE] >> fdp->bshift;
-      fdp->nruns = 1;
-      fdp->runs[0].start = 0;
-      fdp->runs[0].length = fdp->fd_size;
-
-      /* Now really do it.  */
-      create_paging_partition (file_name, fdp, 0, 0);
-    }
-
-  return err;
-}
-
 /*
  * Destroy a paging_partition given a file name
  */

@@ -65,13 +65,7 @@ routine default_pager_object_pages(
 	out	pages			: default_pager_page_array_t,
 			CountInOut, Dealloc);
 
-/* This is the original Mach call, now deprecated in favor
-   of default_pager_paging_storage.  */
-routine default_pager_paging_file(
-		default_pager		: mach_port_t;
-		master_device_port	: mach_port_t;
-		filename		: default_pager_filename_t;
-		add			: boolean_t);
+skip;				/* default_pager_paging_file */
 
 skip;				/* default_pager_register_fileserver */
 
