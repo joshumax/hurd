@@ -31,7 +31,9 @@
 #include <error.h>
 #include <version.h>
 #include "pids.h"
+#include "msgids.h"
 #include <sys/mman.h>
+#include <assert-backtrace.h>
 
 /* From libc (not in hurd.h) */
 char *
@@ -423,6 +425,71 @@ cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
   return err;
 }
 
+error_t
+cmd_report_wait (pid_t pid, mach_port_t msgport, int argc, char *argv[])
+{
+  error_t err;
+  task_t task;
+  process_t proc = getproc ();
+  thread_t *threads = NULL;
+  mach_msg_type_number_t thread_count = 0;
+  size_t i;
+  static int msgids_initialized = 0;
+
+  if (!msgids_initialized)
+    {
+      err = msgids_scan_std ();
+      if (err)
+        error (0, err, "msgids_scan_std");
+      else
+        msgids_initialized = 1;
+    }
+
+  err = proc_pid2task (proc, pid, &task);
+  if (err)
+    return err;
+
+  err = task_threads (task, &threads, &thread_count);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), task);
+      return err;
+    }
+
+  printf ("%d: %lu threads\n", pid, (unsigned long) thread_count);
+  for (i = 0; i < thread_count; i++)
+    {
+      char wait_desc[1024];
+      mach_msg_id_t wait_rpc;
+      const struct msgid_info *info = NULL;
+
+      err = msg_report_wait (msgport, threads[i], wait_desc, &wait_rpc);
+      if (err)
+        {
+          error (0, err, "%d: thread %lu", pid, (unsigned long) i);
+          err = mach_port_deallocate (mach_task_self (), threads[i]);
+          assert_perror_backtrace (err);
+          continue;
+        }
+      printf ("%d: thread %lu: ", pid, (unsigned long) i);
+      if (wait_rpc != 0)
+        info = msgid_info (wait_rpc);
+      if (info && info->name)
+        printf ("%s ", info->name);
+      else if (wait_rpc != 0)
+        printf ("msgid %lu ", (unsigned long) wait_rpc);
+      printf ("%s\n", wait_desc);
+      err = mach_port_deallocate (mach_task_self (), threads[i]);
+      assert_perror_backtrace (err);
+    }
+  err = vm_deallocate (mach_task_self (), (vm_address_t) threads,
+                       sizeof (thread_t) * thread_count);
+  assert_perror_backtrace (err);
+  err = mach_port_deallocate (mach_task_self (), task);
+  assert_perror_backtrace (err);
+  return 0;
+}
+
 
 #define OA OPTION_ARG_OPTIONAL
 
@@ -439,6 +506,7 @@ cmd_umask (pid_t pid, mach_port_t msgport, int argc, char *argv[])
 #define CMD_STDERR	1010
 #define CMD_PWD		1011
 #define CMD_GETROOT	1012
+#define CMD_REPORT_WAIT	1013
 
 /* Params to be passed as the input when parsing CMDS_ARGP.  */
 struct cmds_argp_params
@@ -466,6 +534,7 @@ static const struct argp_option cmd_options[] =
   {"chroot",   CMD_CHCRDIR,"DIR",   0, "Change current root directory"},
   {"cdroot",   CMD_CDROOT, 0,       0, "Change cwd to root directory"},
   {"umask",    CMD_UMASK,  "MASK", OA, "Change umask"},
+  {"report-wait", CMD_REPORT_WAIT, 0, 0, "Describe what threads are blocked on"},
   {0, 0}
 };
 
@@ -574,6 +643,9 @@ parse_cmd_opt (int key, char *arg, struct argp_state *state)
     case CMD_STDERR:
       add_cmd (&cmd_stderr, 1, 2, arg, state);
       break;
+    case CMD_REPORT_WAIT:
+      add_cmd (&cmd_report_wait, 0, 0, arg, state);
+      break;
     default:
       return ARGP_ERR_UNKNOWN;
     }
@@ -633,6 +705,8 @@ main(int argc, char *argv[])
 	"Commands:", 2},
       { &pids_argp, 0,
 	"Process selection:", 3},
+      { &msgid_argp, 0,
+        "Message ID lookup:", 4 },
       {0} };
 
   struct argp argp = { options, parse_opt, args_doc, doc, argp_kids };

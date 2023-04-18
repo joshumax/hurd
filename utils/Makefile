@@ -69,7 +69,7 @@ ps w ids settrans syncfs showtrans fsysopts storeinfo login vmstat portinfo \
 $(filter-out $(special-targets), $(targets)): %: %.o
 
 rpctrace: ../libports/libports.a
-rpctrace rpcscan: msgids.o \
+rpctrace rpcscan msgport: msgids.o \
 	  ../libihash/libihash.a \
 	  ../libshouldbeinlibc/libshouldbeinlibc.a
 msgids-CPPFLAGS = -DDATADIR=\"${datadir}\"
