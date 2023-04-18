@@ -286,7 +286,7 @@ process_file_gc_stat (struct proc_stat *ps, char **contents)
       MACH_PRIORITY_TO_NICE(thbi->base_priority) + 20,
       MACH_PRIORITY_TO_NICE(thbi->base_priority),
       pi->nthreads, 0L,
-      timeval_jiffies (thbi->creation_time), /* FIXME: ... since boot */
+      timeval_jiffies (tbi->creation_time), /* FIXME: ... since boot */
       (long unsigned) tbi->virtual_size,
       (long unsigned) tbi->resident_size / PAGE_SIZE, 0L,
       start_code,
