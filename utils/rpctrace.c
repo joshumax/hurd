@@ -41,6 +41,9 @@
 
 #include "msgids.h"
 
+/* Should match MiG's desired_complex_alignof */
+#define MSG_ALIGNMENT __alignof__(uintptr_t)
+
 const char *argp_program_version = STANDARD_HURD_VERSION (rpctrace);
 
 static unsigned strsize = 80;
@@ -807,7 +810,7 @@ print_contents (mach_msg_header_t *inp,
   int first = 1;
 
   /* Process the message data, wrapping ports and printing data.  */
-  while (msg_buf_ptr < (void *) inp + inp->msgh_size)
+  while (msg_buf_ptr < (char *) inp + inp->msgh_size)
     {
       mach_msg_type_t *const type = msg_buf_ptr;
       mach_msg_type_long_t *const lt = (void *) type;
@@ -839,8 +842,7 @@ print_contents (mach_msg_header_t *inp,
 	  msg_buf_ptr += sizeof (void *);
 	}
       else
-	msg_buf_ptr += ((nelt * eltsize + sizeof(natural_t) - 1)
-			& ~(sizeof(natural_t) - 1));
+	msg_buf_ptr += ((nelt * eltsize + MSG_ALIGNMENT - 1) & ~(MSG_ALIGNMENT - 1));
 
       if (first)
 	first = 0;
