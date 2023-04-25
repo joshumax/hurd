@@ -409,8 +409,13 @@ swaponoff (const char *file, int add, int skipnotexisting)
       runs[j++] = store->runs[i].start;
       runs[j++] = store->runs[i].length;
     }
-  err = default_pager_paging_storage (def_pager, store->port,
-				      runs, j, file, add);
+  err = default_pager_paging_storage_new (def_pager, store->port,
+					  runs, j, file, add);
+  if (err == MIG_BAD_ID || err == EOPNOTSUPP)
+    {
+      err = default_pager_paging_storage (def_pager, store->port,
+					  runs, j, file, add);
+    }
 
   store_free (store);
 

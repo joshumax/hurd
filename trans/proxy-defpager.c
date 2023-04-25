@@ -113,6 +113,17 @@ S_default_pager_paging_storage (mach_port_t default_pager,
 }
 
 kern_return_t
+S_default_pager_paging_storage_new (mach_port_t default_pager,
+				mach_port_t device,
+				const recnum_t *runs, mach_msg_type_number_t nruns,
+				const_default_pager_filename_t name,
+				boolean_t add)
+{
+  return S_default_pager_paging_storage (default_pager,
+      device, runs, nruns, name, add);
+}
+
+kern_return_t
 S_default_pager_object_set_size (mach_port_t memory_object,
 				 mach_port_seqno_t seqno,
 				 vm_size_t object_size_limit)

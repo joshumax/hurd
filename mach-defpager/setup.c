@@ -100,6 +100,16 @@ S_default_pager_paging_storage (mach_port_t pager,
   return 0;
 }
 
+kern_return_t
+S_default_pager_paging_storage_new (mach_port_t pager,
+				mach_port_t device,
+				const recnum_t *runs, mach_msg_type_number_t nrun,
+				const_default_pager_filename_t name,
+				boolean_t add)
+{
+  return S_default_pager_paging_storage (pager,
+      device, runs, nrun, name, add);
+}
 
 /* Called to read a page from backing store.  */
 int
