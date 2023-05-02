@@ -449,7 +449,7 @@ type squad = int64_t;
 
 type blksize_t = long;
 type blkcnt64_t = squad;
-type dev_t = uint32_t;
+type dev_t = uword;
 type fsblkcnt64_t = uquad;
 type fsfilcnt64_t = uquad;
 type fsid_t = uquad;
