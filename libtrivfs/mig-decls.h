@@ -52,7 +52,7 @@ trivfs_begin_using_protid (mach_port_t port)
 }
 
 static inline struct trivfs_protid * __attribute__ ((unused))
-trivfs_begin_using_protid_payload (unsigned long payload)
+trivfs_begin_using_protid_payload (uintptr_t payload)
 {
   struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
 
@@ -99,7 +99,7 @@ trivfs_begin_using_control (mach_port_t port)
 }
 
 static inline struct trivfs_control * __attribute__ ((unused))
-trivfs_begin_using_control_payload (unsigned long payload)
+trivfs_begin_using_control_payload (uintptr_t payload)
 {
   struct port_info *pi = ports_lookup_payload (NULL, payload, NULL);
 

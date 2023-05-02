@@ -33,7 +33,7 @@ begin_using_socket_port (mach_port_t port)
 }
 
 static inline struct sock_user * __attribute__ ((unused))
-begin_using_socket_payload (unsigned long payload)
+begin_using_socket_payload (uintptr_t payload)
 {
   return ports_lookup_payload (pfinet_bucket, payload, socketport_class);
 }
@@ -52,7 +52,7 @@ begin_using_sockaddr_port (mach_port_t port)
 }
 
 static inline struct sock_addr * __attribute__ ((unused))
-begin_using_sockaddr_payload (unsigned long payload)
+begin_using_sockaddr_payload (uintptr_t payload)
 {
   return ports_lookup_payload (pfinet_bucket, payload, addrport_class);
 }

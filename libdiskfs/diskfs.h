@@ -889,13 +889,13 @@ void diskfs_finish_protid (struct protid *cred, struct iouser *user);
 
 extern struct protid * diskfs_begin_using_protid_port (file_t port);
 extern struct protid *
-diskfs_begin_using_protid_payload (unsigned long payload);
+diskfs_begin_using_protid_payload (uintptr_t payload);
 extern struct diskfs_control * diskfs_begin_using_control_port (fsys_t port);
 extern struct diskfs_control *
-diskfs_begin_using_control_port_payload (unsigned long payload);
+diskfs_begin_using_control_port_payload (uintptr_t payload);
 extern struct bootinfo *diskfs_begin_using_bootinfo_port (exec_startup_t port);
 struct bootinfo *
-diskfs_begin_using_bootinfo_payload (unsigned long payload);
+diskfs_begin_using_bootinfo_payload (uintptr_t payload);
 
 extern void diskfs_end_using_protid_port (struct protid *cred);
 extern void diskfs_end_using_control_port (struct diskfs_control *cred);
@@ -913,7 +913,7 @@ diskfs_begin_using_protid_port (file_t port)
 }
 
 DISKFS_EXTERN_INLINE struct protid *
-diskfs_begin_using_protid_payload (unsigned long payload)
+diskfs_begin_using_protid_payload (uintptr_t payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,
@@ -928,7 +928,7 @@ diskfs_begin_using_control_port (fsys_t port)
 }
 
 DISKFS_EXTERN_INLINE struct diskfs_control *
-diskfs_begin_using_control_port_payload (unsigned long payload)
+diskfs_begin_using_control_port_payload (uintptr_t payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,
@@ -943,7 +943,7 @@ diskfs_begin_using_bootinfo_port (exec_startup_t port)
 }
 
 DISKFS_EXTERN_INLINE struct bootinfo *
-diskfs_begin_using_bootinfo_payload (unsigned long payload)
+diskfs_begin_using_bootinfo_payload (uintptr_t payload)
 {
   return ports_lookup_payload (diskfs_port_bucket,
 			       payload,

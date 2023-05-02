@@ -31,7 +31,7 @@ begin_using_bootinfo_port (mach_port_t port)
 }
 
 static inline struct bootinfo * __attribute__ ((unused))
-begin_using_bootinfo_payload (unsigned long payload)
+begin_using_bootinfo_payload (uintptr_t payload)
 {
     return ports_lookup_payload (port_bucket, payload, execboot_portclass);
 }

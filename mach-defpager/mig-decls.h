@@ -32,7 +32,7 @@ begin_using_default_pager (mach_port_t port)
 }
 
 static inline struct dstruct * __attribute__ ((unused))
-begin_using_default_pager_payload (unsigned long payload)
+begin_using_default_pager_payload (uintptr_t payload)
 {
   return (default_pager_t) payload;
 }

@@ -33,7 +33,7 @@ auth_port_to_handle (mach_port_t auth)
 }
 
 static inline struct authhandle * __attribute__ ((unused))
-auth_payload_to_handle (unsigned long payload)
+auth_payload_to_handle (uintptr_t payload)
 {
   return ports_lookup_payload (auth_bucket, payload, authhandle_portclass);
 }

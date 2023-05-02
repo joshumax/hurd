@@ -81,7 +81,7 @@ begin_using_notify_port (fs_notify_t port)
 }
 
 static inline cons_notify_t
-begin_using_notify_payload (unsigned long payload)
+begin_using_notify_payload (uintptr_t payload)
 {
   return ports_lookup_payload (cons_port_bucket, payload, cons_port_class);
 }

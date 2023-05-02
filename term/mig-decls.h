@@ -33,7 +33,7 @@ begin_using_ctty_port (mach_port_t port)
 }
 
 static inline struct port_info * __attribute__ ((unused))
-begin_using_ctty_payload (unsigned long payload)
+begin_using_ctty_payload (uintptr_t payload)
 {
   return ports_lookup_payload (term_bucket, payload, cttyid_class);
 }

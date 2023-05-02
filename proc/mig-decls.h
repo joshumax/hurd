@@ -36,7 +36,7 @@ begin_using_proc_port (mach_port_t port)
 }
 
 static inline struct proc * __attribute__ ((unused))
-begin_using_proc_payload (unsigned long payload)
+begin_using_proc_payload (uintptr_t payload)
 {
   struct proc *p;
   p = ports_lookup_payload (proc_bucket, payload, proc_class);
@@ -62,7 +62,7 @@ begin_using_exc_port (mach_port_t port)
 }
 
 static inline exc_t __attribute__ ((unused))
-begin_using_exc_payload (unsigned long payload)
+begin_using_exc_payload (uintptr_t payload)
 {
   return ports_lookup_payload (NULL, payload, exc_class);
 }

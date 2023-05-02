@@ -36,7 +36,7 @@ begin_using_device_port (mach_port_t port)
 }
 
 static inline struct vether_device * __attribute__ ((unused))
-begin_using_device_payload (unsigned long payload)
+begin_using_device_payload (uintptr_t payload)
 {
   return ports_lookup_payload (port_bucket, payload, vdev_portclass);
 }

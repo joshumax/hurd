@@ -253,20 +253,20 @@ void *ports_lookup_port (struct port_bucket *bucket,
    this function is used, PAYLOAD must be a pointer to the port
    structure.  */
 extern void *ports_lookup_payload (struct port_bucket *bucket,
-				   unsigned long payload,
+				   uintptr_t payload,
 				   struct port_class *port_class);
 
 /* This returns the ports name.  This function can be used as
    intranpayload function turning payloads back into port names.  If
    this function is used, PAYLOAD must be a pointer to the port
    structure.  */
-extern mach_port_t ports_payload_get_name (unsigned int payload);
+extern mach_port_t ports_payload_get_name (uintptr_t payload);
 
 #if (defined(__USE_EXTERN_INLINES) || defined(PORTS_DEFINE_EI)) && !defined(__cplusplus)
 
 PORTS_EI void *
 ports_lookup_payload (struct port_bucket *bucket,
-		      unsigned long payload,
+		      uintptr_t payload,
 		      struct port_class *class)
 {
   struct port_info *pi = (struct port_info *) payload;
@@ -287,7 +287,7 @@ ports_lookup_payload (struct port_bucket *bucket,
 }
 
 PORTS_EI mach_port_t
-ports_payload_get_name (unsigned int payload)
+ports_payload_get_name (uintptr_t payload)
 {
   struct port_info *pi = (struct port_info *) payload;
 

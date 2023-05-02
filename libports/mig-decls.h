@@ -31,7 +31,7 @@ begin_using_port_info_port (mach_port_t port)
 }
 
 static inline struct port_info * __attribute__ ((unused))
-begin_using_port_info_payload (unsigned long payload)
+begin_using_port_info_payload (uintptr_t payload)
 {
   return ports_lookup_payload (0, payload, 0);
 }

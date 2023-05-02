@@ -37,7 +37,7 @@ begin_using_sock_user_port(mach_port_t port)
 }
 
 static inline sock_user_t __attribute__ ((unused))
-begin_using_sock_user_payload (unsigned long payload)
+begin_using_sock_user_payload (uintptr_t payload)
 {
   return ports_lookup_payload (NULL, payload, sock_user_port_class);
 }
@@ -56,7 +56,7 @@ begin_using_addr_port(mach_port_t port)
 }
 
 static inline addr_t __attribute__ ((unused))
-begin_using_addr_payload (unsigned long payload)
+begin_using_addr_payload (uintptr_t payload)
 {
   return ports_lookup_payload (NULL, payload, addr_port_class);
 }

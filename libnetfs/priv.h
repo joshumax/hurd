@@ -34,7 +34,7 @@ begin_using_protid_port (file_t port)
 }
 
 static inline struct protid * __attribute__ ((unused))
-begin_using_protid_payload (unsigned long payload)
+begin_using_protid_payload (uintptr_t payload)
 {
   return ports_lookup_payload (netfs_port_bucket, payload, netfs_protid_class);
 }
@@ -53,7 +53,7 @@ begin_using_control_port (fsys_t port)
 }
 
 static inline struct netfs_control * __attribute__ ((unused))
-begin_using_control_payload (unsigned long payload)
+begin_using_control_payload (uintptr_t payload)
 {
   return ports_lookup_payload (netfs_port_bucket, payload, netfs_control_class);
 }
