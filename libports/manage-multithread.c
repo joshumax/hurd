@@ -128,14 +128,14 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
       struct rpc_info link;
       mig_reply_header_t *outp = (mig_reply_header_t *) outheadp;
       static const mach_msg_type_t RetCodeType = {
-		/* msgt_name = */		MACH_MSG_TYPE_INTEGER_32,
-		/* msgt_size = */		32,
-		/* msgt_number = */		1,
-		/* msgt_inline = */		TRUE,
-		/* msgt_longform = */		FALSE,
-		/* msgt_deallocate = */		FALSE,
-		/* msgt_unused = */		0
-	};
+        .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+        .msgt_size = 32,
+        .msgt_number = 1,
+        .msgt_inline = TRUE,
+        .msgt_longform = FALSE,
+        .msgt_deallocate = FALSE,
+        .msgt_unused = 0
+      };
 
       if (__atomic_sub_fetch (&nreqthreads, 1, __ATOMIC_RELAXED) == 0)
 	/* No thread would be listening for requests, spawn one. */

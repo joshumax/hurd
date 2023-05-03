@@ -1105,13 +1105,13 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 
   const mach_msg_type_t RetCodeType =
   {
-    MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
-    32,				/* msgt_size = */
-    1,				/* msgt_number = */
-    TRUE,			/* msgt_inline = */
-    FALSE,			/* msgt_longform = */
-    FALSE,			/* msgt_deallocate = */
-    0				/* msgt_unused = */
+    .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+    .msgt_size = 32,
+    .msgt_number = 1,
+    .msgt_inline = TRUE,
+    .msgt_longform = FALSE,
+    .msgt_deallocate = FALSE,
+    .msgt_unused = 0
   };
 
   error_t err;

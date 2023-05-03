@@ -85,52 +85,52 @@ send_signal (mach_port_t msgport,
      so we cannot safely use a shared static buffer.  */
   struct msg_sig_post_request message =
   {
-    {
+    .head = {
       /* Message header: */
-      (MACH_MSGH_BITS_COMPLEX
+      .msgh_bits = (MACH_MSGH_BITS_COMPLEX
        | MACH_MSGH_BITS (MACH_MSG_TYPE_COPY_SEND,
-			 MACH_MSG_TYPE_MAKE_SEND_ONCE)), /* msgh_bits */
-      sizeof message,		/* msgh_size */
-      msgport,			/* msgh_remote_port */
-      { MACH_PORT_NULL },	/* msgh_local_port */
-      0,			/* msgh_seqno */
-      RPCID_SIG_POST,		/* msgh_id */
+			 MACH_MSG_TYPE_MAKE_SEND_ONCE)),
+      .msgh_size = sizeof message,
+      .msgh_remote_port = msgport,
+      .msgh_local_port = MACH_PORT_NULL,
+      .msgh_seqno = 0,
+      .msgh_id = RPCID_SIG_POST,
     },
-    {
+    .signaltype = {
       /* Type descriptor for signo */
-      MACH_MSG_TYPE_INTEGER_32, /* msgt_name */
-      32,			/* msgt_size */
-      1,			/* msgt_number */
-      1,			/* msgt_inline */
-      0,			/* msgt_longform */
-      0,			/* msgt_deallocate */
-      0,			/* msgt_unused */
+      .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     },
     /* Signal number */
-    signal,
+    .signal = signal,
     /* Type descriptor for sigcode */
-    {
-      MACH_MSG_TYPE_INTEGER_32, /* msgt_name */
-      32,			/* msgt_size */
-      1,			/* msgt_number */
-      1,			/* msgt_inline */
-      0,			/* msgt_longform */
-      0,			/* msgt_deallocate */
-      0,			/* msgt_unused */
+    .sigcode_type = {
+      .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     },
     /* Sigcode */
-    sigcode,
-    {
+    .sigcode = sigcode,
+    .refporttype = {
       /* Type descriptor for refport */
-      MACH_MSG_TYPE_COPY_SEND, /* msgt_name */
-      32,			/* msgt_size */
-      1,			/* msgt_number */
-      1,			/* msgt_inline */
-      0,			/* msgt_longform */
-      0,			/* msgt_deallocate */
-      0,			/* msgt_unused */
+      .msgt_name = MACH_MSG_TYPE_COPY_SEND,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     },
-    refport
+    .refport = refport
   };
 
   err = mach_msg ((mach_msg_header_t *)&message,

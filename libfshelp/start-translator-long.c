@@ -65,43 +65,43 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
   /* These should be optimized away to pure integer constants.  */
   const mach_msg_type_t flagsCheck =
     {
-      MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
-      32,			/* msgt_size = */
-      1,			/* msgt_number = */
-      TRUE,			/* msgt_inline = */
-      FALSE,			/* msgt_longform = */
-      FALSE,			/* msgt_deallocate = */
-      0				/* msgt_unused = */
+      .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     };
   const mach_msg_type_t control_portCheck =
     {
-      MACH_MSG_TYPE_PORT_SEND,	/* msgt_name = */
-      32,			/* msgt_size = */
-      1,			/* msgt_number = */
-      TRUE,			/* msgt_inline = */
-      FALSE,			/* msgt_longform = */
-      FALSE,			/* msgt_deallocate = */
-      0				/* msgt_unused = */
+      .msgt_name = MACH_MSG_TYPE_PORT_SEND,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     };
   const mach_msg_type_t RetCodeType =
     {
-      MACH_MSG_TYPE_INTEGER_32,	/* msgt_name = */
-      32,			/* msgt_size = */
-      1,			/* msgt_number = */
-      TRUE,			/* msgt_inline = */
-      FALSE,			/* msgt_longform = */
-      FALSE,			/* msgt_deallocate = */
-      0				/* msgt_unused = */
+      .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     };
   const mach_msg_type_t realnodeType =
     {
-      -1,			/* msgt_name = */
-      32,			/* msgt_size = */
-      1,			/* msgt_number = */
-      TRUE,			/* msgt_inline = */
-      FALSE,			/* msgt_longform = */
-      FALSE,			/* msgt_deallocate = */
-      0				/* msgt_unused = */
+      .msgt_name = (unsigned char) MACH_MSG_TYPE_POLYMORPHIC,
+      .msgt_size = 32,
+      .msgt_number = 1,
+      .msgt_inline = TRUE,
+      .msgt_longform = FALSE,
+      .msgt_deallocate = FALSE,
+      .msgt_unused = 0
     };
 
   /* Return true iff TYPE fails to match CHECK.  */

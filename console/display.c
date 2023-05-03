@@ -229,43 +229,43 @@ nowait_file_changed (mach_port_t notify_port, natural_t tickno,
   Request *InP = &Mess.In;
 
   static const mach_msg_type_t ticknoType = {
-    /* msgt_name = */           2,
-    /* msgt_size = */           32,
-    /* msgt_number = */         1,
-    /* msgt_inline = */         TRUE,
-    /* msgt_longform = */       FALSE,
-    /* msgt_deallocate = */     FALSE,
-    /* msgt_unused = */         0
-  };  
+    .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+    .msgt_size = 32,
+    .msgt_number = 1,
+    .msgt_inline = TRUE,
+    .msgt_longform = FALSE,
+    .msgt_deallocate = FALSE,
+    .msgt_unused = 0
+  };
 
   static const mach_msg_type_t changeType = {
-    /* msgt_name = */		2,
-    /* msgt_size = */		32,
-    /* msgt_number = */		1,
-    /* msgt_inline = */		TRUE,
-    /* msgt_longform = */	FALSE,
-    /* msgt_deallocate = */	FALSE,
-    /* msgt_unused = */		0
+    .msgt_name = MACH_MSG_TYPE_INTEGER_32,
+    .msgt_size = 32,
+    .msgt_number = 1,
+    .msgt_inline = TRUE,
+    .msgt_longform = FALSE,
+    .msgt_deallocate = FALSE,
+    .msgt_unused = 0
   };
 
   static const mach_msg_type_t startType = {
-    /* msgt_name = */		11,
-    /* msgt_size = */		64,
-    /* msgt_number = */		1,
-    /* msgt_inline = */		TRUE,
-    /* msgt_longform = */	FALSE,
-    /* msgt_deallocate = */	FALSE,
-    /* msgt_unused = */		0
+    .msgt_name = MACH_MSG_TYPE_INTEGER_64,
+    .msgt_size = 64,
+    .msgt_number = 1,
+    .msgt_inline = TRUE,
+    .msgt_longform = FALSE,
+    .msgt_deallocate = FALSE,
+    .msgt_unused = 0
   };
 
   static const mach_msg_type_t endType = {
-    /* msgt_name = */		11,
-    /* msgt_size = */		64,
-    /* msgt_number = */		1,
-    /* msgt_inline = */		TRUE,
-    /* msgt_longform = */	FALSE,
-    /* msgt_deallocate = */	FALSE,
-    /* msgt_unused = */		0
+    .msgt_name = MACH_MSG_TYPE_INTEGER_64,
+    .msgt_size = 64,
+    .msgt_number = 1,
+    .msgt_inline = TRUE,
+    .msgt_longform = FALSE,
+    .msgt_deallocate = FALSE,
+    .msgt_unused = 0
   };
 
   InP->ticknoType = ticknoType;
