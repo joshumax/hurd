@@ -46,25 +46,29 @@ static int dev_num;
  * TODO every device structure should has its own lock to protect itself. */
 static pthread_mutex_t dev_list_lock = PTHREAD_MUTEX_INITIALIZER;
 
-mach_msg_type_t header_type =
+/* Should match MiG's desired_complex_alignof */
+#define MSG_ALIGNMENT __alignof__(uintptr_t)
+
+static const mach_msg_type_t header_type =
 {
-  MACH_MSG_TYPE_BYTE,
-  8,
-  NET_HDW_HDR_MAX,
-  TRUE,
-  FALSE,
-  FALSE,
-  0
+  .msgt_name = MACH_MSG_TYPE_BYTE,
+  .msgt_size = 8,
+  .msgt_number = NET_HDW_HDR_MAX,
+  .msgt_inline = TRUE,
+  .msgt_longform = FALSE,
+  .msgt_deallocate = FALSE,
+  .msgt_unused = 0
 };
 
-mach_msg_type_t packet_type =
+static const mach_msg_type_t packet_type =
 {
-  MACH_MSG_TYPE_BYTE,	/* name */
-  8,			/* size */
-  0,			/* number */
-  TRUE,			/* inline */
-  FALSE,			/* longform */
-  FALSE			/* deallocate */
+  .msgt_name = MACH_MSG_TYPE_BYTE,
+  .msgt_size = 8,
+  .msgt_number = 0,
+  .msgt_inline = TRUE,
+  .msgt_longform = FALSE,
+  .msgt_deallocate = FALSE,
+  .msgt_unused = 0
 };
 
 int
@@ -208,8 +212,9 @@ broadcast_pack (char *data, int datalen, struct vether_device *from_vdev)
 
   pack_size = datalen - sizeof (struct ethhdr);
   /* remember message sizes must be rounded up */
-  msg.msg_hdr.msgh_size = (((mach_msg_size_t) (sizeof(struct net_rcv_msg)
-					       - NET_RCV_MAX + pack_size)) + 3) & ~3;
+  msg.msg_hdr.msgh_size = sizeof (struct net_rcv_msg) - NET_RCV_MAX + pack_size;
+  msg.msg_hdr.msgh_size = (mach_msg_size_t) ((msg.msg_hdr.msgh_size +
+      MSG_ALIGNMENT - 1) & ~(MSG_ALIGNMENT - 1));
 
   header = (struct ethhdr *) msg.header;
   packet = (struct packet_header *) msg.packet;
