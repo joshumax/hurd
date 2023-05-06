@@ -33,6 +33,9 @@ const char *const mach_cpu_types[] =
 #ifdef CPU_TYPE_POWERPC
     [CPU_TYPE_POWERPC] = "powerpc",
 #endif
+#ifdef CPU_TYPE_X86_64
+    [CPU_TYPE_X86_64] = "x86_64",
+#endif
   };
 
 const char *const mach_cpu_subtypes[][32] =
@@ -96,6 +99,9 @@ const char *const mach_cpu_subtypes[][32] =
 #endif
 #ifdef CPU_TYPE_PENTIUMPRO
     [CPU_TYPE_PENTIUMPRO] = Ix86_SUBTYPES,
+#endif
+#ifdef CPU_TYPE_X86_64
+    [CPU_TYPE_X86_64] = Ix86_SUBTYPES,
 #endif
     [CPU_TYPE_MIPS] =
       {
