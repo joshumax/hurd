@@ -26,6 +26,7 @@ MIGSTUBS = machServer.o mach_hostServer.o gnumachServer.o task_notifyServer.o
 OBJS = boot.o $(COMMON-OBJS) $(MIGSTUBS)
 target = boot
 MIGSFLAGS=-imacros $(srcdir)/mig-mutate.h -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
+device-MIGSFLAGS=-DDEVICE_ENABLE_DEVICE_OPEN_NEW
 io-MIGSFLAGS=-DREPLY_PORTS -DHURD_DEFAULT_PAYLOAD_TO_PORT=1
 HURDLIBS = store shouldbeinlibc ihash
 LDLIBS += -lpthread

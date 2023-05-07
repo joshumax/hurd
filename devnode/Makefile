@@ -24,7 +24,7 @@ HURDLIBS = fshelp ihash iohelp ports shouldbeinlibc trivfs
 target = devnode
 MIGSTUBS = deviceServer.o notifyServer.o
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
+device-MIGSFLAGS=-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name -DDEVICE_ENABLE_DEVICE_OPEN_NEW
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 
 include ../Makeconf

@@ -23,7 +23,7 @@ target = eth-multiplexer
 SRCS = ethernet.c vdev.c multiplexer.c dev_stat.c netfs_impl.c device_impl.c dead-name.c demuxer.c
 MIGSTUBS = deviceServer.o
 MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
-device-MIGSFLAGS="-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name"
+device-MIGSFLAGS=-DMACH_PAYLOAD_TO_PORT=ports_payload_get_name -DDEVICE_ENABLE_DEVICE_OPEN_NEW
 OBJS = $(SRCS:.c=.o) $(MIGSTUBS)
 LCLHDRS = ethernet.h util.h vdev.h netfs_impl.h
 HURDLIBS = ports ihash iohelp fshelp shouldbeinlibc netfs bpf

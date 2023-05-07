@@ -127,6 +127,16 @@ ds_device_open (mach_port_t open_port, mach_port_t reply_port,
 }
 
 io_return_t
+ds_device_open_new (mach_port_t open_port, mach_port_t reply_port,
+                    mach_msg_type_name_t reply_port_type, dev_mode_t mode,
+                    const_dev_name_t name, device_t *devp,
+                    mach_msg_type_name_t *devicePoly)
+{
+  return ds_device_open (open_port, reply_port, reply_port_type, mode,
+      name, devp, devicePoly);
+}
+
+io_return_t
 ds_device_close (struct mach_device *device)
 {
   /* Refuse if device is dead or not completely open.  */

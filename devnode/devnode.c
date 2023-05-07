@@ -175,6 +175,16 @@ ds_device_open (mach_port_t master_port, mach_port_t reply_port,
 }
 
 kern_return_t
+ds_device_open_new (mach_port_t master_port, mach_port_t reply_port,
+		mach_msg_type_name_t reply_portPoly,
+		dev_mode_t mode, const_dev_name_t name, mach_port_t *device,
+		mach_msg_type_name_t *devicetype)
+{
+  return ds_device_open (master_port, reply_port, reply_portPoly, mode,
+      name, device, devicetype);
+}
+
+kern_return_t
 ds_device_close (device_t device)
 {
   return D_INVALID_OPERATION;
