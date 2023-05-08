@@ -28,8 +28,8 @@
 
 extern error_t
 exec_reauth (auth_t auth, int secure, int must_reauth,
-	     mach_port_t *ports, unsigned num_ports,
-	     mach_port_t *fds, unsigned num_fds);
+	     mach_port_t *ports, mach_msg_type_number_t num_ports,
+	     mach_port_t *fds, mach_msg_type_number_t num_fds);
 
 /* If SUID or SGID is true, adds UID and/or GID respectively to the
    authentication in PORTS[INIT_PORT_AUTH], and replaces it with the result.

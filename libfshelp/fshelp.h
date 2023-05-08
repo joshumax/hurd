@@ -107,13 +107,17 @@ typedef error_t (*fshelp_open_fn_t) (int flags,
    task's owner to OWNER_UID (or, if OWNER_UID is -1, then clear the
    new task's owner. */
 error_t
-fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn, void *cookie,
-			      char *name, char *argz, int argz_len,
+fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn,
+			      void *cookie, char *name, char *argz,
+			      mach_msg_type_number_t argz_len,
 			      mach_port_t *fds,
-			      mach_msg_type_name_t fds_type, int fds_len,
+			      mach_msg_type_name_t fds_type,
+			      mach_msg_type_number_t fds_len,
 			      mach_port_t *ports,
-			      mach_msg_type_name_t ports_type, int ports_len,
-			      int *ints, int ints_len,
+			      mach_msg_type_name_t ports_type,
+			      mach_msg_type_number_t ports_len,
+			      int *ints,
+			      mach_msg_type_number_t ints_len,
 			      uid_t owner_uid,
 			      int timeout, fsys_t *control);
 
@@ -123,8 +127,9 @@ fshelp_start_translator_long (fshelp_open_fn_t underlying_open_fn, void *cookie,
    and the other fds are cleared.  */
 error_t
 fshelp_start_translator (fshelp_open_fn_t underlying_open_fn, void *cookie,
-			 char *name, char *argz, int argz_len,
-			 int timeout, fsys_t *control);
+                         char *name, char *argz,
+                         mach_msg_type_number_t argz_len,
+                         int timeout, fsys_t *control);
 
 
 /* Active translator linkage */

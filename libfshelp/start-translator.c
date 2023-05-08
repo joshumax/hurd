@@ -25,8 +25,9 @@
 
 error_t
 fshelp_start_translator (fshelp_open_fn_t underlying_open_fn,
-			 void *cookie, char *name, char *argz,
-			 int argz_len, int timeout, fsys_t *control)
+                         void *cookie, char *name, char *argz,
+                         mach_msg_type_number_t argz_len,
+                         int timeout, fsys_t *control)
 {
   mach_port_t ports[INIT_PORT_MAX];
   mach_port_t fds[STDERR_FILENO + 1];
