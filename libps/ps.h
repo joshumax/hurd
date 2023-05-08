@@ -535,7 +535,7 @@ struct ps_getter
 
     /* A function that will get the value; the protocol between this function
        and its caller is type-dependent.  */
-    void (*fn) (void);
+    void *fn;
   };
 
 /* Access macros: */
