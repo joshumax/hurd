@@ -98,12 +98,12 @@ int boot_script_exec (void);
 /* Create an entry in the symbol table for variable NAME,
    whose type is TYPE and value is VAL.  Returns 0 on success,
    non-zero otherwise.  */
-int boot_script_set_variable (const char *name, int type, integer_t val);
+int boot_script_set_variable (const char *name, int type, intptr_t val);
 
 /* Define the function NAME, which will return type RET_TYPE.  */
 int boot_script_define_function (const char *name, int ret_type,
 				 int (*func) (const struct cmd *cmd,
-					      integer_t *val));
+					      intptr_t *val));
 
 /* Returns a string describing the error ERR.  */
 char *boot_script_error_string (int err);

@@ -257,7 +257,7 @@ boot_script_exec_cmd (void *hook,
 {
   char *args, *p;
   int arg_len, i;
-  size_t reg_size;
+  mach_msg_type_number_t reg_size;
   void *arg_pos;
   vm_offset_t stack_start, stack_end;
   vm_address_t startpc, str_start;
@@ -313,8 +313,13 @@ boot_script_exec_cmd (void *hook,
     reg_size = i386_THREAD_STATE_COUNT;
     thread_get_state (thread, i386_THREAD_STATE,
 		      (thread_state_t) &regs, &reg_size);
-    regs.eip = (int) startpc;
-    regs.uesp = (int) arg_pos;
+#ifdef __x86_64__
+    regs.rip = (uintptr_t) startpc;
+    regs.ursp = (uintptr_t) arg_pos;
+#else
+    regs.eip = (uintptr_t) startpc;
+    regs.uesp = (uintptr_t) arg_pos;
+#endif
     thread_set_state (thread, i386_THREAD_STATE,
 		      (thread_state_t) &regs, reg_size);
   }

@@ -644,18 +644,18 @@ main (int argc, char **argv, char **envp)
   /* Initialize boot script variables.  */
   if (boot_script_set_variable ("host-port", VAL_PORT,
                                 privileged
-                                ? (int) privileged_host_port
-				: (int) pseudo_privileged_host_port)
+                                ? privileged_host_port
+				: pseudo_privileged_host_port)
       || boot_script_set_variable ("device-port", VAL_PORT,
-				   (integer_t) pseudo_master_device_port)
+				   pseudo_master_device_port)
       || boot_script_set_variable ("kernel-task", VAL_PORT,
-				   (integer_t) pseudo_kernel)
+				   pseudo_kernel)
       || boot_script_set_variable ("kernel-command-line", VAL_STR,
-				   (integer_t) kernel_command_line)
+				   (intptr_t) kernel_command_line)
       || boot_script_set_variable ("root-device",
-				   VAL_STR, (integer_t) bootdevice)
+				   VAL_STR, (intptr_t) bootdevice)
       || boot_script_set_variable ("boot-args",
-				   VAL_STR, (integer_t) bootstrap_args))
+				   VAL_STR, (intptr_t) bootstrap_args))
     {
       static const char msg[] = "error setting variable";
 
@@ -676,7 +676,7 @@ main (int argc, char **argv, char **envp)
        if (eq == 0)
          continue;
        *eq++ = '\0';
-       err = boot_script_set_variable (word, VAL_STR, (integer_t) eq);
+       err = boot_script_set_variable (word, VAL_STR, (intptr_t) eq);
        if (err)
          {
            char *msg;
@@ -1020,7 +1020,7 @@ ds_device_write (device_t device,
 		 dev_mode_t mode,
 		 recnum_t recnum,
 		 io_buf_ptr_t data,
-		 size_t datalen,
+		 mach_msg_type_number_t datalen,
 		 int *bytes_written)
 {
   if (device == pseudo_console)
@@ -1057,7 +1057,7 @@ ds_device_write_inband (device_t device,
 			dev_mode_t mode,
 			recnum_t recnum,
 			const io_buf_ptr_inband_t data,
-			size_t datalen,
+			mach_msg_type_number_t datalen,
 			int *bytes_written)
 {
   if (device == pseudo_console)
@@ -1095,8 +1095,9 @@ ds_device_read (device_t device,
 		recnum_t recnum,
 		int bytes_wanted,
 		io_buf_ptr_t *data,
-		size_t *datalen)
+		mach_msg_type_number_t *datalen)
 {
+  error_t err;
   if (device == pseudo_console)
     {
       int avail;
@@ -1121,8 +1122,6 @@ ds_device_read (device_t device,
 	}
       else
 	{
-	  kern_return_t err;
-
 	  unlock_readlock ();
 	  err = queue_read (DEV_READ, reply_port, reply_type, bytes_wanted);
 	  if (err)
@@ -1132,11 +1131,12 @@ ds_device_read (device_t device,
     }
   else if (device == pseudo_root)
     {
-      *datalen = 0;
-      return
-	(store_read (root_store, recnum, bytes_wanted, (void **)data, datalen) == 0
-	 ? D_SUCCESS
-	 : D_IO_ERROR);
+      size_t data_size = 0;
+      err = store_read (root_store, recnum, bytes_wanted, (void **)data, &data_size);
+      if (err)
+        return D_IO_ERROR;
+      *datalen = data_size;
+      return D_SUCCESS;
     }
   else
     return D_NO_SUCH_DEVICE;
@@ -1150,7 +1150,7 @@ ds_device_read_inband (device_t device,
 		       recnum_t recnum,
 		       int bytes_wanted,
 		       io_buf_ptr_inband_t data,
-		       size_t *datalen)
+		       mach_msg_type_number_t *datalen)
 {
   if (device == pseudo_console)
     {
@@ -1188,17 +1188,18 @@ ds_device_read_inband (device_t device,
     {
       error_t err;
       void *returned = data;
+      size_t data_size = bytes_wanted;
 
-      *datalen = bytes_wanted;
-      err =
-	store_read (root_store, recnum, bytes_wanted, (void **)&returned, datalen);
+      err = store_read (root_store, recnum, bytes_wanted,
+			(void **)&returned, &data_size);
+      *datalen = data_size;
 
       if (! err)
 	{
 	  if (returned != data)
 	    {
-	      memcpy ((void *)data, returned, *datalen);
-	      munmap ((caddr_t) returned, *datalen);
+	      memcpy ((void *)data, returned, data_size);
+	      munmap ((caddr_t) returned, data_size);
 	    }
 	  return D_SUCCESS;
 	}
@@ -1243,7 +1244,7 @@ kern_return_t
 ds_device_set_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
-		      size_t statuslen)
+		      mach_msg_type_number_t statuslen)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1254,7 +1255,7 @@ kern_return_t
 ds_device_get_status (device_t device,
 		      dev_flavor_t flavor,
 		      dev_status_t status,
-		      size_t *statuslen)
+		      mach_msg_type_number_t *statuslen)
 {
   if (device == pseudo_console)
     return D_INVALID_OPERATION;
@@ -1289,7 +1290,7 @@ ds_device_set_filter (device_t device,
 		      mach_port_t receive_port,
 		      int priority,
 		      filter_array_t filter,
-		      size_t filterlen)
+		      mach_msg_type_number_t filterlen)
 {
   if (device != pseudo_console && device != pseudo_root)
     return D_NO_SUCH_DEVICE;
@@ -1663,7 +1664,7 @@ S_io_reauthenticate (mach_port_t object,
 {
   uid_t *gu, *au;
   gid_t *gg, *ag;
-  size_t gulen = 0, aulen = 0, gglen = 0, aglen = 0;
+  mach_msg_type_number_t gulen = 0, aulen = 0, gglen = 0, aglen = 0;
   error_t err;
 
   /* XXX: This cannot possibly work, authserver is 0.  */
@@ -1702,9 +1703,9 @@ S_io_restrict_auth (mach_port_t object,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobjtype,
 		    const uid_t *uids,
-		    size_t nuids,
+		    mach_msg_type_number_t nuids,
 		    const uid_t *gids,
-		    size_t ngids)
+		    mach_msg_type_number_t ngids)
 {
   if (object != pseudo_console)
     return EOPNOTSUPP;
@@ -2023,7 +2024,7 @@ static void
 task_ihash_cleanup (hurd_ihash_value_t value, void *cookie)
 {
   (void) cookie;
-  mach_port_deallocate (mach_task_self (), (mach_port_t) value);
+  mach_port_deallocate (mach_task_self (), (mach_port_t)(uintptr_t) value);
 }
 
 static struct hurd_ihash task_ihash =
@@ -2065,7 +2066,8 @@ S_mach_notify_new_task (mach_port_t notify,
 
   mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
   err = hurd_ihash_add (&task_ihash,
-                        (hurd_ihash_key_t) task, (hurd_ihash_value_t) task);
+                        (hurd_ihash_key_t) task,
+			(hurd_ihash_value_t)(uintptr_t) task);
   if (err)
     {
       mach_port_deallocate (mach_task_self (), task);
@@ -2110,7 +2112,7 @@ S_processor_set_tasks(mach_port_t processor_set,
   i = 1;
   HURD_IHASH_ITERATE (&task_ihash, value)
     {
-      task_t task = (task_t) value;
+      task_t task = (task_t)(uintptr_t) value;
       if (task == pseudo_kernel)
         continue;
 
