@@ -86,13 +86,20 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  data_t *data, mach_msg_type_name_t *data_len,
 		  off_t offs, vm_size_t amount)
 {
+  error_t err;
+  size_t data_size = *data_len;
+
   if (! cred)
     return EOPNOTSUPP;
   else if (! (cred->po->openmodes & O_READ))
     return EBADF;
-  else
-    return open_read ((struct open *)cred->po->hook,
-		      offs, amount, (void **)data, data_len);
+
+  err = open_read ((struct open *)cred->po->hook,
+		   offs, amount, (void **)data, &data_size);
+  if (err)
+    return err;
+  *data_len = data_size;
+  return 0;
 }
 
 /* Tell how much data can be read from the object without blocking for
