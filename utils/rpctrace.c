@@ -961,7 +961,7 @@ wrap_all_threads (task_t task)
   struct sender_info *thread_send_wrapper;
   struct receiver_info *thread_receiver_info;
   thread_t *threads;
-  size_t nthreads;
+  mach_msg_type_number_t nthreads;
   error_t err;
 
   err = task_threads (task, &threads, &nthreads);
@@ -1134,7 +1134,7 @@ trace_and_forward (mach_msg_header_t *inp, mach_msg_header_t *outp)
 	    MACH_MSGH_BITS_REMOTE (inp->msgh_bits),
 	    is_notification (inp)? MACH_MSG_TYPE_MOVE_SEND_ONCE: info->type)
 	    | MACH_MSGH_BITS_OTHER (inp->msgh_bits);
-	  inp->msgh_local_port = ports_payload_get_name ((unsigned int) info);
+	  inp->msgh_local_port = ports_payload_get_name ((uintptr_t) info);
 	}
     }
   else
@@ -1538,7 +1538,7 @@ print_data (mach_msg_type_name_t type,
 	  /* We encountered a non-printable character.  Print anything
 	     that has not been printed so far.  */
 	  if (p < q)
-	    fprintf (ostream, "%.*s", q - p, p);
+	    fprintf (ostream, "%.*s", (int) (q - p), p);
 
 	  char c = escape_sequences[*((const unsigned char *) q)];
 	  if (c)
@@ -1552,7 +1552,7 @@ print_data (mach_msg_type_name_t type,
 
       /* Print anything that has not been printed so far.  */
       if (p < q)
-	fprintf (ostream, "%.*s", q - p, p);
+	fprintf (ostream, "%.*s", (int) (q - p), p);
       fprintf (ostream, "\"");
       return;
 

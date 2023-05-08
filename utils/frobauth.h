@@ -30,7 +30,7 @@ struct frobauth
 {
   struct ugids ugids;
   pid_t *pids;
-  size_t num_pids;
+  mach_msg_type_number_t num_pids;
   int verbose, dry_run;		/* User options */
   uid_t default_user;		/* If none specified; -1 means none.  */
   int require_ids;		/* If true, require some ids be specified. */

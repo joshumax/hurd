@@ -188,7 +188,7 @@ main(int argc, char *argv[])
   int posix_fmt = 0;		/* Use a posix_fmt-style format string.  */
   int top = 0;			/* Number of entries to output.  */
   pid_t *pids = 0;		/* User-specified pids.  */
-  size_t num_pids = 0;
+  mach_msg_type_number_t num_pids = 0;
   struct pids_argp_params pids_argp_params = { &pids, &num_pids, 1 };
 
   /* Add a user who's processes should be printed out.  */

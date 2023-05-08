@@ -117,10 +117,11 @@ main(int argc, char *argv[])
     }
   else
     {
-      err = file_get_fs_options (node, &argz, &argz_len);
+      mach_msg_type_number_t argz_size = 0;
+      err = file_get_fs_options (node, &argz, &argz_size);
       if (err)
 	error (5, err, "%s", node_name);
-      argz_stringify (argz, argz_len, ' ');
+      argz_stringify (argz, argz_size, ' ');
       puts (argz);
     }
 

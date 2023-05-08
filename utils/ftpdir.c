@@ -22,6 +22,7 @@
 #include <error.h>
 #include <argp.h>
 #include <time.h>
+#include <inttypes.h>
 #include <netdb.h>
 
 #include <version.h>
@@ -202,7 +203,7 @@ pdirent (const char *name, const struct stat *st, const char *symlink_target,
 {
   char timebuf[20];
   strftime (timebuf, sizeof timebuf, "%Y-%m-%d %H:%M", localtime (&st->st_mtime));
-  printf ("%6o %2d %5d %5d %6lld  %s  %s\n",
+  printf ("%6o %2ld %5d %5d %6" PRIi64 "  %s  %s\n",
 	  st->st_mode, st->st_nlink, st->st_uid, st->st_gid, st->st_size,
 	  timebuf, name);
   if (symlink_target)

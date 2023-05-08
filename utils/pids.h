@@ -23,19 +23,22 @@
 
 /* Add the pids returned in vm_allocated memory by calling PIDS_FN with ID as
    an argument to PIDS and NUM_PIDS, reallocating it in malloced memory.  */
-extern error_t add_fn_pids (pid_t **pids, size_t *num_pids, unsigned id,
+extern error_t add_fn_pids (pid_t **pids, mach_msg_type_number_t *num_pids,
+			    unsigned id,
 			    error_t (*pids_fn)(process_t proc, pid_t id,
-					       pid_t **pids, size_t *num_pids));
+					       pid_t **pids,
+					       mach_msg_type_number_t *num_pids));
 
 /* Add PID to PIDS and NUM_PIDS, reallocating it in malloced memory.  */
-extern error_t add_pid (pid_t **pids, size_t *num_pids, pid_t pid);
+extern error_t add_pid (pid_t **pids, mach_msg_type_number_t *num_pids,
+			pid_t pid);
 
 /* Params to be passed as the input when parsing PIDS_ARGP.  */
 struct pids_argp_params
 {
   /* Array to be extended with parsed pids.  */
   pid_t **pids;
-  size_t *num_pids;
+  mach_msg_type_number_t *num_pids;
 
   /* If true, parse non-option arguments as pids.  */
   int parse_pid_args;

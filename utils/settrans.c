@@ -308,14 +308,15 @@ main(int argc, char *argv[])
 
       char buf[1024];
       argz = buf;
-      argz_len = sizeof (buf);
+      mach_msg_type_number_t argz_size = sizeof (buf);
 
-      err = file_get_translator (node, &argz, &argz_len);
+      err = file_get_translator (node, &argz, &argz_size);
       if (err == EINVAL)
 	error (4, 0, "%s: no passive translator record found", node_name);
       if (err)
 	error (4, err, "%s", node_name);
 
+      argz_len = argz_size;
       mach_port_deallocate (mach_task_self (), node);
     }
 

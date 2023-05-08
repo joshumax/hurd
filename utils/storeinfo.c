@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <argp.h>
 #include <unistd.h>
 #include <sys/fcntl.h>
@@ -112,7 +113,7 @@ print_store (struct store *store, int level, unsigned what)
       if ((what & mask) == mask)
 	{
 	  psep ();
-	  printf ("%Ld", val);
+	  printf ("%" PRIu64, val);
 	}
     }
 
@@ -176,9 +177,10 @@ print_store (struct store *store, int level, unsigned what)
 	    putchar (',');
 	  if (store->runs[i].start < 0)
 	    /* A hole */
-	    printf ("@+%Ld", store->runs[i].length);
+	    printf ("@+%" PRIu64, store->runs[i].length);
 	  else
-	    printf ("%Ld+%Ld", store->runs[i].start, store->runs[i].length);
+	    printf ("%" PRIu64 "+%" PRIu64, store->runs[i].start,
+		    store->runs[i].length);
 	}
     }
 

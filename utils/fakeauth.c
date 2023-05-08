@@ -69,7 +69,8 @@ destroy_authhandle (void *p)
 /* id management.  */
 
 static inline void
-idvec_copyout (struct idvec *idvec, uid_t **ids, size_t *nids)
+idvec_copyout (struct idvec *idvec, uid_t **ids,
+	       mach_msg_type_number_t *nids)
 {
   if (idvec->num > *nids)
     *ids = idvec->ids;
@@ -86,13 +87,13 @@ idvec_copyout (struct idvec *idvec, uid_t **ids, size_t *nids)
 kern_return_t
 S_auth_getids (struct authhandle *auth,
 	       uid_t **euids,
-	       size_t *neuids,
+	       mach_msg_type_number_t *neuids,
 	       uid_t **auids,
-	       size_t *nauids,
+	       mach_msg_type_number_t *nauids,
 	       uid_t **egids,
-	       size_t *negids,
+	       mach_msg_type_number_t *negids,
 	       uid_t **agids,
-	       size_t *nagids)
+	       mach_msg_type_number_t *nagids)
 {
   if (! auth)
     return EOPNOTSUPP;
@@ -105,17 +106,22 @@ S_auth_getids (struct authhandle *auth,
 /* Implement auth_makeauth as described in <hurd/auth.defs>. */
 kern_return_t
 S_auth_makeauth (struct authhandle *auth,
-		 const mach_port_t *authpts, size_t nauths,
-		 const uid_t *euids, size_t neuids,
-		 const uid_t *auids, size_t nauids,
-		 const uid_t *egids, size_t negids,
-		 const uid_t *agids, size_t nagids,
+		 const mach_port_t *authpts,
+		 mach_msg_type_number_t nauths,
+		 const uid_t *euids,
+		 mach_msg_type_number_t neuids,
+		 const uid_t *auids,
+		 mach_msg_type_number_t nauids,
+		 const uid_t *egids,
+		 mach_msg_type_number_t negids,
+		 const uid_t *agids,
+		 mach_msg_type_number_t nagids,
 		 mach_port_t *newhandle)
 {
   struct authhandle *newauth, *auths[1 + nauths];
   int hasroot = 0;
   error_t err;
-  size_t i, j;
+  mach_msg_type_number_t i, j;
 
   if (!auth)
     return EOPNOTSUPP;
@@ -266,13 +272,13 @@ S_auth_server_authenticate (struct authhandle *serverauth,
 			    mach_port_t newport,
 			    mach_msg_type_name_t newport_type,
 			    uid_t **euids,
-			    size_t *neuids,
+			    mach_msg_type_number_t *neuids,
 			    uid_t **auids,
-			    size_t *nauids,
+			    mach_msg_type_number_t *nauids,
 			    uid_t **egids,
-			    size_t *negids,
+			    mach_msg_type_number_t *negids,
 			    uid_t **agids,
-			    size_t *nagids)
+			    mach_msg_type_number_t *nagids)
 {
   if (! serverauth)
     return EOPNOTSUPP;

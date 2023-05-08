@@ -285,7 +285,7 @@ static void
 kill_login (process_t proc_server, pid_t pid, int sig)
 {
   error_t err;
-  size_t num_pids;
+  mach_msg_type_number_t num_pids;
   pid_t self = getpid ();
 
   do

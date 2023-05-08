@@ -67,7 +67,7 @@ main (int argc, char *argv[])
       else
 	{
 	  char buf[1024], *trans = buf;
-	  size_t trans_len = sizeof (buf);
+	  mach_msg_type_number_t trans_len = sizeof (buf);
 	  error_t err = file_get_translator (node, &trans, &trans_len);
 
 	  switch (err)
