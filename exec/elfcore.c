@@ -23,6 +23,7 @@
 #include <link.h>
 #include <string.h>
 #include <argz.h>
+#include <error.h>
 #include <sys/mman.h>
 #include <sys/utsname.h>
 #include <sys/procfs.h>
@@ -44,7 +45,76 @@
 #include <mach/vm_param.h>
 #include <assert-backtrace.h>
 
-#ifdef i386_THREAD_STATE
+#ifdef __x86_64__
+# define ELF_MACHINE		EM_X86_64
+
+static inline void
+fetch_thread_regset (thread_t thread, prgregset_t *gregs)
+{
+  error_t err;
+  struct i386_thread_state state;
+  mach_msg_type_number_t count = i386_THREAD_STATE_COUNT;
+
+  memset (gregs, 0, sizeof (*gregs));
+
+  err = thread_get_state (thread, i386_THREAD_STATE,
+			  (thread_state_t) &state, &count);
+  if (err)
+    {
+      error (0, err, "Failed to fetch thread state");
+      return;
+    }
+
+  assert_backtrace (count == i386_THREAD_STATE_COUNT);
+
+  (*gregs)[REG_RAX] = state.rax;
+  (*gregs)[REG_RBX] = state.rbx;
+  (*gregs)[REG_RCX] = state.rcx;
+  (*gregs)[REG_RDX] = state.rdx;
+
+  (*gregs)[REG_RDI] = state.rdi;
+  (*gregs)[REG_RSI] = state.rsi;
+
+  (*gregs)[REG_RBP] = state.rbp;
+  (*gregs)[REG_RSP] = state.ursp;
+  (*gregs)[REG_RIP] = state.rip;
+  (*gregs)[REG_RFL] = state.rfl;
+
+  (*gregs)[REG_R8] = state.r8;
+  (*gregs)[REG_R9] = state.r9;
+  (*gregs)[REG_R10] = state.r10;
+  (*gregs)[REG_R11] = state.r11;
+  (*gregs)[REG_R12] = state.r12;
+  (*gregs)[REG_R13] = state.r13;
+  (*gregs)[REG_R14] = state.r14;
+  (*gregs)[REG_R15] = state.r15;
+}
+
+static inline void
+fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
+{
+  error_t err;
+  struct i386_float_state st;
+  mach_msg_type_number_t count = i386_FLOAT_STATE_COUNT;
+
+  memset (*fpregs, 0, sizeof (**fpregs));
+
+  err = thread_get_state (thread, i386_FLOAT_STATE,
+                                  (thread_state_t) &st, &count);
+  if (err)
+    {
+      error (0, err, "Failed to fetch thread state");
+      return;
+    }
+  if (st.initialized)
+    {
+      _Static_assert (sizeof (**fpregs) >= sizeof (st.hw_state),
+                      "Expected prfpregset_t to contain hw_state");
+      memcpy (*fpregs, &st.hw_state, sizeof (st.hw_state));
+    }
+}
+
+#elif defined (i386_THREAD_STATE)
 # define ELF_MACHINE		EM_386
 
 /* The gregset_t format (compatible with Linux/x86) almost fits
