@@ -486,15 +486,16 @@ read_boot_script (char **buffer, size_t *length)
       if (p == buf + len)
         {
           char *newbuf;
+          size_t newlen = len + 500;
 
-          len += 500;
-          newbuf = realloc (buf, len);
+          newbuf = realloc (buf, newlen);
           if (!newbuf)
             {
               write (2, memmsg, sizeof (memmsg));
               host_exit (1);
             }
-          p = newbuf + (p - buf);
+          p = newbuf + len;
+          len = newlen;
           buf = newbuf;
         }
     }
