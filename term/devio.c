@@ -536,7 +536,7 @@ device_open_reply (mach_port_t replyport,
 		   mach_port_t device)
 {
   struct tty_status ttystat;
-  size_t count = TTY_STATUS_COUNT;
+  mach_msg_type_number_t count = TTY_STATUS_COUNT;
   error_t err = 0;
 
   if (replyport != phys_reply)
@@ -618,7 +618,7 @@ devio_set_bits (struct termios *state)
   if (!(state->c_cflag & CIGNORE) && phys_device != MACH_PORT_NULL)
     {
       struct tty_status ttystat;
-      size_t cnt = TTY_STATUS_COUNT;
+      mach_msg_type_number_t cnt = TTY_STATUS_COUNT;
 
       /* Find the current state. */
       device_get_status (phys_device, TTY_STATUS, (dev_status_t) &ttystat, &cnt);
@@ -675,7 +675,7 @@ static error_t
 devio_mdmctl (int how, int bits)
 {
   int oldbits, newbits;
-  size_t cnt;
+  mach_msg_type_number_t cnt;
   if ((how == MDMCTL_BIS) || (how == MDMCTL_BIC))
     {
       cnt = TTY_MODEM_COUNT;
@@ -702,7 +702,7 @@ static error_t
 devio_mdmstate (int *state)
 {
   int bits;
-  size_t cnt = TTY_MODEM_COUNT;
+  mach_msg_type_number_t cnt = TTY_MODEM_COUNT;
   device_get_status (phys_device, TTY_MODEM, (dev_status_t) &bits, &cnt);
   if (cnt == TTY_MODEM_COUNT)
     *state = bits;

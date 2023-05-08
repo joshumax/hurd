@@ -197,7 +197,7 @@ hurdio_reader_loop (void *arg)
 #define BUFFER_SIZE 256
   char buffer[BUFFER_SIZE];
   char *data;
-  size_t datalen;
+  mach_msg_type_number_t datalen;
   error_t err;
 
   pthread_mutex_lock (&global_lock);
