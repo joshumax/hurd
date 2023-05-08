@@ -117,7 +117,7 @@ page_read_file_direct (struct file_direct *fdp,
 		       vm_offset_t offset,
 		       vm_size_t size,
 		       vm_offset_t *addr,	/* out */
-		       vm_size_t *size_read)	/* out */
+		       mach_msg_type_number_t *size_read)	/* out */
 {
   struct storage_run *r;
   error_t err;
@@ -183,7 +183,7 @@ page_write_file_direct(struct file_direct *fdp,
 		       vm_offset_t offset,
 		       vm_offset_t addr,
 		       vm_size_t size,
-		       vm_size_t *size_written)	/* out */
+		       mach_msg_type_number_t *size_written)	/* out */
 {
   struct storage_run *r;
   error_t err;

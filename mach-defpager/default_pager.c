@@ -204,7 +204,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	  {
 	    if (check_linux_signature != -3)
 	      printf("(default pager): "
-		     "Paging to raw partition %s (%uk paging space)\n",
+		     "Paging to raw partition %s (%zuk paging space)\n",
 		     name, part->total_size * (vm_page_size / 1024));
 	    return part;
 	  }
@@ -222,7 +222,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	    /* Filesystem block size is smaller than page size,
 	       so we must do several reads to get the whole page.  */
 	    vm_address_t baddr;
-	    vm_size_t bsize;
+	    mach_msg_type_number_t bsize;
 	    rc = page_read_file_direct(part->file,
 				       rsize, LINUX_PAGE_SIZE-rsize,
 				       &baddr,
@@ -285,27 +285,27 @@ new_partition (const char *name, struct file_direct *fdp,
 		bad -= waste;
 		if (bad > 0)
 		  printf("\
-(default pager): Paging to %s, %dk swap-space (%dk bad, %dk wasted at end)\n",
+(default pager): Paging to %s, %zuk swap-space (%uk bad, %uk wasted at end)\n",
 			 name,
 			 part->free * (LINUX_PAGE_SIZE / 1024),
 			 bad * (LINUX_PAGE_SIZE / 1024),
 			 waste * (LINUX_PAGE_SIZE / 1024));
 		else
 		  printf("\
-(default pager): Paging to %s, %dk swap-space (%dk wasted at end)\n",
+(default pager): Paging to %s, %zuk swap-space (%uk wasted at end)\n",
 			 name,
 			 part->free * (LINUX_PAGE_SIZE / 1024),
 			 waste * (LINUX_PAGE_SIZE / 1024));
 	      }
 	    else if (bad > 0)
 	      printf("\
-(default pager): Paging to %s, %dk swap-space (excludes %dk marked bad)\n",
+(default pager): Paging to %s, %zuk swap-space (excludes %uk marked bad)\n",
 		     name,
 		     part->free * (LINUX_PAGE_SIZE / 1024),
 		     bad * (LINUX_PAGE_SIZE / 1024));
 	    else
 	      printf("\
-(default pager): Paging to %s, %dk swap-space\n",
+(default pager): Paging to %s, %zuk swap-space\n",
 		     name,
 		     part->free * (LINUX_PAGE_SIZE / 1024));
 	  }
@@ -345,7 +345,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		  }
 		else
 		  printf ("version %u unknown! IGNORING SIGNATURE PAGE!"
-			  " %dk swap-space\n",
+			  " %zuk swap-space\n",
 			  hdr->version,
 			  part->free * (LINUX_PAGE_SIZE / 1024));
 		break;
@@ -355,7 +355,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		  unsigned int waste, i;
 		  if (hdr->last_page > part->total_size)
 		    {
-		      printf ("signature says %uk, partition has only %uk! ",
+		      printf ("signature says %uk, partition has only %zuk!",
 			    hdr->last_page * (LINUX_PAGE_SIZE / 1024),
 			    part->total_size * (LINUX_PAGE_SIZE / 1024));
 		      waste = 0;
@@ -372,7 +372,7 @@ new_partition (const char *name, struct file_direct *fdp,
 		      part->bitmap[bad / NB_BM] |= 1U << (bad % NB_BM);
 		      part->free--;
 		    }
-		  printf ("%uk swap-space",
+		  printf ("%zuk swap-space",
 			  part->free * (LINUX_PAGE_SIZE / 1024));
 		  if (hdr->nr_badpages != 0)
 		    printf (" (excludes %uk marked bad)",
@@ -388,7 +388,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	  {
 	    printf ("(default pager): "
 		    "Cannot find Linux swap signature page!  "
-		    "SKIPPING %s (%uk partition)!",
+		    "SKIPPING %s (%zuk partition)!",
 		    name, part->total_size * (vm_page_size / 1024));
 	    free(part->bitmap);
 	    free(part->name);
@@ -397,7 +397,7 @@ new_partition (const char *name, struct file_direct *fdp,
 	  }
 	else
 	  printf("(default pager): "
-		 "Paging to raw partition %s (%uk paging space)\n",
+		 "Paging to raw partition %s (%zuk paging space)\n",
 		 name, part->total_size * (vm_page_size / 1024));
 
 	vm_deallocate(mach_task_self(), raddr, rsize);
@@ -1155,7 +1155,7 @@ pager_move_page(union dp_map	block)
 	partition_t	old_part, new_part;
 	p_index_t	old_pindex, new_pindex;
 	union dp_map	ret;
-	vm_size_t	size;
+	mach_msg_type_number_t	size;
 	vm_offset_t	raddr, offset, new_offset;
 	kern_return_t	rc;
 	static char	here[] = "%spager_move_page";
@@ -1606,7 +1606,7 @@ default_read(dpager_t	ds,
 {
 	union dp_map	block;
 	vm_offset_t	raddr;
-	vm_size_t	rsize;
+	mach_msg_type_number_t	rsize;
 	int	rc;
 	boolean_t	first_time;
 	partition_t	part;
@@ -1699,7 +1699,7 @@ default_write(dpager_t	ds,
 {
 	union dp_map	block;
 	partition_t		part;
-	vm_size_t		wsize;
+	mach_msg_type_number_t	wsize;
 	int		rc;
 
 	ddprintf ("default_write: pager offset %lx\n", offset);
