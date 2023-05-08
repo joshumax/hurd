@@ -36,10 +36,18 @@ copy_read (struct store *store, store_offset_t addr, size_t index,
   char *data = store->hook + (addr * store->block_size);
 
   if (page_aligned (data) && page_aligned (amount))
-    /* When reading whole pages, we can avoid any real copying.  */
-    return vm_read (mach_task_self (),
-		    (vm_address_t) data, amount,
-		    (pointer_t *) buf, len);
+    {
+      /* When reading whole pages, we can avoid any real copying.  */
+      error_t err;
+      mach_msg_type_number_t nread;
+      err = vm_read (mach_task_self (),
+                     (vm_address_t) data, amount,
+                     (pointer_t *) buf, &nread);
+      if (err)
+        return err;
+      *len = nread;
+      return 0;
+    }
 
   if (*len < amount)
     /* Have to allocate memory for the return value.  */

@@ -24,6 +24,7 @@
 #include <hurd.h>
 #include <argp.h>
 #include <argz.h>
+#include <inttypes.h>
 
 #include "store.h"
 
@@ -88,7 +89,7 @@ store_parsed_append_args (const struct store_parsed *parsed,
   if (!err && num_names > 1 && (parsed->interleave || parsed->layer))
     {
       if (parsed->interleave)
-	snprintf (buf, sizeof buf, "--interleave=%Ld", parsed->interleave);
+	snprintf (buf, sizeof buf, "--interleave=%" PRIi64, parsed->interleave);
       else
 	snprintf (buf, sizeof buf, "--layer=%d", parsed->layer);
       err = argz_add (args, args_len, buf);
@@ -131,7 +132,8 @@ store_parsed_name (const struct store_parsed *parsed, char **name)
     {
       if (parsed->interleave)
 	{
-	  snprintf (buf, sizeof buf, "interleave(%Ld,", parsed->interleave);
+	  snprintf (buf, sizeof buf, "interleave(%" PRIi64 ",",
+		    parsed->interleave);
 	  pfx = buf;
 	}
       else if (parsed->layer)

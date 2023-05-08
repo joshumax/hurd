@@ -48,24 +48,30 @@ dev_error (error_t err)
 }
 
 static error_t
-dev_read (struct store *store,
-	  store_offset_t addr, size_t index, mach_msg_type_number_t amount,
-	  void **buf, mach_msg_type_number_t *len)
+dev_read (struct store *store, store_offset_t addr,
+          size_t index, size_t amount,
+          void **buf, size_t *len)
 {
+  error_t err;
   recnum_t recnum = addr;
+  mach_msg_type_number_t nread;
 
   if (recnum != addr)
     return EOVERFLOW;
 
-  return dev_error (device_read (store->port, 0, recnum, amount,
-				 (io_buf_ptr_t *)buf, len));
+  err = device_read (store->port, 0, recnum, amount,
+                     (io_buf_ptr_t *) buf, &nread);
+  if (err)
+    return dev_error (err);
+
+  *len = nread;
+  return 0;
 }
 
 static error_t
-dev_write (struct store *store,
-	   store_offset_t addr, size_t index,
-	   const void *buf, mach_msg_type_number_t len,
-	   mach_msg_type_number_t *amount)
+dev_write (struct store *store, store_offset_t addr,
+           size_t index, const void *buf,
+           size_t len, size_t *amount)
 {
   recnum_t recnum = addr;
   error_t err;
@@ -195,7 +201,7 @@ enforced (struct store *store)
 {
   error_t err;
   dev_status_data_t sizes;
-  size_t sizes_len = DEV_STATUS_MAX;
+  mach_msg_type_number_t sizes_len = DEV_STATUS_MAX;
 
   if (store->num_runs != 1 || store->runs[0].start != 0)
     /* Can't enforce non-contiguous ranges, or one not starting at 0.  */
@@ -324,7 +330,7 @@ store_device_create (device_t device, int flags, struct store **store)
   struct store_run run;
   size_t block_size = 0;
   dev_status_data_t sizes;
-  size_t sizes_len = DEV_STATUS_MAX;
+  mach_msg_type_number_t sizes_len = DEV_STATUS_MAX;
   error_t err;
 
 #ifdef DEV_GET_RECORDS

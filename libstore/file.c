@@ -51,12 +51,20 @@ enforced (struct store *store)
 }
 
 static error_t
-file_read (struct store *store,
-	   store_offset_t addr, size_t index, size_t amount, void **buf,
-	   size_t *len)
+file_read (struct store *store, store_offset_t addr,
+           size_t index, size_t amount,
+           void **buf, size_t *len)
 {
+  error_t err;
   size_t bsize = store->block_size;
-  return io_read (store->port, (char **)buf, len, addr * bsize, amount);
+  mach_msg_type_number_t nread = *len;
+
+  err = io_read (store->port, (char **) buf, &nread, addr * bsize, amount);
+  if (err)
+    return err;
+
+  *len = nread;
+  return 0;
 }
 
 static error_t
@@ -222,11 +230,19 @@ store_file_class =
 STORE_STD_CLASS (file);
 
 static error_t
-file_byte_read (struct store *store,
-		store_offset_t addr, size_t index, size_t amount,
-		void **buf, size_t *len)
+file_byte_read (struct store *store, store_offset_t addr,
+                size_t index, size_t amount,
+                void **buf, size_t *len)
 {
-  return io_read (store->port, (char **)buf, len, addr, amount);
+  error_t err;
+  mach_msg_type_number_t nread = *len;
+
+  err = io_read (store->port, (char **) buf, &nread, addr, amount);
+  if (err)
+    return err;
+
+  *len = nread;
+  return 0;
 }
 
 static error_t

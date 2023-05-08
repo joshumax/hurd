@@ -171,12 +171,13 @@ nbd_read (struct store *store,
   error_t err;
   size_t ofs, chunk;
   char *databuf, *piecebuf;
-  size_t databuflen, piecelen;
+  size_t databuflen;
+  mach_msg_type_number_t piecelen;
 
   /* Send a request for the largest possible piece of remaining data and
      read the first piece of its reply into PIECEBUF, PIECELEN.  The amount
      requested can be found in CHUNK.  */
-  inline error_t request_chunk (char **buf, size_t *len)
+  inline error_t request_chunk (char **buf, mach_msg_type_number_t *len)
     {
       vm_size_t cc;
 

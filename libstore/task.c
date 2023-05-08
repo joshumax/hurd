@@ -59,8 +59,14 @@ static error_t
 task_read (struct store *store,
 	   store_offset_t addr, size_t index, size_t amount, void **buf, size_t *len)
 {
+  error_t err;
   size_t bsize = store->block_size;
-  return vm_read (store->port, addr * bsize, amount, (vm_address_t *)buf, len);
+  mach_msg_type_number_t nread;
+  err = vm_read (store->port, addr * bsize, amount, (vm_address_t *) buf, &nread);
+  if (err)
+    return err;
+  *len = nread;
+  return 0;
 }
 
 static error_t

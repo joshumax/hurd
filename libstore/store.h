@@ -127,13 +127,12 @@ struct store
 
 typedef error_t (*store_write_meth_t)(struct store *store,
 				      store_offset_t addr, size_t index,
-				      const void *buf,
-				      mach_msg_type_number_t len,
-				      mach_msg_type_number_t *amount);
+				      const void *buf, size_t len,
+				      size_t *amount);
 typedef error_t (*store_read_meth_t)(struct store *store,
 				     store_offset_t addr, size_t index,
-				     mach_msg_type_number_t amount,
-				     void **buf, mach_msg_type_number_t *len);
+				     size_t amount,
+				     void **buf, size_t *len);
 typedef error_t (*store_set_size_meth_t)(struct store *store,
 					 size_t newsize);
 
