@@ -193,20 +193,21 @@ packet_extend (struct packet *packet, size_t new_len)
     /* A malloc'd packet.  */
     {
       char *new_buf;
-      char *old_buf = packet->buf;
+      ptrdiff_t start_offset = packet->buf_start - packet->buf;
+      ptrdiff_t end_offset = packet->buf_end - packet->buf;
 
       if (new_len >= PACKET_SIZE_LARGE)
 	/* The old packet length is malloc'd, but we want to vm_allocate the
 	   new length, so we'd have to copy the old contents.  */
 	return 0;
 
-      new_buf = realloc (old_buf, new_len);
+      new_buf = realloc (packet->buf, new_len);
       if (! new_buf)
 	return 0;
 
       packet->buf = new_buf;
-      packet->buf_start = new_buf + (packet->buf_start  - old_buf);
-      packet->buf_end = new_buf + (packet->buf_end  - old_buf);
+      packet->buf_start = new_buf + start_offset;
+      packet->buf_end = new_buf + end_offset;
     }
 
   packet->buf_len = new_len;
