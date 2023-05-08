@@ -33,7 +33,7 @@ int main (int argc, char **argv)
   mach_port_t rendezvous = MACH_PORT_NULL;
   int fd;
   int i;
-  uint v;
+  mach_msg_type_number_t v;
   int blocked = 0;
   char buf[10] = "";
   char *bufp;

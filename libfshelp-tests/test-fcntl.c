@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 #include <error.h>
 #include <errno.h>
 #include <unistd.h>
@@ -232,7 +233,7 @@ int main (int argc, char **argv)
   printf ("cmd = %s\n ", cmdc);
   printf("lock = {l_type,  l_whence, l_start, l_len, l_pid} =\n");
 #ifdef __GNU__
-  printf ("        {%s, %s, %lld,       %lld,     %d}\n",
+  printf ("        {%s, %s, %" PRIi64 ",       %" PRIi64 ",     %d}\n",
 #else
   printf ("        {%s, %s, %ld,       %ld,     %d}\n",
 #endif
