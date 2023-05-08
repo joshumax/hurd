@@ -941,6 +941,8 @@ S_proc_getloginpids (struct proc *callerp,
 	    if (new - parray > parraysize)
 	      {
 		struct proc **newparray;
+		ptrdiff_t tail_offset = tail - parray;
+		ptrdiff_t new_offset = new - parray;
 		newparray = realloc (parray, ((parraysize *= 2)
 					      * sizeof (struct proc *)));
 		if (! newparray)
@@ -949,8 +951,8 @@ S_proc_getloginpids (struct proc *callerp,
 		    return ENOMEM;
 		  }
 
-		tail = newparray + (tail - parray);
-		new = newparray + (new - parray);
+		tail = newparray + tail_offset;
+		new = newparray + new_offset;
 		parray = newparray;
 	      }
 	    *new++ = p;
