@@ -560,7 +560,7 @@ rootdir_gc_hostinfo (void *hook, char **contents, ssize_t *contents_len)
     fprintf (m, "Basic info:\n"
              "max_cpus	= %10u	/* max number of cpus possible */\n"
              "avail_cpus	= %10u	/* number of cpus now available */\n"
-             "memory_size	= %10u	/* size of memory in bytes */\n"
+             "memory_size	= %10zu	/* size of memory in bytes */\n"
              "cpu_type	= %10u	/* cpu type */\n"
              "cpu_subtype	= %10u	/* cpu subtype */\n",
              basic->max_cpus,
@@ -651,11 +651,11 @@ rootdir_gc_swaps (void *hook, char **contents, ssize_t *contents_len)
   error_t err = 0;
   FILE *m;
   vm_size_t *free = NULL;
-  size_t nfree = 0;
+  mach_msg_type_number_t nfree = 0;
   vm_size_t *size = NULL;
-  size_t nsize = 0;
+  mach_msg_type_number_t nsize = 0;
   char *names = NULL, *name;
-  size_t names_len = 0;
+  mach_msg_type_number_t names_len = 0;
   size_t i;
 
   m = open_memstream (contents, (size_t *) contents_len);
