@@ -48,6 +48,7 @@ S_io_read (struct sock_user *user,
 {
   error_t err;
   struct pipe *pipe;
+  size_t data_size = *data_len;
 
   if (!user)
     return EOPNOTSUPP;
@@ -63,8 +64,9 @@ S_io_read (struct sock_user *user,
     {
       err =
 	pipe_read (pipe, user->sock->flags & PFLOCAL_SOCK_NONBLOCK, NULL,
-		   data, data_len, amount);
+		   data, &data_size, amount);
       pipe_release_reader (pipe);
+      *data_len = data_size;
     }
 
   return err;
@@ -434,8 +436,8 @@ S_io_reauthenticate (struct sock_user *user, mach_port_t rendezvous)
   uid_t *uids = uids_buf, *aux_uids = aux_uids_buf;
   gid_t gids_buf[NIDS], aux_gids_buf[NIDS];
   gid_t *gids = gids_buf, *aux_gids = aux_gids_buf;
-  size_t num_uids = NIDS, num_aux_uids = NIDS;
-  size_t num_gids = NIDS, num_aux_gids = NIDS;
+  mach_msg_type_number_t num_uids = NIDS, num_aux_uids = NIDS;
+  mach_msg_type_number_t num_gids = NIDS, num_aux_gids = NIDS;
 
   if (!user)
     return EOPNOTSUPP;
@@ -479,8 +481,8 @@ error_t
 S_io_restrict_auth (struct sock_user *user,
 		    mach_port_t *new_port,
 		    mach_msg_type_name_t *new_port_type,
-		    const uid_t *uids, size_t num_uids,
-		    const uid_t *gids, size_t num_gids)
+		    const uid_t *uids, mach_msg_type_number_t num_uids,
+		    const uid_t *gids, mach_msg_type_number_t num_gids)
 {
   if (!user)
     return EOPNOTSUPP;

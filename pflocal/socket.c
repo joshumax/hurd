@@ -380,7 +380,7 @@ S_socket_recv (struct sock_user *user,
 	       int in_flags,
 	       data_t *data, mach_msg_type_name_t *data_len,
 	       mach_port_t **ports, mach_msg_type_name_t *ports_type,
-	       size_t *num_ports,
+	       mach_msg_type_name_t *num_ports,
 	       data_t *control, mach_msg_type_name_t *control_len,
 	       int *out_flags, vm_size_t amount)
 {
@@ -412,12 +412,21 @@ S_socket_recv (struct sock_user *user,
     }
   else if (!err)
     {
+      size_t data_size = *data_len;
+      size_t control_size = *control_len;
+      size_t ports_size = *num_ports;
       noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)
 		|| (in_flags & MSG_DONTWAIT);
       err =
-	pipe_recv (pipe, noblock, &flags, &source_addr, data, data_len,
-		   amount, control, control_len, ports, num_ports);
+	pipe_recv (pipe, noblock, &flags, &source_addr, data, &data_size,
+		   amount, control, &control_size, ports, &ports_size);
       pipe_release_reader (pipe);
+      if (!err)
+	{
+	  *data_len = data_size;
+	  *control_len = control_size;
+	  *num_ports = ports_size;
+	}
     }
 
   if (!err)
@@ -442,7 +451,8 @@ S_socket_recv (struct sock_user *user,
 error_t
 S_socket_getopt (struct sock_user *user,
 		 int level, int opt,
-		 data_t *value, size_t *value_len)
+		 data_t *value,
+		 mach_msg_type_name_t *value_len)
 {
   int ret = 0;
   struct pipe *pipe;
@@ -531,7 +541,8 @@ S_socket_getopt (struct sock_user *user,
 
 error_t
 S_socket_setopt (struct sock_user *user,
-		 int level, int opt, const_data_t value, size_t value_len)
+		 int level, int opt, const_data_t value,
+		 mach_msg_type_name_t value_len)
 {
   int ret = 0;
   struct pipe *pipe;
