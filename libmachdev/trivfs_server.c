@@ -32,7 +32,7 @@
 #include <hurd/paths.h>
 #include <hurd/startup.h>
 #include <hurd.h>
-#include <mach/i386/mach_i386.h>
+#include <mach/machine/mach_i386.h>
 #include <device/device.h> /* mach console */
 
 #include "libdiskfs/diskfs.h"
