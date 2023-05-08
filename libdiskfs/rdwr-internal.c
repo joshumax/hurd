@@ -27,12 +27,8 @@
    DIR is set for writing and clear for reading.  The inode must
    be locked.  If NOTIME is set, then don't update the mtime or atime. */
 error_t
-_diskfs_rdwr_internal (struct node *np,
-		       char *data,
-		       off_t offset,
-		       size_t *amt,
-		       int dir,
-		       int notime)
+_diskfs_rdwr_internal (struct node *np, char *data, off_t offset,
+                       mach_msg_type_number_t *amt, int dir, int notime)
 {
   memory_object_t memobj;
   vm_prot_t prot = dir ? (VM_PROT_READ | VM_PROT_WRITE) : VM_PROT_READ;
@@ -63,8 +59,13 @@ _diskfs_rdwr_internal (struct node *np,
       offset + *amt > ((off_t) 1) << (sizeof(vm_offset_t) * 8))
     err = EFBIG;
   else
-    err = pager_memcpy (diskfs_get_filemap_pager_struct (np), memobj,
-		      offset, data, amt, prot);
+    {
+      size_t amount = *amt;
+      err = pager_memcpy (diskfs_get_filemap_pager_struct (np), memobj,
+                          offset, data, &amount, prot);
+      if (!err)
+        *amt = amount;
+    }
 
   if (!diskfs_check_readonly () && !notime)
     {

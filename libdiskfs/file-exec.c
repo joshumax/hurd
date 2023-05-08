@@ -34,19 +34,19 @@ diskfs_S_file_exec (struct protid *cred,
 		    task_t task,
 		    int flags,
 		    const_data_t argv,
-		    size_t argvlen,
+                    mach_msg_type_number_t argvlen,
 		    const_data_t envp,
-		    size_t envplen,
+                    mach_msg_type_number_t envplen,
 		    const mach_port_t *fds,
-		    size_t fdslen,
+                    mach_msg_type_number_t fdslen,
 		    const mach_port_t *portarray,
-		    size_t portarraylen,
+                    mach_msg_type_number_t portarraylen,
 		    const int *intarray,
-		    size_t intarraylen,
+                    mach_msg_type_number_t intarraylen,
 		    const mach_port_t *deallocnames,
-		    size_t deallocnameslen,
+                    mach_msg_type_number_t deallocnameslen,
 		    const mach_port_t *destroynames,
-		    size_t destroynameslen)
+                    mach_msg_type_number_t destroynameslen)
 {
   return diskfs_S_file_exec_paths (cred,
 				   task,
@@ -69,19 +69,19 @@ diskfs_S_file_exec_paths (struct protid *cred,
 			  const_string_t path,
 			  const_string_t abspath,
 			  const_data_t argv,
-			  size_t argvlen,
+                          mach_msg_type_number_t argvlen,
 			  const_data_t envp,
-			  size_t envplen,
+                          mach_msg_type_number_t envplen,
 			  const mach_port_t *fds,
-			  size_t fdslen,
+                          mach_msg_type_number_t fdslen,
 			  const mach_port_t *portarray,
-			  size_t portarraylen,
+                          mach_msg_type_number_t portarraylen,
 			  const int *intarray,
-			  size_t intarraylen,
+                          mach_msg_type_number_t intarraylen,
 			  const mach_port_t *deallocnames,
-			  size_t deallocnameslen,
+                          mach_msg_type_number_t deallocnameslen,
 			  const mach_port_t *destroynames,
-			  size_t destroynameslen)
+                          mach_msg_type_number_t destroynameslen)
 {
   struct node *np;
   uid_t uid;
@@ -155,7 +155,8 @@ diskfs_S_file_exec_paths (struct protid *cred,
       err =
 	fshelp_exec_reauth (suid, uid, sgid, gid,
 			    diskfs_auth_server_port, get_file_ids,
-			    portarray, portarraylen, fds, fdslen, &secure);
+			    (mach_port_t *) portarray, portarraylen,
+			    (mach_port_t *) fds, fdslen, &secure);
       if (secure)
 	flags |= EXEC_SECURE | EXEC_NEWTASK;
     }

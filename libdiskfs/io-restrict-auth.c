@@ -22,12 +22,12 @@
 /* Implement io_restrict_auth as described in <hurd/io.defs>. */
 kern_return_t
 diskfs_S_io_restrict_auth (struct protid *cred,
-			   mach_port_t *newport,
-			   mach_msg_type_name_t *newportpoly,
-			   const uid_t *uids,
-			   size_t nuids,
-			   const gid_t *gids,
-			   size_t ngids)
+                           mach_port_t *newport,
+                           mach_msg_type_name_t *newportpoly,
+                           const uid_t *uids,
+                           mach_msg_type_name_t nuids,
+                           const gid_t *gids,
+                           mach_msg_type_name_t ngids)
 {
   error_t err;
   struct iouser *user;

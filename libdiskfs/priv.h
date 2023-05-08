@@ -86,7 +86,8 @@ typedef struct bootinfo *bootinfo_t;
    be locked.   If NOTIME is set, then don't update the access or
    modify times on the file.  */
 error_t _diskfs_rdwr_internal (struct node *np, char *data, off_t offset,
-			       size_t *amt, int dir, int notime);
+                               mach_msg_type_number_t *amt,
+                               int dir, int notime);
 
 /* Called when we have a real user environment (complete with proc
    and auth ports). */

@@ -25,12 +25,12 @@
 /* Implement file_set_translator as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_set_translator (struct protid *cred,
-			      int passive_flags,
-			      int active_flags,
-			      int killtrans_flags,
-			      const_data_t passive,
-			      size_t passivelen,
-			      fsys_t active)
+                              int passive_flags,
+                              int active_flags,
+                              int killtrans_flags,
+                              const_data_t passive,
+                              mach_msg_type_number_t passivelen,
+                              fsys_t active)
 {
   struct node *np;
   error_t err;

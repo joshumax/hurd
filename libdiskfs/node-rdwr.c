@@ -28,12 +28,12 @@
    read.  */
 error_t
 diskfs_node_rdwr (struct node *np,
-		  char *data,
-		  off_t off,
-		  size_t amt,
-		  int dir,
-		  struct protid *cred,
-		  size_t *amtread)
+                  char *data,
+                  off_t off,
+                  mach_msg_type_number_t amt,
+                  int dir,
+                  struct protid *cred,
+                  mach_msg_type_number_t *amtread)
 {
   error_t err;
 

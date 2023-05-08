@@ -28,18 +28,18 @@
 /* Implement fsys_getroot as described in <hurd/fsys.defs>. */
 kern_return_t
 diskfs_S_fsys_getroot (struct diskfs_control *pt,
-		       mach_port_t reply,
-		       mach_msg_type_name_t replytype,
-		       mach_port_t dotdot,
-		       const uid_t *uids,
-		       size_t nuids,
-		       const id_t *gids,
-		       size_t ngids,
-		       int flags,
-		       retry_type *retry,
-		       string_t retryname,
-		       file_t *returned_port,
-		       mach_msg_type_name_t *returned_port_poly)
+                       mach_port_t reply,
+                       mach_msg_type_name_t replytype,
+                       mach_port_t dotdot,
+                       const uid_t *uids,
+                       mach_msg_type_number_t nuids,
+                       const id_t *gids,
+                       mach_msg_type_number_t ngids,
+                       int flags,
+                       retry_type *retry,
+                       string_t retryname,
+                       file_t *returned_port,
+                       mach_msg_type_name_t *returned_port_poly)
 {
   error_t err = 0;
   mode_t type;
@@ -110,7 +110,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 	err = (*diskfs_read_symlink_hook) (diskfs_root_node, pathbuf);
       if (!diskfs_read_symlink_hook || err == EINVAL)
 	{
-	  size_t amt = 0;
+	  mach_msg_type_number_t amt = 0;
 	  err = diskfs_node_rdwr (diskfs_root_node, pathbuf, 0,
 				  diskfs_root_node->dn_stat.st_size, 0,
 				  0, &amt);
@@ -184,7 +184,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
   flags &= ~OPENONLY_STATE_MODES;
 
   err = diskfs_make_peropen (diskfs_root_node, flags,
-			       &peropen_context, &newpo);
+                             &peropen_context, &newpo);
   if (! err)
     {
       err = diskfs_create_protid (newpo, &user, &newpi);

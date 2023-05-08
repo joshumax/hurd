@@ -24,8 +24,8 @@
 /* Implement file_get_translator as described in <hurd/fs.defs>. */
 kern_return_t
 diskfs_S_file_get_translator (struct protid *cred,
-			      data_t *trans,
-			      size_t *translen)
+                              data_t *trans,
+                              mach_msg_type_number_t *translen)
 {
   struct node *np;
   error_t err = 0;
@@ -41,7 +41,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   if (S_ISLNK (np->dn_stat.st_mode))
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
-      size_t amt;
+      mach_msg_type_number_t amt;
       assert_backtrace (diskfs_shortcut_symlink);
       if (len > *translen)
 	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
@@ -79,8 +79,8 @@ diskfs_S_file_get_translator (struct protid *cred,
 			 (S_ISCHR (np->dn_stat.st_mode)
 			  ? _HURD_CHRDEV
 			  : _HURD_BLKDEV),
-			 '\0', (np->dn_stat.st_rdev >> 8) & 0377,
-			 '\0', (np->dn_stat.st_rdev) & 0377);
+			 '\0', (int) ((np->dn_stat.st_rdev >> 8) & 0377),
+			 '\0', (int) ((np->dn_stat.st_rdev) & 0377));
       buflen++;			/* terminating nul */
 
       if (buflen > *translen)

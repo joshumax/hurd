@@ -694,8 +694,9 @@ void diskfs_nrele_light (struct node *np);
    read.  */
 error_t
 diskfs_node_rdwr (struct node *np, char *data, loff_t off,
-		  size_t amt, int dir, struct protid *cred,
-		  size_t *amtread);
+                  mach_msg_type_number_t amt, int dir,
+                  struct protid *cred,
+                  mach_msg_type_number_t *amtread);
 
 
 /* Send notifications to users who have requested them with
