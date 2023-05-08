@@ -257,20 +257,21 @@ proc_stat_list_merge (struct proc_stat_list *pp, struct proc_stat_list *mergee)
    which mig will vm_allocate space for them) */
 #define STATICPIDS 200
 
+typedef kern_return_t fetch_fn_pids_t (process_t proc, pid_t **pids,
+				       mach_msg_type_number_t *num_pids);
+
 /* Add to PP entries for all processes in the collection fetched from the
    proc server by the function FETCH_FN.  If an error occurs, the system
    error code is returned, otherwise 0.  If PROC_STATS and NUM_PROCS are
    non-NULL, a malloced vector of the resulting entries is returned in them. */
 static error_t
 proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
-			    kern_return_t (*fetch_fn)(process_t proc,
-						      pid_t **pids,
-						      size_t *num_pids),
+			    fetch_fn_pids_t fetch_fn,
 			    struct proc_stat ***proc_stats, size_t *num_procs)
 {
   error_t err;
   pid_t pid_array[STATICPIDS], *pids = pid_array;
-  size_t num_pids = STATICPIDS;
+  mach_msg_type_number_t num_pids = STATICPIDS;
 
   err = (*fetch_fn)(ps_context_server (pp->context), &pids, &num_pids);
   if (err)
@@ -286,6 +287,10 @@ proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
   return err;
 }
 
+typedef kern_return_t fetch_id_fn_pids_t (process_t proc, pid_t id,
+					  pid_t **pids,
+					  mach_msg_type_number_t *num_pids);
+
 /* Add to PP entries for all processes in the collection fetched from the
    proc server by the function FETCH_FN and ID.  If an error occurs, the
    system error code is returned, otherwise 0.  If PROC_STATS and NUM_PROCS
@@ -293,14 +298,12 @@ proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
    them.  */
 static error_t
 proc_stat_list_add_id_fn_pids (struct proc_stat_list *pp, unsigned id,
-			       kern_return_t (*fetch_fn)(process_t proc,
-							 pid_t id,
-							 pid_t **pids,
-							 size_t *num_pids),
+			       fetch_id_fn_pids_t fetch_fn,
 			       struct proc_stat ***proc_stats,
 			       size_t *num_procs)
 {
-  error_t id_fetch_fn (process_t proc, pid_t **pids, size_t *num_pids)
+  error_t id_fetch_fn (process_t proc, pid_t **pids,
+		       mach_msg_type_number_t *num_pids)
     {
       return (*fetch_fn)(proc, id, pids, num_pids);
     }

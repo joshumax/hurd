@@ -106,8 +106,10 @@ thread_state (thread_basic_info_t bi)
 static error_t
 fetch_procinfo (process_t server, pid_t pid,
 		ps_flags_t need, ps_flags_t *have,
-		struct procinfo **pi, size_t *pi_size,
-		char **waits, size_t *waits_len)
+		struct procinfo **pi,
+		mach_msg_type_number_t *pi_size,
+		char **waits,
+		mach_msg_type_number_t *waits_len)
 {
   static const struct { ps_flags_t ps_flag; int pi_flags; } map[] =
   {
@@ -166,9 +168,9 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 {
   error_t err;
   struct procinfo *new_pi, old_pi_hdr;
-  size_t new_pi_size;
+  mach_msg_type_number_t new_pi_size;
   char *new_waits = 0;
-  size_t new_waits_len = 0;
+  mach_msg_type_number_t new_waits_len = 0;
   /* We always re-fetch any thread-specific info, as the set of threads could
      have changed since the last time we did this, and we can't tell.  */
   ps_flags_t really_need = need | (have & PSTAT_PROCINFO_REFETCH);
@@ -924,11 +926,13 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
       ps->args = buf;
       if (ps->args)
 	{
-	  if (proc_getprocargs (server, ps->pid, &ps->args, &ps->args_len))
+	  mach_msg_type_number_t args_len;
+	  if (proc_getprocargs (server, ps->pid, &ps->args, &args_len))
 	    free (buf);
 	  else
 	    {
 	      have |= PSTAT_ARGS;
+	      ps->args_len = (size_t) args_len;
 	      ps->args_vm_alloced = (ps->args != buf);
 	      if (ps->args_vm_alloced)
 		free (buf);
@@ -944,11 +948,13 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
       ps->env = buf;
       if (ps->env)
 	{
-	  if (proc_getprocenv (server, ps->pid, &ps->env, &ps->env_len))
+	  mach_msg_type_number_t env_len;
+	  if (proc_getprocenv (server, ps->pid, &ps->env, &env_len))
 	    free (buf);
 	  else
 	    {
 	      have |= PSTAT_ENV;
+	      ps->env_len = (size_t) env_len;
 	      ps->env_vm_alloced = (ps->env != buf);
 	      if (ps->env_vm_alloced)
 		free (buf);

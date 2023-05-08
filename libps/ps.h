@@ -603,18 +603,19 @@ void ps_stream_free (struct ps_stream *stream);
    length of STRING, then write all of it; if MAX_LEN == -1, then write all
    of STRING regardless).  */
 error_t ps_stream_write (struct ps_stream *stream,
-			 const char *string, int max_len);
+			 const char *string, ssize_t max_len);
 
 /* Write NUM spaces to STREAM.  NUM may be negative, in which case the same
    number of adjacent spaces (written by other calls to ps_stream_space) are
    consumed if possible.  If an error occurs, the error code is returned,
    otherwise 0.  */
-error_t ps_stream_space (struct ps_stream *stream, int num);
+error_t ps_stream_space (struct ps_stream *stream, ssize_t num);
 
 /* Write as many spaces to STREAM as required to make a field of width SOFAR
    be at least WIDTH characters wide (the absolute value of WIDTH is used).
    If an error occurs, the error code is returned, otherwise 0.  */
-error_t ps_stream_pad (struct ps_stream *stream, int sofar, int width);
+error_t ps_stream_pad (struct ps_stream *stream,
+		       ssize_t sofar, ssize_t width);
 
 /* Write a newline to STREAM, resetting its position to zero.  */
 error_t ps_stream_newline (struct ps_stream *stream);
