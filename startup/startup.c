@@ -266,7 +266,7 @@ reboot_system (int flags)
   if (fakeboot)
     {
       pid_t *pp;
-      size_t npids = 0;
+      mach_msg_type_number_t npids = 0;
       error_t err;
       int ind;
 
@@ -296,9 +296,9 @@ reboot_system (int flags)
 	  if (task != mach_task_self () && task != proctask)
 	    {
 	      struct procinfo *pi = 0;
-	      size_t pisize = 0;
+	      mach_msg_type_number_t pisize = 0;
 	      char *noise;
-	      size_t noise_len = 0;
+	      mach_msg_type_number_t noise_len = 0;
 	      int flags;
 	      err = proc_getprocinfo (procserver, pp[ind], &flags,
 				      (int **)&pi, &pisize,
@@ -1030,7 +1030,7 @@ dump_processes (void)
   for (pid = 1; pid < 100; pid++)
     {
       char args[256], *buffer = args;
-      size_t len = sizeof args;
+      mach_msg_type_number_t len = sizeof args;
       if (proc_getprocargs (procserver, pid, &buffer, &len) == 0)
         {
           fprintf (stderr, "pid%d\t%s\n", (int) pid, buffer);
@@ -1877,8 +1877,10 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 error_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
-		const id_t *uids, size_t nuids,
-		const id_t *gids, size_t ngids,
+		const id_t *uids,
+		mach_msg_type_number_t nuids,
+		const id_t *gids,
+		mach_msg_type_number_t ngids,
 		int flags,
 		retry_type *do_retry,
 		string_t retry_name,
@@ -1943,8 +1945,10 @@ error_t
 S_io_restrict_auth (mach_port_t server,
                     mach_port_t *newport,
                     mach_msg_type_name_t *newporttype,
-                    const uid_t *uids, size_t nuids,
-                    const uid_t *gids, size_t ngids)
+                    const uid_t *uids,
+                    mach_msg_type_number_t nuids,
+                    const uid_t *gids,
+                    mach_msg_type_number_t ngids)
 {
   struct idvec user = { (uid_t*) uids, (unsigned) nuids, (unsigned) nuids };
 
