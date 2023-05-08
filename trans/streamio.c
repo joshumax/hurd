@@ -485,6 +485,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  off_t offs, vm_size_t amount)
 {
   error_t err;
+  size_t data_size = *data_len;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -493,8 +494,10 @@ trivfs_S_io_read (struct trivfs_protid *cred,
     return EBADF;
 
   pthread_mutex_lock (&global_lock);
-  err = dev_read (amount, (void **)data, data_len, cred->po->openmodes & O_NONBLOCK);
+  err = dev_read (amount, (void **)data, &data_size,
+		  cred->po->openmodes & O_NONBLOCK);
   pthread_mutex_unlock (&global_lock);
+  *data_len = data_size;
   return err;
 }
 
@@ -830,7 +833,7 @@ kern_return_t
 device_open_reply (mach_port_t reply, int returncode, mach_port_t device)
 {
   int sizes[DEV_GET_SIZE_COUNT];
-  size_t sizes_len = DEV_GET_SIZE_COUNT;
+  mach_msg_type_number_t sizes_len = DEV_GET_SIZE_COUNT;
   int amount;
 
   if (reply != phys_reply)

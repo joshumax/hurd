@@ -343,6 +343,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 		  off_t offs, vm_size_t amount)
 {
   error_t err;
+  size_t data_size = *data_len;
 
   if (!cred)
     err = EOPNOTSUPP;
@@ -353,8 +354,9 @@ trivfs_S_io_read (struct trivfs_protid *cred,
       struct pipe *pipe = cred->po->hook;
       pthread_mutex_lock (&pipe->lock);
       err = pipe_read (pipe, cred->po->openmodes & O_NONBLOCK, NULL,
-		       data, data_len, amount);
+		       data, &data_size, amount);
       pthread_mutex_unlock (&pipe->lock);
+      *data_len = data_size;
     }
 
   return err;

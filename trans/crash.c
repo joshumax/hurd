@@ -213,7 +213,7 @@ stop_pgrp (process_t userproc, mach_port_t cttyid)
   pid_t pid, ppid, pgrp;
   int orphaned;
   error_t err;
-  size_t numpids = 20;
+  mach_msg_type_number_t numpids = 20;
   pid_t pids_[numpids], *pids = pids_;
   int i;
 

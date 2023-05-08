@@ -189,7 +189,7 @@ magic_open  (struct trivfs_control *cntl,
   if (!err)
     {
       /* We consume the reference for DOTDOT.  */
-      (*cred)->po->hook = (void *) dotdot;
+      (*cred)->po->hook = (void *) (uintptr_t) dotdot;
       struct magic *const m = cntl->hook;
       m->nusers++;
     }
@@ -199,7 +199,7 @@ magic_open  (struct trivfs_control *cntl,
 static void
 magic_peropen_destroy (struct trivfs_peropen *po)
 {
-  mach_port_deallocate (mach_task_self (), (mach_port_t) po->hook);
+  mach_port_deallocate (mach_task_self (), (mach_port_t)(uintptr_t) po->hook);
 }
 
 
@@ -261,7 +261,7 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
 	    ++name;
 	  strcpy (retry_name, name);
 	  *retry_type = FS_RETRY_REAUTH;
-	  *retrypt = (mach_port_t) cred->po->hook;
+	  *retrypt = (mach_port_t)(uintptr_t) cred->po->hook;
 	  *retrypt_type = MACH_MSG_TYPE_COPY_SEND;
 	  return 0;
 	}
@@ -300,7 +300,7 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
 
   /* Execute the open */
 
-  dotdot = (mach_port_t) cred->po->hook;
+  dotdot = (mach_port_t)(uintptr_t) cred->po->hook;
   err = iohelp_dup_iouser (&user, cred->user);
   if (err)
     return err;

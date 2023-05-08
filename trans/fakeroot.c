@@ -351,7 +351,7 @@ netfs_S_dir_lookup (struct protid *diruser,
 	    {
 	      char buf[1024];	/* XXX */
 	      char *trans = buf;
-	      size_t translen = sizeof buf;
+	      mach_msg_type_number_t translen = sizeof buf;
 	      err = file_get_translator (file,
 					 &trans, &translen);
 	      if (!err
@@ -824,7 +824,7 @@ netfs_attempt_readlink (struct iouser *user, struct node *np, char *buf)
 {
   char transbuf[sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1];
   char *trans = transbuf;
-  size_t translen = sizeof transbuf;
+  mach_msg_type_number_t translen = sizeof transbuf;
   error_t err = file_get_translator (netfs_node_netnode (np)->file,
 				     &trans, &translen);
   if (err == 0)
@@ -849,8 +849,10 @@ netfs_attempt_read (struct iouser *cred, struct node *np,
 		    off_t offset, size_t *len, void *data)
 {
   char *buf = data;
+  mach_msg_type_number_t size = *len;
   error_t err = io_read (netfs_node_netnode (np)->file,
-			 &buf, len, offset, *len);
+			 &buf, &size, offset, size);
+  *len = size;
   if (err == 0 && buf != data)
     {
       memcpy (data, buf, *len);
@@ -910,19 +912,19 @@ netfs_S_file_exec_paths (struct protid *user,
 			 const_string_t path,
 			 const_string_t abspath,
 			 const char *argv,
-			 size_t argvlen,
+			 mach_msg_type_number_t argvlen,
 			 const char *envp,
-			 size_t envplen,
+			 mach_msg_type_number_t envplen,
 			 const mach_port_t *fds,
-			 size_t fdslen,
+			 mach_msg_type_number_t fdslen,
 			 const mach_port_t *portarray,
-			 size_t portarraylen,
+			 mach_msg_type_number_t portarraylen,
 			 const int *intarray,
-			 size_t intarraylen,
+			 mach_msg_type_number_t intarraylen,
 			 const mach_port_t *deallocnames,
-			 size_t deallocnameslen,
+			 mach_msg_type_number_t deallocnameslen,
 			 const mach_port_t *destroynames,
-			 size_t destroynameslen)
+			 mach_msg_type_number_t destroynameslen)
 {
   error_t err;
   file_t file;
@@ -992,19 +994,19 @@ netfs_S_file_exec (struct protid *user,
                    task_t task,
                    int flags,
                    const_data_t argv,
-                   size_t argvlen,
+                   mach_msg_type_number_t argvlen,
                    const_data_t envp,
-                   size_t envplen,
+                   mach_msg_type_number_t envplen,
                    const mach_port_t *fds,
-                   size_t fdslen,
+                   mach_msg_type_number_t fdslen,
                    const mach_port_t *portarray,
-                   size_t portarraylen,
+                   mach_msg_type_number_t portarraylen,
                    const int *intarray,
-                   size_t intarraylen,
+                   mach_msg_type_number_t intarraylen,
                    const mach_port_t *deallocnames,
-                   size_t deallocnameslen,
+                   mach_msg_type_number_t deallocnameslen,
                    const mach_port_t *destroynames,
-                   size_t destroynameslen)
+                   mach_msg_type_number_t destroynameslen)
 {
   return netfs_S_file_exec_paths (user,
 				  task,

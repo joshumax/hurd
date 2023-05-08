@@ -324,7 +324,8 @@ mtab_mark_as_seen (struct mtab *mtab, mach_port_t control)
     return TRUE;
 
   hurd_ihash_add (&mtab->ports_seen,
-                  (hurd_ihash_key_t) control, (hurd_ihash_value_t) control);
+                  (hurd_ihash_key_t) control,
+                  (hurd_ihash_value_t)(uintptr_t) control);
   return FALSE;
 }
 
@@ -341,7 +342,7 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
   /* These resources are freed in the epilogue.	 */
   file_t node = MACH_PORT_NULL;
   char *argz = NULL;
-  size_t argz_len = 0;
+  mach_msg_type_number_t argz_len = 0;
   char **argv = NULL;
   char *type = NULL;
   char *options = NULL;
@@ -350,9 +351,9 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
   char *entry = NULL;
   size_t entry_len = 0;
   char *children = NULL;
-  size_t children_len = 0;
+  mach_msg_type_number_t children_len = 0;
   mach_port_t *controls = NULL;
-  size_t controls_count = 0;
+  mach_msg_type_number_t controls_count = 0;
   size_t i;
 
   if (depth < 0)
@@ -645,7 +646,7 @@ close_hook (struct trivfs_peropen *peropen)
   pthread_mutex_destroy (&op->lock);
   free (op->contents);
   HURD_IHASH_ITERATE (&op->ports_seen, p)
-    mach_port_deallocate (mach_task_self (), (mach_port_t) p);
+    mach_port_deallocate (mach_task_self (), (mach_port_t)(uintptr_t) p);
   hurd_ihash_destroy (&op->ports_seen);
   free (op);
 }

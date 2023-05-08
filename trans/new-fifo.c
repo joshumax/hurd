@@ -536,11 +536,13 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   else
     {
       struct pipe *pipe = cred->po->hook;
+      size_t data_size = *data_len;
       assert_backtrace (pipe);
       pthread_mutex_lock (&pipe->lock);
       err = pipe_read (pipe, cred->po->openmodes & O_NONBLOCK, NULL,
-		       data, data_len, amount);
+		       data, &data_size, amount);
       pthread_mutex_unlock (&pipe->lock);
+      *data_len = data_size;
     }
 
   return err;
@@ -821,7 +823,8 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t requestor,
-		       const_data_t argz, size_t argz_len)
+		       const_data_t argz,
+		       mach_msg_type_number_t argz_len)
 {
   error_t err;
   struct fifo_trans *server_trans, *trans;
