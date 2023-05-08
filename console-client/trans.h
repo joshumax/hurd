@@ -39,7 +39,7 @@ struct consnode
      does.  */
   error_t (*write) (struct protid *user, const char *data,
 		    mach_msg_type_number_t datalen, off_t offset,
-		    mach_msg_type_number_t *amount);
+		    vm_size_t *amount);
 
   /* This is exactly the same as io_select{,_timeout} do.  */
   error_t (*select) (struct protid *user, mach_port_t reply,
