@@ -34,6 +34,7 @@ netfs_S_io_read (struct protid *user,
   off_t start;
   struct node *node;
   int alloced = 0;
+  size_t data_size = *datalen;
 
   if (!user)
     return EOPNOTSUPP;
@@ -47,12 +48,12 @@ netfs_S_io_read (struct protid *user,
       return EBADF;
     }
 
-  if (amount > *datalen)
+  if (amount > data_size)
     {
       alloced = 1;
       *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
     }
-  *datalen = amount;
+  data_size = amount;
 
   start = (offset == -1 ? user->po->filepointer : offset);
 
@@ -70,7 +71,7 @@ netfs_S_io_read (struct protid *user,
 
       if (start >= size)
 	{
-	  *datalen = 0;
+	  data_size = 0;
 	  err = 0;
 	}
       else if (amount < size || start > 0)
@@ -80,30 +81,31 @@ netfs_S_io_read (struct protid *user,
 	  if (! err)
 	    {
 	      memcpy (*data, whole_link + start, amount);
-	      *datalen = amount;
+	      data_size = amount;
 	    }
 	}
       else
 	{
 	  err = netfs_attempt_readlink (user->user, node, *data);
-	  *datalen = amount;
+	  data_size = amount;
 	}
     }
   else
     /* Read from a normal file.  */
-    err = netfs_attempt_read (user->user, node, start, datalen, *data);
+    err = netfs_attempt_read (user->user, node, start, &data_size, *data);
 
   if (offset == -1 && !err)
-    user->po->filepointer += *datalen;
+    user->po->filepointer += data_size;
 
   pthread_mutex_unlock (&node->lock);
 
   if (err && alloced)
     munmap (*data, amount);
 
-  if (!err && alloced && (round_page (*datalen) < round_page (amount)))
-    munmap (*data + round_page (*datalen),
-	    round_page (amount) - round_page (*datalen));
+  if (!err && alloced && (round_page (data_size) < round_page (amount)))
+    munmap (*data + round_page (data_size),
+	    round_page (amount) - round_page (data_size));
 
+  *datalen = data_size;
   return err;
 }
