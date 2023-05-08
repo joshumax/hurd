@@ -168,7 +168,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
 
   pid_t pid;
   thread_t *threads;
-  size_t nthreads, i;
+  mach_msg_type_number_t nthreads, i;
   off_t notestart;
 
   /* Helper macros for writing notes.  */
@@ -432,7 +432,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	     task given the locations we now have.  But we are lazy and have
 	     the proc server do it for us.  */
 	  char *data = psinfo.data.pr_psargs;
-	  size_t datalen = sizeof psinfo.data.pr_psargs;
+	  mach_msg_type_number_t datalen = sizeof psinfo.data.pr_psargs;
 	  err = proc_getprocargs (procserver, pid, &data, &datalen);
 	  if (err == 0)
 	    {
@@ -531,7 +531,7 @@ dump_core (task_t task, file_t file, off_t corelimit,
 	do
 	  {
 	    pointer_t copied;
-	    size_t copy_count;
+	    mach_msg_type_number_t copy_count;
 	    err = vm_read (task, va, sz, &copied, &copy_count);
 	    if (err == 0)
 	      {

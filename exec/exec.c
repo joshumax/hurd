@@ -203,7 +203,7 @@ load_section (void *section, struct execdata *u, int interp)
              first page boundary.  */
 	  vm_address_t overlap_page = trunc_page (addr);
 	  vm_address_t ourpage = 0;
-	  vm_size_t size = 0;
+	  mach_msg_type_number_t size = 0;
 	  void *readaddr;
 	  size_t readsize;
 
@@ -312,7 +312,7 @@ load_section (void *section, struct execdata *u, int interp)
 	  /* Zero space in the section before the first page boundary.  */
 	  vm_address_t overlap_page = trunc_page (addr);
 	  vm_address_t ourpage = 0;
-	  vm_size_t size = 0;
+	  mach_msg_type_number_t size = 0;
 	  u->error = vm_read (u->task, overlap_page, vm_page_size,
 			      &ourpage, &size);
 	  if (u->error)
