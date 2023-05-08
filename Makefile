@@ -36,7 +36,7 @@ lib-subdirs = libshouldbeinlibc libihash libiohelp libports \
 # Hurd programs
 prog-subdirs = auth proc exec term \
 	       ext2fs isofs tmpfs fatfs \
-	       storeio pflocal pfinet defpager mach-defpager \
+	       storeio pflocal defpager mach-defpager \
 	       login daemons boot console \
 	       hostmux usermux ftpfs trans \
 	       console-client utils sutils libfshelp-tests \
@@ -47,6 +47,10 @@ prog-subdirs = auth proc exec term \
 	       devnode \
 	       eth-multiplexer \
 	       shutdown
+
+ifneq ($(machine),x86_64)
+prog-subdirs += pfinet
+endif
 
 ifeq ($(HAVE_LIBRUMP),yes)
 prog-subdirs += rumpdisk
