@@ -523,11 +523,11 @@ main (int argc, char *argv[])
   if (show)
     {
       vm_size_t *free = NULL;
-      size_t nfree = 0;
+      mach_msg_type_number_t nfree = 0;
       vm_size_t *size = NULL;
-      size_t nsize = 0;
+      mach_msg_type_number_t nsize = 0;
       char *names = NULL, *name;
-      size_t names_len = 0;
+      mach_msg_type_number_t names_len = 0;
       size_t i;
       int err;
 
