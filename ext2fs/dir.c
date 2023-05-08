@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <dirent.h>
 #include <stddef.h>
+#include <inttypes.h>
 
 #include <hurd/sigpreempt.h>
 
@@ -415,7 +416,7 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	  || EXT2_DIR_REC_LEN (entry->name_len) > le16toh (entry->rec_len)
 	  || memchr (entry->name, '\0', entry->name_len))
 	{
-	  ext2_warning ("bad directory entry: inode: %Ld offset: %lu",
+	  ext2_warning ("bad directory entry: inode: %" PRIu64 " offset: %lu",
 			dp->cache_id,
 			(unsigned long)(currentoff - blockaddr + idx * DIRBLKSIZ));
 	  return ENOENT;
@@ -838,7 +839,7 @@ diskfs_drop_dirstat (struct node *dp, struct dirstat *ds)
 static error_t
 count_dirents (struct node *dp, block_t nb, char *buf)
 {
-  size_t amt;
+  mach_msg_type_number_t amt;
   char *offinblk;
   struct ext2_dir_entry_2 *entry;
   int count = 0;
@@ -893,7 +894,7 @@ diskfs_get_directs (struct node *dp,
   char *datap;
   struct ext2_dir_entry_2 *entryp;
   int allocsize;
-  size_t checklen;
+  mach_msg_type_number_t checklen;
   struct dirent *userp;
 
   nblks = dp->dn_stat.st_size/DIRBLKSIZ;
@@ -1069,7 +1070,8 @@ diskfs_get_directs (struct node *dp,
 
       if (le16toh (entryp->rec_len) == 0)
 	{
-	  ext2_warning ("zero length directory entry: inode: %Ld offset: %zd",
+	  ext2_warning ("zero length directory entry: inode: %" PRIu64
+			" offset: %zd",
 			dp->cache_id,
 			blkno * DIRBLKSIZ + bufp - buf);
 	  return EIO;
@@ -1083,7 +1085,8 @@ diskfs_get_directs (struct node *dp,
 	}
       else if (bufp - buf > DIRBLKSIZ)
 	{
-	  ext2_warning ("directory entry too long: inode: %Ld offset: %zd",
+	  ext2_warning ("directory entry too long: inode: %" PRIu64
+			" offset: %zd",
 			dp->cache_id,
 	      blkno * DIRBLKSIZ + bufp - buf - le16toh (entryp->rec_len));
 	  return EIO;

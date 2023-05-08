@@ -28,6 +28,7 @@
 #include <error.h>
 #include <argz.h>
 #include <argp.h>
+#include <inttypes.h>
 #include <hurd/store.h>
 #include <version.h>
 #include "ext2fs.h"
@@ -230,7 +231,7 @@ main (int argc, char **argv)
 			    &store_parsed, &bootstrap);
 
   if (store->size < SBLOCK_OFFS + SBLOCK_SIZE)
-    ext2_panic ("device too small for superblock (%Ld bytes)", store->size);
+    ext2_panic ("device too small for superblock (%" PRIi64 " bytes)", store->size);
   if (store->log2_blocks_per_page < 0)
     ext2_panic ("device block size (%zu) greater than page size (%lu)",
 		store->block_size, (unsigned long)vm_page_size);

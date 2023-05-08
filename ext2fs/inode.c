@@ -23,6 +23,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
@@ -215,7 +216,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 	  if (le32toh (di->i_size_high))	/* XXX */
 	    {
 	      dino_deref (di);
-	      ext2_warning ("cannot handle large file inode %Ld", np->cache_id);
+	      ext2_warning ("cannot handle large file inode %" PRIu64, np->cache_id);
 	      diskfs_end_catch_exception ();
 	      return EFBIG;
 	    }

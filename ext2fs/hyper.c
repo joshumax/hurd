@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <error.h>
+#include <inttypes.h>
 #include <hurd/store.h>
 #include "ext2fs.h"
 
@@ -104,7 +105,7 @@ get_hypermetadata (void)
 	       (long long int) le32toh (sblock->s_blocks_count) << log2_block_size);
   if (log2_dev_blocks_per_fs_block != 0
       && (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)) != 0)
-    ext2_warning ("%Ld (%zd byte) device blocks "
+    ext2_warning ("%" PRIi64 " (%zd byte) device blocks "
 		  " unused after last filesystem (%d byte) block",
 		  (store->size & ((1 << log2_dev_blocks_per_fs_block) - 1)),
 		  store->block_size, block_size);

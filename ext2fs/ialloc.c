@@ -43,6 +43,8 @@
 
 #include "ext2fs.h"
 #include "bitmap.c"
+
+#include <inttypes.h>
 
 /* ---------------------------------------------------------------- */
 
@@ -68,7 +70,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
 
   if (inum < EXT2_FIRST_INO (sblock) || inum > le32toh (sblock->s_inodes_count))
     {
-      ext2_error ("reserved inode or nonexistent inode: %Ld", inum);
+      ext2_error ("reserved inode or nonexistent inode: %" PRIu64, inum);
       pthread_spin_unlock (&global_lock);
       return;
     }
@@ -80,7 +82,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bh = disk_cache_block_ref (le32toh (gdp->bg_inode_bitmap));
 
   if (!clear_bit (bit, bh))
-    ext2_warning ("bit already cleared for inode %Ld", inum);
+    ext2_warning ("bit already cleared for inode %" PRIu64, inum);
   else
     {
       disk_cache_block_ref_ptr (bh);
@@ -228,7 +230,7 @@ repeat:
     {
       if (set_bit (inum, bh))
 	{
-	  ext2_warning ("bit already set for inode %llu", inum);
+	  ext2_warning ("bit already set for inode %" PRIu64, inum);
 	  disk_cache_block_deref (bh);
 	  bh = NULL;
 	  goto repeat;
@@ -253,7 +255,7 @@ repeat:
   if (inum < EXT2_FIRST_INO (sblock) || inum > le32toh (sblock->s_inodes_count))
     {
       ext2_error ("reserved inode or inode > inodes count - "
-		  "block_group = %d,inode=%llu", i, inum);
+		  "block_group = %d,inode=%" PRIu64, i, inum);
       inum = 0;
       goto sync_out;
     }

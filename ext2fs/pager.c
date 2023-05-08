@@ -22,6 +22,7 @@
 #include <string.h>
 #include <errno.h>
 #include <error.h>
+#include <inttypes.h>
 #include <hurd/store.h>
 #include "ext2fs.h"
 
@@ -642,7 +643,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space.");
       else if (err)
-	ext2_warning ("inode=%Ld, page=0x%lx: %s",
+	ext2_warning ("inode=%" PRIu64 ", page=0x%lx: %s",
 		      node->cache_id, (unsigned long)page, strerror (err));
 
       return err;
@@ -730,7 +731,7 @@ diskfs_grow (struct node *node, off_t size, struct protid *cred)
 		  dn->last_page_partially_writable
 		  ? " (last page writable)": "");
       if (err)
-	ext2_warning ("inode=%Ld, target=%Ld: %s",
+	ext2_warning ("inode=%" PRIu64 ", target=%" PRIi64 ": %s",
 		      node->cache_id, new_size, strerror (err));
 
       node->allocsize = new_size;
