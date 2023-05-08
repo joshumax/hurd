@@ -39,8 +39,9 @@ check_message_return (struct proc *p, void *availpaddr)
 static void *
 tickle_statup (void *statupport)
 {
-  startup_essential_task ((mach_port_t) statupport, mach_task_self (),
-			  MACH_PORT_NULL, "proc", _hurd_host_priv);
+  startup_essential_task ((mach_port_t) (uintptr_t) statupport,
+			  mach_task_self (), MACH_PORT_NULL,
+			  "proc", _hurd_host_priv);
   return NULL;
 }
 

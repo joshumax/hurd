@@ -80,9 +80,9 @@ S_proc_getprivports (struct proc *p,
 kern_return_t
 S_proc_setexecdata (struct proc *p,
 		    const mach_port_t *ports,
-		    size_t nports,
+		    mach_msg_type_number_t nports,
 		    const int *ints,
-		    size_t nints)
+		    mach_msg_type_number_t nints)
 {
   int i;
   struct execdata_notify *n;
@@ -135,9 +135,9 @@ kern_return_t
 S_proc_getexecdata (struct proc *p,
 		    mach_port_t **ports,
 		    mach_msg_type_name_t *portspoly,
-		    size_t *nports,
+		    mach_msg_type_number_t *nports,
 		    int **ints,
-		    size_t *nints)
+		    mach_msg_type_number_t *nints)
 {
   int i;
   int ports_allocated = 0;
@@ -344,7 +344,7 @@ initialize_version_info (void)
   kernel_version_t kv;
   char *p;
   struct host_basic_info info;
-  size_t n = sizeof info;
+  mach_msg_type_number_t n = sizeof info;
   error_t err;
 
   /* Fill in fixed slots sysname and machine.  */

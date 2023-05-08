@@ -102,7 +102,7 @@ S_proc_reauthenticate (struct proc *p, mach_port_t rendport)
   struct ids *new_ids;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
-  size_t ngen_uids, naux_uids, ngen_gids, naux_gids;
+  mach_msg_type_number_t ngen_uids, naux_uids, ngen_gids, naux_gids;
 
   if (!p)
     return EOPNOTSUPP;
@@ -352,7 +352,7 @@ S_proc_reauthenticate_reassign (struct proc *p,
   struct ids *new_ids;
   uid_t gubuf[50], aubuf[50], ggbuf[50], agbuf[50];
   uid_t *gen_uids, *aux_uids, *gen_gids, *aux_gids;
-  size_t ngen_uids, naux_uids, ngen_gids, naux_gids;
+  mach_msg_type_number_t ngen_uids, naux_uids, ngen_gids, naux_gids;
 
   if (!p)
     return EOPNOTSUPP;
@@ -579,7 +579,7 @@ S_proc_dostop (struct proc *p,
 	       thread_t contthread)
 {
   thread_t threadbuf[2], *threads = threadbuf;
-  size_t nthreads = sizeof (threadbuf) / sizeof (thread_t);
+  mach_msg_type_number_t nthreads = sizeof (threadbuf) / sizeof (thread_t);
   int i;
   error_t err;
 
@@ -767,7 +767,7 @@ store_pid (struct proc *p, void *loc)
 kern_return_t
 S_proc_getallpids (struct proc *p,
 		   pid_t **pids,
-		   size_t *pidslen)
+		   mach_msg_type_number_t *pidslen)
 {
   int nprocs;
   pid_t *loc;
@@ -1167,7 +1167,7 @@ struct proc *
 add_tasks (task_t task)
 {
   mach_port_t *psets;
-  size_t npsets;
+  mach_msg_type_number_t npsets;
   int i;
   struct proc *foundp = 0;
 
@@ -1176,7 +1176,7 @@ add_tasks (task_t task)
     {
       mach_port_t psetpriv;
       mach_port_t *tasks;
-      size_t ntasks;
+      mach_msg_type_number_t ntasks;
       int j;
 
       if (!foundp)

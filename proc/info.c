@@ -235,7 +235,7 @@ get_string (task_t t,
 
   vm_address_t readaddr;
   vm_address_t data;
-  size_t readlen;
+  mach_msg_type_number_t readlen;
   error_t err;
   char *c;
 
@@ -329,7 +329,7 @@ static error_t
 get_string_array (task_t t,
 		  vm_address_t loc,
 		  vm_address_t *buf,
-		  size_t *buflen)
+		  mach_msg_type_number_t *buflen)
 {
   char *bp;
   int *vector, *vp;
@@ -400,9 +400,9 @@ get_string_array (task_t t,
 /* Implement proc_getprocargs as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprocargs (struct proc *callerp,
-		  pid_t pid,
-		  data_t *buf,
-		  size_t *buflen)
+		    pid_t pid,
+		    data_t *buf,
+		    mach_msg_type_number_t *buflen)
 {
   struct proc *p = pid_find (pid);
 
@@ -438,9 +438,9 @@ S_proc_getprocargs (struct proc *callerp,
 /* Implement proc_getprocenv as described in <hurd/process.defs>. */
 kern_return_t
 S_proc_getprocenv (struct proc *callerp,
-		 pid_t pid,
-		 data_t *buf,
-		 size_t *buflen)
+		   pid_t pid,
+		   data_t *buf,
+		   mach_msg_type_number_t *buflen)
 {
   struct proc *p = pid_find (pid);
 
@@ -483,12 +483,12 @@ S_proc_getprocinfo (struct proc *callerp,
 		    pid_t pid,
 		    int *flags,
 		    int **piarray,
-		    size_t *piarraylen,
+		    mach_msg_type_number_t *piarraylen,
 		    data_t *waits, mach_msg_type_number_t *waits_len)
 {
   struct proc *p = pid_find (pid);
   struct procinfo *pi;
-  size_t nthreads;
+  mach_msg_type_number_t nthreads;
   thread_t *thds;
   error_t err = 0;
   size_t structsize;
@@ -496,7 +496,7 @@ S_proc_getprocinfo (struct proc *callerp,
   int pi_alloced = 0, waits_alloced = 0;
   /* The amount of WAITS we've filled in so far.  */
   mach_msg_type_number_t waits_used = 0;
-  size_t tkcount, thcount;
+  mach_msg_type_number_t tkcount, thcount;
   struct proc *tp;
   task_t task;			/* P's task port.  */
   mach_port_t msgport;		/* P's msgport, or MACH_PORT_NULL if none.  */
@@ -884,7 +884,7 @@ kern_return_t
 S_proc_getloginpids (struct proc *callerp,
 		     pid_t id,
 		     pid_t **pids,
-		     size_t *npids)
+		     mach_msg_type_number_t *npids)
 {
   error_t err = 0;
   struct proc *l = pid_find (id);

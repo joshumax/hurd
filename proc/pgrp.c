@@ -180,7 +180,7 @@ kern_return_t
 S_proc_getsessionpids (struct proc *callerp,
 		       pid_t sid,
 		       pid_t **pids,
-		       size_t *npidsp)
+		       mach_msg_type_number_t *npidsp)
 {
   size_t count;
   struct pgrp *pg;
@@ -252,7 +252,7 @@ kern_return_t
 S_proc_getsessionpgids (struct proc *callerp,
 			pid_t sid,
 			pid_t **pgids,
-			size_t *npgidsp)
+			mach_msg_type_number_t *npgidsp)
 {
   size_t count;
   struct proc *p;
@@ -319,7 +319,7 @@ kern_return_t
 S_proc_getpgrppids (struct proc *callerp,
 		    pid_t pgid,
 		    pid_t **pids,
-		    size_t *npidsp)
+		    mach_msg_type_number_t *npidsp)
 {
 
   struct proc *p;
