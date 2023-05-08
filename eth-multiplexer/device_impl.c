@@ -102,8 +102,8 @@ ds_device_close (struct vether_device *device)
 kern_return_t
 ds_device_write (struct vether_device *vdev, mach_port_t reply_port,
 		 mach_msg_type_name_t reply_type, dev_mode_t mode,
-		 recnum_t recnum, io_buf_ptr_t data, size_t datalen,
-		 int *bytes_written)
+		 recnum_t recnum, io_buf_ptr_t data,
+		 mach_msg_type_number_t datalen, int *bytes_written)
 {
   kern_return_t ret = 0;
   if (vdev == NULL)
@@ -129,7 +129,7 @@ kern_return_t
 ds_device_write_inband (struct vether_device *vdev, mach_port_t reply_port,
 			mach_msg_type_name_t reply_type, dev_mode_t mode,
 			recnum_t recnum, const io_buf_ptr_inband_t data,
-			size_t datalen, int *bytes_written)
+			mach_msg_type_number_t datalen, int *bytes_written)
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
@@ -140,7 +140,7 @@ kern_return_t
 ds_device_read (struct vether_device *vdev, mach_port_t reply_port,
 		mach_msg_type_name_t reply_type, dev_mode_t mode,
 		recnum_t recnum, int bytes_wanted,
-		io_buf_ptr_t *data, size_t *datalen)
+		io_buf_ptr_t *data, mach_msg_type_number_t *datalen)
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
@@ -151,7 +151,8 @@ kern_return_t
 ds_device_read_inband (struct vether_device *vdev, mach_port_t reply_port,
 		       mach_msg_type_name_t reply_type, dev_mode_t mode,
 		       recnum_t recnum, int bytes_wanted,
-		       io_buf_ptr_inband_t data, size_t *datalen)
+		       io_buf_ptr_inband_t data,
+		       mach_msg_type_number_t *datalen)
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
@@ -169,7 +170,7 @@ ds_device_map (struct vether_device *vdev, vm_prot_t prot, vm_offset_t offset,
 
 kern_return_t
 ds_device_set_status (struct vether_device *vdev, dev_flavor_t flavor,
-		      dev_status_t status, size_t statuslen)
+		      dev_status_t status, mach_msg_type_number_t statuslen)
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
@@ -178,7 +179,7 @@ ds_device_set_status (struct vether_device *vdev, dev_flavor_t flavor,
 
 kern_return_t
 ds_device_get_status (struct vether_device *vdev, dev_flavor_t flavor,
-		      dev_status_t status, size_t *statuslen)
+		      dev_status_t status, mach_msg_type_number_t *statuslen)
 {
   if (vdev == NULL)
     return D_NO_SUCH_DEVICE;
@@ -188,7 +189,8 @@ ds_device_get_status (struct vether_device *vdev, dev_flavor_t flavor,
 
 kern_return_t
 ds_device_set_filter (struct vether_device *vdev, mach_port_t receive_port,
-		      int priority, filter_array_t filter, size_t filterlen)
+		      int priority, filter_array_t filter,
+		      mach_msg_type_number_t filterlen)
 {
   kern_return_t err;
 

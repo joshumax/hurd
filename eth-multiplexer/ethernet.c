@@ -80,7 +80,7 @@ eth_set_clear_flags (int set_flags, int clear_flags)
 {
   error_t err;
   int flags;
-  size_t count;
+  mach_msg_type_number_t count;
 
   count = 1;
   err = device_get_status (ether_port, NET_FLAGS, (dev_status_t) &flags,
@@ -109,7 +109,7 @@ get_ethernet_address (mach_port_t port, char *address)
 {
   error_t err;
   int net_address[2];
-  size_t count = 2;
+  mach_msg_type_number_t count = 2;
   assert_backtrace (count * sizeof (int) >= ETH_ALEN);
 
   err = device_get_status (port, NET_ADDRESS, net_address, &count);
