@@ -25,9 +25,9 @@
 
 /* Tell if the array LIST (of size N) contains a member equal to QUERY. */
 static inline int
-listmember (const uid_t *list, uid_t query, int n)
+listmember (const uid_t *list, uid_t query, mach_msg_type_number_t n)
 {
-  int i;
+  mach_msg_type_number_t i;
   for (i = 0; i < n; i++)
     if (list[i] == query)
       return 1;
@@ -40,8 +40,10 @@ trivfs_S_io_restrict_auth (struct trivfs_protid *cred,
 			   mach_msg_type_name_t replytype,
 			   mach_port_t *newport,
 			   mach_msg_type_name_t *newporttype,
-			   const uid_t *uids, size_t nuids,
-			   const uid_t *gids, size_t ngids)
+			   const uid_t *uids,
+			   mach_msg_type_number_t nuids,
+			   const uid_t *gids,
+			   mach_msg_type_number_t ngids)
 {
   unsigned int i;
   error_t err;
