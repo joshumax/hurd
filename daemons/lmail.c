@@ -146,10 +146,11 @@ bfree (char *blk, size_t blk_len)
 /* Read up to MAX chars from IN into BLK & BLK_LEN, which may be reused or
    freed.  */
 static int
-bread (int in, char *in_name, size_t max, char **blk, size_t *blk_len)
+bread (int in, char *in_name, size_t max, char **blk,
+       mach_msg_type_number_t *blk_len)
 {
   char *orig_blk = *blk;
-  size_t orig_blk_len = *blk_len;
+  mach_msg_type_number_t orig_blk_len = *blk_len;
   error_t err = HURD_DPORT_USE (in, io_read (port, blk, blk_len, -1, max));
 
   if (err)
@@ -182,7 +183,7 @@ copy (int in, char *in_name, int out, char *out_name)
 {
   int ex = 0;
   char *blk = 0;
-  size_t blk_len = 0;
+  mach_msg_type_number_t blk_len = 0;
 
   do
     {
@@ -233,7 +234,7 @@ process (int in, char *in_name, int out, char *out_name, struct params *params)
 {
   /* The block currently being processed.  */
   char *blk = 0;
-  size_t blk_len = 0;
+  mach_msg_type_number_t blk_len = 0;
   /* MATCH is the string we're looking for to escape, NL_MATCH is the same
      string prefixed by a newline to ease searching (MATCH only matches at
      the beginning of lines).  */
