@@ -110,7 +110,7 @@ struct argp *diskfs_runtime_argp = (struct argp *) &runtime_argp;
 /* Override the standard diskfs routine so we can add our own
    output.  */
 error_t
-diskfs_append_args (char **argz, unsigned *argz_len)
+diskfs_append_args (char **argz, size_t *argz_len)
 {
   error_t err;
   char buf[100];

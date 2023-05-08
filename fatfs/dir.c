@@ -659,7 +659,7 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
       vi_key_t entry_key;
       
       entry_key.dir_inode = dp->cache_id;
-      entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
+      entry_key.dir_offset = (uintptr_t) ds->entry - (uintptr_t) ds->mapbuf;
       
       /* Set the key for this inode now because it wasn't know when
 	 the inode was initialized.  */
@@ -727,7 +727,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   
   /*  We need the inode and vinode of the old node.  */
   entry_key.dir_inode = dp->cache_id;
-  entry_key.dir_offset = ((int) ds->entry) - ((int) ds->mapbuf);
+  entry_key.dir_offset = (uintptr_t) ds->entry - (uintptr_t) ds->mapbuf;
   err = vi_rlookup (entry_key, &inode, &vinode, 0);
   assert_backtrace (err != EINVAL);
   if (err)
@@ -832,7 +832,7 @@ diskfs_get_directs (struct node *dp,
 		    int entry,
 		    int nentries,
 		    char **data,
-		    u_int *datacnt,
+		    size_t *datacnt,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
