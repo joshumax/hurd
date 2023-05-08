@@ -62,7 +62,7 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
       mach_port_urefs_t refs;
       error_t err = mach_port_get_refs (task, name, right, &refs);
       if (! err)
-	fprintf (stream, " (refs: %zu)", refs);
+	fprintf (stream, " (refs: %u)", refs);
     }
 
   if (type == 0)
@@ -303,12 +303,12 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 
 	      /* pci_t */
 	      {
-		vm_size_t ndevs;
+		mach_msg_type_number_t ndevs;
 
 		err = pci_get_ndevs (port, &ndevs);
 
 		if (!err)
-		  fprintf (stream, " pci(%d)", ndevs);
+		  fprintf (stream, " pci(%u)", ndevs);
 	      }
 
 	      /* process_t */
@@ -482,13 +482,13 @@ print_port_info (mach_port_t name, mach_port_type_t type, task_t task,
 		fprintf (stream,
 			 hex_names ? "port-set: %#x, " : "port-set: %u, ",
 			 status.mps_pset);
-	      fprintf (stream, "seqno: %zu", status.mps_seqno);
+	      fprintf (stream, "seqno: %u", status.mps_seqno);
 	      if (status.mps_mscount)
-		fprintf (stream, ", ms-count: %zu", status.mps_mscount);
+		fprintf (stream, ", ms-count: %u", status.mps_mscount);
 	      if (status.mps_qlimit != MACH_PORT_QLIMIT_DEFAULT)
-		fprintf (stream, ", qlimit: %zu", status.mps_qlimit);
+		fprintf (stream, ", qlimit: %u", status.mps_qlimit);
 	      if (status.mps_msgcount)
-		fprintf (stream, ", msgs: %zu", status.mps_msgcount);
+		fprintf (stream, ", msgs: %u", status.mps_msgcount);
 	      fprintf (stream, "%s%s%s)",
 		       status.mps_srights ? ", send-rights" : "",
 		       status.mps_pdrequest ? ", pd-req" : "",

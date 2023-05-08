@@ -49,7 +49,7 @@ fsys_get_readonly (fsys_t fsys, int *readonly)
 {
   error_t err;
   char _opts[200], *opts = _opts;
-  size_t opts_len = sizeof opts;
+  mach_msg_type_number_t opts_len = sizeof opts;
 
   err = fsys_get_options (fsys, &opts, &opts_len);
   if (! err)
