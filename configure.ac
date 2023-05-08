@@ -113,8 +113,6 @@ fi
 dnl Let these propagate from the environment.
 AC_SUBST(CFLAGS) AC_SUBST(CPPFLAGS) AC_SUBST(LDFLAGS)
 
-hurd_MIG_RETCODE
-
 # See if --version-script is available.
 AC_CACHE_CHECK(for ld --version-script, hurd_cv_ld_version_script_option, [dnl
 cat > conftest.c <<\EOF

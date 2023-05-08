@@ -378,12 +378,7 @@ intranpayload: mach_port_t MACH_PAYLOAD_TO_PORT
 #define SCP
 #endif
 
-#ifdef HAVE_MIG_RETCODE
 #define RETURN_CODE_ARG in return_code: kern_return_t, retcode
-#else
-#define RETURN_CODE_ARG in return_code: kern_return_t
-#endif
-
 
 #ifdef USERPREFIX
 userprefix USERPREFIX;
