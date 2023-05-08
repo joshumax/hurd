@@ -610,7 +610,7 @@ device_defs = $(addsuffix .defs,$(device_defs_names))
 $(mach_defs): %.defs:
 	echo '#include <mach/$@>' > $@
 $(mach_i386_defs): %.defs:
-	echo '#include <mach/i386/$@>' > $@
+	echo '#include <mach/machine/$@>' > $@
 $(mach_debug_defs): %.defs:
 	echo '#include <mach_debug/$@>' > $@
 $(device_defs): %.defs:
