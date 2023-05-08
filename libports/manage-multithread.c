@@ -160,10 +160,10 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
 	      perror ("pthread_create");
 	    }
 	}
-      
+
       /* Fill in default response. */
-      outp->Head.msgh_bits 
-	= MACH_MSGH_BITS(MACH_MSGH_BITS_REMOTE(inp->msgh_bits), 0);
+      outp->Head.msgh_bits
+        = MACH_MSGH_BITS (MACH_MSGH_BITS_REMOTE (inp->msgh_bits), 0);
       outp->Head.msgh_size = sizeof *outp;
       outp->Head.msgh_remote_port = inp->msgh_remote_port;
       outp->Head.msgh_local_port = MACH_PORT_NULL;

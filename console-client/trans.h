@@ -25,10 +25,10 @@ struct consnode
 
   /* The id of the node.  */
   int id;
-  
+
   /* Cached if the node is already opened.  */
   struct node *node;
-  
+
   /* Read data from a node.  This is exactly the same as io_read
      does.  */
   error_t (*read) (struct protid *user, char **data,
@@ -48,10 +48,10 @@ struct consnode
 
   /* Called when the node is opened.  */
   void (*open) (void);
-  
+
   /* Called when the node is closed.  */
   void (*close) (void);
-  
+
   /* The demuxer used for this node.  */
   int (*demuxer) (mach_msg_header_t *inp, mach_msg_header_t *outp);
 
@@ -60,7 +60,7 @@ struct consnode
 
   /* Called when the symlink is written */
   error_t (*mksymlink) (struct iouser *cred, struct node *np, const char *name);
-  
+
   struct consnode *next;
 };
 

@@ -3,7 +3,7 @@
    Copyright (C) 2004, 2005, 2007 Free Software Foundation, Inc.
 
    Written by Marco Gerards.
-   
+
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
    published by the Free Software Foundation; either version 2, or (at
@@ -75,17 +75,17 @@ console_demuxer (mach_msg_header_t *inp,
 			      netfs_protid_class);
   if (!user)
     return ret;
-  
+
   /* Don't do anything for the root node.  */
   if (user->po->np == netfs_root_node)
     {
       ports_port_deref (user);
       return 0;
-    }    
-  
+    }
+
   if (!ret && user->po->np->nn->node && user->po->np->nn->node->demuxer)
     ret = user->po->np->nn->node->demuxer (inp, outp);
-  
+
   ports_port_deref (user);
   return ret;
 }
@@ -187,10 +187,10 @@ netfs_attempt_utimes (struct iouser *cred, struct node *np,
     {
       if (mtime)
         np->nn_stat.st_mtim = *mtime;
-      
+
       if (atime)
         np->nn_stat.st_atim = *atime;
-      
+
       fshelp_touch (&np->nn_stat, flags, console_maptime);
     }
   return err;
@@ -248,7 +248,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 {
   error_t err;
   consnode_t cn;
-  
+
   *node = 0;
   err = fshelp_access (&dir->nn_stat, S_IEXEC, user);
   if (err)
@@ -268,7 +268,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
       err = EAGAIN;
       goto out;
     }
-  
+
   for (cn = node_list; cn; cn = cn->next)
     if (!strcmp (name, cn->name))
       {
@@ -293,9 +293,9 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 		err = ENOMEM;
 		goto out;
 	      }
-	    
+
 	    *node = netfs_make_node (nn);
-	    
+
 	    nn->node = cn;
 	    (*node)->nn_stat = netfs_root_node->nn_stat;
 	    (*node)->nn_stat.st_mode = (netfs_root_node->nn_stat.st_mode & ~S_IFMT & ~S_ITRANS);
@@ -311,21 +311,21 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	else
 	  {
 	    *node = cn->node;
-	    
+
 	    netfs_nref (*node);
 	    goto out;
 	  }
       }
-  
+
   err = ENOENT;
-  
+
  out:
   pthread_mutex_unlock (&dir->lock);
   if (err)
     *node = 0;
   else
     pthread_mutex_lock (&(*node)->lock);
-  
+
   if (!err && *node != dir && (*node)->nn->node->open)
     (*node)->nn->node->open ();
 
@@ -351,12 +351,12 @@ io_select_common (struct protid *user, mach_port_t reply,
 		  struct timespec *tsp, int *type)
 {
   struct node *np;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   np = user->po->np;
-  
+
   if (np->nn->node && np->nn->node->select)
     return np->nn->node->select (user, reply, replytype, tsp, type);
   return EOPNOTSUPP;
@@ -581,11 +581,11 @@ netfs_S_io_read (struct protid *user,
 		 vm_size_t amount)
 {
   struct node *np;
-  
+
   if (!user)
     return EOPNOTSUPP;
   np = user->po->np;
-  
+
   if (np->nn->node && np->nn->node->read)
     return np->nn->node->read (user, data, datalen, offset, amount);
   return EOPNOTSUPP;
@@ -600,10 +600,10 @@ netfs_S_io_write (struct protid *user,
 		  vm_size_t *amount)
 {
   struct node *np;
-  
+
   if (!user)
     return EOPNOTSUPP;
-  
+
   np = user->po->np;
   if (np->nn->node && np->nn->node->write)
     return np->nn->node->write (user, data, datalen, offset, amount);
@@ -630,7 +630,6 @@ netfs_report_access (struct iouser *cred, struct node *np,
 
 /* Node NP has no more references; free all its associated storage. */
 void netfs_node_norefs (struct node *np)
-     
 {
   if (np->nn->node)
     {
@@ -673,7 +672,6 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
   size_t size = 0;              /* Total size of our return block.  */
   consnode_t cn = node_list;
   consnode_t first_node;
-  
 
   /* Add the length of a directory entry for NAME to SIZE and return true,
      unless it would overflow MAX_DATA_LEN or NUM_ENTRIES, in which case
@@ -760,7 +758,7 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 
       *data_len = size;
       *data_entries = count;
-      
+
       count = 0;
 
       /* Add `.' and `..' entries.  */
@@ -768,13 +766,13 @@ netfs_get_dirents (struct iouser *cred, struct node *dir,
 	add_dir_entry (".", 2, DT_DIR);
       if (first_entry <= 1)
 	add_dir_entry ("..", 2, DT_DIR);
-      
+
       /* Fill in the real directory entries.  */
       for (cn = first_node; cn; cn = cn->next)
 	if (!add_dir_entry (cn->name, cn->id, cn->readlink ? DT_LNK : DT_CHR))
 	  break;
     }
-      
+
   fshelp_touch (&dir->nn_stat, TOUCH_ATIME, console_maptime);
   return err;
 }
@@ -786,7 +784,7 @@ console_client_translator (void *unused)
 {
   error_t err;
 
-  do 
+  do
     {
       ports_manage_port_operations_multithread (netfs_port_bucket,
 						console_demuxer,
@@ -810,7 +808,7 @@ console_create_consnode (const char *name, consnode_t *cn)
   *cn = malloc (sizeof (struct consnode));
   if (!*cn)
     return ENOMEM;
-  
+
   (*cn)->name = strdup (name);
   if (!(*cn)->name)
     {
@@ -853,16 +851,16 @@ console_unregister_consnode (consnode_t cn)
 {
   if (!cn)
     return;
-  
+
   if (node_list == cn)
     node_list = cn->next;
   else
     {
       consnode_t prev = node_list;
-      
+
       for (prev = node_list; prev->next != cn; prev = prev->next)
 	;
-      
+
       prev->next = cn->next;
     }
 }
@@ -877,32 +875,32 @@ console_setup_node (char *path)
   struct port_info *newpi;
   mach_port_t right;
   pthread_t thread;
-  
+
   node = file_name_lookup (path, O_CREAT|O_NOTRANS, 0664);
   if (node == MACH_PORT_NULL)
     return errno;
 
   netfs_init ();
-  
+
   /* Create the root node (some attributes initialized below).  */
   netfs_root_node = netfs_make_node (0);
   if (! netfs_root_node)
     error (1, ENOMEM, "Cannot create root node");
-  
+
   err = maptime_map (0, 0, &console_maptime);
   if (err)
     error (1, err, "Cannot map time");
-  
+
   err = ports_create_port (netfs_control_class, netfs_port_bucket, sizeof (struct port_info), &newpi);
   right = ports_get_send_right (newpi);
   err = file_set_translator (node, 0, FS_TRANS_EXCL | FS_TRANS_SET, 0, 0, 0,
-			     right, MACH_MSG_TYPE_COPY_SEND); 
+			     right, MACH_MSG_TYPE_COPY_SEND);
   mach_port_deallocate (mach_task_self (), right);
-  
+
   err = io_stat (node, &ul_stat);
   if (err)
     error (1, err, "Cannot stat underlying node");
-  
+
   netfs_root_node->nn_stat.st_ino = 2;
   netfs_root_node->nn_stat.st_uid = ul_stat.st_uid;
   netfs_root_node->nn_stat.st_gid = ul_stat.st_gid;
@@ -926,10 +924,10 @@ console_setup_node (char *path)
       if (ul_stat.st_mode & S_IROTH)
         netfs_root_node->nn_stat.st_mode |= S_IXOTH;
     }
-      
+
   fshelp_touch (&netfs_root_node->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
                 console_maptime);
-  
+
   err = pthread_create (&thread, NULL, console_client_translator, NULL);
   if (!err)
     pthread_detach (thread);

@@ -282,7 +282,7 @@ proc_stat_list_add_fn_pids (struct proc_stat_list *pp,
     *num_procs = num_pids;
 
   if (pids != pid_array)
-    VMFREE(pids, sizeof (pid_t) * num_pids);
+    VMFREE (pids, sizeof (pid_t) * num_pids);
 
   return err;
 }

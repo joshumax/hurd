@@ -289,7 +289,7 @@ diskfs_append_args (char **argz, size_t *argz_len)
   return err;
 }
 
-/* Handling of operations for the ports in diskfs_port_bucket, calling 
+/* Handling of operations for the ports in diskfs_port_bucket, calling
  * demuxer for each incoming message */
 static void *
 diskfs_thread_function (void *demuxer)

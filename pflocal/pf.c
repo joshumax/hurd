@@ -135,7 +135,7 @@ S_socket_whatis_address (struct addr *addr,
 			 mach_msg_type_number_t *sockaddr_len)
 {
   socklen_t addr_len = (offsetof (struct sockaddr, sa_data) + 1);
-  
+
   if (! addr)
     return EOPNOTSUPP;
 
@@ -146,6 +146,6 @@ S_socket_whatis_address (struct addr *addr,
   ((struct sockaddr *) *sockaddr)->sa_family = *sockaddr_type;
   ((struct sockaddr *) *sockaddr)->sa_data[0] = 0;
   *sockaddr_len = addr_len;
-  
+
   return 0;
 }

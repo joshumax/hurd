@@ -63,7 +63,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 
 	  assert_backtrace (window_size >= VMCOPY_BETTER_THAN_MEMCPY);
 	  assert_backtrace ((window_size & (vm_page_size - 1)) == 0);
-	  
+
 	  window = 0;
 	  err = vm_map (mach_task_self (), &window, window_size, 0, 1,
 			memobj, offset, 0, prot, prot, VM_INHERIT_NONE);
@@ -127,7 +127,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 		memcpy (other, (const void *) window + pageoff, copy_count);
 	      else
 		memcpy ((void *) window + pageoff, other, copy_count);
-	      
+
 	      vm_deallocate (mach_task_self (), window, window_size);
 
 	      assert_backtrace (n >= copy_count);
@@ -139,7 +139,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 	      n -= copy_count;
 	    }
 	  while (to_copy > 0);
-	  
+
 	  return 0;
 	}
 
@@ -156,7 +156,7 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
 			   - ((vm_address_t) other & (vm_page_size - 1)));
 	  if (err)
 	    return err;
-   
+
 	  assert_backtrace (n >= VMCOPY_BETTER_THAN_MEMCPY);
 
 	  err = do_vm_copy ();

@@ -342,7 +342,7 @@ S_socket_send (struct sock_user *user, struct addr *dest_addr, int flags,
       else
 	/* No address, must be a connected socket...  */
 	err = sock_acquire_write_pipe (sock, &pipe);
-	
+
       if (!err)
 	{
 	  noblock = (user->sock->flags & PFLOCAL_SOCK_NONBLOCK)

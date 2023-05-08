@@ -652,19 +652,19 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   write_word (new->first_cluster_low, np->dn->start_cluster & 0xffff);
   write_word (new->first_cluster_high, np->dn->start_cluster >> 16);
   write_dword (new->file_size, np->dn_stat.st_size);
-  
+
   if (!(name[0] == '.' && (name[1] == '\0' 
 			   || (name[1] == '.'  && name[2] =='\0'))))
     {
       vi_key_t entry_key;
-      
+
       entry_key.dir_inode = dp->cache_id;
       entry_key.dir_offset = (uintptr_t) ds->entry - (uintptr_t) ds->mapbuf;
-      
+
       /* Set the key for this inode now because it wasn't know when
 	 the inode was initialized.  */
       vi_change (vi_lookup (np->cache_id), entry_key);
-      
+
       if (np->dn_stat.st_mode & S_IFDIR)
 	new->attribute = FAT_DIR_ATTR_DIR;
     }
@@ -724,7 +724,7 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
   struct node *oldnp;
   ino_t inode;
   inode_t vinode;
-  
+
   /*  We need the inode and vinode of the old node.  */
   entry_key.dir_inode = dp->cache_id;
   entry_key.dir_offset = (uintptr_t) ds->entry - (uintptr_t) ds->mapbuf;
@@ -836,7 +836,7 @@ diskfs_get_directs (struct node *dp,
 		    vm_size_t bufsiz,
 		    int *amt)
 {
-  volatile vm_size_t allocsize;
+  vm_size_t allocsize;
   struct dirrect *ep;
   struct dirent *userp;
   int i;

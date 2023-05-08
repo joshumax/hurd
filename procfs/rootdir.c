@@ -683,8 +683,8 @@ rootdir_gc_swaps (void *hook, char **contents, ssize_t *contents_len)
       name = argz_next (names, names_len, name);
     }
 
-  vm_deallocate (mach_task_self(), (vm_offset_t) free, nfree * sizeof(*free));
-  vm_deallocate (mach_task_self(), (vm_offset_t) size, nsize * sizeof(*size));
+  vm_deallocate (mach_task_self(), (vm_offset_t) free, nfree * sizeof (*free));
+  vm_deallocate (mach_task_self(), (vm_offset_t) size, nsize * sizeof (*size));
   vm_deallocate (mach_task_self(), (vm_offset_t) names, names_len);
 
 out:

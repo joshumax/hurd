@@ -228,9 +228,9 @@ main(int argc, char *argv[])
 	argp_failure (state, 8, err, "%s: Can't add tty", tty_name);
       return err;
     }
-  int proc_stat_has_ctty(struct proc_stat *ps)
+  int proc_stat_has_ctty (struct proc_stat *ps)
     {
-      if (proc_stat_has(ps, PSTAT_TTY))
+      if (proc_stat_has (ps, PSTAT_TTY))
 	/* Only match processes whose tty we can figure out.  */
 	{
 	  struct ps_tty *tty = proc_stat_tty (ps);
@@ -238,7 +238,7 @@ main(int argc, char *argv[])
 	    {
 	      char *try = 0;
 	      const char *name = ps_tty_name (tty);
-	      const char *short_name = ps_tty_short_name(tty);
+	      const char *short_name = ps_tty_short_name (tty);
 
 	      while ((try = argz_next (tty_names, num_tty_names, try)))
 		if ((name && strcmp (try, name) == 0)
@@ -254,14 +254,14 @@ main(int argc, char *argv[])
     {
       error_t err;
       struct ps_tty *tty;
-      mach_port_t cttyid = getcttyid();
+      mach_port_t cttyid = getcttyid ();
 
       if (cttyid == MACH_PORT_NULL)
-	error(2, 0, "No controlling terminal");
+	error (2, 0, "No controlling terminal");
 
       err = ps_context_find_tty_by_cttyid (context, cttyid, &tty);
       if (err)
-	error(2, err, "Can't get controlling terminal");
+	error (2, err, "Can't get controlling terminal");
 
       return ps_tty_name (tty);
     }
