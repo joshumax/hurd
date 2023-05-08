@@ -229,7 +229,7 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
   thread_function (void *arg)
     {
       struct ports_thread thread;
-      int master = (int) arg;
+      int master = (int)(uintptr_t) arg;
       int timeout;
       error_t err;
 
