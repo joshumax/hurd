@@ -308,7 +308,7 @@ lwip_S_socket_shutdown (struct sock_user * user, int direction)
 
 error_t
 lwip_S_socket_getopt (struct sock_user * user,
-		      int level, int option, char **data, size_t * datalen)
+		      int level, int option, char **data, mach_msg_type_number_t * datalen)
 {
   if (!user)
     return EOPNOTSUPP;
@@ -323,7 +323,7 @@ lwip_S_socket_getopt (struct sock_user * user,
 
 error_t
 lwip_S_socket_setopt (struct sock_user * user,
-		      int level, int option, const char *data, size_t datalen)
+		      int level, int option, const char *data, mach_msg_type_number_t datalen)
 {
   if (!user)
     return EOPNOTSUPP;
@@ -338,11 +338,11 @@ lwip_S_socket_send (struct sock_user * user,
 		    struct sock_addr * addr,
 		    int flags,
 		    const char *data,
-		    size_t datalen,
+		    mach_msg_type_number_t datalen,
 		    const mach_port_t * ports,
-		    size_t nports,
+		    mach_msg_type_number_t nports,
 		    const char *control,
-		    size_t controllen, vm_size_t * amount)
+		    mach_msg_type_number_t controllen, vm_size_t * amount)
 {
   int sent;
   int sockflags;
@@ -386,12 +386,12 @@ lwip_S_socket_recv (struct sock_user * user,
 		    mach_msg_type_name_t * addrporttype,
 		    int flags,
 		    char **data,
-		    size_t * datalen,
+		    mach_msg_type_number_t * datalen,
 		    mach_port_t ** ports,
 		    mach_msg_type_name_t * portstype,
-		    size_t * nports,
+		    mach_msg_type_number_t * nports,
 		    char **control,
-		    size_t * controllen,
+		    mach_msg_type_number_t * controllen,
 		    int *outflags, vm_size_t amount)
 {
   error_t err;

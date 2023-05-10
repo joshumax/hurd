@@ -35,7 +35,7 @@
 error_t
 lwip_S_io_write (struct sock_user *user,
 		 const_data_t data,
-		 size_t datalen,
+		 mach_msg_type_number_t datalen,
 		 off_t offset, vm_size_t * amount)
 {
   int sent;
@@ -59,7 +59,7 @@ lwip_S_io_write (struct sock_user *user,
 error_t
 lwip_S_io_read (struct sock_user * user,
 		data_t *data,
-		size_t * datalen, off_t offset, vm_size_t amount)
+		mach_msg_type_number_t * datalen, off_t offset, vm_size_t amount)
 {
   error_t err;
   int alloced = 0;
@@ -378,8 +378,8 @@ error_t
 lwip_S_io_restrict_auth (struct sock_user * user,
 			 mach_port_t * newobject,
 			 mach_msg_type_name_t * newobject_type,
-			 const uid_t * uids, size_t uidslen,
-			 const uid_t * gids, size_t gidslen)
+			 const uid_t * uids, mach_msg_type_number_t uidslen,
+			 const uid_t * gids, mach_msg_type_number_t gidslen)
 {
   struct sock_user *newuser;
   int i, j;

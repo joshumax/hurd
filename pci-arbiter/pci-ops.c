@@ -80,7 +80,7 @@ calculate_ndevs (struct iouser *user)
  */
 error_t
 S_pci_conf_read (struct protid * master, int reg, char **data,
-		 size_t * datalen, vm_size_t amount)
+		 mach_msg_type_number_t * datalen, vm_size_t amount)
 {
   error_t err;
   pthread_mutex_t *lock;
@@ -128,7 +128,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
 
 /* Write `datalen' bytes from `data'. `amount' is updated. */
 error_t
-S_pci_conf_write (struct protid * master, int reg, const char *data, size_t datalen,
+S_pci_conf_write (struct protid * master, int reg, const char *data, mach_msg_type_number_t datalen,
 		  vm_size_t * amount)
 {
   error_t err;
@@ -182,7 +182,7 @@ S_pci_get_ndevs (struct protid * master, mach_msg_type_number_t * amount)
  * regions in the given device.
  */
 error_t
-S_pci_get_dev_regions (struct protid * master, char **data, size_t * datalen)
+S_pci_get_dev_regions (struct protid * master, char **data, mach_msg_type_number_t * datalen)
 {
   error_t err;
   struct pcifs_dirent *e;
@@ -233,7 +233,7 @@ S_pci_get_dev_regions (struct protid * master, char **data, size_t * datalen)
  * Return in `data' the information about the expansion rom of the given device
  */
 error_t
-S_pci_get_dev_rom (struct protid * master, char **data, size_t * datalen)
+S_pci_get_dev_rom (struct protid * master, char **data, mach_msg_type_number_t * datalen)
 {
   error_t err;
   struct pcifs_dirent *e;

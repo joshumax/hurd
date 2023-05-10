@@ -439,8 +439,8 @@ error_t
 S_io_restrict_auth (struct sock_user *user,
 		    mach_port_t *newobject,
 		    mach_msg_type_name_t *newobject_type,
-		    const uid_t *uids, size_t uidslen,
-		    const uid_t *gids, size_t gidslen)
+		    const uid_t *uids, mach_msg_type_number_t uidslen,
+		    const uid_t *gids, mach_msg_type_number_t gidslen)
 {
   struct sock_user *newuser;
   int i, j;
