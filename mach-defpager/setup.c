@@ -40,7 +40,7 @@ int page_aligned (vm_offset_t num)
 extern mach_port_t default_pager_default_port; /* default_pager.c */
 
 kern_return_t
-S_default_pager_paging_storage (mach_port_t pager,
+S_default_pager_paging_storage_new (mach_port_t pager,
 				mach_port_t device,
 				const recnum_t *runs, mach_msg_type_number_t nrun,
 				const_default_pager_filename_t name,
@@ -100,16 +100,18 @@ S_default_pager_paging_storage (mach_port_t pager,
   return 0;
 }
 
+#ifndef __x86_64__
 kern_return_t
-S_default_pager_paging_storage_new (mach_port_t pager,
+S_default_pager_paging_storage (mach_port_t pager,
 				mach_port_t device,
 				const recnum_t *runs, mach_msg_type_number_t nrun,
 				const_default_pager_filename_t name,
 				boolean_t add)
 {
-  return S_default_pager_paging_storage (pager,
-      device, runs, nrun, name, add);
+  return S_default_pager_paging_storage_new (pager, device, runs, nrun, name,
+                                             add);
 }
+#endif
 
 /* Called to read a page from backing store.  */
 int

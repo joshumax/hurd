@@ -100,28 +100,44 @@ S_default_pager_object_pages (mach_port_t default_pager,
 }
 
 kern_return_t
-S_default_pager_paging_storage (mach_port_t default_pager,
-				mach_port_t device,
-				const recnum_t *runs, mach_msg_type_number_t nruns,
-				const_default_pager_filename_t name,
-				boolean_t add)
-{
-  return allowed (default_pager, O_WRITE)
-    ?: default_pager_paging_storage (real_defpager, dev_master,
-				     runs, nruns, name, add)
-    ?: mach_port_deallocate (mach_task_self (), device);
-}
-
-kern_return_t
 S_default_pager_paging_storage_new (mach_port_t default_pager,
 				mach_port_t device,
 				const recnum_t *runs, mach_msg_type_number_t nruns,
 				const_default_pager_filename_t name,
 				boolean_t add)
 {
-  return S_default_pager_paging_storage (default_pager,
+  error_t err = allowed (default_pager, O_WRITE);
+  if (err)
+    return err;
+
+  err = default_pager_paging_storage_new (real_defpager, dev_master,
+                                          runs, nruns, name, add);
+#ifndef __x86_64__
+  if (err == MIG_BAD_ID || err == EOPNOTSUPP)
+    {
+      err = default_pager_paging_storage (real_defpager, dev_master,
+                                          runs, nruns, name, add);
+    }
+#endif
+
+  if (err)
+    return err;
+
+  mach_port_deallocate (mach_task_self (), device);
+}
+
+#ifndef __x86_64__
+kern_return_t
+S_default_pager_paging_storage (mach_port_t default_pager,
+				mach_port_t device,
+				const recnum_t *runs, mach_msg_type_number_t nruns,
+				const_default_pager_filename_t name,
+				boolean_t add)
+{
+  return S_default_pager_paging_storage_new (default_pager,
       device, runs, nruns, name, add);
 }
+#endif
 
 kern_return_t
 S_default_pager_object_set_size (mach_port_t memory_object,

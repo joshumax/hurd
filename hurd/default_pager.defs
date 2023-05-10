@@ -69,6 +69,9 @@ skip;				/* default_pager_paging_file */
 
 skip;				/* default_pager_register_fileserver */
 
+#ifdef __x86_64__
+skip;  /* default_pager_paging_storage */
+#else
 /* Deprecated RPC to add or remove an area of paging storage.
  * Was superseded in favor of default_pager_paging_storage_new which
  * uses the correct type for default_pager_filename_t using c_string.
@@ -80,6 +83,7 @@ routine default_pager_paging_storage(
 		       array[] of recnum_t;
 		name			: default_pager_filename_t;
 		add			: boolean_t);
+#endif
 
 /* This call is made on a memory object returned by default_pager_object_create
    to fix the object's maximum size.  Any references to pages beyond the limit

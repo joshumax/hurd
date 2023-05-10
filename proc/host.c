@@ -364,11 +364,14 @@ initialize_version_info (void)
   server_versions_nalloc = 10;
 
   err = host_get_kernel_version (mach_host_self (), kv);
+#ifndef __x86_64__
+  /* We don't support host_kernel_version for x86_64. */
   if (err == MIG_BAD_ID)
     {
       /* Delete after some time. */
       err = host_kernel_version (mach_host_self (), kv);
     }
+#endif
   assert_backtrace (! err);
   /* Make sure the result is null-terminated, as the kernel doesn't
      guarantee it.  */

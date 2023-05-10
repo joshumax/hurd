@@ -411,11 +411,14 @@ swaponoff (const char *file, int add, int skipnotexisting)
     }
   err = default_pager_paging_storage_new (def_pager, store->port,
 					  runs, j, file, add);
+#ifndef __x86_64__
+  /* We don't support default_pager_paging_storage in 64 bits. */
   if (err == MIG_BAD_ID || err == EOPNOTSUPP)
     {
       err = default_pager_paging_storage (def_pager, store->port,
 					  runs, j, file, add);
     }
+#endif
 
   store_free (store);
 
