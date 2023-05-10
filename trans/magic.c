@@ -525,7 +525,7 @@ trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,
 		       mach_port_t requestor,
-		       const char *argz, size_t argz_len)
+		       const char *argz, mach_msg_type_number_t argz_len)
 {
   struct trivfs_protid *cred
     = ports_lookup_port (all_fsys->pi.bucket, server, trivfs_protid_class);

@@ -154,7 +154,7 @@ S_fsys_init (mach_port_t fsys,
 
 error_t
 S_fsys_forward (mach_port_t server, mach_port_t requestor,
-		const char *argz, size_t argz_len)
+		const char *argz, mach_msg_type_number_t argz_len)
 {
   return EOPNOTSUPP;
 }
