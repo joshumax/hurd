@@ -80,7 +80,7 @@ S_proc_setmsgport (struct proc *p,
 	  perror ("pthread_create");
 	}
     }
-      
+
   return 0;
 }
 
@@ -107,7 +107,7 @@ check_msgport_death (struct proc *p)
     {
       mach_port_type_t type;
       error_t err;
-      
+
       err = mach_port_type (mach_task_self (), p->p_msgport, &type);
       if (err || (type & MACH_PORT_TYPE_DEAD_NAME))
 	{
