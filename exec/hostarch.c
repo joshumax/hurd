@@ -72,6 +72,15 @@ elf_machine_matches_host (ElfW(Half) e_machine)
     case CPU_TYPE_PENTIUMPRO:
       CACHE (e_machine == EM_386);
 
+    /* When building for x86_64, CPU_TYPE_X86_64 must be defined; otherwise
+       it's OK if we don't compile this branch -- none of the branches other
+       than the actual architecture the code is built for are going to be
+       taken anyway.  */
+#if defined (CPU_TYPE_X86_64) || defined (__x86_64__)
+    case CPU_TYPE_X86_64:
+      CACHE (e_machine == EM_X86_64);
+#endif
+
     case CPU_TYPE_POWERPC:
       CACHE (e_machine == EM_PPC);
 

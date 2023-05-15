@@ -518,6 +518,12 @@ prepare (file_t file, struct execdata *e)
 #define host_ELFDATA ELFDATA2LSB
 #endif
 
+#ifdef __LP64__
+#define host_ELFCLASS ELFCLASS64
+#else
+#define host_ELFCLASS ELFCLASS32
+#endif
+
 static void
 check_elf (struct execdata *e)
 {
@@ -539,7 +545,7 @@ check_elf (struct execdata *e)
       return;
     }
 
-  if (ehdr->e_ident[EI_CLASS] != ELFCLASS32 ||
+  if (ehdr->e_ident[EI_CLASS] != host_ELFCLASS ||
       ehdr->e_ident[EI_DATA] != host_ELFDATA ||
       ehdr->e_ident[EI_VERSION] != EV_CURRENT ||
       ehdr->e_version != EV_CURRENT ||
