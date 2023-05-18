@@ -23,7 +23,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <argp.h>
+#include <argz.h>
 #include <error.h>
+#include <sys/sysmacros.h>
 
 #include <mach.h>
 #include <device/device.h>
@@ -720,6 +722,43 @@ trivfs_S_file_syncfs (struct trivfs_protid *cred,
   err = dev_sync (wait);
   pthread_mutex_unlock (&global_lock);
   return err;
+}
+
+error_t
+trivfs_append_args (struct trivfs_control *fsys,
+		    char **argz, size_t *argz_len)
+{
+  error_t err;
+
+  switch (trivfs_allow_open & O_RDWR)
+    {
+    default:
+      assert_backtrace (!"Bad trivfs_allow_open");
+    case O_READ:
+      err = argz_add (argz, argz_len, "--readonly");
+      break;
+    case O_WRITE:
+      err = argz_add (argz, argz_len, "--writeonly");
+      break;
+    case O_RDWR:
+      err = argz_add (argz, argz_len, "--writable");
+      break;
+    }
+
+  if (err)
+    return err;
+
+  if (rdev != (dev_t) 0)
+    {
+      char buf[40];
+      snprintf (buf, sizeof (buf), "--rdev=%d,%d",
+		gnu_dev_major (rdev), gnu_dev_minor (rdev));
+      err = argz_add (argz, argz_len, buf);
+      if (err)
+        return err;
+    }
+
+  return argz_add (argz, argz_len, stream_name);
 }
 
 
