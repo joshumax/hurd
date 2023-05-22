@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 2019 Free Software Foundation, Inc.
+#   Copyright (C) 2019, 2023 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -15,7 +15,6 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-RUMPPATH=/usr/lib
 RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata rumpdev_piixide rumpdev_ata
 RUMPEXTRA=rumpdev_scsipi
 
@@ -38,6 +37,6 @@ target = rumpdisk
 OBJS = $(SRCS:.c=.o)
 HURDLIBS = machdev ports trivfs shouldbeinlibc iohelp ihash fshelp
 LDLIBS += -lpthread -lpciaccess -ldl
-LDLIBS += -Wl,--whole-archive $(RUMPLIBS:%=$(RUMPPATH)/lib%_pic.a) -Wl,--no-whole-archive $(RUMPEXTRA:%=$(RUMPPATH)/lib%_pic.a)
+LDLIBS += -Wl,--whole-archive $(RUMPLIBS:%=-l%_pic) -Wl,--no-whole-archive $(RUMPEXTRA:%=-l%_pic)
 
 include ../Makeconf
