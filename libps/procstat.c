@@ -921,12 +921,11 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   /* The process's exec arguments */
   if (NEED (PSTAT_ARGS, PSTAT_PID))
     {
-      char *buf = malloc (100);
-      ps->args_len = 100;
+      mach_msg_type_number_t args_len = 100;
+      char *buf = malloc (args_len);
       ps->args = buf;
       if (ps->args)
 	{
-	  mach_msg_type_number_t args_len;
 	  if (proc_getprocargs (server, ps->pid, &ps->args, &args_len))
 	    free (buf);
 	  else
@@ -943,12 +942,11 @@ proc_stat_set_flags (struct proc_stat *ps, ps_flags_t flags)
   /* The process's exec environment */
   if (NEED (PSTAT_ENV, PSTAT_PID))
     {
-      char *buf = malloc (100);
-      ps->env_len = 100;
+      mach_msg_type_number_t env_len = 100;
+      char *buf = malloc (env_len);
       ps->env = buf;
       if (ps->env)
 	{
-	  mach_msg_type_number_t env_len;
 	  if (proc_getprocenv (server, ps->pid, &ps->env, &env_len))
 	    free (buf);
 	  else
