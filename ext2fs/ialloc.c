@@ -225,7 +225,7 @@ repeat:
 
   bh = disk_cache_block_ref (le32toh (gdp->bg_inode_bitmap));
   if ((inum =
-       find_first_zero_bit ((unsigned long *) bh, le32toh (sblock->s_inodes_per_group)))
+       find_first_zero_bit ((uint32_t *) bh, le32toh (sblock->s_inodes_per_group)))
       < le32toh (sblock->s_inodes_per_group))
     {
       if (set_bit (inum, bh))

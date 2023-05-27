@@ -151,7 +151,7 @@ ext2_new_block (block_t goal,
   unsigned char *bh = NULL;
   unsigned char *p, *r;
   int i, j, k, tmp;
-  unsigned long lmap;
+  uint32_t lmap;
   struct ext2_group_desc *gdp;
 
 #ifdef EXT2FS_DEBUG
@@ -213,11 +213,11 @@ repeat:
 	  if ((j & 31) == 31)
 	    lmap = 0;
 	  else
-	    lmap = ((((unsigned long *) bh)[j >> 5]) >>
+	    lmap = ((((uint32_t *) bh)[j >> 5]) >>
 		    ((j & 31) + 1));
 
 	  if (j < le32toh (sblock->s_blocks_per_group) - 32)
-	    lmap |= (((unsigned long *) bh)[(j >> 5) + 1]) <<
+	    lmap |= (((uint32_t *) bh)[(j >> 5) + 1]) <<
 	      (31 - (j & 31));
 	  else
 	    lmap |= 0xffffffff << (31 - (j & 31));
@@ -251,7 +251,7 @@ repeat:
 	  j = k;
 	  goto search_back;
 	}
-      k = find_next_zero_bit ((unsigned long *) bh,
+      k = find_next_zero_bit ((uint32_t *) bh,
 			      le32toh (sblock->s_blocks_per_group),
 			      j);
       if (k < le32toh (sblock->s_blocks_per_group))
@@ -291,7 +291,7 @@ repeat:
   if (j < le32toh (sblock->s_blocks_per_group))
     goto search_back;
   else
-    j = find_first_zero_bit ((unsigned long *) bh,
+    j = find_first_zero_bit ((uint32_t *) bh,
 			     le32toh (sblock->s_blocks_per_group));
   if (j >= le32toh (sblock->s_blocks_per_group))
     {

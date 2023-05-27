@@ -80,6 +80,6 @@ struct ext2_xattr_entry
 				       (entry->e_name_len)))
 
 /* Checks if this entry is the last (not valid) one. */
-#define EXT2_XATTR_ENTRY_LAST(entry) (*(unsigned long *) entry == 0UL)
+#define EXT2_XATTR_ENTRY_LAST(entry) (*(uint32_t *) entry == 0UL)
 
 #endif

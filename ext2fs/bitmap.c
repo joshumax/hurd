@@ -56,12 +56,12 @@ unsigned long count_free (unsigned char *map, unsigned int numchars)
  * on Linus's ALPHA routines, which are pretty portable BTW.
  */
 
-static inline unsigned long
+static inline uint32_t
 find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
 {
-  unsigned long *p = ((unsigned long *) addr) + (offset >> 5);
+  uint32_t *p = ((uint32_t *) addr) + (offset >> 5);
   unsigned long result = offset & ~31UL;
-  unsigned long tmp;
+  uint32_t tmp;
 
   if (offset >= size)
     return size;
