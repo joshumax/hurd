@@ -62,9 +62,9 @@ make_sockaddr_port (int sock,
 	      buflen - offsetof (struct sockaddr, sa_data));
       *addr = ports_get_right (addrstruct);
       *addrtype = MACH_MSG_TYPE_MAKE_SEND;
-    }
 
-  ports_port_deref (addrstruct);
+      ports_port_deref (addrstruct);
+    }
 
   return err;
 }
