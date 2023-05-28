@@ -58,7 +58,10 @@ arrange_shutdown_notification (void)
 
   initport = file_name_lookup (_SERVERS_STARTUP, 0, 0);
   if (initport == MACH_PORT_NULL)
-    return;
+    {
+      ports_port_deref (pi);
+      return;
+    }
 
   notify = ports_get_send_right (pi);
   ports_port_deref (pi);
