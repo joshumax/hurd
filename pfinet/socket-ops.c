@@ -375,7 +375,7 @@ S_socket_getopt (struct sock_user *user,
 		 int level,
 		 int option,
 		 data_t *data,
-		 size_t *datalen)
+		 mach_msg_type_number_t *datalen)
 {
   error_t err;
 
@@ -404,7 +404,7 @@ S_socket_setopt (struct sock_user *user,
 		 int level,
 		 int option,
 		 const_data_t data,
-		 size_t datalen)
+		 mach_msg_type_number_t datalen)
 {
   error_t err;
 
