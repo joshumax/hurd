@@ -65,7 +65,7 @@ csum_partial_copy(const char *src, char *dst, int len,unsigned int sum)
 
 /* Do not call this directly. Use the wrappers below */
 static inline unsigned int
-csum_partial_copy_generic(const void *src, const void *dst,
+csum_partial_copy_generic(const void *src, void *dst,
 			  int len, unsigned int sum,
 			  int *src_err_ptr, int *dst_err_ptr)
 {
@@ -104,6 +104,6 @@ extern unsigned int csum_partial_copy_nocheck(const void *src, void *dst,
  * Returns the 16bit folded/inverted checksum of the passed buffer.
  * Ready to fill in.
  */
-extern unsigned int ip_compute_csum(const void *buff, int len);
+extern unsigned short ip_compute_csum(const void *buff, int len);
 
 #endif /* _ASM_X86_CHECKSUM_64_H */
