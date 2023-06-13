@@ -276,7 +276,7 @@ deliver_msg(struct net_rcv_msg *msg, struct vether_device *vdev)
   msg->msg_hdr.msgh_bits = MACH_MSGH_BITS (MACH_MSG_TYPE_COPY_SEND, 0);
   /* remember message sizes must be rounded up */
   msg->msg_hdr.msgh_local_port = MACH_PORT_NULL;
-  msg->msg_hdr.msgh_kind = MACH_MSGH_KIND_NORMAL;
+  msg->msg_hdr.msgh_seqno = 0;
   msg->msg_hdr.msgh_id = NET_RCV_MSG_ID;
 
   if_port_list = &vdev->port_list.if_rcv_port_list;
