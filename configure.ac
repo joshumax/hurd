@@ -155,7 +155,7 @@ AC_CHECK_FUNCS(file_exec_paths exec_exec_paths _hurd_exec_paths)
 AC_CHECK_FUNCS(_hurd_libc_proc_init)
 
 # Compatibility with glibc < 2.28
-AC_CHECK_FUNCS(file_futimens)
+AC_CHECK_FUNCS(file_utimens)
 AC_DEFINE([UTIME_NOW],[-1])
 AC_DEFINE([UTIME_OMIT],[-2])
 
