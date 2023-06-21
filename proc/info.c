@@ -274,7 +274,7 @@ get_string (task_t t,
 static error_t
 get_vector (task_t task,
 	    vm_address_t addr,
-	    int **vec)
+	    vm_address_t **vec)
 {
   vm_address_t readaddr;
   vm_size_t readsize;
@@ -332,7 +332,7 @@ get_string_array (task_t t,
 		  mach_msg_type_number_t *buflen)
 {
   char *bp;
-  int *vector, *vp;
+  vm_address_t *vector, *vp;
   error_t err;
   vm_address_t origbuf = *buf;
 
