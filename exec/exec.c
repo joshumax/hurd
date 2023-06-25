@@ -48,21 +48,19 @@ pthread_rwlock_t std_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 #include <hurd/sigpreempt.h>
 
-/* Load or allocate a section.
-   Returns the address of the end of the section.  */
-static vm_address_t
-load_section (void *section, struct execdata *u, int interp)
+/* Load or allocate a section.  */
+static void
+load_section (void *section, struct execdata *u)
 {
-  vm_address_t addr = 0, end = 0;
+  vm_address_t addr = 0;
   vm_offset_t filepos = 0;
   vm_size_t filesz = 0, memsz = 0;
   vm_prot_t vm_prot;
-  int anywhere;
   vm_address_t mask = 0;
   const ElfW(Phdr) *const ph = section;
 
   if (u->error)
-    return 0;
+    return;
 
   vm_prot = VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE;
 
@@ -76,28 +74,15 @@ load_section (void *section, struct execdata *u, int interp)
     vm_prot &= ~VM_PROT_WRITE;
   if ((ph->p_flags & PF_X) == 0)
     vm_prot &= ~VM_PROT_EXECUTE;
-  anywhere = u->info.elf.anywhere;
-  if (! anywhere)
-    addr += u->info.elf.loadbase;
-  else if (interp)
-    {
-#ifdef __i386__
-      /* On the i386, programs normally load at 0x08000000, and
-	 expect their data segment to be able to grow dynamically
-	 upward from its start near that address.  We need to make
-	 sure that the dynamic linker is not mapped in a conflicting
-	 address.  */
-      mask = 0xf8000000UL; /* XXX */
-#endif
-    }
-  if (anywhere && addr < vm_page_size)
-    addr = vm_page_size;
 
-  end = addr + memsz;
+  /* The mapping should have been resolved to a specific address
+     by this point.  */
+  assert_backtrace (!u->info.elf.anywhere);
+  addr += u->info.elf.loadbase;
 
   if (memsz == 0)
     /* This section is empty; ignore it.  */
-    return 0;
+    return;
 
   if (filesz != 0)
     {
@@ -110,7 +95,7 @@ load_section (void *section, struct execdata *u, int interp)
 	  vm_size_t off = size % vm_page_size;
 	  /* Allocate with vm_map to set max protections.  */
 	  u->error = vm_map (u->task,
-			     mapstart, size, mask, anywhere,
+			     mapstart, size, mask, 0,
 			     MACH_PORT_NULL, 0, 1,
 			     vm_prot|VM_PROT_WRITE,
 			     VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
@@ -157,7 +142,7 @@ load_section (void *section, struct execdata *u, int interp)
 	    /* Map the data into the task directly from the file.  */
 	    u->error = vm_map (u->task,
 			       &mapstart, filesz - (mapstart - addr),
-			       mask, anywhere,
+			       mask, 0,
 			       u->filemap, filepos + (mapstart - addr), 1,
 			       vm_prot,
 			       VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE,
@@ -172,18 +157,7 @@ load_section (void *section, struct execdata *u, int interp)
 		write_to_task (&mapstart, size, vm_prot, (vm_address_t) buf);
 	    }
 	  if (u->error)
-	    return 0;
-
-	  if (anywhere)
-	    {
-	      /* We let the kernel choose the location of the mapping.
-		 Now record where it ended up.  Later sections cannot
-		 be mapped anywhere, they must come after this one.  */
-	      u->info.elf.loadbase = mapstart;
-	      addr = mapstart + (addr % vm_page_size);
-	      anywhere = u->info.elf.anywhere = 0;
-	      mask = 0;
-	    }
+	    return;
 	}
 
       /* If this segment is executable, adjust start_code and end_code
@@ -229,7 +203,7 @@ load_section (void *section, struct execdata *u, int interp)
 		{
 		maplose:
 		  vm_deallocate (u->task, mapstart, filesz);
-		  return 0;
+		  return;
 		}
 	    }
 
@@ -290,21 +264,10 @@ load_section (void *section, struct execdata *u, int interp)
 	  /* MAPSTART is the first page that starts inside the section.
 	     Allocate all the pages that start inside the section.  */
 	  u->error = vm_map (u->task, &mapstart, memsz - (mapstart - addr),
-			     mask, anywhere, MACH_PORT_NULL, 0, 1,
+			     mask, 0, MACH_PORT_NULL, 0, 1,
 			     vm_prot, VM_PROT_ALL, VM_INHERIT_COPY);
 	  if (u->error)
-	    return 0;
-	}
-
-      if (anywhere)
-	{
-	  /* We let the kernel choose the location of the zero space.
-	     Now record where it ended up.  Later sections cannot
-	     be mapped anywhere, they must come after this one.  */
-	  u->info.elf.loadbase = mapstart;
-	  addr = mapstart + (addr % vm_page_size);
-	  anywhere = u->info.elf.anywhere = 0;
-	  mask = 0;
+	    return;
 	}
 
       if (mapstart > addr)
@@ -318,7 +281,7 @@ load_section (void *section, struct execdata *u, int interp)
 	  if (u->error)
 	    {
 	      vm_deallocate (u->task, mapstart, memsz);
-	      return 0;
+	      return;
 	    }
 	  u->error = hurd_safe_memset (
 				 (void *) (ourpage + (addr - overlap_page)),
@@ -334,7 +297,7 @@ load_section (void *section, struct execdata *u, int interp)
 	  munmap ((caddr_t) ourpage, size);
 	}
     }
-  return end;
+  return;
 }
 
 /* XXX all accesses of the mapped data need to use fault handling
@@ -730,48 +693,60 @@ set_name (task_t task, const char *exec_name, pid_t pid)
   free (name);
 }
 
-/* Load the file.  Returns the address of the end of the load.  */
-static vm_offset_t
-load (task_t usertask, struct execdata *e, vm_offset_t anywhere_start, int interp)
+/* Load the file.  */
+static void
+load (task_t usertask, struct execdata *e)
 {
-  int anywhere = e->info.elf.anywhere;
-  vm_offset_t end;
+  ElfW(Word) i;
+
   e->task = usertask;
 
-  if (! e->error)
+  if (e->error)
+    goto out;
+
+
+  if (e->info.elf.anywhere)
     {
-      ElfW(Word) i;
+      vm_address_t mapping_size = 0;
+      vm_address_t anywhere_start = 0;
 
-      if (anywhere && anywhere_start)
-	{
-	  /* Make sure this anywhere-load will go at the end of the previous
-	     anywhere-load.  */
-	  /* TODO: Rather compute how much contiguous room is needed, allocate
-	     the area from the kernel, and then map memory sections.  */
-	  /* TODO: Possibly implement Adresse Space Layout Randomization.  */
-	  e->info.elf.loadbase = anywhere_start;
-	  e->info.elf.anywhere = 0;
-	}
-
+      /* Find out the overall mapping size.  TODO: This assumes that the
+         lowest PT_LOAD p_vaddr is always zero for PIC.  */
       for (i = 0; i < e->info.elf.phnum; ++i)
-	if (e->info.elf.phdr[i].p_type == PT_LOAD)
-	  {
-	    end = load_section (&e->info.elf.phdr[i], e, interp);
-	    if (anywhere && end > anywhere_start)
-	      /* This section pushes the next anywhere-load further */
-	      anywhere_start = end;
-	  }
+        {
+          ElfW(Phdr) *phdr = &e->info.elf.phdr[i];
+          if (phdr->p_type == PT_LOAD)
+            mapping_size = phdr->p_vaddr + phdr->p_memsz;
+        }
 
-      /* The entry point address is relative to wherever we loaded the
-	 program text.  */
-      e->entry += e->info.elf.loadbase;
+      /* Ask the kernel to find this much contiguous memory.  */
+      e->error = vm_allocate (usertask, &anywhere_start, mapping_size, 1);
+      if (e->error)
+        goto out;  /* not enough memory?  */
+
+      e->info.elf.loadbase = anywhere_start;
+      e->info.elf.anywhere = 0;
+
+      /* Deallocate the space, to be replaced by the actual mappings
+         we do next.  */
+      e->error = vm_deallocate (usertask, anywhere_start, mapping_size);
+      /* This may return an error if USERTASK dies, or if it's something
+         magical and not a real task port.  */
+      if (e->error)
+        goto out;
     }
 
+  for (i = 0; i < e->info.elf.phnum; ++i)
+    if (e->info.elf.phdr[i].p_type == PT_LOAD)
+        load_section (&e->info.elf.phdr[i], e);
+
+  /* The entry point address is relative to wherever we loaded the program
+     text.  */
+  e->entry += e->info.elf.loadbase;
+
+ out:
   /* Release the conch for the file.  */
   finish_mapping (e);
-
-  /* Return potentially-new start for anywhere-loads.  */
-  return round_page (anywhere_start);
 }
 
 
@@ -822,7 +797,6 @@ do_exec (file_t file,
   mach_msg_type_number_t i;
   int intarray_dealloc = 0;	/* Dealloc INTARRAY before returning?  */
   int oldtask_trashed = 0;	/* Have we trashed the old task?  */
-  vm_address_t anywhere_start = 0;
 
   /* Prime E for executing FILE and check its validity.  This must be an
      inline function because it stores pointers into alloca'd storage in E
@@ -1283,12 +1257,15 @@ do_exec (file_t file,
       goto out;
   }
 
-/* XXX this should be below
-   it is here to work around a vm_map kernel bug. */
+  /* Load the file into the task.  */
+  load (newtask, &e);
+  if (e.error)
+    goto out;
+
   if (interp.file != MACH_PORT_NULL)
     {
       /* Load the interpreter file.  */
-      anywhere_start = load (newtask, &interp, anywhere_start, 1);
+      load (newtask, &interp);
       if (interp.error)
 	{
 	  e.error = interp.error;
@@ -1296,17 +1273,6 @@ do_exec (file_t file,
 	}
       finish (&interp, 1);
     }
-
-
-  /* Leave room for mmaps etc. before PIE binaries.
-   * Could add address randomization here.  */
-  anywhere_start += 128 << 20;
-  /* Load the file into the task.  */
-  anywhere_start = load (newtask, &e, anywhere_start, 0);
-  if (e.error)
-    goto out;
-
-  /* XXX loading of interp belongs here */
 
   /* Clean up.  */
   finish (&e, 0);
