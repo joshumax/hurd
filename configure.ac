@@ -410,7 +410,7 @@ AC_ARG_WITH([acpica],
 AS_IF([test "x$with_acpica" != xno], [
   AC_CHECK_LIB(acpica, acpi_init, [
     HAVE_LIBACPICA=yes
-    libacpica_LIBS="-lacpica"
+    libacpica_LIBS="-lacpica -lpciaccess"
     libacpica_CFLAGS=""])
 ])
 AC_SUBST([HAVE_LIBACPICA])
