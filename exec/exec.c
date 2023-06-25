@@ -1263,8 +1263,21 @@ do_exec (file_t file,
   /* Map page zero redzoned.  */
   {
     vm_address_t addr = 0;
+    vm_size_t size = vm_page_size;
+
+#ifdef __LP64__
+    /* On 64-bit, map the entire lower 4 GB redzoned to catch pointer
+       truncation, but only if the program is fine with being loaded at an
+       arbitrary address -- otherwise we'd violate the assumption of the small
+       code model (-mcmodel=small, which is the default) that all symbols are
+       located in the lower 2 GB of the address space.  */
+    if (e.info.elf.anywhere && (interp.file == MACH_PORT_NULL
+				|| interp.info.elf.anywhere))
+      size = (vm_size_t) 1 << 32;
+#endif
+
     e.error = vm_map (newtask,
-		      &addr, vm_page_size, 0, 0, MACH_PORT_NULL, 0, 1,
+		      &addr, size, 0, 0, MACH_PORT_NULL, 0, 1,
 		      VM_PROT_NONE, VM_PROT_NONE, VM_INHERIT_COPY);
     if (e.error)
       goto out;
