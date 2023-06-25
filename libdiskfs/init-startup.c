@@ -223,6 +223,8 @@ _diskfs_init_completed (void)
   if (init == MACH_PORT_NULL)
     {
       err = errno;
+      if (err == EPERM)
+	return;
       goto errout;
     }
 
@@ -233,11 +235,11 @@ _diskfs_init_completed (void)
   err = startup_request_notification (init, notify,
 				      MACH_MSG_TYPE_COPY_SEND, name);
   mach_port_deallocate (mach_task_self (), notify);
+  mach_port_deallocate (mach_task_self (), init);
   free (name);
-  if (err)
+  if (err && err != EPERM)
     goto errout;
 
-  mach_port_deallocate (mach_task_self (), init);
   return;
 
  errout:
