@@ -408,10 +408,11 @@ AC_ARG_WITH([acpica],
   [AS_HELP_STRING([--without-acpica], [disable acpica])], , [with_acpica=yes])
 
 AS_IF([test "x$with_acpica" != xno], [
-  AC_CHECK_LIB(acpica, acpi_init, [
+  AC_CHECK_HEADER([acpi/acpi_init.h], [
     HAVE_LIBACPICA=yes
     libacpica_LIBS="-lacpica -lpciaccess"
-    libacpica_CFLAGS=""])
+    libacpica_CFLAGS=""],
+    [HAVE_LIBACPICA=no])
 ])
 AC_SUBST([HAVE_LIBACPICA])
 AC_SUBST([libacpica_CFLAGS])
