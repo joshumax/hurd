@@ -15,7 +15,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs rumpdev_ahcisata rumpdev_piixide rumpdev_ata
+RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs
+RUMPSATA=rumpdev_ahcisata rumpdev_piixide rumpdev_ata
+RUMPUSB=rumpdev_usb rumpdev_pci_usbhc rumpdev_umass
 RUMPEXTRA=rumpdev_scsipi
 
 # If we have a configured tree, include the configuration so that we
@@ -29,14 +31,25 @@ RUMPLIBS += rumpvfs_nofifofs
 endif
 
 dir := rumpdisk
-makemode := server
+makemode := servers
 
 SRCS = main.c block-rump.c
 LCLHDRS = block-rump.h ioccom-rump.h
-target = rumpdisk
-OBJS = $(SRCS:.c=.o)
+targets = rumpdisk rumpusbdisk
 HURDLIBS = machdev ports trivfs shouldbeinlibc iohelp ihash fshelp
-LDLIBS += -lpthread -lpciaccess -ldl
-LDLIBS += -Wl,--whole-archive $(RUMPLIBS:%=-l%_pic) -Wl,--no-whole-archive $(RUMPEXTRA:%=-l%_pic)
+LDLIBS += -lpthread -lpciaccess -ldl $(RUMPEXTRA:%=-l%_pic) \
+	  -Wl,--whole-archive $(RUMPLIBS:%=-l%_pic) -Wl,--no-whole-archive
+
+%.disk.o: %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -D_RUMP_SATA -c $< -o $@
+rumpdisk-OBJS = $(SRCS:.c=.disk.o)
+rumpdisk-LDLIBS += -Wl,--whole-archive $(RUMPSATA:%=-l%_pic) -Wl,--no-whole-archive
+rumpdisk rumpdisk.static: $(rumpdisk-OBJS) $(HURDLIBS:%=-l%)
+
+%.usb.o: %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+rumpusbdisk-OBJS = $(SRCS:.c=.usb.o)
+rumpusbdisk-LDLIBS += -Wl,--whole-archive $(RUMPUSB:%=-l%_pic) -Wl,--no-whole-archive
+rumpusbdisk rumpusbdisk.static: $(rumpusbdisk-OBJS) $(HURDLIBS:%=-l%)
 
 include ../Makeconf

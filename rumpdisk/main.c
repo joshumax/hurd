@@ -32,6 +32,12 @@
 #include <pthread.h>
 #include <mach.h>
 
+#ifdef _RUMP_SATA
+#define RUMPNAME "rumpdisk"
+#else
+#define RUMPNAME "rumpusbdisk"
+#endif
+
 mach_port_t bootstrap_resume_task = MACH_PORT_NULL;
 
 static const struct argp_option options[] = {
@@ -128,7 +134,7 @@ main (int argc, char **argv)
     }
 
   rump_register_block ();
-  machdev_trivfs_init (argc, argv, bootstrap_resume_task, "rumpdisk", "/dev/rumpdisk", &bootstrap);
+  machdev_trivfs_init (argc, argv, bootstrap_resume_task, RUMPNAME, "/dev/" RUMPNAME, &bootstrap);
 
   /* Make sure we will not swap out, in case we drive the disk used for
      swapping.  */

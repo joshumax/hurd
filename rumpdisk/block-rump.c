@@ -48,6 +48,12 @@
 #define DISK_NAME_LEN 32
 #define MAX_DISK_DEV 2
 
+#ifdef _RUMP_SATA
+#define RUMP_TYPE_STRING "rump SATA/IDE"
+#else
+#define RUMP_TYPE_STRING "rump USB"
+#endif
+
 static bool disabled;
 
 static mach_port_t master_host;
@@ -107,7 +113,11 @@ is_disk_device (const char *name)
 {
   const char *dev;
   const char *allowed_devs[MAX_DISK_DEV] = {
+#ifdef _RUMP_SATA
     "wd",
+#else
+    "sd",
+#endif
     "cd"
   };
   uint8_t i;
@@ -158,7 +168,7 @@ rumpdisk_device_init (void)
 	{
 	  device_close (device);
 	  mach_port_deallocate (mach_task_self (), device);
-	  fprintf(stderr, "Kernel is already driving an IDE device, skipping probing disks\n");
+	  fprintf(stderr, "Kernel is already driving an IDE device, skipping probing " RUMP_TYPE_STRING " disks\n");
 	  fflush(stderr);
 	  disabled = 1;
 	  return;
@@ -172,7 +182,7 @@ rumpdisk_device_init (void)
 	{
 	  device_close (device);
 	  mach_port_deallocate (mach_task_self (), device);
-	  fprintf(stderr, "Kernel is already driving a SATA device, skipping probing disks\n");
+	  fprintf(stderr, "Kernel is already driving a SATA device, skipping probing " RUMP_TYPE_STRING " disks\n");
 	  fflush(stderr);
 	  disabled = 1;
 	  return;
