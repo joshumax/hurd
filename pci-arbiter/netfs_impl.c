@@ -583,6 +583,9 @@ get_filemap_region (struct node *node, vm_prot_t prot)
     strtol (&node->nn->ln->name[strlen (node->nn->ln->name) - 1], 0, 16);
   region = &node->nn->ln->device->regions[reg_num];
 
+  if (region->is_IO)
+    goto error;
+
   /* Ensure the region is mapped */
   err = device_map_region (node->nn->ln->device, region,
 			   &node->nn->ln->region_maps[reg_num]);
