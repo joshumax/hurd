@@ -220,8 +220,8 @@ repeat:
 	    lmap |= (((uint32_t *) bh)[(j >> 5) + 1]) <<
 	      (31 - (j & 31));
 	  else
-	    lmap |= 0xffffffff << (31 - (j & 31));
-	  if (lmap != 0xffffffffl)
+	    lmap |= 0xffffffffu << (31 - (j & 31));
+	  if (lmap != 0xffffffffu)
 	    {
 	      k = ffz (lmap) + 1;
 	      if ((j + k) < le32toh (sblock->s_blocks_per_group))
