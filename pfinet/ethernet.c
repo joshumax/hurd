@@ -275,7 +275,7 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
   error_t err;
   struct ether_device *edev = (struct ether_device *) dev->priv;
   int count;
-  u_int tried = 0;
+  unsigned tried = 0;
 
   do
     {
