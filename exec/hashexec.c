@@ -466,7 +466,7 @@ check_hashbang (struct execdata *e,
       /* The exec of the interpreter succeeded!  Deallocate the resources
 	 we passed to that exec.  We don't need to save them in a bootinfo
 	 structure; the exec of the interpreter takes care of that.  */
-      u_int i;
+      unsigned i;
       mach_port_deallocate (mach_task_self (), file);
       task_resume (oldtask);	/* Our caller suspended it.  */
       mach_port_deallocate (mach_task_self (), oldtask);
