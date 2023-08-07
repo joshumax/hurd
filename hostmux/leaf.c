@@ -40,7 +40,7 @@ netfs_attempt_readlink (struct iouser *user, struct node *node, char *buf)
    For hostmux, this creates a new translator string by instantiating the
    global translator template.  */
 error_t
-netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
+netfs_get_translator (struct node *node, char **args, mach_msg_type_number_t *args_len)
 {
   if (! node->nn->name)
     return EINVAL;
@@ -49,26 +49,28 @@ netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
       error_t err = 0;
       unsigned replace_count = 0;
       struct hostmux *mux = node->nn->mux;
-
-      *argz = 0;			/* Initialize return value.  */
-      *argz_len = 0;
+      char *argz = 0;			/* Initialize return value.  */
+      size_t argz_len = 0;
 
       /* Return a copy of MUX's translator template, with occurrences of
 	 HOST_PAT replaced by the canonical hostname.  */
-      err = argz_append (argz, argz_len,
+      err = argz_append (&argz, &argz_len,
 			 mux->trans_template, mux->trans_template_len);
       if (! err)
-	err = argz_replace (argz, argz_len,
+	err = argz_replace (&argz, &argz_len,
 			    mux->host_pat, node->nn->name->canon,
 			    &replace_count);
 
       if (!err && replace_count == 0)
 	/* Default, if no instances of HOST_PAT occur, is to append the
 	   hostname. */
-	err = argz_add (argz, argz_len, node->nn->name->canon);
+	err = argz_add (&argz, &argz_len, node->nn->name->canon);
 
-      if (err && *argz_len > 0)
-	free (*argz);
+      if (err && argz_len > 0)
+	free (argz);
+
+      *args = argz;
+      *args_len = argz_len;
 
       return err;
     }

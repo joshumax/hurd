@@ -239,7 +239,7 @@ void netfs_node_norefs (struct node *np)
    name into newly malloced storage, and return it in *ARGZ; set
    *ARGZ_LEN to the total length.  */
 error_t netfs_get_translator (struct node *np, char **argz,
-			      size_t *argz_len)
+			      mach_msg_type_number_t *argz_len)
 {
   return procfs_get_translator (np, argz, argz_len);
 }

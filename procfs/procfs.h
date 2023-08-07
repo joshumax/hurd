@@ -53,7 +53,7 @@ struct procfs_node_ops
   void (*cleanup) (void *hook);
 
   /* Get the passive translator record.  */
-  error_t (*get_translator) (void *hook, char **argz, size_t *argz_len);
+  error_t (*get_translator) (void *hook, char **argz, mach_msg_type_number_t *argz_len);
 };
 
 /* These helper functions can be used as procfs_node_ops.cleanup_contents. */
@@ -95,5 +95,5 @@ error_t procfs_lookup (struct node *np, const char *name, struct node **npp);
 void procfs_cleanup (struct node *np);
 
 /* Get the passive translator record if any.  */
-error_t procfs_get_translator (struct node *np, char **argz, size_t *argz_len);
+error_t procfs_get_translator (struct node *np, char **argz, mach_msg_type_number_t *argz_len);
 

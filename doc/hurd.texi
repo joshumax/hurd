@@ -2356,7 +2356,7 @@ If these variables is non-zero, they will be called every time a protid or
 peropen structure is about to be destroyed.
 @end deftypefn
 
-@deftypefn {Variable} error_t (*trivfs_getroot_hook) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{const uid_t *@var{uids}}, @w{u_int @var{nuids}}, @w{const uid_t *@var{gids}}, @w{u_int @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
+@deftypefn {Variable} error_t (*trivfs_getroot_hook) (@w{struct trivfs_control *@var{cntl}}, @w{mach_port_t @var{reply_port}}, @w{mach_msg_type_name_t @var{reply_port_type}}, @w{mach_port_t @var{dotdot}}, @w{const uid_t *@var{uids}}, @w{unsigned @var{nuids}}, @w{const uid_t *@var{gids}}, @w{unsigned @var{ngids}}, @w{int @var{flags}}, @w{retry_type *@var{do_retry}}, @w{char *@var{retry_name}}, @w{mach_port_t *@var{node}}, @w{mach_msg_type_name_t *@var{node_type}})
 If this variable is set, it will be called by @code{trivfs_S_fsys_getroot}
 before any other processing takes place.  If the return value is
 @code{EAGAIN}, normal trivfs getroot processing continues, otherwise the
@@ -2486,7 +2486,7 @@ Initialize a transbox, which contains state information for active
 translators.
 @end deftypefun
 
-@deftypefn {Typedef} typedef error_t (*fshelp_fetch_root_callback1_t) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{gid}}, @w{char **@var{argz}}, @w{size_t *@var{argz_len}})
+@deftypefn {Typedef} typedef error_t (*fshelp_fetch_root_callback1_t) (@w{void *@var{cookie1}}, @w{void *@var{cookie2}}, @w{uid_t *@var{uid}}, @w{gid_t *@var{gid}}, @w{char **@var{argz}}, @w{mach_msg_type_number_t *@var{argz_len}})
 This routine is called by @code{fshelp_fetch_root} to fetch more
 information.  Return the owner and group of the underlying translated
 file in @code{*@var{uid}} and @code{*@var{gid}}; point
@@ -4201,7 +4201,7 @@ continuously since the call to @code{diskfs_lookup}.
 Initialize @var{ds} such that @code{diskfs_drop_dirstat} will ignore it.
 @end deftypefun
 
-@deftypefun error_t diskfs_get_directs (@w{struct node *@var{dp}}, @w{int @var{entry}}, @w{int @var{n}}, @w{char **@var{data}}, @w{u_int *@var{datacnt}}, @w{vm_size_t @var{bufsiz}}, @w{int *@var{amt}})
+@deftypefun error_t diskfs_get_directs (@w{struct node *@var{dp}}, @w{int @var{entry}}, @w{int @var{n}}, @w{char **@var{data}}, @w{mach_msg_type_number_t *@var{datacnt}}, @w{vm_size_t @var{bufsiz}}, @w{int *@var{amt}})
 Return @var{n} directory entries starting at @var{entry} from locked
 directory node @var{dp}.  Fill @code{*@var{data}} with the entries;
 which currently points to @code{*@var{datacnt}} bytes.  If it isn't big
@@ -4222,13 +4222,13 @@ the call@dots{} if this user cannot search the directory, then this
 routine should fail.
 @end deftypefun
 
-@deftypefun error_t diskfs_get_translator (@w{struct node *@var{np}}, @w{char **@var{namep}}, @w{u_int *@var{namelen}})
+@deftypefun error_t diskfs_get_translator (@w{struct node *@var{np}}, @w{char **@var{namep}}, @w{mach_msg_type_number_t *@var{namelen}})
 For locked node @var{np} (for which @code{diskfs_node_translated} is
 true) look up the name of its translator.  Store the name into newly
 malloced storage and set @code{*@var{namelen}} to the total length.
 @end deftypefun
 
-@deftypefun error_t diskfs_set_translator (@w{struct node *@var{np}}, @w{char *@var{name}}, @w{u_int @var{namelen}}, @w{struct protid *@var{cred}})
+@deftypefun error_t diskfs_set_translator (@w{struct node *@var{np}}, @w{char *@var{name}}, @w{mach_msg_type_number_t @var{namelen}}, @w{struct protid *@var{cred}})
 For locked node @var{np}, set the name of the translating program to be
 @var{name}, which is @var{namelen} bytes long.  @var{cred} identifies
 the user responsible for the call.

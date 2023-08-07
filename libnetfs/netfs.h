@@ -154,7 +154,7 @@ error_t netfs_attempt_mkdev (struct iouser *cred, struct node *np,
    translator record for FILE to ARGZ (of length ARGZLEN) for user
    CRED. NP is locked.  */
 error_t netfs_set_translator (struct iouser *cred, struct node *np,
-			      const char *argz, size_t argzlen);
+			      const char *argz, mach_msg_type_number_t argzlen);
 
 /* The user may define this function (but should define it together
    with netfs_set_translator).  For locked node NODE with S_IPTRANS
@@ -162,7 +162,7 @@ error_t netfs_set_translator (struct iouser *cred, struct node *np,
    name into newly malloced storage, and return it in *ARGZ; set
    *ARGZ_LEN to the total length.  */
 error_t netfs_get_translator (struct node *node, char **argz,
-			      size_t *argz_len);
+			      mach_msg_type_number_t *argz_len);
 
 /* The user must define this function.  This should attempt a chflags
    call for the user specified by CRED on locked node NP, to change

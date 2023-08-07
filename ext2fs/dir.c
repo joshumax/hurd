@@ -879,7 +879,7 @@ diskfs_get_directs (struct node *dp,
 		    int entry,
 		    int nentries,
 		    char **data,
-		    size_t *datacnt,
+		    mach_msg_type_number_t *datacnt,
 		    vm_size_t bufsiz,
 		    int *amt)
 {

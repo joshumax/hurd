@@ -517,7 +517,7 @@ netfs_S_dir_lookup (struct protid *diruser,
    CRED. */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      const char *argz, size_t argzlen)
+		      const char *argz, mach_msg_type_number_t argzlen)
 {
   return file_set_translator (netfs_node_netnode (np)->file,
 			      FS_TRANS_EXCL|FS_TRANS_SET,

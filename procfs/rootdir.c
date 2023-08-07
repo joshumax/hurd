@@ -769,7 +769,7 @@ rootdir_make_translated_node (void *dir_hook, const void *entry_hook)
 
 static error_t
 rootdir_translated_node_get_translator (void *hook, char **argz,
-					size_t *argz_len)
+					mach_msg_type_number_t *argz_len)
 {
   const struct procfs_translated_node_ops *ops = hook;
 

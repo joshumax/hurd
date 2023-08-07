@@ -63,7 +63,7 @@ diskfs_dirempty (struct node *dp, struct protid *cred)
 
 error_t
 diskfs_get_directs (struct node *dp, int entry, int n,
-		    char **data, size_t *datacnt,
+		    char **data, mach_msg_type_number_t *datacnt,
 		    vm_size_t bufsiz, int *amt)
 {
   struct tmpfs_dirent *d;

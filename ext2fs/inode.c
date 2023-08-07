@@ -551,7 +551,7 @@ diskfs_set_statfs (struct statfs *st)
 /* Implement the diskfs_set_translator callback from the diskfs
    library; see <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
+diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t namelen,
 		       struct protid *cred)
 {
   error_t err;
@@ -716,7 +716,7 @@ diskfs_set_translator (struct node *np, const char *name, unsigned namelen,
 /* Implement the diskfs_get_translator callback from the diskfs library.
    See <hurd/diskfs.h> for the interface description. */
 error_t
-diskfs_get_translator (struct node *np, char **namep, unsigned *namelen)
+diskfs_get_translator (struct node *np, char **namep, mach_msg_type_number_t *namelen)
 {
   error_t err = 0;
   daddr_t blkno;

@@ -44,19 +44,21 @@ netfs_attempt_readlink (struct iouser *user, struct node *node, char *buf)
    For usermux, this creates a new translator string by instantiating the
    global translator template.  */
 error_t
-netfs_get_translator (struct node *node, char **trans, size_t *trans_len)
+netfs_get_translator (struct node *node, char **trans, mach_msg_type_number_t *trans_len)
 {
   if (! node->nn->name)
     return EINVAL;
   else
     {
+      char *argz = 0;
+      size_t argz_len = 0;
       fshelp_touch (&node->nn_stat, TOUCH_ATIME, usermux_maptime);
-      *trans = 0;
-      *trans_len = 0;
       if (S_ISLNK (node->nn_stat.st_mode))
-	argz_add (trans, trans_len, _HURD_SYMLINK);
+	argz_add (&argz, &argz_len, _HURD_SYMLINK);
       return
-	argz_append (trans, trans_len, node->nn->trans, node->nn->trans_len);
+	argz_append (&argz, &argz_len, node->nn->trans, node->nn->trans_len);
+      *trans = argz;
+      *trans_len = argz_len;
     }
 }
 

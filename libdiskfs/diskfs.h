@@ -401,20 +401,20 @@ error_t diskfs_drop_dirstat (struct node *dp, struct dirstat *ds);
    then there is no limit on *DATACNT; if N is -1, then there is no limit
    on AMT. */
 error_t diskfs_get_directs (struct node *dp, int entry, int n,
-			    char **data, size_t *datacnt,
+			    char **data, mach_msg_type_number_t *datacnt,
 			    vm_size_t bufsiz, int *amt);
 
 /* The user must define this function.  For locked node NP (for which
    diskfs_node_translated is true) look up the name of its translator.
    Store the name into newly malloced storage; set *NAMELEN to the
    total length.  */
-error_t diskfs_get_translator (struct node *np, char **namep, u_int *namelen);
+error_t diskfs_get_translator (struct node *np, char **namep, mach_msg_type_number_t *namelen);
 
 /* The user must define this function.  For locked node NP, set
    the name of the translating program to be NAME, length NAMELEN.  CRED
    identifies the user responsible for the call.  */
 error_t diskfs_set_translator (struct node *np,
-			       const char *name, u_int namelen,
+			       const char *name, mach_msg_type_number_t namelen,
 			       struct protid *cred);
 
 /* The user must define this function.  Truncate locked node NP to be SIZE

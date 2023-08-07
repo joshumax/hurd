@@ -30,7 +30,7 @@
    CRED. */
 error_t __attribute__ ((weak))
 netfs_set_translator (struct iouser *cred, struct node *np,
-		      const char *argz, size_t argzlen)
+		      const char *argz, mach_msg_type_number_t argzlen)
 {
   return EOPNOTSUPP;
 }
@@ -41,7 +41,7 @@ netfs_set_translator (struct iouser *cred, struct node *np,
    malloced storage, and return it in *ARGZ; set *ARGZ_LEN to the total
    length.  */
 error_t __attribute__ ((weak))
-netfs_get_translator (struct node *node, char **argz, size_t *argz_len)
+netfs_get_translator (struct node *node, char **argz, mach_msg_type_number_t *argz_len)
 {
   return EOPNOTSUPP;
 }

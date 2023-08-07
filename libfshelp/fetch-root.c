@@ -53,7 +53,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
     {
       uid_t uid, gid;
       char *argz;
-      size_t argz_len;
+      mach_msg_type_number_t argz_len;
       error_t err;
       mach_port_t ports[INIT_PORT_MAX];
       int ints[INIT_INT_MAX];
@@ -209,7 +209,7 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 error_t
 fshelp_short_circuited_callback1 (void *cookie1, void *cookie2,
 				  uid_t *uid, gid_t *gid,
-				  char **argz, size_t *argz_len)
+				  char **argz, mach_msg_type_number_t *argz_len)
 {
   struct fshelp_stat_cookie2 *statc = cookie2;
 

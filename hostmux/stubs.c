@@ -40,7 +40,7 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *node,
    ARGZLEN) for user CRED. */
 error_t
 netfs_set_translator (struct iouser *cred, struct node *node,
-		      const char *argz, size_t argzlen)
+		      const char *argz, mach_msg_type_number_t argzlen)
 {
   return EOPNOTSUPP;
 }

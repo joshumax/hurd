@@ -340,7 +340,7 @@ diskfs_new_hardrefs (struct node *np)
 
 
 error_t
-diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
+diskfs_get_translator (struct node *np, char **namep, mach_msg_type_number_t *namelen)
 {
   *namelen = np->dn->translen;
   if (*namelen == 0)
@@ -354,7 +354,7 @@ diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
 
 error_t
 diskfs_set_translator (struct node *np,
-		       const char *name, u_int namelen,
+		       const char *name, mach_msg_type_number_t namelen,
 		       struct protid *cred)
 {
   char *new;

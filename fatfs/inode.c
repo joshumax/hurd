@@ -471,7 +471,7 @@ diskfs_set_statfs (struct statfs *st)
 
 error_t
 diskfs_set_translator (struct node *node,
-		       const char *name, u_int namelen,
+		       const char *name, mach_msg_type_number_t namelen,
 		       struct protid *cred)
 {
   assert_backtrace (!diskfs_readonly);
@@ -479,7 +479,7 @@ diskfs_set_translator (struct node *node,
 }
 
 error_t
-diskfs_get_translator (struct node *node, char **namep, u_int *namelen)
+diskfs_get_translator (struct node *node, char **namep, mach_msg_type_number_t *namelen)
 {
   assert_backtrace (0);
 }

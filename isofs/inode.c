@@ -366,14 +366,14 @@ diskfs_grow (struct node *np, off_t end, struct protid *cred)
 
 error_t
 diskfs_set_translator (struct node *np,
-		       const char *name, u_int namelen,
+		       const char *name, mach_msg_type_number_t namelen,
 		       struct protid *cred)
 {
   return EROFS;
 }
 
 error_t
-diskfs_get_translator (struct node *np, char **namep, u_int *namelen)
+diskfs_get_translator (struct node *np, char **namep, mach_msg_type_number_t *namelen)
 {
   return EOPNOTSUPP;
 }

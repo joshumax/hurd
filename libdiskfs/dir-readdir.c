@@ -26,7 +26,7 @@
 kern_return_t
 diskfs_S_dir_readdir (struct protid *cred,
 		      data_t *data,
-                      mach_msg_type_number_t *datacnt,
+		      mach_msg_type_number_t *datacnt,
 		      boolean_t *data_dealloc,
 		      int entry,
 		      int nentries,
@@ -35,7 +35,6 @@ diskfs_S_dir_readdir (struct protid *cred,
 {
   error_t err;
   struct node *np;
-  size_t data_len = *datacnt;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -55,15 +54,8 @@ diskfs_S_dir_readdir (struct protid *cred,
       return ENOTDIR;
     }
 
-  err = diskfs_get_directs (np, entry, nentries,
-                            data, &data_len,
-                            bufsiz, amt);
+  err = diskfs_get_directs (np, entry, nentries, data, datacnt, bufsiz, amt);
   *data_dealloc = 1;		/* XXX */
   pthread_mutex_unlock (&np->lock);
-
-  if (err)
-    return err;
-
-  *datacnt = data_len;
-  return 0;
+  return err;
 }

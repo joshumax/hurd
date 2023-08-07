@@ -27,7 +27,7 @@
 static error_t
 _netfs_translator_callback1_fn (void *cookie1, void *cookie2,
 				 uid_t *uid, gid_t *gid,
-				 char **argz, size_t *argz_len)
+				 char **argz, mach_msg_type_number_t *argz_len)
 {
   error_t err;
   struct node *np = cookie1;

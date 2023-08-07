@@ -119,7 +119,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       else
 	{
 	  char *string;
-	  u_int len;
+	  mach_msg_type_number_t len;
 	  err = diskfs_get_translator (np, &string, &len);
 	  if (!err)
 	    {
