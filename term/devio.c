@@ -348,7 +348,7 @@ error_t
 device_read_reply_inband (mach_port_t replypt,
 			  error_t error_code,
 			  char *data,
-			  u_int datalen)
+			  mach_msg_type_number_t datalen)
 {
   int i, flush;
   error_t err;

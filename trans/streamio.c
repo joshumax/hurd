@@ -1040,7 +1040,7 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
 
 error_t
 device_read_reply_inband (mach_port_t reply, error_t errorcode,
-			  const io_buf_ptr_inband_t data, u_int datalen)
+			  const io_buf_ptr_inband_t data, mach_msg_type_number_t datalen)
 {
   if (reply != phys_reply)
     return EOPNOTSUPP;

@@ -37,13 +37,13 @@ check_hashbang (struct execdata *e,
 		task_t oldtask,
 		int flags,
 		const char *file_name_exec,
-		char *argv, u_int argvlen, boolean_t argv_copy,
-		char *envp, u_int envplen, boolean_t envp_copy,
-		mach_port_t *dtable, u_int dtablesize, boolean_t dtable_copy,
-		mach_port_t *portarray, u_int nports, boolean_t portarray_copy,
-		int *intarray, u_int nints, boolean_t intarray_copy,
-		const mach_port_t *deallocnames, u_int ndeallocnames,
-		const mach_port_t *destroynames, u_int ndestroynames)
+		char *argv, mach_msg_type_number_t argvlen, boolean_t argv_copy,
+		char *envp, mach_msg_type_number_t envplen, boolean_t envp_copy,
+		mach_port_t *dtable, mach_msg_type_number_t dtablesize, boolean_t dtable_copy,
+		mach_port_t *portarray, mach_msg_type_number_t nports, boolean_t portarray_copy,
+		int *intarray, mach_msg_type_number_t nints, boolean_t intarray_copy,
+		const mach_port_t *deallocnames, mach_msg_type_number_t ndeallocnames,
+		const mach_port_t *destroynames, mach_msg_type_number_t ndestroynames)
 {
   char *p;
   char *interp, *arg;		/* Interpreter file name, and first argument */
@@ -52,7 +52,7 @@ check_hashbang (struct execdata *e,
   char *new_argv;
   size_t new_argvlen;
   mach_port_t *new_dtable = NULL;
-  u_int new_dtablesize;
+  mach_msg_type_number_t new_dtablesize;
 
   file_t user_fd (int fd)
     {
