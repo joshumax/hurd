@@ -70,7 +70,8 @@ find_next_zero_bit(void *addr, unsigned long size, unsigned long offset)
   if (offset)
     {
       tmp = *(p++);
-      tmp |= ~0UL >> (32-offset);
+      if (offset)
+	tmp |= ~0UL >> (32-offset);
       if (size < 32)
 	goto found_first;
       if (~tmp)
