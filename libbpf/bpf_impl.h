@@ -59,17 +59,17 @@ typedef filter_t	*filter_array_t;
 
 #ifndef BPF_ALIGN
 #define EXTRACT_SHORT(p)	((u_short)ntohs(*(u_short *)p))
-#define EXTRACT_LONG(p)		(ntohl(*(u_long *)p))
+#define EXTRACT_LONG(p)		(ntohl(*(u_int *)p))
 #else
 #define EXTRACT_SHORT(p)\
 	((u_short)\
 	 ((u_short)*((u_char *)p+0)<<8|\
 	  (u_short)*((u_char *)p+1)<<0))
 #define EXTRACT_LONG(p)\
-	((u_long)*((u_char *)p+0)<<24|\
-	 (u_long)*((u_char *)p+1)<<16|\
-	 (u_long)*((u_char *)p+2)<<8|\
-	 (u_long)*((u_char *)p+3)<<0)
+	((u_int)*((u_char *)p+0)<<24|\
+	 (u_int)*((u_char *)p+1)<<16|\
+	 (u_int)*((u_char *)p+2)<<8|\
+	 (u_int)*((u_char *)p+3)<<0)
 #endif
 
 #define HASH_ITERATE(head, elt) (elt) = (net_hash_entry_t) (head); do {
