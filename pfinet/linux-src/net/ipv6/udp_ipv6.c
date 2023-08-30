@@ -840,7 +840,7 @@ static int udpv6_sendmsg(struct sock *sk, struct msghdr *msg, int ulen)
 	if (ulen < 0 || ulen > INT_MAX - sizeof(struct udphdr))
 		return -EMSGSIZE;
 	
-	if (msg->msg_flags & ~(MSG_DONTROUTE|MSG_DONTWAIT))
+	if (msg->msg_flags & ~(MSG_DONTROUTE|MSG_DONTWAIT|MSG_NOSIGNAL))
 		return(-EINVAL);
 
 	fl.fl6_flowlabel = 0;
