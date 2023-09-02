@@ -39,7 +39,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 {
   int create;			/* true if O_CREAT flag set */
   int excl;			/* true if O_EXCL flag set */
-  int mustbedir = (flags & O_DIRECTORY) != 0;	/* true if the result must be S_IFDIR */
+  int mustbedir = 0;		/* true if the result must be S_IFDIR */
   int lastcomp = 0;		/* true if we are at the last component */
   int newnode = 0;		/* true if this node is newly created */
   int nsymlinks = 0;
