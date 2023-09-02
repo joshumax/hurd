@@ -56,6 +56,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int type;
   struct protid *newpi = 0;
   struct peropen *newpo = 0;
+  int orig_flags = flags;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -447,7 +448,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
  gotit:
   type = np->dn_stat.st_mode & S_IFMT;
 
-  if (mustbedir && type != S_IFDIR)
+  if ((mustbedir || orig_flags & O_DIRECTORY) && type != S_IFDIR)
     {
       err = ENOTDIR;
       goto out;

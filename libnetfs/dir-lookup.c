@@ -410,7 +410,7 @@ netfs_S_dir_lookup (struct protid *dircred,
   /* At this point, NP is the node to return.  */
  gotit:
 
-  if (mustbedir)
+  if (mustbedir || (flags & O_DIRECTORY))
     {
       err = netfs_validate_stat (np, dircred->user);
       if (err)
