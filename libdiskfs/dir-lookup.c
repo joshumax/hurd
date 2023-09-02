@@ -51,7 +51,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int lastcomp = 0;
   int newnode = 0;
   struct dirstat *ds = 0;
-  int mustbedir = 0;
+  int mustbedir = (flags & O_DIRECTORY) != 0;
   mach_msg_type_name_t amt;
   int type;
   struct protid *newpi = 0;
