@@ -394,7 +394,6 @@ sock_connect (struct sock *sock1, struct sock *sock2)
   /* In the case of a connectionless protocol, an already-connected socket may
      be reconnected, so save the old destination for later disposal.  */
   struct pipe *old_sock1_write_pipe = NULL;
-  struct addr *old_sock1_write_addr = NULL;
 
   void connect (struct sock *wr, struct sock *rd)
     {
@@ -426,7 +425,6 @@ sock_connect (struct sock *sock1, struct sock *sock2)
   else
     {
       old_sock1_write_pipe = sock1->write_pipe;
-      old_sock1_write_addr = sock1->write_addr;
 
       /* Always make the forward connection.  */
       connect (sock1, sock2);
@@ -449,10 +447,7 @@ sock_connect (struct sock *sock1, struct sock *sock2)
   pthread_mutex_unlock (&socket_pair_lock);
 
   if (old_sock1_write_pipe)
-    {
-      pipe_remove_writer (old_sock1_write_pipe);
-      ports_port_deref (old_sock1_write_addr);
-    }
+    pipe_remove_writer (old_sock1_write_pipe);
 
   return err;
 }

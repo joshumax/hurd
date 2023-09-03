@@ -74,10 +74,6 @@ struct sock
      one could tell anyway).  */
   struct addr *addr;
 
-  /* If this sock has been connected to another sock, then WRITE_ADDR is the
-     addr of that sock.  We *do* hold a reference to this addr.  */
-  struct addr *write_addr;
-
   /* A connection queue to listen for incoming connections on.  Once a socket
      has one of these, it always does, and can never again be used for
      anything but accepting incoming connections.  */
