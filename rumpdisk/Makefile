@@ -43,13 +43,13 @@ LDLIBS += -lpthread -lpciaccess -ldl $(RUMPEXTRA:%=-l%_pic) \
 %.disk.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -D_RUMP_SATA -c $< -o $@
 rumpdisk-OBJS = $(SRCS:.c=.disk.o)
-rumpdisk-LDLIBS += -Wl,--whole-archive $(RUMPSATA:%=-l%_pic) -Wl,--no-whole-archive
-rumpdisk rumpdisk.static: $(rumpdisk-OBJS) $(HURDLIBS:%=-l%)
+rumpdisk-LDLIBS += -Wl,--whole-archive $(RUMPSATA:%=-l%_pic) -Wl,--no-whole-archive $(HURDLIBS:%=-l%)
+rumpdisk rumpdisk.static: $(rumpdisk-OBJS)
 
 %.usb.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 rumpusbdisk-OBJS = $(SRCS:.c=.usb.o)
-rumpusbdisk-LDLIBS += -Wl,--whole-archive $(RUMPUSB:%=-l%_pic) -Wl,--no-whole-archive
-rumpusbdisk rumpusbdisk.static: $(rumpusbdisk-OBJS) $(HURDLIBS:%=-l%)
+rumpusbdisk-LDLIBS += -Wl,--whole-archive $(RUMPUSB:%=-l%_pic) -Wl,--no-whole-archive $(HURDLIBS:%=-l%)
+rumpusbdisk rumpusbdisk.static: $(rumpusbdisk-OBJS)
 
 include ../Makeconf
