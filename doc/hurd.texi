@@ -3681,8 +3681,18 @@ then use the hurd specific command @command{halt-hurd}.
 @section Linux Extended 2 FS
 @pindex ext2fs
 
-FIXME: finish
+The ext2 filesystem is not the most advanced, robust, or modern
+filesystem, but it is the current recommended filesystem.  A good
+@code{ext2} filesystem design document is available
+@url{https://e2fsprogs.sourceforge.net/ext2intro.html, on the web}.
 
+The Hurd's ext2fs supports partition sizes (using SATA drives)
+of up to 2 TiB.  Please note that IDE disk drivers only support
+128GiB partition sizes.
+
+Most likely you will have to deal with occasional filesystem
+corruption.  Please read the section on @ref{Repairing Filesystems} to
+learn how to fix this.
 
 @node ISO-9660 CD-ROM FS
 @section ISO-9660 CD-ROM FS
