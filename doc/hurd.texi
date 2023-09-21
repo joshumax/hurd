@@ -3698,7 +3698,10 @@ learn how to fix this.
 @section ISO-9660 CD-ROM FS
 @pindex iso9660fs
 
-FIXME: finish
+ISO 9660 is an internationally standarized filesystem designed for
+DVDs or CDs.  You probably used an "iso installation image" to install
+the Hurd.  When you install the Hurd, you are most likely using the
+iso9660fs translator.
 
 
 @node Diskfs Library
