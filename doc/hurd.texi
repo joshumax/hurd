@@ -777,13 +777,23 @@ If neither @option{--interleave} or @option{--layer} is specified, multiple
 
 @node Shutdown
 @section Shutdown
-@scindex halt
+@scindex halt, poweroff, shutdown
 @scindex reboot
 
 You can shut down your GNU/Hurd machine by typing
 
+@example
 $ @kbd{su}
 # @kbd{halt}
+@end example
+
+If the above commands do not work to poweroff the machine, then you
+should instead use the hurd specific commands @kbd{halt-hurd},
+@kbd{poweroff-hurd}, or @kbd{reboot-hurd}, which do not actually shut
+down daemons, but properly sync data to the disk.  After the data is
+synced to the disk, you can safely hard shut off the machine (usually
+via holding the power off button).  To deal with filesystem
+corruption, see @ref{Repairing Filesystems}.
 
 @node Foundations
 @chapter Foundations
@@ -3625,8 +3635,47 @@ workstations, as well.
 @section Repairing Filesystems
 @pindex fsck
 
-FIXME: finish
+Please note that as of 2023, the Hurd still uses the @code{ext2}
+filesystem, which is not a journaling filesystem.  This means that
+filesystem corruption is still possible, normally when the Hurd
+becomes unresponsive, and you are forced to hard shutoff the
+machine. Luckily, the @code{/} filesystem is automatically checked and
+fixed at boot time (though you may have to manually fsck your
+partitions every now and then).  You will know that your filesystem
+partitions need to be repaired if the command @command{fsysopts <mount
+point>} outputs @code{--readonly}.  For example:
 
+@example
+$ fsysopts /home
+  /hurd/ext2fs --readonly --relatime /dev/hd0s6
+@end example
+
+To fix your filesystems, you should take a look at @code{/etc/fstab}
+to find your partitions:
+
+@example
+$ cat /etc/fstab
+@end example
+
+Your partition/s will be something like @code{/dev/sd0sN} (or
+@code{/dev/hd0sN}), where 'N' is a number.  To fix the corrupted
+filesystem, login as the 'root' user, and run the following command
+(replacing N with your number).
+
+@example
+# umount /dev/sd0sN
+# fsck.ext2 /dev/sd0sN
+@end example
+
+If you have many partitions, then you may need to repeat this
+procedure for all partitions.  Then you can reboot.
+
+@example
+# reboot
+@end example
+
+If the @command{reboot} command fails, which happens occassionally,
+then use the hurd specific command @command{halt-hurd}.
 
 @node Linux Extended 2 FS
 @section Linux Extended 2 FS
