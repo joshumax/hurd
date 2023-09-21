@@ -3627,6 +3627,7 @@ workstations, as well.
 * Repairing Filesystems::       Recovering from minor filesystem crashes.
 * Linux Extended 2 FS::         The popular Linux filesystem format.
 * ISO-9660 CD-ROM FS::          Standard CD-ROM format.
+* FAT FS::                      Basic universal filesystem.
 * Diskfs Library::              Implementing new filesystem servers.
 @end menu
 
@@ -3703,6 +3704,14 @@ DVDs or CDs.  You probably used an "iso installation image" to install
 the Hurd.  When you install the Hurd, you are most likely using the
 iso9660fs translator.
 
+@node FAT FS
+@section FAT FS
+@pindex fatfs vfat
+
+FAT FS is a simplistic filesystem that is easily portable to many
+operating systems.  It is a good filesystem to have on a usb stick,
+because you can share data between operating systems, since most
+operating systems have a FAT FS driver.
 
 @node Diskfs Library
 @section Diskfs Library
