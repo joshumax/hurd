@@ -1943,8 +1943,8 @@ Network filesystems, such as @code{nfs} and @code{ftpfs}
 (@pxref{Distributed Filesystems}).
 
 @item
-Single files with dynamic content, such as FIXME: we need a good
-example.
+Single files with dynamic content, such as the @code{random}
+translator.
 
 @item
 @c FIXME: reword
@@ -2110,6 +2110,15 @@ Only display files that have translators.
 @node Invoking mount
 @subsection Invoking @code{mount}
 
+One does not mount filesystem partitions on the Hurd.  Instead one
+sets a translator, which translates the device into a filesystem.
+
+# @kbd{settrans /mnt /hurd/ext2fs /dev/hd0s8}
+
+You can still unmount a filesystem partition, via the @kbd{umount}
+command.
+
+# @kbd{umount /dev/hd0s8}
 
 @node Invoking fsysopts
 @subsection Invoking @code{fsysopts}
@@ -2307,7 +2316,8 @@ These variables are returned in the @var{st_fstype} and @var{st_fsid}
 fields of @code{struct stat}.  @var{trivfs_fstype} should be chosen
 from the @code{FSTYPE_*} constants found in
 @code{<hurd/hurd_types.h>}.  If @code{trivfs_fsid} is zero, trivfs
-will use the pid of the translator instead.
+will use the pid of the translator instead.  Most trivial translators
+will want to use @code{FSTYPE_MISC}.
 @end deftypevar
 
 @deftypevar {extern int} trivfs_allow_open
@@ -2952,7 +2962,7 @@ with Unix.
 
 This chapter does not discuss @file{/dev/zero} or any of the
 microkernel-based devices, since these are translated by the generalized
-storeio server (FIXME xref).
+storeio server's zero store. @xref{the zero store}.
 
 FIXME: finish
 
@@ -3351,6 +3361,7 @@ consuming the @var{task} send right.
 @end deftypevar
 
 @subsubsection @code{zero} store
+@anchor{the zero store}
 @cindex @code{zero} store
 
 @deftypevar {extern const struct store_class} store_zero_class
