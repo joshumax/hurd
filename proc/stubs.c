@@ -67,6 +67,7 @@ blocking_message_send (void *arg)
       break;
     }
 
+  free (req);
 
   return 0;
 }
