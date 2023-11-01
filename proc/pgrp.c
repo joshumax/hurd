@@ -240,7 +240,6 @@ S_proc_getsessionpids (struct proc *callerp,
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	for (p = pg->pg_plist; p; p = p->p_gnext)
 	  *pp++ = p->p_pid;
-      /* Set dealloc XXX */
     }
 
   *npidsp = count;
@@ -308,7 +307,6 @@ S_proc_getsessionpgids (struct proc *callerp,
       pp = *pgids;
       for (pg = s->s_pgrps; pg; pg = pg->pg_next)
 	*pp++ = pg->pg_pgid;
-      /* Dealloc ? XXX */
     }
   *npgidsp = count;
   return 0;
@@ -380,7 +378,6 @@ S_proc_getpgrppids (struct proc *callerp,
       for (p = pg->pg_plist; p; p = p->p_gnext)
 	if (!p->p_important)
 	  *pp++ = p->p_pid;
-      /* Dealloc ? XXX */
     }
   *npidsp = count;
   return 0;
