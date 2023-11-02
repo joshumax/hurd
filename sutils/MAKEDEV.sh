@@ -238,6 +238,10 @@ mkdev() {
         st $I root 644 /hurd/tmpfs --mode=1777 50%
         ;;
 
+      pseudo-root)
+        st $I root 640 /hurd/storeio $I
+        ;;
+
       # Linux compatibility
       loop*)
         # In Linux an inactive "/dev/loopN" device acts like /dev/null.
