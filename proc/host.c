@@ -353,9 +353,16 @@ initialize_version_info (void)
   err = host_info (mach_host_self (), HOST_BASIC_INFO,
 		   (host_info_t) &info, &n);
   assert_backtrace (! err);
-  snprintf (uname_info.machine, sizeof uname_info.machine, "%s-%s",
-	    mach_cpu_types[info.cpu_type],
-	    mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]);
+  snprintf (uname_info.machine, sizeof uname_info.machine,
+	    "%s"
+#ifndef __x86_64__
+	    "-%s"
+#endif
+	    , mach_cpu_types[info.cpu_type]
+#ifndef __x86_64__
+	    , mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]
+#endif
+	    );
 
   /* Notice Mach's and our own version and initialize server version
      variables. */
