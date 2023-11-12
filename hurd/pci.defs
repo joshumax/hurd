@@ -23,8 +23,9 @@ subsystem pci 39000;
 
 #ifdef PCI_IMPORTS
 PCI_IMPORTS
-INTR_INTERFACE
 #endif
+
+INTR_INTERFACE
 
 /*
  * Read 'amount' bytes from offset 'reg' in the
