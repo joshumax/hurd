@@ -65,7 +65,6 @@ server_verify_make_auth (const char *password,
 {
   auth_t auth;
   struct svma_state *svma_state = hook;
-  /* Mig routines don't use 'const' for passwd.  */
   error_t (*check) (io_t server, uid_t id, const char *passwd, auth_t *auth) =
     is_group ? password_check_group : password_check_user;
   error_t err = (*check) (svma_state->server, id, password, &auth);
