@@ -110,7 +110,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
     {
       union
       {
-        uint32_t word;
+        uintptr_t word;
 	mach_msg_type_t type;
       } t, c;
       t.type = *type;
