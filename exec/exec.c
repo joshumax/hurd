@@ -1197,6 +1197,10 @@ do_exec (file_t file,
   /* We are now committed to the exec.  It "should not fail".
      If it does fail now, the task will be hopelessly munged.  */
 
+  /* TODO: implement the interrupt RPC and properly avoid interrupts
+     from here on, so we can avoid disabling signals in exec*() and
+     spawn*().  */
+
   if (newtask == oldtask)
     {
       thread_t *threads;
