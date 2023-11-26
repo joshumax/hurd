@@ -61,6 +61,7 @@ static inline void
 flip_generations (struct ports_threadpool *pool)
 {
   assert_backtrace (pool->old_threads == 0);
+  assert_backtrace (pool->old_objects == NULL);
   pool->old_threads = pool->young_threads;
   pool->old_objects = pool->young_objects;
   pool->young_threads = 0;
@@ -103,6 +104,7 @@ _ports_thread_quiescent (struct ports_threadpool *pool,
       if (pool->old_threads == 0)
 	{
 	  free_list = pool->old_objects;
+	  pool->old_objects = NULL;
 	  flip_generations (pool);
 	}
     }
