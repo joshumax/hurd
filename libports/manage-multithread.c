@@ -256,11 +256,14 @@ ports_manage_port_operations_multithread (struct port_bucket *bucket,
     startover:
 
       do
-	err = mach_msg_server_timeout (synchronized_demuxer,
-				       0, bucket->portset,
-				       timeout ? MACH_RCV_TIMEOUT : 0,
-				       timeout);
-      while (err != MACH_RCV_TIMED_OUT);
+	{
+	  err = mach_msg_server_timeout (synchronized_demuxer,
+					 0, bucket->portset,
+					 MACH_RCV_TIMEOUT,
+					 timeout ? timeout : 10 * 1000);
+	  _ports_thread_quiescent (&bucket->threadpool, &thread);
+	}
+      while (!(timeout && err == MACH_RCV_TIMED_OUT));
 
       if (master)
 	{
