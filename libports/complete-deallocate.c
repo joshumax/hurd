@@ -62,5 +62,7 @@ _ports_complete_deallocate (struct port_info *pi)
   if (pi->class->clean_routine)
     (*pi->class->clean_routine)(pi);
   
+  assert_backtrace (pi->current_rpcs == NULL);
+
   free (pi);
 }
