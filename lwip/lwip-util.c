@@ -149,13 +149,13 @@ init_ifs (void *arg)
   ip6_addr_t *address6;
   int i;
 
-  if (netif_list != 0)
-    {
-      if (netif_list->next == 0)
-	init_loopback ();
-      else
-	remove_ifs ();
-    }
+  if (netif_list == 0)
+    netif_list = calloc (1, sizeof (struct netif));
+
+  if (netif_list->next == 0)
+    init_loopback ();
+  else
+    remove_ifs ();
 
   /*
    * Go through the list backwards. For LwIP
