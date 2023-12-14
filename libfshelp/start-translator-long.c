@@ -39,7 +39,7 @@ struct fsys_startup_request
   mach_msg_type_t flagsType;
   int flags;
   mach_msg_type_t control_portType;
-  mach_port_t control_port;
+  mach_port_name_inlined_t control_port;
 };
 
 struct fsys_startup_reply
@@ -48,7 +48,7 @@ struct fsys_startup_reply
   mach_msg_type_t RetCodeType;
   kern_return_t RetCode;
   mach_msg_type_t realnodeType;
-  mach_port_t realnode;
+  mach_port_name_inlined_t realnode;
 };
 
 /* Wait around for an fsys_startup message on the port PORT from the
@@ -76,7 +76,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
   const mach_msg_type_t control_portCheck =
     {
       .msgt_name = MACH_MSG_TYPE_PORT_SEND,
-      .msgt_size = 32,
+      .msgt_size = 8 * sizeof(mach_port_name_inlined_t),
       .msgt_number = 1,
       .msgt_inline = TRUE,
       .msgt_longform = FALSE,
@@ -96,7 +96,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
   const mach_msg_type_t realnodeType =
     {
       .msgt_name = (unsigned char) MACH_MSG_TYPE_POLYMORPHIC,
-      .msgt_size = 32,
+      .msgt_size = 8 * sizeof(mach_port_name_inlined_t),
       .msgt_number = 1,
       .msgt_inline = TRUE,
       .msgt_longform = FALSE,
@@ -157,17 +157,17 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
     {
       mach_msg_type_name_t realnode_type;
 
-      *control = request.startup.control_port;
+      *control = request.startup.control_port.name;
 
       reply.RetCode =
 	(*underlying_open_fn) (request.startup.flags,
-			       &reply.realnode, &realnode_type, task,
+			       &reply.realnode.name, &realnode_type, task,
 			       cookie);
 
       reply.realnodeType = realnodeType;
       reply.realnodeType.msgt_name = realnode_type;
 
-      if (!reply.RetCode && reply.realnode != MACH_PORT_NULL)
+      if (!reply.RetCode && reply.realnode.name != MACH_PORT_NULL)
 	/* The message can't be simple because of the port.  */
 	reply.head.msgh_bits |= MACH_MSGH_BITS_COMPLEX;
     }
@@ -180,7 +180,7 @@ service_fsys_startup (fshelp_open_fn_t underlying_open_fn, void *cookie,
       && reply.realnodeType.msgt_name == MACH_MSG_TYPE_MOVE_SEND)
     /* For MACH_SEND_INTERRUPTED, we'll have pseudo-received the message
        and might have to clean up a generated send right.  */
-    mach_port_deallocate (mach_task_self (), reply.realnode);
+    mach_port_deallocate (mach_task_self (), reply.realnode.name);
 
   if (reply.RetCode)
     /* Make our error return be the earlier one.  */

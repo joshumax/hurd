@@ -37,7 +37,7 @@ struct msg_sig_post_request
   mach_msg_type_t sigcode_type;
   natural_t sigcode;
   mach_msg_type_t refporttype;
-  mach_port_t refport;
+  mach_port_name_inlined_t refport;
 };
 
 /* Send the Mach message indicated by msg_spec.  */
@@ -124,14 +124,16 @@ send_signal (mach_port_t msgport,
     .refporttype = {
       /* Type descriptor for refport */
       .msgt_name = MACH_MSG_TYPE_COPY_SEND,
-      .msgt_size = 32,
+      .msgt_size = 8 * sizeof(mach_port_name_inlined_t),
       .msgt_number = 1,
       .msgt_inline = TRUE,
       .msgt_longform = FALSE,
       .msgt_deallocate = FALSE,
       .msgt_unused = 0
     },
-    .refport = refport
+    .refport = {
+      .name = refport
+    }
   };
 
   err = mach_msg ((mach_msg_header_t *)&message,
