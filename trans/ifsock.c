@@ -123,7 +123,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
   exit (0);
 }
 
-error_t
+kern_return_t
 S_ifsock_getsockaddr (struct trivfs_protid *cred,
 		      mach_port_t *address)
 {

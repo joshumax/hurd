@@ -23,7 +23,7 @@
 #include "priv.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 diskfs_S_file_reparent (struct protid *cred, mach_port_t parent,
 			   mach_port_t *new, mach_msg_type_name_t *new_type)
 {

@@ -22,7 +22,7 @@
 #include "fs_S.h"
 #include <hurd/fsys.h>
 
-error_t
+kern_return_t
 netfs_S_file_syncfs (struct protid *user,
 		     int wait,
 		     int dochildren)

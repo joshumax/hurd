@@ -22,7 +22,7 @@
 #include "io_S.h"
 #include <hurd/ports.h>
 
-error_t
+kern_return_t
 netfs_S_io_select (struct protid *user,
 		   mach_port_t reply,
 		   mach_msg_type_name_t replytype,
@@ -35,7 +35,7 @@ netfs_S_io_select (struct protid *user,
   return 0;
 }
 
-error_t
+kern_return_t
 netfs_S_io_select_timeout (struct protid *user,
 			   mach_port_t reply,
 			   mach_msg_type_name_t replytype,

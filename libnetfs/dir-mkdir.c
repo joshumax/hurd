@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_dir_mkdir (struct protid *user, const_string_t name, mode_t mode)
 {
   error_t err;

@@ -29,7 +29,7 @@
 
 /* Create a new socket.  Sock type is, for example, SOCK_STREAM,
    SOCK_DGRAM, or some such.  */
-error_t
+kern_return_t
 S_socket_create (trivfs_protid_t pf,
 		 int sock_type, int protocol,
 		 mach_port_t *port, mach_msg_type_name_t *port_type)
@@ -90,7 +90,7 @@ S_socket_create (trivfs_protid_t pf,
   return err;
 }
 
-error_t
+kern_return_t
 S_socket_create_address (mach_port_t pf, int sockaddr_type,
 			 const_data_t data,
 			 mach_msg_type_number_t data_len,
@@ -100,7 +100,7 @@ S_socket_create_address (mach_port_t pf, int sockaddr_type,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_socket_fabricate_address (mach_port_t pf,
 			    int sockaddr_type,
 			    mach_port_t *addr_port,
@@ -128,7 +128,7 @@ S_socket_fabricate_address (mach_port_t pf,
    the file name.  This is primarily for the implementation of accept
    and recvfrom.  The functions getsockname and getpeername remain
    unsupported for the local namespace.  */
-error_t
+kern_return_t
 S_socket_whatis_address (struct addr *addr,
 			 int *sockaddr_type,
 			 data_t *sockaddr,

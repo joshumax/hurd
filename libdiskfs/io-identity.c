@@ -22,7 +22,7 @@
 #include "io_S.h"
 
 /* Implement io_identity as described in <hurd/io.defs>. */
-error_t
+kern_return_t
 diskfs_S_io_identity (struct protid *cred,
 		      mach_port_t *id,
 		      mach_msg_type_name_t *idtype,

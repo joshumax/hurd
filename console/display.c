@@ -313,7 +313,7 @@ free_modreqs (struct modreq *mr)
 
 /* A port deleted notification is generated when we deallocate the
    user's notify port before it is dead.  */
-error_t
+kern_return_t
 do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name)
 {
   /* As we cancel the dead-name notification before deallocating the
@@ -322,7 +322,7 @@ do_mach_notify_port_deleted (struct port_info *pi, mach_port_t name)
 }
 
 /* We request dead name notifications for the user ports.  */
-error_t
+kern_return_t
 do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
 {
   struct notify *notify_port = (struct notify *) pi;
@@ -370,13 +370,13 @@ do_mach_notify_dead_name (struct port_info *pi, mach_port_t dead_name)
   return 0;
 }
 
-error_t
+kern_return_t
 do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t rights)
 {
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 do_mach_notify_no_senders (struct port_info *pi, mach_port_mscount_t count)
 {
   return ports_do_mach_notify_no_senders (pi, count);

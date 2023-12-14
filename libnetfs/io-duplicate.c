@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "io_S.h"
 
-error_t
+kern_return_t
 netfs_S_io_duplicate (struct protid *user,
 		      mach_port_t *newport,
 		      mach_msg_type_name_t *newporttp)

@@ -22,7 +22,7 @@
 #include "io_S.h"
 #include <string.h>
 
-error_t
+kern_return_t
 netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
 {
   error_t err;

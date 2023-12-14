@@ -23,7 +23,7 @@
 #include "trivfs_io_S.h"
 #include <assert-backtrace.h>
 
-error_t
+kern_return_t
 trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
 			       mach_port_t reply,
 			       mach_msg_type_name_t replytype,

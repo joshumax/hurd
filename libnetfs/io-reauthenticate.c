@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "io_S.h"
 
-error_t
+kern_return_t
 netfs_S_io_reauthenticate (struct protid *user, mach_port_t rend_port)
 {
   error_t err;

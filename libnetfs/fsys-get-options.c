@@ -30,7 +30,7 @@
    are pending libnetfs being fleshed out some more.  */
 
 /* Implement fsys_get_options as described in <hurd/fsys.defs>. */
-error_t
+kern_return_t
 netfs_S_fsys_get_options (struct netfs_control *port,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,

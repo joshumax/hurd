@@ -25,7 +25,7 @@
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
-error_t
+kern_return_t
 netfs_S_file_set_translator (struct protid *user,
 			     int passive_flags, int active_flags,
 			     int killtrans_flags, const_data_t passive,

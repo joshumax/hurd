@@ -29,7 +29,7 @@
    are pending libnetfs being fleshed out some more.  */
 
 /* Implement file_get_fs_options as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 netfs_S_file_get_fs_options (struct protid *user,
 			     data_t *data, mach_msg_type_number_t *data_len)
 {

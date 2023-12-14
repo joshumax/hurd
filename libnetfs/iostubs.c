@@ -22,7 +22,7 @@
 #include "netfs.h"
 #include "io_S.h"
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_map (struct protid *user,
 		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
 		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
@@ -70,7 +70,7 @@ error:
   return errno;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_map_cntl (struct protid *user,
 		     mach_port_t *obj,
 		     mach_msg_type_name_t *objtype)
@@ -78,51 +78,51 @@ netfs_S_io_map_cntl (struct protid *user,
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_get_conch (struct protid *user)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_release_conch (struct protid *user)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_eofnotify (struct protid *user)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_prenotify (struct protid *user,
 		      vm_offset_t start, vm_offset_t stop)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_postnotify (struct protid *user,
 		       vm_offset_t start, vm_offset_t stop)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_readnotify (struct protid *user)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_readsleep (struct protid *user)
 {
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_io_sigio (struct protid *user)
 {
   return EOPNOTSUPP;

@@ -730,7 +730,7 @@ device_write_reply (mach_port_t replyport,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 ports_do_mach_notify_send_once (struct port_info *pi)
 {
   error_t err;

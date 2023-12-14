@@ -22,7 +22,7 @@
 #include "netfs.h"
 #include "fsys_S.h"
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_fsys_getfile (struct netfs_control *cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
@@ -34,7 +34,7 @@ netfs_S_fsys_getfile (struct netfs_control *cntl,
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_fsys_getpriv (struct netfs_control *cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
@@ -45,7 +45,7 @@ netfs_S_fsys_getpriv (struct netfs_control *cntl,
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_fsys_init (struct netfs_control *cntl,
 		   mach_port_t reply,
 		   mach_msg_type_name_t reply_type,
@@ -54,7 +54,7 @@ netfs_S_fsys_init (struct netfs_control *cntl,
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_fsys_forward (mach_port_t cntl,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,
@@ -64,7 +64,7 @@ netfs_S_fsys_forward (mach_port_t cntl,
   return EOPNOTSUPP;
 }
 
-error_t __attribute__((weak))
+kern_return_t __attribute__((weak))
 netfs_S_fsys_startup (mach_port_t bootstrap,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,

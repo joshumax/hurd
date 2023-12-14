@@ -480,7 +480,7 @@ trivfs_goaway (struct trivfs_control *fsys, int flags)
 }
 
 
-error_t
+kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t *data_len,
@@ -503,7 +503,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      vm_size_t *amount)
@@ -522,7 +522,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_write (struct trivfs_protid *cred,
 		   mach_port_t reply, mach_msg_type_name_t reply_type,
 		   const_data_t data, mach_msg_type_number_t data_len,
@@ -542,7 +542,7 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  off_t offs, int whence, off_t *new_offs)
@@ -610,7 +610,7 @@ io_select_common (struct trivfs_protid *cred,
     }
 }
 
-error_t
+kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
 		    int *type)
@@ -618,7 +618,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   return io_select_common (cred, reply, reply_type, NULL, type);
 }
 
-error_t
+kern_return_t
 trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 			    mach_port_t reply, mach_msg_type_name_t reply_type,
 			    struct timespec ts,
@@ -627,7 +627,7 @@ trivfs_S_io_select_timeout (struct trivfs_protid *cred,
   return io_select_common (cred, reply, reply_type, &ts, type);
 }
 
-error_t
+kern_return_t
 trivfs_S_file_set_size (struct trivfs_protid *cred,
 			mach_port_t reply, mach_msg_type_name_t reply_type,
 			off_t size)
@@ -642,7 +642,7 @@ trivfs_S_file_set_size (struct trivfs_protid *cred,
     return 0;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
 			   mach_port_t reply, mach_msg_type_name_t reply_type,
 			   int *bits)
@@ -656,7 +656,7 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
     }
 }
 
-error_t
+kern_return_t
 trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
 			       mach_port_t reply,
 			       mach_msg_type_name_t reply_type,
@@ -668,7 +668,7 @@ trivfs_S_io_set_all_openmodes (struct trivfs_protid *cred,
     return 0;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
 				mach_port_t reply,
 				mach_msg_type_name_t reply_type,
@@ -680,7 +680,7 @@ trivfs_S_io_set_some_openmodes (struct trivfs_protid *cred,
     return 0;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
 				  mach_port_t reply,
 				  mach_msg_type_name_t reply_type,
@@ -692,7 +692,7 @@ trivfs_S_io_clear_some_openmodes (struct trivfs_protid *cred,
     return 0;
 }
 
-error_t
+kern_return_t
 trivfs_S_file_sync (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
 		    int wait, int omit_metadata)
@@ -708,7 +708,7 @@ trivfs_S_file_sync (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 trivfs_S_file_syncfs (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      int wait, int dochildren)
@@ -1038,8 +1038,8 @@ dev_read (size_t amount, void **buf, size_t *len, int nowait)
   return err;
 }
 
-error_t
-device_read_reply_inband (mach_port_t reply, error_t errorcode,
+kern_return_t
+device_read_reply_inband (mach_port_t reply, kern_return_t errorcode,
 			  const io_buf_ptr_inband_t data, mach_msg_type_number_t datalen)
 {
   if (reply != phys_reply)
@@ -1158,8 +1158,8 @@ dev_write (const void *buf, size_t len, size_t *amount, int nowait)
   return err;
 }
 
-error_t
-device_write_reply_inband (mach_port_t reply, error_t returncode, int amount)
+kern_return_t
+device_write_reply_inband (mach_port_t reply, kern_return_t returncode, int amount)
 {
   if (reply != phys_reply_writes)
     return EOPNOTSUPP;

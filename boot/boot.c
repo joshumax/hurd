@@ -2041,7 +2041,7 @@ task_died (mach_port_t name)
 }
 
 /* Handle new task notifications from proc.  */
-error_t
+kern_return_t
 S_mach_notify_new_task (mach_port_t notify,
 			mach_port_t task,
 			mach_port_t parent)

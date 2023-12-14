@@ -203,7 +203,7 @@ trivfs_goaway (struct trivfs_control *cntl, int flags)
 /* Read data from an IO object.  If offset if -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
    ignored.  The amount desired to be read is in AMT.  */
-error_t
+kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t *data_len,
@@ -241,7 +241,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 /* Tell how much data can be read from the object without blocking for
    a "long time" (this should be the same meaning of "long time" used
    by the nonblocking flag.  */
-error_t
+kern_return_t
 trivfs_S_io_readable (struct trivfs_protid *cred,
 		      mach_port_t reply, mach_msg_type_name_t reply_type,
 		      vm_size_t *amount)
@@ -258,7 +258,7 @@ trivfs_S_io_readable (struct trivfs_protid *cred,
 }
 
 /* Change current read/write offset */
-error_t
+kern_return_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  off_t offset, int whence, off_t *new_offset)
@@ -271,7 +271,7 @@ trivfs_S_io_seek (struct trivfs_protid *cred,
    return the types that are then available.  ID_TAG is returned as passed; it
    is just for the convenience of the user in matching up reply messages with
    specific requests sent.  */
-error_t
+kern_return_t
 trivfs_S_io_select (struct trivfs_protid *cred,
 		    mach_port_t reply, mach_msg_type_name_t reply_type,
 		    int *type)
@@ -279,7 +279,7 @@ trivfs_S_io_select (struct trivfs_protid *cred,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_select_timeout (struct trivfs_protid *cred,
 			    mach_port_t reply, mach_msg_type_name_t reply_type,
 			    struct timespec ts,

@@ -1852,7 +1852,7 @@ S_msg_set_env_variable (mach_port_t process,
 	boolean_t replace)
 { return _S_msg_set_env_variable (process, refport, variable, value, replace); }
 
-error_t
+kern_return_t
 S_msg_describe_ports (mach_port_t process,
 		      mach_port_t refport,
 		      const_mach_port_array_t names,
@@ -1864,7 +1864,7 @@ S_msg_describe_ports (mach_port_t process,
 				descriptions, descriptionsCnt);
 }
 
-error_t
+kern_return_t
 S_msg_report_wait (mach_port_t process, thread_t thread,
 		   string_t desc, mach_msg_id_t *rpc)
 {
@@ -1874,7 +1874,7 @@ S_msg_report_wait (mach_port_t process, thread_t thread,
 }
 
 /* fsys */
-error_t
+kern_return_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
 		const id_t *uids,
@@ -1907,7 +1907,7 @@ S_fsys_getroot (mach_port_t fsys_t,
   return 0;
 }
 
-error_t
+kern_return_t
 S_fsys_get_options (mach_port_t control,
 		    data_t *data, mach_msg_type_number_t *len)
 {
@@ -1915,7 +1915,7 @@ S_fsys_get_options (mach_port_t control,
   return EOPNOTSUPP;
 }
 
-error_t
+kern_return_t
 S_file_check_access (mach_port_t server,
                      int *allowed)
 {
@@ -1925,7 +1925,7 @@ S_file_check_access (mach_port_t server,
   return 0;
 }
 
-error_t
+kern_return_t
 S_io_stat (mach_port_t server,
            struct stat *st)
 {
@@ -1941,7 +1941,7 @@ S_io_stat (mach_port_t server,
   return 0;
 }
 
-error_t
+kern_return_t
 S_io_restrict_auth (mach_port_t server,
                     mach_port_t *newport,
                     mach_msg_type_name_t *newporttype,

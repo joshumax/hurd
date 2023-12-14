@@ -43,7 +43,7 @@ check_permissions (struct protid *master, int flags)
   return entry_check_perms (master->user, e, flags);
 }
 
-error_t
+kern_return_t
 S_acpi_sleep (struct protid *master,
 	      int sleep_state)
 {
@@ -65,7 +65,7 @@ S_acpi_sleep (struct protid *master,
   return err;
 }
 
-error_t
+kern_return_t
 S_acpi_get_pci_irq (struct protid *master,
 		    int bus,
 		    int dev,

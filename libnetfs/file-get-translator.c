@@ -26,7 +26,7 @@
 #include <sys/mman.h>
 #include <sys/sysmacros.h>
 
-error_t
+kern_return_t
 netfs_S_file_get_translator (struct protid *user,
 			     data_t *trans,
 			     mach_msg_type_number_t *translen)

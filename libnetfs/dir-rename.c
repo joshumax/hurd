@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_dir_rename (struct protid *fromdiruser, const_string_t fromname,
 		    struct protid *todiruser, const_string_t toname, int excl)
 {

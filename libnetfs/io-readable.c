@@ -23,7 +23,7 @@
 #include "netfs.h"
 #include "io_S.h"
 
-error_t
+kern_return_t
 netfs_S_io_readable (struct protid *user,
 		     vm_size_t *amount)
 {

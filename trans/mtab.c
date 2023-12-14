@@ -654,7 +654,7 @@ close_hook (struct trivfs_peropen *peropen)
 /* Read data from an IO object.	 If offset is -1, read from the object
    maintained file pointer.  If the object is not seekable, offset is
    ignored.  The amount desired to be read is in AMOUNT.  */
-error_t
+kern_return_t
 trivfs_S_io_read (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  data_t *data, mach_msg_type_number_t *data_len,
@@ -718,7 +718,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 
 
 /* Change current read/write offset */
-error_t
+kern_return_t
 trivfs_S_io_seek (struct trivfs_protid *cred,
 		  mach_port_t reply, mach_msg_type_name_t reply_type,
 		  off_t offs, int whence, off_t *new_offs)
@@ -844,7 +844,7 @@ trivfs_S_io_get_openmodes (struct trivfs_protid *cred,
   return 0;
 }
 
-error_t
+kern_return_t
 trivfs_S_io_set_all_openmodes(struct trivfs_protid *cred,
 			      mach_port_t reply,
 			      mach_msg_type_name_t replytype,

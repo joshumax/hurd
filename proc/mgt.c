@@ -1256,7 +1256,7 @@ genpid (void)
    us, communicating the names using command line options.  */
 
 /* Implement proc_set_init_task as described in <hurd/process.defs>.  */
-error_t
+kern_return_t
 S_proc_set_init_task(struct proc *callerp,
 		     task_t task)
 {
@@ -1311,7 +1311,7 @@ S_proc_mark_important (struct proc *p)
 }
 
 /* Implement proc_is_important as described in <hurd/process.defs>.  */
-error_t
+kern_return_t
 S_proc_is_important (struct proc *callerp,
 		     boolean_t *essential)
 {
@@ -1324,7 +1324,7 @@ S_proc_is_important (struct proc *callerp,
 }
 
 /* Implement proc_set_code as described in <hurd/process.defs>.  */
-error_t
+kern_return_t
 S_proc_set_code (struct proc *callerp,
 		 vm_address_t start_code,
 		 vm_address_t end_code)
@@ -1339,7 +1339,7 @@ S_proc_set_code (struct proc *callerp,
 }
 
 /* Implement proc_get_code as described in <hurd/process.defs>.  */
-error_t
+kern_return_t
 S_proc_get_code (struct proc *callerp,
 		 vm_address_t *start_code,
 		 vm_address_t *end_code)
@@ -1354,7 +1354,7 @@ S_proc_get_code (struct proc *callerp,
 }
 
 /* Handle new task notifications from the kernel.  */
-error_t
+kern_return_t
 S_mach_notify_new_task (struct port_info *notify,
 			mach_port_t task,
 			mach_port_t parent)
@@ -1400,7 +1400,7 @@ S_mach_notify_new_task (struct port_info *notify,
 
 /* Implement proc_make_task_namespace as described in
    <hurd/process.defs>.  */
-error_t
+kern_return_t
 S_proc_make_task_namespace (struct proc *callerp,
 			    mach_port_t notify)
 {

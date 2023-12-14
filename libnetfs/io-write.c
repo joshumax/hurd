@@ -22,7 +22,7 @@
 #include "io_S.h"
 #include <fcntl.h>
 
-error_t
+kern_return_t
 netfs_S_io_write (struct protid *user,
 		  const_data_t data,
 		  mach_msg_type_number_t datalen,

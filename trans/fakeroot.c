@@ -280,7 +280,7 @@ netfs_check_open_permissions (struct iouser *user, struct node *np,
 			  flags & (O_RDWR|O_EXEC), MACH_PORT_NULL);
 }
 
-error_t
+kern_return_t
 netfs_S_dir_lookup (struct protid *diruser,
 		    const_string_t filename,
 		    int flags,
@@ -1022,7 +1022,7 @@ netfs_S_file_exec (struct protid *user,
 				  destroynames, destroynameslen);
 }
 
-error_t
+kern_return_t
 netfs_S_io_map (struct protid *user,
 		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
 		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
@@ -1039,7 +1039,7 @@ netfs_S_io_map (struct protid *user,
   return err;
 }
 
-error_t
+kern_return_t
 netfs_S_io_map_cntl (struct protid *user,
                      mach_port_t *obj,
                      mach_msg_type_name_t *objtype)
@@ -1056,7 +1056,7 @@ netfs_S_io_map_cntl (struct protid *user,
   return err;
 }
 
-error_t
+kern_return_t
 netfs_S_io_identity (struct protid *user,
 		     mach_port_t *id,
 		     mach_msg_type_name_t *idtype,
@@ -1079,7 +1079,7 @@ netfs_S_io_identity (struct protid *user,
 }
 
 #define NETFS_S_SIMPLE(name)			\
-error_t						\
+kern_return_t					\
 netfs_S_##name (struct protid *user)		\
 {						\
   error_t err;					\
@@ -1100,7 +1100,7 @@ NETFS_S_SIMPLE (io_readnotify)
 NETFS_S_SIMPLE (io_readsleep)
 NETFS_S_SIMPLE (io_sigio)
 
-error_t
+kern_return_t
 netfs_S_io_prenotify (struct protid *user,
                       vm_offset_t start, vm_offset_t stop)
 {
@@ -1115,7 +1115,7 @@ netfs_S_io_prenotify (struct protid *user,
   return err;
 }
 
-error_t
+kern_return_t
 netfs_S_io_postnotify (struct protid *user,
                        vm_offset_t start, vm_offset_t stop)
 {

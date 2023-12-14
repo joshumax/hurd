@@ -27,7 +27,7 @@
    or more links in the file system, therefore there is no guarantee
    that a translators name refers to an existing link in the file
    system.  */
-error_t
+kern_return_t
 trivfs_S_fsys_get_children (struct trivfs_control *fsys,
 			    mach_port_t reply,
 			    mach_msg_type_name_t replyPoly,

@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_file_utimes (struct protid *user,
 		     time_value_t atimein,
 		     time_value_t mtimein)
@@ -47,7 +47,7 @@ netfs_S_file_utimes (struct protid *user,
   return netfs_S_file_utimens (user, atim, mtim);
 }
 
-error_t
+kern_return_t
 netfs_S_file_utimens (struct protid *user,
 		     struct timespec atimein,
 		     struct timespec mtimein)

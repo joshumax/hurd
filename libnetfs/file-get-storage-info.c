@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_file_get_storage_info (struct protid *user,
 			       mach_port_t **ports,
 			       mach_msg_type_name_t *ports_type,

@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_file_chmod (struct protid *user,
 		    mode_t mode)
 {

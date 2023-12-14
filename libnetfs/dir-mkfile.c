@@ -22,7 +22,7 @@
 #include "misc.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode, 
 		    mach_port_t *newfile, mach_msg_type_name_t *newfiletype)
 {

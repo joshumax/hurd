@@ -28,7 +28,7 @@
 #include "fs_S.h"
 
 /* Implement dir_lookup as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 diskfs_S_dir_lookup (struct protid *dircred,
 		     const_string_t filename,
 		     int flags,

@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_file_sync (struct protid *user,
 		   int wait,
 		   int omitmeta)

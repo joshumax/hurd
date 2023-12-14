@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-error_t
+kern_return_t
 netfs_S_io_read (struct protid *user,
 		 data_t *data,
 		 mach_msg_type_number_t *datalen,

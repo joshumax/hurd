@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <sys/file.h>
 
-error_t
+kern_return_t
 netfs_S_file_lock_stat (struct protid *user,
 			int *mystatus,
 			int *otherstatus)

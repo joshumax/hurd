@@ -122,7 +122,7 @@ main (int argc, char **argv)
     }
 }
 
-error_t
+kern_return_t
 S_fsys_getroot (mach_port_t fsys_t,
 		mach_port_t dotdotnode,
 		const id_t *uids,
@@ -164,13 +164,13 @@ S_fsys_getroot (mach_port_t fsys_t,
   return 0;
 }
 
-error_t
+kern_return_t
 S_fsys_goaway (mach_port_t control, int flags)
 {
   exit (0);
 }
 
-error_t
+kern_return_t
 S_fsys_syncfs (mach_port_t control,
 	       int wait,
 	       int recurse)

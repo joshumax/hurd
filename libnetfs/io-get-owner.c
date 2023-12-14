@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "io_S.h"
 
-error_t
+kern_return_t
 netfs_S_io_get_owner (struct protid *user, pid_t *owner)
 {
   if (!user)

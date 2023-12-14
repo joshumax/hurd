@@ -36,7 +36,7 @@ helper (void *cookie, const char *name, mach_port_t control)
   return 0;
 }
 
-error_t
+kern_return_t
 netfs_S_fsys_syncfs (struct netfs_control *cntl,
 		     mach_port_t reply,
 		     mach_msg_type_name_t reply_type,

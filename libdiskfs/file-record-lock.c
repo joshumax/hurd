@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <hurd/fshelp.h>
 
-error_t
+kern_return_t
 diskfs_S_file_record_lock (struct protid *cred,
 			   int cmd,
 			   struct flock64 *lock,

@@ -21,7 +21,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_dir_link (struct protid *diruser, struct protid *fileuser,
 		  const_string_t name, int excl)
 {

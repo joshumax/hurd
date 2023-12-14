@@ -23,7 +23,7 @@
 #include "netfs.h"
 #include "fs_S.h"
 
-error_t
+kern_return_t
 netfs_S_dir_readdir (struct protid *user,
 		     data_t *data,
 		     mach_msg_type_number_t *datacnt,

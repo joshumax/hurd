@@ -511,7 +511,7 @@ pty_io_select (struct trivfs_protid *cred, mach_port_t reply,
     }
 }
 
-error_t
+kern_return_t
 S_tioctl_tiocsig (struct trivfs_protid *cred,
 		  int sig)
 {
@@ -533,7 +533,7 @@ S_tioctl_tiocsig (struct trivfs_protid *cred,
   return 0;
 }
 
-error_t
+kern_return_t
 S_tioctl_tiocpkt (struct trivfs_protid *cred,
 		  int mode)
 {
@@ -561,7 +561,7 @@ S_tioctl_tiocpkt (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 S_tioctl_tiocucntl (struct trivfs_protid *cred,
 		    int mode)
 {
@@ -589,7 +589,7 @@ S_tioctl_tiocucntl (struct trivfs_protid *cred,
   return err;
 }
 
-error_t
+kern_return_t
 S_tioctl_tiocremote (struct trivfs_protid *cred,
 		     int how)
 {
@@ -608,7 +608,7 @@ S_tioctl_tiocremote (struct trivfs_protid *cred,
   return 0;
 }
 
-error_t
+kern_return_t
 S_tioctl_tiocext (struct trivfs_protid *cred,
 		  int mode)
 {

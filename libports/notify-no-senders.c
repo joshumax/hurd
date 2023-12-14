@@ -22,7 +22,7 @@
 #include "ports.h"
 #include "notify_S.h"
 
-error_t
+kern_return_t
 ports_do_mach_notify_no_senders (struct port_info *pi,
                                  mach_port_mscount_t count)
 {

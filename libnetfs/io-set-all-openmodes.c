@@ -22,7 +22,7 @@
 #include "io_S.h"
 #include "modes.h"
 
-error_t
+kern_return_t
 netfs_S_io_set_all_openmodes (struct protid *user, int newbits)
 {
   if (!user)

@@ -21,7 +21,7 @@
 #include "priv.h"
 #include "trivfs_io_S.h"
 
-error_t
+kern_return_t
 trivfs_S_io_identity (struct trivfs_protid *cred,
 		      mach_port_t reply,
 		      mach_msg_type_name_t replytype,

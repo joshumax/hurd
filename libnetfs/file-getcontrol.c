@@ -23,7 +23,7 @@
 #include "fs_S.h"
 #include <hurd/fshelp.h>
 
-error_t
+kern_return_t
 netfs_S_file_getcontrol (struct protid *user,
 			 mach_port_t *control,
 			 mach_msg_type_name_t *controltype)

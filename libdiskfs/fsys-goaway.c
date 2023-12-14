@@ -24,7 +24,7 @@
 #include "fsys_reply_U.h"
 
 /* Implement fsys_goaway as described in <hurd/fsys.defs>. */
-error_t
+kern_return_t
 diskfs_S_fsys_goaway (struct diskfs_control *pt,
 		      mach_port_t reply,
 		      mach_msg_type_name_t reply_type,

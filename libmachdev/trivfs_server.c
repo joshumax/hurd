@@ -458,7 +458,7 @@ machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
 }
 
 /* The system is going down, sync data.  */
-error_t
+kern_return_t
 S_startup_dosync (mach_port_t handle)
 {
   struct port_info *inpi = ports_lookup_port (port_bucket, handle,

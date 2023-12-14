@@ -28,7 +28,7 @@
    the command line arguments.  If the recipient accepts the request, he
    (or some delegate) should send fsys_startup to REQUESTOR to start the
    filesystem up.  */
-error_t
+kern_return_t
 trivfs_S_fsys_forward (mach_port_t server,
 		       mach_port_t reply,
 		       mach_msg_type_name_t replytype,

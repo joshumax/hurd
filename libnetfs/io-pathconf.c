@@ -23,7 +23,7 @@
 #include "io_S.h"
 
 
-error_t
+kern_return_t
 netfs_S_io_pathconf (struct protid *user,
 		     int name,
 		     int *value)

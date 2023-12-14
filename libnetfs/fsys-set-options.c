@@ -46,7 +46,7 @@ helper (void *cookie, const char *name, mach_port_t control)
 }
 
 /* Implement fsys_set_options as described in <hurd/fsys.defs>. */
-error_t
+kern_return_t
 netfs_S_fsys_set_options (struct netfs_control *pt,
 			  mach_port_t reply,
 			  mach_msg_type_name_t reply_type,

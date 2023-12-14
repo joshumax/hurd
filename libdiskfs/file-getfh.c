@@ -25,7 +25,7 @@
 #include "fhandle.h"
 
 /* Return an NFS file handle for CRED in FH & FN_LEN.  */
-error_t
+kern_return_t
 diskfs_S_file_getfh (struct protid *cred, data_t *fh,
                      mach_msg_type_number_t *fh_len)
 {

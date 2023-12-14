@@ -23,7 +23,7 @@
 #include "fs_S.h"
 
 /* Implement file_get_translator_cntl as described in <hurd/fs.defs>. */
-error_t
+kern_return_t
 netfs_S_file_get_translator_cntl (struct protid *cred,
 				  mach_port_t *ctl,
 				  mach_msg_type_name_t *ctltype)

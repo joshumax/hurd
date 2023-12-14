@@ -25,7 +25,7 @@
 
 #include "fs_S.h"
 
-error_t
+kern_return_t
 S_file_check_access (struct sock_user *cred, int *type)
 {
   if (!cred)

@@ -333,7 +333,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 }
 
 
-error_t
+kern_return_t
 netfs_S_io_seek (struct protid *user, off_t offset,
 		 int whence, off_t *newoffset)
 {
@@ -363,7 +363,7 @@ io_select_common (struct protid *user, mach_port_t reply,
 }
 
 
-error_t
+kern_return_t
 netfs_S_io_select (struct protid *user, mach_port_t reply,
 		   mach_msg_type_name_t replytype, int *type)
 {
@@ -371,7 +371,7 @@ netfs_S_io_select (struct protid *user, mach_port_t reply,
 }
 
 
-error_t
+kern_return_t
 netfs_S_io_select_timeout (struct protid *user, mach_port_t reply,
 			   mach_msg_type_name_t replytype,
 			   struct timespec ts, int *type)
@@ -573,7 +573,7 @@ netfs_attempt_write (struct iouser *cred, struct node *np,
 }
 
 
-error_t
+kern_return_t
 netfs_S_io_read (struct protid *user,
 		 data_t *data,
 		 mach_msg_type_number_t *datalen,
@@ -592,7 +592,7 @@ netfs_S_io_read (struct protid *user,
 }
 
 
-error_t
+kern_return_t
 netfs_S_io_write (struct protid *user,
 		  const_data_t data,
 		  mach_msg_type_number_t datalen,
