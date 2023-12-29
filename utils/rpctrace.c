@@ -810,10 +810,10 @@ print_contents (mach_msg_header_t *inp,
   int first = 1;
 
   /* Process the message data, wrapping ports and printing data.  */
-  while (msg_buf_ptr < (char *) inp + inp->msgh_size)
+  while ((char *) msg_buf_ptr < (char *) inp + inp->msgh_size)
     {
       mach_msg_type_t *const type = msg_buf_ptr;
-      mach_msg_type_long_t *const lt = (void *) type;
+      mach_msg_type_long_t *const lt = (mach_msg_type_long_t *) type;
       void *data;
       mach_msg_type_number_t nelt; /* Number of data items.  */
       mach_msg_type_size_t eltsize; /* Bytes per item.  */

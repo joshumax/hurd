@@ -207,7 +207,7 @@ main (int argc, char **argv)
             *p = 1;
 
           if (verbose > 1
-              && ((unsigned int) (p - address) & ((1U<<20) - 1)) == 0)
+              && ((uintptr_t) (p - address) & ((1UL<<20) - 1)) == 0)
             fprintf (stderr, "\r%"PRIu64,
                      allocated
                      + ((uint64_t) (uintptr_t) p - (uint64_t) address));
