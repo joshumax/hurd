@@ -464,7 +464,7 @@ diskfs_S_fsys_getpriv (struct diskfs_control *init_bootstrap_port,
   error_t err;
 
   if (!init_bootstrap_port
-      || init_bootstrap_port != bootinfo)
+      || init_bootstrap_port != (struct diskfs_control *) bootinfo)
     return EOPNOTSUPP;
 
   err = get_privileged_ports (host_priv, dev_master);
