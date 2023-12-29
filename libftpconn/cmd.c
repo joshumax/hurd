@@ -99,7 +99,7 @@ ftp_conn_cmd (struct ftp_conn *conn, const char *cmd, const char *arg,
 	snprintf (buf, sizeof buf, arg ? "%s %s\r\n" : "%s\r\n", cmd, arg);
       err = _write (conn->control, buf, out);
 
-      if (!err && conn->hooks && conn->hooks->cntl_debug)
+      if (!err && conn->hooks && conn->hooks->cntl_debug && out >= 2)
 	{
 	  buf[out - 2] = '\0';	/* Stomp the CR & NL.  */
 	  (* conn->hooks->cntl_debug) (conn, FTP_CONN_CNTL_DEBUG_CMD, buf);
