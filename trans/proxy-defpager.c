@@ -124,6 +124,8 @@ S_default_pager_paging_storage_new (mach_port_t default_pager,
     return err;
 
   mach_port_deallocate (mach_task_self (), device);
+
+  return 0;
 }
 
 #ifndef __x86_64__
