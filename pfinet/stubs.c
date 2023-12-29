@@ -50,7 +50,7 @@ void dev_activate (struct device *)
      __attribute__ ((alias ("dev_init_scheduler")));
 void dev_deactivate (struct device *)
      __attribute__ ((alias ("dev_init_scheduler")));
-void tcp_ioctl (void) __attribute__ ((alias ("dev_init_scheduler")));
+void tcp_ioctl (struct device *) __attribute__ ((alias ("dev_init_scheduler")));
 
 /* This isn't quite a stub, but it's not quite right either.  */
 __u32 secure_tcp_sequence_number(__u32 saddr, __u32 daddr,
