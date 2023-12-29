@@ -379,7 +379,7 @@ netfs_append_args (char **argz, size_t * argz_len)
     }
 
   if (fs->params.node_cache_max != NODE_CACHE_MAX)
-    ADD_OPT ("--ncache=%u", fs->params.node_cache_max);
+    ADD_OPT ("--ncache=%zu", fs->params.node_cache_max);
 
   if (fs->params.next_task != MACH_PORT_NULL)
     ADD_OPT ("--next-task=%u", fs->params.next_task);
