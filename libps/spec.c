@@ -492,7 +492,7 @@ error_t
 ps_emit_nice_size_t (struct proc_stat *ps, struct ps_fmt_field *field,
 		     struct ps_stream *stream)
 {
-  char buf[20];
+  char buf[21];
   size_t value = FG_PROC_STAT (field, size_t)(ps);
   char *sfx = " KMG";
   size_t frac = 0;
