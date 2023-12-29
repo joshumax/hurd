@@ -519,7 +519,7 @@ SIOCGIF (brdaddr, BRDADDR);
 SIOCGIF (netmask, NETMASK);
 
 /* 39 SIOCGIFHWADDR -- Get the hardware address of a network interface.  */
-error_t
+kern_return_t
 S_iioctl_siocgifhwaddr (struct sock_user *user,
 			ifname_t ifname,
 			sockaddr_t *addr)
@@ -544,7 +544,7 @@ S_iioctl_siocgifhwaddr (struct sock_user *user,
 }
 
 /* 51 SIOCGIFMTU -- Get mtu of a network interface.  */
-error_t
+kern_return_t
 S_iioctl_siocgifmtu (struct sock_user *user,
 		     ifname_t ifnam,
 		     int *mtu)
@@ -564,7 +564,7 @@ S_iioctl_siocgifmtu (struct sock_user *user,
 }
 
 /* 51 SIOCSIFMTU -- Set mtu of a network interface.  */
-error_t
+kern_return_t
 S_iioctl_siocsifmtu (struct sock_user *user,
 		     const ifname_t ifnam,
 		     int mtu)
@@ -598,7 +598,7 @@ S_iioctl_siocsifmtu (struct sock_user *user,
 }
 
 /* 100 SIOCGIFINDEX -- Get index number of a network interface.  */
-error_t
+kern_return_t
 S_iioctl_siocgifindex (struct sock_user *user,
 		       ifname_t ifnam,
 		       int *index)
@@ -618,7 +618,7 @@ S_iioctl_siocgifindex (struct sock_user *user,
 }
 
 /* 101 SIOCGIFNAME -- Get name of a network interface from index number.  */
-error_t
+kern_return_t
 S_iioctl_siocgifname (struct sock_user *user,
 		      ifname_t ifnam,
 		      int *index)

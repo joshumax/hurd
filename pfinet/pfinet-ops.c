@@ -47,7 +47,7 @@ extern int dev_ifconf(char *arg);
 /* Return the list of devices in the format provided by SIOCGIFCONF
    in IFR, but don't return more then AMOUNT bytes. If AMOUNT is
    negative, there is no limit.  */
-error_t
+kern_return_t
 S_pfinet_siocgifconf (io_t port,
 		      vm_size_t amount,
 		      data_t *ifr,
@@ -118,7 +118,7 @@ get_routing_table(int start, int count, ifrtreq_t *routes)
 /* Return the routing table as a series of ifrtreq_t structs
    in routes, but don't return more then AMOUNT number of them.
    If AMOUNT is -1, we get the full table. */
-error_t
+kern_return_t
 S_pfinet_getroutes (io_t port,
 		    vm_size_t amount,
 		    data_t *routes,

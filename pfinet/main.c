@@ -146,7 +146,7 @@ pfinet_demuxer (mach_msg_header_t *inp,
 
 /* The system is going down; destroy all the extant port rights.  That
    will cause net channels and such to close promptly.  */
-error_t
+kern_return_t
 S_startup_dosync (mach_port_t handle)
 {
   struct port_info *inpi = ports_lookup_port (pfinet_bucket, handle,

@@ -78,7 +78,7 @@ calculate_ndevs (struct iouser *user)
  *
  * `*datalen' is updated.
  */
-error_t
+kern_return_t
 S_pci_conf_read (struct protid * master, int reg, char **data,
 		 mach_msg_type_number_t * datalen, vm_size_t amount)
 {
@@ -127,7 +127,7 @@ S_pci_conf_read (struct protid * master, int reg, char **data,
 }
 
 /* Write `datalen' bytes from `data'. `amount' is updated. */
-error_t
+kern_return_t
 S_pci_conf_write (struct protid * master, int reg, const char *data, mach_msg_type_number_t datalen,
 		  vm_size_t * amount)
 {
@@ -165,7 +165,7 @@ S_pci_conf_write (struct protid * master, int reg, const char *data, mach_msg_ty
 }
 
 /* Write in `amount' the number of devices allowed for the user. */
-error_t
+kern_return_t
 S_pci_get_ndevs (struct protid * master, mach_msg_type_number_t * amount)
 {
   /* This RPC may only be addressed to the root node */
@@ -181,7 +181,7 @@ S_pci_get_ndevs (struct protid * master, mach_msg_type_number_t * amount)
  * Return in `data' the information about the available memory
  * regions in the given device.
  */
-error_t
+kern_return_t
 S_pci_get_dev_regions (struct protid * master, char **data, mach_msg_type_number_t * datalen)
 {
   error_t err;
@@ -232,7 +232,7 @@ S_pci_get_dev_regions (struct protid * master, char **data, mach_msg_type_number
 /*
  * Return in `data' the information about the expansion rom of the given device
  */
-error_t
+kern_return_t
 S_pci_get_dev_rom (struct protid * master, char **data, mach_msg_type_number_t * datalen)
 {
   error_t err;
