@@ -826,9 +826,12 @@ main (int argc, char **argv, char **envp)
   /* All programs we start should ignore job control stop signals.
      That way Posix.1 B.2.2.2 is satisfied where it says that programs
      not run under job control shells are protected.  */
-  default_ints[INIT_SIGIGN] = (sigmask (SIGTSTP)
-			       | sigmask (SIGTTIN)
-			       | sigmask (SIGTTOU));
+  sigset_t sigmask;
+  sigemptyset (&sigmask);
+  sigaddset (&sigmask, SIGTSTP);
+  sigaddset (&sigmask, SIGTTIN);
+  sigaddset (&sigmask, SIGTTOU);
+  default_ints[INIT_SIGIGN] = sigmask;
 
   default_ports[INIT_PORT_BOOTSTRAP] = startup;
   run ("/hurd/proc", default_ports, &proctask, proc_insert_ports);

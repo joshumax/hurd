@@ -29,7 +29,6 @@ struct pager_requests *diskfs_disk_pager_requests;
 static void fault_handler (int sig, long int sigcode, struct sigcontext *scp);
 static struct hurd_signal_preemptor preemptor =
   {
-  signals: sigmask (SIGSEGV) | sigmask (SIGBUS),
   preemptor: NULL,
   handler: (sighandler_t) &fault_handler,
   };
@@ -73,6 +72,9 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
   /* Set up the signal preemptor to catch faults on the disk image.  */
   preemptor.first = (vm_address_t) *image;
   preemptor.last = ((vm_address_t) *image + size);
+  sigemptyset (&preemptor.signals);
+  sigaddset (&preemptor.signals, SIGSEGV);
+  sigaddset (&preemptor.signals, SIGBUS);
   hurd_preempt_signals (&preemptor);
 
   /* We have the mapping; we no longer need the send right.  */

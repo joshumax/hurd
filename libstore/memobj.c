@@ -113,9 +113,14 @@ memobj_memcpy (memory_object_t memobj,
     return 0;
 
   if (sigsetjmp (buf, 1) == 0)
-    hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
-		       window, window + windowsize,
-		       &copy, (sighandler_t) &fault);
+    {
+      sigset_t mask;
+      sigemptyset (&mask);
+      sigaddset (&mask, SIGSEGV);
+      sigaddset (&mask, SIGBUS);
+      hurd_catch_signal (mask, window, window + windowsize,
+		         &copy, (sighandler_t) &fault);
+    }
 
   if (window)
     munmap ((caddr_t) window, windowsize);

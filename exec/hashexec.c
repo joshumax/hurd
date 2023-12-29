@@ -53,6 +53,11 @@ check_hashbang (struct execdata *e,
   size_t new_argvlen;
   mach_port_t *new_dtable = NULL;
   mach_msg_type_number_t new_dtablesize;
+  sigset_t arg_env_sigset;
+
+  sigemptyset (&arg_env_sigset);
+  sigaddset (&arg_env_sigset, SIGSEGV);
+  sigaddset (&arg_env_sigset, SIGBUS);
 
   file_t user_fd (int fd)
     {
@@ -293,7 +298,7 @@ check_hashbang (struct execdata *e,
 		  if (strchr (name, '/') != NULL)
 		    error = lookup (name, 0, &name_file);
 		  else if ((error = hurd_catch_signal
-			    (sigmask (SIGBUS) | sigmask (SIGSEGV),
+			    (arg_env_sigset,
 			     (vm_address_t) envp, (vm_address_t) envp + envplen,
 			     &search_path, SIG_ERR)))
 		    name_file = MACH_PORT_NULL;
@@ -416,7 +421,7 @@ check_hashbang (struct execdata *e,
 	}
 
       /* Set up the arguments.  */
-      hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
+      hurd_catch_signal (arg_env_sigset,
 			 (vm_address_t) argv, (vm_address_t) argv + argvlen,
 			 &setup_args, &fault_handler);
     }

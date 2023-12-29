@@ -208,9 +208,14 @@ pager_memcpy (struct pager *pager, memory_object_t memobj,
   window_size = 0;
 
   if (sigsetjmp (buf, 1) == 0)
-    hurd_catch_signal (sigmask (SIGSEGV) | sigmask (SIGBUS),
-		       window, window + window_size,
-		       &do_copy, (sighandler_t) &fault);
+    {
+      sigset_t mask;
+      sigemptyset (&mask);
+      sigaddset (&mask, SIGSEGV);
+      sigaddset (&mask, SIGBUS);
+      hurd_catch_signal (mask, window, window + window_size,
+		         &do_copy, (sighandler_t) &fault);
+    }
 
   if (! err)
     assert_backtrace (n == 0);
