@@ -676,7 +676,7 @@ main(int argc, char *argv[])
   size_t num_cmds = 0;
   struct cmds_argp_params cmds_argp_params = { &cmds, &num_cmds };
   pid_t *pids = 0;              /* User-specified pids.  */
-  size_t num_pids = 0;
+  mach_msg_type_number_t num_pids = 0;
   struct pids_argp_params pids_argp_params = { &pids, &num_pids, 0 };
 
   error_t parse_opt (int key, char *arg, struct argp_state *state)

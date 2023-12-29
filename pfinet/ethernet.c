@@ -324,7 +324,7 @@ void
 setup_ethernet_device (char *name, struct device **device)
 {
   struct net_status netstat;
-  size_t count;
+  mach_msg_type_number_t count;
   int net_address[2];
   error_t err;
   struct ether_device *edev;

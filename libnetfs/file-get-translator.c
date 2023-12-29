@@ -116,7 +116,7 @@ netfs_S_file_get_translator (struct protid *user,
   else if (np->nn_translated & S_IPTRANS)
     {
       char *string = NULL;
-      size_t len = 0;
+      mach_msg_type_number_t len = 0;
       err = netfs_get_translator (np, &string, &len);
       if (!err)
 	{

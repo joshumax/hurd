@@ -135,10 +135,11 @@ S_io_seek (struct sock_user *user,
 
 kern_return_t
 S_io_readable (struct sock_user *user,
-	       vm_size_t *amount)
+	       vm_size_t *out_amount)
 {
   struct sock *sk;
   error_t err;
+  mach_msg_type_number_t amount = 0;
 
   if (!user)
     return EOPNOTSUPP;
@@ -160,7 +161,8 @@ S_io_readable (struct sock_user *user,
     {
     case SOCK_STREAM:
     case SOCK_SEQPACKET:
-      err = tcp_tiocinq (sk, amount);
+      err = tcp_tiocinq (sk, &amount);
+      *out_amount = amount;
       break;
 
     case SOCK_DGRAM:
@@ -169,7 +171,7 @@ S_io_readable (struct sock_user *user,
 	err = EINVAL;
       else
 	/* Boy, I really love the C language. */
-	*amount = (skb_peek (&sk->receive_queue)
+	*out_amount = (skb_peek (&sk->receive_queue)
 		   ? : &((struct sk_buff){}))->len;
       break;
 
@@ -358,7 +360,7 @@ S_io_reauthenticate (struct sock_user *user,
   struct sock_user *newuser;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  size_t genuidlen, gengidlen, auxuidlen, auxgidlen;
+  mach_msg_type_number_t genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   size_t i, j;
   auth_t auth;

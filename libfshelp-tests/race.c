@@ -33,7 +33,8 @@ int main (int argc, char **argv)
   mach_port_t rendezvous = MACH_PORT_NULL;
   int fd;
   int i;
-  mach_msg_type_number_t v;
+  mach_msg_type_number_t n_read;
+  vm_size_t v;
   int blocked = 0;
   char buf[10] = "";
   char *bufp;
@@ -61,12 +62,12 @@ int main (int argc, char **argv)
       if (err)
         error (1, err, "file_record_lock");
 
-      v = sizeof (buf);
+      v = n_read = sizeof (buf);
       bufp = buf;
-      io_read (fd, &bufp, &v, 0, v);
+      io_read (fd, &bufp, &n_read, 0, v);
 
       v = atoi (bufp);
-      sprintf (buf, "%d\n", v + 1);
+      sprintf (buf, "%d\n", (int) (v + 1));
 
       v = 10;
       io_write (fd, buf, sizeof (buf), 0, &v);

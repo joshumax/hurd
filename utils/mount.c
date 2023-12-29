@@ -493,7 +493,7 @@ do_query (struct fs *fs)
   error_t err;
   fsys_t fsys;
   char _opts[200], *opts = _opts;
-  size_t opts_len = sizeof opts;
+  mach_msg_type_number_t opts_len = sizeof opts;
   size_t nopts;
 
   err = fs_fsys (fs, &fsys);
