@@ -775,7 +775,7 @@ main (int argc, char **argv, char **envp)
     }
 }
 
-void *
+void * __attribute__ ((noreturn))
 msg_thread (void *arg)
 {
   while (1)
