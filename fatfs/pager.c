@@ -210,7 +210,7 @@ static error_t
 file_pager_read_huge_page (struct node *node, vm_offset_t page,
 			   void **buf, int *writelock)
 {
-  error_t err;
+  error_t err = 0;
   int offs = 0;
   pthread_rwlock_t *lock = NULL;
   int left = vm_page_size;

@@ -170,7 +170,7 @@ static error_t
 file_pager_read_page (struct node *node, vm_offset_t page,
 		      void **buf, int *writelock)
 {
-  error_t err;
+  error_t err = 0;
   int offs = 0;
   int partial = 0;		/* A page truncated by the EOF.  */
   pthread_rwlock_t *lock = NULL;

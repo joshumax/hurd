@@ -158,7 +158,7 @@ update_random_seed_file (void)
 static error_t
 read_random_seed_file (void)
 {
-  error_t err;
+  error_t err = 0;
   int fd;
   struct stat s;
   void *map;
