@@ -39,7 +39,7 @@ char *diskfs_disk_name = "none";
 int diskfs_default_sync_interval = 0;
 
 /* We must supply some claimed limits, though we don't impose any new ones.  */
-int diskfs_link_max = (1ULL << (sizeof (nlink_t) * CHAR_BIT)) - 1;
+int diskfs_link_max = INT_MAX;
 int diskfs_name_max = 255;	/* dirent d_namlen limit */
 int diskfs_maxsymlinks = 8;
 

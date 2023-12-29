@@ -160,8 +160,11 @@ main (int argc, char **argv)
   struct child *c, *children = NULL;
   process_t proc = getproc ();
 
-  /* We must make sure that chunk_size fits into vm_size_t.  */
-  assert_backtrace (chunk_size <= 1U << (sizeof (vm_size_t) * 8 - 1));
+  /* We must make sure that chunk_size fits into vm_size_t.
+   * We assume sizeof (vm_size_t) = sizeof (uintptr_t). */
+  _Static_assert (sizeof (vm_size_t) == sizeof (uintptr_t),
+      "expected sizeof (vm_size_t) == sizeof (uintptr_t).");
+  assert_backtrace (chunk_size <= UINTPTR_MAX);
 
   /* Parse our arguments.  */
   argp_parse (&argp, argc, argv, 0, 0, 0);
