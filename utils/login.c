@@ -157,12 +157,17 @@ static void
 add_utmp_entry (char *args, unsigned args_len, int inherit_host)
 {
   struct utmp utmp;
+  struct timeval current_time;
   char const *host = 0;
   long addr = 0;
 
   memset (&utmp, 0, sizeof(utmp));
 
-  gettimeofday (&utmp.ut_tv, 0);
+  gettimeofday (&current_time, NULL);
+  /* For x86_64, sizeof(utmp.ut_tv) != sizeof(struct timeval) */
+  utmp.ut_tv.tv_sec = current_time.tv_sec;
+  utmp.ut_tv.tv_usec = current_time.tv_usec;
+
   strncpy (utmp.ut_name, envz_get (args, args_len, "USER") ?: "",
 	   sizeof (utmp.ut_name));
 
