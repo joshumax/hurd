@@ -94,7 +94,6 @@ main (void)
 #endif
 
   printf ("All done.\n");
-  malloc (0);
 
   return 0;
 }
