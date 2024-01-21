@@ -340,7 +340,9 @@ void
 initialize_version_info (void)
 {
   extern const char *const mach_cpu_types[];
+#ifndef __x86_64__
   extern const char *const mach_cpu_subtypes[][32];
+#endif
   kernel_version_t kv;
   char *p;
   struct host_basic_info info;

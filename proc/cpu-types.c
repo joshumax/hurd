@@ -41,6 +41,7 @@ const char *const mach_cpu_types[] =
 #endif
   };
 
+#ifndef __x86_64__
 const char *const mach_cpu_subtypes[][32] =
   {
     [CPU_TYPE_VAX] =
@@ -170,3 +171,4 @@ const char *const mach_cpu_subtypes[][32] =
 	[CPU_SUBTYPE_ALPHA_21064] = "ALPHA_21064",
       },
   };
+#endif  /* !__x86_64__ */
