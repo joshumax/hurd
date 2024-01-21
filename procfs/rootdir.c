@@ -709,14 +709,6 @@ rootdir_file_make_node (void *dir_hook, const void *entry_hook)
   return procfs_make_node (entry_hook, dir_hook);
 }
 
-static struct node *
-rootdir_symlink_make_node (void *dir_hook, const void *entry_hook)
-{
-  struct node *np = procfs_make_node (entry_hook, dir_hook);
-  if (np)
-    procfs_node_chtype (np, S_IFLNK);
-  return np;
-}
 
 /* Translator linkage.  */
 
