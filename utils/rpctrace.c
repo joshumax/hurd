@@ -801,6 +801,20 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
   return 0;
 }
 
+static mach_port_name_t *
+get_port_ref (void *data, const boolean_t is_inline, const int i) {
+  if (is_inline)
+    {
+      mach_port_name_inlined_t *const inlined_port_names = data;
+      return &inlined_port_names[i].name;
+    }
+  else
+    {
+      mach_port_t *const portnames = data;
+      return &portnames[i];
+    }
+}
+
 static void
 print_contents (mach_msg_header_t *inp,
 		void *msg_buf_ptr, struct req_info *req)
@@ -818,6 +832,7 @@ print_contents (mach_msg_header_t *inp,
       mach_msg_type_number_t nelt; /* Number of data items.  */
       mach_msg_type_size_t eltsize; /* Bytes per item.  */
       mach_msg_type_name_t name; /* MACH_MSG_TYPE_* code */
+      boolean_t is_inline = type->msgt_inline;
 
       if (!type->msgt_longform)
 	{
@@ -834,7 +849,7 @@ print_contents (mach_msg_header_t *inp,
 	  data = msg_buf_ptr = lt + 1;
 	}
 
-      if (!type->msgt_inline)
+      if (!is_inline)
 	{
 	  /* This datum is out-of-line, meaning the message actually
 	     contains a pointer to a vm_allocate'd region of data.  */
@@ -857,35 +872,39 @@ print_contents (mach_msg_header_t *inp,
       if (MACH_MSG_TYPE_PORT_ANY_RIGHT (name))
 	{
 	  /* These are port rights.  Translate them into wrappers.  */
-	  mach_port_t *const portnames = data;
 	  mach_msg_type_number_t i;
 	  mach_msg_type_name_t newtypes[nelt ? : 1];
 	  int poly;
 
 	  assert_backtrace (inp->msgh_bits & MACH_MSGH_BITS_COMPLEX);
-	  assert_backtrace (eltsize == sizeof (mach_port_t));
+
+	  if (is_inline)
+	    assert_backtrace (eltsize == sizeof (mach_port_name_inlined_t));
+	  else
+	    assert_backtrace (eltsize == sizeof (mach_port_t));
 
 	  poly = 0;
 	  for (i = 0; i < nelt; ++i)
 	    {
 	      char *str;
+	      mach_port_name_t *port_name = get_port_ref (data, is_inline, i);
 
 	      newtypes[i] = name;
 
-	      str = rewrite_right (&portnames[i], &newtypes[i], req);
+	      str = rewrite_right (port_name, &newtypes[i], req);
 
 	      putc ((i == 0 && nelt > 1) ? '{' : ' ', ostream);
 
-	      if (portnames[i] == MACH_PORT_NULL)
+	      if (*port_name == MACH_PORT_NULL)
 		fprintf (ostream, "(null)");
-	      else if (portnames[i] == MACH_PORT_DEAD)
+	      else if (*port_name == MACH_PORT_DEAD)
 		fprintf (ostream, "(dead)");
 	      else
 		{
 		  if (str != 0)
 		    fprintf (ostream, "%s", str);
 		  else
-		    fprintf (ostream, "%3u", (unsigned int) portnames[i]);
+		    fprintf (ostream, "%3u", (unsigned int) *port_name);
 		}
 	      if (i > 0 && newtypes[i] != newtypes[0])
 		poly = 1;
@@ -900,39 +919,45 @@ print_contents (mach_msg_header_t *inp,
 		  /* Some of the new rights are MAKE_SEND_ONCE.
 		     Turn them all into MOVE_SEND_ONCE.  */
 		  for (i = 0; i < nelt; ++i)
-		    if (newtypes[i] == MACH_MSG_TYPE_MAKE_SEND_ONCE)
-		      {
-			err = mach_port_insert_right (mach_task_self (),
-						      portnames[i],
-						      portnames[i],
-						      newtypes[i]);
-			assert_perror_backtrace (err);
-		      }
-		    else
-		      assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND_ONCE);
+		    {
+		      mach_port_name_t *port_name = get_port_ref (data, is_inline, i);
+		      if (newtypes[i] == MACH_MSG_TYPE_MAKE_SEND_ONCE)
+			{
+			  err = mach_port_insert_right (mach_task_self (),
+							*port_name,
+							*port_name,
+							newtypes[i]);
+			  assert_perror_backtrace (err);
+			}
+		      else
+			assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND_ONCE);
+		    }
 		}
 	      else
 		{
 		  for (i = 0; i < nelt; ++i)
-		    switch (newtypes[i])
+		    {
+		      mach_port_name_t *port_name = get_port_ref (data, is_inline, i);
+		      switch (newtypes[i])
 		      {
-		      case MACH_MSG_TYPE_COPY_SEND:
-			err = mach_port_mod_refs (mach_task_self (),
-						  portnames[i],
-						  MACH_PORT_RIGHT_SEND, +1);
-			assert_perror_backtrace (err);
-			break;
-		      case MACH_MSG_TYPE_MAKE_SEND:
-			err = mach_port_insert_right (mach_task_self (),
-						      portnames[i],
-						      portnames[i],
-						      newtypes[i]);
-			assert_perror_backtrace (err);
-			break;
-		      default:
-			assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND);
-			break;
+			case MACH_MSG_TYPE_COPY_SEND:
+			  err = mach_port_mod_refs (mach_task_self (),
+						    *port_name,
+						    MACH_PORT_RIGHT_SEND, +1);
+			  assert_perror_backtrace (err);
+			  break;
+			case MACH_MSG_TYPE_MAKE_SEND:
+			  err = mach_port_insert_right (mach_task_self (),
+						    *port_name,
+						    *port_name,
+						    newtypes[i]);
+			  assert_perror_backtrace (err);
+			  break;
+			default:
+			  assert_backtrace (newtypes[i] == MACH_MSG_TYPE_MOVE_SEND);
+			  break;
 		      }
+		    }
 
 		  name = MACH_MSG_TYPE_MOVE_SEND;
 		}
