@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
 #include <stdlib.h>
