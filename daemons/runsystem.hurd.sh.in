@@ -17,7 +17,7 @@ export PATH
 umask 022
 
 # If we lose badly, try to exec each of these in turn.
-fallback_shells='/bin/sh /bin/bash /bin/csh /bin/ash /bin/shd'
+fallback_shells='/bin/bash /bin/sh /bin/dash /bin/csh /bin/ash /bin/shd'
 
 # Shell used for normal single-user startup.
 SHELL=/bin/sh
