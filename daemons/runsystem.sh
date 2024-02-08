@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # This program is run by /hurd/init at boot time after the essential
 # servers are up.  It does some initialization of its own and then
@@ -32,18 +32,18 @@ init=/hurd/init
 
 # If we get a SIGLOST, attempt to reopen the console in case
 # our console ports were revoked.  This lets us print messages.
-function reopen_console ()
+reopen_console ()
 {
   exec 1>/dev/console 2>&1 || exit 3
 }
-trap 'reopen_console' SIGLOST
+trap 'reopen_console' 32 # SIGLOST = server died on GNU
 
 
 # Call this when we are losing badly enough that we want to punt normal
 # startup entirely.  We exec a single-user shell, so we will not come back
 # here.  The only way to get to multi-user from that shell will be
 # explicitly exec this script or something like that.
-function singleuser()
+singleuser ()
 {
   test $# -eq 0 || echo "$0: $*"
   for try in ${fallback_shells}; do
@@ -120,5 +120,5 @@ esac
 # This is necessary to make stat / return the correct device ids.
 fsysopts / --update --readonly
 
-# Finally, start the actual init.
+# Finally, start the actual SysV init.
 exec ${init} ${single} -a
