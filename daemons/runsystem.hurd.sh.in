@@ -94,10 +94,10 @@ while [ $# -gt 0 ]; do
   -*)
     flags="${flags}${arg#-}"
     ;;
-  'single'|'emergency') # Linux compat
+  'single')
     flags="${flags}s"
     ;;
-  'fastboot')
+  'fastboot'|'emergency')
     flags="${flags}f"
     ;;
   esac
