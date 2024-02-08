@@ -83,8 +83,6 @@ fi
 ###
 
 # Parse the multiboot command line.  We only pay attention to -s and -f.
-# The first argument is the kernel file name; skip that.
-shift
 flags=
 single=
 while [ $# -gt 0 ]; do
