@@ -56,6 +56,8 @@ singleuser ()
   exit 127
 }
 
+# Print a newline.
+echo
 
 # See whether pflocal is set up already, and do so if not (install case)
 #
