@@ -1093,3 +1093,11 @@ S_proc_get_exe (struct proc *callerp,
   return 0;
 }
 
+kern_return_t
+S_proc_getchildren_rusage (struct proc *p, struct rusage *ru)
+{
+  if (!p)
+    return EOPNOTSUPP;
+  *ru = p->p_child_rusage;
+  return 0;
+}

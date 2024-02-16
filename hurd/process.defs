@@ -466,3 +466,9 @@ simpleroutine proc_reauthenticate_reassign (
    that the user has received from auth_user_authenticate call.  */
 simpleroutine proc_reauthenticate_complete (
 	process: process_t);
+
+/* Returns the rusage information for the children that were waited
+ * for plus all their descendants.  */
+routine proc_getchildren_rusage (
+	process: process_t;
+	out children_rusage: rusage_t);

@@ -76,7 +76,9 @@ struct proc
   int p_sigcode;
   struct rusage p_rusage;	/* my usage if I'm dead, to return via wait */
 
-  struct rusage p_child_rusage;	/* accumulates p_rusage of all dead children */
+  /* Accumulates p_rusage of all dead children, including
+   * grandchildren and their descendants.  */
+  struct rusage p_child_rusage;
 
   unsigned int p_exec:1;	/* has called proc_mark_exec */
   unsigned int p_stopped:1;	/* has called proc_mark_stop */
