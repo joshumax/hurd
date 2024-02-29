@@ -277,18 +277,25 @@ rumpdisk_device_open (mach_port_t reply_port, mach_msg_type_name_t reply_port_ty
       return rump_errno2host (errno);
     }
 
-  ret = rump_sys_ioctl (fd, DIOCGMEDIASIZE, &media_size);
-  if (ret < 0)
-    {
-      mach_print ("DIOCGMEDIASIZE ioctl fails\n");
-      pthread_rwlock_unlock (&rumpdisk_rwlock);
-      return rump_errno2host (errno);
-    }
-
   ret = rump_sys_ioctl (fd, DIOCGSECTORSIZE, &block_size);
   if (ret < 0)
     {
       mach_print ("DIOCGSECTORSIZE ioctl fails\n");
+      pthread_rwlock_unlock (&rumpdisk_rwlock);
+      return rump_errno2host (errno);
+    }
+
+  if (block_size == 0) {
+    mach_print ("Unable to get block size\n");
+    rump_sys_close (fd);
+    pthread_rwlock_unlock (&rumpdisk_rwlock);
+    return D_IO_ERROR;
+  }
+
+  ret = rump_sys_ioctl (fd, DIOCGMEDIASIZE, &media_size);
+  if (ret < 0)
+    {
+      mach_print ("DIOCGMEDIASIZE ioctl fails\n");
       pthread_rwlock_unlock (&rumpdisk_rwlock);
       return rump_errno2host (errno);
     }
@@ -509,8 +516,12 @@ rumpdisk_device_get_status (void *d, dev_flavor_t flavor, dev_status_t status,
       break;
     case DEV_GET_RECORDS:
       status[DEV_GET_RECORDS_RECORD_SIZE] = bd->block_size;
-      status[DEV_GET_RECORDS_DEVICE_RECORDS] =
-	bd->media_size / (unsigned long long) bd->block_size;
+      if (bd->block_size == 0)
+	status[DEV_GET_RECORDS_DEVICE_RECORDS] = 0;
+      else {
+	status[DEV_GET_RECORDS_DEVICE_RECORDS] =
+	  bd->media_size / (unsigned long long) bd->block_size;
+      }
       *count = 2;
       break;
     default:
