@@ -85,7 +85,8 @@ bpf_do_filter(net_rcv_port_t infp, char *p,	unsigned int wirelen,
 		switch (pc->code) {
 
 			default:
-				abort();
+				// Unknown instruction, abort
+				return 0;
 			case BPF_RET|BPF_K:
 				if (infp->rcv_port == MACH_PORT_NULL &&
 						*entpp == 0) {
