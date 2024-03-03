@@ -764,19 +764,24 @@ diskfs_get_translator (struct node *np, char **namep, mach_msg_type_number_t *na
       return err;
     }
 
-  err = ext2_get_xattr (np, "gnu.translator", NULL, &datalen);
-  if (err)
-    return err;
+  /* If xattr is supported by this filesystem, check for new translator record
+   * regardless of flag to use it or not */
+  if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
+    {
+      err = ext2_get_xattr (np, "gnu.translator", NULL, &datalen);
+      if (err)
+        return err;
 
-  *namep = malloc (datalen);
-  if (!*namep)
-    err = ENOMEM;
-  else
-    err = ext2_get_xattr (np, "gnu.translator", *namep, &datalen);
+      *namep = malloc (datalen);
+      if (!*namep)
+        err = ENOMEM;
+      else
+        err = ext2_get_xattr (np, "gnu.translator", *namep, &datalen);
 
-  diskfs_end_catch_exception ();
+      diskfs_end_catch_exception ();
 
-  *namelen = datalen;
+      *namelen = datalen;
+    }
   return err;
 }
 
