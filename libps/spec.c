@@ -19,6 +19,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include <hurd.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert-backtrace.h>
@@ -437,12 +438,12 @@ ps_emit_num_blocks (struct proc_stat *ps, struct ps_fmt_field *field,
 
 size_t
 sprint_frac_value (char *buf,
-		  size_t value, int min_value_len,
-		  size_t frac, int frac_scale,
-		  int width)
+		  uint16_t value, uint8_t min_value_len,
+		  uint16_t frac, uint8_t frac_scale,
+		  uint8_t width)
 {
-  int value_len = 0;
-  int frac_len = 0;
+  uint8_t value_len = 0;
+  uint8_t frac_len = 0;
 
   if (value >= 1000)            /* the integer part */
     value_len = 4;              /* values 1000-1023 */
@@ -462,9 +463,9 @@ sprint_frac_value (char *buf,
     frac /= 10;
 
   if (frac_len > 0)
-    sprintf (buf, "%zd.%0*zd", value, frac_len, frac);
+    sprintf (buf, "%" PRIu16 ".%0*" PRIu16, value, frac_len, frac);
   else
-    sprintf (buf, "%zd", value);
+    sprintf (buf, "%" PRIu16, value);
 
   return strlen (buf);
 }
@@ -492,10 +493,13 @@ error_t
 ps_emit_nice_size_t (struct proc_stat *ps, struct ps_fmt_field *field,
 		     struct ps_stream *stream)
 {
-  char buf[21];
+  char buf[20];
   size_t value = FG_PROC_STAT (field, size_t)(ps);
-  char *sfx = " KMG";
+  char *sfx = " KMGTPE";
   size_t frac = 0;
+
+  _Static_assert (sizeof (size_t) <= 8,
+      "ps_emit_nice_size_t can only emit size_t up to 8 bytes long.");
 
   while (value >= 1024)
     {
