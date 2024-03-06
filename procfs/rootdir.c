@@ -315,7 +315,10 @@ rootdir_gc_meminfo (void *hook, char **contents, ssize_t *contents_len)
       "Inactive: %14lu kB\n"
       "Mlocked:  %14lu kB\n"
       ,
-      (long unsigned) hbi.memory_size / 1024,
+      (long unsigned) (vmstats.free_count +
+		       vmstats.active_count +
+		       vmstats.inactive_count +
+		       vmstats.wire_count) * PAGE_SIZE / 1024,
       (long unsigned) vmstats.free_count * PAGE_SIZE / 1024,
       0UL,
       (long unsigned) cache_stats.cache_count * PAGE_SIZE / 1024,
