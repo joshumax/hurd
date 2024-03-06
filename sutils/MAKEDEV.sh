@@ -77,9 +77,23 @@ st() {
   local NODE="$1"
   local OWNER="$2"
   local PERM="$3"
-  shift 3
+  local NODE_TYPE="$4"
+  shift 4
   if [ "$KEEP" ] && showtrans "$NODE" > /dev/null 2>&1 ; then
     return;
+  fi
+  if [ ! -e "$NODE" ]; then
+    case "$NODE_TYPE" in
+      b|c)
+        cmd mknod "$NODE" "$NODE_TYPE" 0 0
+        ;;
+      d)
+        cmd mkdir "$NODE"
+        ;;
+      *)
+        lose "Unknown node type $NODE_TYPE for $NODE"
+        ;;
+    esac
   fi
   if cmd settrans $STFLAGS -c "$NODE"; then
     cmd chown "$OWNER" "$NODE"
@@ -109,47 +123,47 @@ mkdev() {
 	mkdev console tty random urandom null zero full fd time mem klog shm
 	;;
       console|com[0-9])
-	st $I root 600 /hurd/term ${DEVDIR}/$I device $I;;
+	st $I root 600 c /hurd/term ${DEVDIR}/$I device $I;;
       vcs)
-        st $I root 600 /hurd/console;;
+        st $I root 600 d /hurd/console;;
       tty[1-9][0-9]|tty[1-9])
-        st $I root 600 /hurd/term ${DEVDIR}/$I hurdio \
+        st $I root 600 c /hurd/term ${DEVDIR}/$I hurdio \
 	   ${DEVDIR}/vcs/`echo $I | sed -e s/tty//`/console;;
       lpr[0-9])
-        st $I root 660 /hurd/streamio "$I";;
+        st $I root 660 c /hurd/streamio "$I";;
       random)
-	st $I root 644 /hurd/random --seed-file /var/lib/random-seed;;
+	st $I root 644 c /hurd/random --seed-file /var/lib/random-seed;;
       urandom)
 	# Our /dev/random is both secure and non-blocking.  Create a
 	# link for compatibility with Linux.
 	cmd ln -f -s random $I;;
       null)
-	st $I root 666 /hurd/null;;
+	st $I root 666 c /hurd/null;;
       full)
-	st $I root 666 /hurd/null --full;;
+	st $I root 666 c /hurd/null --full;;
       zero)
-	st $I root 666 /bin/nullauth -- /hurd/storeio -Tzero;;
+	st $I root 666 c /bin/nullauth -- /hurd/storeio -Tzero;;
       tty)
-	st $I root 666 /hurd/magic tty;;
+	st $I root 666 c /hurd/magic tty;;
       fd)
-	st $I root 666 /hurd/magic --directory fd
+	st $I root 666 d /hurd/magic --directory fd
 	cmd ln -f -s fd/0 stdin
 	cmd ln -f -s fd/1 stdout
 	cmd ln -f -s fd/2 stderr
 	;;
       'time')
-	st $I root 644 /hurd/storeio --no-cache time ;;
+	st $I root 644 c /hurd/storeio --no-cache time ;;
       mem)
-	st $I root 660 /hurd/storeio --no-cache mem ;;
+	st $I root 660 c /hurd/storeio --no-cache mem ;;
       klog)
-        st $I root 660 /hurd/streamio kmsg;;
+        st $I root 660 c /hurd/streamio kmsg;;
       # ptys
       [pt]ty[pqrstuvwxyzPQRS]?)
 	# Make one pty, both the master and slave halves.
 	local id="${I#???}"
-	st pty$id root 666 /hurd/term ${DEVDIR}/pty$id \
+	st pty$id root 666 c /hurd/term ${DEVDIR}/pty$id \
 				      pty-master ${DEVDIR}/tty$id
-	st tty$id root 666 /hurd/term ${DEVDIR}/tty$id \
+	st tty$id root 666 c /hurd/term ${DEVDIR}/tty$id \
 				      pty-slave ${DEVDIR}/pty$id
 	;;
       [pt]ty[pqrstuvwxyzPQRS])
@@ -162,11 +176,11 @@ mkdev() {
 	;;
 
       fd*|mt*)
-	st $I root 640 /hurd/storeio $I
+	st $I root 640 b /hurd/storeio $I
 	;;
 
       rumpdisk)
-	st $I root 660 /hurd/rumpdisk
+	st $I root 660 c /hurd/rumpdisk
 	cmd ln -f -s rumpdisk disk
 	;;
       [hrscw]d*)
@@ -214,18 +228,18 @@ mkdev() {
 	# The device name passed all syntax checks, so finally use it!
 	if [ "$USE_PARTSTORE" ] && [ -z "$rest" ] && [ "$sliceno" ]; then
 	  local dev=${I%s[0-9]*}
-	  st $I root 640 /hurd/storeio -T typed part:$sliceno:device:$MASTER$dev
+	  st $I root 640 b /hurd/storeio -T typed part:$sliceno:device:$MASTER$dev
 	else
-	  st $I root 640 /hurd/storeio $MASTER$I
+	  st $I root 640 b /hurd/storeio $MASTER$I
 	fi
 	;;
 
       netdde)
-	st $I root 660 /hurd/netdde
+	st $I root 660 c /hurd/netdde
 	cmd ln -f -s netdde net
 	;;
       eth*)
-	st $I root 660 /hurd/devnode -M /dev/net $I;;
+	st $I root 660 c /hurd/devnode -M /dev/net $I;;
 
       # /dev/shm is used by the POSIX.1 shm_open call in libc.
       # We don't want the underlying node to be written by randoms,
@@ -235,18 +249,18 @@ mkdev() {
       # Linux, we tell tmpfs to set the size to half the physical RAM
       # in the machine.
       shm)
-        st $I root 644 /hurd/tmpfs --mode=1777 50%
+        st $I root 644 d /hurd/tmpfs --mode=1777 50%
         ;;
 
       pseudo-root)
-        st $I root 640 /hurd/storeio $I
+        st $I root 640 b /hurd/storeio $I
         ;;
 
       # Linux compatibility
       loop*)
         # In Linux an inactive "/dev/loopN" device acts like /dev/null.
 	# The `losetup' script changes the translator to "activate" the device.
-        st $I root 640 /hurd/null
+        st $I root 640 c /hurd/null
 	;;
 
       *)
