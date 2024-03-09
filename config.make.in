@@ -51,8 +51,6 @@ MIG = @MIG@
 MIGCOM = $(MIG) -cc cat - /dev/null
 AWK = @AWK@
 SED = @SED@
-LEX = @LEX@
-YACC = @YACC@
 
 # Compilation flags.  Append these to the definitions already made by
 # the specific Makefile.
@@ -69,12 +67,10 @@ PARTED_LIBS = @PARTED_LIBS@
 LIBNCURSESW = @LIBNCURSESW@
 NCURSESW_INCLUDE = @NCURSESW_INCLUDE@
 
-# How to compile and link against X11.
-HAVE_X11 = @have_x11@
-X11_CFLAGS = @X11_CFLAGS@
-X11_LIBS = @X11_LIBS@
-XKB_BASE = @XKB_BASE@
-X11_KEYSYMDEF_H = @X11_KEYSYMDEF_H@
+# How to compile and link against xkbcommon.
+HAVE_XKBCOMMON = @have_xkbcommon@
+XKBCOMMON_CFLAGS = @xkbcommon_CFLAGS@
+XKBCOMMON_LIBS = @xkbcommon_LIBS@
 
 # How to compile and link against libdaemon.
 libdaemon_CFLAGS = @libdaemon_CFLAGS@

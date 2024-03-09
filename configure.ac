@@ -286,62 +286,12 @@ AC_MSG_RESULT($boot_store_types)
 # Check for ncursesw, which is needed for the console-curses client.
 hurd_LIB_NCURSESW
 
-AC_PROG_LEX
-AC_PROG_YACC
-AS_IF([test "$LEX" = ":" -o "$YACC" = ":"], [
-have_x11=no
-AC_MSG_WARN([lex or yacc is mising, XKB will be disabled.])
-],[
-# Check for those Xorg modules needed for keyboard mappings.
-PKG_CHECK_MODULES([X11], [x11 xproto],
-  [ have_x11=yes
-    pkg_failed=no
-    AC_MSG_CHECKING([for xkb base])
-    _PKG_CONFIG([XKB_BASE], [variable=xkb_base], [xkeyboard-config])
-    AS_IF([test $pkg_failed = no],
-      [XKB_BASE="$pkg_cv_XKB_BASE"
-       AC_MSG_RESULT([$XKB_BASE])],
-      [XKB_BASE="$datadir/X11/xkb"
-       AC_MSG_RESULT([(default) $XKB_BASE])])
-    pkg_failed=no
-    AC_MSG_CHECKING([for X11 prefix])
-    _PKG_CONFIG([X11_PREFIX], [variable=prefix], [x11])
-    AS_IF([test $pkg_failed = no],
-      [X11_PREFIX="$pkg_cv_X11_PREFIX"
-       AC_MSG_RESULT([$X11_PREFIX])],
-      [X11_PREFIX="$prefix"
-       AC_MSG_RESULT([(default) $X11_PREFIX])])
+# Check for xkbcommon, needed for keyboard mappings.
+PKG_CHECK_MODULES([xkbcommon], [xkbcommon], [have_xkbcommon=yes], [have_xkbcommon=no])
 
-    have_keysymdef_h=no
-    AC_CHECK_HEADER([X11/keysymdef.h],
-      [AC_MSG_CHECKING([for X11/keysymdef.h absolute location])
-       AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <X11/keysymdef.h>]])],
-         [[X11_KEYSYMDEF_H=`$SED -n 's%^[^"]*"\([^"]*X11/keysymdef.h\)".*$%\1%p' conftest.i`]
-          # did the sed magic above work?
-          AS_IF([test -f "$X11_KEYSYMDEF_H"],
-            [have_keysymdef_h=yes],
-            [X11_KEYSYMDEF_H=not-found])
-         ],
-         [X11_KEYSYMDEF_H=not-found])
-       AC_MSG_RESULT([$X11_KEYSYMDEF_H])
-      ])
-    AS_IF([test $have_keysymdef_h = no],
-      [AC_MSG_WARN([X11/keysymdef.h was not found, XKB will be disabled.])
-       have_x11=no])
-  ], [have_x11=no])
-])
-
-AS_IF([test "$have_x11" = "yes"],
-  [AC_MSG_CHECKING([whether AWK is usable])
-   AS_IF([test "$AWK" != ":" && $AWK 'BEGIN { strtonum("1"); }' 2>/dev/null],
-     [AC_MSG_RESULT([yes])],
-     [AC_MSG_RESULT([no])
-      AC_MSG_ERROR([$AWK does not provide required strtonum function])])])
-
-AC_SUBST([have_x11])
-AC_SUBST([XKB_BASE])
-AC_DEFINE_UNQUOTED([X11_PREFIX], "$X11_PREFIX")
-AC_SUBST([X11_KEYSYMDEF_H])
+AC_SUBST([have_xkbcommon])
+AC_SUBST([xkbcommon_CFLAGS])
+AC_SUBST([xkbcommon_LIBS])
 
 # Check for Sun RPC headers and library.
 AC_ARG_WITH([libtirpc],

@@ -45,11 +45,8 @@
 /* The keyboard device in the kernel.  */
 static device_t kbd_dev;
 
-/* The converter.
-   XXX: Here it is used by the fixed US layout code. It's not static because
-   xkb.c also needs a converter. This variable and it's initialization should
-   be moved there once XKB is supported in OSKit.  */
-iconv_t cd;
+/* The converter. */
+static iconv_t cd;
 
 /* The status of various LEDs.  */
 struct {
@@ -710,14 +707,13 @@ keycode_t
 read_keycode (void)
 {
   scancode_t sc = input_next ();
-  int release = 0;
 
   /* The keypress generated two keycodes.  */
   if (sc == SC_EXTENDED1)
     {
       sc = input_next ();
 
-      release = sc & 0x80;
+      int release = sc & 0x80;
       sc &= ~0x80;
 
       switch (sc)
@@ -780,8 +776,6 @@ read_keycode (void)
 
       sc |= release;
     }
-  else
-    release = sc & 0x80;
 
   return sc;
 }
@@ -805,30 +799,17 @@ input_loop (void *unused)
         {
           keypress_t key;
 
-          key.keycode = read_keycode () + min_keys;
-          key.rel = key.keycode & 0x80;
-          key.redir = 0;
+          keycode_t raw_keycode = read_keycode () + get_min_keycode();
+          key.keycode = raw_keycode & ~0x80;
+          key.rel = raw_keycode & 0x80;
 
-          if (!key.rel && key.keycode == prevkey)
-            key.repeat = 1;
-          else
-            key.repeat = 0;
-
-          if (key.repeat)
+          /* don’t allow repeated key */
+          if (raw_keycode == prevkey)
             continue;
 
-          /* The keycombination CTRL+Alt+Backspace terminates the console
-             client. Keycodes instead of modifiers+symbols are used to
-             make it able to exit the client, even when the keymaps are
-             faulty.  */
-          if ((keystate[64].keypressed || keystate[113].keypressed) /* Alt */
-              && (keystate[37].keypressed || keystate[109].keypressed) /* CTRL*/
-              && keystate[22].keypressed && ctrlaltbs) /* Backspace.  */
-            console_exit ();
+          process_input(key);
 
-          if (!key.repeat)
-            xkb_input_key (key.keycode);
-          prevkey = key.keycode;
+          prevkey = raw_keycode;
         }
 
         return 0;
@@ -1188,9 +1169,10 @@ struct arguments
 {
   int pos;
 #ifdef XKB_SUPPORT
-  char *xkbdir;
-  char *keymapfile;
-  char *keymap;
+  char *model;
+  char *layout;
+  char *variant;
+  char *options;
   char *composefile;
   int ctrlaltbs;
   int repeat_delay;
@@ -1204,12 +1186,14 @@ static const struct argp_option options[] =
 /* Some random ids for options available only in long form. */
 #define REPEAT_DELAY_ID 25425
 #define REPEAT_INTERVAL_ID 5322
-    {"xkbdir",     'x', "DIR",          0, 
-     "Directory containing the XKB configuration files" },
-    {"keymapfile", 'f', "FILE",         0,
-     "File containing the keymap" },
-    {"keymap",     'k', "SECTIONNAME" , 0,
-     "Choose keymap"},
+    {"model",      'm', "XKB_MODEL",           0,
+     "the keyboard model for xkb" },
+    {"layout",     'l', "XKB_LAYOUT",          0,
+     "The layout of the keyboard" },
+    {"variant",    'v', "XKB_VARIANT" ,        0,
+     "The variant to use"},
+    {"options",    'p', "XKB_OPTIONS" ,        0,
+     "The xkb options"},
     {"compose",    'o', "COMPOSEFILE", 0,
      "Compose file to load (default none)"},
     {"ctrlaltbs",  'c', 0		     , 0,
@@ -1234,17 +1218,21 @@ parse_opt (int key, char *arg, struct argp_state *state)
   switch (key)
     {
 #ifdef XKB_SUPPORT
-    case 'x':
-      arguments->xkbdir = arg;
+    case 'm':
+      arguments->model = arg;
       break;
 
-    case 'f':
-      arguments->keymapfile = arg;
+    case 'l':
+      arguments->layout = arg;
       break;
 
-    case 'k':
-      arguments->keymap = arg;
+    case 'v':
+      arguments->variant = arg;
       break;
+
+    case 'p': // o already taken for composefile
+      arguments->options = arg;
+    break;
 
     case 'o':
       arguments->composefile = arg;
@@ -1292,9 +1280,10 @@ pc_kbd_init (void **handle, int no_exit, int argc, char *argv[], int *next)
     {
       pos: 1
 #ifdef XKB_SUPPORT
-      , xkbdir: 0
-      , keymapfile: 0
-      , keymap: 0
+      , model: 0
+      , layout: 0
+      , variant: 0
+      , options: 0
       , composefile: 0
       , ctrlaltbs: 1
       , repeat_delay: -1
@@ -1311,14 +1300,6 @@ pc_kbd_init (void **handle, int no_exit, int argc, char *argv[], int *next)
     return err;
 
 #ifdef XKB_SUPPORT
-  if (!arguments.xkbdir)
-    {
-      arguments.xkbdir = XKB_DATA_DIR;
-    }
-  if (!arguments.keymapfile)
-    {
-      arguments.keymapfile = "keymap/hurd";
-    }
   if (arguments.repeat_delay <= 0)
     {
       arguments.repeat_delay = 50;
@@ -1332,13 +1313,11 @@ pc_kbd_init (void **handle, int no_exit, int argc, char *argv[], int *next)
   xkb_repeat_delay = arguments.repeat_delay;
   xkb_repeat_interval = arguments.repeat_interval;
 
-  err = read_composefile (arguments.composefile);
-  if (err)
-    return err;
-
-  xkb_data_init ();
-  err = xkb_load_layout (arguments.xkbdir, arguments.keymapfile,
-                         arguments.keymap);
+  /* Force rules to be "base" to be compatible with the raw keycode we give.
+   * Otherwise, evdev will be selected and the scancode to keycode conversion won’t be the same
+   * and would be incompatible with the input we give.
+   */
+  err = xkb_context_init ("base", arguments.model, arguments.layout, arguments.variant, arguments.options, arguments.composefile);
 
   if (err)
     return err;
@@ -1444,7 +1423,11 @@ pc_kbd_fini (void *handle, int force)
 
   console_unregister_consnode (cnode);
   console_destroy_consnode (cnode);
-  
+
+#ifdef XKB_SUPPORT
+  xkb_context_cleanup ();
+#endif
+
   return 0;
 }
 

@@ -62,16 +62,15 @@ XFree and will be placed in /share/X11/xkb on most systems.
 This module adds the following set of options to pc-kbd for overriding
 the default behaviour:
 
---xkbdir : The root directory of the xkb configuration, by default
- this is /share/X11/xkb.
+--model : model of the keyboard (usually pc105).
 
---keymapfile : The file that hold the descriptions of the default
- keymaps file. This file holds the description of all keymaps. This
- path should be relative to the path set by `xkbdir'. By default
- "keymap/xfree86" is used.
+--layout : The layout of the keyboard (us, fr, it, etc).
 
---keymap : The keymap to use. By default en_US is used. Examples of
- some other keymaps are: fr, us, de, dvorak. Example: --keymap=de
+--variant : The variant of layout to use (latin9, dvorak, etc).
+
+--options : The options to pass to xkbcommon.
+
+--composefile : The compose file to use for key composition in the keyboard (ctrl, alt, etc).
 
 --ctrlaltbs : CTRL+Alt+Backspace will exit the console client.
 --no-ctrlaltbs : CTRL+Alt+Backspace will not exit the console client.
@@ -81,18 +80,6 @@ the default behaviour:
 
 --repeat-interval : The number of jiffies the driver should wait
   between each repeated key. By default this is 10 jiffies.
-
-I wrote some XKB extensions and configuration files to use these
-extensions. You can find these files in the xkb-data directory.
-
-The build system will copy these files to where your XKB
-configuration files are (usually /share/X11/xkb).
-
-for example: xkb-data/keymap/hurd will be copied to /share/X11/xkb/keymap.
-
-To use these extensions you have to use the hurd keymaps file. This
-holds all keymaps extended with Hurd features. Use "--keymapfile
-keymap/hurd" to select this file.
 
 After that you can use these keybindings:
 

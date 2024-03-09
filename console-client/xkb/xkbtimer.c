@@ -56,28 +56,13 @@ static struct per_key_timer
   
   /* Used for bouncekeys.  */
   struct timer_list disable_timer;
+
+  /* The key was disabled for bouncekeys.  */
+  unsigned short disabled;
 } per_key_timers[255];
 
 /* The last pressed key. Only this key may generate keyrepeat events.  */
 static int lastkey = 0;
-
-error_t
-xkb_handle_key (keycode_t kc)
-{
-  static keycode_t prevkc = 0;
-  keypress_t key;
-  
-  key.keycode = kc & 127;
-  key.prevkc = prevkc;
-  key.repeat = (prevkc == kc);
-  key.redir = 0;
-  key.rel = kc & 128;
-  keystate[key.keycode & 127].keypressed = key.rel ? 0 : 1;
-  debug_printf ("PRESSED: %d\n", !(key.rel));
-  xkb_input (key);
-  prevkc = key.keycode;
-  return 0;
-}
 
 error_t
 xkb_init_repeat (int delay, int repeat)
@@ -99,8 +84,19 @@ key_enable (void *handle)
   int key = (int) handle;
   
   /* Enable the key.  */
-  keystate[key].disabled = 0;
+  per_key_timers[key].disabled = 0;
   
+  return 0;
+}
+
+error_t
+xkb_generate_event (keycode_t kc)
+{
+  static keycode_t prevkc = 0;
+
+  keycode_t keycode = kc & 127;
+  process_keypress_event (keycode);
+  prevkc = keycode;
   return 0;
 }
 
@@ -111,7 +107,7 @@ key_timing (void *handle)
 {
   int current_key = (int) handle;
 
-  xkb_handle_key (current_key);
+  xkb_generate_event (current_key);
 
   /* Another key was pressed after this key, stop repeating.  */
   if (lastkey != current_key)
@@ -130,16 +126,7 @@ key_timing (void *handle)
 	= fetch_jiffies () + key_delay;
       lastkey = current_key;
       
-      if (keys[current_key].flags & KEYNOREPEAT)
-	{
-	  per_key_timers[current_key].enable_status = timer_stopped;
-	  /* Stop the timer.  */
-	  return 0;
-	}
-      else
-	{
-	  per_key_timers[current_key].enable_status = timer_repeat_delay;
-	}
+      per_key_timers[current_key].enable_status = timer_repeat_delay;
       break;
     case timer_repeat_delay:
       per_key_timers[current_key].enable_status = timer_repeating;
@@ -152,54 +139,38 @@ key_timing (void *handle)
   return 1;
 }
 
-error_t
-xkb_input_key (int key)
+void
+xkb_key_released(keycode_t keycode, keycode_t keyc)
 {
-  int pressed = !(key & 128);
-  int keyc = key & 127;
-
-  debug_printf ("KEYIN: %d\n", key);
-
-  /* Filter out any double or disabled keys.  */
-  if (key == lastkey || keystate[keyc].disabled)
-    return 0;
-
-  /* Always handle keyrelease events.  */
-  if (!pressed)
+  /* Stop the timer for this released key.  */
+  if (per_key_timers[keyc].enable_status != timer_stopped)
     {
-      /* Stop the timer for this released key.  */
-      if (per_key_timers[keyc].enable_status != timer_stopped)
-	{
-	  timer_remove (&per_key_timers[keyc].enable_timer);
-	  per_key_timers[keyc].enable_status = timer_stopped;
-	}
-
-      /* No more last key; it was released.  */
-      if (keyc == lastkey)
-	lastkey = 0;
-
-      /* Make sure the key was pressed before releasing it, it might
-	 not have been accepted.  */
-      if (keystate[key & 127].keypressed)
-	xkb_handle_key (key);
-
-      /* If bouncekeys is active, disable the key.  */
-      if (bouncekeys_active)
-	{
-	  keystate[keyc].disabled = 1;
-	    
-	  /* Setup a timer to enable the key.  */
-	  timer_clear (&per_key_timers[keyc].disable_timer);
-	  per_key_timers[keyc].disable_timer.fnc = key_enable;
-	  per_key_timers[keyc].disable_timer.fnc_data = (void *) keyc;
-	  per_key_timers[keyc].disable_timer.expires
-	    = fetch_jiffies () + bouncekeys_delay;
-	  timer_add (&per_key_timers[keyc].disable_timer);
-	}
-
-      return 0;
+      timer_remove (&per_key_timers[keyc].enable_timer);
+      per_key_timers[keyc].enable_status = timer_stopped;
     }
 
+  /* No more last key; it was released.  */
+  if (keyc == lastkey)
+    lastkey = 0;
+
+  /* If bouncekeys is active, disable the key.  */
+  if (bouncekeys_active)
+    {
+      per_key_timers[keyc].disabled = 1;
+
+      /* Setup a timer to enable the key.  */
+      timer_clear (&per_key_timers[keyc].disable_timer);
+      per_key_timers[keyc].disable_timer.fnc = key_enable;
+      per_key_timers[keyc].disable_timer.fnc_data = (void *) keyc;
+      per_key_timers[keyc].disable_timer.expires
+        = fetch_jiffies () + bouncekeys_delay;
+      timer_add (&per_key_timers[keyc].disable_timer);
+    }
+}
+
+void
+xkb_key_pressed(keycode_t keyc)
+{
   /* Setup the timer for slowkeys.  */
   timer_clear (&per_key_timers[keyc].enable_timer);
   lastkey = keyc;
@@ -210,22 +181,29 @@ xkb_input_key (int key)
     {
       per_key_timers[keyc].enable_status = timer_slowkeys;
       per_key_timers[keyc].enable_timer.expires
-	= fetch_jiffies () + slowkeys_delay;
+        = fetch_jiffies () + slowkeys_delay;
     }
   else
     {
-      /* Immediately report the keypress.  */
-      xkb_handle_key (keyc);
-
-      /* Check if this repeat is allowed for this keycode.  */
-      if (keys[keyc].flags & KEYNOREPEAT)
-	return 0; /* Nope.  */
-
       per_key_timers[keyc].enable_status = timer_repeat_delay;
       per_key_timers[keyc].enable_timer.expires
-	= fetch_jiffies () + key_delay;
+        = fetch_jiffies () + key_delay;
     }
   timer_add (&per_key_timers[keyc].enable_timer);
+}
 
-  return 0;
+void
+xkb_timer_notify_input (keypress_t key)
+{
+  int keyc = key.keycode & 127;
+
+  /* Filter out any double or disabled keys.  */
+  if ((!key.rel && key.keycode == lastkey) || per_key_timers[keyc].disabled)
+    return;
+
+  /* Always handle key release events.  */
+  if (key.rel)
+    xkb_key_released(key.keycode, keyc);
+  else
+    xkb_key_pressed(keyc);
 }
