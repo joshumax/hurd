@@ -713,7 +713,7 @@ read_keycode (void)
   int release = 0;
 
   /* The keypress generated two keycodes.  */
-  if (sc == 0xE0)
+  if (sc == SC_EXTENDED1)
     {
       sc = input_next ();
 
