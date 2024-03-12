@@ -896,6 +896,8 @@ console_setup_node (char *path)
   err = file_set_translator (node, 0, FS_TRANS_EXCL | FS_TRANS_SET, 0, 0, 0,
 			     right, MACH_MSG_TYPE_COPY_SEND);
   mach_port_deallocate (mach_task_self (), right);
+  if (err)
+    error (1, err, "Cannot set translator on underlying node");
 
   err = io_stat (node, &ul_stat);
   if (err)
