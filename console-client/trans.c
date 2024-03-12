@@ -892,6 +892,8 @@ console_setup_node (char *path)
     error (1, err, "Cannot map time");
 
   err = ports_create_port (netfs_control_class, netfs_port_bucket, sizeof (struct port_info), &newpi);
+  if (err)
+    error (1, err, "Cannot create port");
   right = ports_get_send_right (newpi);
   err = file_set_translator (node, 0, FS_TRANS_EXCL | FS_TRANS_SET, 0, 0, 0,
 			     right, MACH_MSG_TYPE_COPY_SEND);
