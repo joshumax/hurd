@@ -90,6 +90,11 @@ elf_machine_matches_host (ElfW(Half) e_machine)
     case CPU_TYPE_HPPA:
       CACHE (e_machine == EM_PARISC);
 
+#if defined (CPU_TYPE_ARM64) || defined(__aarch64__)
+    case CPU_TYPE_ARM64:
+      CACHE (e_machine == EM_AARCH64);
+#endif
+
     default:
       return EGRATUITOUS;	/* XXX */
     }
