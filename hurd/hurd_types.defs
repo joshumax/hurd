@@ -425,7 +425,7 @@ type flock_t = struct {
 };
 
 type unsigned_int = uint32_t;
-#if defined(__x86_64__)
+#if defined(__LP64__)
 type long = int64_t;
 type unsigned_long = uint64_t;
 
