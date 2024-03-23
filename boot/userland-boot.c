@@ -334,6 +334,17 @@ boot_script_exec_cmd (void *hook,
     thread_set_state (thread, ALPHA_THREAD_STATE,
 		      (thread_state_t) &regs, reg_size);
   }
+#elif defined (AARCH64_THREAD_STATE_COUNT)
+  {
+    struct aarch64_thread_state regs;
+    reg_size = AARCH64_THREAD_STATE_COUNT;
+    thread_get_state (thread, AARCH64_THREAD_STATE,
+		      (thread_state_t) &regs, &reg_size);
+    regs.sp = (long) arg_pos;
+    regs.pc = (long) startpc;
+    thread_set_state (thread, AARCH64_THREAD_STATE,
+		      (thread_state_t) &regs, reg_size);
+  }
 #else
 # error needs to be ported
 #endif
