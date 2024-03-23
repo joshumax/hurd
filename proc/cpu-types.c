@@ -36,6 +36,9 @@ const char *const mach_cpu_types[] =
 #ifdef CPU_TYPE_X86_64
     [CPU_TYPE_X86_64] = "x86_64",
 #endif
+#ifdef CPU_TYPE_ARM64
+    [CPU_TYPE_ARM64] = "aarch64",
+#endif
   };
 
 const char *const mach_cpu_subtypes[][32] =

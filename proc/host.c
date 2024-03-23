@@ -355,11 +355,11 @@ initialize_version_info (void)
   assert_backtrace (! err);
   snprintf (uname_info.machine, sizeof uname_info.machine,
 	    "%s"
-#ifndef __x86_64__
+#if !defined (__x86_64__) && !defined (__aarch64__)
 	    "-%s"
 #endif
 	    , mach_cpu_types[info.cpu_type]
-#ifndef __x86_64__
+#if !defined (__x86_64__) && !defined (__aarch64__)
 	    , mach_cpu_subtypes[info.cpu_type][info.cpu_subtype]
 #endif
 	    );
