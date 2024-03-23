@@ -614,7 +614,7 @@ hurdio_mdmctl (int how, int bits)
 
 
 static int
-hurdio_mdmstate (void)
+hurdio_mdmstate (int *state)
 {
   int oldbits;
 
