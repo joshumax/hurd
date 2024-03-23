@@ -1335,11 +1335,12 @@ do_exec (file_t file,
   if (e.error)
     goto out;
 
-  /* It would probably be better to change mach_setup_thread so
-     it does a vm_map with the right permissions to start with.  */
-  if (!e.info.elf.execstack)
+  /* mach_setup_thread () creates non-executable stacks (with vm_allocate ()).
+     It would probably be better to change mach_setup_thread () so it does
+     a vm_map () with the right permissions to start with.  */
+  if (e.info.elf.execstack || (e.interp.section && interp.info.elf.execstack))
     e.error = vm_protect (newtask, boot->stack_base, boot->stack_size,
-			  0, VM_PROT_READ | VM_PROT_WRITE);
+			  0, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE);
 
   if (oldtask != newtask && oldtask != MACH_PORT_NULL)
     {
