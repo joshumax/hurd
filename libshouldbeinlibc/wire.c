@@ -136,7 +136,7 @@ wire_task_self (void)
   if (err)
     return err;
 
-  err = wire_segment_internal (VM_MIN_ADDRESS, VM_MAX_ADDRESS, host);
+  err = wire_segment_internal (0, (vm_size_t) -1, host);
   if (err)
     goto out;
 
