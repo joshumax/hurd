@@ -187,6 +187,32 @@ fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
 			   (thread_state_t) fpregs, &count);
 }
 
+#elif defined (AARCH64_THREAD_STATE)
+
+# define ELF_MACHINE		EM_AARCH64
+
+static inline void
+fetch_thread_regset (thread_t thread, prgregset_t *gregs)
+{
+  mach_msg_type_number_t count = AARCH64_THREAD_STATE_COUNT;
+  _Static_assert (sizeof (prgregset_t) == sizeof (struct aarch64_thread_state),
+		  "thread state mismatch");
+  (void) thread_get_state (thread, AARCH64_THREAD_STATE,
+			   (thread_state_t) gregs, &count);
+  assert_backtrace (count == AARCH64_THREAD_STATE_COUNT);
+}
+
+static inline void
+fetch_thread_fpregset (thread_t thread, prfpregset_t *fpregs)
+{
+  mach_msg_type_number_t count = AARCH64_FLOAT_STATE_COUNT;
+  _Static_assert (sizeof (prfpregset_t) == sizeof (struct aarch64_float_state),
+		  "float state mismatch");
+  (void) thread_get_state (thread, AARCH64_FLOAT_STATE,
+			   (thread_state_t) fpregs, &count);
+  assert_backtrace (count == AARCH64_FLOAT_STATE_COUNT);
+}
+
 #else
 # warning "do not understand this machine flavor, no registers in dumps"
 # define ELF_MACHINE		EM_NONE
