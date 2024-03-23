@@ -1219,7 +1219,9 @@ do_exec (file_t file,
       munmap ((caddr_t) threads, nthreads * sizeof (thread_t));
 
       /* Deallocate the entire virtual address space of the task.  */
-      vm_deallocate (oldtask, 0, (vm_size_t) -1);
+
+      vm_deallocate (oldtask,
+		     VM_MIN_ADDRESS, VM_MAX_ADDRESS - VM_MIN_ADDRESS);
 
       /* Nothing is supposed to go wrong any more.  If anything does, the
 	 old task is now in a hopeless state and must be killed.  */
