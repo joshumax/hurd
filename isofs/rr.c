@@ -192,7 +192,7 @@ rrip_work (struct dirrect *dr, struct rrip_lookup *rr,
 
 	  /* Make sure the ER field is valid */
 	  if ((void *) er->more + er->len_id + er->len_des + er->len_src
-	      < terminus)
+	      > terminus)
 	    goto next_field;
 
 	  /* Check for rock-ridge */
