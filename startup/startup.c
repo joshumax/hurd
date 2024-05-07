@@ -1516,7 +1516,7 @@ S_startup_essential_task (mach_port_t server,
         }
       else if (!strcmp (name, "proc"))
 	procinit = 1;
-      else if (!strcmp (name, "ext2fs"))
+      else if (strlen (name) >= 2 && !strcmp (name + strlen(name) - 2, "fs"))
         fsinit = 1;
       else
         {
