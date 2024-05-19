@@ -283,12 +283,13 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
       err = device_write (edev->ether_port, D_NOWAIT, 0, (io_buf_ptr_t) skb->data, skb->len, &count);
       if (err == EMACH_SEND_INVALID_DEST || err == EMIG_SERVER_DIED)
 	{
-	  /* Device probably just died, try to reopen it.  */
+	  /* Device probably just died, wait a bit (to let driver restart) and try to reopen it.  */
 
 	  if (tried == 2)
 	    /* Too many tries, abort */
 	    break;
 
+	  sleep (1);
 	  ethernet_close (dev);
 	  ethernet_open (dev);
 	}
