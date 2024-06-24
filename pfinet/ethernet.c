@@ -30,6 +30,7 @@
 #include <string.h>
 #include <error.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
