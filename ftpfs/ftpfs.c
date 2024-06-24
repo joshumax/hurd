@@ -51,8 +51,13 @@ struct ftpfs *ftpfs;
 /* Parameters describing the server we're connecting to.  */
 struct ftp_conn_params *ftpfs_ftp_params = 0;
 
+static int interrupt_check_hook (struct ftp_conn *)
+{
+  return ports_self_interrupted ();
+}
+
 /* customization hooks.  */
-struct ftp_conn_hooks ftpfs_ftp_hooks = { interrupt_check: ports_self_interrupted };
+struct ftp_conn_hooks ftpfs_ftp_hooks = { interrupt_check: interrupt_check_hook };
 
 /* The (user-specified) name of the SERVER:FILESYSTEM we're connected too.  */
 char *ftpfs_remote_fs;

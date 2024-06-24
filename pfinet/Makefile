@@ -144,6 +144,11 @@ socket-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 iioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 rioctl-MIGSFLAGS = -imacros $(srcdir)/mig-mutate.h
 
+LINUX_SRCS_WITH_ERRORS := af_inet6 tcp_ipv6 udp_ipv6
+LINUX_OBJS_WITH_ERRORS := $(addsuffix .o, $(LINUX_SRCS_WITH_ERRORS))
+# We are not fixing the current warnings in the Linux drivers.
+$(LINUX_OBJS_WITH_ERRORS): CFLAGS += -Wno-error=incompatible-pointer-types
+
 # cpp doesn't automatically make dependencies for -imacros dependencies. argh.
 io_S.h ioServer.c socket_S.h socketServer.c: mig-mutate.h
 $(OBJS): config.h
