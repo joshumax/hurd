@@ -595,7 +595,8 @@ unsigned int tcp_poll(struct file * file, struct socket *sock, poll_table *wait)
 			} else {  /* send SIGIO later */
 				sk->socket->flags |= SO_NOSPACE;
 			}
-		}
+		} else
+			mask |= POLLOUT | POLLWRNORM;
 
 		if (tp->urg_data & URG_VALID)
 			mask |= POLLPRI;
