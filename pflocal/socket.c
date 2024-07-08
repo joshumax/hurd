@@ -404,6 +404,7 @@ S_socket_recv (struct sock_user *user,
   if (err == EPIPE)
     /* EOF */
     {
+      err = 0;
       *data_len = 0;
       if (num_ports)
 	*num_ports = 0;
