@@ -37,8 +37,22 @@ diskfs_S_file_get_translator (struct protid *cred,
 
   pthread_mutex_lock (&np->lock);
 
-  /* First look for short-circuited translators. */
-  if (S_ISLNK (np->dn_stat.st_mode))
+  if (np->dn_stat.st_mode & S_IPTRANS)
+    {
+      char *string;
+      mach_msg_type_number_t len;
+      err = diskfs_get_translator (np, &string, &len);
+      if (!err)
+	{
+	  if (len > *translen)
+	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  memcpy (*trans, string, len);
+	  *translen = len;
+	  free (string);
+	}
+    }
+  /* Check for short-circuited translators. */
+  else if (S_ISLNK (np->dn_stat.st_mode))
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->dn_stat.st_size + 1;
       mach_msg_type_number_t amt;
@@ -113,24 +127,7 @@ diskfs_S_file_get_translator (struct protid *cred,
       err = 0;
     }
   else
-    {
-      if (! (np->dn_stat.st_mode & S_IPTRANS))
-	err = EINVAL;
-      else
-	{
-	  char *string;
-	  mach_msg_type_number_t len;
-	  err = diskfs_get_translator (np, &string, &len);
-	  if (!err)
-	    {
-	      if (len > *translen)
-		*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-	      memcpy (*trans, string, len);
-	      *translen = len;
-	      free (string);
-	    }
-	}
-    }
+    err = EINVAL;
 
   pthread_mutex_unlock (&np->lock);
 

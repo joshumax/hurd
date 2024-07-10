@@ -47,7 +47,21 @@ netfs_S_file_get_translator (struct protid *user,
       return err;
     }
 
-  if (S_ISLNK (np->nn_stat.st_mode))
+  if (np->nn_translated & S_IPTRANS)
+    {
+      char *string = NULL;
+      mach_msg_type_number_t len = 0;
+      err = netfs_get_translator (np, &string, &len);
+      if (!err)
+	{
+	  if (len > *translen)
+	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  memcpy (*trans, string, len);
+	  *translen = len;
+	  free (string);
+	}
+    }
+  else if (S_ISLNK (np->nn_stat.st_mode))
     {
       unsigned int len = sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1;
 
@@ -112,20 +126,6 @@ netfs_S_file_get_translator (struct protid *user,
       memcpy (*trans, _HURD_IFSOCK, sizeof _HURD_IFSOCK);
       *translen = len;
       err = 0;
-    }
-  else if (np->nn_translated & S_IPTRANS)
-    {
-      char *string = NULL;
-      mach_msg_type_number_t len = 0;
-      err = netfs_get_translator (np, &string, &len);
-      if (!err)
-	{
-	  if (len > *translen)
-	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
-	  memcpy (*trans, string, len);
-	  *translen = len;
-	  free (string);
-	}
     }
   else
     err = EINVAL;
