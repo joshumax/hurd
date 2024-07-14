@@ -218,4 +218,3 @@ fi[]dnl
 
 
 # Include files from m4/.
-m4_include([m4/libgcrypt.m4])

@@ -341,8 +341,10 @@ PKG_CHECK_MODULES([libblkid], [blkid],
 AC_SUBST([libblkid_LIBS])
 AC_SUBST([libblkid_CFLAGS])
 
-AM_PATH_LIBGCRYPT("1:1.6.0",[HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
+PKG_CHECK_MODULES([libgcrypt], [libgcrypt], [HAVE_LIBGCRYPT=yes], [HAVE_LIBGCRYPT=no])
 AC_SUBST([HAVE_LIBGCRYPT])
+AC_SUBST([libgcrypt_LIBS])
+AC_SUBST([libgcrypt_CFLAGS])
 
 PKG_CHECK_MODULES([liblwip], [lwip], [HAVE_LIBLWIP=yes], [HAVE_LIBLWIP=no])
 AC_SUBST([HAVE_LIBLWIP])
