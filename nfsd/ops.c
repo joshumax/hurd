@@ -292,7 +292,7 @@ op_write (struct cache_handle *c,
   off_t offset;
   size_t count;
   error_t err;
-  mach_msg_type_number_t amt;
+  vm_size_t amt;
   char *bp;
   struct stat st;
 
@@ -583,7 +583,7 @@ op_readdir (struct cache_handle *c,
   error_t err;
   char *buf;
   struct dirent *dp;
-  size_t bufsize;
+  mach_msg_type_number_t bufsize;
   int nentries;
   int i;
   int *replystart;

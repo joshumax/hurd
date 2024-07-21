@@ -387,7 +387,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
   struct cache_handle *c;
   int hash;
   char *bp = fhandle.array + sizeof (int);
-  size_t handlelen = NFS2_FHSIZE - sizeof (int);
+  mach_msg_type_number_t handlelen = NFS2_FHSIZE - sizeof (int);
   mach_port_t newport, ref;
 
   /* Authenticate USERPORT so that we can call file_getfh on it.  */
