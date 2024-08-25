@@ -899,8 +899,11 @@ launch_core_servers (void)
 
   err = install_as_translator ();
   if (err)
-    /* Good luck.  Who knows, maybe it's an old installation.  */
-    error (0, err, "Failed to bind to " _SERVERS_STARTUP);
+    {
+      /* Good luck.  Who knows, maybe it's an old installation.  */
+      mach_print ("Failed to bind to " _SERVERS_STARTUP "\n");
+      error (0, err, "Failed to bind to " _SERVERS_STARTUP);
+    }
 
   if (verbose)
     fprintf (stderr, "Installed on /servers/startup\n");

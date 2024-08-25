@@ -185,7 +185,8 @@ diskfs_start_bootstrap (void)
 			&retry, retry_name, &execnode);
       if (err)
 	{
-	  error (0, err, "cannot set translator on %s", _SERVERS_EXEC);
+	  mach_print ("cannot set translator on " _SERVERS_EXEC "\n");
+	  error (0, err, "cannot set translator on " _SERVERS_EXEC);
 	  mach_port_deallocate (mach_task_self (), diskfs_exec_ctl);
 	}
       else
@@ -319,7 +320,10 @@ diskfs_start_bootstrap (void)
 		      With none supplied, it will use the defaults.  */
 		   NULL, 0, 0, 0, 0, 0);
   if (err)
-    error (1, err, "Executing '%s'", exec_argv);
+    {
+      mach_print ("Failed to execute startup\n");
+      error (1, err, "Executing '%s'", exec_argv);
+    }
   free (exec_argv);
   free (exec_env);
   mach_port_deallocate (mach_task_self (), root_pt);
