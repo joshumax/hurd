@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <error.h>
 #include <signal.h>
 #include <assert-backtrace.h>
 
@@ -46,12 +47,19 @@ diskfs_console_stdio (void)
       else
 	{
 	  int fd = open ("/dev/console", O_RDWR);
-
-	  dup2 (fd, 0);
-	  dup2 (fd, 1);
-	  dup2 (fd, 2);
-	  if (fd > 2)
-	    close (fd);
+	  if (fd < 0)
+	    {
+	      mach_print ("Failed to open /dev/console\n");
+	      error (0, errno, "Failed to open /dev/console");
+	    }
+	  else
+	    {
+	      dup2 (fd, 0);
+	      dup2 (fd, 1);
+	      dup2 (fd, 2);
+	      if (fd > 2)
+		close (fd);
+	    }
 	}
     }
   else
