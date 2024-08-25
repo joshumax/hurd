@@ -399,7 +399,7 @@ write_node (struct node *np)
       if (sblock->s_creator_os == htole32 (EXT2_OS_HURD))
 	/* If this is a hurd-compatible filesystem, write the high bits too. */
 	{
-	  di->i_mode_high = htole16 ((st->st_mode >> 16) & 0xffff & ~S_ITRANS);
+	  di->i_mode_high = htole16 (((st->st_mode & ~S_ITRANS) >> 16) & 0xffff);
 	  di->i_uid_high = htole16 (st->st_uid >> 16);
 	  di->i_gid_high = htole16 (st->st_gid >> 16);
 	  di->i_author = htole32 (st->st_author);
