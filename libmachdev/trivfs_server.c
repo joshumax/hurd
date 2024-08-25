@@ -399,6 +399,7 @@ resume_bootstrap_server(mach_port_t server_task, const char *server_name)
   stdin = mach_open_devstream (cons, "r");
   stdout = stderr = mach_open_devstream (cons, "w");
   mach_port_deallocate (mach_task_self (), cons);
+  setlinebuf (stderr);
 
   printf ("%s ", server_name);
   fflush (stdout);

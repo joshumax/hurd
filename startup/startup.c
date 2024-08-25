@@ -770,7 +770,7 @@ main (int argc, char **argv, char **envp)
   stdin = mach_open_devstream (consdev, "r");
   if (stdout == NULL || stdin == NULL)
     crash_mach ();
-  setbuf (stdout, NULL);
+  setlinebuf (stderr);
 
   err = wire_task_self ();
   if (err)

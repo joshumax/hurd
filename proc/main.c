@@ -132,7 +132,7 @@ open_console (mach_port_t device_master)
 
   stdin = mach_open_devstream (cons, "r");
   stdout = stderr = mach_open_devstream (cons, "w");
-  setbuf (stdout, NULL);
+  setlinebuf (stderr);
 
   got_console = 1;
   mach_port_deallocate (mach_task_self (), cons);

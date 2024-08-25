@@ -249,6 +249,7 @@ main (int argc, char *argv[])
 
     stdin = mach_open_devstream (outp, "r");
     stdout = stderr = mach_open_devstream (outp, "w+");
+    setlinebuf (stderr);
   }
 #endif
 

@@ -59,6 +59,7 @@ main (int argc, char **argv)
   stderr = mach_open_devstream (consdev, "w");
   if (!stderr)
     _exit (127);
+  setlinebuf (stderr);
 
   if (argc < 2)
     error (1, 0, "Usage: %s PROGRAM [ARG...]", program_invocation_short_name);

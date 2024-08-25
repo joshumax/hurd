@@ -76,6 +76,7 @@ diskfs_console_stdio (void)
       stdin = mach_open_devstream (cons, "r");
       stdout = stderr = mach_open_devstream (cons, "w");
       mach_port_deallocate (mach_task_self (), cons);
+      setlinebuf (stderr);
     }
 
   /* And make sure we don't die just because we got some error there.  */
