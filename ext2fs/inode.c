@@ -409,7 +409,7 @@ write_node (struct node *np)
 	{
 	  assert_backtrace ((st->st_uid & ~0xFFFF) == 0);
 	  assert_backtrace ((st->st_gid & ~0xFFFF) == 0);
-	  assert_backtrace ((st->st_mode & ~0xFFFF) == 0);
+	  assert_backtrace (((st->st_mode & ~S_ITRANS) & ~0xFFFF) == 0);
 	  assert_backtrace (np->author_tracks_uid && st->st_author == st->st_uid);
 	}
 
