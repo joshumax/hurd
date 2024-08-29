@@ -336,6 +336,7 @@ main(int argc, char *argv[])
 	    {
 	      fprintf (stderr, "Translator pid: %d\nPausing...",
 	               task2pid (task));
+	      fflush (stderr);
 	      getchar ();
 	    }
 

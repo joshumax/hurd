@@ -246,6 +246,7 @@ notify_shutdown (const char *msg)
       error_t err;
       fprintf (stderr, "%s: notifying %s of %s...",
                program_invocation_short_name, n->name, msg);
+      fflush (stderr);
 
       err = startup_dosync (n->notify_port, 60000); /* 1 minute to reply */
       if (err == MACH_SEND_INVALID_DEST)
