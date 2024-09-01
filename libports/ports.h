@@ -482,6 +482,8 @@ extern kern_return_t
  ports_do_mach_notify_port_destroyed (struct port_info *pi, mach_port_t name);
 extern kern_return_t
  ports_do_mach_notify_send_once (struct port_info *pi);
+
+extern boolean_t ports_interrupt_server (mach_msg_header_t *, mach_msg_header_t *);
 
 /* Private data */
 extern pthread_mutex_t _ports_lock;
