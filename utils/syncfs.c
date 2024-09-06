@@ -22,7 +22,7 @@
 #include <error.h>
 #include <version.h>
 
-const char *argp_program_version = STANDARD_HURD_VERSION (sync);
+const char *argp_program_version = STANDARD_HURD_VERSION (syncfs);
 
 static int synchronous = 0, do_children = 1;
 

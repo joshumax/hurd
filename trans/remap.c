@@ -139,7 +139,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
-const char *argp_program_version = STANDARD_HURD_VERSION (fakeroot);
+const char *argp_program_version = STANDARD_HURD_VERSION (remap);
 
 int
 main (int argc, char **argv)
