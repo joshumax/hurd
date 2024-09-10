@@ -51,7 +51,61 @@
 #define _INPUTDEV_H_ 1
 
 #include <trans.h>
-#include <device/input.h>
+
+typedef u_short kev_type;               /* kd event type */
+
+/* (used for event records) */
+struct mouse_motion {
+  short mm_deltaX;                /* units? */
+  short mm_deltaY;
+};
+typedef u_char Scancode;
+
+typedef struct {
+  kev_type type;                  /* see below */
+  struct timeval time;            /* timestamp */
+  union {                         /* value associated with event */
+    boolean_t up;           /* MOUSE_LEFT .. MOUSE_RIGHT */
+    Scancode sc;            /* KEYBD_EVENT */
+    struct mouse_motion mmotion;    /* MOUSE_MOTION */
+  } value;
+} kd_event;
+#define m_deltaX        mmotion.mm_deltaX
+#define m_deltaY        mmotion.mm_deltaY
+
+/*
+ * kd_event ID's.
+ */
+#define MOUSE_LEFT      1               /* mouse left button up/down */
+#define MOUSE_MIDDLE    2
+#define MOUSE_RIGHT     3
+#define MOUSE_MOTION    4               /* mouse motion */
+#define KEYBD_EVENT     5               /* key up/down */
+
+
+#define IOCPARM_MASK    0x1fff          /* parameter length, at most 13 bits */
+#define IOC_OUT         0x40000000      /* copy out parameters */
+#define IOC_IN          0x80000000U     /* copy in parameters */
+
+#ifndef _IOC
+#define _IOC(inout,group,num,len) \
+        (inout | ((len & IOCPARM_MASK) << 16) | ((group) << 8) | (num))
+#endif
+#ifndef _IOR
+#define _IOR(g,n,t)     _IOC(IOC_OUT,   (g), (n), sizeof(t))
+#endif
+#ifndef _IOW
+#define _IOW(g,n,t)     _IOC(IOC_IN,    (g), (n), sizeof(t))
+#endif
+
+#define KDSKBDMODE      _IOW('K', 1, int)       /* set keyboard mode */
+#define KB_EVENT        1
+#define KB_ASCII        2
+
+#define KDGKBDTYPE      _IOR('K', 2, int)       /* get keyboard type */
+#define KB_VANILLAKB    0
+
+#define KDSETLEDS      _IOW('K', 5, int)        /* set keyboard leds */
 
 /*
  * Low 3 bits of minor are the com port #.
