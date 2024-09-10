@@ -184,6 +184,12 @@ S_i386_get_gdt (mach_port_t target_thread,
 }
 
 kern_return_t
+S_i386_get_xstate_size (host_t host, vm_size_t *size)
+{
+    return EOPNOTSUPP;
+}
+
+kern_return_t
 S_i386_io_perm_create (mach_port_t master_port,
                               io_port_t from,
                               io_port_t to,
