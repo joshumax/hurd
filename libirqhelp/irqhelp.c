@@ -36,7 +36,7 @@
 #include <stdbool.h>
 
 #define IRQ_THREAD_PRIORITY	2
-#define log_error(fmt...)	fprintf(stderr, ## fmt)
+#define log_error(fmt...)	fprintf(stderr, "irqhelp: " fmt)
 
 struct irq {
   void (*handler)(void *);
