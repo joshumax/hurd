@@ -51,6 +51,7 @@ struct irq {
 
 static mach_port_t irqdev = MACH_PORT_NULL;
 static mach_port_t acpidev = MACH_PORT_NULL;
+static bool acpi_missing = false;
 
 static error_t
 get_acpi(void)
@@ -72,7 +73,10 @@ get_acpi(void)
 
   tryacpi = file_name_lookup (_SERVERS_ACPI, O_RDONLY, 0);
   if (tryacpi == MACH_PORT_NULL)
-    return ENODEV;
+    {
+      acpi_missing = true;
+      return ENODEV;
+    }
 
   acpidev = tryacpi;
   return 0;
@@ -129,10 +133,7 @@ irqhelp_init(void)
 
   err = get_acpi();
   if (err)
-    {
-      log_error("cannot grab acpi device\n");
-      return err;
-    }
+    log_error("cannot grab acpi device, continuing\n");
 
   inited = true;
   return 0;
@@ -320,6 +321,12 @@ irqhelp_install_interrupt_handler(int gsi,
 
   if (gsi < 0)
     {
+      if (acpi_missing)
+        {
+          log_error("requires valid gsi when acpi device is missing\n");
+          return NULL;
+        }
+
       if ((bus < 0) || (dev < 0) || (fun < 0))
 	{
 	  log_error("invalid b/d/f\n");
