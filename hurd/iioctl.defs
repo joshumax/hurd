@@ -130,6 +130,7 @@ routine iioctl_siocgifnetmask (
 
 skip; /* 38 SIOCGARP -- Not implemented yet */
 
+/* 39 SIOCGIFHWADDR */
 routine iioctl_siocgifhwaddr (
 	reqport: io_t;
 	inout ifnam: ifname_t;
