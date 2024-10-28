@@ -116,7 +116,7 @@ execute_action(keycode_t keycode)
   /* if CTRL+ALT+Delete is pressed notify the caller */
   if (keysym == XKB_KEY_Delete &&
       xkb_state_mod_names_are_active (state, XKB_STATE_MODS_EFFECTIVE, XKB_STATE_MATCH_ALL, XKB_MOD_NAME_CTRL,
-                                      XKB_MOD_NAME_ALT) > 0)
+                                      XKB_MOD_NAME_ALT, NULL) > 0)
     {
       console_exit ();
       return 1;
