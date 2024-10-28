@@ -48,13 +48,13 @@
 #define DEFAULT_VGA_FONT DEFAULT_VGA_FONT_DIR "vga-system.bdf"
 static char *fb_display_font;
 
-off_t fb_ptr;
+static off_t fb_ptr;
 int fb_type;
-int fb_width;
-int fb_height;
-int fb_bpp;
-int fb_wc;
-int fb_hc;
+static int fb_width;
+static int fb_height;
+static int fb_bpp;
+static int fb_wc;
+static int fb_hc;
 
 static unsigned char question_mark[32] = {
 	0x7E,	/*  ******  */
@@ -96,6 +96,8 @@ static int current_bg = 0;
 #define fb_pos(_col, _row) (vga_videomem + fb_bpp/8 * ( (_row) * fb_hc * disp->width + (_col) * fb_wc ))
 #define CURSOR_GLYPH	0x2581
 #define CURSOR_COLOUR	7
+
+struct display_ops fb_display_ops;
 
 
 
@@ -237,7 +239,7 @@ fb_fini(void)
 }
 
 /* Start the driver.  */
-error_t
+static error_t
 fb_display_start (void *handle)
 {
   error_t err;
@@ -285,7 +287,7 @@ fb_display_start (void *handle)
 }
 
 /* Destroy the display HANDLE.  */
-error_t
+static error_t
 fb_display_fini (void *handle, int force)
 {
   struct fb_display *disp = handle;
@@ -636,3 +638,26 @@ struct display_ops fb_display_ops =
     fb_set_mousecursor_pos,
     fb_set_mousecursor_status
   };
+
+error_t
+fb_display_init (void **handle, struct driver_ops *ops)
+{
+  struct fb_display *fbdisp;
+
+  /* Linear framebuffer! */
+  fbdisp = calloc (1, sizeof *fbdisp);
+  if (!fbdisp)
+    return ENOMEM;
+
+  fbdisp->width = fb_width;
+  fbdisp->height = fb_height;
+
+  /* dynamically switch drivers */
+  ops->start = fb_display_start;
+  ops->fini = fb_display_fini;
+  ops->restore_status = NULL;
+
+  *handle = fbdisp;
+
+  return 0;
+}

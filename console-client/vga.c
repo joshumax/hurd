@@ -283,7 +283,6 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
 {
   error_t err;
   struct vga_display *vgadisp;
-  struct fb_display *fbdisp;
   int pos = 1;
 
   fb_get_multiboot_params();
@@ -300,37 +299,20 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
   if (err && err != EINVAL)
     return err;
 
-  if (fb_type == MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT)
-    {
-      /* EGA text mode */
-      vgadisp = calloc (1, sizeof *vgadisp);
-      if (!vgadisp)
-        return ENOMEM;
+  if (fb_type != MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT)
+    return fb_display_init (handle, &driver_vga_ops);
 
-      vgadisp->df_size = vga_display_max_glyphs ? 512 : 256;
-      vgadisp->df_width = vga_display_font_width;
-      vgadisp->width = VGA_DISP_WIDTH;
-      vgadisp->height = VGA_DISP_HEIGHT;
+  /* EGA text mode */
+  vgadisp = calloc (1, sizeof *vgadisp);
+  if (!vgadisp)
+    return ENOMEM;
 
-      *handle = vgadisp;
-    }
-  else
-    {
-      /* Linear framebuffer! */
-      fbdisp = calloc (1, sizeof *fbdisp);
-      if (!fbdisp)
-        return ENOMEM;
+  vgadisp->df_size = vga_display_max_glyphs ? 512 : 256;
+  vgadisp->df_width = vga_display_font_width;
+  vgadisp->width = VGA_DISP_WIDTH;
+  vgadisp->height = VGA_DISP_HEIGHT;
 
-      fbdisp->width = fb_width;
-      fbdisp->height = fb_height;
-
-      /* dynamically switch drivers */
-      driver_vga_ops.start = fb_display_start;
-      driver_vga_ops.fini = fb_display_fini;
-      driver_vga_ops.restore_status = NULL;
-
-      *handle = fbdisp;
-    }
+  *handle = vgadisp;
 
   return 0;
 }

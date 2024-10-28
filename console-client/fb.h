@@ -32,19 +32,10 @@
 #define FONT_PIXELS_W		8
 #define FONT_PIXELS_H		16
 
-extern struct display_ops fb_display_ops;
-
-extern off_t fb_ptr;
 extern int fb_type;
-extern int fb_width;
-extern int fb_height;
-extern int fb_bpp;
-extern int fb_wc;
-extern int fb_hc;
 
 error_t fb_get_multiboot_params (void);
-error_t fb_display_start (void *handle);
-error_t fb_display_fini (void *handle, int force);
+error_t fb_display_init (void **handle, struct driver_ops *ops);
 
 struct multiboot_framebuffer_info {
     uint64_t framebuffer_addr;
