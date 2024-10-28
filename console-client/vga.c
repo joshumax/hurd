@@ -37,6 +37,7 @@
 #include "driver.h"
 #include "timer.h"
 
+#include "fb.h"
 #include "vga-hw.h"
 #include "vga-support.h"
 #include "bdf.h"
@@ -132,6 +133,8 @@ struct vga_display
   struct refchr refmatrix[VGA_DISP_HEIGHT][VGA_DISP_WIDTH];
 };
 
+/* Forward declaration */
+struct driver_ops driver_vga_ops;
 
 static void
 vga_display_invert_border (void)
@@ -279,8 +282,11 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
 		  int *next)
 {
   error_t err;
-  struct vga_display *disp;
+  struct vga_display *vgadisp;
+  struct fb_display *fbdisp;
   int pos = 1;
+
+  fb_get_multiboot_params();
 
   /* XXX Assert that we are called only once.  */
   pthread_mutex_init (&vga_display_lock, NULL);
@@ -294,18 +300,38 @@ vga_display_init (void **handle, int no_exit, int argc, char *argv[],
   if (err && err != EINVAL)
     return err;
 
-  /* Create and initialize the display structure as much as
-     possible.  */
-  disp = calloc (1, sizeof *disp);
-  if (!disp)
-    return ENOMEM;
+  if (fb_type == MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT)
+    {
+      /* EGA text mode */
+      vgadisp = calloc (1, sizeof *vgadisp);
+      if (!vgadisp)
+        return ENOMEM;
 
-  disp->df_size = vga_display_max_glyphs ? 512 : 256;
-  disp->df_width = vga_display_font_width;
-  disp->width = VGA_DISP_WIDTH;
-  disp->height = VGA_DISP_HEIGHT;
+      vgadisp->df_size = vga_display_max_glyphs ? 512 : 256;
+      vgadisp->df_width = vga_display_font_width;
+      vgadisp->width = VGA_DISP_WIDTH;
+      vgadisp->height = VGA_DISP_HEIGHT;
 
-  *handle = disp;
+      *handle = vgadisp;
+    }
+  else
+    {
+      /* Linear framebuffer! */
+      fbdisp = calloc (1, sizeof *fbdisp);
+      if (!fbdisp)
+        return ENOMEM;
+
+      fbdisp->width = fb_width;
+      fbdisp->height = fb_height;
+
+      /* dynamically switch drivers */
+      driver_vga_ops.start = fb_display_start;
+      driver_vga_ops.fini = fb_display_fini;
+      driver_vga_ops.restore_status = NULL;
+
+      *handle = fbdisp;
+    }
+
   return 0;
 }
 

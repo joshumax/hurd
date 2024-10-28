@@ -22,7 +22,7 @@ makemode := utilities
 
 targets = console
 CONSOLE_SRCS = console.c timer.c driver.c trans.c
-VGA_SO_SRCS = bdf.c vga-dynafont.c vga-dynacolor.c vga-support.c vga.c
+VGA_SO_SRCS = bdf.c vga-dynafont.c vga-dynacolor.c vga-support.c vga.c fb.c
 PC_KBD_SO_SRCS = pc-kbd.c kbd-repeat.c
 PC_MOUSE_SO_SRCS = pc-mouse.c
 GENERIC_SPEAKER_SO_SRCS = generic-speaker.c
@@ -60,6 +60,7 @@ console: $(CONSOLE_SRCS:.c=.o) \
 modules = vga pc_kbd generic_speaker pc_mouse current_vcs
 
 vga-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
+fb-CPPFLAGS = -DDEFAULT_VGA_FONT_DIR=\"${datadir}/hurd/\"
 vga.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(VGA_SO_SRCS))
 pc_kbd.so.$(hurd-version): $(patsubst %.c,%_pic.o,$(PC_KBD_SO_SRCS)) \
 	kdioctlServer_pic.o
