@@ -36,9 +36,9 @@ main (int argc, char **argv)
   mach_port_t hostpriv, devicemaster;
   mach_port_t device;
   int sizes[DEV_GET_SIZE_COUNT];
-  int sizescnt = DEV_GET_SIZE_COUNT;
+  mach_msg_type_number_t sizescnt = DEV_GET_SIZE_COUNT;
   struct disklabel label;
-  int labelcnt = sizeof label / sizeof (int);
+  mach_msg_type_number_t labelcnt = sizeof label / sizeof (int);
   int i;
 
   errno = get_privileged_ports (&hostpriv, &devicemaster);

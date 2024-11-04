@@ -89,7 +89,7 @@ static error_t
 hurdethif_device_get_flags (struct netif *netif, uint16_t * flags)
 {
   error_t err = 0;
-  size_t count;
+  mach_msg_type_number_t count;
   struct net_status status;
   hurdethif *ethif;
 
@@ -457,7 +457,7 @@ err_t
 hurdethif_device_init (struct netif *netif)
 {
   error_t err;
-  size_t count = 2;
+  mach_msg_type_number_t count = 2;
   int net_address[2];
   device_t ether_port;
   hurdethif *ethif;

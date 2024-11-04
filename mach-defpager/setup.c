@@ -48,7 +48,7 @@ S_default_pager_paging_storage_new (mach_port_t pager,
 {
   struct file_direct *fdp;
   int sizes[DEV_GET_RECORDS_COUNT];
-  natural_t count;
+  mach_msg_type_number_t count;
   mach_msg_type_number_t i;
   error_t err;
   recnum_t devsize;
