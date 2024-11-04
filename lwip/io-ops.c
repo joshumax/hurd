@@ -302,7 +302,7 @@ lwip_S_io_reauthenticate (struct sock_user * user, mach_port_t rend)
   struct sock_user *newuser;
   uid_t gubuf[20], ggbuf[20], aubuf[20], agbuf[20];
   uid_t *gen_uids, *gen_gids, *aux_uids, *aux_gids;
-  size_t genuidlen, gengidlen, auxuidlen, auxgidlen;
+  mach_msg_type_number_t genuidlen, gengidlen, auxuidlen, auxgidlen;
   error_t err;
   size_t i, j;
   auth_t auth;
