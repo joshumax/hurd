@@ -18,8 +18,8 @@ along with the GNU Hurd; see the file COPYING.  If not, write to
 the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
 
-/* Ioctl class `r'; the subsystem is derived from calculations in
-   <ioctls.h>. */
+/* Ioctl class `r'; the subsystem is derived from IOC_GROUP_SUBSYSTEM in
+   hurd/ioctls.defs. */
 subsystem rioctl 148000; /* XXX */
 
 #include <hurd/ioctl_types.defs>
