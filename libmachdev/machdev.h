@@ -39,6 +39,7 @@ int machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task
 int machdev_demuxer(mach_msg_header_t *inp, mach_msg_header_t *outp);
 void machdev_trivfs_server_startup(mach_port_t bootstrap);
 void * machdev_trivfs_server_loop(void *);
+void * machdev_trivfs_server_loop_forever(void *);
 boolean_t machdev_is_master_device (mach_port_t port);
 
 #endif

@@ -562,3 +562,16 @@ machdev_trivfs_server_loop(void *arg)
 
   return NULL;
 }
+
+void *
+machdev_trivfs_server_loop_forever(void *arg)
+{
+  /* Launch.  */
+  do
+    {
+      ports_manage_port_operations_one_thread (port_bucket, demuxer, 0);
+    } while (1);
+
+  /* Not reached, or machine powers off */
+  return NULL;
+}

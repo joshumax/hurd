@@ -235,9 +235,9 @@ main (int argc, char **argv)
 
   if (next_task != MACH_PORT_NULL)
     {
-      err = pthread_create (&mt, NULL, machdev_trivfs_server_loop, NULL);
+      err = pthread_create (&mt, NULL, machdev_trivfs_server_loop_forever, NULL);
       if (err)
-        error(1, err, "creating machdev_trivfs_server_loop thread");
+        error(1, err, "creating machdev_trivfs_server_loop_forever thread");
       pthread_detach (mt);
     }
 
