@@ -32,6 +32,7 @@
 #include <hurd/ports.h>
 #include <hurd/trivfs.h>
 #include <hurd/paths.h>
+#include <device/device.h>
 #include <sys/file.h>
 #include <version.h>
 
@@ -55,13 +56,32 @@ int trivfs_allow_open = O_READ | O_WRITE;
 struct port_class *trivfs_protid_class;
 struct port_class *trivfs_control_class;
 
+static mach_port_t
+get_acpi(void)
+{
+  kern_return_t err;
+  mach_port_t tryacpi, device_master;
+
+  err = get_privileged_ports (0, &device_master);
+  if (!err)
+    {
+      err = device_open (device_master, D_READ | D_WRITE, "acpi", &tryacpi);
+      mach_port_deallocate (mach_task_self (), device_master);
+      if (!err)
+        return tryacpi;
+    }
+
+  tryacpi = file_name_lookup (_SERVERS_ACPI, O_RDWR, 0);
+  return tryacpi;
+}
+
 kern_return_t
 S_shutdown_shutdown(trivfs_protid_t server)
 {
   kern_return_t err;
   mach_port_t acpi;
 
-  acpi = file_name_lookup (_SERVERS_ACPI, O_RDWR, 0);
+  acpi = get_acpi();
   if (acpi == MACH_PORT_NULL)
     return EIO;
 
