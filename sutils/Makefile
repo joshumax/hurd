@@ -20,7 +20,7 @@
 dir := sutils
 makemode := utilities
 
-progs = reboot halt fsck swapon swapoff bless
+progs = reboot halt fsck swapon swapoff bless smp
 scripts = e2os MAKEDEV losetup
 targets = $(special-targets) $(progs)
 special-targets = $(scripts)
