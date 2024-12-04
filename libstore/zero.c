@@ -51,6 +51,7 @@ zero_write (struct store *store,
 	    store_offset_t addr, size_t index, const void *buf, size_t len,
 	    size_t *amount)
 {
+  *amount = len;
   return 0;
 }
 
