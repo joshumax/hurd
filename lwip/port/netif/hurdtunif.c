@@ -296,7 +296,7 @@ check_open_hook (struct trivfs_control *cntl, struct iouser *user, int flags)
   struct netif *netif;
   struct hurdtunif *tunif;
 
-  for (netif = netif_list; netif; netif = netif->next)
+  NETIF_FOREACH(netif)
     {
       tunif = (struct hurdtunif *) netif_get_state (netif);
       if (tunif->cntl == cntl)

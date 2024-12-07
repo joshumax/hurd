@@ -310,7 +310,7 @@ trivfs_append_args (struct trivfs_control * fsys, char **argz,
        i.s_addr = (addr);               \
        ADD_OPT ("--%s=%s", name, inet_ntoa (i)); } while (0)
 
-  for (netif = netif_list; netif != 0; netif = netif->next)
+  NETIF_FOREACH(netif)
     {
       /* Skip the loopback interface */
       if (netif_get_state (netif)->type == ARPHRD_LOOPBACK)

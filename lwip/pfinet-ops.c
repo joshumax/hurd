@@ -50,7 +50,7 @@ dev_ifconf (struct ifconf *ifc)
   ifr = ifc->ifc_req;
   len = ifc->ifc_len;
   saddr = (struct sockaddr_in *) &ifr->ifr_addr;
-  for (netif = netif_list; netif != 0; netif = netif->next)
+  NETIF_FOREACH(netif)
     {
       if (ifc->ifc_req != 0)
 	{

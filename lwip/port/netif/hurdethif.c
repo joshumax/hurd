@@ -402,7 +402,7 @@ hurdethif_demuxer (mach_msg_header_t * inp, mach_msg_header_t * outp)
   else
     local_port = inp->msgh_local_port;
 
-  for (netif = netif_list; netif; netif = netif->next)
+  NETIF_FOREACH(netif)
     if (local_port == netif_get_state (netif)->readptname)
       break;
 
