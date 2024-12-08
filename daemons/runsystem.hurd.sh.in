@@ -56,14 +56,16 @@ singleuser ()
   exit 127
 }
 
-# Print a newline.
+# Print a newline and banner.
 echo
+echo Starting runsystem
 
 # See whether pflocal is set up already, and do so if not (install case)
 #
 # Normally this should be the case, but we better make sure since
 # without the pflocal server, pipe(2) does not work.
 if ! test -c /servers/socket/1 && command -v settrans >/dev/null ; then
+  echo Setting up pflocal
   # The root filesystem should be read-only at this point.
   if fsysopts / --update --writable ; then
     settrans -c /servers/socket/1 /hurd/pflocal
