@@ -218,7 +218,7 @@ main (int argc, char **argv)
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)
-    error (-1, 0, "Must be started as a translator");
+    error (1, 0, "Must be started as a translator");
 
   /* Create portclass to install on the bootstrap port. */
   if (lwip_protid_portclasses[lwip_bootstrap_portclass] != NULL)
@@ -228,13 +228,13 @@ main (int argc, char **argv)
     trivfs_add_protid_port_class (&lwip_protid_portclasses
 				  [lwip_bootstrap_portclass]);
   if (err)
-    error (1, 0, "error creating control port class");
+    error (1, err, "error creating control port class");
 
   err =
     trivfs_add_control_port_class (&lwip_cntl_portclasses
 				   [lwip_bootstrap_portclass]);
   if (err)
-    error (1, 0, "error creating control port class");
+    error (1, err, "error creating control port class");
 
   /* Reply to our parent */
   err = trivfs_startup (bootstrap, 0,
@@ -244,9 +244,7 @@ main (int argc, char **argv)
 			lwip_bucket, &lwipcntl);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)
-    {
-      return (-1);
-    }
+    error (1, err, "trivfs_startup failed");
 
   /* Initialize status from underlying node.  */
   lwip_owner = lwip_group = 0;
