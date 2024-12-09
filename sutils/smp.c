@@ -63,10 +63,10 @@ smp (char * const argv[])
   mach_port_deallocate (mach_task_self (), _hurd_host_priv);
   setuid (getuid ());
 
-  execve (argv[1], &argv[1], environ);
+  execve (argv[0], argv, environ);
 
   /* Fall through if not executed */
-  error (1, errno, "failed to execute %s", argv[1]);
+  error (1, errno, "failed to execute %s", argv[0]);
 }
 
 int
@@ -75,6 +75,6 @@ main (int argc, char **argv)
   if (argc < 2)
     error (1, 0, "Usage: smp /path/to/executable");
 
-  smp (argv);
+  smp (argv + 1);
   return 0;
 }
