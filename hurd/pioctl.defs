@@ -1,0 +1,59 @@
+/* Definitions for /dev/rtc ioctls
+
+   Copyright (C) 2024 Free Software Foundation, Inc.
+
+   This file is part of the GNU Hurd.
+
+   The GNU Hurd is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License as
+   published by the Free Software Foundation; either version 2, or (at
+   your option) any later version.
+
+   The GNU Hurd is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA. */
+
+/* Ioctl group 'p'; the subsystem is derived from calculations in
+   hurd/ioctls.defs. */
+subsystem pioctl 140000;
+
+#include <hurd/ioctl_types.defs>
+
+import <hurd/rtc.h>;
+
+#ifdef PIOCTL_IMPORTS
+PIOCTL_IMPORTS
+#endif
+
+INTR_INTERFACE
+
+/* This is the arg for a struct rtc_time as specified by the
+   definition of _IOT_rtc_time in $(hurd)/hurd/rtc.h. */
+type rtc_time_t = struct[9] of int;
+
+skip; skip; skip; /* 0 1 2 */
+
+/* 3 RTC_UIE_ON */
+routine pioctl_rtc_uie_on (
+	reqport: io_t);
+
+/* 4 RTC_UIE_OFF */
+routine pioctl_rtc_uie_off (
+	reqport: io_t);
+
+skip; skip; skip; skip; /* 5 6 7 8 */
+
+/* 9 RTC_RD_TIME */
+routine pioctl_rtc_rd_time (
+	reqport: io_t;
+	out tm: rtc_time_t);
+
+/* 10 RTC_SET_TIME */
+routine pioctl_rtc_set_time (
+	reqport: io_t;
+	tm: rtc_time_t);
