@@ -518,6 +518,64 @@ error_t diskfs_validate_flags_change (struct node *np, int flags);
    changed to RDEV; otherwise return an error code. */
 error_t diskfs_validate_rdev_change (struct node *np, dev_t rdev);
 
+/* An opaque handle representing a journaling transaction.
+   Filesystems implementing a journal must define the internals of this struct.
+   It represents a logical grouping of filesystem modifications that should
+   be recorded atomically. */
+struct diskfs_transaction;
+typedef struct diskfs_transaction diskfs_transaction_t;
+
+/* The user may define the following functions to implement a journaling
+   system (like JBD2). If defined, libdiskfs will call them to wrap
+   file system operations (rename, link, unlink, mkdir, rmdir...) in
+   atomic transactions.
+
+   The default definitions in libdiskfs do nothing. If you choose to
+   implement journaling, you should define ALL of these to ensure
+   consistency and prevent deadlocks. */
+
+/* Starts or joins a journaling transaction.
+   Returns a handle to the transaction, or NULL if journaling is disabled
+   or an error occurs. The returned handle must eventually be consumed by
+   calling exactly ONE of: diskfs_journal_stop_transaction or
+   diskfs_journal_commit_transaction. */
+diskfs_transaction_t *diskfs_journal_start_transaction (void);
+
+/* Ends the caller's participation in the given transaction TXN.
+   This informs the journal that the logical operation is complete. Normally,
+   this does not force an immediate physical disk flush, allowing the
+   underlying journal to batch operations for performance.
+
+   However, if any participant flagged the transaction for a synchronous commit
+   (e.g., via diskfs_journal_set_sync), the journal will automatically commit
+   and flush the transaction to disk once the final participant stops.
+
+   This function consumes TXN. The caller must not use TXN after this call. */
+void diskfs_journal_stop_transaction (diskfs_transaction_t *txn);
+
+/* Ends the caller's participation in the transaction TXN and synchronously
+   commits it to disk. This is used when the VFS requests a synchronous
+   operation (e.g., the directory has the O_SYNC flag).
+
+   This function consumes TXN. The caller must not use TXN after this call,
+   and it MUST NOT call diskfs_journal_stop_transaction on it. */
+void diskfs_journal_commit_transaction (diskfs_transaction_t *txn);
+
+/* Flags the transaction TXN to require a synchronous commit upon completion.
+   This is used by nested filesystem operations that receive a request for
+   synchronous I/O (e.g., POSIX fsync or security zero-filling) but cannot
+   safely block to perform the disk flush themselves due to lock hierarchies.
+   It delegates the physical commit responsibility to the top-level
+   transaction owner. */
+void diskfs_journal_set_sync (diskfs_transaction_t *txn);
+
+/* Returns non-zero if any operation within the transaction TXN has flagged it
+   for a synchronous commit. Top-level VFS RPC handlers must evaluate this
+   before ending the transaction. If it returns true, the caller MUST consume
+   the transaction using diskfs_journal_commit_transaction to uphold the
+   synchronous I/O guarantee. */
+int diskfs_journal_needs_sync (diskfs_transaction_t *txn);
+
 /* The user must define this function.  Sync the info in NP->dn_stat
    and any associated format-specific information to disk.  If WAIT is true,
    then return only after the physicial media has been completely updated. */
@@ -662,8 +720,14 @@ void diskfs_start_bootstrap (void);
 void diskfs_drop_node (struct node *np);
 
 /* Set on disk fields from NP->dn_stat; update ctime, atime, and mtime
-   if necessary.  If WAIT is true, then return only after the physical
-   media has been completely updated.  */
+   if necessary. This immediately serializes the abstract node state
+   into the physical block cache in memory, making it visible to
+   underlying layers (such as active journal transactions if implemented)
+   even when WAIT is false.
+
+   If WAIT is true, then return only after the modifications are safely
+   committed to physical media (either directly or via a durable journal)
+   to guarantee persistence. */
 void diskfs_node_update (struct node *np, int wait);
 
 /* Add a hard reference to a node.  If there were no hard

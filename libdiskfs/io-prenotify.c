@@ -14,7 +14,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
-
+#include "diskfs.h"
 #include "priv.h"
 #include "io_S.h"
 
@@ -30,7 +30,7 @@ diskfs_S_io_prenotify (struct protid *cred,
 {
   struct node *np;
   int err = 0;
-  
+  diskfs_transaction_t *txn;
   if (!cred)
     return EOPNOTSUPP;
 
@@ -39,6 +39,7 @@ diskfs_S_io_prenotify (struct protid *cred,
 
   np = cred->po->np;
 
+  txn = diskfs_journal_start_transaction ();
   /* Clamp it down */
   pthread_mutex_lock (&np->lock);
 
@@ -61,15 +62,21 @@ diskfs_S_io_prenotify (struct protid *cred,
       pthread_spin_lock (&cred->mapped->lock);
       iohelp_put_shared_data (cred);
       pthread_spin_unlock (&cred->mapped->lock);
-      goto out;
+      /* Stop the empty transaction and return cleanly! */
+      pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
+      return 0;
     }
   
   err = diskfs_grow (np, end, cred);
-  if (diskfs_synchronous)
-    diskfs_node_update (np, 1);
+  diskfs_node_update (np, diskfs_synchronous);
   if (!err && np->filemod_reqs)
     diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, end);
  out:
   pthread_mutex_unlock (&np->lock);
+  if (!err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   return err;
 }

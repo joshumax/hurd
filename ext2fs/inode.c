@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <libdiskfs/diskfs.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
@@ -565,18 +566,32 @@ write_all_disknodes (void)
 void
 diskfs_write_disknode (struct node *np, int wait)
 {
+  error_t err;
   struct ext2_inode *di = write_node (np);
-  if (di)
+  if (!di)
+    return;
+
+  if (ext2_journal)
     {
+      diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+      record_global_poke (di);
       if (wait)
-        {
-	  sync_global_ptr (di, 1);
-          error_t err = store_sync (store);
-          if (err && err != EOPNOTSUPP)
-            ext2_warning ("inode flush failed: %s", strerror (err));
-        }
-      else
-	record_global_poke (di);
+        diskfs_journal_set_sync (txn);
+      diskfs_journal_stop_transaction (txn);
+      return;
+    }
+
+  if (wait)
+    {
+      sync_global_ptr (di, 1);
+      err = store_sync (store);
+      /* Ignore EOPNOTSUPP (drivers), but warn on real I/O errors */
+      if (err && err != EOPNOTSUPP)
+        ext2_warning ("device flush failed: %s", strerror (err));
+    }
+  else
+    {
+      record_global_poke (di);
     }
 }
 

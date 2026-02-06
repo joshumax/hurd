@@ -16,6 +16,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
 #include "priv.h"
+#include "diskfs.h"
 
 /* Free the list of modification requests MR */
 static void
@@ -37,6 +38,7 @@ void
 diskfs_drop_node (struct node *np)
 {
   mode_t savemode;
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
   /* XXX: if the filesystem is readonly, we cannot remove the files with no link
      but e.g. memory mapping still in memory.  This notably happens when
@@ -64,11 +66,14 @@ diskfs_drop_node (struct node *np)
 	     do anything. */
 	  refcounts_unsafe_ref (&np->refcounts, NULL);
 	  diskfs_truncate (np, 0);
-	  
+
 	  /* Force allocsize to zero; if truncate consistently fails this
 	     will at least prevent an infinite loop in this routine. */
 	  np->allocsize = 0;
-	  
+	  if (diskfs_synchronous)
+	    diskfs_journal_set_sync (txn);
+	  diskfs_journal_stop_transaction (txn);
+
 	  diskfs_nput (np);
 	  return;
 	}
@@ -83,7 +88,7 @@ diskfs_drop_node (struct node *np)
       diskfs_free_node (np, savemode);
     }
   else
-    diskfs_node_update (np, diskfs_synchronous);
+    diskfs_node_update (np,  diskfs_synchronous);
 
   fshelp_drop_transbox (&np->transbox);
 
@@ -95,6 +100,9 @@ diskfs_drop_node (struct node *np)
   assert_backtrace (!np->sockaddr);
 
   pthread_mutex_unlock(&np->lock);
+  if (diskfs_synchronous)
+    diskfs_journal_set_sync (txn);
+  diskfs_journal_stop_transaction (txn);
   pthread_mutex_destroy(&np->lock);
   diskfs_node_norefs (np);
 }

@@ -29,6 +29,7 @@
 #include <hurd/store.h>
 #include <hurd/diskfs.h>
 #include <hurd/ihash.h>
+#include <libdiskfs/diskfs.h>
 #include <assert-backtrace.h>
 #include <pthread.h>
 #include <sys/mman.h>
@@ -318,6 +319,42 @@ void get_hypermetadata (void);
 void map_hypermetadata (void);
 
 /* ---------------------------------------------------------------- */
+#define ext2_error(fmt, args...) _ext2_error (__FUNCTION__, fmt , ##args)
+extern void _ext2_error (const char *, const char *, ...)
+     __attribute__ ((format (printf, 2, 3)));
+
+#define ext2_panic(fmt, args...) _ext2_panic (__FUNCTION__, fmt , ##args)
+extern void _ext2_panic (const char *, const char *, ...)
+     __attribute__ ((format (printf, 2, 3))) __attribute__((noreturn));
+
+extern void ext2_warning (const char *, ...)
+     __attribute__ ((format (printf, 1, 2)));
+
+/* ---------------------------------------------------------------- */
+
+/* Forward declaration prevents circular dependency with journal.h */
+struct journal;
+extern struct journal *ext2_journal;
+
+#define JRNL_LOG_WARN(fmt, ...) ext2_warning ("[JOURNAL] " fmt, ##__VA_ARGS__)
+
+/**
+ * Mark dirty: Add a modified filesystem block to the given transaction.
+ * Performs a shadow copy of 'data' into the journal memory.
+ */
+error_t
+journal_dirty_block (diskfs_transaction_t * txn, block_t fs_blocknr);
+
+/**
+ * This function exists to sync all AND avoid a deadlock with commit.
+ * It doesn't call journal_commit back yet it syncs everything.
+ **/
+void
+journal_sync_everything (void);
+
+void journal_notify_block_changed (block_t block);
+
+/* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
 
 extern unsigned long frag_size;	/* Size of a fragment in bytes */
@@ -419,8 +456,20 @@ extern struct ext2_group_desc *group_desc_image;
    implementation is provided in 'xinl.c'.  */
 extern struct ext2_inode * dino_ref (ino_t inum);
 extern void _dino_deref (struct ext2_inode *inode);
+extern block_t dino_block (ino_t inum);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
+/* Convert an inode number to the block on disk. */
+EXT2FS_EI block_t
+dino_block (ino_t inum)
+{
+  unsigned long inodes_per_group = le32toh (sblock->s_inodes_per_group);
+  unsigned long bg_num = (inum - 1) / inodes_per_group;
+  unsigned long group_inum = (inum - 1) % inodes_per_group;
+  struct ext2_group_desc *bg = group_desc (bg_num);
+  return le32toh (bg->bg_inode_table) + (group_inum / inodes_per_block);
+}
+
 /* Convert an inode number to the dinode on disk. */
 EXT2FS_EI struct ext2_inode *
 dino_ref (ino_t inum)
@@ -504,6 +553,7 @@ record_global_poke (void *ptr)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
+  journal_notify_block_changed (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
 #ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
@@ -518,6 +568,7 @@ sync_global_ptr (void *ptr, int wait)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
+  journal_notify_block_changed (block);
   ext2_debug ("(%p -> %u)", ptr, block);
   global_block_modified (block);
   _disk_cache_block_deref (block_ptr);
@@ -544,6 +595,7 @@ record_indir_poke (struct node *node, void *ptr)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
+  journal_notify_block_changed (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
 #ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
@@ -561,17 +613,35 @@ sync_global (int wait)
   pokel_sync (&global_pokel, wait);
 }
 
-/* Sync all allocation information and node NP if diskfs_synchronous. */
+/* Sync all allocation information and node NP if diskfs_synchronous.
+   If journaling is active, we just update memory (wait=0) and let the
+   transaction commit handle durability. */
 EXT2FS_EI void
 alloc_sync (struct node *np)
 {
+  /* Serialization for the Journal (Always needed if journaling) */
+  if (ext2_journal || diskfs_synchronous)
+    {
+      diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+
+      if (np)
+        diskfs_node_update (np, diskfs_synchronous);
+
+      if (sblock_dirty && ext2_journal)
+        {
+          block_t sb_blocknr = boffs_block (SBLOCK_OFFS);
+          journal_dirty_block (txn, sb_blocknr);
+        }
+
+      diskfs_journal_stop_transaction (txn);
+    }
+
+  /* Physical Pager Flushing (Strictly limited to synchronous mode) */
   if (diskfs_synchronous)
     {
       if (np)
-	{
-	  diskfs_node_update (np, 1);
-	  pokel_sync (&diskfs_node_disknode (np)->indir_pokel, 1);
-	}
+        pokel_sync (&diskfs_node_disknode (np)->indir_pokel, 1);
+
       diskfs_set_hypermetadata (1, 0);
     }
 }
@@ -607,19 +677,7 @@ error_t dev_write (block_t addr, vm_address_t data, long len);
 error_t dev_read_sync (block_t addr, vm_address_t *data, long len);
 
 /* ---------------------------------------------------------------- */
-
-#define ext2_error(fmt, args...) _ext2_error (__FUNCTION__, fmt , ##args)
-extern void _ext2_error (const char *, const char *, ...)
-     __attribute__ ((format (printf, 2, 3)));
-
-#define ext2_panic(fmt, args...) _ext2_panic (__FUNCTION__, fmt , ##args)
-extern void _ext2_panic (const char *, const char *, ...)
-     __attribute__ ((format (printf, 2, 3))) __attribute__((noreturn));
-
-extern void ext2_warning (const char *, ...)
-     __attribute__ ((format (printf, 1, 2)));
 
-/* ---------------------------------------------------------------- */
 /* xattr.c */
 
 error_t ext2_list_xattr (struct node *np, char *buffer, size_t *len);

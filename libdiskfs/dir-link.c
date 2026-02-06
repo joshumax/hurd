@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "fs_S.h"
 
@@ -30,6 +31,7 @@ diskfs_S_dir_link (struct protid *dircred,
   struct node *dnp;		/* directory of new entry */
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t err;
+  diskfs_transaction_t *txn;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -41,10 +43,12 @@ diskfs_S_dir_link (struct protid *dircred,
     return EXDEV;
 
   np = filecred->po->np;
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
   if (S_ISDIR (np->dn_stat.st_mode))
     {
       pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
       return EPERM;
     }
   pthread_mutex_unlock (&np->lock);
@@ -58,6 +62,7 @@ diskfs_S_dir_link (struct protid *dircred,
     {
       err = EEXIST;
       diskfs_nput (tnp);
+      tnp = NULL;
     }
   if (err && err != ENOENT)
     {
@@ -65,6 +70,7 @@ diskfs_S_dir_link (struct protid *dircred,
 	err = EINVAL;
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&dnp->lock);
+      diskfs_journal_stop_transaction (txn);
       return err;
     }
 
@@ -74,6 +80,7 @@ diskfs_S_dir_link (struct protid *dircred,
       pthread_mutex_unlock (&dnp->lock);
       pthread_mutex_unlock (&tnp->lock);
       mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
+      diskfs_journal_stop_transaction (txn);
       return 0;
     }
 
@@ -82,6 +89,7 @@ diskfs_S_dir_link (struct protid *dircred,
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&dnp->lock);
       pthread_mutex_unlock (&tnp->lock);
+      diskfs_journal_stop_transaction (txn);
       return EISDIR;
     }
 
@@ -97,6 +105,7 @@ diskfs_S_dir_link (struct protid *dircred,
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&np->lock);
       pthread_mutex_unlock (&dnp->lock);
+      diskfs_journal_stop_transaction (txn);
       return EMLINK;
     }
   np->dn_stat.st_nlink++;
@@ -113,21 +122,30 @@ diskfs_S_dir_link (struct protid *dircred,
 	  /* Deallocate link on TNP */
 	  tnp->dn_stat.st_nlink--;
 	  tnp->dn_set_ctime = 1;
-	  if (diskfs_synchronous)
-	    diskfs_node_update (tnp, 1);
+	  diskfs_node_update (tnp, diskfs_synchronous);
 	}
       diskfs_nput (tnp);
     }
   else
     err = diskfs_direnter (dnp, name, np, ds, dircred);
 
-  if (diskfs_synchronous)
-    diskfs_node_update (dnp, 1);
+  if (err)
+    {
+      np->dn_stat.st_nlink--;
+      np->dn_set_ctime = 1;
+      diskfs_node_update (np, diskfs_synchronous);
+    }
+  diskfs_node_update (dnp, diskfs_synchronous);
 
   pthread_mutex_unlock (&dnp->lock);
   pthread_mutex_unlock (&np->lock);
   if (!err)
     /* MiG won't do this for us, which it ought to. */
     mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
+
+  if (!err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   return err;
 }

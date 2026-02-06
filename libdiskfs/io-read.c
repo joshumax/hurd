@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "io_S.h"
 #include <fcntl.h>
@@ -100,8 +101,7 @@ diskfs_S_io_read (struct protid *cred,
     err = _diskfs_rdwr_internal (np, buf, off, datalen, 0,
 				 cred->po->openstat & O_NOATIME);
 
-  if (diskfs_synchronous)
-    diskfs_node_update (np, 1);	/* atime! */
+  diskfs_node_update (np, diskfs_synchronous);	/* atime! */
 
   if (offset == -1 && !err)
     cred->po->filepointer += *datalen;

@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "io_S.h"
 #include <fcntl.h>
@@ -31,6 +32,8 @@ diskfs_S_io_write (struct protid *cred,
   error_t err;
   off_t off = offset;
   mach_msg_type_number_t nwritten;
+  int should_sync;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -41,7 +44,8 @@ diskfs_S_io_write (struct protid *cred,
   np = cred->po->np;
   if (!(cred->po->openstat & O_WRITE))
     return EBADF;
-
+  should_sync = (cred->po->openstat & O_FSYNC) || diskfs_synchronous;
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
   assert_backtrace (!S_ISDIR(np->dn_stat.st_mode));
@@ -63,8 +67,7 @@ diskfs_S_io_write (struct protid *cred,
   while (off + (off_t) datalen > np->allocsize)
     {
       err = diskfs_grow (np, off + datalen, cred);
-      if (diskfs_synchronous)
-	diskfs_node_update (np, 1);
+      diskfs_node_update (np, should_sync);
       if (err)
 	goto out;
       if (np->filemod_reqs)
@@ -75,8 +78,7 @@ diskfs_S_io_write (struct protid *cred,
     {
       np->dn_stat.st_size = off + datalen;
       np->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (np, 1);
+      diskfs_node_update (np, should_sync);
     }
 
   nwritten = datalen;
@@ -87,13 +89,16 @@ diskfs_S_io_write (struct protid *cred,
   if (!err && offset == -1)
     cred->po->filepointer += nwritten;
 
-  if (!err
-      && ((cred->po->openstat & O_FSYNC) || diskfs_synchronous))
-    diskfs_file_update (np, 1);
+  if (!err && should_sync)
+    diskfs_file_update (np, should_sync);
 
   if (!err && np->filemod_reqs)
     diskfs_notice_filechange (np, FILE_CHANGED_WRITE, off, off + nwritten);
  out:
   pthread_mutex_unlock (&np->lock);
+  if (!err && (should_sync || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   return err;
 }

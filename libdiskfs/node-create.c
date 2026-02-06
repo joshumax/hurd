@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 
 /* This enables SysV style group behaviour.  New nodes inherit the GID
@@ -153,11 +154,12 @@ diskfs_create_node (struct node *dir,
 	    diskfs_clear_directory (np, dir, cred);
 	  np->dn_stat.st_nlink = 0;
 	  np->dn_set_ctime = 1;
+          diskfs_node_update (np, diskfs_synchronous);
 	  diskfs_nput (np);
 	}
     }
   if (err)
     *newnode = NULL;
-    
+
   return err;
 }

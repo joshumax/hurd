@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "io_S.h"
 #include <fcntl.h>
@@ -25,12 +26,19 @@
 kern_return_t
 diskfs_S_io_sigio (struct protid *cred)
 {
+  diskfs_transaction_t *txn;
   if (!cred)
     return EOPNOTSUPP;
-  
+
+  if (!((cred->po->openstat & O_FSYNC) || diskfs_synchronous))
+    return 0;
+
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&cred->po->np->lock);
-  if ((cred->po->openstat & O_FSYNC) || diskfs_synchronous)
-    diskfs_file_update (cred->po->np, 1);
+
+  diskfs_file_update (cred->po->np, 1);
+
   pthread_mutex_unlock (&cred->po->np->lock);
+  diskfs_journal_commit_transaction (txn);
   return 0;
 }

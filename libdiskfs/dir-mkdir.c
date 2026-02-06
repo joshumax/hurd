@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "fs_S.h"
 
@@ -27,6 +28,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
   struct node *dnp;
   struct node *np = 0;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
+  diskfs_transaction_t *txn;
   int error;
 
   if (!dircred)
@@ -36,6 +38,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
   if (diskfs_check_readonly ())
     return EROFS;
 
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&dnp->lock);
 
   error = diskfs_lookup (dnp, name, CREATE, 0, ds, dircred);
@@ -48,6 +51,7 @@ diskfs_S_dir_mkdir (struct protid *dircred,
     {
       diskfs_drop_dirstat (dnp, ds);
       pthread_mutex_unlock (&dnp->lock);
+      diskfs_journal_stop_transaction (txn);
       return error;
     }
 
@@ -56,15 +60,18 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   error = diskfs_create_node (dnp, name, mode, &np, dircred, ds);
 
-  if (diskfs_synchronous)
-    {
-      diskfs_file_update (dnp, 1);
-      diskfs_file_update (np, 1);
-    }
+  diskfs_file_update (dnp, diskfs_synchronous);
+  if (!error && np)
+    diskfs_file_update (np, diskfs_synchronous);
 
   if (!error)
     diskfs_nput (np);
 
   pthread_mutex_unlock (&dnp->lock);
+
+  if (!error && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   return error;
 }

@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include <hurd/iohelp.h>
 
@@ -66,6 +67,6 @@ iohelp_fetch_shared_data (void *arg)
     }
   cred->mapped->written = 0;
   cred->mapped->accessed = 0;
-  if (diskfs_synchronous && mod)
-    diskfs_node_update (cred->po->np, 1);
+  if (mod)
+    diskfs_node_update (cred->po->np, diskfs_synchronous);
 }

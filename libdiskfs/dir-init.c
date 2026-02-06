@@ -15,7 +15,9 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
+#include <libdiskfs/diskfs.h>
 
 /* Locked node DP is a new directory; add whatever links are necessary
    to give it structure; its parent is the (locked) node PDP. 
@@ -43,24 +45,34 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
   dp->dn_stat.st_nlink++;	/* for `.' */
   dp->dn_set_ctime = 1;
   err = diskfs_lookup (dp, ".", CREATE, &foo, ds, &lookupcred);
+  diskfs_node_update (dp, diskfs_synchronous);
   assert_backtrace (err == ENOENT);
   err = diskfs_direnter (dp, ".", dp, ds, cred);
   if (err)
     {
       dp->dn_stat.st_nlink--;
       dp->dn_set_ctime = 1;
+      diskfs_node_update (dp, diskfs_synchronous);
+
       return err;
     }
 
   pdp->dn_stat.st_nlink++;	/* for `..' */
   pdp->dn_set_ctime = 1;
   err = diskfs_lookup (dp, "..", CREATE, &foo, ds, &lookupcred);
+  diskfs_node_update (pdp, diskfs_synchronous);
   assert_backtrace (err == ENOENT);
   err = diskfs_direnter (dp, "..", pdp, ds, cred);
   if (err)
     {
+      /* ROLLBACK '.' on Parent */
       pdp->dn_stat.st_nlink--;
       pdp->dn_set_ctime = 1;
+      diskfs_node_update (pdp, diskfs_synchronous);
+      /* CLEANUP '.' on Child */
+      dp->dn_stat.st_nlink--;
+      dp->dn_set_ctime = 1;
+      diskfs_node_update (dp, diskfs_synchronous);
       return err;
     }
 

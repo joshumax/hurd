@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 
 
@@ -77,6 +78,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   void *buf = alloca (diskfs_dirstat_size);
   struct dirstat *ds;
   struct dirstat *tmpds;
+  diskfs_transaction_t *txn;
 
   pthread_mutex_lock (&tdp->lock);
   diskfs_nref (tdp);		/* reference and lock will get consumed by
@@ -86,6 +88,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   if (err)
     return err;
 
+  txn = diskfs_journal_start_transaction ();
   /* Now, lock the parent directories.  This is legal because tdp is not
      a child of fnp (guaranteed by checkpath above). */
   pthread_mutex_lock (&fdp->lock);
@@ -111,6 +114,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       pthread_mutex_unlock (&tdp->lock);
       if (fdp != tdp)
 	pthread_mutex_unlock (&fdp->lock);
+      diskfs_journal_stop_transaction (txn);
       return 0;
     }
 
@@ -150,8 +154,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	}
       tdp->dn_stat.st_nlink++;
       tdp->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (tdp, 1);
+      diskfs_node_update (tdp, diskfs_synchronous);
 
       tmpds = alloca (diskfs_dirstat_size);
       err = diskfs_lookup (fnp, "..", RENAME | SPEC_DOTDOT,
@@ -162,30 +165,27 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	  assert_backtrace (tdp->dn_stat.st_nlink > 0);
 	  tdp->dn_stat.st_nlink--;
 	  tdp->dn_set_ctime = 1;
-	  if (diskfs_synchronous)
-	    diskfs_node_update (tdp, 1);
+          diskfs_node_update (tdp, diskfs_synchronous);
 	  diskfs_drop_dirstat (fnp, tmpds);
 	  goto out;
 	}
       assert_backtrace (tmpnp == fdp);
 
       err = diskfs_dirrewrite (fnp, fdp, tdp, "..", tmpds);
-      if (diskfs_synchronous)
-	diskfs_file_update (fnp, 1);
+      diskfs_file_update (fnp, diskfs_synchronous);
       if (err)
 	{
 	  assert_backtrace (tdp->dn_stat.st_nlink > 0);
 	  tdp->dn_stat.st_nlink--;
 	  tdp->dn_set_ctime = 1;
-	  if (diskfs_synchronous)
-	    diskfs_node_update (tdp, 1);
+          diskfs_node_update (tdp, diskfs_synchronous);
+
 	  goto out;
 	}
 
       fdp->dn_stat.st_nlink--;
       fdp->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (fdp, 1);
+      diskfs_node_update (fdp, diskfs_synchronous);
     }
 
 
@@ -198,6 +198,7 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       pthread_mutex_unlock (&tdp->lock);
       if (tnp)
 	diskfs_nput (tnp);
+      diskfs_journal_stop_transaction (txn);
       return EMLINK;
     }
   fnp->dn_stat.st_nlink++;
@@ -214,14 +215,12 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	  tnp->dn_set_ctime = 1;
 	}
       diskfs_clear_directory (tnp, tdp, tocred);
-      if (diskfs_synchronous)
-	diskfs_file_update (tnp, 1);
+      diskfs_file_update (tnp, diskfs_synchronous);
     }
   else
     {
       err = diskfs_direnter (tdp, toname, fnp, ds, tocred);
-      if (diskfs_synchronous)
-	diskfs_file_update (tdp, 1);
+      diskfs_file_update (tdp, diskfs_synchronous);
     }
 
   if (err)
@@ -229,8 +228,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       assert_backtrace (fnp->dn_stat.st_nlink > 0);
       fnp->dn_stat.st_nlink--;
       fnp->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (fnp, 1);
+      /* fnp is locked, so this is safe */
+      diskfs_node_update (fnp, diskfs_synchronous);
       goto out;
     }
 
@@ -253,11 +252,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   ds = 0;
   fnp->dn_stat.st_nlink--;
   fnp->dn_set_ctime = 1;
-  if (diskfs_synchronous)
-    {
-      diskfs_file_update (fdp, 1);
-      diskfs_node_update (fnp, 1);
-    }
+  diskfs_file_update (fdp, diskfs_synchronous);
+  diskfs_node_update (fnp, diskfs_synchronous);
 
  out:
   if (tdp)
@@ -270,5 +266,11 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
     pthread_mutex_unlock (&fnp->lock);
   if (ds)
     diskfs_drop_dirstat (tdp, ds);
+
+  /* FINALIZE TRANSACTION */
+  if (! err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   return err;
 }

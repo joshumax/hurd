@@ -17,6 +17,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "fs_S.h"
 #include <string.h>
@@ -36,8 +37,9 @@ diskfs_S_dir_rename (struct protid *fromcred,
 {
   struct node *fdp, *tdp, *fnp, *tnp, *tmpnp;
   error_t err;
+  diskfs_transaction_t *txn;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
-  
+
   if (!fromcred)
     return EOPNOTSUPP;
 
@@ -59,8 +61,9 @@ diskfs_S_dir_rename (struct protid *fromcred,
   fdp = fromcred->po->np;
   tdp = tocred->po->np;
 
+  txn = diskfs_journal_start_transaction ();
  try_again:
-  /* Acquire the source; hold a reference to it.  This 
+  /* Acquire the source; hold a reference to it.  This
      will prevent anyone from deleting it before we create
      the new link. */
   pthread_mutex_lock (&fdp->lock);
@@ -69,7 +72,10 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (err == EAGAIN)
     err = EINVAL;
   if (err)
-    return err;
+    {
+      diskfs_journal_stop_transaction (txn);
+      return err;
+    }
 
   if (S_ISDIR (fnp->dn_stat.st_mode))
     {
@@ -81,27 +87,21 @@ diskfs_S_dir_rename (struct protid *fromcred,
 	}
       err = diskfs_rename_dir (fdp, fnp, fromname, tdp, toname, fromcred,
 			       tocred, excl);
-      if (diskfs_synchronous)
-	{
-	  pthread_mutex_lock (&fdp->lock);
-	  diskfs_file_update (fdp, 1);
-	  pthread_mutex_unlock (&fdp->lock);
-	  
-	  pthread_mutex_lock (&fnp->lock);
-	  diskfs_file_update (fnp, 1);
-	  pthread_mutex_unlock (&fnp->lock);
+      pthread_mutex_lock (&fdp->lock);
+      diskfs_file_update (fdp, diskfs_synchronous);
+      pthread_mutex_unlock (&fdp->lock);
 
-	  pthread_mutex_lock (&tdp->lock);
-	  diskfs_file_update (tdp, 1);
-	  pthread_mutex_unlock (&tdp->lock);
-	}
-      
+      pthread_mutex_lock (&fnp->lock);
+      diskfs_file_update (fnp, diskfs_synchronous);
+      pthread_mutex_unlock (&fnp->lock);
+
+      pthread_mutex_lock (&tdp->lock);
+      diskfs_file_update (tdp, diskfs_synchronous);
+      pthread_mutex_unlock (&tdp->lock);
+
       diskfs_nrele (fnp);
       pthread_mutex_unlock (&renamedirlock);
-      if (!err)
-	/* MiG won't do this for us, which it ought to. */
-	mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
-      return err;
+      goto out;
     }
 
   pthread_mutex_unlock (&fnp->lock);
@@ -109,12 +109,15 @@ diskfs_S_dir_rename (struct protid *fromcred,
   /* We now hold no locks */
 
   if (toname[strlen (toname) - 1] == '/')
+  {
+    diskfs_journal_stop_transaction (txn);
     /* Source must be directory.  */
     return ENOTDIR;
+  }
 
   /* Link the node into the new directory. */
   pthread_mutex_lock (&tdp->lock);
-  
+
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   if (err == EAGAIN)
     err = EINVAL;
@@ -128,6 +131,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_drop_dirstat (tdp, ds);
       diskfs_nrele (fnp);
       pthread_mutex_unlock (&tdp->lock);
+      diskfs_journal_stop_transaction (txn);
       return err;
     }
 
@@ -139,8 +143,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
       pthread_mutex_unlock (&tdp->lock);
-      mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
-      return 0;
+      err = 0;
+      goto out;
     }
 
   /* rename("foo", dir) should fail. */
@@ -150,6 +154,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nrele (fnp);
       diskfs_nput (tnp);
       pthread_mutex_unlock (&tdp->lock);
+      diskfs_journal_stop_transaction (txn);
       return EISDIR;
     }
 
@@ -163,8 +168,10 @@ diskfs_S_dir_rename (struct protid *fromcred,
       if (tnp)
         diskfs_nput (tnp);
       pthread_mutex_unlock (&tdp->lock);
+      diskfs_journal_stop_transaction (txn);
       return EMLINK;
     }
+
   fnp->dn_stat.st_nlink++;
   fnp->dn_set_ctime = 1;
   diskfs_node_update (fnp, diskfs_synchronous);
@@ -176,27 +183,26 @@ diskfs_S_dir_rename (struct protid *fromcred,
 	{
 	  tnp->dn_stat.st_nlink--;
 	  tnp->dn_set_ctime = 1;
-	  if (diskfs_synchronous)
-	    diskfs_node_update (tnp, 1);
+	  diskfs_node_update (tnp, diskfs_synchronous);
 	}
       diskfs_nput (tnp);
     }
   else
     err = diskfs_direnter (tdp, toname, fnp, ds, tocred);
 
-  if (diskfs_synchronous)
-    diskfs_node_update (tdp, 1);
+  diskfs_node_update (tdp, diskfs_synchronous);
 
   pthread_mutex_unlock (&tdp->lock);
+
   if (err)
     {
-      assert_backtrace (fnp->dn_stat.st_nlink > 0);
-      fnp->dn_stat.st_nlink--;
+      if (fnp->dn_stat.st_nlink > 0)
+	fnp->dn_stat.st_nlink--;
       fnp->dn_set_ctime = 1;
-      if (diskfs_synchronous)
-	diskfs_node_update (fnp, 1);
-      diskfs_drop_dirstat (tdp, ds);
-      diskfs_nput (fnp);
+      diskfs_node_update (fnp, diskfs_synchronous);
+      pthread_mutex_unlock (&fnp->lock);
+      diskfs_journal_stop_transaction (txn);
+      diskfs_nrele (fnp);
       return err;
     }
   pthread_mutex_unlock (&fnp->lock);
@@ -212,6 +218,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
     {
       diskfs_drop_dirstat (tdp, ds);
       pthread_mutex_unlock (&fdp->lock);
+      diskfs_journal_stop_transaction (txn);
       diskfs_nrele (fnp);
       return err;
     }
@@ -223,26 +230,29 @@ diskfs_S_dir_rename (struct protid *fromcred,
       diskfs_nput (tmpnp);
       diskfs_nrele (fnp);
       pthread_mutex_unlock (&fdp->lock);
-      mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
-      return 0;
+      err = 0;
+      goto out;
     }
-  
+
   diskfs_nrele (tmpnp);
 
   err = diskfs_dirremove (fdp, fnp, fromname, ds);
-  if (diskfs_synchronous)
-    diskfs_node_update (fdp, 1);
+  diskfs_node_update (fdp, diskfs_synchronous);
 
   fnp->dn_stat.st_nlink--;
   fnp->dn_set_ctime = 1;
-  
-  if (diskfs_synchronous)
-    diskfs_node_update (fnp, 1);
-  
+
+  diskfs_node_update (fnp, diskfs_synchronous);
+
   diskfs_nput (fnp);
   pthread_mutex_unlock (&fdp->lock);
+
+out:
+  if (! err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
   if (!err)
     mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
-
   return err;
 }

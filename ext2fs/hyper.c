@@ -22,6 +22,7 @@
 #include <error.h>
 #include <inttypes.h>
 #include <hurd/store.h>
+#include "journal.h"
 #include "ext2fs.h"
 
 vm_address_t zeroblock;
@@ -137,7 +138,7 @@ get_hypermetadata (void)
       if (inode_size < EXT2_GOOD_OLD_INODE_SIZE || (inode_size & (inode_size - 1)) != 0)
 	ext2_panic ("inode size %d isn't supported", inode_size);
       if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
-        ext2_warning ("mounting ext3 filesystem as ext2");
+	JRNL_LOG_DEBUG ("Ext3 journal feature detected. Journal will be initialized.");
     }
 
   groups_count =
@@ -196,11 +197,20 @@ diskfs_set_hypermetadata (int wait, int clean)
     /* The filesystem is clean, so we need to set the clean flag.  */
     {
       sblock->s_state |= htole16 (EXT2_VALID_FS);
+      if (ext2_journal)
+       {
+	  sblock->s_feature_incompat &= htole32(~EXT3_FEATURE_INCOMPAT_RECOVER);
+       }
       sblock_dirty = 1;
     }
   else if (!clean && (sblock->s_state & htole16 (EXT2_VALID_FS)))
     /* The filesystem just became dirty, so clear the clean flag.  */
     {
+      if (ext2_journal &&
+          !(sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
+	{
+           sblock->s_feature_incompat |= htole32(EXT3_FEATURE_INCOMPAT_RECOVER);
+        }
       sblock->s_state &= htole16 (~EXT2_VALID_FS);
       sblock_dirty = 1;
       wait = 1;

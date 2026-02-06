@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 
 /* Reading and writing of files. this is called by other filesystem
@@ -65,12 +66,12 @@ diskfs_node_rdwr (struct node *np,
   else
     amtread = &amt;
   err = _diskfs_rdwr_internal (np, data, off, amtread, dir, 0);
-  if (*amtread && diskfs_synchronous)
+  if (*amtread)
     {
       if (dir)
-	diskfs_file_update (np, 1);
+	diskfs_file_update (np, diskfs_synchronous);
       else
-	diskfs_node_update (np, 1);
+	diskfs_node_update (np, diskfs_synchronous);
     }
 
   return err;

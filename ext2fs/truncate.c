@@ -385,5 +385,7 @@ diskfs_truncate (struct node *node, off_t length)
 
   pthread_rwlock_unlock (&diskfs_node_disknode (node)->alloc_lock);
 
+  /* This informs the journal about the changes. */
+  diskfs_node_update (node, diskfs_synchronous);
   return err;
 }

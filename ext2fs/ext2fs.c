@@ -32,6 +32,7 @@
 #include <hurd/store.h>
 #include <version.h>
 #include "ext2fs.h"
+#include "journal.h"
 
 /* ---------------------------------------------------------------- */
 
@@ -81,6 +82,7 @@ unsigned long desc_per_block;
 unsigned long addr_per_block;
 
 unsigned long groups_count;
+struct journal *ext2_journal = NULL;
 
 /* ---------------------------------------------------------------- */
 
@@ -251,6 +253,28 @@ main (int argc, char **argv)
   else if ((diskfs_root_node->dn_stat.st_mode & S_IFMT) == 0)
     ext2_panic ("no root node!");
   pthread_mutex_unlock (&diskfs_root_node->lock);
+
+  if (sblock->s_feature_compat & EXT3_FEATURE_COMPAT_HAS_JOURNAL)
+    {
+      JRNL_LOG_DEBUG ("\n[JOURNAL CHECK] >>> Inode 8 DETECTED! <<<");
+      JRNL_LOG_DEBUG ("[JOURNAL CHECK] s_journal_inum: %u",
+		      sblock->s_journal_inum);
+      JRNL_LOG_DEBUG ("[JOURNAL CHECK] s_journal_dev:  %u",
+		      sblock->s_journal_dev);
+      struct node *jnode = NULL;
+      error_t err = diskfs_cached_lookup (sblock->s_journal_inum, &jnode);
+
+      if (!err && jnode)
+      {
+	  ext2_journal = journal_create (jnode);
+	  JRNL_LOG_DEBUG ("Global Journal Initialized at %p", ext2_journal);
+	  diskfs_nput(jnode);
+      }
+    }
+  else
+    {
+      JRNL_LOG_DEBUG ("\n[JOURNAL CHECK] No Journal flag found.");
+    }
 
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the

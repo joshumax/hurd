@@ -15,6 +15,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include "diskfs.h"
 #include "priv.h"
 #include "io_S.h"
 #include <string.h>
@@ -33,10 +34,7 @@ diskfs_S_io_stat (struct protid *cred,
   pthread_mutex_lock (&np->lock);
 
   iohelp_get_conch (&np->conch);
-  if (diskfs_synchronous)
-    diskfs_node_update (np, 1);
-  else
-    diskfs_set_node_times (np);
+  diskfs_node_update (np, diskfs_synchronous);
 
   memcpy (statbuf, &np->dn_stat, sizeof (struct stat));
   statbuf->st_mode &= ~(S_IATRANS | S_IROOT);

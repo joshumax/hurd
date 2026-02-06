@@ -123,6 +123,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
 {
   int i;
   block_t goal = 0;
+  int sync_pass = 0;
 #ifdef EXT2FS_DEBUG
   block_t hint;
 #endif
@@ -181,8 +182,9 @@ inode_getblk (struct node *node, int nr, int create, int zero,
   node->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
   node->dn_stat_dirty = 1;
 
-  if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
-    diskfs_node_update (node, 1);
+  sync_pass = (diskfs_synchronous ||
+    diskfs_node_disknode (node)->info.i_osync);
+  diskfs_node_update (node, sync_pass);
 
   return 0;
 }
