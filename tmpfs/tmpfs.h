@@ -80,14 +80,14 @@ extern off_t tmpfs_space_used;
 static inline void
 adjust_used (off_t change)
 {
-  __atomic_add_fetch (&num_files, change, __ATOMIC_RELAXED);
+  __atomic_add_fetch (&tmpfs_space_used, change, __ATOMIC_RELAXED);
 }
 
 /* Convenience function to get tmpfs_space_used.  */
 static inline off_t
 get_used (void)
 {
-  return __atomic_load_n (&num_files, __ATOMIC_RELAXED);
+  return __atomic_load_n (&tmpfs_space_used, __ATOMIC_RELAXED);
 }
 
 #endif
