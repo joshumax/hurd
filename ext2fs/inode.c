@@ -586,7 +586,7 @@ diskfs_write_disknode (struct node *np, int wait)
       sync_global_ptr (di, 1);
       err = store_sync (store);
       /* Ignore EOPNOTSUPP (drivers), but warn on real I/O errors */
-      if (err && err != EOPNOTSUPP)
+      if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
         ext2_warning ("device flush failed: %s", strerror (err));
     }
   else

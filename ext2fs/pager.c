@@ -1601,7 +1601,7 @@ journal_sync_everything (void)
   sync_global (1);
   error_t err = store_sync (store);
   /* Ignore EOPNOTSUPP (drivers), but warn on real I/O errors */
-  if (err && err != EOPNOTSUPP)
+  if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
     ext2_warning ("device flush failed: %s", strerror (err));
 }
 
@@ -1626,7 +1626,7 @@ diskfs_sync_everything (int wait)
   if (wait && !ext2_journal)
     {
       error_t err = store_sync (store);
-      if (err && err != EOPNOTSUPP)
+      if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
         ext2_warning ("device flush failed: %s", strerror (err));
     }
 }
