@@ -475,10 +475,8 @@ EXT2FS_EI struct ext2_inode *
 dino_ref (ino_t inum)
 {
   unsigned long inodes_per_group = le32toh (sblock->s_inodes_per_group);
-  unsigned long bg_num = (inum - 1) / inodes_per_group;
   unsigned long group_inum = (inum - 1) % inodes_per_group;
-  struct ext2_group_desc *bg = group_desc (bg_num);
-  block_t block = le32toh (bg->bg_inode_table) + (group_inum / inodes_per_block);
+  block_t block = dino_block (inum);
   void *block_ptr = disk_cache_block_ref (block);
   size_t offset = (group_inum % inodes_per_block) * global_inode_size;
   return (struct ext2_inode *)((char *)block_ptr + offset);
