@@ -813,6 +813,11 @@ int udp_recvmsg(struct sock *sk, struct msghdr *msg, int len,
 		msg->msg_flags |= MSG_TRUNC;
 	}
 
+#if defined(SO_TIMESTAMP) && defined(SCM_TIMESTAMP)
+	if (sk->timestamp)
+		put_cmsg(msg, SOL_SOCKET, SCM_TIMESTAMP, sizeof(skb->stamp), &skb->stamp);
+#endif
+
 #ifndef CONFIG_UDP_DELAY_CSUM
 	err = skb_copy_datagram_iovec(skb, sizeof(struct udphdr), msg->msg_iov,
 					copied);

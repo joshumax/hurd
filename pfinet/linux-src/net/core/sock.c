@@ -191,6 +191,11 @@ int sock_setsockopt(struct socket *sock, int level, int optname,
 			else
 				sk->debug=valbool;
 			break;
+#if defined(SO_TIMESTAMP) && defined(SCM_TIMESTAMP)
+		case SO_TIMESTAMP:
+			sk->timestamp = valbool;
+			break;
+#endif
 		case SO_REUSEADDR:
 			sk->reuse = valbool;
 			break;
@@ -384,6 +389,11 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
 		case SO_DEBUG:		
 			v.val = sk->debug;
 			break;
+#if defined(SO_TIMESTAMP) && defined(SCM_TIMESTAMP)
+		case SO_TIMESTAMP:
+			v.val = sk->timestamp;
+			break;
+#endif
 		
 		case SO_DONTROUTE:
 			v.val = sk->localroute;

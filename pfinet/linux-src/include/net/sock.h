@@ -411,6 +411,9 @@ struct sock {
 				broadcast,
 				bsdism;
 	unsigned char		debug;
+#if defined(SO_TIMESTAMP) && defined(SCM_TIMESTAMP)
+	unsigned char           timestamp;
+#endif
 	int			proc;
 	unsigned long	        lingertime;
 
