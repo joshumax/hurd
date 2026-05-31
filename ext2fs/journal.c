@@ -1127,7 +1127,20 @@ journal_stop_transaction_locked (journal_t *journal,
     }
 }
 
-/* Must strictly be called OUTSIDE the journal lock */
+/**
+ * Drains the thread-local deferred block queue into a new transaction.
+ * When a thread is forced to execute a synchronous checkpoint (which locks the
+ * global libdiskfs node-cache), any memory mutations triggered by the VFS flush
+ * are intercepted and stored in a thread-local queue to prevent a recursive
+ * deadlock against the journal lock.
+ * This function "sweeps" those intercepted blocks by explicitly starting a
+ * new transaction. The act of starting the transaction automatically injects
+ * the deferred blocks into the new transaction's map (via the internal
+ * diskfs_journal_start_transaction_locked logic). We then immediately stop
+ * the transaction to allow the normal journal commit pipeline to process them.
+ *
+ * Must strictly be called OUTSIDE the journal lock.
+ */
 static void
 journal_drain_deferred_blocks (void)
 {
@@ -1571,7 +1584,7 @@ diskfs_journal_start_transaction_locked (journal_t *journal)
   /* THE SWEEP: Safely inject deferred blocks into our brand new transaction */
   if (deferred_count > 0)
     {
-      /* Copy to local var and reset count immediately to prevent any 
+      /* Copy to local var and reset count immediately to prevent any
          impossible recursion loops during dirty_block */
       int count = deferred_count;
       deferred_count = 0;
