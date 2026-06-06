@@ -596,7 +596,7 @@ S_iioctl_siocsifmtu (struct sock_user *user,
 
   if (!user->isroot)
     err = EPERM;
-  if (!dev)
+  else if (!dev)
     err = ENODEV;
   else if (mtu <= 0)
     err = EINVAL;
