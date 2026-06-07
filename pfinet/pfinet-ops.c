@@ -159,6 +159,12 @@ S_pfinet_getroutes (io_t port,
         {
 	  rtable = (ifrtreq_t *) mmap (0, amount * sizeof(ifrtreq_t), PROT_READ|PROT_WRITE,
 				       MAP_ANON, 0, 0);
+	  if (rtable == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&global_lock);
+	      /* Should use errno here, but glue headers #undef errno */
+	      return ENOMEM;
+	    }
 	  if (dealloc_data)
 	    *dealloc_data = TRUE;
 	}
@@ -170,18 +176,9 @@ S_pfinet_getroutes (io_t port,
         memset(&rtable[n], 0, (amount - n) * sizeof(ifrtreq_t));
     }
 
-  if (rtable == MAP_FAILED)
-    {
-      /* Should use errno here, but glue headers #undef errno */
-      err = ENOMEM;
-      *len = 0;
-    }
-  else
-    {
-      *len = n * sizeof(ifrtreq_t);
-      *routes = (char *)rtable;
-    }
+  *len = n * sizeof(ifrtreq_t);
+  *routes = (char *)rtable;
 
   pthread_mutex_unlock (&global_lock);
-  return err;
+  return 0;
 }
