@@ -77,8 +77,16 @@ S_pfinet_siocgifconf (io_t port,
     {
       /* Possibly allocate a new buffer. */
       if (*len < amount)
-	ifc.ifc_buf = (char *) mmap (0, amount, PROT_READ|PROT_WRITE,
-				     MAP_ANON, 0, 0);
+	{
+	  ifc.ifc_buf = (char *) mmap (0, amount, PROT_READ|PROT_WRITE,
+				       MAP_ANON, 0, 0);
+	  if (ifc.ifc_buf == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&global_lock);
+	      /* Should use errno here, but glue headers #undef errno */
+	      return ENOMEM;
+	    }
+	}
       else
 	ifc.ifc_buf = *ifr;
       err = dev_ifconf ((char *) &ifc);
