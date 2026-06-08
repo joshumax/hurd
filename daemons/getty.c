@@ -170,6 +170,18 @@ main (int argc, char **argv)
 
   openlog ("getty", LOG_ODELAY|LOG_CONS|LOG_PID, LOG_AUTH);
 
+  while (argc >= 2)
+    {
+      if (strcmp(argv[1], "--noclear") == 0)
+	{
+	  /* We don't actually clear anyway.  */
+	  argc--;
+	  argv++;
+	}
+      else
+	break;
+    }
+
   /* Nothing to do .... */
   if (argc != 3)
     {
