@@ -167,6 +167,7 @@ main (int argc, char **argv)
   int tty;
   struct ttyent *tt;
   char *arg;
+  char *autologin_option = NULL, *autologin = NULL;
 
   openlog ("getty", LOG_ODELAY|LOG_CONS|LOG_PID, LOG_AUTH);
 
@@ -177,6 +178,14 @@ main (int argc, char **argv)
 	  /* We don't actually clear anyway.  */
 	  argc--;
 	  argv++;
+	}
+      else if (argc >= 3 && strcmp(argv[1], "-a") == 0)
+	{
+	  /* Auto-login */
+	  autologin_option = "-f";
+	  autologin = argv[2];
+	  argc -= 2;
+	  argv += 2;
 	}
       else
 	break;
@@ -254,10 +263,10 @@ main (int argc, char **argv)
 
   if (tt && strcmp (tt->ty_type, "dialup") == 0)
     /* Dialup lines time out (which is login's default).  */
-    execl (_PATH_LOGIN, "login", "-e", arg, NULL);
+    execl (_PATH_LOGIN, "login", "-e", arg, autologin_option, autologin, NULL);
   else
     /* Hardwired lines don't.  */
-    execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", NULL);
+    execl (_PATH_LOGIN, "login", "-e", arg, "-aNOAUTH_TIMEOUT", autologin_option, autologin, NULL);
 
   syslog (LOG_ERR, "%s: %m", _PATH_LOGIN);
 
