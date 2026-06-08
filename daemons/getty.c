@@ -173,13 +173,15 @@ main (int argc, char **argv)
 
   while (argc >= 2)
     {
-      if (strcmp(argv[1], "--noclear") == 0)
+      if (strcmp (argv[1], "--noclear") == 0)
 	{
 	  /* We don't actually clear anyway.  */
 	  argc--;
 	  argv++;
 	}
-      else if (argc >= 3 && strcmp(argv[1], "-a") == 0)
+      else if (argc >= 3 &&
+		 (strcmp (argv[1], "-a") == 0
+		  || strcmp (argv[1], "--autologin") == 0))
 	{
 	  /* Auto-login */
 	  autologin_option = "-f";
