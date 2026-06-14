@@ -51,7 +51,7 @@ typedef struct
 typedef	unsigned short	filter_t;
 typedef filter_t	*filter_array_t;
 
-#define	NET_MAX_FILTER		128 /* was 64, bpf programs are big */
+#define	NET_MAX_FILTER		512 /* bpf programs are big */
 
 #define NET_HASH_SIZE   256
 #define N_NET_HASH      4
