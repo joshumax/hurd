@@ -35,7 +35,6 @@ static int single;
 static struct argp_option
 options[] =
 {
-  /* XXX: Currently, -s does nothing.  */
   {"single-user", 's', NULL, 0, "Startup system in single-user mode", 0},
   {NULL, 'a', NULL, 0, "Ignored for compatibility with sysvinit", 0},
   {0}
@@ -148,7 +147,7 @@ main (int argc, char **argv)
   sa.sa_flags |= SA_RESTART;
   sigaction (SIGCHLD, &sa, NULL);
 
-  char *args[] = { LIBEXECDIR "/runsystem.hurd", NULL };
+  char *args[] = { LIBEXECDIR "/runsystem.hurd", single ? "-s" : NULL, NULL };
 
   switch (child_pid = fork ())
     {
