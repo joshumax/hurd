@@ -81,6 +81,8 @@ procfs_dir_lookup (void *hook, const char *name, struct node **np)
   for (ent = dir->ops->entries; ent->name && strcmp (name, ent->name); ent++);
   if (! ent->name)
     return ENOENT;
+  if (! entry_exists (dir, ent))
+    return ENOENT;
 
   if (ent->ops.make_node)
     *np = ent->ops.make_node (dir->hook, ent->hook);
@@ -131,4 +133,3 @@ procfs_dir_make_node (const struct procfs_dir_ops *dir_ops, void *dir_hook)
 
   return procfs_make_node (&ops, dir);
 }
-
