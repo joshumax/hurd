@@ -140,7 +140,7 @@ cat (mach_port_t node, char *str)
 	  break;
 	else
 	  {
-	    ssize_t err2 = write (0, data, data_len);
+	    ssize_t err2 = write (STDOUT_FILENO, data, data_len);
 	    assert_backtrace (err2 == data_len);
 	    if (data != buf)
 	      munmap (data, data_len);
