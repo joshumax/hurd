@@ -286,7 +286,10 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
 	      EXT2_N_BLOCKS * sizeof info->i_data[0]);
       st->st_rdev = 0;
     }
-  dn->info_i_translator = le32toh (di->i_translator);
+  if (sblock->s_creator_os == htole32 (EXT2_OS_HURD))
+    dn->info_i_translator = le32toh (di->i_translator);
+  else
+    dn->info_i_translator = 0;
 
   dino_deref (di);
   diskfs_end_catch_exception ();
@@ -640,7 +643,10 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
       struct ext2_inode *di;
 
       di = dino_ref (np->cache_id);
-      blkno = le32toh (di->i_translator);
+      if (sblock->s_creator_os == htole32 (EXT2_OS_HURD))
+	blkno = le32toh (di->i_translator);
+      else
+	blkno = 0;
 
       /* If a legacy translator record found, clear it */
       if (blkno)
