@@ -249,13 +249,12 @@ init_ifs (void *arg)
 struct update_if_args
 {
   struct netif *netif;
-  uint32_t addr;
-  uint32_t netmask;
-  uint32_t peer;
-  uint32_t broadcast;
-  uint32_t gateway;
-  uint32_t *addr6;
-  uint8_t *addr6_prefix_len;
+  ip4_addr_t addr;
+  ip4_addr_t netmask;
+  ip4_addr_t peer;
+  ip4_addr_t broadcast;
+  ip4_addr_t gateway;
+  ip6_addr_t *addr6;
 };
 
 /*
@@ -267,9 +266,7 @@ update_if (void *arg)
   int i;
   struct update_if_args *args = arg;
 
-  netif_set_addr (args->netif, (ip4_addr_t *) & args->addr,
-			   (ip4_addr_t *) & args->netmask,
-			   (ip4_addr_t *) & args->gateway);
+  netif_set_addr (args->netif, &args->addr, &args->netmask, &args->gateway);
 
   if (args->addr6)
     for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
@@ -295,29 +292,29 @@ update_if (void *arg)
 
 /* Get the IP configuration of an interface */
 void
-inquire_device (struct netif *netif, uint32_t * addr, uint32_t * netmask,
-		uint32_t * peer, uint32_t * broadcast, uint32_t * gateway,
-		uint32_t * addr6, uint8_t * addr6_prefix_len)
+inquire_device (struct netif *netif, ip4_addr_t * addr, ip4_addr_t * netmask,
+                ip4_addr_t * peer, ip4_addr_t * broadcast, ip4_addr_t * gateway,
+                ip6_addr_t * addr6, uint8_t * addr6_prefix_len)
 {
   int i;
 
   if (netif)
     {
       if (addr)
-	*addr = netif_ip4_addr (netif)->addr;
+	addr->addr = netif_ip4_addr (netif)->addr;
 
       if (netmask)
-	*netmask = netif_ip4_netmask (netif)->addr;
+	netmask->addr = netif_ip4_netmask (netif)->addr;
 
       if (peer)
-	*peer = INADDR_NONE;
+	peer->addr = INADDR_NONE;
 
       if (broadcast)
-	*broadcast =
+	broadcast->addr =
 	  netif_ip4_addr (netif)->addr | ~netif_ip4_netmask (netif)->addr;
 
       if (gateway)
-	*gateway = netif_ip4_gw (netif)->addr;
+	gateway->addr = netif_ip4_gw (netif)->addr;
 
       if (addr6)
 	for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
@@ -339,9 +336,9 @@ inquire_device (struct netif *netif, uint32_t * addr, uint32_t * netmask,
  * Called from ioctls.
  */
 error_t
-configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
-		  uint32_t peer, uint32_t broadcast, uint32_t gateway,
-		  uint32_t * addr6, uint8_t * addr6_prefix_len)
+configure_device (struct netif *netif, ip4_addr_t addr, ip4_addr_t netmask,
+		  ip4_addr_t peer, ip4_addr_t broadcast, ip4_addr_t gateway,
+		  ip6_addr_t * addr6)
 {
   error_t err = 0;
 
@@ -349,25 +346,27 @@ configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
    * The caller is trying to set an invalid address,
    * set all fields to empty so it passes the validation
    */
-  if (addr == INADDR_ANY || addr == INADDR_NONE)
+  if (addr.addr == INADDR_ANY || addr.addr == INADDR_NONE)
     {
-      addr = INADDR_NONE;
-      netmask = INADDR_NONE;
-      peer = INADDR_NONE;
-      broadcast = INADDR_NONE;
-      gateway = INADDR_NONE;
+      addr.addr = INADDR_NONE;
+      netmask.addr = INADDR_NONE;
+      peer.addr = INADDR_NONE;
+      broadcast.addr = INADDR_NONE;
+      gateway.addr = INADDR_NONE;
     }
 
-  if (netmask != INADDR_NONE)
+  if (netmask.addr != INADDR_NONE)
     /*
      * If broadcasting is enabled and we have a netmask lesser than 31 bits
      * long, we need to update the broadcast address too.
      */
     if ((netif->flags & NETIF_FLAG_BROADCAST)
-	&& ip4_addr_netmask_valid (netmask) && netmask <= 0xfffffffc)
-      broadcast = (addr | ~netmask);
+	&& ip4_addr_netmask_valid (netmask.addr)
+	&& netmask.addr <= 0xfffffffc)
+      broadcast.addr = (addr.addr | ~netmask.addr);
 
-  if (!ipv4config_is_valid (addr, netmask, gateway, broadcast))
+  if (!ipv4config_is_valid
+      (addr.addr, netmask.addr, gateway.addr, broadcast.addr))
     err = EINVAL;
   else
     {
@@ -380,7 +379,6 @@ configure_device (struct netif *netif, uint32_t addr, uint32_t netmask,
       arg->broadcast = broadcast;
       arg->gateway = gateway;
       arg->addr6 = addr6;
-      arg->addr6_prefix_len = addr6_prefix_len;
       err = err_to_errno(tcpip_callback (update_if, arg));
     }
 

@@ -81,7 +81,7 @@ siocgifXaddr (struct sock_user *user,
   struct sockaddr_in *sin = (struct sockaddr_in *) addr;
   size_t buflen = sizeof (struct sockaddr);
   struct netif *netif;
-  uint32_t addrs[5];
+  ip4_addr_t addrs[5];
 
   if (!user)
     return EOPNOTSUPP;
@@ -104,7 +104,7 @@ siocgifXaddr (struct sock_user *user,
     {
       inquire_device (netif, &addrs[ADDR], &addrs[NETMASK], &addrs[DSTADDR],
 		      &addrs[BRDADDR], &addrs[GWADDR], 0, 0);
-      sin->sin_addr.s_addr = addrs[type];
+      sin->sin_addr.s_addr = addrs[type].addr;
     }
 
   return err;
@@ -128,7 +128,7 @@ siocsifXaddr (struct sock_user *user,
   struct sockaddr_in sin;
   size_t buflen = sizeof (struct sockaddr_in);
   struct netif *netif;
-  uint32_t ipv4_addrs[5];
+  ip4_addr_t ipv4_addrs[5];
 
   if (!user)
     return EOPNOTSUPP;
@@ -160,11 +160,11 @@ siocsifXaddr (struct sock_user *user,
 		      &ipv4_addrs[DSTADDR], &ipv4_addrs[BRDADDR],
 		      &ipv4_addrs[GWADDR], 0, 0);
 
-      ipv4_addrs[type] = ((struct sockaddr_in *) addr)->sin_addr.s_addr;
+      ipv4_addrs[type].addr = ((struct sockaddr_in *) addr)->sin_addr.s_addr;
 
       err = configure_device (netif, ipv4_addrs[ADDR], ipv4_addrs[NETMASK],
 			      ipv4_addrs[DSTADDR], ipv4_addrs[BRDADDR],
-			      ipv4_addrs[GWADDR], 0, 0);
+			      ipv4_addrs[GWADDR], 0);
     }
 
   return err;
@@ -212,7 +212,7 @@ lwip_S_rioctl_siocaddrt (struct sock_user *user,
   struct netif *netif;
   struct sockaddr sa;
   size_t buflen = sizeof (struct sockaddr);
-  uint32_t ipv4_addrs[5];
+  ip4_addr_t ipv4_addrs[5];
 
   if (!user)
     return EOPNOTSUPP;
@@ -247,11 +247,12 @@ lwip_S_rioctl_siocaddrt (struct sock_user *user,
        */
 
       /* masking current IP must match given dest to be valid */
-      if (ipv4_addrs[ADDR] != INADDR_ANY && ipv4_addrs[ADDR] != INADDR_NONE
-	  && (ipv4_addrs[ADDR] & route.rt_mask) != route.rt_dest)
+      if (ipv4_addrs[ADDR].addr != INADDR_ANY
+	  && ipv4_addrs[ADDR].addr != INADDR_NONE
+	  && (ipv4_addrs[ADDR].addr & route.rt_mask) != route.rt_dest)
 	return ENETUNREACH;
 
-      ipv4_addrs[NETMASK] = route.rt_mask;
+      ipv4_addrs[NETMASK].addr = route.rt_mask;
     }
   else if (route.rt_gateway != INADDR_ANY)
     {
@@ -261,11 +262,12 @@ lwip_S_rioctl_siocaddrt (struct sock_user *user,
        */
 
       /* First we verify the gateway is reachable from this netif */
-      if (ipv4_addrs[ADDR] != INADDR_ANY && ipv4_addrs[ADDR] != INADDR_NONE
-	  && ipv4_addrs[NETMASK] != INADDR_ANY
-	  && ipv4_addrs[NETMASK] != INADDR_NONE
-	  && (route.rt_gateway & ipv4_addrs[NETMASK]) !=
-	  (ipv4_addrs[ADDR] & ipv4_addrs[NETMASK]))
+      if (ipv4_addrs[ADDR].addr != INADDR_ANY
+	  && ipv4_addrs[ADDR].addr != INADDR_NONE
+	  && ipv4_addrs[NETMASK].addr != INADDR_ANY
+	  && ipv4_addrs[NETMASK].addr != INADDR_NONE
+	  && (route.rt_gateway & ipv4_addrs[NETMASK].addr) !=
+	  (ipv4_addrs[ADDR].addr & ipv4_addrs[NETMASK].addr))
 	return EHOSTUNREACH;
 
       /*
@@ -276,7 +278,7 @@ lwip_S_rioctl_siocaddrt (struct sock_user *user,
        */
       tcpip_callback (clear_gateways, NULL);
 
-      ipv4_addrs[GWADDR] = route.rt_gateway;
+      ipv4_addrs[GWADDR].addr = route.rt_gateway;
       tcpip_callback (set_default_if, netif);
     }
   else
@@ -287,7 +289,7 @@ lwip_S_rioctl_siocaddrt (struct sock_user *user,
 
   err = configure_device (netif, ipv4_addrs[ADDR], ipv4_addrs[NETMASK],
 			  ipv4_addrs[DSTADDR], ipv4_addrs[BRDADDR],
-			  ipv4_addrs[GWADDR], 0, 0);
+			  ipv4_addrs[GWADDR], 0);
 
   return err;
 }
@@ -312,7 +314,7 @@ lwip_S_rioctl_siocdelrt (struct sock_user *user,
   struct netif *netif;
   struct sockaddr sa;
   size_t buflen = sizeof (struct sockaddr);
-  uint32_t ipv4_addrs[5];
+  ip4_addr_t ipv4_addrs[5];
 
   if (!user)
     return EOPNOTSUPP;
@@ -343,12 +345,12 @@ lwip_S_rioctl_siocdelrt (struct sock_user *user,
        */
 
       /* We remove the netmask only if it matches the given one */
-      if (ipv4_addrs[NETMASK] != INADDR_ANY
-	  && ipv4_addrs[NETMASK] != INADDR_NONE
-	  && ipv4_addrs[NETMASK] != route.rt_mask)
+      if (ipv4_addrs[NETMASK].addr != INADDR_ANY
+	  && ipv4_addrs[NETMASK].addr != INADDR_NONE
+	  && ipv4_addrs[NETMASK].addr != route.rt_mask)
 	return EINVAL;
 
-      ipv4_addrs[NETMASK] = INADDR_NONE;
+      ipv4_addrs[NETMASK].addr = INADDR_NONE;
     }
   else if (route.rt_gateway != INADDR_ANY)
     {
@@ -358,16 +360,16 @@ lwip_S_rioctl_siocdelrt (struct sock_user *user,
        */
 
       /* We remove the gateway only if it matches the given one */
-      if (ipv4_addrs[GWADDR] != INADDR_ANY
-	  && ipv4_addrs[GWADDR] != INADDR_NONE
-	  && ipv4_addrs[GWADDR] != route.rt_gateway)
+      if (ipv4_addrs[GWADDR].addr != INADDR_ANY
+	  && ipv4_addrs[GWADDR].addr != INADDR_NONE
+	  && ipv4_addrs[GWADDR].addr != route.rt_gateway)
 	return EINVAL;
 
       /* And only if it was the default one */
       if (netif != netif_default)
 	return EINVAL;
 
-      ipv4_addrs[GWADDR] = INADDR_NONE;
+      ipv4_addrs[GWADDR].addr = INADDR_NONE;
     }
   else
     {
@@ -377,7 +379,7 @@ lwip_S_rioctl_siocdelrt (struct sock_user *user,
 
   err = configure_device (netif, ipv4_addrs[ADDR], ipv4_addrs[NETMASK],
 			  ipv4_addrs[DSTADDR], ipv4_addrs[BRDADDR],
-			  ipv4_addrs[GWADDR], 0, 0);
+			  ipv4_addrs[GWADDR], 0);
 
   return err;
 }

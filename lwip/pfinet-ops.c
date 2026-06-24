@@ -138,7 +138,8 @@ static uint32_t get_routes(ifrtreq_t *rtable) {
   ifrtreq_t *rtable_it;
   struct netif *netif;
   char *devname;
-  uint32_t addr, netmask, gw, count;
+  ip4_addr_t addr, netmask, gw;
+  uint32_t count;
 
   rtable_it = rtable;
   count = 0;
@@ -148,9 +149,9 @@ static uint32_t get_routes(ifrtreq_t *rtable) {
   if (netif_default != NULL) {
     inquire_device (netif_default, 0, 0, 0, 0, &gw, 0, 0);
 
-    if (gw != INADDR_ANY && gw != INADDR_NONE) {
+    if (gw.addr != INADDR_ANY && gw.addr != INADDR_NONE) {
       devname = netif_get_state (netif_default)->devname;
-      add_route(rtable_it++, devname, INADDR_ANY, INADDR_ANY, gw);
+      add_route(rtable_it++, devname, INADDR_ANY, INADDR_ANY, gw.addr);
       count++;
     }
   }
@@ -161,11 +162,13 @@ static uint32_t get_routes(ifrtreq_t *rtable) {
   {
     inquire_device (netif, &addr, &netmask, 0, 0, &gw, 0, 0);
 
-    if(addr != INADDR_ANY && addr != INADDR_NONE
-      && netmask != INADDR_ANY && netmask != INADDR_NONE) {
-      devname = netif_get_state (netif)->devname;
-      add_route(rtable_it++, devname, addr & netmask, netmask, INADDR_ANY);
-      count++;
+    if (addr.addr != INADDR_ANY && addr.addr != INADDR_NONE
+	&& netmask.addr != INADDR_ANY && netmask.addr != INADDR_NONE)
+      {
+	devname = netif_get_state (netif)->devname;
+	add_route (rtable_it++, devname, addr.addr & netmask.addr,
+		   netmask.addr, INADDR_ANY);
+	count++;
       }
 
     if (count == MAX_ROUTES)
