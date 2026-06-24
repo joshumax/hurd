@@ -70,6 +70,50 @@ parse_hook_add_interface (struct parse_hook *h)
   return 0;
 }
 
+static error_t
+parse_hook_load_previous_config (struct parse_hook *h)
+{
+  error_t err;
+  int i;
+  struct netif *netif;
+  ip4_addr_t addr, netmask, peer, gateway;
+  ip6_addr_t addr6[LWIP_IPV6_NUM_ADDRESSES];
+
+  NETIF_FOREACH (netif)
+  {
+    /* Skip the loopback interface */
+    if (netif_get_state (netif)->type == ARPHRD_LOOPBACK)
+      {
+	continue;
+      }
+
+    err = parse_hook_add_interface (h);
+    if (err)
+      return err;
+
+    inquire_device (netif, &addr, &netmask, &peer, 0, &gateway, addr6, 0);
+
+    snprintf (h->curint->dev_name, sizeof (h->curint->dev_name), "%s",
+	      netif_get_state (netif)->devname);
+    h->curint->address.addr = addr.addr;
+    h->curint->netmask.addr = netmask.addr;
+    h->curint->peer.addr = peer.addr;
+    h->curint->gateway.addr = gateway.addr;
+    for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
+      {
+	/* Exclude link-local addresses and SLAAC configured addresses
+	 * Those will be added automatically */
+	if (ip6_addr_islinklocal (&addr6[i])
+	    || !netif_ip6_addr_isstatic (netif, i))
+	  continue;
+
+	memcpy (&h->curint->addr6[i], &addr6[i], sizeof (ip6_addr_t));
+      }
+  }
+
+  return 0;
+}
+
 /* Option parser */
 static error_t
 parse_opt (int opt, char *arg, struct argp_state *state)
@@ -254,6 +298,18 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
       h->interfaces = 0;
       h->num_interfaces = 0;
+
+      if (netif_list != 0)
+	{
+	  /*
+	   * There is a previous config. We are being called by fsysopts.
+	   * Load the previous config so the new config gets merged
+	   */
+	  err = parse_hook_load_previous_config (h);
+	  if (err)
+	    FAIL (err, 12, err, "option parsing");
+	}
+
       err = parse_hook_add_interface (h);
       if (err)
 	FAIL (err, 12, err, "option parsing");
