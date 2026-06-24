@@ -218,11 +218,7 @@ init_ifs (void *arg)
 	    {
 	      netif_add_ip6_address (netif, address6, &ipv6_addr_idx);
 
-	      if (ipv6_addr_idx >= 0)
-		/* First use DAD to make sure nobody else has it */
-		netif_ip6_addr_set_state (netif, ipv6_addr_idx,
-					  IP6_ADDR_TENTATIVE);
-	      else
+	      if (ipv6_addr_idx < 0)
 		error (0, 0, "No free slot for IPv6 address: %s\n",
 		       ip6addr_ntoa (address6));
 	    }
@@ -271,8 +267,8 @@ update_if (void *arg)
   if (args->addr6)
     for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
       {
-	ip6_addr_t *laddr6 = ((ip6_addr_t *) args->addr6 + i);
-	if (!ip6_addr_isany (laddr6))
+	ip6_addr_t *laddr6 = args->addr6 + i;
+	if (!ip6_addr_isany (laddr6) && !ip6_addr_ismulticast (laddr6))
 	  {
 	    netif_ip6_addr_set (args->netif, i, laddr6);
 
@@ -281,13 +277,7 @@ update_if (void *arg)
 	  }
       }
 
-  if (args->addr6_prefix_len)
-    for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
-      *(args->addr6_prefix_len + i) = 64;
-
   free (args);
-
-  return;
 }
 
 /* Get the IP configuration of an interface */
@@ -317,17 +307,21 @@ inquire_device (struct netif *netif, ip4_addr_t * addr, ip4_addr_t * netmask,
 	gateway->addr = netif_ip4_gw (netif)->addr;
 
       if (addr6)
-	for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
-	  {
-	    *(addr6 + i * 4 + 0) = netif_ip6_addr (netif, i)->addr[0];
-	    *(addr6 + i * 4 + 1) = netif_ip6_addr (netif, i)->addr[1];
-	    *(addr6 + i * 4 + 2) = netif_ip6_addr (netif, i)->addr[2];
-	    *(addr6 + i * 4 + 3) = netif_ip6_addr (netif, i)->addr[3];
-	  }
+	{
+	  for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
+	    {
+	      if (!ip6_addr_isvalid (netif_ip6_addr_state (netif, i)))
+		{
+		  memset (&addr6[i], 0, sizeof (ip6_addr_t));
+		  continue;
+		}
 
-      if (addr6_prefix_len)
-	for (i = 0; i < LWIP_IPV6_NUM_ADDRESSES; i++)
-	  *(addr6_prefix_len + i) = 64;
+	      addr6[i] = *netif_ip6_addr (netif, i);
+
+	      if (addr6_prefix_len)
+		*(addr6_prefix_len + i) = 64;
+	    }
+	}
     }
 }
 
