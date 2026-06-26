@@ -55,7 +55,16 @@ netfs_S_file_get_translator (struct protid *user,
       if (!err)
 	{
 	  if (len > *translen)
-	    *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    {
+	      void *buf = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	      if (buf == MAP_FAILED)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return errno;
+		}
+
+	      *trans = buf;
+	    }
 	  memcpy (*trans, string, len);
 	  *translen = len;
 	  free (string);
@@ -66,7 +75,16 @@ netfs_S_file_get_translator (struct protid *user,
       unsigned int len = sizeof _HURD_SYMLINK + np->nn_stat.st_size + 1;
 
       if (len  > *translen)
-	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	{
+	  void *buf = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (buf == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&np->lock);
+	      return errno;
+	    }
+
+	  *trans = buf;
+	}
       memcpy (*trans, _HURD_SYMLINK, sizeof _HURD_SYMLINK);
 
       err = netfs_attempt_readlink (user->user, np,
@@ -98,7 +116,17 @@ netfs_S_file_get_translator (struct protid *user,
 	  buflen++;			/* terminating nul */
 
 	  if (buflen > *translen)
-	    *trans = mmap (0, buflen, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    {
+	      void *buf = mmap (0, buflen, PROT_READ|PROT_WRITE,
+				MAP_ANON, 0, 0);
+	      if (buf == MAP_FAILED)
+		{
+		  pthread_mutex_unlock (&np->lock);
+		  return errno;
+		}
+
+	      *trans = buf;
+	    }
 	  memcpy (*trans, buf, buflen);
 	  free (buf);
 	  *translen = buflen;
@@ -111,7 +139,16 @@ netfs_S_file_get_translator (struct protid *user,
 
       len = sizeof _HURD_FIFO;
       if (len > *translen)
-	*trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	{
+	  void *buf = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (buf == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&np->lock);
+	      return errno;
+	    }
+
+	  *trans = buf;
+	}
       memcpy (*trans, _HURD_FIFO, sizeof _HURD_FIFO);
       *translen = len;
       err = 0;
@@ -122,7 +159,16 @@ netfs_S_file_get_translator (struct protid *user,
 
       len = sizeof _HURD_IFSOCK;
       if (len > *translen)
-        *trans = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	{
+	  void *buf = mmap (0, len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  if (buf == MAP_FAILED)
+	    {
+	      pthread_mutex_unlock (&np->lock);
+	      return errno;
+	    }
+
+	  *trans = buf;
+	}
       memcpy (*trans, _HURD_IFSOCK, sizeof _HURD_IFSOCK);
       *translen = len;
       err = 0;

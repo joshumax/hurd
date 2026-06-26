@@ -345,8 +345,15 @@ S_socket_whatis_address (struct sock_addr *addr,
 
   *type = addr->address.sa_family;
   if (*datalen < addr->address.sa_len)
-    *data = mmap (0, addr->address.sa_len,
-		  PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *new_data = mmap (0, addr->address.sa_len, PROT_READ|PROT_WRITE,
+                             MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+        return ENOMEM;
+
+      *data = new_data;
+    }
+
   *datalen = addr->address.sa_len;
   memcpy (*data, &addr->address, addr->address.sa_len);
 

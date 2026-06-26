@@ -102,8 +102,14 @@ lwip_S_pfinet_siocgifconf (io_t port,
     {
       /* Possibly allocate a new buffer */
       if (*len < amount)
-	ifc.ifc_buf = (char *) mmap (0, amount, PROT_READ | PROT_WRITE,
-				     MAP_ANON, 0, 0);
+	{
+	  void *buf = mmap (0, amount, PROT_READ | PROT_WRITE,
+			    MAP_ANON, 0, 0);
+	  if (buf == MAP_FAILED)
+	    return ENOMEM;
+
+	  ifc.ifc_buf = buf;
+	}
       else
 	ifc.ifc_buf = *ifr;
 

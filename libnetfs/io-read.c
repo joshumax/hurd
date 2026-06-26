@@ -50,8 +50,15 @@ netfs_S_io_read (struct protid *user,
 
   if (amount > data_size)
     {
+      void *new_data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+	{
+	  pthread_mutex_unlock (&node->lock);
+	  return errno;
+	}
+
       alloced = 1;
-      *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      *data = new_data;
     }
   data_size = amount;
 

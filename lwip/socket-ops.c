@@ -287,8 +287,14 @@ lwip_S_socket_whatis_address (struct sock_addr * addr,
 
   *type = addr->address.sa.sa_family;
   if (*datalen < addr->address.sa.sa_len)
-    *data = mmap (0, addr->address.sa.sa_len,
-		  PROT_READ | PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *buf = mmap (0, addr->address.sa.sa_len, PROT_READ | PROT_WRITE,
+                        MAP_ANON, 0, 0);
+      if (buf == MAP_FAILED)
+        return ENOMEM;
+
+      *data = buf;
+    }
   *datalen = addr->address.sa.sa_len;
   memcpy (*data, &addr->address.sa, addr->address.sa.sa_len);
 

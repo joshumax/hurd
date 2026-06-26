@@ -244,7 +244,12 @@ diskfs_get_directs (struct node *dp,
   allocsize = bufsiz ? round_page (bufsiz) : vm_page_size * 4;
   if (allocsize > *datacnt)
     {
-      *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      void *new_data = mmap (0, allocsize, PROT_READ|PROT_WRITE,
+                             MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+        return errno;
+
+      *data = new_data;
       ouralloc = 1;
     }
 

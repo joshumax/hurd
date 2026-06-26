@@ -212,6 +212,7 @@ load_image (task_t t,
 
 	    buf = (vm_address_t) mmap (0, bufsz,
 				       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    assert_backtrace (buf != MAP_FAILED);
 
 	    lseek (fd, ph->p_offset, SEEK_SET);
 	    err = read (fd, (void *)(buf + offs), ph->p_filesz);
@@ -247,6 +248,7 @@ load_image (task_t t,
       amount = headercruft + hdr.a.a_text + hdr.a.a_data;
       rndamount = round_page (amount);
       buf = mmap (0, rndamount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      assert_backtrace (buf != MAP_FAILED);
       lseek (fd, sizeof hdr.a - headercruft, SEEK_SET);
       err = read (fd, buf, amount);
       assert_backtrace (err == amount);
@@ -315,6 +317,7 @@ boot_script_exec_cmd (void *hook,
   arg_pos = (void *) ((stack_end - arg_len) & ~(sizeof (intptr_t) - 1));
   args = mmap (0, stack_end - trunc_page ((vm_offset_t) arg_pos),
 	       PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  assert_backtrace (args != MAP_FAILED);
   str_start = ((vm_address_t) arg_pos
 	       + (argc + 2) * sizeof (char *) + sizeof (intptr_t));
   p = args + ((vm_address_t) arg_pos & (vm_page_size - 1));

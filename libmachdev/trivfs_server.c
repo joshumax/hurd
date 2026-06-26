@@ -294,6 +294,8 @@ trivfs_S_fsys_init (struct trivfs_control *fsys,
 
   portarray = mmap (0, INIT_PORT_MAX * sizeof *portarray,
                     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+  assert_backtrace (portarray != MAP_FAILED);
+
   for (i = 0; i < INIT_PORT_MAX; ++i)
     portarray[i] = MACH_PORT_NULL;
   portarray[INIT_PORT_PROC] = procserver;

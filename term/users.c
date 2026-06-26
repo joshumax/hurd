@@ -721,7 +721,16 @@ trivfs_S_io_read (struct trivfs_protid *cred,
   max = (amount < avail) ? amount : avail;
 
   if (max > *datalen)
-    *data = mmap (0, max, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *new_data = mmap (0, max, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+        {
+          pthread_mutex_unlock (&global_lock);
+          return errno;
+        }
+
+      *data = new_data;
+    }
 
   cancel = 0;
   cp = *data;

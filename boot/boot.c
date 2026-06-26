@@ -898,7 +898,10 @@ read_reply (void)
   pthread_spin_unlock (&queuelock);
 
   if (qr->type == DEV_READ)
-    buf = mmap (0, qr->amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      buf = mmap (0, qr->amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      assert_backtrace (buf != MAP_FAILED);
+    }
   else
     buf = alloca (qr->amount);
   amtread = read (0, buf, qr->amount);
@@ -1138,7 +1141,14 @@ ds_device_read (device_t device,
       ioctl (0, FIONREAD, &avail);
       if (avail)
 	{
-	  *data = mmap (0, bytes_wanted, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	  void *new_data = mmap (0, bytes_wanted, PROT_READ|PROT_WRITE,
+				 MAP_ANON, 0, 0);
+	  if (new_data == MAP_FAILED)
+	    {
+	      unlock_readlock ();
+	      return errno;
+	    }
+	  *data = new_data;
 	  *datalen = read (0, *data, bytes_wanted);
 	  unlock_readlock ();
 	  return (*datalen == -1 ? D_IO_ERROR : D_SUCCESS);
@@ -1484,7 +1494,17 @@ S_io_read (mach_port_t object,
     {
       data_t orig_data = *data;
       if (amount > *datalen)
-	*data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	{
+	  void *new_data = mmap (0, amount, PROT_READ|PROT_WRITE,
+				 MAP_ANON, 0, 0);
+	  if (new_data == MAP_FAILED)
+	    {
+	      unlock_readlock();
+	      return errno;
+	    }
+
+	  *data = new_data;
+        }
       *datalen = read (0, *data, amount);
       if (*datalen == -1 && *data != orig_data)
 	munmap (*data, amount);

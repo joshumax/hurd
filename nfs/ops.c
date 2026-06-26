@@ -2022,7 +2022,17 @@ netfs_get_dirents (struct iouser *cred, struct node *np,
   else
     allocsize = round_page (bufsiz);
   if (allocsize > *datacnt)
-    *data = mmap (0, allocsize, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *new_data = mmap (0, allocsize, PROT_READ|PROT_WRITE,
+                             MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+        {
+          free (buf);
+          return errno;
+        }
+
+      *data = new_data;
+    }
 
   /* Skip ahead to the correct entry. */
   bp = buf;

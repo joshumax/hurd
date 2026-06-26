@@ -424,9 +424,12 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 			     & ~(__alignof (struct dirent) - 1));
 	      return (struct dirent *) ((char *) d + d->d_reclen);
 	    }
-	  struct dirent *d;
-	  m->dirbuf = mmap (0, getpagesize (), PROT_READ|PROT_WRITE,
+	  void *buf = mmap (0, getpagesize (), PROT_READ|PROT_WRITE,
 			    MAP_ANON, 0, 0);
+	  if (buf == MAP_FAILED)
+	    return errno;
+	  m->dirbuf = buf;
+	  struct dirent *d;
 	  d = add (m->dirbuf, ".");
 	  d = add (d, "..");
 	  m->dirbufsize = (char *) d - (char *) m->dirbuf;

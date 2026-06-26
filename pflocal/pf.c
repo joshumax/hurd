@@ -141,7 +141,14 @@ S_socket_whatis_address (struct addr *addr,
 
   *sockaddr_type = AF_LOCAL;
   if (*sockaddr_len < addr_len)
-    *sockaddr = mmap (0, addr_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *buf = mmap (0, addr_len, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (buf == MAP_FAILED)
+        return errno;
+
+      *sockaddr = buf;
+    }
+
   ((struct sockaddr *) *sockaddr)->sa_len = addr_len;
   ((struct sockaddr *) *sockaddr)->sa_family = *sockaddr_type;
   ((struct sockaddr *) *sockaddr)->sa_data[0] = 0;

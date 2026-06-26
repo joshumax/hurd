@@ -235,6 +235,7 @@ main (int argc, char **argv)
 
   zerocluster = (vm_address_t) mmap (0, bytes_per_cluster, PROT_READ|PROT_WRITE,
 				     MAP_ANON, 0, 0);
+  assert_backtrace (zerocluster != MAP_FAILED);
 
   fetch_root ();
 

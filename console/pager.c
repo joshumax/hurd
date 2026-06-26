@@ -68,10 +68,16 @@ pager_read_page (struct user_pager_info *upi, vm_offset_t page,
     {
       *buf = upi->memobj_pages[page / vm_page_size];
       upi->memobj_pages[page / vm_page_size] = (vm_address_t) NULL;
+
+      return 0;
     }
-  else
-    *buf = (vm_address_t) mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
-				MAP_ANON, 0, 0);
+
+  void *new_buf = mmap (0, vm_page_size, PROT_READ|PROT_WRITE,
+                        MAP_ANON, 0, 0);
+  if (new_buf == MAP_FAILED)
+    return errno;
+
+  *buf = (vm_address_t) new_buf;
   return 0;
 }
 

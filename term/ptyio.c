@@ -353,7 +353,17 @@ pty_io_read (struct trivfs_protid *cred,
   if (size > amount)
     size = amount;
   if (size > *datalen)
-    *data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    {
+      void *new_data = mmap (0, size, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+      if (new_data == MAP_FAILED)
+        {
+          pthread_mutex_unlock (&global_lock);
+          return errno;
+        }
+
+      *data = new_data;
+    }
+
   *datalen = size;
 
   if (control_byte)

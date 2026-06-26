@@ -1003,6 +1003,11 @@ do_exec (file_t file,
 	    new_envplen = sizeof (ld_origin_s) - 1 + pathlen + envplen;
 	    new_envp = mmap (0, new_envplen,
 			     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    if (new_envp == MAP_FAILED)
+	      {
+		e.error = errno;
+		goto stdout;
+	      }
 
 	    memcpy (new_envp, ld_origin_s + 1, sizeof (ld_origin_s) - 2);
 	    memcpy (new_envp + sizeof (ld_origin_s) - 2, abspath, pathlen);
@@ -1044,6 +1049,11 @@ do_exec (file_t file,
 	    /* Allocate a new vector that is big enough.  */
 	    boot->intarray = mmap (0, INIT_INT_MAX * sizeof (int),
 				   PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+	    if (boot->intarray == MAP_FAILED)
+	      {
+		e.error = errno;
+		goto stdout;
+	      }
 	    memcpy (boot->intarray, intarray, nints * sizeof (int));
 	    intarray_dealloc = !intarray_copy;
 	  }
@@ -1069,6 +1079,11 @@ do_exec (file_t file,
     boot->nports = nports < INIT_PORT_MAX ? INIT_PORT_MAX : nports;
     boot->portarray = mmap (0, boot->nports * sizeof (mach_port_t),
 			    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
+    if (boot->portarray == MAP_FAILED)
+      {
+	e.error = errno;
+	goto stdout;
+      }
     /* Start by copying the array as passed.  */
     for (i = 0; i < nports; ++i)
       boot->portarray[i] = portarray[i];
