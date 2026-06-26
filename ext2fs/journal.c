@@ -1080,14 +1080,18 @@ journal_stop_transaction_locked (journal_t *journal,
       return;
     }
   txn->t_updates--;
-  if (txn->t_updates == 0)
+  /* Continue until the map is proven clean while locked */
+  while (txn->t_updates == 0)
     {
       size_t iter = 0;
       journal_buffer_t *jb_exp;
+      journal_buffer_t *copy_list_head = NULL;
+      journal_buffer_t *copy_list_tail = NULL;
+
+      /* Traverse while map is locked */
       while ((jb_exp =
 	      journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
 	{
-	  /* Buffer hydration (memory copying) time. */
 	  if (jb_exp->needs_copy)
 	    {
 	      if (jb_exp->lifeboat_index >= 0)
@@ -1095,35 +1099,68 @@ journal_stop_transaction_locked (journal_t *journal,
 		  memcpy (jb_exp->jb_shadow_data,
 			  ext2_lifeboat.payloads[jb_exp->lifeboat_index],
 			  block_size);
+		  jb_exp->needs_copy = 0;
 		}
 	      else
 		{
-		  /**
-		   * Calculate the pointer to the live Mach VM cache for this block.
-		   * Because t_updates is 0 AND we hold a lock, we are mathematically
-		   * guaranteed that no VFS threads are currently mutating this block
-		   * because if they were mutating it they would have to first obtain
-		   * the journal lock AND also increase the t_updates.
-		   */
-		  void *live_cache_ptr = bptr (jb_exp->jb_blocknr);
-		  /**
-		   * We execute exactly ONE memory copy per block,
-		   * capturing the fully settled, tear-free state of the RAM.
-		   * We do this even if jb_is_written == 1, because if the pager
-		   * rushed the block, we MUST capture this settled state into the
-		   * WAL so it can overwrite the pager's rushed data during recovery!
-		   */
-		  memcpy (jb_exp->jb_shadow_data, live_cache_ptr, block_size);
+		  jb_exp->jb_next = NULL;
+		  if (!copy_list_head)
+		    copy_list_head = jb_exp;
+		  else
+		    copy_list_tail->jb_next = jb_exp;
+		  copy_list_tail = jb_exp;
 		}
-	      /* We are done with this block even if t_updates reach 0 again before
-	       * this transaction is committed. If we get notified that this block
-	       * has been modified again journal_dirty_blocks must set needs_copy
-	       * back to 1. */
-	      jb_exp->needs_copy = 0;
 	    }
 	}
-      /* If anyone is sleeping in the commit loop waiting for this, wake them */
-      pthread_cond_broadcast (&journal->j_commit_wait);
+
+      if (!copy_list_head)
+	{
+	  /* Map is perfectly clean. Wake the committer and break the loop. */
+	  pthread_cond_broadcast (&journal->j_commit_wait);
+	  break;
+	}
+
+      /* Now lockless hydration, we will update t_updates to > 0 so none can steal the txn. */
+      txn->t_updates++;
+      JOURNAL_UNLOCK (journal);
+
+      journal_buffer_t *curr = copy_list_head;
+      while (curr)
+	{
+	  /**
+          * Calculate the pointer to the live Mach VM cache for this block.
+          * Because t_updates is 0 AND we hold a lock, we are mathematically
+          * guaranteed that no VFS threads are currently mutating this block
+          * because if they were mutating it they would have to first obtain
+          * the journal lock AND also increase the t_updates.
+          */
+	  void *live_cache_ptr = bptr (curr->jb_blocknr);
+	  /**
+          * We execute exactly ONE memory copy per block,
+          * capturing the fully settled, tear-free state of the RAM.
+          * We do this even if jb_is_written == 1, because if the pager
+          * rushed the block, we MUST capture this settled state into the
+          * WAL so it can overwrite the pager's rushed data during recovery!
+          */
+	  memcpy (curr->jb_shadow_data, live_cache_ptr, block_size);
+	  /* We are done with this block even if t_updates reach 0 again before
+	   * this transaction is committed. If we get notified that this block
+	   * has been modified again journal_dirty_blocks must set needs_copy
+	   * back to 1. */
+	  curr->needs_copy = 0;
+
+	  journal_buffer_t *next = curr->jb_next;
+	  curr->jb_next = NULL;
+	  curr = next;
+	}
+
+      JOURNAL_LOCK (journal);
+      /* We need to decrement what we incremented. */
+      txn->t_updates--;
+
+      /* If t_updates is still 0, the loop repeats to verify no blocks were
+         added. If t_updates > 0, another thread joined while we were unlocked
+         and they will handle the final sweep. We safely fall out. */
     }
 }
 
