@@ -169,6 +169,18 @@ init_ifs (void *arg)
       if (!in->dev_name[0])
 	continue;
 
+      /*
+       * The caller is trying to set an invalid address,
+       * set all fields to empty so it passes the validation
+       */
+      if (in->address.addr == INADDR_ANY || in->address.addr == INADDR_NONE)
+	{
+	  in->address.addr = INADDR_NONE;
+	  in->netmask.addr = INADDR_NONE;
+	  in->peer.addr = INADDR_NONE;
+	  in->gateway.addr = INADDR_NONE;
+	}
+
       if (!ipv4config_is_valid (in->address.addr, in->netmask.addr,
 				in->gateway.addr, INADDR_NONE))
 	continue;
