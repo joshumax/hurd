@@ -118,9 +118,9 @@
 #define JOURNAL_WAIT(cond, j) \
     pthread_cond_wait((cond), &(j)->j_state_lock)
 
-#define JRNL_LIFEBOAT_CAPACITY 128
+#define JRNL_LIFEBOAT_CAPACITY 512
 
-#define JRNL_LIFEBOAT_ALLOC_MASK_LEN 2
+#define JRNL_LIFEBOAT_ALLOC_MASK_LEN 8
 
 /* Thread-Local Deferred Block Queue (The Checkpoint Circuit Breaker)
  *
@@ -150,11 +150,11 @@ __thread int deferred_count = 0;
 
 struct journal_lifeboat
 {
-  /* 128 bits total: 0 means free, 1 means occupied.
+  /* 512 bits total: 0 means free, 1 means occupied.
      Protected by the main ext2_journal->j_state_lock. */
   uint64_t alloc_mask[JRNL_LIFEBOAT_ALLOC_MASK_LEN];
 
-  /* The pre-allocated payload pool (128 * 4KB = 512KB) */
+  /* The pre-allocated payload pool (512 * 4KB = 2MB) */
   char payloads[JRNL_LIFEBOAT_CAPACITY][4096];
 };
 
