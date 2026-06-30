@@ -888,6 +888,16 @@ journal_load_superblock (journal_t *journal)
       free (buf);
       return EINVAL;
     }
+  if (journal->j_first >= journal->map.total_blocks ||
+      journal->j_head >= journal->map.total_blocks)
+    {
+      JRNL_LOG_WARN
+	("Superblock bounds corrupted! First: %u, Head: %u, Max: %u",
+	 journal->j_first, journal->j_head, journal->map.total_blocks);
+      free (buf);
+      return EINVAL;
+    }
+
   jsb->s_maxlen = htobe32 (journal->map.total_blocks);
 
   journal->j_sb_buffer = buf;
