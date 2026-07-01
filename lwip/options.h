@@ -45,7 +45,7 @@ struct parse_interface
   ip4_addr_t address, netmask, peer, gateway;
 
   /* New IPv6 configuration to apply. */
-  uint32_t addr6[LWIP_IPV6_NUM_ADDRESSES][4];
+  ip6_addr_t addr6[LWIP_IPV6_NUM_ADDRESSES];
 };
 
 /* Used to hold data during argument parsing.  */
