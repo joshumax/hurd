@@ -148,6 +148,13 @@ __thread int thread_is_checkpointing = 0;
 __thread block_t deferred_blocks[MAX_DEFERRED_BLOCKS];
 __thread int deferred_count = 0;
 
+/* Temporary storage for blocks rushed by the Mach VM pager.
+ * Because we cannot block or delay the pager when it needs to flush a page
+ * belonging to an active (RUNNING/COMMITTING) transaction, this cache
+ * absorbs the write. This prevents a permanent deadlock while preserving
+ * Write-Ahead Log (WAL) ordering.
+ * The payloads are flushed to disk as soon as the transaction safely commits.
+ */
 struct journal_lifeboat
 {
   /* 512 bits total: 0 means free, 1 means occupied.
