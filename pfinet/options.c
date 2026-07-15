@@ -143,7 +143,7 @@ parse_interface_copy_device(struct device *src,
 
   if (idev)
     {
-      struct inet6_ifaddr *ifa = idev->addr_list;
+      struct inet6_ifaddr *ifa;
 
       /* Look for IPv6 default router and add it to the interface,
        * if it belongs to it.
@@ -151,8 +151,9 @@ parse_interface_copy_device(struct device *src,
       struct rt6_info *rt6i = ipv6_get_dflt_router();
       if (rt6i->rt6i_dev == src)
 	memcpy (&dst->gateway6, &rt6i->rt6i_gateway, sizeof (struct in6_addr));
+
       /* Search for global address and set it in dst */
-      do
+      for (ifa = idev->addr_list; ifa; ifa = ifa->if_next)
 	{
 	  if (!IN6_IS_ADDR_LINKLOCAL (&ifa->addr))
 	    {
@@ -160,7 +161,6 @@ parse_interface_copy_device(struct device *src,
 	      break;
 	    }
 	}
-      while ((ifa = ifa->if_next));
     }
 #endif
 }
