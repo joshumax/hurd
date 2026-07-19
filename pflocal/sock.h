@@ -85,6 +85,9 @@ struct sock
   /* Effective identity of the creator of the socket */
   uid_t uid;
   gid_t gid;
+
+  /* This stores the signaling owner of the socket */
+  pid_t owner;
 };
 
 /* Socket flags */

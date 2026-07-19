@@ -555,3 +555,23 @@ S_io_identity (struct sock_user *user,
 
   return err;
 }
+
+kern_return_t
+S_io_mod_owner (struct sock_user *user, pid_t owner)
+{
+  if (!user)
+    return EOPNOTSUPP;
+
+  user->sock->owner = owner;
+  return 0;
+}
+
+kern_return_t
+S_io_get_owner (struct sock_user *user, pid_t *owner)
+{
+  if (!user)
+    return EOPNOTSUPP;
+
+  *owner = user->sock->owner;
+  return 0;
+}

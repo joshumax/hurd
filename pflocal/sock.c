@@ -126,6 +126,7 @@ sock_create (struct pipe_class *pipe_class, mode_t mode, struct sock **sock)
   new->addr = NULL;
   new->uid = getuid ();
   new->gid = getgid ();
+  new->owner = 0;
   memset (&new->change_time, 0, sizeof (new->change_time));
   pthread_mutex_init (&new->lock, NULL);
 
@@ -488,7 +489,7 @@ sock_shutdown (struct sock *sock, unsigned flags)
 
   /* Unlock SOCK here, as we may subsequently wake up other threads. */
   pthread_mutex_unlock (&sock->lock);
-  
+
   if (read_pipe)
     pipe_remove_reader (read_pipe);
   if (write_pipe)
