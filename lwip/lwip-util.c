@@ -171,12 +171,12 @@ init_ifs (void *arg)
 
       /*
        * The caller is trying to set an invalid address,
-       * set all fields to empty so it passes the validation
+       * set all fields to default values so it passes the validation
        */
       if (in->address.addr == INADDR_ANY || in->address.addr == INADDR_NONE)
 	{
-	  in->address.addr = INADDR_NONE;
-	  in->netmask.addr = INADDR_NONE;
+	  in->address.addr = INADDR_ANY;
+	  in->netmask.addr = inet_addr ("255.0.0.0");
 	  in->peer.addr = INADDR_NONE;
 	  in->gateway.addr = INADDR_NONE;
 	}
@@ -342,8 +342,8 @@ configure_device (struct netif *netif, ip4_addr_t addr, ip4_addr_t netmask,
    */
   if (addr.addr == INADDR_ANY || addr.addr == INADDR_NONE)
     {
-      addr.addr = INADDR_NONE;
-      netmask.addr = INADDR_NONE;
+      addr.addr = INADDR_ANY;
+      netmask.addr = inet_addr ("255.0.0.0");
       peer.addr = INADDR_NONE;
       broadcast.addr = INADDR_NONE;
       gateway.addr = INADDR_NONE;
