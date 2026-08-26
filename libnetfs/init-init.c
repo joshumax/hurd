@@ -38,9 +38,9 @@ void
 netfs_init (void)
 {
   error_t err;
-  err = maptime_map (0, 0, &netfs_mtime);
+  err = maptime_map (1, 0, &netfs_mtime);
   if (err)
-    err = maptime_map (1, 0, &netfs_mtime);
+    err = maptime_map (0, 0, &netfs_mtime);
   if (err)
     error (2, err, "mapping time");
 
