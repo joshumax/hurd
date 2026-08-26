@@ -43,6 +43,15 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
   po->np = np;
   po->path = NULL;
 
+  if (netfs_peropen_create_hook)
+    err = (*netfs_peropen_create_hook) (po);
+  if (err)
+    {
+      fshelp_rlock_po_fini (&po->lock_status);
+      free (po);
+      return NULL;
+    }
+
   if (context)
     {
       if (context->path)

@@ -113,6 +113,14 @@ extern char *netfs_server_name;
    version number.  */
 extern char *netfs_server_version;
 
+/* If this variable is set, it is called internally every time a new peropen
+   structure is created and initialized.  */
+extern error_t (*netfs_peropen_create_hook) (struct peropen *po);
+
+/* If this variable is set, it is called internally every time a peropen
+   structure is about to be destroyed.  */
+extern void (*netfs_peropen_destroy_hook) (struct peropen *po);
+
 /* The user must define this function.  Make sure that NP->nn_stat is
    filled with the most current information.  CRED identifies the user
    responsible for the operation. NP is locked.  */

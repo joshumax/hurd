@@ -53,7 +53,7 @@ OTHERSRCS= drop-node.c init-init.c make-node.c make-peropen.c make-protid.c   \
 	runtime-argp.c std-runtime-argp.c std-startup-argp.c		      \
 	append-std-options.c trans-callback.c set-get-trans.c		      \
 	nref.c nrele.c nput.c file-get-storage-info-default.c dead-name.c     \
-	get-source.c
+	get-source.c priv.c
 
 SRCS= $(OTHERSRCS) $(FSSRCS) $(IOSRCS) $(FSYSSRCS) $(IFSOCKSRCS)
 

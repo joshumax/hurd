@@ -26,6 +26,14 @@ netfs_release_peropen (struct peropen *po)
   if (refcount_deref (&po->refcnt) > 0)
     return;
 
+  if (netfs_peropen_destroy_hook)
+    {
+      refcount_unsafe_ref (&po->refcnt);
+      (*netfs_peropen_destroy_hook) (po);
+      if (refcount_deref (&po->refcnt) > 0)
+        return;
+    }
+
   pthread_mutex_lock (&po->np->lock);
   if (po->root_parent)
     mach_port_deallocate (mach_task_self (), po->root_parent);
