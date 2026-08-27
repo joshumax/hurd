@@ -20,6 +20,7 @@
 
 #include <hurd.h>
 #include <hurd/pager.h>
+#include <hurd/store.h>
 #include <assert-backtrace.h>
 #include <strings.h>
 #include <unistd.h>
@@ -27,6 +28,7 @@
 #include <error.h>
 #include <sys/mman.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "dev.h"
 
@@ -174,11 +176,11 @@ pager_dropweak (struct user_pager_info *upi __attribute__ ((unused)))
 {
 }
 
-/* Try to stop all paging activity on DEV, returning true if we were
-   successful.  If NOSYNC is true, then we won't write back any (kernel)
-   cached pages to the device.  */
+/* Try to stop all paging activity, returning true if we were successful.
+   If NOSYNC is true, then we won't write back any (kernel) cached pages to
+   the device.  */
 int
-dev_stop_paging (struct dev *dev, int nosync)
+dev_stop_paging (int nosync)
 {
   size_t num_pagers = (pager_port_bucket ?
 		       ports_count_bucket (pager_port_bucket) : 0);
@@ -223,7 +225,7 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 {
   error_t err = store_map (dev->store, prot, memobj);
 
-  if (err == EOPNOTSUPP && !dev->inhibit_cache)
+  if (err == EOPNOTSUPP && !storeio_stat.inhibit_cache)
     {
       int created = 0;
 

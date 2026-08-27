@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995,96,97,99,2000,2001 Free Software Foundation, Inc.
+   Copyright (C) 1995,96,97,99,2000,2001,2026 Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
    This program is free software; you can redistribute it and/or
@@ -23,46 +23,25 @@
 #include <mach.h>
 #include <device/device.h>
 #include <pthread.h>
-#include <hurd/store.h>
-#include <hurd/trivfs.h>
+#include <hurd/netfs.h>
+#include <stdio.h>
+#include <unistd.h>
 
-extern struct trivfs_control *storeio_fsys;
+extern mach_port_t underlying_node;
 
 /* Information about backend store, which we presumptively call a "device".  */
 struct dev
 {
-  /* The argument specification that we use to open the store.  */
-  struct store_parsed *store_name;
-
   /* The device to which we're doing io.  This is null when the
      device is closed, in which case we will open from `store_name'.  */
   struct store *store;
 
-  int readonly;			/* Nonzero if user gave --readonly flag.  */
-  int enforced;			/* Nonzero if user gave --enforced flag.  */
-  int no_fileio;		/* Nonzero if user gave --no-fileio flag.  */
-  dev_t rdev;			/* A unixy device number for st_rdev.  */
-
-  /* The current owner of the open device.  For terminals, this affects
-     controlling terminal behavior (see term_become_ctty).  For all objects
-     this affects old-style async IO.  Negative values represent pgrps.  This
-     has nothing to do with the owner of a file (as returned by io_stat, and
-     as used for various permission checks by filesystems).  An owner of 0
-     indicates that there is no owner.  */
-  pid_t owner;
-
   /* The number of active opens.  */
   int nperopens;
 
-  /* This lock protects `store', `owner' and `nperopens'.  The other
-     members never change after creation, except for those locked by
-     io_lock (below).  */
+  /* This lock protects `store' and 'nperopens'.  The other members never
+     change after creation, except for those locked by io_lock (below).  */
   pthread_mutex_t lock;
-
-  /* Nonzero iff the --no-cache flag was given.
-     If this is set, the remaining members are not used at all
-     and don't need to be initialized or cleaned up.  */
-  int inhibit_cache;
 
   /* A bitmask corresponding to the part of an offset that lies within a
      device block.  */
@@ -84,14 +63,54 @@ struct dev
   pthread_mutex_t pager_lock;
 };
 
+struct netnode
+{
+  struct dev *dev;
+  char *name;
+  struct node **entries;
+
+  /* If the storage is a disk, this is the number of partitions on it.  */
+  size_t entries_num;
+};
+
+struct storeio_stat
+{
+  /* The argument specification that we use to open the store.  */
+  struct store_parsed *store_name;
+  volatile struct mapped_time_value *current_time;
+  pid_t pid;
+  uid_t uid;
+  gid_t gid;
+  mode_t mode;
+  int readonly; /* Nonzero if user gave --readonly flag.  */
+  int enforced; /* Nonzero if user gave --enforced flag.  */
+  int no_fileio; /* Nonzero if user gave --no-fileio flag.  */
+  dev_t rdev; /* A unixy device number for st_rdev.  */
+
+  /* Nonzero iff the --no-cache flag was given.
+     If this is set, the remaining members are not used at all
+     and don't need to be initialized or cleaned up.  */
+  int inhibit_cache;
+};
+
+extern struct storeio_stat storeio_stat;
+
+error_t create_node (struct node **node, char *name, struct node *dir);
+error_t check_dev (struct node *node, struct store *store, int flags);
+error_t create_partitions (void);
+
 static inline int
 dev_is_readonly (const struct dev *dev)
 {
-  return dev->readonly || (dev->store && (dev->store->flags & STORE_READONLY));
+  return storeio_stat.readonly || (dev->store && (dev->store->flags
+                                                  & STORE_READONLY));
 }
 
-/* Called with DEV->lock held.  Try to open the store underlying DEV.  */
-error_t dev_open (struct dev *dev);
+/* Called with DEV->lock held.  Initialize the DEV struct.  */
+error_t dev_open_from_store (struct dev *dev, struct store *store);
+
+/* Try to open the store underlying DEV.  */
+error_t dev_open (struct dev *dev, struct store_parsed *store_name);
 
 /* Shut down the store underlying DEV and free any resources it consumes.
    DEV itself remains intact so that dev_open can be called again.
@@ -103,10 +122,10 @@ void dev_close (struct dev *dev);
 error_t dev_get_memory_object(struct dev *dev, vm_prot_t prot,
 			      memory_object_t *memobj);
 
-/* Try to stop all paging activity on DEV, returning true if we were
-   successful.  If NOSYNC is true, then we won't write back any (kernel)
-   cached pages to the device.  */
-int dev_stop_paging (struct dev *dev, int nosync);
+/* Try to stop all paging activity, returning true if we were successful.
+   If NOSYNC is true, then we won't write back any (kernel) cached pages to
+   the device.  */
+int dev_stop_paging (int nosync);
 
 /* Try and write out any pending writes to DEV.  If WAIT is true, will wait
    for any paging activity to cease.  */
@@ -123,5 +142,23 @@ error_t dev_write (struct dev *dev, off_t offs, const void *buf, size_t len,
    otherwise an error code is returned.  */
 error_t dev_read (struct dev *dev, off_t offs, size_t amount,
 		  void **buf, size_t *len);
+
+#ifdef DEBUG
+extern FILE *debug_file;
+extern pthread_mutex_t debug_lock;
+# define debug(format, ...)                             \
+  do                                                    \
+    {                                                   \
+      if (debug_file)                                   \
+        {                                               \
+          pthread_mutex_lock (&debug_lock);             \
+          fprintf (debug_file, format, ## __VA_ARGS__); \
+          pthread_mutex_unlock (&debug_lock);           \
+        }                                               \
+    }                                                   \
+  while (0)
+#else
+# define debug(format, ...) do {} while (0)
+#endif
 
 #endif /* !__DEV_H__ */

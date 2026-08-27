@@ -1,6 +1,7 @@
 # Makefile for storeio
-# 
-#   Copyright (C) 1995, 1996, 1997, 2000, 2012 Free Software Foundation, Inc.
+#
+#   Copyright (C) 1995, 1996, 1997, 2000, 2012, 2026 Free Software
+#   Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -19,12 +20,14 @@
 dir := storeio
 makemode := server
 
+#CFLAGS += -DDEBUG
+
 target = storeio storeio.static
-SRCS = dev.c storeio.c open.c pager.c io.c
+SRCS = dev.c storeio.c pager.c $(and $(PARTED_LIBS),part.c)
 
 OBJS = $(SRCS:.c=.o)
-HURDLIBS = trivfs pager fshelp iohelp store ports ihash shouldbeinlibc
-LDLIBS = -lpthread $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
+HURDLIBS = netfs pager fshelp iohelp store ports ihash shouldbeinlibc
+LDLIBS = -lpthread $(PARTED_LIBS) $(and $(HAVE_LIBBZ2),-lbz2) $(and $(HAVE_LIBZ),-lz)
 
 include ../Makeconf
 

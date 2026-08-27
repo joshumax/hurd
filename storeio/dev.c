@@ -1,6 +1,6 @@
 /* store `device' I/O
 
-   Copyright (C) 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2008
+   Copyright (C) 1995, 1996, 1998, 1999, 2000, 2001, 2002, 2008, 2026
      Free Software Foundation, Inc.
    Written by Miles Bader <miles@gnu.org>
 
@@ -141,32 +141,15 @@ dev_buf_rw (struct dev *dev, size_t buf_offs, size_t *io_offs, size_t *len,
     }
 }
 
-/* Called with DEV->lock held.  Try to open the store underlying DEV.  */
+/* Called with DEV->lock held.  Initialize the DEV struct.  */
 error_t
-dev_open (struct dev *dev)
+dev_open_from_store (struct dev *dev, struct store *store)
 {
-  error_t err;
-  const int flags = ((dev->readonly ? STORE_READONLY : 0)
-		     | (dev->no_fileio ? STORE_NO_FILEIO : 0));
-
-  assert_backtrace (dev->store == 0);
-
-  if (dev->store_name == 0)
-    {
-      /* This means we had no store arguments.
-	 We are to operate on our underlying node. */
-      err = store_create (storeio_fsys->underlying, flags, 0, &dev->store);
-    }
-  else
-    /* Open based on the previously parsed store arguments.  */
-    err = store_parsed_open (dev->store_name, flags, &dev->store);
-  if (err)
-    return err;
-
   /* Inactivate the store, it will be activated at first access.
      We ignore possible EINVAL here   .  XXX Pass STORE_INACTIVE to
      store_create/store_parsed_open instead when libstore is fixed
      to support this.  */
+  dev->store = store;
   store_set_flags (dev->store, STORE_INACTIVE);
 
   if (! dev->store->block_size)
@@ -181,7 +164,7 @@ dev_open (struct dev *dev)
       return ENOMEM;
     }
 
-  if (!dev->inhibit_cache)
+  if (!storeio_stat.inhibit_cache)
     {
       dev->buf_offs = -1;
       pthread_rwlock_init (&dev->io_lock, NULL);
@@ -192,6 +175,32 @@ dev_open (struct dev *dev)
 
   return 0;
 }
+
+/* Try to open the store underlying DEV.  */
+error_t
+dev_open (struct dev *dev, struct store_parsed *store_name)
+{
+  error_t err;
+  const int flags = ((storeio_stat.readonly ? STORE_READONLY : 0)
+                     | (storeio_stat.no_fileio ? STORE_NO_FILEIO : 0));
+
+  assert_backtrace (dev->store == 0);
+
+  struct store *store;
+  if (store_name == 0)
+    {
+      /* This means we had no store arguments.
+	 We are to operate on our underlying node. */
+      err = store_create (underlying_node, flags, 0, &store);
+    }
+  else
+    /* Open based on the previously parsed store arguments.  */
+    err = store_parsed_open (store_name, flags, &store);
+  if (err)
+    return err;
+
+  return dev_open_from_store (dev, store);
+}
 
 /* Shut down the store underlying DEV and free any resources it consumes.
    DEV itself remains intact so that dev_open can be called again.
@@ -201,7 +210,7 @@ dev_close (struct dev *dev)
 {
   assert_backtrace (dev->store);
 
-  if (!dev->inhibit_cache)
+  if (!storeio_stat.inhibit_cache)
     {
       if (dev->pager != NULL)
 	pager_shutdown (dev->pager);
@@ -222,7 +231,7 @@ dev_sync(struct dev *dev, int wait)
 {
   error_t err;
 
-  if (dev->inhibit_cache)
+  if (storeio_stat.inhibit_cache)
     return 0;
 
   /* Sync any paged backing store.  */
@@ -359,7 +368,7 @@ dev_write (struct dev *dev, off_t offs, const void *buf, size_t len,
 		     buf + io_offs, len, amount);
     }
 
-  if (dev->inhibit_cache)
+  if (storeio_stat.inhibit_cache)
     {
       /* Under --no-cache, we permit only whole-block writes.
 	 Note that in this case we handle non-power-of-two block sizes.  */
@@ -452,7 +461,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
       return 0;
     }
 
-  if (dev->inhibit_cache)
+  if (storeio_stat.inhibit_cache)
     {
       /* Under --no-cache, we permit only whole-block reads.
 	 Note that in this case we handle non-power-of-two block sizes.
