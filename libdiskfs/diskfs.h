@@ -596,7 +596,7 @@ error_t diskfs_node_iterate (error_t (*fun)(struct node *));
 
 /* The user must define this function.  Sync all the pagers and any
    data belonging on disk except for the hypermetadata.  If WAIT is true,
-   then return only after the physicial media has been completely updated. */
+   then return only after the physical media has been completely updated. */
 void diskfs_sync_everything (int wait);
 
 /* Shutdown all pagers; this is done when the filesystem is exiting and is
