@@ -162,7 +162,7 @@ struct journal_lifeboat
   uint64_t alloc_mask[JRNL_LIFEBOAT_ALLOC_MASK_LEN];
 
   /* The pre-allocated payload pool (512 * 4KB = 2MB) */
-  char payloads[JRNL_LIFEBOAT_CAPACITY][4096];
+  char *payloads;
 };
 
 static struct journal_lifeboat ext2_lifeboat;
@@ -1114,8 +1114,8 @@ journal_stop_transaction_locked (journal_t *journal,
 	      if (jb_exp->lifeboat_index >= 0)
 		{
 		  memcpy (jb_exp->jb_shadow_data,
-			  ext2_lifeboat.payloads[jb_exp->lifeboat_index],
-			  block_size);
+			  &(ext2_lifeboat.payloads)[jb_exp->lifeboat_index *
+						    block_size], block_size);
 		  jb_exp->needs_copy = 0;
 		}
 	      else
@@ -1378,6 +1378,11 @@ journal_create (struct node *journal_inode)
   j->j_pool_memory[JRNL_MAX_FREE_BUFFERS - 1].jb_next = NULL;
   j->j_free_buffers = &j->j_pool_memory[0];
 
+  ext2_lifeboat.payloads =
+    mmap (NULL, JRNL_LIFEBOAT_CAPACITY * block_size, PROT_READ | PROT_WRITE,
+	  MAP_ANON | MAP_PRIVATE, -1, 0);
+  if (ext2_lifeboat.payloads == MAP_FAILED)
+    ext2_panic ("[JOURNAL] No RAM for lifeboat cache!");
   return j;
 }
 
@@ -1862,7 +1867,7 @@ journal_flush_lifeboat_payloads (journal_t *journal,
 
 	  /* We do the I/O using our safely captured, privately owned index */
 	  err = store_write (store, dev_block,
-			     ext2_lifeboat.payloads[lb_idx],
+			     &(ext2_lifeboat.payloads)[lb_idx * block_size],
 			     block_size, &amount);
 
 	  JOURNAL_LOCK (journal);
@@ -2217,15 +2222,16 @@ journal_handle_write_hazard_locked (block_t b, char *b_data)
 	  /* Success: Spoof the write directly into the Lifeboat */
 	  if (jb_run)
 	    {
-	      memcpy (ext2_lifeboat.payloads[lb_idx_run], b_data, block_size);
+	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_run * block_size],
+		      b_data, block_size);
 	      if (jb_run->lifeboat_index >= 0)
 		lifeboat_free_slot (jb_run->lifeboat_index);
 	      jb_run->lifeboat_index = (int16_t) lb_idx_run;
 	    }
 	  if (jb_commit)
 	    {
-	      memcpy (ext2_lifeboat.payloads[lb_idx_commit], b_data,
-		      block_size);
+	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_commit * block_size],
+		      b_data, block_size);
 	      /* If the old slot is NOT being flushed, we must free it to avoid a leak.
 	         If it IS being flushed, the commit thread owns it and will free it. */
 	      if (jb_commit->lifeboat_index >= 0
@@ -2421,7 +2427,8 @@ journal_overlay_lifeboat (block_t start_block, size_t length, void *buf)
 
 	  /* Overlay the fresh RAM data safely! */
 	  memcpy (out_ptr + offset,
-		  ext2_lifeboat.payloads[jb->lifeboat_index], copy_len);
+		  &(ext2_lifeboat.payloads)[jb->lifeboat_index * block_size],
+		  copy_len);
 
 	  JRNL_LOG_DEBUG
 	    ("Lifeboat Overlay successful for block %u (copied %zu bytes)", b,
