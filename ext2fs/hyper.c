@@ -193,27 +193,37 @@ map_hypermetadata (void)
 error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
-  if (clean && ext2fs_clean && !(sblock->s_state & htole16 (EXT2_VALID_FS)))
-    /* The filesystem is clean, so we need to set the clean flag.  */
+  if (clean)
     {
-      sblock->s_state |= htole16 (EXT2_VALID_FS);
-      if (ext2_journal)
-       {
-	  sblock->s_feature_incompat &= htole32(~EXT3_FEATURE_INCOMPAT_RECOVER);
-       }
-      sblock_dirty = 1;
-    }
-  else if (!clean && (sblock->s_state & htole16 (EXT2_VALID_FS)))
-    /* The filesystem just became dirty, so clear the clean flag.  */
-    {
-      if (ext2_journal &&
-          !(sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
-	{
-           sblock->s_feature_incompat |= htole32(EXT3_FEATURE_INCOMPAT_RECOVER);
+      /* Always clear recovery flag on clean unmount if journal is present */
+      if (ext2_journal && (sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
+        {
+          sblock->s_feature_incompat &= htole32(~EXT3_FEATURE_INCOMPAT_RECOVER);
+          sblock_dirty = 1;
         }
-      sblock->s_state &= htole16 (~EXT2_VALID_FS);
-      sblock_dirty = 1;
-      wait = 1;
+      /* Only set EXT2_VALID_FS if it was clean when we mounted it */
+      if (ext2fs_clean && !(sblock->s_state & htole16 (EXT2_VALID_FS)))
+        {
+          sblock->s_state |= htole16 (EXT2_VALID_FS);
+          sblock_dirty = 1;
+        }
+    }
+  else
+    {
+      /* Always set recovery flag when dirtying if journal is present */
+      if (ext2_journal && !(sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
+        {
+          sblock->s_feature_incompat |= htole32(EXT3_FEATURE_INCOMPAT_RECOVER);
+          sblock_dirty = 1;
+          wait = 1;
+        }
+      /* Clear EXT2_VALID_FS */
+      if (sblock->s_state & htole16 (EXT2_VALID_FS))
+        {
+          sblock->s_state &= htole16 (~EXT2_VALID_FS);
+          sblock_dirty = 1;
+          wait = 1;
+        }
     }
 
   if (sblock_dirty)
