@@ -65,13 +65,13 @@ new_node (struct lnode *ln, struct node **np)
   struct node *node;
 
   if (nn == 0)
-    return ENOMEM;
+    return errno;
   node = netfs_make_node (nn);
   if (node == 0)
     {
       free (nn);
       *np = NULL;
-      return ENOMEM;
+      return errno;
     }
   if (ln)
     ln->n = node;
@@ -86,17 +86,33 @@ lookup (const char *name)
   struct lnode *ln = (struct lnode *) lookup_dev_by_name (name);
 
   char *copied_name = malloc (strlen (name) + 1);
+  if (!copied_name)
+    return NULL;
+
   strcpy (copied_name, name);
+  error_t err;
   if (ln)
     {
-      new_node (ln, &ln->n);
+      err = new_node (ln, &ln->n);
+      if (err)
+	{
+	  errno = err;
+	  return NULL;
+	}
+
       ln->n->nn->name = copied_name;
       return ln->n;
     }
   else
     {
       struct node *n;
-      new_node (ln, &n);
+      err = new_node (ln, &n);
+      if (err)
+	{
+	  errno = err;
+	  return NULL;
+	}
+
       n->nn->name = copied_name;
       return n;
     }
@@ -305,6 +321,12 @@ error_t netfs_attempt_lookup (struct iouser *user, struct node *dir,
     }
 
   *node = lookup (name);
+  if (!*node)
+    {
+      pthread_mutex_unlock (&dir->lock);
+      return errno;
+    }
+
   pthread_mutex_lock (&(*node)->lock);
   pthread_mutex_unlock (&dir->lock);
   return 0;

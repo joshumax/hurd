@@ -43,6 +43,14 @@ _pager_S_memory_object_init (struct pager *p,
     {
 #ifdef KERNEL_INIT_RACE
       struct pending_init *i = malloc (sizeof (struct pending_init));
+      if (!i)
+	{
+	  error_t err = errno;
+	  printf ("failed to allocate memory for pending_init");
+	  pthread_mutex_unlock (&p->interlock);
+	  return err;
+	}
+
       printf ("pager out-of-sequence init\n");
       i->control = control;
       i->name = name;

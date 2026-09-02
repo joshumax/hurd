@@ -885,6 +885,7 @@ complete_proc (struct proc *p, pid_t pid)
   if (!nulllogin)
     {
       nulllogin = malloc (sizeof (struct login) + sizeof (nullsname) + 1);
+      assert_backtrace (nulllogin);
       nulllogin->l_refcnt = 1;
       strcpy (nulllogin->l_name, nullsname);
     }

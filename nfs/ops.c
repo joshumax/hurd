@@ -2086,10 +2086,15 @@ netfs_attempt_mksymlink (struct iouser *cred,
   if (np->nn->dtrans == NOT_POSSIBLE)
     return EOPNOTSUPP;
 
+  char *name = malloc (strlen (arg) + 1);
+  if (!name)
+    return errno;
+
   if (np->nn->dtrans == SYMLINK)
     free (np->nn->transarg.name);
 
-  np->nn->transarg.name = malloc (strlen (arg) + 1);
+  np->nn->transarg.name = name;
+
   strcpy (np->nn->transarg.name, arg);
   np->nn->dtrans = SYMLINK;
   np->nn->stat_updated = 0;

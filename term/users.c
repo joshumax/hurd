@@ -445,6 +445,12 @@ S_term_open_ctty (struct trivfs_protid *cred,
       if (!err)
 	{
 	  struct protid_hook *hook = malloc (sizeof (struct protid_hook));
+	  if (!hook)
+	    {
+	      err = errno;
+	      ports_port_deref (newcred);
+	      return err;
+	    }
 
 	  hook->pid = pid;
 	  hook->pgrp = pgrp;
@@ -1938,7 +1944,15 @@ trivfs_S_io_async (struct trivfs_protid *cred,
       pthread_mutex_unlock (&global_lock);
       return EBADF;
     }
+
   ar = malloc (sizeof (struct async_req));
+  if (!ar)
+    {
+      error_t err = errno;
+      pthread_mutex_unlock (&global_lock);
+      return err;
+    }
+
   ar->notify = notify;
   ar->next = async_requests;
   async_requests = ar;

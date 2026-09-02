@@ -349,6 +349,9 @@ S_socket_whatis_address (struct sock_addr *addr,
       void *new_data = mmap (0, addr->address.sa_len, PROT_READ|PROT_WRITE,
                              MAP_ANON, 0, 0);
       if (new_data == MAP_FAILED)
+        /* Should check whether errno is indeed ENOMEM --
+           but this can't be done in a straightforward way,
+           because the glue headers #undef errno. */
         return ENOMEM;
 
       *data = new_data;

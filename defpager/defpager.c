@@ -33,7 +33,7 @@ struct user_pager_info
 
 /* Expand the P->map as necessary to handle an incoming request of the
    page at ADDR. */
-static inline void
+static inline error_t
 expand_map (struct user_pager_info *p, vm_offset_t addr)
 {
   /* See if this is beyond the current extent */
@@ -44,11 +44,16 @@ expand_map (struct user_pager_info *p, vm_offset_t addr)
 
       newsize = page + vm_page_size;
       newmap = realloc (pager->map, size / vm_page_size * sizeof (off_t));
+      if (!newmap)
+	return errno;
 
-      memset (pager->map + pager->size / vm_page_size * sizeof(off_t), 0, (newsize - pager->size) / vm_page_size * sizeof(off_t));
+      memset (pager->map + pager->size / vm_page_size * sizeof(off_t),
+	      0, (newsize - pager->size) / vm_page_size * sizeof(off_t));
       pager->size = newsize;
       pager->map = newmap;
     }
+
+  return 0;
 }
 
 error_t
@@ -63,10 +68,16 @@ pager_read_page (struct user_pager_info *pager,
   /* We never request write locks. */
   *write_lock = 0;
 
-  expand_map (pager, page);
+  error_t err = expand_map (pager, page);
+  if (err)
+    return err;
 
   if (!pager->map[pfn])
-    vm_allocate (mach_task_self (), buf, vm_page_size, 1);
+    {
+      err = vm_allocate (mach_task_self (), buf, vm_page_size, 1);
+      if (err)
+	return err;
+    }
   else
     {
       store_read (backing_store, pager->map[pfn], vm_page_size, 
@@ -89,7 +100,9 @@ pager_write_page (struct user_pager_info *pager,
   int pfn = page / vm_page_size;
   size_t nwritten;
   
-  expand_map (pager, page);
+  error_t err = expand_map (pager, page);
+  if (err)
+    return err;
   
   if (!pager->map[pfn])
     pager->map[pfn] = allocate_backing_page ();

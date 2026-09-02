@@ -558,6 +558,8 @@ add_cmd (cmd_func_t func, size_t minargs, size_t maxargs,
 
   *params->cmds = cmds;
   *params->num_cmds = num_cmds;
+  if (!cmds)
+    argp_failure (state, 1, errno, "Failed to reallocate memory for cmds");
 
   cmd = &cmds[num_cmds-1];
   cmd->f = func;
@@ -565,6 +567,10 @@ add_cmd (cmd_func_t func, size_t minargs, size_t maxargs,
   if (maxargs)
     {
       cmd->args = malloc (maxargs * sizeof (char *));
+      if (!cmd->args)
+	argp_failure (state, 1, errno, "Failed to allocate memory for"
+				       " cmd->args");
+
       if (arg)
 	cmd->args[i++] = arg;
       while (i < maxargs
@@ -596,6 +602,9 @@ parse_cmd_opt (int key, char *arg, struct argp_state *state)
              re-parse it with 2 dashes prepended. */
 	  size_t len = strlen (arg) + 1;
 	  arg_hack_buf = realloc (arg_hack_buf, 2 + len);
+	  if (!arg_hack_buf)
+	    argp_failure (state, 1, errno, "Failed to reallocate memory for"
+					   " arg_hack_buf");
 	  state->argv[--state->next] = arg_hack_buf;
 	  state->argv[state->next][0] = '-';
 	  state->argv[state->next][1] = '-';

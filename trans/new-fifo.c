@@ -100,6 +100,7 @@ static void
 fifo_trans_create (struct fifo_trans *from, struct fifo_trans **trans)
 {
   struct fifo_trans *new = malloc (sizeof (struct fifo_trans));
+  assert_backtrace (new);
 
   new->server = 0;
   pthread_mutex_init (&new->active_fifo_lock, NULL);

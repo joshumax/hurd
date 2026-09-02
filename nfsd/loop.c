@@ -20,6 +20,7 @@
 
 #include <string.h>
 #include <fcntl.h>
+#include <assert-backtrace.h>
 
 #include "nfsd.h"
 
@@ -81,6 +82,7 @@ server_loop (void *arg)
 	goto repost_reply;
 
       r = (int *) (rbuf = malloc (MAXIOSIZE));
+      assert_backtrace (r);
 
       if (ntohl (*p) != RPC_MSG_VERSION)
 	{
@@ -177,6 +179,7 @@ server_loop (void *arg)
 	    {
 	      free (rbuf);
 	      r = (int *) (rbuf = malloc (amt));
+	      assert_backtrace (r);
 	    }
 	}
 

@@ -188,10 +188,10 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
        probably big enough for everything.  */
     {
       ps->proc_info = malloc (PROCINFO_MALLOC_SIZE);
-      ps->proc_info_size = PROCINFO_MALLOC_SIZE;
-      ps->proc_info_vm_alloced = 0;
       if (! ps->proc_info)
 	return ENOMEM;
+      ps->proc_info_size = PROCINFO_MALLOC_SIZE;
+      ps->proc_info_vm_alloced = 0;
     }
   new_pi = ps->proc_info;
   new_pi_size = ps->proc_info_size;
@@ -202,6 +202,12 @@ merge_procinfo (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
       if (! (have & PSTAT_THREAD_WAITS))
 	{
 	  ps->thread_waits = malloc (WAITS_MALLOC_SIZE);
+	  if (! ps->thread_waits)
+	    {
+	      if (! (have & PSTAT_PROCINFO))
+		free (new_pi);
+	      return ENOMEM;
+	    }
 	  ps->thread_waits_len = WAITS_MALLOC_SIZE;
 	  ps->thread_waits_vm_alloced = 0;
 	}

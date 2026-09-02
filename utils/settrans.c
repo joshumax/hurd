@@ -109,7 +109,7 @@ get_credentials (void)
 
   uids = malloc (uids_len * sizeof (uid_t));
   if (! uids)
-    return ENOMEM;
+    return errno;
 
   uids_len = geteuids (uids_len, uids);
   if (uids_len < 0)
@@ -121,8 +121,8 @@ get_credentials (void)
     return errno;
 
   gids = malloc (gids_len * sizeof (gid_t));
-  if (! uids)
-    return ENOMEM;
+  if (! gids)
+    return errno;
 
   gids_len = getgroups (gids_len, gids);
   if (gids_len < 0)

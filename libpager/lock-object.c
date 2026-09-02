@@ -52,6 +52,7 @@ _pager_lock_object (struct pager *p,
       if (!lr)
 	{
 	  lr = malloc (sizeof (struct lock_request));
+	  assert_backtrace (lr);
 	  lr->start = offset;
 	  lr->end = offset + size;
 	  lr->pending_writes = 0;

@@ -65,6 +65,7 @@ pager_change_attributes (struct pager *p,
       if (!ar)
 	{
 	  ar = malloc (sizeof (struct attribute_request));
+	  assert_backtrace (ar);
 	  ar->may_cache = may_cache;
 	  ar->copy_strategy = copy_strategy;
 	  ar->attrs_pending = 1;

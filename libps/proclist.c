@@ -124,7 +124,11 @@ proc_stat_list_add_pids (struct proc_stat_list *pp,
       struct proc_stat **end = pp->proc_stats + pp->num_procs;
 
       if (proc_stats)
-	*proc_stats = NEWVEC (struct proc_stat *, num_procs);
+	{
+	  *proc_stats = NEWVEC (struct proc_stat *, num_procs);
+	  if (!*proc_stats)
+	    return errno;
+	}
 
       for (i = 0; i < num_procs; i++)
 	{

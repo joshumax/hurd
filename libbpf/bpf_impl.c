@@ -612,6 +612,8 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 		 * a normal packet filter structure.
 		 */
 		my_infp = (net_rcv_port_t) calloc(1, sizeof(struct net_rcv_port));
+		if (!my_infp)
+			return (D_NO_MEMORY);
 		my_infp->rcv_port = rcv_port;
 		is_new_infp = TRUE;
 	} else {
@@ -622,6 +624,8 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 		 */
 		my_infp = 0;
 		hash_entp = (net_hash_entry_t) calloc(1, sizeof(struct net_hash_entry));
+		if (!hash_entp)
+			return (D_NO_MEMORY);
 		is_new_infp = FALSE;
 	}
 

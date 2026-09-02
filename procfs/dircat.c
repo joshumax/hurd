@@ -36,6 +36,8 @@ dircat_get_contents (void *hook, char **contents, ssize_t *contents_len)
 
   pos = 0;
   *contents = malloc (sz = 512);
+  if (!*contents)
+    return errno;
 
   for (i=0; i < dcn->num_dirs; i++)
     {
@@ -53,8 +55,20 @@ dircat_get_contents (void *hook, char **contents, ssize_t *contents_len)
 	  return err;
 	}
 
+      char *new_contents;
       while (pos + sublen > sz)
-	*contents = realloc (*contents, sz *= 2);
+	{
+	  new_contents = realloc (*contents, sz *= 2);
+	  if (!new_contents)
+	    {
+	      err = errno;
+	      free (*contents);
+	      *contents = NULL;
+	      return err;
+	    }
+
+	  *contents = new_contents;
+	}
 
       memcpy (*contents + pos, subcon, sublen);
       pos += sublen;

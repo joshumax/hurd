@@ -291,6 +291,9 @@ lwip_S_socket_whatis_address (struct sock_addr * addr,
       void *buf = mmap (0, addr->address.sa.sa_len, PROT_READ | PROT_WRITE,
                         MAP_ANON, 0, 0);
       if (buf == MAP_FAILED)
+        /* Should check whether errno is indeed ENOMEM --
+           but this can't be done in a straightforward way,
+           because the glue headers #undef errno. */
         return ENOMEM;
 
       *data = buf;

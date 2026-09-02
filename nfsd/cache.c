@@ -106,10 +106,13 @@ idspec_lookup (int nuids, int ngids, int *uids, int *gids)
 
   assert_backtrace (sizeof (uid_t) == sizeof (int));
   i = malloc (sizeof (struct idspec));
+  assert_backtrace (i);
   i->nuids = nuids;
   i->ngids = ngids;
   i->uids = malloc (nuids * sizeof (uid_t));
   i->gids = malloc (ngids * sizeof (gid_t));
+  assert_backtrace (i->uids);
+  assert_backtrace (i->gids);
   memcpy (i->uids, uids, nuids * sizeof (uid_t));
   memcpy (i->gids, gids, ngids * sizeof (gid_t));
   i->references = 1;
@@ -304,6 +307,7 @@ lookup_cache_handle (int *p, struct cache_handle **cp, struct idspec *i)
     }
 
   c = malloc (sizeof (struct cache_handle));
+  assert_backtrace (c);
   memcpy (c->handle.array, p, NFS2_FHSIZE);
   cred_ref (i);
   c->ids = i;
@@ -448,6 +452,7 @@ create_cached_handle (int fs, struct cache_handle *credc, file_t userport)
 
   /* Create it anew.  */
   c = malloc (sizeof (struct cache_handle));
+  assert_backtrace (c);
   memcpy (c->handle.array, fhandle.array, NFS2_FHSIZE);
   cred_ref (credc->ids);
   c->ids = credc->ids;
@@ -498,6 +503,7 @@ check_cached_replies (int xid,
       }
 
   cr = malloc (sizeof (struct cached_reply));
+  assert_backtrace (cr);
   pthread_mutex_init (&cr->lock, NULL);
   pthread_mutex_lock (&cr->lock);
   memcpy (&cr->source, sender, sizeof (struct sockaddr_in));

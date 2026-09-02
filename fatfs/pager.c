@@ -776,6 +776,9 @@ create_fat_pager (void)
 
   /* The disk pager.  */
   struct user_pager_info *upi = malloc (sizeof (struct user_pager_info));
+  if (!upi)
+    error (2, errno, "Failed to allocate memory for user_pager_info.");
+
   upi->type = FAT;
   disk_pager_bucket = ports_create_bucket ();
   diskfs_start_disk_pager (upi, disk_pager_bucket, MAY_CACHE, 0,

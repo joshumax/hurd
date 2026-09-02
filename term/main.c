@@ -132,6 +132,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case ARGP_KEY_INIT:
       state->hook = calloc (1, sizeof *v);
+      if (!state->hook)
+        argp_failure (state, 1, errno, "Failed to allocate memory for"
+				       " state->hook");
       break;
     case ARGP_KEY_FINI:
       free (v);

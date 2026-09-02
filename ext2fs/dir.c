@@ -493,6 +493,12 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
 	{
 	  diskfs_node_disknode (dp)->dirents =
 	    malloc ((dp->dn_stat.st_size / DIRBLKSIZ) * sizeof (int));
+	  if (!diskfs_node_disknode (dp)->dirents)
+	    {
+	      ext2_warning ("Failed to allocate memory for dirents");
+	      return ENOENT;
+	    }
+
 	  for (i = 0; i < dp->dn_stat.st_size/DIRBLKSIZ; i++)
 	    diskfs_node_disknode (dp)->dirents[i] = -1;
 	}
@@ -687,23 +693,34 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	 anything at all. */
       if (diskfs_node_disknode (dp)->dirents)
 	{
-	  diskfs_node_disknode (dp)->dirents =
+	  int *new_dirents =
 	    realloc (diskfs_node_disknode (dp)->dirents,
 		     (dp->dn_stat.st_size / DIRBLKSIZ * sizeof (int)));
-	  for (i = oldsize / DIRBLKSIZ;
-	       i < dp->dn_stat.st_size / DIRBLKSIZ;
-	       i++)
-	    diskfs_node_disknode (dp)->dirents[i] = -1;
+	  if (!new_dirents)
+	    ext2_warning ("Failed to reallocate memory for new_dirents");
+	  else
+	    {
+	      diskfs_node_disknode (dp)->dirents = new_dirents;
+	      for (i = oldsize / DIRBLKSIZ;
+		   i < dp->dn_stat.st_size / DIRBLKSIZ;
+		   i++)
+		diskfs_node_disknode (dp)->dirents[i] = -1;
 
-	  diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
+	      diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
+	    }
 	}
       else
 	{
 	  diskfs_node_disknode (dp)->dirents =
 	    malloc (dp->dn_stat.st_size / DIRBLKSIZ * sizeof (int));
-	  for (i = 0; i < dp->dn_stat.st_size / DIRBLKSIZ; i++)
-	    diskfs_node_disknode (dp)->dirents[i] = -1;
-	  diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
+	  if (!diskfs_node_disknode (dp)->dirents)
+	    ext2_warning ("Failed to allocate memory for dirents");
+	  else
+	    {
+	      for (i = 0; i < dp->dn_stat.st_size / DIRBLKSIZ; i++)
+		diskfs_node_disknode (dp)->dirents[i] = -1;
+	      diskfs_node_disknode (dp)->dirents[ds->idx] = 1;
+	    }
 	}
     }
 
@@ -907,6 +924,12 @@ diskfs_get_directs (struct node *dp,
   if (!diskfs_node_disknode (dp)->dirents)
     {
       diskfs_node_disknode (dp)->dirents = malloc (nblks * sizeof (int));
+      if (!diskfs_node_disknode (dp)->dirents)
+	{
+	  ext2_warning ("Failed to allocate memory for dirents");
+	  return ENOENT;
+	}
+
       for (i = 0; i < nblks; i++)
 	diskfs_node_disknode (dp)->dirents[i] = -1;
     }

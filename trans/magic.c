@@ -427,7 +427,8 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	  void *buf = mmap (0, getpagesize (), PROT_READ|PROT_WRITE,
 			    MAP_ANON, 0, 0);
 	  if (buf == MAP_FAILED)
-	    return errno;
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " m->dirbuf");
 	  m->dirbuf = buf;
 	  struct dirent *d;
 	  d = add (m->dirbuf, ".");
@@ -462,6 +463,7 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
   struct trivfs_control *fsys;
   struct magic *m = calloc (1, sizeof *m);
+  assert_backtrace (m);
 
   argp_parse (&argp, argc, argv, 0, 0, m);
 

@@ -317,7 +317,14 @@ store_remap_runs (const struct store_run *runs, size_t num_runs,
     }
 
   if (xruns_alloced > *num_xruns)
-    *xruns = realloc (*xruns, *num_xruns * sizeof (struct store_run));
+    {
+      void *new_xruns = realloc (*xruns, *num_xruns
+					  * sizeof (struct store_run));
+      if (!new_xruns)
+	return 0;
+
+      *xruns = new_xruns;
+    }
 
   return 0;
 }

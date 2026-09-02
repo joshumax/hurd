@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/statfs.h>
 #include <string.h>
+#include <assert-backtrace.h>
 #include "nfsd.h"
 
 /* Any better ideas?  */
@@ -96,6 +97,7 @@ decode_name (int *p, char **name)
   len = ntohl (*p);
   p++;
   *name = malloc (len + 1);
+  assert_backtrace (*name);
   memcpy (*name, p, len);
   (*name)[len] = '\0';
   return p + INTSIZE (len);

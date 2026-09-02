@@ -46,6 +46,9 @@ static inline int
 getname (const char *name, char **newp)
 {
   *newp = malloc (strlen (name) + 1);
+  if (!*newp)
+    return ENOMEM;
+
   strcpy (*newp, name);
   return 0;
 }

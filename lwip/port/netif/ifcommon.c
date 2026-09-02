@@ -156,6 +156,9 @@ if_change_flags (struct netif * netif, uint16_t flags)
    */
   struct if_change_flags_args *args =
     calloc (1, sizeof (struct if_change_flags_args));
+  if (!args)
+    return errno;
+
   args->netif = netif;
   args->flags = flags;
   err = tcpip_callback_wait(_if_change_flags, args);

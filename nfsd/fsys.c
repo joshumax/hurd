@@ -24,6 +24,7 @@
 #include <hurd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <assert-backtrace.h>
 
 #include "nfsd.h"
 
@@ -54,6 +55,12 @@ init_filesystems (void)
 
   fsystable = (struct fsys_spec *) malloc ((fsystablesize = 10)
 					   * sizeof (struct fsys_spec));
+  if (!fsystable)
+    {
+      error (0, errno, "Failed to allocate memory for fsystable");
+      return;
+    }
+
   for (i = 0; i < fsystablesize; i++)
     {
       fsystable[i].fsys = MACH_PORT_NULL;
@@ -96,8 +103,15 @@ init_filesystems (void)
 
       if (index >= fsystablesize)
 	{
-	  fsystable = (struct fsys_spec *)
+	  void *new_fsystable =
 	    realloc (fsystable, index * 2 * sizeof (struct fsys_spec));
+	  if (!new_fsystable)
+	    {
+	      error (0, errno, "Cannot reallocate memory for fsystable");
+	      return;
+	    }
+
+	  fsystable = new_fsystable;
 	  for (i = fsystablesize; i < index * 2; i++)
 	    {
 	      fsystable[i].fsys = MACH_PORT_NULL;
@@ -190,6 +204,7 @@ enter_filesystem (char *name, file_t root)
       fsystable = (struct fsys_spec *) realloc (fsystable,
 						(fsystablesize * 2)
 						* sizeof (struct fsys_spec));
+      assert_backtrace (fsystable);
       for (i = fsystablesize; i < fsystablesize * 2; i++)
 	{
 	  fsystable[i].fsys = MACH_PORT_NULL;
@@ -199,6 +214,7 @@ enter_filesystem (char *name, file_t root)
     }
 
   fsystable[nfsys].name = malloc (strlen (name) + 1);
+  assert_backtrace (fsystable[nfsys].name);
   strcpy (fsystable[nfsys].name, name);
   file_getcontrol (root, &fsystable[nfsys].fsys);
   nfsys++;

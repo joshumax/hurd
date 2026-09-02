@@ -106,6 +106,9 @@ lwip_S_pfinet_siocgifconf (io_t port,
 	  void *buf = mmap (0, amount, PROT_READ | PROT_WRITE,
 			    MAP_ANON, 0, 0);
 	  if (buf == MAP_FAILED)
+	    /* Should check whether errno is indeed ENOMEM --
+	       but this can't be done in a straightforward way,
+	       because the glue headers #undef errno. */
 	    return ENOMEM;
 
 	  ifc.ifc_buf = buf;
@@ -209,6 +212,8 @@ lwip_S_pfinet_getroutes (io_t port,
     *dealloc_data = FALSE;
 
   rtable = calloc (MAX_ROUTES, sizeof (ifrtreq_t));
+  if (!rtable)
+    return ENOMEM;
 
   available_count = get_routes (rtable);
 
@@ -231,6 +236,9 @@ lwip_S_pfinet_getroutes (io_t port,
 
     if (*routes == MAP_FAILED)
     {
+      /* Should check whether errno is indeed ENOMEM --
+	 but this can't be done in a straightforward way,
+	 because the glue headers #undef errno. */
       *len = 0;
       return ENOMEM;
     }

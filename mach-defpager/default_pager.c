@@ -188,13 +188,20 @@ new_partition (const char *name, struct file_direct *fdp,
 	bmsize = howmany(size, NB_BM) * sizeof(bm_entry_t);
 
 	part = (partition_t) malloc(sizeof(struct part));
+	if (!part)
+	  panic("(default pager): failed to allocate memory for part");
 	pthread_mutex_init(&part->p_lock, NULL);
 	part->name	= (char*) malloc(n + 1);
+	if (!part->name)
+	  panic("(default pager): failed to allocate memory for part->name");
 	strcpy(part->name, name);
 	part->total_size = size;
 	part->free	= size;
 	part->id	= id;
 	part->bitmap	= (bm_entry_t *)malloc(bmsize);
+	if (!part->bitmap)
+	  panic("(default pager): "
+	        "failed to allocate memory for part->bitmap");
 	part->going_away= FALSE;
 	part->file = fdp;
 
@@ -633,6 +640,8 @@ dp_map_t pager_get_direct_map(dpager_t	pager)
 	    }
 
 	    mapptr = (dp_map_t) malloc(alloc_size);
+	    if (!mapptr)
+	      panic("(default pager): failed to allocate memory for mapptr");
 	    for (emapptr = &mapptr[(alloc_size-1) / sizeof(vm_offset_t)];
 		 emapptr >= mapptr;
 		 emapptr--)
@@ -683,10 +692,16 @@ pager_alloc(dpager_t	pager,
 	if (INDIRECT_PAGEMAP(size)) {
 		mapptr = (vm_offset_t *)
 			malloc(INDIRECT_PAGEMAP_SIZE(size));
+		if (!mapptr)
+			panic("(default pager): "
+			      "failed to allocate memory for mapptr");
 		for (i = INDIRECT_PAGEMAP_ENTRIES(size); --i >= 0;)
 			mapptr[i] = 0;
 	} else {
 		mapptr = (vm_offset_t *) malloc(PAGEMAP_SIZE(size));
+		if (!mapptr)
+			panic("(default pager): "
+			      "failed to allocate memory for mapptr");
 		for (i = 0; i < size; i++)
 			mapptr[i] = NO_CHECKSUM;
 	}
@@ -828,6 +843,9 @@ pager_extend(dpager_t	pager,
 	     */
 	    new_mapptr = (dp_map_t)
 			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < INDIRECT_PAGEMAP_ENTRIES(old_size); i++)
 		new_mapptr[i] = old_mapptr[i];
@@ -839,6 +857,9 @@ pager_extend(dpager_t	pager,
 #ifdef	CHECKSUM
 	    new_mapptr = (vm_offset_t *)
 			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    old_mapptr = pager->checksum;
 	    for (i = 0; i < INDIRECT_PAGEMAP_ENTRIES(old_size); i++)
 		new_mapptr[i] = old_mapptr[i];
@@ -873,6 +894,9 @@ pager_extend(dpager_t	pager,
 	     * Allocate new second-level map first.
 	     */
 	    new_mapptr = (dp_map_t) malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    old_mapptr = pager_get_direct_map(pager);
 	    for (i = 0; i < old_size; i++)
 		new_mapptr[i] = old_mapptr[i];
@@ -894,6 +918,9 @@ pager_extend(dpager_t	pager,
 	     */
 	    new_mapptr = (dp_map_t)
 			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    new_mapptr[0].indirect = old_mapptr;
 	    for (i = 1; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i].indirect = 0;
@@ -904,6 +931,9 @@ pager_extend(dpager_t	pager,
 	     * Allocate new second-level map first.
 	     */
 	    new_mapptr = (vm_offset_t *)malloc(PAGEMAP_SIZE(PAGEMAP_ENTRIES));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    old_mapptr = pager->checksum;
 	    for (i = 0; i < old_size; i++)
 		new_mapptr[i] = old_mapptr[i];
@@ -917,6 +947,9 @@ pager_extend(dpager_t	pager,
 	     */
 	    new_mapptr = (vm_offset_t *)
 			malloc(INDIRECT_PAGEMAP_SIZE(new_size));
+	    if (!new_mapptr)
+		panic("(default pager): "
+		      "failed to allocate memory for new_mapptr");
 	    new_mapptr[0] = (vm_offset_t) old_mapptr;
 	    for (i = 1; i < INDIRECT_PAGEMAP_ENTRIES(new_size); i++)
 		new_mapptr[i] = 0;
@@ -932,6 +965,9 @@ pager_extend(dpager_t	pager,
 	 * Enlarging a direct block.
 	 */
 	new_mapptr = (dp_map_t)	malloc(PAGEMAP_SIZE(new_size));
+	if (!new_mapptr)
+	    panic("(default pager): "
+		  "failed to allocate memory for new_mapptr");
 	old_mapptr = pager_get_direct_map(pager);
 	for (i = 0; i < old_size; i++)
 	    new_mapptr[i] = old_mapptr[i];
@@ -943,6 +979,9 @@ pager_extend(dpager_t	pager,
 #ifdef	CHECKSUM
 	new_mapptr = (vm_offset_t *)
 		malloc(PAGEMAP_SIZE(new_size));
+	if (!new_mapptr)
+	    panic("(default pager): "
+		  "failed to allocate memory for new_mapptr");
 	old_mapptr = pager->checksum;
 	for (i = 0; i < old_size; i++)
 	    new_mapptr[i] = old_mapptr[i];
@@ -1021,6 +1060,9 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
 	{
 	  const dp_map_t old_mapptr = pager->map;
 	  pager->map = (dp_map_t) malloc (INDIRECT_PAGEMAP_SIZE(new_size));
+	  if (!pager->map)
+	    panic("(default pager): "
+		  "failed to allocate memory for pager->map");
 	  memcpy (pager->map, old_mapptr, INDIRECT_PAGEMAP_SIZE(new_size));
 	  free ((char *) old_mapptr);
 	}
@@ -1042,6 +1084,8 @@ pager_truncate(dpager_t pager, vm_size_t new_size)	/* in pages */
       /* Now reduce the size of the direct map itself.  */
       const dp_map_t old_mapptr = pager->map;
       pager->map = (dp_map_t) malloc (PAGEMAP_SIZE (new_size));
+      if (!pager->map)
+	panic("(default pager): failed to allocate memory for pager->map");
       memcpy (pager->map, old_mapptr, PAGEMAP_SIZE (new_size));
       free ((char *) old_mapptr);
     }

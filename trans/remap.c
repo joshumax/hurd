@@ -124,6 +124,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	{
 	  /* Second of a pair */
 	  struct remap *remap = malloc (sizeof (*remap));
+	  if (!remap)
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " remap");
 	  remap->from = remap_from;
 	  remap->to = strdup (arg);
 	  remap->next = remaps;

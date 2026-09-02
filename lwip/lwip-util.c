@@ -150,7 +150,10 @@ init_ifs (void *arg)
   int i;
 
   if (netif_list == 0)
-    netif_list = calloc (1, sizeof (struct netif));
+    {
+      netif_list = calloc (1, sizeof (struct netif));
+      assert_backtrace (netif_list);
+    }
 
   if (netif_list->next == 0)
     init_loopback ();
@@ -186,6 +189,7 @@ init_ifs (void *arg)
 	continue;
 
       netif = calloc (1, sizeof (struct netif));
+      assert_backtrace (netif);
 
       create_netif_state (in->dev_name, &ifc);
 
@@ -366,6 +370,9 @@ configure_device (struct netif *netif, ip4_addr_t addr, ip4_addr_t netmask,
     {
       /* Call update_if() inside the tcpip_thread */
       struct update_if_args *arg = calloc (1, sizeof (struct update_if_args));
+      if (!arg)
+        return errno;
+
       arg->netif = netif;
       arg->addr = addr;
       arg->netmask = netmask;

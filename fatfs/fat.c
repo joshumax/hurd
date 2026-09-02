@@ -72,6 +72,9 @@ fat_read_sblock (void)
   size_t read = sizeof(struct boot_sector);
 
   sblock = malloc (read);
+  if (!sblock)
+    error (1, errno, "Failed to allocate memory for superblock.");
+
   err = store_read (store, 0, read, (void **) &sblock, &read);
   if (err)
     error (1, err, "Could not read superblock");

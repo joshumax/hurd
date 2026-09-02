@@ -752,6 +752,8 @@ reallocate_queue (struct queue *q)
       /* Make the queue twice as large. */
       newq = malloc (sizeof (struct queue)
 		     + q->arraylen * 2 * sizeof (quoted_char));
+      assert_backtrace (newq);
+
       newq->susp = q->susp;
       newq->lowat = q->lowat;
       newq->hiwat = q->hiwat;

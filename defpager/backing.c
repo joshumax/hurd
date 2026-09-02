@@ -50,6 +50,9 @@ init_backing (char *name)
   
   bmap_len = backing_store->size / vm_page_size / NBBY;
   bmap = malloc (bmap_len);
+  if (!bmap)
+    return errno;
+
   for (i = 0; i < bmap_len; i++)
     bmap[i] = 0xff;
   bmap_rotor = bmap;
@@ -60,6 +63,8 @@ init_backing (char *name)
      sure we don't tromp on the misfeature in Linux of using the first
      page for permanent data. */
   *bmap_rotor |= 1;
+
+  return 0;
 }
 
 int

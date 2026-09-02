@@ -1586,10 +1586,19 @@ S_startup_request_notification (mach_port_t server,
      calls; this is important.  We need later notification requests
      to get executed first.  */
   nt = malloc (sizeof (struct ntfy_task));
+  if (!nt)
+    return errno;
+
   nt->notify_port = notify;
   nt->next = ntfy_tasks;
-  ntfy_tasks = nt;
   nt->name = malloc (strlen (name) + 1);
+  if (!nt->name)
+    {
+      free (nt);
+      return errno;
+    }
+
+  ntfy_tasks = nt;
   strcpy (nt->name, name);
   return 0;
 }
