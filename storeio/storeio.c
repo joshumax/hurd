@@ -688,12 +688,10 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
           return err;
         }
     }
-  pthread_mutex_unlock (&dir->lock);
 
   if (*name == '\0' || strcmp (name, ".") == 0)
     {
       *np = dir;
-      pthread_mutex_lock (&dir->lock);
       netfs_nref (*np);
       pthread_mutex_unlock (&dir->lock);
       pthread_mutex_lock (&(*np)->lock);
@@ -716,7 +714,6 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
   if (current_node)
     {
       *np = current_node;
-      pthread_mutex_lock (&dir->lock);
       netfs_nref (*np);
       pthread_mutex_unlock (&dir->lock);
       pthread_mutex_lock (&(*np)->lock);
@@ -724,6 +721,7 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
     }
 
   *np = NULL;
+  pthread_mutex_unlock (&dir->lock);
   debug ("netfs_attempt_lookup (user: %p, dir: %p, name: %s):\n",
           user, dir, name);
   debug ("netfs_attempt_lookup return: ENOENT\n");
