@@ -122,32 +122,6 @@
 
 #define JRNL_LIFEBOAT_ALLOC_MASK_LEN 8
 
-/* Thread-Local Deferred Block Queue (The Checkpoint Circuit Breaker)
- *
- * Problem (The Recursion Deadlock):
- * When the journal fills up, a VFS thread must force a checkpoint.
- * Forcing a checkpoint calls write_all_disknodes(), which acquires the
- * global, non-recursive libdiskfs node-cache mutex. Flushing those inodes
- * modifies memory, triggering journal_notify_block_changed(), which attempts
- * to start a transaction. If the journal is still full, it recursively calls
- * journal_force_checkpoint_locked(), attempts to re-acquire the libdiskfs
- * mutex, and permanently deadlocks against itself.
- *
- * The Lockless Sweep:
- * We use Thread-Local Storage (__thread) to detect if the CURRENT thread
- * is actively flushing a checkpoint. If it is, we break the recursion by
- * intercepting the block notifications and saving them in a private array.
- * Once the thread finishes the flush and safely drops the libdiskfs locks,
- * it "sweeps" these deferred blocks into a new transaction. This safely
- * bypasses the lock inversion while maintaining strict Write-Ahead Log
- * (WAL) crash consistency.
- */
-#define MAX_DEFERRED_BLOCKS 128
-
-__thread int thread_is_checkpointing = 0;
-__thread block_t deferred_blocks[MAX_DEFERRED_BLOCKS];
-__thread int deferred_count = 0;
-
 /* Temporary storage for blocks rushed by the Mach VM pager.
  * Because we cannot block or delay the pager when it needs to flush a page
  * belonging to an active (RUNNING/COMMITTING) transaction, this cache
@@ -183,6 +157,7 @@ typedef struct journal_buffer
   /* -1 if normal, 0-127 if holding a spoofed payload in the lifeboat */
   int16_t lifeboat_index;
   uint8_t jb_is_flushing;	/* 1 if commit thread is actively flushing it. */
+  uint8_t jb_escaped;
 } journal_buffer_t;
 
 /**
@@ -210,6 +185,7 @@ typedef enum
   T_LOCKED,			/* Locked, no new handles, waiting for updates
 				   to finish */
   T_FLUSHING,			/* Writing to the journal ring buffer */
+  T_COMMITTED,			/* WAL Commit Record is on disk. Safe to write directly to main FS. */
   T_FINISHED			/* Done, waiting to be checkpointed */
 } transaction_state_t;
 
@@ -282,6 +258,7 @@ typedef struct journal
 
   pthread_mutex_t j_state_lock;	/* Protects the pointers below */
   pthread_cond_t j_commit_wait;	/* Cond. var. while waiting for the tx to be ready. */
+  pthread_cond_t j_flush_wait;	/* Cond. var for safely waiting on physical flushes */
   /* The Transactions */
   diskfs_transaction_t *j_running_transaction;	/* Currently filling */
   diskfs_transaction_t *j_committing_transaction;	/* Transaction that is
@@ -587,6 +564,7 @@ journal_alloc_buffer (journal_t *journal)
       jb->jb_next = NULL;
       jb->jb_is_written = 0;
       jb->jb_is_flushing = 0;
+      jb->jb_escaped = 0;
       goto out;
     }
   jb = calloc (1, sizeof (journal_buffer_t));
@@ -1086,6 +1064,7 @@ journal_try_advance_tail_locked (journal_t *journal)
   return advanced;
 }
 
+
 static void
 journal_stop_transaction_locked (journal_t *journal,
 				 diskfs_transaction_t *txn)
@@ -1111,22 +1090,14 @@ journal_stop_transaction_locked (journal_t *journal,
 	{
 	  if (jb_exp->needs_copy)
 	    {
-	      if (jb_exp->lifeboat_index >= 0)
-		{
-		  memcpy (jb_exp->jb_shadow_data,
-			  &(ext2_lifeboat.payloads)[jb_exp->lifeboat_index *
-						    block_size], block_size);
-		  jb_exp->needs_copy = 0;
-		}
+	      /* ALWAYS hydrate from the live VM cache. The lifeboat is for
+	         delayed physical I/O, not for sourcing WAL shadow data! */
+	      jb_exp->jb_next = NULL;
+	      if (!copy_list_head)
+		copy_list_head = jb_exp;
 	      else
-		{
-		  jb_exp->jb_next = NULL;
-		  if (!copy_list_head)
-		    copy_list_head = jb_exp;
-		  else
-		    copy_list_tail->jb_next = jb_exp;
-		  copy_list_tail = jb_exp;
-		}
+		copy_list_tail->jb_next = jb_exp;
+	      copy_list_tail = jb_exp;
 	    }
 	}
 
@@ -1182,35 +1153,6 @@ journal_stop_transaction_locked (journal_t *journal,
 }
 
 /**
- * Drains the thread-local deferred block queue into a new transaction.
- * When a thread is forced to execute a synchronous checkpoint (which locks the
- * global libdiskfs node-cache), any memory mutations triggered by the VFS flush
- * are intercepted and stored in a thread-local queue to prevent a recursive
- * deadlock against the journal lock.
- * This function "sweeps" those intercepted blocks by explicitly starting a
- * new transaction. The act of starting the transaction automatically injects
- * the deferred blocks into the new transaction's map (via the internal
- * diskfs_journal_start_transaction_locked logic). We then immediately stop
- * the transaction to allow the normal journal commit pipeline to process them.
- *
- * Must strictly be called OUTSIDE the journal lock.
- */
-static void
-journal_drain_deferred_blocks (void)
-{
-  if (deferred_count > 0)
-    {
-      diskfs_transaction_t *drain_txn = diskfs_journal_start_transaction ();
-      if (drain_txn)
-	{
-	  JOURNAL_LOCK (ext2_journal);
-	  journal_stop_transaction_locked (ext2_journal, drain_txn);
-	  JOURNAL_UNLOCK (ext2_journal);
-	}
-    }
-}
-
-/**
  * Checks a range of written blocks against a single transaction's map.
  * Marks any matching buffers as written and decrements the outstanding I/O
  * counter. MUST be called with JOURNAL_LOCK held.
@@ -1220,17 +1162,31 @@ static int
 journal_notify_txn_locked (diskfs_transaction_t *txn,
 			   block_t start_block, size_t n_blocks)
 {
-  for (size_t i = 0; i < n_blocks && txn->t_outstanding_io > 0; i++)
+  /* Process all blocks to ensure jb_is_flushing is safely cleared everywhere */
+  for (size_t i = 0; i < n_blocks; i++)
     {
       block_t b = start_block + i;
       journal_buffer_t *jb = journal_map_lookup (&txn->t_buffer_map, b);
-      if (jb && !jb->jb_is_written)
+
+      if (jb)
 	{
-	  jb->jb_is_written = 1;
-	  txn->t_outstanding_io--;
-	  JRNL_LOG_DEBUG
-	    ("[NOTIFY] Block %u written for TID %u (outstanding: %d)", b,
-	     txn->t_tid, txn->t_outstanding_io);
+	  if (!jb->jb_is_written)
+	    {
+	      jb->jb_is_written = 1;
+	      if (txn->t_outstanding_io > 0)
+		txn->t_outstanding_io--;
+
+	      JRNL_LOG_DEBUG
+		("[NOTIFY] Block %u written for TID %u (outstanding: %d)", b,
+		 txn->t_tid, txn->t_outstanding_io);
+	    }
+
+	  /* Pager finished the I/O. Unblock Checkpoint thread! */
+	  if (jb->jb_is_flushing)
+	    {
+	      jb->jb_is_flushing = 0;
+	      pthread_cond_broadcast (&ext2_journal->j_flush_wait);
+	    }
 	}
     }
   return txn->t_outstanding_io == 0;
@@ -1244,16 +1200,32 @@ journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
 {
   int sb_changed = 0;
   error_t err = 0;
-  if (!ext2_journal || n_blocks == 0)
+  if (!ext2_journal || n_blocks == 0 || ext2_journal->j_must_exit)
     return 0;
 
   JRNL_LOG_DEBUG ("Got notification for %zu blocks starting at %u",
 		  n_blocks, start_block);
 
-  /* Check Running Transaction */
-  diskfs_transaction_t *run = ext2_journal->j_running_transaction;
-  if (run)
-    journal_notify_txn_locked (run, start_block, n_blocks);
+  /* Do NOT notify the running transaction here.
+   *
+   * The running transaction has not yet crossed the WAL barrier — its shadow
+   * buffers may still be updated by journal_stop_transaction_locked as VFS
+   * threads continue to modify blocks.  If we mark a block jb_is_written=1 in
+   * the running transaction, a later checkpoint will skip writing the (correct)
+   * shadow data to the main disk, permanently leaving stale metadata behind.
+   *
+   * This can happen due to a race: the pager checks hazards (block not in any
+   * transaction), unlocks for physical I/O, then a VFS thread adds the block to
+   * the running transaction.  When the pager re-locks and calls us, the block
+   * IS in the running transaction, but the data we just wrote to disk may be
+   * stale relative to the final shadow copy.
+   *
+   * Blocks in the running transaction that legitimately need to be marked as
+   * written are handled by journal_flush_lifeboat_payloads(), which runs AFTER
+   * the WAL barrier is crossed (T_COMMITTED) and does its own marking.
+   *
+   * The committing transaction and checkpoint list are safe to notify: their
+   * shadow data is frozen and the WAL has been (or is being) committed. */
 
   /* Check Committing Transaction */
   diskfs_transaction_t *commit = ext2_journal->j_committing_transaction;
@@ -1359,6 +1331,8 @@ journal_create (struct node *journal_inode)
   pthread_mutex_init (&j->j_state_lock, NULL);
   pthread_cond_init (&j->j_commit_wait, NULL);
   pthread_cond_init (&j->j_flusher_wakeup, NULL);
+  pthread_cond_init (&j->j_flush_wait, NULL);
+
   j->j_must_exit = 0;
   if (pthread_create (&kjournald_tid, NULL, kjournald_thread, j) != 0)
     JRNL_LOG_WARN ("Failed to create a flusher thread.");
@@ -1427,76 +1401,193 @@ journal_clear_checkpoint_list_locked (journal_t *journal)
 }
 
 /**
- * Safely marks the journal as clean on disk.
- * MUST only be called after sync_global(1) ensures no pager I/O is in flight,
- * otherwise asynchronous pager notifications will cause a Use-After-Free!
+ * Checks if a block exists in any transaction newer than 'txn'.
+ * This prevents older checkpoints from overwriting fresh data on the disk.
  */
-void
-journal_quiesce_checkpoints (void)
+static int
+journal_is_block_in_newer_transaction_locked (journal_t *journal,
+					      diskfs_transaction_t *txn,
+					      block_t b)
 {
-  if (!ext2_journal)
-    return;
-
-  JOURNAL_LOCK (ext2_journal);
-
-  /* Set a 10-second deadline for the active commit to finish. */
-  struct timespec ts;
-  clock_gettime (CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += 10;
-
-  int err = 0;
-
-  /* Wait for any active commit to finish writing to the log */
-  while (ext2_journal->j_committing_transaction != NULL && err == 0)
-    err = pthread_cond_clockwait (&ext2_journal->j_commit_done,
-				  &ext2_journal->j_state_lock, CLOCK_MONOTONIC, &ts);
-  if (err)
+  /* Check all transactions in the checkpoint list newer than 'txn'.
+     These are fully committed to the WAL, so relying on them is safe. */
+  diskfs_transaction_t *t = txn->t_checkpoint_next;
+  while (t)
     {
-      /* If we hit ETIMEDOUT, a VFS thread likely leaked a t_updates refcount
-         due to a signal interruption or crash. We MUST bail out without
-         clearing the checkpoint list so the WAL replays on next boot! */
-      JRNL_LOG_WARN
-	("Quiesce timed out! Transaction deadlocked. Leaving journal dirty.");
-      JOURNAL_UNLOCK (ext2_journal);
-      return;
+      if (journal_map_lookup (&t->t_buffer_map, b))
+	return 1;
+      t = t->t_checkpoint_next;
     }
 
-  /* Clear the list and write s_start = 0 to the JBD2 superblock */
-  journal_clear_checkpoint_list_locked (ext2_journal);
-  JOURNAL_UNLOCK (ext2_journal);
+  /* Check the committing transaction ONLY if it has safely crossed the WAL
+     barrier. If it is still T_FLUSHING or T_LOCKED, a crash would lose it,
+     so we cannot rely on it to skip physical I/O! */
+  t = journal->j_committing_transaction;
+  if (t && t->t_state == T_COMMITTED
+      && journal_map_lookup (&t->t_buffer_map, b))
+    return 1;
+
+  /* NEVER check the running transaction. It is not on disk yet.
+     Relying on it would permanently delete the older safely committed WAL backup
+     before the new one is written, causing unrecoverable data loss on crash! */
+
+  return 0;
 }
 
 /**
- * Called when we are running out of space.
- * Since we do a version of sync() on every commit, we can safely declare all
- * previous transactions "checkpointed" and reset the log.
- * Must be called with a journal lock held, and that state will remain such
- * after returning.
+ * Internal helper to flush checkpoint transactions to the main filesystem.
+ * If target_free is UINT32_MAX, it flushes ALL transactions in the list.
+ * Otherwise, it flushes until j_free >= target_free.
+ * Returns 1 if a hardware I/O error occurred, 0 on success.
+ * MUST be called with JOURNAL_LOCK held.
+ */
+static int
+journal_flush_checkpoints_locked (journal_t *journal, uint32_t target_free)
+{
+  int sb_changed = 0;
+  int global_io_error = 0;
+
+  while (journal->j_free < target_free && journal->j_checkpoint_list)
+    {
+      diskfs_transaction_t *txn = journal->j_checkpoint_list;
+      size_t iter = 0;
+      journal_buffer_t *jb;
+      int io_error = 0;
+
+      /* Stream the fully committed WAL shadow blocks directly to the metal */
+      while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
+	{
+	retry_block:
+	  if (!jb->jb_is_written)
+	    {
+	      if (jb->jb_is_flushing)
+		{
+		  pthread_cond_wait (&journal->j_flush_wait,
+				     &journal->j_state_lock);
+		  goto retry_block;
+		}
+
+	      jb->jb_is_flushing = 1;
+	      block_t b = jb->jb_blocknr;
+	      char *data = jb->jb_shadow_data;
+	      size_t amount = 0;
+	      error_t err = 0;
+
+	      if (journal_is_block_in_newer_transaction_locked
+		  (journal, txn, b))
+		{
+		  /* A newer transaction already captured this block.
+		     Skip physical I/O to protect the fresh data on disk. */
+		  amount = block_size;
+		}
+	      else
+		{
+		  /* Unlock to perform physical I/O without stalling the journal */
+		  JOURNAL_UNLOCK (journal);
+		  store_offset_t dev_block =
+		    (store_offset_t) b << log2_dev_blocks_per_fs_block;
+		  err =
+		    store_write (store, dev_block, data, block_size, &amount);
+		  JOURNAL_LOCK (journal);
+		}
+
+	      /* ONLY mark as written if the hardware actually accepted the full block! */
+	      if (!err && amount == block_size)
+		{
+		  if (!jb->jb_is_written)
+		    {
+		      jb->jb_is_written = 1;
+		      if (txn->t_outstanding_io > 0)
+			txn->t_outstanding_io--;
+		    }
+		}
+	      else
+		{
+		  JRNL_LOG_WARN
+		    ("Checkpoint I/O failed for block %u! err=%d, wrote=%zu",
+		     b, err, amount);
+		  io_error = 1;
+		}
+
+	      jb->jb_is_flushing = 0;
+	      pthread_cond_broadcast (&journal->j_flush_wait);
+
+	      if (io_error)
+		break;
+	    }
+	}
+
+      /* All blocks are physically on disk. Reclaim the space! */
+      if (!io_error)
+	{
+	  if (journal_try_advance_tail_locked (journal))
+	    {
+	      sb_changed = 1;
+	    }
+	  else
+	    {
+	      JRNL_LOG_WARN
+		("Logic bug: Failed to advance tail after active checkpoint!");
+	      break;
+	    }
+	}
+      else
+	{
+	  global_io_error = 1;
+	  break;		/* Stop checkpointing on device failure */
+	}
+    }
+
+  if (sb_changed)
+    {
+      JOURNAL_UNLOCK (journal);
+      flush_to_disk ();		/* Ensure all checkpoint data is on the platter first */
+      JOURNAL_LOCK (journal);
+
+      uint32_t tail_seq;
+      diskfs_transaction_t *oldest =
+	journal_get_oldest_transaction_locked (journal);
+
+      if (oldest)
+	tail_seq = oldest->t_tid;
+      else
+	tail_seq = journal->j_transaction_sequence;
+
+      error_t err = journal_update_superblock (journal, tail_seq);
+      if (err)
+	JRNL_LOG_WARN ("Failed to update superblock during checkpoint. %s",
+		       strerror (err));
+      else
+	{
+	  JOURNAL_UNLOCK (journal);
+	  flush_to_disk ();	/* Ensure the SB update itself hits the platter */
+	  JOURNAL_LOCK (journal);
+	}
+    }
+
+  return global_io_error;
+}
+
+/**
+ * Actively flushes the oldest checkpointed transactions to the main filesystem.
+ * This guarantees space is freed instantly without relying on the lazy Mach pager,
+ * and executes entirely without acquiring VFS node locks.
  */
 static void
 journal_force_checkpoint_locked (journal_t *journal)
 {
-  JRNL_LOG_DEBUG ("[CHECKPOINT] Journal Full (Free: %u). Squeezing disk...",
+  JRNL_LOG_DEBUG
+    ("[CHECKPOINT] Journal Full (Free: %u). Actively checkpointing...",
+     journal->j_free);
+
+  /* Add a 1/8th safety runway to prevent thrashing */
+  uint32_t runway = (journal->j_last - journal->j_first) / 8;
+  uint32_t target_free = journal->j_min_free + runway;
+
+  journal_flush_checkpoints_locked (journal, target_free);
+
+  JRNL_LOG_DEBUG ("[CHECKPOINT] Done checkpointing (Free: %u).",
 		  journal->j_free);
-  JOURNAL_UNLOCK (journal);
-
-  /* Arm the circuit breaker and reset the queue */
-  thread_is_checkpointing = 1;
-  deferred_count = 0;
-
-  journal_sync_everything ();
-
-  /* Disarm the circuit breaker */
-  thread_is_checkpointing = 0;
-
-  JOURNAL_LOCK (journal);
-  journal_clear_checkpoint_list_locked (journal);
-  JOURNAL_UNLOCK (journal);
-  flush_to_disk ();
-  JOURNAL_LOCK (journal);
-
-  JRNL_LOG_DEBUG ("[CHECKPOINT] Space reclaimed. Free: %u. Tail: %u",
-		  journal->j_free, journal->j_tail);
 }
 
 /**
@@ -1552,7 +1643,12 @@ journal_dirty_block_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
   journal_buffer_t *new_jb;
   error_t err = 0;
 
-  assert_backtrace (txn);
+  if (!txn)
+    {
+      JRNL_LOG_DEBUG ("[TRX] Transaction null but block dirty.");
+      goto out;
+    }
+
   assert_backtrace (txn->t_state == T_RUNNING || txn->t_state == T_LOCKED);
   jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
 
@@ -1600,6 +1696,9 @@ out:
 static diskfs_transaction_t *
 diskfs_journal_start_transaction_locked (journal_t *journal)
 {
+  if (journal->j_must_exit)
+    return NULL;
+
   diskfs_transaction_t *txn;
   if (ext2_journal->j_free < ext2_journal->j_min_free)
     {
@@ -1639,17 +1738,6 @@ diskfs_journal_start_transaction_locked (journal_t *journal)
 
       journal->j_running_transaction = txn;
       JRNL_LOG_DEBUG ("[TRX] Created NEW TID %u", txn->t_tid);
-    }
-  /* THE SWEEP: Safely inject deferred blocks into our brand new transaction */
-  if (deferred_count > 0)
-    {
-      /* Copy to local var and reset count immediately to prevent any
-         impossible recursion loops during dirty_block */
-      int count = deferred_count;
-      deferred_count = 0;
-
-      for (int i = 0; i < count; i++)
-	journal_dirty_block_locked (txn, deferred_blocks[i]);
     }
 
   return txn;
@@ -1733,6 +1821,24 @@ journal_write_batch (journal_t *journal, const diskfs_transaction_t *txn,
   return 0;
 }
 
+static void
+restore_escaped_magic (const diskfs_transaction_t *txn,
+		       size_t batch_start_iter, uint32_t batch_count)
+{
+  size_t iter = batch_start_iter;
+  uint32_t magic_const = htobe32 (JBD2_MAGIC_NUMBER);
+
+  for (uint32_t i = 0; i < batch_count; i++)
+    {
+      journal_buffer_t *jb = journal_map_iterate (&txn->t_buffer_map, &iter);
+      if (jb->jb_escaped)
+	{
+	  memcpy (jb->jb_shadow_data, &magic_const, sizeof (magic_const));
+	  jb->jb_escaped = 0;
+	}
+    }
+}
+
 /* Writes the Descriptor Block + All Data Blocks (Escaped) */
 static error_t
 journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
@@ -1775,12 +1881,14 @@ journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
 	  if (err)
 	    return err;
 
+	  restore_escaped_magic (txn, batch_start_iter, batch_count);
+
 	  /* Prepare for the next batch */
 	  descriptor_loc = journal_next_log_block_safe (journal);
 	  memset (descriptor_buf, 0, block_size);
 	  setup_header (descriptor_buf, txn, JBD2_DESCRIPTOR_BLOCK);
 	  tag_offset = sizeof (journal_header_t);
-	  batch_start_iter = iter - 1;
+	  batch_start_iter = iter - 1;	/* Point to the item that caused the flush */
 	  batch_count = 0;
 	}
 
@@ -1802,6 +1910,11 @@ journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
 	{
 	  flags |= JBD2_FLAG_ESCAPE;
 	  memset (jb->jb_shadow_data, 0, sizeof (data_head));
+	  jb->jb_escaped = 1;
+	}
+      else
+	{
+	  jb->jb_escaped = 0;
 	}
 
       tag->t_flags = htobe32 (flags);
@@ -1817,6 +1930,7 @@ journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
       err =
 	journal_write_batch (journal, txn, descriptor_buf, descriptor_loc,
 			     batch_start_iter, batch_count);
+      restore_escaped_magic (txn, batch_start_iter, batch_count);
     }
 
   return err;
@@ -1890,12 +2004,14 @@ journal_flush_lifeboat_payloads (journal_t *journal,
 	  /* We always free the raw slot we just finished using */
 	  lifeboat_free_slot (lb_idx);
 
-	  /* Mark it as written so checkpointing can advance! */
-	  if (!err && !jb_lb->jb_is_written)
+	  /* Mark it as written so checkpointing can advance!
+	     Use the global notification system so ALL transactions
+	     that contain this block are marked as written, preventing
+	     the Active Checkpointer from overwriting fresh data with
+	     stale shadow metadata from older checkpoint transactions. */
+	  if (!err)
 	    {
-	      jb_lb->jb_is_written = 1;
-	      if (txn->t_outstanding_io > 0)
-		txn->t_outstanding_io--;
+	      journal_notify_blocks_written_locked (jb_lb->jb_blocknr, 1);
 	    }
 	  JOURNAL_UNLOCK (journal);
 	}
@@ -1979,6 +2095,8 @@ journal_commit_running_transaction_locked (journal_t *journal)
   /* Ensure Commit is persistent */
   flush_to_disk ();
 
+  /* The WAL barrier is crossed! Tell the Pager it can write safely! */
+  txn->t_state = T_COMMITTED;
   /* Flush any intercepted VM pager blocks to the primary disk */
   journal_flush_lifeboat_payloads (journal, txn);
 
@@ -2016,11 +2134,9 @@ journal_commit_running_transaction_locked (journal_t *journal)
     flush_to_disk ();
 
   journal_forget_freed_blocks (journal, freed_extents);
-  journal_drain_deferred_blocks ();
   JOURNAL_LOCK (journal);
   goto out;
 abort_commit:
-  journal_drain_deferred_blocks ();
   /* We hit a physical I/O error. We must clear the pipeline slot and wake
      up any sleeping threads so they don't deadlock, before we free the txn. */
   JOURNAL_LOCK (journal);
@@ -2030,6 +2146,58 @@ abort_commit:
   journal_free_transaction (txn);
 out:
   return err;
+}
+
+/**
+ * Safely marks the journal as clean on disk.
+ * MUST only be called after sync_global(1) ensures no pager I/O is in flight,
+ * otherwise asynchronous pager notifications will cause a Use-After-Free!
+ */
+static void
+journal_quiesce_checkpoints (void)
+{
+  JRNL_LOG_DEBUG ("Journal in quiesce checkpoints.");
+  JOURNAL_LOCK (ext2_journal);
+
+  journal_commit_running_transaction_locked (ext2_journal);
+  /* Set a 10-second deadline for the active commit to finish. */
+  struct timespec ts;
+  clock_gettime (CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += 10;
+
+  int err = 0;
+
+  /* Wait for any active commit to finish writing to the log */
+  while (ext2_journal->j_committing_transaction != NULL && err == 0)
+    err = pthread_cond_clockwait (&ext2_journal->j_commit_done,
+				  &ext2_journal->j_state_lock, CLOCK_MONOTONIC, &ts);
+  if (err)
+    {
+      /* If we hit ETIMEDOUT, a VFS thread likely leaked a t_updates refcount
+         due to a signal interruption or crash. We MUST bail out without
+         clearing the checkpoint list so the WAL replays on next boot! */
+      JRNL_LOG_WARN
+	("Quiesce timed out! Transaction deadlocked. Leaving journal dirty.");
+      JOURNAL_UNLOCK (ext2_journal);
+      return;
+    }
+
+  /* Write ALL shadow data from every checkpoint transaction to the main disk. */
+  /* Pass UINT32_MAX to guarantee we drain the entire checkpoint list */
+  int io_error = journal_flush_checkpoints_locked (ext2_journal, UINT32_MAX);
+
+  if (io_error)
+    {
+      JRNL_LOG_WARN ("[QUIESCE] I/O error during final checkpoint. "
+		     "Leaving journal dirty for WAL replay.");
+      JOURNAL_UNLOCK (ext2_journal);
+      return;
+    }
+
+  /* Now safe to clear the list and write s_start = 0 to the JBD2 superblock */
+  journal_clear_checkpoint_list_locked (ext2_journal);
+
+  JOURNAL_UNLOCK (ext2_journal);
 }
 
 static void
@@ -2079,7 +2247,6 @@ diskfs_journal_stop_transaction (diskfs_transaction_t *txn)
   JOURNAL_LOCK (ext2_journal);
   diskfs_journal_stop_transaction_locked (ext2_journal, txn);
   JOURNAL_UNLOCK (ext2_journal);
-  journal_drain_deferred_blocks ();
 }
 
 /* Forces the currently running transaction (if any) to safely commit to the
@@ -2178,7 +2345,6 @@ diskfs_journal_commit_transaction (diskfs_transaction_t *opaque_txn)
   journal_wait_on_tid_locked (ext2_journal, tid);
 out:
   JOURNAL_UNLOCK (ext2_journal);
-  journal_drain_deferred_blocks ();
 }
 
 /**
@@ -2191,17 +2357,27 @@ static int
 journal_handle_write_hazard_locked (block_t b, char *b_data)
 {
   int intercepted = 0;
+  diskfs_transaction_t *commit;
+  diskfs_transaction_t *run;
+  journal_buffer_t *jb_run;
+  journal_buffer_t *jb_commit;
+  diskfs_transaction_t *chk;
 
-  diskfs_transaction_t *commit = ext2_journal->j_committing_transaction;
-  diskfs_transaction_t *run = ext2_journal->j_running_transaction;
+retry:
+  commit = ext2_journal->j_committing_transaction;
+  run = ext2_journal->j_running_transaction;
 
-  journal_buffer_t *jb_run =
-    run ? journal_map_lookup (&run->t_buffer_map, b) : NULL;
-  journal_buffer_t *jb_commit =
-    commit ? journal_map_lookup (&commit->t_buffer_map, b) : NULL;
+  jb_run = run ? journal_map_lookup (&run->t_buffer_map, b) : NULL;
+  jb_commit = commit ? journal_map_lookup (&commit->t_buffer_map, b) : NULL;
 
-  /* Deadlock Hazard Check */
-  if ((jb_run && (run->t_updates > 0 || commit != NULL)) || jb_commit)
+  /* If it's in the committing transaction BUT the WAL barrier is crossed,
+     it is safe to write to disk. Remove it from the intercept hazard list. */
+  if (commit && commit->t_state == T_COMMITTED && jb_commit)
+    jb_commit = NULL;
+
+  /* Hazard Interception: If it's trapped in an active transaction,
+     send it straight to the lifeboat and RETURN EARLY. Do not touch checkpoints. */
+  if (jb_run || jb_commit)
     {
       int lb_idx_run = jb_run ? lifeboat_alloc_slot () : -1;
       int lb_idx_commit = jb_commit ? lifeboat_alloc_slot () : -1;
@@ -2224,6 +2400,8 @@ journal_handle_write_hazard_locked (block_t b, char *b_data)
 	    {
 	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_run * block_size],
 		      b_data, block_size);
+	      /* If the old slot is NOT being flushed, we must free it to avoid a leak.
+	         If it IS being flushed, the commit thread owns it and will free it. */
 	      if (jb_run->lifeboat_index >= 0)
 		lifeboat_free_slot (jb_run->lifeboat_index);
 	      jb_run->lifeboat_index = (int16_t) lb_idx_run;
@@ -2232,8 +2410,6 @@ journal_handle_write_hazard_locked (block_t b, char *b_data)
 	    {
 	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_commit * block_size],
 		      b_data, block_size);
-	      /* If the old slot is NOT being flushed, we must free it to avoid a leak.
-	         If it IS being flushed, the commit thread owns it and will free it. */
 	      if (jb_commit->lifeboat_index >= 0
 		  && !jb_commit->jb_is_flushing)
 		lifeboat_free_slot (jb_commit->lifeboat_index);
@@ -2245,32 +2421,62 @@ journal_handle_write_hazard_locked (block_t b, char *b_data)
 	    ("Intercepted rushed pager write for block %u into Lifeboat slots (run:%d, commit:%d)",
 	     b, lb_idx_run, lb_idx_commit);
 	}
-    }
-  else if (jb_run)
-    {
-      /* No hazard, but block is in the running transaction.
-         Force a synchronous commit to satisfy the WAL barrier. */
-      JRNL_LOG_DEBUG ("Pager forcing synchronous commit for TID %u",
-		      run->t_tid);
-      error_t err = journal_commit_running_transaction_locked (ext2_journal);
-      if (err)
-	JRNL_LOG_WARN ("Synchronous commit failed for TID %u: %s",
-		       run->t_tid, strerror (err));
+      /* Do not claim any flushing flags! */
+      return intercepted;
     }
 
-  return intercepted;
+  /* We are definitively going to physical disk.
+     Now safely check for hardware races against Checkpoint/Committing threads. */
+  if (commit && commit->t_state == T_COMMITTED)
+    {
+      journal_buffer_t *jb_com_real =
+	journal_map_lookup (&commit->t_buffer_map, b);
+      if (jb_com_real)
+	{
+	  if (jb_com_real->jb_is_flushing)
+	    {
+	      pthread_cond_wait (&ext2_journal->j_flush_wait,
+				 &ext2_journal->j_state_lock);
+	      goto retry;
+	    }
+	  else if (!jb_com_real->jb_is_written)
+	    jb_com_real->jb_is_flushing = 1;	/* Claim it for the Pager */
+	}
+    }
+
+  chk = ext2_journal->j_checkpoint_list;
+  while (chk)
+    {
+      journal_buffer_t *jb_chk = journal_map_lookup (&chk->t_buffer_map, b);
+      if (jb_chk)
+	{
+	  if (jb_chk->jb_is_flushing)
+	    {
+	      pthread_cond_wait (&ext2_journal->j_flush_wait,
+				 &ext2_journal->j_state_lock);
+	      goto retry;
+	    }
+	  else if (!jb_chk->jb_is_written)
+	    {
+	      /* Claim the buffer so the Checkpoint thread yields if it wakes up. */
+	      jb_chk->jb_is_flushing = 1;
+	    }
+	}
+      chk = chk->t_checkpoint_next;
+    }
+
+  return 0;
 }
 
 /**
- * Checks if a block is part of an active transaction.
- * Used by the coalescing loop to stop before a hazard block.
+ * Checks if a block is safe to coalesce into a physical batch write.
+ * If it is safe, it preemptively claims the block in the checkpoint lists
+ * so that background checkpoint threads yield to the Pager.
  * MUST be called with JOURNAL_LOCK held.
  */
 static int
-journal_has_active_transaction_locked (block_t b)
+journal_claim_safe_block_locked (block_t b)
 {
-  int active = 0;
-
   diskfs_transaction_t *commit = ext2_journal->j_committing_transaction;
   diskfs_transaction_t *run = ext2_journal->j_running_transaction;
 
@@ -2279,10 +2485,77 @@ journal_has_active_transaction_locked (block_t b)
   journal_buffer_t *jb_commit =
     commit ? journal_map_lookup (&commit->t_buffer_map, b) : NULL;
 
-  if (jb_run || jb_commit)
-    active = 1;
+  /* If commit crossed WAL barrier, it's safe to coalesce and write */
+  if (commit && commit->t_state == T_COMMITTED)
+    jb_commit = NULL;
 
-  return active;
+  /* If it is an active hazard, we cannot claim it for physical coalescing */
+  if (jb_run || jb_commit)
+    return 0;
+
+  /* Stop coalescing if ANY thread is actively flushing this block to disk */
+  journal_buffer_t *jb_commit_flush =
+    commit ? journal_map_lookup (&commit->t_buffer_map, b) : NULL;
+  if (jb_commit_flush && jb_commit_flush->jb_is_flushing)
+    return 0;
+
+  diskfs_transaction_t *chk = ext2_journal->j_checkpoint_list;
+  while (chk)
+    {
+      journal_buffer_t *jb_chk = journal_map_lookup (&chk->t_buffer_map, b);
+      if (jb_chk && jb_chk->jb_is_flushing)
+	return 0;
+      chk = chk->t_checkpoint_next;
+    }
+
+  /* It is safe to write to disk. CLAIM IT in the lists! */
+  if (commit && commit->t_state == T_COMMITTED)
+    {
+      if (jb_commit_flush && !jb_commit_flush->jb_is_written)
+	jb_commit_flush->jb_is_flushing = 1;
+    }
+
+  chk = ext2_journal->j_checkpoint_list;
+  while (chk)
+    {
+      journal_buffer_t *jb_chk = journal_map_lookup (&chk->t_buffer_map, b);
+      if (jb_chk && !jb_chk->jb_is_written)
+	jb_chk->jb_is_flushing = 1;
+      chk = chk->t_checkpoint_next;
+    }
+
+  return 1;
+}
+
+static void
+journal_clear_flushing_locked (block_t start_block, size_t n_blocks)
+{
+  for (size_t i = 0; i < n_blocks; i++)
+    {
+      block_t b = start_block + i;
+      diskfs_transaction_t *txn = ext2_journal->j_checkpoint_list;
+      while (txn)
+	{
+	  journal_buffer_t *jb = journal_map_lookup (&txn->t_buffer_map, b);
+	  if (jb && jb->jb_is_flushing)
+	    {
+	      jb->jb_is_flushing = 0;
+	      pthread_cond_broadcast (&ext2_journal->j_flush_wait);
+	    }
+	  txn = txn->t_checkpoint_next;
+	}
+
+      txn = ext2_journal->j_committing_transaction;
+      if (txn)
+	{
+	  journal_buffer_t *jb = journal_map_lookup (&txn->t_buffer_map, b);
+	  if (jb && jb->jb_is_flushing)
+	    {
+	      jb->jb_is_flushing = 0;
+	      pthread_cond_broadcast (&ext2_journal->j_flush_wait);
+	    }
+	}
+    }
 }
 
 /**
@@ -2339,8 +2612,8 @@ journal_store_write (block_t start_block, size_t length, void *buf,
 	    {
 	      block_t next_b = start_block + i + flush_count;
 
-	      if (journal_has_active_transaction_locked (next_b))
-		break;		/* Stop coalescing; this next block might need hazard handling */
+	      if (!journal_claim_safe_block_locked (next_b))
+		break;
 
 	      flush_count++;
 	    }
@@ -2362,6 +2635,10 @@ journal_store_write (block_t start_block, size_t length, void *buf,
 	  if (actual_blocks > 0)
 	    flush_needed =
 	      journal_notify_blocks_written_locked (b, actual_blocks);
+
+	  if (actual_blocks < flush_count)
+	    journal_clear_flushing_locked (b + actual_blocks,
+					   flush_count - actual_blocks);
 
 	  total_written += chunk_amount;
 	  i += actual_blocks;
@@ -2468,16 +2745,6 @@ journal_notify_block_changed (block_t block)
   if (!ext2_journal)
     return;
 
-  if (thread_is_checkpointing)
-    {
-      /* We are in a recursive trap! Defer this block for later. */
-      if (deferred_count < MAX_DEFERRED_BLOCKS)
-	deferred_blocks[deferred_count++] = block;
-      else
-	JRNL_LOG_WARN ("Deferred block queue full! Dropping block %u", block);
-      return;
-    }
-
   JOURNAL_LOCK (ext2_journal);
   diskfs_transaction_t *txn =
     diskfs_journal_start_transaction_locked (ext2_journal);
@@ -2486,4 +2753,29 @@ journal_notify_block_changed (block_t block)
 		   block);
   diskfs_journal_stop_transaction_locked (ext2_journal, txn);
   JOURNAL_UNLOCK (ext2_journal);
+}
+
+void
+diskfs_journal_shutdown (void)
+{
+  if (!ext2_journal)
+    return;
+
+  ext2_journal->j_must_exit = 1;	/* Signal kjournald so it doesn't wake up */
+  /* Commit any pending transaction (e.g. the superblock clean-state
+     flags written by diskfs_set_hypermetadata).  */
+  journal_commit_running_transaction ();
+
+  /* Sync the disk pager to ensure all shadow data is on disk.  */
+  sync_global (1);
+
+  /* Checkpoint all remaining transactions and mark the journal clean.  */
+  journal_quiesce_checkpoints ();
+
+  ext2_journal = NULL;
+
+  /* Final hardware flush.  */
+  error_t err = store_sync (store);
+  if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
+    ext2_warning ("device flush failed: %s", strerror (err));
 }

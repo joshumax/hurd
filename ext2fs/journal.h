@@ -81,13 +81,6 @@ journal_store_read (block_t start_block, size_t length, void **buf,
 		    size_t *read_amount);
 
 /**
- * Safely marks the journal as clean on disk.
- * MUST only be called after sync_global(1) ensures no pager I/O is in flight,
- * otherwise asynchronous pager notifications will cause a Use-After-Free!
- */
-void journal_quiesce_checkpoints (void);
-
-/**
  * Records a range of deleted blocks so they can be unpinned from older
  * checkpoint lists AFTER this transaction safely commits.
  */

@@ -345,13 +345,6 @@ extern struct journal *ext2_journal;
 error_t
 journal_dirty_block (diskfs_transaction_t * txn, block_t fs_blocknr);
 
-/**
- * This function exists to sync all AND avoid a deadlock with commit.
- * It doesn't call journal_commit back yet it syncs everything.
- **/
-void
-journal_sync_everything (void);
-
 void journal_notify_block_changed (block_t block);
 
 /* ---------------------------------------------------------------- */

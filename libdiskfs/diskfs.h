@@ -576,6 +576,14 @@ void diskfs_journal_set_sync (diskfs_transaction_t *txn);
    synchronous I/O guarantee. */
 int diskfs_journal_needs_sync (diskfs_transaction_t *txn);
 
+/* The user may define this function.  It is called once at the very end
+   of diskfs_shutdown, after all pagers have been shut down and
+   hypermetadata has been written, to perform any final journal-specific
+   cleanup (e.g. committing the last transaction, checkpointing all
+   remaining transactions, and marking the journal clean on disk).
+   The default definition does nothing.  */
+void diskfs_journal_shutdown (void);
+
 /* The user must define this function.  Sync the info in NP->dn_stat
    and any associated format-specific information to disk.  If WAIT is true,
    then return only after the physicial media has been completely updated. */

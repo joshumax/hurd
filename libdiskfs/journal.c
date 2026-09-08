@@ -1,10 +1,11 @@
 /* Default version of Journal in libdiskfs.
-   It implements default implementations of 5 functions:
+   It implements default implementations of 6 functions:
      - diskfs_journal_start_transaction
      - diskfs_journal_stop_transaction
      - diskfs_journal_commit_transaction
      - diskfs_journal_needs_sync
      - diskfs_journal_set_sync
+     - diskfs_journal_shutdown
 
    diskfs_journal_start_transaction returns NULL,
    diskfs_journal_needs_sync returns 0.
@@ -65,4 +66,10 @@ diskfs_journal_needs_sync (diskfs_transaction_t *txn)
 {
   /* Do nothing */
   return 0;
+}
+
+void __attribute__((weak))
+diskfs_journal_shutdown (void)
+{
+  /* Do nothing */
 }

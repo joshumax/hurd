@@ -964,7 +964,7 @@ pager_report_extent (struct user_pager_info *pager,
 void
 pager_clear_user_data (struct user_pager_info *upi)
 {
-  if (upi->type == FILE_DATA)
+  if (upi->type == FILE_DATA && upi->node)
     {
       struct pager *pager;
 
@@ -1561,48 +1561,90 @@ diskfs_get_filemap_pager_struct (struct node *node)
 void
 diskfs_shutdown_pager (void)
 {
-  error_t shutdown_one (void *v_p)
+  /* TODO: Implement the Ext3/Ext4 Orphan Inode List (s_last_orphan).
+            Currently, if a file is unlinked (nlink=0) but still held open by a
+            Mach pager, it will be abandoned on disk without dtime=0 if the
+            system halts, causing fsck to complain. This manual teardown forces
+            the nodes to drop synchronously before the final journal commit.
+            Once the Orphan List is implemented, this entire manual pager cleanup
+            can be safely removed. Unlinked files will be added to the superblock's
+            orphan list, and the OS can just pull the power. The next boot will
+            silently clean them up. */
+  error_t shutdown_and_clear (void *v_p)
     {
       struct pager *p = v_p;
+      struct user_pager_info *upi = pager_get_upi (p);
+
+      /* First, shutdown the pager: sync and flush all dirty pages,
+         then destroy the port right.  This must happen before we
+         release the node reference, because pager_sync/pager_flush
+         may need to access the node's allocsize and alloc_lock.  */
       pager_shutdown (p);
+
+      /* After pager_shutdown, the pager has been removed from the
+         bucket's hash table (via ports_destroy_right).  But we can
+         still access it because ports_bucket_iterate holds a hard
+         reference on our behalf.
+
+         Now release the pager's weak node reference, mimicking what
+         pager_dropweak + pager_clear_user_data would do.  This
+         ensures diskfs_drop_node runs synchronously for any unlinked
+         nodes before we commit the final journal transaction.
+
+         Without this, unlinked nodes would be left in a half-deleted
+         state: nlink=0 on disk but dtime unset, bitmap not cleared,
+         and free-counts not updated — all in an uncommitted journal
+         transaction lost on exit(0).  */
+      if (upi->type == FILE_DATA && upi->node)
+        {
+          int cleared = 0;
+
+          /* Clear the node->pager back-pointer (as pager_dropweak does)
+             so the assert in pager_clear_user_data is satisfied.  */
+          pthread_spin_lock (&node_to_page_lock);
+          if (diskfs_node_disknode (upi->node)->pager
+              && pager_get_upi (diskfs_node_disknode (upi->node)->pager) == upi)
+            {
+              diskfs_node_disknode (upi->node)->pager = NULL;
+              cleared = 1;
+            }
+          pthread_spin_unlock (&node_to_page_lock);
+
+          if (cleared)
+            ports_port_deref_weak (p);
+
+          /* Release the weak node reference acquired in diskfs_get_filemap.
+             If this is the last reference, diskfs_drop_node is called
+             synchronously, which sets dtime, clears the inode bitmap,
+             and updates free-counts.  */
+          diskfs_nrele_light (upi->node);
+
+          /* Prevent pager_clear_user_data (which fires when the iterator
+             drops its hard ref) from double-releasing the node.  */
+          upi->node = NULL;
+        }
+
       return 0;
     }
 
+  ports_bucket_iterate (file_pager_bucket, shutdown_and_clear);
+
+  /* pager_shutdown + diskfs_nrele_light above may have triggered
+     diskfs_drop_node for unlinked nodes, which writes dtime, clears
+     the inode bitmap, updates free-counts, and starts a new journal
+     transaction.  We MUST commit this transaction before quiescing. */
   write_all_disknodes ();
   journal_commit_running_transaction ();
 
-  ports_bucket_iterate (file_pager_bucket, shutdown_one);
+  if (!ext2_journal)
+    {
+      error_t err = store_sync (store);
+      if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
+        ext2_warning ("device flush failed: %s", strerror (err));
+    }
 
-  /* Sync everything on the the disk pager.  */
-  sync_global (1);
-  journal_quiesce_checkpoints ();
-  store_sync (store);
   /* Despite the name of this function, we never actually shutdown the disk
      pager, just make sure it's synced. */
-}
-
-static error_t
-journal_sync_one (void *v_p)
-{
-  struct pager *p = v_p;
-  pager_sync (p, 1);
-  return 0;
-}
-
-/**
- * Sync all the pagers synchronously, but don't call
- * journal_commit here. It would deadlock.
- **/
-void
-journal_sync_everything (void)
-{
-  write_all_disknodes ();
-  ports_bucket_iterate (file_pager_bucket, journal_sync_one);
-  sync_global (1);
-  error_t err = store_sync (store);
-  /* Ignore EOPNOTSUPP (drivers), but warn on real I/O errors */
-  if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
-    ext2_warning ("device flush failed: %s", strerror (err));
 }
 
 /* Sync all the pagers. */

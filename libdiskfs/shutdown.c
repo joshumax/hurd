@@ -91,6 +91,7 @@ diskfs_shutdown (int flags)
     {
       diskfs_shutdown_pager ();
       diskfs_set_hypermetadata (1, 1);
+      diskfs_journal_shutdown ();
     }
 
   return 0;

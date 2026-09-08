@@ -180,6 +180,7 @@ diskfs_S_startup_dosync (mach_port_t handle)
 	{
 	  diskfs_sync_everything (1);
 	  diskfs_set_hypermetadata (1, 1);
+	  diskfs_journal_shutdown ();
 	  _diskfs_diskdirty = 0;
 
 	  /* XXX: if some application writes something after that, we will
