@@ -76,14 +76,14 @@ ftp_conn_login (struct ftp_conn *conn)
 	      /* Append a '@' */
 	      pass = strdup (pass);
 	      if (pass)
-		pass = realloc (pass, strlen (pass) + 1);
+		pass = realloc (pass, strlen (pass) + 2);
 	      if (pass)
 		{
 		  strcat (pass, "@");
 		  err = ftp_conn_cmd (conn, "pass", pass, &reply, 0);
 		}
 	      else
-		err = ENOMEM;
+		err = errno;
 	    }
 	}
       if (pass && !p->pass)

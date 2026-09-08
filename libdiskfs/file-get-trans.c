@@ -106,7 +106,7 @@ diskfs_S_file_get_translator (struct protid *cred,
   else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
     {
       char *buf;
-      unsigned int buflen;
+      int buflen;
 
       if (S_ISCHR (np->dn_stat.st_mode))
 	assert_backtrace (diskfs_shortcut_chrdev);
@@ -119,6 +119,12 @@ diskfs_S_file_get_translator (struct protid *cred,
 			  : _HURD_BLKDEV),
 			 '\0', (int) ((np->dn_stat.st_rdev >> 8) & 0377),
 			 '\0', (int) ((np->dn_stat.st_rdev) & 0377));
+      if (buflen < 0)
+	{
+	  err = errno;
+	  goto out;
+	}
+
       buflen++;			/* terminating nul */
 
       if (buflen > *translen)

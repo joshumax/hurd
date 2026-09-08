@@ -213,8 +213,8 @@ write_header (int out, char *out_name, struct params *params)
   /* Note that the string returned by ctime includes a terminating newline.  */
   time = tv.tv_sec;
   hdr_len = asprintf (&hdr, "From %s %s", params->from, ctime (&time));
-  if (! hdr)
-    return SYSERRX (ENOMEM, "%s", out_name);
+  if (hdr_len == -1)
+    return SYSERRX (errno, "%s", out_name);
 
   ex = bwrite (out, out_name, hdr, hdr_len);
 
@@ -492,6 +492,8 @@ main (int argc, char **argv)
 	exit (ERR ("%d: Unknown uid", uid));
 
       params.from = strdup (pw->pw_name);
+      if (! params.from)
+	exit (ERR ("Failed to allocate memory for params.from"));
     }
 
   if (file)

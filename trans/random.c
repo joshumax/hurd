@@ -580,6 +580,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 
     case 'S':
       seed_file = strdup (arg);
+      if (!seed_file)
+	argp_failure (state, 1, errno, "Failed to allocate memory for"
+				       " seed_file");
       break;
     }
   return 0;

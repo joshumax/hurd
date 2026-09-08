@@ -214,11 +214,23 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	{
 	  free (tty_name);
 	  tty_name = strdup (v->name);
+	  if (!tty_name)
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " tty_name");
 	}
       if (state->input == 0)	/* This is startup time.  */
 	{
 	  tty_type = v->type ?: T_HURDIO;
-	  tty_arg = v->arg ? strdup (v->arg) : 0;
+
+	  if (v->arg)
+	    {
+	      tty_arg = strdup (v->arg);
+	      if (!tty_arg)
+		argp_failure (state, 1, errno, "Failed to allocate memory for"
+					       " tty_arg");
+	    }
+	  else
+	    tty_arg = NULL;
 	}
       else if (v->type || v->arg)
 	{
@@ -262,6 +274,9 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	    }
 	  free (tty_arg);
 	  tty_arg = strdup (v->arg);
+	  if (!tty_arg)
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " tty_arg");
 	  error_t err = (*bottom->init) ();
 	  if (err == 0 && (termflags & TTY_OPEN))
 	    err = (*bottom->assert_dtr) ();

@@ -109,7 +109,9 @@ dirscanblock (vm_address_t blockoff, struct node *dp, int idx,
 static int
 fatnamematch (const char *dirname, const char *username, size_t unamelen)
 {
-  char *dn = strdup(dirname);
+  char *dn = strdup (dirname);
+  assert_backtrace (dn);
+
   int dpos = 0;
   int upos = 0;
   int ext = 0;

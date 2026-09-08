@@ -97,7 +97,7 @@ get_host_conn (char *name, struct ftp_conn_params *params, char **cname)
 
   params->addr = malloc (he->h_length);
   if (! params->addr)
-    error (11, ENOMEM, "%s", name);
+    error (11, errno, "%s", name);
 
   bcopy (he->h_addr_list[0], params->addr, he->h_length);
   params->addr_len = he->h_length;
@@ -108,7 +108,11 @@ get_host_conn (char *name, struct ftp_conn_params *params, char **cname)
     error (12, err, "%s", he->h_name);
 
   if (cname)
-    *cname = strdup (he->h_name);
+    {
+      *cname = strdup (he->h_name);
+      if (! *cname)
+	error (12, errno, "%s", name);
+    }
 
   return conn;
 }
@@ -123,7 +127,7 @@ cp (int src, const char *src_name, int dst, const char *dst_name)
     {
       copy_buf = valloc (COPY_SZ);
       if (! copy_buf)
-	error (13, ENOMEM, "Cannot allocate copy buffer");
+	error (13, errno, "Cannot allocate copy buffer");
     }
 
   while ((rd = read (src, copy_buf, COPY_SZ)) > 0)
@@ -174,7 +178,7 @@ econnect (struct epoint *e, struct ftp_conn_params *def_params, char *name)
       e->conn = get_host_conn (e->name, &e->params, &e->name);
       e->name = realloc (e->name, strlen (e->name) + 1 + strlen (rmt) + 1);
       if (! e->name)
-	error (22, ENOMEM, "Cannot allocate name storage");
+	error (22, errno, "Cannot allocate name storage");
 
       e->conn->hook = name;
 
@@ -193,7 +197,11 @@ econnect (struct epoint *e, struct ftp_conn_params *def_params, char *name)
 	   "%s: Ftp login parameter specified for a local endpoint (%s,%s,%s)",
 	   e->name, e->params.user, e->params.pass, e->params.acct);
   else
-    e->file = strdup (e->name);
+    {
+      e->file = strdup (e->name);
+      if (! e->file)
+	error (20, errno, "%s", e->name);
+    }
 }
 
 static error_t
@@ -254,7 +262,7 @@ eappend (struct epoint *e,
       char *rval = malloc (strlen (dir) + 1 + strlen (name) + 1);
 
       if (! rval)
-	return ENOMEM;
+	return errno;
 
       if (dir[0] == '/' && dir[1] == '\0')
 	stpcpy (stpcpy (rval, dir), name);
@@ -276,11 +284,12 @@ ebasename (struct epoint *e, const char *composite, char **base)
 {
   if (e->conn)
     return ftp_conn_basename (e->conn, composite, base);
-  else
-    {
-      *base = strdup (basename (composite));
-      return 0;
-    }
+
+  *base = strdup (basename (composite));
+  if (! *base)
+    return errno;
+
+  return 0;
 }
 
 static void

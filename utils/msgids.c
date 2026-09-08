@@ -96,36 +96,41 @@ const struct msgid_info *
 msgid_info (mach_msg_id_t msgid)
 {
   const struct msgid_info *info = hurd_ihash_find (&msgid_ihash, msgid);
-  if (info == 0 && (msgid / 100) % 2 == 1)
+  if (info || (msgid / 100) % 2 != 1)
+    return info;
+
+  /* This message ID is not in the table, and its number makes it
+     what should be an RPC reply message ID.  So look up the message
+     ID of the corresponding RPC request and synthesize a name from
+     that.  Then stash that name in the table so the next time the
+     lookup will match directly.  */
+  info = hurd_ihash_find (&msgid_ihash, msgid - 100);
+  if (!info)
+    return NULL;
+
+  struct msgid_info *reply_info = malloc (sizeof *info);
+  if (!reply_info)
+    return NULL;
+
+  /* asprintf and strdup may fail with ENOMEM, react the same way
+     to malloc failing.  */
+  reply_info->subsystem = strdup (info->subsystem);
+  if (!reply_info->subsystem)
     {
-      /* This message ID is not in the table, and its number makes it
-	 what should be an RPC reply message ID.  So look up the message
-	 ID of the corresponding RPC request and synthesize a name from
-	 that.  Then stash that name in the table so the next time the
-	 lookup will match directly.  */
-      info = hurd_ihash_find (&msgid_ihash, msgid - 100);
-      if (info != 0)
-	{
-	  struct msgid_info *reply_info = malloc (sizeof *info);
-	  if (reply_info != 0)
-	    {
-	      int err;
-	      reply_info->subsystem = strdup (info->subsystem);
-	      reply_info->name = 0;
-	      err = asprintf (&reply_info->name, "%s-reply", info->name);
-	      if (err == -1)
-		/* asprintf may fail with ENOMEM, react the same way to malloc failing */
-		info = 0;
-	      else
-		{
-		  hurd_ihash_add (&msgid_ihash, msgid, reply_info);
-		  info = reply_info;
-		}
-	    }
-	  else
-	    info = 0;
-	}
+      free (reply_info);
+      return NULL;
     }
+
+  error_t err = asprintf (&reply_info->name, "%s-reply", info->name);
+  if (err == -1)
+    {
+      free (reply_info->subsystem);
+      free (reply_info);
+      return NULL;
+    }
+
+  hurd_ihash_add (&msgid_ihash, msgid, reply_info);
+  info = reply_info;
   return info;
 }
 

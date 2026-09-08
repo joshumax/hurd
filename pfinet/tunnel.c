@@ -176,6 +176,8 @@ setup_tunnel_device (char *name, struct device **device)
     base_name = name;
 
   dev->name = strdup (base_name);
+  if (!dev->name)
+    error (2, ENOMEM, "%s", name);
 
   dev->priv = tdev;
   dev->get_stats = tunnel_get_stats;
@@ -198,10 +200,19 @@ setup_tunnel_device (char *name, struct device **device)
   dev_init_buffers (dev);
 
   if (base_name != name)
-    tdev->devname = strdup (name);
+    {
+      tdev->devname = strdup (name);
+      if (!tdev->devname)
+	error (2, ENOMEM, "%s", name);
+    }
   else
-    /* Setting up the translator at /dev/tunX.  */
-    asprintf (&tdev->devname, "/dev/%s", tdev->dev.name);
+    {
+      /* Setting up the translator at /dev/tunX.  */
+      err = asprintf (&tdev->devname, "/dev/%s", tdev->dev.name);
+      if (err == -1)
+	error (2, ENOMEM, "/dev/%s", tdev->dev.name);
+    }
+
   tdev->underlying = file_name_lookup (tdev->devname, O_CREAT|O_NOTRANS, 0664);
 
   if (tdev->underlying == MACH_PORT_NULL)

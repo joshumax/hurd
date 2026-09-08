@@ -278,13 +278,28 @@ lookup_addrinfo (struct hostmux *mux, const char *host, struct addrinfo *he,
   struct hostmux_name *nm = malloc (sizeof (struct hostmux_name));
 
   if (! nm)
-    return ENOMEM;
+    return errno;
 
   nm->name = strdup (host);
+  if (! nm->name)
+    {
+      err = errno;
+      free_name (nm);
+      return err;
+    }
+
   if (!he || strcmp (host, he->ai_canonname) == 0)
     nm->canon = nm->name;
   else
-    nm->canon = strdup (he->ai_canonname);
+    {
+      nm->canon = strdup (he->ai_canonname);
+      if (! nm->canon)
+        {
+          err = errno;
+          free_name (nm);
+          return err;
+        }
+    }
 
   err = create_host_node (mux, nm, node);
   if (err)

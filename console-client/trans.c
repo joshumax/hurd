@@ -141,9 +141,13 @@ netfs_attempt_mksymlink (struct iouser *cred, struct node *np,
 {
   if (!np->nn->node)
     {
+      char *symlink_path = strdup (name);
+      if (!symlink_path)
+	return errno;
+
       if (np->nn->symlink_path)
 	free (np->nn->symlink_path);
-      np->nn->symlink_path = strdup (name);
+      np->nn->symlink_path = symlink_path;
       return 0;
     }
   else if (np->nn->node->mksymlink)

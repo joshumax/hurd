@@ -336,9 +336,16 @@ lookup_pwent (struct usermux *mux, const char *user, struct passwd *pw,
   struct usermux_name *nm = malloc (sizeof (struct usermux_name));
 
   if (! nm)
-    return ENOMEM;
+    return errno;
 
   nm->name = strdup (user);
+  if (! nm->name)
+    {
+      err = errno;
+      free_name (nm);
+      return err;
+    }
+
   err = create_user_node (mux, nm, pw, node);
   if (err)
     {

@@ -329,6 +329,14 @@ add_dev_map (const char *dev_name, const char *dev_file)
 
   map->device_name = strdup (dev_name);
   map->file_name = strdup (dev_file);
+  if (!map->device_name || !map->file_name)
+    {
+      free (map->device_name);
+      free (map->file_name);
+      free (map);
+      return NULL;
+    }
+
   map->next = dev_map_head;
   dev_map_head = map;
   return map;
@@ -706,7 +714,11 @@ main (int argc, char **argv, char **envp)
     if (bootscript)
       read_boot_script (&buf, &amt);
     else
-      buf = strdup (default_boot_script), amt = strlen (default_boot_script);
+      {
+	buf = strdup (default_boot_script);
+	assert_backtrace (buf);
+	amt = strlen (default_boot_script);
+      }
 
     line = p = buf;
     while (1)

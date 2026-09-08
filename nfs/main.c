@@ -261,13 +261,13 @@ netfs_append_args (char **argz, size_t *argz_len)
   if (! err)
     {
       char *fs;
-      if (asprintf (&fs, "%s:%s", host, remote_fs))
+      if (asprintf (&fs, "%s:%s", host, remote_fs) < 0)
+	return errno;
+      else
 	{
 	  err = argz_add (argz, argz_len, fs);
 	  free (fs);
 	}
-      else
-	err = ENOMEM;
     }
 
   return err;

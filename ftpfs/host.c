@@ -44,7 +44,7 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
     {
       *host = strdup (sep + 1);
       if (! *host)
-	return ENOMEM;
+	return errno;
       plim = sep - server;
     }
   else
@@ -55,7 +55,7 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
 	{
 	  *host = strndup (server, sep - server);
 	  if (! *host)
-	    return ENOMEM;
+	    return errno;
 	  p = sep + 1;
 	  plim = strlen (p);
 	}
@@ -64,7 +64,7 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
 	{
 	  *host = strdup (server);
 	  if (! *host)
-	    return ENOMEM;
+	    return errno;
 	  return 0;
 	}
     }
@@ -74,16 +74,22 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
   if (sep)
     /* USERNAME:PASSWD */
     {
+      error_t err;
       *user = strndup (p, sep - p);
-      *passwd = strndup (sep + 1, plim - (sep + 1 - p));
-      if (!*user || !*passwd)
+      if (! *user)
 	{
-	  if (*user)
-	    free (*user);
-	  if (*passwd)
-	    free (*passwd);
+	  err = errno;
 	  free (*host);
-	  return ENOMEM;
+	  return err;
+	}
+
+      *passwd = strndup (sep + 1, plim - (sep + 1 - p));
+      if (! *passwd)
+	{
+	  err = errno;
+	  free (*user);
+	  free (*host);
+	  return err;
 	}
     }
   else
@@ -91,7 +97,11 @@ split_server_name (const char *server, char **host, char **user, char **passwd)
     {
       *user = strndup (p, plim);
       if (! *user)
-	free (*user);
+	{
+	  error_t err = errno;
+	  free (*host);
+	  return err;
+	}
     }
 
   return 0;

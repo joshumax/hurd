@@ -158,7 +158,7 @@ get_credentials (void)
 
   uids = malloc (len * sizeof (uid_t));
   if (! uids)
-    return ENOMEM;
+    return errno;
 
   len_ = geteuids (len, uids);
   if (len_ != len)
@@ -172,7 +172,7 @@ get_credentials (void)
 
   gids = malloc (len * sizeof (gid_t));
   if (! gids)
-    return ENOMEM;
+    return errno;
 
   len_ = getgroups (len, gids);
   if (len_ != len)
@@ -294,7 +294,7 @@ mtab_add_entry (struct mtab *mtab, const char *entry, size_t length)
 {
   char *p = realloc (mtab->contents, mtab->contents_len + length + 1);
   if (! p)
-    return ENOMEM;
+    return errno;
 
   memcpy (&p[mtab->contents_len], entry, length);
 
@@ -380,7 +380,7 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
   argv = malloc ((count + 1) * sizeof (char *));
   if (! argv)
     {
-      err = ENOMEM;
+      err = errno;
       goto errout;
     }
 
@@ -389,7 +389,7 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
   type = strdup (argv[0]);
   if (! type)
     {
-      err = ENOMEM;
+      err = errno;
       goto errout;
     }
 
@@ -425,9 +425,9 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
 
   entry_len = asprintf (&entry, "%s %s %s %s 0 0\n", src, path, type,
 			options? options: MNTOPT_DEFAULTS);
-  if (! entry)
+  if (entry_len == -1)
     {
-      err = ENOMEM;
+      err = errno;
       goto errout;
     }
 
@@ -463,7 +463,7 @@ mtab_populate (struct mtab *mtab, const char *path, mach_port_t control,
 			c);
 	if (err == -1)
 	  {
-	    err = ENOMEM;
+	    err = errno;
 	    goto errout;
 	  }
 
@@ -537,7 +537,7 @@ argz_add_device (char **options, size_t *options_len, const char *device)
   char *arg = NULL;
   err = asprintf (&arg, "size=%s", device);
   if (err == -1)
-    return ENOMEM;
+    return errno;
 
   err = argz_add (options, options_len, arg);
 
@@ -582,7 +582,7 @@ map_device_to_path (const char *device, char **path)
       else
 	err = asprintf (path, "/dev/%s", &device[7]);
       if (err == -1)
-	return ENOMEM;
+	return errno;
     }
   else if (strncmp (device, "/dev/", 5) == 0)
     *path = strdup (device);
@@ -590,13 +590,13 @@ map_device_to_path (const char *device, char **path)
     {
       err = asprintf (path, "/dev/%s", device);
       if (err == -1)
-	return ENOMEM;
+	return errno;
     }
   else
     *path = strdup (device);
 
   if (! *path)
-    return ENOMEM;
+    return errno;
 
   return 0;
 }
@@ -631,7 +631,7 @@ open_hook (struct trivfs_peropen *peropen)
 {
   struct mtab *mtab = malloc (sizeof (struct mtab));
   if (mtab == NULL)
-    return ENOMEM;
+    return errno;
 
   /* Hook! */
   peropen->hook = mtab;
@@ -705,7 +705,7 @@ trivfs_S_io_read (struct trivfs_protid *cred,
 	  *data = mmap (0, amount, PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
 	  if (*data == MAP_FAILED)
 	    {
-	      err = ENOMEM;
+	      err = errno;
 	      goto out;
 	    }
 	}

@@ -92,6 +92,8 @@ setup_dummy_device (char *name, struct device **device)
   *device = dev = &ddev->dev;
 
   dev->name = strdup (name);
+  if (!dev->name)
+    error (2, ENOMEM, "%s", name);
 
   dev->priv = ddev;
   dev->get_stats = dummy_get_stats;

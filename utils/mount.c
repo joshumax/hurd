@@ -675,7 +675,11 @@ main (int argc, char **argv)
 	.mnt_freq = 0, .mnt_passno = 0
       };
       if (firmlink)
-        m.mnt_type = strdup ("firmlink");
+	{
+	  m.mnt_type = strdup ("firmlink");
+	  if (!m.mnt_type)
+	    error (2, errno, "Failed to allocate memory for m.mnt_type");
+	}
 
       err = fstab_add_mntent (fstab, &m, &fs);
       if (err)
@@ -694,7 +698,11 @@ main (int argc, char **argv)
 	.mnt_freq = 0, .mnt_passno = 0
       };
       if (firmlink)
-        m.mnt_type = strdup ("firmlink");
+	{
+	  m.mnt_type = strdup ("firmlink");
+	  if (!m.mnt_type)
+	    error (2, errno, "Failed to allocate memory for m.mnt_type");
+	}
 
       err = fstab_add_mntent (fstab, &m, &fs);
       if (err)

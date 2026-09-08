@@ -122,11 +122,18 @@ w_fetch (struct proc_stat *ps, ps_flags_t need, ps_flags_t have)
 	  ut_host[sizeof utmp->ut_host] = '\0';
 
 	  if (raw_hosts)
-	    hook->host = strdup (ut_host);
+	    {
+	      hook->host = strdup (ut_host);
+	      if (!hook->host)
+		return 0;
+	    }
 	  else
 	    {
 	      char *sd;
 	      hook->host = strdup (canon_host (ut_host) ?: ut_host);
+	      if (!hook->host)
+		return 0;
+
 	      sd = shared_domain (hook->host, localhost ());
 	      if (sd)
 		*sd = '\0';

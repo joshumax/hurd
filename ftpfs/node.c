@@ -42,20 +42,29 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
   error_t err;
 
   if (! nn)
-    return ENOMEM;
+    return errno;
 
   nn->fs = e->dir->fs;
   nn->dir_entry = e;
   nn->contents = 0;
   nn->dir = 0;
   nn->rmt_path = strdup (rmt_path);
+  if (! nn->rmt_path)
+    {
+      err = errno;
+      free (nn);
+      return err;
+    }
+
   nn->ncache_next = nn->ncache_prev = 0;
 
   new = netfs_make_node (nn);
   if (! new)
     {
+      err = errno;
+      free (nn->rmt_path);
       free (nn);
-      return ENOMEM;
+      return err;
     }
 
   fshelp_touch (&new->nn_stat, TOUCH_ATIME|TOUCH_MTIME|TOUCH_CTIME,
@@ -67,6 +76,7 @@ ftpfs_create_node (struct ftpfs_dir_entry *e, const char *rmt_path,
 
   if (err)
     {
+      free (nn->rmt_path);
       free (nn);
       free (new);
       return err;

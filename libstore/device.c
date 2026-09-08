@@ -131,6 +131,9 @@ dopen (const char *name, device_t *device, int *mod_flags)
   if ( (name[0] == '@') && (pos = strchr (name, ':')) )
     {
       master = strndup (name+1, pos-(name+1));
+      if (!master)
+	return errno;
+
       rest = pos+1;
 
       if (*mod_flags & STORE_HARD_READONLY)

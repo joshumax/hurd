@@ -118,8 +118,13 @@ parse_opt (int key, char *arg, struct argp_state *state)
         arg++;
 
       if (!remap_from)
-	/* First of a pair */
-	remap_from = strdup (arg);
+        {
+	  /* First of a pair */
+	  remap_from = strdup (arg);
+	  if (!remap_from)
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " remap_from");
+        }
       else
 	{
 	  /* Second of a pair */
@@ -129,6 +134,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
 					   " remap");
 	  remap->from = remap_from;
 	  remap->to = strdup (arg);
+	  if (!remap->to)
+	    argp_failure (state, 1, errno, "Failed to allocate memory for"
+					   " remap->to");
 	  remap->next = remaps;
 #ifdef DEBUG
 	  fprintf (stderr, "adding remap %s->%s\n", remap->from, remap->to);

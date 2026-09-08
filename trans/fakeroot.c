@@ -660,9 +660,10 @@ netfs_attempt_mkdev (struct iouser *cred, struct node *np,
   char *trans = 0;
   int translen = asprintf (&trans, "%s%c%d%c%d",
 			   S_ISCHR (type) ? _HURD_CHRDEV : _HURD_BLKDEV,
-			   '\0', gnu_dev_major (indexes), '\0', gnu_dev_minor (indexes));
-  if (trans == 0)
-    return ENOMEM;
+			   '\0', gnu_dev_major (indexes),
+			   '\0', gnu_dev_minor (indexes));
+  if (translen == -1)
+    return errno;
   else
     {
       error_t err = file_set_translator (netfs_node_netnode (np)->file,

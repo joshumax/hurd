@@ -71,6 +71,12 @@ lookup (struct ftpfs_dir *dir, const char *name, int add)
       if (e)
 	{
 	  e->name = strdup (name);
+	  if (!e->name)
+	    {
+	      free (e);
+	      return NULL;
+	    }
+
 	  e->node = 0;
 	  e->dir = dir;
 	  e->stat_timestamp = 0;
@@ -141,9 +147,9 @@ sweep (struct ftpfs_dir *dir)
 }
 
 /* Update the directory entry for NAME to reflect ST and SYMLINK_TARGET.
-   True is returned if successful, or false if there was a memory allocation
-   error.  TIMESTAMP is used to record the time of this update.  */
-static void
+   If successful, 0 is returned; if memory allocation fails, errno is
+   returned.  TIMESTAMP is used to record the time of this update.  */
+static error_t
 update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
 	      const char *symlink_target, time_t timestamp)
 {
@@ -166,9 +172,18 @@ update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
       if (!e->symlink_target || !symlink_target
 	  || strcmp (e->symlink_target, symlink_target) != 0)
 	{
+	  char *buf = NULL;
+
+	  if (symlink_target)
+	    {
+	      buf = strdup (symlink_target);
+	      if (!buf)
+		return errno;
+	    }
+
 	  if (e->symlink_target)
 	    free (e->symlink_target);
-	  e->symlink_target = symlink_target ? strdup (symlink_target) : 0;
+	  e->symlink_target = buf;
 	}
     }
 
@@ -176,6 +191,7 @@ update_entry (struct ftpfs_dir_entry *e, const struct stat *st,
   e->stat.st_ino = ino;
   e->stat.st_fsid = fs->fsid;
   e->stat.st_fstype = FSTYPE_FTP;
+  return 0;
 }
 
 /* Add the timestamp TIMESTAMP to the set used to detect bulk stats, and
@@ -242,9 +258,12 @@ update_ordered_entry (const char *name, const struct stat *st,
   struct ftpfs_dir_entry *e = lookup (dfs->dir, name, 1);
 
   if (! e)
-    return ENOMEM;
+    return errno;
 
-  update_entry (e, st, symlink_target, dfs->timestamp);
+  error_t err = update_entry (e, st, symlink_target, dfs->timestamp);
+  if (err)
+    return err;
+
   e->valid = 1;
 
   if (! e->ordered_self_p)
@@ -381,9 +400,7 @@ update_old_entry (const char *name, const struct stat *st,
   if (strcmp (name, res->entry->name) != 0)
     return EGRATUITOUS;
 
-  update_entry (res->entry, st, symlink_target, res->timestamp);
-
-  return 0;
+  return update_entry (res->entry, st, symlink_target, res->timestamp);
 }
 
 /* Refresh stat information for NODE.  This may actually refresh the whole
@@ -549,9 +566,12 @@ update_new_entry (const char *name, const struct stat *st,
 
   e = lookup (nes->dir, name, 1);
   if (! e)
-    return ENOMEM;
+    return errno;
 
-  update_entry (e, st, symlink_target, nes->timestamp);
+  error_t err = update_entry (e, st, symlink_target, nes->timestamp);
+  if (err)
+    return err;
+
   nes->entry = e;
 
   return 0;
@@ -633,7 +653,7 @@ ftpfs_dir_lookup (struct ftpfs_dir *dir, const char *name,
 		    {
 		      e = lookup (dir, name, 1);
 		      if (! e)
-			err = ENOMEM;
+			err = errno;
 		      else
 			{
 			  e->noent = 1;	/* A negative entry.  */
@@ -724,7 +744,7 @@ ftpfs_dir_null_lookup (struct ftpfs_dir *dir, struct node **node)
 
   e = lookup (dir, "", 1);
   if (! e)
-    return ENOMEM;
+    return errno;
 
   if (! e->noent)
     /* We've got a dir entry, get a node for it.  */
@@ -766,8 +786,9 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
 
   if (! new)
     {
+      error_t err = errno;
       free (new);
-      return ENOMEM;
+      return err;
     }
 
   netfs_nref (node);

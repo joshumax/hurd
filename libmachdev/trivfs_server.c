@@ -449,7 +449,12 @@ machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
   if (bootstrap_resume_task != MACH_PORT_NULL)
     {
       if (path)
-	devnode = strdup(path);
+	{
+	  devnode = strdup (path);
+	  if (!devnode)
+	    error (1, errno, "Failed to allocate memory for devnode");
+	}
+
       resume_bootstrap_server(bootstrap_resume_task, name);
 
       /* We need to install as a translator later */

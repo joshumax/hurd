@@ -57,14 +57,18 @@ ftp_conn_basename (struct ftp_conn *conn, const char *composite, char **base)
       char *in = strdup (composite), *out = in;
 
       if (! in)
-	return ENOMEM;
+	return errno;
 
       err = (*conn->syshooks.basename) (conn, &out);
       if (err || out != in)
 	{
 	  if (!err && out >= in && out < in + in_size)
-	    /* OUT uses storage from IN, but not at the beginning.  */
-	    out = strdup (out);
+	    {
+	      /* OUT uses storage from IN, but not at the beginning.  */
+	      out = strdup (out);
+	      if (! out)
+		err = errno;
+	    }
 	  free (in);
 	}
 

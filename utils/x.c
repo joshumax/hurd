@@ -153,8 +153,12 @@ void verify_passwd (const char *name, const char *password,
     return;			/* Already got this one.  */
 
   if (name)
-    asprintf (&prompt, "Password for %s%s:",
-	      is_group ? "group " : "", name);
+    {
+      error_t err = asprintf (&prompt, "Password for %s%s:",
+			      is_group ? "group " : "", name);
+      if (err == -1)
+	error (50, errno, "Failed to allocate memory for prompt");
+    }
   else
     prompt = "Password:";
 

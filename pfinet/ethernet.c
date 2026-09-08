@@ -336,13 +336,15 @@ setup_ethernet_device (char *name, struct device **device)
 
   edev = calloc (1, sizeof (struct ether_device));
   if (!edev)
-    error (2, ENOMEM, "%s", name);
+    error (2, errno, "%s", name);
   edev->next = ether_dev;
   ether_dev = edev;
 
   *device = dev = &edev->dev;
 
   dev->name = strdup (name);
+  if (!dev->name)
+    error (2, errno, "%s", name);
   /* Functions.  These ones are the true "hardware layer" in Linux.  */
   dev->open = 0;		/* We set up before calling dev_open.  */
   dev->stop = ethernet_stop;

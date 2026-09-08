@@ -778,6 +778,9 @@ main(int argc, char *argv[])
 
       /* If we get here, we looked up the default shell ok.  */
       shell = strdup (backup);
+      if (!shell)
+	error (1, errno, "Failed to allocate memory for shell");
+
       error (0, 0, "Using SHELL=%s", shell);
       envz_add (&args, &args_len, "SHELL", shell);
       err = 0;			/* Don't emit random err msgs later!  */
