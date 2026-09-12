@@ -74,9 +74,13 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 
 	if (! err)
 	  {
-	    err = idvec_merge_ids (cache, gids, ngids);
-	    if (gids != _gids)
-	      free (gids);
+	    err = idvec_add_new (cache, pw->pw_gid);
+	    if (!err)
+	      {
+		err = idvec_merge_ids (cache, gids, ngids);
+		if (gids != _gids)
+		  free (gids);
+	      }
 	  }
 
 	if (! err)
