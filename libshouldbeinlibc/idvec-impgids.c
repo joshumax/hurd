@@ -74,6 +74,7 @@ _merge_implied_gids (struct idvec *implied_gids, uid_t uid)
 
 	if (! err)
 	  {
+	    /* Make sure pw_gid is first in the merged list.  */
 	    err = idvec_add_new (cache, pw->pw_gid);
 	    if (!err)
 	      {
