@@ -154,6 +154,7 @@ diskfs_create_node (struct node *dir,
 	    diskfs_clear_directory (np, dir, cred);
 	  np->dn_stat.st_nlink = 0;
 	  np->dn_set_ctime = 1;
+	  diskfs_orphan_add (np);
           diskfs_node_update (np, diskfs_synchronous);
 	  diskfs_nput (np);
 	}

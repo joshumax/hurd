@@ -182,6 +182,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
       if (!err)
 	{
 	  tnp->dn_stat.st_nlink--;
+	  if (tnp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (tnp);
 	  tnp->dn_set_ctime = 1;
 	  diskfs_node_update (tnp, diskfs_synchronous);
 	}
@@ -197,7 +199,12 @@ diskfs_S_dir_rename (struct protid *fromcred,
   if (err)
     {
       if (fnp->dn_stat.st_nlink > 0)
-	fnp->dn_stat.st_nlink--;
+        {
+	  fnp->dn_stat.st_nlink--;
+	  if (fnp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (fnp);
+        }
+
       fnp->dn_set_ctime = 1;
       diskfs_node_update (fnp, diskfs_synchronous);
       pthread_mutex_unlock (&fnp->lock);
@@ -240,6 +247,8 @@ diskfs_S_dir_rename (struct protid *fromcred,
   diskfs_node_update (fdp, diskfs_synchronous);
 
   fnp->dn_stat.st_nlink--;
+  if (fnp->dn_stat.st_nlink == 0)
+    diskfs_orphan_add (fnp);
   fnp->dn_set_ctime = 1;
 
   diskfs_node_update (fnp, diskfs_synchronous);

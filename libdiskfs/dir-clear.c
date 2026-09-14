@@ -48,6 +48,8 @@ diskfs_clear_directory (struct node *dp,
   
   /* Decrement the link count */
   dp->dn_stat.st_nlink--;
+  if (dp->dn_stat.st_nlink == 0)
+    diskfs_orphan_add (dp);
   dp->dn_set_ctime = 1;
 
   /* Find and remove the `..' entry. */
@@ -65,6 +67,8 @@ diskfs_clear_directory (struct node *dp,
 
   /* Decrement the link count on the parent */
   pdp->dn_stat.st_nlink--;
+  if (pdp->dn_stat.st_nlink == 0)
+    diskfs_orphan_add (pdp);
   pdp->dn_set_ctime = 1;
 
   diskfs_truncate (dp, 0);

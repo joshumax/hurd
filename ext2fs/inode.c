@@ -62,6 +62,9 @@ diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
   dn->dirents = 0;
   dn->dir_idx = 0;
   dn->pager = 0;
+  dn->on_orphan_list = 0;
+  dn->orphan_prev = NULL;
+  dn->orphan_next = NULL;
   pthread_rwlock_init (&dn->alloc_lock, NULL);
   pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_cache);
 
@@ -74,6 +77,7 @@ diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
 void
 diskfs_node_norefs (struct node *np)
 {
+  ext2_orphan_drop_ram_link (np);
   if (diskfs_node_disknode (np)->dirents)
     free (diskfs_node_disknode (np)->dirents);
   assert_backtrace (!diskfs_node_disknode (np)->pager);
@@ -488,27 +492,31 @@ write_node (struct node *np)
 	info->i_flags |= EXT2_IMMUTABLE_FL;
       di->i_flags = htole32 (info->i_flags);
 
-      if (st->st_mode == 0)
-	/* Set dtime non-zero to indicate a deleted file.
-	   We don't clear i_size, i_blocks, and i_translator in this case,
-	   to give "undeletion" utilities a chance.  */
-	di->i_dtime = htole32 (di->i_mtime);
-      else
+      /* The i_dtime and other fields here are used by the orphan machinery
+	 so we don't need to touch them here if a node is an orphan.  */
+      if (!diskfs_node_disknode (np)->on_orphan_list)
 	{
-	  di->i_dtime = htole32 (0);
-	  di->i_size = htole32 (st->st_size);
-	  if (sizeof (off_t) >= 8 && !S_ISDIR (st->st_mode))
-	    /* 64bit file size */
-	    di->i_size_high = htole32 (st->st_size >> 32);
-	  di->i_blocks = htole32 (st->st_blocks);
+	  if (st->st_mode == 0)
+	    /* Set dtime non-zero to indicate a deleted file. */
+	    di->i_dtime = htole32 (di->i_mtime);
+	  else
+            {
+              /* We don't clear i_size, i_blocks, and i_translator if mode is 0,
+               to give "undeletion" utilities a chance.  */
+              di->i_dtime = htole32 (0);
+              di->i_size = htole32 (st->st_size);
+              if (sizeof (off_t) >= 8 && !S_ISDIR (st->st_mode))
+                /* 64bit file size */
+                di->i_size_high = htole32 (st->st_size >> 32);
+              di->i_blocks = htole32 (st->st_blocks);
+            }
+
+          if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+            di->i_block[0] = htole32 (st->st_rdev);
+          else
+            memcpy (di->i_block, diskfs_node_disknode (np)->info.i_data,
+                    EXT2_N_BLOCKS * sizeof di->i_block[0]);
 	}
-
-      if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
-	di->i_block[0] = htole32 (st->st_rdev);
-      else
-	memcpy (di->i_block, diskfs_node_disknode (np)->info.i_data,
-		EXT2_N_BLOCKS * sizeof di->i_block[0]);
-
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
 

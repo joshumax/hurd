@@ -121,6 +121,8 @@ diskfs_S_dir_link (struct protid *dircred,
 	{
 	  /* Deallocate link on TNP */
 	  tnp->dn_stat.st_nlink--;
+	  if (tnp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (tnp);
 	  tnp->dn_set_ctime = 1;
 	  diskfs_node_update (tnp, diskfs_synchronous);
 	}
@@ -132,6 +134,8 @@ diskfs_S_dir_link (struct protid *dircred,
   if (err)
     {
       np->dn_stat.st_nlink--;
+      if (np->dn_stat.st_nlink == 0)
+        diskfs_orphan_add (np);
       np->dn_set_ctime = 1;
       diskfs_node_update (np, diskfs_synchronous);
     }

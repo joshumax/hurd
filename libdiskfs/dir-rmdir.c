@@ -90,6 +90,8 @@ diskfs_S_dir_rmdir (struct protid *dircred,
   if (!error)
     {
       np->dn_stat.st_nlink--;
+      if (np->dn_stat.st_nlink == 0)
+        diskfs_orphan_add (np);
       np->dn_set_ctime = 1;
       diskfs_clear_directory (np, dnp, dircred);
       diskfs_file_update (np, diskfs_synchronous);

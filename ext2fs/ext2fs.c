@@ -278,6 +278,11 @@ main (int argc, char **argv)
       JRNL_LOG_DEBUG ("\n[JOURNAL CHECK] No Journal flag found.");
     }
 
+  /* Recover unlinked but open inodes left from a previous shutdown.
+     It won't run unless readonly flag is false. So not for the root
+     filesystem and not for the unclean translator.  */
+  ext2_recover_orphan_list ();
+
   /* Now that we are all set up to handle requests, and diskfs_root_node is
      set properly, it is safe to export our fsys control port to the
      outside world.  */

@@ -79,6 +79,8 @@ diskfs_S_dir_unlink (struct protid *dircred,
 
   np->dn_stat.st_nlink--;
   np->dn_set_ctime = 1;
+  if (np->dn_stat.st_nlink == 0)
+    diskfs_orphan_add (np);
   diskfs_node_update (np,  diskfs_synchronous);
 
   if (np->dn_stat.st_nlink == 0)

@@ -40,10 +40,6 @@ diskfs_drop_node (struct node *np)
   mode_t savemode;
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
-  /* XXX: if the filesystem is readonly, we cannot remove the files with no link
-     but e.g. memory mapping still in memory.  This notably happens when
-     upgrading packages without restarting the corresponding processes.  Fsck
-     will have to fix them.  */
   if (np->dn_stat.st_nlink == 0 && !diskfs_readonly)
     {
       diskfs_check_readonly ();
@@ -84,10 +80,14 @@ diskfs_drop_node (struct node *np)
       np->dn_stat.st_mode = 0;
       np->dn_stat.st_rdev = 0;
       np->dn_set_ctime = np->dn_set_atime = 1;
+      diskfs_orphan_del (np);
       diskfs_node_update (np, diskfs_synchronous);
       diskfs_free_node (np, savemode);
     }
   else
+    /* Here we don't remove the node from the orphan list
+       so that on the next restart, the file system has the
+       opportunity to deal with it before fsck. */
     diskfs_node_update (np,  diskfs_synchronous);
 
   fshelp_drop_transbox (&np->transbox);

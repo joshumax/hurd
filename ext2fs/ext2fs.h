@@ -179,6 +179,13 @@ struct disknode
      partially allocated.  */
   int last_page_partially_writable;
 
+  /* True if this inode is on the ext3 orphan list (nlink=0 but still
+     open).  The i_dtime field is used as the next pointer on disk.  */
+  int on_orphan_list;
+  /* Prev and next pointers in an in-memory doubly linked list of orphans. */
+  struct node *orphan_prev;
+  struct node *orphan_next;
+
   /* Index to start a directory lookup at.  */
   int dir_idx;
 };
@@ -346,6 +353,8 @@ error_t
 journal_dirty_block (diskfs_transaction_t * txn, block_t fs_blocknr);
 
 void journal_notify_block_changed (block_t block);
+
+void ext2_orphan_drop_ram_link (struct node *np);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
@@ -490,6 +499,9 @@ _dino_deref (struct ext2_inode *inode)
 
 /* Write all active disknodes into the inode pager. */
 void write_all_disknodes (void);
+
+/* Recover (clean up) the orphan inode list at mount time. */
+void ext2_recover_orphan_list (void);
 
 /* ---------------------------------------------------------------- */
 

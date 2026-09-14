@@ -585,6 +585,20 @@ int diskfs_journal_needs_sync (diskfs_transaction_t *txn);
    The default definition does nothing.  */
 void diskfs_journal_shutdown (void);
 
+/* Orphan Inode List hooks.
+   These are called by libdiskfs when a file is unlinked (nlink drops to
+   0) but still held open, and when the inode is finally freed.
+   Filesystems with an ext3-style Orphan List (e.g. ext2fs) should
+   override the weak default implementations. */
+
+/* Add inode NP to the orphan list.  Called when nlink drops to 0 while
+   the node is still held open (has hard references).  NP must be locked. */
+void diskfs_orphan_add (struct node *np);
+
+/* Remove inode NP from the orphan list.  Called when the inode is about
+   to be permanently freed in diskfs_drop_node.  NP must be locked. */
+void diskfs_orphan_del (struct node *np);
+
 /* The user must define this function.  Sync the info in NP->dn_stat
    and any associated format-specific information to disk.  If WAIT is true,
    then return only after the physicial media has been completely updated. */

@@ -51,6 +51,8 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
   if (err)
     {
       dp->dn_stat.st_nlink--;
+      if (dp->dn_stat.st_nlink == 0)
+        diskfs_orphan_add (dp);
       dp->dn_set_ctime = 1;
       diskfs_node_update (dp, diskfs_synchronous);
 
@@ -67,10 +69,14 @@ diskfs_init_dir (struct node *dp, struct node *pdp, struct protid *cred)
     {
       /* ROLLBACK '.' on Parent */
       pdp->dn_stat.st_nlink--;
+      if (pdp->dn_stat.st_nlink == 0)
+        diskfs_orphan_add (pdp);
       pdp->dn_set_ctime = 1;
       diskfs_node_update (pdp, diskfs_synchronous);
       /* CLEANUP '.' on Child */
       dp->dn_stat.st_nlink--;
+      if (dp->dn_stat.st_nlink == 0)
+        diskfs_orphan_add (dp);
       dp->dn_set_ctime = 1;
       diskfs_node_update (dp, diskfs_synchronous);
       return err;

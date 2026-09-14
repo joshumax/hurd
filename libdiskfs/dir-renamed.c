@@ -164,6 +164,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	{
 	  assert_backtrace (tdp->dn_stat.st_nlink > 0);
 	  tdp->dn_stat.st_nlink--;
+	  if (tdp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (tdp);
 	  tdp->dn_set_ctime = 1;
           diskfs_node_update (tdp, diskfs_synchronous);
 	  diskfs_drop_dirstat (fnp, tmpds);
@@ -177,6 +179,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	{
 	  assert_backtrace (tdp->dn_stat.st_nlink > 0);
 	  tdp->dn_stat.st_nlink--;
+	  if (tdp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (tdp);
 	  tdp->dn_set_ctime = 1;
           diskfs_node_update (tdp, diskfs_synchronous);
 
@@ -184,6 +188,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
 	}
 
       fdp->dn_stat.st_nlink--;
+      if (fdp->dn_stat.st_nlink == 0)
+	diskfs_orphan_add (fdp);
+
       fdp->dn_set_ctime = 1;
       diskfs_node_update (fdp, diskfs_synchronous);
     }
@@ -212,6 +219,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       if (!err)
 	{
 	  tnp->dn_stat.st_nlink--;
+	  if (tnp->dn_stat.st_nlink == 0)
+	    diskfs_orphan_add (tnp);
 	  tnp->dn_set_ctime = 1;
 	}
       diskfs_clear_directory (tnp, tdp, tocred);
@@ -227,6 +236,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
     {
       assert_backtrace (fnp->dn_stat.st_nlink > 0);
       fnp->dn_stat.st_nlink--;
+      if (fnp->dn_stat.st_nlink == 0)
+	diskfs_orphan_add (fnp);
       fnp->dn_set_ctime = 1;
       /* fnp is locked, so this is safe */
       diskfs_node_update (fnp, diskfs_synchronous);
@@ -251,6 +262,8 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   diskfs_dirremove (fdp, fnp, fromname, ds);
   ds = 0;
   fnp->dn_stat.st_nlink--;
+  if (fnp->dn_stat.st_nlink == 0)
+    diskfs_orphan_add (fnp);
   fnp->dn_set_ctime = 1;
   diskfs_file_update (fdp, diskfs_synchronous);
   diskfs_node_update (fnp, diskfs_synchronous);
