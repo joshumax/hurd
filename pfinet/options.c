@@ -149,7 +149,7 @@ parse_interface_copy_device(struct device *src,
        * if it belongs to it.
        */
       struct rt6_info *rt6i = ipv6_get_dflt_router();
-      if (rt6i->rt6i_dev == src)
+      if (rt6i && rt6i->rt6i_dev == src)
 	memcpy (&dst->gateway6, &rt6i->rt6i_gateway, sizeof (struct in6_addr));
 
       /* Search for global address and set it in dst */
@@ -201,7 +201,7 @@ ipv6_get_dflt_router (void)
 
   struct fib6_node *fib = fib6_lookup
     (&ip6_routing_table, &daddr, NULL);
-  return fib->leaf;
+  return fib ? fib->leaf : NULL;
 }
 #endif /* CONFIG_IPV6 */
 
@@ -536,13 +536,13 @@ parse_opt (int opt, char *arg, struct argp_state *state)
 	{
 	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
 
-	  if (!gw6_in || rt6i->rt6i_dev != gw6_in->device
+	  if (!gw6_in || !rt6i || rt6i->rt6i_dev != gw6_in->device
 	      || !IN6_ARE_ADDR_EQUAL (&rt6i->rt6i_gateway, &gw6_in->gateway6))
 	    {
 	      /* Delete any existing default route on configured devices  */
 	      for (in = h->interfaces; in < h->interfaces
 		   + h->num_interfaces; in++)
-		if (rt6i->rt6i_dev == in->device || gw6_in )
+		if ((rt6i && rt6i->rt6i_dev == in->device) || gw6_in )
 		  rt6_purge_dflt_routers (0);
 
 	      if (gw6_in)
@@ -647,7 +647,7 @@ trivfs_append_args (struct trivfs_control *fsys, char **argz, size_t *argz_len)
 
 	  /* Last not least push --gateway6 option. */
 	  struct rt6_info *rt6i = ipv6_get_dflt_router ();
-	  if(rt6i->rt6i_dev == dev) 
+	  if (rt6i && rt6i->rt6i_dev == dev)
 	    {
 	      inet_ntop (AF_INET6, &rt6i->rt6i_gateway, addr_buf,
 			 INET6_ADDRSTRLEN);
