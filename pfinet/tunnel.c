@@ -388,9 +388,9 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   tdev = (struct tunnel_device *) cred->po->cntl->hook;
 
+  pthread_mutex_lock (&net_bh_lock);
   pthread_mutex_lock (&tdev->lock);
 
-  pthread_mutex_lock (&net_bh_lock);
   skb = alloc_skb (NET_IP_ALIGN + datalen, GFP_ATOMIC);
   skb_reserve(skb, NET_IP_ALIGN);
   skb->len = datalen;
@@ -402,11 +402,12 @@ trivfs_S_io_write (struct trivfs_protid *cred,
   skb->mac.raw = skb->data;
   skb->protocol = htons (ETH_P_IP);
   netif_rx (skb);
+
+  pthread_mutex_unlock (&tdev->lock);
   pthread_mutex_unlock (&net_bh_lock);
 
   *amount = datalen;
 
-  pthread_mutex_unlock (&tdev->lock);
   return 0;
 }
 
