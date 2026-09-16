@@ -33,18 +33,18 @@ _ports_complete_deallocate (struct port_info *pi)
 
       pthread_rwlock_wrlock (&_ports_htable_lock);
       refcounts_references (&pi->refcounts, &result);
-      if (result.hard > 0 || result.weak > 0)
+      if (result.hard > 0 || result.weak > 1)
         {
           /* A reference was reacquired through a hash table lookup.
-             It's fine, we didn't touch anything yet. */
-          /* XXX: This really shouldn't happen.  */
-          assert_backtrace (! "reacquired reference w/o send rights");
+             It's fine, we didn't touch anything yet.  */
           pthread_rwlock_unlock (&_ports_htable_lock);
           return;
         }
 
       hurd_ihash_locp_remove (&_ports_htable, pi->ports_htable_entry);
       hurd_ihash_locp_remove (&pi->bucket->htable, pi->hentry);
+      /* Drop the reference held by the hash tables.  */
+      refcounts_deref_weak (&pi->refcounts, &result);
       pthread_rwlock_unlock (&_ports_htable_lock);
 
       mach_port_mod_refs (mach_task_self (), pi->port_right,

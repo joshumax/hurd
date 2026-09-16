@@ -492,8 +492,8 @@ extern pthread_cond_t _ports_block;
 /* A global hash table mapping port names to port_info objects.  This
    table is used for port lookups and to iterate over classes.
 
-   A port in this hash table carries an implicit light reference.
-   When the reference counts reach zero, we call
+   A port in this hash table carries a weak reference.
+   When all the other references are dropped, we call
    _ports_complete_deallocate.  There we reacquire our lock
    momentarily to check whether someone else reacquired a reference
    through the hash table.  */

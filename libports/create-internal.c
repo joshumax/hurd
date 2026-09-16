@@ -54,7 +54,8 @@ _ports_create_port_internal (struct port_class *class,
     }
 
   pi->class = class;
-  refcounts_init (&pi->refcounts, 1, 0);
+  /* The hash tables hold a weak reference to the port.  */
+  refcounts_init (&pi->refcounts, 1, 1);
   pi->cancel_threshold = 0;
   pi->mscount = 0;
   pi->flags = 0;

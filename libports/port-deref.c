@@ -43,6 +43,8 @@ ports_port_deref (void *portstruct)
   else
     refcounts_deref (&pi->refcounts, &result);
 
-  if (result.hard == 0 && result.weak == 0)
+  if (result.hard == 0 && result.weak == 1)
+    /* Only the reference held by the hash tables is left, try to
+       complete the deallocation.  */
     _ports_complete_deallocate (pi);
 }
