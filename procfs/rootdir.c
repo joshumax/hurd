@@ -224,7 +224,9 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
 {
   struct timeval boottime, time, idletime;
   struct vm_statistics vmstats;
-  unsigned long up_ticks, idle_ticks;
+  unsigned long up_ticks;
+  unsigned long *idle_ticks;
+  unsigned long long total_idle;
   int i;
   FILE *m;
   host_basic_info_t basic;
@@ -242,13 +244,27 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
   if (err)
     return err;
 
-  err = get_idletime (hook, &idletime, 0);
-  if (err)
-    return err;
-
   err = vm_statistics (mach_task_self (), &vmstats);
   if (err)
     return EIO;
+
+  idle_ticks = malloc (basic->avail_cpus * sizeof *idle_ticks);
+  if (idle_ticks == NULL)
+    return ENOMEM;
+
+  total_idle = 0;
+  for (i = 0; i < basic->avail_cpus; i++)
+    {
+      err = get_idletime (hook, &idletime, i);
+      if (err)
+        {
+          free (idle_ticks);
+          return err;
+        }
+
+      idle_ticks[i] = opt_clk_tck * (idletime.tv_sec * 1000000. + idletime.tv_usec) / 1000000.;
+      total_idle += idle_ticks[i];
+    }
 
   m = open_memstream (contents, (size_t *) contents_len);
   if (m == NULL)
@@ -259,22 +275,16 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
 
   timersub (&time, &boottime, &time);
   up_ticks = opt_clk_tck * (time.tv_sec * 1000000. + time.tv_usec) / 1000000.;
-  idle_ticks = opt_clk_tck * (idletime.tv_sec * 1000000. + idletime.tv_usec) / 1000000.;
 
   fprintf (m,
-      "cpu  %lu 0 0 %lu 0 0 0 0 0\n"
-      "cpu0 %lu 0 0 %lu 0 0 0 0 0\n",
-      up_ticks - idle_ticks, idle_ticks,
-      up_ticks - idle_ticks, idle_ticks);
+      "cpu  %llu 0 0 %llu 0 0 0 0 0\n",
+      (unsigned long long) basic->avail_cpus * up_ticks - total_idle,
+      total_idle);
 
-  for (i = 1; i < basic->avail_cpus; i++)
-    {
-      err = get_idletime (hook, &idletime, i);
-      idle_ticks = opt_clk_tck * (idletime.tv_sec * 1000000. + idletime.tv_usec) / 1000000.;
-      fprintf (m,
-          "cpu%d %lu 0 0 %lu 0 0 0 0 0\n",
-          i, up_ticks - idle_ticks, idle_ticks);
-    }
+  for (i = 0; i < basic->avail_cpus; i++)
+    fprintf (m,
+        "cpu%d %lu 0 0 %lu 0 0 0 0 0\n",
+        i, up_ticks - idle_ticks[i], idle_ticks[i]);
 
   fprintf (m,
       "intr 0\n"
@@ -284,6 +294,7 @@ rootdir_gc_stat (void *hook, char **contents, ssize_t *contents_len)
       boottime.tv_sec);
 
  out:
+  free (idle_ticks);
   if (m)
     fclose (m);
   return err;
