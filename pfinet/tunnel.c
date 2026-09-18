@@ -393,14 +393,14 @@ trivfs_S_io_write (struct trivfs_protid *cred,
 
   skb = alloc_skb (NET_IP_ALIGN + datalen, GFP_ATOMIC);
   skb_reserve(skb, NET_IP_ALIGN);
-  skb->len = datalen;
   skb->dev = &tdev->dev;
 
-  memcpy (skb->data, data, datalen);
+  memcpy (skb_put (skb, datalen), data, datalen);
 
   /* Drop it on the queue. */
   skb->mac.raw = skb->data;
-  skb->protocol = htons (ETH_P_IP);
+  skb->protocol = htons (datalen > 0 && (data[0] >> 4) == 6
+			 ? ETH_P_IPV6 : ETH_P_IP);
   netif_rx (skb);
 
   pthread_mutex_unlock (&tdev->lock);
