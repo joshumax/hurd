@@ -96,6 +96,9 @@ st() {
     esac
   fi
   if cmd settrans $STFLAGS -c "$NODE"; then
+    if [ ! -e /etc/passwd ] && [ "$OWNER" = root ]; then
+      OWNER=0:0
+    fi
     cmd chown "$OWNER" "$NODE"
     cmd chmod "$PERM" "$NODE"
     cmd settrans $STFLAGS "$NODE" "$@"
