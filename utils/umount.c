@@ -32,6 +32,10 @@
 #include "match-options.h"
 #include "../sutils/fstab.h"
 
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (umount);
+
 static char *targets;
 static size_t targets_len;
 static int readonly;

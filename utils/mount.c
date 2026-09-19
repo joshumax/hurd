@@ -31,6 +31,9 @@
 #ifdef HAVE_BLKID
 #include <blkid/blkid.h>
 #endif
+#include <version.h>
+
+const char *argp_program_version = STANDARD_HURD_VERSION (mount);
 
 #include "match-options.h"
 
