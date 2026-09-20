@@ -290,11 +290,17 @@ netfs_attempt_lookup (struct iouser *user, struct node *dir,
 	    nn = calloc (1, sizeof *nn);
 	    if (nn == NULL)
 	      {
-		err = ENOMEM;
+		err = errno;
 		goto out;
 	      }
 
 	    *node = netfs_make_node (nn);
+	    if (*node == NULL)
+	      {
+		err = errno;
+		free (nn);
+		goto out;
+	      }
 
 	    nn->node = cn;
 	    (*node)->nn_stat = netfs_root_node->nn_stat;
@@ -491,9 +497,16 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 
   nn = calloc (1, sizeof (*nn));
   if (!nn)
-    return ENOMEM;
+    return errno;
 
   *np = netfs_make_node (nn);
+  if (!*np)
+    {
+      err = errno;
+      free (nn);
+      return err;
+    }
+
   pthread_mutex_lock (&(*np)->lock);
 
   return 0;
@@ -809,13 +822,14 @@ console_create_consnode (const char *name, consnode_t *cn)
 
   *cn = malloc (sizeof (struct consnode));
   if (!*cn)
-    return ENOMEM;
+    return errno;
 
   (*cn)->name = strdup (name);
   if (!(*cn)->name)
     {
+      error_t err = errno;
       free (*cn);
-      return ENOMEM;
+      return err;
     }
 
   (*cn)->id = cn_id++;
@@ -887,7 +901,7 @@ console_setup_node (char *path)
   /* Create the root node (some attributes initialized below).  */
   netfs_root_node = netfs_make_node (0);
   if (! netfs_root_node)
-    error (1, ENOMEM, "Cannot create root node");
+    error (1, errno, "Cannot create root node");
 
   err = maptime_map (0, 0, &console_maptime);
   if (err)
