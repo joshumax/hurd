@@ -39,6 +39,7 @@ static struct argp_option options[] =
   {"silent",    's', 0, 0, "No output; useful when checking error status"},
   {"quiet",     'q', 0, OPTION_ALIAS | OPTION_HIDDEN},
   {"translated",'t', 0, 0, "Only display files that have translators"},
+  {"zero",      'z', 0, 0, "Output raw zero bytes in translator argv"},
   {0, 0}
 };
 
@@ -55,7 +56,7 @@ main (int argc, char *argv[])
   /* The default exit status -- changed to 0 if we find any translators.  */
   int status = 1;
   /* Some option flags.  -1 for PRINT_PREFIX means use the default.  */
-  int print_prefix = -1, silent = 0, show_untrans = 1;
+  int print_prefix = -1, silent = 0, show_untrans = 1, print_zeroes = 0;
 
   /* If NODE is MACH_PORT_NULL, prints an error message and exits, otherwise
      prints the translator on NODE, possibly prefixed by `NAME:', and
@@ -74,14 +75,27 @@ main (int argc, char *argv[])
 	    {
 	    case 0:
 	      /* Make the '\0's in TRANS printable.  */
-	      argz_stringify (trans, trans_len, ' ');
+	      if (!print_zeroes)
+		argz_stringify (trans, trans_len, ' ');
 
 	      if (!silent)
 		{
-		  if (print_prefix)
-		    printf ("%s: %.*s\n", name, (int) trans_len, trans);
-		  else
-		    printf ("%.*s\n", (int) trans_len, trans);
+		  if (print_prefix) {
+		    if (!print_zeroes)
+		      printf ("%s: %.*s\n", name, (int) trans_len, trans);
+		    else {
+		      printf ("%s: ", name);
+		      fwrite(trans, trans_len, 1, stdout);
+		      fputc('\n', stdout);
+		    }
+		  } else {
+		    if (!print_zeroes)
+		      printf ("%.*s\n", (int) trans_len, trans);
+		    else {
+		      fwrite(trans, trans_len, 1, stdout);
+		      fputc('\n', stdout);
+		    }
+		  }
 		}
 
 	      if (trans != buf)
@@ -126,6 +140,7 @@ main (int argc, char *argv[])
 	case 'P': print_prefix = 0; break;
 	case 's': case 'q': silent = 1; break;
 	case 't': show_untrans = 0; break;
+	case 'z': print_zeroes = 1; break;
 
 	case ARGP_KEY_NO_ARGS:
 	  argp_usage (state);	/* exits */
