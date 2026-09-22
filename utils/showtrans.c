@@ -80,22 +80,16 @@ main (int argc, char *argv[])
 
 	      if (!silent)
 		{
-		  if (print_prefix) {
-		    if (!print_zeroes)
-		      printf ("%s: %.*s\n", name, (int) trans_len, trans);
-		    else {
-		      printf ("%s: ", name);
+		  if (print_prefix)
+		    printf ("%s: ", name);
+
+		  if (!print_zeroes)
+		    printf ("%.*s\n", (int) trans_len, trans);
+		  else
+		    {
 		      fwrite(trans, trans_len, 1, stdout);
 		      fputc('\n', stdout);
 		    }
-		  } else {
-		    if (!print_zeroes)
-		      printf ("%.*s\n", (int) trans_len, trans);
-		    else {
-		      fwrite(trans, trans_len, 1, stdout);
-		      fputc('\n', stdout);
-		    }
-		  }
 		}
 
 	      if (trans != buf)
