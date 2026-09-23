@@ -636,14 +636,18 @@ net_set_filter(if_filter_list_t *ifp, mach_port_t rcv_port, int priority,
 
 	/* Check the filter syntax. */
 
+	/* Reject filters which are zero or overflow */
+        if (filter_count == 0 || filter_count > NET_MAX_FILTER) {
+	  debug ("invalid filter_count: %d\n", filter_count);
+	  return (D_INVALID_OPERATION);
+	}
+
 	debug ("filter_count: %d, filter[0]: %d\n", filter_count, filter[0]);
 
 	filter_bytes = CSPF_BYTES (filter_count);
 	match = (bpf_insn_t) 0;
 
-	if (filter_count == 0) {
-		return (D_INVALID_OPERATION);
-	} else if (!((filter[0] & NETF_IN) || (filter[0] & NETF_OUT))) {
+	if (!((filter[0] & NETF_IN) || (filter[0] & NETF_OUT))) {
 		return (D_INVALID_OPERATION); /* NETF_IN or NETF_OUT required */
 	} else if ((filter[0] & NETF_TYPE_MASK) == NETF_BPF) {
 		ret = bpf_validate((bpf_insn_t)filter, filter_bytes, &match);
