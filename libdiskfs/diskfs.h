@@ -547,8 +547,9 @@ diskfs_transaction_t *diskfs_journal_start_transaction (void);
    underlying journal to batch operations for performance.
 
    However, if any participant flagged the transaction for a synchronous commit
-   (e.g., via diskfs_journal_set_sync), the journal will automatically commit
-   and flush the transaction to disk once the final participant stops.
+   (e.g., via diskfs_journal_set_sync), or in other situations the journal
+   reserves the right to commit and flush the transaction to disk once the
+   conditions have been met.
 
    This function consumes TXN. The caller must not use TXN after this call. */
 void diskfs_journal_stop_transaction (diskfs_transaction_t *txn);

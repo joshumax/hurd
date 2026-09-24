@@ -2204,30 +2204,12 @@ static void
 diskfs_journal_stop_transaction_locked (journal_t *journal,
 					diskfs_transaction_t *txn)
 {
-  uint32_t tid = txn->t_tid;
   journal_stop_transaction_locked (journal, txn);
 
-  /* Auto-commit? */
-  if (txn->t_updates == 0)
-    {
-      if (txn->sync_needed)
-	{
-	  assert_backtrace (txn == journal->j_running_transaction
-			    || txn == journal->j_committing_transaction);
-	  if (journal->j_running_transaction == txn)
-	    {
-	      error_t err =
-		journal_commit_running_transaction_locked (journal);
-	      if (err)
-		JRNL_LOG_WARN ("Synchronous commit failed for TID %u: %s",
-			       tid, strerror (err));
-	    }
-	  else
-	    journal_wait_on_tid_locked (journal, tid);
-	}
-      else if (txn->t_buffer_map.size >= journal->j_max_transaction_buffers)
-	pthread_cond_signal (&journal->j_flusher_wakeup);
-    }
+  /* Semi auto-commit? */
+  if (txn->t_updates == 0 && (txn->sync_needed ||
+      (txn->t_buffer_map.size >= journal->j_max_transaction_buffers)))
+    pthread_cond_signal (&journal->j_flusher_wakeup);
 }
 
 /* Ends the caller's participation in the given transaction TXN.
