@@ -2064,6 +2064,15 @@ journal_commit_running_transaction_locked (journal_t *journal)
 
   journal->j_committing_transaction = txn;
   journal->j_running_transaction = NULL;
+  if (!journal->j_must_exit)
+    {
+      /* Instantly spawn the next txn so that there is no gap. */
+      diskfs_transaction_t *run =
+	diskfs_journal_start_transaction_locked (journal);
+      if (run)
+	run->t_updates--;	/* We are just seeding it, not joining it! */
+    }
+
   txn->t_state = T_LOCKED;
 
   while (txn->t_updates > 0)
