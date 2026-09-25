@@ -404,18 +404,16 @@ ext2_check_inodes_bitmap (void)
 {
   int i;
   struct ext2_group_desc *gdp;
-  unsigned long desc_count, bitmap_count, x;
+  unsigned long bitmap_count, x;
 
   pthread_spin_lock (&global_lock);
 
-  desc_count = 0;
   bitmap_count = 0;
   gdp = NULL;
   for (i = 0; i < groups_count; i++)
     {
       void *bh;
       gdp = group_desc (i);
-      desc_count += le16toh (gdp->bg_free_inodes_count);
       bh = disk_cache_block_ref (le32toh (gdp->bg_inode_bitmap));
       x = count_free (bh, le32toh (sblock->s_inodes_per_group) / 8);
       disk_cache_block_deref (bh);
