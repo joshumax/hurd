@@ -459,14 +459,13 @@ void
 ext2_check_blocks_bitmap (void)
 {
   unsigned char *bh;
-  unsigned long desc_count, bitmap_count, x;
+  unsigned long bitmap_count, x;
   unsigned long desc_blocks;
   struct ext2_group_desc *gdp;
   int i, j;
 
   pthread_spin_lock (&global_lock);
 
-  desc_count = 0;
   bitmap_count = 0;
   gdp = NULL;
 
@@ -494,7 +493,6 @@ ext2_check_blocks_bitmap (void)
 	}
 
       gdp = group_desc (i);
-      desc_count += le16toh (gdp->bg_free_blocks_count);
       bh = disk_cache_block_ref (le32toh (gdp->bg_block_bitmap));
 
       if (!EXT2_HAS_RO_COMPAT_FEATURE (sblock,
