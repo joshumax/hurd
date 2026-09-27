@@ -147,9 +147,6 @@ diskfs_S_dir_link (struct protid *dircred,
     /* MiG won't do this for us, which it ought to. */
     mach_port_deallocate (mach_task_self (), filecred->pi.port_right);
 
-  if (!err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   return err;
 }

@@ -96,9 +96,6 @@ diskfs_S_io_write (struct protid *cred,
     diskfs_notice_filechange (np, FILE_CHANGED_WRITE, off, off + nwritten);
  out:
   pthread_mutex_unlock (&np->lock);
-  if (!err && (should_sync || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, should_sync);
   return err;
 }

@@ -257,10 +257,7 @@ diskfs_S_dir_rename (struct protid *fromcred,
   pthread_mutex_unlock (&fdp->lock);
 
 out:
-  if (! err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   if (!err)
     mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
   return err;

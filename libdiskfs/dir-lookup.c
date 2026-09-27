@@ -573,10 +573,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
     ports_port_deref (newpi);
   if (newpo)
     diskfs_release_peropen (newpo);
-  if (newnode && !err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, newnode && !err, diskfs_synchronous);
 
   free (relpath);
 

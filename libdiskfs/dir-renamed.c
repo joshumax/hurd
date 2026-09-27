@@ -281,9 +281,6 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
     diskfs_drop_dirstat (tdp, ds);
 
   /* FINALIZE TRANSACTION */
-  if (! err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   return err;
 }

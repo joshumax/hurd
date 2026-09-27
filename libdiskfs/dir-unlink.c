@@ -100,10 +100,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
       mach_port_deallocate (mach_task_self (), control);
     }
 
-  if (diskfs_synchronous || diskfs_journal_needs_sync (txn))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
 
   return err;
 }

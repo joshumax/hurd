@@ -92,9 +92,6 @@ diskfs_S_dir_mkfile (struct protid *cred,
   if (np)
     diskfs_nput (np);
 
-  if (!err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   return err;
 }

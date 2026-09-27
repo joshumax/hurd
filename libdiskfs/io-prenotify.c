@@ -74,9 +74,6 @@ diskfs_S_io_prenotify (struct protid *cred,
     diskfs_notice_filechange (np, FILE_CHANGED_EXTEND, 0, end);
  out:
   pthread_mutex_unlock (&np->lock);
-  if (!err && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   return err;
 }

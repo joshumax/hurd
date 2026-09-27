@@ -69,9 +69,6 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   pthread_mutex_unlock (&dnp->lock);
 
-  if (!error && (diskfs_synchronous || diskfs_journal_needs_sync (txn)))
-    diskfs_journal_commit_transaction (txn);
-  else
-    diskfs_journal_stop_transaction (txn);
+  diskfs_journal_end_transaction (txn, !error, diskfs_synchronous);
   return error;
 }

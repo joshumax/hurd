@@ -120,6 +120,26 @@ extern pthread_spinlock_t _diskfs_control_lock;
 extern fshelp_fetch_root_callback1_t _diskfs_translator_callback1;
 extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
 
+/* Consume TXN.
+   Wait for the commit when COMMIT_OK is true and either SYNC is true or a
+   participant called diskfs_journal_set_sync.  Otherwise stop without waiting.
+
+   COMMIT_OK is false when this RPC failed and must not wait.  Paths that
+   return before the operation has done its work, and diskfs_drop_node, call
+   diskfs_journal_stop_transaction directly so they cannot commit. */
+static inline void
+diskfs_journal_end_transaction (diskfs_transaction_t *txn,
+				int commit_ok, int sync)
+{
+  if (!txn)
+    return;
+
+  if (commit_ok && (sync || diskfs_journal_needs_sync (txn)))
+    diskfs_journal_commit_transaction (txn);
+  else
+    diskfs_journal_stop_transaction (txn);
+}
+
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
    (without waiting) and unlocks everything, and then returns
@@ -143,10 +163,7 @@ extern fshelp_fetch_root_callback2_t _diskfs_translator_callback2;
   (OPERATION);								    \
   diskfs_node_update (np, diskfs_synchronous);				    \
   pthread_mutex_unlock (&np->lock);					    \
-  if (diskfs_synchronous || diskfs_journal_needs_sync (txn))		    \
-    diskfs_journal_commit_transaction (txn);				    \
-  else									    \
-    diskfs_journal_stop_transaction (txn);				    \
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);		    \
   return err;								    \
 })
 

@@ -39,6 +39,6 @@ diskfs_S_io_sigio (struct protid *cred)
   diskfs_file_update (cred->po->np, 1);
 
   pthread_mutex_unlock (&cred->po->np->lock);
-  diskfs_journal_commit_transaction (txn);
+  diskfs_journal_end_transaction (txn, 1, 1);
   return 0;
 }
