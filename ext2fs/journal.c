@@ -1297,6 +1297,36 @@ journal_forget_freed_blocks (journal_t *journal, journal_freed_extent_t *ext)
     flush_to_disk ();
 }
 
+/* Install a running transaction with t_updates == 0.
+   The journal lock is held on entry and on return, including failure.
+   j_running_transaction must be NULL.  This does not drop the lock, so
+   commit can publish the successor with no gap for start to observe. */
+static diskfs_transaction_t *
+journal_create_running_transaction_locked (journal_t *journal)
+{
+  diskfs_transaction_t *txn;
+
+  assert_backtrace (!journal->j_running_transaction);
+
+  txn = calloc (1, sizeof (diskfs_transaction_t));
+  if (!txn)
+    return NULL;
+
+  if (journal_map_init (&txn->t_buffer_map, 0) != 0)
+    {
+      free (txn);
+      return NULL;
+    }
+
+  txn->t_tid = journal->j_transaction_sequence++;
+  txn->t_state = T_RUNNING;
+  txn->t_updates = 0;
+
+  journal->j_running_transaction = txn;
+  JRNL_LOG_DEBUG ("[TRX] Created NEW TID %u", txn->t_tid);
+  return txn;
+}
+
 journal_t *
 journal_create (struct node *journal_inode)
 {
@@ -1334,6 +1364,15 @@ journal_create (struct node *journal_inode)
   pthread_cond_init (&j->j_flush_wait, NULL);
 
   j->j_must_exit = 0;
+
+  /* The running transaction lives for the whole life of the journal.
+     Commit installs the next one before it drops the lock, and start only
+     joins.  Publish this one before kjournald runs. */
+  JOURNAL_LOCK (j);
+  if (!journal_create_running_transaction_locked (j))
+    ext2_panic ("Cannot create initial journal transaction.");
+  JOURNAL_UNLOCK (j);
+
   if (pthread_create (&kjournald_tid, NULL, kjournald_thread, j) != 0)
     JRNL_LOG_WARN ("Failed to create a flusher thread.");
   else
@@ -1693,53 +1732,21 @@ out:
   return err;
 }
 
+/* Join the running transaction.  A successor is installed by commit
+   before the previous one leaves T_RUNNING, so this never allocates.
+   Shutdown is the exception: j_must_exit means commit did not install
+   a successor, and the caller must tolerate NULL. */
 static diskfs_transaction_t *
-diskfs_journal_start_transaction_locked (journal_t *journal)
+journal_join_transaction_locked (journal_t *journal)
 {
+  diskfs_transaction_t *txn;
+
   if (journal->j_must_exit)
     return NULL;
 
-  diskfs_transaction_t *txn;
-  if (ext2_journal->j_free < ext2_journal->j_min_free)
-    {
-      JRNL_LOG_DEBUG
-	("[TRX] Journal full (Free: %u). Forcing checkpoint.",
-	 ext2_journal->j_free);
-
-      journal_force_checkpoint_locked (journal);
-    }
-
-  txn = ext2_journal->j_running_transaction;
-
-  if (txn)
-    {
-      assert_backtrace (txn->t_state == T_RUNNING);
-      txn->t_updates++;
-    }
-  else
-    {
-      txn = calloc (1, sizeof (diskfs_transaction_t));
-      if (!txn)
-	{
-	  JOURNAL_UNLOCK (journal);
-	  return NULL;
-	}
-
-      if (journal_map_init (&txn->t_buffer_map, 0) != 0)
-	{
-	  free (txn);
-	  JOURNAL_UNLOCK (journal);
-	  return NULL;
-	}
-
-      txn->t_tid = journal->j_transaction_sequence++;
-      txn->t_state = T_RUNNING;
-      txn->t_updates = 1;
-
-      journal->j_running_transaction = txn;
-      JRNL_LOG_DEBUG ("[TRX] Created NEW TID %u", txn->t_tid);
-    }
-
+  txn = journal->j_running_transaction;
+  assert_backtrace (txn && txn->t_state == T_RUNNING);
+  txn->t_updates++;
   return txn;
 }
 
@@ -1747,11 +1754,11 @@ diskfs_transaction_t *
 diskfs_journal_start_transaction (void)
 {
   diskfs_transaction_t *txn;
-  if (!ext2_journal)
+  if (!ext2_journal || ext2_journal->j_must_exit)
     return NULL;
 
   JOURNAL_LOCK (ext2_journal);
-  txn = diskfs_journal_start_transaction_locked (ext2_journal);
+  txn = journal_join_transaction_locked (ext2_journal);
   JOURNAL_UNLOCK (ext2_journal);
   return txn;
 }
@@ -2063,14 +2070,20 @@ journal_commit_running_transaction_locked (journal_t *journal)
     }
 
   journal->j_committing_transaction = txn;
+
+  /* Checkpoint drops the lock.  Do it while txn is still running, so a
+     start that sneaks in joins txn and is waited for below.  Other
+     committers are already blocked on j_committing_transaction. */
+  if (journal->j_free < journal->j_min_free)
+    journal_force_checkpoint_locked (journal);
+
   journal->j_running_transaction = NULL;
   if (!journal->j_must_exit)
     {
-      /* Instantly spawn the next txn so that there is no gap. */
-      diskfs_transaction_t *run =
-	diskfs_journal_start_transaction_locked (journal);
-      if (run)
-	run->t_updates--;	/* We are just seeding it, not joining it! */
+      /* Publish the successor before any unlock.  t_updates is 0: this
+         thread is not a participant. */
+      if (!journal_create_running_transaction_locked (journal))
+	JRNL_LOG_WARN ("Failed to create the successor transaction.");
     }
 
   txn->t_state = T_LOCKED;
@@ -2083,9 +2096,9 @@ journal_commit_running_transaction_locked (journal_t *journal)
   journal_ensure_commit_space_locked (journal, txn);
 
   txn->t_log_start = journal_next_block_would_be (journal);
-  /* We unlock for IO! j_running_transaction is NULL and t_state of this one
-   * is T_LOCKED, nothing else is modifing it, we are safe to iterate it's maps
-   * etc.*/
+  /* Unlock for I/O.  The successor is already j_running_transaction, and
+     this transaction is T_LOCKED, so start joins the successor.  Participants
+     of this one have drained.  Its map is stable. */
   JOURNAL_UNLOCK (journal);
 
   /* Write Data (I/O) */
@@ -2738,7 +2751,7 @@ journal_notify_block_changed (block_t block)
 
   JOURNAL_LOCK (ext2_journal);
   diskfs_transaction_t *txn =
-    diskfs_journal_start_transaction_locked (ext2_journal);
+    journal_join_transaction_locked (ext2_journal);
   if (journal_dirty_block_locked (txn, block))
     JRNL_LOG_WARN ("Didn't manage to add a dirty block %u to the journal.",
 		   block);
