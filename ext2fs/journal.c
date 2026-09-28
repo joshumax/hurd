@@ -635,67 +635,6 @@ init_map (journal_t *journal, struct node *jnode)
   journal->map.inode = jnode;
 }
 
-/**
- * The background journal thread (kjournald).
- * * Wakes up every 5 seconds to commit the currently running transaction
- * to the journal ring buffer. Crucially, this ONLY writes to the log,
- * not the main filesystem.
- *
- * Purpose:
- * - Data Loss Bound: Caps the maximum window of lost work to 5 seconds
- * (matching standard Linux ext3/ext4 behavior), rather than relying on
- * the 30-second diskfs_sync_everything() interval.
- * - Transaction Sizing: Prevents the in-memory shadow buffer map from
- * growing infinitely large during heavy metadata storms (e.g., compiling).
- * - Pager Optimization: By eagerly committing transactions in the background,
- * we proactively satisfy the Write-Ahead Log (WAL) barrier. This ensures
- * that when the Mach VM Pager eventually needs to flush dirty pages to the
- * main disk, it doesn't stall the system waiting for synchronous journal I/O.
- *
- * Future work: The interval could be made dynamic based on VFS load, but
- * a static 5-second interval provides a solid baseline.
- */
-static void *
-kjournald_thread (void *arg)
-{
-  journal_t *journal = (journal_t *) arg;
-  struct timespec ts;
-
-  JOURNAL_LOCK (journal);
-  while (!journal->j_must_exit)
-    {
-      clock_gettime (CLOCK_MONOTONIC, &ts);
-      ts.tv_sec += 5;
-
-      pthread_cond_clockwait (&journal->j_flusher_wakeup,
-			      &journal->j_state_lock, CLOCK_MONOTONIC, &ts);
-
-      if (journal->j_must_exit)
-	break;
-      if (diskfs_readonly)
-	continue;
-
-      if (journal->j_running_transaction)
-	{
-	  JRNL_LOG_DEBUG ("Woke the journal up:\n"
-			  " - Sequence: %u\n"
-			  " - Start (Head): %u\n"
-			  " - First Data Block: %u\n"
-			  " - Total Blocks: %u",
-			  journal->j_transaction_sequence, journal->j_head,
-			  journal->j_first, journal->j_last);
-
-	  JOURNAL_UNLOCK (journal);
-	  error_t err = journal_commit_running_transaction ();
-	  if (err)
-	    JRNL_LOG_WARN ("Background commit failed: %s", strerror (err));
-	  JOURNAL_LOCK (journal);
-	}
-    }
-  JOURNAL_UNLOCK (journal);
-  return NULL;
-}
-
 static block_t
 get_journal_phys_block (journal_t *journal, uint32_t idx)
 {
@@ -1325,78 +1264,6 @@ journal_create_running_transaction_locked (journal_t *journal)
   journal->j_running_transaction = txn;
   JRNL_LOG_DEBUG ("[TRX] Created NEW TID %u", txn->t_tid);
   return txn;
-}
-
-journal_t *
-journal_create (struct node *journal_inode)
-{
-  journal_t *j = calloc (1, sizeof (journal_t));
-  if (!j)
-    ext2_panic ("Cannot create journal struct.");
-
-  init_map (j, journal_inode);
-
-  /* Take ownership of the inode ref */
-  diskfs_nref (journal_inode);
-
-  /* Set generic defaults (Will be overwritten by Superblock read later) */
-  j->j_first = 1;		/* Skip SB block by default */
-  j->j_last = j->map.total_blocks - 1;
-  uint32_t total_len = j->j_last - j->j_first;
-  j->j_free = total_len;
-
-  j->j_max_transaction_buffers = total_len / JRNL_MAX_TRANS_RATIO;
-  if (j->j_max_transaction_buffers < JRNL_MIN_BATCH_BLOCKS)
-    j->j_max_transaction_buffers = JRNL_MIN_BATCH_BLOCKS;
-  j->j_min_free = j->j_max_transaction_buffers + JRNL_METADATA_OVERHEAD;
-  j->j_descriptor_buf = malloc (block_size);
-  j->j_commit_buf = malloc (block_size);
-  if (!j->j_descriptor_buf || !j->j_commit_buf)
-    ext2_panic ("No RAM for commit buffers!");
-
-  if (journal_load_superblock (j) != 0)
-    ext2_panic ("[JOURNAL] Failed to load superblock!");
-  j->j_last_committed_tid = j->j_transaction_sequence - 1;
-  pthread_cond_init (&j->j_commit_done, NULL);
-  pthread_mutex_init (&j->j_state_lock, NULL);
-  pthread_cond_init (&j->j_commit_wait, NULL);
-  pthread_cond_init (&j->j_flusher_wakeup, NULL);
-  pthread_cond_init (&j->j_flush_wait, NULL);
-
-  j->j_must_exit = 0;
-
-  /* The running transaction lives for the whole life of the journal.
-     Commit installs the next one before it drops the lock, and start only
-     joins.  Publish this one before kjournald runs. */
-  JOURNAL_LOCK (j);
-  if (!journal_create_running_transaction_locked (j))
-    ext2_panic ("Cannot create initial journal transaction.");
-  JOURNAL_UNLOCK (j);
-
-  if (pthread_create (&kjournald_tid, NULL, kjournald_thread, j) != 0)
-    JRNL_LOG_WARN ("Failed to create a flusher thread.");
-  else
-    JRNL_LOG_DEBUG ("Created flusher thread.");
-
-  j->j_pool_memory =
-    calloc (JRNL_MAX_FREE_BUFFERS, sizeof (journal_buffer_t));
-  if (!j->j_pool_memory)
-    ext2_panic ("[JOURNAL] No RAM for buffer pool!");
-
-  /* Chain the contiguous blocks together into a free list */
-  for (int i = 0; i < JRNL_MAX_FREE_BUFFERS - 1; i++)
-    j->j_pool_memory[i].jb_next = &j->j_pool_memory[i + 1];
-
-  /* The last block points to NULL, and the head points to block 0 */
-  j->j_pool_memory[JRNL_MAX_FREE_BUFFERS - 1].jb_next = NULL;
-  j->j_free_buffers = &j->j_pool_memory[0];
-
-  ext2_lifeboat.payloads =
-    mmap (NULL, JRNL_LIFEBOAT_CAPACITY * block_size, PROT_READ | PROT_WRITE,
-	  MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ext2_lifeboat.payloads == MAP_FAILED)
-    ext2_panic ("[JOURNAL] No RAM for lifeboat cache!");
-  return j;
 }
 
 /**
@@ -2057,6 +1924,19 @@ journal_commit_running_transaction_locked (journal_t *journal)
   uint32_t commit_loc;
   diskfs_transaction_t *txn;
 
+  txn = ext2_journal->j_running_transaction;
+
+  if (!txn || txn->t_state != T_RUNNING)
+    {
+      err = EINVAL;
+      goto out;
+    }
+  if (txn->t_buffer_map.size == 0)
+    {
+      JRNL_LOG_DEBUG ("Txn %u is empty. Keeping it open.", txn->t_tid);
+      goto out;
+    }
+
   while (journal->j_committing_transaction != NULL)
     JOURNAL_WAIT (&journal->j_commit_done, journal);
 
@@ -2171,6 +2051,137 @@ out:
 }
 
 /**
+ * The background journal thread (kjournald).
+ * * Wakes up every 5 seconds to commit the currently running transaction
+ * to the journal ring buffer. Crucially, this ONLY writes to the log,
+ * not the main filesystem.
+ *
+ * Purpose:
+ * - Data Loss Bound: Caps the maximum window of lost work to 5 seconds
+ * (matching standard Linux ext3/ext4 behavior), rather than relying on
+ * the 30-second diskfs_sync_everything() interval.
+ * - Transaction Sizing: Prevents the in-memory shadow buffer map from
+ * growing infinitely large during heavy metadata storms (e.g., compiling).
+ * - Pager Optimization: By eagerly committing transactions in the background,
+ * we proactively satisfy the Write-Ahead Log (WAL) barrier. This ensures
+ * that when the Mach VM Pager eventually needs to flush dirty pages to the
+ * main disk, it doesn't stall the system waiting for synchronous journal I/O.
+ *
+ * Future work: The interval could be made dynamic based on VFS load, but
+ * a static 5-second interval provides a solid baseline.
+ */
+static void *
+kjournald_thread (void *arg)
+{
+  journal_t *journal = (journal_t *) arg;
+  struct timespec ts;
+
+  JOURNAL_LOCK (journal);
+  while (!journal->j_must_exit)
+    {
+      clock_gettime (CLOCK_MONOTONIC, &ts);
+      ts.tv_sec += 5;
+
+      pthread_cond_clockwait (&journal->j_flusher_wakeup,
+			      &journal->j_state_lock, CLOCK_MONOTONIC, &ts);
+
+      if (journal->j_must_exit)
+	break;
+      if (diskfs_readonly)
+	continue;
+
+      if (journal->j_running_transaction)
+	{
+	  JRNL_LOG_DEBUG ("Woke the journal up:\n"
+			  " - Sequence: %u\n"
+			  " - Start (Head): %u\n"
+			  " - First Data Block: %u\n"
+			  " - Total Blocks: %u",
+			  journal->j_transaction_sequence, journal->j_head,
+			  journal->j_first, journal->j_last);
+
+	  error_t err = journal_commit_running_transaction_locked (ext2_journal);
+	  if (err)
+	    JRNL_LOG_WARN ("Background commit failed: %s", strerror (err));
+	}
+    }
+  JOURNAL_UNLOCK (journal);
+  return NULL;
+}
+
+journal_t *
+journal_create (struct node *journal_inode)
+{
+  journal_t *j = calloc (1, sizeof (journal_t));
+  if (!j)
+    ext2_panic ("Cannot create journal struct.");
+
+  init_map (j, journal_inode);
+
+  /* Take ownership of the inode ref */
+  diskfs_nref (journal_inode);
+
+  /* Set generic defaults (Will be overwritten by Superblock read later) */
+  j->j_first = 1;		/* Skip SB block by default */
+  j->j_last = j->map.total_blocks - 1;
+  uint32_t total_len = j->j_last - j->j_first;
+  j->j_free = total_len;
+
+  j->j_max_transaction_buffers = total_len / JRNL_MAX_TRANS_RATIO;
+  if (j->j_max_transaction_buffers < JRNL_MIN_BATCH_BLOCKS)
+    j->j_max_transaction_buffers = JRNL_MIN_BATCH_BLOCKS;
+  j->j_min_free = j->j_max_transaction_buffers + JRNL_METADATA_OVERHEAD;
+  j->j_descriptor_buf = malloc (block_size);
+  j->j_commit_buf = malloc (block_size);
+  if (!j->j_descriptor_buf || !j->j_commit_buf)
+    ext2_panic ("No RAM for commit buffers!");
+
+  if (journal_load_superblock (j) != 0)
+    ext2_panic ("[JOURNAL] Failed to load superblock!");
+  j->j_last_committed_tid = j->j_transaction_sequence - 1;
+  pthread_cond_init (&j->j_commit_done, NULL);
+  pthread_mutex_init (&j->j_state_lock, NULL);
+  pthread_cond_init (&j->j_commit_wait, NULL);
+  pthread_cond_init (&j->j_flusher_wakeup, NULL);
+  pthread_cond_init (&j->j_flush_wait, NULL);
+
+  j->j_must_exit = 0;
+
+  /* The running transaction lives for the whole life of the journal.
+     Commit installs the next one before it drops the lock, and start only
+     joins.  Publish this one before kjournald runs. */
+  JOURNAL_LOCK (j);
+  if (!journal_create_running_transaction_locked (j))
+    ext2_panic ("Cannot create initial journal transaction.");
+  JOURNAL_UNLOCK (j);
+
+  if (pthread_create (&kjournald_tid, NULL, kjournald_thread, j) != 0)
+    JRNL_LOG_WARN ("Failed to create a flusher thread.");
+  else
+    JRNL_LOG_DEBUG ("Created flusher thread.");
+
+  j->j_pool_memory =
+    calloc (JRNL_MAX_FREE_BUFFERS, sizeof (journal_buffer_t));
+  if (!j->j_pool_memory)
+    ext2_panic ("[JOURNAL] No RAM for buffer pool!");
+
+  /* Chain the contiguous blocks together into a free list */
+  for (int i = 0; i < JRNL_MAX_FREE_BUFFERS - 1; i++)
+    j->j_pool_memory[i].jb_next = &j->j_pool_memory[i + 1];
+
+  /* The last block points to NULL, and the head points to block 0 */
+  j->j_pool_memory[JRNL_MAX_FREE_BUFFERS - 1].jb_next = NULL;
+  j->j_free_buffers = &j->j_pool_memory[0];
+
+  ext2_lifeboat.payloads =
+    mmap (NULL, JRNL_LIFEBOAT_CAPACITY * block_size, PROT_READ | PROT_WRITE,
+	  MAP_ANON | MAP_PRIVATE, -1, 0);
+  if (ext2_lifeboat.payloads == MAP_FAILED)
+    ext2_panic ("[JOURNAL] No RAM for lifeboat cache!");
+  return j;
+}
+
+/**
  * Safely marks the journal as clean on disk.
  * MUST only be called after sync_global(1) ensures no pager I/O is in flight,
  * otherwise asynchronous pager notifications will cause a Use-After-Free!
@@ -2251,57 +2262,6 @@ diskfs_journal_stop_transaction (diskfs_transaction_t *txn)
   JOURNAL_LOCK (ext2_journal);
   diskfs_journal_stop_transaction_locked (ext2_journal, txn);
   JOURNAL_UNLOCK (ext2_journal);
-}
-
-/* Forces the currently running transaction (if any) to safely commit to the
-   physical journal log.
-
-   This function unconditionally blocks the calling thread until all VFS
-   participants currently in the running transaction finish their updates
-   (t_updates reaches 0) and the Write-Ahead Log barrier is physically crossed.
-
-   Unlike diskfs_journal_commit_transaction, this function does not take a
-   transaction handle as an argument. It is a global barrier used by background
-   flushers (kjournald), pager sync operations, and unmount routines to ensure
-   strict durability of all recently dirtied metadata. */
-error_t
-journal_commit_running_transaction (void)
-{
-  diskfs_transaction_t *txn;
-  error_t err = 0;
-  if (!ext2_journal)
-    return 0;
-
-  JOURNAL_LOCK (ext2_journal);
-  txn = ext2_journal->j_running_transaction;
-
-  if (!txn || txn->t_state != T_RUNNING)
-    {
-      err = EINVAL;
-      goto out;
-    }
-  if (txn->t_buffer_map.size == 0)
-    {
-      JRNL_LOG_DEBUG ("Txn %u is empty. Keeping it open.", txn->t_tid);
-      goto out;
-    }
-  /**
-   * Note on buffer hydration (memory copying):
-   * We do not explicitly copy Mach VM memory into the journal shadow buffers
-   * here. That responsibility strictly belongs to
-   * journal_stop_transaction_locked.
-   *
-   * 1. If t_updates == 0: The last VFS thread to exit the transaction has
-   * already populated the shadow buffers. We will just flush them.
-   * 2. If t_updates > 0: The internal locked commit function will flip the
-   * state to T_LOCKED (preventing new threads from joining) and put this
-   * thread to sleep. The last active VFS thread will eventually call stop(),
-   * hit t_updates == 0, safely copy the memory, and wake us up.
-   */
-  err = journal_commit_running_transaction_locked (ext2_journal);
-out:
-  JOURNAL_UNLOCK (ext2_journal);
-  return err;
 }
 
 /* Ends the caller's participation in the transaction TXN and strictly
@@ -2750,9 +2710,6 @@ diskfs_journal_shutdown (void)
     return;
 
   ext2_journal->j_must_exit = 1;	/* Signal kjournald so it doesn't wake up */
-  /* Commit any pending transaction (e.g. the superblock clean-state
-     flags written by diskfs_set_hypermetadata).  */
-  journal_commit_running_transaction ();
 
   /* Sync the disk pager to ensure all shadow data is on disk.  */
   sync_global (1);

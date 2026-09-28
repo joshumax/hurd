@@ -86,16 +86,4 @@ journal_store_read (block_t start_block, size_t length, void **buf,
  */
 void journal_record_freed_blocks (block_t start, unsigned long count);
 
-/* Forces the currently running transaction (if any) to safely commit to the
- * physical journal log.
- *
- * This function unconditionally blocks the calling thread until all VFS
- * participants currently in the running transaction finish their updates
- * (t_updates reaches 0) and the Write-Ahead Log barrier is physically crossed.
- * Unlike diskfs_journal_commit_transaction, this function does not take a
- * transaction handle as an argument. It is a global barrier used by background
- * flushers (kjournald), pager sync operations, and unmount routines to ensure
- * strict durability of all recently dirtied metadata. */
-error_t journal_commit_running_transaction (void);
-
 #endif //_JOURNAL_H

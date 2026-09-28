@@ -29,6 +29,7 @@
 
 /* XXX */
 #include "../libpager/priv.h"
+#include "libdiskfs/diskfs.h"
 
 /* A ports bucket to hold disk pager ports.  */
 struct port_bucket *disk_pager_bucket;
@@ -1568,10 +1569,13 @@ diskfs_shutdown_pager (void)
       return 0;
     }
 
-  write_all_disknodes ();
-  journal_commit_running_transaction ();
 
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+
+  write_all_disknodes ();
   ports_bucket_iterate (file_pager_bucket, shutdown_one);
+
+  diskfs_journal_commit_transaction (txn);
 
   if (!ext2_journal)
     {
@@ -1595,10 +1599,10 @@ diskfs_sync_everything (int wait)
       return 0;
     }
 
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
   write_all_disknodes ();
-  /* We only commit if there is a journal and we have a running transaction */
-  journal_commit_running_transaction ();
   ports_bucket_iterate (file_pager_bucket, sync_one);
+  diskfs_journal_commit_transaction (txn);
 
   /* Do things on the the disk pager.  */
   sync_global (wait);
