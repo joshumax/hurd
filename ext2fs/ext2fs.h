@@ -352,7 +352,6 @@ extern struct journal *ext2_journal;
 error_t
 journal_dirty_block (diskfs_transaction_t * txn, block_t fs_blocknr);
 
-void journal_notify_block_changed (block_t block);
 
 void ext2_orphan_drop_ram_link (struct node *np);
 
@@ -531,6 +530,20 @@ extern void sync_global (int wait);
 extern void alloc_sync (struct node *np);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
+EXT2FS_EI void
+journal_notify_block_changed (block_t block)
+{
+  if (!ext2_journal)
+    return;
+
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+  error_t err = journal_dirty_block (txn, block);
+  if (err)
+    JRNL_LOG_WARN ("Didn't manage to add a dirty block %u to the journal. (%s).",
+		   block, strerror (err));
+  diskfs_journal_stop_transaction (txn);
+}
+
 /* Marks the global block BLOCK as being modified, and returns true if we
    think it may have been clean before (but we may not be sure).  Note that
    this isn't enough to cause the block to be synced; you must call

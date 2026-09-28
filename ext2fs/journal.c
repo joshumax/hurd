@@ -2744,22 +2744,6 @@ journal_store_read (block_t start_block, size_t length, void **buf,
 }
 
 void
-journal_notify_block_changed (block_t block)
-{
-  if (!ext2_journal)
-    return;
-
-  JOURNAL_LOCK (ext2_journal);
-  diskfs_transaction_t *txn =
-    journal_join_transaction_locked (ext2_journal);
-  if (journal_dirty_block_locked (txn, block))
-    JRNL_LOG_WARN ("Didn't manage to add a dirty block %u to the journal.",
-		   block);
-  diskfs_journal_stop_transaction_locked (ext2_journal, txn);
-  JOURNAL_UNLOCK (ext2_journal);
-}
-
-void
 diskfs_journal_shutdown (void)
 {
   if (!ext2_journal)
