@@ -86,4 +86,13 @@ journal_store_read (block_t start_block, size_t length, void **buf,
  */
 void journal_record_freed_blocks (block_t start, unsigned long count);
 
+/**
+ * Marks the calling thread as running a pager callback (ON = 1) or done
+ * with it (ON = 0).  A pager thread must never wait on the journal: an
+ * RPC thread inside a transaction may be waiting on it for a page.  While
+ * marked, diskfs_journal_start_transaction joins the transaction that a
+ * commit is draining instead of waiting for its successor.
+ */
+void journal_thread_set_pager (int on);
+
 #endif //_JOURNAL_H

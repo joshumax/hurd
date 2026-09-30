@@ -743,6 +743,10 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       struct node *node = pager->node;
       struct disknode *dn = diskfs_node_disknode (node);
 
+      /* Block allocation below starts a journal transaction.  Mark this
+	 thread so that start never waits on a draining commit.  */
+      journal_thread_set_pager (1);
+
       pthread_rwlock_wrlock (&dn->alloc_lock);
 
       partial_page = (page + vm_page_size > node->allocsize);
@@ -786,6 +790,8 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       STAT_INC (file_page_unlocks);
 
       pthread_rwlock_unlock (&dn->alloc_lock);
+
+      journal_thread_set_pager (0);
 
       if (err == ENOSPC)
 	ext2_warning ("This filesystem is out of space.");
@@ -974,7 +980,11 @@ pager_clear_user_data (struct user_pager_info *upi)
       assert_backtrace (!pager || pager_get_upi (pager) != upi);
       pthread_spin_unlock (&node_to_page_lock);
 
+      /* Dropping the last reference can write the node back, which starts
+	 a journal transaction on this pager thread.  */
+      journal_thread_set_pager (1);
       diskfs_nrele_light (upi->node);
+      journal_thread_set_pager (0);
     }
 }
 
