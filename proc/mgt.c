@@ -221,6 +221,13 @@ S_proc_child (struct proc *parentp,
   if (childp->p_parentset)
     return EBUSY;
 
+  if (!childp->exe && parentp->exe)
+    {
+      childp->exe = strdup (parentp->exe);
+      if (!childp->exe)
+        return errno;
+    }
+
   mach_port_deallocate (mach_task_self (), childt);
 
   /* Process identification.
@@ -273,8 +280,6 @@ S_proc_child (struct proc *parentp,
       childp->start_code = parentp->start_code;
       childp->end_code = parentp->end_code;
     }
-  if (! childp->exe && parentp->exe)
-    childp->exe = strdup (parentp->exe);
 
   if (MACH_PORT_VALID (parentp->p_task_namespace))
     {
