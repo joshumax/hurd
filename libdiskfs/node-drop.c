@@ -38,6 +38,12 @@ void
 diskfs_drop_node (struct node *np)
 {
   mode_t savemode;
+  /* NP is locked.  A start may wait for a commit to drain, and must not
+     do so while holding a lock a participant could need, so every path
+     that can reach here from outside an RPC handle (diskfs_release_peropen,
+     diskfs_S_fsys_getfile) opens its handle before locking and this start
+     nests.  The remaining outermost caller is the pager thread via
+     diskfs_nrele_light, and a pager thread never waits in start.  */
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
   if (np->dn_stat.st_nlink == 0 && !diskfs_readonly)

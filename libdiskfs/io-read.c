@@ -33,6 +33,7 @@ diskfs_S_io_read (struct protid *cred,
   off_t off = offset;
   char *buf;
   int ourbuf = 0;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -41,6 +42,9 @@ diskfs_S_io_read (struct protid *cred,
   if (!(cred->po->openstat & O_READ))
     return EBADF;
 
+  /* The atime update below writes the inode.  Take the handle before the
+     node lock so that start never waits while holding it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
   iohelp_get_conch (&np->conch);
@@ -50,6 +54,7 @@ diskfs_S_io_read (struct protid *cred,
   if (off < 0)
     {
       pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
       return EINVAL;
     }
 
@@ -65,6 +70,7 @@ diskfs_S_io_read (struct protid *cred,
       if (buf == MAP_FAILED)
 	{
 	  pthread_mutex_unlock (&np->lock);
+	  diskfs_journal_stop_transaction (txn);
 	  return errno;
 	}
       *data = buf;
@@ -110,5 +116,6 @@ diskfs_S_io_read (struct protid *cred,
     munmap (buf, maxread);
 
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
   return err;
 }

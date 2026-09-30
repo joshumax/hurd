@@ -743,9 +743,12 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       struct node *node = pager->node;
       struct disknode *dn = diskfs_node_disknode (node);
 
-      /* Block allocation below starts a journal transaction.  Mark this
-	 thread so that start never waits on a draining commit.  */
+      /* Block allocation below dirties bitmaps, group descriptors and
+	       indirect blocks.  Open one handle here so every block this page
+	       needs lands in one transaction. Mark this
+	       thread so that start never waits on a draining commit.  */
       journal_thread_set_pager (1);
+      diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
       pthread_rwlock_wrlock (&dn->alloc_lock);
 
@@ -790,7 +793,7 @@ pager_unlock_page (struct user_pager_info *pager, vm_offset_t page)
       STAT_INC (file_page_unlocks);
 
       pthread_rwlock_unlock (&dn->alloc_lock);
-
+      diskfs_journal_stop_transaction (txn);
       journal_thread_set_pager (0);
 
       if (err == ENOSPC)

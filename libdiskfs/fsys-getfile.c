@@ -41,6 +41,7 @@ diskfs_S_fsys_getfile (struct diskfs_control *pt,
   struct protid *new_cred;
   struct peropen *new_po;
   struct iouser *user;
+  diskfs_transaction_t *txn;
 
   if (!pt)
     return EOPNOTSUPP;
@@ -52,15 +53,21 @@ diskfs_S_fsys_getfile (struct diskfs_control *pt,
 
   f = (const union diskfs_fhandle *) handle;
 
+  /* The lookup locks the node and the nput below can drop it.  Take the
+     handle before the lock so no start under it waits.  */
+  txn = diskfs_journal_start_transaction ();
+
   err = diskfs_cached_lookup (f->data.cache_id, &node);
   if (err)
     {
+      diskfs_journal_stop_transaction (txn);
       return err;
     }
 
   if (node->dn_stat.st_gen != f->data.gen)
     {
       diskfs_nput (node);
+      diskfs_journal_stop_transaction (txn);
       return ESTALE;
     }
 
@@ -68,6 +75,7 @@ diskfs_S_fsys_getfile (struct diskfs_control *pt,
   if (err)
     {
       diskfs_nput (node);
+      diskfs_journal_stop_transaction (txn);
       return err;
     }
 
@@ -92,6 +100,10 @@ diskfs_S_fsys_getfile (struct diskfs_control *pt,
   iohelp_free_iouser (user);
 
   diskfs_nput (node);
+
+  /* Nothing here changes metadata except a possible drop, and that path
+     asks for sync itself when it needs it.  */
+  diskfs_journal_end_transaction (txn, 1, 0);
 
   if (! err)
     {

@@ -21,8 +21,19 @@
 void
 diskfs_release_peropen (struct peropen *po)
 {
+  diskfs_transaction_t *txn;
+
   if (refcount_deref (&po->refcnt) > 0)
     return;
+
+  /* This is the last close.  Releasing the node below can be its last
+     reference: _diskfs_lastref writes it back under nodecache_lock and
+     diskfs_drop_node truncates and frees it under np->lock.  Open the
+     handle before either lock so those starts nest and never wait.  This
+     path is reached from the ports clean routine, outside any RPC handle,
+     and from RPCs that already hold one, where this start nests.  It
+     never commits: the RPC tail decides that.  */
+  txn = diskfs_journal_start_transaction ();
 
   if (po->root_parent)
     mach_port_deallocate (mach_task_self (), po->root_parent);
@@ -40,4 +51,6 @@ diskfs_release_peropen (struct peropen *po)
 
   free (po->path);
   free (po);
+
+  diskfs_journal_stop_transaction (txn);
 }

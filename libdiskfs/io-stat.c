@@ -26,11 +26,17 @@ diskfs_S_io_stat (struct protid *cred,
 		  io_statbuf_t *statbuf)
 {
   struct node *np;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
 
   np = cred->po->np;
+
+  /* diskfs_node_update writes pending times to the inode.  Take the
+     handle before the node lock so that start never waits while holding
+     it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
   iohelp_get_conch (&np->conch);
@@ -44,6 +50,7 @@ diskfs_S_io_stat (struct protid *cred,
     statbuf->st_mode |= S_IROOT;
 
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
 
   return 0;
 }
