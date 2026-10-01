@@ -55,8 +55,10 @@ routine auth_makeauth (
 
 /* Called by a user in a reauthentication transaction.  The rendezvous
    port is used to match the request up with the server's
-   auth_server_authenticate call.  The newport is a port provided by
-   the server.  */
+   auth_server_authenticate call.  It is typically passed by the user to the
+   server via another way.  The newport is a port provided by the server, which
+   will be trusted by the server as having the provided identification
+   information. */
 routine auth_user_authenticate (
 	handle: auth_t;
 	sreplyport reply: mach_port_poly_t;
@@ -65,9 +67,15 @@ routine auth_user_authenticate (
 
 /* Called by a server in a reauthentication transaction.  The
    rendezvous port is used to match the request up with the user's
-   auth_user_authenticate call.  The newport is passed to the user
-   through the authentication server.  The identification information
-   is returned.  */
+   auth_user_authenticate call.  It is typically passed by the user to the server
+   via another way.  The newport is passed to the user through the
+   authentication server.  The identification information is returned, and
+   can be attached to the newport.
+   Note that the rendezvous port can be subject to man-in-the-middle attacks
+   since it is passed through a side channel.
+   The newport however goes directly through the auth server and thus wears the
+   identification.
+   */
 routine auth_server_authenticate (
 	handle: auth_t;
 	sreplyport reply: mach_port_poly_t;
