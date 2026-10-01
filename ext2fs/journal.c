@@ -121,28 +121,8 @@
 #define IS_RUNNING_TID(j, tid) \
     ((j)->j_running_transaction && (j)->j_running_transaction->t_tid == (tid))
 
-#define JRNL_LIFEBOAT_CAPACITY 512
+#define JRNL_INTERCEPT_CAPACITY 512
 
-#define JRNL_LIFEBOAT_ALLOC_MASK_LEN 8
-
-/* Temporary storage for blocks rushed by the Mach VM pager.
- * Because we cannot block or delay the pager when it needs to flush a page
- * belonging to an active (RUNNING/COMMITTING) transaction, this cache
- * absorbs the write. This prevents a permanent deadlock while preserving
- * Write-Ahead Log (WAL) ordering.
- * The payloads are flushed to disk as soon as the transaction safely commits.
- */
-struct journal_lifeboat
-{
-  /* 512 bits total: 0 means free, 1 means occupied.
-     Protected by the main ext2_journal->j_state_lock. */
-  uint64_t alloc_mask[JRNL_LIFEBOAT_ALLOC_MASK_LEN];
-
-  /* The pre-allocated payload pool (512 * 4KB = 2MB) */
-  char *payloads;
-};
-
-static struct journal_lifeboat ext2_lifeboat;
 static pthread_t kjournald_tid;
 
 /* The handle this thread currently holds, and how many starts are open
@@ -181,8 +161,8 @@ typedef struct journal_buffer
   uint8_t needs_copy;		/* Whether this buffer needs a new copy from
 				   from the live Mach VM cache. Should be 1
 				   when new. */
-  /* -1 if normal, 0-127 if holding a spoofed payload in the lifeboat */
-  int16_t lifeboat_index;
+  /* Pointer to the intercepted data */
+  char *jb_intercepted_data;
   uint8_t jb_is_flushing;	/* 1 if commit thread is actively flushing it. */
   uint8_t jb_escaped;
 } journal_buffer_t;
@@ -310,53 +290,40 @@ typedef struct journal
   /* Pre-allocated buffers for (near) zero-allocation journal_dirty_block */
   journal_buffer_t *j_pool_memory;	/* The raw contiguous block */
   journal_buffer_t *j_free_buffers;	/* The linked list head */
+
+  /* Intercepted data pool pointers */
+  char *j_intercept_pool;
+  void *j_free_intercept_chunks;
 } journal_t;
 
 /**
- * Returns 0-127 on success, or -1 if the lifeboat is full.
- * MUST be called with JOURNAL_LOCK(ext2_journal) held.
+ * O(1) Intercept Chunk Allocation.
+ * MUST be called with JOURNAL_LOCK held.
  */
-static inline int
-lifeboat_alloc_slot (void)
+static inline char *
+journal_alloc_intercept_chunk (journal_t *journal)
 {
-  for (int i = 0; i < JRNL_LIFEBOAT_ALLOC_MASK_LEN; i++)
+  if (journal->j_free_intercept_chunks)
     {
-      /* Invert mask: 1s now represent FREE slots */
-      uint64_t free_bits = ~ext2_lifeboat.alloc_mask[i];
-
-      if (free_bits != 0)
-	{
-	  /* __builtin_ffsll returns 1-64, so we subtract 1 for 0-based index */
-	  int bit = __builtin_ffsll ((long long) free_bits) - 1;
-	  ext2_lifeboat.alloc_mask[i] |= (1ULL << bit);
-	  return (int) (i * sizeof (ext2_lifeboat.alloc_mask[0]) * 8) + bit;
-	}
+      char *chunk = (char *) journal->j_free_intercept_chunks;
+      /* The first 8 bytes of the free chunk hold the 'next' pointer */
+      journal->j_free_intercept_chunks = *(void **) chunk;
+      return chunk;
     }
-  return -1;
+  return NULL;			/* Starvation fallback */
 }
 
 /**
- * Frees a raw slot back to the pool.
+ * O(1) Intercept Chunk Deallocation.
+ * MUST be called with JOURNAL_LOCK held.
  */
 static inline void
-lifeboat_free_slot (int index)
+journal_free_intercept_chunk (journal_t *journal, char *chunk)
 {
-  if (index >= 0 && index < JRNL_LIFEBOAT_CAPACITY)
-    ext2_lifeboat.alloc_mask[index / 64] &= ~(1ULL << (index % 64));
-}
-
-/**
- * Frees a slot back to the pool.
- * MUST be called with JOURNAL_LOCK(ext2_journal) held.
- */
-static inline void
-lifeboat_release_buffer (journal_buffer_t *jb)
-{
-  int index = jb->lifeboat_index;
-  if (index >= 0 && index < JRNL_LIFEBOAT_CAPACITY)
+  if (chunk)
     {
-      ext2_lifeboat.alloc_mask[index / 64] &= ~(1ULL << (index % 64));
-      jb->lifeboat_index = -1;
+      *(void **) chunk = journal->j_free_intercept_chunks;
+      journal->j_free_intercept_chunks = chunk;
     }
 }
 
@@ -600,7 +567,7 @@ journal_alloc_buffer (journal_t *journal)
   if (!jb)
     return NULL;
 out:
-  jb->lifeboat_index = -1;
+  jb->jb_intercepted_data = NULL;
   return jb;
 }
 
@@ -611,14 +578,15 @@ out:
 static inline void
 journal_free_buffer (journal_t *journal, journal_buffer_t *jb)
 {
-  /* Check if this pointer falls inside our contiguous pool block */
-  if (jb->lifeboat_index >= 0)
-    lifeboat_release_buffer (jb);
-
   uintptr_t ptr = (uintptr_t) jb;
   uintptr_t start = (uintptr_t) journal->j_pool_memory;
   uintptr_t end = (uintptr_t) & journal->j_pool_memory[JRNL_MAX_FREE_BUFFERS];
 
+  if (jb->jb_intercepted_data)
+    {
+      journal_free_intercept_chunk (journal, jb->jb_intercepted_data);
+      jb->jb_intercepted_data = NULL;
+    }
   if (ptr >= start && ptr < end)
     {
       /* It belongs to the permanent pool. Link it back up! */
@@ -1062,7 +1030,7 @@ journal_stop_transaction_locked (journal_t *journal,
 	{
 	  if (jb_exp->needs_copy)
 	    {
-	      /* ALWAYS hydrate from the live VM cache. The lifeboat is for
+	      /* ALWAYS hydrate from the live VM cache. The intercept is for
 	         delayed physical I/O, not for sourcing WAL shadow data! */
 	      /* Clear the flag here, under the lock, before the copy.  A
 	         dirty that lands while we copy unlocked sets it again and
@@ -1196,7 +1164,7 @@ journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
    * stale relative to the final shadow copy.
    *
    * Blocks in the running transaction that legitimately need to be marked as
-   * written are handled by journal_flush_lifeboat_payloads(), which runs AFTER
+   * written are handled by journal_flush_intercepted_payloads(), which runs AFTER
    * the WAL barrier is crossed (T_COMMITTED) and does its own marking.
    *
    * The committing transaction and checkpoint list are safe to notify: their
@@ -1374,6 +1342,61 @@ journal_is_block_in_newer_transaction_locked (journal_t *journal,
      before the new one is written, causing unrecoverable data loss on crash! */
 
   return 0;
+}
+
+/* Flush any intercepted VM pager blocks to the primary disk
+   Executes completely outside the global journal lock (manages its own lock per-block).
+   Called immediately after a transaction is safely committed to the WAL.  */
+static void
+journal_flush_intercepted_payloads (journal_t *journal,
+				    diskfs_transaction_t *txn)
+{
+  size_t iter = 0;
+  journal_buffer_t *jb;
+
+  while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
+    {
+      char *flush_data = NULL;
+
+      JOURNAL_LOCK (journal);
+      if (jb->jb_intercepted_data)
+	{
+	  flush_data = jb->jb_intercepted_data;
+	  jb->jb_is_flushing = 1;
+	}
+      JOURNAL_UNLOCK (journal);
+
+      if (flush_data)
+	{
+	  store_offset_t dev_block =
+	    (store_offset_t) jb->jb_blocknr << log2_dev_blocks_per_fs_block;
+	  size_t amount;
+	  error_t err;
+
+	  /* Shadow data is fully settled and committed. */
+	  err =
+	    store_write (store, dev_block, jb->jb_shadow_data, block_size, &amount);
+
+	  JOURNAL_LOCK (journal);
+	  if (err)
+	    JRNL_LOG_WARN ("Intercept flush failed for block %u: %s",
+			   jb->jb_blocknr, strerror (err));
+
+	  jb->jb_is_flushing = 0;
+
+	  /* We always free the chunk we just finished using */
+	  journal_free_intercept_chunk (journal, flush_data);
+
+	  /* If the pager didn't replace it with a new write, clear it. */
+	  if (jb->jb_intercepted_data == flush_data)
+	    jb->jb_intercepted_data = NULL;
+
+	  if (!err)
+	    journal_notify_blocks_written_locked (jb->jb_blocknr, 1);
+
+	  JOURNAL_UNLOCK (journal);
+	}
+    }
 }
 
 /**
@@ -1607,9 +1630,11 @@ journal_dirty_block_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
 	  jb->jb_is_written = 0;
 	  txn->t_outstanding_io++;
 	}
-      if (jb->lifeboat_index >= 0)
-	lifeboat_release_buffer (jb);
-
+      if (jb->jb_intercepted_data)
+	{
+	  journal_free_intercept_chunk (ext2_journal, jb->jb_intercepted_data);
+	  jb->jb_intercepted_data = NULL;
+	}
       goto out;
     }
 
@@ -1946,77 +1971,6 @@ journal_write_commit_record (journal_t *journal,
 }
 
 /**
- * Flushes any intercepted pager writes (Lifeboat payloads) to the main filesystem.
- * Executes completely outside the global journal lock (manages its own lock per-block).
- * Called immediately after a transaction is safely committed to the WAL.
- */
-static void
-journal_flush_lifeboat_payloads (journal_t *journal,
-				 diskfs_transaction_t *txn)
-{
-  size_t iter = 0;
-  journal_buffer_t *jb_lb;
-
-  while ((jb_lb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
-    {
-      int lb_idx = -1;
-
-      JOURNAL_LOCK (journal);
-      if (jb_lb->lifeboat_index >= 0)
-	{
-	  lb_idx = jb_lb->lifeboat_index;
-	  jb_lb->jb_is_flushing = 1;	/* Mark as actively flushing! */
-	}
-      JOURNAL_UNLOCK (journal);
-
-      if (lb_idx >= 0)
-	{
-	  store_offset_t dev_block =
-	    (store_offset_t) jb_lb->jb_blocknr <<
-	    log2_dev_blocks_per_fs_block;
-	  size_t amount;
-	  error_t err;
-
-	  /* We do the I/O using our safely captured, privately owned index */
-	  err = store_write (store, dev_block,
-			     &(ext2_lifeboat.payloads)[lb_idx * block_size],
-			     block_size, &amount);
-
-	  JOURNAL_LOCK (journal);
-	  if (err)
-	    {
-	      JRNL_LOG_WARN
-		("Lifeboat flush failed for block %u: %s",
-		 jb_lb->jb_blocknr, strerror (err));
-	    }
-
-	  jb_lb->jb_is_flushing = 0;	/* Done flushing (even if it failed) */
-
-	  /* Compare-and-Swap: Did the pager replace our slot with a new one? */
-	  if (jb_lb->lifeboat_index == lb_idx)
-	    {
-	      /* No, it didn't. We can safely detach it now. */
-	      jb_lb->lifeboat_index = -1;
-	    }
-
-	  /* We always free the raw slot we just finished using */
-	  lifeboat_free_slot (lb_idx);
-
-	  /* Mark it as written so checkpointing can advance!
-	     Use the global notification system so ALL transactions
-	     that contain this block are marked as written, preventing
-	     the Active Checkpointer from overwriting fresh data with
-	     stale shadow metadata from older checkpoint transactions. */
-	  if (!err)
-	    {
-	      journal_notify_blocks_written_locked (jb_lb->jb_blocknr, 1);
-	    }
-	  JOURNAL_UNLOCK (journal);
-	}
-    }
-}
-
-/**
  * Ensures there is enough free space in the ring buffer to commit the
  * transaction. If space is dangerously low, it forces a synchronous checkpoint.
  * MUST be called with JOURNAL_LOCK held.
@@ -2133,7 +2087,7 @@ journal_commit_running_transaction_locked (journal_t *journal)
   /* The WAL barrier is crossed! Tell the Pager it can write safely! */
   txn->t_state = T_COMMITTED;
   /* Flush any intercepted VM pager blocks to the primary disk */
-  journal_flush_lifeboat_payloads (journal, txn);
+  journal_flush_intercepted_payloads (journal, txn);
 
   int need_sb_flush = 0;
   /* IO done, lock again and finalize Metadata */
@@ -2307,11 +2261,23 @@ journal_create (struct node *journal_inode)
   j->j_pool_memory[JRNL_MAX_FREE_BUFFERS - 1].jb_next = NULL;
   j->j_free_buffers = &j->j_pool_memory[0];
 
-  ext2_lifeboat.payloads =
-    mmap (NULL, JRNL_LIFEBOAT_CAPACITY * block_size, PROT_READ | PROT_WRITE,
+  j->j_intercept_pool =
+    mmap (NULL, JRNL_INTERCEPT_CAPACITY * block_size, PROT_READ | PROT_WRITE,
 	  MAP_ANON | MAP_PRIVATE, -1, 0);
-  if (ext2_lifeboat.payloads == MAP_FAILED)
-    ext2_panic ("[JOURNAL] No RAM for lifeboat cache!");
+  if (j->j_intercept_pool == MAP_FAILED)
+    ext2_panic ("[JOURNAL] No RAM for intercept cache!");
+
+  /* Chain the 4KB chunks into a simple pointer-linked free list */
+  j->j_free_intercept_chunks = j->j_intercept_pool;
+  char *curr = j->j_intercept_pool;
+  for (int i = 0; i < JRNL_INTERCEPT_CAPACITY - 1; i++)
+    {
+      char *next = curr + block_size;
+      *(void **) curr = next;
+      curr = next;
+    }
+  *(void **) curr = NULL;
+
   return j;
 }
 
@@ -2460,8 +2426,8 @@ out:
 
 /**
  * Checks a block against active transactions and handles deadlock hazards.
- * Returns 1 if the block was intercepted (written to lifeboat), 0 if it
- * should be written to physical disk.
+ * Returns 1 if the block was intercepted, 0 if it should be written to
+ * physical disk.
  * MUST be called with JOURNAL_LOCK held.
  */
 static int
@@ -2487,53 +2453,43 @@ retry:
     jb_commit = NULL;
 
   /* Hazard Interception: If it's trapped in an active transaction,
-     send it straight to the lifeboat and RETURN EARLY. Do not touch checkpoints. */
+     send it straight to the intercepted chunks and RETURN EARLY.
+     Do not touch checkpoints. */
   if (jb_run || jb_commit)
     {
-      int lb_idx_run = jb_run ? lifeboat_alloc_slot () : -1;
-      int lb_idx_commit = jb_commit ? lifeboat_alloc_slot () : -1;
+      if (jb_run)
+        {
+          char *chunk_run = jb_run->jb_intercepted_data;
+          if (!chunk_run)
+            {
+              chunk_run = journal_alloc_intercept_chunk (ext2_journal);
+              if (!chunk_run) goto pool_full;
+            }
+          memcpy (chunk_run, b_data, block_size);
+          jb_run->jb_intercepted_data = chunk_run;
+        }
+      else if (jb_commit)
+        {
+          char *chunk_commit = jb_commit->jb_intercepted_data;
+          if (!chunk_commit)
+            {
+              chunk_commit = journal_alloc_intercept_chunk (ext2_journal);
+              if (!chunk_commit) goto pool_full;
+            }
+          memcpy (chunk_commit, b_data, block_size);
+          jb_commit->jb_intercepted_data = chunk_commit;
+        }
 
-      if ((jb_run && lb_idx_run < 0) || (jb_commit && lb_idx_commit < 0))
-	{
-	  if (lb_idx_run >= 0)
-	    lifeboat_free_slot (lb_idx_run);
-	  if (lb_idx_commit >= 0)
-	    lifeboat_free_slot (lb_idx_commit);
-
-	  /* Failure: Lifeboat full. Trigger V4 WAL bypass */
-	  JRNL_LOG_WARN
-	    ("VM Deadlock & Lifeboat Full! Bypassing WAL for block %u.", b);
-	}
-      else
-	{
-	  /* Success: Spoof the write directly into the Lifeboat */
-	  if (jb_run)
-	    {
-	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_run * block_size],
-		      b_data, block_size);
-	      /* If the old slot is NOT being flushed, we must free it to avoid a leak.
-	         If it IS being flushed, the commit thread owns it and will free it. */
-	      if (jb_run->lifeboat_index >= 0)
-		lifeboat_free_slot (jb_run->lifeboat_index);
-	      jb_run->lifeboat_index = (int16_t) lb_idx_run;
-	    }
-	  if (jb_commit)
-	    {
-	      memcpy (&(ext2_lifeboat.payloads)[lb_idx_commit * block_size],
-		      b_data, block_size);
-	      if (jb_commit->lifeboat_index >= 0
-		  && !jb_commit->jb_is_flushing)
-		lifeboat_free_slot (jb_commit->lifeboat_index);
-	      jb_commit->lifeboat_index = (int16_t) lb_idx_commit;
-	    }
-
-	  intercepted = 1;
-	  JRNL_LOG_DEBUG
-	    ("Intercepted rushed pager write for block %u into Lifeboat slots (run:%d, commit:%d)",
-	     b, lb_idx_run, lb_idx_commit);
-	}
-      /* Do not claim any flushing flags! */
+      intercepted = 1;
+      JRNL_LOG_DEBUG ("Intercepted rushed pager write for block %u", b);
       return intercepted;
+
+pool_full:
+      JRNL_LOG_WARN
+        ("VM Deadlock & Intercept Pool Full! Bypassing WAL for block %u.", b);
+
+      /* Do not claim any flushing flags! */
+      return 0;
     }
 
   /* We are definitively going to physical disk.
@@ -2674,7 +2630,7 @@ journal_clear_flushing_locked (block_t start_block, size_t n_blocks)
  * Replaces raw store_write calls to safely intercept deadlock hazards.
  * When the pager attempts to write a block that is actively locked by a
  * running or committing transaction (rushing the transaction commit cycle),
- * this function redirects the payload into temporary storage (the Lifeboat
+ * this function redirects the payload into temporary storage (the intercept
  * cache). This preserves the Write-Ahead Log (WAL) ordering and prevents
  * the VM pager from deadlocking the filesystem. Safe blocks are coalesced
  * and written normally to disk.
@@ -2709,7 +2665,7 @@ journal_store_write (block_t start_block, size_t length, void *buf,
       if (intercepted)
 	{
 	  /* We successfully handled this block in RAM. Move to the next. */
-	  JRNL_LOG_DEBUG ("Lifeboat intercepted hazard for block %u", b);
+	  JRNL_LOG_DEBUG ("Intercepted hazard for block %u", b);
 	  i++;
 	  total_written += block_size;
 	}
@@ -2774,13 +2730,13 @@ journal_store_write (block_t start_block, size_t length, void *buf,
 }
 
 /**
- * Overlays fresh Lifeboat cache data on top of a buffer that was just read
+ * Overlays fresh Intercept cache data on top of a buffer that was just read
  * from disk. This ensures Mach VM pointer and sub-block offset contracts
  * remain unbroken. Safely handles "short reads" at the end of devices without
  * overflowing the buffer.
  */
 static void
-journal_overlay_lifeboat (block_t start_block, size_t length, void *buf)
+journal_overlay_intercepted (block_t start_block, size_t length, void *buf)
 {
   if (!ext2_journal || length == 0 || !buf)
     return;
@@ -2800,27 +2756,25 @@ journal_overlay_lifeboat (block_t start_block, size_t length, void *buf)
       journal_buffer_t *jb =
 	run ? journal_map_lookup (&run->t_buffer_map, b) : NULL;
 
-      if (!jb && commit)
+      /* If the running txn doesn't have an intercept chunk,
+	 fall back to checking the committing one! */
+      if (!(jb && jb->jb_intercepted_data) && commit)
 	jb = journal_map_lookup (&commit->t_buffer_map, b);
 
-      if (jb && jb->lifeboat_index >= 0)
+      if (jb && jb->jb_intercepted_data)
 	{
 	  /* Calculate exact offset and bounds for this specific block */
 	  size_t offset = i << log2_block_size;
 	  size_t copy_len = block_size;
-
 	  /* If this is the final, partially-read block, clamp the copy length */
 	  if (length - offset < block_size)
 	    copy_len = length - offset;
 
 	  /* Overlay the fresh RAM data safely! */
-	  memcpy (out_ptr + offset,
-		  &(ext2_lifeboat.payloads)[jb->lifeboat_index * block_size],
-		  copy_len);
-
+	  memcpy (out_ptr + offset, jb->jb_intercepted_data, copy_len);
 	  JRNL_LOG_DEBUG
-	    ("Lifeboat Overlay successful for block %u (copied %zu bytes)", b,
-	     copy_len);
+           ("Intercept Overlay successful for block %u (copied %zu bytes)", b,
+            copy_len);
 	}
     }
   JOURNAL_UNLOCK (ext2_journal);
@@ -2829,7 +2783,7 @@ journal_overlay_lifeboat (block_t start_block, size_t length, void *buf)
 /**
  * A block device filter layer for the VFS pager's read path.
  * Passes the read through to the underlying physical disk, and then
- * transparently overlays any fresh data from the temporary Lifeboat cache.
+ * transparently overlays any fresh data from the temporary Intercept cache.
  * This ensures that reads of blocks which were recently intercepted and
  * redirected to temporary storage (due to rushing the transaction cycle)
  * return the most up-to-date data, maintaining strict cache coherence
@@ -2845,7 +2799,7 @@ journal_store_read (block_t start_block, size_t length, void **buf,
   error_t err = store_read (store, dev_block, length, buf, read_amount);
   if (!err && ext2_journal && *read_amount > 0)
     /* Pass the actual amount read, just in case it was a short read */
-    journal_overlay_lifeboat (start_block, *read_amount, *buf);
+    journal_overlay_intercepted (start_block, *read_amount, *buf);
 
   return err;
 }
