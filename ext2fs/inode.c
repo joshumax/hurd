@@ -735,6 +735,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
 	      err = diskfs_validate_mode_change (np, newmode);
 	      if (err)
 		{
+		  dino_deref (di);
 		  diskfs_end_catch_exception ();
 		  return err;
 		}
