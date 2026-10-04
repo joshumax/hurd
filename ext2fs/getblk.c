@@ -192,7 +192,7 @@ inode_getblk (struct node *node, int nr, int create, int zero,
   return 0;
 }
 
-error_t
+static error_t
 block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 	      block_t new_block, block_t *result)
 {
