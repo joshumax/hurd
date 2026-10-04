@@ -120,7 +120,6 @@ error_t
 netfs_attempt_mkfile (struct iouser *user, struct node *dir,
 		      mode_t mode, struct node **node)
 {
-  *node = 0;
   pthread_mutex_unlock (&dir->lock);
   return EOPNOTSUPP;
 }

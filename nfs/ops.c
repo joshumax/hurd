@@ -1255,8 +1255,9 @@ netfs_attempt_mkfile (struct iouser *cred, struct node *dir,
   name = malloc (50);
   if (! name)
     {
+      err = errno;
       pthread_mutex_unlock (&dir->lock);
-      return ENOMEM;
+      return err;
     }
 
   do
@@ -1294,6 +1295,8 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
   void *rpcbuf;
   error_t err;
   uid_t owner;
+
+  *newnp = 0;
 
   if (cred->uids->num)
     owner = cred->uids->ids[0];
@@ -1342,7 +1345,6 @@ netfs_attempt_create_file (struct iouser *cred, struct node *np,
     p = xdr_encode_create_state (p, mode, owner);
 
   err = conduct_rpc (&rpcbuf, &p);
-  *newnp = 0;
 
   pthread_mutex_unlock (&np->lock);
 

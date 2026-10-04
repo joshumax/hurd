@@ -492,13 +492,9 @@ netfs_attempt_mkfile (struct iouser *user, struct node *dir,
   struct netnode *nn;
 
   err = fshelp_access (&dir->nn_stat, S_IWRITE, user);
-  if (err)
-    {
-      *np = 0;
-      return err;
-    }
-
   pthread_mutex_unlock (&dir->lock);
+  if (err)
+    return err;
 
   nn = calloc (1, sizeof (*nn));
   if (!nn)
