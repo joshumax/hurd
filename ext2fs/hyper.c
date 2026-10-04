@@ -193,6 +193,9 @@ map_hypermetadata (void)
 error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
+  error_t err = 0;
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+
   if (clean)
     {
       /* Always clear recovery flag on clean unmount if journal is present */
@@ -229,7 +232,10 @@ diskfs_set_hypermetadata (int wait, int clean)
   if (sblock_dirty)
     {
       if (diskfs_readonly)
-        return EROFS; /* impossible to write */
+        {
+          err = EROFS; /* impossible to write */
+          goto out;
+        }
 
       /* Before writing, set the time of write */
       sblock->s_wtime = htole32 (diskfs_mtime->seconds);
@@ -239,15 +245,23 @@ diskfs_set_hypermetadata (int wait, int clean)
       record_global_poke (mapped_sblock);
     }
 
-  sync_global (wait);
-  if (wait)
+  if (!ext2_journal)
     {
-      error_t err = store_sync (store);
-      /* Ignore EOPNOTSUPP (legacy drivers), but warn on real I/O errors */
-      if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
-        ext2_warning ("device flush failed: %s", strerror (err));
+      sync_global (wait);
+      if (wait)
+	{
+	  error_t err = store_sync (store);
+	  /* Ignore EOPNOTSUPP (legacy drivers), but warn on real I/O errors */
+	  if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
+	    ext2_warning ("device flush failed: %s", strerror (err));
+	}
     }
-  return 0;
+  else if (wait)
+    diskfs_journal_set_sync (txn);
+
+out:
+  diskfs_journal_stop_transaction (txn);
+  return err;
 }
 
 void

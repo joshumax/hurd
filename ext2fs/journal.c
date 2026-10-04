@@ -1143,8 +1143,15 @@ journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
 {
   int sb_changed = 0;
   error_t err = 0;
-  if (!ext2_journal || n_blocks == 0 || ext2_journal->j_must_exit)
+  if (!ext2_journal || n_blocks == 0)
     return 0;
+
+  /* On shutdown journal_quiesce_checkpoints owns the checkpoint list and
+     drops the lock for I/O while it walks it, so nothing here may unlink or
+     free a transaction.  The blocks are still marked written and their
+     jb_is_flushing claims released: quiesce waits on j_flush_wait for any
+     block a pager write has claimed.  */
+  int exiting = ext2_journal->j_must_exit;
 
   JRNL_LOG_DEBUG ("Got notification for %zu blocks starting at %u",
 		  n_blocks, start_block);
@@ -1179,6 +1186,13 @@ journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
   diskfs_transaction_t *txn = ext2_journal->j_checkpoint_list;
   while (txn)
     {
+      if (exiting)
+	{
+	  journal_notify_txn_locked (txn, start_block, n_blocks);
+	  txn = txn->t_checkpoint_next;
+	  continue;
+	}
+
       /* Fast-path cleanup for empty transactions lingering at the head */
       if (txn->t_outstanding_io == 0
 	  && txn == ext2_journal->j_checkpoint_list)
