@@ -468,7 +468,8 @@ netfs_attempt_link (struct iouser * user, struct node * dir,
 }
 
 /* Attempt to create an anonymous file related to DIR for USER with MODE.
-   Set *NODE to the returned file upon success.  No matter what, unlock DIR. */
+   Set *NODE to the returned file upon success.  *NODE should be locked on
+   success; no matter what, unlock DIR before returning.  */
 error_t
 netfs_attempt_mkfile (struct iouser * user, struct node * dir,
                      mode_t mode, struct node ** node)
