@@ -436,6 +436,7 @@ ext2_free_xattr_block (struct node *np)
   void *block;
   struct ext2_inode *ei;
   struct ext2_xattr_header *header;
+  diskfs_transaction_t *txn;
 
   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
     {
@@ -443,6 +444,7 @@ ext2_free_xattr_block (struct node *np)
       return EOPNOTSUPP;
     }
 
+  txn = journal_thread_transaction ();
   err = 0;
   block = NULL;
 
@@ -484,11 +486,13 @@ ext2_free_xattr_block (struct node *np)
     {
        ext2_debug("h_refcount: %d", le32toh (header->h_refcount));
 
+       journal_get_write_access (txn, blkno);
        header->h_refcount = htole32 (le32toh (header->h_refcount) - 1);
        record_global_poke (block);
     }
 
 
+  journal_get_write_access (txn, boffs_block (bptr_offs (ei)));
   ei->i_file_acl = 0;
   record_global_poke (ei);
 
@@ -680,6 +684,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
   struct ext2_xattr_header *header;
   struct ext2_xattr_entry *entry;
   struct ext2_xattr_entry *location;
+  diskfs_transaction_t *txn;
 
   if (!EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR))
     {
@@ -692,6 +697,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 
   if (strlen(name) > 255 || len > block_size)
     return ERANGE;
+  txn = journal_thread_transaction ();
 
   ei = dino_ref (np->cache_id);
   blkno = ei->i_file_acl;
@@ -722,6 +728,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	}
 
       block = disk_cache_block_ref (blkno);
+      journal_get_write_access (txn, blkno);
       memset (block, 0, block_size);
 
       header = EXT2_XATTR_HEADER (block);
@@ -739,6 +746,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	  err = EIO;
 	  goto cleanup;
 	}
+      journal_get_write_access (txn, blkno);
     }
 
   entry = EXT2_XATTR_ENTRY_FIRST (header);
@@ -864,6 +872,7 @@ ext2_set_xattr (struct node *np, const char *name, const char *value,
 	      np->dn_stat.st_blocks += 1 << log2_stat_blocks_per_fs_block;
 	      np->dn_set_ctime = 1;
 
+	      journal_get_write_access (txn, boffs_block (bptr_offs (ei)));
 	      ei->i_file_acl = blkno;
 	      record_global_poke (ei);
 	    }

@@ -346,12 +346,39 @@ extern struct journal *ext2_journal;
 #define JRNL_LOG_WARN(fmt, ...) ext2_warning ("[JOURNAL] " fmt, ##__VA_ARGS__)
 
 /**
- * Mark dirty: Add a modified filesystem block to the given transaction.
- * Performs a shadow copy of 'data' into the journal memory.
+ * Notify the journal that the content of the block fs_blocknr is about to get
+ * modified by a filesystem operation.
+ * Journal will arm necessary buffers to track the block and it will
+ * automatically copy the memory contained at that block when the
+ * transaction txn is committing and the block's memory has settled.
+ *
+ * If the memory of the block is modified before calling this function such
+ * modifications won't be part of the journal transaction.
+ *
+ * In between the invocation of this function and the commit, journal will be
+ * intercepting pager's writes to this block and instead of to disk they will
+ * be temporarily stored in journal's caches.
  */
 error_t
-journal_dirty_block (diskfs_transaction_t * txn, block_t fs_blocknr);
+journal_get_write_access (diskfs_transaction_t * txn, block_t fs_blocknr);
 
+/**
+ * Notifies the journal that modifications for this block have been complete;
+ * the block is copied into the transaction again at the next sweep.
+ *
+ * Shouldn't be called if no journal_get_write_access() was called previously
+ * for the same transaction and the same block.
+ */
+void
+journal_mark_dirty (diskfs_transaction_t * txn, block_t fs_blocknr);
+
+/* Return the transaction of the calling thread's open handle.  While the
+   journal is live the caller must hold a handle and the result is a
+   T_RUNNING or T_LOCKED transaction that stays usable until the handle is
+   released.  NULL means there is nothing to journal into: no journal, or
+   the journal is shutting down and no handle was opened.  */
+diskfs_transaction_t *
+journal_thread_transaction (void);
 
 void ext2_orphan_drop_ram_link (struct node *np);
 
@@ -531,17 +558,9 @@ extern void alloc_sync (struct node *np);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
 EXT2FS_EI void
-journal_notify_block_changed (block_t block)
+journal_mark_dirty_current (block_t block)
 {
-  if (!ext2_journal)
-    return;
-
-  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
-  error_t err = journal_dirty_block (txn, block);
-  if (err)
-    JRNL_LOG_WARN ("Didn't manage to add a dirty block %u to the journal. (%s).",
-		   block, strerror (err));
-  diskfs_journal_stop_transaction (txn);
+  journal_mark_dirty (journal_thread_transaction (), block);
 }
 
 /* Marks the global block BLOCK as being modified, and returns true if we
@@ -569,7 +588,7 @@ record_global_poke (void *ptr)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  journal_notify_block_changed (block);
+  journal_mark_dirty_current (block);
   ext2_debug ("(%p = %p)", ptr, block_ptr);
 #ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
@@ -584,7 +603,7 @@ sync_global_ptr (void *ptr, int wait)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  journal_notify_block_changed (block);
+  journal_mark_dirty_current (block);
   ext2_debug ("(%p -> %u)", ptr, block);
   global_block_modified (block);
   _disk_cache_block_deref (block_ptr);
@@ -611,7 +630,7 @@ record_indir_poke (struct node *node, void *ptr)
 {
   block_t block = boffs_block (bptr_offs (ptr));
   void *block_ptr = bptr (block);
-  journal_notify_block_changed (block);
+  journal_mark_dirty_current (block);
   ext2_debug ("(%llu, %p)", node->cache_id, ptr);
 #ifdef EXT2FS_DEBUG
   assert_backtrace (disk_cache_block_is_ref (block));
@@ -630,8 +649,8 @@ sync_global (int wait)
 }
 
 /* Sync all allocation information and node NP if diskfs_synchronous.
-   If journaling is active, we just update memory (wait=0) and let the
-   transaction commit handle durability. */
+   If journaling is active, push the superblock into this transaction;
+   the commit provides durability.  */
 EXT2FS_EI void
 alloc_sync (struct node *np)
 {
@@ -640,14 +659,15 @@ alloc_sync (struct node *np)
     {
       diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
+      /* If the superblock was modified in memory, push it to the disk cache
+         now so it gets bundled into this transaction's WAL commit.
+         diskfs_set_hypermetadata natively handles the get_write_access ->
+         memcpy -> mark_dirty pipeline! */
+      if (sblock_dirty && ext2_journal)
+        diskfs_set_hypermetadata (0, 0);
+
       if (np)
         diskfs_node_update (np, diskfs_synchronous);
-
-      if (sblock_dirty && ext2_journal)
-        {
-          block_t sb_blocknr = boffs_block (SBLOCK_OFFS);
-          journal_dirty_block (txn, sb_blocknr);
-        }
 
       diskfs_journal_stop_transaction (txn);
     }
@@ -658,7 +678,9 @@ alloc_sync (struct node *np)
       if (np)
         pokel_sync (&diskfs_node_disknode (np)->indir_pokel, 1);
 
-      diskfs_set_hypermetadata (1, 0);
+      /* Only flush if journaling didn't already update the cache above */
+      if (!ext2_journal)
+        diskfs_set_hypermetadata (1, 0);
     }
 }
 #endif /* Use extern inlines.  */

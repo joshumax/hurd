@@ -84,7 +84,7 @@ journal_store_read (block_t start_block, size_t length, void **buf,
  * Records a range of deleted blocks so they can be unpinned from older
  * checkpoint lists AFTER this transaction safely commits.
  */
-void journal_record_freed_blocks (block_t start, unsigned long count);
+void journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start, unsigned long count);
 
 /**
  * Marks the calling thread as running a pager callback (ON = 1) or done

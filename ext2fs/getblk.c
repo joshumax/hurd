@@ -70,6 +70,7 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
   static unsigned long alloc_hits = 0, alloc_attempts = 0;
 #endif
   block_t result;
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 
 #ifdef EXT2_PREALLOCATE
   if (diskfs_node_disknode (node)->info.i_prealloc_count &&
@@ -110,7 +111,9 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
   if (result && zero)
     {
       char *bh = disk_cache_block_ref (result);
+      journal_get_write_access (txn, result);
       memset (bh, 0, block_size);
+      /* record_indir_poke handles journal_mark_dirty internally. */
       record_indir_poke (node, bh);
     }
 
@@ -196,6 +199,7 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
   int i;
   block_t goal = 0;
   block_t *bh = (block_t *)disk_cache_block_ref (block);
+  diskfs_transaction_t *txn;
 
   *result = bh[nr];
   if (*result)
@@ -209,6 +213,7 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
       disk_cache_block_deref (bh);
       return EINVAL;
     }
+  txn = journal_thread_transaction ();
 
   if (diskfs_node_disknode (node)->info.i_next_alloc_block == new_block)
     goal = diskfs_node_disknode (node)->info.i_next_alloc_goal;
@@ -233,10 +238,12 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
       return ENOSPC;
     }
 
+  journal_get_write_access (txn, block);
   bh[nr] = *result;
 
   if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
     {
+      /* calls journal_mark_dirty internally */
       sync_global_ptr (bh, 1);
       /* We just wrote a new indirect block pointer.
          If this doesn't hit the platter, the file is corrupt. */
@@ -245,6 +252,7 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 	ext2_warning ("indirect block flush failed: %s", strerror (err));
     }
   else
+    /* record_indir_poke handles journal_mark_dirty internally */
     record_indir_poke (node, bh);
 
   diskfs_node_disknode (node)->info.i_next_alloc_block = new_block;

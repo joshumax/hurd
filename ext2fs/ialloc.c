@@ -59,6 +59,8 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   unsigned long bit;
   struct ext2_group_desc *gdp;
   ino_t inum = np->cache_id;
+  block_t gdp_block, gdp_bitmap_blk;
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 
   assert_backtrace (!diskfs_readonly);
 
@@ -79,8 +81,12 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   bit = (inum - 1) % le32toh (sblock->s_inodes_per_group);
 
   gdp = group_desc (block_group);
-  bh = disk_cache_block_ref (le32toh (gdp->bg_inode_bitmap));
+  gdp_block = boffs_block (bptr_offs (gdp));
+  gdp_bitmap_blk = le32toh (gdp->bg_inode_bitmap);
+  bh = disk_cache_block_ref (gdp_bitmap_blk);
 
+  journal_get_write_access (txn, gdp_bitmap_blk);
+  journal_get_write_access (txn, gdp_block);
   if (!clear_bit (bit, bh))
     ext2_warning ("bit already cleared for inode %" PRIu64, inum);
   else
@@ -123,6 +129,7 @@ ext2_alloc_inode (ino_t dir_inum, mode_t mode)
   ino_t inum;
   struct ext2_group_desc *gdp;
   struct ext2_group_desc *tmp;
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 
   pthread_spin_lock (&global_lock);
 
@@ -228,6 +235,7 @@ repeat:
        find_first_zero_bit ((uint32_t *) bh, le32toh (sblock->s_inodes_per_group)))
       < le32toh (sblock->s_inodes_per_group))
     {
+      journal_get_write_access (txn, le32toh (gdp->bg_inode_bitmap));
       if (set_bit (inum, bh))
 	{
 	  ext2_warning ("bit already set for inode %" PRIu64, inum);
@@ -258,6 +266,7 @@ repeat:
       goto sync_out;
     }
 
+  journal_get_write_access (txn, boffs_block (bptr_offs (gdp)));
   gdp->bg_free_inodes_count = htole16 (le16toh (gdp->bg_free_inodes_count) - 1);
   if (S_ISDIR (mode))
     gdp->bg_used_dirs_count = htole16 (le16toh (gdp->bg_used_dirs_count) + 1);

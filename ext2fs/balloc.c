@@ -63,10 +63,13 @@ ext2_free_blocks (block_t block, unsigned long count)
   unsigned long bit;
   unsigned long i;
   struct ext2_group_desc *gdp;
+  diskfs_transaction_t *txn;
 
   /* Trap trying to free superblock, block group descriptor table, or beyond the end */
   assert_backtrace (block >= group_desc_block_end
 		 && block + count <= store->size >> log2_block_size);
+
+  txn = journal_thread_transaction ();
 
   pthread_spin_lock (&global_lock);
 
@@ -103,6 +106,8 @@ ext2_free_blocks (block_t block, unsigned long count)
 		      block, count);
 	}
       gdp = group_desc (block_group);
+      journal_get_write_access (txn, le32toh (gdp->bg_block_bitmap));
+      journal_get_write_access (txn, boffs_block (bptr_offs (gdp)));
       bh = disk_cache_block_ref (le32toh (gdp->bg_block_bitmap));
 
       if (in_range (le32toh (gdp->bg_block_bitmap), block, gcount) ||
@@ -113,7 +118,7 @@ ext2_free_blocks (block_t block, unsigned long count)
 		    "block = %u, count = %lu",
 		    block, count);
 
-      journal_record_freed_blocks (block, gcount);
+      journal_record_freed_blocks (txn, block, gcount);
       for (i = 0; i < gcount; i++)
 	{
 	  if (!clear_bit (bit + i, bh))
@@ -160,6 +165,7 @@ ext2_new_block (block_t goal,
   uint32_t lmap;
   struct ext2_group_desc *gdp;
 
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 #ifdef EXT2FS_DEBUG
   static int goal_hits = 0, goal_attempts = 0;
 #endif
@@ -317,6 +323,8 @@ search_back:
 
 got_block:
   assert_backtrace (bh != NULL);
+  journal_get_write_access (txn, le32toh (gdp->bg_block_bitmap));
+  journal_get_write_access (txn, boffs_block (bptr_offs (gdp)));
 
   ext2_debug ("using block group %d (%d)", i, le16toh (gdp->bg_free_blocks_count));
 

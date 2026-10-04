@@ -120,6 +120,8 @@ trunc_indirect (struct node *node, block_t end,
 		void (*free_block)(block_t *p, unsigned index),
 		struct free_block_run *fbr)
 {
+  diskfs_transaction_t *txn = journal_thread_transaction ();
+
   if (*p)
     {
       unsigned index;
@@ -127,6 +129,7 @@ trunc_indirect (struct node *node, block_t end,
       block_t *ind_bh = (block_t *) disk_cache_block_ref (*p);
       unsigned first = end < offset ? 0 : end - offset;
 
+      journal_get_write_access (txn, *p);
       for (index = first; index < addr_per_block; index++)
 	if (ind_bh[index])
 	  {
@@ -139,6 +142,10 @@ trunc_indirect (struct node *node, block_t end,
 
       if (first == 0 && all_freed)
 	{
+	  /* We modified this block before killing it.
+	     Use *p (the block number), not ind_bh (the RAM pointer). */
+	  if (modified && ext2_journal)
+	    journal_mark_dirty (txn, *p);
 	  pager_flush_some (diskfs_disk_pager,
 			    bptr_index (ind_bh) << log2_block_size,
 			    block_size, 1);

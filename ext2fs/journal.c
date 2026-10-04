@@ -89,7 +89,7 @@
  * Slab Allocator Pool Size.
  * Pre-allocates a contiguous chunk of memory for journal buffers
  * (512 * 4KB = 2MB).
- * This allows journal_dirty_block to be a zero-allocation operation for the
+ * This allows journal_get_write_access to be a zero-allocation operation for the
  * vast majority of workloads, falling back to dynamic allocation only under
  * extreme metadata pressure.
  */
@@ -287,7 +287,7 @@ typedef struct journal
   /* Pre-allocated buffers for zero-allocation commits */
   void *j_descriptor_buf;
   void *j_commit_buf;
-  /* Pre-allocated buffers for (near) zero-allocation journal_dirty_block */
+  /* Pre-allocated buffers for (near) zero-allocation journal_get_write_access */
   journal_buffer_t *j_pool_memory;	/* The raw contiguous block */
   journal_buffer_t *j_free_buffers;	/* The linked list head */
 
@@ -877,9 +877,10 @@ journal_get_oldest_transaction_locked (journal_t *journal)
  * checkpoint lists AFTER this transaction safely commits.
  */
 void
-journal_record_freed_blocks (block_t start, unsigned long count)
+journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start,
+			     unsigned long count)
 {
-  if (!ext2_journal)
+  if (!ext2_journal || !txn)
     return;
 
   journal_freed_extent_t *ext = malloc (sizeof (journal_freed_extent_t));
@@ -894,11 +895,6 @@ journal_record_freed_blocks (block_t start, unsigned long count)
   ext->fe_count = count;
 
   JOURNAL_LOCK (ext2_journal);
-  /* Record against this thread's transaction when it holds one: the free
-     belongs to the same RPC, and that transaction may be T_LOCKED while
-     j_running_transaction is NULL.  Otherwise use the running one. */
-  diskfs_transaction_t *txn = journal_thread_depth > 0
-    ? journal_thread_txn : ext2_journal->j_running_transaction;
   if (!txn || (txn->t_state != T_RUNNING && txn->t_state != T_LOCKED))
     {
       JRNL_LOG_DEBUG ("Cannot record freed blocks, no running transaction.");
@@ -1077,7 +1073,7 @@ journal_stop_transaction_locked (journal_t *journal,
           */
 	  memcpy (curr->jb_shadow_data, live_cache_ptr, block_size);
 	  /* needs_copy was cleared under the lock when this block was
-	   * listed.  If the block is modified again, journal_dirty_block
+	   * listed.  If the block is modified again, journal_get_write_access
 	   * sets it back to 1 and a later sweep recopies. */
 
 	  journal_buffer_t *next = curr->jb_next;
@@ -1611,22 +1607,52 @@ journal_wait_on_tid_locked (journal_t *journal, uint32_t target_tid)
     JOURNAL_WAIT (&journal->j_commit_done, journal);
 }
 
+void
+journal_mark_dirty (diskfs_transaction_t *txn, block_t fs_blocknr)
+{
+  if (!ext2_journal || !txn)
+    return;
+
+  JOURNAL_LOCK (ext2_journal);
+  journal_buffer_t *jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
+  if (!jb)
+    {
+      /* STRICT JBD2 BEHAVIOR:
+         If we hit this, the filesystem modified a block without calling
+         journal_get_write_access() first! */
+      JRNL_LOG_WARN ("mark_dirty called on unreserved block %u! Missing get_write_access?",
+                     fs_blocknr);
+      goto out;
+    }
+
+  /* We don't delete the intercepted chunk here, its the only copy of the data
+     we have. It won't be used for hydration, or for post commit flushing but
+     we still need it for now for the journal_store_read(). We will instead
+     instruct the hydration that this needs a fresh copy. */
+  jb->needs_copy = 1;
+
+  /* Reset the physical write flag so the Checkpoint thread knows to
+     overwrite the disk with our pristine shadow buffer later. */
+  if (jb->jb_is_written)
+    {
+      jb->jb_is_written = 0;
+      txn->t_outstanding_io++;
+    }
+
+out:
+  JOURNAL_UNLOCK (ext2_journal);
+}
+
 /**
  * Adds a modified filesystem block to the SPECIFIC transaction handle.
  * Defers the actual memory copy until the transaction stops.
  */
 static error_t
-journal_dirty_block_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
+journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
 {
   journal_buffer_t *jb;
   journal_buffer_t *new_jb;
   error_t err = 0;
-
-  if (!txn)
-    {
-      JRNL_LOG_DEBUG ("[TRX] Transaction null but block dirty.");
-      goto out;
-    }
 
   assert_backtrace (txn->t_state == T_RUNNING || txn->t_state == T_LOCKED);
   jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
@@ -1643,11 +1669,6 @@ journal_dirty_block_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
 	     Reset the flag so we know to protect it. */
 	  jb->jb_is_written = 0;
 	  txn->t_outstanding_io++;
-	}
-      if (jb->jb_intercepted_data)
-	{
-	  journal_free_intercept_chunk (ext2_journal, jb->jb_intercepted_data);
-	  jb->jb_intercepted_data = NULL;
 	}
       goto out;
     }
@@ -1786,15 +1807,59 @@ journal_thread_release (diskfs_transaction_t *txn)
  * Defers the actual memory copy until the transaction stops.
  */
 error_t
-journal_dirty_block (diskfs_transaction_t *txn, block_t fs_blocknr)
+journal_get_write_access (diskfs_transaction_t *txn, block_t fs_blocknr)
 {
-  error_t err;
+  error_t err = 0;
   if (!ext2_journal)
-    return EINVAL;
+    goto out;
+
+  if (!txn)
+    {
+      JRNL_LOG_WARN
+	("Transaction null so no write access granted for block %u.",
+	 fs_blocknr);
+      goto out;
+    }
+
   JOURNAL_LOCK (ext2_journal);
-  err = journal_dirty_block_locked (txn, fs_blocknr);
+  err = journal_get_write_access_locked (txn, fs_blocknr);
+  if (err)
+    JRNL_LOG_WARN
+      ("Didn't manage to get journal write access for block %u. (%s).",
+       fs_blocknr, strerror (err));
   JOURNAL_UNLOCK (ext2_journal);
+
+out:
   return err;
+}
+
+/* Return the transaction of the calling thread's open handle.
+
+   While the journal is live the caller must hold a handle, taken with
+   diskfs_journal_start_transaction; calling without one is a bug and
+   asserts.  The result is then never NULL, and the handle's
+   t_active_threads count keeps it T_RUNNING or T_LOCKED until the handle
+   is released, so blocks may be added to it.
+
+   NULL is returned only when the thread holds no handle because there is
+   no journal, or because the journal is shutting down (j_must_exit) and
+   diskfs_journal_start_transaction declined to open one.  Callers must
+   accept NULL and treat it as "do not journal".
+
+   Under NDEBUG the missing-handle check is compiled out: a caller that
+   forgot its handle gets NULL and its edits silently go unjournaled.  */
+diskfs_transaction_t *
+journal_thread_transaction (void)
+{
+  diskfs_transaction_t *txn = journal_thread_txn;
+
+  assert_backtrace (!ext2_journal || ext2_journal->j_must_exit
+		    || journal_thread_depth > 0);
+  /* The handle's t_active_threads count keeps commit from moving the
+     transaction past T_LOCKED.  */
+  assert_backtrace (!txn || txn->t_state == T_RUNNING
+		    || txn->t_state == T_LOCKED);
+  return txn;
 }
 
 /* Two flags.  journal_thread_sync tells this thread's RPC tail to commit

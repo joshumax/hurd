@@ -408,6 +408,7 @@ write_node (struct node *np)
   error_t err;
   struct stat *st = &np->dn_stat;
   struct ext2_inode *di;
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 
   ext2_debug ("(%llu)", np->cache_id);
 
@@ -428,6 +429,7 @@ write_node (struct node *np)
 
       di = dino_ref (np->cache_id);
 
+      journal_get_write_access (txn, boffs_block (bptr_offs (di)));
       di->i_generation = htole32 (st->st_gen);
 
       /* We happen to know that the stat mode bits are the same
@@ -578,13 +580,17 @@ void
 diskfs_write_disknode (struct node *np, int wait)
 {
   error_t err;
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+
   struct ext2_inode *di = write_node (np);
   if (!di)
-    return;
+    {
+      diskfs_journal_stop_transaction (txn);
+      return;
+    }
 
   if (ext2_journal)
     {
-      diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
       record_global_poke (di);
       if (wait)
         diskfs_journal_set_sync (txn);
@@ -601,9 +607,7 @@ diskfs_write_disknode (struct node *np, int wait)
         ext2_warning ("device flush failed: %s", strerror (err));
     }
   else
-    {
-      record_global_poke (di);
-    }
+    record_global_poke (di);
 }
 
 /* Set *ST with appropriate values to reflect the current state of the
@@ -634,6 +638,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
 		       struct protid *cred)
 {
   error_t err;
+  diskfs_transaction_t *txn;
 
   assert_backtrace (!diskfs_readonly);
 
@@ -641,6 +646,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
   if (err)
     return err;
 
+  txn = journal_thread_transaction ();
   /* If xattr is supported for this filesystem, use xattr to store translator
      record, otherwise, use legacy translator record */
   if (EXT2_HAS_COMPAT_FEATURE (sblock, EXT2_FEATURE_COMPAT_EXT_ATTR)
@@ -662,6 +668,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
 	  ext2_debug ("Old translator record found, clear it");
 
 	  /* Clear block for translator going away. */
+	  journal_get_write_access (txn, boffs_block (bptr_offs (di)));
 	  di->i_translator = htole32 (0);
 	  diskfs_node_disknode (np)->info_i_translator = 0;
 	  record_global_poke (di);
@@ -761,6 +768,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
 	      np->dn_stat.st_mode = newmode;
 	    }
 
+	  journal_get_write_access (txn, boffs_block (bptr_offs (di)));
 	  di->i_translator = htole32 (blkno);
 	  diskfs_node_disknode (np)->info_i_translator = blkno;
 	  record_global_poke (di);
@@ -771,6 +779,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
       else if (!namelen && blkno)
 	{
 	  /* Clear block for translator going away. */
+	  journal_get_write_access (txn, boffs_block (bptr_offs (di)));
 	  di->i_translator = htole32 (0);
 	  diskfs_node_disknode (np)->info_i_translator = 0;
 	  record_global_poke (di);
@@ -796,6 +805,7 @@ diskfs_set_translator (struct node *np, const char *name, mach_msg_type_number_t
 	  memcpy (buf + 2, name, namelen);
 
 	  blkptr = disk_cache_block_ref (blkno);
+	  journal_get_write_access (txn, blkno);
 	  memcpy (blkptr, buf, block_size);
 	  record_global_poke (blkptr);
 

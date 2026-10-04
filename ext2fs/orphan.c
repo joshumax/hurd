@@ -43,11 +43,12 @@ diskfs_orphan_add (struct node *np)
 {
   ino_t inum = np->cache_id;
   struct ext2_inode *di;
-  diskfs_transaction_t *txn = NULL;
+  diskfs_transaction_t *txn;
 
   assert_backtrace (!diskfs_readonly);
   assert_backtrace (np->dn_stat.st_nlink == 0);
 
+  /* The orphan list is exclusively an ext3/journaling feature. */
   if (!ext2_journal)
     return;
 
@@ -59,15 +60,13 @@ diskfs_orphan_add (struct node *np)
      2. global_lock: Protects the in-memory superblock modifications.
      3. Journal Transaction (txn): Guarantees that the superblock pointer and the
         inode pointer hit the physical disk as a single, atomic operation. */
-  txn = diskfs_journal_start_transaction ();
+  txn = journal_thread_transaction ();
 
   pthread_mutex_lock (&orphan_lock);
 
   if (diskfs_node_disknode (np)->on_orphan_list)
     {
       pthread_mutex_unlock (&orphan_lock);
-      if (txn)
-	diskfs_journal_stop_transaction (txn);
       return;
     }
 
@@ -80,7 +79,9 @@ diskfs_orphan_add (struct node *np)
 
   di = dino_ref (inum);
 
-  /* Atomically link the new orphan to the head of the on-disk list. */
+  /* Reserve the inode block in the journal */
+  journal_get_write_access (txn, boffs_block (bptr_offs (di)));
+
   pthread_spin_lock (&global_lock);
   di->i_dtime = sblock->s_last_orphan;
   sblock->s_last_orphan = htole32 (inum);
@@ -97,16 +98,8 @@ diskfs_orphan_add (struct node *np)
     di->i_size_high = 0;
   memset (di->i_block, 0, EXT2_N_BLOCKS * sizeof di->i_block[0]);
 
-  if (txn)
-    {
-      /* Atomically bundle the superblock and the placeholder inode.
-         By dirtying both blocks in the same transaction, we guarantee that a
-         crash cannot leave a severed list chain. */
-      memcpy (boffs_ptr (SBLOCK_OFFS), sblock, SBLOCK_SIZE);
-      journal_dirty_block (txn, boffs_block (bptr_offs (di)));
-      journal_dirty_block (txn, boffs_block (SBLOCK_OFFS));
-    }
-
+  /* Let the journal know we are done editing. */
+  journal_mark_dirty (txn, boffs_block (bptr_offs (di)));
   dino_deref (di);
 
   /* Maintain the in-memory doubly linked list for O(1) removals. */
@@ -118,10 +111,8 @@ diskfs_orphan_add (struct node *np)
 
   pthread_mutex_unlock (&orphan_lock);
 
-  if (txn)
-    diskfs_journal_stop_transaction (txn);
-  else
-    diskfs_set_hypermetadata (0, 0);
+  /* hyper.c handles the superblock's get_write_access -> memcpy -> mark_dirty! */
+  diskfs_set_hypermetadata (0, 0);
 }
 
 /* Remove inode NP from the orphan list.  NP is locked by the caller. */
@@ -129,7 +120,7 @@ void
 diskfs_orphan_del (struct node *np)
 {
   ino_t inum = np->cache_id;
-  diskfs_transaction_t *txn = NULL;
+  diskfs_transaction_t *txn;
   int update_super = 0;
 
   if (!ext2_journal)
@@ -138,15 +129,13 @@ diskfs_orphan_del (struct node *np)
   if (!diskfs_node_disknode (np)->on_orphan_list)
     return;
 
-  txn = diskfs_journal_start_transaction ();
+  txn = journal_thread_transaction ();
 
   pthread_mutex_lock (&orphan_lock);
 
   if (!diskfs_node_disknode (np)->on_orphan_list)
     {
       pthread_mutex_unlock (&orphan_lock);
-      if (txn)
-	diskfs_journal_stop_transaction (txn);
       return;
     }
 
@@ -154,12 +143,16 @@ diskfs_orphan_del (struct node *np)
 
   struct ext2_inode *my_di = dino_ref (inum);
   __u32 my_next = le32toh (my_di->i_dtime);
+  block_t blocknr = boffs_block (bptr_offs (my_di));
 
   /* This inode is leaving the list.  i_dtime becomes a normal deletion
      stamp in the caller's following write_node (mode is already 0).
-     We do not journal_dirty it here: that copy can run before write_node
-     stores the cleared block map. */
+     We let the journal know we are about to modify the associated block. */
+  journal_get_write_access (txn, blocknr);
   my_di->i_dtime = 0;
+  /* Done editing. */
+  journal_mark_dirty (txn, blocknr);
+
   dino_deref (my_di);
 
   struct node *prev = diskfs_node_disknode (np)->orphan_prev;
@@ -172,14 +165,7 @@ diskfs_orphan_del (struct node *np)
       sblock_dirty = 1;
       pthread_spin_unlock (&global_lock);
 
-      if (txn)
-	{
-	  memcpy (boffs_ptr (SBLOCK_OFFS), sblock, SBLOCK_SIZE);
-	  journal_dirty_block (txn, boffs_block (SBLOCK_OFFS));
-	}
-      else
-	update_super = 1;
-
+      update_super = 1;
       ram_orphan_head = next;
     }
   else
@@ -188,9 +174,9 @@ diskfs_orphan_del (struct node *np)
 
       /* prev stays on the list, so its cached i_block[] is already the
          placeholder (zeros).  Only i_dtime changes. */
+      journal_get_write_access (txn, boffs_block (bptr_offs (prev_di)));
       prev_di->i_dtime = htole32 (my_next);
-      if (txn)
-	journal_dirty_block (txn, boffs_block (bptr_offs (prev_di)));
+      journal_mark_dirty (txn, boffs_block (bptr_offs (prev_di)));
       dino_deref (prev_di);
 
       diskfs_node_disknode (prev)->orphan_next = next;
@@ -205,10 +191,9 @@ diskfs_orphan_del (struct node *np)
 
   pthread_mutex_unlock (&orphan_lock);
 
+  /* Bundle the superblock modification into the transaction if needed */
   if (update_super)
     diskfs_set_hypermetadata (0, 0);
-  else
-    diskfs_journal_stop_transaction (txn);
 }
 
 /* Recover (clean up) the orphan list at mount time.
@@ -229,6 +214,7 @@ ext2_recover_orphan_list (void)
   int count = 0;
   struct ext2_inode *di;
   struct node *np = NULL;
+  diskfs_transaction_t *txn;
   error_t err;
   __u32 max_inodes = le32toh (sblock->s_inodes_count);
 
@@ -270,9 +256,13 @@ ext2_recover_orphan_list (void)
       next_orphan = le32toh (di->i_dtime);
       dino_deref (di);
 
+      /* One handle per orphan, taken before the node lock like an RPC's:
+	 orphan_del and the drop in diskfs_nput edit metadata in it.  */
+      txn = diskfs_journal_start_transaction ();
       err = diskfs_cached_lookup (inum, &np);
       if (err || !np)
 	{
+	  diskfs_journal_stop_transaction (txn);
 	  ext2_warning ("cannot look up orphan inode %lu: %s",
 			(unsigned long) inum,
 			err ? strerror (err) : "not found");
@@ -298,6 +288,7 @@ ext2_recover_orphan_list (void)
 			(unsigned long) inum);
 	  diskfs_orphan_del (np);
 	  diskfs_nput (np);
+	  diskfs_journal_stop_transaction (txn);
 	  continue;
 	}
 
@@ -305,6 +296,7 @@ ext2_recover_orphan_list (void)
          truncate the file and call diskfs_orphan_del (np), which
          advances s_last_orphan and clears the head.  */
       diskfs_nput (np);
+      diskfs_journal_stop_transaction (txn);
       count++;
     }
 
