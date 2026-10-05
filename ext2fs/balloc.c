@@ -106,6 +106,15 @@ ext2_free_blocks (block_t block, unsigned long count)
 		      block, count);
 	}
       gdp = group_desc (block_group);
+      /* XXX TODO: The journal is called here under global_lock, a spin
+	 lock: journal_get_write_access, and journal_mark_dirty through
+	 record_global_poke, take the journal mutex and can allocate.  The
+	 journal never takes global_lock, so this cannot deadlock, but a
+	 thread that blocks here stalls every thread spinning on
+	 global_lock.  Reserving before the lock is not enough, since the
+	 record_global_poke calls also run under it.  Make global_lock a
+	 mutex.  The same applies in ext2_new_block, diskfs_free_node and
+	 ext2_alloc_inode.  */
       journal_get_write_access (txn, le32toh (gdp->bg_block_bitmap));
       journal_get_write_access (txn, boffs_block (bptr_offs (gdp)));
       bh = disk_cache_block_ref (le32toh (gdp->bg_block_bitmap));
@@ -323,6 +332,7 @@ search_back:
 
 got_block:
   assert_backtrace (bh != NULL);
+  /* XXX TODO: Called under global_lock; see ext2_free_blocks.  */
   journal_get_write_access (txn, le32toh (gdp->bg_block_bitmap));
   journal_get_write_access (txn, boffs_block (bptr_offs (gdp)));
 

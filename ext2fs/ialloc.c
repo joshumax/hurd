@@ -85,6 +85,7 @@ diskfs_free_node (struct node *np, mode_t old_mode)
   gdp_bitmap_blk = le32toh (gdp->bg_inode_bitmap);
   bh = disk_cache_block_ref (gdp_bitmap_blk);
 
+  /* XXX TODO: Called under global_lock; see ext2_free_blocks.  */
   journal_get_write_access (txn, gdp_bitmap_blk);
   journal_get_write_access (txn, gdp_block);
   if (!clear_bit (bit, bh))
@@ -235,6 +236,7 @@ repeat:
        find_first_zero_bit ((uint32_t *) bh, le32toh (sblock->s_inodes_per_group)))
       < le32toh (sblock->s_inodes_per_group))
     {
+      /* XXX TODO: Called under global_lock; see ext2_free_blocks.  */
       journal_get_write_access (txn, le32toh (gdp->bg_inode_bitmap));
       if (set_bit (inum, bh))
 	{

@@ -129,7 +129,6 @@ trunc_indirect (struct node *node, block_t end,
       block_t *ind_bh = (block_t *) disk_cache_block_ref (*p);
       unsigned first = end < offset ? 0 : end - offset;
 
-      journal_get_write_access (txn, *p);
       for (index = first; index < addr_per_block; index++)
 	if (ind_bh[index])
 	  {
@@ -140,12 +139,23 @@ trunc_indirect (struct node *node, block_t end,
 	      modified = 1;
 	  }
 
+      /* Reserve the block only if it survives.  A block freed here must
+	 not be in the transaction: ext2_new_block can hand it to a new
+	 file before the free commits, the new owner's pager writes are then
+	 intercepted, and the post-commit flush writes the shadow, the old
+	 block pointers, over the file's data.  Reserving after the edit is
+	 safe because this thread's handle keeps the stop-time sweep from
+	 copying the block before the handle is released.
+
+	 XXX TODO: Freed blocks are reusable before their free commits, so
+	 a copy of an old owner's contents can still reach a reused block
+	 (a block allocated and freed in one transaction, or a copy in the
+	 committing or checkpoint transactions).  Like ext3/ext4, the
+	 allocator should keep freed blocks busy until the freeing
+	 transaction commits, and the journal should write revoke records
+	 so replay does not overwrite a reused block.  */
       if (first == 0 && all_freed)
 	{
-	  /* We modified this block before killing it.
-	     Use *p (the block number), not ind_bh (the RAM pointer). */
-	  if (modified && ext2_journal)
-	    journal_mark_dirty (txn, *p);
 	  pager_flush_some (diskfs_disk_pager,
 			    bptr_index (ind_bh) << log2_block_size,
 			    block_size, 1);
@@ -153,7 +163,10 @@ trunc_indirect (struct node *node, block_t end,
 	  disk_cache_block_deref (ind_bh);
 	}
       else if (modified)
-	record_indir_poke (node, ind_bh);
+	{
+	  journal_get_write_access (txn, *p);
+	  record_indir_poke (node, ind_bh);
+	}
       else
 	disk_cache_block_deref (ind_bh);
     }
