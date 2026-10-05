@@ -18,6 +18,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
 
+#include <hurd/sigpreempt.h>
 #include "ext2fs.h"
 
 #ifdef DONT_CACHE_MEMORY_OBJECTS
@@ -232,7 +233,17 @@ poke_pages (memory_object_t obj, vm_offset_t start, vm_offset_t end)
 	{
 	  vm_address_t poke;
 	  for (poke = addr; poke < addr + len; poke += vm_page_size)
-	    *(volatile int *)poke = *(volatile int *)poke;
+	    {
+	      int word;
+
+	      /* A page whose write fault fails, for instance because
+		 pager_unlock_page found no free block, raises a memory
+		 exception here, and diskfs_catch_exception only covers the
+		 disk image.  Every poked page lies past the new size and is
+		 discarded, so skip it rather than crash.  */
+	      if (hurd_safe_copyin (&word, (void *) poke, sizeof word) == 0)
+		hurd_safe_copyout ((void *) poke, &word, sizeof word);
+	    }
 	  munmap ((caddr_t) addr, len);
 	}
 
