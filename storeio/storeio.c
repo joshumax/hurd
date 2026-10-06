@@ -873,21 +873,6 @@ netfs_report_access (struct iouser *cred, struct node *np, int *types)
   return EOPNOTSUPP;
 }
 
-mach_port_t
-netfs_get_filemap (struct node *np, vm_prot_t prot)
-{
-  mach_port_t memobj;
-  errno = dev_get_memory_object (np->nn->dev, prot, &memobj);
-  if (errno)
-    {
-      debug ("netfs_get_filemap (np: %p, vm_prot_t: %d):\n", np, prot);
-      memobj = MACH_PORT_NULL;
-      debug ("dev_get_memory_object return err: %d\n", errno);
-    }
-
-  return memobj;
-}
-
 struct iouser *
 netfs_make_user (uid_t *uids, int nuids, uid_t *gids, int ngids)
 {
@@ -1108,4 +1093,57 @@ netfs_file_get_storage_info (struct iouser *cred, struct node *np,
                         offsets, num_offsets, data, data_len);
 
   return err;
+}
+
+kern_return_t
+netfs_S_io_map (struct protid *user,
+		mach_port_t *rdobj, mach_msg_type_name_t *rdobjtype,
+		mach_port_t *wrobj, mach_msg_type_name_t *wrobjtype)
+{
+  if (!user)
+    return EOPNOTSUPP;
+
+  if (user->po->openstat & (O_READ | O_WRITE) == 0)
+    return EBADF;
+
+  *wrobj = *rdobj = MACH_PORT_NULL;
+
+  struct node *node = user->po->np;
+  int flags = user->po->openstat & (O_READ | O_WRITE);
+  vm_prot_t prot = ((flags & O_READ) ? VM_PROT_READ : 0)
+                    | ((flags & O_WRITE) ? VM_PROT_WRITE : 0);
+
+  pthread_mutex_lock (&node->lock);
+  memory_object_t memobj;
+  error_t err = dev_get_memory_object (node->nn->dev, prot, &memobj);
+  if (err)
+    {
+      pthread_mutex_unlock (&node->lock);
+      return err;
+    }
+
+  switch (flags)
+    {
+    case O_READ | O_WRITE:
+      *wrobj = *rdobj = memobj;
+      if (memobj != MACH_PORT_NULL)
+        mach_port_mod_refs (mach_task_self (), memobj,
+                            MACH_PORT_RIGHT_SEND, 1);
+      break;
+
+    case O_READ:
+      *rdobj = memobj;
+      break;
+
+    case O_WRITE:
+      *wrobj = memobj;
+      break;
+    }
+
+  pthread_mutex_unlock (&node->lock);
+
+  *rdobjtype = MACH_MSG_TYPE_MOVE_SEND;
+  *wrobjtype = MACH_MSG_TYPE_MOVE_SEND;
+
+  return 0;
 }
