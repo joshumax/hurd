@@ -137,11 +137,16 @@ diskfs_create_node (struct node *dir,
   if (err)
     {
     change_err:
-      np->dn_stat.st_mode = 0;
+      /* Hand the inode back: dropping the last reference to an unlinked
+	 node truncates and frees it.  Keep the file type so that
+	 diskfs_free_node undoes what diskfs_alloc_node accounted for it,
+	 such as the count of used directories.  */
+      np->dn_stat.st_mode = mode & S_IFMT;
       np->dn_stat.st_nlink = 0;
       if (name)
 	diskfs_drop_dirstat (dir, ds);
       *newnode = NULL;
+      diskfs_nput (np);
       return err;
     }
 
