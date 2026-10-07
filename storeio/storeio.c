@@ -870,7 +870,18 @@ netfs_attempt_write (struct iouser *cred, struct node *np, loff_t offset,
 error_t
 netfs_report_access (struct iouser *cred, struct node *np, int *types)
 {
-  return EOPNOTSUPP;
+  *types = 0;
+
+  if (fshelp_access (&np->nn_stat, S_IREAD, cred) == 0)
+    *types |= O_READ;
+
+  if (fshelp_access (&np->nn_stat, S_IWRITE, cred) == 0)
+    *types |= O_WRITE;
+
+  if (fshelp_access (&np->nn_stat, S_IEXEC, cred) == 0)
+    *types |= O_EXEC;
+
+  return 0;
 }
 
 struct iouser *
