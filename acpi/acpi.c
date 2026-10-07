@@ -33,39 +33,51 @@
 #define __KERNEL__
 #include <acpi/acpi.h>
 
-int
-acpi_get_num_tables(size_t *num_tables)
+static int
+acpi_get_rsdp(struct rsdp_descr2 *rsdp)
 {
-  void *virt_addr;
-  bool found = false;
-  struct rsdp_descr2 rsdp = { 0 };
-  uintptr_t sdt_base = (uintptr_t)0;
-  bool is_64bit = false;
-  unsigned char *buf;
-  struct acpi_header *root_sdt;
-  struct acpi_header *next;
+  acpi_physical_address rsdp_phys = acpi_os_get_root_pointer();
 
-  virt_addr = acpi_os_map_memory(ESCD, ESCD_SIZE);
+  if (!rsdp_phys)
+    return ENODEV;
+
+  acpi_size map_sz = sizeof (struct rsdp_descr2);
+  void *virt_addr = acpi_os_map_memory (rsdp_phys, map_sz);
+
+  if (virt_addr == MAP_FAILED)
+    {
+      /* There is an extremely unlikely case that rsdp_phys is very
+	 close to the maximum value possible and ACPI 1 is in use
+	 which meant we were mapping more than necessary. */
+
+      map_sz = sizeof (struct rsdp_descr);
+      virt_addr = acpi_os_map_memory (rsdp_phys, map_sz);
+    }
+
   if (virt_addr == MAP_FAILED)
     return errno;
 
-  buf = (unsigned char *)virt_addr;
-  found = false;
+  memcpy (rsdp, virt_addr, map_sz);
+  acpi_os_unmap_memory (virt_addr, map_sz);
 
-  /* RSDP magic string is 16 byte aligned */
-  for (int i = 0; i < ESCD_SIZE; i += 16)
-    {
-      if (!memcmp(&buf[i], RSDP_MAGIC, 8)) {
-        rsdp = *((struct rsdp_descr2 *)(&buf[i]));
-        found = true;
-        break;
-      }
-    }
-
-  if (!found) {
-    acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
+  if (memcmp (rsdp->v1.magic, RSDP_MAGIC, sizeof (rsdp->v1.magic)))
     return ENODEV;
-  }
+
+  return 0;
+}
+
+int
+acpi_get_num_tables(size_t *num_tables)
+{
+  struct rsdp_descr2 rsdp = { 0 };
+  uintptr_t sdt_base = (uintptr_t)0;
+  bool is_64bit = false;
+  struct acpi_header *root_sdt;
+  struct acpi_header *next;
+
+  int err = acpi_get_rsdp (&rsdp);
+  if (err)
+    return err;
 
   if (rsdp.v1.revision == 0) {
     // ACPI 1.0
@@ -76,11 +88,8 @@ acpi_get_num_tables(size_t *num_tables)
     sdt_base = rsdp.xsdt_addr;
     is_64bit = true;
   } else {
-    acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
     return ENODEV;
   }
-
-  acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
 
   /* Now we have the sdt_base address and knowledge of 32/64 bit ACPI */
 
@@ -131,12 +140,9 @@ int
 acpi_get_tables(struct acpi_table **tables)
 {
   int err;
-  void *virt_addr;
-  bool found = false;
   struct rsdp_descr2 rsdp = { 0 };
   uintptr_t sdt_base = (uintptr_t)0;
   bool is_64bit = false;
-  unsigned char *buf;
   struct acpi_header *root_sdt;
   struct acpi_header *next;
   size_t ntables_actual;
@@ -150,27 +156,9 @@ acpi_get_tables(struct acpi_table **tables)
   if (!*tables)
     return ENOMEM;
 
-  virt_addr = acpi_os_map_memory(ESCD, ESCD_SIZE);
-  if (virt_addr == MAP_FAILED)
-    return errno;
-
-  buf = (unsigned char *)virt_addr;
-  found = false;
-
-  /* RSDP magic string is 16 byte aligned */
-  for (int i = 0; i < ESCD_SIZE; i += 16)
-    {
-      if (!memcmp(&buf[i], RSDP_MAGIC, 8)) {
-        rsdp = *((struct rsdp_descr2 *)(&buf[i]));
-        found = true;
-        break;
-      }
-    }
-
-  if (!found) {
-    acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
-    return ENODEV;
-  }
+  err = acpi_get_rsdp (&rsdp);
+  if (err)
+    return err;
 
   if (rsdp.v1.revision == 0) {
     // ACPI 1.0
@@ -181,11 +169,8 @@ acpi_get_tables(struct acpi_table **tables)
     sdt_base = rsdp.xsdt_addr;
     is_64bit = true;
   } else {
-    acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
     return ENODEV;
   }
-
-  acpi_os_unmap_memory(virt_addr, ESCD_SIZE);
 
   /* Now we have the sdt_base address and knowledge of 32/64 bit ACPI */
 
