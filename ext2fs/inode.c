@@ -494,31 +494,33 @@ write_node (struct node *np)
 	info->i_flags |= EXT2_IMMUTABLE_FL;
       di->i_flags = htole32 (info->i_flags);
 
-      /* The i_dtime and other fields here are used by the orphan machinery
-	 so we don't need to touch them here if a node is an orphan.  */
+      /* While NP is on the orphan list, i_dtime holds the next orphan's
+	 inode number, and only orphan.c writes it.  */
       if (!diskfs_node_disknode (np)->on_orphan_list)
 	{
 	  if (st->st_mode == 0)
 	    /* Set dtime non-zero to indicate a deleted file. */
 	    di->i_dtime = htole32 (di->i_mtime);
 	  else
-            {
-              /* We don't clear i_size, i_blocks, and i_translator if mode is 0,
-               to give "undeletion" utilities a chance.  */
-              di->i_dtime = htole32 (0);
-              di->i_size = htole32 (st->st_size);
-              if (sizeof (off_t) >= 8 && !S_ISDIR (st->st_mode))
-                /* 64bit file size */
-                di->i_size_high = htole32 (st->st_size >> 32);
-              di->i_blocks = htole32 (st->st_blocks);
-            }
-
-          if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
-            di->i_block[0] = htole32 (st->st_rdev);
-          else
-            memcpy (di->i_block, diskfs_node_disknode (np)->info.i_data,
-                    EXT2_N_BLOCKS * sizeof di->i_block[0]);
+	    di->i_dtime = htole32 (0);
 	}
+
+      /* We don't clear i_size, i_blocks, and i_translator if mode is 0,
+	 to give "undeletion" utilities a chance.  */
+      if (st->st_mode != 0)
+	{
+	  di->i_size = htole32 (st->st_size);
+	  if (sizeof (off_t) >= 8 && !S_ISDIR (st->st_mode))
+	    /* 64bit file size */
+	    di->i_size_high = htole32 (st->st_size >> 32);
+	  di->i_blocks = htole32 (st->st_blocks);
+	}
+
+      if (S_ISCHR(st->st_mode) || S_ISBLK(st->st_mode))
+	di->i_block[0] = htole32 (st->st_rdev);
+      else
+	memcpy (di->i_block, diskfs_node_disknode (np)->info.i_data,
+		EXT2_N_BLOCKS * sizeof di->i_block[0]);
       diskfs_end_catch_exception ();
       np->dn_stat_dirty = 0;
 

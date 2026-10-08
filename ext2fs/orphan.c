@@ -70,9 +70,11 @@ diskfs_orphan_add (struct node *np)
       return;
     }
 
-  /* write_node must see this before it copies info.i_data.  While set:
-     leave i_dtime alone, and do not copy i_data, i_size, or i_blocks.
-     libdiskfs must call diskfs_node_update as soon as this function returns. */
+  /* write_node must see this before it next writes the inode.  While set,
+     it leaves i_dtime alone and writes the rest of the inode as usual, so
+     the block map on disk always matches the blocks NP still owns and
+     recovery can truncate it.  libdiskfs must call diskfs_node_update as
+     soon as this function returns. */
   diskfs_node_disknode (np)->on_orphan_list = 1;
 
   ext2_debug ("adding inode %lu to orphan list", (unsigned long) inum);
@@ -88,15 +90,7 @@ diskfs_orphan_add (struct node *np)
   sblock_dirty = 1;
   pthread_spin_unlock (&global_lock);
 
-  /* Isolate the inode from standard file system deletion logic.
-     Zeroing the block map here prevents the Mach pager from flushing garbage or
-     cross-linked block pointers to the disk before the journal commits. */
   di->i_links_count = 0;
-  di->i_size = 0;
-  di->i_blocks = 0;
-  if (!S_ISDIR (np->dn_stat.st_mode))
-    di->i_size_high = 0;
-  memset (di->i_block, 0, EXT2_N_BLOCKS * sizeof di->i_block[0]);
 
   /* Let the journal know we are done editing. */
   journal_mark_dirty (txn, boffs_block (bptr_offs (di)));
@@ -172,8 +166,7 @@ diskfs_orphan_del (struct node *np)
     {
       struct ext2_inode *prev_di = dino_ref (prev->cache_id);
 
-      /* prev stays on the list, so its cached i_block[] is already the
-         placeholder (zeros).  Only i_dtime changes. */
+      /* prev stays on the list; only its i_dtime changes. */
       journal_get_write_access (txn, boffs_block (bptr_offs (prev_di)));
       prev_di->i_dtime = htole32 (my_next);
       journal_mark_dirty (txn, boffs_block (bptr_offs (prev_di)));
