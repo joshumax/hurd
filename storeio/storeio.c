@@ -64,6 +64,7 @@ const char *argp_program_version = STANDARD_HURD_VERSION (storeio);
 char *netfs_server_name = "storeio";
 char *netfs_server_version = HURD_VERSION;
 int netfs_maxsymlinks = 0; /* arbitrary */
+mode_t root_node_mode = 0;
 
 char *debug_file_name = NULL;
 FILE *debug_file;
@@ -153,18 +154,24 @@ create_node (struct node **node, char *name, struct node *dir)
 static inline void
 change_node_mode (struct node *node)
 {
-  node->nn_stat.st_mode &= S_IFMT;
-
+  mode_t mode;
   if (storeio_stat.inhibit_cache)
+    mode = S_IFCHR;
+  else
     {
-      node->nn_stat.st_mode |= S_IFCHR;
-      return;
+      if (node->nn->dev->store && node->nn->dev->store->block_size == 1)
+        mode = S_IFCHR;
+      else
+        mode = S_IFBLK;
     }
 
-  if (node->nn->dev->store && node->nn->dev->store->block_size == 1)
-    node->nn_stat.st_mode |= S_IFCHR;
+  if (node == netfs_root_node)
+    {
+      if (root_node_mode != S_IFDIR)
+        root_node_mode = mode;
+    }
   else
-    node->nn_stat.st_mode |= S_IFBLK;
+    node->nn_stat.st_mode = mode | (node->nn_stat.st_mode & ~S_IFMT);
 }
 
 error_t
@@ -215,8 +222,7 @@ check_dev (struct node *node, struct store *store, int flags)
       if (dev->store->block_size > 1)
         node->nn_stat.st_blksize = dev->store->block_size;
 
-      if (node != netfs_root_node)
-        change_node_mode (node);
+      change_node_mode (node);
     }
   pthread_mutex_unlock (&dev->lock);
 
@@ -553,6 +559,7 @@ netfs_validate_stat (struct node *np, struct iouser *cred)
       np->nn_stat.st_blksize = 0;
     }
 
+  np->nn_translated = np->nn_stat.st_mode;
   return 0;
 }
 
@@ -871,7 +878,6 @@ error_t
 netfs_report_access (struct iouser *cred, struct node *np, int *types)
 {
   *types = 0;
-
   if (fshelp_access (&np->nn_stat, S_IREAD, cred) == 0)
     *types |= O_READ;
 
@@ -1104,6 +1110,39 @@ netfs_file_get_storage_info (struct iouser *cred, struct node *np,
                         offsets, num_offsets, data, data_len);
 
   return err;
+}
+
+kern_return_t
+netfs_S_io_stat (struct protid *user, io_statbuf_t *statbuf)
+{
+  if (!user)
+    return EOPNOTSUPP;
+
+  struct node *node = user->po->np;
+  pthread_mutex_lock (&node->lock);
+
+  error_t err = netfs_validate_stat (node, user->user);
+  if (err)
+    {
+      pthread_mutex_unlock (&node->lock);
+      return err;
+    }
+
+  memcpy (statbuf, &node->nn_stat, sizeof (struct stat));
+
+  if (node == netfs_root_node)
+    statbuf->st_mode = root_node_mode | (statbuf->st_mode & ~S_IFMT);
+
+  /* Set S_IATRANS and S_IROOT bits as appropriate.  */
+  statbuf->st_mode &= ~(S_IATRANS | S_IROOT);
+  if (fshelp_translated (&node->transbox))
+    statbuf->st_mode |= S_IATRANS; /* Has an active translator.  */
+
+  if (user->po->shadow_root == node || node == netfs_root_node)
+    statbuf->st_mode |= S_IROOT; /* Is a root node.  */
+
+  pthread_mutex_unlock (&node->lock);
+  return 0;
 }
 
 kern_return_t

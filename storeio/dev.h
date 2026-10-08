@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-extern mach_port_t underlying_node;
-
 /* Information about backend store, which we presumptively call a "device".  */
 struct dev
 {
@@ -94,6 +92,8 @@ struct storeio_stat
 };
 
 extern struct storeio_stat storeio_stat;
+extern mach_port_t underlying_node;
+extern mode_t root_node_mode;
 
 error_t create_node (struct node **node, char *name, struct node *dir);
 error_t check_dev (struct node *node, struct store *store, int flags);

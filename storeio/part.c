@@ -114,6 +114,7 @@ create_partitions (void)
   const int flags = ((storeio_stat.readonly ? STORE_READONLY : 0)
                      | (storeio_stat.no_fileio ? STORE_NO_FILEIO : 0));
 
+  root_node_mode = S_IFDIR;
   struct store *source, *store;
   struct node **part;
   char *node_name;
