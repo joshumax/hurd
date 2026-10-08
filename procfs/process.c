@@ -414,6 +414,7 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   };
   struct process_file_node *f;
   struct node *np;
+  int owner;
 
   f = malloc (sizeof *f);
   if (! f)
@@ -426,7 +427,8 @@ process_file_make_node (void *dir_hook, const void *entry_hook)
   if (! np)
     return NULL;
 
-  procfs_node_chown (np, proc_stat_owner_uid (f->ps));
+  owner = proc_stat_owner_uid (f->ps);
+  procfs_node_chown (np, owner >= 0 ? owner : opt_anon_owner);
   if (f->desc->mode)
     procfs_node_chmod (np, f->desc->mode);
 
