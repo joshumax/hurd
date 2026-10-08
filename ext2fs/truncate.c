@@ -140,21 +140,16 @@ trunc_indirect (struct node *node, block_t end,
 	      modified = 1;
 	  }
 
-      /* Reserve the block only if it survives.  A block freed here must
-	 not be in the transaction: ext2_new_block can hand it to a new
-	 file before the free commits, the new owner's pager writes are then
-	 intercepted, and the post-commit flush writes the shadow, the old
-	 block pointers, over the file's data.  Reserving after the edit is
+      /* Reserve the block only if it survives.  A block freed here needs
+	 no copy in the journal: its contents are dead, and ext2_free_blocks
+	 keeps it busy until the free commits.  Reserving after the edit is
 	 safe because this thread's handle keeps the stop-time sweep from
 	 copying the block before the handle is released.
 
-	 XXX TODO: Freed blocks are reusable before their free commits, so
-	 a copy of an old owner's contents can still reach a reused block
-	 (a block allocated and freed in one transaction, or a copy in the
-	 committing or checkpoint transactions).  Like ext3/ext4, the
-	 allocator should keep freed blocks busy until the freeing
-	 transaction commits, and the journal should write revoke records
-	 so replay does not overwrite a reused block.  */
+	 XXX TODO: Older transactions still in the log can hold copies of a
+	 freed block, and replay after a crash writes them over the block's
+	 new owner.  The journal should write revoke records, as ext3/ext4
+	 do.  */
       if (first == 0 && all_freed)
 	{
 	  pager_flush_some (diskfs_disk_pager,

@@ -279,6 +279,8 @@ typedef struct journal
   uint32_t j_min_free;
 
   uint32_t j_last_committed_tid;	/* Transaction ID of the last committed txn. */
+  uint32_t j_released_tid;	/* Last txn whose freed blocks went back
+				   to the allocator. */
   pthread_cond_t j_commit_done;	/* Cond. var. while waiting for the tx to be committed. */
 
   int j_must_exit;		/* variable that tells journal thread when to stop. */
@@ -874,21 +876,24 @@ journal_get_oldest_transaction_locked (journal_t *journal)
 
 /**
  * Records a range of deleted blocks so they can be unpinned from older
- * checkpoint lists AFTER this transaction safely commits.
+ * checkpoint lists AFTER this transaction safely commits.  Returns 1 if
+ * the range was recorded; journal_forget_freed_blocks then hands it back
+ * to the allocator.  Returns 0 if it was not, and the caller must then not
+ * let the blocks be reused.
  */
-void
+int
 journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start,
 			     unsigned long count)
 {
   if (!ext2_journal || !txn)
-    return;
+    return 0;
 
   journal_freed_extent_t *ext = malloc (sizeof (journal_freed_extent_t));
   if (!ext)
     {
       JRNL_LOG_WARN
-	("ENOMEM tracking freed blocks. Harmless I/O overhead may occur.");
-      return;
+	("ENOMEM tracking freed blocks %u[%lu].", start, count);
+      return 0;
     }
 
   ext->fe_start = start;
@@ -902,11 +907,13 @@ journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start,
          We just drop the recording, since the block is already forgotten. */
       JOURNAL_UNLOCK (ext2_journal);
       free (ext);
-      return;
+      return 0;
     }
   ext->fe_next = txn->t_freed_blocks;
   txn->t_freed_blocks = ext;
+
   JOURNAL_UNLOCK (ext2_journal);
+  return 1;
 }
 
 /**
@@ -1131,6 +1138,31 @@ journal_notify_txn_locked (diskfs_transaction_t *txn,
   return txn->t_outstanding_io == 0;
 }
 
+/* Record the tail in the journal superblock after
+   journal_try_advance_tail_locked moved it.  MUST be called with
+   JOURNAL_LOCK held.  Returns 1 if the superblock needs a flush.  */
+static int
+journal_record_tail_locked (journal_t *journal)
+{
+  uint32_t tail_seq;
+  diskfs_transaction_t *oldest =
+    journal_get_oldest_transaction_locked (journal);
+
+  if (oldest)
+    tail_seq = oldest->t_tid;
+  else
+    tail_seq = journal->j_transaction_sequence;
+
+  /* Update Superblock Persistently */
+  error_t err = journal_update_superblock (journal, tail_seq);
+  if (err)
+    {
+      JRNL_LOG_WARN ("Failed to update superblock. %s", strerror (err));
+      return 0;
+    }
+  return 1;
+}
+
 /**
  * Called just after blocks have been written to the main disk.
  */
@@ -1138,7 +1170,6 @@ static int
 journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
 {
   int sb_changed = 0;
-  error_t err = 0;
   if (!ext2_journal || n_blocks == 0)
     return 0;
 
@@ -1210,44 +1241,73 @@ journal_notify_blocks_written_locked (block_t start_block, size_t n_blocks)
 
       txn = txn->t_checkpoint_next;
     }
-  if (sb_changed)
-    {
-      uint32_t tail_seq;
-      diskfs_transaction_t *oldest =
-	journal_get_oldest_transaction_locked (ext2_journal);
-
-      if (oldest)
-	tail_seq = oldest->t_tid;
-      else
-	tail_seq = ext2_journal->j_transaction_sequence;
-
-      /* Update Superblock Persistently */
-      err = journal_update_superblock (ext2_journal, tail_seq);
-      if (err)
-	JRNL_LOG_WARN ("Failed to update superblock. %s", strerror (err));
-    }
-  return (sb_changed && !err) ? 1 : 0;
+  return sb_changed ? journal_record_tail_locked (ext2_journal) : 0;
 }
 
 /**
- * Consumes the freed blocks list and deallocates them.
+ * Consumes the freed blocks list of transaction FREED_TID once it has
+ * committed.  The copies of those blocks in FREED_TID and in older
+ * checkpoint transactions hold the old contents, so they need no home
+ * write anymore and are marked written.  The allocator keeps the blocks
+ * busy until here, so no copy can belong to a new owner yet.  The blocks
+ * then go back to the allocator.
  */
 static void
-journal_forget_freed_blocks (journal_t *journal, journal_freed_extent_t *ext)
+journal_forget_freed_blocks (journal_t *journal, uint32_t freed_tid,
+			     journal_freed_extent_t *freed)
 {
   int flush_needed = 0;
+  journal_freed_extent_t *ext;
+
   JOURNAL_LOCK (journal);
-  while (ext)
+  for (ext = freed; ext; ext = ext->fe_next)
     {
-      journal_freed_extent_t *next = ext->fe_next;
-      if (journal_notify_blocks_written_locked (ext->fe_start, ext->fe_count))
-	flush_needed = 1;
-      free (ext);
-      ext = next;
+    restart:
+      for (diskfs_transaction_t *txn = journal->j_checkpoint_list;
+	   txn && (int32_t) (txn->t_tid - freed_tid) <= 0;
+	   txn = txn->t_checkpoint_next)
+	for (unsigned long i = 0; i < ext->fe_count; i++)
+	  {
+	    block_t b = ext->fe_start + i;
+	    journal_buffer_t *jb =
+	      journal_map_lookup (&txn->t_buffer_map, b);
+	    if (!jb)
+	      continue;
+	    if (jb->jb_is_flushing)
+	      {
+		/* A write of the old contents is in flight.  It must land
+		   before the block has a new owner.  The wait drops the
+		   lock, and the checkpoint list can change meanwhile.  */
+		pthread_cond_wait (&journal->j_flush_wait,
+				   &journal->j_state_lock);
+		goto restart;
+	      }
+	    journal_notify_txn_locked (txn, b, 1);
+	  }
     }
+
+  /* On shutdown journal_quiesce_checkpoints owns the checkpoint list.  */
+  if (!journal->j_must_exit && journal_try_advance_tail_locked (journal)
+      && journal_record_tail_locked (journal))
+    flush_needed = 1;
   JOURNAL_UNLOCK (journal);
   if (flush_needed)
     flush_to_disk ();
+
+  /* ext2_new_block takes the journal lock inside global_lock, so the
+     blocks go back to the allocator with the journal lock dropped.  */
+  while (freed)
+    {
+      ext = freed->fe_next;
+      ext2_release_busy_blocks (freed->fe_start, freed->fe_count);
+      free (freed);
+      freed = ext;
+    }
+
+  JOURNAL_LOCK (journal);
+  journal->j_released_tid = freed_tid;
+  pthread_cond_broadcast (&journal->j_commit_done);
+  JOURNAL_UNLOCK (journal);
 }
 
 /* Install a running transaction with t_active_threads == 0.
@@ -1605,6 +1665,35 @@ journal_wait_on_tid_locked (journal_t *journal, uint32_t target_tid)
   while (tid_gt (target_tid, journal->j_last_committed_tid))
     /* Sleep until a commit finishes */
     JOURNAL_WAIT (&journal->j_commit_done, journal);
+}
+
+/* A pager thread never waits.  Neither does a thread whose handle is on
+   the committing transaction, since that commit waits for the handle to
+   drain.  The running transaction's frees wait for its commit, which the
+   caller's handle holds back; kjournald is woken to start that commit as
+   soon as the handle drains.  */
+int
+journal_wait_freed_blocks (diskfs_transaction_t *txn)
+{
+  diskfs_transaction_t *commit;
+  int waited = 0;
+
+  if (!ext2_journal || journal_thread_is_pager)
+    return 0;
+
+  JOURNAL_LOCK (ext2_journal);
+  pthread_cond_signal (&ext2_journal->j_flusher_wakeup);
+  commit = ext2_journal->j_committing_transaction;
+  if (commit && commit != txn)
+    {
+      uint32_t tid = commit->t_tid;
+
+      while (tid_gt (tid, ext2_journal->j_released_tid))
+	JOURNAL_WAIT (&ext2_journal->j_commit_done, ext2_journal);
+      waited = 1;
+    }
+  JOURNAL_UNLOCK (ext2_journal);
+  return waited;
 }
 
 void
@@ -2187,6 +2276,7 @@ journal_commit_running_transaction_locked (journal_t *journal)
   txn->t_checkpoint_next = NULL;
   journal->j_committing_transaction = NULL;
   journal_freed_extent_t *freed_extents = txn->t_freed_blocks;
+  uint32_t freed_tid = txn->t_tid;
   txn->t_freed_blocks = NULL;
 
   if (journal->j_checkpoint_last)
@@ -2201,7 +2291,7 @@ journal_commit_running_transaction_locked (journal_t *journal)
   if (need_sb_flush)
     flush_to_disk ();
 
-  journal_forget_freed_blocks (journal, freed_extents);
+  journal_forget_freed_blocks (journal, freed_tid, freed_extents);
   JOURNAL_LOCK (journal);
   goto out;
 abort_commit:
@@ -2210,6 +2300,9 @@ abort_commit:
   JOURNAL_LOCK (journal);
   journal->j_committing_transaction = NULL;
   journal->j_last_committed_tid = txn->t_tid;
+  /* The frees did not commit, and older copies of their blocks were not
+     forgotten.  The blocks stay busy until the next mount.  */
+  journal->j_released_tid = txn->t_tid;
   pthread_cond_broadcast (&journal->j_commit_done);
   journal_free_transaction (txn);
 out:
@@ -2305,6 +2398,7 @@ journal_create (struct node *journal_inode)
   if (journal_load_superblock (j) != 0)
     ext2_panic ("[JOURNAL] Failed to load superblock!");
   j->j_last_committed_tid = j->j_transaction_sequence - 1;
+  j->j_released_tid = j->j_last_committed_tid;
   pthread_cond_init (&j->j_commit_done, NULL);
   pthread_mutex_init (&j->j_state_lock, NULL);
   pthread_cond_init (&j->j_commit_wait, NULL);

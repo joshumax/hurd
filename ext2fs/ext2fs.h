@@ -700,6 +700,14 @@ block_t ext2_new_block (block_t goal,
 			block_t *prealloc_count, block_t *prealloc_block);
 
 void ext2_free_blocks (block_t block, unsigned long count);
+
+/* Free COUNT blocks starting at BLOCK that never held data, such as
+   discarded preallocations.  ext2_new_block can hand them out at once.  */
+void ext2_free_unused_blocks (block_t block, unsigned long count);
+
+/* Make COUNT blocks starting at BLOCK, freed by a transaction that has
+   now committed, available to ext2_new_block again.  */
+void ext2_release_busy_blocks (block_t block, unsigned long count);
 
 /* ---------------------------------------------------------------- */
 

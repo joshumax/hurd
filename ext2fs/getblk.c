@@ -55,7 +55,8 @@ ext2_discard_prealloc (struct node *node)
       ext2_debug ("discarding %d prealloced blocks for inode %d",
 		  i, node->cache_id);
       diskfs_node_disknode (node)->info.i_prealloc_count = 0;
-      ext2_free_blocks (diskfs_node_disknode (node)->info.i_prealloc_block, i);
+      ext2_free_unused_blocks
+	(diskfs_node_disknode (node)->info.i_prealloc_block, i);
     }
 #endif
 }

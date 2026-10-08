@@ -82,9 +82,18 @@ journal_store_read (block_t start_block, size_t length, void **buf,
 
 /**
  * Records a range of deleted blocks so they can be unpinned from older
- * checkpoint lists AFTER this transaction safely commits.
+ * checkpoint lists AFTER this transaction safely commits.  Returns 1 if
+ * the range was recorded: the journal then hands it back with
+ * ext2_release_busy_blocks once the commit is done.
  */
-void journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start, unsigned long count);
+int journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start, unsigned long count);
+
+/**
+ * Waits until the transaction committing now has handed its freed blocks
+ * back to the allocator.  TXN is the caller's handle.  Returns 1 after
+ * such a wait, 0 if there was nothing the caller can wait for.
+ */
+int journal_wait_freed_blocks (diskfs_transaction_t *txn);
 
 /**
  * Marks the calling thread as running a pager callback (ON = 1) or done

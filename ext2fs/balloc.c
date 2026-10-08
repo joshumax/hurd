@@ -40,6 +40,7 @@
  * when a file system is mounted (see ext2_read_super).
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include "journal.h"
 #include "ext2fs.h"
@@ -55,8 +56,117 @@ memscan (void *buf, unsigned char ch, size_t len)
 
 #define in_range(b, first, len) ((b) >= (first) && (b) <= (first) + (len) - 1)
 
+/* Blocks freed in a transaction that has not committed yet are busy.  The
+   bitmap shows them free, but the journal can still hold copies of their
+   old contents, and a crash before the free commits gives them back to
+   their old owner.  ext2_new_block skips them until the journal hands
+   them back with ext2_release_busy_blocks.  Protected by global_lock.  */
+static unsigned char **busy_maps;	/* A bitmap per group, or NULL */
+static uint32_t *busy_counts;		/* Busy blocks in each group */
+static unsigned long busy_total;
+static unsigned char *busy_scratch;	/* Bitmap ext2_new_block searches */
+
+/* Make sure group BLOCK_GROUP has a busy bitmap.  Returns 0 without
+   memory for it.  */
+static int
+busy_map_ready (unsigned long block_group)
+{
+  if (!busy_maps)
+    {
+      busy_maps = calloc (groups_count, sizeof *busy_maps);
+      busy_counts = calloc (groups_count, sizeof *busy_counts);
+      busy_scratch = malloc (block_size);
+      if (!busy_maps || !busy_counts || !busy_scratch)
+	{
+	  free (busy_maps);
+	  free (busy_counts);
+	  free (busy_scratch);
+	  busy_maps = NULL;
+	  busy_counts = NULL;
+	  busy_scratch = NULL;
+	  return 0;
+	}
+    }
+
+  if (!busy_maps[block_group])
+    busy_maps[block_group] = calloc (1, block_size);
+  return busy_maps[block_group] != NULL;
+}
+
+/* Mark bit BIT of group BLOCK_GROUP busy.  busy_map_ready must have
+   succeeded for the group.  */
+static void
+mark_busy (unsigned long block_group, unsigned long bit)
+{
+  if (!set_bit (bit, busy_maps[block_group]))
+    {
+      busy_counts[block_group]++;
+      busy_total++;
+    }
+}
+
+/* Returns the free blocks of group BLOCK_GROUP that ext2_new_block can
+   hand out.  */
+static inline unsigned long
+group_allocatable (unsigned long block_group, struct ext2_group_desc *gdp)
+{
+  unsigned long free_count = le16toh (gdp->bg_free_blocks_count);
+  unsigned long busy = busy_counts ? busy_counts[block_group] : 0;
+
+  return free_count > busy ? free_count - busy : 0;
+}
+
+/* Returns the bitmap ext2_new_block searches in group BLOCK_GROUP: the
+   block bitmap BH, or a copy of it with the group's busy blocks marked
+   in use.  */
+static unsigned char *
+search_map (unsigned long block_group, unsigned char *bh)
+{
+  uint32_t *dst, *src, *busy;
+  size_t i;
+
+  if (!busy_counts || busy_counts[block_group] == 0)
+    return bh;
+
+  dst = (uint32_t *) busy_scratch;
+  src = (uint32_t *) bh;
+  busy = (uint32_t *) busy_maps[block_group];
+  for (i = 0; i < block_size / sizeof (uint32_t); i++)
+    dst[i] = src[i] | busy[i];
+  return busy_scratch;
+}
+
 void
-ext2_free_blocks (block_t block, unsigned long count)
+ext2_release_busy_blocks (block_t block, unsigned long count)
+{
+  pthread_spin_lock (&global_lock);
+  if (busy_maps)
+    for (; count > 0; block++, count--)
+      {
+	unsigned long block_group =
+	  (block - le32toh (sblock->s_first_data_block)) /
+	  le32toh (sblock->s_blocks_per_group);
+	unsigned long bit =
+	  (block - le32toh (sblock->s_first_data_block)) %
+	  le32toh (sblock->s_blocks_per_group);
+
+	if (busy_maps[block_group]
+	    && clear_bit (bit, busy_maps[block_group]))
+	  {
+	    busy_counts[block_group]--;
+	    busy_total--;
+	  }
+      }
+  pthread_spin_unlock (&global_lock);
+}
+
+/* Free COUNT blocks starting at BLOCK.  With BUSY set and a journal, the
+   blocks stay busy until the transaction freeing them commits.  When they
+   cannot be kept busy, they stay allocated instead: reusing them could put
+   a journal copy of their old contents over their new owner, while a
+   leaked block only costs space until e2fsck frees it.  */
+static void
+free_blocks (block_t block, unsigned long count, int busy)
 {
   unsigned char *bh;
   unsigned long block_group;
@@ -127,19 +237,27 @@ ext2_free_blocks (block_t block, unsigned long count)
 		    "block = %u, count = %lu",
 		    block, count);
 
-      journal_record_freed_blocks (txn, block, gcount);
-      for (i = 0; i < gcount; i++)
-	{
-	  if (!clear_bit (bit + i, bh))
-	    ext2_warning ("bit already cleared for block %lu", block + i);
-	  else
-	    {
-	      gdp->bg_free_blocks_count =
-		htole16 (le16toh (gdp->bg_free_blocks_count) + 1);
-	      sblock->s_free_blocks_count =
-		htole32 (le32toh (sblock->s_free_blocks_count) + 1);
-	    }
-	}
+      int hold = busy && ext2_journal && txn;
+      int leak = hold && (!busy_map_ready (block_group)
+			  || !journal_record_freed_blocks (txn, block, gcount));
+      if (leak)
+	ext2_warning ("no memory to keep freed blocks busy; leaving "
+		      "blocks %u[%lu] allocated", block, gcount);
+      else
+	for (i = 0; i < gcount; i++)
+	  {
+	    if (!clear_bit (bit + i, bh))
+	      ext2_warning ("bit already cleared for block %lu", block + i);
+	    else
+	      {
+		gdp->bg_free_blocks_count =
+		  htole16 (le16toh (gdp->bg_free_blocks_count) + 1);
+		sblock->s_free_blocks_count =
+		  htole32 (le32toh (sblock->s_free_blocks_count) + 1);
+		if (hold)
+		  mark_busy (block_group, bit + i);
+	      }
+	  }
 
       record_global_poke (bh);
       disk_cache_block_ref_ptr (gdp);
@@ -156,6 +274,18 @@ ext2_free_blocks (block_t block, unsigned long count)
   alloc_sync (0);
 }
 
+void
+ext2_free_blocks (block_t block, unsigned long count)
+{
+  free_blocks (block, count, 1);
+}
+
+void
+ext2_free_unused_blocks (block_t block, unsigned long count)
+{
+  free_blocks (block, count, 0);
+}
+
 /*
  * ext2_new_block uses a goal block to assist allocation.  If the goal is
  * free, or there is a free block within 32 blocks of the goal, that block
@@ -169,6 +299,7 @@ ext2_new_block (block_t goal,
 		block_t *prealloc_count, block_t *prealloc_block)
 {
   unsigned char *bh = NULL;
+  unsigned char *map = NULL;
   unsigned char *p, *r;
   int i, j, k, tmp;
   uint32_t lmap;
@@ -205,7 +336,7 @@ repeat:
   i = (goal - le32toh (sblock->s_first_data_block)) /
     le32toh (sblock->s_blocks_per_group);
   gdp = group_desc (i);
-  if (le16toh (gdp->bg_free_blocks_count) > 0)
+  if (group_allocatable (i, gdp) > 0)
     {
       j = ((goal - le32toh (sblock->s_first_data_block))
 	  % le32toh (sblock->s_blocks_per_group));
@@ -214,10 +345,11 @@ repeat:
 	goal_attempts++;
 #endif
       bh = disk_cache_block_ref (le32toh (gdp->bg_block_bitmap));
+      map = search_map (i, bh);
 
       ext2_debug ("goal is at %d:%d", i, j);
 
-      if (!test_bit (j, bh))
+      if (!test_bit (j, map))
 	{
 #ifdef EXT2FS_DEBUG
 	  goal_hits++;
@@ -234,11 +366,11 @@ repeat:
 	  if ((j & 31) == 31)
 	    lmap = 0;
 	  else
-	    lmap = ((((uint32_t *) bh)[j >> 5]) >>
+	    lmap = ((((uint32_t *) map)[j >> 5]) >>
 		    ((j & 31) + 1));
 
 	  if (j < le32toh (sblock->s_blocks_per_group) - 32)
-	    lmap |= (((uint32_t *) bh)[(j >> 5) + 1]) <<
+	    lmap |= (((uint32_t *) map)[(j >> 5) + 1]) <<
 	      (31 - (j & 31));
 	  else
 	    lmap |= 0xffffffffu << (31 - (j & 31));
@@ -264,15 +396,15 @@ repeat:
        * Search first in the remainder of the current group; then,
        * cyclicly search through the rest of the groups.
        */
-      p = bh + (j >> 3);
+      p = map + (j >> 3);
       r = memscan (p, 0, (le32toh (sblock->s_blocks_per_group) - j + 7) >> 3);
-      k = (r - bh) << 3;
+      k = (r - map) << 3;
       if (k < le32toh (sblock->s_blocks_per_group))
 	{
 	  j = k;
 	  goto search_back;
 	}
-      k = find_next_zero_bit ((uint32_t *) bh,
+      k = find_next_zero_bit ((uint32_t *) map,
 			      le32toh (sblock->s_blocks_per_group),
 			      j);
       if (k < le32toh (sblock->s_blocks_per_group))
@@ -296,22 +428,42 @@ repeat:
       if (i >= groups_count)
 	i = 0;
       gdp = group_desc (i);
-      if (le16toh (gdp->bg_free_blocks_count) > 0)
+      if (group_allocatable (i, gdp) > 0)
 	break;
     }
   if (k >= groups_count)
     {
+      unsigned long busy = busy_total;
+
       pthread_spin_unlock (&global_lock);
+      /* The free space can be busy until the transaction committing now
+	 finishes.
+
+	 XXX TODO: The caller can hold node locks here, such as alloc_lock
+	 from diskfs_grow.  A pager thread that joined the committing
+	 transaction (pager_unlock_page) and then waits for that alloc_lock
+	 keeps the commit from draining, and this wait never ends.  Either
+	 wait only when the caller holds no node lock, or return ENOSPC and
+	 let the caller retry after dropping its locks, as ext4 does.  When
+	 the busy blocks all belong to the caller's own transaction, nothing
+	 waits and the caller gets ENOSPC although space comes back at the
+	 next commit.  */
+      if (busy > 0 && journal_wait_freed_blocks (txn))
+	{
+	  pthread_spin_lock (&global_lock);
+	  goto repeat;
+	}
       return 0;
     }
   assert_backtrace (bh == NULL);
   bh = disk_cache_block_ref (le32toh (gdp->bg_block_bitmap));
-  r = memscan (bh, 0, le32toh (sblock->s_blocks_per_group) >> 3);
-  j = (r - bh) << 3;
+  map = search_map (i, bh);
+  r = memscan (map, 0, le32toh (sblock->s_blocks_per_group) >> 3);
+  j = (r - map) << 3;
   if (j < le32toh (sblock->s_blocks_per_group))
     goto search_back;
   else
-    j = find_first_zero_bit ((uint32_t *) bh,
+    j = find_first_zero_bit ((uint32_t *) map,
 			     le32toh (sblock->s_blocks_per_group));
   if (j >= le32toh (sblock->s_blocks_per_group))
     {
@@ -328,7 +480,7 @@ search_back:
      * bitmap.  Now search backwards up to 7 bits to find the
      * start of this group of free blocks.
    */
-  for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, bh); k++, j--);
+  for (k = 0; k < 7 && j > 0 && !test_bit (j - 1, map); k++, j--);
 
 got_block:
   assert_backtrace (bh != NULL);
@@ -376,7 +528,7 @@ got_block:
       for (k = 1;
 	   k < prealloc_goal && (j + k) < le32toh (sblock->s_blocks_per_group); k++)
 	{
-	  if (set_bit (j + k, bh))
+	  if (test_bit (j + k, map) || set_bit (j + k, bh))
 	    break;
 	  (*prealloc_count)++;
 
