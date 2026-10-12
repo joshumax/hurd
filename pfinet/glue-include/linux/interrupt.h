@@ -10,7 +10,7 @@
 #define synchronize_bh()	((void) 0) /* XXX ? */
 
 /* The code that can call these are already entered holding
-   global_lock, which locks out the net_bh worker thread.  */
+   global_lock.  */
 #define start_bh_atomic()	((void) 0)
 #define end_bh_atomic()		((void) 0)
 /*

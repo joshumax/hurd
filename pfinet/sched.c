@@ -49,8 +49,9 @@ sock_wake_async (struct socket *sock, int how)
    netif_rx either drops the packet, or enqueues it and wakes us up
    via mark_bh which is really condition_broadcast on net_bh_wakeup.
    The packet receiver thread holds net_bh_lock while calling netif_rx.
-   We wake up and take global_lock, which locks out RPC service threads.
-   We then also take net_bh_lock running net_bh.
+   We wake up and run net_bh, which takes net_bh_lock only to dequeue
+   from the backlog and global_lock, which locks out RPC service threads,
+   to run the protocol handlers.
    Thus, only this thread running net_bh locks out the packet receiver
    thread (which takes only net_bh_lock while calling netif_rx), so packets
    are quickly moved from the Mach port's message queue to the `backlog'
@@ -70,9 +71,9 @@ net_bh_worker (void *arg)
 
       net_bh_raised = 0;
 
-      pthread_mutex_lock (&global_lock);
+      pthread_mutex_unlock (&net_bh_lock);
       net_bh ();
-      pthread_mutex_unlock (&global_lock);
+      pthread_mutex_lock (&net_bh_lock);
     }
   /*NOTREACHED*/
   return 0;

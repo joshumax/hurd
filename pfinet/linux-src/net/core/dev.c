@@ -577,7 +577,9 @@ void dev_loopback_xmit(struct sk_buff *skb)
 	newskb->ip_summed = CHECKSUM_UNNECESSARY;
 	if (newskb->dst==NULL)
 		printk(KERN_DEBUG "BUG: packet without dst looped back 1\n");
+	pthread_mutex_lock (&net_bh_lock);
 	netif_rx(newskb);
+	pthread_mutex_unlock (&net_bh_lock);
 }
 
 int dev_queue_xmit(struct sk_buff *skb)
@@ -718,7 +720,6 @@ static void netdev_wakeup(void)
 static void dev_clear_backlog(struct device *dev)
 {
 	struct sk_buff *curr;
-	unsigned long flags;
 
 	/*
 	 *
@@ -727,30 +728,35 @@ static void dev_clear_backlog(struct device *dev)
 	 *  We are competing here both with netif_rx() and net_bh().
 	 *  We don't want either of those to mess with skb ptrs
 	 *  while we work on them, thus we must grab the
-	 *  skb_queue_lock.
+	 *  net_bh_lock.
 	 */
 
+	pthread_mutex_lock(&net_bh_lock);
 	if (backlog.qlen) {
 	repeat:
-		spin_lock_irqsave(&skb_queue_lock, flags);
 		for (curr = backlog.next;
 		     curr != (struct sk_buff *)(&backlog);
 		     curr = curr->next)
 			if (curr->dev == dev)
 			{
 				__skb_unlink(curr, &backlog);
-				spin_unlock_irqrestore(&skb_queue_lock, flags);
+				pthread_mutex_unlock(&net_bh_lock);
 				kfree_skb(curr);
+				pthread_mutex_lock(&net_bh_lock);
 				goto repeat;
 			}
-		spin_unlock_irqrestore(&skb_queue_lock, flags);
 #ifdef CONFIG_NET_HW_FLOWCONTROL
 		if (netdev_dropping)
+		{
+			pthread_mutex_unlock(&net_bh_lock);
 			netdev_wakeup();
+			return;
+		}
 #else
 		netdev_dropping = 0;
 #endif
 	}
+	pthread_mutex_unlock(&net_bh_lock);
 }
 
 /*
@@ -861,6 +867,8 @@ void net_bh(void)
 	 *	latency on a transmit interrupt bh.
 	 */
 
+	pthread_mutex_lock (&global_lock);
+
 	if (qdisc_head.forw != &qdisc_head)
 		qdisc_run_queues();
 
@@ -870,15 +878,7 @@ void net_bh(void)
 	 *	that from the device which does a mark_bh() just after
 	 */
 
-	/*
-	 *	While the queue is not empty..
-	 *
-	 *	Note that the queue never shrinks due to
-	 *	an interrupt, so we can do this test without
-	 *	disabling interrupts.
-	 */
-
-	while (!skb_queue_empty(&backlog))
+	for (;;)
 	{
 		struct sk_buff * skb;
 
@@ -888,10 +888,26 @@ void net_bh(void)
 			goto net_bh_break;
 #endif
 
-		/*
-		 *	We have a packet. Therefore the queue has shrunk
-		 */
+		pthread_mutex_unlock (&global_lock);
+		pthread_mutex_lock (&net_bh_lock);
 		skb = skb_dequeue(&backlog);
+		if (skb == NULL)
+		{
+#ifdef CONFIG_NET_HW_FLOWCONTROL
+			int dropping = netdev_dropping;
+#else
+			netdev_dropping = 0;
+#endif
+			pthread_mutex_unlock (&net_bh_lock);
+			pthread_mutex_lock (&global_lock);
+#ifdef CONFIG_NET_HW_FLOWCONTROL
+			if (dropping)
+				netdev_wakeup();
+#endif
+			break;
+		}
+		pthread_mutex_unlock (&net_bh_lock);
+		pthread_mutex_lock (&global_lock);
 
 #ifndef _HURD_
 #ifdef CONFIG_CPU_IS_SLOW
@@ -1028,12 +1044,7 @@ void net_bh(void)
 	}
 #endif
 #endif
-#ifdef CONFIG_NET_HW_FLOWCONTROL
-	if (netdev_dropping)
-		netdev_wakeup();
-#else
-	netdev_dropping = 0;
-#endif
+	pthread_mutex_unlock (&global_lock);
 	NET_PROFILE_LEAVE(net_bh);
 	return;
 

@@ -73,12 +73,12 @@ static int loopback_xmit(struct sk_buff *skb, struct device *dev)
 #endif
 
 	/*
-	 *	Calling netif_rx() requires locking net_bh_lock, which
-	 *	has already been done since this function is called by
-	 *	the net_bh worker thread.
+	 *	Calling netif_rx() requires locking net_bh_lock.
 	 */
 
+	pthread_mutex_lock (&net_bh_lock);
 	netif_rx(skb);
+	pthread_mutex_unlock (&net_bh_lock);
 
 	stats->rx_bytes+=skb->len;
 	stats->tx_bytes+=skb->len;
