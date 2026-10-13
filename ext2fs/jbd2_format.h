@@ -93,6 +93,19 @@ typedef struct JBD2_PACKED journal_block_tag_s
   uint32_t t_flags;		/* See flags below */
 } journal_block_tag_t;
 
+/**
+ * The Revoke Block header.
+ * Followed by big-endian 32-bit block numbers (64-bit ones only with the
+ * 64BIT feature, which this journal does not use).  Recovery skips the
+ * copies of a revoked block in the revoking transaction and in older
+ * ones.
+ */
+typedef struct JBD2_PACKED journal_revoke_header_s
+{
+  journal_header_t r_header;	/* h_blocktype = JBD2_REVOKE_BLOCK */
+  uint32_t r_count;		/* Bytes used in this block, header included */
+} journal_revoke_header_t;
+
 /* Flags for the Block Tag */
 #define JBD2_FLAG_ESCAPE    1	/* The data block starts with magic number (escaped) */
 #define JBD2_FLAG_SAME_UUID 2	/* (Not needed for us usually) */

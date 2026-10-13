@@ -244,6 +244,9 @@ struct diskfs_transaction
   int t_outstanding_io;
 
   journal_freed_extent_t *t_freed_blocks;	/* Blocks deleted in this txn */
+  /* Freed blocks that still have a copy in the log, written as revoke
+     records at commit.  A set: see journal_map_count_value.  */
+  journal_block_map_t t_revoke_map;
   uint8_t sync_needed;		/* IOU flag for synchronous commits */
 };
 
@@ -288,6 +291,14 @@ typedef struct journal
      in the log, so their log space and their maps are kept until a
      superblock with the new tail has been written.  */
   diskfs_transaction_t *j_retired_list;
+
+  /* Blocks with a copy in a live transaction (running, committing,
+     checkpoint or retired), counted per transaction holding one.  A
+     counter: see journal_map_count_value.  A freed block found here
+     needs a revoke record.  When an insertion fails for lack of memory,
+     j_logged_lost is set and every freed block is revoked from then on.  */
+  journal_block_map_t j_logged;
+  int j_logged_lost;
 
   uint32_t j_max_transaction_buffers;	/* Max size of a single transaction */
   uint32_t j_min_free;
@@ -513,8 +524,9 @@ journal_map_insert (journal_block_map_t *map, block_t blocknr,
     }
 }
 
-static journal_buffer_t *
-journal_map_lookup (journal_block_map_t *map, block_t blocknr)
+/* Returns the bucket holding BLOCKNR, or NULL.  */
+static journal_bucket_t *
+journal_map_find (journal_block_map_t *map, block_t blocknr)
 {
   if (!map->buckets)
     return NULL;
@@ -529,7 +541,7 @@ journal_map_lookup (journal_block_map_t *map, block_t blocknr)
       if (bucket->jb == NULL)
 	return NULL;
       if (bucket->blocknr == blocknr)
-	return bucket->jb;
+	return bucket;
 
       /* If we've probed further than the item sitting here, our target
        * cannot possibly be in this table. Stop searching. */
@@ -539,6 +551,78 @@ journal_map_lookup (journal_block_map_t *map, block_t blocknr)
       pos = (pos + 1) & map->mask;
       dist++;
     }
+}
+
+static journal_buffer_t *
+journal_map_lookup (journal_block_map_t *map, block_t blocknr)
+{
+  journal_bucket_t *bucket = journal_map_find (map, blocknr);
+
+  return bucket ? bucket->jb : NULL;
+}
+
+/* Robin Hood deletion.  MUST be called with JOURNAL_LOCK held.  */
+static journal_buffer_t *
+journal_map_remove (journal_block_map_t *map, block_t blocknr)
+{
+  uint32_t pos, dist, next;
+  journal_buffer_t *found;
+
+  if (!map->buckets)
+    return NULL;
+
+  pos = journal_hash_block (blocknr) & map->mask;
+  dist = 0;
+  for (;;)
+    {
+      journal_bucket_t *bucket = &map->buckets[pos];
+
+      if (bucket->jb == NULL)
+	return NULL;
+      if (bucket->blocknr == blocknr)
+	break;
+      if (dist > bucket->probe_dist)
+	return NULL;
+
+      pos = (pos + 1) & map->mask;
+      dist++;
+    }
+
+  found = map->buckets[pos].jb;
+  for (;;)
+    {
+      journal_bucket_t *nb;
+
+      next = (pos + 1) & map->mask;
+      nb = &map->buckets[next];
+      if (nb->jb == NULL || nb->probe_dist == 0)
+	{
+	  map->buckets[pos].jb = NULL;
+	  map->buckets[pos].blocknr = 0;
+	  map->buckets[pos].probe_dist = 0;
+	  break;
+	}
+      map->buckets[pos] = *nb;
+      map->buckets[pos].probe_dist--;
+      pos = next;
+    }
+  map->size--;
+  return found;
+}
+
+/* t_revoke_map and j_logged reuse journal_block_map_t as a set and as a
+   counter: the value slot holds a number instead of a buffer pointer.
+   The number is never 0, so an empty slot still reads as NULL.  */
+static inline journal_buffer_t *
+journal_map_count_value (uintptr_t n)
+{
+  return (journal_buffer_t *) n;
+}
+
+static inline uintptr_t
+journal_map_value_count (const journal_buffer_t *value)
+{
+  return (uintptr_t) value;
 }
 
 /**
@@ -869,6 +953,96 @@ journal_free_for_tail (const journal_t *journal, uint32_t tail)
   return tail - journal->j_head;
 }
 
+/* Count one more live transaction holding a copy of BLOCK.
+   MUST be called with JOURNAL_LOCK held.  */
+static void
+journal_logged_ref_locked (journal_t *journal, block_t block)
+{
+  journal_bucket_t *bucket = journal_map_find (&journal->j_logged, block);
+
+  if (bucket)
+    {
+      bucket->jb =
+	journal_map_count_value (journal_map_value_count (bucket->jb) + 1);
+      return;
+    }
+
+  if (!journal->j_logged.buckets
+      || journal_map_insert (&journal->j_logged, block,
+			     journal_map_count_value (1)))
+    {
+      if (!journal->j_logged_lost)
+	JRNL_LOG_WARN ("ENOMEM tracking logged blocks; revoking every "
+		       "freed block from now on.");
+      journal->j_logged_lost = 1;
+    }
+}
+
+/* A live transaction holding a copy of BLOCK goes away.
+   MUST be called with JOURNAL_LOCK held.  */
+static void
+journal_logged_unref_locked (journal_t *journal, block_t block)
+{
+  journal_bucket_t *bucket = journal_map_find (&journal->j_logged, block);
+  uintptr_t n;
+
+  if (!bucket)
+    {
+      /* Only a reference whose insertion failed can be missing.  */
+      assert_backtrace (journal->j_logged_lost);
+      return;
+    }
+
+  n = journal_map_value_count (bucket->jb);
+  if (n > 1)
+    bucket->jb = journal_map_count_value (n - 1);
+  else
+    journal_map_remove (&journal->j_logged, block);
+}
+
+/* Returns whether BLOCK may have a copy in the log, so that freeing it
+   needs a revoke record.  MUST be called with JOURNAL_LOCK held.  */
+static int
+journal_logged_locked (journal_t *journal, block_t block)
+{
+  return journal->j_logged_lost
+    || journal_map_find (&journal->j_logged, block) != NULL;
+}
+
+/* Adds a revoke record for BLOCK to TXN.  MUST be called with
+   JOURNAL_LOCK held.  */
+static error_t
+journal_revoke_locked (diskfs_transaction_t *txn, block_t block)
+{
+  journal_block_map_t *map = &txn->t_revoke_map;
+
+  if (!map->buckets)
+    {
+      error_t err = journal_map_init (map, 0);
+      if (err)
+	return err;
+    }
+  if (journal_map_find (map, block))
+    return 0;
+  return journal_map_insert (map, block, journal_map_count_value (1));
+}
+
+/* Revoke records that fit in one revoke block.  */
+static inline uint32_t
+journal_revokes_per_block (void)
+{
+  return (block_size - sizeof (journal_revoke_header_t)) / sizeof (uint32_t);
+}
+
+/* Revoke blocks needed for TXN's revoke records.  */
+static inline uint32_t
+journal_revoke_blocks (const diskfs_transaction_t *txn)
+{
+  uint32_t per_block = journal_revokes_per_block ();
+
+  return (txn->t_revoke_map.size + per_block - 1) / per_block;
+}
+
 /**
  * Fully destroys the transaction structure.
  * Called only when checkpointing is 100% complete.
@@ -891,10 +1065,14 @@ journal_free_transaction (diskfs_transaction_t *txn)
   size_t iter = 0;
   journal_buffer_t *jb;
   while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
-    /* The slab allocator handles linking it back into the free pool */
-    journal_free_buffer (ext2_journal, jb);
+    {
+      journal_logged_unref_locked (ext2_journal, jb->jb_blocknr);
+      /* The slab allocator handles linking it back into the free pool */
+      journal_free_buffer (ext2_journal, jb);
+    }
 
   journal_map_destroy (&txn->t_buffer_map);
+  journal_map_destroy (&txn->t_revoke_map);
   free (txn);
 }
 
@@ -999,6 +1177,21 @@ journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start,
       free (ext);
       return 0;
     }
+  /* A freed block with a copy in the log gets a revoke record, so that
+     recovery does not write that copy over the block's next owner.  Data
+     blocks are never in the log and need none.  */
+  for (unsigned long i = 0; i < count; i++)
+    if (journal_logged_locked (ext2_journal, start + i)
+	&& journal_revoke_locked (txn, start + i))
+      {
+	/* The caller keeps the range allocated.  The records added so far
+	   only revoke blocks nothing points to any more.  */
+	JRNL_LOG_WARN ("ENOMEM revoking freed blocks %u[%lu].", start, count);
+	JOURNAL_UNLOCK (ext2_journal);
+	free (ext);
+	return 0;
+      }
+
   ext->fe_next = txn->t_freed_blocks;
   txn->t_freed_blocks = ext;
 
@@ -1850,6 +2043,15 @@ journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
   error_t err = 0;
 
   assert_backtrace (txn->t_state == T_RUNNING || txn->t_state == T_LOCKED);
+
+  /* A revoke record in TXN would make recovery skip the copy TXN is about
+     to take as well.  Freed blocks stay busy until their free commits, so
+     this should not happen.  */
+  if (txn->t_revoke_map.size
+      && journal_map_remove (&txn->t_revoke_map, fs_blocknr))
+    JRNL_LOG_WARN ("Block %u freed and journaled again in transaction %u; "
+		   "dropping its revoke record.", fs_blocknr, txn->t_tid);
+
   jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
 
   if (jb)
@@ -1886,6 +2088,7 @@ journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
   /* Brand new block for us? We will definitively want to copy it over. */
   new_jb->needs_copy = 1;
   txn->t_outstanding_io++;
+  journal_logged_ref_locked (ext2_journal, fs_blocknr);
 out:
   return err;
 }
@@ -2233,6 +2436,61 @@ journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
   return err;
 }
 
+/* Writes TXN's revoke records.  Recovery then skips the copies of those
+   blocks in TXN and in older transactions, while a copy in a newer
+   transaction, taken after the block was reused, is still replayed.  */
+static error_t
+journal_write_revoke_records (journal_t *journal,
+			      const diskfs_transaction_t *txn)
+{
+  uint32_t per_block = journal_revokes_per_block ();
+  void *buf = journal->j_descriptor_buf;
+  journal_revoke_header_t *header = buf;
+  uint32_t *records = (uint32_t *) (header + 1);
+  uint32_t n = 0;
+  size_t iter = 0;
+  journal_bucket_t *bucket;
+
+  if (txn->t_revoke_map.size == 0)
+    return 0;
+
+  for (;;)
+    {
+      /* Find the next revoked block.  The set keeps only keys.  */
+      bucket = NULL;
+      while (iter < txn->t_revoke_map.capacity)
+	{
+	  journal_bucket_t *b = &txn->t_revoke_map.buckets[iter++];
+	  if (b->jb)
+	    {
+	      bucket = b;
+	      break;
+	    }
+	}
+
+      if (n == per_block || (!bucket && n > 0))
+	{
+	  header->r_count =
+	    htobe32 (sizeof (journal_revoke_header_t) + n * sizeof (uint32_t));
+	  error_t err = journal_write_block (journal,
+					     journal_next_log_block_safe
+					     (journal), buf);
+	  if (err)
+	    return err;
+	  n = 0;
+	}
+      if (!bucket)
+	return 0;
+
+      if (n == 0)
+	{
+	  memset (buf, 0, block_size);
+	  setup_header (buf, txn, JBD2_REVOKE_BLOCK);
+	}
+      records[n++] = htobe32 (bucket->blocknr);
+    }
+}
+
 /* Writes the Commit Block */
 static error_t
 journal_write_commit_record (journal_t *journal,
@@ -2258,7 +2516,8 @@ journal_ensure_commit_space_locked (journal_t *journal,
    * in those rare cases. */
   uint32_t needed =
     txn->t_buffer_map.size +
-    (txn->t_buffer_map.size / JRNL_DESCRIPTOR_RATIO) + JRNL_COMMIT_MARGIN;
+    (txn->t_buffer_map.size / JRNL_DESCRIPTOR_RATIO) +
+    journal_revoke_blocks (txn) + JRNL_COMMIT_MARGIN;
   uint32_t low_water =
     (journal->j_last - journal->j_first) / JRNL_LOW_WATER_RATIO;
 
@@ -2344,6 +2603,12 @@ journal_commit_running_transaction_locked (journal_t *journal)
 
   /* Write Data (I/O) */
   err = journal_write_payload (journal, txn);
+  if (err)
+    goto abort_commit;
+
+  /* The revoke set is stable: frees are recorded only while TXN is
+     T_RUNNING or T_LOCKED.  */
+  err = journal_write_revoke_records (journal, txn);
   if (err)
     goto abort_commit;
 
@@ -2529,6 +2794,8 @@ journal_create (struct node *journal_inode)
     ext2_panic ("[JOURNAL] Failed to load superblock!");
   j->j_last_committed_tid = j->j_transaction_sequence - 1;
   j->j_released_tid = j->j_last_committed_tid;
+  if (journal_map_init (&j->j_logged, 0))
+    j->j_logged_lost = 1;
   pthread_cond_init (&j->j_commit_done, NULL);
   pthread_mutex_init (&j->j_state_lock, NULL);
   pthread_cond_init (&j->j_commit_wait, NULL);

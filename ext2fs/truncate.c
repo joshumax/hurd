@@ -147,12 +147,7 @@ trunc_indirect (struct node *node, block_t end,
 	 no copy in the journal: its contents are dead, and ext2_free_blocks
 	 keeps it busy until the free commits.  Reserving after the edit is
 	 safe because this thread's handle keeps the stop-time sweep from
-	 copying the block before the handle is released.
-
-	 XXX TODO: Older transactions still in the log can hold copies of a
-	 freed block, and replay after a crash writes them over the block's
-	 new owner.  The journal should write revoke records, as ext3/ext4
-	 do.  */
+	 copying the block before the handle is released.  */
       if (first == 0 && all_freed)
 	{
 	  pager_flush_some (diskfs_disk_pager,
