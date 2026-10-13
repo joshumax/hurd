@@ -91,6 +91,19 @@ create_partitions (void)
 {
   debug ("create_partitions:\n");
   struct node *dir = netfs_root_node;
+  error_t err;
+
+  if (!dir->nn->dev->store)
+    {
+      err = check_dev (dir, NULL, O_READ);
+      if (err)
+	{
+	  debug ("create_partitions (dir: %p):\n", dir);
+	  debug ("check_dev return err: %d\n", err);
+	}
+      return err;
+    }
+
   size_t last_partition_num =
     (size_t) set_last_partition_num (dir->nn->dev->store);
   if (last_partition_num == 0)
@@ -100,7 +113,6 @@ create_partitions (void)
       return ENOTDIR;
     }
 
-  error_t err;
   dir->nn->entries_num = last_partition_num;
   dir->nn->entries = malloc (last_partition_num * sizeof (struct node *));
   if (!dir->nn->entries)
