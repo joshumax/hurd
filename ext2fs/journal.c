@@ -283,6 +283,11 @@ typedef struct journal
 							   being committed. */
   diskfs_transaction_t *j_checkpoint_list;	/* Head (Oldest, defines j_tail) */
   diskfs_transaction_t *j_checkpoint_last;
+  /* Transactions that left the checkpoint list, linked through
+     t_checkpoint_next.  The journal superblock on disk can still put them
+     in the log, so their log space and their maps are kept until a
+     superblock with the new tail has been written.  */
+  diskfs_transaction_t *j_retired_list;
 
   uint32_t j_max_transaction_buffers;	/* Max size of a single transaction */
   uint32_t j_min_free;
@@ -850,12 +855,80 @@ journal_load_superblock (journal_t *journal)
   return 0;
 }
 
+/* Returns the free space in the log with the tail at TAIL; a TAIL of 0
+   means the log is empty.  */
+static uint32_t
+journal_free_for_tail (const journal_t *journal, uint32_t tail)
+{
+  uint32_t capacity = journal->j_last - journal->j_first + 1;
+
+  if (tail == 0)
+    return capacity;
+  if (journal->j_head >= tail)
+    return capacity - (journal->j_head - tail);
+  return tail - journal->j_head;
+}
+
+/**
+ * Fully destroys the transaction structure.
+ * Called only when checkpointing is 100% complete.
+ */
+static void
+journal_free_transaction (diskfs_transaction_t *txn)
+{
+  if (!txn)
+    return;
+  journal_freed_extent_t *ext = txn->t_freed_blocks;
+  while (ext)
+    {
+      journal_freed_extent_t *next = ext->fe_next;
+      free (ext);
+      ext = next;
+    }
+  txn->t_freed_blocks = NULL;
+
+  /* Free all journal buffers using the O(N) map iterator */
+  size_t iter = 0;
+  journal_buffer_t *jb;
+  while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
+    /* The slab allocator handles linking it back into the free pool */
+    journal_free_buffer (ext2_journal, jb);
+
+  journal_map_destroy (&txn->t_buffer_map);
+  free (txn);
+}
+
+/* A superblock with the current tail has been written, so the retired
+   transactions are out of the log.  Free them and give their log space
+   back.  MUST be called with JOURNAL_LOCK held.  */
+static void
+journal_release_retired_locked (journal_t *journal)
+{
+  diskfs_transaction_t *txn = journal->j_retired_list;
+
+  if (!txn)
+    return;
+
+  journal->j_retired_list = NULL;
+  while (txn)
+    {
+      diskfs_transaction_t *next = txn->t_checkpoint_next;
+      journal_free_transaction (txn);
+      txn = next;
+    }
+
+  journal->j_free = journal_free_for_tail (journal, journal->j_tail);
+  JRNL_LOG_DEBUG ("[CHECKPOINT] Tail on disk. New Free: %u",
+		  journal->j_free);
+}
+
 /**
  * Updates the JBD2 superblock with the given transaction sequence
  * and the current journal tail (ext2_journal->j_tail).
  * Note: This issues a block write to the underlying store, but does NOT
  * force a synchronous hardware flush. The caller is responsible for
  * invoking flush_to_disk() if strict durability is required.
+ * Once the write is done, the retired transactions are released.
  *
  * MUST be called with JOURNAL_LOCK held.
  */
@@ -863,13 +936,17 @@ static error_t
 journal_update_superblock (journal_t *journal, uint32_t sequence)
 {
   journal_superblock_t *jsb = (journal_superblock_t *) journal->j_sb_buffer;
+  error_t err;
 
   jsb->s_sequence = htobe32 (sequence);
   jsb->s_start = htobe32 (journal->j_tail);
 
   JRNL_LOG_DEBUG ("[SB] Updating: Seq %u, Head %u", sequence,
 		  journal->j_tail);
-  return journal_write_block (journal, 0, jsb);
+  err = journal_write_block (journal, 0, jsb);
+  if (!err)
+    journal_release_retired_locked (journal);
+  return err;
 }
 
 static diskfs_transaction_t *
@@ -930,37 +1007,10 @@ journal_record_freed_blocks (diskfs_transaction_t *txn, block_t start,
 }
 
 /**
- * Fully destroys the transaction structure.
- * Called only when checkpointing is 100% complete.
- */
-static void
-journal_free_transaction (diskfs_transaction_t *txn)
-{
-  if (!txn)
-    return;
-  journal_freed_extent_t *ext = txn->t_freed_blocks;
-  while (ext)
-    {
-      journal_freed_extent_t *next = ext->fe_next;
-      free (ext);
-      ext = next;
-    }
-  txn->t_freed_blocks = NULL;
-
-  /* Free all journal buffers using the O(N) map iterator */
-  size_t iter = 0;
-  journal_buffer_t *jb;
-  while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
-    /* The slab allocator handles linking it back into the free pool */
-    journal_free_buffer (ext2_journal, jb);
-
-  journal_map_destroy (&txn->t_buffer_map);
-  free (txn);
-}
-
-/**
  * Checks if the oldest transaction(s) are fully written.
- * If so, frees them and advances the journal tail.
+ * If so, moves them to the retired list and advances the journal tail.
+ * Their log space comes back once the caller has written the superblock
+ * with the new tail (journal_release_retired_locked).
  */
 static int
 journal_try_advance_tail_locked (journal_t *journal)
@@ -984,14 +1034,8 @@ journal_try_advance_tail_locked (journal_t *journal)
       if (journal->j_checkpoint_list == NULL)
 	journal->j_checkpoint_last = NULL;
 
-      diskfs_transaction_t *oldest =
-	journal_get_oldest_transaction_locked (journal);
-      if (oldest)
-	journal->j_tail = oldest->t_log_start;
-      else
-	journal->j_tail = 0;
-
-      journal_free_transaction (txn);
+      txn->t_checkpoint_next = journal->j_retired_list;
+      journal->j_retired_list = txn;
 
       advanced = 1;
 
@@ -1001,20 +1045,9 @@ journal_try_advance_tail_locked (journal_t *journal)
 
   if (advanced)
     {
-      uint32_t capacity = journal->j_last - journal->j_first + 1;
-      uint32_t used_len = 0;
-      if (journal->j_tail > 0)
-	{
-	  if (journal->j_head >= journal->j_tail)
-	    used_len = journal->j_head - journal->j_tail;
-	  else
-	    used_len = (journal->j_last - journal->j_tail + 1) +
-	      (journal->j_head - journal->j_first);
-	}
-
-      journal->j_free = capacity - used_len;
-      JRNL_LOG_DEBUG ("[CHECKPOINT] Tail advanced. New Free: %u",
-		      journal->j_free);
+      diskfs_transaction_t *oldest =
+	journal_get_oldest_transaction_locked (journal);
+      journal->j_tail = oldest ? oldest->t_log_start : 0;
     }
 
   return advanced;
@@ -1372,21 +1405,11 @@ journal_clear_checkpoint_list_locked (journal_t *journal)
   journal->j_checkpoint_list = NULL;
   journal->j_checkpoint_last = NULL;
 
-  uint32_t capacity = journal->j_last - journal->j_first + 1;
   diskfs_transaction_t *oldest =
     journal_get_oldest_transaction_locked (journal);
 
-  if (oldest)
-    journal->j_tail = oldest->t_log_start;
-  else
-    journal->j_tail = 0;
-
-  if (journal->j_tail == 0)
-    journal->j_free = capacity;
-  else if (journal->j_head >= journal->j_tail)
-    journal->j_free = capacity - (journal->j_head - journal->j_tail);
-  else
-    journal->j_free = journal->j_tail - journal->j_head;
+  journal->j_tail = oldest ? oldest->t_log_start : 0;
+  journal->j_free = journal_free_for_tail (journal, journal->j_tail);
 
   err = journal_update_superblock (journal, journal->j_transaction_sequence);
   if (err)
@@ -1514,7 +1537,10 @@ journal_flush_checkpoints_locked (journal_t *journal, uint32_t target_free,
     JOURNAL_WAIT (&journal->j_checkpoint_done, journal);
   journal->j_checkpointing = 1;
 
-  while (journal->j_free < target_free && journal->j_checkpoint_list
+  /* j_free grows only once the superblock with the new tail is written,
+     after the loop, so measure progress by the tail.  */
+  while (journal_free_for_tail (journal, journal->j_tail) < target_free
+	 && journal->j_checkpoint_list
 	 && !(background && journal_checkpoint_should_yield_locked (journal)))
     {
       diskfs_transaction_t *txn = journal->j_checkpoint_list;
@@ -1614,7 +1640,9 @@ journal_flush_checkpoints_locked (journal_t *journal, uint32_t target_free,
 	}
     }
 
-  if (sb_changed)
+  /* Also write it when an earlier superblock write failed and left
+     transactions retired, so that their log space comes back.  */
+  if (sb_changed || journal->j_retired_list)
     {
       JOURNAL_UNLOCK (journal);
       flush_to_disk ();		/* Ensure all checkpoint data is on the platter first */
