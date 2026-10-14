@@ -2623,8 +2623,11 @@ journal_commit_running_transaction_locked (journal_t *journal)
   /* Ensure Commit is persistent */
   flush_to_disk ();
 
-  /* The WAL barrier is crossed! Tell the Pager it can write safely! */
+  /* The WAL barrier is crossed! Tell the Pager it can write safely!
+     The write-hazard path reads the state under the lock.  */
+  JOURNAL_LOCK (journal);
   txn->t_state = T_COMMITTED;
+  JOURNAL_UNLOCK (journal);
   /* Flush any intercepted VM pager blocks to the primary disk */
   journal_flush_intercepted_payloads (journal, txn);
 
