@@ -2990,6 +2990,10 @@ diskfs_journal_commit_transaction (diskfs_transaction_t *opaque_txn)
 	JRNL_LOG_WARN
 	  ("Commit failed in diskfs_journal_commit_transaction: %s",
 	   strerror (err));
+      /* An empty transaction stays open without waiting, while the
+	 caller's earlier changes can be in the one kjournald is
+	 committing.  The caller asked for them to be durable too.  */
+      journal_wait_on_tid_locked (ext2_journal, tid - 1);
       goto out;
     }
   /* We missed it. Someone else (kjournald) stole it.
