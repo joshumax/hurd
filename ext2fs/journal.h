@@ -81,6 +81,30 @@ journal_store_read (block_t start_block, size_t length, void **buf,
 		    size_t *read_amount);
 
 /**
+ * Same as journal_get_write_access, for a metadata block whose live bytes
+ * are outside the disk cache, such as a directory block edited through
+ * the directory's file pager.  The journal makes no copy of its own; the
+ * caller supplies the edited image through journal_mark_dirty_external,
+ * or gives the block up through journal_release_access.
+ */
+error_t journal_get_write_access_external (diskfs_transaction_t *txn,
+					   block_t fs_blocknr);
+
+/**
+ * Hands the journal the edited image of FS_BLOCKNR, block_size bytes at
+ * DATA.  DATA may be a mapping of the block.  Returns EIO when DATA
+ * cannot be read.
+ */
+error_t journal_mark_dirty_external (diskfs_transaction_t *txn,
+				     block_t fs_blocknr, const void *data);
+
+/**
+ * Gives up FS_BLOCKNR, reserved with journal_get_write_access_external,
+ * when the transaction has no image of it yet.
+ */
+void journal_release_access (diskfs_transaction_t *txn, block_t fs_blocknr);
+
+/**
  * Records a range of deleted blocks so they can be unpinned from older
  * checkpoint lists AFTER this transaction safely commits.  Returns 1 if
  * the range was recorded: the journal then hands it back with

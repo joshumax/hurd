@@ -35,6 +35,7 @@
 #include <pthread.h>
 #include <mach.h>
 
+#include <hurd/sigpreempt.h>
 #include <hurd/store.h>
 #include <libdiskfs/diskfs.h>
 #include "ext2fs.h"
@@ -130,7 +131,7 @@
 #define IS_RUNNING_TID(j, tid) \
     ((j)->j_running_transaction && (j)->j_running_transaction->t_tid == (tid))
 
-#define JRNL_INTERCEPT_CAPACITY 512
+#define JRNL_INTERCEPT_CAPACITY 2048
 
 static pthread_t kjournald_tid;
 
@@ -158,6 +159,12 @@ static __thread int journal_thread_is_pager;
    is that thread's business.  Cleared by the outermost start. */
 static __thread int journal_thread_sync;
 
+/* Allocated in journal_create.  journal_mark_dirty_external copies the
+   caller's image here before it takes the journal lock.  */
+static void *journal_external_scratch;
+static pthread_mutex_t journal_external_scratch_lock =
+  PTHREAD_MUTEX_INITIALIZER;
+
 /**
  * Holds one modified block (4KB) that needs to be written to the journal.
  */
@@ -174,6 +181,10 @@ typedef struct journal_buffer
   char *jb_intercepted_data;
   uint8_t jb_is_flushing;	/* 1 if commit thread is actively flushing it. */
   uint8_t jb_escaped;
+  uint8_t jb_awaiting_data;	/* Reserved by
+				   journal_get_write_access_external, and
+				   the shadow has no image of the block's
+				   current owner yet. */
 } journal_buffer_t;
 
 /**
@@ -665,6 +676,7 @@ journal_alloc_buffer (journal_t *journal)
       jb->jb_is_written = 0;
       jb->jb_is_flushing = 0;
       jb->jb_escaped = 0;
+      jb->jb_awaiting_data = 0;
       goto out;
     }
   jb = calloc (1, sizeof (journal_buffer_t));
@@ -2033,10 +2045,13 @@ out:
 
 /**
  * Adds a modified filesystem block to the SPECIFIC transaction handle.
- * Defers the actual memory copy until the transaction stops.
+ * With HYDRATE set, defers the actual memory copy until the transaction
+ * stops.  With HYDRATE clear, the block's live bytes are outside the disk
+ * cache, and journal_mark_dirty_external supplies the copy.
  */
 static error_t
-journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
+journal_get_write_access_locked (diskfs_transaction_t *txn,
+				 block_t fs_blocknr, int hydrate)
 {
   journal_buffer_t *jb;
   journal_buffer_t *new_jb;
@@ -2059,7 +2074,13 @@ journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
       /* Even if it is already contained in the map we have still been
        * notified about the new change and therefore we must copy it
        * over once more when the time comes. */
-      jb->needs_copy = 1;
+      if (hydrate)
+	jb->jb_awaiting_data = 0;
+      else if (jb->needs_copy)
+	/* The shadow is due to be copied from the disk cache, which does
+	 * not hold the caller's edit. */
+	jb->jb_awaiting_data = 1;
+      jb->needs_copy = hydrate;
       if (jb->jb_is_written)
 	{
 	  /* The pager rushed this block previously, but VFS is dirtying it again.
@@ -2086,7 +2107,8 @@ journal_get_write_access_locked (diskfs_transaction_t *txn, block_t fs_blocknr)
     }
 
   /* Brand new block for us? We will definitively want to copy it over. */
-  new_jb->needs_copy = 1;
+  new_jb->needs_copy = hydrate;
+  new_jb->jb_awaiting_data = !hydrate;
   txn->t_outstanding_io++;
   journal_logged_ref_locked (ext2_journal, fs_blocknr);
 out:
@@ -2220,7 +2242,7 @@ journal_get_write_access (diskfs_transaction_t *txn, block_t fs_blocknr)
     }
 
   JOURNAL_LOCK (ext2_journal);
-  err = journal_get_write_access_locked (txn, fs_blocknr);
+  err = journal_get_write_access_locked (txn, fs_blocknr, 1);
   if (err)
     JRNL_LOG_WARN
       ("Didn't manage to get journal write access for block %u. (%s).",
@@ -2258,6 +2280,119 @@ journal_thread_transaction (void)
   assert_backtrace (!txn || txn->t_state == T_RUNNING
 		    || txn->t_state == T_LOCKED);
   return txn;
+}
+
+/* Adds FS_BLOCKNR, a metadata block whose live bytes are outside the disk
+   cache, to TXN before it is edited.  From here on pager writes of the
+   block are intercepted.  The caller supplies the edited image through
+   journal_mark_dirty_external, or gives the block up through
+   journal_release_access.  */
+error_t
+journal_get_write_access_external (diskfs_transaction_t *txn,
+				   block_t fs_blocknr)
+{
+  error_t err;
+
+  if (!ext2_journal || !txn)
+    return 0;
+
+  JOURNAL_LOCK (ext2_journal);
+  err = journal_get_write_access_locked (txn, fs_blocknr, 0);
+  if (err)
+    JRNL_LOG_WARN
+      ("Didn't manage to get journal write access for block %u. (%s).",
+       fs_blocknr, strerror (err));
+  JOURNAL_UNLOCK (ext2_journal);
+  return err;
+}
+
+/* Copies DATA (block_size bytes) into TXN as the image of FS_BLOCKNR,
+   which journal_get_write_access_external added to it.  DATA may be a
+   mapping of the block, so it is read into the scratch buffer before the
+   journal lock is taken: a fault under the lock would re-enter the
+   journal through the pager.  Returns EIO when DATA cannot be read.  */
+error_t
+journal_mark_dirty_external (diskfs_transaction_t *txn, block_t fs_blocknr,
+			     const void *data)
+{
+  journal_buffer_t *jb;
+  error_t err;
+
+  if (!ext2_journal || !txn)
+    return 0;
+
+  pthread_mutex_lock (&journal_external_scratch_lock);
+  err = hurd_safe_copyin (journal_external_scratch, data, block_size);
+  if (err)
+    {
+      pthread_mutex_unlock (&journal_external_scratch_lock);
+      JRNL_LOG_WARN ("Cannot read the image of block %u. (%s).",
+		     fs_blocknr, strerror (err));
+      return EIO;
+    }
+
+  JOURNAL_LOCK (ext2_journal);
+  jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
+  if (jb)
+    {
+      /* Only the committing transaction and the checkpoint list are
+	 notified of home writes, and TXN is neither while the caller's
+	 handle is open.  */
+      assert_backtrace (!jb->jb_is_written);
+      memcpy (jb->jb_shadow_data, journal_external_scratch, block_size);
+      /* A pager write during the edit left a chunk behind.  The chunk
+	 backs reads of this block until its home write, so it holds the
+	 image that commits.  */
+      if (jb->jb_intercepted_data)
+	memcpy (jb->jb_intercepted_data, journal_external_scratch,
+		block_size);
+      jb->needs_copy = 0;
+      jb->jb_awaiting_data = 0;
+    }
+  else
+    JRNL_LOG_WARN ("mark_dirty_external called on unreserved block %u! "
+		   "Missing get_write_access_external?", fs_blocknr);
+  JOURNAL_UNLOCK (ext2_journal);
+  pthread_mutex_unlock (&journal_external_scratch_lock);
+  return 0;
+}
+
+/* Gives up FS_BLOCKNR when TXN has no image of it yet, so commit does not
+   log an empty shadow.  A pager write intercepted since the reservation
+   holds the page as it is, so that image stays in TXN instead.  */
+void
+journal_release_access (diskfs_transaction_t *txn, block_t fs_blocknr)
+{
+  journal_buffer_t *jb;
+
+  if (!ext2_journal || !txn)
+    return;
+
+  JOURNAL_LOCK (ext2_journal);
+  jb = journal_map_lookup (&txn->t_buffer_map, fs_blocknr);
+  if (!jb || !jb->jb_awaiting_data)
+    goto out;
+
+  if (jb->jb_intercepted_data)
+    {
+      memcpy (jb->jb_shadow_data, jb->jb_intercepted_data, block_size);
+      jb->jb_awaiting_data = 0;
+      goto out;
+    }
+
+  /* A buffer the stop-time sweep is copying must not be freed: the sweep
+     walks its own list of them unlocked.  The sweep only takes buffers
+     with needs_copy set, and an external reservation clears it.  It
+     would be set only if TXN had also reserved the block through the
+     disk cache, which a directory block never is.  */
+  assert_backtrace (!jb->needs_copy);
+  journal_map_remove (&txn->t_buffer_map, fs_blocknr);
+  if (!jb->jb_is_written && txn->t_outstanding_io > 0)
+    txn->t_outstanding_io--;
+  journal_logged_unref_locked (ext2_journal, fs_blocknr);
+  journal_free_buffer (ext2_journal, jb);
+out:
+  JOURNAL_UNLOCK (ext2_journal);
 }
 
 /* Two flags.  journal_thread_sync tells this thread's RPC tail to commit
@@ -2363,6 +2498,7 @@ journal_write_payload (journal_t *journal, const diskfs_transaction_t *txn)
   while ((jb = journal_map_iterate (&txn->t_buffer_map, &iter)) != NULL)
     {
       assert_backtrace (!jb->needs_copy);
+      assert_backtrace (!jb->jb_awaiting_data);
 
       /* If the descriptor block is full, flush the current batch first */
       if (tag_offset + sizeof (journal_block_tag_t) > block_size)
@@ -2790,7 +2926,10 @@ journal_create (struct node *journal_inode)
   j->j_min_free = j->j_max_transaction_buffers + JRNL_METADATA_OVERHEAD;
   j->j_descriptor_buf = malloc (block_size);
   j->j_commit_buf = malloc (block_size);
-  if (!j->j_descriptor_buf || !j->j_commit_buf)
+  /* Shared by every journal this translator starts.  */
+  if (!journal_external_scratch)
+    journal_external_scratch = malloc (block_size);
+  if (!j->j_descriptor_buf || !j->j_commit_buf || !journal_external_scratch)
     ext2_panic ("No RAM for commit buffers!");
 
   if (journal_load_superblock (j) != 0)

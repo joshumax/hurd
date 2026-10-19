@@ -21,6 +21,7 @@
 
 #include "ext2fs.h"
 #include <libdiskfs/diskfs.h>
+#include "journal.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -527,6 +528,69 @@ dirscanblock (vm_address_t blockaddr, struct node *dp, int idx,
   return 0;
 }
 
+/* Directory blocks are metadata, and their live bytes are the directory's
+   file-pager mapping, outside the disk cache.  An edit runs inside the
+   RPC's journal handle.  dirblock_get_write_access comes before the first
+   byte changes, so that pager writes of the block are intercepted until
+   commit.  dirblock_mark_dirty hands the finished block to the journal
+   before the mapping is dropped.  dirblock_release_access gives the block
+   up when the edit never happened.  A zero block number stands for an
+   edit outside the journal.  */
+
+/* Find the disk block of directory block IDX of DP into *BLK and add it
+   to the thread's transaction.  CREATE allocates the block, for a block
+   that diskfs_grow has only made room for.  */
+static error_t
+dirblock_get_write_access (struct node *dp, int idx, int create,
+			   block_t *blk)
+{
+  struct disknode *dn = diskfs_node_disknode (dp);
+  diskfs_transaction_t *txn;
+  error_t err;
+
+  *blk = 0;
+  txn = journal_thread_transaction ();
+  if (!txn)
+    return 0;
+
+  /* We must acquire a WRITE lock if we might allocate physical blocks.  */
+  if (create)
+    pthread_rwlock_wrlock (&dn->alloc_lock);
+  else
+    pthread_rwlock_rdlock (&dn->alloc_lock);
+  err = ext2_getblk (dp, idx, create, blk);
+  pthread_rwlock_unlock (&dn->alloc_lock);
+  if (err)
+    return err;
+
+  return journal_get_write_access_external (txn, *blk);
+}
+
+/* Hand the journal the edited directory block BLK, mapped at DATA.  */
+static error_t
+dirblock_mark_dirty (block_t blk, vm_address_t data)
+{
+  diskfs_transaction_t *txn;
+  error_t err;
+
+  if (!blk)
+    return 0;
+
+  txn = journal_thread_transaction ();
+  err = journal_mark_dirty_external (txn, blk, (const void *) data);
+  if (err)
+    journal_release_access (txn, blk);
+  return err;
+}
+
+/* Give up directory block BLK, which was never edited.  */
+static void
+dirblock_release_access (block_t blk)
+{
+  if (blk)
+    journal_release_access (journal_thread_transaction (), blk);
+}
+
 /* Following a lookup call for CREATE, this adds a node to a directory.
    DP is the directory to be modified; NAME is the name to be entered;
    NP is the node being linked in; DS is the cached information returned
@@ -545,12 +609,25 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   size_t totfreed;
   error_t err;
   size_t oldsize = 0;
+  block_t blk = 0;
 
   assert_backtrace (ds->type == CREATE);
 
   assert_backtrace (!diskfs_readonly);
 
   dp->dn_set_mtime = 1;
+
+  /* Every slot but EXTEND's lies in an allocated block.  EXTEND's block
+     is allocated once diskfs_grow has made room for it.  */
+  if (ds->stat != EXTEND)
+    {
+      err = dirblock_get_write_access (dp, ds->idx, 0, &blk);
+      if (err)
+	{
+	  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+	  return err;
+	}
+    }
 
   /* Select a location for the new directory entry.  Each branch of this
      switch is responsible for setting NEW to point to the on-disk
@@ -631,15 +708,23 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 	    }
 	}
 
+      err = dirblock_get_write_access (dp, ds->idx, 1, &blk);
+      if (err)
+	{
+	  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+	  return err;
+	}
+
       new = (struct ext2_dir_entry_2 *) (ds->mapbuf + oldsize);
       err = hurd_safe_memset (new, 0, DIRBLKSIZ);
       if (err)
-       {
-	 if (err == EKERN_MEMORY_ERROR)
-	   err = ENOSPC;
-         munmap ((caddr_t) ds->mapbuf, ds->mapextent);
-         return err;
-       }
+	{
+	  if (err == EKERN_MEMORY_ERROR)
+	    err = ENOSPC;
+	  dirblock_release_access (blk);
+	  munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+	  return err;
+	}
 
       dp->dn_stat.st_size = oldsize + DIRBLKSIZ;
       dp->dn_set_ctime = 1;
@@ -676,7 +761,10 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
   diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
   dp->dn_set_mtime = 1;
 
+  err = dirblock_mark_dirty (blk, ds->mapbuf + ds->idx * DIRBLKSIZ);
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+  if (err)
+    return err;
 
   if (ds->stat != EXTEND)
     {
@@ -737,10 +825,20 @@ diskfs_direnter_hard (struct node *dp, const char *name, struct node *np,
 error_t
 diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 {
+  error_t err;
+  block_t blk;
+
   assert_backtrace (ds->type == REMOVE);
   assert_backtrace (ds->stat == HERE_TIS);
 
   assert_backtrace (!diskfs_readonly);
+
+  err = dirblock_get_write_access (dp, ds->idx, 0, &blk);
+  if (err)
+    {
+      munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+      return err;
+    }
 
   if (ds->preventry == 0)
     ds->entry->inode = htole32 (0);
@@ -754,7 +852,10 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
   dp->dn_set_mtime = 1;
   diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
 
+  err = dirblock_mark_dirty (blk, ds->mapbuf + ds->idx * DIRBLKSIZ);
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+  if (err)
+    return err;
 
   /* If we are keeping count of this block, then keep the count up
      to date. */
@@ -777,16 +878,29 @@ diskfs_dirremove_hard (struct node *dp, struct dirstat *ds)
 error_t
 diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 {
+  error_t err;
+  block_t blk;
+
   assert_backtrace (ds->type == RENAME);
   assert_backtrace (ds->stat == HERE_TIS);
 
   assert_backtrace (!diskfs_readonly);
 
+  err = dirblock_get_write_access (dp, ds->idx, 0, &blk);
+  if (err)
+    {
+      munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+      return err;
+    }
+
   ds->entry->inode = htole32 (np->cache_id);
   dp->dn_set_mtime = 1;
   diskfs_node_disknode (dp)->info.i_flags &= ~EXT2_BTREE_FL;
 
+  err = dirblock_mark_dirty (blk, ds->mapbuf + ds->idx * DIRBLKSIZ);
   munmap ((caddr_t) ds->mapbuf, ds->mapextent);
+  if (err)
+    return err;
 
   diskfs_file_update (dp, diskfs_synchronous);
 
