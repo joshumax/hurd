@@ -131,7 +131,7 @@
 #define IS_RUNNING_TID(j, tid) \
     ((j)->j_running_transaction && (j)->j_running_transaction->t_tid == (tid))
 
-#define JRNL_INTERCEPT_CAPACITY 2048
+#define JRNL_INTERCEPT_CAPACITY 1024
 
 static pthread_t kjournald_tid;
 

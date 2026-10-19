@@ -910,24 +910,38 @@ diskfs_file_update (struct node *node, int wait)
 {
   struct pager *pager;
 
-  pthread_spin_lock (&node_to_page_lock);
-  pager = diskfs_node_disknode (node)->pager;
-  if (pager)
-    ports_port_ref (pager);
-  pthread_spin_unlock (&node_to_page_lock);
-
-  if (pager)
+  /* File data is not journaled, so a file's pages are written back here.
+     With a journal, a directory's blocks are: the commit makes its edits
+     durable, and checkpointing or the next writeback takes them home.
+     Syncing its pages would only send them to the journal again, to be
+     intercepted and copied, after every edit.  */
+  if (!ext2_journal || !S_ISDIR (node->dn_stat.st_mode))
     {
-      pager_sync (pager, wait);
-      ports_port_deref (pager);
+      pthread_spin_lock (&node_to_page_lock);
+      pager = diskfs_node_disknode (node)->pager;
+      if (pager)
+	ports_port_ref (pager);
+      pthread_spin_unlock (&node_to_page_lock);
+
+      if (pager)
+	{
+	  pager_sync (pager, wait);
+	  ports_port_deref (pager);
+	}
     }
 
-  /* If there is a journal present we will not sync metadata immediately
-     We will let the journal do it when its ready. */
-  int meta_wait = ext2_journal ? 0 : wait;
-  pokel_sync (&diskfs_node_disknode (node)->indir_pokel, meta_wait);
+  if (ext2_journal)
+    /* Indirect blocks and the inode are journaled too, so the same goes
+       for them.  A caller that needs them durable commits its
+       transaction.  The one that waits without committing,
+       diskfs_truncate zeroing the end of the last block, needs only the
+       data above on disk; waiting here would make the inode update force
+       a commit.  */
+    wait = 0;
+  else
+    pokel_sync (&diskfs_node_disknode (node)->indir_pokel, wait);
 
-  diskfs_node_update (node, meta_wait);
+  diskfs_node_update (node, wait);
 }
 
 /* Invalidate any pager data associated with NODE.  */
