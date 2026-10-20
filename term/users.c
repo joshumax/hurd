@@ -95,14 +95,21 @@ init_users (void)
   if (err)
     error (1, err, "Allocating cttyid");
 
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-		      &async_icky_id);
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &async_icky_id);
+  if (err)
+    error (1, err, "mach_port_allocate");
+
   /* Add a send right, since hurd_sig_post needs one.  */
   mach_port_insert_right (mach_task_self (),
 			  async_icky_id, async_icky_id,
 			  MACH_MSG_TYPE_MAKE_SEND);
 
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &async_id);
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &async_id);
+  if (err)
+    error (1, err, "mach_port_allocate");
+
   /* Add a send right, since hurd_sig_post needs one.  */
   mach_port_insert_right (mach_task_self (),
 			  async_id, async_id, MACH_MSG_TYPE_MAKE_SEND);

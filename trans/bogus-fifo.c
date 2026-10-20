@@ -53,7 +53,11 @@ main (int argc, char **argv)
     error(3, 0, "Must be started as a translator");
 
   /* Reply to our parent */
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &fsys);
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &fsys);
+  if (err)
+    error (1, err, "mach_port_allocate");
+
   err = fsys_startup (bootstrap, fsys, MACH_MSG_TYPE_MAKE_SEND, &realnode);
   mach_port_deallocate (mach_task_self (), bootstrap);
   if (err)

@@ -335,8 +335,16 @@ S_io_stat (struct sock_user *user, struct stat *st)
   pthread_mutex_lock (&sock->lock);	/* Make sure the pipes don't go away...  */
 
   if (sock->id == MACH_PORT_NULL)
-    mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
-				&sock->id);
+    {
+      error_t err = mach_port_allocate (mach_task_self (),
+					MACH_PORT_RIGHT_RECEIVE, &sock->id);
+      if (err)
+	{
+	  pthread_mutex_unlock (&sock->lock);
+	  return err;
+	}
+    }
+
   st->st_ino = sock->id;
 
   rpipe = sock->read_pipe;

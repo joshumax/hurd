@@ -48,6 +48,8 @@ netfs_init (void)
   netfs_control_class = ports_create_class (0, 0);
   netfs_port_bucket = ports_create_bucket ();
   netfs_auth_server_port = getauth ();
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, 
-		      &netfs_fsys_identity);
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &netfs_fsys_identity);
+  if (err)
+    error (2, err, "mach_port_allocate");
 }

@@ -85,7 +85,11 @@ main (int argc, char **argv)
   linktarget = argv[1];
 
   /* Reply to our parent */
-  mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &control);
+  err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
+			    &control);
+  if (err)
+    error (1, err, "mach_port_allocate");
+
   mach_port_insert_right (mach_task_self (), control, control,
 			  MACH_MSG_TYPE_MAKE_SEND);
   err =

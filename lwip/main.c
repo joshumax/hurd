@@ -205,8 +205,10 @@ main (int argc, char **argv)
   socketport_class = ports_create_class (clean_socketport, 0);
   lwip_bootstrap_portclass = PORTCLASS_INET;
 
-  mach_port_allocate (mach_task_self (),
-		      MACH_PORT_RIGHT_RECEIVE, &fsys_identity);
+  err = mach_port_allocate (mach_task_self (),
+			    MACH_PORT_RIGHT_RECEIVE, &fsys_identity);
+  if (err)
+    error (1, err, "mach_port_allocate");
 
   /* Init the device modules */
   hurdethif_module_init ();
