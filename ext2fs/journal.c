@@ -133,7 +133,6 @@
 
 #define JRNL_INTERCEPT_CAPACITY 1024
 
-static pthread_t kjournald_tid;
 
 /* The handle this thread currently holds, and how many starts are open
    on it.  One RPC is one thread, and its metadata updates must all land
@@ -320,6 +319,9 @@ typedef struct journal
   pthread_cond_t j_commit_done;	/* Cond. var. while waiting for the tx to be committed. */
 
   int j_must_exit;		/* variable that tells journal thread when to stop. */
+  pthread_t j_kjournald;	/* The journal thread, joined when the
+				   journal stops.  */
+  int j_kjournald_started;
   pthread_cond_t j_flusher_wakeup;	/* Cond. var for the kjournald sleep cycle */
   int j_commit_requested;	/* A stop asked kjournald to commit now. */
 
@@ -2991,10 +2993,13 @@ journal_create (struct node *journal_inode)
     ext2_panic ("Cannot create initial journal transaction.");
   JOURNAL_UNLOCK (j);
 
-  if (pthread_create (&kjournald_tid, NULL, kjournald_thread, j) != 0)
+  if (pthread_create (&j->j_kjournald, NULL, kjournald_thread, j) != 0)
     JRNL_LOG_WARN ("Failed to create a flusher thread.");
   else
-    JRNL_LOG_DEBUG ("Created flusher thread.");
+    {
+      j->j_kjournald_started = 1;
+      JRNL_LOG_DEBUG ("Created flusher thread.");
+    }
 
   j->j_pool_memory =
     calloc (JRNL_MAX_FREE_BUFFERS, sizeof (journal_buffer_t));
@@ -3562,6 +3567,72 @@ journal_store_read (block_t start_block, size_t length, void **buf,
   return err;
 }
 
+/* Free what JOURNAL holds, once journal_quiesce_checkpoints has emptied
+   it and ext2_journal no longer points to it.  The journal_t itself, with
+   its lock and condition variables, is kept: a pager thread may have read
+   ext2_journal just before it was cleared and still take the lock.  With
+   no transaction left, such a thread finds nothing to do, and everything
+   freed here is only reached through a transaction or by the commit,
+   checkpoint and superblock code, which no longer runs.  */
+static void
+journal_free_resources (journal_t *journal)
+{
+  struct node *jnode = journal->map.inode;
+
+  /* kjournald saw j_must_exit, or will when it wakes.  */
+  if (journal->j_kjournald_started)
+    {
+      JOURNAL_LOCK (journal);
+      pthread_cond_signal (&journal->j_flusher_wakeup);
+      JOURNAL_UNLOCK (journal);
+      pthread_join (journal->j_kjournald, NULL);
+      journal->j_kjournald_started = 0;
+    }
+
+  JOURNAL_LOCK (journal);
+
+  /* Quiescing committed everything and emptied the checkpoint list, and
+     writing the superblock released the retired transactions.  Only an
+     empty running transaction can be left, which a commit keeps open.  */
+  diskfs_transaction_t *running = journal->j_running_transaction;
+  if (journal->j_committing_transaction || journal->j_checkpoint_list
+      || journal->j_retired_list
+      || (running && (running->t_buffer_map.size || running->t_freed_blocks
+		      || running->t_revoke_map.size)))
+    {
+      JRNL_LOG_WARN ("Journal stopped with transactions left; "
+		     "not freeing it.");
+      JOURNAL_UNLOCK (journal);
+      return;
+    }
+  journal->j_running_transaction = NULL;
+  journal_free_transaction (running);
+
+  journal_map_destroy (&journal->j_logged);
+  /* Every buffer is back in the pool, and every chunk is free.  */
+  free (journal->j_pool_memory);
+  journal->j_pool_memory = NULL;
+  journal->j_free_buffers = NULL;
+  munmap (journal->j_intercept_pool, JRNL_INTERCEPT_CAPACITY * block_size);
+  journal->j_intercept_pool = NULL;
+  journal->j_free_intercept_chunks = NULL;
+  free (journal->j_sb_buffer);
+  journal->j_sb_buffer = NULL;
+  free (journal->j_descriptor_buf);
+  journal->j_descriptor_buf = NULL;
+  free (journal->j_commit_buf);
+  journal->j_commit_buf = NULL;
+  free (journal->map.phys_blocks);
+  journal->map.phys_blocks = NULL;
+  journal->map.inode = NULL;
+
+  JOURNAL_UNLOCK (journal);
+
+  /* The reference journal_create took.  */
+  if (jnode)
+    diskfs_nrele (jnode);
+}
+
 void
 diskfs_journal_shutdown (void)
 {
@@ -3579,6 +3650,7 @@ diskfs_journal_shutdown (void)
   /* Checkpoint all remaining transactions and mark the journal clean.  */
   int empty = journal_quiesce_checkpoints ();
 
+  journal_t *journal = ext2_journal;
   ext2_journal = NULL;
 
   /* Final hardware flush.  It also puts the empty journal superblock on
@@ -3587,7 +3659,11 @@ diskfs_journal_shutdown (void)
   if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
     ext2_warning ("device flush failed: %s", strerror (err));
 
-  /* Left set when the log is not empty, so that e2fsck replays it.  */
+  /* Left set when the log is not empty, so that e2fsck replays it.
+     The journal is then kept too, as its transactions are.  */
   if (empty)
-    ext2_clear_needs_recovery ();
+    {
+      ext2_clear_needs_recovery ();
+      journal_free_resources (journal);
+    }
 }
