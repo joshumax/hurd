@@ -1595,7 +1595,7 @@ journal_create_running_transaction_locked (journal_t *journal)
  * Forcefully clears the checkpoint list.
  * SAFE ONLY after a full filesystem sync.
  */
-static void
+static error_t
 journal_clear_checkpoint_list_locked (journal_t *journal)
 {
   diskfs_transaction_t *txn = journal->j_checkpoint_list;
@@ -1619,6 +1619,7 @@ journal_clear_checkpoint_list_locked (journal_t *journal)
   err = journal_update_superblock (journal, journal->j_transaction_sequence);
   if (err)
     JRNL_LOG_WARN ("Failed to update superblock. %s", strerror (err));
+  return err;
 }
 
 /**
@@ -2998,8 +2999,9 @@ journal_create (struct node *journal_inode)
  * Safely marks the journal as clean on disk.
  * MUST only be called after sync_global(1) ensures no pager I/O is in flight,
  * otherwise asynchronous pager notifications will cause a Use-After-Free!
+ * Returns 1 if the journal superblock on disk now has an empty log.
  */
-static void
+static int
 journal_quiesce_checkpoints (void)
 {
   JRNL_LOG_DEBUG ("Journal in quiesce checkpoints.");
@@ -3025,7 +3027,7 @@ journal_quiesce_checkpoints (void)
       JRNL_LOG_WARN
 	("Quiesce timed out! Transaction deadlocked. Leaving journal dirty.");
       JOURNAL_UNLOCK (ext2_journal);
-      return;
+      return 0;
     }
 
   /* Write ALL shadow data from every checkpoint transaction to the main disk. */
@@ -3038,13 +3040,14 @@ journal_quiesce_checkpoints (void)
       JRNL_LOG_WARN ("[QUIESCE] I/O error during final checkpoint. "
 		     "Leaving journal dirty for WAL replay.");
       JOURNAL_UNLOCK (ext2_journal);
-      return;
+      return 0;
     }
 
   /* Now safe to clear the list and write s_start = 0 to the JBD2 superblock */
-  journal_clear_checkpoint_list_locked (ext2_journal);
+  err = journal_clear_checkpoint_list_locked (ext2_journal);
 
   JOURNAL_UNLOCK (ext2_journal);
+  return !err;
 }
 
 static void
@@ -3540,12 +3543,17 @@ diskfs_journal_shutdown (void)
   sync_global (1);
 
   /* Checkpoint all remaining transactions and mark the journal clean.  */
-  journal_quiesce_checkpoints ();
+  int empty = journal_quiesce_checkpoints ();
 
   ext2_journal = NULL;
 
-  /* Final hardware flush.  */
+  /* Final hardware flush.  It also puts the empty journal superblock on
+     disk before the needs_recovery flag is cleared.  */
   error_t err = store_sync (store);
   if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
     ext2_warning ("device flush failed: %s", strerror (err));
+
+  /* Left set when the log is not empty, so that e2fsck replays it.  */
+  if (empty)
+    ext2_clear_needs_recovery ();
 }

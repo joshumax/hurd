@@ -196,14 +196,10 @@ diskfs_set_hypermetadata (int wait, int clean)
   error_t err = 0;
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 
+  /* The needs_recovery flag is not handled here: see
+     ext2_set_needs_recovery and ext2_clear_needs_recovery.  */
   if (clean)
     {
-      /* Always clear recovery flag on clean unmount if journal is present */
-      if (ext2_journal && (sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
-        {
-          sblock->s_feature_incompat &= htole32(~EXT3_FEATURE_INCOMPAT_RECOVER);
-          sblock_dirty = 1;
-        }
       /* Only set EXT2_VALID_FS if it was clean when we mounted it */
       if (ext2fs_clean && !(sblock->s_state & htole16 (EXT2_VALID_FS)))
         {
@@ -213,13 +209,6 @@ diskfs_set_hypermetadata (int wait, int clean)
     }
   else
     {
-      /* Always set recovery flag when dirtying if journal is present */
-      if (ext2_journal && !(sblock->s_feature_incompat & htole32(EXT3_FEATURE_INCOMPAT_RECOVER)))
-        {
-          sblock->s_feature_incompat |= htole32(EXT3_FEATURE_INCOMPAT_RECOVER);
-          sblock_dirty = 1;
-          wait = 1;
-        }
       /* Clear EXT2_VALID_FS */
       if (sblock->s_state & htole16 (EXT2_VALID_FS))
         {
@@ -266,6 +255,98 @@ out:
   return err;
 }
 
+/* Set (SET nonzero) or clear the needs_recovery flag in SBLOCK, in the
+   cached superblock, and in the superblock on disk, and flush.  Only the
+   flag is changed on disk, outside the journal: the rest of SBLOCK may
+   hold changes that are not committed yet, and diskfs_set_hypermetadata
+   cannot write while the filesystem is going read-only.  */
+static error_t
+write_needs_recovery_flag (int set)
+{
+  uint32_t flag = htole32 (EXT3_FEATURE_INCOMPAT_RECOVER);
+  struct ext2_super_block *disk_sblock = NULL;
+  size_t amount = 0;
+  error_t err;
+
+  if (set)
+    {
+      sblock->s_feature_incompat |= flag;
+      /* Later writes of the superblock's block come from this image.  */
+      mapped_sblock->s_feature_incompat |= flag;
+    }
+  else
+    {
+      sblock->s_feature_incompat &= ~flag;
+      mapped_sblock->s_feature_incompat &= ~flag;
+    }
+
+  err = store_read (store, SBLOCK_OFFS >> store->log2_block_size,
+		    SBLOCK_SIZE, (void **) &disk_sblock, &amount);
+  if (!err && amount != SBLOCK_SIZE)
+    err = EIO;
+  if (!err)
+    {
+      if (set)
+	disk_sblock->s_feature_incompat |= flag;
+      else
+	disk_sblock->s_feature_incompat &= ~flag;
+      err = store_write (store, SBLOCK_OFFS >> store->log2_block_size,
+			 disk_sblock, SBLOCK_SIZE, &amount);
+      if (!err && amount != SBLOCK_SIZE)
+	err = EIO;
+    }
+  if (disk_sblock)
+    munmap (disk_sblock, SBLOCK_SIZE);
+  if (!err)
+    {
+      err = store_sync (store);
+      if (err == EOPNOTSUPP || err == D_INVALID_OPERATION)
+	err = 0;
+    }
+  return err;
+}
+
+/* Set the needs_recovery flag on disk, outside the journal, and flush.
+   e2fsck replays the log only when the flag is set, and ext2fs does not
+   replay it itself, so the flag must be on disk before the journal
+   commits anything, and must not wait for the journal to write the
+   superblock home.  Called when the journal starts on a writable
+   filesystem, or when such a filesystem becomes writable, before any
+   transaction holds the superblock.  The flag stays set until the journal
+   is empty on disk; see ext2_clear_needs_recovery.  */
+void
+ext2_set_needs_recovery (void)
+{
+  error_t err;
+
+  if (sblock->s_feature_incompat & htole32 (EXT3_FEATURE_INCOMPAT_RECOVER))
+    return;
+
+  err = write_needs_recovery_flag (1);
+  if (err)
+    ext2_warning ("cannot set the needs_recovery flag on disk: %s; "
+		  "after a crash, run e2fsck to replay the journal",
+		  strerror (err));
+}
+
+/* Clear the needs_recovery flag on disk.  Called once the journal is
+   stopped and empty on disk.  */
+void
+ext2_clear_needs_recovery (void)
+{
+  error_t err;
+
+  assert_backtrace (!ext2_journal);
+
+  if (!(sblock->s_feature_incompat & htole32 (EXT3_FEATURE_INCOMPAT_RECOVER)))
+    return;
+
+  err = write_needs_recovery_flag (0);
+  if (err)
+    ext2_warning ("cannot clear the needs_recovery flag on disk: %s",
+		  strerror (err));
+}
+
 void
 diskfs_readonly_changed (int readonly)
 {
@@ -278,4 +359,7 @@ diskfs_readonly_changed (int readonly)
 
   if (!readonly && !(sblock->s_state & htole16 (EXT2_VALID_FS)))
     ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
+
+  if (!readonly && ext2_journal)
+    ext2_set_needs_recovery ();
 }

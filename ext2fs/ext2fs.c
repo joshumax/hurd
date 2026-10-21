@@ -269,6 +269,10 @@ main (int argc, char **argv)
 	  ext2_journal = journal_create (jnode);
 	  if (ext2_journal)
 	    fprintf (stderr, "ext2fs: journaling enabled on %s\n", diskfs_disk_name);
+	  /* Before anything is journaled.  A read-only filesystem gets
+	     the flag when it becomes writable.  */
+	  if (ext2_journal && !diskfs_readonly)
+	    ext2_set_needs_recovery ();
 	  JRNL_LOG_DEBUG ("Global Journal Initialized at %p", ext2_journal);
 	  diskfs_nput(jnode);
       }

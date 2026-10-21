@@ -381,6 +381,12 @@ diskfs_transaction_t *
 journal_thread_transaction (void);
 
 void ext2_orphan_drop_ram_link (struct node *np);
+
+/* Set the needs_recovery flag directly on disk, outside the journal.  */
+void ext2_set_needs_recovery (void);
+
+/* Clear the needs_recovery flag once the journal is empty on disk.  */
+void ext2_clear_needs_recovery (void);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
