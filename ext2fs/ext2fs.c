@@ -220,6 +220,73 @@ static const struct argp_child runtime_children[] =
   {{&diskfs_std_runtime_argp}, {0}};
 static struct argp runtime_argp = {options, parse_opt, 0, 0, runtime_children};
 
+/* Set while the journal's log holds transactions that were never
+   replayed.  ext2fs does not replay a journal, and writing would
+   overwrite the log, so the filesystem is kept hard read-only until a
+   remount, after e2fsck has replayed it, finds the log empty.  */
+static int journal_needs_replay;
+/* diskfs_hard_readonly before journal_needs_replay was set, for a store
+   that is read-only on its own.  */
+static int journal_saved_hard_readonly;
+
+/* Look at the journal's log, when the journal is not running: at mount,
+   and on each remount, which re-reads the superblock while the
+   filesystem is read-only.  */
+void
+ext2_check_journal_log (void)
+{
+  struct node *jnode = NULL;
+  int empty;
+
+  if (!(sblock->s_feature_compat & EXT3_FEATURE_COMPAT_HAS_JOURNAL)
+      || ext2_journal)
+    return;
+
+  empty = (!diskfs_cached_lookup (sblock->s_journal_inum, &jnode)
+	   && jnode && journal_log_is_empty (jnode));
+  if (jnode)
+    diskfs_nput (jnode);
+
+  if (!empty)
+    {
+      if (!journal_needs_replay)
+	{
+	  ext2_warning ("the journal needs recovery: read-only until e2fsck "
+			"has replayed it and the filesystem is remounted");
+	  journal_saved_hard_readonly = diskfs_hard_readonly;
+	}
+      journal_needs_replay = 1;
+      diskfs_hard_readonly = 1;
+    }
+  else if (journal_needs_replay)
+    {
+      journal_needs_replay = 0;
+      diskfs_hard_readonly = journal_saved_hard_readonly;
+    }
+}
+
+void
+ext2_start_journal (void)
+{
+  struct node *jnode = NULL;
+
+  if (diskfs_cached_lookup (sblock->s_journal_inum, &jnode) || !jnode)
+    {
+      ext2_warning ("cannot find the journal inode; journaling disabled");
+      return;
+    }
+
+  ext2_journal = journal_create (jnode);
+  diskfs_nput (jnode);
+  if (!ext2_journal)
+    return;
+
+  fprintf (stderr, "ext2fs: journaling enabled on %s\n", diskfs_disk_name);
+  JRNL_LOG_DEBUG ("Global Journal Initialized at %p", ext2_journal);
+  /* Before anything is journaled.  */
+  ext2_set_needs_recovery ();
+}
+
 struct argp *diskfs_runtime_argp = (struct argp *)&runtime_argp;
 
 int
@@ -261,21 +328,17 @@ main (int argc, char **argv)
 		      sblock->s_journal_inum);
       JRNL_LOG_DEBUG ("[JOURNAL CHECK] s_journal_dev:  %u",
 		      sblock->s_journal_dev);
-      struct node *jnode = NULL;
-      error_t err = diskfs_cached_lookup (sblock->s_journal_inum, &jnode);
-
-      if (!err && jnode)
-      {
-	  ext2_journal = journal_create (jnode);
-	  if (ext2_journal)
-	    fprintf (stderr, "ext2fs: journaling enabled on %s\n", diskfs_disk_name);
-	  /* Before anything is journaled.  A read-only filesystem gets
-	     the flag when it becomes writable.  */
-	  if (ext2_journal && !diskfs_readonly)
-	    ext2_set_needs_recovery ();
-	  JRNL_LOG_DEBUG ("Global Journal Initialized at %p", ext2_journal);
-	  diskfs_nput(jnode);
-      }
+      /* A read-only filesystem gets its journal when it becomes
+	 writable (diskfs_readonly_changed), from the journal superblock
+	 as e2fsck may have left it by then.  */
+      ext2_check_journal_log ();
+      if (journal_needs_replay && !diskfs_readonly)
+	{
+	  diskfs_readonly = 1;
+	  diskfs_readonly_changed (1);
+	}
+      else if (!diskfs_readonly)
+	ext2_start_journal ();
     }
   else
     {
@@ -315,6 +378,9 @@ diskfs_reload_global_state (void)
   map_hypermetadata ();
 
   resume_ext2_pager ();
+
+  /* e2fsck may have replayed the journal since the last look.  */
+  ext2_check_journal_log ();
 
   return 0;
 }

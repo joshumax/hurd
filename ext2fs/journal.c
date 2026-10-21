@@ -2903,6 +2903,40 @@ kjournald_thread (void *arg)
   return NULL;
 }
 
+int
+journal_log_is_empty (struct node *journal_inode)
+{
+  journal_superblock_t *jsb = NULL;
+  block_t phys = 0;
+  size_t amount = 0;
+  int empty = 0;
+  error_t err;
+
+  err = ext2_getblk (journal_inode, 0, 0, &phys);
+  if (!err && phys == 0)
+    err = EIO;
+  if (!err)
+    err = store_read (store,
+		      (store_offset_t) phys << log2_dev_blocks_per_fs_block,
+		      block_size, (void **) &jsb, &amount);
+  if (!err && amount < sizeof (journal_superblock_t))
+    err = EIO;
+
+  if (err)
+    JRNL_LOG_WARN ("Cannot read the journal superblock: %s", strerror (err));
+  else if (be32toh (jsb->s_header[0]) != JBD2_MAGIC_NUMBER
+	   || (be32toh (jsb->s_header[1]) != JBD2_SUPERBLOCK_V1
+	       && be32toh (jsb->s_header[1]) != JBD2_SUPERBLOCK_V2))
+    JRNL_LOG_WARN ("Bad journal superblock.");
+  else
+    /* s_start is 0 when the log is empty.  */
+    empty = jsb->s_start == 0;
+
+  if (jsb)
+    munmap (jsb, amount);
+  return empty;
+}
+
 journal_t *
 journal_create (struct node *journal_inode)
 {

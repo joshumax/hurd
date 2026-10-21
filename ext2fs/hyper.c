@@ -350,6 +350,12 @@ ext2_clear_needs_recovery (void)
 void
 diskfs_readonly_changed (int readonly)
 {
+  /* Like ext4 on a read-only remount: checkpoint the journal, empty the
+     log and clear the needs_recovery flag, while the store is still
+     writable.  diskfs_set_readonly has already synced.  */
+  if (readonly && ext2_journal)
+    diskfs_journal_shutdown ();
+
   allocate_mod_map ();
 
   (*(readonly ? store_set_flags : store_clear_flags)) (store, STORE_READONLY);
@@ -360,6 +366,9 @@ diskfs_readonly_changed (int readonly)
   if (!readonly && !(sblock->s_state & htole16 (EXT2_VALID_FS)))
     ext2_warning ("UNCLEANED FILESYSTEM NOW WRITABLE");
 
-  if (!readonly && ext2_journal)
-    ext2_set_needs_recovery ();
+  /* The log is empty: diskfs_hard_readonly keeps a filesystem whose
+     journal needs recovery from getting here.  */
+  if (!readonly && !ext2_journal
+      && (sblock->s_feature_compat & EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+    ext2_start_journal ();
 }

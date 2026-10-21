@@ -53,6 +53,11 @@ typedef struct journal journal_t;
 /* Initialize the journal subsystem using the inode provided (usually Inode 8). */
 journal_t *journal_create (struct node *journal_inode);
 
+/* Returns 1 if the log of the journal in JOURNAL_INODE is empty on disk,
+   and 0 if it holds transactions that were never replayed, or if its
+   superblock cannot be read.  JOURNAL_INODE is locked.  */
+int journal_log_is_empty (struct node *journal_inode);
+
 /**
  * A block device filter layer for the VFS pager's write path.
  * Replaces raw store_write calls to safely intercept deadlock hazards.

@@ -387,6 +387,14 @@ void ext2_set_needs_recovery (void);
 
 /* Clear the needs_recovery flag once the journal is empty on disk.  */
 void ext2_clear_needs_recovery (void);
+
+/* Start the journal from its superblock on disk, whose log must be
+   empty, and set the needs_recovery flag.  */
+void ext2_start_journal (void);
+
+/* Keep the filesystem read-only while the journal's log holds
+   transactions that were never replayed.  */
+void ext2_check_journal_log (void);
 
 /* ---------------------------------------------------------------- */
 /* Random stuff calculated from the super block.  */
