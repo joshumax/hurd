@@ -2905,13 +2905,13 @@ kjournald_thread (void *arg)
   return NULL;
 }
 
-int
-journal_log_is_empty (struct node *journal_inode)
+enum journal_state
+journal_check (struct node *journal_inode)
 {
   journal_superblock_t *jsb = NULL;
+  enum journal_state state = JOURNAL_NEEDS_REPLAY;
   block_t phys = 0;
   size_t amount = 0;
-  int empty = 0;
   error_t err;
 
   err = ext2_getblk (journal_inode, 0, 0, &phys);
@@ -2930,13 +2930,24 @@ journal_log_is_empty (struct node *journal_inode)
 	   || (be32toh (jsb->s_header[1]) != JBD2_SUPERBLOCK_V1
 	       && be32toh (jsb->s_header[1]) != JBD2_SUPERBLOCK_V2))
     JRNL_LOG_WARN ("Bad journal superblock.");
+  else if (jsb->s_start != 0)
+    /* Whatever its features, only e2fsck can replay it.  */
+    state = JOURNAL_NEEDS_REPLAY;
+  else if (be32toh (jsb->s_header[1]) == JBD2_SUPERBLOCK_V1)
+    /* No feature fields, and so no revoke records.  */
+    state = JOURNAL_UNSUPPORTED;
+  else if ((be32toh (jsb->s_feature_compat) & ~JBD2_KNOWN_COMPAT_FEATURES)
+	   || (be32toh (jsb->s_feature_ro_compat)
+	       & ~JBD2_KNOWN_ROCOMPAT_FEATURES)
+	   || (be32toh (jsb->s_feature_incompat)
+	       & ~JBD2_KNOWN_INCOMPAT_FEATURES))
+    state = JOURNAL_UNSUPPORTED;
   else
-    /* s_start is 0 when the log is empty.  */
-    empty = jsb->s_start == 0;
+    state = JOURNAL_USABLE;
 
   if (jsb)
     munmap (jsb, amount);
-  return empty;
+  return state;
 }
 
 journal_t *
@@ -2971,6 +2982,20 @@ journal_create (struct node *journal_inode)
 
   if (journal_load_superblock (j) != 0)
     ext2_panic ("[JOURNAL] Failed to load superblock!");
+
+  /* The commits write revoke records, which a journal implementation
+     that does not know them must not replay.  journal_check has made
+     sure this is a V2 superblock.  */
+  journal_superblock_t *jsb = (journal_superblock_t *) j->j_sb_buffer;
+  if (!(be32toh (jsb->s_feature_incompat) & JBD2_FEATURE_INCOMPAT_REVOKE))
+    {
+      jsb->s_feature_incompat =
+	htobe32 (be32toh (jsb->s_feature_incompat)
+		 | JBD2_FEATURE_INCOMPAT_REVOKE);
+      if (journal_write_block (j, 0, jsb))
+	ext2_panic ("[JOURNAL] Cannot write the journal superblock!");
+      flush_to_disk ();
+    }
   j->j_last_committed_tid = j->j_transaction_sequence - 1;
   j->j_released_tid = j->j_last_committed_tid;
   if (journal_map_init (&j->j_logged, 0))

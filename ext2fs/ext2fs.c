@@ -228,6 +228,12 @@ static int journal_needs_replay;
 /* diskfs_hard_readonly before journal_needs_replay was set, for a store
    that is read-only on its own.  */
 static int journal_saved_hard_readonly;
+/* Set while the journal uses a feature this implementation does not
+   write, such as 64-bit tags or checksums.  Its log is empty, so the
+   filesystem is used without a journal, as ext2fs did before it had
+   one, rather than kept read-only: a root filesystem made that way must
+   still boot.  */
+static int journal_unsupported;
 
 /* Look at the journal's log, when the journal is not running: at mount,
    and on each remount, which re-reads the superblock while the
@@ -236,18 +242,23 @@ void
 ext2_check_journal_log (void)
 {
   struct node *jnode = NULL;
-  int empty;
+  enum journal_state state = JOURNAL_NEEDS_REPLAY;
 
   if (!(sblock->s_feature_compat & EXT3_FEATURE_COMPAT_HAS_JOURNAL)
       || ext2_journal)
     return;
 
-  empty = (!diskfs_cached_lookup (sblock->s_journal_inum, &jnode)
-	   && jnode && journal_log_is_empty (jnode));
+  if (!diskfs_cached_lookup (sblock->s_journal_inum, &jnode) && jnode)
+    state = journal_check (jnode);
   if (jnode)
     diskfs_nput (jnode);
 
-  if (!empty)
+  if (state == JOURNAL_UNSUPPORTED && !journal_unsupported)
+    ext2_warning ("the journal uses features ext2fs does not write, "
+		  "such as 64-bit blocks or checksums; journaling disabled");
+  journal_unsupported = state == JOURNAL_UNSUPPORTED;
+
+  if (state == JOURNAL_NEEDS_REPLAY)
     {
       if (!journal_needs_replay)
 	{
@@ -269,6 +280,9 @@ void
 ext2_start_journal (void)
 {
   struct node *jnode = NULL;
+
+  if (journal_unsupported)
+    return;
 
   if (diskfs_cached_lookup (sblock->s_journal_inum, &jnode) || !jnode)
     {

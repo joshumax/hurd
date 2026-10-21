@@ -37,6 +37,21 @@
 
 #define JBD2_PACKED __attribute__((packed))
 
+/* Journal superblock features.  This journal writes 32-bit block tags
+   without checksums, and revoke records.  */
+#define JBD2_FEATURE_COMPAT_CHECKSUM	  0x00000001	/* v1 commit checksums */
+#define JBD2_FEATURE_INCOMPAT_REVOKE	  0x00000001	/* Revoke blocks */
+#define JBD2_FEATURE_INCOMPAT_64BIT	  0x00000002	/* 64-bit block tags */
+#define JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT 0x00000004
+#define JBD2_FEATURE_INCOMPAT_CSUM_V2	  0x00000008
+#define JBD2_FEATURE_INCOMPAT_CSUM_V3	  0x00000010
+#define JBD2_FEATURE_INCOMPAT_FAST_COMMIT 0x00000020
+
+/* The features a journal may have for this implementation to write it.  */
+#define JBD2_KNOWN_COMPAT_FEATURES	0
+#define JBD2_KNOWN_ROCOMPAT_FEATURES	0
+#define JBD2_KNOWN_INCOMPAT_FEATURES	JBD2_FEATURE_INCOMPAT_REVOKE
+
 /**
  * The Journal Superblock (Version 2).
  * Lives at the very start of the journal partition (typically Inode 8).

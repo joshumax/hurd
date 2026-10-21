@@ -53,10 +53,20 @@ typedef struct journal journal_t;
 /* Initialize the journal subsystem using the inode provided (usually Inode 8). */
 journal_t *journal_create (struct node *journal_inode);
 
-/* Returns 1 if the log of the journal in JOURNAL_INODE is empty on disk,
-   and 0 if it holds transactions that were never replayed, or if its
-   superblock cannot be read.  JOURNAL_INODE is locked.  */
-int journal_log_is_empty (struct node *journal_inode);
+/* What journal_check finds in a journal's superblock on disk.  */
+enum journal_state
+{
+  JOURNAL_USABLE,		/* Empty log, features this journal writes.  */
+  JOURNAL_NEEDS_REPLAY,		/* The log holds transactions that were never
+				   replayed, or the superblock is unreadable.  */
+  JOURNAL_UNSUPPORTED		/* Empty log, but a feature this journal does
+				   not write, such as 64-bit tags or
+				   checksums.  */
+};
+
+/* Look at the superblock of the journal in JOURNAL_INODE on disk.
+   JOURNAL_INODE is locked.  */
+enum journal_state journal_check (struct node *journal_inode);
 
 /**
  * A block device filter layer for the VFS pager's write path.
