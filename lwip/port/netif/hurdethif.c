@@ -155,84 +155,73 @@ hurdethif_device_set_flags (struct netif *netif, uint16_t flags)
 static error_t
 hurdethif_device_open (struct netif *netif)
 {
-  error_t err = ERR_OK;
-  device_t master_device;
   hurdethif *ethif = netif_get_state (netif);
-
   if (ethif->ether_port != MACH_PORT_NULL)
     {
       error (0, 0, "Already opened: %s", ethif->devname);
       return -1;
     }
 
-  err = ports_create_port (etherread_class, etherport_bucket,
-			   sizeof (struct port_info), &ethif->readpt);
+  error_t err = ports_create_port (etherread_class, etherport_bucket,
+				   sizeof (struct port_info), &ethif->readpt);
   if (err)
     {
       error (0, err, "ports_create_port on %s", ethif->devname);
+      return err;
+    }
+
+  ethif->readptname = ports_get_right (ethif->readpt);
+  err = mach_port_insert_right (mach_task_self (), ethif->readptname,
+				ethif->readptname,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    {
+      error (0, err, "mach_port_insert_right");
+      return err;
+    }
+
+  mach_port_set_qlimit (mach_task_self (), ethif->readptname,
+			MACH_PORT_QLIMIT_MAX);
+
+  char *device_name;
+  filter_array_t filter;
+  unsigned filter_len;
+  device_t master_device = file_name_lookup (ethif->devname, O_RDWR, 0);
+  if (master_device == MACH_PORT_NULL)
+    {
+      int file_errno = errno;
+      err = get_privileged_ports (0, &master_device);
+      if (err)
+	{
+	  error (0, file_errno, "file_name_lookup %s", ethif->devname);
+	  error (0, err, "and cannot get device master port");
+	  return err;
+	}
+
+      device_name = ethif->devname;
+      filter = ether_filter;
+      filter_len = ether_filter_len;
     }
   else
     {
-      ethif->readptname = ports_get_right (ethif->readpt);
-      mach_port_insert_right (mach_task_self (), ethif->readptname,
-			      ethif->readptname, MACH_MSG_TYPE_MAKE_SEND);
-
-      mach_port_set_qlimit (mach_task_self (), ethif->readptname,
-			    MACH_PORT_QLIMIT_MAX);
-
-      master_device = file_name_lookup (ethif->devname, O_RDWR, 0);
-      if (master_device != MACH_PORT_NULL)
-	{
-	  /* The device name here is the path of a device file.  */
-	  err = device_open (master_device, D_WRITE | D_READ,
-			     "eth", &ethif->ether_port);
-	  mach_port_deallocate (mach_task_self (), master_device);
-	  if (err)
-	    error (0, err, "device_open on %s", ethif->devname);
-	  else
-	    {
-	      err = device_set_filter (ethif->ether_port, ethif->readptname,
-				       MACH_MSG_TYPE_MAKE_SEND, 0,
-				       (filter_array_t) bpf_ether_filter,
-				       bpf_ether_filter_len);
-	      if (err)
-		error (0, err, "device_set_filter on %s", ethif->devname);
-	    }
-	}
-      else
-	{
-	  /* No, perhaps a Mach device?  */
-	  int file_errno = errno;
-	  err = get_privileged_ports (0, &master_device);
-	  if (err)
-	    {
-	      error (0, file_errno, "file_name_lookup %s", ethif->devname);
-	      error (0, err, "and cannot get device master port");
-	    }
-	  else
-	    {
-	      err = device_open (master_device, D_WRITE | D_READ,
-				 ethif->devname, &ethif->ether_port);
-	      mach_port_deallocate (mach_task_self (), master_device);
-	      if (err)
-		{
-		  error (0, file_errno, "file_name_lookup %s",
-			 ethif->devname);
-		  error (0, err, "device_open(%s)", ethif->devname);
-		}
-	      else
-		{
-		  err =
-		    device_set_filter (ethif->ether_port, ethif->readptname,
-				       MACH_MSG_TYPE_MAKE_SEND, 0,
-				       (filter_array_t) ether_filter,
-				       ether_filter_len);
-		  if (err)
-		    error (0, err, "device_set_filter on %s", ethif->devname);
-		}
-	    }
-	}
+      device_name = "eth";
+      filter = bpf_ether_filter;
+      filter_len = bpf_ether_filter_len;
     }
+
+  err = device_open (master_device, D_WRITE | D_READ,
+		     device_name, &ethif->ether_port);
+  mach_port_deallocate (mach_task_self (), master_device);
+  if (err)
+    {
+      error (0, err, "device_open(%s)", device_name);
+      return err;
+    }
+
+  err = device_set_filter (ethif->ether_port, ethif->readptname,
+			   MACH_MSG_TYPE_MAKE_SEND, 0, filter, filter_len);
+  if (err)
+    error (0, err, "device_set_filter on %s", device_name);
 
   return err;
 }

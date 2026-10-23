@@ -366,9 +366,15 @@ irqhelp_remove_interrupt_handler(struct irq *irq)
   irq->shutdown = true;
 
   /* Turn port into dead name */
-  mach_port_insert_right (mach_task_self (), irq->port, irq->port,
-                          MACH_MSG_TYPE_MAKE_SEND);
-  mach_port_mod_refs (mach_task_self (), irq->port,
-                      MACH_PORT_RIGHT_RECEIVE, -1);
+  error_t err = mach_port_insert_right (mach_task_self (), irq->port,
+					irq->port, MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    return err;
+
+  err = mach_port_mod_refs (mach_task_self (), irq->port,
+			    MACH_PORT_RIGHT_RECEIVE, -1);
+  if (err)
+    return err;
+
   return 0;
 }

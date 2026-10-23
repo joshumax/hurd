@@ -90,8 +90,11 @@ main (int argc, char **argv)
   if (err)
     error (1, err, "mach_port_allocate");
 
-  mach_port_insert_right (mach_task_self (), control, control,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), control, control,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (1, err, "mach_port_insert_right");
+
   err =
     fsys_startup (bootstrap, 0, control, MACH_MSG_TYPE_COPY_SEND, &realnode);
   mach_port_deallocate (mach_task_self (), control);

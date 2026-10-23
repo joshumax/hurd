@@ -214,8 +214,14 @@ diskfs_get_filemap (struct node *np, vm_prot_t prot)
   
   pthread_spin_unlock (&node2pagelock);
   
-  mach_port_insert_right (mach_task_self (), right, right, 
-			  MACH_MSG_TYPE_MAKE_SEND);
+  error_t err = mach_port_insert_right (mach_task_self (), right, right,
+					MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), right);
+      errno = err;
+      return MACH_PORT_NULL;
+    }
   
   return right;
 }

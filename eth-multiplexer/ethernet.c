@@ -135,8 +135,10 @@ int ethernet_open (char *dev_name, device_t master_device,
   if (err)
     error (2, err, "ports_create_port");
   readptname = ports_get_right (readpt);
-  mach_port_insert_right (mach_task_self (), readptname, readptname,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), readptname, readptname,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (2, err, "mach_port_insert_right");
 
   mach_port_set_qlimit (mach_task_self (), readptname, MACH_PORT_QLIMIT_MAX);
 

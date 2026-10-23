@@ -256,9 +256,15 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
 	  return dev_get_memory_object (dev, prot, memobj);
 	}
       else
-	err =
-	  mach_port_insert_right (mach_task_self (),
-				  *memobj, *memobj, MACH_MSG_TYPE_MAKE_SEND);
+	{
+	  err = mach_port_insert_right (mach_task_self (), *memobj, *memobj,
+					MACH_MSG_TYPE_MAKE_SEND);
+	  if (err)
+	    {
+	      mach_port_deallocate (mach_task_self (), *memobj);
+	      *memobj = MACH_PORT_NULL;
+	    }
+	}
 
       if (created)
 	ports_port_deref (dev->pager);

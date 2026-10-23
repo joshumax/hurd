@@ -207,8 +207,10 @@ ethernet_open (struct device *dev)
 			   sizeof (struct port_info), &edev->readpt);
   assert_perror_backtrace (err);
   edev->readptname = ports_get_right (edev->readpt);
-  mach_port_insert_right (mach_task_self (), edev->readptname, edev->readptname,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), edev->readptname,
+				edev->readptname, MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (2, err, "mach_port_insert_right");
 
   mach_port_set_qlimit (mach_task_self (), edev->readptname, MACH_PORT_QLIMIT_MAX);
 

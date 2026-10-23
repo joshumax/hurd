@@ -834,14 +834,13 @@ dev_open (const char *name, dev_mode_t mode)
   err = ports_create_port (phys_reply_class, streamdev_bucket,
 			   sizeof (struct port_info), &phys_reply_pi);
   if (err)
-    {
-      mach_port_deallocate (mach_task_self (), device_master);
-      return err;
-    }
+    goto device_master_deallocate;
 
   phys_reply = ports_get_right (phys_reply_pi);
-  mach_port_insert_right (mach_task_self (), phys_reply, phys_reply,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), phys_reply, phys_reply,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    goto phys_reply_deallocate;
 
   if (output_buffer)
     {
@@ -849,40 +848,41 @@ dev_open (const char *name, dev_mode_t mode)
 			       sizeof (struct port_info),
 			       &phys_reply_writes_pi);
       if (err)
-	{
-	  mach_port_deallocate (mach_task_self (), phys_reply);
-	  phys_reply = MACH_PORT_NULL;
-	  ports_port_deref (phys_reply_pi);
-	  phys_reply_pi = 0;
-	  mach_port_deallocate (mach_task_self (), device_master);
-	  return err;
-	}
+	goto phys_reply_deallocate;
 
       phys_reply_writes = ports_get_right (phys_reply_writes_pi);
-      mach_port_insert_right (mach_task_self (), phys_reply_writes,
-			      phys_reply_writes, MACH_MSG_TYPE_MAKE_SEND);
+      err = mach_port_insert_right (mach_task_self (), phys_reply_writes,
+				    phys_reply_writes,
+				    MACH_MSG_TYPE_MAKE_SEND);
+      if (err)
+	goto phys_reply_writes_deallocate;
     }
 
   err = device_open_request (device_master, phys_reply, mode, (char *) name);
   if (err)
-    {
-      mach_port_deallocate (mach_task_self (), phys_reply);
-      phys_reply = MACH_PORT_NULL;
-      ports_port_deref (phys_reply_pi);
-      phys_reply_pi = 0;
-      if (output_buffer)
-	{
-	  mach_port_deallocate (mach_task_self (), phys_reply_writes);
-	  phys_reply_writes = MACH_PORT_NULL;
-	  ports_port_deref (phys_reply_writes_pi);
-	  phys_reply_writes_pi = 0;
-	}
-      mach_port_deallocate (mach_task_self (), device_master);
-      return err;
-    }
+    goto phys_reply_writes_deallocate;
 
   open_pending = 1;
   return 0;
+
+ phys_reply_writes_deallocate:
+  if (output_buffer)
+    {
+      mach_port_deallocate (mach_task_self (), phys_reply_writes);
+      phys_reply_writes = MACH_PORT_NULL;
+      ports_port_deref (phys_reply_writes_pi);
+      phys_reply_writes_pi = 0;
+    }
+
+ phys_reply_deallocate:
+  mach_port_deallocate (mach_task_self (), phys_reply);
+  phys_reply = MACH_PORT_NULL;
+  ports_port_deref (phys_reply_pi);
+  phys_reply_pi = 0;
+
+ device_master_deallocate:
+  mach_port_deallocate (mach_task_self (), device_master);
+  return err;
 }
 
 kern_return_t

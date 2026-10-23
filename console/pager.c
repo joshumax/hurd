@@ -167,8 +167,13 @@ user_pager_create (struct user_pager *user_pager, unsigned int npages,
   user_pager->memobj = pager_get_port (user_pager->pager);
   ports_port_deref (user_pager->pager);
 
-  mach_port_insert_right (mach_task_self (), user_pager->memobj,
-			  user_pager->memobj, MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), user_pager->memobj,
+				user_pager->memobj, MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    {
+      mach_port_deallocate (mach_task_self (), user_pager->memobj);
+      return err;
+    }
 
   *user = 0;
   err = vm_map (mach_task_self (),

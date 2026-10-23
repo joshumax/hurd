@@ -62,8 +62,10 @@ diskfs_start_disk_pager (struct user_pager_info *upi,
 
   /* Get a port to the disk pager.  */
   disk_pager_port = pager_get_port (diskfs_disk_pager);
-  mach_port_insert_right (mach_task_self (), disk_pager_port, disk_pager_port,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), disk_pager_port,
+				disk_pager_port, MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (2, err, "mach_port_insert_right");
 
   /* Now map the disk image.  */
   *image = 0;

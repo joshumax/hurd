@@ -101,9 +101,11 @@ init_users (void)
     error (1, err, "mach_port_allocate");
 
   /* Add a send right, since hurd_sig_post needs one.  */
-  mach_port_insert_right (mach_task_self (),
-			  async_icky_id, async_icky_id,
-			  MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (),
+				async_icky_id, async_icky_id,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (1, err, "mach_port_insert_right");
 
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 			    &async_id);
@@ -111,8 +113,10 @@ init_users (void)
     error (1, err, "mach_port_allocate");
 
   /* Add a send right, since hurd_sig_post needs one.  */
-  mach_port_insert_right (mach_task_self (),
-			  async_id, async_id, MACH_MSG_TYPE_MAKE_SEND);
+  err = mach_port_insert_right (mach_task_self (), async_id, async_id,
+				MACH_MSG_TYPE_MAKE_SEND);
+  if (err)
+    error (1, err, "mach_port_insert_right");
 }
 
 
