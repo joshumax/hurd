@@ -1153,7 +1153,7 @@ netfs_S_io_map (struct protid *user,
   if (!user)
     return EOPNOTSUPP;
 
-  if (user->po->openstat & (O_READ | O_WRITE) == 0)
+  if ((user->po->openstat & (O_READ | O_WRITE)) == 0)
     return EBADF;
 
   *wrobj = *rdobj = MACH_PORT_NULL;
