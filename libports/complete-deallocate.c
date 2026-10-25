@@ -47,8 +47,9 @@ _ports_complete_deallocate (struct port_info *pi)
       refcounts_deref_weak (&pi->refcounts, &result);
       pthread_rwlock_unlock (&_ports_htable_lock);
 
-      mach_port_mod_refs (mach_task_self (), pi->port_right,
-			  MACH_PORT_RIGHT_RECEIVE, -1);
+      error_t err = mach_port_mod_refs (mach_task_self (), pi->port_right,
+					MACH_PORT_RIGHT_RECEIVE, -1);
+      assert_perror_backtrace (err);
       pi->port_right = MACH_PORT_NULL;
     }
 

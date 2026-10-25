@@ -82,8 +82,12 @@ static inline void
 free_session (struct session *s)
 {
   if (s->s_sessionid)
-    mach_port_mod_refs (mach_task_self (), s->s_sessionid,
-			MACH_PORT_RIGHT_RECEIVE, -1);
+    {
+      error_t err = mach_port_mod_refs (mach_task_self (), s->s_sessionid,
+					MACH_PORT_RIGHT_RECEIVE, -1);
+      assert_perror_backtrace (err);
+    }
+
   remove_session_from_hash (s);
   free (s);
 }
@@ -129,6 +133,7 @@ boot_setsid (struct proc *p)
   struct session *sess;
 
   sess = new_session (p);
+  assert_backtrace (sess);
   p->p_pgrp = new_pgrp (p->p_pid, sess);
   assert_backtrace (p->p_pgrp);
   join_pgrp (p);
@@ -443,7 +448,16 @@ S_proc_setpgrp (struct proc *callerp,
 	 the last process in that group.  Likewise, if p->p_pgrp was
 	 the last group in p->p_pgrp->pg_session, the session is
 	 deallocated.  */
-      struct pgrp *new = pg ? pg : new_pgrp (pgid, p->p_pgrp->pg_session);
+      struct pgrp *new;
+      if (pg)
+	new = pg;
+      else
+	{
+	  new = new_pgrp (pgid, p->p_pgrp->pg_session);
+	  if (!new)
+	    return errno;
+	}
+
       leave_pgrp (p);
       p->p_pgrp = new;
       join_pgrp (p);

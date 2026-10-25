@@ -41,14 +41,19 @@ trivfs_protid_dup (struct trivfs_protid *cred, struct trivfs_protid **dup)
 
       err = iohelp_dup_iouser (&new->user, cred->user);
       if (err)
-        {
+	{
 	  ports_port_deref (new);
 	  return err;
 	}
 
       new->realnode = cred->realnode;
-      mach_port_mod_refs (mach_task_self (), new->realnode,
-			  MACH_PORT_RIGHT_SEND, 1);
+      err = mach_port_mod_refs (mach_task_self (), new->realnode,
+				MACH_PORT_RIGHT_SEND, 1);
+      if (err)
+	{
+	  ports_port_deref (new);
+	  return err;
+	}
 
       new->hook = cred->hook;
 

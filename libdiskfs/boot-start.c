@@ -608,8 +608,9 @@ diskfs_S_fsys_init (struct diskfs_control *pt,
   ports_port_deref (rootpi);
 
   /* We need two send rights, for the crdir and cwdir slots.  */
-  mach_port_mod_refs (mach_task_self (), root_pt,
-		      MACH_PORT_RIGHT_SEND, +1);
+  err = mach_port_mod_refs (mach_task_self (), root_pt,
+			    MACH_PORT_RIGHT_SEND, +1);
+  assert_perror_backtrace (err);
 
   if (_hurd_ports)
     {

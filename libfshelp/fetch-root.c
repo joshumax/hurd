@@ -180,15 +180,16 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
     }
 
   control = box->active;
-  mach_port_mod_refs (mach_task_self (), control,
-		      MACH_PORT_RIGHT_SEND, 1);
+  err = mach_port_mod_refs (mach_task_self (), control,
+			    MACH_PORT_RIGHT_SEND, 1);
   pthread_mutex_unlock (box->lock);
 
   /* Cancellation point XXX */
-  err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
-		      user->uids->ids, user->uids->num,
-		      user->gids->ids, user->gids->num,
-		      flags, retry, retryname, root);
+  if (!err)
+    err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
+			user->uids->ids, user->uids->num,
+			user->gids->ids, user->gids->num,
+			flags, retry, retryname, root);
 
   pthread_mutex_lock (box->lock);
 

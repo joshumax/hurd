@@ -373,8 +373,5 @@ irqhelp_remove_interrupt_handler(struct irq *irq)
 
   err = mach_port_mod_refs (mach_task_self (), irq->port,
 			    MACH_PORT_RIGHT_RECEIVE, -1);
-  if (err)
-    return err;
-
-  return 0;
+  return err;
 }

@@ -910,8 +910,12 @@ do_exec (file_t file,
 	else
 	  {
 	    if (!consume && new != MACH_PORT_NULL)
-	      mach_port_mod_refs (mach_task_self (),
-				  new, MACH_PORT_RIGHT_SEND, 1);
+	      {
+		e.error = mach_port_mod_refs (mach_task_self (),
+					      new, MACH_PORT_RIGHT_SEND, 1);
+		if (e.error)
+		  return;
+	      }
 	  }
 
 	boot->portarray[idx] = new;
@@ -1181,8 +1185,14 @@ do_exec (file_t file,
 		  errno = EBADF;
 		  return MACH_PORT_NULL;
 		}
-	      mach_port_mod_refs (mach_task_self (), boot->dtable[fd],
-				  MACH_PORT_RIGHT_SEND, +1);
+	      error_t err = mach_port_mod_refs (mach_task_self (),
+						boot->dtable[fd],
+						MACH_PORT_RIGHT_SEND, +1);
+	      if (err)
+		{
+		  errno = err;
+		  return MACH_PORT_NULL;
+		}
 	      return boot->dtable[fd];
 	    }
 				/* XXX/fault */

@@ -677,8 +677,10 @@ rewrite_right (mach_port_t *right, mach_msg_type_name_t *type,
 	    }
 	  /* The receive right is owned by an unknown task. */
 	  receiver_info = new_receiver_info (*right, unknown_task);
-	  mach_port_mod_refs (mach_task_self (), *right,
-			      MACH_PORT_RIGHT_SEND, 1);
+	  err = mach_port_mod_refs (mach_task_self (), *right,
+				    MACH_PORT_RIGHT_SEND, 1);
+	  if (err)
+	    error (2, err, "mach_port_mod_refs");
 	}
       /* If the send right is moved to the task with the receive right,
        * don't do anything. 

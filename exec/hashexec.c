@@ -66,8 +66,13 @@ check_hashbang (struct execdata *e,
 	  const file_t dport = dtable[fd];
 	  if (dport != MACH_PORT_NULL)
 	    {
-	      mach_port_mod_refs (mach_task_self (), dport,
-				  MACH_PORT_RIGHT_SEND, +1);
+	      error_t err = mach_port_mod_refs (mach_task_self (), dport,
+						MACH_PORT_RIGHT_SEND, +1);
+	      if (err)
+		{
+		  errno = err;
+		  return MACH_PORT_NULL;
+		}
 	      return dport;
 	    }
 	}
@@ -344,8 +349,10 @@ check_hashbang (struct execdata *e,
 		}
 	      else
 		dtable[fd] = file;
-	      mach_port_mod_refs (mach_task_self (), file,
-				  MACH_PORT_RIGHT_SEND, +1);
+	      e->error = mach_port_mod_refs (mach_task_self (), file,
+					     MACH_PORT_RIGHT_SEND, +1);
+	      if (e->error)
+		goto end_setup_args;
 
 	      char *fd_file_name = alloca (100);
 	      sprintf (fd_file_name, "/dev/fd/%d", fd);

@@ -38,6 +38,7 @@ netfs_S_io_map (struct protid *user,
   node = user->po->np;
   flags = user->po->openstat & (O_READ | O_WRITE);
 
+  error_t err;
   pthread_mutex_lock (&node->lock);
   switch (flags)
     {
@@ -45,7 +46,14 @@ netfs_S_io_map (struct protid *user,
       *wrobj = *rdobj = netfs_get_filemap (node, VM_PROT_READ |VM_PROT_WRITE);
       if (*wrobj == MACH_PORT_NULL)
 	goto error;
-      mach_port_mod_refs (mach_task_self (), *rdobj, MACH_PORT_RIGHT_SEND, 1);
+      err = mach_port_mod_refs (mach_task_self (), *rdobj,
+				MACH_PORT_RIGHT_SEND, 1);
+      if (err)
+	{
+	  pthread_mutex_unlock (&node->lock);
+	  mach_port_deallocate (mach_task_self (), *rdobj);
+	  return err;
+	}
       break;
     case O_READ:
       *rdobj = netfs_get_filemap (node, VM_PROT_READ);

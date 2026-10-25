@@ -211,8 +211,12 @@ file_map (const struct store *store, vm_prot_t prot, mach_port_t *memobj)
   else if (rd_memobj == wr_memobj)
     {
       if (rd_memobj != MACH_PORT_NULL)
-	mach_port_mod_refs (mach_task_self (), rd_memobj,
-			    MACH_PORT_RIGHT_SEND, -1);
+	{
+	  err = mach_port_mod_refs (mach_task_self (), rd_memobj,
+				    MACH_PORT_RIGHT_SEND, -1);
+	  if (err)
+	    mach_port_deallocate (mach_task_self (), rd_memobj);
+	}
     }
   else
     {

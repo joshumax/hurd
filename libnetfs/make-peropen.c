@@ -46,28 +46,25 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
   if (netfs_peropen_create_hook)
     err = (*netfs_peropen_create_hook) (po);
   if (err)
-    {
-      fshelp_rlock_po_fini (&po->lock_status);
-      free (po);
-      return NULL;
-    }
+    goto error;
 
   if (context)
     {
       if (context->path)
 	{
 	  po->path = strdup (context->path);
-	  if (! po->path) {
-	    fshelp_rlock_po_fini (&po->lock_status);
-	    free (po);
-	    return NULL;
-	  }
+	  if (! po->path)
+	    goto error;
 	}
 
       po->root_parent = context->root_parent;
       if (po->root_parent != MACH_PORT_NULL)
-	mach_port_mod_refs (mach_task_self (), po->root_parent,
-			    MACH_PORT_RIGHT_SEND, 1);
+	{
+	  err = mach_port_mod_refs (mach_task_self (), po->root_parent,
+				    MACH_PORT_RIGHT_SEND, 1);
+	  if (err)
+	    goto free_path;
+	}
 
       po->shadow_root = context->shadow_root;
       if (po->shadow_root)
@@ -80,6 +77,13 @@ netfs_make_peropen (struct node *np, int flags, struct peropen *context)
     }
 
   netfs_nref (np);
-
   return po;
+
+ free_path:
+  free (po->path);
+
+ error:
+  fshelp_rlock_po_fini (&po->lock_status);
+  free (po);
+  return NULL;
 }

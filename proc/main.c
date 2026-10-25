@@ -216,7 +216,9 @@ main (int argc, char **argv, char **envp)
      to panic or something.  */
   open_console (_hurd_device_master);
 
-  mach_port_mod_refs (mach_task_self (), authserver, MACH_PORT_RIGHT_SEND, 1);
+  err = mach_port_mod_refs (mach_task_self (), authserver,
+			    MACH_PORT_RIGHT_SEND, 1);
+  assert_perror_backtrace (err);
   _hurd_port_set (&_hurd_ports[INIT_PORT_AUTH], authserver);
   mach_port_deallocate (mach_task_self (), boot);
 

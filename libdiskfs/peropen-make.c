@@ -30,7 +30,7 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
   struct peropen *po = *ppo = malloc (sizeof (struct peropen));
 
   if (! po)
-    return ENOMEM;
+    return errno;
 
   err = fshelp_rlock_po_init (&po->lock_status);
   if (err)
@@ -52,16 +52,19 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 	  po->path = strdup (context->path);
 	  if (! po->path)
 	    {
-	      fshelp_rlock_po_fini (&po->lock_status);
-	      free (po);
-	      return ENOMEM;
+	      err = errno;
+	      goto error;
 	    }
 	}
 
       po->root_parent = context->root_parent;
       if (po->root_parent != MACH_PORT_NULL)
-	mach_port_mod_refs (mach_task_self (), po->root_parent, 
-			    MACH_PORT_RIGHT_SEND, 1);
+	{
+	  err = mach_port_mod_refs (mach_task_self (), po->root_parent,
+				    MACH_PORT_RIGHT_SEND, 1);
+	  if (err)
+	    goto free_path;
+	}
 
       po->shadow_root = context->shadow_root;
       if (po->shadow_root)
@@ -80,6 +83,13 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
     }
 
   diskfs_nref (np);
-
   return 0;
+
+ free_path:
+  free (po->path);
+
+ error:
+  fshelp_rlock_po_fini (&po->lock_status);
+  free (po);
+  return err;
 }

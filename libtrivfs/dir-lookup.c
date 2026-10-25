@@ -74,8 +74,15 @@ trivfs_S_dir_lookup (struct trivfs_protid *cred,
       if (err)
 	iohelp_free_iouser (user);
       else
-	mach_port_mod_refs (mach_task_self (), cred->realnode,
-			    MACH_PORT_RIGHT_SEND, +1);
+	{
+	  err = mach_port_mod_refs (mach_task_self (), cred->realnode,
+				    MACH_PORT_RIGHT_SEND, +1);
+	  if (err)
+	    {
+	      iohelp_free_iouser (user);
+	      ports_port_deref (newcred);
+	    }
+	}
     }
   if (err)
     return err;
