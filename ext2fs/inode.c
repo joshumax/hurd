@@ -84,6 +84,7 @@ void
 diskfs_node_norefs (struct node *np)
 {
   ext2_orphan_drop_ram_link (np);
+  ext2_discard_prealloc (np);
   if (diskfs_node_disknode (np)->dirents)
     free (diskfs_node_disknode (np)->dirents);
   assert_backtrace (!diskfs_node_disknode (np)->pager);

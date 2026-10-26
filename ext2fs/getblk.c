@@ -38,25 +38,21 @@
 #include <string.h>
 #include "ext2fs.h"
 
-/*
- * ext2_discard_prealloc and ext2_alloc_block are atomic wrt. the
- * superblock in the same manner as are ext2_free_blocks and
- * ext2_new_block.  We just wait on the super rather than locking it
- * here, since ext2_new_block will do the necessary locking and we
- * can't block until then.
- */
+/* Drop NODE's preallocation window.  Only memory holds it, so this just
+   makes its blocks available to other nodes.  The caller holds NODE's
+   alloc_lock, or has the only reference to NODE.  */
 void
 ext2_discard_prealloc (struct node *node)
 {
 #ifdef EXT2_PREALLOCATE
-  if (diskfs_node_disknode (node)->info.i_prealloc_count)
+  struct ext2_inode_info *info = &diskfs_node_disknode (node)->info;
+
+  if (info->i_prealloc_count)
     {
-      int i = diskfs_node_disknode (node)->info.i_prealloc_count;
       ext2_debug ("discarding %d prealloced blocks for inode %d",
-		  i, node->cache_id);
-      diskfs_node_disknode (node)->info.i_prealloc_count = 0;
-      ext2_free_unused_blocks
-	(diskfs_node_disknode (node)->info.i_prealloc_block, i);
+		  info->i_prealloc_count, node->cache_id);
+      ext2_unreserve_blocks (info->i_prealloc_block, info->i_prealloc_count);
+      info->i_prealloc_count = 0;
     }
 #endif
 }
@@ -74,39 +70,38 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
   diskfs_transaction_t *txn = journal_thread_transaction ();
 
 #ifdef EXT2_PREALLOCATE
-  if (diskfs_node_disknode (node)->info.i_prealloc_count &&
-      (goal == diskfs_node_disknode (node)->info.i_prealloc_block ||
-       goal + 1 == diskfs_node_disknode (node)->info.i_prealloc_block))
+  struct ext2_inode_info *info = &diskfs_node_disknode (node)->info;
+
+  if (info->i_prealloc_count &&
+      (goal == info->i_prealloc_block || goal + 1 == info->i_prealloc_block))
     {
-      result = diskfs_node_disknode (node)->info.i_prealloc_block++;
-      diskfs_node_disknode (node)->info.i_prealloc_count--;
+      goal = info->i_prealloc_block;
       ext2_debug ("preallocation hit (%lu/%lu) => %u",
-		  ++alloc_hits, ++alloc_attempts, result);
+		  ++alloc_hits, ++alloc_attempts, goal);
     }
   else
     {
       ext2_debug ("preallocation miss (%lu/%lu)",
 		  alloc_hits, ++alloc_attempts);
       ext2_discard_prealloc (node);
-      result = ext2_new_block
-	(goal,
-	 S_ISREG (node->dn_stat.st_mode)
-	 ? (sblock->s_prealloc_blocks ?: EXT2_DEFAULT_PREALLOC_BLOCKS)
-	 : (S_ISDIR (node->dn_stat.st_mode)
-	    && EXT2_HAS_COMPAT_FEATURE(sblock,
-				       EXT2_FEATURE_COMPAT_DIR_PREALLOC))
-	 ? sblock->s_prealloc_dir_blocks
-	 : 0,
-	 &diskfs_node_disknode (node)->info.i_prealloc_count,
-	 &diskfs_node_disknode (node)->info.i_prealloc_block);
     }
+  result = ext2_new_block
+    (goal,
+     S_ISREG (node->dn_stat.st_mode)
+     ? (sblock->s_prealloc_blocks ?: EXT2_DEFAULT_PREALLOC_BLOCKS)
+     : (S_ISDIR (node->dn_stat.st_mode)
+	&& EXT2_HAS_COMPAT_FEATURE(sblock,
+				   EXT2_FEATURE_COMPAT_DIR_PREALLOC))
+     ? sblock->s_prealloc_dir_blocks
+     : 0,
+     &info->i_prealloc_count, &info->i_prealloc_block);
 
   /* Trap trying to allocate superblock, block group descriptor table, or beyond the end */
   assert_backtrace (result == 0 ||
 		    (result >= group_desc_block_end
 		     && result < store->size >> log2_block_size));
 #else
-  result = ext2_new_block (goal, 0, 0);
+  result = ext2_new_block (goal, 0, 0, 0);
 #endif
 
   if (result && zero)

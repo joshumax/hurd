@@ -715,9 +715,9 @@ block_t ext2_new_block (block_t goal,
 
 void ext2_free_blocks (block_t block, unsigned long count);
 
-/* Free COUNT blocks starting at BLOCK that never held data, such as
-   discarded preallocations.  ext2_new_block can hand them out at once.  */
-void ext2_free_unused_blocks (block_t block, unsigned long count);
+/* Drop the reservation of COUNT blocks starting at BLOCK, a discarded
+   preallocation window.  */
+void ext2_unreserve_blocks (block_t block, unsigned long count);
 
 /* Make COUNT blocks starting at BLOCK, freed by a transaction that has
    now committed, available to ext2_new_block again.  */

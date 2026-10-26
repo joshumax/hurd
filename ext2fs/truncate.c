@@ -358,11 +358,11 @@ diskfs_truncate (struct node *node, off_t length)
       diskfs_file_update (node, 1);
     }
 
-  ext2_discard_prealloc (node);
-
   force_delayed_copies (node, length);
 
   pthread_rwlock_wrlock (&diskfs_node_disknode (node)->alloc_lock);
+
+  ext2_discard_prealloc (node);
 
   /* Update the size on disk; fsck will finish freeing blocks if necessary
      should we crash. */
