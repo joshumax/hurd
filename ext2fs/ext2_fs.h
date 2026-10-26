@@ -30,6 +30,8 @@
  */
 #define EXT2_PREALLOCATE
 #define EXT2_DEFAULT_PREALLOC_BLOCKS	8
+/* A file that keeps using up its window gets one twice as big, up to this.  */
+#define EXT2_MAX_PREALLOC_BLOCKS	1024
 
 /*
  * The second extended file system version
@@ -591,6 +593,7 @@ struct ext2_inode_info {
 	__u32	i_next_alloc_goal;
 	__u32	i_prealloc_block;
 	__u32	i_prealloc_count;
+	__u32	i_prealloc_size;	/* Size of the last window */
 	int	i_new_inode:1;	/* Is a freshly allocated inode */
 };
 

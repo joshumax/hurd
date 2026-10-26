@@ -354,6 +354,7 @@ diskfs_alloc_node (struct node *dir, mode_t mode, struct node **node)
   diskfs_node_disknode (np)->info.i_next_alloc_goal = 0;
   diskfs_node_disknode (np)->info.i_prealloc_block = 0;
   diskfs_node_disknode (np)->info.i_prealloc_count = 0;
+  diskfs_node_disknode (np)->info.i_prealloc_size = 0;
   diskfs_node_disknode (np)->on_orphan_list = 0;
   diskfs_node_disknode (np)->orphan_prev = NULL;
   diskfs_node_disknode (np)->orphan_next = NULL;

@@ -109,6 +109,18 @@ diskfs_user_try_dropping_softrefs (struct node *np)
 void
 diskfs_lost_hardrefs (struct node *np)
 {
+  struct disknode *dn = diskfs_node_disknode (np);
+
+  /* The file is closed: give back the rest of its preallocation window,
+     so that it does not leave a reserved gap behind it while it stays in
+     the cache.  NP->lock is held, and diskfs_grow and diskfs_truncate
+     take alloc_lock under it too.  Most files closed have no window;
+     one made after this check is dropped with the node.  */
+  if (!dn->info.i_prealloc_count)
+    return;
+  pthread_rwlock_wrlock (&dn->alloc_lock);
+  ext2_discard_prealloc (np);
+  pthread_rwlock_unlock (&dn->alloc_lock);
 }
 
 /* A new hard reference to a node has been created; it's now OK to
@@ -281,6 +293,7 @@ diskfs_user_read_node (struct node *np, struct lookup_context *ctx)
   info->i_next_alloc_block = 0;
   info->i_next_alloc_goal = 0;
   info->i_prealloc_count = 0;
+  info->i_prealloc_size = 0;
 
   /* Set to a conservative value.  */
   dn->last_page_partially_writable = 0;
@@ -418,9 +431,6 @@ write_node (struct node *np)
   diskfs_transaction_t *txn = journal_thread_transaction ();
 
   ext2_debug ("(%llu)", np->cache_id);
-
-  if (diskfs_node_disknode (np)->info.i_prealloc_count)
-    ext2_discard_prealloc (np);
 
   if (np->dn_stat_dirty)
     {

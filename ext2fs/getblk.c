@@ -71,9 +71,18 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
 
 #ifdef EXT2_PREALLOCATE
   struct ext2_inode_info *info = &diskfs_node_disknode (node)->info;
+  int sequential = (goal == info->i_prealloc_block
+		    || goal + 1 == info->i_prealloc_block);
+  block_t base =
+    S_ISREG (node->dn_stat.st_mode)
+    ? (sblock->s_prealloc_blocks ?: EXT2_DEFAULT_PREALLOC_BLOCKS)
+    : (S_ISDIR (node->dn_stat.st_mode)
+       && EXT2_HAS_COMPAT_FEATURE(sblock,
+				  EXT2_FEATURE_COMPAT_DIR_PREALLOC))
+    ? sblock->s_prealloc_dir_blocks
+    : 0;
 
-  if (info->i_prealloc_count &&
-      (goal == info->i_prealloc_block || goal + 1 == info->i_prealloc_block))
+  if (info->i_prealloc_count && sequential)
     {
       goal = info->i_prealloc_block;
       ext2_debug ("preallocation hit (%lu/%lu) => %u",
@@ -84,17 +93,21 @@ ext2_alloc_block (struct node *node, block_t goal, int zero)
       ext2_debug ("preallocation miss (%lu/%lu)",
 		  alloc_hits, ++alloc_attempts);
       ext2_discard_prealloc (node);
+      /* A regular file that used up its window and goes on writing
+	 sequentially gets a window twice as big, so that a file written
+	 alongside others is interleaved with them in ever larger runs.
+	 Anything else starts again from the base size.  */
+      if (S_ISREG (node->dn_stat.st_mode) && sequential
+	  && info->i_prealloc_size)
+	info->i_prealloc_size = (info->i_prealloc_size * 2
+				 < EXT2_MAX_PREALLOC_BLOCKS
+				 ? info->i_prealloc_size * 2
+				 : EXT2_MAX_PREALLOC_BLOCKS);
+      else
+	info->i_prealloc_size = base;
     }
-  result = ext2_new_block
-    (goal,
-     S_ISREG (node->dn_stat.st_mode)
-     ? (sblock->s_prealloc_blocks ?: EXT2_DEFAULT_PREALLOC_BLOCKS)
-     : (S_ISDIR (node->dn_stat.st_mode)
-	&& EXT2_HAS_COMPAT_FEATURE(sblock,
-				   EXT2_FEATURE_COMPAT_DIR_PREALLOC))
-     ? sblock->s_prealloc_dir_blocks
-     : 0,
-     &info->i_prealloc_count, &info->i_prealloc_block);
+  result = ext2_new_block (goal, info->i_prealloc_size,
+			   &info->i_prealloc_count, &info->i_prealloc_block);
 
   /* Trap trying to allocate superblock, block group descriptor table, or beyond the end */
   assert_backtrace (result == 0 ||
