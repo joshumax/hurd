@@ -65,6 +65,12 @@ diskfs_user_make_node (struct node **npp, struct lookup_context *ctx)
   dn->on_orphan_list = 0;
   dn->orphan_prev = NULL;
   dn->orphan_next = NULL;
+  /* No preallocation window: a node can be dropped before its inode is
+     read (a lookup that lost a race, a failed read), and dropping it
+     gives its window back.  */
+  dn->info.i_prealloc_block = 0;
+  dn->info.i_prealloc_count = 0;
+  dn->info.i_prealloc_size = 0;
   pthread_rwlock_init (&dn->alloc_lock, NULL);
   pokel_init (&dn->indir_pokel, diskfs_disk_pager, disk_cache);
 
