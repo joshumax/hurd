@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#if __has_include(<stdcountof.h>)
+#include <stdcountof.h>
+#endif
+
 #include <mach.h>
 #include <mach/gnumach.h>
 #include <mach/port.h>
@@ -48,7 +52,7 @@
 
 #define DISK_NAME_LEN 32
 
-#ifndef countof
+#if !__has_include(<stdcountof.h>)
 #define countof(arr) (sizeof (arr) / sizeof ((arr)[0]))
 #endif
 
