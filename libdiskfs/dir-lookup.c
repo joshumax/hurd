@@ -207,7 +207,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      if (diskfs_synchronous)
 		{
 		  diskfs_file_update (dnp, 1);
-		  diskfs_file_update (np, 1);
+		  /* A failed create leaves no node.  */
+		  if (!err)
+		    diskfs_file_update (np, 1);
 		}
 	      newnode = 1;
 	    }
