@@ -205,7 +205,7 @@ hurdethif_device_open (struct netif *netif)
   else
     {
       device_name = "eth";
-      filter = bpf_ether_filter;
+      filter = (filter_array_t) bpf_ether_filter;
       filter_len = bpf_ether_filter_len;
     }
 
