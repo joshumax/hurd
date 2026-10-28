@@ -38,6 +38,15 @@ diskfs_direnter (struct node *dp,
 {
   error_t err;
 
+  /* A directory that was removed, by rmdir or by a rename onto it, stays
+     reachable through the ports and working directories still on it, but
+     nothing reaches what is entered in it.  */
+  if (dp->dn_stat.st_nlink == 0)
+    {
+      diskfs_drop_dirstat (dp, ds);
+      return ENOENT;
+    }
+
   err = diskfs_direnter_hard (dp, name, np, ds, cred);
   if (err)
     return err;

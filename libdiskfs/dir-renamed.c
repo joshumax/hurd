@@ -105,6 +105,13 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
       fnp = NULL;
       goto out;
     }
+  /* TDP was removed (see diskfs_direnter): fail before ".." changes.  */
+  if (tdp->dn_stat.st_nlink == 0)
+    {
+      err = ENOENT;
+      fnp = NULL;
+      goto out;
+    }
   if (tnp && excl)
     {
       err = EEXIST;
