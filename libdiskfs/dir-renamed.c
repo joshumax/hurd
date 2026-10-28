@@ -99,11 +99,16 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   ds = buf;
   err = diskfs_lookup (tdp, toname, RENAME, &tnp, ds, tocred);
   assert_backtrace (err != EAGAIN);	/* <-> assert_backtrace (TONAME != "..") */
+  /* FNP is not locked yet: OUT must not unlock it.  */
   if (err && err != ENOENT)
-    goto out;
+    {
+      fnp = NULL;
+      goto out;
+    }
   if (tnp && excl)
     {
       err = EEXIST;
+      fnp = NULL;
       goto out;
     }
 
