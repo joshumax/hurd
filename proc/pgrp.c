@@ -117,10 +117,21 @@ S_proc_setsid (struct proc *p)
   if (p->p_pgrp->pg_pgid == p->p_pid || pgrp_find (p->p_pid))
     return EPERM;
 
-  leave_pgrp (p);
-
   sess = new_session (p);
-  p->p_pgrp= new_pgrp (p->p_pid, sess);
+  if (!sess)
+    return errno;
+
+  struct pgrp *pgrp = new_pgrp (p->p_pid, sess);
+  if (!pgrp)
+    {
+      error_t err = errno;
+      remove_session_from_hash (sess);
+      free (sess);
+      return err;
+    }
+
+  leave_pgrp (p);
+  p->p_pgrp = pgrp;
   join_pgrp (p);
 
   return 0;

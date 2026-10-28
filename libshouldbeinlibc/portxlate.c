@@ -30,55 +30,55 @@ port_name_xlator_create (mach_port_t from_task, mach_port_t to_task,
 			 struct port_name_xlator **xlator)
 {
   error_t err;
-  struct port_name_xlator *x = malloc (sizeof (struct port_name_xlator));
+  struct port_name_xlator *x = calloc (1, sizeof (struct port_name_xlator));
 
   if (! x)
-    return ENOMEM;
+    return errno;
 
-  mach_port_mod_refs (mach_task_self (), from_task, MACH_PORT_RIGHT_SEND, +1);
+  err = mach_port_mod_refs (mach_task_self (), from_task,
+			    MACH_PORT_RIGHT_SEND, +1);
+  if (err)
+    goto error;
+
   x->from_task = from_task;
-  mach_port_mod_refs (mach_task_self (), to_task, MACH_PORT_RIGHT_SEND, +1);
+  err = mach_port_mod_refs (mach_task_self (), to_task,
+			    MACH_PORT_RIGHT_SEND, +1);
+  if (err)
+    goto deallocate_from_task;
+
   x->to_task = to_task;
-  x->to_names = 0;
-  x->to_types = 0;
-  x->to_names_len = 0;
-  x->to_types_len = 0;
 
   /* Cache a list of names in TO_TASK.  */
   err = mach_port_names (to_task,
 			 &x->to_names, &x->to_names_len,
 			 &x->to_types, &x->to_types_len);
+  if (err)
+    goto deallocate_to_task;
 
-  if (! err)
-    /* Make an array to hold ports from TO_TASK which have been translated
-       into our namespace.  */
+  /* Make an array to hold ports from TO_TASK which have been translated
+     into our namespace.  */
+  x->ports = calloc (1, sizeof (mach_port_t) * x->to_names_len);
+  if (!x->ports)
     {
-      x->ports = malloc (sizeof (mach_port_t) * x->to_names_len);
-      if (x->ports)
-	{
-	  unsigned int i;
-	  for (i = 0; i < x->to_names_len; i++)
-	    x->ports[i] = MACH_PORT_NULL;
-	}
-      else
-	{
-	  munmap ((caddr_t) x->to_names,
-		  x->to_names_len * sizeof (mach_port_t));
-	  munmap ((caddr_t) x->to_types,
-		  x->to_types_len * sizeof (mach_port_type_t));
-
-	  mach_port_deallocate (mach_task_self (), x->to_task);
-	  mach_port_deallocate (mach_task_self (), x->from_task);
-
-	  err = ENOMEM;
-	}
+      err = errno;
+      munmap ((caddr_t) x->to_names,
+	      x->to_names_len * sizeof (mach_port_t));
+      munmap ((caddr_t) x->to_types,
+	      x->to_types_len * sizeof (mach_port_type_t));
+      goto deallocate_to_task;
     }
 
-  if (err)
-    free (x);
-  else
-    *xlator = x;
+  *xlator = x;
+  return 0;
 
+ deallocate_to_task:
+  mach_port_deallocate (mach_task_self (), to_task);
+
+ deallocate_from_task:
+  mach_port_deallocate (mach_task_self (), from_task);
+
+ error:
+  free (x);
   return err;
 }
 

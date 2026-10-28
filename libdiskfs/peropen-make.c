@@ -72,8 +72,17 @@ diskfs_make_peropen (struct node *np, int flags, struct peropen *context,
 
       po->shadow_root_parent = context->shadow_root_parent;
       if (po->shadow_root_parent != MACH_PORT_NULL)
-	mach_port_mod_refs (mach_task_self (), po->shadow_root_parent, 
-			    MACH_PORT_RIGHT_SEND, 1);
+	{
+	  err = mach_port_mod_refs (mach_task_self (), po->shadow_root_parent,
+				    MACH_PORT_RIGHT_SEND, 1);
+	  if (err)
+	    {
+	      if (po->shadow_root)
+		diskfs_nrele (po->shadow_root);
+
+	      goto free_path;
+	    }
+	}
     }
   else
     {

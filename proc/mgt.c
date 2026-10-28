@@ -221,11 +221,33 @@ S_proc_child (struct proc *parentp,
   if (childp->p_parentset)
     return EBUSY;
 
+  int allocate_exe = 0;
   if (!childp->exe && parentp->exe)
     {
       childp->exe = strdup (parentp->exe);
       if (!childp->exe)
-        return errno;
+	return errno;
+
+      allocate_exe = 1;
+    }
+
+  if (MACH_PORT_VALID (parentp->p_task_namespace))
+    {
+      error_t err = mach_port_mod_refs (mach_task_self (),
+					parentp->p_task_namespace,
+					MACH_PORT_RIGHT_SEND, +1);
+      if (err)
+	{
+	  if (allocate_exe)
+	    {
+	      free (childp->exe);
+	      childp->exe = NULL;
+	    }
+
+	  return err;
+	}
+
+      childp->p_task_namespace = parentp->p_task_namespace;
     }
 
   mach_port_deallocate (mach_task_self (), childt);
@@ -279,13 +301,6 @@ S_proc_child (struct proc *parentp,
     {
       childp->start_code = parentp->start_code;
       childp->end_code = parentp->end_code;
-    }
-
-  if (MACH_PORT_VALID (parentp->p_task_namespace))
-    {
-      mach_port_mod_refs (mach_task_self (), parentp->p_task_namespace,
-			  MACH_PORT_RIGHT_SEND, +1);
-      childp->p_task_namespace = parentp->p_task_namespace;
     }
 
   return 0;
@@ -1386,19 +1401,34 @@ S_mach_notify_new_task (struct port_info *notify,
   if (! parentp)
     return ESRCH;
 
+  error_t err;
+  int needs_task_dealloc = 0;
   childp = task_find_nocreate (task);
   if (! childp)
     {
-      mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
+      err = mach_port_mod_refs (mach_task_self (), task,
+				MACH_PORT_RIGHT_SEND, +1);
+      if (err)
+	return err;
+
       childp = new_proc (task);
+      needs_task_dealloc = 1;
     }
 
   if (MACH_PORT_VALID (parentp->p_task_namespace))
     {
-      error_t err;
       /* Tasks in a task namespace are not expected to call
 	 proc_child, so we do it on their behalf.  */
-      mach_port_mod_refs (mach_task_self (), task, MACH_PORT_RIGHT_SEND, +1);
+      err = mach_port_mod_refs (mach_task_self (), task,
+				MACH_PORT_RIGHT_SEND, +1);
+      if (err)
+	{
+	  if (needs_task_dealloc)
+	    mach_port_deallocate (mach_task_self (), task);
+
+	  return err;
+	}
+
       err = S_proc_child (parentp, task);
       assert_perror_backtrace (err);
 

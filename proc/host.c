@@ -139,7 +139,6 @@ S_proc_getexecdata (struct proc *p,
 		    int **ints,
 		    mach_msg_type_number_t *nints)
 {
-  int i;
   int ports_allocated = 0;
   /* No need to check P here; we don't use it. */
 
@@ -151,31 +150,54 @@ S_proc_getexecdata (struct proc *p,
       *ports = mmap (0, round_page (n_std_ports * sizeof (mach_port_t)),
 		     PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*ports == MAP_FAILED)
-        return ENOMEM;
+	return errno;
       ports_allocated = 1;
     }
   memcpy (*ports, std_port_array, n_std_ports * sizeof (mach_port_t));
   *nports = n_std_ports;
 
+  error_t err;
+  int ints_allocated = 0;
   if (*nints < n_std_ints)
     {
       *ints = mmap (0, round_page (n_std_ints * sizeof (int)),
 		    PROT_READ|PROT_WRITE, MAP_ANON, 0, 0);
       if (*ints == MAP_FAILED)
 	{
-	  if (ports_allocated)
-	    munmap (*ports, round_page (n_std_ports * sizeof (mach_port_t)));
-	  return ENOMEM;
+	  err = errno;
+	  goto munmap_ports;
 	}
+
+      ints_allocated = 1;
     }
   memcpy (*ints, std_int_array, n_std_ints * sizeof (int));
   *nints = n_std_ints;
 
-  for (i = 0; i < n_std_ports; i++)
-    mach_port_mod_refs (mach_task_self (), std_port_array[i], MACH_PORT_RIGHT_SEND, 1);
-  *portspoly = MACH_MSG_TYPE_MOVE_SEND;
+  for (int i = 0; i < n_std_ports; ++i)
+    {
+      err = mach_port_mod_refs (mach_task_self (), std_port_array[i],
+				MACH_PORT_RIGHT_SEND, 1);
+      if (err)
+	{
+	  for (int j = 0; j < i; ++j)
+	    mach_port_deallocate (mach_task_self (), std_port_array[j]);
 
+	  goto munmap_ints;
+	}
+    }
+
+  *portspoly = MACH_MSG_TYPE_MOVE_SEND;
   return 0;
+
+ munmap_ints:
+  if (ints_allocated)
+    munmap (*ints, round_page (n_std_ints * sizeof (int)));
+
+ munmap_ports:
+  if (ports_allocated)
+    munmap (*ports, round_page (n_std_ports * sizeof (mach_port_t)));
+
+  return err;
 }
 
 /* Implement proc_execdata_notify as described in <hurd/process.defs>. */

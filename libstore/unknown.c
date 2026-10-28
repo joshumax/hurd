@@ -60,10 +60,7 @@ noflags (struct store *store, int flags)
 static struct store_enc *
 duplicate_encoding (struct store_enc *enc)
 {
-  struct store_enc *us;
-  size_t i;
-
-  us = calloc (1, sizeof *us);
+  struct store_enc *us = calloc (1, sizeof *us);
   if (us == NULL)
     return NULL;
 
@@ -98,9 +95,17 @@ duplicate_encoding (struct store_enc *enc)
   us->num_offsets = enc->num_offsets;
   us->data_len = enc->data_len;
 
-  for (i = 0; i < us->num_ports; ++i)
-    mach_port_mod_refs (mach_task_self (), us->ports[i],
-			MACH_PORT_RIGHT_SEND, +1);
+  error_t err;
+  for (size_t i = 0; i < us->num_ports; ++i)
+    {
+      err = mach_port_mod_refs (mach_task_self (), us->ports[i],
+				MACH_PORT_RIGHT_SEND, +1);
+      if (err)
+	{
+	  memset (&us->ports[i], 0, us->num_ports - i);
+	  goto no_memory;
+	}
+    }
 
   return us;
 }
