@@ -47,7 +47,10 @@
 #define BLKRRPART  0x125F     /* re-read partition table */
 
 #define DISK_NAME_LEN 32
-#define MAX_DISK_DEV 2
+
+#ifndef countof
+#define countof(arr) (sizeof (arr) / sizeof ((arr)[0]))
+#endif
 
 #ifdef _RUMP_SATA
 #define RUMP_TYPE_STRING "rump SATA/IDE"
@@ -122,7 +125,7 @@ static boolean_t
 is_disk_device (const char *name)
 {
   const char *dev;
-  const char *allowed_devs[MAX_DISK_DEV] = {
+  const char *allowed_devs[] = {
 #ifdef _RUMP_SATA
     "wd",
 #else
@@ -132,7 +135,7 @@ is_disk_device (const char *name)
   };
   uint8_t i;
 
-  for (i = 0; i < MAX_DISK_DEV; i++)
+  for (i = 0; i < countof(allowed_devs); i++)
     {
       dev = allowed_devs[i];
       /* /dev/XXN but we only care about /dev/XX prefix */
