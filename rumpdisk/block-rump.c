@@ -1,7 +1,7 @@
 /*
  * Rump block driver support
  *
- * Copyright (C) 2019 Free Software Foundation
+ * Copyright (C) 2019, 2026 Free Software Foundation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@
 #endif
 
 #ifdef _RUMP_SATA
-#define RUMP_TYPE_STRING "rump SATA/IDE"
+#define RUMP_TYPE_STRING "rump SATA/IDE/NVMe"
 #else
 #define RUMP_TYPE_STRING "rump USB"
 #endif
@@ -132,6 +132,7 @@ is_disk_device (const char *name)
   const char *allowed_devs[] = {
 #ifdef _RUMP_SATA
     "wd",
+    "ld",
 #else
     "sd",
 #endif
@@ -178,6 +179,18 @@ rumpdisk_device_init (void)
       device_t device;
 
 #ifdef _RUMP_SATA
+      if (! device_open (device_master, D_READ, "ld0", &device)
+       || ! device_open (device_master, D_READ, "ld1", &device)
+       || ! device_open (device_master, D_READ, "ld3", &device)
+       || ! device_open (device_master, D_READ, "ld2", &device))
+    {
+      device_close (device);
+      mach_port_deallocate (mach_task_self (), device);
+      fprintf(stderr, "Kernel is already driving a Logic Disk device, skipping probing disks\n");
+      fflush(stderr);
+      disabled = 1;
+      return;
+    }
 #if 0
       if (! device_open (device_master, D_READ, "hd0", &device)
        || ! device_open (device_master, D_READ, "hd1", &device)

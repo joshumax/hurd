@@ -1,5 +1,5 @@
 #
-#   Copyright (C) 2019, 2023 Free Software Foundation, Inc.
+#   Copyright (C) 2019, 2023, 2026 Free Software Foundation, Inc.
 #
 #   This program is free software; you can redistribute it and/or
 #   modify it under the terms of the GNU General Public License as
@@ -16,7 +16,7 @@
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 RUMPLIBS=rump rumpuser rumpdev rumpdev_disk rumpdev_pci rumpvfs
-RUMPSATA=rumpdev_ahcisata rumpdev_piixide rumpdev_ata
+RUMPSATA=rumpdev_ahcisata rumpdev_piixide rumpdev_ata rumpdev_nvme rumpdev_ld_nvme rumpdev_ld
 RUMPUSB=rumpdev_usb rumpdev_pci_usbhc rumpdev_umass rumpdev_scsipi
 RUMPEXTRA=rumpdev_scsipi
 
