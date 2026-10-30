@@ -120,8 +120,10 @@ diskfs_startup_diskfs (mach_port_t fs_bootstrap, int flags)
 	 if _diskfs_chroot_directory is non-null.  */
       old = diskfs_root_node;
       diskfs_root_node = np;
-      pthread_mutex_unlock (&np->lock);
-      diskfs_nput (old);
+      /* A virtual root that is the root itself was unlocked with it.  */
+      if (np != old)
+	pthread_mutex_unlock (&np->lock);
+      diskfs_nrele (old);
     }
 
   if (fs_bootstrap != MACH_PORT_NULL)
