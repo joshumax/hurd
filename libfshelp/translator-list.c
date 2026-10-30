@@ -128,14 +128,24 @@ fshelp_set_active_translator (struct port_info *pi,
  update:
   if (MACH_PORT_VALID (transbox->active) && transbox->active != t->active)
     {
+      err = mach_port_mod_refs (mach_task_self (), transbox->active,
+				MACH_PORT_RIGHT_SEND, +1);
+      if (err)
+	goto out;
+
       mach_port_t old;
-      err = mach_port_request_notification (mach_task_self (), transbox->active,
+      err = mach_port_request_notification (mach_task_self (),
+					    transbox->active,
 					    MACH_NOTIFY_DEAD_NAME, 0,
 					    pi->port_right,
 					    MACH_MSG_TYPE_MAKE_SEND_ONCE,
 					    &old);
       if (err)
-	goto out;
+	{
+	  mach_port_deallocate (mach_task_self (), transbox->active);
+	  goto out;
+	}
+
       if (MACH_PORT_VALID (old))
 	mach_port_deallocate (mach_task_self (), old);
 
@@ -147,8 +157,7 @@ fshelp_set_active_translator (struct port_info *pi,
 
       if (MACH_PORT_VALID (t->active))
 	mach_port_deallocate (mach_task_self (), t->active);
-      mach_port_mod_refs (mach_task_self (), transbox->active,
-			  MACH_PORT_RIGHT_SEND, +1);
+
       t->active = transbox->active;
     }
   else if (! MACH_PORT_VALID (transbox->active))
