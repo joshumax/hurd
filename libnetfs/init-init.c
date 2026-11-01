@@ -45,8 +45,17 @@ netfs_init (void)
     error (2, err, "mapping time");
 
   netfs_protid_class = ports_create_class (netfs_release_protid, 0);
+  if (!netfs_protid_class)
+    error (2, errno, "can't create netfs protid class");
+
   netfs_control_class = ports_create_class (0, 0);
+  if (!netfs_control_class)
+    error (2, errno, "can't create netfs control class");
+
   netfs_port_bucket = ports_create_bucket ();
+  if (!netfs_port_bucket)
+    error (2, errno, "can't create netfs port bucket");
+
   netfs_auth_server_port = getauth ();
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 			    &netfs_fsys_identity);

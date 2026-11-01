@@ -111,7 +111,16 @@ devio_init (void)
     return err;
   mach_port_deallocate (mach_task_self (), host_priv);
   if (!phys_reply_class)
-  phys_reply_class = ports_create_class (0, 0);
+    {
+      phys_reply_class = ports_create_class (0, 0);
+      if (!phys_reply_class)
+	{
+	  err = errno;
+	  mach_port_deallocate (mach_task_self (), device_master);
+	  return err;
+	}
+    }
+
   return 0;
 }
 

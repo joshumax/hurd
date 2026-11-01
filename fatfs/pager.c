@@ -781,12 +781,17 @@ create_fat_pager (void)
 
   upi->type = FAT;
   disk_pager_bucket = ports_create_bucket ();
+  if (!disk_pager_bucket)
+    error (2, errno, "can't create disk pager bucket");
+
   diskfs_start_disk_pager (upi, disk_pager_bucket, MAY_CACHE, 0,
 			   bytes_per_sector * sectors_per_fat,
 			   &fat_image);
 
   /* The file pager.  */
   file_pager_bucket = ports_create_bucket ();
+  if (!file_pager_bucket)
+    error (2, errno, "can't create file pager bucket");
 
   /* Start libpagers worker threads.  */
   err = pager_start_workers (file_pager_bucket, &file_pager_requests);

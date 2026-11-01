@@ -553,7 +553,12 @@ hurdethif_module_init (void)
 {
   error_t err;
   etherport_bucket = ports_create_bucket ();
+  if (!etherport_bucket)
+    perror ("ports_create_bucket");
+
   etherread_class = ports_create_class (0, 0);
+  if (!etherread_class)
+    perror ("ports_create_class");
 
   err = pthread_create (&input_thread, 0, hurdethif_input_thread, 0);
   if (!err)

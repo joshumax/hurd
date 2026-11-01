@@ -1852,8 +1852,17 @@ main (int argc, char **argv, char **envp)
   setlinebuf (ostream);
 
   traced_bucket = ports_create_bucket ();
+  if (!traced_bucket)
+    error (1, errno, "can't create traced bucket");
+
   traced_class = ports_create_class (&traced_clean, NULL);
+  if (!traced_class)
+    error (1, errno, "can't create traced class");
+
   other_class = ports_create_class (0, 0);
+  if (!other_class)
+    error (1, errno, "can't create other class");
+
   err = ports_create_port (other_class, traced_bucket,
 			   sizeof (*notify_pi), &notify_pi);
   assert_perror_backtrace (err);

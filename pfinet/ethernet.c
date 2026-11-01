@@ -182,7 +182,12 @@ ethernet_initialize (void)
   pthread_t thread;
   error_t err;
   etherport_bucket = ports_create_bucket ();
+  if (!etherport_bucket)
+    perror ("ports_create_bucket");
+
   etherreadclass = ports_create_class (0, 0);
+  if (!etherreadclass)
+    perror ("ports_create_class");
 
   err = pthread_create (&thread, NULL, ethernet_thread, NULL);
   if (!err)

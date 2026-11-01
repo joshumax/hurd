@@ -185,9 +185,21 @@ main (int argc, char **argv, char **envp)
     error (2, 0, "proc server can only be run by startup during boot");
 
   proc_bucket = ports_create_bucket ();
+  if (!proc_bucket)
+    error (2, errno, "can't create proc bucket");
+
   proc_class = ports_create_class (0, 0);
+  if (!proc_class)
+    error (2, errno, "can't create proc class");
+
   generic_port_class = ports_create_class (0, 0);
+  if (!generic_port_class)
+    error (2, errno, "can't create generic port class");
+
   exc_class = ports_create_class (exc_clean, 0);
+  if (!exc_class)
+    error (2, errno, "can't create exc class");
+
   ports_create_port (generic_port_class, proc_bucket,
 		     sizeof (struct port_info), &genport);
   generic_port = ports_get_right (genport);
@@ -197,6 +209,7 @@ main (int argc, char **argv, char **envp)
 
   /* Create the startup proc object for /hurd/startup (PID 2).  */
   startup_proc = allocate_proc (MACH_PORT_NULL);
+  assert_backtrace (startup_proc);
   startup_proc->p_deadmsg = 1;
   complete_proc (startup_proc, HURD_PID_STARTUP);
 

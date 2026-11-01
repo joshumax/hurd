@@ -78,8 +78,16 @@ main (int argc, char **argv)
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   control_class = ports_create_class (trivfs_clean_cntl, 0);
+  if (!control_class)
+    error (1, errno, "can't create control class");
+
   node_class = ports_create_class (trivfs_clean_protid, 0);
+  if (!node_class)
+    error (1, errno, "can't create node class");
+
   port_bucket = ports_create_bucket ();
+  if (!port_bucket)
+    error (1, errno, "can't create port bucket");
 
   task_get_bootstrap_port (mach_task_self (), &bootstrap);
   if (bootstrap == MACH_PORT_NULL)

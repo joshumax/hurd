@@ -334,6 +334,8 @@ arrange_shutdown_notification (void)
   struct port_info *pi;
 
   machdev_shutdown_notify_class = ports_create_class (0, 0);
+  if (!machdev_shutdown_notify_class)
+    return;
 
   /* Arrange to get notified when the system goes down */
   err = ports_create_port (machdev_shutdown_notify_class, port_bucket,
@@ -420,8 +422,17 @@ machdev_trivfs_init(int argc, char **argv, mach_port_t bootstrap_resume_task,
 {
   mach_port_t mybootstrap = MACH_PORT_NULL;
   port_bucket = ports_create_bucket ();
+  if (!port_bucket)
+    error (1, errno, "can't create port bucket");
+
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
+  if (!trivfs_cntl_class)
+    error (1, errno, "can't create trivfs cntl class");
+
   trivfs_protid_class = ports_create_class (trivfs_clean_protid, 0);
+  if (!trivfs_protid_class)
+    error (1, errno, "can't create trivfs protid class");
+
   trivfs_create_control (MACH_PORT_NULL, trivfs_cntl_class, port_bucket,
                          trivfs_protid_class, 0, &control);
 

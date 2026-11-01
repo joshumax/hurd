@@ -761,6 +761,8 @@ main (int argc, char **argv)
   procserver = getproc ();
 
   crasher_portclass = ports_create_class (dead_crasher, 0);
+  if (!crasher_portclass)
+    error (1, errno, "can't create crasher portclass");
 
   err = trivfs_add_control_port_class (&trivfs_control_class);
   if (err)

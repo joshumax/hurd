@@ -304,6 +304,8 @@ main (int argc, char *argv[])
     error (2, 0, "Must be started as a translator");
 
   streamdev_bucket = ports_create_bucket ();
+  if (!streamdev_bucket)
+    error (2, errno, "can't create streamdev bucket");
 
   err = trivfs_startup (bootstrap, 0,
 			0, streamdev_bucket, 0, streamdev_bucket,
@@ -831,6 +833,12 @@ dev_open (const char *name, dev_mode_t mode)
     return err;
 
   phys_reply_class = ports_create_class (0, 0);
+  if (!phys_reply_class)
+    {
+      err = errno;
+      goto device_master_deallocate;
+    }
+
   err = ports_create_port (phys_reply_class, streamdev_bucket,
 			   sizeof (struct port_info), &phys_reply_pi);
   if (err)

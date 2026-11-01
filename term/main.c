@@ -346,6 +346,8 @@ main (int argc, char **argv)
   int openmode;
 
   term_bucket = ports_create_bucket ();
+  if (!term_bucket)
+    error (1, errno, "can't create term bucket");
 
   trivfs_add_control_port_class (&tty_cntl_class);
   trivfs_add_control_port_class (&pty_cntl_class);
@@ -353,6 +355,8 @@ main (int argc, char **argv)
   trivfs_add_protid_port_class (&pty_class);
 
   cttyid_class = ports_create_class (0, 0);
+  if (!cttyid_class)
+    error (1, errno, "can't create cttyid class");
 
   init_users ();
 

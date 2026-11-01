@@ -493,7 +493,12 @@ main (int argc, char **argv)
   argp_parse (&argp, argc, argv, 0, 0, 0);
 
   auth_bucket = ports_create_bucket ();
+  if (!auth_bucket)
+    error (2, errno, "can't create auth bucket");
+
   authhandle_portclass = ports_create_class (&destroy_authhandle, 0);
+  if (!authhandle_portclass)
+    error (2, errno, "can't create authhandle portclass");
 
   /* Create the initial root auth handle.  */
   err = create_authhandle (&firstauth);

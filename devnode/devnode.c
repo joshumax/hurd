@@ -361,8 +361,16 @@ main (int argc, char *argv[])
   const struct argp argp = { options, parse_opt, args_doc, doc };
 
   port_bucket = ports_create_bucket ();
+  if (!port_bucket)
+    error (1, errno, "can't create port bucket");
+
   trivfs_cntl_class = ports_create_class (trivfs_clean_cntl, 0);
+  if (!trivfs_cntl_class)
+    error (1, errno, "can't create trivfs cntl class");
+
   trivfs_protid_class = ports_create_class (trivfs_clean_protid, 0);
+  if (!trivfs_protid_class)
+    error (1, errno, "can't create trivfs protid class");
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 

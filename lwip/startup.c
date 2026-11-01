@@ -45,6 +45,8 @@ arrange_shutdown_notification (void)
   struct port_info *pi;
 
   shutdown_notify_class = ports_create_class (0, 0);
+  if (!shutdown_notify_class)
+    return;
 
   signal (SIGTERM, sigterm_handler);
 

@@ -176,6 +176,8 @@ arrange_shutdown_notification (void)
   struct port_info *pi;
 
   shutdown_notify_class = ports_create_class (0, 0);
+  if (!shutdown_notify_class)
+    return;
 
   signal (SIGTERM, sigterm_handler);
 
@@ -294,8 +296,17 @@ main (int argc,
   pthread_t thread;
 
   pfinet_bucket = ports_create_bucket ();
+  if (!pfinet_bucket)
+    error (1, errno, "can't create pfinet bucket");
+
   addrport_class = ports_create_class (clean_addrport, 0);
+  if (!addrport_class)
+    error (1, errno, "can't create addrport class");
+
   socketport_class = ports_create_class (clean_socketport, 0);
+  if (!socketport_class)
+    error (1, errno, "can't create socketport class");
+
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE,
 			    &fsys_identity);
   if (err)

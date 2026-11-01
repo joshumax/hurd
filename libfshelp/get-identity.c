@@ -86,6 +86,7 @@ id_initialize (void)
 {
   assert_backtrace (!idclass);
   idclass = ports_create_class (NULL, id_clean);
+  assert_backtrace (idclass);
 }
 
 error_t

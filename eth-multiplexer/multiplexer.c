@@ -131,8 +131,16 @@ main (int argc, char *argv[])
   pthread_t t;
 
   port_bucket = ports_create_bucket ();
+  if (!port_bucket)
+    error (1, errno, "can't create port bucket");
+
   other_portclass = ports_create_class (0, 0);
+  if (!other_portclass)
+    error (1, errno, "can't create other portclass");
+
   vdev_portclass = ports_create_class (destroy_vdev, 0);
+  if (!vdev_portclass)
+    error (1, errno, "can't create vdev portclass");
 
   argp_parse (&argp, argc, argv, 0, 0, 0);
 

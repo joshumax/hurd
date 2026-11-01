@@ -1433,6 +1433,8 @@ create_disk_pager (void)
     ext2_panic ("can't create disk pager: %s", strerror (errno));
   upi->type = DISK;
   disk_pager_bucket = ports_create_bucket ();
+  if (!disk_pager_bucket)
+    ext2_panic ("can't create disk pager bucket: %s", strerror (errno));
   get_hypermetadata ();
   disk_cache_blocks = DISK_CACHE_BLOCKS;
   disk_cache_size = disk_cache_blocks << log2_block_size;
@@ -1442,6 +1444,8 @@ create_disk_pager (void)
 
   /* The file pager.  */
   file_pager_bucket = ports_create_bucket ();
+  if (!file_pager_bucket)
+    ext2_panic ("can't create file pager bucket: %s", strerror (errno));
 
   /* Start libpagers worker threads.  */
   err = pager_start_workers (file_pager_bucket, &file_pager_requests);

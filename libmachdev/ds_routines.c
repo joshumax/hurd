@@ -324,7 +324,10 @@ machdev_device_init(void)
   int i;
 
   machdev_device_bucket = ports_create_bucket ();
+  assert_backtrace (machdev_device_bucket);
+
   machdev_device_class = ports_create_class (0, 0);
+  assert_backtrace (machdev_device_class);
 
   for (i = 0; i < num_emul; i++)
     {

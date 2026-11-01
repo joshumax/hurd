@@ -92,5 +92,6 @@ static void
 create_class (void)
 {
   _pager_class = ports_create_class (_pager_clean, _pager_real_dropweak);
+  assert_backtrace (_pager_class);
   (void) &create_class;		/* Avoid warning */
 }

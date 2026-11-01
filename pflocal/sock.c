@@ -502,8 +502,17 @@ error_t
 sock_global_init (void)
 {
   sock_port_bucket = ports_create_bucket ();
+  if (!sock_port_bucket)
+    return errno;
+
   sock_user_port_class = ports_create_class (sock_user_clean, NULL);
+  if (!sock_user_port_class)
+    return errno;
+
   addr_port_class = ports_create_class (addr_clean, addr_unbind);
+  if (!addr_port_class)
+    return errno;
+
   return 0;
 }
 

@@ -31,6 +31,7 @@ static void
 init_notify_port_class (void)
 {
   notify_port_class = ports_create_class (NULL, NULL);
+  assert_backtrace (notify_port_class);
 }
 
 struct port_bucket *

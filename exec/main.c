@@ -235,6 +235,8 @@ main (int argc, char **argv)
     error (1, 0, "error creating protid port class");
 
   execboot_portclass = ports_create_class (deadboot, NULL);
+  if (!execboot_portclass)
+    error (1, errno, "can't create execboot portclass");
 
   /* Reply to our parent.  */
   err = trivfs_startup (bootstrap, 0,

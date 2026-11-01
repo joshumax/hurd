@@ -90,11 +90,24 @@ diskfs_init_diskfs (void)
   diskfs_auth_server_port = getauth ();
 
   diskfs_protid_class = ports_create_class (diskfs_protid_rele, 0);
+  if (!diskfs_protid_class)
+    return errno;
+
   diskfs_control_class = ports_create_class (_diskfs_control_clean, 0);
+  if (!diskfs_control_class)
+    return errno;
+
   diskfs_execboot_class = ports_create_class (0, 0);
+  if (!diskfs_execboot_class)
+    return errno;
+
   diskfs_shutdown_notification_class = ports_create_class (0, 0);
+  if (!diskfs_shutdown_notification_class)
+    return errno;
 
   diskfs_port_bucket = ports_create_bucket ();
+  if (!diskfs_port_bucket)
+    return errno;
 
   _hurd_port_init (&_diskfs_exec_portcell, MACH_PORT_NULL);
 

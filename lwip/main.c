@@ -201,8 +201,17 @@ main (int argc, char **argv)
   mach_port_t bootstrap;
 
   lwip_bucket = ports_create_bucket ();
+  if (!lwip_bucket)
+    error (1, errno, "can't create lwip bucket");
+
   addrport_class = ports_create_class (clean_addrport, 0);
+  if (!addrport_class)
+    error (1, errno, "can't create addrport class");
+
   socketport_class = ports_create_class (clean_socketport, 0);
+  if (!socketport_class)
+    error (1, errno, "can't create socketport class");
+
   lwip_bootstrap_portclass = PORTCLASS_INET;
 
   err = mach_port_allocate (mach_task_self (),
