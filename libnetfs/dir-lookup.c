@@ -264,6 +264,10 @@ netfs_S_dir_lookup (struct protid *dircred,
 	      if (!err)
 		{
 		  char *end = strchr (retry_name, '\0');
+		  char *translator_path = strdupa (relpath);
+		  char *complete_path;
+		  struct port_info *notify_port;
+
 		  if (mustbedir)
 		    *end++ = '/'; /* Trailing slash.  */
 		  else if (!lastcomp) {
@@ -271,58 +275,50 @@ netfs_S_dir_lookup (struct protid *dircred,
 		      *end++ = '/';
 		    strcpy (end, nextname);
 		  }
+
+		  if (nextname != NULL)
+		    {
+		      /* This was not the last path component.
+			 NEXTNAME points to the next component, locate
+			 the end of the current component and use it
+			 to trim TRANSLATOR_PATH.  */
+		      end = nextname;
+		      while (*end != 0)
+			end--;
+		      translator_path[end - filename_start] = '\0';
+		    }
+
+		  /* Trim trailing slashes.  */
+		  end = &translator_path[strlen (translator_path) - 1];
+		  while (*end == '/' && end >= translator_path)
+		    *end = '\0', end--;
+
+		  if (dircred->po->path == NULL
+		      || !strcmp (dircred->po->path,"."))
+		    /* dircred is the root directory.  */
+		    complete_path = translator_path;
+		  else
+		    {
+			err = asprintf (&complete_path, "%s/%s", dircred->po->path,
+					translator_path);
+			if (err == -1)
+			  {
+			    err = errno;
+			    goto out;
+			  }
+		    }
+		  notify_port = newpi->pi.bucket->notify_port;
+		  err = fshelp_set_active_translator (notify_port,
+						      complete_path,
+						      &np->transbox);
+		  if (complete_path != translator_path)
+		    free(complete_path);
+		  if (err)
+		    {
+		      ports_port_deref (newpi);
+		      goto out;
+		    }
 		}
-
-	      {
-		char *translator_path = strdupa (relpath);
-		char *end;
-		char *complete_path;
-                struct port_info *notify_port;
-
-		if (nextname != NULL)
-		  {
-		    /* This was not the last path component.
-		       NEXTNAME points to the next component, locate
-		       the end of the current component and use it
-		       to trim TRANSLATOR_PATH.  */
-		    end = nextname;
-		    while (*end != 0)
-		      end--;
-		    translator_path[end - filename_start] = '\0';
-		  }
-
-		/* Trim trailing slashes.  */
-		end = &translator_path[strlen (translator_path) - 1];
-		while (*end == '/' && end >= translator_path)
-		  *end = '\0', end--;
-
-		if (dircred->po->path == NULL
-		    || !strcmp (dircred->po->path,"."))
-		  /* dircred is the root directory.  */
-		  complete_path = translator_path;
-		else
-		  {
-		      err = asprintf (&complete_path, "%s/%s", dircred->po->path,
-		                      translator_path);
-		      if (err == -1)
-			{
-			  err = errno;
-			  goto out;
-			}
-		  }
-
-                notify_port = newpi->pi.bucket->notify_port;
-                err = fshelp_set_active_translator (notify_port,
-						    complete_path,
-						    &np->transbox);
-		if (complete_path != translator_path)
-		  free(complete_path);
-		if (err)
-		  {
-		    ports_port_deref (newpi);
-		    goto out;
-		  }
-	      }
 
 	      ports_port_deref (newpi);
 	      goto out;
