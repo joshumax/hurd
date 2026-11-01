@@ -829,7 +829,10 @@ allocate_proc (task_t task)
 
   err = ports_create_port (proc_class, proc_bucket, sizeof (struct proc), &p);
   if (err)
-    return NULL;
+    {
+      errno = err;
+      return NULL;
+    }
 
   memset (&p->p_pi + 1, 0, sizeof *p - sizeof p->p_pi);
   p->p_task = task;
@@ -1412,6 +1415,13 @@ S_mach_notify_new_task (struct port_info *notify,
 	return err;
 
       childp = new_proc (task);
+      if (! childp)
+	{
+	  err = errno;
+	  mach_port_deallocate (mach_task_self (), task);
+	  return err;
+	}
+
       needs_task_dealloc = 1;
     }
 
@@ -1424,7 +1434,10 @@ S_mach_notify_new_task (struct port_info *notify,
       if (err)
 	{
 	  if (needs_task_dealloc)
-	    mach_port_deallocate (mach_task_self (), task);
+	    {
+	      ports_port_deref (childp);
+	      mach_port_deallocate (mach_task_self (), task);
+	    }
 
 	  return err;
 	}
