@@ -363,7 +363,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || !(flags & (O_NOLINK|O_NOTRANS))))
 	{
 	  size_t nextnamelen, newnamelen, linklen;
-	  char *pathbuf;
+	  char *linkbuf;
 	  /* Handle symlink interpretation */
 
 	  if (nsymlinks++ > diskfs_maxsymlinks)
@@ -376,13 +376,13 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
 	  newnamelen = nextnamelen + linklen + 1 + 1;
-	  pathbuf = alloca (newnamelen);
+	  linkbuf = alloca (newnamelen);
 
 	  if (diskfs_read_symlink_hook)
-	    err = (*diskfs_read_symlink_hook)(np, pathbuf);
+	    err = (*diskfs_read_symlink_hook)(np, linkbuf);
 	  if (!diskfs_read_symlink_hook || err == EINVAL)
 	    {
-	      err = diskfs_node_rdwr (np, pathbuf,
+	      err = diskfs_node_rdwr (np, linkbuf,
 					0, np->dn_stat.st_size, 0,
 					dircred, &amt);
 	      if (!err)
@@ -397,28 +397,28 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    {
 	      if (nextname)
 		{
-		  pathbuf[linklen] = '/';
-		  memcpy (pathbuf + linklen + 1, nextname,
+		  linkbuf[linklen] = '/';
+		  memcpy (linkbuf + linklen + 1, nextname,
 		          nextnamelen - 1);
 		}
 	      if (mustbedir)
 		{
-		  pathbuf[nextnamelen + linklen] = '/';
-		  pathbuf[nextnamelen + linklen + 1] = '\0';
+		  linkbuf[nextnamelen + linklen] = '/';
+		  linkbuf[nextnamelen + linklen + 1] = '\0';
 		}
 	      else
-		pathbuf[nextnamelen + linklen] = '\0';
+		linkbuf[nextnamelen + linklen] = '\0';
 
-	      if (pathbuf[0] == '/')
+	      if (linkbuf[0] == '/')
 		{
 		  /* Punt to the caller.  */
 		  *do_retry = FS_RETRY_MAGICAL;
 		  *retry_port = MACH_PORT_NULL;
-		  strcpy (retry_name, pathbuf);
+		  strcpy (retry_name, linkbuf);
 		  goto out;
 		}
 
-	      filename = pathbuf;
+	      filename = linkbuf;
 	      mustbedir = 0;
 	    }
 
