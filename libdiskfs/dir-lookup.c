@@ -45,10 +45,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   int nsymlinks = 0;
   char *nextname;
   char *relpath;
-  int nextnamelen;
   error_t err = 0;
-  char *pathbuf = 0;
-  int newnamelen;
   int create, excl;
   int lastcomp = 0;
   int newnode = 0;
@@ -365,6 +362,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      || mustbedir	/* "foo/" must see that foo points to a dir */
 	      || !(flags & (O_NOLINK|O_NOTRANS))))
 	{
+	  size_t nextnamelen, newnamelen, linklen;
+	  char *pathbuf;
 	  /* Handle symlink interpretation */
 
 	  if (nsymlinks++ > diskfs_maxsymlinks)
@@ -373,9 +372,10 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      goto out;
 	    }
 
-	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
-	  newnamelen = nextnamelen + np->dn_stat.st_size + 1 + 1;
+	  linklen = np->dn_stat.st_size;
 
+	  nextnamelen = nextname ? strlen (nextname) + 1 : 0;
+	  newnamelen = nextnamelen + linklen + 1 + 1;
 	  pathbuf = alloca (newnamelen);
 
 	  if (diskfs_read_symlink_hook)
@@ -391,23 +391,23 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  if (err)
 	    goto out;
 
-	  if (np->dn_stat.st_size == 0)	/* symlink to "" */
+	  if (linklen == 0)	/* symlink to "" */
 	    filename = nextname;
 	  else
 	    {
 	      if (nextname)
 		{
-		  pathbuf[np->dn_stat.st_size] = '/';
-		  memcpy (pathbuf + np->dn_stat.st_size + 1,
-			  nextname, nextnamelen - 1);
+		  pathbuf[linklen] = '/';
+		  memcpy (pathbuf + linklen + 1, nextname,
+		          nextnamelen - 1);
 		}
 	      if (mustbedir)
 		{
-		  pathbuf[nextnamelen + np->dn_stat.st_size] = '/';
-		  pathbuf[nextnamelen + np->dn_stat.st_size + 1] = '\0';
+		  pathbuf[nextnamelen + linklen] = '/';
+		  pathbuf[nextnamelen + linklen + 1] = '\0';
 		}
 	      else
-		pathbuf[nextnamelen + np->dn_stat.st_size] = '\0';
+		pathbuf[nextnamelen + linklen] = '\0';
 
 	      if (pathbuf[0] == '/')
 		{

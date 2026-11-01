@@ -209,6 +209,8 @@ netfs_S_dir_lookup (struct protid *dircred,
       if (err)
 	goto out;
 
+      /* If this is translated, start the translator (if necessary)
+	 and return.  */
       if ((((flags & O_NOTRANS) == 0) || !lastcomp || mustbedir)
 	  && ((np->nn_translated & S_IPTRANS)
 	      || S_ISFIFO (np->nn_translated)
