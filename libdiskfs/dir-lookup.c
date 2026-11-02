@@ -97,7 +97,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
   dnp = dircred->po->np;
   pthread_mutex_lock (&dnp->lock);
 
-  diskfs_nref (dnp);		/* acquire a reference for later diskfs_nput */
+  diskfs_nref (dnp);		/* acquire a reference for later diskfs_nrele */
 
   do
     {
@@ -166,6 +166,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 		  else if (!lastcomp)
 		    strcpy (retry_name, nextname);
 		  err = 0;
+		  pthread_mutex_unlock (&dnp->lock);
 		  goto out;
 		}
 	    }
@@ -182,6 +183,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	      else if (!lastcomp)
 		strcpy (retry_name, nextname);
 	      err = 0;
+	      pthread_mutex_unlock (&dnp->lock);
 	      goto out;
 	    }
 	  else
@@ -214,6 +216,12 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    diskfs_drop_dirstat (dnp, ds);
 	}
 
+      /* The rest only needs a reference to DNP, as in libnetfs: unlock it,
+	 unless NP is DNP itself.  A symlink locks it again to look up the
+	 next name in it.  */
+      if (np != dnp)
+	pthread_mutex_unlock (&dnp->lock);
+
       if (err)
 	goto out;
 
@@ -229,8 +237,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	  mach_port_t dirport;
 	  struct iouser *user;
 
-	  /* Create an unauthenticated port for DNP, and then
-	     unlock it. */
+	  /* Create an unauthenticated port for DNP.  */
 	  err = iohelp_create_empty_iouser (&user);
 	  if (! err)
 	    {
@@ -249,8 +256,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	    goto out;
 
 	  dirport = ports_get_send_right (newpi);
-	  if (np != dnp)
-	    pthread_mutex_unlock (&dnp->lock);
 
 	  struct fshelp_stat_cookie2 cookie = {
 	    .statp = &np->dn_stat,
@@ -339,22 +344,8 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  /* ENOENT means there was a hiccup, and the translator
 	     vanished while NP was unlocked inside fshelp_fetch_root.
-	     Reacquire the locks, and continue as normal. */
+	     Continue as normal. */
 	  err = 0;
-	  if (np != dnp)
-	    {
-	      if (!strcmp (filename, ".."))
-		pthread_mutex_lock (&dnp->lock);
-	      else
-		{
-		  if (pthread_mutex_trylock (&dnp->lock))
-		    {
-		      pthread_mutex_unlock (&np->lock);
-		      pthread_mutex_lock (&dnp->lock);
-		      pthread_mutex_lock (&np->lock);
-		    }
-		}
-	    }
 	}
 
       if (S_ISLNK (np->dn_stat.st_mode)
@@ -427,6 +418,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
 	  diskfs_nput (np);
 	  np = 0;
+	  pthread_mutex_lock (&dnp->lock);
 
 	  if (filename == 0)	/* symlink to "" was the last component */
 	    {
@@ -439,10 +431,7 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	{
 	  /* Handle normal nodes */
 	  filename = nextname;
-	  if (np == dnp)
-	    diskfs_nrele (dnp);
-	  else
-	    diskfs_nput (dnp);
+	  diskfs_nrele (dnp);
 	  if (!lastcomp)
 	    {
 	      dnp = np;
@@ -562,14 +551,9 @@ diskfs_S_dir_lookup (struct protid *dircred,
 
  out:
   if (np)
-    {
-      if (dnp == np)
-	diskfs_nrele (np);
-      else
-	diskfs_nput (np);
-    }
+    diskfs_nput (np);
   if (dnp)
-    diskfs_nput (dnp);
+    diskfs_nrele (dnp);
 
   if (newpi)
     ports_port_deref (newpi);
