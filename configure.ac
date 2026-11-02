@@ -58,6 +58,12 @@ AC_ARG_ENABLE(profile,
 [  --disable-profile	  do not build profiled libraries and programs])
 AC_SUBST(enable_profile)
 
+AC_ARG_ENABLE(mutex-debug,
+[  --enable-mutex-debug	  make mutexes error-checking, and stop a program
+			  with a backtrace when a lock or unlock fails],
+[], [enable_mutex_debug=no])
+AC_SUBST(enable_mutex_debug)
+
 define([default_static],['ext2fs,iso9660fs,rumpdisk,pci-arbiter,acpi'])dnl
 AC_ARG_ENABLE(static-progs,
 [  --enable-static-progs=PROGRAMS...

@@ -11,6 +11,7 @@ asm_syntax = @asm_syntax@
 
 # Build options.
 build-profiled = @enable_profile@
+mutex-debug = @enable_mutex_debug@
 build-static = @enable_static_progs@
 boot-store-types = @boot_store_types@
 

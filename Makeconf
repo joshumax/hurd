@@ -90,6 +90,12 @@ include $(..)config.make
 configured = yes
 endif
 
+# --enable-mutex-debug, once config.make has set mutex-debug.  In CFLAGS,
+# not CPPFLAGS, which also preprocesses the MIG definitions.
+ifeq ($(mutex-debug),yes)
+CFLAGS += -include $(top_srcdir)/libshouldbeinlibc/mutex-debug.h
+endif
+
 # If we're not configured, don't do deps; then `make TAGS' and such can work.
 ifndef configured
 no_deps = t
