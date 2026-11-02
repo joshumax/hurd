@@ -352,8 +352,9 @@ error_t diskfs_set_statfs (fsys_statfsbuf_t *statfsbuf);
    diskfs_clear_directory, and diskfs_init_dir, then lookups for `..'
    might have the flag SPEC_DOTDOT or'd in.  This has the following special
    meaning:
-   For LOOKUP: DP should be unlocked and its reference dropped before
-               returning.
+   For LOOKUP: if the lookup succeeds, DP should be unlocked and its
+               reference dropped before returning; if it fails, DP is
+               left as it was given, locked, with its reference.
    For RENAME and REMOVE: The node being found (*NP) is already held
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)
@@ -896,8 +897,9 @@ diskfs_disknode_node (struct disknode *disknode)
    diskfs_clear_directory, and diskfs_init_dir, then lookups for `..'
    might have the flag SPEC_DOTDOT or'd in.  This has the following special
    meaning:
-   For LOOKUP: DP should be unlocked and its reference dropped before
-               returning.
+   For LOOKUP: if the lookup succeeds, DP should be unlocked and its
+               reference dropped before returning; if it fails, DP is
+               left as it was given, locked, with its reference.
    For RENAME and REMOVE: The node being found (*NP) is already held
                locked, so don't lock it or add a reference to it.
    (SPEC_DOTDOT will not be given with CREATE.)

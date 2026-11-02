@@ -316,10 +316,15 @@ diskfs_lookup_hard (struct node *dp, const char *name, lookup_flags_t l_flags,
 
       else if (type == LOOKUP)
 	{
-	  diskfs_nput (dp);
+	  /* On failure the caller still has DP, locked.  */
+	  pthread_mutex_unlock (&dp->lock);
 	  err = diskfs_cached_lookup (inum, &np);
 	  if (err)
-	    goto out;
+	    {
+	      pthread_mutex_lock (&dp->lock);
+	      goto out;
+	    }
+	  diskfs_nrele (dp);
 	}
       else
 	assert_backtrace (0);
