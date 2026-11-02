@@ -545,8 +545,6 @@ diskfs_S_dir_lookup (struct protid *dircred,
 	err = errno;
 
       *retry_port = ports_get_right (newpi);
-      ports_port_deref (newpi);
-      newpi = 0;
     }
 
  out:

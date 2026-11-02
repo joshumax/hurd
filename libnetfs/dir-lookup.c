@@ -315,17 +315,14 @@ netfs_S_dir_lookup (struct protid *dircred,
 		  if (complete_path != translator_path)
 		    free(complete_path);
 		  if (err)
-		    {
-		      ports_port_deref (newpi);
-		      goto out;
-		    }
+		    goto out;
 		}
 
-	      ports_port_deref (newpi);
 	      goto out;
 	    }
 
 	  ports_port_deref (newpi);
+	  newpi = NULL;
 
 	  /* ENOENT means there was a hiccup, and the translator
 	     vanished while NP was unlocked inside fshelp_fetch_root.
@@ -490,7 +487,6 @@ netfs_S_dir_lookup (struct protid *dircred,
 	err = errno;
 
       *retry_port = ports_get_right (newpi);
-      ports_port_deref (newpi);
     }
 
  out:
@@ -498,6 +494,8 @@ netfs_S_dir_lookup (struct protid *dircred,
     netfs_nput (np);
   if (dnp)
     netfs_nrele (dnp);
+  if (newpi)
+    ports_port_deref (newpi);
   free (relpath);
 
   return err;
