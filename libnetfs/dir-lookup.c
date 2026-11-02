@@ -220,8 +220,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 	{
 	  mach_port_t dirport;
 
-	  /* Create an unauthenticated port for DNP, and then
-	     unlock it. */
+	  /* Create an unauthenticated port for DNP.  */
 	  err = iohelp_create_empty_iouser (&user);
 	  if (! err)
 	    {
@@ -328,8 +327,9 @@ netfs_S_dir_lookup (struct protid *dircred,
 
 	  ports_port_deref (newpi);
 
-	  /* ENOENT means there was a hiccup, and the translator vanished
-	     while NP was unlocked inside fshelp_fetch_root; continue as normal. */
+	  /* ENOENT means there was a hiccup, and the translator
+	     vanished while NP was unlocked inside fshelp_fetch_root.
+	     Continue as normal. */
 	  err = 0;
 	}
 
@@ -340,8 +340,8 @@ netfs_S_dir_lookup (struct protid *dircred,
 	{
 	  size_t nextnamelen, newnamelen, linklen;
 	  char *linkbuf;
-
 	  /* Handle symlink interpretation */
+
 	  if (nsymlinks++ > netfs_maxsymlinks)
 	    {
 	      err = ELOOP;
@@ -374,7 +374,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 
 	  if (linkbuf[0] == '/')
 	    {
-	      /* Punt to the caller */
+	      /* Punt to the caller.  */
 	      *do_retry = FS_RETRY_MAGICAL;
 	      *retry_port = MACH_PORT_NULL;
 	      strcpy (retry_name, linkbuf);
@@ -392,22 +392,21 @@ netfs_S_dir_lookup (struct protid *dircred,
 	      create = 0;
 	    }
 	  netfs_nput (np);
-	  pthread_mutex_lock (&dnp->lock);
 	  np = 0;
+	  pthread_mutex_lock (&dnp->lock);
 	}
       else
 	{
 	  /* Normal nodes here for next filename component */
 	  filename = nextname;
 	  netfs_nrele (dnp);
-
-	  if (lastcomp)
-	    dnp = 0;
-	  else
+	  if (!lastcomp)
 	    {
 	      dnp = np;
 	      np = 0;
 	    }
+	  else
+	    dnp = 0;
 	}
     }
   while (filename && *filename);
@@ -500,5 +499,6 @@ netfs_S_dir_lookup (struct protid *dircred,
   if (dnp)
     netfs_nrele (dnp);
   free (relpath);
+
   return err;
 }
