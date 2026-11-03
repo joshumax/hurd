@@ -236,14 +236,14 @@ netfs_S_dir_lookup (struct protid *dircred,
 
 	  if (! err)
 	    {
+
+	      dirport = ports_get_send_right (newpi);
+
 	      struct fshelp_stat_cookie2 cookie = {
 		.statp = &np->nn_stat,
 		.modep = &np->nn_translated,
 		.next = dircred->po,
 	      };
-
-	      dirport = ports_get_send_right (newpi);
-
 	      err = fshelp_fetch_root (&np->transbox,
 				       &cookie,
 				       dirport,
@@ -254,6 +254,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 					: fshelp_short_circuited_callback1),
 				       _netfs_translator_callback2,
 				       do_retry, retry_name, retry_port);
+
 	      /* fetch_root copies DIRPORT for success, so we always should
 		 deallocate our send right.  */
 	      mach_port_deallocate (mach_task_self (), dirport);
