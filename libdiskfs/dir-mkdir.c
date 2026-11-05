@@ -19,11 +19,11 @@
 #include "priv.h"
 #include "fs_S.h"
 
-/* Implement dir_mkdir as found in <hurd/fs.defs>. */
-kern_return_t
-diskfs_S_dir_mkdir (struct protid *dircred,
-		    const_string_t name,
-		    mode_t mode)
+/* One try of dir_mkdir; see diskfs_retry_enospc.  */
+static error_t
+try_mkdir (struct protid *dircred,
+	   const_string_t name,
+	   mode_t mode)
 {
   struct node *dnp;
   struct node *np = 0;
@@ -71,4 +71,13 @@ diskfs_S_dir_mkdir (struct protid *dircred,
 
   diskfs_journal_end_transaction (txn, !error, diskfs_synchronous);
   return error;
+}
+
+/* Implement dir_mkdir as found in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_dir_mkdir (struct protid *dircred,
+		    const_string_t name,
+		    mode_t mode)
+{
+  return diskfs_retry_enospc (try_mkdir (dircred, name, mode));
 }

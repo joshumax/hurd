@@ -19,12 +19,12 @@
 #include "priv.h"
 #include "fs_S.h"
 
-/* Implement dir_link as described in <hurd/fs.defs>. */
-kern_return_t
-diskfs_S_dir_link (struct protid *dircred,
-		   struct protid *filecred,
-		   const_string_t name,
-		   int excl)
+/* One try of dir_link; see diskfs_retry_enospc.  */
+static error_t
+try_link (struct protid *dircred,
+	  struct protid *filecred,
+	  const_string_t name,
+	  int excl)
 {
   struct node *np;		/* node being linked */
   struct node *tnp;		/* node being deleted implicitly */
@@ -149,4 +149,14 @@ diskfs_S_dir_link (struct protid *dircred,
 
   diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
   return err;
+}
+
+/* Implement dir_link as described in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_dir_link (struct protid *dircred,
+		   struct protid *filecred,
+		   const_string_t name,
+		   int excl)
+{
+  return diskfs_retry_enospc (try_link (dircred, filecred, name, excl));
 }

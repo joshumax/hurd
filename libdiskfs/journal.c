@@ -1,15 +1,17 @@
 /* Default version of Journal in libdiskfs.
-   It implements default implementations of 6 functions:
+   It implements default implementations of 7 functions:
      - diskfs_journal_start_transaction
      - diskfs_journal_stop_transaction
      - diskfs_journal_commit_transaction
      - diskfs_journal_needs_sync
      - diskfs_journal_set_sync
      - diskfs_journal_shutdown
+     - diskfs_journal_should_retry_alloc
 
    diskfs_journal_start_transaction returns NULL,
-   diskfs_journal_needs_sync returns 0.
-   All others are empty and do nothing.
+   diskfs_journal_commit_transaction, diskfs_journal_needs_sync and
+   diskfs_journal_should_retry_alloc return 0.  All others are empty and
+   do nothing.
 
    Written by Milos Nikic.
    Copyright (C) 2026 Free Software Foundation, Inc.
@@ -49,10 +51,11 @@ diskfs_journal_stop_transaction (diskfs_transaction_t *tx)
   /* Do nothing */
 }
 
-void __attribute__((weak))
+error_t __attribute__((weak))
 diskfs_journal_commit_transaction (diskfs_transaction_t *tx)
 {
   /* Do nothing */
+  return 0;
 }
 
 void __attribute__((weak))
@@ -72,4 +75,11 @@ void __attribute__((weak))
 diskfs_journal_shutdown (void)
 {
   /* Do nothing */
+}
+
+int __attribute__((weak))
+diskfs_journal_should_retry_alloc (int *retries)
+{
+  /* Without a journal, no freed block waits for a commit.  */
+  return 0;
 }

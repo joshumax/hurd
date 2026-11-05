@@ -46,6 +46,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
   struct protid *newpi;
   struct peropen *newpo;
   struct iouser user;
+  diskfs_transaction_t *txn;
   struct peropen peropen_context =
   {
     root_parent: dotdot,
@@ -66,6 +67,13 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 #define drop_idvec() idvec_free (user.gids); idvec_free (user.uids)
 
   pthread_rwlock_rdlock (&diskfs_fsys_lock);
+  /* Reading a root symlink that is not stored in the inode updates its
+     access time, and releasing the peropen on an error can drop a node.
+     Both write metadata.  Take the handle before the node lock so that
+     start never waits while holding it, but after diskfs_fsys_lock:
+     diskfs_shutdown starts transactions while it holds that lock for
+     writing.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&diskfs_root_node->lock);
 
   /* This code is similar (but not the same as) the code in
@@ -92,6 +100,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 	  pthread_mutex_unlock (&diskfs_root_node->lock);
 	  pthread_rwlock_unlock (&diskfs_fsys_lock);
 	  drop_idvec ();
+	  diskfs_journal_stop_transaction (txn);
 	  if (!err)
 	    *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  return err;
@@ -122,6 +131,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
       if (err)
 	{
 	  drop_idvec ();
+	  diskfs_journal_stop_transaction (txn);
 	  return err;
 	}
 
@@ -133,6 +143,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 	  strcpy (retryname, pathbuf);
 	  mach_port_deallocate (mach_task_self (), dotdot);
 	  drop_idvec ();
+	  diskfs_journal_stop_transaction (txn);
 	  return 0;
 	}
       else
@@ -142,6 +153,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
 	  *returned_port_poly = MACH_MSG_TYPE_MOVE_SEND;
 	  strcpy (retryname, pathbuf);
 	  drop_idvec ();
+	  diskfs_journal_stop_transaction (txn);
 	  return 0;
 	}
     }
@@ -173,6 +185,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
       pthread_mutex_unlock (&diskfs_root_node->lock);
       pthread_rwlock_unlock (&diskfs_fsys_lock);
       drop_idvec ();
+      diskfs_journal_stop_transaction (txn);
       return err;
     }
 
@@ -207,6 +220,7 @@ diskfs_S_fsys_getroot (struct diskfs_control *pt,
   pthread_rwlock_unlock (&diskfs_fsys_lock);
 
   drop_idvec ();
+  diskfs_journal_stop_transaction (txn);
 
   return err;
 }

@@ -27,13 +27,13 @@
    directores with this lock */
 static pthread_mutex_t renamedirlock = PTHREAD_MUTEX_INITIALIZER;
 
-/* Implement dir_rename as described in <hurd/fs.defs>. */
-kern_return_t
-diskfs_S_dir_rename (struct protid *fromcred,
-		     const_string_t fromname,
-		     struct protid *tocred,
-		     const_string_t toname,
-		     int excl)
+/* One try of dir_rename; see diskfs_retry_enospc.  */
+static error_t
+try_rename (struct protid *fromcred,
+	    const_string_t fromname,
+	    struct protid *tocred,
+	    const_string_t toname,
+	    int excl)
 {
   struct node *fdp, *tdp, *fnp, *tnp, *tmpnp;
   error_t err;
@@ -261,4 +261,16 @@ out:
   if (!err)
     mach_port_deallocate (mach_task_self (), tocred->pi.port_right);
   return err;
+}
+
+/* Implement dir_rename as described in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_dir_rename (struct protid *fromcred,
+		     const_string_t fromname,
+		     struct protid *tocred,
+		     const_string_t toname,
+		     int excl)
+{
+  return diskfs_retry_enospc (try_rename (fromcred, fromname, tocred, toname,
+					  excl));
 }

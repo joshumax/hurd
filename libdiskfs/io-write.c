@@ -34,6 +34,7 @@ diskfs_S_io_write (struct protid *cred,
   mach_msg_type_number_t nwritten;
   int should_sync;
   diskfs_transaction_t *txn;
+  int retries = 0;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -45,6 +46,7 @@ diskfs_S_io_write (struct protid *cred,
   if (!(cred->po->openstat & O_WRITE))
     return EBADF;
   should_sync = (cred->po->openstat & O_FSYNC) || diskfs_synchronous;
+ retry:
   txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
@@ -81,6 +83,18 @@ diskfs_S_io_write (struct protid *cred,
       diskfs_node_update (np, should_sync);
     }
 
+  /* The metadata is done; the copy below only faults in pages, whose
+     blocks the pager allocates under handles of its own.  A commit waits
+     for every open handle, so holding this one through the copy would
+     hold every commit, and every RPC waiting for the next transaction,
+     behind it.  Release it now unless this write must commit: a commit
+     cannot wait under the node lock.  */
+  if (txn && !should_sync && !diskfs_journal_needs_sync (txn))
+    {
+      diskfs_journal_stop_transaction (txn);
+      txn = NULL;
+    }
+
   nwritten = datalen;
   err = _diskfs_rdwr_internal (np, (char *) data, off, &nwritten, 1, 0);
   if (!err)
@@ -97,5 +111,10 @@ diskfs_S_io_write (struct protid *cred,
  out:
   pthread_mutex_unlock (&np->lock);
   diskfs_journal_end_transaction (txn, !err, should_sync);
+  /* Freed blocks can come back once the journal commits.  The write is
+     done again from the start, at the same offset: OFF is no longer -1,
+     so an append goes where it was going to go.  */
+  if (err == ENOSPC && diskfs_journal_should_retry_alloc (&retries))
+    goto retry;
   return err;
 }

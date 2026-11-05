@@ -33,6 +33,7 @@ diskfs_S_io_read (struct protid *cred,
   off_t off = offset;
   char *buf;
   int ourbuf = 0;
+  int atime_deferred = 0;
   diskfs_transaction_t *txn;
 
   if (!cred)
@@ -80,6 +81,19 @@ diskfs_S_io_read (struct protid *cred,
 
   *datalen = maxread;
 
+  /* The handle is only for the atime update after the copy.  A commit
+     waits for every open handle, so holding it through the copy, which
+     can wait for the disk, would hold every commit, and every RPC waiting
+     for the next transaction, behind it.  Unless the filesystem is
+     synchronous, release it now and leave the atime to the next write of
+     the inode.  */
+  if (txn && !diskfs_synchronous)
+    {
+      diskfs_journal_stop_transaction (txn);
+      txn = NULL;
+      atime_deferred = 1;
+    }
+
   if (maxread == 0)
     err = 0;
   else if (S_ISLNK (np->dn_stat.st_mode))
@@ -107,7 +121,8 @@ diskfs_S_io_read (struct protid *cred,
     err = _diskfs_rdwr_internal (np, buf, off, datalen, 0,
 				 cred->po->openstat & O_NOATIME);
 
-  diskfs_node_update (np, diskfs_synchronous);	/* atime! */
+  if (!atime_deferred)
+    diskfs_node_update (np, diskfs_synchronous);	/* atime! */
 
   if (offset == -1 && !err)
     cred->po->filepointer += *datalen;

@@ -909,6 +909,7 @@ void
 diskfs_file_update (struct node *node, int wait)
 {
   struct pager *pager;
+  diskfs_transaction_t *txn;
 
   /* File data is not journaled, so a file's pages are written back here.
      With a journal, a directory's blocks are: the commit makes its edits
@@ -941,7 +942,13 @@ diskfs_file_update (struct node *node, int wait)
   else
     pokel_sync (&diskfs_node_disknode (node)->indir_pokel, wait);
 
+  /* Every caller holds a handle except diskfs_S_file_sync, which opens
+     none around the writeback above (holding one there would stall every
+     other start for as long as a commit waited for it) and holds no node
+     lock here, so this start may wait.  For the others it nests.  */
+  txn = diskfs_journal_start_transaction ();
   diskfs_node_update (node, wait);
+  diskfs_journal_stop_transaction (txn);
 }
 
 /* Invalidate any pager data associated with NODE.  */
@@ -1680,8 +1687,12 @@ enable_caching (void)
 	 turned off, if that's really necessary.  */
       if (upi->type == FILE_DATA)
 	{
+	  /* For an unlinked file, the release writes the node back and
+	     can drop it.  No lock is held here.  */
+	  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
 	  diskfs_nref (upi->node);
 	  diskfs_nrele (upi->node);
+	  diskfs_journal_stop_transaction (txn);
 	}
 
       return 0;

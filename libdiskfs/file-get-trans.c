@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <assert-backtrace.h>
 
-#include "diskfs.h"
+#include "priv.h"
 #include <mach.h>
 #include <hurd/hurd_types.h>
 #include <hurd/paths.h>
@@ -38,12 +38,17 @@ diskfs_S_file_get_translator (struct protid *cred,
 {
   struct node *np;
   error_t err = 0;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
 
   np = cred->po->np;
 
+  /* Reading a symlink that is not stored in the inode updates its access
+     time, which writes the inode.  Take the handle before the node lock
+     so that start never waits while holding it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
   if (np->dn_stat.st_mode & S_IPTRANS)
@@ -183,6 +188,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 
 out:
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
 
   return err;
 }

@@ -23,15 +23,15 @@
 #include <hurd/paths.h>
 #include <hurd/fsys.h>
 
-/* Implement file_set_translator as described in <hurd/fs.defs>. */
-kern_return_t
-diskfs_S_file_set_translator (struct protid *cred,
-                              int passive_flags,
-                              int active_flags,
-                              int killtrans_flags,
-                              const_data_t passive,
-                              mach_msg_type_number_t passivelen,
-                              fsys_t active)
+/* One try of file_set_translator; see diskfs_retry_enospc.  */
+static error_t
+try_set_translator (struct protid *cred,
+		    int passive_flags,
+		    int active_flags,
+		    int killtrans_flags,
+		    const_data_t passive,
+		    mach_msg_type_number_t passivelen,
+		    fsys_t active)
 {
   struct node *np;
   error_t err;
@@ -248,4 +248,25 @@ out:
   diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
 
   return ret_val;
+}
+
+/* Implement file_set_translator as described in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_file_set_translator (struct protid *cred,
+                              int passive_flags,
+                              int active_flags,
+                              int killtrans_flags,
+                              const_data_t passive,
+                              mach_msg_type_number_t passivelen,
+                              fsys_t active)
+{
+  /* An active translator is set first, and a retry would set it again:
+     only a passive one, such as a symlink, is tried again.  */
+  if (active_flags & FS_TRANS_SET)
+    return try_set_translator (cred, passive_flags, active_flags,
+			       killtrans_flags, passive, passivelen, active);
+  return diskfs_retry_enospc (try_set_translator (cred, passive_flags,
+						  active_flags, killtrans_flags,
+						  passive, passivelen,
+						  active));
 }

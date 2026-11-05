@@ -25,7 +25,7 @@
 #include <sys/stat.h>
 
 #include <mach.h>
-#include "diskfs.h"
+#include "priv.h"
 #include <hurd/hurd_types.h>
 #include "fs_S.h"
 
@@ -41,27 +41,35 @@ diskfs_S_dir_readdir (struct protid *cred,
 {
   error_t err;
   struct node *np;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
 
   np = cred->po->np;
+  /* Reading the directory updates its access time, which writes the
+     inode.  Take the handle before the node lock so that start never
+     waits while holding it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
 
   if ((cred->po->openstat & O_READ) == 0)
     {
       pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
       return EBADF;
     }
 
   if ((np->dn_stat.st_mode & S_IFMT) != S_IFDIR)
     {
       pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
       return ENOTDIR;
     }
 
   err = diskfs_get_directs (np, entry, nentries, data, datacnt, bufsiz, amt);
   *data_dealloc = 1;		/* XXX */
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
   return err;
 }

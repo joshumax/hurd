@@ -25,6 +25,7 @@ diskfs_S_io_readable (struct protid *cred,
 		      vm_size_t *amount)
 {
   struct node *np;
+  diskfs_transaction_t *txn;
 
   if (!cred)
     return EOPNOTSUPP;
@@ -34,6 +35,10 @@ diskfs_S_io_readable (struct protid *cred,
 
   np = cred->po->np;
   
+  /* Taking the conch back from a client that mapped the shared page
+     can update the node, which writes the inode.  Take the handle before
+     the node lock so that start never waits while holding it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
   iohelp_get_conch (&np->conch);
   if (np->dn_stat.st_size > cred->po->filepointer)
@@ -42,5 +47,6 @@ diskfs_S_io_readable (struct protid *cred,
     *amount = 0;
 
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
   return 0;
 }

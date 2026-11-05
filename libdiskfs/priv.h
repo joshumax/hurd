@@ -140,6 +140,21 @@ diskfs_journal_end_transaction (diskfs_transaction_t *txn,
     diskfs_journal_stop_transaction (txn);
 }
 
+/* Evaluate CALL, an operation that ends its transaction handle and
+   releases its node locks before it returns, and again while it fails
+   with ENOSPC and the journal says that waiting for a commit can give
+   blocks back (diskfs_journal_should_retry_alloc).  CALL must leave
+   nothing changed when it fails with ENOSPC.  */
+#define diskfs_retry_enospc(call)					    \
+({									    \
+  int retries_ = 0;							    \
+  error_t err_;								    \
+  do									    \
+    err_ = (call);							    \
+  while (err_ == ENOSPC && diskfs_journal_should_retry_alloc (&retries_)); \
+  err_;									    \
+})
+
 /* This macro locks the node associated with PROTID, and then
    evaluates the expression OPERATION; then it syncs the inode
    (without waiting) and unlocks everything, and then returns

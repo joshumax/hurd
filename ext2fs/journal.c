@@ -2010,6 +2010,35 @@ journal_wait_freed_blocks (diskfs_transaction_t *txn)
   return waited;
 }
 
+/* Whether an operation that got ENOSPC should try again, as
+   ext4_should_retry_alloc.  Blocks freed by a transaction that has not
+   committed, or not given them back yet, are busy, and the allocator
+   cannot wait for them under the caller's handle: an operation whose own
+   transaction freed them gets ENOSPC although they come back at the next
+   commit.  The caller has let go of its handle and node locks, so commit
+   the running transaction here and wait for the freed blocks, at most
+   three times an operation (*RETRIES).  Only no free block at all, busy
+   ones included, means that the space is gone: the commit can have
+   given the freed blocks back since the allocation failed, and then
+   nothing is busy any more, though they are what the caller needs.  */
+int
+diskfs_journal_should_retry_alloc (int *retries)
+{
+  diskfs_transaction_t *txn;
+
+  if (!ext2_journal || journal_thread_is_pager || journal_thread_depth > 0)
+    return 0;
+  if (*retries >= 3 || ext2_free_blocks_now () == 0)
+    return 0;
+  (*retries)++;
+
+  txn = diskfs_journal_start_transaction ();
+  if (diskfs_journal_commit_transaction (txn))
+    return 0;
+  journal_wait_freed_blocks (NULL);
+  return 1;
+}
+
 void
 journal_mark_dirty (diskfs_transaction_t *txn, block_t fs_blocknr)
 {
@@ -3164,12 +3193,14 @@ diskfs_journal_stop_transaction (diskfs_transaction_t *txn)
    for top-level VFS RPCs that enforce POSIX fsync/O_SYNC guarantees.
 
    This function consumes TXN. The caller must not use TXN after this call,
-   and it MUST NOT call diskfs_journal_stop_transaction on it. */
-void
+   and it MUST NOT call diskfs_journal_stop_transaction on it.
+
+   Returns 0 once TXN is durable.  */
+error_t
 diskfs_journal_commit_transaction (diskfs_transaction_t *opaque_txn)
 {
   if (!ext2_journal || !opaque_txn)
-    return;
+    return 0;
 
   diskfs_transaction_t *txn = (diskfs_transaction_t *) opaque_txn;
   uint32_t tid = txn->t_tid;
@@ -3210,6 +3241,7 @@ diskfs_journal_commit_transaction (diskfs_transaction_t *opaque_txn)
   journal_wait_on_tid_locked (ext2_journal, tid);
 out:
   JOURNAL_UNLOCK (ext2_journal);
+  return 0;
 }
 
 /**

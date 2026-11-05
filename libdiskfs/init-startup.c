@@ -82,11 +82,16 @@ diskfs_startup_diskfs (mach_port_t fs_bootstrap, int flags)
       struct node *np, *old;
       struct protid *rootpi;
       struct peropen *rootpo;
+      diskfs_transaction_t *txn;
 
       /* Skip leading slashes.  */
       while (*_diskfs_chroot_directory == '/')
 	++_diskfs_chroot_directory;
 
+      /* The journal is running already, and with diskfs_synchronous the
+	 lookup writes the directory's access time.  Take the handle before
+	 the node lock so that start never waits while holding it.  */
+      txn = diskfs_journal_start_transaction ();
       pthread_mutex_lock (&diskfs_root_node->lock);
 
       /* Create a protid we can use in diskfs_lookup.  */
@@ -124,6 +129,7 @@ diskfs_startup_diskfs (mach_port_t fs_bootstrap, int flags)
       if (np != old)
 	pthread_mutex_unlock (&np->lock);
       diskfs_nrele (old);
+      diskfs_journal_stop_transaction (txn);
     }
 
   if (fs_bootstrap != MACH_PORT_NULL)

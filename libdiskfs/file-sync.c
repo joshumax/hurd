@@ -34,9 +34,15 @@ diskfs_S_file_sync (struct protid *cred,
 
   np = cred->po->np;
   
+  /* Taking the conch back from a client that mapped the shared page
+     can update the node, which writes the inode.  Take the handle before
+     the node lock so that start never waits while holding it.  It is
+     released before the writeback below; see the comment there.  */
+  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
   iohelp_get_conch (&np->conch);
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_stop_transaction (txn);
   diskfs_file_update (np, wait);
 
   if (wait)
@@ -50,8 +56,8 @@ diskfs_S_file_sync (struct protid *cred,
 	 holding it there would stall every other start for as long as a
 	 commit of the transaction waits for it.  Without a journal it is
 	 NULL, and committing it does nothing.  */
-      diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
-      diskfs_journal_commit_transaction (txn);
+      txn = diskfs_journal_start_transaction ();
+      return diskfs_journal_commit_transaction (txn);
     }
   return 0;
 }

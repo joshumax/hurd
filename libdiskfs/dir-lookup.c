@@ -29,16 +29,16 @@
 #include "priv.h"
 #include "fs_S.h"
 
-/* Implement dir_lookup as described in <hurd/fs.defs>. */
-kern_return_t
-diskfs_S_dir_lookup (struct protid *dircred,
-		     const_string_t filename,
-		     int flags,
-		     mode_t mode,
-		     retry_type *do_retry,
-		     string_t retry_name,
-		     mach_port_t *retry_port,
-		     mach_msg_type_name_t *retry_port_type)
+/* One try of dir_lookup; see diskfs_retry_enospc.  */
+static error_t
+try_lookup (struct protid *dircred,
+	    const_string_t filename,
+	    int flags,
+	    mode_t mode,
+	    retry_type *do_retry,
+	    string_t retry_name,
+	    mach_port_t *retry_port,
+	    mach_msg_type_name_t *retry_port_type)
 {
   struct node *dnp;
   struct node *np;
@@ -562,4 +562,30 @@ diskfs_S_dir_lookup (struct protid *dircred,
   free (relpath);
 
   return err;
+}
+
+/* Implement dir_lookup as described in <hurd/fs.defs>. */
+kern_return_t
+diskfs_S_dir_lookup (struct protid *dircred,
+		     const_string_t filename,
+		     int flags,
+		     mode_t mode,
+		     retry_type *do_retry,
+		     string_t retry_name,
+		     mach_port_t *retry_port,
+		     mach_msg_type_name_t *retry_port_type)
+{
+  /* Only a create can need a block.  */
+  if (!(flags & O_CREAT))
+    return try_lookup (dircred, filename, flags, mode, do_retry, retry_name,
+		       retry_port, retry_port_type);
+
+  /* try_lookup cuts FILENAME at each slash, and a retry needs it whole:
+     each try gets a copy.  */
+  size_t len = strlen (filename) + 1;
+  char *name = alloca (len);
+  return diskfs_retry_enospc ((memcpy (name, filename, len),
+			       try_lookup (dircred, name, flags, mode,
+					   do_retry, retry_name, retry_port,
+					   retry_port_type)));
 }

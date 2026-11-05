@@ -292,7 +292,9 @@ diskfs_rename_dir (struct node *fdp, struct node *fnp, const char *fromname,
   if (ds)
     diskfs_drop_dirstat (tdp, ds);
 
-  /* FINALIZE TRANSACTION */
-  diskfs_journal_end_transaction (txn, !err, diskfs_synchronous);
+  /* The handle is nested in diskfs_S_dir_rename's, whose end commits on
+     a synchronous mount: a commit here would wait for the outer handle
+     to drain.  */
+  diskfs_journal_stop_transaction (txn);
   return err;
 }

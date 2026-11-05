@@ -23,15 +23,21 @@ kern_return_t
 diskfs_S_io_release_conch (struct protid *cred)
 {
   struct node *np;
+  diskfs_transaction_t *txn;
   
   if (!cred)
     return EOPNOTSUPP;
   
   np = cred->po->np;
+  /* Taking the conch back from a client that mapped the shared page
+     can update the node, which writes the inode.  Take the handle before
+     the node lock so that start never waits while holding it.  */
+  txn = diskfs_journal_start_transaction ();
   pthread_mutex_lock (&np->lock);
   if (!cred->mapped)
     {
       pthread_mutex_unlock (&np->lock);
+      diskfs_journal_stop_transaction (txn);
       return EINVAL;
     }
   
@@ -40,5 +46,6 @@ diskfs_S_io_release_conch (struct protid *cred)
   iohelp_handle_io_release_conch (&np->conch, cred);
   
   pthread_mutex_unlock (&np->lock);
+  diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
   return 0;
 }
