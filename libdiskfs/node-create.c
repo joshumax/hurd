@@ -132,6 +132,12 @@ diskfs_create_node (struct node *dir,
   if (S_ISDIR (mode))
     err = diskfs_init_dir (np, dir, cred);
 
+  /* With no name the node has no links from the start (dir_mkfile).
+     Put it on the orphan list, so that after a crash before its last
+     close, recovery frees it rather than e2fsck finding it in use.  */
+  if (!err && !name)
+    diskfs_orphan_add (np);
+
   diskfs_node_update (np, diskfs_synchronous);
 
   if (err)

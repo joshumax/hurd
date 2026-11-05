@@ -110,6 +110,10 @@ try_link (struct protid *dircred,
     }
   np->dn_stat.st_nlink++;
   np->dn_set_ctime = 1;
+  /* A file with no links (dir_mkfile's, or one unlinked while open) is
+     on the orphan list, which recovery would free it from.  */
+  if (np->dn_stat.st_nlink == 1)
+    diskfs_orphan_del (np);
   diskfs_node_update (np, diskfs_synchronous);
 
   /* Attach it */
