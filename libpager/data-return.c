@@ -21,6 +21,15 @@
 #include <string.h>
 #include <assert-backtrace.h>
 
+/* Whether the write this thread is doing leaves the pages resident.  */
+static __thread int write_keeps_page;
+
+int
+pager_write_keeps_page (void)
+{
+  return write_keeps_page;
+}
+
 /* Worker function used by _pager_S_memory_object_data_return
    and _pager_S_memory_object_data_initialize.  All args are
    as for _pager_S_memory_object_data_return; the additional
@@ -158,6 +167,7 @@ _pager_do_write_request (struct pager *p,
   /* Let someone else in. */
   pthread_mutex_unlock (&p->interlock);
 
+  write_keeps_page = kcopy;
   int i_page = 0;
   while (i_page < npages)
     {
@@ -204,6 +214,7 @@ _pager_do_write_request (struct pager *p,
 
       i_page = j_page;
     }
+  write_keeps_page = 0;
 
 
   /* Acquire the right to meddle with the pagemap */

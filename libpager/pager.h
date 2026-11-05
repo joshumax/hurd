@@ -213,6 +213,13 @@ error_t pager_write_pages(struct user_pager_info *upi,
                           vm_size_t length,
                           vm_size_t *written);
 
+/* Called from pager_write_page or pager_write_pages: nonzero if the
+   kernel keeps the pages being written resident, because it only cleans
+   them (a sync), and zero if it evicts them.  A kept page can be newer
+   than the copy being written, which the kernel took when the write was
+   requested.  */
+int pager_write_keeps_page (void);
+
 /* The user must define this function.  A page should be made writable. */
 error_t
 pager_unlock_page (struct user_pager_info *pager,
