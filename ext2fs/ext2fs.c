@@ -290,7 +290,9 @@ ext2_start_journal (void)
       return;
     }
 
-  ext2_journal = journal_create (jnode);
+  /* Pager threads read it without a lock (journal_store_read and
+     journal_store_write): they must see the journal initialized.  */
+  __atomic_store_n (&ext2_journal, journal_create (jnode), __ATOMIC_RELEASE);
   diskfs_nput (jnode);
   if (!ext2_journal)
     return;

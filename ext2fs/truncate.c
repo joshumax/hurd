@@ -133,6 +133,21 @@ trunc_indirect (struct node *node, block_t end,
 	 after it are freed.  */
       unsigned first = end < offset ? 0 : (end - offset) / span;
 
+      /* Reserve the block before the first entry is cleared, if one is:
+	 one whose blocks all lie at or past END.  The kernel can write
+	 the page out at any moment, and with no transaction holding the
+	 block the journal would let the edit go home before the free
+	 commits: a crash then leaves the freed blocks marked in use, with
+	 nothing pointing to them.  A block freed here keeps its
+	 reservation: the free revokes the copy this transaction logs, and
+	 ext2_free_blocks keeps the block busy until the free commits.  */
+      for (index = first; index < addr_per_block; index++)
+	if (ind_bh[index] && offset + index * span >= end)
+	  {
+	    journal_get_write_access (txn, *p);
+	    break;
+	  }
+
       for (index = first; index < addr_per_block; index++)
 	if (ind_bh[index])
 	  {
@@ -143,11 +158,6 @@ trunc_indirect (struct node *node, block_t end,
 	      modified = 1;
 	  }
 
-      /* Reserve the block only if it survives.  A block freed here needs
-	 no copy in the journal: its contents are dead, and ext2_free_blocks
-	 keeps it busy until the free commits.  Reserving after the edit is
-	 safe because this thread's handle keeps the stop-time sweep from
-	 copying the block before the handle is released.  */
       if (first == 0 && all_freed)
 	{
 	  pager_flush_some (diskfs_disk_pager,
@@ -157,10 +167,7 @@ trunc_indirect (struct node *node, block_t end,
 	  disk_cache_block_deref (ind_bh);
 	}
       else if (modified)
-	{
-	  journal_get_write_access (txn, *p);
-	  record_indir_poke (node, ind_bh);
-	}
+	record_indir_poke (node, ind_bh);
       else
 	disk_cache_block_deref (ind_bh);
     }

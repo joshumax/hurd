@@ -436,7 +436,10 @@ write_node (struct node *np)
     {
       struct ext2_inode_info *info = &diskfs_node_disknode (np)->info;
 
-      assert_backtrace (!diskfs_readonly);
+      /* An aborted journal makes the filesystem read-only under nodes
+	 changed before, which file_sync or a drop still writes: into a
+	 transaction that never commits.  */
+      assert_backtrace (!diskfs_readonly || journal_aborted ());
 
       ext2_debug ("writing inode %d to disk", np->cache_id);
 
@@ -577,7 +580,7 @@ write_all_disknodes (void)
 
       /* Sync the indirect blocks here; they'll all be done before any
 	 inodes.  Waiting for them shouldn't be too bad.  */
-      pokel_sync (&diskfs_node_disknode (node)->indir_pokel, 1);
+      pokel_sync_or_release (&diskfs_node_disknode (node)->indir_pokel, 1);
 
       diskfs_set_node_times (node);
 
@@ -594,26 +597,27 @@ write_all_disknodes (void)
 
 /* Sync the info in NP->dn_stat and any associated format-specific
    information to disk.  If WAIT is true, then return only after the
-   physicial media has been completely updated.  */
+   physicial media has been completely updated.
+
+   NP is locked, so with a journal the caller must already hold a handle,
+   taken before the lock: a start here could wait for a commit to drain
+   while holding it.  The inode goes into that handle's transaction, and
+   with WAIT the caller's tail commits it.  */
 void
 diskfs_write_disknode (struct node *np, int wait)
 {
   error_t err;
-  diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+  diskfs_transaction_t *txn = journal_thread_transaction ();
 
   struct ext2_inode *di = write_node (np);
   if (!di)
-    {
-      diskfs_journal_stop_transaction (txn);
-      return;
-    }
+    return;
 
   if (ext2_journal)
     {
       record_global_poke (di);
       if (wait)
         diskfs_journal_set_sync (txn);
-      diskfs_journal_stop_transaction (txn);
       return;
     }
 

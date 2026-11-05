@@ -250,7 +250,8 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
   journal_get_write_access (txn, block);
   bh[nr] = *result;
 
-  if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
+  if ((diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
+      && !ext2_journal)
     {
       /* calls journal_mark_dirty internally */
       sync_global_ptr (bh, 1);
@@ -261,8 +262,13 @@ block_getblk (struct node *node, block_t block, int nr, int create, int zero,
 	ext2_warning ("indirect block flush failed: %s", strerror (err));
     }
   else
-    /* record_indir_poke handles journal_mark_dirty internally */
-    record_indir_poke (node, bh);
+    {
+      /* record_indir_poke handles journal_mark_dirty internally */
+      record_indir_poke (node, bh);
+      /* With a journal, the commit puts the pointer on disk.  */
+      if (diskfs_synchronous || diskfs_node_disknode (node)->info.i_osync)
+	diskfs_journal_set_sync (txn);
+    }
 
   diskfs_node_disknode (node)->info.i_next_alloc_block = new_block;
   diskfs_node_disknode (node)->info.i_next_alloc_goal = *result;

@@ -222,6 +222,16 @@ ext2_recover_orphan_list (void)
       return;
     }
 
+  /* Made writable again (diskfs_readonly_changed): files this translator
+     put on the list can still be open, and the list is theirs.  Whatever
+     was on it before was recovered when the filesystem first became
+     writable, so leave it for the next mount.  */
+  pthread_mutex_lock (&orphan_lock);
+  int live = ram_orphan_head != NULL;
+  pthread_mutex_unlock (&orphan_lock);
+  if (live)
+    return;
+
   /* No locks needed for the RAM list here; the filesystem is strictly
      single-threaded during mount.  */
   while (next_orphan != 0)

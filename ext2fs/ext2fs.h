@@ -279,6 +279,7 @@ extern pthread_mutex_t disk_cache_lock;
 extern pthread_cond_t disk_cache_reassociation;
 
 void *disk_cache_block_ref (block_t block);
+void *disk_cache_block_ref_mapped (block_t block);
 void disk_cache_block_ref_ptr (void *ptr);
 void _disk_cache_block_deref (void *ptr);
 #define disk_cache_block_deref(PTR)                             \
@@ -357,7 +358,7 @@ extern struct journal *ext2_journal;
  *
  * In between the invocation of this function and the commit, journal will be
  * intercepting pager's writes to this block and instead of to disk they will
- * be temporarily stored in journal's caches.
+ * go into the journal's copy of it, to be written home after the commit.
  */
 error_t
 journal_get_write_access (diskfs_transaction_t * txn, block_t fs_blocknr);
@@ -379,6 +380,10 @@ journal_mark_dirty (diskfs_transaction_t * txn, block_t fs_blocknr);
    the journal is shutting down and no handle was opened.  */
 diskfs_transaction_t *
 journal_thread_transaction (void);
+
+/* Whether a failed commit has aborted the journal, making the filesystem
+   read-only.  The journal still takes changes then, in memory only.  */
+int journal_aborted (void);
 
 void ext2_orphan_drop_ram_link (struct node *np);
 
@@ -568,6 +573,7 @@ extern void sync_global_ptr (void *bptr, int wait);
 extern void flush_global_ptr (void *ptr, int wait);
 extern void record_indir_poke (struct node *node, void *ptr);
 extern void sync_global (int wait);
+extern void pokel_sync_or_release (struct pokel *pokel, int wait);
 extern void alloc_sync (struct node *np);
 
 #if defined(__USE_EXTERN_INLINES) || defined(EXT2FS_DEFINE_EI)
@@ -662,6 +668,18 @@ sync_global (int wait)
   pokel_sync (&global_pokel, wait);
 }
 
+/* Write POKEL's blocks home, or with a journal just release them: a
+   commit makes them durable and checkpointing writes them home, so
+   syncing their pages would only have the journal intercept them.  */
+EXT2FS_EI void
+pokel_sync_or_release (struct pokel *pokel, int wait)
+{
+  if (ext2_journal)
+    pokel_flush (pokel);
+  else
+    pokel_sync (pokel, wait);
+}
+
 /* Sync all allocation information and node NP if diskfs_synchronous.
    If journaling is active, push the superblock into this transaction;
    the commit provides durability.  */
@@ -676,8 +694,9 @@ alloc_sync (struct node *np)
       /* If the superblock was modified in memory, push it to the disk cache
          now so it gets bundled into this transaction's WAL commit.
          diskfs_set_hypermetadata natively handles the get_write_access ->
-         memcpy -> mark_dirty pipeline! */
-      if (sblock_dirty && ext2_journal)
+         memcpy -> mark_dirty pipeline, and reads sblock_dirty under
+         global_lock, which this cannot read without.  */
+      if (ext2_journal)
         diskfs_set_hypermetadata (0, 0);
 
       if (np)

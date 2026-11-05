@@ -284,12 +284,21 @@ repeat:
   alloc_sync (0);
 
   /* Make sure the coming read_node won't complain about bad
-     fields.  */
-  {
-    struct ext2_inode *di = dino_ref (inum);
-    memset (di, 0, EXT2_INODE_SIZE (sblock));
-    dino_deref (di);
-  }
+     fields.  The inode block is reserved first, like any other edit of
+     it: without the reservation the zeroes could reach the disk outside
+     the transaction, and a pager write while the block's previous
+     version commits would not be held for this one.  On failure INUM is
+     0, which is no inode.  */
+  if (inum)
+    {
+      struct ext2_inode *di = dino_ref (inum);
+      block_t block = boffs_block (bptr_offs (di));
+
+      journal_get_write_access (txn, block);
+      memset (di, 0, EXT2_INODE_SIZE (sblock));
+      journal_mark_dirty (txn, block);
+      dino_deref (di);
+    }
 
   return inum;
 }

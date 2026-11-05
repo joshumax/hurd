@@ -194,7 +194,15 @@ error_t
 diskfs_set_hypermetadata (int wait, int clean)
 {
   error_t err = 0;
+  int dirty;
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
+
+  /* SBLOCK and sblock_dirty change under global_lock: the allocators
+     set the flag in the same critical section as the field, but not
+     necessarily after it.  A copy made without the lock could take the
+     flag and miss the field, and the writer's own copy would then find
+     the flag clear.  */
+  pthread_spin_lock (&global_lock);
 
   /* The needs_recovery flag is not handled here: see
      ext2_set_needs_recovery and ext2_clear_needs_recovery.  */
@@ -217,8 +225,10 @@ diskfs_set_hypermetadata (int wait, int clean)
           wait = 1;
         }
     }
+  dirty = sblock_dirty;
+  pthread_spin_unlock (&global_lock);
 
-  if (sblock_dirty)
+  if (dirty)
     {
       if (diskfs_readonly)
         {
@@ -226,12 +236,17 @@ diskfs_set_hypermetadata (int wait, int clean)
           goto out;
         }
 
+      /* The reservation can wait: take it before the lock.  */
+      block_t blk = boffs_block (bptr_offs (mapped_sblock));
+      journal_get_write_access (txn, blk);
+
+      pthread_spin_lock (&global_lock);
       /* Before writing, set the time of write */
       sblock->s_wtime = htole32 (diskfs_mtime->seconds);
       sblock_dirty = 0;
-      block_t blk = boffs_block (bptr_offs (mapped_sblock));
-      journal_get_write_access (txn, blk);
       memcpy (mapped_sblock, sblock, SBLOCK_SIZE);
+      pthread_spin_unlock (&global_lock);
+
       disk_cache_block_ref_ptr (mapped_sblock);
       record_global_poke (mapped_sblock);
     }
@@ -268,6 +283,9 @@ write_needs_recovery_flag (int set)
   size_t amount = 0;
   error_t err;
 
+  /* Under global_lock, as diskfs_set_hypermetadata copies SBLOCK over
+     MAPPED_SBLOCK under it.  */
+  pthread_spin_lock (&global_lock);
   if (set)
     {
       sblock->s_feature_incompat |= flag;
@@ -279,6 +297,7 @@ write_needs_recovery_flag (int set)
       sblock->s_feature_incompat &= ~flag;
       mapped_sblock->s_feature_incompat &= ~flag;
     }
+  pthread_spin_unlock (&global_lock);
 
   err = store_read (store, SBLOCK_OFFS >> store->log2_block_size,
 		    SBLOCK_SIZE, (void **) &disk_sblock, &amount);
@@ -371,4 +390,9 @@ diskfs_readonly_changed (int readonly)
   if (!readonly && !ext2_journal
       && (sblock->s_feature_compat & EXT3_FEATURE_COMPAT_HAS_JOURNAL))
     ext2_start_journal ();
+
+  /* A filesystem mounted read-only, as the root is, gets here before
+     anything frees its orphans: the mount leaves them alone.  */
+  if (!readonly)
+    ext2_recover_orphan_list ();
 }

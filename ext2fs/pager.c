@@ -310,6 +310,8 @@ struct pending_blocks
   void *buf;
   /* And an offset into BUF.  */
   int offs;
+  /* Whether BUF is a page of the disk cache rather than of a file.  */
+  int disk_cache;
 };
 
 /* Write the any pending blocks in PB.  */
@@ -328,11 +330,13 @@ pending_blocks_write (struct pending_blocks *pb)
 	{
 	  void *page_buf = get_page_buf ();
 	  memcpy ((void *)page_buf, pb->buf + pb->offs, length);
-	  err = journal_store_write (pb->block, length, page_buf, &amount);
+	  err = journal_store_write (pb->block, length, page_buf, &amount,
+				     pb->disk_cache);
 	  free_page_buf (page_buf);
 	}
       else
-	err = journal_store_write (pb->block, length, pb->buf, &amount);
+	err = journal_store_write (pb->block, length, pb->buf, &amount,
+				   pb->disk_cache);
 
       if (err)
 	return err;
@@ -347,9 +351,10 @@ pending_blocks_write (struct pending_blocks *pb)
 }
 
 static void
-pending_blocks_init (struct pending_blocks *pb, void *buf)
+pending_blocks_init (struct pending_blocks *pb, void *buf, int disk_cache)
 {
   pb->buf = buf;
+  pb->disk_cache = disk_cache;
   pb->block = 0;
   pb->num = 0;
   pb->offs = 0;
@@ -430,7 +435,7 @@ file_pager_write_pages (struct node *node,
       block_t prev = 0;
       block_t blk = 0;
 
-      pending_blocks_init (&pb, (void *) (buf + done));
+      pending_blocks_init (&pb, (void *) (buf + done), 0);
 
       while (blocks_built < max_blocks && built < left)
 	{
@@ -535,7 +540,7 @@ file_pager_write_page (struct node *node, vm_offset_t offset, void *buf)
   block_t block;
   int left = vm_page_size;
 
-  pending_blocks_init (&pb, buf);
+  pending_blocks_init (&pb, buf, 0);
 
   /* Holding diskfs_node_disknode (node)->alloc_lock effectively locks NODE->allocsize,
      at least for the cases we care about: pager_unlock_page,
@@ -640,7 +645,7 @@ disk_pager_write_page (vm_offset_t page, void *buf)
     {
       struct pending_blocks pb;
 
-      pending_blocks_init (&pb, buf);
+      pending_blocks_init (&pb, buf, 1);
 
       while (length > 0 && !err)
 	{
@@ -672,7 +677,7 @@ disk_pager_write_page (vm_offset_t page, void *buf)
   else
     {
       block_t start_block = offset >> log2_block_size;
-      err = journal_store_write (start_block, length, buf, &amount);
+      err = journal_store_write (start_block, length, buf, &amount, 1);
       if (!err && length != amount)
 	err = EIO;
     }
@@ -939,8 +944,7 @@ diskfs_file_update (struct node *node, int wait)
        data above on disk; waiting here would make the inode update force
        a commit.  */
     wait = 0;
-  else
-    pokel_sync (&diskfs_node_disknode (node)->indir_pokel, wait);
+  pokel_sync_or_release (&diskfs_node_disknode (node)->indir_pokel, wait);
 
   /* Every caller holds a handle except diskfs_S_file_sync, which opens
      none around the writeback above (holding one there would stall every
@@ -1154,7 +1158,7 @@ disk_cache_return_unused (void)
     *(volatile char *)(disk_cache + i);
 
   /* Release some references to cached blocks.  */
-  pokel_sync (&global_pokel, 1);
+  pokel_sync_or_release (&global_pokel, 1);
 
   /* Return unused pages that are in core.  */
   int pending_begin = -1, pending_end = -1;
@@ -1198,6 +1202,34 @@ disk_cache_return_unused (void)
       /* Give it some time.  This should happen rarely.  */
       sleep (1);
     }
+}
+
+/* If BLOCK is mapped, add a reference to it and return a pointer to
+   it, and otherwise return NULL.  Never maps a block, or waits for one:
+   safe where disk_cache_block_ref's reclaiming is not.  */
+void *
+disk_cache_block_ref_mapped (block_t block)
+{
+  void *ptr;
+
+  pthread_mutex_lock (&disk_cache_lock);
+  ptr = hurd_ihash_find (disk_cache_bptr, block);
+  if (ptr)
+    {
+      int index = bptr_index (ptr);
+
+      /* Being mapped to it right now: not yet.  */
+      if (disk_cache_info[index].flags & DC_UNTOUCHED)
+	ptr = NULL;
+      else
+	{
+	  assert_backtrace (disk_cache_info[index].ref_count + 1
+			    > disk_cache_info[index].ref_count);
+	  disk_cache_info[index].ref_count++;
+	}
+    }
+  pthread_mutex_unlock (&disk_cache_lock);
+  return ptr;
 }
 
 /* Map block and return pointer to it.  */
@@ -1558,7 +1590,14 @@ drop_pager_softrefs (struct node *node)
 
   if (MAY_CACHE && pager)
     {
-      pager_sync (pager, 0);
+      /* As in diskfs_file_update, a directory's blocks are journaled.  A
+	 sync would also write copies of its pages that the kernel keeps
+	 and takes now, and a copy can reach the journal after a newer
+	 edit went home and its transaction retired: the edit is undone
+	 on disk.  Without caching, the kernel returns the dirty pages
+	 when the object goes.  */
+      if (!ext2_journal || !S_ISDIR (node->dn_stat.st_mode))
+	pager_sync (pager, 0);
       pager_change_attributes (pager, 0, MEMORY_OBJECT_COPY_DELAY, 0);
     }
   if (pager)
@@ -1608,19 +1647,17 @@ diskfs_shutdown_pager (void)
     }
 
 
+  /* As in diskfs_sync_everything, commit the inodes first.  */
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
-
   write_all_disknodes ();
-  ports_bucket_iterate (file_pager_bucket, shutdown_one);
-
   diskfs_journal_commit_transaction (txn);
 
-  if (!ext2_journal)
-    {
-      error_t err = store_sync (store);
-      if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
-        ext2_warning ("device flush failed: %s", strerror (err));
-    }
+  ports_bucket_iterate (file_pager_bucket, shutdown_one);
+
+  /* With a journal too: the commit's flush came before the file data.  */
+  error_t err = store_sync (store);
+  if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
+    ext2_warning ("device flush failed: %s", strerror (err));
 
   /* Despite the name of this function, we never actually shutdown the disk
      pager, just make sure it's synced. */
@@ -1633,18 +1670,29 @@ diskfs_sync_everything (int wait)
   error_t sync_one (void *v_p)
     {
       struct pager *p = v_p;
-      pager_sync (p, wait);
+      /* As in diskfs_file_update, a directory's blocks are journaled.  */
+      if (!ext2_journal || !S_ISDIR (pager_get_upi (p)->node->dn_stat.st_mode))
+	pager_sync (p, wait);
       return 0;
     }
 
+  /* Commit the inodes before syncing the file pagers.  File data is not
+     journaled, and its blocks were allocated when the pages were
+     unlocked, so the pager writes change no metadata.  Syncing them can
+     take minutes for a large dirty file under memory pressure, and a
+     commit waits for every open handle: holding one through the sync
+     stalled every commit, and every RPC waiting for the next
+     transaction, until it ended.  */
   diskfs_transaction_t *txn = diskfs_journal_start_transaction ();
   write_all_disknodes ();
-  ports_bucket_iterate (file_pager_bucket, sync_one);
   diskfs_journal_commit_transaction (txn);
 
+  ports_bucket_iterate (file_pager_bucket, sync_one);
+
   /* Do things on the the disk pager.  */
-  sync_global (wait);
-  if (wait && !ext2_journal)
+  pokel_sync_or_release (&global_pokel, wait);
+  /* With a journal too: the commit's flush came before the file data.  */
+  if (wait)
     {
       error_t err = store_sync (store);
       if (err && err != EOPNOTSUPP && err != D_INVALID_OPERATION)
