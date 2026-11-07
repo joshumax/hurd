@@ -157,60 +157,64 @@ netfs_S_file_exec_paths (struct protid *cred,
     flags |= EXEC_NEWTASK;
 #endif
 
-  if (! err)
+  if (err)
+    return err;
+
+  struct iouser *user;
+  struct protid *newpi;
+  struct peropen *newpo;
+
+  err = iohelp_dup_iouser (&user, cred->user);
+  if (err)
+    return err;
+
+  newpo = netfs_make_peropen (np, O_READ, cred->po);
+  if (!newpo)
     {
-      struct iouser *user;
-      struct protid *newpi;
-
-      err = iohelp_dup_iouser (&user, cred->user);
-      if (! err)
-        {
-	  newpi = netfs_make_protid (netfs_make_peropen (np, O_READ, cred->po),
-				     user);
-	  if (newpi)
-	    {
-	      right = ports_get_send_right (newpi);
-
-	      /* Add a gratuitous send right on the protid to avoid a no-sender, and thus
-		 interrupt the exec, just because we are precisely replacing the calling
-		 process!  */
-	      cred_right = ports_get_send_right (cred);
-#ifdef HAVE_EXEC_EXEC_PATHS
-	      err = exec_exec_paths (_netfs_exec,
-				     right, MACH_MSG_TYPE_COPY_SEND,
-				     task, flags, path, abspath,
-				     argv, argvlen, envp, envplen,
-				     fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-				     portarray, MACH_MSG_TYPE_COPY_SEND,
-				     portarraylen,
-				     intarray, intarraylen,
-				     deallocnames, deallocnameslen,
-				     destroynames, destroynameslen);
-	      /* For backwards compatibility.  Just drop it when we kill
-		 exec_exec.  */
-	      if (err == MIG_BAD_ID)
-#endif
-		err = exec_exec (_netfs_exec,
-				 right, MACH_MSG_TYPE_COPY_SEND,
-				 task, flags, argv, argvlen, envp, envplen,
-				 fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
-				 portarray, MACH_MSG_TYPE_COPY_SEND,
-				 portarraylen,
-				 intarray, intarraylen,
-				 deallocnames, deallocnameslen,
-				 destroynames, destroynameslen);
-
-	      mach_port_deallocate (mach_task_self (), right);
-	      mach_port_deallocate (mach_task_self (), cred_right);
-	      ports_port_deref (newpi);
-	    }
-	  else
-	    {
-	      err = errno;
-	      iohelp_free_iouser (user);
-	    }
-	}
+      err = errno;
+      goto free_user;
     }
+
+  newpi = netfs_make_protid (newpo, user);
+  if (!newpi)
+    {
+      err = errno;
+      goto release_newpo;
+    }
+
+  right = ports_get_send_right (newpi);
+
+  /* Add a gratuitous send right on the protid to avoid a no-sender, and thus
+     interrupt the exec, just because we are precisely replacing the calling
+     process!  */
+  cred_right = ports_get_send_right (cred);
+#ifdef HAVE_EXEC_EXEC_PATHS
+  err = exec_exec_paths (_netfs_exec,
+			 right, MACH_MSG_TYPE_COPY_SEND,
+			 task, flags, path, abspath,
+			 argv, argvlen, envp, envplen,
+			 fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+			 portarray, MACH_MSG_TYPE_COPY_SEND,
+			 portarraylen,
+			 intarray, intarraylen,
+			 deallocnames, deallocnameslen,
+			 destroynames, destroynameslen);
+  /* For backwards compatibility.  Just drop it when we kill exec_exec.  */
+  if (err == MIG_BAD_ID)
+#endif
+    err = exec_exec (_netfs_exec,
+		     right, MACH_MSG_TYPE_COPY_SEND,
+		     task, flags, argv, argvlen, envp, envplen,
+		     fds, MACH_MSG_TYPE_COPY_SEND, fdslen,
+		     portarray, MACH_MSG_TYPE_COPY_SEND,
+		     portarraylen,
+		     intarray, intarraylen,
+		     deallocnames, deallocnameslen,
+		     destroynames, destroynameslen);
+
+  mach_port_deallocate (mach_task_self (), right);
+  mach_port_deallocate (mach_task_self (), cred_right);
+  ports_port_deref (newpi);
 
   if (! err)
     {
@@ -223,5 +227,12 @@ netfs_S_file_exec_paths (struct protid *cred,
 	mach_port_deallocate (mach_task_self (), portarray[i]);
     }
 
+  return err;
+
+ release_newpo:
+  netfs_release_peropen (newpo);
+
+ free_user:
+  iohelp_free_iouser (user);
   return err;
 }

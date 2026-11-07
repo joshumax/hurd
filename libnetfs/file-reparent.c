@@ -30,6 +30,7 @@ netfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   struct node *node;
   struct protid *new_cred;
   struct iouser *user;
+  struct peropen *newpo;
 
   if (! cred)
     return EOPNOTSUPP;
@@ -41,34 +42,49 @@ netfs_S_file_reparent (struct protid *cred, mach_port_t parent,
   node = cred->po->np;
 
   pthread_mutex_lock (&node->lock);
-  
-  new_cred =
-    netfs_make_protid (netfs_make_peropen (node, cred->po->openstat, cred->po),
-		       user);
+  newpo = netfs_make_peropen (node, cred->po->openstat, cred->po);
+  if (!newpo)
+    {
+      err = errno;
+      pthread_mutex_unlock (&node->lock);
+      goto free_user;
+    }
+
+  new_cred = netfs_make_protid (newpo, user);
+  if (!new_cred)
+    {
+      err = errno;
+      pthread_mutex_unlock (&node->lock);
+      goto release_newpo;
+    }
+
   pthread_mutex_unlock (&node->lock);
 
-  if (new_cred)
+  /* Remove old shadow root state.  */
+  if (new_cred->po->shadow_root && new_cred->po->shadow_root != node)
     {
-      /* Remove old shadow root state.  */
-      if (new_cred->po->shadow_root && new_cred->po->shadow_root != node)
-	{
-	  pthread_mutex_lock (&new_cred->po->shadow_root->lock);
-	  netfs_nput (new_cred->po->shadow_root);
-	}
-      if (new_cred->po->shadow_root_parent)
-	mach_port_deallocate (mach_task_self (), new_cred->po->shadow_root_parent);
-
-      /* And install PARENT instead.  */
-      new_cred->po->shadow_root = node;
-      new_cred->po->shadow_root_parent = parent;
-
-      *new_file = ports_get_right (new_cred);
-      *new_file_type = MACH_MSG_TYPE_MAKE_SEND;
-
-      ports_port_deref (new_cred);
-
-      return 0;
+      pthread_mutex_lock (&new_cred->po->shadow_root->lock);
+      netfs_nput (new_cred->po->shadow_root);
     }
-  else
-    return errno;
+
+  if (new_cred->po->shadow_root_parent)
+    mach_port_deallocate (mach_task_self (),
+			  new_cred->po->shadow_root_parent);
+
+  /* And install PARENT instead.  */
+  new_cred->po->shadow_root = node;
+  new_cred->po->shadow_root_parent = parent;
+
+  *new_file = ports_get_right (new_cred);
+  *new_file_type = MACH_MSG_TYPE_MAKE_SEND;
+
+  ports_port_deref (new_cred);
+  return 0;
+
+ release_newpo:
+  netfs_release_peropen (newpo);
+
+ free_user:
+  iohelp_free_iouser (user);
+  return err;
 }
