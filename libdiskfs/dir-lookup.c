@@ -332,8 +332,6 @@ try_lookup (struct protid *dircred,
 						      &np->transbox);
 		  if (complete_path != translator_path)
 		    free(complete_path);
-		  if (err)
-		    goto out;
 		}
 
 	      goto out;
