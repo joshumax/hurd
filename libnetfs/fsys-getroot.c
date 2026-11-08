@@ -42,6 +42,7 @@ netfs_S_fsys_getroot (struct netfs_control *pt,
   error_t err;
   struct protid *newpi;
   mode_t type;
+  struct peropen *newpo = NULL;
   struct peropen peropen_context =
     {
       .root_parent = dotdot,
@@ -133,9 +134,20 @@ netfs_S_fsys_getroot (struct netfs_control *pt,
 
   flags &= ~OPENONLY_STATE_MODES;
 
-  newpi = netfs_make_protid (netfs_make_peropen (netfs_root_node, flags,
-						 &peropen_context),
-			     cred);
+  newpo = netfs_make_peropen (netfs_root_node, flags, &peropen_context);
+  if (!newpo)
+    {
+      err = errno;
+      goto out;
+    }
+
+  newpi = netfs_make_protid (newpo, cred);
+  if (!newpi)
+    {
+      err = errno;
+      goto out;
+    }
+
   mach_port_deallocate (mach_task_self (), dotdot);
 
   *do_retry = FS_RETRY_NORMAL;
@@ -146,7 +158,13 @@ netfs_S_fsys_getroot (struct netfs_control *pt,
 
  out:
   if (err)
-    iohelp_free_iouser (cred);
+    {
+      iohelp_free_iouser (cred);
+
+      if (newpo)
+	netfs_release_peropen (newpo);
+    }
+
   pthread_mutex_unlock (&netfs_root_node->lock);
   return err;
 }

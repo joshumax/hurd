@@ -28,36 +28,49 @@ netfs_S_dir_mkfile (struct protid *diruser, int flags, mode_t mode,
 {
   error_t err;
   struct node *np;
-  struct iouser *user;
-  struct protid *newpi;
+  struct iouser *user = NULL;
+  struct protid *newpi = NULL;
+  struct peropen *newpo = NULL;
 
   pthread_mutex_lock (&diruser->po->np->lock);
   err = netfs_attempt_mkfile (diruser->user, diruser->po->np, mode, &np);
+  if (err)
+    return err;
 
-  if (!err)
+  /* the dir is now unlocked and NP is locked */
+  flags &= ~OPENONLY_STATE_MODES;
+  err = iohelp_dup_iouser (&user, diruser->user);
+  if (err)
+    goto out;
+
+  newpo = netfs_make_peropen (np, flags, diruser->po);
+  if (!newpo)
     {
-      /* the dir is now unlocked and NP is locked */
-      flags &= ~OPENONLY_STATE_MODES;
-      err = iohelp_dup_iouser (&user, diruser->user);
-      if (! err)
-        {
-          newpi = netfs_make_protid (netfs_make_peropen (np, flags,
-							 diruser->po),
-				     user);
-	  if (newpi)
-	    {
-	      *newfile = ports_get_right (newpi);
-	      *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
-	      ports_port_deref (newpi);
-	    }
-	  else
-	    {
-	      err = errno;
-	      iohelp_free_iouser (user);
-	    }
-	}
-      netfs_nput (np);
+      err = errno;
+      goto out;
     }
 
+  newpi = netfs_make_protid (newpo, user);
+  if (!newpi)
+    {
+      err = errno;
+      goto out;
+    }
+
+  *newfile = ports_get_right (newpi);
+  *newfiletype = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
+
+ out:
+  if (err)
+    {
+      if (user)
+	iohelp_free_iouser (user);
+
+      if (newpo)
+	netfs_release_peropen (newpo);
+    }
+
+  netfs_nput (np);
   return err;
 }

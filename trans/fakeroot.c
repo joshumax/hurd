@@ -292,8 +292,9 @@ netfs_S_dir_lookup (struct protid *diruser,
 {
   struct node *dnp, *np;
   error_t err;
+  struct peropen *newpo = NULL;
   struct protid *newpi;
-  struct iouser *user;
+  struct iouser *user = NULL;
   mach_port_t file;
   mach_port_t idport, fsidport;
   ino_t fileno;
@@ -489,24 +490,38 @@ netfs_S_dir_lookup (struct protid *diruser,
   flags &= ~(O_CREAT|O_EXCL|O_NOLINK|O_NOTRANS|O_NONBLOCK);
 
   err = iohelp_dup_iouser (&user, diruser->user);
-  if (!err)
+  if (err)
+    goto lose;
+
+  newpo = netfs_make_peropen (np, flags, diruser->po);
+  if (!newpo)
     {
-      newpi = netfs_make_protid (netfs_make_peropen (np, flags, diruser->po),
-				 user);
-      if (! newpi)
-	{
-	  iohelp_free_iouser (user);
-	  err = errno;
-	}
-      else
-	{
-	  *retry_port = ports_get_right (newpi);
-	  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
-	  ports_port_deref (newpi);
-	}
+      err = errno;
+      goto lose;
     }
 
+  newpi = netfs_make_protid (newpo, user);
+  if (!newpi)
+    {
+      err = errno;
+      goto lose;
+    }
+
+  *retry_port = ports_get_right (newpi);
+  *retry_port_type = MACH_MSG_TYPE_MAKE_SEND;
+  ports_port_deref (newpi);
+
+
  lose:
+  if (err)
+    {
+      if (user)
+	iohelp_free_iouser (user);
+
+      if (newpo)
+	netfs_release_peropen (newpo);
+    }
+
   if (np != NULL)
     netfs_nput (np);
   return err;

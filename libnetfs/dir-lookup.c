@@ -47,8 +47,9 @@ netfs_S_dir_lookup (struct protid *dircred,
   char *nextname;
   char *relpath;
   error_t err;
+  struct peropen *newpo = NULL;
   struct protid *newpi = NULL;
-  struct iouser *user;
+  struct iouser *user = NULL;
 
   if (!dircred)
     return EOPNOTSUPP;
@@ -224,18 +225,22 @@ netfs_S_dir_lookup (struct protid *dircred,
 	  err = iohelp_create_empty_iouser (&user);
 	  if (! err)
 	    {
-	      newpi = netfs_make_protid (netfs_make_peropen (dnp, 0,
-							     dircred->po),
-					 user);
-	      if (! newpi)
-	        {
-		  err = errno;
-		  iohelp_free_iouser (user);
-		}
+	      newpo = netfs_make_peropen (dnp, 0, dircred->po);
+	      if (! newpo)
+		err = errno;
 	    }
 
 	  if (! err)
 	    {
+	      newpi = netfs_make_protid (newpo, user);
+	      if (! newpi)
+		err = errno;
+	    }
+
+	  if (! err)
+	    {
+	      user = NULL;
+	      newpo = NULL;
 
 	      dirport = ports_get_send_right (newpi);
 
@@ -301,7 +306,8 @@ netfs_S_dir_lookup (struct protid *dircred,
 		    complete_path = translator_path;
 		  else
 		    {
-			err = asprintf (&complete_path, "%s/%s", dircred->po->path,
+			err = asprintf (&complete_path, "%s/%s",
+					dircred->po->path,
 					translator_path);
 			if (err == -1)
 			  {
@@ -314,7 +320,7 @@ netfs_S_dir_lookup (struct protid *dircred,
 						      complete_path,
 						      &np->transbox);
 		  if (complete_path != translator_path)
-		    free(complete_path);
+		    free (complete_path);
 		}
 
 	      goto out;
@@ -432,14 +438,22 @@ netfs_S_dir_lookup (struct protid *dircred,
   if (err)
     goto out;
 
-  newpi = netfs_make_protid (netfs_make_peropen (np, flags, dircred->po),
-			     user);
-  if (! newpi)
+  newpo = netfs_make_peropen (np, flags, dircred->po);
+  if (! newpo)
     {
-      iohelp_free_iouser (user);
       err = errno;
       goto out;
     }
+
+  newpi = netfs_make_protid (newpo, user);
+  if (! newpi)
+    {
+      err = errno;
+      goto out;
+    }
+
+  user = NULL;
+  newpo = NULL;
 
   mach_port_t rendezvous = MACH_PORT_NULL;
   struct flock64 lock =
@@ -476,8 +490,10 @@ netfs_S_dir_lookup (struct protid *dircred,
       else
 	{
 	  newpi->po->path = NULL;
-	  int err2 = asprintf (&newpi->po->path, "%s/%s", dircred->po->path, relpath);
-	  /* If asprintf fails set path to NULL so that the if below checks errno. */
+	  int err2 = asprintf (&newpi->po->path, "%s/%s",
+			       dircred->po->path, relpath);
+	  /* If asprintf fails set path to NULL so that the if below
+	     checks errno.  */
 	  if (err2 == -1)
 	    newpi->po->path = NULL;
 	}
@@ -495,6 +511,10 @@ netfs_S_dir_lookup (struct protid *dircred,
     netfs_nrele (dnp);
   if (newpi)
     ports_port_deref (newpi);
+  if (newpo)
+    netfs_release_peropen (newpo);
+  if (user)
+    iohelp_free_iouser (user);
   free (relpath);
 
   return err;
