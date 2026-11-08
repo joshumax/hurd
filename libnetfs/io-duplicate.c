@@ -34,12 +34,24 @@ netfs_S_io_duplicate (struct protid *user,
   if (err)
     return err;
   
-  refcount_ref (&user->po->refcnt);
   pthread_mutex_lock (&user->po->np->lock);
+
+  refcount_ref (&user->po->refcnt);
   newpi = netfs_make_protid (user->po, clone);
-  *newport = ports_get_right (newpi);
+  if (newpi)
+    {
+      *newport = ports_get_right (newpi);
+      *newporttp = MACH_MSG_TYPE_MAKE_SEND;
+      ports_port_deref (newpi);
+    }
+  else
+    {
+      err = errno;
+      iohelp_free_iouser (clone);
+      refcount_deref (&user->po->refcnt);
+    }
+
   pthread_mutex_unlock (&user->po->np->lock);
-  *newporttp = MACH_MSG_TYPE_MAKE_SEND;
-  ports_port_deref (newpi);
-  return 0;
+
+  return err;
 }
