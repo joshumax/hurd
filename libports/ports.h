@@ -175,6 +175,9 @@ struct port_bucket *ports_create_bucket (void);
 struct port_class *ports_create_class (void (*clean_routine)(void *),
 				       void (*dropweak_routine)(void *));
 
+/* Destroy the BUCKET.  */
+void ports_destroy_bucket (struct port_bucket *bucket);
+
 /* Create and return in RESULT a new port in CLASS and BUCKET; SIZE bytes
    will be allocated to hold the port structure and whatever private data the
    user desires.  */

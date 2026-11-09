@@ -42,10 +42,7 @@ ports_create_bucket (void)
 
   ret = malloc (sizeof (struct port_bucket));
   if (! ret)
-    {
-      errno = ENOMEM;
-      return NULL;
-    }
+    return NULL;
 
   err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_PORT_SET, 
 			    &ret->portset);
@@ -63,10 +60,11 @@ ports_create_bucket (void)
   /* Create the notify_port for this bucket.  */
   pthread_once (&init_notify_port_class_once, init_notify_port_class);
   err = ports_create_port (notify_port_class, ret,
-                           sizeof (struct port_info),
-                           &ret->notify_port);
+			   sizeof (struct port_info),
+			   &ret->notify_port);
   if (err)
     {
+      mach_port_deallocate (mach_task_self (), ret->portset);
       hurd_ihash_destroy (&ret->htable);
       free (ret);
       errno = err;

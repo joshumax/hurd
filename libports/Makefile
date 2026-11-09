@@ -21,7 +21,7 @@ dir := libports
 makemode := library
 
 libname = libports
-SRCS = create-bucket.c create-class.c \
+SRCS = create-bucket.c create-class.c destroy-bucket.c \
  reallocate-port.c reallocate-from-external.c destroy-right.c \
  lookup-port.c port-ref.c port-ref-weak.c port-deref.c port-deref-weak.c \
  no-senders.c begin-rpc.c end-rpc.c manage-one-thread.c manage-multithread.c \
