@@ -145,9 +145,10 @@ static struct port_bucket *pager_port_bucket = 0;
 static struct pager_requests *pager_requests;
 
 /* Initialize paging for this device.  */
-static void
+static error_t
 init_dev_paging (void)
 {
+  error_t err = 0;
   if (! pager_port_bucket)
     {
       static pthread_mutex_t pager_global_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -155,20 +156,30 @@ init_dev_paging (void)
       pthread_mutex_lock (&pager_global_lock);
       if (pager_port_bucket == NULL)
 	{
-	  error_t err;
-
-	  pager_port_bucket = ports_create_bucket ();
+	  struct port_bucket *bucket = ports_create_bucket ();
+	  if (! bucket)
+	    {
+	      err = errno;
+	      error (0, err, "ports_create_bucket");
+	      goto out;
+	    }
 
 	  /* Start libpagers worker threads.  */
-	  err = pager_start_workers (pager_port_bucket, &pager_requests);
+	  err = pager_start_workers (bucket, &pager_requests);
 	  if (err)
 	    {
-	      errno = err;
+	      ports_destroy_bucket (bucket);
 	      error (0, err, "pager_start_workers");
 	    }
+	  else
+	    pager_port_bucket = bucket;
 	}
+
+     out:
       pthread_mutex_unlock (&pager_global_lock);
     }
+
+  return err;
 }
 
 void
@@ -229,7 +240,9 @@ dev_get_memory_object (struct dev *dev, vm_prot_t prot, memory_object_t *memobj)
     {
       int created = 0;
 
-      init_dev_paging ();
+      err = init_dev_paging ();
+      if (err)
+	return err;
 
       pthread_mutex_lock (&dev->pager_lock);
 
