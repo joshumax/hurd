@@ -295,7 +295,7 @@ interrupt_register(int gsi,
   if (err)
     {
       log_error("cannot allocate mach port\n");
-      return NULL;
+      goto free_irq;
     }
 
   irq->port = delivery_port;
@@ -306,10 +306,17 @@ interrupt_register(int gsi,
   if (err)
     {
       log_error("device_intr_register failed with %d\n", err);
-      return NULL;
+      goto deallocate_delivery_port;
     }
 
   return irq;
+
+ deallocate_delivery_port:
+  mach_port_deallocate (mach_task_self (), delivery_port);
+
+ free_irq:
+  free (irq);
+  return NULL;
 }
 
 struct irq *

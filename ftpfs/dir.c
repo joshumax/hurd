@@ -785,11 +785,7 @@ ftpfs_dir_create (struct ftpfs *fs, struct node *node, const char *rmt_path,
   struct ftpfs_dir *new = malloc (sizeof (struct ftpfs_dir));
 
   if (! new)
-    {
-      error_t err = errno;
-      free (new);
-      return err;
-    }
+    return errno;
 
   netfs_nref (node);
 

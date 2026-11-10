@@ -44,7 +44,7 @@ ftpfs_create (char *rmt_path, int fsid,
   struct ftpfs *new = malloc (sizeof (struct ftpfs));
 
   if (! new)
-    return ENOMEM;
+    return errno;
 
   new->free_conns = 0;
   new->conns = 0;
@@ -66,21 +66,27 @@ ftpfs_create (char *rmt_path, int fsid,
 
   super_root = netfs_make_node (0);
   if (! super_root)
-    err = ENOMEM;
-  else
-    {
-      err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
-      if (! err)
-	err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
-    }
+    goto free_new;
 
+  err = ftpfs_dir_create (new, super_root, rmt_path, &super_root_dir);
+  if (err)
+    goto free_super_root;
+
+  err = ftpfs_dir_null_lookup (super_root_dir, &new->root);
   if (err)
     {
       hurd_ihash_destroy (&new->inode_mappings);
-      free (new);
+      goto free_super_root;
     }
-  else
-    *fs = new;
 
+  *fs = new;
+  return 0;
+
+ free_super_root:
+  free (super_root);
+
+ free_new:
+  free (new);
+  *fs = NULL;
   return err;
 }

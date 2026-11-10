@@ -330,8 +330,8 @@ pager_start_workers (struct port_bucket *pager_bucket,
   requests = malloc (sizeof *requests);
   if (requests == NULL)
     {
-      err = ENOMEM;
-      goto done;
+      err = errno;
+      goto error;
     }
 
   requests->bucket = pager_bucket;
@@ -340,8 +340,8 @@ pager_start_workers (struct port_bucket *pager_bucket,
   requests->queue_in = malloc (sizeof *requests->queue_in);
   if (requests->queue_in == NULL)
     {
-      err = ENOMEM;
-      goto done;
+      err = errno;
+      goto free_requests;
     }
   queue_init (requests->queue_in);
   /* Until the workers are inhibited, both queues are the same.  */
@@ -354,7 +354,7 @@ pager_start_workers (struct port_bucket *pager_bucket,
   /* Make a thread to service paging requests.  */
   err = pthread_create (&t, NULL, service_paging_requests, requests);
   if (err)
-    goto done;
+    goto free_queue;
   pthread_detach (t);
 
   for (i = 0; i < WORKER_COUNT; i++)
@@ -365,19 +365,21 @@ pager_start_workers (struct port_bucket *pager_bucket,
 
       err = pthread_create (&t, NULL, &worker_func, &requests->workers[i]);
       if (err)
-	goto done;
+	goto free_queue;
       pthread_detach (t);
     }
 
-done:
-  if (err)
-    {
-      free (requests);
-      *out_requests = NULL;
-    }
-  else
-    *out_requests = requests;
+  *out_requests = requests;
+  return 0;
 
+ free_queue:
+  free (requests->queue_in);
+
+ free_requests:
+  free (requests);
+
+ error:
+  *out_requests = NULL;
   return err;
 }
 

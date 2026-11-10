@@ -91,10 +91,10 @@ store_free (struct store *store)
   if (store->source != MACH_PORT_NULL)
     mach_port_deallocate (mach_task_self (), store->source);
 
-  if (store->name)
-    free (store->name);
-  if (store->runs)
-    free (store->runs);
+  free (store->name);
+  free (store->runs);
+  free (store->misc);
+  free (store->children);
 
   free (store);
 }
