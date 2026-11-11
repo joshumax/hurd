@@ -39,6 +39,7 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   struct ps_fmt *new_fmt;
   int needs = 0;
   int fields_alloced = 10;
+  error_t err;
   /* Initial values for CLR_FLAGS & INV_FLAGS, so the user may specify
      string-wide defaults.  */
   int global_clr_flags = 0, global_inv_flags = 0;
@@ -46,13 +47,13 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   struct ps_fmt_field *field = fields; /* current last field */
 
   if (fields == NULL)
-    return ENOMEM;
+    return errno;
 
   new_fmt = NEW (struct ps_fmt);
   if (new_fmt == NULL)
     {
-      FREE (fields);
-      return ENOMEM;
+      err = errno;
+      goto free_fields;
     }
 
   /* Make a private copy of SRC so we can mutate it.  */
@@ -60,9 +61,8 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   new_fmt->src = strdup (src);
   if (new_fmt->src == NULL)
     {
-      FREE (fields);
-      FREE (new_fmt);
-      return ENOMEM;
+      err = errno;
+      goto free_new_fmt;
     }
 
   src = new_fmt->src;
@@ -74,17 +74,18 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	/* Time to grow FIELDS to make room for more.  */
 	{
 	  int offs = field - fields;
+	  struct ps_fmt_field *new_fields;
 
 	  fields_alloced += 10;
-	  fields = GROWVEC (fields, struct ps_fmt_field, fields_alloced);
+	  new_fields = GROWVEC (fields, struct ps_fmt_field, fields_alloced);
 
-	  if (fields == NULL)
+	  if (new_fields == NULL)
 	    {
-	      FREE (new_fmt->src);
-	      FREE (new_fmt);
-	      return ENOMEM;
+	      err = errno;
+	      goto free_src;
 	    }
 
+	  fields = new_fields;
 	  field = fields + offs;
 	}
 
@@ -177,15 +178,16 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	      /* if we didn't use any chars, don't loop indefinitely */
 	      if (src == start)
 		{
-		  int err = 0;
+		  err = 0;
 		  if (err_string)
 		    err = asprintf (err_string, "%s: Unknown format spec", src);
 
-		  FREE (new_fmt->src);
-		  FREE (new_fmt);
-		  FREE (fields);
+		  if (err == -1)
+		    err = errno;
+		  else
+		    err = EINVAL;
 
-		  return err != -1 ? EINVAL : ENOMEM;
+		  goto free_src;
 		}
 
 	      global_clr_flags = clr_flags;
@@ -247,15 +249,16 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
 	  if (! field->spec)
 	    /* Failed to find any named spec called NAME.  */
 	    {
-	      int err = 0;
+	      err = 0;
 	      if (err_string)
 		err = asprintf (err_string, "%s: Unknown format spec", name);
 
-	      FREE (new_fmt->src);
-	      FREE (fields);
-	      FREE (new_fmt);
+	      if (err == -1)
+		err = errno;
+	      else
+		err = EINVAL;
 
-	      return err != -1 ? EINVAL : ENOMEM;
+	      goto free_src;
 	    }
 
 	  if (! field->title)
@@ -313,8 +316,17 @@ _fmt_create (char *src, int posix, struct ps_fmt_specs *fmt_specs,
   new_fmt->error = "?";
 
   *fmt = new_fmt;
-
   return 0;
+
+ free_src:
+  FREE (new_fmt->src);
+
+ free_new_fmt:
+  FREE (new_fmt);
+
+ free_fields:
+  FREE (fields);
+  return err;
 }
 
 /* Make a PS_FMT_T by parsing the string SRC, searching for any named
