@@ -316,8 +316,9 @@ pager_start_workers (struct port_bucket *pager_bucket,
 		     struct pager_requests **out_requests)
 {
   error_t err;
-  int i;
-  pthread_t t;
+  size_t i;
+  pthread_t service_paging_pthread;
+  pthread_t worker_pthreads[WORKER_COUNT];
   struct pager_requests *requests;
   struct rlimit limits = { RLIM_INFINITY, RLIM_INFINITY };
 
@@ -352,10 +353,11 @@ pager_start_workers (struct port_bucket *pager_bucket,
   pthread_mutex_init (&requests->lock, NULL);
 
   /* Make a thread to service paging requests.  */
-  err = pthread_create (&t, NULL, service_paging_requests, requests);
+  err = pthread_create (&service_paging_pthread, NULL,
+			service_paging_requests, requests);
   if (err)
     goto free_queue;
-  pthread_detach (t);
+  pthread_detach (service_paging_pthread);
 
   for (i = 0; i < WORKER_COUNT; i++)
     {
@@ -363,14 +365,25 @@ pager_start_workers (struct port_bucket *pager_bucket,
       requests->workers[i].tag = 0;
       queue_init (&requests->workers[i].queue);
 
-      err = pthread_create (&t, NULL, &worker_func, &requests->workers[i]);
+      err = pthread_create (&worker_pthreads[i], NULL, &worker_func,
+			    &requests->workers[i]);
       if (err)
-	goto free_queue;
-      pthread_detach (t);
+	goto pthreads_cancel;
+      pthread_detach (worker_pthreads[i]);
     }
 
   *out_requests = requests;
   return 0;
+
+ pthreads_cancel:
+  for (size_t j = 0; j < i; ++j)
+    {
+      pthread_cancel (worker_pthreads[j]);
+      pthread_join (worker_pthreads[j], NULL);
+    }
+
+  pthread_cancel (service_paging_pthread);
+  pthread_join (service_paging_pthread, NULL);
 
  free_queue:
   free (requests->queue_in);
