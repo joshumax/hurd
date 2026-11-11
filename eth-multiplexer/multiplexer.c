@@ -160,7 +160,10 @@ main (int argc, char *argv[])
     error (1, 0, "must be started as a translator");
 
   /* Run the multiplexer server in another thread. */
-  pthread_create (&t, NULL, multiplexer_thread, NULL);
+  err = pthread_create (&t, NULL, multiplexer_thread, NULL);
+  if (err)
+    error (1, err, "Starting multiplexer thread failed");
+
   pthread_detach (t);
 
   err = maptime_map (0, 0, &multiplexer_maptime);
