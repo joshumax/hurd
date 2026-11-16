@@ -385,7 +385,7 @@ dev_write (struct dev *dev, off_t offs, const void *buf, size_t len,
 	return EINVAL;	/* EIO? */
 
       /* Do a direct write to the store.  */
-      return store_write (dev->store, offs << store->log2_block_size,
+      return store_write (dev->store, offs >> store->log2_block_size,
 			  buf, len, amount);
     }
 
@@ -481,7 +481,7 @@ dev_read (struct dev *dev, off_t offs, size_t whole_amount,
 	return EINVAL;
 
       /* Do a direct read from the store.  */
-      return store_read (dev->store, offs << store->log2_block_size,
+      return store_read (dev->store, offs >> store->log2_block_size,
 			 whole_amount, buf, len);
     }
 
