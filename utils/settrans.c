@@ -274,7 +274,7 @@ main(int argc, char *argv[])
   if (stack)
     {
       underlying_node_name = node_name;
-      underlying_lookup_flags = lookup_flags && ~O_NOTRANS;
+      underlying_lookup_flags = lookup_flags & ~O_NOTRANS;
     }
   else
     underlying_lookup_flags = lookup_flags;
