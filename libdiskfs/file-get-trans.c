@@ -106,7 +106,7 @@ diskfs_S_file_get_translator (struct protid *cred,
 	  *translen = len;
 	}
       else if (len > *translen)
-	munmap (trans, len);
+	munmap (*trans, len);
     }
   else if (S_ISCHR (np->dn_stat.st_mode) || S_ISBLK (np->dn_stat.st_mode))
     {
