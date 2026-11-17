@@ -81,8 +81,8 @@ static int _debug = 0;
 /* Everything else is some sort of fsck problem.  */
 
 /* Things we know about what child fsck's might return.  */
-#define FSCK_EX_IS_FIXED(st) ({ int _st = (st); _st >= 1 || _st <= 2; })
-#define FSCK_EX_IS_BROKEN(st) ({ int _st = (st); _st >= 4 || _st <= 8; })
+#define FSCK_EX_IS_FIXED(st) ({ int _st = (st); _st >= 1 && _st <= 2; })
+#define FSCK_EX_IS_BROKEN(st) ({ int _st = (st); _st >= 4 && _st <= 8; })
 
 /* Common fsck flags.  */
 #define FSCK_F_PREEN	0x1
