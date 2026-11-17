@@ -338,6 +338,11 @@ should_suppress_msgport (struct proc_stat *ps)
     /* All threads are suspended.  */
     return TRUE;
 
+  if ((have & PSTAT_THREAD_BASIC)
+      && ps->thread_basic_info->run_state == TH_STATE_HALTED)
+    /* All user threads are halted.  */
+    return TRUE;
+
   if ((have & PSTAT_NUM_THREADS) && ps->num_threads == 0)
     /* No threads (some bug could cause the procserver still to think there's
        a msgport).  */
