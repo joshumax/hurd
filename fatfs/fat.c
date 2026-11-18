@@ -150,7 +150,7 @@ fat_read_sblock (void)
     };
   
   total_sectors = read_word (sblock->total_sectors_16)
-    ?: read_word (sblock->total_sectors_32);
+    ?: read_dword (sblock->total_sectors_32);
   if (total_sectors * bytes_per_sector > store->size)
     error (1, 0, "Store is smaller then implied by metadata");
   if (total_sectors == 0)
@@ -166,7 +166,7 @@ fat_read_sblock (void)
     error (1, 0, "Number of FATs is zero");
 
   sectors_per_fat = read_word (sblock->sectors_per_fat_16)
-    ?: read_word (sblock->compat.fat32.sectors_per_fat_32);
+    ?: read_dword (sblock->compat.fat32.sectors_per_fat_32);
   if (sectors_per_fat == 0)
     error (1, 0, "Number of sectors per fat is zero");
 
