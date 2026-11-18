@@ -303,11 +303,13 @@ ethernet_xmit (struct sk_buff *skb, struct device *dev)
 	  ethernet_close (dev);
 	  ethernet_open (dev);
 	}
-      else
+      else if (err)
 	{
-	  assert_perror_backtrace (err);
-	  assert_backtrace (count == skb->len);
+	  retbuf.tx_dropped++;
+	  break;
 	}
+      else
+	assert_backtrace (count == skb->len);
     }
   while (err);
 
