@@ -125,8 +125,11 @@ _pager_S_memory_object_data_request (struct pager *p,
   return 0;
 
  error_read:
-  memory_object_data_error (p->memobjcntl, offset, length, EIO);
+  /* Record the error before the kernel reports it to the faulting thread.  */
+  pthread_mutex_lock (&p->interlock);
   _pager_mark_object_error (p, offset, length, EIO);
+  pthread_mutex_unlock (&p->interlock);
+  memory_object_data_error (p->memobjcntl, offset, length, EIO);
  allow_term_out:
   pthread_mutex_lock (&p->interlock);
   _pager_allow_termination (p);
