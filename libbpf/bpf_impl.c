@@ -416,7 +416,7 @@ bpf_validate(bpf_insn_t f, int bytes, bpf_insn_t *match)
 			int from = i + 1;
 
 			if (BPF_OP(p->code) == BPF_JA) {
-				if (p->k < 0 || from + p->k >= len)
+				if (p->k < 0 || p->k >= len - from)
 					return 0;
 			}
 			else if (from + p->jt >= len || from + p->jf >= len)
