@@ -44,18 +44,22 @@ netfs_S_fsys_syncfs (struct netfs_control *cntl,
 		     int children)
 {
   struct iouser *cred;
-  error_t err;
+  error_t err = 0;
   struct args args = { wait };
 
   if (! cntl)
     return EOPNOTSUPP;
 
   if (children)
-    fshelp_map_active_translators (helper, &args);
+    err = fshelp_map_active_translators (helper, &args);
+
+  if (err)
+    return err;
 
   err = iohelp_create_simple_iouser (&cred, 0, 0);
   if (err)
     return err;
+
   err = netfs_attempt_syncfs (cred, wait);
   iohelp_free_iouser (cred);
   return err;

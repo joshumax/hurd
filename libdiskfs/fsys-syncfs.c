@@ -45,6 +45,7 @@ diskfs_S_fsys_syncfs (struct diskfs_control *pi,
 		      int children)
 {
   struct args args = { wait };
+  error_t err = 0;
 
   if (!pi)
     return EOPNOTSUPP;
@@ -52,7 +53,10 @@ diskfs_S_fsys_syncfs (struct diskfs_control *pi,
   pthread_rwlock_rdlock (&diskfs_fsys_lock);
 
   if (children)
-    fshelp_map_active_translators (helper, &args);
+    err = fshelp_map_active_translators (helper, &args);
+
+  if (err)
+    goto out;
 
   if (diskfs_synchronous)
     wait = 1;
@@ -63,6 +67,7 @@ diskfs_S_fsys_syncfs (struct diskfs_control *pi,
       diskfs_set_hypermetadata (wait, 0);
     }
 
+ out:
   pthread_rwlock_unlock (&diskfs_fsys_lock);
-  return 0;
+  return err;
 }
