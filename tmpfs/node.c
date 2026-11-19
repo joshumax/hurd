@@ -74,8 +74,6 @@ diskfs_free_node (struct node *np, mode_t mode)
     {
     case DT_REG:
       if (np->dn->u.reg.memobj != MACH_PORT_NULL) {
-      /* XXX GNU Mach will terminate the object, and thus existing mappings
-       * will get SIGBUS.  */
 	vm_deallocate (mach_task_self (), np->dn->u.reg.memref, 4096);
 	mach_port_deallocate (mach_task_self (), np->dn->u.reg.memobj);
       }	
@@ -457,7 +455,9 @@ diskfs_truncate (struct node *np, off_t size)
   off_t set_size = size;
   size = round_page (size);
 
-  if (np->dn->u.reg.memobj != MACH_PORT_NULL)
+  if (np->dn->u.reg.memobj != MACH_PORT_NULL
+      /* Leave memory object as it is if this is just a call from diskfs_drop_node.  */
+      && !(size == 0 && np->cache_id == 0))
     {
       error_t err = default_pager_object_set_size (np->dn->u.reg.memobj, set_size);
       if (err == MIG_BAD_ID)
