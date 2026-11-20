@@ -54,7 +54,6 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
       uid_t uid, gid;
       char *argz;
       mach_msg_type_number_t argz_len;
-      error_t err;
       mach_port_t ports[INIT_PORT_MAX];
       int ints[INIT_INT_MAX];
       mach_port_t fds[STDERR_FILENO + 1];
@@ -85,7 +84,9 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 	  if (err)
 	    ret = MACH_PORT_NULL;
 
-	  mach_port_mod_refs (mach_task_self (), rend, MACH_PORT_RIGHT_RECEIVE, -1);
+	  err = mach_port_mod_refs (mach_task_self (), rend,
+				    MACH_PORT_RIGHT_RECEIVE, -1);
+	  assert_perror_backtrace (err);
 
 	  return ret;
 	}
@@ -181,9 +182,11 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
   control = box->active;
   /* FIXME: handle error properly */
-  mach_port_mod_refs (mach_task_self (), control,
+  err = mach_port_mod_refs (mach_task_self (), control,
 			    MACH_PORT_RIGHT_SEND, 1);
   pthread_mutex_unlock (box->lock);
+  if (err)
+    return err;
 
   /* Cancellation point XXX */
   err = fsys_getroot (control, dotdot, MACH_MSG_TYPE_COPY_SEND,
@@ -195,7 +198,14 @@ fshelp_fetch_root (struct transbox *box, void *cookie,
 
   if ((err == MACH_SEND_INVALID_DEST || err == MIG_SERVER_DIED)
       && control == box->active)
-    fshelp_set_active (box, MACH_PORT_NULL, 0);
+    {
+      error_t err2 = fshelp_set_active (box, MACH_PORT_NULL, 0);
+      if (err2)
+	{
+	  mach_port_deallocate (mach_task_self (), control);
+	  return err2;
+	}
+    }
   else
     mach_port_deallocate (mach_task_self (), control);
 

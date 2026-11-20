@@ -745,14 +745,16 @@ diskfs_dirrewrite_hard (struct node *dp, struct node *np, struct dirstat *ds)
 
   assert_backtrace (!diskfs_readonly);
 
+  /* Close the file, free the referenced held by clients.  */
+  err = fshelp_fetch_control (&oldnp->transbox, &control);
+  if (err)
+    return err;
+
   /*  The link count must be 0 so the file will be removed and
       the node will be dropped.  */
   oldnp->dn_stat.st_nlink--;
   assert_backtrace (!oldnp->dn_stat.st_nlink);
-  
-  /* Close the file, free the referenced held by clients.  */
-  fshelp_fetch_control (&oldnp->transbox, &control);
-  
+
   if (control)
     {
       fsys_goaway (control, FSYS_GOAWAY_UNLINK);

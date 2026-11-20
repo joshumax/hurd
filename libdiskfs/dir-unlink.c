@@ -26,7 +26,7 @@ diskfs_S_dir_unlink (struct protid *dircred,
 		     const_string_t name)
 {
   struct node *dnp;
-  struct node *np;
+  struct node *np = NULL;
   struct dirstat *ds = alloca (diskfs_dirstat_size);
   error_t err;
   diskfs_transaction_t *txn;
@@ -46,45 +46,32 @@ diskfs_S_dir_unlink (struct protid *dircred,
   if (err == EAGAIN)
     err = EPERM;	/* 1003.1-1996 5.5.1.4 */
   if (err)
-    {
-      diskfs_drop_dirstat (dnp, ds);
-      pthread_mutex_unlock (&dnp->lock);
-      diskfs_journal_stop_transaction (txn);
-      return err;
-    }
+    goto drop_dirstat;
 
   /* This isn't the BSD behavior, but it is Posix compliant and saves
      us on several race conditions.*/
   if (S_ISDIR(np->dn_stat.st_mode))
     {
-      if (np == dnp)		/* gotta catch '.' */
-	diskfs_nrele (np);
-      else
-	diskfs_nput (np);
-      diskfs_drop_dirstat (dnp, ds);
-      pthread_mutex_unlock (&dnp->lock);
-      diskfs_journal_stop_transaction (txn);
-      return EPERM;		/* 1003.1-1996 5.5.1.4 */
+      err = EPERM;
+      goto drop_dirstat;
     }
+
+  if (np->dn_stat.st_nlink == 1)
+    err = fshelp_fetch_control (&np->transbox, &control);
+
+  if (err)
+    goto drop_dirstat;
 
   err = diskfs_dirremove (dnp, np, name, ds);
   diskfs_node_update (dnp, diskfs_synchronous);
   if (err)
-    {
-      diskfs_nput (np);
-      pthread_mutex_unlock (&dnp->lock);
-      diskfs_journal_stop_transaction (txn);
-      return err;
-    }
+    goto node_nrele;
 
   np->dn_stat.st_nlink--;
   np->dn_set_ctime = 1;
   if (np->dn_stat.st_nlink == 0)
     diskfs_orphan_add (np);
   diskfs_node_update (np,  diskfs_synchronous);
-
-  if (np->dn_stat.st_nlink == 0)
-    fshelp_fetch_control (&np->transbox, &control);
 
   /* This check is necessary because we might get here on an error while
      checking the mode on something which happens to be `.'. */
@@ -101,6 +88,22 @@ diskfs_S_dir_unlink (struct protid *dircred,
     }
 
   diskfs_journal_end_transaction (txn, 1, diskfs_synchronous);
+  return 0;
 
+ drop_dirstat:
+  diskfs_drop_dirstat (dnp, ds);
+
+ node_nrele:
+  if (np)
+    {
+      if (np == dnp)		/* gotta catch '.' */
+	diskfs_nrele (np);
+      else
+	diskfs_nput (np);
+    }
+
+ return_error:
+  pthread_mutex_unlock (&dnp->lock);
+  diskfs_journal_stop_transaction (txn);
   return err;
 }
