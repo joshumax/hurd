@@ -298,7 +298,8 @@ boot_script_parse_line (void *hook, char *cmdline)
 	  for (p += 2;;)
 	    {
 	      char c;
-	      int i, type;
+	      unsigned i;
+	      int type;
 	      intptr_t val;
 	      struct sym *s;
 
