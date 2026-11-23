@@ -102,7 +102,6 @@ diskfs_S_dir_unlink (struct protid *dircred,
 	diskfs_nput (np);
     }
 
- return_error:
   pthread_mutex_unlock (&dnp->lock);
   diskfs_journal_stop_transaction (txn);
   return err;
