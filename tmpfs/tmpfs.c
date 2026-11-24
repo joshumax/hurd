@@ -55,7 +55,7 @@ struct node *diskfs_root_node;
 mach_port_t default_pager;
 
 off_t tmpfs_page_limit, tmpfs_space_used;
-mode_t tmpfs_root_mode = -1;
+mode_t tmpfs_root_mode = (mode_t) -1;
 
 error_t
 diskfs_set_statfs (struct statfs *st)
@@ -125,6 +125,11 @@ parse_opt_size (const char *arg, struct argp_state *state, off_t *newsize)
       argp_error (state, "argument must be a number");
       return EINVAL;
     }
+  if (size == 0)
+    {
+      argp_error (state, "argument must be bigger than zero");
+      return EINVAL;
+    }
   if (size < 0)
     {
       argp_error (state, "negative size not meaningful");
@@ -191,7 +196,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 	return ENOMEM;
       state->hook = values;
       values->size = -1;
-      values->mode = -1;
+      values->mode = (mode_t) -1;
       break;
     case ARGP_KEY_FINI:
       free (values);
@@ -201,8 +206,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
     case 'm':			/* --mode=OCTAL */
       {
 	char *end = NULL;
+	errno = 0;
 	mode_t mode = strtoul (arg, &end, 8);
-	if (end == NULL || end == arg)
+	if (errno != 0 || *end != '\0' || end == arg)
 	  {
 	    argp_error (state, "argument must be an octal number");
 	    return EINVAL;
@@ -257,7 +263,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
 
     case ARGP_KEY_SUCCESS:
       /* All options parse successfully, so implement ours if possible.  */
-      tmpfs_page_limit = values->size / vm_page_size;
+      tmpfs_page_limit = (values->size + vm_page_size - 1) / vm_page_size;
       tmpfs_root_mode = values->mode;
       break;
 
@@ -419,7 +425,7 @@ main (int argc, char **argv)
   if (err)
     {
       error (0, err, "cannot stat underlying node");
-      if (tmpfs_root_mode == -1)
+      if (tmpfs_root_mode == (mode_t) -1)
 	diskfs_root_node->dn_stat.st_mode |= 0777 | S_ISVTX;
       else
 	diskfs_root_node->dn_stat.st_mode |= tmpfs_root_mode;
@@ -429,7 +435,7 @@ main (int argc, char **argv)
     }
   else
     {
-      if (tmpfs_root_mode == -1)
+      if (tmpfs_root_mode == (mode_t) -1)
 	{
 	  diskfs_root_node->dn_stat.st_mode |= st.st_mode &~ S_IFMT;
 	  if (S_ISREG (st.st_mode) && (st.st_mode & 0111) == 0)
