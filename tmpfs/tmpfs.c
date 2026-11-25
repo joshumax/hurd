@@ -119,8 +119,9 @@ static error_t
 parse_opt_size (const char *arg, struct argp_state *state, off_t *newsize)
 {
   char *end = NULL;
+  errno = 0;
   intmax_t size = strtoimax (arg, &end, 0);
-  if (end == NULL || end == arg)
+  if (errno != 0 || *end != '\0' || end == arg)
     {
       argp_error (state, "argument must be a number");
       return EINVAL;
