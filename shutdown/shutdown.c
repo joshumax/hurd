@@ -81,6 +81,13 @@ S_shutdown_shutdown(trivfs_protid_t server)
   kern_return_t err;
   mach_port_t acpi;
 
+  if (!server)
+    return EOPNOTSUPP;
+
+  /* Only root may power the machine off.  */
+  if (!server->isroot)
+    return EPERM;
+
   acpi = get_acpi();
   if (acpi == MACH_PORT_NULL)
     return EIO;
